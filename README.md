@@ -1,6 +1,26 @@
 # Keibi Engine
+=======
 
+Introduction
+---
 
+This is a CLI to query cloud resources such EC2 instances from public cloud. For now only AWS is supported.
+
+Build
+---
+
+Run the build command
+
+    make build
+
+The built binary is found in the ./build directory
+
+Executing
+--
+
+Start using the CLI by running command
+
+    ./build/cloud-inventory aws --help
 
 ## Getting started
 
