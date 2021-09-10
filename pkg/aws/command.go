@@ -17,25 +17,31 @@ func Command() *cobra.Command {
 	var awsAccessKey string
 	var awsSessionToken string
 	var disabledRegions bool
+	var assumeRoleArn string
 
 	cmd := &cobra.Command{
 		Use: "aws",
 		Example: `
-Query the list of EC2 Instances in us-east-1:
+# Query the list of EC2 Instances in us-east-1:
 
 	cloud-inventory aws --type AWS::EC2::Instance --regions us-east-1 --account-id 12314214324
 
-Query the list of EC2 VPCs in us-east-1 and us-west-2:
+# Query the list of EC2 VPCs in us-east-1 and us-west-2:
 
 	cloud-inventory aws --type AWS::EC2::VPC --regions us-east-1,us-west-2 --account-id 12314214324
 
-Query the list of EC2 Subnets in all regions:
+# Query the list of EC2 Subnets in all regions:
 
 	cloud-inventory aws --type AWS::EC2::Subnet --account-id 12314214324
 
-Query the list of EC2 Instances using the provided AccessKey and SecretKey:
+# Query the list of EC2 Instances using the provided AccessKey and SecretKey:
 
 	cloud-inventory aws --type AWS::EC2::Instance --account-id 12314214324 --secret-key 1fadsrqendfq3ud --access-key feqfefedff23
+
+# Query the list of SecurityGroups by assuming the role SecurityAuditorRole
+
+	cloud-inventory aws --type AWS::EC2::Instance --account-id 12314214324 --secret-key 1fadsrqendfq3ud --access-key feqfefedff23 --assume-role-arn arn:aws:iam::123456789012:role/SecurityAuditorRole
+
 `,
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			switch {
@@ -52,13 +58,39 @@ Query the list of EC2 Instances using the provided AccessKey and SecretKey:
 			}
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			resources, err := GetResources(context.Background(), regions, resourceType, awsAccessKey, awsSecretKey, awsSessionToken, disabledRegions)
+			// After this, if we return error, don't print out usage. The error is a runtime error.
+			cmd.SilenceUsage = true
+
+			ctx := context.Background()
+			cfg, err := getConfig(ctx, awsAccessKey, awsSecretKey, awsSessionToken, assumeRoleArn)
 			if err != nil {
 				return err
 			}
 
-			output := map[string]map[string][]interface{}{
-				awsAccount: resources,
+			if len(regions) == 0 {
+				rs, err := GetAllRegions(ctx, cfg, disabledRegions)
+				if err != nil {
+					return err
+				}
+
+				for _, r := range rs {
+					regions = append(regions, *r.RegionName)
+				}
+			}
+
+			response, err := GetResources(ctx, cfg, regions, resourceType)
+			if err != nil {
+				return err
+			}
+
+			output := map[string]interface{}{
+				"resources": response.Resources,
+				"errors":    response.Errors,
+				"metadata": map[string]interface{}{
+					"type":      resourceType,
+					"accountId": awsAccount,
+					"regions":   regions,
+				},
 			}
 
 			bytes, err := json.MarshalIndent(output, "", "  ")
@@ -72,11 +104,19 @@ Query the list of EC2 Instances using the provided AccessKey and SecretKey:
 	}
 
 	cmd.PersistentFlags().StringVarP(&resourceType, "type", "t", "", "AWS Resource Type, e.g. 'AWS::EC2::Instance'")
-	cmd.PersistentFlags().StringSliceVarP(&regions, "regions", "r", []string{}, "Comma seperated list of regions to query, e.g. 'us-east-1,us-east-2'. If no region is specified, the resource will be queries from all AWS regions")
+	cmd.PersistentFlags().StringSliceVarP(&regions, "regions", "r", []string{},
+		`Comma seperated list of regions to query, e.g. 'us-east-1,us-east-2'. 
+If no region is specified, the resource will be queries from all AWS regions`)
 	cmd.PersistentFlags().BoolVar(&disabledRegions, "include-disabled-regions", false, "By default, regions such as ")
 	cmd.PersistentFlags().StringVar(&awsAccount, "account-id", "", "AWS Account id")
 	cmd.PersistentFlags().StringVar(&awsSecretKey, "secret-key", "", "AWS SecretKey from the credentials. If not specified, the defailt shared aws config will be used")
 	cmd.PersistentFlags().StringVar(&awsAccessKey, "access-key", "", "AWS AccessKey from the credentials. If not specified, the defailt shared aws config will be used")
+	cmd.PersistentFlags().StringVar(&assumeRoleArn, "assume-role-arn", "",
+		`AWS AssumeRoleARN, e.g. 'arn:aws:iam::123456789012:role/roleName'.
+If provided, will assume the role with the provided credentials.
+If no credentials are provided the default AWS credentials.
+The role must have access to describe the specific resource type as
+well as 'EC2:DescribeRegions'`)
 	cmd.PersistentFlags().StringVar(&awsSessionToken, "session-token", "", "AWS SessionToken from the credentials")
 
 	cmd.AddCommand(listResourcesCommand())
