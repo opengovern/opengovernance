@@ -1,29 +1,35 @@
 package describer
 
-/*
-
 import (
 	"context"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/wafregional"
+	regionaltypes "github.com/aws/aws-sdk-go-v2/service/wafregional/types"
 	"github.com/aws/aws-sdk-go-v2/service/wafv2"
+	"github.com/aws/aws-sdk-go-v2/service/wafv2/types"
 )
 
 func WAFv2IPSet(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
 	client := wafv2.NewFromConfig(cfg)
-	paginator := wafv2.NewDescribeIPSetsPaginator(client, &wafv2.DescribeIPSetsInput{MaxResults: aws.Int32(pagingSize)})
 
 	var values []interface{}
-	for paginator.HasMorePages() {
-		page, err := paginator.NextPage(ctx)
+	err := PaginateRetrieveAll(func(prevToken *string) (nextToken *string, err error) {
+		output, err := client.ListIPSets(ctx, &wafv2.ListIPSetsInput{
+			Scope:      types.ScopeRegional,
+			NextMarker: prevToken,
+		})
 		if err != nil {
 			return nil, err
 		}
 
-		for _, v := range page.IPSets {
+		for _, v := range output.IPSets {
 			values = append(values, v)
 		}
+		return output.NextMarker, nil
+	})
+	if err != nil {
+		return nil, err
 	}
 
 	return values, nil
@@ -31,18 +37,24 @@ func WAFv2IPSet(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
 
 func WAFv2LoggingConfiguration(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
 	client := wafv2.NewFromConfig(cfg)
-	paginator := wafv2.NewDescribeLoggingConfigurationsPaginator(client, &wafv2.DescribeLoggingConfigurationsInput{MaxResults: aws.Int32(pagingSize)})
 
 	var values []interface{}
-	for paginator.HasMorePages() {
-		page, err := paginator.NextPage(ctx)
+	err := PaginateRetrieveAll(func(prevToken *string) (nextToken *string, err error) {
+		output, err := client.ListLoggingConfigurations(ctx, &wafv2.ListLoggingConfigurationsInput{
+			Scope:      types.ScopeRegional,
+			NextMarker: prevToken,
+		})
 		if err != nil {
 			return nil, err
 		}
 
-		for _, v := range page.LoggingConfigurations {
+		for _, v := range output.LoggingConfigurations {
 			values = append(values, v)
 		}
+		return output.NextMarker, nil
+	})
+	if err != nil {
+		return nil, err
 	}
 
 	return values, nil
@@ -50,18 +62,24 @@ func WAFv2LoggingConfiguration(ctx context.Context, cfg aws.Config) ([]interface
 
 func WAFv2RegexPatternSet(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
 	client := wafv2.NewFromConfig(cfg)
-	paginator := wafv2.NewDescribeRegexPatternSetsPaginator(client, &wafv2.DescribeRegexPatternSetsInput{MaxResults: aws.Int32(pagingSize)})
 
 	var values []interface{}
-	for paginator.HasMorePages() {
-		page, err := paginator.NextPage(ctx)
+	err := PaginateRetrieveAll(func(prevToken *string) (nextToken *string, err error) {
+		output, err := client.ListRegexPatternSets(ctx, &wafv2.ListRegexPatternSetsInput{
+			Scope:      types.ScopeRegional,
+			NextMarker: prevToken,
+		})
 		if err != nil {
 			return nil, err
 		}
 
-		for _, v := range page.RegexPatternSets {
+		for _, v := range output.RegexPatternSets {
 			values = append(values, v)
 		}
+		return output.NextMarker, nil
+	})
+	if err != nil {
+		return nil, err
 	}
 
 	return values, nil
@@ -69,18 +87,24 @@ func WAFv2RegexPatternSet(ctx context.Context, cfg aws.Config) ([]interface{}, e
 
 func WAFv2RuleGroup(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
 	client := wafv2.NewFromConfig(cfg)
-	paginator := wafv2.NewDescribeRuleGroupsPaginator(client, &wafv2.DescribeRuleGroupsInput{MaxResults: aws.Int32(pagingSize)})
 
 	var values []interface{}
-	for paginator.HasMorePages() {
-		page, err := paginator.NextPage(ctx)
+	err := PaginateRetrieveAll(func(prevToken *string) (nextToken *string, err error) {
+		output, err := client.ListRuleGroups(ctx, &wafv2.ListRuleGroupsInput{
+			Scope:      types.ScopeRegional,
+			NextMarker: prevToken,
+		})
 		if err != nil {
 			return nil, err
 		}
 
-		for _, v := range page.RuleGroups {
+		for _, v := range output.RuleGroups {
 			values = append(values, v)
 		}
+		return output.NextMarker, nil
+	})
+	if err != nil {
+		return nil, err
 	}
 
 	return values, nil
@@ -88,35 +112,49 @@ func WAFv2RuleGroup(ctx context.Context, cfg aws.Config) ([]interface{}, error) 
 
 func WAFv2WebACL(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
 	client := wafv2.NewFromConfig(cfg)
-	paginator := wafv2.NewDescribeWebACLsPaginator(client, &wafv2.DescribeWebACLsInput{MaxResults: aws.Int32(pagingSize)})
 
 	var values []interface{}
-	for paginator.HasMorePages() {
-		page, err := paginator.NextPage(ctx)
+	err := PaginateRetrieveAll(func(prevToken *string) (nextToken *string, err error) {
+		output, err := client.ListWebACLs(ctx, &wafv2.ListWebACLsInput{
+			Scope:      types.ScopeRegional,
+			NextMarker: prevToken,
+		})
 		if err != nil {
 			return nil, err
 		}
 
-		for _, v := range page.WebACLs {
+		for _, v := range output.WebACLs {
 			values = append(values, v)
 		}
+		return output.NextMarker, nil
+	})
+	if err != nil {
+		return nil, err
 	}
 
 	return values, nil
 }
 
+// Returns ResourceArns that have a WebAcl Associated
 func WAFv2WebACLAssociation(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
+	acls, err := WAFv2WebACL(ctx, cfg)
+	if err != nil {
+		return nil, err
+	}
+
 	client := wafv2.NewFromConfig(cfg)
-	paginator := wafv2.NewDescribeWebACLAssociationsPaginator(client, &wafv2.DescribeWebACLAssociationsInput{MaxResults: aws.Int32(pagingSize)})
 
 	var values []interface{}
-	for paginator.HasMorePages() {
-		page, err := paginator.NextPage(ctx)
+	for _, a := range acls {
+		acl := a.(types.WebACL)
+		output, err := client.ListResourcesForWebACL(ctx, &wafv2.ListResourcesForWebACLInput{
+			WebACLArn: acl.ARN,
+		})
 		if err != nil {
 			return nil, err
 		}
 
-		for _, v := range page.WebACLAssociations {
+		for _, v := range output.ResourceArns {
 			values = append(values, v)
 		}
 	}
@@ -126,18 +164,23 @@ func WAFv2WebACLAssociation(ctx context.Context, cfg aws.Config) ([]interface{},
 
 func WAFRegionalByteMatchSet(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
 	client := wafregional.NewFromConfig(cfg)
-	paginator := wafregional.NewDescribeByteMatchSetsPaginator(client, &wafregional.DescribeByteMatchSetsInput{MaxResults: aws.Int32(pagingSize)})
 
 	var values []interface{}
-	for paginator.HasMorePages() {
-		page, err := paginator.NextPage(ctx)
+	err := PaginateRetrieveAll(func(prevToken *string) (nextToken *string, err error) {
+		output, err := client.ListByteMatchSets(ctx, &wafregional.ListByteMatchSetsInput{
+			NextMarker: prevToken,
+		})
 		if err != nil {
 			return nil, err
 		}
 
-		for _, v := range page.ByteMatchSets {
+		for _, v := range output.ByteMatchSets {
 			values = append(values, v)
 		}
+		return output.NextMarker, nil
+	})
+	if err != nil {
+		return nil, err
 	}
 
 	return values, nil
@@ -145,18 +188,23 @@ func WAFRegionalByteMatchSet(ctx context.Context, cfg aws.Config) ([]interface{}
 
 func WAFRegionalGeoMatchSet(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
 	client := wafregional.NewFromConfig(cfg)
-	paginator := wafregional.NewDescribeGeoMatchSetsPaginator(client, &wafregional.DescribeGeoMatchSetsInput{MaxResults: aws.Int32(pagingSize)})
 
 	var values []interface{}
-	for paginator.HasMorePages() {
-		page, err := paginator.NextPage(ctx)
+	err := PaginateRetrieveAll(func(prevToken *string) (nextToken *string, err error) {
+		output, err := client.ListGeoMatchSets(ctx, &wafregional.ListGeoMatchSetsInput{
+			NextMarker: prevToken,
+		})
 		if err != nil {
 			return nil, err
 		}
 
-		for _, v := range page.GeoMatchSets {
+		for _, v := range output.GeoMatchSets {
 			values = append(values, v)
 		}
+		return output.NextMarker, nil
+	})
+	if err != nil {
+		return nil, err
 	}
 
 	return values, nil
@@ -164,18 +212,23 @@ func WAFRegionalGeoMatchSet(ctx context.Context, cfg aws.Config) ([]interface{},
 
 func WAFRegionalIPSet(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
 	client := wafregional.NewFromConfig(cfg)
-	paginator := client.ListIPSets(&wafregional.ListIPSetsInput{Limit: pagingSize})
 
 	var values []interface{}
-	for paginator.HasMorePages() {
-		page, err := paginator.NextPage(ctx)
+	err := PaginateRetrieveAll(func(prevToken *string) (nextToken *string, err error) {
+		output, err := client.ListIPSets(ctx, &wafregional.ListIPSetsInput{
+			NextMarker: prevToken,
+		})
 		if err != nil {
 			return nil, err
 		}
 
-		for _, v := range page.IPSets {
+		for _, v := range output.IPSets {
 			values = append(values, v)
 		}
+		return output.NextMarker, nil
+	})
+	if err != nil {
+		return nil, err
 	}
 
 	return values, nil
@@ -183,18 +236,23 @@ func WAFRegionalIPSet(ctx context.Context, cfg aws.Config) ([]interface{}, error
 
 func WAFRegionalRateBasedRule(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
 	client := wafregional.NewFromConfig(cfg)
-	paginator := wafregional.NewDescribeRateBasedRulesPaginator(client, &wafregional.DescribeRateBasedRulesInput{MaxResults: aws.Int32(pagingSize)})
 
 	var values []interface{}
-	for paginator.HasMorePages() {
-		page, err := paginator.NextPage(ctx)
+	err := PaginateRetrieveAll(func(prevToken *string) (nextToken *string, err error) {
+		output, err := client.ListRateBasedRules(ctx, &wafregional.ListRateBasedRulesInput{
+			NextMarker: prevToken,
+		})
 		if err != nil {
 			return nil, err
 		}
 
-		for _, v := range page.RateBasedRules {
+		for _, v := range output.Rules {
 			values = append(values, v)
 		}
+		return output.NextMarker, nil
+	})
+	if err != nil {
+		return nil, err
 	}
 
 	return values, nil
@@ -202,18 +260,23 @@ func WAFRegionalRateBasedRule(ctx context.Context, cfg aws.Config) ([]interface{
 
 func WAFRegionalRegexPatternSet(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
 	client := wafregional.NewFromConfig(cfg)
-	paginator := wafregional.NewDescribeRegexPatternSetsPaginator(client, &wafregional.DescribeRegexPatternSetsInput{MaxResults: aws.Int32(pagingSize)})
 
 	var values []interface{}
-	for paginator.HasMorePages() {
-		page, err := paginator.NextPage(ctx)
+	err := PaginateRetrieveAll(func(prevToken *string) (nextToken *string, err error) {
+		output, err := client.ListRegexPatternSets(ctx, &wafregional.ListRegexPatternSetsInput{
+			NextMarker: prevToken,
+		})
 		if err != nil {
 			return nil, err
 		}
 
-		for _, v := range page.RegexPatternSets {
+		for _, v := range output.RegexPatternSets {
 			values = append(values, v)
 		}
+		return output.NextMarker, nil
+	})
+	if err != nil {
+		return nil, err
 	}
 
 	return values, nil
@@ -221,18 +284,23 @@ func WAFRegionalRegexPatternSet(ctx context.Context, cfg aws.Config) ([]interfac
 
 func WAFRegionalRule(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
 	client := wafregional.NewFromConfig(cfg)
-	paginator := wafregional.NewDescribeRulesPaginator(client, &wafregional.DescribeRulesInput{MaxResults: aws.Int32(pagingSize)})
 
 	var values []interface{}
-	for paginator.HasMorePages() {
-		page, err := paginator.NextPage(ctx)
+	err := PaginateRetrieveAll(func(prevToken *string) (nextToken *string, err error) {
+		output, err := client.ListRules(ctx, &wafregional.ListRulesInput{
+			NextMarker: prevToken,
+		})
 		if err != nil {
 			return nil, err
 		}
 
-		for _, v := range page.Rules {
+		for _, v := range output.Rules {
 			values = append(values, v)
 		}
+		return output.NextMarker, nil
+	})
+	if err != nil {
+		return nil, err
 	}
 
 	return values, nil
@@ -240,18 +308,23 @@ func WAFRegionalRule(ctx context.Context, cfg aws.Config) ([]interface{}, error)
 
 func WAFRegionalSizeConstraintSet(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
 	client := wafregional.NewFromConfig(cfg)
-	paginator := wafregional.NewDescribeSizeConstraintSetsPaginator(client, &wafregional.DescribeSizeConstraintSetsInput{MaxResults: aws.Int32(pagingSize)})
 
 	var values []interface{}
-	for paginator.HasMorePages() {
-		page, err := paginator.NextPage(ctx)
+	err := PaginateRetrieveAll(func(prevToken *string) (nextToken *string, err error) {
+		output, err := client.ListSizeConstraintSets(ctx, &wafregional.ListSizeConstraintSetsInput{
+			NextMarker: prevToken,
+		})
 		if err != nil {
 			return nil, err
 		}
 
-		for _, v := range page.SizeConstraintSets {
+		for _, v := range output.SizeConstraintSets {
 			values = append(values, v)
 		}
+		return output.NextMarker, nil
+	})
+	if err != nil {
+		return nil, err
 	}
 
 	return values, nil
@@ -259,18 +332,23 @@ func WAFRegionalSizeConstraintSet(ctx context.Context, cfg aws.Config) ([]interf
 
 func WAFRegionalSqlInjectionMatchSet(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
 	client := wafregional.NewFromConfig(cfg)
-	paginator := wafregional.NewDescribeSqlInjectionMatchSetsPaginator(client, &wafregional.DescribeSqlInjectionMatchSetsInput{MaxResults: aws.Int32(pagingSize)})
 
 	var values []interface{}
-	for paginator.HasMorePages() {
-		page, err := paginator.NextPage(ctx)
+	err := PaginateRetrieveAll(func(prevToken *string) (nextToken *string, err error) {
+		output, err := client.ListSqlInjectionMatchSets(ctx, &wafregional.ListSqlInjectionMatchSetsInput{
+			NextMarker: prevToken,
+		})
 		if err != nil {
 			return nil, err
 		}
 
-		for _, v := range page.SqlInjectionMatchSets {
+		for _, v := range output.SqlInjectionMatchSets {
 			values = append(values, v)
 		}
+		return output.NextMarker, nil
+	})
+	if err != nil {
+		return nil, err
 	}
 
 	return values, nil
@@ -278,35 +356,47 @@ func WAFRegionalSqlInjectionMatchSet(ctx context.Context, cfg aws.Config) ([]int
 
 func WAFRegionalWebACL(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
 	client := wafregional.NewFromConfig(cfg)
-	paginator := wafregional.NewDescribeWebACLsPaginator(client, &wafregional.DescribeWebACLsInput{MaxResults: aws.Int32(pagingSize)})
 
 	var values []interface{}
-	for paginator.HasMorePages() {
-		page, err := paginator.NextPage(ctx)
+	err := PaginateRetrieveAll(func(prevToken *string) (nextToken *string, err error) {
+		output, err := client.ListWebACLs(ctx, &wafregional.ListWebACLsInput{
+			NextMarker: prevToken,
+		})
 		if err != nil {
 			return nil, err
 		}
 
-		for _, v := range page.WebACLs {
+		for _, v := range output.WebACLs {
 			values = append(values, v)
 		}
+		return output.NextMarker, nil
+	})
+	if err != nil {
+		return nil, err
 	}
 
 	return values, nil
 }
 
 func WAFRegionalWebACLAssociation(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
+	acls, err := WAFRegionalWebACL(ctx, cfg)
+	if err != nil {
+		return nil, err
+	}
+
 	client := wafregional.NewFromConfig(cfg)
-	paginator := wafregional.NewDescribeWebACLAssociationsPaginator(client, &wafregional.DescribeWebACLAssociationsInput{MaxResults: aws.Int32(pagingSize)})
 
 	var values []interface{}
-	for paginator.HasMorePages() {
-		page, err := paginator.NextPage(ctx)
+	for _, a := range acls {
+		acl := a.(regionaltypes.WebACL)
+		output, err := client.ListResourcesForWebACL(ctx, &wafregional.ListResourcesForWebACLInput{
+			WebACLId: acl.WebACLId,
+		})
 		if err != nil {
 			return nil, err
 		}
 
-		for _, v := range page.WebACLAssociations {
+		for _, v := range output.ResourceArns {
 			values = append(values, v)
 		}
 	}
@@ -316,20 +406,24 @@ func WAFRegionalWebACLAssociation(ctx context.Context, cfg aws.Config) ([]interf
 
 func WAFRegionalXssMatchSet(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
 	client := wafregional.NewFromConfig(cfg)
-	paginator := wafregional.NewDescribeXssMatchSetsPaginator(client, &wafregional.DescribeXssMatchSetsInput{MaxResults: aws.Int32(pagingSize)})
 
 	var values []interface{}
-	for paginator.HasMorePages() {
-		page, err := paginator.NextPage(ctx)
+	err := PaginateRetrieveAll(func(prevToken *string) (nextToken *string, err error) {
+		output, err := client.ListXssMatchSets(ctx, &wafregional.ListXssMatchSetsInput{
+			NextMarker: prevToken,
+		})
 		if err != nil {
 			return nil, err
 		}
 
-		for _, v := range page.XssMatchSets {
+		for _, v := range output.XssMatchSets {
 			values = append(values, v)
 		}
+		return output.NextMarker, nil
+	})
+	if err != nil {
+		return nil, err
 	}
 
 	return values, nil
 }
-*/

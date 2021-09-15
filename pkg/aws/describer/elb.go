@@ -38,9 +38,9 @@ func ElasticLoadBalancingV2Listener(ctx context.Context, cfg aws.Config) ([]inte
 
 	var values []interface{}
 	for _, lb := range lbs {
-		name := lb.(types.LoadBalancer).LoadBalancerName
+		arn := lb.(types.LoadBalancer).LoadBalancerArn
 		paginator := elasticloadbalancingv2.NewDescribeListenersPaginator(client, &elasticloadbalancingv2.DescribeListenersInput{
-			LoadBalancerArn: aws.String(*name),
+			LoadBalancerArn: aws.String(*arn),
 		})
 		for paginator.HasMorePages() {
 			page, err := paginator.NextPage(ctx)
