@@ -34,10 +34,6 @@ func SESConfigurationSet(ctx context.Context, cfg aws.Config) ([]interface{}, er
 	return values, nil
 }
 
-// OMIT: Part of SESConfigurationSet!
-// func SESConfigurationSetEventDestination(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
-// }
-
 func SESContactList(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
 	client := sesv2.NewFromConfig(cfg)
 	paginator := sesv2.NewListContactListsPaginator(client, &sesv2.ListContactListsInput{})
@@ -72,10 +68,6 @@ func SESReceiptFilter(ctx context.Context, cfg aws.Config) ([]interface{}, error
 
 	return values, nil
 }
-
-// OMIT: Part of SESReceiptRuleSet
-// func SESReceiptRule(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
-// }
 
 func SESReceiptRuleSet(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
 	client := ses.NewFromConfig(cfg)

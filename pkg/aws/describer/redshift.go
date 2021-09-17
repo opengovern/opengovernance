@@ -2,9 +2,11 @@ package describer
 
 import (
 	"context"
+	"errors"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/redshift"
+	"github.com/aws/smithy-go"
 )
 
 func RedshiftCluster(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
@@ -45,8 +47,6 @@ func RedshiftClusterParameterGroup(ctx context.Context, cfg aws.Config) ([]inter
 	return values, nil
 }
 
-// TODO: Catch this error and return empty
-// * An error occurred (InvalidParameterValue) when calling the CreateClusterSecurityGroup operation: VPC-by-Default customers cannot use cluster security groups
 func RedshiftClusterSecurityGroup(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
 	client := redshift.NewFromConfig(cfg)
 	paginator := redshift.NewDescribeClusterSecurityGroupsPaginator(client, &redshift.DescribeClusterSecurityGroupsInput{})
@@ -55,6 +55,11 @@ func RedshiftClusterSecurityGroup(ctx context.Context, cfg aws.Config) ([]interf
 	for paginator.HasMorePages() {
 		page, err := paginator.NextPage(ctx)
 		if err != nil {
+			var ae smithy.APIError
+			if errors.As(err, &ae) && (ae.ErrorMessage() == "VPC-by-Default customers cannot use cluster security groups") {
+				return nil, nil
+			}
+
 			return nil, err
 		}
 
@@ -65,11 +70,6 @@ func RedshiftClusterSecurityGroup(ctx context.Context, cfg aws.Config) ([]interf
 
 	return values, nil
 }
-
-// OMIT: Already included in RedshiftClusterSecurityGroup
-// func RedshiftClusterSecurityGroupIngress(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
-
-// }
 
 func RedshiftClusterSubnetGroup(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
 	client := redshift.NewFromConfig(cfg)

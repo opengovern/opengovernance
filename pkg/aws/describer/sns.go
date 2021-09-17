@@ -51,7 +51,3 @@ func SNSTopic(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
 
 	return values, nil
 }
-
-// OMIT: Part of SNSTopic
-// func SNSTopicPolicy(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
-// }

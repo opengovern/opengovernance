@@ -79,10 +79,6 @@ func Route53DNSSEC(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
 	return values, nil
 }
 
-// OMIT: Part of the Route53DNSSEC
-// func Route53KeySigningKey(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
-// }
-
 func Route53RecordSet(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
 	zones, err := Route53HostedZone(ctx, cfg)
 	if err != nil {
@@ -118,10 +114,6 @@ func Route53RecordSet(ctx context.Context, cfg aws.Config) ([]interface{}, error
 
 	return values, nil
 }
-
-// OMIT: Already part of Route53RecordSet. Not queriable seperatly.
-// func Route53RecordSetGroup(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
-// }
 
 func Route53ResolverFirewallDomainList(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
 	client := route53resolver.NewFromConfig(cfg)
@@ -180,7 +172,6 @@ func Route53ResolverFirewallRuleGroupAssociation(ctx context.Context, cfg aws.Co
 	return values, nil
 }
 
-// TODO
 func Route53ResolverResolverDNSSECConfig(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
 	vpcs, err := EC2VPC(ctx, cfg)
 	if err != nil {

@@ -171,11 +171,6 @@ func RDSDBSecurityGroup(ctx context.Context, cfg aws.Config) ([]interface{}, err
 	return values, nil
 }
 
-// OMIT: Already included in the RDSDBSecurityGroup
-// func RDSDBSecurityGroupIngress(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
-
-// }
-
 func RDSDBSubnetGroup(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
 	client := rds.NewFromConfig(cfg)
 	paginator := rds.NewDescribeDBSubnetGroupsPaginator(client, &rds.DescribeDBSubnetGroupsInput{})

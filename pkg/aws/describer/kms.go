@@ -44,7 +44,3 @@ func KMSKey(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
 
 	return values, nil
 }
-
-// OMIT: Already part of KMSKey
-// func KMSReplicaKey(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
-// }

@@ -2,11 +2,13 @@ package describer
 
 import (
 	"context"
+	"errors"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	acmtypes "github.com/aws/aws-sdk-go-v2/service/acm/types"
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
 	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
+	"github.com/aws/smithy-go"
 )
 
 func EC2CapacityReservation(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
@@ -86,18 +88,29 @@ func EC2ClientVpnEndpoint(ctx context.Context, cfg aws.Config) ([]interface{}, e
 }
 
 func EC2ClientVpnRoute(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
+	endpoints, err := EC2ClientVpnEndpoint(ctx, cfg)
+	if err != nil {
+		return nil, err
+	}
+
 	client := ec2.NewFromConfig(cfg)
-	paginator := ec2.NewDescribeClientVpnRoutesPaginator(client, &ec2.DescribeClientVpnRoutesInput{})
 
 	var values []interface{}
-	for paginator.HasMorePages() {
-		page, err := paginator.NextPage(ctx)
-		if err != nil {
-			return nil, err
-		}
+	for _, e := range endpoints {
+		endpoint := e.(types.ClientVpnEndpoint)
+		paginator := ec2.NewDescribeClientVpnRoutesPaginator(client, &ec2.DescribeClientVpnRoutesInput{
+			ClientVpnEndpointId: endpoint.ClientVpnEndpointId,
+		})
 
-		for _, v := range page.Routes {
-			values = append(values, v)
+		for paginator.HasMorePages() {
+			page, err := paginator.NextPage(ctx)
+			if err != nil {
+				return nil, err
+			}
+
+			for _, v := range page.Routes {
+				values = append(values, v)
+			}
 		}
 	}
 
@@ -105,18 +118,29 @@ func EC2ClientVpnRoute(ctx context.Context, cfg aws.Config) ([]interface{}, erro
 }
 
 func EC2ClientVpnTargetNetworkAssociation(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
+	endpoints, err := EC2ClientVpnEndpoint(ctx, cfg)
+	if err != nil {
+		return nil, err
+	}
+
 	client := ec2.NewFromConfig(cfg)
-	paginator := ec2.NewDescribeClientVpnTargetNetworksPaginator(client, &ec2.DescribeClientVpnTargetNetworksInput{})
 
 	var values []interface{}
-	for paginator.HasMorePages() {
-		page, err := paginator.NextPage(ctx)
-		if err != nil {
-			return nil, err
-		}
+	for _, e := range endpoints {
+		endpoint := e.(types.ClientVpnEndpoint)
+		paginator := ec2.NewDescribeClientVpnTargetNetworksPaginator(client, &ec2.DescribeClientVpnTargetNetworksInput{
+			ClientVpnEndpointId: endpoint.ClientVpnEndpointId,
+		})
 
-		for _, v := range page.ClientVpnTargetNetworks {
-			values = append(values, v)
+		for paginator.HasMorePages() {
+			page, err := paginator.NextPage(ctx)
+			if err != nil {
+				return nil, err
+			}
+
+			for _, v := range page.ClientVpnTargetNetworks {
+				values = append(values, v)
+			}
 		}
 	}
 
@@ -209,10 +233,6 @@ func EC2EIP(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
 
 	return values, nil
 }
-
-// OMIT: Association is just an Id. It is part of the EC2EIP!
-// func EC2EIPAssociation(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
-// }
 
 func EC2EnclaveCertificateIamRoleAssociation(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
 	certs, err := CertificateManagerCertificate(ctx, cfg)
@@ -376,14 +396,6 @@ func EC2NetworkAcl(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
 	return values, nil
 }
 
-// OMIT: Part of EC2NetworkAcl
-// func EC2NetworkAclEntry(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
-// }
-
-// OMIT: Part of EC2NetworkAcl
-// func EC2SubnetNetworkAclAssociation(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
-// }
-
 func EC2NetworkInsightsAnalysis(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
 	client := ec2.NewFromConfig(cfg)
 	paginator := ec2.NewDescribeNetworkInsightsAnalysesPaginator(client, &ec2.DescribeNetworkInsightsAnalysesInput{})
@@ -532,22 +544,6 @@ func EC2RouteTable(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
 	return values, nil
 }
 
-// OMIT: Already part of EC2RouteTable
-// func EC2Route(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
-// }
-
-// OMIT: Already part of EC2RouteTable
-// func EC2GatewayRouteTableAssociation(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
-// }
-
-// OMIT: Already part of EC2RouteTable
-// func EC2SubnetRouteTableAssociation(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
-// }
-
-// OMIT: Already part of EC2RouteTable
-// func EC2VPNGatewayRoutePropagation(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
-// }
-
 func EC2LocalGatewayRouteTable(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
 	client := ec2.NewFromConfig(cfg)
 	paginator := ec2.NewDescribeLocalGatewayRouteTablesPaginator(client, &ec2.DescribeLocalGatewayRouteTablesInput{})
@@ -566,10 +562,6 @@ func EC2LocalGatewayRouteTable(ctx context.Context, cfg aws.Config) ([]interface
 
 	return values, nil
 }
-
-// OMIT: Part of EC2LocalGatewayRouteTable
-// func EC2LocalGatewayRoute(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
-// }
 
 func EC2LocalGatewayRouteTableVPCAssociation(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
 	client := ec2.NewFromConfig(cfg)
@@ -610,41 +602,58 @@ func EC2TransitGatewayRouteTable(ctx context.Context, cfg aws.Config) ([]interfa
 }
 
 func EC2TransitGatewayRouteTableAssociation(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
+	rts, err := EC2TransitGatewayRouteTable(ctx, cfg)
+	if err != nil {
+		return nil, err
+	}
+
 	client := ec2.NewFromConfig(cfg)
-	paginator := ec2.NewGetTransitGatewayRouteTableAssociationsPaginator(client, &ec2.GetTransitGatewayRouteTableAssociationsInput{})
 
 	var values []interface{}
-	for paginator.HasMorePages() {
-		page, err := paginator.NextPage(ctx)
-		if err != nil {
-			return nil, err
-		}
+	for _, r := range rts {
+		routeTable := r.(types.TransitGatewayRouteTable)
+		paginator := ec2.NewGetTransitGatewayRouteTableAssociationsPaginator(client, &ec2.GetTransitGatewayRouteTableAssociationsInput{
+			TransitGatewayRouteTableId: routeTable.TransitGatewayRouteTableId,
+		})
+		for paginator.HasMorePages() {
+			page, err := paginator.NextPage(ctx)
+			if err != nil {
+				return nil, err
+			}
 
-		for _, v := range page.Associations {
-			values = append(values, v)
+			for _, v := range page.Associations {
+				values = append(values, v)
+			}
 		}
 	}
 
 	return values, nil
 }
 
-// OMIT: Part of EC2TransitGatewayRouteTableAssociation
-// func EC2TransitGatewayRoute(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
-// }
-
 func EC2TransitGatewayRouteTablePropagation(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
+	rts, err := EC2TransitGatewayRouteTable(ctx, cfg)
+	if err != nil {
+		return nil, err
+	}
+
 	client := ec2.NewFromConfig(cfg)
-	paginator := ec2.NewGetTransitGatewayRouteTablePropagationsPaginator(client, &ec2.GetTransitGatewayRouteTablePropagationsInput{})
 
 	var values []interface{}
-	for paginator.HasMorePages() {
-		page, err := paginator.NextPage(ctx)
-		if err != nil {
-			return nil, err
-		}
+	for _, r := range rts {
+		routeTable := r.(types.TransitGatewayRouteTable)
+		paginator := ec2.NewGetTransitGatewayRouteTablePropagationsPaginator(client, &ec2.GetTransitGatewayRouteTablePropagationsInput{
+			TransitGatewayRouteTableId: routeTable.TransitGatewayRouteTableId,
+		})
 
-		for _, v := range page.TransitGatewayRouteTablePropagations {
-			values = append(values, v)
+		for paginator.HasMorePages() {
+			page, err := paginator.NextPage(ctx)
+			if err != nil {
+				return nil, err
+			}
+
+			for _, v := range page.TransitGatewayRouteTablePropagations {
+				values = append(values, v)
+			}
 		}
 	}
 
@@ -669,14 +678,6 @@ func EC2SecurityGroup(ctx context.Context, cfg aws.Config) ([]interface{}, error
 
 	return values, nil
 }
-
-// OMIT: Part of EC2SecurityGroup
-// func EC2SecurityGroupEgress(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
-// }
-
-// OMIT: Part of EC2SecurityGroup
-// func EC2SecurityGroupIngress(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
-// }
 
 func EC2SpotFleet(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
 	client := ec2.NewFromConfig(cfg)
@@ -753,10 +754,6 @@ func EC2TrafficMirrorFilter(ctx context.Context, cfg aws.Config) ([]interface{},
 
 	return values, nil
 }
-
-// OMIT: Part of EC2TrafficMirrorFilter
-// func EC2TrafficMirrorFilterRule(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
-// }
 
 func EC2TrafficMirrorSession(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
 	client := ec2.NewFromConfig(cfg)
@@ -1006,10 +1003,6 @@ func EC2Volume(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
 	return values, nil
 }
 
-// OMIT: Part of EC2Volume
-// func EC2VolumeAttachment(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
-// }
-
 func EC2VPC(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
 	client := ec2.NewFromConfig(cfg)
 	paginator := ec2.NewDescribeVpcsPaginator(client, &ec2.DescribeVpcsInput{})
@@ -1028,14 +1021,6 @@ func EC2VPC(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
 
 	return values, nil
 }
-
-// OMIT: Part of EC2Vpc
-// func EC2VPCCidrBlock(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
-// }
-
-// OMIT: Not really type but used to make an association. DHCPOptionId is part of EC2Vpc and EC2DHCPOptions
-// func EC2VPCDHCPOptionsAssociation(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
-// }
 
 func EC2VPCEndpoint(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
 	client := ec2.NewFromConfig(cfg)
@@ -1101,28 +1086,39 @@ func EC2VPCEndpointService(ctx context.Context, cfg aws.Config) ([]interface{}, 
 }
 
 func EC2VPCEndpointServicePermissions(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
+	services, err := EC2VPCEndpointService(ctx, cfg)
+	if err != nil {
+		return nil, err
+	}
+
 	client := ec2.NewFromConfig(cfg)
-	paginator := ec2.NewDescribeVpcEndpointServicePermissionsPaginator(client, &ec2.DescribeVpcEndpointServicePermissionsInput{})
 
 	var values []interface{}
-	for paginator.HasMorePages() {
-		page, err := paginator.NextPage(ctx)
-		if err != nil {
-			return nil, err
-		}
+	for _, s := range services {
+		service := s.(types.ServiceDetail)
 
-		for _, v := range page.AllowedPrincipals {
-			values = append(values, v)
+		paginator := ec2.NewDescribeVpcEndpointServicePermissionsPaginator(client, &ec2.DescribeVpcEndpointServicePermissionsInput{
+			ServiceId: service.ServiceId,
+		})
+		for paginator.HasMorePages() {
+			page, err := paginator.NextPage(ctx)
+			if err != nil {
+				var ae smithy.APIError
+				if errors.As(err, &ae) && ae.ErrorCode() == "InvalidVpcEndpointServiceId.NotFound" {
+					// VpcEndpoint doesn't have permissions set. Move on!
+					break
+				}
+				return nil, err
+			}
+
+			for _, v := range page.AllowedPrincipals {
+				values = append(values, v)
+			}
 		}
 	}
 
 	return values, nil
 }
-
-// OMIT: Attaches an internet gateway, or a virtual private gateway to a VPC, enabling connectivity between the internet and the VPC.
-// The attachment is part of the EC2InternetGateway or EC2VPNGateway!
-// func EC2VPCGatewayAttachment(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
-// }
 
 func EC2VPCPeeringConnection(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
 	client := ec2.NewFromConfig(cfg)
@@ -1157,10 +1153,6 @@ func EC2VPNConnection(ctx context.Context, cfg aws.Config) ([]interface{}, error
 
 	return values, nil
 }
-
-// OMIT: Part of EC2VPNConnection
-// func EC2VPNConnectionRoute(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
-// }
 
 func EC2VPNGateway(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
 	client := ec2.NewFromConfig(cfg)

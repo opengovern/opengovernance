@@ -5,6 +5,7 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/ssm"
+	"github.com/aws/aws-sdk-go-v2/service/ssm/types"
 )
 
 func SSMAssociation(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
@@ -65,18 +66,29 @@ func SSMMaintenanceWindow(ctx context.Context, cfg aws.Config) ([]interface{}, e
 }
 
 func SSMMaintenanceWindowTarget(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
+	windows, err := SSMMaintenanceWindow(ctx, cfg)
+	if err != nil {
+		return nil, err
+	}
+
 	client := ssm.NewFromConfig(cfg)
-	paginator := ssm.NewDescribeMaintenanceWindowTargetsPaginator(client, &ssm.DescribeMaintenanceWindowTargetsInput{})
 
 	var values []interface{}
-	for paginator.HasMorePages() {
-		page, err := paginator.NextPage(ctx)
-		if err != nil {
-			return nil, err
-		}
+	for _, w := range windows {
+		window := w.(types.MaintenanceWindowIdentity)
+		paginator := ssm.NewDescribeMaintenanceWindowTargetsPaginator(client, &ssm.DescribeMaintenanceWindowTargetsInput{
+			WindowId: window.WindowId,
+		})
 
-		for _, v := range page.Targets {
-			values = append(values, v)
+		for paginator.HasMorePages() {
+			page, err := paginator.NextPage(ctx)
+			if err != nil {
+				return nil, err
+			}
+
+			for _, v := range page.Targets {
+				values = append(values, v)
+			}
 		}
 	}
 
@@ -84,18 +96,29 @@ func SSMMaintenanceWindowTarget(ctx context.Context, cfg aws.Config) ([]interfac
 }
 
 func SSMMaintenanceWindowTask(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
+	windows, err := SSMMaintenanceWindow(ctx, cfg)
+	if err != nil {
+		return nil, err
+	}
+
 	client := ssm.NewFromConfig(cfg)
-	paginator := ssm.NewDescribeMaintenanceWindowTasksPaginator(client, &ssm.DescribeMaintenanceWindowTasksInput{})
 
 	var values []interface{}
-	for paginator.HasMorePages() {
-		page, err := paginator.NextPage(ctx)
-		if err != nil {
-			return nil, err
-		}
+	for _, w := range windows {
+		window := w.(types.MaintenanceWindowIdentity)
+		paginator := ssm.NewDescribeMaintenanceWindowTasksPaginator(client, &ssm.DescribeMaintenanceWindowTasksInput{
+			WindowId: window.WindowId,
+		})
 
-		for _, v := range page.Tasks {
-			values = append(values, v)
+		for paginator.HasMorePages() {
+			page, err := paginator.NextPage(ctx)
+			if err != nil {
+				return nil, err
+			}
+
+			for _, v := range page.Tasks {
+				values = append(values, v)
+			}
 		}
 	}
 

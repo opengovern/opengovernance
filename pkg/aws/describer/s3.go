@@ -12,62 +12,74 @@ import (
 	"github.com/aws/smithy-go"
 )
 
-// TODO: Handle global resources
+// S3Bucket describe S3 buckets.
+// ListBuckets returns buckets in all regions. However, this function categorizes the buckets based
+// on their location constaint, aka the regions they reside in.
+func S3Bucket(ctx context.Context, cfg aws.Config, regions []string) (map[string][]interface{}, error) {
+	regionalValues := make(map[string][]interface{}, len(regions))
+	for _, r := range regions {
+		regionalValues[r] = make([]interface{}, 0)
+	}
 
-func S3Bucket(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
 	client := s3.NewFromConfig(cfg)
 	output, err := client.ListBuckets(ctx, &s3.ListBucketsInput{})
 	if err != nil {
 		return nil, err
 	}
 
-	var values []interface{}
-	for _, v := range output.Buckets {
+	for _, bucket := range output.Buckets {
 		output, err := client.GetBucketLocation(ctx, &s3.GetBucketLocationInput{
-			Bucket: v.Name,
+			Bucket: bucket.Name,
 		})
 		if err != nil {
 			return nil, err
 		}
 
-		if cfg.Region != string(output.LocationConstraint) &&
-			!(output.LocationConstraint == "" && cfg.Region == "us-east-1") {
-			continue
+		bRegion := string(output.LocationConstraint)
+		if bRegion == "" {
+			// Buckets in Region us-east-1 have a LocationConstraint of null.
+			bRegion = "us-east-1"
 		}
 
-		values = append(values, v)
+		if _, ok := regionalValues[bRegion]; ok {
+			regionalValues[bRegion] = append(regionalValues[bRegion], bucket)
+		}
 	}
 
-	return values, nil
+	return regionalValues, nil
 }
 
-func S3BucketPolicy(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
-	buckets, err := S3Bucket(ctx, cfg)
+// S3BucketPolicy describes bucket policies for each bucket. The BucketPolicy can only be queried from the
+// reigon it resides in. That is despite the fact that ListBuckets returns all buckets regardless of the region.
+func S3BucketPolicy(ctx context.Context, cfg aws.Config, regions []string) (map[string][]interface{}, error) {
+	reigonalBuckets, err := S3Bucket(ctx, cfg, regions)
 	if err != nil {
 		return nil, err
 	}
 
-	client := s3.NewFromConfig(cfg)
+	regionalBucketPolicies := make(map[string][]interface{}, len(regions))
+	for region, buckets := range reigonalBuckets {
+		client := s3.NewFromConfig(cfg, func(o *s3.Options) { o.Region = region })
 
-	var values []interface{}
-	for _, b := range buckets {
-		bucket := b.(types.Bucket)
+		for _, b := range buckets {
+			bucket := b.(types.Bucket)
+			output, err := client.GetBucketPolicy(ctx, &s3.GetBucketPolicyInput{
+				Bucket: bucket.Name,
+			})
+			if err != nil {
+				var ae smithy.APIError
+				if errors.As(err, &ae) && (ae.ErrorCode() == "NoSuchBucketPolicy") {
+					continue
+				}
 
-		output1, err := client.GetBucketPolicy(ctx, &s3.GetBucketPolicyInput{
-			Bucket: bucket.Name,
-		})
-		if err != nil {
-			var ae smithy.APIError
-			if errors.As(err, &ae) && ae.ErrorCode() == "NoSuchBucketPolicy" {
-				continue
+				return nil, err
 			}
-			return nil, err
-		}
 
-		values = append(values, output1.Policy)
+			regionalBucketPolicies[region] = append(regionalBucketPolicies[region], output.Policy)
+		}
 	}
 
-	return values, nil
+	return regionalBucketPolicies, nil
 }
 
 func S3AccessPoint(ctx context.Context, cfg aws.Config) ([]interface{}, error) {

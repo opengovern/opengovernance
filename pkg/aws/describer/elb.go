@@ -58,10 +58,6 @@ func ElasticLoadBalancingV2Listener(ctx context.Context, cfg aws.Config) ([]inte
 	return values, nil
 }
 
-// OMIT: Part of ElasticLoadBalancingV2Listener!
-// func ElasticLoadBalancingV2ListenerCertificate(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
-// }
-
 func ElasticLoadBalancingV2ListenerRule(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
 	listeners, err := ElasticLoadBalancingV2Listener(ctx, cfg)
 	if err != nil {

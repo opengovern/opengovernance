@@ -73,7 +73,3 @@ func ECRRegistry(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
 
 	return []interface{}{output}, nil
 }
-
-// OMIT: Part of ECRRegistry
-// func ECRReplicationConfiguration(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
-// }

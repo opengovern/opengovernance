@@ -36,7 +36,3 @@ func SQSQueue(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
 
 	return values, nil
 }
-
-// OMIT: Part of SQSQueue
-// func SQSQueuePolicy(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
-// }

@@ -71,10 +71,6 @@ func ECSCluster(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
 	return values, nil
 }
 
-// // Omit. Already included in the ECSCluster
-// func ECSClusterCapacityProviderAssociations(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
-// }
-
 func ECSService(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
 	clusters, err := listEcsClusters(ctx, cfg)
 	if err != nil {
@@ -142,15 +138,6 @@ func ECSTaskDefinition(ctx context.Context, cfg aws.Config) ([]interface{}, erro
 
 	return values, nil
 }
-
-// OMIT part of ECSService
-// func ECSTaskSet(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
-// }
-
-// Specifies which task set in a service is the primary task set. 
-// OMIT: Not really a seperate type
-// func ECSPrimaryTaskSet(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
-// }
 
 func listECsServices(ctx context.Context, cfg aws.Config, cluster string) ([]string, error) {
 	client := ecs.NewFromConfig(cfg)

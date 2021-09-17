@@ -5,6 +5,7 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/iam"
+	"github.com/aws/aws-sdk-go-v2/service/iam/types"
 )
 
 func IAMAccessKey(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
@@ -100,20 +101,127 @@ func IAMOIDCProvider(ctx context.Context, cfg aws.Config) ([]interface{}, error)
 	return values, nil
 }
 
-// TODO: Adds or updates an inline policy document that is embedded in the specified IAM user, group, or role.
-func IAMPolicy(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
+func IAMGroupPolicy(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
+	groups, err := IAMGroup(ctx, cfg)
+	if err != nil {
+		return nil, err
+	}
+
 	client := iam.NewFromConfig(cfg)
-	paginator := iam.NewListPoliciesPaginator(client, &iam.ListPoliciesInput{})
 
 	var values []interface{}
-	for paginator.HasMorePages() {
-		page, err := paginator.NextPage(ctx)
+	for _, g := range groups {
+		group := g.(types.Group)
+		err := PaginateRetrieveAll(func(prevToken *string) (nextToken *string, err error) {
+			output, err := client.ListGroupPolicies(ctx, &iam.ListGroupPoliciesInput{
+				GroupName: group.GroupName,
+				Marker:    prevToken,
+			})
+			if err != nil {
+				return nil, err
+			}
+
+			for _, policy := range output.PolicyNames {
+				pOutput, err := client.GetGroupPolicy(ctx, &iam.GetGroupPolicyInput{
+					GroupName:  group.GroupName,
+					PolicyName: aws.String(policy),
+				})
+				if err != nil {
+					return nil, err
+				}
+
+				values = append(values, pOutput)
+			}
+
+			return output.Marker, nil
+		})
 		if err != nil {
 			return nil, err
 		}
+	}
 
-		for _, v := range page.Policies {
-			values = append(values, v)
+	return values, nil
+}
+
+func IAMUserPolicy(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
+	users, err := IAMUser(ctx, cfg)
+	if err != nil {
+		return nil, err
+	}
+
+	client := iam.NewFromConfig(cfg)
+
+	var values []interface{}
+	for _, u := range users {
+		user := u.(types.User)
+		err := PaginateRetrieveAll(func(prevToken *string) (nextToken *string, err error) {
+			output, err := client.ListUserPolicies(ctx, &iam.ListUserPoliciesInput{
+				UserName: user.UserName,
+				Marker:   prevToken,
+			})
+			if err != nil {
+				return nil, err
+			}
+
+			for _, policy := range output.PolicyNames {
+				pOutput, err := client.GetUserPolicy(ctx, &iam.GetUserPolicyInput{
+					UserName:   user.UserName,
+					PolicyName: aws.String(policy),
+				})
+				if err != nil {
+					return nil, err
+				}
+
+				values = append(values, pOutput)
+			}
+
+			return output.Marker, nil
+		})
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return values, nil
+}
+
+func IAMRolePolicy(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
+	roles, err := IAMRole(ctx, cfg)
+	if err != nil {
+		return nil, err
+	}
+
+	client := iam.NewFromConfig(cfg)
+
+	var values []interface{}
+
+	for _, r := range roles {
+		role := r.(types.Role)
+		err := PaginateRetrieveAll(func(prevToken *string) (nextToken *string, err error) {
+			output, err := client.ListRolePolicies(ctx, &iam.ListRolePoliciesInput{
+				RoleName: role.RoleName,
+				Marker:   prevToken,
+			})
+			if err != nil {
+				return nil, err
+			}
+
+			for _, policy := range output.PolicyNames {
+				pOutput, err := client.GetRolePolicy(ctx, &iam.GetRolePolicyInput{
+					RoleName:   role.RoleName,
+					PolicyName: aws.String(policy),
+				})
+				if err != nil {
+					return nil, err
+				}
+
+				values = append(values, pOutput)
+			}
+
+			return output.Marker, nil
+		})
+		if err != nil {
+			return nil, err
 		}
 	}
 
@@ -138,10 +246,6 @@ func IAMRole(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
 
 	return values, nil
 }
-
-// OMIT: Part of IAMRole
-// func IAMServiceLinkedRole(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
-// }
 
 func IAMSAMLProvider(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
 	client := iam.NewFromConfig(cfg)
@@ -195,11 +299,6 @@ func IAMUser(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
 
 	return values, nil
 }
-
-// OMIT: Adds the specified user to the specified group.
-// Doesn't really make sense to list it
-// func IAMUserToGroupAddition(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
-// }
 
 func IAMVirtualMFADevice(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
 	client := iam.NewFromConfig(cfg)

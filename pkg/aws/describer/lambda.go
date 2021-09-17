@@ -216,7 +216,3 @@ func listLayers(ctx context.Context, cfg aws.Config) ([]types.LayersListItem, er
 
 	return values, nil
 }
-
-// OMIT: Already included in LambdaFunction
-// func LambdaVersion(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
-// }

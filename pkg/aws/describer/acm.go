@@ -7,7 +7,6 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/acm"
 )
 
-// Discuss: Not region base and account base
 func CertificateManagerAccount(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
 	client := acm.NewFromConfig(cfg)
 	output, err := client.GetAccountConfiguration(ctx, &acm.GetAccountConfigurationInput{})
