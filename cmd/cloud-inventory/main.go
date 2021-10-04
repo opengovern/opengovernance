@@ -5,6 +5,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"gitlab.com/anil94/golang-aws-inventory/pkg/aws"
+	"gitlab.com/anil94/golang-aws-inventory/pkg/azure"
 )
 
 func main() {
@@ -14,6 +15,7 @@ func main() {
 
 	rootCmd.AddCommand(
 		aws.Command(),
+		azure.Command(),
 	)
 
 	if err := rootCmd.Execute(); err != nil {

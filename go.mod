@@ -3,6 +3,11 @@ module gitlab.com/anil94/golang-aws-inventory
 go 1.16
 
 require (
+	github.com/Azure/azure-sdk-for-go v58.0.0+incompatible
+	github.com/Azure/go-autorest/autorest v0.11.21
+	github.com/Azure/go-autorest/autorest/azure/auth v0.5.8
+	github.com/Azure/go-autorest/autorest/to v0.4.0 // indirect
+	github.com/Azure/go-autorest/autorest/validation v0.3.1 // indirect
 	github.com/aws/aws-sdk-go-v2 v1.9.1
 	github.com/aws/aws-sdk-go-v2/config v1.7.0
 	github.com/aws/aws-sdk-go-v2/credentials v1.4.0

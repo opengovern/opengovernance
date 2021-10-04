@@ -1,10 +1,10 @@
 package aws
 
 import (
-	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"sort"
 
 	"github.com/spf13/cobra"
 )
@@ -20,7 +20,8 @@ func Command() *cobra.Command {
 	var assumeRoleArn string
 
 	cmd := &cobra.Command{
-		Use: "aws",
+		Use:   "aws",
+		Short: "describes resources in Amazon Web Services cloud",
 		Example: `
 # Query the list of EC2 Instances in us-east-1:
 
@@ -61,7 +62,7 @@ func Command() *cobra.Command {
 			// After this, if we return error, don't print out usage. The error is a runtime error.
 			cmd.SilenceUsage = true
 
-			ctx := context.Background()
+			ctx := cmd.Context()
 			cfg, err := getConfig(ctx, awsAccessKey, awsSecretKey, awsSessionToken, assumeRoleArn)
 			if err != nil {
 				return err
@@ -128,8 +129,14 @@ func listResourcesCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use: "list-resources",
 		Run: func(cmd *cobra.Command, args []string) {
+			var list []string
 			for k := range ResourceTypeToDescriber {
-				fmt.Println(k)
+				list = append(list, k)
+			}
+
+			sort.Strings(list)
+			for _, resource := range list {
+				fmt.Println(resource)
 			}
 		},
 	}
