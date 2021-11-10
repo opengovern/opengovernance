@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"sort"
 
 	"github.com/spf13/cobra"
 )
@@ -63,35 +62,19 @@ func Command() *cobra.Command {
 			cmd.SilenceUsage = true
 
 			ctx := cmd.Context()
-			cfg, err := getConfig(ctx, awsAccessKey, awsSecretKey, awsSessionToken, assumeRoleArn)
+			output, err := GetResources(
+				ctx,
+				resourceType,
+				awsAccount,
+				regions,
+				awsAccessKey,
+				awsSecretKey,
+				awsSessionToken,
+				assumeRoleArn,
+				disabledRegions,
+			)
 			if err != nil {
 				return err
-			}
-
-			if len(regions) == 0 {
-				rs, err := GetAllRegions(ctx, cfg, disabledRegions)
-				if err != nil {
-					return err
-				}
-
-				for _, r := range rs {
-					regions = append(regions, *r.RegionName)
-				}
-			}
-
-			response, err := GetResources(ctx, cfg, regions, resourceType)
-			if err != nil {
-				return err
-			}
-
-			output := map[string]interface{}{
-				"resources": response.Resources,
-				"errors":    response.Errors,
-				"metadata": map[string]interface{}{
-					"type":      resourceType,
-					"accountId": awsAccount,
-					"regions":   regions,
-				},
 			}
 
 			bytes, err := json.MarshalIndent(output, "", "  ")
@@ -129,13 +112,7 @@ func listResourcesCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use: "list-resources",
 		Run: func(cmd *cobra.Command, args []string) {
-			var list []string
-			for k := range ResourceTypeToDescriber {
-				list = append(list, k)
-			}
-
-			sort.Strings(list)
-			for _, resource := range list {
+			for _, resource := range ListResourceTypes() {
 				fmt.Println(resource)
 			}
 		},

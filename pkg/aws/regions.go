@@ -9,8 +9,8 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
 )
 
-func GetAllRegionsInJSON(ctx context.Context, cfg aws.Config, includeDisabledRegions bool) (string, error) {
-	regions, err := GetAllRegions(ctx, cfg, includeDisabledRegions)
+func getAllRegionsInJSON(ctx context.Context, cfg aws.Config, includeDisabledRegions bool) (string, error) {
+	regions, err := getAllRegions(ctx, cfg, includeDisabledRegions)
 	if err != nil {
 		return "", nil
 	}
@@ -22,7 +22,7 @@ func GetAllRegionsInJSON(ctx context.Context, cfg aws.Config, includeDisabledReg
 	return string(j), err
 }
 
-func GetAllRegions(ctx context.Context, cfg aws.Config, includeDisabledRegions bool) ([]types.Region, error) {
+func getAllRegions(ctx context.Context, cfg aws.Config, includeDisabledRegions bool) ([]types.Region, error) {
 	client := ec2.NewFromConfig(cfg)
 	output, err := client.DescribeRegions(ctx, &ec2.DescribeRegionsInput{
 		AllRegions: &includeDisabledRegions,

@@ -4,12 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"os"
-	"sort"
-	"strings"
 
-	"github.com/Azure/azure-sdk-for-go/profiles/latest/resourcegraph/mgmt/resourcegraph"
-	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure/auth"
 	"github.com/spf13/cobra"
 )
@@ -96,42 +91,22 @@ or --auth-location flag.
 			cmd.SilenceUsage = true
 
 			ctx := cmd.Context()
-			// Create and authorize a ResourceGraph client
-			var authorizer autorest.Authorizer
-			var err error
-			switch v := AuthType(strings.ToUpper(azureAuth)); v {
-			case AuthEnv:
-				setEnvIfNotEmpty(auth.TenantID, tenantId)
-				setEnvIfNotEmpty(auth.ClientID, clientId)
-				setEnvIfNotEmpty(auth.ClientSecret, clientSecret)
-				setEnvIfNotEmpty(auth.CertificatePath, certPath)
-				setEnvIfNotEmpty(auth.CertificatePassword, certPass)
-				setEnvIfNotEmpty(auth.Username, username)
-				setEnvIfNotEmpty(auth.Password, password)
-				authorizer, err = auth.NewAuthorizerFromEnvironment()
-			case AuthFile:
-				setEnvIfNotEmpty(AzureAuthLocation, azureAuthLoc)
-				authorizer, err = auth.NewAuthorizerFromFile(resourcegraph.DefaultBaseURI)
-			case AuthCLI:
-				authorizer, err = auth.NewAuthorizerFromCLI()
-			default:
-				err = fmt.Errorf("invalid auth type: %s", v)
-			}
+			output, err := GetResources(
+				ctx,
+				resourceType,
+				subscriptions,
+				tenantId,
+				clientId,
+				clientSecret,
+				certPath,
+				certPass,
+				username,
+				password,
+				azureAuth,
+				azureAuthLoc,
+			)
 			if err != nil {
-				return err
-			}
-
-			resources, err := GetResources(ctx, authorizer, resourceType, subscriptions)
-			if err != nil {
-				return err
-			}
-
-			output := map[string]interface{}{
-				"resources": resources,
-				"metadata": map[string]interface{}{
-					"type":            resourceType,
-					"subscriptionIds": subscriptions,
-				},
+				return nil
 			}
 
 			bytes, err := json.MarshalIndent(output, " ", " ")
@@ -170,23 +145,12 @@ func listResourcesCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use: "list-resources",
 		Run: func(cmd *cobra.Command, args []string) {
-			var list []string
-			for k := range Resources {
-				list = append(list, k)
-			}
 
-			sort.Strings(list)
-			for _, resource := range list {
+			for _, resource := range ListResourceTypes() {
 				fmt.Println(resource)
 			}
 		},
 	}
 
 	return cmd
-}
-
-func setEnvIfNotEmpty(env, s string) {
-	if s != "" {
-		os.Setenv(env, s)
-	}
 }

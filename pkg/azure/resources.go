@@ -3,8 +3,13 @@ package azure
 import (
 	"context"
 	"fmt"
+	"os"
+	"sort"
+	"strings"
 
+	"github.com/Azure/azure-sdk-for-go/profiles/latest/resourcegraph/mgmt/resourcegraph"
 	"github.com/Azure/go-autorest/autorest"
+	"github.com/Azure/go-autorest/autorest/azure/auth"
 	"gitlab.com/anil94/golang-aws-inventory/pkg/azure/describer.go"
 )
 
@@ -18,7 +23,7 @@ func (fn ResourceDescribeFunc) DescribeResources(c context.Context, a autorest.A
 	return fn(c, a, s)
 }
 
-var Resources = map[string]ResourceDescriber{
+var resourceTypeToDescriber = map[string]ResourceDescriber{
 	"Microsoft.AnalysisServices/servers":                        nil,
 	"Microsoft.ApiManagement/service":                           nil,
 	"Microsoft.AppConfiguration/configurationStores":            nil,
@@ -126,8 +131,89 @@ var Resources = map[string]ResourceDescriber{
 	"Microsoft.Web/staticSites":                                 nil,
 }
 
-func GetResources(ctx context.Context, authorizer autorest.Authorizer, resourceType string, subscriptions []string) ([]interface{}, error) {
-	rd, ok := Resources[resourceType]
+func ListResourceTypes() []string {
+	var list []string
+	for k := range resourceTypeToDescriber {
+		list = append(list, k)
+	}
+
+	sort.Strings(list)
+	return list
+}
+
+type ResourceDescriptionMetadata struct {
+	ResourceType    string
+	SubscriptionIds []string
+}
+
+type Resources struct {
+	Resources []interface{}
+	Metadata  ResourceDescriptionMetadata
+}
+
+func GetResources(
+	ctx context.Context,
+	resourceType string,
+	subscriptions []string,
+	tenantId,
+	clientId,
+	clientSecret,
+	certPath,
+	certPass,
+	username,
+	password,
+	azureAuth,
+	azureAuthLoc string,
+) (*Resources, error) {
+	// Create and authorize a ResourceGraph client
+	var authorizer autorest.Authorizer
+	var err error
+	switch v := AuthType(strings.ToUpper(azureAuth)); v {
+	case AuthEnv:
+		setEnvIfNotEmpty(auth.TenantID, tenantId)
+		setEnvIfNotEmpty(auth.ClientID, clientId)
+		setEnvIfNotEmpty(auth.ClientSecret, clientSecret)
+		setEnvIfNotEmpty(auth.CertificatePath, certPath)
+		setEnvIfNotEmpty(auth.CertificatePassword, certPass)
+		setEnvIfNotEmpty(auth.Username, username)
+		setEnvIfNotEmpty(auth.Password, password)
+		authorizer, err = auth.NewAuthorizerFromEnvironment()
+	case AuthFile:
+		setEnvIfNotEmpty(AzureAuthLocation, azureAuthLoc)
+		authorizer, err = auth.NewAuthorizerFromFile(resourcegraph.DefaultBaseURI)
+	case AuthCLI:
+		authorizer, err = auth.NewAuthorizerFromCLI()
+	default:
+		err = fmt.Errorf("invalid auth type: %s", v)
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	resources, err := describe(ctx, authorizer, resourceType, subscriptions)
+	if err != nil {
+		return nil, err
+	}
+
+	output := &Resources{
+		Resources: resources,
+		Metadata: ResourceDescriptionMetadata{
+			ResourceType:    resourceType,
+			SubscriptionIds: subscriptions,
+		},
+	}
+
+	return output, err
+}
+
+func setEnvIfNotEmpty(env, s string) {
+	if s != "" {
+		os.Setenv(env, s)
+	}
+}
+
+func describe(ctx context.Context, authorizer autorest.Authorizer, resourceType string, subscriptions []string) ([]interface{}, error) {
+	rd, ok := resourceTypeToDescriber[resourceType]
 	if !ok {
 		return nil, fmt.Errorf("unsupported resource type: %s", resourceType)
 	}

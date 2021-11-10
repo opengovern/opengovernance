@@ -3,6 +3,7 @@ package aws
 import (
 	"context"
 	"fmt"
+	"sort"
 
 	"gitlab.com/anil94/golang-aws-inventory/pkg/aws/describer"
 
@@ -11,7 +12,7 @@ import (
 
 type ResourceDescriber func(context.Context, aws.Config, []string) (*ResourceDescribeOutput, error)
 
-var ResourceTypeToDescriber = map[string]ResourceDescriber{
+var resourceTypeToDescriber = map[string]ResourceDescriber{
 	"AWS::ApplicationInsights::Application":                       ParallelDescribeRegional(describer.ApplicationInsightsApplication),
 	"AWS::AutoScaling::AutoScalingGroup":                          ParallelDescribeRegional(describer.AutoScalingAutoScalingGroup),
 	"AWS::AutoScaling::LaunchConfiguration":                       ParallelDescribeRegional(describer.AutoScalingLaunchConfiguration),
@@ -208,18 +209,85 @@ var ResourceTypeToDescriber = map[string]ResourceDescriber{
 	"AWS::WorkSpaces::Workspace":                                  ParallelDescribeRegional(describer.WorkSpacesWorkspace),
 }
 
+func ListResourceTypes() []string {
+	var list []string
+	for k := range resourceTypeToDescriber {
+		list = append(list, k)
+	}
+
+	sort.Strings(list)
+	return list
+}
+
+type Resources struct {
+	ResourceDescribeOutput
+	Metadata ResourceDescribeMetadata
+}
+
 type ResourceDescribeOutput struct {
 	Resources map[string][]interface{}
 	Errors    map[string]string
 }
 
+type ResourceDescribeMetadata struct {
+	ResourceType string
+	AccountId    string
+	Regions      []string
+}
+
 func GetResources(
+	ctx context.Context,
+	resourceType string,
+	accountId string,
+	regions []string,
+	accessKey,
+	secretKey,
+	sessionToken,
+	assumeRoleArn string,
+	includeDisabledRegions bool,
+) (*Resources, error) {
+	cfg, err := getConfig(ctx, accessKey, secretKey, sessionToken, assumeRoleArn)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(regions) == 0 {
+		cfgClone := cfg.Copy()
+		cfgClone.Region = "us-east-1"
+
+		rs, err := getAllRegions(ctx, cfgClone, includeDisabledRegions)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, r := range rs {
+			regions = append(regions, *r.RegionName)
+		}
+	}
+
+	response, err := describe(ctx, cfg, regions, resourceType)
+	if err != nil {
+		return nil, err
+	}
+
+	output := &Resources{
+		ResourceDescribeOutput: *response,
+		Metadata: ResourceDescribeMetadata{
+			ResourceType: resourceType,
+			AccountId:    accountId,
+			Regions:      regions,
+		},
+	}
+
+	return output, nil
+}
+
+func describe(
 	ctx context.Context,
 	cfg aws.Config,
 	regions []string,
 	resourceType string) (*ResourceDescribeOutput, error) {
-
-	describe, ok := ResourceTypeToDescriber[resourceType]
+	describe, ok := resourceTypeToDescriber[resourceType]
 	if !ok {
 		return nil, fmt.Errorf("unsupported resource type: %s", resourceType)
 	}
