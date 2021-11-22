@@ -54,9 +54,12 @@ require (
 	github.com/eapache/queue v1.1.0 // indirect
 	github.com/frankban/quicktest v1.14.0 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
+	github.com/google/uuid v1.3.0
 	github.com/pierrec/lz4 v2.6.1+incompatible // indirect
 	github.com/rcrowley/go-metrics v0.0.0-20201227073835-cf1acfcdf475 // indirect
 	github.com/spf13/cobra v1.2.1
 	github.com/streadway/amqp v1.0.0
 	gopkg.in/Shopify/sarama.v1 v1.20.1
+	gorm.io/driver/postgres v1.2.2
+	gorm.io/gorm v1.22.3
 )
