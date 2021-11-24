@@ -44,6 +44,19 @@ func (db Database) UpdateSource(a Source) error {
 	return nil
 }
 
+// DeleteSource deletes the source
+func (db Database) DeleteSource(a Source) error {
+	tx := db.orm.
+		Delete(&Source{}, a.ID.String())
+	if tx.Error != nil {
+		return tx.Error
+	} else if tx.RowsAffected != 1 {
+		return fmt.Errorf("delete source: didn't find the source to delete")
+	}
+
+	return nil
+}
+
 // CreateSources creates multiple source in batches.
 func (db Database) CreateSources(a []Source) error {
 	tx := db.orm.
@@ -116,7 +129,7 @@ func (db Database) UpdateDescribeSourceJob(id uint, status DescribeSourceJobStat
 }
 
 type DescribedSourceJobDescribeResourceJobStatus struct {
-	DescribeSourceJobID      uint                      `gorm:"column:id"`
+	DescribeSourceJobID       uint                      `gorm:"column:id"`
 	DescribeResourceJobStatus DescribeResourceJobStatus `gorm:"column:status"`
 	DescribeResourceJobCount  int                       `gorm:"column:count"`
 }

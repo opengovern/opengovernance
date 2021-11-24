@@ -8,11 +8,11 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/efs/types"
 )
 
-func EFSAccessPoint(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
+func EFSAccessPoint(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	client := efs.NewFromConfig(cfg)
 	paginator := efs.NewDescribeAccessPointsPaginator(client, &efs.DescribeAccessPointsInput{})
 
-	var values []interface{}
+	var values []Resource
 	for paginator.HasMorePages() {
 		page, err := paginator.NextPage(ctx)
 		if err != nil {
@@ -20,18 +20,21 @@ func EFSAccessPoint(ctx context.Context, cfg aws.Config) ([]interface{}, error) 
 		}
 
 		for _, v := range page.AccessPoints {
-			values = append(values, v)
+			values = append(values, Resource{
+				ARN:         *v.AccessPointArn,
+				Description: v,
+			})
 		}
 	}
 
 	return values, nil
 }
 
-func EFSFileSystem(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
+func EFSFileSystem(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	client := efs.NewFromConfig(cfg)
 	paginator := efs.NewDescribeFileSystemsPaginator(client, &efs.DescribeFileSystemsInput{})
 
-	var values []interface{}
+	var values []Resource
 	for paginator.HasMorePages() {
 		page, err := paginator.NextPage(ctx)
 		if err != nil {
@@ -39,24 +42,27 @@ func EFSFileSystem(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
 		}
 
 		for _, v := range page.FileSystems {
-			values = append(values, v)
+			values = append(values, Resource{
+				ARN:         *v.FileSystemArn,
+				Description: v,
+			})
 		}
 	}
 
 	return values, nil
 }
 
-func EFSMountTarget(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
+func EFSMountTarget(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	client := efs.NewFromConfig(cfg)
 
-	var values []interface{}
+	var values []Resource
 
 	accessPoints, err := EFSAccessPoint(ctx, cfg)
 	if err != nil {
 		return nil, err
 	}
 	for _, ap := range accessPoints {
-		accessPoint := ap.(types.AccessPointDescription)
+		accessPoint := ap.Description.(types.AccessPointDescription)
 		err := PaginateRetrieveAll(func(prevToken *string) (nextToken *string, err error) {
 			output, err := client.DescribeMountTargets(ctx, &efs.DescribeMountTargetsInput{
 				AccessPointId: accessPoint.AccessPointId,
@@ -67,7 +73,10 @@ func EFSMountTarget(ctx context.Context, cfg aws.Config) ([]interface{}, error) 
 			}
 
 			for _, v := range output.MountTargets {
-				values = append(values, v)
+				values = append(values, Resource{
+					ID:          *v.MountTargetId,
+					Description: v,
+				})
 			}
 			return output.NextMarker, nil
 		})
@@ -81,7 +90,7 @@ func EFSMountTarget(ctx context.Context, cfg aws.Config) ([]interface{}, error) 
 		return nil, err
 	}
 	for _, fs := range filesystems {
-		filesystem := fs.(types.FileSystemDescription)
+		filesystem := fs.Description.(types.FileSystemDescription)
 		err := PaginateRetrieveAll(func(prevToken *string) (nextToken *string, err error) {
 			output, err := client.DescribeMountTargets(ctx, &efs.DescribeMountTargetsInput{
 				FileSystemId: filesystem.FileSystemId,
@@ -92,7 +101,10 @@ func EFSMountTarget(ctx context.Context, cfg aws.Config) ([]interface{}, error) 
 			}
 
 			for _, v := range output.MountTargets {
-				values = append(values, v)
+				values = append(values, Resource{
+					ID:          *v.FileSystemId,
+					Description: v,
+				})
 			}
 			return output.NextMarker, nil
 		})

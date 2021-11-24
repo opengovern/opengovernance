@@ -7,7 +7,7 @@ import (
 	"github.com/Azure/go-autorest/autorest"
 )
 
-func ServiceBusQueue(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]interface{}, error) {
+func ServiceBusQueue(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
 	rgs, err := resourceGroup(ctx, authorizer, subscription)
 	if err != nil {
 		return nil, err
@@ -16,7 +16,7 @@ func ServiceBusQueue(ctx context.Context, authorizer autorest.Authorizer, subscr
 	client := servicebus.NewQueuesClient(subscription)
 	client.Authorizer = authorizer
 
-	var values []interface{}
+	var values []Resource
 	for _, rg := range rgs {
 		ns, err := serviceBusNamespace(ctx, authorizer, subscription, *rg.Name)
 		if err != nil {
@@ -30,7 +30,10 @@ func ServiceBusQueue(ctx context.Context, authorizer autorest.Authorizer, subscr
 			}
 
 			for v := it.Value(); it.NotDone(); v = it.Value() {
-				values = append(values, JSONAllFieldsMarshaller{Value: v})
+				values = append(values, Resource{
+					ID:          *v.ID,
+					Description: JSONAllFieldsMarshaller{Value: v},
+				})
 
 				err := it.NextWithContext(ctx)
 				if err != nil {
@@ -43,7 +46,7 @@ func ServiceBusQueue(ctx context.Context, authorizer autorest.Authorizer, subscr
 	return values, nil
 }
 
-func ServiceBusTopic(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]interface{}, error) {
+func ServiceBusTopic(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
 	rgs, err := resourceGroup(ctx, authorizer, subscription)
 	if err != nil {
 		return nil, err
@@ -52,7 +55,7 @@ func ServiceBusTopic(ctx context.Context, authorizer autorest.Authorizer, subscr
 	client := servicebus.NewTopicsClient(subscription)
 	client.Authorizer = authorizer
 
-	var values []interface{}
+	var values []Resource
 	for _, rg := range rgs {
 		ns, err := serviceBusNamespace(ctx, authorizer, subscription, *rg.Name)
 		if err != nil {
@@ -66,7 +69,10 @@ func ServiceBusTopic(ctx context.Context, authorizer autorest.Authorizer, subscr
 			}
 
 			for v := it.Value(); it.NotDone(); v = it.Value() {
-				values = append(values, JSONAllFieldsMarshaller{Value: v})
+				values = append(values, Resource{
+					ID:          *v.ID,
+					Description: JSONAllFieldsMarshaller{Value: v},
+				})
 
 				err := it.NextWithContext(ctx)
 				if err != nil {

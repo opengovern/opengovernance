@@ -7,11 +7,11 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/cloudtrail"
 )
 
-func CloudTrailTrail(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
+func CloudTrailTrail(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	client := cloudtrail.NewFromConfig(cfg)
 	paginator := cloudtrail.NewListTrailsPaginator(client, &cloudtrail.ListTrailsInput{})
 
-	var values []interface{}
+	var values []Resource
 	for paginator.HasMorePages() {
 		page, err := paginator.NextPage(ctx)
 		if err != nil {
@@ -38,7 +38,10 @@ func CloudTrailTrail(ctx context.Context, cfg aws.Config) ([]interface{}, error)
 		}
 
 		for _, v := range output.TrailList {
-			values = append(values, v)
+			values = append(values, Resource{
+				ARN:         *v.TrailARN,
+				Description: v,
+			})
 		}
 	}
 

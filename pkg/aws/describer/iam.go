@@ -8,11 +8,11 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/iam/types"
 )
 
-func IAMAccessKey(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
+func IAMAccessKey(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	client := iam.NewFromConfig(cfg)
 	paginator := iam.NewListAccessKeysPaginator(client, &iam.ListAccessKeysInput{})
 
-	var values []interface{}
+	var values []Resource
 	for paginator.HasMorePages() {
 		page, err := paginator.NextPage(ctx)
 		if err != nil {
@@ -20,18 +20,21 @@ func IAMAccessKey(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
 		}
 
 		for _, v := range page.AccessKeyMetadata {
-			values = append(values, v)
+			values = append(values, Resource{
+				ID:          *v.AccessKeyId,
+				Description: v,
+			})
 		}
 	}
 
 	return values, nil
 }
 
-func IAMGroup(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
+func IAMGroup(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	client := iam.NewFromConfig(cfg)
 	paginator := iam.NewListGroupsPaginator(client, &iam.ListGroupsInput{})
 
-	var values []interface{}
+	var values []Resource
 	for paginator.HasMorePages() {
 		page, err := paginator.NextPage(ctx)
 		if err != nil {
@@ -39,18 +42,21 @@ func IAMGroup(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
 		}
 
 		for _, v := range page.Groups {
-			values = append(values, v)
+			values = append(values, Resource{
+				ARN:         *v.Arn,
+				Description: v,
+			})
 		}
 	}
 
 	return values, nil
 }
 
-func IAMInstanceProfile(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
+func IAMInstanceProfile(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	client := iam.NewFromConfig(cfg)
 	paginator := iam.NewListInstanceProfilesPaginator(client, &iam.ListInstanceProfilesInput{})
 
-	var values []interface{}
+	var values []Resource
 	for paginator.HasMorePages() {
 		page, err := paginator.NextPage(ctx)
 		if err != nil {
@@ -58,20 +64,23 @@ func IAMInstanceProfile(ctx context.Context, cfg aws.Config) ([]interface{}, err
 		}
 
 		for _, v := range page.InstanceProfiles {
-			values = append(values, v)
+			values = append(values, Resource{
+				ARN:         *v.Arn,
+				Description: v,
+			})
 		}
 	}
 
 	return values, nil
 }
 
-func IAMManagedPolicy(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
+func IAMManagedPolicy(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	client := iam.NewFromConfig(cfg)
 	paginator := iam.NewListPoliciesPaginator(client, &iam.ListPoliciesInput{
 		OnlyAttached: true,
 	})
 
-	var values []interface{}
+	var values []Resource
 	for paginator.HasMorePages() {
 		page, err := paginator.NextPage(ctx)
 		if err != nil {
@@ -79,29 +88,35 @@ func IAMManagedPolicy(ctx context.Context, cfg aws.Config) ([]interface{}, error
 		}
 
 		for _, v := range page.Policies {
-			values = append(values, v)
+			values = append(values, Resource{
+				ARN:         *v.Arn,
+				Description: v,
+			})
 		}
 	}
 
 	return values, nil
 }
 
-func IAMOIDCProvider(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
+func IAMOIDCProvider(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	client := iam.NewFromConfig(cfg)
 	output, err := client.ListOpenIDConnectProviders(ctx, &iam.ListOpenIDConnectProvidersInput{})
 	if err != nil {
 		return nil, err
 	}
 
-	var values []interface{}
+	var values []Resource
 	for _, v := range output.OpenIDConnectProviderList {
-		values = append(values, v)
+		values = append(values, Resource{
+			ARN:         *v.Arn,
+			Description: v,
+		})
 	}
 
 	return values, nil
 }
 
-func IAMGroupPolicy(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
+func IAMGroupPolicy(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	groups, err := IAMGroup(ctx, cfg)
 	if err != nil {
 		return nil, err
@@ -109,9 +124,9 @@ func IAMGroupPolicy(ctx context.Context, cfg aws.Config) ([]interface{}, error) 
 
 	client := iam.NewFromConfig(cfg)
 
-	var values []interface{}
+	var values []Resource
 	for _, g := range groups {
-		group := g.(types.Group)
+		group := g.Description.(types.Group)
 		err := PaginateRetrieveAll(func(prevToken *string) (nextToken *string, err error) {
 			output, err := client.ListGroupPolicies(ctx, &iam.ListGroupPoliciesInput{
 				GroupName: group.GroupName,
@@ -122,7 +137,7 @@ func IAMGroupPolicy(ctx context.Context, cfg aws.Config) ([]interface{}, error) 
 			}
 
 			for _, policy := range output.PolicyNames {
-				pOutput, err := client.GetGroupPolicy(ctx, &iam.GetGroupPolicyInput{
+				v, err := client.GetGroupPolicy(ctx, &iam.GetGroupPolicyInput{
 					GroupName:  group.GroupName,
 					PolicyName: aws.String(policy),
 				})
@@ -130,7 +145,10 @@ func IAMGroupPolicy(ctx context.Context, cfg aws.Config) ([]interface{}, error) 
 					return nil, err
 				}
 
-				values = append(values, pOutput)
+				values = append(values, Resource{
+					ID:          CompositeID(*v.GroupName, *v.PolicyName),
+					Description: v,
+				})
 			}
 
 			return output.Marker, nil
@@ -143,7 +161,7 @@ func IAMGroupPolicy(ctx context.Context, cfg aws.Config) ([]interface{}, error) 
 	return values, nil
 }
 
-func IAMUserPolicy(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
+func IAMUserPolicy(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	users, err := IAMUser(ctx, cfg)
 	if err != nil {
 		return nil, err
@@ -151,9 +169,9 @@ func IAMUserPolicy(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
 
 	client := iam.NewFromConfig(cfg)
 
-	var values []interface{}
+	var values []Resource
 	for _, u := range users {
-		user := u.(types.User)
+		user := u.Description.(types.User)
 		err := PaginateRetrieveAll(func(prevToken *string) (nextToken *string, err error) {
 			output, err := client.ListUserPolicies(ctx, &iam.ListUserPoliciesInput{
 				UserName: user.UserName,
@@ -164,7 +182,7 @@ func IAMUserPolicy(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
 			}
 
 			for _, policy := range output.PolicyNames {
-				pOutput, err := client.GetUserPolicy(ctx, &iam.GetUserPolicyInput{
+				v, err := client.GetUserPolicy(ctx, &iam.GetUserPolicyInput{
 					UserName:   user.UserName,
 					PolicyName: aws.String(policy),
 				})
@@ -172,7 +190,10 @@ func IAMUserPolicy(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
 					return nil, err
 				}
 
-				values = append(values, pOutput)
+				values = append(values, Resource{
+					ID:          CompositeID(*v.UserName, *v.PolicyName),
+					Description: v,
+				})
 			}
 
 			return output.Marker, nil
@@ -185,7 +206,7 @@ func IAMUserPolicy(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
 	return values, nil
 }
 
-func IAMRolePolicy(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
+func IAMRolePolicy(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	roles, err := IAMRole(ctx, cfg)
 	if err != nil {
 		return nil, err
@@ -193,10 +214,10 @@ func IAMRolePolicy(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
 
 	client := iam.NewFromConfig(cfg)
 
-	var values []interface{}
+	var values []Resource
 
 	for _, r := range roles {
-		role := r.(types.Role)
+		role := r.Description.(types.Role)
 		err := PaginateRetrieveAll(func(prevToken *string) (nextToken *string, err error) {
 			output, err := client.ListRolePolicies(ctx, &iam.ListRolePoliciesInput{
 				RoleName: role.RoleName,
@@ -207,7 +228,7 @@ func IAMRolePolicy(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
 			}
 
 			for _, policy := range output.PolicyNames {
-				pOutput, err := client.GetRolePolicy(ctx, &iam.GetRolePolicyInput{
+				v, err := client.GetRolePolicy(ctx, &iam.GetRolePolicyInput{
 					RoleName:   role.RoleName,
 					PolicyName: aws.String(policy),
 				})
@@ -215,7 +236,10 @@ func IAMRolePolicy(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
 					return nil, err
 				}
 
-				values = append(values, pOutput)
+				values = append(values, Resource{
+					ID:          CompositeID(*v.RoleName, *v.PolicyName),
+					Description: v,
+				})
 			}
 
 			return output.Marker, nil
@@ -228,11 +252,11 @@ func IAMRolePolicy(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
 	return values, nil
 }
 
-func IAMRole(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
+func IAMRole(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	client := iam.NewFromConfig(cfg)
 	paginator := iam.NewListRolesPaginator(client, &iam.ListRolesInput{})
 
-	var values []interface{}
+	var values []Resource
 	for paginator.HasMorePages() {
 		page, err := paginator.NextPage(ctx)
 		if err != nil {
@@ -240,33 +264,39 @@ func IAMRole(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
 		}
 
 		for _, v := range page.Roles {
-			values = append(values, v)
+			values = append(values, Resource{
+				ARN:         *v.Arn,
+				Description: v,
+			})
 		}
 	}
 
 	return values, nil
 }
 
-func IAMSAMLProvider(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
+func IAMSAMLProvider(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	client := iam.NewFromConfig(cfg)
 	output, err := client.ListSAMLProviders(ctx, &iam.ListSAMLProvidersInput{})
 	if err != nil {
 		return nil, err
 	}
 
-	var values []interface{}
+	var values []Resource
 	for _, v := range output.SAMLProviderList {
-		values = append(values, v)
+		values = append(values, Resource{
+			ARN:         *v.Arn,
+			Description: v,
+		})
 	}
 
 	return values, nil
 }
 
-func IAMServerCertificate(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
+func IAMServerCertificate(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	client := iam.NewFromConfig(cfg)
 	paginator := iam.NewListServerCertificatesPaginator(client, &iam.ListServerCertificatesInput{})
 
-	var values []interface{}
+	var values []Resource
 	for paginator.HasMorePages() {
 		page, err := paginator.NextPage(ctx)
 		if err != nil {
@@ -274,18 +304,21 @@ func IAMServerCertificate(ctx context.Context, cfg aws.Config) ([]interface{}, e
 		}
 
 		for _, v := range page.ServerCertificateMetadataList {
-			values = append(values, v)
+			values = append(values, Resource{
+				ARN:         *v.Arn,
+				Description: v,
+			})
 		}
 	}
 
 	return values, nil
 }
 
-func IAMUser(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
+func IAMUser(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	client := iam.NewFromConfig(cfg)
 	paginator := iam.NewListUsersPaginator(client, &iam.ListUsersInput{})
 
-	var values []interface{}
+	var values []Resource
 	for paginator.HasMorePages() {
 		page, err := paginator.NextPage(ctx)
 		if err != nil {
@@ -293,23 +326,29 @@ func IAMUser(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
 		}
 
 		for _, v := range page.Users {
-			values = append(values, v)
+			values = append(values, Resource{
+				ARN:         *v.Arn,
+				Description: v,
+			})
 		}
 	}
 
 	return values, nil
 }
 
-func IAMVirtualMFADevice(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
+func IAMVirtualMFADevice(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	client := iam.NewFromConfig(cfg)
 	output, err := client.ListMFADevices(ctx, &iam.ListMFADevicesInput{})
 	if err != nil {
 		return nil, err
 	}
 
-	var values []interface{}
+	var values []Resource
 	for _, v := range output.MFADevices {
-		values = append(values, v)
+		values = append(values, Resource{
+			ID:          *v.SerialNumber,
+			Description: v,
+		})
 	}
 
 	return values, nil

@@ -7,7 +7,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/eks"
 )
 
-func EKSCluster(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
+func EKSCluster(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	clusters, err := listEksClusters(ctx, cfg)
 	if err != nil {
 		return nil, err
@@ -15,20 +15,23 @@ func EKSCluster(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
 
 	client := eks.NewFromConfig(cfg)
 
-	var values []interface{}
+	var values []Resource
 	for _, cluster := range clusters {
 		output, err := client.DescribeCluster(ctx, &eks.DescribeClusterInput{Name: aws.String(cluster)})
 		if err != nil {
 			return nil, err
 		}
 
-		values = append(values, output.Cluster)
+		values = append(values, Resource{
+			ARN:         *output.Cluster.Arn,
+			Description: output.Cluster,
+		})
 	}
 
 	return values, nil
 }
 
-func EKSAddon(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
+func EKSAddon(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	clusters, err := listEksClusters(ctx, cfg)
 	if err != nil {
 		return nil, err
@@ -36,7 +39,7 @@ func EKSAddon(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
 
 	client := eks.NewFromConfig(cfg)
 
-	var values []interface{}
+	var values []Resource
 	for _, cluster := range clusters {
 		var addons []string
 
@@ -59,14 +62,17 @@ func EKSAddon(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
 				return nil, err
 			}
 
-			values = append(values, output.Addon)
+			values = append(values, Resource{
+				ARN:         *output.Addon.AddonArn,
+				Description: output.Addon,
+			})
 		}
 	}
 
 	return values, nil
 }
 
-func EKSFargateProfile(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
+func EKSFargateProfile(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	clusters, err := listEksClusters(ctx, cfg)
 	if err != nil {
 		return nil, err
@@ -74,7 +80,7 @@ func EKSFargateProfile(ctx context.Context, cfg aws.Config) ([]interface{}, erro
 
 	client := eks.NewFromConfig(cfg)
 
-	var values []interface{}
+	var values []Resource
 	for _, cluster := range clusters {
 		var profiles []string
 
@@ -97,14 +103,17 @@ func EKSFargateProfile(ctx context.Context, cfg aws.Config) ([]interface{}, erro
 				return nil, err
 			}
 
-			values = append(values, output.FargateProfile)
+			values = append(values, Resource{
+				ARN:         *output.FargateProfile.FargateProfileArn,
+				Description: output.FargateProfile,
+			})
 		}
 	}
 
 	return values, nil
 }
 
-func EKSNodegroup(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
+func EKSNodegroup(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	clusters, err := listEksClusters(ctx, cfg)
 	if err != nil {
 		return nil, err
@@ -112,7 +121,7 @@ func EKSNodegroup(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
 
 	client := eks.NewFromConfig(cfg)
 
-	var values []interface{}
+	var values []Resource
 	for _, cluster := range clusters {
 		var groups []string
 		paginator := eks.NewListNodegroupsPaginator(client, &eks.ListNodegroupsInput{ClusterName: aws.String(cluster)})
@@ -135,7 +144,10 @@ func EKSNodegroup(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
 				return nil, err
 			}
 
-			values = append(values, output.Nodegroup)
+			values = append(values, Resource{
+				ARN:         *output.Nodegroup.NodegroupArn,
+				Description: output.Nodegroup,
+			})
 		}
 	}
 

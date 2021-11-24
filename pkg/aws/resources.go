@@ -2,15 +2,17 @@ package aws
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"sort"
 
 	"gitlab.com/anil94/golang-aws-inventory/pkg/aws/describer"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/smithy-go"
 )
 
-type ResourceDescriber func(context.Context, aws.Config, []string) (*ResourceDescribeOutput, error)
+type ResourceDescriber func(context.Context, aws.Config, string, []string, string) (*ResourceDescribeOutput, error)
 
 var resourceTypeToDescriber = map[string]ResourceDescriber{
 	"AWS::ApplicationInsights::Application":                       ParallelDescribeRegional(describer.ApplicationInsightsApplication),
@@ -56,7 +58,6 @@ var resourceTypeToDescriber = map[string]ResourceDescriber{
 	"AWS::EC2::NetworkInsightsAnalysis":                           ParallelDescribeRegional(describer.EC2NetworkInsightsAnalysis),
 	"AWS::EC2::NetworkInsightsPath":                               ParallelDescribeRegional(describer.EC2NetworkInsightsPath),
 	"AWS::EC2::NetworkInterface":                                  ParallelDescribeRegional(describer.EC2NetworkInterface),
-	"AWS::EC2::NetworkInterfaceAttachment":                        ParallelDescribeRegional(describer.EC2NetworkInterfaceAttachment),
 	"AWS::EC2::NetworkInterfacePermission":                        ParallelDescribeRegional(describer.EC2NetworkInterfacePermission),
 	"AWS::EC2::PlacementGroup":                                    ParallelDescribeRegional(describer.EC2PlacementGroup),
 	"AWS::EC2::PrefixList":                                        ParallelDescribeRegional(describer.EC2PrefixList),
@@ -64,7 +65,6 @@ var resourceTypeToDescriber = map[string]ResourceDescriber{
 	"AWS::EC2::SecurityGroup":                                     ParallelDescribeRegional(describer.EC2SecurityGroup),
 	"AWS::EC2::SpotFleet":                                         ParallelDescribeRegional(describer.EC2SpotFleet),
 	"AWS::EC2::Subnet":                                            ParallelDescribeRegional(describer.EC2Subnet),
-	"AWS::EC2::SubnetCidrBlock":                                   ParallelDescribeRegional(describer.EC2SubnetCidrBlock),
 	"AWS::EC2::TrafficMirrorFilter":                               ParallelDescribeRegional(describer.EC2TrafficMirrorFilter),
 	"AWS::EC2::TrafficMirrorSession":                              ParallelDescribeRegional(describer.EC2TrafficMirrorSession),
 	"AWS::EC2::TrafficMirrorTarget":                               ParallelDescribeRegional(describer.EC2TrafficMirrorTarget),
@@ -225,7 +225,7 @@ type Resources struct {
 }
 
 type ResourceDescribeOutput struct {
-	Resources map[string][]interface{}
+	Resources map[string][]describer.Resource
 	Errors    map[string]string
 }
 
@@ -265,7 +265,7 @@ func GetResources(
 		}
 	}
 
-	response, err := describe(ctx, cfg, regions, resourceType)
+	response, err := describe(ctx, cfg, accountId, regions, resourceType)
 	if err != nil {
 		return nil, err
 	}
@@ -285,6 +285,7 @@ func GetResources(
 func describe(
 	ctx context.Context,
 	cfg aws.Config,
+	account string,
 	regions []string,
 	resourceType string) (*ResourceDescribeOutput, error) {
 	describe, ok := resourceTypeToDescriber[resourceType]
@@ -292,18 +293,18 @@ func describe(
 		return nil, fmt.Errorf("unsupported resource type: %s", resourceType)
 	}
 
-	return describe(ctx, cfg, regions)
+	return describe(ctx, cfg, account, regions, resourceType)
 }
 
 // Parallel describe the resources across the reigons. Failure in one regions won't affect
 // other regions.
-func ParallelDescribeRegional(describe func(context.Context, aws.Config) ([]interface{}, error)) ResourceDescriber {
+func ParallelDescribeRegional(describe func(context.Context, aws.Config) ([]describer.Resource, error)) ResourceDescriber {
 	type result struct {
 		region    string
-		resources []interface{}
+		resources []describer.Resource
 		err       error
 	}
-	return func(ctx context.Context, cfg aws.Config, regions []string) (*ResourceDescribeOutput, error) {
+	return func(ctx context.Context, cfg aws.Config, account string, regions []string, rType string) (*ResourceDescribeOutput, error) {
 		input := make(chan result, len(regions))
 		for _, region := range regions {
 			go func(r string) {
@@ -317,19 +318,28 @@ func ParallelDescribeRegional(describe func(context.Context, aws.Config) ([]inte
 		}
 
 		output := ResourceDescribeOutput{
-			Resources: make(map[string][]interface{}, len(regions)),
+			Resources: make(map[string][]describer.Resource, len(regions)),
 			Errors:    make(map[string]string, len(regions)),
 		}
 		for range regions {
 			resp := <-input
 			if resp.err != nil {
-				output.Errors[resp.region] = resp.err.Error()
-				continue
+				if !IsUnsupportedOrInvalid(resp.err) {
+					output.Errors[resp.region] = resp.err.Error()
+					continue
+				}
 			}
 
 			if resp.resources == nil {
-				resp.resources = []interface{}{}
+				resp.resources = []describer.Resource{}
 			}
+
+			for i := range resp.resources {
+				resp.resources[i].Account = account
+				resp.resources[i].Region = resp.region
+				resp.resources[i].Type = rType
+			}
+
 			output.Resources[resp.region] = resp.resources
 		}
 
@@ -338,10 +348,10 @@ func ParallelDescribeRegional(describe func(context.Context, aws.Config) ([]inte
 }
 
 // Sequentially describe the resources. If anyone of the regions fails, it will move on to the next region.
-func SequentialDescribeGlobal(describe func(context.Context, aws.Config) ([]interface{}, error)) ResourceDescriber {
-	return func(ctx context.Context, cfg aws.Config, regions []string) (*ResourceDescribeOutput, error) {
+func SequentialDescribeGlobal(describe func(context.Context, aws.Config) ([]describer.Resource, error)) ResourceDescriber {
+	return func(ctx context.Context, cfg aws.Config, account string, regions []string, rType string) (*ResourceDescribeOutput, error) {
 		output := ResourceDescribeOutput{
-			Resources: make(map[string][]interface{}, len(regions)),
+			Resources: make(map[string][]describer.Resource, len(regions)),
 			Errors:    make(map[string]string, len(regions)),
 		}
 
@@ -352,13 +362,22 @@ func SequentialDescribeGlobal(describe func(context.Context, aws.Config) ([]inte
 
 			resources, err := describe(ctx, rCfg)
 			if err != nil {
-				output.Errors[region] = err.Error()
+				if !IsUnsupportedOrInvalid(err) {
+					output.Errors[region] = err.Error()
+				}
 				continue
 			}
 
 			if resources == nil {
-				resources = []interface{}{}
+				resources = []describer.Resource{}
 			}
+
+			for i := range resources {
+				resources[i].Account = account
+				resources[i].Region = "" // Ignore region for global resources
+				resources[i].Type = rType
+			}
+
 			output.Resources[region] = resources
 
 			// Stop describing as soon as one region has returned a successful response
@@ -371,10 +390,10 @@ func SequentialDescribeGlobal(describe func(context.Context, aws.Config) ([]inte
 
 // Sequentially describe the resources. If anyone of the regions fails, it will move on to the next region.
 // This utility is specific to S3 usecase.
-func SequentialDescribeS3(describe func(context.Context, aws.Config, []string) (map[string][]interface{}, error)) ResourceDescriber {
-	return func(ctx context.Context, cfg aws.Config, regions []string) (*ResourceDescribeOutput, error) {
+func SequentialDescribeS3(describe func(context.Context, aws.Config, []string) (map[string][]describer.Resource, error)) ResourceDescriber {
+	return func(ctx context.Context, cfg aws.Config, account string, regions []string, rType string) (*ResourceDescribeOutput, error) {
 		output := ResourceDescribeOutput{
-			Resources: make(map[string][]interface{}, len(regions)),
+			Resources: make(map[string][]describer.Resource, len(regions)),
 			Errors:    make(map[string]string, len(regions)),
 		}
 
@@ -385,7 +404,9 @@ func SequentialDescribeS3(describe func(context.Context, aws.Config, []string) (
 
 			resources, err := describe(ctx, rCfg, regions)
 			if err != nil {
-				output.Errors[region] = err.Error()
+				if !IsUnsupportedOrInvalid(err) {
+					output.Errors[region] = err.Error()
+				}
 				continue
 			}
 
@@ -398,6 +419,30 @@ func SequentialDescribeS3(describe func(context.Context, aws.Config, []string) (
 			break
 		}
 
+		for region, resources := range output.Resources {
+			for j, resource := range resources {
+				resource.Account = account
+				resource.Region = "" // Ignore region for global resources
+				resource.Type = rType
+
+				output.Resources[region][j] = resource
+			}
+		}
+
 		return &output, nil
 	}
+}
+
+func IsUnsupportedOrInvalid(err error) bool {
+	var ae smithy.APIError
+	if errors.As(err, &ae) {
+		switch ae.ErrorCode() {
+		case "InvalidAction":
+			return true
+		case "UnsupportedOperation":
+			return true
+		}
+	}
+
+	return false
 }

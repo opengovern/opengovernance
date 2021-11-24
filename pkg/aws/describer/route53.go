@@ -10,10 +10,10 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/route53resolver"
 )
 
-func Route53HealthCheck(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
+func Route53HealthCheck(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	client := route53.NewFromConfig(cfg)
 
-	var values []interface{}
+	var values []Resource
 	err := PaginateRetrieveAll(func(prevToken *string) (nextToken *string, err error) {
 		output, err := client.ListHealthChecks(ctx, &route53.ListHealthChecksInput{Marker: prevToken})
 		if err != nil {
@@ -21,7 +21,10 @@ func Route53HealthCheck(ctx context.Context, cfg aws.Config) ([]interface{}, err
 		}
 
 		for _, v := range output.HealthChecks {
-			values = append(values, v)
+			values = append(values, Resource{
+				ID:          *v.Id,
+				Description: v,
+			})
 		}
 
 		return output.NextMarker, nil
@@ -33,10 +36,10 @@ func Route53HealthCheck(ctx context.Context, cfg aws.Config) ([]interface{}, err
 	return values, nil
 }
 
-func Route53HostedZone(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
+func Route53HostedZone(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	client := route53.NewFromConfig(cfg)
 
-	var values []interface{}
+	var values []Resource
 	err := PaginateRetrieveAll(func(prevToken *string) (nextToken *string, err error) {
 		output, err := client.ListHostedZones(ctx, &route53.ListHostedZonesInput{Marker: prevToken})
 		if err != nil {
@@ -44,7 +47,10 @@ func Route53HostedZone(ctx context.Context, cfg aws.Config) ([]interface{}, erro
 		}
 
 		for _, v := range output.HostedZones {
-			values = append(values, v)
+			values = append(values, Resource{
+				ID:          *v.Id,
+				Description: v,
+			})
 		}
 
 		return output.NextMarker, nil
@@ -56,7 +62,7 @@ func Route53HostedZone(ctx context.Context, cfg aws.Config) ([]interface{}, erro
 	return values, nil
 }
 
-func Route53DNSSEC(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
+func Route53DNSSEC(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	zones, err := Route53HostedZone(ctx, cfg)
 	if err != nil {
 		return nil, err
@@ -64,22 +70,26 @@ func Route53DNSSEC(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
 
 	client := route53.NewFromConfig(cfg)
 
-	var values []interface{}
+	var values []Resource
 	for _, zone := range zones {
-		output, err := client.GetDNSSEC(ctx, &route53.GetDNSSECInput{
-			HostedZoneId: zone.(types.HostedZone).Id,
+		id := zone.Description.(types.HostedZone).Id
+		v, err := client.GetDNSSEC(ctx, &route53.GetDNSSECInput{
+			HostedZoneId: id,
 		})
 		if err != nil {
 			return nil, err
 		}
 
-		values = append(values, output)
+		values = append(values, Resource{
+			ID:          *id, // Unique per HostedZone
+			Description: v,
+		})
 	}
 
 	return values, nil
 }
 
-func Route53RecordSet(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
+func Route53RecordSet(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	zones, err := Route53HostedZone(ctx, cfg)
 	if err != nil {
 		return nil, err
@@ -87,12 +97,13 @@ func Route53RecordSet(ctx context.Context, cfg aws.Config) ([]interface{}, error
 
 	client := route53.NewFromConfig(cfg)
 
-	var values []interface{}
+	var values []Resource
 	for _, zone := range zones {
+		id := zone.Description.(types.HostedZone).Id
 		var prevType types.RRType
 		err = PaginateRetrieveAll(func(prevName *string) (nextName *string, err error) {
 			output, err := client.ListResourceRecordSets(ctx, &route53.ListResourceRecordSetsInput{
-				HostedZoneId:    zone.(types.HostedZone).Id,
+				HostedZoneId:    id,
 				StartRecordName: prevName,
 				StartRecordType: prevType,
 			})
@@ -101,7 +112,10 @@ func Route53RecordSet(ctx context.Context, cfg aws.Config) ([]interface{}, error
 			}
 
 			for _, v := range output.ResourceRecordSets {
-				values = append(values, v)
+				values = append(values, Resource{
+					ID:          CompositeID(*id, *v.Name),
+					Description: v,
+				})
 			}
 
 			prevType = output.NextRecordType
@@ -115,11 +129,11 @@ func Route53RecordSet(ctx context.Context, cfg aws.Config) ([]interface{}, error
 	return values, nil
 }
 
-func Route53ResolverFirewallDomainList(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
+func Route53ResolverFirewallDomainList(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	client := route53resolver.NewFromConfig(cfg)
 	paginator := route53resolver.NewListFirewallDomainListsPaginator(client, &route53resolver.ListFirewallDomainListsInput{})
 
-	var values []interface{}
+	var values []Resource
 	for paginator.HasMorePages() {
 		page, err := paginator.NextPage(ctx)
 		if err != nil {
@@ -127,18 +141,21 @@ func Route53ResolverFirewallDomainList(ctx context.Context, cfg aws.Config) ([]i
 		}
 
 		for _, v := range page.FirewallDomainLists {
-			values = append(values, v)
+			values = append(values, Resource{
+				ARN:         *v.Arn,
+				Description: v,
+			})
 		}
 	}
 
 	return values, nil
 }
 
-func Route53ResolverFirewallRuleGroup(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
+func Route53ResolverFirewallRuleGroup(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	client := route53resolver.NewFromConfig(cfg)
 	paginator := route53resolver.NewListFirewallRuleGroupsPaginator(client, &route53resolver.ListFirewallRuleGroupsInput{})
 
-	var values []interface{}
+	var values []Resource
 	for paginator.HasMorePages() {
 		page, err := paginator.NextPage(ctx)
 		if err != nil {
@@ -146,18 +163,21 @@ func Route53ResolverFirewallRuleGroup(ctx context.Context, cfg aws.Config) ([]in
 		}
 
 		for _, v := range page.FirewallRuleGroups {
-			values = append(values, v)
+			values = append(values, Resource{
+				ARN:         *v.Arn,
+				Description: v,
+			})
 		}
 	}
 
 	return values, nil
 }
 
-func Route53ResolverFirewallRuleGroupAssociation(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
+func Route53ResolverFirewallRuleGroupAssociation(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	client := route53resolver.NewFromConfig(cfg)
 	paginator := route53resolver.NewListFirewallRuleGroupAssociationsPaginator(client, &route53resolver.ListFirewallRuleGroupAssociationsInput{})
 
-	var values []interface{}
+	var values []Resource
 	for paginator.HasMorePages() {
 		page, err := paginator.NextPage(ctx)
 		if err != nil {
@@ -165,14 +185,17 @@ func Route53ResolverFirewallRuleGroupAssociation(ctx context.Context, cfg aws.Co
 		}
 
 		for _, v := range page.FirewallRuleGroupAssociations {
-			values = append(values, v)
+			values = append(values, Resource{
+				ARN:         *v.Arn,
+				Description: v,
+			})
 		}
 	}
 
 	return values, nil
 }
 
-func Route53ResolverResolverDNSSECConfig(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
+func Route53ResolverResolverDNSSECConfig(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	vpcs, err := EC2VPC(ctx, cfg)
 	if err != nil {
 		return nil, err
@@ -180,26 +203,29 @@ func Route53ResolverResolverDNSSECConfig(ctx context.Context, cfg aws.Config) ([
 
 	client := route53resolver.NewFromConfig(cfg)
 
-	var values []interface{}
+	var values []Resource
 	for _, vpc := range vpcs {
-		output, err := client.GetResolverDnssecConfig(ctx, &route53resolver.GetResolverDnssecConfigInput{
-			ResourceId: vpc.(ec2types.Vpc).VpcId,
+		v, err := client.GetResolverDnssecConfig(ctx, &route53resolver.GetResolverDnssecConfigInput{
+			ResourceId: vpc.Description.(ec2types.Vpc).VpcId,
 		})
 		if err != nil {
 			return nil, err
 		}
 
-		values = append(values, output.ResolverDNSSECConfig)
+		values = append(values, Resource{
+			ID:          *v.ResolverDNSSECConfig.Id,
+			Description: v.ResolverDNSSECConfig,
+		})
 	}
 
 	return values, nil
 }
 
-func Route53ResolverResolverEndpoint(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
+func Route53ResolverResolverEndpoint(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	client := route53resolver.NewFromConfig(cfg)
 	paginator := route53resolver.NewListResolverEndpointsPaginator(client, &route53resolver.ListResolverEndpointsInput{})
 
-	var values []interface{}
+	var values []Resource
 	for paginator.HasMorePages() {
 		page, err := paginator.NextPage(ctx)
 		if err != nil {
@@ -207,18 +233,21 @@ func Route53ResolverResolverEndpoint(ctx context.Context, cfg aws.Config) ([]int
 		}
 
 		for _, v := range page.ResolverEndpoints {
-			values = append(values, v)
+			values = append(values, Resource{
+				ARN:         *v.Arn,
+				Description: v,
+			})
 		}
 	}
 
 	return values, nil
 }
 
-func Route53ResolverResolverQueryLoggingConfig(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
+func Route53ResolverResolverQueryLoggingConfig(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	client := route53resolver.NewFromConfig(cfg)
 	paginator := route53resolver.NewListResolverQueryLogConfigsPaginator(client, &route53resolver.ListResolverQueryLogConfigsInput{})
 
-	var values []interface{}
+	var values []Resource
 	for paginator.HasMorePages() {
 		page, err := paginator.NextPage(ctx)
 		if err != nil {
@@ -226,18 +255,21 @@ func Route53ResolverResolverQueryLoggingConfig(ctx context.Context, cfg aws.Conf
 		}
 
 		for _, v := range page.ResolverQueryLogConfigs {
-			values = append(values, v)
+			values = append(values, Resource{
+				ARN:         *v.Arn,
+				Description: v,
+			})
 		}
 	}
 
 	return values, nil
 }
 
-func Route53ResolverResolverQueryLoggingConfigAssociation(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
+func Route53ResolverResolverQueryLoggingConfigAssociation(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	client := route53resolver.NewFromConfig(cfg)
 	paginator := route53resolver.NewListResolverQueryLogConfigAssociationsPaginator(client, &route53resolver.ListResolverQueryLogConfigAssociationsInput{})
 
-	var values []interface{}
+	var values []Resource
 	for paginator.HasMorePages() {
 		page, err := paginator.NextPage(ctx)
 		if err != nil {
@@ -245,18 +277,21 @@ func Route53ResolverResolverQueryLoggingConfigAssociation(ctx context.Context, c
 		}
 
 		for _, v := range page.ResolverQueryLogConfigAssociations {
-			values = append(values, v)
+			values = append(values, Resource{
+				ID:          *v.Id,
+				Description: v,
+			})
 		}
 	}
 
 	return values, nil
 }
 
-func Route53ResolverResolverRule(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
+func Route53ResolverResolverRule(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	client := route53resolver.NewFromConfig(cfg)
 	paginator := route53resolver.NewListResolverRulesPaginator(client, &route53resolver.ListResolverRulesInput{})
 
-	var values []interface{}
+	var values []Resource
 	for paginator.HasMorePages() {
 		page, err := paginator.NextPage(ctx)
 		if err != nil {
@@ -264,18 +299,21 @@ func Route53ResolverResolverRule(ctx context.Context, cfg aws.Config) ([]interfa
 		}
 
 		for _, v := range page.ResolverRules {
-			values = append(values, v)
+			values = append(values, Resource{
+				ARN:         *v.Arn,
+				Description: v,
+			})
 		}
 	}
 
 	return values, nil
 }
 
-func Route53ResolverResolverRuleAssociation(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
+func Route53ResolverResolverRuleAssociation(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	client := route53resolver.NewFromConfig(cfg)
 	paginator := route53resolver.NewListResolverRuleAssociationsPaginator(client, &route53resolver.ListResolverRuleAssociationsInput{})
 
-	var values []interface{}
+	var values []Resource
 	for paginator.HasMorePages() {
 		page, err := paginator.NextPage(ctx)
 		if err != nil {
@@ -283,7 +321,10 @@ func Route53ResolverResolverRuleAssociation(ctx context.Context, cfg aws.Config)
 		}
 
 		for _, v := range page.ResolverRuleAssociations {
-			values = append(values, v)
+			values = append(values, Resource{
+				ID:          *v.Id,
+				Description: v,
+			})
 		}
 	}
 

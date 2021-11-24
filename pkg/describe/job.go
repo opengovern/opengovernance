@@ -2,30 +2,35 @@ package describe
 
 import (
 	"context"
+	"crypto/sha256"
 	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
 
-	"github.com/google/uuid"
 	"gitlab.com/anil94/golang-aws-inventory/pkg/aws"
 	"gitlab.com/anil94/golang-aws-inventory/pkg/azure"
 	"gopkg.in/Shopify/sarama.v1"
 )
 
-type SourceAction string
+type AWSAccountCredentials struct {
+	AccountId     string
+	Regions       []string
+	SecretKey     string
+	AccessKey     string
+	SessionToken  string
+	AssumeRoleARN string
+}
 
-const (
-	SourceCreate SourceAction = "CREATE"
-	SourceUpdate SourceAction = "UPDATE"
-	SourceDelete SourceAction = "DELETE"
-)
-
-type SourceEvent struct {
-	Action            SourceAction
-	SourceID          uuid.UUID
-	SourceType        SourceType
-	SourceCredentials []byte
+type AzureSubscriptionCredentials struct {
+	SubscriptionId  string
+	TenantID        string
+	ClientID        string
+	ClientSecret    string
+	CertificatePath string
+	CertificatePass string
+	Username        string
+	Password        string
 }
 
 func IsCredentialsValid(creds []byte, cloud SourceType) bool {
@@ -49,26 +54,6 @@ func IsCredentialsValid(creds []byte, cloud SourceType) bool {
 	}
 }
 
-type AWSAccountCredentials struct {
-	AccountId     string
-	Regions       []string
-	SecretKey     string
-	AccessKey     string
-	SessionToken  string
-	AssumeRoleARN string
-}
-
-type AzureSubscriptionCredentials struct {
-	SubscriptionId  string
-	TenantID        string
-	ClientID        string
-	ClientSecret    string
-	CertificatePath string
-	CertificatePass string
-	Username        string
-	Password        string
-}
-
 type Job struct {
 	JobID               uint // DescribeResourceJob ID
 	ParentJobID         uint // DescribeSourceJob ID
@@ -86,7 +71,18 @@ type Job struct {
 // do its best to complete the task even if some errors occur along the way. However,
 // if any error occurs, The JobResult will indicate that through the Status and Error
 // will be set to the first error that occured.
-func (j Job) Do(producer sarama.SyncProducer, topic string) JobResult {
+func (j Job) Do(producer sarama.SyncProducer, topic string) (r JobResult) {
+	defer func() {
+		if err := recover(); err != nil {
+			r = JobResult{
+				JobID:       j.JobID,
+				ParentJobID: j.ParentJobID,
+				Status:      DescribeResourceJobFailed,
+				Error:       fmt.Sprintf("paniced: %s", err),
+			}
+		}
+	}()
+
 	// Assume it succeeded unless it fails somewhere
 	var (
 		status         = DescribeResourceJobSucceeded
@@ -164,14 +160,14 @@ func doDescribe(job Job) ([]map[string]interface{}, error) {
 
 		for region, resources := range output.Resources {
 			for _, resource := range resources {
-				if resource == nil {
+				if resource.Description == nil {
 					continue
-
 				}
 
 				inventory = append(inventory, map[string]interface{}{
-					output.Metadata.ResourceType: resource,
-					"CloudType":                  SourceCloudAWS,
+					"ID":                         resource.UniqueID(),
+					output.Metadata.ResourceType: resource.Description,
+					"SourceType":                 SourceCloudAWS,
 					"ResourceType":               output.Metadata.ResourceType,
 					"AccountId":                  output.Metadata.AccountId,
 					"Region":                     region,
@@ -214,13 +210,14 @@ func doDescribe(job Job) ([]map[string]interface{}, error) {
 		}
 
 		for _, resource := range output.Resources {
-			if resource == nil {
+			if resource.Description == nil {
 				continue
 			}
 
 			inventory = append(inventory, map[string]interface{}{
-				output.Metadata.ResourceType: resource,
-				"CloudType":                  SourceCloudAzure,
+				"ID":                         resource.UniqueID(),
+				output.Metadata.ResourceType: resource.Description,
+				"SourceType":                 SourceCloudAzure,
 				"ResourceType":               output.Metadata.ResourceType,
 				"SubscriptionIds":            strings.Join(output.Metadata.SubscriptionIds, ","),
 			})
@@ -238,8 +235,13 @@ func doSendToKafka(producer sarama.SyncProducer, topic string, resources []map[s
 			return err
 		}
 
+		id := v["ID"].(string)
+		h := sha256.New()
+		h.Write([]byte(id))
+
 		msgs = append(msgs, &sarama.ProducerMessage{
 			Topic: topic,
+			Key:   sarama.StringEncoder(fmt.Sprintf("%x", h.Sum(nil))),
 			Value: sarama.ByteEncoder(value),
 		})
 	}

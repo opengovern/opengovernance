@@ -8,13 +8,13 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/sesv2"
 )
 
-func SESConfigurationSet(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
+func SESConfigurationSet(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	client := sesv2.NewFromConfig(cfg)
 	paginator := sesv2.NewListConfigurationSetsPaginator(client, &sesv2.ListConfigurationSetsInput{})
 
 	sesClient := ses.NewFromConfig(cfg)
 
-	var values []interface{}
+	var values []Resource
 	for paginator.HasMorePages() {
 		page, err := paginator.NextPage(ctx)
 		if err != nil {
@@ -27,18 +27,21 @@ func SESConfigurationSet(ctx context.Context, cfg aws.Config) ([]interface{}, er
 				return nil, err
 			}
 
-			values = append(values, output)
+			values = append(values, Resource{
+				ID:          *output.ConfigurationSet.Name,
+				Description: output,
+			})
 		}
 	}
 
 	return values, nil
 }
 
-func SESContactList(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
+func SESContactList(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	client := sesv2.NewFromConfig(cfg)
 	paginator := sesv2.NewListContactListsPaginator(client, &sesv2.ListContactListsInput{})
 
-	var values []interface{}
+	var values []Resource
 	for paginator.HasMorePages() {
 		page, err := paginator.NextPage(ctx)
 		if err != nil {
@@ -46,14 +49,17 @@ func SESContactList(ctx context.Context, cfg aws.Config) ([]interface{}, error) 
 		}
 
 		for _, v := range page.ContactLists {
-			values = append(values, v)
+			values = append(values, Resource{
+				ID:          *v.ContactListName,
+				Description: v,
+			})
 		}
 	}
 
 	return values, nil
 }
 
-func SESReceiptFilter(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
+func SESReceiptFilter(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	client := ses.NewFromConfig(cfg)
 
 	output, err := client.ListReceiptFilters(ctx, &ses.ListReceiptFiltersInput{})
@@ -61,18 +67,21 @@ func SESReceiptFilter(ctx context.Context, cfg aws.Config) ([]interface{}, error
 		return nil, err
 	}
 
-	var values []interface{}
+	var values []Resource
 	for _, v := range output.Filters {
-		values = append(values, v)
+		values = append(values, Resource{
+			ID:          *v.Name,
+			Description: v,
+		})
 	}
 
 	return values, nil
 }
 
-func SESReceiptRuleSet(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
+func SESReceiptRuleSet(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	client := ses.NewFromConfig(cfg)
 
-	var values []interface{}
+	var values []Resource
 	err := PaginateRetrieveAll(func(prevToken *string) (nextToken *string, err error) {
 		output, err := client.ListReceiptRuleSets(ctx, &ses.ListReceiptRuleSetsInput{NextToken: prevToken})
 		if err != nil {
@@ -85,7 +94,10 @@ func SESReceiptRuleSet(ctx context.Context, cfg aws.Config) ([]interface{}, erro
 				return nil, err
 			}
 
-			values = append(values, output)
+			values = append(values, Resource{
+				ID:          *output.Metadata.Name,
+				Description: output,
+			})
 		}
 
 		return output.NextToken, nil
@@ -97,10 +109,10 @@ func SESReceiptRuleSet(ctx context.Context, cfg aws.Config) ([]interface{}, erro
 	return values, nil
 }
 
-func SESTemplate(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
+func SESTemplate(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	client := ses.NewFromConfig(cfg)
 
-	var values []interface{}
+	var values []Resource
 	err := PaginateRetrieveAll(func(prevToken *string) (nextToken *string, err error) {
 		output, err := client.ListTemplates(ctx, &ses.ListTemplatesInput{NextToken: prevToken})
 		if err != nil {
@@ -108,7 +120,10 @@ func SESTemplate(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
 		}
 
 		for _, v := range output.TemplatesMetadata {
-			values = append(values, v)
+			values = append(values, Resource{
+				ID:          *v.Name,
+				Description: v,
+			})
 		}
 
 		return output.NextToken, nil

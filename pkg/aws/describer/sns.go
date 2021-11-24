@@ -7,11 +7,11 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/sns"
 )
 
-func SNSSubscription(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
+func SNSSubscription(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	client := sns.NewFromConfig(cfg)
 	paginator := sns.NewListSubscriptionsPaginator(client, &sns.ListSubscriptionsInput{})
 
-	var values []interface{}
+	var values []Resource
 	for paginator.HasMorePages() {
 		page, err := paginator.NextPage(ctx)
 		if err != nil {
@@ -19,18 +19,21 @@ func SNSSubscription(ctx context.Context, cfg aws.Config) ([]interface{}, error)
 		}
 
 		for _, v := range page.Subscriptions {
-			values = append(values, v)
+			values = append(values, Resource{
+				ARN:         *v.SubscriptionArn,
+				Description: v,
+			})
 		}
 	}
 
 	return values, nil
 }
 
-func SNSTopic(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
+func SNSTopic(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	client := sns.NewFromConfig(cfg)
 	paginator := sns.NewListTopicsPaginator(client, &sns.ListTopicsInput{})
 
-	var values []interface{}
+	var values []Resource
 	for paginator.HasMorePages() {
 		page, err := paginator.NextPage(ctx)
 		if err != nil {
@@ -45,7 +48,10 @@ func SNSTopic(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
 				return nil, err
 			}
 
-			values = append(values, output.Attributes)
+			values = append(values, Resource{
+				ARN:         *v.TopicArn,
+				Description: output.Attributes,
+			})
 		}
 	}
 

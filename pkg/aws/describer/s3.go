@@ -15,10 +15,10 @@ import (
 // S3Bucket describe S3 buckets.
 // ListBuckets returns buckets in all regions. However, this function categorizes the buckets based
 // on their location constaint, aka the regions they reside in.
-func S3Bucket(ctx context.Context, cfg aws.Config, regions []string) (map[string][]interface{}, error) {
-	regionalValues := make(map[string][]interface{}, len(regions))
+func S3Bucket(ctx context.Context, cfg aws.Config, regions []string) (map[string][]Resource, error) {
+	regionalValues := make(map[string][]Resource, len(regions))
 	for _, r := range regions {
-		regionalValues[r] = make([]interface{}, 0)
+		regionalValues[r] = make([]Resource, 0)
 	}
 
 	client := s3.NewFromConfig(cfg)
@@ -42,7 +42,10 @@ func S3Bucket(ctx context.Context, cfg aws.Config, regions []string) (map[string
 		}
 
 		if _, ok := regionalValues[bRegion]; ok {
-			regionalValues[bRegion] = append(regionalValues[bRegion], bucket)
+			regionalValues[bRegion] = append(regionalValues[bRegion], Resource{
+				ID:          *bucket.Name,
+				Description: bucket,
+			})
 		}
 	}
 
@@ -51,18 +54,18 @@ func S3Bucket(ctx context.Context, cfg aws.Config, regions []string) (map[string
 
 // S3BucketPolicy describes bucket policies for each bucket. The BucketPolicy can only be queried from the
 // reigon it resides in. That is despite the fact that ListBuckets returns all buckets regardless of the region.
-func S3BucketPolicy(ctx context.Context, cfg aws.Config, regions []string) (map[string][]interface{}, error) {
+func S3BucketPolicy(ctx context.Context, cfg aws.Config, regions []string) (map[string][]Resource, error) {
 	reigonalBuckets, err := S3Bucket(ctx, cfg, regions)
 	if err != nil {
 		return nil, err
 	}
 
-	regionalBucketPolicies := make(map[string][]interface{}, len(regions))
+	regionalBucketPolicies := make(map[string][]Resource, len(regions))
 	for region, buckets := range reigonalBuckets {
 		client := s3.NewFromConfig(cfg, func(o *s3.Options) { o.Region = region })
 
 		for _, b := range buckets {
-			bucket := b.(types.Bucket)
+			bucket := b.Description.(types.Bucket)
 			output, err := client.GetBucketPolicy(ctx, &s3.GetBucketPolicyInput{
 				Bucket: bucket.Name,
 			})
@@ -75,14 +78,20 @@ func S3BucketPolicy(ctx context.Context, cfg aws.Config, regions []string) (map[
 				return nil, err
 			}
 
-			regionalBucketPolicies[region] = append(regionalBucketPolicies[region], output.Policy)
+			regionalBucketPolicies[region] = append(regionalBucketPolicies[region], Resource{
+
+				Description: map[string]string{
+					"BucketName": *bucket.Name,
+					"Policy":     *output.Policy,
+				},
+			})
 		}
 	}
 
 	return regionalBucketPolicies, nil
 }
 
-func S3AccessPoint(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
+func S3AccessPoint(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	stsClient := sts.NewFromConfig(cfg)
 	output, err := stsClient.GetCallerIdentity(ctx, &sts.GetCallerIdentityInput{})
 	if err != nil {
@@ -94,7 +103,7 @@ func S3AccessPoint(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
 		AccountId: output.Account,
 	})
 
-	var values []interface{}
+	var values []Resource
 	for paginator.HasMorePages() {
 		page, err := paginator.NextPage(ctx)
 		if err != nil {
@@ -102,14 +111,17 @@ func S3AccessPoint(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
 		}
 
 		for _, v := range page.AccessPointList {
-			values = append(values, v)
+			values = append(values, Resource{
+				ARN:         *v.AccessPointArn,
+				Description: v,
+			})
 		}
 	}
 
 	return values, nil
 }
 
-func S3StorageLens(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
+func S3StorageLens(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	stsClient := sts.NewFromConfig(cfg)
 	output, err := stsClient.GetCallerIdentity(ctx, &sts.GetCallerIdentityInput{})
 	if err != nil {
@@ -121,7 +133,7 @@ func S3StorageLens(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
 		AccountId: output.Account,
 	})
 
-	var values []interface{}
+	var values []Resource
 	for paginator.HasMorePages() {
 		page, err := paginator.NextPage(ctx)
 		if err != nil {
@@ -129,7 +141,10 @@ func S3StorageLens(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
 		}
 
 		for _, v := range page.StorageLensConfigurationList {
-			values = append(values, v)
+			values = append(values, Resource{
+				ARN:         *v.StorageLensArn,
+				Description: v,
+			})
 		}
 	}
 
