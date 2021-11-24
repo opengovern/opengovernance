@@ -20,13 +20,13 @@ type GenericResourceGraph struct {
 	Type  string
 }
 
-func (d GenericResourceGraph) DescribeResources(ctx context.Context, authorizer autorest.Authorizer, subscriptions []string) ([]interface{}, error) {
+func (d GenericResourceGraph) DescribeResources(ctx context.Context, authorizer autorest.Authorizer, subscriptions []string) ([]Resource, error) {
 	query := fmt.Sprintf("%s | where type == \"%s\"", d.Table, strings.ToLower(d.Type))
 
 	client := resourcegraph.New()
 	client.Authorizer = authorizer
 
-	values := []interface{}{}
+	values := []Resource{}
 
 	// Group the subscriptions to batches with a max size
 	for i := 0; i < len(subscriptions); i = i + SubscriptionBatchSize {
@@ -62,7 +62,13 @@ func (d GenericResourceGraph) DescribeResources(ctx context.Context, authorizer 
 				time.Sleep(untilResets)
 			}
 
-			values = append(values, response.Data.([]interface{})...)
+			for _, v := range response.Data.([]interface{}) {
+				m := v.(map[string]interface{})
+				values = append(values, Resource{
+					ID:          m["id"].(string),
+					Description: v,
+				})
+			}
 			first, skipToken = false, response.SkipToken
 		}
 	}

@@ -7,7 +7,7 @@ import (
 	"github.com/Azure/go-autorest/autorest"
 )
 
-func DocumentDBDatabaseAccountsSQLDatabase(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]interface{}, error) {
+func DocumentDBDatabaseAccountsSQLDatabase(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
 	rgs, err := resourceGroup(ctx, authorizer, subscription)
 	if err != nil {
 		return nil, err
@@ -16,7 +16,7 @@ func DocumentDBDatabaseAccountsSQLDatabase(ctx context.Context, authorizer autor
 	client := documentdb.NewSQLResourcesClient(subscription)
 	client.Authorizer = authorizer
 
-	var values []interface{}
+	var values []Resource
 	for _, rg := range rgs {
 		accounts, err := documentDBDatabaseAccounts(ctx, authorizer, subscription, *rg.Name)
 		if err != nil {
@@ -32,7 +32,10 @@ func DocumentDBDatabaseAccountsSQLDatabase(ctx context.Context, authorizer autor
 			}
 
 			for _, v := range *it.Value {
-				values = append(values, JSONAllFieldsMarshaller{Value: v})
+				values = append(values, Resource{
+					ID:          *v.ID,
+					Description: JSONAllFieldsMarshaller{Value: v},
+				})
 			}
 		}
 	}

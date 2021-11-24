@@ -7,11 +7,11 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/applicationinsights"
 )
 
-func ApplicationInsightsApplication(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
+func ApplicationInsightsApplication(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	client := applicationinsights.NewFromConfig(cfg)
 	paginator := applicationinsights.NewListApplicationsPaginator(client, &applicationinsights.ListApplicationsInput{})
 
-	var values []interface{}
+	var values []Resource
 	for paginator.HasMorePages() {
 		page, err := paginator.NextPage(ctx)
 		if err != nil {
@@ -19,7 +19,10 @@ func ApplicationInsightsApplication(ctx context.Context, cfg aws.Config) ([]inte
 		}
 
 		for _, v := range page.ApplicationInfoList {
-			values = append(values, v)
+			values = append(values, Resource{
+				ID:          *v.ResourceGroupName,
+				Description: v,
+			})
 		}
 	}
 

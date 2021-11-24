@@ -7,21 +7,24 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/acm"
 )
 
-func CertificateManagerAccount(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
+func CertificateManagerAccount(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	client := acm.NewFromConfig(cfg)
 	output, err := client.GetAccountConfiguration(ctx, &acm.GetAccountConfigurationInput{})
 	if err != nil {
 		return nil, err
 	}
 
-	return []interface{}{output}, nil
+	return []Resource{{
+		ID:          "", // No ID or ARN. Per Account Configuration
+		Description: output,
+	}}, nil
 }
 
-func CertificateManagerCertificate(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
+func CertificateManagerCertificate(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	client := acm.NewFromConfig(cfg)
 	paginator := acm.NewListCertificatesPaginator(client, &acm.ListCertificatesInput{})
 
-	var values []interface{}
+	var values []Resource
 	for paginator.HasMorePages() {
 		page, err := paginator.NextPage(ctx)
 		if err != nil {
@@ -29,7 +32,10 @@ func CertificateManagerCertificate(ctx context.Context, cfg aws.Config) ([]inter
 		}
 
 		for _, v := range page.CertificateSummaryList {
-			values = append(values, v)
+			values = append(values, Resource{
+				ARN:         *v.CertificateArn,
+				Description: v,
+			})
 		}
 	}
 

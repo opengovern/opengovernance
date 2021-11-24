@@ -2,19 +2,22 @@ package describer
 
 import (
 	"context"
+	"errors"
+	"fmt"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/lambda"
 	"github.com/aws/aws-sdk-go-v2/service/lambda/types"
+	"github.com/aws/smithy-go"
 )
 
-func LambdaFunction(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
+func LambdaFunction(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	client := lambda.NewFromConfig(cfg)
 	paginator := lambda.NewListFunctionsPaginator(client, &lambda.ListFunctionsInput{
 		FunctionVersion: types.FunctionVersionAll,
 	})
 
-	var values []interface{}
+	var values []Resource
 	for paginator.HasMorePages() {
 		page, err := paginator.NextPage(ctx)
 		if err != nil {
@@ -22,14 +25,17 @@ func LambdaFunction(ctx context.Context, cfg aws.Config) ([]interface{}, error) 
 		}
 
 		for _, v := range page.Functions {
-			values = append(values, v)
+			values = append(values, Resource{
+				ARN:         *v.FunctionArn,
+				Description: v,
+			})
 		}
 	}
 
 	return values, nil
 }
 
-func LambdaAlias(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
+func LambdaAlias(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	fns, err := LambdaFunction(ctx, cfg)
 	if err != nil {
 		return nil, err
@@ -37,11 +43,11 @@ func LambdaAlias(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
 
 	client := lambda.NewFromConfig(cfg)
 
-	var values []interface{}
+	var values []Resource
 	for _, fn := range fns {
 		paginator := lambda.NewListAliasesPaginator(client, &lambda.ListAliasesInput{
-			FunctionName:    fn.(types.FunctionConfiguration).FunctionName,
-			FunctionVersion: fn.(types.FunctionConfiguration).Version,
+			FunctionName:    fn.Description.(types.FunctionConfiguration).FunctionName,
+			FunctionVersion: fn.Description.(types.FunctionConfiguration).Version,
 		})
 
 		for paginator.HasMorePages() {
@@ -51,7 +57,10 @@ func LambdaAlias(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
 			}
 
 			for _, v := range page.Aliases {
-				values = append(values, v)
+				values = append(values, Resource{
+					ARN:         *v.AliasArn,
+					Description: v,
+				})
 			}
 		}
 	}
@@ -59,7 +68,7 @@ func LambdaAlias(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
 	return values, nil
 }
 
-func LambdaPermission(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
+func LambdaPermission(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	fns, err := LambdaFunction(ctx, cfg)
 	if err != nil {
 		return nil, err
@@ -67,22 +76,31 @@ func LambdaPermission(ctx context.Context, cfg aws.Config) ([]interface{}, error
 
 	client := lambda.NewFromConfig(cfg)
 
-	var values []interface{}
-	for _, fn := range fns {
-		output, err := client.GetPolicy(ctx, &lambda.GetPolicyInput{
-			FunctionName: fn.(types.FunctionConfiguration).FunctionName,
+	var values []Resource
+	for _, f := range fns {
+		fn := f.Description.(types.FunctionConfiguration)
+		v, err := client.GetPolicy(ctx, &lambda.GetPolicyInput{
+			FunctionName: fn.FunctionArn,
 		})
 		if err != nil {
+			var ae smithy.APIError
+			if errors.As(err, &ae) && ae.ErrorCode() == "ResourceNotFoundException" {
+				continue
+			}
+
 			return nil, err
 		}
 
-		values = append(values, output)
+		values = append(values, Resource{
+			ID:          CompositeID(*fn.FunctionArn, *v.Policy),
+			Description: v,
+		})
 	}
 
 	return values, nil
 }
 
-func LambdaEventInvokeConfig(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
+func LambdaEventInvokeConfig(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	fns, err := LambdaFunction(ctx, cfg)
 	if err != nil {
 		return nil, err
@@ -90,10 +108,11 @@ func LambdaEventInvokeConfig(ctx context.Context, cfg aws.Config) ([]interface{}
 
 	client := lambda.NewFromConfig(cfg)
 
-	var values []interface{}
-	for _, fn := range fns {
+	var values []Resource
+	for _, f := range fns {
+		fn := f.Description.(types.FunctionConfiguration)
 		paginator := lambda.NewListFunctionEventInvokeConfigsPaginator(client, &lambda.ListFunctionEventInvokeConfigsInput{
-			FunctionName: fn.(types.FunctionConfiguration).FunctionName,
+			FunctionName: fn.FunctionName,
 		})
 
 		for paginator.HasMorePages() {
@@ -103,7 +122,10 @@ func LambdaEventInvokeConfig(ctx context.Context, cfg aws.Config) ([]interface{}
 			}
 
 			for _, v := range page.FunctionEventInvokeConfigs {
-				values = append(values, v)
+				values = append(values, Resource{
+					ID:          *fn.FunctionName, // Invoke Config is unique per function
+					Description: v,
+				})
 			}
 		}
 	}
@@ -111,11 +133,11 @@ func LambdaEventInvokeConfig(ctx context.Context, cfg aws.Config) ([]interface{}
 	return values, nil
 }
 
-func LambdaCodeSigningConfig(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
+func LambdaCodeSigningConfig(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	client := lambda.NewFromConfig(cfg)
 	paginator := lambda.NewListCodeSigningConfigsPaginator(client, &lambda.ListCodeSigningConfigsInput{})
 
-	var values []interface{}
+	var values []Resource
 	for paginator.HasMorePages() {
 		page, err := paginator.NextPage(ctx)
 		if err != nil {
@@ -123,18 +145,21 @@ func LambdaCodeSigningConfig(ctx context.Context, cfg aws.Config) ([]interface{}
 		}
 
 		for _, v := range page.CodeSigningConfigs {
-			values = append(values, v)
+			values = append(values, Resource{
+				ARN:         *v.CodeSigningConfigArn,
+				Description: v,
+			})
 		}
 	}
 
 	return values, nil
 }
 
-func LambdaEventSourceMapping(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
+func LambdaEventSourceMapping(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	client := lambda.NewFromConfig(cfg)
 	paginator := lambda.NewListEventSourceMappingsPaginator(client, &lambda.ListEventSourceMappingsInput{})
 
-	var values []interface{}
+	var values []Resource
 	for paginator.HasMorePages() {
 		page, err := paginator.NextPage(ctx)
 		if err != nil {
@@ -142,14 +167,17 @@ func LambdaEventSourceMapping(ctx context.Context, cfg aws.Config) ([]interface{
 		}
 
 		for _, v := range page.EventSourceMappings {
-			values = append(values, v)
+			values = append(values, Resource{
+				ARN:         *v.EventSourceArn,
+				Description: v,
+			})
 		}
 	}
 
 	return values, nil
 }
 
-func LambdaLayerVersion(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
+func LambdaLayerVersion(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	layers, err := listLayers(ctx, cfg)
 	if err != nil {
 		return nil, err
@@ -157,9 +185,11 @@ func LambdaLayerVersion(ctx context.Context, cfg aws.Config) ([]interface{}, err
 
 	client := lambda.NewFromConfig(cfg)
 
-	var values []interface{}
+	var values []Resource
 	for _, layer := range layers {
-		paginator := lambda.NewListLayerVersionsPaginator(client, &lambda.ListLayerVersionsInput{LayerName: layer.LayerArn})
+		paginator := lambda.NewListLayerVersionsPaginator(client, &lambda.ListLayerVersionsInput{
+			LayerName: layer.LayerArn,
+		})
 
 		for paginator.HasMorePages() {
 			page, err := paginator.NextPage(ctx)
@@ -168,7 +198,10 @@ func LambdaLayerVersion(ctx context.Context, cfg aws.Config) ([]interface{}, err
 			}
 
 			for _, v := range page.LayerVersions {
-				values = append(values, v)
+				values = append(values, Resource{
+					ARN:         *v.LayerVersionArn,
+					Description: v,
+				})
 			}
 		}
 	}
@@ -176,7 +209,7 @@ func LambdaLayerVersion(ctx context.Context, cfg aws.Config) ([]interface{}, err
 	return values, nil
 }
 
-func LambdaLayerVersionPermission(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
+func LambdaLayerVersionPermission(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	lvs, err := LambdaLayerVersion(ctx, cfg)
 	if err != nil {
 		return nil, err
@@ -184,17 +217,22 @@ func LambdaLayerVersionPermission(ctx context.Context, cfg aws.Config) ([]interf
 
 	client := lambda.NewFromConfig(cfg)
 
-	var values []interface{}
+	var values []Resource
 	for _, lv := range lvs {
-		output, err := client.GetLayerVersionPolicy(ctx, &lambda.GetLayerVersionPolicyInput{
-			LayerName:     lv.(types.LayerVersionsListItem).LayerVersionArn,
-			VersionNumber: lv.(types.LayerVersionsListItem).Version,
+		arn := lv.Description.(types.LayerVersionsListItem).LayerVersionArn
+		version := lv.Description.(types.LayerVersionsListItem).Version
+		v, err := client.GetLayerVersionPolicy(ctx, &lambda.GetLayerVersionPolicyInput{
+			LayerName:     arn,
+			VersionNumber: version,
 		})
 		if err != nil {
 			return nil, err
 		}
 
-		values = append(values, output)
+		values = append(values, Resource{
+			ID:          CompositeID(*arn, fmt.Sprintf("%d", version)),
+			Description: v,
+		})
 	}
 
 	return values, nil

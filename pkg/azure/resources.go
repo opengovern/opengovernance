@@ -14,12 +14,12 @@ import (
 )
 
 type ResourceDescriber interface {
-	DescribeResources(context.Context, autorest.Authorizer, []string) ([]interface{}, error)
+	DescribeResources(context.Context, autorest.Authorizer, []string) ([]describer.Resource, error)
 }
 
-type ResourceDescribeFunc func(context.Context, autorest.Authorizer, []string) ([]interface{}, error)
+type ResourceDescribeFunc func(context.Context, autorest.Authorizer, []string) ([]describer.Resource, error)
 
-func (fn ResourceDescribeFunc) DescribeResources(c context.Context, a autorest.Authorizer, s []string) ([]interface{}, error) {
+func (fn ResourceDescribeFunc) DescribeResources(c context.Context, a autorest.Authorizer, s []string) ([]describer.Resource, error) {
 	return fn(c, a, s)
 }
 
@@ -147,7 +147,7 @@ type ResourceDescriptionMetadata struct {
 }
 
 type Resources struct {
-	Resources []interface{}
+	Resources []describer.Resource
 	Metadata  ResourceDescriptionMetadata
 }
 
@@ -212,7 +212,7 @@ func setEnvIfNotEmpty(env, s string) {
 	}
 }
 
-func describe(ctx context.Context, authorizer autorest.Authorizer, resourceType string, subscriptions []string) ([]interface{}, error) {
+func describe(ctx context.Context, authorizer autorest.Authorizer, resourceType string, subscriptions []string) ([]describer.Resource, error) {
 	rd, ok := resourceTypeToDescriber[resourceType]
 	if !ok {
 		return nil, fmt.Errorf("unsupported resource type: %s", resourceType)
@@ -225,9 +225,9 @@ func describe(ctx context.Context, authorizer autorest.Authorizer, resourceType 
 	return rd.DescribeResources(ctx, authorizer, subscriptions)
 }
 
-func DescribeBySubscription(describe func(context.Context, autorest.Authorizer, string) ([]interface{}, error)) ResourceDescriber {
-	return ResourceDescribeFunc(func(ctx context.Context, authorizer autorest.Authorizer, subscriptions []string) ([]interface{}, error) {
-		values := []interface{}{}
+func DescribeBySubscription(describe func(context.Context, autorest.Authorizer, string) ([]describer.Resource, error)) ResourceDescriber {
+	return ResourceDescribeFunc(func(ctx context.Context, authorizer autorest.Authorizer, subscriptions []string) ([]describer.Resource, error) {
+		values := []describer.Resource{}
 		for _, subscription := range subscriptions {
 			result, err := describe(ctx, authorizer, subscription)
 			if err != nil {

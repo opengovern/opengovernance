@@ -1,12 +1,10 @@
 package describe
 
 import (
-	"database/sql"
 	"encoding/json"
 	"fmt"
 	"time"
 
-	"github.com/google/uuid"
 	"gitlab.com/anil94/golang-aws-inventory/pkg/aws"
 	"gitlab.com/anil94/golang-aws-inventory/pkg/azure"
 	"gorm.io/driver/postgres"
@@ -249,21 +247,9 @@ func (s *Scheduler) RunSourceEventsConsumer() error {
 			continue
 		}
 
-		fmt.Printf("Processing SourceEvent[%s] for Source[%s] with type %s\n", event.Action, event.SourceID.String(), event.SourceType)
-		switch event.Action {
-		case SourceCreate:
-			err := CreateSource(s.db, event)
-			if err != nil {
-				fmt.Printf("Failed to create Source[%s]: %s", event.SourceID, err.Error())
-				msg.Nack(false, false)
-				continue
-			}
-		case SourceUpdate, SourceDelete:
-			fmt.Printf("action (%s) is not implemented yet\n", event.Action)
-			msg.Nack(false, false)
-			continue
-		default:
-			fmt.Printf("action (%s) is invalid\n", event.Action)
+		err := ProcessSourceAction(s.db, event)
+		if err != nil {
+			fmt.Printf("Failed to process event for Source[%s]: %s", event.SourceID, err)
 			msg.Nack(false, false)
 			continue
 		}
@@ -272,51 +258,6 @@ func (s *Scheduler) RunSourceEventsConsumer() error {
 	}
 
 	return fmt.Errorf("source events queue channel is closed")
-}
-
-func CreateSource(db Database, event SourceEvent) error {
-	switch {
-	case len(event.SourceID) == 0 || event.SourceID.Variant() == uuid.Invalid:
-		return fmt.Errorf("source has invalid uuid format")
-	case !IsValidSourceType(event.SourceType):
-		return fmt.Errorf("source has invalid source type")
-	case !IsCredentialsValid(event.SourceCredentials, event.SourceType):
-		return fmt.Errorf("source has invalid credentials")
-	}
-
-	err := db.CreateSource(Source{
-		ID:             event.SourceID,
-		Type:           event.SourceType,
-		Credentials:    event.SourceCredentials,
-		NextDescribeAt: sql.NullTime{Time: time.Now(), Valid: true},
-	})
-	if err != nil {
-		return fmt.Errorf("create source: %w", err)
-	}
-
-	return nil
-}
-
-func UpdateSource(db Database, event SourceEvent) error {
-	switch {
-	case len(event.SourceID) == 0 || event.SourceID.Variant() == uuid.Invalid:
-		return fmt.Errorf("source has invalid uuid format")
-	case event.SourceType != "" && !IsValidSourceType(event.SourceType):
-		return fmt.Errorf("source has invalid source type")
-	case len(event.SourceCredentials) > 0 && !IsCredentialsValid(event.SourceCredentials, event.SourceType):
-		return fmt.Errorf("source has invalid credentials")
-	}
-
-	err := db.UpdateSource(Source{
-		ID:          event.SourceID,
-		Type:        event.SourceType,
-		Credentials: event.SourceCredentials,
-	})
-	if err != nil {
-		return fmt.Errorf("updae source: %w", err)
-	}
-
-	return nil
 }
 
 // RunJobResultsConsumer consumes messages from the jobResult queue.

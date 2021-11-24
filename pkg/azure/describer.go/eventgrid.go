@@ -7,7 +7,7 @@ import (
 	"github.com/Azure/go-autorest/autorest"
 )
 
-func EventGridDomainTopic(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]interface{}, error) {
+func EventGridDomainTopic(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
 	rgs, err := resourceGroup(ctx, authorizer, subscription)
 	if err != nil {
 		return nil, err
@@ -16,7 +16,7 @@ func EventGridDomainTopic(ctx context.Context, authorizer autorest.Authorizer, s
 	client := eventgrid.NewDomainTopicsClient(subscription)
 	client.Authorizer = authorizer
 
-	var values []interface{}
+	var values []Resource
 	for _, rg := range rgs {
 		domains, err := eventGridDomain(ctx, authorizer, subscription, *rg.Name)
 		if err != nil {
@@ -30,7 +30,10 @@ func EventGridDomainTopic(ctx context.Context, authorizer autorest.Authorizer, s
 			}
 
 			for v := it.Value(); it.NotDone(); v = it.Value() {
-				values = append(values, JSONAllFieldsMarshaller{Value: v})
+				values = append(values, Resource{
+					ID:          *v.ID,
+					Description: JSONAllFieldsMarshaller{Value: v},
+				})
 
 				err := it.NextWithContext(ctx)
 				if err != nil {

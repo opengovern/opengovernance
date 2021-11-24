@@ -8,11 +8,11 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/sqs/types"
 )
 
-func SQSQueue(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
+func SQSQueue(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	client := sqs.NewFromConfig(cfg)
 	paginator := sqs.NewListQueuesPaginator(client, &sqs.ListQueuesInput{})
 
-	var values []interface{}
+	var values []Resource
 	for paginator.HasMorePages() {
 		page, err := paginator.NextPage(ctx)
 		if err != nil {
@@ -30,7 +30,10 @@ func SQSQueue(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
 				return nil, err
 			}
 
-			values = append(values, output.Attributes)
+			values = append(values, Resource{
+				ARN:         url,
+				Description: output.Attributes,
+			})
 		}
 	}
 

@@ -3,6 +3,7 @@ package describer
 import (
 	"context"
 	"errors"
+	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/ecr"
@@ -11,11 +12,16 @@ import (
 	"github.com/aws/smithy-go"
 )
 
-func ECRPublicRepository(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
+func ECRPublicRepository(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+	// Only supported in US-EAST-1
+	if !strings.EqualFold(cfg.Region, "us-east-1") {
+		return []Resource{}, nil
+	}
+
 	client := ecrpublic.NewFromConfig(cfg)
 	paginator := ecrpublic.NewDescribeRepositoriesPaginator(client, &ecrpublic.DescribeRepositoriesInput{})
 
-	var values []interface{}
+	var values []Resource
 	for paginator.HasMorePages() {
 		page, err := paginator.NextPage(ctx)
 		if err != nil {
@@ -23,18 +29,21 @@ func ECRPublicRepository(ctx context.Context, cfg aws.Config) ([]interface{}, er
 		}
 
 		for _, v := range page.Repositories {
-			values = append(values, v)
+			values = append(values, Resource{
+				ARN:         *v.RepositoryArn,
+				Description: v,
+			})
 		}
 	}
 
 	return values, nil
 }
 
-func ECRRepository(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
+func ECRRepository(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	client := ecr.NewFromConfig(cfg)
 	paginator := ecr.NewDescribeRepositoriesPaginator(client, &ecr.DescribeRepositoriesInput{})
 
-	var values []interface{}
+	var values []Resource
 	for paginator.HasMorePages() {
 		page, err := paginator.NextPage(ctx)
 		if err != nil {
@@ -42,34 +51,43 @@ func ECRRepository(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
 		}
 
 		for _, v := range page.Repositories {
-			values = append(values, v)
+			values = append(values, Resource{
+				ARN:         *v.RepositoryArn,
+				Description: v,
+			})
 		}
 	}
 
 	return values, nil
 }
 
-func ECRRegistryPolicy(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
+func ECRRegistryPolicy(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	client := ecr.NewFromConfig(cfg)
 	output, err := client.GetRegistryPolicy(ctx, &ecr.GetRegistryPolicyInput{})
 	if err != nil {
 		var ae smithy.APIError
 		e := types.RegistryPolicyNotFoundException{}
 		if errors.As(err, &ae) && ae.ErrorCode() == e.ErrorCode() {
-			return []interface{}{}, nil
+			return []Resource{}, nil
 		}
 		return nil, err
 	}
 
-	return []interface{}{output}, nil
+	return []Resource{{
+		ID:          *output.RegistryId,
+		Description: output,
+	}}, nil
 }
 
-func ECRRegistry(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
+func ECRRegistry(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	client := ecr.NewFromConfig(cfg)
 	output, err := client.DescribeRegistry(ctx, &ecr.DescribeRegistryInput{})
 	if err != nil {
 		return nil, err
 	}
 
-	return []interface{}{output}, nil
+	return []Resource{{
+		ID:          *output.RegistryId,
+		Description: output,
+	}}, nil
 }

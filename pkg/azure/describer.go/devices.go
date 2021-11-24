@@ -7,7 +7,7 @@ import (
 	"github.com/Azure/go-autorest/autorest"
 )
 
-func DevicesProvisioningServicesCertificates(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]interface{}, error) {
+func DevicesProvisioningServicesCertificates(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
 	rgs, err := resourceGroup(ctx, authorizer, subscription)
 	if err != nil {
 		return nil, err
@@ -16,7 +16,7 @@ func DevicesProvisioningServicesCertificates(ctx context.Context, authorizer aut
 	client := iothub.NewDpsCertificateClient(subscription)
 	client.Authorizer = authorizer
 
-	var values []interface{}
+	var values []Resource
 	for _, rg := range rgs {
 		dpss, err := devicesProvisioningServices(ctx, authorizer, subscription, *rg.Name)
 		if err != nil {
@@ -34,7 +34,10 @@ func DevicesProvisioningServicesCertificates(ctx context.Context, authorizer aut
 			}
 
 			for _, v := range *it.Value {
-				values = append(values, JSONAllFieldsMarshaller{Value: v})
+				values = append(values, Resource{
+					ID:          *v.ID,
+					Description: JSONAllFieldsMarshaller{Value: v},
+				})
 			}
 		}
 	}

@@ -8,11 +8,11 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/ssm/types"
 )
 
-func SSMAssociation(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
+func SSMAssociation(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	client := ssm.NewFromConfig(cfg)
 	paginator := ssm.NewListAssociationsPaginator(client, &ssm.ListAssociationsInput{})
 
-	var values []interface{}
+	var values []Resource
 	for paginator.HasMorePages() {
 		page, err := paginator.NextPage(ctx)
 		if err != nil {
@@ -20,18 +20,21 @@ func SSMAssociation(ctx context.Context, cfg aws.Config) ([]interface{}, error) 
 		}
 
 		for _, v := range page.Associations {
-			values = append(values, v)
+			values = append(values, Resource{
+				ID:          *v.AssociationId,
+				Description: v,
+			})
 		}
 	}
 
 	return values, nil
 }
 
-func SSMDocument(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
+func SSMDocument(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	client := ssm.NewFromConfig(cfg)
 	paginator := ssm.NewListDocumentsPaginator(client, &ssm.ListDocumentsInput{})
 
-	var values []interface{}
+	var values []Resource
 	for paginator.HasMorePages() {
 		page, err := paginator.NextPage(ctx)
 		if err != nil {
@@ -39,18 +42,21 @@ func SSMDocument(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
 		}
 
 		for _, v := range page.DocumentIdentifiers {
-			values = append(values, v)
+			values = append(values, Resource{
+				ID:          *v.Name,
+				Description: v,
+			})
 		}
 	}
 
 	return values, nil
 }
 
-func SSMMaintenanceWindow(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
+func SSMMaintenanceWindow(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	client := ssm.NewFromConfig(cfg)
 	paginator := ssm.NewDescribeMaintenanceWindowsPaginator(client, &ssm.DescribeMaintenanceWindowsInput{})
 
-	var values []interface{}
+	var values []Resource
 	for paginator.HasMorePages() {
 		page, err := paginator.NextPage(ctx)
 		if err != nil {
@@ -58,14 +64,17 @@ func SSMMaintenanceWindow(ctx context.Context, cfg aws.Config) ([]interface{}, e
 		}
 
 		for _, v := range page.WindowIdentities {
-			values = append(values, v)
+			values = append(values, Resource{
+				ID:          *v.WindowId,
+				Description: v,
+			})
 		}
 	}
 
 	return values, nil
 }
 
-func SSMMaintenanceWindowTarget(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
+func SSMMaintenanceWindowTarget(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	windows, err := SSMMaintenanceWindow(ctx, cfg)
 	if err != nil {
 		return nil, err
@@ -73,9 +82,9 @@ func SSMMaintenanceWindowTarget(ctx context.Context, cfg aws.Config) ([]interfac
 
 	client := ssm.NewFromConfig(cfg)
 
-	var values []interface{}
+	var values []Resource
 	for _, w := range windows {
-		window := w.(types.MaintenanceWindowIdentity)
+		window := w.Description.(types.MaintenanceWindowIdentity)
 		paginator := ssm.NewDescribeMaintenanceWindowTargetsPaginator(client, &ssm.DescribeMaintenanceWindowTargetsInput{
 			WindowId: window.WindowId,
 		})
@@ -87,7 +96,10 @@ func SSMMaintenanceWindowTarget(ctx context.Context, cfg aws.Config) ([]interfac
 			}
 
 			for _, v := range page.Targets {
-				values = append(values, v)
+				values = append(values, Resource{
+					ID:          *v.WindowTargetId,
+					Description: v,
+				})
 			}
 		}
 	}
@@ -95,7 +107,7 @@ func SSMMaintenanceWindowTarget(ctx context.Context, cfg aws.Config) ([]interfac
 	return values, nil
 }
 
-func SSMMaintenanceWindowTask(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
+func SSMMaintenanceWindowTask(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	windows, err := SSMMaintenanceWindow(ctx, cfg)
 	if err != nil {
 		return nil, err
@@ -103,9 +115,9 @@ func SSMMaintenanceWindowTask(ctx context.Context, cfg aws.Config) ([]interface{
 
 	client := ssm.NewFromConfig(cfg)
 
-	var values []interface{}
+	var values []Resource
 	for _, w := range windows {
-		window := w.(types.MaintenanceWindowIdentity)
+		window := w.Description.(types.MaintenanceWindowIdentity)
 		paginator := ssm.NewDescribeMaintenanceWindowTasksPaginator(client, &ssm.DescribeMaintenanceWindowTasksInput{
 			WindowId: window.WindowId,
 		})
@@ -117,7 +129,10 @@ func SSMMaintenanceWindowTask(ctx context.Context, cfg aws.Config) ([]interface{
 			}
 
 			for _, v := range page.Tasks {
-				values = append(values, v)
+				values = append(values, Resource{
+					ARN:         *v.TaskArn,
+					Description: v,
+				})
 			}
 		}
 	}
@@ -125,11 +140,11 @@ func SSMMaintenanceWindowTask(ctx context.Context, cfg aws.Config) ([]interface{
 	return values, nil
 }
 
-func SSMParameter(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
+func SSMParameter(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	client := ssm.NewFromConfig(cfg)
 	paginator := ssm.NewDescribeParametersPaginator(client, &ssm.DescribeParametersInput{})
 
-	var values []interface{}
+	var values []Resource
 	for paginator.HasMorePages() {
 		page, err := paginator.NextPage(ctx)
 		if err != nil {
@@ -137,18 +152,21 @@ func SSMParameter(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
 		}
 
 		for _, v := range page.Parameters {
-			values = append(values, v)
+			values = append(values, Resource{
+				ID:          *v.Name,
+				Description: v,
+			})
 		}
 	}
 
 	return values, nil
 }
 
-func SSMPatchBaseline(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
+func SSMPatchBaseline(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	client := ssm.NewFromConfig(cfg)
 	paginator := ssm.NewDescribePatchBaselinesPaginator(client, &ssm.DescribePatchBaselinesInput{})
 
-	var values []interface{}
+	var values []Resource
 	for paginator.HasMorePages() {
 		page, err := paginator.NextPage(ctx)
 		if err != nil {
@@ -156,18 +174,21 @@ func SSMPatchBaseline(ctx context.Context, cfg aws.Config) ([]interface{}, error
 		}
 
 		for _, v := range page.BaselineIdentities {
-			values = append(values, v)
+			values = append(values, Resource{
+				ID:          *v.BaselineId,
+				Description: v,
+			})
 		}
 	}
 
 	return values, nil
 }
 
-func SSMResourceDataSync(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
+func SSMResourceDataSync(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	client := ssm.NewFromConfig(cfg)
 	paginator := ssm.NewListResourceDataSyncPaginator(client, &ssm.ListResourceDataSyncInput{})
 
-	var values []interface{}
+	var values []Resource
 	for paginator.HasMorePages() {
 		page, err := paginator.NextPage(ctx)
 		if err != nil {
@@ -175,7 +196,10 @@ func SSMResourceDataSync(ctx context.Context, cfg aws.Config) ([]interface{}, er
 		}
 
 		for _, v := range page.ResourceDataSyncItems {
-			values = append(values, v)
+			values = append(values, Resource{
+				ID:          *v.SyncName,
+				Description: v,
+			})
 		}
 	}
 

@@ -8,11 +8,11 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/backup/types"
 )
 
-func BackupBackupPlan(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
+func BackupBackupPlan(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	client := backup.NewFromConfig(cfg)
 	paginator := backup.NewListBackupPlansPaginator(client, &backup.ListBackupPlansInput{})
 
-	var values []interface{}
+	var values []Resource
 	for paginator.HasMorePages() {
 		page, err := paginator.NextPage(ctx)
 		if err != nil {
@@ -20,14 +20,17 @@ func BackupBackupPlan(ctx context.Context, cfg aws.Config) ([]interface{}, error
 		}
 
 		for _, v := range page.BackupPlansList {
-			values = append(values, v)
+			values = append(values, Resource{
+				ARN:         *v.BackupPlanArn,
+				Description: v,
+			})
 		}
 	}
 
 	return values, nil
 }
 
-func BackupBackupSelection(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
+func BackupBackupSelection(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	plans, err := BackupBackupPlan(ctx, cfg)
 	if err != nil {
 		return nil, err
@@ -35,10 +38,10 @@ func BackupBackupSelection(ctx context.Context, cfg aws.Config) ([]interface{}, 
 
 	client := backup.NewFromConfig(cfg)
 
-	var values []interface{}
+	var values []Resource
 	for _, plan := range plans {
 		paginator := backup.NewListBackupSelectionsPaginator(client, &backup.ListBackupSelectionsInput{
-			BackupPlanId: plan.(types.BackupPlansListMember).BackupPlanId,
+			BackupPlanId: plan.Description.(types.BackupPlansListMember).BackupPlanId,
 		})
 
 		for paginator.HasMorePages() {
@@ -48,7 +51,10 @@ func BackupBackupSelection(ctx context.Context, cfg aws.Config) ([]interface{}, 
 			}
 
 			for _, v := range page.BackupSelectionsList {
-				values = append(values, v)
+				values = append(values, Resource{
+					ID:          CompositeID(*v.BackupPlanId, *v.SelectionId),
+					Description: v,
+				})
 			}
 		}
 	}
@@ -56,11 +62,11 @@ func BackupBackupSelection(ctx context.Context, cfg aws.Config) ([]interface{}, 
 	return values, nil
 }
 
-func BackupBackupVault(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
+func BackupBackupVault(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	client := backup.NewFromConfig(cfg)
 	paginator := backup.NewListBackupVaultsPaginator(client, &backup.ListBackupVaultsInput{})
 
-	var values []interface{}
+	var values []Resource
 	for paginator.HasMorePages() {
 		page, err := paginator.NextPage(ctx)
 		if err != nil {
@@ -68,7 +74,10 @@ func BackupBackupVault(ctx context.Context, cfg aws.Config) ([]interface{}, erro
 		}
 
 		for _, v := range page.BackupVaultList {
-			values = append(values, v)
+			values = append(values, Resource{
+				ARN:         *v.BackupVaultArn,
+				Description: v,
+			})
 		}
 	}
 

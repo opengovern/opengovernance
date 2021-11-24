@@ -7,10 +7,10 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/workspaces"
 )
 
-func WorkSpacesConnectionAlias(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
+func WorkSpacesConnectionAlias(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	client := workspaces.NewFromConfig(cfg)
 
-	var values []interface{}
+	var values []Resource
 	err := PaginateRetrieveAll(func(prevToken *string) (nextToken *string, err error) {
 		output, err := client.DescribeConnectionAliases(ctx, &workspaces.DescribeConnectionAliasesInput{
 			NextToken: prevToken,
@@ -20,7 +20,10 @@ func WorkSpacesConnectionAlias(ctx context.Context, cfg aws.Config) ([]interface
 		}
 
 		for _, v := range output.ConnectionAliases {
-			values = append(values, v)
+			values = append(values, Resource{
+				ID:          *v.AliasId,
+				Description: v,
+			})
 		}
 
 		return output.NextToken, nil
@@ -32,11 +35,11 @@ func WorkSpacesConnectionAlias(ctx context.Context, cfg aws.Config) ([]interface
 	return values, nil
 }
 
-func WorkSpacesWorkspace(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
+func WorkSpacesWorkspace(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	client := workspaces.NewFromConfig(cfg)
 	paginator := workspaces.NewDescribeWorkspacesPaginator(client, &workspaces.DescribeWorkspacesInput{})
 
-	var values []interface{}
+	var values []Resource
 	for paginator.HasMorePages() {
 		page, err := paginator.NextPage(ctx)
 		if err != nil {
@@ -44,7 +47,10 @@ func WorkSpacesWorkspace(ctx context.Context, cfg aws.Config) ([]interface{}, er
 		}
 
 		for _, v := range page.Workspaces {
-			values = append(values, v)
+			values = append(values, Resource{
+				ID:          *v.WorkspaceId,
+				Description: v,
+			})
 		}
 	}
 

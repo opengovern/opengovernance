@@ -7,11 +7,11 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/synthetics"
 )
 
-func SyntheticsCanary(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
+func SyntheticsCanary(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	client := synthetics.NewFromConfig(cfg)
 	paginator := synthetics.NewDescribeCanariesPaginator(client, &synthetics.DescribeCanariesInput{})
 
-	var values []interface{}
+	var values []Resource
 	for paginator.HasMorePages() {
 		page, err := paginator.NextPage(ctx)
 		if err != nil {
@@ -19,7 +19,10 @@ func SyntheticsCanary(ctx context.Context, cfg aws.Config) ([]interface{}, error
 		}
 
 		for _, v := range page.Canaries {
-			values = append(values, v)
+			values = append(values, Resource{
+				ID:          *v.Id,
+				Description: v,
+			})
 		}
 	}
 

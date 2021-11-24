@@ -8,11 +8,11 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/autoscaling/types"
 )
 
-func AutoScalingAutoScalingGroup(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
+func AutoScalingAutoScalingGroup(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	client := autoscaling.NewFromConfig(cfg)
 	paginator := autoscaling.NewDescribeAutoScalingGroupsPaginator(client, &autoscaling.DescribeAutoScalingGroupsInput{})
 
-	var values []interface{}
+	var values []Resource
 	for paginator.HasMorePages() {
 		page, err := paginator.NextPage(ctx)
 		if err != nil {
@@ -20,18 +20,21 @@ func AutoScalingAutoScalingGroup(ctx context.Context, cfg aws.Config) ([]interfa
 		}
 
 		for _, v := range page.AutoScalingGroups {
-			values = append(values, v)
+			values = append(values, Resource{
+				ARN:         *v.AutoScalingGroupARN,
+				Description: v,
+			})
 		}
 	}
 
 	return values, nil
 }
 
-func AutoScalingLaunchConfiguration(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
+func AutoScalingLaunchConfiguration(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	client := autoscaling.NewFromConfig(cfg)
 	paginator := autoscaling.NewDescribeLaunchConfigurationsPaginator(client, &autoscaling.DescribeLaunchConfigurationsInput{})
 
-	var values []interface{}
+	var values []Resource
 	for paginator.HasMorePages() {
 		page, err := paginator.NextPage(ctx)
 		if err != nil {
@@ -39,14 +42,17 @@ func AutoScalingLaunchConfiguration(ctx context.Context, cfg aws.Config) ([]inte
 		}
 
 		for _, v := range page.LaunchConfigurations {
-			values = append(values, v)
+			values = append(values, Resource{
+				ARN:         *v.LaunchConfigurationARN,
+				Description: v,
+			})
 		}
 	}
 
 	return values, nil
 }
 
-func AutoScalingLifecycleHook(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
+func AutoScalingLifecycleHook(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	groups, err := AutoScalingAutoScalingGroup(ctx, cfg)
 	if groups != nil {
 		return nil, err
@@ -54,9 +60,9 @@ func AutoScalingLifecycleHook(ctx context.Context, cfg aws.Config) ([]interface{
 
 	client := autoscaling.NewFromConfig(cfg)
 
-	var values []interface{}
+	var values []Resource
 	for _, g := range groups {
-		group := g.(types.AutoScalingGroup)
+		group := g.Description.(types.AutoScalingGroup)
 		output, err := client.DescribeLifecycleHooks(ctx, &autoscaling.DescribeLifecycleHooksInput{
 			AutoScalingGroupName: group.AutoScalingGroupName,
 		})
@@ -65,18 +71,21 @@ func AutoScalingLifecycleHook(ctx context.Context, cfg aws.Config) ([]interface{
 		}
 
 		for _, v := range output.LifecycleHooks {
-			values = append(values, v)
+			values = append(values, Resource{
+				ID:          CompositeID(*v.AutoScalingGroupName, *v.LifecycleHookName),
+				Description: v,
+			})
 		}
 	}
 
 	return values, nil
 }
 
-func AutoScalingScalingPolicy(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
+func AutoScalingScalingPolicy(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	client := autoscaling.NewFromConfig(cfg)
 	paginator := autoscaling.NewDescribePoliciesPaginator(client, &autoscaling.DescribePoliciesInput{})
 
-	var values []interface{}
+	var values []Resource
 	for paginator.HasMorePages() {
 		page, err := paginator.NextPage(ctx)
 		if err != nil {
@@ -84,18 +93,21 @@ func AutoScalingScalingPolicy(ctx context.Context, cfg aws.Config) ([]interface{
 		}
 
 		for _, v := range page.ScalingPolicies {
-			values = append(values, v)
+			values = append(values, Resource{
+				ARN:         *v.PolicyARN,
+				Description: v,
+			})
 		}
 	}
 
 	return values, nil
 }
 
-func AutoScalingScheduledAction(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
+func AutoScalingScheduledAction(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	client := autoscaling.NewFromConfig(cfg)
 	paginator := autoscaling.NewDescribeScheduledActionsPaginator(client, &autoscaling.DescribeScheduledActionsInput{})
 
-	var values []interface{}
+	var values []Resource
 	for paginator.HasMorePages() {
 		page, err := paginator.NextPage(ctx)
 		if err != nil {
@@ -103,14 +115,17 @@ func AutoScalingScheduledAction(ctx context.Context, cfg aws.Config) ([]interfac
 		}
 
 		for _, v := range page.ScheduledUpdateGroupActions {
-			values = append(values, v)
+			values = append(values, Resource{
+				ARN:         *v.ScheduledActionARN,
+				Description: v,
+			})
 		}
 	}
 
 	return values, nil
 }
 
-func AutoScalingWarmPool(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
+func AutoScalingWarmPool(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	groups, err := AutoScalingAutoScalingGroup(ctx, cfg)
 	if groups != nil {
 		return nil, err
@@ -118,26 +133,29 @@ func AutoScalingWarmPool(ctx context.Context, cfg aws.Config) ([]interface{}, er
 
 	client := autoscaling.NewFromConfig(cfg)
 
-	var values []interface{}
+	var values []Resource
 	for _, g := range groups {
-		group := g.(types.AutoScalingGroup)
+		group := g.Description.(types.AutoScalingGroup)
 
 		PaginateRetrieveAll(func(prevToken *string) (nextToken *string, err error) {
 			output, err := client.DescribeWarmPool(ctx, &autoscaling.DescribeWarmPoolInput{
 				AutoScalingGroupName: group.AutoScalingGroupName,
-				NextToken: prevToken,
+				NextToken:            prevToken,
 			})
 			if err != nil {
 				return nil, err
 			}
-	
+
 			for _, v := range output.Instances {
-				values = append(values, v)
+				values = append(values, Resource{
+					ID:          CompositeID(*group.AutoScalingGroupName, *v.InstanceId), // TODO
+					Description: v,
+				})
 			}
 
 			return output.NextToken, nil
 		})
-		
+
 	}
 
 	return values, nil

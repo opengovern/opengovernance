@@ -11,10 +11,10 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/ecs/types"
 )
 
-func ECSCapacityProvider(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
+func ECSCapacityProvider(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	client := ecs.NewFromConfig(cfg)
 
-	var values []interface{}
+	var values []Resource
 	err := PaginateRetrieveAll(func(prevToken *string) (nextToken *string, err error) {
 		output, err := client.DescribeCapacityProviders(ctx, &ecs.DescribeCapacityProvidersInput{NextToken: prevToken})
 		if err != nil {
@@ -25,7 +25,10 @@ func ECSCapacityProvider(ctx context.Context, cfg aws.Config) ([]interface{}, er
 		}
 
 		for _, v := range output.CapacityProviders {
-			values = append(values, v)
+			values = append(values, Resource{
+				ARN:         *v.CapacityProviderArn,
+				Description: v,
+			})
 		}
 
 		return output.NextToken, nil
@@ -37,7 +40,7 @@ func ECSCapacityProvider(ctx context.Context, cfg aws.Config) ([]interface{}, er
 	return values, nil
 }
 
-func ECSCluster(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
+func ECSCluster(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	clusters, err := listEcsClusters(ctx, cfg)
 	if err != nil {
 		return nil, err
@@ -45,7 +48,7 @@ func ECSCluster(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
 
 	client := ecs.NewFromConfig(cfg)
 
-	var values []interface{}
+	var values []Resource
 	// Describe in batch of 100 which is the limit
 	for i := 0; i < len(clusters); i = i + 100 {
 		j := i + 100
@@ -64,14 +67,17 @@ func ECSCluster(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
 		}
 
 		for _, v := range output.Clusters {
-			values = append(values, v)
+			values = append(values, Resource{
+				ARN:         *v.ClusterArn,
+				Description: v,
+			})
 		}
 	}
 
 	return values, nil
 }
 
-func ECSService(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
+func ECSService(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	clusters, err := listEcsClusters(ctx, cfg)
 	if err != nil {
 		return nil, err
@@ -79,7 +85,7 @@ func ECSService(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
 
 	client := ecs.NewFromConfig(cfg)
 
-	var values []interface{}
+	var values []Resource
 	for _, cluster := range clusters {
 		services, err := listECsServices(ctx, cfg, cluster)
 		if err != nil {
@@ -105,7 +111,10 @@ func ECSService(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
 			}
 
 			for _, v := range output.Services {
-				values = append(values, v)
+				values = append(values, Resource{
+					ARN:         *v.ServiceArn,
+					Description: v,
+				})
 			}
 		}
 	}
@@ -113,11 +122,11 @@ func ECSService(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
 	return values, nil
 }
 
-func ECSTaskDefinition(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
+func ECSTaskDefinition(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	client := ecs.NewFromConfig(cfg)
 	paginator := ecs.NewListTaskDefinitionsPaginator(client, &ecs.ListTaskDefinitionsInput{})
 
-	var values []interface{}
+	var values []Resource
 	for paginator.HasMorePages() {
 		page, err := paginator.NextPage(ctx)
 		if err != nil {
@@ -132,7 +141,10 @@ func ECSTaskDefinition(ctx context.Context, cfg aws.Config) ([]interface{}, erro
 				return nil, err
 			}
 
-			values = append(values, output.TaskDefinition)
+			values = append(values, Resource{
+				ARN:         arn,
+				Description: output.TaskDefinition,
+			})
 		}
 	}
 

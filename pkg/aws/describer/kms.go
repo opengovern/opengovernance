@@ -7,11 +7,11 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/kms"
 )
 
-func KMSAlias(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
+func KMSAlias(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	client := kms.NewFromConfig(cfg)
 	paginator := kms.NewListAliasesPaginator(client, &kms.ListAliasesInput{})
 
-	var values []interface{}
+	var values []Resource
 	for paginator.HasMorePages() {
 		page, err := paginator.NextPage(ctx)
 		if err != nil {
@@ -19,18 +19,21 @@ func KMSAlias(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
 		}
 
 		for _, v := range page.Aliases {
-			values = append(values, v)
+			values = append(values, Resource{
+				ARN:         *v.AliasArn,
+				Description: v,
+			})
 		}
 	}
 
 	return values, nil
 }
 
-func KMSKey(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
+func KMSKey(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	client := kms.NewFromConfig(cfg)
 	paginator := kms.NewListKeysPaginator(client, &kms.ListKeysInput{})
 
-	var values []interface{}
+	var values []Resource
 	for paginator.HasMorePages() {
 		page, err := paginator.NextPage(ctx)
 		if err != nil {
@@ -38,7 +41,10 @@ func KMSKey(ctx context.Context, cfg aws.Config) ([]interface{}, error) {
 		}
 
 		for _, v := range page.Keys {
-			values = append(values, v)
+			values = append(values, Resource{
+				ARN:         *v.KeyArn,
+				Description: v,
+			})
 		}
 	}
 
