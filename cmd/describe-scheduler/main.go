@@ -3,7 +3,7 @@ package main
 import (
 	"os"
 
-	"gitlab.com/anil94/golang-aws-inventory/pkg/describe"
+	"gitlab.com/keibiengine/keibi-engine/pkg/describe"
 )
 
 func main() {

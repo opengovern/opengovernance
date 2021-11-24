@@ -8,8 +8,8 @@ import (
 	"strings"
 	"time"
 
-	"gitlab.com/anil94/golang-aws-inventory/pkg/aws"
-	"gitlab.com/anil94/golang-aws-inventory/pkg/azure"
+	"gitlab.com/keibiengine/keibi-engine/pkg/aws"
+	"gitlab.com/keibiengine/keibi-engine/pkg/azure"
 	"gopkg.in/Shopify/sarama.v1"
 )
 
