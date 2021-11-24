@@ -6,10 +6,9 @@ import (
 	"fmt"
 	"sort"
 
-	"gitlab.com/anil94/golang-aws-inventory/pkg/aws/describer"
-
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/smithy-go"
+	"gitlab.com/keibiengine/keibi-engine/pkg/aws/describer"
 )
 
 type ResourceDescriber func(context.Context, aws.Config, string, []string, string) (*ResourceDescribeOutput, error)

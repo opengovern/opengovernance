@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"time"
 
-	"gitlab.com/anil94/golang-aws-inventory/pkg/aws"
-	"gitlab.com/anil94/golang-aws-inventory/pkg/azure"
+	"gitlab.com/keibiengine/keibi-engine/pkg/aws"
+	"gitlab.com/keibiengine/keibi-engine/pkg/azure"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )

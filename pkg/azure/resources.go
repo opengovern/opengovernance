@@ -10,7 +10,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/profiles/latest/resourcegraph/mgmt/resourcegraph"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure/auth"
-	"gitlab.com/anil94/golang-aws-inventory/pkg/azure/describer.go"
+	"gitlab.com/keibiengine/keibi-engine/pkg/azure/describer.go"
 )
 
 type ResourceDescriber interface {
