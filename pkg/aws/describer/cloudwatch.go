@@ -44,7 +44,7 @@ func CloudWatchAnomalyDetector(ctx context.Context, cfg aws.Config) ([]Resource,
 	var values []Resource
 	for _, v := range output.AnomalyDetectors {
 		values = append(values, Resource{
-			ID:          CompositeID(*v.Namespace, *v.MetricName),
+			ID:          CompositeID(*v.SingleMetricAnomalyDetector.Namespace, *v.SingleMetricAnomalyDetector.MetricName),
 			Description: v,
 		})
 	}
