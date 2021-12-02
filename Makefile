@@ -1,7 +1,7 @@
 .PHONY: build clean
 
 build:
-	CGO_ENABLED=0 GOOS=linux go build -v -a -tags netgo -ldflags '-w -extldflags "-static"' -o ./build/ ./cmd/...
+	GOCACHE=$(PWD)/cache/linux/ CGO_ENABLED=0 GOOS=linux go build -v -ldflags '-w -extldflags -static' -o ./build/ ./cmd/...
 
 docker-build:
 	docker build -f  docker/DescribeSchedulerDockerfile . -t registry.digitalocean.com/keibi/describe-scheduler:0.0.1

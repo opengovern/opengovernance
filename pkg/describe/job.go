@@ -5,6 +5,7 @@ import (
 	"crypto/sha256"
 	"encoding/json"
 	"fmt"
+	"regexp"
 	"strings"
 	"time"
 
@@ -12,6 +13,13 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/azure"
 	"gopkg.in/Shopify/sarama.v1"
 )
+
+const (
+	esIndexHeader = "elasticsearch_index"
+	jobTimeout    = 5 * time.Minute
+)
+
+var stopWordsRe = regexp.MustCompile(`\W+`)
 
 type AWSAccountCredentials struct {
 	AccountId     string
@@ -96,7 +104,10 @@ func (j Job) Do(producer sarama.SyncProducer, topic string) (r JobResult) {
 		}
 	}
 
-	resources, err := doDescribe(j)
+	ctx, cancel := context.WithTimeout(context.Background(), jobTimeout)
+	defer cancel()
+
+	resources, err := doDescribe(ctx, j)
 	if err != nil {
 		// Don't return here. In certain cases, such as AWS, resources might be
 		// available for some regions while there was failures in other regions.
@@ -122,128 +133,183 @@ func (j Job) Do(producer sarama.SyncProducer, topic string) (r JobResult) {
 }
 
 // doDescribe describes the sources, e.g. AWS, Azure and returns the responses.
-func doDescribe(job Job) ([]map[string]interface{}, error) {
+func doDescribe(ctx context.Context, job Job) ([]KafkaResource, error) {
 	fmt.Printf("Proccessing Job: ID[%d] ParentJobID[%d] RosourceType[%s]\n", job.JobID, job.ParentJobID, job.ResourceType)
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
-	defer cancel()
-
-	var inventory []map[string]interface{}
 	switch job.SourceType {
 	case SourceCloudAWS:
-		var creds AWSAccountCredentials
-		if err := json.Unmarshal(job.DescribeCredentials, &creds); err != nil {
-			return nil, fmt.Errorf("aws account credentials: %w", err)
-		}
-
-		output, err := aws.GetResources(
-			ctx,
-			job.ResourceType,
-			creds.AccountId,
-			creds.Regions,
-			creds.AccessKey,
-			creds.SecretKey,
-			creds.SessionToken,
-			creds.AssumeRoleARN,
-			false,
-		)
-		if err != nil {
-			return nil, fmt.Errorf("AWS: %w", err)
-		}
-
-		var errs []string
-		for region, err := range output.Errors {
-			if err != "" {
-				errs = append(errs, fmt.Sprintf("region (%s): %s", region, err))
-			}
-		}
-
-		for region, resources := range output.Resources {
-			for _, resource := range resources {
-				if resource.Description == nil {
-					continue
-				}
-
-				inventory = append(inventory, map[string]interface{}{
-					"ID":                         resource.UniqueID(),
-					output.Metadata.ResourceType: resource.Description,
-					"SourceType":                 SourceCloudAWS,
-					"ResourceType":               output.Metadata.ResourceType,
-					"AccountId":                  output.Metadata.AccountId,
-					"Region":                     region,
-				})
-			}
-		}
-
-		// For AWS resources, since they are queries independently per region,
-		// if there is an error in some regions, return those errors. For the regions
-		// with no error, return the list of resources.
-		if len(errs) > 0 {
-			err = fmt.Errorf("AWS: [%s]", strings.Join(errs, ","))
-		} else {
-			err = nil
-		}
-
-		return inventory, err
+		return doDescribeAWS(ctx, job)
 	case SourceCloudAzure:
-		var creds AzureSubscriptionCredentials
-		if err := json.Unmarshal(job.DescribeCredentials, &creds); err != nil {
-			return nil, fmt.Errorf("azure subscription credentials: %w", err)
-		}
+		return doDescribeAzure(ctx, job)
+	default:
+		return nil, fmt.Errorf("invalid SourceType: %s", job.SourceType)
+	}
+}
 
-		output, err := azure.GetResources(
-			ctx,
-			job.ResourceType,
-			[]string{creds.SubscriptionId},
-			creds.TenantID,
-			creds.ClientID,
-			creds.ClientSecret,
-			creds.CertificatePath,
-			creds.CertificatePass,
-			creds.Username,
-			creds.Password,
-			string(azure.AuthEnv),
-			"",
-		)
-		if err != nil {
-			return nil, fmt.Errorf("Azure: %w", err)
-		}
+func doDescribeAWS(ctx context.Context, job Job) ([]KafkaResource, error) {
+	var creds AWSAccountCredentials
+	if err := json.Unmarshal(job.DescribeCredentials, &creds); err != nil {
+		return nil, fmt.Errorf("aws account credentials: %w", err)
+	}
 
-		for _, resource := range output.Resources {
+	output, err := aws.GetResources(
+		ctx,
+		job.ResourceType,
+		creds.AccountId,
+		creds.Regions,
+		creds.AccessKey,
+		creds.SecretKey,
+		creds.SessionToken,
+		creds.AssumeRoleARN,
+		false,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("AWS: %w", err)
+	}
+
+	var errs []string
+	for region, err := range output.Errors {
+		if err != "" {
+			errs = append(errs, fmt.Sprintf("region (%s): %s", region, err))
+		}
+	}
+
+	var inventory []KafkaResource
+	for region, resources := range output.Resources {
+		for _, resource := range resources {
 			if resource.Description == nil {
 				continue
 			}
 
-			inventory = append(inventory, map[string]interface{}{
-				"ID":                         resource.UniqueID(),
-				output.Metadata.ResourceType: resource.Description,
-				"SourceType":                 SourceCloudAzure,
-				"ResourceType":               output.Metadata.ResourceType,
-				"SubscriptionIds":            strings.Join(output.Metadata.SubscriptionIds, ","),
+			inventory = append(inventory, KafkaResource{
+				ID:            resource.UniqueID(),
+				Description:   resource.Description,
+				SourceType:    SourceCloudAWS,
+				ResourceType:  output.Metadata.ResourceType,
+				ResourceJobID: job.JobID,
+				SourceJobID:   job.ParentJobID,
+				Metadata: map[string]string{
+					"region":     region,
+					"account_id": output.Metadata.AccountId,
+				},
 			})
 		}
+	}
+
+	// For AWS resources, since they are queries independently per region,
+	// if there is an error in some regions, return those errors. For the regions
+	// with no error, return the list of resources.
+	if len(errs) > 0 {
+		err = fmt.Errorf("AWS: [%s]", strings.Join(errs, ","))
+	} else {
+		err = nil
+	}
+
+	return inventory, err
+}
+
+func doDescribeAzure(ctx context.Context, job Job) ([]KafkaResource, error) {
+	var creds AzureSubscriptionCredentials
+	if err := json.Unmarshal(job.DescribeCredentials, &creds); err != nil {
+		return nil, fmt.Errorf("azure subscription credentials: %w", err)
+	}
+
+	output, err := azure.GetResources(
+		ctx,
+		job.ResourceType,
+		[]string{creds.SubscriptionId},
+		creds.TenantID,
+		creds.ClientID,
+		creds.ClientSecret,
+		creds.CertificatePath,
+		creds.CertificatePass,
+		creds.Username,
+		creds.Password,
+		string(azure.AuthEnv),
+		"",
+	)
+	if err != nil {
+		return nil, fmt.Errorf("Azure: %w", err)
+	}
+
+	var inventory []KafkaResource
+	for _, resource := range output.Resources {
+		if resource.Description == nil {
+			continue
+		}
+
+		inventory = append(inventory, KafkaResource{
+			ID:            resource.UniqueID(),
+			Description:   resource.Description,
+			SourceType:    SourceCloudAzure,
+			ResourceType:  output.Metadata.ResourceType,
+			ResourceJobID: job.JobID,
+			SourceJobID:   job.ParentJobID,
+			Metadata: map[string]string{
+				"subscription_id": strings.Join(output.Metadata.SubscriptionIds, ","),
+			},
+		})
 	}
 
 	return inventory, nil
 }
 
-func doSendToKafka(producer sarama.SyncProducer, topic string, resources []map[string]interface{}) error {
+type KafkaResource struct {
+	// ID is the globally unique ID of the resource.
+	ID string `json:"id"`
+	// Description is the description of the resource based on the describe call.
+	Description interface{} `json:"description"`
+	// SourceType is the type of the source of the resource, i.e. AWS Cloud, Azure Cloud.
+	SourceType SourceType `json:"source_type"`
+	// ResourceType is the type of the resource.
+	ResourceType string `json:"resource_type"`
+	// ResourceJobID is the DescribeResourceJob ID that described this resource
+	ResourceJobID uint `json:"resource_job_id"`
+	// SourceJobID is the DescribeSourceJob ID that the ResourceJobID was created for
+	SourceJobID uint `json:"source_job_id"`
+	// Metadata is arbitrary data associated with each resource
+	Metadata map[string]string `json:"metadata"`
+}
+
+func (r KafkaResource) AsProducerMessage() (*sarama.ProducerMessage, error) {
+	value, err := json.Marshal(r)
+	if err != nil {
+		return nil, err
+	}
+
+	h := sha256.New()
+	h.Write([]byte(r.ID))
+
+	return &sarama.ProducerMessage{
+		Key: sarama.StringEncoder(fmt.Sprintf("%x", h.Sum(nil))),
+		Headers: []sarama.RecordHeader{
+			{
+				Key:   []byte(esIndexHeader),
+				Value: []byte(ResourceTypeToESIndex(r.ResourceType)),
+			},
+		},
+		Value: sarama.ByteEncoder(value),
+	}, nil
+}
+
+func ResourceTypeToESIndex(t string) string {
+	t = stopWordsRe.ReplaceAllString(t, "_")
+	return strings.ToLower(t)
+}
+
+func doSendToKafka(producer sarama.SyncProducer, topic string, resources []KafkaResource) error {
 	var msgs []*sarama.ProducerMessage
 	for _, v := range resources {
-		value, err := json.Marshal(v)
+		msg, err := v.AsProducerMessage()
 		if err != nil {
-			return err
+			fmt.Printf("Failed to convert resource[%s] to Kafka ProducerMessage, ignoring...", v.ID)
+			continue
 		}
 
-		id := v["ID"].(string)
-		h := sha256.New()
-		h.Write([]byte(id))
+		// Override the topic
+		msg.Topic = topic
 
-		msgs = append(msgs, &sarama.ProducerMessage{
-			Topic: topic,
-			Key:   sarama.StringEncoder(fmt.Sprintf("%x", h.Sum(nil))),
-			Value: sarama.ByteEncoder(value),
-		})
+		msgs = append(msgs, msg)
 	}
 
 	if len(msgs) == 0 {
@@ -253,7 +319,7 @@ func doSendToKafka(producer sarama.SyncProducer, topic string, resources []map[s
 	if err := producer.SendMessages(msgs); err != nil {
 		if errs, ok := err.(sarama.ProducerErrors); ok {
 			for _, e := range errs {
-				fmt.Printf("failed to persist resource in kafka: %s\nMessage: %v\n", e.Error(), e.Msg)
+				fmt.Printf("Failed to persist resource[%s] in kafka topic[%s]: %s\nMessage: %v\n", e.Msg.Key, e.Msg.Topic, e.Error(), e.Msg)
 			}
 		}
 
