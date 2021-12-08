@@ -25,8 +25,8 @@ var (
 	PostgreSQLPassword = os.Getenv("POSTGRESQL_PASSWORD")
 
 	VaultAddress  = os.Getenv("VAULT_ADDRESS")
-	VaultToken    = os.Getenv("VAULT_AUTH_JWT")
-	VaultRoleName = os.Getenv("VAULT_ONBOARD_ROLE")
+	VaultToken    = os.Getenv("VAULT_TOKEN")
+	VaultRoleName = os.Getenv("VAULT_ROLE")
 )
 
 func main() {

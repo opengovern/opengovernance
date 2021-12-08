@@ -358,11 +358,11 @@ func enqueueDescribeResourceJobs(db Database, queue *Queue, a Source, daj Descri
 		errMsg := ""
 
 		err := queue.PublishJSON("describe-scheduler", Job{
-			JobID:               drj.ID,
-			ParentJobID:         daj.ID,
-			SourceType:          a.Type,
-			ResourceType:        drj.ResourceType,
-			DescribeCredentials: a.Credentials,
+			JobID:        drj.ID,
+			ParentJobID:  daj.ID,
+			SourceType:   a.Type,
+			ResourceType: drj.ResourceType,
+			ConfigReg:    a.ConfigRef,
 		})
 		if err != nil {
 			fmt.Printf("Failed to Queue DescribeResourceJob[%d]: %s\n", drj.ID, err.Error())

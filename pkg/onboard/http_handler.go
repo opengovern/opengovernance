@@ -3,6 +3,7 @@ package onboard
 import (
 	"fmt"
 
+	"github.com/hashicorp/vault/api/auth/kubernetes"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/vault"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -11,7 +12,7 @@ import (
 type HttpHandler struct {
 	db                *Database
 	sourceEventsQueue *Queue
-	vault             *vault.Vault // TODO: should be of type KeibiVault interface
+	vault             vault.Keibi
 }
 
 func InitializeHttpHandler(
@@ -71,14 +72,16 @@ func InitializeHttpHandler(
 		&Source{},
 	)
 
-	// setup vault
-	v, err := vault.NewVault(vaultAddress)
+	k8sAuth, err := kubernetes.NewKubernetesAuth(
+		vaultRoleName,
+		kubernetes.WithServiceAccountToken(vaultToken),
+	)
 	if err != nil {
 		return nil, err
 	}
 
-	// err = v.AuthenticateUsingTokenPath(vaultRoleName, "/var/run/secrets/kubernetes.io/serviceaccount/token")
-	err = v.AuthenticateUsingJwt(vaultRoleName, vaultToken)
+	// setup vault
+	v, err := vault.NewVault(vaultAddress, k8sAuth)
 	if err != nil {
 		return nil, err
 	}

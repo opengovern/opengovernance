@@ -17,10 +17,10 @@ const (
 )
 
 type SourceEvent struct {
-	Action            SourceAction
-	SourceID          uuid.UUID
-	SourceType        SourceType
-	SourceCredentials []byte
+	Action     SourceAction
+	SourceID   uuid.UUID
+	SourceType SourceType
+	ConfigRef  string
 }
 
 func ProcessSourceAction(db Database, event SourceEvent) error {
@@ -54,14 +54,14 @@ func CreateSource(db Database, event SourceEvent) error {
 		return fmt.Errorf("source has invalid uuid format")
 	case !IsValidSourceType(event.SourceType):
 		return fmt.Errorf("source has invalid source type")
-	case !IsCredentialsValid(event.SourceCredentials, event.SourceType):
-		return fmt.Errorf("source has invalid credentials")
+	case event.ConfigRef == "": // TODO: should check if the config ref exists?
+		return fmt.Errorf("source has invalid config ref")
 	}
 
-	err := db.CreateSource(Source{
+	err := db.CreateSource(&Source{
 		ID:             event.SourceID,
 		Type:           event.SourceType,
-		Credentials:    event.SourceCredentials,
+		ConfigRef:      event.ConfigRef,
 		NextDescribeAt: sql.NullTime{Time: time.Now(), Valid: true},
 	})
 	if err != nil {
@@ -77,14 +77,14 @@ func UpdateSource(db Database, event SourceEvent) error {
 		return fmt.Errorf("source has invalid uuid format")
 	case event.SourceType != "" && !IsValidSourceType(event.SourceType):
 		return fmt.Errorf("source has invalid source type")
-	case len(event.SourceCredentials) > 0 && !IsCredentialsValid(event.SourceCredentials, event.SourceType):
+	case event.ConfigRef == "": // TODO: should check if the config ref exists?
 		return fmt.Errorf("source has invalid credentials")
 	}
 
-	err := db.UpdateSource(Source{
-		ID:          event.SourceID,
-		Type:        event.SourceType,
-		Credentials: event.SourceCredentials,
+	err := db.UpdateSource(&Source{
+		ID:        event.SourceID,
+		Type:      event.SourceType,
+		ConfigRef: event.ConfigRef,
 	})
 	if err != nil {
 		return fmt.Errorf("update source: %w", err)

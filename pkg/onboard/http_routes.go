@@ -144,6 +144,16 @@ func (h *HttpHandler) PostSourceAws(ctx echo.Context) error {
 	}
 	src.ConfigRef = pathRef
 
+	err = h.sourceEventsQueue.PublishJSON("onboard-service", SourceEvent{
+		Action:     SourceCreated,
+		SourceID:   src.ID,
+		SourceType: src.Type,
+		ConfigRef:  src.ConfigRef,
+	})
+	if err != nil {
+		fmt.Println(err.Error()) // TODO
+	}
+
 	// save source to the database
 	src, err = h.db.CreateSource(src)
 	if err != nil {
@@ -178,12 +188,15 @@ func (h *HttpHandler) PostSourceAzure(ctx echo.Context) error {
 	}
 	src.ConfigRef = pathRef
 
-	// TODO: Add SourceId
 	err = h.sourceEventsQueue.PublishJSON("onboard-service", SourceEvent{
-		Action:    SourceCreated,
-		ConfigRef: src.ConfigRef,
+		Action:     SourceCreated,
+		SourceID:   src.ID,
+		SourceType: src.Type,
+		ConfigRef:  src.ConfigRef,
 	})
-	fmt.Println(err.Error())
+	if err != nil {
+		fmt.Println(err.Error()) // TODO
+	}
 	// TODO: synchronize transactions & error handling
 
 	// save source to the database
@@ -232,10 +245,16 @@ func (h *HttpHandler) DeleteSource(ctx echo.Context) error {
 		return ctx.JSON(http.StatusBadRequest, fmt.Errorf("error occured while trying to delete source with id %q", srcId))
 	}
 
-	_ = h.sourceEventsQueue.PublishJSON("onboard-service", SourceEvent{
-		Action:    SourceDeleted,
-		ConfigRef: src.ConfigRef,
+	err = h.sourceEventsQueue.PublishJSON("onboard-service", SourceEvent{
+		Action:     SourceDeleted,
+		SourceID:   src.ID,
+		SourceType: src.Type,
+		ConfigRef:  src.ConfigRef,
 	})
+	if err != nil {
+		fmt.Println(err.Error()) // TODO
+	}
+
 	// TODO: synchronize transactions & error handling
 
 	// delete organization from the database

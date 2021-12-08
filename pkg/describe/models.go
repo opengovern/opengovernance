@@ -27,7 +27,7 @@ type Source struct {
 	gorm.Model
 	ID                 uuid.UUID `gorm:"type:uuid;default:uuid_generate_v4()"`
 	Type               SourceType
-	Credentials        []byte
+	ConfigRef          string
 	LastDescribedAt    sql.NullTime
 	NextDescribeAt     sql.NullTime
 	DescribeSourceJobs []DescribeSourceJob `gorm:"foreignKey:SourceID;constraint:OnDelete:CASCADE;"`

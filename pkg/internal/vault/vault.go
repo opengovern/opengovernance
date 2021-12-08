@@ -3,21 +3,21 @@ package vault
 import (
 	"context"
 	"fmt"
+	"log"
 	"strings"
 
 	"github.com/google/uuid"
 	vault "github.com/hashicorp/vault/api"
-	auth "github.com/hashicorp/vault/api/auth/kubernetes"
 )
 
-type KeibiVault interface {
+type Keibi interface {
 	// GetOrganizations() (pathRefs []string, err error)
 
 	DeleteOrganization(pathRef string) error
-	NewOrganization(orgId uuid.UUID) (pathRef uuid.UUID, err error)
+	NewOrganization(orgId uuid.UUID) (pathRef string, err error)
 
 	DeleteSourceConfig(pathRef string) error
-	ReadSourceConfig(pathRef string) (config interface{}, err error)
+	ReadSourceConfig(pathRef string) (config map[string]interface{}, err error)
 	WriteSourceConfig(orgId uuid.UUID, sourceId uuid.UUID, sourceType string, config interface{}) (configRef string, err error)
 }
 
@@ -25,48 +25,50 @@ type Vault struct {
 	client *vault.Client
 }
 
-func NewVault(vaultAddress string) (*Vault, error) {
+func NewVault(vaultAddress string, auth vault.AuthMethod) (Keibi, error) {
 	conf := vault.DefaultConfig()
 	conf.Address = vaultAddress
 
 	c, err := vault.NewClient(conf)
 	if err != nil {
-		return nil, fmt.Errorf("new vault: error occured")
+		return nil, fmt.Errorf("new vault: %w", err)
 	}
 
-	return &Vault{client: c}, nil
+	secret, err := c.Auth().Login(context.TODO(), auth)
+	if err != nil {
+		return nil, fmt.Errorf("vault authenticate: %w", err)
+	}
+
+	vault := &Vault{client: c}
+	vault.watchSecret(secret)
+
+	return vault, nil
 }
 
-func (v *Vault) AuthenticateUsingTokenPath(roleName string, tokenPath string) error {
-	k8sAuth, _ := auth.NewKubernetesAuth(
-		roleName,
-		auth.WithServiceAccountTokenPath(tokenPath),
-	)
-
-	authInfo, err := v.client.Auth().Login(context.TODO(), k8sAuth)
+func (v *Vault) watchSecret(s *vault.Secret) error {
+	watcher, err := v.client.NewLifetimeWatcher(&vault.LifetimeWatcherInput{
+		Secret: s,
+	})
 	if err != nil {
-		return fmt.Errorf("authenticate using token path error - %q", err.Error()) // TODO format & make meaningful
+		return err
 	}
-	if authInfo == nil {
-		return fmt.Errorf("authenticate using token path error") // TODO format & make meaningful
-	}
+	go watcher.Start()
 
-	return nil
-}
+	go func() {
+		for {
+			select {
+			case err := <-watcher.DoneCh():
+				if err != nil {
+					// TODO: Don't fail here. Instead return error to upstream to handle as needed
+					log.Fatal(err)
+				}
 
-func (v *Vault) AuthenticateUsingJwt(roleName string, token string) error {
-	k8sAuth, _ := auth.NewKubernetesAuth(
-		roleName,
-		auth.WithServiceAccountToken(token),
-	)
-
-	authInfo, err := v.client.Auth().Login(context.TODO(), k8sAuth)
-	if err != nil {
-		return fmt.Errorf("authenticate using token path error - %q", err.Error()) // TODO: format & make meaningful
-	}
-	if authInfo == nil {
-		return fmt.Errorf("authenticate using token path error") // TODO: format & make meaningful
-	}
+				// Renewal is now over
+			case renewal := <-watcher.RenewCh():
+				fmt.Printf("Successfully renewed: %#v\n", renewal)
+			}
+		}
+	}()
 
 	return nil
 }
@@ -115,11 +117,17 @@ func (v *Vault) WriteSourceConfig(orgId uuid.UUID, sourceId uuid.UUID, sourceTyp
 	return path, err
 }
 
-func (v *Vault) ReadSourceConfig(pathRef string) (config interface{}, err error) {
+func (v *Vault) ReadSourceConfig(pathRef string) (config map[string]interface{}, err error) {
 	secret, err := v.client.Logical().Read(pathRef)
-	config = secret.Data["config"].(string)
+	if err != nil {
+		return nil, err
+	}
 
-	return config, err
+	if secret == nil {
+		return nil, fmt.Errorf("invalid pathRef: %s", pathRef)
+	}
+
+	return secret.Data["config"].(map[string]interface{}), nil
 }
 
 func (v *Vault) DeleteOrganization(pathRef string) error {
