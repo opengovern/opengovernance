@@ -14,14 +14,9 @@ type OrganizationRequest struct {
 	KeibiUrl    string `json:"keibiUrl" validate:"required,url"`
 }
 
-func newUUIDv4() uuid.UUID {
-	guid, _ := uuid.NewUUID()
-	return guid
-}
-
 func (s OrganizationRequest) toOrganization() *Organization {
 	return &Organization{
-		ID:          newUUIDv4(),
+		ID:          uuid.New(),
 		Name:        s.Name,
 		Description: s.Description,
 		AdminEmail:  s.AdminEmail,
@@ -66,7 +61,7 @@ type SourceAwsRequest struct {
 
 func (s SourceAwsRequest) toSource(orgId uuid.UUID) *Source {
 	o := &Source{
-		ID:             newUUIDv4(),
+		ID:             uuid.New(),
 		SourceId:       s.Config.AccountId,
 		OrganizationID: orgId,
 		Name:           s.Name,
@@ -87,16 +82,16 @@ type SourceAzureRequest struct {
 	Description string `json:"description"`
 
 	Config struct {
-		SubscriptionId string `json:"accountId" validate:"required,uuid_rfc4122"`
+		SubscriptionId string `json:"subscriptionId" validate:"required,uuid_rfc4122"`
 		TenantId       string `json:"tenantId" validate:"required,uuid_rfc4122"`
-		ClientId       string `json:"accessKey" validate:"required"`
-		ClientSecret   string `json:"secretKey" validate:"required"`
+		ClientId       string `json:"clientId" validate:"required"`
+		ClientSecret   string `json:"clientSecret" validate:"required"`
 	}
 }
 
 func (s SourceAzureRequest) toSource(orgId uuid.UUID) *Source {
 	o := &Source{
-		ID:             newUUIDv4(),
+		ID:             uuid.New(),
 		SourceId:       s.Config.SubscriptionId,
 		OrganizationID: orgId,
 		Name:           s.Name,
@@ -135,24 +130,8 @@ func (s Source) toSourceResponse() *SourceResponse {
 }
 
 type SourceEvent struct {
-	Action    SourceAction `json:"action"`
-	ConfigRef string       `json:"configRef"`
+	Action     SourceAction
+	SourceID   uuid.UUID
+	SourceType SourceType
+	ConfigRef  string
 }
-
-// type SourceAwsResponse struct {
-// 	ID             uuid.UUID `json:"id"`
-// 	OrganizationID uuid.UUID `json:"organizationId"`
-// 	Name           string    `json:"name"`
-// 	Description    string    `json:"description"`
-// 	AccountId      string    `json:"accountId"`
-// 	Regions        []string  `json:"regions"`
-// }
-
-// type SourceAzureResponse struct {
-// 	ID             uuid.UUID `json:"id"`
-// 	OrganizationID uuid.UUID `json:"organizationId"`
-// 	Name           string    `json:"name"`
-// 	Description    string    `json:"description"`
-// 	SubscriptionId string    `json:"accountId"`
-// 	TenantId       string    `json:"tenantId"`
-// }

@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/hashicorp/vault/api/auth/kubernetes"
+	"gitlab.com/keibiengine/keibi-engine/pkg/internal/vault"
 	"gopkg.in/Shopify/sarama.v1"
 )
 
@@ -14,6 +16,7 @@ type Worker struct {
 	jobResultQueue *Queue
 	kfkProducer    sarama.SyncProducer
 	kfkTopic       string
+	vault          vault.Keibi
 }
 
 func InitializeWorker(
@@ -26,6 +29,9 @@ func InitializeWorker(
 	describeJobResultQueue string,
 	kafkaBrokers []string,
 	kafkaTopic string,
+	vaultAddress string,
+	vaultRoleName string,
+	vaultToken string,
 ) (w *Worker, err error) {
 	if id == "" {
 		return nil, fmt.Errorf("'id' must be set to a non empty string")
@@ -35,7 +41,7 @@ func InitializeWorker(
 
 	w = &Worker{id: id, kfkTopic: kafkaTopic}
 	defer func() {
-		if err != nil {
+		if err != nil && w != nil {
 			w.Stop()
 		}
 	}()
@@ -75,6 +81,23 @@ func InitializeWorker(
 
 	w.kfkProducer = producer
 
+	k8sAuth, err := kubernetes.NewKubernetesAuth(
+		vaultRoleName,
+		kubernetes.WithServiceAccountToken(vaultToken),
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	// setup vault
+	v, err := vault.NewVault(vaultAddress, k8sAuth)
+	if err != nil {
+		return nil, err
+	}
+
+	fmt.Println("Connected to vault:", vaultAddress)
+	w.vault = v
+
 	return w, nil
 }
 
@@ -93,7 +116,7 @@ func (w *Worker) Run() error {
 			continue
 		}
 
-		result := job.Do(w.kfkProducer, w.kfkTopic)
+		result := job.Do(w.vault, w.kfkProducer, w.kfkTopic)
 
 		err := w.jobResultQueue.PublishJSON(w.id, result)
 		if err != nil {

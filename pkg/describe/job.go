@@ -11,6 +11,7 @@ import (
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/aws"
 	"gitlab.com/keibiengine/keibi-engine/pkg/azure"
+	"gitlab.com/keibiengine/keibi-engine/pkg/internal/vault"
 	"gopkg.in/Shopify/sarama.v1"
 )
 
@@ -21,53 +22,62 @@ const (
 
 var stopWordsRe = regexp.MustCompile(`\W+`)
 
-type AWSAccountCredentials struct {
-	AccountId     string
-	Regions       []string
-	SecretKey     string
-	AccessKey     string
-	SessionToken  string
-	AssumeRoleARN string
+type AWSAccountConfig struct {
+	AccountID     string   `json:"accountId"`
+	Regions       []string `json:"regions"`
+	SecretKey     string   `json:"secretKey"`
+	AccessKey     string   `json:"accessKey"`
+	SessionToken  string   `json:"sessionToken"`
+	AssumeRoleARN string   `json:"assumeRoleARN"`
 }
 
-type AzureSubscriptionCredentials struct {
-	SubscriptionId  string
-	TenantID        string
-	ClientID        string
-	ClientSecret    string
-	CertificatePath string
-	CertificatePass string
-	Username        string
-	Password        string
-}
-
-func IsCredentialsValid(creds []byte, cloud SourceType) bool {
-	switch cloud {
-	case SourceCloudAWS:
-		var v AWSAccountCredentials
-		if err := json.Unmarshal(creds, &v); err != nil {
-			return false
-		}
-
-		return true
-	case SourceCloudAzure:
-		var v AzureSubscriptionCredentials
-		if err := json.Unmarshal(creds, &v); err != nil {
-			return false
-		}
-
-		return true
-	default:
-		panic(fmt.Errorf("unsupported cloudtype: %s", cloud))
+func AWSAccountConfigFromMap(m map[string]interface{}) (AWSAccountConfig, error) {
+	mj, err := json.Marshal(m)
+	if err != nil {
+		return AWSAccountConfig{}, err
 	}
+
+	var c AWSAccountConfig
+	err = json.Unmarshal(mj, &c)
+	if err != nil {
+		return AWSAccountConfig{}, err
+	}
+
+	return c, nil
+}
+
+type AzureSubscriptionConfig struct {
+	SubscriptionID  string `json:"subscriptionId"`
+	TenantID        string `json:"tenantId"`
+	ClientID        string `json:"clientId"`
+	ClientSecret    string `json:"clientSecret"`
+	CertificatePath string `json:"certificatePath"`
+	CertificatePass string `json:"certificatePass"`
+	Username        string `json:"username"`
+	Password        string `json:"password"`
+}
+
+func AzureSubscriptionConfigFromMap(m map[string]interface{}) (AzureSubscriptionConfig, error) {
+	mj, err := json.Marshal(m)
+	if err != nil {
+		return AzureSubscriptionConfig{}, err
+	}
+
+	var c AzureSubscriptionConfig
+	err = json.Unmarshal(mj, &c)
+	if err != nil {
+		return AzureSubscriptionConfig{}, err
+	}
+
+	return c, nil
 }
 
 type Job struct {
-	JobID               uint // DescribeResourceJob ID
-	ParentJobID         uint // DescribeSourceJob ID
-	ResourceType        string
-	SourceType          SourceType
-	DescribeCredentials []byte
+	JobID        uint // DescribeResourceJob ID
+	ParentJobID  uint // DescribeSourceJob ID
+	ResourceType string
+	SourceType   SourceType
+	ConfigReg    string
 }
 
 // Do will perform the job which includes the following tasks:
@@ -79,7 +89,7 @@ type Job struct {
 // do its best to complete the task even if some errors occur along the way. However,
 // if any error occurs, The JobResult will indicate that through the Status and Error
 // will be set to the first error that occured.
-func (j Job) Do(producer sarama.SyncProducer, topic string) (r JobResult) {
+func (j Job) Do(vlt vault.Keibi, producer sarama.SyncProducer, topic string) (r JobResult) {
 	defer func() {
 		if err := recover(); err != nil {
 			r = JobResult{
@@ -107,16 +117,21 @@ func (j Job) Do(producer sarama.SyncProducer, topic string) (r JobResult) {
 	ctx, cancel := context.WithTimeout(context.Background(), jobTimeout)
 	defer cancel()
 
-	resources, err := doDescribe(ctx, j)
+	config, err := vlt.ReadSourceConfig(j.ConfigReg)
 	if err != nil {
-		// Don't return here. In certain cases, such as AWS, resources might be
-		// available for some regions while there was failures in other regions.
-		// Instead, continue to write whatever you can to kafka.
-		fail(fmt.Errorf("describe resources: %w", err))
-	}
+		fail(fmt.Errorf("resource source config: %w", err))
+	} else {
+		resources, err := doDescribe(ctx, j, config)
+		if err != nil {
+			// Don't return here. In certain cases, such as AWS, resources might be
+			// available for some regions while there was failures in other regions.
+			// Instead, continue to write whatever you can to kafka.
+			fail(fmt.Errorf("describe resources: %w", err))
+		}
 
-	if err := doSendToKafka(producer, topic, resources); err != nil {
-		fail(fmt.Errorf("send to kafka: %w", err))
+		if err := doSendToKafka(producer, topic, resources); err != nil {
+			fail(fmt.Errorf("send to kafka: %w", err))
+		}
 	}
 
 	errMsg := ""
@@ -133,29 +148,29 @@ func (j Job) Do(producer sarama.SyncProducer, topic string) (r JobResult) {
 }
 
 // doDescribe describes the sources, e.g. AWS, Azure and returns the responses.
-func doDescribe(ctx context.Context, job Job) ([]KafkaResource, error) {
+func doDescribe(ctx context.Context, job Job, config map[string]interface{}) ([]KafkaResource, error) {
 	fmt.Printf("Proccessing Job: ID[%d] ParentJobID[%d] RosourceType[%s]\n", job.JobID, job.ParentJobID, job.ResourceType)
 
 	switch job.SourceType {
 	case SourceCloudAWS:
-		return doDescribeAWS(ctx, job)
+		return doDescribeAWS(ctx, job, config)
 	case SourceCloudAzure:
-		return doDescribeAzure(ctx, job)
+		return doDescribeAzure(ctx, job, config)
 	default:
 		return nil, fmt.Errorf("invalid SourceType: %s", job.SourceType)
 	}
 }
 
-func doDescribeAWS(ctx context.Context, job Job) ([]KafkaResource, error) {
-	var creds AWSAccountCredentials
-	if err := json.Unmarshal(job.DescribeCredentials, &creds); err != nil {
+func doDescribeAWS(ctx context.Context, job Job, config map[string]interface{}) ([]KafkaResource, error) {
+	creds, err := AWSAccountConfigFromMap(config)
+	if err != nil {
 		return nil, fmt.Errorf("aws account credentials: %w", err)
 	}
 
 	output, err := aws.GetResources(
 		ctx,
 		job.ResourceType,
-		creds.AccountId,
+		creds.AccountID,
 		creds.Regions,
 		creds.AccessKey,
 		creds.SecretKey,
@@ -208,16 +223,16 @@ func doDescribeAWS(ctx context.Context, job Job) ([]KafkaResource, error) {
 	return inventory, err
 }
 
-func doDescribeAzure(ctx context.Context, job Job) ([]KafkaResource, error) {
-	var creds AzureSubscriptionCredentials
-	if err := json.Unmarshal(job.DescribeCredentials, &creds); err != nil {
-		return nil, fmt.Errorf("azure subscription credentials: %w", err)
+func doDescribeAzure(ctx context.Context, job Job, config map[string]interface{}) ([]KafkaResource, error) {
+	creds, err := AzureSubscriptionConfigFromMap(config)
+	if err != nil {
+		return nil, fmt.Errorf("aure subscription credentials: %w", err)
 	}
 
 	output, err := azure.GetResources(
 		ctx,
 		job.ResourceType,
-		[]string{creds.SubscriptionId},
+		[]string{creds.SubscriptionID},
 		creds.TenantID,
 		creds.ClientID,
 		creds.ClientSecret,

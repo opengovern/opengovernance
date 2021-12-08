@@ -15,7 +15,7 @@ type Database struct {
 // ==================================== Source ====================================
 
 // CreateSource creates an source.
-func (db Database) CreateSource(a Source) error {
+func (db Database) CreateSource(a *Source) error {
 	tx := db.orm.
 		Model(&Source{}).
 		Clauses(clause.OnConflict{DoNothing: true}). // Don't update an existing source
@@ -30,7 +30,7 @@ func (db Database) CreateSource(a Source) error {
 }
 
 // UpdateSource updates the source information.
-func (db Database) UpdateSource(a Source) error {
+func (db Database) UpdateSource(a *Source) error {
 	tx := db.orm.
 		Model(&Source{}).
 		Where("id = ?", a.ID.String()).

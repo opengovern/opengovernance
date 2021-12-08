@@ -21,6 +21,10 @@ var (
 	PostgreSQLDb       = os.Getenv("POSTGRESQL_DB")
 	PostgreSQLUser     = os.Getenv("POSTGRESQL_USERNAME")
 	PostgreSQLPassword = os.Getenv("POSTGRESQL_PASSWORD")
+
+	VaultAddress  = os.Getenv("VAULT_ADDRESS")
+	VaultToken    = os.Getenv("VAULT_TOKEN")
+	VaultRoleName = os.Getenv("VAULT_ROLE")
 )
 
 func SchedulerCommand() *cobra.Command {
@@ -84,6 +88,8 @@ func WorkerCommand() *cobra.Command {
 			}
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
+			cmd.SilenceUsage = true
+
 			w, err := InitializeWorker(
 				id,
 				RabbitMQUsername,
@@ -94,6 +100,9 @@ func WorkerCommand() *cobra.Command {
 				DescribeResultsQueueName,
 				strings.Split(KafkaService, ","),
 				resourcesTopic,
+				VaultAddress,
+				VaultRoleName,
+				VaultToken,
 			)
 			if err != nil {
 				return err

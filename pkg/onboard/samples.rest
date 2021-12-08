@@ -27,12 +27,11 @@ Content-Type: application/json
 {
 	"name": "",
 	"config": {
-		"accountId": "000111222333",
-		"accessKey": "24334557676677844557670",
-		"secretKey": "456675568880906554534647676978675844"
+		"accountId": "XXX",
+		"accessKey": "XXX",
+		"secretKey": "XXX"
 	}
 }
-
 
 ### delete aws source
 @sourceid = {{create_source_aws.response.body.$.id}}
@@ -46,7 +45,19 @@ DELETE {{baseUrl}}/organizations/{{orgid}}
 ### try to get an orgsanization that does not exists
 GET {{baseUrl}}/organizations/${{$guid}}
 
+# @name create_source_azure
+POST {{baseUrl}}/organizations/{{orgid}}/sources/azure
+Content-Type: application/json
 
+{
+	"name": "",
+	"config": {
+		"subscriptionId": "XXX",
+		"tenantId": "XXX",
+		"clientId": "XXX",
+		"clientSecret": "XXX"
+	}
+}
 
 
 
