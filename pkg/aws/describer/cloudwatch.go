@@ -189,12 +189,16 @@ func CloudWatchLogsLogStream(ctx context.Context, cfg aws.Config) ([]Resource, e
 		client := cloudwatchlogs.NewFromConfig(cfg)
 		paginator := cloudwatchlogs.NewDescribeLogStreamsPaginator(client, &cloudwatchlogs.DescribeLogStreamsInput{
 			LogGroupName: logGroup.Description.(logstypes.LogGroup).LogGroupName,
-			Limit:        aws.Int32(1000), // Avoid Throttling. Just fetch a few LogStreams.
+			Limit:        aws.Int32(50),
 			OrderBy:      logstypes.OrderByLastEventTime,
 			Descending:   aws.Bool(true),
 		})
 
-		for paginator.HasMorePages() {
+		// To avoid throttling, don't fetching everything. Only the first 5 pages!
+		page := 0
+		for paginator.HasMorePages() && page < 5 {
+			page++
+
 			page, err := paginator.NextPage(ctx)
 			if err != nil {
 				return nil, err
