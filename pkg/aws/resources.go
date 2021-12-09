@@ -2,12 +2,10 @@ package aws
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"sort"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/aws/smithy-go"
 	"gitlab.com/keibiengine/keibi-engine/pkg/aws/describer"
 )
 
@@ -323,7 +321,7 @@ func ParallelDescribeRegional(describe func(context.Context, aws.Config) ([]desc
 		for range regions {
 			resp := <-input
 			if resp.err != nil {
-				if !IsUnsupportedOrInvalid(resp.err) {
+				if !IsUnsupportedOrInvalidError(rType, resp.region, resp.err) {
 					output.Errors[resp.region] = resp.err.Error()
 					continue
 				}
@@ -361,7 +359,7 @@ func SequentialDescribeGlobal(describe func(context.Context, aws.Config) ([]desc
 
 			resources, err := describe(ctx, rCfg)
 			if err != nil {
-				if !IsUnsupportedOrInvalid(err) {
+				if !IsUnsupportedOrInvalidError(rType, region, err) {
 					output.Errors[region] = err.Error()
 				}
 				continue
@@ -403,7 +401,7 @@ func SequentialDescribeS3(describe func(context.Context, aws.Config, []string) (
 
 			resources, err := describe(ctx, rCfg, regions)
 			if err != nil {
-				if !IsUnsupportedOrInvalid(err) {
+				if !IsUnsupportedOrInvalidError(rType, region, err) {
 					output.Errors[region] = err.Error()
 				}
 				continue
@@ -430,18 +428,4 @@ func SequentialDescribeS3(describe func(context.Context, aws.Config, []string) (
 
 		return &output, nil
 	}
-}
-
-func IsUnsupportedOrInvalid(err error) bool {
-	var ae smithy.APIError
-	if errors.As(err, &ae) {
-		switch ae.ErrorCode() {
-		case "InvalidAction":
-			return true
-		case "UnsupportedOperation":
-			return true
-		}
-	}
-
-	return false
 }
