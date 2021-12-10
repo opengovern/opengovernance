@@ -128,7 +128,11 @@ func (h *HttpHandler) PostSourceAws(ctx echo.Context) error {
 	}
 
 	p := ctx.Param("organizationId")
-	orgId, _ := uuid.Parse(p)
+	orgId, err := uuid.Parse(p)
+	if err != nil {
+		return cc.JSON(http.StatusBadRequest, NewError(err))
+	}
+
 	src := req.toSource(orgId)
 
 	// ensure that the org id is valid
@@ -172,7 +176,10 @@ func (h *HttpHandler) PostSourceAzure(ctx echo.Context) error {
 	}
 
 	p := ctx.Param("organizationId")
-	orgId, _ := uuid.Parse(p)
+	orgId, err := uuid.Parse(p)
+	if err != nil {
+		return cc.JSON(http.StatusBadRequest, NewError(err))
+	}
 	src := req.toSource(orgId)
 
 	// ensure that the org id is valid
