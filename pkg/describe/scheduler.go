@@ -7,6 +7,7 @@ import (
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/aws"
 	"gitlab.com/keibiengine/keibi-engine/pkg/azure"
+	"gitlab.com/keibiengine/keibi-engine/pkg/internal/queue"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
@@ -21,11 +22,11 @@ type Scheduler struct {
 	id string
 	db Database
 	// jobQueue is used to publish jobs to be performed by the workers.
-	jobQueue *Queue
+	jobQueue queue.Interface
 	// jobResultQueue is used to consume the job results returned by the workers.
-	jobResultQueue *Queue
+	jobResultQueue queue.Interface
 	// sourceQueue is used to consume source updates by the onboarding service.
-	sourceQueue *Queue
+	sourceQueue queue.Interface
 }
 
 func InitializeScheduler(
@@ -56,14 +57,15 @@ func InitializeScheduler(
 
 	fmt.Println("Initializing the scheduler")
 
-	qCfg := QueueConfig{}
+	qCfg := queue.Config{}
 	qCfg.Server.Username = rabbitMQUsername
 	qCfg.Server.Password = rabbitMQPassword
 	qCfg.Server.Host = rabbitMQHost
 	qCfg.Server.Port = rabbitMQPort
 	qCfg.Queue.Name = describeJobQueue
 	qCfg.Queue.Durable = true
-	describeQueue, err := NewQueue(qCfg)
+	qCfg.Producer.ID = s.id
+	describeQueue, err := queue.New(qCfg)
 	if err != nil {
 		return nil, err
 	}
@@ -71,14 +73,15 @@ func InitializeScheduler(
 	fmt.Println("Connected to the describe jobs queue: ", describeJobQueue)
 	s.jobQueue = describeQueue
 
-	qCfg = QueueConfig{}
+	qCfg = queue.Config{}
 	qCfg.Server.Username = rabbitMQUsername
 	qCfg.Server.Password = rabbitMQPassword
 	qCfg.Server.Host = rabbitMQHost
 	qCfg.Server.Port = rabbitMQPort
 	qCfg.Queue.Name = describeJobResultQueue
 	qCfg.Queue.Durable = true
-	describeResultsQueue, err := NewQueue(qCfg)
+	qCfg.Consumer.ID = s.id
+	describeResultsQueue, err := queue.New(qCfg)
 	if err != nil {
 		return nil, err
 	}
@@ -86,14 +89,15 @@ func InitializeScheduler(
 	fmt.Println("Connected to the describe job results queue: ", describeJobResultQueue)
 	s.jobResultQueue = describeResultsQueue
 
-	qCfg = QueueConfig{}
+	qCfg = queue.Config{}
 	qCfg.Server.Username = rabbitMQUsername
 	qCfg.Server.Password = rabbitMQPassword
 	qCfg.Server.Host = rabbitMQHost
 	qCfg.Server.Port = rabbitMQPort
 	qCfg.Queue.Name = sourceQueue
 	qCfg.Queue.Durable = true
-	sourceEventsQueue, err := NewQueue(qCfg)
+	qCfg.Consumer.ID = s.id
+	sourceEventsQueue, err := queue.New(qCfg)
 	if err != nil {
 		return nil, err
 	}
@@ -234,7 +238,7 @@ func (s *Scheduler) RunDescribeScheduler() {
 // or update/delete the source.
 func (s *Scheduler) RunSourceEventsConsumer() error {
 	fmt.Println("Consuming messages from SourceEvents queue")
-	msgs, err := s.sourceQueue.Consume(s.id)
+	msgs, err := s.sourceQueue.Consume()
 	if err != nil {
 		return err
 	}
@@ -266,7 +270,7 @@ func (s *Scheduler) RunSourceEventsConsumer() error {
 func (s *Scheduler) RunJobResultsConsumer() error {
 	fmt.Println("Consuming messages from the JobResults queue")
 
-	msgs, err := s.jobResultQueue.Consume(s.id)
+	msgs, err := s.jobResultQueue.Consume()
 	if err != nil {
 		return err
 	}
@@ -352,12 +356,12 @@ func newDescribeSourceJob(a Source) DescribeSourceJob {
 	return daj
 }
 
-func enqueueDescribeResourceJobs(db Database, queue *Queue, a Source, daj DescribeSourceJob) {
+func enqueueDescribeResourceJobs(db Database, q queue.Interface, a Source, daj DescribeSourceJob) {
 	for i, drj := range daj.DescribeResourceJobs {
 		nextStatus := DescribeResourceJobQueued
 		errMsg := ""
 
-		err := queue.PublishJSON("describe-scheduler", Job{
+		err := q.Publish(Job{
 			JobID:        drj.ID,
 			ParentJobID:  daj.ID,
 			SourceType:   a.Type,

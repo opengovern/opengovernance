@@ -8,6 +8,12 @@ import (
 	"github.com/spf13/cobra"
 )
 
+const (
+	DescribeJobsQueueName    = "describe-jobs-queue"
+	DescribeResultsQueueName = "describe-results-queue"
+	SourceEventsQueueName    = "source-events-queue"
+)
+
 var (
 	RabbitMQService  = os.Getenv("RABBITMQ_SERVICE")
 	RabbitMQPort     = 5672

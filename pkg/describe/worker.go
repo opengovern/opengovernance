@@ -6,14 +6,15 @@ import (
 	"strings"
 
 	"github.com/hashicorp/vault/api/auth/kubernetes"
+	"gitlab.com/keibiengine/keibi-engine/pkg/internal/queue"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/vault"
 	"gopkg.in/Shopify/sarama.v1"
 )
 
 type Worker struct {
 	id             string
-	jobQueue       *Queue
-	jobResultQueue *Queue
+	jobQueue       queue.Interface
+	jobResultQueue queue.Interface
 	kfkProducer    sarama.SyncProducer
 	kfkTopic       string
 	vault          vault.Keibi
@@ -46,28 +47,30 @@ func InitializeWorker(
 		}
 	}()
 
-	qCfg := QueueConfig{}
+	qCfg := queue.Config{}
 	qCfg.Server.Username = rabbitMQUsername
 	qCfg.Server.Password = rabbitMQPassword
 	qCfg.Server.Host = rabbitMQHost
 	qCfg.Server.Port = rabbitMQPort
 	qCfg.Queue.Name = describeJobQueue
 	qCfg.Queue.Durable = true
-	describeQueue, err := NewQueue(qCfg)
+	qCfg.Consumer.ID = w.id
+	describeQueue, err := queue.New(qCfg)
 	if err != nil {
 		return nil, err
 	}
 
 	w.jobQueue = describeQueue
 
-	qCfg = QueueConfig{}
+	qCfg = queue.Config{}
 	qCfg.Server.Username = rabbitMQUsername
 	qCfg.Server.Password = rabbitMQPassword
 	qCfg.Server.Host = rabbitMQHost
 	qCfg.Server.Port = rabbitMQPort
 	qCfg.Queue.Name = describeJobResultQueue
 	qCfg.Queue.Durable = true
-	describeResultsQueue, err := NewQueue(qCfg)
+	qCfg.Producer.ID = w.id
+	describeResultsQueue, err := queue.New(qCfg)
 	if err != nil {
 		return nil, err
 	}
@@ -102,7 +105,7 @@ func InitializeWorker(
 }
 
 func (w *Worker) Run() error {
-	msgs, err := w.jobQueue.Consume(w.id)
+	msgs, err := w.jobQueue.Consume()
 	if err != nil {
 		return err
 	}
@@ -118,7 +121,7 @@ func (w *Worker) Run() error {
 
 		result := job.Do(w.vault, w.kfkProducer, w.kfkTopic)
 
-		err := w.jobResultQueue.PublishJSON(w.id, result)
+		err := w.jobResultQueue.Publish(result)
 		if err != nil {
 			fmt.Printf("Failed to send results to queue: %s", err.Error())
 		}
