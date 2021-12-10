@@ -1,4 +1,4 @@
-package describe
+package queue
 
 import (
 	"encoding/json"
@@ -9,22 +9,25 @@ import (
 )
 
 const (
-	prefetchCount            = 10
-	prefetchSize             = 0 // Disabled prefetch size
-	DescribeJobsQueueName    = "describe-jobs-queue"
-	DescribeResultsQueueName = "describe-results-queue"
-	SourceEventsQueueName    = "source-events-queue"
+	prefetchCount = 10
+	prefetchSize  = 0 // Disabled prefetch size
 )
 
-// Queue is message queue based on the AMQP protocol. It uses RabbitMQ as the
+type Interface interface {
+	Consume() (<-chan amqp.Delivery, error)
+	Publish(v interface{}) error
+	Close()
+}
+
+// queue is message queue based on the AMQP protocol. It uses RabbitMQ as the
 // distributed system for publishing and consuming messages.
-type Queue struct {
-	cfg  QueueConfig
+type queue struct {
+	cfg  Config
 	conn *amqp.Connection
 	ch   *amqp.Channel
 }
 
-type QueueConfig struct {
+type Config struct {
 	Server struct {
 		Host     string
 		Port     int
@@ -39,9 +42,17 @@ type QueueConfig struct {
 		Exclusive    bool
 		NoWait       bool
 	}
+
+	Consumer struct {
+		ID string
+	}
+
+	Producer struct {
+		ID string
+	}
 }
 
-func (cfg *QueueConfig) validate() error {
+func (cfg *Config) validate() error {
 	switch {
 	case cfg.Server.Host == "":
 		return fmt.Errorf("Server.Host must be provided")
@@ -49,29 +60,27 @@ func (cfg *QueueConfig) validate() error {
 		return fmt.Errorf("Server.Port must be provided")
 	case cfg.Queue.Name == "":
 		return fmt.Errorf("Queue.Name must be provided")
+	case cfg.Consumer.ID == "" && cfg.Producer.ID == "":
+		return fmt.Errorf("cfg.Consumer.ID or cfg.Producer.ID must be provided")
 	default:
 		return nil
 	}
 }
 
-func NewQueue(cfg QueueConfig) (q *Queue, err error) {
+func New(cfg Config) (Interface, error) {
 	if err := cfg.validate(); err != nil {
 		return nil, err
 	}
-	// Close underlying connections if anything fails along the way
-	defer func() {
-		if err != nil && q != nil {
-			q.Close()
-		}
-	}()
 
-	q = &Queue{cfg: cfg}
+	q := &queue{cfg: cfg}
+
 	if err := q.setup(); err != nil {
+		q.Close()
 		return nil, err
 	}
 
 	// Ensure Queue is declared
-	_, err = q.ch.QueueDeclare(
+	_, err := q.ch.QueueDeclare(
 		q.cfg.Queue.Name,         // name
 		q.cfg.Queue.Durable,      // durable
 		q.cfg.Queue.DeleteUnused, // delete when unused
@@ -80,13 +89,14 @@ func NewQueue(cfg QueueConfig) (q *Queue, err error) {
 		nil,                      // arguments
 	)
 	if err != nil {
+		q.Close()
 		return nil, fmt.Errorf("creating queue: %w", err)
 	}
 
 	return q, nil
 }
 
-func (q *Queue) setup() error {
+func (q *queue) setup() error {
 	url := fmt.Sprintf("amqp://%s:%s@%s:%d/",
 		q.cfg.Server.Username,
 		q.cfg.Server.Password,
@@ -113,19 +123,20 @@ func (q *Queue) setup() error {
 	return nil
 }
 
-func (q *Queue) Consume(consumer string) (<-chan amqp.Delivery, error) {
+func (q *queue) Consume() (<-chan amqp.Delivery, error) {
 	return q.ch.Consume(
-		q.cfg.Queue.Name, // queue
-		consumer,         // consumer
-		false,            // auto-ack
-		false,            // exclusive
-		false,            // no-local
-		false,            // no-wait
-		nil,              // args
+		q.cfg.Queue.Name,  // queue
+		q.cfg.Consumer.ID, // consumer
+		false,             // auto-ack
+		false,             // exclusive
+		false,             // no-local
+		false,             // no-wait
+		nil,               // args
 	)
+
 }
 
-func (q *Queue) PublishJSON(publisher string, v interface{}) error {
+func (q *queue) Publish(v interface{}) error {
 	body, err := json.Marshal(v)
 	if err != nil {
 		return err
@@ -134,7 +145,7 @@ func (q *Queue) PublishJSON(publisher string, v interface{}) error {
 	p := amqp.Publishing{
 		ContentType: "application/json",
 		Body:        body,
-		AppId:       publisher,
+		AppId:       q.cfg.Producer.ID,
 		Timestamp:   time.Now(),
 	}
 
@@ -146,7 +157,7 @@ func (q *Queue) PublishJSON(publisher string, v interface{}) error {
 		p)
 }
 
-func (q *Queue) Close() {
+func (q *queue) Close() {
 	if q.conn != nil {
 		_ = q.conn.Close()
 	}

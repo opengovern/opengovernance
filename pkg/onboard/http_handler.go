@@ -4,14 +4,15 @@ import (
 	"fmt"
 
 	"github.com/hashicorp/vault/api/auth/kubernetes"
+	"gitlab.com/keibiengine/keibi-engine/pkg/internal/queue"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/vault"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
 
 type HttpHandler struct {
-	db                *Database
-	sourceEventsQueue *Queue
+	db                Database
+	sourceEventsQueue queue.Interface
 	vault             vault.Keibi
 }
 
@@ -36,14 +37,15 @@ func InitializeHttpHandler(
 	fmt.Println("Initializing http handler")
 
 	// setup source events queue
-	qCfg := QueueConfig{}
+	qCfg := queue.Config{}
 	qCfg.Server.Username = rabbitMQUsername
 	qCfg.Server.Password = rabbitMQPassword
 	qCfg.Server.Host = rabbitMQHost
 	qCfg.Server.Port = rabbitMQPort
 	qCfg.Queue.Name = sourceEventsQueueName
 	qCfg.Queue.Durable = true
-	sourceEventsQueue, err := NewQueue(qCfg)
+	qCfg.Producer.ID = "onboard-service"
+	sourceEventsQueue, err := queue.New(qCfg)
 	if err != nil {
 		return nil, err
 	}
@@ -66,7 +68,7 @@ func InitializeHttpHandler(
 	}
 
 	fmt.Println("Connected to the postgres database: ", postgresDb)
-	h.db = &Database{orm: db}
+	h.db = Database{orm: db}
 	h.db.orm.AutoMigrate(
 		&Organization{},
 		&Source{},

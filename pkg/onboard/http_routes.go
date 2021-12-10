@@ -148,7 +148,7 @@ func (h *HttpHandler) PostSourceAws(ctx echo.Context) error {
 	}
 	src.ConfigRef = pathRef
 
-	err = h.sourceEventsQueue.PublishJSON("onboard-service", SourceEvent{
+	err = h.sourceEventsQueue.Publish(SourceEvent{
 		Action:     SourceCreated,
 		SourceID:   src.ID,
 		SourceType: src.Type,
@@ -195,7 +195,7 @@ func (h *HttpHandler) PostSourceAzure(ctx echo.Context) error {
 	}
 	src.ConfigRef = pathRef
 
-	err = h.sourceEventsQueue.PublishJSON("onboard-service", SourceEvent{
+	err = h.sourceEventsQueue.Publish(SourceEvent{
 		Action:     SourceCreated,
 		SourceID:   src.ID,
 		SourceType: src.Type,
@@ -252,7 +252,7 @@ func (h *HttpHandler) DeleteSource(ctx echo.Context) error {
 		return ctx.JSON(http.StatusBadRequest, fmt.Errorf("error occured while trying to delete source with id %q", srcId))
 	}
 
-	err = h.sourceEventsQueue.PublishJSON("onboard-service", SourceEvent{
+	err = h.sourceEventsQueue.Publish(SourceEvent{
 		Action:     SourceDeleted,
 		SourceID:   src.ID,
 		SourceType: src.Type,
