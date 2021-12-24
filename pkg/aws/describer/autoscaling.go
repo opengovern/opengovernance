@@ -8,6 +8,11 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/autoscaling/types"
 )
 
+type AutoScalingGroupDefinition struct {
+	AutoScalingGroup types.AutoScalingGroup
+	Policies         []types.ScalingPolicy
+}
+
 func AutoScalingAutoScalingGroup(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	client := autoscaling.NewFromConfig(cfg)
 	paginator := autoscaling.NewDescribeAutoScalingGroupsPaginator(client, &autoscaling.DescribeAutoScalingGroupsInput{})
@@ -20,11 +25,38 @@ func AutoScalingAutoScalingGroup(ctx context.Context, cfg aws.Config) ([]Resourc
 		}
 
 		for _, v := range page.AutoScalingGroups {
+			var desc AutoScalingGroupDefinition
+			desc.AutoScalingGroup = v
+			desc.Policies, err = getAutoScalingPolicies(ctx, cfg, v.AutoScalingGroupName)
+			if err != nil {
+				return nil, err
+			}
+
 			values = append(values, Resource{
 				ARN:         *v.AutoScalingGroupARN,
-				Description: v,
+				Description: desc,
 			})
+
 		}
+	}
+
+	return values, nil
+}
+
+func getAutoScalingPolicies(ctx context.Context, cfg aws.Config, asgName *string) ([]types.ScalingPolicy, error) {
+	client := autoscaling.NewFromConfig(cfg)
+	paginator := autoscaling.NewDescribePoliciesPaginator(client, &autoscaling.DescribePoliciesInput{
+		AutoScalingGroupName: asgName,
+	})
+
+	var values []types.ScalingPolicy
+	for paginator.HasMorePages() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		values = append(values, page.ScalingPolicies...)
 	}
 
 	return values, nil

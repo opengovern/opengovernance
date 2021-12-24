@@ -5,6 +5,7 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/sns"
+	"github.com/aws/aws-sdk-go-v2/service/sns/types"
 )
 
 func SNSSubscription(ctx context.Context, cfg aws.Config) ([]Resource, error) {
@@ -29,6 +30,11 @@ func SNSSubscription(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	return values, nil
 }
 
+type SNSTopicDescription struct {
+	Attributes map[string]string
+	Tags       []types.Tag
+}
+
 func SNSTopic(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	client := sns.NewFromConfig(cfg)
 	paginator := sns.NewListTopicsPaginator(client, &sns.ListTopicsInput{})
@@ -48,9 +54,19 @@ func SNSTopic(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 				return nil, err
 			}
 
+			tOutput, err := client.ListTagsForResource(ctx, &sns.ListTagsForResourceInput{
+				ResourceArn: v.TopicArn,
+			})
+			if err != nil {
+				return nil, err
+			}
+
 			values = append(values, Resource{
-				ARN:         *v.TopicArn,
-				Description: output.Attributes,
+				ARN: *v.TopicArn,
+				Description: SNSTopicDescription{
+					Attributes: output.Attributes,
+					Tags:       tOutput.Tags,
+				},
 			})
 		}
 	}

@@ -165,8 +165,7 @@ var resourceTypeToDescriber = map[string]ResourceDescriber{
 	"AWS::Route53Resolver::ResolverRule":                          ParallelDescribeRegional(describer.Route53ResolverResolverRule),
 	"AWS::Route53Resolver::ResolverRuleAssociation":               ParallelDescribeRegional(describer.Route53ResolverResolverRuleAssociation),
 	"AWS::S3::AccessPoint":                                        ParallelDescribeRegional(describer.S3AccessPoint),
-	"AWS::S3::Bucket":                                             SequentialDescribeS3(describer.S3Bucket),       // Global
-	"AWS::S3::BucketPolicy":                                       SequentialDescribeS3(describer.S3BucketPolicy), // Semi-Global
+	"AWS::S3::Bucket":                                             SequentialDescribeS3(describer.S3Bucket), // Global
 	"AWS::S3::StorageLens":                                        ParallelDescribeRegional(describer.S3StorageLens),
 	"AWS::SES::ConfigurationSet":                                  ParallelDescribeRegional(describer.SESConfigurationSet),
 	"AWS::SES::ContactList":                                       ParallelDescribeRegional(describer.SESContactList),
@@ -218,7 +217,6 @@ func ListResourceTypes() []string {
 
 type Resources struct {
 	ResourceDescribeOutput
-	Metadata ResourceDescribeMetadata
 }
 
 type ResourceDescribeOutput struct {
@@ -269,11 +267,6 @@ func GetResources(
 
 	output := &Resources{
 		ResourceDescribeOutput: *response,
-		Metadata: ResourceDescribeMetadata{
-			ResourceType: resourceType,
-			AccountId:    accountId,
-			Regions:      regions,
-		},
 	}
 
 	return output, nil
@@ -331,9 +324,11 @@ func ParallelDescribeRegional(describe func(context.Context, aws.Config) ([]desc
 				resp.resources = []describer.Resource{}
 			}
 
+			partition, _ := partitionOf(resp.region)
 			for i := range resp.resources {
 				resp.resources[i].Account = account
 				resp.resources[i].Region = resp.region
+				resp.resources[i].Partition = partition
 				resp.resources[i].Type = rType
 			}
 
@@ -369,9 +364,11 @@ func SequentialDescribeGlobal(describe func(context.Context, aws.Config) ([]desc
 				resources = []describer.Resource{}
 			}
 
+			partition, _ := partitionOf(region)
 			for i := range resources {
 				resources[i].Account = account
-				resources[i].Region = "" // Ignore region for global resources
+				resources[i].Region = "global"
+				resources[i].Partition = partition
 				resources[i].Type = rType
 			}
 
@@ -417,9 +414,12 @@ func SequentialDescribeS3(describe func(context.Context, aws.Config, []string) (
 		}
 
 		for region, resources := range output.Resources {
+			partition, _ := partitionOf(region)
+
 			for j, resource := range resources {
 				resource.Account = account
-				resource.Region = "" // Ignore region for global resources
+				resource.Region = region
+				resource.Partition = partition
 				resource.Type = rType
 
 				output.Resources[region][j] = resource
