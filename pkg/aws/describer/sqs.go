@@ -8,6 +8,11 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/sqs/types"
 )
 
+type SQSQueueDescription struct {
+	Attributes map[string]string
+	Tags       map[string]string
+}
+
 func SQSQueue(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	client := sqs.NewFromConfig(cfg)
 	paginator := sqs.NewListQueuesPaginator(client, &sqs.ListQueuesInput{})
@@ -30,9 +35,22 @@ func SQSQueue(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 				return nil, err
 			}
 
+			tOutput, err := client.ListQueueTags(ctx, &sqs.ListQueueTagsInput{
+				QueueUrl: &url,
+			})
+			if err != nil {
+				return nil, err
+			}
+
+			// Add Queue URL since it doesn't exists in the description
+			output.Attributes["QueueUrl"] = url
+
 			values = append(values, Resource{
-				ARN:         url,
-				Description: output.Attributes,
+				ARN: url,
+				Description: SQSQueueDescription{
+					Attributes: output.Attributes,
+					Tags:       tOutput.Tags,
+				},
 			})
 		}
 	}

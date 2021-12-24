@@ -3,6 +3,7 @@ package describer
 import (
 	"context"
 	"errors"
+	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
@@ -11,6 +12,36 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/sts"
 	"github.com/aws/smithy-go"
 )
+
+const (
+	s3NoSuchBucketPolicy                             = "NoSuchBucketPolicy"
+	s3NoSuchLifecycleConfiguration                   = "NoSuchLifecycleConfiguration"
+	s3NoSuchPublicAccessBlockConfiguration           = "NoSuchPublicAccessBlockConfiguration"
+	s3ObjectLockConfigurationNotFoundError           = "ObjectLockConfigurationNotFoundError"
+	s3ReplicationConfigurationNotFoundError          = "ReplicationConfigurationNotFoundError"
+	s3ServerSideEncryptionConfigurationNotFoundError = "ServerSideEncryptionConfigurationNotFoundError"
+)
+
+type S3BucketDescription struct {
+	Bucket    types.Bucket
+	BucketAcl struct {
+		Grants []types.Grant
+		Owner  *types.Owner
+	}
+	Policy                         *string
+	PolicyStatus                   *types.PolicyStatus
+	PublicAccessBlockConfiguration *types.PublicAccessBlockConfiguration
+	Versioning                     struct {
+		MFADelete types.MFADeleteStatus
+		Status    types.BucketVersioningStatus
+	}
+	LifecycleRules                    []types.LifecycleRule
+	LoggingEnabled                    *types.LoggingEnabled
+	ServerSideEncryptionConfiguration *types.ServerSideEncryptionConfiguration
+	ObjectLockConfiguration           *types.ObjectLockConfiguration
+	ReplicationConfiguration          *types.ReplicationConfiguration
+	Tags                              []types.Tag
+}
 
 // S3Bucket describe S3 buckets.
 // ListBuckets returns buckets in all regions. However, this function categorizes the buckets based
@@ -28,23 +59,24 @@ func S3Bucket(ctx context.Context, cfg aws.Config, regions []string) (map[string
 	}
 
 	for _, bucket := range output.Buckets {
-		output, err := client.GetBucketLocation(ctx, &s3.GetBucketLocationInput{
-			Bucket: bucket.Name,
-		})
+		region, err := getBucketLocation(ctx, client, bucket)
 		if err != nil {
 			return nil, err
 		}
 
-		bRegion := string(output.LocationConstraint)
-		if bRegion == "" {
-			// Buckets in Region us-east-1 have a LocationConstraint of null.
-			bRegion = "us-east-1"
+		if !isIncludedInRegions(regions, region) {
+			continue
 		}
 
-		if _, ok := regionalValues[bRegion]; ok {
-			regionalValues[bRegion] = append(regionalValues[bRegion], Resource{
+		desc, err := getBucketDescription(ctx, cfg, bucket, region)
+		if err != nil {
+			return nil, err
+		}
+
+		if _, ok := regionalValues[region]; ok {
+			regionalValues[region] = append(regionalValues[region], Resource{
 				ID:          *bucket.Name,
-				Description: bucket,
+				Description: desc,
 			})
 		}
 	}
@@ -52,43 +84,290 @@ func S3Bucket(ctx context.Context, cfg aws.Config, regions []string) (map[string
 	return regionalValues, nil
 }
 
-// S3BucketPolicy describes bucket policies for each bucket. The BucketPolicy can only be queried from the
-// reigon it resides in. That is despite the fact that ListBuckets returns all buckets regardless of the region.
-func S3BucketPolicy(ctx context.Context, cfg aws.Config, regions []string) (map[string][]Resource, error) {
-	reigonalBuckets, err := S3Bucket(ctx, cfg, regions)
+func getBucketLocation(ctx context.Context, client *s3.Client, bucket types.Bucket) (string, error) {
+	output, err := client.GetBucketLocation(ctx, &s3.GetBucketLocationInput{
+		Bucket: bucket.Name,
+	})
+	if err != nil {
+		return "", err
+	}
+
+	region := string(output.LocationConstraint)
+	if region == "" {
+		// Buckets in Region us-east-1 have a LocationConstraint of null.
+		region = "us-east-1"
+	}
+
+	return region, nil
+}
+
+func getBucketDescription(ctx context.Context, cfg aws.Config, bucket types.Bucket, region string) (*S3BucketDescription, error) {
+	rClient := s3.NewFromConfig(cfg, func(o *s3.Options) { o.Region = region })
+	o1, err := getBucketIsPublic(ctx, rClient, bucket)
 	if err != nil {
 		return nil, err
 	}
 
-	regionalBucketPolicies := make(map[string][]Resource, len(regions))
-	for region, buckets := range reigonalBuckets {
-		client := s3.NewFromConfig(cfg, func(o *s3.Options) { o.Region = region })
+	o2, err := getBucketVersioning(ctx, rClient, bucket)
+	if err != nil {
+		return nil, err
+	}
 
-		for _, b := range buckets {
-			bucket := b.Description.(types.Bucket)
-			output, err := client.GetBucketPolicy(ctx, &s3.GetBucketPolicyInput{
-				Bucket: bucket.Name,
-			})
-			if err != nil {
-				var ae smithy.APIError
-				if errors.As(err, &ae) && (ae.ErrorCode() == "NoSuchBucketPolicy") {
-					continue
-				}
+	o3, err := getBucketEncryption(ctx, rClient, bucket)
+	if err != nil {
+		return nil, err
+	}
 
-				return nil, err
-			}
+	o4, err := getBucketPublicAccessBlock(ctx, rClient, bucket)
+	if err != nil {
+		return nil, err
+	}
 
-			regionalBucketPolicies[region] = append(regionalBucketPolicies[region], Resource{
+	o5, err := getBucketACL(ctx, rClient, bucket)
+	if err != nil {
+		return nil, err
+	}
 
-				Description: map[string]string{
-					"BucketName": *bucket.Name,
-					"Policy":     *output.Policy,
+	o6, err := getBucketLifecycle(ctx, rClient, bucket)
+	if err != nil {
+		return nil, err
+	}
+
+	o7, err := getBucketLogging(ctx, rClient, bucket)
+	if err != nil {
+		return nil, err
+	}
+
+	o8, err := getBucketPolicy(ctx, rClient, bucket)
+	if err != nil {
+		return nil, err
+	}
+
+	o9, err := getBucketReplication(ctx, rClient, bucket)
+	if err != nil {
+		return nil, err
+	}
+
+	o10, err := getObjectLockConfiguration(ctx, rClient, bucket)
+	if err != nil {
+		return nil, err
+	}
+
+	o11, err := getBucketTagging(ctx, rClient, bucket)
+	if err != nil {
+		return nil, err
+	}
+
+	return &S3BucketDescription{
+		Bucket: bucket,
+		BucketAcl: struct {
+			Grants []types.Grant
+			Owner  *types.Owner
+		}{
+			Grants: o5.Grants,
+			Owner:  o5.Owner,
+		},
+		Policy:                         o8.Policy,
+		PolicyStatus:                   o1.PolicyStatus,
+		PublicAccessBlockConfiguration: o4.PublicAccessBlockConfiguration,
+		Versioning: struct {
+			MFADelete types.MFADeleteStatus
+			Status    types.BucketVersioningStatus
+		}{
+			MFADelete: o2.MFADelete,
+			Status:    o2.Status,
+		},
+		LifecycleRules:                    o6.Rules,
+		LoggingEnabled:                    o7.LoggingEnabled,
+		ServerSideEncryptionConfiguration: o3.ServerSideEncryptionConfiguration,
+		ObjectLockConfiguration:           o10.ObjectLockConfiguration,
+		ReplicationConfiguration:          o9.ReplicationConfiguration,
+		Tags:                              o11.TagSet,
+	}, nil
+}
+
+func getBucketIsPublic(ctx context.Context, client *s3.Client, bucket types.Bucket) (*s3.GetBucketPolicyStatusOutput, error) {
+	output, err := client.GetBucketPolicyStatus(ctx, &s3.GetBucketPolicyStatusInput{
+		Bucket: bucket.Name,
+	})
+
+	if err != nil {
+		if isS3Err(err, s3NoSuchBucketPolicy) {
+			return &s3.GetBucketPolicyStatusOutput{}, nil
+		}
+
+		return nil, err
+	}
+
+	return output, nil
+}
+
+func getBucketVersioning(ctx context.Context, client *s3.Client, bucket types.Bucket) (*s3.GetBucketVersioningOutput, error) {
+	output, err := client.GetBucketVersioning(ctx, &s3.GetBucketVersioningInput{
+		Bucket: bucket.Name,
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	return output, nil
+}
+
+func getBucketEncryption(ctx context.Context, client *s3.Client, bucket types.Bucket) (*s3.GetBucketEncryptionOutput, error) {
+	output, err := client.GetBucketEncryption(ctx, &s3.GetBucketEncryptionInput{
+		Bucket: bucket.Name,
+	})
+
+	if err != nil {
+		if isS3Err(err, s3ServerSideEncryptionConfigurationNotFoundError) {
+			return &s3.GetBucketEncryptionOutput{}, nil
+		}
+
+		return nil, err
+	}
+
+	return output, nil
+}
+
+func getBucketPublicAccessBlock(ctx context.Context, client *s3.Client, bucket types.Bucket) (*s3.GetPublicAccessBlockOutput, error) {
+	output, err := client.GetPublicAccessBlock(ctx, &s3.GetPublicAccessBlockInput{
+		Bucket: bucket.Name,
+	})
+
+	if err != nil {
+		// If the GetPublicAccessBlock is called on buckets which were created before Public Access Block setting was
+		// introduced, sometime it fails with error NoSuchPublicAccessBlockConfiguration
+		if isS3Err(err, s3NoSuchPublicAccessBlockConfiguration) {
+			return &s3.GetPublicAccessBlockOutput{
+				PublicAccessBlockConfiguration: &types.PublicAccessBlockConfiguration{
+					BlockPublicAcls:       false,
+					BlockPublicPolicy:     false,
+					IgnorePublicAcls:      false,
+					RestrictPublicBuckets: false,
 				},
-			})
+			}, nil
+		}
+
+		return nil, err
+	}
+
+	return output, nil
+}
+
+func getBucketACL(ctx context.Context, client *s3.Client, bucket types.Bucket) (*s3.GetBucketAclOutput, error) {
+	output, err := client.GetBucketAcl(ctx, &s3.GetBucketAclInput{
+		Bucket: bucket.Name,
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	return output, nil
+}
+
+func getBucketLifecycle(ctx context.Context, client *s3.Client, bucket types.Bucket) (*s3.GetBucketLifecycleConfigurationOutput, error) {
+	output, err := client.GetBucketLifecycleConfiguration(ctx, &s3.GetBucketLifecycleConfigurationInput{
+		Bucket: bucket.Name,
+	})
+
+	if err != nil {
+		if isS3Err(err, s3NoSuchLifecycleConfiguration) {
+			return &s3.GetBucketLifecycleConfigurationOutput{}, nil
+		}
+
+		return nil, err
+	}
+
+	return output, nil
+}
+
+func getBucketLogging(ctx context.Context, client *s3.Client, bucket types.Bucket) (*s3.GetBucketLoggingOutput, error) {
+	output, err := client.GetBucketLogging(ctx, &s3.GetBucketLoggingInput{
+		Bucket: bucket.Name,
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	return output, nil
+}
+
+func getBucketPolicy(ctx context.Context, client *s3.Client, bucket types.Bucket) (*s3.GetBucketPolicyOutput, error) {
+	output, err := client.GetBucketPolicy(ctx, &s3.GetBucketPolicyInput{
+		Bucket: bucket.Name,
+	})
+
+	if err != nil {
+		if isS3Err(err, s3NoSuchBucketPolicy) {
+			return &s3.GetBucketPolicyOutput{}, nil
+		}
+
+		return nil, err
+	}
+
+	return output, nil
+}
+
+func getBucketReplication(ctx context.Context, client *s3.Client, bucket types.Bucket) (*s3.GetBucketReplicationOutput, error) {
+	output, err := client.GetBucketReplication(ctx, &s3.GetBucketReplicationInput{
+		Bucket: bucket.Name,
+	})
+
+	if err != nil {
+		if isS3Err(err, s3ReplicationConfigurationNotFoundError) {
+			return &s3.GetBucketReplicationOutput{}, nil
+		}
+
+		return nil, err
+	}
+
+	return output, nil
+}
+
+func getObjectLockConfiguration(ctx context.Context, client *s3.Client, bucket types.Bucket) (*s3.GetObjectLockConfigurationOutput, error) {
+	output, err := client.GetObjectLockConfiguration(ctx, &s3.GetObjectLockConfigurationInput{
+		Bucket: bucket.Name,
+	})
+
+	if err != nil {
+		if isS3Err(err, s3ObjectLockConfigurationNotFoundError) {
+			return &s3.GetObjectLockConfigurationOutput{}, nil
+		}
+
+		return nil, err
+	}
+
+	return output, nil
+}
+
+func getBucketTagging(ctx context.Context, client *s3.Client, bucket types.Bucket) (*s3.GetBucketTaggingOutput, error) {
+	output, err := client.GetBucketTagging(ctx, &s3.GetBucketTaggingInput{
+		Bucket: bucket.Name,
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	return output, nil
+}
+
+func isIncludedInRegions(regions []string, region string) bool {
+	for _, region := range regions {
+		if strings.EqualFold(region, region) {
+			return true
 		}
 	}
 
-	return regionalBucketPolicies, nil
+	return false
+}
+
+func isS3Err(err error, code string) bool {
+	var ae smithy.APIError
+	return errors.As(err, &ae) && ae.ErrorCode() == code
 }
 
 func S3AccessPoint(ctx context.Context, cfg aws.Config) ([]Resource, error) {

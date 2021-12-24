@@ -2,25 +2,12 @@ package aws
 
 import (
 	"context"
-	"encoding/json"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
 	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
+	"github.com/aws/aws-sdk-go/aws/endpoints"
 )
-
-func getAllRegionsInJSON(ctx context.Context, cfg aws.Config, includeDisabledRegions bool) (string, error) {
-	regions, err := getAllRegions(ctx, cfg, includeDisabledRegions)
-	if err != nil {
-		return "", nil
-	}
-	j, err := json.MarshalIndent(regions, "", "  ")
-	if err != nil {
-		return "", err
-	}
-
-	return string(j), err
-}
 
 func getAllRegions(ctx context.Context, cfg aws.Config, includeDisabledRegions bool) ([]types.Region, error) {
 	client := ec2.NewFromConfig(cfg)
@@ -32,4 +19,19 @@ func getAllRegions(ctx context.Context, cfg aws.Config, includeDisabledRegions b
 	}
 
 	return output.Regions, nil
+}
+
+func partitionOf(region string) (string, bool) {
+	resolver := endpoints.DefaultResolver()
+	partitions := resolver.(endpoints.EnumPartitions).Partitions()
+
+	for _, p := range partitions {
+		for r := range p.Regions() {
+			if r == region {
+				return p.ID(), true
+			}
+		}
+	}
+
+	return "", false
 }

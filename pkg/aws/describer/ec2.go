@@ -352,6 +352,16 @@ func EC2Host(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	return values, nil
 }
 
+type EC2InstanceDescription struct {
+	Instance       types.Instance
+	InstanceStatus types.InstanceStatus
+	Attributes     struct {
+		UserData                          string
+		InstanceInitiatedShutdownBehavior string
+		DisableApiTermination             bool
+	}
+}
+
 func EC2Instance(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	client := ec2.NewFromConfig(cfg)
 	paginator := ec2.NewDescribeInstancesPaginator(client, &ec2.DescribeInstancesInput{})
@@ -365,9 +375,48 @@ func EC2Instance(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 
 		for _, r := range page.Reservations {
 			for _, v := range r.Instances {
+				var desc EC2InstanceDescription
+				desc.Instance = v
+
+				statusOutput, err := client.DescribeInstanceStatus(ctx, &ec2.DescribeInstanceStatusInput{
+					InstanceIds:         []string{*v.InstanceId},
+					IncludeAllInstances: aws.Bool(true),
+				})
+				if err != nil {
+					return nil, err
+				}
+				if len(statusOutput.InstanceStatuses) > 0 {
+					desc.InstanceStatus = statusOutput.InstanceStatuses[0]
+				}
+
+				attrs := []types.InstanceAttributeName{
+					types.InstanceAttributeNameUserData,
+					types.InstanceAttributeNameInstanceInitiatedShutdownBehavior,
+					types.InstanceAttributeNameDisableApiTermination,
+				}
+
+				for _, attr := range attrs {
+					output, err := client.DescribeInstanceAttribute(ctx, &ec2.DescribeInstanceAttributeInput{
+						InstanceId: v.InstanceId,
+						Attribute:  attr,
+					})
+					if err != nil {
+						return nil, err
+					}
+
+					switch attr {
+					case types.InstanceAttributeNameUserData:
+						desc.Attributes.UserData = aws.ToString(output.UserData.Value)
+					case types.InstanceAttributeNameInstanceInitiatedShutdownBehavior:
+						desc.Attributes.InstanceInitiatedShutdownBehavior = aws.ToString(output.InstanceInitiatedShutdownBehavior.Value)
+					case types.InstanceAttributeNameDisableApiTermination:
+						desc.Attributes.DisableApiTermination = aws.ToBool(output.DisableApiTermination.Value)
+					}
+				}
+
 				values = append(values, Resource{
 					ID:          *v.InstanceId,
-					Description: v,
+					Description: desc,
 				})
 			}
 		}

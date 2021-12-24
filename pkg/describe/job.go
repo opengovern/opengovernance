@@ -190,7 +190,7 @@ func doDescribeAWS(ctx context.Context, job Job, config map[string]interface{}) 
 	}
 
 	var inventory []KafkaResource
-	for region, resources := range output.Resources {
+	for _, resources := range output.Resources {
 		for _, resource := range resources {
 			if resource.Description == nil {
 				continue
@@ -200,12 +200,13 @@ func doDescribeAWS(ctx context.Context, job Job, config map[string]interface{}) 
 				ID:            resource.UniqueID(),
 				Description:   resource.Description,
 				SourceType:    SourceCloudAWS,
-				ResourceType:  output.Metadata.ResourceType,
+				ResourceType:  job.ResourceType,
 				ResourceJobID: job.JobID,
 				SourceJobID:   job.ParentJobID,
 				Metadata: map[string]string{
-					"region":     region,
-					"account_id": output.Metadata.AccountId,
+					"partition":  resource.Partition,
+					"region":     resource.Region,
+					"account_id": resource.Account,
 				},
 			})
 		}
