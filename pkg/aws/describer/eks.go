@@ -5,7 +5,12 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/eks"
+	"github.com/aws/aws-sdk-go-v2/service/eks/types"
 )
+
+type EKSClusterDescription struct {
+	Cluster *types.Cluster
+}
 
 func EKSCluster(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	clusters, err := listEksClusters(ctx, cfg)
@@ -23,12 +28,18 @@ func EKSCluster(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 		}
 
 		values = append(values, Resource{
-			ARN:         *output.Cluster.Arn,
-			Description: output.Cluster,
+			ARN: *output.Cluster.Arn,
+			Description: EKSClusterDescription{
+				Cluster: output.Cluster,
+			},
 		})
 	}
 
 	return values, nil
+}
+
+type EKSAddonDescription struct {
+	Addon *types.Addon
 }
 
 func EKSAddon(ctx context.Context, cfg aws.Config) ([]Resource, error) {
@@ -63,8 +74,10 @@ func EKSAddon(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 			}
 
 			values = append(values, Resource{
-				ARN:         *output.Addon.AddonArn,
-				Description: output.Addon,
+				ARN: *output.Addon.AddonArn,
+				Description: EKSAddonDescription{
+					Addon: output.Addon,
+				},
 			})
 		}
 	}

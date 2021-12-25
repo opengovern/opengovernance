@@ -8,6 +8,10 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/efs/types"
 )
 
+const (
+	efsPolicyNotFound = "PolicyNotFound"
+)
+
 func EFSAccessPoint(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	client := efs.NewFromConfig(cfg)
 	paginator := efs.NewDescribeAccessPointsPaginator(client, &efs.DescribeAccessPointsInput{})
@@ -30,6 +34,11 @@ func EFSAccessPoint(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	return values, nil
 }
 
+type EFSFileSystemDescription struct {
+	FileSystem types.FileSystemDescription
+	Policy     *string
+}
+
 func EFSFileSystem(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	client := efs.NewFromConfig(cfg)
 	paginator := efs.NewDescribeFileSystemsPaginator(client, &efs.DescribeFileSystemsInput{})
@@ -42,9 +51,23 @@ func EFSFileSystem(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 		}
 
 		for _, v := range page.FileSystems {
+			output, err := client.DescribeFileSystemPolicy(ctx, &efs.DescribeFileSystemPolicyInput{
+				FileSystemId: v.FileSystemId,
+			})
+			if err != nil {
+				if !isErr(err, efsPolicyNotFound) {
+					return nil, err
+				}
+
+				output = &efs.DescribeFileSystemPolicyOutput{}
+			}
+
 			values = append(values, Resource{
-				ARN:         *v.FileSystemArn,
-				Description: v,
+				ARN: *v.FileSystemArn,
+				Description: EFSFileSystemDescription{
+					FileSystem: v,
+					Policy:     output.Policy,
+				},
 			})
 		}
 	}

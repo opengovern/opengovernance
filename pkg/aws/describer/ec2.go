@@ -1165,6 +1165,10 @@ func EC2Volume(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	return values, nil
 }
 
+type EC2VPCDescription struct {
+	Vpc types.Vpc
+}
+
 func EC2VPC(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	client := ec2.NewFromConfig(cfg)
 	paginator := ec2.NewDescribeVpcsPaginator(client, &ec2.DescribeVpcsInput{})
@@ -1178,8 +1182,10 @@ func EC2VPC(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 
 		for _, v := range page.Vpcs {
 			values = append(values, Resource{
-				ID:          *v.VpcId,
-				Description: v,
+				ID: *v.VpcId,
+				Description: EC2VPCDescription{
+					Vpc: v,
+				},
 			})
 		}
 	}
