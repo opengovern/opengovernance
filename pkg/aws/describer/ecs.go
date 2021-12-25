@@ -40,6 +40,10 @@ func ECSCapacityProvider(ctx context.Context, cfg aws.Config) ([]Resource, error
 	return values, nil
 }
 
+type ECSClusterDescription struct {
+	Cluster types.Cluster
+}
+
 func ECSCluster(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	clusters, err := listEcsClusters(ctx, cfg)
 	if err != nil {
@@ -68,8 +72,10 @@ func ECSCluster(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 
 		for _, v := range output.Clusters {
 			values = append(values, Resource{
-				ARN:         *v.ClusterArn,
-				Description: v,
+				ARN: *v.ClusterArn,
+				Description: ECSClusterDescription{
+					Cluster: v,
+				},
 			})
 		}
 	}

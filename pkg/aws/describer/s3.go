@@ -192,7 +192,7 @@ func getBucketIsPublic(ctx context.Context, client *s3.Client, bucket types.Buck
 	})
 
 	if err != nil {
-		if isS3Err(err, s3NoSuchBucketPolicy) {
+		if isErr(err, s3NoSuchBucketPolicy) {
 			return &s3.GetBucketPolicyStatusOutput{}, nil
 		}
 
@@ -220,7 +220,7 @@ func getBucketEncryption(ctx context.Context, client *s3.Client, bucket types.Bu
 	})
 
 	if err != nil {
-		if isS3Err(err, s3ServerSideEncryptionConfigurationNotFoundError) {
+		if isErr(err, s3ServerSideEncryptionConfigurationNotFoundError) {
 			return &s3.GetBucketEncryptionOutput{}, nil
 		}
 
@@ -238,7 +238,7 @@ func getBucketPublicAccessBlock(ctx context.Context, client *s3.Client, bucket t
 	if err != nil {
 		// If the GetPublicAccessBlock is called on buckets which were created before Public Access Block setting was
 		// introduced, sometime it fails with error NoSuchPublicAccessBlockConfiguration
-		if isS3Err(err, s3NoSuchPublicAccessBlockConfiguration) {
+		if isErr(err, s3NoSuchPublicAccessBlockConfiguration) {
 			return &s3.GetPublicAccessBlockOutput{
 				PublicAccessBlockConfiguration: &types.PublicAccessBlockConfiguration{
 					BlockPublicAcls:       false,
@@ -273,7 +273,7 @@ func getBucketLifecycle(ctx context.Context, client *s3.Client, bucket types.Buc
 	})
 
 	if err != nil {
-		if isS3Err(err, s3NoSuchLifecycleConfiguration) {
+		if isErr(err, s3NoSuchLifecycleConfiguration) {
 			return &s3.GetBucketLifecycleConfigurationOutput{}, nil
 		}
 
@@ -301,7 +301,7 @@ func getBucketPolicy(ctx context.Context, client *s3.Client, bucket types.Bucket
 	})
 
 	if err != nil {
-		if isS3Err(err, s3NoSuchBucketPolicy) {
+		if isErr(err, s3NoSuchBucketPolicy) {
 			return &s3.GetBucketPolicyOutput{}, nil
 		}
 
@@ -317,7 +317,7 @@ func getBucketReplication(ctx context.Context, client *s3.Client, bucket types.B
 	})
 
 	if err != nil {
-		if isS3Err(err, s3ReplicationConfigurationNotFoundError) {
+		if isErr(err, s3ReplicationConfigurationNotFoundError) {
 			return &s3.GetBucketReplicationOutput{}, nil
 		}
 
@@ -333,7 +333,7 @@ func getObjectLockConfiguration(ctx context.Context, client *s3.Client, bucket t
 	})
 
 	if err != nil {
-		if isS3Err(err, s3ObjectLockConfigurationNotFoundError) {
+		if isErr(err, s3ObjectLockConfigurationNotFoundError) {
 			return &s3.GetObjectLockConfigurationOutput{}, nil
 		}
 
@@ -365,7 +365,7 @@ func isIncludedInRegions(regions []string, region string) bool {
 	return false
 }
 
-func isS3Err(err error, code string) bool {
+func isErr(err error, code string) bool {
 	var ae smithy.APIError
 	return errors.As(err, &ae) && ae.ErrorCode() == code
 }
