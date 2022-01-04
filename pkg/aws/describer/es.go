@@ -9,25 +9,51 @@ import (
 
 type ESDomainDescription struct {
 	Domain types.ElasticsearchDomainStatus
+	Tags []types.Tag
 }
 
-func ESDomains(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func ESDomain(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+	var values []Resource
+
 	client := es.NewFromConfig(cfg)
-	out, err := client.DescribeElasticsearchDomains(ctx, &es.DescribeElasticsearchDomainsInput{})
+	listNamesOut, err := client.ListDomainNames(ctx, &es.ListDomainNamesInput{})
 	if err != nil {
 		return nil, err
 	}
 
-	var values []Resource
+	var domainNamesList []string
+	for _, dn := range listNamesOut.DomainNames {
+		domainNamesList = append(domainNamesList, *dn.DomainName)
+	}
+
+	if len(domainNamesList) == 0 {
+		return values, nil
+	}
+
+	out, err := client.DescribeElasticsearchDomains(ctx, &es.DescribeElasticsearchDomainsInput{
+		DomainNames: domainNamesList,
+	})
+	if err != nil {
+		return nil, err
+	}
 
 	for _, v := range out.DomainStatusList {
+		out, err := client.ListTags(ctx, &es.ListTagsInput{
+			ARN: v.ARN,
+		})
+		if err != nil {
+			return nil, err
+		}
+
 		values = append(values, Resource{
 			ID:         *v.DomainId,
 			Description: ESDomainDescription {
 				Domain: v,
+				Tags: out.TagList,
 			},
 		})
 	}
+
 
 	return values, nil
 }
