@@ -2,11 +2,16 @@ package describer
 
 import (
 	"context"
+	"github.com/aws/aws-sdk-go/aws/awserr"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/backup"
 	"github.com/aws/aws-sdk-go-v2/service/backup/types"
 )
+
+type BackupBackupPlanDescription struct {
+	BackupPlan types.BackupPlansListMember
+}
 
 func BackupBackupPlan(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	client := backup.NewFromConfig(cfg)
@@ -21,8 +26,10 @@ func BackupBackupPlan(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 
 		for _, v := range page.BackupPlansList {
 			values = append(values, Resource{
-				ARN:         *v.BackupPlanArn,
-				Description: v,
+				ARN: *v.BackupPlanArn,
+				Description: BackupBackupPlanDescription{
+					BackupPlan: v,
+				},
 			})
 		}
 	}
@@ -62,6 +69,13 @@ func BackupBackupSelection(ctx context.Context, cfg aws.Config) ([]Resource, err
 	return values, nil
 }
 
+type BackupBackupVaultDescription struct {
+	BackupVault       types.BackupVaultListMember
+	Policy            *string
+	BackupVaultEvents []types.BackupVaultEvent
+	SNSTopicArn       *string
+}
+
 func BackupBackupVault(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	client := backup.NewFromConfig(cfg)
 	paginator := backup.NewListBackupVaultsPaginator(client, &backup.ListBackupVaultsInput{})
@@ -74,9 +88,38 @@ func BackupBackupVault(ctx context.Context, cfg aws.Config) ([]Resource, error) 
 		}
 
 		for _, v := range page.BackupVaultList {
+			notification, err := client.GetBackupVaultNotifications(ctx, &backup.GetBackupVaultNotificationsInput{
+				BackupVaultName: v.BackupVaultName,
+			})
+			if err != nil {
+				if a, ok := err.(awserr.Error); ok {
+					if a.Code() == "ResourceNotFoundException" || a.Code() == "InvalidParameter" {
+						notification = &backup.GetBackupVaultNotificationsOutput{}
+					} else {
+						return nil, err
+					}
+				}
+			}
+
+			accessPolicy, err := client.GetBackupVaultAccessPolicy(ctx, &backup.GetBackupVaultAccessPolicyInput{
+				BackupVaultName: v.BackupVaultName,
+			})
+			if a, ok := err.(awserr.Error); ok {
+				if a.Code() == "ResourceNotFoundException" || a.Code() == "InvalidParameter" {
+					accessPolicy = &backup.GetBackupVaultAccessPolicyOutput{}
+				} else {
+					return nil, err
+				}
+			}
+
 			values = append(values, Resource{
-				ARN:         *v.BackupVaultArn,
-				Description: v,
+				ARN: *v.BackupVaultArn,
+				Description: BackupBackupVaultDescription{
+					BackupVault:       v,
+					Policy:            accessPolicy.Policy,
+					BackupVaultEvents: notification.BackupVaultEvents,
+					SNSTopicArn:       notification.SNSTopicArn,
+				},
 			})
 		}
 	}

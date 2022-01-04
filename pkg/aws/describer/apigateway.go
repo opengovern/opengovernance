@@ -9,7 +9,7 @@ import (
 )
 
 type ApiGatewayDescription struct {
-	RestApi types.RestApi
+	RestApiId *string
 	Stage	types.Stage
 }
 
@@ -36,7 +36,7 @@ func ApiGatewayStage(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 				values = append(values, Resource{
 					ID: CompositeID(*restItem.Id, *stageItem.StageName),
 					Description: ApiGatewayDescription{
-						RestApi: restItem,
+						RestApiId: restItem.Id,
 						Stage:  stageItem,
 					},
 				})
