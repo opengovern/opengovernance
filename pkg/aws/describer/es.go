@@ -9,7 +9,7 @@ import (
 
 type ESDomainDescription struct {
 	Domain types.ElasticsearchDomainStatus
-	Tags []types.Tag
+	Tags   []types.Tag
 }
 
 func ESDomain(ctx context.Context, cfg aws.Config) ([]Resource, error) {
@@ -46,15 +46,13 @@ func ESDomain(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 		}
 
 		values = append(values, Resource{
-			ID:         *v.DomainId,
-			Description: ESDomainDescription {
+			ARN: *v.ARN,
+			Description: ESDomainDescription{
 				Domain: v,
-				Tags: out.TagList,
+				Tags:   out.TagList,
 			},
 		})
 	}
 
-
 	return values, nil
 }
-
