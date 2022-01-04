@@ -12,7 +12,7 @@ require (
 	github.com/Shopify/toxiproxy v2.1.4+incompatible // indirect
 	github.com/armon/go-metrics v0.3.10 // indirect
 	github.com/aws/aws-sdk-go v1.42.23
-	github.com/aws/aws-sdk-go-v2 v1.11.1
+	github.com/aws/aws-sdk-go-v2 v1.11.2
 	github.com/aws/aws-sdk-go-v2/config v1.10.2
 	github.com/aws/aws-sdk-go-v2/credentials v1.6.2
 	github.com/aws/aws-sdk-go-v2/service/acm v1.9.1
@@ -31,6 +31,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/eks v1.14.0
 	github.com/aws/aws-sdk-go-v2/service/elasticloadbalancing v1.9.1
 	github.com/aws/aws-sdk-go-v2/service/elasticloadbalancingv2 v1.12.1
+	github.com/aws/aws-sdk-go-v2/service/elasticsearchservice v1.11.0
 	github.com/aws/aws-sdk-go-v2/service/iam v1.13.1
 	github.com/aws/aws-sdk-go-v2/service/kms v1.11.0
 	github.com/aws/aws-sdk-go-v2/service/lambda v1.13.0
