@@ -119,6 +119,7 @@ var resourceTypeToDescriber = map[string]ResourceDescriber{
 	"AWS::IAM::ServerCertificate":                                 SequentialDescribeGlobal(describer.IAMServerCertificate),
 	"AWS::IAM::User":                                              SequentialDescribeGlobal(describer.IAMUser),
 	"AWS::IAM::VirtualMFADevice":                                  SequentialDescribeGlobal(describer.IAMVirtualMFADevice),
+	"AWS::ApiGateway::Stage":                                      ParallelDescribeRegional(describer.ApiGatewayStage),
 	"AWS::KMS::Alias":                                             ParallelDescribeRegional(describer.KMSAlias),
 	"AWS::KMS::Key":                                               ParallelDescribeRegional(describer.KMSKey),
 	"AWS::Lambda::Alias":                                          ParallelDescribeRegional(describer.LambdaAlias),
