@@ -105,6 +105,7 @@ var resourceTypeToDescriber = map[string]ResourceDescriber{
 	"AWS::ElasticLoadBalancingV2::ListenerRule":                   ParallelDescribeRegional(describer.ElasticLoadBalancingV2ListenerRule),
 	"AWS::ElasticLoadBalancingV2::LoadBalancer":                   ParallelDescribeRegional(describer.ElasticLoadBalancingV2LoadBalancer),
 	"AWS::ElasticLoadBalancingV2::TargetGroup":                    ParallelDescribeRegional(describer.ElasticLoadBalancingV2TargetGroup),
+	"AWS::ElasticSearch::Domain":                                  ParallelDescribeRegional(describer.ESDomain),
 	"AWS::IAM::AccessKey":                                         SequentialDescribeGlobal(describer.IAMAccessKey),
 	"AWS::IAM::Group":                                             SequentialDescribeGlobal(describer.IAMGroup),
 	"AWS::IAM::InstanceProfile":                                   SequentialDescribeGlobal(describer.IAMInstanceProfile),
