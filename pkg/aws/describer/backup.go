@@ -37,6 +37,86 @@ func BackupBackupPlan(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	return values, nil
 }
 
+type BackupBackupRecoveryPointDescription struct {
+	RecoveryPoint types.RecoveryPointByBackupVault
+	StorageClass  types.StorageClass
+}
+
+func BackupBackupRecoveryPoint(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+	client := backup.NewFromConfig(cfg)
+	var values []Resource
+
+	paginator := backup.NewListBackupVaultsPaginator(client, &backup.ListBackupVaultsInput{})
+	for paginator.HasMorePages() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, item := range page.BackupVaultList {
+			recoveryPointPaginator := backup.NewListRecoveryPointsByBackupVaultPaginator(client,
+				&backup.ListRecoveryPointsByBackupVaultInput{
+					BackupVaultName: item.BackupVaultName,
+				})
+
+			for recoveryPointPaginator.HasMorePages() {
+				page, err := recoveryPointPaginator.NextPage(ctx)
+				if err != nil {
+					return nil, err
+				}
+
+				for _, recoveryPoint := range page.RecoveryPoints {
+					out, err := client.DescribeRecoveryPoint(ctx, &backup.DescribeRecoveryPointInput{
+						BackupVaultName:  recoveryPoint.BackupVaultName,
+						RecoveryPointArn: recoveryPoint.RecoveryPointArn,
+					})
+					if err != nil {
+						return nil, err
+					}
+
+					values = append(values, Resource{
+						ARN: *recoveryPoint.RecoveryPointArn,
+						Description: BackupBackupRecoveryPointDescription{
+							RecoveryPoint: recoveryPoint,
+							StorageClass:  out.StorageClass,
+						},
+					})
+				}
+			}
+		}
+	}
+
+	return values, nil
+}
+
+type BackupBackupProtectedResourceDescription struct {
+	ProtectedResource types.ProtectedResource
+}
+
+func BackupBackupProtectedResource(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+	client := backup.NewFromConfig(cfg)
+	var values []Resource
+
+	paginator := backup.NewListProtectedResourcesPaginator(client, &backup.ListProtectedResourcesInput{})
+	for paginator.HasMorePages() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, resource := range page.Results {
+			values = append(values, Resource{
+				ARN: *resource.ResourceArn,
+				Description: BackupBackupProtectedResourceDescription{
+					ProtectedResource: resource,
+				},
+			})
+		}
+	}
+
+	return values, nil
+}
+
 func BackupBackupSelection(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	plans, err := BackupBackupPlan(ctx, cfg)
 	if err != nil {

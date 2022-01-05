@@ -24,6 +24,8 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/cloudtrail v1.10.0
 	github.com/aws/aws-sdk-go-v2/service/cloudwatch v1.12.0
 	github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs v1.10.1
+	github.com/aws/aws-sdk-go-v2/service/codebuild v1.15.0
+	github.com/aws/aws-sdk-go-v2/service/configservice v1.13.0
 	github.com/aws/aws-sdk-go-v2/service/ec2 v1.23.0
 	github.com/aws/aws-sdk-go-v2/service/ecr v1.10.1
 	github.com/aws/aws-sdk-go-v2/service/ecrpublic v1.8.1

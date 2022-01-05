@@ -10,6 +10,11 @@ import (
 	logstypes "github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs/types"
 )
 
+type CloudWatchAlarmDescription struct {
+	MetricAlarm types.MetricAlarm
+	Tags        []types.Tag
+}
+
 func CloudWatchAlarm(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	client := cloudwatch.NewFromConfig(cfg)
 	paginator := cloudwatch.NewDescribeAlarmsPaginator(client, &cloudwatch.DescribeAlarmsInput{
@@ -24,9 +29,19 @@ func CloudWatchAlarm(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 		}
 
 		for _, v := range page.MetricAlarms {
+			tags, err := client.ListTagsForResource(ctx, &cloudwatch.ListTagsForResourceInput{
+				ResourceARN: v.AlarmArn,
+			})
+			if err != nil {
+				return nil, err
+			}
+
 			values = append(values, Resource{
-				ARN:         *v.AlarmArn,
-				Description: v,
+				ARN: *v.AlarmArn,
+				Description: CloudWatchAlarmDescription{
+					MetricAlarm: v,
+					Tags:        tags.Tags,
+				},
 			})
 		}
 	}
@@ -156,6 +171,11 @@ func CloudWatchLogsDestination(ctx context.Context, cfg aws.Config) ([]Resource,
 	return values, nil
 }
 
+type CloudWatchLogsLogGroupDescription struct {
+	LogGroup logstypes.LogGroup
+	Tags     map[string]string
+}
+
 func CloudWatchLogsLogGroup(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	client := cloudwatchlogs.NewFromConfig(cfg)
 	paginator := cloudwatchlogs.NewDescribeLogGroupsPaginator(client, &cloudwatchlogs.DescribeLogGroupsInput{})
@@ -168,9 +188,19 @@ func CloudWatchLogsLogGroup(ctx context.Context, cfg aws.Config) ([]Resource, er
 		}
 
 		for _, v := range page.LogGroups {
+			tags, err := client.ListTagsLogGroup(ctx, &cloudwatchlogs.ListTagsLogGroupInput{
+				LogGroupName: v.LogGroupName,
+			})
+			if err != nil {
+				return nil, err
+			}
+
 			values = append(values, Resource{
-				ARN:         *v.Arn,
-				Description: v,
+				ARN: *v.Arn,
+				Description: CloudWatchLogsLogGroupDescription{
+					LogGroup: v,
+					Tags:     tags.Tags,
+				},
 			})
 		}
 	}
