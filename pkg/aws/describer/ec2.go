@@ -260,6 +260,10 @@ func EC2EgressOnlyInternetGateway(ctx context.Context, cfg aws.Config) ([]Resour
 	return values, nil
 }
 
+type EC2EIPDescription struct {
+	Address types.Address
+}
+
 func EC2EIP(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	client := ec2.NewFromConfig(cfg)
 	output, err := client.DescribeAddresses(ctx, &ec2.DescribeAddressesInput{})
@@ -270,8 +274,10 @@ func EC2EIP(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	var values []Resource
 	for _, v := range output.Addresses {
 		values = append(values, Resource{
-			ID:          *v.AllocationId,
-			Description: v,
+			ID: *v.AllocationId,
+			Description: EC2EIPDescription{
+				Address: v,
+			},
 		})
 	}
 
@@ -425,6 +431,10 @@ func EC2Instance(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	return values, nil
 }
 
+type EC2InternetGatewayDescription struct {
+	InternetGateway types.InternetGateway
+}
+
 func EC2InternetGateway(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	client := ec2.NewFromConfig(cfg)
 	paginator := ec2.NewDescribeInternetGatewaysPaginator(client, &ec2.DescribeInternetGatewaysInput{})
@@ -438,8 +448,10 @@ func EC2InternetGateway(ctx context.Context, cfg aws.Config) ([]Resource, error)
 
 		for _, v := range page.InternetGateways {
 			values = append(values, Resource{
-				ID:          *v.InternetGatewayId,
-				Description: v,
+				ID: *v.InternetGatewayId,
+				Description: EC2InternetGatewayDescription{
+					InternetGateway: v,
+				},
 			})
 		}
 	}
@@ -469,6 +481,10 @@ func EC2LaunchTemplate(ctx context.Context, cfg aws.Config) ([]Resource, error) 
 	return values, nil
 }
 
+type EC2NatGatewayDescription struct {
+	NatGateway types.NatGateway
+}
+
 func EC2NatGateway(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	client := ec2.NewFromConfig(cfg)
 	paginator := ec2.NewDescribeNatGatewaysPaginator(client, &ec2.DescribeNatGatewaysInput{})
@@ -482,13 +498,19 @@ func EC2NatGateway(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 
 		for _, v := range page.NatGateways {
 			values = append(values, Resource{
-				ID:          *v.NatGatewayId,
-				Description: v,
+				ID: *v.NatGatewayId,
+				Description: EC2NatGatewayDescription{
+					NatGateway: v,
+				},
 			})
 		}
 	}
 
 	return values, nil
+}
+
+type EC2NetworkAclDescription struct {
+	NetworkAcl types.NetworkAcl
 }
 
 func EC2NetworkAcl(ctx context.Context, cfg aws.Config) ([]Resource, error) {
@@ -504,8 +526,10 @@ func EC2NetworkAcl(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 
 		for _, v := range page.NetworkAcls {
 			values = append(values, Resource{
-				ID:          *v.NetworkAclId,
-				Description: v,
+				ID: *v.NetworkAclId,
+				Description: EC2NetworkAclDescription{
+					NetworkAcl: v,
+				},
 			})
 		}
 	}
@@ -641,6 +665,10 @@ func EC2PrefixList(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	return values, nil
 }
 
+type EC2RouteTableDescription struct {
+	RouteTable types.RouteTable
+}
+
 func EC2RouteTable(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	client := ec2.NewFromConfig(cfg)
 	paginator := ec2.NewDescribeRouteTablesPaginator(client, &ec2.DescribeRouteTablesInput{})
@@ -654,8 +682,10 @@ func EC2RouteTable(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 
 		for _, v := range page.RouteTables {
 			values = append(values, Resource{
-				ID:          *v.RouteTableId,
-				Description: v,
+				ID: *v.RouteTableId,
+				Description: EC2RouteTableDescription{
+					RouteTable: v,
+				},
 			})
 		}
 	}
@@ -794,6 +824,10 @@ func EC2TransitGatewayRouteTablePropagation(ctx context.Context, cfg aws.Config)
 	return values, nil
 }
 
+type EC2SecurityGroupDescription struct {
+	SecurityGroup types.SecurityGroup
+}
+
 func EC2SecurityGroup(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	client := ec2.NewFromConfig(cfg)
 	paginator := ec2.NewDescribeSecurityGroupsPaginator(client, &ec2.DescribeSecurityGroupsInput{})
@@ -807,8 +841,10 @@ func EC2SecurityGroup(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 
 		for _, v := range page.SecurityGroups {
 			values = append(values, Resource{
-				ID:          *v.GroupId,
-				Description: v,
+				ID: *v.GroupId,
+				Description: EC2SecurityGroupDescription{
+					SecurityGroup: v,
+				},
 			})
 		}
 	}
@@ -838,6 +874,10 @@ func EC2SpotFleet(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	return values, nil
 }
 
+type EC2SubnetDescription struct {
+	Subnet types.Subnet
+}
+
 func EC2Subnet(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	client := ec2.NewFromConfig(cfg)
 	paginator := ec2.NewDescribeSubnetsPaginator(client, &ec2.DescribeSubnetsInput{})
@@ -851,8 +891,10 @@ func EC2Subnet(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 
 		for _, v := range page.Subnets {
 			values = append(values, Resource{
-				ARN:         *v.SubnetArn,
-				Description: v,
+				ARN: *v.SubnetArn,
+				Description: EC2SubnetDescription{
+					Subnet: v,
+				},
 			})
 		}
 	}
@@ -1193,6 +1235,10 @@ func EC2VPC(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	return values, nil
 }
 
+type EC2VPCEndpointDescription struct {
+	VpcEndpoint types.VpcEndpoint
+}
+
 func EC2VPCEndpoint(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	client := ec2.NewFromConfig(cfg)
 	paginator := ec2.NewDescribeVpcEndpointsPaginator(client, &ec2.DescribeVpcEndpointsInput{})
@@ -1206,8 +1252,10 @@ func EC2VPCEndpoint(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 
 		for _, v := range page.VpcEndpoints {
 			values = append(values, Resource{
-				ID:          *v.VpcEndpointId,
-				Description: v,
+				ID: *v.VpcEndpointId,
+				Description: EC2VPCEndpointDescription{
+					VpcEndpoint: v,
+				},
 			})
 		}
 	}
@@ -1325,6 +1373,10 @@ func EC2VPCPeeringConnection(ctx context.Context, cfg aws.Config) ([]Resource, e
 	return values, nil
 }
 
+type EC2VPNConnectionDescription struct {
+	VpnConnection types.VpnConnection
+}
+
 func EC2VPNConnection(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	client := ec2.NewFromConfig(cfg)
 	output, err := client.DescribeVpnConnections(ctx, &ec2.DescribeVpnConnectionsInput{})
@@ -1335,8 +1387,10 @@ func EC2VPNConnection(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	var values []Resource
 	for _, v := range output.VpnConnections {
 		values = append(values, Resource{
-			ID:          *v.VpnConnectionId,
-			Description: v,
+			ID: *v.VpnConnectionId,
+			Description: EC2VPNConnectionDescription{
+				VpnConnection: v,
+			},
 		})
 	}
 
