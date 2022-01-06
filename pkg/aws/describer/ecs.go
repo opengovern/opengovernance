@@ -83,6 +83,10 @@ func ECSCluster(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	return values, nil
 }
 
+type ECSServiceDescription struct {
+	Service types.Service
+}
+
 func ECSService(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	clusters, err := listEcsClusters(ctx, cfg)
 	if err != nil {
@@ -118,8 +122,10 @@ func ECSService(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 
 			for _, v := range output.Services {
 				values = append(values, Resource{
-					ARN:         *v.ServiceArn,
-					Description: v,
+					ARN: *v.ServiceArn,
+					Description: ECSServiceDescription{
+						Service: v,
+					},
 				})
 			}
 		}
