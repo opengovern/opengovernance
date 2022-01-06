@@ -26,6 +26,10 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs v1.10.1
 	github.com/aws/aws-sdk-go-v2/service/codebuild v1.15.0
 	github.com/aws/aws-sdk-go-v2/service/configservice v1.13.0
+	github.com/aws/aws-sdk-go-v2/service/databasemigrationservice v1.14.0
+	github.com/aws/aws-sdk-go-v2/service/dax v1.7.2
+	github.com/aws/aws-sdk-go-v2/service/dynamodb v1.11.0
+	github.com/aws/aws-sdk-go-v2/service/ebs v1.10.0
 	github.com/aws/aws-sdk-go-v2/service/ec2 v1.23.0
 	github.com/aws/aws-sdk-go-v2/service/ecr v1.10.1
 	github.com/aws/aws-sdk-go-v2/service/ecrpublic v1.8.1
