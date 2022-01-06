@@ -9,11 +9,11 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/backup/types"
 )
 
-type BackupBackupPlanDescription struct {
+type BackupPlanDescription struct {
 	BackupPlan types.BackupPlansListMember
 }
 
-func BackupBackupPlan(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func BackupPlan(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	client := backup.NewFromConfig(cfg)
 	paginator := backup.NewListBackupPlansPaginator(client, &backup.ListBackupPlansInput{})
 
@@ -27,7 +27,7 @@ func BackupBackupPlan(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 		for _, v := range page.BackupPlansList {
 			values = append(values, Resource{
 				ARN: *v.BackupPlanArn,
-				Description: BackupBackupPlanDescription{
+				Description: BackupPlanDescription{
 					BackupPlan: v,
 				},
 			})
@@ -37,12 +37,11 @@ func BackupBackupPlan(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	return values, nil
 }
 
-type BackupBackupRecoveryPointDescription struct {
-	RecoveryPoint types.RecoveryPointByBackupVault
-	StorageClass  types.StorageClass
+type BackupRecoveryPointDescription struct {
+	RecoveryPoint *backup.DescribeRecoveryPointOutput
 }
 
-func BackupBackupRecoveryPoint(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func BackupRecoveryPoint(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	client := backup.NewFromConfig(cfg)
 	var values []Resource
 
@@ -76,9 +75,8 @@ func BackupBackupRecoveryPoint(ctx context.Context, cfg aws.Config) ([]Resource,
 
 					values = append(values, Resource{
 						ARN: *recoveryPoint.RecoveryPointArn,
-						Description: BackupBackupRecoveryPointDescription{
-							RecoveryPoint: recoveryPoint,
-							StorageClass:  out.StorageClass,
+						Description: BackupRecoveryPointDescription{
+							RecoveryPoint: out,
 						},
 					})
 				}
@@ -89,11 +87,11 @@ func BackupBackupRecoveryPoint(ctx context.Context, cfg aws.Config) ([]Resource,
 	return values, nil
 }
 
-type BackupBackupProtectedResourceDescription struct {
+type BackupProtectedResourceDescription struct {
 	ProtectedResource types.ProtectedResource
 }
 
-func BackupBackupProtectedResource(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func BackupProtectedResource(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	client := backup.NewFromConfig(cfg)
 	var values []Resource
 
@@ -107,7 +105,7 @@ func BackupBackupProtectedResource(ctx context.Context, cfg aws.Config) ([]Resou
 		for _, resource := range page.Results {
 			values = append(values, Resource{
 				ARN: *resource.ResourceArn,
-				Description: BackupBackupProtectedResourceDescription{
+				Description: BackupProtectedResourceDescription{
 					ProtectedResource: resource,
 				},
 			})
@@ -118,7 +116,7 @@ func BackupBackupProtectedResource(ctx context.Context, cfg aws.Config) ([]Resou
 }
 
 func BackupBackupSelection(ctx context.Context, cfg aws.Config) ([]Resource, error) {
-	plans, err := BackupBackupPlan(ctx, cfg)
+	plans, err := BackupPlan(ctx, cfg)
 	if err != nil {
 		return nil, err
 	}
@@ -149,14 +147,14 @@ func BackupBackupSelection(ctx context.Context, cfg aws.Config) ([]Resource, err
 	return values, nil
 }
 
-type BackupBackupVaultDescription struct {
+type BackupVaultDescription struct {
 	BackupVault       types.BackupVaultListMember
 	Policy            *string
 	BackupVaultEvents []types.BackupVaultEvent
 	SNSTopicArn       *string
 }
 
-func BackupBackupVault(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func BackupVault(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	client := backup.NewFromConfig(cfg)
 	paginator := backup.NewListBackupVaultsPaginator(client, &backup.ListBackupVaultsInput{})
 
@@ -194,7 +192,7 @@ func BackupBackupVault(ctx context.Context, cfg aws.Config) ([]Resource, error) 
 
 			values = append(values, Resource{
 				ARN: *v.BackupVaultArn,
-				Description: BackupBackupVaultDescription{
+				Description: BackupVaultDescription{
 					BackupVault:       v,
 					Policy:            accessPolicy.Policy,
 					BackupVaultEvents: notification.BackupVaultEvents,

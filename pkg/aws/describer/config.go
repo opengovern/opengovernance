@@ -9,7 +9,7 @@ import (
 )
 
 type ConfigConfigurationRecorderDescription struct {
-	ConfigurationRecorder types.ConfigurationRecorder
+	ConfigurationRecorder        types.ConfigurationRecorder
 	ConfigurationRecordersStatus types.ConfigurationRecorderStatus
 }
 
@@ -33,7 +33,7 @@ func ConfigConfigurationRecorder(ctx context.Context, cfg aws.Config) ([]Resourc
 		values = append(values, Resource{
 			ARN: *item.RoleARN,
 			Description: ConfigConfigurationRecorderDescription{
-				ConfigurationRecorder: item,
+				ConfigurationRecorder:        item,
 				ConfigurationRecordersStatus: status.ConfigurationRecordersStatus[0],
 			},
 		})
