@@ -8,7 +8,6 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/iam/types"
 	"github.com/aws/aws-sdk-go-v2/service/organizations"
 	orgtypes "github.com/aws/aws-sdk-go-v2/service/organizations/types"
-	"github.com/aws/aws-sdk-go-v2/service/sts"
 )
 
 const (
@@ -45,15 +44,9 @@ func IAMAccount(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 		aliases = append(aliases, page.AccountAliases...)
 	}
 
-	stsClient := sts.NewFromConfig(cfg)
-	callerOutput, err := stsClient.GetCallerIdentity(ctx, &sts.GetCallerIdentityInput{})
-	if err != nil {
-		return nil, err
-	}
-
 	return []Resource{
 		{
-			ARN: *callerOutput.Arn,
+			// No ID or ARN. Per Account Configuration
 			Description: IAMAccountDescription{
 				Aliases:      aliases,
 				Organization: output.Organization,
