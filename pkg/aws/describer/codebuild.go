@@ -13,10 +13,10 @@ type CodeBuildProjectDescription struct {
 }
 
 func CodeBuildProject(ctx context.Context, cfg aws.Config) ([]Resource, error) {
-	var values []Resource
 	client := codebuild.NewFromConfig(cfg)
 	paginator := codebuild.NewListProjectsPaginator(client, &codebuild.ListProjectsInput{})
 
+	var values []Resource
 	for paginator.HasMorePages() {
 		page, err := paginator.NextPage(ctx)
 		if err != nil {

@@ -16,9 +16,9 @@ type CloudFrontDistributionDescription struct {
 
 func CloudFrontDistribution(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	client := cloudfront.NewFromConfig(cfg)
-	var values []Resource
-
 	paginator := cloudfront.NewListDistributionsPaginator(client, &cloudfront.ListDistributionsInput{})
+
+	var values []Resource
 	for paginator.HasMorePages() {
 		page, err := paginator.NextPage(ctx)
 		if err != nil {

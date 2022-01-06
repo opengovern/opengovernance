@@ -14,14 +14,13 @@ type ConfigConfigurationRecorderDescription struct {
 }
 
 func ConfigConfigurationRecorder(ctx context.Context, cfg aws.Config) ([]Resource, error) {
-	var values []Resource
-
 	client := configservice.NewFromConfig(cfg)
 	out, err := client.DescribeConfigurationRecorders(ctx, &configservice.DescribeConfigurationRecordersInput{})
 	if err != nil {
 		return nil, err
 	}
 
+	var values []Resource
 	for _, item := range out.ConfigurationRecorders {
 		status, err := client.DescribeConfigurationRecorderStatus(ctx, &configservice.DescribeConfigurationRecorderStatusInput{
 			ConfigurationRecorderNames: []string{*item.Name},

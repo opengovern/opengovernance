@@ -43,9 +43,9 @@ type BackupRecoveryPointDescription struct {
 
 func BackupRecoveryPoint(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	client := backup.NewFromConfig(cfg)
-	var values []Resource
-
 	paginator := backup.NewListBackupVaultsPaginator(client, &backup.ListBackupVaultsInput{})
+
+	var values []Resource
 	for paginator.HasMorePages() {
 		page, err := paginator.NextPage(ctx)
 		if err != nil {
@@ -93,9 +93,9 @@ type BackupProtectedResourceDescription struct {
 
 func BackupProtectedResource(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	client := backup.NewFromConfig(cfg)
-	var values []Resource
-
 	paginator := backup.NewListProtectedResourcesPaginator(client, &backup.ListProtectedResourcesInput{})
+
+	var values []Resource
 	for paginator.HasMorePages() {
 		page, err := paginator.NextPage(ctx)
 		if err != nil {

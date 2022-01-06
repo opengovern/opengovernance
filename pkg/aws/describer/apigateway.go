@@ -15,9 +15,9 @@ type ApiGatewayDescription struct {
 
 func ApiGatewayStage(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	client := apigateway.NewFromConfig(cfg)
+	paginator := apigateway.NewGetRestApisPaginator(client, &apigateway.GetRestApisInput{})
 
 	var values []Resource
-	paginator := apigateway.NewGetRestApisPaginator(client, &apigateway.GetRestApisInput{})
 	for paginator.HasMorePages() {
 		page, err := paginator.NextPage(ctx)
 		if err != nil {

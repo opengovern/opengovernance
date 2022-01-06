@@ -3,13 +3,105 @@ package describer
 import (
 	"context"
 	"errors"
-
 	"github.com/aws/aws-sdk-go-v2/aws"
 	acmtypes "github.com/aws/aws-sdk-go-v2/service/acm/types"
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
 	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	"github.com/aws/smithy-go"
 )
+
+type EC2VolumeSnapshotDescription struct {
+	Snapshot                *types.Snapshot
+	CreateVolumePermissions []types.CreateVolumePermission
+}
+
+func EC2VolumeSnapshot(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+	var values []Resource
+	client := ec2.NewFromConfig(cfg)
+
+	paginator := ec2.NewDescribeSnapshotsPaginator(client, &ec2.DescribeSnapshotsInput{})
+	for paginator.HasMorePages() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, snapshot := range page.Snapshots {
+			attrs, err := client.DescribeSnapshotAttribute(ctx, &ec2.DescribeSnapshotAttributeInput{
+				Attribute:  types.SnapshotAttributeNameCreateVolumePermission,
+				SnapshotId: snapshot.SnapshotId,
+			})
+			if err != nil {
+				return nil, err
+			}
+
+			values = append(values, Resource{
+				ID: *snapshot.SnapshotId,
+				Description: EC2VolumeSnapshotDescription{
+					Snapshot:                &snapshot,
+					CreateVolumePermissions: attrs.CreateVolumePermissions,
+				},
+			})
+		}
+	}
+
+	return values, nil
+}
+
+type EC2VolumeDescription struct {
+	Volume     *types.Volume
+	Attributes struct {
+		AutoEnableIO bool
+		ProductCodes []types.ProductCode
+	}
+}
+
+func EC2Volume(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+	var values []Resource
+	client := ec2.NewFromConfig(cfg)
+
+	paginator := ec2.NewDescribeVolumesPaginator(client, &ec2.DescribeVolumesInput{})
+	for paginator.HasMorePages() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, volume := range page.Volumes {
+			var description EC2VolumeDescription
+			description.Volume = &volume
+
+			attrs := []types.VolumeAttributeName{
+				types.VolumeAttributeNameAutoEnableIO,
+				types.VolumeAttributeNameProductCodes,
+			}
+
+			for _, attr := range attrs {
+				attrs, err := client.DescribeVolumeAttribute(ctx, &ec2.DescribeVolumeAttributeInput{
+					Attribute: attr,
+					VolumeId:  volume.VolumeId,
+				})
+				if err != nil {
+					return nil, err
+				}
+
+				switch attr {
+				case types.VolumeAttributeNameAutoEnableIO:
+					description.Attributes.AutoEnableIO = *attrs.AutoEnableIO.Value
+				case types.VolumeAttributeNameProductCodes:
+					description.Attributes.ProductCodes = attrs.ProductCodes
+				}
+			}
+
+			values = append(values, Resource{
+				ID: *volume.VolumeId,
+				Description: description,
+			})
+		}
+	}
+
+	return values, nil
+}
 
 func EC2CapacityReservation(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	client := ec2.NewFromConfig(cfg)
@@ -1177,28 +1269,6 @@ func EC2TransitGatewayPeeringAttachment(ctx context.Context, cfg aws.Config) ([]
 		for _, v := range page.TransitGatewayPeeringAttachments {
 			values = append(values, Resource{
 				ID:          *v.TransitGatewayAttachmentId,
-				Description: v,
-			})
-		}
-	}
-
-	return values, nil
-}
-
-func EC2Volume(ctx context.Context, cfg aws.Config) ([]Resource, error) {
-	client := ec2.NewFromConfig(cfg)
-	paginator := ec2.NewDescribeVolumesPaginator(client, &ec2.DescribeVolumesInput{})
-
-	var values []Resource
-	for paginator.HasMorePages() {
-		page, err := paginator.NextPage(ctx)
-		if err != nil {
-			return nil, err
-		}
-
-		for _, v := range page.Volumes {
-			values = append(values, Resource{
-				ID:          *v.VolumeId,
 				Description: v,
 			})
 		}
