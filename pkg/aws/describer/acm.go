@@ -5,6 +5,7 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/acm"
+	"github.com/aws/aws-sdk-go-v2/service/acm/types"
 )
 
 func CertificateManagerAccount(ctx context.Context, cfg aws.Config) ([]Resource, error) {
@@ -15,9 +16,18 @@ func CertificateManagerAccount(ctx context.Context, cfg aws.Config) ([]Resource,
 	}
 
 	return []Resource{{
-		ID:          "", // No ID or ARN. Per Account Configuration
+		// No ID or ARN. Per Account Configuration
 		Description: output,
 	}}, nil
+}
+
+type CertificateManagerCertificateDescription struct {
+	Certificate types.CertificateDetail
+	Attributes  struct {
+		Certificate      *string
+		CertificateChain *string
+	}
+	Tags []types.Tag
 }
 
 func CertificateManagerCertificate(ctx context.Context, cfg aws.Config) ([]Resource, error) {
@@ -32,9 +42,40 @@ func CertificateManagerCertificate(ctx context.Context, cfg aws.Config) ([]Resou
 		}
 
 		for _, v := range page.CertificateSummaryList {
+			getOutput, err := client.GetCertificate(ctx, &acm.GetCertificateInput{
+				CertificateArn: v.CertificateArn,
+			})
+			if err != nil {
+				return nil, err
+			}
+
+			describeOutput, err := client.DescribeCertificate(ctx, &acm.DescribeCertificateInput{
+				CertificateArn: v.CertificateArn,
+			})
+			if err != nil {
+				return nil, err
+			}
+
+			tagsOutput, err := client.ListTagsForCertificate(ctx, &acm.ListTagsForCertificateInput{
+				CertificateArn: v.CertificateArn,
+			})
+			if err != nil {
+				return nil, err
+			}
+
 			values = append(values, Resource{
-				ARN:         *v.CertificateArn,
-				Description: v,
+				ARN: *v.CertificateArn,
+				Description: CertificateManagerCertificateDescription{
+					Certificate: *describeOutput.Certificate,
+					Attributes: struct {
+						Certificate      *string
+						CertificateChain *string
+					}{
+						Certificate:      getOutput.Certificate,
+						CertificateChain: getOutput.CertificateChain,
+					},
+					Tags: tagsOutput.Tags,
+				},
 			})
 		}
 	}
