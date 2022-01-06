@@ -36,6 +36,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/iam v1.13.1
 	github.com/aws/aws-sdk-go-v2/service/kms v1.11.0
 	github.com/aws/aws-sdk-go-v2/service/lambda v1.13.0
+	github.com/aws/aws-sdk-go-v2/service/organizations v1.10.0
 	github.com/aws/aws-sdk-go-v2/service/rds v1.12.1
 	github.com/aws/aws-sdk-go-v2/service/redshift v1.15.0
 	github.com/aws/aws-sdk-go-v2/service/route53 v1.14.1

@@ -6,7 +6,61 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/iam"
 	"github.com/aws/aws-sdk-go-v2/service/iam/types"
+	"github.com/aws/aws-sdk-go-v2/service/organizations"
+	orgtypes "github.com/aws/aws-sdk-go-v2/service/organizations/types"
+	"github.com/aws/aws-sdk-go-v2/service/sts"
 )
+
+const (
+	organizationsNotInUseException = "AWSOrganizationsNotInUseException"
+)
+
+type IAMAccountDescription struct {
+	Aliases      []string
+	Organization *orgtypes.Organization
+}
+
+func IAMAccount(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+	client := organizations.NewFromConfig(cfg)
+
+	output, err := client.DescribeOrganization(ctx, &organizations.DescribeOrganizationInput{})
+	if err != nil {
+		if isErr(err, organizationsNotInUseException) {
+			output = &organizations.DescribeOrganizationOutput{}
+		} else {
+			return nil, err
+		}
+	}
+
+	iamClient := iam.NewFromConfig(cfg)
+	paginator := iam.NewListAccountAliasesPaginator(iamClient, &iam.ListAccountAliasesInput{})
+
+	var aliases []string
+	for paginator.HasMorePages() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		aliases = append(aliases, page.AccountAliases...)
+	}
+
+	stsClient := sts.NewFromConfig(cfg)
+	callerOutput, err := stsClient.GetCallerIdentity(ctx, &sts.GetCallerIdentityInput{})
+	if err != nil {
+		return nil, err
+	}
+
+	return []Resource{
+		{
+			ARN: *callerOutput.Arn,
+			Description: IAMAccountDescription{
+				Aliases:      aliases,
+				Organization: output.Organization,
+			},
+		},
+	}, nil
+}
 
 func IAMAccessKey(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	client := iam.NewFromConfig(cfg)
