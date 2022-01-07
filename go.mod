@@ -17,6 +17,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/credentials v1.6.2
 	github.com/aws/aws-sdk-go-v2/service/acm v1.9.1
 	github.com/aws/aws-sdk-go-v2/service/apigateway v1.11.0
+	github.com/aws/aws-sdk-go-v2/service/applicationautoscaling v1.11.0
 	github.com/aws/aws-sdk-go-v2/service/applicationinsights v1.8.0
 	github.com/aws/aws-sdk-go-v2/service/autoscaling v1.15.1
 	github.com/aws/aws-sdk-go-v2/service/backup v1.9.1
@@ -29,13 +30,13 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/databasemigrationservice v1.14.0
 	github.com/aws/aws-sdk-go-v2/service/dax v1.7.2
 	github.com/aws/aws-sdk-go-v2/service/dynamodb v1.11.0
-	github.com/aws/aws-sdk-go-v2/service/ebs v1.10.0
 	github.com/aws/aws-sdk-go-v2/service/ec2 v1.23.0
 	github.com/aws/aws-sdk-go-v2/service/ecr v1.10.1
 	github.com/aws/aws-sdk-go-v2/service/ecrpublic v1.8.1
 	github.com/aws/aws-sdk-go-v2/service/ecs v1.12.1
 	github.com/aws/aws-sdk-go-v2/service/efs v1.10.1
 	github.com/aws/aws-sdk-go-v2/service/eks v1.14.0
+	github.com/aws/aws-sdk-go-v2/service/elasticbeanstalk v1.10.0
 	github.com/aws/aws-sdk-go-v2/service/elasticloadbalancing v1.9.1
 	github.com/aws/aws-sdk-go-v2/service/elasticloadbalancingv2 v1.12.1
 	github.com/aws/aws-sdk-go-v2/service/elasticsearchservice v1.11.0

@@ -134,6 +134,11 @@ func ECSService(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	return values, nil
 }
 
+type ECSTaskDefinitionDescription struct {
+	TaskDefinition *types.TaskDefinition
+	Tags           []types.Tag
+}
+
 func ECSTaskDefinition(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	client := ecs.NewFromConfig(cfg)
 	paginator := ecs.NewListTaskDefinitionsPaginator(client, &ecs.ListTaskDefinitionsInput{})
@@ -148,14 +153,20 @@ func ECSTaskDefinition(ctx context.Context, cfg aws.Config) ([]Resource, error) 
 		for _, arn := range page.TaskDefinitionArns {
 			output, err := client.DescribeTaskDefinition(ctx, &ecs.DescribeTaskDefinitionInput{
 				TaskDefinition: &arn,
+				Include: []types.TaskDefinitionField{
+					types.TaskDefinitionFieldTags,
+				},
 			})
 			if err != nil {
 				return nil, err
 			}
 
 			values = append(values, Resource{
-				ARN:         arn,
-				Description: output.TaskDefinition,
+				ARN: arn,
+				Description: ECSTaskDefinitionDescription{
+					TaskDefinition: output.TaskDefinition,
+					Tags:           output.Tags,
+				},
 			})
 		}
 	}

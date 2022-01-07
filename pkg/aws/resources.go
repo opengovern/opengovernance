@@ -13,6 +13,7 @@ type ResourceDescriber func(context.Context, aws.Config, string, []string, strin
 
 var resourceTypeToDescriber = map[string]ResourceDescriber{
 	"AWS::ApplicationInsights::Application":                       ParallelDescribeRegional(describer.ApplicationInsightsApplication),
+	"AWS::ApplicationAutoScaling::Target":                         ParallelDescribeRegional(describer.ApplicationAutoScalingTarget),
 	"AWS::AutoScaling::AutoScalingGroup":                          ParallelDescribeRegional(describer.AutoScalingAutoScalingGroup),
 	"AWS::AutoScaling::LaunchConfiguration":                       ParallelDescribeRegional(describer.AutoScalingLaunchConfiguration),
 	"AWS::AutoScaling::LifecycleHook":                             ParallelDescribeRegional(describer.AutoScalingLifecycleHook),
@@ -20,7 +21,7 @@ var resourceTypeToDescriber = map[string]ResourceDescriber{
 	"AWS::AutoScaling::ScheduledAction":                           ParallelDescribeRegional(describer.AutoScalingScheduledAction),
 	"AWS::AutoScaling::WarmPool":                                  ParallelDescribeRegional(describer.AutoScalingWarmPool),
 	"AWS::Backup::Plan":                                           ParallelDescribeRegional(describer.BackupPlan),
-	"AWS::Backup::BackupSelection":                                ParallelDescribeRegional(describer.BackupBackupSelection),
+	"AWS::Backup::Selection":                                      ParallelDescribeRegional(describer.BackupSelection),
 	"AWS::Backup::RecoveryPoint":                                  ParallelDescribeRegional(describer.BackupRecoveryPoint),
 	"AWS::Backup::ProtectedResource":                              ParallelDescribeRegional(describer.BackupProtectedResource),
 	"AWS::Backup::Vault":                                          ParallelDescribeRegional(describer.BackupVault),
@@ -69,6 +70,7 @@ var resourceTypeToDescriber = map[string]ResourceDescriber{
 	"AWS::EC2::PlacementGroup":                                    ParallelDescribeRegional(describer.EC2PlacementGroup),
 	"AWS::EC2::PrefixList":                                        ParallelDescribeRegional(describer.EC2PrefixList),
 	"AWS::EC2::RouteTable":                                        ParallelDescribeRegional(describer.EC2RouteTable),
+	"AWS::EC2::RegionalSettings":                                  ParallelDescribeRegional(describer.EC2RegionalSettings),
 	"AWS::EC2::SecurityGroup":                                     ParallelDescribeRegional(describer.EC2SecurityGroup),
 	"AWS::EC2::SpotFleet":                                         ParallelDescribeRegional(describer.EC2SpotFleet),
 	"AWS::EC2::Subnet":                                            ParallelDescribeRegional(describer.EC2Subnet),
@@ -109,6 +111,7 @@ var resourceTypeToDescriber = map[string]ResourceDescriber{
 	"AWS::EKS::Cluster":                                           ParallelDescribeRegional(describer.EKSCluster),
 	"AWS::EKS::FargateProfile":                                    ParallelDescribeRegional(describer.EKSFargateProfile),
 	"AWS::EKS::Nodegroup":                                         ParallelDescribeRegional(describer.EKSNodegroup),
+	"AWS::ElasticBeanstalk::Environment":                          ParallelDescribeRegional(describer.ElasticBeanstalkEnvironment),
 	"AWS::ElasticLoadBalancing::LoadBalancer":                     ParallelDescribeRegional(describer.ElasticLoadBalancingLoadBalancer),
 	"AWS::ElasticLoadBalancingV2::Listener":                       ParallelDescribeRegional(describer.ElasticLoadBalancingV2Listener),
 	"AWS::ElasticLoadBalancingV2::ListenerRule":                   ParallelDescribeRegional(describer.ElasticLoadBalancingV2ListenerRule),

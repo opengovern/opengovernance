@@ -94,7 +94,7 @@ func EC2Volume(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 			}
 
 			values = append(values, Resource{
-				ID: *volume.VolumeId,
+				ID:          *volume.VolumeId,
 				Description: description,
 			})
 		}
@@ -673,6 +673,10 @@ func EC2NetworkInsightsPath(ctx context.Context, cfg aws.Config) ([]Resource, er
 	return values, nil
 }
 
+type EC2NetworkInterfaceDescription struct {
+	NetworkInterface types.NetworkInterface
+}
+
 func EC2NetworkInterface(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	client := ec2.NewFromConfig(cfg)
 	paginator := ec2.NewDescribeNetworkInterfacesPaginator(client, &ec2.DescribeNetworkInterfacesInput{})
@@ -686,8 +690,10 @@ func EC2NetworkInterface(ctx context.Context, cfg aws.Config) ([]Resource, error
 
 		for _, v := range page.NetworkInterfaces {
 			values = append(values, Resource{
-				ID:          *v.NetworkInterfaceId,
-				Description: v,
+				ID: *v.NetworkInterfaceId,
+				Description: EC2NetworkInterfaceDescription{
+					NetworkInterface: v,
+				},
 			})
 		}
 	}
@@ -755,6 +761,34 @@ func EC2PrefixList(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	}
 
 	return values, nil
+}
+
+type EC2RegionalSettingsDescription struct {
+	EbsEncryptionByDefault *bool
+	KmsKeyId               *string
+}
+
+func EC2RegionalSettings(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+	client := ec2.NewFromConfig(cfg)
+	out, err := client.GetEbsEncryptionByDefault(ctx, &ec2.GetEbsEncryptionByDefaultInput{})
+	if err != nil {
+		return nil, err
+	}
+
+	outkey, err := client.GetEbsDefaultKmsKeyId(ctx, &ec2.GetEbsDefaultKmsKeyIdInput{})
+	if err != nil {
+		return nil, err
+	}
+
+	return []Resource{
+		{
+			// No ID or ARN. Per Account Configuration
+			Description: EC2RegionalSettingsDescription{
+				EbsEncryptionByDefault: out.EbsEncryptionByDefault,
+				KmsKeyId:               outkey.KmsKeyId,
+			},
+		},
+	}, nil
 }
 
 type EC2RouteTableDescription struct {
