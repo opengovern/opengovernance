@@ -115,7 +115,13 @@ func BackupProtectedResource(ctx context.Context, cfg aws.Config) ([]Resource, e
 	return values, nil
 }
 
-func BackupBackupSelection(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+type BackupSelectionDescription struct {
+	BackupSelection types.BackupSelectionsListMember
+	ListOfTags      []types.Condition
+	Resources       []string
+}
+
+func BackupSelection(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	plans, err := BackupPlan(ctx, cfg)
 	if err != nil {
 		return nil, err
@@ -136,9 +142,21 @@ func BackupBackupSelection(ctx context.Context, cfg aws.Config) ([]Resource, err
 			}
 
 			for _, v := range page.BackupSelectionsList {
+				out, err := client.GetBackupSelection(ctx, &backup.GetBackupSelectionInput{
+					BackupPlanId: v.BackupPlanId,
+					SelectionId:  v.SelectionId,
+				})
+				if err != nil {
+					return nil, err
+				}
+
 				values = append(values, Resource{
-					ID:          CompositeID(*v.BackupPlanId, *v.SelectionId),
-					Description: v,
+					ID: CompositeID(*v.BackupPlanId, *v.SelectionId),
+					Description: BackupSelectionDescription{
+						BackupSelection: v,
+						ListOfTags:      out.BackupSelection.ListOfTags,
+						Resources:       out.BackupSelection.Resources,
+					},
 				})
 			}
 		}

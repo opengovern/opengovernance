@@ -62,6 +62,10 @@ func getAutoScalingPolicies(ctx context.Context, cfg aws.Config, asgName *string
 	return values, nil
 }
 
+type AutoScalingLaunchConfigurationDescription struct {
+	LaunchConfiguration types.LaunchConfiguration
+}
+
 func AutoScalingLaunchConfiguration(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	client := autoscaling.NewFromConfig(cfg)
 	paginator := autoscaling.NewDescribeLaunchConfigurationsPaginator(client, &autoscaling.DescribeLaunchConfigurationsInput{})
@@ -75,8 +79,10 @@ func AutoScalingLaunchConfiguration(ctx context.Context, cfg aws.Config) ([]Reso
 
 		for _, v := range page.LaunchConfigurations {
 			values = append(values, Resource{
-				ARN:         *v.LaunchConfigurationARN,
-				Description: v,
+				ARN: *v.LaunchConfigurationARN,
+				Description: AutoScalingLaunchConfigurationDescription{
+					LaunchConfiguration: v,
+				},
 			})
 		}
 	}

@@ -118,6 +118,8 @@ github.com/aws/aws-sdk-go-v2/service/acm v1.9.1 h1:Ft9ymYWT+AM271ecU5PY4gxrb89X6
 github.com/aws/aws-sdk-go-v2/service/acm v1.9.1/go.mod h1:XVW3+f6JwMQVm1Jq+2Cm8Uwek15UMmqkO4GD1FOBQxY=
 github.com/aws/aws-sdk-go-v2/service/apigateway v1.11.0 h1:8g968yiQ2yinlg/1PvB1TsiP+li+1ph5JRo52lmZ6W4=
 github.com/aws/aws-sdk-go-v2/service/apigateway v1.11.0/go.mod h1:81rBI522AuALgYFf6L5xw3avwDH4bgzVVWG73FUY1iM=
+github.com/aws/aws-sdk-go-v2/service/applicationautoscaling v1.11.0 h1:3IKkGOCR7RVmtiLC9Dr7OB+7MoeDS8vRg0oZFdKy5YU=
+github.com/aws/aws-sdk-go-v2/service/applicationautoscaling v1.11.0/go.mod h1:JRrNjpM1qIFI25ikEvad6g8Q5qw0B1S8G0di/9kU7DY=
 github.com/aws/aws-sdk-go-v2/service/applicationinsights v1.8.0 h1:MajgQOz7mL0dN0UVYU/8Yr4emYo8Hz7tiGv9DtpIg5g=
 github.com/aws/aws-sdk-go-v2/service/applicationinsights v1.8.0/go.mod h1:0W3g2pqFJ/1aHRNGrMIJ9vmnlTegPEYkzhtMdqyNBwM=
 github.com/aws/aws-sdk-go-v2/service/autoscaling v1.15.1 h1:1Yl51M7ccPNDFxnw5HvdQ52F7qG035JRP/HbYvJBOCo=
@@ -142,8 +144,6 @@ github.com/aws/aws-sdk-go-v2/service/dax v1.7.2 h1:18Nxds4KQoQGUrGREWImE+eTK3CGB
 github.com/aws/aws-sdk-go-v2/service/dax v1.7.2/go.mod h1:nfGaoXs2m4bnNbDF6sfTIaIBSa8o5XVqxbRI8BhFgtU=
 github.com/aws/aws-sdk-go-v2/service/dynamodb v1.11.0 h1:te+nIFwPf5Bi/cZvd9g/+EF0gkJT3c0J/5+NMx0NBZg=
 github.com/aws/aws-sdk-go-v2/service/dynamodb v1.11.0/go.mod h1:ELltfl9ri0n4sZ/VjPZBgemNMd9mYIpCAuZhc7NP7l4=
-github.com/aws/aws-sdk-go-v2/service/ebs v1.10.0 h1:hlwnVb6dnEgPfRuTy/Wn2pkj9Kqa8qI103lk3mTNOmw=
-github.com/aws/aws-sdk-go-v2/service/ebs v1.10.0/go.mod h1:iaEXGHgGuKn1cr9dYwfE535x4JeuKGAoe1pEomhXHQk=
 github.com/aws/aws-sdk-go-v2/service/ec2 v1.23.0 h1:ZZiG7Hol3Zjb7rGStw4QUuj4MAHBSdZjnt3D7+csgS8=
 github.com/aws/aws-sdk-go-v2/service/ec2 v1.23.0/go.mod h1:Xv0jfvBUvJMRnYA5sX+VisekFtkWzD68qTW1VkvcrIo=
 github.com/aws/aws-sdk-go-v2/service/ecr v1.10.1 h1:onTF83DG9dsRv6UzuhYb7phiktjwQ++s/n+ZtNlTQnM=
@@ -156,6 +156,8 @@ github.com/aws/aws-sdk-go-v2/service/efs v1.10.1 h1:0jt+mGF2e9TNAgIeaPFcOYSQT7Ii
 github.com/aws/aws-sdk-go-v2/service/efs v1.10.1/go.mod h1:i40E9eoqZUFpvT/EV2hQo8TkonbQYdl3EJraljCFA9o=
 github.com/aws/aws-sdk-go-v2/service/eks v1.14.0 h1:iGnWS1vp1KTIqiGeqiDYYc4vF9cGpo51b1SpmAum/vw=
 github.com/aws/aws-sdk-go-v2/service/eks v1.14.0/go.mod h1:o3iJCwMzn0tlUD3Gqf6+kdTZepEJKygLinNqxLZ86Uw=
+github.com/aws/aws-sdk-go-v2/service/elasticbeanstalk v1.10.0 h1:kGmiqBw3FMI8Fo7a/Kni3sDvBvXaeobJtkaNlIxU9t8=
+github.com/aws/aws-sdk-go-v2/service/elasticbeanstalk v1.10.0/go.mod h1:F+HdkxyGxjLuSS/MILZ3dtAHNawsQiS8Vj8srEknOsE=
 github.com/aws/aws-sdk-go-v2/service/elasticloadbalancing v1.9.1 h1:pvLhGTYgpR24D4GflZC6/QX0T+zgT7tTmXSDvALrSHo=
 github.com/aws/aws-sdk-go-v2/service/elasticloadbalancing v1.9.1/go.mod h1:wmjUevZXcMOs8lFWGv9ZCL0oY6XCHA48xe/OmWgNhHE=
 github.com/aws/aws-sdk-go-v2/service/elasticloadbalancingv2 v1.12.1 h1:aRFs9+0WE1agoR8w6E77JZnkfUh9fe0L3TqWHz9sUoc=
