@@ -160,7 +160,16 @@ func WAFv2RuleGroup(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	return values, nil
 }
 
+type WAFv2WebACLDescription struct {
+	WebACL               *types.WebACL
+	Scope                types.Scope
+	LoggingConfiguration *types.LoggingConfiguration
+	TagInfoForResource   *types.TagInfoForResource
+	LockToken            *string
+}
+
 func WAFv2WebACL(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+	client := wafv2.NewFromConfig(cfg)
 
 	scopes := []types.Scope{
 		types.ScopeRegional,
@@ -177,9 +186,35 @@ func WAFv2WebACL(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 		}
 
 		for _, v := range acls {
+			out, err := client.GetWebACL(ctx, &wafv2.GetWebACLInput{
+				Id:    v.Id,
+				Name:  v.Name,
+				Scope: scope,
+			})
+			if err != nil {
+				return nil, err
+			}
+
+			logC, err := client.GetLoggingConfiguration(ctx, &wafv2.GetLoggingConfigurationInput{
+				ResourceArn: out.WebACL.ARN,
+			})
+			if err != nil {
+				return nil, err
+			}
+
+			tags, err := client.ListTagsForResource(ctx, &wafv2.ListTagsForResourceInput{
+				ResourceARN: out.WebACL.ARN,
+			})
+
 			values = append(values, Resource{
-				ARN:         *v.ARN,
-				Description: v,
+				ARN: *v.ARN,
+				Description: WAFv2WebACLDescription{
+					WebACL:               out.WebACL,
+					Scope:                scope,
+					LoggingConfiguration: logC.LoggingConfiguration,
+					TagInfoForResource:   tags.TagInfoForResource,
+					LockToken:            v.LockToken,
+				},
 			})
 		}
 	}

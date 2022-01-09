@@ -8,6 +8,33 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/ssm/types"
 )
 
+type SSMManagedInstanceDescription struct {
+	InstanceInformation types.InstanceInformation
+}
+
+func SSMManagedInstance(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+	client := ssm.NewFromConfig(cfg)
+	paginator := ssm.NewDescribeInstanceInformationPaginator(client, &ssm.DescribeInstanceInformationInput{})
+
+	var values []Resource
+	for paginator.HasMorePages() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, item := range page.InstanceInformationList {
+			values = append(values, Resource{
+				ID: *item.InstanceId,
+				Description: SSMManagedInstanceDescription{
+					InstanceInformation: item,
+				},
+			})
+		}
+	}
+	return values, nil
+}
+
 func SSMAssociation(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	client := ssm.NewFromConfig(cfg)
 	paginator := ssm.NewListAssociationsPaginator(client, &ssm.ListAssociationsInput{})
