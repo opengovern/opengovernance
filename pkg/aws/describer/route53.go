@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
-	ec2types "github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	"github.com/aws/aws-sdk-go-v2/service/route53"
 	"github.com/aws/aws-sdk-go-v2/service/route53/types"
 	"github.com/aws/aws-sdk-go-v2/service/route53resolver"
@@ -206,7 +205,7 @@ func Route53ResolverResolverDNSSECConfig(ctx context.Context, cfg aws.Config) ([
 	var values []Resource
 	for _, vpc := range vpcs {
 		v, err := client.GetResolverDnssecConfig(ctx, &route53resolver.GetResolverDnssecConfigInput{
-			ResourceId: vpc.Description.(ec2types.Vpc).VpcId,
+			ResourceId: vpc.Description.(EC2VPCDescription).Vpc.VpcId,
 		})
 		if err != nil {
 			return nil, err
