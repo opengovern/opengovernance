@@ -320,6 +320,11 @@ func ParallelDescribeRegional(describe func(context.Context, aws.Config) ([]desc
 		input := make(chan result, len(regions))
 		for _, region := range regions {
 			go func(r string) {
+				defer func() {
+					if err := recover(); err != nil {
+						input <- result{region: r, resources: nil, err: fmt.Errorf("paniced: %v", err)}
+					}
+				}()
 				// Make a shallow copy and override the default region
 				rCfg := cfg.Copy()
 				rCfg.Region = r
