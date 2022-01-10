@@ -5,6 +5,7 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/kms"
+	"github.com/aws/aws-sdk-go-v2/service/kms/types"
 )
 
 func KMSAlias(ctx context.Context, cfg aws.Config) ([]Resource, error) {
@@ -29,6 +30,14 @@ func KMSAlias(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	return values, nil
 }
 
+type KMSKeyDescription struct {
+	Metadata           *types.KeyMetadata
+	Aliases            []types.AliasListEntry
+	KeyRotationEnabled bool
+	Policy             *string
+	Tags               []types.Tag
+}
+
 func KMSKey(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	client := kms.NewFromConfig(cfg)
 	paginator := kms.NewListKeysPaginator(client, &kms.ListKeysInput{})
@@ -41,9 +50,59 @@ func KMSKey(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 		}
 
 		for _, v := range page.Keys {
+			key, err := client.DescribeKey(ctx, &kms.DescribeKeyInput{
+				KeyId: v.KeyId,
+			})
+			if err != nil {
+				return nil, err
+			}
+
+			aliasPaginator := kms.NewListAliasesPaginator(client, &kms.ListAliasesInput{
+				KeyId: v.KeyId,
+			})
+
+			var keyAlias []types.AliasListEntry
+			for aliasPaginator.HasMorePages() {
+				aliasPage, err := aliasPaginator.NextPage(ctx)
+				if err != nil {
+					return nil, err
+				}
+
+				keyAlias = append(keyAlias, aliasPage.Aliases...)
+			}
+
+			rotationStatus, err := client.GetKeyRotationStatus(ctx, &kms.GetKeyRotationStatusInput{
+				KeyId: v.KeyId,
+			})
+			if err != nil {
+				return nil, err
+			}
+
+			var defaultPolicy = "default"
+			policy, err := client.GetKeyPolicy(ctx, &kms.GetKeyPolicyInput{
+				KeyId:      v.KeyId,
+				PolicyName: &defaultPolicy,
+			})
+			if err != nil {
+				return nil, err
+			}
+
+			tags, err := client.ListResourceTags(ctx, &kms.ListResourceTagsInput{
+				KeyId: v.KeyId,
+			})
+			if err != nil {
+				return nil, err
+			}
+
 			values = append(values, Resource{
-				ARN:         *v.KeyArn,
-				Description: v,
+				ARN: *v.KeyArn,
+				Description: KMSKeyDescription{
+					Metadata:           key.KeyMetadata,
+					Aliases:            keyAlias,
+					KeyRotationEnabled: rotationStatus.KeyRotationEnabled,
+					Policy:             policy.Policy,
+					Tags:               tags.Tags,
+				},
 			})
 		}
 	}

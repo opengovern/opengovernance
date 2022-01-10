@@ -3,11 +3,18 @@ package describer
 import (
 	"context"
 	"errors"
+	"github.com/aws/aws-sdk-go-v2/service/redshift/types"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/redshift"
 	"github.com/aws/smithy-go"
 )
+
+type RedshiftClusterDescription struct {
+	Cluster          types.Cluster
+	LoggingStatus    *redshift.DescribeLoggingStatusOutput
+	ScheduledActions []types.ScheduledAction
+}
 
 func RedshiftCluster(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	client := redshift.NewFromConfig(cfg)
@@ -21,14 +28,42 @@ func RedshiftCluster(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 		}
 
 		for _, v := range page.Clusters {
+			logStatus, err := client.DescribeLoggingStatus(ctx, &redshift.DescribeLoggingStatusInput{
+				ClusterIdentifier: v.ClusterIdentifier,
+			})
+			if err != nil {
+				return nil, err
+			}
+
+			sactions, err := client.DescribeScheduledActions(ctx, &redshift.DescribeScheduledActionsInput{
+				Filters: []types.ScheduledActionFilter{
+					{
+						Name:   types.ScheduledActionFilterNameClusterIdentifier,
+						Values: []string{*v.ClusterIdentifier},
+					},
+				},
+			})
+			if err != nil {
+				return nil, err
+			}
+
 			values = append(values, Resource{
-				ARN:         *v.ClusterNamespaceArn,
-				Description: v,
+				ARN: *v.ClusterNamespaceArn,
+				Description: RedshiftClusterDescription{
+					Cluster:          v,
+					LoggingStatus:    logStatus,
+					ScheduledActions: sactions.ScheduledActions,
+				},
 			})
 		}
 	}
 
 	return values, nil
+}
+
+type RedshiftClusterParameterGroupDescription struct {
+	ClusterParameterGroup types.ClusterParameterGroup
+	Parameters            []types.Parameter
 }
 
 func RedshiftClusterParameterGroup(ctx context.Context, cfg aws.Config) ([]Resource, error) {
@@ -43,9 +78,19 @@ func RedshiftClusterParameterGroup(ctx context.Context, cfg aws.Config) ([]Resou
 		}
 
 		for _, v := range page.ParameterGroups {
+			param, err := client.DescribeClusterParameters(ctx, &redshift.DescribeClusterParametersInput{
+				ParameterGroupName: v.ParameterGroupName,
+			})
+			if err != nil {
+				return nil, err
+			}
+
 			values = append(values, Resource{
-				ID:          *v.ParameterGroupName,
-				Description: v,
+				ID: *v.ParameterGroupName,
+				Description: RedshiftClusterParameterGroupDescription{
+					ClusterParameterGroup: v,
+					Parameters:            param.Parameters,
+				},
 			})
 		}
 	}

@@ -11,6 +11,11 @@ import (
 	"github.com/aws/smithy-go"
 )
 
+type LambdaFunctionDescription struct {
+	Function *lambda.GetFunctionOutput
+	Policy   *lambda.GetPolicyOutput
+}
+
 func LambdaFunction(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	client := lambda.NewFromConfig(cfg)
 	paginator := lambda.NewListFunctionsPaginator(client, &lambda.ListFunctionsInput{
@@ -25,9 +30,26 @@ func LambdaFunction(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 		}
 
 		for _, v := range page.Functions {
+			policy, err := client.GetPolicy(ctx, &lambda.GetPolicyInput{
+				FunctionName: v.FunctionName,
+			})
+			if err != nil {
+				return nil, err
+			}
+
+			function, err := client.GetFunction(ctx, &lambda.GetFunctionInput{
+				FunctionName: v.FunctionName,
+			})
+			if err != nil {
+				return nil, err
+			}
+
 			values = append(values, Resource{
-				ARN:         *v.FunctionArn,
-				Description: v,
+				ARN: *v.FunctionArn,
+				Description: LambdaFunctionDescription{
+					Function: function,
+					Policy:   policy,
+				},
 			})
 		}
 	}
