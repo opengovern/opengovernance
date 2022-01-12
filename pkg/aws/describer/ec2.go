@@ -3,6 +3,7 @@ package describer
 import (
 	"context"
 	"errors"
+
 	"github.com/aws/aws-sdk-go-v2/aws"
 	acmtypes "github.com/aws/aws-sdk-go-v2/service/acm/types"
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
@@ -1513,6 +1514,32 @@ func EC2VPNGateway(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 		values = append(values, Resource{
 			ID:          *v.VpnGatewayId,
 			Description: v,
+		})
+	}
+
+	return values, nil
+}
+
+type EC2RegionDescription struct {
+	Region types.Region
+}
+
+func EC2Region(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+	client := ec2.NewFromConfig(cfg)
+	output, err := client.DescribeRegions(ctx, &ec2.DescribeRegionsInput{
+		AllRegions: aws.Bool(true),
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	var values []Resource
+	for _, v := range output.Regions {
+		values = append(values, Resource{
+			ID: *v.RegionName,
+			Description: EC2RegionDescription{
+				Region: v,
+			},
 		})
 	}
 

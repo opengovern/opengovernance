@@ -2,8 +2,8 @@ package describer
 
 import (
 	"context"
-	"github.com/aws/aws-sdk-go-v2/aws"
 
+	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
 )
@@ -43,6 +43,9 @@ func DynamoDbTable(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 			tags, err := client.ListTagsOfResource(ctx, &dynamodb.ListTagsOfResourceInput{
 				ResourceArn: v.Table.TableArn,
 			})
+			if err != nil {
+				return nil, err
+			}
 
 			values = append(values, Resource{
 				ARN: *v.Table.TableArn,

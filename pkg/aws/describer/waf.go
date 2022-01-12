@@ -205,6 +205,9 @@ func WAFv2WebACL(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 			tags, err := client.ListTagsForResource(ctx, &wafv2.ListTagsForResourceInput{
 				ResourceARN: out.WebACL.ARN,
 			})
+			if err != nil {
+				return nil, err
+			}
 
 			values = append(values, Resource{
 				ARN: *v.ARN,

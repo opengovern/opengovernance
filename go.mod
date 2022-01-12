@@ -74,6 +74,7 @@ require (
 	github.com/frankban/quicktest v1.14.0 // indirect
 	github.com/go-openapi/spec v0.20.4 // indirect
 	github.com/go-playground/universal-translator v0.18.0 // indirect
+	github.com/gocarina/gocsv v0.0.0-20211203214250-4735fba0c1d9
 	github.com/google/uuid v1.3.0
 	github.com/hashicorp/go-cleanhttp v0.5.2 // indirect
 	github.com/hashicorp/go-hclog v1.0.0 // indirect
