@@ -35,6 +35,9 @@ func SageMakerEndpointConfiguration(ctx context.Context, cfg aws.Config) ([]Reso
 			tags, err := client.ListTags(ctx, &sagemaker.ListTagsInput{
 				ResourceArn: item.EndpointConfigArn,
 			})
+			if err != nil {
+				return nil, err
+			}
 
 			values = append(values, Resource{
 				ARN: *out.EndpointConfigArn,
@@ -75,6 +78,9 @@ func SageMakerNotebookInstance(ctx context.Context, cfg aws.Config) ([]Resource,
 			tags, err := client.ListTags(ctx, &sagemaker.ListTagsInput{
 				ResourceArn: out.NotebookInstanceArn,
 			})
+			if err != nil {
+				return nil, err
+			}
 
 			values = append(values, Resource{
 				ARN: *out.NotebookInstanceArn,

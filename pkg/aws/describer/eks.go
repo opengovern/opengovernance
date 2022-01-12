@@ -183,3 +183,53 @@ func listEksClusters(ctx context.Context, cfg aws.Config) ([]string, error) {
 
 	return values, nil
 }
+
+type EKSIdentityProviderConfigDescription struct {
+	ConfigName             string
+	ConfigType             string
+	IdentityProviderConfig types.OidcIdentityProviderConfig
+}
+
+func EKSIdentityProviderConfig(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+	clusters, err := listEksClusters(ctx, cfg)
+	if err != nil {
+		return nil, err
+	}
+
+	var values []Resource
+	for _, cluster := range clusters {
+		client := eks.NewFromConfig(cfg)
+		paginator := eks.NewListIdentityProviderConfigsPaginator(client, &eks.ListIdentityProviderConfigsInput{
+			ClusterName: &cluster,
+		})
+
+		for paginator.HasMorePages() {
+			page, err := paginator.NextPage(ctx)
+			if err != nil {
+				return nil, err
+			}
+
+			for _, config := range page.IdentityProviderConfigs {
+				output, err := client.DescribeIdentityProviderConfig(ctx, &eks.DescribeIdentityProviderConfigInput{
+					ClusterName:            &cluster,
+					IdentityProviderConfig: &config,
+				})
+				if err != nil {
+					return nil, err
+				}
+
+				values = append(values, Resource{
+					ARN: *output.IdentityProviderConfig.Oidc.IdentityProviderConfigArn,
+					Description: EKSIdentityProviderConfigDescription{
+						ConfigName:             *config.Name,
+						ConfigType:             *config.Type,
+						IdentityProviderConfig: *output.IdentityProviderConfig.Oidc,
+					},
+				})
+
+			}
+		}
+	}
+
+	return values, nil
+}

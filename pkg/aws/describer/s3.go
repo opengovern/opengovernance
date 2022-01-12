@@ -9,6 +9,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/aws/aws-sdk-go-v2/service/s3/types"
 	"github.com/aws/aws-sdk-go-v2/service/s3control"
+	s3controltypes "github.com/aws/aws-sdk-go-v2/service/s3control/types"
 	"github.com/aws/aws-sdk-go-v2/service/sts"
 	"github.com/aws/smithy-go"
 )
@@ -428,4 +429,44 @@ func S3StorageLens(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	}
 
 	return values, nil
+}
+
+type S3AccountSettingDescription struct {
+	PublicAccessBlockConfiguration s3controltypes.PublicAccessBlockConfiguration
+}
+
+func S3AccountSetting(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+	stsClient := sts.NewFromConfig(cfg)
+	identity, err := stsClient.GetCallerIdentity(ctx, &sts.GetCallerIdentityInput{})
+	if err != nil {
+		return nil, err
+	}
+
+	client := s3control.NewFromConfig(cfg)
+	output, err := client.GetPublicAccessBlock(ctx, &s3control.GetPublicAccessBlockInput{
+		AccountId: identity.Account,
+	})
+	if err != nil {
+		if !isErr(err, s3NoSuchPublicAccessBlockConfiguration) {
+			return nil, err
+		}
+
+		output = &s3control.GetPublicAccessBlockOutput{
+			PublicAccessBlockConfiguration: &s3controltypes.PublicAccessBlockConfiguration{
+				BlockPublicAcls:       false,
+				BlockPublicPolicy:     false,
+				IgnorePublicAcls:      false,
+				RestrictPublicBuckets: false,
+			},
+		}
+	}
+
+	return []Resource{
+		{
+			// No ARN or ID. Account level setting
+			Description: S3AccountSettingDescription{
+				PublicAccessBlockConfiguration: *output.PublicAccessBlockConfiguration,
+			},
+		},
+	}, nil
 }
