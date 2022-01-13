@@ -23,6 +23,10 @@ func CodeBuildProject(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 			return nil, err
 		}
 
+		if len(page.Projects) == 0 {
+			continue
+		}
+
 		projects, err := client.BatchGetProjects(ctx, &codebuild.BatchGetProjectsInput{
 			Names: page.Projects,
 		})
