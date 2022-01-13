@@ -75,7 +75,7 @@ func ElasticLoadBalancingV2Listener(ctx context.Context, cfg aws.Config) ([]Reso
 
 	var values []Resource
 	for _, lb := range lbs {
-		arn := lb.Description.(typesv2.LoadBalancer).LoadBalancerArn
+		arn := lb.Description.(ElasticLoadBalancingV2LoadBalancerDescription).LoadBalancer.LoadBalancerArn
 		paginator := elasticloadbalancingv2.NewDescribeListenersPaginator(client, &elasticloadbalancingv2.DescribeListenersInput{
 			LoadBalancerArn: arn,
 		})
@@ -109,7 +109,7 @@ func ElasticLoadBalancingV2ListenerRule(ctx context.Context, cfg aws.Config) ([]
 	client := elasticloadbalancingv2.NewFromConfig(cfg)
 	var values []Resource
 	for _, l := range listeners {
-		arn := l.Description.(typesv2.Listener).ListenerArn
+		arn := l.Description.(ElasticLoadBalancingV2ListenerDescription).Listener.ListenerArn
 		err = PaginateRetrieveAll(func(prevToken *string) (nextToken *string, err error) {
 			output, err := client.DescribeRules(ctx, &elasticloadbalancingv2.DescribeRulesInput{
 				ListenerArn: aws.String(*arn),

@@ -66,10 +66,11 @@ func LambdaAlias(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	client := lambda.NewFromConfig(cfg)
 
 	var values []Resource
-	for _, fn := range fns {
+	for _, f := range fns {
+		fn := f.Description.(LambdaFunctionDescription).Function.Configuration
 		paginator := lambda.NewListAliasesPaginator(client, &lambda.ListAliasesInput{
-			FunctionName:    fn.Description.(types.FunctionConfiguration).FunctionName,
-			FunctionVersion: fn.Description.(types.FunctionConfiguration).Version,
+			FunctionName:    fn.FunctionName,
+			FunctionVersion: fn.Version,
 		})
 
 		for paginator.HasMorePages() {
@@ -100,7 +101,7 @@ func LambdaPermission(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 
 	var values []Resource
 	for _, f := range fns {
-		fn := f.Description.(types.FunctionConfiguration)
+		fn := f.Description.(LambdaFunctionDescription).Function.Configuration
 		v, err := client.GetPolicy(ctx, &lambda.GetPolicyInput{
 			FunctionName: fn.FunctionArn,
 		})
@@ -132,7 +133,7 @@ func LambdaEventInvokeConfig(ctx context.Context, cfg aws.Config) ([]Resource, e
 
 	var values []Resource
 	for _, f := range fns {
-		fn := f.Description.(types.FunctionConfiguration)
+		fn := f.Description.(LambdaFunctionDescription).Function.Configuration
 		paginator := lambda.NewListFunctionEventInvokeConfigsPaginator(client, &lambda.ListFunctionEventInvokeConfigsInput{
 			FunctionName: fn.FunctionName,
 		})

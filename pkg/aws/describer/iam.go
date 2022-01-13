@@ -149,6 +149,31 @@ func IAMAccountSummary(ctx context.Context, cfg aws.Config) ([]Resource, error) 
 	}, nil
 }
 
+type IAMAccountPasswordPolicyDescription struct {
+	PasswordPolicy *types.PasswordPolicy
+}
+
+func IAMAccountPasswordPolicy(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+	client := iam.NewFromConfig(cfg)
+	output, err := client.GetAccountPasswordPolicy(ctx, &iam.GetAccountPasswordPolicyInput{})
+	if err != nil {
+		if !isErr(err, "NoSuchEntity") {
+			return nil, err
+		}
+
+		output = &iam.GetAccountPasswordPolicyOutput{}
+	}
+
+	return []Resource{
+		{
+			// No ID or ARN. Per Account Configuration
+			Description: IAMAccountPasswordPolicyDescription{
+				PasswordPolicy: output.PasswordPolicy,
+			},
+		},
+	}, nil
+}
+
 type IAMAccessKeyDescription struct {
 	AccessKey types.AccessKeyMetadata
 }
@@ -472,7 +497,7 @@ func IAMGroupPolicy(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 
 	var values []Resource
 	for _, g := range groups {
-		group := g.Description.(types.Group)
+		group := g.Description.(IAMGroupDescription).Group
 		err := PaginateRetrieveAll(func(prevToken *string) (nextToken *string, err error) {
 			output, err := client.ListGroupPolicies(ctx, &iam.ListGroupPoliciesInput{
 				GroupName: group.GroupName,
@@ -517,7 +542,7 @@ func IAMUserPolicy(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 
 	var values []Resource
 	for _, u := range users {
-		user := u.Description.(types.User)
+		user := u.Description.(IAMUserDescription).User
 		err := PaginateRetrieveAll(func(prevToken *string) (nextToken *string, err error) {
 			output, err := client.ListUserPolicies(ctx, &iam.ListUserPoliciesInput{
 				UserName: user.UserName,
@@ -563,7 +588,7 @@ func IAMRolePolicy(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	var values []Resource
 
 	for _, r := range roles {
-		role := r.Description.(types.Role)
+		role := r.Description.(IAMRoleDescription).Role
 		err := PaginateRetrieveAll(func(prevToken *string) (nextToken *string, err error) {
 			output, err := client.ListRolePolicies(ctx, &iam.ListRolePoliciesInput{
 				RoleName: role.RoleName,
@@ -922,18 +947,33 @@ func getUserMFADevices(ctx context.Context, client *iam.Client, username *string
 	return devices, nil
 }
 
+type IAMVirtualMFADeviceDescription struct {
+	VirtualMFADevice types.VirtualMFADevice
+	Tags             []types.Tag
+}
+
 func IAMVirtualMFADevice(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	client := iam.NewFromConfig(cfg)
-	output, err := client.ListMFADevices(ctx, &iam.ListMFADevicesInput{})
+	output, err := client.ListVirtualMFADevices(ctx, &iam.ListVirtualMFADevicesInput{})
 	if err != nil {
 		return nil, err
 	}
 
 	var values []Resource
-	for _, v := range output.MFADevices {
+	for _, v := range output.VirtualMFADevices {
+		output, err := client.ListMFADeviceTags(ctx, &iam.ListMFADeviceTagsInput{
+			SerialNumber: v.SerialNumber,
+		})
+		if err != nil {
+			return nil, err
+		}
+
 		values = append(values, Resource{
-			ID:          *v.SerialNumber,
-			Description: v,
+			ID: *v.SerialNumber,
+			Description: IAMVirtualMFADeviceDescription{
+				VirtualMFADevice: v,
+				Tags:             output.Tags,
+			},
 		})
 	}
 
