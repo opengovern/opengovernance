@@ -8,6 +8,11 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/sns/types"
 )
 
+type SNSSubscriptionDescription struct {
+	Subscription types.Subscription
+	Attributes   map[string]string
+}
+
 func SNSSubscription(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	client := sns.NewFromConfig(cfg)
 	paginator := sns.NewListSubscriptionsPaginator(client, &sns.ListSubscriptionsInput{})
@@ -20,9 +25,23 @@ func SNSSubscription(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 		}
 
 		for _, v := range page.Subscriptions {
+			output, err := client.GetSubscriptionAttributes(ctx, &sns.GetSubscriptionAttributesInput{
+				SubscriptionArn: v.SubscriptionArn,
+			})
+			if err != nil {
+				if !isErr(err, "NotFound") {
+					return nil, err
+				}
+
+				output = &sns.GetSubscriptionAttributesOutput{}
+			}
+
 			values = append(values, Resource{
-				ARN:         *v.SubscriptionArn,
-				Description: v,
+				ARN: *v.SubscriptionArn,
+				Description: SNSSubscriptionDescription{
+					Subscription: v,
+					Attributes:   output.Attributes,
+				},
 			})
 		}
 	}

@@ -5,7 +5,6 @@ import (
 	"errors"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
-	acmtypes "github.com/aws/aws-sdk-go-v2/service/acm/types"
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
 	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	"github.com/aws/smithy-go"
@@ -387,10 +386,10 @@ func EC2EnclaveCertificateIamRoleAssociation(ctx context.Context, cfg aws.Config
 
 	var values []Resource
 	for _, c := range certs {
-		cert := c.Description.(acmtypes.CertificateSummary)
+		cert := c.Description.(CertificateManagerCertificateDescription)
 
 		output, err := client.GetAssociatedEnclaveCertificateIamRoles(ctx, &ec2.GetAssociatedEnclaveCertificateIamRolesInput{
-			CertificateArn: cert.CertificateArn,
+			CertificateArn: cert.Certificate.CertificateArn,
 		})
 		if err != nil {
 			return nil, err
@@ -407,6 +406,10 @@ func EC2EnclaveCertificateIamRoleAssociation(ctx context.Context, cfg aws.Config
 	return values, nil
 }
 
+type EC2FlowLogDescription struct {
+	FlowLog types.FlowLog
+}
+
 func EC2FlowLog(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	client := ec2.NewFromConfig(cfg)
 	paginator := ec2.NewDescribeFlowLogsPaginator(client, &ec2.DescribeFlowLogsInput{})
@@ -420,8 +423,10 @@ func EC2FlowLog(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 
 		for _, v := range page.FlowLogs {
 			values = append(values, Resource{
-				ID:          *v.FlowLogId,
-				Description: v,
+				ID: *v.FlowLogId,
+				Description: EC2FlowLogDescription{
+					FlowLog: v,
+				},
 			})
 		}
 	}

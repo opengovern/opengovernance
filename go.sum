@@ -117,6 +117,8 @@ github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.1.0 h1:ArRd27pSm66f7cCBDPS
 github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.1.0/go.mod h1:KdVvdk4gb7iatuHZgIkIqvJlWHBtjCJLUtD/uO/FkWw=
 github.com/aws/aws-sdk-go-v2/internal/ini v1.3.1 h1:fdQSN/ieDwbxdj7ptvFKjS2cS2a91l/WdjacCt5GgTE=
 github.com/aws/aws-sdk-go-v2/internal/ini v1.3.1/go.mod h1:5eEM4wZ6I2GaeOaVXsiJexIH4P1sFnK5Yp2Tlw9Ah3c=
+github.com/aws/aws-sdk-go-v2/service/accessanalyzer v1.12.0 h1:/043E/bBsh9RqZVua+5782n7iYZz1ZexlJV2xChh4rg=
+github.com/aws/aws-sdk-go-v2/service/accessanalyzer v1.12.0/go.mod h1:AlM26E4J/wDuFw8Aw20vIWVzo105igTU0xsnADR8JHY=
 github.com/aws/aws-sdk-go-v2/service/acm v1.9.1 h1:Ft9ymYWT+AM271ecU5PY4gxrb89X6EkHGpE1Mgr4mT4=
 github.com/aws/aws-sdk-go-v2/service/acm v1.9.1/go.mod h1:XVW3+f6JwMQVm1Jq+2Cm8Uwek15UMmqkO4GD1FOBQxY=
 github.com/aws/aws-sdk-go-v2/service/apigateway v1.11.0 h1:8g968yiQ2yinlg/1PvB1TsiP+li+1ph5JRo52lmZ6W4=

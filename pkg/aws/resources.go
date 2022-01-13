@@ -12,6 +12,7 @@ import (
 type ResourceDescriber func(context.Context, aws.Config, string, []string, string) (*ResourceDescribeOutput, error)
 
 var resourceTypeToDescriber = map[string]ResourceDescriber{
+	"AWS::AccessAnalyzer::Analyzer":                               ParallelDescribeRegional(describer.AccessAnalyzerAnalyzer),
 	"AWS::ApplicationInsights::Application":                       ParallelDescribeRegional(describer.ApplicationInsightsApplication),
 	"AWS::ApplicationAutoScaling::Target":                         ParallelDescribeRegional(describer.ApplicationAutoScalingTarget),
 	"AWS::AutoScaling::AutoScalingGroup":                          ParallelDescribeRegional(describer.AutoScalingAutoScalingGroup),
@@ -125,6 +126,7 @@ var resourceTypeToDescriber = map[string]ResourceDescriber{
 	"AWS::GuardDuty::Finding":                                     ParallelDescribeRegional(describer.GuardDutyFinding),
 	"AWS::IAM::AccessKey":                                         SequentialDescribeGlobal(describer.IAMAccessKey),
 	"AWS::IAM::Account":                                           SequentialDescribeGlobal(describer.IAMAccount),
+	"AWS::IAM::IAMAccountPasswordPolicy":                          SequentialDescribeGlobal(describer.IAMAccountPasswordPolicy),
 	"AWS::IAM::AccountSummary":                                    SequentialDescribeGlobal(describer.IAMAccountSummary),
 	"AWS::IAM::CredentialReport":                                  SequentialDescribeGlobal(describer.IAMCredentialReport),
 	"AWS::IAM::Group":                                             SequentialDescribeGlobal(describer.IAMGroup),
