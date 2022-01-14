@@ -2,6 +2,7 @@ package describer
 
 import (
 	"context"
+	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/dax"
@@ -26,7 +27,11 @@ func DAXCluster(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 			ResourceName: cluster.ClusterArn,
 		})
 		if err != nil {
-			return nil, err
+			if strings.Contains(err.Error(), "ClusterNotFoundFault") {
+				tags = nil
+			} else {
+				return nil, err
+			}
 		}
 
 		values = append(values, Resource{
