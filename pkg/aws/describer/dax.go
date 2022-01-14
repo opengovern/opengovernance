@@ -18,11 +18,6 @@ func DAXCluster(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	client := dax.NewFromConfig(cfg)
 	out, err := client.DescribeClusters(ctx, &dax.DescribeClustersInput{})
 	if err != nil {
-		// Dax Cluster is not available in all regions yet and throws exceptions for those regions
-		// https://aws.amazon.com/about-aws/whats-new/2018/04/amazon-dynamodb-accelerator-regional-expansion/
-		if strings.Contains(err.Error(), "InvalidParameterValueException") || strings.Contains(err.Error(), "no such host") {
-			return nil, nil
-		}
 		return nil, err
 	}
 
