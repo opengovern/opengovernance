@@ -371,6 +371,14 @@ func isErr(err error, code string) bool {
 	return errors.As(err, &ae) && ae.ErrorCode() == code
 }
 
+type S3AccessPointDescription struct {
+	AccessPoint    *s3control.GetAccessPointOutput
+	AccessPointArn *string
+	Policy         *s3control.GetAccessPointPolicyOutput
+	PolicyStatus   *s3control.GetAccessPointPolicyStatusOutput
+	ArnToAkas      *string
+}
+
 func S3AccessPoint(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	stsClient := sts.NewFromConfig(cfg)
 	output, err := stsClient.GetCallerIdentity(ctx, &sts.GetCallerIdentityInput{})
@@ -391,13 +399,41 @@ func S3AccessPoint(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 		}
 
 		for _, v := range page.AccessPointList {
+			ap, err := client.GetAccessPoint(ctx, &s3control.GetAccessPointInput{
+				Name:      v.Name,
+				AccountId: output.Account,
+			})
+			if err != nil {
+				return nil, err
+			}
+
+			params := &s3control.GetAccessPointPolicyInput{
+				Name:      v.Name,
+				AccountId: output.Account,
+			}
+			app, err := client.GetAccessPointPolicy(ctx, params)
+			if err != nil {
+				return nil, err
+			}
+
+			appsParams := &s3control.GetAccessPointPolicyStatusInput{
+				Name:      v.Name,
+				AccountId: output.Account,
+			}
+			apps, err := client.GetAccessPointPolicyStatus(ctx, appsParams)
+
 			values = append(values, Resource{
-				ARN:         *v.AccessPointArn,
-				Description: v,
+				ARN: *v.AccessPointArn,
+				Description: S3AccessPointDescription{
+					AccessPoint:    ap,
+					AccessPointArn: ap.Name,
+					Policy:         app,
+					PolicyStatus:   apps,
+					ArnToAkas:      v.AccessPointArn,
+				},
 			})
 		}
 	}
-
 	return values, nil
 }
 
