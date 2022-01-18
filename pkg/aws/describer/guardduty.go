@@ -55,3 +55,40 @@ func GuardDutyFinding(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	}
 	return values, nil
 }
+
+type GuardDutyDetectorDescription struct {
+	DetectorId string
+	Detector *guardduty.GetDetectorOutput
+}
+
+func GuardDutyDetector(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+	var values []Resource
+
+	client := guardduty.NewFromConfig(cfg)
+
+	paginator := guardduty.NewListDetectorsPaginator(client, &guardduty.ListDetectorsInput{})
+	for paginator.HasMorePages() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, item := range page.DetectorIds {
+			out, err := client.GetDetector(ctx, &guardduty.GetDetectorInput{
+				DetectorId: &item,
+			})
+			if err != nil {
+				return nil, err
+			}
+
+			values = append(values, Resource{
+				ID: item,
+				Description: GuardDutyDetectorDescription{
+					DetectorId: item,
+					Detector: out,
+				},
+			})
+		}
+	}
+	return values, nil
+}

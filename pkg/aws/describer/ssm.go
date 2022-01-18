@@ -35,6 +35,47 @@ func SSMManagedInstance(ctx context.Context, cfg aws.Config) ([]Resource, error)
 	return values, nil
 }
 
+type SSMManagedInstanceComplianceDescription struct {
+	ComplianceItem types.ComplianceItem
+}
+
+func SSMManagedInstanceCompliance(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+	client := ssm.NewFromConfig(cfg)
+	paginator := ssm.NewDescribeInstanceInformationPaginator(client, &ssm.DescribeInstanceInformationInput{})
+
+	var values []Resource
+	for paginator.HasMorePages() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, item := range page.InstanceInformationList {
+			cpaginator := ssm.NewListComplianceItemsPaginator(client, &ssm.ListComplianceItemsInput{
+				ResourceIds: []string{*item.InstanceId},
+			})
+
+			for cpaginator.HasMorePages() {
+				cpage, err := cpaginator.NextPage(ctx)
+				if err != nil {
+					return nil, err
+				}
+
+				for _, item := range cpage.ComplianceItems {
+					values = append(values, Resource{
+						ID: *item.Id,
+						Description: SSMManagedInstanceComplianceDescription{
+							ComplianceItem: item,
+						},
+					})
+				}
+			}
+		}
+	}
+
+	return values, nil
+}
+
 func SSMAssociation(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	client := ssm.NewFromConfig(cfg)
 	paginator := ssm.NewListAssociationsPaginator(client, &ssm.ListAssociationsInput{})
