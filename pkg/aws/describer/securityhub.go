@@ -15,6 +15,9 @@ func SecurityHubHub(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	client := securityhub.NewFromConfig(cfg)
 	out, err := client.DescribeHub(ctx, &securityhub.DescribeHubInput{})
 	if err != nil {
+		if isErr(err, "InvalidAccessException") {
+			return nil, nil
+		}
 		return nil, err
 	}
 
