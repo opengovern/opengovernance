@@ -12,7 +12,7 @@ require (
 	github.com/Shopify/toxiproxy v2.1.4+incompatible // indirect
 	github.com/armon/go-metrics v0.3.10 // indirect
 	github.com/aws/aws-sdk-go v1.42.23
-	github.com/aws/aws-sdk-go-v2 v1.12.0
+	github.com/aws/aws-sdk-go-v2 v1.13.0
 	github.com/aws/aws-sdk-go-v2/config v1.10.2
 	github.com/aws/aws-sdk-go-v2/credentials v1.6.2
 	github.com/aws/aws-sdk-go-v2/service/accessanalyzer v1.12.0
@@ -43,6 +43,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/elasticloadbalancingv2 v1.12.1
 	github.com/aws/aws-sdk-go-v2/service/elasticsearchservice v1.11.0
 	github.com/aws/aws-sdk-go-v2/service/emr v1.14.0
+	github.com/aws/aws-sdk-go-v2/service/fsx v1.17.0
 	github.com/aws/aws-sdk-go-v2/service/guardduty v1.9.0
 	github.com/aws/aws-sdk-go-v2/service/iam v1.13.1
 	github.com/aws/aws-sdk-go-v2/service/kms v1.11.0
@@ -56,6 +57,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/s3control v1.14.1
 	github.com/aws/aws-sdk-go-v2/service/sagemaker v1.21.0
 	github.com/aws/aws-sdk-go-v2/service/secretsmanager v1.11.0
+	github.com/aws/aws-sdk-go-v2/service/securityhub v1.16.0
 	github.com/aws/aws-sdk-go-v2/service/ses v1.9.1
 	github.com/aws/aws-sdk-go-v2/service/sesv2 v1.8.1
 	github.com/aws/aws-sdk-go-v2/service/sns v1.12.0
@@ -66,7 +68,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/wafregional v1.8.1
 	github.com/aws/aws-sdk-go-v2/service/wafv2 v1.14.0
 	github.com/aws/aws-sdk-go-v2/service/workspaces v1.10.1
-	github.com/aws/smithy-go v1.9.1
+	github.com/aws/smithy-go v1.10.0
 	github.com/cenkalti/backoff/v3 v3.2.2 // indirect
 	github.com/eapache/go-resiliency v1.2.0 // indirect
 	github.com/eapache/go-xerial-snappy v0.0.0-20180814174437-776d5712da21 // indirect

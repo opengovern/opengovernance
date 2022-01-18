@@ -46,3 +46,27 @@ func CodeBuildProject(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 
 	return values, nil
 }
+
+type CodeBuildSourceCredentialDescription struct {
+	SourceCredentialsInfo types.SourceCredentialsInfo
+}
+
+func CodeBuildSourceCredential(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+	client := codebuild.NewFromConfig(cfg)
+	out, err := client.ListSourceCredentials(ctx, &codebuild.ListSourceCredentialsInput{})
+	if err != nil {
+		return nil, err
+	}
+
+	var values []Resource
+	for _, item := range out.SourceCredentialsInfos {
+		values = append(values, Resource{
+			ARN: *item.Arn,
+			Description: CodeBuildSourceCredentialDescription {
+				SourceCredentialsInfo: item,
+			},
+		})
+	}
+
+	return values, nil
+}
