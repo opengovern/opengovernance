@@ -372,11 +372,9 @@ func isErr(err error, code string) bool {
 }
 
 type S3AccessPointDescription struct {
-	AccessPoint    *s3control.GetAccessPointOutput
-	AccessPointArn *string
-	Policy         *s3control.GetAccessPointPolicyOutput
-	PolicyStatus   *s3control.GetAccessPointPolicyStatusOutput
-	ArnToAkas      *string
+	AccessPoint  *s3control.GetAccessPointOutput
+	Policy       *string
+	PolicyStatus *s3controltypes.PolicyStatus
 }
 
 func S3AccessPoint(ctx context.Context, cfg aws.Config) ([]Resource, error) {
@@ -427,8 +425,8 @@ func S3AccessPoint(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 				Description: S3AccessPointDescription{
 					AccessPoint:    ap,
 					AccessPointArn: ap.Name,
-					Policy:         app,
-					PolicyStatus:   apps,
+					Policy:         app.Policy,
+					PolicyStatus:   apps.PolicyStatus,
 					ArnToAkas:      v.AccessPointArn,
 				},
 			})
