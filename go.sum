@@ -126,6 +126,8 @@ github.com/aws/aws-sdk-go-v2/service/acm v1.9.1 h1:Ft9ymYWT+AM271ecU5PY4gxrb89X6
 github.com/aws/aws-sdk-go-v2/service/acm v1.9.1/go.mod h1:XVW3+f6JwMQVm1Jq+2Cm8Uwek15UMmqkO4GD1FOBQxY=
 github.com/aws/aws-sdk-go-v2/service/apigateway v1.11.0 h1:8g968yiQ2yinlg/1PvB1TsiP+li+1ph5JRo52lmZ6W4=
 github.com/aws/aws-sdk-go-v2/service/apigateway v1.11.0/go.mod h1:81rBI522AuALgYFf6L5xw3avwDH4bgzVVWG73FUY1iM=
+github.com/aws/aws-sdk-go-v2/service/apigatewayv2 v1.10.0 h1:+/ihULu4IXgAp4inBDCQyUfSepk3I8zNW5Q612Wtb84=
+github.com/aws/aws-sdk-go-v2/service/apigatewayv2 v1.10.0/go.mod h1:9fank3WJWzECy2UR0KiPESczxFZPj9b91f1HLr1Pv88=
 github.com/aws/aws-sdk-go-v2/service/applicationautoscaling v1.11.0 h1:3IKkGOCR7RVmtiLC9Dr7OB+7MoeDS8vRg0oZFdKy5YU=
 github.com/aws/aws-sdk-go-v2/service/applicationautoscaling v1.11.0/go.mod h1:JRrNjpM1qIFI25ikEvad6g8Q5qw0B1S8G0di/9kU7DY=
 github.com/aws/aws-sdk-go-v2/service/applicationinsights v1.8.0 h1:MajgQOz7mL0dN0UVYU/8Yr4emYo8Hz7tiGv9DtpIg5g=

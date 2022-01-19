@@ -337,3 +337,40 @@ func RDSOptionGroup(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 
 	return values, nil
 }
+
+type RDSDBSnapshotDescription struct {
+	DBSnapshot           types.DBSnapshot
+	DBSnapshotAttributes []types.DBSnapshotAttribute
+}
+
+func RDSDBSnapshot(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+	client := rds.NewFromConfig(cfg)
+	paginator := rds.NewDescribeDBSnapshotsPaginator(client, &rds.DescribeDBSnapshotsInput{})
+
+	var values []Resource
+	for paginator.HasMorePages() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page.DBSnapshots {
+			attrs, err := client.DescribeDBSnapshotAttributes(ctx, &rds.DescribeDBSnapshotAttributesInput{
+				DBSnapshotIdentifier: v.DBSnapshotIdentifier,
+			})
+			if err != nil {
+				return nil, err
+			}
+
+			values = append(values, Resource{
+				ARN: *v.DBSnapshotArn,
+				Description: RDSDBSnapshotDescription{
+					DBSnapshot:           v,
+					DBSnapshotAttributes: attrs.DBSnapshotAttributesResult.DBSnapshotAttributes,
+				},
+			})
+		}
+	}
+
+	return values, nil
+}

@@ -18,6 +18,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/accessanalyzer v1.12.0
 	github.com/aws/aws-sdk-go-v2/service/acm v1.9.1
 	github.com/aws/aws-sdk-go-v2/service/apigateway v1.11.0
+	github.com/aws/aws-sdk-go-v2/service/apigatewayv2 v1.10.0
 	github.com/aws/aws-sdk-go-v2/service/applicationautoscaling v1.11.0
 	github.com/aws/aws-sdk-go-v2/service/applicationinsights v1.8.0
 	github.com/aws/aws-sdk-go-v2/service/autoscaling v1.15.1
