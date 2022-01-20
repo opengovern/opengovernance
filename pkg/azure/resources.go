@@ -142,8 +142,9 @@ func ListResourceTypes() []string {
 }
 
 type ResourceDescriptionMetadata struct {
-	ResourceType    string
-	SubscriptionIds []string
+	ResourceType     string
+	SubscriptionIds  []string
+	CloudEnvironment string
 }
 
 type Resources struct {
@@ -190,6 +191,11 @@ func GetResources(
 		return nil, err
 	}
 
+	env, err := auth.GetSettingsFromEnvironment()
+	if err != nil {
+		return nil, err
+	}
+
 	resources, err := describe(ctx, authorizer, resourceType, subscriptions)
 	if err != nil {
 		return nil, err
@@ -200,6 +206,7 @@ func GetResources(
 		Metadata: ResourceDescriptionMetadata{
 			ResourceType:    resourceType,
 			SubscriptionIds: subscriptions,
+			CloudEnvironment: env.Environment.Name,
 		},
 	}
 

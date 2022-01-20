@@ -9,7 +9,7 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/aws/describer"
 )
 
-type ResourceDescriber func(context.Context, aws.Config, string, []string, string) (*ResourceDescribeOutput, error)
+type ResourceDescriber func(context.Context, aws.Config, string, []string, string) (*Resources, error)
 
 var resourceTypeToDescriber = map[string]ResourceDescriber{
 	"AWS::AccessAnalyzer::Analyzer":                               ParallelDescribeRegional(describer.AccessAnalyzerAnalyzer),
@@ -252,18 +252,8 @@ func ListResourceTypes() []string {
 }
 
 type Resources struct {
-	ResourceDescribeOutput
-}
-
-type ResourceDescribeOutput struct {
 	Resources map[string][]describer.Resource
 	Errors    map[string]string
-}
-
-type ResourceDescribeMetadata struct {
-	ResourceType string
-	AccountId    string
-	Regions      []string
 }
 
 func GetResources(
@@ -296,16 +286,12 @@ func GetResources(
 		}
 	}
 
-	response, err := describe(ctx, cfg, accountId, regions, resourceType)
+	resources, err := describe(ctx, cfg, accountId, regions, resourceType)
 	if err != nil {
 		return nil, err
 	}
 
-	output := &Resources{
-		ResourceDescribeOutput: *response,
-	}
-
-	return output, nil
+	return resources, nil
 }
 
 func describe(
@@ -313,7 +299,7 @@ func describe(
 	cfg aws.Config,
 	account string,
 	regions []string,
-	resourceType string) (*ResourceDescribeOutput, error) {
+	resourceType string) (*Resources, error) {
 	describe, ok := resourceTypeToDescriber[resourceType]
 	if !ok {
 		return nil, fmt.Errorf("unsupported resource type: %s", resourceType)
@@ -330,7 +316,7 @@ func ParallelDescribeRegional(describe func(context.Context, aws.Config) ([]desc
 		resources []describer.Resource
 		err       error
 	}
-	return func(ctx context.Context, cfg aws.Config, account string, regions []string, rType string) (*ResourceDescribeOutput, error) {
+	return func(ctx context.Context, cfg aws.Config, account string, regions []string, rType string) (*Resources, error) {
 		input := make(chan result, len(regions))
 		for _, region := range regions {
 			go func(r string) {
@@ -348,7 +334,7 @@ func ParallelDescribeRegional(describe func(context.Context, aws.Config) ([]desc
 			}(region)
 		}
 
-		output := ResourceDescribeOutput{
+		output := Resources{
 			Resources: make(map[string][]describer.Resource, len(regions)),
 			Errors:    make(map[string]string, len(regions)),
 		}
@@ -382,8 +368,8 @@ func ParallelDescribeRegional(describe func(context.Context, aws.Config) ([]desc
 
 // Sequentially describe the resources. If anyone of the regions fails, it will move on to the next region.
 func SequentialDescribeGlobal(describe func(context.Context, aws.Config) ([]describer.Resource, error)) ResourceDescriber {
-	return func(ctx context.Context, cfg aws.Config, account string, regions []string, rType string) (*ResourceDescribeOutput, error) {
-		output := ResourceDescribeOutput{
+	return func(ctx context.Context, cfg aws.Config, account string, regions []string, rType string) (*Resources, error) {
+		output := Resources{
 			Resources: make(map[string][]describer.Resource, len(regions)),
 			Errors:    make(map[string]string, len(regions)),
 		}
@@ -426,8 +412,8 @@ func SequentialDescribeGlobal(describe func(context.Context, aws.Config) ([]desc
 // Sequentially describe the resources. If anyone of the regions fails, it will move on to the next region.
 // This utility is specific to S3 usecase.
 func SequentialDescribeS3(describe func(context.Context, aws.Config, []string) (map[string][]describer.Resource, error)) ResourceDescriber {
-	return func(ctx context.Context, cfg aws.Config, account string, regions []string, rType string) (*ResourceDescribeOutput, error) {
-		output := ResourceDescribeOutput{
+	return func(ctx context.Context, cfg aws.Config, account string, regions []string, rType string) (*Resources, error) {
+		output := Resources{
 			Resources: make(map[string][]describer.Resource, len(regions)),
 			Errors:    make(map[string]string, len(regions)),
 		}
