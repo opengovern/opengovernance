@@ -423,11 +423,9 @@ func S3AccessPoint(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 			values = append(values, Resource{
 				ARN: *v.AccessPointArn,
 				Description: S3AccessPointDescription{
-					AccessPoint:    ap,
-					AccessPointArn: ap.Name,
-					Policy:         app.Policy,
-					PolicyStatus:   apps.PolicyStatus,
-					ArnToAkas:      v.AccessPointArn,
+					AccessPoint:  ap,
+					Policy:       app.Policy,
+					PolicyStatus: apps.PolicyStatus,
 				},
 			})
 		}
