@@ -4,7 +4,7 @@ import (
 	"context"
 	"github.com/Azure/azure-sdk-for-go/services/storage/mgmt/2019-06-01/storage"
 	"github.com/Azure/go-autorest/autorest"
-	"gitlab.com/keibiengine/keibi-engine/pkg/azure"
+	"gitlab.com/keibiengine/keibi-engine/pkg/azure/model"
 	"strings"
 )
 
@@ -47,7 +47,7 @@ func StorageContainer(ctx context.Context, authorizer autorest.Authorizer, subsc
 					values = append(values, Resource{
 						ID: *v.ID,
 						Description: JSONAllFieldsMarshaller{
-							azure.StorageContainerDescription{
+							model.StorageContainerDescription{
 								ListContainerItem:  v,
 								ImmutabilityPolicy: op,
 							},

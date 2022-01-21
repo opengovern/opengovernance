@@ -5,7 +5,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/profiles/2020-09-01/monitor/mgmt/insights"
 	"github.com/Azure/azure-sdk-for-go/profiles/latest/healthcareapis/mgmt/healthcareapis"
 	"github.com/Azure/go-autorest/autorest"
-	"gitlab.com/keibiengine/keibi-engine/pkg/azure"
+	"gitlab.com/keibiengine/keibi-engine/pkg/azure/model"
 	"strings"
 )
 
@@ -55,7 +55,7 @@ func HealthcareService(ctx context.Context, authorizer autorest.Authorizer, subs
 			values = append(values, Resource{
 				ID: *v.ID,
 				Description: JSONAllFieldsMarshaller{
-					azure.HealthcareServiceDescription{
+					model.HealthcareServiceDescription{
 						ServicesDescription:         v,
 						DiagnosticSettingsResources: opValue,
 						PrivateEndpointConnections:  opServiceValue,

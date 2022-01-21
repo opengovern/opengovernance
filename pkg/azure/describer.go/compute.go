@@ -4,7 +4,7 @@ import (
 	"context"
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2020-06-01/compute"
 	"github.com/Azure/go-autorest/autorest"
-	"gitlab.com/keibiengine/keibi-engine/pkg/azure"
+	"gitlab.com/keibiengine/keibi-engine/pkg/azure/model"
 	"strings"
 )
 
@@ -23,7 +23,7 @@ func ComputeDisk(ctx context.Context, authorizer autorest.Authorizer, subscripti
 			values = append(values, Resource{
 				ID: *v.ID,
 				Description: JSONAllFieldsMarshaller{
-					azure.ComputeDiskDescription{
+					model.ComputeDiskDescription{
 						Disk: v,
 					},
 				},
@@ -58,7 +58,7 @@ func ComputeDiskAccess(ctx context.Context, authorizer autorest.Authorizer, subs
 			values = append(values, Resource{
 				ID: *v.ID,
 				Description: JSONAllFieldsMarshaller{
-					azure.ComputeDiskAccessDescription{
+					model.ComputeDiskAccessDescription{
 						DiskAccess: v,
 					},
 				},
@@ -103,7 +103,7 @@ func ComputeVirtualMachineScaleSet(ctx context.Context, authorizer autorest.Auth
 			values = append(values, Resource{
 				ID: *v.ID,
 				Description: JSONAllFieldsMarshaller{
-					azure.ComputeVirtualMachineScaleSetDescription{
+					model.ComputeVirtualMachineScaleSetDescription{
 						VirtualMachineScaleSet:           v,
 						VirtualMachineScaleSetExtensions: op.Values(),
 					},

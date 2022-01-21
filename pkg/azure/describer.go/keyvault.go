@@ -4,7 +4,7 @@ import (
 	"context"
 	"github.com/Azure/azure-sdk-for-go/services/keyvault/mgmt/2019-09-01/keyvault"
 	"github.com/Azure/go-autorest/autorest"
-	"gitlab.com/keibiengine/keibi-engine/pkg/azure"
+	"gitlab.com/keibiengine/keibi-engine/pkg/azure/model"
 	"strings"
 )
 
@@ -46,7 +46,7 @@ func KeyVaultKey(ctx context.Context, authorizer autorest.Authorizer, subscripti
 					values = append(values, Resource{
 						ID: *v.ID,
 						Description: JSONAllFieldsMarshaller{
-							azure.KeyVaultKeyDescription{
+							model.KeyVaultKeyDescription{
 								Key: v,
 							},
 						},

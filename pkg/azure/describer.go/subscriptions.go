@@ -4,7 +4,7 @@ import (
 	"context"
 	"github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2019-06-01/subscriptions"
 	"github.com/Azure/go-autorest/autorest"
-	"gitlab.com/keibiengine/keibi-engine/pkg/azure"
+	"gitlab.com/keibiengine/keibi-engine/pkg/azure/model"
 )
 
 //TODO-Saleh resource ??
@@ -22,7 +22,7 @@ func Tenant(ctx context.Context, authorizer autorest.Authorizer, subscription st
 		values = append(values, Resource{
 			ID: *v.ID,
 			Description: JSONAllFieldsMarshaller{
-				azure.TenantDescription{
+				model.TenantDescription{
 					TenantIDDescription: v,
 				},
 			},

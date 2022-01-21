@@ -4,7 +4,7 @@ import (
 	"context"
 	"github.com/Azure/azure-sdk-for-go/profiles/latest/resources/mgmt/links"
 	"github.com/Azure/go-autorest/autorest"
-	"gitlab.com/keibiengine/keibi-engine/pkg/azure"
+	"gitlab.com/keibiengine/keibi-engine/pkg/azure/model"
 )
 
 //TODO-Saleh resource ??
@@ -23,7 +23,7 @@ func ResourceLink(ctx context.Context, authorizer autorest.Authorizer, subscript
 			values = append(values, Resource{
 				ID: *v.ID,
 				Description: JSONAllFieldsMarshaller{
-					azure.ResourceLinkDescription{
+					model.ResourceLinkDescription{
 						ResourceLink: v,
 					},
 				},
