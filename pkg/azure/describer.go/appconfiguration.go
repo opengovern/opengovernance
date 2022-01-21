@@ -5,7 +5,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/profiles/2020-09-01/monitor/mgmt/insights"
 	"github.com/Azure/azure-sdk-for-go/services/appconfiguration/mgmt/2020-06-01/appconfiguration"
 	"github.com/Azure/go-autorest/autorest"
-	"gitlab.com/keibiengine/keibi-engine/pkg/azure"
+	"gitlab.com/keibiengine/keibi-engine/pkg/azure/model"
 )
 
 func AppConfiguration(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
@@ -31,7 +31,7 @@ func AppConfiguration(ctx context.Context, authorizer autorest.Authorizer, subsc
 			values = append(values, Resource{
 				ID: *config.ID,
 				Description: JSONAllFieldsMarshaller{
-					azure.AppConfigurationDescription{
+					model.AppConfigurationDescription{
 						ConfigurationStore:          config,
 						DiagnosticSettingsResources: *op.Value,
 					},

@@ -4,7 +4,7 @@ import (
 	"context"
 	"github.com/Azure/azure-sdk-for-go/services/preview/security/mgmt/v1.0/security"
 	"github.com/Azure/go-autorest/autorest"
-	"gitlab.com/keibiengine/keibi-engine/pkg/azure"
+	"gitlab.com/keibiengine/keibi-engine/pkg/azure/model"
 )
 
 //TODO-Saleh resource ??
@@ -23,7 +23,7 @@ func SecurityCenterAutoProvisioning(ctx context.Context, authorizer autorest.Aut
 			values = append(values, Resource{
 				ID: *v.ID,
 				Description: JSONAllFieldsMarshaller{
-					azure.SecurityCenterAutoProvisioningDescription{
+					model.SecurityCenterAutoProvisioningDescription{
 						AutoProvisioningSetting: v,
 					},
 				},
@@ -59,7 +59,7 @@ func SecurityCenterContact(ctx context.Context, authorizer autorest.Authorizer, 
 			values = append(values, Resource{
 				ID: *v.ID,
 				Description: JSONAllFieldsMarshaller{
-					azure.SecurityCenterContactDescription{
+					model.SecurityCenterContactDescription{
 						Contact: v,
 					},
 				},
@@ -95,7 +95,7 @@ func SecurityCenterJitNetworkAccessPolicy(ctx context.Context, authorizer autore
 			values = append(values, Resource{
 				ID: *v.ID,
 				Description: JSONAllFieldsMarshaller{
-					azure.SecurityCenterJitNetworkAccessPolicyDescription{
+					model.SecurityCenterJitNetworkAccessPolicyDescription{
 						JitNetworkAccessPolicy: v,
 					},
 				},
@@ -131,7 +131,7 @@ func SecurityCenterSetting(ctx context.Context, authorizer autorest.Authorizer, 
 			values = append(values, Resource{
 				ID: *v.ID,
 				Description: JSONAllFieldsMarshaller{
-					azure.SecurityCenterSettingDescription{
+					model.SecurityCenterSettingDescription{
 						Setting: v,
 					},
 				},
@@ -166,7 +166,7 @@ func SecurityCenterSubscriptionPricing(ctx context.Context, authorizer autorest.
 			values = append(values, Resource{
 				ID: *v.ID,
 				Description: JSONAllFieldsMarshaller{
-					azure.SecurityCenterSubscriptionPricingDescription{
+					model.SecurityCenterSubscriptionPricingDescription{
 						Pricing: v,
 					},
 				},

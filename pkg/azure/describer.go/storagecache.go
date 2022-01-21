@@ -4,7 +4,7 @@ import (
 	"context"
 	"github.com/Azure/azure-sdk-for-go/services/storagecache/mgmt/2021-05-01/storagecache"
 	"github.com/Azure/go-autorest/autorest"
-	"gitlab.com/keibiengine/keibi-engine/pkg/azure"
+	"gitlab.com/keibiengine/keibi-engine/pkg/azure/model"
 )
 
 func HpcCache(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
@@ -22,7 +22,7 @@ func HpcCache(ctx context.Context, authorizer autorest.Authorizer, subscription 
 			values = append(values, Resource{
 				ID: *v.ID,
 				Description: JSONAllFieldsMarshaller{
-					azure.HpcCacheDescription{
+					model.HpcCacheDescription{
 						Cache: v,
 					},
 				},

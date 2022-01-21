@@ -4,7 +4,7 @@ import (
 	"context"
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2020-05-01/network"
 	"github.com/Azure/go-autorest/autorest"
-	"gitlab.com/keibiengine/keibi-engine/pkg/azure"
+	"gitlab.com/keibiengine/keibi-engine/pkg/azure/model"
 	"strings"
 )
 
@@ -23,7 +23,7 @@ func NetworkInterface(ctx context.Context, authorizer autorest.Authorizer, subsc
 			values = append(values, Resource{
 				ID: *v.ID,
 				Description: JSONAllFieldsMarshaller{
-					azure.NetworkInterfaceDescription{
+					model.NetworkInterfaceDescription{
 						Interface: v,
 					},
 				},
@@ -72,7 +72,7 @@ func NetworkWatcherFlowLog(ctx context.Context, authorizer autorest.Authorizer, 
 				values = append(values, Resource{
 					ID: *v.ID,
 					Description: JSONAllFieldsMarshaller{
-						azure.NetworkWatcherFlowLogDescription{
+						model.NetworkWatcherFlowLogDescription{
 							FlowLog: v,
 						},
 					},
@@ -120,7 +120,7 @@ func Subnet(ctx context.Context, authorizer autorest.Authorizer, subscription st
 					values = append(values, Resource{
 						ID: *v.ID,
 						Description: JSONAllFieldsMarshaller{
-							azure.SubnetDescription{
+							model.SubnetDescription{
 								Subnet: v,
 							},
 						},
@@ -166,7 +166,7 @@ func VirtualNetwork(ctx context.Context, authorizer autorest.Authorizer, subscri
 			values = append(values, Resource{
 				ID: *v.ID,
 				Description: JSONAllFieldsMarshaller{
-					azure.VirtualNetworkDescription{
+					model.VirtualNetworkDescription{
 						VirtualNetwork: v,
 					},
 				},

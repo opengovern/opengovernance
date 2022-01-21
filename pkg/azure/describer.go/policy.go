@@ -4,7 +4,7 @@ import (
 	"context"
 	"github.com/Azure/azure-sdk-for-go/profiles/latest/resources/mgmt/policy"
 	"github.com/Azure/go-autorest/autorest"
-	"gitlab.com/keibiengine/keibi-engine/pkg/azure"
+	"gitlab.com/keibiengine/keibi-engine/pkg/azure/model"
 )
 
 func PolicyAssignment(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
@@ -22,7 +22,7 @@ func PolicyAssignment(ctx context.Context, authorizer autorest.Authorizer, subsc
 			values = append(values, Resource{
 				ID: *v.ID,
 				Description: JSONAllFieldsMarshaller{
-					azure.PolicyAssignmentDescription{
+					model.PolicyAssignmentDescription{
 						Assignment: v,
 					},
 				},

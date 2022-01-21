@@ -5,7 +5,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/profiles/2020-09-01/monitor/mgmt/insights"
 	"github.com/Azure/azure-sdk-for-go/services/apimanagement/mgmt/2020-12-01/apimanagement"
 	"github.com/Azure/go-autorest/autorest"
-	"gitlab.com/keibiengine/keibi-engine/pkg/azure"
+	"gitlab.com/keibiengine/keibi-engine/pkg/azure/model"
 )
 
 func APIManagement(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
@@ -31,7 +31,7 @@ func APIManagement(ctx context.Context, authorizer autorest.Authorizer, subscrip
 			values = append(values, Resource{
 				ID: *apiManagement.ID,
 				Description: JSONAllFieldsMarshaller{
-					azure.APIManagementDescription{
+					model.APIManagementDescription{
 						APIManagement:               apiManagement,
 						DiagnosticSettingsResources: *op.Value,
 					},

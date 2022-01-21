@@ -4,7 +4,7 @@ import (
 	"context"
 	"github.com/Azure/azure-sdk-for-go/services/preview/authorization/mgmt/2018-09-01-preview/authorization"
 	"github.com/Azure/go-autorest/autorest"
-	"gitlab.com/keibiengine/keibi-engine/pkg/azure"
+	"gitlab.com/keibiengine/keibi-engine/pkg/azure/model"
 )
 
 func RoleAssignment(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
@@ -22,7 +22,7 @@ func RoleAssignment(ctx context.Context, authorizer autorest.Authorizer, subscri
 			values = append(values, Resource{
 				ID: *v.ID,
 				Description: JSONAllFieldsMarshaller{
-					azure.RoleAssignmentDescription{
+					model.RoleAssignmentDescription{
 						RoleAssignment: v,
 					},
 				},
@@ -58,7 +58,7 @@ func RoleDefinition(ctx context.Context, authorizer autorest.Authorizer, subscri
 			values = append(values, Resource{
 				ID: *v.ID,
 				Description: JSONAllFieldsMarshaller{
-					Value: azure.RoleDefinitionDescription{
+					Value: model.RoleDefinitionDescription{
 						RoleDefinition: v,
 					},
 				},

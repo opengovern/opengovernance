@@ -4,7 +4,7 @@ import (
 	"context"
 	"github.com/Azure/azure-sdk-for-go/services/web/mgmt/2020-06-01/web"
 	"github.com/Azure/go-autorest/autorest"
-	"gitlab.com/keibiengine/keibi-engine/pkg/azure"
+	"gitlab.com/keibiengine/keibi-engine/pkg/azure/model"
 )
 
 func AppServiceEnvironment(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
@@ -22,7 +22,7 @@ func AppServiceEnvironment(ctx context.Context, authorizer autorest.Authorizer, 
 			values = append(values, Resource{
 				ID: *v.ID,
 				Description: JSONAllFieldsMarshaller{
-					azure.AppServiceEnvironmentDescription{
+					model.AppServiceEnvironmentDescription{
 						AppServiceEnvironmentResource: v,
 					},
 				},
@@ -71,7 +71,7 @@ func AppServiceFunctionApp(ctx context.Context, authorizer autorest.Authorizer, 
 			values = append(values, Resource{
 				ID: *v.ID,
 				Description: JSONAllFieldsMarshaller{
-					azure.AppServiceFunctionAppDescription{
+					model.AppServiceFunctionAppDescription{
 						Site:               v,
 						SiteAuthSettings:   authSettings,
 						SiteConfigResource: configuration,
@@ -131,7 +131,7 @@ func AppServiceWebApp(ctx context.Context, authorizer autorest.Authorizer, subsc
 			values = append(values, Resource{
 				ID: *v.ID,
 				Description: JSONAllFieldsMarshaller{
-					azure.AppServiceWebAppDescription{
+					model.AppServiceWebAppDescription{
 						Site:               v,
 						SiteConfigResource: op,
 						SiteAuthSettings:   authSettings,
