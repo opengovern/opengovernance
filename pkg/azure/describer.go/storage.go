@@ -2,6 +2,7 @@ package describer
 
 import (
 	"context"
+	"github.com/Azure/azure-sdk-for-go/profiles/2020-09-01/monitor/mgmt/insights"
 	"github.com/Azure/azure-sdk-for-go/services/storage/mgmt/2019-06-01/storage"
 	"github.com/Azure/go-autorest/autorest"
 	"gitlab.com/keibiengine/keibi-engine/pkg/azure/model"
@@ -75,6 +76,106 @@ func StorageContainer(ctx context.Context, authorizer autorest.Authorizer, subsc
 			return nil, err
 		}
 	}
+	return values, nil
+}
+func StorageAccount(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
+	encryptionScopesStorageClient := storage.NewEncryptionScopesClient(subscription)
+	encryptionScopesStorageClient.Authorizer = authorizer
 
+	client := insights.NewDiagnosticSettingsClient(subscription)
+	client.Authorizer = authorizer
+
+	fileServicesStorageClient := storage.NewFileServicesClient(subscription)
+	fileServicesStorageClient.Authorizer = authorizer
+
+	blobServicesStorageClient := storage.NewBlobServicesClient(subscription)
+	blobServicesStorageClient.Authorizer = authorizer
+
+	managementPoliciesStorageClient := storage.NewManagementPoliciesClient(subscription)
+	managementPoliciesStorageClient.Authorizer = authorizer
+
+	storageClient := storage.NewAccountsClient(subscription)
+	storageClient.Authorizer = authorizer
+
+	result, err := storageClient.List(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	var values []Resource
+	for {
+		for _, account := range result.Values() {
+			resourceGroup := &strings.Split(string(*account.ID), "/")[4]
+
+			storageGetOp, err := managementPoliciesStorageClient.Get(ctx, *resourceGroup, *account.Name)
+			if err != nil {
+				if !strings.Contains(err.Error(), "ManagementPolicyNotFound") {
+					return nil, err
+				}
+			}
+
+			var blobServicesProperties *storage.BlobServiceProperties
+			if account.Kind != "FileStorage" {
+				blobServicesPropertiesOp, err := blobServicesStorageClient.GetServiceProperties(ctx, *resourceGroup, *account.Name)
+				if err != nil {
+					return nil, err
+				}
+				blobServicesProperties = &blobServicesPropertiesOp
+			}
+
+			var storageListKeysAccountKeys *storage.AccountListKeysResult
+			if account.Kind != "FileStorage" {
+				v, err := storageClient.ListKeys(ctx, *resourceGroup, *account.Name, "")
+				if err != nil {
+					if !strings.Contains(err.Error(), "ScopeLocked") {
+						return nil, err
+					}
+				}
+				storageListKeysAccountKeys = &v
+			}
+
+			var storageGetServicePropertiesOp *storage.FileServiceProperties
+			if account.Kind != "BlobStorage" {
+				v, err := fileServicesStorageClient.GetServiceProperties(ctx, *resourceGroup, *account.Name)
+				if err != nil {
+					if !strings.Contains(err.Error(), "FeatureNotSupportedForAccount") {
+						return nil, err
+					}
+				}
+				storageGetServicePropertiesOp = &v
+			}
+
+			id := *account.ID
+			storageListOp, err := client.List(ctx, id)
+			if err != nil {
+				return nil, err
+			}
+
+			storageListEncryptionScope, err := encryptionScopesStorageClient.List(ctx, *resourceGroup, *account.Name)
+			if err != nil {
+				return nil, err
+			}
+
+			values = append(values, Resource{
+				ID: *account.ID,
+				Description: model.StorageAccountDescription{
+					account,
+					storageGetOp,
+					blobServicesProperties,
+					storageListKeysAccountKeys,
+					storageGetServicePropertiesOp,
+					storageListOp,
+					storageListEncryptionScope,
+				},
+			})
+		}
+		if !result.NotDone() {
+			break
+		}
+		err = result.NextWithContext(ctx)
+		if err != nil {
+			return nil, err
+		}
+	}
 	return values, nil
 }

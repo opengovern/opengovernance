@@ -1994,9 +1994,585 @@ type StorageSyncDescription struct {
 type StorageSyncDescription struct {
 	obj0 storagesync.TypeName
 }
-{
+
+//  =================== sql ==================
+
+//index:
+//getfilter:name=
+//getfilter:resource_group=
+type MssqlManagedInstanceDescription struct {
+	obj0 sql.TypeName
+
+	obj1 sql.TypeName
+
+	obj2 sql.TypeName
+
+	obj3 sql.TypeName
+}
+
+//  =================== sql ==================
+
+//index:
+//getfilter:name=
+//getfilter:resource_group=
+type MssqlManagedInstanceDescription struct {
+	obj0 sql.TypeName
+
+	obj1 sql.TypeName
+
+	obj2 sql.TypeName
+
+	obj3 sql.TypeName
+}
+
+//  =================== sql ==================
+
+//index:
+//getfilter:name=
+//getfilter:resource_group=
+type MssqlManagedInstanceDescription struct {
+	obj0 sql.TypeName
+
+	obj1 sql.TypeName
+
+	obj2 sql.TypeName
+
+	obj3 sql.TypeName
+}
+
+//  =================== sql ==================
+
+//index:
+//getfilter:name=
+//getfilter:resource_group=
+type MssqlManagedInstanceDescription struct {
+	obj0 sql.TypeName
+
+	obj1 sql.TypeName
+
+	obj2 sql.TypeName
+
+	obj3 sql.TypeName
+}
+
+//  =================== sql ==================
+
+//index:microsoft_synapse_workspaces_sqldatabases
+//getfilter:name=
+//getfilter:resource_group=
+type SqlDatabaseDescription struct {
+	obj0 sql.TypeName
+
+	obj1 sql.TypeName
+
+	obj2 sql.TypeName
+
+	obj3 sql.TypeName
+
+	obj4 sql.TypeName
+
+	obj5 sql.TypeName
+}
+
+//  =================== sql ==================
+
+//index:microsoft_synapse_workspaces_sqldatabases
+//getfilter:name=
+//getfilter:resource_group=
+type SqlDatabaseDescription struct {
+	obj0 sql.TypeName
+
+	obj1 sql.TypeName
+
+	obj2 sql.TypeName
+
+	obj3 sql.TypeName
+
+	obj4 sql.TypeName
+
+	obj5 sql.TypeName
+}
+
+//  =================== sql ==================
+
+//index:microsoft_synapse_workspaces_sqldatabases
+//getfilter:name=
+//getfilter:resource_group=
+type SqlDatabaseDescription struct {
+	obj0 sql.TypeName
+
+	obj1 sql.TypeName
+
+	obj2 sql.TypeName
+
+	obj3 sql.TypeName
+
+	obj4 sql.TypeName
+
+	obj5 sql.TypeName
+}
+
+//  =================== sql ==================
+
+//index:microsoft_synapse_workspaces_sqldatabases
+//getfilter:name=
+//getfilter:resource_group=
+type SqlDatabaseDescription struct {
+	obj0 sql.TypeName
+
+	obj1 sql.TypeName
+
+	obj2 sql.TypeName
+
+	obj3 sql.TypeName
+
+	obj4 sql.TypeName
+
+	obj5 sql.TypeName
+}
+
+//  =================== sql ==================
+
+//index:microsoft_synapse_workspaces_sqldatabases
+//getfilter:name=
+//getfilter:resource_group=
+type SqlDatabaseDescription struct {
+	obj0 sql.TypeName
+
+	obj1 sql.TypeName
+
+	obj2 sql.TypeName
+
+	obj3 sql.TypeName
+
+	obj4 sql.TypeName
+
+	obj5 sql.TypeName
+}
+
+//  =================== sqlv3 ==================
+
+//index:Microsoft_AzureArcData_sqlServerInstances
+//getfilter:name=
+//getfilter:resource_group=
+type SqlServerDescription struct {
+	obj0 sqlv3.TypeName
+
+	obj1 sqlv3.TypeName
+
+	obj2 sqlv3.TypeName
+
+	obj3 sqlv3.TypeName
+
+	obj4 sqlv3.TypeName
+
+	obj5 sqlv3.TypeName
+
+	obj6 sqlv3.TypeName
+
+	obj7 sqlv3.TypeName
+
+	obj8 sqlv3.TypeName
+}
+
+//  =================== sqlv3 ==================
+
+//index:Microsoft_AzureArcData_sqlServerInstances
+//getfilter:name=
+//getfilter:resource_group=
+type SqlServerDescription struct {
+	obj0 sqlv3.TypeName
+
+	obj1 sqlv3.TypeName
+
+	obj2 sqlv3.TypeName
+
+	obj3 sqlv3.TypeName
+
+	obj4 sqlv3.TypeName
+
+	obj5 sqlv3.TypeName
+
+	obj6 sqlv3.TypeName
+
+	obj7 sqlv3.TypeName
+
+	obj8 sqlv3.TypeName
+}
+
+//  =================== sqlv3 ==================
+
+//index:Microsoft_AzureArcData_sqlServerInstances
+//getfilter:name=
+//getfilter:resource_group=
+type SqlServerDescription struct {
+	obj0 sqlv3.TypeName
+
+	obj1 sqlv3.TypeName
+
+	obj2 sqlv3.TypeName
+
+	obj3 sqlv3.TypeName
+
+	obj4 sqlv3.TypeName
+
+	obj5 sqlv3.TypeName
+
+	obj6 sqlv3.TypeName
+
+	obj7 sqlv3.TypeName
+
+	obj8 sqlv3.TypeName
+}
+
+//  =================== sqlv3 ==================
+
+//index:Microsoft_AzureArcData_sqlServerInstances
+//getfilter:name=
+//getfilter:resource_group=
+type SqlServerDescription struct {
+	obj0 sqlv3.TypeName
+
+	obj1 sqlv3.TypeName
+
+	obj2 sqlv3.TypeName
+
+	obj3 sqlv3.TypeName
+
+	obj4 sqlv3.TypeName
+
+	obj5 sqlv3.TypeName
+
+	obj6 sqlv3.TypeName
+
+	obj7 sqlv3.TypeName
+
+	obj8 sqlv3.TypeName
+}
+
+//  =================== sqlv3 ==================
+
+//index:Microsoft_AzureArcData_sqlServerInstances
+//getfilter:name=
+//getfilter:resource_group=
+type SqlServerDescription struct {
+	obj0 sqlv3.TypeName
+
+	obj1 sqlv3.TypeName
+
+	obj2 sqlv3.TypeName
+
+	obj3 sqlv3.TypeName
+
+	obj4 sqlv3.TypeName
+
+	obj5 sqlv3.TypeName
+
+	obj6 sqlv3.TypeName
+
+	obj7 sqlv3.TypeName
+
+	obj8 sqlv3.TypeName
+}
+
+//  =================== sqlv3 ==================
+
+//index:Microsoft_AzureArcData_sqlServerInstances
+//getfilter:name=
+//getfilter:resource_group=
+type SqlServerDescription struct {
+	obj0 sqlv3.TypeName
+
+	obj1 sqlv3.TypeName
+
+	obj2 sqlv3.TypeName
+
+	obj3 sqlv3.TypeName
+
+	obj4 sqlv3.TypeName
+
+	obj5 sqlv3.TypeName
+
+	obj6 sqlv3.TypeName
+
+	obj7 sqlv3.TypeName
+
+	obj8 sqlv3.TypeName
+}
+
+//  =================== sqlv3 ==================
+
+//index:Microsoft_AzureArcData_sqlServerInstances
+//getfilter:name=
+//getfilter:resource_group=
+type SqlServerDescription struct {
+	obj0 sqlv3.TypeName
+
+	obj1 sqlv3.TypeName
+
+	obj2 sqlv3.TypeName
+
+	obj3 sqlv3.TypeName
+
+	obj4 sqlv3.TypeName
+
+	obj5 sqlv3.TypeName
+
+	obj6 sqlv3.TypeName
+
+	obj7 sqlv3.TypeName
+
+	obj8 sqlv3.TypeName
+}
+
+//  =================== storage ==================
+
+//index:Microsoft_ClassicStorage_StorageAccounts
+//getfilter:name=
+//getfilter:resource_group=
+type StorageAccountDescription struct {
+	obj0 storage.TypeName
+
+	obj1 storage.TypeName
+
+	obj2 storage.TypeName
+
+	obj3 storage.TypeName
+
+	obj4 storage.TypeName
+
+	obj5 storage.TypeName
+
+	obj6 storage.TypeName
+}
+
+//  =================== storage ==================
+
+//index:Microsoft_ClassicStorage_StorageAccounts
+//getfilter:name=
+//getfilter:resource_group=
+type StorageAccountDescription struct {
+	obj0 storage.TypeName
+
+	obj1 storage.TypeName
+
+	obj2 storage.TypeName
+
+	obj3 storage.TypeName
+
+	obj4 storage.TypeName
+
+	obj5 storage.TypeName
+
+	obj6 storage.TypeName
+}
+
+//  =================== storage ==================
+
+//index:Microsoft_ClassicStorage_StorageAccounts
+//getfilter:name=
+//getfilter:resource_group=
+type StorageAccountDescription struct {
+	obj0 storage.TypeName
+
+	obj1 storage.TypeName
+
+	obj2 storage.TypeName
+
+	obj3 storage.TypeName
+
+	obj4 storage.TypeName
+
+	obj5 storage.TypeName
+
+	obj6 storage.TypeName
+}
+
+//  =================== storage ==================
+
+//index:Microsoft_ClassicStorage_StorageAccounts
+//getfilter:name=
+//getfilter:resource_group=
+type StorageAccountDescription struct {
+	obj0 storage.TypeName
+
+	obj1 storage.TypeName
+
+	obj2 storage.TypeName
+
+	obj3 storage.TypeName
+
+	obj4 storage.TypeName
+
+	obj5 storage.TypeName
+
+	obj6 storage.TypeName
+}
+
+//  =================== storage ==================
+
+//index:Microsoft_ClassicStorage_StorageAccounts
+//getfilter:name=
+//getfilter:resource_group=
+type StorageAccountDescription struct {
+	obj0 storage.TypeName
+
+	obj1 storage.TypeName
+
+	obj2 storage.TypeName
+
+	obj3 storage.TypeName
+
+	obj4 storage.TypeName
+
+	obj5 storage.TypeName
+
+	obj6 storage.TypeName
+}
+
+//  =================== storage ==================
+
+//index:Microsoft_ClassicStorage_StorageAccounts
+//getfilter:name=
+//getfilter:resource_group=
+type StorageAccountDescription struct {
+	obj0 storage.TypeName
+
+	obj1 storage.TypeName
+
+	obj2 storage.TypeName
+
+	obj3 storage.TypeName
+
+	obj4 storage.TypeName
+
+	obj5 storage.TypeName
+
+	obj6 storage.TypeName
+}
+
+//  =================== storage ==================
+
+//index:Microsoft_ClassicStorage_StorageAccounts
+//getfilter:name=
+//getfilter:resource_group=
+type StorageAccountDescription struct {
+	obj0 storage.TypeName
+
+	obj1 storage.TypeName
+
+	obj2 storage.TypeName
+
+	obj3 storage.TypeName
+
+	obj4 storage.TypeName
+
+	obj5 storage.TypeName
+
+	obj6 storage.TypeName
+}
+
+//  =================== storage ==================
+
+//index:Microsoft_ClassicStorage_StorageAccounts
+//getfilter:name=
+//getfilter:resource_group=
+type StorageAccountDescription struct {
+	obj0 storage.TypeName
+
+	obj1 storage.TypeName
+
+	obj2 storage.TypeName
+
+	obj3 storage.TypeName
+
+	obj4 storage.TypeName
+
+	obj5 storage.TypeName
+
+	obj6 storage.TypeName
+}
+
+//  =================== storage ==================
+
+//index:Microsoft_ClassicStorage_StorageAccounts
+//getfilter:name=
+//getfilter:resource_group=
+type StorageAccountDescription struct {
+	obj0 storage.TypeName
+
+	obj1 storage.TypeName
+
+	obj2 storage.TypeName
+
+	obj3 storage.TypeName
+
+	obj4 storage.TypeName
+
+	obj5 storage.TypeName
+
+	obj6 storage.TypeName
+}
+
+//  =================== storage ==================
+
+//index:Microsoft_ClassicStorage_StorageAccounts
+//getfilter:name=
+//getfilter:resource_group=
+type StorageAccountDescription struct {
+	obj0 storage.TypeName
+
+	obj1 storage.TypeName
+
+	obj2 storage.TypeName
+
+	obj3 storage.TypeName
+
+	obj4 storage.TypeName
+
+	obj5 storage.TypeName
+
+	obj6 storage.TypeName
+}
+
+//  =================== storage ==================
+
+//index:Microsoft_ClassicStorage_StorageAccounts
+//getfilter:name=
+//getfilter:resource_group=
+type StorageAccountDescription struct {
+	obj0 storage.TypeName
+
+	obj1 storage.TypeName
+
+	obj2 storage.TypeName
+
+	obj3 storage.TypeName
+
+	obj4 storage.TypeName
+
+	obj5 storage.TypeName
+
+	obj6 storage.TypeName
+}
+orageAccounts
+//getfilter:name=
+//getfilter:resource_group=
+type StorageAccountDescription struct {
 	
-		obj0 storagesync.TypeName 
+		obj0 storage.TypeName 
+	
+		obj1 storage.TypeName 
+	
+		obj2 storage.TypeName 
+	
+		obj3 storage.TypeName 
+	
+		obj4 storage.TypeName 
+	
+		obj5 storage.TypeName 
+	
+		obj6 storage.TypeName 
 	
 }
 
