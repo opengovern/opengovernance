@@ -2,9 +2,12 @@ package describer
 
 import (
 	"context"
-
+	"github.com/Azure/azure-sdk-for-go/profiles/2020-09-01/monitor/mgmt/insights"
 	"github.com/Azure/azure-sdk-for-go/profiles/latest/servicebus/mgmt/servicebus"
+	previewservicebus "github.com/Azure/azure-sdk-for-go/services/preview/servicebus/mgmt/2021-06-01-preview/servicebus"
 	"github.com/Azure/go-autorest/autorest"
+	"gitlab.com/keibiengine/keibi-engine/pkg/azure/model"
+	"strings"
 )
 
 func ServiceBusQueue(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
@@ -104,5 +107,62 @@ func serviceBusNamespace(ctx context.Context, authorizer autorest.Authorizer, su
 		}
 	}
 
+	return values, nil
+}
+func ServicebusNamespace(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
+	servicebusClient := previewservicebus.NewPrivateEndpointConnectionsClient(subscription)
+	servicebusClient.Authorizer = authorizer
+
+	namespaceClient := previewservicebus.NewNamespacesClient(subscription)
+	namespaceClient.Authorizer = authorizer
+
+	insightsClient := insights.NewDiagnosticSettingsClient(subscription)
+	insightsClient.Authorizer = authorizer
+
+	client := previewservicebus.NewNamespacesClient(subscription)
+	client.Authorizer = authorizer
+
+	result, err := client.List(ctx)
+	if err != nil {
+		return nil, err
+	}
+	var values []Resource
+	for {
+		for _, namespace := range result.Values() {
+			resourceGroup := strings.Split(*namespace.ID, "/")[4]
+
+			insightsListOp, err := insightsClient.List(ctx, *namespace.ID)
+			if err != nil {
+				return nil, err
+			}
+
+			servicebusGetNetworkRuleSetOp, err := namespaceClient.GetNetworkRuleSet(ctx, resourceGroup, *namespace.Name)
+			if err != nil {
+				return nil, err
+			}
+
+			servicebusListOp, err := servicebusClient.List(ctx, resourceGroup, *namespace.Name)
+			if err != nil {
+				return nil, err
+			}
+
+			values = append(values, Resource{
+				ID: *namespace.ID,
+				Description: model.ServicebusNamespaceDescription{
+					namespace,
+					insightsListOp,
+					servicebusGetNetworkRuleSetOp,
+					servicebusListOp,
+				},
+			})
+		}
+		if !result.NotDone() {
+			break
+		}
+		err = result.NextWithContext(ctx)
+		if err != nil {
+			return nil, err
+		}
+	}
 	return values, nil
 }

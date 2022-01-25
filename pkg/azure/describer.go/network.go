@@ -2,7 +2,9 @@ package describer
 
 import (
 	"context"
+	"github.com/Azure/azure-sdk-for-go/profiles/2020-09-01/monitor/mgmt/insights"
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2020-05-01/network"
+	newnetwork "github.com/Azure/azure-sdk-for-go/services/network/mgmt/2021-02-01/network"
 	"github.com/Azure/go-autorest/autorest"
 	"gitlab.com/keibiengine/keibi-engine/pkg/azure/model"
 	"strings"
@@ -181,6 +183,104 @@ func VirtualNetwork(ctx context.Context, authorizer autorest.Authorizer, subscri
 		if err != nil {
 			return nil, err
 		}
+	}
+
+	return values, nil
+}
+func ApplicationGateway(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
+	insightsClient := insights.NewDiagnosticSettingsClient(subscription)
+	insightsClient.Authorizer = authorizer
+
+	client := newnetwork.NewApplicationGatewaysClient(subscription)
+	client.Authorizer = authorizer
+
+	result, err := client.ListAll(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	var values []Resource
+	for {
+		for _, gateway := range result.Values() {
+			networkListOp, err := insightsClient.List(ctx, *gateway.ID)
+			if err != nil {
+				return nil, err
+			}
+
+			values = append(values, Resource{
+				ID: *gateway.ID,
+				Description: model.ApplicationGatewayDescription{
+					gateway,
+					networkListOp,
+				},
+			})
+		}
+		if !result.NotDone() {
+			break
+		}
+		err = result.NextWithContext(ctx)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return values, nil
+}
+
+func NetworkSecurityGroup(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
+	client := insights.NewDiagnosticSettingsClient(subscription)
+	client.Authorizer = authorizer
+
+	NetworkSecurityGroupClient := newnetwork.NewSecurityGroupsClient(subscription)
+	NetworkSecurityGroupClient.Authorizer = authorizer
+
+	result, err := NetworkSecurityGroupClient.ListAll(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	var values []Resource
+	for {
+		for _, networkSecurityGroup := range result.Values() {
+			id := *networkSecurityGroup.ID
+			networkListOp, err := client.List(ctx, id)
+			if err != nil {
+				return nil, err
+			}
+			values = append(values, Resource{
+				ID: *networkSecurityGroup.ID,
+				Description: model.NetworkSecurityGroupDescription{
+					networkSecurityGroup,
+					networkListOp,
+				},
+			})
+		}
+		if !result.NotDone() {
+			break
+		}
+		err = result.NextWithContext(ctx)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return values, nil
+}
+
+func NetworkWatcher(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
+	networkWatcherClient := newnetwork.NewWatchersClient(subscription)
+	networkWatcherClient.Authorizer = authorizer
+	result, err := networkWatcherClient.ListAll(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	var values []Resource
+	for _, networkWatcher := range *result.Value {
+		values = append(values, Resource{
+			ID: *networkWatcher.ID,
+			Description: model.NetworkWatcherDescription{
+				networkWatcher,
+			},
+		})
 	}
 
 	return values, nil

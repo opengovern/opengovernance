@@ -1,0 +1,67 @@
+package describer
+
+import (
+	"context"
+	"github.com/Azure/azure-sdk-for-go/profiles/2020-09-01/monitor/mgmt/insights"
+	"github.com/Azure/go-autorest/autorest"
+	"gitlab.com/keibiengine/keibi-engine/pkg/azure/model"
+)
+
+func DiagnosticSetting(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
+	diagnosticSettingClient := insights.NewDiagnosticSettingsClient(subscription)
+	diagnosticSettingClient.Authorizer = authorizer
+	resourceURI := "/subscriptions/" + subscription
+	result, err := diagnosticSettingClient.List(ctx, resourceURI)
+	if err != nil {
+		return nil, err
+	}
+
+	var values []Resource
+	for _, diagnosticSetting := range *result.Value {
+		values = append(values, Resource{
+			ID: *diagnosticSetting.ID,
+			Description: model.DiagnosticSettingDescription{
+				diagnosticSetting,
+			},
+		})
+	}
+	return values, nil
+}
+func LogAlert(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
+	logAlertClient := insights.NewActivityLogAlertsClient(subscription)
+	logAlertClient.Authorizer = authorizer
+	result, err := logAlertClient.ListBySubscriptionID(ctx)
+	if err != nil {
+		return nil, err
+	}
+	var values []Resource
+	for _, logAlert := range *result.Value {
+		values = append(values, Resource{
+			ID: *logAlert.ID,
+			Description: model.LogAlertDescription{
+				logAlert,
+			},
+		})
+	}
+
+	return values, nil
+}
+func LogProfile(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
+	logProfileClient := insights.NewLogProfilesClient(subscription)
+	logProfileClient.Authorizer = authorizer
+	result, err := logProfileClient.List(ctx)
+	if err != nil {
+		return nil, err
+	}
+	var values []Resource
+	for _, logProfile := range *result.Value {
+		values = append(values, Resource{
+			ID: *logProfile.ID,
+			Description: model.LogProfileDescription{
+				logProfile,
+			},
+		})
+	}
+
+	return values, nil
+}

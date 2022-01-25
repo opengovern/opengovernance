@@ -2,9 +2,11 @@ package describer
 
 import (
 	"context"
-
 	"github.com/Azure/azure-sdk-for-go/profiles/latest/cosmos-db/mgmt/documentdb"
+	"github.com/Azure/azure-sdk-for-go/services/preview/cosmos-db/mgmt/2020-04-01-preview/documentdb"
 	"github.com/Azure/go-autorest/autorest"
+	"gitlab.com/keibiengine/keibi-engine/pkg/azure/model"
+	"strings"
 )
 
 func DocumentDBDatabaseAccountsSQLDatabase(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
@@ -58,5 +60,26 @@ func documentDBDatabaseAccounts(ctx context.Context, authorizer autorest.Authori
 	var values []documentdb.DatabaseAccountGetResults
 	values = append(values, *accounts.Value...)
 
+	return values, nil
+}
+
+func CosmosdbAccount(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
+	documentDBClient := documentdb.NewDatabaseAccountsClient(subscription)
+	documentDBClient.Authorizer = authorizer
+	result, err := documentDBClient.List(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	var values []Resource
+
+	for _, account := range *result.Value {
+		values = append(values, Resource{
+			ID:          *account.ID,
+			Description: model.CosmosdbAccountDescription{
+				account,
+			},
+		})
+	}
 	return values, nil
 }
