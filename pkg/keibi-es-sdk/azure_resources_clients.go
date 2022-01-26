@@ -551,6 +551,142 @@ func GetAppServiceFunctionApp(ctx context.Context, d *plugin.QueryData, _ *plugi
 
 // ==========================  END: AppServiceFunctionApp =============================
 
+// ==========================  START: AppServiceWebApp =============================
+
+type AppServiceWebApp struct {
+	Description azure.AppServiceWebAppDescription `json:"description"`
+	Metadata    azure.Metadata                    `json:"metadata"`
+}
+
+type AppServiceWebAppHit struct {
+	ID      string           `json:"_id"`
+	Score   float64          `json:"_score"`
+	Index   string           `json:"_index"`
+	Type    string           `json:"_type"`
+	Version int64            `json:"_version,omitempty"`
+	Source  AppServiceWebApp `json:"_source"`
+	Sort    []interface{}    `json:"sort"`
+}
+
+type AppServiceWebAppHits struct {
+	Total SearchTotal           `json:"total"`
+	Hits  []AppServiceWebAppHit `json:"hits"`
+}
+
+type AppServiceWebAppSearchResponse struct {
+	PitID string               `json:"pit_id"`
+	Hits  AppServiceWebAppHits `json:"hits"`
+}
+
+type AppServiceWebAppPaginator struct {
+	paginator baseESPaginator
+}
+
+func (k Client) NewAppServiceWebAppPaginator(filters []BoolFilter, limit *int64) (AppServiceWebAppPaginator, error) {
+	paginator, err := newPaginator(k.es, "Microsoft.Web/StaticSites", filters, limit)
+	if err != nil {
+		return AppServiceWebAppPaginator{}, err
+	}
+
+	p := AppServiceWebAppPaginator{
+		paginator: *paginator,
+	}
+
+	return p, nil
+}
+
+func (p AppServiceWebAppPaginator) HasNext() bool {
+	return !p.paginator.done
+}
+
+func (p *AppServiceWebAppPaginator) NextPage(ctx context.Context) ([]AppServiceWebApp, error) {
+	var response AppServiceWebAppSearchResponse
+	err := p.paginator.search(ctx, &response)
+	if err != nil {
+		return nil, err
+	}
+
+	var values []AppServiceWebApp
+	for _, hit := range response.Hits.Hits {
+		values = append(values, hit.Source)
+	}
+
+	hits := int64(len(response.Hits.Hits))
+	if hits > 0 {
+		p.paginator.updateState(hits, response.Hits.Hits[hits-1].Sort, response.PitID)
+	} else {
+		p.paginator.updateState(hits, nil, "")
+	}
+
+	return values, nil
+}
+
+var listAppServiceWebAppFilters = map[string]string{}
+
+func ListAppServiceWebApp(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("ListAppServiceWebApp")
+
+	// create service
+	k, err := NewClient(GetConfig(d.Connection))
+	if err != nil {
+		return nil, err
+	}
+
+	paginator, err := k.NewAppServiceWebAppPaginator(buildFilter(d.KeyColumnQuals, listAppServiceWebAppFilters), d.QueryContext.Limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			d.StreamListItem(ctx, v)
+		}
+	}
+
+	return nil, nil
+}
+
+var getAppServiceWebAppFilters = map[string]string{
+	"name":           "description.Site.Name",
+	"resource_group": "description.ResourceGroup",
+}
+
+func GetAppServiceWebApp(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("GetAppServiceWebApp")
+
+	// create service
+	k, err := NewClient(GetConfig(d.Connection))
+	if err != nil {
+		return nil, err
+	}
+
+	limit := int64(1)
+	paginator, err := k.NewAppServiceWebAppPaginator(buildFilter(d.KeyColumnQuals, getAppServiceWebAppFilters), &limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			return v, nil
+		}
+	}
+
+	return nil, nil
+}
+
+// ==========================  END: AppServiceWebApp =============================
+
 // ==========================  START: ComputeDisk =============================
 
 type ComputeDisk struct {
@@ -2184,6 +2320,141 @@ func GetRedisCache(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateDa
 
 // ==========================  END: RedisCache =============================
 
+// ==========================  START: ResourceLink =============================
+
+type ResourceLink struct {
+	Description azure.ResourceLinkDescription `json:"description"`
+	Metadata    azure.Metadata                `json:"metadata"`
+}
+
+type ResourceLinkHit struct {
+	ID      string        `json:"_id"`
+	Score   float64       `json:"_score"`
+	Index   string        `json:"_index"`
+	Type    string        `json:"_type"`
+	Version int64         `json:"_version,omitempty"`
+	Source  ResourceLink  `json:"_source"`
+	Sort    []interface{} `json:"sort"`
+}
+
+type ResourceLinkHits struct {
+	Total SearchTotal       `json:"total"`
+	Hits  []ResourceLinkHit `json:"hits"`
+}
+
+type ResourceLinkSearchResponse struct {
+	PitID string           `json:"pit_id"`
+	Hits  ResourceLinkHits `json:"hits"`
+}
+
+type ResourceLinkPaginator struct {
+	paginator baseESPaginator
+}
+
+func (k Client) NewResourceLinkPaginator(filters []BoolFilter, limit *int64) (ResourceLinkPaginator, error) {
+	paginator, err := newPaginator(k.es, "microsoft_resources_links", filters, limit)
+	if err != nil {
+		return ResourceLinkPaginator{}, err
+	}
+
+	p := ResourceLinkPaginator{
+		paginator: *paginator,
+	}
+
+	return p, nil
+}
+
+func (p ResourceLinkPaginator) HasNext() bool {
+	return !p.paginator.done
+}
+
+func (p *ResourceLinkPaginator) NextPage(ctx context.Context) ([]ResourceLink, error) {
+	var response ResourceLinkSearchResponse
+	err := p.paginator.search(ctx, &response)
+	if err != nil {
+		return nil, err
+	}
+
+	var values []ResourceLink
+	for _, hit := range response.Hits.Hits {
+		values = append(values, hit.Source)
+	}
+
+	hits := int64(len(response.Hits.Hits))
+	if hits > 0 {
+		p.paginator.updateState(hits, response.Hits.Hits[hits-1].Sort, response.PitID)
+	} else {
+		p.paginator.updateState(hits, nil, "")
+	}
+
+	return values, nil
+}
+
+var listResourceLinkFilters = map[string]string{}
+
+func ListResourceLink(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("ListResourceLink")
+
+	// create service
+	k, err := NewClient(GetConfig(d.Connection))
+	if err != nil {
+		return nil, err
+	}
+
+	paginator, err := k.NewResourceLinkPaginator(buildFilter(d.KeyColumnQuals, listResourceLinkFilters), d.QueryContext.Limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			d.StreamListItem(ctx, v)
+		}
+	}
+
+	return nil, nil
+}
+
+var getResourceLinkFilters = map[string]string{
+	"id": "description.ResourceLink.ID",
+}
+
+func GetResourceLink(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("GetResourceLink")
+
+	// create service
+	k, err := NewClient(GetConfig(d.Connection))
+	if err != nil {
+		return nil, err
+	}
+
+	limit := int64(1)
+	paginator, err := k.NewResourceLinkPaginator(buildFilter(d.KeyColumnQuals, getResourceLinkFilters), &limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			return v, nil
+		}
+	}
+
+	return nil, nil
+}
+
+// ==========================  END: ResourceLink =============================
+
 // ==========================  START: RoleAssignment =============================
 
 type RoleAssignment struct {
@@ -2318,6 +2589,679 @@ func GetRoleAssignment(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydra
 }
 
 // ==========================  END: RoleAssignment =============================
+
+// ==========================  START: RoleDefinition =============================
+
+type RoleDefinition struct {
+	Description azure.RoleDefinitionDescription `json:"description"`
+	Metadata    azure.Metadata                  `json:"metadata"`
+}
+
+type RoleDefinitionHit struct {
+	ID      string         `json:"_id"`
+	Score   float64        `json:"_score"`
+	Index   string         `json:"_index"`
+	Type    string         `json:"_type"`
+	Version int64          `json:"_version,omitempty"`
+	Source  RoleDefinition `json:"_source"`
+	Sort    []interface{}  `json:"sort"`
+}
+
+type RoleDefinitionHits struct {
+	Total SearchTotal         `json:"total"`
+	Hits  []RoleDefinitionHit `json:"hits"`
+}
+
+type RoleDefinitionSearchResponse struct {
+	PitID string             `json:"pit_id"`
+	Hits  RoleDefinitionHits `json:"hits"`
+}
+
+type RoleDefinitionPaginator struct {
+	paginator baseESPaginator
+}
+
+func (k Client) NewRoleDefinitionPaginator(filters []BoolFilter, limit *int64) (RoleDefinitionPaginator, error) {
+	paginator, err := newPaginator(k.es, "microsoft_authorization_roledefinitions", filters, limit)
+	if err != nil {
+		return RoleDefinitionPaginator{}, err
+	}
+
+	p := RoleDefinitionPaginator{
+		paginator: *paginator,
+	}
+
+	return p, nil
+}
+
+func (p RoleDefinitionPaginator) HasNext() bool {
+	return !p.paginator.done
+}
+
+func (p *RoleDefinitionPaginator) NextPage(ctx context.Context) ([]RoleDefinition, error) {
+	var response RoleDefinitionSearchResponse
+	err := p.paginator.search(ctx, &response)
+	if err != nil {
+		return nil, err
+	}
+
+	var values []RoleDefinition
+	for _, hit := range response.Hits.Hits {
+		values = append(values, hit.Source)
+	}
+
+	hits := int64(len(response.Hits.Hits))
+	if hits > 0 {
+		p.paginator.updateState(hits, response.Hits.Hits[hits-1].Sort, response.PitID)
+	} else {
+		p.paginator.updateState(hits, nil, "")
+	}
+
+	return values, nil
+}
+
+var listRoleDefinitionFilters = map[string]string{}
+
+func ListRoleDefinition(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("ListRoleDefinition")
+
+	// create service
+	k, err := NewClient(GetConfig(d.Connection))
+	if err != nil {
+		return nil, err
+	}
+
+	paginator, err := k.NewRoleDefinitionPaginator(buildFilter(d.KeyColumnQuals, listRoleDefinitionFilters), d.QueryContext.Limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			d.StreamListItem(ctx, v)
+		}
+	}
+
+	return nil, nil
+}
+
+var getRoleDefinitionFilters = map[string]string{
+	"name": "description.RoleDefinition.Name",
+}
+
+func GetRoleDefinition(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("GetRoleDefinition")
+
+	// create service
+	k, err := NewClient(GetConfig(d.Connection))
+	if err != nil {
+		return nil, err
+	}
+
+	limit := int64(1)
+	paginator, err := k.NewRoleDefinitionPaginator(buildFilter(d.KeyColumnQuals, getRoleDefinitionFilters), &limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			return v, nil
+		}
+	}
+
+	return nil, nil
+}
+
+// ==========================  END: RoleDefinition =============================
+
+// ==========================  START: SecurityCenterAutoProvisioning =============================
+
+type SecurityCenterAutoProvisioning struct {
+	Description azure.SecurityCenterAutoProvisioningDescription `json:"description"`
+	Metadata    azure.Metadata                                  `json:"metadata"`
+}
+
+type SecurityCenterAutoProvisioningHit struct {
+	ID      string                         `json:"_id"`
+	Score   float64                        `json:"_score"`
+	Index   string                         `json:"_index"`
+	Type    string                         `json:"_type"`
+	Version int64                          `json:"_version,omitempty"`
+	Source  SecurityCenterAutoProvisioning `json:"_source"`
+	Sort    []interface{}                  `json:"sort"`
+}
+
+type SecurityCenterAutoProvisioningHits struct {
+	Total SearchTotal                         `json:"total"`
+	Hits  []SecurityCenterAutoProvisioningHit `json:"hits"`
+}
+
+type SecurityCenterAutoProvisioningSearchResponse struct {
+	PitID string                             `json:"pit_id"`
+	Hits  SecurityCenterAutoProvisioningHits `json:"hits"`
+}
+
+type SecurityCenterAutoProvisioningPaginator struct {
+	paginator baseESPaginator
+}
+
+func (k Client) NewSecurityCenterAutoProvisioningPaginator(filters []BoolFilter, limit *int64) (SecurityCenterAutoProvisioningPaginator, error) {
+	paginator, err := newPaginator(k.es, "microsoft_security_autoprovisioningsettings", filters, limit)
+	if err != nil {
+		return SecurityCenterAutoProvisioningPaginator{}, err
+	}
+
+	p := SecurityCenterAutoProvisioningPaginator{
+		paginator: *paginator,
+	}
+
+	return p, nil
+}
+
+func (p SecurityCenterAutoProvisioningPaginator) HasNext() bool {
+	return !p.paginator.done
+}
+
+func (p *SecurityCenterAutoProvisioningPaginator) NextPage(ctx context.Context) ([]SecurityCenterAutoProvisioning, error) {
+	var response SecurityCenterAutoProvisioningSearchResponse
+	err := p.paginator.search(ctx, &response)
+	if err != nil {
+		return nil, err
+	}
+
+	var values []SecurityCenterAutoProvisioning
+	for _, hit := range response.Hits.Hits {
+		values = append(values, hit.Source)
+	}
+
+	hits := int64(len(response.Hits.Hits))
+	if hits > 0 {
+		p.paginator.updateState(hits, response.Hits.Hits[hits-1].Sort, response.PitID)
+	} else {
+		p.paginator.updateState(hits, nil, "")
+	}
+
+	return values, nil
+}
+
+var listSecurityCenterAutoProvisioningFilters = map[string]string{}
+
+func ListSecurityCenterAutoProvisioning(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("ListSecurityCenterAutoProvisioning")
+
+	// create service
+	k, err := NewClient(GetConfig(d.Connection))
+	if err != nil {
+		return nil, err
+	}
+
+	paginator, err := k.NewSecurityCenterAutoProvisioningPaginator(buildFilter(d.KeyColumnQuals, listSecurityCenterAutoProvisioningFilters), d.QueryContext.Limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			d.StreamListItem(ctx, v)
+		}
+	}
+
+	return nil, nil
+}
+
+var getSecurityCenterAutoProvisioningFilters = map[string]string{
+	"name": "description.AutoProvisioningSetting.Name",
+}
+
+func GetSecurityCenterAutoProvisioning(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("GetSecurityCenterAutoProvisioning")
+
+	// create service
+	k, err := NewClient(GetConfig(d.Connection))
+	if err != nil {
+		return nil, err
+	}
+
+	limit := int64(1)
+	paginator, err := k.NewSecurityCenterAutoProvisioningPaginator(buildFilter(d.KeyColumnQuals, getSecurityCenterAutoProvisioningFilters), &limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			return v, nil
+		}
+	}
+
+	return nil, nil
+}
+
+// ==========================  END: SecurityCenterAutoProvisioning =============================
+
+// ==========================  START: SecurityCenterContact =============================
+
+type SecurityCenterContact struct {
+	Description azure.SecurityCenterContactDescription `json:"description"`
+	Metadata    azure.Metadata                         `json:"metadata"`
+}
+
+type SecurityCenterContactHit struct {
+	ID      string                `json:"_id"`
+	Score   float64               `json:"_score"`
+	Index   string                `json:"_index"`
+	Type    string                `json:"_type"`
+	Version int64                 `json:"_version,omitempty"`
+	Source  SecurityCenterContact `json:"_source"`
+	Sort    []interface{}         `json:"sort"`
+}
+
+type SecurityCenterContactHits struct {
+	Total SearchTotal                `json:"total"`
+	Hits  []SecurityCenterContactHit `json:"hits"`
+}
+
+type SecurityCenterContactSearchResponse struct {
+	PitID string                    `json:"pit_id"`
+	Hits  SecurityCenterContactHits `json:"hits"`
+}
+
+type SecurityCenterContactPaginator struct {
+	paginator baseESPaginator
+}
+
+func (k Client) NewSecurityCenterContactPaginator(filters []BoolFilter, limit *int64) (SecurityCenterContactPaginator, error) {
+	paginator, err := newPaginator(k.es, "microsoft_security_securitycontacts", filters, limit)
+	if err != nil {
+		return SecurityCenterContactPaginator{}, err
+	}
+
+	p := SecurityCenterContactPaginator{
+		paginator: *paginator,
+	}
+
+	return p, nil
+}
+
+func (p SecurityCenterContactPaginator) HasNext() bool {
+	return !p.paginator.done
+}
+
+func (p *SecurityCenterContactPaginator) NextPage(ctx context.Context) ([]SecurityCenterContact, error) {
+	var response SecurityCenterContactSearchResponse
+	err := p.paginator.search(ctx, &response)
+	if err != nil {
+		return nil, err
+	}
+
+	var values []SecurityCenterContact
+	for _, hit := range response.Hits.Hits {
+		values = append(values, hit.Source)
+	}
+
+	hits := int64(len(response.Hits.Hits))
+	if hits > 0 {
+		p.paginator.updateState(hits, response.Hits.Hits[hits-1].Sort, response.PitID)
+	} else {
+		p.paginator.updateState(hits, nil, "")
+	}
+
+	return values, nil
+}
+
+var listSecurityCenterContactFilters = map[string]string{}
+
+func ListSecurityCenterContact(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("ListSecurityCenterContact")
+
+	// create service
+	k, err := NewClient(GetConfig(d.Connection))
+	if err != nil {
+		return nil, err
+	}
+
+	paginator, err := k.NewSecurityCenterContactPaginator(buildFilter(d.KeyColumnQuals, listSecurityCenterContactFilters), d.QueryContext.Limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			d.StreamListItem(ctx, v)
+		}
+	}
+
+	return nil, nil
+}
+
+var getSecurityCenterContactFilters = map[string]string{
+	"name": "description.Contact.Name",
+}
+
+func GetSecurityCenterContact(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("GetSecurityCenterContact")
+
+	// create service
+	k, err := NewClient(GetConfig(d.Connection))
+	if err != nil {
+		return nil, err
+	}
+
+	limit := int64(1)
+	paginator, err := k.NewSecurityCenterContactPaginator(buildFilter(d.KeyColumnQuals, getSecurityCenterContactFilters), &limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			return v, nil
+		}
+	}
+
+	return nil, nil
+}
+
+// ==========================  END: SecurityCenterContact =============================
+
+// ==========================  START: SecurityCenterJitNetworkAccessPolicy =============================
+
+type SecurityCenterJitNetworkAccessPolicy struct {
+	Description azure.SecurityCenterJitNetworkAccessPolicyDescription `json:"description"`
+	Metadata    azure.Metadata                                        `json:"metadata"`
+}
+
+type SecurityCenterJitNetworkAccessPolicyHit struct {
+	ID      string                               `json:"_id"`
+	Score   float64                              `json:"_score"`
+	Index   string                               `json:"_index"`
+	Type    string                               `json:"_type"`
+	Version int64                                `json:"_version,omitempty"`
+	Source  SecurityCenterJitNetworkAccessPolicy `json:"_source"`
+	Sort    []interface{}                        `json:"sort"`
+}
+
+type SecurityCenterJitNetworkAccessPolicyHits struct {
+	Total SearchTotal                               `json:"total"`
+	Hits  []SecurityCenterJitNetworkAccessPolicyHit `json:"hits"`
+}
+
+type SecurityCenterJitNetworkAccessPolicySearchResponse struct {
+	PitID string                                   `json:"pit_id"`
+	Hits  SecurityCenterJitNetworkAccessPolicyHits `json:"hits"`
+}
+
+type SecurityCenterJitNetworkAccessPolicyPaginator struct {
+	paginator baseESPaginator
+}
+
+func (k Client) NewSecurityCenterJitNetworkAccessPolicyPaginator(filters []BoolFilter, limit *int64) (SecurityCenterJitNetworkAccessPolicyPaginator, error) {
+	paginator, err := newPaginator(k.es, "microsoft_security_locations_jitnetworkaccesspolicies", filters, limit)
+	if err != nil {
+		return SecurityCenterJitNetworkAccessPolicyPaginator{}, err
+	}
+
+	p := SecurityCenterJitNetworkAccessPolicyPaginator{
+		paginator: *paginator,
+	}
+
+	return p, nil
+}
+
+func (p SecurityCenterJitNetworkAccessPolicyPaginator) HasNext() bool {
+	return !p.paginator.done
+}
+
+func (p *SecurityCenterJitNetworkAccessPolicyPaginator) NextPage(ctx context.Context) ([]SecurityCenterJitNetworkAccessPolicy, error) {
+	var response SecurityCenterJitNetworkAccessPolicySearchResponse
+	err := p.paginator.search(ctx, &response)
+	if err != nil {
+		return nil, err
+	}
+
+	var values []SecurityCenterJitNetworkAccessPolicy
+	for _, hit := range response.Hits.Hits {
+		values = append(values, hit.Source)
+	}
+
+	hits := int64(len(response.Hits.Hits))
+	if hits > 0 {
+		p.paginator.updateState(hits, response.Hits.Hits[hits-1].Sort, response.PitID)
+	} else {
+		p.paginator.updateState(hits, nil, "")
+	}
+
+	return values, nil
+}
+
+var listSecurityCenterJitNetworkAccessPolicyFilters = map[string]string{}
+
+func ListSecurityCenterJitNetworkAccessPolicy(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("ListSecurityCenterJitNetworkAccessPolicy")
+
+	// create service
+	k, err := NewClient(GetConfig(d.Connection))
+	if err != nil {
+		return nil, err
+	}
+
+	paginator, err := k.NewSecurityCenterJitNetworkAccessPolicyPaginator(buildFilter(d.KeyColumnQuals, listSecurityCenterJitNetworkAccessPolicyFilters), d.QueryContext.Limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			d.StreamListItem(ctx, v)
+		}
+	}
+
+	return nil, nil
+}
+
+var getSecurityCenterJitNetworkAccessPolicyFilters = map[string]string{}
+
+func GetSecurityCenterJitNetworkAccessPolicy(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("GetSecurityCenterJitNetworkAccessPolicy")
+
+	// create service
+	k, err := NewClient(GetConfig(d.Connection))
+	if err != nil {
+		return nil, err
+	}
+
+	limit := int64(1)
+	paginator, err := k.NewSecurityCenterJitNetworkAccessPolicyPaginator(buildFilter(d.KeyColumnQuals, getSecurityCenterJitNetworkAccessPolicyFilters), &limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			return v, nil
+		}
+	}
+
+	return nil, nil
+}
+
+// ==========================  END: SecurityCenterJitNetworkAccessPolicy =============================
+
+// ==========================  START: SecurityCenterSetting =============================
+
+type SecurityCenterSetting struct {
+	Description azure.SecurityCenterSettingDescription `json:"description"`
+	Metadata    azure.Metadata                         `json:"metadata"`
+}
+
+type SecurityCenterSettingHit struct {
+	ID      string                `json:"_id"`
+	Score   float64               `json:"_score"`
+	Index   string                `json:"_index"`
+	Type    string                `json:"_type"`
+	Version int64                 `json:"_version,omitempty"`
+	Source  SecurityCenterSetting `json:"_source"`
+	Sort    []interface{}         `json:"sort"`
+}
+
+type SecurityCenterSettingHits struct {
+	Total SearchTotal                `json:"total"`
+	Hits  []SecurityCenterSettingHit `json:"hits"`
+}
+
+type SecurityCenterSettingSearchResponse struct {
+	PitID string                    `json:"pit_id"`
+	Hits  SecurityCenterSettingHits `json:"hits"`
+}
+
+type SecurityCenterSettingPaginator struct {
+	paginator baseESPaginator
+}
+
+func (k Client) NewSecurityCenterSettingPaginator(filters []BoolFilter, limit *int64) (SecurityCenterSettingPaginator, error) {
+	paginator, err := newPaginator(k.es, "microsoft_security_settings", filters, limit)
+	if err != nil {
+		return SecurityCenterSettingPaginator{}, err
+	}
+
+	p := SecurityCenterSettingPaginator{
+		paginator: *paginator,
+	}
+
+	return p, nil
+}
+
+func (p SecurityCenterSettingPaginator) HasNext() bool {
+	return !p.paginator.done
+}
+
+func (p *SecurityCenterSettingPaginator) NextPage(ctx context.Context) ([]SecurityCenterSetting, error) {
+	var response SecurityCenterSettingSearchResponse
+	err := p.paginator.search(ctx, &response)
+	if err != nil {
+		return nil, err
+	}
+
+	var values []SecurityCenterSetting
+	for _, hit := range response.Hits.Hits {
+		values = append(values, hit.Source)
+	}
+
+	hits := int64(len(response.Hits.Hits))
+	if hits > 0 {
+		p.paginator.updateState(hits, response.Hits.Hits[hits-1].Sort, response.PitID)
+	} else {
+		p.paginator.updateState(hits, nil, "")
+	}
+
+	return values, nil
+}
+
+var listSecurityCenterSettingFilters = map[string]string{}
+
+func ListSecurityCenterSetting(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("ListSecurityCenterSetting")
+
+	// create service
+	k, err := NewClient(GetConfig(d.Connection))
+	if err != nil {
+		return nil, err
+	}
+
+	paginator, err := k.NewSecurityCenterSettingPaginator(buildFilter(d.KeyColumnQuals, listSecurityCenterSettingFilters), d.QueryContext.Limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			d.StreamListItem(ctx, v)
+		}
+	}
+
+	return nil, nil
+}
+
+var getSecurityCenterSettingFilters = map[string]string{
+	"name": "description.Setting.Name",
+}
+
+func GetSecurityCenterSetting(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("GetSecurityCenterSetting")
+
+	// create service
+	k, err := NewClient(GetConfig(d.Connection))
+	if err != nil {
+		return nil, err
+	}
+
+	limit := int64(1)
+	paginator, err := k.NewSecurityCenterSettingPaginator(buildFilter(d.KeyColumnQuals, getSecurityCenterSettingFilters), &limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			return v, nil
+		}
+	}
+
+	return nil, nil
+}
+
+// ==========================  END: SecurityCenterSetting =============================
 
 // ==========================  START: SecurityCenterSubscriptionPricing =============================
 
@@ -2454,6 +3398,280 @@ func GetSecurityCenterSubscriptionPricing(ctx context.Context, d *plugin.QueryDa
 
 // ==========================  END: SecurityCenterSubscriptionPricing =============================
 
+// ==========================  START: StorageContainer =============================
+
+type StorageContainer struct {
+	Description azure.StorageContainerDescription `json:"description"`
+	Metadata    azure.Metadata                    `json:"metadata"`
+}
+
+type StorageContainerHit struct {
+	ID      string           `json:"_id"`
+	Score   float64          `json:"_score"`
+	Index   string           `json:"_index"`
+	Type    string           `json:"_type"`
+	Version int64            `json:"_version,omitempty"`
+	Source  StorageContainer `json:"_source"`
+	Sort    []interface{}    `json:"sort"`
+}
+
+type StorageContainerHits struct {
+	Total SearchTotal           `json:"total"`
+	Hits  []StorageContainerHit `json:"hits"`
+}
+
+type StorageContainerSearchResponse struct {
+	PitID string               `json:"pit_id"`
+	Hits  StorageContainerHits `json:"hits"`
+}
+
+type StorageContainerPaginator struct {
+	paginator baseESPaginator
+}
+
+func (k Client) NewStorageContainerPaginator(filters []BoolFilter, limit *int64) (StorageContainerPaginator, error) {
+	paginator, err := newPaginator(k.es, "microsoft_storage_storageaccounts_containers", filters, limit)
+	if err != nil {
+		return StorageContainerPaginator{}, err
+	}
+
+	p := StorageContainerPaginator{
+		paginator: *paginator,
+	}
+
+	return p, nil
+}
+
+func (p StorageContainerPaginator) HasNext() bool {
+	return !p.paginator.done
+}
+
+func (p *StorageContainerPaginator) NextPage(ctx context.Context) ([]StorageContainer, error) {
+	var response StorageContainerSearchResponse
+	err := p.paginator.search(ctx, &response)
+	if err != nil {
+		return nil, err
+	}
+
+	var values []StorageContainer
+	for _, hit := range response.Hits.Hits {
+		values = append(values, hit.Source)
+	}
+
+	hits := int64(len(response.Hits.Hits))
+	if hits > 0 {
+		p.paginator.updateState(hits, response.Hits.Hits[hits-1].Sort, response.PitID)
+	} else {
+		p.paginator.updateState(hits, nil, "")
+	}
+
+	return values, nil
+}
+
+var listStorageContainerFilters = map[string]string{}
+
+func ListStorageContainer(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("ListStorageContainer")
+
+	// create service
+	k, err := NewClient(GetConfig(d.Connection))
+	if err != nil {
+		return nil, err
+	}
+
+	paginator, err := k.NewStorageContainerPaginator(buildFilter(d.KeyColumnQuals, listStorageContainerFilters), d.QueryContext.Limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			d.StreamListItem(ctx, v)
+		}
+	}
+
+	return nil, nil
+}
+
+var getStorageContainerFilters = map[string]string{
+	"account_name":   "",
+	"name":           "description.ListContainerItem.Name",
+	"resource_group": "description.ResourceGroup",
+}
+
+func GetStorageContainer(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("GetStorageContainer")
+
+	// create service
+	k, err := NewClient(GetConfig(d.Connection))
+	if err != nil {
+		return nil, err
+	}
+
+	limit := int64(1)
+	paginator, err := k.NewStorageContainerPaginator(buildFilter(d.KeyColumnQuals, getStorageContainerFilters), &limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			return v, nil
+		}
+	}
+
+	return nil, nil
+}
+
+// ==========================  END: StorageContainer =============================
+
+// ==========================  START: Subnet =============================
+
+type Subnet struct {
+	Description azure.SubnetDescription `json:"description"`
+	Metadata    azure.Metadata          `json:"metadata"`
+}
+
+type SubnetHit struct {
+	ID      string        `json:"_id"`
+	Score   float64       `json:"_score"`
+	Index   string        `json:"_index"`
+	Type    string        `json:"_type"`
+	Version int64         `json:"_version,omitempty"`
+	Source  Subnet        `json:"_source"`
+	Sort    []interface{} `json:"sort"`
+}
+
+type SubnetHits struct {
+	Total SearchTotal `json:"total"`
+	Hits  []SubnetHit `json:"hits"`
+}
+
+type SubnetSearchResponse struct {
+	PitID string     `json:"pit_id"`
+	Hits  SubnetHits `json:"hits"`
+}
+
+type SubnetPaginator struct {
+	paginator baseESPaginator
+}
+
+func (k Client) NewSubnetPaginator(filters []BoolFilter, limit *int64) (SubnetPaginator, error) {
+	paginator, err := newPaginator(k.es, "microsoft_network_virtualnetworks_subnets", filters, limit)
+	if err != nil {
+		return SubnetPaginator{}, err
+	}
+
+	p := SubnetPaginator{
+		paginator: *paginator,
+	}
+
+	return p, nil
+}
+
+func (p SubnetPaginator) HasNext() bool {
+	return !p.paginator.done
+}
+
+func (p *SubnetPaginator) NextPage(ctx context.Context) ([]Subnet, error) {
+	var response SubnetSearchResponse
+	err := p.paginator.search(ctx, &response)
+	if err != nil {
+		return nil, err
+	}
+
+	var values []Subnet
+	for _, hit := range response.Hits.Hits {
+		values = append(values, hit.Source)
+	}
+
+	hits := int64(len(response.Hits.Hits))
+	if hits > 0 {
+		p.paginator.updateState(hits, response.Hits.Hits[hits-1].Sort, response.PitID)
+	} else {
+		p.paginator.updateState(hits, nil, "")
+	}
+
+	return values, nil
+}
+
+var listSubnetFilters = map[string]string{}
+
+func ListSubnet(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("ListSubnet")
+
+	// create service
+	k, err := NewClient(GetConfig(d.Connection))
+	if err != nil {
+		return nil, err
+	}
+
+	paginator, err := k.NewSubnetPaginator(buildFilter(d.KeyColumnQuals, listSubnetFilters), d.QueryContext.Limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			d.StreamListItem(ctx, v)
+		}
+	}
+
+	return nil, nil
+}
+
+var getSubnetFilters = map[string]string{
+	"name":                 "description.Subnet.Name",
+	"resource_group":       "description.ResourceGroup",
+	"virtual_network_name": "",
+}
+
+func GetSubnet(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("GetSubnet")
+
+	// create service
+	k, err := NewClient(GetConfig(d.Connection))
+	if err != nil {
+		return nil, err
+	}
+
+	limit := int64(1)
+	paginator, err := k.NewSubnetPaginator(buildFilter(d.KeyColumnQuals, getSubnetFilters), &limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			return v, nil
+		}
+	}
+
+	return nil, nil
+}
+
+// ==========================  END: Subnet =============================
+
 // ==========================  START: VirtualNetwork =============================
 
 type VirtualNetwork struct {
@@ -2589,6 +3807,272 @@ func GetVirtualNetwork(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydra
 }
 
 // ==========================  END: VirtualNetwork =============================
+
+// ==========================  START: Tenant =============================
+
+type Tenant struct {
+	Description azure.TenantDescription `json:"description"`
+	Metadata    azure.Metadata          `json:"metadata"`
+}
+
+type TenantHit struct {
+	ID      string        `json:"_id"`
+	Score   float64       `json:"_score"`
+	Index   string        `json:"_index"`
+	Type    string        `json:"_type"`
+	Version int64         `json:"_version,omitempty"`
+	Source  Tenant        `json:"_source"`
+	Sort    []interface{} `json:"sort"`
+}
+
+type TenantHits struct {
+	Total SearchTotal `json:"total"`
+	Hits  []TenantHit `json:"hits"`
+}
+
+type TenantSearchResponse struct {
+	PitID string     `json:"pit_id"`
+	Hits  TenantHits `json:"hits"`
+}
+
+type TenantPaginator struct {
+	paginator baseESPaginator
+}
+
+func (k Client) NewTenantPaginator(filters []BoolFilter, limit *int64) (TenantPaginator, error) {
+	paginator, err := newPaginator(k.es, "microsoft_resources_tenants", filters, limit)
+	if err != nil {
+		return TenantPaginator{}, err
+	}
+
+	p := TenantPaginator{
+		paginator: *paginator,
+	}
+
+	return p, nil
+}
+
+func (p TenantPaginator) HasNext() bool {
+	return !p.paginator.done
+}
+
+func (p *TenantPaginator) NextPage(ctx context.Context) ([]Tenant, error) {
+	var response TenantSearchResponse
+	err := p.paginator.search(ctx, &response)
+	if err != nil {
+		return nil, err
+	}
+
+	var values []Tenant
+	for _, hit := range response.Hits.Hits {
+		values = append(values, hit.Source)
+	}
+
+	hits := int64(len(response.Hits.Hits))
+	if hits > 0 {
+		p.paginator.updateState(hits, response.Hits.Hits[hits-1].Sort, response.PitID)
+	} else {
+		p.paginator.updateState(hits, nil, "")
+	}
+
+	return values, nil
+}
+
+var listTenantFilters = map[string]string{}
+
+func ListTenant(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("ListTenant")
+
+	// create service
+	k, err := NewClient(GetConfig(d.Connection))
+	if err != nil {
+		return nil, err
+	}
+
+	paginator, err := k.NewTenantPaginator(buildFilter(d.KeyColumnQuals, listTenantFilters), d.QueryContext.Limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			d.StreamListItem(ctx, v)
+		}
+	}
+
+	return nil, nil
+}
+
+var getTenantFilters = map[string]string{}
+
+func GetTenant(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("GetTenant")
+
+	// create service
+	k, err := NewClient(GetConfig(d.Connection))
+	if err != nil {
+		return nil, err
+	}
+
+	limit := int64(1)
+	paginator, err := k.NewTenantPaginator(buildFilter(d.KeyColumnQuals, getTenantFilters), &limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			return v, nil
+		}
+	}
+
+	return nil, nil
+}
+
+// ==========================  END: Tenant =============================
+
+// ==========================  START: Subscription =============================
+
+type Subscription struct {
+	Description azure.SubscriptionDescription `json:"description"`
+	Metadata    azure.Metadata                `json:"metadata"`
+}
+
+type SubscriptionHit struct {
+	ID      string        `json:"_id"`
+	Score   float64       `json:"_score"`
+	Index   string        `json:"_index"`
+	Type    string        `json:"_type"`
+	Version int64         `json:"_version,omitempty"`
+	Source  Subscription  `json:"_source"`
+	Sort    []interface{} `json:"sort"`
+}
+
+type SubscriptionHits struct {
+	Total SearchTotal       `json:"total"`
+	Hits  []SubscriptionHit `json:"hits"`
+}
+
+type SubscriptionSearchResponse struct {
+	PitID string           `json:"pit_id"`
+	Hits  SubscriptionHits `json:"hits"`
+}
+
+type SubscriptionPaginator struct {
+	paginator baseESPaginator
+}
+
+func (k Client) NewSubscriptionPaginator(filters []BoolFilter, limit *int64) (SubscriptionPaginator, error) {
+	paginator, err := newPaginator(k.es, "microsoft_resources_subscriptions", filters, limit)
+	if err != nil {
+		return SubscriptionPaginator{}, err
+	}
+
+	p := SubscriptionPaginator{
+		paginator: *paginator,
+	}
+
+	return p, nil
+}
+
+func (p SubscriptionPaginator) HasNext() bool {
+	return !p.paginator.done
+}
+
+func (p *SubscriptionPaginator) NextPage(ctx context.Context) ([]Subscription, error) {
+	var response SubscriptionSearchResponse
+	err := p.paginator.search(ctx, &response)
+	if err != nil {
+		return nil, err
+	}
+
+	var values []Subscription
+	for _, hit := range response.Hits.Hits {
+		values = append(values, hit.Source)
+	}
+
+	hits := int64(len(response.Hits.Hits))
+	if hits > 0 {
+		p.paginator.updateState(hits, response.Hits.Hits[hits-1].Sort, response.PitID)
+	} else {
+		p.paginator.updateState(hits, nil, "")
+	}
+
+	return values, nil
+}
+
+var listSubscriptionFilters = map[string]string{}
+
+func ListSubscription(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("ListSubscription")
+
+	// create service
+	k, err := NewClient(GetConfig(d.Connection))
+	if err != nil {
+		return nil, err
+	}
+
+	paginator, err := k.NewSubscriptionPaginator(buildFilter(d.KeyColumnQuals, listSubscriptionFilters), d.QueryContext.Limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			d.StreamListItem(ctx, v)
+		}
+	}
+
+	return nil, nil
+}
+
+var getSubscriptionFilters = map[string]string{}
+
+func GetSubscription(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("GetSubscription")
+
+	// create service
+	k, err := NewClient(GetConfig(d.Connection))
+	if err != nil {
+		return nil, err
+	}
+
+	limit := int64(1)
+	paginator, err := k.NewSubscriptionPaginator(buildFilter(d.KeyColumnQuals, getSubscriptionFilters), &limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			return v, nil
+		}
+	}
+
+	return nil, nil
+}
+
+// ==========================  END: Subscription =============================
 
 // ==========================  START: ApplicationGateway =============================
 
@@ -2862,6 +4346,278 @@ func GetBatchAccount(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydrate
 
 // ==========================  END: BatchAccount =============================
 
+// ==========================  START: CognitiveAccount =============================
+
+type CognitiveAccount struct {
+	Description azure.CognitiveAccountDescription `json:"description"`
+	Metadata    azure.Metadata                    `json:"metadata"`
+}
+
+type CognitiveAccountHit struct {
+	ID      string           `json:"_id"`
+	Score   float64          `json:"_score"`
+	Index   string           `json:"_index"`
+	Type    string           `json:"_type"`
+	Version int64            `json:"_version,omitempty"`
+	Source  CognitiveAccount `json:"_source"`
+	Sort    []interface{}    `json:"sort"`
+}
+
+type CognitiveAccountHits struct {
+	Total SearchTotal           `json:"total"`
+	Hits  []CognitiveAccountHit `json:"hits"`
+}
+
+type CognitiveAccountSearchResponse struct {
+	PitID string               `json:"pit_id"`
+	Hits  CognitiveAccountHits `json:"hits"`
+}
+
+type CognitiveAccountPaginator struct {
+	paginator baseESPaginator
+}
+
+func (k Client) NewCognitiveAccountPaginator(filters []BoolFilter, limit *int64) (CognitiveAccountPaginator, error) {
+	paginator, err := newPaginator(k.es, "microsoft_cognitiveservices_accounts", filters, limit)
+	if err != nil {
+		return CognitiveAccountPaginator{}, err
+	}
+
+	p := CognitiveAccountPaginator{
+		paginator: *paginator,
+	}
+
+	return p, nil
+}
+
+func (p CognitiveAccountPaginator) HasNext() bool {
+	return !p.paginator.done
+}
+
+func (p *CognitiveAccountPaginator) NextPage(ctx context.Context) ([]CognitiveAccount, error) {
+	var response CognitiveAccountSearchResponse
+	err := p.paginator.search(ctx, &response)
+	if err != nil {
+		return nil, err
+	}
+
+	var values []CognitiveAccount
+	for _, hit := range response.Hits.Hits {
+		values = append(values, hit.Source)
+	}
+
+	hits := int64(len(response.Hits.Hits))
+	if hits > 0 {
+		p.paginator.updateState(hits, response.Hits.Hits[hits-1].Sort, response.PitID)
+	} else {
+		p.paginator.updateState(hits, nil, "")
+	}
+
+	return values, nil
+}
+
+var listCognitiveAccountFilters = map[string]string{}
+
+func ListCognitiveAccount(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("ListCognitiveAccount")
+
+	// create service
+	k, err := NewClient(GetConfig(d.Connection))
+	if err != nil {
+		return nil, err
+	}
+
+	paginator, err := k.NewCognitiveAccountPaginator(buildFilter(d.KeyColumnQuals, listCognitiveAccountFilters), d.QueryContext.Limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			d.StreamListItem(ctx, v)
+		}
+	}
+
+	return nil, nil
+}
+
+var getCognitiveAccountFilters = map[string]string{
+	"name":           "description.Account.Name",
+	"resource_group": "description.ResourceGroup",
+}
+
+func GetCognitiveAccount(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("GetCognitiveAccount")
+
+	// create service
+	k, err := NewClient(GetConfig(d.Connection))
+	if err != nil {
+		return nil, err
+	}
+
+	limit := int64(1)
+	paginator, err := k.NewCognitiveAccountPaginator(buildFilter(d.KeyColumnQuals, getCognitiveAccountFilters), &limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			return v, nil
+		}
+	}
+
+	return nil, nil
+}
+
+// ==========================  END: CognitiveAccount =============================
+
+// ==========================  START: ComputeVirtualMachine =============================
+
+type ComputeVirtualMachine struct {
+	Description azure.ComputeVirtualMachineDescription `json:"description"`
+	Metadata    azure.Metadata                         `json:"metadata"`
+}
+
+type ComputeVirtualMachineHit struct {
+	ID      string                `json:"_id"`
+	Score   float64               `json:"_score"`
+	Index   string                `json:"_index"`
+	Type    string                `json:"_type"`
+	Version int64                 `json:"_version,omitempty"`
+	Source  ComputeVirtualMachine `json:"_source"`
+	Sort    []interface{}         `json:"sort"`
+}
+
+type ComputeVirtualMachineHits struct {
+	Total SearchTotal                `json:"total"`
+	Hits  []ComputeVirtualMachineHit `json:"hits"`
+}
+
+type ComputeVirtualMachineSearchResponse struct {
+	PitID string                    `json:"pit_id"`
+	Hits  ComputeVirtualMachineHits `json:"hits"`
+}
+
+type ComputeVirtualMachinePaginator struct {
+	paginator baseESPaginator
+}
+
+func (k Client) NewComputeVirtualMachinePaginator(filters []BoolFilter, limit *int64) (ComputeVirtualMachinePaginator, error) {
+	paginator, err := newPaginator(k.es, "microsoft_compute_virtualmachines", filters, limit)
+	if err != nil {
+		return ComputeVirtualMachinePaginator{}, err
+	}
+
+	p := ComputeVirtualMachinePaginator{
+		paginator: *paginator,
+	}
+
+	return p, nil
+}
+
+func (p ComputeVirtualMachinePaginator) HasNext() bool {
+	return !p.paginator.done
+}
+
+func (p *ComputeVirtualMachinePaginator) NextPage(ctx context.Context) ([]ComputeVirtualMachine, error) {
+	var response ComputeVirtualMachineSearchResponse
+	err := p.paginator.search(ctx, &response)
+	if err != nil {
+		return nil, err
+	}
+
+	var values []ComputeVirtualMachine
+	for _, hit := range response.Hits.Hits {
+		values = append(values, hit.Source)
+	}
+
+	hits := int64(len(response.Hits.Hits))
+	if hits > 0 {
+		p.paginator.updateState(hits, response.Hits.Hits[hits-1].Sort, response.PitID)
+	} else {
+		p.paginator.updateState(hits, nil, "")
+	}
+
+	return values, nil
+}
+
+var listComputeVirtualMachineFilters = map[string]string{}
+
+func ListComputeVirtualMachine(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("ListComputeVirtualMachine")
+
+	// create service
+	k, err := NewClient(GetConfig(d.Connection))
+	if err != nil {
+		return nil, err
+	}
+
+	paginator, err := k.NewComputeVirtualMachinePaginator(buildFilter(d.KeyColumnQuals, listComputeVirtualMachineFilters), d.QueryContext.Limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			d.StreamListItem(ctx, v)
+		}
+	}
+
+	return nil, nil
+}
+
+var getComputeVirtualMachineFilters = map[string]string{
+	"name":           "description.VirtualMachine.Name",
+	"resource_group": "description.ResourceGroup",
+}
+
+func GetComputeVirtualMachine(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("GetComputeVirtualMachine")
+
+	// create service
+	k, err := NewClient(GetConfig(d.Connection))
+	if err != nil {
+		return nil, err
+	}
+
+	limit := int64(1)
+	paginator, err := k.NewComputeVirtualMachinePaginator(buildFilter(d.KeyColumnQuals, getComputeVirtualMachineFilters), &limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			return v, nil
+		}
+	}
+
+	return nil, nil
+}
+
+// ==========================  END: ComputeVirtualMachine =============================
+
 // ==========================  START: ContainerRegistry =============================
 
 type ContainerRegistry struct {
@@ -2998,6 +4754,142 @@ func GetContainerRegistry(ctx context.Context, d *plugin.QueryData, _ *plugin.Hy
 
 // ==========================  END: ContainerRegistry =============================
 
+// ==========================  START: CosmosdbAccount =============================
+
+type CosmosdbAccount struct {
+	Description azure.CosmosdbAccountDescription `json:"description"`
+	Metadata    azure.Metadata                   `json:"metadata"`
+}
+
+type CosmosdbAccountHit struct {
+	ID      string          `json:"_id"`
+	Score   float64         `json:"_score"`
+	Index   string          `json:"_index"`
+	Type    string          `json:"_type"`
+	Version int64           `json:"_version,omitempty"`
+	Source  CosmosdbAccount `json:"_source"`
+	Sort    []interface{}   `json:"sort"`
+}
+
+type CosmosdbAccountHits struct {
+	Total SearchTotal          `json:"total"`
+	Hits  []CosmosdbAccountHit `json:"hits"`
+}
+
+type CosmosdbAccountSearchResponse struct {
+	PitID string              `json:"pit_id"`
+	Hits  CosmosdbAccountHits `json:"hits"`
+}
+
+type CosmosdbAccountPaginator struct {
+	paginator baseESPaginator
+}
+
+func (k Client) NewCosmosdbAccountPaginator(filters []BoolFilter, limit *int64) (CosmosdbAccountPaginator, error) {
+	paginator, err := newPaginator(k.es, "microsoft_documentdb_databaseaccounts", filters, limit)
+	if err != nil {
+		return CosmosdbAccountPaginator{}, err
+	}
+
+	p := CosmosdbAccountPaginator{
+		paginator: *paginator,
+	}
+
+	return p, nil
+}
+
+func (p CosmosdbAccountPaginator) HasNext() bool {
+	return !p.paginator.done
+}
+
+func (p *CosmosdbAccountPaginator) NextPage(ctx context.Context) ([]CosmosdbAccount, error) {
+	var response CosmosdbAccountSearchResponse
+	err := p.paginator.search(ctx, &response)
+	if err != nil {
+		return nil, err
+	}
+
+	var values []CosmosdbAccount
+	for _, hit := range response.Hits.Hits {
+		values = append(values, hit.Source)
+	}
+
+	hits := int64(len(response.Hits.Hits))
+	if hits > 0 {
+		p.paginator.updateState(hits, response.Hits.Hits[hits-1].Sort, response.PitID)
+	} else {
+		p.paginator.updateState(hits, nil, "")
+	}
+
+	return values, nil
+}
+
+var listCosmosdbAccountFilters = map[string]string{}
+
+func ListCosmosdbAccount(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("ListCosmosdbAccount")
+
+	// create service
+	k, err := NewClient(GetConfig(d.Connection))
+	if err != nil {
+		return nil, err
+	}
+
+	paginator, err := k.NewCosmosdbAccountPaginator(buildFilter(d.KeyColumnQuals, listCosmosdbAccountFilters), d.QueryContext.Limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			d.StreamListItem(ctx, v)
+		}
+	}
+
+	return nil, nil
+}
+
+var getCosmosdbAccountFilters = map[string]string{
+	"name":           "description.DatabaseAccountGetResults.Name",
+	"resource_group": "description.ResourceGroup",
+}
+
+func GetCosmosdbAccount(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("GetCosmosdbAccount")
+
+	// create service
+	k, err := NewClient(GetConfig(d.Connection))
+	if err != nil {
+		return nil, err
+	}
+
+	limit := int64(1)
+	paginator, err := k.NewCosmosdbAccountPaginator(buildFilter(d.KeyColumnQuals, getCosmosdbAccountFilters), &limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			return v, nil
+		}
+	}
+
+	return nil, nil
+}
+
+// ==========================  END: CosmosdbAccount =============================
+
 // ==========================  START: DataFactory =============================
 
 type DataFactory struct {
@@ -3133,6 +5025,142 @@ func GetDataFactory(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateD
 }
 
 // ==========================  END: DataFactory =============================
+
+// ==========================  START: DataLakeAnalyticsAccount =============================
+
+type DataLakeAnalyticsAccount struct {
+	Description azure.DataLakeAnalyticsAccountDescription `json:"description"`
+	Metadata    azure.Metadata                            `json:"metadata"`
+}
+
+type DataLakeAnalyticsAccountHit struct {
+	ID      string                   `json:"_id"`
+	Score   float64                  `json:"_score"`
+	Index   string                   `json:"_index"`
+	Type    string                   `json:"_type"`
+	Version int64                    `json:"_version,omitempty"`
+	Source  DataLakeAnalyticsAccount `json:"_source"`
+	Sort    []interface{}            `json:"sort"`
+}
+
+type DataLakeAnalyticsAccountHits struct {
+	Total SearchTotal                   `json:"total"`
+	Hits  []DataLakeAnalyticsAccountHit `json:"hits"`
+}
+
+type DataLakeAnalyticsAccountSearchResponse struct {
+	PitID string                       `json:"pit_id"`
+	Hits  DataLakeAnalyticsAccountHits `json:"hits"`
+}
+
+type DataLakeAnalyticsAccountPaginator struct {
+	paginator baseESPaginator
+}
+
+func (k Client) NewDataLakeAnalyticsAccountPaginator(filters []BoolFilter, limit *int64) (DataLakeAnalyticsAccountPaginator, error) {
+	paginator, err := newPaginator(k.es, "microsoft_datalakeanalytics_accounts", filters, limit)
+	if err != nil {
+		return DataLakeAnalyticsAccountPaginator{}, err
+	}
+
+	p := DataLakeAnalyticsAccountPaginator{
+		paginator: *paginator,
+	}
+
+	return p, nil
+}
+
+func (p DataLakeAnalyticsAccountPaginator) HasNext() bool {
+	return !p.paginator.done
+}
+
+func (p *DataLakeAnalyticsAccountPaginator) NextPage(ctx context.Context) ([]DataLakeAnalyticsAccount, error) {
+	var response DataLakeAnalyticsAccountSearchResponse
+	err := p.paginator.search(ctx, &response)
+	if err != nil {
+		return nil, err
+	}
+
+	var values []DataLakeAnalyticsAccount
+	for _, hit := range response.Hits.Hits {
+		values = append(values, hit.Source)
+	}
+
+	hits := int64(len(response.Hits.Hits))
+	if hits > 0 {
+		p.paginator.updateState(hits, response.Hits.Hits[hits-1].Sort, response.PitID)
+	} else {
+		p.paginator.updateState(hits, nil, "")
+	}
+
+	return values, nil
+}
+
+var listDataLakeAnalyticsAccountFilters = map[string]string{}
+
+func ListDataLakeAnalyticsAccount(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("ListDataLakeAnalyticsAccount")
+
+	// create service
+	k, err := NewClient(GetConfig(d.Connection))
+	if err != nil {
+		return nil, err
+	}
+
+	paginator, err := k.NewDataLakeAnalyticsAccountPaginator(buildFilter(d.KeyColumnQuals, listDataLakeAnalyticsAccountFilters), d.QueryContext.Limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			d.StreamListItem(ctx, v)
+		}
+	}
+
+	return nil, nil
+}
+
+var getDataLakeAnalyticsAccountFilters = map[string]string{
+	"name":           "description.DataLakeAnalyticsAccount.Name",
+	"resource_group": "description.ResourceGroup",
+}
+
+func GetDataLakeAnalyticsAccount(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("GetDataLakeAnalyticsAccount")
+
+	// create service
+	k, err := NewClient(GetConfig(d.Connection))
+	if err != nil {
+		return nil, err
+	}
+
+	limit := int64(1)
+	paginator, err := k.NewDataLakeAnalyticsAccountPaginator(buildFilter(d.KeyColumnQuals, getDataLakeAnalyticsAccountFilters), &limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			return v, nil
+		}
+	}
+
+	return nil, nil
+}
+
+// ==========================  END: DataLakeAnalyticsAccount =============================
 
 // ==========================  START: DataLakeStore =============================
 
@@ -3406,6 +5434,414 @@ func GetDiagnosticSetting(ctx context.Context, d *plugin.QueryData, _ *plugin.Hy
 
 // ==========================  END: DiagnosticSetting =============================
 
+// ==========================  START: EventGridDomain =============================
+
+type EventGridDomain struct {
+	Description azure.EventGridDomainDescription `json:"description"`
+	Metadata    azure.Metadata                   `json:"metadata"`
+}
+
+type EventGridDomainHit struct {
+	ID      string          `json:"_id"`
+	Score   float64         `json:"_score"`
+	Index   string          `json:"_index"`
+	Type    string          `json:"_type"`
+	Version int64           `json:"_version,omitempty"`
+	Source  EventGridDomain `json:"_source"`
+	Sort    []interface{}   `json:"sort"`
+}
+
+type EventGridDomainHits struct {
+	Total SearchTotal          `json:"total"`
+	Hits  []EventGridDomainHit `json:"hits"`
+}
+
+type EventGridDomainSearchResponse struct {
+	PitID string              `json:"pit_id"`
+	Hits  EventGridDomainHits `json:"hits"`
+}
+
+type EventGridDomainPaginator struct {
+	paginator baseESPaginator
+}
+
+func (k Client) NewEventGridDomainPaginator(filters []BoolFilter, limit *int64) (EventGridDomainPaginator, error) {
+	paginator, err := newPaginator(k.es, "microsoft_eventgrid_domains", filters, limit)
+	if err != nil {
+		return EventGridDomainPaginator{}, err
+	}
+
+	p := EventGridDomainPaginator{
+		paginator: *paginator,
+	}
+
+	return p, nil
+}
+
+func (p EventGridDomainPaginator) HasNext() bool {
+	return !p.paginator.done
+}
+
+func (p *EventGridDomainPaginator) NextPage(ctx context.Context) ([]EventGridDomain, error) {
+	var response EventGridDomainSearchResponse
+	err := p.paginator.search(ctx, &response)
+	if err != nil {
+		return nil, err
+	}
+
+	var values []EventGridDomain
+	for _, hit := range response.Hits.Hits {
+		values = append(values, hit.Source)
+	}
+
+	hits := int64(len(response.Hits.Hits))
+	if hits > 0 {
+		p.paginator.updateState(hits, response.Hits.Hits[hits-1].Sort, response.PitID)
+	} else {
+		p.paginator.updateState(hits, nil, "")
+	}
+
+	return values, nil
+}
+
+var listEventGridDomainFilters = map[string]string{}
+
+func ListEventGridDomain(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("ListEventGridDomain")
+
+	// create service
+	k, err := NewClient(GetConfig(d.Connection))
+	if err != nil {
+		return nil, err
+	}
+
+	paginator, err := k.NewEventGridDomainPaginator(buildFilter(d.KeyColumnQuals, listEventGridDomainFilters), d.QueryContext.Limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			d.StreamListItem(ctx, v)
+		}
+	}
+
+	return nil, nil
+}
+
+var getEventGridDomainFilters = map[string]string{
+	"name":           "description.Domain.Name",
+	"resource_group": "description.ResourceGroup",
+}
+
+func GetEventGridDomain(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("GetEventGridDomain")
+
+	// create service
+	k, err := NewClient(GetConfig(d.Connection))
+	if err != nil {
+		return nil, err
+	}
+
+	limit := int64(1)
+	paginator, err := k.NewEventGridDomainPaginator(buildFilter(d.KeyColumnQuals, getEventGridDomainFilters), &limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			return v, nil
+		}
+	}
+
+	return nil, nil
+}
+
+// ==========================  END: EventGridDomain =============================
+
+// ==========================  START: EventGridTopic =============================
+
+type EventGridTopic struct {
+	Description azure.EventGridTopicDescription `json:"description"`
+	Metadata    azure.Metadata                  `json:"metadata"`
+}
+
+type EventGridTopicHit struct {
+	ID      string         `json:"_id"`
+	Score   float64        `json:"_score"`
+	Index   string         `json:"_index"`
+	Type    string         `json:"_type"`
+	Version int64          `json:"_version,omitempty"`
+	Source  EventGridTopic `json:"_source"`
+	Sort    []interface{}  `json:"sort"`
+}
+
+type EventGridTopicHits struct {
+	Total SearchTotal         `json:"total"`
+	Hits  []EventGridTopicHit `json:"hits"`
+}
+
+type EventGridTopicSearchResponse struct {
+	PitID string             `json:"pit_id"`
+	Hits  EventGridTopicHits `json:"hits"`
+}
+
+type EventGridTopicPaginator struct {
+	paginator baseESPaginator
+}
+
+func (k Client) NewEventGridTopicPaginator(filters []BoolFilter, limit *int64) (EventGridTopicPaginator, error) {
+	paginator, err := newPaginator(k.es, "microsoft_eventgrid_topics", filters, limit)
+	if err != nil {
+		return EventGridTopicPaginator{}, err
+	}
+
+	p := EventGridTopicPaginator{
+		paginator: *paginator,
+	}
+
+	return p, nil
+}
+
+func (p EventGridTopicPaginator) HasNext() bool {
+	return !p.paginator.done
+}
+
+func (p *EventGridTopicPaginator) NextPage(ctx context.Context) ([]EventGridTopic, error) {
+	var response EventGridTopicSearchResponse
+	err := p.paginator.search(ctx, &response)
+	if err != nil {
+		return nil, err
+	}
+
+	var values []EventGridTopic
+	for _, hit := range response.Hits.Hits {
+		values = append(values, hit.Source)
+	}
+
+	hits := int64(len(response.Hits.Hits))
+	if hits > 0 {
+		p.paginator.updateState(hits, response.Hits.Hits[hits-1].Sort, response.PitID)
+	} else {
+		p.paginator.updateState(hits, nil, "")
+	}
+
+	return values, nil
+}
+
+var listEventGridTopicFilters = map[string]string{}
+
+func ListEventGridTopic(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("ListEventGridTopic")
+
+	// create service
+	k, err := NewClient(GetConfig(d.Connection))
+	if err != nil {
+		return nil, err
+	}
+
+	paginator, err := k.NewEventGridTopicPaginator(buildFilter(d.KeyColumnQuals, listEventGridTopicFilters), d.QueryContext.Limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			d.StreamListItem(ctx, v)
+		}
+	}
+
+	return nil, nil
+}
+
+var getEventGridTopicFilters = map[string]string{
+	"name":           "description.Topic.Name",
+	"resource_group": "description.ResourceGroup",
+}
+
+func GetEventGridTopic(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("GetEventGridTopic")
+
+	// create service
+	k, err := NewClient(GetConfig(d.Connection))
+	if err != nil {
+		return nil, err
+	}
+
+	limit := int64(1)
+	paginator, err := k.NewEventGridTopicPaginator(buildFilter(d.KeyColumnQuals, getEventGridTopicFilters), &limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			return v, nil
+		}
+	}
+
+	return nil, nil
+}
+
+// ==========================  END: EventGridTopic =============================
+
+// ==========================  START: EventhubNamespace =============================
+
+type EventhubNamespace struct {
+	Description azure.EventhubNamespaceDescription `json:"description"`
+	Metadata    azure.Metadata                     `json:"metadata"`
+}
+
+type EventhubNamespaceHit struct {
+	ID      string            `json:"_id"`
+	Score   float64           `json:"_score"`
+	Index   string            `json:"_index"`
+	Type    string            `json:"_type"`
+	Version int64             `json:"_version,omitempty"`
+	Source  EventhubNamespace `json:"_source"`
+	Sort    []interface{}     `json:"sort"`
+}
+
+type EventhubNamespaceHits struct {
+	Total SearchTotal            `json:"total"`
+	Hits  []EventhubNamespaceHit `json:"hits"`
+}
+
+type EventhubNamespaceSearchResponse struct {
+	PitID string                `json:"pit_id"`
+	Hits  EventhubNamespaceHits `json:"hits"`
+}
+
+type EventhubNamespacePaginator struct {
+	paginator baseESPaginator
+}
+
+func (k Client) NewEventhubNamespacePaginator(filters []BoolFilter, limit *int64) (EventhubNamespacePaginator, error) {
+	paginator, err := newPaginator(k.es, "microsoft_eventhub_namespaces", filters, limit)
+	if err != nil {
+		return EventhubNamespacePaginator{}, err
+	}
+
+	p := EventhubNamespacePaginator{
+		paginator: *paginator,
+	}
+
+	return p, nil
+}
+
+func (p EventhubNamespacePaginator) HasNext() bool {
+	return !p.paginator.done
+}
+
+func (p *EventhubNamespacePaginator) NextPage(ctx context.Context) ([]EventhubNamespace, error) {
+	var response EventhubNamespaceSearchResponse
+	err := p.paginator.search(ctx, &response)
+	if err != nil {
+		return nil, err
+	}
+
+	var values []EventhubNamespace
+	for _, hit := range response.Hits.Hits {
+		values = append(values, hit.Source)
+	}
+
+	hits := int64(len(response.Hits.Hits))
+	if hits > 0 {
+		p.paginator.updateState(hits, response.Hits.Hits[hits-1].Sort, response.PitID)
+	} else {
+		p.paginator.updateState(hits, nil, "")
+	}
+
+	return values, nil
+}
+
+var listEventhubNamespaceFilters = map[string]string{}
+
+func ListEventhubNamespace(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("ListEventhubNamespace")
+
+	// create service
+	k, err := NewClient(GetConfig(d.Connection))
+	if err != nil {
+		return nil, err
+	}
+
+	paginator, err := k.NewEventhubNamespacePaginator(buildFilter(d.KeyColumnQuals, listEventhubNamespaceFilters), d.QueryContext.Limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			d.StreamListItem(ctx, v)
+		}
+	}
+
+	return nil, nil
+}
+
+var getEventhubNamespaceFilters = map[string]string{
+	"name":           "description.EHNamespace.Name",
+	"resource_group": "description.ResourceGroup",
+}
+
+func GetEventhubNamespace(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("GetEventhubNamespace")
+
+	// create service
+	k, err := NewClient(GetConfig(d.Connection))
+	if err != nil {
+		return nil, err
+	}
+
+	limit := int64(1)
+	paginator, err := k.NewEventhubNamespacePaginator(buildFilter(d.KeyColumnQuals, getEventhubNamespaceFilters), &limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			return v, nil
+		}
+	}
+
+	return nil, nil
+}
+
+// ==========================  END: EventhubNamespace =============================
+
 // ==========================  START: Frontdoor =============================
 
 type Frontdoor struct {
@@ -3678,6 +6114,142 @@ func GetHdinsightCluster(ctx context.Context, d *plugin.QueryData, _ *plugin.Hyd
 
 // ==========================  END: HdinsightCluster =============================
 
+// ==========================  START: HybridComputeMachine =============================
+
+type HybridComputeMachine struct {
+	Description azure.HybridComputeMachineDescription `json:"description"`
+	Metadata    azure.Metadata                        `json:"metadata"`
+}
+
+type HybridComputeMachineHit struct {
+	ID      string               `json:"_id"`
+	Score   float64              `json:"_score"`
+	Index   string               `json:"_index"`
+	Type    string               `json:"_type"`
+	Version int64                `json:"_version,omitempty"`
+	Source  HybridComputeMachine `json:"_source"`
+	Sort    []interface{}        `json:"sort"`
+}
+
+type HybridComputeMachineHits struct {
+	Total SearchTotal               `json:"total"`
+	Hits  []HybridComputeMachineHit `json:"hits"`
+}
+
+type HybridComputeMachineSearchResponse struct {
+	PitID string                   `json:"pit_id"`
+	Hits  HybridComputeMachineHits `json:"hits"`
+}
+
+type HybridComputeMachinePaginator struct {
+	paginator baseESPaginator
+}
+
+func (k Client) NewHybridComputeMachinePaginator(filters []BoolFilter, limit *int64) (HybridComputeMachinePaginator, error) {
+	paginator, err := newPaginator(k.es, "microsoft_hybridcompute_machines", filters, limit)
+	if err != nil {
+		return HybridComputeMachinePaginator{}, err
+	}
+
+	p := HybridComputeMachinePaginator{
+		paginator: *paginator,
+	}
+
+	return p, nil
+}
+
+func (p HybridComputeMachinePaginator) HasNext() bool {
+	return !p.paginator.done
+}
+
+func (p *HybridComputeMachinePaginator) NextPage(ctx context.Context) ([]HybridComputeMachine, error) {
+	var response HybridComputeMachineSearchResponse
+	err := p.paginator.search(ctx, &response)
+	if err != nil {
+		return nil, err
+	}
+
+	var values []HybridComputeMachine
+	for _, hit := range response.Hits.Hits {
+		values = append(values, hit.Source)
+	}
+
+	hits := int64(len(response.Hits.Hits))
+	if hits > 0 {
+		p.paginator.updateState(hits, response.Hits.Hits[hits-1].Sort, response.PitID)
+	} else {
+		p.paginator.updateState(hits, nil, "")
+	}
+
+	return values, nil
+}
+
+var listHybridComputeMachineFilters = map[string]string{}
+
+func ListHybridComputeMachine(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("ListHybridComputeMachine")
+
+	// create service
+	k, err := NewClient(GetConfig(d.Connection))
+	if err != nil {
+		return nil, err
+	}
+
+	paginator, err := k.NewHybridComputeMachinePaginator(buildFilter(d.KeyColumnQuals, listHybridComputeMachineFilters), d.QueryContext.Limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			d.StreamListItem(ctx, v)
+		}
+	}
+
+	return nil, nil
+}
+
+var getHybridComputeMachineFilters = map[string]string{
+	"name":           "description.Machine.Name",
+	"resource_group": "description.ResourceGroup",
+}
+
+func GetHybridComputeMachine(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("GetHybridComputeMachine")
+
+	// create service
+	k, err := NewClient(GetConfig(d.Connection))
+	if err != nil {
+		return nil, err
+	}
+
+	limit := int64(1)
+	paginator, err := k.NewHybridComputeMachinePaginator(buildFilter(d.KeyColumnQuals, getHybridComputeMachineFilters), &limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			return v, nil
+		}
+	}
+
+	return nil, nil
+}
+
+// ==========================  END: HybridComputeMachine =============================
+
 // ==========================  START: IOTHub =============================
 
 type IOTHub struct {
@@ -3710,7 +6282,7 @@ type IOTHubPaginator struct {
 }
 
 func (k Client) NewIOTHubPaginator(filters []BoolFilter, limit *int64) (IOTHubPaginator, error) {
-	paginator, err := newPaginator(k.es, "microsoft_devices_elasticpools_iothubtenants", filters, limit)
+	paginator, err := newPaginator(k.es, "microsoft_devices_iothubs", filters, limit)
 	if err != nil {
 		return IOTHubPaginator{}, err
 	}
@@ -3846,7 +6418,7 @@ type KeyVaultPaginator struct {
 }
 
 func (k Client) NewKeyVaultPaginator(filters []BoolFilter, limit *int64) (KeyVaultPaginator, error) {
-	paginator, err := newPaginator(k.es, "microsoft_keyvault_hsmpools", filters, limit)
+	paginator, err := newPaginator(k.es, "microsoft_keyvault_vaults", filters, limit)
 	if err != nil {
 		return KeyVaultPaginator{}, err
 	}
@@ -3949,6 +6521,414 @@ func GetKeyVault(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData
 }
 
 // ==========================  END: KeyVault =============================
+
+// ==========================  START: KeyVaultManagedHardwareSecurityModule =============================
+
+type KeyVaultManagedHardwareSecurityModule struct {
+	Description azure.KeyVaultManagedHardwareSecurityModuleDescription `json:"description"`
+	Metadata    azure.Metadata                                         `json:"metadata"`
+}
+
+type KeyVaultManagedHardwareSecurityModuleHit struct {
+	ID      string                                `json:"_id"`
+	Score   float64                               `json:"_score"`
+	Index   string                                `json:"_index"`
+	Type    string                                `json:"_type"`
+	Version int64                                 `json:"_version,omitempty"`
+	Source  KeyVaultManagedHardwareSecurityModule `json:"_source"`
+	Sort    []interface{}                         `json:"sort"`
+}
+
+type KeyVaultManagedHardwareSecurityModuleHits struct {
+	Total SearchTotal                                `json:"total"`
+	Hits  []KeyVaultManagedHardwareSecurityModuleHit `json:"hits"`
+}
+
+type KeyVaultManagedHardwareSecurityModuleSearchResponse struct {
+	PitID string                                    `json:"pit_id"`
+	Hits  KeyVaultManagedHardwareSecurityModuleHits `json:"hits"`
+}
+
+type KeyVaultManagedHardwareSecurityModulePaginator struct {
+	paginator baseESPaginator
+}
+
+func (k Client) NewKeyVaultManagedHardwareSecurityModulePaginator(filters []BoolFilter, limit *int64) (KeyVaultManagedHardwareSecurityModulePaginator, error) {
+	paginator, err := newPaginator(k.es, "microsoft_keyvault_managedhsms", filters, limit)
+	if err != nil {
+		return KeyVaultManagedHardwareSecurityModulePaginator{}, err
+	}
+
+	p := KeyVaultManagedHardwareSecurityModulePaginator{
+		paginator: *paginator,
+	}
+
+	return p, nil
+}
+
+func (p KeyVaultManagedHardwareSecurityModulePaginator) HasNext() bool {
+	return !p.paginator.done
+}
+
+func (p *KeyVaultManagedHardwareSecurityModulePaginator) NextPage(ctx context.Context) ([]KeyVaultManagedHardwareSecurityModule, error) {
+	var response KeyVaultManagedHardwareSecurityModuleSearchResponse
+	err := p.paginator.search(ctx, &response)
+	if err != nil {
+		return nil, err
+	}
+
+	var values []KeyVaultManagedHardwareSecurityModule
+	for _, hit := range response.Hits.Hits {
+		values = append(values, hit.Source)
+	}
+
+	hits := int64(len(response.Hits.Hits))
+	if hits > 0 {
+		p.paginator.updateState(hits, response.Hits.Hits[hits-1].Sort, response.PitID)
+	} else {
+		p.paginator.updateState(hits, nil, "")
+	}
+
+	return values, nil
+}
+
+var listKeyVaultManagedHardwareSecurityModuleFilters = map[string]string{}
+
+func ListKeyVaultManagedHardwareSecurityModule(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("ListKeyVaultManagedHardwareSecurityModule")
+
+	// create service
+	k, err := NewClient(GetConfig(d.Connection))
+	if err != nil {
+		return nil, err
+	}
+
+	paginator, err := k.NewKeyVaultManagedHardwareSecurityModulePaginator(buildFilter(d.KeyColumnQuals, listKeyVaultManagedHardwareSecurityModuleFilters), d.QueryContext.Limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			d.StreamListItem(ctx, v)
+		}
+	}
+
+	return nil, nil
+}
+
+var getKeyVaultManagedHardwareSecurityModuleFilters = map[string]string{
+	"name":           "description.ManagedHsm.Name",
+	"resource_group": "description.ResourceGroup",
+}
+
+func GetKeyVaultManagedHardwareSecurityModule(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("GetKeyVaultManagedHardwareSecurityModule")
+
+	// create service
+	k, err := NewClient(GetConfig(d.Connection))
+	if err != nil {
+		return nil, err
+	}
+
+	limit := int64(1)
+	paginator, err := k.NewKeyVaultManagedHardwareSecurityModulePaginator(buildFilter(d.KeyColumnQuals, getKeyVaultManagedHardwareSecurityModuleFilters), &limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			return v, nil
+		}
+	}
+
+	return nil, nil
+}
+
+// ==========================  END: KeyVaultManagedHardwareSecurityModule =============================
+
+// ==========================  START: KeyVaultSecret =============================
+
+type KeyVaultSecret struct {
+	Description azure.KeyVaultSecretDescription `json:"description"`
+	Metadata    azure.Metadata                  `json:"metadata"`
+}
+
+type KeyVaultSecretHit struct {
+	ID      string         `json:"_id"`
+	Score   float64        `json:"_score"`
+	Index   string         `json:"_index"`
+	Type    string         `json:"_type"`
+	Version int64          `json:"_version,omitempty"`
+	Source  KeyVaultSecret `json:"_source"`
+	Sort    []interface{}  `json:"sort"`
+}
+
+type KeyVaultSecretHits struct {
+	Total SearchTotal         `json:"total"`
+	Hits  []KeyVaultSecretHit `json:"hits"`
+}
+
+type KeyVaultSecretSearchResponse struct {
+	PitID string             `json:"pit_id"`
+	Hits  KeyVaultSecretHits `json:"hits"`
+}
+
+type KeyVaultSecretPaginator struct {
+	paginator baseESPaginator
+}
+
+func (k Client) NewKeyVaultSecretPaginator(filters []BoolFilter, limit *int64) (KeyVaultSecretPaginator, error) {
+	paginator, err := newPaginator(k.es, "microsoft_keyvault_vaults_secrets", filters, limit)
+	if err != nil {
+		return KeyVaultSecretPaginator{}, err
+	}
+
+	p := KeyVaultSecretPaginator{
+		paginator: *paginator,
+	}
+
+	return p, nil
+}
+
+func (p KeyVaultSecretPaginator) HasNext() bool {
+	return !p.paginator.done
+}
+
+func (p *KeyVaultSecretPaginator) NextPage(ctx context.Context) ([]KeyVaultSecret, error) {
+	var response KeyVaultSecretSearchResponse
+	err := p.paginator.search(ctx, &response)
+	if err != nil {
+		return nil, err
+	}
+
+	var values []KeyVaultSecret
+	for _, hit := range response.Hits.Hits {
+		values = append(values, hit.Source)
+	}
+
+	hits := int64(len(response.Hits.Hits))
+	if hits > 0 {
+		p.paginator.updateState(hits, response.Hits.Hits[hits-1].Sort, response.PitID)
+	} else {
+		p.paginator.updateState(hits, nil, "")
+	}
+
+	return values, nil
+}
+
+var listKeyVaultSecretFilters = map[string]string{}
+
+func ListKeyVaultSecret(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("ListKeyVaultSecret")
+
+	// create service
+	k, err := NewClient(GetConfig(d.Connection))
+	if err != nil {
+		return nil, err
+	}
+
+	paginator, err := k.NewKeyVaultSecretPaginator(buildFilter(d.KeyColumnQuals, listKeyVaultSecretFilters), d.QueryContext.Limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			d.StreamListItem(ctx, v)
+		}
+	}
+
+	return nil, nil
+}
+
+var getKeyVaultSecretFilters = map[string]string{
+	"name":           "description.SecretItem.Name",
+	"resource_group": "description.ResourceGroup",
+}
+
+func GetKeyVaultSecret(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("GetKeyVaultSecret")
+
+	// create service
+	k, err := NewClient(GetConfig(d.Connection))
+	if err != nil {
+		return nil, err
+	}
+
+	limit := int64(1)
+	paginator, err := k.NewKeyVaultSecretPaginator(buildFilter(d.KeyColumnQuals, getKeyVaultSecretFilters), &limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			return v, nil
+		}
+	}
+
+	return nil, nil
+}
+
+// ==========================  END: KeyVaultSecret =============================
+
+// ==========================  START: KustoCluster =============================
+
+type KustoCluster struct {
+	Description azure.KustoClusterDescription `json:"description"`
+	Metadata    azure.Metadata                `json:"metadata"`
+}
+
+type KustoClusterHit struct {
+	ID      string        `json:"_id"`
+	Score   float64       `json:"_score"`
+	Index   string        `json:"_index"`
+	Type    string        `json:"_type"`
+	Version int64         `json:"_version,omitempty"`
+	Source  KustoCluster  `json:"_source"`
+	Sort    []interface{} `json:"sort"`
+}
+
+type KustoClusterHits struct {
+	Total SearchTotal       `json:"total"`
+	Hits  []KustoClusterHit `json:"hits"`
+}
+
+type KustoClusterSearchResponse struct {
+	PitID string           `json:"pit_id"`
+	Hits  KustoClusterHits `json:"hits"`
+}
+
+type KustoClusterPaginator struct {
+	paginator baseESPaginator
+}
+
+func (k Client) NewKustoClusterPaginator(filters []BoolFilter, limit *int64) (KustoClusterPaginator, error) {
+	paginator, err := newPaginator(k.es, "microsoft_kusto_clusters", filters, limit)
+	if err != nil {
+		return KustoClusterPaginator{}, err
+	}
+
+	p := KustoClusterPaginator{
+		paginator: *paginator,
+	}
+
+	return p, nil
+}
+
+func (p KustoClusterPaginator) HasNext() bool {
+	return !p.paginator.done
+}
+
+func (p *KustoClusterPaginator) NextPage(ctx context.Context) ([]KustoCluster, error) {
+	var response KustoClusterSearchResponse
+	err := p.paginator.search(ctx, &response)
+	if err != nil {
+		return nil, err
+	}
+
+	var values []KustoCluster
+	for _, hit := range response.Hits.Hits {
+		values = append(values, hit.Source)
+	}
+
+	hits := int64(len(response.Hits.Hits))
+	if hits > 0 {
+		p.paginator.updateState(hits, response.Hits.Hits[hits-1].Sort, response.PitID)
+	} else {
+		p.paginator.updateState(hits, nil, "")
+	}
+
+	return values, nil
+}
+
+var listKustoClusterFilters = map[string]string{}
+
+func ListKustoCluster(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("ListKustoCluster")
+
+	// create service
+	k, err := NewClient(GetConfig(d.Connection))
+	if err != nil {
+		return nil, err
+	}
+
+	paginator, err := k.NewKustoClusterPaginator(buildFilter(d.KeyColumnQuals, listKustoClusterFilters), d.QueryContext.Limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			d.StreamListItem(ctx, v)
+		}
+	}
+
+	return nil, nil
+}
+
+var getKustoClusterFilters = map[string]string{
+	"name":           "description.Cluster.Name",
+	"resource_group": "description.ResourceGroup",
+}
+
+func GetKustoCluster(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("GetKustoCluster")
+
+	// create service
+	k, err := NewClient(GetConfig(d.Connection))
+	if err != nil {
+		return nil, err
+	}
+
+	limit := int64(1)
+	paginator, err := k.NewKustoClusterPaginator(buildFilter(d.KeyColumnQuals, getKustoClusterFilters), &limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			return v, nil
+		}
+	}
+
+	return nil, nil
+}
+
+// ==========================  END: KustoCluster =============================
 
 // ==========================  START: LogAlert =============================
 
@@ -4085,6 +7065,414 @@ func GetLogAlert(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData
 }
 
 // ==========================  END: LogAlert =============================
+
+// ==========================  START: LogProfile =============================
+
+type LogProfile struct {
+	Description azure.LogProfileDescription `json:"description"`
+	Metadata    azure.Metadata              `json:"metadata"`
+}
+
+type LogProfileHit struct {
+	ID      string        `json:"_id"`
+	Score   float64       `json:"_score"`
+	Index   string        `json:"_index"`
+	Type    string        `json:"_type"`
+	Version int64         `json:"_version,omitempty"`
+	Source  LogProfile    `json:"_source"`
+	Sort    []interface{} `json:"sort"`
+}
+
+type LogProfileHits struct {
+	Total SearchTotal     `json:"total"`
+	Hits  []LogProfileHit `json:"hits"`
+}
+
+type LogProfileSearchResponse struct {
+	PitID string         `json:"pit_id"`
+	Hits  LogProfileHits `json:"hits"`
+}
+
+type LogProfilePaginator struct {
+	paginator baseESPaginator
+}
+
+func (k Client) NewLogProfilePaginator(filters []BoolFilter, limit *int64) (LogProfilePaginator, error) {
+	paginator, err := newPaginator(k.es, "microsoft_insights_logprofiles", filters, limit)
+	if err != nil {
+		return LogProfilePaginator{}, err
+	}
+
+	p := LogProfilePaginator{
+		paginator: *paginator,
+	}
+
+	return p, nil
+}
+
+func (p LogProfilePaginator) HasNext() bool {
+	return !p.paginator.done
+}
+
+func (p *LogProfilePaginator) NextPage(ctx context.Context) ([]LogProfile, error) {
+	var response LogProfileSearchResponse
+	err := p.paginator.search(ctx, &response)
+	if err != nil {
+		return nil, err
+	}
+
+	var values []LogProfile
+	for _, hit := range response.Hits.Hits {
+		values = append(values, hit.Source)
+	}
+
+	hits := int64(len(response.Hits.Hits))
+	if hits > 0 {
+		p.paginator.updateState(hits, response.Hits.Hits[hits-1].Sort, response.PitID)
+	} else {
+		p.paginator.updateState(hits, nil, "")
+	}
+
+	return values, nil
+}
+
+var listLogProfileFilters = map[string]string{}
+
+func ListLogProfile(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("ListLogProfile")
+
+	// create service
+	k, err := NewClient(GetConfig(d.Connection))
+	if err != nil {
+		return nil, err
+	}
+
+	paginator, err := k.NewLogProfilePaginator(buildFilter(d.KeyColumnQuals, listLogProfileFilters), d.QueryContext.Limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			d.StreamListItem(ctx, v)
+		}
+	}
+
+	return nil, nil
+}
+
+var getLogProfileFilters = map[string]string{
+	"name":           "description.LogProfileResource.Name",
+	"resource_group": "description.ResourceGroup",
+}
+
+func GetLogProfile(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("GetLogProfile")
+
+	// create service
+	k, err := NewClient(GetConfig(d.Connection))
+	if err != nil {
+		return nil, err
+	}
+
+	limit := int64(1)
+	paginator, err := k.NewLogProfilePaginator(buildFilter(d.KeyColumnQuals, getLogProfileFilters), &limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			return v, nil
+		}
+	}
+
+	return nil, nil
+}
+
+// ==========================  END: LogProfile =============================
+
+// ==========================  START: LogicAppWorkflow =============================
+
+type LogicAppWorkflow struct {
+	Description azure.LogicAppWorkflowDescription `json:"description"`
+	Metadata    azure.Metadata                    `json:"metadata"`
+}
+
+type LogicAppWorkflowHit struct {
+	ID      string           `json:"_id"`
+	Score   float64          `json:"_score"`
+	Index   string           `json:"_index"`
+	Type    string           `json:"_type"`
+	Version int64            `json:"_version,omitempty"`
+	Source  LogicAppWorkflow `json:"_source"`
+	Sort    []interface{}    `json:"sort"`
+}
+
+type LogicAppWorkflowHits struct {
+	Total SearchTotal           `json:"total"`
+	Hits  []LogicAppWorkflowHit `json:"hits"`
+}
+
+type LogicAppWorkflowSearchResponse struct {
+	PitID string               `json:"pit_id"`
+	Hits  LogicAppWorkflowHits `json:"hits"`
+}
+
+type LogicAppWorkflowPaginator struct {
+	paginator baseESPaginator
+}
+
+func (k Client) NewLogicAppWorkflowPaginator(filters []BoolFilter, limit *int64) (LogicAppWorkflowPaginator, error) {
+	paginator, err := newPaginator(k.es, "microsoft_logic_workflows", filters, limit)
+	if err != nil {
+		return LogicAppWorkflowPaginator{}, err
+	}
+
+	p := LogicAppWorkflowPaginator{
+		paginator: *paginator,
+	}
+
+	return p, nil
+}
+
+func (p LogicAppWorkflowPaginator) HasNext() bool {
+	return !p.paginator.done
+}
+
+func (p *LogicAppWorkflowPaginator) NextPage(ctx context.Context) ([]LogicAppWorkflow, error) {
+	var response LogicAppWorkflowSearchResponse
+	err := p.paginator.search(ctx, &response)
+	if err != nil {
+		return nil, err
+	}
+
+	var values []LogicAppWorkflow
+	for _, hit := range response.Hits.Hits {
+		values = append(values, hit.Source)
+	}
+
+	hits := int64(len(response.Hits.Hits))
+	if hits > 0 {
+		p.paginator.updateState(hits, response.Hits.Hits[hits-1].Sort, response.PitID)
+	} else {
+		p.paginator.updateState(hits, nil, "")
+	}
+
+	return values, nil
+}
+
+var listLogicAppWorkflowFilters = map[string]string{}
+
+func ListLogicAppWorkflow(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("ListLogicAppWorkflow")
+
+	// create service
+	k, err := NewClient(GetConfig(d.Connection))
+	if err != nil {
+		return nil, err
+	}
+
+	paginator, err := k.NewLogicAppWorkflowPaginator(buildFilter(d.KeyColumnQuals, listLogicAppWorkflowFilters), d.QueryContext.Limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			d.StreamListItem(ctx, v)
+		}
+	}
+
+	return nil, nil
+}
+
+var getLogicAppWorkflowFilters = map[string]string{
+	"name":           "description.Workflow.Name",
+	"resource_group": "description.ResourceGroup",
+}
+
+func GetLogicAppWorkflow(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("GetLogicAppWorkflow")
+
+	// create service
+	k, err := NewClient(GetConfig(d.Connection))
+	if err != nil {
+		return nil, err
+	}
+
+	limit := int64(1)
+	paginator, err := k.NewLogicAppWorkflowPaginator(buildFilter(d.KeyColumnQuals, getLogicAppWorkflowFilters), &limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			return v, nil
+		}
+	}
+
+	return nil, nil
+}
+
+// ==========================  END: LogicAppWorkflow =============================
+
+// ==========================  START: MachineLearningWorkspace =============================
+
+type MachineLearningWorkspace struct {
+	Description azure.MachineLearningWorkspaceDescription `json:"description"`
+	Metadata    azure.Metadata                            `json:"metadata"`
+}
+
+type MachineLearningWorkspaceHit struct {
+	ID      string                   `json:"_id"`
+	Score   float64                  `json:"_score"`
+	Index   string                   `json:"_index"`
+	Type    string                   `json:"_type"`
+	Version int64                    `json:"_version,omitempty"`
+	Source  MachineLearningWorkspace `json:"_source"`
+	Sort    []interface{}            `json:"sort"`
+}
+
+type MachineLearningWorkspaceHits struct {
+	Total SearchTotal                   `json:"total"`
+	Hits  []MachineLearningWorkspaceHit `json:"hits"`
+}
+
+type MachineLearningWorkspaceSearchResponse struct {
+	PitID string                       `json:"pit_id"`
+	Hits  MachineLearningWorkspaceHits `json:"hits"`
+}
+
+type MachineLearningWorkspacePaginator struct {
+	paginator baseESPaginator
+}
+
+func (k Client) NewMachineLearningWorkspacePaginator(filters []BoolFilter, limit *int64) (MachineLearningWorkspacePaginator, error) {
+	paginator, err := newPaginator(k.es, "microsoft_machinelearning_workspaces", filters, limit)
+	if err != nil {
+		return MachineLearningWorkspacePaginator{}, err
+	}
+
+	p := MachineLearningWorkspacePaginator{
+		paginator: *paginator,
+	}
+
+	return p, nil
+}
+
+func (p MachineLearningWorkspacePaginator) HasNext() bool {
+	return !p.paginator.done
+}
+
+func (p *MachineLearningWorkspacePaginator) NextPage(ctx context.Context) ([]MachineLearningWorkspace, error) {
+	var response MachineLearningWorkspaceSearchResponse
+	err := p.paginator.search(ctx, &response)
+	if err != nil {
+		return nil, err
+	}
+
+	var values []MachineLearningWorkspace
+	for _, hit := range response.Hits.Hits {
+		values = append(values, hit.Source)
+	}
+
+	hits := int64(len(response.Hits.Hits))
+	if hits > 0 {
+		p.paginator.updateState(hits, response.Hits.Hits[hits-1].Sort, response.PitID)
+	} else {
+		p.paginator.updateState(hits, nil, "")
+	}
+
+	return values, nil
+}
+
+var listMachineLearningWorkspaceFilters = map[string]string{}
+
+func ListMachineLearningWorkspace(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("ListMachineLearningWorkspace")
+
+	// create service
+	k, err := NewClient(GetConfig(d.Connection))
+	if err != nil {
+		return nil, err
+	}
+
+	paginator, err := k.NewMachineLearningWorkspacePaginator(buildFilter(d.KeyColumnQuals, listMachineLearningWorkspaceFilters), d.QueryContext.Limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			d.StreamListItem(ctx, v)
+		}
+	}
+
+	return nil, nil
+}
+
+var getMachineLearningWorkspaceFilters = map[string]string{
+	"name":           "description.Workspace.Name",
+	"resource_group": "description.ResourceGroup",
+}
+
+func GetMachineLearningWorkspace(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("GetMachineLearningWorkspace")
+
+	// create service
+	k, err := NewClient(GetConfig(d.Connection))
+	if err != nil {
+		return nil, err
+	}
+
+	limit := int64(1)
+	paginator, err := k.NewMachineLearningWorkspacePaginator(buildFilter(d.KeyColumnQuals, getMachineLearningWorkspaceFilters), &limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			return v, nil
+		}
+	}
+
+	return nil, nil
+}
+
+// ==========================  END: MachineLearningWorkspace =============================
 
 // ==========================  START: MariadbServer =============================
 
@@ -4902,6 +8290,142 @@ func GetServiceFabricCluster(ctx context.Context, d *plugin.QueryData, _ *plugin
 
 // ==========================  END: ServiceFabricCluster =============================
 
+// ==========================  START: ServicebusNamespace =============================
+
+type ServicebusNamespace struct {
+	Description azure.ServicebusNamespaceDescription `json:"description"`
+	Metadata    azure.Metadata                       `json:"metadata"`
+}
+
+type ServicebusNamespaceHit struct {
+	ID      string              `json:"_id"`
+	Score   float64             `json:"_score"`
+	Index   string              `json:"_index"`
+	Type    string              `json:"_type"`
+	Version int64               `json:"_version,omitempty"`
+	Source  ServicebusNamespace `json:"_source"`
+	Sort    []interface{}       `json:"sort"`
+}
+
+type ServicebusNamespaceHits struct {
+	Total SearchTotal              `json:"total"`
+	Hits  []ServicebusNamespaceHit `json:"hits"`
+}
+
+type ServicebusNamespaceSearchResponse struct {
+	PitID string                  `json:"pit_id"`
+	Hits  ServicebusNamespaceHits `json:"hits"`
+}
+
+type ServicebusNamespacePaginator struct {
+	paginator baseESPaginator
+}
+
+func (k Client) NewServicebusNamespacePaginator(filters []BoolFilter, limit *int64) (ServicebusNamespacePaginator, error) {
+	paginator, err := newPaginator(k.es, "microsoft_servicebus_namespaces", filters, limit)
+	if err != nil {
+		return ServicebusNamespacePaginator{}, err
+	}
+
+	p := ServicebusNamespacePaginator{
+		paginator: *paginator,
+	}
+
+	return p, nil
+}
+
+func (p ServicebusNamespacePaginator) HasNext() bool {
+	return !p.paginator.done
+}
+
+func (p *ServicebusNamespacePaginator) NextPage(ctx context.Context) ([]ServicebusNamespace, error) {
+	var response ServicebusNamespaceSearchResponse
+	err := p.paginator.search(ctx, &response)
+	if err != nil {
+		return nil, err
+	}
+
+	var values []ServicebusNamespace
+	for _, hit := range response.Hits.Hits {
+		values = append(values, hit.Source)
+	}
+
+	hits := int64(len(response.Hits.Hits))
+	if hits > 0 {
+		p.paginator.updateState(hits, response.Hits.Hits[hits-1].Sort, response.PitID)
+	} else {
+		p.paginator.updateState(hits, nil, "")
+	}
+
+	return values, nil
+}
+
+var listServicebusNamespaceFilters = map[string]string{}
+
+func ListServicebusNamespace(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("ListServicebusNamespace")
+
+	// create service
+	k, err := NewClient(GetConfig(d.Connection))
+	if err != nil {
+		return nil, err
+	}
+
+	paginator, err := k.NewServicebusNamespacePaginator(buildFilter(d.KeyColumnQuals, listServicebusNamespaceFilters), d.QueryContext.Limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			d.StreamListItem(ctx, v)
+		}
+	}
+
+	return nil, nil
+}
+
+var getServicebusNamespaceFilters = map[string]string{
+	"name":           "description.SBNamespace.Name",
+	"resource_group": "description.ResourceGroup",
+}
+
+func GetServicebusNamespace(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("GetServicebusNamespace")
+
+	// create service
+	k, err := NewClient(GetConfig(d.Connection))
+	if err != nil {
+		return nil, err
+	}
+
+	limit := int64(1)
+	paginator, err := k.NewServicebusNamespacePaginator(buildFilter(d.KeyColumnQuals, getServicebusNamespaceFilters), &limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			return v, nil
+		}
+	}
+
+	return nil, nil
+}
+
+// ==========================  END: ServicebusNamespace =============================
+
 // ==========================  START: SignalrService =============================
 
 type SignalrService struct {
@@ -5037,6 +8561,142 @@ func GetSignalrService(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydra
 }
 
 // ==========================  END: SignalrService =============================
+
+// ==========================  START: SpringCloudService =============================
+
+type SpringCloudService struct {
+	Description azure.SpringCloudServiceDescription `json:"description"`
+	Metadata    azure.Metadata                      `json:"metadata"`
+}
+
+type SpringCloudServiceHit struct {
+	ID      string             `json:"_id"`
+	Score   float64            `json:"_score"`
+	Index   string             `json:"_index"`
+	Type    string             `json:"_type"`
+	Version int64              `json:"_version,omitempty"`
+	Source  SpringCloudService `json:"_source"`
+	Sort    []interface{}      `json:"sort"`
+}
+
+type SpringCloudServiceHits struct {
+	Total SearchTotal             `json:"total"`
+	Hits  []SpringCloudServiceHit `json:"hits"`
+}
+
+type SpringCloudServiceSearchResponse struct {
+	PitID string                 `json:"pit_id"`
+	Hits  SpringCloudServiceHits `json:"hits"`
+}
+
+type SpringCloudServicePaginator struct {
+	paginator baseESPaginator
+}
+
+func (k Client) NewSpringCloudServicePaginator(filters []BoolFilter, limit *int64) (SpringCloudServicePaginator, error) {
+	paginator, err := newPaginator(k.es, "microsoft_appplatform_spring", filters, limit)
+	if err != nil {
+		return SpringCloudServicePaginator{}, err
+	}
+
+	p := SpringCloudServicePaginator{
+		paginator: *paginator,
+	}
+
+	return p, nil
+}
+
+func (p SpringCloudServicePaginator) HasNext() bool {
+	return !p.paginator.done
+}
+
+func (p *SpringCloudServicePaginator) NextPage(ctx context.Context) ([]SpringCloudService, error) {
+	var response SpringCloudServiceSearchResponse
+	err := p.paginator.search(ctx, &response)
+	if err != nil {
+		return nil, err
+	}
+
+	var values []SpringCloudService
+	for _, hit := range response.Hits.Hits {
+		values = append(values, hit.Source)
+	}
+
+	hits := int64(len(response.Hits.Hits))
+	if hits > 0 {
+		p.paginator.updateState(hits, response.Hits.Hits[hits-1].Sort, response.PitID)
+	} else {
+		p.paginator.updateState(hits, nil, "")
+	}
+
+	return values, nil
+}
+
+var listSpringCloudServiceFilters = map[string]string{}
+
+func ListSpringCloudService(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("ListSpringCloudService")
+
+	// create service
+	k, err := NewClient(GetConfig(d.Connection))
+	if err != nil {
+		return nil, err
+	}
+
+	paginator, err := k.NewSpringCloudServicePaginator(buildFilter(d.KeyColumnQuals, listSpringCloudServiceFilters), d.QueryContext.Limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			d.StreamListItem(ctx, v)
+		}
+	}
+
+	return nil, nil
+}
+
+var getSpringCloudServiceFilters = map[string]string{
+	"name":           "description.ServiceResource.Name",
+	"resource_group": "description.ResourceGroup",
+}
+
+func GetSpringCloudService(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("GetSpringCloudService")
+
+	// create service
+	k, err := NewClient(GetConfig(d.Connection))
+	if err != nil {
+		return nil, err
+	}
+
+	limit := int64(1)
+	paginator, err := k.NewSpringCloudServicePaginator(buildFilter(d.KeyColumnQuals, getSpringCloudServiceFilters), &limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			return v, nil
+		}
+	}
+
+	return nil, nil
+}
+
+// ==========================  END: SpringCloudService =============================
 
 // ==========================  START: StreamAnalyticsJob =============================
 
@@ -5174,6 +8834,142 @@ func GetStreamAnalyticsJob(ctx context.Context, d *plugin.QueryData, _ *plugin.H
 
 // ==========================  END: StreamAnalyticsJob =============================
 
+// ==========================  START: SynapseWorkspace =============================
+
+type SynapseWorkspace struct {
+	Description azure.SynapseWorkspaceDescription `json:"description"`
+	Metadata    azure.Metadata                    `json:"metadata"`
+}
+
+type SynapseWorkspaceHit struct {
+	ID      string           `json:"_id"`
+	Score   float64          `json:"_score"`
+	Index   string           `json:"_index"`
+	Type    string           `json:"_type"`
+	Version int64            `json:"_version,omitempty"`
+	Source  SynapseWorkspace `json:"_source"`
+	Sort    []interface{}    `json:"sort"`
+}
+
+type SynapseWorkspaceHits struct {
+	Total SearchTotal           `json:"total"`
+	Hits  []SynapseWorkspaceHit `json:"hits"`
+}
+
+type SynapseWorkspaceSearchResponse struct {
+	PitID string               `json:"pit_id"`
+	Hits  SynapseWorkspaceHits `json:"hits"`
+}
+
+type SynapseWorkspacePaginator struct {
+	paginator baseESPaginator
+}
+
+func (k Client) NewSynapseWorkspacePaginator(filters []BoolFilter, limit *int64) (SynapseWorkspacePaginator, error) {
+	paginator, err := newPaginator(k.es, "microsoft_synapse_workspaces", filters, limit)
+	if err != nil {
+		return SynapseWorkspacePaginator{}, err
+	}
+
+	p := SynapseWorkspacePaginator{
+		paginator: *paginator,
+	}
+
+	return p, nil
+}
+
+func (p SynapseWorkspacePaginator) HasNext() bool {
+	return !p.paginator.done
+}
+
+func (p *SynapseWorkspacePaginator) NextPage(ctx context.Context) ([]SynapseWorkspace, error) {
+	var response SynapseWorkspaceSearchResponse
+	err := p.paginator.search(ctx, &response)
+	if err != nil {
+		return nil, err
+	}
+
+	var values []SynapseWorkspace
+	for _, hit := range response.Hits.Hits {
+		values = append(values, hit.Source)
+	}
+
+	hits := int64(len(response.Hits.Hits))
+	if hits > 0 {
+		p.paginator.updateState(hits, response.Hits.Hits[hits-1].Sort, response.PitID)
+	} else {
+		p.paginator.updateState(hits, nil, "")
+	}
+
+	return values, nil
+}
+
+var listSynapseWorkspaceFilters = map[string]string{}
+
+func ListSynapseWorkspace(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("ListSynapseWorkspace")
+
+	// create service
+	k, err := NewClient(GetConfig(d.Connection))
+	if err != nil {
+		return nil, err
+	}
+
+	paginator, err := k.NewSynapseWorkspacePaginator(buildFilter(d.KeyColumnQuals, listSynapseWorkspaceFilters), d.QueryContext.Limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			d.StreamListItem(ctx, v)
+		}
+	}
+
+	return nil, nil
+}
+
+var getSynapseWorkspaceFilters = map[string]string{
+	"name":           "description.Workspace.Name",
+	"resource_group": "description.ResourceGroup",
+}
+
+func GetSynapseWorkspace(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("GetSynapseWorkspace")
+
+	// create service
+	k, err := NewClient(GetConfig(d.Connection))
+	if err != nil {
+		return nil, err
+	}
+
+	limit := int64(1)
+	paginator, err := k.NewSynapseWorkspacePaginator(buildFilter(d.KeyColumnQuals, getSynapseWorkspaceFilters), &limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			return v, nil
+		}
+	}
+
+	return nil, nil
+}
+
+// ==========================  END: SynapseWorkspace =============================
+
 // ==========================  START: Location =============================
 
 type Location struct {
@@ -5206,7 +9002,7 @@ type LocationPaginator struct {
 }
 
 func (k Client) NewLocationPaginator(filters []BoolFilter, limit *int64) (LocationPaginator, error) {
-	paginator, err := newPaginator(k.es, "microsoft_desktopvirtualization_hostpools_sessionhosts", filters, limit)
+	paginator, err := newPaginator(k.es, "microsoft_resources_subscriptions_locations", filters, limit)
 	if err != nil {
 		return LocationPaginator{}, err
 	}
@@ -5310,6 +9106,141 @@ func GetLocation(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData
 
 // ==========================  END: Location =============================
 
+// ==========================  START: AdUsers =============================
+
+type AdUsers struct {
+	Description azure.AdUsersDescription `json:"description"`
+	Metadata    azure.Metadata           `json:"metadata"`
+}
+
+type AdUsersHit struct {
+	ID      string        `json:"_id"`
+	Score   float64       `json:"_score"`
+	Index   string        `json:"_index"`
+	Type    string        `json:"_type"`
+	Version int64         `json:"_version,omitempty"`
+	Source  AdUsers       `json:"_source"`
+	Sort    []interface{} `json:"sort"`
+}
+
+type AdUsersHits struct {
+	Total SearchTotal  `json:"total"`
+	Hits  []AdUsersHit `json:"hits"`
+}
+
+type AdUsersSearchResponse struct {
+	PitID string      `json:"pit_id"`
+	Hits  AdUsersHits `json:"hits"`
+}
+
+type AdUsersPaginator struct {
+	paginator baseESPaginator
+}
+
+func (k Client) NewAdUsersPaginator(filters []BoolFilter, limit *int64) (AdUsersPaginator, error) {
+	paginator, err := newPaginator(k.es, "microsoft_resources_users", filters, limit)
+	if err != nil {
+		return AdUsersPaginator{}, err
+	}
+
+	p := AdUsersPaginator{
+		paginator: *paginator,
+	}
+
+	return p, nil
+}
+
+func (p AdUsersPaginator) HasNext() bool {
+	return !p.paginator.done
+}
+
+func (p *AdUsersPaginator) NextPage(ctx context.Context) ([]AdUsers, error) {
+	var response AdUsersSearchResponse
+	err := p.paginator.search(ctx, &response)
+	if err != nil {
+		return nil, err
+	}
+
+	var values []AdUsers
+	for _, hit := range response.Hits.Hits {
+		values = append(values, hit.Source)
+	}
+
+	hits := int64(len(response.Hits.Hits))
+	if hits > 0 {
+		p.paginator.updateState(hits, response.Hits.Hits[hits-1].Sort, response.PitID)
+	} else {
+		p.paginator.updateState(hits, nil, "")
+	}
+
+	return values, nil
+}
+
+var listAdUsersFilters = map[string]string{}
+
+func ListAdUsers(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("ListAdUsers")
+
+	// create service
+	k, err := NewClient(GetConfig(d.Connection))
+	if err != nil {
+		return nil, err
+	}
+
+	paginator, err := k.NewAdUsersPaginator(buildFilter(d.KeyColumnQuals, listAdUsersFilters), d.QueryContext.Limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			d.StreamListItem(ctx, v)
+		}
+	}
+
+	return nil, nil
+}
+
+var getAdUsersFilters = map[string]string{
+	"object_id": "description.AdUsers.ObjectID",
+}
+
+func GetAdUsers(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("GetAdUsers")
+
+	// create service
+	k, err := NewClient(GetConfig(d.Connection))
+	if err != nil {
+		return nil, err
+	}
+
+	limit := int64(1)
+	paginator, err := k.NewAdUsersPaginator(buildFilter(d.KeyColumnQuals, getAdUsersFilters), &limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			return v, nil
+		}
+	}
+
+	return nil, nil
+}
+
+// ==========================  END: AdUsers =============================
+
 // ==========================  START: PostgresqlServer =============================
 
 type PostgresqlServer struct {
@@ -5342,7 +9273,7 @@ type PostgresqlServerPaginator struct {
 }
 
 func (k Client) NewPostgresqlServerPaginator(filters []BoolFilter, limit *int64) (PostgresqlServerPaginator, error) {
-	paginator, err := newPaginator(k.es, "microsoft_dbforpostgresql_servergroups", filters, limit)
+	paginator, err := newPaginator(k.es, "microsoft_dbforpostgresql_servers", filters, limit)
 	if err != nil {
 		return PostgresqlServerPaginator{}, err
 	}
@@ -5582,6 +9513,142 @@ func GetStorageSync(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateD
 
 // ==========================  END: StorageSync =============================
 
+// ==========================  START: MssqlManagedInstance =============================
+
+type MssqlManagedInstance struct {
+	Description azure.MssqlManagedInstanceDescription `json:"description"`
+	Metadata    azure.Metadata                        `json:"metadata"`
+}
+
+type MssqlManagedInstanceHit struct {
+	ID      string               `json:"_id"`
+	Score   float64              `json:"_score"`
+	Index   string               `json:"_index"`
+	Type    string               `json:"_type"`
+	Version int64                `json:"_version,omitempty"`
+	Source  MssqlManagedInstance `json:"_source"`
+	Sort    []interface{}        `json:"sort"`
+}
+
+type MssqlManagedInstanceHits struct {
+	Total SearchTotal               `json:"total"`
+	Hits  []MssqlManagedInstanceHit `json:"hits"`
+}
+
+type MssqlManagedInstanceSearchResponse struct {
+	PitID string                   `json:"pit_id"`
+	Hits  MssqlManagedInstanceHits `json:"hits"`
+}
+
+type MssqlManagedInstancePaginator struct {
+	paginator baseESPaginator
+}
+
+func (k Client) NewMssqlManagedInstancePaginator(filters []BoolFilter, limit *int64) (MssqlManagedInstancePaginator, error) {
+	paginator, err := newPaginator(k.es, "microsoft_sql_managedinstances", filters, limit)
+	if err != nil {
+		return MssqlManagedInstancePaginator{}, err
+	}
+
+	p := MssqlManagedInstancePaginator{
+		paginator: *paginator,
+	}
+
+	return p, nil
+}
+
+func (p MssqlManagedInstancePaginator) HasNext() bool {
+	return !p.paginator.done
+}
+
+func (p *MssqlManagedInstancePaginator) NextPage(ctx context.Context) ([]MssqlManagedInstance, error) {
+	var response MssqlManagedInstanceSearchResponse
+	err := p.paginator.search(ctx, &response)
+	if err != nil {
+		return nil, err
+	}
+
+	var values []MssqlManagedInstance
+	for _, hit := range response.Hits.Hits {
+		values = append(values, hit.Source)
+	}
+
+	hits := int64(len(response.Hits.Hits))
+	if hits > 0 {
+		p.paginator.updateState(hits, response.Hits.Hits[hits-1].Sort, response.PitID)
+	} else {
+		p.paginator.updateState(hits, nil, "")
+	}
+
+	return values, nil
+}
+
+var listMssqlManagedInstanceFilters = map[string]string{}
+
+func ListMssqlManagedInstance(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("ListMssqlManagedInstance")
+
+	// create service
+	k, err := NewClient(GetConfig(d.Connection))
+	if err != nil {
+		return nil, err
+	}
+
+	paginator, err := k.NewMssqlManagedInstancePaginator(buildFilter(d.KeyColumnQuals, listMssqlManagedInstanceFilters), d.QueryContext.Limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			d.StreamListItem(ctx, v)
+		}
+	}
+
+	return nil, nil
+}
+
+var getMssqlManagedInstanceFilters = map[string]string{
+	"name":           "description.ManagedInstance.Name",
+	"resource_group": "description.ResourceGroup",
+}
+
+func GetMssqlManagedInstance(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("GetMssqlManagedInstance")
+
+	// create service
+	k, err := NewClient(GetConfig(d.Connection))
+	if err != nil {
+		return nil, err
+	}
+
+	limit := int64(1)
+	paginator, err := k.NewMssqlManagedInstancePaginator(buildFilter(d.KeyColumnQuals, getMssqlManagedInstanceFilters), &limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			return v, nil
+		}
+	}
+
+	return nil, nil
+}
+
+// ==========================  END: MssqlManagedInstance =============================
+
 // ==========================  START: SqlDatabase =============================
 
 type SqlDatabase struct {
@@ -5614,7 +9681,7 @@ type SqlDatabasePaginator struct {
 }
 
 func (k Client) NewSqlDatabasePaginator(filters []BoolFilter, limit *int64) (SqlDatabasePaginator, error) {
-	paginator, err := newPaginator(k.es, "microsoft_synapse_workspaces_sqldatabases", filters, limit)
+	paginator, err := newPaginator(k.es, "microsoft_sql_servers_databases", filters, limit)
 	if err != nil {
 		return SqlDatabasePaginator{}, err
 	}
@@ -5750,7 +9817,7 @@ type SqlServerPaginator struct {
 }
 
 func (k Client) NewSqlServerPaginator(filters []BoolFilter, limit *int64) (SqlServerPaginator, error) {
-	paginator, err := newPaginator(k.es, "microsoft_azurearcdata_sqlserverinstances", filters, limit)
+	paginator, err := newPaginator(k.es, "microsoft_sql_servers", filters, limit)
 	if err != nil {
 		return SqlServerPaginator{}, err
 	}
