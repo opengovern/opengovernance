@@ -236,7 +236,7 @@ type RedisCacheDescription struct {
 
 //  =================== links ==================
 
-//index:
+//index:microsoft_resources_links
 //getfilter:id=description.ResourceLink.ID
 type ResourceLinkDescription struct {
 	ResourceLink links.ResourceLink
@@ -250,7 +250,7 @@ type RoleAssignmentDescription struct {
 	RoleAssignment authorization.RoleAssignment
 }
 
-//index:
+//index:microsoft_authorization_roledefinitions
 //getfilter:name=description.RoleDefinition.Name
 type RoleDefinitionDescription struct {
 	RoleDefinition authorization.RoleDefinition
@@ -258,24 +258,24 @@ type RoleDefinitionDescription struct {
 
 //  =================== security ==================
 
-//index:
+//index:microsoft_security_autoprovisioningsettings
 //getfilter:name=description.AutoProvisioningSetting.Name
 type SecurityCenterAutoProvisioningDescription struct {
 	AutoProvisioningSetting security.AutoProvisioningSetting
 }
 
-//index:
+//index:microsoft_security_securitycontacts
 //getfilter:name=description.Contact.Name
 type SecurityCenterContactDescription struct {
 	Contact security.Contact
 }
 
-//index:
+//index:microsoft_security_locations_jitnetworkaccesspolicies
 type SecurityCenterJitNetworkAccessPolicyDescription struct {
 	JitNetworkAccessPolicy security.JitNetworkAccessPolicy
 }
 
-//index:
+//index:microsoft_security_settings
 //getfilter:name=description.Setting.Name
 type SecurityCenterSettingDescription struct {
 	Setting security.Setting
@@ -289,7 +289,7 @@ type SecurityCenterSubscriptionPricingDescription struct {
 
 //  =================== storage ==================
 
-//index:
+//index:microsoft_storage_storageaccounts_containers
 //getfilter:name=description.ListContainerItem.Name
 //getfilter:resource_group=description.ResourceGroup
 //getfilter:account_name=
@@ -301,7 +301,7 @@ type StorageContainerDescription struct {
 
 //  =================== network ==================
 
-//index:
+//index:microsoft_network_virtualnetworks_subnets
 //getfilter:name=description.Subnet.Name
 //getfilter:resource_group=description.ResourceGroup
 //getfilter:virtual_network_name=
@@ -320,7 +320,7 @@ type VirtualNetworkDescription struct {
 
 //  =================== subscriptions ==================
 
-//index:
+//index:microsoft_resources_tenants
 type TenantDescription struct {
 	TenantIDDescription subscriptions.TenantIDDescription
 }
@@ -407,7 +407,7 @@ type CosmosdbAccountDescription struct {
 //getfilter:resource_group=description.ResourceGroup
 type DataFactoryDescription struct {
 	Factory                    datafactory.Factory
-	PrivateEndPointConnections []datafactory.PrivateEndPointConnection
+	PrivateEndPointConnections []datafactory.PrivateEndpointConnectionResource
 	ResourceGroup              string
 }
 
@@ -547,7 +547,7 @@ type KeyVaultManagedHardwareSecurityModuleDescription struct {
 
 //  =================== secret ==================
 
-//index:
+//index:microsoft_keyvault_vaults_secrets
 //getfilter:name=description.SecretItem.Name
 //getfilter:resource_group=description.ResourceGroup
 type KeyVaultSecretDescription struct {
@@ -579,7 +579,7 @@ type LogAlertDescription struct {
 
 //  =================== insights ==================
 
-//index:
+//index:microsoft_insights_logprofiles
 //getfilter:name=description.LogProfileResource.Name
 //getfilter:resource_group=description.ResourceGroup
 type LogProfileDescription struct {
@@ -733,7 +733,7 @@ type SynapseWorkspaceDescription struct {
 
 //  =================== sub ==================
 
-//index:
+//index:microsoft_resources_subscriptions_locations
 //getfilter:name=description.Location.Name
 //getfilter:resource_group=description.ResourceGroup
 type LocationDescription struct {
@@ -743,7 +743,7 @@ type LocationDescription struct {
 
 //  =================== graphrbac ==================
 
-//index:
+//index:microsoft_resources_users
 //getfilter:object_id=description.AdUsers.ObjectID
 type AdUsersDescription struct {
 	AdUsers      graphrbac.User

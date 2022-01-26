@@ -148,6 +148,19 @@ var resourceTypeToDescriber = map[string]ResourceDescriber{
 	"Microsoft.AppPlatform/Spring":                              DescribeBySubscription(describer.SpringCloudService),
 	"Microsoft.StreamAnalytics/StreamingJobs":                   DescribeBySubscription(describer.StreamAnalyticsJob),
 	"Microsoft.StorageSync/storageSyncServices":                 DescribeBySubscription(describer.StorageSync),
+	"Microsoft.Resources/links":                                 DescribeBySubscription(describer.ResourceLink),
+	"Microsoft.Authorization/roleDefinitions":                   DescribeBySubscription(describer.RoleDefinition),
+	"Microsoft.Security/autoProvisioningSettings":               DescribeBySubscription(describer.SecurityCenterAutoProvisioning),
+	"Microsoft.Security/securityContacts":                       DescribeBySubscription(describer.SecurityCenterContact),
+	"Microsoft.Security/locations/jitNetworkAccessPolicies":     DescribeBySubscription(describer.SecurityCenterJitNetworkAccessPolicy),
+	"Microsoft.Security/settings":                               DescribeBySubscription(describer.SecurityCenterSetting),
+	"Microsoft.Storage/storageAccounts/containers":              DescribeBySubscription(describer.StorageContainer),
+	"Microsoft.Network/virtualNetworks/subnets":                 DescribeBySubscription(describer.Subnet),
+	"Microsoft.Resources/tenants":                               DescribeBySubscription(describer.Tenant),
+	"Microsoft.KeyVault/vaults/secrets":                         DescribeBySubscription(describer.KeyVaultSecret),
+	"Microsoft.Insights/logProfiles":                            DescribeBySubscription(describer.LogProfile),
+	"Microsoft.Resources/subscriptions/locations":               DescribeBySubscription(describer.Location),
+	"Microsoft.Resources/users":                                 DescribeBySubscription(describer.AdUsers),
 }
 
 func ListResourceTypes() []string {
