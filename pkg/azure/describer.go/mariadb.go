@@ -5,6 +5,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/services/mariadb/mgmt/2020-01-01/mariadb"
 	"github.com/Azure/go-autorest/autorest"
 	"gitlab.com/keibiengine/keibi-engine/pkg/azure/model"
+	"strings"
 )
 
 func MariadbServer(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
@@ -18,10 +19,13 @@ func MariadbServer(ctx context.Context, authorizer autorest.Authorizer, subscrip
 
 	var values []Resource
 	for _, v := range *result.Value {
+		resourceGroup := strings.Split(*v.ID, "/")[4]
+
 		values = append(values, Resource{
 			ID: *v.ID,
 			Description: model.MariadbServerDescription{
-				v,
+				Server:        v,
+				ResourceGroup: resourceGroup,
 			},
 		})
 	}

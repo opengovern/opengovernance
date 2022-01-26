@@ -25,11 +25,9 @@ func DataLakeAnalyticsAccount(ctx context.Context, authorizer autorest.Authorize
 	var values []Resource
 	for {
 		for _, account := range result.Values() {
-			var name, resourceGroup string
-
 			splitID := strings.Split(*account.ID, "/")
-			name = *account.Name
-			resourceGroup = splitID[4]
+			name := *account.Name
+			resourceGroup := splitID[4]
 
 			if name == "" || resourceGroup == "" {
 				continue
@@ -46,14 +44,17 @@ func DataLakeAnalyticsAccount(ctx context.Context, authorizer autorest.Authorize
 				return nil, err
 			}
 
-			values = append(values, Resource{
+			values = append(
+				values,
+				Resource{
 				ID: *account.ID,
 				Description: model.DataLakeAnalyticsAccountDescription{
-					account,
-					accountGetOp,
-					accountListOp,
+					DataLakeAnalyticsAccount:      accountGetOp,
+					DiagnosticSettingsResource:    accountListOp.Value,
+					ResourceGroup: resourceGroup,
 				},
-			})
+			},
+			)
 		}
 		if !result.NotDone() {
 			break
@@ -100,9 +101,9 @@ func DataLakeStore(ctx context.Context, authorizer autorest.Authorizer, subscrip
 			values = append(values, Resource{
 				ID: *account.ID,
 				Description: model.DataLakeStoreDescription{
-					account,
-					accountGetOp,
-					accountListOp,
+					DataLakeStoreAccount:   accountGetOp,
+					DiagnosticSettingsResource: accountListOp.Value,
+					ResourceGroup:              resourceGroup,
 				},
 			})
 		}

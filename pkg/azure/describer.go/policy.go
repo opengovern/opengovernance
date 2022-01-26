@@ -21,10 +21,8 @@ func PolicyAssignment(ctx context.Context, authorizer autorest.Authorizer, subsc
 		for _, v := range result.Values() {
 			values = append(values, Resource{
 				ID: *v.ID,
-				Description: JSONAllFieldsMarshaller{
-					model.PolicyAssignmentDescription{
-						Assignment: v,
-					},
+				Description: model.PolicyAssignmentDescription{
+					Assignment: v,
 				},
 			})
 		}

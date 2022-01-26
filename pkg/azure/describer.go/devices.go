@@ -7,6 +7,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/services/iothub/mgmt/2020-03-01/devices"
 	"github.com/Azure/go-autorest/autorest"
 	"gitlab.com/keibiengine/keibi-engine/pkg/azure/model"
+	"strings"
 )
 
 func DevicesProvisioningServicesCertificates(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
@@ -84,6 +85,8 @@ func IOTHub(ctx context.Context, authorizer autorest.Authorizer, subscription st
 	var values []Resource
 	for {
 		for _, iotHubDescription := range result.Values() {
+			resourceGroup := strings.Split(*iotHubDescription.ID, "/")[4]
+
 			id := *iotHubDescription.ID
 
 			devicesListOp, err := client.List(ctx, id)
@@ -93,9 +96,10 @@ func IOTHub(ctx context.Context, authorizer autorest.Authorizer, subscription st
 
 			values = append(values, Resource{
 				ID: *iotHubDescription.ID,
-				Description: model.IothubDescription{
-					iotHubDescription,
-					devicesListOp,
+				Description: model.IOTHubDescription{
+					IotHubDescription:           iotHubDescription,
+					DiagnosticSettingsResources: devicesListOp.Value,
+					ResourceGroup:               resourceGroup,
 				},
 			})
 		}

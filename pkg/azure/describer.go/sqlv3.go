@@ -51,10 +51,28 @@ func SqlServer(ctx context.Context, authorizer autorest.Authorizer, subscription
 			if err != nil {
 				return nil, err
 			}
+			bop := blobOp.Values()
+			for blobOp.NotDone() {
+				err := blobOp.NextWithContext(ctx)
+				if err != nil {
+					return nil, err
+				}
+
+				bop = append(bop, blobOp.Values()...)
+			}
 
 			securityOp, err := serverSecurityClient.ListByServer(ctx, resourceGroupName, *server.Name)
 			if err != nil {
 				return nil, err
+			}
+			sop := securityOp.Values()
+			for securityOp.NotDone() {
+				err := securityOp.NextWithContext(ctx)
+				if err != nil {
+					return nil, err
+				}
+
+				sop = append(sop, securityOp.Values()...)
 			}
 
 			adminOp, err := serverAzureClient.ListByServer(ctx, resourceGroupName, *server.Name)
@@ -68,6 +86,15 @@ func SqlServer(ctx context.Context, authorizer autorest.Authorizer, subscription
 			if err != nil {
 				return nil, err
 			}
+			vop := vulnerabilityOp.Values()
+			for vulnerabilityOp.NotDone() {
+				err := vulnerabilityOp.NextWithContext(ctx)
+				if err != nil {
+					return nil, err
+				}
+
+				vop = append(vop, vulnerabilityOp.Values()...)
+			}
 
 			firewallOp, err := firewallRulesClient.ListByServer(ctx, resourceGroupName, *server.Name)
 			if err != nil {
@@ -78,19 +105,28 @@ func SqlServer(ctx context.Context, authorizer autorest.Authorizer, subscription
 			if err != nil {
 				return nil, err
 			}
+			eop := encryptionProtectorOp.Values()
+			for encryptionProtectorOp.NotDone() {
+				err := encryptionProtectorOp.NextWithContext(ctx)
+				if err != nil {
+					return nil, err
+				}
+
+				eop = append(eop, encryptionProtectorOp.Values()...)
+			}
 
 			pvEndpointOp, err := privateEndpointClient.ListByServer(ctx, resourceGroupName, *server.Name)
 			if err != nil {
 				return nil, err
 			}
-			vop := pvEndpointOp.Values()
+			pop := pvEndpointOp.Values()
 			for pvEndpointOp.NotDone() {
 				err := pvEndpointOp.NextWithContext(ctx)
 				if err != nil {
 					return nil, err
 				}
 
-				vop = append(vop, pvEndpointOp.Values()...)
+				pop = append(pop, pvEndpointOp.Values()...)
 			}
 
 			networkOp, err := virtualNetworkClient.ListByServer(ctx, resourceGroupName, *server.Name)
@@ -110,15 +146,16 @@ func SqlServer(ctx context.Context, authorizer autorest.Authorizer, subscription
 			values = append(values, Resource{
 				ID: *server.ID,
 				Description: model.SqlServerDescription{
-					server,
-					blobOp,
-					securityOp,
-					adminOp,
-					vulnerabilityOp,
-					firewallOp,
-					encryptionProtectorOp,
-					vop,
-					nop,
+					Server:                         server,
+					ServerBlobAuditingPolicies:     bop,
+					ServerSecurityAlertPolicies:    sop,
+					ServerAzureADAdministrators:    adminOp.Value,
+					ServerVulnerabilityAssessments: vop,
+					FirewallRules:                  firewallOp.Value,
+					EncryptionProtectors:           eop,
+					PrivateEndpointConnections:     pop,
+					VirtualNetworkRules:            nop,
+					ResourceGroup:                  resourceGroupName,
 				},
 			})
 		}

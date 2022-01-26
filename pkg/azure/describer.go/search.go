@@ -6,6 +6,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/services/search/mgmt/2020-08-01/search"
 	"github.com/Azure/go-autorest/autorest"
 	"gitlab.com/keibiengine/keibi-engine/pkg/azure/model"
+	"strings"
 )
 
 func SearchService(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
@@ -22,6 +23,8 @@ func SearchService(ctx context.Context, authorizer autorest.Authorizer, subscrip
 	var values []Resource
 	for {
 		for _, service := range result.Values() {
+			resourceGroup := strings.Split(*service.ID, "/")[4]
+
 			id := service.ID
 			searchListOp, err := client.List(ctx, *id)
 			if err != nil {
@@ -30,8 +33,9 @@ func SearchService(ctx context.Context, authorizer autorest.Authorizer, subscrip
 			values = append(values, Resource{
 				ID: *service.ID,
 				Description: model.SearchServiceDescription{
-					service,
-					searchListOp,
+					Service:                     service,
+					DiagnosticSettingsResources: searchListOp.Value,
+					ResourceGroup:               resourceGroup,
 				},
 			})
 		}

@@ -8,6 +8,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/profiles/latest/hybridcompute/mgmt/hybridcompute"
 	"github.com/Azure/azure-sdk-for-go/profiles/latest/resources/mgmt/links"
 	"github.com/Azure/azure-sdk-for-go/profiles/latest/resources/mgmt/policy"
+	sub "github.com/Azure/azure-sdk-for-go/profiles/latest/subscription/mgmt/subscription"
 	"github.com/Azure/azure-sdk-for-go/services/apimanagement/mgmt/2020-12-01/apimanagement"
 	"github.com/Azure/azure-sdk-for-go/services/appconfiguration/mgmt/2020-06-01/appconfiguration"
 	"github.com/Azure/azure-sdk-for-go/services/appplatform/mgmt/2020-07-01/appplatform"
@@ -17,29 +18,33 @@ import (
 	"github.com/Azure/azure-sdk-for-go/services/containerservice/mgmt/2021-02-01/containerservice"
 	"github.com/Azure/azure-sdk-for-go/services/databoxedge/mgmt/2019-07-01/databoxedge"
 	"github.com/Azure/azure-sdk-for-go/services/datafactory/mgmt/2018-06-01/datafactory"
-	"github.com/Azure/azure-sdk-for-go/services/datalake/analytics/mgmt/2016-11-01/account"
-	"github.com/Azure/azure-sdk-for-go/services/datalake/store/mgmt/2016-11-01/account"
+	analytics "github.com/Azure/azure-sdk-for-go/services/datalake/analytics/mgmt/2016-11-01/account"
+	store "github.com/Azure/azure-sdk-for-go/services/datalake/store/mgmt/2016-11-01/account"
 	"github.com/Azure/azure-sdk-for-go/services/frontdoor/mgmt/2020-05-01/frontdoor"
+	"github.com/Azure/azure-sdk-for-go/services/guestconfiguration/mgmt/2020-06-25/guestconfiguration"
 	"github.com/Azure/azure-sdk-for-go/services/hdinsight/mgmt/2018-06-01/hdinsight"
 	"github.com/Azure/azure-sdk-for-go/services/iothub/mgmt/2020-03-01/devices"
 	"github.com/Azure/azure-sdk-for-go/services/keyvault/mgmt/2019-09-01/keyvault"
+	secret "github.com/Azure/azure-sdk-for-go/services/keyvault/v7.1/keyvault"
 	"github.com/Azure/azure-sdk-for-go/services/kusto/mgmt/2021-01-01/kusto"
 	"github.com/Azure/azure-sdk-for-go/services/logic/mgmt/2019-05-01/logic"
 	"github.com/Azure/azure-sdk-for-go/services/mariadb/mgmt/2020-01-01/mariadb"
 	"github.com/Azure/azure-sdk-for-go/services/mysql/mgmt/2020-01-01/mysql"
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2020-05-01/network"
-	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2021-02-01/network"
+	newnetwork "github.com/Azure/azure-sdk-for-go/services/network/mgmt/2021-02-01/network"
 	"github.com/Azure/azure-sdk-for-go/services/postgresql/mgmt/2020-01-01/postgresql"
 	"github.com/Azure/azure-sdk-for-go/services/preview/authorization/mgmt/2018-09-01-preview/authorization"
 	"github.com/Azure/azure-sdk-for-go/services/preview/containerregistry/mgmt/2020-11-01-preview/containerregistry"
 	"github.com/Azure/azure-sdk-for-go/services/preview/cosmos-db/mgmt/2020-04-01-preview/documentdb"
 	"github.com/Azure/azure-sdk-for-go/services/preview/eventgrid/mgmt/2021-06-01-preview/eventgrid"
 	"github.com/Azure/azure-sdk-for-go/services/preview/eventhub/mgmt/2018-01-01-preview/eventhub"
-	"github.com/Azure/azure-sdk-for-go/services/preview/keyvault/mgmt/2020-04-01-preview/keyvault"
+	previewKeyvault "github.com/Azure/azure-sdk-for-go/services/preview/keyvault/mgmt/2020-04-01-preview/keyvault"
 	"github.com/Azure/azure-sdk-for-go/services/preview/machinelearningservices/mgmt/2020-02-18-preview/machinelearningservices"
 	"github.com/Azure/azure-sdk-for-go/services/preview/security/mgmt/v1.0/security"
 	"github.com/Azure/azure-sdk-for-go/services/preview/servicebus/mgmt/2021-06-01-preview/servicebus"
-	"github.com/Azure/azure-sdk-for-go/services/preview/sql/mgmt/v5.0/sql"
+	"github.com/Azure/azure-sdk-for-go/services/preview/sql/mgmt/2017-03-01-preview/sql"
+	sqlv3 "github.com/Azure/azure-sdk-for-go/services/preview/sql/mgmt/v3.0/sql"
+	sqlv5 "github.com/Azure/azure-sdk-for-go/services/preview/sql/mgmt/v5.0/sql"
 	"github.com/Azure/azure-sdk-for-go/services/redis/mgmt/2020-06-01/redis"
 	"github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2019-06-01/subscriptions"
 	"github.com/Azure/azure-sdk-for-go/services/search/mgmt/2020-08-01/search"
@@ -62,143 +67,158 @@ type Metadata struct {
 
 //index:microsoft_apimanagement_service
 //getfilter:name=description.APIManagement.Name
-//getfilter:resource_group=
+//getfilter:resource_group=description.ResourceGroup
 type APIManagementDescription struct {
 	APIManagement               apimanagement.ServiceResource
 	DiagnosticSettingsResources []insights.DiagnosticSettingsResource
+	ResourceGroup string
 }
 
 //  ===================  App Configuration ==================
 
 //index:microsoft_appconfiguration_configurationstores
 //getfilter:name=description.ConfigurationStore.Name
-//getfilter:resource_group=
+//getfilter:resource_group=description.ResourceGroup
 type AppConfigurationDescription struct {
 	ConfigurationStore          appconfiguration.ConfigurationStore
 	DiagnosticSettingsResources []insights.DiagnosticSettingsResource
+	ResourceGroup string
 }
 
 //  =================== web ==================
 
 //index:microsoft_web_hostingenvironments
-//getfilter:name=
-//getfilter:resource_group=
+//getfilter:name=description.AppServiceEnvironmentResource.Name
+//getfilter:resource_group=description.ResourceGroup
 type AppServiceEnvironmentDescription struct {
 	AppServiceEnvironmentResource web.AppServiceEnvironmentResource
+	ResourceGroup string
 }
 
 //index:
-//getfilter:name=
-//getfilter:resource_group=
+//getfilter:name=description.Site.Name
+//getfilter:resource_group=description.ResourceGroup
 type AppServiceFunctionAppDescription struct {
 	Site               web.Site
 	SiteAuthSettings   web.SiteAuthSettings
 	SiteConfigResource web.SiteConfigResource
+	ResourceGroup string
 }
 
 //index:
-//getfilter:name=
-//getfilter:resource_group=
+//getfilter:name=description.Site.Name
+//getfilter:resource_group=description.ResourceGroup
 type AppServiceWebAppDescription struct {
 	Site               web.Site
 	SiteAuthSettings   web.SiteAuthSettings
 	SiteConfigResource web.SiteConfigResource
 	VnetInfo           web.VnetInfo
+	ResourceGroup string
 }
 
 //  =================== compute ==================
 
 //index:microsoft_compute_disks
-//getfilter:name=
-//getfilter:resource_group=
+//getfilter:name=description.Disk.Name
+//getfilter:resource_group=description.ResourceGroup
 type ComputeDiskDescription struct {
 	Disk compute.Disk
+	ResourceGroup string
 }
 
 //index:microsoft_compute_diskaccesses
-//getfilter:name=
-//getfilter:resource_group=
+//getfilter:name=description.DiskAccess.Name
+//getfilter:resource_group=description.ResourceGroup
 type ComputeDiskAccessDescription struct {
 	DiskAccess compute.DiskAccess
+	ResourceGroup string
 }
 
 //index:microsoft_compute_virtualmachinescalesets
-//getfilter:name=
-//getfilter:resource_group=
+//getfilter:name=description.VirtualMachineScaleSet.Name
+//getfilter:resource_group=description.ResourceGroup
 type ComputeVirtualMachineScaleSetDescription struct {
 	VirtualMachineScaleSet           compute.VirtualMachineScaleSet
 	VirtualMachineScaleSetExtensions []compute.VirtualMachineScaleSetExtension
+	ResourceGroup string
 }
 
 //  =================== databoxedge ==================
 
 //index:microsoft_databoxedge_databoxedgedevices
-//getfilter:name=
-//getfilter:resource_group=
+//getfilter:name=description.Device.Name
+//getfilter:resource_group=description.ResourceGroup
 type DataboxEdgeDeviceDescription struct {
 	Device databoxedge.Device
+	ResourceGroup string
 }
 
 //  =================== healthcareapis ==================
 
 //index:microsoft_healthcareapis_services
-//getfilter:name=
-//getfilter:resource_group=
+//getfilter:name=description.ServicesDescription.Name
+//getfilter:resource_group=description.ResourceGroup
 type HealthcareServiceDescription struct {
 	ServicesDescription         healthcareapis.ServicesDescription
 	DiagnosticSettingsResources *[]insights.DiagnosticSettingsResource
 	PrivateEndpointConnections  *[]healthcareapis.PrivateEndpointConnection
+	ResourceGroup string
 }
 
 //  =================== storagecache ==================
 
 //index:microsoft_storagecache_caches
-//getfilter:name=
-//getfilter:resource_group=
+//getfilter:name=description.Cache.Name
+//getfilter:resource_group=description.ResourceGroup
 type HpcCacheDescription struct {
 	Cache storagecache.Cache
+	ResourceGroup string
 }
 
 //  =================== keyvault ==================
 
 //index:microsoft_keyvault_vaults
 //getfilter:vault_name=
-//getfilter:name=
-//getfilter:resource_group=
+//getfilter:name=description.Cache.Name
+//getfilter:resource_group=description.ResourceGroup
 type KeyVaultKeyDescription struct {
 	Key keyvault.Key
+	ResourceGroup string
 }
 
 //  =================== containerservice ==================
 
 //index:microsoft_containerservice_managedclusters
-//getfilter:name=
-//getfilter:resource_group=
+//getfilter:name=description.ManagedCluster.Name
+//getfilter:resource_group=description.ResourceGroup
 type KubernetesClusterDescription struct {
 	ManagedCluster containerservice.ManagedCluster
+	ResourceGroup string
 }
 
 //  =================== network ==================
 
 //index:microsoft_network_networkinterfaces
-//getfilter:name=
-//getfilter:resource_group=
+//getfilter:name=description.Interface.Name
+//getfilter:resource_group=description.ResourceGroup
 type NetworkInterfaceDescription struct {
 	Interface network.Interface
+	ResourceGroup string
 }
 
 //index:microsoft_network_networkwatchers
 //getfilter:network_watcher_name=
-//getfilter:name=
-//getfilter:resource_group=
+//getfilter:name=description.ManagedCluster.Name
+//getfilter:resource_group=description.ResourceGroup
 type NetworkWatcherFlowLogDescription struct {
 	FlowLog network.FlowLog
+	ResourceGroup string
 }
 
 //  =================== policy ==================
 
 //index:microsoft_authorization_policyassignments
-//getfilter:name=
+//getfilter:name=description.Assignment.Name
 type PolicyAssignmentDescription struct {
 	Assignment policy.Assignment
 }
@@ -206,16 +226,17 @@ type PolicyAssignmentDescription struct {
 //  =================== redis ==================
 
 //index:microsoft_cache_redis
-//getfilter:name=
-//getfilter:resource_group=
+//getfilter:name=description.ResourceType.Name
+//getfilter:resource_group=description.ResourceGroup
 type RedisCacheDescription struct {
 	ResourceType redis.ResourceType
+	ResourceGroup string
 }
 
 //  =================== links ==================
 
 //index:
-//getfilter:id=
+//getfilter:id=description.ResourceLink.ID
 type ResourceLinkDescription struct {
 	ResourceLink links.ResourceLink
 }
@@ -223,13 +244,13 @@ type ResourceLinkDescription struct {
 //  =================== authorization ==================
 
 //index:microsoft_authorization_elevateaccessroleassignment
-//getfilter:id=
+//getfilter:id=description.RoleAssignment.ID
 type RoleAssignmentDescription struct {
 	RoleAssignment authorization.RoleAssignment
 }
 
 //index:
-//getfilter:name=
+//getfilter:name=description.RoleDefinition.Name
 type RoleDefinitionDescription struct {
 	RoleDefinition authorization.RoleDefinition
 }
@@ -237,13 +258,13 @@ type RoleDefinitionDescription struct {
 //  =================== security ==================
 
 //index:
-//getfilter:name=
+//getfilter:name=description.AutoProvisioningSetting.Name
 type SecurityCenterAutoProvisioningDescription struct {
 	AutoProvisioningSetting security.AutoProvisioningSetting
 }
 
 //index:
-//getfilter:name=
+//getfilter:name=description.Contact.Name
 type SecurityCenterContactDescription struct {
 	Contact security.Contact
 }
@@ -254,13 +275,13 @@ type SecurityCenterJitNetworkAccessPolicyDescription struct {
 }
 
 //index:
-//getfilter:name=
+//getfilter:name=description.Setting.Name
 type SecurityCenterSettingDescription struct {
 	Setting security.Setting
 }
 
 //index:microsoft_security_pricings
-//getfilter:name=
+//getfilter:name=description.Pricing.Name
 type SecurityCenterSubscriptionPricingDescription struct {
 	Pricing security.Pricing
 }
@@ -268,29 +289,32 @@ type SecurityCenterSubscriptionPricingDescription struct {
 //  =================== storage ==================
 
 //index:
-//getfilter:name=
-//getfilter:resource_group=
+//getfilter:name=description.ListContainerItem.Name
+//getfilter:resource_group=description.ResourceGroup
 //getfilter:account_name=
 type StorageContainerDescription struct {
 	ListContainerItem  storage.ListContainerItem
 	ImmutabilityPolicy storage.ImmutabilityPolicy
+	ResourceGroup string
 }
 
 //  =================== network ==================
 
 //index:
-//getfilter:name=
-//getfilter:resource_group=
+//getfilter:name=description.Subnet.Name
+//getfilter:resource_group=description.ResourceGroup
 //getfilter:virtual_network_name=
 type SubnetDescription struct {
 	Subnet network.Subnet
+	ResourceGroup string
 }
 
 //index:microsoft_network_virtualnetworks
-//getfilter:name=
-//getfilter:resource_group=
+//getfilter:name=description.VirtualNetwork.Name
+//getfilter:resource_group=description.ResourceGroup
 type VirtualNetworkDescription struct {
 	VirtualNetwork network.VirtualNetwork
+	ResourceGroup string
 }
 
 //  =================== subscriptions ==================
@@ -300,2279 +324,504 @@ type TenantDescription struct {
 	TenantIDDescription subscriptions.TenantIDDescription
 }
 
+//index:
+type SubscriptionDescription struct {
+	Subscription subscriptions.Subscription
+}
+
 //  =================== network ==================
 
 //index:Microsoft_Network_applicationGateways
-//getfilter:name=
-//getfilter:resource_group=
+//getfilter:name=description.ApplicationGateway.Name
+//getfilter:resource_group=description.ResourceGroup
 type ApplicationGatewayDescription struct {
-	obj0 network.TypeName
-
-	obj1 network.TypeName
+	ApplicationGateway          newnetwork.ApplicationGateway
+	DiagnosticSettingsResources *[]insights.DiagnosticSettingsResource
+	ResourceGroup               string
 }
 
 //  =================== batch ==================
 
 //index:Microsoft_Batch_batchAccounts
-//getfilter:name=
-//getfilter:resource_group=
+//getfilter:name=description.Account.Name
+//getfilter:resource_group=description.ResourceGroup
 type BatchAccountDescription struct {
-	obj0 batch.TypeName
-
-	obj1 batch.TypeName
+	Account                     batch.Account
+	DiagnosticSettingsResources *[]insights.DiagnosticSettingsResource
+	ResourceGroup               string
 }
 
 //  =================== cognitiveservices ==================
 
 //index:
-//getfilter:name=
-//getfilter:resource_group=
+//getfilter:name=description.Account.Name
+//getfilter:resource_group=description.ResourceGroup
 type CognitiveAccountDescription struct {
-	obj0 cognitiveservices.TypeName
-
-	obj1 cognitiveservices.TypeName
+	Account                     cognitiveservices.Account
+	DiagnosticSettingsResources *[]insights.DiagnosticSettingsResource
+	ResourceGroup               string
 }
 
 //  =================== compute ==================
 
 //index:
-//getfilter:name=
-//getfilter:resource_group=
+//getfilter:name=description.VirtualMachine.Name
+//getfilter:resource_group=description.ResourceGroup
 type ComputeVirtualMachineDescription struct {
-	obj0 compute.TypeName
-
-	obj1 compute.TypeName
-
-	obj2 compute.TypeName
-
-	obj3 compute.TypeName
-	obj4 compute.TypeName
-	obj5 compute.TypeName
+	VirtualMachine             compute.VirtualMachine
+	VirtualMachineInstanceView compute.VirtualMachineInstanceView
+	InterfaceIPConfigurations  []network.InterfaceIPConfiguration
+	PublicIPs                  []string
+	VirtualMachineExtension    *[]compute.VirtualMachineExtension
+	Assignments                *[]guestconfiguration.Assignment
+	ResourceGroup              string
 }
 
 //  =================== containerregistry ==================
 
 //index:Microsoft_ContainerRegistry_registries
-//getfilter:name=
-//getfilter:resource_group=
+//getfilter:name=description.Registry.Name
+//getfilter:resource_group=description.ResourceGroup
 type ContainerRegistryDescription struct {
-	obj0 containerregistry.TypeName
-
-	obj1 containerregistry.TypeName
-
-	obj2 containerregistry.TypeName
-}
-
-//  =================== containerregistry ==================
-
-//index:Microsoft_ContainerRegistry_registries
-//getfilter:name=
-//getfilter:resource_group=
-type ContainerRegistryDescription struct {
-	obj0 containerregistry.TypeName
-
-	obj1 containerregistry.TypeName
-
-	obj2 containerregistry.TypeName
-}
-
-//  =================== containerregistry ==================
-
-//index:Microsoft_ContainerRegistry_registries
-//getfilter:name=
-//getfilter:resource_group=
-type ContainerRegistryDescription struct {
-	obj0 containerregistry.TypeName
-
-	obj1 containerregistry.TypeName
-
-	obj2 containerregistry.TypeName
+	Registry                      containerregistry.Registry
+	RegistryListCredentialsResult containerregistry.RegistryListCredentialsResult
+	RegistryUsages                *[]containerregistry.RegistryUsage
+	ResourceGroup                 string
 }
 
 //  =================== documentdb ==================
 
 //index:
-//getfilter:name=
-//getfilter:resource_group=
+//getfilter:name=description.DatabaseAccountGetResults.Name
+//getfilter:resource_group=description.ResourceGroup
 type CosmosdbAccountDescription struct {
-	obj0 documentdb.TypeName
+	DatabaseAccountGetResults documentdb.DatabaseAccountGetResults
+	ResourceGroup             string
 }
 
 //  =================== datafactory ==================
 
 //index:Microsoft_DataFactory_dataFactories
-//getfilter:name=
-//getfilter:resource_group=
+//getfilter:name=description.Factory.Name
+//getfilter:resource_group=description.ResourceGroup
 type DataFactoryDescription struct {
-	obj0 datafactory.TypeName
-
-	obj1 datafactory.TypeName
+	Factory datafactory.Factory
+	PrivateEndPointConnections []datafactory.PrivateEndPointConnection
+	ResourceGroup             string
 }
 
 //  =================== account ==================
 
 //index:
-//getfilter:name=
-//getfilter:resource_group=
+//getfilter:name=description.DataLakeAnalyticsAccount.Name
+//getfilter:resource_group=description.ResourceGroup
 type DataLakeAnalyticsAccountDescription struct {
-	obj0 account.TypeName
-
-	obj1 account.TypeName
-
-	obj2 account.TypeName
+	DataLakeAnalyticsAccount   analytics.DataLakeAnalyticsAccount
+	DiagnosticSettingsResource *[]insights.DiagnosticSettingsResource
+	ResourceGroup              string
 }
 
 //  =================== account ==================
 
 //index:Microsoft_DataLakeStore_accounts
-//getfilter:name=
-//getfilter:resource_group=
+//getfilter:name=description.DataLakeStoreAccount.Name
+//getfilter:resource_group=description.ResourceGroup
 type DataLakeStoreDescription struct {
-	obj0 account.TypeName
-
-	obj1 account.TypeName
-
-	obj2 account.TypeName
+	DataLakeStoreAccount       store.DataLakeStoreAccount
+	DiagnosticSettingsResource *[]insights.DiagnosticSettingsResource
+	ResourceGroup              string
 }
 
 //  =================== insights ==================
 
 //index:microsoft_insights_guestdiagnosticsettings
-//getfilter:name=
-//getfilter:resource_group=
+//getfilter:name=description.DiagnosticSettingsResource.Name
+//getfilter:resource_group=description.ResourceGroup
 type DiagnosticSettingDescription struct {
-	obj0 insights.TypeName
+	DiagnosticSettingsResource insights.DiagnosticSettingsResource
+	ResourceGroup              string
 }
 
 //  =================== eventgrid ==================
 
 //index:
-//getfilter:name=
-//getfilter:resource_group=
-type EventgridDomainDescription struct {
-	obj0 eventgrid.TypeName
-
-	obj1 eventgrid.TypeName
+//getfilter:name=description.Domain.Name
+//getfilter:resource_group=description.ResourceGroup
+type EventGridDomainDescription struct {
+	Domain                      eventgrid.Domain
+	DiagnosticSettingsResources *[]insights.DiagnosticSettingsResource
+	ResourceGroup               string
 }
 
 //  =================== eventgrid ==================
 
 //index:
-//getfilter:name=
-//getfilter:resource_group=
-type EventgridDomainDescription struct {
-	obj0 eventgrid.TypeName
-
-	obj1 eventgrid.TypeName
-}
-
-//  =================== eventgrid ==================
-
-//index:
-//getfilter:name=
-//getfilter:resource_group=
-type EventgridTopicDescription struct {
-	obj0 eventgrid.TypeName
-
-	obj1 eventgrid.TypeName
+//getfilter:name=description.Topic.Name
+//getfilter:resource_group=description.ResourceGroup
+type EventGridTopicDescription struct {
+	Topic                       eventgrid.Topic
+	DiagnosticSettingsResources *[]insights.DiagnosticSettingsResource
+	ResourceGroup               string
 }
 
 //  =================== eventhub ==================
 
 //index:
-//getfilter:name=
-//getfilter:resource_group=
+//getfilter:name=description.EHNamespace.Name
+//getfilter:resource_group=description.ResourceGroup
 type EventhubNamespaceDescription struct {
-	obj0 eventhub.TypeName
-
-	obj1 eventhub.TypeName
-
-	obj2 eventhub.TypeName
-
-	obj3 eventhub.TypeName
-}
-
-//  =================== eventhub ==================
-
-//index:
-//getfilter:name=
-//getfilter:resource_group=
-type EventhubNamespaceDescription struct {
-	obj0 eventhub.TypeName
-
-	obj1 eventhub.TypeName
-
-	obj2 eventhub.TypeName
-
-	obj3 eventhub.TypeName
-}
-
-//  =================== eventhub ==================
-
-//index:
-//getfilter:name=
-//getfilter:resource_group=
-type EventhubNamespaceDescription struct {
-	obj0 eventhub.TypeName
-
-	obj1 eventhub.TypeName
-
-	obj2 eventhub.TypeName
-
-	obj3 eventhub.TypeName
+	EHNamespace                 eventhub.EHNamespace
+	DiagnosticSettingsResources *[]insights.DiagnosticSettingsResource
+	NetworkRuleSet eventhub.NetworkRuleSet
+	PrivateEndpointConnection []eventhub.PrivateEndpointConnection
+	ResourceGroup             string
 }
 
 //  =================== frontdoor ==================
 
 //index:Microsoft_Network_frontdoors
-//getfilter:name=
-//getfilter:resource_group=
+//getfilter:name=description.FrontDoor.Name
+//getfilter:resource_group=description.ResourceGroup
 type FrontdoorDescription struct {
-	obj0 frontdoor.TypeName
-
-	obj1 frontdoor.TypeName
+	FrontDoor                   frontdoor.FrontDoor
+	DiagnosticSettingsResources *[]insights.DiagnosticSettingsResource
+	ResourceGroup               string
 }
 
 //  =================== hdinsight ==================
 
 //index:Microsoft_HDInsight_clusterpools
-//getfilter:name=
-//getfilter:resource_group=
+//getfilter:name=description.Cluster.Name
+//getfilter:resource_group=description.ResourceGroup
 type HdinsightClusterDescription struct {
-	obj0 hdinsight.TypeName
-
-	obj1 hdinsight.TypeName
+	Cluster                     hdinsight.Cluster
+	DiagnosticSettingsResources *[]insights.DiagnosticSettingsResource
+	ResourceGroup               string
 }
 
 //  =================== hybridcompute ==================
 
 //index:
-//getfilter:name=
-//getfilter:resource_group=
+//getfilter:name=description.Machine.Name
+//getfilter:resource_group=description.ResourceGroup
 type HybridComputeMachineDescription struct {
-	obj0 hybridcompute.TypeName
-
-	obj1 hybridcompute.TypeName
+	Machine           hybridcompute.Machine
+	MachineExtensions []hybridcompute.MachineExtension
+	ResourceGroup     string
 }
 
 //  =================== devices ==================
 
 //index:microsoft_devices_elasticpools_iothubtenants
-//getfilter:name=
-//getfilter:resource_group=
-type IothubDescription struct {
-	obj0 devices.TypeName
-
-	obj1 devices.TypeName
+//getfilter:name=description.IotHubDescription.Name
+//getfilter:resource_group=description.ResourceGroup
+type IOTHubDescription struct {
+	IotHubDescription           devices.IotHubDescription
+	DiagnosticSettingsResources *[]insights.DiagnosticSettingsResource
+	ResourceGroup               string
 }
 
 //  =================== keyvault ==================
 
 //index:microsoft_keyvault_hsmpools
-//getfilter:name=
-//getfilter:resource_group=
+//getfilter:name=description.Resource.Name
+//getfilter:resource_group=description.ResourceGroup
 type KeyVaultDescription struct {
-	obj0 keyvault.TypeName
-
-	obj1 keyvault.TypeName
-
-	obj2 keyvault.TypeName
+	Resource                    keyvault.Resource
+	Vault                       keyvault.Vault
+	DiagnosticSettingsResources *[]insights.DiagnosticSettingsResource
+	ResourceGroup               string
 }
 
 //  =================== keyvault ==================
 
 //index:
-//getfilter:name=
-//getfilter:resource_group=
+//getfilter:name=description.ManagedHsm.Name
+//getfilter:resource_group=description.ResourceGroup
 type KeyVaultManagedHardwareSecurityModuleDescription struct {
-	obj0 keyvault.TypeName
-
-	obj1 keyvault.TypeName
-}
-
-//  =================== keyvault ==================
-
-//index:
-//getfilter:name=
-//getfilter:resource_group=
-type KeyVaultManagedHardwareSecurityModuleDescription struct {
-	obj0 keyvault.TypeName
-
-	obj1 keyvault.TypeName
-}
-
-//  =================== keyvault ==================
-
-//index:
-//getfilter:name=
-//getfilter:resource_group=
-type KeyVaultManagedHardwareSecurityModuleDescription struct {
-	obj0 keyvault.TypeName
-
-	obj1 keyvault.TypeName
+	ManagedHsm                  previewKeyvault.ManagedHsm
+	DiagnosticSettingsResources *[]insights.DiagnosticSettingsResource
+	ResourceGroup               string
 }
 
 //  =================== secret ==================
 
 //index:
-//getfilter:name=
-//getfilter:resource_group=
+//getfilter:name=description.SecretItem.Name
+//getfilter:resource_group=description.ResourceGroup
 type KeyVaultSecretDescription struct {
-	obj0 secret.TypeName
-
-	obj1 secret.TypeName
-
-	obj2 secret.TypeName
+	SecretItem    secret.SecretItem
+	SecretBundle  secret.SecretBundle
+	TurboData     map[string]interface{}
+	ResourceGroup string
 }
 
 //  =================== kusto ==================
 
 //index:
-//getfilter:name=
-//getfilter:resource_group=
+//getfilter:name=description.Cluster.Name
+//getfilter:resource_group=description.ResourceGroup
 type KustoClusterDescription struct {
-	obj0 kusto.TypeName
-}
-
-//  =================== kusto ==================
-
-//index:
-//getfilter:name=
-//getfilter:resource_group=
-type KustoClusterDescription struct {
-	obj0 kusto.TypeName
-}
-
-//  =================== kusto ==================
-
-//index:
-//getfilter:name=
-//getfilter:resource_group=
-type KustoClusterDescription struct {
-	obj0 kusto.TypeName
-}
-
-//  =================== sub ==================
-
-//index:microsoft_desktopvirtualization_hostpools_sessionhosts
-//getfilter:name=
-//getfilter:resource_group=
-type LocationDescription struct {
-	obj0 sub.TypeName
+	Cluster       kusto.Cluster
+	ResourceGroup string
 }
 
 //  =================== insights ==================
 
 //index:microsoft_insights_activitylogalerts
-//getfilter:name=
-//getfilter:resource_group=
+//getfilter:name=description.ActivityLogAlertResource.Name
+//getfilter:resource_group=description.ResourceGroup
 type LogAlertDescription struct {
-	obj0 insights.TypeName
-}
-
-//  =================== insights ==================
-
-//index:microsoft_insights_activitylogalerts
-//getfilter:name=
-//getfilter:resource_group=
-type LogAlertDescription struct {
-	obj0 insights.TypeName
+	ActivityLogAlertResource insights.ActivityLogAlertResource
+	ResourceGroup            string
 }
 
 //  =================== insights ==================
 
 //index:
-//getfilter:name=
-//getfilter:resource_group=
+//getfilter:name=description.LogProfileResource.Name
+//getfilter:resource_group=description.ResourceGroup
 type LogProfileDescription struct {
-	obj0 insights.TypeName
-}
-
-//  =================== insights ==================
-
-//index:
-//getfilter:name=
-//getfilter:resource_group=
-type LogProfileDescription struct {
-	obj0 insights.TypeName
-}
-
-//  =================== insights ==================
-
-//index:
-//getfilter:name=
-//getfilter:resource_group=
-type LogProfileDescription struct {
-	obj0 insights.TypeName
+	LogProfileResource insights.LogProfileResource
+	ResourceGroup      string
 }
 
 //  =================== logic ==================
 
 //index:
-//getfilter:name=
-//getfilter:resource_group=
+//getfilter:name=description.Workflow.Name
+//getfilter:resource_group=description.ResourceGroup
 type LogicAppWorkflowDescription struct {
-	obj0 logic.TypeName
-
-	obj1 logic.TypeName
-}
-
-//  =================== logic ==================
-
-//index:
-//getfilter:name=
-//getfilter:resource_group=
-type LogicAppWorkflowDescription struct {
-	obj0 logic.TypeName
-
-	obj1 logic.TypeName
-}
-
-//  =================== logic ==================
-
-//index:
-//getfilter:name=
-//getfilter:resource_group=
-type LogicAppWorkflowDescription struct {
-	obj0 logic.TypeName
-
-	obj1 logic.TypeName
+	Workflow                    logic.Workflow
+	DiagnosticSettingsResources *[]insights.DiagnosticSettingsResource
+	ResourceGroup               string
 }
 
 //  =================== machinelearningservices ==================
 
 //index:
-//getfilter:name=
-//getfilter:resource_group=
+//getfilter:name=description.Workspace.Name
+//getfilter:resource_group=description.ResourceGroup
 type MachineLearningWorkspaceDescription struct {
-	obj0 machinelearningservices.TypeName
-
-	obj1 machinelearningservices.TypeName
+	Workspace                   machinelearningservices.Workspace
+	DiagnosticSettingsResources *[]insights.DiagnosticSettingsResource
+	ResourceGroup               string
 }
 
 //  =================== mariadb ==================
 
 //index:Microsoft_DBforMariaDB_servers
-//getfilter:name=
-//getfilter:resource_group=
+//getfilter:name=description.Server.Name
+//getfilter:resource_group=description.ResourceGroup
 type MariadbServerDescription struct {
-	obj0 mariadb.TypeName
-}
-
-//  =================== sql ==================
-
-//index:
-//getfilter:name=
-//getfilter:resource_group=
-type MssqlManagedInstanceDescription struct {
-	obj0 sql.TypeName
-
-	obj1 sql.TypeName
-
-	obj2 sql.TypeName
-
-	obj3 sql.TypeName
+	Server        mariadb.Server
+	ResourceGroup string
 }
 
 //  =================== mysql ==================
 
 //index:Microsoft_DBforMySQL_servers
-//getfilter:name=
-//getfilter:resource_group=
+//getfilter:name=description.Server.Name
+//getfilter:resource_group=description.ResourceGroup
 type MysqlServerDescription struct {
-	obj0 mysql.TypeName
-
-	obj1 mysql.TypeName
-
-	obj2 mysql.TypeName
+	Server         mysql.Server
+	Configurations *[]mysql.Configuration
+	ServerKeys     []mysql.ServerKey
+	ResourceGroup  string
 }
 
 //  =================== network ==================
 
 //index:Microsoft_ClassicNetwork_networkSecurityGroups
-//getfilter:name=
-//getfilter:resource_group=
+//getfilter:name=description.SecurityGroup.Name
+//getfilter:resource_group=description.ResourceGroup
 type NetworkSecurityGroupDescription struct {
-	obj0 network.TypeName
-
-	obj1 network.TypeName
+	SecurityGroup               newnetwork.SecurityGroup
+	DiagnosticSettingsResources *[]insights.DiagnosticSettingsResource
+	ResourceGroup               string
 }
 
 //  =================== network ==================
 
 //index:microsoft_network_networkwatchers
-//getfilter:name=
-//getfilter:resource_group=
+//getfilter:name=description.Watcher.Name
+//getfilter:resource_group=description.ResourceGroup
 type NetworkWatcherDescription struct {
-	obj0 network.TypeName
-}
-
-//  =================== network ==================
-
-//index:microsoft_network_networkwatchers
-//getfilter:name=
-//getfilter:resource_group=
-type NetworkWatcherDescription struct {
-	obj0 network.TypeName
-}
-
-//  =================== network ==================
-
-//index:microsoft_network_networkwatchers
-//getfilter:name=
-//getfilter:resource_group=
-type NetworkWatcherDescription struct {
-	obj0 network.TypeName
-}
-
-//  =================== postgresql ==================
-
-//index:Microsoft_DBforPostgreSQL_serverGroups
-//getfilter:name=
-//getfilter:resource_group=
-type PostgresqlServerDescription struct {
-	obj0 postgresql.TypeName
-
-	obj1 postgresql.TypeName
-
-	obj2 postgresql.TypeName
-
-	obj3 postgresql.TypeName
-
-	obj4 postgresql.TypeName
-}
-
-//  =================== postgresql ==================
-
-//index:Microsoft_DBforPostgreSQL_serverGroups
-//getfilter:name=
-//getfilter:resource_group=
-type PostgresqlServerDescription struct {
-	obj0 postgresql.TypeName
-
-	obj1 postgresql.TypeName
-
-	obj2 postgresql.TypeName
-
-	obj3 postgresql.TypeName
-
-	obj4 postgresql.TypeName
-}
-
-//  =================== postgresql ==================
-
-//index:Microsoft_DBforPostgreSQL_serverGroups
-//getfilter:name=
-//getfilter:resource_group=
-type PostgresqlServerDescription struct {
-	obj0 postgresql.TypeName
-
-	obj1 postgresql.TypeName
-
-	obj2 postgresql.TypeName
-
-	obj3 postgresql.TypeName
-
-	obj4 postgresql.TypeName
+	Watcher       newnetwork.Watcher
+	ResourceGroup string
 }
 
 //  =================== search ==================
 
 //index:Microsoft_Search_searchServices
-//getfilter:name=
-//getfilter:resource_group=
+//getfilter:name=description.Service.Name
+//getfilter:resource_group=description.ResourceGroup
 type SearchServiceDescription struct {
-	obj0 search.TypeName
-
-	obj1 search.TypeName
-	obj2 search.TypeName
+	Service                     search.Service
+	DiagnosticSettingsResources *[]insights.DiagnosticSettingsResource
+	ResourceGroup               string
 }
 
 //  =================== servicefabric ==================
 
 //index:Microsoft_ServiceFabric_clusters
-//getfilter:name=
-//getfilter:resource_group=
+//getfilter:name=description.Cluster.Name
+//getfilter:resource_group=description.ResourceGroup
 type ServiceFabricClusterDescription struct {
-	obj0 servicefabric.TypeName
+	Cluster       servicefabric.Cluster
+	ResourceGroup string
 }
 
 //  =================== servicebus ==================
 
 //index:
-//getfilter:name=
-//getfilter:resource_group=
+//getfilter:name=description.SBNamespace.Name
+//getfilter:resource_group=description.ResourceGroup
 type ServicebusNamespaceDescription struct {
-	obj0 servicebus.TypeName
-
-	obj1 servicebus.TypeName
-
-	obj2 servicebus.TypeName
-
-	obj3 servicebus.TypeName
+	SBNamespace                 servicebus.SBNamespace
+	DiagnosticSettingsResources *[]insights.DiagnosticSettingsResource
+	NetworkRuleSet              servicebus.NetworkRuleSet
+	PrivateEndpointConnections  []servicebus.PrivateEndpointConnection
+	ResourceGroup               string
 }
 
 //  =================== signalr ==================
 
 //index:Microsoft_SignalRService_SignalR
-//getfilter:name=
-//getfilter:resource_group=
+//getfilter:name=description.ResourceType.Name
+//getfilter:resource_group=description.ResourceGroup
 type SignalrServiceDescription struct {
-	obj0 signalr.TypeName
-
-	obj1 signalr.TypeName
+	ResourceType                signalr.ResourceType
+	DiagnosticSettingsResources *[]insights.DiagnosticSettingsResource
+	ResourceGroup               string
 }
 
 //  =================== appplatform ==================
 
 //index:
-//getfilter:name=
-//getfilter:resource_group=
+//getfilter:name=description.ServiceResource.Name
+//getfilter:resource_group=description.ResourceGroup
 type SpringCloudServiceDescription struct {
-	obj0 appplatform.TypeName
-
-	obj1 appplatform.TypeName
-}
-
-//  =================== sql ==================
-
-//index:microsoft_synapse_workspaces_sqldatabases
-//getfilter:name=
-//getfilter:resource_group=
-type SqlDatabaseDescription struct {
-	obj0 sql.TypeName
-
-	obj1 sql.TypeName
-
-	obj2 sql.TypeName
-
-	obj3 sql.TypeName
-
-	obj4 sql.TypeName
-
-	obj5 sql.TypeName
-}
-
-//  =================== sqlv3 ==================
-
-//index:Microsoft_AzureArcData_sqlServerInstances
-//getfilter:name=
-//getfilter:resource_group=
-type SqlServerDescription struct {
-	obj0 sqlv3.TypeName
-
-	obj1 sqlv3.TypeName
-
-	obj2 sqlv3.TypeName
-
-	obj3 sqlv3.TypeName
-
-	obj4 sqlv3.TypeName
-
-	obj5 sqlv3.TypeName
-
-	obj6 sqlv3.TypeName
-
-	obj7 sqlv3.TypeName
-
-	obj8 sqlv3.TypeName
-}
-
-//  =================== sqlv3 ==================
-
-//index:Microsoft_AzureArcData_sqlServerInstances
-//getfilter:name=
-//getfilter:resource_group=
-type SqlServerDescription struct {
-	obj0 sqlv3.TypeName
-
-	obj1 sqlv3.TypeName
-
-	obj2 sqlv3.TypeName
-
-	obj3 sqlv3.TypeName
-
-	obj4 sqlv3.TypeName
-
-	obj5 sqlv3.TypeName
-
-	obj6 sqlv3.TypeName
-
-	obj7 sqlv3.TypeName
-
-	obj8 sqlv3.TypeName
-}
-
-//  =================== sqlv3 ==================
-
-//index:Microsoft_AzureArcData_sqlServerInstances
-//getfilter:name=
-//getfilter:resource_group=
-type SqlServerDescription struct {
-	obj0 sqlv3.TypeName
-
-	obj1 sqlv3.TypeName
-
-	obj2 sqlv3.TypeName
-
-	obj3 sqlv3.TypeName
-
-	obj4 sqlv3.TypeName
-
-	obj5 sqlv3.TypeName
-
-	obj6 sqlv3.TypeName
-
-	obj7 sqlv3.TypeName
-
-	obj8 sqlv3.TypeName
-}
-
-//  =================== storage ==================
-
-//index:Microsoft_ClassicStorage_StorageAccounts
-//getfilter:name=
-//getfilter:resource_group=
-type StorageAccountDescription struct {
-	obj0 storage.TypeName
-
-	obj1 storage.TypeName
-
-	obj2 storage.TypeName
-
-	obj3 storage.TypeName
-
-	obj4 storage.TypeName
-
-	obj5 storage.TypeName
-
-	obj6 storage.TypeName
-}
-
-//  =================== storage ==================
-
-//index:Microsoft_ClassicStorage_StorageAccounts
-//getfilter:name=
-//getfilter:resource_group=
-type StorageAccountDescription struct {
-	obj0 storage.TypeName
-
-	obj1 storage.TypeName
-
-	obj2 storage.TypeName
-
-	obj3 storage.TypeName
-
-	obj4 storage.TypeName
-
-	obj5 storage.TypeName
-
-	obj6 storage.TypeName
-}
-
-//  =================== storage ==================
-
-//index:Microsoft_ClassicStorage_StorageAccounts
-//getfilter:name=
-//getfilter:resource_group=
-type StorageAccountDescription struct {
-	obj0 storage.TypeName
-
-	obj1 storage.TypeName
-
-	obj2 storage.TypeName
-
-	obj3 storage.TypeName
-
-	obj4 storage.TypeName
-
-	obj5 storage.TypeName
-
-	obj6 storage.TypeName
-}
-
-//  =================== storage ==================
-
-//index:Microsoft_ClassicStorage_StorageAccounts
-//getfilter:name=
-//getfilter:resource_group=
-type StorageAccountDescription struct {
-	obj0 storage.TypeName
-
-	obj1 storage.TypeName
-
-	obj2 storage.TypeName
-
-	obj3 storage.TypeName
-
-	obj4 storage.TypeName
-
-	obj5 storage.TypeName
-
-	obj6 storage.TypeName
-}
-
-//  =================== storage ==================
-
-//index:Microsoft_ClassicStorage_StorageAccounts
-//getfilter:name=
-//getfilter:resource_group=
-type StorageAccountDescription struct {
-	obj0 storage.TypeName
-
-	obj1 storage.TypeName
-
-	obj2 storage.TypeName
-
-	obj3 storage.TypeName
-
-	obj4 storage.TypeName
-
-	obj5 storage.TypeName
-
-	obj6 storage.TypeName
-}
-
-//  =================== storage ==================
-
-//index:Microsoft_ClassicStorage_StorageAccounts
-//getfilter:name=
-//getfilter:resource_group=
-type StorageAccountDescription struct {
-	obj0 storage.TypeName
-
-	obj1 storage.TypeName
-
-	obj2 storage.TypeName
-
-	obj3 storage.TypeName
-
-	obj4 storage.TypeName
-
-	obj5 storage.TypeName
-
-	obj6 storage.TypeName
-}
-
-//  =================== storagesync ==================
-
-//index:Microsoft_StorageSync_storageSyncServices
-//getfilter:name=
-//getfilter:resource_group=
-type StorageSyncDescription struct {
-	obj0 storagesync.TypeName
-}
-
-//  =================== storagesync ==================
-
-//index:Microsoft_StorageSync_storageSyncServices
-//getfilter:name=
-//getfilter:resource_group=
-type StorageSyncDescription struct {
-	obj0 storagesync.TypeName
-}
-
-//  =================== storagesync ==================
-
-//index:Microsoft_StorageSync_storageSyncServices
-//getfilter:name=
-//getfilter:resource_group=
-type StorageSyncDescription struct {
-	obj0 storagesync.TypeName
-}
-
-//  =================== storagesync ==================
-
-//index:Microsoft_StorageSync_storageSyncServices
-//getfilter:name=
-//getfilter:resource_group=
-type StorageSyncDescription struct {
-	obj0 storagesync.TypeName
-}
-
-//  =================== storagesync ==================
-
-//index:Microsoft_StorageSync_storageSyncServices
-//getfilter:name=
-//getfilter:resource_group=
-type StorageSyncDescription struct {
-	obj0 storagesync.TypeName
-}
-
-//  =================== storagesync ==================
-
-//index:Microsoft_StorageSync_storageSyncServices
-//getfilter:name=
-//getfilter:resource_group=
-type StorageSyncDescription struct {
-	obj0 storagesync.TypeName
-}
-
-//  =================== storagesync ==================
-
-//index:Microsoft_StorageSync_storageSyncServices
-//getfilter:name=
-//getfilter:resource_group=
-type StorageSyncDescription struct {
-	obj0 storagesync.TypeName
-}
-
-//  =================== storagesync ==================
-
-//index:Microsoft_StorageSync_storageSyncServices
-//getfilter:name=
-//getfilter:resource_group=
-type StorageSyncDescription struct {
-	obj0 storagesync.TypeName
+	ServiceResource            appplatform.ServiceResource
+	DiagnosticSettingsResource *[]insights.DiagnosticSettingsResource
+	ResourceGroup              string
 }
 
 //  =================== streamanalytics ==================
 
 //index:Microsoft_StreamAnalytics_StreamingJobs
-//getfilter:name=
-//getfilter:resource_group=
+//getfilter:name=description.StreamingJob.Name
+//getfilter:resource_group=description.ResourceGroup
 type StreamAnalyticsJobDescription struct {
-	obj0 streamanalytics.TypeName
-
-	obj1 streamanalytics.TypeName
+	StreamingJob                streamanalytics.StreamingJob
+	DiagnosticSettingsResources *[]insights.DiagnosticSettingsResource
+	ResourceGroup               string
 }
 
 //  =================== synapse ==================
 
 //index:
-//getfilter:name=
-//getfilter:resource_group=
+//getfilter:name=description.Workspace.Name
+//getfilter:resource_group=description.ResourceGroup
 type SynapseWorkspaceDescription struct {
-	obj0 synapse.TypeName
-
-	obj1 synapse.TypeName
-
-	obj2 synapse.TypeName
+	Workspace                      synapse.Workspace
+	ServerVulnerabilityAssessments []synapse.ServerVulnerabilityAssessment
+	DiagnosticSettingsResources    *[]insights.DiagnosticSettingsResource
+	ResourceGroup                  string
 }
 
-//  =================== datafactory ==================
-
-//index:Microsoft_DataFactory_dataFactories
-//getfilter:name=
-//getfilter:resource_group=
-type DataFactoryDescription struct {
-	obj0 datafactory.TypeName
-
-	obj1 datafactory.TypeName
-}
 
 //  =================== sub ==================
 
 //index:microsoft_desktopvirtualization_hostpools_sessionhosts
-//getfilter:name=
-//getfilter:resource_group=
+//getfilter:name=description.Location.Name
+//getfilter:resource_group=description.ResourceGroup
 type LocationDescription struct {
-	obj0 sub.TypeName
-}
-
-//  =================== sub ==================
-
-//index:microsoft_desktopvirtualization_hostpools_sessionhosts
-//getfilter:name=
-//getfilter:resource_group=
-type LocationDescription struct {
-	obj0 sub.TypeName
-}
-
-//  =================== sub ==================
-
-//index:microsoft_desktopvirtualization_hostpools_sessionhosts
-//getfilter:name=
-//getfilter:resource_group=
-type LocationDescription struct {
-	obj0 sub.TypeName
-}
-
-//  =================== sql ==================
-
-//index:
-//getfilter:name=
-//getfilter:resource_group=
-type MssqlManagedInstanceDescription struct {
-	obj0 sql.TypeName
-
-	obj1 sql.TypeName
-
-	obj2 sql.TypeName
-
-	obj3 sql.TypeName
-}
-
-//  =================== sql ==================
-
-//index:
-//getfilter:name=
-//getfilter:resource_group=
-type MssqlManagedInstanceDescription struct {
-	obj0 sql.TypeName
-
-	obj1 sql.TypeName
-
-	obj2 sql.TypeName
-
-	obj3 sql.TypeName
-}
-
-//  =================== sql ==================
-
-//index:
-//getfilter:name=
-//getfilter:resource_group=
-type MssqlManagedInstanceDescription struct {
-	obj0 sql.TypeName
-
-	obj1 sql.TypeName
-
-	obj2 sql.TypeName
-
-	obj3 sql.TypeName
-}
-
-//  =================== mysql ==================
-
-//index:Microsoft_DBforMySQL_servers
-//getfilter:name=
-//getfilter:resource_group=
-type MysqlServerDescription struct {
-	obj0 mysql.TypeName
-
-	obj1 mysql.TypeName
-
-	obj2 mysql.TypeName
-}
-
-//  =================== mysql ==================
-
-//index:Microsoft_DBforMySQL_servers
-//getfilter:name=
-//getfilter:resource_group=
-type MysqlServerDescription struct {
-	obj0 mysql.TypeName
-
-	obj1 mysql.TypeName
-
-	obj2 mysql.TypeName
-}
-
-//  =================== mysql ==================
-
-//index:Microsoft_DBforMySQL_servers
-//getfilter:name=
-//getfilter:resource_group=
-type MysqlServerDescription struct {
-	obj0 mysql.TypeName
-
-	obj1 mysql.TypeName
-
-	obj2 mysql.TypeName
-}
-
-//  =================== mysql ==================
-
-//index:Microsoft_DBforMySQL_servers
-//getfilter:name=
-//getfilter:resource_group=
-type MysqlServerDescription struct {
-	obj0 mysql.TypeName
-
-	obj1 mysql.TypeName
-
-	obj2 mysql.TypeName
+	Location      sub.Location
+	ResourceGroup string
 }
 
 //  =================== postgresql ==================
 
 //index:Microsoft_DBforPostgreSQL_serverGroups
-//getfilter:name=
-//getfilter:resource_group=
+//getfilter:name=description.Server.Name
+//getfilter:resource_group=description.ResourceGroup
 type PostgresqlServerDescription struct {
-	obj0 postgresql.TypeName
-
-	obj1 postgresql.TypeName
-
-	obj2 postgresql.TypeName
-
-	obj3 postgresql.TypeName
-
-	obj4 postgresql.TypeName
-}
-
-//  =================== postgresql ==================
-
-//index:Microsoft_DBforPostgreSQL_serverGroups
-//getfilter:name=
-//getfilter:resource_group=
-type PostgresqlServerDescription struct {
-	obj0 postgresql.TypeName
-
-	obj1 postgresql.TypeName
-
-	obj2 postgresql.TypeName
-
-	obj3 postgresql.TypeName
-
-	obj4 postgresql.TypeName
-}
-
-//  =================== postgresql ==================
-
-//index:Microsoft_DBforPostgreSQL_serverGroups
-//getfilter:name=
-//getfilter:resource_group=
-type PostgresqlServerDescription struct {
-	obj0 postgresql.TypeName
-
-	obj1 postgresql.TypeName
-
-	obj2 postgresql.TypeName
-
-	obj3 postgresql.TypeName
-
-	obj4 postgresql.TypeName
-}
-
-//  =================== postgresql ==================
-
-//index:Microsoft_DBforPostgreSQL_serverGroups
-//getfilter:name=
-//getfilter:resource_group=
-type PostgresqlServerDescription struct {
-	obj0 postgresql.TypeName
-
-	obj1 postgresql.TypeName
-
-	obj2 postgresql.TypeName
-
-	obj3 postgresql.TypeName
-
-	obj4 postgresql.TypeName
-}
-
-//  =================== postgresql ==================
-
-//index:Microsoft_DBforPostgreSQL_serverGroups
-//getfilter:name=
-//getfilter:resource_group=
-type PostgresqlServerDescription struct {
-	obj0 postgresql.TypeName
-
-	obj1 postgresql.TypeName
-
-	obj2 postgresql.TypeName
-
-	obj3 postgresql.TypeName
-
-	obj4 postgresql.TypeName
-}
-
-//  =================== servicefabric ==================
-
-//index:Microsoft_ServiceFabric_clusters
-//getfilter:name=
-//getfilter:resource_group=
-type ServiceFabricClusterDescription struct {
-	obj0 servicefabric.TypeName
-}
-
-//  =================== servicefabric ==================
-
-//index:Microsoft_ServiceFabric_clusters
-//getfilter:name=
-//getfilter:resource_group=
-type ServiceFabricClusterDescription struct {
-	obj0 servicefabric.TypeName
-}
-
-//  =================== servicefabric ==================
-
-//index:Microsoft_ServiceFabric_clusters
-//getfilter:name=
-//getfilter:resource_group=
-type ServiceFabricClusterDescription struct {
-	obj0 servicefabric.TypeName
-}
-
-//  =================== servicefabric ==================
-
-//index:Microsoft_ServiceFabric_clusters
-//getfilter:name=
-//getfilter:resource_group=
-type ServiceFabricClusterDescription struct {
-	obj0 servicefabric.TypeName
-}
-
-//  =================== servicefabric ==================
-
-//index:Microsoft_ServiceFabric_clusters
-//getfilter:name=
-//getfilter:resource_group=
-type ServiceFabricClusterDescription struct {
-	obj0 servicefabric.TypeName
-}
-
-//  =================== servicefabric ==================
-
-//index:Microsoft_ServiceFabric_clusters
-//getfilter:name=
-//getfilter:resource_group=
-type ServiceFabricClusterDescription struct {
-	obj0 servicefabric.TypeName
-}
-
-//  =================== sql ==================
-
-//index:microsoft_synapse_workspaces_sqldatabases
-//getfilter:name=
-//getfilter:resource_group=
-type SqlDatabaseDescription struct {
-	obj0 sql.TypeName
-
-	obj1 sql.TypeName
-
-	obj2 sql.TypeName
-
-	obj3 sql.TypeName
-
-	obj4 sql.TypeName
-
-	obj5 sql.TypeName
-}
-
-//  =================== sql ==================
-
-//index:microsoft_synapse_workspaces_sqldatabases
-//getfilter:name=
-//getfilter:resource_group=
-type SqlDatabaseDescription struct {
-	obj0 sql.TypeName
-
-	obj1 sql.TypeName
-
-	obj2 sql.TypeName
-
-	obj3 sql.TypeName
-
-	obj4 sql.TypeName
-
-	obj5 sql.TypeName
-}
-
-//  =================== sql ==================
-
-//index:microsoft_synapse_workspaces_sqldatabases
-//getfilter:name=
-//getfilter:resource_group=
-type SqlDatabaseDescription struct {
-	obj0 sql.TypeName
-
-	obj1 sql.TypeName
-
-	obj2 sql.TypeName
-
-	obj3 sql.TypeName
-
-	obj4 sql.TypeName
-
-	obj5 sql.TypeName
-}
-
-//  =================== sql ==================
-
-//index:microsoft_synapse_workspaces_sqldatabases
-//getfilter:name=
-//getfilter:resource_group=
-type SqlDatabaseDescription struct {
-	obj0 sql.TypeName
-
-	obj1 sql.TypeName
-
-	obj2 sql.TypeName
-
-	obj3 sql.TypeName
-
-	obj4 sql.TypeName
-
-	obj5 sql.TypeName
-}
-
-//  =================== sqlv3 ==================
-
-//index:Microsoft_AzureArcData_sqlServerInstances
-//getfilter:name=
-//getfilter:resource_group=
-type SqlServerDescription struct {
-	obj0 sqlv3.TypeName
-
-	obj1 sqlv3.TypeName
-
-	obj2 sqlv3.TypeName
-
-	obj3 sqlv3.TypeName
-
-	obj4 sqlv3.TypeName
-
-	obj5 sqlv3.TypeName
-
-	obj6 sqlv3.TypeName
-
-	obj7 sqlv3.TypeName
-
-	obj8 sqlv3.TypeName
-}
-
-//  =================== sqlv3 ==================
-
-//index:Microsoft_AzureArcData_sqlServerInstances
-//getfilter:name=
-//getfilter:resource_group=
-type SqlServerDescription struct {
-	obj0 sqlv3.TypeName
-
-	obj1 sqlv3.TypeName
-
-	obj2 sqlv3.TypeName
-
-	obj3 sqlv3.TypeName
-
-	obj4 sqlv3.TypeName
-
-	obj5 sqlv3.TypeName
-
-	obj6 sqlv3.TypeName
-
-	obj7 sqlv3.TypeName
-
-	obj8 sqlv3.TypeName
-}
-
-//  =================== sqlv3 ==================
-
-//index:Microsoft_AzureArcData_sqlServerInstances
-//getfilter:name=
-//getfilter:resource_group=
-type SqlServerDescription struct {
-	obj0 sqlv3.TypeName
-
-	obj1 sqlv3.TypeName
-
-	obj2 sqlv3.TypeName
-
-	obj3 sqlv3.TypeName
-
-	obj4 sqlv3.TypeName
-
-	obj5 sqlv3.TypeName
-
-	obj6 sqlv3.TypeName
-
-	obj7 sqlv3.TypeName
-
-	obj8 sqlv3.TypeName
-}
-
-//  =================== sqlv3 ==================
-
-//index:Microsoft_AzureArcData_sqlServerInstances
-//getfilter:name=
-//getfilter:resource_group=
-type SqlServerDescription struct {
-	obj0 sqlv3.TypeName
-
-	obj1 sqlv3.TypeName
-
-	obj2 sqlv3.TypeName
-
-	obj3 sqlv3.TypeName
-
-	obj4 sqlv3.TypeName
-
-	obj5 sqlv3.TypeName
-
-	obj6 sqlv3.TypeName
-
-	obj7 sqlv3.TypeName
-
-	obj8 sqlv3.TypeName
-}
-
-//  =================== sqlv3 ==================
-
-//index:Microsoft_AzureArcData_sqlServerInstances
-//getfilter:name=
-//getfilter:resource_group=
-type SqlServerDescription struct {
-	obj0 sqlv3.TypeName
-
-	obj1 sqlv3.TypeName
-
-	obj2 sqlv3.TypeName
-
-	obj3 sqlv3.TypeName
-
-	obj4 sqlv3.TypeName
-
-	obj5 sqlv3.TypeName
-
-	obj6 sqlv3.TypeName
-
-	obj7 sqlv3.TypeName
-
-	obj8 sqlv3.TypeName
-}
-
-//  =================== sqlv3 ==================
-
-//index:Microsoft_AzureArcData_sqlServerInstances
-//getfilter:name=
-//getfilter:resource_group=
-type SqlServerDescription struct {
-	obj0 sqlv3.TypeName
-
-	obj1 sqlv3.TypeName
-
-	obj2 sqlv3.TypeName
-
-	obj3 sqlv3.TypeName
-
-	obj4 sqlv3.TypeName
-
-	obj5 sqlv3.TypeName
-
-	obj6 sqlv3.TypeName
-
-	obj7 sqlv3.TypeName
-
-	obj8 sqlv3.TypeName
-}
-
-//  =================== storage ==================
-
-//index:Microsoft_ClassicStorage_StorageAccounts
-//getfilter:name=
-//getfilter:resource_group=
-type StorageAccountDescription struct {
-	obj0 storage.TypeName
-
-	obj1 storage.TypeName
-
-	obj2 storage.TypeName
-
-	obj3 storage.TypeName
-
-	obj4 storage.TypeName
-
-	obj5 storage.TypeName
-
-	obj6 storage.TypeName
-}
-
-//  =================== storage ==================
-
-//index:Microsoft_ClassicStorage_StorageAccounts
-//getfilter:name=
-//getfilter:resource_group=
-type StorageAccountDescription struct {
-	obj0 storage.TypeName
-
-	obj1 storage.TypeName
-
-	obj2 storage.TypeName
-
-	obj3 storage.TypeName
-
-	obj4 storage.TypeName
-
-	obj5 storage.TypeName
-
-	obj6 storage.TypeName
-}
-
-//  =================== storage ==================
-
-//index:Microsoft_ClassicStorage_StorageAccounts
-//getfilter:name=
-//getfilter:resource_group=
-type StorageAccountDescription struct {
-	obj0 storage.TypeName
-
-	obj1 storage.TypeName
-
-	obj2 storage.TypeName
-
-	obj3 storage.TypeName
-
-	obj4 storage.TypeName
-
-	obj5 storage.TypeName
-
-	obj6 storage.TypeName
-}
-
-//  =================== storage ==================
-
-//index:Microsoft_ClassicStorage_StorageAccounts
-//getfilter:name=
-//getfilter:resource_group=
-type StorageAccountDescription struct {
-	obj0 storage.TypeName
-
-	obj1 storage.TypeName
-
-	obj2 storage.TypeName
-
-	obj3 storage.TypeName
-
-	obj4 storage.TypeName
-
-	obj5 storage.TypeName
-
-	obj6 storage.TypeName
-}
-
-//  =================== storage ==================
-
-//index:Microsoft_ClassicStorage_StorageAccounts
-//getfilter:name=
-//getfilter:resource_group=
-type StorageAccountDescription struct {
-	obj0 storage.TypeName
-
-	obj1 storage.TypeName
-
-	obj2 storage.TypeName
-
-	obj3 storage.TypeName
-
-	obj4 storage.TypeName
-
-	obj5 storage.TypeName
-
-	obj6 storage.TypeName
-}
-
-//  =================== storage ==================
-
-//index:Microsoft_ClassicStorage_StorageAccounts
-//getfilter:name=
-//getfilter:resource_group=
-type StorageAccountDescription struct {
-	obj0 storage.TypeName
-
-	obj1 storage.TypeName
-
-	obj2 storage.TypeName
-
-	obj3 storage.TypeName
-
-	obj4 storage.TypeName
-
-	obj5 storage.TypeName
-
-	obj6 storage.TypeName
-}
-
-//  =================== storage ==================
-
-//index:Microsoft_ClassicStorage_StorageAccounts
-//getfilter:name=
-//getfilter:resource_group=
-type StorageAccountDescription struct {
-	obj0 storage.TypeName
-
-	obj1 storage.TypeName
-
-	obj2 storage.TypeName
-
-	obj3 storage.TypeName
-
-	obj4 storage.TypeName
-
-	obj5 storage.TypeName
-
-	obj6 storage.TypeName
-}
-
-//  =================== storage ==================
-
-//index:Microsoft_ClassicStorage_StorageAccounts
-//getfilter:name=
-//getfilter:resource_group=
-type StorageAccountDescription struct {
-	obj0 storage.TypeName
-
-	obj1 storage.TypeName
-
-	obj2 storage.TypeName
-
-	obj3 storage.TypeName
-
-	obj4 storage.TypeName
-
-	obj5 storage.TypeName
-
-	obj6 storage.TypeName
-}
-
-//  =================== storage ==================
-
-//index:Microsoft_ClassicStorage_StorageAccounts
-//getfilter:name=
-//getfilter:resource_group=
-type StorageAccountDescription struct {
-	obj0 storage.TypeName
-
-	obj1 storage.TypeName
-
-	obj2 storage.TypeName
-
-	obj3 storage.TypeName
-
-	obj4 storage.TypeName
-
-	obj5 storage.TypeName
-
-	obj6 storage.TypeName
-}
-
-//  =================== storage ==================
-
-//index:Microsoft_ClassicStorage_StorageAccounts
-//getfilter:name=
-//getfilter:resource_group=
-type StorageAccountDescription struct {
-	obj0 storage.TypeName
-
-	obj1 storage.TypeName
-
-	obj2 storage.TypeName
-
-	obj3 storage.TypeName
-
-	obj4 storage.TypeName
-
-	obj5 storage.TypeName
-
-	obj6 storage.TypeName
-}
-
-//getfilter:resource_group=
-type StorageAccountDescription struct {
-	obj0 storage.TypeName
-
-	obj1 storage.TypeName
-
-	obj2 storage.TypeName
-
-	obj3 storage.TypeName
-
-	obj4 storage.TypeName
-
-	obj5 storage.TypeName
-
-	obj6 storage.TypeName
+	Server                       postgresql.Server
+	ServerAdministratorResources *[]postgresql.ServerAdministratorResource
+	Configurations               *[]postgresql.Configuration
+	ServerKeys                   []postgresql.ServerKey
+	FirewallRules                *[]postgresql.FirewallRule
+	ResourceGroup                string
 }
 
 //  =================== storagesync ==================
 
 //index:Microsoft_StorageSync_storageSyncServices
-//getfilter:name=
-//getfilter:resource_group=
+//getfilter:name=description.Service.Name
+//getfilter:resource_group=description.ResourceGroup
 type StorageSyncDescription struct {
-	obj0 storagesync.TypeName
-}
-
-//  =================== storagesync ==================
-
-//index:Microsoft_StorageSync_storageSyncServices
-//getfilter:name=
-//getfilter:resource_group=
-type StorageSyncDescription struct {
-	obj0 storagesync.TypeName
+	Service       storagesync.Service
+	ResourceGroup string
 }
 
 //  =================== sql ==================
 
 //index:
-//getfilter:name=
-//getfilter:resource_group=
+//getfilter:name=description.ManagedInstance.Name
+//getfilter:resource_group=description.ResourceGroup
 type MssqlManagedInstanceDescription struct {
-	obj0 sql.TypeName
-
-	obj1 sql.TypeName
-
-	obj2 sql.TypeName
-
-	obj3 sql.TypeName
-}
-
-//  =================== sql ==================
-
-//index:
-//getfilter:name=
-//getfilter:resource_group=
-type MssqlManagedInstanceDescription struct {
-	obj0 sql.TypeName
-
-	obj1 sql.TypeName
-
-	obj2 sql.TypeName
-
-	obj3 sql.TypeName
-}
-
-//  =================== sql ==================
-
-//index:
-//getfilter:name=
-//getfilter:resource_group=
-type MssqlManagedInstanceDescription struct {
-	obj0 sql.TypeName
-
-	obj1 sql.TypeName
-
-	obj2 sql.TypeName
-
-	obj3 sql.TypeName
-}
-
-//  =================== sql ==================
-
-//index:
-//getfilter:name=
-//getfilter:resource_group=
-type MssqlManagedInstanceDescription struct {
-	obj0 sql.TypeName
-
-	obj1 sql.TypeName
-
-	obj2 sql.TypeName
-
-	obj3 sql.TypeName
+	ManagedInstance                         sqlv5.ManagedInstance
+	ManagedInstanceVulnerabilityAssessments []sqlv5.ManagedInstanceVulnerabilityAssessment
+	ManagedDatabaseSecurityAlertPolicies    []sqlv5.ManagedServerSecurityAlertPolicy
+	ManagedInstanceEncryptionProtectors     []sqlv5.ManagedInstanceEncryptionProtector
+	ResourceGroup                           string
 }
 
 //  =================== sql ==================
 
 //index:microsoft_synapse_workspaces_sqldatabases
-//getfilter:name=
-//getfilter:resource_group=
+//getfilter:name=description.Database.Name
+//getfilter:resource_group=description.ResourceGroup
 type SqlDatabaseDescription struct {
-	obj0 sql.TypeName
-
-	obj1 sql.TypeName
-
-	obj2 sql.TypeName
-
-	obj3 sql.TypeName
-
-	obj4 sql.TypeName
-
-	obj5 sql.TypeName
-}
-
-//  =================== sql ==================
-
-//index:microsoft_synapse_workspaces_sqldatabases
-//getfilter:name=
-//getfilter:resource_group=
-type SqlDatabaseDescription struct {
-	obj0 sql.TypeName
-
-	obj1 sql.TypeName
-
-	obj2 sql.TypeName
-
-	obj3 sql.TypeName
-
-	obj4 sql.TypeName
-
-	obj5 sql.TypeName
-}
-
-//  =================== sql ==================
-
-//index:microsoft_synapse_workspaces_sqldatabases
-//getfilter:name=
-//getfilter:resource_group=
-type SqlDatabaseDescription struct {
-	obj0 sql.TypeName
-
-	obj1 sql.TypeName
-
-	obj2 sql.TypeName
-
-	obj3 sql.TypeName
-
-	obj4 sql.TypeName
-
-	obj5 sql.TypeName
-}
-
-//  =================== sql ==================
-
-//index:microsoft_synapse_workspaces_sqldatabases
-//getfilter:name=
-//getfilter:resource_group=
-type SqlDatabaseDescription struct {
-	obj0 sql.TypeName
-
-	obj1 sql.TypeName
-
-	obj2 sql.TypeName
-
-	obj3 sql.TypeName
-
-	obj4 sql.TypeName
-
-	obj5 sql.TypeName
-}
-
-//  =================== sql ==================
-
-//index:microsoft_synapse_workspaces_sqldatabases
-//getfilter:name=
-//getfilter:resource_group=
-type SqlDatabaseDescription struct {
-	obj0 sql.TypeName
-
-	obj1 sql.TypeName
-
-	obj2 sql.TypeName
-
-	obj3 sql.TypeName
-
-	obj4 sql.TypeName
-
-	obj5 sql.TypeName
+	Database                           sql.Database
+	LongTermRetentionPolicies          []sqlv5.LongTermRetentionPolicy
+	TransparentDataEncryption          sql.TransparentDataEncryption
+	DatabaseVulnerabilityAssessments   []sqlv5.DatabaseVulnerabilityAssessment
+	VulnerabilityAssessmentScanRecords []sqlv5.VulnerabilityAssessmentScanRecord
+	ResourceGroup                      string
 }
 
 //  =================== sqlv3 ==================
 
 //index:Microsoft_AzureArcData_sqlServerInstances
-//getfilter:name=
-//getfilter:resource_group=
+//getfilter:name=description.Server.Name
+//getfilter:resource_group=description.ResourceGroup
 type SqlServerDescription struct {
-	obj0 sqlv3.TypeName
-
-	obj1 sqlv3.TypeName
-
-	obj2 sqlv3.TypeName
-
-	obj3 sqlv3.TypeName
-
-	obj4 sqlv3.TypeName
-
-	obj5 sqlv3.TypeName
-
-	obj6 sqlv3.TypeName
-
-	obj7 sqlv3.TypeName
-
-	obj8 sqlv3.TypeName
-}
-
-//  =================== sqlv3 ==================
-
-//index:Microsoft_AzureArcData_sqlServerInstances
-//getfilter:name=
-//getfilter:resource_group=
-type SqlServerDescription struct {
-	obj0 sqlv3.TypeName
-
-	obj1 sqlv3.TypeName
-
-	obj2 sqlv3.TypeName
-
-	obj3 sqlv3.TypeName
-
-	obj4 sqlv3.TypeName
-
-	obj5 sqlv3.TypeName
-
-	obj6 sqlv3.TypeName
-
-	obj7 sqlv3.TypeName
-
-	obj8 sqlv3.TypeName
-}
-
-//  =================== sqlv3 ==================
-
-//index:Microsoft_AzureArcData_sqlServerInstances
-//getfilter:name=
-//getfilter:resource_group=
-type SqlServerDescription struct {
-	obj0 sqlv3.TypeName
-
-	obj1 sqlv3.TypeName
-
-	obj2 sqlv3.TypeName
-
-	obj3 sqlv3.TypeName
-
-	obj4 sqlv3.TypeName
-
-	obj5 sqlv3.TypeName
-
-	obj6 sqlv3.TypeName
-
-	obj7 sqlv3.TypeName
-
-	obj8 sqlv3.TypeName
-}
-
-//  =================== sqlv3 ==================
-
-//index:Microsoft_AzureArcData_sqlServerInstances
-//getfilter:name=
-//getfilter:resource_group=
-type SqlServerDescription struct {
-	obj0 sqlv3.TypeName
-
-	obj1 sqlv3.TypeName
-
-	obj2 sqlv3.TypeName
-
-	obj3 sqlv3.TypeName
-
-	obj4 sqlv3.TypeName
-
-	obj5 sqlv3.TypeName
-
-	obj6 sqlv3.TypeName
-
-	obj7 sqlv3.TypeName
-
-	obj8 sqlv3.TypeName
-}
-
-//  =================== sqlv3 ==================
-
-//index:Microsoft_AzureArcData_sqlServerInstances
-//getfilter:name=
-//getfilter:resource_group=
-type SqlServerDescription struct {
-	obj0 sqlv3.TypeName
-
-	obj1 sqlv3.TypeName
-
-	obj2 sqlv3.TypeName
-
-	obj3 sqlv3.TypeName
-
-	obj4 sqlv3.TypeName
-
-	obj5 sqlv3.TypeName
-
-	obj6 sqlv3.TypeName
-
-	obj7 sqlv3.TypeName
-
-	obj8 sqlv3.TypeName
-}
-
-//  =================== sqlv3 ==================
-
-//index:Microsoft_AzureArcData_sqlServerInstances
-//getfilter:name=
-//getfilter:resource_group=
-type SqlServerDescription struct {
-	obj0 sqlv3.TypeName
-
-	obj1 sqlv3.TypeName
-
-	obj2 sqlv3.TypeName
-
-	obj3 sqlv3.TypeName
-
-	obj4 sqlv3.TypeName
-
-	obj5 sqlv3.TypeName
-
-	obj6 sqlv3.TypeName
-
-	obj7 sqlv3.TypeName
-
-	obj8 sqlv3.TypeName
-}
-
-//  =================== sqlv3 ==================
-
-//index:Microsoft_AzureArcData_sqlServerInstances
-//getfilter:name=
-//getfilter:resource_group=
-type SqlServerDescription struct {
-	obj0 sqlv3.TypeName
-
-	obj1 sqlv3.TypeName
-
-	obj2 sqlv3.TypeName
-
-	obj3 sqlv3.TypeName
-
-	obj4 sqlv3.TypeName
-
-	obj5 sqlv3.TypeName
-
-	obj6 sqlv3.TypeName
-
-	obj7 sqlv3.TypeName
-
-	obj8 sqlv3.TypeName
+	Server                         sqlv3.Server
+	ServerBlobAuditingPolicies     []sql.ServerBlobAuditingPolicy
+	ServerSecurityAlertPolicies    []sql.ServerSecurityAlertPolicy
+	ServerAzureADAdministrators    *[]sql.ServerAzureADAdministrator
+	ServerVulnerabilityAssessments []sqlv3.ServerVulnerabilityAssessment
+	FirewallRules                  *[]sql.FirewallRule
+	EncryptionProtectors           []sql.EncryptionProtector
+	PrivateEndpointConnections     []sqlv3.PrivateEndpointConnection
+	VirtualNetworkRules            []sql.VirtualNetworkRule
+	ResourceGroup                  string
 }
 
 //  =================== storage ==================
 
 //index:Microsoft_ClassicStorage_StorageAccounts
-//getfilter:name=
-//getfilter:resource_group=
+//getfilter:name=description.Account.Name
+//getfilter:resource_group=description.ResourceGroup
 type StorageAccountDescription struct {
-	obj0 storage.TypeName
-
-	obj1 storage.TypeName
-
-	obj2 storage.TypeName
-
-	obj3 storage.TypeName
-
-	obj4 storage.TypeName
-
-	obj5 storage.TypeName
-
-	obj6 storage.TypeName
+	Account                     storage.Account
+	ManagementPolicy            storage.ManagementPolicy
+	BlobServiceProperties       *storage.BlobServiceProperties
+	AccountKeys                 *[]storage.AccountKey
+	FileServiceProperties       *storage.FileServiceProperties
+	DiagnosticSettingsResources *[]insights.DiagnosticSettingsResource
+	EncryptionScopes            []storage.EncryptionScope
+	ResourceGroup               string
 }
-
-//  =================== storage ==================
-
-//index:Microsoft_ClassicStorage_StorageAccounts
-//getfilter:name=
-//getfilter:resource_group=
-type StorageAccountDescription struct {
-	obj0 storage.TypeName
-
-	obj1 storage.TypeName
-
-	obj2 storage.TypeName
-
-	obj3 storage.TypeName
-
-	obj4 storage.TypeName
-
-	obj5 storage.TypeName
-
-	obj6 storage.TypeName
-}
-
-//  =================== storage ==================
-
-//index:Microsoft_ClassicStorage_StorageAccounts
-//getfilter:name=
-//getfilter:resource_group=
-type StorageAccountDescription struct {
-	obj0 storage.TypeName
-
-	obj1 storage.TypeName
-
-	obj2 storage.TypeName
-
-	obj3 storage.TypeName
-
-	obj4 storage.TypeName
-
-	obj5 storage.TypeName
-
-	obj6 storage.TypeName
-}
-
-//  =================== storage ==================
-
-//index:Microsoft_ClassicStorage_StorageAccounts
-//getfilter:name=
-//getfilter:resource_group=
-type StorageAccountDescription struct {
-	obj0 storage.TypeName
-
-	obj1 storage.TypeName
-
-	obj2 storage.TypeName
-
-	obj3 storage.TypeName
-
-	obj4 storage.TypeName
-
-	obj5 storage.TypeName
-
-	obj6 storage.TypeName
-}
-
-//  =================== storage ==================
-
-//index:Microsoft_ClassicStorage_StorageAccounts
-//getfilter:name=
-//getfilter:resource_group=
-type StorageAccountDescription struct {
-	obj0 storage.TypeName
-
-	obj1 storage.TypeName
-
-	obj2 storage.TypeName
-
-	obj3 storage.TypeName
-
-	obj4 storage.TypeName
-
-	obj5 storage.TypeName
-
-	obj6 storage.TypeName
-}
-
-//  =================== storage ==================
-
-//index:Microsoft_ClassicStorage_StorageAccounts
-//getfilter:name=
-//getfilter:resource_group=
-type StorageAccountDescription struct {
-	obj0 storage.TypeName
-
-	obj1 storage.TypeName
-
-	obj2 storage.TypeName
-
-	obj3 storage.TypeName
-
-	obj4 storage.TypeName
-
-	obj5 storage.TypeName
-
-	obj6 storage.TypeName
-}
-
-//  =================== storage ==================
-
-//index:Microsoft_ClassicStorage_StorageAccounts
-//getfilter:name=
-//getfilter:resource_group=
-type StorageAccountDescription struct {
-	obj0 storage.TypeName
-
-	obj1 storage.TypeName
-
-	obj2 storage.TypeName
-
-	obj3 storage.TypeName
-
-	obj4 storage.TypeName
-
-	obj5 storage.TypeName
-
-	obj6 storage.TypeName
-}
-
-//  =================== storage ==================
-
-//index:Microsoft_ClassicStorage_StorageAccounts
-//getfilter:name=
-//getfilter:resource_group=
-type StorageAccountDescription struct {
-	obj0 storage.TypeName
-
-	obj1 storage.TypeName
-
-	obj2 storage.TypeName
-
-	obj3 storage.TypeName
-
-	obj4 storage.TypeName
-
-	obj5 storage.TypeName
-
-	obj6 storage.TypeName
-}
-
-//  =================== storage ==================
-
-//index:Microsoft_ClassicStorage_StorageAccounts
-//getfilter:name=
-//getfilter:resource_group=
-type StorageAccountDescription struct {
-	obj0 storage.TypeName
-
-	obj1 storage.TypeName
-
-	obj2 storage.TypeName
-
-	obj3 storage.TypeName
-
-	obj4 storage.TypeName
-
-	obj5 storage.TypeName
-
-	obj6 storage.TypeName
-}
-
-//  =================== storage ==================
-
-//index:Microsoft_ClassicStorage_StorageAccounts
-//getfilter:name=
-//getfilter:resource_group=
-type StorageAccountDescription struct {
-	obj0 storage.TypeName
-
-	obj1 storage.TypeName
-
-	obj2 storage.TypeName
-
-	obj3 storage.TypeName
-
-	obj4 storage.TypeName
-
-	obj5 storage.TypeName
-
-	obj6 storage.TypeName
-}
-
-//  =================== storage ==================
-
-//index:Microsoft_ClassicStorage_StorageAccounts
-//getfilter:name=
-//getfilter:resource_group=
-type StorageAccountDescription struct {
-	obj0 storage.TypeName
-
-	obj1 storage.TypeName
-
-	obj2 storage.TypeName
-
-	obj3 storage.TypeName
-
-	obj4 storage.TypeName
-
-	obj5 storage.TypeName
-
-	obj6 storage.TypeName
-}
-orageAccounts
-//getfilter:name=
-//getfilter:resource_group=
-type StorageAccountDescription struct {
-	
-		obj0 storage.TypeName 
-	
-		obj1 storage.TypeName 
-	
-		obj2 storage.TypeName 
-	
-		obj3 storage.TypeName 
-	
-		obj4 storage.TypeName 
-	
-		obj5 storage.TypeName 
-	
-		obj6 storage.TypeName 
-	
-}
-

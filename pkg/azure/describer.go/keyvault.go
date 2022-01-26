@@ -47,10 +47,9 @@ func KeyVaultKey(ctx context.Context, authorizer autorest.Authorizer, subscripti
 
 					values = append(values, Resource{
 						ID: *v.ID,
-						Description: JSONAllFieldsMarshaller{
-							model.KeyVaultKeyDescription{
-								Key: v,
-							},
+						Description: model.KeyVaultKeyDescription{
+							Key: v,
+							ResourceGroup: resourceGroup,
 						},
 					})
 				}
@@ -110,9 +109,10 @@ func KeyVault(ctx context.Context, authorizer autorest.Authorizer, subscription 
 			values = append(values, Resource{
 				ID: *vault.ID,
 				Description: model.KeyVaultDescription{
-					vault,
-					keyVaultGetOp,
-					insightsListOp,
+					Resource:                    vault,
+					Vault:                       keyVaultGetOp,
+					DiagnosticSettingsResources: insightsListOp.Value,
+					ResourceGroup:               resourceGroup,
 				},
 			})
 		}
@@ -143,6 +143,8 @@ func KeyVaultManagedHardwareSecurityModule(ctx context.Context, authorizer autor
 	var values []Resource
 	for {
 		for _, vault := range result.Values() {
+			resourceGroup := strings.Split(*vault.ID, "/")[4]
+
 			keyvaultListOp, err := client.List(ctx, *vault.ID)
 			if err != nil {
 				return nil, err
@@ -151,8 +153,9 @@ func KeyVaultManagedHardwareSecurityModule(ctx context.Context, authorizer autor
 			values = append(values, Resource{
 				ID: *vault.ID,
 				Description: model.KeyVaultManagedHardwareSecurityModuleDescription{
-					vault,
-					keyvaultListOp,
+					ManagedHsm:                  vault,
+					DiagnosticSettingsResources: keyvaultListOp.Value,
+					ResourceGroup:               resourceGroup,
 				},
 			})
 		}

@@ -5,6 +5,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/services/redis/mgmt/2020-06-01/redis"
 	"github.com/Azure/go-autorest/autorest"
 	"gitlab.com/keibiengine/keibi-engine/pkg/azure/model"
+	"strings"
 )
 
 func RedisCache(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
@@ -19,12 +20,12 @@ func RedisCache(ctx context.Context, authorizer autorest.Authorizer, subscriptio
 	var values []Resource
 	for {
 		for _, v := range result.Values() {
+			resourceGroup := strings.Split(*v.ID, "/")[4]
 			values = append(values, Resource{
 				ID: *v.ID,
-				Description: JSONAllFieldsMarshaller{
-					model.RedisCacheDescription{
-						ResourceType: v,
-					},
+				Description: model.RedisCacheDescription{
+					ResourceType:  v,
+					ResourceGroup: resourceGroup,
 				},
 			})
 		}

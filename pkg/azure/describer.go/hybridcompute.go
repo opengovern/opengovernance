@@ -29,12 +29,22 @@ func HybridComputeMachine(ctx context.Context, authorizer autorest.Authorizer, s
 			if err != nil {
 				return nil, err
 			}
+			v := hybridComputeListResult.Values()
+			for hybridComputeListResult.NotDone() {
+				err := hybridComputeListResult.NextWithContext(ctx)
+				if err != nil {
+					return nil, err
+				}
+
+				v = append(v, hybridComputeListResult.Values()...)
+			}
 
 			values = append(values, Resource{
 				ID: *machine.ID,
 				Description: model.HybridComputeMachineDescription{
-					machine,
-					hybridComputeListResult,
+					Machine:           machine,
+					MachineExtensions: v,
+					ResourceGroup:     resourceGroup,
 				},
 			})
 		}

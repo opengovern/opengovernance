@@ -6,6 +6,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/services/hdinsight/mgmt/2018-06-01/hdinsight"
 	"github.com/Azure/go-autorest/autorest"
 	"gitlab.com/keibiengine/keibi-engine/pkg/azure/model"
+	"strings"
 )
 
 func HdInsightCluster(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
@@ -23,6 +24,8 @@ func HdInsightCluster(ctx context.Context, authorizer autorest.Authorizer, subsc
 	var values []Resource
 	for {
 		for _, cluster := range result.Values() {
+			resourceGroup := strings.Split(*cluster.ID, "/")[4]
+
 			hdinsightListOp, err := insightsClient.List(ctx, *cluster.ID)
 			if err != nil {
 				return nil, err
@@ -31,8 +34,9 @@ func HdInsightCluster(ctx context.Context, authorizer autorest.Authorizer, subsc
 			values = append(values, Resource{
 				ID: *cluster.ID,
 				Description: model.HdinsightClusterDescription{
-					cluster,
-					hdinsightListOp,
+					Cluster:                     cluster,
+					DiagnosticSettingsResources: hdinsightListOp.Value,
+					ResourceGroup:               resourceGroup,
 				},
 			})
 		}

@@ -2,7 +2,6 @@ package describer
 
 import (
 	"context"
-	"github.com/Azure/azure-sdk-for-go/profiles/latest/cosmos-db/mgmt/documentdb"
 	"github.com/Azure/azure-sdk-for-go/services/preview/cosmos-db/mgmt/2020-04-01-preview/documentdb"
 	"github.com/Azure/go-autorest/autorest"
 	"gitlab.com/keibiengine/keibi-engine/pkg/azure/model"
@@ -74,10 +73,13 @@ func CosmosdbAccount(ctx context.Context, authorizer autorest.Authorizer, subscr
 	var values []Resource
 
 	for _, account := range *result.Value {
+		resourceGroup := strings.Split(*account.ID, "/")[4]
+
 		values = append(values, Resource{
 			ID:          *account.ID,
 			Description: model.CosmosdbAccountDescription{
-				account,
+				DatabaseAccountGetResults: account,
+				ResourceGroup:             resourceGroup,
 			},
 		})
 	}

@@ -39,12 +39,12 @@ func KeyVaultSecret(ctx context.Context, authorizer autorest.Authorizer, subscri
 			for {
 				for _, sc := range res.Values() {
 					splitID := strings.Split(*sc.ID, "/")
-					name := splitID[4]
+					resourceGroup := splitID[4]
 
 					if !*sc.Attributes.Enabled {
 						continue
 					}
-					op, err := client.GetSecret(ctx, vaultURI, name, "")
+					op, err := client.GetSecret(ctx, vaultURI, resourceGroup, "")
 					if err != nil {
 						return nil, err
 					}
@@ -77,10 +77,11 @@ func KeyVaultSecret(ctx context.Context, authorizer autorest.Authorizer, subscri
 
 					values = append(values, Resource{
 						ID: *sc.ID,
-						Description: model.SearchServiceDescription{
-							sc,
-							op,
-							turbotData,
+						Description: model.KeyVaultSecretDescription{
+							SecretItem:    sc,
+							SecretBundle:  op,
+							TurboData:     turbotData,
+							ResourceGroup: resourceGroup,
 						},
 					})
 

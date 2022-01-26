@@ -79,10 +79,11 @@ func MssqlManagedInstance(ctx context.Context, authorizer autorest.Authorizer, s
 			values = append(values, Resource{
 				ID: *managedInstance.ID,
 				Description: model.MssqlManagedInstanceDescription{
-					managedInstance,
-					viop,
-					vsop,
-					veop,
+					ManagedInstance:                         managedInstance,
+					ManagedInstanceVulnerabilityAssessments: viop,
+					ManagedDatabaseSecurityAlertPolicies:    vsop,
+					ManagedInstanceEncryptionProtectors:     veop,
+					ResourceGroup:                           resourceGroup,
 				},
 			})
 		}
@@ -184,12 +185,12 @@ func SqlDatabase(ctx context.Context, authorizer autorest.Authorizer, subscripti
 				values = append(values, Resource{
 					ID: *server.ID,
 					Description: model.SqlDatabaseDescription{
-						database,
-						longTermRetentionPolicy,
-						transparentDataOp,
-						c,
-						v,
-						getOp,
+						Database:                           getOp,
+						LongTermRetentionPolicies:          longTermRetentionPolicy,
+						TransparentDataEncryption:          transparentDataOp,
+						DatabaseVulnerabilityAssessments:   c,
+						VulnerabilityAssessmentScanRecords: v,
+						ResourceGroup: resourceGroupName,
 					},
 				})
 			}

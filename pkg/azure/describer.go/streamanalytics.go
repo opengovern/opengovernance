@@ -6,6 +6,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/services/streamanalytics/mgmt/2016-03-01/streamanalytics"
 	"github.com/Azure/go-autorest/autorest"
 	"gitlab.com/keibiengine/keibi-engine/pkg/azure/model"
+	"strings"
 )
 
 func StreamAnalyticsJob(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
@@ -23,6 +24,8 @@ func StreamAnalyticsJob(ctx context.Context, authorizer autorest.Authorizer, sub
 	var values []Resource
 	for {
 		for _, streamingJob := range result.Values() {
+			resourceGroup := strings.Split(*streamingJob.ID, "/")[4]
+
 			streamanalyticsListOp, err := client.List(ctx, *streamingJob.ID)
 			if err != nil {
 				return nil, err
@@ -31,8 +34,9 @@ func StreamAnalyticsJob(ctx context.Context, authorizer autorest.Authorizer, sub
 			values = append(values, Resource{
 				ID: *streamingJob.ID,
 				Description: model.StreamAnalyticsJobDescription{
-					streamingJob,
-					streamanalyticsListOp,
+					StreamingJob:                streamingJob,
+					DiagnosticSettingsResources: streamanalyticsListOp.Value,
+					ResourceGroup:               resourceGroup,
 				},
 			})
 		}

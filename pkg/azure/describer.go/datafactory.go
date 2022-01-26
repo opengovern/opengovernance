@@ -22,15 +22,27 @@ func DataFactory(ctx context.Context, authorizer autorest.Authorizer, subscripti
 		for _, factory := range result.Values() {
 			factoryName := factory.Name
 			resourceGroup := strings.Split(*factory.ID, "/")[4]
+
 			datafactoryListByFactoryOp, err := connClient.ListByFactory(ctx, resourceGroup, *factoryName)
 			if err != nil {
 				return nil, err
 			}
+			v := datafactoryListByFactoryOp.Values()
+			for datafactoryListByFactoryOp.NotDone() {
+				err := datafactoryListByFactoryOp.NextWithContext(ctx)
+				if err != nil {
+					return nil, err
+				}
+
+				v = append(v, datafactoryListByFactoryOp.Values()...)
+			}
+
 			values = append(values, Resource{
 				ID: *factory.ID,
 				Description: model.DataFactoryDescription{
-					factory,
-					datafactoryListByFactoryOp,
+					Factory:                    factory,
+					PrivateEndPointConnections: v,
+					ResourceGroup:              resourceGroup,
 				},
 			})
 		}

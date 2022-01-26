@@ -3,10 +3,10 @@ package describer
 import (
 	"context"
 	"github.com/Azure/azure-sdk-for-go/profiles/2020-09-01/monitor/mgmt/insights"
-	"github.com/Azure/azure-sdk-for-go/profiles/preview/preview/eventgrid/mgmt/eventgrid"
 	"github.com/Azure/azure-sdk-for-go/services/preview/eventgrid/mgmt/2021-06-01-preview/eventgrid"
 	"github.com/Azure/go-autorest/autorest"
 	"gitlab.com/keibiengine/keibi-engine/pkg/azure/model"
+	"strings"
 )
 
 func EventGridDomainTopic(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
@@ -85,6 +85,8 @@ func EventGridDomain(ctx context.Context, authorizer autorest.Authorizer, subscr
 	var values []Resource
 	for {
 		for _, domain := range result.Values() {
+			resourceGroup := strings.Split(*domain.ID, "/")[4]
+
 			id := *domain.ID
 			eventgridListOp, err := insightsClient.List(ctx, id)
 			if err != nil {
@@ -93,9 +95,10 @@ func EventGridDomain(ctx context.Context, authorizer autorest.Authorizer, subscr
 
 			values = append(values, Resource{
 				ID: *domain.ID,
-				Description: model.EventgridDomainDescription{
-					domain,
-					eventgridListOp,
+				Description: model.EventGridDomainDescription{
+					Domain:                      domain,
+					DiagnosticSettingsResources: eventgridListOp.Value,
+					ResourceGroup:               resourceGroup,
 				},
 			})
 		}
@@ -125,6 +128,8 @@ func EventGridTopic(ctx context.Context, authorizer autorest.Authorizer, subscri
 	var values []Resource
 	for {
 		for _, topic := range result.Values() {
+			resourceGroup := strings.Split(*topic.ID, "/")[4]
+
 			eventgridListOp, err := insightsClient.List(ctx, *topic.ID)
 			if err != nil {
 				return nil, err
@@ -132,9 +137,10 @@ func EventGridTopic(ctx context.Context, authorizer autorest.Authorizer, subscri
 
 			values = append(values, Resource{
 				ID: *topic.ID,
-				Description: model.EventgridTopicDescription{
-					topic,
-					eventgridListOp,
+				Description: model.EventGridTopicDescription{
+					Topic:                       topic,
+					DiagnosticSettingsResources: eventgridListOp.Value,
+					ResourceGroup:               resourceGroup,
 				},
 			})
 		}

@@ -5,6 +5,7 @@ import (
 	sub "github.com/Azure/azure-sdk-for-go/profiles/latest/subscription/mgmt/subscription"
 	"github.com/Azure/go-autorest/autorest"
 	"gitlab.com/keibiengine/keibi-engine/pkg/azure/model"
+	"strings"
 )
 
 func Location(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
@@ -18,10 +19,13 @@ func Location(ctx context.Context, authorizer autorest.Authorizer, subscription 
 
 	var values []Resource
 	for _, location := range *result.Value {
+		resourceGroup := strings.Split(*location.ID, "/")[4]
+
 		values = append(values, Resource{
 			ID: *location.ID,
 			Description: model.LocationDescription{
-				location,
+				Location:      location,
+				ResourceGroup: resourceGroup,
 			},
 		})
 	}

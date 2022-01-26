@@ -22,12 +22,13 @@ func ComputeDisk(ctx context.Context, authorizer autorest.Authorizer, subscripti
 	var values []Resource
 	for {
 		for _, v := range result.Values() {
+			resourceGroup := strings.Split(*v.ID, "/")[4]
+
 			values = append(values, Resource{
 				ID: *v.ID,
-				Description: JSONAllFieldsMarshaller{
-					model.ComputeDiskDescription{
-						Disk: v,
-					},
+				Description: model.ComputeDiskDescription{
+					Disk:          v,
+					ResourceGroup: resourceGroup,
 				},
 			})
 		}
@@ -57,12 +58,13 @@ func ComputeDiskAccess(ctx context.Context, authorizer autorest.Authorizer, subs
 	var values []Resource
 	for {
 		for _, v := range result.Values() {
+			resourceGroup := strings.Split(*v.ID, "/")[4]
+
 			values = append(values, Resource{
 				ID: *v.ID,
-				Description: JSONAllFieldsMarshaller{
-					model.ComputeDiskAccessDescription{
-						DiskAccess: v,
-					},
+				Description: model.ComputeDiskAccessDescription{
+					DiskAccess:    v,
+					ResourceGroup: resourceGroup,
 				},
 			})
 		}
@@ -104,11 +106,10 @@ func ComputeVirtualMachineScaleSet(ctx context.Context, authorizer autorest.Auth
 
 			values = append(values, Resource{
 				ID: *v.ID,
-				Description: JSONAllFieldsMarshaller{
-					model.ComputeVirtualMachineScaleSetDescription{
-						VirtualMachineScaleSet:           v,
-						VirtualMachineScaleSetExtensions: op.Values(),
-					},
+				Description: model.ComputeVirtualMachineScaleSetDescription{
+					VirtualMachineScaleSet:           v,
+					VirtualMachineScaleSetExtensions: op.Values(),
+					ResourceGroup:                    resourceGroupName,
 				},
 			})
 		}
@@ -201,12 +202,13 @@ func ComputeVirtualMachine(ctx context.Context, authorizer autorest.Authorizer, 
 			values = append(values, Resource{
 				ID: *virtualMachine.ID,
 				Description: model.ComputeVirtualMachineDescription{
-					virtualMachine,
-					computeInstanceViewOp,
-					ipConfigs,
-					publicIPs,
-					computeListOp,
-					configurationListOp,
+					VirtualMachine:             virtualMachine,
+					VirtualMachineInstanceView: computeInstanceViewOp,
+					InterfaceIPConfigurations:  ipConfigs,
+					PublicIPs:                  publicIPs,
+					VirtualMachineExtension:    computeListOp.Value,
+					Assignments:                configurationListOp.Value,
+					ResourceGroup:              resourceGroupName,
 				},
 			})
 		}

@@ -7,6 +7,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/services/appplatform/mgmt/2020-07-01/appplatform"
 	"github.com/Azure/go-autorest/autorest"
 	"gitlab.com/keibiengine/keibi-engine/pkg/azure/model"
+	"strings"
 )
 
 func SpringCloudService(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
@@ -38,6 +39,9 @@ func SpringCloudService(ctx context.Context, authorizer autorest.Authorizer, sub
 			for {
 				for _, service := range res.Values() {
 					id := *service.ID
+					splitID := strings.Split(*service.ID, "/")
+
+					resourceGroup := splitID[4]
 					appplatformListOp, err := insightsClient.List(ctx, id)
 					if err != nil {
 						return nil, err
@@ -45,8 +49,9 @@ func SpringCloudService(ctx context.Context, authorizer autorest.Authorizer, sub
 					values = append(values, Resource{
 						ID: *service.ID,
 						Description: model.SpringCloudServiceDescription{
-							service,
-							appplatformListOp,
+							ServiceResource:            service,
+							DiagnosticSettingsResource: appplatformListOp.Value,
+							ResourceGroup:              resourceGroup,
 						},
 					})
 				}

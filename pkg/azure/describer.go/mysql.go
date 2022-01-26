@@ -52,9 +52,10 @@ func MysqlServer(ctx context.Context, authorizer autorest.Authorizer, subscripti
 		values = append(values, Resource{
 			ID: *server.ID,
 			Description: model.MysqlServerDescription{
-				server,
-				mysqlListByServerOp,
-				keys,
+				Server:         server,
+				Configurations: mysqlListByServerOp.Value,
+				ServerKeys:     keys,
+				ResourceGroup:  resourceGroup,
 			},
 		})
 	}

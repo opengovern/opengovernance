@@ -145,14 +145,23 @@ func ServicebusNamespace(ctx context.Context, authorizer autorest.Authorizer, su
 			if err != nil {
 				return nil, err
 			}
+			v := servicebusListOp.Values()
+			for servicebusListOp.NotDone() {
+				err := servicebusListOp.NextWithContext(ctx)
+				if err != nil {
+					return nil, err
+				}
 
+				v = append(v, servicebusListOp.Values()...)
+			}
 			values = append(values, Resource{
 				ID: *namespace.ID,
 				Description: model.ServicebusNamespaceDescription{
-					namespace,
-					insightsListOp,
-					servicebusGetNetworkRuleSetOp,
-					servicebusListOp,
+					SBNamespace:                 namespace,
+					DiagnosticSettingsResources: insightsListOp.Value,
+					NetworkRuleSet:              servicebusGetNetworkRuleSetOp,
+					PrivateEndpointConnections:  v,
+					ResourceGroup:               resourceGroup,
 				},
 			})
 		}

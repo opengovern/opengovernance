@@ -4,7 +4,6 @@ import (
 	"context"
 	"github.com/Azure/azure-sdk-for-go/services/postgresql/mgmt/2020-01-01/postgresql"
 	"github.com/Azure/go-autorest/autorest"
-	"github.com/turbot/steampipe-plugin-azure/azure"
 	"gitlab.com/keibiengine/keibi-engine/pkg/azure/model"
 	"strings"
 )
@@ -41,6 +40,15 @@ func PostgresqlServer(ctx context.Context, authorizer autorest.Authorizer, subsc
 		if err != nil {
 			return nil, err
 		}
+		kop := keysListOp.Values()
+		for keysListOp.NotDone() {
+			err := keysListOp.NextWithContext(ctx)
+			if err != nil {
+				return nil, err
+			}
+
+			kop = append(kop, keysListOp.Values()...)
+		}
 
 		var serverKeys []postgresql.ServerKey
 		serverKeys = append(serverKeys, keysListOp.Values()...)
@@ -60,11 +68,12 @@ func PostgresqlServer(ctx context.Context, authorizer autorest.Authorizer, subsc
 		values = append(values, Resource{
 			ID: *server.ID,
 			Description: model.PostgresqlServerDescription{
-				server,
-				adminListOp,
-				confListByServerOp,
-				keysListOp,
-				firewallListByServerOp,
+				Server:                       server,
+				ServerAdministratorResources: adminListOp.Value,
+				Configurations:               confListByServerOp.Value,
+				ServerKeys:                   kop,
+				FirewallRules:                firewallListByServerOp.Value,
+				ResourceGroup:                resourceGroupName,
 			},
 		})
 	}

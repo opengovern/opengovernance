@@ -43,13 +43,24 @@ func EventhubNamespace(ctx context.Context, authorizer autorest.Authorizer, subs
 			if err != nil {
 				return nil, err
 			}
+			v := eventhubListOp.Values()
+			for eventhubListOp.NotDone() {
+				err := eventhubListOp.NextWithContext(ctx)
+				if err != nil {
+					return nil, err
+				}
+
+				v = append(v, eventhubListOp.Values()...)
+			}
+
 			values = append(values, Resource{
 				ID: *namespace.ID,
 				Description: model.EventhubNamespaceDescription{
-					namespace,
-					insightsListOp,
-					eventhubGetNetworkRuleSetOp,
-					eventhubListOp,
+					EHNamespace:                 namespace,
+					DiagnosticSettingsResources: insightsListOp.Value,
+					NetworkRuleSet:              eventhubGetNetworkRuleSetOp,
+					PrivateEndpointConnection:   v,
+					ResourceGroup:               resourceGroupName,
 				},
 			})
 		}

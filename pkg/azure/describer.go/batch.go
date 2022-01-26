@@ -6,6 +6,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/services/batch/mgmt/2020-09-01/batch"
 	"github.com/Azure/go-autorest/autorest"
 	"gitlab.com/keibiengine/keibi-engine/pkg/azure/model"
+	"strings"
 )
 
 func BatchAccount(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
@@ -28,12 +29,16 @@ func BatchAccount(ctx context.Context, authorizer autorest.Authorizer, subscript
 			if err != nil {
 				return nil, err
 			}
+			splitID := strings.Split(*account.ID, "/")
+
+			resourceGroup := splitID[4]
 
 			values = append(values, Resource{
 				ID: *account.ID,
 				Description: model.BatchAccountDescription{
-					account,
-					batchListOp,
+					Account:                     account,
+					DiagnosticSettingsResources: batchListOp.Value,
+					ResourceGroup:               resourceGroup,
 				},
 			})
 		}

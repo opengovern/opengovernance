@@ -6,7 +6,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/services/preview/machinelearningservices/mgmt/2020-02-18-preview/machinelearningservices"
 	"github.com/Azure/go-autorest/autorest"
 	"gitlab.com/keibiengine/keibi-engine/pkg/azure/model"
-	"gorm.io/gorm/logger"
+	"strings"
 )
 
 func MachineLearningWorkspace(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
@@ -24,6 +24,8 @@ func MachineLearningWorkspace(ctx context.Context, authorizer autorest.Authorize
 	var values []Resource
 	for {
 		for _, workspace := range result.Values() {
+			resourceGroup := strings.Split(*workspace.ID, "/")[4]
+
 			machineLearningServicesListOp, err := client.List(ctx, *workspace.ID)
 			if err != nil {
 				return nil, err
@@ -31,8 +33,9 @@ func MachineLearningWorkspace(ctx context.Context, authorizer autorest.Authorize
 			values = append(values, Resource{
 				ID: *workspace.ID,
 				Description: model.MachineLearningWorkspaceDescription{
-					workspace,
-					machineLearningServicesListOp,
+					Workspace:                   workspace,
+					DiagnosticSettingsResources: machineLearningServicesListOp.Value,
+					ResourceGroup:               resourceGroup,
 				},
 			})
 		}

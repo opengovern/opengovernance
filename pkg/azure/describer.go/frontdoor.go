@@ -6,6 +6,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/services/frontdoor/mgmt/2020-05-01/frontdoor"
 	"github.com/Azure/go-autorest/autorest"
 	"gitlab.com/keibiengine/keibi-engine/pkg/azure/model"
+	"strings"
 )
 
 func FrontDoor(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
@@ -23,6 +24,8 @@ func FrontDoor(ctx context.Context, authorizer autorest.Authorizer, subscription
 	var values []Resource
 	for {
 		for _, door := range result.Values() {
+			resourceGroup := strings.Split(*door.ID, "/")[4]
+
 			frontDoorListOp, err := insightsClient.List(ctx, *door.ID)
 			if err != nil {
 				return nil, err
@@ -31,8 +34,9 @@ func FrontDoor(ctx context.Context, authorizer autorest.Authorizer, subscription
 			values = append(values, Resource{
 				ID: *door.ID,
 				Description: model.FrontdoorDescription{
-					door,
-					frontDoorListOp,
+					FrontDoor:                   door,
+					DiagnosticSettingsResources: frontDoorListOp.Value,
+					ResourceGroup:               resourceGroup,
 				},
 			})
 		}

@@ -47,11 +47,10 @@ func StorageContainer(ctx context.Context, authorizer autorest.Authorizer, subsc
 
 					values = append(values, Resource{
 						ID: *v.ID,
-						Description: JSONAllFieldsMarshaller{
-							model.StorageContainerDescription{
-								ListContainerItem:  v,
-								ImmutabilityPolicy: op,
-							},
+						Description: model.StorageContainerDescription{
+							ListContainerItem:  v,
+							ImmutabilityPolicy: op,
+							ResourceGroup:      resourceGroup,
 						},
 					})
 				}
@@ -155,17 +154,27 @@ func StorageAccount(ctx context.Context, authorizer autorest.Authorizer, subscri
 			if err != nil {
 				return nil, err
 			}
+			vsop := storageListEncryptionScope.Values()
+			for storageListEncryptionScope.NotDone() {
+				err := storageListEncryptionScope.NextWithContext(ctx)
+				if err != nil {
+					return nil, err
+				}
+
+				vsop = append(vsop, storageListEncryptionScope.Values()...)
+			}
 
 			values = append(values, Resource{
 				ID: *account.ID,
 				Description: model.StorageAccountDescription{
-					account,
-					storageGetOp,
-					blobServicesProperties,
-					storageListKeysAccountKeys,
-					storageGetServicePropertiesOp,
-					storageListOp,
-					storageListEncryptionScope,
+					Account:                     account,
+					ManagementPolicy:            storageGetOp,
+					BlobServiceProperties:       blobServicesProperties,
+					AccountKeys:                 storageListKeysAccountKeys.Keys,
+					FileServiceProperties:       storageGetServicePropertiesOp,
+					DiagnosticSettingsResources: storageListOp.Value,
+					EncryptionScopes:            vsop,
+					ResourceGroup:               *resourceGroup,
 				},
 			})
 		}

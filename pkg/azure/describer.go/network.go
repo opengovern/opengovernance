@@ -22,12 +22,13 @@ func NetworkInterface(ctx context.Context, authorizer autorest.Authorizer, subsc
 	var values []Resource
 	for {
 		for _, v := range result.Values() {
+			resourceGroup := strings.Split(*v.ID, "/")[4]
+
 			values = append(values, Resource{
 				ID: *v.ID,
-				Description: JSONAllFieldsMarshaller{
-					model.NetworkInterfaceDescription{
-						Interface: v,
-					},
+				Description: model.NetworkInterfaceDescription{
+					Interface:     v,
+					ResourceGroup: resourceGroup,
 				},
 			})
 		}
@@ -73,10 +74,9 @@ func NetworkWatcherFlowLog(ctx context.Context, authorizer autorest.Authorizer, 
 			for _, v := range result.Values() {
 				values = append(values, Resource{
 					ID: *v.ID,
-					Description: JSONAllFieldsMarshaller{
-						model.NetworkWatcherFlowLogDescription{
-							FlowLog: v,
-						},
+					Description: model.NetworkWatcherFlowLogDescription{
+						FlowLog:       v,
+						ResourceGroup: resourceGroupID,
 					},
 				})
 			}
@@ -121,10 +121,9 @@ func Subnet(ctx context.Context, authorizer autorest.Authorizer, subscription st
 				for _, v := range result.Values() {
 					values = append(values, Resource{
 						ID: *v.ID,
-						Description: JSONAllFieldsMarshaller{
-							model.SubnetDescription{
-								Subnet: v,
-							},
+						Description: model.SubnetDescription{
+							Subnet:        v,
+							ResourceGroup: *resourceGroupName,
 						},
 					})
 				}
@@ -165,12 +164,13 @@ func VirtualNetwork(ctx context.Context, authorizer autorest.Authorizer, subscri
 	var values []Resource
 	for {
 		for _, v := range result.Values() {
+			resourceGroup := strings.Split(*v.ID, "/")[4]
+
 			values = append(values, Resource{
 				ID: *v.ID,
-				Description: JSONAllFieldsMarshaller{
-					model.VirtualNetworkDescription{
-						VirtualNetwork: v,
-					},
+				Description: model.VirtualNetworkDescription{
+					VirtualNetwork: v,
+					ResourceGroup:  resourceGroup,
 				},
 			})
 		}
@@ -202,6 +202,8 @@ func ApplicationGateway(ctx context.Context, authorizer autorest.Authorizer, sub
 	var values []Resource
 	for {
 		for _, gateway := range result.Values() {
+			resourceGroup := strings.Split(*gateway.ID, "/")[4]
+
 			networkListOp, err := insightsClient.List(ctx, *gateway.ID)
 			if err != nil {
 				return nil, err
@@ -210,8 +212,9 @@ func ApplicationGateway(ctx context.Context, authorizer autorest.Authorizer, sub
 			values = append(values, Resource{
 				ID: *gateway.ID,
 				Description: model.ApplicationGatewayDescription{
-					gateway,
-					networkListOp,
+					ApplicationGateway:          gateway,
+					DiagnosticSettingsResources: networkListOp.Value,
+					ResourceGroup:               resourceGroup,
 				},
 			})
 		}
@@ -241,6 +244,8 @@ func NetworkSecurityGroup(ctx context.Context, authorizer autorest.Authorizer, s
 	var values []Resource
 	for {
 		for _, networkSecurityGroup := range result.Values() {
+			resourceGroup := strings.Split(*networkSecurityGroup.ID, "/")[4]
+
 			id := *networkSecurityGroup.ID
 			networkListOp, err := client.List(ctx, id)
 			if err != nil {
@@ -249,8 +254,9 @@ func NetworkSecurityGroup(ctx context.Context, authorizer autorest.Authorizer, s
 			values = append(values, Resource{
 				ID: *networkSecurityGroup.ID,
 				Description: model.NetworkSecurityGroupDescription{
-					networkSecurityGroup,
-					networkListOp,
+					SecurityGroup:               networkSecurityGroup,
+					DiagnosticSettingsResources: networkListOp.Value,
+					ResourceGroup:               resourceGroup,
 				},
 			})
 		}
@@ -275,10 +281,13 @@ func NetworkWatcher(ctx context.Context, authorizer autorest.Authorizer, subscri
 
 	var values []Resource
 	for _, networkWatcher := range *result.Value {
+		resourceGroup := strings.Split(*networkWatcher.ID, "/")[4]
+
 		values = append(values, Resource{
 			ID: *networkWatcher.ID,
 			Description: model.NetworkWatcherDescription{
-				networkWatcher,
+				Watcher:       networkWatcher,
+				ResourceGroup: resourceGroup,
 			},
 		})
 	}

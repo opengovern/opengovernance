@@ -6,6 +6,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/services/logic/mgmt/2019-05-01/logic"
 	"github.com/Azure/go-autorest/autorest"
 	"gitlab.com/keibiengine/keibi-engine/pkg/azure/model"
+	"strings"
 )
 
 func LogicAppWorkflow(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
@@ -23,6 +24,8 @@ func LogicAppWorkflow(ctx context.Context, authorizer autorest.Authorizer, subsc
 	var values []Resource
 	for {
 		for _, workflow := range result.Values() {
+			resourceGroup := strings.Split(*workflow.ID, "/")[4]
+
 			logicListOp, err := client.List(ctx, *workflow.ID)
 			if err != nil {
 				return nil, err
@@ -31,8 +34,9 @@ func LogicAppWorkflow(ctx context.Context, authorizer autorest.Authorizer, subsc
 			values = append(values, Resource{
 				ID: *workflow.ID,
 				Description: model.LogicAppWorkflowDescription{
-					workflow,
-					logicListOp,
+					Workflow:                    workflow,
+					DiagnosticSettingsResources: logicListOp.Value,
+					ResourceGroup:               resourceGroup,
 				},
 			})
 		}

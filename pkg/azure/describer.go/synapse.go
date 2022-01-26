@@ -34,7 +34,7 @@ func SynapseWorkspace(ctx context.Context, authorizer autorest.Authorizer, subsc
 				return nil, err
 			}
 
-			serverVulnerabilityAssessments := []synapse.ServerVulnerabilityAssessment{}
+			var serverVulnerabilityAssessments []synapse.ServerVulnerabilityAssessment
 			serverVulnerabilityAssessments = append(serverVulnerabilityAssessments, synapseListResult.Values()...)
 
 			for synapseListResult.NotDone() {
@@ -53,9 +53,10 @@ func SynapseWorkspace(ctx context.Context, authorizer autorest.Authorizer, subsc
 			values = append(values, Resource{
 				ID: *config.ID,
 				Description: model.SynapseWorkspaceDescription{
-					config,
-					serverVulnerabilityAssessments,
-					synapseListOp,
+					Workspace:                      config,
+					ServerVulnerabilityAssessments: serverVulnerabilityAssessments,
+					DiagnosticSettingsResources:    synapseListOp.Value,
+					ResourceGroup:                  resourceGroup,
 				},
 			})
 		}

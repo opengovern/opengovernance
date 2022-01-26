@@ -5,6 +5,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/services/servicefabric/mgmt/2019-03-01/servicefabric"
 	"github.com/Azure/go-autorest/autorest"
 	"gitlab.com/keibiengine/keibi-engine/pkg/azure/model"
+	"strings"
 )
 
 func ServiceFabricCluster(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
@@ -16,9 +17,11 @@ func ServiceFabricCluster(ctx context.Context, authorizer autorest.Authorizer, s
 	}
 	var values []Resource
 	for _, cluster := range *result.Value {
+		resourceGroup := strings.Split(*cluster.ID, "/")[4]
+
 		values = append(values, Resource{
 			ID: *cluster.ID,
-			Description: model.ServiceFabricClusterDescription{cluster}},
+			Description: model.ServiceFabricClusterDescription{Cluster: cluster, ResourceGroup: resourceGroup}},
 		)
 	}
 	return values, nil

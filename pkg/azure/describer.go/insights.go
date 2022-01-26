@@ -5,6 +5,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/profiles/2020-09-01/monitor/mgmt/insights"
 	"github.com/Azure/go-autorest/autorest"
 	"gitlab.com/keibiengine/keibi-engine/pkg/azure/model"
+	"strings"
 )
 
 func DiagnosticSetting(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
@@ -18,10 +19,13 @@ func DiagnosticSetting(ctx context.Context, authorizer autorest.Authorizer, subs
 
 	var values []Resource
 	for _, diagnosticSetting := range *result.Value {
+		resourceGroup := strings.Split(*diagnosticSetting.ID, "/")[4]
+
 		values = append(values, Resource{
 			ID: *diagnosticSetting.ID,
 			Description: model.DiagnosticSettingDescription{
-				diagnosticSetting,
+				DiagnosticSettingsResource: diagnosticSetting,
+				ResourceGroup:              resourceGroup,
 			},
 		})
 	}
@@ -36,10 +40,13 @@ func LogAlert(ctx context.Context, authorizer autorest.Authorizer, subscription 
 	}
 	var values []Resource
 	for _, logAlert := range *result.Value {
+		resourceGroup := strings.Split(*logAlert.ID, "/")[4]
+
 		values = append(values, Resource{
 			ID: *logAlert.ID,
 			Description: model.LogAlertDescription{
-				logAlert,
+				ActivityLogAlertResource: logAlert,
+				ResourceGroup:            resourceGroup,
 			},
 		})
 	}
@@ -55,10 +62,13 @@ func LogProfile(ctx context.Context, authorizer autorest.Authorizer, subscriptio
 	}
 	var values []Resource
 	for _, logProfile := range *result.Value {
+		resourceGroup := strings.Split(*logProfile.ID, "/")[4]
+
 		values = append(values, Resource{
 			ID: *logProfile.ID,
 			Description: model.LogProfileDescription{
-				logProfile,
+				LogProfileResource: logProfile,
+				ResourceGroup:      resourceGroup,
 			},
 		})
 	}

@@ -5,6 +5,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/services/kusto/mgmt/2021-01-01/kusto"
 	"github.com/Azure/go-autorest/autorest"
 	"gitlab.com/keibiengine/keibi-engine/pkg/azure/model"
+	"strings"
 )
 
 func KustoCluster(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
@@ -17,10 +18,13 @@ func KustoCluster(ctx context.Context, authorizer autorest.Authorizer, subscript
 
 	var values []Resource
 	for _, kusto := range *result.Value {
+		resourceGroup := strings.Split(*kusto.ID, "/")[4]
+
 		values = append(values, Resource{
 			ID: *kusto.ID,
 			Description: model.KustoClusterDescription{
-				kusto,
+				Cluster:       kusto,
+				ResourceGroup: resourceGroup,
 			},
 		})
 	}

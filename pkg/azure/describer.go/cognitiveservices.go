@@ -6,6 +6,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/services/cognitiveservices/mgmt/2021-04-30/cognitiveservices"
 	"github.com/Azure/go-autorest/autorest"
 	"gitlab.com/keibiengine/keibi-engine/pkg/azure/model"
+	"strings"
 )
 
 func CognitiveAccount(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
@@ -23,6 +24,8 @@ func CognitiveAccount(ctx context.Context, authorizer autorest.Authorizer, subsc
 	var values []Resource
 	for {
 		for _, account := range result.Values() {
+			resourceGroup := strings.Split(*account.ID, "/")[4]
+
 			id := *account.ID
 			cognitiveservicesListOp, err := client.List(ctx, id)
 			if err != nil {
@@ -32,8 +35,9 @@ func CognitiveAccount(ctx context.Context, authorizer autorest.Authorizer, subsc
 			values = append(values, Resource{
 				ID: *account.ID,
 				Description: model.CognitiveAccountDescription{
-					account,
-					cognitiveservicesListOp,
+					Account:                     account,
+					DiagnosticSettingsResources: cognitiveservicesListOp.Value,
+					ResourceGroup:               resourceGroup,
 				},
 			})
 		}

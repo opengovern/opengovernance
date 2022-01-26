@@ -22,10 +22,8 @@ func ResourceLink(ctx context.Context, authorizer autorest.Authorizer, subscript
 		for _, v := range result.Values() {
 			values = append(values, Resource{
 				ID: *v.ID,
-				Description: JSONAllFieldsMarshaller{
-					model.ResourceLinkDescription{
-						ResourceLink: v,
-					},
+				Description: model.ResourceLinkDescription{
+					ResourceLink: v,
 				},
 			})
 		}
