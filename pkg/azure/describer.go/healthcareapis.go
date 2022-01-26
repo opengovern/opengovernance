@@ -27,6 +27,8 @@ func HealthcareService(ctx context.Context, authorizer autorest.Authorizer, subs
 	var values []Resource
 	for {
 		for _, v := range result.Values() {
+			resourceGroup := strings.Split(*v.ID, "/")[4]
+
 			var opValue *[]insights.DiagnosticSettingsResource
 			var opServiceValue *[]healthcareapis.PrivateEndpointConnection
 			if v.ID != nil {
@@ -54,12 +56,11 @@ func HealthcareService(ctx context.Context, authorizer autorest.Authorizer, subs
 
 			values = append(values, Resource{
 				ID: *v.ID,
-				Description: JSONAllFieldsMarshaller{
-					model.HealthcareServiceDescription{
-						ServicesDescription:         v,
-						DiagnosticSettingsResources: opValue,
-						PrivateEndpointConnections:  opServiceValue,
-					},
+				Description: model.HealthcareServiceDescription{
+					ServicesDescription:         v,
+					DiagnosticSettingsResources: opValue,
+					PrivateEndpointConnections:  opServiceValue,
+					ResourceGroup:               resourceGroup,
 				},
 			})
 		}

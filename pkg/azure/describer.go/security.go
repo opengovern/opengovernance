@@ -22,10 +22,8 @@ func SecurityCenterAutoProvisioning(ctx context.Context, authorizer autorest.Aut
 		for _, v := range result.Values() {
 			values = append(values, Resource{
 				ID: *v.ID,
-				Description: JSONAllFieldsMarshaller{
-					model.SecurityCenterAutoProvisioningDescription{
-						AutoProvisioningSetting: v,
-					},
+				Description: model.SecurityCenterAutoProvisioningDescription{
+					AutoProvisioningSetting: v,
 				},
 			})
 		}
@@ -58,10 +56,8 @@ func SecurityCenterContact(ctx context.Context, authorizer autorest.Authorizer, 
 		for _, v := range result.Values() {
 			values = append(values, Resource{
 				ID: *v.ID,
-				Description: JSONAllFieldsMarshaller{
-					model.SecurityCenterContactDescription{
-						Contact: v,
-					},
+				Description: model.SecurityCenterContactDescription{
+					Contact: v,
 				},
 			})
 		}
@@ -94,10 +90,8 @@ func SecurityCenterJitNetworkAccessPolicy(ctx context.Context, authorizer autore
 		for _, v := range result.Values() {
 			values = append(values, Resource{
 				ID: *v.ID,
-				Description: JSONAllFieldsMarshaller{
-					model.SecurityCenterJitNetworkAccessPolicyDescription{
-						JitNetworkAccessPolicy: v,
-					},
+				Description: model.SecurityCenterJitNetworkAccessPolicyDescription{
+					JitNetworkAccessPolicy: v,
 				},
 			})
 		}
@@ -130,10 +124,8 @@ func SecurityCenterSetting(ctx context.Context, authorizer autorest.Authorizer, 
 		for _, v := range result.Values() {
 			values = append(values, Resource{
 				ID: *v.ID,
-				Description: JSONAllFieldsMarshaller{
-					model.SecurityCenterSettingDescription{
-						Setting: v,
-					},
+				Description: model.SecurityCenterSettingDescription{
+					Setting: v,
 				},
 			})
 		}
@@ -165,10 +157,8 @@ func SecurityCenterSubscriptionPricing(ctx context.Context, authorizer autorest.
 		for _, v := range result.Values() {
 			values = append(values, Resource{
 				ID: *v.ID,
-				Description: JSONAllFieldsMarshaller{
-					model.SecurityCenterSubscriptionPricingDescription{
-						Pricing: v,
-					},
+				Description: model.SecurityCenterSubscriptionPricingDescription{
+					Pricing: v,
 				},
 			})
 		}

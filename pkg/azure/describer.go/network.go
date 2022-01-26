@@ -2,7 +2,9 @@ package describer
 
 import (
 	"context"
+	"github.com/Azure/azure-sdk-for-go/profiles/2020-09-01/monitor/mgmt/insights"
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2020-05-01/network"
+	newnetwork "github.com/Azure/azure-sdk-for-go/services/network/mgmt/2021-02-01/network"
 	"github.com/Azure/go-autorest/autorest"
 	"gitlab.com/keibiengine/keibi-engine/pkg/azure/model"
 	"strings"
@@ -20,12 +22,13 @@ func NetworkInterface(ctx context.Context, authorizer autorest.Authorizer, subsc
 	var values []Resource
 	for {
 		for _, v := range result.Values() {
+			resourceGroup := strings.Split(*v.ID, "/")[4]
+
 			values = append(values, Resource{
 				ID: *v.ID,
-				Description: JSONAllFieldsMarshaller{
-					model.NetworkInterfaceDescription{
-						Interface: v,
-					},
+				Description: model.NetworkInterfaceDescription{
+					Interface:     v,
+					ResourceGroup: resourceGroup,
 				},
 			})
 		}
@@ -71,10 +74,9 @@ func NetworkWatcherFlowLog(ctx context.Context, authorizer autorest.Authorizer, 
 			for _, v := range result.Values() {
 				values = append(values, Resource{
 					ID: *v.ID,
-					Description: JSONAllFieldsMarshaller{
-						model.NetworkWatcherFlowLogDescription{
-							FlowLog: v,
-						},
+					Description: model.NetworkWatcherFlowLogDescription{
+						FlowLog:       v,
+						ResourceGroup: resourceGroupID,
 					},
 				})
 			}
@@ -119,10 +121,9 @@ func Subnet(ctx context.Context, authorizer autorest.Authorizer, subscription st
 				for _, v := range result.Values() {
 					values = append(values, Resource{
 						ID: *v.ID,
-						Description: JSONAllFieldsMarshaller{
-							model.SubnetDescription{
-								Subnet: v,
-							},
+						Description: model.SubnetDescription{
+							Subnet:        v,
+							ResourceGroup: *resourceGroupName,
 						},
 					})
 				}
@@ -163,12 +164,13 @@ func VirtualNetwork(ctx context.Context, authorizer autorest.Authorizer, subscri
 	var values []Resource
 	for {
 		for _, v := range result.Values() {
+			resourceGroup := strings.Split(*v.ID, "/")[4]
+
 			values = append(values, Resource{
 				ID: *v.ID,
-				Description: JSONAllFieldsMarshaller{
-					model.VirtualNetworkDescription{
-						VirtualNetwork: v,
-					},
+				Description: model.VirtualNetworkDescription{
+					VirtualNetwork: v,
+					ResourceGroup:  resourceGroup,
 				},
 			})
 		}
@@ -181,6 +183,113 @@ func VirtualNetwork(ctx context.Context, authorizer autorest.Authorizer, subscri
 		if err != nil {
 			return nil, err
 		}
+	}
+
+	return values, nil
+}
+func ApplicationGateway(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
+	insightsClient := insights.NewDiagnosticSettingsClient(subscription)
+	insightsClient.Authorizer = authorizer
+
+	client := newnetwork.NewApplicationGatewaysClient(subscription)
+	client.Authorizer = authorizer
+
+	result, err := client.ListAll(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	var values []Resource
+	for {
+		for _, gateway := range result.Values() {
+			resourceGroup := strings.Split(*gateway.ID, "/")[4]
+
+			networkListOp, err := insightsClient.List(ctx, *gateway.ID)
+			if err != nil {
+				return nil, err
+			}
+
+			values = append(values, Resource{
+				ID: *gateway.ID,
+				Description: model.ApplicationGatewayDescription{
+					ApplicationGateway:          gateway,
+					DiagnosticSettingsResources: networkListOp.Value,
+					ResourceGroup:               resourceGroup,
+				},
+			})
+		}
+		if !result.NotDone() {
+			break
+		}
+		err = result.NextWithContext(ctx)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return values, nil
+}
+
+func NetworkSecurityGroup(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
+	client := insights.NewDiagnosticSettingsClient(subscription)
+	client.Authorizer = authorizer
+
+	NetworkSecurityGroupClient := newnetwork.NewSecurityGroupsClient(subscription)
+	NetworkSecurityGroupClient.Authorizer = authorizer
+
+	result, err := NetworkSecurityGroupClient.ListAll(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	var values []Resource
+	for {
+		for _, networkSecurityGroup := range result.Values() {
+			resourceGroup := strings.Split(*networkSecurityGroup.ID, "/")[4]
+
+			id := *networkSecurityGroup.ID
+			networkListOp, err := client.List(ctx, id)
+			if err != nil {
+				return nil, err
+			}
+			values = append(values, Resource{
+				ID: *networkSecurityGroup.ID,
+				Description: model.NetworkSecurityGroupDescription{
+					SecurityGroup:               networkSecurityGroup,
+					DiagnosticSettingsResources: networkListOp.Value,
+					ResourceGroup:               resourceGroup,
+				},
+			})
+		}
+		if !result.NotDone() {
+			break
+		}
+		err = result.NextWithContext(ctx)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return values, nil
+}
+
+func NetworkWatcher(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
+	networkWatcherClient := newnetwork.NewWatchersClient(subscription)
+	networkWatcherClient.Authorizer = authorizer
+	result, err := networkWatcherClient.ListAll(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	var values []Resource
+	for _, networkWatcher := range *result.Value {
+		resourceGroup := strings.Split(*networkWatcher.ID, "/")[4]
+
+		values = append(values, Resource{
+			ID: *networkWatcher.ID,
+			Description: model.NetworkWatcherDescription{
+				Watcher:       networkWatcher,
+				ResourceGroup: resourceGroup,
+			},
+		})
 	}
 
 	return values, nil

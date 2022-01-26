@@ -21,10 +21,8 @@ func RoleAssignment(ctx context.Context, authorizer autorest.Authorizer, subscri
 		for _, v := range result.Values() {
 			values = append(values, Resource{
 				ID: *v.ID,
-				Description: JSONAllFieldsMarshaller{
-					model.RoleAssignmentDescription{
-						RoleAssignment: v,
-					},
+				Description: model.RoleAssignmentDescription{
+					RoleAssignment: v,
 				},
 			})
 		}
@@ -57,10 +55,8 @@ func RoleDefinition(ctx context.Context, authorizer autorest.Authorizer, subscri
 		for _, v := range result.Values() {
 			values = append(values, Resource{
 				ID: *v.ID,
-				Description: JSONAllFieldsMarshaller{
-					Value: model.RoleDefinitionDescription{
-						RoleDefinition: v,
-					},
+				Description: model.RoleDefinitionDescription{
+					RoleDefinition: v,
 				},
 			})
 		}

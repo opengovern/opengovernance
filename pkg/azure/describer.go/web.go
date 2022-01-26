@@ -5,6 +5,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/services/web/mgmt/2020-06-01/web"
 	"github.com/Azure/go-autorest/autorest"
 	"gitlab.com/keibiengine/keibi-engine/pkg/azure/model"
+	"strings"
 )
 
 func AppServiceEnvironment(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
@@ -19,12 +20,13 @@ func AppServiceEnvironment(ctx context.Context, authorizer autorest.Authorizer, 
 	var values []Resource
 	for {
 		for _, v := range result.Values() {
+			resourceGroup := strings.Split(*v.ID, "/")[4]
+
 			values = append(values, Resource{
 				ID: *v.ID,
-				Description: JSONAllFieldsMarshaller{
-					model.AppServiceEnvironmentDescription{
-						AppServiceEnvironmentResource: v,
-					},
+				Description: model.AppServiceEnvironmentDescription{
+					AppServiceEnvironmentResource: v,
+					ResourceGroup:                 resourceGroup,
 				},
 			})
 		}
@@ -58,6 +60,8 @@ func AppServiceFunctionApp(ctx context.Context, authorizer autorest.Authorizer, 
 	var values []Resource
 	for {
 		for _, v := range result.Values() {
+			resourceGroup := strings.Split(*v.ID, "/")[4]
+
 			authSettings, err := webClient.GetAuthSettings(ctx, *v.SiteProperties.ResourceGroup, *v.Name)
 			if err != nil {
 				return nil, err
@@ -70,12 +74,11 @@ func AppServiceFunctionApp(ctx context.Context, authorizer autorest.Authorizer, 
 
 			values = append(values, Resource{
 				ID: *v.ID,
-				Description: JSONAllFieldsMarshaller{
-					model.AppServiceFunctionAppDescription{
-						Site:               v,
-						SiteAuthSettings:   authSettings,
-						SiteConfigResource: configuration,
-					},
+				Description: model.AppServiceFunctionAppDescription{
+					Site:               v,
+					SiteAuthSettings:   authSettings,
+					SiteConfigResource: configuration,
+					ResourceGroup:      resourceGroup,
 				},
 			})
 		}
@@ -109,6 +112,8 @@ func AppServiceWebApp(ctx context.Context, authorizer autorest.Authorizer, subsc
 	var values []Resource
 	for {
 		for _, v := range result.Values() {
+			resourceGroup := strings.Split(*v.ID, "/")[4]
+
 			op, err := webClient.GetConfiguration(ctx, *v.SiteProperties.ResourceGroup, *v.Name)
 			if err != nil {
 				return nil, err
@@ -130,13 +135,12 @@ func AppServiceWebApp(ctx context.Context, authorizer autorest.Authorizer, subsc
 
 			values = append(values, Resource{
 				ID: *v.ID,
-				Description: JSONAllFieldsMarshaller{
-					model.AppServiceWebAppDescription{
-						Site:               v,
-						SiteConfigResource: op,
-						SiteAuthSettings:   authSettings,
-						VnetInfo:           vnetInfo,
-					},
+				Description: model.AppServiceWebAppDescription{
+					Site:               v,
+					SiteConfigResource: op,
+					SiteAuthSettings:   authSettings,
+					VnetInfo:           vnetInfo,
+					ResourceGroup:      resourceGroup,
 				},
 			})
 		}

@@ -21,13 +21,32 @@ func Tenant(ctx context.Context, authorizer autorest.Authorizer, subscription st
 	for _, v := range result.Values() {
 		values = append(values, Resource{
 			ID: *v.ID,
-			Description: JSONAllFieldsMarshaller{
-				model.TenantDescription{
-					TenantIDDescription: v,
-				},
+			Description: model.TenantDescription{
+				TenantIDDescription: v,
 			},
 		})
 	}
 
 	return values, nil
 }
+
+func Subscription(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
+	client := subscriptions.NewClient()
+	client.Authorizer = authorizer
+
+	op, err := client.Get(ctx, subscription)
+	if err != nil {
+		return nil, err
+	}
+
+	var values []Resource
+	values = append(values, Resource{
+		ID: *op.ID,
+		Description: model.SubscriptionDescription{
+			Subscription: op,
+		},
+	})
+
+	return values, nil
+}
+
