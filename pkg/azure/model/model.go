@@ -21,6 +21,7 @@ import (
 	analytics "github.com/Azure/azure-sdk-for-go/services/datalake/analytics/mgmt/2016-11-01/account"
 	store "github.com/Azure/azure-sdk-for-go/services/datalake/store/mgmt/2016-11-01/account"
 	"github.com/Azure/azure-sdk-for-go/services/frontdoor/mgmt/2020-05-01/frontdoor"
+	"github.com/Azure/azure-sdk-for-go/services/graphrbac/1.6/graphrbac"
 	"github.com/Azure/azure-sdk-for-go/services/guestconfiguration/mgmt/2020-06-25/guestconfiguration"
 	"github.com/Azure/azure-sdk-for-go/services/hdinsight/mgmt/2018-06-01/hdinsight"
 	"github.com/Azure/azure-sdk-for-go/services/iothub/mgmt/2020-03-01/devices"
@@ -71,7 +72,7 @@ type Metadata struct {
 type APIManagementDescription struct {
 	APIManagement               apimanagement.ServiceResource
 	DiagnosticSettingsResources []insights.DiagnosticSettingsResource
-	ResourceGroup string
+	ResourceGroup               string
 }
 
 //  ===================  App Configuration ==================
@@ -82,7 +83,7 @@ type APIManagementDescription struct {
 type AppConfigurationDescription struct {
 	ConfigurationStore          appconfiguration.ConfigurationStore
 	DiagnosticSettingsResources []insights.DiagnosticSettingsResource
-	ResourceGroup string
+	ResourceGroup               string
 }
 
 //  =================== web ==================
@@ -92,20 +93,20 @@ type AppConfigurationDescription struct {
 //getfilter:resource_group=description.ResourceGroup
 type AppServiceEnvironmentDescription struct {
 	AppServiceEnvironmentResource web.AppServiceEnvironmentResource
-	ResourceGroup string
+	ResourceGroup                 string
 }
 
-//index:
+//index:microsoft_web_sites
 //getfilter:name=description.Site.Name
 //getfilter:resource_group=description.ResourceGroup
 type AppServiceFunctionAppDescription struct {
 	Site               web.Site
 	SiteAuthSettings   web.SiteAuthSettings
 	SiteConfigResource web.SiteConfigResource
-	ResourceGroup string
+	ResourceGroup      string
 }
 
-//index:
+//index:Microsoft.Web/StaticSites
 //getfilter:name=description.Site.Name
 //getfilter:resource_group=description.ResourceGroup
 type AppServiceWebAppDescription struct {
@@ -113,7 +114,7 @@ type AppServiceWebAppDescription struct {
 	SiteAuthSettings   web.SiteAuthSettings
 	SiteConfigResource web.SiteConfigResource
 	VnetInfo           web.VnetInfo
-	ResourceGroup string
+	ResourceGroup      string
 }
 
 //  =================== compute ==================
@@ -122,7 +123,7 @@ type AppServiceWebAppDescription struct {
 //getfilter:name=description.Disk.Name
 //getfilter:resource_group=description.ResourceGroup
 type ComputeDiskDescription struct {
-	Disk compute.Disk
+	Disk          compute.Disk
 	ResourceGroup string
 }
 
@@ -130,7 +131,7 @@ type ComputeDiskDescription struct {
 //getfilter:name=description.DiskAccess.Name
 //getfilter:resource_group=description.ResourceGroup
 type ComputeDiskAccessDescription struct {
-	DiskAccess compute.DiskAccess
+	DiskAccess    compute.DiskAccess
 	ResourceGroup string
 }
 
@@ -140,7 +141,7 @@ type ComputeDiskAccessDescription struct {
 type ComputeVirtualMachineScaleSetDescription struct {
 	VirtualMachineScaleSet           compute.VirtualMachineScaleSet
 	VirtualMachineScaleSetExtensions []compute.VirtualMachineScaleSetExtension
-	ResourceGroup string
+	ResourceGroup                    string
 }
 
 //  =================== databoxedge ==================
@@ -149,7 +150,7 @@ type ComputeVirtualMachineScaleSetDescription struct {
 //getfilter:name=description.Device.Name
 //getfilter:resource_group=description.ResourceGroup
 type DataboxEdgeDeviceDescription struct {
-	Device databoxedge.Device
+	Device        databoxedge.Device
 	ResourceGroup string
 }
 
@@ -162,7 +163,7 @@ type HealthcareServiceDescription struct {
 	ServicesDescription         healthcareapis.ServicesDescription
 	DiagnosticSettingsResources *[]insights.DiagnosticSettingsResource
 	PrivateEndpointConnections  *[]healthcareapis.PrivateEndpointConnection
-	ResourceGroup string
+	ResourceGroup               string
 }
 
 //  =================== storagecache ==================
@@ -171,7 +172,7 @@ type HealthcareServiceDescription struct {
 //getfilter:name=description.Cache.Name
 //getfilter:resource_group=description.ResourceGroup
 type HpcCacheDescription struct {
-	Cache storagecache.Cache
+	Cache         storagecache.Cache
 	ResourceGroup string
 }
 
@@ -182,7 +183,7 @@ type HpcCacheDescription struct {
 //getfilter:name=description.Cache.Name
 //getfilter:resource_group=description.ResourceGroup
 type KeyVaultKeyDescription struct {
-	Key keyvault.Key
+	Key           keyvault.Key
 	ResourceGroup string
 }
 
@@ -193,7 +194,7 @@ type KeyVaultKeyDescription struct {
 //getfilter:resource_group=description.ResourceGroup
 type KubernetesClusterDescription struct {
 	ManagedCluster containerservice.ManagedCluster
-	ResourceGroup string
+	ResourceGroup  string
 }
 
 //  =================== network ==================
@@ -202,7 +203,7 @@ type KubernetesClusterDescription struct {
 //getfilter:name=description.Interface.Name
 //getfilter:resource_group=description.ResourceGroup
 type NetworkInterfaceDescription struct {
-	Interface network.Interface
+	Interface     network.Interface
 	ResourceGroup string
 }
 
@@ -211,7 +212,7 @@ type NetworkInterfaceDescription struct {
 //getfilter:name=description.ManagedCluster.Name
 //getfilter:resource_group=description.ResourceGroup
 type NetworkWatcherFlowLogDescription struct {
-	FlowLog network.FlowLog
+	FlowLog       network.FlowLog
 	ResourceGroup string
 }
 
@@ -229,13 +230,13 @@ type PolicyAssignmentDescription struct {
 //getfilter:name=description.ResourceType.Name
 //getfilter:resource_group=description.ResourceGroup
 type RedisCacheDescription struct {
-	ResourceType redis.ResourceType
+	ResourceType  redis.ResourceType
 	ResourceGroup string
 }
 
 //  =================== links ==================
 
-//index:
+//index:microsoft_resources_links
 //getfilter:id=description.ResourceLink.ID
 type ResourceLinkDescription struct {
 	ResourceLink links.ResourceLink
@@ -249,7 +250,7 @@ type RoleAssignmentDescription struct {
 	RoleAssignment authorization.RoleAssignment
 }
 
-//index:
+//index:microsoft_authorization_roledefinitions
 //getfilter:name=description.RoleDefinition.Name
 type RoleDefinitionDescription struct {
 	RoleDefinition authorization.RoleDefinition
@@ -257,24 +258,24 @@ type RoleDefinitionDescription struct {
 
 //  =================== security ==================
 
-//index:
+//index:microsoft_security_autoprovisioningsettings
 //getfilter:name=description.AutoProvisioningSetting.Name
 type SecurityCenterAutoProvisioningDescription struct {
 	AutoProvisioningSetting security.AutoProvisioningSetting
 }
 
-//index:
+//index:microsoft_security_securitycontacts
 //getfilter:name=description.Contact.Name
 type SecurityCenterContactDescription struct {
 	Contact security.Contact
 }
 
-//index:
+//index:microsoft_security_locations_jitnetworkaccesspolicies
 type SecurityCenterJitNetworkAccessPolicyDescription struct {
 	JitNetworkAccessPolicy security.JitNetworkAccessPolicy
 }
 
-//index:
+//index:microsoft_security_settings
 //getfilter:name=description.Setting.Name
 type SecurityCenterSettingDescription struct {
 	Setting security.Setting
@@ -288,24 +289,24 @@ type SecurityCenterSubscriptionPricingDescription struct {
 
 //  =================== storage ==================
 
-//index:
+//index:microsoft_storage_storageaccounts_containers
 //getfilter:name=description.ListContainerItem.Name
 //getfilter:resource_group=description.ResourceGroup
 //getfilter:account_name=
 type StorageContainerDescription struct {
 	ListContainerItem  storage.ListContainerItem
 	ImmutabilityPolicy storage.ImmutabilityPolicy
-	ResourceGroup string
+	ResourceGroup      string
 }
 
 //  =================== network ==================
 
-//index:
+//index:microsoft_network_virtualnetworks_subnets
 //getfilter:name=description.Subnet.Name
 //getfilter:resource_group=description.ResourceGroup
 //getfilter:virtual_network_name=
 type SubnetDescription struct {
-	Subnet network.Subnet
+	Subnet        network.Subnet
 	ResourceGroup string
 }
 
@@ -314,24 +315,24 @@ type SubnetDescription struct {
 //getfilter:resource_group=description.ResourceGroup
 type VirtualNetworkDescription struct {
 	VirtualNetwork network.VirtualNetwork
-	ResourceGroup string
+	ResourceGroup  string
 }
 
 //  =================== subscriptions ==================
 
-//index:
+//index:microsoft_resources_tenants
 type TenantDescription struct {
 	TenantIDDescription subscriptions.TenantIDDescription
 }
 
-//index:
+//index:microsoft_resources_subscriptions
 type SubscriptionDescription struct {
 	Subscription subscriptions.Subscription
 }
 
 //  =================== network ==================
 
-//index:Microsoft_Network_applicationGateways
+//index:microsoft_network_applicationgateways
 //getfilter:name=description.ApplicationGateway.Name
 //getfilter:resource_group=description.ResourceGroup
 type ApplicationGatewayDescription struct {
@@ -342,7 +343,7 @@ type ApplicationGatewayDescription struct {
 
 //  =================== batch ==================
 
-//index:Microsoft_Batch_batchAccounts
+//index:microsoft_batch_batchaccounts
 //getfilter:name=description.Account.Name
 //getfilter:resource_group=description.ResourceGroup
 type BatchAccountDescription struct {
@@ -353,7 +354,7 @@ type BatchAccountDescription struct {
 
 //  =================== cognitiveservices ==================
 
-//index:
+//index:microsoft_cognitiveservices_accounts
 //getfilter:name=description.Account.Name
 //getfilter:resource_group=description.ResourceGroup
 type CognitiveAccountDescription struct {
@@ -364,7 +365,7 @@ type CognitiveAccountDescription struct {
 
 //  =================== compute ==================
 
-//index:
+//index:microsoft_compute_virtualmachines
 //getfilter:name=description.VirtualMachine.Name
 //getfilter:resource_group=description.ResourceGroup
 type ComputeVirtualMachineDescription struct {
@@ -379,7 +380,7 @@ type ComputeVirtualMachineDescription struct {
 
 //  =================== containerregistry ==================
 
-//index:Microsoft_ContainerRegistry_registries
+//index:microsoft_containerregistry_registries
 //getfilter:name=description.Registry.Name
 //getfilter:resource_group=description.ResourceGroup
 type ContainerRegistryDescription struct {
@@ -391,7 +392,7 @@ type ContainerRegistryDescription struct {
 
 //  =================== documentdb ==================
 
-//index:
+//index:microsoft_documentdb_databaseaccounts
 //getfilter:name=description.DatabaseAccountGetResults.Name
 //getfilter:resource_group=description.ResourceGroup
 type CosmosdbAccountDescription struct {
@@ -401,18 +402,18 @@ type CosmosdbAccountDescription struct {
 
 //  =================== datafactory ==================
 
-//index:Microsoft_DataFactory_dataFactories
+//index:microsoft_datafactory_datafactories
 //getfilter:name=description.Factory.Name
 //getfilter:resource_group=description.ResourceGroup
 type DataFactoryDescription struct {
-	Factory datafactory.Factory
-	PrivateEndPointConnections []datafactory.PrivateEndPointConnection
-	ResourceGroup             string
+	Factory                    datafactory.Factory
+	PrivateEndPointConnections []datafactory.PrivateEndpointConnectionResource
+	ResourceGroup              string
 }
 
 //  =================== account ==================
 
-//index:
+//index:microsoft_datalakeanalytics_accounts
 //getfilter:name=description.DataLakeAnalyticsAccount.Name
 //getfilter:resource_group=description.ResourceGroup
 type DataLakeAnalyticsAccountDescription struct {
@@ -423,7 +424,7 @@ type DataLakeAnalyticsAccountDescription struct {
 
 //  =================== account ==================
 
-//index:Microsoft_DataLakeStore_accounts
+//index:microsoft_datalakestore_accounts
 //getfilter:name=description.DataLakeStoreAccount.Name
 //getfilter:resource_group=description.ResourceGroup
 type DataLakeStoreDescription struct {
@@ -444,7 +445,7 @@ type DiagnosticSettingDescription struct {
 
 //  =================== eventgrid ==================
 
-//index:
+//index:microsoft_eventgrid_domains
 //getfilter:name=description.Domain.Name
 //getfilter:resource_group=description.ResourceGroup
 type EventGridDomainDescription struct {
@@ -455,7 +456,7 @@ type EventGridDomainDescription struct {
 
 //  =================== eventgrid ==================
 
-//index:
+//index:microsoft_eventgrid_topics
 //getfilter:name=description.Topic.Name
 //getfilter:resource_group=description.ResourceGroup
 type EventGridTopicDescription struct {
@@ -466,20 +467,20 @@ type EventGridTopicDescription struct {
 
 //  =================== eventhub ==================
 
-//index:
+//index:microsoft_eventhub_namespaces
 //getfilter:name=description.EHNamespace.Name
 //getfilter:resource_group=description.ResourceGroup
 type EventhubNamespaceDescription struct {
 	EHNamespace                 eventhub.EHNamespace
 	DiagnosticSettingsResources *[]insights.DiagnosticSettingsResource
-	NetworkRuleSet eventhub.NetworkRuleSet
-	PrivateEndpointConnection []eventhub.PrivateEndpointConnection
-	ResourceGroup             string
+	NetworkRuleSet              eventhub.NetworkRuleSet
+	PrivateEndpointConnection   []eventhub.PrivateEndpointConnection
+	ResourceGroup               string
 }
 
 //  =================== frontdoor ==================
 
-//index:Microsoft_Network_frontdoors
+//index:microsoft_network_frontdoors
 //getfilter:name=description.FrontDoor.Name
 //getfilter:resource_group=description.ResourceGroup
 type FrontdoorDescription struct {
@@ -490,7 +491,7 @@ type FrontdoorDescription struct {
 
 //  =================== hdinsight ==================
 
-//index:Microsoft_HDInsight_clusterpools
+//index:microsoft_hdinsight_clusterpools
 //getfilter:name=description.Cluster.Name
 //getfilter:resource_group=description.ResourceGroup
 type HdinsightClusterDescription struct {
@@ -501,7 +502,7 @@ type HdinsightClusterDescription struct {
 
 //  =================== hybridcompute ==================
 
-//index:
+//index:microsoft_hybridcompute_machines
 //getfilter:name=description.Machine.Name
 //getfilter:resource_group=description.ResourceGroup
 type HybridComputeMachineDescription struct {
@@ -512,7 +513,7 @@ type HybridComputeMachineDescription struct {
 
 //  =================== devices ==================
 
-//index:microsoft_devices_elasticpools_iothubtenants
+//index:microsoft_devices_iothubs
 //getfilter:name=description.IotHubDescription.Name
 //getfilter:resource_group=description.ResourceGroup
 type IOTHubDescription struct {
@@ -523,7 +524,7 @@ type IOTHubDescription struct {
 
 //  =================== keyvault ==================
 
-//index:microsoft_keyvault_hsmpools
+//index:microsoft_keyvault_vaults
 //getfilter:name=description.Resource.Name
 //getfilter:resource_group=description.ResourceGroup
 type KeyVaultDescription struct {
@@ -535,7 +536,7 @@ type KeyVaultDescription struct {
 
 //  =================== keyvault ==================
 
-//index:
+//index:microsoft_keyvault_managedhsms
 //getfilter:name=description.ManagedHsm.Name
 //getfilter:resource_group=description.ResourceGroup
 type KeyVaultManagedHardwareSecurityModuleDescription struct {
@@ -546,7 +547,7 @@ type KeyVaultManagedHardwareSecurityModuleDescription struct {
 
 //  =================== secret ==================
 
-//index:
+//index:microsoft_keyvault_vaults_secrets
 //getfilter:name=description.SecretItem.Name
 //getfilter:resource_group=description.ResourceGroup
 type KeyVaultSecretDescription struct {
@@ -558,7 +559,7 @@ type KeyVaultSecretDescription struct {
 
 //  =================== kusto ==================
 
-//index:
+//index:microsoft_kusto_clusters
 //getfilter:name=description.Cluster.Name
 //getfilter:resource_group=description.ResourceGroup
 type KustoClusterDescription struct {
@@ -578,7 +579,7 @@ type LogAlertDescription struct {
 
 //  =================== insights ==================
 
-//index:
+//index:microsoft_insights_logprofiles
 //getfilter:name=description.LogProfileResource.Name
 //getfilter:resource_group=description.ResourceGroup
 type LogProfileDescription struct {
@@ -588,7 +589,7 @@ type LogProfileDescription struct {
 
 //  =================== logic ==================
 
-//index:
+//index:microsoft_logic_workflows
 //getfilter:name=description.Workflow.Name
 //getfilter:resource_group=description.ResourceGroup
 type LogicAppWorkflowDescription struct {
@@ -599,7 +600,7 @@ type LogicAppWorkflowDescription struct {
 
 //  =================== machinelearningservices ==================
 
-//index:
+//index:microsoft_machinelearning_workspaces
 //getfilter:name=description.Workspace.Name
 //getfilter:resource_group=description.ResourceGroup
 type MachineLearningWorkspaceDescription struct {
@@ -610,7 +611,7 @@ type MachineLearningWorkspaceDescription struct {
 
 //  =================== mariadb ==================
 
-//index:Microsoft_DBforMariaDB_servers
+//index:microsoft_dbformariadb_servers
 //getfilter:name=description.Server.Name
 //getfilter:resource_group=description.ResourceGroup
 type MariadbServerDescription struct {
@@ -620,7 +621,7 @@ type MariadbServerDescription struct {
 
 //  =================== mysql ==================
 
-//index:Microsoft_DBforMySQL_servers
+//index:microsoft_dbformysql_servers
 //getfilter:name=description.Server.Name
 //getfilter:resource_group=description.ResourceGroup
 type MysqlServerDescription struct {
@@ -632,7 +633,7 @@ type MysqlServerDescription struct {
 
 //  =================== network ==================
 
-//index:Microsoft_ClassicNetwork_networkSecurityGroups
+//index:microsoft_classicnetwork_networksecuritygroups
 //getfilter:name=description.SecurityGroup.Name
 //getfilter:resource_group=description.ResourceGroup
 type NetworkSecurityGroupDescription struct {
@@ -653,7 +654,7 @@ type NetworkWatcherDescription struct {
 
 //  =================== search ==================
 
-//index:Microsoft_Search_searchServices
+//index:microsoft_search_searchservices
 //getfilter:name=description.Service.Name
 //getfilter:resource_group=description.ResourceGroup
 type SearchServiceDescription struct {
@@ -664,7 +665,7 @@ type SearchServiceDescription struct {
 
 //  =================== servicefabric ==================
 
-//index:Microsoft_ServiceFabric_clusters
+//index:microsoft_servicefabric_clusters
 //getfilter:name=description.Cluster.Name
 //getfilter:resource_group=description.ResourceGroup
 type ServiceFabricClusterDescription struct {
@@ -674,7 +675,7 @@ type ServiceFabricClusterDescription struct {
 
 //  =================== servicebus ==================
 
-//index:
+//index:microsoft_servicebus_namespaces
 //getfilter:name=description.SBNamespace.Name
 //getfilter:resource_group=description.ResourceGroup
 type ServicebusNamespaceDescription struct {
@@ -687,7 +688,7 @@ type ServicebusNamespaceDescription struct {
 
 //  =================== signalr ==================
 
-//index:Microsoft_SignalRService_SignalR
+//index:microsoft_signalrservice_signalr
 //getfilter:name=description.ResourceType.Name
 //getfilter:resource_group=description.ResourceGroup
 type SignalrServiceDescription struct {
@@ -698,7 +699,7 @@ type SignalrServiceDescription struct {
 
 //  =================== appplatform ==================
 
-//index:
+//index:microsoft_appplatform_spring
 //getfilter:name=description.ServiceResource.Name
 //getfilter:resource_group=description.ResourceGroup
 type SpringCloudServiceDescription struct {
@@ -709,7 +710,7 @@ type SpringCloudServiceDescription struct {
 
 //  =================== streamanalytics ==================
 
-//index:Microsoft_StreamAnalytics_StreamingJobs
+//index:microsoft_streamanalytics_streamingjobs
 //getfilter:name=description.StreamingJob.Name
 //getfilter:resource_group=description.ResourceGroup
 type StreamAnalyticsJobDescription struct {
@@ -720,7 +721,7 @@ type StreamAnalyticsJobDescription struct {
 
 //  =================== synapse ==================
 
-//index:
+//index:microsoft_synapse_workspaces
 //getfilter:name=description.Workspace.Name
 //getfilter:resource_group=description.ResourceGroup
 type SynapseWorkspaceDescription struct {
@@ -730,10 +731,9 @@ type SynapseWorkspaceDescription struct {
 	ResourceGroup                  string
 }
 
-
 //  =================== sub ==================
 
-//index:microsoft_desktopvirtualization_hostpools_sessionhosts
+//index:microsoft_resources_subscriptions_locations
 //getfilter:name=description.Location.Name
 //getfilter:resource_group=description.ResourceGroup
 type LocationDescription struct {
@@ -741,9 +741,17 @@ type LocationDescription struct {
 	ResourceGroup string
 }
 
+//  =================== graphrbac ==================
+
+//index:microsoft_resources_users
+//getfilter:object_id=description.AdUsers.ObjectID
+type AdUsersDescription struct {
+	AdUsers      graphrbac.User
+}
+
 //  =================== postgresql ==================
 
-//index:Microsoft_DBforPostgreSQL_serverGroups
+//index:microsoft_dbforpostgresql_servers
 //getfilter:name=description.Server.Name
 //getfilter:resource_group=description.ResourceGroup
 type PostgresqlServerDescription struct {
@@ -757,7 +765,7 @@ type PostgresqlServerDescription struct {
 
 //  =================== storagesync ==================
 
-//index:Microsoft_StorageSync_storageSyncServices
+//index:microsoft_storagesync_storagesyncservices
 //getfilter:name=description.Service.Name
 //getfilter:resource_group=description.ResourceGroup
 type StorageSyncDescription struct {
@@ -767,7 +775,7 @@ type StorageSyncDescription struct {
 
 //  =================== sql ==================
 
-//index:
+//index:microsoft_sql_managedinstances
 //getfilter:name=description.ManagedInstance.Name
 //getfilter:resource_group=description.ResourceGroup
 type MssqlManagedInstanceDescription struct {
@@ -780,7 +788,7 @@ type MssqlManagedInstanceDescription struct {
 
 //  =================== sql ==================
 
-//index:microsoft_synapse_workspaces_sqldatabases
+//index:microsoft_sql_servers_databases
 //getfilter:name=description.Database.Name
 //getfilter:resource_group=description.ResourceGroup
 type SqlDatabaseDescription struct {
@@ -794,7 +802,7 @@ type SqlDatabaseDescription struct {
 
 //  =================== sqlv3 ==================
 
-//index:Microsoft_AzureArcData_sqlServerInstances
+//index:microsoft_sql_servers
 //getfilter:name=description.Server.Name
 //getfilter:resource_group=description.ResourceGroup
 type SqlServerDescription struct {
@@ -812,7 +820,7 @@ type SqlServerDescription struct {
 
 //  =================== storage ==================
 
-//index:Microsoft_ClassicStorage_StorageAccounts
+//index:microsoft_classicstorage_storageaccounts
 //getfilter:name=description.Account.Name
 //getfilter:resource_group=description.ResourceGroup
 type StorageAccountDescription struct {
