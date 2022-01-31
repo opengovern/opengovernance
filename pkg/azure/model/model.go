@@ -106,7 +106,7 @@ type AppServiceFunctionAppDescription struct {
 	ResourceGroup      string
 }
 
-//index:Microsoft.Web/StaticSites
+//index:microsoft_web_staticsites
 //getfilter:name=description.Site.Name
 //getfilter:resource_group=description.ResourceGroup
 type AppServiceWebAppDescription struct {
@@ -179,10 +179,11 @@ type HpcCacheDescription struct {
 //  =================== keyvault ==================
 
 //index:microsoft_keyvault_vaults
-//getfilter:vault_name=
+//getfilter:vault_name=description.Vault.Name
 //getfilter:name=description.Key.Name
 //getfilter:resource_group=description.ResourceGroup
 type KeyVaultKeyDescription struct {
+	Vault         keyvault.Resource
 	Key           keyvault.Key
 	ResourceGroup string
 }
@@ -208,12 +209,13 @@ type NetworkInterfaceDescription struct {
 }
 
 //index:microsoft_network_networkwatchers
-//getfilter:network_watcher_name=
+//getfilter:network_watcher_name=description.NetworkWatcherName
 //getfilter:name=description.ManagedCluster.Name
 //getfilter:resource_group=description.ResourceGroup
 type NetworkWatcherFlowLogDescription struct {
-	FlowLog       network.FlowLog
-	ResourceGroup string
+	NetworkWatcherName string
+	FlowLog            network.FlowLog
+	ResourceGroup      string
 }
 
 //  =================== policy ==================
@@ -292,8 +294,9 @@ type SecurityCenterSubscriptionPricingDescription struct {
 //index:microsoft_storage_storageaccounts_containers
 //getfilter:name=description.ListContainerItem.Name
 //getfilter:resource_group=description.ResourceGroup
-//getfilter:account_name=
+//getfilter:account_name=description.AccountName
 type StorageContainerDescription struct {
+	AccountName        string
 	ListContainerItem  storage.ListContainerItem
 	ImmutabilityPolicy storage.ImmutabilityPolicy
 	ResourceGroup      string
@@ -304,10 +307,11 @@ type StorageContainerDescription struct {
 //index:microsoft_network_virtualnetworks_subnets
 //getfilter:name=description.Subnet.Name
 //getfilter:resource_group=description.ResourceGroup
-//getfilter:virtual_network_name=
+//getfilter:virtual_network_name=description.VirtualNetworkName
 type SubnetDescription struct {
-	Subnet        network.Subnet
-	ResourceGroup string
+	VirtualNetworkName string
+	Subnet             network.Subnet
+	ResourceGroup      string
 }
 
 //index:microsoft_network_virtualnetworks
@@ -746,7 +750,7 @@ type LocationDescription struct {
 //index:microsoft_resources_users
 //getfilter:object_id=description.AdUsers.ObjectID
 type AdUsersDescription struct {
-	AdUsers      graphrbac.User
+	AdUsers graphrbac.User
 }
 
 //  =================== postgresql ==================

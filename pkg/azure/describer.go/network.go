@@ -75,6 +75,7 @@ func NetworkWatcherFlowLog(ctx context.Context, authorizer autorest.Authorizer, 
 				values = append(values, Resource{
 					ID: *v.ID,
 					Description: model.NetworkWatcherFlowLogDescription{
+						NetworkWatcherName: *networkWatcherDetails.Name,
 						FlowLog:       v,
 						ResourceGroup: resourceGroupID,
 					},
@@ -121,6 +122,7 @@ func Subnet(ctx context.Context, authorizer autorest.Authorizer, subscription st
 					values = append(values, Resource{
 						ID: *v.ID,
 						Description: model.SubnetDescription{
+							VirtualNetworkName: *virtualNetwork.Name,
 							Subnet:        v,
 							ResourceGroup: *resourceGroupName,
 						},

@@ -47,6 +47,7 @@ func StorageContainer(ctx context.Context, authorizer autorest.Authorizer, subsc
 					values = append(values, Resource{
 						ID: *v.ID,
 						Description: model.StorageContainerDescription{
+							AccountName: *account.Name,
 							ListContainerItem:  v,
 							ImmutabilityPolicy: op,
 							ResourceGroup:      resourceGroup,

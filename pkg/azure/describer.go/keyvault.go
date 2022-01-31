@@ -48,6 +48,7 @@ func KeyVaultKey(ctx context.Context, authorizer autorest.Authorizer, subscripti
 					values = append(values, Resource{
 						ID: *v.ID,
 						Description: model.KeyVaultKeyDescription{
+							Vault: vault,
 							Key: v,
 							ResourceGroup: resourceGroup,
 						},
