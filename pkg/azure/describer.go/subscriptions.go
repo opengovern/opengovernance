@@ -7,7 +7,6 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/azure/model"
 )
 
-//TODO-Saleh resource ??
 func Tenant(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
 	client := subscriptions.NewTenantsClient()
 	client.Authorizer = authorizer

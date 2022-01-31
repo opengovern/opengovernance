@@ -20,7 +20,7 @@ type GenericResourceGraph struct {
 	Type  string
 }
 
-func (d GenericResourceGraph) DescribeResources(ctx context.Context, authorizer autorest.Authorizer, subscriptions []string) ([]Resource, error) {
+func (d GenericResourceGraph) DescribeResources(ctx context.Context, authorizer autorest.Authorizer, subscriptions []string, tenantId string) ([]Resource, error) {
 	query := fmt.Sprintf("%s | where type == \"%s\"", d.Table, strings.ToLower(d.Type))
 
 	client := resourcegraph.New()

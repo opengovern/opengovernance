@@ -44,7 +44,6 @@ func AppServiceEnvironment(ctx context.Context, authorizer autorest.Authorizer, 
 	return values, nil
 }
 
-//TODO-Saleh resource??
 func AppServiceFunctionApp(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
 	client := web.NewAppsClient(subscription)
 	client.Authorizer = authorizer
@@ -96,7 +95,6 @@ func AppServiceFunctionApp(ctx context.Context, authorizer autorest.Authorizer, 
 	return values, nil
 }
 
-//TODO-Saleh resource??
 func AppServiceWebApp(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
 	client := web.NewAppsClient(subscription)
 	client.Authorizer = authorizer

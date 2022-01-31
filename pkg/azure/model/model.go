@@ -180,7 +180,7 @@ type HpcCacheDescription struct {
 
 //index:microsoft_keyvault_vaults
 //getfilter:vault_name=
-//getfilter:name=description.Cache.Name
+//getfilter:name=description.Key.Name
 //getfilter:resource_group=description.ResourceGroup
 type KeyVaultKeyDescription struct {
 	Key           keyvault.Key

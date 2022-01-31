@@ -9,7 +9,6 @@ import (
 	"strings"
 )
 
-//TODO-Saleh resource??
 func StorageContainer(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
 	client := storage.NewBlobContainersClient(subscription)
 	client.Authorizer = authorizer

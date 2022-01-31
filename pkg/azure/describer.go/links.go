@@ -7,7 +7,6 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/azure/model"
 )
 
-//TODO-Saleh resource ??
 func ResourceLink(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
 	client := links.NewResourceLinksClient(subscription)
 	client.Authorizer = authorizer

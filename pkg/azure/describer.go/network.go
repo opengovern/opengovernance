@@ -95,7 +95,6 @@ func NetworkWatcherFlowLog(ctx context.Context, authorizer autorest.Authorizer, 
 	return values, nil
 }
 
-//TODO-Saleh resource ??
 func Subnet(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
 	networkClient := network.NewVirtualNetworksClient(subscription)
 	networkClient.Authorizer = authorizer

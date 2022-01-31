@@ -7,7 +7,6 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/azure/model"
 )
 
-//TODO-Saleh resource ??
 func SecurityCenterAutoProvisioning(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
 	client := security.NewAutoProvisioningSettingsClient(subscription, "")
 	client.Authorizer = authorizer
@@ -41,7 +40,6 @@ func SecurityCenterAutoProvisioning(ctx context.Context, authorizer autorest.Aut
 	return values, nil
 }
 
-//TODO-Saleh resource ??
 func SecurityCenterContact(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
 	client := security.NewContactsClient(subscription, "")
 	client.Authorizer = authorizer
@@ -75,7 +73,6 @@ func SecurityCenterContact(ctx context.Context, authorizer autorest.Authorizer, 
 	return values, nil
 }
 
-//TODO-Saleh resource ??
 func SecurityCenterJitNetworkAccessPolicy(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
 	client := security.NewJitNetworkAccessPoliciesClient(subscription, "")
 	client.Authorizer = authorizer
@@ -109,7 +106,6 @@ func SecurityCenterJitNetworkAccessPolicy(ctx context.Context, authorizer autore
 	return values, nil
 }
 
-//TODO-Saleh resource ??
 func SecurityCenterSetting(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
 	client := security.NewSettingsClient(subscription, "")
 	client.Authorizer = authorizer
