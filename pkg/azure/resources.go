@@ -233,6 +233,12 @@ func GetResources(
 		return nil, err
 	}
 
+	for _, resource := range resources {
+		resource.Description = describer.JSONAllFieldsMarshaller{
+			Value: resource,
+		}
+	}
+
 	output := &Resources{
 		Resources: resources,
 		Metadata: ResourceDescriptionMetadata{
