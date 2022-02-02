@@ -75,6 +75,7 @@ func NetworkWatcherFlowLog(ctx context.Context, authorizer autorest.Authorizer, 
 				values = append(values, Resource{
 					ID: *v.ID,
 					Description: model.NetworkWatcherFlowLogDescription{
+						NetworkWatcherName: *networkWatcherDetails.Name,
 						FlowLog:       v,
 						ResourceGroup: resourceGroupID,
 					},
@@ -95,7 +96,6 @@ func NetworkWatcherFlowLog(ctx context.Context, authorizer autorest.Authorizer, 
 	return values, nil
 }
 
-//TODO-Saleh resource ??
 func Subnet(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
 	networkClient := network.NewVirtualNetworksClient(subscription)
 	networkClient.Authorizer = authorizer
@@ -122,6 +122,7 @@ func Subnet(ctx context.Context, authorizer autorest.Authorizer, subscription st
 					values = append(values, Resource{
 						ID: *v.ID,
 						Description: model.SubnetDescription{
+							VirtualNetworkName: *virtualNetwork.Name,
 							Subnet:        v,
 							ResourceGroup: *resourceGroupName,
 						},

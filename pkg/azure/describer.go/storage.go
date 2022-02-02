@@ -9,7 +9,6 @@ import (
 	"strings"
 )
 
-//TODO-Saleh resource??
 func StorageContainer(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
 	client := storage.NewBlobContainersClient(subscription)
 	client.Authorizer = authorizer
@@ -48,6 +47,7 @@ func StorageContainer(ctx context.Context, authorizer autorest.Authorizer, subsc
 					values = append(values, Resource{
 						ID: *v.ID,
 						Description: model.StorageContainerDescription{
+							AccountName: *account.Name,
 							ListContainerItem:  v,
 							ImmutabilityPolicy: op,
 							ResourceGroup:      resourceGroup,

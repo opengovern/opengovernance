@@ -18,6 +18,9 @@ func DAXCluster(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	client := dax.NewFromConfig(cfg)
 	out, err := client.DescribeClusters(ctx, &dax.DescribeClustersInput{})
 	if err != nil {
+		if strings.Contains(err.Error(), "InvalidParameterValueException") || strings.Contains(err.Error(), "no such host") {
+			return nil, nil
+		}
 		return nil, err
 	}
 

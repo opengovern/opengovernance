@@ -40,7 +40,6 @@ func RoleAssignment(ctx context.Context, authorizer autorest.Authorizer, subscri
 	return values, nil
 }
 
-//TODO-Saleh resource ??
 func RoleDefinition(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
 	client := authorization.NewRoleDefinitionsClient(subscription)
 	client.Authorizer = authorizer

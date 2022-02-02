@@ -7,8 +7,8 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/azure/model"
 )
 
-func AdUsers(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
-	graphClient := graphrbac.NewUsersClient(subscription) //TODO-Saleh tenant id ?
+func AdUsers(ctx context.Context, authorizer autorest.Authorizer, tenantId string) ([]Resource, error) {
+	graphClient := graphrbac.NewUsersClient(tenantId)
 	graphClient.Authorizer = authorizer
 
 	result, err := graphClient.List(ctx, "", "")
