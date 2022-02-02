@@ -51,8 +51,10 @@ func (x azStructMarshaller) MarshalJSON() ([]byte, error) {
 		jsonTag := field.Tag.Get("json")
 		jsonFields := strings.Split(jsonTag, ",")
 		jsonField := jsonFields[0]
-		if jsonField == "" || jsonField == "-" {
+		if jsonField == "-" {
 			continue
+		} else if jsonField == "" {
+			jsonField = field.Name
 		}
 
 		jsonOmitEmpty := false
@@ -100,7 +102,9 @@ func (x azSliceMarshaller) MarshalJSON() ([]byte, error) {
 }
 
 func isAzureType(t reflect.Type) bool {
-	return strings.HasPrefix(t.PkgPath(), "github.com/Azure/azure-sdk-for-go")
+	return strings.HasPrefix(t.PkgPath(), "github.com/Azure/azure-sdk-for-go") ||
+		// TODO: Wrap the objects before putting them into model. That way we don't have to include the second package here
+		strings.HasPrefix(t.PkgPath(), "gitlab.com/keibiengine/keibi-engine/pkg/azure/model")
 }
 
 func isEmptyValue(v reflect.Value) bool {
