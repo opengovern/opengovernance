@@ -17,12 +17,33 @@ type JSONAllFieldsMarshaller struct {
 }
 
 func (x JSONAllFieldsMarshaller) MarshalJSON() ([]byte, error) {
+	var val interface{} = x.Value
+
 	v := reflect.ValueOf(x.Value)
-	if v.Kind() != reflect.Struct ||
-		!strings.HasPrefix(v.Type().PkgPath(), "github.com/Azure/azure-sdk-for-go") {
-		return json.Marshal(x.Value)
+	if isAzureType(v.Type()) {
+		switch v.Kind() {
+		case reflect.Slice, reflect.Array:
+			if isAzureType(v.Type().Elem()) {
+				val = azSliceMarshaller{Value: v}
+			}
+		case reflect.Ptr:
+			if isAzureType(v.Type().Elem()) {
+				val = azPtrMarshaller{Value: v}
+			}
+		case reflect.Struct:
+			val = azStructMarshaller{Value: v}
+		}
 	}
 
+	return json.Marshal(val)
+}
+
+type azStructMarshaller struct {
+	reflect.Value
+}
+
+func (x azStructMarshaller) MarshalJSON() ([]byte, error) {
+	v := x.Value
 	m := make(map[string]interface{})
 	num := v.Type().NumField()
 	for i := 0; i < num; i++ {
@@ -49,6 +70,37 @@ func (x JSONAllFieldsMarshaller) MarshalJSON() ([]byte, error) {
 	}
 
 	return json.Marshal(m)
+}
+
+type azPtrMarshaller struct {
+	reflect.Value
+}
+
+func (x azPtrMarshaller) MarshalJSON() ([]byte, error) {
+	val := x.Value
+	for val.Type().Kind() == reflect.Ptr && !val.IsNil() {
+		val = val.Elem()
+	}
+
+	return JSONAllFieldsMarshaller{Value: val.Interface()}.MarshalJSON()
+}
+
+type azSliceMarshaller struct {
+	reflect.Value
+}
+
+func (x azSliceMarshaller) MarshalJSON() ([]byte, error) {
+	num := x.Value.Len()
+	list := make([]JSONAllFieldsMarshaller, 0, num)
+	for i := 0; i < num; i++ {
+		list = append(list, JSONAllFieldsMarshaller{Value: x.Value.Index(i).Interface()})
+	}
+
+	return json.Marshal(list)
+}
+
+func isAzureType(t reflect.Type) bool {
+	return strings.HasPrefix(t.PkgPath(), "github.com/Azure/azure-sdk-for-go")
 }
 
 func isEmptyValue(v reflect.Value) bool {
