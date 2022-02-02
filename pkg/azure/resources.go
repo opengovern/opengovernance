@@ -233,9 +233,9 @@ func GetResources(
 		return nil, err
 	}
 
-	for _, resource := range resources {
-		resource.Description = describer.JSONAllFieldsMarshaller{
-			Value: resource,
+	for i, resource := range resources {
+		resources[i].Description = describer.JSONAllFieldsMarshaller{
+			Value: resource.Description,
 		}
 	}
 
