@@ -108,7 +108,7 @@ func ListAPIManagement(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydra
 }
 
 var getAPIManagementFilters = map[string]string{
-	"name":           "description.APIManagement.Name",
+	"name":           "description.APIManagement.name",
 	"resource_group": "description.ResourceGroup",
 }
 
@@ -244,7 +244,7 @@ func ListAppConfiguration(ctx context.Context, d *plugin.QueryData, _ *plugin.Hy
 }
 
 var getAppConfigurationFilters = map[string]string{
-	"name":           "description.ConfigurationStore.Name",
+	"name":           "description.ConfigurationStore.name",
 	"resource_group": "description.ResourceGroup",
 }
 
@@ -380,7 +380,7 @@ func ListAppServiceEnvironment(ctx context.Context, d *plugin.QueryData, _ *plug
 }
 
 var getAppServiceEnvironmentFilters = map[string]string{
-	"name":           "description.AppServiceEnvironmentResource.Name",
+	"name":           "description.AppServiceEnvironmentResource.name",
 	"resource_group": "description.ResourceGroup",
 }
 
@@ -516,7 +516,7 @@ func ListAppServiceFunctionApp(ctx context.Context, d *plugin.QueryData, _ *plug
 }
 
 var getAppServiceFunctionAppFilters = map[string]string{
-	"name":           "description.Site.Name",
+	"name":           "description.Site.name",
 	"resource_group": "description.ResourceGroup",
 }
 
@@ -583,7 +583,7 @@ type AppServiceWebAppPaginator struct {
 }
 
 func (k Client) NewAppServiceWebAppPaginator(filters []BoolFilter, limit *int64) (AppServiceWebAppPaginator, error) {
-	paginator, err := newPaginator(k.es, "Microsoft.Web/StaticSites", filters, limit)
+	paginator, err := newPaginator(k.es, "microsoft_web_staticsites", filters, limit)
 	if err != nil {
 		return AppServiceWebAppPaginator{}, err
 	}
@@ -652,7 +652,7 @@ func ListAppServiceWebApp(ctx context.Context, d *plugin.QueryData, _ *plugin.Hy
 }
 
 var getAppServiceWebAppFilters = map[string]string{
-	"name":           "description.Site.Name",
+	"name":           "description.Site.name",
 	"resource_group": "description.ResourceGroup",
 }
 
@@ -788,7 +788,7 @@ func ListComputeDisk(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydrate
 }
 
 var getComputeDiskFilters = map[string]string{
-	"name":           "description.Disk.Name",
+	"name":           "description.Disk.name",
 	"resource_group": "description.ResourceGroup",
 }
 
@@ -924,7 +924,7 @@ func ListComputeDiskAccess(ctx context.Context, d *plugin.QueryData, _ *plugin.H
 }
 
 var getComputeDiskAccessFilters = map[string]string{
-	"name":           "description.DiskAccess.Name",
+	"name":           "description.DiskAccess.name",
 	"resource_group": "description.ResourceGroup",
 }
 
@@ -1060,7 +1060,7 @@ func ListComputeVirtualMachineScaleSet(ctx context.Context, d *plugin.QueryData,
 }
 
 var getComputeVirtualMachineScaleSetFilters = map[string]string{
-	"name":           "description.VirtualMachineScaleSet.Name",
+	"name":           "description.VirtualMachineScaleSet.name",
 	"resource_group": "description.ResourceGroup",
 }
 
@@ -1196,7 +1196,7 @@ func ListDataboxEdgeDevice(ctx context.Context, d *plugin.QueryData, _ *plugin.H
 }
 
 var getDataboxEdgeDeviceFilters = map[string]string{
-	"name":           "description.Device.Name",
+	"name":           "description.Device.name",
 	"resource_group": "description.ResourceGroup",
 }
 
@@ -1332,7 +1332,7 @@ func ListHealthcareService(ctx context.Context, d *plugin.QueryData, _ *plugin.H
 }
 
 var getHealthcareServiceFilters = map[string]string{
-	"name":           "description.ServicesDescription.Name",
+	"name":           "description.ServicesDescription.name",
 	"resource_group": "description.ResourceGroup",
 }
 
@@ -1468,7 +1468,7 @@ func ListHpcCache(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateDat
 }
 
 var getHpcCacheFilters = map[string]string{
-	"name":           "description.Cache.Name",
+	"name":           "description.Cache.name",
 	"resource_group": "description.ResourceGroup",
 }
 
@@ -1604,9 +1604,9 @@ func ListKeyVaultKey(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydrate
 }
 
 var getKeyVaultKeyFilters = map[string]string{
-	"name":           "description.Cache.Name",
+	"name":           "description.Key.name",
 	"resource_group": "description.ResourceGroup",
-	"vault_name":     "",
+	"vault_name":     "description.Vault.name",
 }
 
 func GetKeyVaultKey(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
@@ -1741,7 +1741,7 @@ func ListKubernetesCluster(ctx context.Context, d *plugin.QueryData, _ *plugin.H
 }
 
 var getKubernetesClusterFilters = map[string]string{
-	"name":           "description.ManagedCluster.Name",
+	"name":           "description.ManagedCluster.name",
 	"resource_group": "description.ResourceGroup",
 }
 
@@ -1877,7 +1877,7 @@ func ListNetworkInterface(ctx context.Context, d *plugin.QueryData, _ *plugin.Hy
 }
 
 var getNetworkInterfaceFilters = map[string]string{
-	"name":           "description.Interface.Name",
+	"name":           "description.Interface.name",
 	"resource_group": "description.ResourceGroup",
 }
 
@@ -2013,8 +2013,8 @@ func ListNetworkWatcherFlowLog(ctx context.Context, d *plugin.QueryData, _ *plug
 }
 
 var getNetworkWatcherFlowLogFilters = map[string]string{
-	"name":                 "description.ManagedCluster.Name",
-	"network_watcher_name": "",
+	"name":                 "description.ManagedCluster.name",
+	"network_watcher_name": "description.NetworkWatcherName",
 	"resource_group":       "description.ResourceGroup",
 }
 
@@ -2150,7 +2150,7 @@ func ListPolicyAssignment(ctx context.Context, d *plugin.QueryData, _ *plugin.Hy
 }
 
 var getPolicyAssignmentFilters = map[string]string{
-	"name": "description.Assignment.Name",
+	"name": "description.Assignment.name",
 }
 
 func GetPolicyAssignment(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
@@ -2285,7 +2285,7 @@ func ListRedisCache(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateD
 }
 
 var getRedisCacheFilters = map[string]string{
-	"name":           "description.ResourceType.Name",
+	"name":           "description.ResourceType.name",
 	"resource_group": "description.ResourceGroup",
 }
 
@@ -2421,7 +2421,7 @@ func ListResourceLink(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydrat
 }
 
 var getResourceLinkFilters = map[string]string{
-	"id": "description.ResourceLink.ID",
+	"id": "description.ResourceLink.id",
 }
 
 func GetResourceLink(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
@@ -2556,7 +2556,7 @@ func ListRoleAssignment(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydr
 }
 
 var getRoleAssignmentFilters = map[string]string{
-	"id": "description.RoleAssignment.ID",
+	"id": "description.RoleAssignment.id",
 }
 
 func GetRoleAssignment(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
@@ -2691,7 +2691,7 @@ func ListRoleDefinition(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydr
 }
 
 var getRoleDefinitionFilters = map[string]string{
-	"name": "description.RoleDefinition.Name",
+	"name": "description.RoleDefinition.name",
 }
 
 func GetRoleDefinition(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
@@ -2826,7 +2826,7 @@ func ListSecurityCenterAutoProvisioning(ctx context.Context, d *plugin.QueryData
 }
 
 var getSecurityCenterAutoProvisioningFilters = map[string]string{
-	"name": "description.AutoProvisioningSetting.Name",
+	"name": "description.AutoProvisioningSetting.name",
 }
 
 func GetSecurityCenterAutoProvisioning(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
@@ -2961,7 +2961,7 @@ func ListSecurityCenterContact(ctx context.Context, d *plugin.QueryData, _ *plug
 }
 
 var getSecurityCenterContactFilters = map[string]string{
-	"name": "description.Contact.Name",
+	"name": "description.Contact.name",
 }
 
 func GetSecurityCenterContact(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
@@ -3229,7 +3229,7 @@ func ListSecurityCenterSetting(ctx context.Context, d *plugin.QueryData, _ *plug
 }
 
 var getSecurityCenterSettingFilters = map[string]string{
-	"name": "description.Setting.Name",
+	"name": "description.Setting.name",
 }
 
 func GetSecurityCenterSetting(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
@@ -3364,7 +3364,7 @@ func ListSecurityCenterSubscriptionPricing(ctx context.Context, d *plugin.QueryD
 }
 
 var getSecurityCenterSubscriptionPricingFilters = map[string]string{
-	"name": "description.Pricing.Name",
+	"name": "description.Pricing.name",
 }
 
 func GetSecurityCenterSubscriptionPricing(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
@@ -3499,8 +3499,8 @@ func ListStorageContainer(ctx context.Context, d *plugin.QueryData, _ *plugin.Hy
 }
 
 var getStorageContainerFilters = map[string]string{
-	"account_name":   "",
-	"name":           "description.ListContainerItem.Name",
+	"account_name":   "description.AccountName",
+	"name":           "description.ListContainerItem.name",
 	"resource_group": "description.ResourceGroup",
 }
 
@@ -3636,9 +3636,9 @@ func ListSubnet(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData)
 }
 
 var getSubnetFilters = map[string]string{
-	"name":                 "description.Subnet.Name",
+	"name":                 "description.Subnet.name",
 	"resource_group":       "description.ResourceGroup",
-	"virtual_network_name": "",
+	"virtual_network_name": "description.VirtualNetworkName",
 }
 
 func GetSubnet(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
@@ -3773,7 +3773,7 @@ func ListVirtualNetwork(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydr
 }
 
 var getVirtualNetworkFilters = map[string]string{
-	"name":           "description.VirtualNetwork.Name",
+	"name":           "description.VirtualNetwork.name",
 	"resource_group": "description.ResourceGroup",
 }
 
@@ -4175,7 +4175,7 @@ func ListApplicationGateway(ctx context.Context, d *plugin.QueryData, _ *plugin.
 }
 
 var getApplicationGatewayFilters = map[string]string{
-	"name":           "description.ApplicationGateway.Name",
+	"name":           "description.ApplicationGateway.name",
 	"resource_group": "description.ResourceGroup",
 }
 
@@ -4311,7 +4311,7 @@ func ListBatchAccount(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydrat
 }
 
 var getBatchAccountFilters = map[string]string{
-	"name":           "description.Account.Name",
+	"name":           "description.Account.name",
 	"resource_group": "description.ResourceGroup",
 }
 
@@ -4447,7 +4447,7 @@ func ListCognitiveAccount(ctx context.Context, d *plugin.QueryData, _ *plugin.Hy
 }
 
 var getCognitiveAccountFilters = map[string]string{
-	"name":           "description.Account.Name",
+	"name":           "description.Account.name",
 	"resource_group": "description.ResourceGroup",
 }
 
@@ -4583,7 +4583,7 @@ func ListComputeVirtualMachine(ctx context.Context, d *plugin.QueryData, _ *plug
 }
 
 var getComputeVirtualMachineFilters = map[string]string{
-	"name":           "description.VirtualMachine.Name",
+	"name":           "description.VirtualMachine.name",
 	"resource_group": "description.ResourceGroup",
 }
 
@@ -4719,7 +4719,7 @@ func ListContainerRegistry(ctx context.Context, d *plugin.QueryData, _ *plugin.H
 }
 
 var getContainerRegistryFilters = map[string]string{
-	"name":           "description.Registry.Name",
+	"name":           "description.Registry.name",
 	"resource_group": "description.ResourceGroup",
 }
 
@@ -4855,7 +4855,7 @@ func ListCosmosdbAccount(ctx context.Context, d *plugin.QueryData, _ *plugin.Hyd
 }
 
 var getCosmosdbAccountFilters = map[string]string{
-	"name":           "description.DatabaseAccountGetResults.Name",
+	"name":           "description.DatabaseAccountGetResults.name",
 	"resource_group": "description.ResourceGroup",
 }
 
@@ -4991,7 +4991,7 @@ func ListDataFactory(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydrate
 }
 
 var getDataFactoryFilters = map[string]string{
-	"name":           "description.Factory.Name",
+	"name":           "description.Factory.name",
 	"resource_group": "description.ResourceGroup",
 }
 
@@ -5127,7 +5127,7 @@ func ListDataLakeAnalyticsAccount(ctx context.Context, d *plugin.QueryData, _ *p
 }
 
 var getDataLakeAnalyticsAccountFilters = map[string]string{
-	"name":           "description.DataLakeAnalyticsAccount.Name",
+	"name":           "description.DataLakeAnalyticsAccount.name",
 	"resource_group": "description.ResourceGroup",
 }
 
@@ -5263,7 +5263,7 @@ func ListDataLakeStore(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydra
 }
 
 var getDataLakeStoreFilters = map[string]string{
-	"name":           "description.DataLakeStoreAccount.Name",
+	"name":           "description.DataLakeStoreAccount.name",
 	"resource_group": "description.ResourceGroup",
 }
 
@@ -5399,7 +5399,7 @@ func ListDiagnosticSetting(ctx context.Context, d *plugin.QueryData, _ *plugin.H
 }
 
 var getDiagnosticSettingFilters = map[string]string{
-	"name":           "description.DiagnosticSettingsResource.Name",
+	"name":           "description.DiagnosticSettingsResource.name",
 	"resource_group": "description.ResourceGroup",
 }
 
@@ -5535,7 +5535,7 @@ func ListEventGridDomain(ctx context.Context, d *plugin.QueryData, _ *plugin.Hyd
 }
 
 var getEventGridDomainFilters = map[string]string{
-	"name":           "description.Domain.Name",
+	"name":           "description.Domain.name",
 	"resource_group": "description.ResourceGroup",
 }
 
@@ -5671,7 +5671,7 @@ func ListEventGridTopic(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydr
 }
 
 var getEventGridTopicFilters = map[string]string{
-	"name":           "description.Topic.Name",
+	"name":           "description.Topic.name",
 	"resource_group": "description.ResourceGroup",
 }
 
@@ -5807,7 +5807,7 @@ func ListEventhubNamespace(ctx context.Context, d *plugin.QueryData, _ *plugin.H
 }
 
 var getEventhubNamespaceFilters = map[string]string{
-	"name":           "description.EHNamespace.Name",
+	"name":           "description.EHNamespace.name",
 	"resource_group": "description.ResourceGroup",
 }
 
@@ -5943,7 +5943,7 @@ func ListFrontdoor(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateDa
 }
 
 var getFrontdoorFilters = map[string]string{
-	"name":           "description.FrontDoor.Name",
+	"name":           "description.FrontDoor.name",
 	"resource_group": "description.ResourceGroup",
 }
 
@@ -6079,7 +6079,7 @@ func ListHdinsightCluster(ctx context.Context, d *plugin.QueryData, _ *plugin.Hy
 }
 
 var getHdinsightClusterFilters = map[string]string{
-	"name":           "description.Cluster.Name",
+	"name":           "description.Cluster.name",
 	"resource_group": "description.ResourceGroup",
 }
 
@@ -6215,7 +6215,7 @@ func ListHybridComputeMachine(ctx context.Context, d *plugin.QueryData, _ *plugi
 }
 
 var getHybridComputeMachineFilters = map[string]string{
-	"name":           "description.Machine.Name",
+	"name":           "description.Machine.name",
 	"resource_group": "description.ResourceGroup",
 }
 
@@ -6351,7 +6351,7 @@ func ListIOTHub(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData)
 }
 
 var getIOTHubFilters = map[string]string{
-	"name":           "description.IotHubDescription.Name",
+	"name":           "description.IotHubDescription.name",
 	"resource_group": "description.ResourceGroup",
 }
 
@@ -6487,7 +6487,7 @@ func ListKeyVault(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateDat
 }
 
 var getKeyVaultFilters = map[string]string{
-	"name":           "description.Resource.Name",
+	"name":           "description.Resource.name",
 	"resource_group": "description.ResourceGroup",
 }
 
@@ -6623,7 +6623,7 @@ func ListKeyVaultManagedHardwareSecurityModule(ctx context.Context, d *plugin.Qu
 }
 
 var getKeyVaultManagedHardwareSecurityModuleFilters = map[string]string{
-	"name":           "description.ManagedHsm.Name",
+	"name":           "description.ManagedHsm.name",
 	"resource_group": "description.ResourceGroup",
 }
 
@@ -6759,7 +6759,7 @@ func ListKeyVaultSecret(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydr
 }
 
 var getKeyVaultSecretFilters = map[string]string{
-	"name":           "description.SecretItem.Name",
+	"name":           "description.SecretItem.name",
 	"resource_group": "description.ResourceGroup",
 }
 
@@ -6895,7 +6895,7 @@ func ListKustoCluster(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydrat
 }
 
 var getKustoClusterFilters = map[string]string{
-	"name":           "description.Cluster.Name",
+	"name":           "description.Cluster.name",
 	"resource_group": "description.ResourceGroup",
 }
 
@@ -7031,7 +7031,7 @@ func ListLogAlert(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateDat
 }
 
 var getLogAlertFilters = map[string]string{
-	"name":           "description.ActivityLogAlertResource.Name",
+	"name":           "description.ActivityLogAlertResource.name",
 	"resource_group": "description.ResourceGroup",
 }
 
@@ -7167,7 +7167,7 @@ func ListLogProfile(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateD
 }
 
 var getLogProfileFilters = map[string]string{
-	"name":           "description.LogProfileResource.Name",
+	"name":           "description.LogProfileResource.name",
 	"resource_group": "description.ResourceGroup",
 }
 
@@ -7303,7 +7303,7 @@ func ListLogicAppWorkflow(ctx context.Context, d *plugin.QueryData, _ *plugin.Hy
 }
 
 var getLogicAppWorkflowFilters = map[string]string{
-	"name":           "description.Workflow.Name",
+	"name":           "description.Workflow.name",
 	"resource_group": "description.ResourceGroup",
 }
 
@@ -7439,7 +7439,7 @@ func ListMachineLearningWorkspace(ctx context.Context, d *plugin.QueryData, _ *p
 }
 
 var getMachineLearningWorkspaceFilters = map[string]string{
-	"name":           "description.Workspace.Name",
+	"name":           "description.Workspace.name",
 	"resource_group": "description.ResourceGroup",
 }
 
@@ -7575,7 +7575,7 @@ func ListMariadbServer(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydra
 }
 
 var getMariadbServerFilters = map[string]string{
-	"name":           "description.Server.Name",
+	"name":           "description.Server.name",
 	"resource_group": "description.ResourceGroup",
 }
 
@@ -7711,7 +7711,7 @@ func ListMysqlServer(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydrate
 }
 
 var getMysqlServerFilters = map[string]string{
-	"name":           "description.Server.Name",
+	"name":           "description.Server.name",
 	"resource_group": "description.ResourceGroup",
 }
 
@@ -7847,7 +7847,7 @@ func ListNetworkSecurityGroup(ctx context.Context, d *plugin.QueryData, _ *plugi
 }
 
 var getNetworkSecurityGroupFilters = map[string]string{
-	"name":           "description.SecurityGroup.Name",
+	"name":           "description.SecurityGroup.name",
 	"resource_group": "description.ResourceGroup",
 }
 
@@ -7983,7 +7983,7 @@ func ListNetworkWatcher(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydr
 }
 
 var getNetworkWatcherFilters = map[string]string{
-	"name":           "description.Watcher.Name",
+	"name":           "description.Watcher.name",
 	"resource_group": "description.ResourceGroup",
 }
 
@@ -8119,7 +8119,7 @@ func ListSearchService(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydra
 }
 
 var getSearchServiceFilters = map[string]string{
-	"name":           "description.Service.Name",
+	"name":           "description.Service.name",
 	"resource_group": "description.ResourceGroup",
 }
 
@@ -8255,7 +8255,7 @@ func ListServiceFabricCluster(ctx context.Context, d *plugin.QueryData, _ *plugi
 }
 
 var getServiceFabricClusterFilters = map[string]string{
-	"name":           "description.Cluster.Name",
+	"name":           "description.Cluster.name",
 	"resource_group": "description.ResourceGroup",
 }
 
@@ -8391,7 +8391,7 @@ func ListServicebusNamespace(ctx context.Context, d *plugin.QueryData, _ *plugin
 }
 
 var getServicebusNamespaceFilters = map[string]string{
-	"name":           "description.SBNamespace.Name",
+	"name":           "description.SBNamespace.name",
 	"resource_group": "description.ResourceGroup",
 }
 
@@ -8527,7 +8527,7 @@ func ListSignalrService(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydr
 }
 
 var getSignalrServiceFilters = map[string]string{
-	"name":           "description.ResourceType.Name",
+	"name":           "description.ResourceType.name",
 	"resource_group": "description.ResourceGroup",
 }
 
@@ -8663,7 +8663,7 @@ func ListSpringCloudService(ctx context.Context, d *plugin.QueryData, _ *plugin.
 }
 
 var getSpringCloudServiceFilters = map[string]string{
-	"name":           "description.ServiceResource.Name",
+	"name":           "description.ServiceResource.name",
 	"resource_group": "description.ResourceGroup",
 }
 
@@ -8799,7 +8799,7 @@ func ListStreamAnalyticsJob(ctx context.Context, d *plugin.QueryData, _ *plugin.
 }
 
 var getStreamAnalyticsJobFilters = map[string]string{
-	"name":           "description.StreamingJob.Name",
+	"name":           "description.StreamingJob.name",
 	"resource_group": "description.ResourceGroup",
 }
 
@@ -8935,7 +8935,7 @@ func ListSynapseWorkspace(ctx context.Context, d *plugin.QueryData, _ *plugin.Hy
 }
 
 var getSynapseWorkspaceFilters = map[string]string{
-	"name":           "description.Workspace.Name",
+	"name":           "description.Workspace.name",
 	"resource_group": "description.ResourceGroup",
 }
 
@@ -9071,7 +9071,7 @@ func ListLocation(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateDat
 }
 
 var getLocationFilters = map[string]string{
-	"name":           "description.Location.Name",
+	"name":           "description.Location.name",
 	"resource_group": "description.ResourceGroup",
 }
 
@@ -9207,7 +9207,7 @@ func ListAdUsers(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData
 }
 
 var getAdUsersFilters = map[string]string{
-	"object_id": "description.AdUsers.ObjectID",
+	"object_id": "description.AdUsers.objectID",
 }
 
 func GetAdUsers(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
@@ -9342,7 +9342,7 @@ func ListPostgresqlServer(ctx context.Context, d *plugin.QueryData, _ *plugin.Hy
 }
 
 var getPostgresqlServerFilters = map[string]string{
-	"name":           "description.Server.Name",
+	"name":           "description.Server.name",
 	"resource_group": "description.ResourceGroup",
 }
 
@@ -9478,7 +9478,7 @@ func ListStorageSync(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydrate
 }
 
 var getStorageSyncFilters = map[string]string{
-	"name":           "description.Service.Name",
+	"name":           "description.Service.name",
 	"resource_group": "description.ResourceGroup",
 }
 
@@ -9614,7 +9614,7 @@ func ListMssqlManagedInstance(ctx context.Context, d *plugin.QueryData, _ *plugi
 }
 
 var getMssqlManagedInstanceFilters = map[string]string{
-	"name":           "description.ManagedInstance.Name",
+	"name":           "description.ManagedInstance.name",
 	"resource_group": "description.ResourceGroup",
 }
 
@@ -9750,7 +9750,7 @@ func ListSqlDatabase(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydrate
 }
 
 var getSqlDatabaseFilters = map[string]string{
-	"name":           "description.Database.Name",
+	"name":           "description.Database.name",
 	"resource_group": "description.ResourceGroup",
 }
 
@@ -9886,7 +9886,7 @@ func ListSqlServer(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateDa
 }
 
 var getSqlServerFilters = map[string]string{
-	"name":           "description.Server.Name",
+	"name":           "description.Server.name",
 	"resource_group": "description.ResourceGroup",
 }
 
@@ -10022,7 +10022,7 @@ func ListStorageAccount(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydr
 }
 
 var getStorageAccountFilters = map[string]string{
-	"name":           "description.Account.Name",
+	"name":           "description.Account.name",
 	"resource_group": "description.ResourceGroup",
 }
 
