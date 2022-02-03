@@ -20,19 +20,13 @@ func (x JSONAllFieldsMarshaller) MarshalJSON() ([]byte, error) {
 	var val interface{} = x.Value
 
 	v := reflect.ValueOf(x.Value)
-	if isAzureType(v.Type()) {
-		switch v.Kind() {
-		case reflect.Slice, reflect.Array:
-			if isAzureType(v.Type().Elem()) {
-				val = azSliceMarshaller{Value: v}
-			}
-		case reflect.Ptr:
-			if isAzureType(v.Type().Elem()) {
-				val = azPtrMarshaller{Value: v}
-			}
-		case reflect.Struct:
-			val = azStructMarshaller{Value: v}
-		}
+	switch v.Kind() {
+	case reflect.Slice, reflect.Array:
+		val = azSliceMarshaller{Value: v}
+	case reflect.Ptr:
+		val = azPtrMarshaller{Value: v}
+	case reflect.Struct:
+		val = azStructMarshaller{Value: v}
 	}
 
 	return json.Marshal(val)
@@ -99,12 +93,6 @@ func (x azSliceMarshaller) MarshalJSON() ([]byte, error) {
 	}
 
 	return json.Marshal(list)
-}
-
-func isAzureType(t reflect.Type) bool {
-	return strings.HasPrefix(t.PkgPath(), "github.com/Azure/azure-sdk-for-go") ||
-		// TODO: Wrap the objects before putting them into model. That way we don't have to include the second package here
-		strings.HasPrefix(t.PkgPath(), "gitlab.com/keibiengine/keibi-engine/pkg/azure/model")
 }
 
 func isEmptyValue(v reflect.Value) bool {
