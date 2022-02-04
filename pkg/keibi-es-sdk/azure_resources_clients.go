@@ -35,7 +35,7 @@ type APIManagementSearchResponse struct {
 }
 
 type APIManagementPaginator struct {
-	paginator baseESPaginator
+	paginator *baseESPaginator
 }
 
 func (k Client) NewAPIManagementPaginator(filters []BoolFilter, limit *int64) (APIManagementPaginator, error) {
@@ -45,7 +45,7 @@ func (k Client) NewAPIManagementPaginator(filters []BoolFilter, limit *int64) (A
 	}
 
 	p := APIManagementPaginator{
-		paginator: *paginator,
+		paginator: paginator,
 	}
 
 	return p, nil
@@ -55,7 +55,7 @@ func (p APIManagementPaginator) HasNext() bool {
 	return !p.paginator.done
 }
 
-func (p *APIManagementPaginator) NextPage(ctx context.Context) ([]APIManagement, error) {
+func (p APIManagementPaginator) NextPage(ctx context.Context) ([]APIManagement, error) {
 	var response APIManagementSearchResponse
 	err := p.paginator.search(ctx, &response)
 	if err != nil {
@@ -171,7 +171,7 @@ type AppConfigurationSearchResponse struct {
 }
 
 type AppConfigurationPaginator struct {
-	paginator baseESPaginator
+	paginator *baseESPaginator
 }
 
 func (k Client) NewAppConfigurationPaginator(filters []BoolFilter, limit *int64) (AppConfigurationPaginator, error) {
@@ -181,7 +181,7 @@ func (k Client) NewAppConfigurationPaginator(filters []BoolFilter, limit *int64)
 	}
 
 	p := AppConfigurationPaginator{
-		paginator: *paginator,
+		paginator: paginator,
 	}
 
 	return p, nil
@@ -191,7 +191,7 @@ func (p AppConfigurationPaginator) HasNext() bool {
 	return !p.paginator.done
 }
 
-func (p *AppConfigurationPaginator) NextPage(ctx context.Context) ([]AppConfiguration, error) {
+func (p AppConfigurationPaginator) NextPage(ctx context.Context) ([]AppConfiguration, error) {
 	var response AppConfigurationSearchResponse
 	err := p.paginator.search(ctx, &response)
 	if err != nil {
@@ -307,7 +307,7 @@ type AppServiceEnvironmentSearchResponse struct {
 }
 
 type AppServiceEnvironmentPaginator struct {
-	paginator baseESPaginator
+	paginator *baseESPaginator
 }
 
 func (k Client) NewAppServiceEnvironmentPaginator(filters []BoolFilter, limit *int64) (AppServiceEnvironmentPaginator, error) {
@@ -317,7 +317,7 @@ func (k Client) NewAppServiceEnvironmentPaginator(filters []BoolFilter, limit *i
 	}
 
 	p := AppServiceEnvironmentPaginator{
-		paginator: *paginator,
+		paginator: paginator,
 	}
 
 	return p, nil
@@ -327,7 +327,7 @@ func (p AppServiceEnvironmentPaginator) HasNext() bool {
 	return !p.paginator.done
 }
 
-func (p *AppServiceEnvironmentPaginator) NextPage(ctx context.Context) ([]AppServiceEnvironment, error) {
+func (p AppServiceEnvironmentPaginator) NextPage(ctx context.Context) ([]AppServiceEnvironment, error) {
 	var response AppServiceEnvironmentSearchResponse
 	err := p.paginator.search(ctx, &response)
 	if err != nil {
@@ -443,7 +443,7 @@ type AppServiceFunctionAppSearchResponse struct {
 }
 
 type AppServiceFunctionAppPaginator struct {
-	paginator baseESPaginator
+	paginator *baseESPaginator
 }
 
 func (k Client) NewAppServiceFunctionAppPaginator(filters []BoolFilter, limit *int64) (AppServiceFunctionAppPaginator, error) {
@@ -453,7 +453,7 @@ func (k Client) NewAppServiceFunctionAppPaginator(filters []BoolFilter, limit *i
 	}
 
 	p := AppServiceFunctionAppPaginator{
-		paginator: *paginator,
+		paginator: paginator,
 	}
 
 	return p, nil
@@ -463,7 +463,7 @@ func (p AppServiceFunctionAppPaginator) HasNext() bool {
 	return !p.paginator.done
 }
 
-func (p *AppServiceFunctionAppPaginator) NextPage(ctx context.Context) ([]AppServiceFunctionApp, error) {
+func (p AppServiceFunctionAppPaginator) NextPage(ctx context.Context) ([]AppServiceFunctionApp, error) {
 	var response AppServiceFunctionAppSearchResponse
 	err := p.paginator.search(ctx, &response)
 	if err != nil {
@@ -579,7 +579,7 @@ type AppServiceWebAppSearchResponse struct {
 }
 
 type AppServiceWebAppPaginator struct {
-	paginator baseESPaginator
+	paginator *baseESPaginator
 }
 
 func (k Client) NewAppServiceWebAppPaginator(filters []BoolFilter, limit *int64) (AppServiceWebAppPaginator, error) {
@@ -589,7 +589,7 @@ func (k Client) NewAppServiceWebAppPaginator(filters []BoolFilter, limit *int64)
 	}
 
 	p := AppServiceWebAppPaginator{
-		paginator: *paginator,
+		paginator: paginator,
 	}
 
 	return p, nil
@@ -599,7 +599,7 @@ func (p AppServiceWebAppPaginator) HasNext() bool {
 	return !p.paginator.done
 }
 
-func (p *AppServiceWebAppPaginator) NextPage(ctx context.Context) ([]AppServiceWebApp, error) {
+func (p AppServiceWebAppPaginator) NextPage(ctx context.Context) ([]AppServiceWebApp, error) {
 	var response AppServiceWebAppSearchResponse
 	err := p.paginator.search(ctx, &response)
 	if err != nil {
@@ -715,7 +715,7 @@ type ComputeDiskSearchResponse struct {
 }
 
 type ComputeDiskPaginator struct {
-	paginator baseESPaginator
+	paginator *baseESPaginator
 }
 
 func (k Client) NewComputeDiskPaginator(filters []BoolFilter, limit *int64) (ComputeDiskPaginator, error) {
@@ -725,7 +725,7 @@ func (k Client) NewComputeDiskPaginator(filters []BoolFilter, limit *int64) (Com
 	}
 
 	p := ComputeDiskPaginator{
-		paginator: *paginator,
+		paginator: paginator,
 	}
 
 	return p, nil
@@ -735,7 +735,7 @@ func (p ComputeDiskPaginator) HasNext() bool {
 	return !p.paginator.done
 }
 
-func (p *ComputeDiskPaginator) NextPage(ctx context.Context) ([]ComputeDisk, error) {
+func (p ComputeDiskPaginator) NextPage(ctx context.Context) ([]ComputeDisk, error) {
 	var response ComputeDiskSearchResponse
 	err := p.paginator.search(ctx, &response)
 	if err != nil {
@@ -851,7 +851,7 @@ type ComputeDiskAccessSearchResponse struct {
 }
 
 type ComputeDiskAccessPaginator struct {
-	paginator baseESPaginator
+	paginator *baseESPaginator
 }
 
 func (k Client) NewComputeDiskAccessPaginator(filters []BoolFilter, limit *int64) (ComputeDiskAccessPaginator, error) {
@@ -861,7 +861,7 @@ func (k Client) NewComputeDiskAccessPaginator(filters []BoolFilter, limit *int64
 	}
 
 	p := ComputeDiskAccessPaginator{
-		paginator: *paginator,
+		paginator: paginator,
 	}
 
 	return p, nil
@@ -871,7 +871,7 @@ func (p ComputeDiskAccessPaginator) HasNext() bool {
 	return !p.paginator.done
 }
 
-func (p *ComputeDiskAccessPaginator) NextPage(ctx context.Context) ([]ComputeDiskAccess, error) {
+func (p ComputeDiskAccessPaginator) NextPage(ctx context.Context) ([]ComputeDiskAccess, error) {
 	var response ComputeDiskAccessSearchResponse
 	err := p.paginator.search(ctx, &response)
 	if err != nil {
@@ -987,7 +987,7 @@ type ComputeVirtualMachineScaleSetSearchResponse struct {
 }
 
 type ComputeVirtualMachineScaleSetPaginator struct {
-	paginator baseESPaginator
+	paginator *baseESPaginator
 }
 
 func (k Client) NewComputeVirtualMachineScaleSetPaginator(filters []BoolFilter, limit *int64) (ComputeVirtualMachineScaleSetPaginator, error) {
@@ -997,7 +997,7 @@ func (k Client) NewComputeVirtualMachineScaleSetPaginator(filters []BoolFilter, 
 	}
 
 	p := ComputeVirtualMachineScaleSetPaginator{
-		paginator: *paginator,
+		paginator: paginator,
 	}
 
 	return p, nil
@@ -1007,7 +1007,7 @@ func (p ComputeVirtualMachineScaleSetPaginator) HasNext() bool {
 	return !p.paginator.done
 }
 
-func (p *ComputeVirtualMachineScaleSetPaginator) NextPage(ctx context.Context) ([]ComputeVirtualMachineScaleSet, error) {
+func (p ComputeVirtualMachineScaleSetPaginator) NextPage(ctx context.Context) ([]ComputeVirtualMachineScaleSet, error) {
 	var response ComputeVirtualMachineScaleSetSearchResponse
 	err := p.paginator.search(ctx, &response)
 	if err != nil {
@@ -1123,7 +1123,7 @@ type DataboxEdgeDeviceSearchResponse struct {
 }
 
 type DataboxEdgeDevicePaginator struct {
-	paginator baseESPaginator
+	paginator *baseESPaginator
 }
 
 func (k Client) NewDataboxEdgeDevicePaginator(filters []BoolFilter, limit *int64) (DataboxEdgeDevicePaginator, error) {
@@ -1133,7 +1133,7 @@ func (k Client) NewDataboxEdgeDevicePaginator(filters []BoolFilter, limit *int64
 	}
 
 	p := DataboxEdgeDevicePaginator{
-		paginator: *paginator,
+		paginator: paginator,
 	}
 
 	return p, nil
@@ -1143,7 +1143,7 @@ func (p DataboxEdgeDevicePaginator) HasNext() bool {
 	return !p.paginator.done
 }
 
-func (p *DataboxEdgeDevicePaginator) NextPage(ctx context.Context) ([]DataboxEdgeDevice, error) {
+func (p DataboxEdgeDevicePaginator) NextPage(ctx context.Context) ([]DataboxEdgeDevice, error) {
 	var response DataboxEdgeDeviceSearchResponse
 	err := p.paginator.search(ctx, &response)
 	if err != nil {
@@ -1259,7 +1259,7 @@ type HealthcareServiceSearchResponse struct {
 }
 
 type HealthcareServicePaginator struct {
-	paginator baseESPaginator
+	paginator *baseESPaginator
 }
 
 func (k Client) NewHealthcareServicePaginator(filters []BoolFilter, limit *int64) (HealthcareServicePaginator, error) {
@@ -1269,7 +1269,7 @@ func (k Client) NewHealthcareServicePaginator(filters []BoolFilter, limit *int64
 	}
 
 	p := HealthcareServicePaginator{
-		paginator: *paginator,
+		paginator: paginator,
 	}
 
 	return p, nil
@@ -1279,7 +1279,7 @@ func (p HealthcareServicePaginator) HasNext() bool {
 	return !p.paginator.done
 }
 
-func (p *HealthcareServicePaginator) NextPage(ctx context.Context) ([]HealthcareService, error) {
+func (p HealthcareServicePaginator) NextPage(ctx context.Context) ([]HealthcareService, error) {
 	var response HealthcareServiceSearchResponse
 	err := p.paginator.search(ctx, &response)
 	if err != nil {
@@ -1395,7 +1395,7 @@ type HpcCacheSearchResponse struct {
 }
 
 type HpcCachePaginator struct {
-	paginator baseESPaginator
+	paginator *baseESPaginator
 }
 
 func (k Client) NewHpcCachePaginator(filters []BoolFilter, limit *int64) (HpcCachePaginator, error) {
@@ -1405,7 +1405,7 @@ func (k Client) NewHpcCachePaginator(filters []BoolFilter, limit *int64) (HpcCac
 	}
 
 	p := HpcCachePaginator{
-		paginator: *paginator,
+		paginator: paginator,
 	}
 
 	return p, nil
@@ -1415,7 +1415,7 @@ func (p HpcCachePaginator) HasNext() bool {
 	return !p.paginator.done
 }
 
-func (p *HpcCachePaginator) NextPage(ctx context.Context) ([]HpcCache, error) {
+func (p HpcCachePaginator) NextPage(ctx context.Context) ([]HpcCache, error) {
 	var response HpcCacheSearchResponse
 	err := p.paginator.search(ctx, &response)
 	if err != nil {
@@ -1531,7 +1531,7 @@ type KeyVaultKeySearchResponse struct {
 }
 
 type KeyVaultKeyPaginator struct {
-	paginator baseESPaginator
+	paginator *baseESPaginator
 }
 
 func (k Client) NewKeyVaultKeyPaginator(filters []BoolFilter, limit *int64) (KeyVaultKeyPaginator, error) {
@@ -1541,7 +1541,7 @@ func (k Client) NewKeyVaultKeyPaginator(filters []BoolFilter, limit *int64) (Key
 	}
 
 	p := KeyVaultKeyPaginator{
-		paginator: *paginator,
+		paginator: paginator,
 	}
 
 	return p, nil
@@ -1551,7 +1551,7 @@ func (p KeyVaultKeyPaginator) HasNext() bool {
 	return !p.paginator.done
 }
 
-func (p *KeyVaultKeyPaginator) NextPage(ctx context.Context) ([]KeyVaultKey, error) {
+func (p KeyVaultKeyPaginator) NextPage(ctx context.Context) ([]KeyVaultKey, error) {
 	var response KeyVaultKeySearchResponse
 	err := p.paginator.search(ctx, &response)
 	if err != nil {
@@ -1668,7 +1668,7 @@ type KubernetesClusterSearchResponse struct {
 }
 
 type KubernetesClusterPaginator struct {
-	paginator baseESPaginator
+	paginator *baseESPaginator
 }
 
 func (k Client) NewKubernetesClusterPaginator(filters []BoolFilter, limit *int64) (KubernetesClusterPaginator, error) {
@@ -1678,7 +1678,7 @@ func (k Client) NewKubernetesClusterPaginator(filters []BoolFilter, limit *int64
 	}
 
 	p := KubernetesClusterPaginator{
-		paginator: *paginator,
+		paginator: paginator,
 	}
 
 	return p, nil
@@ -1688,7 +1688,7 @@ func (p KubernetesClusterPaginator) HasNext() bool {
 	return !p.paginator.done
 }
 
-func (p *KubernetesClusterPaginator) NextPage(ctx context.Context) ([]KubernetesCluster, error) {
+func (p KubernetesClusterPaginator) NextPage(ctx context.Context) ([]KubernetesCluster, error) {
 	var response KubernetesClusterSearchResponse
 	err := p.paginator.search(ctx, &response)
 	if err != nil {
@@ -1804,7 +1804,7 @@ type NetworkInterfaceSearchResponse struct {
 }
 
 type NetworkInterfacePaginator struct {
-	paginator baseESPaginator
+	paginator *baseESPaginator
 }
 
 func (k Client) NewNetworkInterfacePaginator(filters []BoolFilter, limit *int64) (NetworkInterfacePaginator, error) {
@@ -1814,7 +1814,7 @@ func (k Client) NewNetworkInterfacePaginator(filters []BoolFilter, limit *int64)
 	}
 
 	p := NetworkInterfacePaginator{
-		paginator: *paginator,
+		paginator: paginator,
 	}
 
 	return p, nil
@@ -1824,7 +1824,7 @@ func (p NetworkInterfacePaginator) HasNext() bool {
 	return !p.paginator.done
 }
 
-func (p *NetworkInterfacePaginator) NextPage(ctx context.Context) ([]NetworkInterface, error) {
+func (p NetworkInterfacePaginator) NextPage(ctx context.Context) ([]NetworkInterface, error) {
 	var response NetworkInterfaceSearchResponse
 	err := p.paginator.search(ctx, &response)
 	if err != nil {
@@ -1940,7 +1940,7 @@ type NetworkWatcherFlowLogSearchResponse struct {
 }
 
 type NetworkWatcherFlowLogPaginator struct {
-	paginator baseESPaginator
+	paginator *baseESPaginator
 }
 
 func (k Client) NewNetworkWatcherFlowLogPaginator(filters []BoolFilter, limit *int64) (NetworkWatcherFlowLogPaginator, error) {
@@ -1950,7 +1950,7 @@ func (k Client) NewNetworkWatcherFlowLogPaginator(filters []BoolFilter, limit *i
 	}
 
 	p := NetworkWatcherFlowLogPaginator{
-		paginator: *paginator,
+		paginator: paginator,
 	}
 
 	return p, nil
@@ -1960,7 +1960,7 @@ func (p NetworkWatcherFlowLogPaginator) HasNext() bool {
 	return !p.paginator.done
 }
 
-func (p *NetworkWatcherFlowLogPaginator) NextPage(ctx context.Context) ([]NetworkWatcherFlowLog, error) {
+func (p NetworkWatcherFlowLogPaginator) NextPage(ctx context.Context) ([]NetworkWatcherFlowLog, error) {
 	var response NetworkWatcherFlowLogSearchResponse
 	err := p.paginator.search(ctx, &response)
 	if err != nil {
@@ -2077,7 +2077,7 @@ type PolicyAssignmentSearchResponse struct {
 }
 
 type PolicyAssignmentPaginator struct {
-	paginator baseESPaginator
+	paginator *baseESPaginator
 }
 
 func (k Client) NewPolicyAssignmentPaginator(filters []BoolFilter, limit *int64) (PolicyAssignmentPaginator, error) {
@@ -2087,7 +2087,7 @@ func (k Client) NewPolicyAssignmentPaginator(filters []BoolFilter, limit *int64)
 	}
 
 	p := PolicyAssignmentPaginator{
-		paginator: *paginator,
+		paginator: paginator,
 	}
 
 	return p, nil
@@ -2097,7 +2097,7 @@ func (p PolicyAssignmentPaginator) HasNext() bool {
 	return !p.paginator.done
 }
 
-func (p *PolicyAssignmentPaginator) NextPage(ctx context.Context) ([]PolicyAssignment, error) {
+func (p PolicyAssignmentPaginator) NextPage(ctx context.Context) ([]PolicyAssignment, error) {
 	var response PolicyAssignmentSearchResponse
 	err := p.paginator.search(ctx, &response)
 	if err != nil {
@@ -2212,7 +2212,7 @@ type RedisCacheSearchResponse struct {
 }
 
 type RedisCachePaginator struct {
-	paginator baseESPaginator
+	paginator *baseESPaginator
 }
 
 func (k Client) NewRedisCachePaginator(filters []BoolFilter, limit *int64) (RedisCachePaginator, error) {
@@ -2222,7 +2222,7 @@ func (k Client) NewRedisCachePaginator(filters []BoolFilter, limit *int64) (Redi
 	}
 
 	p := RedisCachePaginator{
-		paginator: *paginator,
+		paginator: paginator,
 	}
 
 	return p, nil
@@ -2232,7 +2232,7 @@ func (p RedisCachePaginator) HasNext() bool {
 	return !p.paginator.done
 }
 
-func (p *RedisCachePaginator) NextPage(ctx context.Context) ([]RedisCache, error) {
+func (p RedisCachePaginator) NextPage(ctx context.Context) ([]RedisCache, error) {
 	var response RedisCacheSearchResponse
 	err := p.paginator.search(ctx, &response)
 	if err != nil {
@@ -2348,7 +2348,7 @@ type ResourceLinkSearchResponse struct {
 }
 
 type ResourceLinkPaginator struct {
-	paginator baseESPaginator
+	paginator *baseESPaginator
 }
 
 func (k Client) NewResourceLinkPaginator(filters []BoolFilter, limit *int64) (ResourceLinkPaginator, error) {
@@ -2358,7 +2358,7 @@ func (k Client) NewResourceLinkPaginator(filters []BoolFilter, limit *int64) (Re
 	}
 
 	p := ResourceLinkPaginator{
-		paginator: *paginator,
+		paginator: paginator,
 	}
 
 	return p, nil
@@ -2368,7 +2368,7 @@ func (p ResourceLinkPaginator) HasNext() bool {
 	return !p.paginator.done
 }
 
-func (p *ResourceLinkPaginator) NextPage(ctx context.Context) ([]ResourceLink, error) {
+func (p ResourceLinkPaginator) NextPage(ctx context.Context) ([]ResourceLink, error) {
 	var response ResourceLinkSearchResponse
 	err := p.paginator.search(ctx, &response)
 	if err != nil {
@@ -2483,7 +2483,7 @@ type RoleAssignmentSearchResponse struct {
 }
 
 type RoleAssignmentPaginator struct {
-	paginator baseESPaginator
+	paginator *baseESPaginator
 }
 
 func (k Client) NewRoleAssignmentPaginator(filters []BoolFilter, limit *int64) (RoleAssignmentPaginator, error) {
@@ -2493,7 +2493,7 @@ func (k Client) NewRoleAssignmentPaginator(filters []BoolFilter, limit *int64) (
 	}
 
 	p := RoleAssignmentPaginator{
-		paginator: *paginator,
+		paginator: paginator,
 	}
 
 	return p, nil
@@ -2503,7 +2503,7 @@ func (p RoleAssignmentPaginator) HasNext() bool {
 	return !p.paginator.done
 }
 
-func (p *RoleAssignmentPaginator) NextPage(ctx context.Context) ([]RoleAssignment, error) {
+func (p RoleAssignmentPaginator) NextPage(ctx context.Context) ([]RoleAssignment, error) {
 	var response RoleAssignmentSearchResponse
 	err := p.paginator.search(ctx, &response)
 	if err != nil {
@@ -2618,7 +2618,7 @@ type RoleDefinitionSearchResponse struct {
 }
 
 type RoleDefinitionPaginator struct {
-	paginator baseESPaginator
+	paginator *baseESPaginator
 }
 
 func (k Client) NewRoleDefinitionPaginator(filters []BoolFilter, limit *int64) (RoleDefinitionPaginator, error) {
@@ -2628,7 +2628,7 @@ func (k Client) NewRoleDefinitionPaginator(filters []BoolFilter, limit *int64) (
 	}
 
 	p := RoleDefinitionPaginator{
-		paginator: *paginator,
+		paginator: paginator,
 	}
 
 	return p, nil
@@ -2638,7 +2638,7 @@ func (p RoleDefinitionPaginator) HasNext() bool {
 	return !p.paginator.done
 }
 
-func (p *RoleDefinitionPaginator) NextPage(ctx context.Context) ([]RoleDefinition, error) {
+func (p RoleDefinitionPaginator) NextPage(ctx context.Context) ([]RoleDefinition, error) {
 	var response RoleDefinitionSearchResponse
 	err := p.paginator.search(ctx, &response)
 	if err != nil {
@@ -2753,7 +2753,7 @@ type SecurityCenterAutoProvisioningSearchResponse struct {
 }
 
 type SecurityCenterAutoProvisioningPaginator struct {
-	paginator baseESPaginator
+	paginator *baseESPaginator
 }
 
 func (k Client) NewSecurityCenterAutoProvisioningPaginator(filters []BoolFilter, limit *int64) (SecurityCenterAutoProvisioningPaginator, error) {
@@ -2763,7 +2763,7 @@ func (k Client) NewSecurityCenterAutoProvisioningPaginator(filters []BoolFilter,
 	}
 
 	p := SecurityCenterAutoProvisioningPaginator{
-		paginator: *paginator,
+		paginator: paginator,
 	}
 
 	return p, nil
@@ -2773,7 +2773,7 @@ func (p SecurityCenterAutoProvisioningPaginator) HasNext() bool {
 	return !p.paginator.done
 }
 
-func (p *SecurityCenterAutoProvisioningPaginator) NextPage(ctx context.Context) ([]SecurityCenterAutoProvisioning, error) {
+func (p SecurityCenterAutoProvisioningPaginator) NextPage(ctx context.Context) ([]SecurityCenterAutoProvisioning, error) {
 	var response SecurityCenterAutoProvisioningSearchResponse
 	err := p.paginator.search(ctx, &response)
 	if err != nil {
@@ -2888,7 +2888,7 @@ type SecurityCenterContactSearchResponse struct {
 }
 
 type SecurityCenterContactPaginator struct {
-	paginator baseESPaginator
+	paginator *baseESPaginator
 }
 
 func (k Client) NewSecurityCenterContactPaginator(filters []BoolFilter, limit *int64) (SecurityCenterContactPaginator, error) {
@@ -2898,7 +2898,7 @@ func (k Client) NewSecurityCenterContactPaginator(filters []BoolFilter, limit *i
 	}
 
 	p := SecurityCenterContactPaginator{
-		paginator: *paginator,
+		paginator: paginator,
 	}
 
 	return p, nil
@@ -2908,7 +2908,7 @@ func (p SecurityCenterContactPaginator) HasNext() bool {
 	return !p.paginator.done
 }
 
-func (p *SecurityCenterContactPaginator) NextPage(ctx context.Context) ([]SecurityCenterContact, error) {
+func (p SecurityCenterContactPaginator) NextPage(ctx context.Context) ([]SecurityCenterContact, error) {
 	var response SecurityCenterContactSearchResponse
 	err := p.paginator.search(ctx, &response)
 	if err != nil {
@@ -3023,7 +3023,7 @@ type SecurityCenterJitNetworkAccessPolicySearchResponse struct {
 }
 
 type SecurityCenterJitNetworkAccessPolicyPaginator struct {
-	paginator baseESPaginator
+	paginator *baseESPaginator
 }
 
 func (k Client) NewSecurityCenterJitNetworkAccessPolicyPaginator(filters []BoolFilter, limit *int64) (SecurityCenterJitNetworkAccessPolicyPaginator, error) {
@@ -3033,7 +3033,7 @@ func (k Client) NewSecurityCenterJitNetworkAccessPolicyPaginator(filters []BoolF
 	}
 
 	p := SecurityCenterJitNetworkAccessPolicyPaginator{
-		paginator: *paginator,
+		paginator: paginator,
 	}
 
 	return p, nil
@@ -3043,7 +3043,7 @@ func (p SecurityCenterJitNetworkAccessPolicyPaginator) HasNext() bool {
 	return !p.paginator.done
 }
 
-func (p *SecurityCenterJitNetworkAccessPolicyPaginator) NextPage(ctx context.Context) ([]SecurityCenterJitNetworkAccessPolicy, error) {
+func (p SecurityCenterJitNetworkAccessPolicyPaginator) NextPage(ctx context.Context) ([]SecurityCenterJitNetworkAccessPolicy, error) {
 	var response SecurityCenterJitNetworkAccessPolicySearchResponse
 	err := p.paginator.search(ctx, &response)
 	if err != nil {
@@ -3156,7 +3156,7 @@ type SecurityCenterSettingSearchResponse struct {
 }
 
 type SecurityCenterSettingPaginator struct {
-	paginator baseESPaginator
+	paginator *baseESPaginator
 }
 
 func (k Client) NewSecurityCenterSettingPaginator(filters []BoolFilter, limit *int64) (SecurityCenterSettingPaginator, error) {
@@ -3166,7 +3166,7 @@ func (k Client) NewSecurityCenterSettingPaginator(filters []BoolFilter, limit *i
 	}
 
 	p := SecurityCenterSettingPaginator{
-		paginator: *paginator,
+		paginator: paginator,
 	}
 
 	return p, nil
@@ -3176,7 +3176,7 @@ func (p SecurityCenterSettingPaginator) HasNext() bool {
 	return !p.paginator.done
 }
 
-func (p *SecurityCenterSettingPaginator) NextPage(ctx context.Context) ([]SecurityCenterSetting, error) {
+func (p SecurityCenterSettingPaginator) NextPage(ctx context.Context) ([]SecurityCenterSetting, error) {
 	var response SecurityCenterSettingSearchResponse
 	err := p.paginator.search(ctx, &response)
 	if err != nil {
@@ -3291,7 +3291,7 @@ type SecurityCenterSubscriptionPricingSearchResponse struct {
 }
 
 type SecurityCenterSubscriptionPricingPaginator struct {
-	paginator baseESPaginator
+	paginator *baseESPaginator
 }
 
 func (k Client) NewSecurityCenterSubscriptionPricingPaginator(filters []BoolFilter, limit *int64) (SecurityCenterSubscriptionPricingPaginator, error) {
@@ -3301,7 +3301,7 @@ func (k Client) NewSecurityCenterSubscriptionPricingPaginator(filters []BoolFilt
 	}
 
 	p := SecurityCenterSubscriptionPricingPaginator{
-		paginator: *paginator,
+		paginator: paginator,
 	}
 
 	return p, nil
@@ -3311,7 +3311,7 @@ func (p SecurityCenterSubscriptionPricingPaginator) HasNext() bool {
 	return !p.paginator.done
 }
 
-func (p *SecurityCenterSubscriptionPricingPaginator) NextPage(ctx context.Context) ([]SecurityCenterSubscriptionPricing, error) {
+func (p SecurityCenterSubscriptionPricingPaginator) NextPage(ctx context.Context) ([]SecurityCenterSubscriptionPricing, error) {
 	var response SecurityCenterSubscriptionPricingSearchResponse
 	err := p.paginator.search(ctx, &response)
 	if err != nil {
@@ -3426,7 +3426,7 @@ type StorageContainerSearchResponse struct {
 }
 
 type StorageContainerPaginator struct {
-	paginator baseESPaginator
+	paginator *baseESPaginator
 }
 
 func (k Client) NewStorageContainerPaginator(filters []BoolFilter, limit *int64) (StorageContainerPaginator, error) {
@@ -3436,7 +3436,7 @@ func (k Client) NewStorageContainerPaginator(filters []BoolFilter, limit *int64)
 	}
 
 	p := StorageContainerPaginator{
-		paginator: *paginator,
+		paginator: paginator,
 	}
 
 	return p, nil
@@ -3446,7 +3446,7 @@ func (p StorageContainerPaginator) HasNext() bool {
 	return !p.paginator.done
 }
 
-func (p *StorageContainerPaginator) NextPage(ctx context.Context) ([]StorageContainer, error) {
+func (p StorageContainerPaginator) NextPage(ctx context.Context) ([]StorageContainer, error) {
 	var response StorageContainerSearchResponse
 	err := p.paginator.search(ctx, &response)
 	if err != nil {
@@ -3563,7 +3563,7 @@ type SubnetSearchResponse struct {
 }
 
 type SubnetPaginator struct {
-	paginator baseESPaginator
+	paginator *baseESPaginator
 }
 
 func (k Client) NewSubnetPaginator(filters []BoolFilter, limit *int64) (SubnetPaginator, error) {
@@ -3573,7 +3573,7 @@ func (k Client) NewSubnetPaginator(filters []BoolFilter, limit *int64) (SubnetPa
 	}
 
 	p := SubnetPaginator{
-		paginator: *paginator,
+		paginator: paginator,
 	}
 
 	return p, nil
@@ -3583,7 +3583,7 @@ func (p SubnetPaginator) HasNext() bool {
 	return !p.paginator.done
 }
 
-func (p *SubnetPaginator) NextPage(ctx context.Context) ([]Subnet, error) {
+func (p SubnetPaginator) NextPage(ctx context.Context) ([]Subnet, error) {
 	var response SubnetSearchResponse
 	err := p.paginator.search(ctx, &response)
 	if err != nil {
@@ -3700,7 +3700,7 @@ type VirtualNetworkSearchResponse struct {
 }
 
 type VirtualNetworkPaginator struct {
-	paginator baseESPaginator
+	paginator *baseESPaginator
 }
 
 func (k Client) NewVirtualNetworkPaginator(filters []BoolFilter, limit *int64) (VirtualNetworkPaginator, error) {
@@ -3710,7 +3710,7 @@ func (k Client) NewVirtualNetworkPaginator(filters []BoolFilter, limit *int64) (
 	}
 
 	p := VirtualNetworkPaginator{
-		paginator: *paginator,
+		paginator: paginator,
 	}
 
 	return p, nil
@@ -3720,7 +3720,7 @@ func (p VirtualNetworkPaginator) HasNext() bool {
 	return !p.paginator.done
 }
 
-func (p *VirtualNetworkPaginator) NextPage(ctx context.Context) ([]VirtualNetwork, error) {
+func (p VirtualNetworkPaginator) NextPage(ctx context.Context) ([]VirtualNetwork, error) {
 	var response VirtualNetworkSearchResponse
 	err := p.paginator.search(ctx, &response)
 	if err != nil {
@@ -3836,7 +3836,7 @@ type TenantSearchResponse struct {
 }
 
 type TenantPaginator struct {
-	paginator baseESPaginator
+	paginator *baseESPaginator
 }
 
 func (k Client) NewTenantPaginator(filters []BoolFilter, limit *int64) (TenantPaginator, error) {
@@ -3846,7 +3846,7 @@ func (k Client) NewTenantPaginator(filters []BoolFilter, limit *int64) (TenantPa
 	}
 
 	p := TenantPaginator{
-		paginator: *paginator,
+		paginator: paginator,
 	}
 
 	return p, nil
@@ -3856,7 +3856,7 @@ func (p TenantPaginator) HasNext() bool {
 	return !p.paginator.done
 }
 
-func (p *TenantPaginator) NextPage(ctx context.Context) ([]Tenant, error) {
+func (p TenantPaginator) NextPage(ctx context.Context) ([]Tenant, error) {
 	var response TenantSearchResponse
 	err := p.paginator.search(ctx, &response)
 	if err != nil {
@@ -3969,7 +3969,7 @@ type SubscriptionSearchResponse struct {
 }
 
 type SubscriptionPaginator struct {
-	paginator baseESPaginator
+	paginator *baseESPaginator
 }
 
 func (k Client) NewSubscriptionPaginator(filters []BoolFilter, limit *int64) (SubscriptionPaginator, error) {
@@ -3979,7 +3979,7 @@ func (k Client) NewSubscriptionPaginator(filters []BoolFilter, limit *int64) (Su
 	}
 
 	p := SubscriptionPaginator{
-		paginator: *paginator,
+		paginator: paginator,
 	}
 
 	return p, nil
@@ -3989,7 +3989,7 @@ func (p SubscriptionPaginator) HasNext() bool {
 	return !p.paginator.done
 }
 
-func (p *SubscriptionPaginator) NextPage(ctx context.Context) ([]Subscription, error) {
+func (p SubscriptionPaginator) NextPage(ctx context.Context) ([]Subscription, error) {
 	var response SubscriptionSearchResponse
 	err := p.paginator.search(ctx, &response)
 	if err != nil {
@@ -4102,7 +4102,7 @@ type ApplicationGatewaySearchResponse struct {
 }
 
 type ApplicationGatewayPaginator struct {
-	paginator baseESPaginator
+	paginator *baseESPaginator
 }
 
 func (k Client) NewApplicationGatewayPaginator(filters []BoolFilter, limit *int64) (ApplicationGatewayPaginator, error) {
@@ -4112,7 +4112,7 @@ func (k Client) NewApplicationGatewayPaginator(filters []BoolFilter, limit *int6
 	}
 
 	p := ApplicationGatewayPaginator{
-		paginator: *paginator,
+		paginator: paginator,
 	}
 
 	return p, nil
@@ -4122,7 +4122,7 @@ func (p ApplicationGatewayPaginator) HasNext() bool {
 	return !p.paginator.done
 }
 
-func (p *ApplicationGatewayPaginator) NextPage(ctx context.Context) ([]ApplicationGateway, error) {
+func (p ApplicationGatewayPaginator) NextPage(ctx context.Context) ([]ApplicationGateway, error) {
 	var response ApplicationGatewaySearchResponse
 	err := p.paginator.search(ctx, &response)
 	if err != nil {
@@ -4238,7 +4238,7 @@ type BatchAccountSearchResponse struct {
 }
 
 type BatchAccountPaginator struct {
-	paginator baseESPaginator
+	paginator *baseESPaginator
 }
 
 func (k Client) NewBatchAccountPaginator(filters []BoolFilter, limit *int64) (BatchAccountPaginator, error) {
@@ -4248,7 +4248,7 @@ func (k Client) NewBatchAccountPaginator(filters []BoolFilter, limit *int64) (Ba
 	}
 
 	p := BatchAccountPaginator{
-		paginator: *paginator,
+		paginator: paginator,
 	}
 
 	return p, nil
@@ -4258,7 +4258,7 @@ func (p BatchAccountPaginator) HasNext() bool {
 	return !p.paginator.done
 }
 
-func (p *BatchAccountPaginator) NextPage(ctx context.Context) ([]BatchAccount, error) {
+func (p BatchAccountPaginator) NextPage(ctx context.Context) ([]BatchAccount, error) {
 	var response BatchAccountSearchResponse
 	err := p.paginator.search(ctx, &response)
 	if err != nil {
@@ -4374,7 +4374,7 @@ type CognitiveAccountSearchResponse struct {
 }
 
 type CognitiveAccountPaginator struct {
-	paginator baseESPaginator
+	paginator *baseESPaginator
 }
 
 func (k Client) NewCognitiveAccountPaginator(filters []BoolFilter, limit *int64) (CognitiveAccountPaginator, error) {
@@ -4384,7 +4384,7 @@ func (k Client) NewCognitiveAccountPaginator(filters []BoolFilter, limit *int64)
 	}
 
 	p := CognitiveAccountPaginator{
-		paginator: *paginator,
+		paginator: paginator,
 	}
 
 	return p, nil
@@ -4394,7 +4394,7 @@ func (p CognitiveAccountPaginator) HasNext() bool {
 	return !p.paginator.done
 }
 
-func (p *CognitiveAccountPaginator) NextPage(ctx context.Context) ([]CognitiveAccount, error) {
+func (p CognitiveAccountPaginator) NextPage(ctx context.Context) ([]CognitiveAccount, error) {
 	var response CognitiveAccountSearchResponse
 	err := p.paginator.search(ctx, &response)
 	if err != nil {
@@ -4510,7 +4510,7 @@ type ComputeVirtualMachineSearchResponse struct {
 }
 
 type ComputeVirtualMachinePaginator struct {
-	paginator baseESPaginator
+	paginator *baseESPaginator
 }
 
 func (k Client) NewComputeVirtualMachinePaginator(filters []BoolFilter, limit *int64) (ComputeVirtualMachinePaginator, error) {
@@ -4520,7 +4520,7 @@ func (k Client) NewComputeVirtualMachinePaginator(filters []BoolFilter, limit *i
 	}
 
 	p := ComputeVirtualMachinePaginator{
-		paginator: *paginator,
+		paginator: paginator,
 	}
 
 	return p, nil
@@ -4530,7 +4530,7 @@ func (p ComputeVirtualMachinePaginator) HasNext() bool {
 	return !p.paginator.done
 }
 
-func (p *ComputeVirtualMachinePaginator) NextPage(ctx context.Context) ([]ComputeVirtualMachine, error) {
+func (p ComputeVirtualMachinePaginator) NextPage(ctx context.Context) ([]ComputeVirtualMachine, error) {
 	var response ComputeVirtualMachineSearchResponse
 	err := p.paginator.search(ctx, &response)
 	if err != nil {
@@ -4646,7 +4646,7 @@ type ContainerRegistrySearchResponse struct {
 }
 
 type ContainerRegistryPaginator struct {
-	paginator baseESPaginator
+	paginator *baseESPaginator
 }
 
 func (k Client) NewContainerRegistryPaginator(filters []BoolFilter, limit *int64) (ContainerRegistryPaginator, error) {
@@ -4656,7 +4656,7 @@ func (k Client) NewContainerRegistryPaginator(filters []BoolFilter, limit *int64
 	}
 
 	p := ContainerRegistryPaginator{
-		paginator: *paginator,
+		paginator: paginator,
 	}
 
 	return p, nil
@@ -4666,7 +4666,7 @@ func (p ContainerRegistryPaginator) HasNext() bool {
 	return !p.paginator.done
 }
 
-func (p *ContainerRegistryPaginator) NextPage(ctx context.Context) ([]ContainerRegistry, error) {
+func (p ContainerRegistryPaginator) NextPage(ctx context.Context) ([]ContainerRegistry, error) {
 	var response ContainerRegistrySearchResponse
 	err := p.paginator.search(ctx, &response)
 	if err != nil {
@@ -4782,7 +4782,7 @@ type CosmosdbAccountSearchResponse struct {
 }
 
 type CosmosdbAccountPaginator struct {
-	paginator baseESPaginator
+	paginator *baseESPaginator
 }
 
 func (k Client) NewCosmosdbAccountPaginator(filters []BoolFilter, limit *int64) (CosmosdbAccountPaginator, error) {
@@ -4792,7 +4792,7 @@ func (k Client) NewCosmosdbAccountPaginator(filters []BoolFilter, limit *int64) 
 	}
 
 	p := CosmosdbAccountPaginator{
-		paginator: *paginator,
+		paginator: paginator,
 	}
 
 	return p, nil
@@ -4802,7 +4802,7 @@ func (p CosmosdbAccountPaginator) HasNext() bool {
 	return !p.paginator.done
 }
 
-func (p *CosmosdbAccountPaginator) NextPage(ctx context.Context) ([]CosmosdbAccount, error) {
+func (p CosmosdbAccountPaginator) NextPage(ctx context.Context) ([]CosmosdbAccount, error) {
 	var response CosmosdbAccountSearchResponse
 	err := p.paginator.search(ctx, &response)
 	if err != nil {
@@ -4918,7 +4918,7 @@ type DataFactorySearchResponse struct {
 }
 
 type DataFactoryPaginator struct {
-	paginator baseESPaginator
+	paginator *baseESPaginator
 }
 
 func (k Client) NewDataFactoryPaginator(filters []BoolFilter, limit *int64) (DataFactoryPaginator, error) {
@@ -4928,7 +4928,7 @@ func (k Client) NewDataFactoryPaginator(filters []BoolFilter, limit *int64) (Dat
 	}
 
 	p := DataFactoryPaginator{
-		paginator: *paginator,
+		paginator: paginator,
 	}
 
 	return p, nil
@@ -4938,7 +4938,7 @@ func (p DataFactoryPaginator) HasNext() bool {
 	return !p.paginator.done
 }
 
-func (p *DataFactoryPaginator) NextPage(ctx context.Context) ([]DataFactory, error) {
+func (p DataFactoryPaginator) NextPage(ctx context.Context) ([]DataFactory, error) {
 	var response DataFactorySearchResponse
 	err := p.paginator.search(ctx, &response)
 	if err != nil {
@@ -5054,7 +5054,7 @@ type DataLakeAnalyticsAccountSearchResponse struct {
 }
 
 type DataLakeAnalyticsAccountPaginator struct {
-	paginator baseESPaginator
+	paginator *baseESPaginator
 }
 
 func (k Client) NewDataLakeAnalyticsAccountPaginator(filters []BoolFilter, limit *int64) (DataLakeAnalyticsAccountPaginator, error) {
@@ -5064,7 +5064,7 @@ func (k Client) NewDataLakeAnalyticsAccountPaginator(filters []BoolFilter, limit
 	}
 
 	p := DataLakeAnalyticsAccountPaginator{
-		paginator: *paginator,
+		paginator: paginator,
 	}
 
 	return p, nil
@@ -5074,7 +5074,7 @@ func (p DataLakeAnalyticsAccountPaginator) HasNext() bool {
 	return !p.paginator.done
 }
 
-func (p *DataLakeAnalyticsAccountPaginator) NextPage(ctx context.Context) ([]DataLakeAnalyticsAccount, error) {
+func (p DataLakeAnalyticsAccountPaginator) NextPage(ctx context.Context) ([]DataLakeAnalyticsAccount, error) {
 	var response DataLakeAnalyticsAccountSearchResponse
 	err := p.paginator.search(ctx, &response)
 	if err != nil {
@@ -5190,7 +5190,7 @@ type DataLakeStoreSearchResponse struct {
 }
 
 type DataLakeStorePaginator struct {
-	paginator baseESPaginator
+	paginator *baseESPaginator
 }
 
 func (k Client) NewDataLakeStorePaginator(filters []BoolFilter, limit *int64) (DataLakeStorePaginator, error) {
@@ -5200,7 +5200,7 @@ func (k Client) NewDataLakeStorePaginator(filters []BoolFilter, limit *int64) (D
 	}
 
 	p := DataLakeStorePaginator{
-		paginator: *paginator,
+		paginator: paginator,
 	}
 
 	return p, nil
@@ -5210,7 +5210,7 @@ func (p DataLakeStorePaginator) HasNext() bool {
 	return !p.paginator.done
 }
 
-func (p *DataLakeStorePaginator) NextPage(ctx context.Context) ([]DataLakeStore, error) {
+func (p DataLakeStorePaginator) NextPage(ctx context.Context) ([]DataLakeStore, error) {
 	var response DataLakeStoreSearchResponse
 	err := p.paginator.search(ctx, &response)
 	if err != nil {
@@ -5326,7 +5326,7 @@ type DiagnosticSettingSearchResponse struct {
 }
 
 type DiagnosticSettingPaginator struct {
-	paginator baseESPaginator
+	paginator *baseESPaginator
 }
 
 func (k Client) NewDiagnosticSettingPaginator(filters []BoolFilter, limit *int64) (DiagnosticSettingPaginator, error) {
@@ -5336,7 +5336,7 @@ func (k Client) NewDiagnosticSettingPaginator(filters []BoolFilter, limit *int64
 	}
 
 	p := DiagnosticSettingPaginator{
-		paginator: *paginator,
+		paginator: paginator,
 	}
 
 	return p, nil
@@ -5346,7 +5346,7 @@ func (p DiagnosticSettingPaginator) HasNext() bool {
 	return !p.paginator.done
 }
 
-func (p *DiagnosticSettingPaginator) NextPage(ctx context.Context) ([]DiagnosticSetting, error) {
+func (p DiagnosticSettingPaginator) NextPage(ctx context.Context) ([]DiagnosticSetting, error) {
 	var response DiagnosticSettingSearchResponse
 	err := p.paginator.search(ctx, &response)
 	if err != nil {
@@ -5462,7 +5462,7 @@ type EventGridDomainSearchResponse struct {
 }
 
 type EventGridDomainPaginator struct {
-	paginator baseESPaginator
+	paginator *baseESPaginator
 }
 
 func (k Client) NewEventGridDomainPaginator(filters []BoolFilter, limit *int64) (EventGridDomainPaginator, error) {
@@ -5472,7 +5472,7 @@ func (k Client) NewEventGridDomainPaginator(filters []BoolFilter, limit *int64) 
 	}
 
 	p := EventGridDomainPaginator{
-		paginator: *paginator,
+		paginator: paginator,
 	}
 
 	return p, nil
@@ -5482,7 +5482,7 @@ func (p EventGridDomainPaginator) HasNext() bool {
 	return !p.paginator.done
 }
 
-func (p *EventGridDomainPaginator) NextPage(ctx context.Context) ([]EventGridDomain, error) {
+func (p EventGridDomainPaginator) NextPage(ctx context.Context) ([]EventGridDomain, error) {
 	var response EventGridDomainSearchResponse
 	err := p.paginator.search(ctx, &response)
 	if err != nil {
@@ -5598,7 +5598,7 @@ type EventGridTopicSearchResponse struct {
 }
 
 type EventGridTopicPaginator struct {
-	paginator baseESPaginator
+	paginator *baseESPaginator
 }
 
 func (k Client) NewEventGridTopicPaginator(filters []BoolFilter, limit *int64) (EventGridTopicPaginator, error) {
@@ -5608,7 +5608,7 @@ func (k Client) NewEventGridTopicPaginator(filters []BoolFilter, limit *int64) (
 	}
 
 	p := EventGridTopicPaginator{
-		paginator: *paginator,
+		paginator: paginator,
 	}
 
 	return p, nil
@@ -5618,7 +5618,7 @@ func (p EventGridTopicPaginator) HasNext() bool {
 	return !p.paginator.done
 }
 
-func (p *EventGridTopicPaginator) NextPage(ctx context.Context) ([]EventGridTopic, error) {
+func (p EventGridTopicPaginator) NextPage(ctx context.Context) ([]EventGridTopic, error) {
 	var response EventGridTopicSearchResponse
 	err := p.paginator.search(ctx, &response)
 	if err != nil {
@@ -5734,7 +5734,7 @@ type EventhubNamespaceSearchResponse struct {
 }
 
 type EventhubNamespacePaginator struct {
-	paginator baseESPaginator
+	paginator *baseESPaginator
 }
 
 func (k Client) NewEventhubNamespacePaginator(filters []BoolFilter, limit *int64) (EventhubNamespacePaginator, error) {
@@ -5744,7 +5744,7 @@ func (k Client) NewEventhubNamespacePaginator(filters []BoolFilter, limit *int64
 	}
 
 	p := EventhubNamespacePaginator{
-		paginator: *paginator,
+		paginator: paginator,
 	}
 
 	return p, nil
@@ -5754,7 +5754,7 @@ func (p EventhubNamespacePaginator) HasNext() bool {
 	return !p.paginator.done
 }
 
-func (p *EventhubNamespacePaginator) NextPage(ctx context.Context) ([]EventhubNamespace, error) {
+func (p EventhubNamespacePaginator) NextPage(ctx context.Context) ([]EventhubNamespace, error) {
 	var response EventhubNamespaceSearchResponse
 	err := p.paginator.search(ctx, &response)
 	if err != nil {
@@ -5870,7 +5870,7 @@ type FrontdoorSearchResponse struct {
 }
 
 type FrontdoorPaginator struct {
-	paginator baseESPaginator
+	paginator *baseESPaginator
 }
 
 func (k Client) NewFrontdoorPaginator(filters []BoolFilter, limit *int64) (FrontdoorPaginator, error) {
@@ -5880,7 +5880,7 @@ func (k Client) NewFrontdoorPaginator(filters []BoolFilter, limit *int64) (Front
 	}
 
 	p := FrontdoorPaginator{
-		paginator: *paginator,
+		paginator: paginator,
 	}
 
 	return p, nil
@@ -5890,7 +5890,7 @@ func (p FrontdoorPaginator) HasNext() bool {
 	return !p.paginator.done
 }
 
-func (p *FrontdoorPaginator) NextPage(ctx context.Context) ([]Frontdoor, error) {
+func (p FrontdoorPaginator) NextPage(ctx context.Context) ([]Frontdoor, error) {
 	var response FrontdoorSearchResponse
 	err := p.paginator.search(ctx, &response)
 	if err != nil {
@@ -6006,7 +6006,7 @@ type HdinsightClusterSearchResponse struct {
 }
 
 type HdinsightClusterPaginator struct {
-	paginator baseESPaginator
+	paginator *baseESPaginator
 }
 
 func (k Client) NewHdinsightClusterPaginator(filters []BoolFilter, limit *int64) (HdinsightClusterPaginator, error) {
@@ -6016,7 +6016,7 @@ func (k Client) NewHdinsightClusterPaginator(filters []BoolFilter, limit *int64)
 	}
 
 	p := HdinsightClusterPaginator{
-		paginator: *paginator,
+		paginator: paginator,
 	}
 
 	return p, nil
@@ -6026,7 +6026,7 @@ func (p HdinsightClusterPaginator) HasNext() bool {
 	return !p.paginator.done
 }
 
-func (p *HdinsightClusterPaginator) NextPage(ctx context.Context) ([]HdinsightCluster, error) {
+func (p HdinsightClusterPaginator) NextPage(ctx context.Context) ([]HdinsightCluster, error) {
 	var response HdinsightClusterSearchResponse
 	err := p.paginator.search(ctx, &response)
 	if err != nil {
@@ -6142,7 +6142,7 @@ type HybridComputeMachineSearchResponse struct {
 }
 
 type HybridComputeMachinePaginator struct {
-	paginator baseESPaginator
+	paginator *baseESPaginator
 }
 
 func (k Client) NewHybridComputeMachinePaginator(filters []BoolFilter, limit *int64) (HybridComputeMachinePaginator, error) {
@@ -6152,7 +6152,7 @@ func (k Client) NewHybridComputeMachinePaginator(filters []BoolFilter, limit *in
 	}
 
 	p := HybridComputeMachinePaginator{
-		paginator: *paginator,
+		paginator: paginator,
 	}
 
 	return p, nil
@@ -6162,7 +6162,7 @@ func (p HybridComputeMachinePaginator) HasNext() bool {
 	return !p.paginator.done
 }
 
-func (p *HybridComputeMachinePaginator) NextPage(ctx context.Context) ([]HybridComputeMachine, error) {
+func (p HybridComputeMachinePaginator) NextPage(ctx context.Context) ([]HybridComputeMachine, error) {
 	var response HybridComputeMachineSearchResponse
 	err := p.paginator.search(ctx, &response)
 	if err != nil {
@@ -6278,7 +6278,7 @@ type IOTHubSearchResponse struct {
 }
 
 type IOTHubPaginator struct {
-	paginator baseESPaginator
+	paginator *baseESPaginator
 }
 
 func (k Client) NewIOTHubPaginator(filters []BoolFilter, limit *int64) (IOTHubPaginator, error) {
@@ -6288,7 +6288,7 @@ func (k Client) NewIOTHubPaginator(filters []BoolFilter, limit *int64) (IOTHubPa
 	}
 
 	p := IOTHubPaginator{
-		paginator: *paginator,
+		paginator: paginator,
 	}
 
 	return p, nil
@@ -6298,7 +6298,7 @@ func (p IOTHubPaginator) HasNext() bool {
 	return !p.paginator.done
 }
 
-func (p *IOTHubPaginator) NextPage(ctx context.Context) ([]IOTHub, error) {
+func (p IOTHubPaginator) NextPage(ctx context.Context) ([]IOTHub, error) {
 	var response IOTHubSearchResponse
 	err := p.paginator.search(ctx, &response)
 	if err != nil {
@@ -6414,7 +6414,7 @@ type KeyVaultSearchResponse struct {
 }
 
 type KeyVaultPaginator struct {
-	paginator baseESPaginator
+	paginator *baseESPaginator
 }
 
 func (k Client) NewKeyVaultPaginator(filters []BoolFilter, limit *int64) (KeyVaultPaginator, error) {
@@ -6424,7 +6424,7 @@ func (k Client) NewKeyVaultPaginator(filters []BoolFilter, limit *int64) (KeyVau
 	}
 
 	p := KeyVaultPaginator{
-		paginator: *paginator,
+		paginator: paginator,
 	}
 
 	return p, nil
@@ -6434,7 +6434,7 @@ func (p KeyVaultPaginator) HasNext() bool {
 	return !p.paginator.done
 }
 
-func (p *KeyVaultPaginator) NextPage(ctx context.Context) ([]KeyVault, error) {
+func (p KeyVaultPaginator) NextPage(ctx context.Context) ([]KeyVault, error) {
 	var response KeyVaultSearchResponse
 	err := p.paginator.search(ctx, &response)
 	if err != nil {
@@ -6550,7 +6550,7 @@ type KeyVaultManagedHardwareSecurityModuleSearchResponse struct {
 }
 
 type KeyVaultManagedHardwareSecurityModulePaginator struct {
-	paginator baseESPaginator
+	paginator *baseESPaginator
 }
 
 func (k Client) NewKeyVaultManagedHardwareSecurityModulePaginator(filters []BoolFilter, limit *int64) (KeyVaultManagedHardwareSecurityModulePaginator, error) {
@@ -6560,7 +6560,7 @@ func (k Client) NewKeyVaultManagedHardwareSecurityModulePaginator(filters []Bool
 	}
 
 	p := KeyVaultManagedHardwareSecurityModulePaginator{
-		paginator: *paginator,
+		paginator: paginator,
 	}
 
 	return p, nil
@@ -6570,7 +6570,7 @@ func (p KeyVaultManagedHardwareSecurityModulePaginator) HasNext() bool {
 	return !p.paginator.done
 }
 
-func (p *KeyVaultManagedHardwareSecurityModulePaginator) NextPage(ctx context.Context) ([]KeyVaultManagedHardwareSecurityModule, error) {
+func (p KeyVaultManagedHardwareSecurityModulePaginator) NextPage(ctx context.Context) ([]KeyVaultManagedHardwareSecurityModule, error) {
 	var response KeyVaultManagedHardwareSecurityModuleSearchResponse
 	err := p.paginator.search(ctx, &response)
 	if err != nil {
@@ -6686,7 +6686,7 @@ type KeyVaultSecretSearchResponse struct {
 }
 
 type KeyVaultSecretPaginator struct {
-	paginator baseESPaginator
+	paginator *baseESPaginator
 }
 
 func (k Client) NewKeyVaultSecretPaginator(filters []BoolFilter, limit *int64) (KeyVaultSecretPaginator, error) {
@@ -6696,7 +6696,7 @@ func (k Client) NewKeyVaultSecretPaginator(filters []BoolFilter, limit *int64) (
 	}
 
 	p := KeyVaultSecretPaginator{
-		paginator: *paginator,
+		paginator: paginator,
 	}
 
 	return p, nil
@@ -6706,7 +6706,7 @@ func (p KeyVaultSecretPaginator) HasNext() bool {
 	return !p.paginator.done
 }
 
-func (p *KeyVaultSecretPaginator) NextPage(ctx context.Context) ([]KeyVaultSecret, error) {
+func (p KeyVaultSecretPaginator) NextPage(ctx context.Context) ([]KeyVaultSecret, error) {
 	var response KeyVaultSecretSearchResponse
 	err := p.paginator.search(ctx, &response)
 	if err != nil {
@@ -6822,7 +6822,7 @@ type KustoClusterSearchResponse struct {
 }
 
 type KustoClusterPaginator struct {
-	paginator baseESPaginator
+	paginator *baseESPaginator
 }
 
 func (k Client) NewKustoClusterPaginator(filters []BoolFilter, limit *int64) (KustoClusterPaginator, error) {
@@ -6832,7 +6832,7 @@ func (k Client) NewKustoClusterPaginator(filters []BoolFilter, limit *int64) (Ku
 	}
 
 	p := KustoClusterPaginator{
-		paginator: *paginator,
+		paginator: paginator,
 	}
 
 	return p, nil
@@ -6842,7 +6842,7 @@ func (p KustoClusterPaginator) HasNext() bool {
 	return !p.paginator.done
 }
 
-func (p *KustoClusterPaginator) NextPage(ctx context.Context) ([]KustoCluster, error) {
+func (p KustoClusterPaginator) NextPage(ctx context.Context) ([]KustoCluster, error) {
 	var response KustoClusterSearchResponse
 	err := p.paginator.search(ctx, &response)
 	if err != nil {
@@ -6958,7 +6958,7 @@ type LogAlertSearchResponse struct {
 }
 
 type LogAlertPaginator struct {
-	paginator baseESPaginator
+	paginator *baseESPaginator
 }
 
 func (k Client) NewLogAlertPaginator(filters []BoolFilter, limit *int64) (LogAlertPaginator, error) {
@@ -6968,7 +6968,7 @@ func (k Client) NewLogAlertPaginator(filters []BoolFilter, limit *int64) (LogAle
 	}
 
 	p := LogAlertPaginator{
-		paginator: *paginator,
+		paginator: paginator,
 	}
 
 	return p, nil
@@ -6978,7 +6978,7 @@ func (p LogAlertPaginator) HasNext() bool {
 	return !p.paginator.done
 }
 
-func (p *LogAlertPaginator) NextPage(ctx context.Context) ([]LogAlert, error) {
+func (p LogAlertPaginator) NextPage(ctx context.Context) ([]LogAlert, error) {
 	var response LogAlertSearchResponse
 	err := p.paginator.search(ctx, &response)
 	if err != nil {
@@ -7094,7 +7094,7 @@ type LogProfileSearchResponse struct {
 }
 
 type LogProfilePaginator struct {
-	paginator baseESPaginator
+	paginator *baseESPaginator
 }
 
 func (k Client) NewLogProfilePaginator(filters []BoolFilter, limit *int64) (LogProfilePaginator, error) {
@@ -7104,7 +7104,7 @@ func (k Client) NewLogProfilePaginator(filters []BoolFilter, limit *int64) (LogP
 	}
 
 	p := LogProfilePaginator{
-		paginator: *paginator,
+		paginator: paginator,
 	}
 
 	return p, nil
@@ -7114,7 +7114,7 @@ func (p LogProfilePaginator) HasNext() bool {
 	return !p.paginator.done
 }
 
-func (p *LogProfilePaginator) NextPage(ctx context.Context) ([]LogProfile, error) {
+func (p LogProfilePaginator) NextPage(ctx context.Context) ([]LogProfile, error) {
 	var response LogProfileSearchResponse
 	err := p.paginator.search(ctx, &response)
 	if err != nil {
@@ -7230,7 +7230,7 @@ type LogicAppWorkflowSearchResponse struct {
 }
 
 type LogicAppWorkflowPaginator struct {
-	paginator baseESPaginator
+	paginator *baseESPaginator
 }
 
 func (k Client) NewLogicAppWorkflowPaginator(filters []BoolFilter, limit *int64) (LogicAppWorkflowPaginator, error) {
@@ -7240,7 +7240,7 @@ func (k Client) NewLogicAppWorkflowPaginator(filters []BoolFilter, limit *int64)
 	}
 
 	p := LogicAppWorkflowPaginator{
-		paginator: *paginator,
+		paginator: paginator,
 	}
 
 	return p, nil
@@ -7250,7 +7250,7 @@ func (p LogicAppWorkflowPaginator) HasNext() bool {
 	return !p.paginator.done
 }
 
-func (p *LogicAppWorkflowPaginator) NextPage(ctx context.Context) ([]LogicAppWorkflow, error) {
+func (p LogicAppWorkflowPaginator) NextPage(ctx context.Context) ([]LogicAppWorkflow, error) {
 	var response LogicAppWorkflowSearchResponse
 	err := p.paginator.search(ctx, &response)
 	if err != nil {
@@ -7366,7 +7366,7 @@ type MachineLearningWorkspaceSearchResponse struct {
 }
 
 type MachineLearningWorkspacePaginator struct {
-	paginator baseESPaginator
+	paginator *baseESPaginator
 }
 
 func (k Client) NewMachineLearningWorkspacePaginator(filters []BoolFilter, limit *int64) (MachineLearningWorkspacePaginator, error) {
@@ -7376,7 +7376,7 @@ func (k Client) NewMachineLearningWorkspacePaginator(filters []BoolFilter, limit
 	}
 
 	p := MachineLearningWorkspacePaginator{
-		paginator: *paginator,
+		paginator: paginator,
 	}
 
 	return p, nil
@@ -7386,7 +7386,7 @@ func (p MachineLearningWorkspacePaginator) HasNext() bool {
 	return !p.paginator.done
 }
 
-func (p *MachineLearningWorkspacePaginator) NextPage(ctx context.Context) ([]MachineLearningWorkspace, error) {
+func (p MachineLearningWorkspacePaginator) NextPage(ctx context.Context) ([]MachineLearningWorkspace, error) {
 	var response MachineLearningWorkspaceSearchResponse
 	err := p.paginator.search(ctx, &response)
 	if err != nil {
@@ -7502,7 +7502,7 @@ type MariadbServerSearchResponse struct {
 }
 
 type MariadbServerPaginator struct {
-	paginator baseESPaginator
+	paginator *baseESPaginator
 }
 
 func (k Client) NewMariadbServerPaginator(filters []BoolFilter, limit *int64) (MariadbServerPaginator, error) {
@@ -7512,7 +7512,7 @@ func (k Client) NewMariadbServerPaginator(filters []BoolFilter, limit *int64) (M
 	}
 
 	p := MariadbServerPaginator{
-		paginator: *paginator,
+		paginator: paginator,
 	}
 
 	return p, nil
@@ -7522,7 +7522,7 @@ func (p MariadbServerPaginator) HasNext() bool {
 	return !p.paginator.done
 }
 
-func (p *MariadbServerPaginator) NextPage(ctx context.Context) ([]MariadbServer, error) {
+func (p MariadbServerPaginator) NextPage(ctx context.Context) ([]MariadbServer, error) {
 	var response MariadbServerSearchResponse
 	err := p.paginator.search(ctx, &response)
 	if err != nil {
@@ -7638,7 +7638,7 @@ type MysqlServerSearchResponse struct {
 }
 
 type MysqlServerPaginator struct {
-	paginator baseESPaginator
+	paginator *baseESPaginator
 }
 
 func (k Client) NewMysqlServerPaginator(filters []BoolFilter, limit *int64) (MysqlServerPaginator, error) {
@@ -7648,7 +7648,7 @@ func (k Client) NewMysqlServerPaginator(filters []BoolFilter, limit *int64) (Mys
 	}
 
 	p := MysqlServerPaginator{
-		paginator: *paginator,
+		paginator: paginator,
 	}
 
 	return p, nil
@@ -7658,7 +7658,7 @@ func (p MysqlServerPaginator) HasNext() bool {
 	return !p.paginator.done
 }
 
-func (p *MysqlServerPaginator) NextPage(ctx context.Context) ([]MysqlServer, error) {
+func (p MysqlServerPaginator) NextPage(ctx context.Context) ([]MysqlServer, error) {
 	var response MysqlServerSearchResponse
 	err := p.paginator.search(ctx, &response)
 	if err != nil {
@@ -7774,7 +7774,7 @@ type NetworkSecurityGroupSearchResponse struct {
 }
 
 type NetworkSecurityGroupPaginator struct {
-	paginator baseESPaginator
+	paginator *baseESPaginator
 }
 
 func (k Client) NewNetworkSecurityGroupPaginator(filters []BoolFilter, limit *int64) (NetworkSecurityGroupPaginator, error) {
@@ -7784,7 +7784,7 @@ func (k Client) NewNetworkSecurityGroupPaginator(filters []BoolFilter, limit *in
 	}
 
 	p := NetworkSecurityGroupPaginator{
-		paginator: *paginator,
+		paginator: paginator,
 	}
 
 	return p, nil
@@ -7794,7 +7794,7 @@ func (p NetworkSecurityGroupPaginator) HasNext() bool {
 	return !p.paginator.done
 }
 
-func (p *NetworkSecurityGroupPaginator) NextPage(ctx context.Context) ([]NetworkSecurityGroup, error) {
+func (p NetworkSecurityGroupPaginator) NextPage(ctx context.Context) ([]NetworkSecurityGroup, error) {
 	var response NetworkSecurityGroupSearchResponse
 	err := p.paginator.search(ctx, &response)
 	if err != nil {
@@ -7910,7 +7910,7 @@ type NetworkWatcherSearchResponse struct {
 }
 
 type NetworkWatcherPaginator struct {
-	paginator baseESPaginator
+	paginator *baseESPaginator
 }
 
 func (k Client) NewNetworkWatcherPaginator(filters []BoolFilter, limit *int64) (NetworkWatcherPaginator, error) {
@@ -7920,7 +7920,7 @@ func (k Client) NewNetworkWatcherPaginator(filters []BoolFilter, limit *int64) (
 	}
 
 	p := NetworkWatcherPaginator{
-		paginator: *paginator,
+		paginator: paginator,
 	}
 
 	return p, nil
@@ -7930,7 +7930,7 @@ func (p NetworkWatcherPaginator) HasNext() bool {
 	return !p.paginator.done
 }
 
-func (p *NetworkWatcherPaginator) NextPage(ctx context.Context) ([]NetworkWatcher, error) {
+func (p NetworkWatcherPaginator) NextPage(ctx context.Context) ([]NetworkWatcher, error) {
 	var response NetworkWatcherSearchResponse
 	err := p.paginator.search(ctx, &response)
 	if err != nil {
@@ -8046,7 +8046,7 @@ type SearchServiceSearchResponse struct {
 }
 
 type SearchServicePaginator struct {
-	paginator baseESPaginator
+	paginator *baseESPaginator
 }
 
 func (k Client) NewSearchServicePaginator(filters []BoolFilter, limit *int64) (SearchServicePaginator, error) {
@@ -8056,7 +8056,7 @@ func (k Client) NewSearchServicePaginator(filters []BoolFilter, limit *int64) (S
 	}
 
 	p := SearchServicePaginator{
-		paginator: *paginator,
+		paginator: paginator,
 	}
 
 	return p, nil
@@ -8066,7 +8066,7 @@ func (p SearchServicePaginator) HasNext() bool {
 	return !p.paginator.done
 }
 
-func (p *SearchServicePaginator) NextPage(ctx context.Context) ([]SearchService, error) {
+func (p SearchServicePaginator) NextPage(ctx context.Context) ([]SearchService, error) {
 	var response SearchServiceSearchResponse
 	err := p.paginator.search(ctx, &response)
 	if err != nil {
@@ -8182,7 +8182,7 @@ type ServiceFabricClusterSearchResponse struct {
 }
 
 type ServiceFabricClusterPaginator struct {
-	paginator baseESPaginator
+	paginator *baseESPaginator
 }
 
 func (k Client) NewServiceFabricClusterPaginator(filters []BoolFilter, limit *int64) (ServiceFabricClusterPaginator, error) {
@@ -8192,7 +8192,7 @@ func (k Client) NewServiceFabricClusterPaginator(filters []BoolFilter, limit *in
 	}
 
 	p := ServiceFabricClusterPaginator{
-		paginator: *paginator,
+		paginator: paginator,
 	}
 
 	return p, nil
@@ -8202,7 +8202,7 @@ func (p ServiceFabricClusterPaginator) HasNext() bool {
 	return !p.paginator.done
 }
 
-func (p *ServiceFabricClusterPaginator) NextPage(ctx context.Context) ([]ServiceFabricCluster, error) {
+func (p ServiceFabricClusterPaginator) NextPage(ctx context.Context) ([]ServiceFabricCluster, error) {
 	var response ServiceFabricClusterSearchResponse
 	err := p.paginator.search(ctx, &response)
 	if err != nil {
@@ -8318,7 +8318,7 @@ type ServicebusNamespaceSearchResponse struct {
 }
 
 type ServicebusNamespacePaginator struct {
-	paginator baseESPaginator
+	paginator *baseESPaginator
 }
 
 func (k Client) NewServicebusNamespacePaginator(filters []BoolFilter, limit *int64) (ServicebusNamespacePaginator, error) {
@@ -8328,7 +8328,7 @@ func (k Client) NewServicebusNamespacePaginator(filters []BoolFilter, limit *int
 	}
 
 	p := ServicebusNamespacePaginator{
-		paginator: *paginator,
+		paginator: paginator,
 	}
 
 	return p, nil
@@ -8338,7 +8338,7 @@ func (p ServicebusNamespacePaginator) HasNext() bool {
 	return !p.paginator.done
 }
 
-func (p *ServicebusNamespacePaginator) NextPage(ctx context.Context) ([]ServicebusNamespace, error) {
+func (p ServicebusNamespacePaginator) NextPage(ctx context.Context) ([]ServicebusNamespace, error) {
 	var response ServicebusNamespaceSearchResponse
 	err := p.paginator.search(ctx, &response)
 	if err != nil {
@@ -8454,7 +8454,7 @@ type SignalrServiceSearchResponse struct {
 }
 
 type SignalrServicePaginator struct {
-	paginator baseESPaginator
+	paginator *baseESPaginator
 }
 
 func (k Client) NewSignalrServicePaginator(filters []BoolFilter, limit *int64) (SignalrServicePaginator, error) {
@@ -8464,7 +8464,7 @@ func (k Client) NewSignalrServicePaginator(filters []BoolFilter, limit *int64) (
 	}
 
 	p := SignalrServicePaginator{
-		paginator: *paginator,
+		paginator: paginator,
 	}
 
 	return p, nil
@@ -8474,7 +8474,7 @@ func (p SignalrServicePaginator) HasNext() bool {
 	return !p.paginator.done
 }
 
-func (p *SignalrServicePaginator) NextPage(ctx context.Context) ([]SignalrService, error) {
+func (p SignalrServicePaginator) NextPage(ctx context.Context) ([]SignalrService, error) {
 	var response SignalrServiceSearchResponse
 	err := p.paginator.search(ctx, &response)
 	if err != nil {
@@ -8590,7 +8590,7 @@ type SpringCloudServiceSearchResponse struct {
 }
 
 type SpringCloudServicePaginator struct {
-	paginator baseESPaginator
+	paginator *baseESPaginator
 }
 
 func (k Client) NewSpringCloudServicePaginator(filters []BoolFilter, limit *int64) (SpringCloudServicePaginator, error) {
@@ -8600,7 +8600,7 @@ func (k Client) NewSpringCloudServicePaginator(filters []BoolFilter, limit *int6
 	}
 
 	p := SpringCloudServicePaginator{
-		paginator: *paginator,
+		paginator: paginator,
 	}
 
 	return p, nil
@@ -8610,7 +8610,7 @@ func (p SpringCloudServicePaginator) HasNext() bool {
 	return !p.paginator.done
 }
 
-func (p *SpringCloudServicePaginator) NextPage(ctx context.Context) ([]SpringCloudService, error) {
+func (p SpringCloudServicePaginator) NextPage(ctx context.Context) ([]SpringCloudService, error) {
 	var response SpringCloudServiceSearchResponse
 	err := p.paginator.search(ctx, &response)
 	if err != nil {
@@ -8726,7 +8726,7 @@ type StreamAnalyticsJobSearchResponse struct {
 }
 
 type StreamAnalyticsJobPaginator struct {
-	paginator baseESPaginator
+	paginator *baseESPaginator
 }
 
 func (k Client) NewStreamAnalyticsJobPaginator(filters []BoolFilter, limit *int64) (StreamAnalyticsJobPaginator, error) {
@@ -8736,7 +8736,7 @@ func (k Client) NewStreamAnalyticsJobPaginator(filters []BoolFilter, limit *int6
 	}
 
 	p := StreamAnalyticsJobPaginator{
-		paginator: *paginator,
+		paginator: paginator,
 	}
 
 	return p, nil
@@ -8746,7 +8746,7 @@ func (p StreamAnalyticsJobPaginator) HasNext() bool {
 	return !p.paginator.done
 }
 
-func (p *StreamAnalyticsJobPaginator) NextPage(ctx context.Context) ([]StreamAnalyticsJob, error) {
+func (p StreamAnalyticsJobPaginator) NextPage(ctx context.Context) ([]StreamAnalyticsJob, error) {
 	var response StreamAnalyticsJobSearchResponse
 	err := p.paginator.search(ctx, &response)
 	if err != nil {
@@ -8862,7 +8862,7 @@ type SynapseWorkspaceSearchResponse struct {
 }
 
 type SynapseWorkspacePaginator struct {
-	paginator baseESPaginator
+	paginator *baseESPaginator
 }
 
 func (k Client) NewSynapseWorkspacePaginator(filters []BoolFilter, limit *int64) (SynapseWorkspacePaginator, error) {
@@ -8872,7 +8872,7 @@ func (k Client) NewSynapseWorkspacePaginator(filters []BoolFilter, limit *int64)
 	}
 
 	p := SynapseWorkspacePaginator{
-		paginator: *paginator,
+		paginator: paginator,
 	}
 
 	return p, nil
@@ -8882,7 +8882,7 @@ func (p SynapseWorkspacePaginator) HasNext() bool {
 	return !p.paginator.done
 }
 
-func (p *SynapseWorkspacePaginator) NextPage(ctx context.Context) ([]SynapseWorkspace, error) {
+func (p SynapseWorkspacePaginator) NextPage(ctx context.Context) ([]SynapseWorkspace, error) {
 	var response SynapseWorkspaceSearchResponse
 	err := p.paginator.search(ctx, &response)
 	if err != nil {
@@ -8998,7 +8998,7 @@ type LocationSearchResponse struct {
 }
 
 type LocationPaginator struct {
-	paginator baseESPaginator
+	paginator *baseESPaginator
 }
 
 func (k Client) NewLocationPaginator(filters []BoolFilter, limit *int64) (LocationPaginator, error) {
@@ -9008,7 +9008,7 @@ func (k Client) NewLocationPaginator(filters []BoolFilter, limit *int64) (Locati
 	}
 
 	p := LocationPaginator{
-		paginator: *paginator,
+		paginator: paginator,
 	}
 
 	return p, nil
@@ -9018,7 +9018,7 @@ func (p LocationPaginator) HasNext() bool {
 	return !p.paginator.done
 }
 
-func (p *LocationPaginator) NextPage(ctx context.Context) ([]Location, error) {
+func (p LocationPaginator) NextPage(ctx context.Context) ([]Location, error) {
 	var response LocationSearchResponse
 	err := p.paginator.search(ctx, &response)
 	if err != nil {
@@ -9134,7 +9134,7 @@ type AdUsersSearchResponse struct {
 }
 
 type AdUsersPaginator struct {
-	paginator baseESPaginator
+	paginator *baseESPaginator
 }
 
 func (k Client) NewAdUsersPaginator(filters []BoolFilter, limit *int64) (AdUsersPaginator, error) {
@@ -9144,7 +9144,7 @@ func (k Client) NewAdUsersPaginator(filters []BoolFilter, limit *int64) (AdUsers
 	}
 
 	p := AdUsersPaginator{
-		paginator: *paginator,
+		paginator: paginator,
 	}
 
 	return p, nil
@@ -9154,7 +9154,7 @@ func (p AdUsersPaginator) HasNext() bool {
 	return !p.paginator.done
 }
 
-func (p *AdUsersPaginator) NextPage(ctx context.Context) ([]AdUsers, error) {
+func (p AdUsersPaginator) NextPage(ctx context.Context) ([]AdUsers, error) {
 	var response AdUsersSearchResponse
 	err := p.paginator.search(ctx, &response)
 	if err != nil {
@@ -9277,7 +9277,7 @@ type PostgresqlServerSearchResponse struct {
 }
 
 type PostgresqlServerPaginator struct {
-	paginator baseESPaginator
+	paginator *baseESPaginator
 }
 
 func (k Client) NewPostgresqlServerPaginator(filters []BoolFilter, limit *int64) (PostgresqlServerPaginator, error) {
@@ -9287,7 +9287,7 @@ func (k Client) NewPostgresqlServerPaginator(filters []BoolFilter, limit *int64)
 	}
 
 	p := PostgresqlServerPaginator{
-		paginator: *paginator,
+		paginator: paginator,
 	}
 
 	return p, nil
@@ -9297,7 +9297,7 @@ func (p PostgresqlServerPaginator) HasNext() bool {
 	return !p.paginator.done
 }
 
-func (p *PostgresqlServerPaginator) NextPage(ctx context.Context) ([]PostgresqlServer, error) {
+func (p PostgresqlServerPaginator) NextPage(ctx context.Context) ([]PostgresqlServer, error) {
 	var response PostgresqlServerSearchResponse
 	err := p.paginator.search(ctx, &response)
 	if err != nil {
@@ -9413,7 +9413,7 @@ type StorageSyncSearchResponse struct {
 }
 
 type StorageSyncPaginator struct {
-	paginator baseESPaginator
+	paginator *baseESPaginator
 }
 
 func (k Client) NewStorageSyncPaginator(filters []BoolFilter, limit *int64) (StorageSyncPaginator, error) {
@@ -9423,7 +9423,7 @@ func (k Client) NewStorageSyncPaginator(filters []BoolFilter, limit *int64) (Sto
 	}
 
 	p := StorageSyncPaginator{
-		paginator: *paginator,
+		paginator: paginator,
 	}
 
 	return p, nil
@@ -9433,7 +9433,7 @@ func (p StorageSyncPaginator) HasNext() bool {
 	return !p.paginator.done
 }
 
-func (p *StorageSyncPaginator) NextPage(ctx context.Context) ([]StorageSync, error) {
+func (p StorageSyncPaginator) NextPage(ctx context.Context) ([]StorageSync, error) {
 	var response StorageSyncSearchResponse
 	err := p.paginator.search(ctx, &response)
 	if err != nil {
@@ -9549,7 +9549,7 @@ type MssqlManagedInstanceSearchResponse struct {
 }
 
 type MssqlManagedInstancePaginator struct {
-	paginator baseESPaginator
+	paginator *baseESPaginator
 }
 
 func (k Client) NewMssqlManagedInstancePaginator(filters []BoolFilter, limit *int64) (MssqlManagedInstancePaginator, error) {
@@ -9559,7 +9559,7 @@ func (k Client) NewMssqlManagedInstancePaginator(filters []BoolFilter, limit *in
 	}
 
 	p := MssqlManagedInstancePaginator{
-		paginator: *paginator,
+		paginator: paginator,
 	}
 
 	return p, nil
@@ -9569,7 +9569,7 @@ func (p MssqlManagedInstancePaginator) HasNext() bool {
 	return !p.paginator.done
 }
 
-func (p *MssqlManagedInstancePaginator) NextPage(ctx context.Context) ([]MssqlManagedInstance, error) {
+func (p MssqlManagedInstancePaginator) NextPage(ctx context.Context) ([]MssqlManagedInstance, error) {
 	var response MssqlManagedInstanceSearchResponse
 	err := p.paginator.search(ctx, &response)
 	if err != nil {
@@ -9685,7 +9685,7 @@ type SqlDatabaseSearchResponse struct {
 }
 
 type SqlDatabasePaginator struct {
-	paginator baseESPaginator
+	paginator *baseESPaginator
 }
 
 func (k Client) NewSqlDatabasePaginator(filters []BoolFilter, limit *int64) (SqlDatabasePaginator, error) {
@@ -9695,7 +9695,7 @@ func (k Client) NewSqlDatabasePaginator(filters []BoolFilter, limit *int64) (Sql
 	}
 
 	p := SqlDatabasePaginator{
-		paginator: *paginator,
+		paginator: paginator,
 	}
 
 	return p, nil
@@ -9705,7 +9705,7 @@ func (p SqlDatabasePaginator) HasNext() bool {
 	return !p.paginator.done
 }
 
-func (p *SqlDatabasePaginator) NextPage(ctx context.Context) ([]SqlDatabase, error) {
+func (p SqlDatabasePaginator) NextPage(ctx context.Context) ([]SqlDatabase, error) {
 	var response SqlDatabaseSearchResponse
 	err := p.paginator.search(ctx, &response)
 	if err != nil {
@@ -9821,7 +9821,7 @@ type SqlServerSearchResponse struct {
 }
 
 type SqlServerPaginator struct {
-	paginator baseESPaginator
+	paginator *baseESPaginator
 }
 
 func (k Client) NewSqlServerPaginator(filters []BoolFilter, limit *int64) (SqlServerPaginator, error) {
@@ -9831,7 +9831,7 @@ func (k Client) NewSqlServerPaginator(filters []BoolFilter, limit *int64) (SqlSe
 	}
 
 	p := SqlServerPaginator{
-		paginator: *paginator,
+		paginator: paginator,
 	}
 
 	return p, nil
@@ -9841,7 +9841,7 @@ func (p SqlServerPaginator) HasNext() bool {
 	return !p.paginator.done
 }
 
-func (p *SqlServerPaginator) NextPage(ctx context.Context) ([]SqlServer, error) {
+func (p SqlServerPaginator) NextPage(ctx context.Context) ([]SqlServer, error) {
 	var response SqlServerSearchResponse
 	err := p.paginator.search(ctx, &response)
 	if err != nil {
@@ -9957,7 +9957,7 @@ type StorageAccountSearchResponse struct {
 }
 
 type StorageAccountPaginator struct {
-	paginator baseESPaginator
+	paginator *baseESPaginator
 }
 
 func (k Client) NewStorageAccountPaginator(filters []BoolFilter, limit *int64) (StorageAccountPaginator, error) {
@@ -9967,7 +9967,7 @@ func (k Client) NewStorageAccountPaginator(filters []BoolFilter, limit *int64) (
 	}
 
 	p := StorageAccountPaginator{
-		paginator: *paginator,
+		paginator: paginator,
 	}
 
 	return p, nil
@@ -9977,7 +9977,7 @@ func (p StorageAccountPaginator) HasNext() bool {
 	return !p.paginator.done
 }
 
-func (p *StorageAccountPaginator) NextPage(ctx context.Context) ([]StorageAccount, error) {
+func (p StorageAccountPaginator) NextPage(ctx context.Context) ([]StorageAccount, error) {
 	var response StorageAccountSearchResponse
 	err := p.paginator.search(ctx, &response)
 	if err != nil {

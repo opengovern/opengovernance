@@ -62,7 +62,7 @@ type {{ .Name }}SearchResponse struct {
 }
 
 type {{ .Name }}Paginator struct {
-	paginator baseESPaginator
+	paginator *baseESPaginator
 }
 
 func (k Client) New{{ .Name }}Paginator(filters []BoolFilter, limit *int64) ({{ .Name }}Paginator, error) {
@@ -72,7 +72,7 @@ func (k Client) New{{ .Name }}Paginator(filters []BoolFilter, limit *int64) ({{ 
 	}
 
 	p := {{ .Name }}Paginator{
-		paginator: *paginator,
+		paginator: paginator,
 	}
 
 	return p, nil
@@ -82,7 +82,7 @@ func (p {{ .Name }}Paginator) HasNext() bool {
 	return !p.paginator.done
 }
 
-func (p *{{ .Name }}Paginator) NextPage(ctx context.Context) ([]{{ .Name }}, error) {
+func (p {{ .Name }}Paginator) NextPage(ctx context.Context) ([]{{ .Name }}, error) {
 	var response {{ .Name }}SearchResponse
 	err := p.paginator.search(ctx, &response)
 	if err != nil {
