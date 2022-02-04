@@ -9176,7 +9176,15 @@ func (p *AdUsersPaginator) NextPage(ctx context.Context) ([]AdUsers, error) {
 	return values, nil
 }
 
-var listAdUsersFilters = map[string]string{}
+var listAdUsersFilters = map[string]string{
+	"account_enabled":     "description.AdUsers.accountEnabled",
+	"display_name":        "description.AdUsers.displayName",
+	"filter":              "description.AdUsers.filter",
+	"id":                  "description.AdUsers.DirectoryObject.id",
+	"surname":             "description.AdUsers.surname",
+	"user_principal_name": "description.AdUsers.userPrincipalName",
+	"user_type":           "description.AdUsers.userType",
+}
 
 func ListAdUsers(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
 	plugin.Logger(ctx).Trace("ListAdUsers")
@@ -9207,7 +9215,7 @@ func ListAdUsers(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData
 }
 
 var getAdUsersFilters = map[string]string{
-	"object_id": "description.AdUsers.objectID",
+	"id": "description.AdUsers.DirectoryObject.id",
 }
 
 func GetAdUsers(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {

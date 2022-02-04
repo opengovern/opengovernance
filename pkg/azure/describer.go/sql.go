@@ -142,7 +142,11 @@ func SqlDatabase(ctx context.Context, authorizer autorest.Authorizer, subscripti
 				if err != nil {
 					return nil, err
 				}
-				longTermRetentionPolicy := op.Values()
+				longTermRetentionPolicies := op.Values()
+				var longTermRetentionPolicy sqlV5.LongTermRetentionPolicy
+				if len(longTermRetentionPolicies) > 0 {
+					longTermRetentionPolicy = longTermRetentionPolicies[0]
+				}
 
 				transparentDataOp, err := transparentDataClient.Get(ctx, resourceGroupName, serverName, databaseName)
 				if err != nil {
@@ -186,11 +190,11 @@ func SqlDatabase(ctx context.Context, authorizer autorest.Authorizer, subscripti
 					ID: *server.ID,
 					Description: model.SqlDatabaseDescription{
 						Database:                           getOp,
-						LongTermRetentionPolicies:          longTermRetentionPolicy,
+						LongTermRetentionPolicy:            longTermRetentionPolicy,
 						TransparentDataEncryption:          transparentDataOp,
 						DatabaseVulnerabilityAssessments:   c,
 						VulnerabilityAssessmentScanRecords: v,
-						ResourceGroup: resourceGroupName,
+						ResourceGroup:                      resourceGroupName,
 					},
 				})
 			}

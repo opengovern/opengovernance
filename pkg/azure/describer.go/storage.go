@@ -5,6 +5,8 @@ import (
 	"github.com/Azure/azure-sdk-for-go/profiles/2020-09-01/monitor/mgmt/insights"
 	"github.com/Azure/azure-sdk-for-go/services/storage/mgmt/2019-06-01/storage"
 	"github.com/Azure/go-autorest/autorest"
+	"github.com/tombuildsstuff/giovanni/storage/2018-11-09/queue/queues"
+	"github.com/tombuildsstuff/giovanni/storage/2019-12-12/blob/accounts"
 	"gitlab.com/keibiengine/keibi-engine/pkg/azure/model"
 	"strings"
 )
@@ -47,7 +49,7 @@ func StorageContainer(ctx context.Context, authorizer autorest.Authorizer, subsc
 					values = append(values, Resource{
 						ID: *v.ID,
 						Description: model.StorageContainerDescription{
-							AccountName: *account.Name,
+							AccountName:        *account.Name,
 							ListContainerItem:  v,
 							ImmutabilityPolicy: op,
 							ResourceGroup:      resourceGroup,
@@ -104,13 +106,16 @@ func StorageAccount(ctx context.Context, authorizer autorest.Authorizer, subscri
 	var values []Resource
 	for {
 		for _, account := range result.Values() {
-			resourceGroup := &strings.Split(string(*account.ID), "/")[4]
+			resourceGroup := &strings.Split(*account.ID, "/")[4]
 
+			var managementPolicy *storage.ManagementPolicy
 			storageGetOp, err := managementPoliciesStorageClient.Get(ctx, *resourceGroup, *account.Name)
 			if err != nil {
 				if !strings.Contains(err.Error(), "ManagementPolicyNotFound") {
 					return nil, err
 				}
+			} else {
+				managementPolicy = &storageGetOp
 			}
 
 			var blobServicesProperties *storage.BlobServiceProperties
@@ -122,15 +127,36 @@ func StorageAccount(ctx context.Context, authorizer autorest.Authorizer, subscri
 				blobServicesProperties = &blobServicesPropertiesOp
 			}
 
-			var storageListKeysAccountKeys *storage.AccountListKeysResult
+			var logging *accounts.Logging
 			if account.Kind != "FileStorage" {
 				v, err := storageClient.ListKeys(ctx, *resourceGroup, *account.Name, "")
 				if err != nil {
 					if !strings.Contains(err.Error(), "ScopeLocked") {
 						return nil, err
 					}
+				} else {
+					if *v.Keys != nil || len(*v.Keys) > 0 {
+						key := (*v.Keys)[0]
+
+						storageAuth, err := autorest.NewSharedKeyAuthorizer(*account.Name, *key.Value, autorest.SharedKeyLite)
+						if err != nil {
+							return nil, err
+						}
+
+						client := accounts.New()
+						client.Client.Authorizer = storageAuth
+						client.BaseURI = storage.DefaultBaseURI
+
+						resp, err := client.GetServiceProperties(ctx, *account.Name)
+						if err != nil {
+							if !strings.Contains(err.Error(), "FeatureNotSupportedForAccount") {
+								return nil, err
+							}
+						} else {
+							logging = resp.StorageServiceProperties.Logging
+						}
+					}
 				}
-				storageListKeysAccountKeys = &v
 			}
 
 			var storageGetServicePropertiesOp *storage.FileServiceProperties
@@ -144,8 +170,7 @@ func StorageAccount(ctx context.Context, authorizer autorest.Authorizer, subscri
 				storageGetServicePropertiesOp = &v
 			}
 
-			id := *account.ID
-			storageListOp, err := client.List(ctx, id)
+			diagSettingsOp, err := client.List(ctx, *account.ID)
 			if err != nil {
 				return nil, err
 			}
@@ -164,15 +189,48 @@ func StorageAccount(ctx context.Context, authorizer autorest.Authorizer, subscri
 				vsop = append(vsop, storageListEncryptionScope.Values()...)
 			}
 
+			var storageProperties *queues.StorageServiceProperties
+			if account.Sku.Tier == "Standard" && (account.Kind == "Storage" || account.Kind == "StorageV2") {
+				accountKeys, err := storageClient.ListKeys(ctx, *resourceGroup, *account.Name, "")
+				if err != nil {
+					if !strings.Contains(err.Error(), "ScopeLocked") {
+						return nil, err
+					}
+				} else {
+					if *accountKeys.Keys != nil || len(*accountKeys.Keys) > 0 {
+						key := (*accountKeys.Keys)[0]
+						storageAuth, err := autorest.NewSharedKeyAuthorizer(*account.Name, *key.Value, autorest.SharedKeyLite)
+						if err != nil {
+							return nil, err
+						}
+
+						queuesClient := queues.New()
+						queuesClient.Client.Authorizer = storageAuth
+						queuesClient.BaseURI = storage.DefaultBaseURI
+
+						resp, err := queuesClient.GetServiceProperties(ctx, *account.Name)
+
+						if err != nil {
+							if !strings.Contains(err.Error(), "FeatureNotSupportedForAccount") {
+								return nil, err
+							}
+						} else {
+							storageProperties = &resp.StorageServiceProperties
+						}
+					}
+				}
+			}
+
 			values = append(values, Resource{
 				ID: *account.ID,
 				Description: model.StorageAccountDescription{
 					Account:                     account,
-					ManagementPolicy:            storageGetOp,
+					ManagementPolicy:            managementPolicy,
 					BlobServiceProperties:       blobServicesProperties,
-					AccountKeys:                 storageListKeysAccountKeys.Keys,
+					Logging:                     logging,
+					StorageServiceProperties:    storageProperties,
 					FileServiceProperties:       storageGetServicePropertiesOp,
-					DiagnosticSettingsResources: storageListOp.Value,
+					DiagnosticSettingsResources: diagSettingsOp.Value,
 					EncryptionScopes:            vsop,
 					ResourceGroup:               *resourceGroup,
 				},
