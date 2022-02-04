@@ -41,15 +41,15 @@ func KeyVaultKey(ctx context.Context, authorizer autorest.Authorizer, subscripti
 
 					// In some cases resource does not give any notFound error
 					// instead of notFound error, it returns empty data
-					if op.ID != nil {
-						v = op
+					if op.ID == nil {
+						continue
 					}
 
 					values = append(values, Resource{
 						ID: *v.ID,
 						Description: model.KeyVaultKeyDescription{
 							Vault: vault,
-							Key: v,
+							Key: op,
 							ResourceGroup: resourceGroup,
 						},
 					})

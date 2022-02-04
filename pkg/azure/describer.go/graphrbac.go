@@ -2,37 +2,41 @@ package describer
 
 import (
 	"context"
-	"github.com/Azure/azure-sdk-for-go/services/graphrbac/1.6/graphrbac"
-	"github.com/Azure/go-autorest/autorest"
+	"github.com/manicminer/hamilton/auth"
+	"github.com/manicminer/hamilton/msgraph"
+	"github.com/manicminer/hamilton/odata"
 	"gitlab.com/keibiengine/keibi-engine/pkg/azure/model"
+	"strings"
 )
 
-func AdUsers(ctx context.Context, authorizer autorest.Authorizer, tenantId string) ([]Resource, error) {
-	graphClient := graphrbac.NewUsersClient(tenantId)
-	graphClient.Authorizer = authorizer
+func AdUsers(ctx context.Context, authorizer auth.Authorizer, tenantId string) ([]Resource, error) {
+	client := msgraph.NewUsersClient(tenantId)
+	client.BaseClient.Authorizer = authorizer
 
-	result, err := graphClient.List(ctx, "", "")
+	input := odata.Query{}
+	input.Expand = odata.Expand{
+		Relationship: "memberOf",
+		Select:       []string{"id", "displayName"},
+	}
+
+	users, _, err := client.List(ctx, input)
 	if err != nil {
+		if strings.Contains(err.Error(), "Request_ResourceNotFound") {
+			return nil, nil
+		}
 		return nil, err
 	}
 
 	var values []Resource
-	for {
-		for _, graph := range result.Values() {
-			values = append(values, Resource{
-				ID: *graph.ObjectID,
-				Description: model.AdUsersDescription{
-					AdUsers:                   graph,
-				},
-			})
-		}
-		if !result.NotDone() {
-			break
-		}
-		err = result.NextWithContext(ctx)
-		if err != nil {
-			return nil, err
-		}
+	for _, user := range *users {
+
+		values = append(values, Resource{
+			ID: *user.ID,
+			Description: model.AdUsersDescription{
+				AdUsers: user,
+			},
+		})
 	}
+
 	return values, nil
 }

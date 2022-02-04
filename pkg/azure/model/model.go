@@ -21,7 +21,6 @@ import (
 	analytics "github.com/Azure/azure-sdk-for-go/services/datalake/analytics/mgmt/2016-11-01/account"
 	store "github.com/Azure/azure-sdk-for-go/services/datalake/store/mgmt/2016-11-01/account"
 	"github.com/Azure/azure-sdk-for-go/services/frontdoor/mgmt/2020-05-01/frontdoor"
-	"github.com/Azure/azure-sdk-for-go/services/graphrbac/1.6/graphrbac"
 	"github.com/Azure/azure-sdk-for-go/services/guestconfiguration/mgmt/2020-06-25/guestconfiguration"
 	"github.com/Azure/azure-sdk-for-go/services/hdinsight/mgmt/2018-06-01/hdinsight"
 	"github.com/Azure/azure-sdk-for-go/services/iothub/mgmt/2020-03-01/devices"
@@ -57,6 +56,9 @@ import (
 	"github.com/Azure/azure-sdk-for-go/services/streamanalytics/mgmt/2016-03-01/streamanalytics"
 	"github.com/Azure/azure-sdk-for-go/services/synapse/mgmt/2021-03-01/synapse"
 	"github.com/Azure/azure-sdk-for-go/services/web/mgmt/2020-06-01/web"
+	"github.com/manicminer/hamilton/msgraph"
+	"github.com/tombuildsstuff/giovanni/storage/2018-11-09/queue/queues"
+	"github.com/tombuildsstuff/giovanni/storage/2019-12-12/blob/accounts"
 )
 
 type Metadata struct {
@@ -745,12 +747,20 @@ type LocationDescription struct {
 	ResourceGroup string
 }
 
-//  =================== graphrbac ==================
+//  =================== msgraph ==================
 
 //index:microsoft_resources_users
-//getfilter:object_id=description.AdUsers.objectID
+//getfilter:id=description.AdUsers.DirectoryObject.id
+//listfilter:id=description.AdUsers.DirectoryObject.id
+//listfilter:user_principal_name=description.AdUsers.userPrincipalName
+//listfilter:filter=description.AdUsers.filter
+//listfilter:user_type=description.AdUsers.userType
+//listfilter:account_enabled=description.AdUsers.accountEnabled
+//listfilter:display_name=description.AdUsers.displayName
+//listfilter:surname=description.AdUsers.surname
 type AdUsersDescription struct {
-	AdUsers graphrbac.User
+	TenantID string
+	AdUsers msgraph.User
 }
 
 //  =================== postgresql ==================
@@ -797,7 +807,7 @@ type MssqlManagedInstanceDescription struct {
 //getfilter:resource_group=description.ResourceGroup
 type SqlDatabaseDescription struct {
 	Database                           sql.Database
-	LongTermRetentionPolicies          []sqlv5.LongTermRetentionPolicy
+	LongTermRetentionPolicy            sqlv5.LongTermRetentionPolicy
 	TransparentDataEncryption          sql.TransparentDataEncryption
 	DatabaseVulnerabilityAssessments   []sqlv5.DatabaseVulnerabilityAssessment
 	VulnerabilityAssessmentScanRecords []sqlv5.VulnerabilityAssessmentScanRecord
@@ -829,9 +839,10 @@ type SqlServerDescription struct {
 //getfilter:resource_group=description.ResourceGroup
 type StorageAccountDescription struct {
 	Account                     storage.Account
-	ManagementPolicy            storage.ManagementPolicy
+	ManagementPolicy            *storage.ManagementPolicy
 	BlobServiceProperties       *storage.BlobServiceProperties
-	AccountKeys                 *[]storage.AccountKey
+	Logging                     *accounts.Logging
+	StorageServiceProperties    *queues.StorageServiceProperties
 	FileServiceProperties       *storage.FileServiceProperties
 	DiagnosticSettingsResources *[]insights.DiagnosticSettingsResource
 	EncryptionScopes            []storage.EncryptionScope
