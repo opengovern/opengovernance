@@ -6,6 +6,10 @@ import (
 	"strings"
 )
 
+var exclusionTypeSet = map[string]struct{}{
+	"github.com/gofrs/uuid": {},
+}
+
 // JSONAllFieldsMarshaller is a hack around the issue described here
 // https://githubmemory.com/repo/Azure/azure-sdk-for-go/issues/12227
 // Azure sdk overrides all the MarshalJSON methods for the struct fields
@@ -20,13 +24,15 @@ func (x JSONAllFieldsMarshaller) MarshalJSON() ([]byte, error) {
 	var val interface{} = x.Value
 
 	v := reflect.ValueOf(x.Value)
-	switch v.Kind() {
-	case reflect.Slice, reflect.Array:
-		val = azSliceMarshaller{Value: v}
-	case reflect.Ptr:
-		val = azPtrMarshaller{Value: v}
-	case reflect.Struct:
-		val = azStructMarshaller{Value: v}
+	if _, ok := exclusionTypeSet[v.Type().PkgPath()]; !ok {
+		switch v.Kind() {
+		case reflect.Slice, reflect.Array:
+			val = azSliceMarshaller{Value: v}
+		case reflect.Ptr:
+			val = azPtrMarshaller{Value: v}
+		case reflect.Struct:
+			val = azStructMarshaller{Value: v}
+		}
 	}
 
 	return json.Marshal(val)
