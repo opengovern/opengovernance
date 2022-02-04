@@ -186,6 +186,11 @@ func (p *baseESPaginator) search(ctx context.Context, response interface{}) erro
 	sa := SearchRequest{
 		Size:  &p.pageSize,
 		Query: p.query,
+		Sort: []map[string]interface{}{
+			{
+				"_shard_doc": "desc",
+			},
+		},
 	}
 
 	if p.limit > p.pageSize {
@@ -195,7 +200,7 @@ func (p *baseESPaginator) search(ctx context.Context, response interface{}) erro
 		}
 	}
 
-	if sa.SearchAfter != nil {
+	if p.searchAfter != nil {
 		sa.SearchAfter = p.searchAfter
 	}
 
