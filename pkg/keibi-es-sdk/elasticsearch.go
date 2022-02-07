@@ -186,17 +186,18 @@ func (p *baseESPaginator) search(ctx context.Context, response interface{}) erro
 	sa := SearchRequest{
 		Size:  &p.pageSize,
 		Query: p.query,
-		Sort: []map[string]interface{}{
-			{
-				"_shard_doc": "desc",
-			},
-		},
 	}
 
 	if p.limit > p.pageSize {
 		sa.PIT = &PointInTime{
 			ID:        p.pitID,
 			KeepAlive: "1m",
+		}
+
+		sa.Sort = []map[string]interface{}{
+			{
+				"_shard_doc": "desc",
+			},
 		}
 	}
 
