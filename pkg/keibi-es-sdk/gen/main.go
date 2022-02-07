@@ -113,7 +113,7 @@ func List{{ .Name }}(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydrate
 	plugin.Logger(ctx).Trace("List{{ .Name }}")
 
 	// create service
-	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache, ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -147,7 +147,7 @@ func Get{{ .Name }}(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateD
 	plugin.Logger(ctx).Trace("Get{{ .Name }}")
 
 	// create service
-	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache, ctx)
 	if err != nil {
 		return nil, err
 	}

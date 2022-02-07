@@ -1,6 +1,7 @@
 package keibi
 
 import (
+	"context"
 	"crypto/tls"
 	"net/http"
 
@@ -47,11 +48,13 @@ func GetConfig(connection *plugin.Connection) ClientConfig {
 	return config
 }
 
-func NewClientCached(c ClientConfig, cache *connection.Cache) (Client, error) {
+func NewClientCached(c ClientConfig, cache *connection.Cache, ctx context.Context) (Client, error) {
 	value, ok := cache.Get("keibi-client")
 	if ok {
 		return value.(Client), nil
 	}
+
+	plugin.Logger(ctx).Warn("client is not cached, creating a new one")
 
 	client, err := NewClient(c)
 	if err != nil {
