@@ -1535,7 +1535,7 @@ type KeyVaultKeyPaginator struct {
 }
 
 func (k Client) NewKeyVaultKeyPaginator(filters []BoolFilter, limit *int64) (KeyVaultKeyPaginator, error) {
-	paginator, err := newPaginator(k.es, "microsoft_keyvault_vaults", filters, limit)
+	paginator, err := newPaginator(k.es, "microsoft_keyvault_vaults_keys", filters, limit)
 	if err != nil {
 		return KeyVaultKeyPaginator{}, err
 	}

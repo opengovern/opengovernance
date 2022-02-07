@@ -71,6 +71,7 @@ var resourceTypeToDescriber = map[string]ResourceDescriber{
 	"Microsoft.Insights/actionGroups":                           nil,
 	"Microsoft.Insights/components":                             nil,
 	"Microsoft.KeyVault/vaults":                                 DescribeBySubscription(describer.KeyVault),
+	"Microsoft.KeyVault/vaults/keys":                                 DescribeBySubscription(describer.KeyVaultKey),
 	"Microsoft.Kubernetes/connectedClusters":                    nil,
 	"Microsoft.Kusto/clusters":                                  DescribeBySubscription(describer.KustoCluster),
 	"Microsoft.Kusto/clusters/databases":                        nil,
