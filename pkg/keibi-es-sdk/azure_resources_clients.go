@@ -83,7 +83,7 @@ func ListAPIManagement(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydra
 	plugin.Logger(ctx).Trace("ListAPIManagement")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -116,7 +116,7 @@ func GetAPIManagement(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydrat
 	plugin.Logger(ctx).Trace("GetAPIManagement")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -219,7 +219,7 @@ func ListAppConfiguration(ctx context.Context, d *plugin.QueryData, _ *plugin.Hy
 	plugin.Logger(ctx).Trace("ListAppConfiguration")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -252,7 +252,7 @@ func GetAppConfiguration(ctx context.Context, d *plugin.QueryData, _ *plugin.Hyd
 	plugin.Logger(ctx).Trace("GetAppConfiguration")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -355,7 +355,7 @@ func ListAppServiceEnvironment(ctx context.Context, d *plugin.QueryData, _ *plug
 	plugin.Logger(ctx).Trace("ListAppServiceEnvironment")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -388,7 +388,7 @@ func GetAppServiceEnvironment(ctx context.Context, d *plugin.QueryData, _ *plugi
 	plugin.Logger(ctx).Trace("GetAppServiceEnvironment")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -491,7 +491,7 @@ func ListAppServiceFunctionApp(ctx context.Context, d *plugin.QueryData, _ *plug
 	plugin.Logger(ctx).Trace("ListAppServiceFunctionApp")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -524,7 +524,7 @@ func GetAppServiceFunctionApp(ctx context.Context, d *plugin.QueryData, _ *plugi
 	plugin.Logger(ctx).Trace("GetAppServiceFunctionApp")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -627,7 +627,7 @@ func ListAppServiceWebApp(ctx context.Context, d *plugin.QueryData, _ *plugin.Hy
 	plugin.Logger(ctx).Trace("ListAppServiceWebApp")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -660,7 +660,7 @@ func GetAppServiceWebApp(ctx context.Context, d *plugin.QueryData, _ *plugin.Hyd
 	plugin.Logger(ctx).Trace("GetAppServiceWebApp")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -763,7 +763,7 @@ func ListComputeDisk(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydrate
 	plugin.Logger(ctx).Trace("ListComputeDisk")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -796,7 +796,7 @@ func GetComputeDisk(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateD
 	plugin.Logger(ctx).Trace("GetComputeDisk")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -899,7 +899,7 @@ func ListComputeDiskAccess(ctx context.Context, d *plugin.QueryData, _ *plugin.H
 	plugin.Logger(ctx).Trace("ListComputeDiskAccess")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -932,7 +932,7 @@ func GetComputeDiskAccess(ctx context.Context, d *plugin.QueryData, _ *plugin.Hy
 	plugin.Logger(ctx).Trace("GetComputeDiskAccess")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -1035,7 +1035,7 @@ func ListComputeVirtualMachineScaleSet(ctx context.Context, d *plugin.QueryData,
 	plugin.Logger(ctx).Trace("ListComputeVirtualMachineScaleSet")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -1068,7 +1068,7 @@ func GetComputeVirtualMachineScaleSet(ctx context.Context, d *plugin.QueryData, 
 	plugin.Logger(ctx).Trace("GetComputeVirtualMachineScaleSet")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -1171,7 +1171,7 @@ func ListDataboxEdgeDevice(ctx context.Context, d *plugin.QueryData, _ *plugin.H
 	plugin.Logger(ctx).Trace("ListDataboxEdgeDevice")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -1204,7 +1204,7 @@ func GetDataboxEdgeDevice(ctx context.Context, d *plugin.QueryData, _ *plugin.Hy
 	plugin.Logger(ctx).Trace("GetDataboxEdgeDevice")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -1307,7 +1307,7 @@ func ListHealthcareService(ctx context.Context, d *plugin.QueryData, _ *plugin.H
 	plugin.Logger(ctx).Trace("ListHealthcareService")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -1340,7 +1340,7 @@ func GetHealthcareService(ctx context.Context, d *plugin.QueryData, _ *plugin.Hy
 	plugin.Logger(ctx).Trace("GetHealthcareService")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -1443,7 +1443,7 @@ func ListHpcCache(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateDat
 	plugin.Logger(ctx).Trace("ListHpcCache")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -1476,7 +1476,7 @@ func GetHpcCache(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData
 	plugin.Logger(ctx).Trace("GetHpcCache")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -1579,7 +1579,7 @@ func ListKeyVaultKey(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydrate
 	plugin.Logger(ctx).Trace("ListKeyVaultKey")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -1613,7 +1613,7 @@ func GetKeyVaultKey(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateD
 	plugin.Logger(ctx).Trace("GetKeyVaultKey")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -1716,7 +1716,7 @@ func ListKubernetesCluster(ctx context.Context, d *plugin.QueryData, _ *plugin.H
 	plugin.Logger(ctx).Trace("ListKubernetesCluster")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -1749,7 +1749,7 @@ func GetKubernetesCluster(ctx context.Context, d *plugin.QueryData, _ *plugin.Hy
 	plugin.Logger(ctx).Trace("GetKubernetesCluster")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -1852,7 +1852,7 @@ func ListNetworkInterface(ctx context.Context, d *plugin.QueryData, _ *plugin.Hy
 	plugin.Logger(ctx).Trace("ListNetworkInterface")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -1885,7 +1885,7 @@ func GetNetworkInterface(ctx context.Context, d *plugin.QueryData, _ *plugin.Hyd
 	plugin.Logger(ctx).Trace("GetNetworkInterface")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -1988,7 +1988,7 @@ func ListNetworkWatcherFlowLog(ctx context.Context, d *plugin.QueryData, _ *plug
 	plugin.Logger(ctx).Trace("ListNetworkWatcherFlowLog")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -2022,7 +2022,7 @@ func GetNetworkWatcherFlowLog(ctx context.Context, d *plugin.QueryData, _ *plugi
 	plugin.Logger(ctx).Trace("GetNetworkWatcherFlowLog")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -2125,7 +2125,7 @@ func ListPolicyAssignment(ctx context.Context, d *plugin.QueryData, _ *plugin.Hy
 	plugin.Logger(ctx).Trace("ListPolicyAssignment")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -2157,7 +2157,7 @@ func GetPolicyAssignment(ctx context.Context, d *plugin.QueryData, _ *plugin.Hyd
 	plugin.Logger(ctx).Trace("GetPolicyAssignment")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -2260,7 +2260,7 @@ func ListRedisCache(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateD
 	plugin.Logger(ctx).Trace("ListRedisCache")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -2293,7 +2293,7 @@ func GetRedisCache(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateDa
 	plugin.Logger(ctx).Trace("GetRedisCache")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -2396,7 +2396,7 @@ func ListResourceLink(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydrat
 	plugin.Logger(ctx).Trace("ListResourceLink")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -2428,7 +2428,7 @@ func GetResourceLink(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydrate
 	plugin.Logger(ctx).Trace("GetResourceLink")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -2531,7 +2531,7 @@ func ListRoleAssignment(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydr
 	plugin.Logger(ctx).Trace("ListRoleAssignment")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -2563,7 +2563,7 @@ func GetRoleAssignment(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydra
 	plugin.Logger(ctx).Trace("GetRoleAssignment")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -2666,7 +2666,7 @@ func ListRoleDefinition(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydr
 	plugin.Logger(ctx).Trace("ListRoleDefinition")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -2698,7 +2698,7 @@ func GetRoleDefinition(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydra
 	plugin.Logger(ctx).Trace("GetRoleDefinition")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -2801,7 +2801,7 @@ func ListSecurityCenterAutoProvisioning(ctx context.Context, d *plugin.QueryData
 	plugin.Logger(ctx).Trace("ListSecurityCenterAutoProvisioning")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -2833,7 +2833,7 @@ func GetSecurityCenterAutoProvisioning(ctx context.Context, d *plugin.QueryData,
 	plugin.Logger(ctx).Trace("GetSecurityCenterAutoProvisioning")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -2936,7 +2936,7 @@ func ListSecurityCenterContact(ctx context.Context, d *plugin.QueryData, _ *plug
 	plugin.Logger(ctx).Trace("ListSecurityCenterContact")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -2968,7 +2968,7 @@ func GetSecurityCenterContact(ctx context.Context, d *plugin.QueryData, _ *plugi
 	plugin.Logger(ctx).Trace("GetSecurityCenterContact")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -3071,7 +3071,7 @@ func ListSecurityCenterJitNetworkAccessPolicy(ctx context.Context, d *plugin.Que
 	plugin.Logger(ctx).Trace("ListSecurityCenterJitNetworkAccessPolicy")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -3101,7 +3101,7 @@ func GetSecurityCenterJitNetworkAccessPolicy(ctx context.Context, d *plugin.Quer
 	plugin.Logger(ctx).Trace("GetSecurityCenterJitNetworkAccessPolicy")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -3204,7 +3204,7 @@ func ListSecurityCenterSetting(ctx context.Context, d *plugin.QueryData, _ *plug
 	plugin.Logger(ctx).Trace("ListSecurityCenterSetting")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -3236,7 +3236,7 @@ func GetSecurityCenterSetting(ctx context.Context, d *plugin.QueryData, _ *plugi
 	plugin.Logger(ctx).Trace("GetSecurityCenterSetting")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -3339,7 +3339,7 @@ func ListSecurityCenterSubscriptionPricing(ctx context.Context, d *plugin.QueryD
 	plugin.Logger(ctx).Trace("ListSecurityCenterSubscriptionPricing")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -3371,7 +3371,7 @@ func GetSecurityCenterSubscriptionPricing(ctx context.Context, d *plugin.QueryDa
 	plugin.Logger(ctx).Trace("GetSecurityCenterSubscriptionPricing")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -3474,7 +3474,7 @@ func ListStorageContainer(ctx context.Context, d *plugin.QueryData, _ *plugin.Hy
 	plugin.Logger(ctx).Trace("ListStorageContainer")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -3508,7 +3508,7 @@ func GetStorageContainer(ctx context.Context, d *plugin.QueryData, _ *plugin.Hyd
 	plugin.Logger(ctx).Trace("GetStorageContainer")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -3611,7 +3611,7 @@ func ListSubnet(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData)
 	plugin.Logger(ctx).Trace("ListSubnet")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -3645,7 +3645,7 @@ func GetSubnet(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) 
 	plugin.Logger(ctx).Trace("GetSubnet")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -3748,7 +3748,7 @@ func ListVirtualNetwork(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydr
 	plugin.Logger(ctx).Trace("ListVirtualNetwork")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -3781,7 +3781,7 @@ func GetVirtualNetwork(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydra
 	plugin.Logger(ctx).Trace("GetVirtualNetwork")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -3884,7 +3884,7 @@ func ListTenant(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData)
 	plugin.Logger(ctx).Trace("ListTenant")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -3914,7 +3914,7 @@ func GetTenant(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) 
 	plugin.Logger(ctx).Trace("GetTenant")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -4017,7 +4017,7 @@ func ListSubscription(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydrat
 	plugin.Logger(ctx).Trace("ListSubscription")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -4047,7 +4047,7 @@ func GetSubscription(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydrate
 	plugin.Logger(ctx).Trace("GetSubscription")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -4150,7 +4150,7 @@ func ListApplicationGateway(ctx context.Context, d *plugin.QueryData, _ *plugin.
 	plugin.Logger(ctx).Trace("ListApplicationGateway")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -4183,7 +4183,7 @@ func GetApplicationGateway(ctx context.Context, d *plugin.QueryData, _ *plugin.H
 	plugin.Logger(ctx).Trace("GetApplicationGateway")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -4286,7 +4286,7 @@ func ListBatchAccount(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydrat
 	plugin.Logger(ctx).Trace("ListBatchAccount")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -4319,7 +4319,7 @@ func GetBatchAccount(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydrate
 	plugin.Logger(ctx).Trace("GetBatchAccount")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -4422,7 +4422,7 @@ func ListCognitiveAccount(ctx context.Context, d *plugin.QueryData, _ *plugin.Hy
 	plugin.Logger(ctx).Trace("ListCognitiveAccount")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -4455,7 +4455,7 @@ func GetCognitiveAccount(ctx context.Context, d *plugin.QueryData, _ *plugin.Hyd
 	plugin.Logger(ctx).Trace("GetCognitiveAccount")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -4558,7 +4558,7 @@ func ListComputeVirtualMachine(ctx context.Context, d *plugin.QueryData, _ *plug
 	plugin.Logger(ctx).Trace("ListComputeVirtualMachine")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -4591,7 +4591,7 @@ func GetComputeVirtualMachine(ctx context.Context, d *plugin.QueryData, _ *plugi
 	plugin.Logger(ctx).Trace("GetComputeVirtualMachine")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -4694,7 +4694,7 @@ func ListContainerRegistry(ctx context.Context, d *plugin.QueryData, _ *plugin.H
 	plugin.Logger(ctx).Trace("ListContainerRegistry")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -4727,7 +4727,7 @@ func GetContainerRegistry(ctx context.Context, d *plugin.QueryData, _ *plugin.Hy
 	plugin.Logger(ctx).Trace("GetContainerRegistry")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -4830,7 +4830,7 @@ func ListCosmosdbAccount(ctx context.Context, d *plugin.QueryData, _ *plugin.Hyd
 	plugin.Logger(ctx).Trace("ListCosmosdbAccount")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -4863,7 +4863,7 @@ func GetCosmosdbAccount(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydr
 	plugin.Logger(ctx).Trace("GetCosmosdbAccount")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -4966,7 +4966,7 @@ func ListDataFactory(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydrate
 	plugin.Logger(ctx).Trace("ListDataFactory")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -4999,7 +4999,7 @@ func GetDataFactory(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateD
 	plugin.Logger(ctx).Trace("GetDataFactory")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -5102,7 +5102,7 @@ func ListDataLakeAnalyticsAccount(ctx context.Context, d *plugin.QueryData, _ *p
 	plugin.Logger(ctx).Trace("ListDataLakeAnalyticsAccount")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -5135,7 +5135,7 @@ func GetDataLakeAnalyticsAccount(ctx context.Context, d *plugin.QueryData, _ *pl
 	plugin.Logger(ctx).Trace("GetDataLakeAnalyticsAccount")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -5238,7 +5238,7 @@ func ListDataLakeStore(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydra
 	plugin.Logger(ctx).Trace("ListDataLakeStore")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -5271,7 +5271,7 @@ func GetDataLakeStore(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydrat
 	plugin.Logger(ctx).Trace("GetDataLakeStore")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -5374,7 +5374,7 @@ func ListDiagnosticSetting(ctx context.Context, d *plugin.QueryData, _ *plugin.H
 	plugin.Logger(ctx).Trace("ListDiagnosticSetting")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -5407,7 +5407,7 @@ func GetDiagnosticSetting(ctx context.Context, d *plugin.QueryData, _ *plugin.Hy
 	plugin.Logger(ctx).Trace("GetDiagnosticSetting")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -5510,7 +5510,7 @@ func ListEventGridDomain(ctx context.Context, d *plugin.QueryData, _ *plugin.Hyd
 	plugin.Logger(ctx).Trace("ListEventGridDomain")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -5543,7 +5543,7 @@ func GetEventGridDomain(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydr
 	plugin.Logger(ctx).Trace("GetEventGridDomain")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -5646,7 +5646,7 @@ func ListEventGridTopic(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydr
 	plugin.Logger(ctx).Trace("ListEventGridTopic")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -5679,7 +5679,7 @@ func GetEventGridTopic(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydra
 	plugin.Logger(ctx).Trace("GetEventGridTopic")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -5782,7 +5782,7 @@ func ListEventhubNamespace(ctx context.Context, d *plugin.QueryData, _ *plugin.H
 	plugin.Logger(ctx).Trace("ListEventhubNamespace")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -5815,7 +5815,7 @@ func GetEventhubNamespace(ctx context.Context, d *plugin.QueryData, _ *plugin.Hy
 	plugin.Logger(ctx).Trace("GetEventhubNamespace")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -5918,7 +5918,7 @@ func ListFrontdoor(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateDa
 	plugin.Logger(ctx).Trace("ListFrontdoor")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -5951,7 +5951,7 @@ func GetFrontdoor(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateDat
 	plugin.Logger(ctx).Trace("GetFrontdoor")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -6054,7 +6054,7 @@ func ListHdinsightCluster(ctx context.Context, d *plugin.QueryData, _ *plugin.Hy
 	plugin.Logger(ctx).Trace("ListHdinsightCluster")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -6087,7 +6087,7 @@ func GetHdinsightCluster(ctx context.Context, d *plugin.QueryData, _ *plugin.Hyd
 	plugin.Logger(ctx).Trace("GetHdinsightCluster")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -6190,7 +6190,7 @@ func ListHybridComputeMachine(ctx context.Context, d *plugin.QueryData, _ *plugi
 	plugin.Logger(ctx).Trace("ListHybridComputeMachine")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -6223,7 +6223,7 @@ func GetHybridComputeMachine(ctx context.Context, d *plugin.QueryData, _ *plugin
 	plugin.Logger(ctx).Trace("GetHybridComputeMachine")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -6326,7 +6326,7 @@ func ListIOTHub(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData)
 	plugin.Logger(ctx).Trace("ListIOTHub")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -6359,7 +6359,7 @@ func GetIOTHub(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) 
 	plugin.Logger(ctx).Trace("GetIOTHub")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -6462,7 +6462,7 @@ func ListKeyVault(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateDat
 	plugin.Logger(ctx).Trace("ListKeyVault")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -6495,7 +6495,7 @@ func GetKeyVault(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData
 	plugin.Logger(ctx).Trace("GetKeyVault")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -6598,7 +6598,7 @@ func ListKeyVaultManagedHardwareSecurityModule(ctx context.Context, d *plugin.Qu
 	plugin.Logger(ctx).Trace("ListKeyVaultManagedHardwareSecurityModule")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -6631,7 +6631,7 @@ func GetKeyVaultManagedHardwareSecurityModule(ctx context.Context, d *plugin.Que
 	plugin.Logger(ctx).Trace("GetKeyVaultManagedHardwareSecurityModule")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -6734,7 +6734,7 @@ func ListKeyVaultSecret(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydr
 	plugin.Logger(ctx).Trace("ListKeyVaultSecret")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -6767,7 +6767,7 @@ func GetKeyVaultSecret(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydra
 	plugin.Logger(ctx).Trace("GetKeyVaultSecret")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -6870,7 +6870,7 @@ func ListKustoCluster(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydrat
 	plugin.Logger(ctx).Trace("ListKustoCluster")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -6903,7 +6903,7 @@ func GetKustoCluster(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydrate
 	plugin.Logger(ctx).Trace("GetKustoCluster")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -7006,7 +7006,7 @@ func ListLogAlert(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateDat
 	plugin.Logger(ctx).Trace("ListLogAlert")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -7039,7 +7039,7 @@ func GetLogAlert(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData
 	plugin.Logger(ctx).Trace("GetLogAlert")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -7142,7 +7142,7 @@ func ListLogProfile(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateD
 	plugin.Logger(ctx).Trace("ListLogProfile")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -7175,7 +7175,7 @@ func GetLogProfile(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateDa
 	plugin.Logger(ctx).Trace("GetLogProfile")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -7278,7 +7278,7 @@ func ListLogicAppWorkflow(ctx context.Context, d *plugin.QueryData, _ *plugin.Hy
 	plugin.Logger(ctx).Trace("ListLogicAppWorkflow")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -7311,7 +7311,7 @@ func GetLogicAppWorkflow(ctx context.Context, d *plugin.QueryData, _ *plugin.Hyd
 	plugin.Logger(ctx).Trace("GetLogicAppWorkflow")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -7414,7 +7414,7 @@ func ListMachineLearningWorkspace(ctx context.Context, d *plugin.QueryData, _ *p
 	plugin.Logger(ctx).Trace("ListMachineLearningWorkspace")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -7447,7 +7447,7 @@ func GetMachineLearningWorkspace(ctx context.Context, d *plugin.QueryData, _ *pl
 	plugin.Logger(ctx).Trace("GetMachineLearningWorkspace")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -7550,7 +7550,7 @@ func ListMariadbServer(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydra
 	plugin.Logger(ctx).Trace("ListMariadbServer")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -7583,7 +7583,7 @@ func GetMariadbServer(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydrat
 	plugin.Logger(ctx).Trace("GetMariadbServer")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -7686,7 +7686,7 @@ func ListMysqlServer(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydrate
 	plugin.Logger(ctx).Trace("ListMysqlServer")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -7719,7 +7719,7 @@ func GetMysqlServer(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateD
 	plugin.Logger(ctx).Trace("GetMysqlServer")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -7822,7 +7822,7 @@ func ListNetworkSecurityGroup(ctx context.Context, d *plugin.QueryData, _ *plugi
 	plugin.Logger(ctx).Trace("ListNetworkSecurityGroup")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -7855,7 +7855,7 @@ func GetNetworkSecurityGroup(ctx context.Context, d *plugin.QueryData, _ *plugin
 	plugin.Logger(ctx).Trace("GetNetworkSecurityGroup")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -7958,7 +7958,7 @@ func ListNetworkWatcher(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydr
 	plugin.Logger(ctx).Trace("ListNetworkWatcher")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -7991,7 +7991,7 @@ func GetNetworkWatcher(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydra
 	plugin.Logger(ctx).Trace("GetNetworkWatcher")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -8094,7 +8094,7 @@ func ListSearchService(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydra
 	plugin.Logger(ctx).Trace("ListSearchService")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -8127,7 +8127,7 @@ func GetSearchService(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydrat
 	plugin.Logger(ctx).Trace("GetSearchService")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -8230,7 +8230,7 @@ func ListServiceFabricCluster(ctx context.Context, d *plugin.QueryData, _ *plugi
 	plugin.Logger(ctx).Trace("ListServiceFabricCluster")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -8263,7 +8263,7 @@ func GetServiceFabricCluster(ctx context.Context, d *plugin.QueryData, _ *plugin
 	plugin.Logger(ctx).Trace("GetServiceFabricCluster")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -8366,7 +8366,7 @@ func ListServicebusNamespace(ctx context.Context, d *plugin.QueryData, _ *plugin
 	plugin.Logger(ctx).Trace("ListServicebusNamespace")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -8399,7 +8399,7 @@ func GetServicebusNamespace(ctx context.Context, d *plugin.QueryData, _ *plugin.
 	plugin.Logger(ctx).Trace("GetServicebusNamespace")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -8502,7 +8502,7 @@ func ListSignalrService(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydr
 	plugin.Logger(ctx).Trace("ListSignalrService")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -8535,7 +8535,7 @@ func GetSignalrService(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydra
 	plugin.Logger(ctx).Trace("GetSignalrService")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -8638,7 +8638,7 @@ func ListSpringCloudService(ctx context.Context, d *plugin.QueryData, _ *plugin.
 	plugin.Logger(ctx).Trace("ListSpringCloudService")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -8671,7 +8671,7 @@ func GetSpringCloudService(ctx context.Context, d *plugin.QueryData, _ *plugin.H
 	plugin.Logger(ctx).Trace("GetSpringCloudService")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -8774,7 +8774,7 @@ func ListStreamAnalyticsJob(ctx context.Context, d *plugin.QueryData, _ *plugin.
 	plugin.Logger(ctx).Trace("ListStreamAnalyticsJob")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -8807,7 +8807,7 @@ func GetStreamAnalyticsJob(ctx context.Context, d *plugin.QueryData, _ *plugin.H
 	plugin.Logger(ctx).Trace("GetStreamAnalyticsJob")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -8910,7 +8910,7 @@ func ListSynapseWorkspace(ctx context.Context, d *plugin.QueryData, _ *plugin.Hy
 	plugin.Logger(ctx).Trace("ListSynapseWorkspace")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -8943,7 +8943,7 @@ func GetSynapseWorkspace(ctx context.Context, d *plugin.QueryData, _ *plugin.Hyd
 	plugin.Logger(ctx).Trace("GetSynapseWorkspace")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -9046,7 +9046,7 @@ func ListLocation(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateDat
 	plugin.Logger(ctx).Trace("ListLocation")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -9079,7 +9079,7 @@ func GetLocation(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData
 	plugin.Logger(ctx).Trace("GetLocation")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -9190,7 +9190,7 @@ func ListAdUsers(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData
 	plugin.Logger(ctx).Trace("ListAdUsers")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -9222,7 +9222,7 @@ func GetAdUsers(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData)
 	plugin.Logger(ctx).Trace("GetAdUsers")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -9325,7 +9325,7 @@ func ListPostgresqlServer(ctx context.Context, d *plugin.QueryData, _ *plugin.Hy
 	plugin.Logger(ctx).Trace("ListPostgresqlServer")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -9358,7 +9358,7 @@ func GetPostgresqlServer(ctx context.Context, d *plugin.QueryData, _ *plugin.Hyd
 	plugin.Logger(ctx).Trace("GetPostgresqlServer")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -9461,7 +9461,7 @@ func ListStorageSync(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydrate
 	plugin.Logger(ctx).Trace("ListStorageSync")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -9494,7 +9494,7 @@ func GetStorageSync(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateD
 	plugin.Logger(ctx).Trace("GetStorageSync")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -9597,7 +9597,7 @@ func ListMssqlManagedInstance(ctx context.Context, d *plugin.QueryData, _ *plugi
 	plugin.Logger(ctx).Trace("ListMssqlManagedInstance")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -9630,7 +9630,7 @@ func GetMssqlManagedInstance(ctx context.Context, d *plugin.QueryData, _ *plugin
 	plugin.Logger(ctx).Trace("GetMssqlManagedInstance")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -9733,7 +9733,7 @@ func ListSqlDatabase(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydrate
 	plugin.Logger(ctx).Trace("ListSqlDatabase")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -9766,7 +9766,7 @@ func GetSqlDatabase(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateD
 	plugin.Logger(ctx).Trace("GetSqlDatabase")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -9869,7 +9869,7 @@ func ListSqlServer(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateDa
 	plugin.Logger(ctx).Trace("ListSqlServer")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -9902,7 +9902,7 @@ func GetSqlServer(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateDat
 	plugin.Logger(ctx).Trace("GetSqlServer")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -10005,7 +10005,7 @@ func ListStorageAccount(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydr
 	plugin.Logger(ctx).Trace("ListStorageAccount")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -10038,7 +10038,7 @@ func GetStorageAccount(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydra
 	plugin.Logger(ctx).Trace("GetStorageAccount")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
