@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	elasticsearchv7 "github.com/elastic/go-elasticsearch/v7"
+	"github.com/turbot/steampipe-plugin-sdk/connection"
 	"github.com/turbot/steampipe-plugin-sdk/plugin"
 	"github.com/turbot/steampipe-plugin-sdk/plugin/schema"
 )
@@ -44,6 +45,22 @@ func GetConfig(connection *plugin.Connection) ClientConfig {
 	}
 	config, _ := connection.Config.(ClientConfig)
 	return config
+}
+
+func NewClientCached(c ClientConfig, cache *connection.Cache) (Client, error) {
+	value, ok := cache.Get("keibi-client")
+	if ok {
+		return value.(Client), nil
+	}
+
+	client, err := NewClient(c)
+	if err != nil {
+		return Client{}, err
+	}
+
+	cache.Set("keibi-client", client)
+
+	return client, nil
 }
 
 func NewClient(c ClientConfig) (Client, error) {

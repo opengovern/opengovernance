@@ -35,7 +35,7 @@ type AccessAnalyzerAnalyzerSearchResponse struct {
 }
 
 type AccessAnalyzerAnalyzerPaginator struct {
-	paginator baseESPaginator
+	paginator *baseESPaginator
 }
 
 func (k Client) NewAccessAnalyzerAnalyzerPaginator(filters []BoolFilter, limit *int64) (AccessAnalyzerAnalyzerPaginator, error) {
@@ -45,7 +45,7 @@ func (k Client) NewAccessAnalyzerAnalyzerPaginator(filters []BoolFilter, limit *
 	}
 
 	p := AccessAnalyzerAnalyzerPaginator{
-		paginator: *paginator,
+		paginator: paginator,
 	}
 
 	return p, nil
@@ -55,7 +55,7 @@ func (p AccessAnalyzerAnalyzerPaginator) HasNext() bool {
 	return !p.paginator.done
 }
 
-func (p *AccessAnalyzerAnalyzerPaginator) NextPage(ctx context.Context) ([]AccessAnalyzerAnalyzer, error) {
+func (p AccessAnalyzerAnalyzerPaginator) NextPage(ctx context.Context) ([]AccessAnalyzerAnalyzer, error) {
 	var response AccessAnalyzerAnalyzerSearchResponse
 	err := p.paginator.search(ctx, &response)
 	if err != nil {
@@ -85,7 +85,7 @@ func ListAccessAnalyzerAnalyzer(ctx context.Context, d *plugin.QueryData, _ *plu
 	plugin.Logger(ctx).Trace("ListAccessAnalyzerAnalyzer")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -117,7 +117,7 @@ func GetAccessAnalyzerAnalyzer(ctx context.Context, d *plugin.QueryData, _ *plug
 	plugin.Logger(ctx).Trace("GetAccessAnalyzerAnalyzer")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -172,7 +172,7 @@ type ApiGatewayStageSearchResponse struct {
 }
 
 type ApiGatewayStagePaginator struct {
-	paginator baseESPaginator
+	paginator *baseESPaginator
 }
 
 func (k Client) NewApiGatewayStagePaginator(filters []BoolFilter, limit *int64) (ApiGatewayStagePaginator, error) {
@@ -182,7 +182,7 @@ func (k Client) NewApiGatewayStagePaginator(filters []BoolFilter, limit *int64) 
 	}
 
 	p := ApiGatewayStagePaginator{
-		paginator: *paginator,
+		paginator: paginator,
 	}
 
 	return p, nil
@@ -192,7 +192,7 @@ func (p ApiGatewayStagePaginator) HasNext() bool {
 	return !p.paginator.done
 }
 
-func (p *ApiGatewayStagePaginator) NextPage(ctx context.Context) ([]ApiGatewayStage, error) {
+func (p ApiGatewayStagePaginator) NextPage(ctx context.Context) ([]ApiGatewayStage, error) {
 	var response ApiGatewayStageSearchResponse
 	err := p.paginator.search(ctx, &response)
 	if err != nil {
@@ -220,7 +220,7 @@ func ListApiGatewayStage(ctx context.Context, d *plugin.QueryData, _ *plugin.Hyd
 	plugin.Logger(ctx).Trace("ListApiGatewayStage")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -253,7 +253,7 @@ func GetApiGatewayStage(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydr
 	plugin.Logger(ctx).Trace("GetApiGatewayStage")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -308,7 +308,7 @@ type ApiGatewayV2StageSearchResponse struct {
 }
 
 type ApiGatewayV2StagePaginator struct {
-	paginator baseESPaginator
+	paginator *baseESPaginator
 }
 
 func (k Client) NewApiGatewayV2StagePaginator(filters []BoolFilter, limit *int64) (ApiGatewayV2StagePaginator, error) {
@@ -318,7 +318,7 @@ func (k Client) NewApiGatewayV2StagePaginator(filters []BoolFilter, limit *int64
 	}
 
 	p := ApiGatewayV2StagePaginator{
-		paginator: *paginator,
+		paginator: paginator,
 	}
 
 	return p, nil
@@ -328,7 +328,7 @@ func (p ApiGatewayV2StagePaginator) HasNext() bool {
 	return !p.paginator.done
 }
 
-func (p *ApiGatewayV2StagePaginator) NextPage(ctx context.Context) ([]ApiGatewayV2Stage, error) {
+func (p ApiGatewayV2StagePaginator) NextPage(ctx context.Context) ([]ApiGatewayV2Stage, error) {
 	var response ApiGatewayV2StageSearchResponse
 	err := p.paginator.search(ctx, &response)
 	if err != nil {
@@ -356,7 +356,7 @@ func ListApiGatewayV2Stage(ctx context.Context, d *plugin.QueryData, _ *plugin.H
 	plugin.Logger(ctx).Trace("ListApiGatewayV2Stage")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -389,7 +389,7 @@ func GetApiGatewayV2Stage(ctx context.Context, d *plugin.QueryData, _ *plugin.Hy
 	plugin.Logger(ctx).Trace("GetApiGatewayV2Stage")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -444,7 +444,7 @@ type ElasticBeanstalkEnvironmentSearchResponse struct {
 }
 
 type ElasticBeanstalkEnvironmentPaginator struct {
-	paginator baseESPaginator
+	paginator *baseESPaginator
 }
 
 func (k Client) NewElasticBeanstalkEnvironmentPaginator(filters []BoolFilter, limit *int64) (ElasticBeanstalkEnvironmentPaginator, error) {
@@ -454,7 +454,7 @@ func (k Client) NewElasticBeanstalkEnvironmentPaginator(filters []BoolFilter, li
 	}
 
 	p := ElasticBeanstalkEnvironmentPaginator{
-		paginator: *paginator,
+		paginator: paginator,
 	}
 
 	return p, nil
@@ -464,7 +464,7 @@ func (p ElasticBeanstalkEnvironmentPaginator) HasNext() bool {
 	return !p.paginator.done
 }
 
-func (p *ElasticBeanstalkEnvironmentPaginator) NextPage(ctx context.Context) ([]ElasticBeanstalkEnvironment, error) {
+func (p ElasticBeanstalkEnvironmentPaginator) NextPage(ctx context.Context) ([]ElasticBeanstalkEnvironment, error) {
 	var response ElasticBeanstalkEnvironmentSearchResponse
 	err := p.paginator.search(ctx, &response)
 	if err != nil {
@@ -492,7 +492,7 @@ func ListElasticBeanstalkEnvironment(ctx context.Context, d *plugin.QueryData, _
 	plugin.Logger(ctx).Trace("ListElasticBeanstalkEnvironment")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -524,7 +524,7 @@ func GetElasticBeanstalkEnvironment(ctx context.Context, d *plugin.QueryData, _ 
 	plugin.Logger(ctx).Trace("GetElasticBeanstalkEnvironment")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -579,7 +579,7 @@ type ElastiCacheReplicationGroupSearchResponse struct {
 }
 
 type ElastiCacheReplicationGroupPaginator struct {
-	paginator baseESPaginator
+	paginator *baseESPaginator
 }
 
 func (k Client) NewElastiCacheReplicationGroupPaginator(filters []BoolFilter, limit *int64) (ElastiCacheReplicationGroupPaginator, error) {
@@ -589,7 +589,7 @@ func (k Client) NewElastiCacheReplicationGroupPaginator(filters []BoolFilter, li
 	}
 
 	p := ElastiCacheReplicationGroupPaginator{
-		paginator: *paginator,
+		paginator: paginator,
 	}
 
 	return p, nil
@@ -599,7 +599,7 @@ func (p ElastiCacheReplicationGroupPaginator) HasNext() bool {
 	return !p.paginator.done
 }
 
-func (p *ElastiCacheReplicationGroupPaginator) NextPage(ctx context.Context) ([]ElastiCacheReplicationGroup, error) {
+func (p ElastiCacheReplicationGroupPaginator) NextPage(ctx context.Context) ([]ElastiCacheReplicationGroup, error) {
 	var response ElastiCacheReplicationGroupSearchResponse
 	err := p.paginator.search(ctx, &response)
 	if err != nil {
@@ -627,7 +627,7 @@ func ListElastiCacheReplicationGroup(ctx context.Context, d *plugin.QueryData, _
 	plugin.Logger(ctx).Trace("ListElastiCacheReplicationGroup")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -659,7 +659,7 @@ func GetElastiCacheReplicationGroup(ctx context.Context, d *plugin.QueryData, _ 
 	plugin.Logger(ctx).Trace("GetElastiCacheReplicationGroup")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -714,7 +714,7 @@ type ESDomainSearchResponse struct {
 }
 
 type ESDomainPaginator struct {
-	paginator baseESPaginator
+	paginator *baseESPaginator
 }
 
 func (k Client) NewESDomainPaginator(filters []BoolFilter, limit *int64) (ESDomainPaginator, error) {
@@ -724,7 +724,7 @@ func (k Client) NewESDomainPaginator(filters []BoolFilter, limit *int64) (ESDoma
 	}
 
 	p := ESDomainPaginator{
-		paginator: *paginator,
+		paginator: paginator,
 	}
 
 	return p, nil
@@ -734,7 +734,7 @@ func (p ESDomainPaginator) HasNext() bool {
 	return !p.paginator.done
 }
 
-func (p *ESDomainPaginator) NextPage(ctx context.Context) ([]ESDomain, error) {
+func (p ESDomainPaginator) NextPage(ctx context.Context) ([]ESDomain, error) {
 	var response ESDomainSearchResponse
 	err := p.paginator.search(ctx, &response)
 	if err != nil {
@@ -762,7 +762,7 @@ func ListESDomain(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateDat
 	plugin.Logger(ctx).Trace("ListESDomain")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -794,7 +794,7 @@ func GetESDomain(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData
 	plugin.Logger(ctx).Trace("GetESDomain")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -849,7 +849,7 @@ type EMRClusterSearchResponse struct {
 }
 
 type EMRClusterPaginator struct {
-	paginator baseESPaginator
+	paginator *baseESPaginator
 }
 
 func (k Client) NewEMRClusterPaginator(filters []BoolFilter, limit *int64) (EMRClusterPaginator, error) {
@@ -859,7 +859,7 @@ func (k Client) NewEMRClusterPaginator(filters []BoolFilter, limit *int64) (EMRC
 	}
 
 	p := EMRClusterPaginator{
-		paginator: *paginator,
+		paginator: paginator,
 	}
 
 	return p, nil
@@ -869,7 +869,7 @@ func (p EMRClusterPaginator) HasNext() bool {
 	return !p.paginator.done
 }
 
-func (p *EMRClusterPaginator) NextPage(ctx context.Context) ([]EMRCluster, error) {
+func (p EMRClusterPaginator) NextPage(ctx context.Context) ([]EMRCluster, error) {
 	var response EMRClusterSearchResponse
 	err := p.paginator.search(ctx, &response)
 	if err != nil {
@@ -897,7 +897,7 @@ func ListEMRCluster(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateD
 	plugin.Logger(ctx).Trace("ListEMRCluster")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -929,7 +929,7 @@ func GetEMRCluster(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateDa
 	plugin.Logger(ctx).Trace("GetEMRCluster")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -984,7 +984,7 @@ type GuardDutyFindingSearchResponse struct {
 }
 
 type GuardDutyFindingPaginator struct {
-	paginator baseESPaginator
+	paginator *baseESPaginator
 }
 
 func (k Client) NewGuardDutyFindingPaginator(filters []BoolFilter, limit *int64) (GuardDutyFindingPaginator, error) {
@@ -994,7 +994,7 @@ func (k Client) NewGuardDutyFindingPaginator(filters []BoolFilter, limit *int64)
 	}
 
 	p := GuardDutyFindingPaginator{
-		paginator: *paginator,
+		paginator: paginator,
 	}
 
 	return p, nil
@@ -1004,7 +1004,7 @@ func (p GuardDutyFindingPaginator) HasNext() bool {
 	return !p.paginator.done
 }
 
-func (p *GuardDutyFindingPaginator) NextPage(ctx context.Context) ([]GuardDutyFinding, error) {
+func (p GuardDutyFindingPaginator) NextPage(ctx context.Context) ([]GuardDutyFinding, error) {
 	var response GuardDutyFindingSearchResponse
 	err := p.paginator.search(ctx, &response)
 	if err != nil {
@@ -1032,7 +1032,7 @@ func ListGuardDutyFinding(ctx context.Context, d *plugin.QueryData, _ *plugin.Hy
 	plugin.Logger(ctx).Trace("ListGuardDutyFinding")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -1062,7 +1062,7 @@ func GetGuardDutyFinding(ctx context.Context, d *plugin.QueryData, _ *plugin.Hyd
 	plugin.Logger(ctx).Trace("GetGuardDutyFinding")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -1117,7 +1117,7 @@ type GuardDutyDetectorSearchResponse struct {
 }
 
 type GuardDutyDetectorPaginator struct {
-	paginator baseESPaginator
+	paginator *baseESPaginator
 }
 
 func (k Client) NewGuardDutyDetectorPaginator(filters []BoolFilter, limit *int64) (GuardDutyDetectorPaginator, error) {
@@ -1127,7 +1127,7 @@ func (k Client) NewGuardDutyDetectorPaginator(filters []BoolFilter, limit *int64
 	}
 
 	p := GuardDutyDetectorPaginator{
-		paginator: *paginator,
+		paginator: paginator,
 	}
 
 	return p, nil
@@ -1137,7 +1137,7 @@ func (p GuardDutyDetectorPaginator) HasNext() bool {
 	return !p.paginator.done
 }
 
-func (p *GuardDutyDetectorPaginator) NextPage(ctx context.Context) ([]GuardDutyDetector, error) {
+func (p GuardDutyDetectorPaginator) NextPage(ctx context.Context) ([]GuardDutyDetector, error) {
 	var response GuardDutyDetectorSearchResponse
 	err := p.paginator.search(ctx, &response)
 	if err != nil {
@@ -1165,7 +1165,7 @@ func ListGuardDutyDetector(ctx context.Context, d *plugin.QueryData, _ *plugin.H
 	plugin.Logger(ctx).Trace("ListGuardDutyDetector")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -1197,7 +1197,7 @@ func GetGuardDutyDetector(ctx context.Context, d *plugin.QueryData, _ *plugin.Hy
 	plugin.Logger(ctx).Trace("GetGuardDutyDetector")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -1252,7 +1252,7 @@ type BackupPlanSearchResponse struct {
 }
 
 type BackupPlanPaginator struct {
-	paginator baseESPaginator
+	paginator *baseESPaginator
 }
 
 func (k Client) NewBackupPlanPaginator(filters []BoolFilter, limit *int64) (BackupPlanPaginator, error) {
@@ -1262,7 +1262,7 @@ func (k Client) NewBackupPlanPaginator(filters []BoolFilter, limit *int64) (Back
 	}
 
 	p := BackupPlanPaginator{
-		paginator: *paginator,
+		paginator: paginator,
 	}
 
 	return p, nil
@@ -1272,7 +1272,7 @@ func (p BackupPlanPaginator) HasNext() bool {
 	return !p.paginator.done
 }
 
-func (p *BackupPlanPaginator) NextPage(ctx context.Context) ([]BackupPlan, error) {
+func (p BackupPlanPaginator) NextPage(ctx context.Context) ([]BackupPlan, error) {
 	var response BackupPlanSearchResponse
 	err := p.paginator.search(ctx, &response)
 	if err != nil {
@@ -1300,7 +1300,7 @@ func ListBackupPlan(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateD
 	plugin.Logger(ctx).Trace("ListBackupPlan")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -1332,7 +1332,7 @@ func GetBackupPlan(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateDa
 	plugin.Logger(ctx).Trace("GetBackupPlan")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -1387,7 +1387,7 @@ type BackupSelectionSearchResponse struct {
 }
 
 type BackupSelectionPaginator struct {
-	paginator baseESPaginator
+	paginator *baseESPaginator
 }
 
 func (k Client) NewBackupSelectionPaginator(filters []BoolFilter, limit *int64) (BackupSelectionPaginator, error) {
@@ -1397,7 +1397,7 @@ func (k Client) NewBackupSelectionPaginator(filters []BoolFilter, limit *int64) 
 	}
 
 	p := BackupSelectionPaginator{
-		paginator: *paginator,
+		paginator: paginator,
 	}
 
 	return p, nil
@@ -1407,7 +1407,7 @@ func (p BackupSelectionPaginator) HasNext() bool {
 	return !p.paginator.done
 }
 
-func (p *BackupSelectionPaginator) NextPage(ctx context.Context) ([]BackupSelection, error) {
+func (p BackupSelectionPaginator) NextPage(ctx context.Context) ([]BackupSelection, error) {
 	var response BackupSelectionSearchResponse
 	err := p.paginator.search(ctx, &response)
 	if err != nil {
@@ -1435,7 +1435,7 @@ func ListBackupSelection(ctx context.Context, d *plugin.QueryData, _ *plugin.Hyd
 	plugin.Logger(ctx).Trace("ListBackupSelection")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -1468,7 +1468,7 @@ func GetBackupSelection(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydr
 	plugin.Logger(ctx).Trace("GetBackupSelection")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -1523,7 +1523,7 @@ type BackupVaultSearchResponse struct {
 }
 
 type BackupVaultPaginator struct {
-	paginator baseESPaginator
+	paginator *baseESPaginator
 }
 
 func (k Client) NewBackupVaultPaginator(filters []BoolFilter, limit *int64) (BackupVaultPaginator, error) {
@@ -1533,7 +1533,7 @@ func (k Client) NewBackupVaultPaginator(filters []BoolFilter, limit *int64) (Bac
 	}
 
 	p := BackupVaultPaginator{
-		paginator: *paginator,
+		paginator: paginator,
 	}
 
 	return p, nil
@@ -1543,7 +1543,7 @@ func (p BackupVaultPaginator) HasNext() bool {
 	return !p.paginator.done
 }
 
-func (p *BackupVaultPaginator) NextPage(ctx context.Context) ([]BackupVault, error) {
+func (p BackupVaultPaginator) NextPage(ctx context.Context) ([]BackupVault, error) {
 	var response BackupVaultSearchResponse
 	err := p.paginator.search(ctx, &response)
 	if err != nil {
@@ -1571,7 +1571,7 @@ func ListBackupVault(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydrate
 	plugin.Logger(ctx).Trace("ListBackupVault")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -1603,7 +1603,7 @@ func GetBackupVault(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateD
 	plugin.Logger(ctx).Trace("GetBackupVault")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -1658,7 +1658,7 @@ type BackupRecoveryPointSearchResponse struct {
 }
 
 type BackupRecoveryPointPaginator struct {
-	paginator baseESPaginator
+	paginator *baseESPaginator
 }
 
 func (k Client) NewBackupRecoveryPointPaginator(filters []BoolFilter, limit *int64) (BackupRecoveryPointPaginator, error) {
@@ -1668,7 +1668,7 @@ func (k Client) NewBackupRecoveryPointPaginator(filters []BoolFilter, limit *int
 	}
 
 	p := BackupRecoveryPointPaginator{
-		paginator: *paginator,
+		paginator: paginator,
 	}
 
 	return p, nil
@@ -1678,7 +1678,7 @@ func (p BackupRecoveryPointPaginator) HasNext() bool {
 	return !p.paginator.done
 }
 
-func (p *BackupRecoveryPointPaginator) NextPage(ctx context.Context) ([]BackupRecoveryPoint, error) {
+func (p BackupRecoveryPointPaginator) NextPage(ctx context.Context) ([]BackupRecoveryPoint, error) {
 	var response BackupRecoveryPointSearchResponse
 	err := p.paginator.search(ctx, &response)
 	if err != nil {
@@ -1710,7 +1710,7 @@ func ListBackupRecoveryPoint(ctx context.Context, d *plugin.QueryData, _ *plugin
 	plugin.Logger(ctx).Trace("ListBackupRecoveryPoint")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -1743,7 +1743,7 @@ func GetBackupRecoveryPoint(ctx context.Context, d *plugin.QueryData, _ *plugin.
 	plugin.Logger(ctx).Trace("GetBackupRecoveryPoint")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -1798,7 +1798,7 @@ type BackupProtectedResourceSearchResponse struct {
 }
 
 type BackupProtectedResourcePaginator struct {
-	paginator baseESPaginator
+	paginator *baseESPaginator
 }
 
 func (k Client) NewBackupProtectedResourcePaginator(filters []BoolFilter, limit *int64) (BackupProtectedResourcePaginator, error) {
@@ -1808,7 +1808,7 @@ func (k Client) NewBackupProtectedResourcePaginator(filters []BoolFilter, limit 
 	}
 
 	p := BackupProtectedResourcePaginator{
-		paginator: *paginator,
+		paginator: paginator,
 	}
 
 	return p, nil
@@ -1818,7 +1818,7 @@ func (p BackupProtectedResourcePaginator) HasNext() bool {
 	return !p.paginator.done
 }
 
-func (p *BackupProtectedResourcePaginator) NextPage(ctx context.Context) ([]BackupProtectedResource, error) {
+func (p BackupProtectedResourcePaginator) NextPage(ctx context.Context) ([]BackupProtectedResource, error) {
 	var response BackupProtectedResourceSearchResponse
 	err := p.paginator.search(ctx, &response)
 	if err != nil {
@@ -1846,7 +1846,7 @@ func ListBackupProtectedResource(ctx context.Context, d *plugin.QueryData, _ *pl
 	plugin.Logger(ctx).Trace("ListBackupProtectedResource")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -1878,7 +1878,7 @@ func GetBackupProtectedResource(ctx context.Context, d *plugin.QueryData, _ *plu
 	plugin.Logger(ctx).Trace("GetBackupProtectedResource")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -1933,7 +1933,7 @@ type CloudFrontDistributionSearchResponse struct {
 }
 
 type CloudFrontDistributionPaginator struct {
-	paginator baseESPaginator
+	paginator *baseESPaginator
 }
 
 func (k Client) NewCloudFrontDistributionPaginator(filters []BoolFilter, limit *int64) (CloudFrontDistributionPaginator, error) {
@@ -1943,7 +1943,7 @@ func (k Client) NewCloudFrontDistributionPaginator(filters []BoolFilter, limit *
 	}
 
 	p := CloudFrontDistributionPaginator{
-		paginator: *paginator,
+		paginator: paginator,
 	}
 
 	return p, nil
@@ -1953,7 +1953,7 @@ func (p CloudFrontDistributionPaginator) HasNext() bool {
 	return !p.paginator.done
 }
 
-func (p *CloudFrontDistributionPaginator) NextPage(ctx context.Context) ([]CloudFrontDistribution, error) {
+func (p CloudFrontDistributionPaginator) NextPage(ctx context.Context) ([]CloudFrontDistribution, error) {
 	var response CloudFrontDistributionSearchResponse
 	err := p.paginator.search(ctx, &response)
 	if err != nil {
@@ -1981,7 +1981,7 @@ func ListCloudFrontDistribution(ctx context.Context, d *plugin.QueryData, _ *plu
 	plugin.Logger(ctx).Trace("ListCloudFrontDistribution")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -2013,7 +2013,7 @@ func GetCloudFrontDistribution(ctx context.Context, d *plugin.QueryData, _ *plug
 	plugin.Logger(ctx).Trace("GetCloudFrontDistribution")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -2068,7 +2068,7 @@ type CloudWatchAlarmSearchResponse struct {
 }
 
 type CloudWatchAlarmPaginator struct {
-	paginator baseESPaginator
+	paginator *baseESPaginator
 }
 
 func (k Client) NewCloudWatchAlarmPaginator(filters []BoolFilter, limit *int64) (CloudWatchAlarmPaginator, error) {
@@ -2078,7 +2078,7 @@ func (k Client) NewCloudWatchAlarmPaginator(filters []BoolFilter, limit *int64) 
 	}
 
 	p := CloudWatchAlarmPaginator{
-		paginator: *paginator,
+		paginator: paginator,
 	}
 
 	return p, nil
@@ -2088,7 +2088,7 @@ func (p CloudWatchAlarmPaginator) HasNext() bool {
 	return !p.paginator.done
 }
 
-func (p *CloudWatchAlarmPaginator) NextPage(ctx context.Context) ([]CloudWatchAlarm, error) {
+func (p CloudWatchAlarmPaginator) NextPage(ctx context.Context) ([]CloudWatchAlarm, error) {
 	var response CloudWatchAlarmSearchResponse
 	err := p.paginator.search(ctx, &response)
 	if err != nil {
@@ -2119,7 +2119,7 @@ func ListCloudWatchAlarm(ctx context.Context, d *plugin.QueryData, _ *plugin.Hyd
 	plugin.Logger(ctx).Trace("ListCloudWatchAlarm")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -2151,7 +2151,7 @@ func GetCloudWatchAlarm(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydr
 	plugin.Logger(ctx).Trace("GetCloudWatchAlarm")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -2206,7 +2206,7 @@ type CloudWatchLogsLogGroupSearchResponse struct {
 }
 
 type CloudWatchLogsLogGroupPaginator struct {
-	paginator baseESPaginator
+	paginator *baseESPaginator
 }
 
 func (k Client) NewCloudWatchLogsLogGroupPaginator(filters []BoolFilter, limit *int64) (CloudWatchLogsLogGroupPaginator, error) {
@@ -2216,7 +2216,7 @@ func (k Client) NewCloudWatchLogsLogGroupPaginator(filters []BoolFilter, limit *
 	}
 
 	p := CloudWatchLogsLogGroupPaginator{
-		paginator: *paginator,
+		paginator: paginator,
 	}
 
 	return p, nil
@@ -2226,7 +2226,7 @@ func (p CloudWatchLogsLogGroupPaginator) HasNext() bool {
 	return !p.paginator.done
 }
 
-func (p *CloudWatchLogsLogGroupPaginator) NextPage(ctx context.Context) ([]CloudWatchLogsLogGroup, error) {
+func (p CloudWatchLogsLogGroupPaginator) NextPage(ctx context.Context) ([]CloudWatchLogsLogGroup, error) {
 	var response CloudWatchLogsLogGroupSearchResponse
 	err := p.paginator.search(ctx, &response)
 	if err != nil {
@@ -2256,7 +2256,7 @@ func ListCloudWatchLogsLogGroup(ctx context.Context, d *plugin.QueryData, _ *plu
 	plugin.Logger(ctx).Trace("ListCloudWatchLogsLogGroup")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -2288,7 +2288,7 @@ func GetCloudWatchLogsLogGroup(ctx context.Context, d *plugin.QueryData, _ *plug
 	plugin.Logger(ctx).Trace("GetCloudWatchLogsLogGroup")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -2343,7 +2343,7 @@ type CloudWatchLogsMetricFilterSearchResponse struct {
 }
 
 type CloudWatchLogsMetricFilterPaginator struct {
-	paginator baseESPaginator
+	paginator *baseESPaginator
 }
 
 func (k Client) NewCloudWatchLogsMetricFilterPaginator(filters []BoolFilter, limit *int64) (CloudWatchLogsMetricFilterPaginator, error) {
@@ -2353,7 +2353,7 @@ func (k Client) NewCloudWatchLogsMetricFilterPaginator(filters []BoolFilter, lim
 	}
 
 	p := CloudWatchLogsMetricFilterPaginator{
-		paginator: *paginator,
+		paginator: paginator,
 	}
 
 	return p, nil
@@ -2363,7 +2363,7 @@ func (p CloudWatchLogsMetricFilterPaginator) HasNext() bool {
 	return !p.paginator.done
 }
 
-func (p *CloudWatchLogsMetricFilterPaginator) NextPage(ctx context.Context) ([]CloudWatchLogsMetricFilter, error) {
+func (p CloudWatchLogsMetricFilterPaginator) NextPage(ctx context.Context) ([]CloudWatchLogsMetricFilter, error) {
 	var response CloudWatchLogsMetricFilterSearchResponse
 	err := p.paginator.search(ctx, &response)
 	if err != nil {
@@ -2396,7 +2396,7 @@ func ListCloudWatchLogsMetricFilter(ctx context.Context, d *plugin.QueryData, _ 
 	plugin.Logger(ctx).Trace("ListCloudWatchLogsMetricFilter")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -2428,7 +2428,7 @@ func GetCloudWatchLogsMetricFilter(ctx context.Context, d *plugin.QueryData, _ *
 	plugin.Logger(ctx).Trace("GetCloudWatchLogsMetricFilter")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -2483,7 +2483,7 @@ type CodeBuildProjectSearchResponse struct {
 }
 
 type CodeBuildProjectPaginator struct {
-	paginator baseESPaginator
+	paginator *baseESPaginator
 }
 
 func (k Client) NewCodeBuildProjectPaginator(filters []BoolFilter, limit *int64) (CodeBuildProjectPaginator, error) {
@@ -2493,7 +2493,7 @@ func (k Client) NewCodeBuildProjectPaginator(filters []BoolFilter, limit *int64)
 	}
 
 	p := CodeBuildProjectPaginator{
-		paginator: *paginator,
+		paginator: paginator,
 	}
 
 	return p, nil
@@ -2503,7 +2503,7 @@ func (p CodeBuildProjectPaginator) HasNext() bool {
 	return !p.paginator.done
 }
 
-func (p *CodeBuildProjectPaginator) NextPage(ctx context.Context) ([]CodeBuildProject, error) {
+func (p CodeBuildProjectPaginator) NextPage(ctx context.Context) ([]CodeBuildProject, error) {
 	var response CodeBuildProjectSearchResponse
 	err := p.paginator.search(ctx, &response)
 	if err != nil {
@@ -2531,7 +2531,7 @@ func ListCodeBuildProject(ctx context.Context, d *plugin.QueryData, _ *plugin.Hy
 	plugin.Logger(ctx).Trace("ListCodeBuildProject")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -2563,7 +2563,7 @@ func GetCodeBuildProject(ctx context.Context, d *plugin.QueryData, _ *plugin.Hyd
 	plugin.Logger(ctx).Trace("GetCodeBuildProject")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -2618,7 +2618,7 @@ type CodeBuildSourceCredentialSearchResponse struct {
 }
 
 type CodeBuildSourceCredentialPaginator struct {
-	paginator baseESPaginator
+	paginator *baseESPaginator
 }
 
 func (k Client) NewCodeBuildSourceCredentialPaginator(filters []BoolFilter, limit *int64) (CodeBuildSourceCredentialPaginator, error) {
@@ -2628,7 +2628,7 @@ func (k Client) NewCodeBuildSourceCredentialPaginator(filters []BoolFilter, limi
 	}
 
 	p := CodeBuildSourceCredentialPaginator{
-		paginator: *paginator,
+		paginator: paginator,
 	}
 
 	return p, nil
@@ -2638,7 +2638,7 @@ func (p CodeBuildSourceCredentialPaginator) HasNext() bool {
 	return !p.paginator.done
 }
 
-func (p *CodeBuildSourceCredentialPaginator) NextPage(ctx context.Context) ([]CodeBuildSourceCredential, error) {
+func (p CodeBuildSourceCredentialPaginator) NextPage(ctx context.Context) ([]CodeBuildSourceCredential, error) {
 	var response CodeBuildSourceCredentialSearchResponse
 	err := p.paginator.search(ctx, &response)
 	if err != nil {
@@ -2666,7 +2666,7 @@ func ListCodeBuildSourceCredential(ctx context.Context, d *plugin.QueryData, _ *
 	plugin.Logger(ctx).Trace("ListCodeBuildSourceCredential")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -2696,7 +2696,7 @@ func GetCodeBuildSourceCredential(ctx context.Context, d *plugin.QueryData, _ *p
 	plugin.Logger(ctx).Trace("GetCodeBuildSourceCredential")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -2751,7 +2751,7 @@ type ConfigConfigurationRecorderSearchResponse struct {
 }
 
 type ConfigConfigurationRecorderPaginator struct {
-	paginator baseESPaginator
+	paginator *baseESPaginator
 }
 
 func (k Client) NewConfigConfigurationRecorderPaginator(filters []BoolFilter, limit *int64) (ConfigConfigurationRecorderPaginator, error) {
@@ -2761,7 +2761,7 @@ func (k Client) NewConfigConfigurationRecorderPaginator(filters []BoolFilter, li
 	}
 
 	p := ConfigConfigurationRecorderPaginator{
-		paginator: *paginator,
+		paginator: paginator,
 	}
 
 	return p, nil
@@ -2771,7 +2771,7 @@ func (p ConfigConfigurationRecorderPaginator) HasNext() bool {
 	return !p.paginator.done
 }
 
-func (p *ConfigConfigurationRecorderPaginator) NextPage(ctx context.Context) ([]ConfigConfigurationRecorder, error) {
+func (p ConfigConfigurationRecorderPaginator) NextPage(ctx context.Context) ([]ConfigConfigurationRecorder, error) {
 	var response ConfigConfigurationRecorderSearchResponse
 	err := p.paginator.search(ctx, &response)
 	if err != nil {
@@ -2801,7 +2801,7 @@ func ListConfigConfigurationRecorder(ctx context.Context, d *plugin.QueryData, _
 	plugin.Logger(ctx).Trace("ListConfigConfigurationRecorder")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -2833,7 +2833,7 @@ func GetConfigConfigurationRecorder(ctx context.Context, d *plugin.QueryData, _ 
 	plugin.Logger(ctx).Trace("GetConfigConfigurationRecorder")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -2888,7 +2888,7 @@ type DAXClusterSearchResponse struct {
 }
 
 type DAXClusterPaginator struct {
-	paginator baseESPaginator
+	paginator *baseESPaginator
 }
 
 func (k Client) NewDAXClusterPaginator(filters []BoolFilter, limit *int64) (DAXClusterPaginator, error) {
@@ -2898,7 +2898,7 @@ func (k Client) NewDAXClusterPaginator(filters []BoolFilter, limit *int64) (DAXC
 	}
 
 	p := DAXClusterPaginator{
-		paginator: *paginator,
+		paginator: paginator,
 	}
 
 	return p, nil
@@ -2908,7 +2908,7 @@ func (p DAXClusterPaginator) HasNext() bool {
 	return !p.paginator.done
 }
 
-func (p *DAXClusterPaginator) NextPage(ctx context.Context) ([]DAXCluster, error) {
+func (p DAXClusterPaginator) NextPage(ctx context.Context) ([]DAXCluster, error) {
 	var response DAXClusterSearchResponse
 	err := p.paginator.search(ctx, &response)
 	if err != nil {
@@ -2938,7 +2938,7 @@ func ListDAXCluster(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateD
 	plugin.Logger(ctx).Trace("ListDAXCluster")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -2970,7 +2970,7 @@ func GetDAXCluster(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateDa
 	plugin.Logger(ctx).Trace("GetDAXCluster")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -3025,7 +3025,7 @@ type DMSReplicationInstanceSearchResponse struct {
 }
 
 type DMSReplicationInstancePaginator struct {
-	paginator baseESPaginator
+	paginator *baseESPaginator
 }
 
 func (k Client) NewDMSReplicationInstancePaginator(filters []BoolFilter, limit *int64) (DMSReplicationInstancePaginator, error) {
@@ -3035,7 +3035,7 @@ func (k Client) NewDMSReplicationInstancePaginator(filters []BoolFilter, limit *
 	}
 
 	p := DMSReplicationInstancePaginator{
-		paginator: *paginator,
+		paginator: paginator,
 	}
 
 	return p, nil
@@ -3045,7 +3045,7 @@ func (p DMSReplicationInstancePaginator) HasNext() bool {
 	return !p.paginator.done
 }
 
-func (p *DMSReplicationInstancePaginator) NextPage(ctx context.Context) ([]DMSReplicationInstance, error) {
+func (p DMSReplicationInstancePaginator) NextPage(ctx context.Context) ([]DMSReplicationInstance, error) {
 	var response DMSReplicationInstanceSearchResponse
 	err := p.paginator.search(ctx, &response)
 	if err != nil {
@@ -3078,7 +3078,7 @@ func ListDMSReplicationInstance(ctx context.Context, d *plugin.QueryData, _ *plu
 	plugin.Logger(ctx).Trace("ListDMSReplicationInstance")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -3110,7 +3110,7 @@ func GetDMSReplicationInstance(ctx context.Context, d *plugin.QueryData, _ *plug
 	plugin.Logger(ctx).Trace("GetDMSReplicationInstance")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -3165,7 +3165,7 @@ type DynamoDbTableSearchResponse struct {
 }
 
 type DynamoDbTablePaginator struct {
-	paginator baseESPaginator
+	paginator *baseESPaginator
 }
 
 func (k Client) NewDynamoDbTablePaginator(filters []BoolFilter, limit *int64) (DynamoDbTablePaginator, error) {
@@ -3175,7 +3175,7 @@ func (k Client) NewDynamoDbTablePaginator(filters []BoolFilter, limit *int64) (D
 	}
 
 	p := DynamoDbTablePaginator{
-		paginator: *paginator,
+		paginator: paginator,
 	}
 
 	return p, nil
@@ -3185,7 +3185,7 @@ func (p DynamoDbTablePaginator) HasNext() bool {
 	return !p.paginator.done
 }
 
-func (p *DynamoDbTablePaginator) NextPage(ctx context.Context) ([]DynamoDbTable, error) {
+func (p DynamoDbTablePaginator) NextPage(ctx context.Context) ([]DynamoDbTable, error) {
 	var response DynamoDbTableSearchResponse
 	err := p.paginator.search(ctx, &response)
 	if err != nil {
@@ -3215,7 +3215,7 @@ func ListDynamoDbTable(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydra
 	plugin.Logger(ctx).Trace("ListDynamoDbTable")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -3247,7 +3247,7 @@ func GetDynamoDbTable(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydrat
 	plugin.Logger(ctx).Trace("GetDynamoDbTable")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -3302,7 +3302,7 @@ type EC2VolumeSnapshotSearchResponse struct {
 }
 
 type EC2VolumeSnapshotPaginator struct {
-	paginator baseESPaginator
+	paginator *baseESPaginator
 }
 
 func (k Client) NewEC2VolumeSnapshotPaginator(filters []BoolFilter, limit *int64) (EC2VolumeSnapshotPaginator, error) {
@@ -3312,7 +3312,7 @@ func (k Client) NewEC2VolumeSnapshotPaginator(filters []BoolFilter, limit *int64
 	}
 
 	p := EC2VolumeSnapshotPaginator{
-		paginator: *paginator,
+		paginator: paginator,
 	}
 
 	return p, nil
@@ -3322,7 +3322,7 @@ func (p EC2VolumeSnapshotPaginator) HasNext() bool {
 	return !p.paginator.done
 }
 
-func (p *EC2VolumeSnapshotPaginator) NextPage(ctx context.Context) ([]EC2VolumeSnapshot, error) {
+func (p EC2VolumeSnapshotPaginator) NextPage(ctx context.Context) ([]EC2VolumeSnapshot, error) {
 	var response EC2VolumeSnapshotSearchResponse
 	err := p.paginator.search(ctx, &response)
 	if err != nil {
@@ -3360,7 +3360,7 @@ func ListEC2VolumeSnapshot(ctx context.Context, d *plugin.QueryData, _ *plugin.H
 	plugin.Logger(ctx).Trace("ListEC2VolumeSnapshot")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -3392,7 +3392,7 @@ func GetEC2VolumeSnapshot(ctx context.Context, d *plugin.QueryData, _ *plugin.Hy
 	plugin.Logger(ctx).Trace("GetEC2VolumeSnapshot")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -3447,7 +3447,7 @@ type EC2VolumeSearchResponse struct {
 }
 
 type EC2VolumePaginator struct {
-	paginator baseESPaginator
+	paginator *baseESPaginator
 }
 
 func (k Client) NewEC2VolumePaginator(filters []BoolFilter, limit *int64) (EC2VolumePaginator, error) {
@@ -3457,7 +3457,7 @@ func (k Client) NewEC2VolumePaginator(filters []BoolFilter, limit *int64) (EC2Vo
 	}
 
 	p := EC2VolumePaginator{
-		paginator: *paginator,
+		paginator: paginator,
 	}
 
 	return p, nil
@@ -3467,7 +3467,7 @@ func (p EC2VolumePaginator) HasNext() bool {
 	return !p.paginator.done
 }
 
-func (p *EC2VolumePaginator) NextPage(ctx context.Context) ([]EC2Volume, error) {
+func (p EC2VolumePaginator) NextPage(ctx context.Context) ([]EC2Volume, error) {
 	var response EC2VolumeSearchResponse
 	err := p.paginator.search(ctx, &response)
 	if err != nil {
@@ -3495,7 +3495,7 @@ func ListEC2Volume(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateDa
 	plugin.Logger(ctx).Trace("ListEC2Volume")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -3527,7 +3527,7 @@ func GetEC2Volume(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateDat
 	plugin.Logger(ctx).Trace("GetEC2Volume")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -3582,7 +3582,7 @@ type EC2InstanceSearchResponse struct {
 }
 
 type EC2InstancePaginator struct {
-	paginator baseESPaginator
+	paginator *baseESPaginator
 }
 
 func (k Client) NewEC2InstancePaginator(filters []BoolFilter, limit *int64) (EC2InstancePaginator, error) {
@@ -3592,7 +3592,7 @@ func (k Client) NewEC2InstancePaginator(filters []BoolFilter, limit *int64) (EC2
 	}
 
 	p := EC2InstancePaginator{
-		paginator: *paginator,
+		paginator: paginator,
 	}
 
 	return p, nil
@@ -3602,7 +3602,7 @@ func (p EC2InstancePaginator) HasNext() bool {
 	return !p.paginator.done
 }
 
-func (p *EC2InstancePaginator) NextPage(ctx context.Context) ([]EC2Instance, error) {
+func (p EC2InstancePaginator) NextPage(ctx context.Context) ([]EC2Instance, error) {
 	var response EC2InstanceSearchResponse
 	err := p.paginator.search(ctx, &response)
 	if err != nil {
@@ -3649,7 +3649,7 @@ func ListEC2Instance(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydrate
 	plugin.Logger(ctx).Trace("ListEC2Instance")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -3681,7 +3681,7 @@ func GetEC2Instance(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateD
 	plugin.Logger(ctx).Trace("GetEC2Instance")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -3736,7 +3736,7 @@ type EC2VpcSearchResponse struct {
 }
 
 type EC2VpcPaginator struct {
-	paginator baseESPaginator
+	paginator *baseESPaginator
 }
 
 func (k Client) NewEC2VpcPaginator(filters []BoolFilter, limit *int64) (EC2VpcPaginator, error) {
@@ -3746,7 +3746,7 @@ func (k Client) NewEC2VpcPaginator(filters []BoolFilter, limit *int64) (EC2VpcPa
 	}
 
 	p := EC2VpcPaginator{
-		paginator: *paginator,
+		paginator: paginator,
 	}
 
 	return p, nil
@@ -3756,7 +3756,7 @@ func (p EC2VpcPaginator) HasNext() bool {
 	return !p.paginator.done
 }
 
-func (p *EC2VpcPaginator) NextPage(ctx context.Context) ([]EC2Vpc, error) {
+func (p EC2VpcPaginator) NextPage(ctx context.Context) ([]EC2Vpc, error) {
 	var response EC2VpcSearchResponse
 	err := p.paginator.search(ctx, &response)
 	if err != nil {
@@ -3784,7 +3784,7 @@ func ListEC2Vpc(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData)
 	plugin.Logger(ctx).Trace("ListEC2Vpc")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -3816,7 +3816,7 @@ func GetEC2Vpc(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) 
 	plugin.Logger(ctx).Trace("GetEC2Vpc")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -3871,7 +3871,7 @@ type EC2NetworkInterfaceSearchResponse struct {
 }
 
 type EC2NetworkInterfacePaginator struct {
-	paginator baseESPaginator
+	paginator *baseESPaginator
 }
 
 func (k Client) NewEC2NetworkInterfacePaginator(filters []BoolFilter, limit *int64) (EC2NetworkInterfacePaginator, error) {
@@ -3881,7 +3881,7 @@ func (k Client) NewEC2NetworkInterfacePaginator(filters []BoolFilter, limit *int
 	}
 
 	p := EC2NetworkInterfacePaginator{
-		paginator: *paginator,
+		paginator: paginator,
 	}
 
 	return p, nil
@@ -3891,7 +3891,7 @@ func (p EC2NetworkInterfacePaginator) HasNext() bool {
 	return !p.paginator.done
 }
 
-func (p *EC2NetworkInterfacePaginator) NextPage(ctx context.Context) ([]EC2NetworkInterface, error) {
+func (p EC2NetworkInterfacePaginator) NextPage(ctx context.Context) ([]EC2NetworkInterface, error) {
 	var response EC2NetworkInterfaceSearchResponse
 	err := p.paginator.search(ctx, &response)
 	if err != nil {
@@ -3919,7 +3919,7 @@ func ListEC2NetworkInterface(ctx context.Context, d *plugin.QueryData, _ *plugin
 	plugin.Logger(ctx).Trace("ListEC2NetworkInterface")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -3951,7 +3951,7 @@ func GetEC2NetworkInterface(ctx context.Context, d *plugin.QueryData, _ *plugin.
 	plugin.Logger(ctx).Trace("GetEC2NetworkInterface")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -4006,7 +4006,7 @@ type EC2RegionalSettingsSearchResponse struct {
 }
 
 type EC2RegionalSettingsPaginator struct {
-	paginator baseESPaginator
+	paginator *baseESPaginator
 }
 
 func (k Client) NewEC2RegionalSettingsPaginator(filters []BoolFilter, limit *int64) (EC2RegionalSettingsPaginator, error) {
@@ -4016,7 +4016,7 @@ func (k Client) NewEC2RegionalSettingsPaginator(filters []BoolFilter, limit *int
 	}
 
 	p := EC2RegionalSettingsPaginator{
-		paginator: *paginator,
+		paginator: paginator,
 	}
 
 	return p, nil
@@ -4026,7 +4026,7 @@ func (p EC2RegionalSettingsPaginator) HasNext() bool {
 	return !p.paginator.done
 }
 
-func (p *EC2RegionalSettingsPaginator) NextPage(ctx context.Context) ([]EC2RegionalSettings, error) {
+func (p EC2RegionalSettingsPaginator) NextPage(ctx context.Context) ([]EC2RegionalSettings, error) {
 	var response EC2RegionalSettingsSearchResponse
 	err := p.paginator.search(ctx, &response)
 	if err != nil {
@@ -4054,7 +4054,7 @@ func ListEC2RegionalSettings(ctx context.Context, d *plugin.QueryData, _ *plugin
 	plugin.Logger(ctx).Trace("ListEC2RegionalSettings")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -4084,7 +4084,7 @@ func GetEC2RegionalSettings(ctx context.Context, d *plugin.QueryData, _ *plugin.
 	plugin.Logger(ctx).Trace("GetEC2RegionalSettings")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -4139,7 +4139,7 @@ type EC2SubnetSearchResponse struct {
 }
 
 type EC2SubnetPaginator struct {
-	paginator baseESPaginator
+	paginator *baseESPaginator
 }
 
 func (k Client) NewEC2SubnetPaginator(filters []BoolFilter, limit *int64) (EC2SubnetPaginator, error) {
@@ -4149,7 +4149,7 @@ func (k Client) NewEC2SubnetPaginator(filters []BoolFilter, limit *int64) (EC2Su
 	}
 
 	p := EC2SubnetPaginator{
-		paginator: *paginator,
+		paginator: paginator,
 	}
 
 	return p, nil
@@ -4159,7 +4159,7 @@ func (p EC2SubnetPaginator) HasNext() bool {
 	return !p.paginator.done
 }
 
-func (p *EC2SubnetPaginator) NextPage(ctx context.Context) ([]EC2Subnet, error) {
+func (p EC2SubnetPaginator) NextPage(ctx context.Context) ([]EC2Subnet, error) {
 	var response EC2SubnetSearchResponse
 	err := p.paginator.search(ctx, &response)
 	if err != nil {
@@ -4187,7 +4187,7 @@ func ListEC2Subnet(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateDa
 	plugin.Logger(ctx).Trace("ListEC2Subnet")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -4219,7 +4219,7 @@ func GetEC2Subnet(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateDat
 	plugin.Logger(ctx).Trace("GetEC2Subnet")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -4274,7 +4274,7 @@ type EC2VPCEndpointSearchResponse struct {
 }
 
 type EC2VPCEndpointPaginator struct {
-	paginator baseESPaginator
+	paginator *baseESPaginator
 }
 
 func (k Client) NewEC2VPCEndpointPaginator(filters []BoolFilter, limit *int64) (EC2VPCEndpointPaginator, error) {
@@ -4284,7 +4284,7 @@ func (k Client) NewEC2VPCEndpointPaginator(filters []BoolFilter, limit *int64) (
 	}
 
 	p := EC2VPCEndpointPaginator{
-		paginator: *paginator,
+		paginator: paginator,
 	}
 
 	return p, nil
@@ -4294,7 +4294,7 @@ func (p EC2VPCEndpointPaginator) HasNext() bool {
 	return !p.paginator.done
 }
 
-func (p *EC2VPCEndpointPaginator) NextPage(ctx context.Context) ([]EC2VPCEndpoint, error) {
+func (p EC2VPCEndpointPaginator) NextPage(ctx context.Context) ([]EC2VPCEndpoint, error) {
 	var response EC2VPCEndpointSearchResponse
 	err := p.paginator.search(ctx, &response)
 	if err != nil {
@@ -4322,7 +4322,7 @@ func ListEC2VPCEndpoint(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydr
 	plugin.Logger(ctx).Trace("ListEC2VPCEndpoint")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -4354,7 +4354,7 @@ func GetEC2VPCEndpoint(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydra
 	plugin.Logger(ctx).Trace("GetEC2VPCEndpoint")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -4409,7 +4409,7 @@ type EC2SecurityGroupSearchResponse struct {
 }
 
 type EC2SecurityGroupPaginator struct {
-	paginator baseESPaginator
+	paginator *baseESPaginator
 }
 
 func (k Client) NewEC2SecurityGroupPaginator(filters []BoolFilter, limit *int64) (EC2SecurityGroupPaginator, error) {
@@ -4419,7 +4419,7 @@ func (k Client) NewEC2SecurityGroupPaginator(filters []BoolFilter, limit *int64)
 	}
 
 	p := EC2SecurityGroupPaginator{
-		paginator: *paginator,
+		paginator: paginator,
 	}
 
 	return p, nil
@@ -4429,7 +4429,7 @@ func (p EC2SecurityGroupPaginator) HasNext() bool {
 	return !p.paginator.done
 }
 
-func (p *EC2SecurityGroupPaginator) NextPage(ctx context.Context) ([]EC2SecurityGroup, error) {
+func (p EC2SecurityGroupPaginator) NextPage(ctx context.Context) ([]EC2SecurityGroup, error) {
 	var response EC2SecurityGroupSearchResponse
 	err := p.paginator.search(ctx, &response)
 	if err != nil {
@@ -4457,7 +4457,7 @@ func ListEC2SecurityGroup(ctx context.Context, d *plugin.QueryData, _ *plugin.Hy
 	plugin.Logger(ctx).Trace("ListEC2SecurityGroup")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -4489,7 +4489,7 @@ func GetEC2SecurityGroup(ctx context.Context, d *plugin.QueryData, _ *plugin.Hyd
 	plugin.Logger(ctx).Trace("GetEC2SecurityGroup")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -4544,7 +4544,7 @@ type EC2EIPSearchResponse struct {
 }
 
 type EC2EIPPaginator struct {
-	paginator baseESPaginator
+	paginator *baseESPaginator
 }
 
 func (k Client) NewEC2EIPPaginator(filters []BoolFilter, limit *int64) (EC2EIPPaginator, error) {
@@ -4554,7 +4554,7 @@ func (k Client) NewEC2EIPPaginator(filters []BoolFilter, limit *int64) (EC2EIPPa
 	}
 
 	p := EC2EIPPaginator{
-		paginator: *paginator,
+		paginator: paginator,
 	}
 
 	return p, nil
@@ -4564,7 +4564,7 @@ func (p EC2EIPPaginator) HasNext() bool {
 	return !p.paginator.done
 }
 
-func (p *EC2EIPPaginator) NextPage(ctx context.Context) ([]EC2EIP, error) {
+func (p EC2EIPPaginator) NextPage(ctx context.Context) ([]EC2EIP, error) {
 	var response EC2EIPSearchResponse
 	err := p.paginator.search(ctx, &response)
 	if err != nil {
@@ -4592,7 +4592,7 @@ func ListEC2EIP(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData)
 	plugin.Logger(ctx).Trace("ListEC2EIP")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -4624,7 +4624,7 @@ func GetEC2EIP(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) 
 	plugin.Logger(ctx).Trace("GetEC2EIP")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -4679,7 +4679,7 @@ type EC2InternetGatewaySearchResponse struct {
 }
 
 type EC2InternetGatewayPaginator struct {
-	paginator baseESPaginator
+	paginator *baseESPaginator
 }
 
 func (k Client) NewEC2InternetGatewayPaginator(filters []BoolFilter, limit *int64) (EC2InternetGatewayPaginator, error) {
@@ -4689,7 +4689,7 @@ func (k Client) NewEC2InternetGatewayPaginator(filters []BoolFilter, limit *int6
 	}
 
 	p := EC2InternetGatewayPaginator{
-		paginator: *paginator,
+		paginator: paginator,
 	}
 
 	return p, nil
@@ -4699,7 +4699,7 @@ func (p EC2InternetGatewayPaginator) HasNext() bool {
 	return !p.paginator.done
 }
 
-func (p *EC2InternetGatewayPaginator) NextPage(ctx context.Context) ([]EC2InternetGateway, error) {
+func (p EC2InternetGatewayPaginator) NextPage(ctx context.Context) ([]EC2InternetGateway, error) {
 	var response EC2InternetGatewaySearchResponse
 	err := p.paginator.search(ctx, &response)
 	if err != nil {
@@ -4727,7 +4727,7 @@ func ListEC2InternetGateway(ctx context.Context, d *plugin.QueryData, _ *plugin.
 	plugin.Logger(ctx).Trace("ListEC2InternetGateway")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -4759,7 +4759,7 @@ func GetEC2InternetGateway(ctx context.Context, d *plugin.QueryData, _ *plugin.H
 	plugin.Logger(ctx).Trace("GetEC2InternetGateway")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -4814,7 +4814,7 @@ type EC2NetworkAclSearchResponse struct {
 }
 
 type EC2NetworkAclPaginator struct {
-	paginator baseESPaginator
+	paginator *baseESPaginator
 }
 
 func (k Client) NewEC2NetworkAclPaginator(filters []BoolFilter, limit *int64) (EC2NetworkAclPaginator, error) {
@@ -4824,7 +4824,7 @@ func (k Client) NewEC2NetworkAclPaginator(filters []BoolFilter, limit *int64) (E
 	}
 
 	p := EC2NetworkAclPaginator{
-		paginator: *paginator,
+		paginator: paginator,
 	}
 
 	return p, nil
@@ -4834,7 +4834,7 @@ func (p EC2NetworkAclPaginator) HasNext() bool {
 	return !p.paginator.done
 }
 
-func (p *EC2NetworkAclPaginator) NextPage(ctx context.Context) ([]EC2NetworkAcl, error) {
+func (p EC2NetworkAclPaginator) NextPage(ctx context.Context) ([]EC2NetworkAcl, error) {
 	var response EC2NetworkAclSearchResponse
 	err := p.paginator.search(ctx, &response)
 	if err != nil {
@@ -4862,7 +4862,7 @@ func ListEC2NetworkAcl(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydra
 	plugin.Logger(ctx).Trace("ListEC2NetworkAcl")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -4894,7 +4894,7 @@ func GetEC2NetworkAcl(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydrat
 	plugin.Logger(ctx).Trace("GetEC2NetworkAcl")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -4949,7 +4949,7 @@ type EC2VPNConnectionSearchResponse struct {
 }
 
 type EC2VPNConnectionPaginator struct {
-	paginator baseESPaginator
+	paginator *baseESPaginator
 }
 
 func (k Client) NewEC2VPNConnectionPaginator(filters []BoolFilter, limit *int64) (EC2VPNConnectionPaginator, error) {
@@ -4959,7 +4959,7 @@ func (k Client) NewEC2VPNConnectionPaginator(filters []BoolFilter, limit *int64)
 	}
 
 	p := EC2VPNConnectionPaginator{
-		paginator: *paginator,
+		paginator: paginator,
 	}
 
 	return p, nil
@@ -4969,7 +4969,7 @@ func (p EC2VPNConnectionPaginator) HasNext() bool {
 	return !p.paginator.done
 }
 
-func (p *EC2VPNConnectionPaginator) NextPage(ctx context.Context) ([]EC2VPNConnection, error) {
+func (p EC2VPNConnectionPaginator) NextPage(ctx context.Context) ([]EC2VPNConnection, error) {
 	var response EC2VPNConnectionSearchResponse
 	err := p.paginator.search(ctx, &response)
 	if err != nil {
@@ -4997,7 +4997,7 @@ func ListEC2VPNConnection(ctx context.Context, d *plugin.QueryData, _ *plugin.Hy
 	plugin.Logger(ctx).Trace("ListEC2VPNConnection")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -5029,7 +5029,7 @@ func GetEC2VPNConnection(ctx context.Context, d *plugin.QueryData, _ *plugin.Hyd
 	plugin.Logger(ctx).Trace("GetEC2VPNConnection")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -5084,7 +5084,7 @@ type EC2RouteTableSearchResponse struct {
 }
 
 type EC2RouteTablePaginator struct {
-	paginator baseESPaginator
+	paginator *baseESPaginator
 }
 
 func (k Client) NewEC2RouteTablePaginator(filters []BoolFilter, limit *int64) (EC2RouteTablePaginator, error) {
@@ -5094,7 +5094,7 @@ func (k Client) NewEC2RouteTablePaginator(filters []BoolFilter, limit *int64) (E
 	}
 
 	p := EC2RouteTablePaginator{
-		paginator: *paginator,
+		paginator: paginator,
 	}
 
 	return p, nil
@@ -5104,7 +5104,7 @@ func (p EC2RouteTablePaginator) HasNext() bool {
 	return !p.paginator.done
 }
 
-func (p *EC2RouteTablePaginator) NextPage(ctx context.Context) ([]EC2RouteTable, error) {
+func (p EC2RouteTablePaginator) NextPage(ctx context.Context) ([]EC2RouteTable, error) {
 	var response EC2RouteTableSearchResponse
 	err := p.paginator.search(ctx, &response)
 	if err != nil {
@@ -5132,7 +5132,7 @@ func ListEC2RouteTable(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydra
 	plugin.Logger(ctx).Trace("ListEC2RouteTable")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -5164,7 +5164,7 @@ func GetEC2RouteTable(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydrat
 	plugin.Logger(ctx).Trace("GetEC2RouteTable")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -5219,7 +5219,7 @@ type EC2NatGatewaySearchResponse struct {
 }
 
 type EC2NatGatewayPaginator struct {
-	paginator baseESPaginator
+	paginator *baseESPaginator
 }
 
 func (k Client) NewEC2NatGatewayPaginator(filters []BoolFilter, limit *int64) (EC2NatGatewayPaginator, error) {
@@ -5229,7 +5229,7 @@ func (k Client) NewEC2NatGatewayPaginator(filters []BoolFilter, limit *int64) (E
 	}
 
 	p := EC2NatGatewayPaginator{
-		paginator: *paginator,
+		paginator: paginator,
 	}
 
 	return p, nil
@@ -5239,7 +5239,7 @@ func (p EC2NatGatewayPaginator) HasNext() bool {
 	return !p.paginator.done
 }
 
-func (p *EC2NatGatewayPaginator) NextPage(ctx context.Context) ([]EC2NatGateway, error) {
+func (p EC2NatGatewayPaginator) NextPage(ctx context.Context) ([]EC2NatGateway, error) {
 	var response EC2NatGatewaySearchResponse
 	err := p.paginator.search(ctx, &response)
 	if err != nil {
@@ -5267,7 +5267,7 @@ func ListEC2NatGateway(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydra
 	plugin.Logger(ctx).Trace("ListEC2NatGateway")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -5299,7 +5299,7 @@ func GetEC2NatGateway(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydrat
 	plugin.Logger(ctx).Trace("GetEC2NatGateway")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -5354,7 +5354,7 @@ type EC2RegionSearchResponse struct {
 }
 
 type EC2RegionPaginator struct {
-	paginator baseESPaginator
+	paginator *baseESPaginator
 }
 
 func (k Client) NewEC2RegionPaginator(filters []BoolFilter, limit *int64) (EC2RegionPaginator, error) {
@@ -5364,7 +5364,7 @@ func (k Client) NewEC2RegionPaginator(filters []BoolFilter, limit *int64) (EC2Re
 	}
 
 	p := EC2RegionPaginator{
-		paginator: *paginator,
+		paginator: paginator,
 	}
 
 	return p, nil
@@ -5374,7 +5374,7 @@ func (p EC2RegionPaginator) HasNext() bool {
 	return !p.paginator.done
 }
 
-func (p *EC2RegionPaginator) NextPage(ctx context.Context) ([]EC2Region, error) {
+func (p EC2RegionPaginator) NextPage(ctx context.Context) ([]EC2Region, error) {
 	var response EC2RegionSearchResponse
 	err := p.paginator.search(ctx, &response)
 	if err != nil {
@@ -5402,7 +5402,7 @@ func ListEC2Region(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateDa
 	plugin.Logger(ctx).Trace("ListEC2Region")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -5434,7 +5434,7 @@ func GetEC2Region(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateDat
 	plugin.Logger(ctx).Trace("GetEC2Region")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -5489,7 +5489,7 @@ type EC2FlowLogSearchResponse struct {
 }
 
 type EC2FlowLogPaginator struct {
-	paginator baseESPaginator
+	paginator *baseESPaginator
 }
 
 func (k Client) NewEC2FlowLogPaginator(filters []BoolFilter, limit *int64) (EC2FlowLogPaginator, error) {
@@ -5499,7 +5499,7 @@ func (k Client) NewEC2FlowLogPaginator(filters []BoolFilter, limit *int64) (EC2F
 	}
 
 	p := EC2FlowLogPaginator{
-		paginator: *paginator,
+		paginator: paginator,
 	}
 
 	return p, nil
@@ -5509,7 +5509,7 @@ func (p EC2FlowLogPaginator) HasNext() bool {
 	return !p.paginator.done
 }
 
-func (p *EC2FlowLogPaginator) NextPage(ctx context.Context) ([]EC2FlowLog, error) {
+func (p EC2FlowLogPaginator) NextPage(ctx context.Context) ([]EC2FlowLog, error) {
 	var response EC2FlowLogSearchResponse
 	err := p.paginator.search(ctx, &response)
 	if err != nil {
@@ -5537,7 +5537,7 @@ func ListEC2FlowLog(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateD
 	plugin.Logger(ctx).Trace("ListEC2FlowLog")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -5569,7 +5569,7 @@ func GetEC2FlowLog(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateDa
 	plugin.Logger(ctx).Trace("GetEC2FlowLog")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -5624,7 +5624,7 @@ type ElasticLoadBalancingV2LoadBalancerSearchResponse struct {
 }
 
 type ElasticLoadBalancingV2LoadBalancerPaginator struct {
-	paginator baseESPaginator
+	paginator *baseESPaginator
 }
 
 func (k Client) NewElasticLoadBalancingV2LoadBalancerPaginator(filters []BoolFilter, limit *int64) (ElasticLoadBalancingV2LoadBalancerPaginator, error) {
@@ -5634,7 +5634,7 @@ func (k Client) NewElasticLoadBalancingV2LoadBalancerPaginator(filters []BoolFil
 	}
 
 	p := ElasticLoadBalancingV2LoadBalancerPaginator{
-		paginator: *paginator,
+		paginator: paginator,
 	}
 
 	return p, nil
@@ -5644,7 +5644,7 @@ func (p ElasticLoadBalancingV2LoadBalancerPaginator) HasNext() bool {
 	return !p.paginator.done
 }
 
-func (p *ElasticLoadBalancingV2LoadBalancerPaginator) NextPage(ctx context.Context) ([]ElasticLoadBalancingV2LoadBalancer, error) {
+func (p ElasticLoadBalancingV2LoadBalancerPaginator) NextPage(ctx context.Context) ([]ElasticLoadBalancingV2LoadBalancer, error) {
 	var response ElasticLoadBalancingV2LoadBalancerSearchResponse
 	err := p.paginator.search(ctx, &response)
 	if err != nil {
@@ -5674,7 +5674,7 @@ func ListElasticLoadBalancingV2LoadBalancer(ctx context.Context, d *plugin.Query
 	plugin.Logger(ctx).Trace("ListElasticLoadBalancingV2LoadBalancer")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -5707,7 +5707,7 @@ func GetElasticLoadBalancingV2LoadBalancer(ctx context.Context, d *plugin.QueryD
 	plugin.Logger(ctx).Trace("GetElasticLoadBalancingV2LoadBalancer")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -5762,7 +5762,7 @@ type ElasticLoadBalancingLoadBalancerSearchResponse struct {
 }
 
 type ElasticLoadBalancingLoadBalancerPaginator struct {
-	paginator baseESPaginator
+	paginator *baseESPaginator
 }
 
 func (k Client) NewElasticLoadBalancingLoadBalancerPaginator(filters []BoolFilter, limit *int64) (ElasticLoadBalancingLoadBalancerPaginator, error) {
@@ -5772,7 +5772,7 @@ func (k Client) NewElasticLoadBalancingLoadBalancerPaginator(filters []BoolFilte
 	}
 
 	p := ElasticLoadBalancingLoadBalancerPaginator{
-		paginator: *paginator,
+		paginator: paginator,
 	}
 
 	return p, nil
@@ -5782,7 +5782,7 @@ func (p ElasticLoadBalancingLoadBalancerPaginator) HasNext() bool {
 	return !p.paginator.done
 }
 
-func (p *ElasticLoadBalancingLoadBalancerPaginator) NextPage(ctx context.Context) ([]ElasticLoadBalancingLoadBalancer, error) {
+func (p ElasticLoadBalancingLoadBalancerPaginator) NextPage(ctx context.Context) ([]ElasticLoadBalancingLoadBalancer, error) {
 	var response ElasticLoadBalancingLoadBalancerSearchResponse
 	err := p.paginator.search(ctx, &response)
 	if err != nil {
@@ -5810,7 +5810,7 @@ func ListElasticLoadBalancingLoadBalancer(ctx context.Context, d *plugin.QueryDa
 	plugin.Logger(ctx).Trace("ListElasticLoadBalancingLoadBalancer")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -5842,7 +5842,7 @@ func GetElasticLoadBalancingLoadBalancer(ctx context.Context, d *plugin.QueryDat
 	plugin.Logger(ctx).Trace("GetElasticLoadBalancingLoadBalancer")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -5897,7 +5897,7 @@ type ElasticLoadBalancingV2ListenerSearchResponse struct {
 }
 
 type ElasticLoadBalancingV2ListenerPaginator struct {
-	paginator baseESPaginator
+	paginator *baseESPaginator
 }
 
 func (k Client) NewElasticLoadBalancingV2ListenerPaginator(filters []BoolFilter, limit *int64) (ElasticLoadBalancingV2ListenerPaginator, error) {
@@ -5907,7 +5907,7 @@ func (k Client) NewElasticLoadBalancingV2ListenerPaginator(filters []BoolFilter,
 	}
 
 	p := ElasticLoadBalancingV2ListenerPaginator{
-		paginator: *paginator,
+		paginator: paginator,
 	}
 
 	return p, nil
@@ -5917,7 +5917,7 @@ func (p ElasticLoadBalancingV2ListenerPaginator) HasNext() bool {
 	return !p.paginator.done
 }
 
-func (p *ElasticLoadBalancingV2ListenerPaginator) NextPage(ctx context.Context) ([]ElasticLoadBalancingV2Listener, error) {
+func (p ElasticLoadBalancingV2ListenerPaginator) NextPage(ctx context.Context) ([]ElasticLoadBalancingV2Listener, error) {
 	var response ElasticLoadBalancingV2ListenerSearchResponse
 	err := p.paginator.search(ctx, &response)
 	if err != nil {
@@ -5945,7 +5945,7 @@ func ListElasticLoadBalancingV2Listener(ctx context.Context, d *plugin.QueryData
 	plugin.Logger(ctx).Trace("ListElasticLoadBalancingV2Listener")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -5977,7 +5977,7 @@ func GetElasticLoadBalancingV2Listener(ctx context.Context, d *plugin.QueryData,
 	plugin.Logger(ctx).Trace("GetElasticLoadBalancingV2Listener")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -6032,7 +6032,7 @@ type FSXFileSystemSearchResponse struct {
 }
 
 type FSXFileSystemPaginator struct {
-	paginator baseESPaginator
+	paginator *baseESPaginator
 }
 
 func (k Client) NewFSXFileSystemPaginator(filters []BoolFilter, limit *int64) (FSXFileSystemPaginator, error) {
@@ -6042,7 +6042,7 @@ func (k Client) NewFSXFileSystemPaginator(filters []BoolFilter, limit *int64) (F
 	}
 
 	p := FSXFileSystemPaginator{
-		paginator: *paginator,
+		paginator: paginator,
 	}
 
 	return p, nil
@@ -6052,7 +6052,7 @@ func (p FSXFileSystemPaginator) HasNext() bool {
 	return !p.paginator.done
 }
 
-func (p *FSXFileSystemPaginator) NextPage(ctx context.Context) ([]FSXFileSystem, error) {
+func (p FSXFileSystemPaginator) NextPage(ctx context.Context) ([]FSXFileSystem, error) {
 	var response FSXFileSystemSearchResponse
 	err := p.paginator.search(ctx, &response)
 	if err != nil {
@@ -6080,7 +6080,7 @@ func ListFSXFileSystem(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydra
 	plugin.Logger(ctx).Trace("ListFSXFileSystem")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -6112,7 +6112,7 @@ func GetFSXFileSystem(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydrat
 	plugin.Logger(ctx).Trace("GetFSXFileSystem")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -6167,7 +6167,7 @@ type ApplicationAutoScalingTargetSearchResponse struct {
 }
 
 type ApplicationAutoScalingTargetPaginator struct {
-	paginator baseESPaginator
+	paginator *baseESPaginator
 }
 
 func (k Client) NewApplicationAutoScalingTargetPaginator(filters []BoolFilter, limit *int64) (ApplicationAutoScalingTargetPaginator, error) {
@@ -6177,7 +6177,7 @@ func (k Client) NewApplicationAutoScalingTargetPaginator(filters []BoolFilter, l
 	}
 
 	p := ApplicationAutoScalingTargetPaginator{
-		paginator: *paginator,
+		paginator: paginator,
 	}
 
 	return p, nil
@@ -6187,7 +6187,7 @@ func (p ApplicationAutoScalingTargetPaginator) HasNext() bool {
 	return !p.paginator.done
 }
 
-func (p *ApplicationAutoScalingTargetPaginator) NextPage(ctx context.Context) ([]ApplicationAutoScalingTarget, error) {
+func (p ApplicationAutoScalingTargetPaginator) NextPage(ctx context.Context) ([]ApplicationAutoScalingTarget, error) {
 	var response ApplicationAutoScalingTargetSearchResponse
 	err := p.paginator.search(ctx, &response)
 	if err != nil {
@@ -6219,7 +6219,7 @@ func ListApplicationAutoScalingTarget(ctx context.Context, d *plugin.QueryData, 
 	plugin.Logger(ctx).Trace("ListApplicationAutoScalingTarget")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -6252,7 +6252,7 @@ func GetApplicationAutoScalingTarget(ctx context.Context, d *plugin.QueryData, _
 	plugin.Logger(ctx).Trace("GetApplicationAutoScalingTarget")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -6307,7 +6307,7 @@ type AutoScalingGroupSearchResponse struct {
 }
 
 type AutoScalingGroupPaginator struct {
-	paginator baseESPaginator
+	paginator *baseESPaginator
 }
 
 func (k Client) NewAutoScalingGroupPaginator(filters []BoolFilter, limit *int64) (AutoScalingGroupPaginator, error) {
@@ -6317,7 +6317,7 @@ func (k Client) NewAutoScalingGroupPaginator(filters []BoolFilter, limit *int64)
 	}
 
 	p := AutoScalingGroupPaginator{
-		paginator: *paginator,
+		paginator: paginator,
 	}
 
 	return p, nil
@@ -6327,7 +6327,7 @@ func (p AutoScalingGroupPaginator) HasNext() bool {
 	return !p.paginator.done
 }
 
-func (p *AutoScalingGroupPaginator) NextPage(ctx context.Context) ([]AutoScalingGroup, error) {
+func (p AutoScalingGroupPaginator) NextPage(ctx context.Context) ([]AutoScalingGroup, error) {
 	var response AutoScalingGroupSearchResponse
 	err := p.paginator.search(ctx, &response)
 	if err != nil {
@@ -6355,7 +6355,7 @@ func ListAutoScalingGroup(ctx context.Context, d *plugin.QueryData, _ *plugin.Hy
 	plugin.Logger(ctx).Trace("ListAutoScalingGroup")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -6387,7 +6387,7 @@ func GetAutoScalingGroup(ctx context.Context, d *plugin.QueryData, _ *plugin.Hyd
 	plugin.Logger(ctx).Trace("GetAutoScalingGroup")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -6442,7 +6442,7 @@ type AutoScalingLaunchConfigurationSearchResponse struct {
 }
 
 type AutoScalingLaunchConfigurationPaginator struct {
-	paginator baseESPaginator
+	paginator *baseESPaginator
 }
 
 func (k Client) NewAutoScalingLaunchConfigurationPaginator(filters []BoolFilter, limit *int64) (AutoScalingLaunchConfigurationPaginator, error) {
@@ -6452,7 +6452,7 @@ func (k Client) NewAutoScalingLaunchConfigurationPaginator(filters []BoolFilter,
 	}
 
 	p := AutoScalingLaunchConfigurationPaginator{
-		paginator: *paginator,
+		paginator: paginator,
 	}
 
 	return p, nil
@@ -6462,7 +6462,7 @@ func (p AutoScalingLaunchConfigurationPaginator) HasNext() bool {
 	return !p.paginator.done
 }
 
-func (p *AutoScalingLaunchConfigurationPaginator) NextPage(ctx context.Context) ([]AutoScalingLaunchConfiguration, error) {
+func (p AutoScalingLaunchConfigurationPaginator) NextPage(ctx context.Context) ([]AutoScalingLaunchConfiguration, error) {
 	var response AutoScalingLaunchConfigurationSearchResponse
 	err := p.paginator.search(ctx, &response)
 	if err != nil {
@@ -6490,7 +6490,7 @@ func ListAutoScalingLaunchConfiguration(ctx context.Context, d *plugin.QueryData
 	plugin.Logger(ctx).Trace("ListAutoScalingLaunchConfiguration")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -6522,7 +6522,7 @@ func GetAutoScalingLaunchConfiguration(ctx context.Context, d *plugin.QueryData,
 	plugin.Logger(ctx).Trace("GetAutoScalingLaunchConfiguration")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -6577,7 +6577,7 @@ type CertificateManagerCertificateSearchResponse struct {
 }
 
 type CertificateManagerCertificatePaginator struct {
-	paginator baseESPaginator
+	paginator *baseESPaginator
 }
 
 func (k Client) NewCertificateManagerCertificatePaginator(filters []BoolFilter, limit *int64) (CertificateManagerCertificatePaginator, error) {
@@ -6587,7 +6587,7 @@ func (k Client) NewCertificateManagerCertificatePaginator(filters []BoolFilter, 
 	}
 
 	p := CertificateManagerCertificatePaginator{
-		paginator: *paginator,
+		paginator: paginator,
 	}
 
 	return p, nil
@@ -6597,7 +6597,7 @@ func (p CertificateManagerCertificatePaginator) HasNext() bool {
 	return !p.paginator.done
 }
 
-func (p *CertificateManagerCertificatePaginator) NextPage(ctx context.Context) ([]CertificateManagerCertificate, error) {
+func (p CertificateManagerCertificatePaginator) NextPage(ctx context.Context) ([]CertificateManagerCertificate, error) {
 	var response CertificateManagerCertificateSearchResponse
 	err := p.paginator.search(ctx, &response)
 	if err != nil {
@@ -6627,7 +6627,7 @@ func ListCertificateManagerCertificate(ctx context.Context, d *plugin.QueryData,
 	plugin.Logger(ctx).Trace("ListCertificateManagerCertificate")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -6659,7 +6659,7 @@ func GetCertificateManagerCertificate(ctx context.Context, d *plugin.QueryData, 
 	plugin.Logger(ctx).Trace("GetCertificateManagerCertificate")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -6714,7 +6714,7 @@ type CloudTrailTrailSearchResponse struct {
 }
 
 type CloudTrailTrailPaginator struct {
-	paginator baseESPaginator
+	paginator *baseESPaginator
 }
 
 func (k Client) NewCloudTrailTrailPaginator(filters []BoolFilter, limit *int64) (CloudTrailTrailPaginator, error) {
@@ -6724,7 +6724,7 @@ func (k Client) NewCloudTrailTrailPaginator(filters []BoolFilter, limit *int64) 
 	}
 
 	p := CloudTrailTrailPaginator{
-		paginator: *paginator,
+		paginator: paginator,
 	}
 
 	return p, nil
@@ -6734,7 +6734,7 @@ func (p CloudTrailTrailPaginator) HasNext() bool {
 	return !p.paginator.done
 }
 
-func (p *CloudTrailTrailPaginator) NextPage(ctx context.Context) ([]CloudTrailTrail, error) {
+func (p CloudTrailTrailPaginator) NextPage(ctx context.Context) ([]CloudTrailTrail, error) {
 	var response CloudTrailTrailSearchResponse
 	err := p.paginator.search(ctx, &response)
 	if err != nil {
@@ -6762,7 +6762,7 @@ func ListCloudTrailTrail(ctx context.Context, d *plugin.QueryData, _ *plugin.Hyd
 	plugin.Logger(ctx).Trace("ListCloudTrailTrail")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -6795,7 +6795,7 @@ func GetCloudTrailTrail(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydr
 	plugin.Logger(ctx).Trace("GetCloudTrailTrail")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -6850,7 +6850,7 @@ type IAMAccountSearchResponse struct {
 }
 
 type IAMAccountPaginator struct {
-	paginator baseESPaginator
+	paginator *baseESPaginator
 }
 
 func (k Client) NewIAMAccountPaginator(filters []BoolFilter, limit *int64) (IAMAccountPaginator, error) {
@@ -6860,7 +6860,7 @@ func (k Client) NewIAMAccountPaginator(filters []BoolFilter, limit *int64) (IAMA
 	}
 
 	p := IAMAccountPaginator{
-		paginator: *paginator,
+		paginator: paginator,
 	}
 
 	return p, nil
@@ -6870,7 +6870,7 @@ func (p IAMAccountPaginator) HasNext() bool {
 	return !p.paginator.done
 }
 
-func (p *IAMAccountPaginator) NextPage(ctx context.Context) ([]IAMAccount, error) {
+func (p IAMAccountPaginator) NextPage(ctx context.Context) ([]IAMAccount, error) {
 	var response IAMAccountSearchResponse
 	err := p.paginator.search(ctx, &response)
 	if err != nil {
@@ -6898,7 +6898,7 @@ func ListIAMAccount(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateD
 	plugin.Logger(ctx).Trace("ListIAMAccount")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -6928,7 +6928,7 @@ func GetIAMAccount(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateDa
 	plugin.Logger(ctx).Trace("GetIAMAccount")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -6983,7 +6983,7 @@ type IAMAccountSummarySearchResponse struct {
 }
 
 type IAMAccountSummaryPaginator struct {
-	paginator baseESPaginator
+	paginator *baseESPaginator
 }
 
 func (k Client) NewIAMAccountSummaryPaginator(filters []BoolFilter, limit *int64) (IAMAccountSummaryPaginator, error) {
@@ -6993,7 +6993,7 @@ func (k Client) NewIAMAccountSummaryPaginator(filters []BoolFilter, limit *int64
 	}
 
 	p := IAMAccountSummaryPaginator{
-		paginator: *paginator,
+		paginator: paginator,
 	}
 
 	return p, nil
@@ -7003,7 +7003,7 @@ func (p IAMAccountSummaryPaginator) HasNext() bool {
 	return !p.paginator.done
 }
 
-func (p *IAMAccountSummaryPaginator) NextPage(ctx context.Context) ([]IAMAccountSummary, error) {
+func (p IAMAccountSummaryPaginator) NextPage(ctx context.Context) ([]IAMAccountSummary, error) {
 	var response IAMAccountSummarySearchResponse
 	err := p.paginator.search(ctx, &response)
 	if err != nil {
@@ -7031,7 +7031,7 @@ func ListIAMAccountSummary(ctx context.Context, d *plugin.QueryData, _ *plugin.H
 	plugin.Logger(ctx).Trace("ListIAMAccountSummary")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -7061,7 +7061,7 @@ func GetIAMAccountSummary(ctx context.Context, d *plugin.QueryData, _ *plugin.Hy
 	plugin.Logger(ctx).Trace("GetIAMAccountSummary")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -7116,7 +7116,7 @@ type IAMAccessKeySearchResponse struct {
 }
 
 type IAMAccessKeyPaginator struct {
-	paginator baseESPaginator
+	paginator *baseESPaginator
 }
 
 func (k Client) NewIAMAccessKeyPaginator(filters []BoolFilter, limit *int64) (IAMAccessKeyPaginator, error) {
@@ -7126,7 +7126,7 @@ func (k Client) NewIAMAccessKeyPaginator(filters []BoolFilter, limit *int64) (IA
 	}
 
 	p := IAMAccessKeyPaginator{
-		paginator: *paginator,
+		paginator: paginator,
 	}
 
 	return p, nil
@@ -7136,7 +7136,7 @@ func (p IAMAccessKeyPaginator) HasNext() bool {
 	return !p.paginator.done
 }
 
-func (p *IAMAccessKeyPaginator) NextPage(ctx context.Context) ([]IAMAccessKey, error) {
+func (p IAMAccessKeyPaginator) NextPage(ctx context.Context) ([]IAMAccessKey, error) {
 	var response IAMAccessKeySearchResponse
 	err := p.paginator.search(ctx, &response)
 	if err != nil {
@@ -7164,7 +7164,7 @@ func ListIAMAccessKey(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydrat
 	plugin.Logger(ctx).Trace("ListIAMAccessKey")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -7194,7 +7194,7 @@ func GetIAMAccessKey(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydrate
 	plugin.Logger(ctx).Trace("GetIAMAccessKey")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -7249,7 +7249,7 @@ type IAMAccountPasswordPolicySearchResponse struct {
 }
 
 type IAMAccountPasswordPolicyPaginator struct {
-	paginator baseESPaginator
+	paginator *baseESPaginator
 }
 
 func (k Client) NewIAMAccountPasswordPolicyPaginator(filters []BoolFilter, limit *int64) (IAMAccountPasswordPolicyPaginator, error) {
@@ -7259,7 +7259,7 @@ func (k Client) NewIAMAccountPasswordPolicyPaginator(filters []BoolFilter, limit
 	}
 
 	p := IAMAccountPasswordPolicyPaginator{
-		paginator: *paginator,
+		paginator: paginator,
 	}
 
 	return p, nil
@@ -7269,7 +7269,7 @@ func (p IAMAccountPasswordPolicyPaginator) HasNext() bool {
 	return !p.paginator.done
 }
 
-func (p *IAMAccountPasswordPolicyPaginator) NextPage(ctx context.Context) ([]IAMAccountPasswordPolicy, error) {
+func (p IAMAccountPasswordPolicyPaginator) NextPage(ctx context.Context) ([]IAMAccountPasswordPolicy, error) {
 	var response IAMAccountPasswordPolicySearchResponse
 	err := p.paginator.search(ctx, &response)
 	if err != nil {
@@ -7297,7 +7297,7 @@ func ListIAMAccountPasswordPolicy(ctx context.Context, d *plugin.QueryData, _ *p
 	plugin.Logger(ctx).Trace("ListIAMAccountPasswordPolicy")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -7327,7 +7327,7 @@ func GetIAMAccountPasswordPolicy(ctx context.Context, d *plugin.QueryData, _ *pl
 	plugin.Logger(ctx).Trace("GetIAMAccountPasswordPolicy")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -7382,7 +7382,7 @@ type IAMUserSearchResponse struct {
 }
 
 type IAMUserPaginator struct {
-	paginator baseESPaginator
+	paginator *baseESPaginator
 }
 
 func (k Client) NewIAMUserPaginator(filters []BoolFilter, limit *int64) (IAMUserPaginator, error) {
@@ -7392,7 +7392,7 @@ func (k Client) NewIAMUserPaginator(filters []BoolFilter, limit *int64) (IAMUser
 	}
 
 	p := IAMUserPaginator{
-		paginator: *paginator,
+		paginator: paginator,
 	}
 
 	return p, nil
@@ -7402,7 +7402,7 @@ func (p IAMUserPaginator) HasNext() bool {
 	return !p.paginator.done
 }
 
-func (p *IAMUserPaginator) NextPage(ctx context.Context) ([]IAMUser, error) {
+func (p IAMUserPaginator) NextPage(ctx context.Context) ([]IAMUser, error) {
 	var response IAMUserSearchResponse
 	err := p.paginator.search(ctx, &response)
 	if err != nil {
@@ -7430,7 +7430,7 @@ func ListIAMUser(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData
 	plugin.Logger(ctx).Trace("ListIAMUser")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -7463,7 +7463,7 @@ func GetIAMUser(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData)
 	plugin.Logger(ctx).Trace("GetIAMUser")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -7518,7 +7518,7 @@ type IAMGroupSearchResponse struct {
 }
 
 type IAMGroupPaginator struct {
-	paginator baseESPaginator
+	paginator *baseESPaginator
 }
 
 func (k Client) NewIAMGroupPaginator(filters []BoolFilter, limit *int64) (IAMGroupPaginator, error) {
@@ -7528,7 +7528,7 @@ func (k Client) NewIAMGroupPaginator(filters []BoolFilter, limit *int64) (IAMGro
 	}
 
 	p := IAMGroupPaginator{
-		paginator: *paginator,
+		paginator: paginator,
 	}
 
 	return p, nil
@@ -7538,7 +7538,7 @@ func (p IAMGroupPaginator) HasNext() bool {
 	return !p.paginator.done
 }
 
-func (p *IAMGroupPaginator) NextPage(ctx context.Context) ([]IAMGroup, error) {
+func (p IAMGroupPaginator) NextPage(ctx context.Context) ([]IAMGroup, error) {
 	var response IAMGroupSearchResponse
 	err := p.paginator.search(ctx, &response)
 	if err != nil {
@@ -7566,7 +7566,7 @@ func ListIAMGroup(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateDat
 	plugin.Logger(ctx).Trace("ListIAMGroup")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -7599,7 +7599,7 @@ func GetIAMGroup(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData
 	plugin.Logger(ctx).Trace("GetIAMGroup")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -7654,7 +7654,7 @@ type IAMRoleSearchResponse struct {
 }
 
 type IAMRolePaginator struct {
-	paginator baseESPaginator
+	paginator *baseESPaginator
 }
 
 func (k Client) NewIAMRolePaginator(filters []BoolFilter, limit *int64) (IAMRolePaginator, error) {
@@ -7664,7 +7664,7 @@ func (k Client) NewIAMRolePaginator(filters []BoolFilter, limit *int64) (IAMRole
 	}
 
 	p := IAMRolePaginator{
-		paginator: *paginator,
+		paginator: paginator,
 	}
 
 	return p, nil
@@ -7674,7 +7674,7 @@ func (p IAMRolePaginator) HasNext() bool {
 	return !p.paginator.done
 }
 
-func (p *IAMRolePaginator) NextPage(ctx context.Context) ([]IAMRole, error) {
+func (p IAMRolePaginator) NextPage(ctx context.Context) ([]IAMRole, error) {
 	var response IAMRoleSearchResponse
 	err := p.paginator.search(ctx, &response)
 	if err != nil {
@@ -7702,7 +7702,7 @@ func ListIAMRole(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData
 	plugin.Logger(ctx).Trace("ListIAMRole")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -7735,7 +7735,7 @@ func GetIAMRole(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData)
 	plugin.Logger(ctx).Trace("GetIAMRole")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -7790,7 +7790,7 @@ type IAMServerCertificateSearchResponse struct {
 }
 
 type IAMServerCertificatePaginator struct {
-	paginator baseESPaginator
+	paginator *baseESPaginator
 }
 
 func (k Client) NewIAMServerCertificatePaginator(filters []BoolFilter, limit *int64) (IAMServerCertificatePaginator, error) {
@@ -7800,7 +7800,7 @@ func (k Client) NewIAMServerCertificatePaginator(filters []BoolFilter, limit *in
 	}
 
 	p := IAMServerCertificatePaginator{
-		paginator: *paginator,
+		paginator: paginator,
 	}
 
 	return p, nil
@@ -7810,7 +7810,7 @@ func (p IAMServerCertificatePaginator) HasNext() bool {
 	return !p.paginator.done
 }
 
-func (p *IAMServerCertificatePaginator) NextPage(ctx context.Context) ([]IAMServerCertificate, error) {
+func (p IAMServerCertificatePaginator) NextPage(ctx context.Context) ([]IAMServerCertificate, error) {
 	var response IAMServerCertificateSearchResponse
 	err := p.paginator.search(ctx, &response)
 	if err != nil {
@@ -7838,7 +7838,7 @@ func ListIAMServerCertificate(ctx context.Context, d *plugin.QueryData, _ *plugi
 	plugin.Logger(ctx).Trace("ListIAMServerCertificate")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -7870,7 +7870,7 @@ func GetIAMServerCertificate(ctx context.Context, d *plugin.QueryData, _ *plugin
 	plugin.Logger(ctx).Trace("GetIAMServerCertificate")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -7925,7 +7925,7 @@ type IAMPolicySearchResponse struct {
 }
 
 type IAMPolicyPaginator struct {
-	paginator baseESPaginator
+	paginator *baseESPaginator
 }
 
 func (k Client) NewIAMPolicyPaginator(filters []BoolFilter, limit *int64) (IAMPolicyPaginator, error) {
@@ -7935,7 +7935,7 @@ func (k Client) NewIAMPolicyPaginator(filters []BoolFilter, limit *int64) (IAMPo
 	}
 
 	p := IAMPolicyPaginator{
-		paginator: *paginator,
+		paginator: paginator,
 	}
 
 	return p, nil
@@ -7945,7 +7945,7 @@ func (p IAMPolicyPaginator) HasNext() bool {
 	return !p.paginator.done
 }
 
-func (p *IAMPolicyPaginator) NextPage(ctx context.Context) ([]IAMPolicy, error) {
+func (p IAMPolicyPaginator) NextPage(ctx context.Context) ([]IAMPolicy, error) {
 	var response IAMPolicySearchResponse
 	err := p.paginator.search(ctx, &response)
 	if err != nil {
@@ -7973,7 +7973,7 @@ func ListIAMPolicy(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateDa
 	plugin.Logger(ctx).Trace("ListIAMPolicy")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -8005,7 +8005,7 @@ func GetIAMPolicy(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateDat
 	plugin.Logger(ctx).Trace("GetIAMPolicy")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -8060,7 +8060,7 @@ type IAMCredentialReportSearchResponse struct {
 }
 
 type IAMCredentialReportPaginator struct {
-	paginator baseESPaginator
+	paginator *baseESPaginator
 }
 
 func (k Client) NewIAMCredentialReportPaginator(filters []BoolFilter, limit *int64) (IAMCredentialReportPaginator, error) {
@@ -8070,7 +8070,7 @@ func (k Client) NewIAMCredentialReportPaginator(filters []BoolFilter, limit *int
 	}
 
 	p := IAMCredentialReportPaginator{
-		paginator: *paginator,
+		paginator: paginator,
 	}
 
 	return p, nil
@@ -8080,7 +8080,7 @@ func (p IAMCredentialReportPaginator) HasNext() bool {
 	return !p.paginator.done
 }
 
-func (p *IAMCredentialReportPaginator) NextPage(ctx context.Context) ([]IAMCredentialReport, error) {
+func (p IAMCredentialReportPaginator) NextPage(ctx context.Context) ([]IAMCredentialReport, error) {
 	var response IAMCredentialReportSearchResponse
 	err := p.paginator.search(ctx, &response)
 	if err != nil {
@@ -8108,7 +8108,7 @@ func ListIAMCredentialReport(ctx context.Context, d *plugin.QueryData, _ *plugin
 	plugin.Logger(ctx).Trace("ListIAMCredentialReport")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -8138,7 +8138,7 @@ func GetIAMCredentialReport(ctx context.Context, d *plugin.QueryData, _ *plugin.
 	plugin.Logger(ctx).Trace("GetIAMCredentialReport")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -8193,7 +8193,7 @@ type IAMVirtualMFADeviceSearchResponse struct {
 }
 
 type IAMVirtualMFADevicePaginator struct {
-	paginator baseESPaginator
+	paginator *baseESPaginator
 }
 
 func (k Client) NewIAMVirtualMFADevicePaginator(filters []BoolFilter, limit *int64) (IAMVirtualMFADevicePaginator, error) {
@@ -8203,7 +8203,7 @@ func (k Client) NewIAMVirtualMFADevicePaginator(filters []BoolFilter, limit *int
 	}
 
 	p := IAMVirtualMFADevicePaginator{
-		paginator: *paginator,
+		paginator: paginator,
 	}
 
 	return p, nil
@@ -8213,7 +8213,7 @@ func (p IAMVirtualMFADevicePaginator) HasNext() bool {
 	return !p.paginator.done
 }
 
-func (p *IAMVirtualMFADevicePaginator) NextPage(ctx context.Context) ([]IAMVirtualMFADevice, error) {
+func (p IAMVirtualMFADevicePaginator) NextPage(ctx context.Context) ([]IAMVirtualMFADevice, error) {
 	var response IAMVirtualMFADeviceSearchResponse
 	err := p.paginator.search(ctx, &response)
 	if err != nil {
@@ -8241,7 +8241,7 @@ func ListIAMVirtualMFADevice(ctx context.Context, d *plugin.QueryData, _ *plugin
 	plugin.Logger(ctx).Trace("ListIAMVirtualMFADevice")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -8271,7 +8271,7 @@ func GetIAMVirtualMFADevice(ctx context.Context, d *plugin.QueryData, _ *plugin.
 	plugin.Logger(ctx).Trace("GetIAMVirtualMFADevice")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -8326,7 +8326,7 @@ type RDSDBClusterSearchResponse struct {
 }
 
 type RDSDBClusterPaginator struct {
-	paginator baseESPaginator
+	paginator *baseESPaginator
 }
 
 func (k Client) NewRDSDBClusterPaginator(filters []BoolFilter, limit *int64) (RDSDBClusterPaginator, error) {
@@ -8336,7 +8336,7 @@ func (k Client) NewRDSDBClusterPaginator(filters []BoolFilter, limit *int64) (RD
 	}
 
 	p := RDSDBClusterPaginator{
-		paginator: *paginator,
+		paginator: paginator,
 	}
 
 	return p, nil
@@ -8346,7 +8346,7 @@ func (p RDSDBClusterPaginator) HasNext() bool {
 	return !p.paginator.done
 }
 
-func (p *RDSDBClusterPaginator) NextPage(ctx context.Context) ([]RDSDBCluster, error) {
+func (p RDSDBClusterPaginator) NextPage(ctx context.Context) ([]RDSDBCluster, error) {
 	var response RDSDBClusterSearchResponse
 	err := p.paginator.search(ctx, &response)
 	if err != nil {
@@ -8374,7 +8374,7 @@ func ListRDSDBCluster(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydrat
 	plugin.Logger(ctx).Trace("ListRDSDBCluster")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -8406,7 +8406,7 @@ func GetRDSDBCluster(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydrate
 	plugin.Logger(ctx).Trace("GetRDSDBCluster")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -8461,7 +8461,7 @@ type RDSDBClusterSnapshotSearchResponse struct {
 }
 
 type RDSDBClusterSnapshotPaginator struct {
-	paginator baseESPaginator
+	paginator *baseESPaginator
 }
 
 func (k Client) NewRDSDBClusterSnapshotPaginator(filters []BoolFilter, limit *int64) (RDSDBClusterSnapshotPaginator, error) {
@@ -8471,7 +8471,7 @@ func (k Client) NewRDSDBClusterSnapshotPaginator(filters []BoolFilter, limit *in
 	}
 
 	p := RDSDBClusterSnapshotPaginator{
-		paginator: *paginator,
+		paginator: paginator,
 	}
 
 	return p, nil
@@ -8481,7 +8481,7 @@ func (p RDSDBClusterSnapshotPaginator) HasNext() bool {
 	return !p.paginator.done
 }
 
-func (p *RDSDBClusterSnapshotPaginator) NextPage(ctx context.Context) ([]RDSDBClusterSnapshot, error) {
+func (p RDSDBClusterSnapshotPaginator) NextPage(ctx context.Context) ([]RDSDBClusterSnapshot, error) {
 	var response RDSDBClusterSnapshotSearchResponse
 	err := p.paginator.search(ctx, &response)
 	if err != nil {
@@ -8514,7 +8514,7 @@ func ListRDSDBClusterSnapshot(ctx context.Context, d *plugin.QueryData, _ *plugi
 	plugin.Logger(ctx).Trace("ListRDSDBClusterSnapshot")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -8546,7 +8546,7 @@ func GetRDSDBClusterSnapshot(ctx context.Context, d *plugin.QueryData, _ *plugin
 	plugin.Logger(ctx).Trace("GetRDSDBClusterSnapshot")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -8601,7 +8601,7 @@ type RDSDBEventSubscriptionSearchResponse struct {
 }
 
 type RDSDBEventSubscriptionPaginator struct {
-	paginator baseESPaginator
+	paginator *baseESPaginator
 }
 
 func (k Client) NewRDSDBEventSubscriptionPaginator(filters []BoolFilter, limit *int64) (RDSDBEventSubscriptionPaginator, error) {
@@ -8611,7 +8611,7 @@ func (k Client) NewRDSDBEventSubscriptionPaginator(filters []BoolFilter, limit *
 	}
 
 	p := RDSDBEventSubscriptionPaginator{
-		paginator: *paginator,
+		paginator: paginator,
 	}
 
 	return p, nil
@@ -8621,7 +8621,7 @@ func (p RDSDBEventSubscriptionPaginator) HasNext() bool {
 	return !p.paginator.done
 }
 
-func (p *RDSDBEventSubscriptionPaginator) NextPage(ctx context.Context) ([]RDSDBEventSubscription, error) {
+func (p RDSDBEventSubscriptionPaginator) NextPage(ctx context.Context) ([]RDSDBEventSubscription, error) {
 	var response RDSDBEventSubscriptionSearchResponse
 	err := p.paginator.search(ctx, &response)
 	if err != nil {
@@ -8649,7 +8649,7 @@ func ListRDSDBEventSubscription(ctx context.Context, d *plugin.QueryData, _ *plu
 	plugin.Logger(ctx).Trace("ListRDSDBEventSubscription")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -8681,7 +8681,7 @@ func GetRDSDBEventSubscription(ctx context.Context, d *plugin.QueryData, _ *plug
 	plugin.Logger(ctx).Trace("GetRDSDBEventSubscription")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -8736,7 +8736,7 @@ type RDSDBInstanceSearchResponse struct {
 }
 
 type RDSDBInstancePaginator struct {
-	paginator baseESPaginator
+	paginator *baseESPaginator
 }
 
 func (k Client) NewRDSDBInstancePaginator(filters []BoolFilter, limit *int64) (RDSDBInstancePaginator, error) {
@@ -8746,7 +8746,7 @@ func (k Client) NewRDSDBInstancePaginator(filters []BoolFilter, limit *int64) (R
 	}
 
 	p := RDSDBInstancePaginator{
-		paginator: *paginator,
+		paginator: paginator,
 	}
 
 	return p, nil
@@ -8756,7 +8756,7 @@ func (p RDSDBInstancePaginator) HasNext() bool {
 	return !p.paginator.done
 }
 
-func (p *RDSDBInstancePaginator) NextPage(ctx context.Context) ([]RDSDBInstance, error) {
+func (p RDSDBInstancePaginator) NextPage(ctx context.Context) ([]RDSDBInstance, error) {
 	var response RDSDBInstanceSearchResponse
 	err := p.paginator.search(ctx, &response)
 	if err != nil {
@@ -8784,7 +8784,7 @@ func ListRDSDBInstance(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydra
 	plugin.Logger(ctx).Trace("ListRDSDBInstance")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -8816,7 +8816,7 @@ func GetRDSDBInstance(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydrat
 	plugin.Logger(ctx).Trace("GetRDSDBInstance")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -8871,7 +8871,7 @@ type RDSDBSnapshotSearchResponse struct {
 }
 
 type RDSDBSnapshotPaginator struct {
-	paginator baseESPaginator
+	paginator *baseESPaginator
 }
 
 func (k Client) NewRDSDBSnapshotPaginator(filters []BoolFilter, limit *int64) (RDSDBSnapshotPaginator, error) {
@@ -8881,7 +8881,7 @@ func (k Client) NewRDSDBSnapshotPaginator(filters []BoolFilter, limit *int64) (R
 	}
 
 	p := RDSDBSnapshotPaginator{
-		paginator: *paginator,
+		paginator: paginator,
 	}
 
 	return p, nil
@@ -8891,7 +8891,7 @@ func (p RDSDBSnapshotPaginator) HasNext() bool {
 	return !p.paginator.done
 }
 
-func (p *RDSDBSnapshotPaginator) NextPage(ctx context.Context) ([]RDSDBSnapshot, error) {
+func (p RDSDBSnapshotPaginator) NextPage(ctx context.Context) ([]RDSDBSnapshot, error) {
 	var response RDSDBSnapshotSearchResponse
 	err := p.paginator.search(ctx, &response)
 	if err != nil {
@@ -8919,7 +8919,7 @@ func ListRDSDBSnapshot(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydra
 	plugin.Logger(ctx).Trace("ListRDSDBSnapshot")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -8951,7 +8951,7 @@ func GetRDSDBSnapshot(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydrat
 	plugin.Logger(ctx).Trace("GetRDSDBSnapshot")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -9006,7 +9006,7 @@ type RedshiftClusterSearchResponse struct {
 }
 
 type RedshiftClusterPaginator struct {
-	paginator baseESPaginator
+	paginator *baseESPaginator
 }
 
 func (k Client) NewRedshiftClusterPaginator(filters []BoolFilter, limit *int64) (RedshiftClusterPaginator, error) {
@@ -9016,7 +9016,7 @@ func (k Client) NewRedshiftClusterPaginator(filters []BoolFilter, limit *int64) 
 	}
 
 	p := RedshiftClusterPaginator{
-		paginator: *paginator,
+		paginator: paginator,
 	}
 
 	return p, nil
@@ -9026,7 +9026,7 @@ func (p RedshiftClusterPaginator) HasNext() bool {
 	return !p.paginator.done
 }
 
-func (p *RedshiftClusterPaginator) NextPage(ctx context.Context) ([]RedshiftCluster, error) {
+func (p RedshiftClusterPaginator) NextPage(ctx context.Context) ([]RedshiftCluster, error) {
 	var response RedshiftClusterSearchResponse
 	err := p.paginator.search(ctx, &response)
 	if err != nil {
@@ -9054,7 +9054,7 @@ func ListRedshiftCluster(ctx context.Context, d *plugin.QueryData, _ *plugin.Hyd
 	plugin.Logger(ctx).Trace("ListRedshiftCluster")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -9086,7 +9086,7 @@ func GetRedshiftCluster(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydr
 	plugin.Logger(ctx).Trace("GetRedshiftCluster")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -9141,7 +9141,7 @@ type RedshiftClusterParameterGroupSearchResponse struct {
 }
 
 type RedshiftClusterParameterGroupPaginator struct {
-	paginator baseESPaginator
+	paginator *baseESPaginator
 }
 
 func (k Client) NewRedshiftClusterParameterGroupPaginator(filters []BoolFilter, limit *int64) (RedshiftClusterParameterGroupPaginator, error) {
@@ -9151,7 +9151,7 @@ func (k Client) NewRedshiftClusterParameterGroupPaginator(filters []BoolFilter, 
 	}
 
 	p := RedshiftClusterParameterGroupPaginator{
-		paginator: *paginator,
+		paginator: paginator,
 	}
 
 	return p, nil
@@ -9161,7 +9161,7 @@ func (p RedshiftClusterParameterGroupPaginator) HasNext() bool {
 	return !p.paginator.done
 }
 
-func (p *RedshiftClusterParameterGroupPaginator) NextPage(ctx context.Context) ([]RedshiftClusterParameterGroup, error) {
+func (p RedshiftClusterParameterGroupPaginator) NextPage(ctx context.Context) ([]RedshiftClusterParameterGroup, error) {
 	var response RedshiftClusterParameterGroupSearchResponse
 	err := p.paginator.search(ctx, &response)
 	if err != nil {
@@ -9189,7 +9189,7 @@ func ListRedshiftClusterParameterGroup(ctx context.Context, d *plugin.QueryData,
 	plugin.Logger(ctx).Trace("ListRedshiftClusterParameterGroup")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -9221,7 +9221,7 @@ func GetRedshiftClusterParameterGroup(ctx context.Context, d *plugin.QueryData, 
 	plugin.Logger(ctx).Trace("GetRedshiftClusterParameterGroup")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -9276,7 +9276,7 @@ type SNSTopicSearchResponse struct {
 }
 
 type SNSTopicPaginator struct {
-	paginator baseESPaginator
+	paginator *baseESPaginator
 }
 
 func (k Client) NewSNSTopicPaginator(filters []BoolFilter, limit *int64) (SNSTopicPaginator, error) {
@@ -9286,7 +9286,7 @@ func (k Client) NewSNSTopicPaginator(filters []BoolFilter, limit *int64) (SNSTop
 	}
 
 	p := SNSTopicPaginator{
-		paginator: *paginator,
+		paginator: paginator,
 	}
 
 	return p, nil
@@ -9296,7 +9296,7 @@ func (p SNSTopicPaginator) HasNext() bool {
 	return !p.paginator.done
 }
 
-func (p *SNSTopicPaginator) NextPage(ctx context.Context) ([]SNSTopic, error) {
+func (p SNSTopicPaginator) NextPage(ctx context.Context) ([]SNSTopic, error) {
 	var response SNSTopicSearchResponse
 	err := p.paginator.search(ctx, &response)
 	if err != nil {
@@ -9324,7 +9324,7 @@ func ListSNSTopic(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateDat
 	plugin.Logger(ctx).Trace("ListSNSTopic")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -9356,7 +9356,7 @@ func GetSNSTopic(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData
 	plugin.Logger(ctx).Trace("GetSNSTopic")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -9411,7 +9411,7 @@ type SNSSubscriptionSearchResponse struct {
 }
 
 type SNSSubscriptionPaginator struct {
-	paginator baseESPaginator
+	paginator *baseESPaginator
 }
 
 func (k Client) NewSNSSubscriptionPaginator(filters []BoolFilter, limit *int64) (SNSSubscriptionPaginator, error) {
@@ -9421,7 +9421,7 @@ func (k Client) NewSNSSubscriptionPaginator(filters []BoolFilter, limit *int64) 
 	}
 
 	p := SNSSubscriptionPaginator{
-		paginator: *paginator,
+		paginator: paginator,
 	}
 
 	return p, nil
@@ -9431,7 +9431,7 @@ func (p SNSSubscriptionPaginator) HasNext() bool {
 	return !p.paginator.done
 }
 
-func (p *SNSSubscriptionPaginator) NextPage(ctx context.Context) ([]SNSSubscription, error) {
+func (p SNSSubscriptionPaginator) NextPage(ctx context.Context) ([]SNSSubscription, error) {
 	var response SNSSubscriptionSearchResponse
 	err := p.paginator.search(ctx, &response)
 	if err != nil {
@@ -9459,7 +9459,7 @@ func ListSNSSubscription(ctx context.Context, d *plugin.QueryData, _ *plugin.Hyd
 	plugin.Logger(ctx).Trace("ListSNSSubscription")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -9491,7 +9491,7 @@ func GetSNSSubscription(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydr
 	plugin.Logger(ctx).Trace("GetSNSSubscription")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -9546,7 +9546,7 @@ type SQSQueueSearchResponse struct {
 }
 
 type SQSQueuePaginator struct {
-	paginator baseESPaginator
+	paginator *baseESPaginator
 }
 
 func (k Client) NewSQSQueuePaginator(filters []BoolFilter, limit *int64) (SQSQueuePaginator, error) {
@@ -9556,7 +9556,7 @@ func (k Client) NewSQSQueuePaginator(filters []BoolFilter, limit *int64) (SQSQue
 	}
 
 	p := SQSQueuePaginator{
-		paginator: *paginator,
+		paginator: paginator,
 	}
 
 	return p, nil
@@ -9566,7 +9566,7 @@ func (p SQSQueuePaginator) HasNext() bool {
 	return !p.paginator.done
 }
 
-func (p *SQSQueuePaginator) NextPage(ctx context.Context) ([]SQSQueue, error) {
+func (p SQSQueuePaginator) NextPage(ctx context.Context) ([]SQSQueue, error) {
 	var response SQSQueueSearchResponse
 	err := p.paginator.search(ctx, &response)
 	if err != nil {
@@ -9594,7 +9594,7 @@ func ListSQSQueue(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateDat
 	plugin.Logger(ctx).Trace("ListSQSQueue")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -9626,7 +9626,7 @@ func GetSQSQueue(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData
 	plugin.Logger(ctx).Trace("GetSQSQueue")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -9681,7 +9681,7 @@ type S3BucketSearchResponse struct {
 }
 
 type S3BucketPaginator struct {
-	paginator baseESPaginator
+	paginator *baseESPaginator
 }
 
 func (k Client) NewS3BucketPaginator(filters []BoolFilter, limit *int64) (S3BucketPaginator, error) {
@@ -9691,7 +9691,7 @@ func (k Client) NewS3BucketPaginator(filters []BoolFilter, limit *int64) (S3Buck
 	}
 
 	p := S3BucketPaginator{
-		paginator: *paginator,
+		paginator: paginator,
 	}
 
 	return p, nil
@@ -9701,7 +9701,7 @@ func (p S3BucketPaginator) HasNext() bool {
 	return !p.paginator.done
 }
 
-func (p *S3BucketPaginator) NextPage(ctx context.Context) ([]S3Bucket, error) {
+func (p S3BucketPaginator) NextPage(ctx context.Context) ([]S3Bucket, error) {
 	var response S3BucketSearchResponse
 	err := p.paginator.search(ctx, &response)
 	if err != nil {
@@ -9729,7 +9729,7 @@ func ListS3Bucket(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateDat
 	plugin.Logger(ctx).Trace("ListS3Bucket")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -9761,7 +9761,7 @@ func GetS3Bucket(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData
 	plugin.Logger(ctx).Trace("GetS3Bucket")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -9816,7 +9816,7 @@ type S3AccountSettingSearchResponse struct {
 }
 
 type S3AccountSettingPaginator struct {
-	paginator baseESPaginator
+	paginator *baseESPaginator
 }
 
 func (k Client) NewS3AccountSettingPaginator(filters []BoolFilter, limit *int64) (S3AccountSettingPaginator, error) {
@@ -9826,7 +9826,7 @@ func (k Client) NewS3AccountSettingPaginator(filters []BoolFilter, limit *int64)
 	}
 
 	p := S3AccountSettingPaginator{
-		paginator: *paginator,
+		paginator: paginator,
 	}
 
 	return p, nil
@@ -9836,7 +9836,7 @@ func (p S3AccountSettingPaginator) HasNext() bool {
 	return !p.paginator.done
 }
 
-func (p *S3AccountSettingPaginator) NextPage(ctx context.Context) ([]S3AccountSetting, error) {
+func (p S3AccountSettingPaginator) NextPage(ctx context.Context) ([]S3AccountSetting, error) {
 	var response S3AccountSettingSearchResponse
 	err := p.paginator.search(ctx, &response)
 	if err != nil {
@@ -9864,7 +9864,7 @@ func ListS3AccountSetting(ctx context.Context, d *plugin.QueryData, _ *plugin.Hy
 	plugin.Logger(ctx).Trace("ListS3AccountSetting")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -9894,7 +9894,7 @@ func GetS3AccountSetting(ctx context.Context, d *plugin.QueryData, _ *plugin.Hyd
 	plugin.Logger(ctx).Trace("GetS3AccountSetting")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -9949,7 +9949,7 @@ type SageMakerEndpointConfigurationSearchResponse struct {
 }
 
 type SageMakerEndpointConfigurationPaginator struct {
-	paginator baseESPaginator
+	paginator *baseESPaginator
 }
 
 func (k Client) NewSageMakerEndpointConfigurationPaginator(filters []BoolFilter, limit *int64) (SageMakerEndpointConfigurationPaginator, error) {
@@ -9959,7 +9959,7 @@ func (k Client) NewSageMakerEndpointConfigurationPaginator(filters []BoolFilter,
 	}
 
 	p := SageMakerEndpointConfigurationPaginator{
-		paginator: *paginator,
+		paginator: paginator,
 	}
 
 	return p, nil
@@ -9969,7 +9969,7 @@ func (p SageMakerEndpointConfigurationPaginator) HasNext() bool {
 	return !p.paginator.done
 }
 
-func (p *SageMakerEndpointConfigurationPaginator) NextPage(ctx context.Context) ([]SageMakerEndpointConfiguration, error) {
+func (p SageMakerEndpointConfigurationPaginator) NextPage(ctx context.Context) ([]SageMakerEndpointConfiguration, error) {
 	var response SageMakerEndpointConfigurationSearchResponse
 	err := p.paginator.search(ctx, &response)
 	if err != nil {
@@ -9997,7 +9997,7 @@ func ListSageMakerEndpointConfiguration(ctx context.Context, d *plugin.QueryData
 	plugin.Logger(ctx).Trace("ListSageMakerEndpointConfiguration")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -10029,7 +10029,7 @@ func GetSageMakerEndpointConfiguration(ctx context.Context, d *plugin.QueryData,
 	plugin.Logger(ctx).Trace("GetSageMakerEndpointConfiguration")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -10084,7 +10084,7 @@ type SageMakerNotebookInstanceSearchResponse struct {
 }
 
 type SageMakerNotebookInstancePaginator struct {
-	paginator baseESPaginator
+	paginator *baseESPaginator
 }
 
 func (k Client) NewSageMakerNotebookInstancePaginator(filters []BoolFilter, limit *int64) (SageMakerNotebookInstancePaginator, error) {
@@ -10094,7 +10094,7 @@ func (k Client) NewSageMakerNotebookInstancePaginator(filters []BoolFilter, limi
 	}
 
 	p := SageMakerNotebookInstancePaginator{
-		paginator: *paginator,
+		paginator: paginator,
 	}
 
 	return p, nil
@@ -10104,7 +10104,7 @@ func (p SageMakerNotebookInstancePaginator) HasNext() bool {
 	return !p.paginator.done
 }
 
-func (p *SageMakerNotebookInstancePaginator) NextPage(ctx context.Context) ([]SageMakerNotebookInstance, error) {
+func (p SageMakerNotebookInstancePaginator) NextPage(ctx context.Context) ([]SageMakerNotebookInstance, error) {
 	var response SageMakerNotebookInstanceSearchResponse
 	err := p.paginator.search(ctx, &response)
 	if err != nil {
@@ -10132,7 +10132,7 @@ func ListSageMakerNotebookInstance(ctx context.Context, d *plugin.QueryData, _ *
 	plugin.Logger(ctx).Trace("ListSageMakerNotebookInstance")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -10164,7 +10164,7 @@ func GetSageMakerNotebookInstance(ctx context.Context, d *plugin.QueryData, _ *p
 	plugin.Logger(ctx).Trace("GetSageMakerNotebookInstance")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -10219,7 +10219,7 @@ type SecretsManagerSecretSearchResponse struct {
 }
 
 type SecretsManagerSecretPaginator struct {
-	paginator baseESPaginator
+	paginator *baseESPaginator
 }
 
 func (k Client) NewSecretsManagerSecretPaginator(filters []BoolFilter, limit *int64) (SecretsManagerSecretPaginator, error) {
@@ -10229,7 +10229,7 @@ func (k Client) NewSecretsManagerSecretPaginator(filters []BoolFilter, limit *in
 	}
 
 	p := SecretsManagerSecretPaginator{
-		paginator: *paginator,
+		paginator: paginator,
 	}
 
 	return p, nil
@@ -10239,7 +10239,7 @@ func (p SecretsManagerSecretPaginator) HasNext() bool {
 	return !p.paginator.done
 }
 
-func (p *SecretsManagerSecretPaginator) NextPage(ctx context.Context) ([]SecretsManagerSecret, error) {
+func (p SecretsManagerSecretPaginator) NextPage(ctx context.Context) ([]SecretsManagerSecret, error) {
 	var response SecretsManagerSecretSearchResponse
 	err := p.paginator.search(ctx, &response)
 	if err != nil {
@@ -10267,7 +10267,7 @@ func ListSecretsManagerSecret(ctx context.Context, d *plugin.QueryData, _ *plugi
 	plugin.Logger(ctx).Trace("ListSecretsManagerSecret")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -10299,7 +10299,7 @@ func GetSecretsManagerSecret(ctx context.Context, d *plugin.QueryData, _ *plugin
 	plugin.Logger(ctx).Trace("GetSecretsManagerSecret")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -10354,7 +10354,7 @@ type SecurityHubHubSearchResponse struct {
 }
 
 type SecurityHubHubPaginator struct {
-	paginator baseESPaginator
+	paginator *baseESPaginator
 }
 
 func (k Client) NewSecurityHubHubPaginator(filters []BoolFilter, limit *int64) (SecurityHubHubPaginator, error) {
@@ -10364,7 +10364,7 @@ func (k Client) NewSecurityHubHubPaginator(filters []BoolFilter, limit *int64) (
 	}
 
 	p := SecurityHubHubPaginator{
-		paginator: *paginator,
+		paginator: paginator,
 	}
 
 	return p, nil
@@ -10374,7 +10374,7 @@ func (p SecurityHubHubPaginator) HasNext() bool {
 	return !p.paginator.done
 }
 
-func (p *SecurityHubHubPaginator) NextPage(ctx context.Context) ([]SecurityHubHub, error) {
+func (p SecurityHubHubPaginator) NextPage(ctx context.Context) ([]SecurityHubHub, error) {
 	var response SecurityHubHubSearchResponse
 	err := p.paginator.search(ctx, &response)
 	if err != nil {
@@ -10402,7 +10402,7 @@ func ListSecurityHubHub(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydr
 	plugin.Logger(ctx).Trace("ListSecurityHubHub")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -10434,7 +10434,7 @@ func GetSecurityHubHub(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydra
 	plugin.Logger(ctx).Trace("GetSecurityHubHub")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -10489,7 +10489,7 @@ type SSMManagedInstanceSearchResponse struct {
 }
 
 type SSMManagedInstancePaginator struct {
-	paginator baseESPaginator
+	paginator *baseESPaginator
 }
 
 func (k Client) NewSSMManagedInstancePaginator(filters []BoolFilter, limit *int64) (SSMManagedInstancePaginator, error) {
@@ -10499,7 +10499,7 @@ func (k Client) NewSSMManagedInstancePaginator(filters []BoolFilter, limit *int6
 	}
 
 	p := SSMManagedInstancePaginator{
-		paginator: *paginator,
+		paginator: paginator,
 	}
 
 	return p, nil
@@ -10509,7 +10509,7 @@ func (p SSMManagedInstancePaginator) HasNext() bool {
 	return !p.paginator.done
 }
 
-func (p *SSMManagedInstancePaginator) NextPage(ctx context.Context) ([]SSMManagedInstance, error) {
+func (p SSMManagedInstancePaginator) NextPage(ctx context.Context) ([]SSMManagedInstance, error) {
 	var response SSMManagedInstanceSearchResponse
 	err := p.paginator.search(ctx, &response)
 	if err != nil {
@@ -10537,7 +10537,7 @@ func ListSSMManagedInstance(ctx context.Context, d *plugin.QueryData, _ *plugin.
 	plugin.Logger(ctx).Trace("ListSSMManagedInstance")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -10567,7 +10567,7 @@ func GetSSMManagedInstance(ctx context.Context, d *plugin.QueryData, _ *plugin.H
 	plugin.Logger(ctx).Trace("GetSSMManagedInstance")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -10622,7 +10622,7 @@ type SSMManagedInstanceComplianceSearchResponse struct {
 }
 
 type SSMManagedInstanceCompliancePaginator struct {
-	paginator baseESPaginator
+	paginator *baseESPaginator
 }
 
 func (k Client) NewSSMManagedInstanceCompliancePaginator(filters []BoolFilter, limit *int64) (SSMManagedInstanceCompliancePaginator, error) {
@@ -10632,7 +10632,7 @@ func (k Client) NewSSMManagedInstanceCompliancePaginator(filters []BoolFilter, l
 	}
 
 	p := SSMManagedInstanceCompliancePaginator{
-		paginator: *paginator,
+		paginator: paginator,
 	}
 
 	return p, nil
@@ -10642,7 +10642,7 @@ func (p SSMManagedInstanceCompliancePaginator) HasNext() bool {
 	return !p.paginator.done
 }
 
-func (p *SSMManagedInstanceCompliancePaginator) NextPage(ctx context.Context) ([]SSMManagedInstanceCompliance, error) {
+func (p SSMManagedInstanceCompliancePaginator) NextPage(ctx context.Context) ([]SSMManagedInstanceCompliance, error) {
 	var response SSMManagedInstanceComplianceSearchResponse
 	err := p.paginator.search(ctx, &response)
 	if err != nil {
@@ -10672,7 +10672,7 @@ func ListSSMManagedInstanceCompliance(ctx context.Context, d *plugin.QueryData, 
 	plugin.Logger(ctx).Trace("ListSSMManagedInstanceCompliance")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -10702,7 +10702,7 @@ func GetSSMManagedInstanceCompliance(ctx context.Context, d *plugin.QueryData, _
 	plugin.Logger(ctx).Trace("GetSSMManagedInstanceCompliance")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -10757,7 +10757,7 @@ type ECSTaskDefinitionSearchResponse struct {
 }
 
 type ECSTaskDefinitionPaginator struct {
-	paginator baseESPaginator
+	paginator *baseESPaginator
 }
 
 func (k Client) NewECSTaskDefinitionPaginator(filters []BoolFilter, limit *int64) (ECSTaskDefinitionPaginator, error) {
@@ -10767,7 +10767,7 @@ func (k Client) NewECSTaskDefinitionPaginator(filters []BoolFilter, limit *int64
 	}
 
 	p := ECSTaskDefinitionPaginator{
-		paginator: *paginator,
+		paginator: paginator,
 	}
 
 	return p, nil
@@ -10777,7 +10777,7 @@ func (p ECSTaskDefinitionPaginator) HasNext() bool {
 	return !p.paginator.done
 }
 
-func (p *ECSTaskDefinitionPaginator) NextPage(ctx context.Context) ([]ECSTaskDefinition, error) {
+func (p ECSTaskDefinitionPaginator) NextPage(ctx context.Context) ([]ECSTaskDefinition, error) {
 	var response ECSTaskDefinitionSearchResponse
 	err := p.paginator.search(ctx, &response)
 	if err != nil {
@@ -10805,7 +10805,7 @@ func ListECSTaskDefinition(ctx context.Context, d *plugin.QueryData, _ *plugin.H
 	plugin.Logger(ctx).Trace("ListECSTaskDefinition")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -10837,7 +10837,7 @@ func GetECSTaskDefinition(ctx context.Context, d *plugin.QueryData, _ *plugin.Hy
 	plugin.Logger(ctx).Trace("GetECSTaskDefinition")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -10892,7 +10892,7 @@ type ECSClusterSearchResponse struct {
 }
 
 type ECSClusterPaginator struct {
-	paginator baseESPaginator
+	paginator *baseESPaginator
 }
 
 func (k Client) NewECSClusterPaginator(filters []BoolFilter, limit *int64) (ECSClusterPaginator, error) {
@@ -10902,7 +10902,7 @@ func (k Client) NewECSClusterPaginator(filters []BoolFilter, limit *int64) (ECSC
 	}
 
 	p := ECSClusterPaginator{
-		paginator: *paginator,
+		paginator: paginator,
 	}
 
 	return p, nil
@@ -10912,7 +10912,7 @@ func (p ECSClusterPaginator) HasNext() bool {
 	return !p.paginator.done
 }
 
-func (p *ECSClusterPaginator) NextPage(ctx context.Context) ([]ECSCluster, error) {
+func (p ECSClusterPaginator) NextPage(ctx context.Context) ([]ECSCluster, error) {
 	var response ECSClusterSearchResponse
 	err := p.paginator.search(ctx, &response)
 	if err != nil {
@@ -10940,7 +10940,7 @@ func ListECSCluster(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateD
 	plugin.Logger(ctx).Trace("ListECSCluster")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -10972,7 +10972,7 @@ func GetECSCluster(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateDa
 	plugin.Logger(ctx).Trace("GetECSCluster")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -11027,7 +11027,7 @@ type ECSServiceSearchResponse struct {
 }
 
 type ECSServicePaginator struct {
-	paginator baseESPaginator
+	paginator *baseESPaginator
 }
 
 func (k Client) NewECSServicePaginator(filters []BoolFilter, limit *int64) (ECSServicePaginator, error) {
@@ -11037,7 +11037,7 @@ func (k Client) NewECSServicePaginator(filters []BoolFilter, limit *int64) (ECSS
 	}
 
 	p := ECSServicePaginator{
-		paginator: *paginator,
+		paginator: paginator,
 	}
 
 	return p, nil
@@ -11047,7 +11047,7 @@ func (p ECSServicePaginator) HasNext() bool {
 	return !p.paginator.done
 }
 
-func (p *ECSServicePaginator) NextPage(ctx context.Context) ([]ECSService, error) {
+func (p ECSServicePaginator) NextPage(ctx context.Context) ([]ECSService, error) {
 	var response ECSServiceSearchResponse
 	err := p.paginator.search(ctx, &response)
 	if err != nil {
@@ -11075,7 +11075,7 @@ func ListECSService(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateD
 	plugin.Logger(ctx).Trace("ListECSService")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -11105,7 +11105,7 @@ func GetECSService(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateDa
 	plugin.Logger(ctx).Trace("GetECSService")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -11160,7 +11160,7 @@ type EFSFileSystemSearchResponse struct {
 }
 
 type EFSFileSystemPaginator struct {
-	paginator baseESPaginator
+	paginator *baseESPaginator
 }
 
 func (k Client) NewEFSFileSystemPaginator(filters []BoolFilter, limit *int64) (EFSFileSystemPaginator, error) {
@@ -11170,7 +11170,7 @@ func (k Client) NewEFSFileSystemPaginator(filters []BoolFilter, limit *int64) (E
 	}
 
 	p := EFSFileSystemPaginator{
-		paginator: *paginator,
+		paginator: paginator,
 	}
 
 	return p, nil
@@ -11180,7 +11180,7 @@ func (p EFSFileSystemPaginator) HasNext() bool {
 	return !p.paginator.done
 }
 
-func (p *EFSFileSystemPaginator) NextPage(ctx context.Context) ([]EFSFileSystem, error) {
+func (p EFSFileSystemPaginator) NextPage(ctx context.Context) ([]EFSFileSystem, error) {
 	var response EFSFileSystemSearchResponse
 	err := p.paginator.search(ctx, &response)
 	if err != nil {
@@ -11208,7 +11208,7 @@ func ListEFSFileSystem(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydra
 	plugin.Logger(ctx).Trace("ListEFSFileSystem")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -11240,7 +11240,7 @@ func GetEFSFileSystem(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydrat
 	plugin.Logger(ctx).Trace("GetEFSFileSystem")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -11295,7 +11295,7 @@ type EKSClusterSearchResponse struct {
 }
 
 type EKSClusterPaginator struct {
-	paginator baseESPaginator
+	paginator *baseESPaginator
 }
 
 func (k Client) NewEKSClusterPaginator(filters []BoolFilter, limit *int64) (EKSClusterPaginator, error) {
@@ -11305,7 +11305,7 @@ func (k Client) NewEKSClusterPaginator(filters []BoolFilter, limit *int64) (EKSC
 	}
 
 	p := EKSClusterPaginator{
-		paginator: *paginator,
+		paginator: paginator,
 	}
 
 	return p, nil
@@ -11315,7 +11315,7 @@ func (p EKSClusterPaginator) HasNext() bool {
 	return !p.paginator.done
 }
 
-func (p *EKSClusterPaginator) NextPage(ctx context.Context) ([]EKSCluster, error) {
+func (p EKSClusterPaginator) NextPage(ctx context.Context) ([]EKSCluster, error) {
 	var response EKSClusterSearchResponse
 	err := p.paginator.search(ctx, &response)
 	if err != nil {
@@ -11343,7 +11343,7 @@ func ListEKSCluster(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateD
 	plugin.Logger(ctx).Trace("ListEKSCluster")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -11375,7 +11375,7 @@ func GetEKSCluster(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateDa
 	plugin.Logger(ctx).Trace("GetEKSCluster")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -11430,7 +11430,7 @@ type EKSAddonSearchResponse struct {
 }
 
 type EKSAddonPaginator struct {
-	paginator baseESPaginator
+	paginator *baseESPaginator
 }
 
 func (k Client) NewEKSAddonPaginator(filters []BoolFilter, limit *int64) (EKSAddonPaginator, error) {
@@ -11440,7 +11440,7 @@ func (k Client) NewEKSAddonPaginator(filters []BoolFilter, limit *int64) (EKSAdd
 	}
 
 	p := EKSAddonPaginator{
-		paginator: *paginator,
+		paginator: paginator,
 	}
 
 	return p, nil
@@ -11450,7 +11450,7 @@ func (p EKSAddonPaginator) HasNext() bool {
 	return !p.paginator.done
 }
 
-func (p *EKSAddonPaginator) NextPage(ctx context.Context) ([]EKSAddon, error) {
+func (p EKSAddonPaginator) NextPage(ctx context.Context) ([]EKSAddon, error) {
 	var response EKSAddonSearchResponse
 	err := p.paginator.search(ctx, &response)
 	if err != nil {
@@ -11478,7 +11478,7 @@ func ListEKSAddon(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateDat
 	plugin.Logger(ctx).Trace("ListEKSAddon")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -11511,7 +11511,7 @@ func GetEKSAddon(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData
 	plugin.Logger(ctx).Trace("GetEKSAddon")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -11566,7 +11566,7 @@ type EKSIdentityProviderConfigSearchResponse struct {
 }
 
 type EKSIdentityProviderConfigPaginator struct {
-	paginator baseESPaginator
+	paginator *baseESPaginator
 }
 
 func (k Client) NewEKSIdentityProviderConfigPaginator(filters []BoolFilter, limit *int64) (EKSIdentityProviderConfigPaginator, error) {
@@ -11576,7 +11576,7 @@ func (k Client) NewEKSIdentityProviderConfigPaginator(filters []BoolFilter, limi
 	}
 
 	p := EKSIdentityProviderConfigPaginator{
-		paginator: *paginator,
+		paginator: paginator,
 	}
 
 	return p, nil
@@ -11586,7 +11586,7 @@ func (p EKSIdentityProviderConfigPaginator) HasNext() bool {
 	return !p.paginator.done
 }
 
-func (p *EKSIdentityProviderConfigPaginator) NextPage(ctx context.Context) ([]EKSIdentityProviderConfig, error) {
+func (p EKSIdentityProviderConfigPaginator) NextPage(ctx context.Context) ([]EKSIdentityProviderConfig, error) {
 	var response EKSIdentityProviderConfigSearchResponse
 	err := p.paginator.search(ctx, &response)
 	if err != nil {
@@ -11614,7 +11614,7 @@ func ListEKSIdentityProviderConfig(ctx context.Context, d *plugin.QueryData, _ *
 	plugin.Logger(ctx).Trace("ListEKSIdentityProviderConfig")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -11648,7 +11648,7 @@ func GetEKSIdentityProviderConfig(ctx context.Context, d *plugin.QueryData, _ *p
 	plugin.Logger(ctx).Trace("GetEKSIdentityProviderConfig")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -11703,7 +11703,7 @@ type WAFv2WebACLSearchResponse struct {
 }
 
 type WAFv2WebACLPaginator struct {
-	paginator baseESPaginator
+	paginator *baseESPaginator
 }
 
 func (k Client) NewWAFv2WebACLPaginator(filters []BoolFilter, limit *int64) (WAFv2WebACLPaginator, error) {
@@ -11713,7 +11713,7 @@ func (k Client) NewWAFv2WebACLPaginator(filters []BoolFilter, limit *int64) (WAF
 	}
 
 	p := WAFv2WebACLPaginator{
-		paginator: *paginator,
+		paginator: paginator,
 	}
 
 	return p, nil
@@ -11723,7 +11723,7 @@ func (p WAFv2WebACLPaginator) HasNext() bool {
 	return !p.paginator.done
 }
 
-func (p *WAFv2WebACLPaginator) NextPage(ctx context.Context) ([]WAFv2WebACL, error) {
+func (p WAFv2WebACLPaginator) NextPage(ctx context.Context) ([]WAFv2WebACL, error) {
 	var response WAFv2WebACLSearchResponse
 	err := p.paginator.search(ctx, &response)
 	if err != nil {
@@ -11751,7 +11751,7 @@ func ListWAFv2WebACL(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydrate
 	plugin.Logger(ctx).Trace("ListWAFv2WebACL")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -11785,7 +11785,7 @@ func GetWAFv2WebACL(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateD
 	plugin.Logger(ctx).Trace("GetWAFv2WebACL")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -11840,7 +11840,7 @@ type KMSKeySearchResponse struct {
 }
 
 type KMSKeyPaginator struct {
-	paginator baseESPaginator
+	paginator *baseESPaginator
 }
 
 func (k Client) NewKMSKeyPaginator(filters []BoolFilter, limit *int64) (KMSKeyPaginator, error) {
@@ -11850,7 +11850,7 @@ func (k Client) NewKMSKeyPaginator(filters []BoolFilter, limit *int64) (KMSKeyPa
 	}
 
 	p := KMSKeyPaginator{
-		paginator: *paginator,
+		paginator: paginator,
 	}
 
 	return p, nil
@@ -11860,7 +11860,7 @@ func (p KMSKeyPaginator) HasNext() bool {
 	return !p.paginator.done
 }
 
-func (p *KMSKeyPaginator) NextPage(ctx context.Context) ([]KMSKey, error) {
+func (p KMSKeyPaginator) NextPage(ctx context.Context) ([]KMSKey, error) {
 	var response KMSKeySearchResponse
 	err := p.paginator.search(ctx, &response)
 	if err != nil {
@@ -11888,7 +11888,7 @@ func ListKMSKey(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData)
 	plugin.Logger(ctx).Trace("ListKMSKey")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -11920,7 +11920,7 @@ func GetKMSKey(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) 
 	plugin.Logger(ctx).Trace("GetKMSKey")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -11975,7 +11975,7 @@ type LambdaFunctionSearchResponse struct {
 }
 
 type LambdaFunctionPaginator struct {
-	paginator baseESPaginator
+	paginator *baseESPaginator
 }
 
 func (k Client) NewLambdaFunctionPaginator(filters []BoolFilter, limit *int64) (LambdaFunctionPaginator, error) {
@@ -11985,7 +11985,7 @@ func (k Client) NewLambdaFunctionPaginator(filters []BoolFilter, limit *int64) (
 	}
 
 	p := LambdaFunctionPaginator{
-		paginator: *paginator,
+		paginator: paginator,
 	}
 
 	return p, nil
@@ -11995,7 +11995,7 @@ func (p LambdaFunctionPaginator) HasNext() bool {
 	return !p.paginator.done
 }
 
-func (p *LambdaFunctionPaginator) NextPage(ctx context.Context) ([]LambdaFunction, error) {
+func (p LambdaFunctionPaginator) NextPage(ctx context.Context) ([]LambdaFunction, error) {
 	var response LambdaFunctionSearchResponse
 	err := p.paginator.search(ctx, &response)
 	if err != nil {
@@ -12023,7 +12023,7 @@ func ListLambdaFunction(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydr
 	plugin.Logger(ctx).Trace("ListLambdaFunction")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -12055,7 +12055,7 @@ func GetLambdaFunction(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydra
 	plugin.Logger(ctx).Trace("GetLambdaFunction")
 
 	// create service
-	k, err := NewClient(GetConfig(d.Connection))
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache)
 	if err != nil {
 		return nil, err
 	}
