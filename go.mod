@@ -63,6 +63,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/sqs v1.12.1
 	github.com/aws/aws-sdk-go-v2/service/ssm v1.16.0
 	github.com/aws/aws-sdk-go-v2/service/sts v1.10.1
+	github.com/aws/aws-sdk-go-v2/service/support v1.11.0
 	github.com/aws/aws-sdk-go-v2/service/synthetics v1.9.1
 	github.com/aws/aws-sdk-go-v2/service/wafregional v1.8.1
 	github.com/aws/aws-sdk-go-v2/service/wafv2 v1.14.0
