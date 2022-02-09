@@ -16,8 +16,8 @@ const (
 
 func InitializeDb(db *Database) {
 	db.orm.AutoMigrate(
-		&Source{},
 		&Organization{},
+		&Source{},
 		&AWSMetadata{},
 		&AzureMetadata{},
 	)
