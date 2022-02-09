@@ -18,6 +18,8 @@ func InitializeDb(db *Database) {
 	db.orm.AutoMigrate(
 		&Source{},
 		&Organization{},
+		&AWSMetadata{},
+		&AzureMetadata{},
 	)
 }
 
@@ -37,6 +39,29 @@ const (
 	SourceUpdated SourceAction = "UPDATE"
 	SourceDeleted SourceAction = "DELETE"
 )
+
+type AWSMetadata struct {
+	gorm.Model
+	ID                 uuid.UUID `gorm:"primaryKey;type:uuid;default:uuid_generate_v4()"`
+	SourceID           int
+	AccountID          string
+	OrganizationID     string // null of not part of an aws organization
+	Email              string
+	Name               string
+	SupportTier        string
+	AlternateContact   string
+	SecurityHubEnabled bool
+	MacieEnabled       bool
+}
+
+type AzureMetadata struct {
+	gorm.Model
+	ID             uuid.UUID `gorm:"primaryKey;type:uuid;default:uuid_generate_v4()"`
+	SourceID       int
+	SubscriptionID int
+	OfferByID      int
+	DirectoryID    int
+}
 
 type Source struct {
 	gorm.Model

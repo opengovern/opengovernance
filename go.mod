@@ -101,6 +101,7 @@ require (
 	github.com/rcrowley/go-metrics v0.0.0-20201227073835-cf1acfcdf475 // indirect
 	github.com/spf13/cobra v1.2.1
 	github.com/streadway/amqp v1.0.0
+	github.com/stretchr/testify v1.7.0
 	github.com/swaggo/echo-swagger v1.1.4
 	github.com/swaggo/files v0.0.0-20210815190702-a29dd2bc99b2 // indirect
 	github.com/swaggo/swag v1.7.4 // indirect

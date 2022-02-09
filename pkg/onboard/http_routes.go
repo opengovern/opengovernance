@@ -216,7 +216,29 @@ func (h *HttpHandler) PostSourceAzure(ctx echo.Context) error {
 }
 
 func (h *HttpHandler) GetSource(ctx echo.Context) error {
-	panic("not implemented yet")
+	cc := ctx.(*Context)
+	p := ctx.Param("organizationId")
+	orgId, err := uuid.Parse(p)
+	if err != nil {
+		return ctx.JSON(http.StatusBadRequest, NewError(err))
+	}
+
+	p = ctx.Param("sourceId")
+	srcId, err := uuid.Parse(p)
+	if err != nil {
+		return ctx.JSON(http.StatusBadRequest, NewError(err))
+	}
+
+	src, err := h.db.GetSource(srcId)
+	if err != nil || src == nil {
+		return ctx.JSON(http.StatusBadRequest, NewError(err))
+	}
+
+	if src.OrganizationID != orgId {
+		return ctx.JSON(http.StatusBadRequest, fmt.Errorf("no source with id %q was found for organization with id %q", srcId, orgId))
+	}
+
+	return cc.JSON(http.StatusOK, src.toSourceResponse())
 }
 
 func (h *HttpHandler) PutSource(ctx echo.Context) error {

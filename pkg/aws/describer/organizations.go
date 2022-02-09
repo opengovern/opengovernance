@@ -10,7 +10,7 @@ import (
 )
 
 // IsAccountAMember Checks whether an account is a member of an organization or not.
-func IsAccountAMember(cfg, id string) bool {
+func IsAccountAMember(cfg aws.Config, id string) bool {
 	_, err := DescribeAccountById(cfg, id)
 	return err == nil
 }
@@ -23,7 +23,7 @@ func DescribeAccountById(cfg aws.Config, id string) (*types.Account, error) {
 	req, err := svc.DescribeAccount(context.Background(), &organizations.DescribeAccountInput{AccountId: aws.String(id)})
 	var notFoundErr *types.AWSOrganizationsNotInUseException
 	if errors.As(err, &notFoundErr) {
-		return nil, errors.Wrap(err, "account is not a member of organization")
+		return nil, err
 	}
 
 	return req.Account, nil
