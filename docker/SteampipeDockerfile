@@ -5,8 +5,5 @@ FROM registry.digitalocean.com/keibi/steampipe-plugin-azuread:0.0.1 as azuread
 FROM docker.io/turbot/steampipe:latest
 
 COPY --from=aws /steampipe-plugin-aws.plugin ~/.steampipe/plugins/hub.steampipe.io/plugins/turbot/aws@latest/steampipe-plugin-aws.plugin
-COPY --from=azure /steampipe-plugin-azure.plugin ~/.steampipe/plugins/hub.steampipe.io/plugins/turbot/aws@latest/steampipe-plugin-azure.plugin
-COPY --from=azuread /steampipe-plugin-azuread.plugin ~/.steampipe/plugins/hub.steampipe.io/plugins/turbot/aws@latest/steampipe-plugin-azuread.plugin
-
-WORKDIR /
-CMD [ "steampipe", "service", "start" ]
+COPY --from=azure /steampipe-plugin-azure.plugin ~/.steampipe/plugins/hub.steampipe.io/plugins/turbot/azure@latest/steampipe-plugin-azure.plugin
+COPY --from=azuread /steampipe-plugin-azuread.plugin ~/.steampipe/plugins/hub.steampipe.io/plugins/turbot/azuread@latest/steampipe-plugin-azuread.plugin
