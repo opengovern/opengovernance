@@ -3,7 +3,7 @@ FROM registry.digitalocean.com/keibi/steampipe-plugin-azure:0.0.1 as azure
 RUN ls /
 FROM registry.digitalocean.com/keibi/steampipe-plugin-azuread:0.0.1 as azuread
 
-FROM alpine:3.12
+FROM turbot/steampipe:latest
 
 ARG USER=steampipe
 ENV HOME /home/$USER
@@ -26,4 +26,4 @@ USER $USER
 RUN steampipe plugin install steampipe
 
 WORKDIR /steampipe-mod-aws-compliance
-CMD [ "steampipe", "check", "all" ]
+CMD [ "steampipe", "service", "start" ]

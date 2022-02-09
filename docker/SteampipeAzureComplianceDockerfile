@@ -2,14 +2,12 @@ FROM registry.digitalocean.com/keibi/steampipe-plugin-aws:0.0.1 as aws
 FROM registry.digitalocean.com/keibi/steampipe-plugin-azure:0.0.1 as azure
 FROM registry.digitalocean.com/keibi/steampipe-plugin-azuread:0.0.1 as azuread
 
-FROM alpine:3.12
+FROM turbot/steampipe:latest
 
 ARG USER=steampipe
 ENV HOME /home/$USER
 
 RUN apk add --no-cache --update git curl wget sudo
-
-RUN /bin/sh -c "$(curl -fsSL https://raw.githubusercontent.com/turbot/steampipe/main/install.sh )"
 
 COPY --from=aws /steampipe-plugin-aws.plugin ~/.steampipe/plugins/hub.steampipe.io/plugins/turbot/aws@latest/steampipe-plugin-aws.plugin
 COPY --from=azure /steampipe-plugin-azure.plugin ~/.steampipe/plugins/hub.steampipe.io/plugins/turbot/aws@latest/steampipe-plugin-azure.plugin
@@ -25,4 +23,4 @@ USER $USER
 RUN steampipe plugin install steampipe
 
 WORKDIR /steampipe-mod-azure-compliance
-CMD [ "steampipe", "check", "all" ]
+CMD [ "steampipe", "service", "start" ]
