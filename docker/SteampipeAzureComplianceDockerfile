@@ -3,23 +3,13 @@ FROM registry.digitalocean.com/keibi/steampipe-plugin-azure:0.0.1 as azure
 FROM registry.digitalocean.com/keibi/steampipe-plugin-azuread:0.0.1 as azuread
 
 FROM turbot/steampipe:latest
-
-ARG USER=steampipe
-ENV HOME /home/$USER
-
 RUN apk add --no-cache --update git curl wget sudo
 
 COPY --from=aws /steampipe-plugin-aws.plugin ~/.steampipe/plugins/hub.steampipe.io/plugins/turbot/aws@latest/steampipe-plugin-aws.plugin
 COPY --from=azure /steampipe-plugin-azure.plugin ~/.steampipe/plugins/hub.steampipe.io/plugins/turbot/aws@latest/steampipe-plugin-azure.plugin
 COPY --from=azuread /steampipe-plugin-azuread.plugin ~/.steampipe/plugins/hub.steampipe.io/plugins/turbot/aws@latest/steampipe-plugin-azuread.plugin
 
-RUN adduser -D $USER \
-        && echo "$USER ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/$USER \
-        && chmod 0440 /etc/sudoers.d/$USER
-
 RUN git clone https://github.com/turbot/steampipe-mod-azure-compliance.git /steampipe-mod-azure-compliance
-
-USER $USER
 RUN steampipe plugin install steampipe
 
 WORKDIR /steampipe-mod-azure-compliance
