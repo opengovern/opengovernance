@@ -51,14 +51,13 @@ deploy:      # This job runs in the deploy stage.
     - podman push registry.digitalocean.com/keibi/onboard-service:0.0.1
 
 deploy plugin:      # This job runs in the deploy stage.
-  stage: deploy  # It only runs when *both* jobs in the test stage complete successfully.
-  only:
-    - main
+  stage: test  # It only runs when *both* jobs in the test stage complete successfully.
+#  only:
+#    - main
+  when: manual
   image:
     name: quay.io/podman/stable
   script:
     - podman login -u "${DO_API_TOKEN}" -p "${DO_API_TOKEN}" "registry.digitalocean.com/keibi"
-    - podman build -f  docker/SteampipeAWSComplianceDockerfile . -t registry.digitalocean.com/keibi/steampipe-mod-aws-compliance:0.0.1
-    - podman build -f  docker/SteampipeAzureComplianceDockerfile . -t registry.digitalocean.com/keibi/steampipe-mod-azure-compliance:0.0.1
-    - podman push registry.digitalocean.com/keibi/steampipe-mod-aws-compliance:0.0.1
-    - podman push registry.digitalocean.com/keibi/steampipe-mod-azure-compliance:0.0.1
+    - podman build -f  docker/SteampipeDockerfile . -t registry.digitalocean.com/keibi/steampipe-service:0.0.1
+    - podman push registry.digitalocean.com/keibi/steampipe-service:0.0.1
