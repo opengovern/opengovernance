@@ -51,7 +51,7 @@ deploy:      # This job runs in the deploy stage.
     - podman push registry.digitalocean.com/keibi/onboard-service:0.0.1
 
 deploy plugin:      # This job runs in the deploy stage.
-  stage: test  # It only runs when *both* jobs in the test stage complete successfully.
+  stage: build  # It only runs when *both* jobs in the test stage complete successfully.
 #  only:
 #    - main
   when: manual
