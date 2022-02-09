@@ -2,7 +2,7 @@ FROM registry.digitalocean.com/keibi/steampipe-plugin-aws:0.0.1 as aws
 FROM registry.digitalocean.com/keibi/steampipe-plugin-azure:0.0.1 as azure
 FROM registry.digitalocean.com/keibi/steampipe-plugin-azuread:0.0.1 as azuread
 
-FROM turbot/steampipe:latest
+FROM docker.io/turbot/steampipe:latest
 
 COPY --from=aws /steampipe-plugin-aws.plugin ~/.steampipe/plugins/hub.steampipe.io/plugins/turbot/aws@latest/steampipe-plugin-aws.plugin
 COPY --from=azure /steampipe-plugin-azure.plugin ~/.steampipe/plugins/hub.steampipe.io/plugins/turbot/aws@latest/steampipe-plugin-azure.plugin
