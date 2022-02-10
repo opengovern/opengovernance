@@ -13,3 +13,7 @@ USER root
 RUN apt update && apt install -y git
 
 USER steampipe
+
+COPY run_mod .
+
+CMD [ "./run_mod" ]
