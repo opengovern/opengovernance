@@ -1,15 +1,15 @@
-#!/bin/bash
+#!/bin/sh
 
 PROVIDER=$1
 
-if [[ -z $PROVIDER ]]; then
+if [ -z $PROVIDER ]; then
     echo "Please specify the provider (aws|azure)"
     exit 1
 fi
 
-if [[ $PROVIDER == "aws" ]]; then
+if [ $PROVIDER -eq "aws" ]; then
     git clone https://github.com/turbot/steampipe-mod-azure-compliance.git /steampipe-mod-compliance
-elif [[ $PROVIDER == "aws" ]]; then
+elif [ $PROVIDER -eq "aws" ]; then
     git clone https://github.com/turbot/steampipe-mod-aws-compliance.git /steampipe-mod-compliance
 else
     echo "Invalid provider. Specify the provider (aws|azure)"
