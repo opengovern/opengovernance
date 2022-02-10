@@ -73,7 +73,7 @@ func (h *HttpHandler) GetOrganization(ctx echo.Context) error {
 		return ctx.JSON(http.StatusInternalServerError, NewError(err))
 	}
 
-	return ctx.JSON(http.StatusFound, org.toOrganizationResponse())
+	return ctx.JSON(http.StatusOK, org.toOrganizationResponse())
 }
 
 func (h *HttpHandler) PutOrganization(ctx echo.Context) error {
@@ -194,7 +194,7 @@ func (h *HttpHandler) PostSourceAzure(ctx echo.Context) error {
 		return cc.JSON(http.StatusInternalServerError, NewError(err))
 	}
 	src.ConfigRef = pathRef
-
+  
 	err = h.sourceEventsQueue.Publish(SourceEvent{
 		Action:     SourceCreated,
 		SourceID:   src.ID,
