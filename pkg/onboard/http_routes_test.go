@@ -3,6 +3,7 @@ package onboard
 import (
 	"fmt"
 	"log"
+	"net/http"
 	"net/http/httptest"
 	"testing"
 	"time"
@@ -30,7 +31,7 @@ func TestGetSource(t *testing.T) {
 	)
 
 	r := InitializeRouter()
-	h := &HttpHandler{}
+	h := &HttpHandler{db: Database{db}}
 	h.Register(r.Group("/api/v1"))
 
 	orgId := uuid.New()
@@ -58,5 +59,5 @@ func TestGetSource(t *testing.T) {
 	rec := httptest.NewRecorder()
 	r.ServeHTTP(rec, req)
 
-	assert.Equal(t, true, true, "The two words should be the same.")
+	assert.Equal(t, http.StatusOK, rec.Code)
 }
