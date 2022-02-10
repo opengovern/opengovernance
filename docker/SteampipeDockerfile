@@ -14,6 +14,6 @@ RUN apt update && apt install -y git
 
 USER steampipe
 
-COPY run_mod .
+COPY ./run_mod /usr/bin/
 
-CMD [ "./run_mod" ]
+CMD [ "run_mod" ]
