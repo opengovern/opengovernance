@@ -54,7 +54,7 @@ func TestGetSource(t *testing.T) {
 		CreatedAt:      time.Now().UTC(),
 	})
 
-	req := httptest.NewRequest(echo.GET, fmt.Sprintf("/api/v1/%s/sources/%s", orgId, srcId), nil)
+	req := httptest.NewRequest(echo.GET, fmt.Sprintf("/api/v1/organizations/%s/sources/%s", orgId, srcId), nil)
 	rec := httptest.NewRecorder()
 	r.ServeHTTP(rec, req)
 
