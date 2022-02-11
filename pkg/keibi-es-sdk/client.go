@@ -19,6 +19,7 @@ type ClientConfig struct {
 	Addresses []string `cty:"addresses"`
 	Username  *string  `cty:"username"`
 	Password  *string  `cty:"password"`
+	SourceID  *string  `cty:"sourceID"`
 }
 
 func ConfigSchema() map[string]*schema.Attribute {
@@ -31,6 +32,9 @@ func ConfigSchema() map[string]*schema.Attribute {
 			Type: schema.TypeString,
 		},
 		"password": {
+			Type: schema.TypeString,
+		},
+		"sourceID": {
 			Type: schema.TypeString,
 		},
 	}
