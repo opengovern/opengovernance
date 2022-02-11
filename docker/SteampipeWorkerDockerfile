@@ -2,18 +2,23 @@ FROM registry.digitalocean.com/keibi/steampipe-plugin-aws:0.0.1 as aws
 FROM registry.digitalocean.com/keibi/steampipe-plugin-azure:0.0.1 as azure
 FROM registry.digitalocean.com/keibi/steampipe-plugin-azuread:0.0.1 as azuread
 
-FROM docker.io/turbot/steampipe:latest
+FROM docker.io/golang:alpine as build
+RUN apk --no-cache add ca-certificates
+
+FROM scratch
+COPY --from=build /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
+
+RUN apk --no-cache add curl git wget
+RUN /bin/sh -c "$(curl -fsSL https://raw.githubusercontent.com/turbot/steampipe/main/install.sh)"
+RUN steampipe plugin install steampipe
 
 COPY --from=aws /steampipe-plugin-aws.plugin /home/steampipe/.steampipe/plugins/hub.steampipe.io/plugins/turbot/aws@latest/steampipe-plugin-aws.plugin
 COPY --from=azure /steampipe-plugin-azure.plugin /home/steampipe/.steampipe/plugins/hub.steampipe.io/plugins/turbot/azure@latest/steampipe-plugin-azure.plugin
 COPY --from=azuread /steampipe-plugin-azuread.plugin /home/steampipe/.steampipe/plugins/hub.steampipe.io/plugins/turbot/azuread@latest/steampipe-plugin-azuread.plugin
 
-USER root
+RUN git clone https://github.com/turbot/steampipe-mod-azure-compliance.git /steampipe-mod-azure-compliance
+RUN git clone https://github.com/turbot/steampipe-mod-aws-compliance.git /steampipe-mod-aws-compliance
 
-RUN apt update && apt install -y git
+COPY ./build/steampipe-worker /
 
-USER steampipe
-
-COPY docker/run_mod /usr/bin/
-
-CMD [ "run_mod" ]
+CMD [ "/steampipe-worker" ]
