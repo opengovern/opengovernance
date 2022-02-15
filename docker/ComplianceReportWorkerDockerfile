@@ -19,6 +19,6 @@ COPY --from=azuread /steampipe-plugin-azuread.plugin /home/steampipe/.steampipe/
 RUN git clone https://github.com/turbot/steampipe-mod-azure-compliance.git /steampipe-mod-azure-compliance
 RUN git clone https://github.com/turbot/steampipe-mod-aws-compliance.git /steampipe-mod-aws-compliance
 
-COPY ./build/steampipe-worker /
+COPY ./build/compliance-report-worker /
 
-CMD [ "/steampipe-worker" ]
+CMD [ "/compliance-report-worker" ]

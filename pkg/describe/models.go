@@ -2,6 +2,7 @@ package describe
 
 import (
 	"database/sql"
+	compliance_report "gitlab.com/keibiengine/keibi-engine/pkg/compliance-report"
 
 	"github.com/google/uuid"
 	"gorm.io/gorm"
@@ -25,12 +26,15 @@ func IsValidSourceType(t SourceType) bool {
 
 type Source struct {
 	gorm.Model
-	ID                 uuid.UUID `gorm:"type:uuid;default:uuid_generate_v4()"`
-	Type               SourceType
-	ConfigRef          string
-	LastDescribedAt    sql.NullTime
-	NextDescribeAt     sql.NullTime
-	DescribeSourceJobs []DescribeSourceJob `gorm:"foreignKey:SourceID;constraint:OnDelete:CASCADE;"`
+	ID                     uuid.UUID `gorm:"type:uuid;default:uuid_generate_v4()"`
+	Type                   SourceType
+	ConfigRef              string
+	LastDescribedAt        sql.NullTime
+	NextDescribeAt         sql.NullTime
+	LastComplianceReportAt sql.NullTime
+	NextComplianceReportAt sql.NullTime
+	DescribeSourceJobs     []DescribeSourceJob   `gorm:"foreignKey:SourceID;constraint:OnDelete:CASCADE;"`
+	ComplianceReportJobs   []ComplianceReportJob `gorm:"foreignKey:SourceID;constraint:OnDelete:CASCADE;"`
 }
 
 type DescribeSourceJobStatus string
@@ -47,6 +51,14 @@ type DescribeSourceJob struct {
 	SourceID             uuid.UUID             // Not the primary key but should be a unique identifier
 	DescribeResourceJobs []DescribeResourceJob `gorm:"foreignKey:ParentJobID;constraint:OnDelete:CASCADE;"`
 	Status               DescribeSourceJobStatus
+}
+
+type ComplianceReportJob struct {
+	gorm.Model
+	SourceID       uuid.UUID // Not the primary key but should be a unique identifier
+	Status         compliance_report.ComplianceReportJobStatus
+	S3ResultURL    string // url to result file in s3 storage
+	FailureMessage string // Should be NULLSTRING
 }
 
 type DescribeResourceJobStatus string

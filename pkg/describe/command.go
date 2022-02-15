@@ -9,9 +9,11 @@ import (
 )
 
 const (
-	DescribeJobsQueueName    = "describe-jobs-queue"
-	DescribeResultsQueueName = "describe-results-queue"
-	SourceEventsQueueName    = "source-events-queue"
+	DescribeJobsQueueName            = "describe-jobs-queue"
+	DescribeResultsQueueName         = "describe-results-queue"
+	ComplianceReportJobsQueueName    = "compliance-report-jobs-queue"
+	ComplianceReportResultsQueueName = "compliance-report-results-queue"
+	SourceEventsQueueName            = "source-events-queue"
 )
 
 var (
@@ -55,6 +57,8 @@ func SchedulerCommand() *cobra.Command {
 				RabbitMQPort,
 				DescribeJobsQueueName,
 				DescribeResultsQueueName,
+				ComplianceReportJobsQueueName,
+				ComplianceReportResultsQueueName,
 				SourceEventsQueueName,
 				PostgreSQLUser,
 				PostgreSQLPassword,

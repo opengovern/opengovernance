@@ -3,6 +3,7 @@ package describe
 import (
 	"encoding/json"
 	"fmt"
+	compliancereport "gitlab.com/keibiengine/keibi-engine/pkg/compliance-report"
 	"time"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/aws"
@@ -13,9 +14,10 @@ import (
 )
 
 const (
-	JobCompletionInterval   = 1 * time.Minute
-	JobSchedulingInterval   = 1 * time.Minute
-	JobTimeoutCheckInterval = 15 * time.Minute
+	JobCompletionInterval       = 1 * time.Minute
+	JobSchedulingInterval       = 1 * time.Minute
+	JobComplianceReportInterval = 1 * time.Minute
+	JobTimeoutCheckInterval     = 15 * time.Minute
 )
 
 type Scheduler struct {
@@ -27,6 +29,9 @@ type Scheduler struct {
 	jobResultQueue queue.Interface
 	// sourceQueue is used to consume source updates by the onboarding service.
 	sourceQueue queue.Interface
+
+	complianceReportJobQueue       queue.Interface
+	complianceReportJobResultQueue queue.Interface
 }
 
 func InitializeScheduler(
@@ -37,6 +42,8 @@ func InitializeScheduler(
 	rabbitMQPort int,
 	describeJobQueue string,
 	describeJobResultQueue string,
+	complianceReportJobQueue string,
+	complianceReportJobResultQueue string,
 	sourceQueue string,
 	postgresUsername string,
 	postgresPassword string,
@@ -105,6 +112,38 @@ func InitializeScheduler(
 	fmt.Println("Connected to the source events queue: ", sourceQueue)
 	s.sourceQueue = sourceEventsQueue
 
+	qCfg = queue.Config{}
+	qCfg.Server.Username = rabbitMQUsername
+	qCfg.Server.Password = rabbitMQPassword
+	qCfg.Server.Host = rabbitMQHost
+	qCfg.Server.Port = rabbitMQPort
+	qCfg.Queue.Name = complianceReportJobQueue
+	qCfg.Queue.Durable = true
+	qCfg.Consumer.ID = s.id
+	complianceReportJobsQueue, err := queue.New(qCfg)
+	if err != nil {
+		return nil, err
+	}
+
+	fmt.Println("Connected to the compliance report jobs queue: ", complianceReportJobsQueue)
+	s.complianceReportJobQueue = complianceReportJobsQueue
+
+	qCfg = queue.Config{}
+	qCfg.Server.Username = rabbitMQUsername
+	qCfg.Server.Password = rabbitMQPassword
+	qCfg.Server.Host = rabbitMQHost
+	qCfg.Server.Port = rabbitMQPort
+	qCfg.Queue.Name = complianceReportJobResultQueue
+	qCfg.Queue.Durable = true
+	qCfg.Consumer.ID = s.id
+	complianceReportJobsResultQueue, err := queue.New(qCfg)
+	if err != nil {
+		return nil, err
+	}
+
+	fmt.Println("Connected to the compliance report jobs result queue: ", complianceReportJobsResultQueue)
+	s.complianceReportJobResultQueue = complianceReportJobsResultQueue
+
 	dsn := fmt.Sprintf(`host=%s port=%s user=%s password=%s dbname=%s sslmode=disable TimeZone=GMT`,
 		postgresHost,
 		postgresPort,
@@ -133,7 +172,8 @@ func (s *Scheduler) Run() error {
 	go s.RunSourceEventsConsumer()
 	go s.RunJobCompletionUpdater()
 	go s.RunDescribeScheduler()
-
+	go s.RunComplianceReportScheduler()
+	go s.RunComplianceReportJobResultsConsumer()
 	// RunJobResultsConsumer shouldn't return.
 	// If it does, indicates a failure with consume
 	return s.RunJobResultsConsumer()
@@ -310,6 +350,84 @@ func (s *Scheduler) RunJobResultsConsumer() error {
 	}
 }
 
+func (s *Scheduler) RunComplianceReportScheduler() {
+	fmt.Println("Scheduling ComplianceReport jobs on a timer")
+	t := time.NewTicker(JobComplianceReportInterval)
+	defer t.Stop()
+
+	for ; ; <-t.C {
+		sources, err := s.db.QuerySourcesDueForComplianceReport()
+		if err != nil {
+			fmt.Printf("Error finding the next sources to create ComplianceReportJob: %s\n", err.Error())
+			continue
+		}
+
+		for _, source := range sources {
+			fmt.Printf("Source[%s] is due for a steampipe check. Creating a ComplianceReportJob now\n", source.ID)
+
+			crj := newComplianceReportJob(source)
+			err := s.db.CreateComplianceReportJob(&crj)
+			if err != nil {
+				fmt.Printf("Failed to create ComplianceReportJob[%d] for Source[%d]: %s\n", crj.ID, source.ID, err.Error())
+				continue
+			}
+
+			enqueueComplianceReportJobs(s.db, s.jobQueue, source, &crj)
+
+			err = s.db.UpdateSourceReportGenerated(source.ID)
+			if err != nil {
+				fmt.Printf("Failed to update report job of Source[%d]: %s\n", source.ID, err.Error())
+			}
+		}
+	}
+}
+
+// RunComplianceReportJobResultsConsumer consumes messages from the complianceReportJobResultQueue queue.
+// It will update the status of the jobs in the database based on the message.
+// It will also update the jobs status that are not completed in certain time to FAILED
+func (s *Scheduler) RunComplianceReportJobResultsConsumer() error {
+	fmt.Println("Consuming messages from the ComplianceReportJobResultQueue queue")
+
+	msgs, err := s.complianceReportJobResultQueue.Consume()
+	if err != nil {
+		return err
+	}
+
+	t := time.NewTicker(JobTimeoutCheckInterval)
+	defer t.Stop()
+
+	for {
+		select {
+		case msg, ok := <-msgs:
+			if !ok {
+				return fmt.Errorf("tasks channel is closed")
+			}
+
+			var result compliancereport.JobResult
+			if err := json.Unmarshal(msg.Body, &result); err != nil {
+				fmt.Printf("Failed to unmarshal ComplianceReportJob results: %s\n", err.Error())
+				msg.Nack(false, false)
+				continue
+			}
+
+			fmt.Printf("Processing ReportJobResult for Job[%d]: job status is %s\n", result.JobID, result.Status)
+			err := s.db.UpdateComplianceReportJob(result.JobID, result.Status, result.Error, result.S3ResultURL)
+			if err != nil {
+				fmt.Printf("Failed to update the status of ComplianceReportJob[%d]: %s\n", result.JobID, err.Error())
+				msg.Nack(false, true)
+				continue
+			}
+
+			msg.Ack(false)
+		case <-t.C:
+			err := s.db.UpdateComplianceReportJobsTimedOut()
+			if err != nil {
+				fmt.Printf("Failed to update timed out ComplianceReportJob: %s\n", err.Error())
+			}
+		}
+	}
+}
+
 func (s *Scheduler) Stop() {
 	if s.jobQueue != nil {
 		s.jobQueue.Close()
@@ -356,6 +474,13 @@ func newDescribeSourceJob(a Source) DescribeSourceJob {
 	return daj
 }
 
+func newComplianceReportJob(a Source) ComplianceReportJob {
+	return ComplianceReportJob{
+		SourceID: a.ID,
+		Status:   compliancereport.ComplianceReportJobCreated,
+	}
+}
+
 func enqueueDescribeResourceJobs(db Database, q queue.Interface, a Source, daj DescribeSourceJob) {
 	for i, drj := range daj.DescribeResourceJobs {
 		nextStatus := DescribeResourceJobQueued
@@ -382,4 +507,28 @@ func enqueueDescribeResourceJobs(db Database, q queue.Interface, a Source, daj D
 
 		daj.DescribeResourceJobs[i].Status = nextStatus
 	}
+}
+
+func enqueueComplianceReportJobs(db Database, q queue.Interface, a Source, crj *ComplianceReportJob) {
+	nextStatus := compliancereport.ComplianceReportJobInProgress
+	errMsg := ""
+
+	err := q.Publish(compliancereport.Job{
+		JobID:      crj.ID,
+		SourceType: compliancereport.SourceType(a.Type),
+		ConfigReg:  a.ConfigRef,
+	})
+	if err != nil {
+		fmt.Printf("Failed to Queue ComplianceReportJob[%d]: %s\n", crj.ID, err.Error())
+
+		nextStatus = compliancereport.ComplianceReportJobCompletedWithFailure
+		errMsg = fmt.Sprintf("queue: %s", err.Error())
+	}
+
+	err = db.UpdateComplianceReportJob(crj.ID, nextStatus, errMsg, "")
+	if err != nil {
+		fmt.Printf("Failed to update ComplianceReportJob[%d]: %s\n", crj.ID, err.Error())
+	}
+
+	crj.Status = nextStatus
 }
