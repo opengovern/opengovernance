@@ -1,4 +1,4 @@
-package steampipe
+package compliance_report
 
 import (
 	"errors"
@@ -7,8 +7,8 @@ import (
 )
 
 const (
-	JobsQueueName    = "steampipe-jobs-queue"
-	ResultsQueueName = "steampipe-results-queue"
+	JobsQueueName    = "compliance-report-jobs-queue"
+	ResultsQueueName = "compliance-report-results-queue"
 )
 
 type ElasticSearchConfig struct {
@@ -28,14 +28,20 @@ type S3ClientConfig struct {
 	Key      string
 	Secret   string
 	Endpoint string
-	Region   string
 	Bucket   string
+}
+
+type VaultConfig struct {
+	Address  string
+	RoleName string
+	Token    string
 }
 
 type Config struct {
 	S3Client      S3ClientConfig
 	RabbitMQ      RabbitMQConfig
 	ElasticSearch ElasticSearchConfig
+	Vault         VaultConfig
 }
 
 func WorkerCommand() *cobra.Command {
@@ -52,12 +58,15 @@ func WorkerCommand() *cobra.Command {
 	config.S3Client.Endpoint = os.Getenv("S3_ENDPOINT")
 	config.S3Client.Key = os.Getenv("S3_KEY")
 	config.S3Client.Secret = os.Getenv("S3_SECRET")
-	config.S3Client.Region = os.Getenv("S3_REGION")
 	config.S3Client.Bucket = os.Getenv("S3_BUCKET")
 
 	config.ElasticSearch.Address = os.Getenv("ES_ADDRESS")
 	config.ElasticSearch.Username = os.Getenv("ES_USERNAME")
 	config.ElasticSearch.Password = os.Getenv("ES_PASSWORD")
+
+	config.Vault.Address = os.Getenv("VAULT_ADDRESS")
+	config.Vault.Token = os.Getenv("VAULT_TOKEN")
+	config.Vault.RoleName = os.Getenv("VAULT_ROLE")
 
 	cmd := &cobra.Command{
 		PreRunE: func(cmd *cobra.Command, args []string) error {
