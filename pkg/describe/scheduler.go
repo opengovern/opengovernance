@@ -372,7 +372,7 @@ func (s *Scheduler) RunComplianceReportScheduler() {
 				continue
 			}
 
-			enqueueComplianceReportJobs(s.db, s.jobQueue, source, &crj)
+			enqueueComplianceReportJobs(s.db, s.complianceReportJobQueue, source, &crj)
 
 			err = s.db.UpdateSourceReportGenerated(source.ID)
 			if err != nil {
