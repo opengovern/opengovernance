@@ -164,7 +164,7 @@ func InitializeScheduler(
 }
 
 func (s *Scheduler) Run() error {
-	err := s.db.orm.AutoMigrate(&Source{}, &DescribeSourceJob{}, &DescribeResourceJob{})
+	err := s.db.orm.AutoMigrate(&Source{}, &DescribeSourceJob{}, &DescribeResourceJob{}, &ComplianceReportJob{})
 	if err != nil {
 		return err
 	}
