@@ -69,7 +69,7 @@ func (j *Job) failed(msg string, args ...interface{}) JobResult {
 func (j *Job) Do(vlt vault.Keibi, s3Client s3iface.S3API, config Config) JobResult {
 	cfg, err := vlt.ReadSourceConfig(j.ConfigReg)
 	if err != nil {
-		return j.failed("error: failed to read vault config due to " + err.Error())
+		return j.failed("error: read source config: " + err.Error())
 	}
 
 	var accountID string
@@ -77,29 +77,29 @@ func (j *Job) Do(vlt vault.Keibi, s3Client s3iface.S3API, config Config) JobResu
 	case SourceCloudAWS:
 		creds, err := AWSAccountConfigFromMap(cfg)
 		if err != nil {
-			return j.failed("error: failed to convert vault config to aws config due to " + err.Error())
+			return j.failed("error: AWSAccountConfigFromMap: " + err.Error())
 		}
 		accountID = creds.AccountID
 
 		err = BuildSpecFile("aws", config.ElasticSearch, accountID)
 		if err != nil {
-			return j.failed("error: failed to build aws spec file due to " + err.Error())
+			return j.failed("error: BuildSpecFile: " + err.Error())
 		}
 	case SourceCloudAzure:
 		creds, err := AzureSubscriptionConfigFromMap(cfg)
 		if err != nil {
-			return j.failed("error: failed to convert vault config to azure config due to " + err.Error())
+			return j.failed("error: AzureSubscriptionConfigFromMap: " + err.Error())
 		}
 		accountID = creds.SubscriptionID
 
 		err = BuildSpecFile("azure", config.ElasticSearch, accountID)
 		if err != nil {
-			return j.failed("error: failed to build azure spec file due to " + err.Error())
+			return j.failed("error: BuildSpecFile(azure): " + err.Error())
 		}
 
 		err = BuildSpecFile("azuread", config.ElasticSearch, accountID)
 		if err != nil {
-			return j.failed("error: failed to build azuread spec file due to " + err.Error())
+			return j.failed("error: BuildSpecFile(azuread) " + err.Error())
 		}
 	default:
 		return j.failed("error: invalid source type")
@@ -109,17 +109,17 @@ func (j *Job) Do(vlt vault.Keibi, s3Client s3iface.S3API, config Config) JobResu
 
 	err = RunSteampipeCheckAll(j.SourceType, resultFileName)
 	if err != nil {
-		return j.failed("error: failed to run check all due to " + err.Error())
+		return j.failed("error: RunSteampipeCheckAll: " + err.Error())
 	}
 
 	file, err := os.OpenFile(resultFileName, os.O_RDONLY, os.ModePerm)
 	if err != nil {
-		return j.failed("error: failed to open result file due to " + err.Error())
+		return j.failed("error: OpenFile: " + err.Error())
 	}
 
 	urlStr, err := UploadIntoS3Storage(s3Client, config.S3Client.Bucket, resultFileName, file)
 	if err != nil {
-		return j.failed("error: failed to upload result file into s3 storage due to " + err.Error())
+		return j.failed("error: UploadIntoS3Storage: " + err.Error())
 	}
 
 	return JobResult{
