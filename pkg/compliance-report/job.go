@@ -58,10 +58,10 @@ type SteampipeResultStatusJson struct {
 	Error int `json:"error"`
 }
 
-func (j *Job) JobFailed(err string) JobResult {
+func (j *Job) failed(msg string, args ...interface{}) JobResult {
 	return JobResult{
 		JobID:  j.JobID,
-		Error:  err,
+		Error:  fmt.Sprintf(msg, args),
 		Status: ComplianceReportJobCompletedWithFailure,
 	}
 }
@@ -69,7 +69,7 @@ func (j *Job) JobFailed(err string) JobResult {
 func (j *Job) Do(vlt vault.Keibi, s3Client s3iface.S3API, config Config) JobResult {
 	cfg, err := vlt.ReadSourceConfig(j.ConfigReg)
 	if err != nil {
-		return j.JobFailed("error: failed to read vault config due to " + err.Error())
+		return j.failed("error: failed to read vault config due to " + err.Error())
 	}
 
 	var accountID string
@@ -77,49 +77,49 @@ func (j *Job) Do(vlt vault.Keibi, s3Client s3iface.S3API, config Config) JobResu
 	case SourceCloudAWS:
 		creds, err := AWSAccountConfigFromMap(cfg)
 		if err != nil {
-			return j.JobFailed("error: failed to convert vault config to aws config due to " + err.Error())
+			return j.failed("error: failed to convert vault config to aws config due to " + err.Error())
 		}
 		accountID = creds.AccountID
 
 		err = BuildSpecFile("aws", config.ElasticSearch, accountID)
 		if err != nil {
-			return j.JobFailed("error: failed to build aws spec file due to " + err.Error())
+			return j.failed("error: failed to build aws spec file due to " + err.Error())
 		}
 	case SourceCloudAzure:
 		creds, err := AzureSubscriptionConfigFromMap(cfg)
 		if err != nil {
-			return j.JobFailed("error: failed to convert vault config to azure config due to " + err.Error())
+			return j.failed("error: failed to convert vault config to azure config due to " + err.Error())
 		}
 		accountID = creds.SubscriptionID
 
 		err = BuildSpecFile("azure", config.ElasticSearch, accountID)
 		if err != nil {
-			return j.JobFailed("error: failed to build azure spec file due to " + err.Error())
+			return j.failed("error: failed to build azure spec file due to " + err.Error())
 		}
 
 		err = BuildSpecFile("azuread", config.ElasticSearch, accountID)
 		if err != nil {
-			return j.JobFailed("error: failed to build azuread spec file due to " + err.Error())
+			return j.failed("error: failed to build azuread spec file due to " + err.Error())
 		}
 	default:
-		return j.JobFailed("error: invalid source type")
+		return j.failed("error: invalid source type")
 	}
 
 	resultFileName := fmt.Sprintf("result-%s-%d.json", accountID, time.Now().Unix())
 
 	err = RunSteampipeCheckAll(j.SourceType, resultFileName)
 	if err != nil {
-		return j.JobFailed("error: failed to run check all due to " + err.Error())
+		return j.failed("error: failed to run check all due to " + err.Error())
 	}
 
 	file, err := os.OpenFile(resultFileName, os.O_RDONLY, os.ModePerm)
 	if err != nil {
-		return j.JobFailed("error: failed to open result file due to " + err.Error())
+		return j.failed("error: failed to open result file due to " + err.Error())
 	}
 
 	urlStr, err := UploadIntoS3Storage(s3Client, config.S3Client.Bucket, resultFileName, file)
 	if err != nil {
-		return j.JobFailed("error: failed to upload result file into s3 storage due to " + err.Error())
+		return j.failed("error: failed to upload result file into s3 storage due to " + err.Error())
 	}
 
 	return JobResult{
@@ -143,6 +143,11 @@ func RunSteampipeCheckAll(sourceType SourceType, exportFileName string) error {
 
 	cmd := exec.Command("steampipe", "check", "all",
 		"--export", exportFileName, "--workspace-chdir", workspaceDir)
+	// steampipe will return total of alarms + errors as exit code
+	// that would result in error on cmd.Run() output.
+	// to prevent error on having alarms we ignore the error reported by cmd.Run()
+	// exported json summery object is being used for discovering whether
+	// there's an error or not
 	_ = cmd.Run()
 
 	contentBytes, err := ioutil.ReadFile(exportFileName)
