@@ -34,7 +34,7 @@ import (
 	es "github.com/aws/aws-sdk-go-v2/service/elasticsearchservice/types"
 	emr "github.com/aws/aws-sdk-go-v2/service/emr/types"
 	fsx "github.com/aws/aws-sdk-go-v2/service/fsx/types"
-	guardduty "github.com/aws/aws-sdk-go-v2/service/guardduty"
+	"github.com/aws/aws-sdk-go-v2/service/guardduty"
 	guarddutytypes "github.com/aws/aws-sdk-go-v2/service/guardduty/types"
 	iam "github.com/aws/aws-sdk-go-v2/service/iam/types"
 	kms "github.com/aws/aws-sdk-go-v2/service/kms/types"
@@ -44,11 +44,12 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/redshift"
 	redshifttypes "github.com/aws/aws-sdk-go-v2/service/redshift/types"
 	s3 "github.com/aws/aws-sdk-go-v2/service/s3/types"
-	s3control "github.com/aws/aws-sdk-go-v2/service/s3control/types"
+	"github.com/aws/aws-sdk-go-v2/service/s3control"
+	s3controltypes "github.com/aws/aws-sdk-go-v2/service/s3control/types"
 	"github.com/aws/aws-sdk-go-v2/service/sagemaker"
 	sagemakertypes "github.com/aws/aws-sdk-go-v2/service/sagemaker/types"
 	"github.com/aws/aws-sdk-go-v2/service/secretsmanager"
-	securityhub "github.com/aws/aws-sdk-go-v2/service/securityhub"
+	"github.com/aws/aws-sdk-go-v2/service/securityhub"
 	sns "github.com/aws/aws-sdk-go-v2/service/sns/types"
 	ssm "github.com/aws/aws-sdk-go-v2/service/ssm/types"
 	wafv2 "github.com/aws/aws-sdk-go-v2/service/wafv2/types"
@@ -756,7 +757,7 @@ type S3BucketDescription struct {
 
 //index:aws_s3_accountsettingdescription
 type S3AccountSettingDescription struct {
-	PublicAccessBlockConfiguration s3control.PublicAccessBlockConfiguration
+	PublicAccessBlockConfiguration s3controltypes.PublicAccessBlockConfiguration
 }
 
 //  ===================  SageMaker  ===================
@@ -893,4 +894,13 @@ type KMSKeyDescription struct {
 type LambdaFunctionDescription struct {
 	Function *lambda.GetFunctionOutput
 	Policy   *lambda.GetPolicyOutput
+}
+
+//index:aws_s3_accesspoint
+//getfilter:name=description.AccessPoint.Name
+//getfilter:region=metadata.region
+type S3AccessPointDescription struct {
+	AccessPoint  *s3control.GetAccessPointOutput
+	Policy       *string
+	PolicyStatus *s3controltypes.PolicyStatus
 }

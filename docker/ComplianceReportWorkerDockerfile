@@ -16,6 +16,7 @@ USER root
 RUN git clone https://github.com/turbot/steampipe-mod-azure-compliance.git /steampipe-mod-azure-compliance
 RUN git clone https://github.com/turbot/steampipe-mod-aws-compliance.git /steampipe-mod-aws-compliance
 RUN chown -R steampipe. /steampipe*
+RUN chown -R steampipe. /home/steampipe/.steampipe/plugins/*
 USER steampipe
 
 COPY ./build/compliance-report-worker /
