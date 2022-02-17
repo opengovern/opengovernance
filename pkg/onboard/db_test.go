@@ -47,7 +47,6 @@ func TestCreateSource(t *testing.T) {
 		&Organization{},
 		&Source{},
 		&AWSMetadata{},
-		&AzureMetadata{},
 	)
 
 	s := Source{}

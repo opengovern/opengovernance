@@ -19,7 +19,6 @@ func InitializeDb(db *Database) {
 		&Organization{},
 		&Source{},
 		&AWSMetadata{},
-		&AzureMetadata{},
 	)
 }
 
@@ -45,7 +44,7 @@ type AWSMetadata struct {
 	ID                 uuid.UUID `gorm:"primaryKey;type:uuid;default:uuid_generate_v4()"`
 	SourceID           string
 	AccountID          string
-	OrganizationID     string // null of not part of an aws organization
+	OrganizationID     *string // null of not part of an aws organization
 	Email              string
 	Name               string
 	SupportTier        string

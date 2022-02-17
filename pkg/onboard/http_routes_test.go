@@ -16,20 +16,24 @@ import (
 	"gorm.io/gorm"
 )
 
-func TestGetSource(t *testing.T) {
+func setupDB(t *testing.T) (*gorm.DB) {
 	dsn := "postgres://postgres:mysecretpassword@localhost:5432/postgres"
 	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	if err != nil {
-		log.Fatal(err)
+		t.Fatal(err)
 	}
 
 	db.AutoMigrate(
 		&Organization{},
 		&Source{},
 		&AWSMetadata{},
-		&AzureMetadata{},
 	)
+        
+        return db
+}
 
+func TestGetSource(t *testing.T) {
+        db := setupDB(t)
 	r := InitializeRouter()
 	h := &HttpHandler{db: Database{db}}
 	h.Register(r.Group("/api/v1"))
@@ -73,7 +77,6 @@ func TestGetOrganization(t *testing.T) {
 		&Organization{},
 		&Source{},
 		&AWSMetadata{},
-		&AzureMetadata{},
 	)
 
 	r := InitializeRouter()

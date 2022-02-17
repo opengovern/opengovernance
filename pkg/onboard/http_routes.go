@@ -145,24 +145,7 @@ func (h *HttpHandler) PostSourceAws(ctx echo.Context) error {
 	// ensure that the org id is valid
 	org, err := h.db.GetOrganization(orgId)
 	if err != nil || org == nil {
-		return cc.JSON(http.StatusBadRequest, NewError(err))
-	}
-
-	// write config to the vault
-	pathRef, err := h.vault.WriteSourceConfig(orgId, src.ID, string(SourceCloudAWS), req.Config)
-	if err != nil {
-		return cc.JSON(http.StatusInternalServerError, NewError(err))
-	}
-	src.ConfigRef = pathRef
-
-	err = h.sourceEventsQueue.Publish(SourceEvent{
-		Action:     SourceCreated,
-		SourceID:   src.ID,
-		SourceType: src.Type,
-		ConfigRef:  src.ConfigRef,
-	})
-	if err != nil {
-		fmt.Println(err.Error()) // TODO
+		return cc.JSON(http.StatusNotFound, NewError(err))
 	}
 
 	accID, err := describer.GetAccountId(ctx.Request().Context(), cfg)
@@ -197,6 +180,25 @@ func (h *HttpHandler) PostSourceAws(ctx echo.Context) error {
 	} else if atx.RowsAffected != 1 {
 		return cc.JSON(http.StatusBadRequest, NewError(fmt.Errorf("create aws metadata: didn't create aws metadata due to id conflict: %w", atx.Error)))
 	}
+
+	// write config to the vault
+	pathRef, err := h.vault.WriteSourceConfig(orgId, src.ID, string(SourceCloudAWS), req.Config)
+	if err != nil {
+		return cc.JSON(http.StatusInternalServerError, NewError(err))
+	}
+	src.ConfigRef = pathRef
+
+
+	err = h.sourceEventsQueue.Publish(SourceEvent{
+		Action:     SourceCreated,
+		SourceID:   src.ID,
+		SourceType: src.Type,
+		ConfigRef:  src.ConfigRef,
+	})
+	if err != nil {
+		fmt.Println(err.Error()) // TODO
+	}
+
 
 	return cc.JSON(http.StatusCreated, src.toSourceResponse())
 }
