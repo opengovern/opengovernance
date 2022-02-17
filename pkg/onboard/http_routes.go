@@ -6,6 +6,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
+	"gitlab.com/keibiengine/keibi-engine/pkg/aws"
 	"gitlab.com/keibiengine/keibi-engine/pkg/aws/describer"
 	"gorm.io/gorm/clause"
 )
@@ -135,7 +136,7 @@ func (h *HttpHandler) PostSourceAws(ctx echo.Context) error {
 		return cc.JSON(http.StatusBadRequest, NewError(err))
 	}
 
-	cfg, err := describer.GetConfig(ctx.Request().Context(), req.Config.AccessKey, req.Config.SecretKey)
+	cfg, err := aws.GetConfig(ctx.Request().Context(), req.Config.AccessKey, req.Config.SecretKey, "", "")
 	if err != nil {
 		return cc.JSON(http.StatusBadRequest, NewError(err))
 	}
@@ -188,7 +189,6 @@ func (h *HttpHandler) PostSourceAws(ctx echo.Context) error {
 	}
 	src.ConfigRef = pathRef
 
-
 	err = h.sourceEventsQueue.Publish(SourceEvent{
 		Action:     SourceCreated,
 		SourceID:   src.ID,
@@ -198,7 +198,6 @@ func (h *HttpHandler) PostSourceAws(ctx echo.Context) error {
 	if err != nil {
 		fmt.Println(err.Error()) // TODO
 	}
-
 
 	return cc.JSON(http.StatusCreated, src.toSourceResponse())
 }
