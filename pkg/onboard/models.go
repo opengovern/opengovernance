@@ -54,15 +54,6 @@ type AWSMetadata struct {
 	MacieEnabled       bool
 }
 
-type AzureMetadata struct {
-	gorm.Model
-	ID             uuid.UUID `gorm:"primaryKey;type:uuid;default:uuid_generate_v4()"`
-	SourceID       int
-	SubscriptionID int
-	OfferByID      int
-	DirectoryID    int
-}
-
 type Source struct {
 	gorm.Model
 	ID             uuid.UUID `gorm:"primaryKey;type:uuid;default:uuid_generate_v4()"`
