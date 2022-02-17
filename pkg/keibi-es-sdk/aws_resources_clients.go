@@ -12081,3 +12081,139 @@ func GetLambdaFunction(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydra
 }
 
 // ==========================  END: LambdaFunction =============================
+
+// ==========================  START: S3AccessPoint =============================
+
+type S3AccessPoint struct {
+	Description aws.S3AccessPointDescription `json:"description"`
+	Metadata    aws.Metadata                 `json:"metadata"`
+}
+
+type S3AccessPointHit struct {
+	ID      string        `json:"_id"`
+	Score   float64       `json:"_score"`
+	Index   string        `json:"_index"`
+	Type    string        `json:"_type"`
+	Version int64         `json:"_version,omitempty"`
+	Source  S3AccessPoint `json:"_source"`
+	Sort    []interface{} `json:"sort"`
+}
+
+type S3AccessPointHits struct {
+	Total SearchTotal        `json:"total"`
+	Hits  []S3AccessPointHit `json:"hits"`
+}
+
+type S3AccessPointSearchResponse struct {
+	PitID string            `json:"pit_id"`
+	Hits  S3AccessPointHits `json:"hits"`
+}
+
+type S3AccessPointPaginator struct {
+	paginator *baseESPaginator
+}
+
+func (k Client) NewS3AccessPointPaginator(filters []BoolFilter, limit *int64) (S3AccessPointPaginator, error) {
+	paginator, err := newPaginator(k.es, "aws_s3_accesspoint", filters, limit)
+	if err != nil {
+		return S3AccessPointPaginator{}, err
+	}
+
+	p := S3AccessPointPaginator{
+		paginator: paginator,
+	}
+
+	return p, nil
+}
+
+func (p S3AccessPointPaginator) HasNext() bool {
+	return !p.paginator.done
+}
+
+func (p S3AccessPointPaginator) NextPage(ctx context.Context) ([]S3AccessPoint, error) {
+	var response S3AccessPointSearchResponse
+	err := p.paginator.search(ctx, &response)
+	if err != nil {
+		return nil, err
+	}
+
+	var values []S3AccessPoint
+	for _, hit := range response.Hits.Hits {
+		values = append(values, hit.Source)
+	}
+
+	hits := int64(len(response.Hits.Hits))
+	if hits > 0 {
+		p.paginator.updateState(hits, response.Hits.Hits[hits-1].Sort, response.PitID)
+	} else {
+		p.paginator.updateState(hits, nil, "")
+	}
+
+	return values, nil
+}
+
+var listS3AccessPointFilters = map[string]string{}
+
+func ListS3AccessPoint(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("ListS3AccessPoint")
+
+	// create service
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache, ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	paginator, err := k.NewS3AccessPointPaginator(buildFilter(d.KeyColumnQuals, listS3AccessPointFilters), d.QueryContext.Limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			d.StreamListItem(ctx, v)
+		}
+	}
+
+	return nil, nil
+}
+
+var getS3AccessPointFilters = map[string]string{
+	"name":   "description.AccessPoint.Name",
+	"region": "metadata.region",
+}
+
+func GetS3AccessPoint(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("GetS3AccessPoint")
+
+	// create service
+	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache, ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	limit := int64(1)
+	paginator, err := k.NewS3AccessPointPaginator(buildFilter(d.KeyColumnQuals, getS3AccessPointFilters), &limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			return v, nil
+		}
+	}
+
+	return nil, nil
+}
+
+// ==========================  END: S3AccessPoint =============================

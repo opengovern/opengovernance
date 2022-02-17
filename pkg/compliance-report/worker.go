@@ -46,12 +46,12 @@ func InitializeWorker(
 	qCfg.Queue.Name = complianceReportJobQueue
 	qCfg.Queue.Durable = true
 	qCfg.Consumer.ID = w.id
-	describeQueue, err := queue.New(qCfg)
+	reportJobQueue, err := queue.New(qCfg)
 	if err != nil {
 		return nil, err
 	}
 
-	w.jobQueue = describeQueue
+	w.jobQueue = reportJobQueue
 
 	qCfg = queue.Config{}
 	qCfg.Server.Username = config.RabbitMQ.Username
@@ -61,12 +61,12 @@ func InitializeWorker(
 	qCfg.Queue.Name = complianceReportJobResultQueue
 	qCfg.Queue.Durable = true
 	qCfg.Producer.ID = w.id
-	describeResultsQueue, err := queue.New(qCfg)
+	reportResultQueue, err := queue.New(qCfg)
 	if err != nil {
 		return nil, err
 	}
 
-	w.jobResultQueue = describeResultsQueue
+	w.jobResultQueue = reportResultQueue
 
 	s3Config := &aws.Config{
 		Credentials: credentials.NewStaticCredentials(config.S3Client.Key, config.S3Client.Secret, ""),
@@ -123,7 +123,7 @@ func (w *Worker) Run() error {
 		return err
 	}
 
-	fmt.Printf("Waiting indefinitly for messages. To exit press CTRL+C")
+	fmt.Printf("Waiting indefinitly for messages. To exit press CTRL+C\n")
 	for msg := range msgs {
 		var job Job
 		if err := json.Unmarshal(msg.Body, &job); err != nil {
@@ -139,10 +139,11 @@ func (w *Worker) Run() error {
 			fmt.Printf("Failed to send results to queue: %s", err.Error())
 		}
 
+		fmt.Printf("A job is done and result is published into the result queue, result: %v\n", result)
 		msg.Ack(false)
 	}
 
-	return fmt.Errorf("descibe jobs channel is closed")
+	return fmt.Errorf("report jobs channel is closed")
 }
 
 func (w *Worker) Stop() {

@@ -13,9 +13,10 @@ COPY --from=azure /steampipe-plugin-azure.plugin /home/steampipe/.steampipe/plug
 COPY --from=azuread /steampipe-plugin-azuread.plugin /home/steampipe/.steampipe/plugins/hub.steampipe.io/plugins/turbot/azuread@latest/steampipe-plugin-azuread.plugin
 
 USER root
-RUN git clone https://github.com/turbot/steampipe-mod-azure-compliance.git /steampipe-mod-azure-compliance
-RUN git clone https://github.com/turbot/steampipe-mod-aws-compliance.git /steampipe-mod-aws-compliance
+RUN git clone https://github.com/turbot/steampipe-mod-azure-compliance.git /steampipe-mod-azure-compliance && cd /steampipe-mod-azure-compliance && git checkout v0.10
+RUN git clone https://github.com/turbot/steampipe-mod-aws-compliance.git /steampipe-mod-aws-compliance && cd /steampipe-mod-aws-compliance && git checkout v0.23
 RUN chown -R steampipe. /steampipe*
+RUN chown -R steampipe. /home/steampipe/.steampipe/plugins/*
 USER steampipe
 
 COPY ./build/compliance-report-worker /
