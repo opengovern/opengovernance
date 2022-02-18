@@ -50,7 +50,7 @@ type BoolFilter interface {
 	IsBoolFilter()
 }
 
-func buildFilter(equalQuals plugin.KeyColumnEqualsQualMap, filtersQuals map[string]string) []BoolFilter {
+func buildFilter(equalQuals plugin.KeyColumnEqualsQualMap, filtersQuals map[string]string, accountProvider, accountID string) []BoolFilter {
 	var filters []BoolFilter
 	for columnName, filterName := range filtersQuals {
 		if equalQuals[columnName] == nil {
@@ -73,6 +73,15 @@ func buildFilter(equalQuals plugin.KeyColumnEqualsQualMap, filtersQuals map[stri
 
 		filters = append(filters, filter)
 	}
+
+	var accountFieldName string
+	switch accountProvider {
+	case "aws":
+		accountFieldName = "account_id"
+	case "azure":
+		accountFieldName = "subscription_id"
+	}
+	filters = append(filters, TermFilter("metadata." + accountFieldName, accountID))
 	return filters
 }
 

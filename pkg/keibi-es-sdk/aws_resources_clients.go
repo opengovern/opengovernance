@@ -85,12 +85,13 @@ func ListAccessAnalyzerAnalyzer(ctx context.Context, d *plugin.QueryData, _ *plu
 	plugin.Logger(ctx).Trace("ListAccessAnalyzerAnalyzer")
 
 	// create service
-	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache, ctx)
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	paginator, err := k.NewAccessAnalyzerAnalyzerPaginator(buildFilter(d.KeyColumnQuals, listAccessAnalyzerAnalyzerFilters), d.QueryContext.Limit)
+	paginator, err := k.NewAccessAnalyzerAnalyzerPaginator(buildFilter(d.KeyColumnQuals, listAccessAnalyzerAnalyzerFilters, "aws", *cfg.AccountID), d.QueryContext.Limit)
 	if err != nil {
 		return nil, err
 	}
@@ -117,13 +118,14 @@ func GetAccessAnalyzerAnalyzer(ctx context.Context, d *plugin.QueryData, _ *plug
 	plugin.Logger(ctx).Trace("GetAccessAnalyzerAnalyzer")
 
 	// create service
-	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache, ctx)
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	limit := int64(1)
-	paginator, err := k.NewAccessAnalyzerAnalyzerPaginator(buildFilter(d.KeyColumnQuals, getAccessAnalyzerAnalyzerFilters), &limit)
+	paginator, err := k.NewAccessAnalyzerAnalyzerPaginator(buildFilter(d.KeyColumnQuals, getAccessAnalyzerAnalyzerFilters, "aws", *cfg.AccountID), &limit)
 	if err != nil {
 		return nil, err
 	}
@@ -220,12 +222,13 @@ func ListApiGatewayStage(ctx context.Context, d *plugin.QueryData, _ *plugin.Hyd
 	plugin.Logger(ctx).Trace("ListApiGatewayStage")
 
 	// create service
-	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache, ctx)
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	paginator, err := k.NewApiGatewayStagePaginator(buildFilter(d.KeyColumnQuals, listApiGatewayStageFilters), d.QueryContext.Limit)
+	paginator, err := k.NewApiGatewayStagePaginator(buildFilter(d.KeyColumnQuals, listApiGatewayStageFilters, "aws", *cfg.AccountID), d.QueryContext.Limit)
 	if err != nil {
 		return nil, err
 	}
@@ -253,13 +256,14 @@ func GetApiGatewayStage(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydr
 	plugin.Logger(ctx).Trace("GetApiGatewayStage")
 
 	// create service
-	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache, ctx)
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	limit := int64(1)
-	paginator, err := k.NewApiGatewayStagePaginator(buildFilter(d.KeyColumnQuals, getApiGatewayStageFilters), &limit)
+	paginator, err := k.NewApiGatewayStagePaginator(buildFilter(d.KeyColumnQuals, getApiGatewayStageFilters, "aws", *cfg.AccountID), &limit)
 	if err != nil {
 		return nil, err
 	}
@@ -356,12 +360,13 @@ func ListApiGatewayV2Stage(ctx context.Context, d *plugin.QueryData, _ *plugin.H
 	plugin.Logger(ctx).Trace("ListApiGatewayV2Stage")
 
 	// create service
-	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache, ctx)
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	paginator, err := k.NewApiGatewayV2StagePaginator(buildFilter(d.KeyColumnQuals, listApiGatewayV2StageFilters), d.QueryContext.Limit)
+	paginator, err := k.NewApiGatewayV2StagePaginator(buildFilter(d.KeyColumnQuals, listApiGatewayV2StageFilters, "aws", *cfg.AccountID), d.QueryContext.Limit)
 	if err != nil {
 		return nil, err
 	}
@@ -389,13 +394,14 @@ func GetApiGatewayV2Stage(ctx context.Context, d *plugin.QueryData, _ *plugin.Hy
 	plugin.Logger(ctx).Trace("GetApiGatewayV2Stage")
 
 	// create service
-	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache, ctx)
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	limit := int64(1)
-	paginator, err := k.NewApiGatewayV2StagePaginator(buildFilter(d.KeyColumnQuals, getApiGatewayV2StageFilters), &limit)
+	paginator, err := k.NewApiGatewayV2StagePaginator(buildFilter(d.KeyColumnQuals, getApiGatewayV2StageFilters, "aws", *cfg.AccountID), &limit)
 	if err != nil {
 		return nil, err
 	}
@@ -492,12 +498,13 @@ func ListElasticBeanstalkEnvironment(ctx context.Context, d *plugin.QueryData, _
 	plugin.Logger(ctx).Trace("ListElasticBeanstalkEnvironment")
 
 	// create service
-	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache, ctx)
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	paginator, err := k.NewElasticBeanstalkEnvironmentPaginator(buildFilter(d.KeyColumnQuals, listElasticBeanstalkEnvironmentFilters), d.QueryContext.Limit)
+	paginator, err := k.NewElasticBeanstalkEnvironmentPaginator(buildFilter(d.KeyColumnQuals, listElasticBeanstalkEnvironmentFilters, "aws", *cfg.AccountID), d.QueryContext.Limit)
 	if err != nil {
 		return nil, err
 	}
@@ -524,13 +531,14 @@ func GetElasticBeanstalkEnvironment(ctx context.Context, d *plugin.QueryData, _ 
 	plugin.Logger(ctx).Trace("GetElasticBeanstalkEnvironment")
 
 	// create service
-	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache, ctx)
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	limit := int64(1)
-	paginator, err := k.NewElasticBeanstalkEnvironmentPaginator(buildFilter(d.KeyColumnQuals, getElasticBeanstalkEnvironmentFilters), &limit)
+	paginator, err := k.NewElasticBeanstalkEnvironmentPaginator(buildFilter(d.KeyColumnQuals, getElasticBeanstalkEnvironmentFilters, "aws", *cfg.AccountID), &limit)
 	if err != nil {
 		return nil, err
 	}
@@ -627,12 +635,13 @@ func ListElastiCacheReplicationGroup(ctx context.Context, d *plugin.QueryData, _
 	plugin.Logger(ctx).Trace("ListElastiCacheReplicationGroup")
 
 	// create service
-	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache, ctx)
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	paginator, err := k.NewElastiCacheReplicationGroupPaginator(buildFilter(d.KeyColumnQuals, listElastiCacheReplicationGroupFilters), d.QueryContext.Limit)
+	paginator, err := k.NewElastiCacheReplicationGroupPaginator(buildFilter(d.KeyColumnQuals, listElastiCacheReplicationGroupFilters, "aws", *cfg.AccountID), d.QueryContext.Limit)
 	if err != nil {
 		return nil, err
 	}
@@ -659,13 +668,14 @@ func GetElastiCacheReplicationGroup(ctx context.Context, d *plugin.QueryData, _ 
 	plugin.Logger(ctx).Trace("GetElastiCacheReplicationGroup")
 
 	// create service
-	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache, ctx)
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	limit := int64(1)
-	paginator, err := k.NewElastiCacheReplicationGroupPaginator(buildFilter(d.KeyColumnQuals, getElastiCacheReplicationGroupFilters), &limit)
+	paginator, err := k.NewElastiCacheReplicationGroupPaginator(buildFilter(d.KeyColumnQuals, getElastiCacheReplicationGroupFilters, "aws", *cfg.AccountID), &limit)
 	if err != nil {
 		return nil, err
 	}
@@ -762,12 +772,13 @@ func ListESDomain(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateDat
 	plugin.Logger(ctx).Trace("ListESDomain")
 
 	// create service
-	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache, ctx)
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	paginator, err := k.NewESDomainPaginator(buildFilter(d.KeyColumnQuals, listESDomainFilters), d.QueryContext.Limit)
+	paginator, err := k.NewESDomainPaginator(buildFilter(d.KeyColumnQuals, listESDomainFilters, "aws", *cfg.AccountID), d.QueryContext.Limit)
 	if err != nil {
 		return nil, err
 	}
@@ -794,13 +805,14 @@ func GetESDomain(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData
 	plugin.Logger(ctx).Trace("GetESDomain")
 
 	// create service
-	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache, ctx)
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	limit := int64(1)
-	paginator, err := k.NewESDomainPaginator(buildFilter(d.KeyColumnQuals, getESDomainFilters), &limit)
+	paginator, err := k.NewESDomainPaginator(buildFilter(d.KeyColumnQuals, getESDomainFilters, "aws", *cfg.AccountID), &limit)
 	if err != nil {
 		return nil, err
 	}
@@ -897,12 +909,13 @@ func ListEMRCluster(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateD
 	plugin.Logger(ctx).Trace("ListEMRCluster")
 
 	// create service
-	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache, ctx)
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	paginator, err := k.NewEMRClusterPaginator(buildFilter(d.KeyColumnQuals, listEMRClusterFilters), d.QueryContext.Limit)
+	paginator, err := k.NewEMRClusterPaginator(buildFilter(d.KeyColumnQuals, listEMRClusterFilters, "aws", *cfg.AccountID), d.QueryContext.Limit)
 	if err != nil {
 		return nil, err
 	}
@@ -929,13 +942,14 @@ func GetEMRCluster(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateDa
 	plugin.Logger(ctx).Trace("GetEMRCluster")
 
 	// create service
-	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache, ctx)
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	limit := int64(1)
-	paginator, err := k.NewEMRClusterPaginator(buildFilter(d.KeyColumnQuals, getEMRClusterFilters), &limit)
+	paginator, err := k.NewEMRClusterPaginator(buildFilter(d.KeyColumnQuals, getEMRClusterFilters, "aws", *cfg.AccountID), &limit)
 	if err != nil {
 		return nil, err
 	}
@@ -1032,12 +1046,13 @@ func ListGuardDutyFinding(ctx context.Context, d *plugin.QueryData, _ *plugin.Hy
 	plugin.Logger(ctx).Trace("ListGuardDutyFinding")
 
 	// create service
-	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache, ctx)
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	paginator, err := k.NewGuardDutyFindingPaginator(buildFilter(d.KeyColumnQuals, listGuardDutyFindingFilters), d.QueryContext.Limit)
+	paginator, err := k.NewGuardDutyFindingPaginator(buildFilter(d.KeyColumnQuals, listGuardDutyFindingFilters, "aws", *cfg.AccountID), d.QueryContext.Limit)
 	if err != nil {
 		return nil, err
 	}
@@ -1062,13 +1077,14 @@ func GetGuardDutyFinding(ctx context.Context, d *plugin.QueryData, _ *plugin.Hyd
 	plugin.Logger(ctx).Trace("GetGuardDutyFinding")
 
 	// create service
-	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache, ctx)
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	limit := int64(1)
-	paginator, err := k.NewGuardDutyFindingPaginator(buildFilter(d.KeyColumnQuals, getGuardDutyFindingFilters), &limit)
+	paginator, err := k.NewGuardDutyFindingPaginator(buildFilter(d.KeyColumnQuals, getGuardDutyFindingFilters, "aws", *cfg.AccountID), &limit)
 	if err != nil {
 		return nil, err
 	}
@@ -1165,12 +1181,13 @@ func ListGuardDutyDetector(ctx context.Context, d *plugin.QueryData, _ *plugin.H
 	plugin.Logger(ctx).Trace("ListGuardDutyDetector")
 
 	// create service
-	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache, ctx)
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	paginator, err := k.NewGuardDutyDetectorPaginator(buildFilter(d.KeyColumnQuals, listGuardDutyDetectorFilters), d.QueryContext.Limit)
+	paginator, err := k.NewGuardDutyDetectorPaginator(buildFilter(d.KeyColumnQuals, listGuardDutyDetectorFilters, "aws", *cfg.AccountID), d.QueryContext.Limit)
 	if err != nil {
 		return nil, err
 	}
@@ -1197,13 +1214,14 @@ func GetGuardDutyDetector(ctx context.Context, d *plugin.QueryData, _ *plugin.Hy
 	plugin.Logger(ctx).Trace("GetGuardDutyDetector")
 
 	// create service
-	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache, ctx)
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	limit := int64(1)
-	paginator, err := k.NewGuardDutyDetectorPaginator(buildFilter(d.KeyColumnQuals, getGuardDutyDetectorFilters), &limit)
+	paginator, err := k.NewGuardDutyDetectorPaginator(buildFilter(d.KeyColumnQuals, getGuardDutyDetectorFilters, "aws", *cfg.AccountID), &limit)
 	if err != nil {
 		return nil, err
 	}
@@ -1300,12 +1318,13 @@ func ListBackupPlan(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateD
 	plugin.Logger(ctx).Trace("ListBackupPlan")
 
 	// create service
-	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache, ctx)
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	paginator, err := k.NewBackupPlanPaginator(buildFilter(d.KeyColumnQuals, listBackupPlanFilters), d.QueryContext.Limit)
+	paginator, err := k.NewBackupPlanPaginator(buildFilter(d.KeyColumnQuals, listBackupPlanFilters, "aws", *cfg.AccountID), d.QueryContext.Limit)
 	if err != nil {
 		return nil, err
 	}
@@ -1332,13 +1351,14 @@ func GetBackupPlan(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateDa
 	plugin.Logger(ctx).Trace("GetBackupPlan")
 
 	// create service
-	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache, ctx)
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	limit := int64(1)
-	paginator, err := k.NewBackupPlanPaginator(buildFilter(d.KeyColumnQuals, getBackupPlanFilters), &limit)
+	paginator, err := k.NewBackupPlanPaginator(buildFilter(d.KeyColumnQuals, getBackupPlanFilters, "aws", *cfg.AccountID), &limit)
 	if err != nil {
 		return nil, err
 	}
@@ -1435,12 +1455,13 @@ func ListBackupSelection(ctx context.Context, d *plugin.QueryData, _ *plugin.Hyd
 	plugin.Logger(ctx).Trace("ListBackupSelection")
 
 	// create service
-	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache, ctx)
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	paginator, err := k.NewBackupSelectionPaginator(buildFilter(d.KeyColumnQuals, listBackupSelectionFilters), d.QueryContext.Limit)
+	paginator, err := k.NewBackupSelectionPaginator(buildFilter(d.KeyColumnQuals, listBackupSelectionFilters, "aws", *cfg.AccountID), d.QueryContext.Limit)
 	if err != nil {
 		return nil, err
 	}
@@ -1468,13 +1489,14 @@ func GetBackupSelection(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydr
 	plugin.Logger(ctx).Trace("GetBackupSelection")
 
 	// create service
-	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache, ctx)
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	limit := int64(1)
-	paginator, err := k.NewBackupSelectionPaginator(buildFilter(d.KeyColumnQuals, getBackupSelectionFilters), &limit)
+	paginator, err := k.NewBackupSelectionPaginator(buildFilter(d.KeyColumnQuals, getBackupSelectionFilters, "aws", *cfg.AccountID), &limit)
 	if err != nil {
 		return nil, err
 	}
@@ -1571,12 +1593,13 @@ func ListBackupVault(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydrate
 	plugin.Logger(ctx).Trace("ListBackupVault")
 
 	// create service
-	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache, ctx)
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	paginator, err := k.NewBackupVaultPaginator(buildFilter(d.KeyColumnQuals, listBackupVaultFilters), d.QueryContext.Limit)
+	paginator, err := k.NewBackupVaultPaginator(buildFilter(d.KeyColumnQuals, listBackupVaultFilters, "aws", *cfg.AccountID), d.QueryContext.Limit)
 	if err != nil {
 		return nil, err
 	}
@@ -1603,13 +1626,14 @@ func GetBackupVault(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateD
 	plugin.Logger(ctx).Trace("GetBackupVault")
 
 	// create service
-	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache, ctx)
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	limit := int64(1)
-	paginator, err := k.NewBackupVaultPaginator(buildFilter(d.KeyColumnQuals, getBackupVaultFilters), &limit)
+	paginator, err := k.NewBackupVaultPaginator(buildFilter(d.KeyColumnQuals, getBackupVaultFilters, "aws", *cfg.AccountID), &limit)
 	if err != nil {
 		return nil, err
 	}
@@ -1710,12 +1734,13 @@ func ListBackupRecoveryPoint(ctx context.Context, d *plugin.QueryData, _ *plugin
 	plugin.Logger(ctx).Trace("ListBackupRecoveryPoint")
 
 	// create service
-	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache, ctx)
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	paginator, err := k.NewBackupRecoveryPointPaginator(buildFilter(d.KeyColumnQuals, listBackupRecoveryPointFilters), d.QueryContext.Limit)
+	paginator, err := k.NewBackupRecoveryPointPaginator(buildFilter(d.KeyColumnQuals, listBackupRecoveryPointFilters, "aws", *cfg.AccountID), d.QueryContext.Limit)
 	if err != nil {
 		return nil, err
 	}
@@ -1743,13 +1768,14 @@ func GetBackupRecoveryPoint(ctx context.Context, d *plugin.QueryData, _ *plugin.
 	plugin.Logger(ctx).Trace("GetBackupRecoveryPoint")
 
 	// create service
-	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache, ctx)
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	limit := int64(1)
-	paginator, err := k.NewBackupRecoveryPointPaginator(buildFilter(d.KeyColumnQuals, getBackupRecoveryPointFilters), &limit)
+	paginator, err := k.NewBackupRecoveryPointPaginator(buildFilter(d.KeyColumnQuals, getBackupRecoveryPointFilters, "aws", *cfg.AccountID), &limit)
 	if err != nil {
 		return nil, err
 	}
@@ -1846,12 +1872,13 @@ func ListBackupProtectedResource(ctx context.Context, d *plugin.QueryData, _ *pl
 	plugin.Logger(ctx).Trace("ListBackupProtectedResource")
 
 	// create service
-	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache, ctx)
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	paginator, err := k.NewBackupProtectedResourcePaginator(buildFilter(d.KeyColumnQuals, listBackupProtectedResourceFilters), d.QueryContext.Limit)
+	paginator, err := k.NewBackupProtectedResourcePaginator(buildFilter(d.KeyColumnQuals, listBackupProtectedResourceFilters, "aws", *cfg.AccountID), d.QueryContext.Limit)
 	if err != nil {
 		return nil, err
 	}
@@ -1878,13 +1905,14 @@ func GetBackupProtectedResource(ctx context.Context, d *plugin.QueryData, _ *plu
 	plugin.Logger(ctx).Trace("GetBackupProtectedResource")
 
 	// create service
-	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache, ctx)
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	limit := int64(1)
-	paginator, err := k.NewBackupProtectedResourcePaginator(buildFilter(d.KeyColumnQuals, getBackupProtectedResourceFilters), &limit)
+	paginator, err := k.NewBackupProtectedResourcePaginator(buildFilter(d.KeyColumnQuals, getBackupProtectedResourceFilters, "aws", *cfg.AccountID), &limit)
 	if err != nil {
 		return nil, err
 	}
@@ -1981,12 +2009,13 @@ func ListCloudFrontDistribution(ctx context.Context, d *plugin.QueryData, _ *plu
 	plugin.Logger(ctx).Trace("ListCloudFrontDistribution")
 
 	// create service
-	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache, ctx)
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	paginator, err := k.NewCloudFrontDistributionPaginator(buildFilter(d.KeyColumnQuals, listCloudFrontDistributionFilters), d.QueryContext.Limit)
+	paginator, err := k.NewCloudFrontDistributionPaginator(buildFilter(d.KeyColumnQuals, listCloudFrontDistributionFilters, "aws", *cfg.AccountID), d.QueryContext.Limit)
 	if err != nil {
 		return nil, err
 	}
@@ -2013,13 +2042,14 @@ func GetCloudFrontDistribution(ctx context.Context, d *plugin.QueryData, _ *plug
 	plugin.Logger(ctx).Trace("GetCloudFrontDistribution")
 
 	// create service
-	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache, ctx)
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	limit := int64(1)
-	paginator, err := k.NewCloudFrontDistributionPaginator(buildFilter(d.KeyColumnQuals, getCloudFrontDistributionFilters), &limit)
+	paginator, err := k.NewCloudFrontDistributionPaginator(buildFilter(d.KeyColumnQuals, getCloudFrontDistributionFilters, "aws", *cfg.AccountID), &limit)
 	if err != nil {
 		return nil, err
 	}
@@ -2119,12 +2149,13 @@ func ListCloudWatchAlarm(ctx context.Context, d *plugin.QueryData, _ *plugin.Hyd
 	plugin.Logger(ctx).Trace("ListCloudWatchAlarm")
 
 	// create service
-	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache, ctx)
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	paginator, err := k.NewCloudWatchAlarmPaginator(buildFilter(d.KeyColumnQuals, listCloudWatchAlarmFilters), d.QueryContext.Limit)
+	paginator, err := k.NewCloudWatchAlarmPaginator(buildFilter(d.KeyColumnQuals, listCloudWatchAlarmFilters, "aws", *cfg.AccountID), d.QueryContext.Limit)
 	if err != nil {
 		return nil, err
 	}
@@ -2151,13 +2182,14 @@ func GetCloudWatchAlarm(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydr
 	plugin.Logger(ctx).Trace("GetCloudWatchAlarm")
 
 	// create service
-	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache, ctx)
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	limit := int64(1)
-	paginator, err := k.NewCloudWatchAlarmPaginator(buildFilter(d.KeyColumnQuals, getCloudWatchAlarmFilters), &limit)
+	paginator, err := k.NewCloudWatchAlarmPaginator(buildFilter(d.KeyColumnQuals, getCloudWatchAlarmFilters, "aws", *cfg.AccountID), &limit)
 	if err != nil {
 		return nil, err
 	}
@@ -2256,12 +2288,13 @@ func ListCloudWatchLogsLogGroup(ctx context.Context, d *plugin.QueryData, _ *plu
 	plugin.Logger(ctx).Trace("ListCloudWatchLogsLogGroup")
 
 	// create service
-	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache, ctx)
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	paginator, err := k.NewCloudWatchLogsLogGroupPaginator(buildFilter(d.KeyColumnQuals, listCloudWatchLogsLogGroupFilters), d.QueryContext.Limit)
+	paginator, err := k.NewCloudWatchLogsLogGroupPaginator(buildFilter(d.KeyColumnQuals, listCloudWatchLogsLogGroupFilters, "aws", *cfg.AccountID), d.QueryContext.Limit)
 	if err != nil {
 		return nil, err
 	}
@@ -2288,13 +2321,14 @@ func GetCloudWatchLogsLogGroup(ctx context.Context, d *plugin.QueryData, _ *plug
 	plugin.Logger(ctx).Trace("GetCloudWatchLogsLogGroup")
 
 	// create service
-	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache, ctx)
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	limit := int64(1)
-	paginator, err := k.NewCloudWatchLogsLogGroupPaginator(buildFilter(d.KeyColumnQuals, getCloudWatchLogsLogGroupFilters), &limit)
+	paginator, err := k.NewCloudWatchLogsLogGroupPaginator(buildFilter(d.KeyColumnQuals, getCloudWatchLogsLogGroupFilters, "aws", *cfg.AccountID), &limit)
 	if err != nil {
 		return nil, err
 	}
@@ -2396,12 +2430,13 @@ func ListCloudWatchLogsMetricFilter(ctx context.Context, d *plugin.QueryData, _ 
 	plugin.Logger(ctx).Trace("ListCloudWatchLogsMetricFilter")
 
 	// create service
-	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache, ctx)
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	paginator, err := k.NewCloudWatchLogsMetricFilterPaginator(buildFilter(d.KeyColumnQuals, listCloudWatchLogsMetricFilterFilters), d.QueryContext.Limit)
+	paginator, err := k.NewCloudWatchLogsMetricFilterPaginator(buildFilter(d.KeyColumnQuals, listCloudWatchLogsMetricFilterFilters, "aws", *cfg.AccountID), d.QueryContext.Limit)
 	if err != nil {
 		return nil, err
 	}
@@ -2428,13 +2463,14 @@ func GetCloudWatchLogsMetricFilter(ctx context.Context, d *plugin.QueryData, _ *
 	plugin.Logger(ctx).Trace("GetCloudWatchLogsMetricFilter")
 
 	// create service
-	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache, ctx)
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	limit := int64(1)
-	paginator, err := k.NewCloudWatchLogsMetricFilterPaginator(buildFilter(d.KeyColumnQuals, getCloudWatchLogsMetricFilterFilters), &limit)
+	paginator, err := k.NewCloudWatchLogsMetricFilterPaginator(buildFilter(d.KeyColumnQuals, getCloudWatchLogsMetricFilterFilters, "aws", *cfg.AccountID), &limit)
 	if err != nil {
 		return nil, err
 	}
@@ -2531,12 +2567,13 @@ func ListCodeBuildProject(ctx context.Context, d *plugin.QueryData, _ *plugin.Hy
 	plugin.Logger(ctx).Trace("ListCodeBuildProject")
 
 	// create service
-	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache, ctx)
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	paginator, err := k.NewCodeBuildProjectPaginator(buildFilter(d.KeyColumnQuals, listCodeBuildProjectFilters), d.QueryContext.Limit)
+	paginator, err := k.NewCodeBuildProjectPaginator(buildFilter(d.KeyColumnQuals, listCodeBuildProjectFilters, "aws", *cfg.AccountID), d.QueryContext.Limit)
 	if err != nil {
 		return nil, err
 	}
@@ -2563,13 +2600,14 @@ func GetCodeBuildProject(ctx context.Context, d *plugin.QueryData, _ *plugin.Hyd
 	plugin.Logger(ctx).Trace("GetCodeBuildProject")
 
 	// create service
-	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache, ctx)
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	limit := int64(1)
-	paginator, err := k.NewCodeBuildProjectPaginator(buildFilter(d.KeyColumnQuals, getCodeBuildProjectFilters), &limit)
+	paginator, err := k.NewCodeBuildProjectPaginator(buildFilter(d.KeyColumnQuals, getCodeBuildProjectFilters, "aws", *cfg.AccountID), &limit)
 	if err != nil {
 		return nil, err
 	}
@@ -2666,12 +2704,13 @@ func ListCodeBuildSourceCredential(ctx context.Context, d *plugin.QueryData, _ *
 	plugin.Logger(ctx).Trace("ListCodeBuildSourceCredential")
 
 	// create service
-	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache, ctx)
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	paginator, err := k.NewCodeBuildSourceCredentialPaginator(buildFilter(d.KeyColumnQuals, listCodeBuildSourceCredentialFilters), d.QueryContext.Limit)
+	paginator, err := k.NewCodeBuildSourceCredentialPaginator(buildFilter(d.KeyColumnQuals, listCodeBuildSourceCredentialFilters, "aws", *cfg.AccountID), d.QueryContext.Limit)
 	if err != nil {
 		return nil, err
 	}
@@ -2696,13 +2735,14 @@ func GetCodeBuildSourceCredential(ctx context.Context, d *plugin.QueryData, _ *p
 	plugin.Logger(ctx).Trace("GetCodeBuildSourceCredential")
 
 	// create service
-	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache, ctx)
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	limit := int64(1)
-	paginator, err := k.NewCodeBuildSourceCredentialPaginator(buildFilter(d.KeyColumnQuals, getCodeBuildSourceCredentialFilters), &limit)
+	paginator, err := k.NewCodeBuildSourceCredentialPaginator(buildFilter(d.KeyColumnQuals, getCodeBuildSourceCredentialFilters, "aws", *cfg.AccountID), &limit)
 	if err != nil {
 		return nil, err
 	}
@@ -2801,12 +2841,13 @@ func ListConfigConfigurationRecorder(ctx context.Context, d *plugin.QueryData, _
 	plugin.Logger(ctx).Trace("ListConfigConfigurationRecorder")
 
 	// create service
-	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache, ctx)
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	paginator, err := k.NewConfigConfigurationRecorderPaginator(buildFilter(d.KeyColumnQuals, listConfigConfigurationRecorderFilters), d.QueryContext.Limit)
+	paginator, err := k.NewConfigConfigurationRecorderPaginator(buildFilter(d.KeyColumnQuals, listConfigConfigurationRecorderFilters, "aws", *cfg.AccountID), d.QueryContext.Limit)
 	if err != nil {
 		return nil, err
 	}
@@ -2833,13 +2874,14 @@ func GetConfigConfigurationRecorder(ctx context.Context, d *plugin.QueryData, _ 
 	plugin.Logger(ctx).Trace("GetConfigConfigurationRecorder")
 
 	// create service
-	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache, ctx)
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	limit := int64(1)
-	paginator, err := k.NewConfigConfigurationRecorderPaginator(buildFilter(d.KeyColumnQuals, getConfigConfigurationRecorderFilters), &limit)
+	paginator, err := k.NewConfigConfigurationRecorderPaginator(buildFilter(d.KeyColumnQuals, getConfigConfigurationRecorderFilters, "aws", *cfg.AccountID), &limit)
 	if err != nil {
 		return nil, err
 	}
@@ -2938,12 +2980,13 @@ func ListDAXCluster(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateD
 	plugin.Logger(ctx).Trace("ListDAXCluster")
 
 	// create service
-	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache, ctx)
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	paginator, err := k.NewDAXClusterPaginator(buildFilter(d.KeyColumnQuals, listDAXClusterFilters), d.QueryContext.Limit)
+	paginator, err := k.NewDAXClusterPaginator(buildFilter(d.KeyColumnQuals, listDAXClusterFilters, "aws", *cfg.AccountID), d.QueryContext.Limit)
 	if err != nil {
 		return nil, err
 	}
@@ -2970,13 +3013,14 @@ func GetDAXCluster(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateDa
 	plugin.Logger(ctx).Trace("GetDAXCluster")
 
 	// create service
-	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache, ctx)
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	limit := int64(1)
-	paginator, err := k.NewDAXClusterPaginator(buildFilter(d.KeyColumnQuals, getDAXClusterFilters), &limit)
+	paginator, err := k.NewDAXClusterPaginator(buildFilter(d.KeyColumnQuals, getDAXClusterFilters, "aws", *cfg.AccountID), &limit)
 	if err != nil {
 		return nil, err
 	}
@@ -3078,12 +3122,13 @@ func ListDMSReplicationInstance(ctx context.Context, d *plugin.QueryData, _ *plu
 	plugin.Logger(ctx).Trace("ListDMSReplicationInstance")
 
 	// create service
-	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache, ctx)
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	paginator, err := k.NewDMSReplicationInstancePaginator(buildFilter(d.KeyColumnQuals, listDMSReplicationInstanceFilters), d.QueryContext.Limit)
+	paginator, err := k.NewDMSReplicationInstancePaginator(buildFilter(d.KeyColumnQuals, listDMSReplicationInstanceFilters, "aws", *cfg.AccountID), d.QueryContext.Limit)
 	if err != nil {
 		return nil, err
 	}
@@ -3110,13 +3155,14 @@ func GetDMSReplicationInstance(ctx context.Context, d *plugin.QueryData, _ *plug
 	plugin.Logger(ctx).Trace("GetDMSReplicationInstance")
 
 	// create service
-	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache, ctx)
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	limit := int64(1)
-	paginator, err := k.NewDMSReplicationInstancePaginator(buildFilter(d.KeyColumnQuals, getDMSReplicationInstanceFilters), &limit)
+	paginator, err := k.NewDMSReplicationInstancePaginator(buildFilter(d.KeyColumnQuals, getDMSReplicationInstanceFilters, "aws", *cfg.AccountID), &limit)
 	if err != nil {
 		return nil, err
 	}
@@ -3215,12 +3261,13 @@ func ListDynamoDbTable(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydra
 	plugin.Logger(ctx).Trace("ListDynamoDbTable")
 
 	// create service
-	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache, ctx)
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	paginator, err := k.NewDynamoDbTablePaginator(buildFilter(d.KeyColumnQuals, listDynamoDbTableFilters), d.QueryContext.Limit)
+	paginator, err := k.NewDynamoDbTablePaginator(buildFilter(d.KeyColumnQuals, listDynamoDbTableFilters, "aws", *cfg.AccountID), d.QueryContext.Limit)
 	if err != nil {
 		return nil, err
 	}
@@ -3247,13 +3294,14 @@ func GetDynamoDbTable(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydrat
 	plugin.Logger(ctx).Trace("GetDynamoDbTable")
 
 	// create service
-	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache, ctx)
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	limit := int64(1)
-	paginator, err := k.NewDynamoDbTablePaginator(buildFilter(d.KeyColumnQuals, getDynamoDbTableFilters), &limit)
+	paginator, err := k.NewDynamoDbTablePaginator(buildFilter(d.KeyColumnQuals, getDynamoDbTableFilters, "aws", *cfg.AccountID), &limit)
 	if err != nil {
 		return nil, err
 	}
@@ -3360,12 +3408,13 @@ func ListEC2VolumeSnapshot(ctx context.Context, d *plugin.QueryData, _ *plugin.H
 	plugin.Logger(ctx).Trace("ListEC2VolumeSnapshot")
 
 	// create service
-	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache, ctx)
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	paginator, err := k.NewEC2VolumeSnapshotPaginator(buildFilter(d.KeyColumnQuals, listEC2VolumeSnapshotFilters), d.QueryContext.Limit)
+	paginator, err := k.NewEC2VolumeSnapshotPaginator(buildFilter(d.KeyColumnQuals, listEC2VolumeSnapshotFilters, "aws", *cfg.AccountID), d.QueryContext.Limit)
 	if err != nil {
 		return nil, err
 	}
@@ -3392,13 +3441,14 @@ func GetEC2VolumeSnapshot(ctx context.Context, d *plugin.QueryData, _ *plugin.Hy
 	plugin.Logger(ctx).Trace("GetEC2VolumeSnapshot")
 
 	// create service
-	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache, ctx)
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	limit := int64(1)
-	paginator, err := k.NewEC2VolumeSnapshotPaginator(buildFilter(d.KeyColumnQuals, getEC2VolumeSnapshotFilters), &limit)
+	paginator, err := k.NewEC2VolumeSnapshotPaginator(buildFilter(d.KeyColumnQuals, getEC2VolumeSnapshotFilters, "aws", *cfg.AccountID), &limit)
 	if err != nil {
 		return nil, err
 	}
@@ -3495,12 +3545,13 @@ func ListEC2Volume(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateDa
 	plugin.Logger(ctx).Trace("ListEC2Volume")
 
 	// create service
-	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache, ctx)
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	paginator, err := k.NewEC2VolumePaginator(buildFilter(d.KeyColumnQuals, listEC2VolumeFilters), d.QueryContext.Limit)
+	paginator, err := k.NewEC2VolumePaginator(buildFilter(d.KeyColumnQuals, listEC2VolumeFilters, "aws", *cfg.AccountID), d.QueryContext.Limit)
 	if err != nil {
 		return nil, err
 	}
@@ -3527,13 +3578,14 @@ func GetEC2Volume(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateDat
 	plugin.Logger(ctx).Trace("GetEC2Volume")
 
 	// create service
-	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache, ctx)
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	limit := int64(1)
-	paginator, err := k.NewEC2VolumePaginator(buildFilter(d.KeyColumnQuals, getEC2VolumeFilters), &limit)
+	paginator, err := k.NewEC2VolumePaginator(buildFilter(d.KeyColumnQuals, getEC2VolumeFilters, "aws", *cfg.AccountID), &limit)
 	if err != nil {
 		return nil, err
 	}
@@ -3649,12 +3701,13 @@ func ListEC2Instance(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydrate
 	plugin.Logger(ctx).Trace("ListEC2Instance")
 
 	// create service
-	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache, ctx)
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	paginator, err := k.NewEC2InstancePaginator(buildFilter(d.KeyColumnQuals, listEC2InstanceFilters), d.QueryContext.Limit)
+	paginator, err := k.NewEC2InstancePaginator(buildFilter(d.KeyColumnQuals, listEC2InstanceFilters, "aws", *cfg.AccountID), d.QueryContext.Limit)
 	if err != nil {
 		return nil, err
 	}
@@ -3681,13 +3734,14 @@ func GetEC2Instance(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateD
 	plugin.Logger(ctx).Trace("GetEC2Instance")
 
 	// create service
-	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache, ctx)
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	limit := int64(1)
-	paginator, err := k.NewEC2InstancePaginator(buildFilter(d.KeyColumnQuals, getEC2InstanceFilters), &limit)
+	paginator, err := k.NewEC2InstancePaginator(buildFilter(d.KeyColumnQuals, getEC2InstanceFilters, "aws", *cfg.AccountID), &limit)
 	if err != nil {
 		return nil, err
 	}
@@ -3784,12 +3838,13 @@ func ListEC2Vpc(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData)
 	plugin.Logger(ctx).Trace("ListEC2Vpc")
 
 	// create service
-	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache, ctx)
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	paginator, err := k.NewEC2VpcPaginator(buildFilter(d.KeyColumnQuals, listEC2VpcFilters), d.QueryContext.Limit)
+	paginator, err := k.NewEC2VpcPaginator(buildFilter(d.KeyColumnQuals, listEC2VpcFilters, "aws", *cfg.AccountID), d.QueryContext.Limit)
 	if err != nil {
 		return nil, err
 	}
@@ -3816,13 +3871,14 @@ func GetEC2Vpc(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) 
 	plugin.Logger(ctx).Trace("GetEC2Vpc")
 
 	// create service
-	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache, ctx)
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	limit := int64(1)
-	paginator, err := k.NewEC2VpcPaginator(buildFilter(d.KeyColumnQuals, getEC2VpcFilters), &limit)
+	paginator, err := k.NewEC2VpcPaginator(buildFilter(d.KeyColumnQuals, getEC2VpcFilters, "aws", *cfg.AccountID), &limit)
 	if err != nil {
 		return nil, err
 	}
@@ -3919,12 +3975,13 @@ func ListEC2NetworkInterface(ctx context.Context, d *plugin.QueryData, _ *plugin
 	plugin.Logger(ctx).Trace("ListEC2NetworkInterface")
 
 	// create service
-	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache, ctx)
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	paginator, err := k.NewEC2NetworkInterfacePaginator(buildFilter(d.KeyColumnQuals, listEC2NetworkInterfaceFilters), d.QueryContext.Limit)
+	paginator, err := k.NewEC2NetworkInterfacePaginator(buildFilter(d.KeyColumnQuals, listEC2NetworkInterfaceFilters, "aws", *cfg.AccountID), d.QueryContext.Limit)
 	if err != nil {
 		return nil, err
 	}
@@ -3951,13 +4008,14 @@ func GetEC2NetworkInterface(ctx context.Context, d *plugin.QueryData, _ *plugin.
 	plugin.Logger(ctx).Trace("GetEC2NetworkInterface")
 
 	// create service
-	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache, ctx)
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	limit := int64(1)
-	paginator, err := k.NewEC2NetworkInterfacePaginator(buildFilter(d.KeyColumnQuals, getEC2NetworkInterfaceFilters), &limit)
+	paginator, err := k.NewEC2NetworkInterfacePaginator(buildFilter(d.KeyColumnQuals, getEC2NetworkInterfaceFilters, "aws", *cfg.AccountID), &limit)
 	if err != nil {
 		return nil, err
 	}
@@ -4054,12 +4112,13 @@ func ListEC2RegionalSettings(ctx context.Context, d *plugin.QueryData, _ *plugin
 	plugin.Logger(ctx).Trace("ListEC2RegionalSettings")
 
 	// create service
-	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache, ctx)
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	paginator, err := k.NewEC2RegionalSettingsPaginator(buildFilter(d.KeyColumnQuals, listEC2RegionalSettingsFilters), d.QueryContext.Limit)
+	paginator, err := k.NewEC2RegionalSettingsPaginator(buildFilter(d.KeyColumnQuals, listEC2RegionalSettingsFilters, "aws", *cfg.AccountID), d.QueryContext.Limit)
 	if err != nil {
 		return nil, err
 	}
@@ -4084,13 +4143,14 @@ func GetEC2RegionalSettings(ctx context.Context, d *plugin.QueryData, _ *plugin.
 	plugin.Logger(ctx).Trace("GetEC2RegionalSettings")
 
 	// create service
-	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache, ctx)
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	limit := int64(1)
-	paginator, err := k.NewEC2RegionalSettingsPaginator(buildFilter(d.KeyColumnQuals, getEC2RegionalSettingsFilters), &limit)
+	paginator, err := k.NewEC2RegionalSettingsPaginator(buildFilter(d.KeyColumnQuals, getEC2RegionalSettingsFilters, "aws", *cfg.AccountID), &limit)
 	if err != nil {
 		return nil, err
 	}
@@ -4187,12 +4247,13 @@ func ListEC2Subnet(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateDa
 	plugin.Logger(ctx).Trace("ListEC2Subnet")
 
 	// create service
-	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache, ctx)
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	paginator, err := k.NewEC2SubnetPaginator(buildFilter(d.KeyColumnQuals, listEC2SubnetFilters), d.QueryContext.Limit)
+	paginator, err := k.NewEC2SubnetPaginator(buildFilter(d.KeyColumnQuals, listEC2SubnetFilters, "aws", *cfg.AccountID), d.QueryContext.Limit)
 	if err != nil {
 		return nil, err
 	}
@@ -4219,13 +4280,14 @@ func GetEC2Subnet(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateDat
 	plugin.Logger(ctx).Trace("GetEC2Subnet")
 
 	// create service
-	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache, ctx)
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	limit := int64(1)
-	paginator, err := k.NewEC2SubnetPaginator(buildFilter(d.KeyColumnQuals, getEC2SubnetFilters), &limit)
+	paginator, err := k.NewEC2SubnetPaginator(buildFilter(d.KeyColumnQuals, getEC2SubnetFilters, "aws", *cfg.AccountID), &limit)
 	if err != nil {
 		return nil, err
 	}
@@ -4322,12 +4384,13 @@ func ListEC2VPCEndpoint(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydr
 	plugin.Logger(ctx).Trace("ListEC2VPCEndpoint")
 
 	// create service
-	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache, ctx)
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	paginator, err := k.NewEC2VPCEndpointPaginator(buildFilter(d.KeyColumnQuals, listEC2VPCEndpointFilters), d.QueryContext.Limit)
+	paginator, err := k.NewEC2VPCEndpointPaginator(buildFilter(d.KeyColumnQuals, listEC2VPCEndpointFilters, "aws", *cfg.AccountID), d.QueryContext.Limit)
 	if err != nil {
 		return nil, err
 	}
@@ -4354,13 +4417,14 @@ func GetEC2VPCEndpoint(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydra
 	plugin.Logger(ctx).Trace("GetEC2VPCEndpoint")
 
 	// create service
-	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache, ctx)
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	limit := int64(1)
-	paginator, err := k.NewEC2VPCEndpointPaginator(buildFilter(d.KeyColumnQuals, getEC2VPCEndpointFilters), &limit)
+	paginator, err := k.NewEC2VPCEndpointPaginator(buildFilter(d.KeyColumnQuals, getEC2VPCEndpointFilters, "aws", *cfg.AccountID), &limit)
 	if err != nil {
 		return nil, err
 	}
@@ -4457,12 +4521,13 @@ func ListEC2SecurityGroup(ctx context.Context, d *plugin.QueryData, _ *plugin.Hy
 	plugin.Logger(ctx).Trace("ListEC2SecurityGroup")
 
 	// create service
-	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache, ctx)
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	paginator, err := k.NewEC2SecurityGroupPaginator(buildFilter(d.KeyColumnQuals, listEC2SecurityGroupFilters), d.QueryContext.Limit)
+	paginator, err := k.NewEC2SecurityGroupPaginator(buildFilter(d.KeyColumnQuals, listEC2SecurityGroupFilters, "aws", *cfg.AccountID), d.QueryContext.Limit)
 	if err != nil {
 		return nil, err
 	}
@@ -4489,13 +4554,14 @@ func GetEC2SecurityGroup(ctx context.Context, d *plugin.QueryData, _ *plugin.Hyd
 	plugin.Logger(ctx).Trace("GetEC2SecurityGroup")
 
 	// create service
-	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache, ctx)
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	limit := int64(1)
-	paginator, err := k.NewEC2SecurityGroupPaginator(buildFilter(d.KeyColumnQuals, getEC2SecurityGroupFilters), &limit)
+	paginator, err := k.NewEC2SecurityGroupPaginator(buildFilter(d.KeyColumnQuals, getEC2SecurityGroupFilters, "aws", *cfg.AccountID), &limit)
 	if err != nil {
 		return nil, err
 	}
@@ -4592,12 +4658,13 @@ func ListEC2EIP(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData)
 	plugin.Logger(ctx).Trace("ListEC2EIP")
 
 	// create service
-	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache, ctx)
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	paginator, err := k.NewEC2EIPPaginator(buildFilter(d.KeyColumnQuals, listEC2EIPFilters), d.QueryContext.Limit)
+	paginator, err := k.NewEC2EIPPaginator(buildFilter(d.KeyColumnQuals, listEC2EIPFilters, "aws", *cfg.AccountID), d.QueryContext.Limit)
 	if err != nil {
 		return nil, err
 	}
@@ -4624,13 +4691,14 @@ func GetEC2EIP(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) 
 	plugin.Logger(ctx).Trace("GetEC2EIP")
 
 	// create service
-	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache, ctx)
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	limit := int64(1)
-	paginator, err := k.NewEC2EIPPaginator(buildFilter(d.KeyColumnQuals, getEC2EIPFilters), &limit)
+	paginator, err := k.NewEC2EIPPaginator(buildFilter(d.KeyColumnQuals, getEC2EIPFilters, "aws", *cfg.AccountID), &limit)
 	if err != nil {
 		return nil, err
 	}
@@ -4727,12 +4795,13 @@ func ListEC2InternetGateway(ctx context.Context, d *plugin.QueryData, _ *plugin.
 	plugin.Logger(ctx).Trace("ListEC2InternetGateway")
 
 	// create service
-	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache, ctx)
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	paginator, err := k.NewEC2InternetGatewayPaginator(buildFilter(d.KeyColumnQuals, listEC2InternetGatewayFilters), d.QueryContext.Limit)
+	paginator, err := k.NewEC2InternetGatewayPaginator(buildFilter(d.KeyColumnQuals, listEC2InternetGatewayFilters, "aws", *cfg.AccountID), d.QueryContext.Limit)
 	if err != nil {
 		return nil, err
 	}
@@ -4759,13 +4828,14 @@ func GetEC2InternetGateway(ctx context.Context, d *plugin.QueryData, _ *plugin.H
 	plugin.Logger(ctx).Trace("GetEC2InternetGateway")
 
 	// create service
-	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache, ctx)
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	limit := int64(1)
-	paginator, err := k.NewEC2InternetGatewayPaginator(buildFilter(d.KeyColumnQuals, getEC2InternetGatewayFilters), &limit)
+	paginator, err := k.NewEC2InternetGatewayPaginator(buildFilter(d.KeyColumnQuals, getEC2InternetGatewayFilters, "aws", *cfg.AccountID), &limit)
 	if err != nil {
 		return nil, err
 	}
@@ -4862,12 +4932,13 @@ func ListEC2NetworkAcl(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydra
 	plugin.Logger(ctx).Trace("ListEC2NetworkAcl")
 
 	// create service
-	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache, ctx)
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	paginator, err := k.NewEC2NetworkAclPaginator(buildFilter(d.KeyColumnQuals, listEC2NetworkAclFilters), d.QueryContext.Limit)
+	paginator, err := k.NewEC2NetworkAclPaginator(buildFilter(d.KeyColumnQuals, listEC2NetworkAclFilters, "aws", *cfg.AccountID), d.QueryContext.Limit)
 	if err != nil {
 		return nil, err
 	}
@@ -4894,13 +4965,14 @@ func GetEC2NetworkAcl(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydrat
 	plugin.Logger(ctx).Trace("GetEC2NetworkAcl")
 
 	// create service
-	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache, ctx)
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	limit := int64(1)
-	paginator, err := k.NewEC2NetworkAclPaginator(buildFilter(d.KeyColumnQuals, getEC2NetworkAclFilters), &limit)
+	paginator, err := k.NewEC2NetworkAclPaginator(buildFilter(d.KeyColumnQuals, getEC2NetworkAclFilters, "aws", *cfg.AccountID), &limit)
 	if err != nil {
 		return nil, err
 	}
@@ -4997,12 +5069,13 @@ func ListEC2VPNConnection(ctx context.Context, d *plugin.QueryData, _ *plugin.Hy
 	plugin.Logger(ctx).Trace("ListEC2VPNConnection")
 
 	// create service
-	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache, ctx)
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	paginator, err := k.NewEC2VPNConnectionPaginator(buildFilter(d.KeyColumnQuals, listEC2VPNConnectionFilters), d.QueryContext.Limit)
+	paginator, err := k.NewEC2VPNConnectionPaginator(buildFilter(d.KeyColumnQuals, listEC2VPNConnectionFilters, "aws", *cfg.AccountID), d.QueryContext.Limit)
 	if err != nil {
 		return nil, err
 	}
@@ -5029,13 +5102,14 @@ func GetEC2VPNConnection(ctx context.Context, d *plugin.QueryData, _ *plugin.Hyd
 	plugin.Logger(ctx).Trace("GetEC2VPNConnection")
 
 	// create service
-	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache, ctx)
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	limit := int64(1)
-	paginator, err := k.NewEC2VPNConnectionPaginator(buildFilter(d.KeyColumnQuals, getEC2VPNConnectionFilters), &limit)
+	paginator, err := k.NewEC2VPNConnectionPaginator(buildFilter(d.KeyColumnQuals, getEC2VPNConnectionFilters, "aws", *cfg.AccountID), &limit)
 	if err != nil {
 		return nil, err
 	}
@@ -5132,12 +5206,13 @@ func ListEC2RouteTable(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydra
 	plugin.Logger(ctx).Trace("ListEC2RouteTable")
 
 	// create service
-	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache, ctx)
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	paginator, err := k.NewEC2RouteTablePaginator(buildFilter(d.KeyColumnQuals, listEC2RouteTableFilters), d.QueryContext.Limit)
+	paginator, err := k.NewEC2RouteTablePaginator(buildFilter(d.KeyColumnQuals, listEC2RouteTableFilters, "aws", *cfg.AccountID), d.QueryContext.Limit)
 	if err != nil {
 		return nil, err
 	}
@@ -5164,13 +5239,14 @@ func GetEC2RouteTable(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydrat
 	plugin.Logger(ctx).Trace("GetEC2RouteTable")
 
 	// create service
-	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache, ctx)
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	limit := int64(1)
-	paginator, err := k.NewEC2RouteTablePaginator(buildFilter(d.KeyColumnQuals, getEC2RouteTableFilters), &limit)
+	paginator, err := k.NewEC2RouteTablePaginator(buildFilter(d.KeyColumnQuals, getEC2RouteTableFilters, "aws", *cfg.AccountID), &limit)
 	if err != nil {
 		return nil, err
 	}
@@ -5267,12 +5343,13 @@ func ListEC2NatGateway(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydra
 	plugin.Logger(ctx).Trace("ListEC2NatGateway")
 
 	// create service
-	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache, ctx)
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	paginator, err := k.NewEC2NatGatewayPaginator(buildFilter(d.KeyColumnQuals, listEC2NatGatewayFilters), d.QueryContext.Limit)
+	paginator, err := k.NewEC2NatGatewayPaginator(buildFilter(d.KeyColumnQuals, listEC2NatGatewayFilters, "aws", *cfg.AccountID), d.QueryContext.Limit)
 	if err != nil {
 		return nil, err
 	}
@@ -5299,13 +5376,14 @@ func GetEC2NatGateway(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydrat
 	plugin.Logger(ctx).Trace("GetEC2NatGateway")
 
 	// create service
-	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache, ctx)
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	limit := int64(1)
-	paginator, err := k.NewEC2NatGatewayPaginator(buildFilter(d.KeyColumnQuals, getEC2NatGatewayFilters), &limit)
+	paginator, err := k.NewEC2NatGatewayPaginator(buildFilter(d.KeyColumnQuals, getEC2NatGatewayFilters, "aws", *cfg.AccountID), &limit)
 	if err != nil {
 		return nil, err
 	}
@@ -5402,12 +5480,13 @@ func ListEC2Region(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateDa
 	plugin.Logger(ctx).Trace("ListEC2Region")
 
 	// create service
-	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache, ctx)
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	paginator, err := k.NewEC2RegionPaginator(buildFilter(d.KeyColumnQuals, listEC2RegionFilters), d.QueryContext.Limit)
+	paginator, err := k.NewEC2RegionPaginator(buildFilter(d.KeyColumnQuals, listEC2RegionFilters, "aws", *cfg.AccountID), d.QueryContext.Limit)
 	if err != nil {
 		return nil, err
 	}
@@ -5434,13 +5513,14 @@ func GetEC2Region(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateDat
 	plugin.Logger(ctx).Trace("GetEC2Region")
 
 	// create service
-	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache, ctx)
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	limit := int64(1)
-	paginator, err := k.NewEC2RegionPaginator(buildFilter(d.KeyColumnQuals, getEC2RegionFilters), &limit)
+	paginator, err := k.NewEC2RegionPaginator(buildFilter(d.KeyColumnQuals, getEC2RegionFilters, "aws", *cfg.AccountID), &limit)
 	if err != nil {
 		return nil, err
 	}
@@ -5537,12 +5617,13 @@ func ListEC2FlowLog(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateD
 	plugin.Logger(ctx).Trace("ListEC2FlowLog")
 
 	// create service
-	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache, ctx)
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	paginator, err := k.NewEC2FlowLogPaginator(buildFilter(d.KeyColumnQuals, listEC2FlowLogFilters), d.QueryContext.Limit)
+	paginator, err := k.NewEC2FlowLogPaginator(buildFilter(d.KeyColumnQuals, listEC2FlowLogFilters, "aws", *cfg.AccountID), d.QueryContext.Limit)
 	if err != nil {
 		return nil, err
 	}
@@ -5569,13 +5650,14 @@ func GetEC2FlowLog(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateDa
 	plugin.Logger(ctx).Trace("GetEC2FlowLog")
 
 	// create service
-	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache, ctx)
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	limit := int64(1)
-	paginator, err := k.NewEC2FlowLogPaginator(buildFilter(d.KeyColumnQuals, getEC2FlowLogFilters), &limit)
+	paginator, err := k.NewEC2FlowLogPaginator(buildFilter(d.KeyColumnQuals, getEC2FlowLogFilters, "aws", *cfg.AccountID), &limit)
 	if err != nil {
 		return nil, err
 	}
@@ -5674,12 +5756,13 @@ func ListElasticLoadBalancingV2LoadBalancer(ctx context.Context, d *plugin.Query
 	plugin.Logger(ctx).Trace("ListElasticLoadBalancingV2LoadBalancer")
 
 	// create service
-	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache, ctx)
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	paginator, err := k.NewElasticLoadBalancingV2LoadBalancerPaginator(buildFilter(d.KeyColumnQuals, listElasticLoadBalancingV2LoadBalancerFilters), d.QueryContext.Limit)
+	paginator, err := k.NewElasticLoadBalancingV2LoadBalancerPaginator(buildFilter(d.KeyColumnQuals, listElasticLoadBalancingV2LoadBalancerFilters, "aws", *cfg.AccountID), d.QueryContext.Limit)
 	if err != nil {
 		return nil, err
 	}
@@ -5707,13 +5790,14 @@ func GetElasticLoadBalancingV2LoadBalancer(ctx context.Context, d *plugin.QueryD
 	plugin.Logger(ctx).Trace("GetElasticLoadBalancingV2LoadBalancer")
 
 	// create service
-	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache, ctx)
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	limit := int64(1)
-	paginator, err := k.NewElasticLoadBalancingV2LoadBalancerPaginator(buildFilter(d.KeyColumnQuals, getElasticLoadBalancingV2LoadBalancerFilters), &limit)
+	paginator, err := k.NewElasticLoadBalancingV2LoadBalancerPaginator(buildFilter(d.KeyColumnQuals, getElasticLoadBalancingV2LoadBalancerFilters, "aws", *cfg.AccountID), &limit)
 	if err != nil {
 		return nil, err
 	}
@@ -5810,12 +5894,13 @@ func ListElasticLoadBalancingLoadBalancer(ctx context.Context, d *plugin.QueryDa
 	plugin.Logger(ctx).Trace("ListElasticLoadBalancingLoadBalancer")
 
 	// create service
-	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache, ctx)
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	paginator, err := k.NewElasticLoadBalancingLoadBalancerPaginator(buildFilter(d.KeyColumnQuals, listElasticLoadBalancingLoadBalancerFilters), d.QueryContext.Limit)
+	paginator, err := k.NewElasticLoadBalancingLoadBalancerPaginator(buildFilter(d.KeyColumnQuals, listElasticLoadBalancingLoadBalancerFilters, "aws", *cfg.AccountID), d.QueryContext.Limit)
 	if err != nil {
 		return nil, err
 	}
@@ -5842,13 +5927,14 @@ func GetElasticLoadBalancingLoadBalancer(ctx context.Context, d *plugin.QueryDat
 	plugin.Logger(ctx).Trace("GetElasticLoadBalancingLoadBalancer")
 
 	// create service
-	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache, ctx)
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	limit := int64(1)
-	paginator, err := k.NewElasticLoadBalancingLoadBalancerPaginator(buildFilter(d.KeyColumnQuals, getElasticLoadBalancingLoadBalancerFilters), &limit)
+	paginator, err := k.NewElasticLoadBalancingLoadBalancerPaginator(buildFilter(d.KeyColumnQuals, getElasticLoadBalancingLoadBalancerFilters, "aws", *cfg.AccountID), &limit)
 	if err != nil {
 		return nil, err
 	}
@@ -5945,12 +6031,13 @@ func ListElasticLoadBalancingV2Listener(ctx context.Context, d *plugin.QueryData
 	plugin.Logger(ctx).Trace("ListElasticLoadBalancingV2Listener")
 
 	// create service
-	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache, ctx)
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	paginator, err := k.NewElasticLoadBalancingV2ListenerPaginator(buildFilter(d.KeyColumnQuals, listElasticLoadBalancingV2ListenerFilters), d.QueryContext.Limit)
+	paginator, err := k.NewElasticLoadBalancingV2ListenerPaginator(buildFilter(d.KeyColumnQuals, listElasticLoadBalancingV2ListenerFilters, "aws", *cfg.AccountID), d.QueryContext.Limit)
 	if err != nil {
 		return nil, err
 	}
@@ -5977,13 +6064,14 @@ func GetElasticLoadBalancingV2Listener(ctx context.Context, d *plugin.QueryData,
 	plugin.Logger(ctx).Trace("GetElasticLoadBalancingV2Listener")
 
 	// create service
-	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache, ctx)
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	limit := int64(1)
-	paginator, err := k.NewElasticLoadBalancingV2ListenerPaginator(buildFilter(d.KeyColumnQuals, getElasticLoadBalancingV2ListenerFilters), &limit)
+	paginator, err := k.NewElasticLoadBalancingV2ListenerPaginator(buildFilter(d.KeyColumnQuals, getElasticLoadBalancingV2ListenerFilters, "aws", *cfg.AccountID), &limit)
 	if err != nil {
 		return nil, err
 	}
@@ -6080,12 +6168,13 @@ func ListFSXFileSystem(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydra
 	plugin.Logger(ctx).Trace("ListFSXFileSystem")
 
 	// create service
-	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache, ctx)
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	paginator, err := k.NewFSXFileSystemPaginator(buildFilter(d.KeyColumnQuals, listFSXFileSystemFilters), d.QueryContext.Limit)
+	paginator, err := k.NewFSXFileSystemPaginator(buildFilter(d.KeyColumnQuals, listFSXFileSystemFilters, "aws", *cfg.AccountID), d.QueryContext.Limit)
 	if err != nil {
 		return nil, err
 	}
@@ -6112,13 +6201,14 @@ func GetFSXFileSystem(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydrat
 	plugin.Logger(ctx).Trace("GetFSXFileSystem")
 
 	// create service
-	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache, ctx)
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	limit := int64(1)
-	paginator, err := k.NewFSXFileSystemPaginator(buildFilter(d.KeyColumnQuals, getFSXFileSystemFilters), &limit)
+	paginator, err := k.NewFSXFileSystemPaginator(buildFilter(d.KeyColumnQuals, getFSXFileSystemFilters, "aws", *cfg.AccountID), &limit)
 	if err != nil {
 		return nil, err
 	}
@@ -6219,12 +6309,13 @@ func ListApplicationAutoScalingTarget(ctx context.Context, d *plugin.QueryData, 
 	plugin.Logger(ctx).Trace("ListApplicationAutoScalingTarget")
 
 	// create service
-	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache, ctx)
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	paginator, err := k.NewApplicationAutoScalingTargetPaginator(buildFilter(d.KeyColumnQuals, listApplicationAutoScalingTargetFilters), d.QueryContext.Limit)
+	paginator, err := k.NewApplicationAutoScalingTargetPaginator(buildFilter(d.KeyColumnQuals, listApplicationAutoScalingTargetFilters, "aws", *cfg.AccountID), d.QueryContext.Limit)
 	if err != nil {
 		return nil, err
 	}
@@ -6252,13 +6343,14 @@ func GetApplicationAutoScalingTarget(ctx context.Context, d *plugin.QueryData, _
 	plugin.Logger(ctx).Trace("GetApplicationAutoScalingTarget")
 
 	// create service
-	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache, ctx)
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	limit := int64(1)
-	paginator, err := k.NewApplicationAutoScalingTargetPaginator(buildFilter(d.KeyColumnQuals, getApplicationAutoScalingTargetFilters), &limit)
+	paginator, err := k.NewApplicationAutoScalingTargetPaginator(buildFilter(d.KeyColumnQuals, getApplicationAutoScalingTargetFilters, "aws", *cfg.AccountID), &limit)
 	if err != nil {
 		return nil, err
 	}
@@ -6355,12 +6447,13 @@ func ListAutoScalingGroup(ctx context.Context, d *plugin.QueryData, _ *plugin.Hy
 	plugin.Logger(ctx).Trace("ListAutoScalingGroup")
 
 	// create service
-	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache, ctx)
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	paginator, err := k.NewAutoScalingGroupPaginator(buildFilter(d.KeyColumnQuals, listAutoScalingGroupFilters), d.QueryContext.Limit)
+	paginator, err := k.NewAutoScalingGroupPaginator(buildFilter(d.KeyColumnQuals, listAutoScalingGroupFilters, "aws", *cfg.AccountID), d.QueryContext.Limit)
 	if err != nil {
 		return nil, err
 	}
@@ -6387,13 +6480,14 @@ func GetAutoScalingGroup(ctx context.Context, d *plugin.QueryData, _ *plugin.Hyd
 	plugin.Logger(ctx).Trace("GetAutoScalingGroup")
 
 	// create service
-	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache, ctx)
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	limit := int64(1)
-	paginator, err := k.NewAutoScalingGroupPaginator(buildFilter(d.KeyColumnQuals, getAutoScalingGroupFilters), &limit)
+	paginator, err := k.NewAutoScalingGroupPaginator(buildFilter(d.KeyColumnQuals, getAutoScalingGroupFilters, "aws", *cfg.AccountID), &limit)
 	if err != nil {
 		return nil, err
 	}
@@ -6490,12 +6584,13 @@ func ListAutoScalingLaunchConfiguration(ctx context.Context, d *plugin.QueryData
 	plugin.Logger(ctx).Trace("ListAutoScalingLaunchConfiguration")
 
 	// create service
-	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache, ctx)
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	paginator, err := k.NewAutoScalingLaunchConfigurationPaginator(buildFilter(d.KeyColumnQuals, listAutoScalingLaunchConfigurationFilters), d.QueryContext.Limit)
+	paginator, err := k.NewAutoScalingLaunchConfigurationPaginator(buildFilter(d.KeyColumnQuals, listAutoScalingLaunchConfigurationFilters, "aws", *cfg.AccountID), d.QueryContext.Limit)
 	if err != nil {
 		return nil, err
 	}
@@ -6522,13 +6617,14 @@ func GetAutoScalingLaunchConfiguration(ctx context.Context, d *plugin.QueryData,
 	plugin.Logger(ctx).Trace("GetAutoScalingLaunchConfiguration")
 
 	// create service
-	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache, ctx)
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	limit := int64(1)
-	paginator, err := k.NewAutoScalingLaunchConfigurationPaginator(buildFilter(d.KeyColumnQuals, getAutoScalingLaunchConfigurationFilters), &limit)
+	paginator, err := k.NewAutoScalingLaunchConfigurationPaginator(buildFilter(d.KeyColumnQuals, getAutoScalingLaunchConfigurationFilters, "aws", *cfg.AccountID), &limit)
 	if err != nil {
 		return nil, err
 	}
@@ -6627,12 +6723,13 @@ func ListCertificateManagerCertificate(ctx context.Context, d *plugin.QueryData,
 	plugin.Logger(ctx).Trace("ListCertificateManagerCertificate")
 
 	// create service
-	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache, ctx)
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	paginator, err := k.NewCertificateManagerCertificatePaginator(buildFilter(d.KeyColumnQuals, listCertificateManagerCertificateFilters), d.QueryContext.Limit)
+	paginator, err := k.NewCertificateManagerCertificatePaginator(buildFilter(d.KeyColumnQuals, listCertificateManagerCertificateFilters, "aws", *cfg.AccountID), d.QueryContext.Limit)
 	if err != nil {
 		return nil, err
 	}
@@ -6659,13 +6756,14 @@ func GetCertificateManagerCertificate(ctx context.Context, d *plugin.QueryData, 
 	plugin.Logger(ctx).Trace("GetCertificateManagerCertificate")
 
 	// create service
-	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache, ctx)
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	limit := int64(1)
-	paginator, err := k.NewCertificateManagerCertificatePaginator(buildFilter(d.KeyColumnQuals, getCertificateManagerCertificateFilters), &limit)
+	paginator, err := k.NewCertificateManagerCertificatePaginator(buildFilter(d.KeyColumnQuals, getCertificateManagerCertificateFilters, "aws", *cfg.AccountID), &limit)
 	if err != nil {
 		return nil, err
 	}
@@ -6762,12 +6860,13 @@ func ListCloudTrailTrail(ctx context.Context, d *plugin.QueryData, _ *plugin.Hyd
 	plugin.Logger(ctx).Trace("ListCloudTrailTrail")
 
 	// create service
-	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache, ctx)
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	paginator, err := k.NewCloudTrailTrailPaginator(buildFilter(d.KeyColumnQuals, listCloudTrailTrailFilters), d.QueryContext.Limit)
+	paginator, err := k.NewCloudTrailTrailPaginator(buildFilter(d.KeyColumnQuals, listCloudTrailTrailFilters, "aws", *cfg.AccountID), d.QueryContext.Limit)
 	if err != nil {
 		return nil, err
 	}
@@ -6795,13 +6894,14 @@ func GetCloudTrailTrail(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydr
 	plugin.Logger(ctx).Trace("GetCloudTrailTrail")
 
 	// create service
-	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache, ctx)
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	limit := int64(1)
-	paginator, err := k.NewCloudTrailTrailPaginator(buildFilter(d.KeyColumnQuals, getCloudTrailTrailFilters), &limit)
+	paginator, err := k.NewCloudTrailTrailPaginator(buildFilter(d.KeyColumnQuals, getCloudTrailTrailFilters, "aws", *cfg.AccountID), &limit)
 	if err != nil {
 		return nil, err
 	}
@@ -6898,12 +6998,13 @@ func ListIAMAccount(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateD
 	plugin.Logger(ctx).Trace("ListIAMAccount")
 
 	// create service
-	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache, ctx)
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	paginator, err := k.NewIAMAccountPaginator(buildFilter(d.KeyColumnQuals, listIAMAccountFilters), d.QueryContext.Limit)
+	paginator, err := k.NewIAMAccountPaginator(buildFilter(d.KeyColumnQuals, listIAMAccountFilters, "aws", *cfg.AccountID), d.QueryContext.Limit)
 	if err != nil {
 		return nil, err
 	}
@@ -6928,13 +7029,14 @@ func GetIAMAccount(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateDa
 	plugin.Logger(ctx).Trace("GetIAMAccount")
 
 	// create service
-	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache, ctx)
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	limit := int64(1)
-	paginator, err := k.NewIAMAccountPaginator(buildFilter(d.KeyColumnQuals, getIAMAccountFilters), &limit)
+	paginator, err := k.NewIAMAccountPaginator(buildFilter(d.KeyColumnQuals, getIAMAccountFilters, "aws", *cfg.AccountID), &limit)
 	if err != nil {
 		return nil, err
 	}
@@ -7031,12 +7133,13 @@ func ListIAMAccountSummary(ctx context.Context, d *plugin.QueryData, _ *plugin.H
 	plugin.Logger(ctx).Trace("ListIAMAccountSummary")
 
 	// create service
-	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache, ctx)
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	paginator, err := k.NewIAMAccountSummaryPaginator(buildFilter(d.KeyColumnQuals, listIAMAccountSummaryFilters), d.QueryContext.Limit)
+	paginator, err := k.NewIAMAccountSummaryPaginator(buildFilter(d.KeyColumnQuals, listIAMAccountSummaryFilters, "aws", *cfg.AccountID), d.QueryContext.Limit)
 	if err != nil {
 		return nil, err
 	}
@@ -7061,13 +7164,14 @@ func GetIAMAccountSummary(ctx context.Context, d *plugin.QueryData, _ *plugin.Hy
 	plugin.Logger(ctx).Trace("GetIAMAccountSummary")
 
 	// create service
-	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache, ctx)
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	limit := int64(1)
-	paginator, err := k.NewIAMAccountSummaryPaginator(buildFilter(d.KeyColumnQuals, getIAMAccountSummaryFilters), &limit)
+	paginator, err := k.NewIAMAccountSummaryPaginator(buildFilter(d.KeyColumnQuals, getIAMAccountSummaryFilters, "aws", *cfg.AccountID), &limit)
 	if err != nil {
 		return nil, err
 	}
@@ -7164,12 +7268,13 @@ func ListIAMAccessKey(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydrat
 	plugin.Logger(ctx).Trace("ListIAMAccessKey")
 
 	// create service
-	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache, ctx)
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	paginator, err := k.NewIAMAccessKeyPaginator(buildFilter(d.KeyColumnQuals, listIAMAccessKeyFilters), d.QueryContext.Limit)
+	paginator, err := k.NewIAMAccessKeyPaginator(buildFilter(d.KeyColumnQuals, listIAMAccessKeyFilters, "aws", *cfg.AccountID), d.QueryContext.Limit)
 	if err != nil {
 		return nil, err
 	}
@@ -7194,13 +7299,14 @@ func GetIAMAccessKey(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydrate
 	plugin.Logger(ctx).Trace("GetIAMAccessKey")
 
 	// create service
-	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache, ctx)
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	limit := int64(1)
-	paginator, err := k.NewIAMAccessKeyPaginator(buildFilter(d.KeyColumnQuals, getIAMAccessKeyFilters), &limit)
+	paginator, err := k.NewIAMAccessKeyPaginator(buildFilter(d.KeyColumnQuals, getIAMAccessKeyFilters, "aws", *cfg.AccountID), &limit)
 	if err != nil {
 		return nil, err
 	}
@@ -7297,12 +7403,13 @@ func ListIAMAccountPasswordPolicy(ctx context.Context, d *plugin.QueryData, _ *p
 	plugin.Logger(ctx).Trace("ListIAMAccountPasswordPolicy")
 
 	// create service
-	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache, ctx)
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	paginator, err := k.NewIAMAccountPasswordPolicyPaginator(buildFilter(d.KeyColumnQuals, listIAMAccountPasswordPolicyFilters), d.QueryContext.Limit)
+	paginator, err := k.NewIAMAccountPasswordPolicyPaginator(buildFilter(d.KeyColumnQuals, listIAMAccountPasswordPolicyFilters, "aws", *cfg.AccountID), d.QueryContext.Limit)
 	if err != nil {
 		return nil, err
 	}
@@ -7327,13 +7434,14 @@ func GetIAMAccountPasswordPolicy(ctx context.Context, d *plugin.QueryData, _ *pl
 	plugin.Logger(ctx).Trace("GetIAMAccountPasswordPolicy")
 
 	// create service
-	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache, ctx)
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	limit := int64(1)
-	paginator, err := k.NewIAMAccountPasswordPolicyPaginator(buildFilter(d.KeyColumnQuals, getIAMAccountPasswordPolicyFilters), &limit)
+	paginator, err := k.NewIAMAccountPasswordPolicyPaginator(buildFilter(d.KeyColumnQuals, getIAMAccountPasswordPolicyFilters, "aws", *cfg.AccountID), &limit)
 	if err != nil {
 		return nil, err
 	}
@@ -7430,12 +7538,13 @@ func ListIAMUser(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData
 	plugin.Logger(ctx).Trace("ListIAMUser")
 
 	// create service
-	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache, ctx)
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	paginator, err := k.NewIAMUserPaginator(buildFilter(d.KeyColumnQuals, listIAMUserFilters), d.QueryContext.Limit)
+	paginator, err := k.NewIAMUserPaginator(buildFilter(d.KeyColumnQuals, listIAMUserFilters, "aws", *cfg.AccountID), d.QueryContext.Limit)
 	if err != nil {
 		return nil, err
 	}
@@ -7463,13 +7572,14 @@ func GetIAMUser(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData)
 	plugin.Logger(ctx).Trace("GetIAMUser")
 
 	// create service
-	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache, ctx)
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	limit := int64(1)
-	paginator, err := k.NewIAMUserPaginator(buildFilter(d.KeyColumnQuals, getIAMUserFilters), &limit)
+	paginator, err := k.NewIAMUserPaginator(buildFilter(d.KeyColumnQuals, getIAMUserFilters, "aws", *cfg.AccountID), &limit)
 	if err != nil {
 		return nil, err
 	}
@@ -7566,12 +7676,13 @@ func ListIAMGroup(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateDat
 	plugin.Logger(ctx).Trace("ListIAMGroup")
 
 	// create service
-	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache, ctx)
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	paginator, err := k.NewIAMGroupPaginator(buildFilter(d.KeyColumnQuals, listIAMGroupFilters), d.QueryContext.Limit)
+	paginator, err := k.NewIAMGroupPaginator(buildFilter(d.KeyColumnQuals, listIAMGroupFilters, "aws", *cfg.AccountID), d.QueryContext.Limit)
 	if err != nil {
 		return nil, err
 	}
@@ -7599,13 +7710,14 @@ func GetIAMGroup(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData
 	plugin.Logger(ctx).Trace("GetIAMGroup")
 
 	// create service
-	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache, ctx)
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	limit := int64(1)
-	paginator, err := k.NewIAMGroupPaginator(buildFilter(d.KeyColumnQuals, getIAMGroupFilters), &limit)
+	paginator, err := k.NewIAMGroupPaginator(buildFilter(d.KeyColumnQuals, getIAMGroupFilters, "aws", *cfg.AccountID), &limit)
 	if err != nil {
 		return nil, err
 	}
@@ -7702,12 +7814,13 @@ func ListIAMRole(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData
 	plugin.Logger(ctx).Trace("ListIAMRole")
 
 	// create service
-	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache, ctx)
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	paginator, err := k.NewIAMRolePaginator(buildFilter(d.KeyColumnQuals, listIAMRoleFilters), d.QueryContext.Limit)
+	paginator, err := k.NewIAMRolePaginator(buildFilter(d.KeyColumnQuals, listIAMRoleFilters, "aws", *cfg.AccountID), d.QueryContext.Limit)
 	if err != nil {
 		return nil, err
 	}
@@ -7735,13 +7848,14 @@ func GetIAMRole(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData)
 	plugin.Logger(ctx).Trace("GetIAMRole")
 
 	// create service
-	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache, ctx)
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	limit := int64(1)
-	paginator, err := k.NewIAMRolePaginator(buildFilter(d.KeyColumnQuals, getIAMRoleFilters), &limit)
+	paginator, err := k.NewIAMRolePaginator(buildFilter(d.KeyColumnQuals, getIAMRoleFilters, "aws", *cfg.AccountID), &limit)
 	if err != nil {
 		return nil, err
 	}
@@ -7838,12 +7952,13 @@ func ListIAMServerCertificate(ctx context.Context, d *plugin.QueryData, _ *plugi
 	plugin.Logger(ctx).Trace("ListIAMServerCertificate")
 
 	// create service
-	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache, ctx)
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	paginator, err := k.NewIAMServerCertificatePaginator(buildFilter(d.KeyColumnQuals, listIAMServerCertificateFilters), d.QueryContext.Limit)
+	paginator, err := k.NewIAMServerCertificatePaginator(buildFilter(d.KeyColumnQuals, listIAMServerCertificateFilters, "aws", *cfg.AccountID), d.QueryContext.Limit)
 	if err != nil {
 		return nil, err
 	}
@@ -7870,13 +7985,14 @@ func GetIAMServerCertificate(ctx context.Context, d *plugin.QueryData, _ *plugin
 	plugin.Logger(ctx).Trace("GetIAMServerCertificate")
 
 	// create service
-	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache, ctx)
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	limit := int64(1)
-	paginator, err := k.NewIAMServerCertificatePaginator(buildFilter(d.KeyColumnQuals, getIAMServerCertificateFilters), &limit)
+	paginator, err := k.NewIAMServerCertificatePaginator(buildFilter(d.KeyColumnQuals, getIAMServerCertificateFilters, "aws", *cfg.AccountID), &limit)
 	if err != nil {
 		return nil, err
 	}
@@ -7973,12 +8089,13 @@ func ListIAMPolicy(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateDa
 	plugin.Logger(ctx).Trace("ListIAMPolicy")
 
 	// create service
-	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache, ctx)
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	paginator, err := k.NewIAMPolicyPaginator(buildFilter(d.KeyColumnQuals, listIAMPolicyFilters), d.QueryContext.Limit)
+	paginator, err := k.NewIAMPolicyPaginator(buildFilter(d.KeyColumnQuals, listIAMPolicyFilters, "aws", *cfg.AccountID), d.QueryContext.Limit)
 	if err != nil {
 		return nil, err
 	}
@@ -8005,13 +8122,14 @@ func GetIAMPolicy(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateDat
 	plugin.Logger(ctx).Trace("GetIAMPolicy")
 
 	// create service
-	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache, ctx)
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	limit := int64(1)
-	paginator, err := k.NewIAMPolicyPaginator(buildFilter(d.KeyColumnQuals, getIAMPolicyFilters), &limit)
+	paginator, err := k.NewIAMPolicyPaginator(buildFilter(d.KeyColumnQuals, getIAMPolicyFilters, "aws", *cfg.AccountID), &limit)
 	if err != nil {
 		return nil, err
 	}
@@ -8108,12 +8226,13 @@ func ListIAMCredentialReport(ctx context.Context, d *plugin.QueryData, _ *plugin
 	plugin.Logger(ctx).Trace("ListIAMCredentialReport")
 
 	// create service
-	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache, ctx)
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	paginator, err := k.NewIAMCredentialReportPaginator(buildFilter(d.KeyColumnQuals, listIAMCredentialReportFilters), d.QueryContext.Limit)
+	paginator, err := k.NewIAMCredentialReportPaginator(buildFilter(d.KeyColumnQuals, listIAMCredentialReportFilters, "aws", *cfg.AccountID), d.QueryContext.Limit)
 	if err != nil {
 		return nil, err
 	}
@@ -8138,13 +8257,14 @@ func GetIAMCredentialReport(ctx context.Context, d *plugin.QueryData, _ *plugin.
 	plugin.Logger(ctx).Trace("GetIAMCredentialReport")
 
 	// create service
-	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache, ctx)
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	limit := int64(1)
-	paginator, err := k.NewIAMCredentialReportPaginator(buildFilter(d.KeyColumnQuals, getIAMCredentialReportFilters), &limit)
+	paginator, err := k.NewIAMCredentialReportPaginator(buildFilter(d.KeyColumnQuals, getIAMCredentialReportFilters, "aws", *cfg.AccountID), &limit)
 	if err != nil {
 		return nil, err
 	}
@@ -8241,12 +8361,13 @@ func ListIAMVirtualMFADevice(ctx context.Context, d *plugin.QueryData, _ *plugin
 	plugin.Logger(ctx).Trace("ListIAMVirtualMFADevice")
 
 	// create service
-	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache, ctx)
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	paginator, err := k.NewIAMVirtualMFADevicePaginator(buildFilter(d.KeyColumnQuals, listIAMVirtualMFADeviceFilters), d.QueryContext.Limit)
+	paginator, err := k.NewIAMVirtualMFADevicePaginator(buildFilter(d.KeyColumnQuals, listIAMVirtualMFADeviceFilters, "aws", *cfg.AccountID), d.QueryContext.Limit)
 	if err != nil {
 		return nil, err
 	}
@@ -8271,13 +8392,14 @@ func GetIAMVirtualMFADevice(ctx context.Context, d *plugin.QueryData, _ *plugin.
 	plugin.Logger(ctx).Trace("GetIAMVirtualMFADevice")
 
 	// create service
-	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache, ctx)
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	limit := int64(1)
-	paginator, err := k.NewIAMVirtualMFADevicePaginator(buildFilter(d.KeyColumnQuals, getIAMVirtualMFADeviceFilters), &limit)
+	paginator, err := k.NewIAMVirtualMFADevicePaginator(buildFilter(d.KeyColumnQuals, getIAMVirtualMFADeviceFilters, "aws", *cfg.AccountID), &limit)
 	if err != nil {
 		return nil, err
 	}
@@ -8374,12 +8496,13 @@ func ListRDSDBCluster(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydrat
 	plugin.Logger(ctx).Trace("ListRDSDBCluster")
 
 	// create service
-	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache, ctx)
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	paginator, err := k.NewRDSDBClusterPaginator(buildFilter(d.KeyColumnQuals, listRDSDBClusterFilters), d.QueryContext.Limit)
+	paginator, err := k.NewRDSDBClusterPaginator(buildFilter(d.KeyColumnQuals, listRDSDBClusterFilters, "aws", *cfg.AccountID), d.QueryContext.Limit)
 	if err != nil {
 		return nil, err
 	}
@@ -8406,13 +8529,14 @@ func GetRDSDBCluster(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydrate
 	plugin.Logger(ctx).Trace("GetRDSDBCluster")
 
 	// create service
-	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache, ctx)
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	limit := int64(1)
-	paginator, err := k.NewRDSDBClusterPaginator(buildFilter(d.KeyColumnQuals, getRDSDBClusterFilters), &limit)
+	paginator, err := k.NewRDSDBClusterPaginator(buildFilter(d.KeyColumnQuals, getRDSDBClusterFilters, "aws", *cfg.AccountID), &limit)
 	if err != nil {
 		return nil, err
 	}
@@ -8514,12 +8638,13 @@ func ListRDSDBClusterSnapshot(ctx context.Context, d *plugin.QueryData, _ *plugi
 	plugin.Logger(ctx).Trace("ListRDSDBClusterSnapshot")
 
 	// create service
-	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache, ctx)
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	paginator, err := k.NewRDSDBClusterSnapshotPaginator(buildFilter(d.KeyColumnQuals, listRDSDBClusterSnapshotFilters), d.QueryContext.Limit)
+	paginator, err := k.NewRDSDBClusterSnapshotPaginator(buildFilter(d.KeyColumnQuals, listRDSDBClusterSnapshotFilters, "aws", *cfg.AccountID), d.QueryContext.Limit)
 	if err != nil {
 		return nil, err
 	}
@@ -8546,13 +8671,14 @@ func GetRDSDBClusterSnapshot(ctx context.Context, d *plugin.QueryData, _ *plugin
 	plugin.Logger(ctx).Trace("GetRDSDBClusterSnapshot")
 
 	// create service
-	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache, ctx)
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	limit := int64(1)
-	paginator, err := k.NewRDSDBClusterSnapshotPaginator(buildFilter(d.KeyColumnQuals, getRDSDBClusterSnapshotFilters), &limit)
+	paginator, err := k.NewRDSDBClusterSnapshotPaginator(buildFilter(d.KeyColumnQuals, getRDSDBClusterSnapshotFilters, "aws", *cfg.AccountID), &limit)
 	if err != nil {
 		return nil, err
 	}
@@ -8649,12 +8775,13 @@ func ListRDSDBEventSubscription(ctx context.Context, d *plugin.QueryData, _ *plu
 	plugin.Logger(ctx).Trace("ListRDSDBEventSubscription")
 
 	// create service
-	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache, ctx)
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	paginator, err := k.NewRDSDBEventSubscriptionPaginator(buildFilter(d.KeyColumnQuals, listRDSDBEventSubscriptionFilters), d.QueryContext.Limit)
+	paginator, err := k.NewRDSDBEventSubscriptionPaginator(buildFilter(d.KeyColumnQuals, listRDSDBEventSubscriptionFilters, "aws", *cfg.AccountID), d.QueryContext.Limit)
 	if err != nil {
 		return nil, err
 	}
@@ -8681,13 +8808,14 @@ func GetRDSDBEventSubscription(ctx context.Context, d *plugin.QueryData, _ *plug
 	plugin.Logger(ctx).Trace("GetRDSDBEventSubscription")
 
 	// create service
-	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache, ctx)
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	limit := int64(1)
-	paginator, err := k.NewRDSDBEventSubscriptionPaginator(buildFilter(d.KeyColumnQuals, getRDSDBEventSubscriptionFilters), &limit)
+	paginator, err := k.NewRDSDBEventSubscriptionPaginator(buildFilter(d.KeyColumnQuals, getRDSDBEventSubscriptionFilters, "aws", *cfg.AccountID), &limit)
 	if err != nil {
 		return nil, err
 	}
@@ -8784,12 +8912,13 @@ func ListRDSDBInstance(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydra
 	plugin.Logger(ctx).Trace("ListRDSDBInstance")
 
 	// create service
-	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache, ctx)
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	paginator, err := k.NewRDSDBInstancePaginator(buildFilter(d.KeyColumnQuals, listRDSDBInstanceFilters), d.QueryContext.Limit)
+	paginator, err := k.NewRDSDBInstancePaginator(buildFilter(d.KeyColumnQuals, listRDSDBInstanceFilters, "aws", *cfg.AccountID), d.QueryContext.Limit)
 	if err != nil {
 		return nil, err
 	}
@@ -8816,13 +8945,14 @@ func GetRDSDBInstance(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydrat
 	plugin.Logger(ctx).Trace("GetRDSDBInstance")
 
 	// create service
-	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache, ctx)
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	limit := int64(1)
-	paginator, err := k.NewRDSDBInstancePaginator(buildFilter(d.KeyColumnQuals, getRDSDBInstanceFilters), &limit)
+	paginator, err := k.NewRDSDBInstancePaginator(buildFilter(d.KeyColumnQuals, getRDSDBInstanceFilters, "aws", *cfg.AccountID), &limit)
 	if err != nil {
 		return nil, err
 	}
@@ -8919,12 +9049,13 @@ func ListRDSDBSnapshot(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydra
 	plugin.Logger(ctx).Trace("ListRDSDBSnapshot")
 
 	// create service
-	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache, ctx)
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	paginator, err := k.NewRDSDBSnapshotPaginator(buildFilter(d.KeyColumnQuals, listRDSDBSnapshotFilters), d.QueryContext.Limit)
+	paginator, err := k.NewRDSDBSnapshotPaginator(buildFilter(d.KeyColumnQuals, listRDSDBSnapshotFilters, "aws", *cfg.AccountID), d.QueryContext.Limit)
 	if err != nil {
 		return nil, err
 	}
@@ -8951,13 +9082,14 @@ func GetRDSDBSnapshot(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydrat
 	plugin.Logger(ctx).Trace("GetRDSDBSnapshot")
 
 	// create service
-	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache, ctx)
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	limit := int64(1)
-	paginator, err := k.NewRDSDBSnapshotPaginator(buildFilter(d.KeyColumnQuals, getRDSDBSnapshotFilters), &limit)
+	paginator, err := k.NewRDSDBSnapshotPaginator(buildFilter(d.KeyColumnQuals, getRDSDBSnapshotFilters, "aws", *cfg.AccountID), &limit)
 	if err != nil {
 		return nil, err
 	}
@@ -9054,12 +9186,13 @@ func ListRedshiftCluster(ctx context.Context, d *plugin.QueryData, _ *plugin.Hyd
 	plugin.Logger(ctx).Trace("ListRedshiftCluster")
 
 	// create service
-	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache, ctx)
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	paginator, err := k.NewRedshiftClusterPaginator(buildFilter(d.KeyColumnQuals, listRedshiftClusterFilters), d.QueryContext.Limit)
+	paginator, err := k.NewRedshiftClusterPaginator(buildFilter(d.KeyColumnQuals, listRedshiftClusterFilters, "aws", *cfg.AccountID), d.QueryContext.Limit)
 	if err != nil {
 		return nil, err
 	}
@@ -9086,13 +9219,14 @@ func GetRedshiftCluster(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydr
 	plugin.Logger(ctx).Trace("GetRedshiftCluster")
 
 	// create service
-	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache, ctx)
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	limit := int64(1)
-	paginator, err := k.NewRedshiftClusterPaginator(buildFilter(d.KeyColumnQuals, getRedshiftClusterFilters), &limit)
+	paginator, err := k.NewRedshiftClusterPaginator(buildFilter(d.KeyColumnQuals, getRedshiftClusterFilters, "aws", *cfg.AccountID), &limit)
 	if err != nil {
 		return nil, err
 	}
@@ -9189,12 +9323,13 @@ func ListRedshiftClusterParameterGroup(ctx context.Context, d *plugin.QueryData,
 	plugin.Logger(ctx).Trace("ListRedshiftClusterParameterGroup")
 
 	// create service
-	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache, ctx)
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	paginator, err := k.NewRedshiftClusterParameterGroupPaginator(buildFilter(d.KeyColumnQuals, listRedshiftClusterParameterGroupFilters), d.QueryContext.Limit)
+	paginator, err := k.NewRedshiftClusterParameterGroupPaginator(buildFilter(d.KeyColumnQuals, listRedshiftClusterParameterGroupFilters, "aws", *cfg.AccountID), d.QueryContext.Limit)
 	if err != nil {
 		return nil, err
 	}
@@ -9221,13 +9356,14 @@ func GetRedshiftClusterParameterGroup(ctx context.Context, d *plugin.QueryData, 
 	plugin.Logger(ctx).Trace("GetRedshiftClusterParameterGroup")
 
 	// create service
-	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache, ctx)
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	limit := int64(1)
-	paginator, err := k.NewRedshiftClusterParameterGroupPaginator(buildFilter(d.KeyColumnQuals, getRedshiftClusterParameterGroupFilters), &limit)
+	paginator, err := k.NewRedshiftClusterParameterGroupPaginator(buildFilter(d.KeyColumnQuals, getRedshiftClusterParameterGroupFilters, "aws", *cfg.AccountID), &limit)
 	if err != nil {
 		return nil, err
 	}
@@ -9324,12 +9460,13 @@ func ListSNSTopic(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateDat
 	plugin.Logger(ctx).Trace("ListSNSTopic")
 
 	// create service
-	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache, ctx)
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	paginator, err := k.NewSNSTopicPaginator(buildFilter(d.KeyColumnQuals, listSNSTopicFilters), d.QueryContext.Limit)
+	paginator, err := k.NewSNSTopicPaginator(buildFilter(d.KeyColumnQuals, listSNSTopicFilters, "aws", *cfg.AccountID), d.QueryContext.Limit)
 	if err != nil {
 		return nil, err
 	}
@@ -9356,13 +9493,14 @@ func GetSNSTopic(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData
 	plugin.Logger(ctx).Trace("GetSNSTopic")
 
 	// create service
-	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache, ctx)
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	limit := int64(1)
-	paginator, err := k.NewSNSTopicPaginator(buildFilter(d.KeyColumnQuals, getSNSTopicFilters), &limit)
+	paginator, err := k.NewSNSTopicPaginator(buildFilter(d.KeyColumnQuals, getSNSTopicFilters, "aws", *cfg.AccountID), &limit)
 	if err != nil {
 		return nil, err
 	}
@@ -9459,12 +9597,13 @@ func ListSNSSubscription(ctx context.Context, d *plugin.QueryData, _ *plugin.Hyd
 	plugin.Logger(ctx).Trace("ListSNSSubscription")
 
 	// create service
-	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache, ctx)
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	paginator, err := k.NewSNSSubscriptionPaginator(buildFilter(d.KeyColumnQuals, listSNSSubscriptionFilters), d.QueryContext.Limit)
+	paginator, err := k.NewSNSSubscriptionPaginator(buildFilter(d.KeyColumnQuals, listSNSSubscriptionFilters, "aws", *cfg.AccountID), d.QueryContext.Limit)
 	if err != nil {
 		return nil, err
 	}
@@ -9491,13 +9630,14 @@ func GetSNSSubscription(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydr
 	plugin.Logger(ctx).Trace("GetSNSSubscription")
 
 	// create service
-	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache, ctx)
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	limit := int64(1)
-	paginator, err := k.NewSNSSubscriptionPaginator(buildFilter(d.KeyColumnQuals, getSNSSubscriptionFilters), &limit)
+	paginator, err := k.NewSNSSubscriptionPaginator(buildFilter(d.KeyColumnQuals, getSNSSubscriptionFilters, "aws", *cfg.AccountID), &limit)
 	if err != nil {
 		return nil, err
 	}
@@ -9594,12 +9734,13 @@ func ListSQSQueue(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateDat
 	plugin.Logger(ctx).Trace("ListSQSQueue")
 
 	// create service
-	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache, ctx)
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	paginator, err := k.NewSQSQueuePaginator(buildFilter(d.KeyColumnQuals, listSQSQueueFilters), d.QueryContext.Limit)
+	paginator, err := k.NewSQSQueuePaginator(buildFilter(d.KeyColumnQuals, listSQSQueueFilters, "aws", *cfg.AccountID), d.QueryContext.Limit)
 	if err != nil {
 		return nil, err
 	}
@@ -9626,13 +9767,14 @@ func GetSQSQueue(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData
 	plugin.Logger(ctx).Trace("GetSQSQueue")
 
 	// create service
-	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache, ctx)
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	limit := int64(1)
-	paginator, err := k.NewSQSQueuePaginator(buildFilter(d.KeyColumnQuals, getSQSQueueFilters), &limit)
+	paginator, err := k.NewSQSQueuePaginator(buildFilter(d.KeyColumnQuals, getSQSQueueFilters, "aws", *cfg.AccountID), &limit)
 	if err != nil {
 		return nil, err
 	}
@@ -9729,12 +9871,13 @@ func ListS3Bucket(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateDat
 	plugin.Logger(ctx).Trace("ListS3Bucket")
 
 	// create service
-	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache, ctx)
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	paginator, err := k.NewS3BucketPaginator(buildFilter(d.KeyColumnQuals, listS3BucketFilters), d.QueryContext.Limit)
+	paginator, err := k.NewS3BucketPaginator(buildFilter(d.KeyColumnQuals, listS3BucketFilters, "aws", *cfg.AccountID), d.QueryContext.Limit)
 	if err != nil {
 		return nil, err
 	}
@@ -9761,13 +9904,14 @@ func GetS3Bucket(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData
 	plugin.Logger(ctx).Trace("GetS3Bucket")
 
 	// create service
-	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache, ctx)
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	limit := int64(1)
-	paginator, err := k.NewS3BucketPaginator(buildFilter(d.KeyColumnQuals, getS3BucketFilters), &limit)
+	paginator, err := k.NewS3BucketPaginator(buildFilter(d.KeyColumnQuals, getS3BucketFilters, "aws", *cfg.AccountID), &limit)
 	if err != nil {
 		return nil, err
 	}
@@ -9864,12 +10008,13 @@ func ListS3AccountSetting(ctx context.Context, d *plugin.QueryData, _ *plugin.Hy
 	plugin.Logger(ctx).Trace("ListS3AccountSetting")
 
 	// create service
-	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache, ctx)
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	paginator, err := k.NewS3AccountSettingPaginator(buildFilter(d.KeyColumnQuals, listS3AccountSettingFilters), d.QueryContext.Limit)
+	paginator, err := k.NewS3AccountSettingPaginator(buildFilter(d.KeyColumnQuals, listS3AccountSettingFilters, "aws", *cfg.AccountID), d.QueryContext.Limit)
 	if err != nil {
 		return nil, err
 	}
@@ -9894,13 +10039,14 @@ func GetS3AccountSetting(ctx context.Context, d *plugin.QueryData, _ *plugin.Hyd
 	plugin.Logger(ctx).Trace("GetS3AccountSetting")
 
 	// create service
-	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache, ctx)
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	limit := int64(1)
-	paginator, err := k.NewS3AccountSettingPaginator(buildFilter(d.KeyColumnQuals, getS3AccountSettingFilters), &limit)
+	paginator, err := k.NewS3AccountSettingPaginator(buildFilter(d.KeyColumnQuals, getS3AccountSettingFilters, "aws", *cfg.AccountID), &limit)
 	if err != nil {
 		return nil, err
 	}
@@ -9997,12 +10143,13 @@ func ListSageMakerEndpointConfiguration(ctx context.Context, d *plugin.QueryData
 	plugin.Logger(ctx).Trace("ListSageMakerEndpointConfiguration")
 
 	// create service
-	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache, ctx)
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	paginator, err := k.NewSageMakerEndpointConfigurationPaginator(buildFilter(d.KeyColumnQuals, listSageMakerEndpointConfigurationFilters), d.QueryContext.Limit)
+	paginator, err := k.NewSageMakerEndpointConfigurationPaginator(buildFilter(d.KeyColumnQuals, listSageMakerEndpointConfigurationFilters, "aws", *cfg.AccountID), d.QueryContext.Limit)
 	if err != nil {
 		return nil, err
 	}
@@ -10029,13 +10176,14 @@ func GetSageMakerEndpointConfiguration(ctx context.Context, d *plugin.QueryData,
 	plugin.Logger(ctx).Trace("GetSageMakerEndpointConfiguration")
 
 	// create service
-	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache, ctx)
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	limit := int64(1)
-	paginator, err := k.NewSageMakerEndpointConfigurationPaginator(buildFilter(d.KeyColumnQuals, getSageMakerEndpointConfigurationFilters), &limit)
+	paginator, err := k.NewSageMakerEndpointConfigurationPaginator(buildFilter(d.KeyColumnQuals, getSageMakerEndpointConfigurationFilters, "aws", *cfg.AccountID), &limit)
 	if err != nil {
 		return nil, err
 	}
@@ -10132,12 +10280,13 @@ func ListSageMakerNotebookInstance(ctx context.Context, d *plugin.QueryData, _ *
 	plugin.Logger(ctx).Trace("ListSageMakerNotebookInstance")
 
 	// create service
-	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache, ctx)
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	paginator, err := k.NewSageMakerNotebookInstancePaginator(buildFilter(d.KeyColumnQuals, listSageMakerNotebookInstanceFilters), d.QueryContext.Limit)
+	paginator, err := k.NewSageMakerNotebookInstancePaginator(buildFilter(d.KeyColumnQuals, listSageMakerNotebookInstanceFilters, "aws", *cfg.AccountID), d.QueryContext.Limit)
 	if err != nil {
 		return nil, err
 	}
@@ -10164,13 +10313,14 @@ func GetSageMakerNotebookInstance(ctx context.Context, d *plugin.QueryData, _ *p
 	plugin.Logger(ctx).Trace("GetSageMakerNotebookInstance")
 
 	// create service
-	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache, ctx)
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	limit := int64(1)
-	paginator, err := k.NewSageMakerNotebookInstancePaginator(buildFilter(d.KeyColumnQuals, getSageMakerNotebookInstanceFilters), &limit)
+	paginator, err := k.NewSageMakerNotebookInstancePaginator(buildFilter(d.KeyColumnQuals, getSageMakerNotebookInstanceFilters, "aws", *cfg.AccountID), &limit)
 	if err != nil {
 		return nil, err
 	}
@@ -10267,12 +10417,13 @@ func ListSecretsManagerSecret(ctx context.Context, d *plugin.QueryData, _ *plugi
 	plugin.Logger(ctx).Trace("ListSecretsManagerSecret")
 
 	// create service
-	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache, ctx)
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	paginator, err := k.NewSecretsManagerSecretPaginator(buildFilter(d.KeyColumnQuals, listSecretsManagerSecretFilters), d.QueryContext.Limit)
+	paginator, err := k.NewSecretsManagerSecretPaginator(buildFilter(d.KeyColumnQuals, listSecretsManagerSecretFilters, "aws", *cfg.AccountID), d.QueryContext.Limit)
 	if err != nil {
 		return nil, err
 	}
@@ -10299,13 +10450,14 @@ func GetSecretsManagerSecret(ctx context.Context, d *plugin.QueryData, _ *plugin
 	plugin.Logger(ctx).Trace("GetSecretsManagerSecret")
 
 	// create service
-	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache, ctx)
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	limit := int64(1)
-	paginator, err := k.NewSecretsManagerSecretPaginator(buildFilter(d.KeyColumnQuals, getSecretsManagerSecretFilters), &limit)
+	paginator, err := k.NewSecretsManagerSecretPaginator(buildFilter(d.KeyColumnQuals, getSecretsManagerSecretFilters, "aws", *cfg.AccountID), &limit)
 	if err != nil {
 		return nil, err
 	}
@@ -10402,12 +10554,13 @@ func ListSecurityHubHub(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydr
 	plugin.Logger(ctx).Trace("ListSecurityHubHub")
 
 	// create service
-	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache, ctx)
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	paginator, err := k.NewSecurityHubHubPaginator(buildFilter(d.KeyColumnQuals, listSecurityHubHubFilters), d.QueryContext.Limit)
+	paginator, err := k.NewSecurityHubHubPaginator(buildFilter(d.KeyColumnQuals, listSecurityHubHubFilters, "aws", *cfg.AccountID), d.QueryContext.Limit)
 	if err != nil {
 		return nil, err
 	}
@@ -10434,13 +10587,14 @@ func GetSecurityHubHub(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydra
 	plugin.Logger(ctx).Trace("GetSecurityHubHub")
 
 	// create service
-	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache, ctx)
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	limit := int64(1)
-	paginator, err := k.NewSecurityHubHubPaginator(buildFilter(d.KeyColumnQuals, getSecurityHubHubFilters), &limit)
+	paginator, err := k.NewSecurityHubHubPaginator(buildFilter(d.KeyColumnQuals, getSecurityHubHubFilters, "aws", *cfg.AccountID), &limit)
 	if err != nil {
 		return nil, err
 	}
@@ -10537,12 +10691,13 @@ func ListSSMManagedInstance(ctx context.Context, d *plugin.QueryData, _ *plugin.
 	plugin.Logger(ctx).Trace("ListSSMManagedInstance")
 
 	// create service
-	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache, ctx)
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	paginator, err := k.NewSSMManagedInstancePaginator(buildFilter(d.KeyColumnQuals, listSSMManagedInstanceFilters), d.QueryContext.Limit)
+	paginator, err := k.NewSSMManagedInstancePaginator(buildFilter(d.KeyColumnQuals, listSSMManagedInstanceFilters, "aws", *cfg.AccountID), d.QueryContext.Limit)
 	if err != nil {
 		return nil, err
 	}
@@ -10567,13 +10722,14 @@ func GetSSMManagedInstance(ctx context.Context, d *plugin.QueryData, _ *plugin.H
 	plugin.Logger(ctx).Trace("GetSSMManagedInstance")
 
 	// create service
-	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache, ctx)
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	limit := int64(1)
-	paginator, err := k.NewSSMManagedInstancePaginator(buildFilter(d.KeyColumnQuals, getSSMManagedInstanceFilters), &limit)
+	paginator, err := k.NewSSMManagedInstancePaginator(buildFilter(d.KeyColumnQuals, getSSMManagedInstanceFilters, "aws", *cfg.AccountID), &limit)
 	if err != nil {
 		return nil, err
 	}
@@ -10672,12 +10828,13 @@ func ListSSMManagedInstanceCompliance(ctx context.Context, d *plugin.QueryData, 
 	plugin.Logger(ctx).Trace("ListSSMManagedInstanceCompliance")
 
 	// create service
-	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache, ctx)
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	paginator, err := k.NewSSMManagedInstanceCompliancePaginator(buildFilter(d.KeyColumnQuals, listSSMManagedInstanceComplianceFilters), d.QueryContext.Limit)
+	paginator, err := k.NewSSMManagedInstanceCompliancePaginator(buildFilter(d.KeyColumnQuals, listSSMManagedInstanceComplianceFilters, "aws", *cfg.AccountID), d.QueryContext.Limit)
 	if err != nil {
 		return nil, err
 	}
@@ -10702,13 +10859,14 @@ func GetSSMManagedInstanceCompliance(ctx context.Context, d *plugin.QueryData, _
 	plugin.Logger(ctx).Trace("GetSSMManagedInstanceCompliance")
 
 	// create service
-	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache, ctx)
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	limit := int64(1)
-	paginator, err := k.NewSSMManagedInstanceCompliancePaginator(buildFilter(d.KeyColumnQuals, getSSMManagedInstanceComplianceFilters), &limit)
+	paginator, err := k.NewSSMManagedInstanceCompliancePaginator(buildFilter(d.KeyColumnQuals, getSSMManagedInstanceComplianceFilters, "aws", *cfg.AccountID), &limit)
 	if err != nil {
 		return nil, err
 	}
@@ -10805,12 +10963,13 @@ func ListECSTaskDefinition(ctx context.Context, d *plugin.QueryData, _ *plugin.H
 	plugin.Logger(ctx).Trace("ListECSTaskDefinition")
 
 	// create service
-	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache, ctx)
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	paginator, err := k.NewECSTaskDefinitionPaginator(buildFilter(d.KeyColumnQuals, listECSTaskDefinitionFilters), d.QueryContext.Limit)
+	paginator, err := k.NewECSTaskDefinitionPaginator(buildFilter(d.KeyColumnQuals, listECSTaskDefinitionFilters, "aws", *cfg.AccountID), d.QueryContext.Limit)
 	if err != nil {
 		return nil, err
 	}
@@ -10837,13 +10996,14 @@ func GetECSTaskDefinition(ctx context.Context, d *plugin.QueryData, _ *plugin.Hy
 	plugin.Logger(ctx).Trace("GetECSTaskDefinition")
 
 	// create service
-	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache, ctx)
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	limit := int64(1)
-	paginator, err := k.NewECSTaskDefinitionPaginator(buildFilter(d.KeyColumnQuals, getECSTaskDefinitionFilters), &limit)
+	paginator, err := k.NewECSTaskDefinitionPaginator(buildFilter(d.KeyColumnQuals, getECSTaskDefinitionFilters, "aws", *cfg.AccountID), &limit)
 	if err != nil {
 		return nil, err
 	}
@@ -10940,12 +11100,13 @@ func ListECSCluster(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateD
 	plugin.Logger(ctx).Trace("ListECSCluster")
 
 	// create service
-	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache, ctx)
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	paginator, err := k.NewECSClusterPaginator(buildFilter(d.KeyColumnQuals, listECSClusterFilters), d.QueryContext.Limit)
+	paginator, err := k.NewECSClusterPaginator(buildFilter(d.KeyColumnQuals, listECSClusterFilters, "aws", *cfg.AccountID), d.QueryContext.Limit)
 	if err != nil {
 		return nil, err
 	}
@@ -10972,13 +11133,14 @@ func GetECSCluster(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateDa
 	plugin.Logger(ctx).Trace("GetECSCluster")
 
 	// create service
-	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache, ctx)
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	limit := int64(1)
-	paginator, err := k.NewECSClusterPaginator(buildFilter(d.KeyColumnQuals, getECSClusterFilters), &limit)
+	paginator, err := k.NewECSClusterPaginator(buildFilter(d.KeyColumnQuals, getECSClusterFilters, "aws", *cfg.AccountID), &limit)
 	if err != nil {
 		return nil, err
 	}
@@ -11075,12 +11237,13 @@ func ListECSService(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateD
 	plugin.Logger(ctx).Trace("ListECSService")
 
 	// create service
-	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache, ctx)
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	paginator, err := k.NewECSServicePaginator(buildFilter(d.KeyColumnQuals, listECSServiceFilters), d.QueryContext.Limit)
+	paginator, err := k.NewECSServicePaginator(buildFilter(d.KeyColumnQuals, listECSServiceFilters, "aws", *cfg.AccountID), d.QueryContext.Limit)
 	if err != nil {
 		return nil, err
 	}
@@ -11105,13 +11268,14 @@ func GetECSService(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateDa
 	plugin.Logger(ctx).Trace("GetECSService")
 
 	// create service
-	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache, ctx)
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	limit := int64(1)
-	paginator, err := k.NewECSServicePaginator(buildFilter(d.KeyColumnQuals, getECSServiceFilters), &limit)
+	paginator, err := k.NewECSServicePaginator(buildFilter(d.KeyColumnQuals, getECSServiceFilters, "aws", *cfg.AccountID), &limit)
 	if err != nil {
 		return nil, err
 	}
@@ -11208,12 +11372,13 @@ func ListEFSFileSystem(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydra
 	plugin.Logger(ctx).Trace("ListEFSFileSystem")
 
 	// create service
-	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache, ctx)
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	paginator, err := k.NewEFSFileSystemPaginator(buildFilter(d.KeyColumnQuals, listEFSFileSystemFilters), d.QueryContext.Limit)
+	paginator, err := k.NewEFSFileSystemPaginator(buildFilter(d.KeyColumnQuals, listEFSFileSystemFilters, "aws", *cfg.AccountID), d.QueryContext.Limit)
 	if err != nil {
 		return nil, err
 	}
@@ -11240,13 +11405,14 @@ func GetEFSFileSystem(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydrat
 	plugin.Logger(ctx).Trace("GetEFSFileSystem")
 
 	// create service
-	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache, ctx)
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	limit := int64(1)
-	paginator, err := k.NewEFSFileSystemPaginator(buildFilter(d.KeyColumnQuals, getEFSFileSystemFilters), &limit)
+	paginator, err := k.NewEFSFileSystemPaginator(buildFilter(d.KeyColumnQuals, getEFSFileSystemFilters, "aws", *cfg.AccountID), &limit)
 	if err != nil {
 		return nil, err
 	}
@@ -11343,12 +11509,13 @@ func ListEKSCluster(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateD
 	plugin.Logger(ctx).Trace("ListEKSCluster")
 
 	// create service
-	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache, ctx)
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	paginator, err := k.NewEKSClusterPaginator(buildFilter(d.KeyColumnQuals, listEKSClusterFilters), d.QueryContext.Limit)
+	paginator, err := k.NewEKSClusterPaginator(buildFilter(d.KeyColumnQuals, listEKSClusterFilters, "aws", *cfg.AccountID), d.QueryContext.Limit)
 	if err != nil {
 		return nil, err
 	}
@@ -11375,13 +11542,14 @@ func GetEKSCluster(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateDa
 	plugin.Logger(ctx).Trace("GetEKSCluster")
 
 	// create service
-	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache, ctx)
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	limit := int64(1)
-	paginator, err := k.NewEKSClusterPaginator(buildFilter(d.KeyColumnQuals, getEKSClusterFilters), &limit)
+	paginator, err := k.NewEKSClusterPaginator(buildFilter(d.KeyColumnQuals, getEKSClusterFilters, "aws", *cfg.AccountID), &limit)
 	if err != nil {
 		return nil, err
 	}
@@ -11478,12 +11646,13 @@ func ListEKSAddon(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateDat
 	plugin.Logger(ctx).Trace("ListEKSAddon")
 
 	// create service
-	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache, ctx)
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	paginator, err := k.NewEKSAddonPaginator(buildFilter(d.KeyColumnQuals, listEKSAddonFilters), d.QueryContext.Limit)
+	paginator, err := k.NewEKSAddonPaginator(buildFilter(d.KeyColumnQuals, listEKSAddonFilters, "aws", *cfg.AccountID), d.QueryContext.Limit)
 	if err != nil {
 		return nil, err
 	}
@@ -11511,13 +11680,14 @@ func GetEKSAddon(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData
 	plugin.Logger(ctx).Trace("GetEKSAddon")
 
 	// create service
-	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache, ctx)
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	limit := int64(1)
-	paginator, err := k.NewEKSAddonPaginator(buildFilter(d.KeyColumnQuals, getEKSAddonFilters), &limit)
+	paginator, err := k.NewEKSAddonPaginator(buildFilter(d.KeyColumnQuals, getEKSAddonFilters, "aws", *cfg.AccountID), &limit)
 	if err != nil {
 		return nil, err
 	}
@@ -11614,12 +11784,13 @@ func ListEKSIdentityProviderConfig(ctx context.Context, d *plugin.QueryData, _ *
 	plugin.Logger(ctx).Trace("ListEKSIdentityProviderConfig")
 
 	// create service
-	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache, ctx)
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	paginator, err := k.NewEKSIdentityProviderConfigPaginator(buildFilter(d.KeyColumnQuals, listEKSIdentityProviderConfigFilters), d.QueryContext.Limit)
+	paginator, err := k.NewEKSIdentityProviderConfigPaginator(buildFilter(d.KeyColumnQuals, listEKSIdentityProviderConfigFilters, "aws", *cfg.AccountID), d.QueryContext.Limit)
 	if err != nil {
 		return nil, err
 	}
@@ -11648,13 +11819,14 @@ func GetEKSIdentityProviderConfig(ctx context.Context, d *plugin.QueryData, _ *p
 	plugin.Logger(ctx).Trace("GetEKSIdentityProviderConfig")
 
 	// create service
-	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache, ctx)
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	limit := int64(1)
-	paginator, err := k.NewEKSIdentityProviderConfigPaginator(buildFilter(d.KeyColumnQuals, getEKSIdentityProviderConfigFilters), &limit)
+	paginator, err := k.NewEKSIdentityProviderConfigPaginator(buildFilter(d.KeyColumnQuals, getEKSIdentityProviderConfigFilters, "aws", *cfg.AccountID), &limit)
 	if err != nil {
 		return nil, err
 	}
@@ -11751,12 +11923,13 @@ func ListWAFv2WebACL(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydrate
 	plugin.Logger(ctx).Trace("ListWAFv2WebACL")
 
 	// create service
-	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache, ctx)
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	paginator, err := k.NewWAFv2WebACLPaginator(buildFilter(d.KeyColumnQuals, listWAFv2WebACLFilters), d.QueryContext.Limit)
+	paginator, err := k.NewWAFv2WebACLPaginator(buildFilter(d.KeyColumnQuals, listWAFv2WebACLFilters, "aws", *cfg.AccountID), d.QueryContext.Limit)
 	if err != nil {
 		return nil, err
 	}
@@ -11785,13 +11958,14 @@ func GetWAFv2WebACL(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateD
 	plugin.Logger(ctx).Trace("GetWAFv2WebACL")
 
 	// create service
-	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache, ctx)
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	limit := int64(1)
-	paginator, err := k.NewWAFv2WebACLPaginator(buildFilter(d.KeyColumnQuals, getWAFv2WebACLFilters), &limit)
+	paginator, err := k.NewWAFv2WebACLPaginator(buildFilter(d.KeyColumnQuals, getWAFv2WebACLFilters, "aws", *cfg.AccountID), &limit)
 	if err != nil {
 		return nil, err
 	}
@@ -11888,12 +12062,13 @@ func ListKMSKey(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData)
 	plugin.Logger(ctx).Trace("ListKMSKey")
 
 	// create service
-	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache, ctx)
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	paginator, err := k.NewKMSKeyPaginator(buildFilter(d.KeyColumnQuals, listKMSKeyFilters), d.QueryContext.Limit)
+	paginator, err := k.NewKMSKeyPaginator(buildFilter(d.KeyColumnQuals, listKMSKeyFilters, "aws", *cfg.AccountID), d.QueryContext.Limit)
 	if err != nil {
 		return nil, err
 	}
@@ -11920,13 +12095,14 @@ func GetKMSKey(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) 
 	plugin.Logger(ctx).Trace("GetKMSKey")
 
 	// create service
-	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache, ctx)
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	limit := int64(1)
-	paginator, err := k.NewKMSKeyPaginator(buildFilter(d.KeyColumnQuals, getKMSKeyFilters), &limit)
+	paginator, err := k.NewKMSKeyPaginator(buildFilter(d.KeyColumnQuals, getKMSKeyFilters, "aws", *cfg.AccountID), &limit)
 	if err != nil {
 		return nil, err
 	}
@@ -12023,12 +12199,13 @@ func ListLambdaFunction(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydr
 	plugin.Logger(ctx).Trace("ListLambdaFunction")
 
 	// create service
-	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache, ctx)
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	paginator, err := k.NewLambdaFunctionPaginator(buildFilter(d.KeyColumnQuals, listLambdaFunctionFilters), d.QueryContext.Limit)
+	paginator, err := k.NewLambdaFunctionPaginator(buildFilter(d.KeyColumnQuals, listLambdaFunctionFilters, "aws", *cfg.AccountID), d.QueryContext.Limit)
 	if err != nil {
 		return nil, err
 	}
@@ -12055,13 +12232,14 @@ func GetLambdaFunction(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydra
 	plugin.Logger(ctx).Trace("GetLambdaFunction")
 
 	// create service
-	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache, ctx)
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	limit := int64(1)
-	paginator, err := k.NewLambdaFunctionPaginator(buildFilter(d.KeyColumnQuals, getLambdaFunctionFilters), &limit)
+	paginator, err := k.NewLambdaFunctionPaginator(buildFilter(d.KeyColumnQuals, getLambdaFunctionFilters, "aws", *cfg.AccountID), &limit)
 	if err != nil {
 		return nil, err
 	}
@@ -12158,12 +12336,13 @@ func ListS3AccessPoint(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydra
 	plugin.Logger(ctx).Trace("ListS3AccessPoint")
 
 	// create service
-	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache, ctx)
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	paginator, err := k.NewS3AccessPointPaginator(buildFilter(d.KeyColumnQuals, listS3AccessPointFilters), d.QueryContext.Limit)
+	paginator, err := k.NewS3AccessPointPaginator(buildFilter(d.KeyColumnQuals, listS3AccessPointFilters, "aws", *cfg.AccountID), d.QueryContext.Limit)
 	if err != nil {
 		return nil, err
 	}
@@ -12191,13 +12370,14 @@ func GetS3AccessPoint(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydrat
 	plugin.Logger(ctx).Trace("GetS3AccessPoint")
 
 	// create service
-	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache, ctx)
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	limit := int64(1)
-	paginator, err := k.NewS3AccessPointPaginator(buildFilter(d.KeyColumnQuals, getS3AccessPointFilters), &limit)
+	paginator, err := k.NewS3AccessPointPaginator(buildFilter(d.KeyColumnQuals, getS3AccessPointFilters, "aws", *cfg.AccountID), &limit)
 	if err != nil {
 		return nil, err
 	}

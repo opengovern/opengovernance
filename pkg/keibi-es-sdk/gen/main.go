@@ -113,12 +113,13 @@ func List{{ .Name }}(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydrate
 	plugin.Logger(ctx).Trace("List{{ .Name }}")
 
 	// create service
-	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache, ctx)
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	paginator, err := k.New{{ .Name }}Paginator(buildFilter(d.KeyColumnQuals, list{{ .Name }}Filters), d.QueryContext.Limit)
+	paginator, err := k.New{{ .Name }}Paginator(buildFilter(d.KeyColumnQuals, list{{ .Name }}Filters, "{{ .SourceType }}", *cfg.AccountID), d.QueryContext.Limit)
 	if err != nil {
 		return nil, err
 	}
@@ -147,13 +148,14 @@ func Get{{ .Name }}(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateD
 	plugin.Logger(ctx).Trace("Get{{ .Name }}")
 
 	// create service
-	k, err := NewClientCached(GetConfig(d.Connection), d.ConnectionManager.Cache, ctx)
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	limit := int64(1)
-	paginator, err := k.New{{ .Name }}Paginator(buildFilter(d.KeyColumnQuals, get{{ .Name }}Filters), &limit)
+	paginator, err := k.New{{ .Name }}Paginator(buildFilter(d.KeyColumnQuals, get{{ .Name }}Filters, "{{ .SourceType }}", *cfg.AccountID), &limit)
 	if err != nil {
 		return nil, err
 	}
