@@ -74,14 +74,16 @@ func buildFilter(equalQuals plugin.KeyColumnEqualsQualMap, filtersQuals map[stri
 		filters = append(filters, filter)
 	}
 
-	var accountFieldName string
-	switch accountProvider {
-	case "aws":
-		accountFieldName = "account_id"
-	case "azure":
-		accountFieldName = "subscription_id"
+	if len(accountID) > 0 {
+		var accountFieldName string
+		switch accountProvider {
+		case "aws":
+			accountFieldName = "account_id"
+		case "azure":
+			accountFieldName = "subscription_id"
+		}
+		filters = append(filters, TermFilter("metadata."+accountFieldName, accountID))
 	}
-	filters = append(filters, TermFilter("metadata." + accountFieldName, accountID))
 	return filters
 }
 
