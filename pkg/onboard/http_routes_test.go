@@ -2,7 +2,6 @@ package onboard
 
 import (
 	"fmt"
-	"log"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -71,18 +70,7 @@ func TestGetSource(t *testing.T) {
 }
 
 func TestGetOrganization(t *testing.T) {
-	dsn := "postgres://postgres:mysecretpassword@localhost:5432/postgres"
-	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	db.AutoMigrate(
-		&Organization{},
-		&Source{},
-		&AWSMetadata{},
-	)
-
+	db := setupDB(t)
 	r := InitializeRouter()
 	h := &HttpHandler{db: Database{db}}
 	h.Register(r.Group("/api/v1"))
