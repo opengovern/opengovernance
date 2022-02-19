@@ -8,12 +8,6 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/organizations/types"
 )
 
-// IsAccountAMember Checks whether an account is a member of an organization or not.
-func IsAccountAMember(ctx context.Context, cfg aws.Config, id string) bool {
-	_, err := DescribeOrgByAccountID(ctx, cfg, id)
-	return err == nil
-}
-
 // DescribeOrgByAccountID Retrieves AWS Organizations-related information about
 // the specified (ID) account .
 func DescribeOrgByAccountID(ctx context.Context, cfg aws.Config, id string) (*types.Account, error) {
