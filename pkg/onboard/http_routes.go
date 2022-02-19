@@ -1,9 +1,11 @@
 package onboard
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 
+	"github.com/aws/aws-sdk-go-v2/service/organizations/types"
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
 	"gitlab.com/keibiengine/keibi-engine/pkg/aws"
@@ -129,7 +131,9 @@ func (h *HttpHandler) PostSourceAws(ctx echo.Context) error {
 		return cc.JSON(http.StatusBadRequest, NewError(err))
 	}
 
+	var organizationId *string
 	p := ctx.Param("organizationId")
+	organizationId = &p
 	orgId, err := uuid.Parse(p)
 	if err != nil {
 		return cc.JSON(http.StatusBadRequest, NewError(err))
@@ -148,6 +152,12 @@ func (h *HttpHandler) PostSourceAws(ctx echo.Context) error {
 		return cc.JSON(http.StatusNotFound, NewError(err))
 	}
 
+	var (
+		macieEnabled       bool
+		securityHubEnabled bool
+		supportTier        string
+	)
+
 	accID, err := describer.GetAccountId(ctx.Request().Context(), cfg)
 	if err != nil {
 		return cc.JSON(http.StatusBadRequest, NewError(err))
@@ -155,7 +165,14 @@ func (h *HttpHandler) PostSourceAws(ctx echo.Context) error {
 
 	acc, err := describer.DescribeAccountById(ctx.Request().Context(), cfg, accID)
 	if err != nil {
-		return cc.JSON(http.StatusBadRequest, NewError(err))
+		// This checks whether user has permium support tier or not
+		var notFoundErr *types.AWSOrganizationsNotInUseException
+		if errors.As(err, &notFoundErr) {
+			organizationId = nil
+		} else {
+			return cc.JSON(http.StatusBadRequest, NewError(err))
+		}
+
 	}
 
 	// save source to the database
@@ -164,10 +181,29 @@ func (h *HttpHandler) PostSourceAws(ctx echo.Context) error {
 		return cc.JSON(http.StatusInternalServerError, NewError(err))
 	}
 
+	services, err := describer.DescribeServicesByLang(ctx.Request().Context(), cfg, "EN")
+	if err != nil {
+		supportTier = "Free"
+	}
+
+	for _, s := range services {
+		if *s.Name == "service-macie" {
+			macieEnabled = true
+		} else if *s.Name == "service-security-hub" {
+			securityHubEnabled = true
+		} else {
+			continue
+		}
+	}
+
 	_, err = h.db.CreateAWSMetadata(&AWSMetadata{
-		Email:    *acc.Email,
-		Name:     *acc.Name,
-		SourceID: src.ID.String(),
+		Email:              *acc.Email,
+		Name:               *acc.Name,
+		SourceID:           src.ID.String(),
+		OrganizationID:     organizationId,
+		MacieEnabled:       macieEnabled,
+		SecurityHubEnabled: securityHubEnabled,
+		SupportTier:        supportTier,
 	})
 	if err != nil {
 		return cc.JSON(http.StatusInternalServerError, NewError(err))
