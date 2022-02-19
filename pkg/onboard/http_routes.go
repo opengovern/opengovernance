@@ -12,6 +12,11 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/aws/describer"
 )
 
+const (
+	FREESupportTier string = "FREE"
+	PAIDSupportTier string = "PAID"
+)
+
 func (h *HttpHandler) Register(v1 *echo.Group) {
 	o := v1.Group("/organizations")
 
@@ -152,12 +157,6 @@ func (h *HttpHandler) PostSourceAws(ctx echo.Context) error {
 		return cc.JSON(http.StatusNotFound, NewError(err))
 	}
 
-	var (
-		macieEnabled       bool
-		securityHubEnabled bool
-		supportTier        string
-	)
-
 	accID, err := describer.GetAccountId(ctx.Request().Context(), cfg)
 	if err != nil {
 		return cc.JSON(http.StatusBadRequest, NewError(err))
@@ -181,29 +180,24 @@ func (h *HttpHandler) PostSourceAws(ctx echo.Context) error {
 		return cc.JSON(http.StatusInternalServerError, NewError(err))
 	}
 
-	services, err := describer.DescribeServicesByLang(ctx.Request().Context(), cfg, "EN")
+	// FIXME: Check for Error code ot make sure that "SubscriptionIsRequiredException" is the actual error
+	var supportTier string
+	_, err = describer.DescribeServicesByLang(ctx.Request().Context(), cfg, "EN")
 	if err != nil {
-		supportTier = "Free"
-	}
-
-	for _, s := range services {
-		if *s.Name == "service-macie" {
-			macieEnabled = true
-		} else if *s.Name == "service-security-hub" {
-			securityHubEnabled = true
-		} else {
-			continue
-		}
+		supportTier = FREESupportTier
+	} else {
+		supportTier = PAIDSupportTier
 	}
 
 	_, err = h.db.CreateAWSMetadata(&AWSMetadata{
-		Email:              *acc.Email,
-		Name:               *acc.Name,
-		SourceID:           src.ID.String(),
-		OrganizationID:     organizationId,
-		MacieEnabled:       macieEnabled,
-		SecurityHubEnabled: securityHubEnabled,
-		SupportTier:        supportTier,
+		Email:          *acc.Email,
+		Name:           *acc.Name,
+		SourceID:       src.ID.String(),
+		OrganizationID: organizationId,
+		SupportTier:    supportTier,
+		// FIXME: Need to call `macie list-member-accounts` and `securityhub describe-hub` to fill the below fields.
+		// MacieEnabled:       macieEnabled,
+		// SecurityHubEnabled: securityHubEnabled,
 	})
 	if err != nil {
 		return cc.JSON(http.StatusInternalServerError, NewError(err))
