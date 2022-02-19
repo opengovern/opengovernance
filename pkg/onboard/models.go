@@ -39,6 +39,11 @@ const (
 	SourceDeleted SourceAction = "DELETE"
 )
 
+const (
+	FREESupportTier string = "FREE"
+	PAIDSupportTier string = "PAID"
+)
+
 type AWSMetadata struct {
 	gorm.Model
 	ID                 uuid.UUID `gorm:"primaryKey;type:uuid;default:uuid_generate_v4()"`

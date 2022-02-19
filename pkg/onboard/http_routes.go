@@ -12,10 +12,6 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/aws/describer"
 )
 
-const (
-	FREESupportTier string = "FREE"
-	PAIDSupportTier string = "PAID"
-)
 
 func (h *HttpHandler) Register(v1 *echo.Group) {
 	o := v1.Group("/organizations")
