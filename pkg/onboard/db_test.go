@@ -18,7 +18,7 @@ func TestCreateSource(t *testing.T) {
 	}
 
 	// pulls an image, creates a container based on it and runs it
-	resource, err := pool.Run("sameersbn/postgresql", "latest", []string{"PG_PASSWORD=mysecretpassword"})
+	resource, err := pool.Run("postgres", "latest", []string{"POSTGRES_PASSWORD=mysecretpassword"})
 	if err != nil {
 		t.Fatalf("Could not start resource: %s", err)
 	}
