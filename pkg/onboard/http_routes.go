@@ -8,7 +8,6 @@ import (
 	"github.com/labstack/echo/v4"
 	"gitlab.com/keibiengine/keibi-engine/pkg/aws"
 	"gitlab.com/keibiengine/keibi-engine/pkg/aws/describer"
-	"gorm.io/gorm/clause"
 )
 
 func (h *HttpHandler) Register(v1 *echo.Group) {
@@ -165,21 +164,13 @@ func (h *HttpHandler) PostSourceAws(ctx echo.Context) error {
 		return cc.JSON(http.StatusInternalServerError, NewError(err))
 	}
 
-	// Prefill AWS metadata
-	awsmetadata := AWSMetadata{}
-	awsmetadata.Email = *acc.Email
-	awsmetadata.Name = *acc.Name
-	awsmetadata.SourceID = src.ID.String()
-
-	atx := h.db.orm.
-		Model(&AWSMetadata{}).
-		Clauses(clause.OnConflict{DoNothing: true}).
-		Create(awsmetadata)
-
-	if atx.Error != nil {
-		return cc.JSON(http.StatusBadRequest, NewError(atx.Error))
-	} else if atx.RowsAffected != 1 {
-		return cc.JSON(http.StatusBadRequest, NewError(fmt.Errorf("create aws metadata: didn't create aws metadata due to id conflict: %w", atx.Error)))
+	_, err = h.db.CreateAWSMetadata(&AWSMetadata{
+		Email:    *acc.Email,
+		Name:     *acc.Name,
+		SourceID: src.ID.String(),
+	})
+	if err != nil {
+		return cc.JSON(http.StatusInternalServerError, NewError(err))
 	}
 
 	// write config to the vault
@@ -274,6 +265,7 @@ func (h *HttpHandler) GetSource(ctx echo.Context) error {
 	}
 
 	return cc.JSON(http.StatusOK, src.toSourceResponse())
+
 }
 
 func (h *HttpHandler) PutSource(ctx echo.Context) error {

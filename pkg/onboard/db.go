@@ -145,3 +145,19 @@ func (db Database) DeleteSource(id uuid.UUID) error {
 
 	return nil
 }
+
+// UpdateSource updates an existing source and returns it
+func (db Database) CreateAWSMetadata(a *AWSMetadata) (*AWSMetadata, error) {
+	tx := db.orm.
+		Model(&AWSMetadata{}).
+		Clauses(clause.OnConflict{DoNothing: true}).
+		Create(a)
+
+	if tx.Error != nil {
+		return nil, tx.Error
+	} else if tx.RowsAffected != 1 {
+		return nil, fmt.Errorf("create aws metadata: didn't create aws metadata due to id conflict: %w", tx.Error)
+	}
+
+        return a, nil
+}

@@ -107,14 +107,28 @@ func (s SourceAzureRequest) toSource(orgId uuid.UUID) *Source {
 	return o
 }
 
+type AWSMetadataResponse struct {
+	ID                 string  `json:"uuid"`
+	SourceID           string  `json:"source_id"`
+	AccountID          string  `json:"account_id"`
+	OrganizationID     *string `json:"organization_id"`
+	Email              string  `json:"email"`
+	Name               string  `json:"name"`
+	SupportTier        string  `json:"support_tier"`
+	AlternateContact   string  `json:"alternate_contact"`
+	SecurityHubEnabled bool    `json:"security_hub_enabled"`
+	MacieEnabled       bool    `json:"macie_enabled"`
+}
+
 type SourceResponse struct {
-	ID             uuid.UUID `json:"id"`
-	OrganizationID uuid.UUID `json:"organizationId"`
-	Name           string    `json:"name"`
-	Description    string    `json:"description"`
-	Type           string    `json:"type"`
-	CreatedAt      time.Time `json:"createdAt"`
-	UpdatedAt      time.Time `json:"updatedAt"`
+	ID             uuid.UUID           `json:"id"`
+	OrganizationID uuid.UUID           `json:"organizationId"`
+	Name           string              `json:"name"`
+	Description    string              `json:"description"`
+	Type           string              `json:"type"`
+	AWSMetadata    *AWSMetadataResponse `json:"aws_metadata"`
+	CreatedAt      time.Time           `json:"createdAt"`
+	UpdatedAt      time.Time           `json:"updatedAt"`
 }
 
 func (s Source) toSourceResponse() *SourceResponse {
@@ -124,8 +138,24 @@ func (s Source) toSourceResponse() *SourceResponse {
 		Name:           s.Name,
 		Description:    s.Description,
 		Type:           string(s.Type),
+		AWSMetadata:    s.AWSMetadata.toAWSMetadataResponse(),
 		CreatedAt:      s.CreatedAt,
 		UpdatedAt:      s.UpdatedAt,
+	}
+}
+
+func (a AWSMetadata) toAWSMetadataResponse() *AWSMetadataResponse {
+	return &AWSMetadataResponse{
+		ID:                 a.ID.String(),
+		SourceID:           a.SourceID,
+		AccountID:          a.AccountID,
+		OrganizationID:     a.OrganizationID,
+		Email:              a.Email,
+		Name:               a.Name,
+		SupportTier:        a.SupportTier,
+		AlternateContact:   a.AlternateContact,
+		SecurityHubEnabled: a.SecurityHubEnabled,
+		MacieEnabled:       a.MacieEnabled,
 	}
 }
 

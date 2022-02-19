@@ -62,6 +62,7 @@ type Source struct {
 	Type           SourceType `gorm:"not null"`
 	Description    string
 	ConfigRef      string
+	AWSMetadata    AWSMetadata `gorm:"foreignKey:SourceID"`
 	CreatedAt      time.Time
 	UpdatedAt      time.Time
 }
