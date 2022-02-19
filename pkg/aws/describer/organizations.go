@@ -10,13 +10,13 @@ import (
 
 // IsAccountAMember Checks whether an account is a member of an organization or not.
 func IsAccountAMember(ctx context.Context, cfg aws.Config, id string) bool {
-	_, err := DescribeAccountById(ctx, cfg, id)
+	_, err := DescribeOrgByAccountID(ctx, cfg, id)
 	return err == nil
 }
 
-// DescribeAccountById Retrieves AWS Organizations-related information about
+// DescribeOrgByAccountID Retrieves AWS Organizations-related information about
 // the specified (ID) account .
-func DescribeAccountById(ctx context.Context, cfg aws.Config, id string) (*types.Account, error) {
+func DescribeOrgByAccountID(ctx context.Context, cfg aws.Config, id string) (*types.Account, error) {
 	svc := organizations.NewFromConfig(cfg)
 
 	req, err := svc.DescribeAccount(ctx, &organizations.DescribeAccountInput{AccountId: aws.String(id)})

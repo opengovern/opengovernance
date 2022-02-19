@@ -163,7 +163,7 @@ func (h *HttpHandler) PostSourceAws(ctx echo.Context) error {
 		return cc.JSON(http.StatusBadRequest, NewError(err))
 	}
 
-	acc, err := describer.DescribeAccountById(ctx.Request().Context(), cfg, accID)
+	acc, err := describer.DescribeOrgByAccountID(ctx.Request().Context(), cfg, accID)
 	if err != nil {
 		// This checks whether user has permium support tier or not
 		var notFoundErr *types.AWSOrganizationsNotInUseException
