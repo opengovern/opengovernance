@@ -297,7 +297,7 @@ func (h *HttpHandler) GetSource(ctx echo.Context) error {
 	}
 
 	if src.OrganizationID != orgId {
-		return ctx.JSON(http.StatusBadRequest, fmt.Errorf("no source with id %q was found for organization with id %q", srcId, orgId))
+		return ctx.JSON(http.StatusNotFound, fmt.Errorf("no source with id %q was found for organization with id %q", srcId, orgId))
 	}
 
 	return cc.JSON(http.StatusOK, src.toSourceResponse())
@@ -328,7 +328,7 @@ func (h *HttpHandler) DeleteSource(ctx echo.Context) error {
 	}
 
 	if src.OrganizationID != orgId {
-		return ctx.JSON(http.StatusBadRequest, fmt.Errorf("no source with id %q was found for organization with id %q", srcId, orgId))
+		return ctx.JSON(http.StatusNotFound, fmt.Errorf("no source with id %q was found for organization with id %q", srcId, orgId))
 	}
 
 	// delete source from vault
