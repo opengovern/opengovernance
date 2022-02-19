@@ -2,7 +2,6 @@ package onboard
 
 import (
 	"fmt"
-	"log"
 	"testing"
 
 	"github.com/ory/dockertest/v3"
@@ -14,7 +13,7 @@ import (
 func TestCreateSource(t *testing.T) {
 	pool, err := dockertest.NewPool("")
 	if err != nil {
-		log.Fatalf("Could not connect to docker: %s", err)
+		t.Fatalf("Could not connect to docker: %s", err)
 	}
 
 	// pulls an image, creates a container based on it and runs it
@@ -37,7 +36,7 @@ func TestCreateSource(t *testing.T) {
 		d, _ := db.DB()
 		return d.Ping()
 	}); err != nil {
-		log.Fatalf("Could not connect to database: %s", err)
+		t.Fatalf("Could not connect to database: %s", err)
 	}
 
 	// Enable uuid_generate_v4
@@ -56,6 +55,6 @@ func TestCreateSource(t *testing.T) {
 
 	// You can't defer this because os.Exit doesn't care for defer
 	if err := pool.Purge(resource); err != nil {
-		log.Fatalf("Could not purge resource: %s", err)
+		t.Fatalf("Could not purge resource: %s", err)
 	}
 }
