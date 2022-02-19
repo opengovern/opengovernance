@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"testing"
 	"time"
 
@@ -16,8 +17,11 @@ import (
 	"gorm.io/gorm"
 )
 
-func setupDB(t *testing.T) (*gorm.DB) {
-	dsn := "postgres://postgres:mysecretpassword@localhost:5432/postgres"
+func setupDB(t *testing.T) *gorm.DB {
+	dsn, ok := os.LookupEnv("DB_URL")
+	if !ok {
+		t.Fatal("DB_URL must exist")
+	}
 	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	if err != nil {
 		t.Fatal(err)
@@ -28,12 +32,12 @@ func setupDB(t *testing.T) (*gorm.DB) {
 		&Source{},
 		&AWSMetadata{},
 	)
-        
-        return db
+
+	return db
 }
 
 func TestGetSource(t *testing.T) {
-        db := setupDB(t)
+	db := setupDB(t)
 	r := InitializeRouter()
 	h := &HttpHandler{db: Database{db}}
 	h.Register(r.Group("/api/v1"))
