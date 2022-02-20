@@ -146,7 +146,7 @@ func (db Database) DeleteSource(id uuid.UUID) error {
 	return nil
 }
 
-// UpdateSource updates an existing source and returns it
+// CreateAWSMetadata creates a new AWSMetadata and returns it.
 func (db Database) CreateAWSMetadata(a *AWSMetadata) (*AWSMetadata, error) {
 	tx := db.orm.
 		Model(&AWSMetadata{}).
