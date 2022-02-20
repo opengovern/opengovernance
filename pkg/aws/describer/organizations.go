@@ -14,10 +14,6 @@ func DescribeOrgByAccountID(ctx context.Context, cfg aws.Config, id string) (*ty
 	svc := organizations.NewFromConfig(cfg)
 
 	req, err := svc.DescribeAccount(ctx, &organizations.DescribeAccountInput{AccountId: aws.String(id)})
-	//var notFoundErr *types.AWSOrganizationsNotInUseException
-	//if errors.As(err, &notFoundErr) {
-	//	return nil, err
-	//}
 	if err != nil {
 		return nil, err
 	}
