@@ -153,6 +153,13 @@ func (h *HttpHandler) PostSourceAws(ctx echo.Context) error {
 		return cc.JSON(http.StatusBadRequest, NewError(err))
 	}
 
+	// write config to the vault
+	pathRef, err := h.vault.WriteSourceConfig(orgId, src.ID, string(SourceCloudAWS), req.Config)
+	if err != nil {
+		return err
+	}
+	src.ConfigRef = pathRef
+
 	// NOTE: This could be refactored into another function but I don't see
 	// the point of it as of now.
 	// It only hides accessing orm otherwise we need to implement gorm.DB interface.
@@ -163,13 +170,6 @@ func (h *HttpHandler) PostSourceAws(ctx echo.Context) error {
 		if err != nil {
 			return err
 		}
-
-		// write config to the vault
-		pathRef, err := h.vault.WriteSourceConfig(orgId, src.ID, string(SourceCloudAWS), req.Config)
-		if err != nil {
-			return err
-		}
-		src.ConfigRef = pathRef
 
 		err = h.sourceEventsQueue.Publish(SourceEvent{
 			Action:     SourceCreated,
