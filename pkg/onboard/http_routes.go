@@ -1,11 +1,18 @@
 package onboard
 
 import (
+	"context"
+	"errors"
 	"fmt"
 	"net/http"
 
+	"github.com/aws/aws-sdk-go-v2/service/organizations/types"
+	"github.com/aws/smithy-go"
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
+	"gitlab.com/keibiengine/keibi-engine/pkg/aws"
+	"gitlab.com/keibiengine/keibi-engine/pkg/aws/describer"
+	"gorm.io/gorm"
 )
 
 func (h *HttpHandler) Register(v1 *echo.Group) {
@@ -73,7 +80,7 @@ func (h *HttpHandler) GetOrganization(ctx echo.Context) error {
 		return ctx.JSON(http.StatusInternalServerError, NewError(err))
 	}
 
-	return ctx.JSON(http.StatusFound, org.toOrganizationResponse())
+	return ctx.JSON(http.StatusOK, org.toOrganizationResponse())
 }
 
 func (h *HttpHandler) PutOrganization(ctx echo.Context) error {
@@ -138,28 +145,45 @@ func (h *HttpHandler) PostSourceAws(ctx echo.Context) error {
 	// ensure that the org id is valid
 	org, err := h.db.GetOrganization(orgId)
 	if err != nil || org == nil {
+		return cc.JSON(http.StatusNotFound, NewError(err))
+	}
+
+	aws, err := getAWSMetadata(ctx.Request().Context(), req.Config.AccessKey, req.Config.SecretKey)
+	if err != nil {
 		return cc.JSON(http.StatusBadRequest, NewError(err))
 	}
 
 	// write config to the vault
 	pathRef, err := h.vault.WriteSourceConfig(orgId, src.ID, string(SourceCloudAWS), req.Config)
 	if err != nil {
-		return cc.JSON(http.StatusInternalServerError, NewError(err))
+		return err
 	}
 	src.ConfigRef = pathRef
 
-	err = h.sourceEventsQueue.Publish(SourceEvent{
-		Action:     SourceCreated,
-		SourceID:   src.ID,
-		SourceType: src.Type,
-		ConfigRef:  src.ConfigRef,
-	})
-	if err != nil {
-		fmt.Println(err.Error()) // TODO
-	}
+	// NOTE: This could be refactored into another function but I don't see
+	// the point of it as of now.
+	// It only hides accessing orm otherwise we need to implement gorm.DB interface.
+	err = h.db.orm.Transaction(func(tx *gorm.DB) error {
+		// save source to the database
+		src.AWSMetadata = *aws
+		src, err = h.db.CreateSource(src)
+		if err != nil {
+			return err
+		}
 
-	// save source to the database
-	src, err = h.db.CreateSource(src)
+		err = h.sourceEventsQueue.Publish(SourceEvent{
+			Action:     SourceCreated,
+			SourceID:   src.ID,
+			SourceType: src.Type,
+			ConfigRef:  src.ConfigRef,
+		})
+		if err != nil {
+			fmt.Println(err.Error()) // TODO
+			return err
+		}
+
+		return nil
+	})
 	if err != nil {
 		return cc.JSON(http.StatusInternalServerError, NewError(err))
 	}
@@ -216,7 +240,30 @@ func (h *HttpHandler) PostSourceAzure(ctx echo.Context) error {
 }
 
 func (h *HttpHandler) GetSource(ctx echo.Context) error {
-	panic("not implemented yet")
+	cc := ctx.(*Context)
+	p := ctx.Param("organizationId")
+	orgId, err := uuid.Parse(p)
+	if err != nil {
+		return ctx.JSON(http.StatusBadRequest, NewError(err))
+	}
+
+	p = ctx.Param("sourceId")
+	srcId, err := uuid.Parse(p)
+	if err != nil {
+		return ctx.JSON(http.StatusBadRequest, NewError(err))
+	}
+
+	src, err := h.db.GetSource(srcId)
+	if err != nil || src == nil {
+		return ctx.JSON(http.StatusBadRequest, NewError(err))
+	}
+
+	if src.OrganizationID != orgId {
+		return ctx.JSON(http.StatusNotFound, fmt.Errorf("no source with id %q was found for organization with id %q", srcId, orgId))
+	}
+
+	return cc.JSON(http.StatusOK, src.toSourceResponse())
+
 }
 
 func (h *HttpHandler) PutSource(ctx echo.Context) error {
@@ -243,7 +290,7 @@ func (h *HttpHandler) DeleteSource(ctx echo.Context) error {
 	}
 
 	if src.OrganizationID != orgId {
-		return ctx.JSON(http.StatusBadRequest, fmt.Errorf("no source with id %q was found for organization with id %q", srcId, orgId))
+		return ctx.JSON(http.StatusNotFound, fmt.Errorf("no source with id %q was found for organization with id %q", srcId, orgId))
 	}
 
 	// delete source from vault
@@ -270,4 +317,61 @@ func (h *HttpHandler) DeleteSource(ctx echo.Context) error {
 	}
 
 	return ctx.NoContent(http.StatusOK)
+}
+
+func getAWSMetadata(ctx context.Context, accessKey, secretKey string) (*AWSMetadata, error) {
+	cfg, err := aws.GetConfig(ctx, accessKey, secretKey, "", "")
+	if err != nil {
+		return nil, err
+	}
+
+	accID, err := describer.GetAccountId(ctx, cfg)
+	if err != nil {
+		return nil, err
+	}
+
+	var supportTier string
+	_, err = describer.DescribeServicesByLang(ctx, cfg, "EN")
+	if err != nil {
+		var ae smithy.APIError
+		if errors.As(err, &ae) {
+			if ae.ErrorCode() == aws.ErrSubscriptionRequired {
+				supportTier = FREESupportTier
+			} else {
+				return nil, err
+			}
+		}
+	} else {
+		supportTier = PAIDSupportTier
+	}
+
+	org, err := describer.DescribeOrganization(ctx, cfg)
+	if err != nil {
+		// This checks whether user has permium support tier or not
+		var notFoundErr *types.AWSOrganizationsNotInUseException
+		if errors.As(err, &notFoundErr) {
+			return &AWSMetadata{
+				Email:          "",
+				Name:           "",
+				AccountID:      accID,
+				OrganizationID: nil,
+				SupportTier:    supportTier,
+			}, nil
+		} else {
+			return nil, err
+		}
+	}
+
+	acc, err := describer.DescribeAccountByID(ctx, cfg, accID)
+	if err != nil {
+		return nil, err
+	}
+
+	return &AWSMetadata{
+		Email:          *acc.Email,
+		Name:           *acc.Name,
+		AccountID:      *acc.Id,
+		OrganizationID: org.Id,
+		SupportTier:    supportTier,
+	}, nil
 }

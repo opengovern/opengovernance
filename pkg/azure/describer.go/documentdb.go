@@ -76,7 +76,7 @@ func CosmosdbAccount(ctx context.Context, authorizer autorest.Authorizer, subscr
 		resourceGroup := strings.Split(*account.ID, "/")[4]
 
 		values = append(values, Resource{
-			ID:          *account.ID,
+			ID: *account.ID,
 			Description: model.CosmosdbAccountDescription{
 				DatabaseAccountGetResults: account,
 				ResourceGroup:             resourceGroup,

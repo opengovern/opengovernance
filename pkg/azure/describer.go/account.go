@@ -47,13 +47,13 @@ func DataLakeAnalyticsAccount(ctx context.Context, authorizer autorest.Authorize
 			values = append(
 				values,
 				Resource{
-				ID: *account.ID,
-				Description: model.DataLakeAnalyticsAccountDescription{
-					DataLakeAnalyticsAccount:      accountGetOp,
-					DiagnosticSettingsResource:    accountListOp.Value,
-					ResourceGroup: resourceGroup,
+					ID: *account.ID,
+					Description: model.DataLakeAnalyticsAccountDescription{
+						DataLakeAnalyticsAccount:   accountGetOp,
+						DiagnosticSettingsResource: accountListOp.Value,
+						ResourceGroup:              resourceGroup,
+					},
 				},
-			},
 			)
 		}
 		if !result.NotDone() {
@@ -101,7 +101,7 @@ func DataLakeStore(ctx context.Context, authorizer autorest.Authorizer, subscrip
 			values = append(values, Resource{
 				ID: *account.ID,
 				Description: model.DataLakeStoreDescription{
-					DataLakeStoreAccount:   accountGetOp,
+					DataLakeStoreAccount:       accountGetOp,
 					DiagnosticSettingsResource: accountListOp.Value,
 					ResourceGroup:              resourceGroup,
 				},

@@ -20,7 +20,7 @@ func ServiceFabricCluster(ctx context.Context, authorizer autorest.Authorizer, s
 		resourceGroup := strings.Split(*cluster.ID, "/")[4]
 
 		values = append(values, Resource{
-			ID: *cluster.ID,
+			ID:          *cluster.ID,
 			Description: model.ServiceFabricClusterDescription{Cluster: cluster, ResourceGroup: resourceGroup}},
 		)
 	}

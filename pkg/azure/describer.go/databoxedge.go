@@ -25,7 +25,7 @@ func DataboxEdgeDevice(ctx context.Context, authorizer autorest.Authorizer, subs
 			values = append(values, Resource{
 				ID: *v.ID,
 				Description: model.DataboxEdgeDeviceDescription{
-					Device: v,
+					Device:        v,
 					ResourceGroup: resourceGroup,
 				},
 			})

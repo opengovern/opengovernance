@@ -7,6 +7,10 @@ import (
 	"github.com/aws/smithy-go"
 )
 
+const (
+	ErrSubscriptionRequired = "SubscriptionRequiredException"
+)
+
 func IsUnsupportedOrInvalidError(resource, region string, err error) bool {
 	var ae smithy.APIError
 	if errors.As(err, &ae) {

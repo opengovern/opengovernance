@@ -15,7 +15,7 @@ import (
 // If the awsAccessKey is specified, the config will be created for the combination of awsAccessKey, awsSecretKey, awsSessionToken.
 // Else it will use the default AWS SDK logic to load the configuration. See https://aws.github.io/aws-sdk-go-v2/docs/configuring-sdk/
 // If assumeRoleArn is provided, it will use the evaluated configuration to then assume the specified role.
-func getConfig(ctx context.Context, awsAccessKey, awsSecretKey, awsSessionToken, assumeRoleArn string) (aws.Config, error) {
+func GetConfig(ctx context.Context, awsAccessKey, awsSecretKey, awsSessionToken, assumeRoleArn string) (aws.Config, error) {
 	opts := []func(*config.LoadOptions) error{}
 
 	if awsAccessKey != "" {

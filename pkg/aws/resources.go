@@ -267,7 +267,7 @@ func GetResources(
 	assumeRoleArn string,
 	includeDisabledRegions bool,
 ) (*Resources, error) {
-	cfg, err := getConfig(ctx, accessKey, secretKey, sessionToken, assumeRoleArn)
+	cfg, err := GetConfig(ctx, accessKey, secretKey, sessionToken, assumeRoleArn)
 	if err != nil {
 		return nil, err
 	}

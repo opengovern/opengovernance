@@ -16,8 +16,9 @@ const (
 
 func InitializeDb(db *Database) {
 	db.orm.AutoMigrate(
-		&Source{},
 		&Organization{},
+		&Source{},
+		&AWSMetadata{},
 	)
 }
 
@@ -38,6 +39,22 @@ const (
 	SourceDeleted SourceAction = "DELETE"
 )
 
+const (
+	FREESupportTier string = "FREE"
+	PAIDSupportTier string = "PAID"
+)
+
+type AWSMetadata struct {
+	gorm.Model
+	ID             uuid.UUID `gorm:"primaryKey;type:uuid;default:uuid_generate_v4()"`
+	SourceID       string
+	AccountID      string
+	OrganizationID *string // null of not part of an aws organization
+	Email          string
+	Name           string
+	SupportTier    string
+}
+
 type Source struct {
 	gorm.Model
 	ID             uuid.UUID `gorm:"primaryKey;type:uuid;default:uuid_generate_v4()"`
@@ -47,6 +64,7 @@ type Source struct {
 	Type           SourceType `gorm:"not null"`
 	Description    string
 	ConfigRef      string
+	AWSMetadata    AWSMetadata `gorm:"foreignKey:SourceID"`
 	CreatedAt      time.Time
 	UpdatedAt      time.Time
 }
@@ -72,7 +90,6 @@ type SourceConfigAzure struct {
 }
 
 type SourceConfigAWS struct {
-	AccountId string
 	Regions   []string
 	AccessKey string
 	SecretKey string
