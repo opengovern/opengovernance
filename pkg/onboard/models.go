@@ -54,8 +54,6 @@ type AWSMetadata struct {
 	Name               string
 	SupportTier        string
 	AlternateContact   string
-	SecurityHubEnabled bool
-	MacieEnabled       bool
 }
 
 type Source struct {

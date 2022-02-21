@@ -116,8 +116,6 @@ type AWSMetadataResponse struct {
 	Name               string  `json:"name"`
 	SupportTier        string  `json:"support_tier"`
 	AlternateContact   string  `json:"alternate_contact"`
-	SecurityHubEnabled bool    `json:"security_hub_enabled"`
-	MacieEnabled       bool    `json:"macie_enabled"`
 }
 
 type SourceResponse struct {
@@ -154,8 +152,6 @@ func (a AWSMetadata) toAWSMetadataResponse() *AWSMetadataResponse {
 		Name:               a.Name,
 		SupportTier:        a.SupportTier,
 		AlternateContact:   a.AlternateContact,
-		SecurityHubEnabled: a.SecurityHubEnabled,
-		MacieEnabled:       a.MacieEnabled,
 	}
 }
 

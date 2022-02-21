@@ -191,9 +191,6 @@ func (h *HttpHandler) PostSourceAws(ctx echo.Context) error {
 		SourceID:       src.ID.String(),
 		OrganizationID: organizationId,
 		SupportTier:    supportTier,
-		// FIXME: Need to call `macie list-member-accounts` and `securityhub describe-hub` to fill the below fields.
-		// MacieEnabled:       macieEnabled,
-		// SecurityHubEnabled: securityHubEnabled,
 	})
 	if err != nil {
 		return cc.JSON(http.StatusInternalServerError, NewError(err))
