@@ -1,6 +1,7 @@
 package onboard
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"net/http"
@@ -149,17 +150,7 @@ func (h *HttpHandler) PostSourceAws(ctx echo.Context) error {
 		return cc.JSON(http.StatusNotFound, NewError(err))
 	}
 
-	cfg, err := aws.GetConfig(ctx.Request().Context(), req.Config.AccessKey, req.Config.SecretKey, "", "")
-	if err != nil {
-		return cc.JSON(http.StatusBadRequest, NewError(err))
-	}
-
-	accID, err := describer.GetAccountId(ctx.Request().Context(), cfg)
-	if err != nil {
-		return cc.JSON(http.StatusBadRequest, NewError(err))
-	}
-
-	acc, err := describer.DescribeOrgByAccountID(ctx.Request().Context(), cfg, accID)
+	aws, err := getAWSMetadata(ctx.Request().Context(), req.Config.AccessKey, req.Config.SecretKey)
 	if err != nil {
 		// This checks whether user has permium support tier or not
 		var notFoundErr *types.AWSOrganizationsNotInUseException
@@ -171,34 +162,14 @@ func (h *HttpHandler) PostSourceAws(ctx echo.Context) error {
 
 	}
 
-	var supportTier string
-	_, err = describer.DescribeServicesByLang(ctx.Request().Context(), cfg, "EN")
-	if err != nil {
-		var ae smithy.APIError
-		if errors.As(err, &ae) {
-			if ae.ErrorCode() == aws.ErrSubscriptionRequired {
-				supportTier = FREESupportTier
-			} else {
-				return cc.JSON(http.StatusBadRequest, NewError(err))
-			}
-		}
-	} else {
-		supportTier = PAIDSupportTier
-	}
-
 	// NOTE: This could be refactored into another function but I don't see
 	// the point of it as of now.
 	// It only hides accessing orm otherwise we need to implement gorm.DB interface.
 	var jsonerr error
 	h.db.orm.Transaction(func(tx *gorm.DB) error {
 		// save source to the database
-		src.AWSMetadata = AWSMetadata{
-			Email:          *acc.Email,
-			Name:           *acc.Name,
-			SourceID:       src.ID.String(),
-			OrganizationID: organizationId,
-			SupportTier:    supportTier,
-		}
+		aws.OrganizationID = organizationId
+		src.AWSMetadata = *aws
 		src, err = h.db.CreateSource(src)
 		if err != nil {
 			jsonerr = err
@@ -362,4 +333,43 @@ func (h *HttpHandler) DeleteSource(ctx echo.Context) error {
 	}
 
 	return ctx.NoContent(http.StatusOK)
+}
+
+func getAWSMetadata(ctx context.Context, accessKey, secretKey string) (*AWSMetadata, error) {
+	cfg, err := aws.GetConfig(ctx, accessKey, secretKey, "", "")
+	if err != nil {
+		return nil, err
+	}
+
+	accID, err := describer.GetAccountId(ctx, cfg)
+	if err != nil {
+		return nil, err
+	}
+
+	acc, err := describer.DescribeOrgByAccountID(ctx, cfg, accID)
+	if err != nil {
+		return nil, err
+	}
+
+	var supportTier string
+	_, err = describer.DescribeServicesByLang(ctx, cfg, "EN")
+	if err != nil {
+		var ae smithy.APIError
+		if errors.As(err, &ae) {
+			if ae.ErrorCode() == aws.ErrSubscriptionRequired {
+				supportTier = FREESupportTier
+			} else {
+				return nil, err
+			}
+		}
+	} else {
+		supportTier = PAIDSupportTier
+	}
+
+	return &AWSMetadata{
+		Email:       *acc.Email,
+		Name:        *acc.Name,
+		SupportTier: supportTier,
+	}, nil
+
 }
