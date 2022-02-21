@@ -12,7 +12,6 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/aws/describer"
 )
 
-
 func (h *HttpHandler) Register(v1 *echo.Group) {
 	o := v1.Group("/organizations")
 
@@ -170,12 +169,6 @@ func (h *HttpHandler) PostSourceAws(ctx echo.Context) error {
 
 	}
 
-	// save source to the database
-	src, err = h.db.CreateSource(src)
-	if err != nil {
-		return cc.JSON(http.StatusInternalServerError, NewError(err))
-	}
-
 	// FIXME: Check for Error code ot make sure that "SubscriptionIsRequiredException" is the actual error
 	var supportTier string
 	_, err = describer.DescribeServicesByLang(ctx.Request().Context(), cfg, "EN")
@@ -185,13 +178,15 @@ func (h *HttpHandler) PostSourceAws(ctx echo.Context) error {
 		supportTier = PAIDSupportTier
 	}
 
-	_, err = h.db.CreateAWSMetadata(&AWSMetadata{
+	// save source to the database
+	src.AWSMetadata = AWSMetadata{
 		Email:          *acc.Email,
 		Name:           *acc.Name,
 		SourceID:       src.ID.String(),
 		OrganizationID: organizationId,
 		SupportTier:    supportTier,
-	})
+	}
+	src, err = h.db.CreateSource(src)
 	if err != nil {
 		return cc.JSON(http.StatusInternalServerError, NewError(err))
 	}
