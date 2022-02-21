@@ -43,7 +43,7 @@ const (
 type AWSMetadata struct {
 	gorm.Model
 	ID                 uuid.UUID `gorm:"primaryKey;type:uuid;default:uuid_generate_v4()"`
-	SourceID           int
+	SourceID           string
 	AccountID          string
 	OrganizationID     string // null of not part of an aws organization
 	Email              string
@@ -97,7 +97,6 @@ type SourceConfigAzure struct {
 }
 
 type SourceConfigAWS struct {
-	AccountId string
 	Regions   []string
 	AccessKey string
 	SecretKey string

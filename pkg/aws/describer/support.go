@@ -10,10 +10,10 @@ import (
 
 // DescribeServicesByLang Describes the specified services running in your
 // cluster with a specified language. e.g. "EN"
-func DescribeServicesByLang(cfg aws.Config, lang string) ([]types.Service, error) {
+func DescribeServicesByLang(ctx context.Context, cfg aws.Config, lang string) ([]types.Service, error) {
 	svc := support.NewFromConfig(cfg)
 
-	req, err := svc.DescribeServices(context.Background(), &support.DescribeServicesInput{Language: aws.String(lang)})
+	req, err := svc.DescribeServices(ctx, &support.DescribeServicesInput{Language: aws.String(lang)})
 	if err != nil {
 		return nil, err
 	}

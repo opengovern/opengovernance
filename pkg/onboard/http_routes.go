@@ -6,6 +6,8 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
+	"gitlab.com/keibiengine/keibi-engine/pkg/aws/describer"
+	"gorm.io/gorm/clause"
 )
 
 func (h *HttpHandler) Register(v1 *echo.Group) {
@@ -133,6 +135,11 @@ func (h *HttpHandler) PostSourceAws(ctx echo.Context) error {
 		return cc.JSON(http.StatusBadRequest, NewError(err))
 	}
 
+	cfg, err := describer.GetConfig(ctx.Request().Context(), req.Config.AccessKey, req.Config.SecretKey)
+	if err != nil {
+		return cc.JSON(http.StatusBadRequest, NewError(err))
+	}
+
 	src := req.toSource(orgId)
 
 	// ensure that the org id is valid
@@ -158,10 +165,37 @@ func (h *HttpHandler) PostSourceAws(ctx echo.Context) error {
 		fmt.Println(err.Error()) // TODO
 	}
 
+	accID, err := describer.GetAccountId(ctx.Request().Context(), cfg)
+	if err != nil {
+		return cc.JSON(http.StatusBadRequest, NewError(err))
+	}
+
+	acc, err := describer.DescribeAccountById(ctx.Request().Context(), cfg, accID)
+	if err != nil {
+		return cc.JSON(http.StatusBadRequest, NewError(err))
+	}
+
 	// save source to the database
 	src, err = h.db.CreateSource(src)
 	if err != nil {
 		return cc.JSON(http.StatusInternalServerError, NewError(err))
+	}
+
+	// Prefill AWS metadata
+	awsmetadata := AWSMetadata{}
+	awsmetadata.Email = *acc.Email
+	awsmetadata.Name = *acc.Name
+	awsmetadata.SourceID = src.ID.String()
+
+	atx := h.db.orm.
+		Model(&AWSMetadata{}).
+		Clauses(clause.OnConflict{DoNothing: true}).
+		Create(awsmetadata)
+
+	if atx.Error != nil {
+		return cc.JSON(http.StatusBadRequest, NewError(atx.Error))
+	} else if atx.RowsAffected != 1 {
+		return cc.JSON(http.StatusBadRequest, NewError(fmt.Errorf("create aws metadata: didn't create aws metadata due to id conflict: %w", atx.Error)))
 	}
 
 	return cc.JSON(http.StatusCreated, src.toSourceResponse())
