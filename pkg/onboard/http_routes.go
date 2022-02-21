@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/aws/aws-sdk-go-v2/service/organizations/types"
+	"github.com/aws/smithy-go"
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
 	"gitlab.com/keibiengine/keibi-engine/pkg/aws"
@@ -170,18 +171,24 @@ func (h *HttpHandler) PostSourceAws(ctx echo.Context) error {
 
 	}
 
-	// FIXME: Check for Error code ot make sure that "SubscriptionIsRequiredException" is the actual error
 	var supportTier string
 	_, err = describer.DescribeServicesByLang(ctx.Request().Context(), cfg, "EN")
 	if err != nil {
-		supportTier = FREESupportTier
+		var ae smithy.APIError
+		if errors.As(err, &ae) {
+			if ae.ErrorCode() == aws.ErrSubscriptionRequired {
+				supportTier = FREESupportTier
+			} else {
+				return cc.JSON(http.StatusBadRequest, NewError(err))
+			}
+		}
 	} else {
 		supportTier = PAIDSupportTier
 	}
 
-        // NOTE: This could be refactored into another function but I don't see
-        // the point of it as of now.
-        // It only hides accessing orm otherwise we need to implement gorm.DB interface.
+	// NOTE: This could be refactored into another function but I don't see
+	// the point of it as of now.
+	// It only hides accessing orm otherwise we need to implement gorm.DB interface.
 	var jsonerr error
 	h.db.orm.Transaction(func(tx *gorm.DB) error {
 		// save source to the database
