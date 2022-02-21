@@ -134,9 +134,7 @@ func (h *HttpHandler) PostSourceAws(ctx echo.Context) error {
 		return cc.JSON(http.StatusBadRequest, NewError(err))
 	}
 
-	var organizationId *string
 	p := ctx.Param("organizationId")
-	organizationId = &p
 	orgId, err := uuid.Parse(p)
 	if err != nil {
 		return cc.JSON(http.StatusBadRequest, NewError(err))
@@ -152,34 +150,23 @@ func (h *HttpHandler) PostSourceAws(ctx echo.Context) error {
 
 	aws, err := getAWSMetadata(ctx.Request().Context(), req.Config.AccessKey, req.Config.SecretKey)
 	if err != nil {
-		// This checks whether user has permium support tier or not
-		var notFoundErr *types.AWSOrganizationsNotInUseException
-		if errors.As(err, &notFoundErr) {
-			organizationId = nil
-		} else {
-			return cc.JSON(http.StatusBadRequest, NewError(err))
-		}
-
+		return cc.JSON(http.StatusBadRequest, NewError(err))
 	}
 
 	// NOTE: This could be refactored into another function but I don't see
 	// the point of it as of now.
 	// It only hides accessing orm otherwise we need to implement gorm.DB interface.
-	var jsonerr error
-	h.db.orm.Transaction(func(tx *gorm.DB) error {
+	err = h.db.orm.Transaction(func(tx *gorm.DB) error {
 		// save source to the database
-		aws.OrganizationID = organizationId
 		src.AWSMetadata = *aws
 		src, err = h.db.CreateSource(src)
 		if err != nil {
-			jsonerr = err
 			return err
 		}
 
 		// write config to the vault
 		pathRef, err := h.vault.WriteSourceConfig(orgId, src.ID, string(SourceCloudAWS), req.Config)
 		if err != nil {
-			jsonerr = err
 			return err
 		}
 		src.ConfigRef = pathRef
@@ -192,19 +179,16 @@ func (h *HttpHandler) PostSourceAws(ctx echo.Context) error {
 		})
 		if err != nil {
 			fmt.Println(err.Error()) // TODO
-			jsonerr = err
 			return err
 		}
 
 		return nil
 	})
-
-	if jsonerr != nil {
+	if err != nil {
 		return cc.JSON(http.StatusInternalServerError, NewError(err))
-	} else {
-		return cc.JSON(http.StatusCreated, src.toSourceResponse())
 	}
 
+	return cc.JSON(http.StatusCreated, src.toSourceResponse())
 }
 
 func (h *HttpHandler) PostSourceAzure(ctx echo.Context) error {
@@ -346,11 +330,6 @@ func getAWSMetadata(ctx context.Context, accessKey, secretKey string) (*AWSMetad
 		return nil, err
 	}
 
-	acc, err := describer.DescribeOrgByAccountID(ctx, cfg, accID)
-	if err != nil {
-		return nil, err
-	}
-
 	var supportTier string
 	_, err = describer.DescribeServicesByLang(ctx, cfg, "EN")
 	if err != nil {
@@ -366,11 +345,33 @@ func getAWSMetadata(ctx context.Context, accessKey, secretKey string) (*AWSMetad
 		supportTier = PAIDSupportTier
 	}
 
-	return &AWSMetadata{
-		Email:       *acc.Email,
-		Name:        *acc.Name,
-		AccountID:   *acc.Id,
-		SupportTier: supportTier,
-	}, nil
+	org, err := describer.DescribeOrganization(ctx, cfg)
+	if err != nil {
+		// This checks whether user has permium support tier or not
+		var notFoundErr *types.AWSOrganizationsNotInUseException
+		if errors.As(err, &notFoundErr) {
+			return &AWSMetadata{
+				Email:          "",
+				Name:           "",
+				AccountID:      accID,
+				OrganizationID: nil,
+				SupportTier:    supportTier,
+			}, nil
+		} else {
+			return nil, err
+		}
+	}
 
+	acc, err := describer.DescribeAccountByID(ctx, cfg, accID)
+	if err != nil {
+		return nil, err
+	}
+
+	return &AWSMetadata{
+		Email:          *acc.Email,
+		Name:           *acc.Name,
+		AccountID:      *acc.Id,
+		OrganizationID: org.Id,
+		SupportTier:    supportTier,
+	}, nil
 }

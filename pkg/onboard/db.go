@@ -84,7 +84,7 @@ func (db Database) DeleteOrganization(id uuid.UUID) error {
 // GetSource gets a source with matching id
 func (db Database) GetSource(id uuid.UUID) (*Source, error) {
 	var s Source
-	tx := db.orm.First(&s, "id = ?", id.String())
+	tx := db.orm.Joins("AWSMetadata").First(&s, "id = ?", id.String())
 
 	if tx.Error != nil {
 		return nil, tx.Error

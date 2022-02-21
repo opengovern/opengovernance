@@ -46,14 +46,13 @@ const (
 
 type AWSMetadata struct {
 	gorm.Model
-	ID                 uuid.UUID `gorm:"primaryKey;type:uuid;default:uuid_generate_v4()"`
-	SourceID           string
-	AccountID          string
-	OrganizationID     *string // null of not part of an aws organization
-	Email              string
-	Name               string
-	SupportTier        string
-	AlternateContact   string
+	ID             uuid.UUID `gorm:"primaryKey;type:uuid;default:uuid_generate_v4()"`
+	SourceID       string
+	AccountID      string
+	OrganizationID *string // null of not part of an aws organization
+	Email          string
+	Name           string
+	SupportTier    string
 }
 
 type Source struct {
