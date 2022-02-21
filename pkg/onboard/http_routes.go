@@ -369,6 +369,7 @@ func getAWSMetadata(ctx context.Context, accessKey, secretKey string) (*AWSMetad
 	return &AWSMetadata{
 		Email:       *acc.Email,
 		Name:        *acc.Name,
+		AccountID:   *acc.Id,
 		SupportTier: supportTier,
 	}, nil
 
