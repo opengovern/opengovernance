@@ -61,7 +61,7 @@ type SteampipeResultStatusJson struct {
 func (j *Job) failed(msg string, args ...interface{}) JobResult {
 	return JobResult{
 		JobID:  j.JobID,
-		Error:  fmt.Sprintf(msg, args),
+		Error:  fmt.Sprintf(msg, args...),
 		Status: ComplianceReportJobCompletedWithFailure,
 	}
 }
