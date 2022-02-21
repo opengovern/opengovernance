@@ -24,7 +24,7 @@ func StorageSync(ctx context.Context, authorizer autorest.Authorizer, subscripti
 		values = append(values, Resource{
 			ID: *storage.ID,
 			Description: model.StorageSyncDescription{
-				Service: storage,
+				Service:       storage,
 				ResourceGroup: resourceGroup,
 			}})
 	}

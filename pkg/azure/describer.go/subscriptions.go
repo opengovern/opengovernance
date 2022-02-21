@@ -48,4 +48,3 @@ func Subscription(ctx context.Context, authorizer autorest.Authorizer, subscript
 
 	return values, nil
 }
-

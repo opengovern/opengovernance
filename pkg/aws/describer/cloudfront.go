@@ -10,8 +10,8 @@ import (
 
 type CloudFrontDistributionDescription struct {
 	Distribution *types.Distribution
-	ETag *string
-	Tags []types.Tag
+	ETag         *string
+	Tags         []types.Tag
 }
 
 func CloudFrontDistribution(ctx context.Context, cfg aws.Config) ([]Resource, error) {
@@ -44,8 +44,8 @@ func CloudFrontDistribution(ctx context.Context, cfg aws.Config) ([]Resource, er
 				ARN: *item.ARN,
 				Description: CloudFrontDistributionDescription{
 					Distribution: distribution.Distribution,
-					ETag: distribution.ETag,
-					Tags: tags.Tags.Items,
+					ETag:         distribution.ETag,
+					Tags:         tags.Tags.Items,
 				},
 			})
 		}

@@ -26,7 +26,7 @@ func KubernetesCluster(ctx context.Context, authorizer autorest.Authorizer, subs
 				ID: *v.ID,
 				Description: model.KubernetesClusterDescription{
 					ManagedCluster: v,
-					ResourceGroup: resourceGroup,
+					ResourceGroup:  resourceGroup,
 				},
 			})
 		}

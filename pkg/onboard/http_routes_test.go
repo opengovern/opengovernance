@@ -29,7 +29,7 @@ func TestGetSource(t *testing.T) {
 		&AWSMetadata{},
 		&AzureMetadata{},
 	)
- 
+
 	r := InitializeRouter()
 	h := &HttpHandler{db: Database{db}}
 	h.Register(r.Group("/api/v1"))
@@ -75,7 +75,7 @@ func TestGetOrganization(t *testing.T) {
 		&AWSMetadata{},
 		&AzureMetadata{},
 	)
- 
+
 	r := InitializeRouter()
 	h := &HttpHandler{db: Database{db}}
 	h.Register(r.Group("/api/v1"))

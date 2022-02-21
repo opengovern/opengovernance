@@ -26,9 +26,9 @@ func EC2VolumeSnapshot(ctx context.Context, cfg aws.Config) ([]Resource, error) 
 			"self",
 		},
 	}
-	
+
 	paginator := ec2.NewDescribeSnapshotsPaginator(client, &ec2.DescribeSnapshotsInput{
-		Filters: []types.Filter {
+		Filters: []types.Filter{
 			ownerFilter,
 		},
 	})

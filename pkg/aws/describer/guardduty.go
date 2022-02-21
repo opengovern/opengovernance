@@ -58,7 +58,7 @@ func GuardDutyFinding(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 
 type GuardDutyDetectorDescription struct {
 	DetectorId string
-	Detector *guardduty.GetDetectorOutput
+	Detector   *guardduty.GetDetectorOutput
 }
 
 func GuardDutyDetector(ctx context.Context, cfg aws.Config) ([]Resource, error) {
@@ -85,7 +85,7 @@ func GuardDutyDetector(ctx context.Context, cfg aws.Config) ([]Resource, error) 
 				ID: item,
 				Description: GuardDutyDetectorDescription{
 					DetectorId: item,
-					Detector: out,
+					Detector:   out,
 				},
 			})
 		}

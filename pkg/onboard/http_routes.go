@@ -194,7 +194,7 @@ func (h *HttpHandler) PostSourceAzure(ctx echo.Context) error {
 		return cc.JSON(http.StatusInternalServerError, NewError(err))
 	}
 	src.ConfigRef = pathRef
-  
+
 	err = h.sourceEventsQueue.Publish(SourceEvent{
 		Action:     SourceCreated,
 		SourceID:   src.ID,
