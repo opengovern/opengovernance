@@ -33,6 +33,8 @@ var (
 	VaultAddress  = os.Getenv("VAULT_ADDRESS")
 	VaultToken    = os.Getenv("VAULT_TOKEN")
 	VaultRoleName = os.Getenv("VAULT_ROLE")
+
+	HttpServerAddress = os.Getenv("HTTP_ADDRESS")
 )
 
 func SchedulerCommand() *cobra.Command {
@@ -65,6 +67,7 @@ func SchedulerCommand() *cobra.Command {
 				PostgreSQLHost,
 				PostgreSQLPort,
 				PostgreSQLDb,
+				HttpServerAddress,
 			)
 			if err != nil {
 				return err

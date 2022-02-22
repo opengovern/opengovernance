@@ -3,6 +3,7 @@ package keibi
 import (
 	"context"
 	"crypto/tls"
+	"fmt"
 	"net/http"
 
 	elasticsearchv7 "github.com/elastic/go-elasticsearch/v7"
@@ -19,7 +20,7 @@ type ClientConfig struct {
 	Addresses []string `cty:"addresses"`
 	Username  *string  `cty:"username"`
 	Password  *string  `cty:"password"`
-	AccountID  *string  `cty:"accountID"`
+	AccountID *string  `cty:"accountID"`
 }
 
 func ConfigSchema() map[string]*schema.Attribute {
@@ -71,6 +72,10 @@ func NewClientCached(c ClientConfig, cache *connection.Cache, ctx context.Contex
 }
 
 func NewClient(c ClientConfig) (Client, error) {
+	if c.AccountID == nil || len(*c.AccountID) == 0 {
+		return Client{}, fmt.Errorf("accountID is either null or empty: %v", c.AccountID)
+	}
+
 	cfg := elasticsearchv7.Config{
 		Addresses: c.Addresses,
 		Username:  *c.Username,
