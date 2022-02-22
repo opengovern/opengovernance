@@ -30,6 +30,17 @@ func (db Database) CreateSource(a *Source) error {
 	return nil
 }
 
+// ListSources lists all sources
+func (db Database) ListSources() ([]Source, error) {
+	var sources []Source
+	tx := db.orm.Find(&sources)
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+
+	return sources, nil
+}
+
 // UpdateSource updates the source information.
 func (db Database) UpdateSource(a *Source) error {
 	tx := db.orm.
@@ -87,6 +98,23 @@ func (db Database) UpdateSourceDescribed(id uuid.UUID) error {
 	return nil
 }
 
+// UpdateSourceNextDescribeAtToNow updates the source next_describe_at to
+// **NOW()**.
+func (db Database) UpdateSourceNextDescribeAtToNow(id uuid.UUID) error {
+	tx := db.orm.
+		Model(&Source{}).
+		Where("id = ?", id.String()).
+		Where("next_describe_at > NOW() + interval '1 minute'").
+		Updates(map[string]interface{}{
+			"next_describe_at":  gorm.Expr("NOW()"),
+		})
+	if tx.Error != nil {
+		return tx.Error
+	}
+
+	return nil
+}
+
 // UpdateSourceReportGenerated updates the source last_compliance_report_at to
 // **NOW()** and next_compliance_report_at to **NOW() + 2 Hours**.
 func (db Database) UpdateSourceReportGenerated(id uuid.UUID) error {
@@ -96,6 +124,23 @@ func (db Database) UpdateSourceReportGenerated(id uuid.UUID) error {
 		Updates(map[string]interface{}{
 			"last_compliance_report_at": gorm.Expr("NOW()"),
 			"next_compliance_report_at": gorm.Expr("NOW() + INTERVAL '2 HOURS'"),
+		})
+	if tx.Error != nil {
+		return tx.Error
+	}
+
+	return nil
+}
+
+// UpdateSourceNextComplianceReportToNow updates the source next_compliance_report_at to
+// **NOW()**.
+func (db Database) UpdateSourceNextComplianceReportToNow(id uuid.UUID) error {
+	tx := db.orm.
+		Model(&Source{}).
+		Where("id = ?", id.String()).
+		Where("next_describe_at > NOW() + interval '1 minute'").
+		Updates(map[string]interface{}{
+			"next_compliance_report_at": gorm.Expr("NOW()"),
 		})
 	if tx.Error != nil {
 		return tx.Error
@@ -160,6 +205,17 @@ func (db Database) UpdateDescribeSourceJob(id uint, status DescribeSourceJobStat
 	return nil
 }
 
+// ListDescribeSourceJobs lists the DescribeSourceJob .
+func (db Database) ListDescribeSourceJobs(sourceID uuid.UUID) ([]DescribeSourceJob, error) {
+	var jobs []DescribeSourceJob
+	tx := db.orm.Preload(clause.Associations).Where("source_id = ?", sourceID).Find(&jobs)
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+
+	return jobs, nil
+}
+
 type DescribedSourceJobDescribeResourceJobStatus struct {
 	DescribeSourceJobID       uint                      `gorm:"column:id"`
 	DescribeResourceJobStatus DescribeResourceJobStatus `gorm:"column:status"`
@@ -219,6 +275,17 @@ func (db Database) UpdateDescribeResourceJobsTimedOut() error {
 	return nil
 }
 
+// ListDescribeResourceJobs lists the DescribeResourceJob .
+func (db Database) ListDescribeResourceJobs(describeSourceJobID uint) ([]DescribeResourceJob, error) {
+	var jobs []DescribeResourceJob
+	tx := db.orm.Where("parent_id = ?", describeSourceJobID).Find(&jobs)
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+
+	return jobs, nil
+}
+
 // =============================== ComplianceReportJob ===============================
 
 // CreateComplianceReportJob creates a new ComplianceReportJob.
@@ -241,9 +308,9 @@ func (db Database) UpdateComplianceReportJob(
 		Model(&ComplianceReportJob{}).
 		Where("id = ?", id).
 		Updates(ComplianceReportJob{
-			Status: status,
+			Status:         status,
 			FailureMessage: failureMsg,
-			S3ResultURL: s3ResultURL,
+			S3ResultURL:    s3ResultURL,
 		})
 	if tx.Error != nil {
 		return tx.Error
@@ -266,4 +333,15 @@ func (db Database) UpdateComplianceReportJobsTimedOut() error {
 	}
 
 	return nil
+}
+
+// ListComplianceReports lists the ComplianceReportJob .
+func (db Database) ListComplianceReports(sourceID uuid.UUID) ([]ComplianceReportJob, error) {
+	var jobs []ComplianceReportJob
+	tx := db.orm.Where("source_id = ?", sourceID).Find(&jobs)
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+
+	return jobs, nil
 }

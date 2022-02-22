@@ -21,8 +21,9 @@ const (
 )
 
 type Scheduler struct {
-	id string
-	db Database
+	id         string
+	db         Database
+	httpServer *HttpServer
 	// jobQueue is used to publish jobs to be performed by the workers.
 	jobQueue queue.Interface
 	// jobResultQueue is used to consume the job results returned by the workers.
@@ -50,6 +51,7 @@ func InitializeScheduler(
 	postgresHost string,
 	postgresPort string,
 	postgresDb string,
+	httpServerAddress string,
 ) (s *Scheduler, err error) {
 	if id == "" {
 		return nil, fmt.Errorf("'id' must be set to a non empty string")
@@ -160,6 +162,8 @@ func InitializeScheduler(
 	fmt.Println("Connected to the postgres database: ", postgresDb)
 	s.db = Database{orm: db}
 
+	s.httpServer = NewHTTPServer(httpServerAddress, s.db)
+
 	return s, nil
 }
 
@@ -174,9 +178,12 @@ func (s *Scheduler) Run() error {
 	go s.RunDescribeScheduler()
 	go s.RunComplianceReportScheduler()
 	go s.RunComplianceReportJobResultsConsumer()
-	// RunJobResultsConsumer shouldn't return.
+        go s.RunJobResultsConsumer()
+	// httpServer.Initialize() shouldn't return.
+        // If it does indicates a failure HTTP server.
 	// If it does, indicates a failure with consume
-	return s.RunJobResultsConsumer()
+	go s.RunJobResultsConsumer()
+	return s.httpServer.Initialize()
 }
 
 func (s *Scheduler) RunJobCompletionUpdater() {
