@@ -19,7 +19,7 @@ type Worker struct {
 	jobResultQueue queue.Interface
 	s3Client       *s3.S3
 	config         Config
-	vault          vault.Keibi
+	vault          vault.SourceConfig
 }
 
 func InitializeWorker(
@@ -106,7 +106,7 @@ func InitializeWorker(
 	}
 
 	// setup vault
-	v, err := vault.NewVault(config.Vault.Address, k8sAuth)
+	v, err := vault.NewSourceConfig(config.Vault.Address, k8sAuth)
 	if err != nil {
 		return nil, err
 	}

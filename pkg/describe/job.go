@@ -89,7 +89,7 @@ type Job struct {
 // do its best to complete the task even if some errors occur along the way. However,
 // if any error occurs, The JobResult will indicate that through the Status and Error
 // will be set to the first error that occured.
-func (j Job) Do(vlt vault.Keibi, producer sarama.SyncProducer, topic string) (r JobResult) {
+func (j Job) Do(vlt vault.SourceConfig, producer sarama.SyncProducer, topic string) (r JobResult) {
 	defer func() {
 		if err := recover(); err != nil {
 			r = JobResult{
@@ -117,7 +117,7 @@ func (j Job) Do(vlt vault.Keibi, producer sarama.SyncProducer, topic string) (r 
 	ctx, cancel := context.WithTimeout(context.Background(), jobTimeout)
 	defer cancel()
 
-	config, err := vlt.ReadSourceConfig(j.ConfigReg)
+	config, err := vlt.Read(j.ConfigReg)
 	if err != nil {
 		fail(fmt.Errorf("resource source config: %w", err))
 	} else {
@@ -234,13 +234,15 @@ func doDescribeAzure(ctx context.Context, job Job, config map[string]interface{}
 		ctx,
 		job.ResourceType,
 		[]string{creds.SubscriptionID},
-		creds.TenantID,
-		creds.ClientID,
-		creds.ClientSecret,
-		creds.CertificatePath,
-		creds.CertificatePass,
-		creds.Username,
-		creds.Password,
+		azure.AuthConfig{
+			TenantID:            creds.TenantID,
+			ClientID:            creds.ClientID,
+			ClientSecret:        creds.ClientSecret,
+			CertificatePath:     creds.CertificatePath,
+			CertificatePassword: creds.CertificatePass,
+			Username:            creds.Username,
+			Password:            creds.Password,
+		},
 		string(azure.AuthEnv),
 		"",
 	)

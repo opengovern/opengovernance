@@ -8,9 +8,22 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/organizations/types"
 )
 
-// DescribeAccountByID Retrieves AWS Organizations-related information about
+// OrganizationOrganization Retrieves information about the organization that the
+// user's account belongs to.
+func OrganizationOrganization(ctx context.Context, cfg aws.Config) (*types.Organization, error) {
+	svc := organizations.NewFromConfig(cfg)
+
+	req, err := svc.DescribeOrganization(ctx, &organizations.DescribeOrganizationInput{})
+	if err != nil {
+		return nil, err
+	}
+
+	return req.Organization, nil
+}
+
+// OrganizationAccount Retrieves AWS Organizations-related information about
 // the specified (ID) account .
-func DescribeAccountByID(ctx context.Context, cfg aws.Config, id string) (*types.Account, error) {
+func OrganizationAccount(ctx context.Context, cfg aws.Config, id string) (*types.Account, error) {
 	svc := organizations.NewFromConfig(cfg)
 
 	req, err := svc.DescribeAccount(ctx, &organizations.DescribeAccountInput{AccountId: aws.String(id)})
@@ -23,13 +36,20 @@ func DescribeAccountByID(ctx context.Context, cfg aws.Config, id string) (*types
 
 // DescribeOrganization Retrieves information about the organization that the
 // user's account belongs to.
-func DescribeOrganization(ctx context.Context, cfg aws.Config) (*types.Organization, error) {
-	svc := organizations.NewFromConfig(cfg)
+func OrganizationAccounts(ctx context.Context, cfg aws.Config) ([]types.Account, error) {
+	client := organizations.NewFromConfig(cfg)
 
-	req, err := svc.DescribeOrganization(ctx, &organizations.DescribeOrganizationInput{})
-	if err != nil {
-		return nil, err
+	paginator := organizations.NewListAccountsPaginator(client, &organizations.ListAccountsInput{})
+
+	var values []types.Account
+	for paginator.HasMorePages() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		values = append(values, page.Accounts...)
 	}
 
-	return req.Organization, nil
+	return values, nil
 }

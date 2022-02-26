@@ -1,48 +1,21 @@
 package onboard
 
 import (
-	"time"
+	"fmt"
+	"strings"
 
 	"github.com/google/uuid"
 	"gorm.io/gorm"
-)
 
-type SourceType string
-
-const (
-	SourceCloudAWS   SourceType = "AWS"
-	SourceCloudAzure SourceType = "Azure"
+	"gitlab.com/keibiengine/keibi-engine/pkg/onboard/api"
 )
 
 func InitializeDb(db *Database) {
 	db.orm.AutoMigrate(
-		&Organization{},
 		&Source{},
 		&AWSMetadata{},
 	)
 }
-
-func IsValidSourceType(t SourceType) bool {
-	switch t {
-	case SourceCloudAWS, SourceCloudAzure:
-		return true
-	default:
-		return false
-	}
-}
-
-type SourceAction string
-
-const (
-	SourceCreated SourceAction = "CREATE"
-	SourceUpdated SourceAction = "UPDATE"
-	SourceDeleted SourceAction = "DELETE"
-)
-
-const (
-	FREESupportTier string = "FREE"
-	PAIDSupportTier string = "PAID"
-)
 
 type AWSMetadata struct {
 	gorm.Model
@@ -55,42 +28,70 @@ type AWSMetadata struct {
 	SupportTier    string
 }
 
+func (a AWSMetadata) toAWSMetadataResponse() *api.AWSMetadataResponse {
+	return &api.AWSMetadataResponse{
+		ID:             a.ID.String(),
+		SourceID:       a.SourceID,
+		AccountID:      a.AccountID,
+		OrganizationID: a.OrganizationID,
+		Email:          a.Email,
+		Name:           a.Name,
+		SupportTier:    a.SupportTier,
+	}
+}
+
 type Source struct {
 	gorm.Model
-	ID             uuid.UUID `gorm:"primaryKey;type:uuid;default:uuid_generate_v4()"`
-	OrganizationID uuid.UUID `gorm:"not null"`
-	SourceId       string
-	Name           string     `gorm:"not null"`
-	Type           SourceType `gorm:"not null"`
-	Description    string
-	ConfigRef      string
-	AWSMetadata    AWSMetadata `gorm:"foreignKey:SourceID"`
-	CreatedAt      time.Time
-	UpdatedAt      time.Time
-}
-
-type Organization struct {
-	gorm.Model
 	ID          uuid.UUID `gorm:"primaryKey;type:uuid;default:uuid_generate_v4()"`
-	Name        string    `gorm:"not null"`
-	Description string    `gorm:"not null"`
-	AdminEmail  string    `gorm:"not null"`
-	KeibiUrl    string    `gorm:"not null"`
-	VaultRef    string
-	CreatedAt   time.Time
-	UpdatedAt   time.Time
-	Sources     []Source `gorm:"foreignKey:OrganizationID;constraint:OnDelete:CASCADE;"`
+	SourceId    string
+	Name        string         `gorm:"not null"`
+	Type        api.SourceType `gorm:"not null"`
+	Description string
+	ConfigRef   string
 }
 
-type SourceConfigAzure struct {
-	SubscriptionId string
-	TenantId       string
-	ClientId       string
-	ClientSecret   string
+func NewAWSSource(in api.SourceAwsRequest) Source {
+	id := uuid.New()
+	provider := api.SourceCloudAWS
+
+	s := Source{
+		ID:          id,
+		SourceId:    in.Config.AccountId,
+		Name:        in.Name,
+		Description: in.Description,
+		Type:        provider,
+		ConfigRef:   fmt.Sprintf("sources/%s/%s", strings.ToLower(string(provider)), id),
+	}
+
+	if len(strings.TrimSpace(s.Name)) == 0 {
+		s.Name = s.SourceId
+	}
+
+	return s
 }
 
-type SourceConfigAWS struct {
-	Regions   []string
-	AccessKey string
-	SecretKey string
+func NewAzureSource(in api.SourceAzureRequest) Source {
+	id := uuid.New()
+	provider := api.SourceCloudAzure
+
+	s := Source{
+		ID:          id,
+		SourceId:    in.Config.SubscriptionId,
+		Name:        in.Name,
+		Description: in.Description,
+		Type:        provider,
+		ConfigRef:   fmt.Sprintf("sources/%s/%s", strings.ToLower(string(provider)), id),
+	}
+
+	if len(strings.TrimSpace(s.Name)) == 0 {
+		s.Name = s.SourceId
+	}
+
+	return s
+}
+
+func (s Source) toSourceResponse() *api.CreateSourceResponse {
+	return &api.CreateSourceResponse{
+		ID: s.ID,
+	}
 }

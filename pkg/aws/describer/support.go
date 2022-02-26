@@ -8,12 +8,11 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/support/types"
 )
 
-// DescribeServicesByLang Describes the specified services running in your
-// cluster with a specified language. e.g. "EN"
-func DescribeServicesByLang(ctx context.Context, cfg aws.Config, lang string) ([]types.Service, error) {
+// SupportServices returns the specified services in an aws region
+func SupportServices(ctx context.Context, cfg aws.Config) ([]types.Service, error) {
 	svc := support.NewFromConfig(cfg)
 
-	req, err := svc.DescribeServices(ctx, &support.DescribeServicesInput{Language: aws.String(lang)})
+	req, err := svc.DescribeServices(ctx, &support.DescribeServicesInput{})
 	if err != nil {
 		return nil, err
 	}

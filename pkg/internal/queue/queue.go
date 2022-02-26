@@ -13,6 +13,7 @@ const (
 	prefetchSize  = 0 // Disabled prefetch size
 )
 
+//go:generate mockery --name Interface
 type Interface interface {
 	Consume() (<-chan amqp.Delivery, error)
 	Publish(v interface{}) error

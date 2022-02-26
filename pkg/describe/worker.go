@@ -17,7 +17,7 @@ type Worker struct {
 	jobResultQueue queue.Interface
 	kfkProducer    sarama.SyncProducer
 	kfkTopic       string
-	vault          vault.Keibi
+	vault          vault.SourceConfig
 }
 
 func InitializeWorker(
@@ -93,7 +93,7 @@ func InitializeWorker(
 	}
 
 	// setup vault
-	v, err := vault.NewVault(vaultAddress, k8sAuth)
+	v, err := vault.NewSourceConfig(vaultAddress, k8sAuth)
 	if err != nil {
 		return nil, err
 	}
