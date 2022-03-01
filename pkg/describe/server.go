@@ -61,7 +61,7 @@ func (s *HttpServer) Initialize() error {
 	e.GET("/sources/:source_id/jobs/describe/refresh", s.RunDescribeJobs)
 	e.GET("/sources/:source_id/jobs/compliance/refresh", s.RunComplianceReportJobs)
 
-	e.GET("/sources/:source_id/policy/:policy_id", s.AssignSourceToPolicy)
+	e.PUT("/sources/:source_id/policy/:policy_id", s.AssignPolicyToSource)
 	return e.Start(s.Address)
 }
 
