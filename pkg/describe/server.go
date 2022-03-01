@@ -179,7 +179,7 @@ func (s *HttpServer) RunDescribeJobs(ctx echo.Context) error {
 	return ctx.String(http.StatusOK, "")
 }
 
-func (s *HttpServer) AssignSourceToPolicy(ctx echo.Context) error {
+func (s *HttpServer) AssignPolicyToSource(ctx echo.Context) error {
 	sourceID := ctx.Param("source_id")
 	sourceUUID, err := uuid.Parse(sourceID)
 	if err != nil {
