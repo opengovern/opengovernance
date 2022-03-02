@@ -345,3 +345,29 @@ func (db Database) ListComplianceReports(sourceID uuid.UUID) ([]ComplianceReport
 
 	return jobs, nil
 }
+
+// =============================== Assignment ===============================
+
+// CreateAssignment creates a new Assignment.
+// If there is no error, the assignment is updated with the assigned ID
+func (db Database) CreateAssignment(assignment *Assignment) error {
+	tx := db.orm.
+		Model(&Assignment{}).
+		Create(assignment)
+	if tx.Error != nil {
+		return tx.Error
+	}
+
+	return nil
+}
+
+// FetchAssignmentsBySourceID lists the Assignment by sourceID .
+func (db Database) FetchAssignmentsBySourceID(sourceID uuid.UUID) ([]Assignment, error) {
+	var assignment []Assignment
+	tx := db.orm.Where("source_id = ?", sourceID).Find(&assignment)
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+
+	return assignment, nil
+}

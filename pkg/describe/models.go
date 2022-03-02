@@ -3,6 +3,7 @@ package describe
 import (
 	"database/sql"
 	compliance_report "gitlab.com/keibiengine/keibi-engine/pkg/compliance-report"
+	"time"
 
 	"github.com/google/uuid"
 	"gorm.io/gorm"
@@ -59,6 +60,14 @@ type ComplianceReportJob struct {
 	Status         compliance_report.ComplianceReportJobStatus
 	S3ResultURL    string // url to result file in s3 storage
 	FailureMessage string // Should be NULLSTRING
+}
+
+type Assignment struct {
+	SourceID  uuid.UUID `gorm:"primarykey"`
+	PolicyID  uuid.UUID `gorm:"primarykey"`
+	Enabled   bool
+	CreatedAt time.Time
+	UpdatedAt time.Time
 }
 
 type DescribeResourceJobStatus string

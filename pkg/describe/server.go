@@ -7,6 +7,7 @@ import (
 	"github.com/labstack/echo/v4/middleware"
 	cr "gitlab.com/keibiengine/keibi-engine/pkg/compliance-report"
 	"net/http"
+	"time"
 )
 
 type ApiSource struct {
@@ -33,6 +34,10 @@ type ApiComplianceReport struct {
 	FailureMessage string                       `json:"failure_message"`
 }
 
+type ErrorResponse struct {
+	Message string
+}
+
 type HttpServer struct {
 	Address string
 	DB      Database
@@ -55,6 +60,8 @@ func (s *HttpServer) Initialize() error {
 	e.GET("/sources/:source_id/jobs/compliance", s.HandleListSourceComplianceReports)
 	e.GET("/sources/:source_id/jobs/describe/refresh", s.RunDescribeJobs)
 	e.GET("/sources/:source_id/jobs/compliance/refresh", s.RunComplianceReportJobs)
+
+	e.PUT("/sources/:source_id/policy/:policy_id", s.AssignPolicyToSource)
 	return e.Start(s.Address)
 }
 
@@ -62,7 +69,7 @@ func (s *HttpServer) HandleListSources(ctx echo.Context) error {
 	sources, err := s.DB.ListSources()
 	if err != nil {
 		ctx.Logger().Errorf("fetching sources: %v", err)
-		return err
+		return ctx.JSON(http.StatusInternalServerError, ErrorResponse{Message: "internal error"})
 	}
 
 	var objs []ApiSource
@@ -83,13 +90,13 @@ func (s *HttpServer) HandleListSourceDescribeJobs(ctx echo.Context) error {
 	sourceUUID, err := uuid.Parse(sourceID)
 	if err != nil {
 		ctx.Logger().Errorf("parsing uuid: %v", err)
-		return err
+		return ctx.JSON(http.StatusBadRequest, ErrorResponse{Message: "invalid source uuid"})
 	}
 
 	jobs, err := s.DB.ListDescribeSourceJobs(sourceUUID)
 	if err != nil {
 		ctx.Logger().Errorf("fetching describe source jobs: %v", err)
-		return err
+		return ctx.JSON(http.StatusInternalServerError, ErrorResponse{Message: "internal error"})
 	}
 
 	var objs []ApiDescribeSource
@@ -117,13 +124,13 @@ func (s *HttpServer) HandleListSourceComplianceReports(ctx echo.Context) error {
 	sourceUUID, err := uuid.Parse(sourceID)
 	if err != nil {
 		ctx.Logger().Errorf("parsing uuid: %v", err)
-		return err
+		return ctx.JSON(http.StatusBadRequest, ErrorResponse{Message: "invalid source uuid"})
 	}
 
 	jobs, err := s.DB.ListComplianceReports(sourceUUID)
 	if err != nil {
 		ctx.Logger().Errorf("fetching compliance reports: %v", err)
-		return err
+		return ctx.JSON(http.StatusInternalServerError, ErrorResponse{Message: "internal error"})
 	}
 
 	var objs []ApiComplianceReport
@@ -143,13 +150,13 @@ func (s *HttpServer) RunComplianceReportJobs(ctx echo.Context) error {
 	sourceUUID, err := uuid.Parse(sourceID)
 	if err != nil {
 		ctx.Logger().Errorf("parsing uuid: %v", err)
-		return err
+		return ctx.JSON(http.StatusBadRequest, ErrorResponse{Message: "invalid source uuid"})
 	}
 
 	err = s.DB.UpdateSourceNextComplianceReportToNow(sourceUUID)
 	if err != nil {
 		ctx.Logger().Errorf("update source next compliance report run: %v", err)
-		return err
+		return ctx.JSON(http.StatusInternalServerError, ErrorResponse{Message: "internal error"})
 	}
 
 	return ctx.String(http.StatusOK, "")
@@ -160,13 +167,45 @@ func (s *HttpServer) RunDescribeJobs(ctx echo.Context) error {
 	sourceUUID, err := uuid.Parse(sourceID)
 	if err != nil {
 		ctx.Logger().Errorf("parsing uuid: %v", err)
-		return err
+		return ctx.JSON(http.StatusBadRequest, ErrorResponse{Message: "invalid source uuid"})
 	}
 
 	err = s.DB.UpdateSourceNextDescribeAtToNow(sourceUUID)
 	if err != nil {
 		ctx.Logger().Errorf("update source next describe run: %v", err)
-		return err
+		return ctx.JSON(http.StatusInternalServerError, ErrorResponse{Message: "internal error"})
+	}
+
+	return ctx.String(http.StatusOK, "")
+}
+
+func (s *HttpServer) AssignPolicyToSource(ctx echo.Context) error {
+	sourceID := ctx.Param("source_id")
+	sourceUUID, err := uuid.Parse(sourceID)
+	if err != nil {
+		ctx.Logger().Errorf("parsing source uuid: %v", err)
+		return ctx.JSON(http.StatusBadRequest, ErrorResponse{Message: "invalid source uuid"})
+	}
+
+	policyID := ctx.Param("policy_id")
+	policyUUID, err := uuid.Parse(policyID)
+	if err != nil {
+		ctx.Logger().Errorf("parsing policy uuid: %v", err)
+		return ctx.JSON(http.StatusBadRequest, ErrorResponse{Message: "invalid policy uuid"})
+	}
+
+	//TODO-Saleh check whether assigned policy exists in policy engine
+
+	err = s.DB.CreateAssignment(&Assignment{
+		SourceID:  sourceUUID,
+		PolicyID:  policyUUID,
+		Enabled:   true,
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+	})
+	if err != nil {
+		ctx.Logger().Errorf("assigning policy to source: %v", err)
+		return ctx.JSON(http.StatusInternalServerError, ErrorResponse{Message: "failed to assign policy"})
 	}
 
 	return ctx.String(http.StatusOK, "")
