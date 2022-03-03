@@ -22,7 +22,8 @@ func DiagnosticSetting(ctx context.Context, authorizer autorest.Authorizer, subs
 		resourceGroup := strings.Split(*diagnosticSetting.ID, "/")[4]
 
 		values = append(values, Resource{
-			ID: *diagnosticSetting.ID,
+			ID:       *diagnosticSetting.ID,
+			Location: "global",
 			Description: model.DiagnosticSettingDescription{
 				DiagnosticSettingsResource: diagnosticSetting,
 				ResourceGroup:              resourceGroup,
@@ -43,7 +44,8 @@ func LogAlert(ctx context.Context, authorizer autorest.Authorizer, subscription 
 		resourceGroup := strings.Split(*logAlert.ID, "/")[4]
 
 		values = append(values, Resource{
-			ID: *logAlert.ID,
+			ID:       *logAlert.ID,
+			Location: *logAlert.Location,
 			Description: model.LogAlertDescription{
 				ActivityLogAlertResource: logAlert,
 				ResourceGroup:            resourceGroup,
@@ -65,7 +67,8 @@ func LogProfile(ctx context.Context, authorizer autorest.Authorizer, subscriptio
 		resourceGroup := strings.Split(*logProfile.ID, "/")[4]
 
 		values = append(values, Resource{
-			ID: *logProfile.ID,
+			ID:       *logProfile.ID,
+			Location: *logProfile.Location,
 			Description: model.LogProfileDescription{
 				LogProfileResource: logProfile,
 				ResourceGroup:      resourceGroup,

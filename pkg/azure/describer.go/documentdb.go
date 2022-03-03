@@ -35,6 +35,7 @@ func DocumentDBDatabaseAccountsSQLDatabase(ctx context.Context, authorizer autor
 			for _, v := range *it.Value {
 				values = append(values, Resource{
 					ID:          *v.ID,
+					Location:    *v.Location,
 					Description: JSONAllFieldsMarshaller{Value: v},
 				})
 			}
@@ -76,7 +77,8 @@ func CosmosdbAccount(ctx context.Context, authorizer autorest.Authorizer, subscr
 		resourceGroup := strings.Split(*account.ID, "/")[4]
 
 		values = append(values, Resource{
-			ID: *account.ID,
+			ID:       *account.ID,
+			Location: *account.Location,
 			Description: model.CosmosdbAccountDescription{
 				DatabaseAccountGetResults: account,
 				ResourceGroup:             resourceGroup,

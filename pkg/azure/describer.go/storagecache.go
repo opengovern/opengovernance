@@ -23,7 +23,8 @@ func HpcCache(ctx context.Context, authorizer autorest.Authorizer, subscription 
 			resourceGroup := strings.Split(*v.ID, "/")[4]
 
 			values = append(values, Resource{
-				ID: *v.ID,
+				ID:       *v.ID,
+				Location: *v.Location,
 				Description: model.HpcCacheDescription{
 					Cache:         v,
 					ResourceGroup: resourceGroup,

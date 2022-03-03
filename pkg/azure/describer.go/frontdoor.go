@@ -32,7 +32,8 @@ func FrontDoor(ctx context.Context, authorizer autorest.Authorizer, subscription
 			}
 
 			values = append(values, Resource{
-				ID: *door.ID,
+				ID:       *door.ID,
+				Location: *door.Location,
 				Description: model.FrontdoorDescription{
 					FrontDoor:                   door,
 					DiagnosticSettingsResources: frontDoorListOp.Value,

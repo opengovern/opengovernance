@@ -25,7 +25,8 @@ func ComputeDisk(ctx context.Context, authorizer autorest.Authorizer, subscripti
 			resourceGroup := strings.Split(*v.ID, "/")[4]
 
 			values = append(values, Resource{
-				ID: *v.ID,
+				ID:       *v.ID,
+				Location: *v.Location,
 				Description: model.ComputeDiskDescription{
 					Disk:          v,
 					ResourceGroup: resourceGroup,
@@ -61,7 +62,8 @@ func ComputeDiskAccess(ctx context.Context, authorizer autorest.Authorizer, subs
 			resourceGroup := strings.Split(*v.ID, "/")[4]
 
 			values = append(values, Resource{
-				ID: *v.ID,
+				ID:       *v.ID,
+				Location: *v.Location,
 				Description: model.ComputeDiskAccessDescription{
 					DiskAccess:    v,
 					ResourceGroup: resourceGroup,
@@ -105,7 +107,8 @@ func ComputeVirtualMachineScaleSet(ctx context.Context, authorizer autorest.Auth
 			}
 
 			values = append(values, Resource{
-				ID: *v.ID,
+				ID:       *v.ID,
+				Location: *v.Location,
 				Description: model.ComputeVirtualMachineScaleSetDescription{
 					VirtualMachineScaleSet:           v,
 					VirtualMachineScaleSetExtensions: op.Values(),
@@ -200,7 +203,8 @@ func ComputeVirtualMachine(ctx context.Context, authorizer autorest.Authorizer, 
 				}
 			}
 			values = append(values, Resource{
-				ID: *virtualMachine.ID,
+				ID:       *virtualMachine.ID,
+				Location: *virtualMachine.Location,
 				Description: model.ComputeVirtualMachineDescription{
 					VirtualMachine:             virtualMachine,
 					VirtualMachineInstanceView: computeInstanceViewOp,

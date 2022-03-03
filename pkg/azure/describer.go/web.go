@@ -23,7 +23,8 @@ func AppServiceEnvironment(ctx context.Context, authorizer autorest.Authorizer, 
 			resourceGroup := strings.Split(*v.ID, "/")[4]
 
 			values = append(values, Resource{
-				ID: *v.ID,
+				ID:       *v.ID,
+				Location: *v.Location,
 				Description: model.AppServiceEnvironmentDescription{
 					AppServiceEnvironmentResource: v,
 					ResourceGroup:                 resourceGroup,
@@ -72,7 +73,8 @@ func AppServiceFunctionApp(ctx context.Context, authorizer autorest.Authorizer, 
 			}
 
 			values = append(values, Resource{
-				ID: *v.ID,
+				ID:       *v.ID,
+				Location: *v.Location,
 				Description: model.AppServiceFunctionAppDescription{
 					Site:               v,
 					SiteAuthSettings:   authSettings,
@@ -132,7 +134,8 @@ func AppServiceWebApp(ctx context.Context, authorizer autorest.Authorizer, subsc
 			}
 
 			values = append(values, Resource{
-				ID: *v.ID,
+				ID:       *v.ID,
+				Location: *v.Location,
 				Description: model.AppServiceWebAppDescription{
 					Site:               v,
 					SiteConfigResource: op,

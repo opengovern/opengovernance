@@ -22,7 +22,8 @@ func Location(ctx context.Context, authorizer autorest.Authorizer, subscription 
 		resourceGroup := strings.Split(*location.ID, "/")[4]
 
 		values = append(values, Resource{
-			ID: *location.ID,
+			ID:       *location.ID,
+			Location: "global",
 			Description: model.LocationDescription{
 				Location:      location,
 				ResourceGroup: resourceGroup,

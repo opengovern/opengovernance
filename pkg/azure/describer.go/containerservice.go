@@ -23,7 +23,8 @@ func KubernetesCluster(ctx context.Context, authorizer autorest.Authorizer, subs
 			resourceGroup := strings.Split(*v.ID, "/")[4]
 
 			values = append(values, Resource{
-				ID: *v.ID,
+				ID:       *v.ID,
+				Location: *v.Location,
 				Description: model.KubernetesClusterDescription{
 					ManagedCluster: v,
 					ResourceGroup:  resourceGroup,

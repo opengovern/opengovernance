@@ -46,7 +46,8 @@ func KeyVaultKey(ctx context.Context, authorizer autorest.Authorizer, subscripti
 					}
 
 					values = append(values, Resource{
-						ID: *v.ID,
+						ID:       *v.ID,
+						Location: *v.Location,
 						Description: model.KeyVaultKeyDescription{
 							Vault:         vault,
 							Key:           v,
@@ -108,7 +109,8 @@ func KeyVault(ctx context.Context, authorizer autorest.Authorizer, subscription 
 			}
 
 			values = append(values, Resource{
-				ID: *vault.ID,
+				ID:       *vault.ID,
+				Location: *vault.Location,
 				Description: model.KeyVaultDescription{
 					Resource:                    vault,
 					Vault:                       keyVaultGetOp,
@@ -152,7 +154,8 @@ func KeyVaultManagedHardwareSecurityModule(ctx context.Context, authorizer autor
 			}
 
 			values = append(values, Resource{
-				ID: *vault.ID,
+				ID:       *vault.ID,
+				Location: *vault.Location,
 				Description: model.KeyVaultManagedHardwareSecurityModuleDescription{
 					ManagedHsm:                  vault,
 					DiagnosticSettingsResources: keyvaultListOp.Value,

@@ -25,7 +25,8 @@ func NetworkInterface(ctx context.Context, authorizer autorest.Authorizer, subsc
 			resourceGroup := strings.Split(*v.ID, "/")[4]
 
 			values = append(values, Resource{
-				ID: *v.ID,
+				ID:       *v.ID,
+				Location: *v.Location,
 				Description: model.NetworkInterfaceDescription{
 					Interface:     v,
 					ResourceGroup: resourceGroup,
@@ -73,7 +74,8 @@ func NetworkWatcherFlowLog(ctx context.Context, authorizer autorest.Authorizer, 
 		for {
 			for _, v := range result.Values() {
 				values = append(values, Resource{
-					ID: *v.ID,
+					ID:       *v.ID,
+					Location: *v.Location,
 					Description: model.NetworkWatcherFlowLogDescription{
 						NetworkWatcherName: *networkWatcherDetails.Name,
 						FlowLog:            v,
@@ -120,7 +122,8 @@ func Subnet(ctx context.Context, authorizer autorest.Authorizer, subscription st
 			for {
 				for _, v := range result.Values() {
 					values = append(values, Resource{
-						ID: *v.ID,
+						ID:       *v.ID,
+						Location: "global",
 						Description: model.SubnetDescription{
 							VirtualNetworkName: *virtualNetwork.Name,
 							Subnet:             v,
@@ -168,7 +171,8 @@ func VirtualNetwork(ctx context.Context, authorizer autorest.Authorizer, subscri
 			resourceGroup := strings.Split(*v.ID, "/")[4]
 
 			values = append(values, Resource{
-				ID: *v.ID,
+				ID:       *v.ID,
+				Location: *v.Location,
 				Description: model.VirtualNetworkDescription{
 					VirtualNetwork: v,
 					ResourceGroup:  resourceGroup,
@@ -211,7 +215,8 @@ func ApplicationGateway(ctx context.Context, authorizer autorest.Authorizer, sub
 			}
 
 			values = append(values, Resource{
-				ID: *gateway.ID,
+				ID:       *gateway.ID,
+				Location: *gateway.Location,
 				Description: model.ApplicationGatewayDescription{
 					ApplicationGateway:          gateway,
 					DiagnosticSettingsResources: networkListOp.Value,
@@ -253,7 +258,8 @@ func NetworkSecurityGroup(ctx context.Context, authorizer autorest.Authorizer, s
 				return nil, err
 			}
 			values = append(values, Resource{
-				ID: *networkSecurityGroup.ID,
+				ID:       *networkSecurityGroup.ID,
+				Location: *networkSecurityGroup.Location,
 				Description: model.NetworkSecurityGroupDescription{
 					SecurityGroup:               networkSecurityGroup,
 					DiagnosticSettingsResources: networkListOp.Value,
@@ -285,7 +291,8 @@ func NetworkWatcher(ctx context.Context, authorizer autorest.Authorizer, subscri
 		resourceGroup := strings.Split(*networkWatcher.ID, "/")[4]
 
 		values = append(values, Resource{
-			ID: *networkWatcher.ID,
+			ID:       *networkWatcher.ID,
+			Location: *networkWatcher.Location,
 			Description: model.NetworkWatcherDescription{
 				Watcher:       networkWatcher,
 				ResourceGroup: resourceGroup,

@@ -38,7 +38,8 @@ func DataFactory(ctx context.Context, authorizer autorest.Authorizer, subscripti
 			}
 
 			values = append(values, Resource{
-				ID: *factory.ID,
+				ID:       *factory.ID,
+				Location: *factory.Location,
 				Description: model.DataFactoryDescription{
 					Factory:                    factory,
 					PrivateEndPointConnections: v,

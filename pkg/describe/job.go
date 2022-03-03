@@ -265,6 +265,7 @@ func doDescribeAzure(ctx context.Context, job Job, config map[string]interface{}
 			SourceJobID:   job.ParentJobID,
 			Metadata: map[string]string{
 				"subscription_id":   strings.Join(output.Metadata.SubscriptionIds, ","),
+				"location":          resource.Location,
 				"cloud_environment": output.Metadata.CloudEnvironment,
 			},
 		})

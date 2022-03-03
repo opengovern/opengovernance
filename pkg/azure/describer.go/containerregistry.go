@@ -38,7 +38,8 @@ func ContainerRegistry(ctx context.Context, authorizer autorest.Authorizer, subs
 			}
 
 			values = append(values, Resource{
-				ID: *registry.ID,
+				ID:       *registry.ID,
+				Location: *registry.Location,
 				Description: model.ContainerRegistryDescription{
 					Registry:                      registry,
 					RegistryListCredentialsResult: containerRegistryListCredentialsOp,

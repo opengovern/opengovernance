@@ -39,6 +39,7 @@ func DevicesProvisioningServicesCertificates(ctx context.Context, authorizer aut
 			for _, v := range *it.Value {
 				values = append(values, Resource{
 					ID:          *v.ID,
+					Location:    "global",
 					Description: JSONAllFieldsMarshaller{Value: v},
 				})
 			}
@@ -95,7 +96,8 @@ func IOTHub(ctx context.Context, authorizer autorest.Authorizer, subscription st
 			}
 
 			values = append(values, Resource{
-				ID: *iotHubDescription.ID,
+				ID:       *iotHubDescription.ID,
+				Location: *iotHubDescription.Location,
 				Description: model.IOTHubDescription{
 					IotHubDescription:           iotHubDescription,
 					DiagnosticSettingsResources: devicesListOp.Value,

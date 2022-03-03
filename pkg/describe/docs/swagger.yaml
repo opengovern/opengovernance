@@ -1,0 +1,181 @@
+basePath: /
+definitions:
+  describe.ApiComplianceReport:
+    properties:
+      failure_message:
+        type: string
+      s3_result_url:
+        type: string
+      status:
+        type: string
+    type: object
+  describe.ApiDescribeResource:
+    properties:
+      failure_message:
+        type: string
+      resource_type:
+        type: string
+      status:
+        type: string
+    type: object
+  describe.ApiDescribeSource:
+    properties:
+      describe_resource_jobs:
+        items:
+          $ref: '#/definitions/describe.ApiDescribeResource'
+        type: array
+      status:
+        type: string
+    type: object
+  describe.ApiSource:
+    properties:
+      id:
+        type: string
+      last_compliance_report_at:
+        type: string
+      last_described_at:
+        type: string
+      type:
+        type: string
+    type: object
+host: localhost:8000
+info:
+  contact:
+    email: support@swagger.io
+    name: API Support
+    url: http://www.swagger.io/support
+  description: Describe Scheduler Service
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  termsOfService: http://swagger.io/terms/
+  title: Describe Scheduler Service
+  version: "1.0"
+paths:
+  /resource_type/{provider}:
+    get:
+      description: get resource type by provider
+      parameters:
+      - description: Provider
+        enum:
+        - aws
+        - azure
+        in: path
+        name: provider
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              type: string
+            type: array
+      summary: get resource type by provider
+      tags:
+      - source
+  /sources:
+    get:
+      description: Getting all of Keibi sources
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/describe.ApiSource'
+            type: array
+      summary: List Sources
+      tags:
+      - source
+  /sources/{source_id}/jobs/compliance:
+    get:
+      description: List source compliance reports
+      parameters:
+      - description: SourceID
+        in: path
+        name: source_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/describe.ApiComplianceReport'
+            type: array
+      summary: List source compliance reports
+      tags:
+      - source
+  /sources/{source_id}/jobs/compliance/refresh:
+    get:
+      description: Run compliance report jobs
+      parameters:
+      - description: SourceID
+        in: path
+        name: source_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses: {}
+      summary: Run compliance report jobs
+      tags:
+      - source
+  /sources/{source_id}/jobs/describe:
+    get:
+      description: List source describe jobs
+      parameters:
+      - description: SourceID
+        in: path
+        name: source_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/describe.ApiDescribeSource'
+            type: array
+      summary: List source describe jobs
+      tags:
+      - source
+  /sources/{source_id}/jobs/describe/refresh:
+    get:
+      description: Run describe jobs
+      parameters:
+      - description: SourceID
+        in: path
+        name: source_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses: {}
+      summary: Run describe jobs
+      tags:
+      - source
+  /sources/{source_id}/policy/{policy_id}:
+    get:
+      description: Assign source to policy
+      parameters:
+      - description: SourceID
+        in: path
+        name: source_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses: {}
+      summary: Assign source to policy
+      tags:
+      - source
+swagger: "2.0"

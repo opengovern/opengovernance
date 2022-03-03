@@ -35,6 +35,7 @@ func ServiceBusQueue(ctx context.Context, authorizer autorest.Authorizer, subscr
 			for v := it.Value(); it.NotDone(); v = it.Value() {
 				values = append(values, Resource{
 					ID:          *v.ID,
+					Location:    "global",
 					Description: JSONAllFieldsMarshaller{Value: v},
 				})
 
@@ -74,6 +75,7 @@ func ServiceBusTopic(ctx context.Context, authorizer autorest.Authorizer, subscr
 			for v := it.Value(); it.NotDone(); v = it.Value() {
 				values = append(values, Resource{
 					ID:          *v.ID,
+					Location:    "global",
 					Description: JSONAllFieldsMarshaller{Value: v},
 				})
 
@@ -155,7 +157,8 @@ func ServicebusNamespace(ctx context.Context, authorizer autorest.Authorizer, su
 				v = append(v, servicebusListOp.Values()...)
 			}
 			values = append(values, Resource{
-				ID: *namespace.ID,
+				ID:       *namespace.ID,
+				Location: *namespace.Location,
 				Description: model.ServicebusNamespaceDescription{
 					SBNamespace:                 namespace,
 					DiagnosticSettingsResources: insightsListOp.Value,

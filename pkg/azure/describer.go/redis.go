@@ -22,7 +22,8 @@ func RedisCache(ctx context.Context, authorizer autorest.Authorizer, subscriptio
 		for _, v := range result.Values() {
 			resourceGroup := strings.Split(*v.ID, "/")[4]
 			values = append(values, Resource{
-				ID: *v.ID,
+				ID:       *v.ID,
+				Location: *v.Location,
 				Description: model.RedisCacheDescription{
 					ResourceType:  v,
 					ResourceGroup: resourceGroup,

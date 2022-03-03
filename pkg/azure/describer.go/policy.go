@@ -20,7 +20,8 @@ func PolicyAssignment(ctx context.Context, authorizer autorest.Authorizer, subsc
 	for {
 		for _, v := range result.Values() {
 			values = append(values, Resource{
-				ID: *v.ID,
+				ID:       *v.ID,
+				Location: *v.Location,
 				Description: model.PolicyAssignmentDescription{
 					Assignment: v,
 				},
