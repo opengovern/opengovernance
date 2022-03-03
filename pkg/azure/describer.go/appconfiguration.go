@@ -32,7 +32,8 @@ func AppConfiguration(ctx context.Context, authorizer autorest.Authorizer, subsc
 			}
 
 			values = append(values, Resource{
-				ID: *config.ID,
+				ID:       *config.ID,
+				Location: *config.Location,
 				Description: model.AppConfigurationDescription{
 					ConfigurationStore:          config,
 					DiagnosticSettingsResources: *op.Value,

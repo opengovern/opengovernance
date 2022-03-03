@@ -19,7 +19,8 @@ func Tenant(ctx context.Context, authorizer autorest.Authorizer, subscription st
 	var values []Resource
 	for _, v := range result.Values() {
 		values = append(values, Resource{
-			ID: *v.ID,
+			ID:       *v.ID,
+			Location: "global",
 			Description: model.TenantDescription{
 				TenantIDDescription: v,
 			},
@@ -40,7 +41,8 @@ func Subscription(ctx context.Context, authorizer autorest.Authorizer, subscript
 
 	var values []Resource
 	values = append(values, Resource{
-		ID: *op.ID,
+		ID:       *op.ID,
+		Location: "global",
 		Description: model.SubscriptionDescription{
 			Subscription: op,
 		},

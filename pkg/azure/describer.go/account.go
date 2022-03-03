@@ -47,7 +47,8 @@ func DataLakeAnalyticsAccount(ctx context.Context, authorizer autorest.Authorize
 			values = append(
 				values,
 				Resource{
-					ID: *account.ID,
+					ID:       *account.ID,
+					Location: *account.Location,
 					Description: model.DataLakeAnalyticsAccountDescription{
 						DataLakeAnalyticsAccount:   accountGetOp,
 						DiagnosticSettingsResource: accountListOp.Value,
@@ -99,7 +100,8 @@ func DataLakeStore(ctx context.Context, authorizer autorest.Authorizer, subscrip
 				return nil, err
 			}
 			values = append(values, Resource{
-				ID: *account.ID,
+				ID:       *account.ID,
+				Location: *account.Location,
 				Description: model.DataLakeStoreDescription{
 					DataLakeStoreAccount:       accountGetOp,
 					DiagnosticSettingsResource: accountListOp.Value,

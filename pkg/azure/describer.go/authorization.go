@@ -20,7 +20,8 @@ func RoleAssignment(ctx context.Context, authorizer autorest.Authorizer, subscri
 	for {
 		for _, v := range result.Values() {
 			values = append(values, Resource{
-				ID: *v.ID,
+				ID:       *v.ID,
+				Location: "global",
 				Description: model.RoleAssignmentDescription{
 					RoleAssignment: v,
 				},
@@ -53,7 +54,8 @@ func RoleDefinition(ctx context.Context, authorizer autorest.Authorizer, subscri
 	for {
 		for _, v := range result.Values() {
 			values = append(values, Resource{
-				ID: *v.ID,
+				ID:       *v.ID,
+				Location: "global",
 				Description: model.RoleDefinitionDescription{
 					RoleDefinition: v,
 				},

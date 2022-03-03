@@ -32,7 +32,8 @@ func StreamAnalyticsJob(ctx context.Context, authorizer autorest.Authorizer, sub
 			}
 
 			values = append(values, Resource{
-				ID: *streamingJob.ID,
+				ID:       *streamingJob.ID,
+				Location: *streamingJob.Location,
 				Description: model.StreamAnalyticsJobDescription{
 					StreamingJob:                streamingJob,
 					DiagnosticSettingsResources: streamanalyticsListOp.Value,

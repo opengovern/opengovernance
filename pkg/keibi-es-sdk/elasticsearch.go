@@ -295,3 +295,33 @@ func (p *baseESPaginator) updateState(numHits int64, searchAfter []interface{}, 
 		p.pitID = pitID
 	}
 }
+
+func (c Client) Search(ctx context.Context, index string, query string, response interface{}) error {
+	opts := []func(*esapi.SearchRequest){
+		c.es.Search.WithContext(ctx),
+		c.es.Search.WithBody(strings.NewReader(query)),
+		c.es.Search.WithTrackTotalHits(false),
+		c.es.Search.WithIndex(index),
+	}
+
+	res, err := c.es.Search(opts...)
+	defer closeSafe(res)
+	if err != nil {
+		return err
+	} else if err := checkError(res); err != nil {
+		if isIndexNotFoundErr(err) {
+			return nil
+		}
+		return err
+	}
+
+	b, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		return fmt.Errorf("read response: %w", err)
+	}
+
+	if err := json.Unmarshal(b, response); err != nil {
+		return fmt.Errorf("unmarshal response: %w", err)
+	}
+	return nil
+}

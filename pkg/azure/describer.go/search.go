@@ -31,7 +31,8 @@ func SearchService(ctx context.Context, authorizer autorest.Authorizer, subscrip
 				return nil, err
 			}
 			values = append(values, Resource{
-				ID: *service.ID,
+				ID:       *service.ID,
+				Location: *service.Location,
 				Description: model.SearchServiceDescription{
 					Service:                     service,
 					DiagnosticSettingsResources: searchListOp.Value,

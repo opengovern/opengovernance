@@ -31,7 +31,8 @@ func AdUsers(ctx context.Context, authorizer auth.Authorizer, tenantId string) (
 	for _, user := range *users {
 
 		values = append(values, Resource{
-			ID: *user.ID,
+			ID:       *user.ID,
+			Location: "global",
 			Description: model.AdUsersDescription{
 				AdUsers: user,
 			},

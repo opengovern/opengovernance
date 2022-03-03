@@ -1,0 +1,122 @@
+basePath: /api/v1
+definitions:
+  inventory.Filters:
+    properties:
+      keibi_source:
+        items:
+          type: string
+        type: array
+      location:
+        items:
+          type: string
+        type: array
+      provider:
+        items:
+          type: string
+        type: array
+      resourceType:
+        items:
+          type: string
+        type: array
+    type: object
+  inventory.GetResourceResponse:
+    properties:
+      page:
+        $ref: '#/definitions/inventory.Page'
+      resources:
+        items:
+          $ref: '#/definitions/inventory.Resource'
+        type: array
+    type: object
+  inventory.LocationByProviderResponse:
+    properties:
+      name:
+        type: string
+    type: object
+  inventory.Page:
+    properties:
+      next_marker:
+        items:
+          type: integer
+        type: array
+      size:
+        type: integer
+    type: object
+  inventory.Resource:
+    properties:
+      id:
+        type: string
+      keibi_source:
+        type: string
+      location:
+        type: string
+      resource_type:
+        type: string
+    type: object
+host: localhost:6251
+info:
+  contact:
+    email: support@swagger.io
+    name: API Support
+    url: http://www.swagger.io/support
+  description: Inventory service
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  termsOfService: http://swagger.io/terms/
+  title: Inventory Service API
+  version: "1.0"
+paths:
+  /locations/{provider}:
+    get:
+      description: Getting locations by provider
+      parameters:
+      - description: Provider
+        enum:
+        - aws
+        - azure
+        in: path
+        name: provider
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/inventory.LocationByProviderResponse'
+            type: array
+      summary: Get locations
+      tags:
+      - location
+  /resources:
+    post:
+      consumes:
+      - application/json
+      description: Getting resources by filters
+      parameters:
+      - description: Filters
+        in: body
+        name: filters
+        required: true
+        schema:
+          $ref: '#/definitions/inventory.Filters'
+      - description: Page
+        in: body
+        name: page
+        required: true
+        schema:
+          $ref: '#/definitions/inventory.Page'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/inventory.GetResourceResponse'
+      summary: Get resources
+      tags:
+      - inventory
+swagger: "2.0"

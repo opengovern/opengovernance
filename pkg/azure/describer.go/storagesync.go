@@ -22,7 +22,8 @@ func StorageSync(ctx context.Context, authorizer autorest.Authorizer, subscripti
 		resourceGroup := strings.Split(*storage.ID, "/")[4]
 
 		values = append(values, Resource{
-			ID: *storage.ID,
+			ID:       *storage.ID,
+			Location: *storage.Location,
 			Description: model.StorageSyncDescription{
 				Service:       storage,
 				ResourceGroup: resourceGroup,

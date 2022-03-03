@@ -47,7 +47,8 @@ func StorageContainer(ctx context.Context, authorizer autorest.Authorizer, subsc
 					}
 
 					values = append(values, Resource{
-						ID: *v.ID,
+						ID:       *v.ID,
+						Location: "global",
 						Description: model.StorageContainerDescription{
 							AccountName:        *account.Name,
 							ListContainerItem:  v,
@@ -222,7 +223,8 @@ func StorageAccount(ctx context.Context, authorizer autorest.Authorizer, subscri
 			}
 
 			values = append(values, Resource{
-				ID: *account.ID,
+				ID:       *account.ID,
+				Location: *account.Location,
 				Description: model.StorageAccountDescription{
 					Account:                     account,
 					ManagementPolicy:            managementPolicy,

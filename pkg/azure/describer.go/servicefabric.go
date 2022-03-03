@@ -21,6 +21,7 @@ func ServiceFabricCluster(ctx context.Context, authorizer autorest.Authorizer, s
 
 		values = append(values, Resource{
 			ID:          *cluster.ID,
+			Location:    *cluster.Location,
 			Description: model.ServiceFabricClusterDescription{Cluster: cluster, ResourceGroup: resourceGroup}},
 		)
 	}

@@ -21,7 +21,8 @@ func KustoCluster(ctx context.Context, authorizer autorest.Authorizer, subscript
 		resourceGroup := strings.Split(*kusto.ID, "/")[4]
 
 		values = append(values, Resource{
-			ID: *kusto.ID,
+			ID:       *kusto.ID,
+			Location: *kusto.Location,
 			Description: model.KustoClusterDescription{
 				Cluster:       kusto,
 				ResourceGroup: resourceGroup,

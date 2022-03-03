@@ -32,7 +32,8 @@ func HdInsightCluster(ctx context.Context, authorizer autorest.Authorizer, subsc
 			}
 
 			values = append(values, Resource{
-				ID: *cluster.ID,
+				ID:       *cluster.ID,
+				Location: *cluster.Location,
 				Description: model.HdinsightClusterDescription{
 					Cluster:                     cluster,
 					DiagnosticSettingsResources: hdinsightListOp.Value,

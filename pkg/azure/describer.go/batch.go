@@ -34,7 +34,8 @@ func BatchAccount(ctx context.Context, authorizer autorest.Authorizer, subscript
 			resourceGroup := splitID[4]
 
 			values = append(values, Resource{
-				ID: *account.ID,
+				ID:       *account.ID,
+				Location: *account.Location,
 				Description: model.BatchAccountDescription{
 					Account:                     account,
 					DiagnosticSettingsResources: batchListOp.Value,

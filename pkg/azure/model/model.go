@@ -63,6 +63,7 @@ import (
 
 type Metadata struct {
 	SubscriptionID   string `json:"subscription_id"`
+	Location         string `json:"location"`
 	CloudEnvironment string `json:"cloud_environment"`
 }
 
@@ -760,7 +761,7 @@ type LocationDescription struct {
 //listfilter:surname=description.AdUsers.surname
 type AdUsersDescription struct {
 	TenantID string
-	AdUsers msgraph.User
+	AdUsers  msgraph.User
 }
 
 //  =================== postgresql ==================

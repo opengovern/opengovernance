@@ -76,7 +76,8 @@ func KeyVaultSecret(ctx context.Context, authorizer autorest.Authorizer, subscri
 					}
 
 					values = append(values, Resource{
-						ID: *sc.ID,
+						ID:       *sc.ID,
+						Location: "global",
 						Description: model.KeyVaultSecretDescription{
 							SecretItem:    sc,
 							SecretBundle:  op,

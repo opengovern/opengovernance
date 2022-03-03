@@ -32,7 +32,8 @@ func SignalrService(ctx context.Context, authorizer autorest.Authorizer, subscri
 			}
 
 			values = append(values, Resource{
-				ID: *service.ID,
+				ID:       *service.ID,
+				Location: *service.Location,
 				Description: model.SignalrServiceDescription{
 					ResourceType:                service,
 					DiagnosticSettingsResources: signalrListOp.Value,

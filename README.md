@@ -22,6 +22,16 @@ Start using the CLI by running command
 
     ./build/cloud-inventory aws --help
 
+#Generating Swagger UI
+In order to generate templates for SwaggerUI, run the following commands: ([how to install swag command](https://github.com/swaggo/echo-swagger#start-using-it)):
+```
+swag init --dir cmd/inventory-service,pkg/inventory --output ./pkg/inventory/docs
+swag init --dir cmd/describe-scheduler/,pkg/describe,pkg/compliance-report --output ./pkg/describe/docs
+```
+then remove all of docs.go content except the docTemplate variable.
+
+You can find ways to populate Swagger UI in [this](https://github.com/swaggo/swag#general-api-info) link.
+
 ## Getting started
 
 To make it easy for you to get started with GitLab, here's a list of recommended next steps.
