@@ -71,7 +71,7 @@ var resourceTypeToDescriber = map[string]ResourceDescriber{
 	"Microsoft.Insights/actionGroups":                           nil,
 	"Microsoft.Insights/components":                             nil,
 	"Microsoft.KeyVault/vaults":                                 DescribeBySubscription(describer.KeyVault),
-	"Microsoft.KeyVault/vaults/keys":                                 DescribeBySubscription(describer.KeyVaultKey),
+	"Microsoft.KeyVault/vaults/keys":                            DescribeBySubscription(describer.KeyVaultKey),
 	"Microsoft.Kubernetes/connectedClusters":                    nil,
 	"Microsoft.Kusto/clusters":                                  DescribeBySubscription(describer.KustoCluster),
 	"Microsoft.Kusto/clusters/databases":                        nil,
@@ -190,14 +190,8 @@ func GetResources(
 	ctx context.Context,
 	resourceType string,
 	subscriptions []string,
-	tenantId,
-	clientId,
-	clientSecret,
-	certPath,
-	certPass,
-	username,
-	password,
-	azureAuth,
+	cfg AuthConfig,
+	azureAuth string,
 	azureAuthLoc string,
 ) (*Resources, error) {
 	// Create and authorize a ResourceGraph client
@@ -205,14 +199,7 @@ func GetResources(
 	var err error
 	switch v := AuthType(strings.ToUpper(azureAuth)); v {
 	case AuthEnv:
-		setEnvIfNotEmpty(auth.TenantID, tenantId)
-		setEnvIfNotEmpty(auth.ClientID, clientId)
-		setEnvIfNotEmpty(auth.ClientSecret, clientSecret)
-		setEnvIfNotEmpty(auth.CertificatePath, certPath)
-		setEnvIfNotEmpty(auth.CertificatePassword, certPass)
-		setEnvIfNotEmpty(auth.Username, username)
-		setEnvIfNotEmpty(auth.Password, password)
-		authorizer, err = auth.NewAuthorizerFromEnvironment()
+		authorizer, err = NewAuthorizerFromConfig(cfg)
 	case AuthFile:
 		setEnvIfNotEmpty(AzureAuthLocation, azureAuthLoc)
 		authorizer, err = auth.NewAuthorizerFromFile(resourcegraph.DefaultBaseURI)
@@ -232,7 +219,7 @@ func GetResources(
 		return nil, err
 	}
 
-	resources, err := describe(ctx, authorizer, hamiltonAuthorizer, resourceType, subscriptions, tenantId)
+	resources, err := describe(ctx, authorizer, hamiltonAuthorizer, resourceType, subscriptions, cfg.TenantID)
 	if err != nil {
 		return nil, err
 	}

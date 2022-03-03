@@ -7,23 +7,10 @@ import (
 	"gopkg.in/go-playground/validator.v9"
 )
 
-// Context extends the echo.Context interface with custom APIs
-type Context struct {
-	echo.Context
-}
-
 func InitializeRouter() *echo.Echo {
 	e := echo.New()
 	e.Logger.SetLevel(log.DEBUG) // TODO: change in prod
 	e.Pre(middleware.RemoveTrailingSlash())
-
-	// add middleware to extend the default context
-	e.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
-		return func(ctx echo.Context) error {
-			cc := &Context{ctx}
-			return next(cc)
-		}
-	})
 
 	e.Use(middleware.Logger())
 	e.Validator = newValidator()

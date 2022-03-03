@@ -66,8 +66,8 @@ func (j *Job) failed(msg string, args ...interface{}) JobResult {
 	}
 }
 
-func (j *Job) Do(vlt vault.Keibi, s3Client s3iface.S3API, config Config) JobResult {
-	cfg, err := vlt.ReadSourceConfig(j.ConfigReg)
+func (j *Job) Do(vlt vault.SourceConfig, s3Client s3iface.S3API, config Config) JobResult {
+	cfg, err := vlt.Read(j.ConfigReg)
 	if err != nil {
 		return j.failed("error: read source config: " + err.Error())
 	}

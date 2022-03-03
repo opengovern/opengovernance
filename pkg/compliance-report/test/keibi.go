@@ -2,27 +2,19 @@ package test
 
 import (
 	"encoding/json"
-	"github.com/google/uuid"
+
 	compliancereport "gitlab.com/keibiengine/keibi-engine/pkg/compliance-report"
 )
 
-type KeibiMock struct {
+type SourceConfigMock struct {
 }
 
 // GetOrganizations() (pathRefs []string, err error)
 
-func (s KeibiMock) DeleteOrganization(pathRef string) error {
+func (s SourceConfigMock) Delete(pathRef string) error {
 	return nil
 }
-
-func (s KeibiMock) NewOrganization(orgId uuid.UUID) (pathRef string, err error) {
-	return "", nil
-}
-
-func (s KeibiMock) DeleteSourceConfig(pathRef string) error {
-	return nil
-}
-func (s KeibiMock) ReadSourceConfig(pathRef string) (config map[string]interface{}, err error) {
+func (s SourceConfigMock) Read(pathRef string) (config map[string]interface{}, err error) {
 	switch pathRef {
 	case "azure":
 		cfg := compliancereport.AzureSubscriptionConfig{
@@ -42,6 +34,7 @@ func (s KeibiMock) ReadSourceConfig(pathRef string) (config map[string]interface
 	}
 	return nil, nil
 }
-func (s KeibiMock) WriteSourceConfig(orgId uuid.UUID, sourceId uuid.UUID, sourceType string, config interface{}) (configRef string, err error) {
-	return "", nil
+
+func (s SourceConfigMock) Write(pathRef string, config map[string]interface{}) (err error) {
+	return nil
 }

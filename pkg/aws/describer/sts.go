@@ -7,7 +7,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/sts"
 )
 
-func GetAccountId(ctx context.Context, cfg aws.Config) (string, error) {
+func STSAccount(ctx context.Context, cfg aws.Config) (string, error) {
 	svc := sts.NewFromConfig(cfg)
 
 	acc, err := svc.GetCallerIdentity(ctx, &sts.GetCallerIdentityInput{})

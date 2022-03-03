@@ -13,7 +13,7 @@ import (
 type HttpHandler struct {
 	db                Database
 	sourceEventsQueue queue.Interface
-	vault             vault.Keibi
+	vault             vault.SourceConfig
 }
 
 func InitializeHttpHandler(
@@ -30,9 +30,7 @@ func InitializeHttpHandler(
 	vaultAddress string,
 	vaultToken string,
 	vaultRoleName string,
-) (h *HttpHandler, err error) {
-
-	h = &HttpHandler{}
+) (h HttpHandler, err error) {
 
 	fmt.Println("Initializing http handler")
 
@@ -47,11 +45,10 @@ func InitializeHttpHandler(
 	qCfg.Producer.ID = "onboard-service"
 	sourceEventsQueue, err := queue.New(qCfg)
 	if err != nil {
-		return nil, err
+		return HttpHandler{}, err
 	}
 
 	fmt.Println("Connected to the source queue: ", sourceEventsQueueName)
-	h.sourceEventsQueue = sourceEventsQueue
 
 	// setup postgres connection
 	dsn := fmt.Sprintf(`host=%s port=%s user=%s password=%s dbname=%s sslmode=disable TimeZone=GMT`,
@@ -64,32 +61,30 @@ func InitializeHttpHandler(
 
 	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	if err != nil {
-		return nil, err
+		return HttpHandler{}, err
 	}
 
 	fmt.Println("Connected to the postgres database: ", postgresDb)
-	h.db = Database{orm: db}
-	h.db.orm.AutoMigrate(
-		&Organization{},
-		&Source{},
-	)
 
 	k8sAuth, err := kubernetes.NewKubernetesAuth(
 		vaultRoleName,
 		kubernetes.WithServiceAccountToken(vaultToken),
 	)
 	if err != nil {
-		return nil, err
+		return HttpHandler{}, err
 	}
 
 	// setup vault
-	v, err := vault.NewVault(vaultAddress, k8sAuth)
+	v, err := vault.NewSourceConfig(vaultAddress, k8sAuth)
 	if err != nil {
-		return nil, err
+		return HttpHandler{}, err
 	}
 
 	fmt.Println("Connected to vault:", vaultAddress)
-	h.vault = v
 
-	return h, nil
+	return HttpHandler{
+		vault:             v,
+		db:                Database{orm: db},
+		sourceEventsQueue: sourceEventsQueue,
+	}, nil
 }

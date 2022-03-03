@@ -54,6 +54,6 @@ func main() {
 		os.Exit(1)
 	}
 
-	h.Register(r.Group("/api/v1"))
+	h.Register(r)
 	r.Logger.Fatal(r.Start("127.0.0.1:6251"))
 }

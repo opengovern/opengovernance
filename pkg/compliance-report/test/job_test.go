@@ -15,7 +15,7 @@ func TestJob_Do(t *testing.T) {
 		ConfigReg:  "azure",
 	}
 
-	vault := KeibiMock{}
+	vault := SourceConfigMock{}
 	s3 := NewMockedS3Client()
 
 	result := job.Do(vault, s3, compliancereport.Config{
