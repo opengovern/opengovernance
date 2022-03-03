@@ -157,7 +157,13 @@ func (h HttpHandler) GetSource(ctx echo.Context) error {
 		return ctx.JSON(http.StatusBadRequest, err)
 	}
 
-	return ctx.JSON(http.StatusOK, src.toSourceResponse())
+	return ctx.JSON(http.StatusOK, &api.Source{
+		ID:          src.ID,
+		SourceId:    src.SourceId,
+		Name:        src.Name,
+		Type:        src.Type,
+		Description: src.Description,
+	})
 }
 
 func (h HttpHandler) PutSource(ctx echo.Context) error {
@@ -217,13 +223,13 @@ func (h HttpHandler) GetSources(ctx echo.Context) error {
 		var err error
 		sources, err = h.db.GetSourcesOfType(st)
 		if err != nil {
-			ctx.JSON(http.StatusInternalServerError, err)
+			return ctx.JSON(http.StatusInternalServerError, err)
 		}
 	} else {
 		var err error
 		sources, err = h.db.GetSources()
 		if err != nil {
-			ctx.JSON(http.StatusInternalServerError, err)
+			return ctx.JSON(http.StatusInternalServerError, err)
 		}
 	}
 
@@ -253,7 +259,7 @@ func (h HttpHandler) DiscoverAwsAccounts(ctx echo.Context) error {
 
 	accounts, err := discoverAwsAccounts(ctx.Request().Context(), req)
 	if err != nil {
-		ctx.JSON(http.StatusBadRequest, err)
+		return ctx.JSON(http.StatusBadRequest, err.Error())
 	}
 
 	return ctx.JSON(http.StatusOK, accounts)
@@ -267,7 +273,7 @@ func (h *HttpHandler) DiscoverAzureSubscriptions(ctx echo.Context) error {
 
 	subs, err := discoverAzureSubscriptions(ctx.Request().Context(), req)
 	if err != nil {
-		ctx.JSON(http.StatusBadRequest, err)
+		return ctx.JSON(http.StatusBadRequest, err)
 	}
 
 	return ctx.JSON(http.StatusOK, subs)

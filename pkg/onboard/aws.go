@@ -8,14 +8,18 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/organizations/types"
 	"github.com/aws/smithy-go"
 	keibiaws "gitlab.com/keibiengine/keibi-engine/pkg/aws"
-	"gitlab.com/keibiengine/keibi-engine/pkg/onboard/api"
 	"gitlab.com/keibiengine/keibi-engine/pkg/aws/describer"
+	"gitlab.com/keibiengine/keibi-engine/pkg/onboard/api"
 )
 
 func discoverAwsAccounts(ctx context.Context, req api.DiscoverAWSAccountsRequest) ([]api.DiscoverAWSAccountsResponse, error) {
 	cfg, err := keibiaws.GetConfig(ctx, req.AccessKey, req.SecretKey, "", "")
 	if err != nil {
 		return nil, err
+	}
+
+	if cfg.Region == "" {
+		cfg.Region = "us-east-1"
 	}
 
 	accounts, err := describer.OrganizationAccounts(ctx, cfg)
