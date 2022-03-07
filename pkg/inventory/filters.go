@@ -1,6 +1,9 @@
 package inventory
 
-import "gitlab.com/keibiengine/keibi-engine/pkg/keibi-es-sdk"
+import (
+	"gitlab.com/keibiengine/keibi-engine/pkg/keibi-es-sdk"
+	"strings"
+)
 
 func FilterIsEmpty(filter []string) bool {
 	return filter == nil || len(filter) == 0
@@ -8,7 +11,7 @@ func FilterIsEmpty(filter []string) bool {
 
 func FilterContains(filters []string, obj string) bool {
 	for _, f := range filters {
-		if f == obj {
+		if strings.ToLower(f) == strings.ToLower(obj) {
 			return true
 		}
 	}

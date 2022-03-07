@@ -6,11 +6,11 @@ import (
 	"github.com/hashicorp/go-hclog"
 	"github.com/turbot/steampipe-plugin-sdk/logging"
 	"github.com/turbot/steampipe-plugin-sdk/plugin/context_key"
+	"gitlab.com/keibiengine/keibi-engine/pkg/describe"
 	"gitlab.com/keibiengine/keibi-engine/pkg/keibi-es-sdk"
 	"log"
 	"net/http"
 	"strconv"
-	"strings"
 
 	"github.com/labstack/echo/v4"
 )
@@ -26,7 +26,9 @@ func extractContext(ctx echo.Context) context.Context {
 
 func (h *HttpHandler) Register(v1 *echo.Group) {
 	v1.GET("/locations/:provider", h.GetLocations)
-	v1.POST("/resources", h.GetResources)
+	v1.POST("/resources", h.GetAllResources)
+	v1.POST("/resources/azure", h.GetAzureResources)
+	v1.POST("/resources/aws", h.GetAWSResources)
 }
 
 // GetLocations godoc
@@ -86,9 +88,51 @@ func (h *HttpHandler) GetLocations(ctx echo.Context) error {
 	return ctx.JSON(http.StatusOK, locations)
 }
 
-// GetResources godoc
+// GetAzureResources godoc
+// @Summary      Get Azure resources
+// @Description  Getting Azure resources by filters
+// @Tags         inventory
+// @Accept       json
+// @Produce      json
+// @Param        filters   body      Filters  true  "Filters"
+// @Param        page      body      Page     true  "Page"
+// @Success      200  {object}  GetAzureResourceResponse
+// @Router       /resources/azure [post]
+func (h *HttpHandler) GetAzureResources(ectx echo.Context) error {
+	cc := ectx.(*Context)
+	req := &GetResourceRequest{}
+	if err := cc.BindValidate(req); err != nil {
+		return cc.JSON(http.StatusBadRequest, err)
+	}
+
+	provider := SourceCloudAzure
+	return h.GetResources(ectx, req, &provider)
+}
+
+// GetAWSResources godoc
+// @Summary      Get AWS resources
+// @Description  Getting AWS resources by filters
+// @Tags         inventory
+// @Accept       json
+// @Produce      json
+// @Param        filters   body      Filters  true  "Filters"
+// @Param        page      body      Page     true  "Page"
+// @Success      200  {object}  GetAWSResourceResponse
+// @Router       /resources/aws [post]
+func (h *HttpHandler) GetAWSResources(ectx echo.Context) error {
+	cc := ectx.(*Context)
+	req := &GetResourceRequest{}
+	if err := cc.BindValidate(req); err != nil {
+		return cc.JSON(http.StatusBadRequest, err)
+	}
+
+	provider := SourceCloudAWS
+	return h.GetResources(ectx, req, &provider)
+}
+
+// GetAllResources godoc
 // @Summary      Get resources
-// @Description  Getting resources by filters
+// @Description  Getting all cloud providers resources by filters
 // @Tags         inventory
 // @Accept       json
 // @Produce      json
@@ -96,15 +140,21 @@ func (h *HttpHandler) GetLocations(ctx echo.Context) error {
 // @Param        page      body      Page     true  "Page"
 // @Success      200  {object}  GetResourceResponse
 // @Router       /resources [post]
-func (h *HttpHandler) GetResources(ectx echo.Context) error {
-	var err error
-
-	ctx := extractContext(ectx)
+func (h *HttpHandler) GetAllResources(ectx echo.Context) error {
 	cc := ectx.(*Context)
 	req := &GetResourceRequest{}
 	if err := cc.BindValidate(req); err != nil {
 		return cc.JSON(http.StatusBadRequest, err)
 	}
+
+	return h.GetResources(ectx, req, nil)
+}
+
+func (h *HttpHandler) GetResources(ectx echo.Context, req *GetResourceRequest, provider *SourceType) error {
+	var err error
+
+	ctx := extractContext(ectx)
+	cc := ectx.(*Context)
 
 	var lastIdx int
 	if req.Page.NextMarker != nil || len(req.Page.NextMarker) > 0 {
@@ -116,61 +166,30 @@ func (h *HttpHandler) GetResources(ectx echo.Context) error {
 		lastIdx = 0
 	}
 
-	indexName := "_all"
-	if FilterIsEmpty(req.Filters.Provider) ||
-		(FilterContains(req.Filters.Provider, "aws") && FilterContains(req.Filters.Provider, "azure")) {
-		// index is still _all
-	} else if FilterContains(req.Filters.Provider, "aws") {
-		indexName = "aws_*"
-	} else if FilterContains(req.Filters.Provider, "azure") {
-		indexName = "microsoft_*"
+	var terms []keibi.BoolFilter
+	if !FilterIsEmpty(req.Filters.Location) {
+		terms = append(terms, keibi.TermsFilter("location", req.Filters.Location))
 	}
 
 	if !FilterIsEmpty(req.Filters.ResourceType) {
-		var indexes []string
-		for _, resourceType := range req.Filters.ResourceType {
-			resourceType = strings.ToLower(resourceType)
-			resourceType = strings.ReplaceAll(resourceType, "::", "_") // aws
-			resourceType = strings.ReplaceAll(resourceType, ".", "_")  // azure
-			resourceType = strings.ReplaceAll(resourceType, "/", "_")  // azure
-			if indexName == "aws_*" && !strings.HasPrefix(resourceType, "aws_") {
-				continue
-			}
-			if indexName == "microsoft_*" && !strings.HasPrefix(resourceType, "microsoft_") {
-				continue
-			}
-
-			indexes = append(indexes, resourceType)
-		}
-
-		indexName = strings.Join(indexes, ",")
-	}
-
-	var awsTerms []keibi.BoolFilter
-	var azureTerms []keibi.BoolFilter
-	if !FilterIsEmpty(req.Filters.Location) {
-		awsTerms = append(awsTerms, keibi.TermsFilter("metadata.region", req.Filters.Location))
-		azureTerms = append(azureTerms, keibi.TermsFilter("metadata.location", req.Filters.Location))
+		terms = append(terms, keibi.TermsFilter("resource_type", req.Filters.ResourceType))
 	}
 
 	if !FilterIsEmpty(req.Filters.KeibiSource) {
-		awsTerms = append(awsTerms, keibi.TermsFilter("metadata.account_id", req.Filters.KeibiSource))
-		azureTerms = append(azureTerms, keibi.TermsFilter("metadata.subscription", req.Filters.KeibiSource))
+		terms = append(terms, keibi.TermsFilter("keibi_source_id", req.Filters.KeibiSource))
+	}
+
+	if provider != nil {
+		terms = append(terms, keibi.TermsFilter("source_type", []string{string(*provider)}))
 	}
 
 	var queryStr string
-	if len(azureTerms) > 0 || len(awsTerms) > 0 {
-		azureQuery := BuildBoolFilter(azureTerms)
-		awsQuery := BuildBoolFilter(awsTerms)
+	if len(terms) > 0 {
+		query := BuildBoolFilter(terms)
 		var shouldTerms []interface{}
-		if len(azureTerms) > 0 {
-			shouldTerms = append(shouldTerms, azureQuery)
-		}
-		if len(awsTerms) > 0 {
-			shouldTerms = append(shouldTerms, awsQuery)
-		}
+		shouldTerms = append(shouldTerms, query)
 
-		query := BuildQuery(shouldTerms, req.Page.Size, lastIdx)
+		query = BuildQuery(shouldTerms, req.Page.Size, lastIdx)
 		queryBytes, err := json.Marshal(query)
 		if err != nil {
 			return err
@@ -179,17 +198,64 @@ func (h *HttpHandler) GetResources(ectx echo.Context) error {
 		queryStr = string(queryBytes)
 	}
 
-	resources, err := h.GetResourcesPageFromES(ctx, indexName, queryStr)
+	resources, err := h.GetResourcesPageFromES(ctx, "lookup_table", queryStr)
 	if err != nil {
 		return err
 	}
+	page := Page{
+		Size:       req.Page.Size,
+		NextMarker: []byte(strconv.Itoa(lastIdx + req.Page.Size)),
+	}
 
+	if provider != nil && *provider == SourceCloudAWS {
+		var awsResources []AWSResource
+		for _, resource := range resources {
+			awsResources = append(awsResources, AWSResource{
+				Name:         resource.Name,
+				ResourceType: resource.ResourceType,
+				ResourceID:   resource.ResourceID,
+				Region:       resource.Location,
+				AccountID:    resource.KeibiSourceID,
+			})
+		}
+		return cc.JSON(http.StatusOK, GetAWSResourceResponse{
+			Resources: awsResources,
+			Page:      page,
+		})
+	}
+
+	if provider != nil && *provider == SourceCloudAzure {
+		var azureResources []AzureResource
+		for _, resource := range resources {
+			azureResources = append(azureResources, AzureResource{
+				Name:           resource.Name,
+				Type:           resource.ResourceType,
+				ResourceGroup:  resource.ResourceGroup,
+				Location:       resource.Location,
+				ResourceID:     resource.ResourceID,
+				SubscriptionID: resource.KeibiSourceID,
+			})
+		}
+		return cc.JSON(http.StatusOK, GetAzureResourceResponse{
+			Resources: azureResources,
+			Page:      page,
+		})
+	}
+
+	var allResources []AllResource
+	for _, resource := range resources {
+		allResources = append(allResources, AllResource{
+			Name:          resource.Name,
+			Provider:      SourceType(resource.SourceType),
+			ResourceType:  resource.ResourceType,
+			Location:      resource.Location,
+			ResourceID:    resource.ResourceID,
+			KeibiSourceID: resource.KeibiSourceID,
+		})
+	}
 	return cc.JSON(http.StatusOK, GetResourceResponse{
-		Resources: resources,
-		Page: Page{
-			Size:       req.Page.Size,
-			NextMarker: []byte(strconv.Itoa(lastIdx + req.Page.Size)),
-		},
+		Resources: allResources,
+		Page:      page,
 	})
 }
 
@@ -201,50 +267,25 @@ type QueryHits struct {
 	Hits  []QueryHit        `json:"hits"`
 }
 type QueryHit struct {
-	ID      string        `json:"_id"`
-	Score   float64       `json:"_score"`
-	Index   string        `json:"_index"`
-	Type    string        `json:"_type"`
-	Version int64         `json:"_version,omitempty"`
-	Source  Source        `json:"_source"`
-	Sort    []interface{} `json:"sort"`
-}
-type Source struct {
-	ID           string   `json:"id"`
-	Metadata     Metadata `json:"metadata"`
-	ResourceType string   `json:"resource_type"`
-	SourceType   string   `json:"source_type"`
-}
-type Metadata struct {
-	AccountID string `json:"account_id"`
-	Region    string `json:"region"`
-
-	SubscriptionID string `json:"subscription_id"`
-	Location       string `json:"location"`
+	ID      string                       `json:"_id"`
+	Score   float64                      `json:"_score"`
+	Index   string                       `json:"_index"`
+	Type    string                       `json:"_type"`
+	Version int64                        `json:"_version,omitempty"`
+	Source  describe.KafkaLookupResource `json:"_source"`
+	Sort    []interface{}                `json:"sort"`
 }
 
-func (h *HttpHandler) GetResourcesPageFromES(ctx context.Context, index string, query string) ([]Resource, error) {
+func (h *HttpHandler) GetResourcesPageFromES(ctx context.Context, index string, query string) ([]describe.KafkaLookupResource, error) {
 	var response QueryResponse
 	err := h.client.Search(ctx, index, query, &response)
 	if err != nil {
 		return nil, err
 	}
 
-	var resources []Resource
+	var resources []describe.KafkaLookupResource
 	for _, hits := range response.Hits.Hits {
-		resource := Resource{
-			ID:           hits.Source.ID,
-			ResourceType: hits.Source.ResourceType,
-		}
-		if strings.HasPrefix(strings.ToLower(hits.Index), "aws") {
-			resource.Location = hits.Source.Metadata.Region
-			resource.KeibiSourceID = hits.Source.Metadata.AccountID
-		} else if strings.HasPrefix(strings.ToLower(hits.Index), "microsoft") {
-			resource.Location = hits.Source.Metadata.Location
-			resource.KeibiSourceID = hits.Source.Metadata.SubscriptionID
-		}
-
-		resources = append(resources, resource)
+		resources = append(resources, hits.Source)
 	}
 
 	return resources, nil

@@ -61,7 +61,7 @@ const docTemplate = `{
         },
         "/resources": {
             "post": {
-                "description": "Getting resources by filters",
+                "description": "Getting all cloud providers resources by filters",
                 "consumes": [
                     "application/json"
                 ],
@@ -101,9 +101,161 @@ const docTemplate = `{
                     }
                 }
             }
+        },
+        "/resources/aws": {
+            "post": {
+                "description": "Getting AWS resources by filters",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "inventory"
+                ],
+                "summary": "Get AWS resources",
+                "parameters": [
+                    {
+                        "description": "Filters",
+                        "name": "filters",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/inventory.Filters"
+                        }
+                    },
+                    {
+                        "description": "Page",
+                        "name": "page",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/inventory.Page"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/inventory.GetAWSResourceResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/resources/azure": {
+            "post": {
+                "description": "Getting Azure resources by filters",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "inventory"
+                ],
+                "summary": "Get Azure resources",
+                "parameters": [
+                    {
+                        "description": "Filters",
+                        "name": "filters",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/inventory.Filters"
+                        }
+                    },
+                    {
+                        "description": "Page",
+                        "name": "page",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/inventory.Page"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/inventory.GetAzureResourceResponse"
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
+        "inventory.AWSResource": {
+            "type": "object",
+            "properties": {
+                "account_id": {
+                    "type": "string"
+                },
+                "location": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "resource_id": {
+                    "type": "string"
+                },
+                "resource_type": {
+                    "type": "string"
+                }
+            }
+        },
+        "inventory.AllResource": {
+            "type": "object",
+            "properties": {
+                "keibi_source_id": {
+                    "type": "string"
+                },
+                "location": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "provider": {
+                    "type": "string"
+                },
+                "resource_id": {
+                    "type": "string"
+                },
+                "resource_type": {
+                    "type": "string"
+                }
+            }
+        },
+        "inventory.AzureResource": {
+            "type": "object",
+            "properties": {
+                "location": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "resource_group": {
+                    "type": "string"
+                },
+                "resource_id": {
+                    "type": "string"
+                },
+                "subscription_id": {
+                    "type": "string"
+                },
+                "type": {
+                    "type": "string"
+                }
+            }
+        },
         "inventory.Filters": {
             "type": "object",
             "properties": {
@@ -119,16 +271,38 @@ const docTemplate = `{
                         "type": "string"
                     }
                 },
-                "provider": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
                 "resourceType": {
                     "type": "array",
                     "items": {
                         "type": "string"
+                    }
+                }
+            }
+        },
+        "inventory.GetAWSResourceResponse": {
+            "type": "object",
+            "properties": {
+                "page": {
+                    "$ref": "#/definitions/inventory.Page"
+                },
+                "resources": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/inventory.AWSResource"
+                    }
+                }
+            }
+        },
+        "inventory.GetAzureResourceResponse": {
+            "type": "object",
+            "properties": {
+                "page": {
+                    "$ref": "#/definitions/inventory.Page"
+                },
+                "resources": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/inventory.AzureResource"
                     }
                 }
             }
@@ -142,7 +316,7 @@ const docTemplate = `{
                 "resources": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/inventory.Resource"
+                        "$ref": "#/definitions/inventory.AllResource"
                     }
                 }
             }
@@ -168,23 +342,7 @@ const docTemplate = `{
                     "type": "integer"
                 }
             }
-        },
-        "inventory.Resource": {
-            "type": "object",
-            "properties": {
-                "id": {
-                    "type": "string"
-                },
-                "keibi_source": {
-                    "type": "string"
-                },
-                "location": {
-                    "type": "string"
-                },
-                "resource_type": {
-                    "type": "string"
-                }
-            }
         }
     }
 }`
+
