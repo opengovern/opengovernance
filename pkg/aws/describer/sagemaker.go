@@ -40,7 +40,8 @@ func SageMakerEndpointConfiguration(ctx context.Context, cfg aws.Config) ([]Reso
 			}
 
 			values = append(values, Resource{
-				ARN: *out.EndpointConfigArn,
+				ARN:  *out.EndpointConfigArn,
+				Name: *out.EndpointConfigName,
 				Description: SageMakerEndpointConfigurationDescription{
 					EndpointConfig: out,
 					Tags:           tags.Tags,
@@ -83,7 +84,8 @@ func SageMakerNotebookInstance(ctx context.Context, cfg aws.Config) ([]Resource,
 			}
 
 			values = append(values, Resource{
-				ARN: *out.NotebookInstanceArn,
+				ARN:  *out.NotebookInstanceArn,
+				Name: *out.NotebookInstanceName,
 				Description: SageMakerNotebookInstanceDescription{
 					NotebookInstance: out,
 					Tags:             tags.Tags,

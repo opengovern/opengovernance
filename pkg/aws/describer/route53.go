@@ -22,6 +22,7 @@ func Route53HealthCheck(ctx context.Context, cfg aws.Config) ([]Resource, error)
 		for _, v := range output.HealthChecks {
 			values = append(values, Resource{
 				ID:          *v.Id,
+				Name:        *v.HealthCheckConfig.FullyQualifiedDomainName,
 				Description: v,
 			})
 		}
@@ -48,6 +49,7 @@ func Route53HostedZone(ctx context.Context, cfg aws.Config) ([]Resource, error) 
 		for _, v := range output.HostedZones {
 			values = append(values, Resource{
 				ID:          *v.Id,
+				Name:        *v.Name,
 				Description: v,
 			})
 		}
@@ -81,6 +83,7 @@ func Route53DNSSEC(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 
 		values = append(values, Resource{
 			ID:          *id, // Unique per HostedZone
+			Name:        *id,
 			Description: v,
 		})
 	}
@@ -113,6 +116,7 @@ func Route53RecordSet(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 			for _, v := range output.ResourceRecordSets {
 				values = append(values, Resource{
 					ID:          CompositeID(*id, *v.Name),
+					Name:        *v.Name,
 					Description: v,
 				})
 			}
@@ -142,6 +146,7 @@ func Route53ResolverFirewallDomainList(ctx context.Context, cfg aws.Config) ([]R
 		for _, v := range page.FirewallDomainLists {
 			values = append(values, Resource{
 				ARN:         *v.Arn,
+				Name:        *v.Name,
 				Description: v,
 			})
 		}
@@ -164,6 +169,7 @@ func Route53ResolverFirewallRuleGroup(ctx context.Context, cfg aws.Config) ([]Re
 		for _, v := range page.FirewallRuleGroups {
 			values = append(values, Resource{
 				ARN:         *v.Arn,
+				Name:        *v.Name,
 				Description: v,
 			})
 		}
@@ -186,6 +192,7 @@ func Route53ResolverFirewallRuleGroupAssociation(ctx context.Context, cfg aws.Co
 		for _, v := range page.FirewallRuleGroupAssociations {
 			values = append(values, Resource{
 				ARN:         *v.Arn,
+				Name:        *v.Name,
 				Description: v,
 			})
 		}
@@ -213,6 +220,7 @@ func Route53ResolverResolverDNSSECConfig(ctx context.Context, cfg aws.Config) ([
 
 		values = append(values, Resource{
 			ID:          *v.ResolverDNSSECConfig.Id,
+			Name:        *v.ResolverDNSSECConfig.Id,
 			Description: v.ResolverDNSSECConfig,
 		})
 	}
@@ -234,6 +242,7 @@ func Route53ResolverResolverEndpoint(ctx context.Context, cfg aws.Config) ([]Res
 		for _, v := range page.ResolverEndpoints {
 			values = append(values, Resource{
 				ARN:         *v.Arn,
+				Name:        *v.Name,
 				Description: v,
 			})
 		}
@@ -256,6 +265,7 @@ func Route53ResolverResolverQueryLoggingConfig(ctx context.Context, cfg aws.Conf
 		for _, v := range page.ResolverQueryLogConfigs {
 			values = append(values, Resource{
 				ARN:         *v.Arn,
+				Name:        *v.Name,
 				Description: v,
 			})
 		}
@@ -278,6 +288,7 @@ func Route53ResolverResolverQueryLoggingConfigAssociation(ctx context.Context, c
 		for _, v := range page.ResolverQueryLogConfigAssociations {
 			values = append(values, Resource{
 				ID:          *v.Id,
+				Name:        *v.Id,
 				Description: v,
 			})
 		}
@@ -300,6 +311,7 @@ func Route53ResolverResolverRule(ctx context.Context, cfg aws.Config) ([]Resourc
 		for _, v := range page.ResolverRules {
 			values = append(values, Resource{
 				ARN:         *v.Arn,
+				Name:        *v.Name,
 				Description: v,
 			})
 		}
@@ -322,6 +334,7 @@ func Route53ResolverResolverRuleAssociation(ctx context.Context, cfg aws.Config)
 		for _, v := range page.ResolverRuleAssociations {
 			values = append(values, Resource{
 				ID:          *v.Id,
+				Name:        *v.Name,
 				Description: v,
 			})
 		}

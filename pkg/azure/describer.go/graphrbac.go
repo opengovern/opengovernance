@@ -32,6 +32,7 @@ func AdUsers(ctx context.Context, authorizer auth.Authorizer, tenantId string) (
 
 		values = append(values, Resource{
 			ID:       *user.ID,
+			Name:     *user.DisplayName,
 			Location: "global",
 			Description: model.AdUsersDescription{
 				AdUsers: user,

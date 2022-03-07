@@ -33,6 +33,7 @@ func LogicAppWorkflow(ctx context.Context, authorizer autorest.Authorizer, subsc
 
 			values = append(values, Resource{
 				ID:       *workflow.ID,
+				Name:     *workflow.Name,
 				Location: *workflow.Location,
 				Description: model.LogicAppWorkflowDescription{
 					Workflow:                    workflow,

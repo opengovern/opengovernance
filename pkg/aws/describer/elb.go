@@ -53,6 +53,7 @@ func ElasticLoadBalancingV2LoadBalancer(ctx context.Context, cfg aws.Config) ([]
 
 			values = append(values, Resource{
 				ARN:         *v.LoadBalancerArn,
+				Name:        *v.LoadBalancerName,
 				Description: description,
 			})
 		}
@@ -87,7 +88,8 @@ func ElasticLoadBalancingV2Listener(ctx context.Context, cfg aws.Config) ([]Reso
 
 			for _, v := range page.Listeners {
 				values = append(values, Resource{
-					ARN: *v.ListenerArn,
+					ARN:  *v.ListenerArn,
+					Name: *v.ListenerArn,
 					Description: ElasticLoadBalancingV2ListenerDescription{
 						Listener: v,
 					},
@@ -122,6 +124,7 @@ func ElasticLoadBalancingV2ListenerRule(ctx context.Context, cfg aws.Config) ([]
 			for _, v := range output.Rules {
 				values = append(values, Resource{
 					ARN:         *v.RuleArn,
+					Name:        *v.RuleArn,
 					Description: v,
 				})
 			}
@@ -150,6 +153,7 @@ func ElasticLoadBalancingV2TargetGroup(ctx context.Context, cfg aws.Config) ([]R
 		for _, v := range page.TargetGroups {
 			values = append(values, Resource{
 				ARN:         *v.TargetGroupArn,
+				Name:        *v.TargetGroupName,
 				Description: v,
 			})
 		}
@@ -201,6 +205,7 @@ func ElasticLoadBalancingLoadBalancer(ctx context.Context, cfg aws.Config) ([]Re
 
 			values = append(values, Resource{
 				ARN:         *v.DNSName, // DNSName is unique
+				Name:        *v.DNSName,
 				Description: description,
 			})
 		}

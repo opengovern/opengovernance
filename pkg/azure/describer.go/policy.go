@@ -21,6 +21,7 @@ func PolicyAssignment(ctx context.Context, authorizer autorest.Authorizer, subsc
 		for _, v := range result.Values() {
 			values = append(values, Resource{
 				ID:       *v.ID,
+				Name:     *v.Name,
 				Location: *v.Location,
 				Description: model.PolicyAssignmentDescription{
 					Assignment: v,

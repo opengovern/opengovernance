@@ -22,6 +22,7 @@ func KMSAlias(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 		for _, v := range page.Aliases {
 			values = append(values, Resource{
 				ARN:         *v.AliasArn,
+				Name:        *v.AliasName,
 				Description: v,
 			})
 		}
@@ -95,7 +96,8 @@ func KMSKey(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 			}
 
 			values = append(values, Resource{
-				ARN: *v.KeyArn,
+				ARN:  *v.KeyArn,
+				Name: *v.KeyArn,
 				Description: KMSKeyDescription{
 					Metadata:           key.KeyMetadata,
 					Aliases:            keyAlias,

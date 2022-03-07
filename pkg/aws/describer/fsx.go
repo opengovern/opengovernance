@@ -24,7 +24,8 @@ func FSXFileSystem(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 
 		for _, item := range page.FileSystems {
 			values = append(values, Resource{
-				ARN: *item.ResourceARN,
+				ARN:  *item.ResourceARN,
+				Name: *item.DNSName,
 				Description: FSXFileSystemDescription{
 					FileSystem: item,
 				},

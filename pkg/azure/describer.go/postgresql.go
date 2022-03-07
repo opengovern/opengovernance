@@ -67,6 +67,7 @@ func PostgresqlServer(ctx context.Context, authorizer autorest.Authorizer, subsc
 
 		values = append(values, Resource{
 			ID:       *server.ID,
+			Name:     *server.Name,
 			Location: *server.Location,
 			Description: model.PostgresqlServerDescription{
 				Server:                       server,

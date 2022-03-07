@@ -25,7 +25,8 @@ func SSMManagedInstance(ctx context.Context, cfg aws.Config) ([]Resource, error)
 
 		for _, item := range page.InstanceInformationList {
 			values = append(values, Resource{
-				ID: *item.InstanceId,
+				ID:   *item.InstanceId,
+				Name: *item.Name,
 				Description: SSMManagedInstanceDescription{
 					InstanceInformation: item,
 				},
@@ -63,7 +64,8 @@ func SSMManagedInstanceCompliance(ctx context.Context, cfg aws.Config) ([]Resour
 
 				for _, item := range cpage.ComplianceItems {
 					values = append(values, Resource{
-						ID: *item.Id,
+						ID:   *item.Id,
+						Name: *item.Title,
 						Description: SSMManagedInstanceComplianceDescription{
 							ComplianceItem: item,
 						},
@@ -90,6 +92,7 @@ func SSMAssociation(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 		for _, v := range page.Associations {
 			values = append(values, Resource{
 				ID:          *v.AssociationId,
+				Name:        *v.Name,
 				Description: v,
 			})
 		}
@@ -112,6 +115,7 @@ func SSMDocument(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 		for _, v := range page.DocumentIdentifiers {
 			values = append(values, Resource{
 				ID:          *v.Name,
+				Name:        *v.Name,
 				Description: v,
 			})
 		}
@@ -134,6 +138,7 @@ func SSMMaintenanceWindow(ctx context.Context, cfg aws.Config) ([]Resource, erro
 		for _, v := range page.WindowIdentities {
 			values = append(values, Resource{
 				ID:          *v.WindowId,
+				Name:        *v.Name,
 				Description: v,
 			})
 		}
@@ -166,6 +171,7 @@ func SSMMaintenanceWindowTarget(ctx context.Context, cfg aws.Config) ([]Resource
 			for _, v := range page.Targets {
 				values = append(values, Resource{
 					ID:          *v.WindowTargetId,
+					Name:        *v.Name,
 					Description: v,
 				})
 			}
@@ -199,6 +205,7 @@ func SSMMaintenanceWindowTask(ctx context.Context, cfg aws.Config) ([]Resource, 
 			for _, v := range page.Tasks {
 				values = append(values, Resource{
 					ARN:         *v.TaskArn,
+					Name:        *v.Name,
 					Description: v,
 				})
 			}
@@ -222,6 +229,7 @@ func SSMParameter(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 		for _, v := range page.Parameters {
 			values = append(values, Resource{
 				ID:          *v.Name,
+				Name:        *v.Name,
 				Description: v,
 			})
 		}
@@ -244,6 +252,7 @@ func SSMPatchBaseline(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 		for _, v := range page.BaselineIdentities {
 			values = append(values, Resource{
 				ID:          *v.BaselineId,
+				Name:        *v.BaselineName,
 				Description: v,
 			})
 		}
@@ -266,6 +275,7 @@ func SSMResourceDataSync(ctx context.Context, cfg aws.Config) ([]Resource, error
 		for _, v := range page.ResourceDataSyncItems {
 			values = append(values, Resource{
 				ID:          *v.SyncName,
+				Name:        *v.SyncName,
 				Description: v,
 			})
 		}

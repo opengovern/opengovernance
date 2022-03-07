@@ -30,7 +30,8 @@ func ElasticBeanstalkEnvironment(ctx context.Context, cfg aws.Config) ([]Resourc
 		}
 
 		values = append(values, Resource{
-			ARN: *item.EnvironmentArn,
+			ARN:  *item.EnvironmentArn,
+			Name: *item.EnvironmentName,
 			Description: ElasticBeanstalkEnvironmentDescription{
 				EnvironmentDescription: item,
 				Tags:                   tags.ResourceTags,

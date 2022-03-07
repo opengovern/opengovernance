@@ -26,6 +26,7 @@ func NetworkInterface(ctx context.Context, authorizer autorest.Authorizer, subsc
 
 			values = append(values, Resource{
 				ID:       *v.ID,
+				Name:     *v.Name,
 				Location: *v.Location,
 				Description: model.NetworkInterfaceDescription{
 					Interface:     v,
@@ -75,6 +76,7 @@ func NetworkWatcherFlowLog(ctx context.Context, authorizer autorest.Authorizer, 
 			for _, v := range result.Values() {
 				values = append(values, Resource{
 					ID:       *v.ID,
+					Name:     *v.Name,
 					Location: *v.Location,
 					Description: model.NetworkWatcherFlowLogDescription{
 						NetworkWatcherName: *networkWatcherDetails.Name,
@@ -123,6 +125,7 @@ func Subnet(ctx context.Context, authorizer autorest.Authorizer, subscription st
 				for _, v := range result.Values() {
 					values = append(values, Resource{
 						ID:       *v.ID,
+						Name:     *v.Name,
 						Location: "global",
 						Description: model.SubnetDescription{
 							VirtualNetworkName: *virtualNetwork.Name,
@@ -172,6 +175,7 @@ func VirtualNetwork(ctx context.Context, authorizer autorest.Authorizer, subscri
 
 			values = append(values, Resource{
 				ID:       *v.ID,
+				Name:     *v.Name,
 				Location: *v.Location,
 				Description: model.VirtualNetworkDescription{
 					VirtualNetwork: v,
@@ -216,6 +220,7 @@ func ApplicationGateway(ctx context.Context, authorizer autorest.Authorizer, sub
 
 			values = append(values, Resource{
 				ID:       *gateway.ID,
+				Name:     *gateway.Name,
 				Location: *gateway.Location,
 				Description: model.ApplicationGatewayDescription{
 					ApplicationGateway:          gateway,
@@ -259,6 +264,7 @@ func NetworkSecurityGroup(ctx context.Context, authorizer autorest.Authorizer, s
 			}
 			values = append(values, Resource{
 				ID:       *networkSecurityGroup.ID,
+				Name:     *networkSecurityGroup.Name,
 				Location: *networkSecurityGroup.Location,
 				Description: model.NetworkSecurityGroupDescription{
 					SecurityGroup:               networkSecurityGroup,
@@ -292,6 +298,7 @@ func NetworkWatcher(ctx context.Context, authorizer autorest.Authorizer, subscri
 
 		values = append(values, Resource{
 			ID:       *networkWatcher.ID,
+			Name:     *networkWatcher.Name,
 			Location: *networkWatcher.Location,
 			Description: model.NetworkWatcherDescription{
 				Watcher:       networkWatcher,

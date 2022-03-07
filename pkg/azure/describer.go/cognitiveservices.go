@@ -34,6 +34,7 @@ func CognitiveAccount(ctx context.Context, authorizer autorest.Authorizer, subsc
 
 			values = append(values, Resource{
 				ID:       *account.ID,
+				Name:     *account.Name,
 				Location: *account.Location,
 				Description: model.CognitiveAccountDescription{
 					Account:                     account,

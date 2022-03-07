@@ -39,7 +39,8 @@ func SecretsManagerSecret(ctx context.Context, cfg aws.Config) ([]Resource, erro
 			}
 
 			values = append(values, Resource{
-				ARN: *item.ARN,
+				ARN:  *item.ARN,
+				Name: *item.Name,
 				Description: SecretsManagerSecretDescription{
 					Secret:         out,
 					ResourcePolicy: policy.ResourcePolicy,

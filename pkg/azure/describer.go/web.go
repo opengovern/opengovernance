@@ -24,6 +24,7 @@ func AppServiceEnvironment(ctx context.Context, authorizer autorest.Authorizer, 
 
 			values = append(values, Resource{
 				ID:       *v.ID,
+				Name:     *v.Name,
 				Location: *v.Location,
 				Description: model.AppServiceEnvironmentDescription{
 					AppServiceEnvironmentResource: v,
@@ -74,6 +75,7 @@ func AppServiceFunctionApp(ctx context.Context, authorizer autorest.Authorizer, 
 
 			values = append(values, Resource{
 				ID:       *v.ID,
+				Name:     *v.Name,
 				Location: *v.Location,
 				Description: model.AppServiceFunctionAppDescription{
 					Site:               v,
@@ -135,6 +137,7 @@ func AppServiceWebApp(ctx context.Context, authorizer autorest.Authorizer, subsc
 
 			values = append(values, Resource{
 				ID:       *v.ID,
+				Name:     *v.Name,
 				Location: *v.Location,
 				Description: model.AppServiceWebAppDescription{
 					Site:               v,

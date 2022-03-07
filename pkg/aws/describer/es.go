@@ -46,7 +46,8 @@ func ESDomain(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 		}
 
 		values = append(values, Resource{
-			ARN: *v.ARN,
+			ARN:  *v.ARN,
+			Name: *v.DomainName,
 			Description: ESDomainDescription{
 				Domain: v,
 				Tags:   out.TagList,

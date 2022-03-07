@@ -48,7 +48,8 @@ func EC2VolumeSnapshot(ctx context.Context, cfg aws.Config) ([]Resource, error) 
 			}
 
 			values = append(values, Resource{
-				ID: *snapshot.SnapshotId,
+				ID:   *snapshot.SnapshotId,
+				Name: *snapshot.SnapshotId,
 				Description: EC2VolumeSnapshotDescription{
 					Snapshot:                &snapshot,
 					CreateVolumePermissions: attrs.CreateVolumePermissions,
@@ -107,6 +108,7 @@ func EC2Volume(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 
 			values = append(values, Resource{
 				ID:          *volume.VolumeId,
+				Name:        *volume.VolumeId,
 				Description: description,
 			})
 		}
@@ -129,6 +131,7 @@ func EC2CapacityReservation(ctx context.Context, cfg aws.Config) ([]Resource, er
 		for _, v := range page.CapacityReservations {
 			values = append(values, Resource{
 				ARN:         *v.CapacityReservationArn,
+				Name:        *v.CapacityReservationArn,
 				Description: v,
 			})
 		}
@@ -151,6 +154,7 @@ func EC2CarrierGateway(ctx context.Context, cfg aws.Config) ([]Resource, error) 
 		for _, v := range page.CarrierGateways {
 			values = append(values, Resource{
 				ID:          *v.CarrierGatewayId,
+				Name:        *v.CarrierGatewayId,
 				Description: v,
 			})
 		}
@@ -183,6 +187,7 @@ func EC2ClientVpnAuthorizationRule(ctx context.Context, cfg aws.Config) ([]Resou
 			for _, v := range page.AuthorizationRules {
 				values = append(values, Resource{
 					ID:          CompositeID(*v.ClientVpnEndpointId, *v.DestinationCidr, *v.GroupId),
+					Name:        *v.ClientVpnEndpointId,
 					Description: v,
 				})
 			}
@@ -206,6 +211,7 @@ func EC2ClientVpnEndpoint(ctx context.Context, cfg aws.Config) ([]Resource, erro
 		for _, v := range page.ClientVpnEndpoints {
 			values = append(values, Resource{
 				ID:          *v.ClientVpnEndpointId,
+				Name:        *v.ClientVpnEndpointId,
 				Description: v,
 			})
 		}
@@ -238,6 +244,7 @@ func EC2ClientVpnRoute(ctx context.Context, cfg aws.Config) ([]Resource, error) 
 			for _, v := range page.Routes {
 				values = append(values, Resource{
 					ID:          CompositeID(*v.ClientVpnEndpointId, *v.DestinationCidr, *v.TargetSubnet),
+					Name:        *v.ClientVpnEndpointId,
 					Description: v,
 				})
 			}
@@ -271,6 +278,7 @@ func EC2ClientVpnTargetNetworkAssociation(ctx context.Context, cfg aws.Config) (
 			for _, v := range page.ClientVpnTargetNetworks {
 				values = append(values, Resource{
 					ID:          *v.AssociationId,
+					Name:        *v.AssociationId,
 					Description: v,
 				})
 			}
@@ -291,6 +299,7 @@ func EC2CustomerGateway(ctx context.Context, cfg aws.Config) ([]Resource, error)
 	for _, v := range output.CustomerGateways {
 		values = append(values, Resource{
 			ID:          *v.CustomerGatewayId,
+			Name:        *v.DeviceName,
 			Description: v,
 		})
 	}
@@ -312,6 +321,7 @@ func EC2DHCPOptions(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 		for _, v := range page.DhcpOptions {
 			values = append(values, Resource{
 				ID:          *v.DhcpOptionsId,
+				Name:        *v.DhcpOptionsId,
 				Description: v,
 			})
 		}
@@ -334,6 +344,7 @@ func EC2Fleet(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 		for _, v := range page.Fleets {
 			values = append(values, Resource{
 				ID:          *v.FleetId,
+				Name:        *v.FleetId,
 				Description: v,
 			})
 		}
@@ -356,6 +367,7 @@ func EC2EgressOnlyInternetGateway(ctx context.Context, cfg aws.Config) ([]Resour
 		for _, v := range page.EgressOnlyInternetGateways {
 			values = append(values, Resource{
 				ID:          *v.EgressOnlyInternetGatewayId,
+				Name:        *v.EgressOnlyInternetGatewayId,
 				Description: v,
 			})
 		}
@@ -378,7 +390,8 @@ func EC2EIP(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	var values []Resource
 	for _, v := range output.Addresses {
 		values = append(values, Resource{
-			ID: *v.AllocationId,
+			ID:   *v.AllocationId,
+			Name: *v.AllocationId,
 			Description: EC2EIPDescription{
 				Address: v,
 			},
@@ -410,6 +423,7 @@ func EC2EnclaveCertificateIamRoleAssociation(ctx context.Context, cfg aws.Config
 		for _, v := range output.AssociatedRoles {
 			values = append(values, Resource{
 				ID:          *v.AssociatedRoleArn, // Don't set to ARN since that will be the same for the role itself and this association
+				Name:        *v.AssociatedRoleArn,
 				Description: v,
 			})
 		}
@@ -435,7 +449,8 @@ func EC2FlowLog(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 
 		for _, v := range page.FlowLogs {
 			values = append(values, Resource{
-				ID: *v.FlowLogId,
+				ID:   *v.FlowLogId,
+				Name: *v.LogGroupName,
 				Description: EC2FlowLogDescription{
 					FlowLog: v,
 				},
@@ -460,6 +475,7 @@ func EC2Host(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 		for _, v := range page.Hosts {
 			values = append(values, Resource{
 				ID:          *v.HostId,
+				Name:        *v.HostId,
 				Description: v,
 			})
 		}
@@ -532,6 +548,7 @@ func EC2Instance(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 
 				values = append(values, Resource{
 					ID:          *v.InstanceId,
+					Name:        *v.InstanceId,
 					Description: desc,
 				})
 			}
@@ -558,7 +575,8 @@ func EC2InternetGateway(ctx context.Context, cfg aws.Config) ([]Resource, error)
 
 		for _, v := range page.InternetGateways {
 			values = append(values, Resource{
-				ID: *v.InternetGatewayId,
+				ID:   *v.InternetGatewayId,
+				Name: *v.InternetGatewayId,
 				Description: EC2InternetGatewayDescription{
 					InternetGateway: v,
 				},
@@ -583,6 +601,7 @@ func EC2LaunchTemplate(ctx context.Context, cfg aws.Config) ([]Resource, error) 
 		for _, v := range page.LaunchTemplates {
 			values = append(values, Resource{
 				ID:          *v.LaunchTemplateId,
+				Name:        *v.LaunchTemplateName,
 				Description: v,
 			})
 		}
@@ -608,7 +627,8 @@ func EC2NatGateway(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 
 		for _, v := range page.NatGateways {
 			values = append(values, Resource{
-				ID: *v.NatGatewayId,
+				ID:   *v.NatGatewayId,
+				Name: *v.NatGatewayId,
 				Description: EC2NatGatewayDescription{
 					NatGateway: v,
 				},
@@ -636,7 +656,8 @@ func EC2NetworkAcl(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 
 		for _, v := range page.NetworkAcls {
 			values = append(values, Resource{
-				ID: *v.NetworkAclId,
+				ID:   *v.NetworkAclId,
+				Name: *v.NetworkAclId,
 				Description: EC2NetworkAclDescription{
 					NetworkAcl: v,
 				},
@@ -661,6 +682,7 @@ func EC2NetworkInsightsAnalysis(ctx context.Context, cfg aws.Config) ([]Resource
 		for _, v := range page.NetworkInsightsAnalyses {
 			values = append(values, Resource{
 				ARN:         *v.NetworkInsightsAnalysisArn,
+				Name:        *v.NetworkInsightsAnalysisArn,
 				Description: v,
 			})
 		}
@@ -683,6 +705,7 @@ func EC2NetworkInsightsPath(ctx context.Context, cfg aws.Config) ([]Resource, er
 		for _, v := range page.NetworkInsightsPaths {
 			values = append(values, Resource{
 				ARN:         *v.NetworkInsightsPathArn,
+				Name:        *v.NetworkInsightsPathArn,
 				Description: v,
 			})
 		}
@@ -708,7 +731,8 @@ func EC2NetworkInterface(ctx context.Context, cfg aws.Config) ([]Resource, error
 
 		for _, v := range page.NetworkInterfaces {
 			values = append(values, Resource{
-				ID: *v.NetworkInterfaceId,
+				ID:   *v.NetworkInterfaceId,
+				Name: *v.PrivateDnsName,
 				Description: EC2NetworkInterfaceDescription{
 					NetworkInterface: v,
 				},
@@ -733,6 +757,7 @@ func EC2NetworkInterfacePermission(ctx context.Context, cfg aws.Config) ([]Resou
 		for _, v := range page.NetworkInterfacePermissions {
 			values = append(values, Resource{
 				ID:          *v.NetworkInterfacePermissionId,
+				Name:        *v.NetworkInterfacePermissionId,
 				Description: v,
 			})
 		}
@@ -752,6 +777,7 @@ func EC2PlacementGroup(ctx context.Context, cfg aws.Config) ([]Resource, error) 
 	for _, v := range output.PlacementGroups {
 		values = append(values, Resource{
 			ID:          *v.GroupId,
+			Name:        *v.GroupName,
 			Description: v,
 		})
 	}
@@ -773,6 +799,7 @@ func EC2PrefixList(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 		for _, v := range page.PrefixLists {
 			values = append(values, Resource{
 				ID:          *v.PrefixListId,
+				Name:        *v.PrefixListName,
 				Description: v,
 			})
 		}
@@ -826,7 +853,8 @@ func EC2RouteTable(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 
 		for _, v := range page.RouteTables {
 			values = append(values, Resource{
-				ID: *v.RouteTableId,
+				ID:   *v.RouteTableId,
+				Name: *v.RouteTableId,
 				Description: EC2RouteTableDescription{
 					RouteTable: v,
 				},
@@ -851,6 +879,7 @@ func EC2LocalGatewayRouteTable(ctx context.Context, cfg aws.Config) ([]Resource,
 		for _, v := range page.LocalGatewayRouteTables {
 			values = append(values, Resource{
 				ARN:         *v.LocalGatewayRouteTableArn,
+				Name:        *v.LocalGatewayRouteTableArn,
 				Description: v,
 			})
 		}
@@ -873,6 +902,7 @@ func EC2LocalGatewayRouteTableVPCAssociation(ctx context.Context, cfg aws.Config
 		for _, v := range page.LocalGatewayRouteTableVpcAssociations {
 			values = append(values, Resource{
 				ID:          *v.LocalGatewayRouteTableVpcAssociationId,
+				Name:        *v.LocalGatewayRouteTableVpcAssociationId,
 				Description: v,
 			})
 		}
@@ -895,6 +925,7 @@ func EC2TransitGatewayRouteTable(ctx context.Context, cfg aws.Config) ([]Resourc
 		for _, v := range page.TransitGatewayRouteTables {
 			values = append(values, Resource{
 				ID:          *v.TransitGatewayRouteTableId,
+				Name:        *v.TransitGatewayRouteTableId,
 				Description: v,
 			})
 		}
@@ -926,6 +957,7 @@ func EC2TransitGatewayRouteTableAssociation(ctx context.Context, cfg aws.Config)
 			for _, v := range page.Associations {
 				values = append(values, Resource{
 					ID:          *v.TransitGatewayAttachmentId,
+					Name:        *v.TransitGatewayAttachmentId,
 					Description: v,
 				})
 			}
@@ -959,6 +991,7 @@ func EC2TransitGatewayRouteTablePropagation(ctx context.Context, cfg aws.Config)
 			for _, v := range page.TransitGatewayRouteTablePropagations {
 				values = append(values, Resource{
 					ID:          CompositeID(*routeTable.TransitGatewayRouteTableId, *v.TransitGatewayAttachmentId),
+					Name:        *routeTable.TransitGatewayRouteTableId,
 					Description: v,
 				})
 			}
@@ -985,7 +1018,8 @@ func EC2SecurityGroup(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 
 		for _, v := range page.SecurityGroups {
 			values = append(values, Resource{
-				ID: *v.GroupId,
+				ID:   *v.GroupId,
+				Name: *v.GroupName,
 				Description: EC2SecurityGroupDescription{
 					SecurityGroup: v,
 				},
@@ -1010,6 +1044,7 @@ func EC2SpotFleet(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 		for _, v := range page.SpotFleetRequestConfigs {
 			values = append(values, Resource{
 				ID:          *v.SpotFleetRequestId,
+				Name:        *v.SpotFleetRequestId,
 				Description: v,
 			})
 		}
@@ -1035,7 +1070,8 @@ func EC2Subnet(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 
 		for _, v := range page.Subnets {
 			values = append(values, Resource{
-				ARN: *v.SubnetArn,
+				ARN:  *v.SubnetArn,
+				Name: *v.SubnetArn,
 				Description: EC2SubnetDescription{
 					Subnet: v,
 				},
@@ -1060,6 +1096,7 @@ func EC2TrafficMirrorFilter(ctx context.Context, cfg aws.Config) ([]Resource, er
 		for _, v := range page.TrafficMirrorFilters {
 			values = append(values, Resource{
 				ID:          *v.TrafficMirrorFilterId,
+				Name:        *v.TrafficMirrorFilterId,
 				Description: v,
 			})
 		}
@@ -1082,6 +1119,7 @@ func EC2TrafficMirrorSession(ctx context.Context, cfg aws.Config) ([]Resource, e
 		for _, v := range page.TrafficMirrorSessions {
 			values = append(values, Resource{
 				ID:          *v.TrafficMirrorSessionId,
+				Name:        *v.TrafficMirrorFilterId,
 				Description: v,
 			})
 		}
@@ -1104,6 +1142,7 @@ func EC2TrafficMirrorTarget(ctx context.Context, cfg aws.Config) ([]Resource, er
 		for _, v := range page.TrafficMirrorTargets {
 			values = append(values, Resource{
 				ID:          *v.TrafficMirrorTargetId,
+				Name:        *v.TrafficMirrorTargetId,
 				Description: v,
 			})
 		}
@@ -1126,6 +1165,7 @@ func EC2TransitGateway(ctx context.Context, cfg aws.Config) ([]Resource, error) 
 		for _, v := range page.TransitGateways {
 			values = append(values, Resource{
 				ARN:         *v.TransitGatewayArn,
+				Name:        *v.TransitGatewayArn,
 				Description: v,
 			})
 		}
@@ -1148,6 +1188,7 @@ func EC2TransitGatewayAttachment(ctx context.Context, cfg aws.Config) ([]Resourc
 		for _, v := range page.TransitGatewayAttachments {
 			values = append(values, Resource{
 				ID:          *v.TransitGatewayAttachmentId,
+				Name:        *v.TransitGatewayAttachmentId,
 				Description: v,
 			})
 		}
@@ -1170,6 +1211,7 @@ func EC2TransitGatewayConnect(ctx context.Context, cfg aws.Config) ([]Resource, 
 		for _, v := range page.TransitGatewayConnects {
 			values = append(values, Resource{
 				ID:          *v.TransitGatewayAttachmentId,
+				Name:        *v.TransitGatewayAttachmentId,
 				Description: v,
 			})
 		}
@@ -1192,6 +1234,7 @@ func EC2TransitGatewayMulticastDomain(ctx context.Context, cfg aws.Config) ([]Re
 		for _, v := range page.TransitGatewayMulticastDomains {
 			values = append(values, Resource{
 				ARN:         *v.TransitGatewayMulticastDomainArn,
+				Name:        *v.TransitGatewayMulticastDomainArn,
 				Description: v,
 			})
 		}
@@ -1222,6 +1265,7 @@ func EC2TransitGatewayMulticastDomainAssociation(ctx context.Context, cfg aws.Co
 			for _, v := range page.MulticastDomainAssociations {
 				values = append(values, Resource{
 					ID:          *v.TransitGatewayAttachmentId,
+					Name:        *v.TransitGatewayAttachmentId,
 					Description: v,
 				})
 			}
@@ -1260,6 +1304,7 @@ func EC2TransitGatewayMulticastGroupMember(ctx context.Context, cfg aws.Config) 
 			for _, v := range page.MulticastGroups {
 				values = append(values, Resource{
 					ID:          CompositeID(*tgmdID, *v.GroupIpAddress),
+					Name:        *v.GroupIpAddress,
 					Description: v,
 				})
 			}
@@ -1298,6 +1343,7 @@ func EC2TransitGatewayMulticastGroupSource(ctx context.Context, cfg aws.Config) 
 			for _, v := range page.MulticastGroups {
 				values = append(values, Resource{
 					ID:          CompositeID(*tgmdID, *v.GroupIpAddress),
+					Name:        *v.GroupIpAddress,
 					Description: v,
 				})
 			}
@@ -1321,6 +1367,7 @@ func EC2TransitGatewayPeeringAttachment(ctx context.Context, cfg aws.Config) ([]
 		for _, v := range page.TransitGatewayPeeringAttachments {
 			values = append(values, Resource{
 				ID:          *v.TransitGatewayAttachmentId,
+				Name:        *v.TransitGatewayAttachmentId,
 				Description: v,
 			})
 		}
@@ -1346,7 +1393,8 @@ func EC2VPC(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 
 		for _, v := range page.Vpcs {
 			values = append(values, Resource{
-				ID: *v.VpcId,
+				ID:   *v.VpcId,
+				Name: *v.VpcId,
 				Description: EC2VPCDescription{
 					Vpc: v,
 				},
@@ -1374,7 +1422,8 @@ func EC2VPCEndpoint(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 
 		for _, v := range page.VpcEndpoints {
 			values = append(values, Resource{
-				ID: *v.VpcEndpointId,
+				ID:   *v.VpcEndpointId,
+				Name: *v.ServiceName,
 				Description: EC2VPCEndpointDescription{
 					VpcEndpoint: v,
 				},
@@ -1399,6 +1448,7 @@ func EC2VPCEndpointConnectionNotification(ctx context.Context, cfg aws.Config) (
 		for _, v := range page.ConnectionNotificationSet {
 			values = append(values, Resource{
 				ARN:         *v.ConnectionNotificationArn,
+				Name:        *v.ConnectionNotificationArn,
 				Description: v,
 			})
 		}
@@ -1422,6 +1472,7 @@ func EC2VPCEndpointService(ctx context.Context, cfg aws.Config) ([]Resource, err
 		for _, v := range output.ServiceDetails {
 			values = append(values, Resource{
 				ID:          *v.ServiceId,
+				Name:        *v.ServiceName,
 				Description: v,
 			})
 		}
@@ -1464,6 +1515,7 @@ func EC2VPCEndpointServicePermissions(ctx context.Context, cfg aws.Config) ([]Re
 			for _, v := range page.AllowedPrincipals {
 				values = append(values, Resource{
 					ARN:         *v.Principal,
+					Name:        *v.Principal,
 					Description: v,
 				})
 			}
@@ -1487,6 +1539,7 @@ func EC2VPCPeeringConnection(ctx context.Context, cfg aws.Config) ([]Resource, e
 		for _, v := range page.VpcPeeringConnections {
 			values = append(values, Resource{
 				ID:          *v.VpcPeeringConnectionId,
+				Name:        *v.VpcPeeringConnectionId,
 				Description: v,
 			})
 		}
@@ -1509,7 +1562,8 @@ func EC2VPNConnection(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	var values []Resource
 	for _, v := range output.VpnConnections {
 		values = append(values, Resource{
-			ID: *v.VpnConnectionId,
+			ID:   *v.VpnConnectionId,
+			Name: *v.VpnConnectionId,
 			Description: EC2VPNConnectionDescription{
 				VpnConnection: v,
 			},
@@ -1530,6 +1584,7 @@ func EC2VPNGateway(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	for _, v := range output.VpnGateways {
 		values = append(values, Resource{
 			ID:          *v.VpnGatewayId,
+			Name:        *v.VpnGatewayId,
 			Description: v,
 		})
 	}
@@ -1553,7 +1608,8 @@ func EC2Region(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	var values []Resource
 	for _, v := range output.Regions {
 		values = append(values, Resource{
-			ID: *v.RegionName,
+			ID:   *v.RegionName,
+			Name: *v.RegionName,
 			Description: EC2RegionDescription{
 				Region: v,
 			},

@@ -35,7 +35,8 @@ func DMSReplicationInstance(ctx context.Context, cfg aws.Config) ([]Resource, er
 			}
 
 			values = append(values, Resource{
-				ARN: *item.ReplicationInstanceArn,
+				ARN:  *item.ReplicationInstanceArn,
+				Name: *item.DnsNameServers,
 				Description: DMSReplicationInstanceDescription{
 					ReplicationInstance: item,
 					Tags:                tags.TagList,

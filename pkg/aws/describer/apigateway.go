@@ -36,7 +36,8 @@ func ApiGatewayStage(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 
 			for _, stageItem := range out.Item {
 				values = append(values, Resource{
-					ID: CompositeID(*restItem.Id, *stageItem.StageName),
+					ID:   CompositeID(*restItem.Id, *stageItem.StageName),
+					Name: *restItem.Name,
 					Description: ApiGatewayStageDescription{
 						RestApiId: restItem.Id,
 						Stage:     stageItem,
@@ -93,7 +94,8 @@ func ApiGatewayV2Stage(ctx context.Context, cfg aws.Config) ([]Resource, error) 
 
 		for _, stage := range stages {
 			values = append(values, Resource{
-				ID: CompositeID(*api.ApiId, *stage.StageName),
+				ID:   CompositeID(*api.ApiId, *stage.StageName),
+				Name: *api.Name,
 				Description: ApiGatewayV2StageDescription{
 					ApiId: api.ApiId,
 					Stage: stage,

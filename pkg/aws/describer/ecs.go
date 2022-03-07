@@ -27,6 +27,7 @@ func ECSCapacityProvider(ctx context.Context, cfg aws.Config) ([]Resource, error
 		for _, v := range output.CapacityProviders {
 			values = append(values, Resource{
 				ARN:         *v.CapacityProviderArn,
+				Name:        *v.Name,
 				Description: v,
 			})
 		}
@@ -72,7 +73,8 @@ func ECSCluster(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 
 		for _, v := range output.Clusters {
 			values = append(values, Resource{
-				ARN: *v.ClusterArn,
+				ARN:  *v.ClusterArn,
+				Name: *v.ClusterName,
 				Description: ECSClusterDescription{
 					Cluster: v,
 				},
@@ -122,7 +124,8 @@ func ECSService(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 
 			for _, v := range output.Services {
 				values = append(values, Resource{
-					ARN: *v.ServiceArn,
+					ARN:  *v.ServiceArn,
+					Name: *v.ServiceName,
 					Description: ECSServiceDescription{
 						Service: v,
 					},
@@ -162,7 +165,8 @@ func ECSTaskDefinition(ctx context.Context, cfg aws.Config) ([]Resource, error) 
 			}
 
 			values = append(values, Resource{
-				ARN: arn,
+				ARN:  arn,
+				Name: arn,
 				Description: ECSTaskDefinitionDescription{
 					TaskDefinition: output.TaskDefinition,
 					Tags:           output.Tags,

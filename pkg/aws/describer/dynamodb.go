@@ -48,7 +48,8 @@ func DynamoDbTable(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 			}
 
 			values = append(values, Resource{
-				ARN: *v.Table.TableArn,
+				ARN:  *v.Table.TableArn,
+				Name: *v.Table.TableName,
 				Description: DynamoDbTableDescription{
 					Table:            v.Table,
 					ContinuousBackup: continuousBackup.ContinuousBackupsDescription,

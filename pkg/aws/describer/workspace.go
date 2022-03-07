@@ -22,6 +22,7 @@ func WorkSpacesConnectionAlias(ctx context.Context, cfg aws.Config) ([]Resource,
 		for _, v := range output.ConnectionAliases {
 			values = append(values, Resource{
 				ID:          *v.AliasId,
+				Name:        *v.AliasId,
 				Description: v,
 			})
 		}
@@ -49,6 +50,7 @@ func WorkSpacesWorkspace(ctx context.Context, cfg aws.Config) ([]Resource, error
 		for _, v := range page.Workspaces {
 			values = append(values, Resource{
 				ID:          *v.WorkspaceId,
+				Name:        *v.WorkspaceId,
 				Description: v,
 			})
 		}

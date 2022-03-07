@@ -26,7 +26,8 @@ func BackupPlan(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 
 		for _, v := range page.BackupPlansList {
 			values = append(values, Resource{
-				ARN: *v.BackupPlanArn,
+				ARN:  *v.BackupPlanArn,
+				Name: *v.BackupPlanName,
 				Description: BackupPlanDescription{
 					BackupPlan: v,
 				},
@@ -74,7 +75,8 @@ func BackupRecoveryPoint(ctx context.Context, cfg aws.Config) ([]Resource, error
 					}
 
 					values = append(values, Resource{
-						ARN: *recoveryPoint.RecoveryPointArn,
+						ARN:  *recoveryPoint.RecoveryPointArn,
+						Name: *out.BackupVaultName,
 						Description: BackupRecoveryPointDescription{
 							RecoveryPoint: out,
 						},
@@ -104,7 +106,8 @@ func BackupProtectedResource(ctx context.Context, cfg aws.Config) ([]Resource, e
 
 		for _, resource := range page.Results {
 			values = append(values, Resource{
-				ARN: *resource.ResourceArn,
+				ARN:  *resource.ResourceArn,
+				Name: *resource.ResourceArn,
 				Description: BackupProtectedResourceDescription{
 					ProtectedResource: resource,
 				},
@@ -151,7 +154,8 @@ func BackupSelection(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 				}
 
 				values = append(values, Resource{
-					ID: CompositeID(*v.BackupPlanId, *v.SelectionId),
+					ID:   CompositeID(*v.BackupPlanId, *v.SelectionId),
+					Name: *v.SelectionName,
 					Description: BackupSelectionDescription{
 						BackupSelection: v,
 						ListOfTags:      out.BackupSelection.ListOfTags,
@@ -209,7 +213,8 @@ func BackupVault(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 			}
 
 			values = append(values, Resource{
-				ARN: *v.BackupVaultArn,
+				ARN:  *v.BackupVaultArn,
+				Name: *v.BackupVaultName,
 				Description: BackupVaultDescription{
 					BackupVault:       v,
 					Policy:            accessPolicy.Policy,

@@ -91,7 +91,8 @@ func CloudTrailTrail(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 			}
 
 			values = append(values, Resource{
-				ARN: *v.TrailARN,
+				ARN:  *v.TrailARN,
+				Name: *v.Name,
 				Description: CloudTrailTrailDescription{
 					Trail:                  v,
 					TrailStatus:            *statusOutput,

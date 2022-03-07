@@ -41,6 +41,7 @@ func HybridComputeMachine(ctx context.Context, authorizer autorest.Authorizer, s
 
 			values = append(values, Resource{
 				ID:       *machine.ID,
+				Name:     *machine.Name,
 				Location: *machine.Location,
 				Description: model.HybridComputeMachineDescription{
 					Machine:           machine,

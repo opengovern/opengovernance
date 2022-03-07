@@ -30,7 +30,8 @@ func AccessAnalyzerAnalyzer(ctx context.Context, cfg aws.Config) ([]Resource, er
 				return nil, err
 			}
 			values = append(values, Resource{
-				ARN: *v.Arn,
+				ARN:  *v.Arn,
+				Name: *v.Name,
 				Description: AccessAnalyzerAnalyzerDescription{
 					Analyzer: v,
 					Findings: findings,

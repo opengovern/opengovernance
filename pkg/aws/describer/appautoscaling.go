@@ -29,7 +29,8 @@ func ApplicationAutoScalingTarget(ctx context.Context, cfg aws.Config) ([]Resour
 
 			for _, item := range page.ScalableTargets {
 				values = append(values, Resource{
-					ID: *item.ResourceId,
+					ID:   *item.ResourceId,
+					Name: *item.ResourceId,
 					Description: ApplicationAutoScalingTargetDescription{
 						ScalableTarget: item,
 					},

@@ -50,6 +50,7 @@ func MysqlServer(ctx context.Context, authorizer autorest.Authorizer, subscripti
 
 		values = append(values, Resource{
 			ID:       *server.ID,
+			Name:     *server.Name,
 			Location: *server.Location,
 			Description: model.MysqlServerDescription{
 				Server:         server,

@@ -41,7 +41,8 @@ func CloudFrontDistribution(ctx context.Context, cfg aws.Config) ([]Resource, er
 			}
 
 			values = append(values, Resource{
-				ARN: *item.ARN,
+				ARN:  *item.ARN,
+				Name: *item.DomainName,
 				Description: CloudFrontDistributionDescription{
 					Distribution: distribution.Distribution,
 					ETag:         distribution.ETag,

@@ -191,7 +191,8 @@ func IAMAccessKey(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 
 		for _, v := range page.AccessKeyMetadata {
 			values = append(values, Resource{
-				ID: *v.AccessKeyId,
+				ID:   *v.AccessKeyId,
+				Name: *v.UserName,
 				Description: IAMAccessKeyDescription{
 					AccessKey: v,
 				},
@@ -253,7 +254,8 @@ func IAMCredentialReport(ctx context.Context, cfg aws.Config) ([]Resource, error
 	for _, report := range reports {
 		report.GeneratedTime = output.GeneratedTime
 		values = append(values, Resource{
-			ID: report.UserName, // Unique report entry per user
+			ID:   report.UserName, // Unique report entry per user
+			Name: report.UserName,
 			Description: IAMCredentialReportDescription{
 				CredentialReport: report,
 			},
@@ -292,7 +294,8 @@ func IAMPolicy(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 			}
 
 			values = append(values, Resource{
-				ARN: *v.Arn,
+				ARN:  *v.Arn,
+				Name: *v.PolicyName,
 				Description: IAMPolicyDescription{
 					Policy:        v,
 					PolicyVersion: *version.PolicyVersion,
@@ -339,7 +342,8 @@ func IAMGroup(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 			}
 
 			values = append(values, Resource{
-				ARN: *v.Arn,
+				ARN:  *v.Arn,
+				Name: *v.GroupName,
 				Description: IAMGroupDescription{
 					Group:              v,
 					Users:              users,
@@ -437,6 +441,7 @@ func IAMInstanceProfile(ctx context.Context, cfg aws.Config) ([]Resource, error)
 		for _, v := range page.InstanceProfiles {
 			values = append(values, Resource{
 				ARN:         *v.Arn,
+				Name:        *v.InstanceProfileName,
 				Description: v,
 			})
 		}
@@ -461,6 +466,7 @@ func IAMManagedPolicy(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 		for _, v := range page.Policies {
 			values = append(values, Resource{
 				ARN:         *v.Arn,
+				Name:        *v.PolicyName,
 				Description: v,
 			})
 		}
@@ -480,6 +486,7 @@ func IAMOIDCProvider(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	for _, v := range output.OpenIDConnectProviderList {
 		values = append(values, Resource{
 			ARN:         *v.Arn,
+			Name:        *v.Arn,
 			Description: v,
 		})
 	}
@@ -518,6 +525,7 @@ func IAMGroupPolicy(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 
 				values = append(values, Resource{
 					ID:          CompositeID(*v.GroupName, *v.PolicyName),
+					Name:        *v.GroupName,
 					Description: v,
 				})
 			}
@@ -563,6 +571,7 @@ func IAMUserPolicy(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 
 				values = append(values, Resource{
 					ID:          CompositeID(*v.UserName, *v.PolicyName),
+					Name:        *v.UserName,
 					Description: v,
 				})
 			}
@@ -609,6 +618,7 @@ func IAMRolePolicy(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 
 				values = append(values, Resource{
 					ID:          CompositeID(*v.RoleName, *v.PolicyName),
+					Name:        *v.RoleName,
 					Description: v,
 				})
 			}
@@ -658,7 +668,8 @@ func IAMRole(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 			}
 
 			values = append(values, Resource{
-				ARN: *v.Arn,
+				ARN:  *v.Arn,
+				Name: *v.RoleName,
 				Description: IAMRoleDescription{
 					Role:                v,
 					InstanceProfileArns: profiles,
@@ -756,6 +767,7 @@ func IAMSAMLProvider(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	for _, v := range output.SAMLProviderList {
 		values = append(values, Resource{
 			ARN:         *v.Arn,
+			Name:        *v.Arn,
 			Description: v,
 		})
 	}
@@ -787,7 +799,8 @@ func IAMServerCertificate(ctx context.Context, cfg aws.Config) ([]Resource, erro
 			}
 
 			values = append(values, Resource{
-				ARN: *v.Arn,
+				ARN:  *v.Arn,
+				Name: *v.ServerCertificateName,
 				Description: IAMServerCertificateDescription{
 					ServerCertificate: *output.ServerCertificate,
 				},
@@ -844,7 +857,8 @@ func IAMUser(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 			}
 
 			values = append(values, Resource{
-				ARN: *v.Arn,
+				ARN:  *v.Arn,
+				Name: *v.UserName,
 				Description: IAMUserDescription{
 					User:               v,
 					Groups:             groups,
@@ -969,7 +983,8 @@ func IAMVirtualMFADevice(ctx context.Context, cfg aws.Config) ([]Resource, error
 		}
 
 		values = append(values, Resource{
-			ID: *v.SerialNumber,
+			ID:   *v.SerialNumber,
+			Name: *v.SerialNumber,
 			Description: IAMVirtualMFADeviceDescription{
 				VirtualMFADevice: v,
 				Tags:             output.Tags,

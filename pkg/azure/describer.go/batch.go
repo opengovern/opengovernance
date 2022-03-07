@@ -35,6 +35,7 @@ func BatchAccount(ctx context.Context, authorizer autorest.Authorizer, subscript
 
 			values = append(values, Resource{
 				ID:       *account.ID,
+				Name:     *account.Name,
 				Location: *account.Location,
 				Description: model.BatchAccountDescription{
 					Account:                     account,

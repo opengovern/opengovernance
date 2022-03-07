@@ -26,6 +26,7 @@ func ComputeDisk(ctx context.Context, authorizer autorest.Authorizer, subscripti
 
 			values = append(values, Resource{
 				ID:       *v.ID,
+				Name:     *v.Name,
 				Location: *v.Location,
 				Description: model.ComputeDiskDescription{
 					Disk:          v,
@@ -63,6 +64,7 @@ func ComputeDiskAccess(ctx context.Context, authorizer autorest.Authorizer, subs
 
 			values = append(values, Resource{
 				ID:       *v.ID,
+				Name:     *v.Name,
 				Location: *v.Location,
 				Description: model.ComputeDiskAccessDescription{
 					DiskAccess:    v,
@@ -108,6 +110,7 @@ func ComputeVirtualMachineScaleSet(ctx context.Context, authorizer autorest.Auth
 
 			values = append(values, Resource{
 				ID:       *v.ID,
+				Name:     *v.Name,
 				Location: *v.Location,
 				Description: model.ComputeVirtualMachineScaleSetDescription{
 					VirtualMachineScaleSet:           v,
@@ -204,6 +207,7 @@ func ComputeVirtualMachine(ctx context.Context, authorizer autorest.Authorizer, 
 			}
 			values = append(values, Resource{
 				ID:       *virtualMachine.ID,
+				Name:     *virtualMachine.Name,
 				Location: *virtualMachine.Location,
 				Description: model.ComputeVirtualMachineDescription{
 					VirtualMachine:             virtualMachine,

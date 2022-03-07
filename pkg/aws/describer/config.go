@@ -30,7 +30,8 @@ func ConfigConfigurationRecorder(ctx context.Context, cfg aws.Config) ([]Resourc
 		}
 
 		values = append(values, Resource{
-			ARN: *item.RoleARN,
+			ARN:  *item.RoleARN,
+			Name: *item.Name,
 			Description: ConfigConfigurationRecorderDescription{
 				ConfigurationRecorder:        item,
 				ConfigurationRecordersStatus: status.ConfigurationRecordersStatus[0],

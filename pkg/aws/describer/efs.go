@@ -26,6 +26,7 @@ func EFSAccessPoint(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 		for _, v := range page.AccessPoints {
 			values = append(values, Resource{
 				ARN:         *v.AccessPointArn,
+				Name:        *v.Name,
 				Description: v,
 			})
 		}
@@ -63,7 +64,8 @@ func EFSFileSystem(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 			}
 
 			values = append(values, Resource{
-				ARN: *v.FileSystemArn,
+				ARN:  *v.FileSystemArn,
+				Name: *v.Name,
 				Description: EFSFileSystemDescription{
 					FileSystem: v,
 					Policy:     output.Policy,
@@ -98,6 +100,7 @@ func EFSMountTarget(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 			for _, v := range output.MountTargets {
 				values = append(values, Resource{
 					ID:          *v.MountTargetId,
+					Name:        *v.AvailabilityZoneName,
 					Description: v,
 				})
 			}
@@ -126,6 +129,7 @@ func EFSMountTarget(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 			for _, v := range output.MountTargets {
 				values = append(values, Resource{
 					ID:          *v.FileSystemId,
+					Name:        *v.AvailabilityZoneName,
 					Description: v,
 				})
 			}

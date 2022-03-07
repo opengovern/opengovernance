@@ -34,6 +34,7 @@ func AutoScalingAutoScalingGroup(ctx context.Context, cfg aws.Config) ([]Resourc
 
 			values = append(values, Resource{
 				ARN:         *v.AutoScalingGroupARN,
+				Name:        *v.AutoScalingGroupName,
 				Description: desc,
 			})
 
@@ -79,7 +80,8 @@ func AutoScalingLaunchConfiguration(ctx context.Context, cfg aws.Config) ([]Reso
 
 		for _, v := range page.LaunchConfigurations {
 			values = append(values, Resource{
-				ARN: *v.LaunchConfigurationARN,
+				ARN:  *v.LaunchConfigurationARN,
+				Name: *v.LaunchConfigurationName,
 				Description: AutoScalingLaunchConfigurationDescription{
 					LaunchConfiguration: v,
 				},
@@ -111,6 +113,7 @@ func AutoScalingLifecycleHook(ctx context.Context, cfg aws.Config) ([]Resource, 
 		for _, v := range output.LifecycleHooks {
 			values = append(values, Resource{
 				ID:          CompositeID(*v.AutoScalingGroupName, *v.LifecycleHookName),
+				Name:        *v.AutoScalingGroupName,
 				Description: v,
 			})
 		}
@@ -133,6 +136,7 @@ func AutoScalingScalingPolicy(ctx context.Context, cfg aws.Config) ([]Resource, 
 		for _, v := range page.ScalingPolicies {
 			values = append(values, Resource{
 				ARN:         *v.PolicyARN,
+				Name:        *v.PolicyName,
 				Description: v,
 			})
 		}
@@ -155,6 +159,7 @@ func AutoScalingScheduledAction(ctx context.Context, cfg aws.Config) ([]Resource
 		for _, v := range page.ScheduledUpdateGroupActions {
 			values = append(values, Resource{
 				ARN:         *v.ScheduledActionARN,
+				Name:        *v.ScheduledActionName,
 				Description: v,
 			})
 		}
@@ -187,6 +192,7 @@ func AutoScalingWarmPool(ctx context.Context, cfg aws.Config) ([]Resource, error
 			for _, v := range output.Instances {
 				values = append(values, Resource{
 					ID:          CompositeID(*group.AutoScalingGroupName, *v.InstanceId), // TODO
+					Name:        *v.LaunchConfigurationName,
 					Description: v,
 				})
 			}

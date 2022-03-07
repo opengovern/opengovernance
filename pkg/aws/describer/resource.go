@@ -12,6 +12,7 @@ type Resource struct {
 	ID          string
 	Description interface{}
 
+	Name      string
 	Account   string
 	Region    string
 	Partition string

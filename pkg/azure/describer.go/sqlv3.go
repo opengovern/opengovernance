@@ -145,6 +145,7 @@ func SqlServer(ctx context.Context, authorizer autorest.Authorizer, subscription
 
 			values = append(values, Resource{
 				ID:       *server.ID,
+				Name:     *server.Name,
 				Location: *server.Location,
 				Description: model.SqlServerDescription{
 					Server:                         server,

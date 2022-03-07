@@ -77,6 +77,7 @@ func S3Bucket(ctx context.Context, cfg aws.Config, regions []string) (map[string
 		if _, ok := regionalValues[region]; ok {
 			regionalValues[region] = append(regionalValues[region], Resource{
 				ID:          *bucket.Name,
+				Name:        *bucket.Name,
 				Description: desc,
 			})
 		}
@@ -421,7 +422,8 @@ func S3AccessPoint(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 			apps, err := client.GetAccessPointPolicyStatus(ctx, appsParams)
 
 			values = append(values, Resource{
-				ARN: *v.AccessPointArn,
+				ARN:  *v.AccessPointArn,
+				Name: *v.Name,
 				Description: S3AccessPointDescription{
 					AccessPoint:  ap,
 					Policy:       app.Policy,
@@ -455,6 +457,7 @@ func S3StorageLens(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 		for _, v := range page.StorageLensConfigurationList {
 			values = append(values, Resource{
 				ARN:         *v.StorageLensArn,
+				Name:        *v.StorageLensArn,
 				Description: v,
 			})
 		}

@@ -44,7 +44,8 @@ func GuardDutyFinding(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 
 				for _, item := range findings.Findings {
 					values = append(values, Resource{
-						ARN: *item.Arn,
+						ARN:  *item.Arn,
+						Name: *item.Arn,
 						Description: GuardDutyFindingDescription{
 							Finding: item,
 						},
@@ -82,7 +83,8 @@ func GuardDutyDetector(ctx context.Context, cfg aws.Config) ([]Resource, error) 
 			}
 
 			values = append(values, Resource{
-				ID: item,
+				ID:   item,
+				Name: item,
 				Description: GuardDutyDetectorDescription{
 					DetectorId: item,
 					Detector:   out,

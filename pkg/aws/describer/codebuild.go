@@ -36,7 +36,8 @@ func CodeBuildProject(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 
 		for _, project := range projects.Projects {
 			values = append(values, Resource{
-				ARN: *project.Arn,
+				ARN:  *project.Arn,
+				Name: *project.Name,
 				Description: CodeBuildProjectDescription{
 					Project: project,
 				},
@@ -61,7 +62,8 @@ func CodeBuildSourceCredential(ctx context.Context, cfg aws.Config) ([]Resource,
 	var values []Resource
 	for _, item := range out.SourceCredentialsInfos {
 		values = append(values, Resource{
-			ARN: *item.Arn,
+			ARN:  *item.Arn,
+			Name: *item.Arn,
 			Description: CodeBuildSourceCredentialDescription{
 				SourceCredentialsInfo: item,
 			},

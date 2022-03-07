@@ -37,7 +37,8 @@ func CloudWatchAlarm(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 			}
 
 			values = append(values, Resource{
-				ARN: *v.AlarmArn,
+				ARN:  *v.AlarmArn,
+				Name: *v.AlarmName,
 				Description: CloudWatchAlarmDescription{
 					MetricAlarm: v,
 					Tags:        tags.Tags,
@@ -60,6 +61,7 @@ func CloudWatchAnomalyDetector(ctx context.Context, cfg aws.Config) ([]Resource,
 	for _, v := range output.AnomalyDetectors {
 		values = append(values, Resource{
 			ID:          CompositeID(*v.SingleMetricAnomalyDetector.Namespace, *v.SingleMetricAnomalyDetector.MetricName),
+			Name:        *v.SingleMetricAnomalyDetector.MetricName,
 			Description: v,
 		})
 	}
@@ -83,6 +85,7 @@ func CloudWatchCompositeAlarm(ctx context.Context, cfg aws.Config) ([]Resource, 
 		for _, v := range page.MetricAlarms {
 			values = append(values, Resource{
 				ARN:         *v.AlarmArn,
+				Name:        *v.AlarmName,
 				Description: v,
 			})
 		}
@@ -102,6 +105,7 @@ func CloudWatchDashboard(ctx context.Context, cfg aws.Config) ([]Resource, error
 	for _, v := range output.DashboardEntries {
 		values = append(values, Resource{
 			ARN:         *v.DashboardArn,
+			Name:        *v.DashboardName,
 			Description: v,
 		})
 	}
@@ -123,6 +127,7 @@ func CloudWatchInsightRule(ctx context.Context, cfg aws.Config) ([]Resource, err
 		for _, v := range page.InsightRules {
 			values = append(values, Resource{
 				ID:          *v.Name,
+				Name:        *v.Name,
 				Description: v,
 			})
 		}
@@ -142,6 +147,7 @@ func CloudWatchMetricStream(ctx context.Context, cfg aws.Config) ([]Resource, er
 	for _, v := range output.Entries {
 		values = append(values, Resource{
 			ARN:         *v.Arn,
+			Name:        *v.Name,
 			Description: v,
 		})
 	}
@@ -163,6 +169,7 @@ func CloudWatchLogsDestination(ctx context.Context, cfg aws.Config) ([]Resource,
 		for _, v := range page.Destinations {
 			values = append(values, Resource{
 				ARN:         *v.Arn,
+				Name:        *v.DestinationName,
 				Description: v,
 			})
 		}
@@ -196,7 +203,8 @@ func CloudWatchLogsLogGroup(ctx context.Context, cfg aws.Config) ([]Resource, er
 			}
 
 			values = append(values, Resource{
-				ARN: *v.Arn,
+				ARN:  *v.Arn,
+				Name: *v.LogGroupName,
 				Description: CloudWatchLogsLogGroupDescription{
 					LogGroup: v,
 					Tags:     tags.Tags,
@@ -237,6 +245,7 @@ func CloudWatchLogsLogStream(ctx context.Context, cfg aws.Config) ([]Resource, e
 			for _, v := range page.LogStreams {
 				values = append(values, Resource{
 					ARN:         *v.Arn,
+					Name:        *v.LogStreamName,
 					Description: v,
 				})
 			}
@@ -263,7 +272,8 @@ func CloudWatchLogsMetricFilter(ctx context.Context, cfg aws.Config) ([]Resource
 
 		for _, v := range page.MetricFilters {
 			values = append(values, Resource{
-				ID: *v.FilterName,
+				ID:   *v.FilterName,
+				Name: *v.FilterName,
 				Description: CloudWatchLogsMetricFilterDescription{
 					MetricFilter: v,
 				},
@@ -287,6 +297,7 @@ func CloudWatchLogsQueryDefinition(ctx context.Context, cfg aws.Config) ([]Resou
 		for _, v := range output.QueryDefinitions {
 			values = append(values, Resource{
 				ID:          *v.QueryDefinitionId,
+				Name:        *v.Name,
 				Description: v,
 			})
 		}
@@ -313,6 +324,7 @@ func CloudWatchLogsResourcePolicy(ctx context.Context, cfg aws.Config) ([]Resour
 		for _, v := range output.ResourcePolicies {
 			values = append(values, Resource{
 				ID:          *v.PolicyName,
+				Name:        *v.PolicyName,
 				Description: v,
 			})
 		}
@@ -349,6 +361,7 @@ func CloudWatchLogsSubscriptionFilter(ctx context.Context, cfg aws.Config) ([]Re
 			for _, v := range page.SubscriptionFilters {
 				values = append(values, Resource{
 					ID:          CompositeID(*v.LogGroupName, *v.FilterName),
+					Name:        *v.LogGroupName,
 					Description: v,
 				})
 			}

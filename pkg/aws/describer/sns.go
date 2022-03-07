@@ -37,7 +37,8 @@ func SNSSubscription(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 			}
 
 			values = append(values, Resource{
-				ARN: *v.SubscriptionArn,
+				ARN:  *v.SubscriptionArn,
+				Name: *v.SubscriptionArn,
 				Description: SNSSubscriptionDescription{
 					Subscription: v,
 					Attributes:   output.Attributes,
@@ -81,7 +82,8 @@ func SNSTopic(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 			}
 
 			values = append(values, Resource{
-				ARN: *v.TopicArn,
+				ARN:  *v.TopicArn,
+				Name: *v.TopicArn,
 				Description: SNSTopicDescription{
 					Attributes: output.Attributes,
 					Tags:       tOutput.Tags,

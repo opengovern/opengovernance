@@ -64,7 +64,8 @@ func CertificateManagerCertificate(ctx context.Context, cfg aws.Config) ([]Resou
 			}
 
 			values = append(values, Resource{
-				ARN: *v.CertificateArn,
+				ARN:  *v.CertificateArn,
+				Name: *v.DomainName,
 				Description: CertificateManagerCertificateDescription{
 					Certificate: *describeOutput.Certificate,
 					Attributes: struct {

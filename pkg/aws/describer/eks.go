@@ -28,7 +28,8 @@ func EKSCluster(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 		}
 
 		values = append(values, Resource{
-			ARN: *output.Cluster.Arn,
+			ARN:  *output.Cluster.Arn,
+			Name: *output.Cluster.Name,
 			Description: EKSClusterDescription{
 				Cluster: output.Cluster,
 			},
@@ -74,7 +75,8 @@ func EKSAddon(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 			}
 
 			values = append(values, Resource{
-				ARN: *output.Addon.AddonArn,
+				ARN:  *output.Addon.AddonArn,
+				Name: *output.Addon.AddonName,
 				Description: EKSAddonDescription{
 					Addon: output.Addon,
 				},
@@ -118,6 +120,7 @@ func EKSFargateProfile(ctx context.Context, cfg aws.Config) ([]Resource, error) 
 
 			values = append(values, Resource{
 				ARN:         *output.FargateProfile.FargateProfileArn,
+				Name:        *output.FargateProfile.FargateProfileName,
 				Description: output.FargateProfile,
 			})
 		}
@@ -159,6 +162,7 @@ func EKSNodegroup(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 
 			values = append(values, Resource{
 				ARN:         *output.Nodegroup.NodegroupArn,
+				Name:        *output.Nodegroup.NodegroupName,
 				Description: output.Nodegroup,
 			})
 		}
@@ -219,7 +223,8 @@ func EKSIdentityProviderConfig(ctx context.Context, cfg aws.Config) ([]Resource,
 				}
 
 				values = append(values, Resource{
-					ARN: *output.IdentityProviderConfig.Oidc.IdentityProviderConfigArn,
+					ARN:  *output.IdentityProviderConfig.Oidc.IdentityProviderConfigArn,
+					Name: *config.Name,
 					Description: EKSIdentityProviderConfigDescription{
 						ConfigName:             *config.Name,
 						ConfigType:             *config.Type,

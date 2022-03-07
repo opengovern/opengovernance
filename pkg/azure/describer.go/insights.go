@@ -23,6 +23,7 @@ func DiagnosticSetting(ctx context.Context, authorizer autorest.Authorizer, subs
 
 		values = append(values, Resource{
 			ID:       *diagnosticSetting.ID,
+			Name:     *diagnosticSetting.Name,
 			Location: "global",
 			Description: model.DiagnosticSettingDescription{
 				DiagnosticSettingsResource: diagnosticSetting,
@@ -45,6 +46,7 @@ func LogAlert(ctx context.Context, authorizer autorest.Authorizer, subscription 
 
 		values = append(values, Resource{
 			ID:       *logAlert.ID,
+			Name:     *logAlert.Name,
 			Location: *logAlert.Location,
 			Description: model.LogAlertDescription{
 				ActivityLogAlertResource: logAlert,
@@ -68,6 +70,7 @@ func LogProfile(ctx context.Context, authorizer autorest.Authorizer, subscriptio
 
 		values = append(values, Resource{
 			ID:       *logProfile.ID,
+			Name:     *logProfile.Name,
 			Location: *logProfile.Location,
 			Description: model.LogProfileDescription{
 				LogProfileResource: logProfile,

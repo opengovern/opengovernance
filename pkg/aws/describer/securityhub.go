@@ -29,7 +29,8 @@ func SecurityHubHub(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	}
 
 	values = append(values, Resource{
-		ARN: *out.HubArn,
+		ARN:  *out.HubArn,
+		Name: *out.HubArn,
 		Description: SecurityHubHubDescription{
 			Hub:  out,
 			Tags: tags.Tags,

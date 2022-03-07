@@ -46,7 +46,8 @@ func SQSQueue(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 			output.Attributes["QueueUrl"] = url
 
 			values = append(values, Resource{
-				ARN: url,
+				ARN:  url,
+				Name: url,
 				Description: SQSQueueDescription{
 					Attributes: output.Attributes,
 					Tags:       tOutput.Tags,

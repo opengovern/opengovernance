@@ -29,6 +29,7 @@ func SESConfigurationSet(ctx context.Context, cfg aws.Config) ([]Resource, error
 
 			values = append(values, Resource{
 				ID:          *output.ConfigurationSet.Name,
+				Name:        *output.ConfigurationSet.Name,
 				Description: output,
 			})
 		}
@@ -51,6 +52,7 @@ func SESContactList(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 		for _, v := range page.ContactLists {
 			values = append(values, Resource{
 				ID:          *v.ContactListName,
+				Name:        *v.ContactListName,
 				Description: v,
 			})
 		}
@@ -71,6 +73,7 @@ func SESReceiptFilter(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	for _, v := range output.Filters {
 		values = append(values, Resource{
 			ID:          *v.Name,
+			Name:        *v.Name,
 			Description: v,
 		})
 	}
@@ -96,6 +99,7 @@ func SESReceiptRuleSet(ctx context.Context, cfg aws.Config) ([]Resource, error) 
 
 			values = append(values, Resource{
 				ID:          *output.Metadata.Name,
+				Name:        *output.Metadata.Name,
 				Description: output,
 			})
 		}
@@ -122,6 +126,7 @@ func SESTemplate(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 		for _, v := range output.TemplatesMetadata {
 			values = append(values, Resource{
 				ID:          *v.Name,
+				Name:        *v.Name,
 				Description: v,
 			})
 		}

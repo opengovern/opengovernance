@@ -48,7 +48,8 @@ func RedshiftCluster(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 			}
 
 			values = append(values, Resource{
-				ARN: *v.ClusterNamespaceArn,
+				ARN:  *v.ClusterNamespaceArn,
+				Name: *v.ClusterNamespaceArn,
 				Description: RedshiftClusterDescription{
 					Cluster:          v,
 					LoggingStatus:    logStatus,
@@ -86,7 +87,8 @@ func RedshiftClusterParameterGroup(ctx context.Context, cfg aws.Config) ([]Resou
 			}
 
 			values = append(values, Resource{
-				ID: *v.ParameterGroupName,
+				ID:   *v.ParameterGroupName,
+				Name: *v.ParameterGroupName,
 				Description: RedshiftClusterParameterGroupDescription{
 					ClusterParameterGroup: v,
 					Parameters:            param.Parameters,
@@ -117,6 +119,7 @@ func RedshiftClusterSecurityGroup(ctx context.Context, cfg aws.Config) ([]Resour
 		for _, v := range page.ClusterSecurityGroups {
 			values = append(values, Resource{
 				ID:          *v.ClusterSecurityGroupName,
+				Name:        *v.ClusterSecurityGroupName,
 				Description: v,
 			})
 		}
@@ -139,6 +142,7 @@ func RedshiftClusterSubnetGroup(ctx context.Context, cfg aws.Config) ([]Resource
 		for _, v := range page.ClusterSubnetGroups {
 			values = append(values, Resource{
 				ID:          *v.ClusterSubnetGroupName,
+				Name:        *v.ClusterSubnetGroupName,
 				Description: v,
 			})
 		}

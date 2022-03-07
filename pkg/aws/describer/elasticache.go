@@ -25,7 +25,8 @@ func ElastiCacheReplicationGroup(ctx context.Context, cfg aws.Config) ([]Resourc
 
 		for _, item := range page.ReplicationGroups {
 			values = append(values, Resource{
-				ARN: *item.ARN,
+				ARN:  *item.ARN,
+				Name: *item.ARN,
 				Description: ElastiCacheReplicationGroupDescription{
 					ReplicationGroup: item,
 				},

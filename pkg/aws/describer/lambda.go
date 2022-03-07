@@ -45,7 +45,8 @@ func LambdaFunction(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 			}
 
 			values = append(values, Resource{
-				ARN: *v.FunctionArn,
+				ARN:  *v.FunctionArn,
+				Name: *v.FunctionName,
 				Description: LambdaFunctionDescription{
 					Function: function,
 					Policy:   policy,
@@ -82,6 +83,7 @@ func LambdaAlias(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 			for _, v := range page.Aliases {
 				values = append(values, Resource{
 					ARN:         *v.AliasArn,
+					Name:        *v.Name,
 					Description: v,
 				})
 			}
@@ -116,6 +118,7 @@ func LambdaPermission(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 
 		values = append(values, Resource{
 			ID:          CompositeID(*fn.FunctionArn, *v.Policy),
+			Name:        *v.Policy,
 			Description: v,
 		})
 	}
@@ -147,6 +150,7 @@ func LambdaEventInvokeConfig(ctx context.Context, cfg aws.Config) ([]Resource, e
 			for _, v := range page.FunctionEventInvokeConfigs {
 				values = append(values, Resource{
 					ID:          *fn.FunctionName, // Invoke Config is unique per function
+					Name:        *fn.FunctionName,
 					Description: v,
 				})
 			}
@@ -170,6 +174,7 @@ func LambdaCodeSigningConfig(ctx context.Context, cfg aws.Config) ([]Resource, e
 		for _, v := range page.CodeSigningConfigs {
 			values = append(values, Resource{
 				ARN:         *v.CodeSigningConfigArn,
+				Name:        *v.CodeSigningConfigArn,
 				Description: v,
 			})
 		}
@@ -192,6 +197,7 @@ func LambdaEventSourceMapping(ctx context.Context, cfg aws.Config) ([]Resource, 
 		for _, v := range page.EventSourceMappings {
 			values = append(values, Resource{
 				ARN:         *v.EventSourceArn,
+				Name:        *v.EventSourceArn,
 				Description: v,
 			})
 		}
@@ -223,6 +229,7 @@ func LambdaLayerVersion(ctx context.Context, cfg aws.Config) ([]Resource, error)
 			for _, v := range page.LayerVersions {
 				values = append(values, Resource{
 					ARN:         *v.LayerVersionArn,
+					Name:        *v.LayerVersionArn,
 					Description: v,
 				})
 			}
@@ -254,6 +261,7 @@ func LambdaLayerVersionPermission(ctx context.Context, cfg aws.Config) ([]Resour
 
 		values = append(values, Resource{
 			ID:          CompositeID(*arn, fmt.Sprintf("%d", version)),
+			Name:        *arn,
 			Description: v,
 		})
 	}

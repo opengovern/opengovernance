@@ -225,6 +225,10 @@ func GetResources(
 	}
 
 	for i, resource := range resources {
+		resources[i].Type = resourceType
+		if parts := strings.Split(resources[i].ID, "/"); len(parts) > 4 {
+			resources[i].ResourceGroup = strings.Split(resources[i].ID, "/")[4]
+		}
 		resources[i].Description = describer.JSONAllFieldsMarshaller{
 			Value: resource.Description,
 		}
@@ -270,6 +274,9 @@ func DescribeBySubscription(describe func(context.Context, autorest.Authorizer, 
 				return nil, err
 			}
 
+			for _, resource := range result {
+				resource.SubscriptionID = subscription
+			}
 			values = append(values, result...)
 		}
 

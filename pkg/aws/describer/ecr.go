@@ -31,6 +31,7 @@ func ECRPublicRepository(ctx context.Context, cfg aws.Config) ([]Resource, error
 		for _, v := range page.Repositories {
 			values = append(values, Resource{
 				ARN:         *v.RepositoryArn,
+				Name:        *v.RepositoryName,
 				Description: v,
 			})
 		}
@@ -53,6 +54,7 @@ func ECRRepository(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 		for _, v := range page.Repositories {
 			values = append(values, Resource{
 				ARN:         *v.RepositoryArn,
+				Name:        *v.RepositoryName,
 				Description: v,
 			})
 		}
@@ -75,6 +77,7 @@ func ECRRegistryPolicy(ctx context.Context, cfg aws.Config) ([]Resource, error) 
 
 	return []Resource{{
 		ID:          *output.RegistryId,
+		Name:        *output.RegistryId,
 		Description: output,
 	}}, nil
 }
@@ -88,6 +91,7 @@ func ECRRegistry(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 
 	return []Resource{{
 		ID:          *output.RegistryId,
+		Name:        *output.RegistryId,
 		Description: output,
 	}}, nil
 }

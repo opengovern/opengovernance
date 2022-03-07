@@ -23,6 +23,7 @@ func StorageSync(ctx context.Context, authorizer autorest.Authorizer, subscripti
 
 		values = append(values, Resource{
 			ID:       *storage.ID,
+			Name:     *storage.Name,
 			Location: *storage.Location,
 			Description: model.StorageSyncDescription{
 				Service:       storage,

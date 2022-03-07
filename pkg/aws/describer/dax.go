@@ -38,7 +38,8 @@ func DAXCluster(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 		}
 
 		values = append(values, Resource{
-			ARN: *cluster.ClusterArn,
+			ARN:  *cluster.ClusterArn,
+			Name: *cluster.ClusterName,
 			Description: DAXClusterDescription{
 				Cluster: cluster,
 				Tags:    tags.Tags,

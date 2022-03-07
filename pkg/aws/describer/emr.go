@@ -31,7 +31,8 @@ func EMRCluster(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 			}
 
 			values = append(values, Resource{
-				ARN: *out.Cluster.ClusterArn,
+				ARN:  *out.Cluster.ClusterArn,
+				Name: *out.Cluster.Name,
 				Description: EMRClusterDescription{
 					Cluster: out.Cluster,
 				},
