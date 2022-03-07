@@ -121,7 +121,7 @@ func (j Job) Do(vlt vault.SourceConfig, producer sarama.SyncProducer, topic stri
 	if err != nil {
 		fail(fmt.Errorf("resource source config: %w", err))
 	} else {
-		resources, err := doDescribe(ctx, j, config)
+		resources, lookups, err := doDescribe(ctx, j, config)
 		if err != nil {
 			// Don't return here. In certain cases, such as AWS, resources might be
 			// available for some regions while there was failures in other regions.
@@ -129,7 +129,7 @@ func (j Job) Do(vlt vault.SourceConfig, producer sarama.SyncProducer, topic stri
 			fail(fmt.Errorf("describe resources: %w", err))
 		}
 
-		if err := doSendToKafka(producer, topic, resources); err != nil {
+		if err := doSendToKafka(producer, topic, resources, lookups); err != nil {
 			fail(fmt.Errorf("send to kafka: %w", err))
 		}
 	}
@@ -148,7 +148,7 @@ func (j Job) Do(vlt vault.SourceConfig, producer sarama.SyncProducer, topic stri
 }
 
 // doDescribe describes the sources, e.g. AWS, Azure and returns the responses.
-func doDescribe(ctx context.Context, job Job, config map[string]interface{}) ([]KafkaResource, error) {
+func doDescribe(ctx context.Context, job Job, config map[string]interface{}) ([]KafkaResource, []KafkaLookupResource, error) {
 	fmt.Printf("Proccessing Job: ID[%d] ParentJobID[%d] RosourceType[%s]\n", job.JobID, job.ParentJobID, job.ResourceType)
 
 	switch job.SourceType {
@@ -157,14 +157,14 @@ func doDescribe(ctx context.Context, job Job, config map[string]interface{}) ([]
 	case SourceCloudAzure:
 		return doDescribeAzure(ctx, job, config)
 	default:
-		return nil, fmt.Errorf("invalid SourceType: %s", job.SourceType)
+		return nil, nil, fmt.Errorf("invalid SourceType: %s", job.SourceType)
 	}
 }
 
-func doDescribeAWS(ctx context.Context, job Job, config map[string]interface{}) ([]KafkaResource, error) {
+func doDescribeAWS(ctx context.Context, job Job, config map[string]interface{}) ([]KafkaResource, []KafkaLookupResource, error) {
 	creds, err := AWSAccountConfigFromMap(config)
 	if err != nil {
-		return nil, fmt.Errorf("aws account credentials: %w", err)
+		return nil, nil, fmt.Errorf("aws account credentials: %w", err)
 	}
 
 	output, err := aws.GetResources(
@@ -179,7 +179,7 @@ func doDescribeAWS(ctx context.Context, job Job, config map[string]interface{}) 
 		false,
 	)
 	if err != nil {
-		return nil, fmt.Errorf("AWS: %w", err)
+		return nil, nil, fmt.Errorf("AWS: %w", err)
 	}
 
 	var errs []string
@@ -189,6 +189,7 @@ func doDescribeAWS(ctx context.Context, job Job, config map[string]interface{}) 
 		}
 	}
 
+	var lookup []KafkaLookupResource
 	var inventory []KafkaResource
 	for _, resources := range output.Resources {
 		for _, resource := range resources {
@@ -209,6 +210,18 @@ func doDescribeAWS(ctx context.Context, job Job, config map[string]interface{}) 
 					"account_id": resource.Account,
 				},
 			})
+
+			lookup = append(lookup, KafkaLookupResource{
+				ResourceID:    resource.UniqueID(),
+				Name:          resource.Name,
+				SourceType:    SourceCloudAWS,
+				ResourceType:  job.ResourceType,
+				ResourceGroup: "",
+				Location:      resource.Region,
+				KeibiSourceID: resource.Account,
+				ResourceJobID: job.JobID,
+				SourceJobID:   job.ParentJobID,
+			})
 		}
 	}
 
@@ -221,13 +234,13 @@ func doDescribeAWS(ctx context.Context, job Job, config map[string]interface{}) 
 		err = nil
 	}
 
-	return inventory, err
+	return inventory, lookup, err
 }
 
-func doDescribeAzure(ctx context.Context, job Job, config map[string]interface{}) ([]KafkaResource, error) {
+func doDescribeAzure(ctx context.Context, job Job, config map[string]interface{}) ([]KafkaResource, []KafkaLookupResource, error) {
 	creds, err := AzureSubscriptionConfigFromMap(config)
 	if err != nil {
-		return nil, fmt.Errorf("aure subscription credentials: %w", err)
+		return nil, nil, fmt.Errorf("aure subscription credentials: %w", err)
 	}
 
 	output, err := azure.GetResources(
@@ -247,10 +260,11 @@ func doDescribeAzure(ctx context.Context, job Job, config map[string]interface{}
 		"",
 	)
 	if err != nil {
-		return nil, fmt.Errorf("Azure: %w", err)
+		return nil, nil, fmt.Errorf("Azure: %w", err)
 	}
 
 	var inventory []KafkaResource
+	var lookup []KafkaLookupResource
 	for _, resource := range output.Resources {
 		if resource.Description == nil {
 			continue
@@ -269,9 +283,21 @@ func doDescribeAzure(ctx context.Context, job Job, config map[string]interface{}
 				"cloud_environment": output.Metadata.CloudEnvironment,
 			},
 		})
+
+		lookup = append(lookup, KafkaLookupResource{
+			ResourceID:    resource.UniqueID(),
+			Name:          resource.Name,
+			SourceType:    SourceCloudAzure,
+			ResourceType:  job.ResourceType,
+			ResourceGroup: resource.ResourceGroup,
+			Location:      resource.Location,
+			KeibiSourceID: resource.SubscriptionID,
+			ResourceJobID: job.JobID,
+			SourceJobID:   job.ParentJobID,
+		})
 	}
 
-	return inventory, nil
+	return inventory, lookup, nil
 }
 
 type KafkaResource struct {
@@ -312,17 +338,73 @@ func (r KafkaResource) AsProducerMessage() (*sarama.ProducerMessage, error) {
 	}, nil
 }
 
+type KafkaLookupResource struct {
+	// ResourceID is the globally unique ID of the resource.
+	ResourceID string `json:"resource_id"`
+	// Name is the name of the resource.
+	Name string `yaml:"name"`
+	// SourceType is the type of the source of the resource, i.e. AWS Cloud, Azure Cloud.
+	SourceType SourceType `json:"source_type"`
+	// ResourceType is the type of the resource.
+	ResourceType string `yaml:"resource_type"`
+	// ResourceGroup is the group of resource (Azure only)
+	ResourceGroup string `yaml:"resource_group"`
+	// Location is location/region of the resource
+	Location string `yaml:"location"`
+	// KeibiSourceID is aws account id or azure subscription id
+	KeibiSourceID string `yaml:"keibi_source_id"`
+	// ResourceJobID is the DescribeResourceJob ID that described this resource
+	ResourceJobID uint `json:"resource_job_id"`
+	// SourceJobID is the DescribeSourceJob ID that the ResourceJobID was created for
+	SourceJobID uint `json:"source_job_id"`
+}
+
+func (r KafkaLookupResource) AsProducerMessage() (*sarama.ProducerMessage, error) {
+	value, err := json.Marshal(r)
+	if err != nil {
+		return nil, err
+	}
+
+	h := sha256.New()
+	h.Write([]byte(r.ResourceID))
+	h.Write([]byte(r.SourceType))
+
+	return &sarama.ProducerMessage{
+		Key: sarama.StringEncoder(fmt.Sprintf("%x", h.Sum(nil))),
+		Headers: []sarama.RecordHeader{
+			{
+				Key:   []byte(esIndexHeader),
+				Value: []byte("lookup_table"),
+			},
+		},
+		Value: sarama.ByteEncoder(value),
+	}, nil
+}
+
 func ResourceTypeToESIndex(t string) string {
 	t = stopWordsRe.ReplaceAllString(t, "_")
 	return strings.ToLower(t)
 }
 
-func doSendToKafka(producer sarama.SyncProducer, topic string, resources []KafkaResource) error {
+func doSendToKafka(producer sarama.SyncProducer, topic string, resources []KafkaResource, lookups []KafkaLookupResource) error {
 	var msgs []*sarama.ProducerMessage
 	for _, v := range resources {
 		msg, err := v.AsProducerMessage()
 		if err != nil {
 			fmt.Printf("Failed to convert resource[%s] to Kafka ProducerMessage, ignoring...", v.ID)
+			continue
+		}
+
+		// Override the topic
+		msg.Topic = topic
+
+		msgs = append(msgs, msg)
+	}
+
+	for _, v := range lookups {
+		msg, err := v.AsProducerMessage()
+		if err != nil {
+			fmt.Printf("Failed to convert lookup[%s] to Kafka ProducerMessage, ignoring...", v.ResourceID)
 			continue
 		}
 
