@@ -6,11 +6,8 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/eks"
 	"github.com/aws/aws-sdk-go-v2/service/eks/types"
+	"gitlab.com/keibiengine/keibi-engine/pkg/aws/model"
 )
-
-type EKSClusterDescription struct {
-	Cluster *types.Cluster
-}
 
 func EKSCluster(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	clusters, err := listEksClusters(ctx, cfg)
@@ -30,17 +27,13 @@ func EKSCluster(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 		values = append(values, Resource{
 			ARN:  *output.Cluster.Arn,
 			Name: *output.Cluster.Name,
-			Description: EKSClusterDescription{
-				Cluster: output.Cluster,
+			Description: model.EKSClusterDescription{
+				Cluster: *output.Cluster,
 			},
 		})
 	}
 
 	return values, nil
-}
-
-type EKSAddonDescription struct {
-	Addon *types.Addon
 }
 
 func EKSAddon(ctx context.Context, cfg aws.Config) ([]Resource, error) {
@@ -77,8 +70,8 @@ func EKSAddon(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 			values = append(values, Resource{
 				ARN:  *output.Addon.AddonArn,
 				Name: *output.Addon.AddonName,
-				Description: EKSAddonDescription{
-					Addon: output.Addon,
+				Description: model.EKSAddonDescription{
+					Addon: *output.Addon,
 				},
 			})
 		}

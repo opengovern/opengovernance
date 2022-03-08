@@ -6,12 +6,8 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/autoscaling"
 	"github.com/aws/aws-sdk-go-v2/service/autoscaling/types"
+	"gitlab.com/keibiengine/keibi-engine/pkg/aws/model"
 )
-
-type AutoScalingGroupDefinition struct {
-	AutoScalingGroup types.AutoScalingGroup
-	Policies         []types.ScalingPolicy
-}
 
 func AutoScalingAutoScalingGroup(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	client := autoscaling.NewFromConfig(cfg)
@@ -25,8 +21,11 @@ func AutoScalingAutoScalingGroup(ctx context.Context, cfg aws.Config) ([]Resourc
 		}
 
 		for _, v := range page.AutoScalingGroups {
-			var desc AutoScalingGroupDefinition
-			desc.AutoScalingGroup = v
+			var desc model.AutoScalingGroupDescription
+
+			sg := v // Do this to avoid the pointer being replaces by the for loop
+
+			desc.AutoScalingGroup = &sg
 			desc.Policies, err = getAutoScalingPolicies(ctx, cfg, v.AutoScalingGroupName)
 			if err != nil {
 				return nil, err
@@ -63,10 +62,6 @@ func getAutoScalingPolicies(ctx context.Context, cfg aws.Config, asgName *string
 	return values, nil
 }
 
-type AutoScalingLaunchConfigurationDescription struct {
-	LaunchConfiguration types.LaunchConfiguration
-}
-
 func AutoScalingLaunchConfiguration(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	client := autoscaling.NewFromConfig(cfg)
 	paginator := autoscaling.NewDescribeLaunchConfigurationsPaginator(client, &autoscaling.DescribeLaunchConfigurationsInput{})
@@ -82,7 +77,7 @@ func AutoScalingLaunchConfiguration(ctx context.Context, cfg aws.Config) ([]Reso
 			values = append(values, Resource{
 				ARN:  *v.LaunchConfigurationARN,
 				Name: *v.LaunchConfigurationName,
-				Description: AutoScalingLaunchConfigurationDescription{
+				Description: model.AutoScalingLaunchConfigurationDescription{
 					LaunchConfiguration: v,
 				},
 			})

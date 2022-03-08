@@ -5,12 +5,8 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/secretsmanager"
+	"gitlab.com/keibiengine/keibi-engine/pkg/aws/model"
 )
-
-type SecretsManagerSecretDescription struct {
-	Secret         *secretsmanager.DescribeSecretOutput
-	ResourcePolicy *string
-}
 
 func SecretsManagerSecret(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	client := secretsmanager.NewFromConfig(cfg)
@@ -41,7 +37,7 @@ func SecretsManagerSecret(ctx context.Context, cfg aws.Config) ([]Resource, erro
 			values = append(values, Resource{
 				ARN:  *item.ARN,
 				Name: *item.Name,
-				Description: SecretsManagerSecretDescription{
+				Description: model.SecretsManagerSecretDescription{
 					Secret:         out,
 					ResourcePolicy: policy.ResourcePolicy,
 				},

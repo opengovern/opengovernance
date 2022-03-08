@@ -8,12 +8,8 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
 	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	"github.com/aws/smithy-go"
+	"gitlab.com/keibiengine/keibi-engine/pkg/aws/model"
 )
-
-type EC2VolumeSnapshotDescription struct {
-	Snapshot                *types.Snapshot
-	CreateVolumePermissions []types.CreateVolumePermission
-}
 
 func EC2VolumeSnapshot(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	var values []Resource
@@ -50,7 +46,7 @@ func EC2VolumeSnapshot(ctx context.Context, cfg aws.Config) ([]Resource, error) 
 			values = append(values, Resource{
 				ID:   *snapshot.SnapshotId,
 				Name: *snapshot.SnapshotId,
-				Description: EC2VolumeSnapshotDescription{
+				Description: model.EC2VolumeSnapshotDescription{
 					Snapshot:                &snapshot,
 					CreateVolumePermissions: attrs.CreateVolumePermissions,
 				},
@@ -59,14 +55,6 @@ func EC2VolumeSnapshot(ctx context.Context, cfg aws.Config) ([]Resource, error) 
 	}
 
 	return values, nil
-}
-
-type EC2VolumeDescription struct {
-	Volume     *types.Volume
-	Attributes struct {
-		AutoEnableIO bool
-		ProductCodes []types.ProductCode
-	}
 }
 
 func EC2Volume(ctx context.Context, cfg aws.Config) ([]Resource, error) {
@@ -81,7 +69,7 @@ func EC2Volume(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 		}
 
 		for _, volume := range page.Volumes {
-			var description EC2VolumeDescription
+			var description model.EC2VolumeDescription
 			description.Volume = &volume
 
 			attrs := []types.VolumeAttributeName{
@@ -376,10 +364,6 @@ func EC2EgressOnlyInternetGateway(ctx context.Context, cfg aws.Config) ([]Resour
 	return values, nil
 }
 
-type EC2EIPDescription struct {
-	Address types.Address
-}
-
 func EC2EIP(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	client := ec2.NewFromConfig(cfg)
 	output, err := client.DescribeAddresses(ctx, &ec2.DescribeAddressesInput{})
@@ -392,7 +376,7 @@ func EC2EIP(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 		values = append(values, Resource{
 			ID:   *v.AllocationId,
 			Name: *v.AllocationId,
-			Description: EC2EIPDescription{
+			Description: model.EC2EIPDescription{
 				Address: v,
 			},
 		})
@@ -411,7 +395,7 @@ func EC2EnclaveCertificateIamRoleAssociation(ctx context.Context, cfg aws.Config
 
 	var values []Resource
 	for _, c := range certs {
-		cert := c.Description.(CertificateManagerCertificateDescription)
+		cert := c.Description.(model.CertificateManagerCertificateDescription)
 
 		output, err := client.GetAssociatedEnclaveCertificateIamRoles(ctx, &ec2.GetAssociatedEnclaveCertificateIamRolesInput{
 			CertificateArn: cert.Certificate.CertificateArn,
@@ -432,10 +416,6 @@ func EC2EnclaveCertificateIamRoleAssociation(ctx context.Context, cfg aws.Config
 	return values, nil
 }
 
-type EC2FlowLogDescription struct {
-	FlowLog types.FlowLog
-}
-
 func EC2FlowLog(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	client := ec2.NewFromConfig(cfg)
 	paginator := ec2.NewDescribeFlowLogsPaginator(client, &ec2.DescribeFlowLogsInput{})
@@ -450,8 +430,8 @@ func EC2FlowLog(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 		for _, v := range page.FlowLogs {
 			values = append(values, Resource{
 				ID:   *v.FlowLogId,
-				Name: *v.LogGroupName,
-				Description: EC2FlowLogDescription{
+				Name: *v.FlowLogId,
+				Description: model.EC2FlowLogDescription{
 					FlowLog: v,
 				},
 			})
@@ -484,16 +464,6 @@ func EC2Host(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	return values, nil
 }
 
-type EC2InstanceDescription struct {
-	Instance       types.Instance
-	InstanceStatus types.InstanceStatus
-	Attributes     struct {
-		UserData                          string
-		InstanceInitiatedShutdownBehavior string
-		DisableApiTermination             bool
-	}
-}
-
 func EC2Instance(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	client := ec2.NewFromConfig(cfg)
 	paginator := ec2.NewDescribeInstancesPaginator(client, &ec2.DescribeInstancesInput{})
@@ -507,8 +477,10 @@ func EC2Instance(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 
 		for _, r := range page.Reservations {
 			for _, v := range r.Instances {
-				var desc EC2InstanceDescription
-				desc.Instance = v
+				var desc model.EC2InstanceDescription
+
+				in := v // Do this to avoid the pointer being replaced by the for loop
+				desc.Instance = &in
 
 				statusOutput, err := client.DescribeInstanceStatus(ctx, &ec2.DescribeInstanceStatusInput{
 					InstanceIds:         []string{*v.InstanceId},
@@ -518,7 +490,7 @@ func EC2Instance(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 					return nil, err
 				}
 				if len(statusOutput.InstanceStatuses) > 0 {
-					desc.InstanceStatus = statusOutput.InstanceStatuses[0]
+					desc.InstanceStatus = &statusOutput.InstanceStatuses[0]
 				}
 
 				attrs := []types.InstanceAttributeName{
@@ -558,10 +530,6 @@ func EC2Instance(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	return values, nil
 }
 
-type EC2InternetGatewayDescription struct {
-	InternetGateway types.InternetGateway
-}
-
 func EC2InternetGateway(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	client := ec2.NewFromConfig(cfg)
 	paginator := ec2.NewDescribeInternetGatewaysPaginator(client, &ec2.DescribeInternetGatewaysInput{})
@@ -577,7 +545,7 @@ func EC2InternetGateway(ctx context.Context, cfg aws.Config) ([]Resource, error)
 			values = append(values, Resource{
 				ID:   *v.InternetGatewayId,
 				Name: *v.InternetGatewayId,
-				Description: EC2InternetGatewayDescription{
+				Description: model.EC2InternetGatewayDescription{
 					InternetGateway: v,
 				},
 			})
@@ -610,10 +578,6 @@ func EC2LaunchTemplate(ctx context.Context, cfg aws.Config) ([]Resource, error) 
 	return values, nil
 }
 
-type EC2NatGatewayDescription struct {
-	NatGateway types.NatGateway
-}
-
 func EC2NatGateway(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	client := ec2.NewFromConfig(cfg)
 	paginator := ec2.NewDescribeNatGatewaysPaginator(client, &ec2.DescribeNatGatewaysInput{})
@@ -629,7 +593,7 @@ func EC2NatGateway(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 			values = append(values, Resource{
 				ID:   *v.NatGatewayId,
 				Name: *v.NatGatewayId,
-				Description: EC2NatGatewayDescription{
+				Description: model.EC2NatGatewayDescription{
 					NatGateway: v,
 				},
 			})
@@ -637,10 +601,6 @@ func EC2NatGateway(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	}
 
 	return values, nil
-}
-
-type EC2NetworkAclDescription struct {
-	NetworkAcl types.NetworkAcl
 }
 
 func EC2NetworkAcl(ctx context.Context, cfg aws.Config) ([]Resource, error) {
@@ -658,7 +618,7 @@ func EC2NetworkAcl(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 			values = append(values, Resource{
 				ID:   *v.NetworkAclId,
 				Name: *v.NetworkAclId,
-				Description: EC2NetworkAclDescription{
+				Description: model.EC2NetworkAclDescription{
 					NetworkAcl: v,
 				},
 			})
@@ -714,10 +674,6 @@ func EC2NetworkInsightsPath(ctx context.Context, cfg aws.Config) ([]Resource, er
 	return values, nil
 }
 
-type EC2NetworkInterfaceDescription struct {
-	NetworkInterface types.NetworkInterface
-}
-
 func EC2NetworkInterface(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	client := ec2.NewFromConfig(cfg)
 	paginator := ec2.NewDescribeNetworkInterfacesPaginator(client, &ec2.DescribeNetworkInterfacesInput{})
@@ -732,8 +688,8 @@ func EC2NetworkInterface(ctx context.Context, cfg aws.Config) ([]Resource, error
 		for _, v := range page.NetworkInterfaces {
 			values = append(values, Resource{
 				ID:   *v.NetworkInterfaceId,
-				Name: *v.PrivateDnsName,
-				Description: EC2NetworkInterfaceDescription{
+				Name: *v.NetworkInterfaceId,
+				Description: model.EC2NetworkInterfaceDescription{
 					NetworkInterface: v,
 				},
 			})
@@ -808,11 +764,6 @@ func EC2PrefixList(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	return values, nil
 }
 
-type EC2RegionalSettingsDescription struct {
-	EbsEncryptionByDefault *bool
-	KmsKeyId               *string
-}
-
 func EC2RegionalSettings(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	client := ec2.NewFromConfig(cfg)
 	out, err := client.GetEbsEncryptionByDefault(ctx, &ec2.GetEbsEncryptionByDefaultInput{})
@@ -828,16 +779,13 @@ func EC2RegionalSettings(ctx context.Context, cfg aws.Config) ([]Resource, error
 	return []Resource{
 		{
 			// No ID or ARN. Per Account Configuration
-			Description: EC2RegionalSettingsDescription{
+			Name: cfg.Region + " EC2 Settings", // Based on Steampipe
+			Description: model.EC2RegionalSettingsDescription{
 				EbsEncryptionByDefault: out.EbsEncryptionByDefault,
 				KmsKeyId:               outkey.KmsKeyId,
 			},
 		},
 	}, nil
-}
-
-type EC2RouteTableDescription struct {
-	RouteTable types.RouteTable
 }
 
 func EC2RouteTable(ctx context.Context, cfg aws.Config) ([]Resource, error) {
@@ -855,7 +803,7 @@ func EC2RouteTable(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 			values = append(values, Resource{
 				ID:   *v.RouteTableId,
 				Name: *v.RouteTableId,
-				Description: EC2RouteTableDescription{
+				Description: model.EC2RouteTableDescription{
 					RouteTable: v,
 				},
 			})
@@ -879,7 +827,7 @@ func EC2LocalGatewayRouteTable(ctx context.Context, cfg aws.Config) ([]Resource,
 		for _, v := range page.LocalGatewayRouteTables {
 			values = append(values, Resource{
 				ARN:         *v.LocalGatewayRouteTableArn,
-				Name:        *v.LocalGatewayRouteTableArn,
+				Name:        *v.LocalGatewayRouteTableId,
 				Description: v,
 			})
 		}
@@ -1001,10 +949,6 @@ func EC2TransitGatewayRouteTablePropagation(ctx context.Context, cfg aws.Config)
 	return values, nil
 }
 
-type EC2SecurityGroupDescription struct {
-	SecurityGroup types.SecurityGroup
-}
-
 func EC2SecurityGroup(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	client := ec2.NewFromConfig(cfg)
 	paginator := ec2.NewDescribeSecurityGroupsPaginator(client, &ec2.DescribeSecurityGroupsInput{})
@@ -1020,7 +964,7 @@ func EC2SecurityGroup(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 			values = append(values, Resource{
 				ID:   *v.GroupId,
 				Name: *v.GroupName,
-				Description: EC2SecurityGroupDescription{
+				Description: model.EC2SecurityGroupDescription{
 					SecurityGroup: v,
 				},
 			})
@@ -1053,10 +997,6 @@ func EC2SpotFleet(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	return values, nil
 }
 
-type EC2SubnetDescription struct {
-	Subnet types.Subnet
-}
-
 func EC2Subnet(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	client := ec2.NewFromConfig(cfg)
 	paginator := ec2.NewDescribeSubnetsPaginator(client, &ec2.DescribeSubnetsInput{})
@@ -1071,8 +1011,8 @@ func EC2Subnet(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 		for _, v := range page.Subnets {
 			values = append(values, Resource{
 				ARN:  *v.SubnetArn,
-				Name: *v.SubnetArn,
-				Description: EC2SubnetDescription{
+				Name: *v.SubnetId,
+				Description: model.EC2SubnetDescription{
 					Subnet: v,
 				},
 			})
@@ -1376,10 +1316,6 @@ func EC2TransitGatewayPeeringAttachment(ctx context.Context, cfg aws.Config) ([]
 	return values, nil
 }
 
-type EC2VPCDescription struct {
-	Vpc types.Vpc
-}
-
 func EC2VPC(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	client := ec2.NewFromConfig(cfg)
 	paginator := ec2.NewDescribeVpcsPaginator(client, &ec2.DescribeVpcsInput{})
@@ -1395,7 +1331,7 @@ func EC2VPC(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 			values = append(values, Resource{
 				ID:   *v.VpcId,
 				Name: *v.VpcId,
-				Description: EC2VPCDescription{
+				Description: model.EC2VpcDescription{
 					Vpc: v,
 				},
 			})
@@ -1403,10 +1339,6 @@ func EC2VPC(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	}
 
 	return values, nil
-}
-
-type EC2VPCEndpointDescription struct {
-	VpcEndpoint types.VpcEndpoint
 }
 
 func EC2VPCEndpoint(ctx context.Context, cfg aws.Config) ([]Resource, error) {
@@ -1423,8 +1355,8 @@ func EC2VPCEndpoint(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 		for _, v := range page.VpcEndpoints {
 			values = append(values, Resource{
 				ID:   *v.VpcEndpointId,
-				Name: *v.ServiceName,
-				Description: EC2VPCEndpointDescription{
+				Name: *v.VpcEndpointId,
+				Description: model.EC2VPCEndpointDescription{
 					VpcEndpoint: v,
 				},
 			})
@@ -1548,10 +1480,6 @@ func EC2VPCPeeringConnection(ctx context.Context, cfg aws.Config) ([]Resource, e
 	return values, nil
 }
 
-type EC2VPNConnectionDescription struct {
-	VpnConnection types.VpnConnection
-}
-
 func EC2VPNConnection(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	client := ec2.NewFromConfig(cfg)
 	output, err := client.DescribeVpnConnections(ctx, &ec2.DescribeVpnConnectionsInput{})
@@ -1564,7 +1492,7 @@ func EC2VPNConnection(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 		values = append(values, Resource{
 			ID:   *v.VpnConnectionId,
 			Name: *v.VpnConnectionId,
-			Description: EC2VPNConnectionDescription{
+			Description: model.EC2VPNConnectionDescription{
 				VpnConnection: v,
 			},
 		})
@@ -1592,10 +1520,6 @@ func EC2VPNGateway(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	return values, nil
 }
 
-type EC2RegionDescription struct {
-	Region types.Region
-}
-
 func EC2Region(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	client := ec2.NewFromConfig(cfg)
 	output, err := client.DescribeRegions(ctx, &ec2.DescribeRegionsInput{
@@ -1610,7 +1534,7 @@ func EC2Region(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 		values = append(values, Resource{
 			ID:   *v.RegionName,
 			Name: *v.RegionName,
-			Description: EC2RegionDescription{
+			Description: model.EC2RegionDescription{
 				Region: v,
 			},
 		})

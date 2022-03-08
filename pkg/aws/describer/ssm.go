@@ -6,11 +6,8 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/ssm"
 	"github.com/aws/aws-sdk-go-v2/service/ssm/types"
+	"gitlab.com/keibiengine/keibi-engine/pkg/aws/model"
 )
-
-type SSMManagedInstanceDescription struct {
-	InstanceInformation types.InstanceInformation
-}
 
 func SSMManagedInstance(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	client := ssm.NewFromConfig(cfg)
@@ -27,17 +24,13 @@ func SSMManagedInstance(ctx context.Context, cfg aws.Config) ([]Resource, error)
 			values = append(values, Resource{
 				ID:   *item.InstanceId,
 				Name: *item.Name,
-				Description: SSMManagedInstanceDescription{
+				Description: model.SSMManagedInstanceDescription{
 					InstanceInformation: item,
 				},
 			})
 		}
 	}
 	return values, nil
-}
-
-type SSMManagedInstanceComplianceDescription struct {
-	ComplianceItem types.ComplianceItem
 }
 
 func SSMManagedInstanceCompliance(ctx context.Context, cfg aws.Config) ([]Resource, error) {
@@ -66,7 +59,7 @@ func SSMManagedInstanceCompliance(ctx context.Context, cfg aws.Config) ([]Resour
 					values = append(values, Resource{
 						ID:   *item.Id,
 						Name: *item.Title,
-						Description: SSMManagedInstanceComplianceDescription{
+						Description: model.SSMManagedInstanceComplianceDescription{
 							ComplianceItem: item,
 						},
 					})

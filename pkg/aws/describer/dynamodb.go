@@ -5,14 +5,8 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
-	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
+	"gitlab.com/keibiengine/keibi-engine/pkg/aws/model"
 )
-
-type DynamoDbTableDescription struct {
-	Table            *types.TableDescription
-	ContinuousBackup *types.ContinuousBackupsDescription
-	Tags             []types.Tag
-}
 
 func DynamoDbTable(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	client := dynamodb.NewFromConfig(cfg)
@@ -50,7 +44,7 @@ func DynamoDbTable(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 			values = append(values, Resource{
 				ARN:  *v.Table.TableArn,
 				Name: *v.Table.TableName,
-				Description: DynamoDbTableDescription{
+				Description: model.DynamoDbTableDescription{
 					Table:            v.Table,
 					ContinuousBackup: continuousBackup.ContinuousBackupsDescription,
 					Tags:             tags.Tags,

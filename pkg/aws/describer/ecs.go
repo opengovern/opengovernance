@@ -9,6 +9,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/ecs"
 	"github.com/aws/aws-sdk-go-v2/service/ecs/types"
+	"gitlab.com/keibiengine/keibi-engine/pkg/aws/model"
 )
 
 func ECSCapacityProvider(ctx context.Context, cfg aws.Config) ([]Resource, error) {
@@ -41,10 +42,6 @@ func ECSCapacityProvider(ctx context.Context, cfg aws.Config) ([]Resource, error
 	return values, nil
 }
 
-type ECSClusterDescription struct {
-	Cluster types.Cluster
-}
-
 func ECSCluster(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	clusters, err := listEcsClusters(ctx, cfg)
 	if err != nil {
@@ -75,7 +72,7 @@ func ECSCluster(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 			values = append(values, Resource{
 				ARN:  *v.ClusterArn,
 				Name: *v.ClusterName,
-				Description: ECSClusterDescription{
+				Description: model.ECSClusterDescription{
 					Cluster: v,
 				},
 			})
@@ -83,10 +80,6 @@ func ECSCluster(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	}
 
 	return values, nil
-}
-
-type ECSServiceDescription struct {
-	Service types.Service
 }
 
 func ECSService(ctx context.Context, cfg aws.Config) ([]Resource, error) {
@@ -126,7 +119,7 @@ func ECSService(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 				values = append(values, Resource{
 					ARN:  *v.ServiceArn,
 					Name: *v.ServiceName,
-					Description: ECSServiceDescription{
+					Description: model.ECSServiceDescription{
 						Service: v,
 					},
 				})
@@ -135,11 +128,6 @@ func ECSService(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	}
 
 	return values, nil
-}
-
-type ECSTaskDefinitionDescription struct {
-	TaskDefinition *types.TaskDefinition
-	Tags           []types.Tag
 }
 
 func ECSTaskDefinition(ctx context.Context, cfg aws.Config) ([]Resource, error) {
@@ -164,10 +152,14 @@ func ECSTaskDefinition(ctx context.Context, cfg aws.Config) ([]Resource, error) 
 				return nil, err
 			}
 
+			// From Steampipe
+			splitArn := strings.Split(arn, ":")
+			name := splitArn[len(splitArn)-1]
+
 			values = append(values, Resource{
 				ARN:  arn,
-				Name: arn,
-				Description: ECSTaskDefinitionDescription{
+				Name: name,
+				Description: model.ECSTaskDefinitionDescription{
 					TaskDefinition: output.TaskDefinition,
 					Tags:           output.Tags,
 				},

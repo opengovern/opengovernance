@@ -5,13 +5,8 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/sagemaker"
-	"github.com/aws/aws-sdk-go-v2/service/sagemaker/types"
+	"gitlab.com/keibiengine/keibi-engine/pkg/aws/model"
 )
-
-type SageMakerEndpointConfigurationDescription struct {
-	EndpointConfig *sagemaker.DescribeEndpointConfigOutput
-	Tags           []types.Tag
-}
 
 func SageMakerEndpointConfiguration(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	client := sagemaker.NewFromConfig(cfg)
@@ -42,7 +37,7 @@ func SageMakerEndpointConfiguration(ctx context.Context, cfg aws.Config) ([]Reso
 			values = append(values, Resource{
 				ARN:  *out.EndpointConfigArn,
 				Name: *out.EndpointConfigName,
-				Description: SageMakerEndpointConfigurationDescription{
+				Description: model.SageMakerEndpointConfigurationDescription{
 					EndpointConfig: out,
 					Tags:           tags.Tags,
 				},
@@ -50,11 +45,6 @@ func SageMakerEndpointConfiguration(ctx context.Context, cfg aws.Config) ([]Reso
 		}
 	}
 	return values, nil
-}
-
-type SageMakerNotebookInstanceDescription struct {
-	NotebookInstance *sagemaker.DescribeNotebookInstanceOutput
-	Tags             []types.Tag
 }
 
 func SageMakerNotebookInstance(ctx context.Context, cfg aws.Config) ([]Resource, error) {
@@ -86,7 +76,7 @@ func SageMakerNotebookInstance(ctx context.Context, cfg aws.Config) ([]Resource,
 			values = append(values, Resource{
 				ARN:  *out.NotebookInstanceArn,
 				Name: *out.NotebookInstanceName,
-				Description: SageMakerNotebookInstanceDescription{
+				Description: model.SageMakerNotebookInstanceDescription{
 					NotebookInstance: out,
 					Tags:             tags.Tags,
 				},

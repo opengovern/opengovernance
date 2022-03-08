@@ -8,12 +8,8 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/cloudwatch/types"
 	"github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs"
 	logstypes "github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs/types"
+	"gitlab.com/keibiengine/keibi-engine/pkg/aws/model"
 )
-
-type CloudWatchAlarmDescription struct {
-	MetricAlarm types.MetricAlarm
-	Tags        []types.Tag
-}
 
 func CloudWatchAlarm(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	client := cloudwatch.NewFromConfig(cfg)
@@ -39,7 +35,7 @@ func CloudWatchAlarm(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 			values = append(values, Resource{
 				ARN:  *v.AlarmArn,
 				Name: *v.AlarmName,
-				Description: CloudWatchAlarmDescription{
+				Description: model.CloudWatchAlarmDescription{
 					MetricAlarm: v,
 					Tags:        tags.Tags,
 				},
@@ -178,11 +174,6 @@ func CloudWatchLogsDestination(ctx context.Context, cfg aws.Config) ([]Resource,
 	return values, nil
 }
 
-type CloudWatchLogsLogGroupDescription struct {
-	LogGroup logstypes.LogGroup
-	Tags     map[string]string
-}
-
 func CloudWatchLogsLogGroup(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	client := cloudwatchlogs.NewFromConfig(cfg)
 	paginator := cloudwatchlogs.NewDescribeLogGroupsPaginator(client, &cloudwatchlogs.DescribeLogGroupsInput{})
@@ -205,7 +196,7 @@ func CloudWatchLogsLogGroup(ctx context.Context, cfg aws.Config) ([]Resource, er
 			values = append(values, Resource{
 				ARN:  *v.Arn,
 				Name: *v.LogGroupName,
-				Description: CloudWatchLogsLogGroupDescription{
+				Description: model.CloudWatchLogsLogGroupDescription{
 					LogGroup: v,
 					Tags:     tags.Tags,
 				},
@@ -226,7 +217,7 @@ func CloudWatchLogsLogStream(ctx context.Context, cfg aws.Config) ([]Resource, e
 	for _, logGroup := range logGroups {
 		client := cloudwatchlogs.NewFromConfig(cfg)
 		paginator := cloudwatchlogs.NewDescribeLogStreamsPaginator(client, &cloudwatchlogs.DescribeLogStreamsInput{
-			LogGroupName: logGroup.Description.(CloudWatchLogsLogGroupDescription).LogGroup.LogGroupName,
+			LogGroupName: logGroup.Description.(model.CloudWatchLogsLogGroupDescription).LogGroup.LogGroupName,
 			Limit:        aws.Int32(50),
 			OrderBy:      logstypes.OrderByLastEventTime,
 			Descending:   aws.Bool(true),
@@ -255,10 +246,6 @@ func CloudWatchLogsLogStream(ctx context.Context, cfg aws.Config) ([]Resource, e
 	return values, nil
 }
 
-type CloudWatchLogsMetricFilterDescription struct {
-	MetricFilter logstypes.MetricFilter
-}
-
 func CloudWatchLogsMetricFilter(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	client := cloudwatchlogs.NewFromConfig(cfg)
 	paginator := cloudwatchlogs.NewDescribeMetricFiltersPaginator(client, &cloudwatchlogs.DescribeMetricFiltersInput{})
@@ -274,7 +261,7 @@ func CloudWatchLogsMetricFilter(ctx context.Context, cfg aws.Config) ([]Resource
 			values = append(values, Resource{
 				ID:   *v.FilterName,
 				Name: *v.FilterName,
-				Description: CloudWatchLogsMetricFilterDescription{
+				Description: model.CloudWatchLogsMetricFilterDescription{
 					MetricFilter: v,
 				},
 			})
@@ -349,7 +336,7 @@ func CloudWatchLogsSubscriptionFilter(ctx context.Context, cfg aws.Config) ([]Re
 		client := cloudwatchlogs.NewFromConfig(cfg)
 
 		paginator := cloudwatchlogs.NewDescribeSubscriptionFiltersPaginator(client, &cloudwatchlogs.DescribeSubscriptionFiltersInput{
-			LogGroupName: logGroup.Description.(CloudWatchLogsLogGroupDescription).LogGroup.LogGroupName,
+			LogGroupName: logGroup.Description.(model.CloudWatchLogsLogGroupDescription).LogGroup.LogGroupName,
 		})
 
 		for paginator.HasMorePages() {

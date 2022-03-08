@@ -5,13 +5,8 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/configservice"
-	"github.com/aws/aws-sdk-go-v2/service/configservice/types"
+	"gitlab.com/keibiengine/keibi-engine/pkg/aws/model"
 )
-
-type ConfigConfigurationRecorderDescription struct {
-	ConfigurationRecorder        types.ConfigurationRecorder
-	ConfigurationRecordersStatus types.ConfigurationRecorderStatus
-}
 
 func ConfigConfigurationRecorder(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	client := configservice.NewFromConfig(cfg)
@@ -30,9 +25,9 @@ func ConfigConfigurationRecorder(ctx context.Context, cfg aws.Config) ([]Resourc
 		}
 
 		values = append(values, Resource{
-			ARN:  *item.RoleARN,
+			ID:   *item.Name,
 			Name: *item.Name,
-			Description: ConfigConfigurationRecorderDescription{
+			Description: model.ConfigConfigurationRecorderDescription{
 				ConfigurationRecorder:        item,
 				ConfigurationRecordersStatus: status.ConfigurationRecordersStatus[0],
 			},

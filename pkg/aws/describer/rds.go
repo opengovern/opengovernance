@@ -6,11 +6,8 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/rds"
 	"github.com/aws/aws-sdk-go-v2/service/rds/types"
+	"gitlab.com/keibiengine/keibi-engine/pkg/aws/model"
 )
-
-type RDSDBClusterDescription struct {
-	DBCluster types.DBCluster
-}
 
 func RDSDBCluster(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	client := rds.NewFromConfig(cfg)
@@ -26,8 +23,8 @@ func RDSDBCluster(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 		for _, v := range page.DBClusters {
 			values = append(values, Resource{
 				ARN:  *v.DBClusterArn,
-				Name: *v.DatabaseName,
-				Description: RDSDBClusterDescription{
+				Name: *v.DBClusterIdentifier,
+				Description: model.RDSDBClusterDescription{
 					DBCluster: v,
 				},
 			})
@@ -35,11 +32,6 @@ func RDSDBCluster(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	}
 
 	return values, nil
-}
-
-type RDSDBClusterSnapshotDescription struct {
-	DBClusterSnapshot types.DBClusterSnapshot
-	Attributes        *types.DBClusterSnapshotAttributesResult
 }
 
 func RDSDBClusterSnapshot(ctx context.Context, cfg aws.Config) ([]Resource, error) {
@@ -63,8 +55,8 @@ func RDSDBClusterSnapshot(ctx context.Context, cfg aws.Config) ([]Resource, erro
 
 			values = append(values, Resource{
 				ARN:  *v.DBClusterSnapshotArn,
-				Name: *v.DBClusterSnapshotArn,
-				Description: RDSDBClusterSnapshotDescription{
+				Name: *v.DBClusterSnapshotIdentifier,
+				Description: model.RDSDBClusterSnapshotDescription{
 					DBClusterSnapshot: v,
 					Attributes:        attr.DBClusterSnapshotAttributesResult,
 				},
@@ -98,10 +90,6 @@ func RDSDBClusterParameterGroup(ctx context.Context, cfg aws.Config) ([]Resource
 	return values, nil
 }
 
-type RDSDBInstanceDescription struct {
-	DBInstance types.DBInstance
-}
-
 func RDSDBInstance(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	client := rds.NewFromConfig(cfg)
 	paginator := rds.NewDescribeDBInstancesPaginator(client, &rds.DescribeDBInstancesInput{})
@@ -116,8 +104,8 @@ func RDSDBInstance(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 		for _, v := range page.DBInstances {
 			values = append(values, Resource{
 				ARN:  *v.DBInstanceArn,
-				Name: *v.DBName,
-				Description: RDSDBInstanceDescription{
+				Name: *v.DBInstanceIdentifier,
+				Description: model.RDSDBInstanceDescription{
 					DBInstance: v,
 				},
 			})
@@ -276,10 +264,6 @@ func RDSDBSubnetGroup(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	return values, nil
 }
 
-type RDSDBEventSubscriptionDescription struct {
-	EventSubscription types.EventSubscription
-}
-
 func RDSDBEventSubscription(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	client := rds.NewFromConfig(cfg)
 	paginator := rds.NewDescribeEventSubscriptionsPaginator(client, &rds.DescribeEventSubscriptionsInput{})
@@ -294,8 +278,8 @@ func RDSDBEventSubscription(ctx context.Context, cfg aws.Config) ([]Resource, er
 		for _, v := range page.EventSubscriptionsList {
 			values = append(values, Resource{
 				ARN:  *v.EventSubscriptionArn,
-				Name: *v.EventSubscriptionArn,
-				Description: RDSDBEventSubscriptionDescription{
+				Name: *v.CustSubscriptionId,
+				Description: model.RDSDBEventSubscriptionDescription{
 					EventSubscription: v,
 				},
 			})

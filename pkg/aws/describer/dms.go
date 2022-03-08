@@ -2,16 +2,11 @@ package describer
 
 import (
 	"context"
+
 	"github.com/aws/aws-sdk-go-v2/aws"
-
 	dms "github.com/aws/aws-sdk-go-v2/service/databasemigrationservice"
-	dmstypes "github.com/aws/aws-sdk-go-v2/service/databasemigrationservice/types"
+	"gitlab.com/keibiengine/keibi-engine/pkg/aws/model"
 )
-
-type DMSReplicationInstanceDescription struct {
-	ReplicationInstance dmstypes.ReplicationInstance
-	Tags                []dmstypes.Tag
-}
 
 func DMSReplicationInstance(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	client := dms.NewFromConfig(cfg)
@@ -36,8 +31,8 @@ func DMSReplicationInstance(ctx context.Context, cfg aws.Config) ([]Resource, er
 
 			values = append(values, Resource{
 				ARN:  *item.ReplicationInstanceArn,
-				Name: *item.DnsNameServers,
-				Description: DMSReplicationInstanceDescription{
+				Name: *item.ReplicationInstanceIdentifier,
+				Description: model.DMSReplicationInstanceDescription{
 					ReplicationInstance: item,
 					Tags:                tags.TagList,
 				},

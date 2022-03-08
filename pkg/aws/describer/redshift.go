@@ -3,18 +3,13 @@ package describer
 import (
 	"context"
 	"errors"
-	"github.com/aws/aws-sdk-go-v2/service/redshift/types"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/redshift"
+	"github.com/aws/aws-sdk-go-v2/service/redshift/types"
 	"github.com/aws/smithy-go"
+	"gitlab.com/keibiengine/keibi-engine/pkg/aws/model"
 )
-
-type RedshiftClusterDescription struct {
-	Cluster          types.Cluster
-	LoggingStatus    *redshift.DescribeLoggingStatusOutput
-	ScheduledActions []types.ScheduledAction
-}
 
 func RedshiftCluster(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	client := redshift.NewFromConfig(cfg)
@@ -49,8 +44,8 @@ func RedshiftCluster(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 
 			values = append(values, Resource{
 				ARN:  *v.ClusterNamespaceArn,
-				Name: *v.ClusterNamespaceArn,
-				Description: RedshiftClusterDescription{
+				Name: *v.ClusterIdentifier,
+				Description: model.RedshiftClusterDescription{
 					Cluster:          v,
 					LoggingStatus:    logStatus,
 					ScheduledActions: sactions.ScheduledActions,
@@ -60,11 +55,6 @@ func RedshiftCluster(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	}
 
 	return values, nil
-}
-
-type RedshiftClusterParameterGroupDescription struct {
-	ClusterParameterGroup types.ClusterParameterGroup
-	Parameters            []types.Parameter
 }
 
 func RedshiftClusterParameterGroup(ctx context.Context, cfg aws.Config) ([]Resource, error) {
@@ -89,7 +79,7 @@ func RedshiftClusterParameterGroup(ctx context.Context, cfg aws.Config) ([]Resou
 			values = append(values, Resource{
 				ID:   *v.ParameterGroupName,
 				Name: *v.ParameterGroupName,
-				Description: RedshiftClusterParameterGroupDescription{
+				Description: model.RedshiftClusterParameterGroupDescription{
 					ClusterParameterGroup: v,
 					Parameters:            param.Parameters,
 				},

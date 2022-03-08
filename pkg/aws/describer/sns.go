@@ -5,13 +5,8 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/sns"
-	"github.com/aws/aws-sdk-go-v2/service/sns/types"
+	"gitlab.com/keibiengine/keibi-engine/pkg/aws/model"
 )
-
-type SNSSubscriptionDescription struct {
-	Subscription types.Subscription
-	Attributes   map[string]string
-}
 
 func SNSSubscription(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	client := sns.NewFromConfig(cfg)
@@ -38,8 +33,8 @@ func SNSSubscription(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 
 			values = append(values, Resource{
 				ARN:  *v.SubscriptionArn,
-				Name: *v.SubscriptionArn,
-				Description: SNSSubscriptionDescription{
+				Name: nameFromArn(*v.SubscriptionArn),
+				Description: model.SNSSubscriptionDescription{
 					Subscription: v,
 					Attributes:   output.Attributes,
 				},
@@ -48,11 +43,6 @@ func SNSSubscription(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	}
 
 	return values, nil
-}
-
-type SNSTopicDescription struct {
-	Attributes map[string]string
-	Tags       []types.Tag
 }
 
 func SNSTopic(ctx context.Context, cfg aws.Config) ([]Resource, error) {
@@ -83,8 +73,8 @@ func SNSTopic(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 
 			values = append(values, Resource{
 				ARN:  *v.TopicArn,
-				Name: *v.TopicArn,
-				Description: SNSTopicDescription{
+				Name: nameFromArn(*v.TopicArn),
+				Description: model.SNSTopicDescription{
 					Attributes: output.Attributes,
 					Tags:       tOutput.Tags,
 				},

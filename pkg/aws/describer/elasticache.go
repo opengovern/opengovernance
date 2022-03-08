@@ -5,12 +5,8 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/elasticache"
-	"github.com/aws/aws-sdk-go-v2/service/elasticache/types"
+	"gitlab.com/keibiengine/keibi-engine/pkg/aws/model"
 )
-
-type ElastiCacheReplicationGroupDescription struct {
-	ReplicationGroup types.ReplicationGroup
-}
 
 func ElastiCacheReplicationGroup(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	client := elasticache.NewFromConfig(cfg)
@@ -27,7 +23,7 @@ func ElastiCacheReplicationGroup(ctx context.Context, cfg aws.Config) ([]Resourc
 			values = append(values, Resource{
 				ARN:  *item.ARN,
 				Name: *item.ARN,
-				Description: ElastiCacheReplicationGroupDescription{
+				Description: model.ElastiCacheReplicationGroupDescription{
 					ReplicationGroup: item,
 				},
 			})

@@ -6,6 +6,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/kms"
 	"github.com/aws/aws-sdk-go-v2/service/kms/types"
+	"gitlab.com/keibiengine/keibi-engine/pkg/aws/model"
 )
 
 func KMSAlias(ctx context.Context, cfg aws.Config) ([]Resource, error) {
@@ -29,14 +30,6 @@ func KMSAlias(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	}
 
 	return values, nil
-}
-
-type KMSKeyDescription struct {
-	Metadata           *types.KeyMetadata
-	Aliases            []types.AliasListEntry
-	KeyRotationEnabled bool
-	Policy             *string
-	Tags               []types.Tag
 }
 
 func KMSKey(ctx context.Context, cfg aws.Config) ([]Resource, error) {
@@ -97,8 +90,8 @@ func KMSKey(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 
 			values = append(values, Resource{
 				ARN:  *v.KeyArn,
-				Name: *v.KeyArn,
-				Description: KMSKeyDescription{
+				Name: *v.KeyId,
+				Description: model.KMSKeyDescription{
 					Metadata:           key.KeyMetadata,
 					Aliases:            keyAlias,
 					KeyRotationEnabled: rotationStatus.KeyRotationEnabled,

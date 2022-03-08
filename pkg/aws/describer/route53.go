@@ -7,6 +7,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/route53"
 	"github.com/aws/aws-sdk-go-v2/service/route53/types"
 	"github.com/aws/aws-sdk-go-v2/service/route53resolver"
+	"gitlab.com/keibiengine/keibi-engine/pkg/aws/model"
 )
 
 func Route53HealthCheck(ctx context.Context, cfg aws.Config) ([]Resource, error) {
@@ -212,7 +213,7 @@ func Route53ResolverResolverDNSSECConfig(ctx context.Context, cfg aws.Config) ([
 	var values []Resource
 	for _, vpc := range vpcs {
 		v, err := client.GetResolverDnssecConfig(ctx, &route53resolver.GetResolverDnssecConfigInput{
-			ResourceId: vpc.Description.(EC2VPCDescription).Vpc.VpcId,
+			ResourceId: vpc.Description.(model.EC2VpcDescription).Vpc.VpcId,
 		})
 		if err != nil {
 			return nil, err

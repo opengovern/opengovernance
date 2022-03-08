@@ -5,13 +5,8 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/elasticbeanstalk"
-	"github.com/aws/aws-sdk-go-v2/service/elasticbeanstalk/types"
+	"gitlab.com/keibiengine/keibi-engine/pkg/aws/model"
 )
-
-type ElasticBeanstalkEnvironmentDescription struct {
-	EnvironmentDescription types.EnvironmentDescription
-	Tags                   []types.Tag
-}
 
 func ElasticBeanstalkEnvironment(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	client := elasticbeanstalk.NewFromConfig(cfg)
@@ -32,7 +27,7 @@ func ElasticBeanstalkEnvironment(ctx context.Context, cfg aws.Config) ([]Resourc
 		values = append(values, Resource{
 			ARN:  *item.EnvironmentArn,
 			Name: *item.EnvironmentName,
-			Description: ElasticBeanstalkEnvironmentDescription{
+			Description: model.ElasticBeanstalkEnvironmentDescription{
 				EnvironmentDescription: item,
 				Tags:                   tags.ResourceTags,
 			},

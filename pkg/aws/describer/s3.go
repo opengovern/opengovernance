@@ -12,6 +12,7 @@ import (
 	s3controltypes "github.com/aws/aws-sdk-go-v2/service/s3control/types"
 	"github.com/aws/aws-sdk-go-v2/service/sts"
 	"github.com/aws/smithy-go"
+	"gitlab.com/keibiengine/keibi-engine/pkg/aws/model"
 )
 
 const (
@@ -22,27 +23,6 @@ const (
 	s3ReplicationConfigurationNotFoundError          = "ReplicationConfigurationNotFoundError"
 	s3ServerSideEncryptionConfigurationNotFoundError = "ServerSideEncryptionConfigurationNotFoundError"
 )
-
-type S3BucketDescription struct {
-	Bucket    types.Bucket
-	BucketAcl struct {
-		Grants []types.Grant
-		Owner  *types.Owner
-	}
-	Policy                         *string
-	PolicyStatus                   *types.PolicyStatus
-	PublicAccessBlockConfiguration *types.PublicAccessBlockConfiguration
-	Versioning                     struct {
-		MFADelete types.MFADeleteStatus
-		Status    types.BucketVersioningStatus
-	}
-	LifecycleRules                    []types.LifecycleRule
-	LoggingEnabled                    *types.LoggingEnabled
-	ServerSideEncryptionConfiguration *types.ServerSideEncryptionConfiguration
-	ObjectLockConfiguration           *types.ObjectLockConfiguration
-	ReplicationConfiguration          *types.ReplicationConfiguration
-	Tags                              []types.Tag
-}
 
 // S3Bucket describe S3 buckets.
 // ListBuckets returns buckets in all regions. However, this function categorizes the buckets based
@@ -103,7 +83,7 @@ func getBucketLocation(ctx context.Context, client *s3.Client, bucket types.Buck
 	return region, nil
 }
 
-func getBucketDescription(ctx context.Context, cfg aws.Config, bucket types.Bucket, region string) (*S3BucketDescription, error) {
+func getBucketDescription(ctx context.Context, cfg aws.Config, bucket types.Bucket, region string) (*model.S3BucketDescription, error) {
 	rClient := s3.NewFromConfig(cfg, func(o *s3.Options) { o.Region = region })
 	o1, err := getBucketIsPublic(ctx, rClient, bucket)
 	if err != nil {
@@ -160,7 +140,7 @@ func getBucketDescription(ctx context.Context, cfg aws.Config, bucket types.Buck
 		return nil, err
 	}
 
-	return &S3BucketDescription{
+	return &model.S3BucketDescription{
 		Bucket: bucket,
 		BucketAcl: struct {
 			Grants []types.Grant
@@ -372,12 +352,6 @@ func isErr(err error, code string) bool {
 	return errors.As(err, &ae) && ae.ErrorCode() == code
 }
 
-type S3AccessPointDescription struct {
-	AccessPoint  *s3control.GetAccessPointOutput
-	Policy       *string
-	PolicyStatus *s3controltypes.PolicyStatus
-}
-
 func S3AccessPoint(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	stsClient := sts.NewFromConfig(cfg)
 	output, err := stsClient.GetCallerIdentity(ctx, &sts.GetCallerIdentityInput{})
@@ -424,7 +398,7 @@ func S3AccessPoint(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 			values = append(values, Resource{
 				ARN:  *v.AccessPointArn,
 				Name: *v.Name,
-				Description: S3AccessPointDescription{
+				Description: model.S3AccessPointDescription{
 					AccessPoint:  ap,
 					Policy:       app.Policy,
 					PolicyStatus: apps.PolicyStatus,
@@ -457,7 +431,7 @@ func S3StorageLens(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 		for _, v := range page.StorageLensConfigurationList {
 			values = append(values, Resource{
 				ARN:         *v.StorageLensArn,
-				Name:        *v.StorageLensArn,
+				Name:        *v.Id,
 				Description: v,
 			})
 		}
@@ -466,20 +440,15 @@ func S3StorageLens(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	return values, nil
 }
 
-type S3AccountSettingDescription struct {
-	PublicAccessBlockConfiguration s3controltypes.PublicAccessBlockConfiguration
-}
-
 func S3AccountSetting(ctx context.Context, cfg aws.Config) ([]Resource, error) {
-	stsClient := sts.NewFromConfig(cfg)
-	identity, err := stsClient.GetCallerIdentity(ctx, &sts.GetCallerIdentityInput{})
+	accountId, err := STSAccount(ctx, cfg)
 	if err != nil {
 		return nil, err
 	}
 
 	client := s3control.NewFromConfig(cfg)
 	output, err := client.GetPublicAccessBlock(ctx, &s3control.GetPublicAccessBlockInput{
-		AccountId: identity.Account,
+		AccountId: &accountId,
 	})
 	if err != nil {
 		if !isErr(err, s3NoSuchPublicAccessBlockConfiguration) {
@@ -499,7 +468,8 @@ func S3AccountSetting(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	return []Resource{
 		{
 			// No ARN or ID. Account level setting
-			Description: S3AccountSettingDescription{
+			Name: accountId + " S3 Account Setting",
+			Description: model.S3AccountSettingDescription{
 				PublicAccessBlockConfiguration: *output.PublicAccessBlockConfiguration,
 			},
 		},

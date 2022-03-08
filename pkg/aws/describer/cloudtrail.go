@@ -8,15 +8,8 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/cloudtrail"
 	"github.com/aws/aws-sdk-go-v2/service/cloudtrail/types"
 	"github.com/aws/aws-sdk-go-v2/service/sts"
+	"gitlab.com/keibiengine/keibi-engine/pkg/aws/model"
 )
-
-type CloudTrailTrailDescription struct {
-	Trail                  types.Trail
-	TrailStatus            cloudtrail.GetTrailStatusOutput
-	EventSelectors         []types.EventSelector
-	AdvancedEventSelectors []types.AdvancedEventSelector
-	Tags                   []types.Tag
-}
 
 func CloudTrailTrail(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	client := cloudtrail.NewFromConfig(cfg)
@@ -93,7 +86,7 @@ func CloudTrailTrail(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 			values = append(values, Resource{
 				ARN:  *v.TrailARN,
 				Name: *v.Name,
-				Description: CloudTrailTrailDescription{
+				Description: model.CloudTrailTrailDescription{
 					Trail:                  v,
 					TrailStatus:            *statusOutput,
 					EventSelectors:         selectorOutput.EventSelectors,

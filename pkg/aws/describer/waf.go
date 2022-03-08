@@ -10,6 +10,7 @@ import (
 	regionaltypes "github.com/aws/aws-sdk-go-v2/service/wafregional/types"
 	"github.com/aws/aws-sdk-go-v2/service/wafv2"
 	"github.com/aws/aws-sdk-go-v2/service/wafv2/types"
+	"gitlab.com/keibiengine/keibi-engine/pkg/aws/model"
 )
 
 func WAFv2IPSet(ctx context.Context, cfg aws.Config) ([]Resource, error) {
@@ -164,14 +165,6 @@ func WAFv2RuleGroup(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	return values, nil
 }
 
-type WAFv2WebACLDescription struct {
-	WebACL               *types.WebACL
-	Scope                types.Scope
-	LoggingConfiguration *types.LoggingConfiguration
-	TagInfoForResource   *types.TagInfoForResource
-	LockToken            *string
-}
-
 func WAFv2WebACL(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	client := wafv2.NewFromConfig(cfg)
 
@@ -216,7 +209,7 @@ func WAFv2WebACL(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 			values = append(values, Resource{
 				ARN:  *v.ARN,
 				Name: *v.Name,
-				Description: WAFv2WebACLDescription{
+				Description: model.WAFv2WebACLDescription{
 					WebACL:               out.WebACL,
 					Scope:                scope,
 					LoggingConfiguration: logC.LoggingConfiguration,

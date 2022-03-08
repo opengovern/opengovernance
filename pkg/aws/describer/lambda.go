@@ -9,12 +9,8 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/lambda"
 	"github.com/aws/aws-sdk-go-v2/service/lambda/types"
 	"github.com/aws/smithy-go"
+	"gitlab.com/keibiengine/keibi-engine/pkg/aws/model"
 )
-
-type LambdaFunctionDescription struct {
-	Function *lambda.GetFunctionOutput
-	Policy   *lambda.GetPolicyOutput
-}
 
 func LambdaFunction(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	client := lambda.NewFromConfig(cfg)
@@ -47,7 +43,7 @@ func LambdaFunction(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 			values = append(values, Resource{
 				ARN:  *v.FunctionArn,
 				Name: *v.FunctionName,
-				Description: LambdaFunctionDescription{
+				Description: model.LambdaFunctionDescription{
 					Function: function,
 					Policy:   policy,
 				},
@@ -68,7 +64,7 @@ func LambdaAlias(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 
 	var values []Resource
 	for _, f := range fns {
-		fn := f.Description.(LambdaFunctionDescription).Function.Configuration
+		fn := f.Description.(model.LambdaFunctionDescription).Function.Configuration
 		paginator := lambda.NewListAliasesPaginator(client, &lambda.ListAliasesInput{
 			FunctionName:    fn.FunctionName,
 			FunctionVersion: fn.Version,
@@ -103,7 +99,7 @@ func LambdaPermission(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 
 	var values []Resource
 	for _, f := range fns {
-		fn := f.Description.(LambdaFunctionDescription).Function.Configuration
+		fn := f.Description.(model.LambdaFunctionDescription).Function.Configuration
 		v, err := client.GetPolicy(ctx, &lambda.GetPolicyInput{
 			FunctionName: fn.FunctionArn,
 		})
@@ -136,7 +132,7 @@ func LambdaEventInvokeConfig(ctx context.Context, cfg aws.Config) ([]Resource, e
 
 	var values []Resource
 	for _, f := range fns {
-		fn := f.Description.(LambdaFunctionDescription).Function.Configuration
+		fn := f.Description.(model.LambdaFunctionDescription).Function.Configuration
 		paginator := lambda.NewListFunctionEventInvokeConfigsPaginator(client, &lambda.ListFunctionEventInvokeConfigsInput{
 			FunctionName: fn.FunctionName,
 		})
@@ -197,7 +193,7 @@ func LambdaEventSourceMapping(ctx context.Context, cfg aws.Config) ([]Resource, 
 		for _, v := range page.EventSourceMappings {
 			values = append(values, Resource{
 				ARN:         *v.EventSourceArn,
-				Name:        *v.EventSourceArn,
+				Name:        *v.UUID,
 				Description: v,
 			})
 		}
