@@ -3,12 +3,10 @@ package inventory
 import (
 	"fmt"
 	"gitlab.com/keibiengine/keibi-engine/pkg/keibi-es-sdk"
-
-	"gitlab.com/keibiengine/keibi-engine/pkg/internal/vault"
 )
 
 type HttpHandler struct {
-	vault  vault.SourceConfig
+	steampipe     *SteampipeDatabase
 	client keibi.Client
 }
 
@@ -29,6 +27,9 @@ func InitializeHttpHandler(
 		Password:  &elasticSearchPassword,
 		AccountID: &defaultAccountID,
 	})
+	if err != nil {
+		return nil, err
+	}
 
 	return h, nil
 }

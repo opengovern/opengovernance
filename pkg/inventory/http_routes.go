@@ -3,6 +3,7 @@ package inventory
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"github.com/hashicorp/go-hclog"
 	"github.com/turbot/steampipe-plugin-sdk/logging"
 	"github.com/turbot/steampipe-plugin-sdk/plugin/context_key"
@@ -25,10 +26,30 @@ func extractContext(ctx echo.Context) context.Context {
 }
 
 func (h *HttpHandler) Register(v1 *echo.Group) {
+	v1.GET("/resource/:resourceType/:id", h.GetResource)
 	v1.GET("/locations/:provider", h.GetLocations)
 	v1.POST("/resources", h.GetAllResources)
 	v1.POST("/resources/azure", h.GetAzureResources)
 	v1.POST("/resources/aws", h.GetAWSResources)
+}
+
+// GetResource godoc
+// @Summary      Get details of a Resource
+// @Description  Getting resource details by id and resource type
+// @Tags         resource
+// @Produce      json
+// @Param        id         path      string  true  "Id"
+// @Param        resourceType         path      string  true  "ResourceType"
+// @Success      200  {object}  []LocationByProviderResponse
+// @Router       /resource/{resourceType}/{id} [get]
+func (h *HttpHandler) GetResource(ctx echo.Context) error {
+	cc := extractContext(ctx)
+	id := ctx.Param("id")
+	resourceType := ctx.Param("resourceType")
+
+
+
+	return ctx.JSON(200, cols)
 }
 
 // GetLocations godoc
