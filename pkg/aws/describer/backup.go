@@ -2,16 +2,13 @@ package describer
 
 import (
 	"context"
-	"github.com/aws/aws-sdk-go/aws/awserr"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/backup"
 	"github.com/aws/aws-sdk-go-v2/service/backup/types"
+	"github.com/aws/aws-sdk-go/aws/awserr"
+	"gitlab.com/keibiengine/keibi-engine/pkg/aws/model"
 )
-
-type BackupPlanDescription struct {
-	BackupPlan types.BackupPlansListMember
-}
 
 func BackupPlan(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	client := backup.NewFromConfig(cfg)
@@ -26,8 +23,9 @@ func BackupPlan(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 
 		for _, v := range page.BackupPlansList {
 			values = append(values, Resource{
-				ARN: *v.BackupPlanArn,
-				Description: BackupPlanDescription{
+				ARN:  *v.BackupPlanArn,
+				Name: *v.BackupPlanName,
+				Description: model.BackupPlanDescription{
 					BackupPlan: v,
 				},
 			})
@@ -35,10 +33,6 @@ func BackupPlan(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	}
 
 	return values, nil
-}
-
-type BackupRecoveryPointDescription struct {
-	RecoveryPoint *backup.DescribeRecoveryPointOutput
 }
 
 func BackupRecoveryPoint(ctx context.Context, cfg aws.Config) ([]Resource, error) {
@@ -74,8 +68,9 @@ func BackupRecoveryPoint(ctx context.Context, cfg aws.Config) ([]Resource, error
 					}
 
 					values = append(values, Resource{
-						ARN: *recoveryPoint.RecoveryPointArn,
-						Description: BackupRecoveryPointDescription{
+						ARN:  *recoveryPoint.RecoveryPointArn,
+						Name: nameFromArn(*out.RecoveryPointArn),
+						Description: model.BackupRecoveryPointDescription{
 							RecoveryPoint: out,
 						},
 					})
@@ -85,10 +80,6 @@ func BackupRecoveryPoint(ctx context.Context, cfg aws.Config) ([]Resource, error
 	}
 
 	return values, nil
-}
-
-type BackupProtectedResourceDescription struct {
-	ProtectedResource types.ProtectedResource
 }
 
 func BackupProtectedResource(ctx context.Context, cfg aws.Config) ([]Resource, error) {
@@ -104,8 +95,9 @@ func BackupProtectedResource(ctx context.Context, cfg aws.Config) ([]Resource, e
 
 		for _, resource := range page.Results {
 			values = append(values, Resource{
-				ARN: *resource.ResourceArn,
-				Description: BackupProtectedResourceDescription{
+				ARN:  *resource.ResourceArn,
+				Name: nameFromArn(*resource.ResourceArn),
+				Description: model.BackupProtectedResourceDescription{
 					ProtectedResource: resource,
 				},
 			})
@@ -113,12 +105,6 @@ func BackupProtectedResource(ctx context.Context, cfg aws.Config) ([]Resource, e
 	}
 
 	return values, nil
-}
-
-type BackupSelectionDescription struct {
-	BackupSelection types.BackupSelectionsListMember
-	ListOfTags      []types.Condition
-	Resources       []string
 }
 
 func BackupSelection(ctx context.Context, cfg aws.Config) ([]Resource, error) {
@@ -151,8 +137,9 @@ func BackupSelection(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 				}
 
 				values = append(values, Resource{
-					ID: CompositeID(*v.BackupPlanId, *v.SelectionId),
-					Description: BackupSelectionDescription{
+					ID:   CompositeID(*v.BackupPlanId, *v.SelectionId),
+					Name: *v.SelectionName,
+					Description: model.BackupSelectionDescription{
 						BackupSelection: v,
 						ListOfTags:      out.BackupSelection.ListOfTags,
 						Resources:       out.BackupSelection.Resources,
@@ -163,13 +150,6 @@ func BackupSelection(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	}
 
 	return values, nil
-}
-
-type BackupVaultDescription struct {
-	BackupVault       types.BackupVaultListMember
-	Policy            *string
-	BackupVaultEvents []types.BackupVaultEvent
-	SNSTopicArn       *string
 }
 
 func BackupVault(ctx context.Context, cfg aws.Config) ([]Resource, error) {
@@ -209,8 +189,9 @@ func BackupVault(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 			}
 
 			values = append(values, Resource{
-				ARN: *v.BackupVaultArn,
-				Description: BackupVaultDescription{
+				ARN:  *v.BackupVaultArn,
+				Name: *v.BackupVaultName,
+				Description: model.BackupVaultDescription{
 					BackupVault:       v,
 					Policy:            accessPolicy.Policy,
 					BackupVaultEvents: notification.BackupVaultEvents,

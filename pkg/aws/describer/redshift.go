@@ -3,18 +3,13 @@ package describer
 import (
 	"context"
 	"errors"
-	"github.com/aws/aws-sdk-go-v2/service/redshift/types"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/redshift"
+	"github.com/aws/aws-sdk-go-v2/service/redshift/types"
 	"github.com/aws/smithy-go"
+	"gitlab.com/keibiengine/keibi-engine/pkg/aws/model"
 )
-
-type RedshiftClusterDescription struct {
-	Cluster          types.Cluster
-	LoggingStatus    *redshift.DescribeLoggingStatusOutput
-	ScheduledActions []types.ScheduledAction
-}
 
 func RedshiftCluster(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	client := redshift.NewFromConfig(cfg)
@@ -48,8 +43,9 @@ func RedshiftCluster(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 			}
 
 			values = append(values, Resource{
-				ARN: *v.ClusterNamespaceArn,
-				Description: RedshiftClusterDescription{
+				ARN:  *v.ClusterNamespaceArn,
+				Name: *v.ClusterIdentifier,
+				Description: model.RedshiftClusterDescription{
 					Cluster:          v,
 					LoggingStatus:    logStatus,
 					ScheduledActions: sactions.ScheduledActions,
@@ -59,11 +55,6 @@ func RedshiftCluster(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	}
 
 	return values, nil
-}
-
-type RedshiftClusterParameterGroupDescription struct {
-	ClusterParameterGroup types.ClusterParameterGroup
-	Parameters            []types.Parameter
 }
 
 func RedshiftClusterParameterGroup(ctx context.Context, cfg aws.Config) ([]Resource, error) {
@@ -86,8 +77,9 @@ func RedshiftClusterParameterGroup(ctx context.Context, cfg aws.Config) ([]Resou
 			}
 
 			values = append(values, Resource{
-				ID: *v.ParameterGroupName,
-				Description: RedshiftClusterParameterGroupDescription{
+				ID:   *v.ParameterGroupName,
+				Name: *v.ParameterGroupName,
+				Description: model.RedshiftClusterParameterGroupDescription{
 					ClusterParameterGroup: v,
 					Parameters:            param.Parameters,
 				},
@@ -117,6 +109,7 @@ func RedshiftClusterSecurityGroup(ctx context.Context, cfg aws.Config) ([]Resour
 		for _, v := range page.ClusterSecurityGroups {
 			values = append(values, Resource{
 				ID:          *v.ClusterSecurityGroupName,
+				Name:        *v.ClusterSecurityGroupName,
 				Description: v,
 			})
 		}
@@ -139,6 +132,7 @@ func RedshiftClusterSubnetGroup(ctx context.Context, cfg aws.Config) ([]Resource
 		for _, v := range page.ClusterSubnetGroups {
 			values = append(values, Resource{
 				ID:          *v.ClusterSubnetGroupName,
+				Name:        *v.ClusterSubnetGroupName,
 				Description: v,
 			})
 		}

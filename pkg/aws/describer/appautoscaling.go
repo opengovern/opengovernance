@@ -6,11 +6,8 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/applicationautoscaling"
 	"github.com/aws/aws-sdk-go-v2/service/applicationautoscaling/types"
+	"gitlab.com/keibiengine/keibi-engine/pkg/aws/model"
 )
-
-type ApplicationAutoScalingTargetDescription struct {
-	ScalableTarget types.ScalableTarget
-}
 
 func ApplicationAutoScalingTarget(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	client := applicationautoscaling.NewFromConfig(cfg)
@@ -29,8 +26,9 @@ func ApplicationAutoScalingTarget(ctx context.Context, cfg aws.Config) ([]Resour
 
 			for _, item := range page.ScalableTargets {
 				values = append(values, Resource{
-					ID: *item.ResourceId,
-					Description: ApplicationAutoScalingTargetDescription{
+					ID:   *item.ResourceId,
+					Name: *item.ResourceId,
+					Description: model.ApplicationAutoScalingTargetDescription{
 						ScalableTarget: item,
 					},
 				})

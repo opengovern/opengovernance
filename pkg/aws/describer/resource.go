@@ -12,6 +12,7 @@ type Resource struct {
 	ID          string
 	Description interface{}
 
+	Name      string
 	Account   string
 	Region    string
 	Partition string
@@ -39,4 +40,16 @@ func CompositeID(list ...string) string {
 
 	}
 	return strings.Join(normList, "|")
+}
+
+// nameFromArn returns the name from ARN.
+// It **assumes** that the name of the resource is always the last element in the arn.
+func nameFromArn(arn string) string {
+	parts := strings.Split(arn, ":")
+	name := parts[len(parts)-1]
+
+	parts = strings.Split(name, "/")
+	name = parts[len(parts)-1]
+
+	return name
 }

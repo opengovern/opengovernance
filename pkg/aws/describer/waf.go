@@ -10,6 +10,7 @@ import (
 	regionaltypes "github.com/aws/aws-sdk-go-v2/service/wafregional/types"
 	"github.com/aws/aws-sdk-go-v2/service/wafv2"
 	"github.com/aws/aws-sdk-go-v2/service/wafv2/types"
+	"gitlab.com/keibiengine/keibi-engine/pkg/aws/model"
 )
 
 func WAFv2IPSet(ctx context.Context, cfg aws.Config) ([]Resource, error) {
@@ -36,6 +37,7 @@ func WAFv2IPSet(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 			for _, v := range output.IPSets {
 				values = append(values, Resource{
 					ARN:         *v.ARN,
+					Name:        *v.Name,
 					Description: v,
 				})
 			}
@@ -73,6 +75,7 @@ func WAFv2LoggingConfiguration(ctx context.Context, cfg aws.Config) ([]Resource,
 			for _, v := range output.LoggingConfigurations {
 				values = append(values, Resource{
 					ARN:         *v.ResourceArn, // TODO: might not be the actual ARN
+					Name:        *v.ResourceArn,
 					Description: v,
 				})
 			}
@@ -110,6 +113,7 @@ func WAFv2RegexPatternSet(ctx context.Context, cfg aws.Config) ([]Resource, erro
 			for _, v := range output.RegexPatternSets {
 				values = append(values, Resource{
 					ARN:         *v.ARN,
+					Name:        *v.Name,
 					Description: v,
 				})
 			}
@@ -147,6 +151,7 @@ func WAFv2RuleGroup(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 			for _, v := range output.RuleGroups {
 				values = append(values, Resource{
 					ARN:         *v.ARN,
+					Name:        *v.Name,
 					Description: v,
 				})
 			}
@@ -158,14 +163,6 @@ func WAFv2RuleGroup(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	}
 
 	return values, nil
-}
-
-type WAFv2WebACLDescription struct {
-	WebACL               *types.WebACL
-	Scope                types.Scope
-	LoggingConfiguration *types.LoggingConfiguration
-	TagInfoForResource   *types.TagInfoForResource
-	LockToken            *string
 }
 
 func WAFv2WebACL(ctx context.Context, cfg aws.Config) ([]Resource, error) {
@@ -210,8 +207,9 @@ func WAFv2WebACL(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 			}
 
 			values = append(values, Resource{
-				ARN: *v.ARN,
-				Description: WAFv2WebACLDescription{
+				ARN:  *v.ARN,
+				Name: *v.Name,
+				Description: model.WAFv2WebACLDescription{
 					WebACL:               out.WebACL,
 					Scope:                scope,
 					LoggingConfiguration: logC.LoggingConfiguration,
@@ -267,7 +265,8 @@ func WAFv2WebACLAssociation(ctx context.Context, cfg aws.Config) ([]Resource, er
 		}
 
 		values = append(values, Resource{
-			ID: *acl.Id, // Unique per WebACL
+			ID:   *acl.Id, // Unique per WebACL
+			Name: *acl.Name,
 			Description: map[string]interface{}{
 				"WebACLArn":    *acl.ARN,
 				"ResourceArns": output.ResourceArns,
@@ -293,7 +292,8 @@ func WAFv2WebACLAssociation(ctx context.Context, cfg aws.Config) ([]Resource, er
 				}
 
 				values = append(values, Resource{
-					ID: *acl.Id, // Unique per WebACL
+					ID:   *acl.Id, // Unique per WebACL
+					Name: *acl.Name,
 					Description: map[string]interface{}{
 						"WebACLArn":     *acl.ARN,
 						"Distributions": output.DistributionList.Items,
@@ -326,6 +326,7 @@ func WAFRegionalByteMatchSet(ctx context.Context, cfg aws.Config) ([]Resource, e
 		for _, v := range output.ByteMatchSets {
 			values = append(values, Resource{
 				ID:          *v.ByteMatchSetId,
+				Name:        *v.Name,
 				Description: v,
 			})
 		}
@@ -353,6 +354,7 @@ func WAFRegionalGeoMatchSet(ctx context.Context, cfg aws.Config) ([]Resource, er
 		for _, v := range output.GeoMatchSets {
 			values = append(values, Resource{
 				ID:          *v.GeoMatchSetId,
+				Name:        *v.Name,
 				Description: v,
 			})
 		}
@@ -380,6 +382,7 @@ func WAFRegionalIPSet(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 		for _, v := range output.IPSets {
 			values = append(values, Resource{
 				ID:          *v.IPSetId,
+				Name:        *v.Name,
 				Description: v,
 			})
 		}
@@ -407,6 +410,7 @@ func WAFRegionalRateBasedRule(ctx context.Context, cfg aws.Config) ([]Resource, 
 		for _, v := range output.Rules {
 			values = append(values, Resource{
 				ID:          *v.RuleId,
+				Name:        *v.Name,
 				Description: v,
 			})
 		}
@@ -434,6 +438,7 @@ func WAFRegionalRegexPatternSet(ctx context.Context, cfg aws.Config) ([]Resource
 		for _, v := range output.RegexPatternSets {
 			values = append(values, Resource{
 				ID:          *v.RegexPatternSetId,
+				Name:        *v.Name,
 				Description: v,
 			})
 		}
@@ -461,6 +466,7 @@ func WAFRegionalRule(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 		for _, v := range output.Rules {
 			values = append(values, Resource{
 				ID:          *v.RuleId,
+				Name:        *v.Name,
 				Description: v,
 			})
 		}
@@ -488,6 +494,7 @@ func WAFRegionalSizeConstraintSet(ctx context.Context, cfg aws.Config) ([]Resour
 		for _, v := range output.SizeConstraintSets {
 			values = append(values, Resource{
 				ID:          *v.SizeConstraintSetId,
+				Name:        *v.Name,
 				Description: v,
 			})
 		}
@@ -515,6 +522,7 @@ func WAFRegionalSqlInjectionMatchSet(ctx context.Context, cfg aws.Config) ([]Res
 		for _, v := range output.SqlInjectionMatchSets {
 			values = append(values, Resource{
 				ID:          *v.SqlInjectionMatchSetId,
+				Name:        *v.Name,
 				Description: v,
 			})
 		}
@@ -542,6 +550,7 @@ func WAFRegionalWebACL(ctx context.Context, cfg aws.Config) ([]Resource, error) 
 		for _, v := range output.WebACLs {
 			values = append(values, Resource{
 				ID:          *v.WebACLId,
+				Name:        *v.Name,
 				Description: v,
 			})
 		}
@@ -573,7 +582,8 @@ func WAFRegionalWebACLAssociation(ctx context.Context, cfg aws.Config) ([]Resour
 		}
 
 		values = append(values, Resource{
-			ID: *acl.WebACLId, // Unique per WebACL
+			ID:   *acl.WebACLId, // Unique per WebACL
+			Name: *acl.Name,
 			Description: map[string]interface{}{
 				"WebACLId":     *acl.WebACLId,
 				"ResourceArns": output.ResourceArns,
@@ -599,6 +609,7 @@ func WAFRegionalXssMatchSet(ctx context.Context, cfg aws.Config) ([]Resource, er
 		for _, v := range output.XssMatchSets {
 			values = append(values, Resource{
 				ID:          *v.XssMatchSetId,
+				Name:        *v.Name,
 				Description: v,
 			})
 		}

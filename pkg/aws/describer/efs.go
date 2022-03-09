@@ -6,6 +6,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/efs"
 	"github.com/aws/aws-sdk-go-v2/service/efs/types"
+	"gitlab.com/keibiengine/keibi-engine/pkg/aws/model"
 )
 
 const (
@@ -24,19 +25,22 @@ func EFSAccessPoint(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 		}
 
 		for _, v := range page.AccessPoints {
+
+			// Doc: The name of the access point. This is the value of the Name tag.
+			name := aws.ToString(v.Name)
+			if name == "" {
+				name = *v.AccessPointId
+			}
+
 			values = append(values, Resource{
 				ARN:         *v.AccessPointArn,
+				Name:        name,
 				Description: v,
 			})
 		}
 	}
 
 	return values, nil
-}
-
-type EFSFileSystemDescription struct {
-	FileSystem types.FileSystemDescription
-	Policy     *string
 }
 
 func EFSFileSystem(ctx context.Context, cfg aws.Config) ([]Resource, error) {
@@ -62,9 +66,18 @@ func EFSFileSystem(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 				output = &efs.DescribeFileSystemPolicyOutput{}
 			}
 
+			// Doc: You can add tags to a file system, including a Name tag. For more information,
+			// see CreateFileSystem. If the file system has a Name tag, Amazon EFS returns the
+			// value in this field.
+			name := aws.ToString(v.Name)
+			if name == "" {
+				name = *v.FileSystemId
+			}
+
 			values = append(values, Resource{
-				ARN: *v.FileSystemArn,
-				Description: EFSFileSystemDescription{
+				ARN:  *v.FileSystemArn,
+				Name: name,
+				Description: model.EFSFileSystemDescription{
 					FileSystem: v,
 					Policy:     output.Policy,
 				},
@@ -98,6 +111,7 @@ func EFSMountTarget(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 			for _, v := range output.MountTargets {
 				values = append(values, Resource{
 					ID:          *v.MountTargetId,
+					Name:        *v.MountTargetId,
 					Description: v,
 				})
 			}
@@ -126,6 +140,7 @@ func EFSMountTarget(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 			for _, v := range output.MountTargets {
 				values = append(values, Resource{
 					ID:          *v.FileSystemId,
+					Name:        *v.AvailabilityZoneName,
 					Description: v,
 				})
 			}

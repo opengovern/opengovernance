@@ -48,6 +48,7 @@ func SpringCloudService(ctx context.Context, authorizer autorest.Authorizer, sub
 					}
 					values = append(values, Resource{
 						ID:       *service.ID,
+						Name:     *service.Name,
 						Location: *service.Location,
 						Description: model.SpringCloudServiceDescription{
 							ServiceResource:            service,

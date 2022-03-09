@@ -6,11 +6,8 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/eks"
 	"github.com/aws/aws-sdk-go-v2/service/eks/types"
+	"gitlab.com/keibiengine/keibi-engine/pkg/aws/model"
 )
-
-type EKSClusterDescription struct {
-	Cluster *types.Cluster
-}
 
 func EKSCluster(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	clusters, err := listEksClusters(ctx, cfg)
@@ -28,18 +25,15 @@ func EKSCluster(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 		}
 
 		values = append(values, Resource{
-			ARN: *output.Cluster.Arn,
-			Description: EKSClusterDescription{
-				Cluster: output.Cluster,
+			ARN:  *output.Cluster.Arn,
+			Name: *output.Cluster.Name,
+			Description: model.EKSClusterDescription{
+				Cluster: *output.Cluster,
 			},
 		})
 	}
 
 	return values, nil
-}
-
-type EKSAddonDescription struct {
-	Addon *types.Addon
 }
 
 func EKSAddon(ctx context.Context, cfg aws.Config) ([]Resource, error) {
@@ -74,9 +68,10 @@ func EKSAddon(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 			}
 
 			values = append(values, Resource{
-				ARN: *output.Addon.AddonArn,
-				Description: EKSAddonDescription{
-					Addon: output.Addon,
+				ARN:  *output.Addon.AddonArn,
+				Name: *output.Addon.AddonName,
+				Description: model.EKSAddonDescription{
+					Addon: *output.Addon,
 				},
 			})
 		}
@@ -118,6 +113,7 @@ func EKSFargateProfile(ctx context.Context, cfg aws.Config) ([]Resource, error) 
 
 			values = append(values, Resource{
 				ARN:         *output.FargateProfile.FargateProfileArn,
+				Name:        *output.FargateProfile.FargateProfileName,
 				Description: output.FargateProfile,
 			})
 		}
@@ -159,6 +155,7 @@ func EKSNodegroup(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 
 			values = append(values, Resource{
 				ARN:         *output.Nodegroup.NodegroupArn,
+				Name:        *output.Nodegroup.NodegroupName,
 				Description: output.Nodegroup,
 			})
 		}
@@ -219,7 +216,8 @@ func EKSIdentityProviderConfig(ctx context.Context, cfg aws.Config) ([]Resource,
 				}
 
 				values = append(values, Resource{
-					ARN: *output.IdentityProviderConfig.Oidc.IdentityProviderConfigArn,
+					ARN:  *output.IdentityProviderConfig.Oidc.IdentityProviderConfigArn,
+					Name: *config.Name,
 					Description: EKSIdentityProviderConfigDescription{
 						ConfigName:             *config.Name,
 						ConfigType:             *config.Type,

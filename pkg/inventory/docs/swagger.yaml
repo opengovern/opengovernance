@@ -1,5 +1,48 @@
 basePath: /api/v1
 definitions:
+  inventory.AWSResource:
+    properties:
+      account_id:
+        type: string
+      location:
+        type: string
+      name:
+        type: string
+      resource_id:
+        type: string
+      resource_type:
+        type: string
+    type: object
+  inventory.AllResource:
+    properties:
+      keibi_source_id:
+        type: string
+      location:
+        type: string
+      name:
+        type: string
+      provider:
+        type: string
+      resource_id:
+        type: string
+      resource_type:
+        type: string
+    type: object
+  inventory.AzureResource:
+    properties:
+      location:
+        type: string
+      name:
+        type: string
+      resource_group:
+        type: string
+      resource_id:
+        type: string
+      subscription_id:
+        type: string
+      type:
+        type: string
+    type: object
   inventory.Filters:
     properties:
       keibi_source:
@@ -10,13 +53,27 @@ definitions:
         items:
           type: string
         type: array
-      provider:
-        items:
-          type: string
-        type: array
       resourceType:
         items:
           type: string
+        type: array
+    type: object
+  inventory.GetAWSResourceResponse:
+    properties:
+      page:
+        $ref: '#/definitions/inventory.Page'
+      resources:
+        items:
+          $ref: '#/definitions/inventory.AWSResource'
+        type: array
+    type: object
+  inventory.GetAzureResourceResponse:
+    properties:
+      page:
+        $ref: '#/definitions/inventory.Page'
+      resources:
+        items:
+          $ref: '#/definitions/inventory.AzureResource'
         type: array
     type: object
   inventory.GetResourceResponse:
@@ -25,7 +82,7 @@ definitions:
         $ref: '#/definitions/inventory.Page'
       resources:
         items:
-          $ref: '#/definitions/inventory.Resource'
+          $ref: '#/definitions/inventory.AllResource'
         type: array
     type: object
   inventory.LocationByProviderResponse:
@@ -41,17 +98,6 @@ definitions:
         type: array
       size:
         type: integer
-    type: object
-  inventory.Resource:
-    properties:
-      id:
-        type: string
-      keibi_source:
-        type: string
-      location:
-        type: string
-      resource_type:
-        type: string
     type: object
 host: localhost:6251
 info:
@@ -95,7 +141,7 @@ paths:
     post:
       consumes:
       - application/json
-      description: Getting resources by filters
+      description: Getting all cloud providers resources by filters
       parameters:
       - description: Filters
         in: body
@@ -117,6 +163,62 @@ paths:
           schema:
             $ref: '#/definitions/inventory.GetResourceResponse'
       summary: Get resources
+      tags:
+      - inventory
+  /resources/aws:
+    post:
+      consumes:
+      - application/json
+      description: Getting AWS resources by filters
+      parameters:
+      - description: Filters
+        in: body
+        name: filters
+        required: true
+        schema:
+          $ref: '#/definitions/inventory.Filters'
+      - description: Page
+        in: body
+        name: page
+        required: true
+        schema:
+          $ref: '#/definitions/inventory.Page'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/inventory.GetAWSResourceResponse'
+      summary: Get AWS resources
+      tags:
+      - inventory
+  /resources/azure:
+    post:
+      consumes:
+      - application/json
+      description: Getting Azure resources by filters
+      parameters:
+      - description: Filters
+        in: body
+        name: filters
+        required: true
+        schema:
+          $ref: '#/definitions/inventory.Filters'
+      - description: Page
+        in: body
+        name: page
+        required: true
+        schema:
+          $ref: '#/definitions/inventory.Page'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/inventory.GetAzureResourceResponse'
+      summary: Get Azure resources
       tags:
       - inventory
 swagger: "2.0"

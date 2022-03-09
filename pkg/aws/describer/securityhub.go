@@ -2,14 +2,11 @@ package describer
 
 import (
 	"context"
+
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/securityhub"
+	"gitlab.com/keibiengine/keibi-engine/pkg/aws/model"
 )
-
-type SecurityHubHubDescription struct {
-	Hub  *securityhub.DescribeHubOutput
-	Tags map[string]string
-}
 
 func SecurityHubHub(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	client := securityhub.NewFromConfig(cfg)
@@ -29,8 +26,9 @@ func SecurityHubHub(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	}
 
 	values = append(values, Resource{
-		ARN: *out.HubArn,
-		Description: SecurityHubHubDescription{
+		ARN:  *out.HubArn,
+		Name: nameFromArn(*out.HubArn),
+		Description: model.SecurityHubHubDescription{
 			Hub:  out,
 			Tags: tags.Tags,
 		},

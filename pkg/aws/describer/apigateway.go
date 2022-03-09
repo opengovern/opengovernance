@@ -5,15 +5,10 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/apigateway"
-	"github.com/aws/aws-sdk-go-v2/service/apigateway/types"
 	"github.com/aws/aws-sdk-go-v2/service/apigatewayv2"
 	typesv2 "github.com/aws/aws-sdk-go-v2/service/apigatewayv2/types"
+	"gitlab.com/keibiengine/keibi-engine/pkg/aws/model"
 )
-
-type ApiGatewayStageDescription struct {
-	RestApiId *string
-	Stage     types.Stage
-}
 
 func ApiGatewayStage(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	client := apigateway.NewFromConfig(cfg)
@@ -36,8 +31,9 @@ func ApiGatewayStage(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 
 			for _, stageItem := range out.Item {
 				values = append(values, Resource{
-					ID: CompositeID(*restItem.Id, *stageItem.StageName),
-					Description: ApiGatewayStageDescription{
+					ID:   CompositeID(*restItem.Id, *stageItem.StageName),
+					Name: *restItem.Name,
+					Description: model.ApiGatewayStageDescription{
 						RestApiId: restItem.Id,
 						Stage:     stageItem,
 					},
@@ -46,11 +42,6 @@ func ApiGatewayStage(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 		}
 	}
 	return values, nil
-}
-
-type ApiGatewayV2StageDescription struct {
-	ApiId *string
-	Stage typesv2.Stage
 }
 
 func ApiGatewayV2Stage(ctx context.Context, cfg aws.Config) ([]Resource, error) {
@@ -93,8 +84,9 @@ func ApiGatewayV2Stage(ctx context.Context, cfg aws.Config) ([]Resource, error) 
 
 		for _, stage := range stages {
 			values = append(values, Resource{
-				ID: CompositeID(*api.ApiId, *stage.StageName),
-				Description: ApiGatewayV2StageDescription{
+				ID:   CompositeID(*api.ApiId, *stage.StageName),
+				Name: *api.Name,
+				Description: model.ApiGatewayV2StageDescription{
 					ApiId: api.ApiId,
 					Stage: stage,
 				},

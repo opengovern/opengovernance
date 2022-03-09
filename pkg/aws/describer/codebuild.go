@@ -5,12 +5,8 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/codebuild"
-	"github.com/aws/aws-sdk-go-v2/service/codebuild/types"
+	"gitlab.com/keibiengine/keibi-engine/pkg/aws/model"
 )
-
-type CodeBuildProjectDescription struct {
-	Project types.Project
-}
 
 func CodeBuildProject(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	client := codebuild.NewFromConfig(cfg)
@@ -36,8 +32,9 @@ func CodeBuildProject(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 
 		for _, project := range projects.Projects {
 			values = append(values, Resource{
-				ARN: *project.Arn,
-				Description: CodeBuildProjectDescription{
+				ARN:  *project.Arn,
+				Name: *project.Name,
+				Description: model.CodeBuildProjectDescription{
 					Project: project,
 				},
 			})
@@ -45,10 +42,6 @@ func CodeBuildProject(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	}
 
 	return values, nil
-}
-
-type CodeBuildSourceCredentialDescription struct {
-	SourceCredentialsInfo types.SourceCredentialsInfo
 }
 
 func CodeBuildSourceCredential(ctx context.Context, cfg aws.Config) ([]Resource, error) {
@@ -61,8 +54,9 @@ func CodeBuildSourceCredential(ctx context.Context, cfg aws.Config) ([]Resource,
 	var values []Resource
 	for _, item := range out.SourceCredentialsInfos {
 		values = append(values, Resource{
-			ARN: *item.Arn,
-			Description: CodeBuildSourceCredentialDescription{
+			ARN:  *item.Arn,
+			Name: nameFromArn(*item.Arn),
+			Description: model.CodeBuildSourceCredentialDescription{
 				SourceCredentialsInfo: item,
 			},
 		})

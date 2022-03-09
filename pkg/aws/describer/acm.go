@@ -5,7 +5,7 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/acm"
-	"github.com/aws/aws-sdk-go-v2/service/acm/types"
+	"gitlab.com/keibiengine/keibi-engine/pkg/aws/model"
 )
 
 func CertificateManagerAccount(ctx context.Context, cfg aws.Config) ([]Resource, error) {
@@ -19,15 +19,6 @@ func CertificateManagerAccount(ctx context.Context, cfg aws.Config) ([]Resource,
 		// No ID or ARN. Per Account Configuration
 		Description: output,
 	}}, nil
-}
-
-type CertificateManagerCertificateDescription struct {
-	Certificate types.CertificateDetail
-	Attributes  struct {
-		Certificate      *string
-		CertificateChain *string
-	}
-	Tags []types.Tag
 }
 
 func CertificateManagerCertificate(ctx context.Context, cfg aws.Config) ([]Resource, error) {
@@ -64,8 +55,9 @@ func CertificateManagerCertificate(ctx context.Context, cfg aws.Config) ([]Resou
 			}
 
 			values = append(values, Resource{
-				ARN: *v.CertificateArn,
-				Description: CertificateManagerCertificateDescription{
+				ARN:  *v.CertificateArn,
+				Name: nameFromArn(*v.CertificateArn),
+				Description: model.CertificateManagerCertificateDescription{
 					Certificate: *describeOutput.Certificate,
 					Attributes: struct {
 						Certificate      *string

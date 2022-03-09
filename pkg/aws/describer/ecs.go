@@ -9,6 +9,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/ecs"
 	"github.com/aws/aws-sdk-go-v2/service/ecs/types"
+	"gitlab.com/keibiengine/keibi-engine/pkg/aws/model"
 )
 
 func ECSCapacityProvider(ctx context.Context, cfg aws.Config) ([]Resource, error) {
@@ -27,6 +28,7 @@ func ECSCapacityProvider(ctx context.Context, cfg aws.Config) ([]Resource, error
 		for _, v := range output.CapacityProviders {
 			values = append(values, Resource{
 				ARN:         *v.CapacityProviderArn,
+				Name:        *v.Name,
 				Description: v,
 			})
 		}
@@ -38,10 +40,6 @@ func ECSCapacityProvider(ctx context.Context, cfg aws.Config) ([]Resource, error
 	}
 
 	return values, nil
-}
-
-type ECSClusterDescription struct {
-	Cluster types.Cluster
 }
 
 func ECSCluster(ctx context.Context, cfg aws.Config) ([]Resource, error) {
@@ -72,8 +70,9 @@ func ECSCluster(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 
 		for _, v := range output.Clusters {
 			values = append(values, Resource{
-				ARN: *v.ClusterArn,
-				Description: ECSClusterDescription{
+				ARN:  *v.ClusterArn,
+				Name: *v.ClusterName,
+				Description: model.ECSClusterDescription{
 					Cluster: v,
 				},
 			})
@@ -81,10 +80,6 @@ func ECSCluster(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	}
 
 	return values, nil
-}
-
-type ECSServiceDescription struct {
-	Service types.Service
 }
 
 func ECSService(ctx context.Context, cfg aws.Config) ([]Resource, error) {
@@ -122,8 +117,9 @@ func ECSService(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 
 			for _, v := range output.Services {
 				values = append(values, Resource{
-					ARN: *v.ServiceArn,
-					Description: ECSServiceDescription{
+					ARN:  *v.ServiceArn,
+					Name: *v.ServiceName,
+					Description: model.ECSServiceDescription{
 						Service: v,
 					},
 				})
@@ -132,11 +128,6 @@ func ECSService(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	}
 
 	return values, nil
-}
-
-type ECSTaskDefinitionDescription struct {
-	TaskDefinition *types.TaskDefinition
-	Tags           []types.Tag
 }
 
 func ECSTaskDefinition(ctx context.Context, cfg aws.Config) ([]Resource, error) {
@@ -161,9 +152,14 @@ func ECSTaskDefinition(ctx context.Context, cfg aws.Config) ([]Resource, error) 
 				return nil, err
 			}
 
+			// From Steampipe
+			splitArn := strings.Split(arn, ":")
+			name := splitArn[len(splitArn)-1]
+
 			values = append(values, Resource{
-				ARN: arn,
-				Description: ECSTaskDefinitionDescription{
+				ARN:  arn,
+				Name: name,
+				Description: model.ECSTaskDefinitionDescription{
 					TaskDefinition: output.TaskDefinition,
 					Tags:           output.Tags,
 				},

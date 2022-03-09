@@ -469,7 +469,7 @@ type ApplicationAutoScalingTargetDescription struct {
 //getfilter:name=description.AutoScalingGroup.AutoScalingGroupName
 type AutoScalingGroupDescription struct {
 	AutoScalingGroup *autoscaling.AutoScalingGroup
-	Policies         *autoscaling.ScalingPolicy
+	Policies         []autoscaling.ScalingPolicy
 }
 
 //index:aws_autoscaling_launchconfiguration
@@ -744,8 +744,8 @@ type S3BucketDescription struct {
 	PolicyStatus                   *s3.PolicyStatus
 	PublicAccessBlockConfiguration *s3.PublicAccessBlockConfiguration
 	Versioning                     struct {
-		MFADelete *string
-		Status    *string
+		MFADelete s3.MFADeleteStatus
+		Status    s3.BucketVersioningStatus
 	}
 	LifecycleRules                    []s3.LifecycleRule
 	LoggingEnabled                    *s3.LoggingEnabled

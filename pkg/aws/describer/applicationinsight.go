@@ -21,6 +21,7 @@ func ApplicationInsightsApplication(ctx context.Context, cfg aws.Config) ([]Reso
 		for _, v := range page.ApplicationInfoList {
 			values = append(values, Resource{
 				ID:          *v.ResourceGroupName,
+				Name:        *v.ResourceGroupName,
 				Description: v,
 			})
 		}

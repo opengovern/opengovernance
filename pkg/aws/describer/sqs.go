@@ -6,12 +6,8 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/sqs"
 	"github.com/aws/aws-sdk-go-v2/service/sqs/types"
+	"gitlab.com/keibiengine/keibi-engine/pkg/aws/model"
 )
-
-type SQSQueueDescription struct {
-	Attributes map[string]string
-	Tags       map[string]string
-}
 
 func SQSQueue(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	client := sqs.NewFromConfig(cfg)
@@ -25,6 +21,8 @@ func SQSQueue(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 		}
 
 		for _, url := range page.QueueUrls {
+			// url example: http://sqs.us-west-2.amazonaws.com/123456789012/queueName
+
 			output, err := client.GetQueueAttributes(ctx, &sqs.GetQueueAttributesInput{
 				QueueUrl: &url,
 				AttributeNames: []types.QueueAttributeName{
@@ -46,8 +44,9 @@ func SQSQueue(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 			output.Attributes["QueueUrl"] = url
 
 			values = append(values, Resource{
-				ARN: url,
-				Description: SQSQueueDescription{
+				ARN:  url,
+				Name: nameFromArn(url),
+				Description: model.SQSQueueDescription{
 					Attributes: output.Attributes,
 					Tags:       tOutput.Tags,
 				},

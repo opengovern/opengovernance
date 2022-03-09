@@ -56,6 +56,7 @@ func HealthcareService(ctx context.Context, authorizer autorest.Authorizer, subs
 
 			values = append(values, Resource{
 				ID:       *v.ID,
+				Name:     *v.Name,
 				Location: *v.Location,
 				Description: model.HealthcareServiceDescription{
 					ServicesDescription:         v,

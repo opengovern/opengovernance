@@ -4,9 +4,11 @@ type Resource struct {
 	ID          string
 	Description interface{}
 
-	Location     string
-	Subscription string
-	Type         string
+	Name           string
+	Type           string
+	ResourceGroup  string
+	Location       string
+	SubscriptionID string
 }
 
 func (r Resource) UniqueID() string {

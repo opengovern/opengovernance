@@ -6,11 +6,8 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/rds"
 	"github.com/aws/aws-sdk-go-v2/service/rds/types"
+	"gitlab.com/keibiengine/keibi-engine/pkg/aws/model"
 )
-
-type RDSDBClusterDescription struct {
-	DBCluster types.DBCluster
-}
 
 func RDSDBCluster(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	client := rds.NewFromConfig(cfg)
@@ -25,8 +22,9 @@ func RDSDBCluster(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 
 		for _, v := range page.DBClusters {
 			values = append(values, Resource{
-				ARN: *v.DBClusterArn,
-				Description: RDSDBClusterDescription{
+				ARN:  *v.DBClusterArn,
+				Name: *v.DBClusterIdentifier,
+				Description: model.RDSDBClusterDescription{
 					DBCluster: v,
 				},
 			})
@@ -34,11 +32,6 @@ func RDSDBCluster(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	}
 
 	return values, nil
-}
-
-type RDSDBClusterSnapshotDescription struct {
-	DBClusterSnapshot types.DBClusterSnapshot
-	Attributes        *types.DBClusterSnapshotAttributesResult
 }
 
 func RDSDBClusterSnapshot(ctx context.Context, cfg aws.Config) ([]Resource, error) {
@@ -61,8 +54,9 @@ func RDSDBClusterSnapshot(ctx context.Context, cfg aws.Config) ([]Resource, erro
 			}
 
 			values = append(values, Resource{
-				ARN: *v.DBClusterSnapshotArn,
-				Description: RDSDBClusterSnapshotDescription{
+				ARN:  *v.DBClusterSnapshotArn,
+				Name: *v.DBClusterSnapshotIdentifier,
+				Description: model.RDSDBClusterSnapshotDescription{
 					DBClusterSnapshot: v,
 					Attributes:        attr.DBClusterSnapshotAttributesResult,
 				},
@@ -87,16 +81,13 @@ func RDSDBClusterParameterGroup(ctx context.Context, cfg aws.Config) ([]Resource
 		for _, v := range page.DBClusterParameterGroups {
 			values = append(values, Resource{
 				ARN:         *v.DBClusterParameterGroupArn,
+				Name:        *v.DBClusterParameterGroupName,
 				Description: v,
 			})
 		}
 	}
 
 	return values, nil
-}
-
-type RDSDBInstanceDescription struct {
-	DBInstance types.DBInstance
 }
 
 func RDSDBInstance(ctx context.Context, cfg aws.Config) ([]Resource, error) {
@@ -112,8 +103,9 @@ func RDSDBInstance(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 
 		for _, v := range page.DBInstances {
 			values = append(values, Resource{
-				ARN: *v.DBInstanceArn,
-				Description: RDSDBInstanceDescription{
+				ARN:  *v.DBInstanceArn,
+				Name: *v.DBInstanceIdentifier,
+				Description: model.RDSDBInstanceDescription{
 					DBInstance: v,
 				},
 			})
@@ -137,6 +129,7 @@ func RDSDBParameterGroup(ctx context.Context, cfg aws.Config) ([]Resource, error
 		for _, v := range page.DBParameterGroups {
 			values = append(values, Resource{
 				ARN:         *v.DBParameterGroupArn,
+				Name:        *v.DBParameterGroupName,
 				Description: v,
 			})
 		}
@@ -159,6 +152,7 @@ func RDSDBProxy(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 		for _, v := range page.DBProxies {
 			values = append(values, Resource{
 				ARN:         *v.DBProxyArn,
+				Name:        *v.DBProxyName,
 				Description: v,
 			})
 		}
@@ -181,6 +175,7 @@ func RDSDBProxyEndpoint(ctx context.Context, cfg aws.Config) ([]Resource, error)
 		for _, v := range page.DBProxyEndpoints {
 			values = append(values, Resource{
 				ARN:         *v.DBProxyEndpointArn,
+				Name:        *v.DBProxyEndpointName,
 				Description: v,
 			})
 		}
@@ -213,6 +208,7 @@ func RDSDBProxyTargetGroup(ctx context.Context, cfg aws.Config) ([]Resource, err
 			for _, v := range page.TargetGroups {
 				values = append(values, Resource{
 					ARN:         *v.TargetGroupArn,
+					Name:        *v.TargetGroupName,
 					Description: v,
 				})
 			}
@@ -236,6 +232,7 @@ func RDSDBSecurityGroup(ctx context.Context, cfg aws.Config) ([]Resource, error)
 		for _, v := range page.DBSecurityGroups {
 			values = append(values, Resource{
 				ARN:         *v.DBSecurityGroupArn,
+				Name:        *v.DBSecurityGroupName,
 				Description: v,
 			})
 		}
@@ -258,16 +255,13 @@ func RDSDBSubnetGroup(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 		for _, v := range page.DBSubnetGroups {
 			values = append(values, Resource{
 				ARN:         *v.DBSubnetGroupArn,
+				Name:        *v.DBSubnetGroupName,
 				Description: v,
 			})
 		}
 	}
 
 	return values, nil
-}
-
-type RDSDBEventSubscriptionDescription struct {
-	EventSubscription types.EventSubscription
 }
 
 func RDSDBEventSubscription(ctx context.Context, cfg aws.Config) ([]Resource, error) {
@@ -283,8 +277,9 @@ func RDSDBEventSubscription(ctx context.Context, cfg aws.Config) ([]Resource, er
 
 		for _, v := range page.EventSubscriptionsList {
 			values = append(values, Resource{
-				ARN: *v.EventSubscriptionArn,
-				Description: RDSDBEventSubscriptionDescription{
+				ARN:  *v.EventSubscriptionArn,
+				Name: *v.CustSubscriptionId,
+				Description: model.RDSDBEventSubscriptionDescription{
 					EventSubscription: v,
 				},
 			})
@@ -308,6 +303,7 @@ func RDSGlobalCluster(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 		for _, v := range page.GlobalClusters {
 			values = append(values, Resource{
 				ARN:         *v.GlobalClusterArn,
+				Name:        *v.GlobalClusterArn,
 				Description: v,
 			})
 		}
@@ -330,6 +326,7 @@ func RDSOptionGroup(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 		for _, v := range page.OptionGroupsList {
 			values = append(values, Resource{
 				ARN:         *v.OptionGroupArn,
+				Name:        *v.OptionGroupName,
 				Description: v,
 			})
 		}
@@ -363,7 +360,8 @@ func RDSDBSnapshot(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 			}
 
 			values = append(values, Resource{
-				ARN: *v.DBSnapshotArn,
+				ARN:  *v.DBSnapshotArn,
+				Name: *v.DBSnapshotArn,
 				Description: RDSDBSnapshotDescription{
 					DBSnapshot:           v,
 					DBSnapshotAttributes: attrs.DBSnapshotAttributesResult.DBSnapshotAttributes,

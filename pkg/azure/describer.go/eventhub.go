@@ -55,6 +55,7 @@ func EventhubNamespace(ctx context.Context, authorizer autorest.Authorizer, subs
 
 			values = append(values, Resource{
 				ID:       *namespace.ID,
+				Name:     *namespace.Name,
 				Location: *namespace.Location,
 				Description: model.EventhubNamespaceDescription{
 					EHNamespace:                 namespace,

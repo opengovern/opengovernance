@@ -74,7 +74,7 @@ func buildFilter(equalQuals plugin.KeyColumnEqualsQualMap, filtersQuals map[stri
 		filters = append(filters, filter)
 	}
 
-	if len(accountID) > 0 {
+	if len(accountID) > 0 && accountID != "all" {
 		var accountFieldName string
 		switch accountProvider {
 		case "aws":

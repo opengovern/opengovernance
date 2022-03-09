@@ -6,13 +6,8 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/dax"
-	"github.com/aws/aws-sdk-go-v2/service/dax/types"
+	"gitlab.com/keibiengine/keibi-engine/pkg/aws/model"
 )
-
-type DAXClusterDescription struct {
-	Cluster types.Cluster
-	Tags    []types.Tag
-}
 
 func DAXCluster(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	client := dax.NewFromConfig(cfg)
@@ -38,8 +33,9 @@ func DAXCluster(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 		}
 
 		values = append(values, Resource{
-			ARN: *cluster.ClusterArn,
-			Description: DAXClusterDescription{
+			ARN:  *cluster.ClusterArn,
+			Name: *cluster.ClusterName,
+			Description: model.DAXClusterDescription{
 				Cluster: cluster,
 				Tags:    tags.Tags,
 			},

@@ -22,6 +22,7 @@ func KustoCluster(ctx context.Context, authorizer autorest.Authorizer, subscript
 
 		values = append(values, Resource{
 			ID:       *kusto.ID,
+			Name:     *kusto.Name,
 			Location: *kusto.Location,
 			Description: model.KustoClusterDescription{
 				Cluster:       kusto,

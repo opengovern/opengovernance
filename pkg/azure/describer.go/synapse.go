@@ -52,6 +52,7 @@ func SynapseWorkspace(ctx context.Context, authorizer autorest.Authorizer, subsc
 
 			values = append(values, Resource{
 				ID:       *config.ID,
+				Name:     *config.Name,
 				Location: *config.Location,
 				Description: model.SynapseWorkspaceDescription{
 					Workspace:                      config,

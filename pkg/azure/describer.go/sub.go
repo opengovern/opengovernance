@@ -23,6 +23,7 @@ func Location(ctx context.Context, authorizer autorest.Authorizer, subscription 
 
 		values = append(values, Resource{
 			ID:       *location.ID,
+			Name:     *location.Name,
 			Location: "global",
 			Description: model.LocationDescription{
 				Location:      location,

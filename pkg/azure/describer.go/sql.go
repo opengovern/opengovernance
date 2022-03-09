@@ -78,6 +78,7 @@ func MssqlManagedInstance(ctx context.Context, authorizer autorest.Authorizer, s
 
 			values = append(values, Resource{
 				ID:       *managedInstance.ID,
+				Name:     *managedInstance.Name,
 				Location: *managedInstance.Location,
 				Description: model.MssqlManagedInstanceDescription{
 					ManagedInstance:                         managedInstance,
@@ -189,6 +190,7 @@ func SqlDatabase(ctx context.Context, authorizer autorest.Authorizer, subscripti
 
 				values = append(values, Resource{
 					ID:       *server.ID,
+					Name:     *server.Name,
 					Location: *server.Location,
 					Description: model.SqlDatabaseDescription{
 						Database:                           getOp,

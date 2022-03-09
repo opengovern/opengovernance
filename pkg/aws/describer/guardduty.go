@@ -2,14 +2,11 @@ package describer
 
 import (
 	"context"
+
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/guardduty"
-	"github.com/aws/aws-sdk-go-v2/service/guardduty/types"
+	"gitlab.com/keibiengine/keibi-engine/pkg/aws/model"
 )
-
-type GuardDutyFindingDescription struct {
-	Finding types.Finding
-}
 
 func GuardDutyFinding(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	var values []Resource
@@ -44,8 +41,9 @@ func GuardDutyFinding(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 
 				for _, item := range findings.Findings {
 					values = append(values, Resource{
-						ARN: *item.Arn,
-						Description: GuardDutyFindingDescription{
+						ARN:  *item.Arn,
+						Name: *item.Id,
+						Description: model.GuardDutyFindingDescription{
 							Finding: item,
 						},
 					})
@@ -54,11 +52,6 @@ func GuardDutyFinding(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 		}
 	}
 	return values, nil
-}
-
-type GuardDutyDetectorDescription struct {
-	DetectorId string
-	Detector   *guardduty.GetDetectorOutput
 }
 
 func GuardDutyDetector(ctx context.Context, cfg aws.Config) ([]Resource, error) {
@@ -73,18 +66,19 @@ func GuardDutyDetector(ctx context.Context, cfg aws.Config) ([]Resource, error) 
 			return nil, err
 		}
 
-		for _, item := range page.DetectorIds {
+		for _, id := range page.DetectorIds {
 			out, err := client.GetDetector(ctx, &guardduty.GetDetectorInput{
-				DetectorId: &item,
+				DetectorId: &id,
 			})
 			if err != nil {
 				return nil, err
 			}
 
 			values = append(values, Resource{
-				ID: item,
-				Description: GuardDutyDetectorDescription{
-					DetectorId: item,
+				ID:   id,
+				Name: id,
+				Description: model.GuardDutyDetectorDescription{
+					DetectorId: id,
 					Detector:   out,
 				},
 			})

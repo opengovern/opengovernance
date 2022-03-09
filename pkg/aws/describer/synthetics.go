@@ -21,6 +21,7 @@ func SyntheticsCanary(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 		for _, v := range page.Canaries {
 			values = append(values, Resource{
 				ID:          *v.Id,
+				Name:        *v.Name,
 				Description: v,
 			})
 		}

@@ -34,6 +34,7 @@ func EventGridDomainTopic(ctx context.Context, authorizer autorest.Authorizer, s
 			for v := it.Value(); it.NotDone(); v = it.Value() {
 				values = append(values, Resource{
 					ID:          *v.ID,
+					Name:        *v.Name,
 					Location:    "global",
 					Description: JSONAllFieldsMarshaller{Value: v},
 				})
@@ -96,6 +97,7 @@ func EventGridDomain(ctx context.Context, authorizer autorest.Authorizer, subscr
 
 			values = append(values, Resource{
 				ID:       *domain.ID,
+				Name:     *domain.Name,
 				Location: *domain.Location,
 				Description: model.EventGridDomainDescription{
 					Domain:                      domain,
@@ -139,6 +141,7 @@ func EventGridTopic(ctx context.Context, authorizer autorest.Authorizer, subscri
 
 			values = append(values, Resource{
 				ID:       *topic.ID,
+				Name:     *topic.Name,
 				Location: *topic.Location,
 				Description: model.EventGridTopicDescription{
 					Topic:                       topic,

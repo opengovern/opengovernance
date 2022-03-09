@@ -6,12 +6,8 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/accessanalyzer"
 	"github.com/aws/aws-sdk-go-v2/service/accessanalyzer/types"
+	"gitlab.com/keibiengine/keibi-engine/pkg/aws/model"
 )
-
-type AccessAnalyzerAnalyzerDescription struct {
-	Analyzer types.AnalyzerSummary
-	Findings []types.FindingSummary
-}
 
 func AccessAnalyzerAnalyzer(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	client := accessanalyzer.NewFromConfig(cfg)
@@ -30,8 +26,9 @@ func AccessAnalyzerAnalyzer(ctx context.Context, cfg aws.Config) ([]Resource, er
 				return nil, err
 			}
 			values = append(values, Resource{
-				ARN: *v.Arn,
-				Description: AccessAnalyzerAnalyzerDescription{
+				ARN:  *v.Arn,
+				Name: *v.Name,
+				Description: model.AccessAnalyzerAnalyzerDescription{
 					Analyzer: v,
 					Findings: findings,
 				},

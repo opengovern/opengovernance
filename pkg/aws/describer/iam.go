@@ -2,27 +2,26 @@ package describer
 
 import (
 	"context"
-	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/iam"
 	"github.com/aws/aws-sdk-go-v2/service/iam/types"
 	"github.com/aws/aws-sdk-go-v2/service/organizations"
-	orgtypes "github.com/aws/aws-sdk-go-v2/service/organizations/types"
 	"github.com/gocarina/gocsv"
+	"gitlab.com/keibiengine/keibi-engine/pkg/aws/model"
 )
 
 const (
 	organizationsNotInUseException = "AWSOrganizationsNotInUseException"
 )
 
-type IAMAccountDescription struct {
-	Aliases      []string
-	Organization *orgtypes.Organization
-}
-
 func IAMAccount(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	orgClient := organizations.NewFromConfig(cfg)
+
+	accountId, err := STSAccount(ctx, cfg)
+	if err != nil {
+		return nil, err
+	}
 
 	output, err := orgClient.DescribeOrganization(ctx, &organizations.DescribeOrganizationInput{})
 	if err != nil {
@@ -49,52 +48,13 @@ func IAMAccount(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	return []Resource{
 		{
 			// No ID or ARN. Per Account Configuration
-			Description: IAMAccountDescription{
+			Name: accountId,
+			Description: model.IAMAccountDescription{
 				Aliases:      aliases,
 				Organization: output.Organization,
 			},
 		},
 	}, nil
-}
-
-type AccountSummary struct {
-	AccountMFAEnabled                 int32
-	AccessKeysPerUserQuota            int32
-	AccountAccessKeysPresent          int32
-	AccountSigningCertificatesPresent int32
-	AssumeRolePolicySizeQuota         int32
-	AttachedPoliciesPerGroupQuota     int32
-	AttachedPoliciesPerRoleQuota      int32
-	AttachedPoliciesPerUserQuota      int32
-	GlobalEndpointTokenVersion        int32
-	GroupPolicySizeQuota              int32
-	Groups                            int32
-	GroupsPerUserQuota                int32
-	GroupsQuota                       int32
-	InstanceProfiles                  int32
-	InstanceProfilesQuota             int32
-	MFADevices                        int32
-	MFADevicesInUse                   int32
-	Policies                          int32
-	PoliciesQuota                     int32
-	PolicySizeQuota                   int32
-	PolicyVersionsInUse               int32
-	PolicyVersionsInUseQuota          int32
-	Providers                         int32
-	RolePolicySizeQuota               int32
-	Roles                             int32
-	RolesQuota                        int32
-	ServerCertificates                int32
-	ServerCertificatesQuota           int32
-	SigningCertificatesPerUserQuota   int32
-	UserPolicySizeQuota               int32
-	Users                             int32
-	UsersQuota                        int32
-	VersionsPerPolicyQuota            int32
-}
-
-type IAMAccountSummaryDescription struct {
-	AccountSummary AccountSummary
 }
 
 func IAMAccountSummary(ctx context.Context, cfg aws.Config) ([]Resource, error) {
@@ -104,8 +64,8 @@ func IAMAccountSummary(ctx context.Context, cfg aws.Config) ([]Resource, error) 
 		return nil, err
 	}
 
-	desc := IAMAccountSummaryDescription{
-		AccountSummary: AccountSummary{
+	desc := model.IAMAccountSummaryDescription{
+		AccountSummary: model.AccountSummary{
 			AccountMFAEnabled:                 output.SummaryMap["AccountMFAEnabled"],
 			AccessKeysPerUserQuota:            output.SummaryMap["AccessKeysPerUserQuota"],
 			AccountAccessKeysPresent:          output.SummaryMap["AccountAccessKeysPresent"],
@@ -141,16 +101,19 @@ func IAMAccountSummary(ctx context.Context, cfg aws.Config) ([]Resource, error) 
 			VersionsPerPolicyQuota:            output.SummaryMap["VersionsPerPolicyQuota"],
 		},
 	}
+
+	accountId, err := STSAccount(ctx, cfg)
+	if err != nil {
+		return nil, err
+	}
+
 	return []Resource{
 		{
 			// No ID or ARN. Per Account Configuration
+			Name:        accountId + " Account Summary",
 			Description: desc,
 		},
 	}, nil
-}
-
-type IAMAccountPasswordPolicyDescription struct {
-	PasswordPolicy *types.PasswordPolicy
 }
 
 func IAMAccountPasswordPolicy(ctx context.Context, cfg aws.Config) ([]Resource, error) {
@@ -164,18 +127,20 @@ func IAMAccountPasswordPolicy(ctx context.Context, cfg aws.Config) ([]Resource, 
 		output = &iam.GetAccountPasswordPolicyOutput{}
 	}
 
+	accountId, err := STSAccount(ctx, cfg)
+	if err != nil {
+		return nil, err
+	}
+
 	return []Resource{
 		{
 			// No ID or ARN. Per Account Configuration
-			Description: IAMAccountPasswordPolicyDescription{
-				PasswordPolicy: output.PasswordPolicy,
+			Name: accountId + " IAM Password Policy",
+			Description: model.IAMAccountPasswordPolicyDescription{
+				PasswordPolicy: *output.PasswordPolicy,
 			},
 		},
 	}, nil
-}
-
-type IAMAccessKeyDescription struct {
-	AccessKey types.AccessKeyMetadata
 }
 
 func IAMAccessKey(ctx context.Context, cfg aws.Config) ([]Resource, error) {
@@ -191,8 +156,9 @@ func IAMAccessKey(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 
 		for _, v := range page.AccessKeyMetadata {
 			values = append(values, Resource{
-				ID: *v.AccessKeyId,
-				Description: IAMAccessKeyDescription{
+				ID:   *v.AccessKeyId,
+				Name: *v.UserName,
+				Description: model.IAMAccessKeyDescription{
 					AccessKey: v,
 				},
 			})
@@ -200,36 +166,6 @@ func IAMAccessKey(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	}
 
 	return values, nil
-}
-
-type CredentialReport struct {
-	GeneratedTime             *time.Time `csv:"-"`
-	UserArn                   string     `csv:"arn"`
-	UserName                  string     `csv:"user"`
-	UserCreationTime          string     `csv:"user_creation_time"`
-	AccessKey1Active          bool       `csv:"access_key_1_active"`
-	AccessKey1LastRotated     string     `csv:"access_key_1_last_rotated"`
-	AccessKey1LastUsedDate    string     `csv:"access_key_1_last_used_date"`
-	AccessKey1LastUsedRegion  string     `csv:"access_key_1_last_used_region"`
-	AccessKey1LastUsedService string     `csv:"access_key_1_last_used_service"`
-	AccessKey2Active          bool       `csv:"access_key_2_active"`
-	AccessKey2LastRotated     string     `csv:"access_key_2_last_rotated"`
-	AccessKey2LastUsedDate    string     `csv:"access_key_2_last_used_date"`
-	AccessKey2LastUsedRegion  string     `csv:"access_key_2_last_used_region"`
-	AccessKey2LastUsedService string     `csv:"access_key_2_last_used_service"`
-	Cert1Active               bool       `csv:"cert_1_active"`
-	Cert1LastRotated          string     `csv:"cert_1_last_rotated"`
-	Cert2Active               bool       `csv:"cert_2_active"`
-	Cert2LastRotated          string     `csv:"cert_2_last_rotated"`
-	MFAActive                 bool       `csv:"mfa_active"`
-	PasswordEnabled           string     `csv:"password_enabled"`
-	PasswordLastChanged       string     `csv:"password_last_changed"`
-	PasswordLastUsed          string     `csv:"password_last_used"`
-	PasswordNextRotation      string     `csv:"password_next_rotation"`
-}
-
-type IAMCredentialReportDescription struct {
-	CredentialReport CredentialReport
 }
 
 func IAMCredentialReport(ctx context.Context, cfg aws.Config) ([]Resource, error) {
@@ -244,7 +180,7 @@ func IAMCredentialReport(ctx context.Context, cfg aws.Config) ([]Resource, error
 		return nil, err
 	}
 
-	reports := []CredentialReport{}
+	reports := []model.CredentialReport{}
 	if err := gocsv.UnmarshalString(string(output.Content), &reports); err != nil {
 		return nil, err
 	}
@@ -253,19 +189,15 @@ func IAMCredentialReport(ctx context.Context, cfg aws.Config) ([]Resource, error
 	for _, report := range reports {
 		report.GeneratedTime = output.GeneratedTime
 		values = append(values, Resource{
-			ID: report.UserName, // Unique report entry per user
-			Description: IAMCredentialReportDescription{
+			ID:   report.UserName, // Unique report entry per user
+			Name: report.UserName + " Credential Report",
+			Description: model.IAMCredentialReportDescription{
 				CredentialReport: report,
 			},
 		})
 	}
 
 	return values, nil
-}
-
-type IAMPolicyDescription struct {
-	Policy        types.Policy
-	PolicyVersion types.PolicyVersion
 }
 
 func IAMPolicy(ctx context.Context, cfg aws.Config) ([]Resource, error) {
@@ -292,8 +224,9 @@ func IAMPolicy(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 			}
 
 			values = append(values, Resource{
-				ARN: *v.Arn,
-				Description: IAMPolicyDescription{
+				ARN:  *v.Arn,
+				Name: *v.PolicyName,
+				Description: model.IAMPolicyDescription{
 					Policy:        v,
 					PolicyVersion: *version.PolicyVersion,
 				},
@@ -302,13 +235,6 @@ func IAMPolicy(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	}
 
 	return values, nil
-}
-
-type IAMGroupDescription struct {
-	Group              types.Group
-	Users              []types.User
-	InlinePolicies     []InlinePolicy
-	AttachedPolicyArns []string
 }
 
 func IAMGroup(ctx context.Context, cfg aws.Config) ([]Resource, error) {
@@ -339,8 +265,9 @@ func IAMGroup(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 			}
 
 			values = append(values, Resource{
-				ARN: *v.Arn,
-				Description: IAMGroupDescription{
+				ARN:  *v.Arn,
+				Name: *v.GroupName,
+				Description: model.IAMGroupDescription{
 					Group:              v,
 					Users:              users,
 					InlinePolicies:     policies,
@@ -371,12 +298,12 @@ func getGroupUsers(ctx context.Context, client *iam.Client, groupname *string) (
 	return users, nil
 }
 
-func getGroupPolicies(ctx context.Context, client *iam.Client, groupname *string) ([]InlinePolicy, error) {
+func getGroupPolicies(ctx context.Context, client *iam.Client, groupname *string) ([]model.InlinePolicy, error) {
 	paginator := iam.NewListGroupPoliciesPaginator(client, &iam.ListGroupPoliciesInput{
 		GroupName: groupname,
 	})
 
-	var policies []InlinePolicy
+	var policies []model.InlinePolicy
 	for paginator.HasMorePages() {
 		page, err := paginator.NextPage(ctx)
 		if err != nil {
@@ -392,7 +319,7 @@ func getGroupPolicies(ctx context.Context, client *iam.Client, groupname *string
 				return nil, err
 			}
 
-			policies = append(policies, InlinePolicy{
+			policies = append(policies, model.InlinePolicy{
 				PolicyName:     *output.PolicyName,
 				PolicyDocument: *output.PolicyDocument,
 			})
@@ -437,6 +364,7 @@ func IAMInstanceProfile(ctx context.Context, cfg aws.Config) ([]Resource, error)
 		for _, v := range page.InstanceProfiles {
 			values = append(values, Resource{
 				ARN:         *v.Arn,
+				Name:        *v.InstanceProfileName,
 				Description: v,
 			})
 		}
@@ -461,6 +389,7 @@ func IAMManagedPolicy(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 		for _, v := range page.Policies {
 			values = append(values, Resource{
 				ARN:         *v.Arn,
+				Name:        *v.PolicyName,
 				Description: v,
 			})
 		}
@@ -480,6 +409,7 @@ func IAMOIDCProvider(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	for _, v := range output.OpenIDConnectProviderList {
 		values = append(values, Resource{
 			ARN:         *v.Arn,
+			Name:        *v.Arn,
 			Description: v,
 		})
 	}
@@ -497,7 +427,7 @@ func IAMGroupPolicy(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 
 	var values []Resource
 	for _, g := range groups {
-		group := g.Description.(IAMGroupDescription).Group
+		group := g.Description.(model.IAMGroupDescription).Group
 		err := PaginateRetrieveAll(func(prevToken *string) (nextToken *string, err error) {
 			output, err := client.ListGroupPolicies(ctx, &iam.ListGroupPoliciesInput{
 				GroupName: group.GroupName,
@@ -518,6 +448,7 @@ func IAMGroupPolicy(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 
 				values = append(values, Resource{
 					ID:          CompositeID(*v.GroupName, *v.PolicyName),
+					Name:        *v.GroupName,
 					Description: v,
 				})
 			}
@@ -542,7 +473,7 @@ func IAMUserPolicy(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 
 	var values []Resource
 	for _, u := range users {
-		user := u.Description.(IAMUserDescription).User
+		user := u.Description.(model.IAMUserDescription).User
 		err := PaginateRetrieveAll(func(prevToken *string) (nextToken *string, err error) {
 			output, err := client.ListUserPolicies(ctx, &iam.ListUserPoliciesInput{
 				UserName: user.UserName,
@@ -563,6 +494,7 @@ func IAMUserPolicy(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 
 				values = append(values, Resource{
 					ID:          CompositeID(*v.UserName, *v.PolicyName),
+					Name:        *v.UserName,
 					Description: v,
 				})
 			}
@@ -588,7 +520,7 @@ func IAMRolePolicy(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	var values []Resource
 
 	for _, r := range roles {
-		role := r.Description.(IAMRoleDescription).Role
+		role := r.Description.(model.IAMRoleDescription).Role
 		err := PaginateRetrieveAll(func(prevToken *string) (nextToken *string, err error) {
 			output, err := client.ListRolePolicies(ctx, &iam.ListRolePoliciesInput{
 				RoleName: role.RoleName,
@@ -609,6 +541,7 @@ func IAMRolePolicy(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 
 				values = append(values, Resource{
 					ID:          CompositeID(*v.RoleName, *v.PolicyName),
+					Name:        *v.RoleName,
 					Description: v,
 				})
 			}
@@ -621,13 +554,6 @@ func IAMRolePolicy(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	}
 
 	return values, nil
-}
-
-type IAMRoleDescription struct {
-	Role                types.Role
-	InstanceProfileArns []string
-	InlinePolicies      []InlinePolicy
-	AttachedPolicyArns  []string
 }
 
 func IAMRole(ctx context.Context, cfg aws.Config) ([]Resource, error) {
@@ -658,8 +584,9 @@ func IAMRole(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 			}
 
 			values = append(values, Resource{
-				ARN: *v.Arn,
-				Description: IAMRoleDescription{
+				ARN:  *v.Arn,
+				Name: *v.RoleName,
+				Description: model.IAMRoleDescription{
 					Role:                v,
 					InstanceProfileArns: profiles,
 					InlinePolicies:      policies,
@@ -693,12 +620,12 @@ func getRoleInstanceProfileArns(ctx context.Context, client *iam.Client, rolenam
 	return arns, nil
 }
 
-func getRolePolicies(ctx context.Context, client *iam.Client, rolename *string) ([]InlinePolicy, error) {
+func getRolePolicies(ctx context.Context, client *iam.Client, rolename *string) ([]model.InlinePolicy, error) {
 	paginator := iam.NewListRolePoliciesPaginator(client, &iam.ListRolePoliciesInput{
 		RoleName: rolename,
 	})
 
-	var policies []InlinePolicy
+	var policies []model.InlinePolicy
 	for paginator.HasMorePages() {
 		page, err := paginator.NextPage(ctx)
 		if err != nil {
@@ -714,7 +641,7 @@ func getRolePolicies(ctx context.Context, client *iam.Client, rolename *string) 
 				return nil, err
 			}
 
-			policies = append(policies, InlinePolicy{
+			policies = append(policies, model.InlinePolicy{
 				PolicyName:     *output.PolicyName,
 				PolicyDocument: *output.PolicyDocument,
 			})
@@ -756,15 +683,12 @@ func IAMSAMLProvider(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	for _, v := range output.SAMLProviderList {
 		values = append(values, Resource{
 			ARN:         *v.Arn,
+			Name:        *v.Arn,
 			Description: v,
 		})
 	}
 
 	return values, nil
-}
-
-type IAMServerCertificateDescription struct {
-	ServerCertificate types.ServerCertificate
 }
 
 func IAMServerCertificate(ctx context.Context, cfg aws.Config) ([]Resource, error) {
@@ -787,8 +711,9 @@ func IAMServerCertificate(ctx context.Context, cfg aws.Config) ([]Resource, erro
 			}
 
 			values = append(values, Resource{
-				ARN: *v.Arn,
-				Description: IAMServerCertificateDescription{
+				ARN:  *v.Arn,
+				Name: *v.ServerCertificateName,
+				Description: model.IAMServerCertificateDescription{
 					ServerCertificate: *output.ServerCertificate,
 				},
 			})
@@ -796,19 +721,6 @@ func IAMServerCertificate(ctx context.Context, cfg aws.Config) ([]Resource, erro
 	}
 
 	return values, nil
-}
-
-type InlinePolicy struct {
-	PolicyName     string
-	PolicyDocument string
-}
-
-type IAMUserDescription struct {
-	User               types.User
-	Groups             []types.Group
-	InlinePolicies     []InlinePolicy
-	AttachedPolicyArns []string
-	MFADevices         []types.MFADevice
 }
 
 func IAMUser(ctx context.Context, cfg aws.Config) ([]Resource, error) {
@@ -844,8 +756,9 @@ func IAMUser(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 			}
 
 			values = append(values, Resource{
-				ARN: *v.Arn,
-				Description: IAMUserDescription{
+				ARN:  *v.Arn,
+				Name: *v.UserName,
+				Description: model.IAMUserDescription{
 					User:               v,
 					Groups:             groups,
 					InlinePolicies:     policies,
@@ -859,12 +772,12 @@ func IAMUser(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	return values, nil
 }
 
-func getUserPolicies(ctx context.Context, client *iam.Client, username *string) ([]InlinePolicy, error) {
+func getUserPolicies(ctx context.Context, client *iam.Client, username *string) ([]model.InlinePolicy, error) {
 	paginator := iam.NewListUserPoliciesPaginator(client, &iam.ListUserPoliciesInput{
 		UserName: username,
 	})
 
-	var policies []InlinePolicy
+	var policies []model.InlinePolicy
 	for paginator.HasMorePages() {
 		page, err := paginator.NextPage(ctx)
 		if err != nil {
@@ -880,7 +793,7 @@ func getUserPolicies(ctx context.Context, client *iam.Client, username *string) 
 				return nil, err
 			}
 
-			policies = append(policies, InlinePolicy{
+			policies = append(policies, model.InlinePolicy{
 				PolicyName:     *output.PolicyName,
 				PolicyDocument: *output.PolicyDocument,
 			})
@@ -947,11 +860,6 @@ func getUserMFADevices(ctx context.Context, client *iam.Client, username *string
 	return devices, nil
 }
 
-type IAMVirtualMFADeviceDescription struct {
-	VirtualMFADevice types.VirtualMFADevice
-	Tags             []types.Tag
-}
-
 func IAMVirtualMFADevice(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	client := iam.NewFromConfig(cfg)
 	output, err := client.ListVirtualMFADevices(ctx, &iam.ListVirtualMFADevicesInput{})
@@ -969,8 +877,9 @@ func IAMVirtualMFADevice(ctx context.Context, cfg aws.Config) ([]Resource, error
 		}
 
 		values = append(values, Resource{
-			ID: *v.SerialNumber,
-			Description: IAMVirtualMFADeviceDescription{
+			ID:   *v.SerialNumber,
+			Name: *v.SerialNumber,
+			Description: model.IAMVirtualMFADeviceDescription{
 				VirtualMFADevice: v,
 				Tags:             output.Tags,
 			},

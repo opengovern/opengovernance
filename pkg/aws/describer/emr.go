@@ -2,14 +2,11 @@ package describer
 
 import (
 	"context"
+
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/emr"
-	"github.com/aws/aws-sdk-go-v2/service/emr/types"
+	"gitlab.com/keibiengine/keibi-engine/pkg/aws/model"
 )
-
-type EMRClusterDescription struct {
-	Cluster *types.Cluster
-}
 
 func EMRCluster(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	client := emr.NewFromConfig(cfg)
@@ -31,8 +28,9 @@ func EMRCluster(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 			}
 
 			values = append(values, Resource{
-				ARN: *out.Cluster.ClusterArn,
-				Description: EMRClusterDescription{
+				ARN:  *out.Cluster.ClusterArn,
+				Name: *out.Cluster.Name,
+				Description: model.EMRClusterDescription{
 					Cluster: out.Cluster,
 				},
 			})

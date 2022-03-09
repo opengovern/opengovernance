@@ -21,6 +21,7 @@ func ResourceLink(ctx context.Context, authorizer autorest.Authorizer, subscript
 		for _, v := range result.Values() {
 			values = append(values, Resource{
 				ID:       *v.ID,
+				Name:     *v.Name,
 				Location: "global",
 				Description: model.ResourceLinkDescription{
 					ResourceLink: v,

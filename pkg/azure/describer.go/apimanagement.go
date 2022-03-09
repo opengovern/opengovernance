@@ -33,6 +33,7 @@ func APIManagement(ctx context.Context, authorizer autorest.Authorizer, subscrip
 
 			values = append(values, Resource{
 				ID:       *apiManagement.ID,
+				Name:     *apiManagement.Name,
 				Location: *apiManagement.Location,
 				Description: model.APIManagementDescription{
 					APIManagement:               apiManagement,

@@ -5,16 +5,9 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/elasticloadbalancing"
-	"github.com/aws/aws-sdk-go-v2/service/elasticloadbalancing/types"
 	"github.com/aws/aws-sdk-go-v2/service/elasticloadbalancingv2"
-	typesv2 "github.com/aws/aws-sdk-go-v2/service/elasticloadbalancingv2/types"
+	"gitlab.com/keibiengine/keibi-engine/pkg/aws/model"
 )
-
-type ElasticLoadBalancingV2LoadBalancerDescription struct {
-	LoadBalancer typesv2.LoadBalancer
-	Attributes   []typesv2.LoadBalancerAttribute
-	Tags         []typesv2.Tag
-}
 
 func ElasticLoadBalancingV2LoadBalancer(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	client := elasticloadbalancingv2.NewFromConfig(cfg)
@@ -42,7 +35,7 @@ func ElasticLoadBalancingV2LoadBalancer(ctx context.Context, cfg aws.Config) ([]
 				return nil, err
 			}
 
-			description := ElasticLoadBalancingV2LoadBalancerDescription{
+			description := model.ElasticLoadBalancingV2LoadBalancerDescription{
 				LoadBalancer: v,
 				Attributes:   attrs.Attributes,
 			}
@@ -53,16 +46,13 @@ func ElasticLoadBalancingV2LoadBalancer(ctx context.Context, cfg aws.Config) ([]
 
 			values = append(values, Resource{
 				ARN:         *v.LoadBalancerArn,
+				Name:        *v.LoadBalancerName,
 				Description: description,
 			})
 		}
 	}
 
 	return values, nil
-}
-
-type ElasticLoadBalancingV2ListenerDescription struct {
-	Listener typesv2.Listener
 }
 
 func ElasticLoadBalancingV2Listener(ctx context.Context, cfg aws.Config) ([]Resource, error) {
@@ -75,7 +65,7 @@ func ElasticLoadBalancingV2Listener(ctx context.Context, cfg aws.Config) ([]Reso
 
 	var values []Resource
 	for _, lb := range lbs {
-		arn := lb.Description.(ElasticLoadBalancingV2LoadBalancerDescription).LoadBalancer.LoadBalancerArn
+		arn := lb.Description.(model.ElasticLoadBalancingV2LoadBalancerDescription).LoadBalancer.LoadBalancerArn
 		paginator := elasticloadbalancingv2.NewDescribeListenersPaginator(client, &elasticloadbalancingv2.DescribeListenersInput{
 			LoadBalancerArn: arn,
 		})
@@ -87,8 +77,9 @@ func ElasticLoadBalancingV2Listener(ctx context.Context, cfg aws.Config) ([]Reso
 
 			for _, v := range page.Listeners {
 				values = append(values, Resource{
-					ARN: *v.ListenerArn,
-					Description: ElasticLoadBalancingV2ListenerDescription{
+					ARN:  *v.ListenerArn,
+					Name: nameFromArn(*v.ListenerArn),
+					Description: model.ElasticLoadBalancingV2ListenerDescription{
 						Listener: v,
 					},
 				})
@@ -109,7 +100,7 @@ func ElasticLoadBalancingV2ListenerRule(ctx context.Context, cfg aws.Config) ([]
 	client := elasticloadbalancingv2.NewFromConfig(cfg)
 	var values []Resource
 	for _, l := range listeners {
-		arn := l.Description.(ElasticLoadBalancingV2ListenerDescription).Listener.ListenerArn
+		arn := l.Description.(model.ElasticLoadBalancingV2ListenerDescription).Listener.ListenerArn
 		err = PaginateRetrieveAll(func(prevToken *string) (nextToken *string, err error) {
 			output, err := client.DescribeRules(ctx, &elasticloadbalancingv2.DescribeRulesInput{
 				ListenerArn: aws.String(*arn),
@@ -122,6 +113,7 @@ func ElasticLoadBalancingV2ListenerRule(ctx context.Context, cfg aws.Config) ([]
 			for _, v := range output.Rules {
 				values = append(values, Resource{
 					ARN:         *v.RuleArn,
+					Name:        *v.RuleArn,
 					Description: v,
 				})
 			}
@@ -150,18 +142,13 @@ func ElasticLoadBalancingV2TargetGroup(ctx context.Context, cfg aws.Config) ([]R
 		for _, v := range page.TargetGroups {
 			values = append(values, Resource{
 				ARN:         *v.TargetGroupArn,
+				Name:        *v.TargetGroupName,
 				Description: v,
 			})
 		}
 	}
 
 	return values, nil
-}
-
-type ElasticLoadBalancingLoadBalancerDescription struct {
-	LoadBalancer types.LoadBalancerDescription
-	Attributes   *types.LoadBalancerAttributes
-	Tags         []types.Tag
 }
 
 func ElasticLoadBalancingLoadBalancer(ctx context.Context, cfg aws.Config) ([]Resource, error) {
@@ -190,7 +177,7 @@ func ElasticLoadBalancingLoadBalancer(ctx context.Context, cfg aws.Config) ([]Re
 				return nil, err
 			}
 
-			description := ElasticLoadBalancingLoadBalancerDescription{
+			description := model.ElasticLoadBalancingLoadBalancerDescription{
 				LoadBalancer: v,
 				Attributes:   attrs.LoadBalancerAttributes,
 			}
@@ -200,7 +187,8 @@ func ElasticLoadBalancingLoadBalancer(ctx context.Context, cfg aws.Config) ([]Re
 			}
 
 			values = append(values, Resource{
-				ARN:         *v.DNSName, // DNSName is unique
+				ID:          *v.LoadBalancerName,
+				Name:        *v.LoadBalancerName,
 				Description: description,
 			})
 		}

@@ -32,6 +32,7 @@ func MachineLearningWorkspace(ctx context.Context, authorizer autorest.Authorize
 			}
 			values = append(values, Resource{
 				ID:       *workspace.ID,
+				Name:     *workspace.Name,
 				Location: *workspace.Location,
 				Description: model.MachineLearningWorkspaceDescription{
 					Workspace:                   workspace,

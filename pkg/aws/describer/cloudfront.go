@@ -5,14 +5,8 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/cloudfront"
-	"github.com/aws/aws-sdk-go-v2/service/cloudfront/types"
+	"gitlab.com/keibiengine/keibi-engine/pkg/aws/model"
 )
-
-type CloudFrontDistributionDescription struct {
-	Distribution *types.Distribution
-	ETag         *string
-	Tags         []types.Tag
-}
 
 func CloudFrontDistribution(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	client := cloudfront.NewFromConfig(cfg)
@@ -41,8 +35,9 @@ func CloudFrontDistribution(ctx context.Context, cfg aws.Config) ([]Resource, er
 			}
 
 			values = append(values, Resource{
-				ARN: *item.ARN,
-				Description: CloudFrontDistributionDescription{
+				ARN:  *item.ARN,
+				Name: *item.Id,
+				Description: model.CloudFrontDistributionDescription{
 					Distribution: distribution.Distribution,
 					ETag:         distribution.ETag,
 					Tags:         tags.Tags.Items,

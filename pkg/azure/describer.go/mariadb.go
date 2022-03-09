@@ -23,6 +23,7 @@ func MariadbServer(ctx context.Context, authorizer autorest.Authorizer, subscrip
 
 		values = append(values, Resource{
 			ID:       *v.ID,
+			Name:     *v.Name,
 			Location: *v.Location,
 			Description: model.MariadbServerDescription{
 				Server:        v,

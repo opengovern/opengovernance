@@ -21,6 +21,7 @@ func SecurityCenterAutoProvisioning(ctx context.Context, authorizer autorest.Aut
 		for _, v := range result.Values() {
 			values = append(values, Resource{
 				ID:       *v.ID,
+				Name:     *v.Name,
 				Location: "global",
 				Description: model.SecurityCenterAutoProvisioningDescription{
 					AutoProvisioningSetting: v,
@@ -55,6 +56,7 @@ func SecurityCenterContact(ctx context.Context, authorizer autorest.Authorizer, 
 		for _, v := range result.Values() {
 			values = append(values, Resource{
 				ID:       *v.ID,
+				Name:     *v.Name,
 				Location: "global",
 				Description: model.SecurityCenterContactDescription{
 					Contact: v,
@@ -89,6 +91,7 @@ func SecurityCenterJitNetworkAccessPolicy(ctx context.Context, authorizer autore
 		for _, v := range result.Values() {
 			values = append(values, Resource{
 				ID:       *v.ID,
+				Name:     *v.Name,
 				Location: *v.Location,
 				Description: model.SecurityCenterJitNetworkAccessPolicyDescription{
 					JitNetworkAccessPolicy: v,
@@ -123,6 +126,7 @@ func SecurityCenterSetting(ctx context.Context, authorizer autorest.Authorizer, 
 		for _, v := range result.Values() {
 			values = append(values, Resource{
 				ID:       *v.ID,
+				Name:     *v.Name,
 				Location: "global",
 				Description: model.SecurityCenterSettingDescription{
 					Setting: v,
@@ -157,6 +161,7 @@ func SecurityCenterSubscriptionPricing(ctx context.Context, authorizer autorest.
 		for _, v := range result.Values() {
 			values = append(values, Resource{
 				ID:       *v.ID,
+				Name:     *v.Name,
 				Location: "global",
 				Description: model.SecurityCenterSubscriptionPricingDescription{
 					Pricing: v,

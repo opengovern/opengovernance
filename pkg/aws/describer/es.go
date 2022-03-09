@@ -2,15 +2,11 @@ package describer
 
 import (
 	"context"
+
 	"github.com/aws/aws-sdk-go-v2/aws"
 	es "github.com/aws/aws-sdk-go-v2/service/elasticsearchservice"
-	"github.com/aws/aws-sdk-go-v2/service/elasticsearchservice/types"
+	"gitlab.com/keibiengine/keibi-engine/pkg/aws/model"
 )
-
-type ESDomainDescription struct {
-	Domain types.ElasticsearchDomainStatus
-	Tags   []types.Tag
-}
 
 func ESDomain(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	var values []Resource
@@ -46,8 +42,9 @@ func ESDomain(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 		}
 
 		values = append(values, Resource{
-			ARN: *v.ARN,
-			Description: ESDomainDescription{
+			ARN:  *v.ARN,
+			Name: *v.DomainName,
+			Description: model.ESDomainDescription{
 				Domain: v,
 				Tags:   out.TagList,
 			},
