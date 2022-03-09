@@ -2,6 +2,7 @@ package inventory
 
 import (
 	"context"
+	"crypto/sha256"
 	"encoding/json"
 	"fmt"
 	"github.com/hashicorp/go-hclog"
@@ -12,6 +13,7 @@ import (
 	"log"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/labstack/echo/v4"
 )
@@ -26,7 +28,7 @@ func extractContext(ctx echo.Context) context.Context {
 }
 
 func (h *HttpHandler) Register(v1 *echo.Group) {
-	v1.GET("/resource/:resourceType/:id", h.GetResource)
+	v1.POST("/resource", h.GetResource)
 	v1.GET("/locations/:provider", h.GetLocations)
 	v1.POST("/resources", h.GetAllResources)
 	v1.POST("/resources/azure", h.GetAzureResources)
@@ -38,18 +40,54 @@ func (h *HttpHandler) Register(v1 *echo.Group) {
 // @Description  Getting resource details by id and resource type
 // @Tags         resource
 // @Produce      json
-// @Param        id         path      string  true  "Id"
-// @Param        resourceType         path      string  true  "ResourceType"
-// @Success      200  {object}  []LocationByProviderResponse
-// @Router       /resource/{resourceType}/{id} [get]
-func (h *HttpHandler) GetResource(ctx echo.Context) error {
+// @Param        id         body      string  true  "Id"
+// @Param        resourceType         body      string  true  "ResourceType"
+// @Success      200  {object}
+// @Router       /resource [post]
+func (h *HttpHandler) GetResource(ectx echo.Context) error {
+	ctx := ectx.(*Context)
 	cc := extractContext(ctx)
-	id := ctx.Param("id")
-	resourceType := ctx.Param("resourceType")
 
+	req := &GetResourceRequest{}
+	if err := ctx.BindValidate(req); err != nil {
+		return ctx.JSON(http.StatusBadRequest, err)
+	}
 
+	hash := sha256.New()
+	hash.Write([]byte(req.ID))
 
-	return ctx.JSON(200, cols)
+	index := strings.ToLower(req.ResourceType)
+	index = strings.ReplaceAll(index, "::", "_")
+	index = strings.ReplaceAll(index, ".", "_")
+	index = strings.ReplaceAll(index, "/", "_")
+	query := map[string]interface{}{
+		"query": map[string]interface{}{
+			"term": map[string]interface{}{
+				"_id": fmt.Sprintf("%x", hash.Sum(nil)),
+			},
+		},
+	}
+	queryBytes, err := json.Marshal(query)
+	if err != nil {
+		return ctx.JSON(http.StatusInternalServerError, err)
+	}
+
+	var response GenericQueryResponse
+	err = h.client.Search(cc, index, string(queryBytes), &response)
+	if err != nil {
+		return ctx.JSON(http.StatusInternalServerError, err)
+	}
+
+	var source map[string]interface{}
+	for _, hit := range response.Hits.Hits {
+		source = hit.Source
+	}
+
+	var resp interface{}
+	if source != nil {
+		resp = source["description"]
+	}
+	return ctx.JSON(200, resp)
 }
 
 // GetLocations godoc
@@ -121,7 +159,7 @@ func (h *HttpHandler) GetLocations(ctx echo.Context) error {
 // @Router       /resources/azure [post]
 func (h *HttpHandler) GetAzureResources(ectx echo.Context) error {
 	cc := ectx.(*Context)
-	req := &GetResourceRequest{}
+	req := &GetResourcesRequest{}
 	if err := cc.BindValidate(req); err != nil {
 		return cc.JSON(http.StatusBadRequest, err)
 	}
@@ -142,7 +180,7 @@ func (h *HttpHandler) GetAzureResources(ectx echo.Context) error {
 // @Router       /resources/aws [post]
 func (h *HttpHandler) GetAWSResources(ectx echo.Context) error {
 	cc := ectx.(*Context)
-	req := &GetResourceRequest{}
+	req := &GetResourcesRequest{}
 	if err := cc.BindValidate(req); err != nil {
 		return cc.JSON(http.StatusBadRequest, err)
 	}
@@ -163,7 +201,7 @@ func (h *HttpHandler) GetAWSResources(ectx echo.Context) error {
 // @Router       /resources [post]
 func (h *HttpHandler) GetAllResources(ectx echo.Context) error {
 	cc := ectx.(*Context)
-	req := &GetResourceRequest{}
+	req := &GetResourcesRequest{}
 	if err := cc.BindValidate(req); err != nil {
 		return cc.JSON(http.StatusBadRequest, err)
 	}
@@ -171,14 +209,14 @@ func (h *HttpHandler) GetAllResources(ectx echo.Context) error {
 	return h.GetResources(ectx, req, nil)
 }
 
-func (h *HttpHandler) GetResources(ectx echo.Context, req *GetResourceRequest, provider *SourceType) error {
+func (h *HttpHandler) GetResources(ectx echo.Context, req *GetResourcesRequest, provider *SourceType) error {
 	var err error
 
 	ctx := extractContext(ectx)
 	cc := ectx.(*Context)
 
 	var lastIdx int
-	if req.Page.NextMarker != nil || len(req.Page.NextMarker) > 0 {
+	if req.Page.NextMarker != nil && len(req.Page.NextMarker) > 0 {
 		lastIdx, err = strconv.Atoi(string(req.Page.NextMarker))
 		if err != nil {
 			return err
@@ -274,31 +312,14 @@ func (h *HttpHandler) GetResources(ectx echo.Context, req *GetResourceRequest, p
 			SourceID:     resource.SourceID,
 		})
 	}
-	return cc.JSON(http.StatusOK, GetResourceResponse{
+	return cc.JSON(http.StatusOK, GetResourcesResponse{
 		Resources: allResources,
 		Page:      page,
 	})
 }
 
-type QueryResponse struct {
-	Hits QueryHits `json:"hits"`
-}
-type QueryHits struct {
-	Total keibi.SearchTotal `json:"total"`
-	Hits  []QueryHit        `json:"hits"`
-}
-type QueryHit struct {
-	ID      string                       `json:"_id"`
-	Score   float64                      `json:"_score"`
-	Index   string                       `json:"_index"`
-	Type    string                       `json:"_type"`
-	Version int64                        `json:"_version,omitempty"`
-	Source  describe.KafkaLookupResource `json:"_source"`
-	Sort    []interface{}                `json:"sort"`
-}
-
 func GetResourcesPageFromES(client keibi.Client, ctx context.Context, index string, query string) ([]describe.KafkaLookupResource, error) {
-	var response QueryResponse
+	var response SummaryQueryResponse
 	err := client.Search(ctx, index, query, &response)
 	if err != nil {
 		return nil, err
