@@ -172,15 +172,15 @@ func (h *HttpHandler) GetResources(ectx echo.Context, req *GetResourceRequest, p
 	}
 
 	if !FilterIsEmpty(req.Filters.ResourceType) {
-		terms = append(terms, keibi.TermsFilter("resource_type", req.Filters.ResourceType))
+		terms = append(terms, keibi.TermsFilter("resourceType", req.Filters.ResourceType))
 	}
 
 	if !FilterIsEmpty(req.Filters.KeibiSource) {
-		terms = append(terms, keibi.TermsFilter("keibi_source_id", req.Filters.KeibiSource))
+		terms = append(terms, keibi.TermsFilter("sourceID", req.Filters.KeibiSource))
 	}
 
 	if provider != nil {
-		terms = append(terms, keibi.TermsFilter("source_type", []string{string(*provider)}))
+		terms = append(terms, keibi.TermsFilter("provider", []string{string(*provider)}))
 	}
 
 	var queryStr string
@@ -198,7 +198,7 @@ func (h *HttpHandler) GetResources(ectx echo.Context, req *GetResourceRequest, p
 		queryStr = string(queryBytes)
 	}
 
-	resources, err := h.GetResourcesPageFromES(ctx, "lookup_table", queryStr)
+	resources, err := GetResourcesPageFromES(h.client, ctx, "inventory_summary", queryStr)
 	if err != nil {
 		return err
 	}
@@ -215,7 +215,7 @@ func (h *HttpHandler) GetResources(ectx echo.Context, req *GetResourceRequest, p
 				ResourceType: resource.ResourceType,
 				ResourceID:   resource.ResourceID,
 				Region:       resource.Location,
-				AccountID:    resource.KeibiSourceID,
+				AccountID:    resource.SourceID,
 			})
 		}
 		return cc.JSON(http.StatusOK, GetAWSResourceResponse{
@@ -229,11 +229,11 @@ func (h *HttpHandler) GetResources(ectx echo.Context, req *GetResourceRequest, p
 		for _, resource := range resources {
 			azureResources = append(azureResources, AzureResource{
 				Name:           resource.Name,
-				Type:           resource.ResourceType,
+				ResourceType:   resource.ResourceType,
 				ResourceGroup:  resource.ResourceGroup,
 				Location:       resource.Location,
 				ResourceID:     resource.ResourceID,
-				SubscriptionID: resource.KeibiSourceID,
+				SubscriptionID: resource.SourceID,
 			})
 		}
 		return cc.JSON(http.StatusOK, GetAzureResourceResponse{
@@ -245,12 +245,12 @@ func (h *HttpHandler) GetResources(ectx echo.Context, req *GetResourceRequest, p
 	var allResources []AllResource
 	for _, resource := range resources {
 		allResources = append(allResources, AllResource{
-			Name:          resource.Name,
-			Provider:      SourceType(resource.SourceType),
-			ResourceType:  resource.ResourceType,
-			Location:      resource.Location,
-			ResourceID:    resource.ResourceID,
-			KeibiSourceID: resource.KeibiSourceID,
+			Name:         resource.Name,
+			Provider:     SourceType(resource.SourceType),
+			ResourceType: resource.ResourceType,
+			Location:     resource.Location,
+			ResourceID:   resource.ResourceID,
+			SourceID:     resource.SourceID,
 		})
 	}
 	return cc.JSON(http.StatusOK, GetResourceResponse{
@@ -276,9 +276,9 @@ type QueryHit struct {
 	Sort    []interface{}                `json:"sort"`
 }
 
-func (h *HttpHandler) GetResourcesPageFromES(ctx context.Context, index string, query string) ([]describe.KafkaLookupResource, error) {
+func GetResourcesPageFromES(client keibi.Client, ctx context.Context, index string, query string) ([]describe.KafkaLookupResource, error) {
 	var response QueryResponse
-	err := h.client.Search(ctx, index, query, &response)
+	err := client.Search(ctx, index, query, &response)
 	if err != nil {
 		return nil, err
 	}

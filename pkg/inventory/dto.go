@@ -17,42 +17,42 @@ type GetResourceRequest struct {
 }
 
 type Page struct {
-	NextMarker []byte `json:"next_marker"`
+	NextMarker []byte `json:"nextMarker"`
 	Size       int    `json:"size"`
 }
 
 type Filters struct {
 	ResourceType []string `json:"resourceType"`
 	Location     []string `json:"location"`
-	KeibiSource  []string `json:"keibi_source"`
+	KeibiSource  []string `json:"keibiSource"`
 }
 
 type GetResourceResponse struct {
-	Resources []AllResource `json:"resources"`
+	Resources []AllResource `json:"resourcesces"`
 	Page      Page          `json:"page"`
 }
 
 type AllResource struct {
-	Name          string              `json:"name"`
-	Provider      SourceType `json:"provider"`
-	ResourceType  string              `json:"resource_type"`
-	Location      string              `json:"location"`
-	ResourceID    string              `json:"resource_id"`
-	KeibiSourceID string              `json:"keibi_source_id"`
+	Name         string     `json:"name"`
+	Provider     SourceType `json:"provider"`
+	ResourceType string     `json:"resourceType"`
+	Location     string     `json:"location"`
+	ResourceID   string     `json:"resourceID"`
+	SourceID     string     `json:"sourceID"`
 }
 
 type GetAzureResourceResponse struct {
 	Resources []AzureResource `json:"resources"`
-	Page      Page          `json:"page"`
+	Page      Page            `json:"page"`
 }
 
 type AzureResource struct {
 	Name           string `json:"name"`
-	Type           string `json:"type"`
-	ResourceGroup  string `json:"resource_group"`
+	ResourceType   string `json:"resourceType"`
+	ResourceGroup  string `json:"resourceGroup"`
 	Location       string `json:"location"`
-	ResourceID     string `json:"resource_id"`
-	SubscriptionID string `json:"subscription_id"`
+	ResourceID     string `json:"resourceID"`
+	SubscriptionID string `json:"subscriptionID"`
 }
 
 type GetAWSResourceResponse struct {
@@ -62,8 +62,8 @@ type GetAWSResourceResponse struct {
 
 type AWSResource struct {
 	Name         string `json:"name"`
-	ResourceType string `json:"resource_type"`
-	ResourceID   string `json:"resource_id"`
+	ResourceType string `json:"resourceType"`
+	ResourceID   string `json:"resourceID"`
 	Region       string `json:"location"`
-	AccountID    string `json:"account_id"`
+	AccountID    string `json:"accountID"`
 }

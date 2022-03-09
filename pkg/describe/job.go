@@ -218,7 +218,7 @@ func doDescribeAWS(ctx context.Context, job Job, config map[string]interface{}) 
 				ResourceType:  job.ResourceType,
 				ResourceGroup: "",
 				Location:      resource.Region,
-				KeibiSourceID: resource.Account,
+				SourceID:      resource.Account,
 				ResourceJobID: job.JobID,
 				SourceJobID:   job.ParentJobID,
 			})
@@ -291,7 +291,7 @@ func doDescribeAzure(ctx context.Context, job Job, config map[string]interface{}
 			ResourceType:  job.ResourceType,
 			ResourceGroup: resource.ResourceGroup,
 			Location:      resource.Location,
-			KeibiSourceID: resource.SubscriptionID,
+			SourceID:      resource.SubscriptionID,
 			ResourceJobID: job.JobID,
 			SourceJobID:   job.ParentJobID,
 		})
@@ -351,8 +351,8 @@ type KafkaLookupResource struct {
 	ResourceGroup string `yaml:"resource_group"`
 	// Location is location/region of the resource
 	Location string `yaml:"location"`
-	// KeibiSourceID is aws account id or azure subscription id
-	KeibiSourceID string `yaml:"keibi_source_id"`
+	// SourceID is aws account id or azure subscription id
+	SourceID string `yaml:"source_id"`
 	// ResourceJobID is the DescribeResourceJob ID that described this resource
 	ResourceJobID uint `json:"resource_job_id"`
 	// SourceJobID is the DescribeSourceJob ID that the ResourceJobID was created for
@@ -374,7 +374,7 @@ func (r KafkaLookupResource) AsProducerMessage() (*sarama.ProducerMessage, error
 		Headers: []sarama.RecordHeader{
 			{
 				Key:   []byte(esIndexHeader),
-				Value: []byte("lookup_table"),
+				Value: []byte("inventory_summary"),
 			},
 		},
 		Value: sarama.ByteEncoder(value),
