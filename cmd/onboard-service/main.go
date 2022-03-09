@@ -27,6 +27,8 @@ var (
 	VaultAddress  = os.Getenv("VAULT_ADDRESS")
 	VaultToken    = os.Getenv("VAULT_TOKEN")
 	VaultRoleName = os.Getenv("VAULT_ROLE")
+
+	HttpAddress = os.Getenv("HTTP_ADDRESS")
 )
 
 func main() {
@@ -55,5 +57,5 @@ func main() {
 	}
 
 	h.Register(r)
-	r.Logger.Fatal(r.Start("127.0.0.1:6251"))
+	r.Logger.Fatal(r.Start(HttpAddress))
 }
