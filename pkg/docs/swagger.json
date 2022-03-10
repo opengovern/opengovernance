@@ -1,14 +1,109 @@
 {
     "swagger": "2.0",
     "info": {
-        "description": "Inventory service",
-        "title": "Inventory Service API",
-        "contact": {},
+        "description": "Onboard service",
+        "title": "Onboard Service API",
+        "termsOfService": "http://swagger.io/terms/",
+        "contact": {
+            "name": "API Support",
+            "url": "http://www.swagger.io/support",
+            "email": "support@swagger.io"
+        },
+        "license": {
+            "name": "Apache 2.0",
+            "url": "http://www.apache.org/licenses/LICENSE-2.0.html"
+        },
         "version": "1.0"
     },
-    "host": "https://dev-cluster.keibi.io",
-    "basePath": "/inventory/api/v1",
+    "host": "localhost:6251",
+    "basePath": "/api/v1",
     "paths": {
+        "/aws": {
+            "post": {
+                "description": "Creating AWS source",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "onboard"
+                ],
+                "summary": "Create AWS source",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/api.CreateSourceResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/aws/accounts": {
+            "get": {
+                "description": "If the account is part of an organization and the account has premission to list the accounts, it will return all the accounts in that organization. Otherwise, it will return the single account these credentials belong to.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "onboard"
+                ],
+                "summary": "Returns the list of available AWS accounts given the credentials.",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/api.DiscoverAWSAccountsResponse"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/azure": {
+            "post": {
+                "description": "Creating Azure source",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "onboard"
+                ],
+                "summary": "Create Azure source",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/api.CreateSourceResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/azure/subscriptions": {
+            "get": {
+                "description": "Returning the list of available Azure subscriptions.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "onboard"
+                ],
+                "summary": "Returns the list of available Azure subscriptions.",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/api.DiscoverAzureSubscriptionsResponse"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/locations/{provider}": {
             "get": {
                 "description": "Getting locations by provider",
@@ -39,6 +134,29 @@
                             "type": "array",
                             "items": {
                                 "$ref": "#/definitions/inventory.LocationByProviderResponse"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/providers": {
+            "get": {
+                "description": "Getting cloud providers",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "onboard"
+                ],
+                "summary": "Get providers",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/api.Provider"
                             }
                         }
                     }
@@ -392,21 +510,35 @@
         },
         "/sources": {
             "get": {
-                "description": "Getting all of Keibi sources",
+                "description": "Returning a list of sources including both AWS and Azure unless filtered by Type.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
-                    "source"
+                    "onboard"
                 ],
-                "summary": "List Sources",
+                "summary": "Returns a list of sources",
+                "parameters": [
+                    {
+                        "enum": [
+                            "aws",
+                            "azure"
+                        ],
+                        "description": "Type",
+                        "name": "type",
+                        "in": "body",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/describe.ApiSource"
+                                "$ref": "#/definitions/api.Source"
                             }
                         }
                     }
@@ -542,9 +674,145 @@
                 ],
                 "responses": {}
             }
+        },
+        "/{sourceId}": {
+            "get": {
+                "description": "Returning single source either AWS / Azure.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "onboard"
+                ],
+                "summary": "Returns a single source",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "SourceID",
+                        "name": "sourceId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/api.Source"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "description": "Deleting a single source either AWS / Azure.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "onboard"
+                ],
+                "summary": "Delete a single source",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "SourceID",
+                        "name": "sourceId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": ""
+                    }
+                }
+            }
         }
     },
     "definitions": {
+        "api.CreateSourceResponse": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string"
+                }
+            }
+        },
+        "api.DiscoverAWSAccountsResponse": {
+            "type": "object",
+            "properties": {
+                "accountId": {
+                    "type": "string"
+                },
+                "email": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "organizationId": {
+                    "description": "Nil if not part of an AWS organization",
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                }
+            }
+        },
+        "api.DiscoverAzureSubscriptionsResponse": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "subscriptionId": {
+                    "type": "string"
+                }
+            }
+        },
+        "api.Provider": {
+            "type": "object",
+            "properties": {
+                "enabled": {
+                    "type": "boolean"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "type": {
+                    "type": "string"
+                }
+            }
+        },
+        "api.Source": {
+            "type": "object",
+            "properties": {
+                "description": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "sourceId": {
+                    "type": "string"
+                },
+                "type": {
+                    "type": "string"
+                }
+            }
+        },
         "describe.ApiComplianceReport": {
             "type": "object",
             "properties": {

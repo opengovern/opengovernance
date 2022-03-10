@@ -47,6 +47,13 @@ func bindValidate(ctx echo.Context, i interface{}) error {
 	return nil
 }
 
+// GetProviders godoc
+// @Summary      Get providers
+// @Description  Getting cloud providers
+// @Tags         onboard
+// @Produce      json
+// @Success      200  {object}  api.ProvidersResponse
+// @Router       /providers [get]
 func (h HttpHandler) GetProviders(ctx echo.Context) error {
 	return ctx.JSON(http.StatusOK, api.ProvidersResponse{
 		{
@@ -64,6 +71,13 @@ func (h HttpHandler) GetProviders(ctx echo.Context) error {
 	})
 }
 
+// PostSourceAws godoc
+// @Summary      Create AWS source
+// @Description  Creating AWS source
+// @Tags         onboard
+// @Produce      json
+// @Success      200  {object}  api.CreateSourceResponse
+// @Router       /aws [post]
 func (h HttpHandler) PostSourceAws(ctx echo.Context) error {
 	var req api.SourceAwsRequest
 	if err := bindValidate(ctx, &req); err != nil {
@@ -102,6 +116,13 @@ func (h HttpHandler) PostSourceAws(ctx echo.Context) error {
 	return ctx.JSON(http.StatusOK, src.toSourceResponse())
 }
 
+// PostSourceAzure godoc
+// @Summary      Create Azure source
+// @Description  Creating Azure source
+// @Tags         onboard
+// @Produce      json
+// @Success      200  {object}  api.CreateSourceResponse
+// @Router       /azure [post]
 func (h HttpHandler) PostSourceAzure(ctx echo.Context) error {
 	var req api.SourceAzureRequest
 
@@ -146,6 +167,14 @@ func (h HttpHandler) PostSourceAzure(ctx echo.Context) error {
 	return ctx.JSON(http.StatusOK, src.toSourceResponse())
 }
 
+// GetSource godoc
+// @Summary      Returns a single source
+// @Description  Returning single source either AWS / Azure.
+// @Tags         onboard
+// @Produce      json
+// @Success      200  {object}  api.Source
+// @Param        sourceId   path      integer  true  "SourceID"
+// @Router       /{sourceId} [get]
 func (h HttpHandler) GetSource(ctx echo.Context) error {
 	srcId, err := uuid.Parse(ctx.Param(paramSourceId))
 	if err != nil {
@@ -166,10 +195,14 @@ func (h HttpHandler) GetSource(ctx echo.Context) error {
 	})
 }
 
-func (h HttpHandler) PutSource(ctx echo.Context) error {
-	panic("not implemented yet")
-}
-
+// DeleteSource godoc
+// @Summary      Delete a single source
+// @Description  Deleting a single source either AWS / Azure.
+// @Tags         onboard
+// @Produce      json
+// @Success      200
+// @Param        sourceId   path      integer  true  "SourceID"
+// @Router       /{sourceId} [delete]
 func (h HttpHandler) DeleteSource(ctx echo.Context) error {
 	srcId, err := uuid.Parse(ctx.Param(paramSourceId))
 	if err != nil {
@@ -211,6 +244,14 @@ func (h HttpHandler) DeleteSource(ctx echo.Context) error {
 	return ctx.NoContent(http.StatusOK)
 }
 
+// GetSources godoc
+// @Summary      Returns a list of sources
+// @Description  Returning a list of sources including both AWS and Azure unless filtered by Type.
+// @Tags         onboard
+// @Produce      json
+// @Param        type body string false "Type" Enums(aws,azure)
+// @Success      200  {object}  api.GetSourcesResponse
+// @Router       /sources [get]
 func (h HttpHandler) GetSources(ctx echo.Context) error {
 	sType := ctx.QueryParam("type")
 	var sources []Source
@@ -247,11 +288,23 @@ func (h HttpHandler) GetSources(ctx echo.Context) error {
 	return ctx.JSON(http.StatusOK, resp)
 }
 
-// DiscoverAwsAccounts returns the list of available AWS accounts given the credentials.
-// If the account is part of an organization and the account has premission to list the
-// accounts, it will return all the accounts in that organization. Otherwise, it will return
-// the single account these credentials belong to.
+func (h HttpHandler) PutSource(ctx echo.Context) error {
+	panic("not implemented yet")
+}
+
+
+// DiscoverAwsAccounts godoc
+// @Summary     Returns the list of available AWS accounts given the credentials.
+// @Description  If the account is part of an organization and the account has premission to list the accounts, it will return all the accounts in that organization. Otherwise, it will return the single account these credentials belong to.
+// @Tags         onboard
+// @Produce      json
+// @Success      200  {object}  []api.DiscoverAWSAccountsResponse
+// @Router       /aws/accounts [get]
 func (h HttpHandler) DiscoverAwsAccounts(ctx echo.Context) error {
+        // DiscoverAwsAccounts returns the list of available AWS accounts given the credentials.
+        // If the account is part of an organization and the account has premission to
+        // list the accounts, it will return all the accounts in that organization.
+        // Otherwise, it will return the single account these credentials belong to.
 	var req api.DiscoverAWSAccountsRequest
 	if err := bindValidate(ctx, &req); err != nil {
 		return ctx.JSON(http.StatusBadRequest, err)
@@ -265,6 +318,13 @@ func (h HttpHandler) DiscoverAwsAccounts(ctx echo.Context) error {
 	return ctx.JSON(http.StatusOK, accounts)
 }
 
+// DiscoverAzureSubscriptions godoc
+// @Summary     Returns the list of available Azure subscriptions.
+// @Description  Returning the list of available Azure subscriptions.
+// @Tags         onboard
+// @Produce      json
+// @Success      200  {object}  []api.DiscoverAzureSubscriptionsResponse
+// @Router       /azure/subscriptions [get]
 func (h *HttpHandler) DiscoverAzureSubscriptions(ctx echo.Context) error {
 	var req api.DiscoverAzureSubscriptionsRequest
 	if err := bindValidate(ctx, &req); err != nil {

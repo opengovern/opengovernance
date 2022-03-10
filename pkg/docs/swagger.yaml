@@ -1,5 +1,59 @@
-basePath: /inventory/api/v1
+basePath: /api/v1
 definitions:
+  api.CreateSourceResponse:
+    properties:
+      id:
+        type: string
+    type: object
+  api.DiscoverAWSAccountsResponse:
+    properties:
+      accountId:
+        type: string
+      email:
+        type: string
+      name:
+        type: string
+      organizationId:
+        description: Nil if not part of an AWS organization
+        type: string
+      status:
+        type: string
+    type: object
+  api.DiscoverAzureSubscriptionsResponse:
+    properties:
+      id:
+        type: string
+      name:
+        type: string
+      status:
+        type: string
+      subscriptionId:
+        type: string
+    type: object
+  api.Provider:
+    properties:
+      enabled:
+        type: boolean
+      id:
+        type: string
+      name:
+        type: string
+      type:
+        type: string
+    type: object
+  api.Source:
+    properties:
+      description:
+        type: string
+      id:
+        type: string
+      name:
+        type: string
+      sourceId:
+        type: string
+      type:
+        type: string
+    type: object
   describe.ApiComplianceReport:
     properties:
       failure_message:
@@ -154,13 +208,113 @@ definitions:
       field:
         type: string
     type: object
-host: https://dev-cluster.keibi.io
+host: localhost:6251
 info:
-  contact: {}
-  description: Inventory service
-  title: Inventory Service API
+  contact:
+    email: support@swagger.io
+    name: API Support
+    url: http://www.swagger.io/support
+  description: Onboard service
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  termsOfService: http://swagger.io/terms/
+  title: Onboard Service API
   version: "1.0"
 paths:
+  /{sourceId}:
+    delete:
+      description: Deleting a single source either AWS / Azure.
+      parameters:
+      - description: SourceID
+        in: path
+        name: sourceId
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: ""
+      summary: Delete a single source
+      tags:
+      - onboard
+    get:
+      description: Returning single source either AWS / Azure.
+      parameters:
+      - description: SourceID
+        in: path
+        name: sourceId
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/api.Source'
+      summary: Returns a single source
+      tags:
+      - onboard
+  /aws:
+    post:
+      description: Creating AWS source
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/api.CreateSourceResponse'
+      summary: Create AWS source
+      tags:
+      - onboard
+  /aws/accounts:
+    get:
+      description: If the account is part of an organization and the account has premission
+        to list the accounts, it will return all the accounts in that organization.
+        Otherwise, it will return the single account these credentials belong to.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/api.DiscoverAWSAccountsResponse'
+            type: array
+      summary: Returns the list of available AWS accounts given the credentials.
+      tags:
+      - onboard
+  /azure:
+    post:
+      description: Creating Azure source
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/api.CreateSourceResponse'
+      summary: Create Azure source
+      tags:
+      - onboard
+  /azure/subscriptions:
+    get:
+      description: Returning the list of available Azure subscriptions.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/api.DiscoverAzureSubscriptionsResponse'
+            type: array
+      summary: Returns the list of available Azure subscriptions.
+      tags:
+      - onboard
   /locations/{provider}:
     get:
       description: Getting locations by provider
@@ -185,6 +339,21 @@ paths:
       summary: Get locations
       tags:
       - location
+  /providers:
+    get:
+      description: Getting cloud providers
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/api.Provider'
+            type: array
+      summary: Get providers
+      tags:
+      - onboard
   /resource:
     post:
       description: Getting resource details by id and resource type
@@ -413,7 +582,17 @@ paths:
       - inventory
   /sources:
     get:
-      description: Getting all of Keibi sources
+      description: Returning a list of sources including both AWS and Azure unless
+        filtered by Type.
+      parameters:
+      - description: Type
+        enum:
+        - aws
+        - azure
+        in: body
+        name: type
+        schema:
+          type: string
       produces:
       - application/json
       responses:
@@ -421,11 +600,11 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/describe.ApiSource'
+              $ref: '#/definitions/api.Source'
             type: array
-      summary: List Sources
+      summary: Returns a list of sources
       tags:
-      - source
+      - onboard
   /sources/{source_id}/jobs/compliance:
     get:
       description: List source compliance reports
