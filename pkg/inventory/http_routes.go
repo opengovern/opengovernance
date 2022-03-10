@@ -2,15 +2,18 @@ package inventory
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/csv"
 	"encoding/json"
+	"fmt"
 	"github.com/hashicorp/go-hclog"
 	"github.com/turbot/steampipe-plugin-sdk/logging"
 	"github.com/turbot/steampipe-plugin-sdk/plugin/context_key"
-	"gitlab.com/keibiengine/keibi-engine/pkg/describe"
-	"gitlab.com/keibiengine/keibi-engine/pkg/keibi-es-sdk"
+	"io"
 	"log"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/labstack/echo/v4"
 )
@@ -26,9 +29,71 @@ func extractContext(ctx echo.Context) context.Context {
 
 func (h *HttpHandler) Register(v1 *echo.Group) {
 	v1.GET("/locations/:provider", h.GetLocations)
+
 	v1.POST("/resources", h.GetAllResources)
 	v1.POST("/resources/azure", h.GetAzureResources)
 	v1.POST("/resources/aws", h.GetAWSResources)
+
+	v1.POST("/resource", h.GetResource)
+
+	v1.POST("/resources/csv", h.GetAllResourcesCSV)
+	v1.POST("/resources/azure/csv", h.GetAzureResourcesCSV)
+	v1.POST("/resources/aws/csv", h.GetAWSResourcesCSV)
+}
+
+// GetResource godoc
+// @Summary      Get details of a Resource
+// @Description  Getting resource details by id and resource type
+// @Tags         resource
+// @Accepts      json
+// @Produce      json
+// @Param        id            body      string  true  "Id"
+// @Param        resourceType  body      string  true  "ResourceType"
+// @Router       /resource [post]
+func (h *HttpHandler) GetResource(ectx echo.Context) error {
+	ctx := ectx.(*Context)
+	cc := extractContext(ctx)
+
+	req := &GetResourceRequest{}
+	if err := ctx.BindValidate(req); err != nil {
+		return ctx.JSON(http.StatusBadRequest, err)
+	}
+
+	hash := sha256.New()
+	hash.Write([]byte(req.ID))
+
+	index := strings.ToLower(req.ResourceType)
+	index = strings.ReplaceAll(index, "::", "_")
+	index = strings.ReplaceAll(index, ".", "_")
+	index = strings.ReplaceAll(index, "/", "_")
+	query := map[string]interface{}{
+		"query": map[string]interface{}{
+			"term": map[string]interface{}{
+				"_id": fmt.Sprintf("%x", hash.Sum(nil)),
+			},
+		},
+	}
+	queryBytes, err := json.Marshal(query)
+	if err != nil {
+		return ctx.JSON(http.StatusInternalServerError, err)
+	}
+
+	var response GenericQueryResponse
+	err = h.client.Search(cc, index, string(queryBytes), &response)
+	if err != nil {
+		return ctx.JSON(http.StatusInternalServerError, err)
+	}
+
+	var source map[string]interface{}
+	for _, hit := range response.Hits.Hits {
+		source = hit.Source
+	}
+
+	var resp interface{}
+	if source != nil {
+		resp = source["description"]
+	}
+	return ctx.JSON(200, resp)
 }
 
 // GetLocations godoc
@@ -96,17 +161,27 @@ func (h *HttpHandler) GetLocations(ctx echo.Context) error {
 // @Produce      json
 // @Param        filters   body      Filters  true  "Filters"
 // @Param        page      body      Page     true  "Page"
+// @Param        sort      body      Sort     true  "Sort"
 // @Success      200  {object}  GetAzureResourceResponse
 // @Router       /resources/azure [post]
 func (h *HttpHandler) GetAzureResources(ectx echo.Context) error {
-	cc := ectx.(*Context)
-	req := &GetResourceRequest{}
-	if err := cc.BindValidate(req); err != nil {
-		return cc.JSON(http.StatusBadRequest, err)
-	}
-
 	provider := SourceCloudAzure
-	return h.GetResources(ectx, req, &provider)
+	return h.GetResources(ectx, &provider)
+}
+
+// GetAzureResourcesCSV godoc
+// @Summary      Get Azure resources in csv file
+// @Description  Getting Azure resources by filters in csv file
+// @Tags         inventory
+// @Accept       json
+// @Produce      plain
+// @Param        filters   body      Filters  true  "Filters"
+// @Param        sort      body      Sort     true  "Sort"
+// @Success      200
+// @Router       /resources/azure/csv [post]
+func (h *HttpHandler) GetAzureResourcesCSV(ectx echo.Context) error {
+	provider := SourceCloudAzure
+	return h.GetResourcesCSV(ectx, &provider)
 }
 
 // GetAWSResources godoc
@@ -117,17 +192,27 @@ func (h *HttpHandler) GetAzureResources(ectx echo.Context) error {
 // @Produce      json
 // @Param        filters   body      Filters  true  "Filters"
 // @Param        page      body      Page     true  "Page"
+// @Param        sort      body      Sort     true  "Sort"
 // @Success      200  {object}  GetAWSResourceResponse
 // @Router       /resources/aws [post]
 func (h *HttpHandler) GetAWSResources(ectx echo.Context) error {
-	cc := ectx.(*Context)
-	req := &GetResourceRequest{}
-	if err := cc.BindValidate(req); err != nil {
-		return cc.JSON(http.StatusBadRequest, err)
-	}
-
 	provider := SourceCloudAWS
-	return h.GetResources(ectx, req, &provider)
+	return h.GetResources(ectx, &provider)
+}
+
+// GetAWSResourcesCSV godoc
+// @Summary      Get AWS resources in csv file
+// @Description  Getting AWS resources by filters in csv file
+// @Tags         inventory
+// @Accept       json
+// @Produce      plain
+// @Param        filters   body      Filters  true  "Filters"
+// @Param        sort      body      Sort     true  "Sort"
+// @Success      200
+// @Router       /resources/aws/csv [post]
+func (h *HttpHandler) GetAWSResourcesCSV(ectx echo.Context) error {
+	provider := SourceCloudAWS
+	return h.GetResourcesCSV(ectx, &provider)
 }
 
 // GetAllResources godoc
@@ -138,26 +223,39 @@ func (h *HttpHandler) GetAWSResources(ectx echo.Context) error {
 // @Produce      json
 // @Param        filters   body      Filters  true  "Filters"
 // @Param        page      body      Page     true  "Page"
-// @Success      200  {object}  GetResourceResponse
+// @Param        sort      body      Sort     true  "Sort"
+// @Success      200  {object}  GetResourcesResponse
 // @Router       /resources [post]
 func (h *HttpHandler) GetAllResources(ectx echo.Context) error {
+	return h.GetResources(ectx, nil)
+}
+
+// GetAllResourcesCSV godoc
+// @Summary      Get all resources in csv file
+// @Description  Getting all resources by filters in csv file
+// @Tags         inventory
+// @Accept       json
+// @Produce      plain
+// @Param        filters   body      Filters  true  "Filters"
+// @Param        sort      body      Sort     true  "Sort"
+// @Success      200
+// @Router       /resources/csv [post]
+func (h *HttpHandler) GetAllResourcesCSV(ectx echo.Context) error {
+	return h.GetResourcesCSV(ectx, nil)
+}
+
+func (h *HttpHandler) GetResources(ectx echo.Context, provider *SourceType) error {
+	var err error
 	cc := ectx.(*Context)
-	req := &GetResourceRequest{}
+	req := &GetResourcesRequest{}
 	if err := cc.BindValidate(req); err != nil {
 		return cc.JSON(http.StatusBadRequest, err)
 	}
 
-	return h.GetResources(ectx, req, nil)
-}
-
-func (h *HttpHandler) GetResources(ectx echo.Context, req *GetResourceRequest, provider *SourceType) error {
-	var err error
-
 	ctx := extractContext(ectx)
-	cc := ectx.(*Context)
 
 	var lastIdx int
-	if req.Page.NextMarker != nil || len(req.Page.NextMarker) > 0 {
+	if req.Page.NextMarker != nil && len(req.Page.NextMarker) > 0 {
 		lastIdx, err = strconv.Atoi(string(req.Page.NextMarker))
 		if err != nil {
 			return err
@@ -166,42 +264,11 @@ func (h *HttpHandler) GetResources(ectx echo.Context, req *GetResourceRequest, p
 		lastIdx = 0
 	}
 
-	var terms []keibi.BoolFilter
-	if !FilterIsEmpty(req.Filters.Location) {
-		terms = append(terms, keibi.TermsFilter("location", req.Filters.Location))
-	}
-
-	if !FilterIsEmpty(req.Filters.ResourceType) {
-		terms = append(terms, keibi.TermsFilter("resourceType", req.Filters.ResourceType))
-	}
-
-	if !FilterIsEmpty(req.Filters.KeibiSource) {
-		terms = append(terms, keibi.TermsFilter("sourceID", req.Filters.KeibiSource))
-	}
-
-	if provider != nil {
-		terms = append(terms, keibi.TermsFilter("provider", []string{string(*provider)}))
-	}
-
-	var queryStr string
-	if len(terms) > 0 {
-		query := BuildBoolFilter(terms)
-		var shouldTerms []interface{}
-		shouldTerms = append(shouldTerms, query)
-
-		query = BuildQuery(shouldTerms, req.Page.Size, lastIdx)
-		queryBytes, err := json.Marshal(query)
-		if err != nil {
-			return err
-		}
-
-		queryStr = string(queryBytes)
-	}
-
-	resources, err := GetResourcesPageFromES(h.client, ctx, "inventory_summary", queryStr)
+	resources, err := QuerySummaryResources(ctx, h.client, req.Filters, provider, req.Page.Size, lastIdx, req.Sort)
 	if err != nil {
 		return err
 	}
+
 	page := Page{
 		Size:       req.Page.Size,
 		NextMarker: []byte(strconv.Itoa(lastIdx + req.Page.Size)),
@@ -253,42 +320,171 @@ func (h *HttpHandler) GetResources(ectx echo.Context, req *GetResourceRequest, p
 			SourceID:     resource.SourceID,
 		})
 	}
-	return cc.JSON(http.StatusOK, GetResourceResponse{
+	return cc.JSON(http.StatusOK, GetResourcesResponse{
 		Resources: allResources,
 		Page:      page,
 	})
 }
 
-type QueryResponse struct {
-	Hits QueryHits `json:"hits"`
-}
-type QueryHits struct {
-	Total keibi.SearchTotal `json:"total"`
-	Hits  []QueryHit        `json:"hits"`
-}
-type QueryHit struct {
-	ID      string                       `json:"_id"`
-	Score   float64                      `json:"_score"`
-	Index   string                       `json:"_index"`
-	Type    string                       `json:"_type"`
-	Version int64                        `json:"_version,omitempty"`
-	Source  describe.KafkaLookupResource `json:"_source"`
-	Sort    []interface{}                `json:"sort"`
-}
-
-func GetResourcesPageFromES(client keibi.Client, ctx context.Context, index string, query string) ([]describe.KafkaLookupResource, error) {
-	var response QueryResponse
-	err := client.Search(ctx, index, query, &response)
+func Csv(record []string, w io.Writer) error {
+	wr := csv.NewWriter(w)
+	err := wr.Write(record)
 	if err != nil {
-		return nil, err
+		return err
+	}
+	wr.Flush()
+	return nil
+}
+
+func (h *HttpHandler) GetResourcesCSV(ectx echo.Context, provider *SourceType) error {
+	cc := ectx.(*Context)
+
+	req := &GetResourcesRequestCSV{}
+	if err := cc.BindValidate(req); err != nil {
+		return cc.JSON(http.StatusBadRequest, err)
 	}
 
-	var resources []describe.KafkaLookupResource
-	for _, hits := range response.Hits.Hits {
-		resources = append(resources, hits.Source)
+	reqCSV := GetResourcesRequest{Filters: req.Filters, Sort: req.Sort, Page: Page{
+		NextMarker: nil,
+		Size:       1000,
+	}}
+
+	ectx.Response().Header().Set(echo.HeaderContentType, echo.MIMETextPlain)
+	ectx.Response().WriteHeader(http.StatusOK)
+
+	total := 0
+	writeHeaders := true
+	for {
+		n, nextPage, err := h.GetResourcesCSVPage(ectx, &reqCSV, provider, writeHeaders)
+		if err != nil {
+			return err
+		}
+		writeHeaders = false
+
+		if n == 0 {
+			break
+		}
+
+		ectx.Response().Flush()
+
+		total = total + n
+		if total >= 4999 {
+			break
+		}
+
+		reqCSV.Page = nextPage
 	}
 
-	return resources, nil
+	return nil
+}
+
+func (h *HttpHandler) GetResourcesCSVPage(ectx echo.Context, req *GetResourcesRequest, provider *SourceType, writeHeaders bool) (int, Page, error) {
+	var err error
+
+	ctx := extractContext(ectx)
+	cc := ectx.(*Context)
+
+	var lastIdx int
+	if req.Page.NextMarker != nil && len(req.Page.NextMarker) > 0 {
+		lastIdx, err = strconv.Atoi(string(req.Page.NextMarker))
+		if err != nil {
+			return 0, Page{}, err
+		}
+	} else {
+		lastIdx = 0
+	}
+	page := Page{
+		Size:       req.Page.Size,
+		NextMarker: []byte(strconv.Itoa(lastIdx + req.Page.Size)),
+	}
+
+	resources, err := QuerySummaryResources(ctx, h.client, req.Filters, provider, req.Page.Size, lastIdx, req.Sort)
+	if err != nil {
+		return 0, Page{}, err
+	}
+
+	if provider != nil && *provider == SourceCloudAWS {
+		var awsResources []AWSResource
+		if writeHeaders {
+			err := Csv(AWSResource{}.ToCSVHeaders(), cc.Response())
+			if err != nil {
+				return 0, Page{}, err
+			}
+			writeHeaders = false
+		}
+		for _, resource := range resources {
+			awsResource := AWSResource{
+				Name:         resource.Name,
+				ResourceType: resource.ResourceType,
+				ResourceID:   resource.ResourceID,
+				Region:       resource.Location,
+				AccountID:    resource.SourceID,
+			}
+			awsResources = append(awsResources, awsResource)
+
+			err := Csv(awsResource.ToCSVRecord(), cc.Response())
+			if err != nil {
+				return 0, Page{}, err
+			}
+		}
+		return len(resources), page, nil
+	}
+
+	if provider != nil && *provider == SourceCloudAzure {
+		var azureResources []AzureResource
+		if writeHeaders {
+			fmt.Println(AzureResource{}.ToCSVHeaders())
+			err := Csv(AzureResource{}.ToCSVHeaders(), cc.Response())
+			if err != nil {
+				return 0, Page{}, err
+			}
+
+			writeHeaders = false
+		}
+		for _, resource := range resources {
+			azureResource := AzureResource{
+				Name:           resource.Name,
+				ResourceType:   resource.ResourceType,
+				ResourceGroup:  resource.ResourceGroup,
+				Location:       resource.Location,
+				ResourceID:     resource.ResourceID,
+				SubscriptionID: resource.SourceID,
+			}
+			azureResources = append(azureResources, azureResource)
+
+			err := Csv(azureResource.ToCSVRecord(), cc.Response())
+			if err != nil {
+				return 0, Page{}, err
+			}
+		}
+		return len(resources), page, nil
+	}
+
+	var allResources []AllResource
+	for _, resource := range resources {
+		if writeHeaders {
+			err := Csv(AllResource{}.ToCSVHeaders(), cc.Response())
+			if err != nil {
+				return 0, Page{}, err
+			}
+			writeHeaders = false
+		}
+		allResource := AllResource{
+			Name:         resource.Name,
+			Provider:     SourceType(resource.SourceType),
+			ResourceType: resource.ResourceType,
+			Location:     resource.Location,
+			ResourceID:   resource.ResourceID,
+			SourceID:     resource.SourceID,
+		}
+		allResources = append(allResources, allResource)
+
+		err := Csv(allResource.ToCSVRecord(), cc.Response())
+		if err != nil {
+			return 0, Page{}, err
+		}
+	}
+	return len(resources), page, nil
 }
 
 func (c *Context) BindValidate(i interface{}) error {

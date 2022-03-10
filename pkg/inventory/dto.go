@@ -1,5 +1,10 @@
 package inventory
 
+import (
+	"gitlab.com/keibiengine/keibi-engine/pkg/describe"
+	"gitlab.com/keibiengine/keibi-engine/pkg/keibi-es-sdk"
+)
+
 type SourceType string
 
 const (
@@ -7,13 +12,43 @@ const (
 	SourceCloudAzure SourceType = "Azure"
 )
 
+type DirectionType string
+
+const (
+	DirectionAscending  DirectionType = "asc"
+	DirectionDescending DirectionType = "desc"
+)
+
+type SortFieldType string
+
+const (
+	SortFieldResourceID    SortFieldType = "resource_id"
+	SortFieldName          SortFieldType = "name"
+	SortFieldSourceType    SortFieldType = "source_type"
+	SortFieldResourceType  SortFieldType = "resource_type"
+	SortFieldResourceGroup SortFieldType = "resource_group"
+	SortFieldLocation      SortFieldType = "location"
+	SortFieldSourceID      SortFieldType = "source_id"
+)
+
+type GetResourceRequest struct {
+	ResourceType string `json:"resourceType" validate:"required"`
+	ID           string `json:"ID" validate:"required"`
+}
+
 type LocationByProviderResponse struct {
 	Name string `json:"name"`
 }
 
-type GetResourceRequest struct {
+type GetResourcesRequest struct {
 	Filters Filters `json:"filters" validate:"required"`
+	Sort    Sort    `json:"sort"`
 	Page    Page    `json:"page"`
+}
+
+type GetResourcesRequestCSV struct {
+	Filters Filters `json:"filters" validate:"required"`
+	Sort    Sort    `json:"sort"`
 }
 
 type Page struct {
@@ -27,8 +62,20 @@ type Filters struct {
 	KeibiSource  []string `json:"keibiSource"`
 }
 
-type GetResourceResponse struct {
-	Resources []AllResource `json:"resourcesces"`
+type Sort struct {
+	SortBy []SortItem `json:"sortBy"`
+}
+
+// SortItem godoc
+// @Param   field      body     string     true  "field name"
+// @Param   direction  body     string     true  "direction"       Enums(asc,desc)
+type SortItem struct {
+	Field     SortFieldType `json:"field"`
+	Direction DirectionType `json:"direction" enums:"asc,desc"`
+}
+
+type GetResourcesResponse struct {
+	Resources []AllResource `json:"resources"`
 	Page      Page          `json:"page"`
 }
 
@@ -39,6 +86,14 @@ type AllResource struct {
 	Location     string     `json:"location"`
 	ResourceID   string     `json:"resourceID"`
 	SourceID     string     `json:"sourceID"`
+}
+
+func (r AllResource) ToCSVRecord() []string {
+	return []string{r.Name, string(r.Provider), r.ResourceType, r.Location, r.ResourceID, r.SourceID}
+}
+
+func (r AllResource) ToCSVHeaders() []string {
+	return []string{"Name", "Provider", "ResourceType", "Location", "ResourceID", "SourceID"}
 }
 
 type GetAzureResourceResponse struct {
@@ -55,6 +110,13 @@ type AzureResource struct {
 	SubscriptionID string `json:"subscriptionID"`
 }
 
+func (r AzureResource) ToCSVRecord() []string {
+	return []string{r.Name, r.ResourceType, r.ResourceGroup, r.Location, r.ResourceID, r.SubscriptionID}
+}
+func (r AzureResource) ToCSVHeaders() []string {
+	return []string{"Name", "ResourceType", "ResourceGroup", "Location", "ResourceID", "SubscriptionID"}
+}
+
 type GetAWSResourceResponse struct {
 	Resources []AWSResource `json:"resources"`
 	Page      Page          `json:"page"`
@@ -66,4 +128,45 @@ type AWSResource struct {
 	ResourceID   string `json:"resourceID"`
 	Region       string `json:"location"`
 	AccountID    string `json:"accountID"`
+}
+
+func (r AWSResource) ToCSVRecord() []string {
+	return []string{r.Name, r.ResourceType, r.ResourceID, r.Region, r.AccountID}
+}
+func (r AWSResource) ToCSVHeaders() []string {
+	return []string{"Name", "ResourceType", "ResourceID", "Region", "AccountID"}
+}
+
+type SummaryQueryResponse struct {
+	Hits SummaryQueryHits `json:"hits"`
+}
+type SummaryQueryHits struct {
+	Total keibi.SearchTotal `json:"total"`
+	Hits  []SummaryQueryHit `json:"hits"`
+}
+type SummaryQueryHit struct {
+	ID      string                       `json:"_id"`
+	Score   float64                      `json:"_score"`
+	Index   string                       `json:"_index"`
+	Type    string                       `json:"_type"`
+	Version int64                        `json:"_version,omitempty"`
+	Source  describe.KafkaLookupResource `json:"_source"`
+	Sort    []interface{}                `json:"sort"`
+}
+
+type GenericQueryResponse struct {
+	Hits GenericQueryHits `json:"hits"`
+}
+type GenericQueryHits struct {
+	Total keibi.SearchTotal `json:"total"`
+	Hits  []GenericQueryHit `json:"hits"`
+}
+type GenericQueryHit struct {
+	ID      string                 `json:"_id"`
+	Score   float64                `json:"_score"`
+	Index   string                 `json:"_index"`
+	Type    string                 `json:"_type"`
+	Version int64                  `json:"_version,omitempty"`
+	Source  map[string]interface{} `json:"_source"`
+	Sort    []interface{}          `json:"sort"`
 }

@@ -5,6 +5,7 @@ import (
 	"crypto/tls"
 	"fmt"
 	"net/http"
+	"os"
 
 	elasticsearchv7 "github.com/elastic/go-elasticsearch/v7"
 	"github.com/turbot/steampipe-plugin-sdk/connection"
@@ -74,6 +75,16 @@ func NewClientCached(c ClientConfig, cache *connection.Cache, ctx context.Contex
 func NewClient(c ClientConfig) (Client, error) {
 	if c.AccountID == nil || len(*c.AccountID) == 0 {
 		return Client{}, fmt.Errorf("accountID is either null or empty: %v", c.AccountID)
+	}
+
+	if c.Username == nil || len(*c.Username) == 0 {
+		username := os.Getenv("ES_USERNAME")
+		c.Username = &username
+	}
+
+	if c.Password == nil || len(*c.Password) == 0 {
+		password := os.Getenv("ES_PASSWORD")
+		c.Password = &password
 	}
 
 	cfg := elasticsearchv7.Config{
