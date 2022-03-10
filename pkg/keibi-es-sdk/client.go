@@ -77,12 +77,12 @@ func NewClient(c ClientConfig) (Client, error) {
 		return Client{}, fmt.Errorf("accountID is either null or empty: %v", c.AccountID)
 	}
 
-	if len(*c.Username) == 0 {
+	if c.Username == nil || len(*c.Username) == 0 {
 		username := os.Getenv("ES_USERNAME")
 		c.Username = &username
 	}
 
-	if len(*c.Password) == 0 {
+	if c.Password == nil || len(*c.Password) == 0 {
 		password := os.Getenv("ES_PASSWORD")
 		c.Password = &password
 	}

@@ -6,7 +6,6 @@ import (
 )
 
 type HttpHandler struct {
-	steampipe     *SteampipeDatabase
 	client keibi.Client
 }
 

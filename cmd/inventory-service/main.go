@@ -21,8 +21,8 @@ var (
 // @version 1.0
 // @description Inventory service
 
-// @host https://keibi.io
-// @BasePath /api/v1
+// @host https://dev-cluster.keibi.io
+// @BasePath /inventory/api/v1
 func main() {
 	r := inventory.InitializeRouter()
 	r.GET("/swagger/*", swagger.WrapHandler)

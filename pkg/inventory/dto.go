@@ -19,6 +19,18 @@ const (
 	DirectionDescending DirectionType = "desc"
 )
 
+type SortFieldType string
+
+const (
+	SortFieldResourceID    SortFieldType = "resource_id"
+	SortFieldName          SortFieldType = "name"
+	SortFieldSourceType    SortFieldType = "source_type"
+	SortFieldResourceType  SortFieldType = "resource_type"
+	SortFieldResourceGroup SortFieldType = "resource_group"
+	SortFieldLocation      SortFieldType = "location"
+	SortFieldSourceID      SortFieldType = "source_id"
+)
+
 type GetResourceRequest struct {
 	ResourceType string `json:"resourceType" validate:"required"`
 	ID           string `json:"ID" validate:"required"`
@@ -58,7 +70,7 @@ type Sort struct {
 // @Param   field      body     string     true  "field name"
 // @Param   direction  body     string     true  "direction"       Enums(asc,desc)
 type SortItem struct {
-	Field     string        `json:"field"`
+	Field     SortFieldType `json:"field"`
 	Direction DirectionType `json:"direction" enums:"asc,desc"`
 }
 

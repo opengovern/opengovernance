@@ -22,11 +22,11 @@ type swaggerInfo struct {
 // SwaggerInfo holds exported Swagger Info so clients can modify it
 var SwaggerInfo = swaggerInfo{
 	Version:     "1.0",
-	Host:        "localhost:6251",
-	BasePath:    "/api/v1",
+	Host:        "https://dev-cluster.keibi.io",
+	BasePath:    "/",
 	Schemes:     []string{"http", "https"},
-	Title:       "Inventory Service API",
-	Description: "Inventory service",
+	Title:       "Keibi Service API",
+	Description: "Keibi service",
 }
 
 type s struct{}

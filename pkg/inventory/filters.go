@@ -20,7 +20,7 @@ func BuildSort(sort Sort) []map[string]interface{} {
 	var result []map[string]interface{}
 	for _, item := range sort.SortBy {
 		dir := string(item.Direction)
-		result = append(result, map[string]interface{}{item.Field: dir})
+		result = append(result, map[string]interface{}{string(item.Field): dir})
 	}
 	return result
 }
