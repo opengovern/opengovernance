@@ -26,6 +26,10 @@ type GetResourcesRequest struct {
 	Page    Page    `json:"page"`
 }
 
+type GetResourcesRequestCSV struct {
+	Filters Filters `json:"filters" validate:"required"`
+}
+
 type Page struct {
 	NextMarker []byte `json:"nextMarker"`
 	Size       int    `json:"size"`
@@ -51,6 +55,14 @@ type AllResource struct {
 	SourceID     string     `json:"sourceID"`
 }
 
+func (r AllResource) ToCSVRecord() []string {
+	return []string{r.Name, string(r.Provider), r.ResourceType, r.Location, r.ResourceID, r.SourceID}
+}
+
+func (r AllResource) ToCSVHeaders() []string {
+	return []string{"Name", "Provider", "ResourceType", "Location", "ResourceID", "SourceID"}
+}
+
 type GetAzureResourceResponse struct {
 	Resources []AzureResource `json:"resources"`
 	Page      Page            `json:"page"`
@@ -65,6 +77,13 @@ type AzureResource struct {
 	SubscriptionID string `json:"subscriptionID"`
 }
 
+func (r AzureResource) ToCSVRecord() []string {
+	return []string{r.Name, r.ResourceType, r.ResourceGroup, r.Location, r.ResourceID, r.SubscriptionID}
+}
+func (r AzureResource) ToCSVHeaders() []string {
+	return []string{"Name", "ResourceType", "ResourceGroup", "Location", "ResourceID", "SubscriptionID"}
+}
+
 type GetAWSResourceResponse struct {
 	Resources []AWSResource `json:"resources"`
 	Page      Page          `json:"page"`
@@ -76,6 +95,13 @@ type AWSResource struct {
 	ResourceID   string `json:"resourceID"`
 	Region       string `json:"location"`
 	AccountID    string `json:"accountID"`
+}
+
+func (r AWSResource) ToCSVRecord() []string {
+	return []string{r.Name, r.ResourceType, r.ResourceID, r.Region, r.AccountID}
+}
+func (r AWSResource) ToCSVHeaders() []string {
+	return []string{"Name", "ResourceType", "ResourceID", "Region", "AccountID"}
 }
 
 type SummaryQueryResponse struct {

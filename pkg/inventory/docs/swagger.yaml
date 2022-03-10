@@ -2,30 +2,30 @@ basePath: /api/v1
 definitions:
   inventory.AWSResource:
     properties:
-      account_id:
+      accountID:
         type: string
       location:
         type: string
       name:
         type: string
-      resource_id:
+      resourceID:
         type: string
-      resource_type:
+      resourceType:
         type: string
     type: object
   inventory.AllResource:
     properties:
-      keibi_source_id:
-        type: string
       location:
         type: string
       name:
         type: string
       provider:
         type: string
-      resource_id:
+      resourceID:
         type: string
-      resource_type:
+      resourceType:
+        type: string
+      sourceID:
         type: string
     type: object
   inventory.AzureResource:
@@ -34,18 +34,18 @@ definitions:
         type: string
       name:
         type: string
-      resource_group:
+      resourceGroup:
         type: string
-      resource_id:
+      resourceID:
         type: string
-      subscription_id:
+      resourceType:
         type: string
-      type:
+      subscriptionID:
         type: string
     type: object
   inventory.Filters:
     properties:
-      keibi_source:
+      keibiSource:
         items:
           type: string
         type: array
@@ -76,11 +76,11 @@ definitions:
           $ref: '#/definitions/inventory.AzureResource'
         type: array
     type: object
-  inventory.GetResourceResponse:
+  inventory.GetResourcesResponse:
     properties:
       page:
         $ref: '#/definitions/inventory.Page'
-      resources:
+      resourcesces:
         items:
           $ref: '#/definitions/inventory.AllResource'
         type: array
@@ -92,24 +92,17 @@ definitions:
     type: object
   inventory.Page:
     properties:
-      next_marker:
+      nextMarker:
         items:
           type: integer
         type: array
       size:
         type: integer
     type: object
-host: localhost:6251
+host: https://keibi.io
 info:
-  contact:
-    email: support@swagger.io
-    name: API Support
-    url: http://www.swagger.io/support
+  contact: {}
   description: Inventory service
-  license:
-    name: Apache 2.0
-    url: http://www.apache.org/licenses/LICENSE-2.0.html
-  termsOfService: http://swagger.io/terms/
   title: Inventory Service API
   version: "1.0"
 paths:
@@ -137,6 +130,28 @@ paths:
       summary: Get locations
       tags:
       - location
+  /resource:
+    post:
+      description: Getting resource details by id and resource type
+      parameters:
+      - description: Id
+        in: body
+        name: id
+        required: true
+        schema:
+          type: string
+      - description: ResourceType
+        in: body
+        name: resourceType
+        required: true
+        schema:
+          type: string
+      produces:
+      - application/json
+      responses: {}
+      summary: Get details of a Resource
+      tags:
+      - resource
   /resources:
     post:
       consumes:
@@ -161,7 +176,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/inventory.GetResourceResponse'
+            $ref: '#/definitions/inventory.GetResourcesResponse'
       summary: Get resources
       tags:
       - inventory
@@ -193,6 +208,26 @@ paths:
       summary: Get AWS resources
       tags:
       - inventory
+  /resources/aws/csv:
+    post:
+      consumes:
+      - application/json
+      description: Getting AWS resources by filters in csv file
+      parameters:
+      - description: Filters
+        in: body
+        name: filters
+        required: true
+        schema:
+          $ref: '#/definitions/inventory.Filters'
+      produces:
+      - text/plain
+      responses:
+        "200":
+          description: ""
+      summary: Get AWS resources in csv file
+      tags:
+      - inventory
   /resources/azure:
     post:
       consumes:
@@ -219,6 +254,46 @@ paths:
           schema:
             $ref: '#/definitions/inventory.GetAzureResourceResponse'
       summary: Get Azure resources
+      tags:
+      - inventory
+  /resources/azure/csv:
+    post:
+      consumes:
+      - application/json
+      description: Getting Azure resources by filters in csv file
+      parameters:
+      - description: Filters
+        in: body
+        name: filters
+        required: true
+        schema:
+          $ref: '#/definitions/inventory.Filters'
+      produces:
+      - text/plain
+      responses:
+        "200":
+          description: ""
+      summary: Get Azure resources in csv file
+      tags:
+      - inventory
+  /resources/csv:
+    post:
+      consumes:
+      - application/json
+      description: Getting all resources by filters in csv file
+      parameters:
+      - description: Filters
+        in: body
+        name: filters
+        required: true
+        schema:
+          $ref: '#/definitions/inventory.Filters'
+      produces:
+      - text/plain
+      responses:
+        "200":
+          description: ""
+      summary: Get all resources in csv file
       tags:
       - inventory
 swagger: "2.0"

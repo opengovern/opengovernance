@@ -8,16 +8,7 @@ const docTemplate = `{
     "info": {
         "description": "{{escape .Description}}",
         "title": "{{.Title}}",
-        "termsOfService": "http://swagger.io/terms/",
-        "contact": {
-            "name": "API Support",
-            "url": "http://www.swagger.io/support",
-            "email": "support@swagger.io"
-        },
-        "license": {
-            "name": "Apache 2.0",
-            "url": "http://www.apache.org/licenses/LICENSE-2.0.html"
-        },
+        "contact": {},
         "version": "{{.Version}}"
     },
     "host": "{{.Host}}",
@@ -59,6 +50,39 @@ const docTemplate = `{
                 }
             }
         },
+        "/resource": {
+            "post": {
+                "description": "Getting resource details by id and resource type",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "resource"
+                ],
+                "summary": "Get details of a Resource",
+                "parameters": [
+                    {
+                        "description": "Id",
+                        "name": "id",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "description": "ResourceType",
+                        "name": "resourceType",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {}
+            }
+        },
         "/resources": {
             "post": {
                 "description": "Getting all cloud providers resources by filters",
@@ -96,7 +120,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/inventory.GetResourceResponse"
+                            "$ref": "#/definitions/inventory.GetResourcesResponse"
                         }
                     }
                 }
@@ -145,6 +169,37 @@ const docTemplate = `{
                 }
             }
         },
+        "/resources/aws/csv": {
+            "post": {
+                "description": "Getting AWS resources by filters in csv file",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "text/plain"
+                ],
+                "tags": [
+                    "inventory"
+                ],
+                "summary": "Get AWS resources in csv file",
+                "parameters": [
+                    {
+                        "description": "Filters",
+                        "name": "filters",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/inventory.Filters"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": ""
+                    }
+                }
+            }
+        },
         "/resources/azure": {
             "post": {
                 "description": "Getting Azure resources by filters",
@@ -187,13 +242,75 @@ const docTemplate = `{
                     }
                 }
             }
+        },
+        "/resources/azure/csv": {
+            "post": {
+                "description": "Getting Azure resources by filters in csv file",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "text/plain"
+                ],
+                "tags": [
+                    "inventory"
+                ],
+                "summary": "Get Azure resources in csv file",
+                "parameters": [
+                    {
+                        "description": "Filters",
+                        "name": "filters",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/inventory.Filters"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/resources/csv": {
+            "post": {
+                "description": "Getting all resources by filters in csv file",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "text/plain"
+                ],
+                "tags": [
+                    "inventory"
+                ],
+                "summary": "Get all resources in csv file",
+                "parameters": [
+                    {
+                        "description": "Filters",
+                        "name": "filters",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/inventory.Filters"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": ""
+                    }
+                }
+            }
         }
     },
     "definitions": {
         "inventory.AWSResource": {
             "type": "object",
             "properties": {
-                "account_id": {
+                "accountID": {
                     "type": "string"
                 },
                 "location": {
@@ -202,10 +319,10 @@ const docTemplate = `{
                 "name": {
                     "type": "string"
                 },
-                "resource_id": {
+                "resourceID": {
                     "type": "string"
                 },
-                "resource_type": {
+                "resourceType": {
                     "type": "string"
                 }
             }
@@ -213,9 +330,6 @@ const docTemplate = `{
         "inventory.AllResource": {
             "type": "object",
             "properties": {
-                "keibi_source_id": {
-                    "type": "string"
-                },
                 "location": {
                     "type": "string"
                 },
@@ -225,10 +339,13 @@ const docTemplate = `{
                 "provider": {
                     "type": "string"
                 },
-                "resource_id": {
+                "resourceID": {
                     "type": "string"
                 },
-                "resource_type": {
+                "resourceType": {
+                    "type": "string"
+                },
+                "sourceID": {
                     "type": "string"
                 }
             }
@@ -242,16 +359,16 @@ const docTemplate = `{
                 "name": {
                     "type": "string"
                 },
-                "resource_group": {
+                "resourceGroup": {
                     "type": "string"
                 },
-                "resource_id": {
+                "resourceID": {
                     "type": "string"
                 },
-                "subscription_id": {
+                "resourceType": {
                     "type": "string"
                 },
-                "type": {
+                "subscriptionID": {
                     "type": "string"
                 }
             }
@@ -259,7 +376,7 @@ const docTemplate = `{
         "inventory.Filters": {
             "type": "object",
             "properties": {
-                "keibi_source": {
+                "keibiSource": {
                     "type": "array",
                     "items": {
                         "type": "string"
@@ -307,13 +424,13 @@ const docTemplate = `{
                 }
             }
         },
-        "inventory.GetResourceResponse": {
+        "inventory.GetResourcesResponse": {
             "type": "object",
             "properties": {
                 "page": {
                     "$ref": "#/definitions/inventory.Page"
                 },
-                "resources": {
+                "resourcesces": {
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/inventory.AllResource"
@@ -332,7 +449,7 @@ const docTemplate = `{
         "inventory.Page": {
             "type": "object",
             "properties": {
-                "next_marker": {
+                "nextMarker": {
                     "type": "array",
                     "items": {
                         "type": "integer"
@@ -345,4 +462,3 @@ const docTemplate = `{
         }
     }
 }`
-
