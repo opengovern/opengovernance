@@ -71,5 +71,5 @@ func main() {
 	}
 
 	h.Register(r)
-	r.Logger.Fatal(r.Start(":8080"))
+	r.Logger.Fatal(r.Start(HttpAddress))
 }
