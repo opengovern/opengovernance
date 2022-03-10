@@ -16,8 +16,18 @@ func BuildBoolFilter(filters []keibi.BoolFilter) map[string]interface{} {
 	}
 }
 
-func BuildQuery(shouldTerms []interface{}, size, from int) map[string]interface{} {
+func BuildSort(sort Sort) []map[string]interface{} {
+	var result []map[string]interface{}
+	for _, item := range sort.SortBy {
+		dir := string(item.Direction)
+		result = append(result, map[string]interface{}{item.Field: dir})
+	}
+	return result
+}
+
+func BuildQuery(shouldTerms []interface{}, size, from int, sortItems []map[string]interface{}) map[string]interface{} {
 	return map[string]interface{}{
+		"sort": sortItems,
 		"query": map[string]interface{}{
 			"bool": map[string]interface{}{
 				"should": shouldTerms,

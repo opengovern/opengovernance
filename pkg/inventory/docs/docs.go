@@ -114,6 +114,15 @@ const docTemplate = `{
                         "schema": {
                             "$ref": "#/definitions/inventory.Page"
                         }
+                    },
+                    {
+                        "description": "Sort",
+                        "name": "sort",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/inventory.Sort"
+                        }
                     }
                 ],
                 "responses": {
@@ -157,6 +166,15 @@ const docTemplate = `{
                         "schema": {
                             "$ref": "#/definitions/inventory.Page"
                         }
+                    },
+                    {
+                        "description": "Sort",
+                        "name": "sort",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/inventory.Sort"
+                        }
                     }
                 ],
                 "responses": {
@@ -190,6 +208,15 @@ const docTemplate = `{
                         "required": true,
                         "schema": {
                             "$ref": "#/definitions/inventory.Filters"
+                        }
+                    },
+                    {
+                        "description": "Sort",
+                        "name": "sort",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/inventory.Sort"
                         }
                     }
                 ],
@@ -231,6 +258,15 @@ const docTemplate = `{
                         "schema": {
                             "$ref": "#/definitions/inventory.Page"
                         }
+                    },
+                    {
+                        "description": "Sort",
+                        "name": "sort",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/inventory.Sort"
+                        }
                     }
                 ],
                 "responses": {
@@ -265,6 +301,15 @@ const docTemplate = `{
                         "schema": {
                             "$ref": "#/definitions/inventory.Filters"
                         }
+                    },
+                    {
+                        "description": "Sort",
+                        "name": "sort",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/inventory.Sort"
+                        }
                     }
                 ],
                 "responses": {
@@ -295,6 +340,15 @@ const docTemplate = `{
                         "required": true,
                         "schema": {
                             "$ref": "#/definitions/inventory.Filters"
+                        }
+                    },
+                    {
+                        "description": "Sort",
+                        "name": "sort",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/inventory.Sort"
                         }
                     }
                 ],
@@ -430,7 +484,7 @@ const docTemplate = `{
                 "page": {
                     "$ref": "#/definitions/inventory.Page"
                 },
-                "resourcesces": {
+                "resources": {
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/inventory.AllResource"
@@ -457,6 +511,32 @@ const docTemplate = `{
                 },
                 "size": {
                     "type": "integer"
+                }
+            }
+        },
+        "inventory.Sort": {
+            "type": "object",
+            "properties": {
+                "sortBy": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/inventory.SortItem"
+                    }
+                }
+            }
+        },
+        "inventory.SortItem": {
+            "type": "object",
+            "properties": {
+                "direction": {
+                    "type": "string",
+                    "enum": [
+                        "asc",
+                        "desc"
+                    ]
+                },
+                "field": {
+                    "type": "string"
                 }
             }
         }

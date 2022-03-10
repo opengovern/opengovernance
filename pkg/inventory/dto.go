@@ -12,6 +12,13 @@ const (
 	SourceCloudAzure SourceType = "Azure"
 )
 
+type DirectionType string
+
+const (
+	DirectionAscending  DirectionType = "asc"
+	DirectionDescending DirectionType = "desc"
+)
+
 type GetResourceRequest struct {
 	ResourceType string `json:"resourceType" validate:"required"`
 	ID           string `json:"ID" validate:"required"`
@@ -23,11 +30,13 @@ type LocationByProviderResponse struct {
 
 type GetResourcesRequest struct {
 	Filters Filters `json:"filters" validate:"required"`
+	Sort    Sort    `json:"sort"`
 	Page    Page    `json:"page"`
 }
 
 type GetResourcesRequestCSV struct {
 	Filters Filters `json:"filters" validate:"required"`
+	Sort    Sort    `json:"sort"`
 }
 
 type Page struct {
@@ -41,8 +50,20 @@ type Filters struct {
 	KeibiSource  []string `json:"keibiSource"`
 }
 
+type Sort struct {
+	SortBy []SortItem `json:"sortBy"`
+}
+
+// SortItem godoc
+// @Param   field      body     string     true  "field name"
+// @Param   direction  body     string     true  "direction"       Enums(asc,desc)
+type SortItem struct {
+	Field     string        `json:"field"`
+	Direction DirectionType `json:"direction" enums:"asc,desc"`
+}
+
 type GetResourcesResponse struct {
-	Resources []AllResource `json:"resourcesces"`
+	Resources []AllResource `json:"resources"`
 	Page      Page          `json:"page"`
 }
 

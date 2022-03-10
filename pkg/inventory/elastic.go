@@ -13,6 +13,7 @@ func QuerySummaryResources(
 	filters Filters,
 	provider *SourceType,
 	size, lastIndex int,
+	sort Sort,
 ) ([]describe.KafkaLookupResource, error) {
 	var err error
 
@@ -33,7 +34,7 @@ func QuerySummaryResources(
 		terms = append(terms, keibi.TermsFilter("provider", []string{string(*provider)}))
 	}
 
-	queryStr, err := BuildSummaryQuery(terms, size, lastIndex)
+	queryStr, err := BuildSummaryQuery(terms, size, lastIndex, sort)
 	if err != nil {
 		return nil, err
 	}
@@ -46,13 +47,13 @@ func QuerySummaryResources(
 	return resources, nil
 }
 
-func BuildSummaryQuery(terms []keibi.BoolFilter, size, lastIdx int) (string, error) {
+func BuildSummaryQuery(terms []keibi.BoolFilter, size, lastIdx int, sort Sort) (string, error) {
 	if len(terms) > 0 {
 		query := BuildBoolFilter(terms)
 		var shouldTerms []interface{}
 		shouldTerms = append(shouldTerms, query)
 
-		query = BuildQuery(shouldTerms, size, lastIdx)
+		query = BuildQuery(shouldTerms, size, lastIdx, BuildSort(sort))
 		queryBytes, err := json.Marshal(query)
 		if err != nil {
 			return "", err

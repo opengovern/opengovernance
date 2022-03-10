@@ -161,6 +161,7 @@ func (h *HttpHandler) GetLocations(ctx echo.Context) error {
 // @Produce      json
 // @Param        filters   body      Filters  true  "Filters"
 // @Param        page      body      Page     true  "Page"
+// @Param        sort      body      Sort     true  "Sort"
 // @Success      200  {object}  GetAzureResourceResponse
 // @Router       /resources/azure [post]
 func (h *HttpHandler) GetAzureResources(ectx echo.Context) error {
@@ -175,6 +176,7 @@ func (h *HttpHandler) GetAzureResources(ectx echo.Context) error {
 // @Accept       json
 // @Produce      plain
 // @Param        filters   body      Filters  true  "Filters"
+// @Param        sort      body      Sort     true  "Sort"
 // @Success      200
 // @Router       /resources/azure/csv [post]
 func (h *HttpHandler) GetAzureResourcesCSV(ectx echo.Context) error {
@@ -190,6 +192,7 @@ func (h *HttpHandler) GetAzureResourcesCSV(ectx echo.Context) error {
 // @Produce      json
 // @Param        filters   body      Filters  true  "Filters"
 // @Param        page      body      Page     true  "Page"
+// @Param        sort      body      Sort     true  "Sort"
 // @Success      200  {object}  GetAWSResourceResponse
 // @Router       /resources/aws [post]
 func (h *HttpHandler) GetAWSResources(ectx echo.Context) error {
@@ -204,6 +207,7 @@ func (h *HttpHandler) GetAWSResources(ectx echo.Context) error {
 // @Accept       json
 // @Produce      plain
 // @Param        filters   body      Filters  true  "Filters"
+// @Param        sort      body      Sort     true  "Sort"
 // @Success      200
 // @Router       /resources/aws/csv [post]
 func (h *HttpHandler) GetAWSResourcesCSV(ectx echo.Context) error {
@@ -219,6 +223,7 @@ func (h *HttpHandler) GetAWSResourcesCSV(ectx echo.Context) error {
 // @Produce      json
 // @Param        filters   body      Filters  true  "Filters"
 // @Param        page      body      Page     true  "Page"
+// @Param        sort      body      Sort     true  "Sort"
 // @Success      200  {object}  GetResourcesResponse
 // @Router       /resources [post]
 func (h *HttpHandler) GetAllResources(ectx echo.Context) error {
@@ -232,6 +237,7 @@ func (h *HttpHandler) GetAllResources(ectx echo.Context) error {
 // @Accept       json
 // @Produce      plain
 // @Param        filters   body      Filters  true  "Filters"
+// @Param        sort      body      Sort     true  "Sort"
 // @Success      200
 // @Router       /resources/csv [post]
 func (h *HttpHandler) GetAllResourcesCSV(ectx echo.Context) error {
@@ -258,7 +264,7 @@ func (h *HttpHandler) GetResources(ectx echo.Context, provider *SourceType) erro
 		lastIdx = 0
 	}
 
-	resources, err := QuerySummaryResources(ctx, h.client, req.Filters, provider, req.Page.Size, lastIdx)
+	resources, err := QuerySummaryResources(ctx, h.client, req.Filters, provider, req.Page.Size, lastIdx, req.Sort)
 	if err != nil {
 		return err
 	}
@@ -338,7 +344,7 @@ func (h *HttpHandler) GetResourcesCSV(ectx echo.Context, provider *SourceType) e
 		return cc.JSON(http.StatusBadRequest, err)
 	}
 
-	reqCSV := GetResourcesRequest{Filters: req.Filters, Page: Page{
+	reqCSV := GetResourcesRequest{Filters: req.Filters, Sort: req.Sort, Page: Page{
 		NextMarker: nil,
 		Size:       1000,
 	}}
@@ -392,7 +398,7 @@ func (h *HttpHandler) GetResourcesCSVPage(ectx echo.Context, req *GetResourcesRe
 		NextMarker: []byte(strconv.Itoa(lastIdx + req.Page.Size)),
 	}
 
-	resources, err := QuerySummaryResources(ctx, h.client, req.Filters, provider, req.Page.Size, lastIdx)
+	resources, err := QuerySummaryResources(ctx, h.client, req.Filters, provider, req.Page.Size, lastIdx, req.Sort)
 	if err != nil {
 		return 0, Page{}, err
 	}

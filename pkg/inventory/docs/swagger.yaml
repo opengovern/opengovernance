@@ -80,7 +80,7 @@ definitions:
     properties:
       page:
         $ref: '#/definitions/inventory.Page'
-      resourcesces:
+      resources:
         items:
           $ref: '#/definitions/inventory.AllResource'
         type: array
@@ -98,6 +98,23 @@ definitions:
         type: array
       size:
         type: integer
+    type: object
+  inventory.Sort:
+    properties:
+      sortBy:
+        items:
+          $ref: '#/definitions/inventory.SortItem'
+        type: array
+    type: object
+  inventory.SortItem:
+    properties:
+      direction:
+        enum:
+        - asc
+        - desc
+        type: string
+      field:
+        type: string
     type: object
 host: https://keibi.io
 info:
@@ -170,6 +187,12 @@ paths:
         required: true
         schema:
           $ref: '#/definitions/inventory.Page'
+      - description: Sort
+        in: body
+        name: sort
+        required: true
+        schema:
+          $ref: '#/definitions/inventory.Sort'
       produces:
       - application/json
       responses:
@@ -198,6 +221,12 @@ paths:
         required: true
         schema:
           $ref: '#/definitions/inventory.Page'
+      - description: Sort
+        in: body
+        name: sort
+        required: true
+        schema:
+          $ref: '#/definitions/inventory.Sort'
       produces:
       - application/json
       responses:
@@ -220,6 +249,12 @@ paths:
         required: true
         schema:
           $ref: '#/definitions/inventory.Filters'
+      - description: Sort
+        in: body
+        name: sort
+        required: true
+        schema:
+          $ref: '#/definitions/inventory.Sort'
       produces:
       - text/plain
       responses:
@@ -246,6 +281,12 @@ paths:
         required: true
         schema:
           $ref: '#/definitions/inventory.Page'
+      - description: Sort
+        in: body
+        name: sort
+        required: true
+        schema:
+          $ref: '#/definitions/inventory.Sort'
       produces:
       - application/json
       responses:
@@ -268,6 +309,12 @@ paths:
         required: true
         schema:
           $ref: '#/definitions/inventory.Filters'
+      - description: Sort
+        in: body
+        name: sort
+        required: true
+        schema:
+          $ref: '#/definitions/inventory.Sort'
       produces:
       - text/plain
       responses:
@@ -288,6 +335,12 @@ paths:
         required: true
         schema:
           $ref: '#/definitions/inventory.Filters'
+      - description: Sort
+        in: body
+        name: sort
+        required: true
+        schema:
+          $ref: '#/definitions/inventory.Sort'
       produces:
       - text/plain
       responses:
