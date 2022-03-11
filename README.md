@@ -25,7 +25,7 @@ Start using the CLI by running command
 #Generating Swagger UI
 In order to generate templates for SwaggerUI, run the following commands: ([how to install swag command](https://github.com/swaggo/echo-swagger#start-using-it)):
 ```
-swag init --dir cmd/inventory-service,pkg/inventory,cmd/describe-scheduler/,pkg/describe,pkg/compliance-report --output ./pkg/docs
+swag init --dir cmd/onboard-service,cmd/inventory-service,pkg/compliance-report,pkg/inventory,cmd/describe-scheduler/,pkg/describe,pkg/compliance-report,pkg/inventory,pkg/onboard --output ./pkg/docs
 ```
 then remove all of docs.go content except the docTemplate variable.
 
