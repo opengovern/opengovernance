@@ -342,17 +342,17 @@ type KafkaLookupResource struct {
 	// ResourceID is the globally unique ID of the resource.
 	ResourceID string `json:"resource_id"`
 	// Name is the name of the resource.
-	Name string `yaml:"name"`
+	Name string `json:"name"`
 	// SourceType is the type of the source of the resource, i.e. AWS Cloud, Azure Cloud.
 	SourceType SourceType `json:"source_type"`
 	// ResourceType is the type of the resource.
-	ResourceType string `yaml:"resource_type"`
+	ResourceType string `json:"resource_type"`
 	// ResourceGroup is the group of resource (Azure only)
-	ResourceGroup string `yaml:"resource_group"`
+	ResourceGroup string `json:"resource_group"`
 	// Location is location/region of the resource
-	Location string `yaml:"location"`
+	Location string `json:"location"`
 	// SourceID is aws account id or azure subscription id
-	SourceID string `yaml:"source_id"`
+	SourceID string `json:"source_id"`
 	// ResourceJobID is the DescribeResourceJob ID that described this resource
 	ResourceJobID uint `json:"resource_job_id"`
 	// SourceJobID is the DescribeSourceJob ID that the ResourceJobID was created for

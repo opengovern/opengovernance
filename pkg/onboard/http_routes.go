@@ -53,7 +53,7 @@ func bindValidate(ctx echo.Context, i interface{}) error {
 // @Tags         onboard
 // @Produce      json
 // @Success      200  {object}  api.ProvidersResponse
-// @Router       /onboard/providers [get]
+// @Router       /onboard/api/v1/providers [get]
 func (h HttpHandler) GetProviders(ctx echo.Context) error {
 	return ctx.JSON(http.StatusOK, api.ProvidersResponse{
 		{
@@ -80,7 +80,7 @@ func (h HttpHandler) GetProviders(ctx echo.Context) error {
 // @Param        name              body      string  true  "name"
 // @Param        description       body      string  true  "description"
 // @Param        config            body      api.SourceConfigAWS  true  "config"
-// @Router       /onboard/aws [post]
+// @Router       /onboard/api/v1/aws [post]
 func (h HttpHandler) PostSourceAws(ctx echo.Context) error {
 	var req api.SourceAwsRequest
 	if err := bindValidate(ctx, &req); err != nil {
@@ -128,7 +128,7 @@ func (h HttpHandler) PostSourceAws(ctx echo.Context) error {
 // @Param        name              body      string  true  "name"
 // @Param        description       body      string  true  "description"
 // @Param        config            body      api.SourceConfigAzure  true  "config"
-// @Router       /onboard/azure [post]
+// @Router       /onboard/api/v1/azure [post]
 func (h HttpHandler) PostSourceAzure(ctx echo.Context) error {
 	var req api.SourceAzureRequest
 
@@ -180,7 +180,7 @@ func (h HttpHandler) PostSourceAzure(ctx echo.Context) error {
 // @Produce      json
 // @Success      200  {object}  api.Source
 // @Param        sourceId   path      integer  true  "SourceID"
-// @Router       /onboard/{sourceId} [get]
+// @Router       /onboard/api/v1/{sourceId} [get]
 func (h HttpHandler) GetSource(ctx echo.Context) error {
 	srcId, err := uuid.Parse(ctx.Param(paramSourceId))
 	if err != nil {
@@ -208,7 +208,7 @@ func (h HttpHandler) GetSource(ctx echo.Context) error {
 // @Produce      json
 // @Success      200
 // @Param        sourceId   path      integer  true  "SourceID"
-// @Router       /onboard/{sourceId} [delete]
+// @Router       /onboard/api/v1/{sourceId} [delete]
 func (h HttpHandler) DeleteSource(ctx echo.Context) error {
 	srcId, err := uuid.Parse(ctx.Param(paramSourceId))
 	if err != nil {
@@ -257,7 +257,7 @@ func (h HttpHandler) DeleteSource(ctx echo.Context) error {
 // @Produce      json
 // @Param        type query string false "Type" Enums(aws,azure)
 // @Success      200  {object}  api.GetSourcesResponse
-// @Router       /onboard/sources [get]
+// @Router       /onboard/api/v1/sources [get]
 func (h HttpHandler) GetSources(ctx echo.Context) error {
 	sType := ctx.QueryParam("type")
 	var sources []Source
@@ -307,7 +307,7 @@ func (h HttpHandler) PutSource(ctx echo.Context) error {
 // @Success      200  {object}  []api.DiscoverAWSAccountsResponse
 // @Param        accessKey       body      string  true  "AccessKey"
 // @Param        secretKey       body      string  true  "SecretKey"
-// @Router       /onboard/aws/accounts [get]
+// @Router       /onboard/api/v1/aws/accounts [get]
 func (h HttpHandler) DiscoverAwsAccounts(ctx echo.Context) error {
       // DiscoverAwsAccounts returns the list of available AWS accounts given the credentials.
       // If the account is part of an organization and the account has premission to
@@ -335,7 +335,7 @@ func (h HttpHandler) DiscoverAwsAccounts(ctx echo.Context) error {
 // @Param        tenantId       body      string  true  "TenantId"
 // @Param        clientId       body      string  true  "ClientId"
 // @Param        clientSecret   body      string  true  "ClientSecret"
-// @Router       /onboard/azure/subscriptions [get]
+// @Router       /onboard/api/v1/azure/subscriptions [get]
 func (h *HttpHandler) DiscoverAzureSubscriptions(ctx echo.Context) error {
 	var req api.DiscoverAzureSubscriptionsRequest
 	if err := bindValidate(ctx, &req); err != nil {
