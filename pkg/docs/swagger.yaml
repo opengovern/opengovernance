@@ -1,4 +1,3 @@
-basePath: /api/v1
 definitions:
   api.CreateSourceResponse:
     properties:
@@ -208,19 +207,8 @@ definitions:
       field:
         type: string
     type: object
-host: localhost:6251
 info:
-  contact:
-    email: support@swagger.io
-    name: API Support
-    url: http://www.swagger.io/support
-  description: Onboard service
-  license:
-    name: Apache 2.0
-    url: http://www.apache.org/licenses/LICENSE-2.0.html
-  termsOfService: http://swagger.io/terms/
-  title: Onboard Service API
-  version: "1.0"
+  contact: {}
 paths:
   /{sourceId}:
     delete:

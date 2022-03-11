@@ -31,20 +31,6 @@ var (
 	HttpAddress = os.Getenv("HTTP_ADDRESS")
 )
 
-// @title Onboard Service API
-// @version 1.0
-// @description Onboard service
-// @termsOfService http://swagger.io/terms/
-
-// @contact.name API Support
-// @contact.url http://www.swagger.io/support
-// @contact.email support@swagger.io
-
-// @license.name Apache 2.0
-// @license.url http://www.apache.org/licenses/LICENSE-2.0.html
-
-// @host localhost:6251
-// @BasePath /api/v1
 func main() {
 	// TODO: http handler shouldn't be initializing the queue & the db.
 	h, err := onboard.InitializeHttpHandler(
