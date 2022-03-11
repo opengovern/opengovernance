@@ -77,6 +77,9 @@ func (h HttpHandler) GetProviders(ctx echo.Context) error {
 // @Tags         onboard
 // @Produce      json
 // @Success      200  {object}  api.CreateSourceResponse
+// @Param        name              body      string  true  "name"
+// @Param        description       body      string  true  "description"
+// @Param        config            body      api.SourceConfigAWS  true  "config"
 // @Router       /aws [post]
 func (h HttpHandler) PostSourceAws(ctx echo.Context) error {
 	var req api.SourceAwsRequest
@@ -122,6 +125,9 @@ func (h HttpHandler) PostSourceAws(ctx echo.Context) error {
 // @Tags         onboard
 // @Produce      json
 // @Success      200  {object}  api.CreateSourceResponse
+// @Param        name              body      string  true  "name"
+// @Param        description       body      string  true  "description"
+// @Param        config            body      api.SourceConfigAzure  true  "config"
 // @Router       /azure [post]
 func (h HttpHandler) PostSourceAzure(ctx echo.Context) error {
 	var req api.SourceAzureRequest

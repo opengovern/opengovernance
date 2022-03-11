@@ -24,6 +24,35 @@ const docTemplate = `{
                     "onboard"
                 ],
                 "summary": "Create AWS source",
+                "parameters": [
+                    {
+                        "description": "name",
+                        "name": "name",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "description": "description",
+                        "name": "description",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "description": "config",
+                        "name": "config",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/api.SourceConfigAWS"
+                        }
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -87,6 +116,35 @@ const docTemplate = `{
                     "onboard"
                 ],
                 "summary": "Create Azure source",
+                "parameters": [
+                    {
+                        "description": "name",
+                        "name": "name",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "description": "description",
+                        "name": "description",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "description": "config",
+                        "name": "config",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/api.SourceConfigAzure"
+                        }
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -852,6 +910,54 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "type": {
+                    "type": "string"
+                }
+            }
+        },
+        "api.SourceConfigAWS": {
+            "type": "object",
+            "required": [
+                "accessKey",
+                "accountId",
+                "secretKey"
+            ],
+            "properties": {
+                "accessKey": {
+                    "type": "string"
+                },
+                "accountId": {
+                    "type": "string"
+                },
+                "regions": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "secretKey": {
+                    "type": "string"
+                }
+            }
+        },
+        "api.SourceConfigAzure": {
+            "type": "object",
+            "required": [
+                "clientId",
+                "clientSecret",
+                "subscriptionId",
+                "tenantId"
+            ],
+            "properties": {
+                "clientId": {
+                    "type": "string"
+                },
+                "clientSecret": {
+                    "type": "string"
+                },
+                "subscriptionId": {
+                    "type": "string"
+                },
+                "tenantId": {
                     "type": "string"
                 }
             }

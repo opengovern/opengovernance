@@ -53,6 +53,39 @@ definitions:
       type:
         type: string
     type: object
+  api.SourceConfigAWS:
+    properties:
+      accessKey:
+        type: string
+      accountId:
+        type: string
+      regions:
+        items:
+          type: string
+        type: array
+      secretKey:
+        type: string
+    required:
+    - accessKey
+    - accountId
+    - secretKey
+    type: object
+  api.SourceConfigAzure:
+    properties:
+      clientId:
+        type: string
+      clientSecret:
+        type: string
+      subscriptionId:
+        type: string
+      tenantId:
+        type: string
+    required:
+    - clientId
+    - clientSecret
+    - subscriptionId
+    - tenantId
+    type: object
   describe.ApiComplianceReport:
     properties:
       failure_message:
@@ -248,6 +281,25 @@ paths:
   /aws:
     post:
       description: Creating AWS source
+      parameters:
+      - description: name
+        in: body
+        name: name
+        required: true
+        schema:
+          type: string
+      - description: description
+        in: body
+        name: description
+        required: true
+        schema:
+          type: string
+      - description: config
+        in: body
+        name: config
+        required: true
+        schema:
+          $ref: '#/definitions/api.SourceConfigAWS'
       produces:
       - application/json
       responses:
@@ -291,6 +343,25 @@ paths:
   /azure:
     post:
       description: Creating Azure source
+      parameters:
+      - description: name
+        in: body
+        name: name
+        required: true
+        schema:
+          type: string
+      - description: description
+        in: body
+        name: description
+        required: true
+        schema:
+          type: string
+      - description: config
+        in: body
+        name: config
+        required: true
+        schema:
+          $ref: '#/definitions/api.SourceConfigAzure'
       produces:
       - application/json
       responses:
