@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os"
 
-	swagger "github.com/swaggo/echo-swagger"
 	"gitlab.com/keibiengine/keibi-engine/pkg/onboard"
 )
 
@@ -33,8 +32,6 @@ var (
 
 func main() {
 	r := onboard.InitializeRouter()
-	r.GET("/swagger/*", swagger.WrapHandler)
-
 	// TODO: http handler shouldn't be initializing the queue & the db.
 	h, err := onboard.InitializeHttpHandler(
 		RabbitMQUsername,

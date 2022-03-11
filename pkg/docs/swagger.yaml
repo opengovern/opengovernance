@@ -1,5 +1,91 @@
-basePath: /inventory/api/v1
 definitions:
+  api.CreateSourceResponse:
+    properties:
+      id:
+        type: string
+    type: object
+  api.DiscoverAWSAccountsResponse:
+    properties:
+      accountId:
+        type: string
+      email:
+        type: string
+      name:
+        type: string
+      organizationId:
+        description: Nil if not part of an AWS organization
+        type: string
+      status:
+        type: string
+    type: object
+  api.DiscoverAzureSubscriptionsResponse:
+    properties:
+      id:
+        type: string
+      name:
+        type: string
+      status:
+        type: string
+      subscriptionId:
+        type: string
+    type: object
+  api.Provider:
+    properties:
+      enabled:
+        type: boolean
+      id:
+        type: string
+      name:
+        type: string
+      type:
+        type: string
+    type: object
+  api.Source:
+    properties:
+      description:
+        type: string
+      id:
+        type: string
+      name:
+        type: string
+      sourceId:
+        type: string
+      type:
+        type: string
+    type: object
+  api.SourceConfigAWS:
+    properties:
+      accessKey:
+        type: string
+      accountId:
+        type: string
+      regions:
+        items:
+          type: string
+        type: array
+      secretKey:
+        type: string
+    required:
+    - accessKey
+    - accountId
+    - secretKey
+    type: object
+  api.SourceConfigAzure:
+    properties:
+      clientId:
+        type: string
+      clientSecret:
+        type: string
+      subscriptionId:
+        type: string
+      tenantId:
+        type: string
+    required:
+    - clientId
+    - clientSecret
+    - subscriptionId
+    - tenantId
+    type: object
   describe.ApiComplianceReport:
     properties:
       failure_message:
@@ -154,14 +240,10 @@ definitions:
       field:
         type: string
     type: object
-host: https://dev-cluster.keibi.io
 info:
   contact: {}
-  description: Inventory service
-  title: Inventory Service API
-  version: "1.0"
 paths:
-  /locations/{provider}:
+  /inventory/locations/{provider}:
     get:
       description: Getting locations by provider
       parameters:
@@ -185,7 +267,7 @@ paths:
       summary: Get locations
       tags:
       - location
-  /resource:
+  /inventory/resource:
     post:
       description: Getting resource details by id and resource type
       parameters:
@@ -207,31 +289,7 @@ paths:
       summary: Get details of a Resource
       tags:
       - resource
-  /resource_type/{provider}:
-    get:
-      description: get resource type by provider
-      parameters:
-      - description: Provider
-        enum:
-        - aws
-        - azure
-        in: path
-        name: provider
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            items:
-              type: string
-            type: array
-      summary: get resource type by provider
-      tags:
-      - source
-  /resources:
+  /inventory/resources:
     post:
       consumes:
       - application/json
@@ -265,7 +323,7 @@ paths:
       summary: Get resources
       tags:
       - inventory
-  /resources/aws:
+  /inventory/resources/aws:
     post:
       consumes:
       - application/json
@@ -299,7 +357,7 @@ paths:
       summary: Get AWS resources
       tags:
       - inventory
-  /resources/aws/csv:
+  /inventory/resources/aws/csv:
     post:
       consumes:
       - application/json
@@ -325,7 +383,7 @@ paths:
       summary: Get AWS resources in csv file
       tags:
       - inventory
-  /resources/azure:
+  /inventory/resources/azure:
     post:
       consumes:
       - application/json
@@ -359,7 +417,7 @@ paths:
       summary: Get Azure resources
       tags:
       - inventory
-  /resources/azure/csv:
+  /inventory/resources/azure/csv:
     post:
       consumes:
       - application/json
@@ -385,7 +443,7 @@ paths:
       summary: Get Azure resources in csv file
       tags:
       - inventory
-  /resources/csv:
+  /inventory/resources/csv:
     post:
       consumes:
       - application/json
@@ -411,7 +469,233 @@ paths:
       summary: Get all resources in csv file
       tags:
       - inventory
-  /sources:
+  /onboard/{sourceId}:
+    delete:
+      description: Deleting a single source either AWS / Azure.
+      parameters:
+      - description: SourceID
+        in: path
+        name: sourceId
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: ""
+      summary: Delete a single source
+      tags:
+      - onboard
+    get:
+      description: Returning single source either AWS / Azure.
+      parameters:
+      - description: SourceID
+        in: path
+        name: sourceId
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/api.Source'
+      summary: Returns a single source
+      tags:
+      - onboard
+  /onboard/aws:
+    post:
+      description: Creating AWS source
+      parameters:
+      - description: name
+        in: body
+        name: name
+        required: true
+        schema:
+          type: string
+      - description: description
+        in: body
+        name: description
+        required: true
+        schema:
+          type: string
+      - description: config
+        in: body
+        name: config
+        required: true
+        schema:
+          $ref: '#/definitions/api.SourceConfigAWS'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/api.CreateSourceResponse'
+      summary: Create AWS source
+      tags:
+      - onboard
+  /onboard/aws/accounts:
+    get:
+      description: If the account is part of an organization and the account has premission
+        to list the accounts, it will return all the accounts in that organization.
+        Otherwise, it will return the single account these credentials belong to.
+      parameters:
+      - description: AccessKey
+        in: body
+        name: accessKey
+        required: true
+        schema:
+          type: string
+      - description: SecretKey
+        in: body
+        name: secretKey
+        required: true
+        schema:
+          type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/api.DiscoverAWSAccountsResponse'
+            type: array
+      summary: Returns the list of available AWS accounts given the credentials.
+      tags:
+      - onboard
+  /onboard/azure:
+    post:
+      description: Creating Azure source
+      parameters:
+      - description: name
+        in: body
+        name: name
+        required: true
+        schema:
+          type: string
+      - description: description
+        in: body
+        name: description
+        required: true
+        schema:
+          type: string
+      - description: config
+        in: body
+        name: config
+        required: true
+        schema:
+          $ref: '#/definitions/api.SourceConfigAzure'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/api.CreateSourceResponse'
+      summary: Create Azure source
+      tags:
+      - onboard
+  /onboard/azure/subscriptions:
+    get:
+      description: Returning the list of available Azure subscriptions.
+      parameters:
+      - description: TenantId
+        in: body
+        name: tenantId
+        required: true
+        schema:
+          type: string
+      - description: ClientId
+        in: body
+        name: clientId
+        required: true
+        schema:
+          type: string
+      - description: ClientSecret
+        in: body
+        name: clientSecret
+        required: true
+        schema:
+          type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/api.DiscoverAzureSubscriptionsResponse'
+            type: array
+      summary: Returns the list of available Azure subscriptions.
+      tags:
+      - onboard
+  /onboard/providers:
+    get:
+      description: Getting cloud providers
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/api.Provider'
+            type: array
+      summary: Get providers
+      tags:
+      - onboard
+  /onboard/sources:
+    get:
+      description: Returning a list of sources including both AWS and Azure unless
+        filtered by Type.
+      parameters:
+      - description: Type
+        enum:
+        - aws
+        - azure
+        in: query
+        name: type
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/api.Source'
+            type: array
+      summary: Returns a list of sources
+      tags:
+      - onboard
+  /schedule/resource_type/{provider}:
+    get:
+      description: get resource type by provider
+      parameters:
+      - description: Provider
+        enum:
+        - aws
+        - azure
+        in: path
+        name: provider
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              type: string
+            type: array
+      summary: get resource type by provider
+      tags:
+      - source
+  /schedule/sources:
     get:
       description: Getting all of Keibi sources
       produces:
@@ -426,7 +710,7 @@ paths:
       summary: List Sources
       tags:
       - source
-  /sources/{source_id}/jobs/compliance:
+  /schedule/sources/{source_id}/jobs/compliance:
     get:
       description: List source compliance reports
       parameters:
@@ -447,7 +731,7 @@ paths:
       summary: List source compliance reports
       tags:
       - source
-  /sources/{source_id}/jobs/compliance/refresh:
+  /schedule/sources/{source_id}/jobs/compliance/refresh:
     get:
       description: Run compliance report jobs
       parameters:
@@ -462,7 +746,7 @@ paths:
       summary: Run compliance report jobs
       tags:
       - source
-  /sources/{source_id}/jobs/describe:
+  /schedule/sources/{source_id}/jobs/describe:
     get:
       description: List source describe jobs
       parameters:
@@ -483,7 +767,7 @@ paths:
       summary: List source describe jobs
       tags:
       - source
-  /sources/{source_id}/jobs/describe/refresh:
+  /schedule/sources/{source_id}/jobs/describe/refresh:
     get:
       description: Run describe jobs
       parameters:
@@ -498,7 +782,7 @@ paths:
       summary: Run describe jobs
       tags:
       - source
-  /sources/{source_id}/policy/{policy_id}:
+  /schedule/sources/{source_id}/policy/{policy_id}:
     get:
       description: Assign source to policy
       parameters:

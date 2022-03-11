@@ -3,6 +3,7 @@ package inventory
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"gitlab.com/keibiengine/keibi-engine/pkg/describe"
 	"gitlab.com/keibiengine/keibi-engine/pkg/keibi-es-sdk"
 )
@@ -23,15 +24,15 @@ func QuerySummaryResources(
 	}
 
 	if !FilterIsEmpty(filters.ResourceType) {
-		terms = append(terms, keibi.TermsFilter("resourceType", filters.ResourceType))
+		terms = append(terms, keibi.TermsFilter("resource_type", filters.ResourceType))
 	}
 
 	if !FilterIsEmpty(filters.KeibiSource) {
-		terms = append(terms, keibi.TermsFilter("sourceID", filters.KeibiSource))
+		terms = append(terms, keibi.TermsFilter("source_id", filters.KeibiSource))
 	}
 
 	if provider != nil {
-		terms = append(terms, keibi.TermsFilter("provider", []string{string(*provider)}))
+		terms = append(terms, keibi.TermsFilter("source_type", []string{string(*provider)}))
 	}
 
 	queryStr, err := BuildSummaryQuery(terms, size, lastIndex, sort)
@@ -48,23 +49,24 @@ func QuerySummaryResources(
 }
 
 func BuildSummaryQuery(terms []keibi.BoolFilter, size, lastIdx int, sort Sort) (string, error) {
-	if len(terms) > 0 {
+	var shouldTerms []interface{}
+
+	if terms != nil && len(terms) > 0 {
 		query := BuildBoolFilter(terms)
-		var shouldTerms []interface{}
 		shouldTerms = append(shouldTerms, query)
-
-		query = BuildQuery(shouldTerms, size, lastIdx, BuildSort(sort))
-		queryBytes, err := json.Marshal(query)
-		if err != nil {
-			return "", err
-		}
-
-		return string(queryBytes), nil
 	}
-	return "", nil
+
+	query := BuildQuery(shouldTerms, size, lastIdx, BuildSort(sort))
+	queryBytes, err := json.Marshal(query)
+	if err != nil {
+		return "", err
+	}
+
+	return string(queryBytes), nil
 }
 
 func SummaryQueryES(client keibi.Client, ctx context.Context, index string, query string) ([]describe.KafkaLookupResource, error) {
+	fmt.Println(query)
 	var response SummaryQueryResponse
 	err := client.Search(ctx, index, query, &response)
 	if err != nil {
