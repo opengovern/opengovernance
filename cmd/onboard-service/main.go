@@ -46,9 +46,6 @@ var (
 // @host localhost:6251
 // @BasePath /api/v1
 func main() {
-	r := onboard.InitializeRouter()
-	r.GET("/swagger/*", swagger.WrapHandler)
-
 	// TODO: http handler shouldn't be initializing the queue & the db.
 	h, err := onboard.InitializeHttpHandler(
 		RabbitMQUsername,
