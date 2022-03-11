@@ -263,6 +263,19 @@ paths:
       description: If the account is part of an organization and the account has premission
         to list the accounts, it will return all the accounts in that organization.
         Otherwise, it will return the single account these credentials belong to.
+      parameters:
+      - description: AccessKey
+        in: body
+        name: accessKey
+        required: true
+        schema:
+          type: string
+      - description: SecretKey
+        in: body
+        name: secretKey
+        required: true
+        schema:
+          type: string
       produces:
       - application/json
       responses:
@@ -291,6 +304,25 @@ paths:
   /azure/subscriptions:
     get:
       description: Returning the list of available Azure subscriptions.
+      parameters:
+      - description: TenantId
+        in: body
+        name: tenantId
+        required: true
+        schema:
+          type: string
+      - description: ClientId
+        in: body
+        name: clientId
+        required: true
+        schema:
+          type: string
+      - description: ClientSecret
+        in: body
+        name: clientSecret
+        required: true
+        schema:
+          type: string
       produces:
       - application/json
       responses:
@@ -577,10 +609,9 @@ paths:
         enum:
         - aws
         - azure
-        in: body
+        in: query
         name: type
-        schema:
-          type: string
+        type: string
       produces:
       - application/json
       responses:

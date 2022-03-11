@@ -44,6 +44,26 @@ const docTemplate = `{
                     "onboard"
                 ],
                 "summary": "Returns the list of available AWS accounts given the credentials.",
+                "parameters": [
+                    {
+                        "description": "AccessKey",
+                        "name": "accessKey",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "description": "SecretKey",
+                        "name": "secretKey",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -87,6 +107,35 @@ const docTemplate = `{
                     "onboard"
                 ],
                 "summary": "Returns the list of available Azure subscriptions.",
+                "parameters": [
+                    {
+                        "description": "TenantId",
+                        "name": "tenantId",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "description": "ClientId",
+                        "name": "clientId",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "description": "ClientSecret",
+                        "name": "clientSecret",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -520,12 +569,10 @@ const docTemplate = `{
                             "aws",
                             "azure"
                         ],
+                        "type": "string",
                         "description": "Type",
                         "name": "type",
-                        "in": "body",
-                        "schema": {
-                            "type": "string"
-                        }
+                        "in": "query"
                     }
                 ],
                 "responses": {

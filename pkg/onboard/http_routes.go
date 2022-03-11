@@ -249,7 +249,7 @@ func (h HttpHandler) DeleteSource(ctx echo.Context) error {
 // @Description  Returning a list of sources including both AWS and Azure unless filtered by Type.
 // @Tags         onboard
 // @Produce      json
-// @Param        type body string false "Type" Enums(aws,azure)
+// @Param        type query string false "Type" Enums(aws,azure)
 // @Success      200  {object}  api.GetSourcesResponse
 // @Router       /sources [get]
 func (h HttpHandler) GetSources(ctx echo.Context) error {
@@ -299,12 +299,14 @@ func (h HttpHandler) PutSource(ctx echo.Context) error {
 // @Tags         onboard
 // @Produce      json
 // @Success      200  {object}  []api.DiscoverAWSAccountsResponse
+// @Param        accessKey       body      string  true  "AccessKey"
+// @Param        secretKey       body      string  true  "SecretKey"
 // @Router       /aws/accounts [get]
 func (h HttpHandler) DiscoverAwsAccounts(ctx echo.Context) error {
-        // DiscoverAwsAccounts returns the list of available AWS accounts given the credentials.
-        // If the account is part of an organization and the account has premission to
-        // list the accounts, it will return all the accounts in that organization.
-        // Otherwise, it will return the single account these credentials belong to.
+      // DiscoverAwsAccounts returns the list of available AWS accounts given the credentials.
+      // If the account is part of an organization and the account has premission to
+      // list the accounts, it will return all the accounts in that organization.
+      // Otherwise, it will return the single account these credentials belong to.
 	var req api.DiscoverAWSAccountsRequest
 	if err := bindValidate(ctx, &req); err != nil {
 		return ctx.JSON(http.StatusBadRequest, err)
@@ -324,6 +326,9 @@ func (h HttpHandler) DiscoverAwsAccounts(ctx echo.Context) error {
 // @Tags         onboard
 // @Produce      json
 // @Success      200  {object}  []api.DiscoverAzureSubscriptionsResponse
+// @Param        tenantId       body      string  true  "TenantId"
+// @Param        clientId       body      string  true  "ClientId"
+// @Param        clientSecret   body      string  true  "ClientSecret"
 // @Router       /azure/subscriptions [get]
 func (h *HttpHandler) DiscoverAzureSubscriptions(ctx echo.Context) error {
 	var req api.DiscoverAzureSubscriptionsRequest
