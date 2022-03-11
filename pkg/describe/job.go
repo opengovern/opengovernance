@@ -11,6 +11,7 @@ import (
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/aws"
 	"gitlab.com/keibiengine/keibi-engine/pkg/azure"
+	"gitlab.com/keibiengine/keibi-engine/pkg/describe/api"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/vault"
 	"gopkg.in/Shopify/sarama.v1"
 )
@@ -76,7 +77,7 @@ type Job struct {
 	JobID        uint // DescribeResourceJob ID
 	ParentJobID  uint // DescribeSourceJob ID
 	ResourceType string
-	SourceType   SourceType
+	SourceType   api.SourceType
 	ConfigReg    string
 }
 
@@ -95,7 +96,7 @@ func (j Job) Do(vlt vault.SourceConfig, producer sarama.SyncProducer, topic stri
 			r = JobResult{
 				JobID:       j.JobID,
 				ParentJobID: j.ParentJobID,
-				Status:      DescribeResourceJobFailed,
+				Status:      api.DescribeResourceJobFailed,
 				Error:       fmt.Sprintf("paniced: %s", err),
 			}
 		}
@@ -103,12 +104,12 @@ func (j Job) Do(vlt vault.SourceConfig, producer sarama.SyncProducer, topic stri
 
 	// Assume it succeeded unless it fails somewhere
 	var (
-		status         = DescribeResourceJobSucceeded
+		status         = api.DescribeResourceJobSucceeded
 		firstErr error = nil
 	)
 
 	fail := func(err error) {
-		status = DescribeResourceJobFailed
+		status = api.DescribeResourceJobFailed
 		if firstErr == nil {
 			firstErr = err
 		}
@@ -152,9 +153,9 @@ func doDescribe(ctx context.Context, job Job, config map[string]interface{}) ([]
 	fmt.Printf("Proccessing Job: ID[%d] ParentJobID[%d] RosourceType[%s]\n", job.JobID, job.ParentJobID, job.ResourceType)
 
 	switch job.SourceType {
-	case SourceCloudAWS:
+	case api.SourceCloudAWS:
 		return doDescribeAWS(ctx, job, config)
-	case SourceCloudAzure:
+	case api.SourceCloudAzure:
 		return doDescribeAzure(ctx, job, config)
 	default:
 		return nil, nil, fmt.Errorf("invalid SourceType: %s", job.SourceType)
@@ -200,7 +201,7 @@ func doDescribeAWS(ctx context.Context, job Job, config map[string]interface{}) 
 			inventory = append(inventory, KafkaResource{
 				ID:            resource.UniqueID(),
 				Description:   resource.Description,
-				SourceType:    SourceCloudAWS,
+				SourceType:    api.SourceCloudAWS,
 				ResourceType:  job.ResourceType,
 				ResourceJobID: job.JobID,
 				SourceJobID:   job.ParentJobID,
@@ -214,7 +215,7 @@ func doDescribeAWS(ctx context.Context, job Job, config map[string]interface{}) 
 			lookup = append(lookup, KafkaLookupResource{
 				ResourceID:    resource.UniqueID(),
 				Name:          resource.Name,
-				SourceType:    SourceCloudAWS,
+				SourceType:    api.SourceCloudAWS,
 				ResourceType:  job.ResourceType,
 				ResourceGroup: "",
 				Location:      resource.Region,
@@ -273,7 +274,7 @@ func doDescribeAzure(ctx context.Context, job Job, config map[string]interface{}
 		inventory = append(inventory, KafkaResource{
 			ID:            resource.UniqueID(),
 			Description:   resource.Description,
-			SourceType:    SourceCloudAzure,
+			SourceType:    api.SourceCloudAzure,
 			ResourceType:  output.Metadata.ResourceType,
 			ResourceJobID: job.JobID,
 			SourceJobID:   job.ParentJobID,
@@ -287,7 +288,7 @@ func doDescribeAzure(ctx context.Context, job Job, config map[string]interface{}
 		lookup = append(lookup, KafkaLookupResource{
 			ResourceID:    resource.UniqueID(),
 			Name:          resource.Name,
-			SourceType:    SourceCloudAzure,
+			SourceType:    api.SourceCloudAzure,
 			ResourceType:  job.ResourceType,
 			ResourceGroup: resource.ResourceGroup,
 			Location:      resource.Location,
@@ -306,7 +307,7 @@ type KafkaResource struct {
 	// Description is the description of the resource based on the describe call.
 	Description interface{} `json:"description"`
 	// SourceType is the type of the source of the resource, i.e. AWS Cloud, Azure Cloud.
-	SourceType SourceType `json:"source_type"`
+	SourceType api.SourceType `json:"source_type"`
 	// ResourceType is the type of the resource.
 	ResourceType string `json:"resource_type"`
 	// ResourceJobID is the DescribeResourceJob ID that described this resource
@@ -344,7 +345,7 @@ type KafkaLookupResource struct {
 	// Name is the name of the resource.
 	Name string `json:"name"`
 	// SourceType is the type of the source of the resource, i.e. AWS Cloud, Azure Cloud.
-	SourceType SourceType `json:"source_type"`
+	SourceType api.SourceType `json:"source_type"`
 	// ResourceType is the type of the resource.
 	ResourceType string `json:"resource_type"`
 	// ResourceGroup is the group of resource (Azure only)
@@ -434,6 +435,6 @@ func doSendToKafka(producer sarama.SyncProducer, topic string, resources []Kafka
 type JobResult struct {
 	JobID       uint
 	ParentJobID uint
-	Status      DescribeResourceJobStatus
+	Status      api.DescribeResourceJobStatus
 	Error       string
 }

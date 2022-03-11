@@ -1,27 +1,8 @@
 @baseUrl = http://127.0.0.1:6251/api/v1
 
-### create an organization
-# @name create_organization
-POST {{baseUrl}}/organizations/
-Content-Type: application/json
-
-{
-	"name": "Blue Magic",
-	"description": "Blue Magic LLC",
-	"adminEmail": "denzel@bluemagic.com",
-	"keibiUrl": "https://bmagic.keibi.io"
-}
-
-
-### get an organization
-@orgid = {{create_organization.response.body.$.id}}
-GET {{baseUrl}}/organizations/{{orgid}}
-Content-Type: application/json
-
-
-### create new aws source
+### Create AWS Source
 # @name create_source_aws
-POST {{baseUrl}}/organizations/{{orgid}}/sources/aws
+POST {{baseUrl}}/source/aws
 Content-Type: application/json
 
 {
@@ -33,20 +14,9 @@ Content-Type: application/json
 	}
 }
 
-### delete aws source
-@sourceid = {{create_source_aws.response.body.$.id}}
-DELETE {{baseUrl}}/organizations/{{orgid}}/sources/{{sourceid}}
-
-
-### delete organization
-DELETE {{baseUrl}}/organizations/{{orgid}}
-
-
-### try to get an orgsanization that does not exists
-GET {{baseUrl}}/organizations/${{$guid}}
-
+### Create Azure Source
 # @name create_source_azure
-POST {{baseUrl}}/organizations/{{orgid}}/sources/azure
+POST {{baseUrl}}/source/azure
 Content-Type: application/json
 
 {
@@ -58,6 +28,10 @@ Content-Type: application/json
 		"clientSecret": "XXX"
 	}
 }
+
+### delete source
+@sourceid = {{create_source_aws.response.body.$.id}}
+DELETE {{baseUrl}}/source/{{sourceid}}
 
 
 

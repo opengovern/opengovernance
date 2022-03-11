@@ -1,10 +1,16 @@
 {
+    "schemes": [
+        "https"
+    ],
     "swagger": "2.0",
     "info": {
-        "contact": {}
+        "title": "Keibi Service API",
+        "contact": {},
+        "version": "1.0"
     },
+    "host": "dev-cluster.keibi.io",
     "paths": {
-        "/inventory/locations/{provider}": {
+        "/inventory/api/v1/locations/{provider}": {
             "get": {
                 "description": "Getting locations by provider",
                 "produces": [
@@ -40,7 +46,7 @@
                 }
             }
         },
-        "/inventory/resource": {
+        "/inventory/api/v1/resource": {
             "post": {
                 "description": "Getting resource details by id and resource type",
                 "produces": [
@@ -73,7 +79,7 @@
                 "responses": {}
             }
         },
-        "/inventory/resources": {
+        "/inventory/api/v1/resources": {
             "post": {
                 "description": "Getting all cloud providers resources by filters",
                 "consumes": [
@@ -125,7 +131,7 @@
                 }
             }
         },
-        "/inventory/resources/aws": {
+        "/inventory/api/v1/resources/aws": {
             "post": {
                 "description": "Getting AWS resources by filters",
                 "consumes": [
@@ -177,7 +183,7 @@
                 }
             }
         },
-        "/inventory/resources/aws/csv": {
+        "/inventory/api/v1/resources/aws/csv": {
             "post": {
                 "description": "Getting AWS resources by filters in csv file",
                 "consumes": [
@@ -217,7 +223,7 @@
                 }
             }
         },
-        "/inventory/resources/azure": {
+        "/inventory/api/v1/resources/azure": {
             "post": {
                 "description": "Getting Azure resources by filters",
                 "consumes": [
@@ -269,7 +275,7 @@
                 }
             }
         },
-        "/inventory/resources/azure/csv": {
+        "/inventory/api/v1/resources/azure/csv": {
             "post": {
                 "description": "Getting Azure resources by filters in csv file",
                 "consumes": [
@@ -309,7 +315,7 @@
                 }
             }
         },
-        "/inventory/resources/csv": {
+        "/inventory/api/v1/resources/csv": {
             "post": {
                 "description": "Getting all resources by filters in csv file",
                 "consumes": [
@@ -349,7 +355,7 @@
                 }
             }
         },
-        "/onboard/aws": {
+        "/onboard/api/v1/aws": {
             "post": {
                 "description": "Creating AWS source",
                 "produces": [
@@ -398,7 +404,7 @@
                 }
             }
         },
-        "/onboard/aws/accounts": {
+        "/onboard/api/v1/aws/accounts": {
             "get": {
                 "description": "If the account is part of an organization and the account has premission to list the accounts, it will return all the accounts in that organization. Otherwise, it will return the single account these credentials belong to.",
                 "produces": [
@@ -441,7 +447,7 @@
                 }
             }
         },
-        "/onboard/azure": {
+        "/onboard/api/v1/azure": {
             "post": {
                 "description": "Creating Azure source",
                 "produces": [
@@ -490,7 +496,7 @@
                 }
             }
         },
-        "/onboard/azure/subscriptions": {
+        "/onboard/api/v1/azure/subscriptions": {
             "get": {
                 "description": "Returning the list of available Azure subscriptions.",
                 "produces": [
@@ -542,7 +548,7 @@
                 }
             }
         },
-        "/onboard/providers": {
+        "/onboard/api/v1/providers": {
             "get": {
                 "description": "Getting cloud providers",
                 "produces": [
@@ -565,7 +571,7 @@
                 }
             }
         },
-        "/onboard/sources": {
+        "/onboard/api/v1/sources": {
             "get": {
                 "description": "Returning a list of sources including both AWS and Azure unless filtered by Type.",
                 "produces": [
@@ -593,14 +599,14 @@
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/api.Source"
+                                "$ref": "#/definitions/gitlab.com_keibiengine_keibi-engine_pkg_onboard_api.Source"
                             }
                         }
                     }
                 }
             }
         },
-        "/onboard/{sourceId}": {
+        "/onboard/api/v1/{sourceId}": {
             "get": {
                 "description": "Returning single source either AWS / Azure.",
                 "produces": [
@@ -623,7 +629,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/api.Source"
+                            "$ref": "#/definitions/gitlab.com_keibiengine_keibi-engine_pkg_onboard_api.Source"
                         }
                     }
                 }
@@ -653,14 +659,14 @@
                 }
             }
         },
-        "/schedule/resource_type/{provider}": {
+        "/schedule/api/v1/resource_type/{provider}": {
             "get": {
                 "description": "get resource type by provider",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
-                    "source"
+                    "schedule"
                 ],
                 "summary": "get resource type by provider",
                 "parameters": [
@@ -689,14 +695,14 @@
                 }
             }
         },
-        "/schedule/sources": {
+        "/schedule/api/v1/sources": {
             "get": {
                 "description": "Getting all of Keibi sources",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
-                    "source"
+                    "schedule"
                 ],
                 "summary": "List Sources",
                 "responses": {
@@ -705,21 +711,21 @@
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/describe.ApiSource"
+                                "$ref": "#/definitions/gitlab.com_keibiengine_keibi-engine_pkg_describe_api.Source"
                             }
                         }
                     }
                 }
             }
         },
-        "/schedule/sources/{source_id}/jobs/compliance": {
+        "/schedule/api/v1/sources/{source_id}/jobs/compliance": {
             "get": {
                 "description": "List source compliance reports",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
-                    "source"
+                    "schedule"
                 ],
                 "summary": "List source compliance reports",
                 "parameters": [
@@ -737,21 +743,21 @@
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/describe.ApiComplianceReport"
+                                "$ref": "#/definitions/api.ComplianceReport"
                             }
                         }
                     }
                 }
             }
         },
-        "/schedule/sources/{source_id}/jobs/compliance/refresh": {
-            "get": {
+        "/schedule/api/v1/sources/{source_id}/jobs/compliance/refresh": {
+            "post": {
                 "description": "Run compliance report jobs",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
-                    "source"
+                    "schedule"
                 ],
                 "summary": "Run compliance report jobs",
                 "parameters": [
@@ -766,14 +772,14 @@
                 "responses": {}
             }
         },
-        "/schedule/sources/{source_id}/jobs/describe": {
+        "/schedule/api/v1/sources/{source_id}/jobs/describe": {
             "get": {
                 "description": "List source describe jobs",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
-                    "source"
+                    "schedule"
                 ],
                 "summary": "List source describe jobs",
                 "parameters": [
@@ -791,21 +797,21 @@
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/describe.ApiDescribeSource"
+                                "$ref": "#/definitions/api.DescribeSource"
                             }
                         }
                     }
                 }
             }
         },
-        "/schedule/sources/{source_id}/jobs/describe/refresh": {
-            "get": {
+        "/schedule/api/v1/sources/{source_id}/jobs/describe/refresh": {
+            "post": {
                 "description": "Run describe jobs",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
-                    "source"
+                    "schedule"
                 ],
                 "summary": "Run describe jobs",
                 "parameters": [
@@ -820,14 +826,14 @@
                 "responses": {}
             }
         },
-        "/schedule/sources/{source_id}/policy/{policy_id}": {
+        "/schedule/api/v1/sources/{source_id}/policy/{policy_id}": {
             "get": {
                 "description": "Assign source to policy",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
-                    "source"
+                    "schedule"
                 ],
                 "summary": "Assign source to policy",
                 "parameters": [
@@ -844,10 +850,52 @@
         }
     },
     "definitions": {
+        "api.ComplianceReport": {
+            "type": "object",
+            "properties": {
+                "failureMessage": {
+                    "type": "string"
+                },
+                "s3ResultUrl": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                }
+            }
+        },
         "api.CreateSourceResponse": {
             "type": "object",
             "properties": {
                 "id": {
+                    "type": "string"
+                }
+            }
+        },
+        "api.DescribeResource": {
+            "type": "object",
+            "properties": {
+                "failureMessage": {
+                    "type": "string"
+                },
+                "resourceType": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                }
+            }
+        },
+        "api.DescribeSource": {
+            "type": "object",
+            "properties": {
+                "describeResourceJobs": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/api.DescribeResource"
+                    }
+                },
+                "status": {
                     "type": "string"
                 }
             }
@@ -907,26 +955,6 @@
                 }
             }
         },
-        "api.Source": {
-            "type": "object",
-            "properties": {
-                "description": {
-                    "type": "string"
-                },
-                "id": {
-                    "type": "string"
-                },
-                "name": {
-                    "type": "string"
-                },
-                "sourceId": {
-                    "type": "string"
-                },
-                "type": {
-                    "type": "string"
-                }
-            }
-        },
         "api.SourceConfigAWS": {
             "type": "object",
             "required": [
@@ -975,58 +1003,36 @@
                 }
             }
         },
-        "describe.ApiComplianceReport": {
-            "type": "object",
-            "properties": {
-                "failure_message": {
-                    "type": "string"
-                },
-                "s3_result_url": {
-                    "type": "string"
-                },
-                "status": {
-                    "type": "string"
-                }
-            }
-        },
-        "describe.ApiDescribeResource": {
-            "type": "object",
-            "properties": {
-                "failure_message": {
-                    "type": "string"
-                },
-                "resource_type": {
-                    "type": "string"
-                },
-                "status": {
-                    "type": "string"
-                }
-            }
-        },
-        "describe.ApiDescribeSource": {
-            "type": "object",
-            "properties": {
-                "describe_resource_jobs": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/describe.ApiDescribeResource"
-                    }
-                },
-                "status": {
-                    "type": "string"
-                }
-            }
-        },
-        "describe.ApiSource": {
+        "gitlab.com_keibiengine_keibi-engine_pkg_describe_api.Source": {
             "type": "object",
             "properties": {
                 "id": {
                     "type": "string"
                 },
-                "last_compliance_report_at": {
+                "lastComplianceReportAt": {
                     "type": "string"
                 },
-                "last_described_at": {
+                "lastDescribedAt": {
+                    "type": "string"
+                },
+                "type": {
+                    "type": "string"
+                }
+            }
+        },
+        "gitlab.com_keibiengine_keibi-engine_pkg_onboard_api.Source": {
+            "type": "object",
+            "properties": {
+                "description": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "sourceId": {
                     "type": "string"
                 },
                 "type": {

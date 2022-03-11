@@ -7,10 +7,12 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
+	"net/http"
+
 	elasticsearchv7 "github.com/elastic/go-elasticsearch/v7"
 	"github.com/elastic/go-elasticsearch/v7/esapi"
 	"gitlab.com/keibiengine/keibi-engine/pkg/describe"
-	"net/http"
+	"gitlab.com/keibiengine/keibi-engine/pkg/describe/api"
 )
 
 func PopulateElastic(address string) error {
@@ -84,7 +86,7 @@ func GenerateLookupResources() []describe.KafkaLookupResource {
 		resources = append(resources, describe.KafkaLookupResource{
 			ResourceID:    resourceIds[i],
 			Name:          names[i],
-			SourceType:    describe.SourceType(sourceTypes[i]),
+			SourceType:    api.SourceType(sourceTypes[i]),
 			ResourceType:  resourceTypes[i],
 			ResourceGroup: resourceGroups[i],
 			Location:      locations[i],

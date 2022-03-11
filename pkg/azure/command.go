@@ -108,7 +108,7 @@ or --auth-location flag.
 				azureAuthLoc,
 			)
 			if err != nil {
-				return nil
+				return err
 			}
 
 			bytes, err := json.MarshalIndent(output, " ", " ")
