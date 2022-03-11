@@ -55,3 +55,12 @@ deploy:      # This job runs in the deploy stage.
     - podman push registry.digitalocean.com/keibi/onboard-service:0.0.1
     - podman push registry.digitalocean.com/keibi/inventory-service:0.0.1
     - podman push registry.digitalocean.com/keibi/swagger-ui:0.0.1
+
+deploy swagger:      # This job runs in the deploy stage.
+  stage: deploy  # It only runs when *both* jobs in the test stage complete successfully.
+  image:
+    name: quay.io/podman/stable
+  script:
+    - podman login -u "${DO_API_TOKEN}" -p "${DO_API_TOKEN}" "registry.digitalocean.com/keibi"
+    - podman build -f  docker/SwaggerUIDockerfile . -t registry.digitalocean.com/keibi/swagger-ui:0.0.1
+    - podman push registry.digitalocean.com/keibi/swagger-ui:0.0.1
