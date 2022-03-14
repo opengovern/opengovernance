@@ -3,12 +3,14 @@ package describe
 import (
 	"encoding/json"
 	"fmt"
-	compliancereport "gitlab.com/keibiengine/keibi-engine/pkg/compliance-report"
 	"time"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/aws"
 	"gitlab.com/keibiengine/keibi-engine/pkg/azure"
+	compliancereport "gitlab.com/keibiengine/keibi-engine/pkg/compliance-report"
+	"gitlab.com/keibiengine/keibi-engine/pkg/describe/api"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/queue"
+	"go.uber.org/zap"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
@@ -33,6 +35,8 @@ type Scheduler struct {
 
 	complianceReportJobQueue       queue.Interface
 	complianceReportJobResultQueue queue.Interface
+
+	logger *zap.Logger
 }
 
 func InitializeScheduler(
@@ -64,7 +68,12 @@ func InitializeScheduler(
 		}
 	}()
 
-	fmt.Println("Initializing the scheduler")
+	s.logger, err = zap.NewProduction()
+	if err != nil {
+		return nil, err
+	}
+
+	s.logger.Info("Initializing the scheduler")
 
 	qCfg := queue.Config{}
 	qCfg.Server.Username = rabbitMQUsername
@@ -79,7 +88,7 @@ func InitializeScheduler(
 		return nil, err
 	}
 
-	fmt.Println("Connected to the describe jobs queue: ", describeJobQueue)
+	s.logger.Info("Connected to the describe jobs queue", zap.String("queue", describeJobQueue))
 	s.jobQueue = describeQueue
 
 	qCfg = queue.Config{}
@@ -95,7 +104,7 @@ func InitializeScheduler(
 		return nil, err
 	}
 
-	fmt.Println("Connected to the describe job results queue: ", describeJobResultQueue)
+	s.logger.Info("Connected to the describe job results queue", zap.String("queue", describeJobResultQueue))
 	s.jobResultQueue = describeResultsQueue
 
 	qCfg = queue.Config{}
@@ -111,7 +120,7 @@ func InitializeScheduler(
 		return nil, err
 	}
 
-	fmt.Println("Connected to the source events queue: ", sourceQueue)
+	s.logger.Info("Connected to the source events queue", zap.String("queue", sourceQueue))
 	s.sourceQueue = sourceEventsQueue
 
 	qCfg = queue.Config{}
@@ -127,7 +136,7 @@ func InitializeScheduler(
 		return nil, err
 	}
 
-	fmt.Println("Connected to the compliance report jobs queue: ", complianceReportJobsQueue)
+	s.logger.Info("Connected to the compliance report jobs queue", zap.String("queue", complianceReportJobQueue))
 	s.complianceReportJobQueue = complianceReportJobsQueue
 
 	qCfg = queue.Config{}
@@ -143,7 +152,7 @@ func InitializeScheduler(
 		return nil, err
 	}
 
-	fmt.Println("Connected to the compliance report jobs result queue: ", complianceReportJobsResultQueue)
+	s.logger.Info("Connected to the compliance report jobs result queue", zap.String("queue", complianceReportJobResultQueue))
 	s.complianceReportJobResultQueue = complianceReportJobsResultQueue
 
 	dsn := fmt.Sprintf(`host=%s port=%s user=%s password=%s dbname=%s sslmode=disable TimeZone=GMT`,
@@ -159,7 +168,7 @@ func InitializeScheduler(
 		return nil, err
 	}
 
-	fmt.Println("Connected to the postgres database: ", postgresDb)
+	s.logger.Info("Connected to the postgres database: ", zap.String("db", postgresDb))
 	s.db = Database{orm: db}
 
 	s.httpServer = NewHTTPServer(httpServerAddress, s.db)
@@ -173,16 +182,25 @@ func (s *Scheduler) Run() error {
 		return err
 	}
 
-	go s.RunSourceEventsConsumer()
 	go s.RunJobCompletionUpdater()
 	go s.RunDescribeScheduler()
 	go s.RunComplianceReportScheduler()
-	go s.RunComplianceReportJobResultsConsumer()
-        go s.RunJobResultsConsumer()
+
+	go func() {
+		s.logger.Fatal("SourceEvent consumer exited", zap.Error(s.RunSourceEventsConsumer()))
+	}()
+
+	go func() {
+		s.logger.Fatal("DescribeJobResult consumer exited", zap.Error(s.RunJobResultsConsumer()))
+	}()
+
+	go func() {
+		s.logger.Fatal("ComplianceReportJobResult consumer exited", zap.Error(s.RunComplianceReportJobResultsConsumer()))
+	}()
+
 	// httpServer.Initialize() shouldn't return.
-        // If it does indicates a failure HTTP server.
+	// If it does indicates a failure HTTP server.
 	// If it does, indicates a failure with consume
-	go s.RunJobResultsConsumer()
 	return s.httpServer.Initialize()
 }
 
@@ -193,18 +211,18 @@ func (s *Scheduler) RunJobCompletionUpdater() {
 	for ; ; <-t.C {
 		results, err := s.db.QueryInProgressDescribedSourceJobGroupByDescribeResourceJobStatus()
 		if err != nil {
-			fmt.Println("Error finding the DescribeSourceJobs: ", err.Error())
+			s.logger.Error("Failed to find DescribeSourceJobs", zap.Error(err))
 			continue
 		}
 
-		jobIDToStatus := make(map[uint]map[DescribeResourceJobStatus]int)
+		jobIDToStatus := make(map[uint]map[api.DescribeResourceJobStatus]int)
 		for _, v := range results {
 			if _, ok := jobIDToStatus[v.DescribeSourceJobID]; !ok {
-				jobIDToStatus[v.DescribeSourceJobID] = map[DescribeResourceJobStatus]int{
-					DescribeResourceJobCreated:   0,
-					DescribeResourceJobQueued:    0,
-					DescribeResourceJobFailed:    0,
-					DescribeResourceJobSucceeded: 0,
+				jobIDToStatus[v.DescribeSourceJobID] = map[api.DescribeResourceJobStatus]int{
+					api.DescribeResourceJobCreated:   0,
+					api.DescribeResourceJobQueued:    0,
+					api.DescribeResourceJobFailed:    0,
+					api.DescribeResourceJobSucceeded: 0,
 				}
 			}
 
@@ -213,26 +231,34 @@ func (s *Scheduler) RunJobCompletionUpdater() {
 
 		for id, status := range jobIDToStatus {
 			// If any CREATED or QUEUED, job is still in progress
-			if status[DescribeResourceJobCreated] > 0 ||
-				status[DescribeResourceJobQueued] > 0 {
+			if status[api.DescribeResourceJobCreated] > 0 ||
+				status[api.DescribeResourceJobQueued] > 0 {
 				continue
 			}
 
 			// If any FAILURE, job is completed with failure
-			if status[DescribeResourceJobFailed] > 0 {
-				err := s.db.UpdateDescribeSourceJob(id, DescribeSourceJobCompletedWithFailure)
+			if status[api.DescribeResourceJobFailed] > 0 {
+				err := s.db.UpdateDescribeSourceJob(id, api.DescribeSourceJobCompletedWithFailure)
 				if err != nil {
-					fmt.Printf("Error updating DescribeSourceJob %d status to %s: %s\n", id, DescribeSourceJobCompletedWithFailure, err.Error())
+					s.logger.Error("Failed to update DescribeSourceJob status\n",
+						zap.Uint("jobId", id),
+						zap.String("status", string(api.DescribeSourceJobCompletedWithFailure)),
+						zap.Error(err),
+					)
 				}
 
 				continue
 			}
 
 			// If the rest is SUCCEEDED, job has completed with no failure
-			if status[DescribeResourceJobSucceeded] > 0 {
-				err := s.db.UpdateDescribeSourceJob(id, DescribeSourceJobCompleted)
+			if status[api.DescribeResourceJobSucceeded] > 0 {
+				err := s.db.UpdateDescribeSourceJob(id, api.DescribeSourceJobCompleted)
 				if err != nil {
-					fmt.Printf("Error updating DescribeSourceJob %d status to %s: %s\n", id, DescribeSourceJobCompleted, err.Error())
+					s.logger.Error("Failed to update DescribeSourceJob status\n",
+						zap.Uint("jobId", id),
+						zap.String("status", string(api.DescribeSourceJobCompleted)),
+						zap.Error(err),
+					)
 				}
 
 				continue
@@ -242,40 +268,51 @@ func (s *Scheduler) RunJobCompletionUpdater() {
 }
 
 func (s *Scheduler) RunDescribeScheduler() {
-	fmt.Println("Scheduling describe jobs on a timer")
+	s.logger.Info("Scheduling describe jobs on a timer")
 	t := time.NewTicker(JobSchedulingInterval)
 	defer t.Stop()
 
 	for ; ; <-t.C {
 		sources, err := s.db.QuerySourcesDueForDescribe()
 		if err != nil {
-			fmt.Printf("Error finding the next sources to create DescribeSourceJob: %s\n", err.Error())
+			s.logger.Error("Failed to find the next sources to create DescribeSourceJob", zap.Error(err))
 			continue
 		}
 
 		for _, source := range sources {
-			fmt.Printf("Source[%s] is due for a describe. Creating a job now\n", source.ID)
+			s.logger.Info("Source is due for a describe. Creating a job now", zap.String("sourceId", source.ID.String()))
 
 			daj := newDescribeSourceJob(source)
 			err := s.db.CreateDescribeSourceJob(&daj)
 			if err != nil {
-				fmt.Printf("Failed to create DescribeSourceJob[%d] for Source[%d]: %s\n", daj.ID, source.ID, err.Error())
+				s.logger.Error("Failed to create DescribeSourceJob",
+					zap.Uint("jobId", daj.ID),
+					zap.String("sourceId", source.ID.String()),
+					zap.Error(err),
+				)
 				continue
 			}
 
-			enqueueDescribeResourceJobs(s.db, s.jobQueue, source, daj)
+			enqueueDescribeResourceJobs(s.logger, s.db, s.jobQueue, source, daj)
 
-			err = s.db.UpdateDescribeSourceJob(daj.ID, DescribeSourceJobInProgress)
+			err = s.db.UpdateDescribeSourceJob(daj.ID, api.DescribeSourceJobInProgress)
 			if err != nil {
-				fmt.Printf("Failed to update DescribeSourceJob[%d]: %s\n", daj.ID, err.Error())
+				s.logger.Error("Failed to update DescribeSourceJob",
+					zap.Uint("jobId", daj.ID),
+					zap.String("sourceId", source.ID.String()),
+					zap.Error(err),
+				)
 			}
-			daj.Status = DescribeSourceJobInProgress
+			daj.Status = api.DescribeSourceJobInProgress
 
 			err = s.db.UpdateSourceDescribed(source.ID)
 			if err != nil {
-				fmt.Printf("Failed to update Source[%d]: %s\n", source.ID, err.Error())
+				s.logger.Error("Failed to update Source",
+					zap.String("sourceId", source.ID.String()),
+					zap.Error(err),
+				)
 			}
-			daj.Status = DescribeSourceJobInProgress
+			daj.Status = api.DescribeSourceJobInProgress
 		}
 	}
 }
@@ -284,7 +321,7 @@ func (s *Scheduler) RunDescribeScheduler() {
 // update the list of sources that need to be described. Either create a source
 // or update/delete the source.
 func (s *Scheduler) RunSourceEventsConsumer() error {
-	fmt.Println("Consuming messages from SourceEvents queue")
+	s.logger.Info("Consuming messages from SourceEvents queue")
 	msgs, err := s.sourceQueue.Consume()
 	if err != nil {
 		return err
@@ -293,14 +330,17 @@ func (s *Scheduler) RunSourceEventsConsumer() error {
 	for msg := range msgs {
 		var event SourceEvent
 		if err := json.Unmarshal(msg.Body, &event); err != nil {
-			fmt.Printf("Failed to unmarshal SourceEvent: %s\n", err.Error())
+			s.logger.Error("Failed to unmarshal SourceEvent", zap.Error(err))
 			msg.Nack(false, false)
 			continue
 		}
 
 		err := ProcessSourceAction(s.db, event)
 		if err != nil {
-			fmt.Printf("Failed to process event for Source[%s]: %s", event.SourceID, err)
+			s.logger.Error("Failed to process event for Source",
+				zap.String("sourceId", event.SourceID.String()),
+				zap.Error(err),
+			)
 			msg.Nack(false, false)
 			continue
 		}
@@ -315,7 +355,7 @@ func (s *Scheduler) RunSourceEventsConsumer() error {
 // It will update the status of the jobs in the database based on the message.
 // It will also update the jobs status that are not completed in certain time to FAILED
 func (s *Scheduler) RunJobResultsConsumer() error {
-	fmt.Println("Consuming messages from the JobResults queue")
+	s.logger.Info("Consuming messages from the JobResults queue")
 
 	msgs, err := s.jobResultQueue.Consume()
 	if err != nil {
@@ -334,15 +374,21 @@ func (s *Scheduler) RunJobResultsConsumer() error {
 
 			var result JobResult
 			if err := json.Unmarshal(msg.Body, &result); err != nil {
-				fmt.Printf("Failed to unmarshal DescribeResourceJob results: %s\n", err.Error())
+				s.logger.Error("Failed to unmarshal DescribeResourceJob results\n", zap.Error(err))
 				msg.Nack(false, false)
 				continue
 			}
 
-			fmt.Printf("Processing JobResult for Job[%d]: job status is %s\n", result.JobID, result.Status)
+			s.logger.Info("Processing JobResult for Job",
+				zap.Uint("jobId", result.JobID),
+				zap.String("status", string(result.Status)),
+			)
 			err := s.db.UpdateDescribeResourceJobStatus(result.JobID, result.Status, result.Error)
 			if err != nil {
-				fmt.Printf("Failed to update the status of DescribeResourceJob[%d]: %s\n", result.JobID, err.Error())
+				s.logger.Error("Failed to update the status of DescribeResourceJob",
+					zap.Uint("jobId", result.JobID),
+					zap.Error(err),
+				)
 				msg.Nack(false, true)
 				continue
 			}
@@ -351,39 +397,43 @@ func (s *Scheduler) RunJobResultsConsumer() error {
 		case <-t.C:
 			err := s.db.UpdateDescribeResourceJobsTimedOut()
 			if err != nil {
-				fmt.Printf("Failed to update timed out DescribeResourceJobs: %s\n", err.Error())
+				s.logger.Error("Failed to update timed out DescribeResourceJobs", zap.Error(err))
 			}
 		}
 	}
 }
 
 func (s *Scheduler) RunComplianceReportScheduler() {
-	fmt.Println("Scheduling ComplianceReport jobs on a timer")
+	s.logger.Info("Scheduling ComplianceReport jobs on a timer")
 	t := time.NewTicker(JobComplianceReportInterval)
 	defer t.Stop()
 
 	for ; ; <-t.C {
 		sources, err := s.db.QuerySourcesDueForComplianceReport()
 		if err != nil {
-			fmt.Printf("Error finding the next sources to create ComplianceReportJob: %s\n", err.Error())
+			s.logger.Error("Failed to find the next sources to create ComplianceReportJob", zap.Error(err))
 			continue
 		}
 
 		for _, source := range sources {
-			fmt.Printf("Source[%s] is due for a steampipe check. Creating a ComplianceReportJob now\n", source.ID)
+			s.logger.Error("Source is due for a steampipe check. Creating a ComplianceReportJob now", zap.String("sourceId", source.ID.String()))
 
 			crj := newComplianceReportJob(source)
 			err := s.db.CreateComplianceReportJob(&crj)
 			if err != nil {
-				fmt.Printf("Failed to create ComplianceReportJob[%d] for Source[%d]: %s\n", crj.ID, source.ID, err.Error())
+				s.logger.Error("Failed to create ComplianceReportJob for Source",
+					zap.Uint("jobId", crj.ID),
+					zap.String("sourceId", source.ID.String()),
+					zap.Error(err),
+				)
 				continue
 			}
 
-			enqueueComplianceReportJobs(s.db, s.complianceReportJobQueue, source, &crj)
+			enqueueComplianceReportJobs(s.logger, s.db, s.complianceReportJobQueue, source, &crj)
 
 			err = s.db.UpdateSourceReportGenerated(source.ID)
 			if err != nil {
-				fmt.Printf("Failed to update report job of Source[%d]: %s\n", source.ID, err.Error())
+				s.logger.Error("Failed to update report job of Source: %s\n", zap.String("sourceId", source.ID.String()), zap.Error(err))
 			}
 		}
 	}
@@ -393,7 +443,7 @@ func (s *Scheduler) RunComplianceReportScheduler() {
 // It will update the status of the jobs in the database based on the message.
 // It will also update the jobs status that are not completed in certain time to FAILED
 func (s *Scheduler) RunComplianceReportJobResultsConsumer() error {
-	fmt.Println("Consuming messages from the ComplianceReportJobResultQueue queue")
+	s.logger.Info("Consuming messages from the ComplianceReportJobResultQueue queue")
 
 	msgs, err := s.complianceReportJobResultQueue.Consume()
 	if err != nil {
@@ -412,15 +462,20 @@ func (s *Scheduler) RunComplianceReportJobResultsConsumer() error {
 
 			var result compliancereport.JobResult
 			if err := json.Unmarshal(msg.Body, &result); err != nil {
-				fmt.Printf("Failed to unmarshal ComplianceReportJob results: %s\n", err.Error())
+				s.logger.Error("Failed to unmarshal ComplianceReportJob results", zap.Error(err))
 				msg.Nack(false, false)
 				continue
 			}
 
-			fmt.Printf("Processing ReportJobResult for Job[%d]: job status is %s\n", result.JobID, result.Status)
+			s.logger.Info("Processing ReportJobResult for Job",
+				zap.Uint("jobId", result.JobID),
+				zap.String("status", string(result.Status)),
+			)
 			err := s.db.UpdateComplianceReportJob(result.JobID, result.Status, result.Error, result.S3ResultURL)
 			if err != nil {
-				fmt.Printf("Failed to update the status of ComplianceReportJob[%d]: %s\n", result.JobID, err.Error())
+				s.logger.Error("Failed to update the status of ComplianceReportJob",
+					zap.Uint("jobId", result.JobID),
+					zap.Error(err))
 				msg.Nack(false, true)
 				continue
 			}
@@ -429,7 +484,7 @@ func (s *Scheduler) RunComplianceReportJobResultsConsumer() error {
 		case <-t.C:
 			err := s.db.UpdateComplianceReportJobsTimedOut()
 			if err != nil {
-				fmt.Printf("Failed to update timed out ComplianceReportJob: %s\n", err.Error())
+				s.logger.Error("Failed to update timed out ComplianceReportJob", zap.Error(err))
 			}
 		}
 	}
@@ -456,22 +511,22 @@ func newDescribeSourceJob(a Source) DescribeSourceJob {
 	daj := DescribeSourceJob{
 		SourceID:             a.ID,
 		DescribeResourceJobs: []DescribeResourceJob{},
-		Status:               DescribeSourceJobCreated,
+		Status:               api.DescribeSourceJobCreated,
 	}
 
-	switch sType := SourceType(a.Type); sType {
-	case SourceCloudAWS:
+	switch sType := api.SourceType(a.Type); sType {
+	case api.SourceCloudAWS:
 		for _, rType := range aws.ListResourceTypes() {
 			daj.DescribeResourceJobs = append(daj.DescribeResourceJobs, DescribeResourceJob{
 				ResourceType: rType,
-				Status:       DescribeResourceJobCreated,
+				Status:       api.DescribeResourceJobCreated,
 			})
 		}
-	case SourceCloudAzure:
+	case api.SourceCloudAzure:
 		for _, rType := range azure.ListResourceTypes() {
 			daj.DescribeResourceJobs = append(daj.DescribeResourceJobs, DescribeResourceJob{
 				ResourceType: rType,
-				Status:       DescribeResourceJobCreated,
+				Status:       api.DescribeResourceJobCreated,
 			})
 		}
 	default:
@@ -488,9 +543,9 @@ func newComplianceReportJob(a Source) ComplianceReportJob {
 	}
 }
 
-func enqueueDescribeResourceJobs(db Database, q queue.Interface, a Source, daj DescribeSourceJob) {
+func enqueueDescribeResourceJobs(logger *zap.Logger, db Database, q queue.Interface, a Source, daj DescribeSourceJob) {
 	for i, drj := range daj.DescribeResourceJobs {
-		nextStatus := DescribeResourceJobQueued
+		nextStatus := api.DescribeResourceJobQueued
 		errMsg := ""
 
 		err := q.Publish(Job{
@@ -501,22 +556,28 @@ func enqueueDescribeResourceJobs(db Database, q queue.Interface, a Source, daj D
 			ConfigReg:    a.ConfigRef,
 		})
 		if err != nil {
-			fmt.Printf("Failed to Queue DescribeResourceJob[%d]: %s\n", drj.ID, err.Error())
+			logger.Error("Failed to queue DescribeResourceJob",
+				zap.Uint("jobId", drj.ID),
+				zap.Error(err),
+			)
 
-			nextStatus = DescribeResourceJobFailed
+			nextStatus = api.DescribeResourceJobFailed
 			errMsg = fmt.Sprintf("queue: %s", err.Error())
 		}
 
 		err = db.UpdateDescribeResourceJobStatus(drj.ID, nextStatus, errMsg)
 		if err != nil {
-			fmt.Printf("Failed to update DescribeResourceJob[%d]: %s\n", drj.ID, err.Error())
+			logger.Error("Failed to update DescribeResourceJob",
+				zap.Uint("jobId", drj.ID),
+				zap.Error(err),
+			)
 		}
 
 		daj.DescribeResourceJobs[i].Status = nextStatus
 	}
 }
 
-func enqueueComplianceReportJobs(db Database, q queue.Interface, a Source, crj *ComplianceReportJob) {
+func enqueueComplianceReportJobs(logger *zap.Logger, db Database, q queue.Interface, a Source, crj *ComplianceReportJob) {
 	nextStatus := compliancereport.ComplianceReportJobInProgress
 	errMsg := ""
 
@@ -526,7 +587,10 @@ func enqueueComplianceReportJobs(db Database, q queue.Interface, a Source, crj *
 		ConfigReg:  a.ConfigRef,
 	})
 	if err != nil {
-		fmt.Printf("Failed to Queue ComplianceReportJob[%d]: %s\n", crj.ID, err.Error())
+		logger.Error("Failed to queue ComplianceReportJob",
+			zap.Uint("jobId", crj.ID),
+			zap.Error(err),
+		)
 
 		nextStatus = compliancereport.ComplianceReportJobCompletedWithFailure
 		errMsg = fmt.Sprintf("queue: %s", err.Error())
@@ -534,7 +598,10 @@ func enqueueComplianceReportJobs(db Database, q queue.Interface, a Source, crj *
 
 	err = db.UpdateComplianceReportJob(crj.ID, nextStatus, errMsg, "")
 	if err != nil {
-		fmt.Printf("Failed to update ComplianceReportJob[%d]: %s\n", crj.ID, err.Error())
+		logger.Error("Failed to update ComplianceReportJob",
+			zap.Uint("jobId", crj.ID),
+			zap.Error(err),
+		)
 	}
 
 	crj.Status = nextStatus

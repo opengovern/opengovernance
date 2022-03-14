@@ -1,43 +1,16 @@
 package describe
 
 import (
+	"net/http"
+	"time"
+
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	"gitlab.com/keibiengine/keibi-engine/pkg/aws"
 	"gitlab.com/keibiengine/keibi-engine/pkg/azure"
-	cr "gitlab.com/keibiengine/keibi-engine/pkg/compliance-report"
-	"net/http"
-	"time"
+	"gitlab.com/keibiengine/keibi-engine/pkg/describe/api"
 )
-
-type ApiSource struct {
-	ID                     uuid.UUID    `json:"id"`
-	Type                   SourceType   `json:"type"`
-	LastDescribedAt        time.Time `json:"last_described_at"`
-	LastComplianceReportAt time.Time `json:"last_compliance_report_at"`
-}
-
-type ApiDescribeSource struct {
-	DescribeResourceJobs []ApiDescribeResource   `json:"describe_resource_jobs"`
-	Status               DescribeSourceJobStatus `json:"status"`
-}
-
-type ApiDescribeResource struct {
-	ResourceType   string                    `json:"resource_type"`
-	Status         DescribeResourceJobStatus `json:"status"`
-	FailureMessage string                    `json:"failure_message"`
-}
-
-type ApiComplianceReport struct {
-	Status         cr.ComplianceReportJobStatus `json:"status"`
-	S3ResultURL    string                       `json:"s3_result_url"`
-	FailureMessage string                       `json:"failure_message"`
-}
-
-type ErrorResponse struct {
-	Message string
-}
 
 type HttpServer struct {
 	Address string
@@ -56,33 +29,38 @@ func (s *HttpServer) Initialize() error {
 	e.Use(middleware.LoggerWithConfig(middleware.LoggerConfig{
 		Format: "method=${method}, uri=${uri}, status=${status}\n",
 	}))
-	e.GET("/sources", s.HandleListSources)
-	e.GET("/sources/:source_id/jobs/describe", s.HandleListSourceDescribeJobs)
-	e.GET("/sources/:source_id/jobs/compliance", s.HandleListSourceComplianceReports)
-	e.GET("/sources/:source_id/jobs/describe/refresh", s.RunDescribeJobs)
-	e.GET("/sources/:source_id/jobs/compliance/refresh", s.RunComplianceReportJobs)
 
-	e.PUT("/sources/:source_id/policy/:policy_id", s.AssignPolicyToSource)
+	v1 := e.Group("/api/v1")
 
-	e.GET("/resource_type/:provider", s.GetResourceTypesByProvider)
+	v1.GET("/sources", s.HandleListSources)
+	v1.GET("/sources/:source_id/jobs/describe", s.HandleListSourceDescribeJobs)
+	v1.GET("/sources/:source_id/jobs/compliance", s.HandleListSourceComplianceReports)
+
+	v1.POST("/sources/:source_id/jobs/describe/refresh", s.RunDescribeJobs)
+	v1.POST("/sources/:source_id/jobs/compliance/refresh", s.RunComplianceReportJobs)
+
+	v1.PUT("/sources/:source_id/policy/:policy_id", s.AssignPolicyToSource)
+
+	v1.GET("/resource_type/:provider", s.GetResourceTypesByProvider)
+
 	return e.Start(s.Address)
 }
 
 // HandleListSources godoc
 // @Summary      List Sources
 // @Description  Getting all of Keibi sources
-// @Tags         source
+// @Tags         schedule
 // @Produce      json
-// @Success      200  {object}  []ApiSource
+// @Success      200  {object}  []api.Source
 // @Router       /schedule/api/v1/sources [get]
-func (s *HttpServer) HandleListSources(ctx echo.Context) error {
+func (s HttpServer) HandleListSources(ctx echo.Context) error {
 	sources, err := s.DB.ListSources()
 	if err != nil {
 		ctx.Logger().Errorf("fetching sources: %v", err)
-		return ctx.JSON(http.StatusInternalServerError, ErrorResponse{Message: "internal error"})
+		return ctx.JSON(http.StatusInternalServerError, api.ErrorResponse{Message: "internal error"})
 	}
 
-	var objs []ApiSource
+	var objs []api.Source
 	for _, source := range sources {
 		lastDescribeAt := time.Time{}
 		lastComplianceReportAt := time.Time{}
@@ -93,7 +71,7 @@ func (s *HttpServer) HandleListSources(ctx echo.Context) error {
 			lastComplianceReportAt = source.LastComplianceReportAt.Time
 		}
 
-		objs = append(objs, ApiSource{
+		objs = append(objs, api.Source{
 			ID:                     source.ID,
 			Type:                   source.Type,
 			LastDescribedAt:        lastDescribeAt,
@@ -107,37 +85,37 @@ func (s *HttpServer) HandleListSources(ctx echo.Context) error {
 // HandleListSourceDescribeJobs godoc
 // @Summary      List source describe jobs
 // @Description  List source describe jobs
-// @Tags         source
+// @Tags         schedule
 // @Produce      json
 // @Param        source_id   path      string  true  "SourceID"
-// @Success      200  {object}  []ApiDescribeSource
+// @Success      200  {object}  []api.DescribeSource
 // @Router       /schedule/api/v1/sources/{source_id}/jobs/describe [get]
-func (s *HttpServer) HandleListSourceDescribeJobs(ctx echo.Context) error {
+func (s HttpServer) HandleListSourceDescribeJobs(ctx echo.Context) error {
 	sourceID := ctx.Param("source_id")
 	sourceUUID, err := uuid.Parse(sourceID)
 	if err != nil {
 		ctx.Logger().Errorf("parsing uuid: %v", err)
-		return ctx.JSON(http.StatusBadRequest, ErrorResponse{Message: "invalid source uuid"})
+		return ctx.JSON(http.StatusBadRequest, api.ErrorResponse{Message: "invalid source uuid"})
 	}
 
 	jobs, err := s.DB.ListDescribeSourceJobs(sourceUUID)
 	if err != nil {
 		ctx.Logger().Errorf("fetching describe source jobs: %v", err)
-		return ctx.JSON(http.StatusInternalServerError, ErrorResponse{Message: "internal error"})
+		return ctx.JSON(http.StatusInternalServerError, api.ErrorResponse{Message: "internal error"})
 	}
 
-	var objs []ApiDescribeSource
+	var objs []api.DescribeSource
 	for _, job := range jobs {
-		var describeResourceJobs []ApiDescribeResource
+		var describeResourceJobs []api.DescribeResource
 		for _, describeResourceJob := range job.DescribeResourceJobs {
-			describeResourceJobs = append(describeResourceJobs, ApiDescribeResource{
+			describeResourceJobs = append(describeResourceJobs, api.DescribeResource{
 				ResourceType:   describeResourceJob.ResourceType,
 				Status:         describeResourceJob.Status,
 				FailureMessage: describeResourceJob.FailureMessage,
 			})
 		}
 
-		objs = append(objs, ApiDescribeSource{
+		objs = append(objs, api.DescribeSource{
 			DescribeResourceJobs: describeResourceJobs,
 			Status:               job.Status,
 		})
@@ -149,28 +127,28 @@ func (s *HttpServer) HandleListSourceDescribeJobs(ctx echo.Context) error {
 // HandleListSourceComplianceReports godoc
 // @Summary      List source compliance reports
 // @Description  List source compliance reports
-// @Tags         source
+// @Tags         schedule
 // @Produce      json
 // @Param        source_id   path      string  true  "SourceID"
-// @Success      200  {object}  []ApiComplianceReport
+// @Success      200  {object}  []api.ComplianceReport
 // @Router       /schedule/api/v1/sources/{source_id}/jobs/compliance [get]
-func (s *HttpServer) HandleListSourceComplianceReports(ctx echo.Context) error {
+func (s HttpServer) HandleListSourceComplianceReports(ctx echo.Context) error {
 	sourceID := ctx.Param("source_id")
 	sourceUUID, err := uuid.Parse(sourceID)
 	if err != nil {
 		ctx.Logger().Errorf("parsing uuid: %v", err)
-		return ctx.JSON(http.StatusBadRequest, ErrorResponse{Message: "invalid source uuid"})
+		return ctx.JSON(http.StatusBadRequest, api.ErrorResponse{Message: "invalid source uuid"})
 	}
 
 	jobs, err := s.DB.ListComplianceReports(sourceUUID)
 	if err != nil {
 		ctx.Logger().Errorf("fetching compliance reports: %v", err)
-		return ctx.JSON(http.StatusInternalServerError, ErrorResponse{Message: "internal error"})
+		return ctx.JSON(http.StatusInternalServerError, api.ErrorResponse{Message: "internal error"})
 	}
 
-	var objs []ApiComplianceReport
+	var objs []api.ComplianceReport
 	for _, job := range jobs {
-		objs = append(objs, ApiComplianceReport{
+		objs = append(objs, api.ComplianceReport{
 			Status:         job.Status,
 			S3ResultURL:    job.S3ResultURL,
 			FailureMessage: job.FailureMessage,
@@ -183,22 +161,22 @@ func (s *HttpServer) HandleListSourceComplianceReports(ctx echo.Context) error {
 // RunComplianceReportJobs godoc
 // @Summary      Run compliance report jobs
 // @Description  Run compliance report jobs
-// @Tags         source
+// @Tags         schedule
 // @Produce      json
 // @Param        source_id   path      string  true  "SourceID"
-// @Router       /schedule/api/v1/sources/{source_id}/jobs/compliance/refresh [get]
-func (s *HttpServer) RunComplianceReportJobs(ctx echo.Context) error {
+// @Router       /schedule/api/v1/sources/{source_id}/jobs/compliance/refresh [post]
+func (s HttpServer) RunComplianceReportJobs(ctx echo.Context) error {
 	sourceID := ctx.Param("source_id")
 	sourceUUID, err := uuid.Parse(sourceID)
 	if err != nil {
 		ctx.Logger().Errorf("parsing uuid: %v", err)
-		return ctx.JSON(http.StatusBadRequest, ErrorResponse{Message: "invalid source uuid"})
+		return ctx.JSON(http.StatusBadRequest, api.ErrorResponse{Message: "invalid source uuid"})
 	}
 
 	err = s.DB.UpdateSourceNextComplianceReportToNow(sourceUUID)
 	if err != nil {
 		ctx.Logger().Errorf("update source next compliance report run: %v", err)
-		return ctx.JSON(http.StatusInternalServerError, ErrorResponse{Message: "internal error"})
+		return ctx.JSON(http.StatusInternalServerError, api.ErrorResponse{Message: "internal error"})
 	}
 
 	return ctx.String(http.StatusOK, "")
@@ -207,22 +185,22 @@ func (s *HttpServer) RunComplianceReportJobs(ctx echo.Context) error {
 // RunDescribeJobs godoc
 // @Summary      Run describe jobs
 // @Description  Run describe jobs
-// @Tags         source
+// @Tags         schedule
 // @Produce      json
 // @Param        source_id   path      string  true  "SourceID"
-// @Router       /schedule/api/v1/sources/{source_id}/jobs/describe/refresh [get]
-func (s *HttpServer) RunDescribeJobs(ctx echo.Context) error {
+// @Router       /schedule/api/v1/sources/{source_id}/jobs/describe/refresh [post]
+func (s HttpServer) RunDescribeJobs(ctx echo.Context) error {
 	sourceID := ctx.Param("source_id")
 	sourceUUID, err := uuid.Parse(sourceID)
 	if err != nil {
 		ctx.Logger().Errorf("parsing uuid: %v", err)
-		return ctx.JSON(http.StatusBadRequest, ErrorResponse{Message: "invalid source uuid"})
+		return ctx.JSON(http.StatusBadRequest, api.ErrorResponse{Message: "invalid source uuid"})
 	}
 
 	err = s.DB.UpdateSourceNextDescribeAtToNow(sourceUUID)
 	if err != nil {
 		ctx.Logger().Errorf("update source next describe run: %v", err)
-		return ctx.JSON(http.StatusInternalServerError, ErrorResponse{Message: "internal error"})
+		return ctx.JSON(http.StatusInternalServerError, api.ErrorResponse{Message: "internal error"})
 	}
 
 	return ctx.String(http.StatusOK, "")
@@ -231,23 +209,23 @@ func (s *HttpServer) RunDescribeJobs(ctx echo.Context) error {
 // AssignPolicyToSource godoc
 // @Summary      Assign source to policy
 // @Description  Assign source to policy
-// @Tags         source
+// @Tags         schedule
 // @Produce      json
 // @Param        source_id   path      string  true  "SourceID"
 // @Router       /schedule/api/v1/sources/{source_id}/policy/{policy_id} [get]
-func (s *HttpServer) AssignPolicyToSource(ctx echo.Context) error {
+func (s HttpServer) AssignPolicyToSource(ctx echo.Context) error {
 	sourceID := ctx.Param("source_id")
 	sourceUUID, err := uuid.Parse(sourceID)
 	if err != nil {
 		ctx.Logger().Errorf("parsing source uuid: %v", err)
-		return ctx.JSON(http.StatusBadRequest, ErrorResponse{Message: "invalid source uuid"})
+		return ctx.JSON(http.StatusBadRequest, api.ErrorResponse{Message: "invalid source uuid"})
 	}
 
 	policyID := ctx.Param("policy_id")
 	policyUUID, err := uuid.Parse(policyID)
 	if err != nil {
 		ctx.Logger().Errorf("parsing policy uuid: %v", err)
-		return ctx.JSON(http.StatusBadRequest, ErrorResponse{Message: "invalid policy uuid"})
+		return ctx.JSON(http.StatusBadRequest, api.ErrorResponse{Message: "invalid policy uuid"})
 	}
 
 	//TODO-Saleh check whether assigned policy exists in policy engine
@@ -261,7 +239,7 @@ func (s *HttpServer) AssignPolicyToSource(ctx echo.Context) error {
 	})
 	if err != nil {
 		ctx.Logger().Errorf("assigning policy to source: %v", err)
-		return ctx.JSON(http.StatusInternalServerError, ErrorResponse{Message: "failed to assign policy"})
+		return ctx.JSON(http.StatusInternalServerError, api.ErrorResponse{Message: "failed to assign policy"})
 	}
 
 	return ctx.String(http.StatusOK, "")
@@ -270,12 +248,12 @@ func (s *HttpServer) AssignPolicyToSource(ctx echo.Context) error {
 // GetResourceTypesByProvider godoc
 // @Summary      get resource type by provider
 // @Description  get resource type by provider
-// @Tags         source
+// @Tags         schedule
 // @Produce      json
 // @Param        provider   path      string  true  "Provider" Enums(aws,azure)
 // @Success      200  {object}  []string
 // @Router       /schedule/api/v1/resource_type/{provider} [get]
-func (s *HttpServer) GetResourceTypesByProvider(ctx echo.Context) error {
+func (s HttpServer) GetResourceTypesByProvider(ctx echo.Context) error {
 	provider := ctx.Param("provider")
 
 	var resourceTypes []string

@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"gitlab.com/keibiengine/keibi-engine/pkg/describe/api"
 )
 
 type SourceAction string
@@ -19,7 +20,7 @@ const (
 type SourceEvent struct {
 	Action     SourceAction
 	SourceID   uuid.UUID
-	SourceType SourceType
+	SourceType api.SourceType
 	ConfigRef  string
 }
 
@@ -52,7 +53,7 @@ func CreateSource(db Database, event SourceEvent) error {
 	switch {
 	case len(event.SourceID) == 0 || event.SourceID.Variant() == uuid.Invalid:
 		return fmt.Errorf("source has invalid uuid format")
-	case !IsValidSourceType(event.SourceType):
+	case !api.IsValidSourceType(event.SourceType):
 		return fmt.Errorf("source has invalid source type")
 	case event.ConfigRef == "": // TODO: should check if the config ref exists?
 		return fmt.Errorf("source has invalid config ref")
@@ -75,7 +76,7 @@ func UpdateSource(db Database, event SourceEvent) error {
 	switch {
 	case len(event.SourceID) == 0 || event.SourceID.Variant() == uuid.Invalid:
 		return fmt.Errorf("source has invalid uuid format")
-	case event.SourceType != "" && !IsValidSourceType(event.SourceType):
+	case event.SourceType != "" && !api.IsValidSourceType(event.SourceType):
 		return fmt.Errorf("source has invalid source type")
 	case event.ConfigRef == "": // TODO: should check if the config ref exists?
 		return fmt.Errorf("source has invalid credentials")

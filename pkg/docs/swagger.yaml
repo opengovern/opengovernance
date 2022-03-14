@@ -1,7 +1,34 @@
 definitions:
+  api.ComplianceReport:
+    properties:
+      failureMessage:
+        type: string
+      s3ResultUrl:
+        type: string
+      status:
+        type: string
+    type: object
   api.CreateSourceResponse:
     properties:
       id:
+        type: string
+    type: object
+  api.DescribeResource:
+    properties:
+      failureMessage:
+        type: string
+      resourceType:
+        type: string
+      status:
+        type: string
+    type: object
+  api.DescribeSource:
+    properties:
+      describeResourceJobs:
+        items:
+          $ref: '#/definitions/api.DescribeResource'
+        type: array
+      status:
         type: string
     type: object
   api.DiscoverAWSAccountsResponse:
@@ -40,19 +67,6 @@ definitions:
       type:
         type: string
     type: object
-  api.Source:
-    properties:
-      description:
-        type: string
-      id:
-        type: string
-      name:
-        type: string
-      sourceId:
-        type: string
-      type:
-        type: string
-    type: object
   api.SourceConfigAWS:
     properties:
       accessKey:
@@ -86,40 +100,26 @@ definitions:
     - subscriptionId
     - tenantId
     type: object
-  describe.ApiComplianceReport:
-    properties:
-      failure_message:
-        type: string
-      s3_result_url:
-        type: string
-      status:
-        type: string
-    type: object
-  describe.ApiDescribeResource:
-    properties:
-      failure_message:
-        type: string
-      resource_type:
-        type: string
-      status:
-        type: string
-    type: object
-  describe.ApiDescribeSource:
-    properties:
-      describe_resource_jobs:
-        items:
-          $ref: '#/definitions/describe.ApiDescribeResource'
-        type: array
-      status:
-        type: string
-    type: object
-  describe.ApiSource:
+  gitlab.com_keibiengine_keibi-engine_pkg_describe_api.Source:
     properties:
       id:
         type: string
-      last_compliance_report_at:
+      lastComplianceReportAt:
         type: string
-      last_described_at:
+      lastDescribedAt:
+        type: string
+      type:
+        type: string
+    type: object
+  gitlab.com_keibiengine_keibi-engine_pkg_onboard_api.Source:
+    properties:
+      description:
+        type: string
+      id:
+        type: string
+      name:
+        type: string
+      sourceId:
         type: string
       type:
         type: string
@@ -240,10 +240,13 @@ definitions:
       field:
         type: string
     type: object
+host: dev-cluster.keibi.io
 info:
   contact: {}
+  title: Keibi Service API
+  version: "1.0"
 paths:
-  /inventory/locations/{provider}:
+  /inventory/api/v1/locations/{provider}:
     get:
       description: Getting locations by provider
       parameters:
@@ -267,7 +270,7 @@ paths:
       summary: Get locations
       tags:
       - location
-  /inventory/resource:
+  /inventory/api/v1/resource:
     post:
       description: Getting resource details by id and resource type
       parameters:
@@ -289,7 +292,7 @@ paths:
       summary: Get details of a Resource
       tags:
       - resource
-  /inventory/resources:
+  /inventory/api/v1/resources:
     post:
       consumes:
       - application/json
@@ -323,7 +326,7 @@ paths:
       summary: Get resources
       tags:
       - inventory
-  /inventory/resources/aws:
+  /inventory/api/v1/resources/aws:
     post:
       consumes:
       - application/json
@@ -357,7 +360,7 @@ paths:
       summary: Get AWS resources
       tags:
       - inventory
-  /inventory/resources/aws/csv:
+  /inventory/api/v1/resources/aws/csv:
     post:
       consumes:
       - application/json
@@ -383,7 +386,7 @@ paths:
       summary: Get AWS resources in csv file
       tags:
       - inventory
-  /inventory/resources/azure:
+  /inventory/api/v1/resources/azure:
     post:
       consumes:
       - application/json
@@ -417,7 +420,7 @@ paths:
       summary: Get Azure resources
       tags:
       - inventory
-  /inventory/resources/azure/csv:
+  /inventory/api/v1/resources/azure/csv:
     post:
       consumes:
       - application/json
@@ -443,7 +446,7 @@ paths:
       summary: Get Azure resources in csv file
       tags:
       - inventory
-  /inventory/resources/csv:
+  /inventory/api/v1/resources/csv:
     post:
       consumes:
       - application/json
@@ -469,7 +472,7 @@ paths:
       summary: Get all resources in csv file
       tags:
       - inventory
-  /onboard/{sourceId}:
+  /onboard/api/v1/{sourceId}:
     delete:
       description: Deleting a single source either AWS / Azure.
       parameters:
@@ -500,11 +503,11 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/api.Source'
+            $ref: '#/definitions/gitlab.com_keibiengine_keibi-engine_pkg_onboard_api.Source'
       summary: Returns a single source
       tags:
       - onboard
-  /onboard/aws:
+  /onboard/api/v1/aws:
     post:
       description: Creating AWS source
       parameters:
@@ -536,7 +539,7 @@ paths:
       summary: Create AWS source
       tags:
       - onboard
-  /onboard/aws/accounts:
+  /onboard/api/v1/aws/accounts:
     get:
       description: If the account is part of an organization and the account has premission
         to list the accounts, it will return all the accounts in that organization.
@@ -566,7 +569,7 @@ paths:
       summary: Returns the list of available AWS accounts given the credentials.
       tags:
       - onboard
-  /onboard/azure:
+  /onboard/api/v1/azure:
     post:
       description: Creating Azure source
       parameters:
@@ -598,7 +601,7 @@ paths:
       summary: Create Azure source
       tags:
       - onboard
-  /onboard/azure/subscriptions:
+  /onboard/api/v1/azure/subscriptions:
     get:
       description: Returning the list of available Azure subscriptions.
       parameters:
@@ -632,7 +635,7 @@ paths:
       summary: Returns the list of available Azure subscriptions.
       tags:
       - onboard
-  /onboard/providers:
+  /onboard/api/v1/providers:
     get:
       description: Getting cloud providers
       produces:
@@ -647,7 +650,7 @@ paths:
       summary: Get providers
       tags:
       - onboard
-  /onboard/sources:
+  /onboard/api/v1/sources:
     get:
       description: Returning a list of sources including both AWS and Azure unless
         filtered by Type.
@@ -666,12 +669,12 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/api.Source'
+              $ref: '#/definitions/gitlab.com_keibiengine_keibi-engine_pkg_onboard_api.Source'
             type: array
       summary: Returns a list of sources
       tags:
       - onboard
-  /schedule/resource_type/{provider}:
+  /schedule/api/v1/resource_type/{provider}:
     get:
       description: get resource type by provider
       parameters:
@@ -694,8 +697,8 @@ paths:
             type: array
       summary: get resource type by provider
       tags:
-      - source
-  /schedule/sources:
+      - schedule
+  /schedule/api/v1/sources:
     get:
       description: Getting all of Keibi sources
       produces:
@@ -705,12 +708,12 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/describe.ApiSource'
+              $ref: '#/definitions/gitlab.com_keibiengine_keibi-engine_pkg_describe_api.Source'
             type: array
       summary: List Sources
       tags:
-      - source
-  /schedule/sources/{source_id}/jobs/compliance:
+      - schedule
+  /schedule/api/v1/sources/{source_id}/jobs/compliance:
     get:
       description: List source compliance reports
       parameters:
@@ -726,13 +729,13 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/describe.ApiComplianceReport'
+              $ref: '#/definitions/api.ComplianceReport'
             type: array
       summary: List source compliance reports
       tags:
-      - source
-  /schedule/sources/{source_id}/jobs/compliance/refresh:
-    get:
+      - schedule
+  /schedule/api/v1/sources/{source_id}/jobs/compliance/refresh:
+    post:
       description: Run compliance report jobs
       parameters:
       - description: SourceID
@@ -745,8 +748,8 @@ paths:
       responses: {}
       summary: Run compliance report jobs
       tags:
-      - source
-  /schedule/sources/{source_id}/jobs/describe:
+      - schedule
+  /schedule/api/v1/sources/{source_id}/jobs/describe:
     get:
       description: List source describe jobs
       parameters:
@@ -762,13 +765,13 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/describe.ApiDescribeSource'
+              $ref: '#/definitions/api.DescribeSource'
             type: array
       summary: List source describe jobs
       tags:
-      - source
-  /schedule/sources/{source_id}/jobs/describe/refresh:
-    get:
+      - schedule
+  /schedule/api/v1/sources/{source_id}/jobs/describe/refresh:
+    post:
       description: Run describe jobs
       parameters:
       - description: SourceID
@@ -781,8 +784,8 @@ paths:
       responses: {}
       summary: Run describe jobs
       tags:
-      - source
-  /schedule/sources/{source_id}/policy/{policy_id}:
+      - schedule
+  /schedule/api/v1/sources/{source_id}/policy/{policy_id}:
     get:
       description: Assign source to policy
       parameters:
@@ -796,5 +799,7 @@ paths:
       responses: {}
       summary: Assign source to policy
       tags:
-      - source
+      - schedule
+schemes:
+- https
 swagger: "2.0"

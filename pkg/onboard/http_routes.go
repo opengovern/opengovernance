@@ -280,7 +280,7 @@ func (h HttpHandler) GetSources(ctx echo.Context) error {
 		}
 	}
 
-	var resp api.GetSourcesResponse
+	resp := api.GetSourcesResponse{}
 	for _, s := range sources {
 		resp = append(resp, api.Source{
 			ID:          s.ID,
@@ -298,7 +298,6 @@ func (h HttpHandler) PutSource(ctx echo.Context) error {
 	panic("not implemented yet")
 }
 
-
 // DiscoverAwsAccounts godoc
 // @Summary     Returns the list of available AWS accounts given the credentials.
 // @Description  If the account is part of an organization and the account has premission to list the accounts, it will return all the accounts in that organization. Otherwise, it will return the single account these credentials belong to.
@@ -309,10 +308,10 @@ func (h HttpHandler) PutSource(ctx echo.Context) error {
 // @Param        secretKey       body      string  true  "SecretKey"
 // @Router       /onboard/api/v1/aws/accounts [get]
 func (h HttpHandler) DiscoverAwsAccounts(ctx echo.Context) error {
-      // DiscoverAwsAccounts returns the list of available AWS accounts given the credentials.
-      // If the account is part of an organization and the account has premission to
-      // list the accounts, it will return all the accounts in that organization.
-      // Otherwise, it will return the single account these credentials belong to.
+	// DiscoverAwsAccounts returns the list of available AWS accounts given the credentials.
+	// If the account is part of an organization and the account has premission to
+	// list the accounts, it will return all the accounts in that organization.
+	// Otherwise, it will return the single account these credentials belong to.
 	var req api.DiscoverAWSAccountsRequest
 	if err := bindValidate(ctx, &req); err != nil {
 		return ctx.JSON(http.StatusBadRequest, err)

@@ -2,7 +2,9 @@ package describe
 
 import (
 	"fmt"
+
 	compliance_report "gitlab.com/keibiengine/keibi-engine/pkg/compliance-report"
+	"gitlab.com/keibiengine/keibi-engine/pkg/describe/api"
 
 	"github.com/google/uuid"
 	"gorm.io/gorm"
@@ -59,7 +61,8 @@ func (db Database) UpdateSource(a *Source) error {
 // DeleteSource deletes the source
 func (db Database) DeleteSource(a Source) error {
 	tx := db.orm.
-		Delete(&Source{}, a.ID.String())
+		Where("id = ?", a.ID.String()).
+		Delete(&Source{})
 	if tx.Error != nil {
 		return tx.Error
 	} else if tx.RowsAffected != 1 {
@@ -106,7 +109,7 @@ func (db Database) UpdateSourceNextDescribeAtToNow(id uuid.UUID) error {
 		Where("id = ?", id.String()).
 		Where("next_describe_at > NOW() + interval '1 minute'").
 		Updates(map[string]interface{}{
-			"next_describe_at":  gorm.Expr("NOW()"),
+			"next_describe_at": gorm.Expr("NOW()"),
 		})
 	if tx.Error != nil {
 		return tx.Error
@@ -193,7 +196,7 @@ func (db Database) CreateDescribeSourceJob(job *DescribeSourceJob) error {
 }
 
 // UpdateDescribeSourceJob updates the DescribeSourceJob status.
-func (db Database) UpdateDescribeSourceJob(id uint, status DescribeSourceJobStatus) error {
+func (db Database) UpdateDescribeSourceJob(id uint, status api.DescribeSourceJobStatus) error {
 	tx := db.orm.
 		Model(&DescribeSourceJob{}).
 		Where("id = ?", id).
@@ -217,9 +220,9 @@ func (db Database) ListDescribeSourceJobs(sourceID uuid.UUID) ([]DescribeSourceJ
 }
 
 type DescribedSourceJobDescribeResourceJobStatus struct {
-	DescribeSourceJobID       uint                      `gorm:"column:id"`
-	DescribeResourceJobStatus DescribeResourceJobStatus `gorm:"column:status"`
-	DescribeResourceJobCount  int                       `gorm:"column:count"`
+	DescribeSourceJobID       uint                          `gorm:"column:id"`
+	DescribeResourceJobStatus api.DescribeResourceJobStatus `gorm:"column:status"`
+	DescribeResourceJobCount  int                           `gorm:"column:count"`
 }
 
 // Finds the DescribeSourceJobs that are IN_PROGRESS and find the
@@ -231,7 +234,7 @@ func (db Database) QueryInProgressDescribedSourceJobGroupByDescribeResourceJobSt
 		Model(&DescribeSourceJob{}).
 		Select("describe_source_jobs.id, describe_resource_jobs.status, COUNT(*)").
 		Joins("JOIN describe_resource_jobs ON describe_source_jobs.id = describe_resource_jobs.parent_job_id").
-		Where("describe_source_jobs.status IN ?", []string{string(DescribeSourceJobInProgress)}).
+		Where("describe_source_jobs.status IN ?", []string{string(api.DescribeSourceJobInProgress)}).
 		Group("describe_source_jobs.id").
 		Group("describe_resource_jobs.status").
 		Order("describe_source_jobs.id ASC").
@@ -247,7 +250,7 @@ func (db Database) QueryInProgressDescribedSourceJobGroupByDescribeResourceJobSt
 
 // UpdateDescribeResourceJobStatus updates the status of the DescribeResourceJob to the provided status.
 // If the status if 'FAILED', msg could be used to indicate the failure reason
-func (db Database) UpdateDescribeResourceJobStatus(id uint, status DescribeResourceJobStatus, msg string) error {
+func (db Database) UpdateDescribeResourceJobStatus(id uint, status api.DescribeResourceJobStatus, msg string) error {
 	tx := db.orm.
 		Model(&DescribeResourceJob{}).
 		Where("id = ?", id).
@@ -266,8 +269,8 @@ func (db Database) UpdateDescribeResourceJobsTimedOut() error {
 	tx := db.orm.
 		Model(&DescribeResourceJob{}).
 		Where("created_at < NOW() - INTERVAL '4 HOURS'").
-		Where("status IN ?", []string{string(DescribeResourceJobCreated), string(DescribeResourceJobQueued)}).
-		Updates(DescribeResourceJob{Status: DescribeResourceJobFailed, FailureMessage: "Job timed out"})
+		Where("status IN ?", []string{string(api.DescribeResourceJobCreated), string(api.DescribeResourceJobQueued)}).
+		Updates(DescribeResourceJob{Status: api.DescribeResourceJobFailed, FailureMessage: "Job timed out"})
 	if tx.Error != nil {
 		return tx.Error
 	}
