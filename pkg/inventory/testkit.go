@@ -38,35 +38,6 @@ func PopulateElastic(address string) error {
 		}
 	}
 
-	data := `{
-	"properties": {
-		"resource_id": {
-			"type" : "text",
-				"fielddata": true
-		}
-	}
-}`
-	req := esapi.IndicesPutMappingRequest{
-		Index:             []string{"inventory_summary"},
-		Body:              bytes.NewReader([]byte(data)),
-	}
-
-	// Perform the request with the client.
-	res, err := req.Do(context.Background(), es)
-	if err != nil {
-		return err
-	}
-	defer res.Body.Close()
-
-	if res.IsError() {
-		return fmt.Errorf("[%s] Error changing mapping", res.Status())
-	} else {
-		// Deserialize the response into a map.
-		var r map[string]interface{}
-		if err := json.NewDecoder(res.Body).Decode(&r); err != nil {
-			return err
-		}
-	}
 	return nil
 }
 
@@ -81,7 +52,7 @@ func GenerateLookupResources() []describe.KafkaLookupResource {
 
 	var resources []describe.KafkaLookupResource
 	for i := 0; i < len(resourceIds); i++ {
-		resources = append(resources, describe.KafkaLookupResource{
+		resource := describe.KafkaLookupResource{
 			ResourceID:    resourceIds[i],
 			Name:          names[i],
 			SourceType:    describe.SourceType(sourceTypes[i]),
@@ -89,7 +60,8 @@ func GenerateLookupResources() []describe.KafkaLookupResource {
 			ResourceGroup: resourceGroups[i],
 			Location:      locations[i],
 			SourceID:      sourceIDs[i],
-		})
+		}
+		resources = append(resources, resource)
 	}
 	return resources
 }
