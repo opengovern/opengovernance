@@ -162,6 +162,7 @@ func (h *HttpHandler) GetLocations(ctx echo.Context) error {
 // @Param        filters   body      Filters  true  "Filters"
 // @Param        page      body      Page     true  "Page"
 // @Param        sort      body      Sort     true  "Sort"
+// @Param        query     body      string   true  "Query"
 // @Success      200  {object}  GetAzureResourceResponse
 // @Router       /inventory/api/v1/resources/azure [post]
 func (h *HttpHandler) GetAzureResources(ectx echo.Context) error {
@@ -177,6 +178,7 @@ func (h *HttpHandler) GetAzureResources(ectx echo.Context) error {
 // @Produce      plain
 // @Param        filters   body      Filters  true  "Filters"
 // @Param        sort      body      Sort     true  "Sort"
+// @Param        query     body      string   true  "Query"
 // @Success      200
 // @Router       /inventory/api/v1/resources/azure/csv [post]
 func (h *HttpHandler) GetAzureResourcesCSV(ectx echo.Context) error {
@@ -193,6 +195,7 @@ func (h *HttpHandler) GetAzureResourcesCSV(ectx echo.Context) error {
 // @Param        filters   body      Filters  true  "Filters"
 // @Param        page      body      Page     true  "Page"
 // @Param        sort      body      Sort     true  "Sort"
+// @Param        query     body      string   true  "Query"
 // @Success      200  {object}  GetAWSResourceResponse
 // @Router       /inventory/api/v1/resources/aws [post]
 func (h *HttpHandler) GetAWSResources(ectx echo.Context) error {
@@ -208,6 +211,7 @@ func (h *HttpHandler) GetAWSResources(ectx echo.Context) error {
 // @Produce      plain
 // @Param        filters   body      Filters  true  "Filters"
 // @Param        sort      body      Sort     true  "Sort"
+// @Param        query     body      string   true  "Query"
 // @Success      200
 // @Router       /inventory/api/v1/resources/aws/csv [post]
 func (h *HttpHandler) GetAWSResourcesCSV(ectx echo.Context) error {
@@ -224,6 +228,7 @@ func (h *HttpHandler) GetAWSResourcesCSV(ectx echo.Context) error {
 // @Param        filters   body      Filters  true  "Filters"
 // @Param        page      body      Page     true  "Page"
 // @Param        sort      body      Sort     true  "Sort"
+// @Param        query     body      string   true  "Query"
 // @Success      200  {object}  GetResourcesResponse
 // @Router       /inventory/api/v1/resources [post]
 func (h *HttpHandler) GetAllResources(ectx echo.Context) error {
@@ -238,6 +243,7 @@ func (h *HttpHandler) GetAllResources(ectx echo.Context) error {
 // @Produce      plain
 // @Param        filters   body      Filters  true  "Filters"
 // @Param        sort      body      Sort     true  "Sort"
+// @Param        query     body      string   true  "Query"
 // @Success      200
 // @Router       /inventory/api/v1/resources/csv [post]
 func (h *HttpHandler) GetAllResourcesCSV(ectx echo.Context) error {
@@ -264,7 +270,7 @@ func (h *HttpHandler) GetResources(ectx echo.Context, provider *SourceType) erro
 		lastIdx = 0
 	}
 
-	resources, err := QuerySummaryResources(ctx, h.client, req.Filters, provider, req.Page.Size, lastIdx, req.Sort)
+	resources, err := QuerySummaryResources(ctx, h.client, req.Query, req.Filters, provider, req.Page.Size, lastIdx, req.Sort)
 	if err != nil {
 		return err
 	}
@@ -398,7 +404,7 @@ func (h *HttpHandler) GetResourcesCSVPage(ectx echo.Context, req *GetResourcesRe
 		NextMarker: []byte(strconv.Itoa(lastIdx + req.Page.Size)),
 	}
 
-	resources, err := QuerySummaryResources(ctx, h.client, req.Filters, provider, req.Page.Size, lastIdx, req.Sort)
+	resources, err := QuerySummaryResources(ctx, h.client, req.Query, req.Filters, provider, req.Page.Size, lastIdx, req.Sort)
 	if err != nil {
 		return 0, Page{}, err
 	}
@@ -433,7 +439,6 @@ func (h *HttpHandler) GetResourcesCSVPage(ectx echo.Context, req *GetResourcesRe
 	if provider != nil && *provider == SourceCloudAzure {
 		var azureResources []AzureResource
 		if writeHeaders {
-			fmt.Println(AzureResource{}.ToCSVHeaders())
 			err := Csv(AzureResource{}.ToCSVHeaders(), cc.Response())
 			if err != nil {
 				return 0, Page{}, err

@@ -125,6 +125,15 @@ const docTemplate = `{
                         "schema": {
                             "$ref": "#/definitions/inventory.Sort"
                         }
+                    },
+                    {
+                        "description": "Query",
+                        "name": "query",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
                     }
                 ],
                 "responses": {
@@ -177,6 +186,15 @@ const docTemplate = `{
                         "schema": {
                             "$ref": "#/definitions/inventory.Sort"
                         }
+                    },
+                    {
+                        "description": "Query",
+                        "name": "query",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
                     }
                 ],
                 "responses": {
@@ -219,6 +237,15 @@ const docTemplate = `{
                         "required": true,
                         "schema": {
                             "$ref": "#/definitions/inventory.Sort"
+                        }
+                    },
+                    {
+                        "description": "Query",
+                        "name": "query",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
                         }
                     }
                 ],
@@ -269,6 +296,15 @@ const docTemplate = `{
                         "schema": {
                             "$ref": "#/definitions/inventory.Sort"
                         }
+                    },
+                    {
+                        "description": "Query",
+                        "name": "query",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
                     }
                 ],
                 "responses": {
@@ -312,6 +348,15 @@ const docTemplate = `{
                         "schema": {
                             "$ref": "#/definitions/inventory.Sort"
                         }
+                    },
+                    {
+                        "description": "Query",
+                        "name": "query",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
                     }
                 ],
                 "responses": {
@@ -351,6 +396,15 @@ const docTemplate = `{
                         "required": true,
                         "schema": {
                             "$ref": "#/definitions/inventory.Sort"
+                        }
+                    },
+                    {
+                        "description": "Query",
+                        "name": "query",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
                         }
                     }
                 ],

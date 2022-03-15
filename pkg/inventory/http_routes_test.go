@@ -83,7 +83,6 @@ func (s *HttpHandlerSuite) BeforeTest(suiteName, testName string) {
 func (s *HttpHandlerSuite) AfterTest(suiteName, testName string) {
 	//require := s.Require()
 }
-
 func (s *HttpHandlerSuite) TestGetAllResources() {
 	require := s.Require()
 
@@ -221,6 +220,44 @@ func (s *HttpHandlerSuite) TestGetAllResources_Filters() {
 	require.Len(response.Resources, 2)
 	require.Equal(response.Resources[0].ResourceID, "aaa2")
 	require.Equal(response.Resources[1].ResourceID, "aaa3")
+
+	req.Filters = Filters{}
+	req.Filters.ResourceType = []string{"AWS::EC2::Instance"}
+	req.Filters.Location = []string{"us-east1"}
+	rec, err = doRequestJSONResponse(s.router, echo.POST, "/api/v1/resources", req, &response)
+	require.NoError(err, "request")
+	require.Equal(http.StatusOK, rec.Code)
+	require.Len(response.Resources, 1)
+	require.Equal(response.Resources[0].ResourceID, "aaa0")
+}
+
+func (s *HttpHandlerSuite) TestGetAllResources_Query() {
+	require := s.Require()
+
+	req := GetResourcesRequest{
+		Query: "EC2",
+		Filters: Filters{
+			Location: []string{"us-east1"},
+		},
+		Sort: Sort{
+			SortBy: []SortItem{
+				{
+					Field:     SortFieldResourceID,
+					Direction: DirectionAscending,
+				},
+			},
+		},
+		Page: Page{
+			Size: 10,
+		},
+	}
+
+	var response GetResourcesResponse
+	rec, err := doRequestJSONResponse(s.router, echo.POST, "/api/v1/resources", req, &response)
+	require.NoError(err, "request")
+	require.Equal(http.StatusOK, rec.Code)
+	require.Len(response.Resources, 1)
+	require.Equal(response.Resources[0].ResourceID, "aaa0")
 }
 
 func (s *HttpHandlerSuite) TestGetAllResources_CSV() {

@@ -41,6 +41,7 @@ type LocationByProviderResponse struct {
 }
 
 type GetResourcesRequest struct {
+	Query   string  `json:"query"`
 	Filters Filters `json:"filters" validate:"required"`
 	Sort    Sort    `json:"sort"`
 	Page    Page    `json:"page"`
@@ -66,9 +67,6 @@ type Sort struct {
 	SortBy []SortItem `json:"sortBy"`
 }
 
-// SortItem godoc
-// @Param   field      body     string     true  "field name"
-// @Param   direction  body     string     true  "direction"       Enums(asc,desc)
 type SortItem struct {
 	Field     SortFieldType `json:"field"`
 	Direction DirectionType `json:"direction" enums:"asc,desc"`
