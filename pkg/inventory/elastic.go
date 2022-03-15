@@ -3,7 +3,6 @@ package inventory
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"gitlab.com/keibiengine/keibi-engine/pkg/describe"
 	"gitlab.com/keibiengine/keibi-engine/pkg/keibi-es-sdk"
 )
@@ -20,19 +19,19 @@ func QuerySummaryResources(
 
 	var terms []keibi.BoolFilter
 	if !FilterIsEmpty(filters.Location) {
-		terms = append(terms, keibi.TermsFilter("location", filters.Location))
+		terms = append(terms, keibi.TermsFilter("location.keyword", filters.Location))
 	}
 
 	if !FilterIsEmpty(filters.ResourceType) {
-		terms = append(terms, keibi.TermsFilter("resource_type", filters.ResourceType))
+		terms = append(terms, keibi.TermsFilter("resource_type.keyword", filters.ResourceType))
 	}
 
 	if !FilterIsEmpty(filters.KeibiSource) {
-		terms = append(terms, keibi.TermsFilter("source_id", filters.KeibiSource))
+		terms = append(terms, keibi.TermsFilter("source_id.keyword", filters.KeibiSource))
 	}
 
 	if provider != nil {
-		terms = append(terms, keibi.TermsFilter("source_type", []string{string(*provider)}))
+		terms = append(terms, keibi.TermsFilter("source_type.keyword", []string{string(*provider)}))
 	}
 
 	queryStr, err := BuildSummaryQuery(terms, size, lastIndex, sort)
@@ -66,7 +65,6 @@ func BuildSummaryQuery(terms []keibi.BoolFilter, size, lastIdx int, sort Sort) (
 }
 
 func SummaryQueryES(client keibi.Client, ctx context.Context, index string, query string) ([]describe.KafkaLookupResource, error) {
-	fmt.Println(query)
 	var response SummaryQueryResponse
 	err := client.Search(ctx, index, query, &response)
 	if err != nil {
