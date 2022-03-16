@@ -83,6 +83,7 @@ func (s *HttpHandlerSuite) BeforeTest(suiteName, testName string) {
 func (s *HttpHandlerSuite) AfterTest(suiteName, testName string) {
 	//require := s.Require()
 }
+
 func (s *HttpHandlerSuite) TestGetAllResources() {
 	require := s.Require()
 
@@ -258,6 +259,13 @@ func (s *HttpHandlerSuite) TestGetAllResources_Query() {
 	require.Equal(http.StatusOK, rec.Code)
 	require.Len(response.Resources, 1)
 	require.Equal(response.Resources[0].ResourceID, "aaa0")
+
+	req.Query = "Microsoft"
+	rec, err = doRequestJSONResponse(s.router, echo.POST, "/api/v1/resources", req, &response)
+	require.NoError(err, "request")
+	require.Equal(http.StatusOK, rec.Code)
+	require.Len(response.Resources, 1)
+	require.Equal(response.Resources[0].ResourceID, "aaa2")
 }
 
 func (s *HttpHandlerSuite) TestGetAllResources_CSV() {
