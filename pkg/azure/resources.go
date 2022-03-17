@@ -11,7 +11,7 @@ import (
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure/auth"
 	hamiltonAuth "github.com/manicminer/hamilton/auth"
-	"gitlab.com/keibiengine/keibi-engine/pkg/azure/describer.go"
+	"gitlab.com/keibiengine/keibi-engine/pkg/azure/describer"
 )
 
 type ResourceDescriber interface {
