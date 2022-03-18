@@ -10,6 +10,7 @@ import (
 func QuerySummaryResources(
 	ctx context.Context,
 	client keibi.Client,
+	query string,
 	filters Filters,
 	provider *SourceType,
 	size, lastIndex int,
@@ -17,24 +18,24 @@ func QuerySummaryResources(
 ) ([]describe.KafkaLookupResource, error) {
 	var err error
 
-	var terms []keibi.BoolFilter
+	terms := make(map[string][]string)
 	if !FilterIsEmpty(filters.Location) {
-		terms = append(terms, keibi.TermsFilter("location.keyword", filters.Location))
+		terms["location.keyword"] = filters.Location
 	}
 
 	if !FilterIsEmpty(filters.ResourceType) {
-		terms = append(terms, keibi.TermsFilter("resource_type.keyword", filters.ResourceType))
+		terms["resource_type.keyword"] = filters.ResourceType
 	}
 
 	if !FilterIsEmpty(filters.KeibiSource) {
-		terms = append(terms, keibi.TermsFilter("source_id.keyword", filters.KeibiSource))
+		terms["source_id.keyword"] = filters.KeibiSource
 	}
 
 	if provider != nil {
-		terms = append(terms, keibi.TermsFilter("source_type.keyword", []string{string(*provider)}))
+		terms["source_type.keyword"] = []string{string(*provider)}
 	}
 
-	queryStr, err := BuildSummaryQuery(terms, size, lastIndex, sort)
+	queryStr, err := BuildSummaryQuery(query, terms, size, lastIndex, sort)
 	if err != nil {
 		return nil, err
 	}
@@ -47,20 +48,48 @@ func QuerySummaryResources(
 	return resources, nil
 }
 
-func BuildSummaryQuery(terms []keibi.BoolFilter, size, lastIdx int, sort Sort) (string, error) {
-	var shouldTerms []interface{}
-
-	if terms != nil && len(terms) > 0 {
-		query := BuildBoolFilter(terms)
-		shouldTerms = append(shouldTerms, query)
+func BuildSummaryQuery(query string, terms map[string][]string, size, lastIdx int, sort Sort) (string, error) {
+	q := map[string]interface{}{
+		"size": size,
+		"from": lastIdx,
+	}
+	if sort.SortBy != nil {
+		q["sort"] = BuildSort(sort)
 	}
 
-	query := BuildQuery(shouldTerms, size, lastIdx, BuildSort(sort))
-	queryBytes, err := json.Marshal(query)
+	boolQuery := make(map[string]interface{})
+	if terms != nil && len(terms) > 0 {
+		var filters []map[string]interface{}
+		for k, vs := range terms {
+			filters = append(filters, map[string]interface{}{
+				"terms": map[string][]string{
+					k: vs,
+				},
+			})
+		}
+
+		boolQuery["filter"] = filters
+	}
+	if len(query) > 0 {
+		boolQuery["must"] = map[string]interface{}{
+			"multi_match": map[string]interface{}{
+				"fields": []string{"resource_id", "name", "source_type", "resource_type", "resource_group",
+					"location", "source_id"},
+				"query":     query,
+				"fuzziness": "AUTO",
+			},
+		}
+	}
+	if len(boolQuery) > 0 {
+		q["query"] = map[string]interface{}{
+			"bool": boolQuery,
+		}
+	}
+
+	queryBytes, err := json.Marshal(q)
 	if err != nil {
 		return "", err
 	}
-
 	return string(queryBytes), nil
 }
 

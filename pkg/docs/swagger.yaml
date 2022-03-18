@@ -316,6 +316,12 @@ paths:
         required: true
         schema:
           $ref: '#/definitions/inventory.Sort'
+      - description: Query
+        in: body
+        name: query
+        required: true
+        schema:
+          type: string
       produces:
       - application/json
       responses:
@@ -350,6 +356,12 @@ paths:
         required: true
         schema:
           $ref: '#/definitions/inventory.Sort'
+      - description: Query
+        in: body
+        name: query
+        required: true
+        schema:
+          type: string
       produces:
       - application/json
       responses:
@@ -378,6 +390,12 @@ paths:
         required: true
         schema:
           $ref: '#/definitions/inventory.Sort'
+      - description: Query
+        in: body
+        name: query
+        required: true
+        schema:
+          type: string
       produces:
       - text/plain
       responses:
@@ -410,6 +428,12 @@ paths:
         required: true
         schema:
           $ref: '#/definitions/inventory.Sort'
+      - description: Query
+        in: body
+        name: query
+        required: true
+        schema:
+          type: string
       produces:
       - application/json
       responses:
@@ -438,6 +462,12 @@ paths:
         required: true
         schema:
           $ref: '#/definitions/inventory.Sort'
+      - description: Query
+        in: body
+        name: query
+        required: true
+        schema:
+          type: string
       produces:
       - text/plain
       responses:
@@ -464,6 +494,12 @@ paths:
         required: true
         schema:
           $ref: '#/definitions/inventory.Sort'
+      - description: Query
+        in: body
+        name: query
+        required: true
+        schema:
+          type: string
       produces:
       - text/plain
       responses:

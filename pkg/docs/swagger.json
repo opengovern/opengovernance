@@ -119,6 +119,15 @@
                         "schema": {
                             "$ref": "#/definitions/inventory.Sort"
                         }
+                    },
+                    {
+                        "description": "Query",
+                        "name": "query",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
                     }
                 ],
                 "responses": {
@@ -171,6 +180,15 @@
                         "schema": {
                             "$ref": "#/definitions/inventory.Sort"
                         }
+                    },
+                    {
+                        "description": "Query",
+                        "name": "query",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
                     }
                 ],
                 "responses": {
@@ -213,6 +231,15 @@
                         "required": true,
                         "schema": {
                             "$ref": "#/definitions/inventory.Sort"
+                        }
+                    },
+                    {
+                        "description": "Query",
+                        "name": "query",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
                         }
                     }
                 ],
@@ -263,6 +290,15 @@
                         "schema": {
                             "$ref": "#/definitions/inventory.Sort"
                         }
+                    },
+                    {
+                        "description": "Query",
+                        "name": "query",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
                     }
                 ],
                 "responses": {
@@ -306,6 +342,15 @@
                         "schema": {
                             "$ref": "#/definitions/inventory.Sort"
                         }
+                    },
+                    {
+                        "description": "Query",
+                        "name": "query",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
                     }
                 ],
                 "responses": {
@@ -345,6 +390,15 @@
                         "required": true,
                         "schema": {
                             "$ref": "#/definitions/inventory.Sort"
+                        }
+                    },
+                    {
+                        "description": "Query",
+                        "name": "query",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
                         }
                     }
                 ],
