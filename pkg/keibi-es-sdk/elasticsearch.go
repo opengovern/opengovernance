@@ -34,7 +34,7 @@ func checkError(resp *esapi.Response) error {
 
 	var e ErrorResponse
 	if err := json.Unmarshal(data, &e); err != nil {
-		return fmt.Errorf("unmarshal error: %w", err)
+		return fmt.Errorf(string(data))
 	}
 
 	return e
@@ -324,4 +324,55 @@ func (c Client) Search(ctx context.Context, index string, query string, response
 		return fmt.Errorf("unmarshal response: %w", err)
 	}
 	return nil
+}
+
+type DeleteByQueryResponse struct {
+	Took             int  `json:"took"`
+	TimedOut         bool `json:"timed_out"`
+	Total            int  `json:"total"`
+	Deleted          int  `json:"deleted"`
+	Batched          int  `json:"batches"`
+	VersionConflicts int  `json:"version_conflicts"`
+	Noops            int  `json:"noops"`
+	Retries          struct {
+		Bulk   int `json:"bulk"`
+		Search int `json:"search"`
+	} `json:"retries"`
+	ThrottledMillis      int           `json:"throttled_millis"`
+	RequestsPerSecond    float64       `json:"requests_per_second"`
+	ThrottledUntilMillis int           `json:"throttled_until_millis"`
+	Failures             []interface{} `json:"failures"`
+}
+
+func DeleteByQuery(ctx context.Context, es *elasticsearchv7.Client, index string, query interface{}, opts ...func(*esapi.DeleteByQueryRequest)) (DeleteByQueryResponse, error) {
+	defaultOpts := []func(*esapi.DeleteByQueryRequest){
+		es.DeleteByQuery.WithContext(ctx),
+		es.DeleteByQuery.WithWaitForCompletion(true),
+	}
+
+	resp, err := es.DeleteByQuery(
+		[]string{index},
+		esutil.NewJSONReader(query),
+		append(defaultOpts, opts...)...,
+	)
+	defer closeSafe(resp)
+	if err != nil {
+		return DeleteByQueryResponse{}, err
+	} else if err := checkError(resp); err != nil {
+		if isIndexNotFoundErr(err) {
+			return DeleteByQueryResponse{}, nil
+		}
+		return DeleteByQueryResponse{}, err
+	}
+
+	b, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return DeleteByQueryResponse{}, fmt.Errorf("read response: %w", err)
+	}
+
+	var response DeleteByQueryResponse
+	if err := json.Unmarshal(b, &response); err != nil {
+		return DeleteByQueryResponse{}, fmt.Errorf("unmarshal response: %w", err)
+	}
+	return response, nil
 }
