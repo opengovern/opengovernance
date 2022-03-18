@@ -1,10 +1,13 @@
 package describe
 
 import (
+	"crypto/tls"
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"strings"
 
+	"github.com/elastic/go-elasticsearch/v7"
 	"github.com/hashicorp/vault/api/auth/kubernetes"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/queue"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/vault"
@@ -112,7 +115,7 @@ func (w *Worker) Run() error {
 
 	fmt.Printf("Waiting indefinitly for messages. To exit press CTRL+C")
 	for msg := range msgs {
-		var job Job
+		var job DescribeJob
 		if err := json.Unmarshal(msg.Body, &job); err != nil {
 			fmt.Printf("Failed to unmarshal task: %s", err.Error())
 			msg.Nack(false, false)
@@ -162,4 +165,101 @@ func newKafkaProducer(brokers []string) (sarama.SyncProducer, error) {
 	}
 
 	return producer, nil
+}
+
+type CleanupWorker struct {
+	id              string
+	cleanupJobQueue queue.Interface
+	esClient        *elasticsearch.Client
+}
+
+func InitializeCleanupWorker(
+	id string,
+	rabbitMQUsername string,
+	rabbitMQPassword string,
+	rabbitMQHost string,
+	rabbitMQPort int,
+	cleanupJobQueueName string,
+	elasticAddress string,
+	elasticUsername string,
+	elasticPassword string,
+) (w *CleanupWorker, err error) {
+	if id == "" {
+		return nil, fmt.Errorf("'id' must be set to a non empty string")
+	}
+
+	w = &CleanupWorker{id: id}
+	defer func() {
+		if err != nil && w != nil {
+			w.Stop()
+		}
+	}()
+
+	qCfg := queue.Config{}
+	qCfg.Server.Username = rabbitMQUsername
+	qCfg.Server.Password = rabbitMQPassword
+	qCfg.Server.Host = rabbitMQHost
+	qCfg.Server.Port = rabbitMQPort
+	qCfg.Queue.Name = cleanupJobQueueName
+	qCfg.Queue.Durable = true
+	qCfg.Consumer.ID = w.id
+	cleanupJobQueue, err := queue.New(qCfg)
+	if err != nil {
+		return nil, err
+	}
+
+	w.cleanupJobQueue = cleanupJobQueue
+
+	esClient, err := elasticsearch.NewClient(elasticsearch.Config{
+		Addresses: []string{elasticAddress},
+		Username:  elasticUsername,
+		Password:  elasticPassword,
+		Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{
+				InsecureSkipVerify: true, // TODO: undo
+			},
+		},
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	w.esClient = esClient
+
+	return w, nil
+}
+
+func (w *CleanupWorker) Run() error {
+	msgs, err := w.cleanupJobQueue.Consume()
+	if err != nil {
+		return err
+	}
+
+	fmt.Printf("Waiting indefinitly for messages. To exit press CTRL+C")
+	for msg := range msgs {
+		var job DescribeCleanupJob
+		if err := json.Unmarshal(msg.Body, &job); err != nil {
+			fmt.Printf("Failed to unmarshal task: %s", err.Error())
+			msg.Nack(false, false)
+			continue
+		}
+
+		err := job.Do(w.esClient)
+		if err != nil {
+			fmt.Printf("Failed to cleanup resources: %s\n", err.Error())
+			msg.Nack(false, true) // Requeue if there is any failure
+			continue
+		}
+
+		msg.Ack(false)
+	}
+
+	return fmt.Errorf("descibe jobs channel is closed")
+}
+
+func (w *CleanupWorker) Stop() {
+	if w.cleanupJobQueue != nil {
+		w.cleanupJobQueue.Close()
+		w.cleanupJobQueue = nil
+	}
 }

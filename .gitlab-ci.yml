@@ -45,12 +45,14 @@ deploy:      # This job runs in the deploy stage.
     - podman login -u "${DO_API_TOKEN}" -p "${DO_API_TOKEN}" "registry.digitalocean.com/keibi"
     - podman build -f  docker/DescribeSchedulerDockerfile . -t registry.digitalocean.com/keibi/describe-scheduler:0.0.1
     - podman build -f  docker/DescribeWorkerDockerfile . -t registry.digitalocean.com/keibi/describe-worker:0.0.1
+    - podman build -f  docker/DescribeCleanupWorkerDockerfile . -t registry.digitalocean.com/keibi/describe-cleanup-worker:0.0.1
     - podman build -f  docker/ComplianceReportWorkerDockerfile . -t registry.digitalocean.com/keibi/compliance-report-worker:0.0.1
     - podman build -f  docker/OnboardServiceDockerfile . -t registry.digitalocean.com/keibi/onboard-service:0.0.1
     - podman build -f  docker/InventoryServiceDockerfile . -t registry.digitalocean.com/keibi/inventory-service:0.0.1
     - podman build -f  docker/SwaggerUIDockerfile . -t registry.digitalocean.com/keibi/swagger-ui:0.0.1
     - podman push registry.digitalocean.com/keibi/describe-scheduler:0.0.1
     - podman push registry.digitalocean.com/keibi/describe-worker:0.0.1
+    - podman push registry.digitalocean.com/keibi/describe-cleanup-worker:0.0.1
     - podman push registry.digitalocean.com/keibi/compliance-report-worker:0.0.1
     - podman push registry.digitalocean.com/keibi/onboard-service:0.0.1
     - podman push registry.digitalocean.com/keibi/inventory-service:0.0.1

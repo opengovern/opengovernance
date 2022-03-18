@@ -134,7 +134,6 @@ func (q *queue) Consume() (<-chan amqp.Delivery, error) {
 		false,             // no-wait
 		nil,               // args
 	)
-
 }
 
 func (q *queue) Publish(v interface{}) error {

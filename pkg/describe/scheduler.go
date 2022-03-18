@@ -26,10 +26,14 @@ type Scheduler struct {
 	id         string
 	db         Database
 	httpServer *HttpServer
-	// jobQueue is used to publish jobs to be performed by the workers.
-	jobQueue queue.Interface
-	// jobResultQueue is used to consume the job results returned by the workers.
-	jobResultQueue queue.Interface
+
+	// describeJobQueue is used to publish describe jobs to be performed by the workers.
+	describeJobQueue queue.Interface
+	// describeJobResultQueue is used to consume the describe job results returned by the workers.
+	describeJobResultQueue queue.Interface
+	// describeCleanupJobQueue is used to publish describe cleanup jobs to be performed by the workers.
+	describeCleanupJobQueue queue.Interface
+
 	// sourceQueue is used to consume source updates by the onboarding service.
 	sourceQueue queue.Interface
 
@@ -45,11 +49,12 @@ func InitializeScheduler(
 	rabbitMQPassword string,
 	rabbitMQHost string,
 	rabbitMQPort int,
-	describeJobQueue string,
-	describeJobResultQueue string,
-	complianceReportJobQueue string,
-	complianceReportJobResultQueue string,
-	sourceQueue string,
+	describeJobQueueName string,
+	describeJobResultQueueName string,
+	describeCleanupJobQueueName string,
+	complianceReportJobQueueName string,
+	complianceReportJobResultQueueName string,
+	sourceQueueName string,
 	postgresUsername string,
 	postgresPassword string,
 	postgresHost string,
@@ -80,7 +85,7 @@ func InitializeScheduler(
 	qCfg.Server.Password = rabbitMQPassword
 	qCfg.Server.Host = rabbitMQHost
 	qCfg.Server.Port = rabbitMQPort
-	qCfg.Queue.Name = describeJobQueue
+	qCfg.Queue.Name = describeJobQueueName
 	qCfg.Queue.Durable = true
 	qCfg.Producer.ID = s.id
 	describeQueue, err := queue.New(qCfg)
@@ -88,15 +93,15 @@ func InitializeScheduler(
 		return nil, err
 	}
 
-	s.logger.Info("Connected to the describe jobs queue", zap.String("queue", describeJobQueue))
-	s.jobQueue = describeQueue
+	s.logger.Info("Connected to the describe jobs queue", zap.String("queue", describeJobQueueName))
+	s.describeJobQueue = describeQueue
 
 	qCfg = queue.Config{}
 	qCfg.Server.Username = rabbitMQUsername
 	qCfg.Server.Password = rabbitMQPassword
 	qCfg.Server.Host = rabbitMQHost
 	qCfg.Server.Port = rabbitMQPort
-	qCfg.Queue.Name = describeJobResultQueue
+	qCfg.Queue.Name = describeJobResultQueueName
 	qCfg.Queue.Durable = true
 	qCfg.Consumer.ID = s.id
 	describeResultsQueue, err := queue.New(qCfg)
@@ -104,15 +109,31 @@ func InitializeScheduler(
 		return nil, err
 	}
 
-	s.logger.Info("Connected to the describe job results queue", zap.String("queue", describeJobResultQueue))
-	s.jobResultQueue = describeResultsQueue
+	s.logger.Info("Connected to the describe job results queue", zap.String("queue", describeJobResultQueueName))
+	s.describeJobResultQueue = describeResultsQueue
 
 	qCfg = queue.Config{}
 	qCfg.Server.Username = rabbitMQUsername
 	qCfg.Server.Password = rabbitMQPassword
 	qCfg.Server.Host = rabbitMQHost
 	qCfg.Server.Port = rabbitMQPort
-	qCfg.Queue.Name = sourceQueue
+	qCfg.Queue.Name = describeCleanupJobQueueName
+	qCfg.Queue.Durable = true
+	qCfg.Producer.ID = s.id
+	describeCleanupJobQueue, err := queue.New(qCfg)
+	if err != nil {
+		return nil, err
+	}
+
+	s.logger.Info("Connected to the describe cleanup job queue", zap.String("queue", describeCleanupJobQueueName))
+	s.describeCleanupJobQueue = describeCleanupJobQueue
+
+	qCfg = queue.Config{}
+	qCfg.Server.Username = rabbitMQUsername
+	qCfg.Server.Password = rabbitMQPassword
+	qCfg.Server.Host = rabbitMQHost
+	qCfg.Server.Port = rabbitMQPort
+	qCfg.Queue.Name = sourceQueueName
 	qCfg.Queue.Durable = true
 	qCfg.Consumer.ID = s.id
 	sourceEventsQueue, err := queue.New(qCfg)
@@ -120,7 +141,7 @@ func InitializeScheduler(
 		return nil, err
 	}
 
-	s.logger.Info("Connected to the source events queue", zap.String("queue", sourceQueue))
+	s.logger.Info("Connected to the source events queue", zap.String("queue", sourceQueueName))
 	s.sourceQueue = sourceEventsQueue
 
 	qCfg = queue.Config{}
@@ -128,15 +149,15 @@ func InitializeScheduler(
 	qCfg.Server.Password = rabbitMQPassword
 	qCfg.Server.Host = rabbitMQHost
 	qCfg.Server.Port = rabbitMQPort
-	qCfg.Queue.Name = complianceReportJobQueue
+	qCfg.Queue.Name = complianceReportJobQueueName
 	qCfg.Queue.Durable = true
-	qCfg.Consumer.ID = s.id
+	qCfg.Producer.ID = s.id
 	complianceReportJobsQueue, err := queue.New(qCfg)
 	if err != nil {
 		return nil, err
 	}
 
-	s.logger.Info("Connected to the compliance report jobs queue", zap.String("queue", complianceReportJobQueue))
+	s.logger.Info("Connected to the compliance report jobs queue", zap.String("queue", complianceReportJobQueueName))
 	s.complianceReportJobQueue = complianceReportJobsQueue
 
 	qCfg = queue.Config{}
@@ -144,7 +165,7 @@ func InitializeScheduler(
 	qCfg.Server.Password = rabbitMQPassword
 	qCfg.Server.Host = rabbitMQHost
 	qCfg.Server.Port = rabbitMQPort
-	qCfg.Queue.Name = complianceReportJobResultQueue
+	qCfg.Queue.Name = complianceReportJobResultQueueName
 	qCfg.Queue.Durable = true
 	qCfg.Consumer.ID = s.id
 	complianceReportJobsResultQueue, err := queue.New(qCfg)
@@ -152,7 +173,7 @@ func InitializeScheduler(
 		return nil, err
 	}
 
-	s.logger.Info("Connected to the compliance report jobs result queue", zap.String("queue", complianceReportJobResultQueue))
+	s.logger.Info("Connected to the compliance report jobs result queue", zap.String("queue", complianceReportJobResultQueueName))
 	s.complianceReportJobResultQueue = complianceReportJobsResultQueue
 
 	dsn := fmt.Sprintf(`host=%s port=%s user=%s password=%s dbname=%s sslmode=disable TimeZone=GMT`,
@@ -182,8 +203,9 @@ func (s *Scheduler) Run() error {
 		return err
 	}
 
-	go s.RunJobCompletionUpdater()
-	go s.RunDescribeScheduler()
+	go s.RunDescribeJobCompletionUpdater()
+	go s.RunDescribeJobScheduler()
+	go s.RunDescribeCleanupJobScheduler()
 	go s.RunComplianceReportScheduler()
 
 	go func() {
@@ -191,7 +213,7 @@ func (s *Scheduler) Run() error {
 	}()
 
 	go func() {
-		s.logger.Fatal("DescribeJobResult consumer exited", zap.Error(s.RunJobResultsConsumer()))
+		s.logger.Fatal("DescribeJobResult consumer exited", zap.Error(s.RunDescribeJobResultsConsumer()))
 	}()
 
 	go func() {
@@ -204,7 +226,7 @@ func (s *Scheduler) Run() error {
 	return s.httpServer.Initialize()
 }
 
-func (s *Scheduler) RunJobCompletionUpdater() {
+func (s *Scheduler) RunDescribeJobCompletionUpdater() {
 	t := time.NewTicker(JobCompletionInterval)
 	defer t.Stop()
 
@@ -267,7 +289,7 @@ func (s *Scheduler) RunJobCompletionUpdater() {
 	}
 }
 
-func (s *Scheduler) RunDescribeScheduler() {
+func (s *Scheduler) RunDescribeJobScheduler() {
 	s.logger.Info("Scheduling describe jobs on a timer")
 	t := time.NewTicker(JobSchedulingInterval)
 	defer t.Stop()
@@ -293,7 +315,7 @@ func (s *Scheduler) RunDescribeScheduler() {
 				continue
 			}
 
-			enqueueDescribeResourceJobs(s.logger, s.db, s.jobQueue, source, daj)
+			enqueueDescribeResourceJobs(s.logger, s.db, s.describeJobQueue, source, daj)
 
 			err = s.db.UpdateDescribeSourceJob(daj.ID, api.DescribeSourceJobInProgress)
 			if err != nil {
@@ -313,6 +335,77 @@ func (s *Scheduler) RunDescribeScheduler() {
 				)
 			}
 			daj.Status = api.DescribeSourceJobInProgress
+		}
+	}
+}
+
+func (s *Scheduler) RunDescribeCleanupJobScheduler() {
+	s.logger.Info("Running describe cleanup job scheduler")
+
+	t := time.NewTicker(JobSchedulingInterval)
+	defer t.Stop()
+
+	for range t.C {
+		dsj, err := s.db.QueryOlderThanNRecentCompletedDescribeSourceJobs(5)
+		if err != nil {
+			s.logger.Error("Failed to find older than 5 recent completed DescribeSourceJob for each source",
+				zap.Error(err),
+			)
+
+			continue
+		}
+
+		for _, sj := range dsj {
+			// I purposefully didn't embbed this query in the previous query to keep returned results count low.
+			drj, err := s.db.ListDescribeResourceJobs(sj.ID)
+			if err != nil {
+				s.logger.Error("Failed to retrieve DescribeResourceJobs for DescribeSouceJob",
+					zap.Uint("jobId", sj.ID),
+					zap.Error(err),
+				)
+
+				continue
+			}
+
+			success := true
+			for _, rj := range drj {
+				err := s.describeCleanupJobQueue.Publish(DescribeCleanupJob{
+					JobID:        rj.ID,
+					ResourceType: rj.ResourceType,
+				})
+				if err != nil {
+					s.logger.Error("Failed to publish describe clean up job to queue for DescribeResourceJob",
+						zap.Uint("jobId", rj.ID),
+						zap.Error(err),
+					)
+					success = false
+					continue
+				}
+
+				err = s.db.DeleteDescribeResourceJob(rj.ID)
+				if err != nil {
+					s.logger.Error("Failed to delete DescribeResourceJob",
+						zap.Uint("jobId", rj.ID),
+						zap.Error(err),
+					)
+					success = false
+					continue
+				}
+			}
+
+			if success {
+				err := s.db.DeleteDescribeSourceJob(sj.ID)
+				if err != nil {
+					s.logger.Error("Failed to delete DescribeSourceJob",
+						zap.Uint("jobId", sj.ID),
+						zap.Error(err),
+					)
+				}
+			}
+
+			s.logger.Info("Successfully deleted DescribeSourceJob and its DescribeResourceJobs",
+				zap.Uint("jobId", sj.ID),
+			)
 		}
 	}
 }
@@ -351,13 +444,13 @@ func (s *Scheduler) RunSourceEventsConsumer() error {
 	return fmt.Errorf("source events queue channel is closed")
 }
 
-// RunJobResultsConsumer consumes messages from the jobResult queue.
+// RunDescribeJobResultsConsumer consumes messages from the jobResult queue.
 // It will update the status of the jobs in the database based on the message.
 // It will also update the jobs status that are not completed in certain time to FAILED
-func (s *Scheduler) RunJobResultsConsumer() error {
+func (s *Scheduler) RunDescribeJobResultsConsumer() error {
 	s.logger.Info("Consuming messages from the JobResults queue")
 
-	msgs, err := s.jobResultQueue.Consume()
+	msgs, err := s.describeJobResultQueue.Consume()
 	if err != nil {
 		return err
 	}
@@ -372,7 +465,7 @@ func (s *Scheduler) RunJobResultsConsumer() error {
 				return fmt.Errorf("tasks channel is closed")
 			}
 
-			var result JobResult
+			var result DescribeJobResult
 			if err := json.Unmarshal(msg.Body, &result); err != nil {
 				s.logger.Error("Failed to unmarshal DescribeResourceJob results\n", zap.Error(err))
 				msg.Nack(false, false)
@@ -491,19 +584,17 @@ func (s *Scheduler) RunComplianceReportJobResultsConsumer() error {
 }
 
 func (s *Scheduler) Stop() {
-	if s.jobQueue != nil {
-		s.jobQueue.Close()
-		s.jobQueue = nil
+	queues := []queue.Interface{
+		s.describeJobQueue,
+		s.describeJobResultQueue,
+		s.describeCleanupJobQueue,
+		s.complianceReportJobQueue,
+		s.complianceReportJobResultQueue,
+		s.sourceQueue,
 	}
 
-	if s.jobResultQueue != nil {
-		s.jobResultQueue.Close()
-		s.jobResultQueue = nil
-	}
-
-	if s.sourceQueue != nil {
-		s.sourceQueue.Close()
-		s.sourceQueue = nil
+	for _, queue := range queues {
+		queue.Close()
 	}
 }
 
@@ -548,7 +639,7 @@ func enqueueDescribeResourceJobs(logger *zap.Logger, db Database, q queue.Interf
 		nextStatus := api.DescribeResourceJobQueued
 		errMsg := ""
 
-		err := q.Publish(Job{
+		err := q.Publish(DescribeJob{
 			JobID:        drj.ID,
 			ParentJobID:  daj.ID,
 			SourceType:   a.Type,

@@ -9,16 +9,19 @@ import (
 	"strings"
 	"time"
 
+	"github.com/elastic/go-elasticsearch/v7"
 	"gitlab.com/keibiengine/keibi-engine/pkg/aws"
 	"gitlab.com/keibiengine/keibi-engine/pkg/azure"
 	"gitlab.com/keibiengine/keibi-engine/pkg/describe/api"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/vault"
+	"gitlab.com/keibiengine/keibi-engine/pkg/keibi-es-sdk"
 	"gopkg.in/Shopify/sarama.v1"
 )
 
 const (
-	esIndexHeader = "elasticsearch_index"
-	jobTimeout    = 5 * time.Minute
+	esIndexHeader      = "elasticsearch_index"
+	describeJobTimeout = 5 * time.Minute
+	cleanupJobTimeout  = 5 * time.Minute
 )
 
 var stopWordsRe = regexp.MustCompile(`\W+`)
@@ -73,12 +76,19 @@ func AzureSubscriptionConfigFromMap(m map[string]interface{}) (AzureSubscription
 	return c, nil
 }
 
-type Job struct {
+type DescribeJob struct {
 	JobID        uint // DescribeResourceJob ID
 	ParentJobID  uint // DescribeSourceJob ID
 	ResourceType string
 	SourceType   api.SourceType
 	ConfigReg    string
+}
+
+type DescribeJobResult struct {
+	JobID       uint
+	ParentJobID uint
+	Status      api.DescribeResourceJobStatus
+	Error       string
 }
 
 // Do will perform the job which includes the following tasks:
@@ -90,10 +100,10 @@ type Job struct {
 // do its best to complete the task even if some errors occur along the way. However,
 // if any error occurs, The JobResult will indicate that through the Status and Error
 // will be set to the first error that occured.
-func (j Job) Do(vlt vault.SourceConfig, producer sarama.SyncProducer, topic string) (r JobResult) {
+func (j DescribeJob) Do(vlt vault.SourceConfig, producer sarama.SyncProducer, topic string) (r DescribeJobResult) {
 	defer func() {
 		if err := recover(); err != nil {
-			r = JobResult{
+			r = DescribeJobResult{
 				JobID:       j.JobID,
 				ParentJobID: j.ParentJobID,
 				Status:      api.DescribeResourceJobFailed,
@@ -115,7 +125,7 @@ func (j Job) Do(vlt vault.SourceConfig, producer sarama.SyncProducer, topic stri
 		}
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), jobTimeout)
+	ctx, cancel := context.WithTimeout(context.Background(), describeJobTimeout)
 	defer cancel()
 
 	config, err := vlt.Read(j.ConfigReg)
@@ -140,7 +150,7 @@ func (j Job) Do(vlt vault.SourceConfig, producer sarama.SyncProducer, topic stri
 		errMsg = firstErr.Error()
 	}
 
-	return JobResult{
+	return DescribeJobResult{
 		JobID:       j.JobID,
 		ParentJobID: j.ParentJobID,
 		Status:      status,
@@ -149,7 +159,7 @@ func (j Job) Do(vlt vault.SourceConfig, producer sarama.SyncProducer, topic stri
 }
 
 // doDescribe describes the sources, e.g. AWS, Azure and returns the responses.
-func doDescribe(ctx context.Context, job Job, config map[string]interface{}) ([]KafkaResource, []KafkaLookupResource, error) {
+func doDescribe(ctx context.Context, job DescribeJob, config map[string]interface{}) ([]KafkaResource, []KafkaLookupResource, error) {
 	fmt.Printf("Proccessing Job: ID[%d] ParentJobID[%d] RosourceType[%s]\n", job.JobID, job.ParentJobID, job.ResourceType)
 
 	switch job.SourceType {
@@ -162,7 +172,7 @@ func doDescribe(ctx context.Context, job Job, config map[string]interface{}) ([]
 	}
 }
 
-func doDescribeAWS(ctx context.Context, job Job, config map[string]interface{}) ([]KafkaResource, []KafkaLookupResource, error) {
+func doDescribeAWS(ctx context.Context, job DescribeJob, config map[string]interface{}) ([]KafkaResource, []KafkaLookupResource, error) {
 	creds, err := AWSAccountConfigFromMap(config)
 	if err != nil {
 		return nil, nil, fmt.Errorf("aws account credentials: %w", err)
@@ -238,7 +248,7 @@ func doDescribeAWS(ctx context.Context, job Job, config map[string]interface{}) 
 	return inventory, lookup, err
 }
 
-func doDescribeAzure(ctx context.Context, job Job, config map[string]interface{}) ([]KafkaResource, []KafkaLookupResource, error) {
+func doDescribeAzure(ctx context.Context, job DescribeJob, config map[string]interface{}) ([]KafkaResource, []KafkaLookupResource, error) {
 	creds, err := AzureSubscriptionConfigFromMap(config)
 	if err != nil {
 		return nil, nil, fmt.Errorf("aure subscription credentials: %w", err)
@@ -432,9 +442,43 @@ func doSendToKafka(producer sarama.SyncProducer, topic string, resources []Kafka
 	return nil
 }
 
-type JobResult struct {
-	JobID       uint
-	ParentJobID uint
-	Status      api.DescribeResourceJobStatus
-	Error       string
+type DescribeCleanupJob struct {
+	JobID        uint // DescribeResourceJob ID
+	ResourceType string
+}
+
+func (j DescribeCleanupJob) Do(esClient *elasticsearch.Client) error {
+	ctx, cancel := context.WithTimeout(context.Background(), cleanupJobTimeout)
+	defer cancel()
+
+	index := ResourceTypeToESIndex(j.ResourceType)
+	fmt.Printf("Cleaning resources with resource_job_id of %d from index %s\n", j.JobID, index)
+
+	query := map[string]interface{}{
+		"query": map[string]interface{}{
+			"match": map[string]interface{}{
+				"resource_job_id": j.JobID,
+			},
+		},
+	}
+
+	resp, err := keibi.DeleteByQuery(ctx, esClient, index, query,
+		esClient.DeleteByQuery.WithRefresh(true),
+		esClient.DeleteByQuery.WithConflicts("proceed"),
+	)
+	if err != nil {
+		return err
+	}
+
+	if len(resp.Failures) != 0 {
+		body, err := json.Marshal(resp)
+		if err != nil {
+			return err
+		}
+
+		return fmt.Errorf("elasticsearch: delete by query: %s", string(body))
+	}
+
+	fmt.Printf("Successfully delete %d resources of type %s\n", resp.Deleted, j.ResourceType)
+	return nil
 }

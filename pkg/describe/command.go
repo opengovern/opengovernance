@@ -11,6 +11,7 @@ import (
 const (
 	DescribeJobsQueueName            = "describe-jobs-queue"
 	DescribeResultsQueueName         = "describe-results-queue"
+	DescribeCleanupJobsQueueName     = "describe-cleanup-jobs-queue"
 	ComplianceReportJobsQueueName    = "compliance-report-jobs-queue"
 	ComplianceReportResultsQueueName = "compliance-report-results-queue"
 	SourceEventsQueueName            = "source-events-queue"
@@ -33,6 +34,10 @@ var (
 	VaultAddress  = os.Getenv("VAULT_ADDRESS")
 	VaultToken    = os.Getenv("VAULT_TOKEN")
 	VaultRoleName = os.Getenv("VAULT_ROLE")
+
+	ElasticSearchAddress  = os.Getenv("ES_ADDRESS")
+	ElasticSearchUsername = os.Getenv("ES_USERNAME")
+	ElasticSearchPassword = os.Getenv("ES_PASSWORD")
 
 	HttpServerAddress = os.Getenv("HTTP_ADDRESS")
 )
@@ -59,6 +64,7 @@ func SchedulerCommand() *cobra.Command {
 				RabbitMQPort,
 				DescribeJobsQueueName,
 				DescribeResultsQueueName,
+				DescribeCleanupJobsQueueName,
 				ComplianceReportJobsQueueName,
 				ComplianceReportResultsQueueName,
 				SourceEventsQueueName,
@@ -129,6 +135,48 @@ func WorkerCommand() *cobra.Command {
 
 	cmd.Flags().StringVar(&id, "id", "", "The worker id")
 	cmd.Flags().StringVarP(&resourcesTopic, "resources-topic", "t", "", "The kafka topic where the resources are published.")
+
+	return cmd
+}
+
+func CleanupWorkerCommand() *cobra.Command {
+	var (
+		id string
+	)
+	cmd := &cobra.Command{
+		PreRunE: func(cmd *cobra.Command, args []string) error {
+			switch {
+			case id == "":
+				return errors.New("missing required flag 'id'")
+			default:
+				return nil
+			}
+		},
+		RunE: func(cmd *cobra.Command, args []string) error {
+			cmd.SilenceUsage = true
+
+			w, err := InitializeCleanupWorker(
+				id,
+				RabbitMQUsername,
+				RabbitMQPassword,
+				RabbitMQService,
+				RabbitMQPort,
+				DescribeCleanupJobsQueueName,
+				ElasticSearchAddress,
+				ElasticSearchUsername,
+				ElasticSearchPassword,
+			)
+			if err != nil {
+				return err
+			}
+
+			defer w.Stop()
+
+			return w.Run()
+		},
+	}
+
+	cmd.Flags().StringVar(&id, "id", "", "The worker id")
 
 	return cmd
 }

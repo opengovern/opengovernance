@@ -246,6 +246,43 @@ func (db Database) QueryInProgressDescribedSourceJobGroupByDescribeResourceJobSt
 	return results, nil
 }
 
+func (db Database) QueryOlderThanNRecentCompletedDescribeSourceJobs(n int) ([]DescribeSourceJob, error) {
+	var results []DescribeSourceJob
+
+	tx := db.orm.Raw(
+		`
+SELECT jobs.id
+FROM (
+	SELECT *, rank() OVER ( 
+		PARTITION BY source_id 
+		ORDER BY updated_at DESC
+	)
+	FROM describe_source_jobs 
+	WHERE status IN ? AND deleted_at IS NULL) 
+jobs
+WHERE rank > ?
+`, []string{string(api.DescribeSourceJobCompleted), string(api.DescribeSourceJobCompletedWithFailure)}, n).Scan(&results)
+
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+
+	return results, nil
+}
+
+func (db Database) DeleteDescribeSourceJob(id uint) error {
+	tx := db.orm.
+		Where("id = ?", id).
+		Delete(&DescribeSourceJob{})
+	if tx.Error != nil {
+		return tx.Error
+	} else if tx.RowsAffected != 1 {
+		return fmt.Errorf("delete source: didn't find the describe source job to delete")
+	}
+
+	return nil
+}
+
 // =============================== DescribeResourceJob ===============================
 
 // UpdateDescribeResourceJobStatus updates the status of the DescribeResourceJob to the provided status.
@@ -281,12 +318,25 @@ func (db Database) UpdateDescribeResourceJobsTimedOut() error {
 // ListDescribeResourceJobs lists the DescribeResourceJob .
 func (db Database) ListDescribeResourceJobs(describeSourceJobID uint) ([]DescribeResourceJob, error) {
 	var jobs []DescribeResourceJob
-	tx := db.orm.Where("parent_id = ?", describeSourceJobID).Find(&jobs)
+	tx := db.orm.Where("parent_job_id = ?", describeSourceJobID).Find(&jobs)
 	if tx.Error != nil {
 		return nil, tx.Error
 	}
 
 	return jobs, nil
+}
+
+func (db Database) DeleteDescribeResourceJob(id uint) error {
+	tx := db.orm.
+		Where("id = ?", id).
+		Delete(&DescribeResourceJob{})
+	if tx.Error != nil {
+		return tx.Error
+	} else if tx.RowsAffected != 1 {
+		return fmt.Errorf("delete source: didn't find the describe resource job to delete")
+	}
+
+	return nil
 }
 
 // =============================== ComplianceReportJob ===============================
