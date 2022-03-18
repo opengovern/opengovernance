@@ -7,12 +7,21 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
-	"net/http"
-
+	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2020-05-01/network"
+	ec2 "github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	elasticsearchv7 "github.com/elastic/go-elasticsearch/v7"
 	"github.com/elastic/go-elasticsearch/v7/esapi"
+	"github.com/google/uuid"
+	awsdescriber "gitlab.com/keibiengine/keibi-engine/pkg/aws/describer"
+	awsmodel "gitlab.com/keibiengine/keibi-engine/pkg/aws/model"
+	azuredescriber "gitlab.com/keibiengine/keibi-engine/pkg/azure/describer.go"
+	azuremodel "gitlab.com/keibiengine/keibi-engine/pkg/azure/model"
 	"gitlab.com/keibiengine/keibi-engine/pkg/describe"
 	"gitlab.com/keibiengine/keibi-engine/pkg/describe/api"
+	"io/ioutil"
+	"math/rand"
+	"net/http"
+	"os"
 )
 
 func PopulateElastic(address string) error {
@@ -38,6 +47,11 @@ func PopulateElastic(address string) error {
 		if err != nil {
 			return err
 		}
+	}
+
+	err = GenerateResources(es)
+	if err != nil {
+		return err
 	}
 
 	return nil
@@ -82,6 +96,237 @@ func IndexLookupResource(es *elasticsearchv7.Client, resource describe.KafkaLook
 	// Set up the request object.
 	req := esapi.IndexRequest{
 		Index:      "inventory_summary",
+		DocumentID: documentID,
+		Body:       bytes.NewReader(js),
+		Refresh:    "true",
+	}
+
+	// Perform the request with the client.
+	res, err := req.Do(context.Background(), es)
+	if err != nil {
+		return err
+	}
+	defer res.Body.Close()
+
+	if res.IsError() {
+		return fmt.Errorf("[%s] Error indexing document ID=%s", res.Status(), documentID)
+	} else {
+		// Deserialize the response into a map.
+		var r map[string]interface{}
+		if err := json.NewDecoder(res.Body).Decode(&r); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func PopulatePostgres(db Database) error {
+	id := uuid.New()
+	err := db.AddQuery(&SmartQuery{
+		ID:          id,
+		Provider:    "AWS",
+		Title:       "Query 1",
+		Description: "description 1",
+		Query:       "select count(*) from aws_ec2_instance",
+	})
+	if err != nil {
+		return err
+	}
+
+	id = uuid.New()
+	err = db.AddQuery(&SmartQuery{
+		ID: id,
+		Provider:    "Azure",
+		Title:       "Query 2",
+		Description: "description 2",
+		Query:       "select count(*) from azure_virtual_network",
+	})
+	if err != nil {
+		return err
+	}
+
+	id = uuid.New()
+	err = db.AddQuery(&SmartQuery{
+		ID: id,
+		Provider:    "Azure",
+		Title:       "Query 3",
+		Description: "description 3",
+		Query:       "select * from azure_virtual_network",
+	})
+	if err != nil {
+		return err
+	}
+
+	id = uuid.New()
+	err = db.AddQuery(&SmartQuery{
+		ID:          id,
+		Provider:    "AWS",
+		Title:       "Query 4",
+		Description: "description 4",
+		Query:       "select * from aws_ec2_instance",
+	})
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func BuildTempSpecFile(plugin string, esUrl string) (string, error) {
+	spcFile, err := ioutil.TempFile("", plugin+"*.spc")
+	if err != nil {
+		return "", err
+	}
+
+	err = os.Chmod(spcFile.Name(), os.ModePerm)
+	if err != nil {
+		return spcFile.Name(), err
+	}
+
+	str := `
+connection "` + plugin + `" {
+  plugin = "` + plugin + `"
+  addresses = ["` + esUrl + `"]
+  username = ""
+  password = ""
+  accountID = "all"
+}
+`
+	err = ioutil.WriteFile(spcFile.Name(), []byte(str), os.ModePerm)
+	if err != nil {
+		return spcFile.Name(), err
+	}
+
+	return spcFile.Name(), nil
+}
+
+func GenerateResources(es *elasticsearchv7.Client) error {
+	instanceId := "abcd"
+	empty := ""
+	resource := awsdescriber.Resource{
+		ARN: "abcd",
+		ID:  "aaa0",
+		Description: awsmodel.EC2InstanceDescription{
+			Instance: &ec2.Instance{
+				InstanceId:            &instanceId,
+				StateTransitionReason: &empty,
+				Tags:                  nil,
+			},
+			InstanceStatus: nil,
+			Attributes: struct {
+				UserData                          string
+				InstanceInitiatedShutdownBehavior string
+				DisableApiTermination             bool
+			}{},
+		},
+		Name:      "0001",
+		Account:   "ss1",
+		Region:    "us-east1",
+		Partition: "ppp",
+		Type:      "AWS::EC2::Instance",
+	}
+
+	err := IndexAWSResource(es, resource)
+	if err != nil {
+		return err
+	}
+
+	azureResource := azuredescriber.Resource{
+		ID:             "aaa1",
+		Description:    azuremodel.VirtualNetworkDescription{
+			VirtualNetwork: network.VirtualNetwork{
+				VirtualNetworkPropertiesFormat: nil,
+				Etag:                           nil,
+				ID:                             nil,
+				Name:                           nil,
+				Type:                           nil,
+				Location:                       nil,
+				Tags:                           nil,
+			},
+			ResourceGroup:  "abcd",
+		},
+		Name:           "0002",
+		Type:           "Microsoft.Network/virtualNetworks",
+		ResourceGroup:  "abcd",
+		Location:       "us-east2",
+		SubscriptionID: "ss2",
+	}
+
+	err = IndexAzureResource(es, azureResource)
+	if err != nil {
+		return err
+	}
+
+	azureResource = azuredescriber.Resource{
+		ID:             "aaa2",
+		Description:    azuremodel.VirtualNetworkDescription{
+			VirtualNetwork: network.VirtualNetwork{
+				VirtualNetworkPropertiesFormat: nil,
+				Etag:                           nil,
+				ID:                             nil,
+				Name:                           nil,
+				Type:                           nil,
+				Location:                       nil,
+				Tags:                           nil,
+			},
+			ResourceGroup:  "abcd",
+		},
+		Name:           "0003",
+		Type:           "Microsoft.Network/virtualNetworks",
+		ResourceGroup:  "abcd",
+		Location:       "us-east1",
+		SubscriptionID: "ss1",
+	}
+
+	return IndexAzureResource(es, azureResource)
+}
+
+func IndexAWSResource(es *elasticsearchv7.Client, resource awsdescriber.Resource) error {
+	kafkaRes := describe.KafkaResource{
+		ID:            resource.UniqueID(),
+		Description:   resource.Description,
+		SourceType:    api.SourceCloudAWS,
+		ResourceType:  resource.Type,
+		ResourceJobID: uint(rand.Uint32()),
+		SourceJobID:   uint(rand.Uint32()),
+		Metadata: map[string]string{
+			"partition":  resource.Partition,
+			"region":     resource.Region,
+			"account_id": resource.Account,
+		},
+	}
+	return IndexKafkaResource(es, kafkaRes)
+}
+
+func IndexAzureResource(es *elasticsearchv7.Client, resource azuredescriber.Resource) error {
+	kafkaRes := describe.KafkaResource{
+		ID:            resource.UniqueID(),
+		Description:   resource.Description,
+		SourceType:    api.SourceCloudAzure,
+		ResourceType:  resource.Type,
+		ResourceJobID: uint(rand.Uint32()),
+		SourceJobID:   uint(rand.Uint32()),
+		Metadata: map[string]string{
+			"subscription_id":   resource.SubscriptionID,
+			"location":          resource.Location,
+			"cloud_environment": "Azure",
+		},
+	}
+	return IndexKafkaResource(es, kafkaRes)
+}
+
+func IndexKafkaResource(es *elasticsearchv7.Client, kafkaRes describe.KafkaResource) error {
+	js, err := json.Marshal(kafkaRes)
+	if err != nil {
+		return err
+	}
+
+	h := sha256.New()
+	h.Write([]byte(kafkaRes.ID))
+	documentID := fmt.Sprintf("%x", h.Sum(nil))
+
+	// Set up the request object.
+	req := esapi.IndexRequest{
+		Index:      describe.ResourceTypeToESIndex(kafkaRes.ResourceType),
 		DocumentID: documentID,
 		Body:       bytes.NewReader(js),
 		Refresh:    "true",

@@ -1,6 +1,7 @@
 package inventory
 
 import (
+	"github.com/google/uuid"
 	"gitlab.com/keibiengine/keibi-engine/pkg/describe"
 	"gitlab.com/keibiengine/keibi-engine/pkg/keibi-es-sdk"
 )
@@ -40,20 +41,26 @@ type LocationByProviderResponse struct {
 	Name string `json:"name"`
 }
 
-type GetResourcesRequest struct {
-	Query   string  `json:"query"`
-	Filters Filters `json:"filters" validate:"required"`
-	Sort    Sort    `json:"sort"`
-	Page    Page    `json:"page"`
+type RunQueryRequest struct {
+	Page  Page                 `json:"page"`
+	Sorts []SmartQuerySortItem `json:"sorts"`
 }
 
-type GetResourcesRequestCSV struct {
-	Filters Filters `json:"filters" validate:"required"`
-	Sort    Sort    `json:"sort"`
+type RunQueryResponse struct {
+	Page    Page            `json:"page"`
+	Headers []string        `json:"headers"`
+	Result  [][]interface{} `json:"result"`
+}
+
+type GetResourcesRequest struct {
+	Query   string             `json:"query"`
+	Filters Filters            `json:"filters" validate:"required"`
+	Sorts   []ResourceSortItem `json:"sorts"`
+	Page    Page               `json:"page"`
 }
 
 type Page struct {
-	NextMarker []byte `json:"nextMarker"`
+	NextMarker string `json:"nextMarker"`
 	Size       int    `json:"size"`
 }
 
@@ -63,12 +70,13 @@ type Filters struct {
 	KeibiSource  []string `json:"keibiSource"`
 }
 
-type Sort struct {
-	SortBy []SortItem `json:"sortBy"`
+type ResourceSortItem struct {
+	Field     SortFieldType `json:"field"`
+	Direction DirectionType `json:"direction" enums:"asc,desc"`
 }
 
-type SortItem struct {
-	Field     SortFieldType `json:"field"`
+type SmartQuerySortItem struct {
+	Field     string        `json:"field"`
 	Direction DirectionType `json:"direction" enums:"asc,desc"`
 }
 
@@ -167,4 +175,12 @@ type GenericQueryHit struct {
 	Version int64                  `json:"_version,omitempty"`
 	Source  map[string]interface{} `json:"_source"`
 	Sort    []interface{}          `json:"sort"`
+}
+
+type SmartQueryItem struct {
+	ID          uuid.UUID `json:"id"`
+	Provider    string    `json:"provider"`
+	Title       string    `json:"title"`
+	Description string    `json:"description"`
+	Query       string    `json:"query"`
 }

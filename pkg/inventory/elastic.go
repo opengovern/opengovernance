@@ -14,7 +14,7 @@ func QuerySummaryResources(
 	filters Filters,
 	provider *SourceType,
 	size, lastIndex int,
-	sort Sort,
+	sorts []ResourceSortItem,
 ) ([]describe.KafkaLookupResource, error) {
 	var err error
 
@@ -35,7 +35,7 @@ func QuerySummaryResources(
 		terms["source_type.keyword"] = []string{string(*provider)}
 	}
 
-	queryStr, err := BuildSummaryQuery(query, terms, size, lastIndex, sort)
+	queryStr, err := BuildSummaryQuery(query, terms, size, lastIndex, sorts)
 	if err != nil {
 		return nil, err
 	}
@@ -48,13 +48,13 @@ func QuerySummaryResources(
 	return resources, nil
 }
 
-func BuildSummaryQuery(query string, terms map[string][]string, size, lastIdx int, sort Sort) (string, error) {
+func BuildSummaryQuery(query string, terms map[string][]string, size, lastIdx int, sorts []ResourceSortItem) (string, error) {
 	q := map[string]interface{}{
 		"size": size,
 		"from": lastIdx,
 	}
-	if sort.SortBy != nil {
-		q["sort"] = BuildSort(sort)
+	if sorts != nil && len(sorts) > 0 {
+		q["sort"] = BuildSort(sorts)
 	}
 
 	boolQuery := make(map[string]interface{})

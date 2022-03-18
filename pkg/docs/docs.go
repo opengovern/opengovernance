@@ -52,6 +52,79 @@ const docTemplate = `{
                 }
             }
         },
+        "/inventory/api/v1/query": {
+            "get": {
+                "description": "Listing smart queries",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "smart_query"
+                ],
+                "summary": "List smart queries",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/inventory.SmartQueryItem"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/inventory/api/v1/query/{queryId}": {
+            "post": {
+                "description": "Run a specific smart query.\nIn order to get the results in CSV format, Accepts header must be filled with ` + "`" + `text/csv` + "`" + ` value.\nNote that csv output doesn't process pagination and returns first 5000 records.",
+                "produces": [
+                    "application/json",
+                    "text/csv"
+                ],
+                "tags": [
+                    "smart_query"
+                ],
+                "summary": "Run a specific smart query",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "QueryID",
+                        "name": "queryId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Request Body",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/inventory.RunQueryRequest"
+                        }
+                    },
+                    {
+                        "enum": [
+                            "application/json",
+                            "text/csv"
+                        ],
+                        "type": "string",
+                        "description": "Accept header",
+                        "name": "accept",
+                        "in": "header",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/inventory.RunQueryResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/inventory/api/v1/resource": {
             "post": {
                 "description": "Getting resource details by id and resource type",
@@ -64,21 +137,12 @@ const docTemplate = `{
                 "summary": "Get details of a Resource",
                 "parameters": [
                     {
-                        "description": "Id",
-                        "name": "id",
+                        "description": "Request Body",
+                        "name": "request",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "type": "string"
-                        }
-                    },
-                    {
-                        "description": "ResourceType",
-                        "name": "resourceType",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "type": "string"
+                            "$ref": "#/definitions/inventory.GetResourceRequest"
                         }
                     }
                 ],
@@ -87,12 +151,13 @@ const docTemplate = `{
         },
         "/inventory/api/v1/resources": {
             "post": {
-                "description": "Getting all cloud providers resources by filters",
+                "description": "Getting all cloud providers resources by filters.\nIn order to get the results in CSV format, Accepts header must be filled with ` + "`" + `text/csv` + "`" + ` value.\nNote that csv output doesn't process pagination and returns first 5000 records.",
                 "consumes": [
                     "application/json"
                 ],
                 "produces": [
-                    "application/json"
+                    "application/json",
+                    "text/csv"
                 ],
                 "tags": [
                     "inventory"
@@ -100,40 +165,24 @@ const docTemplate = `{
                 "summary": "Get resources",
                 "parameters": [
                     {
-                        "description": "Filters",
-                        "name": "filters",
+                        "description": "Request Body",
+                        "name": "request",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/inventory.Filters"
+                            "$ref": "#/definitions/inventory.GetResourcesRequest"
                         }
                     },
                     {
-                        "description": "Page",
-                        "name": "page",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/inventory.Page"
-                        }
-                    },
-                    {
-                        "description": "Sort",
-                        "name": "sort",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/inventory.Sort"
-                        }
-                    },
-                    {
-                        "description": "Query",
-                        "name": "query",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "type": "string"
-                        }
+                        "enum": [
+                            "application/json",
+                            "text/csv"
+                        ],
+                        "type": "string",
+                        "description": "Accept header",
+                        "name": "accept",
+                        "in": "header",
+                        "required": true
                     }
                 ],
                 "responses": {
@@ -148,12 +197,13 @@ const docTemplate = `{
         },
         "/inventory/api/v1/resources/aws": {
             "post": {
-                "description": "Getting AWS resources by filters",
+                "description": "Getting AWS resources by filters.\nIn order to get the results in CSV format, Accepts header must be filled with ` + "`" + `text/csv` + "`" + ` value.\nNote that csv output doesn't process pagination and returns first 5000 records.",
                 "consumes": [
                     "application/json"
                 ],
                 "produces": [
-                    "application/json"
+                    "application/json",
+                    "text/csv"
                 ],
                 "tags": [
                     "inventory"
@@ -161,40 +211,24 @@ const docTemplate = `{
                 "summary": "Get AWS resources",
                 "parameters": [
                     {
-                        "description": "Filters",
-                        "name": "filters",
+                        "description": "Request Body",
+                        "name": "request",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/inventory.Filters"
+                            "$ref": "#/definitions/inventory.GetResourcesRequest"
                         }
                     },
                     {
-                        "description": "Page",
-                        "name": "page",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/inventory.Page"
-                        }
-                    },
-                    {
-                        "description": "Sort",
-                        "name": "sort",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/inventory.Sort"
-                        }
-                    },
-                    {
-                        "description": "Query",
-                        "name": "query",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "type": "string"
-                        }
+                        "enum": [
+                            "application/json",
+                            "text/csv"
+                        ],
+                        "type": "string",
+                        "description": "Accept header",
+                        "name": "accept",
+                        "in": "header",
+                        "required": true
                     }
                 ],
                 "responses": {
@@ -207,63 +241,15 @@ const docTemplate = `{
                 }
             }
         },
-        "/inventory/api/v1/resources/aws/csv": {
-            "post": {
-                "description": "Getting AWS resources by filters in csv file",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "text/plain"
-                ],
-                "tags": [
-                    "inventory"
-                ],
-                "summary": "Get AWS resources in csv file",
-                "parameters": [
-                    {
-                        "description": "Filters",
-                        "name": "filters",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/inventory.Filters"
-                        }
-                    },
-                    {
-                        "description": "Sort",
-                        "name": "sort",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/inventory.Sort"
-                        }
-                    },
-                    {
-                        "description": "Query",
-                        "name": "query",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "type": "string"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": ""
-                    }
-                }
-            }
-        },
         "/inventory/api/v1/resources/azure": {
             "post": {
-                "description": "Getting Azure resources by filters",
+                "description": "Getting Azure resources by filters.\nIn order to get the results in CSV format, Accepts header must be filled with ` + "`" + `text/csv` + "`" + ` value.\nNote that csv output doesn't process pagination and returns first 5000 records.",
                 "consumes": [
                     "application/json"
                 ],
                 "produces": [
-                    "application/json"
+                    "application/json",
+                    "text/csv"
                 ],
                 "tags": [
                     "inventory"
@@ -271,40 +257,24 @@ const docTemplate = `{
                 "summary": "Get Azure resources",
                 "parameters": [
                     {
-                        "description": "Filters",
-                        "name": "filters",
+                        "description": "Request Body",
+                        "name": "request",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/inventory.Filters"
+                            "$ref": "#/definitions/inventory.GetResourcesRequest"
                         }
                     },
                     {
-                        "description": "Page",
-                        "name": "page",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/inventory.Page"
-                        }
-                    },
-                    {
-                        "description": "Sort",
-                        "name": "sort",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/inventory.Sort"
-                        }
-                    },
-                    {
-                        "description": "Query",
-                        "name": "query",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "type": "string"
-                        }
+                        "enum": [
+                            "application/json",
+                            "text/csv"
+                        ],
+                        "type": "string",
+                        "description": "Accept header",
+                        "name": "accept",
+                        "in": "header",
+                        "required": true
                     }
                 ],
                 "responses": {
@@ -313,104 +283,6 @@ const docTemplate = `{
                         "schema": {
                             "$ref": "#/definitions/inventory.GetAzureResourceResponse"
                         }
-                    }
-                }
-            }
-        },
-        "/inventory/api/v1/resources/azure/csv": {
-            "post": {
-                "description": "Getting Azure resources by filters in csv file",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "text/plain"
-                ],
-                "tags": [
-                    "inventory"
-                ],
-                "summary": "Get Azure resources in csv file",
-                "parameters": [
-                    {
-                        "description": "Filters",
-                        "name": "filters",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/inventory.Filters"
-                        }
-                    },
-                    {
-                        "description": "Sort",
-                        "name": "sort",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/inventory.Sort"
-                        }
-                    },
-                    {
-                        "description": "Query",
-                        "name": "query",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "type": "string"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": ""
-                    }
-                }
-            }
-        },
-        "/inventory/api/v1/resources/csv": {
-            "post": {
-                "description": "Getting all resources by filters in csv file",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "text/plain"
-                ],
-                "tags": [
-                    "inventory"
-                ],
-                "summary": "Get all resources in csv file",
-                "parameters": [
-                    {
-                        "description": "Filters",
-                        "name": "filters",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/inventory.Filters"
-                        }
-                    },
-                    {
-                        "description": "Sort",
-                        "name": "sort",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/inventory.Sort"
-                        }
-                    },
-                    {
-                        "description": "Query",
-                        "name": "query",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "type": "string"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": ""
                     }
                 }
             }
@@ -1217,6 +1089,41 @@ const docTemplate = `{
                 }
             }
         },
+        "inventory.GetResourceRequest": {
+            "type": "object",
+            "required": [
+                "ID",
+                "resourceType"
+            ],
+            "properties": {
+                "ID": {
+                    "type": "string"
+                },
+                "resourceType": {
+                    "type": "string"
+                }
+            }
+        },
+        "inventory.GetResourcesRequest": {
+            "type": "object",
+            "required": [
+                "filters"
+            ],
+            "properties": {
+                "filters": {
+                    "$ref": "#/definitions/inventory.Filters"
+                },
+                "page": {
+                    "$ref": "#/definitions/inventory.Page"
+                },
+                "query": {
+                    "type": "string"
+                },
+                "sort": {
+                    "$ref": "#/definitions/inventory.Sort"
+                }
+            }
+        },
         "inventory.GetResourcesResponse": {
             "type": "object",
             "properties": {
@@ -1250,6 +1157,65 @@ const docTemplate = `{
                 },
                 "size": {
                     "type": "integer"
+                }
+            }
+        },
+        "inventory.RunQueryRequest": {
+            "type": "object",
+            "properties": {
+                "direction": {
+                    "type": "string",
+                    "enum": [
+                        "asc",
+                        "desc"
+                    ]
+                },
+                "page": {
+                    "$ref": "#/definitions/inventory.Page"
+                },
+                "sortBy": {
+                    "type": "string"
+                }
+            }
+        },
+        "inventory.RunQueryResponse": {
+            "type": "object",
+            "properties": {
+                "header": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "page": {
+                    "$ref": "#/definitions/inventory.Page"
+                },
+                "result": {
+                    "type": "array",
+                    "items": {
+                        "type": "array",
+                        "items": {}
+                    }
+                }
+            }
+        },
+        "inventory.SmartQueryItem": {
+            "type": "object",
+            "properties": {
+                "description": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "provider": {
+                    "type": "string"
+                },
+                "query": {
+                    "type": "string"
+                },
+                "title": {
+                    "type": "string"
                 }
             }
         },
