@@ -344,14 +344,14 @@ type DeleteByQueryResponse struct {
 	Failures             []interface{} `json:"failures"`
 }
 
-func DeleteByQuery(ctx context.Context, es *elasticsearchv7.Client, index string, query interface{}, opts ...func(*esapi.DeleteByQueryRequest)) (DeleteByQueryResponse, error) {
+func DeleteByQuery(ctx context.Context, es *elasticsearchv7.Client, indices []string, query interface{}, opts ...func(*esapi.DeleteByQueryRequest)) (DeleteByQueryResponse, error) {
 	defaultOpts := []func(*esapi.DeleteByQueryRequest){
 		es.DeleteByQuery.WithContext(ctx),
 		es.DeleteByQuery.WithWaitForCompletion(true),
 	}
 
 	resp, err := es.DeleteByQuery(
-		[]string{index},
+		indices,
 		esutil.NewJSONReader(query),
 		append(defaultOpts, opts...)...,
 	)

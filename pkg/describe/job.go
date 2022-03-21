@@ -19,9 +19,10 @@ import (
 )
 
 const (
-	esIndexHeader      = "elasticsearch_index"
-	describeJobTimeout = 5 * time.Minute
-	cleanupJobTimeout  = 5 * time.Minute
+	esIndexHeader         = "elasticsearch_index"
+	inventorySummaryIndex = "inventory_summary"
+	describeJobTimeout    = 5 * time.Minute
+	cleanupJobTimeout     = 5 * time.Minute
 )
 
 var stopWordsRe = regexp.MustCompile(`\W+`)
@@ -385,7 +386,7 @@ func (r KafkaLookupResource) AsProducerMessage() (*sarama.ProducerMessage, error
 		Headers: []sarama.RecordHeader{
 			{
 				Key:   []byte(esIndexHeader),
-				Value: []byte("inventory_summary"),
+				Value: []byte(inventorySummaryIndex),
 			},
 		},
 		Value: sarama.ByteEncoder(value),
@@ -451,8 +452,8 @@ func (j DescribeCleanupJob) Do(esClient *elasticsearch.Client) error {
 	ctx, cancel := context.WithTimeout(context.Background(), cleanupJobTimeout)
 	defer cancel()
 
-	index := ResourceTypeToESIndex(j.ResourceType)
-	fmt.Printf("Cleaning resources with resource_job_id of %d from index %s\n", j.JobID, index)
+	rIndex := ResourceTypeToESIndex(j.ResourceType)
+	fmt.Printf("Cleaning resources with resource_job_id of %d from index %s\n", j.JobID, rIndex)
 
 	query := map[string]interface{}{
 		"query": map[string]interface{}{
@@ -462,7 +463,13 @@ func (j DescribeCleanupJob) Do(esClient *elasticsearch.Client) error {
 		},
 	}
 
-	resp, err := keibi.DeleteByQuery(ctx, esClient, index, query,
+	// Delete the resources from both inventory_summary and resource specific index
+	indices := []string{
+		rIndex,
+		inventorySummaryIndex,
+	}
+
+	resp, err := keibi.DeleteByQuery(ctx, esClient, indices, query,
 		esClient.DeleteByQuery.WithRefresh(true),
 		esClient.DeleteByQuery.WithConflicts("proceed"),
 	)
