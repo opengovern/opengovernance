@@ -14,6 +14,7 @@ const (
 )
 
 //go:generate mockery --name Interface
+//go:generate mockery --name Acknowledger --srcpkg github.com/streadway/amqp
 type Interface interface {
 	Consume() (<-chan amqp.Delivery, error)
 	Publish(v interface{}) error

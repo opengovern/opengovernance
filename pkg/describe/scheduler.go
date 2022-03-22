@@ -198,7 +198,7 @@ func InitializeScheduler(
 }
 
 func (s *Scheduler) Run() error {
-	err := s.db.orm.AutoMigrate(&Source{}, &DescribeSourceJob{}, &DescribeResourceJob{}, &ComplianceReportJob{})
+	err := s.db.Initialize()
 	if err != nil {
 		return err
 	}
@@ -289,53 +289,57 @@ func (s *Scheduler) RunDescribeJobCompletionUpdater() {
 	}
 }
 
-func (s *Scheduler) RunDescribeJobScheduler() {
+func (s Scheduler) RunDescribeJobScheduler() {
 	s.logger.Info("Scheduling describe jobs on a timer")
 	t := time.NewTicker(JobSchedulingInterval)
 	defer t.Stop()
 
 	for ; ; <-t.C {
-		sources, err := s.db.QuerySourcesDueForDescribe()
+		s.scheduleDescribeJob()
+	}
+}
+
+func (s Scheduler) scheduleDescribeJob() {
+	sources, err := s.db.QuerySourcesDueForDescribe()
+	if err != nil {
+		s.logger.Error("Failed to find the next sources to create DescribeSourceJob", zap.Error(err))
+		return
+	}
+
+	for _, source := range sources {
+		s.logger.Info("Source is due for a describe. Creating a job now", zap.String("sourceId", source.ID.String()))
+
+		daj := newDescribeSourceJob(source)
+		err := s.db.CreateDescribeSourceJob(&daj)
 		if err != nil {
-			s.logger.Error("Failed to find the next sources to create DescribeSourceJob", zap.Error(err))
+			s.logger.Error("Failed to create DescribeSourceJob",
+				zap.Uint("jobId", daj.ID),
+				zap.String("sourceId", source.ID.String()),
+				zap.Error(err),
+			)
 			continue
 		}
 
-		for _, source := range sources {
-			s.logger.Info("Source is due for a describe. Creating a job now", zap.String("sourceId", source.ID.String()))
+		enqueueDescribeResourceJobs(s.logger, s.db, s.describeJobQueue, source, daj)
 
-			daj := newDescribeSourceJob(source)
-			err := s.db.CreateDescribeSourceJob(&daj)
-			if err != nil {
-				s.logger.Error("Failed to create DescribeSourceJob",
-					zap.Uint("jobId", daj.ID),
-					zap.String("sourceId", source.ID.String()),
-					zap.Error(err),
-				)
-				continue
-			}
-
-			enqueueDescribeResourceJobs(s.logger, s.db, s.describeJobQueue, source, daj)
-
-			err = s.db.UpdateDescribeSourceJob(daj.ID, api.DescribeSourceJobInProgress)
-			if err != nil {
-				s.logger.Error("Failed to update DescribeSourceJob",
-					zap.Uint("jobId", daj.ID),
-					zap.String("sourceId", source.ID.String()),
-					zap.Error(err),
-				)
-			}
-			daj.Status = api.DescribeSourceJobInProgress
-
-			err = s.db.UpdateSourceDescribed(source.ID)
-			if err != nil {
-				s.logger.Error("Failed to update Source",
-					zap.String("sourceId", source.ID.String()),
-					zap.Error(err),
-				)
-			}
-			daj.Status = api.DescribeSourceJobInProgress
+		err = s.db.UpdateDescribeSourceJob(daj.ID, api.DescribeSourceJobInProgress)
+		if err != nil {
+			s.logger.Error("Failed to update DescribeSourceJob",
+				zap.Uint("jobId", daj.ID),
+				zap.String("sourceId", source.ID.String()),
+				zap.Error(err),
+			)
 		}
+		daj.Status = api.DescribeSourceJobInProgress
+
+		err = s.db.UpdateSourceDescribed(source.ID)
+		if err != nil {
+			s.logger.Error("Failed to update Source",
+				zap.String("sourceId", source.ID.String()),
+				zap.Error(err),
+			)
+		}
+		daj.Status = api.DescribeSourceJobInProgress
 	}
 }
 
@@ -346,67 +350,71 @@ func (s *Scheduler) RunDescribeCleanupJobScheduler() {
 	defer t.Stop()
 
 	for range t.C {
-		dsj, err := s.db.QueryOlderThanNRecentCompletedDescribeSourceJobs(5)
+		s.cleanupDescribeJob()
+	}
+}
+
+func (s Scheduler) cleanupDescribeJob() {
+	dsj, err := s.db.QueryOlderThanNRecentCompletedDescribeSourceJobs(5)
+	if err != nil {
+		s.logger.Error("Failed to find older than 5 recent completed DescribeSourceJob for each source",
+			zap.Error(err),
+		)
+
+		return
+	}
+
+	for _, sj := range dsj {
+		// I purposefully didn't embbed this query in the previous query to keep returned results count low.
+		drj, err := s.db.ListDescribeResourceJobs(sj.ID)
 		if err != nil {
-			s.logger.Error("Failed to find older than 5 recent completed DescribeSourceJob for each source",
+			s.logger.Error("Failed to retrieve DescribeResourceJobs for DescribeSouceJob",
+				zap.Uint("jobId", sj.ID),
 				zap.Error(err),
 			)
 
-			continue
+			return
 		}
 
-		for _, sj := range dsj {
-			// I purposefully didn't embbed this query in the previous query to keep returned results count low.
-			drj, err := s.db.ListDescribeResourceJobs(sj.ID)
+		success := true
+		for _, rj := range drj {
+			err := s.describeCleanupJobQueue.Publish(DescribeCleanupJob{
+				JobID:        rj.ID,
+				ResourceType: rj.ResourceType,
+			})
 			if err != nil {
-				s.logger.Error("Failed to retrieve DescribeResourceJobs for DescribeSouceJob",
+				s.logger.Error("Failed to publish describe clean up job to queue for DescribeResourceJob",
+					zap.Uint("jobId", rj.ID),
+					zap.Error(err),
+				)
+				success = false
+				return
+			}
+
+			err = s.db.DeleteDescribeResourceJob(rj.ID)
+			if err != nil {
+				s.logger.Error("Failed to delete DescribeResourceJob",
+					zap.Uint("jobId", rj.ID),
+					zap.Error(err),
+				)
+				success = false
+				return
+			}
+		}
+
+		if success {
+			err := s.db.DeleteDescribeSourceJob(sj.ID)
+			if err != nil {
+				s.logger.Error("Failed to delete DescribeSourceJob",
 					zap.Uint("jobId", sj.ID),
 					zap.Error(err),
 				)
-
-				continue
 			}
-
-			success := true
-			for _, rj := range drj {
-				err := s.describeCleanupJobQueue.Publish(DescribeCleanupJob{
-					JobID:        rj.ID,
-					ResourceType: rj.ResourceType,
-				})
-				if err != nil {
-					s.logger.Error("Failed to publish describe clean up job to queue for DescribeResourceJob",
-						zap.Uint("jobId", rj.ID),
-						zap.Error(err),
-					)
-					success = false
-					continue
-				}
-
-				err = s.db.DeleteDescribeResourceJob(rj.ID)
-				if err != nil {
-					s.logger.Error("Failed to delete DescribeResourceJob",
-						zap.Uint("jobId", rj.ID),
-						zap.Error(err),
-					)
-					success = false
-					continue
-				}
-			}
-
-			if success {
-				err := s.db.DeleteDescribeSourceJob(sj.ID)
-				if err != nil {
-					s.logger.Error("Failed to delete DescribeSourceJob",
-						zap.Uint("jobId", sj.ID),
-						zap.Error(err),
-					)
-				}
-			}
-
-			s.logger.Info("Successfully deleted DescribeSourceJob and its DescribeResourceJobs",
-				zap.Uint("jobId", sj.ID),
-			)
 		}
+
+		s.logger.Info("Successfully deleted DescribeSourceJob and its DescribeResourceJobs",
+			zap.Uint("jobId", sj.ID),
+		)
 	}
 }
 

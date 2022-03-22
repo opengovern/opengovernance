@@ -15,6 +15,10 @@ type Database struct {
 	orm *gorm.DB
 }
 
+func (db Database) Initialize() error {
+	return db.orm.AutoMigrate(&Source{}, &DescribeSourceJob{}, &DescribeResourceJob{}, &ComplianceReportJob{})
+}
+
 // ==================================== Source ====================================
 
 // CreateSource creates an source.
@@ -208,7 +212,18 @@ func (db Database) UpdateDescribeSourceJob(id uint, status api.DescribeSourceJob
 	return nil
 }
 
-// ListDescribeSourceJobs lists the DescribeSourceJob .
+// ListAllDescribeSourceJobs lists all DescribeSourceJob .
+func (db Database) ListAllDescribeSourceJobs() ([]DescribeSourceJob, error) {
+	var jobs []DescribeSourceJob
+	tx := db.orm.Find(&jobs)
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+
+	return jobs, nil
+}
+
+// ListDescribeSourceJobs lists the DescribeSourceJobs for the given sourcel.
 func (db Database) ListDescribeSourceJobs(sourceID uuid.UUID) ([]DescribeSourceJob, error) {
 	var jobs []DescribeSourceJob
 	tx := db.orm.Preload(clause.Associations).Where("source_id = ?", sourceID).Find(&jobs)
@@ -285,6 +300,16 @@ func (db Database) DeleteDescribeSourceJob(id uint) error {
 
 // =============================== DescribeResourceJob ===============================
 
+func (db Database) GetDescribeResourceJob(id uint) (DescribeResourceJob, error) {
+	var job DescribeResourceJob
+	tx := db.orm.Where("id = ?", id).First(&job)
+	if tx.Error != nil {
+		return DescribeResourceJob{}, tx.Error
+	}
+
+	return job, nil
+}
+
 // UpdateDescribeResourceJobStatus updates the status of the DescribeResourceJob to the provided status.
 // If the status if 'FAILED', msg could be used to indicate the failure reason
 func (db Database) UpdateDescribeResourceJobStatus(id uint, status api.DescribeResourceJobStatus, msg string) error {
@@ -315,7 +340,18 @@ func (db Database) UpdateDescribeResourceJobsTimedOut() error {
 	return nil
 }
 
-// ListDescribeResourceJobs lists the DescribeResourceJob .
+// ListAllDescribeResourceJobs lists all the DescribeResourceJobs.
+func (db Database) ListAllDescribeResourceJobs() ([]DescribeResourceJob, error) {
+	var jobs []DescribeResourceJob
+	tx := db.orm.Find(&jobs)
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+
+	return jobs, nil
+}
+
+// ListDescribeResourceJobs lists the DescribeResourceJob for the given source job .
 func (db Database) ListDescribeResourceJobs(describeSourceJobID uint) ([]DescribeResourceJob, error) {
 	var jobs []DescribeResourceJob
 	tx := db.orm.Where("parent_job_id = ?", describeSourceJobID).Find(&jobs)
