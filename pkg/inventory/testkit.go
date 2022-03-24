@@ -14,7 +14,7 @@ import (
 	"github.com/google/uuid"
 	awsdescriber "gitlab.com/keibiengine/keibi-engine/pkg/aws/describer"
 	awsmodel "gitlab.com/keibiengine/keibi-engine/pkg/aws/model"
-	azuredescriber "gitlab.com/keibiengine/keibi-engine/pkg/azure/describer.go"
+	azuredescriber "gitlab.com/keibiengine/keibi-engine/pkg/azure/describer"
 	azuremodel "gitlab.com/keibiengine/keibi-engine/pkg/azure/model"
 	"gitlab.com/keibiengine/keibi-engine/pkg/describe"
 	"gitlab.com/keibiengine/keibi-engine/pkg/describe/api"
