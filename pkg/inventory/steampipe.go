@@ -45,6 +45,9 @@ func NewSteampipeDatabase(option SteampipeOption) (*SteampipeDatabase, error) {
 func (s *SteampipeDatabase) Query(query string, from, size int, orderBy string,
 	orderDir DirectionType) (*SteampipeResult, error) {
 
+	// parameterize order by is not supported by steampipe.
+	// in order to prevent SQL Injection, we ensure that orderby field is only consists of
+	// characters and underline.
 	if ok, err := regexp.Match("(\\w|_)+", []byte(orderBy)); err != nil || !ok {
 		if err != nil {
 			return nil, err
