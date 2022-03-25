@@ -2,46 +2,95 @@ package inventory
 
 import (
 	"context"
+	"errors"
 	"fmt"
-	"github.com/jackc/pgx/v4/pgxpool"
-	"os"
+	"github.com/jackc/pgx/v4"
+	"regexp"
 )
 
-type Option struct {
+type SteampipeOption struct {
 	Host string
-	Port int
+	Port string
 	User string
 	Pass string
 	Db   string
 }
 
 type SteampipeDatabase struct {
-	db *pgxpool.Pool
+	conn *pgx.Conn
 }
 
-func NewSteampipeDatabase(option Option, maxConnections int) *SteampipeDatabase {
+type SteampipeResult struct {
+	headers []string
+	data    [][]interface{}
+}
+
+func NewSteampipeDatabase(option SteampipeOption) (*SteampipeDatabase, error) {
 	var err error
-
-	if maxConnections == 0 {
-		maxConnections = 5
-	}
-
-	config, _ := pgxpool.ParseConfig("")
-	config.ConnConfig.Host = option.Host
-	config.ConnConfig.Port = uint16(option.Port)
-	config.ConnConfig.Database = option.Db
-	config.ConnConfig.User = option.User
-	config.ConnConfig.Password = option.Pass
-	config.MaxConns = int32(maxConnections)
-
-	fmt.Printf("Creating pgx connection pool. host: %v, port: %v\n", option.Host, option.Port)
-	postgresPool, err := pgxpool.ConnectConfig(context.Background(), config)
+	dsn := fmt.Sprintf(`host=%s port=%s user=%s password=%s dbname=%s sslmode=disable TimeZone=GMT`,
+		option.Host,
+		option.Port,
+		option.User,
+		option.Pass,
+		option.Db,
+	)
+	conn, err := pgx.Connect(context.Background(), dsn)
 	if err != nil {
-		fmt.Printf("Unable to create connection pool. host: %v, error: %v\n", option.Host, err)
-		os.Exit(1)
+		return nil, err
 	}
-	fmt.Println("Pgx connection pool created successfully.")
 
-	return &SteampipeDatabase{postgresPool}
+	return &SteampipeDatabase{conn: conn}, nil
 }
 
+func (s *SteampipeDatabase) Query(query string, from, size int, orderBy string,
+	orderDir DirectionType) (*SteampipeResult, error) {
+
+	// parameterize order by is not supported by steampipe.
+	// in order to prevent SQL Injection, we ensure that orderby field is only consists of
+	// characters and underline.
+	if ok, err := regexp.Match("(\\w|_)+", []byte(orderBy)); err != nil || !ok {
+		if err != nil {
+			return nil, err
+		}
+		return nil, errors.New("invalid orderby field:" + orderBy)
+	}
+
+	orderStr := ""
+	if orderBy != "" {
+		if orderDir == DirectionAscending {
+			orderStr = " order by " + orderBy + " asc"
+		} else if orderDir == DirectionDescending {
+			orderStr = " order by " + orderBy + " desc"
+		} else {
+			return nil, errors.New("invalid order direction:" + string(orderDir))
+		}
+	}
+
+	query = query + orderStr + " LIMIT $1 OFFSET $2;"
+
+	r, err := s.conn.Query(context.Background(),
+		query, size, from)
+	defer r.Close()
+	if err != nil {
+		return nil, err
+	}
+
+	var headers []string
+	for _, field := range r.FieldDescriptions() {
+		headers = append(headers, string(field.Name))
+	}
+	var result [][]interface{}
+	for r.Next() {
+		v, err := r.Values()
+		if err != nil {
+			return nil, err
+		}
+
+		result = append(result, v)
+	}
+
+	return &SteampipeResult{
+		headers: headers,
+		data:    result,
+	}, nil
+}

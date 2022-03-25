@@ -200,6 +200,31 @@ definitions:
           $ref: '#/definitions/inventory.AzureResource'
         type: array
     type: object
+  inventory.GetResourceRequest:
+    properties:
+      ID:
+        type: string
+      resourceType:
+        type: string
+    required:
+    - ID
+    - resourceType
+    type: object
+  inventory.GetResourcesRequest:
+    properties:
+      filters:
+        $ref: '#/definitions/inventory.Filters'
+      page:
+        $ref: '#/definitions/inventory.Page'
+      query:
+        type: string
+      sorts:
+        items:
+          $ref: '#/definitions/inventory.ResourceSortItem'
+        type: array
+    required:
+    - filters
+    type: object
   inventory.GetResourcesResponse:
     properties:
       page:
@@ -217,20 +242,57 @@ definitions:
   inventory.Page:
     properties:
       nextMarker:
-        items:
-          type: integer
-        type: array
+        type: string
       size:
         type: integer
     type: object
-  inventory.Sort:
+  inventory.ResourceSortItem:
     properties:
-      sortBy:
+      direction:
+        enum:
+        - asc
+        - desc
+        type: string
+      field:
+        type: string
+    type: object
+  inventory.RunQueryRequest:
+    properties:
+      page:
+        $ref: '#/definitions/inventory.Page'
+      sorts:
         items:
-          $ref: '#/definitions/inventory.SortItem'
+          $ref: '#/definitions/inventory.SmartQuerySortItem'
         type: array
     type: object
-  inventory.SortItem:
+  inventory.RunQueryResponse:
+    properties:
+      headers:
+        items:
+          type: string
+        type: array
+      page:
+        $ref: '#/definitions/inventory.Page'
+      result:
+        items:
+          items: {}
+          type: array
+        type: array
+    type: object
+  inventory.SmartQueryItem:
+    properties:
+      description:
+        type: string
+      id:
+        type: string
+      provider:
+        type: string
+      query:
+        type: string
+      title:
+        type: string
+    type: object
+  inventory.SmartQuerySortItem:
     properties:
       direction:
         enum:
@@ -270,22 +332,68 @@ paths:
       summary: Get locations
       tags:
       - location
+  /inventory/api/v1/query:
+    get:
+      description: Listing smart queries
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/inventory.SmartQueryItem'
+            type: array
+      summary: List smart queries
+      tags:
+      - smart_query
+  /inventory/api/v1/query/{queryId}:
+    post:
+      description: |-
+        Run a specific smart query.
+        In order to get the results in CSV format, Accepts header must be filled with `text/csv` value.
+        Note that csv output doesn't process pagination and returns first 5000 records.
+      parameters:
+      - description: QueryID
+        in: path
+        name: queryId
+        required: true
+        type: string
+      - description: Request Body
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/inventory.RunQueryRequest'
+      - description: Accept header
+        enum:
+        - application/json
+        - text/csv
+        in: header
+        name: accept
+        required: true
+        type: string
+      produces:
+      - application/json
+      - text/csv
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/inventory.RunQueryResponse'
+      summary: Run a specific smart query
+      tags:
+      - smart_query
   /inventory/api/v1/resource:
     post:
       description: Getting resource details by id and resource type
       parameters:
-      - description: Id
+      - description: Request Body
         in: body
-        name: id
+        name: request
         required: true
         schema:
-          type: string
-      - description: ResourceType
-        in: body
-        name: resourceType
-        required: true
-        schema:
-          type: string
+          $ref: '#/definitions/inventory.GetResourceRequest'
       produces:
       - application/json
       responses: {}
@@ -296,34 +404,29 @@ paths:
     post:
       consumes:
       - application/json
-      description: Getting all cloud providers resources by filters
+      description: |-
+        Getting all cloud providers resources by filters.
+        In order to get the results in CSV format, Accepts header must be filled with `text/csv` value.
+        Note that csv output doesn't process pagination and returns first 5000 records.
+        If sort by is empty, result will be sorted by the first column in ascending order.
       parameters:
-      - description: Filters
+      - description: Request Body
         in: body
-        name: filters
+        name: request
         required: true
         schema:
-          $ref: '#/definitions/inventory.Filters'
-      - description: Page
-        in: body
-        name: page
+          $ref: '#/definitions/inventory.GetResourcesRequest'
+      - description: Accept header
+        enum:
+        - application/json
+        - text/csv
+        in: header
+        name: accept
         required: true
-        schema:
-          $ref: '#/definitions/inventory.Page'
-      - description: Sort
-        in: body
-        name: sort
-        required: true
-        schema:
-          $ref: '#/definitions/inventory.Sort'
-      - description: Query
-        in: body
-        name: query
-        required: true
-        schema:
-          type: string
+        type: string
       produces:
       - application/json
+      - text/csv
       responses:
         "200":
           description: OK
@@ -336,34 +439,28 @@ paths:
     post:
       consumes:
       - application/json
-      description: Getting AWS resources by filters
+      description: |-
+        Getting AWS resources by filters.
+        In order to get the results in CSV format, Accepts header must be filled with `text/csv` value.
+        Note that csv output doesn't process pagination and returns first 5000 records.
       parameters:
-      - description: Filters
+      - description: Request Body
         in: body
-        name: filters
+        name: request
         required: true
         schema:
-          $ref: '#/definitions/inventory.Filters'
-      - description: Page
-        in: body
-        name: page
+          $ref: '#/definitions/inventory.GetResourcesRequest'
+      - description: Accept header
+        enum:
+        - application/json
+        - text/csv
+        in: header
+        name: accept
         required: true
-        schema:
-          $ref: '#/definitions/inventory.Page'
-      - description: Sort
-        in: body
-        name: sort
-        required: true
-        schema:
-          $ref: '#/definitions/inventory.Sort'
-      - description: Query
-        in: body
-        name: query
-        required: true
-        schema:
-          type: string
+        type: string
       produces:
       - application/json
+      - text/csv
       responses:
         "200":
           description: OK
@@ -372,140 +469,38 @@ paths:
       summary: Get AWS resources
       tags:
       - inventory
-  /inventory/api/v1/resources/aws/csv:
-    post:
-      consumes:
-      - application/json
-      description: Getting AWS resources by filters in csv file
-      parameters:
-      - description: Filters
-        in: body
-        name: filters
-        required: true
-        schema:
-          $ref: '#/definitions/inventory.Filters'
-      - description: Sort
-        in: body
-        name: sort
-        required: true
-        schema:
-          $ref: '#/definitions/inventory.Sort'
-      - description: Query
-        in: body
-        name: query
-        required: true
-        schema:
-          type: string
-      produces:
-      - text/plain
-      responses:
-        "200":
-          description: ""
-      summary: Get AWS resources in csv file
-      tags:
-      - inventory
   /inventory/api/v1/resources/azure:
     post:
       consumes:
       - application/json
-      description: Getting Azure resources by filters
+      description: |-
+        Getting Azure resources by filters.
+        In order to get the results in CSV format, Accepts header must be filled with `text/csv` value.
+        Note that csv output doesn't process pagination and returns first 5000 records.
       parameters:
-      - description: Filters
+      - description: Request Body
         in: body
-        name: filters
+        name: request
         required: true
         schema:
-          $ref: '#/definitions/inventory.Filters'
-      - description: Page
-        in: body
-        name: page
+          $ref: '#/definitions/inventory.GetResourcesRequest'
+      - description: Accept header
+        enum:
+        - application/json
+        - text/csv
+        in: header
+        name: accept
         required: true
-        schema:
-          $ref: '#/definitions/inventory.Page'
-      - description: Sort
-        in: body
-        name: sort
-        required: true
-        schema:
-          $ref: '#/definitions/inventory.Sort'
-      - description: Query
-        in: body
-        name: query
-        required: true
-        schema:
-          type: string
+        type: string
       produces:
       - application/json
+      - text/csv
       responses:
         "200":
           description: OK
           schema:
             $ref: '#/definitions/inventory.GetAzureResourceResponse'
       summary: Get Azure resources
-      tags:
-      - inventory
-  /inventory/api/v1/resources/azure/csv:
-    post:
-      consumes:
-      - application/json
-      description: Getting Azure resources by filters in csv file
-      parameters:
-      - description: Filters
-        in: body
-        name: filters
-        required: true
-        schema:
-          $ref: '#/definitions/inventory.Filters'
-      - description: Sort
-        in: body
-        name: sort
-        required: true
-        schema:
-          $ref: '#/definitions/inventory.Sort'
-      - description: Query
-        in: body
-        name: query
-        required: true
-        schema:
-          type: string
-      produces:
-      - text/plain
-      responses:
-        "200":
-          description: ""
-      summary: Get Azure resources in csv file
-      tags:
-      - inventory
-  /inventory/api/v1/resources/csv:
-    post:
-      consumes:
-      - application/json
-      description: Getting all resources by filters in csv file
-      parameters:
-      - description: Filters
-        in: body
-        name: filters
-        required: true
-        schema:
-          $ref: '#/definitions/inventory.Filters'
-      - description: Sort
-        in: body
-        name: sort
-        required: true
-        schema:
-          $ref: '#/definitions/inventory.Sort'
-      - description: Query
-        in: body
-        name: query
-        required: true
-        schema:
-          type: string
-      produces:
-      - text/plain
-      responses:
-        "200":
-          description: ""
-      summary: Get all resources in csv file
       tags:
       - inventory
   /onboard/api/v1/{sourceId}:

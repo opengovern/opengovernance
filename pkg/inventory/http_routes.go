@@ -5,14 +5,16 @@ import (
 	"crypto/sha256"
 	"encoding/csv"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"github.com/google/uuid"
 	"github.com/hashicorp/go-hclog"
 	"github.com/turbot/steampipe-plugin-sdk/logging"
 	"github.com/turbot/steampipe-plugin-sdk/plugin/context_key"
 	"io"
 	"log"
+	"mime"
 	"net/http"
-	"strconv"
 	"strings"
 
 	"github.com/labstack/echo/v4"
@@ -36,9 +38,8 @@ func (h *HttpHandler) Register(v1 *echo.Group) {
 
 	v1.POST("/resource", h.GetResource)
 
-	v1.POST("/resources/csv", h.GetAllResourcesCSV)
-	v1.POST("/resources/azure/csv", h.GetAzureResourcesCSV)
-	v1.POST("/resources/aws/csv", h.GetAWSResourcesCSV)
+	v1.GET("/query", h.ListQueries)
+	v1.POST("/query/:queryId", h.RunQuery)
 }
 
 // GetResource godoc
@@ -47,8 +48,7 @@ func (h *HttpHandler) Register(v1 *echo.Group) {
 // @Tags         resource
 // @Accepts      json
 // @Produce      json
-// @Param        id            body      string  true  "Id"
-// @Param        resourceType  body      string  true  "ResourceType"
+// @Param        request	body	GetResourceRequest	true	"Request Body"
 // @Router       /inventory/api/v1/resource [post]
 func (h *HttpHandler) GetResource(ectx echo.Context) error {
 	ctx := ectx.(*Context)
@@ -92,6 +92,114 @@ func (h *HttpHandler) GetResource(ectx echo.Context) error {
 	var resp interface{}
 	if source != nil {
 		resp = source["description"]
+	}
+	return ctx.JSON(200, resp)
+}
+
+// ListQueries godoc
+// @Summary      List smart queries
+// @Description  Listing smart queries
+// @Tags         smart_query
+// @Produce      json
+// @Success      200  {object}  []SmartQueryItem
+// @Router       /inventory/api/v1/query [get]
+func (h *HttpHandler) ListQueries(ectx echo.Context) error {
+	ctx := ectx.(*Context)
+
+	queries, err := h.db.GetQueries()
+	if err != nil {
+		return ctx.JSON(http.StatusInternalServerError, err)
+	}
+
+	var result []SmartQueryItem
+	for _, item := range queries {
+		result = append(result, SmartQueryItem{
+			ID:          item.ID,
+			Provider:    item.Provider,
+			Title:       item.Title,
+			Description: item.Description,
+			Query:       item.Query,
+		})
+	}
+	return ctx.JSON(200, result)
+}
+
+// RunQuery godoc
+// @Summary      Run a specific smart query
+// @Description  Run a specific smart query.
+// @Description  In order to get the results in CSV format, Accepts header must be filled with `text/csv` value.
+// @Description  Note that csv output doesn't process pagination and returns first 5000 records.
+// @Tags         smart_query
+// @Accepts      json
+// @Produce      json,text/csv
+// @Param        queryId	path	string			true	"QueryID"
+// @Param        request	body	RunQueryRequest	true	"Request Body"
+// @Param        accept		header	string				true	"Accept header"		Enums(application/json,text/csv)
+// @Success      200  {object}  RunQueryResponse
+// @Router       /inventory/api/v1/query/{queryId} [post]
+func (h *HttpHandler) RunQuery(ectx echo.Context) error {
+	ctx := ectx.(*Context)
+
+	req := &RunQueryRequest{}
+	if err := ctx.BindValidate(req); err != nil {
+		return ctx.JSON(http.StatusBadRequest, err)
+	}
+
+	queryId := ctx.Param("queryId")
+	queryUUID, err := uuid.Parse(queryId)
+	if err != nil {
+		return ctx.JSON(http.StatusBadRequest, err)
+	}
+
+	if accepts := ectx.Request().Header.Get("accept"); accepts != "" {
+		mediaType, _, err := mime.ParseMediaType(accepts)
+		if err == nil && mediaType == "text/csv" {
+			req.Page = Page{
+				NextMarker: "",
+				Size:       5000,
+			}
+
+			ectx.Response().Header().Set(echo.HeaderContentType, "text/csv")
+			ectx.Response().WriteHeader(http.StatusOK)
+
+			query, err := h.db.GetQuery(queryUUID)
+			if err != nil {
+				return ctx.JSON(http.StatusNotFound, err)
+			}
+
+			resp, err := h.RunSmartQuery(query.Query, req)
+			if err != nil {
+				return ctx.JSON(http.StatusInternalServerError, err)
+			}
+
+			err = Csv(resp.Headers, ctx.Response())
+			if err != nil {
+				return ctx.JSON(http.StatusInternalServerError, err)
+			}
+
+			for _, row := range resp.Result {
+				var cells []string
+				for _, cell := range row {
+					cells = append(cells, fmt.Sprint(cell))
+				}
+				err := Csv(cells, ctx.Response())
+				if err != nil {
+					return ctx.JSON(http.StatusInternalServerError, err)
+				}
+			}
+
+			ectx.Response().Flush()
+			return nil
+		}
+	}
+
+	query, err := h.db.GetQuery(queryUUID)
+	if err != nil {
+		return ctx.JSON(http.StatusNotFound, err)
+	}
+	resp, err := h.RunSmartQuery(query.Query, req)
+	if err != nil {
+		return ctx.JSON(http.StatusInternalServerError, err)
 	}
 	return ctx.JSON(200, resp)
 }
@@ -155,99 +263,116 @@ func (h *HttpHandler) GetLocations(ctx echo.Context) error {
 
 // GetAzureResources godoc
 // @Summary      Get Azure resources
-// @Description  Getting Azure resources by filters
+// @Description  Getting Azure resources by filters.
+// @Description  In order to get the results in CSV format, Accepts header must be filled with `text/csv` value.
+// @Description  Note that csv output doesn't process pagination and returns first 5000 records.
 // @Tags         inventory
 // @Accept       json
-// @Produce      json
-// @Param        filters   body      Filters  true  "Filters"
-// @Param        page      body      Page     true  "Page"
-// @Param        sort      body      Sort     true  "Sort"
-// @Param        query     body      string   true  "Query"
+// @Produce      json,text/csv
+// @Param        request	body	GetResourcesRequest	true	"Request Body"
+// @Param        accept		header	string				true	"Accept header"		Enums(application/json,text/csv)
 // @Success      200  {object}  GetAzureResourceResponse
 // @Router       /inventory/api/v1/resources/azure [post]
 func (h *HttpHandler) GetAzureResources(ectx echo.Context) error {
 	provider := SourceCloudAzure
+	if accepts := ectx.Request().Header.Get("accept"); accepts != "" {
+		mediaType, _, err := mime.ParseMediaType(accepts)
+		if err == nil && mediaType == "text/csv" {
+			return h.GetResourcesCSV(ectx, &provider)
+		}
+	}
 	return h.GetResources(ectx, &provider)
-}
-
-// GetAzureResourcesCSV godoc
-// @Summary      Get Azure resources in csv file
-// @Description  Getting Azure resources by filters in csv file
-// @Tags         inventory
-// @Accept       json
-// @Produce      plain
-// @Param        filters   body      Filters  true  "Filters"
-// @Param        sort      body      Sort     true  "Sort"
-// @Param        query     body      string   true  "Query"
-// @Success      200
-// @Router       /inventory/api/v1/resources/azure/csv [post]
-func (h *HttpHandler) GetAzureResourcesCSV(ectx echo.Context) error {
-	provider := SourceCloudAzure
-	return h.GetResourcesCSV(ectx, &provider)
 }
 
 // GetAWSResources godoc
 // @Summary      Get AWS resources
-// @Description  Getting AWS resources by filters
+// @Description  Getting AWS resources by filters.
+// @Description  In order to get the results in CSV format, Accepts header must be filled with `text/csv` value.
+// @Description  Note that csv output doesn't process pagination and returns first 5000 records.
 // @Tags         inventory
 // @Accept       json
-// @Produce      json
-// @Param        filters   body      Filters  true  "Filters"
-// @Param        page      body      Page     true  "Page"
-// @Param        sort      body      Sort     true  "Sort"
-// @Param        query     body      string   true  "Query"
+// @Produce      json,text/csv
+// @Param        request	body	GetResourcesRequest	true	"Request Body"
+// @Param        accept		header	string				true	"Accept header"		Enums(application/json,text/csv)
 // @Success      200  {object}  GetAWSResourceResponse
 // @Router       /inventory/api/v1/resources/aws [post]
 func (h *HttpHandler) GetAWSResources(ectx echo.Context) error {
 	provider := SourceCloudAWS
+	if accepts := ectx.Request().Header.Get("accept"); accepts != "" {
+		mediaType, _, err := mime.ParseMediaType(accepts)
+		if err == nil && mediaType == "text/csv" {
+			return h.GetResourcesCSV(ectx, &provider)
+		}
+	}
 	return h.GetResources(ectx, &provider)
-}
-
-// GetAWSResourcesCSV godoc
-// @Summary      Get AWS resources in csv file
-// @Description  Getting AWS resources by filters in csv file
-// @Tags         inventory
-// @Accept       json
-// @Produce      plain
-// @Param        filters   body      Filters  true  "Filters"
-// @Param        sort      body      Sort     true  "Sort"
-// @Param        query     body      string   true  "Query"
-// @Success      200
-// @Router       /inventory/api/v1/resources/aws/csv [post]
-func (h *HttpHandler) GetAWSResourcesCSV(ectx echo.Context) error {
-	provider := SourceCloudAWS
-	return h.GetResourcesCSV(ectx, &provider)
 }
 
 // GetAllResources godoc
 // @Summary      Get resources
-// @Description  Getting all cloud providers resources by filters
+// @Description  Getting all cloud providers resources by filters.
+// @Description  In order to get the results in CSV format, Accepts header must be filled with `text/csv` value.
+// @Description  Note that csv output doesn't process pagination and returns first 5000 records.
+// @Description  If sort by is empty, result will be sorted by the first column in ascending order.
 // @Tags         inventory
 // @Accept       json
-// @Produce      json
-// @Param        filters   body      Filters  true  "Filters"
-// @Param        page      body      Page     true  "Page"
-// @Param        sort      body      Sort     true  "Sort"
-// @Param        query     body      string   true  "Query"
+// @Produce      json,text/csv
+// @Param        request	body	GetResourcesRequest	true	"Request Body"
+// @Param        accept		header	string				true	"Accept header"		Enums(application/json,text/csv)
 // @Success      200  {object}  GetResourcesResponse
 // @Router       /inventory/api/v1/resources [post]
 func (h *HttpHandler) GetAllResources(ectx echo.Context) error {
+	if accepts := ectx.Request().Header.Get("accept"); accepts != "" {
+		mediaType, _, err := mime.ParseMediaType(accepts)
+		if err == nil && mediaType == "text/csv" {
+			return h.GetResourcesCSV(ectx, nil)
+		}
+	}
 	return h.GetResources(ectx, nil)
 }
 
-// GetAllResourcesCSV godoc
-// @Summary      Get all resources in csv file
-// @Description  Getting all resources by filters in csv file
-// @Tags         inventory
-// @Accept       json
-// @Produce      plain
-// @Param        filters   body      Filters  true  "Filters"
-// @Param        sort      body      Sort     true  "Sort"
-// @Param        query     body      string   true  "Query"
-// @Success      200
-// @Router       /inventory/api/v1/resources/csv [post]
-func (h *HttpHandler) GetAllResourcesCSV(ectx echo.Context) error {
-	return h.GetResourcesCSV(ectx, nil)
+func (h *HttpHandler) RunSmartQuery(query string,
+	req *RunQueryRequest) (*RunQueryResponse, error) {
+
+	var err error
+	var lastIdx int
+	if req.Page.NextMarker != "" && len(req.Page.NextMarker) > 0 {
+		lastIdx, err = MarkerToIdx(req.Page.NextMarker)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		lastIdx = 0
+	}
+
+	if req.Sorts == nil || len(req.Sorts) == 0 {
+		req.Sorts = []SmartQuerySortItem{
+			{
+				Field:     "1",
+				Direction: DirectionAscending,
+			},
+		}
+	}
+	if len(req.Sorts) > 1 {
+		return nil, errors.New("multiple sort items not supported")
+	}
+
+	res, err := h.steampipeConn.Query(query, lastIdx, req.Page.Size, req.Sorts[0].Field, req.Sorts[0].Direction)
+	if err != nil {
+		panic(err)
+		return nil, err
+	}
+
+	newIdx := lastIdx + req.Page.Size
+	newPage := Page{
+		NextMarker: BuildMarker(newIdx),
+		Size:       req.Page.Size,
+	}
+	resp := RunQueryResponse{
+		Page:    newPage,
+		Headers: res.headers,
+		Result:  res.data,
+	}
+	return &resp, nil
 }
 
 func (h *HttpHandler) GetResources(ectx echo.Context, provider *SourceType) error {
@@ -261,8 +386,8 @@ func (h *HttpHandler) GetResources(ectx echo.Context, provider *SourceType) erro
 	ctx := extractContext(ectx)
 
 	var lastIdx int
-	if req.Page.NextMarker != nil && len(req.Page.NextMarker) > 0 {
-		lastIdx, err = strconv.Atoi(string(req.Page.NextMarker))
+	if req.Page.NextMarker != "" && len(req.Page.NextMarker) > 0 {
+		lastIdx, err = MarkerToIdx(req.Page.NextMarker)
 		if err != nil {
 			return err
 		}
@@ -270,14 +395,14 @@ func (h *HttpHandler) GetResources(ectx echo.Context, provider *SourceType) erro
 		lastIdx = 0
 	}
 
-	resources, err := QuerySummaryResources(ctx, h.client, req.Query, req.Filters, provider, req.Page.Size, lastIdx, req.Sort)
+	resources, err := QuerySummaryResources(ctx, h.client, req.Query, req.Filters, provider, req.Page.Size, lastIdx, req.Sorts)
 	if err != nil {
 		return err
 	}
 
 	page := Page{
 		Size:       req.Page.Size,
-		NextMarker: []byte(strconv.Itoa(lastIdx + req.Page.Size)),
+		NextMarker: BuildMarker(lastIdx + req.Page.Size),
 	}
 
 	if provider != nil && *provider == SourceCloudAWS {
@@ -345,23 +470,23 @@ func Csv(record []string, w io.Writer) error {
 func (h *HttpHandler) GetResourcesCSV(ectx echo.Context, provider *SourceType) error {
 	cc := ectx.(*Context)
 
-	req := &GetResourcesRequestCSV{}
+	req := &GetResourcesRequest{}
 	if err := cc.BindValidate(req); err != nil {
 		return cc.JSON(http.StatusBadRequest, err)
 	}
 
-	reqCSV := GetResourcesRequest{Filters: req.Filters, Sort: req.Sort, Page: Page{
-		NextMarker: nil,
+	req.Page = Page{
+		NextMarker: "",
 		Size:       1000,
-	}}
+	}
 
-	ectx.Response().Header().Set(echo.HeaderContentType, echo.MIMETextPlain)
+	ectx.Response().Header().Set(echo.HeaderContentType, "text/csv")
 	ectx.Response().WriteHeader(http.StatusOK)
 
 	total := 0
 	writeHeaders := true
 	for {
-		n, nextPage, err := h.GetResourcesCSVPage(ectx, &reqCSV, provider, writeHeaders)
+		n, nextPage, err := h.GetResourcesCSVPage(ectx, req, provider, writeHeaders)
 		if err != nil {
 			return err
 		}
@@ -378,7 +503,7 @@ func (h *HttpHandler) GetResourcesCSV(ectx echo.Context, provider *SourceType) e
 			break
 		}
 
-		reqCSV.Page = nextPage
+		req.Page = nextPage
 	}
 
 	return nil
@@ -391,8 +516,8 @@ func (h *HttpHandler) GetResourcesCSVPage(ectx echo.Context, req *GetResourcesRe
 	cc := ectx.(*Context)
 
 	var lastIdx int
-	if req.Page.NextMarker != nil && len(req.Page.NextMarker) > 0 {
-		lastIdx, err = strconv.Atoi(string(req.Page.NextMarker))
+	if req.Page.NextMarker != "" && len(req.Page.NextMarker) > 0 {
+		lastIdx, err = MarkerToIdx(req.Page.NextMarker)
 		if err != nil {
 			return 0, Page{}, err
 		}
@@ -401,10 +526,10 @@ func (h *HttpHandler) GetResourcesCSVPage(ectx echo.Context, req *GetResourcesRe
 	}
 	page := Page{
 		Size:       req.Page.Size,
-		NextMarker: []byte(strconv.Itoa(lastIdx + req.Page.Size)),
+		NextMarker: BuildMarker(lastIdx + req.Page.Size),
 	}
 
-	resources, err := QuerySummaryResources(ctx, h.client, req.Query, req.Filters, provider, req.Page.Size, lastIdx, req.Sort)
+	resources, err := QuerySummaryResources(ctx, h.client, req.Query, req.Filters, provider, req.Page.Size, lastIdx, req.Sorts)
 	if err != nil {
 		return 0, Page{}, err
 	}
