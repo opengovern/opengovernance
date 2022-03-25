@@ -218,8 +218,10 @@ definitions:
         $ref: '#/definitions/inventory.Page'
       query:
         type: string
-      sort:
-        $ref: '#/definitions/inventory.Sort'
+      sorts:
+        items:
+          $ref: '#/definitions/inventory.ResourceSortItem'
+        type: array
     required:
     - filters
     type: object
@@ -240,27 +242,32 @@ definitions:
   inventory.Page:
     properties:
       nextMarker:
-        items:
-          type: integer
-        type: array
+        type: string
       size:
         type: integer
     type: object
-  inventory.RunQueryRequest:
+  inventory.ResourceSortItem:
     properties:
       direction:
         enum:
         - asc
         - desc
         type: string
+      field:
+        type: string
+    type: object
+  inventory.RunQueryRequest:
+    properties:
       page:
         $ref: '#/definitions/inventory.Page'
-      sortBy:
-        type: string
+      sorts:
+        items:
+          $ref: '#/definitions/inventory.SmartQuerySortItem'
+        type: array
     type: object
   inventory.RunQueryResponse:
     properties:
-      header:
+      headers:
         items:
           type: string
         type: array
@@ -285,14 +292,7 @@ definitions:
       title:
         type: string
     type: object
-  inventory.Sort:
-    properties:
-      sortBy:
-        items:
-          $ref: '#/definitions/inventory.SortItem'
-        type: array
-    type: object
-  inventory.SortItem:
+  inventory.SmartQuerySortItem:
     properties:
       direction:
         enum:
@@ -408,6 +408,7 @@ paths:
         Getting all cloud providers resources by filters.
         In order to get the results in CSV format, Accepts header must be filled with `text/csv` value.
         Note that csv output doesn't process pagination and returns first 5000 records.
+        If sort by is empty, result will be sorted by the first column in ascending order.
       parameters:
       - description: Request Body
         in: body

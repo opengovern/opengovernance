@@ -151,7 +151,7 @@ const docTemplate = `{
         },
         "/inventory/api/v1/resources": {
             "post": {
-                "description": "Getting all cloud providers resources by filters.\nIn order to get the results in CSV format, Accepts header must be filled with ` + "`" + `text/csv` + "`" + ` value.\nNote that csv output doesn't process pagination and returns first 5000 records.",
+                "description": "Getting all cloud providers resources by filters.\nIn order to get the results in CSV format, Accepts header must be filled with ` + "`" + `text/csv` + "`" + ` value.\nNote that csv output doesn't process pagination and returns first 5000 records.\nIf sort by is empty, result will be sorted by the first column in ascending order.",
                 "consumes": [
                     "application/json"
                 ],
@@ -1119,8 +1119,11 @@ const docTemplate = `{
                 "query": {
                     "type": "string"
                 },
-                "sort": {
-                    "$ref": "#/definitions/inventory.Sort"
+                "sorts": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/inventory.ResourceSortItem"
+                    }
                 }
             }
         },
@@ -1150,17 +1153,14 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "nextMarker": {
-                    "type": "array",
-                    "items": {
-                        "type": "integer"
-                    }
+                    "type": "string"
                 },
                 "size": {
                     "type": "integer"
                 }
             }
         },
-        "inventory.RunQueryRequest": {
+        "inventory.ResourceSortItem": {
             "type": "object",
             "properties": {
                 "direction": {
@@ -1170,18 +1170,29 @@ const docTemplate = `{
                         "desc"
                     ]
                 },
+                "field": {
+                    "type": "string"
+                }
+            }
+        },
+        "inventory.RunQueryRequest": {
+            "type": "object",
+            "properties": {
                 "page": {
                     "$ref": "#/definitions/inventory.Page"
                 },
-                "sortBy": {
-                    "type": "string"
+                "sorts": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/inventory.SmartQuerySortItem"
+                    }
                 }
             }
         },
         "inventory.RunQueryResponse": {
             "type": "object",
             "properties": {
-                "header": {
+                "headers": {
                     "type": "array",
                     "items": {
                         "type": "string"
@@ -1219,18 +1230,7 @@ const docTemplate = `{
                 }
             }
         },
-        "inventory.Sort": {
-            "type": "object",
-            "properties": {
-                "sortBy": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/inventory.SortItem"
-                    }
-                }
-            }
-        },
-        "inventory.SortItem": {
+        "inventory.SmartQuerySortItem": {
             "type": "object",
             "properties": {
                 "direction": {
