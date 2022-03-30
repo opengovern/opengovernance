@@ -358,7 +358,6 @@ func (h *HttpHandler) RunSmartQuery(query string,
 
 	res, err := h.steampipeConn.Query(query, lastIdx, req.Page.Size, req.Sorts[0].Field, req.Sorts[0].Direction)
 	if err != nil {
-		panic(err)
 		return nil, err
 	}
 
