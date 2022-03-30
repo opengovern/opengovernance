@@ -17,11 +17,11 @@ var (
 	PostgreSQLUser     = os.Getenv("POSTGRESQL_USERNAME")
 	PostgreSQLPassword = os.Getenv("POSTGRESQL_PASSWORD")
 
-	SteampipeHost     = os.Getenv("POSTGRESQL_HOST")
-	SteampipePort     = os.Getenv("POSTGRESQL_PORT")
-	SteampipeDb       = os.Getenv("POSTGRESQL_DB")
-	SteampipeUser     = os.Getenv("POSTGRESQL_USERNAME")
-	SteampipePassword = os.Getenv("POSTGRESQL_PASSWORD")
+	SteampipeHost     = os.Getenv("STEAMPIPE_HOST")
+	SteampipePort     = os.Getenv("STEAMPIPE_PORT")
+	SteampipeDb       = os.Getenv("STEAMPIPE_DB")
+	SteampipeUser     = os.Getenv("STEAMPIPE_USERNAME")
+	SteampipePassword = os.Getenv("STEAMPIPE_PASSWORD")
 
 	HttpAddress = os.Getenv("HTTP_ADDRESS")
 )
