@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"os"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/inventory"
@@ -45,6 +46,7 @@ func main() {
 		SteampipePassword,
 	)
 	if err != nil {
+		fmt.Println(err)
 		os.Exit(1)
 	}
 
