@@ -56,13 +56,18 @@ func InitializeHttpHandler(
 	fmt.Println("Initialized postgres database: ", postgresDb)
 
 	// setup steampipe connection
-	h.steampipeConn, err = NewSteampipeDatabase(SteampipeOption{
+	steampipeConn, err := NewSteampipeDatabase(SteampipeOption{
 		Host: steampipeHost,
 		Port: steampipePort,
 		User: steampipeUsername,
 		Pass: steampipePassword,
 		Db:   steampipeDb,
 	})
+	h.steampipeConn = steampipeConn
+	if err != nil {
+		return nil, err
+	}
+	fmt.Println("Initialized steampipe database: ", steampipeConn)
 
 	defaultAccountID := "default"
 	h.client, err = keibi.NewClient(keibi.ClientConfig{
