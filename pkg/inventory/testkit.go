@@ -6,6 +6,7 @@ import (
 	"crypto/sha256"
 	"crypto/tls"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2020-05-01/network"
 	ec2 "github.com/aws/aws-sdk-go-v2/service/ec2/types"
@@ -22,6 +23,8 @@ import (
 	"math/rand"
 	"net/http"
 	"os"
+	"strconv"
+	"time"
 )
 
 func PopulateElastic(address string) error {
@@ -39,6 +42,26 @@ func PopulateElastic(address string) error {
 	es, err := elasticsearchv7.NewClient(cfg)
 	if err != nil {
 		return err
+	}
+
+	c, err := ioutil.ReadFile("test/compliance_report_template.json")
+	if err != nil {
+		return err
+	}
+
+	req, err := http.NewRequest("PUT", address + "/_index_template/compliance_report_template", bytes.NewReader(c))
+	if err != nil {
+		return err
+	}
+	req.Header.Add("Content-type", "application/json")
+
+	res, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return err
+	}
+
+	if res.StatusCode != 200 {
+		return errors.New("invalid status code")
 	}
 
 	resources := GenerateLookupResources()
@@ -350,3 +373,38 @@ func IndexKafkaResource(es *elasticsearchv7.Client, kafkaRes describe.KafkaResou
 	}
 	return nil
 }
+
+type DescribeMock struct {
+	Response []describe.ComplianceReportJob
+}
+
+func(m *DescribeMock) HelloServer(w http.ResponseWriter, r *http.Request) {
+	var res []describe.ComplianceReportJob
+	if r.URL.Query().Has("from") {
+		fromStr := r.URL.Query().Get("from")
+		toStr := r.URL.Query().Get("to")
+		from, _ := strconv.ParseInt(fromStr, 10, 64)
+		to, _ := strconv.ParseInt(toStr, 10, 64)
+		for _, r := range m.Response {
+			if r.Model.UpdatedAt.After(time.UnixMilli(from)) &&
+				r.Model.UpdatedAt.Before(time.UnixMilli(to)) {
+				res = append(res, r)
+			}
+		}
+	} else {
+		res = append(res, m.Response[len(m.Response)-1])
+	}
+
+	b, _ := json.Marshal(res)
+	fmt.Fprintf(w, string(b))
+}
+
+func (m *DescribeMock) SetResponse(jobs ...describe.ComplianceReportJob) {
+	m.Response = jobs
+}
+
+func (m *DescribeMock) Run() {
+	http.HandleFunc("/api/v1/sources/", m.HelloServer)
+	go http.ListenAndServe(":1234", nil)
+}
+

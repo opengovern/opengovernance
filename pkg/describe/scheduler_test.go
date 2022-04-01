@@ -1,7 +1,12 @@
 package describe
 
 import (
+	"database/sql"
 	"encoding/json"
+	"errors"
+	"github.com/cenkalti/backoff/v3"
+	compliance_report "gitlab.com/keibiengine/keibi-engine/pkg/compliance-report"
+	"gitlab.com/keibiengine/keibi-engine/pkg/internal/queue"
 	"testing"
 	"time"
 
@@ -20,12 +25,15 @@ import (
 type SchedulerTestSuite struct {
 	suite.Suite
 
-	orm *gorm.DB
+	orm      *gorm.DB
+	rabbit   dockertest.RabbitMQServer
+	queueInt queue.Interface
 	Scheduler
 }
 
 func (s *SchedulerTestSuite) SetupSuite() {
 	s.orm = dockertest.StartupPostgreSQL(s.T())
+	s.rabbit = dockertest.StartupRabbitMQ(s.T())
 }
 
 func (s *SchedulerTestSuite) BeforeTest(suiteName, testName string) {
@@ -34,17 +42,29 @@ func (s *SchedulerTestSuite) BeforeTest(suiteName, testName string) {
 	logger, err := zap.NewDevelopment()
 	require.NoError(err, "logger")
 
-	s.Scheduler = Scheduler{
-		id: "test-scheduler",
-		db: Database{
-			orm: s.orm,
-		},
-		describeJobQueue:        &mocksqueue.Interface{},
-		describeJobResultQueue:  &mocksqueue.Interface{},
-		describeCleanupJobQueue: &mocksqueue.Interface{},
-		logger:                  logger,
+	cfg := queue.Config{
+		Server: s.rabbit,
 	}
+	cfg.Queue.Name = ComplianceReportJobsQueueName
+	cfg.Queue.Durable = true
+	cfg.Consumer.ID = "test-scheduler"
+	queueInt, err := queue.New(cfg)
+	s.Require().NoError(err, "queue")
 
+	s.queueInt = queueInt
+	db := Database{
+		orm: s.orm,
+	}
+	s.Scheduler = Scheduler{
+		id:                       "test-scheduler",
+		db:                       db,
+		describeJobQueue:         &mocksqueue.Interface{},
+		describeJobResultQueue:   &mocksqueue.Interface{},
+		describeCleanupJobQueue:  &mocksqueue.Interface{},
+		complianceReportJobQueue: s.queueInt,
+		logger:                   logger,
+		httpServer:               NewHTTPServer("localhost:2345", db),
+	}
 	err = s.Scheduler.db.Initialize()
 	require.NoError(err, "initialize db")
 }
@@ -64,6 +84,7 @@ func (s *SchedulerTestSuite) AfterTest(suiteName, testName string) {
 	tx = s.Scheduler.db.orm.Exec("DROP TABLE IF EXISTS sources;")
 	require.NoError(tx.Error, "drop sources")
 
+	s.queueInt.Close()
 	s.Scheduler = Scheduler{}
 }
 
@@ -591,6 +612,79 @@ func (s *SchedulerTestSuite) TestDescribeCleanup() {
 	for _, dsj := range sources {
 		require.NotEqual(1, dsj.ID, "job 1 should've been deleted")
 	}
+}
+
+func (s *SchedulerTestSuite) TestRunComplianceReport() {
+	source := Source{
+		ID:   uuid.New(),
+		Type: api.SourceCloudAWS,
+		NextComplianceReportAt: sql.NullTime{
+			Time:  time.Now().Add(-60 * time.Second),
+			Valid: true,
+		},
+	}
+	err := s.Scheduler.db.CreateSource(&source)
+	s.Require().NoError(err)
+
+	s.Require().NotNil(s.Scheduler)
+	s.Require().NotNil(s.Scheduler.complianceReportJobQueue)
+
+	delivery, err := s.Scheduler.complianceReportJobQueue.Consume()
+	s.Require().NoError(err)
+
+	go s.Scheduler.RunComplianceReportScheduler()
+
+	err = backoff.Retry(func() error {
+		jobs, err := s.Scheduler.db.ListComplianceReports(source.ID)
+		if err != nil {
+			return err
+		}
+
+		if jobs == nil || len(jobs) < 1 {
+			return errors.New("job not found")
+		}
+
+		for _, job := range jobs {
+			if job.SourceID == source.ID {
+				if job.Status != compliance_report.ComplianceReportJobInProgress {
+					return errors.New("job not in progress")
+				}
+			}
+		}
+
+		sources, err := s.Scheduler.db.ListSources()
+		if err != nil {
+			return err
+		}
+
+		for _, src := range sources {
+			if src.ID == source.ID {
+				v, err := src.NextComplianceReportAt.Value()
+				if err != nil {
+					return err
+				}
+
+				t := v.(time.Time)
+				if t.Before(time.Now()) {
+					return errors.New("time hasn't updated")
+				}
+			}
+		}
+
+		select {
+		case msg := <-delivery:
+			var job compliance_report.Job
+			err := json.Unmarshal(msg.Body, &job)
+			if err != nil {
+				return err
+			}
+
+			return nil
+		default:
+			return errors.New("msg not received")
+		}
+	}, backoff.WithMaxRetries(backoff.NewConstantBackOff(time.Second), 30))
+	s.Require().NoError(err)
 }
 
 func TestScheduler(t *testing.T) {

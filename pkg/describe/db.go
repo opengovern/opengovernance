@@ -2,6 +2,7 @@ package describe
 
 import (
 	"fmt"
+	"time"
 
 	compliance_report "gitlab.com/keibiengine/keibi-engine/pkg/compliance-report"
 	"gitlab.com/keibiengine/keibi-engine/pkg/describe/api"
@@ -74,6 +75,19 @@ func (db Database) DeleteSource(a Source) error {
 	}
 
 	return nil
+}
+
+// GetSourceByUUID find source by uuid
+func (db Database) GetSourceByUUID(id uuid.UUID) (*Source, error) {
+	var source Source
+	tx := db.orm.
+		Where("id = ?", id.String()).
+		Find(&source)
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+
+	return &source, nil
 }
 
 // CreateSources creates multiple source in batches.
@@ -392,14 +406,13 @@ func (db Database) CreateComplianceReportJob(job *ComplianceReportJob) error {
 
 // UpdateComplianceReportJob updates the ComplianceReportJob
 func (db Database) UpdateComplianceReportJob(
-	id uint, status compliance_report.ComplianceReportJobStatus, failureMsg string, s3ResultURL string) error {
+	id uint, status compliance_report.ComplianceReportJobStatus, failureMsg string) error {
 	tx := db.orm.
 		Model(&ComplianceReportJob{}).
 		Where("id = ?", id).
 		Updates(ComplianceReportJob{
 			Status:         status,
 			FailureMessage: failureMsg,
-			S3ResultURL:    s3ResultURL,
 		})
 	if tx.Error != nil {
 		return tx.Error
@@ -433,6 +446,71 @@ func (db Database) ListComplianceReports(sourceID uuid.UUID) ([]ComplianceReport
 	}
 
 	return jobs, nil
+}
+
+// GetLastCompletedComplianceReport returns the ComplianceReportJob which is completed.
+func (db Database) GetLastCompletedComplianceReport(sourceID uuid.UUID) (*ComplianceReportJob, error) {
+	var job ComplianceReportJob
+	tx := db.orm.
+		Where("source_id = ? AND status = ?", sourceID, compliance_report.ComplianceReportJobCompleted).
+		Order("updated_at DESC").
+		First(&job)
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+
+	return &job, nil
+}
+
+// ListCompletedComplianceReportByDate returns list of ComplianceReportJob s which is completed within the date range.
+func (db Database) ListCompletedComplianceReportByDate(sourceID uuid.UUID, fromDate, toDate time.Time) ([]ComplianceReportJob, error) {
+	var jobs []ComplianceReportJob
+	tx := db.orm.
+		Where("source_id = ? AND status = ? AND updated_at > ? AND updated_at < ?",
+			sourceID, compliance_report.ComplianceReportJobCompleted, fromDate, toDate).
+		Order("updated_at DESC").
+		Find(&jobs)
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+
+	return jobs, nil
+}
+
+func (db Database) DeleteComplianceReportJob(id uint) error {
+	tx := db.orm.
+		Where("id = ?", id).
+		Delete(&ComplianceReportJob{})
+	if tx.Error != nil {
+		return tx.Error
+	} else if tx.RowsAffected != 1 {
+		return fmt.Errorf("delete compliance report: didn't find the compliance report job to delete")
+	}
+
+	return nil
+}
+
+func (db Database) QueryOlderThanNRecentCompletedComplianceReportJobs(n int) ([]ComplianceReportJob, error) {
+	var results []ComplianceReportJob
+	tx := db.orm.Raw(
+		`
+SELECT jobs.id
+FROM (
+	SELECT *, rank() OVER ( 
+		PARTITION BY source_id 
+		ORDER BY updated_at DESC
+	)
+	FROM compliance_report_jobs 
+	WHERE status IN ? AND deleted_at IS NULL) 
+jobs
+WHERE rank > ?
+`, []string{string(api.DescribeSourceJobCompleted), string(api.DescribeSourceJobCompletedWithFailure)}, n).Scan(&results)
+
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+
+	return results, nil
 }
 
 // =============================== Assignment ===============================

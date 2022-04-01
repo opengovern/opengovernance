@@ -2,6 +2,7 @@ package describe
 
 import (
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/google/uuid"
@@ -17,7 +18,11 @@ type HttpServer struct {
 	DB      Database
 }
 
-func NewHTTPServer(address string, db Database) *HttpServer {
+func NewHTTPServer(
+	address string,
+	db Database,
+) *HttpServer {
+
 	return &HttpServer{
 		Address: address,
 		DB:      db,
@@ -130,6 +135,8 @@ func (s HttpServer) HandleListSourceDescribeJobs(ctx echo.Context) error {
 // @Tags         schedule
 // @Produce      json
 // @Param        source_id   path      string  true  "SourceID"
+// @Param        from	query	int	false	"From Time (TimeRange)"
+// @Param        to		query	int	false	"To Time (TimeRange)"
 // @Success      200  {object}  []api.ComplianceReport
 // @Router       /schedule/api/v1/sources/{source_id}/jobs/compliance [get]
 func (s HttpServer) HandleListSourceComplianceReports(ctx echo.Context) error {
@@ -140,17 +147,45 @@ func (s HttpServer) HandleListSourceComplianceReports(ctx echo.Context) error {
 		return ctx.JSON(http.StatusBadRequest, api.ErrorResponse{Message: "invalid source uuid"})
 	}
 
-	jobs, err := s.DB.ListComplianceReports(sourceUUID)
-	if err != nil {
-		ctx.Logger().Errorf("fetching compliance reports: %v", err)
-		return ctx.JSON(http.StatusInternalServerError, api.ErrorResponse{Message: "internal error"})
+	from := ctx.QueryParam("from")
+	to := ctx.QueryParam("to")
+
+	var jobs []ComplianceReportJob
+	if from == "" && to == "" {
+		report, err := s.DB.GetLastCompletedComplianceReport(sourceUUID)
+		if err != nil {
+			return ctx.JSON(http.StatusInternalServerError, api.ErrorResponse{Message: err.Error()})
+		}
+		if report != nil {
+			jobs = append(jobs, *report)
+		}
+	} else if from == "" || to == "" {
+		return ctx.JSON(http.StatusBadRequest, api.ErrorResponse{Message: "both from and to must be provided"})
+	} else {
+		n, err := strconv.ParseInt(from, 10, 64)
+		if err != nil {
+			return ctx.JSON(http.StatusInternalServerError, api.ErrorResponse{Message: err.Error()})
+		}
+		fromTime := time.UnixMilli(n)
+
+		n, err = strconv.ParseInt(to, 10, 64)
+		if err != nil {
+			return ctx.JSON(http.StatusInternalServerError, api.ErrorResponse{Message: err.Error()})
+		}
+		toTime := time.UnixMilli(n)
+
+		jobs, err = s.DB.ListCompletedComplianceReportByDate(sourceUUID, fromTime, toTime)
+		if err != nil {
+			return ctx.JSON(http.StatusInternalServerError, api.ErrorResponse{Message: err.Error()})
+		}
 	}
 
 	var objs []api.ComplianceReport
 	for _, job := range jobs {
 		objs = append(objs, api.ComplianceReport{
+			ID:             job.ID,
+			UpdatedAt:      job.UpdatedAt,
 			Status:         job.Status,
-			S3ResultURL:    job.S3ResultURL,
 			FailureMessage: job.FailureMessage,
 		})
 	}

@@ -1,12 +1,64 @@
 definitions:
+  api.AWSResource:
+    properties:
+      accountID:
+        type: string
+      location:
+        type: string
+      name:
+        type: string
+      resourceID:
+        type: string
+      resourceType:
+        type: string
+    type: object
+  api.AllResource:
+    properties:
+      location:
+        type: string
+      name:
+        type: string
+      provider:
+        type: string
+      resourceID:
+        type: string
+      resourceType:
+        type: string
+      sourceID:
+        type: string
+    type: object
+  api.AzureResource:
+    properties:
+      location:
+        type: string
+      name:
+        type: string
+      resourceGroup:
+        type: string
+      resourceID:
+        type: string
+      resourceType:
+        type: string
+      subscriptionID:
+        type: string
+    type: object
   api.ComplianceReport:
     properties:
       failureMessage:
         type: string
-      s3ResultUrl:
-        type: string
+      id:
+        type: integer
       status:
         type: string
+      updatedAt:
+        type: string
+    type: object
+  api.ComplianceReportFilters:
+    properties:
+      groupID:
+        type: string
+      timeRange:
+        $ref: '#/definitions/api.TimeRangeFilter'
     type: object
   api.CreateSourceResponse:
     properties:
@@ -56,6 +108,87 @@ definitions:
       subscriptionId:
         type: string
     type: object
+  api.Filters:
+    properties:
+      keibiSource:
+        items:
+          type: string
+        type: array
+      location:
+        items:
+          type: string
+        type: array
+      resourceType:
+        items:
+          type: string
+        type: array
+    type: object
+  api.GetAWSResourceResponse:
+    properties:
+      page:
+        $ref: '#/definitions/gitlab.com_keibiengine_keibi-engine_pkg_inventory_api.Page'
+      resources:
+        items:
+          $ref: '#/definitions/api.AWSResource'
+        type: array
+    type: object
+  api.GetAzureResourceResponse:
+    properties:
+      page:
+        $ref: '#/definitions/gitlab.com_keibiengine_keibi-engine_pkg_inventory_api.Page'
+      resources:
+        items:
+          $ref: '#/definitions/api.AzureResource'
+        type: array
+    type: object
+  api.GetComplianceReportRequest:
+    properties:
+      filters:
+        $ref: '#/definitions/api.ComplianceReportFilters'
+      page:
+        $ref: '#/definitions/gitlab.com_keibiengine_keibi-engine_pkg_internal_api.Page'
+      reportType:
+        type: string
+    type: object
+  api.GetResourceRequest:
+    properties:
+      ID:
+        type: string
+      resourceType:
+        type: string
+    required:
+    - ID
+    - resourceType
+    type: object
+  api.GetResourcesRequest:
+    properties:
+      filters:
+        $ref: '#/definitions/api.Filters'
+      page:
+        $ref: '#/definitions/gitlab.com_keibiengine_keibi-engine_pkg_inventory_api.Page'
+      query:
+        type: string
+      sorts:
+        items:
+          $ref: '#/definitions/api.ResourceSortItem'
+        type: array
+    required:
+    - filters
+    type: object
+  api.GetResourcesResponse:
+    properties:
+      page:
+        $ref: '#/definitions/gitlab.com_keibiengine_keibi-engine_pkg_inventory_api.Page'
+      resources:
+        items:
+          $ref: '#/definitions/api.AllResource'
+        type: array
+    type: object
+  api.LocationByProviderResponse:
+    properties:
+      name:
+        type: string
+    type: object
   api.Provider:
     properties:
       enabled:
@@ -65,6 +198,62 @@ definitions:
       name:
         type: string
       type:
+        type: string
+    type: object
+  api.ResourceSortItem:
+    properties:
+      direction:
+        enum:
+        - asc
+        - desc
+        type: string
+      field:
+        type: string
+    type: object
+  api.RunQueryRequest:
+    properties:
+      page:
+        $ref: '#/definitions/gitlab.com_keibiengine_keibi-engine_pkg_inventory_api.Page'
+      sorts:
+        items:
+          $ref: '#/definitions/api.SmartQuerySortItem'
+        type: array
+    type: object
+  api.RunQueryResponse:
+    properties:
+      headers:
+        items:
+          type: string
+        type: array
+      page:
+        $ref: '#/definitions/gitlab.com_keibiengine_keibi-engine_pkg_inventory_api.Page'
+      result:
+        items:
+          items: {}
+          type: array
+        type: array
+    type: object
+  api.SmartQueryItem:
+    properties:
+      description:
+        type: string
+      id:
+        type: string
+      provider:
+        type: string
+      query:
+        type: string
+      title:
+        type: string
+    type: object
+  api.SmartQuerySortItem:
+    properties:
+      direction:
+        enum:
+        - asc
+        - desc
+        type: string
+      field:
         type: string
     type: object
   api.SourceConfigAWS:
@@ -100,6 +289,102 @@ definitions:
     - subscriptionId
     - tenantId
     type: object
+  api.TimeRangeFilter:
+    properties:
+      from:
+        type: integer
+      to:
+        type: integer
+    type: object
+  compliance_report.Dimension:
+    properties:
+      key:
+        type: string
+      value:
+        type: string
+    type: object
+  compliance_report.Report:
+    properties:
+      group:
+        $ref: '#/definitions/compliance_report.ReportGroupObj'
+      reportJobID:
+        type: integer
+      result:
+        $ref: '#/definitions/compliance_report.ReportResultObj'
+      sourceID:
+        type: string
+      type:
+        type: string
+    type: object
+  compliance_report.ReportGroupObj:
+    properties:
+      controlIDs:
+        items:
+          type: string
+        type: array
+      description:
+        type: string
+      groupIDs:
+        items:
+          type: string
+        type: array
+      id:
+        type: string
+      parentGroupIDs:
+        items:
+          type: string
+        type: array
+      summary:
+        $ref: '#/definitions/compliance_report.Summary'
+      tags:
+        additionalProperties:
+          type: string
+        type: object
+      title:
+        type: string
+    type: object
+  compliance_report.ReportResultObj:
+    properties:
+      controlId:
+        type: string
+      parentGroupIDs:
+        items:
+          type: string
+        type: array
+      result:
+        $ref: '#/definitions/compliance_report.Result'
+    type: object
+  compliance_report.Result:
+    properties:
+      dimensions:
+        items:
+          $ref: '#/definitions/compliance_report.Dimension'
+        type: array
+      reason:
+        type: string
+      resource:
+        type: string
+      status:
+        type: string
+    type: object
+  compliance_report.Summary:
+    properties:
+      status:
+        $ref: '#/definitions/compliance_report.SummaryStatus'
+    type: object
+  compliance_report.SummaryStatus:
+    properties:
+      alarm:
+        type: integer
+      error:
+        type: integer
+      info:
+        type: integer
+      ok:
+        type: integer
+      skip:
+        type: integer
+    type: object
   gitlab.com_keibiengine_keibi-engine_pkg_describe_api.Source:
     properties:
       id:
@@ -110,6 +395,20 @@ definitions:
         type: string
       type:
         type: string
+    type: object
+  gitlab.com_keibiengine_keibi-engine_pkg_internal_api.Page:
+    properties:
+      nextMarker:
+        type: string
+      size:
+        type: integer
+    type: object
+  gitlab.com_keibiengine_keibi-engine_pkg_inventory_api.Page:
+    properties:
+      nextMarker:
+        type: string
+      size:
+        type: integer
     type: object
   gitlab.com_keibiengine_keibi-engine_pkg_onboard_api.Source:
     properties:
@@ -122,184 +421,6 @@ definitions:
       sourceId:
         type: string
       type:
-        type: string
-    type: object
-  inventory.AWSResource:
-    properties:
-      accountID:
-        type: string
-      location:
-        type: string
-      name:
-        type: string
-      resourceID:
-        type: string
-      resourceType:
-        type: string
-    type: object
-  inventory.AllResource:
-    properties:
-      location:
-        type: string
-      name:
-        type: string
-      provider:
-        type: string
-      resourceID:
-        type: string
-      resourceType:
-        type: string
-      sourceID:
-        type: string
-    type: object
-  inventory.AzureResource:
-    properties:
-      location:
-        type: string
-      name:
-        type: string
-      resourceGroup:
-        type: string
-      resourceID:
-        type: string
-      resourceType:
-        type: string
-      subscriptionID:
-        type: string
-    type: object
-  inventory.Filters:
-    properties:
-      keibiSource:
-        items:
-          type: string
-        type: array
-      location:
-        items:
-          type: string
-        type: array
-      resourceType:
-        items:
-          type: string
-        type: array
-    type: object
-  inventory.GetAWSResourceResponse:
-    properties:
-      page:
-        $ref: '#/definitions/inventory.Page'
-      resources:
-        items:
-          $ref: '#/definitions/inventory.AWSResource'
-        type: array
-    type: object
-  inventory.GetAzureResourceResponse:
-    properties:
-      page:
-        $ref: '#/definitions/inventory.Page'
-      resources:
-        items:
-          $ref: '#/definitions/inventory.AzureResource'
-        type: array
-    type: object
-  inventory.GetResourceRequest:
-    properties:
-      ID:
-        type: string
-      resourceType:
-        type: string
-    required:
-    - ID
-    - resourceType
-    type: object
-  inventory.GetResourcesRequest:
-    properties:
-      filters:
-        $ref: '#/definitions/inventory.Filters'
-      page:
-        $ref: '#/definitions/inventory.Page'
-      query:
-        type: string
-      sorts:
-        items:
-          $ref: '#/definitions/inventory.ResourceSortItem'
-        type: array
-    required:
-    - filters
-    type: object
-  inventory.GetResourcesResponse:
-    properties:
-      page:
-        $ref: '#/definitions/inventory.Page'
-      resources:
-        items:
-          $ref: '#/definitions/inventory.AllResource'
-        type: array
-    type: object
-  inventory.LocationByProviderResponse:
-    properties:
-      name:
-        type: string
-    type: object
-  inventory.Page:
-    properties:
-      nextMarker:
-        type: string
-      size:
-        type: integer
-    type: object
-  inventory.ResourceSortItem:
-    properties:
-      direction:
-        enum:
-        - asc
-        - desc
-        type: string
-      field:
-        type: string
-    type: object
-  inventory.RunQueryRequest:
-    properties:
-      page:
-        $ref: '#/definitions/inventory.Page'
-      sorts:
-        items:
-          $ref: '#/definitions/inventory.SmartQuerySortItem'
-        type: array
-    type: object
-  inventory.RunQueryResponse:
-    properties:
-      headers:
-        items:
-          type: string
-        type: array
-      page:
-        $ref: '#/definitions/inventory.Page'
-      result:
-        items:
-          items: {}
-          type: array
-        type: array
-    type: object
-  inventory.SmartQueryItem:
-    properties:
-      description:
-        type: string
-      id:
-        type: string
-      provider:
-        type: string
-      query:
-        type: string
-      title:
-        type: string
-    type: object
-  inventory.SmartQuerySortItem:
-    properties:
-      direction:
-        enum:
-        - asc
-        - desc
-        type: string
-      field:
         type: string
     type: object
 host: dev-cluster.keibi.io
@@ -327,7 +448,7 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/inventory.LocationByProviderResponse'
+              $ref: '#/definitions/api.LocationByProviderResponse'
             type: array
       summary: Get locations
       tags:
@@ -342,7 +463,7 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/inventory.SmartQueryItem'
+              $ref: '#/definitions/api.SmartQueryItem'
             type: array
       summary: List smart queries
       tags:
@@ -364,7 +485,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/inventory.RunQueryRequest'
+          $ref: '#/definitions/api.RunQueryRequest'
       - description: Accept header
         enum:
         - application/json
@@ -380,7 +501,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/inventory.RunQueryResponse'
+            $ref: '#/definitions/api.RunQueryResponse'
       summary: Run a specific smart query
       tags:
       - smart_query
@@ -393,7 +514,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/inventory.GetResourceRequest'
+          $ref: '#/definitions/api.GetResourceRequest'
       produces:
       - application/json
       responses: {}
@@ -415,7 +536,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/inventory.GetResourcesRequest'
+          $ref: '#/definitions/api.GetResourcesRequest'
       - description: Accept header
         enum:
         - application/json
@@ -431,7 +552,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/inventory.GetResourcesResponse'
+            $ref: '#/definitions/api.GetResourcesResponse'
       summary: Get resources
       tags:
       - inventory
@@ -449,7 +570,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/inventory.GetResourcesRequest'
+          $ref: '#/definitions/api.GetResourcesRequest'
       - description: Accept header
         enum:
         - application/json
@@ -465,7 +586,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/inventory.GetAWSResourceResponse'
+            $ref: '#/definitions/api.GetAWSResourceResponse'
       summary: Get AWS resources
       tags:
       - inventory
@@ -483,7 +604,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/inventory.GetResourcesRequest'
+          $ref: '#/definitions/api.GetResourcesRequest'
       - description: Accept header
         enum:
         - application/json
@@ -499,7 +620,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/inventory.GetAzureResourceResponse'
+            $ref: '#/definitions/api.GetAzureResourceResponse'
       summary: Get Azure resources
       tags:
       - inventory
@@ -570,36 +691,6 @@ paths:
       summary: Create AWS source
       tags:
       - onboard
-  /onboard/api/v1/aws/accounts:
-    get:
-      description: If the account is part of an organization and the account has premission
-        to list the accounts, it will return all the accounts in that organization.
-        Otherwise, it will return the single account these credentials belong to.
-      parameters:
-      - description: AccessKey
-        in: body
-        name: accessKey
-        required: true
-        schema:
-          type: string
-      - description: SecretKey
-        in: body
-        name: secretKey
-        required: true
-        schema:
-          type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            items:
-              $ref: '#/definitions/api.DiscoverAWSAccountsResponse'
-            type: array
-      summary: Returns the list of available AWS accounts given the credentials.
-      tags:
-      - onboard
   /onboard/api/v1/azure:
     post:
       description: Creating Azure source
@@ -632,7 +723,37 @@ paths:
       summary: Create Azure source
       tags:
       - onboard
-  /onboard/api/v1/azure/subscriptions:
+  /onboard/api/v1/discover/aws/accounts:
+    get:
+      description: If the account is part of an organization and the account has premission
+        to list the accounts, it will return all the accounts in that organization.
+        Otherwise, it will return the single account these credentials belong to.
+      parameters:
+      - description: AccessKey
+        in: body
+        name: accessKey
+        required: true
+        schema:
+          type: string
+      - description: SecretKey
+        in: body
+        name: secretKey
+        required: true
+        schema:
+          type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/api.DiscoverAWSAccountsResponse'
+            type: array
+      summary: Returns the list of available AWS accounts given the credentials.
+      tags:
+      - onboard
+  /onboard/api/v1/discover/azure/subscriptions:
     get:
       description: Returning the list of available Azure subscriptions.
       parameters:
@@ -705,6 +826,76 @@ paths:
       summary: Returns a list of sources
       tags:
       - onboard
+  /reports/compliance/{source_id}:
+    get:
+      consumes:
+      - application/json
+      description: Returns list of compliance report groups of specified job id (if
+        not specified, last one will be returned)
+      parameters:
+      - description: Source ID
+        in: path
+        name: source_id
+        required: true
+        type: string
+      - description: Report Job ID
+        in: path
+        name: report_id
+        required: true
+        type: string
+      - description: Request Body
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/api.GetComplianceReportRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/compliance_report.Report'
+            type: array
+      summary: Returns list of compliance report groups
+      tags:
+      - compliance_report
+  /reports/compliance/{source_id}/{report_id}:
+    get:
+      consumes:
+      - application/json
+      description: Returns list of compliance report groups of specified job id (if
+        not specified, last one will be returned)
+      parameters:
+      - description: Source ID
+        in: path
+        name: source_id
+        required: true
+        type: string
+      - description: Report Job ID
+        in: path
+        name: report_id
+        required: true
+        type: string
+      - description: Request Body
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/api.GetComplianceReportRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/compliance_report.Report'
+            type: array
+      summary: Returns list of compliance report groups
+      tags:
+      - compliance_report
   /schedule/api/v1/resource_type/{provider}:
     get:
       description: get resource type by provider
@@ -753,6 +944,14 @@ paths:
         name: source_id
         required: true
         type: string
+      - description: From Time (TimeRange)
+        in: query
+        name: from
+        type: integer
+      - description: To Time (TimeRange)
+        in: query
+        name: to
+        type: integer
       produces:
       - application/json
       responses:

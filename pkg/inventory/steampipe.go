@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/jackc/pgx/v4"
+	"gitlab.com/keibiengine/keibi-engine/pkg/inventory/api"
 	"regexp"
 )
 
@@ -43,7 +44,7 @@ func NewSteampipeDatabase(option SteampipeOption) (*SteampipeDatabase, error) {
 }
 
 func (s *SteampipeDatabase) Query(query string, from, size int, orderBy string,
-	orderDir DirectionType) (*SteampipeResult, error) {
+	orderDir api.DirectionType) (*SteampipeResult, error) {
 
 	// parameterize order by is not supported by steampipe.
 	// in order to prevent SQL Injection, we ensure that orderby field is only consists of
@@ -57,9 +58,9 @@ func (s *SteampipeDatabase) Query(query string, from, size int, orderBy string,
 
 	orderStr := ""
 	if orderBy != "" {
-		if orderDir == DirectionAscending {
+		if orderDir == api.DirectionAscending {
 			orderStr = " order by " + orderBy + " asc"
-		} else if orderDir == DirectionDescending {
+		} else if orderDir == api.DirectionDescending {
 			orderStr = " order by " + orderBy + " desc"
 		} else {
 			return nil, errors.New("invalid order direction:" + string(orderDir))

@@ -24,6 +24,8 @@ var (
 	SteampipeUser     = os.Getenv("STEAMPIPE_USERNAME")
 	SteampipePassword = os.Getenv("STEAMPIPE_PASSWORD")
 
+	SchedulerBaseUrl = os.Getenv("SCHEDULER_BASE_URL")
+
 	HttpAddress = os.Getenv("HTTP_ADDRESS")
 )
 
@@ -44,6 +46,7 @@ func main() {
 		SteampipeDb,
 		SteampipeUser,
 		SteampipePassword,
+		SchedulerBaseUrl,
 	)
 	if err != nil {
 		fmt.Println(err)

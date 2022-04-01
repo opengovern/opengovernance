@@ -37,10 +37,15 @@ type VaultConfig struct {
 	Token    string
 }
 
+type KafkaConfig struct {
+	Addresses string
+	Topic     string
+}
+
 type Config struct {
-	S3Client      S3ClientConfig
 	RabbitMQ      RabbitMQConfig
 	ElasticSearch ElasticSearchConfig
+	Kafka         KafkaConfig
 	Vault         VaultConfig
 }
 
@@ -55,14 +60,12 @@ func WorkerCommand() *cobra.Command {
 	config.RabbitMQ.Username = os.Getenv("RABBITMQ_USERNAME")
 	config.RabbitMQ.Password = os.Getenv("RABBITMQ_PASSWORD")
 
-	config.S3Client.Endpoint = os.Getenv("S3_ENDPOINT")
-	config.S3Client.Key = os.Getenv("S3_KEY")
-	config.S3Client.Secret = os.Getenv("S3_SECRET")
-	config.S3Client.Bucket = os.Getenv("S3_BUCKET")
-
 	config.ElasticSearch.Address = os.Getenv("ES_ADDRESS")
 	config.ElasticSearch.Username = os.Getenv("ES_USERNAME")
 	config.ElasticSearch.Password = os.Getenv("ES_PASSWORD")
+
+	config.Kafka.Addresses = os.Getenv("KAFKA_ADDRESSES")
+	config.Kafka.Topic = os.Getenv("KAFKA_TOPIC")
 
 	config.Vault.Address = os.Getenv("VAULT_ADDRESS")
 	config.Vault.Token = os.Getenv("VAULT_TOKEN")

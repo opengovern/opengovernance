@@ -11,10 +11,15 @@ import (
 	"github.com/hashicorp/go-hclog"
 	"github.com/turbot/steampipe-plugin-sdk/logging"
 	"github.com/turbot/steampipe-plugin-sdk/plugin/context_key"
+	compliance_report "gitlab.com/keibiengine/keibi-engine/pkg/compliance-report"
+	describeAPI "gitlab.com/keibiengine/keibi-engine/pkg/describe/api"
+	pagination "gitlab.com/keibiengine/keibi-engine/pkg/internal/api"
+	"gitlab.com/keibiengine/keibi-engine/pkg/inventory/api"
 	"io"
 	"log"
 	"mime"
 	"net/http"
+	"strconv"
 	"strings"
 
 	"github.com/labstack/echo/v4"
@@ -40,6 +45,9 @@ func (h *HttpHandler) Register(v1 *echo.Group) {
 
 	v1.GET("/query", h.ListQueries)
 	v1.POST("/query/:queryId", h.RunQuery)
+
+	v1.GET("/reports/compliance/:sourceId", h.GetComplianceReports)
+	v1.GET("/reports/compliance/:sourceId/:reportId", h.GetComplianceReports)
 }
 
 // GetResource godoc
@@ -48,13 +56,13 @@ func (h *HttpHandler) Register(v1 *echo.Group) {
 // @Tags         resource
 // @Accepts      json
 // @Produce      json
-// @Param        request	body	GetResourceRequest	true	"Request Body"
+// @Param        request	body	api.GetResourceRequest	true	"Request Body"
 // @Router       /inventory/api/v1/resource [post]
 func (h *HttpHandler) GetResource(ectx echo.Context) error {
 	ctx := ectx.(*Context)
 	cc := extractContext(ctx)
 
-	req := &GetResourceRequest{}
+	req := &api.GetResourceRequest{}
 	if err := ctx.BindValidate(req); err != nil {
 		return ctx.JSON(http.StatusBadRequest, err)
 	}
@@ -78,7 +86,7 @@ func (h *HttpHandler) GetResource(ectx echo.Context) error {
 		return ctx.JSON(http.StatusInternalServerError, err)
 	}
 
-	var response GenericQueryResponse
+	var response api.GenericQueryResponse
 	err = h.client.Search(cc, index, string(queryBytes), &response)
 	if err != nil {
 		return ctx.JSON(http.StatusInternalServerError, err)
@@ -101,7 +109,7 @@ func (h *HttpHandler) GetResource(ectx echo.Context) error {
 // @Description  Listing smart queries
 // @Tags         smart_query
 // @Produce      json
-// @Success      200  {object}  []SmartQueryItem
+// @Success      200  {object}  []api.SmartQueryItem
 // @Router       /inventory/api/v1/query [get]
 func (h *HttpHandler) ListQueries(ectx echo.Context) error {
 	ctx := ectx.(*Context)
@@ -111,9 +119,9 @@ func (h *HttpHandler) ListQueries(ectx echo.Context) error {
 		return ctx.JSON(http.StatusInternalServerError, err)
 	}
 
-	var result []SmartQueryItem
+	var result []api.SmartQueryItem
 	for _, item := range queries {
-		result = append(result, SmartQueryItem{
+		result = append(result, api.SmartQueryItem{
 			ID:          item.ID,
 			Provider:    item.Provider,
 			Title:       item.Title,
@@ -132,15 +140,15 @@ func (h *HttpHandler) ListQueries(ectx echo.Context) error {
 // @Tags         smart_query
 // @Accepts      json
 // @Produce      json,text/csv
-// @Param        queryId	path	string			true	"QueryID"
-// @Param        request	body	RunQueryRequest	true	"Request Body"
+// @Param        queryId	path	string				true	"QueryID"
+// @Param        request	body	api.RunQueryRequest	true	"Request Body"
 // @Param        accept		header	string				true	"Accept header"		Enums(application/json,text/csv)
-// @Success      200  {object}  RunQueryResponse
+// @Success      200  {object}  api.RunQueryResponse
 // @Router       /inventory/api/v1/query/{queryId} [post]
 func (h *HttpHandler) RunQuery(ectx echo.Context) error {
 	ctx := ectx.(*Context)
 
-	req := &RunQueryRequest{}
+	req := &api.RunQueryRequest{}
 	if err := ctx.BindValidate(req); err != nil {
 		return ctx.JSON(http.StatusBadRequest, err)
 	}
@@ -154,7 +162,7 @@ func (h *HttpHandler) RunQuery(ectx echo.Context) error {
 	if accepts := ectx.Request().Header.Get("accept"); accepts != "" {
 		mediaType, _, err := mime.ParseMediaType(accepts)
 		if err == nil && mediaType == "text/csv" {
-			req.Page = Page{
+			req.Page = api.Page{
 				NextMarker: "",
 				Size:       5000,
 			}
@@ -210,13 +218,13 @@ func (h *HttpHandler) RunQuery(ectx echo.Context) error {
 // @Tags         location
 // @Produce      json
 // @Param        provider   path      string  true  "Provider" Enums(aws,azure)
-// @Success      200  {object}  []LocationByProviderResponse
+// @Success      200  {object}  []api.LocationByProviderResponse
 // @Router       /inventory/api/v1/locations/{provider} [get]
 func (h *HttpHandler) GetLocations(ctx echo.Context) error {
 	cc := extractContext(ctx)
 	provider := ctx.Param("provider")
 
-	var locations []LocationByProviderResponse
+	var locations []api.LocationByProviderResponse
 
 	if provider == "aws" || provider == "all" {
 		regions, err := h.client.NewEC2RegionPaginator(nil, nil)
@@ -231,7 +239,7 @@ func (h *HttpHandler) GetLocations(ctx echo.Context) error {
 			}
 
 			for _, region := range regions {
-				locations = append(locations, LocationByProviderResponse{
+				locations = append(locations, api.LocationByProviderResponse{
 					Name: *region.Description.Region.RegionName,
 				})
 			}
@@ -251,7 +259,7 @@ func (h *HttpHandler) GetLocations(ctx echo.Context) error {
 			}
 
 			for _, location := range locpage {
-				locations = append(locations, LocationByProviderResponse{
+				locations = append(locations, api.LocationByProviderResponse{
 					Name: *location.Description.Location.Name,
 				})
 			}
@@ -269,12 +277,12 @@ func (h *HttpHandler) GetLocations(ctx echo.Context) error {
 // @Tags         inventory
 // @Accept       json
 // @Produce      json,text/csv
-// @Param        request	body	GetResourcesRequest	true	"Request Body"
-// @Param        accept		header	string				true	"Accept header"		Enums(application/json,text/csv)
-// @Success      200  {object}  GetAzureResourceResponse
+// @Param        request	body	api.GetResourcesRequest	true	"Request Body"
+// @Param        accept		header	string					true	"Accept header"		Enums(application/json,text/csv)
+// @Success      200  {object}  api.GetAzureResourceResponse
 // @Router       /inventory/api/v1/resources/azure [post]
 func (h *HttpHandler) GetAzureResources(ectx echo.Context) error {
-	provider := SourceCloudAzure
+	provider := api.SourceCloudAzure
 	if accepts := ectx.Request().Header.Get("accept"); accepts != "" {
 		mediaType, _, err := mime.ParseMediaType(accepts)
 		if err == nil && mediaType == "text/csv" {
@@ -292,12 +300,12 @@ func (h *HttpHandler) GetAzureResources(ectx echo.Context) error {
 // @Tags         inventory
 // @Accept       json
 // @Produce      json,text/csv
-// @Param        request	body	GetResourcesRequest	true	"Request Body"
-// @Param        accept		header	string				true	"Accept header"		Enums(application/json,text/csv)
-// @Success      200  {object}  GetAWSResourceResponse
+// @Param        request	body	api.GetResourcesRequest	true	"Request Body"
+// @Param        accept		header	string					true	"Accept header"		Enums(application/json,text/csv)
+// @Success      200  {object}  api.GetAWSResourceResponse
 // @Router       /inventory/api/v1/resources/aws [post]
 func (h *HttpHandler) GetAWSResources(ectx echo.Context) error {
-	provider := SourceCloudAWS
+	provider := api.SourceCloudAWS
 	if accepts := ectx.Request().Header.Get("accept"); accepts != "" {
 		mediaType, _, err := mime.ParseMediaType(accepts)
 		if err == nil && mediaType == "text/csv" {
@@ -316,9 +324,9 @@ func (h *HttpHandler) GetAWSResources(ectx echo.Context) error {
 // @Tags         inventory
 // @Accept       json
 // @Produce      json,text/csv
-// @Param        request	body	GetResourcesRequest	true	"Request Body"
-// @Param        accept		header	string				true	"Accept header"		Enums(application/json,text/csv)
-// @Success      200  {object}  GetResourcesResponse
+// @Param        request	body	api.GetResourcesRequest	true	"Request Body"
+// @Param        accept		header	string					true	"Accept header"		Enums(application/json,text/csv)
+// @Success      200  {object}  api.GetResourcesResponse
 // @Router       /inventory/api/v1/resources [post]
 func (h *HttpHandler) GetAllResources(ectx echo.Context) error {
 	if accepts := ectx.Request().Header.Get("accept"); accepts != "" {
@@ -331,7 +339,7 @@ func (h *HttpHandler) GetAllResources(ectx echo.Context) error {
 }
 
 func (h *HttpHandler) RunSmartQuery(query string,
-	req *RunQueryRequest) (*RunQueryResponse, error) {
+	req *api.RunQueryRequest) (*api.RunQueryResponse, error) {
 
 	var err error
 	var lastIdx int
@@ -345,10 +353,10 @@ func (h *HttpHandler) RunSmartQuery(query string,
 	}
 
 	if req.Sorts == nil || len(req.Sorts) == 0 {
-		req.Sorts = []SmartQuerySortItem{
+		req.Sorts = []api.SmartQuerySortItem{
 			{
 				Field:     "1",
-				Direction: DirectionAscending,
+				Direction: api.DirectionAscending,
 			},
 		}
 	}
@@ -362,11 +370,11 @@ func (h *HttpHandler) RunSmartQuery(query string,
 	}
 
 	newIdx := lastIdx + req.Page.Size
-	newPage := Page{
+	newPage := api.Page{
 		NextMarker: BuildMarker(newIdx),
 		Size:       req.Page.Size,
 	}
-	resp := RunQueryResponse{
+	resp := api.RunQueryResponse{
 		Page:    newPage,
 		Headers: res.headers,
 		Result:  res.data,
@@ -374,10 +382,10 @@ func (h *HttpHandler) RunSmartQuery(query string,
 	return &resp, nil
 }
 
-func (h *HttpHandler) GetResources(ectx echo.Context, provider *SourceType) error {
+func (h *HttpHandler) GetResources(ectx echo.Context, provider *api.SourceType) error {
 	var err error
 	cc := ectx.(*Context)
-	req := &GetResourcesRequest{}
+	req := &api.GetResourcesRequest{}
 	if err := cc.BindValidate(req); err != nil {
 		return cc.JSON(http.StatusBadRequest, err)
 	}
@@ -399,15 +407,15 @@ func (h *HttpHandler) GetResources(ectx echo.Context, provider *SourceType) erro
 		return err
 	}
 
-	page := Page{
+	page := api.Page{
 		Size:       req.Page.Size,
 		NextMarker: BuildMarker(lastIdx + req.Page.Size),
 	}
 
-	if provider != nil && *provider == SourceCloudAWS {
-		var awsResources []AWSResource
+	if provider != nil && *provider == api.SourceCloudAWS {
+		var awsResources []api.AWSResource
 		for _, resource := range resources {
-			awsResources = append(awsResources, AWSResource{
+			awsResources = append(awsResources, api.AWSResource{
 				Name:         resource.Name,
 				ResourceType: resource.ResourceType,
 				ResourceID:   resource.ResourceID,
@@ -415,16 +423,16 @@ func (h *HttpHandler) GetResources(ectx echo.Context, provider *SourceType) erro
 				AccountID:    resource.SourceID,
 			})
 		}
-		return cc.JSON(http.StatusOK, GetAWSResourceResponse{
+		return cc.JSON(http.StatusOK, api.GetAWSResourceResponse{
 			Resources: awsResources,
 			Page:      page,
 		})
 	}
 
-	if provider != nil && *provider == SourceCloudAzure {
-		var azureResources []AzureResource
+	if provider != nil && *provider == api.SourceCloudAzure {
+		var azureResources []api.AzureResource
 		for _, resource := range resources {
-			azureResources = append(azureResources, AzureResource{
+			azureResources = append(azureResources, api.AzureResource{
 				Name:           resource.Name,
 				ResourceType:   resource.ResourceType,
 				ResourceGroup:  resource.ResourceGroup,
@@ -433,24 +441,24 @@ func (h *HttpHandler) GetResources(ectx echo.Context, provider *SourceType) erro
 				SubscriptionID: resource.SourceID,
 			})
 		}
-		return cc.JSON(http.StatusOK, GetAzureResourceResponse{
+		return cc.JSON(http.StatusOK, api.GetAzureResourceResponse{
 			Resources: azureResources,
 			Page:      page,
 		})
 	}
 
-	var allResources []AllResource
+	var allResources []api.AllResource
 	for _, resource := range resources {
-		allResources = append(allResources, AllResource{
+		allResources = append(allResources, api.AllResource{
 			Name:         resource.Name,
-			Provider:     SourceType(resource.SourceType),
+			Provider:     api.SourceType(resource.SourceType),
 			ResourceType: resource.ResourceType,
 			Location:     resource.Location,
 			ResourceID:   resource.ResourceID,
 			SourceID:     resource.SourceID,
 		})
 	}
-	return cc.JSON(http.StatusOK, GetResourcesResponse{
+	return cc.JSON(http.StatusOK, api.GetResourcesResponse{
 		Resources: allResources,
 		Page:      page,
 	})
@@ -466,15 +474,15 @@ func Csv(record []string, w io.Writer) error {
 	return nil
 }
 
-func (h *HttpHandler) GetResourcesCSV(ectx echo.Context, provider *SourceType) error {
+func (h *HttpHandler) GetResourcesCSV(ectx echo.Context, provider *api.SourceType) error {
 	cc := ectx.(*Context)
 
-	req := &GetResourcesRequest{}
+	req := &api.GetResourcesRequest{}
 	if err := cc.BindValidate(req); err != nil {
 		return cc.JSON(http.StatusBadRequest, err)
 	}
 
-	req.Page = Page{
+	req.Page = api.Page{
 		NextMarker: "",
 		Size:       1000,
 	}
@@ -508,7 +516,7 @@ func (h *HttpHandler) GetResourcesCSV(ectx echo.Context, provider *SourceType) e
 	return nil
 }
 
-func (h *HttpHandler) GetResourcesCSVPage(ectx echo.Context, req *GetResourcesRequest, provider *SourceType, writeHeaders bool) (int, Page, error) {
+func (h *HttpHandler) GetResourcesCSVPage(ectx echo.Context, req *api.GetResourcesRequest, provider *api.SourceType, writeHeaders bool) (int, api.Page, error) {
 	var err error
 
 	ctx := extractContext(ectx)
@@ -518,32 +526,32 @@ func (h *HttpHandler) GetResourcesCSVPage(ectx echo.Context, req *GetResourcesRe
 	if req.Page.NextMarker != "" && len(req.Page.NextMarker) > 0 {
 		lastIdx, err = MarkerToIdx(req.Page.NextMarker)
 		if err != nil {
-			return 0, Page{}, err
+			return 0, api.Page{}, err
 		}
 	} else {
 		lastIdx = 0
 	}
-	page := Page{
+	page := api.Page{
 		Size:       req.Page.Size,
 		NextMarker: BuildMarker(lastIdx + req.Page.Size),
 	}
 
 	resources, err := QuerySummaryResources(ctx, h.client, req.Query, req.Filters, provider, req.Page.Size, lastIdx, req.Sorts)
 	if err != nil {
-		return 0, Page{}, err
+		return 0, api.Page{}, err
 	}
 
-	if provider != nil && *provider == SourceCloudAWS {
-		var awsResources []AWSResource
+	if provider != nil && *provider == api.SourceCloudAWS {
+		var awsResources []api.AWSResource
 		if writeHeaders {
-			err := Csv(AWSResource{}.ToCSVHeaders(), cc.Response())
+			err := Csv(api.AWSResource{}.ToCSVHeaders(), cc.Response())
 			if err != nil {
-				return 0, Page{}, err
+				return 0, api.Page{}, err
 			}
 			writeHeaders = false
 		}
 		for _, resource := range resources {
-			awsResource := AWSResource{
+			awsResource := api.AWSResource{
 				Name:         resource.Name,
 				ResourceType: resource.ResourceType,
 				ResourceID:   resource.ResourceID,
@@ -554,24 +562,24 @@ func (h *HttpHandler) GetResourcesCSVPage(ectx echo.Context, req *GetResourcesRe
 
 			err := Csv(awsResource.ToCSVRecord(), cc.Response())
 			if err != nil {
-				return 0, Page{}, err
+				return 0, api.Page{}, err
 			}
 		}
 		return len(resources), page, nil
 	}
 
-	if provider != nil && *provider == SourceCloudAzure {
-		var azureResources []AzureResource
+	if provider != nil && *provider == api.SourceCloudAzure {
+		var azureResources []api.AzureResource
 		if writeHeaders {
-			err := Csv(AzureResource{}.ToCSVHeaders(), cc.Response())
+			err := Csv(api.AzureResource{}.ToCSVHeaders(), cc.Response())
 			if err != nil {
-				return 0, Page{}, err
+				return 0, api.Page{}, err
 			}
 
 			writeHeaders = false
 		}
 		for _, resource := range resources {
-			azureResource := AzureResource{
+			azureResource := api.AzureResource{
 				Name:           resource.Name,
 				ResourceType:   resource.ResourceType,
 				ResourceGroup:  resource.ResourceGroup,
@@ -583,24 +591,24 @@ func (h *HttpHandler) GetResourcesCSVPage(ectx echo.Context, req *GetResourcesRe
 
 			err := Csv(azureResource.ToCSVRecord(), cc.Response())
 			if err != nil {
-				return 0, Page{}, err
+				return 0, api.Page{}, err
 			}
 		}
 		return len(resources), page, nil
 	}
 
-	var allResources []AllResource
+	var allResources []api.AllResource
 	for _, resource := range resources {
 		if writeHeaders {
-			err := Csv(AllResource{}.ToCSVHeaders(), cc.Response())
+			err := Csv(api.AllResource{}.ToCSVHeaders(), cc.Response())
 			if err != nil {
-				return 0, Page{}, err
+				return 0, api.Page{}, err
 			}
 			writeHeaders = false
 		}
-		allResource := AllResource{
+		allResource := api.AllResource{
 			Name:         resource.Name,
-			Provider:     SourceType(resource.SourceType),
+			Provider:     api.SourceType(resource.SourceType),
 			ResourceType: resource.ResourceType,
 			Location:     resource.Location,
 			ResourceID:   resource.ResourceID,
@@ -610,10 +618,91 @@ func (h *HttpHandler) GetResourcesCSVPage(ectx echo.Context, req *GetResourcesRe
 
 		err := Csv(allResource.ToCSVRecord(), cc.Response())
 		if err != nil {
-			return 0, Page{}, err
+			return 0, api.Page{}, err
 		}
 	}
 	return len(resources), page, nil
+}
+
+// GetComplianceReports godoc
+// @Summary      Returns list of compliance report groups
+// @Description  Returns list of compliance report groups of specified job id (if not specified, last one will be returned)
+// @Tags         compliance_report
+// @Accept       json
+// @Produce      json
+// @Param        source_id		path	string							true	"Source ID"
+// @Param        report_id		path	string							true	"Report Job ID"
+// @Param        request		body	api.GetComplianceReportRequest	true	"Request Body"
+// @Success      200  {object}  []compliance_report.Report
+// @Router       /reports/compliance/{source_id} [get]
+// @Router       /reports/compliance/{source_id}/{report_id} [get]
+func (h *HttpHandler) GetComplianceReports(ctx echo.Context) error {
+	sourceUUID, err := uuid.Parse(ctx.Param("sourceId"))
+	if err != nil {
+		ctx.Logger().Errorf("parsing uuid: %v", err)
+		return ctx.JSON(http.StatusBadRequest, describeAPI.ErrorResponse{Message: "invalid source uuid"})
+	}
+
+	req := &api.GetComplianceReportRequest{}
+	if err := ctx.Bind(req); err != nil {
+		return ctx.JSON(http.StatusBadRequest, err)
+	}
+
+	nextPage, err := pagination.NextPage(req.Page)
+	if err != nil {
+		return ctx.JSON(http.StatusBadRequest, err)
+	}
+
+	var jobIDs []int
+	jobIDStr := ctx.Param("reportId")
+	if jobIDStr != "" {
+		jobID, err := strconv.Atoi(jobIDStr)
+		if err != nil {
+			ctx.Logger().Errorf("parsing jobid: %v", err)
+			return ctx.JSON(http.StatusBadRequest, describeAPI.ErrorResponse{Message: "invalid job id"})
+		}
+		jobIDs = append(jobIDs, jobID)
+	} else {
+		reports, err := api.ListComplianceReportJobs(h.schedulerBaseUrl, sourceUUID, req.Filters.TimeRange)
+		if err != nil {
+			return ctx.JSON(http.StatusInternalServerError, describeAPI.ErrorResponse{Message: "failed to fetch reports"})
+		}
+
+		for _, report := range reports {
+			jobIDs = append(jobIDs, int(report.ID))
+		}
+	}
+
+	lastIdx, err := pagination.MarkerToIdx(req.Page.NextMarker)
+	if err != nil {
+		return ctx.JSON(http.StatusBadRequest, err)
+	}
+
+	query := compliance_report.QueryReports(sourceUUID, jobIDs, req.ReportType,
+		req.Filters.GroupID, req.Page.Size, lastIdx)
+	b, err := json.Marshal(query)
+	if err != nil {
+		return ctx.JSON(http.StatusBadRequest, err)
+	}
+
+	var response compliance_report.ReportQueryResponse
+	err = h.client.Search(context.Background(), compliance_report.ComplianceReportIndex,
+		string(b), &response)
+	if err != nil {
+		return ctx.JSON(http.StatusBadRequest, err)
+	}
+
+	var reports []compliance_report.Report
+	for _, hits := range response.Hits.Hits {
+		reports = append(reports, hits.Source)
+	}
+
+	resp := api.GetComplianceReportResponse{
+		Reports: reports,
+		Page:    nextPage,
+	}
+
+	return ctx.JSON(http.StatusOK, resp)
 }
 
 func (c *Context) BindValidate(i interface{}) error {

@@ -1,15 +1,17 @@
 package compliance_report
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/service/s3"
-	"github.com/aws/aws-sdk-go/service/s3/s3iface"
+	"github.com/elastic/go-elasticsearch/v7"
+	"github.com/google/uuid"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/vault"
-	"io"
+	"gitlab.com/keibiengine/keibi-engine/pkg/keibi-es-sdk"
+	"gopkg.in/Shopify/sarama.v1"
 	"io/ioutil"
+	"log"
 	"os"
 	"os/exec"
 	"time"
@@ -18,8 +20,9 @@ import (
 type SourceType string
 
 const (
-	SourceCloudAWS   SourceType = "AWS"
-	SourceCloudAzure SourceType = "Azure"
+	SourceCloudAWS    SourceType = "AWS"
+	SourceCloudAzure  SourceType = "Azure"
+	cleanupJobTimeout            = 5 * time.Minute
 )
 
 type ComplianceReportJobStatus string
@@ -33,15 +36,15 @@ const (
 
 type Job struct {
 	JobID      uint
+	SourceID   uuid.UUID
 	SourceType SourceType
 	ConfigReg  string
 }
 
 type JobResult struct {
-	JobID       uint
-	S3ResultURL string
-	Status      ComplianceReportJobStatus
-	Error       string
+	JobID  uint
+	Status ComplianceReportJobStatus
+	Error  string
 }
 
 type SteampipeResultJson struct {
@@ -66,7 +69,7 @@ func (j *Job) failed(msg string, args ...interface{}) JobResult {
 	}
 }
 
-func (j *Job) Do(vlt vault.SourceConfig, s3Client s3iface.S3API, config Config) JobResult {
+func (j *Job) Do(vlt vault.SourceConfig, producer sarama.SyncProducer, topic string, config Config) JobResult {
 	cfg, err := vlt.Read(j.ConfigReg)
 	if err != nil {
 		return j.failed("error: read source config: " + err.Error())
@@ -106,27 +109,64 @@ func (j *Job) Do(vlt vault.SourceConfig, s3Client s3iface.S3API, config Config) 
 	}
 
 	resultFileName := fmt.Sprintf("result-%s-%d.json", accountID, time.Now().Unix())
+	defer func() {
+		err := os.Remove(resultFileName)
+		if err != nil {
+			log.Println(err)
+		}
+	}()
 
 	err = RunSteampipeCheckAll(j.SourceType, resultFileName)
 	if err != nil {
 		return j.failed("error: RunSteampipeCheckAll: " + err.Error())
 	}
 
-	file, err := os.OpenFile(resultFileName, os.O_RDONLY, os.ModePerm)
+	reports, err := ParseReport(resultFileName, j.JobID, j.SourceID)
 	if err != nil {
-		return j.failed("error: OpenFile: " + err.Error())
+		return j.failed("error: Parse report: " + err.Error())
 	}
 
-	urlStr, err := UploadIntoS3Storage(s3Client, config.S3Client.Bucket, resultFileName, file)
+	err = doSendToKafka(producer, topic, reports)
 	if err != nil {
-		return j.failed("error: UploadIntoS3Storage: " + err.Error())
+		return j.failed("error: SendingToKafka: " + err.Error())
 	}
 
 	return JobResult{
-		JobID:       j.JobID,
-		S3ResultURL: urlStr,
-		Status:      ComplianceReportJobCompleted,
+		JobID:  j.JobID,
+		Status: ComplianceReportJobCompleted,
 	}
+}
+
+func doSendToKafka(producer sarama.SyncProducer, topic string, reports []Report) error {
+	var msgs []*sarama.ProducerMessage
+	for _, v := range reports {
+		msg, err := v.AsProducerMessage()
+		if err != nil {
+			fmt.Printf("Failed to convert report[%v] to Kafka ProducerMessage, ignoring...", v)
+			continue
+		}
+
+		// Override the topic
+		msg.Topic = topic
+
+		msgs = append(msgs, msg)
+	}
+
+	if len(msgs) == 0 {
+		return nil
+	}
+
+	if err := producer.SendMessages(msgs); err != nil {
+		if errs, ok := err.(sarama.ProducerErrors); ok {
+			for _, e := range errs {
+				fmt.Printf("Failed to persist resource[%s] in kafka topic[%s]: %s\nMessage: %v\n", e.Msg.Key, e.Msg.Topic, e.Error(), e.Msg)
+			}
+		}
+
+		return err
+	}
+
+	return nil
 }
 
 func RunSteampipeCheckAll(sourceType SourceType, exportFileName string) error {
@@ -167,30 +207,6 @@ func RunSteampipeCheckAll(sourceType SourceType, exportFileName string) error {
 	return nil
 }
 
-func UploadIntoS3Storage(s3Client s3iface.S3API, bucketName string, keyName string, contentReader io.ReadSeeker) (string, error) {
-	object := s3.PutObjectInput{
-		Bucket: aws.String(bucketName),
-		Key:    aws.String(keyName),
-		Body:   contentReader,
-		ACL:    aws.String("private"),
-	}
-	_, err := s3Client.PutObject(&object)
-	if err != nil {
-		return "", err
-	}
-
-	req, _ := s3Client.GetObjectRequest(&s3.GetObjectInput{
-		Bucket: aws.String(bucketName),
-		Key:    aws.String(keyName),
-	})
-	urlStr, err := req.Presign(5 * time.Minute)
-	if err != nil {
-		return "", err
-	}
-
-	return urlStr, nil
-}
-
 func BuildSpecFile(plugin string, config ElasticSearchConfig, accountID string) error {
 	content := `
 connection "` + plugin + `" {
@@ -208,4 +224,47 @@ connection "` + plugin + `" {
 
 	filePath := dirname + "/.steampipe/config/" + plugin + ".spc"
 	return ioutil.WriteFile(filePath, []byte(content), os.ModePerm)
+}
+
+type ComplianceReportCleanupJob struct {
+	JobID uint // ComplianceReportJob ID
+}
+
+func (j ComplianceReportCleanupJob) Do(esClient *elasticsearch.Client) error {
+	ctx, cancel := context.WithTimeout(context.Background(), cleanupJobTimeout)
+	defer cancel()
+
+	fmt.Printf("Cleaning report with compliance_report_job_id of %d from index %s\n", j.JobID, ComplianceReportIndex)
+
+	query := map[string]interface{}{
+		"query": map[string]interface{}{
+			"match": map[string]interface{}{
+				"report_job_id": j.JobID,
+			},
+		},
+	}
+
+	indices := []string{
+		ComplianceReportIndex,
+	}
+
+	resp, err := keibi.DeleteByQuery(ctx, esClient, indices, query,
+		esClient.DeleteByQuery.WithRefresh(true),
+		esClient.DeleteByQuery.WithConflicts("proceed"),
+	)
+	if err != nil {
+		return err
+	}
+
+	if len(resp.Failures) != 0 {
+		body, err := json.Marshal(resp)
+		if err != nil {
+			return err
+		}
+
+		return fmt.Errorf("elasticsearch: delete by query: %s", string(body))
+	}
+
+	fmt.Printf("Successfully delete %d reports\n", resp.Deleted)
+	return nil
 }

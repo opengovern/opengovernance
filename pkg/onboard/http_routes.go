@@ -306,7 +306,7 @@ func (h HttpHandler) PutSource(ctx echo.Context) error {
 // @Success      200  {object}  []api.DiscoverAWSAccountsResponse
 // @Param        accessKey       body      string  true  "AccessKey"
 // @Param        secretKey       body      string  true  "SecretKey"
-// @Router       /onboard/api/v1/aws/accounts [get]
+// @Router       /onboard/api/v1/discover/aws/accounts [get]
 func (h HttpHandler) DiscoverAwsAccounts(ctx echo.Context) error {
 	// DiscoverAwsAccounts returns the list of available AWS accounts given the credentials.
 	// If the account is part of an organization and the account has premission to
@@ -334,7 +334,7 @@ func (h HttpHandler) DiscoverAwsAccounts(ctx echo.Context) error {
 // @Param        tenantId       body      string  true  "TenantId"
 // @Param        clientId       body      string  true  "ClientId"
 // @Param        clientSecret   body      string  true  "ClientSecret"
-// @Router       /onboard/api/v1/azure/subscriptions [get]
+// @Router       /onboard/api/v1/discover/azure/subscriptions [get]
 func (h *HttpHandler) DiscoverAzureSubscriptions(ctx echo.Context) error {
 	var req api.DiscoverAzureSubscriptionsRequest
 	if err := bindValidate(ctx, &req); err != nil {
