@@ -9,12 +9,13 @@ import (
 )
 
 const (
-	DescribeJobsQueueName            = "describe-jobs-queue"
-	DescribeResultsQueueName         = "describe-results-queue"
-	DescribeCleanupJobsQueueName     = "describe-cleanup-jobs-queue"
-	ComplianceReportJobsQueueName    = "compliance-report-jobs-queue"
-	ComplianceReportResultsQueueName = "compliance-report-results-queue"
-	SourceEventsQueueName            = "source-events-queue"
+	DescribeJobsQueueName                = "describe-jobs-queue"
+	DescribeResultsQueueName             = "describe-results-queue"
+	DescribeCleanupJobsQueueName         = "describe-cleanup-jobs-queue"
+	ComplianceReportJobsQueueName        = "compliance-report-jobs-queue"
+	ComplianceReportResultsQueueName     = "compliance-report-results-queue"
+	ComplianceReportCleanupJobsQueueName = "compliance-report-cleanup-jobs-queue"
+	SourceEventsQueueName                = "source-events-queue"
 )
 
 var (
@@ -67,6 +68,7 @@ func SchedulerCommand() *cobra.Command {
 				DescribeCleanupJobsQueueName,
 				ComplianceReportJobsQueueName,
 				ComplianceReportResultsQueueName,
+				ComplianceReportCleanupJobsQueueName,
 				SourceEventsQueueName,
 				PostgreSQLUser,
 				PostgreSQLPassword,
@@ -74,6 +76,9 @@ func SchedulerCommand() *cobra.Command {
 				PostgreSQLPort,
 				PostgreSQLDb,
 				HttpServerAddress,
+				VaultAddress,
+				VaultRoleName,
+				VaultToken,
 			)
 			if err != nil {
 				return err

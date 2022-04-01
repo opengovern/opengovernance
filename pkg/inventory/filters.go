@@ -3,6 +3,7 @@ package inventory
 import (
 	"encoding/base64"
 	"fmt"
+	"gitlab.com/keibiengine/keibi-engine/pkg/inventory/api"
 	"strconv"
 )
 
@@ -10,7 +11,7 @@ func FilterIsEmpty(filter []string) bool {
 	return filter == nil || len(filter) == 0
 }
 
-func BuildSort(sorts []ResourceSortItem) []map[string]interface{} {
+func BuildSort(sorts []api.ResourceSortItem) []map[string]interface{} {
 	var result []map[string]interface{}
 	for _, item := range sorts {
 		dir := string(item.Direction)

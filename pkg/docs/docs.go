@@ -45,7 +45,7 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/inventory.LocationByProviderResponse"
+                                "$ref": "#/definitions/api.LocationByProviderResponse"
                             }
                         }
                     }
@@ -68,7 +68,7 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/inventory.SmartQueryItem"
+                                "$ref": "#/definitions/api.SmartQueryItem"
                             }
                         }
                     }
@@ -100,7 +100,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/inventory.RunQueryRequest"
+                            "$ref": "#/definitions/api.RunQueryRequest"
                         }
                     },
                     {
@@ -119,7 +119,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/inventory.RunQueryResponse"
+                            "$ref": "#/definitions/api.RunQueryResponse"
                         }
                     }
                 }
@@ -142,7 +142,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/inventory.GetResourceRequest"
+                            "$ref": "#/definitions/api.GetResourceRequest"
                         }
                     }
                 ],
@@ -170,7 +170,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/inventory.GetResourcesRequest"
+                            "$ref": "#/definitions/api.GetResourcesRequest"
                         }
                     },
                     {
@@ -189,7 +189,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/inventory.GetResourcesResponse"
+                            "$ref": "#/definitions/api.GetResourcesResponse"
                         }
                     }
                 }
@@ -216,7 +216,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/inventory.GetResourcesRequest"
+                            "$ref": "#/definitions/api.GetResourcesRequest"
                         }
                     },
                     {
@@ -235,7 +235,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/inventory.GetAWSResourceResponse"
+                            "$ref": "#/definitions/api.GetAWSResourceResponse"
                         }
                     }
                 }
@@ -262,7 +262,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/inventory.GetResourcesRequest"
+                            "$ref": "#/definitions/api.GetResourcesRequest"
                         }
                     },
                     {
@@ -281,7 +281,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/inventory.GetAzureResourceResponse"
+                            "$ref": "#/definitions/api.GetAzureResourceResponse"
                         }
                     }
                 }
@@ -336,49 +336,6 @@ const docTemplate = `{
                 }
             }
         },
-        "/onboard/api/v1/aws/accounts": {
-            "get": {
-                "description": "If the account is part of an organization and the account has premission to list the accounts, it will return all the accounts in that organization. Otherwise, it will return the single account these credentials belong to.",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "onboard"
-                ],
-                "summary": "Returns the list of available AWS accounts given the credentials.",
-                "parameters": [
-                    {
-                        "description": "AccessKey",
-                        "name": "accessKey",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "type": "string"
-                        }
-                    },
-                    {
-                        "description": "SecretKey",
-                        "name": "secretKey",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "type": "string"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/api.DiscoverAWSAccountsResponse"
-                            }
-                        }
-                    }
-                }
-            }
-        },
         "/onboard/api/v1/azure": {
             "post": {
                 "description": "Creating Azure source",
@@ -428,7 +385,50 @@ const docTemplate = `{
                 }
             }
         },
-        "/onboard/api/v1/azure/subscriptions": {
+        "/onboard/api/v1/discover/aws/accounts": {
+            "get": {
+                "description": "If the account is part of an organization and the account has premission to list the accounts, it will return all the accounts in that organization. Otherwise, it will return the single account these credentials belong to.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "onboard"
+                ],
+                "summary": "Returns the list of available AWS accounts given the credentials.",
+                "parameters": [
+                    {
+                        "description": "AccessKey",
+                        "name": "accessKey",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "description": "SecretKey",
+                        "name": "secretKey",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/api.DiscoverAWSAccountsResponse"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/onboard/api/v1/discover/azure/subscriptions": {
             "get": {
                 "description": "Returning the list of available Azure subscriptions.",
                 "produces": [
@@ -591,6 +591,108 @@ const docTemplate = `{
                 }
             }
         },
+        "/reports/compliance/{source_id}": {
+            "get": {
+                "description": "Returns list of compliance report groups of specified job id (if not specified, last one will be returned)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "compliance_report"
+                ],
+                "summary": "Returns list of compliance report groups",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Source ID",
+                        "name": "source_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Report Job ID",
+                        "name": "report_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Request Body",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/api.GetComplianceReportRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/compliance_report.Report"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/reports/compliance/{source_id}/{report_id}": {
+            "get": {
+                "description": "Returns list of compliance report groups of specified job id (if not specified, last one will be returned)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "compliance_report"
+                ],
+                "summary": "Returns list of compliance report groups",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Source ID",
+                        "name": "source_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Report Job ID",
+                        "name": "report_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Request Body",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/api.GetComplianceReportRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/compliance_report.Report"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/schedule/api/v1/resource_type/{provider}": {
             "get": {
                 "description": "get resource type by provider",
@@ -667,6 +769,18 @@ const docTemplate = `{
                         "name": "source_id",
                         "in": "path",
                         "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "From Time (TimeRange)",
+                        "name": "from",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "To Time (TimeRange)",
+                        "name": "to",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -782,17 +896,97 @@ const docTemplate = `{
         }
     },
     "definitions": {
+        "api.AWSResource": {
+            "type": "object",
+            "properties": {
+                "accountID": {
+                    "type": "string"
+                },
+                "location": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "resourceID": {
+                    "type": "string"
+                },
+                "resourceType": {
+                    "type": "string"
+                }
+            }
+        },
+        "api.AllResource": {
+            "type": "object",
+            "properties": {
+                "location": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "provider": {
+                    "type": "string"
+                },
+                "resourceID": {
+                    "type": "string"
+                },
+                "resourceType": {
+                    "type": "string"
+                },
+                "sourceID": {
+                    "type": "string"
+                }
+            }
+        },
+        "api.AzureResource": {
+            "type": "object",
+            "properties": {
+                "location": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "resourceGroup": {
+                    "type": "string"
+                },
+                "resourceID": {
+                    "type": "string"
+                },
+                "resourceType": {
+                    "type": "string"
+                },
+                "subscriptionID": {
+                    "type": "string"
+                }
+            }
+        },
         "api.ComplianceReport": {
             "type": "object",
             "properties": {
                 "failureMessage": {
                     "type": "string"
                 },
-                "s3ResultUrl": {
-                    "type": "string"
+                "id": {
+                    "type": "integer"
                 },
                 "status": {
                     "type": "string"
+                },
+                "updatedAt": {
+                    "type": "string"
+                }
+            }
+        },
+        "api.ComplianceReportFilters": {
+            "type": "object",
+            "properties": {
+                "groupID": {
+                    "type": "string"
+                },
+                "timeRange": {
+                    "$ref": "#/definitions/api.TimeRangeFilter"
                 }
             }
         },
@@ -870,6 +1064,131 @@ const docTemplate = `{
                 }
             }
         },
+        "api.Filters": {
+            "type": "object",
+            "properties": {
+                "keibiSource": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "location": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "resourceType": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
+        "api.GetAWSResourceResponse": {
+            "type": "object",
+            "properties": {
+                "page": {
+                    "$ref": "#/definitions/gitlab.com_keibiengine_keibi-engine_pkg_inventory_api.Page"
+                },
+                "resources": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/api.AWSResource"
+                    }
+                }
+            }
+        },
+        "api.GetAzureResourceResponse": {
+            "type": "object",
+            "properties": {
+                "page": {
+                    "$ref": "#/definitions/gitlab.com_keibiengine_keibi-engine_pkg_inventory_api.Page"
+                },
+                "resources": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/api.AzureResource"
+                    }
+                }
+            }
+        },
+        "api.GetComplianceReportRequest": {
+            "type": "object",
+            "properties": {
+                "filters": {
+                    "$ref": "#/definitions/api.ComplianceReportFilters"
+                },
+                "page": {
+                    "$ref": "#/definitions/gitlab.com_keibiengine_keibi-engine_pkg_internal_api.Page"
+                },
+                "reportType": {
+                    "type": "string"
+                }
+            }
+        },
+        "api.GetResourceRequest": {
+            "type": "object",
+            "required": [
+                "ID",
+                "resourceType"
+            ],
+            "properties": {
+                "ID": {
+                    "type": "string"
+                },
+                "resourceType": {
+                    "type": "string"
+                }
+            }
+        },
+        "api.GetResourcesRequest": {
+            "type": "object",
+            "required": [
+                "filters"
+            ],
+            "properties": {
+                "filters": {
+                    "$ref": "#/definitions/api.Filters"
+                },
+                "page": {
+                    "$ref": "#/definitions/gitlab.com_keibiengine_keibi-engine_pkg_inventory_api.Page"
+                },
+                "query": {
+                    "type": "string"
+                },
+                "sorts": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/api.ResourceSortItem"
+                    }
+                }
+            }
+        },
+        "api.GetResourcesResponse": {
+            "type": "object",
+            "properties": {
+                "page": {
+                    "$ref": "#/definitions/gitlab.com_keibiengine_keibi-engine_pkg_inventory_api.Page"
+                },
+                "resources": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/api.AllResource"
+                    }
+                }
+            }
+        },
+        "api.LocationByProviderResponse": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string"
+                }
+            }
+        },
         "api.Provider": {
             "type": "object",
             "properties": {
@@ -883,6 +1202,91 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "type": {
+                    "type": "string"
+                }
+            }
+        },
+        "api.ResourceSortItem": {
+            "type": "object",
+            "properties": {
+                "direction": {
+                    "type": "string",
+                    "enum": [
+                        "asc",
+                        "desc"
+                    ]
+                },
+                "field": {
+                    "type": "string"
+                }
+            }
+        },
+        "api.RunQueryRequest": {
+            "type": "object",
+            "properties": {
+                "page": {
+                    "$ref": "#/definitions/gitlab.com_keibiengine_keibi-engine_pkg_inventory_api.Page"
+                },
+                "sorts": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/api.SmartQuerySortItem"
+                    }
+                }
+            }
+        },
+        "api.RunQueryResponse": {
+            "type": "object",
+            "properties": {
+                "headers": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "page": {
+                    "$ref": "#/definitions/gitlab.com_keibiengine_keibi-engine_pkg_inventory_api.Page"
+                },
+                "result": {
+                    "type": "array",
+                    "items": {
+                        "type": "array",
+                        "items": {}
+                    }
+                }
+            }
+        },
+        "api.SmartQueryItem": {
+            "type": "object",
+            "properties": {
+                "description": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "provider": {
+                    "type": "string"
+                },
+                "query": {
+                    "type": "string"
+                },
+                "title": {
+                    "type": "string"
+                }
+            }
+        },
+        "api.SmartQuerySortItem": {
+            "type": "object",
+            "properties": {
+                "direction": {
+                    "type": "string",
+                    "enum": [
+                        "asc",
+                        "desc"
+                    ]
+                },
+                "field": {
                     "type": "string"
                 }
             }
@@ -935,6 +1339,154 @@ const docTemplate = `{
                 }
             }
         },
+        "api.TimeRangeFilter": {
+            "type": "object",
+            "properties": {
+                "from": {
+                    "type": "integer"
+                },
+                "to": {
+                    "type": "integer"
+                }
+            }
+        },
+        "compliance_report.Dimension": {
+            "type": "object",
+            "properties": {
+                "key": {
+                    "type": "string"
+                },
+                "value": {
+                    "type": "string"
+                }
+            }
+        },
+        "compliance_report.Report": {
+            "type": "object",
+            "properties": {
+                "group": {
+                    "$ref": "#/definitions/compliance_report.ReportGroupObj"
+                },
+                "reportJobID": {
+                    "type": "integer"
+                },
+                "result": {
+                    "$ref": "#/definitions/compliance_report.ReportResultObj"
+                },
+                "sourceID": {
+                    "type": "string"
+                },
+                "type": {
+                    "type": "string"
+                }
+            }
+        },
+        "compliance_report.ReportGroupObj": {
+            "type": "object",
+            "properties": {
+                "controlIDs": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "description": {
+                    "type": "string"
+                },
+                "groupIDs": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "id": {
+                    "type": "string"
+                },
+                "parentGroupIDs": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "summary": {
+                    "$ref": "#/definitions/compliance_report.Summary"
+                },
+                "tags": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
+                },
+                "title": {
+                    "type": "string"
+                }
+            }
+        },
+        "compliance_report.ReportResultObj": {
+            "type": "object",
+            "properties": {
+                "controlId": {
+                    "type": "string"
+                },
+                "parentGroupIDs": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "result": {
+                    "$ref": "#/definitions/compliance_report.Result"
+                }
+            }
+        },
+        "compliance_report.Result": {
+            "type": "object",
+            "properties": {
+                "dimensions": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/compliance_report.Dimension"
+                    }
+                },
+                "reason": {
+                    "type": "string"
+                },
+                "resource": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                }
+            }
+        },
+        "compliance_report.Summary": {
+            "type": "object",
+            "properties": {
+                "status": {
+                    "$ref": "#/definitions/compliance_report.SummaryStatus"
+                }
+            }
+        },
+        "compliance_report.SummaryStatus": {
+            "type": "object",
+            "properties": {
+                "alarm": {
+                    "type": "integer"
+                },
+                "error": {
+                    "type": "integer"
+                },
+                "info": {
+                    "type": "integer"
+                },
+                "ok": {
+                    "type": "integer"
+                },
+                "skip": {
+                    "type": "integer"
+                }
+            }
+        },
         "gitlab.com_keibiengine_keibi-engine_pkg_describe_api.Source": {
             "type": "object",
             "properties": {
@@ -949,6 +1501,28 @@ const docTemplate = `{
                 },
                 "type": {
                     "type": "string"
+                }
+            }
+        },
+        "gitlab.com_keibiengine_keibi-engine_pkg_internal_api.Page": {
+            "type": "object",
+            "properties": {
+                "nextMarker": {
+                    "type": "string"
+                },
+                "size": {
+                    "type": "integer"
+                }
+            }
+        },
+        "gitlab.com_keibiengine_keibi-engine_pkg_inventory_api.Page": {
+            "type": "object",
+            "properties": {
+                "nextMarker": {
+                    "type": "string"
+                },
+                "size": {
+                    "type": "integer"
                 }
             }
         },
@@ -968,279 +1542,6 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "type": {
-                    "type": "string"
-                }
-            }
-        },
-        "inventory.AWSResource": {
-            "type": "object",
-            "properties": {
-                "accountID": {
-                    "type": "string"
-                },
-                "location": {
-                    "type": "string"
-                },
-                "name": {
-                    "type": "string"
-                },
-                "resourceID": {
-                    "type": "string"
-                },
-                "resourceType": {
-                    "type": "string"
-                }
-            }
-        },
-        "inventory.AllResource": {
-            "type": "object",
-            "properties": {
-                "location": {
-                    "type": "string"
-                },
-                "name": {
-                    "type": "string"
-                },
-                "provider": {
-                    "type": "string"
-                },
-                "resourceID": {
-                    "type": "string"
-                },
-                "resourceType": {
-                    "type": "string"
-                },
-                "sourceID": {
-                    "type": "string"
-                }
-            }
-        },
-        "inventory.AzureResource": {
-            "type": "object",
-            "properties": {
-                "location": {
-                    "type": "string"
-                },
-                "name": {
-                    "type": "string"
-                },
-                "resourceGroup": {
-                    "type": "string"
-                },
-                "resourceID": {
-                    "type": "string"
-                },
-                "resourceType": {
-                    "type": "string"
-                },
-                "subscriptionID": {
-                    "type": "string"
-                }
-            }
-        },
-        "inventory.Filters": {
-            "type": "object",
-            "properties": {
-                "keibiSource": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "location": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "resourceType": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                }
-            }
-        },
-        "inventory.GetAWSResourceResponse": {
-            "type": "object",
-            "properties": {
-                "page": {
-                    "$ref": "#/definitions/inventory.Page"
-                },
-                "resources": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/inventory.AWSResource"
-                    }
-                }
-            }
-        },
-        "inventory.GetAzureResourceResponse": {
-            "type": "object",
-            "properties": {
-                "page": {
-                    "$ref": "#/definitions/inventory.Page"
-                },
-                "resources": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/inventory.AzureResource"
-                    }
-                }
-            }
-        },
-        "inventory.GetResourceRequest": {
-            "type": "object",
-            "required": [
-                "ID",
-                "resourceType"
-            ],
-            "properties": {
-                "ID": {
-                    "type": "string"
-                },
-                "resourceType": {
-                    "type": "string"
-                }
-            }
-        },
-        "inventory.GetResourcesRequest": {
-            "type": "object",
-            "required": [
-                "filters"
-            ],
-            "properties": {
-                "filters": {
-                    "$ref": "#/definitions/inventory.Filters"
-                },
-                "page": {
-                    "$ref": "#/definitions/inventory.Page"
-                },
-                "query": {
-                    "type": "string"
-                },
-                "sorts": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/inventory.ResourceSortItem"
-                    }
-                }
-            }
-        },
-        "inventory.GetResourcesResponse": {
-            "type": "object",
-            "properties": {
-                "page": {
-                    "$ref": "#/definitions/inventory.Page"
-                },
-                "resources": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/inventory.AllResource"
-                    }
-                }
-            }
-        },
-        "inventory.LocationByProviderResponse": {
-            "type": "object",
-            "properties": {
-                "name": {
-                    "type": "string"
-                }
-            }
-        },
-        "inventory.Page": {
-            "type": "object",
-            "properties": {
-                "nextMarker": {
-                    "type": "string"
-                },
-                "size": {
-                    "type": "integer"
-                }
-            }
-        },
-        "inventory.ResourceSortItem": {
-            "type": "object",
-            "properties": {
-                "direction": {
-                    "type": "string",
-                    "enum": [
-                        "asc",
-                        "desc"
-                    ]
-                },
-                "field": {
-                    "type": "string"
-                }
-            }
-        },
-        "inventory.RunQueryRequest": {
-            "type": "object",
-            "properties": {
-                "page": {
-                    "$ref": "#/definitions/inventory.Page"
-                },
-                "sorts": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/inventory.SmartQuerySortItem"
-                    }
-                }
-            }
-        },
-        "inventory.RunQueryResponse": {
-            "type": "object",
-            "properties": {
-                "headers": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "page": {
-                    "$ref": "#/definitions/inventory.Page"
-                },
-                "result": {
-                    "type": "array",
-                    "items": {
-                        "type": "array",
-                        "items": {}
-                    }
-                }
-            }
-        },
-        "inventory.SmartQueryItem": {
-            "type": "object",
-            "properties": {
-                "description": {
-                    "type": "string"
-                },
-                "id": {
-                    "type": "string"
-                },
-                "provider": {
-                    "type": "string"
-                },
-                "query": {
-                    "type": "string"
-                },
-                "title": {
-                    "type": "string"
-                }
-            }
-        },
-        "inventory.SmartQuerySortItem": {
-            "type": "object",
-            "properties": {
-                "direction": {
-                    "type": "string",
-                    "enum": [
-                        "asc",
-                        "desc"
-                    ]
-                },
-                "field": {
                     "type": "string"
                 }
             }

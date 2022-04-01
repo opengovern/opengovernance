@@ -34,7 +34,6 @@ type ComplianceReportJob struct {
 	gorm.Model
 	SourceID       uuid.UUID // Not the primary key but should be a unique identifier
 	Status         compliance_report.ComplianceReportJobStatus
-	S3ResultURL    string // url to result file in s3 storage
 	FailureMessage string // Should be NULLSTRING
 }
 

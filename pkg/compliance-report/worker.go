@@ -3,23 +3,21 @@ package compliance_report
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/awserr"
-	"github.com/aws/aws-sdk-go/aws/credentials"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/hashicorp/vault/api/auth/kubernetes"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/queue"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/vault"
+	"gopkg.in/Shopify/sarama.v1"
+	"strings"
 )
 
 type Worker struct {
 	id             string
 	jobQueue       queue.Interface
 	jobResultQueue queue.Interface
-	s3Client       *s3.S3
 	config         Config
 	vault          vault.SourceConfig
+	kfkProducer    sarama.SyncProducer
+	kfkTopic       string
 }
 
 func InitializeWorker(
@@ -31,7 +29,7 @@ func InitializeWorker(
 		return nil, fmt.Errorf("'id' must be set to a non empty string")
 	}
 
-	w = &Worker{id: id}
+	w = &Worker{id: id, kfkTopic: config.Kafka.Topic}
 	defer func() {
 		if err != nil && w != nil {
 			w.Stop()
@@ -68,33 +66,11 @@ func InitializeWorker(
 
 	w.jobResultQueue = reportResultQueue
 
-	s3Config := &aws.Config{
-		Credentials: credentials.NewStaticCredentials(config.S3Client.Key, config.S3Client.Secret, ""),
-		Endpoint:    aws.String(config.S3Client.Endpoint),
-		Region:      aws.String("us-east-1"),
-	}
-
-	newSession := session.New(s3Config)
-	w.s3Client = s3.New(newSession)
-
-	params := &s3.CreateBucketInput{
-		Bucket: aws.String(config.S3Client.Bucket),
-	}
-
-	_, err = w.s3Client.CreateBucket(params)
+	producer, err := newKafkaProducer(strings.Split(config.Kafka.Addresses, ","))
 	if err != nil {
-		ignoreError := false
-		if awserror, ok := err.(awserr.Error); ok {
-			if awserror.Code() == s3.ErrCodeBucketAlreadyExists {
-				ignoreError = true
-			}
-		}
-
-		if !ignoreError {
-			return nil, err
-		}
+		return nil, err
 	}
-
+	w.kfkProducer = producer
 	w.config = config
 
 	k8sAuth, err := kubernetes.NewKubernetesAuth(
@@ -132,7 +108,7 @@ func (w *Worker) Run() error {
 			continue
 		}
 
-		result := job.Do(w.vault, w.s3Client, w.config)
+		result := job.Do(w.vault, w.kfkProducer, w.kfkTopic, w.config)
 
 		err := w.jobResultQueue.Publish(result)
 		if err != nil {
@@ -156,4 +132,18 @@ func (w *Worker) Stop() {
 		w.jobResultQueue.Close()
 		w.jobResultQueue = nil
 	}
+}
+func newKafkaProducer(kafkaServers []string) (sarama.SyncProducer, error) {
+	cfg := sarama.NewConfig()
+	cfg.Producer.Retry.Max = 3
+	cfg.Producer.RequiredAcks = sarama.WaitForAll
+	cfg.Producer.Return.Successes = true
+	cfg.Version = sarama.V2_1_0_0
+
+	producer, err := sarama.NewSyncProducer(kafkaServers, cfg)
+	if err != nil {
+		return nil, err
+	}
+
+	return producer, nil
 }

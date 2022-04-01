@@ -8,9 +8,10 @@ import (
 )
 
 type HttpHandler struct {
-	client        keibi.Client
-	db            Database
-	steampipeConn *SteampipeDatabase
+	client           keibi.Client
+	db               Database
+	steampipeConn    *SteampipeDatabase
+	schedulerBaseUrl string
 }
 
 func InitializeHttpHandler(
@@ -27,6 +28,7 @@ func InitializeHttpHandler(
 	steampipeDb string,
 	steampipeUsername string,
 	steampipePassword string,
+	schedulerBaseUrl string,
 ) (h *HttpHandler, err error) {
 
 	h = &HttpHandler{}
@@ -79,6 +81,7 @@ func InitializeHttpHandler(
 	if err != nil {
 		return nil, err
 	}
+	h.schedulerBaseUrl = schedulerBaseUrl
 
 	return h, nil
 }

@@ -1,8 +1,10 @@
-package inventory
+package api
 
 import (
 	"github.com/google/uuid"
+	compliance_report "gitlab.com/keibiengine/keibi-engine/pkg/compliance-report"
 	"gitlab.com/keibiengine/keibi-engine/pkg/describe"
+	"gitlab.com/keibiengine/keibi-engine/pkg/internal/api"
 	"gitlab.com/keibiengine/keibi-engine/pkg/keibi-es-sdk"
 )
 
@@ -183,4 +185,25 @@ type SmartQueryItem struct {
 	Title       string    `json:"title"`
 	Description string    `json:"description"`
 	Query       string    `json:"query"`
+}
+
+type TimeRangeFilter struct {
+	From int64
+	To   int64
+}
+
+type ComplianceReportFilters struct {
+	TimeRange *TimeRangeFilter `json:"timeRange"`
+	GroupID   *string          `json:"groupID"`
+}
+
+type GetComplianceReportRequest struct {
+	Filters    ComplianceReportFilters      `json:"filters"`
+	ReportType compliance_report.ReportType `json:"reportType"`
+	Page       api.Page                     `json:"page"`
+}
+
+type GetComplianceReportResponse struct {
+	Reports []compliance_report.Report `json:"reports"`
+	Page    api.Page                   `json:"page"`
 }

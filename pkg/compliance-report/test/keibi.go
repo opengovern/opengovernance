@@ -31,6 +31,21 @@ func (s SourceConfigMock) Read(pathRef string) (config map[string]interface{}, e
 		}
 
 		return config, nil
+	case "compliance_report/test/aws/a001":
+		cfg := compliancereport.AWSAccountConfig{
+			AccountID: "a001",
+		}
+		c, err := json.Marshal(cfg)
+		if err != nil {
+			return nil, err
+		}
+
+		err = json.Unmarshal(c, &config)
+		if err != nil {
+			return nil, err
+		}
+
+		return config, nil
 	}
 	return nil, nil
 }

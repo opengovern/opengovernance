@@ -37,8 +37,9 @@ type Scheduler struct {
 	// sourceQueue is used to consume source updates by the onboarding service.
 	sourceQueue queue.Interface
 
-	complianceReportJobQueue       queue.Interface
-	complianceReportJobResultQueue queue.Interface
+	complianceReportJobQueue        queue.Interface
+	complianceReportJobResultQueue  queue.Interface
+	complianceReportCleanupJobQueue queue.Interface
 
 	logger *zap.Logger
 }
@@ -54,6 +55,7 @@ func InitializeScheduler(
 	describeCleanupJobQueueName string,
 	complianceReportJobQueueName string,
 	complianceReportJobResultQueueName string,
+	complianceReportCleanupJobQueueName string,
 	sourceQueueName string,
 	postgresUsername string,
 	postgresPassword string,
@@ -61,6 +63,9 @@ func InitializeScheduler(
 	postgresPort string,
 	postgresDb string,
 	httpServerAddress string,
+	vaultAddress string,
+	vaultRoleName string,
+	vaultToken string,
 ) (s *Scheduler, err error) {
 	if id == "" {
 		return nil, fmt.Errorf("'id' must be set to a non empty string")
@@ -127,6 +132,22 @@ func InitializeScheduler(
 
 	s.logger.Info("Connected to the describe cleanup job queue", zap.String("queue", describeCleanupJobQueueName))
 	s.describeCleanupJobQueue = describeCleanupJobQueue
+
+	qCfg = queue.Config{}
+	qCfg.Server.Username = rabbitMQUsername
+	qCfg.Server.Password = rabbitMQPassword
+	qCfg.Server.Host = rabbitMQHost
+	qCfg.Server.Port = rabbitMQPort
+	qCfg.Queue.Name = complianceReportCleanupJobQueueName
+	qCfg.Queue.Durable = true
+	qCfg.Producer.ID = s.id
+	complianceReportCleanupJobQueue, err := queue.New(qCfg)
+	if err != nil {
+		return nil, err
+	}
+
+	s.logger.Info("Connected to the complianceReport cleanup job queue", zap.String("queue", complianceReportCleanupJobQueueName))
+	s.complianceReportCleanupJobQueue = complianceReportCleanupJobQueue
 
 	qCfg = queue.Config{}
 	qCfg.Server.Username = rabbitMQUsername
@@ -207,6 +228,9 @@ func (s *Scheduler) Run() error {
 	go s.RunDescribeJobScheduler()
 	go s.RunDescribeCleanupJobScheduler()
 	go s.RunComplianceReportScheduler()
+
+	// In order to have history of reports, we won't clean up compliance reports for now.
+	//go s.RunComplianceReportCleanupJobScheduler()
 
 	go func() {
 		s.logger.Fatal("SourceEvent consumer exited", zap.Error(s.RunSourceEventsConsumer()))
@@ -342,6 +366,16 @@ func (s Scheduler) scheduleDescribeJob() {
 		daj.Status = api.DescribeSourceJobInProgress
 	}
 }
+func (s *Scheduler) RunComplianceReportCleanupJobScheduler() {
+	s.logger.Info("Running compliance report cleanup job scheduler")
+
+	t := time.NewTicker(JobSchedulingInterval)
+	defer t.Stop()
+
+	for range t.C {
+		s.cleanupComplianceReportJob()
+	}
+}
 
 func (s *Scheduler) RunDescribeCleanupJobScheduler() {
 	s.logger.Info("Running describe cleanup job scheduler")
@@ -413,6 +447,42 @@ func (s Scheduler) cleanupDescribeJob() {
 		}
 
 		s.logger.Info("Successfully deleted DescribeSourceJob and its DescribeResourceJobs",
+			zap.Uint("jobId", sj.ID),
+		)
+	}
+}
+
+func (s Scheduler) cleanupComplianceReportJob() {
+	dsj, err := s.db.QueryOlderThanNRecentCompletedComplianceReportJobs(5)
+	if err != nil {
+		s.logger.Error("Failed to find older than 5 recent completed ComplianceReportJobs for each source",
+			zap.Error(err),
+		)
+
+		return
+	}
+
+	for _, sj := range dsj {
+		err := s.complianceReportCleanupJobQueue.Publish(compliancereport.ComplianceReportCleanupJob{
+			JobID: sj.ID,
+		})
+		if err != nil {
+			s.logger.Error("Failed to publish compliance report clean up job to queue for ComplianceReportJob",
+				zap.Uint("jobId", sj.ID),
+				zap.Error(err),
+			)
+			return
+		}
+
+		err = s.db.DeleteComplianceReportJob(sj.ID)
+		if err != nil {
+			s.logger.Error("Failed to delete ComplianceReportJob",
+				zap.Uint("jobId", sj.ID),
+				zap.Error(err),
+			)
+		}
+
+		s.logger.Info("Successfully deleted ComplianceReportJob",
 			zap.Uint("jobId", sj.ID),
 		)
 	}
@@ -572,7 +642,7 @@ func (s *Scheduler) RunComplianceReportJobResultsConsumer() error {
 				zap.Uint("jobId", result.JobID),
 				zap.String("status", string(result.Status)),
 			)
-			err := s.db.UpdateComplianceReportJob(result.JobID, result.Status, result.Error, result.S3ResultURL)
+			err := s.db.UpdateComplianceReportJob(result.JobID, result.Status, result.Error)
 			if err != nil {
 				s.logger.Error("Failed to update the status of ComplianceReportJob",
 					zap.Uint("jobId", result.JobID),
@@ -682,6 +752,7 @@ func enqueueComplianceReportJobs(logger *zap.Logger, db Database, q queue.Interf
 
 	err := q.Publish(compliancereport.Job{
 		JobID:      crj.ID,
+		SourceID: 	a.ID,
 		SourceType: compliancereport.SourceType(a.Type),
 		ConfigReg:  a.ConfigRef,
 	})
@@ -695,7 +766,7 @@ func enqueueComplianceReportJobs(logger *zap.Logger, db Database, q queue.Interf
 		errMsg = fmt.Sprintf("queue: %s", err.Error())
 	}
 
-	err = db.UpdateComplianceReportJob(crj.ID, nextStatus, errMsg, "")
+	err = db.UpdateComplianceReportJob(crj.ID, nextStatus, errMsg)
 	if err != nil {
 		logger.Error("Failed to update ComplianceReportJob",
 			zap.Uint("jobId", crj.ID),

@@ -5,9 +5,16 @@ import (
 	"encoding/csv"
 	"encoding/json"
 	"fmt"
+	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
 	"github.com/ory/dockertest/v3"
 	"github.com/stretchr/testify/suite"
+	compliance_report "gitlab.com/keibiengine/keibi-engine/pkg/compliance-report"
+	"gitlab.com/keibiengine/keibi-engine/pkg/compliance-report/test"
+	"gitlab.com/keibiengine/keibi-engine/pkg/describe"
+	api2 "gitlab.com/keibiengine/keibi-engine/pkg/describe/api"
+	pagination "gitlab.com/keibiengine/keibi-engine/pkg/internal/api"
+	"gitlab.com/keibiengine/keibi-engine/pkg/inventory/api"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"io"
@@ -17,13 +24,16 @@ import (
 	"os"
 	"strings"
 	"testing"
+	"time"
 )
 
 type HttpHandlerSuite struct {
 	suite.Suite
 
-	handler *HttpHandler
-	router  *echo.Echo
+	elasticUrl string
+	handler    *HttpHandler
+	router     *echo.Echo
+	describe   *DescribeMock
 }
 
 func (s *HttpHandlerSuite) SetupSuite() {
@@ -52,7 +62,7 @@ func (s *HttpHandlerSuite) SetupSuite() {
 		Networks: []*dockertest.Network{net},
 	})
 	require.NoError(err, "status elasticsearch")
-	esUrl := "http://localhost:" + elasticResource.GetPort("9200/tcp")
+	s.elasticUrl = "http://localhost:" + elasticResource.GetPort("9200/tcp")
 
 	t.Cleanup(func() {
 		err := pool.Purge(elasticResource)
@@ -121,7 +131,7 @@ func (s *HttpHandlerSuite) SetupSuite() {
 
 	// exponential backoff-retry, because the application in the container might not be ready to accept connections yet
 	err = pool.Retry(func() error {
-		res, err := http.Get(esUrl)
+		res, err := http.Get(s.elasticUrl)
 		if err != nil {
 			return err
 		}
@@ -141,7 +151,7 @@ func (s *HttpHandlerSuite) SetupSuite() {
 	})
 	require.NoError(err, "wait for elastic search connection")
 
-	err = PopulateElastic(esUrl)
+	err = PopulateElastic(s.elasticUrl)
 	require.NoError(err, "populating elastic")
 
 	var orm *gorm.DB
@@ -188,10 +198,14 @@ func (s *HttpHandlerSuite) SetupSuite() {
 	require.NoError(err, "wait for postgres connection")
 
 	s.router = InitializeRouter()
-	s.handler, _ = InitializeHttpHandler(esUrl, "", "",
+	s.handler, _ = InitializeHttpHandler(s.elasticUrl, "", "",
 		"localhost", postgresResource.GetPort("5432/tcp"), "postgres", "postgres", "mysecretpassword",
 		"localhost", steampipeResource.GetPort("9193/tcp"), "steampipe", "steampipe", "abcd",
+		"http://localhost:1234",
 	)
+
+	s.describe = &DescribeMock{}
+	s.describe.Run()
 
 	s.handler.Register(s.router.Group("/api/v1"))
 }
@@ -207,11 +221,11 @@ func (s *HttpHandlerSuite) AfterTest(suiteName, testName string) {
 func (s *HttpHandlerSuite) TestGetAllResources() {
 	require := s.Require()
 
-	var response GetResourcesResponse
-	rec, err := doRequestJSONResponse(s.router, echo.POST, "/api/v1/resources", GetResourcesRequest{
-		Filters: Filters{},
-		Sorts:   []ResourceSortItem{},
-		Page: Page{
+	var response api.GetResourcesResponse
+	rec, err := doRequestJSONResponse(s.router, echo.POST, "/api/v1/resources", api.GetResourcesRequest{
+		Filters: api.Filters{},
+		Sorts:   []api.ResourceSortItem{},
+		Page: api.Page{
 			Size: 10,
 		},
 	}, &response)
@@ -223,16 +237,16 @@ func (s *HttpHandlerSuite) TestGetAllResources() {
 func (s *HttpHandlerSuite) TestGetAllResources_Sort() {
 	require := s.Require()
 
-	var response GetResourcesResponse
-	rec, err := doRequestJSONResponse(s.router, echo.POST, "/api/v1/resources", GetResourcesRequest{
-		Filters: Filters{},
-		Sorts: []ResourceSortItem{
+	var response api.GetResourcesResponse
+	rec, err := doRequestJSONResponse(s.router, echo.POST, "/api/v1/resources", api.GetResourcesRequest{
+		Filters: api.Filters{},
+		Sorts: []api.ResourceSortItem{
 			{
-				Field:     SortFieldResourceID,
-				Direction: DirectionDescending,
+				Field:     api.SortFieldResourceID,
+				Direction: api.DirectionDescending,
 			},
 		},
-		Page: Page{
+		Page: api.Page{
 			Size: 10,
 		},
 	}, &response)
@@ -245,19 +259,19 @@ func (s *HttpHandlerSuite) TestGetAllResources_Sort() {
 func (s *HttpHandlerSuite) TestGetAllResources_Paging() {
 	require := s.Require()
 
-	req := GetResourcesRequest{
-		Filters: Filters{},
-		Sorts: []ResourceSortItem{
+	req := api.GetResourcesRequest{
+		Filters: api.Filters{},
+		Sorts: []api.ResourceSortItem{
 			{
-				Field:     SortFieldResourceID,
-				Direction: DirectionDescending,
+				Field:     api.SortFieldResourceID,
+				Direction: api.DirectionDescending,
 			},
 		},
-		Page: Page{
+		Page: api.Page{
 			Size: 1,
 		},
 	}
-	var response GetResourcesResponse
+	var response api.GetResourcesResponse
 	rec, err := doRequestJSONResponse(s.router, echo.POST, "/api/v1/resources", req, &response)
 	require.NoError(err, "request")
 	require.Equal(http.StatusOK, rec.Code)
@@ -295,21 +309,21 @@ func (s *HttpHandlerSuite) TestGetAllResources_Paging() {
 func (s *HttpHandlerSuite) TestGetAllResources_Filters() {
 	require := s.Require()
 
-	req := GetResourcesRequest{
-		Filters: Filters{},
-		Sorts: []ResourceSortItem{
+	req := api.GetResourcesRequest{
+		Filters: api.Filters{},
+		Sorts: []api.ResourceSortItem{
 			{
-				Field:     SortFieldResourceID,
-				Direction: DirectionAscending,
+				Field:     api.SortFieldResourceID,
+				Direction: api.DirectionAscending,
 			},
 		},
-		Page: Page{
+		Page: api.Page{
 			Size: 10,
 		},
 	}
 
-	var response GetResourcesResponse
-	req.Filters = Filters{}
+	var response api.GetResourcesResponse
+	req.Filters = api.Filters{}
 	req.Filters.Location = []string{"us-east1"}
 	rec, err := doRequestJSONResponse(s.router, echo.POST, "/api/v1/resources", req, &response)
 	require.NoError(err, "request")
@@ -318,7 +332,7 @@ func (s *HttpHandlerSuite) TestGetAllResources_Filters() {
 	require.Equal(response.Resources[0].ResourceID, "aaa0")
 	require.Equal(response.Resources[1].ResourceID, "aaa2")
 
-	req.Filters = Filters{}
+	req.Filters = api.Filters{}
 	req.Filters.KeibiSource = []string{"ss1"}
 	rec, err = doRequestJSONResponse(s.router, echo.POST, "/api/v1/resources", req, &response)
 	require.NoError(err, "request")
@@ -327,7 +341,7 @@ func (s *HttpHandlerSuite) TestGetAllResources_Filters() {
 	require.Equal(response.Resources[0].ResourceID, "aaa0")
 	require.Equal(response.Resources[1].ResourceID, "aaa1")
 
-	req.Filters = Filters{}
+	req.Filters = api.Filters{}
 	req.Filters.ResourceType = []string{"Microsoft.Network/virtualNetworks"}
 	rec, err = doRequestJSONResponse(s.router, echo.POST, "/api/v1/resources", req, &response)
 	require.NoError(err, "request")
@@ -336,7 +350,7 @@ func (s *HttpHandlerSuite) TestGetAllResources_Filters() {
 	require.Equal(response.Resources[0].ResourceID, "aaa2")
 	require.Equal(response.Resources[1].ResourceID, "aaa3")
 
-	req.Filters = Filters{}
+	req.Filters = api.Filters{}
 	req.Filters.ResourceType = []string{"AWS::EC2::Instance"}
 	req.Filters.Location = []string{"us-east1"}
 	rec, err = doRequestJSONResponse(s.router, echo.POST, "/api/v1/resources", req, &response)
@@ -349,23 +363,23 @@ func (s *HttpHandlerSuite) TestGetAllResources_Filters() {
 func (s *HttpHandlerSuite) TestGetAllResources_Query() {
 	require := s.Require()
 
-	req := GetResourcesRequest{
+	req := api.GetResourcesRequest{
 		Query: "EC2",
-		Filters: Filters{
+		Filters: api.Filters{
 			Location: []string{"us-east1"},
 		},
-		Sorts: []ResourceSortItem{
+		Sorts: []api.ResourceSortItem{
 			{
-				Field:     SortFieldResourceID,
-				Direction: DirectionAscending,
+				Field:     api.SortFieldResourceID,
+				Direction: api.DirectionAscending,
 			},
 		},
-		Page: Page{
+		Page: api.Page{
 			Size: 10,
 		},
 	}
 
-	var response GetResourcesResponse
+	var response api.GetResourcesResponse
 	rec, err := doRequestJSONResponse(s.router, echo.POST, "/api/v1/resources", req, &response)
 	require.NoError(err, "request")
 	require.Equal(http.StatusOK, rec.Code)
@@ -383,15 +397,15 @@ func (s *HttpHandlerSuite) TestGetAllResources_Query() {
 func (s *HttpHandlerSuite) TestGetAllResources_CSV() {
 	require := s.Require()
 
-	req := GetResourcesRequest{
-		Filters: Filters{},
-		Sorts: []ResourceSortItem{
+	req := api.GetResourcesRequest{
+		Filters: api.Filters{},
+		Sorts: []api.ResourceSortItem{
 			{
-				Field:     SortFieldResourceID,
-				Direction: DirectionAscending,
+				Field:     api.SortFieldResourceID,
+				Direction: api.DirectionAscending,
 			},
 		},
-		Page: Page{
+		Page: api.Page{
 			Size: 10,
 		},
 	}
@@ -406,7 +420,7 @@ func (s *HttpHandlerSuite) TestGetAllResources_CSV() {
 	require.Equal(response[3][4], "aaa2")
 	require.Equal(response[4][4], "aaa3")
 
-	req.Filters = Filters{}
+	req.Filters = api.Filters{}
 	req.Filters.Location = []string{"us-east1"}
 	rec, response, err = doRequestCSVResponse(s.router, echo.POST, "/api/v1/resources", req)
 	require.NoError(err, "request")
@@ -419,15 +433,15 @@ func (s *HttpHandlerSuite) TestGetAllResources_CSV() {
 func (s *HttpHandlerSuite) TestGetAWSResources() {
 	require := s.Require()
 
-	var response GetAWSResourceResponse
-	rec, err := doRequestJSONResponse(s.router, echo.POST, "/api/v1/resources/aws", GetResourcesRequest{
-		Filters: Filters{
+	var response api.GetAWSResourceResponse
+	rec, err := doRequestJSONResponse(s.router, echo.POST, "/api/v1/resources/aws", api.GetResourcesRequest{
+		Filters: api.Filters{
 			ResourceType: nil,
 			Location:     nil,
 			KeibiSource:  nil,
 		},
-		Sorts: []ResourceSortItem{},
-		Page: Page{
+		Sorts: []api.ResourceSortItem{},
+		Page: api.Page{
 			NextMarker: "",
 			Size:       10,
 		},
@@ -443,15 +457,15 @@ func (s *HttpHandlerSuite) TestGetAWSResources() {
 func (s *HttpHandlerSuite) TestGetAzureResources() {
 	require := s.Require()
 
-	var response GetAzureResourceResponse
-	rec, err := doRequestJSONResponse(s.router, echo.POST, "/api/v1/resources/azure", GetResourcesRequest{
-		Filters: Filters{
+	var response api.GetAzureResourceResponse
+	rec, err := doRequestJSONResponse(s.router, echo.POST, "/api/v1/resources/azure", api.GetResourcesRequest{
+		Filters: api.Filters{
 			ResourceType: nil,
 			Location:     nil,
 			KeibiSource:  nil,
 		},
-		Sorts: []ResourceSortItem{},
-		Page: Page{
+		Sorts: []api.ResourceSortItem{},
+		Page: api.Page{
 			NextMarker: "",
 			Size:       10,
 		},
@@ -483,12 +497,12 @@ func (s *HttpHandlerSuite) TestRunQuery() {
 	require.Equal(http.StatusOK, rec.Code)
 	require.Len(queryList, 4)
 
-	req := RunQueryRequest{
-		Page: Page{
+	req := api.RunQueryRequest{
+		Page: api.Page{
 			"", 10,
 		},
 	}
-	var response RunQueryResponse
+	var response api.RunQueryResponse
 	rec, err = doRequestJSONResponse(s.router, echo.POST, "/api/v1/query/"+queryList[0].ID.String(), &req, &response)
 	require.NoError(err, "request")
 	require.Equal(http.StatusOK, rec.Code)
@@ -506,18 +520,18 @@ func (s *HttpHandlerSuite) TestRunQuery_Sort() {
 	require.Equal(http.StatusOK, rec.Code)
 	require.Len(queryList, 4)
 
-	req := RunQueryRequest{
-		Page: Page{
+	req := api.RunQueryRequest{
+		Page: api.Page{
 			"", 10,
 		},
-		Sorts: []SmartQuerySortItem{
+		Sorts: []api.SmartQuerySortItem{
 			{
 				Field:     "subscription_id",
-				Direction: DirectionAscending,
+				Direction: api.DirectionAscending,
 			},
 		},
 	}
-	var response RunQueryResponse
+	var response api.RunQueryResponse
 	rec, err = doRequestJSONResponse(s.router, echo.POST, "/api/v1/query/"+queryList[2].ID.String(), &req, &response)
 	require.NoError(err, "request")
 	require.Equal(http.StatusOK, rec.Code)
@@ -526,14 +540,14 @@ func (s *HttpHandlerSuite) TestRunQuery_Sort() {
 	require.Equal("ss1", response.Result[0][17])
 	require.Equal("ss2", response.Result[1][17])
 
-	req = RunQueryRequest{
-		Page: Page{
+	req = api.RunQueryRequest{
+		Page: api.Page{
 			"", 10,
 		},
-		Sorts: []SmartQuerySortItem{
+		Sorts: []api.SmartQuerySortItem{
 			{
 				Field:     "subscription_id",
-				Direction: DirectionDescending,
+				Direction: api.DirectionDescending,
 			},
 		},
 	}
@@ -555,18 +569,18 @@ func (s *HttpHandlerSuite) TestRunQuery_Page() {
 	require.Equal(http.StatusOK, rec.Code)
 	require.Len(queryList, 4)
 
-	req := RunQueryRequest{
-		Page: Page{
+	req := api.RunQueryRequest{
+		Page: api.Page{
 			"", 1,
 		},
-		Sorts: []SmartQuerySortItem{
+		Sorts: []api.SmartQuerySortItem{
 			{
 				Field:     "subscription_id",
-				Direction: DirectionAscending,
+				Direction: api.DirectionAscending,
 			},
 		},
 	}
-	var response RunQueryResponse
+	var response api.RunQueryResponse
 	rec, err = doRequestJSONResponse(s.router, echo.POST, "/api/v1/query/"+queryList[2].ID.String(), &req, &response)
 	require.NoError(err, "request")
 	require.Equal(http.StatusOK, rec.Code)
@@ -592,14 +606,14 @@ func (s *HttpHandlerSuite) TestRunQuery_CSV() {
 	require.Equal(http.StatusOK, rec.Code)
 	require.Len(queryList, 4)
 
-	req := RunQueryRequest{
-		Page: Page{
+	req := api.RunQueryRequest{
+		Page: api.Page{
 			"", 1,
 		},
-		Sorts: []SmartQuerySortItem{
+		Sorts: []api.SmartQuerySortItem{
 			{
 				Field:     "subscription_id",
-				Direction: DirectionAscending,
+				Direction: api.DirectionAscending,
 			},
 		},
 	}
@@ -610,6 +624,171 @@ func (s *HttpHandlerSuite) TestRunQuery_CSV() {
 	require.Equal(response[0][17], "subscription_id")
 	require.Equal(response[1][17], "ss1")
 	require.Equal(response[2][17], "ss2")
+}
+
+func (s *HttpHandlerSuite) TestGetComplianceReport_Benchmark() {
+	require := s.Require()
+
+	err := test.PopulateElastic(s.elasticUrl)
+	require.NoError(err)
+
+	uuid1, _ := uuid.Parse("c29c0dae-823f-4726-ade0-5fa94a941e88")
+
+	source := api2.Source{
+		ID:   uuid1,
+		Type: api2.SourceCloudAWS,
+	}
+	date1 := time.Now().UnixMilli()
+	j1 := describe.ComplianceReportJob{
+		Model: gorm.Model{
+			ID:        1,
+			CreatedAt: time.Now(),
+			UpdatedAt: time.Now(),
+			DeletedAt: gorm.DeletedAt{},
+		},
+		SourceID:       source.ID,
+		Status:         compliance_report.ComplianceReportJobCompleted,
+		FailureMessage: "",
+	}
+	time.Sleep(10 * time.Millisecond)
+	date2 := time.Now().UnixMilli()
+	time.Sleep(10 * time.Millisecond)
+	j2 := describe.ComplianceReportJob{
+		Model: gorm.Model{
+			ID:        2,
+			CreatedAt: time.Now(),
+			UpdatedAt: time.Now(),
+			DeletedAt: gorm.DeletedAt{},
+		},
+		SourceID:       source.ID,
+		Status:         compliance_report.ComplianceReportJobCompleted,
+		FailureMessage: "",
+	}
+	time.Sleep(10 * time.Millisecond)
+	require.NoError(err)
+	date3 := time.Now().UnixMilli()
+
+	s.describe.SetResponse(j1, j2)
+
+	var res api.GetComplianceReportResponse
+	_, err = doRequestJSONResponse(s.router, "GET",
+		"/api/v1/reports/compliance/"+source.ID.String(), &api.GetComplianceReportRequest{
+			ReportType: compliance_report.ReportTypeBenchmark,
+			Page:       pagination.Page{Size: 10},
+		}, &res)
+	require.NoError(err)
+	require.True(len(res.Reports) > 0)
+	for _, report := range res.Reports {
+		require.NotNil(report.Group)
+		require.Equal(2, int(report.ReportJobId))
+	}
+
+	res = api.GetComplianceReportResponse{}
+	_, err = doRequestJSONResponse(s.router, "GET",
+		"/api/v1/reports/compliance/"+source.ID.String(), &api.GetComplianceReportRequest{
+			Filters: api.ComplianceReportFilters{
+				TimeRange: &api.TimeRangeFilter{
+					From: date1,
+					To:   date2,
+				},
+			},
+			ReportType: compliance_report.ReportTypeBenchmark,
+			Page:       pagination.Page{Size: 10},
+		}, &res)
+	require.NoError(err)
+	require.True(len(res.Reports) > 0)
+	for _, report := range res.Reports {
+		require.NotNil(report.Group)
+		require.Equal(1, int(report.ReportJobId))
+	}
+
+	res = api.GetComplianceReportResponse{}
+	_, err = doRequestJSONResponse(s.router, "GET",
+		"/api/v1/reports/compliance/"+source.ID.String(), &api.GetComplianceReportRequest{
+			Filters: api.ComplianceReportFilters{
+				TimeRange: &api.TimeRangeFilter{
+					From: date2,
+					To:   date3,
+				},
+			},
+			ReportType: compliance_report.ReportTypeBenchmark,
+			Page:       pagination.Page{Size: 10},
+		}, &res)
+	require.NoError(err)
+	require.True(len(res.Reports) > 0)
+	for _, report := range res.Reports {
+		require.NotNil(report.Group)
+		require.Equal(2, int(report.ReportJobId))
+	}
+
+	res = api.GetComplianceReportResponse{}
+	groupID := "cis.001"
+	_, err = doRequestJSONResponse(s.router, "GET",
+		"/api/v1/reports/compliance/"+source.ID.String(), &api.GetComplianceReportRequest{
+			Filters: api.ComplianceReportFilters{
+				GroupID: &groupID,
+			},
+			ReportType: compliance_report.ReportTypeBenchmark,
+			Page:       pagination.Page{Size: 10},
+		}, &res)
+	require.NoError(err)
+	require.True(len(res.Reports) > 0)
+	for _, report := range res.Reports {
+		require.NotNil(report.Group)
+		require.Equal(groupID, report.Group.ID)
+	}
+
+	res = api.GetComplianceReportResponse{}
+	_, err = doRequestJSONResponse(s.router, "GET",
+		"/api/v1/reports/compliance/"+source.ID.String()+"/1", &api.GetComplianceReportRequest{
+			ReportType: compliance_report.ReportTypeBenchmark,
+			Page:       pagination.Page{Size: 10},
+		}, &res)
+	require.NoError(err)
+	require.True(len(res.Reports) > 0)
+	for _, report := range res.Reports {
+		require.NotNil(report.Group)
+		require.Equal(1, int(report.ReportJobId))
+	}
+}
+
+func (s *HttpHandlerSuite) TestGetComplianceReport_Result() {
+	require := s.Require()
+
+	err := test.PopulateElastic(s.elasticUrl)
+	require.NoError(err)
+
+	uuid1, _ := uuid.Parse("c29c0dae-823f-4726-ade0-5fa94a941e88")
+	source := api2.Source{
+		ID:   uuid1,
+		Type: api2.SourceCloudAWS,
+	}
+
+	j1 := describe.ComplianceReportJob{
+		Model: gorm.Model{
+			ID:        1,
+			CreatedAt: time.Now(),
+			UpdatedAt: time.Now(),
+			DeletedAt: gorm.DeletedAt{},
+		},
+		SourceID: source.ID,
+		Status:   compliance_report.ComplianceReportJobCompleted,
+	}
+	require.NoError(err)
+	s.describe.SetResponse(j1)
+
+	var res api.GetComplianceReportResponse
+	_, err = doRequestJSONResponse(s.router, "GET",
+		"/api/v1/reports/compliance/"+source.ID.String(), &api.GetComplianceReportRequest{
+			ReportType: compliance_report.ReportTypeResult,
+			Page:       pagination.Page{Size: 10},
+		}, &res)
+	require.NoError(err)
+	require.True(len(res.Reports) > 0)
+	for _, report := range res.Reports {
+		require.NotNil(report.Result)
+		require.Equal(1, int(report.ReportJobId))
+	}
 }
 
 func TestHttpHandlerSuite(t *testing.T) {

@@ -42,8 +42,9 @@ type DescribeResource struct {
 }
 
 type ComplianceReport struct {
+	ID             uint                         `json:"id"`
+	UpdatedAt      time.Time                    `json:"updatedAt"`
 	Status         cr.ComplianceReportJobStatus `json:"status"`
-	S3ResultURL    string                       `json:"s3ResultUrl"`
 	FailureMessage string                       `json:"failureMessage"`
 }
 
