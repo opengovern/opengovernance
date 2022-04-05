@@ -29,8 +29,8 @@ func (h HttpHandler) Register(r *echo.Echo) {
 
 	disc := v1.Group("/discover")
 
-	disc.GET("/aws/accounts", h.DiscoverAwsAccounts)
-	disc.GET("/azure/subscriptions", h.DiscoverAzureSubscriptions)
+	disc.POST("/aws/accounts", h.DiscoverAwsAccounts)
+	disc.POST("/azure/subscriptions", h.DiscoverAzureSubscriptions)
 
 	v1.GET("/providers", h.GetProviders)
 }
