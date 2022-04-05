@@ -49,7 +49,7 @@ func PopulateElastic(address string) error {
 		return err
 	}
 
-	req, err := http.NewRequest("PUT", address + "/_index_template/compliance_report_template", bytes.NewReader(c))
+	req, err := http.NewRequest("PUT", address+"/_index_template/compliance_report_template", bytes.NewReader(c))
 	if err != nil {
 		return err
 	}
@@ -158,7 +158,7 @@ func PopulatePostgres(db Database) error {
 
 	id = uuid.New()
 	err = db.AddQuery(&SmartQuery{
-		ID: id,
+		ID:          id,
 		Provider:    "Azure",
 		Title:       "Query 2",
 		Description: "description 2",
@@ -170,7 +170,7 @@ func PopulatePostgres(db Database) error {
 
 	id = uuid.New()
 	err = db.AddQuery(&SmartQuery{
-		ID: id,
+		ID:          id,
 		Provider:    "Azure",
 		Title:       "Query 3",
 		Description: "description 3",
@@ -254,8 +254,8 @@ func GenerateResources(es *elasticsearchv7.Client) error {
 	}
 
 	azureResource := azuredescriber.Resource{
-		ID:             "aaa1",
-		Description:    azuremodel.VirtualNetworkDescription{
+		ID: "aaa1",
+		Description: azuremodel.VirtualNetworkDescription{
 			VirtualNetwork: network.VirtualNetwork{
 				VirtualNetworkPropertiesFormat: nil,
 				Etag:                           nil,
@@ -265,7 +265,7 @@ func GenerateResources(es *elasticsearchv7.Client) error {
 				Location:                       nil,
 				Tags:                           nil,
 			},
-			ResourceGroup:  "abcd",
+			ResourceGroup: "abcd",
 		},
 		Name:           "0002",
 		Type:           "Microsoft.Network/virtualNetworks",
@@ -280,8 +280,8 @@ func GenerateResources(es *elasticsearchv7.Client) error {
 	}
 
 	azureResource = azuredescriber.Resource{
-		ID:             "aaa2",
-		Description:    azuremodel.VirtualNetworkDescription{
+		ID: "aaa2",
+		Description: azuremodel.VirtualNetworkDescription{
 			VirtualNetwork: network.VirtualNetwork{
 				VirtualNetworkPropertiesFormat: nil,
 				Etag:                           nil,
@@ -291,7 +291,7 @@ func GenerateResources(es *elasticsearchv7.Client) error {
 				Location:                       nil,
 				Tags:                           nil,
 			},
-			ResourceGroup:  "abcd",
+			ResourceGroup: "abcd",
 		},
 		Name:           "0003",
 		Type:           "Microsoft.Network/virtualNetworks",
@@ -329,6 +329,8 @@ func IndexAzureResource(es *elasticsearchv7.Client, resource azuredescriber.Reso
 		ResourceJobID: uint(rand.Uint32()),
 		SourceJobID:   uint(rand.Uint32()),
 		Metadata: map[string]string{
+			"id":                resource.ID,
+			"name":              resource.Name,
 			"subscription_id":   resource.SubscriptionID,
 			"location":          resource.Location,
 			"cloud_environment": "Azure",
@@ -378,7 +380,7 @@ type DescribeMock struct {
 	Response []describe.ComplianceReportJob
 }
 
-func(m *DescribeMock) HelloServer(w http.ResponseWriter, r *http.Request) {
+func (m *DescribeMock) HelloServer(w http.ResponseWriter, r *http.Request) {
 	var res []describe.ComplianceReportJob
 	if r.URL.Query().Has("from") {
 		fromStr := r.URL.Query().Get("from")
@@ -407,4 +409,3 @@ func (m *DescribeMock) Run() {
 	http.HandleFunc("/api/v1/sources/", m.HelloServer)
 	go http.ListenAndServe(":1234", nil)
 }
-

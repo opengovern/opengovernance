@@ -11,6 +11,10 @@ definitions:
         type: string
       resourceType:
         type: string
+      steampipe_columns:
+        additionalProperties:
+          type: string
+        type: object
     type: object
   api.AllResource:
     properties:
@@ -26,6 +30,10 @@ definitions:
         type: string
       sourceID:
         type: string
+      steampipe_columns:
+        additionalProperties:
+          type: string
+        type: object
     type: object
   api.AzureResource:
     properties:
@@ -39,6 +47,10 @@ definitions:
         type: string
       resourceType:
         type: string
+      steampipe_columns:
+        additionalProperties:
+          type: string
+        type: object
       subscriptionID:
         type: string
     type: object
@@ -56,6 +68,7 @@ definitions:
   api.ComplianceReportFilters:
     properties:
       groupID:
+        description: benchmark id or control id
         type: string
       timeRange:
         $ref: '#/definitions/api.TimeRangeFilter'
@@ -109,16 +122,24 @@ definitions:
         type: string
     type: object
   api.Filters:
+    description: if you provide two values for same filter OR operation would be used
+      if you provide value for two filters AND operation would be used
     properties:
       keibiSource:
+        description: if you dont need to use this filter, leave them empty. (e.g.
+          [])
         items:
           type: string
         type: array
       location:
+        description: if you dont need to use this filter, leave them empty. (e.g.
+          [])
         items:
           type: string
         type: array
       resourceType:
+        description: if you dont need to use this filter, leave them empty. (e.g.
+          [])
         items:
           type: string
         type: array
@@ -126,7 +147,7 @@ definitions:
   api.GetAWSResourceResponse:
     properties:
       page:
-        $ref: '#/definitions/gitlab.com_keibiengine_keibi-engine_pkg_inventory_api.Page'
+        $ref: '#/definitions/api.Page'
       resources:
         items:
           $ref: '#/definitions/api.AWSResource'
@@ -135,7 +156,7 @@ definitions:
   api.GetAzureResourceResponse:
     properties:
       page:
-        $ref: '#/definitions/gitlab.com_keibiengine_keibi-engine_pkg_inventory_api.Page'
+        $ref: '#/definitions/api.Page'
       resources:
         items:
           $ref: '#/definitions/api.AzureResource'
@@ -146,13 +167,18 @@ definitions:
       filters:
         $ref: '#/definitions/api.ComplianceReportFilters'
       page:
-        $ref: '#/definitions/gitlab.com_keibiengine_keibi-engine_pkg_internal_api.Page'
+        $ref: '#/definitions/api.Page'
       reportType:
+        enum:
+        - benchmark
+        - control
+        - result
         type: string
     type: object
   api.GetResourceRequest:
     properties:
       ID:
+        description: Resource ID
         type: string
       resourceType:
         type: string
@@ -164,11 +190,15 @@ definitions:
     properties:
       filters:
         $ref: '#/definitions/api.Filters'
+        description: search filters
       page:
-        $ref: '#/definitions/gitlab.com_keibiengine_keibi-engine_pkg_inventory_api.Page'
+        $ref: '#/definitions/api.Page'
       query:
+        description: search query
         type: string
       sorts:
+        description: 'NOTE: we don''t support multi-field sort for now, if sort is
+          empty, results would be sorted by first column'
         items:
           $ref: '#/definitions/api.ResourceSortItem'
         type: array
@@ -178,7 +208,7 @@ definitions:
   api.GetResourcesResponse:
     properties:
       page:
-        $ref: '#/definitions/gitlab.com_keibiengine_keibi-engine_pkg_inventory_api.Page'
+        $ref: '#/definitions/api.Page'
       resources:
         items:
           $ref: '#/definitions/api.AllResource'
@@ -188,6 +218,15 @@ definitions:
     properties:
       name:
         type: string
+    type: object
+  api.Page:
+    properties:
+      nextMarker:
+        description: fill it with empty for the first request
+        type: string
+      size:
+        minimum: 1
+        type: integer
     type: object
   api.Provider:
     properties:
@@ -208,13 +247,23 @@ definitions:
         - desc
         type: string
       field:
+        enum:
+        - resource_id
+        - name
+        - source_type
+        - resource_type
+        - resource_group
+        - location
+        - source_id
         type: string
     type: object
   api.RunQueryRequest:
     properties:
       page:
-        $ref: '#/definitions/gitlab.com_keibiengine_keibi-engine_pkg_inventory_api.Page'
+        $ref: '#/definitions/api.Page'
       sorts:
+        description: 'NOTE: we don''t support multi-field sort for now, if sort is
+          empty, results would be sorted by first column'
         items:
           $ref: '#/definitions/api.SmartQuerySortItem'
         type: array
@@ -222,12 +271,15 @@ definitions:
   api.RunQueryResponse:
     properties:
       headers:
+        description: column names
         items:
           type: string
         type: array
       page:
-        $ref: '#/definitions/gitlab.com_keibiengine_keibi-engine_pkg_inventory_api.Page'
+        $ref: '#/definitions/api.Page'
       result:
+        description: result of query. in order to access a specific cell please use
+          Result[Row][Column]
         items:
           items: {}
           type: array
@@ -254,6 +306,7 @@ definitions:
         - desc
         type: string
       field:
+        description: fill this with column name
         type: string
     type: object
   api.SourceConfigAWS:
@@ -292,8 +345,10 @@ definitions:
   api.TimeRangeFilter:
     properties:
       from:
+        description: from epoch millisecond
         type: integer
       to:
+        description: from epoch millisecond
         type: integer
     type: object
   compliance_report.Dimension:
@@ -329,6 +384,7 @@ definitions:
           type: string
         type: array
       id:
+        description: benchmark id / control id
         type: string
       parentGroupIDs:
         items:
@@ -395,20 +451,6 @@ definitions:
         type: string
       type:
         type: string
-    type: object
-  gitlab.com_keibiengine_keibi-engine_pkg_internal_api.Page:
-    properties:
-      nextMarker:
-        type: string
-      size:
-        type: integer
-    type: object
-  gitlab.com_keibiengine_keibi-engine_pkg_inventory_api.Page:
-    properties:
-      nextMarker:
-        type: string
-      size:
-        type: integer
     type: object
   gitlab.com_keibiengine_keibi-engine_pkg_onboard_api.Source:
     properties:

@@ -913,6 +913,12 @@ const docTemplate = `{
                 },
                 "resourceType": {
                     "type": "string"
+                },
+                "steampipe_columns": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
                 }
             }
         },
@@ -936,6 +942,12 @@ const docTemplate = `{
                 },
                 "sourceID": {
                     "type": "string"
+                },
+                "steampipe_columns": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
                 }
             }
         },
@@ -956,6 +968,12 @@ const docTemplate = `{
                 },
                 "resourceType": {
                     "type": "string"
+                },
+                "steampipe_columns": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
                 },
                 "subscriptionID": {
                     "type": "string"
@@ -983,6 +1001,7 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "groupID": {
+                    "description": "benchmark id or control id",
                     "type": "string"
                 },
                 "timeRange": {
@@ -1065,21 +1084,25 @@ const docTemplate = `{
             }
         },
         "api.Filters": {
+            "description": "if you provide two values for same filter OR operation would be used if you provide value for two filters AND operation would be used",
             "type": "object",
             "properties": {
                 "keibiSource": {
+                    "description": "if you dont need to use this filter, leave them empty. (e.g. [])",
                     "type": "array",
                     "items": {
                         "type": "string"
                     }
                 },
                 "location": {
+                    "description": "if you dont need to use this filter, leave them empty. (e.g. [])",
                     "type": "array",
                     "items": {
                         "type": "string"
                     }
                 },
                 "resourceType": {
+                    "description": "if you dont need to use this filter, leave them empty. (e.g. [])",
                     "type": "array",
                     "items": {
                         "type": "string"
@@ -1091,7 +1114,7 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "page": {
-                    "$ref": "#/definitions/gitlab.com_keibiengine_keibi-engine_pkg_inventory_api.Page"
+                    "$ref": "#/definitions/api.Page"
                 },
                 "resources": {
                     "type": "array",
@@ -1105,7 +1128,7 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "page": {
-                    "$ref": "#/definitions/gitlab.com_keibiengine_keibi-engine_pkg_inventory_api.Page"
+                    "$ref": "#/definitions/api.Page"
                 },
                 "resources": {
                     "type": "array",
@@ -1122,10 +1145,15 @@ const docTemplate = `{
                     "$ref": "#/definitions/api.ComplianceReportFilters"
                 },
                 "page": {
-                    "$ref": "#/definitions/gitlab.com_keibiengine_keibi-engine_pkg_internal_api.Page"
+                    "$ref": "#/definitions/api.Page"
                 },
                 "reportType": {
-                    "type": "string"
+                    "type": "string",
+                    "enum": [
+                        "benchmark",
+                        "control",
+                        "result"
+                    ]
                 }
             }
         },
@@ -1137,6 +1165,7 @@ const docTemplate = `{
             ],
             "properties": {
                 "ID": {
+                    "description": "Resource ID",
                     "type": "string"
                 },
                 "resourceType": {
@@ -1151,15 +1180,18 @@ const docTemplate = `{
             ],
             "properties": {
                 "filters": {
+                    "description": "search filters",
                     "$ref": "#/definitions/api.Filters"
                 },
                 "page": {
-                    "$ref": "#/definitions/gitlab.com_keibiengine_keibi-engine_pkg_inventory_api.Page"
+                    "$ref": "#/definitions/api.Page"
                 },
                 "query": {
+                    "description": "search query",
                     "type": "string"
                 },
                 "sorts": {
+                    "description": "NOTE: we don't support multi-field sort for now, if sort is empty, results would be sorted by first column",
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/api.ResourceSortItem"
@@ -1171,7 +1203,7 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "page": {
-                    "$ref": "#/definitions/gitlab.com_keibiengine_keibi-engine_pkg_inventory_api.Page"
+                    "$ref": "#/definitions/api.Page"
                 },
                 "resources": {
                     "type": "array",
@@ -1186,6 +1218,19 @@ const docTemplate = `{
             "properties": {
                 "name": {
                     "type": "string"
+                }
+            }
+        },
+        "api.Page": {
+            "type": "object",
+            "properties": {
+                "nextMarker": {
+                    "description": "fill it with empty for the first request",
+                    "type": "string"
+                },
+                "size": {
+                    "type": "integer",
+                    "minimum": 1
                 }
             }
         },
@@ -1217,7 +1262,16 @@ const docTemplate = `{
                     ]
                 },
                 "field": {
-                    "type": "string"
+                    "type": "string",
+                    "enum": [
+                        "resource_id",
+                        "name",
+                        "source_type",
+                        "resource_type",
+                        "resource_group",
+                        "location",
+                        "source_id"
+                    ]
                 }
             }
         },
@@ -1225,9 +1279,10 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "page": {
-                    "$ref": "#/definitions/gitlab.com_keibiengine_keibi-engine_pkg_inventory_api.Page"
+                    "$ref": "#/definitions/api.Page"
                 },
                 "sorts": {
+                    "description": "NOTE: we don't support multi-field sort for now, if sort is empty, results would be sorted by first column",
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/api.SmartQuerySortItem"
@@ -1239,15 +1294,17 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "headers": {
+                    "description": "column names",
                     "type": "array",
                     "items": {
                         "type": "string"
                     }
                 },
                 "page": {
-                    "$ref": "#/definitions/gitlab.com_keibiengine_keibi-engine_pkg_inventory_api.Page"
+                    "$ref": "#/definitions/api.Page"
                 },
                 "result": {
+                    "description": "result of query. in order to access a specific cell please use Result[Row][Column]",
                     "type": "array",
                     "items": {
                         "type": "array",
@@ -1287,6 +1344,7 @@ const docTemplate = `{
                     ]
                 },
                 "field": {
+                    "description": "fill this with column name",
                     "type": "string"
                 }
             }
@@ -1343,9 +1401,11 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "from": {
+                    "description": "from epoch millisecond",
                     "type": "integer"
                 },
                 "to": {
+                    "description": "from epoch millisecond",
                     "type": "integer"
                 }
             }
@@ -1400,6 +1460,7 @@ const docTemplate = `{
                     }
                 },
                 "id": {
+                    "description": "benchmark id / control id",
                     "type": "string"
                 },
                 "parentGroupIDs": {
@@ -1501,28 +1562,6 @@ const docTemplate = `{
                 },
                 "type": {
                     "type": "string"
-                }
-            }
-        },
-        "gitlab.com_keibiengine_keibi-engine_pkg_internal_api.Page": {
-            "type": "object",
-            "properties": {
-                "nextMarker": {
-                    "type": "string"
-                },
-                "size": {
-                    "type": "integer"
-                }
-            }
-        },
-        "gitlab.com_keibiengine_keibi-engine_pkg_inventory_api.Page": {
-            "type": "object",
-            "properties": {
-                "nextMarker": {
-                    "type": "string"
-                },
-                "size": {
-                    "type": "integer"
                 }
             }
         },

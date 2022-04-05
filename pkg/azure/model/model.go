@@ -62,6 +62,8 @@ import (
 )
 
 type Metadata struct {
+	ID               string `json:"id"`
+	Name             string `json:"name"`
 	SubscriptionID   string `json:"subscription_id"`
 	Location         string `json:"location"`
 	CloudEnvironment string `json:"cloud_environment"`

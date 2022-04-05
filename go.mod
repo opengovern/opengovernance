@@ -4,25 +4,22 @@ go 1.16
 
 require (
 	github.com/Azure/azure-sdk-for-go v59.3.0+incompatible
-	github.com/Azure/go-ansiterm v0.0.0-20210617225240-d185dfc1b5a1 // indirect
 	github.com/Azure/go-autorest/autorest v0.11.22
 	github.com/Azure/go-autorest/autorest/azure/auth v0.5.9
-	github.com/DataDog/zstd v1.5.0 // indirect
-	github.com/Shopify/toxiproxy v2.1.4+incompatible // indirect
-	github.com/aws/aws-sdk-go v1.42.23
+	github.com/aws/aws-sdk-go v1.42.48
 	github.com/aws/aws-sdk-go-v2 v1.13.0
 	github.com/aws/aws-sdk-go-v2/config v1.10.2
 	github.com/aws/aws-sdk-go-v2/credentials v1.6.2
 	github.com/aws/aws-sdk-go-v2/service/accessanalyzer v1.12.0
-	github.com/aws/aws-sdk-go-v2/service/acm v1.9.1
+	github.com/aws/aws-sdk-go-v2/service/acm v1.10.0
 	github.com/aws/aws-sdk-go-v2/service/apigateway v1.11.0
 	github.com/aws/aws-sdk-go-v2/service/apigatewayv2 v1.10.0
 	github.com/aws/aws-sdk-go-v2/service/applicationautoscaling v1.11.0
 	github.com/aws/aws-sdk-go-v2/service/applicationinsights v1.8.0
-	github.com/aws/aws-sdk-go-v2/service/autoscaling v1.15.1
+	github.com/aws/aws-sdk-go-v2/service/autoscaling v1.17.0
 	github.com/aws/aws-sdk-go-v2/service/backup v1.9.1
 	github.com/aws/aws-sdk-go-v2/service/cloudfront v1.11.1
-	github.com/aws/aws-sdk-go-v2/service/cloudtrail v1.10.0
+	github.com/aws/aws-sdk-go-v2/service/cloudtrail v1.11.0
 	github.com/aws/aws-sdk-go-v2/service/cloudwatch v1.12.0
 	github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs v1.10.1
 	github.com/aws/aws-sdk-go-v2/service/codebuild v1.15.0
@@ -30,7 +27,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/databasemigrationservice v1.14.0
 	github.com/aws/aws-sdk-go-v2/service/dax v1.7.2
 	github.com/aws/aws-sdk-go-v2/service/dynamodb v1.11.0
-	github.com/aws/aws-sdk-go-v2/service/ec2 v1.23.0
+	github.com/aws/aws-sdk-go-v2/service/ec2 v1.26.0
 	github.com/aws/aws-sdk-go-v2/service/ecr v1.10.1
 	github.com/aws/aws-sdk-go-v2/service/ecrpublic v1.8.1
 	github.com/aws/aws-sdk-go-v2/service/ecs v1.12.1
@@ -44,7 +41,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/emr v1.14.0
 	github.com/aws/aws-sdk-go-v2/service/fsx v1.17.0
 	github.com/aws/aws-sdk-go-v2/service/guardduty v1.9.0
-	github.com/aws/aws-sdk-go-v2/service/iam v1.13.1
+	github.com/aws/aws-sdk-go-v2/service/iam v1.15.0
 	github.com/aws/aws-sdk-go-v2/service/kms v1.11.0
 	github.com/aws/aws-sdk-go-v2/service/lambda v1.13.0
 	github.com/aws/aws-sdk-go-v2/service/organizations v1.10.0
@@ -52,8 +49,8 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/redshift v1.15.0
 	github.com/aws/aws-sdk-go-v2/service/route53 v1.14.1
 	github.com/aws/aws-sdk-go-v2/service/route53resolver v1.10.1
-	github.com/aws/aws-sdk-go-v2/service/s3 v1.19.1
-	github.com/aws/aws-sdk-go-v2/service/s3control v1.14.1
+	github.com/aws/aws-sdk-go-v2/service/s3 v1.22.0
+	github.com/aws/aws-sdk-go-v2/service/s3control v1.17.0
 	github.com/aws/aws-sdk-go-v2/service/sagemaker v1.21.0
 	github.com/aws/aws-sdk-go-v2/service/secretsmanager v1.11.0
 	github.com/aws/aws-sdk-go-v2/service/securityhub v1.16.0
@@ -69,53 +66,34 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/wafv2 v1.14.0
 	github.com/aws/aws-sdk-go-v2/service/workspaces v1.10.1
 	github.com/aws/smithy-go v1.10.0
-	github.com/cenkalti/backoff/v3 v3.2.2 // indirect
-	github.com/containerd/continuity v0.2.2 // indirect
-	github.com/eapache/go-resiliency v1.2.0 // indirect
-	github.com/eapache/go-xerial-snappy v0.0.0-20180814174437-776d5712da21 // indirect
-	github.com/eapache/queue v1.1.0 // indirect
+	github.com/cenkalti/backoff/v3 v3.2.2
 	github.com/elastic/go-elasticsearch/v7 v7.16.0
-	github.com/frankban/quicktest v1.14.0 // indirect
-	github.com/go-openapi/swag v0.21.1 // indirect
-	github.com/go-playground/universal-translator v0.18.0 // indirect
 	github.com/gocarina/gocsv v0.0.0-20211203214250-4735fba0c1d9
 	github.com/gofrs/uuid v4.0.0+incompatible
+	github.com/golang/protobuf v1.5.2
 	github.com/google/uuid v1.3.0
 	github.com/hashicorp/go-hclog v1.0.0
-	github.com/hashicorp/go-secure-stdlib/mlock v0.1.2 // indirect
-	github.com/hashicorp/go-secure-stdlib/parseutil v0.1.2 // indirect
-	github.com/hashicorp/go-secure-stdlib/strutil v0.1.2 // indirect
 	github.com/hashicorp/vault/api v1.3.0
 	github.com/hashicorp/vault/api/auth/kubernetes v0.1.0
-	github.com/hashicorp/yamux v0.0.0-20211028200310-0bc27b27de87 // indirect
 	github.com/jackc/pgx/v4 v4.13.0
 	github.com/labstack/echo/v4 v4.6.1
 	github.com/labstack/gommon v0.3.1
-	github.com/leodido/go-urn v1.2.1 // indirect
 	github.com/manicminer/hamilton v0.41.1
-	github.com/mattn/go-runewidth v0.0.13 // indirect
-	github.com/mitchellh/copystructure v1.2.0 // indirect
-	github.com/mitchellh/go-testing-interface v1.14.1 // indirect
-	github.com/oklog/run v1.1.0 // indirect
-	github.com/opencontainers/runc v1.1.0 // indirect
 	github.com/ory/dockertest/v3 v3.8.1
-	github.com/pierrec/lz4 v2.6.1+incompatible // indirect
-	github.com/rcrowley/go-metrics v0.0.0-20201227073835-cf1acfcdf475 // indirect
 	github.com/spf13/cobra v1.3.0
 	github.com/streadway/amqp v1.0.0
 	github.com/stretchr/testify v1.7.0
 	github.com/swaggo/echo-swagger v1.3.0
 	github.com/swaggo/swag v1.8.0
 	github.com/tombuildsstuff/giovanni v0.18.0
+	github.com/turbot/go-kit v0.3.0
 	github.com/turbot/steampipe-plugin-sdk v1.8.3
+	gitlab.com/keibiengine/steampipe-plugin-aws v0.0.0-20220401174834-4d29274e8abe
+	gitlab.com/keibiengine/steampipe-plugin-azure v0.23.2-0.20220401174801-d61359c2d790
+	gitlab.com/keibiengine/steampipe-plugin-azuread v0.1.1-0.20220401174905-60626bc2deea
 	go.uber.org/zap v1.21.0
-	golang.org/x/net v0.0.0-20220225172249-27dd8689420f // indirect
-	golang.org/x/sys v0.0.0-20220310020820-b874c991c1a5 // indirect
-	golang.org/x/time v0.0.0-20211116232009-f0f3c7e86c11 // indirect
 	gopkg.in/Shopify/sarama.v1 v1.20.1
-	gopkg.in/go-playground/assert.v1 v1.2.1 // indirect
 	gopkg.in/go-playground/validator.v9 v9.31.0
-	gopkg.in/square/go-jose.v2 v2.6.0 // indirect
 	gorm.io/driver/postgres v1.2.2
 	gorm.io/gorm v1.22.3
 )

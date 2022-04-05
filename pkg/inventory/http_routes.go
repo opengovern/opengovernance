@@ -162,7 +162,7 @@ func (h *HttpHandler) RunQuery(ectx echo.Context) error {
 	if accepts := ectx.Request().Header.Get("accept"); accepts != "" {
 		mediaType, _, err := mime.ParseMediaType(accepts)
 		if err == nil && mediaType == "text/csv" {
-			req.Page = api.Page{
+			req.Page = pagination.Page{
 				NextMarker: "",
 				Size:       5000,
 			}
@@ -344,7 +344,7 @@ func (h *HttpHandler) RunSmartQuery(query string,
 	var err error
 	var lastIdx int
 	if req.Page.NextMarker != "" && len(req.Page.NextMarker) > 0 {
-		lastIdx, err = MarkerToIdx(req.Page.NextMarker)
+		lastIdx, err = pagination.MarkerToIdx(req.Page.NextMarker)
 		if err != nil {
 			return nil, err
 		}
@@ -369,11 +369,11 @@ func (h *HttpHandler) RunSmartQuery(query string,
 		return nil, err
 	}
 
-	newIdx := lastIdx + req.Page.Size
-	newPage := api.Page{
-		NextMarker: BuildMarker(newIdx),
-		Size:       req.Page.Size,
+	newPage, err := pagination.NextPage(req.Page)
+	if err != nil {
+		return nil, err
 	}
+
 	resp := api.RunQueryResponse{
 		Page:    newPage,
 		Headers: res.headers,
@@ -392,76 +392,29 @@ func (h *HttpHandler) GetResources(ectx echo.Context, provider *api.SourceType) 
 
 	ctx := extractContext(ectx)
 
-	var lastIdx int
-	if req.Page.NextMarker != "" && len(req.Page.NextMarker) > 0 {
-		lastIdx, err = MarkerToIdx(req.Page.NextMarker)
-		if err != nil {
-			return err
-		}
-	} else {
-		lastIdx = 0
-	}
-
-	resources, err := QuerySummaryResources(ctx, h.client, req.Query, req.Filters, provider, req.Page.Size, lastIdx, req.Sorts)
+	res, err := api.QueryResources(ctx, h.client, req, provider)
 	if err != nil {
-		return err
+		return cc.JSON(http.StatusInternalServerError, err)
 	}
 
-	page := api.Page{
-		Size:       req.Page.Size,
-		NextMarker: BuildMarker(lastIdx + req.Page.Size),
-	}
-
-	if provider != nil && *provider == api.SourceCloudAWS {
-		var awsResources []api.AWSResource
-		for _, resource := range resources {
-			awsResources = append(awsResources, api.AWSResource{
-				Name:         resource.Name,
-				ResourceType: resource.ResourceType,
-				ResourceID:   resource.ResourceID,
-				Region:       resource.Location,
-				AccountID:    resource.SourceID,
-			})
-		}
+	if provider == nil {
+		return cc.JSON(http.StatusOK, api.GetResourcesResponse{
+			Resources: res.AllResources,
+			Page:      res.Page,
+		})
+	} else if *provider == api.SourceCloudAWS {
 		return cc.JSON(http.StatusOK, api.GetAWSResourceResponse{
-			Resources: awsResources,
-			Page:      page,
+			Resources: res.AWSResources,
+			Page:      res.Page,
 		})
-	}
-
-	if provider != nil && *provider == api.SourceCloudAzure {
-		var azureResources []api.AzureResource
-		for _, resource := range resources {
-			azureResources = append(azureResources, api.AzureResource{
-				Name:           resource.Name,
-				ResourceType:   resource.ResourceType,
-				ResourceGroup:  resource.ResourceGroup,
-				Location:       resource.Location,
-				ResourceID:     resource.ResourceID,
-				SubscriptionID: resource.SourceID,
-			})
-		}
+	} else if *provider == api.SourceCloudAzure {
 		return cc.JSON(http.StatusOK, api.GetAzureResourceResponse{
-			Resources: azureResources,
-			Page:      page,
+			Resources: res.AzureResources,
+			Page:      res.Page,
 		})
+	} else {
+		return cc.JSON(http.StatusBadRequest, errors.New("invalid provider"))
 	}
-
-	var allResources []api.AllResource
-	for _, resource := range resources {
-		allResources = append(allResources, api.AllResource{
-			Name:         resource.Name,
-			Provider:     api.SourceType(resource.SourceType),
-			ResourceType: resource.ResourceType,
-			Location:     resource.Location,
-			ResourceID:   resource.ResourceID,
-			SourceID:     resource.SourceID,
-		})
-	}
-	return cc.JSON(http.StatusOK, api.GetResourcesResponse{
-		Resources: allResources,
-		Page:      page,
-	})
 }
 
 func Csv(record []string, w io.Writer) error {
@@ -475,153 +428,68 @@ func Csv(record []string, w io.Writer) error {
 }
 
 func (h *HttpHandler) GetResourcesCSV(ectx echo.Context, provider *api.SourceType) error {
+	var err error
 	cc := ectx.(*Context)
+	ctx := extractContext(ectx)
 
 	req := &api.GetResourcesRequest{}
 	if err := cc.BindValidate(req); err != nil {
 		return cc.JSON(http.StatusBadRequest, err)
 	}
-
-	req.Page = api.Page{
+	req.Page = pagination.Page{
 		NextMarker: "",
-		Size:       1000,
+		Size:       5000,
 	}
 
 	ectx.Response().Header().Set(echo.HeaderContentType, "text/csv")
 	ectx.Response().WriteHeader(http.StatusOK)
 
-	total := 0
-	writeHeaders := true
-	for {
-		n, nextPage, err := h.GetResourcesCSVPage(ectx, req, provider, writeHeaders)
-		if err != nil {
-			return err
-		}
-		writeHeaders = false
-
-		if n == 0 {
-			break
-		}
-
-		ectx.Response().Flush()
-
-		total = total + n
-		if total >= 4999 {
-			break
-		}
-
-		req.Page = nextPage
+	res, err := api.QueryResources(ctx, h.client, req, provider)
+	if err != nil {
+		return cc.JSON(http.StatusInternalServerError, err)
 	}
 
-	return nil
-}
-
-func (h *HttpHandler) GetResourcesCSVPage(ectx echo.Context, req *api.GetResourcesRequest, provider *api.SourceType, writeHeaders bool) (int, api.Page, error) {
-	var err error
-
-	ctx := extractContext(ectx)
-	cc := ectx.(*Context)
-
-	var lastIdx int
-	if req.Page.NextMarker != "" && len(req.Page.NextMarker) > 0 {
-		lastIdx, err = MarkerToIdx(req.Page.NextMarker)
+	if provider == nil {
+		err := Csv(api.AllResource{}.ToCSVHeaders(), cc.Response())
 		if err != nil {
-			return 0, api.Page{}, err
+			return cc.JSON(http.StatusInternalServerError, err)
+		}
+
+		for _, resource := range res.AllResources {
+			err := Csv(resource.ToCSVRecord(), cc.Response())
+			if err != nil {
+				return cc.JSON(http.StatusInternalServerError, err)
+			}
+		}
+	} else if *provider == api.SourceCloudAWS {
+		err := Csv(api.AWSResource{}.ToCSVHeaders(), cc.Response())
+		if err != nil {
+			return cc.JSON(http.StatusInternalServerError, err)
+		}
+
+		for _, resource := range res.AWSResources {
+			err := Csv(resource.ToCSVRecord(), cc.Response())
+			if err != nil {
+				return cc.JSON(http.StatusInternalServerError, err)
+			}
+		}
+	} else if *provider == api.SourceCloudAzure {
+		err := Csv(api.AzureResource{}.ToCSVHeaders(), cc.Response())
+		if err != nil {
+			return cc.JSON(http.StatusInternalServerError, err)
+		}
+
+		for _, resource := range res.AzureResources {
+			err := Csv(resource.ToCSVRecord(), cc.Response())
+			if err != nil {
+				return cc.JSON(http.StatusInternalServerError, err)
+			}
 		}
 	} else {
-		lastIdx = 0
+		return cc.JSON(http.StatusBadRequest, errors.New("invalid provider"))
 	}
-	page := api.Page{
-		Size:       req.Page.Size,
-		NextMarker: BuildMarker(lastIdx + req.Page.Size),
-	}
-
-	resources, err := QuerySummaryResources(ctx, h.client, req.Query, req.Filters, provider, req.Page.Size, lastIdx, req.Sorts)
-	if err != nil {
-		return 0, api.Page{}, err
-	}
-
-	if provider != nil && *provider == api.SourceCloudAWS {
-		var awsResources []api.AWSResource
-		if writeHeaders {
-			err := Csv(api.AWSResource{}.ToCSVHeaders(), cc.Response())
-			if err != nil {
-				return 0, api.Page{}, err
-			}
-			writeHeaders = false
-		}
-		for _, resource := range resources {
-			awsResource := api.AWSResource{
-				Name:         resource.Name,
-				ResourceType: resource.ResourceType,
-				ResourceID:   resource.ResourceID,
-				Region:       resource.Location,
-				AccountID:    resource.SourceID,
-			}
-			awsResources = append(awsResources, awsResource)
-
-			err := Csv(awsResource.ToCSVRecord(), cc.Response())
-			if err != nil {
-				return 0, api.Page{}, err
-			}
-		}
-		return len(resources), page, nil
-	}
-
-	if provider != nil && *provider == api.SourceCloudAzure {
-		var azureResources []api.AzureResource
-		if writeHeaders {
-			err := Csv(api.AzureResource{}.ToCSVHeaders(), cc.Response())
-			if err != nil {
-				return 0, api.Page{}, err
-			}
-
-			writeHeaders = false
-		}
-		for _, resource := range resources {
-			azureResource := api.AzureResource{
-				Name:           resource.Name,
-				ResourceType:   resource.ResourceType,
-				ResourceGroup:  resource.ResourceGroup,
-				Location:       resource.Location,
-				ResourceID:     resource.ResourceID,
-				SubscriptionID: resource.SourceID,
-			}
-			azureResources = append(azureResources, azureResource)
-
-			err := Csv(azureResource.ToCSVRecord(), cc.Response())
-			if err != nil {
-				return 0, api.Page{}, err
-			}
-		}
-		return len(resources), page, nil
-	}
-
-	var allResources []api.AllResource
-	for _, resource := range resources {
-		if writeHeaders {
-			err := Csv(api.AllResource{}.ToCSVHeaders(), cc.Response())
-			if err != nil {
-				return 0, api.Page{}, err
-			}
-			writeHeaders = false
-		}
-		allResource := api.AllResource{
-			Name:         resource.Name,
-			Provider:     api.SourceType(resource.SourceType),
-			ResourceType: resource.ResourceType,
-			Location:     resource.Location,
-			ResourceID:   resource.ResourceID,
-			SourceID:     resource.SourceID,
-		}
-		allResources = append(allResources, allResource)
-
-		err := Csv(allResource.ToCSVRecord(), cc.Response())
-		if err != nil {
-			return 0, api.Page{}, err
-		}
-	}
-	return len(resources), page, nil
+	cc.Response().Flush()
+	return nil
 }
 
 // GetComplianceReports godoc

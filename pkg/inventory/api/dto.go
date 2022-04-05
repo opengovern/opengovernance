@@ -36,7 +36,7 @@ const (
 
 type GetResourceRequest struct {
 	ResourceType string `json:"resourceType" validate:"required"`
-	ID           string `json:"ID" validate:"required"`
+	ID           string `json:"ID" validate:"required"` //	Resource ID
 }
 
 type LocationByProviderResponse struct {
@@ -44,47 +44,52 @@ type LocationByProviderResponse struct {
 }
 
 type RunQueryRequest struct {
-	Page  Page                 `json:"page"`
+	Page api.Page `json:"page"`
+	// NOTE: we don't support multi-field sort for now, if sort is empty, results would be sorted by first column
 	Sorts []SmartQuerySortItem `json:"sorts"`
 }
 
 type RunQueryResponse struct {
-	Page    Page            `json:"page"`
-	Headers []string        `json:"headers"`
-	Result  [][]interface{} `json:"result"`
+	Page    api.Page `json:"page"`
+	Headers []string `json:"headers"` // column names
+	// result of query. in order to access a specific cell please use Result[Row][Column]
+	Result [][]interface{} `json:"result"`
 }
 
 type GetResourcesRequest struct {
-	Query   string             `json:"query"`
-	Filters Filters            `json:"filters" validate:"required"`
-	Sorts   []ResourceSortItem `json:"sorts"`
-	Page    Page               `json:"page"`
+	Query   string  `json:"query"`                       // search query
+	Filters Filters `json:"filters" validate:"required"` // search filters
+	// NOTE: we don't support multi-field sort for now, if sort is empty, results would be sorted by first column
+	Sorts []ResourceSortItem `json:"sorts"`
+	Page  api.Page           `json:"page"`
 }
 
-type Page struct {
-	NextMarker string `json:"nextMarker"`
-	Size       int    `json:"size"`
-}
-
+// Filters model
+// @Description if you provide two values for same filter OR operation would be used
+// @Description if you provide value for two filters AND operation would be used
 type Filters struct {
+	// if you dont need to use this filter, leave them empty. (e.g. [])
 	ResourceType []string `json:"resourceType"`
-	Location     []string `json:"location"`
-	KeibiSource  []string `json:"keibiSource"`
+	// if you dont need to use this filter, leave them empty. (e.g. [])
+	Location []string `json:"location"`
+	// if you dont need to use this filter, leave them empty. (e.g. [])
+	KeibiSource []string `json:"keibiSource"`
 }
 
 type ResourceSortItem struct {
-	Field     SortFieldType `json:"field"`
+	Field     SortFieldType `json:"field" enums:"resource_id,name,source_type,resource_type,resource_group,location,source_id"`
 	Direction DirectionType `json:"direction" enums:"asc,desc"`
 }
 
 type SmartQuerySortItem struct {
+	// fill this with column name
 	Field     string        `json:"field"`
 	Direction DirectionType `json:"direction" enums:"asc,desc"`
 }
 
 type GetResourcesResponse struct {
 	Resources []AllResource `json:"resources"`
-	Page      Page          `json:"page"`
+	Page      api.Page      `json:"page"`
 }
 
 type AllResource struct {
@@ -94,19 +99,30 @@ type AllResource struct {
 	Location     string     `json:"location"`
 	ResourceID   string     `json:"resourceID"`
 	SourceID     string     `json:"sourceID"`
+
+	SteampipeColumns map[string]string `json:"steampipe_columns"`
 }
 
 func (r AllResource) ToCSVRecord() []string {
-	return []string{r.Name, string(r.Provider), r.ResourceType, r.Location, r.ResourceID, r.SourceID}
+	h := []string{r.Name, string(r.Provider), r.ResourceType, r.Location,
+		r.ResourceID, r.SourceID}
+	for _, value := range r.SteampipeColumns {
+		h = append(h, value)
+	}
+	return h
 }
 
 func (r AllResource) ToCSVHeaders() []string {
-	return []string{"Name", "Provider", "ResourceType", "Location", "ResourceID", "SourceID"}
+	h := []string{"Name", "Provider", "ResourceType", "Location", "ResourceID", "SourceID"}
+	for key := range r.SteampipeColumns {
+		h = append(h, key)
+	}
+	return h
 }
 
 type GetAzureResourceResponse struct {
 	Resources []AzureResource `json:"resources"`
-	Page      Page            `json:"page"`
+	Page      api.Page        `json:"page"`
 }
 
 type AzureResource struct {
@@ -116,18 +132,28 @@ type AzureResource struct {
 	Location       string `json:"location"`
 	ResourceID     string `json:"resourceID"`
 	SubscriptionID string `json:"subscriptionID"`
+
+	SteampipeColumns map[string]string `json:"steampipe_columns"`
 }
 
 func (r AzureResource) ToCSVRecord() []string {
-	return []string{r.Name, r.ResourceType, r.ResourceGroup, r.Location, r.ResourceID, r.SubscriptionID}
+	h := []string{r.Name, r.ResourceType, r.ResourceGroup, r.Location, r.ResourceID, r.SubscriptionID}
+	for _, value := range r.SteampipeColumns {
+		h = append(h, value)
+	}
+	return h
 }
 func (r AzureResource) ToCSVHeaders() []string {
-	return []string{"Name", "ResourceType", "ResourceGroup", "Location", "ResourceID", "SubscriptionID"}
+	h := []string{"Name", "ResourceType", "ResourceGroup", "Location", "ResourceID", "SubscriptionID"}
+	for key := range r.SteampipeColumns {
+		h = append(h, key)
+	}
+	return h
 }
 
 type GetAWSResourceResponse struct {
 	Resources []AWSResource `json:"resources"`
-	Page      Page          `json:"page"`
+	Page      api.Page      `json:"page"`
 }
 
 type AWSResource struct {
@@ -136,13 +162,23 @@ type AWSResource struct {
 	ResourceID   string `json:"resourceID"`
 	Region       string `json:"location"`
 	AccountID    string `json:"accountID"`
+
+	SteampipeColumns map[string]string `json:"steampipe_columns"`
 }
 
 func (r AWSResource) ToCSVRecord() []string {
-	return []string{r.Name, r.ResourceType, r.ResourceID, r.Region, r.AccountID}
+	h := []string{r.Name, r.ResourceType, r.ResourceID, r.Region, r.AccountID}
+	for _, value := range r.SteampipeColumns {
+		h = append(h, value)
+	}
+	return h
 }
 func (r AWSResource) ToCSVHeaders() []string {
-	return []string{"Name", "ResourceType", "ResourceID", "Region", "AccountID"}
+	h := []string{"Name", "ResourceType", "ResourceID", "Region", "AccountID"}
+	for key := range r.SteampipeColumns {
+		h = append(h, key)
+	}
+	return h
 }
 
 type SummaryQueryResponse struct {
@@ -188,18 +224,18 @@ type SmartQueryItem struct {
 }
 
 type TimeRangeFilter struct {
-	From int64
-	To   int64
+	From int64 // from epoch millisecond
+	To   int64 // from epoch millisecond
 }
 
 type ComplianceReportFilters struct {
 	TimeRange *TimeRangeFilter `json:"timeRange"`
-	GroupID   *string          `json:"groupID"`
+	GroupID   *string          `json:"groupID"` // benchmark id or control id
 }
 
 type GetComplianceReportRequest struct {
 	Filters    ComplianceReportFilters      `json:"filters"`
-	ReportType compliance_report.ReportType `json:"reportType"`
+	ReportType compliance_report.ReportType `json:"reportType" enums:"benchmark,control,result"`
 	Page       api.Page                     `json:"page"`
 }
 
