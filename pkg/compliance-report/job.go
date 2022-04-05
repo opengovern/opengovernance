@@ -121,6 +121,11 @@ func (j *Job) Do(vlt vault.SourceConfig, producer sarama.SyncProducer, topic str
 		return j.failed("error: RunSteampipeCheckAll: " + err.Error())
 	}
 
+	err = RunSteampipeCheckAll(j.SourceType, resultFileName)
+	if err != nil {
+		return j.failed("error: RunSteampipeCheckAll: " + err.Error())
+	}
+
 	reports, err := ParseReport(resultFileName, j.JobID, j.SourceID)
 	if err != nil {
 		return j.failed("error: Parse report: " + err.Error())
