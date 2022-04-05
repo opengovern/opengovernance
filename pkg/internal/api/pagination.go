@@ -17,7 +17,7 @@ import (
 type Page struct {
 	// fill it with empty for the first request
 	NextMarker string `json:"nextMarker"`
-	Size       int    `json:"size" minimum:"1"`
+	Size       int    `json:"size" minimum:"1" validate:"required,gte=1"`
 }
 
 func (p Page) GetIndex() (int, error) {

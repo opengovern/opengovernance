@@ -9,10 +9,10 @@ import (
 	"fmt"
 	"github.com/google/uuid"
 	"github.com/hashicorp/go-hclog"
+	"github.com/jackc/pgx/v4"
 	"github.com/turbot/steampipe-plugin-sdk/logging"
 	"github.com/turbot/steampipe-plugin-sdk/plugin/context_key"
 	compliance_report "gitlab.com/keibiengine/keibi-engine/pkg/compliance-report"
-	describeAPI "gitlab.com/keibiengine/keibi-engine/pkg/describe/api"
 	pagination "gitlab.com/keibiengine/keibi-engine/pkg/internal/api"
 	"gitlab.com/keibiengine/keibi-engine/pkg/inventory/api"
 	"io"
@@ -64,7 +64,7 @@ func (h *HttpHandler) GetResource(ectx echo.Context) error {
 
 	req := &api.GetResourceRequest{}
 	if err := ctx.BindValidate(req); err != nil {
-		return ctx.JSON(http.StatusBadRequest, err)
+		return echo.NewHTTPError(http.StatusBadRequest, "Invalid request")
 	}
 
 	hash := sha256.New()
@@ -83,13 +83,13 @@ func (h *HttpHandler) GetResource(ectx echo.Context) error {
 	}
 	queryBytes, err := json.Marshal(query)
 	if err != nil {
-		return ctx.JSON(http.StatusInternalServerError, err)
+		return err
 	}
 
 	var response api.GenericQueryResponse
 	err = h.client.Search(cc, index, string(queryBytes), &response)
 	if err != nil {
-		return ctx.JSON(http.StatusInternalServerError, err)
+		return err
 	}
 
 	var source map[string]interface{}
@@ -116,7 +116,7 @@ func (h *HttpHandler) ListQueries(ectx echo.Context) error {
 
 	queries, err := h.db.GetQueries()
 	if err != nil {
-		return ctx.JSON(http.StatusInternalServerError, err)
+		return err
 	}
 
 	var result []api.SmartQueryItem
@@ -150,13 +150,13 @@ func (h *HttpHandler) RunQuery(ectx echo.Context) error {
 
 	req := &api.RunQueryRequest{}
 	if err := ctx.BindValidate(req); err != nil {
-		return ctx.JSON(http.StatusBadRequest, err)
+		return echo.NewHTTPError(http.StatusBadRequest, "Invalid request")
 	}
 
 	queryId := ctx.Param("queryId")
 	queryUUID, err := uuid.Parse(queryId)
 	if err != nil {
-		return ctx.JSON(http.StatusBadRequest, err)
+		return echo.NewHTTPError(http.StatusBadRequest, "Invalid queryId")
 	}
 
 	if accepts := ectx.Request().Header.Get("accept"); accepts != "" {
@@ -172,17 +172,20 @@ func (h *HttpHandler) RunQuery(ectx echo.Context) error {
 
 			query, err := h.db.GetQuery(queryUUID)
 			if err != nil {
-				return ctx.JSON(http.StatusNotFound, err)
+				if err == pgx.ErrNoRows {
+					return echo.NewHTTPError(http.StatusNotFound, "Query not found")
+				}
+				return err
 			}
 
 			resp, err := h.RunSmartQuery(query.Query, req)
 			if err != nil {
-				return ctx.JSON(http.StatusInternalServerError, err)
+				return err
 			}
 
 			err = Csv(resp.Headers, ctx.Response())
 			if err != nil {
-				return ctx.JSON(http.StatusInternalServerError, err)
+				return err
 			}
 
 			for _, row := range resp.Result {
@@ -192,7 +195,7 @@ func (h *HttpHandler) RunQuery(ectx echo.Context) error {
 				}
 				err := Csv(cells, ctx.Response())
 				if err != nil {
-					return ctx.JSON(http.StatusInternalServerError, err)
+					return err
 				}
 			}
 
@@ -203,11 +206,14 @@ func (h *HttpHandler) RunQuery(ectx echo.Context) error {
 
 	query, err := h.db.GetQuery(queryUUID)
 	if err != nil {
-		return ctx.JSON(http.StatusNotFound, err)
+		if err == pgx.ErrNoRows {
+			return echo.NewHTTPError(http.StatusNotFound, "Query not found")
+		}
+		return err
 	}
 	resp, err := h.RunSmartQuery(query.Query, req)
 	if err != nil {
-		return ctx.JSON(http.StatusInternalServerError, err)
+		return err
 	}
 	return ctx.JSON(200, resp)
 }
@@ -387,14 +393,14 @@ func (h *HttpHandler) GetResources(ectx echo.Context, provider *api.SourceType) 
 	cc := ectx.(*Context)
 	req := &api.GetResourcesRequest{}
 	if err := cc.BindValidate(req); err != nil {
-		return cc.JSON(http.StatusBadRequest, err)
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
 	}
 
 	ctx := extractContext(ectx)
 
 	res, err := api.QueryResources(ctx, h.client, req, provider)
 	if err != nil {
-		return cc.JSON(http.StatusInternalServerError, err)
+		return err
 	}
 
 	if provider == nil {
@@ -413,7 +419,7 @@ func (h *HttpHandler) GetResources(ectx echo.Context, provider *api.SourceType) 
 			Page:      res.Page,
 		})
 	} else {
-		return cc.JSON(http.StatusBadRequest, errors.New("invalid provider"))
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid provider")
 	}
 }
 
@@ -434,7 +440,7 @@ func (h *HttpHandler) GetResourcesCSV(ectx echo.Context, provider *api.SourceTyp
 
 	req := &api.GetResourcesRequest{}
 	if err := cc.BindValidate(req); err != nil {
-		return cc.JSON(http.StatusBadRequest, err)
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
 	}
 	req.Page = pagination.Page{
 		NextMarker: "",
@@ -446,47 +452,47 @@ func (h *HttpHandler) GetResourcesCSV(ectx echo.Context, provider *api.SourceTyp
 
 	res, err := api.QueryResources(ctx, h.client, req, provider)
 	if err != nil {
-		return cc.JSON(http.StatusInternalServerError, err)
+		return err
 	}
 
 	if provider == nil {
 		err := Csv(api.AllResource{}.ToCSVHeaders(), cc.Response())
 		if err != nil {
-			return cc.JSON(http.StatusInternalServerError, err)
+			return err
 		}
 
 		for _, resource := range res.AllResources {
 			err := Csv(resource.ToCSVRecord(), cc.Response())
 			if err != nil {
-				return cc.JSON(http.StatusInternalServerError, err)
+				return err
 			}
 		}
 	} else if *provider == api.SourceCloudAWS {
 		err := Csv(api.AWSResource{}.ToCSVHeaders(), cc.Response())
 		if err != nil {
-			return cc.JSON(http.StatusInternalServerError, err)
+			return err
 		}
 
 		for _, resource := range res.AWSResources {
 			err := Csv(resource.ToCSVRecord(), cc.Response())
 			if err != nil {
-				return cc.JSON(http.StatusInternalServerError, err)
+				return err
 			}
 		}
 	} else if *provider == api.SourceCloudAzure {
 		err := Csv(api.AzureResource{}.ToCSVHeaders(), cc.Response())
 		if err != nil {
-			return cc.JSON(http.StatusInternalServerError, err)
+			return err
 		}
 
 		for _, resource := range res.AzureResources {
 			err := Csv(resource.ToCSVRecord(), cc.Response())
 			if err != nil {
-				return cc.JSON(http.StatusInternalServerError, err)
+				return err
 			}
 		}
 	} else {
-		return cc.JSON(http.StatusBadRequest, errors.New("invalid provider"))
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid provider")
 	}
 	cc.Response().Flush()
 	return nil
@@ -499,26 +505,32 @@ func (h *HttpHandler) GetResourcesCSV(ectx echo.Context, provider *api.SourceTyp
 // @Accept       json
 // @Produce      json
 // @Param        source_id		path	string							true	"Source ID"
-// @Param        report_id		path	string							true	"Report Job ID"
+// @Param        report_id		path	string							false	"Report Job ID"
 // @Param        request		body	api.GetComplianceReportRequest	true	"Request Body"
 // @Success      200  {object}  []compliance_report.Report
 // @Router       /reports/compliance/{source_id} [get]
 // @Router       /reports/compliance/{source_id}/{report_id} [get]
 func (h *HttpHandler) GetComplianceReports(ctx echo.Context) error {
+	cc := ctx.(*Context)
+
 	sourceUUID, err := uuid.Parse(ctx.Param("sourceId"))
 	if err != nil {
-		ctx.Logger().Errorf("parsing uuid: %v", err)
-		return ctx.JSON(http.StatusBadRequest, describeAPI.ErrorResponse{Message: "invalid source uuid"})
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid source uuid")
 	}
 
 	req := &api.GetComplianceReportRequest{}
-	if err := ctx.Bind(req); err != nil {
-		return ctx.JSON(http.StatusBadRequest, err)
+	if err := cc.BindValidate(req); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
+	}
+
+	lastIdx, err := pagination.MarkerToIdx(req.Page.NextMarker)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid page")
 	}
 
 	nextPage, err := pagination.NextPage(req.Page)
 	if err != nil {
-		return ctx.JSON(http.StatusBadRequest, err)
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid page")
 	}
 
 	var jobIDs []int
@@ -527,13 +539,13 @@ func (h *HttpHandler) GetComplianceReports(ctx echo.Context) error {
 		jobID, err := strconv.Atoi(jobIDStr)
 		if err != nil {
 			ctx.Logger().Errorf("parsing jobid: %v", err)
-			return ctx.JSON(http.StatusBadRequest, describeAPI.ErrorResponse{Message: "invalid job id"})
+			return echo.NewHTTPError(http.StatusBadRequest, "invalid job id")
 		}
 		jobIDs = append(jobIDs, jobID)
 	} else {
 		reports, err := api.ListComplianceReportJobs(h.schedulerBaseUrl, sourceUUID, req.Filters.TimeRange)
 		if err != nil {
-			return ctx.JSON(http.StatusInternalServerError, describeAPI.ErrorResponse{Message: "failed to fetch reports"})
+			return err
 		}
 
 		for _, report := range reports {
@@ -541,23 +553,18 @@ func (h *HttpHandler) GetComplianceReports(ctx echo.Context) error {
 		}
 	}
 
-	lastIdx, err := pagination.MarkerToIdx(req.Page.NextMarker)
-	if err != nil {
-		return ctx.JSON(http.StatusBadRequest, err)
-	}
-
 	query := compliance_report.QueryReports(sourceUUID, jobIDs, req.ReportType,
 		req.Filters.GroupID, req.Page.Size, lastIdx)
 	b, err := json.Marshal(query)
 	if err != nil {
-		return ctx.JSON(http.StatusBadRequest, err)
+		return err
 	}
 
 	var response compliance_report.ReportQueryResponse
 	err = h.client.Search(context.Background(), compliance_report.ComplianceReportIndex,
 		string(b), &response)
 	if err != nil {
-		return ctx.JSON(http.StatusBadRequest, err)
+		return err
 	}
 
 	var reports []compliance_report.Report

@@ -174,6 +174,8 @@ definitions:
         - control
         - result
         type: string
+    required:
+    - page
     type: object
   api.GetResourceRequest:
     properties:
@@ -204,6 +206,7 @@ definitions:
         type: array
     required:
     - filters
+    - page
     type: object
   api.GetResourcesResponse:
     properties:
@@ -227,6 +230,8 @@ definitions:
       size:
         minimum: 1
         type: integer
+    required:
+    - size
     type: object
   api.Provider:
     properties:
@@ -267,6 +272,8 @@ definitions:
         items:
           $ref: '#/definitions/api.SmartQuerySortItem'
         type: array
+    required:
+    - page
     type: object
   api.RunQueryResponse:
     properties:
@@ -766,7 +773,7 @@ paths:
       tags:
       - onboard
   /onboard/api/v1/discover/aws/accounts:
-    get:
+    post:
       description: If the account is part of an organization and the account has premission
         to list the accounts, it will return all the accounts in that organization.
         Otherwise, it will return the single account these credentials belong to.
@@ -796,7 +803,7 @@ paths:
       tags:
       - onboard
   /onboard/api/v1/discover/azure/subscriptions:
-    get:
+    post:
       description: Returning the list of available Azure subscriptions.
       parameters:
       - description: TenantId
@@ -883,7 +890,6 @@ paths:
       - description: Report Job ID
         in: path
         name: report_id
-        required: true
         type: string
       - description: Request Body
         in: body
@@ -918,7 +924,6 @@ paths:
       - description: Report Job ID
         in: path
         name: report_id
-        required: true
         type: string
       - description: Request Body
         in: body

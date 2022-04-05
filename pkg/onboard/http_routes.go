@@ -84,7 +84,7 @@ func (h HttpHandler) GetProviders(ctx echo.Context) error {
 func (h HttpHandler) PostSourceAws(ctx echo.Context) error {
 	var req api.SourceAwsRequest
 	if err := bindValidate(ctx, &req); err != nil {
-		return ctx.JSON(http.StatusBadRequest, err)
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
 	}
 
 	src := NewAWSSource(req)
@@ -113,7 +113,7 @@ func (h HttpHandler) PostSourceAws(ctx echo.Context) error {
 		return nil
 	})
 	if err != nil {
-		return ctx.JSON(http.StatusInternalServerError, err)
+		return err
 	}
 
 	return ctx.JSON(http.StatusOK, src.toSourceResponse())
@@ -133,14 +133,14 @@ func (h HttpHandler) PostSourceAzure(ctx echo.Context) error {
 	var req api.SourceAzureRequest
 
 	if err := bindValidate(ctx, &req); err != nil {
-		return ctx.JSON(http.StatusBadRequest, err)
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
 	}
 
 	src := NewAzureSource(req)
 
 	err := h.vault.Write(src.ConfigRef, req.Config.AsMap())
 	if err != nil {
-		return ctx.JSON(http.StatusInternalServerError, err)
+		return err
 	}
 
 	err = h.db.orm.Transaction(func(tx *gorm.DB) error {
@@ -167,7 +167,7 @@ func (h HttpHandler) PostSourceAzure(ctx echo.Context) error {
 		return nil
 	})
 	if err != nil {
-		return ctx.JSON(http.StatusInternalServerError, err)
+		return err
 	}
 
 	return ctx.JSON(http.StatusOK, src.toSourceResponse())
@@ -184,12 +184,15 @@ func (h HttpHandler) PostSourceAzure(ctx echo.Context) error {
 func (h HttpHandler) GetSource(ctx echo.Context) error {
 	srcId, err := uuid.Parse(ctx.Param(paramSourceId))
 	if err != nil {
-		return ctx.JSON(http.StatusBadRequest, err)
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
 	}
 
 	src, err := h.db.GetSource(srcId)
 	if err != nil {
-		return ctx.JSON(http.StatusBadRequest, err)
+		if err == gorm.ErrRecordNotFound {
+			return echo.NewHTTPError(http.StatusBadRequest, "source not found")
+		}
+		return err
 	}
 
 	return ctx.JSON(http.StatusOK, &api.Source{
@@ -212,12 +215,15 @@ func (h HttpHandler) GetSource(ctx echo.Context) error {
 func (h HttpHandler) DeleteSource(ctx echo.Context) error {
 	srcId, err := uuid.Parse(ctx.Param(paramSourceId))
 	if err != nil {
-		return ctx.JSON(http.StatusBadRequest, err)
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
 	}
 
 	src, err := h.db.GetSource(srcId)
 	if err != nil {
-		return ctx.JSON(http.StatusBadRequest, err)
+		if err == gorm.ErrRecordNotFound {
+			return echo.NewHTTPError(http.StatusBadRequest, "source not found")
+		}
+		return err
 	}
 
 	err = h.db.orm.Transaction(func(tx *gorm.DB) error {
@@ -244,7 +250,7 @@ func (h HttpHandler) DeleteSource(ctx echo.Context) error {
 		return nil
 	})
 	if err != nil {
-		return ctx.JSON(http.StatusBadRequest, err)
+		return err
 	}
 
 	return ctx.NoContent(http.StatusOK)
@@ -264,19 +270,19 @@ func (h HttpHandler) GetSources(ctx echo.Context) error {
 	if sType != "" {
 		st, ok := api.AsSourceType(sType)
 		if !ok {
-			return ctx.JSON(http.StatusBadRequest, fmt.Errorf("invalid source type: %s", sType))
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("invalid source type: %s", sType))
 		}
 
 		var err error
 		sources, err = h.db.GetSourcesOfType(st)
 		if err != nil {
-			return ctx.JSON(http.StatusInternalServerError, err)
+			return err
 		}
 	} else {
 		var err error
 		sources, err = h.db.GetSources()
 		if err != nil {
-			return ctx.JSON(http.StatusInternalServerError, err)
+			return err
 		}
 	}
 
@@ -306,7 +312,7 @@ func (h HttpHandler) PutSource(ctx echo.Context) error {
 // @Success      200  {object}  []api.DiscoverAWSAccountsResponse
 // @Param        accessKey       body      string  true  "AccessKey"
 // @Param        secretKey       body      string  true  "SecretKey"
-// @Router       /onboard/api/v1/discover/aws/accounts [get]
+// @Router       /onboard/api/v1/discover/aws/accounts [post]
 func (h HttpHandler) DiscoverAwsAccounts(ctx echo.Context) error {
 	// DiscoverAwsAccounts returns the list of available AWS accounts given the credentials.
 	// If the account is part of an organization and the account has premission to
@@ -314,12 +320,12 @@ func (h HttpHandler) DiscoverAwsAccounts(ctx echo.Context) error {
 	// Otherwise, it will return the single account these credentials belong to.
 	var req api.DiscoverAWSAccountsRequest
 	if err := bindValidate(ctx, &req); err != nil {
-		return ctx.JSON(http.StatusBadRequest, err)
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
 	}
 
 	accounts, err := discoverAwsAccounts(ctx.Request().Context(), req)
 	if err != nil {
-		return ctx.JSON(http.StatusBadRequest, err.Error())
+		return err
 	}
 
 	return ctx.JSON(http.StatusOK, accounts)
@@ -334,16 +340,16 @@ func (h HttpHandler) DiscoverAwsAccounts(ctx echo.Context) error {
 // @Param        tenantId       body      string  true  "TenantId"
 // @Param        clientId       body      string  true  "ClientId"
 // @Param        clientSecret   body      string  true  "ClientSecret"
-// @Router       /onboard/api/v1/discover/azure/subscriptions [get]
+// @Router       /onboard/api/v1/discover/azure/subscriptions [post]
 func (h *HttpHandler) DiscoverAzureSubscriptions(ctx echo.Context) error {
 	var req api.DiscoverAzureSubscriptionsRequest
 	if err := bindValidate(ctx, &req); err != nil {
-		return ctx.JSON(http.StatusBadRequest, err)
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
 	}
 
 	subs, err := discoverAzureSubscriptions(ctx.Request().Context(), req)
 	if err != nil {
-		return ctx.JSON(http.StatusBadRequest, err)
+		return err
 	}
 
 	return ctx.JSON(http.StatusOK, subs)

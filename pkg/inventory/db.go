@@ -1,8 +1,8 @@
 package inventory
 
 import (
-	"fmt"
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v4"
 	"gorm.io/gorm"
 )
 
@@ -54,7 +54,7 @@ func (db Database) GetQuery(id uuid.UUID) (SmartQuery, error) {
 	if tx.Error != nil {
 		return SmartQuery{}, tx.Error
 	} else if tx.RowsAffected != 1 {
-		return SmartQuery{}, fmt.Errorf("get query: specified id was not found")
+		return SmartQuery{}, pgx.ErrNoRows
 	}
 
 	return s, nil

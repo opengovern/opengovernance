@@ -386,7 +386,7 @@ const docTemplate = `{
             }
         },
         "/onboard/api/v1/discover/aws/accounts": {
-            "get": {
+            "post": {
                 "description": "If the account is part of an organization and the account has premission to list the accounts, it will return all the accounts in that organization. Otherwise, it will return the single account these credentials belong to.",
                 "produces": [
                     "application/json"
@@ -429,7 +429,7 @@ const docTemplate = `{
             }
         },
         "/onboard/api/v1/discover/azure/subscriptions": {
-            "get": {
+            "post": {
                 "description": "Returning the list of available Azure subscriptions.",
                 "produces": [
                     "application/json"
@@ -616,8 +616,7 @@ const docTemplate = `{
                         "type": "string",
                         "description": "Report Job ID",
                         "name": "report_id",
-                        "in": "path",
-                        "required": true
+                        "in": "path"
                     },
                     {
                         "description": "Request Body",
@@ -667,8 +666,7 @@ const docTemplate = `{
                         "type": "string",
                         "description": "Report Job ID",
                         "name": "report_id",
-                        "in": "path",
-                        "required": true
+                        "in": "path"
                     },
                     {
                         "description": "Request Body",
@@ -1140,6 +1138,9 @@ const docTemplate = `{
         },
         "api.GetComplianceReportRequest": {
             "type": "object",
+            "required": [
+                "page"
+            ],
             "properties": {
                 "filters": {
                     "$ref": "#/definitions/api.ComplianceReportFilters"
@@ -1176,7 +1177,8 @@ const docTemplate = `{
         "api.GetResourcesRequest": {
             "type": "object",
             "required": [
-                "filters"
+                "filters",
+                "page"
             ],
             "properties": {
                 "filters": {
@@ -1223,6 +1225,9 @@ const docTemplate = `{
         },
         "api.Page": {
             "type": "object",
+            "required": [
+                "size"
+            ],
             "properties": {
                 "nextMarker": {
                     "description": "fill it with empty for the first request",
@@ -1277,6 +1282,9 @@ const docTemplate = `{
         },
         "api.RunQueryRequest": {
             "type": "object",
+            "required": [
+                "page"
+            ],
             "properties": {
                 "page": {
                     "$ref": "#/definitions/api.Page"

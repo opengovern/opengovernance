@@ -44,7 +44,7 @@ type LocationByProviderResponse struct {
 }
 
 type RunQueryRequest struct {
-	Page api.Page `json:"page"`
+	Page api.Page `json:"page" validate:"required"`
 	// NOTE: we don't support multi-field sort for now, if sort is empty, results would be sorted by first column
 	Sorts []SmartQuerySortItem `json:"sorts"`
 }
@@ -61,7 +61,7 @@ type GetResourcesRequest struct {
 	Filters Filters `json:"filters" validate:"required"` // search filters
 	// NOTE: we don't support multi-field sort for now, if sort is empty, results would be sorted by first column
 	Sorts []ResourceSortItem `json:"sorts"`
-	Page  api.Page           `json:"page"`
+	Page  api.Page           `json:"page" validate:"required"`
 }
 
 // Filters model
@@ -77,14 +77,14 @@ type Filters struct {
 }
 
 type ResourceSortItem struct {
-	Field     SortFieldType `json:"field" enums:"resource_id,name,source_type,resource_type,resource_group,location,source_id"`
-	Direction DirectionType `json:"direction" enums:"asc,desc"`
+	Field     SortFieldType `json:"field" enums:"resource_id,name,source_type,resource_type,resource_group,location,source_id" validate:"resource_id|name|source_type|resource_type|resource_group|location|source_id"`
+	Direction DirectionType `json:"direction" enums:"asc,desc" validate:"asc|desc"`
 }
 
 type SmartQuerySortItem struct {
 	// fill this with column name
 	Field     string        `json:"field"`
-	Direction DirectionType `json:"direction" enums:"asc,desc"`
+	Direction DirectionType `json:"direction" enums:"asc,desc" validate:"asc|desc"`
 }
 
 type GetResourcesResponse struct {
@@ -235,8 +235,8 @@ type ComplianceReportFilters struct {
 
 type GetComplianceReportRequest struct {
 	Filters    ComplianceReportFilters      `json:"filters"`
-	ReportType compliance_report.ReportType `json:"reportType" enums:"benchmark,control,result"`
-	Page       api.Page                     `json:"page"`
+	ReportType compliance_report.ReportType `json:"reportType" enums:"benchmark,control,result" validate:"benchmark|control|result"`
+	Page       api.Page                     `json:"page" validate:"required"`
 }
 
 type GetComplianceReportResponse struct {
