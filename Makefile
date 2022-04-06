@@ -1,7 +1,7 @@
 .PHONY: build clean
 
 build:
-	export GOPRIVATE="gitlab.com/keibiengine"
+	export GOPRIVATE="gitlab.com"
 	GOCACHE=$(GOCACHE)/linux/ CGO_ENABLED=0 GOOS=linux go build -v -ldflags '-w -extldflags -static' -o ./build/ ./cmd/...
 
 docker-build:
