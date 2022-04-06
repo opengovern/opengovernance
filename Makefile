@@ -1,7 +1,8 @@
 .PHONY: build clean
 
 build:
-	GOCACHE=$(GOCACHE)/linux/ GOPRIVATE=gitlab.com/keibiengine CGO_ENABLED=0 GOOS=linux go build -v -ldflags '-w -extldflags -static' -o ./build/ ./cmd/...
+	export GOPRIVATE="gitlab.com/keibiengine"
+	GOCACHE=$(GOCACHE)/linux/ CGO_ENABLED=0 GOOS=linux go build -v -ldflags '-w -extldflags -static' -o ./build/ ./cmd/...
 
 docker-build:
 	docker build -f  docker/DescribeSchedulerDockerfile . -t registry.digitalocean.com/keibi/describe-scheduler:0.0.1
