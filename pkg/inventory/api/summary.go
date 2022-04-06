@@ -27,8 +27,8 @@ func QuerySummaryResources(
 		terms["resource_type.keyword"] = filters.ResourceType
 	}
 
-	if !FilterIsEmpty(filters.KeibiSource) {
-		terms["source_id.keyword"] = filters.KeibiSource
+	if !FilterIsEmpty(filters.SourceID) {
+		terms["source_id.keyword"] = filters.SourceID
 	}
 
 	if provider != nil {

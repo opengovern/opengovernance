@@ -900,6 +900,12 @@ const docTemplate = `{
                 "accountID": {
                     "type": "string"
                 },
+                "attributes": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
+                },
                 "location": {
                     "type": "string"
                 },
@@ -911,18 +917,18 @@ const docTemplate = `{
                 },
                 "resourceType": {
                     "type": "string"
-                },
-                "steampipe_columns": {
-                    "type": "object",
-                    "additionalProperties": {
-                        "type": "string"
-                    }
                 }
             }
         },
         "api.AllResource": {
             "type": "object",
             "properties": {
+                "attributes": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
+                },
                 "location": {
                     "type": "string"
                 },
@@ -940,18 +946,18 @@ const docTemplate = `{
                 },
                 "sourceID": {
                     "type": "string"
-                },
-                "steampipe_columns": {
-                    "type": "object",
-                    "additionalProperties": {
-                        "type": "string"
-                    }
                 }
             }
         },
         "api.AzureResource": {
             "type": "object",
             "properties": {
+                "attributes": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
+                },
                 "location": {
                     "type": "string"
                 },
@@ -966,12 +972,6 @@ const docTemplate = `{
                 },
                 "resourceType": {
                     "type": "string"
-                },
-                "steampipe_columns": {
-                    "type": "object",
-                    "additionalProperties": {
-                        "type": "string"
-                    }
                 },
                 "subscriptionID": {
                     "type": "string"
@@ -1085,13 +1085,6 @@ const docTemplate = `{
             "description": "if you provide two values for same filter OR operation would be used if you provide value for two filters AND operation would be used",
             "type": "object",
             "properties": {
-                "keibiSource": {
-                    "description": "if you dont need to use this filter, leave them empty. (e.g. [])",
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
                 "location": {
                     "description": "if you dont need to use this filter, leave them empty. (e.g. [])",
                     "type": "array",
@@ -1100,6 +1093,13 @@ const docTemplate = `{
                     }
                 },
                 "resourceType": {
+                    "description": "if you dont need to use this filter, leave them empty. (e.g. [])",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "sourceID": {
                     "description": "if you dont need to use this filter, leave them empty. (e.g. [])",
                     "type": "array",
                     "items": {

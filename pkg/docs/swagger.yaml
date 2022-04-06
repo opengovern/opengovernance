@@ -3,6 +3,10 @@ definitions:
     properties:
       accountID:
         type: string
+      attributes:
+        additionalProperties:
+          type: string
+        type: object
       location:
         type: string
       name:
@@ -11,13 +15,13 @@ definitions:
         type: string
       resourceType:
         type: string
-      steampipe_columns:
-        additionalProperties:
-          type: string
-        type: object
     type: object
   api.AllResource:
     properties:
+      attributes:
+        additionalProperties:
+          type: string
+        type: object
       location:
         type: string
       name:
@@ -30,13 +34,13 @@ definitions:
         type: string
       sourceID:
         type: string
-      steampipe_columns:
-        additionalProperties:
-          type: string
-        type: object
     type: object
   api.AzureResource:
     properties:
+      attributes:
+        additionalProperties:
+          type: string
+        type: object
       location:
         type: string
       name:
@@ -47,10 +51,6 @@ definitions:
         type: string
       resourceType:
         type: string
-      steampipe_columns:
-        additionalProperties:
-          type: string
-        type: object
       subscriptionID:
         type: string
     type: object
@@ -125,12 +125,6 @@ definitions:
     description: if you provide two values for same filter OR operation would be used
       if you provide value for two filters AND operation would be used
     properties:
-      keibiSource:
-        description: if you dont need to use this filter, leave them empty. (e.g.
-          [])
-        items:
-          type: string
-        type: array
       location:
         description: if you dont need to use this filter, leave them empty. (e.g.
           [])
@@ -138,6 +132,12 @@ definitions:
           type: string
         type: array
       resourceType:
+        description: if you dont need to use this filter, leave them empty. (e.g.
+          [])
+        items:
+          type: string
+        type: array
+      sourceID:
         description: if you dont need to use this filter, leave them empty. (e.g.
           [])
         items:

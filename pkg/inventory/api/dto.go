@@ -73,18 +73,18 @@ type Filters struct {
 	// if you dont need to use this filter, leave them empty. (e.g. [])
 	Location []string `json:"location"`
 	// if you dont need to use this filter, leave them empty. (e.g. [])
-	KeibiSource []string `json:"keibiSource"`
+	SourceID []string `json:"sourceID"`
 }
 
 type ResourceSortItem struct {
-	Field     SortFieldType `json:"field" enums:"resource_id,name,source_type,resource_type,resource_group,location,source_id" validate:"resource_id|name|source_type|resource_type|resource_group|location|source_id"`
-	Direction DirectionType `json:"direction" enums:"asc,desc" validate:"asc|desc"`
+	Field     SortFieldType `json:"field" enums:"resource_id,name,source_type,resource_type,resource_group,location,source_id"`
+	Direction DirectionType `json:"direction" enums:"asc,desc"`
 }
 
 type SmartQuerySortItem struct {
 	// fill this with column name
 	Field     string        `json:"field"`
-	Direction DirectionType `json:"direction" enums:"asc,desc" validate:"asc|desc"`
+	Direction DirectionType `json:"direction" enums:"asc,desc"`
 }
 
 type GetResourcesResponse struct {
@@ -100,13 +100,13 @@ type AllResource struct {
 	ResourceID   string     `json:"resourceID"`
 	SourceID     string     `json:"sourceID"`
 
-	SteampipeColumns map[string]string `json:"steampipe_columns"`
+	Attributes map[string]string `json:"attributes"`
 }
 
 func (r AllResource) ToCSVRecord() []string {
 	h := []string{r.Name, string(r.Provider), r.ResourceType, r.Location,
 		r.ResourceID, r.SourceID}
-	for _, value := range r.SteampipeColumns {
+	for _, value := range r.Attributes {
 		h = append(h, value)
 	}
 	return h
@@ -114,7 +114,7 @@ func (r AllResource) ToCSVRecord() []string {
 
 func (r AllResource) ToCSVHeaders() []string {
 	h := []string{"Name", "Provider", "ResourceType", "Location", "ResourceID", "SourceID"}
-	for key := range r.SteampipeColumns {
+	for key := range r.Attributes {
 		h = append(h, key)
 	}
 	return h
@@ -133,19 +133,19 @@ type AzureResource struct {
 	ResourceID     string `json:"resourceID"`
 	SubscriptionID string `json:"subscriptionID"`
 
-	SteampipeColumns map[string]string `json:"steampipe_columns"`
+	Attributes map[string]string `json:"attributes"`
 }
 
 func (r AzureResource) ToCSVRecord() []string {
 	h := []string{r.Name, r.ResourceType, r.ResourceGroup, r.Location, r.ResourceID, r.SubscriptionID}
-	for _, value := range r.SteampipeColumns {
+	for _, value := range r.Attributes {
 		h = append(h, value)
 	}
 	return h
 }
 func (r AzureResource) ToCSVHeaders() []string {
 	h := []string{"Name", "ResourceType", "ResourceGroup", "Location", "ResourceID", "SubscriptionID"}
-	for key := range r.SteampipeColumns {
+	for key := range r.Attributes {
 		h = append(h, key)
 	}
 	return h
@@ -163,19 +163,19 @@ type AWSResource struct {
 	Region       string `json:"location"`
 	AccountID    string `json:"accountID"`
 
-	SteampipeColumns map[string]string `json:"steampipe_columns"`
+	Attributes map[string]string `json:"attributes"`
 }
 
 func (r AWSResource) ToCSVRecord() []string {
 	h := []string{r.Name, r.ResourceType, r.ResourceID, r.Region, r.AccountID}
-	for _, value := range r.SteampipeColumns {
+	for _, value := range r.Attributes {
 		h = append(h, value)
 	}
 	return h
 }
 func (r AWSResource) ToCSVHeaders() []string {
 	h := []string{"Name", "ResourceType", "ResourceID", "Region", "AccountID"}
-	for key := range r.SteampipeColumns {
+	for key := range r.Attributes {
 		h = append(h, key)
 	}
 	return h
@@ -235,7 +235,7 @@ type ComplianceReportFilters struct {
 
 type GetComplianceReportRequest struct {
 	Filters    ComplianceReportFilters      `json:"filters"`
-	ReportType compliance_report.ReportType `json:"reportType" enums:"benchmark,control,result" validate:"benchmark|control|result"`
+	ReportType compliance_report.ReportType `json:"reportType" enums:"benchmark,control,result"`
 	Page       api.Page                     `json:"page" validate:"required"`
 }
 

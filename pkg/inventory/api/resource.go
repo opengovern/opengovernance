@@ -88,11 +88,11 @@ func QueryResourcesWithSteampipeColumns(
 			terms["resource_type.keyword"] = req.Filters.ResourceType
 		}
 
-		if !FilterIsEmpty(req.Filters.KeibiSource) {
+		if !FilterIsEmpty(req.Filters.SourceID) {
 			if sourceType == SourceCloudAWS {
-				terms["account_id.keyword"] = req.Filters.KeibiSource
+				terms["account_id.keyword"] = req.Filters.SourceID
 			} else {
-				terms["subscription_id.keyword"] = req.Filters.KeibiSource
+				terms["subscription_id.keyword"] = req.Filters.SourceID
 			}
 		}
 
@@ -130,12 +130,12 @@ func QueryResourcesWithSteampipeColumns(
 				}
 
 				resource := AWSResource{
-					Name:             metadata.Name,
-					ResourceType:     resourceType,
-					ResourceID:       hit.Source.ID,
-					Region:           metadata.Region,
-					AccountID:        metadata.AccountID,
-					SteampipeColumns: make(map[string]string),
+					Name:         metadata.Name,
+					ResourceType: resourceType,
+					ResourceID:   hit.Source.ID,
+					Region:       metadata.Region,
+					AccountID:    metadata.AccountID,
+					Attributes:   make(map[string]string),
 				}
 
 				desc, err := convertToDescription(resourceType, hit.Source)
@@ -148,7 +148,7 @@ func QueryResourcesWithSteampipeColumns(
 					return nil, err
 				}
 				for colName, cell := range cells {
-					resource.SteampipeColumns[colName] = cell.String()
+					resource.Attributes[colName] = cell.String()
 				}
 				result.AWSResources = append(result.AWSResources, resource)
 			} else if pluginProvider == steampipe.SteampipePluginAzure || pluginProvider == steampipe.SteampipePluginAzureAD {
@@ -169,13 +169,13 @@ func QueryResourcesWithSteampipeColumns(
 				}
 
 				resource := AzureResource{
-					Name:             metadata.Name,
-					ResourceType:     resourceType,
-					ResourceID:       hit.Source.ID,
-					ResourceGroup:    resourceGroup,
-					Location:         metadata.Location,
-					SubscriptionID:   metadata.SubscriptionID,
-					SteampipeColumns: make(map[string]string),
+					Name:           metadata.Name,
+					ResourceType:   resourceType,
+					ResourceID:     hit.Source.ID,
+					ResourceGroup:  resourceGroup,
+					Location:       metadata.Location,
+					SubscriptionID: metadata.SubscriptionID,
+					Attributes:     make(map[string]string),
 				}
 
 				desc, err := convertToDescription(resourceType, hit.Source)
@@ -190,7 +190,7 @@ func QueryResourcesWithSteampipeColumns(
 						return nil, err
 					}
 					for colName, cell := range cells {
-						resource.SteampipeColumns[colName] = cell.String()
+						resource.Attributes[colName] = cell.String()
 					}
 				} else {
 					cells, err = steampipe.AzureADDescriptionToRecord(desc, pluginTableName)
@@ -198,7 +198,7 @@ func QueryResourcesWithSteampipeColumns(
 						return nil, err
 					}
 					for colName, cell := range cells {
-						resource.SteampipeColumns[colName] = cell.String()
+						resource.Attributes[colName] = cell.String()
 					}
 				}
 				result.AzureResources = append(result.AzureResources, resource)
@@ -211,25 +211,25 @@ func QueryResourcesWithSteampipeColumns(
 	if provider == nil {
 		for _, aws := range result.AWSResources {
 			result.AllResources = append(result.AllResources, AllResource{
-				Name:             aws.Name,
-				Provider:         SourceCloudAWS,
-				ResourceType:     aws.ResourceType,
-				Location:         aws.Region,
-				ResourceID:       aws.ResourceID,
-				SourceID:         aws.AccountID,
-				SteampipeColumns: aws.SteampipeColumns,
+				Name:         aws.Name,
+				Provider:     SourceCloudAWS,
+				ResourceType: aws.ResourceType,
+				Location:     aws.Region,
+				ResourceID:   aws.ResourceID,
+				SourceID:     aws.AccountID,
+				Attributes:   aws.Attributes,
 			})
 		}
 
 		for _, azure := range result.AzureResources {
 			result.AllResources = append(result.AllResources, AllResource{
-				Name:             azure.Name,
-				Provider:         SourceCloudAzure,
-				ResourceType:     azure.ResourceType,
-				Location:         azure.Location,
-				ResourceID:       azure.ResourceID,
-				SourceID:         azure.SubscriptionID,
-				SteampipeColumns: azure.SteampipeColumns,
+				Name:         azure.Name,
+				Provider:     SourceCloudAzure,
+				ResourceType: azure.ResourceType,
+				Location:     azure.Location,
+				ResourceID:   azure.ResourceID,
+				SourceID:     azure.SubscriptionID,
+				Attributes:   azure.Attributes,
 			})
 		}
 	}

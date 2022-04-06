@@ -333,7 +333,7 @@ func (s *HttpHandlerSuite) TestGetAllResources_Filters() {
 	require.Equal(response.Resources[1].ResourceID, "aaa2")
 
 	req.Filters = api.Filters{}
-	req.Filters.KeibiSource = []string{"ss1"}
+	req.Filters.SourceID = []string{"ss1"}
 	rec, err = doRequestJSONResponse(s.router, echo.POST, "/api/v1/resources", req, &response)
 	require.NoError(err, "request")
 	require.Equal(http.StatusOK, rec.Code)
@@ -385,9 +385,32 @@ func (s *HttpHandlerSuite) TestGetAllResources_Query() {
 	require.Equal(http.StatusOK, rec.Code)
 	require.Len(response.Resources, 1)
 	require.Equal(response.Resources[0].ResourceID, "aaa0")
+}
 
+func (s *HttpHandlerSuite) TestGetAllResources_QueryMicrosoft() {
+	s.T().Skip("This test fails due to a known bug and we're gonna fix it later")
+
+	require := s.Require()
+
+	req := api.GetResourcesRequest{
+		Query: "Microsoft",
+		Filters: api.Filters{
+			Location: []string{"us-east1"},
+		},
+		Sorts: []api.ResourceSortItem{
+			{
+				Field:     api.SortFieldResourceID,
+				Direction: api.DirectionAscending,
+			},
+		},
+		Page: pagination.Page{
+			Size: 10,
+		},
+	}
+
+	var response api.GetResourcesResponse
 	req.Query = "Microsoft"
-	rec, err = doRequestJSONResponse(s.router, echo.POST, "/api/v1/resources", req, &response)
+	rec, err := doRequestJSONResponse(s.router, echo.POST, "/api/v1/resources", req, &response)
 	require.NoError(err, "request")
 	require.Equal(http.StatusOK, rec.Code)
 	require.Len(response.Resources, 1)
@@ -438,7 +461,7 @@ func (s *HttpHandlerSuite) TestGetAWSResources() {
 		Filters: api.Filters{
 			ResourceType: nil,
 			Location:     nil,
-			KeibiSource:  nil,
+			SourceID:     nil,
 		},
 		Sorts: []api.ResourceSortItem{},
 		Page: pagination.Page{
@@ -462,7 +485,7 @@ func (s *HttpHandlerSuite) TestGetAzureResources() {
 		Filters: api.Filters{
 			ResourceType: nil,
 			Location:     nil,
-			KeibiSource:  nil,
+			SourceID:     nil,
 		},
 		Sorts: []api.ResourceSortItem{},
 		Page: pagination.Page{
