@@ -56,7 +56,7 @@ func (db Database) GetSource(id uuid.UUID) (Source, error) {
 	if tx.Error != nil {
 		return Source{}, tx.Error
 	} else if tx.RowsAffected != 1 {
-		return Source{}, fmt.Errorf("get source: specified id was not found")
+		return Source{}, gorm.ErrRecordNotFound
 	}
 
 	return s, nil

@@ -25,6 +25,7 @@ build:
       - build/
     expire_in: 1 hour
   script:
+    - echo -e "machine gitlab.com login gitlab-ci-token password ${CI_JOB_TOKEN}" > ~/.netrc
     - make
 
 test:

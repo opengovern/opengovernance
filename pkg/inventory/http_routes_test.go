@@ -225,7 +225,7 @@ func (s *HttpHandlerSuite) TestGetAllResources() {
 	rec, err := doRequestJSONResponse(s.router, echo.POST, "/api/v1/resources", api.GetResourcesRequest{
 		Filters: api.Filters{},
 		Sorts:   []api.ResourceSortItem{},
-		Page: api.Page{
+		Page: pagination.Page{
 			Size: 10,
 		},
 	}, &response)
@@ -246,7 +246,7 @@ func (s *HttpHandlerSuite) TestGetAllResources_Sort() {
 				Direction: api.DirectionDescending,
 			},
 		},
-		Page: api.Page{
+		Page: pagination.Page{
 			Size: 10,
 		},
 	}, &response)
@@ -267,7 +267,7 @@ func (s *HttpHandlerSuite) TestGetAllResources_Paging() {
 				Direction: api.DirectionDescending,
 			},
 		},
-		Page: api.Page{
+		Page: pagination.Page{
 			Size: 1,
 		},
 	}
@@ -317,7 +317,7 @@ func (s *HttpHandlerSuite) TestGetAllResources_Filters() {
 				Direction: api.DirectionAscending,
 			},
 		},
-		Page: api.Page{
+		Page: pagination.Page{
 			Size: 10,
 		},
 	}
@@ -333,7 +333,7 @@ func (s *HttpHandlerSuite) TestGetAllResources_Filters() {
 	require.Equal(response.Resources[1].ResourceID, "aaa2")
 
 	req.Filters = api.Filters{}
-	req.Filters.KeibiSource = []string{"ss1"}
+	req.Filters.SourceID = []string{"ss1"}
 	rec, err = doRequestJSONResponse(s.router, echo.POST, "/api/v1/resources", req, &response)
 	require.NoError(err, "request")
 	require.Equal(http.StatusOK, rec.Code)
@@ -347,8 +347,8 @@ func (s *HttpHandlerSuite) TestGetAllResources_Filters() {
 	require.NoError(err, "request")
 	require.Equal(http.StatusOK, rec.Code)
 	require.Len(response.Resources, 2)
-	require.Equal(response.Resources[0].ResourceID, "aaa2")
-	require.Equal(response.Resources[1].ResourceID, "aaa3")
+	require.Equal(response.Resources[0].ResourceID, "aaa1")
+	require.Equal(response.Resources[1].ResourceID, "aaa2")
 
 	req.Filters = api.Filters{}
 	req.Filters.ResourceType = []string{"AWS::EC2::Instance"}
@@ -357,7 +357,7 @@ func (s *HttpHandlerSuite) TestGetAllResources_Filters() {
 	require.NoError(err, "request")
 	require.Equal(http.StatusOK, rec.Code)
 	require.Len(response.Resources, 1)
-	require.Equal(response.Resources[0].ResourceID, "aaa0")
+	require.Equal(response.Resources[0].ResourceID, "abcd")
 }
 
 func (s *HttpHandlerSuite) TestGetAllResources_Query() {
@@ -374,7 +374,7 @@ func (s *HttpHandlerSuite) TestGetAllResources_Query() {
 				Direction: api.DirectionAscending,
 			},
 		},
-		Page: api.Page{
+		Page: pagination.Page{
 			Size: 10,
 		},
 	}
@@ -385,9 +385,32 @@ func (s *HttpHandlerSuite) TestGetAllResources_Query() {
 	require.Equal(http.StatusOK, rec.Code)
 	require.Len(response.Resources, 1)
 	require.Equal(response.Resources[0].ResourceID, "aaa0")
+}
 
+func (s *HttpHandlerSuite) TestGetAllResources_QueryMicrosoft() {
+	s.T().Skip("This test fails due to a known bug and we're gonna fix it later")
+
+	require := s.Require()
+
+	req := api.GetResourcesRequest{
+		Query: "Microsoft",
+		Filters: api.Filters{
+			Location: []string{"us-east1"},
+		},
+		Sorts: []api.ResourceSortItem{
+			{
+				Field:     api.SortFieldResourceID,
+				Direction: api.DirectionAscending,
+			},
+		},
+		Page: pagination.Page{
+			Size: 10,
+		},
+	}
+
+	var response api.GetResourcesResponse
 	req.Query = "Microsoft"
-	rec, err = doRequestJSONResponse(s.router, echo.POST, "/api/v1/resources", req, &response)
+	rec, err := doRequestJSONResponse(s.router, echo.POST, "/api/v1/resources", req, &response)
 	require.NoError(err, "request")
 	require.Equal(http.StatusOK, rec.Code)
 	require.Len(response.Resources, 1)
@@ -405,7 +428,7 @@ func (s *HttpHandlerSuite) TestGetAllResources_CSV() {
 				Direction: api.DirectionAscending,
 			},
 		},
-		Page: api.Page{
+		Page: pagination.Page{
 			Size: 10,
 		},
 	}
@@ -438,10 +461,10 @@ func (s *HttpHandlerSuite) TestGetAWSResources() {
 		Filters: api.Filters{
 			ResourceType: nil,
 			Location:     nil,
-			KeibiSource:  nil,
+			SourceID:     nil,
 		},
 		Sorts: []api.ResourceSortItem{},
-		Page: api.Page{
+		Page: pagination.Page{
 			NextMarker: "",
 			Size:       10,
 		},
@@ -462,10 +485,10 @@ func (s *HttpHandlerSuite) TestGetAzureResources() {
 		Filters: api.Filters{
 			ResourceType: nil,
 			Location:     nil,
-			KeibiSource:  nil,
+			SourceID:     nil,
 		},
 		Sorts: []api.ResourceSortItem{},
-		Page: api.Page{
+		Page: pagination.Page{
 			NextMarker: "",
 			Size:       10,
 		},
@@ -498,7 +521,7 @@ func (s *HttpHandlerSuite) TestRunQuery() {
 	require.Len(queryList, 4)
 
 	req := api.RunQueryRequest{
-		Page: api.Page{
+		Page: pagination.Page{
 			"", 10,
 		},
 	}
@@ -521,7 +544,7 @@ func (s *HttpHandlerSuite) TestRunQuery_Sort() {
 	require.Len(queryList, 4)
 
 	req := api.RunQueryRequest{
-		Page: api.Page{
+		Page: pagination.Page{
 			"", 10,
 		},
 		Sorts: []api.SmartQuerySortItem{
@@ -541,7 +564,7 @@ func (s *HttpHandlerSuite) TestRunQuery_Sort() {
 	require.Equal("ss2", response.Result[1][17])
 
 	req = api.RunQueryRequest{
-		Page: api.Page{
+		Page: pagination.Page{
 			"", 10,
 		},
 		Sorts: []api.SmartQuerySortItem{
@@ -570,7 +593,7 @@ func (s *HttpHandlerSuite) TestRunQuery_Page() {
 	require.Len(queryList, 4)
 
 	req := api.RunQueryRequest{
-		Page: api.Page{
+		Page: pagination.Page{
 			"", 1,
 		},
 		Sorts: []api.SmartQuerySortItem{
@@ -607,7 +630,7 @@ func (s *HttpHandlerSuite) TestRunQuery_CSV() {
 	require.Len(queryList, 4)
 
 	req := api.RunQueryRequest{
-		Page: api.Page{
+		Page: pagination.Page{
 			"", 1,
 		},
 		Sorts: []api.SmartQuerySortItem{

@@ -29,7 +29,7 @@ type ReportResultObj struct {
 }
 
 type ReportGroupObj struct {
-	ID             string            `json:"id"`
+	ID             string            `json:"id"` // benchmark id / control id
 	Title          string            `json:"title"`
 	Description    string            `json:"description"`
 	Tags           map[string]string `json:"tags"`
@@ -104,7 +104,7 @@ type Control struct {
 }
 
 type Group struct {
-	GroupId     string            `json:"group_id"`
+	GroupId     string            `json:"group_id"` // benchmark id / control id
 	Title       string            `json:"title"`
 	Description string            `json:"description"`
 	Tags        map[string]string `json:"tags"`
@@ -157,7 +157,7 @@ func ExtractNodes(root Group, tree []string, reportJobID uint, sourceID uuid.UUI
 	}
 	nodes = append(nodes, me)
 
-	newTree := make([]string, 0, len(tree) + 1)
+	newTree := make([]string, 0, len(tree)+1)
 	newTree = append(newTree, tree...)
 	newTree = append(newTree, root.GroupId)
 
@@ -192,7 +192,7 @@ func ExtractLeaves(root Group, tree []string, reportJobID uint, sourceID uuid.UU
 	var leaves []Report
 	if root.Controls != nil {
 		for _, control := range root.Controls {
-			controlTree := make([]string, 0, len(tree) + 1)
+			controlTree := make([]string, 0, len(tree)+1)
 			controlTree = append(controlTree, tree...)
 			controlTree = append(controlTree, control.ControlId)
 
@@ -212,7 +212,7 @@ func ExtractLeaves(root Group, tree []string, reportJobID uint, sourceID uuid.UU
 		return leaves
 	}
 
-	newTree := make([]string, 0, len(tree) + 1)
+	newTree := make([]string, 0, len(tree)+1)
 	newTree = append(newTree, tree...)
 	newTree = append(newTree, root.GroupId)
 

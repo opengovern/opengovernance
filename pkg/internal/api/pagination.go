@@ -7,9 +7,28 @@ import (
 	"strings"
 )
 
+// Page model
+// @Description Please fill nextMarker with "" for the first request. After that fill it with last response of server.
+// @Description e.g.:
+// @Description {"nextMarker": "", "size": 10} --> Server
+// @Description Server --> {"nextMarker": "MGT=", "size": 10}
+// @Description {"nextMarker": "MGT=", "size": 10} --> Server
+
 type Page struct {
+	// fill it with empty for the first request
 	NextMarker string `json:"nextMarker"`
-	Size       int    `json:"size"`
+	Size       int    `json:"size" minimum:"1" validate:"required,gte=1"`
+}
+
+func (p Page) GetIndex() (int, error) {
+	if p.NextMarker != "" && len(p.NextMarker) > 0 {
+		return MarkerToIdx(p.NextMarker)
+	}
+	return 0, nil
+}
+
+func (p Page) NextPage() (Page, error) {
+	return NextPage(p)
 }
 
 func NextPage(page Page) (Page, error) {
