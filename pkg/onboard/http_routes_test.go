@@ -290,7 +290,7 @@ func (s *HttpHandlerSuite) TestGetProviders() {
 	rec, err := doSimpleJSONRequest(s.router, echo.GET, "/api/v1/providers", nil, &response)
 	require.NoError(err, "request")
 	require.Equal(http.StatusOK, rec.Code)
-	require.Equal(2, len(response))
+	require.Equal(80, len(response))
 }
 
 func TestHttpHandlerSuite(t *testing.T) {

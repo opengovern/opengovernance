@@ -62,6 +62,20 @@ func (db Database) GetSource(id uuid.UUID) (Source, error) {
 	return s, nil
 }
 
+// GetSourceBySourceID gets a source with matching source id
+func (db Database) GetSourceBySourceID(id string) (Source, error) {
+	var s Source
+	tx := db.orm.First(&s, "source_id = ?", id)
+
+	if tx.Error != nil {
+		return Source{}, tx.Error
+	} else if tx.RowsAffected != 1 {
+		return Source{}, gorm.ErrRecordNotFound
+	}
+
+	return s, nil
+}
+
 // CreateSource creates a new source and returns it
 func (db Database) CreateSource(s *Source) error {
 	tx := db.orm.

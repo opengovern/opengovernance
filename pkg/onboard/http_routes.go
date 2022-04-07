@@ -149,24 +149,24 @@ func (h HttpHandler) GetProviders(ctx echo.Context) error {
 // @Router       /onboard/api/v1/providers/types [get]
 func (h HttpHandler) GetProviderTypes(ctx echo.Context) error {
 	return ctx.JSON(http.StatusOK, api.ProviderTypesResponse{
-		{ID: 1, TypeName: "Public Cloud", State: api.ProviderTypeStateEnabled},
-		{ID: 2, TypeName: "Cointainer Orchestrator", State: api.ProviderTypeStateComingSoon},
-		{ID: 3, TypeName: "Private Cloud", State: api.ProviderTypeStateComingSoon},
-		{ID: 4, TypeName: "Source Code Management", State: api.ProviderTypeStateComingSoon},
-		{ID: 5, TypeName: "Identity", State: api.ProviderTypeStateComingSoon},
-		{ID: 6, TypeName: "Enterprise Security", State: api.ProviderTypeStateDisabled},
-		{ID: 7, TypeName: "Observability", State: api.ProviderTypeStateDisabled},
-		{ID: 8, TypeName: "Messaging", State: api.ProviderTypeStateDisabled},
-		{ID: 9, TypeName: "Communications", State: api.ProviderTypeStateDisabled},
-		{ID: 10, TypeName: "IT Operations", State: api.ProviderTypeStateDisabled},
-		{ID: 11, TypeName: "Enterprise Applications", State: api.ProviderTypeStateDisabled},
-		{ID: 12, TypeName: "Databases", State: api.ProviderTypeStateDisabled},
-		{ID: 13, TypeName: "Data Management", State: api.ProviderTypeStateDisabled},
-		{ID: 14, TypeName: "Cloud Storage", State: api.ProviderTypeStateDisabled},
-		{ID: 15, TypeName: "Content Delivery (CDN)", State: api.ProviderTypeStateDisabled},
-		{ID: 16, TypeName: "Collaboration & Productivity", State: api.ProviderTypeStateDisabled},
-		{ID: 17, TypeName: "Edge Compute", State: api.ProviderTypeStateDisabled},
-		{ID: 18, TypeName: "Reporting", State: api.ProviderTypeStateDisabled},
+		{ID: "1", TypeName: "Public Cloud", State: api.ProviderTypeStateEnabled},
+		{ID: "2", TypeName: "Cointainer Orchestrator", State: api.ProviderTypeStateComingSoon},
+		{ID: "3", TypeName: "Private Cloud", State: api.ProviderTypeStateComingSoon},
+		{ID: "4", TypeName: "Source Code Management", State: api.ProviderTypeStateComingSoon},
+		{ID: "5", TypeName: "Identity", State: api.ProviderTypeStateComingSoon},
+		{ID: "6", TypeName: "Enterprise Security", State: api.ProviderTypeStateDisabled},
+		{ID: "7", TypeName: "Observability", State: api.ProviderTypeStateDisabled},
+		{ID: "8", TypeName: "Messaging", State: api.ProviderTypeStateDisabled},
+		{ID: "9", TypeName: "Communications", State: api.ProviderTypeStateDisabled},
+		{ID: "10", TypeName: "IT Operations", State: api.ProviderTypeStateDisabled},
+		{ID: "11", TypeName: "Enterprise Applications", State: api.ProviderTypeStateDisabled},
+		{ID: "12", TypeName: "Databases", State: api.ProviderTypeStateDisabled},
+		{ID: "13", TypeName: "Data Management", State: api.ProviderTypeStateDisabled},
+		{ID: "14", TypeName: "Cloud Storage", State: api.ProviderTypeStateDisabled},
+		{ID: "15", TypeName: "Content Delivery (CDN)", State: api.ProviderTypeStateDisabled},
+		{ID: "16", TypeName: "Collaboration & Productivity", State: api.ProviderTypeStateDisabled},
+		{ID: "17", TypeName: "Edge Compute", State: api.ProviderTypeStateDisabled},
+		{ID: "18", TypeName: "Reporting", State: api.ProviderTypeStateDisabled},
 	})
 }
 
@@ -427,6 +427,16 @@ func (h HttpHandler) DiscoverAwsAccounts(ctx echo.Context) error {
 		return err
 	}
 
+	for _, account := range accounts {
+		_, err := h.db.GetSourceBySourceID(account.AccountID)
+		if err != nil {
+			if err == gorm.ErrRecordNotFound {
+				continue
+			}
+			return err
+		}
+		account.Status = "DUPLICATE"
+	}
 	return ctx.JSON(http.StatusOK, accounts)
 }
 
@@ -451,5 +461,15 @@ func (h *HttpHandler) DiscoverAzureSubscriptions(ctx echo.Context) error {
 		return err
 	}
 
+	for _, sub := range subs {
+		_, err := h.db.GetSourceBySourceID(sub.SubscriptionID)
+		if err != nil {
+			if err == gorm.ErrRecordNotFound {
+				continue
+			}
+			return err
+		}
+		sub.Status = "DUPLICATE"
+	}
 	return ctx.JSON(http.StatusOK, subs)
 }

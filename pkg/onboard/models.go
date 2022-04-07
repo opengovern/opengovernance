@@ -42,8 +42,8 @@ func (a AWSMetadata) toAWSMetadataResponse() *api.AWSMetadataResponse {
 
 type Source struct {
 	gorm.Model
-	ID          uuid.UUID `gorm:"primaryKey;type:uuid;default:uuid_generate_v4()"`
-	SourceId    string
+	ID          uuid.UUID      `gorm:"primaryKey;type:uuid;default:uuid_generate_v4()"`
+	SourceId    string         `gorm:"index:idx_source_id,unique"`
 	Name        string         `gorm:"not null"`
 	Type        api.SourceType `gorm:"not null"`
 	Description string

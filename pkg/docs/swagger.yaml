@@ -247,7 +247,7 @@ definitions:
   api.ProviderType:
     properties:
       id:
-        type: integer
+        type: string
       state:
         enum:
         - enabled

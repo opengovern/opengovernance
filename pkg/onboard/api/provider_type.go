@@ -9,7 +9,7 @@ const (
 )
 
 type ProviderType struct {
-	ID       int               `json:"id"`
+	ID       string            `json:"id"`
 	TypeName string            `json:"typeName"`
 	State    ProviderTypeState `json:"state" enums:"enabled,coming_soon,disabled"`
 }
