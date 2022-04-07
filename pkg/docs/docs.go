@@ -503,6 +503,29 @@ const docTemplate = `{
                 }
             }
         },
+        "/onboard/api/v1/providers/types": {
+            "get": {
+                "description": "Getting provider types",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "onboard"
+                ],
+                "summary": "Get provider types",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/api.ProviderType"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/onboard/api/v1/sources": {
             "get": {
                 "description": "Returning a list of sources including both AWS and Azure unless filtered by Type.",
@@ -1242,16 +1265,35 @@ const docTemplate = `{
         "api.Provider": {
             "type": "object",
             "properties": {
-                "enabled": {
-                    "type": "boolean"
-                },
                 "id": {
                     "type": "string"
                 },
                 "name": {
                     "type": "string"
                 },
+                "state": {
+                    "type": "string"
+                },
                 "type": {
+                    "type": "string"
+                }
+            }
+        },
+        "api.ProviderType": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "integer"
+                },
+                "state": {
+                    "type": "string",
+                    "enum": [
+                        "enabled",
+                        "coming_soon",
+                        "disabled"
+                    ]
+                },
+                "typeName": {
                     "type": "string"
                 }
             }

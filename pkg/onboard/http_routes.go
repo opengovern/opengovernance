@@ -33,6 +33,7 @@ func (h HttpHandler) Register(r *echo.Echo) {
 	disc.POST("/azure/subscriptions", h.DiscoverAzureSubscriptions)
 
 	v1.GET("/providers", h.GetProviders)
+	v1.GET("/providers/types", h.GetProviderTypes)
 }
 
 func bindValidate(ctx echo.Context, i interface{}) error {
@@ -56,54 +57,116 @@ func bindValidate(ctx echo.Context, i interface{}) error {
 // @Router       /onboard/api/v1/providers [get]
 func (h HttpHandler) GetProviders(ctx echo.Context) error {
 	return ctx.JSON(http.StatusOK, api.ProvidersResponse{
-		{
-			ID:      "aws",
-			Name:    "Amazon Web Services",
-			Enabled: true,
-			Type:    "PublicCloud",
-		},
-		{
-			ID:      "azure",
-			Name:    "Microsoft Azure",
-			Enabled: true,
-			Type:    "PublicCloud",
-		},
-		{
-			ID:      "gcp",
-			Name:    "Google Cloud Platform",
-			Enabled: false,
-			Type:    "PublicCloud",
-		},
-		{
-			ID:      "kubernetes",
-			Name:    "Kubernetes",
-			Enabled: false,
-			Type:    "PublicCloud",
-		},
-		{
-			ID:      "azuread",
-			Name:    "AzureAD",
-			Enabled: false,
-			Type:    "PublicCloud",
-		},
-		{
-			ID:      "vmware",
-			Name:    "VMWare",
-			Enabled: false,
-			Type:    "PublicCloud",
-		},
-		{
-			ID:      "gitlab",
-			Name:    "Gitlab.com",
-			Enabled: false,
-			Type:    "PublicCloud",
-		},
-		{
-			ID:      "github",
-			Name:    "GitHub",
-			Enabled: false,
-			Type:    "PublicCloud",
-		},
+		{Name: "Sumo Logic", ID: "sumologic", Type: "IT Operations", State: api.ProviderStateDisabled},
+		{Name: "Akamai", ID: "akamai", Type: "Content Delivery (CDN)", State: api.ProviderStateDisabled},
+		{Name: "Box", ID: "boxnet", Type: "Cloud Storage", State: api.ProviderStateDisabled},
+		{Name: "DropBox", ID: "dropbox", Type: "Cloud Storage", State: api.ProviderStateDisabled},
+		{Name: "Microsoft OneDrive", ID: "onedrive", Type: "Cloud Storage", State: api.ProviderStateDisabled},
+		{Name: "Kubernetes", ID: "kubernetes", Type: "Cointainer Orchestrator", State: api.ProviderStateComingSoon},
+		{Name: "Box", ID: "boxnet", Type: "Collaboration & Productivity", State: api.ProviderStateDisabled},
+		{Name: "DocuSign", ID: "docusign", Type: "Collaboration & Productivity", State: api.ProviderStateDisabled},
+		{Name: "Google Workspace", ID: "googleworkspace", Type: "Collaboration & Productivity", State: api.ProviderStateDisabled},
+		{Name: "Microsoft Office 365", ID: "o365", Type: "Collaboration & Productivity", State: api.ProviderStateDisabled},
+		{Name: "Microsoft SharePoint", ID: "sharepoint", Type: "Collaboration & Productivity", State: api.ProviderStateDisabled},
+		{Name: "Microsoft Teams", ID: "teams", Type: "Collaboration & Productivity", State: api.ProviderStateDisabled},
+		{Name: "Slack", ID: "slack", Type: "Collaboration & Productivity", State: api.ProviderStateDisabled},
+		{Name: "Trello", ID: "trello", Type: "Collaboration & Productivity", State: api.ProviderStateDisabled},
+		{Name: "Zoom", ID: "zoom", Type: "Collaboration & Productivity", State: api.ProviderStateDisabled},
+		{Name: "Mailchimp", ID: "mailchimp", Type: "Communications", State: api.ProviderStateDisabled},
+		{Name: "PagerDuty", ID: "pagerduty", Type: "Communications", State: api.ProviderStateDisabled},
+		{Name: "RingCentral", ID: "ringcentral", Type: "Communications", State: api.ProviderStateDisabled},
+		{Name: "Twilio SendGrid", ID: "sendgrid", Type: "Communications", State: api.ProviderStateDisabled},
+		{Name: "Mailchimp", ID: "mailchimp", Type: "Communications", State: api.ProviderStateDisabled},
+		{Name: "Mailgun", ID: "mailgun", Type: "Communications", State: api.ProviderStateDisabled},
+		{Name: "Rubrik", ID: "rubrik", Type: "Data Management", State: api.ProviderStateDisabled},
+		{Name: "Snowflake", ID: "snowflake", Type: "Data Management", State: api.ProviderStateDisabled},
+		{Name: "talend.com", ID: "talend", Type: "Data Management", State: api.ProviderStateDisabled},
+		{Name: "MongoDB Atlas", ID: "mongodbatlast", Type: "Databases", State: api.ProviderStateDisabled},
+		{Name: "Elastic Cloud", ID: "elasticcloud", Type: "Databases", State: api.ProviderStateDisabled},
+		{Name: "Okta", ID: "okta", Type: "Identity", State: api.ProviderStateDisabled},
+		{Name: "JumpCloud", ID: "jumpcloud", Type: "Identity", State: api.ProviderStateDisabled},
+		{Name: "Ping Identity", ID: "pingidentity", Type: "Identity", State: api.ProviderStateDisabled},
+		{Name: "Auth0.com", ID: "auth0", Type: "Identity", State: api.ProviderStateDisabled},
+		{Name: "Microsoft Azure Active Directory", ID: "azuread", Type: "Identity", State: api.ProviderStateComingSoon},
+		{Name: "OneLogin", ID: "onelogin", Type: "Identity", State: api.ProviderStateDisabled},
+		{Name: "Expensify", ID: "expensify", Type: "Enterprise Applications", State: api.ProviderStateDisabled},
+		{Name: "Salesforce", ID: "salesforce", Type: "Enterprise Applications", State: api.ProviderStateDisabled},
+		{Name: "Xero", ID: "xero", Type: "Enterprise Applications", State: api.ProviderStateDisabled},
+		{Name: "AppViewX", ID: "appviewx", Type: "Enterprise Security", State: api.ProviderStateDisabled},
+		{Name: "Rapid7", ID: "rapid7", Type: "Enterprise Security", State: api.ProviderStateDisabled},
+		{Name: "Akamai", ID: "akamai", Type: "Edge Compute", State: api.ProviderStateDisabled},
+		{Name: "Akamai", ID: "akamai", Type: "Enterprise Security", State: api.ProviderStateDisabled},
+		{Name: "Imperva", ID: "imperva", Type: "Enterprise Security", State: api.ProviderStateDisabled},
+		{Name: "Cloudflare", ID: "cloudfare", Type: "Enterprise Security", State: api.ProviderStateDisabled},
+		{Name: "CyberArk", ID: "cuberark", Type: "Enterprise Security", State: api.ProviderStateDisabled},
+		{Name: "Blackberry CylanceProtect", ID: "cylance", Type: "Enterprise Security", State: api.ProviderStateDisabled},
+		{Name: "Cisco Duo", ID: "duo", Type: "Enterprise Security", State: api.ProviderStateDisabled},
+		{Name: "OneLogin", ID: "onelogin", Type: "Enterprise Security", State: api.ProviderStateDisabled},
+		{Name: "OneTrust", ID: "onetrust", Type: "Enterprise Security", State: api.ProviderStateDisabled},
+		{Name: "PaloAlto Networks Prisma", ID: "prismacloud", Type: "Enterprise Security", State: api.ProviderStateDisabled},
+		{Name: "Ping Identity", ID: "pingidentity", Type: "Enterprise Security", State: api.ProviderStateDisabled},
+		{Name: "SignalSciences", ID: "signalscience", Type: "Enterprise Security", State: api.ProviderStateDisabled},
+		{Name: "StrongDM", ID: "strongdm", Type: "Enterprise Security", State: api.ProviderStateDisabled},
+		{Name: "Sumo Logic", ID: "sumologic", Type: "Enterprise Security", State: api.ProviderStateDisabled},
+		{Name: "Tenable", ID: "tenable", Type: "Enterprise Security", State: api.ProviderStateDisabled},
+		{Name: "Atlassian", ID: "atlassian", Type: "IT Operations", State: api.ProviderStateDisabled},
+		{Name: "DataDog", ID: "datadog", Type: "IT Operations", State: api.ProviderStateDisabled},
+		{Name: "PagerDuty", ID: "pagerduty", Type: "IT Operations", State: api.ProviderStateDisabled},
+		{Name: "RingCentral", ID: "ringcentral", Type: "IT Operations", State: api.ProviderStateDisabled},
+		{Name: "ServiceNow", ID: "servicenow", Type: "IT Operations", State: api.ProviderStateDisabled},
+		{Name: "Zendesk", ID: "zendesk", Type: "IT Operations", State: api.ProviderStateDisabled},
+		{Name: "Splunk", ID: "splunk", Type: "IT Operations", State: api.ProviderStateDisabled},
+		{Name: "Confluent", ID: "confluence", Type: "Messaging", State: api.ProviderStateDisabled},
+		{Name: "Splunk", ID: "splunk", Type: "Observability", State: api.ProviderStateDisabled},
+		{Name: "DataDog", ID: "datadog", Type: "Observability", State: api.ProviderStateDisabled},
+		{Name: "OpenStack", ID: "openstack", Type: "Private Cloud", State: api.ProviderStateDisabled},
+		{Name: "VMWare", ID: "vmware", Type: "Private Cloud", State: api.ProviderStateComingSoon},
+		{Name: "HPE Helion", ID: "hpehelion", Type: "Private Cloud", State: api.ProviderStateDisabled},
+		{Name: "Amazon Web Services", ID: "aws", Type: "Public Cloud", State: api.ProviderStateEnabled},
+		{Name: "Google Cloud Platform", ID: "gcp", Type: "Public Cloud", State: api.ProviderStateComingSoon},
+		{Name: "Oracle Cloud Infrastructure", ID: "oci", Type: "Public Cloud", State: api.ProviderStateDisabled},
+		{Name: "Alibaba Cloud", ID: "alibabacloud", Type: "Public Cloud", State: api.ProviderStateDisabled},
+		{Name: "Tencent Cloud", ID: "tencentcloud", Type: "Public Cloud", State: api.ProviderStateDisabled},
+		{Name: "IBM Cloud", ID: "ibmcloud", Type: "Public Cloud", State: api.ProviderStateDisabled},
+		{Name: "Microsoft Azure", ID: "azure", Type: "Public Cloud", State: api.ProviderStateEnabled},
+		{Name: "Salesforce Tableau", ID: "tableau", Type: "Reporting", State: api.ProviderStateDisabled},
+		{Name: "Google Looker", ID: "looker", Type: "Reporting", State: api.ProviderStateDisabled},
+		{Name: "Gitlab.com", ID: "gitlab", Type: "Source Code Management", State: api.ProviderStateComingSoon},
+		{Name: "GitHub", ID: "github", Type: "Source Code Management", State: api.ProviderStateComingSoon},
+		{Name: "Azure DevOps", ID: "azuredevops", Type: "Source Code Management", State: api.ProviderStateDisabled},
+		{Name: "Jfrog", ID: "jfrog", Type: "Source Code Management", State: api.ProviderStateDisabled},
+		{Name: "NewRelic", ID: "newrelic", Type: "Observability", State: api.ProviderStateDisabled},
+		{Name: "DynaTrace", ID: "dynatrace", Type: "Observability", State: api.ProviderStateDisabled},
+	})
+}
+
+// GetProviderTypes godoc
+// @Summary      Get provider types
+// @Description  Getting provider types
+// @Tags         onboard
+// @Produce      json
+// @Success      200  {object}  api.ProviderTypesResponse
+// @Router       /onboard/api/v1/providers/types [get]
+func (h HttpHandler) GetProviderTypes(ctx echo.Context) error {
+	return ctx.JSON(http.StatusOK, api.ProviderTypesResponse{
+		{ID: 1, TypeName: "Public Cloud", State: api.ProviderTypeStateEnabled},
+		{ID: 2, TypeName: "Cointainer Orchestrator", State: api.ProviderTypeStateComingSoon},
+		{ID: 3, TypeName: "Private Cloud", State: api.ProviderTypeStateComingSoon},
+		{ID: 4, TypeName: "Source Code Management", State: api.ProviderTypeStateComingSoon},
+		{ID: 5, TypeName: "Identity", State: api.ProviderTypeStateComingSoon},
+		{ID: 6, TypeName: "Enterprise Security", State: api.ProviderTypeStateDisabled},
+		{ID: 7, TypeName: "Observability", State: api.ProviderTypeStateDisabled},
+		{ID: 8, TypeName: "Messaging", State: api.ProviderTypeStateDisabled},
+		{ID: 9, TypeName: "Communications", State: api.ProviderTypeStateDisabled},
+		{ID: 10, TypeName: "IT Operations", State: api.ProviderTypeStateDisabled},
+		{ID: 11, TypeName: "Enterprise Applications", State: api.ProviderTypeStateDisabled},
+		{ID: 12, TypeName: "Databases", State: api.ProviderTypeStateDisabled},
+		{ID: 13, TypeName: "Data Management", State: api.ProviderTypeStateDisabled},
+		{ID: 14, TypeName: "Cloud Storage", State: api.ProviderTypeStateDisabled},
+		{ID: 15, TypeName: "Content Delivery (CDN)", State: api.ProviderTypeStateDisabled},
+		{ID: 16, TypeName: "Collaboration & Productivity", State: api.ProviderTypeStateDisabled},
+		{ID: 17, TypeName: "Edge Compute", State: api.ProviderTypeStateDisabled},
+		{ID: 18, TypeName: "Reporting", State: api.ProviderTypeStateDisabled},
 	})
 }
 
