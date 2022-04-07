@@ -69,6 +69,12 @@ func (h HttpHandler) GetProviders(ctx echo.Context) error {
 			Type:    "PublicCloud",
 		},
 		{
+			ID:      "gcp",
+			Name:    "Google Cloud Platform",
+			Enabled: false,
+			Type:    "PublicCloud",
+		},
+		{
 			ID:      "kubernetes",
 			Name:    "Kubernetes",
 			Enabled: false,
