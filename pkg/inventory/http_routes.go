@@ -121,12 +121,17 @@ func (h *HttpHandler) ListQueries(ectx echo.Context) error {
 
 	var result []api.SmartQueryItem
 	for _, item := range queries {
+		var tags []string
+		for _, tag := range item.Tags {
+			tags = append(tags, tag.Value)
+		}
 		result = append(result, api.SmartQueryItem{
-			ID:          item.ID,
+			ID:          item.Model.ID,
 			Provider:    item.Provider,
 			Title:       item.Title,
 			Description: item.Description,
 			Query:       item.Query,
+			Tags:        tags,
 		})
 	}
 	return ctx.JSON(200, result)
@@ -154,10 +159,6 @@ func (h *HttpHandler) RunQuery(ectx echo.Context) error {
 	}
 
 	queryId := ctx.Param("queryId")
-	queryUUID, err := uuid.Parse(queryId)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, "Invalid queryId")
-	}
 
 	if accepts := ectx.Request().Header.Get("accept"); accepts != "" {
 		mediaType, _, err := mime.ParseMediaType(accepts)
@@ -170,7 +171,7 @@ func (h *HttpHandler) RunQuery(ectx echo.Context) error {
 			ectx.Response().Header().Set(echo.HeaderContentType, "text/csv")
 			ectx.Response().WriteHeader(http.StatusOK)
 
-			query, err := h.db.GetQuery(queryUUID)
+			query, err := h.db.GetQuery(queryId)
 			if err != nil {
 				if err == pgx.ErrNoRows {
 					return echo.NewHTTPError(http.StatusNotFound, "Query not found")
@@ -204,7 +205,7 @@ func (h *HttpHandler) RunQuery(ectx echo.Context) error {
 		}
 	}
 
-	query, err := h.db.GetQuery(queryUUID)
+	query, err := h.db.GetQuery(queryId)
 	if err != nil {
 		if err == pgx.ErrNoRows {
 			return echo.NewHTTPError(http.StatusNotFound, "Query not found")

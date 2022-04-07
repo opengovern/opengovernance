@@ -1,7 +1,6 @@
 package api
 
 import (
-	"github.com/google/uuid"
 	compliance_report "gitlab.com/keibiengine/keibi-engine/pkg/compliance-report"
 	"gitlab.com/keibiengine/keibi-engine/pkg/describe"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/api"
@@ -216,11 +215,12 @@ type GenericQueryHit struct {
 }
 
 type SmartQueryItem struct {
-	ID          uuid.UUID `json:"id"`
-	Provider    string    `json:"provider"`
-	Title       string    `json:"title"`
-	Description string    `json:"description"`
-	Query       string    `json:"query"`
+	ID          uint     `json:"id"`
+	Provider    string   `json:"provider"`
+	Title       string   `json:"title"`
+	Description string   `json:"description"`
+	Query       string   `json:"query"`
+	Tags        []string `json:"tags"`
 }
 
 type TimeRangeFilter struct {

@@ -1,7 +1,6 @@
 package inventory
 
 import (
-	"github.com/google/uuid"
 	"github.com/jackc/pgx/v4"
 	"gorm.io/gorm"
 )
@@ -47,9 +46,9 @@ func (db Database) GetQueries() ([]SmartQuery, error) {
 }
 
 // GetQuery gets a query with matching id
-func (db Database) GetQuery(id uuid.UUID) (SmartQuery, error) {
+func (db Database) GetQuery(id string) (SmartQuery, error) {
 	var s SmartQuery
-	tx := db.orm.First(&s, "id = ?", id.String())
+	tx := db.orm.First(&s, "id = ?", id)
 
 	if tx.Error != nil {
 		return SmartQuery{}, tx.Error

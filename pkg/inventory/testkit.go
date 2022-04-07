@@ -12,7 +12,6 @@ import (
 	ec2 "github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	elasticsearchv7 "github.com/elastic/go-elasticsearch/v7"
 	"github.com/elastic/go-elasticsearch/v7/esapi"
-	"github.com/google/uuid"
 	awsdescriber "gitlab.com/keibiengine/keibi-engine/pkg/aws/describer"
 	awsmodel "gitlab.com/keibiengine/keibi-engine/pkg/aws/model"
 	azuredescriber "gitlab.com/keibiengine/keibi-engine/pkg/azure/describer"
@@ -144,9 +143,7 @@ func IndexLookupResource(es *elasticsearchv7.Client, resource describe.KafkaLook
 }
 
 func PopulatePostgres(db Database) error {
-	id := uuid.New()
 	err := db.AddQuery(&SmartQuery{
-		ID:          id,
 		Provider:    "AWS",
 		Title:       "Query 1",
 		Description: "description 1",
@@ -156,9 +153,7 @@ func PopulatePostgres(db Database) error {
 		return err
 	}
 
-	id = uuid.New()
 	err = db.AddQuery(&SmartQuery{
-		ID:          id,
 		Provider:    "Azure",
 		Title:       "Query 2",
 		Description: "description 2",
@@ -168,9 +163,7 @@ func PopulatePostgres(db Database) error {
 		return err
 	}
 
-	id = uuid.New()
 	err = db.AddQuery(&SmartQuery{
-		ID:          id,
 		Provider:    "Azure",
 		Title:       "Query 3",
 		Description: "description 3",
@@ -180,9 +173,7 @@ func PopulatePostgres(db Database) error {
 		return err
 	}
 
-	id = uuid.New()
 	err = db.AddQuery(&SmartQuery{
-		ID:          id,
 		Provider:    "AWS",
 		Title:       "Query 4",
 		Description: "description 4",
