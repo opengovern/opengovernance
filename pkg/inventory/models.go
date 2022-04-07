@@ -10,11 +10,11 @@ type SmartQuery struct {
 	Title       string
 	Description string
 	Query       string
-	Tags        []Tag
+	Tags        []Tag `gorm:"many2many:smartquery_tags;"`
 }
 
 type Tag struct {
 	gorm.Model
-	SmartQueryID uint
 	Value        string
+	SmartQueries []SmartQuery `gorm:"many2many:smartquery_tags;"`
 }
