@@ -5,16 +5,17 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/elastic/go-elasticsearch/v7"
-	"github.com/google/uuid"
-	"gitlab.com/keibiengine/keibi-engine/pkg/internal/vault"
-	"gitlab.com/keibiengine/keibi-engine/pkg/keibi-es-sdk"
-	"gopkg.in/Shopify/sarama.v1"
 	"io/ioutil"
 	"log"
 	"os"
 	"os/exec"
 	"time"
+
+	"github.com/elastic/go-elasticsearch/v7"
+	"github.com/google/uuid"
+	"gitlab.com/keibiengine/keibi-engine/pkg/internal/vault"
+	"gitlab.com/keibiengine/keibi-engine/pkg/keibi-es-sdk"
+	"gopkg.in/Shopify/sarama.v1"
 )
 
 type SourceType string

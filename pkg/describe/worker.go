@@ -118,7 +118,10 @@ func (w *Worker) Run() error {
 		var job DescribeJob
 		if err := json.Unmarshal(msg.Body, &job); err != nil {
 			fmt.Printf("Failed to unmarshal task: %s", err.Error())
-			msg.Nack(false, false)
+			err = msg.Nack(false, false)
+			if err != nil {
+				fmt.Printf("Failed nacking message: %v\n", err.Error())
+			}
 			continue
 		}
 
@@ -129,7 +132,10 @@ func (w *Worker) Run() error {
 			fmt.Printf("Failed to send results to queue: %s", err.Error())
 		}
 
-		msg.Ack(false)
+		err = msg.Ack(false)
+		if err != nil {
+			fmt.Printf("Failed acking message: %v\n", err.Error())
+		}
 	}
 
 	return fmt.Errorf("descibe jobs channel is closed")
@@ -137,17 +143,17 @@ func (w *Worker) Run() error {
 
 func (w *Worker) Stop() {
 	if w.jobQueue != nil {
-		w.jobQueue.Close()
+		w.jobQueue.Close() //nolint,gosec
 		w.jobQueue = nil
 	}
 
 	if w.jobResultQueue != nil {
-		w.jobResultQueue.Close()
+		w.jobResultQueue.Close() //nolint,gosec
 		w.jobResultQueue = nil
 	}
 
 	if w.kfkProducer != nil {
-		w.kfkProducer.Close()
+		w.kfkProducer.Close() //nolint,gosec
 		w.kfkProducer = nil
 	}
 }
@@ -216,7 +222,7 @@ func InitializeCleanupWorker(
 		Password:  elasticPassword,
 		Transport: &http.Transport{
 			TLSClientConfig: &tls.Config{
-				InsecureSkipVerify: true, // TODO: undo
+				InsecureSkipVerify: true, //nolint,gosec
 			},
 		},
 	})
@@ -240,18 +246,27 @@ func (w *CleanupWorker) Run() error {
 		var job DescribeCleanupJob
 		if err := json.Unmarshal(msg.Body, &job); err != nil {
 			fmt.Printf("Failed to unmarshal task: %s", err.Error())
-			msg.Nack(false, false)
+			err = msg.Nack(false, false)
+			if err != nil {
+				fmt.Printf("Failed nacking message: %v\n", err.Error())
+			}
 			continue
 		}
 
 		err := job.Do(w.esClient)
 		if err != nil {
 			fmt.Printf("Failed to cleanup resources: %s\n", err.Error())
-			msg.Nack(false, true) // Requeue if there is any failure
+			err = msg.Nack(false, true) // Requeue if there is any failure
+			if err != nil {
+				fmt.Printf("Failed nacking message: %v\n", err.Error())
+			}
 			continue
 		}
 
-		msg.Ack(false)
+		err = msg.Ack(false)
+		if err != nil {
+			fmt.Printf("Failed acking message: %v\n", err.Error())
+		}
 	}
 
 	return fmt.Errorf("descibe jobs channel is closed")

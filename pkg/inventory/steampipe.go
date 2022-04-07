@@ -4,9 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"regexp"
+
 	"github.com/jackc/pgx/v4"
 	"gitlab.com/keibiengine/keibi-engine/pkg/inventory/api"
-	"regexp"
 )
 
 type SteampipeOption struct {

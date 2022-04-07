@@ -2,10 +2,11 @@ package describer
 
 import (
 	"context"
+	"strings"
+
 	"github.com/Azure/azure-sdk-for-go/services/preview/containerregistry/mgmt/2020-11-01-preview/containerregistry"
 	"github.com/Azure/go-autorest/autorest"
 	"gitlab.com/keibiengine/keibi-engine/pkg/azure/model"
-	"strings"
 )
 
 func ContainerRegistry(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {

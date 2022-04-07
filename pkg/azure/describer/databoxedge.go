@@ -2,10 +2,11 @@ package describer
 
 import (
 	"context"
+	"strings"
+
 	"github.com/Azure/azure-sdk-for-go/services/databoxedge/mgmt/2019-07-01/databoxedge"
 	"github.com/Azure/go-autorest/autorest"
 	"gitlab.com/keibiengine/keibi-engine/pkg/azure/model"
-	"strings"
 )
 
 func DataboxEdgeDevice(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {

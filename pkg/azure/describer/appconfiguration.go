@@ -2,11 +2,12 @@ package describer
 
 import (
 	"context"
+	"strings"
+
 	"github.com/Azure/azure-sdk-for-go/profiles/2020-09-01/monitor/mgmt/insights"
 	"github.com/Azure/azure-sdk-for-go/services/appconfiguration/mgmt/2020-06-01/appconfiguration"
 	"github.com/Azure/go-autorest/autorest"
 	"gitlab.com/keibiengine/keibi-engine/pkg/azure/model"
-	"strings"
 )
 
 func AppConfiguration(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {

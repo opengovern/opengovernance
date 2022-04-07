@@ -33,7 +33,7 @@ func main() {
 	flag.Parse()
 
 	tpl := template.New("types")
-	tpl.Parse(`
+	_, err := tpl.Parse(`
 // ==========================  START: {{ .Name }} =============================
 
 type {{ .Name }} struct {
@@ -177,6 +177,9 @@ func Get{{ .Name }}(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateD
 // ==========================  END: {{ .Name }} =============================
 
 `)
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	out, err := os.Create(*output)
 	if err != nil {
@@ -263,7 +266,10 @@ func Get{{ .Name }}(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateD
 	}
 
 	for _, source := range sources {
-		tpl.Execute(&buf, source)
+		err := tpl.Execute(&buf, source)
+		if err != nil {
+			log.Fatal(err)
+		}
 	}
 
 	source, err := format.Source(buf.Bytes())

@@ -2,10 +2,9 @@ package api
 
 import (
 	"context"
+
 	internal "gitlab.com/keibiengine/keibi-engine/pkg/internal/api"
 	"gitlab.com/keibiengine/keibi-engine/pkg/keibi-es-sdk"
-
-	//"gitlab.com/keibiengine/keibi-engine/pkg/steampipe"
 )
 
 type GetResourcesResult struct {
@@ -70,7 +69,7 @@ func QueryResourcesFromInventorySummary(ctx context.Context, client keibi.Client
 		}
 		return &GetResourcesResult{
 			AzureResources: azureResources,
-			Page:         page,
+			Page:           page,
 		}, nil
 	}
 

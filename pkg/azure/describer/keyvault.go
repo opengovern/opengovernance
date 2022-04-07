@@ -2,12 +2,13 @@ package describer
 
 import (
 	"context"
+	"strings"
+
 	"github.com/Azure/azure-sdk-for-go/profiles/2020-09-01/monitor/mgmt/insights"
 	"github.com/Azure/azure-sdk-for-go/services/keyvault/mgmt/2019-09-01/keyvault"
 	previewKeyvault "github.com/Azure/azure-sdk-for-go/services/preview/keyvault/mgmt/2020-04-01-preview/keyvault"
 	"github.com/Azure/go-autorest/autorest"
 	"gitlab.com/keibiengine/keibi-engine/pkg/azure/model"
-	"strings"
 )
 
 func KeyVaultKey(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {

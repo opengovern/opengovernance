@@ -4,6 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
+	"net"
+
 	"github.com/golang/protobuf/ptypes"
 	"github.com/hashicorp/go-hclog"
 	"github.com/turbot/go-kit/helpers"
@@ -15,11 +18,9 @@ import (
 	"gitlab.com/keibiengine/steampipe-plugin-aws/aws"
 	"gitlab.com/keibiengine/steampipe-plugin-azure/azure"
 	"gitlab.com/keibiengine/steampipe-plugin-azuread/azuread"
-	"log"
-	"net"
 )
 
-func buildContext() context.Context{
+func buildContext() context.Context {
 	ctx := context.Background()
 	ctx = context.WithValue(ctx, context_key.Logger, hclog.New(nil))
 	return ctx

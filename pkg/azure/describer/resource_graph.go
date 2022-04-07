@@ -4,11 +4,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	hamiltonAuth "github.com/manicminer/hamilton/auth"
 	"net/http"
 	"strconv"
 	"strings"
 	"time"
+
+	hamiltonAuth "github.com/manicminer/hamilton/auth"
 
 	"github.com/Azure/azure-sdk-for-go/profiles/latest/resourcegraph/mgmt/resourcegraph"
 	"github.com/Azure/go-autorest/autorest"

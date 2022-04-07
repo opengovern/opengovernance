@@ -9,6 +9,7 @@ import (
 )
 
 func TestDiscoverAwsAccounts(t *testing.T) {
+	t.Skip()
 	accounts, err := discoverAwsAccounts(context.Background(), api.DiscoverAWSAccountsRequest{
 		AccessKey: "",
 		SecretKey: "",

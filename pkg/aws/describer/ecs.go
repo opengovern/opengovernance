@@ -92,6 +92,8 @@ func ECSService(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 
 	var values []Resource
 	for _, cluster := range clusters {
+		// This prevents Implicit memory aliasing in for loop
+		cluster := cluster
 		services, err := listECsServices(ctx, cfg, cluster)
 		if err != nil {
 			return nil, err

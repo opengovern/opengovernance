@@ -2,11 +2,12 @@ package compliance_report
 
 import (
 	"encoding/json"
+	"io/ioutil"
+	"strconv"
+
 	"github.com/google/uuid"
 	"gitlab.com/keibiengine/keibi-engine/pkg/keibi-es-sdk"
 	"gopkg.in/Shopify/sarama.v1"
-	"io/ioutil"
-	"strconv"
 )
 
 const (

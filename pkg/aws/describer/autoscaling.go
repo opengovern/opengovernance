@@ -175,7 +175,7 @@ func AutoScalingWarmPool(ctx context.Context, cfg aws.Config) ([]Resource, error
 	for _, g := range groups {
 		group := g.Description.(types.AutoScalingGroup)
 
-		PaginateRetrieveAll(func(prevToken *string) (nextToken *string, err error) {
+		err := PaginateRetrieveAll(func(prevToken *string) (nextToken *string, err error) {
 			output, err := client.DescribeWarmPool(ctx, &autoscaling.DescribeWarmPoolInput{
 				AutoScalingGroupName: group.AutoScalingGroupName,
 				NextToken:            prevToken,
@@ -194,6 +194,9 @@ func AutoScalingWarmPool(ctx context.Context, cfg aws.Config) ([]Resource, error
 
 			return output.NextToken, nil
 		})
+		if err != nil {
+			return nil, err
+		}
 
 	}
 

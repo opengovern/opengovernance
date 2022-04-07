@@ -9,6 +9,7 @@ import (
 )
 
 func TestDiscoverAzureSubscriptions(t *testing.T) {
+	t.Skip()
 	subs, err := discoverAzureSubscriptions(context.Background(), api.DiscoverAzureSubscriptionsRequest{
 		TenantId:     "",
 		ClientId:     "",

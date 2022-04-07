@@ -502,7 +502,10 @@ func (s *Scheduler) RunSourceEventsConsumer() error {
 		var event SourceEvent
 		if err := json.Unmarshal(msg.Body, &event); err != nil {
 			s.logger.Error("Failed to unmarshal SourceEvent", zap.Error(err))
-			msg.Nack(false, false)
+			err = msg.Nack(false, false)
+			if err != nil {
+				s.logger.Error("Failed nacking message", zap.Error(err))
+			}
 			continue
 		}
 
@@ -512,11 +515,17 @@ func (s *Scheduler) RunSourceEventsConsumer() error {
 				zap.String("sourceId", event.SourceID.String()),
 				zap.Error(err),
 			)
-			msg.Nack(false, false)
+			err = msg.Nack(false, false)
+			if err != nil {
+				s.logger.Error("Failed nacking message", zap.Error(err))
+			}
 			continue
 		}
 
-		msg.Ack(false)
+		err = msg.Ack(false)
+		if err != nil {
+			s.logger.Error("Failed acking message", zap.Error(err))
+		}
 	}
 
 	return fmt.Errorf("source events queue channel is closed")
@@ -546,7 +555,10 @@ func (s *Scheduler) RunDescribeJobResultsConsumer() error {
 			var result DescribeJobResult
 			if err := json.Unmarshal(msg.Body, &result); err != nil {
 				s.logger.Error("Failed to unmarshal DescribeResourceJob results\n", zap.Error(err))
-				msg.Nack(false, false)
+				err = msg.Nack(false, false)
+				if err != nil {
+					s.logger.Error("Failed nacking message", zap.Error(err))
+				}
 				continue
 			}
 
@@ -560,11 +572,17 @@ func (s *Scheduler) RunDescribeJobResultsConsumer() error {
 					zap.Uint("jobId", result.JobID),
 					zap.Error(err),
 				)
-				msg.Nack(false, true)
+				err = msg.Nack(false, true)
+				if err != nil {
+					s.logger.Error("Failed nacking message", zap.Error(err))
+				}
 				continue
 			}
 
-			msg.Ack(false)
+			err = msg.Ack(false)
+			if err != nil {
+				s.logger.Error("Failed acking message", zap.Error(err))
+			}
 		case <-t.C:
 			err := s.db.UpdateDescribeResourceJobsTimedOut()
 			if err != nil {
@@ -634,7 +652,10 @@ func (s *Scheduler) RunComplianceReportJobResultsConsumer() error {
 			var result compliancereport.JobResult
 			if err := json.Unmarshal(msg.Body, &result); err != nil {
 				s.logger.Error("Failed to unmarshal ComplianceReportJob results", zap.Error(err))
-				msg.Nack(false, false)
+				err = msg.Nack(false, false)
+				if err != nil {
+					s.logger.Error("Failed nacking message", zap.Error(err))
+				}
 				continue
 			}
 
@@ -647,11 +668,17 @@ func (s *Scheduler) RunComplianceReportJobResultsConsumer() error {
 				s.logger.Error("Failed to update the status of ComplianceReportJob",
 					zap.Uint("jobId", result.JobID),
 					zap.Error(err))
-				msg.Nack(false, true)
+				err = msg.Nack(false, true)
+				if err != nil {
+					s.logger.Error("Failed nacking message", zap.Error(err))
+				}
 				continue
 			}
 
-			msg.Ack(false)
+			err = msg.Ack(false)
+			if err != nil {
+				s.logger.Error("Failed acking message", zap.Error(err))
+			}
 		case <-t.C:
 			err := s.db.UpdateComplianceReportJobsTimedOut()
 			if err != nil {
@@ -752,7 +779,7 @@ func enqueueComplianceReportJobs(logger *zap.Logger, db Database, q queue.Interf
 
 	err := q.Publish(compliancereport.Job{
 		JobID:      crj.ID,
-		SourceID: 	a.ID,
+		SourceID:   a.ID,
 		SourceType: compliancereport.SourceType(a.Type),
 		ConfigReg:  a.ConfigRef,
 	})

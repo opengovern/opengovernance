@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"strings"
+
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe-plugin-sdk/grpc/proto"
 	awsmodel "gitlab.com/keibiengine/keibi-engine/pkg/aws/model"
@@ -11,7 +13,6 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/describe"
 	"gitlab.com/keibiengine/keibi-engine/pkg/keibi-es-sdk"
 	"gitlab.com/keibiengine/keibi-engine/pkg/steampipe"
-	"strings"
 )
 
 type ResourceObj struct {

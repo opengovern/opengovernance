@@ -51,4 +51,3 @@ func AzureSubscriptionConfigFromMap(m map[string]interface{}) (AzureSubscription
 
 	return c, nil
 }
-

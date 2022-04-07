@@ -35,6 +35,8 @@ func EC2VolumeSnapshot(ctx context.Context, cfg aws.Config) ([]Resource, error) 
 		}
 
 		for _, snapshot := range page.Snapshots {
+			// This prevents Implicit memory aliasing in for loop
+			snapshot := snapshot
 			attrs, err := client.DescribeSnapshotAttribute(ctx, &ec2.DescribeSnapshotAttributeInput{
 				Attribute:  types.SnapshotAttributeNameCreateVolumePermission,
 				SnapshotId: snapshot.SnapshotId,
@@ -69,6 +71,7 @@ func EC2Volume(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 		}
 
 		for _, volume := range page.Volumes {
+			volume := volume
 			var description model.EC2VolumeDescription
 			description.Volume = &volume
 

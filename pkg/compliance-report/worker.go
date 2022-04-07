@@ -3,11 +3,12 @@ package compliance_report
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
+
 	"github.com/hashicorp/vault/api/auth/kubernetes"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/queue"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/vault"
 	"gopkg.in/Shopify/sarama.v1"
-	"strings"
 )
 
 type Worker struct {
@@ -104,7 +105,10 @@ func (w *Worker) Run() error {
 		var job Job
 		if err := json.Unmarshal(msg.Body, &job); err != nil {
 			fmt.Printf("Failed to unmarshal task: %s", err.Error())
-			msg.Nack(false, false)
+			err = msg.Nack(false, false)
+			if err != nil {
+				fmt.Printf("Failed nacking message: %v\n", err.Error())
+			}
 			continue
 		}
 
@@ -116,7 +120,10 @@ func (w *Worker) Run() error {
 		}
 
 		fmt.Printf("A job is done and result is published into the result queue, result: %v\n", result)
-		msg.Ack(false)
+		err = msg.Ack(false)
+		if err != nil {
+			fmt.Printf("Failed acking message: %v\n", err.Error())
+		}
 	}
 
 	return fmt.Errorf("report jobs channel is closed")

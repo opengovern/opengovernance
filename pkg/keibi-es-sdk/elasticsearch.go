@@ -18,7 +18,7 @@ import (
 func closeSafe(resp *esapi.Response) {
 	if resp != nil && resp.Body != nil {
 		_, _ = ioutil.ReadAll(resp.Body)
-		resp.Body.Close()
+		resp.Body.Close() //nolint,gosec
 	}
 }
 
