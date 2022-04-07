@@ -1,8 +1,9 @@
 package main
 
 import (
-	compliance_report "gitlab.com/keibiengine/keibi-engine/pkg/compliance-report"
 	"os"
+
+	compliance_report "gitlab.com/keibiengine/keibi-engine/pkg/compliance-report"
 )
 
 func main() {

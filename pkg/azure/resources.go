@@ -248,7 +248,10 @@ func GetResources(
 
 func setEnvIfNotEmpty(env, s string) {
 	if s != "" {
-		os.Setenv(env, s)
+		err := os.Setenv(env, s)
+		if err != nil {
+			panic(err)
+		}
 	}
 }
 

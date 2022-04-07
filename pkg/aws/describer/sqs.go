@@ -22,6 +22,8 @@ func SQSQueue(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 
 		for _, url := range page.QueueUrls {
 			// url example: http://sqs.us-west-2.amazonaws.com/123456789012/queueName
+			// This prevents Implicit memory aliasing in for loop
+			url := url
 
 			output, err := client.GetQueueAttributes(ctx, &sqs.GetQueueAttributesInput{
 				QueueUrl: &url,

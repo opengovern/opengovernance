@@ -21,6 +21,9 @@ func GuardDutyFinding(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 		}
 
 		for _, detectorId := range dpage.DetectorIds {
+			// This prevents Implicit memory aliasing in for loop
+			detectorId := detectorId
+
 			paginator := guardduty.NewListFindingsPaginator(client, &guardduty.ListFindingsInput{
 				DetectorId: &detectorId,
 			})
@@ -67,6 +70,7 @@ func GuardDutyDetector(ctx context.Context, cfg aws.Config) ([]Resource, error) 
 		}
 
 		for _, id := range page.DetectorIds {
+			id := id
 			out, err := client.GetDetector(ctx, &guardduty.GetDetectorInput{
 				DetectorId: &id,
 			})

@@ -10,11 +10,12 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/onboard/api"
 )
 
-func InitializeDb(db *Database) {
-	db.orm.AutoMigrate(
+func InitializeDb(db *Database) (err error) {
+	err = db.orm.AutoMigrate(
 		&Source{},
 		&AWSMetadata{},
 	)
+	return
 }
 
 type AWSMetadata struct {

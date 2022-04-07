@@ -19,6 +19,8 @@ func EKSCluster(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 
 	var values []Resource
 	for _, cluster := range clusters {
+		// This prevents Implicit memory aliasing in for loop
+		cluster := cluster
 		output, err := client.DescribeCluster(ctx, &eks.DescribeClusterInput{Name: aws.String(cluster)})
 		if err != nil {
 			return nil, err
@@ -132,6 +134,7 @@ func EKSNodegroup(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 
 	var values []Resource
 	for _, cluster := range clusters {
+		cluster := cluster
 		var groups []string
 		paginator := eks.NewListNodegroupsPaginator(client, &eks.ListNodegroupsInput{ClusterName: aws.String(cluster)})
 
@@ -195,6 +198,7 @@ func EKSIdentityProviderConfig(ctx context.Context, cfg aws.Config) ([]Resource,
 
 	var values []Resource
 	for _, cluster := range clusters {
+		cluster := cluster
 		client := eks.NewFromConfig(cfg)
 		paginator := eks.NewListIdentityProviderConfigsPaginator(client, &eks.ListIdentityProviderConfigsInput{
 			ClusterName: &cluster,
@@ -207,6 +211,7 @@ func EKSIdentityProviderConfig(ctx context.Context, cfg aws.Config) ([]Resource,
 			}
 
 			for _, config := range page.IdentityProviderConfigs {
+				config := config
 				output, err := client.DescribeIdentityProviderConfig(ctx, &eks.DescribeIdentityProviderConfigInput{
 					ClusterName:            &cluster,
 					IdentityProviderConfig: &config,

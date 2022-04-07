@@ -6,11 +6,12 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
+	"net/http"
+
 	elasticsearchv7 "github.com/elastic/go-elasticsearch/v7"
 	"github.com/elastic/go-elasticsearch/v7/esapi"
 	"github.com/google/uuid"
 	report "gitlab.com/keibiengine/keibi-engine/pkg/compliance-report"
-	"net/http"
 )
 
 func PopulateElastic(address string) error {
@@ -68,7 +69,7 @@ func GenerateReports() []report.Report {
 					},
 					Type:        report.ReportTypeBenchmark,
 					ReportJobId: jobID,
-					SourceID:   sourceID,
+					SourceID:    sourceID,
 				}
 				reports = append(reports, r)
 			}
@@ -76,7 +77,7 @@ func GenerateReports() []report.Report {
 			for _, result := range results {
 				r := report.Report{
 					Result: &report.ReportResultObj{
-						Result:         report.Result{
+						Result: report.Result{
 							Reason:     "",
 							Resource:   "",
 							Status:     "",
@@ -85,10 +86,10 @@ func GenerateReports() []report.Report {
 						ControlId:      result,
 						ParentGroupIds: nil,
 					},
-					Group: nil,
+					Group:       nil,
 					Type:        report.ReportTypeResult,
 					ReportJobId: jobID,
-					SourceID:   sourceID,
+					SourceID:    sourceID,
 				}
 				reports = append(reports, r)
 			}

@@ -8,6 +8,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io/ioutil"
+	"math/rand"
+	"net/http"
+	"os"
+	"strconv"
+	"time"
+
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2020-05-01/network"
 	ec2 "github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	elasticsearchv7 "github.com/elastic/go-elasticsearch/v7"
@@ -18,12 +25,6 @@ import (
 	azuremodel "gitlab.com/keibiengine/keibi-engine/pkg/azure/model"
 	"gitlab.com/keibiengine/keibi-engine/pkg/describe"
 	"gitlab.com/keibiengine/keibi-engine/pkg/describe/api"
-	"io/ioutil"
-	"math/rand"
-	"net/http"
-	"os"
-	"strconv"
-	"time"
 )
 
 func PopulateElastic(address string) error {
@@ -33,7 +34,7 @@ func PopulateElastic(address string) error {
 		Password:  "",
 		Transport: &http.Transport{
 			TLSClientConfig: &tls.Config{
-				InsecureSkipVerify: true,
+				InsecureSkipVerify: true, //nolint,gosec
 			},
 		},
 	}
@@ -388,8 +389,15 @@ func (m *DescribeMock) HelloServer(w http.ResponseWriter, r *http.Request) {
 		res = append(res, m.Response[len(m.Response)-1])
 	}
 
-	b, _ := json.Marshal(res)
-	fmt.Fprintf(w, string(b))
+	b, err := json.Marshal(res)
+	if err != nil {
+		fmt.Printf("Failed marshaling json: %v\n", err.Error())
+	}
+
+	_, err = fmt.Fprintf(w, string(b))
+	if err != nil {
+		fmt.Printf("Failed writing to response: %v\n", err.Error())
+	}
 }
 
 func (m *DescribeMock) SetResponse(jobs ...describe.ComplianceReportJob) {

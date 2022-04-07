@@ -1,8 +1,9 @@
 package steampipe
 
 import (
-	"gitlab.com/keibiengine/keibi-engine/pkg/keibi-es-sdk"
 	"strings"
+
+	"gitlab.com/keibiengine/keibi-engine/pkg/keibi-es-sdk"
 )
 
 var awsMap = map[string]string{

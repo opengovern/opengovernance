@@ -2,8 +2,9 @@ package compliance_report
 
 import (
 	"errors"
-	"github.com/spf13/cobra"
 	"os"
+
+	"github.com/spf13/cobra"
 )
 
 const (

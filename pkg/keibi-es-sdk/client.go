@@ -93,7 +93,7 @@ func NewClient(c ClientConfig) (Client, error) {
 		Password:  *c.Password,
 		Transport: &http.Transport{
 			TLSClientConfig: &tls.Config{
-				InsecureSkipVerify: true,
+				InsecureSkipVerify: true, //nolint,gosec
 			},
 		},
 	}

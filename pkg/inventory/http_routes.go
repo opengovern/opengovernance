@@ -7,14 +7,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/google/uuid"
-	"github.com/hashicorp/go-hclog"
-	"github.com/jackc/pgx/v4"
-	"github.com/turbot/steampipe-plugin-sdk/logging"
-	"github.com/turbot/steampipe-plugin-sdk/plugin/context_key"
-	compliance_report "gitlab.com/keibiengine/keibi-engine/pkg/compliance-report"
-	pagination "gitlab.com/keibiengine/keibi-engine/pkg/internal/api"
-	"gitlab.com/keibiengine/keibi-engine/pkg/inventory/api"
 	"io"
 	"log"
 	"mime"
@@ -22,7 +14,15 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/google/uuid"
+	"github.com/hashicorp/go-hclog"
+	"github.com/jackc/pgx/v4"
 	"github.com/labstack/echo/v4"
+	"github.com/turbot/steampipe-plugin-sdk/logging"
+	"github.com/turbot/steampipe-plugin-sdk/plugin/context_key"
+	compliance_report "gitlab.com/keibiengine/keibi-engine/pkg/compliance-report"
+	pagination "gitlab.com/keibiengine/keibi-engine/pkg/internal/api"
+	"gitlab.com/keibiengine/keibi-engine/pkg/inventory/api"
 )
 
 func extractContext(ctx echo.Context) context.Context {

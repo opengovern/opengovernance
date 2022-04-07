@@ -2,20 +2,22 @@ image: golang:latest
 
 stages:
   - build
+  - lint
   - test
   - deploy
 
 .go-cache:
   variables:
     GOPATH: $CI_PROJECT_DIR/.go
-    GOCACHE: $CI_PROJECT_DIR/.cache
+    GOCACHE: $CI_PROJECT_DIR/.cache/linux
   before_script:
     - mkdir -p .go
     - mkdir -p .cache
   cache:
-    paths:
-      - .go/pkg/mod/
-      - .cache/
+    - key: go-cache
+      paths:
+        - .go/pkg/mod/
+        - .cache/
 
 build:
   stage: build
@@ -28,16 +30,41 @@ build:
     - echo -e "machine gitlab.com login gitlab-ci-token password ${CI_JOB_TOKEN}" > ~/.netrc
     - make
 
+golangci-lint:
+  stage: test
+  image:
+    name: golangci/golangci-lint:v1.45
+    entrypoint: [""]
+  extends: .go-cache
+  variables:
+    GOLANGCI_LINT_CACHE: ${CI_PROJECT_DIR}/.linter-cache
+  cache:
+    - key: linter-cache
+      paths:
+        - .linter-cache/
+    - key: go-cache
+      paths:
+        - .go/pkg/mod/
+        - .cache/
+      policy: pull
+  script:
+    - golangci-lint run -v
+
 test:
   stage: test
-  when: manual # TODO: Enable
+  extends: build
+  when: manual
+  services:
+    - docker:dind
+  variables:
+    DOCKER_HOST: tcp://docker:2375
+    DOCKER_DRIVER: overlay2
+    YOUR_APP_DB_HOST: docker
   script:
-    - go fmt ./...
-    - go vet ./...
     - go test -race ./...
 
-deploy:      # This job runs in the deploy stage.
-  stage: deploy  # It only runs when *both* jobs in the test stage complete successfully.
+deploy: # This job runs in the deploy stage.
+  stage: deploy # It only runs when *both* jobs in the test stage complete successfully.
   only:
     - main
   image:

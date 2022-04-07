@@ -4,6 +4,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io/ioutil"
+	"net/http"
+	"os"
+	"strconv"
+	"testing"
+	"time"
+
 	"github.com/ory/dockertest/v3"
 	dc "github.com/ory/dockertest/v3/docker"
 	"github.com/streadway/amqp"
@@ -11,14 +18,18 @@ import (
 	"gopkg.in/Shopify/sarama.v1"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
-	"io/ioutil"
-	"net/http"
-	"strconv"
-	"testing"
-	"time"
 )
 
+func getEnv(key, fallback string) string {
+	value, exists := os.LookupEnv(key)
+	if !exists {
+		value = fallback
+	}
+	return value
+}
+
 func StartupPostgreSQL(t *testing.T) *gorm.DB {
+	DBHost := getEnv("YOUR_APP_DB_HOST", "localhost")
 	t.Helper()
 
 	require := require.New(t)
@@ -37,7 +48,7 @@ func StartupPostgreSQL(t *testing.T) *gorm.DB {
 	var orm *gorm.DB
 	// exponential backoff-retry, because the application in the container might not be ready to accept connections yet
 	err = pool.Retry(func() error {
-		orm, err = gorm.Open(postgres.Open(fmt.Sprintf("postgres://postgres:postgres@localhost:%s/postgres", resource.GetPort("5432/tcp"))), &gorm.Config{})
+		orm, err = gorm.Open(postgres.Open(fmt.Sprintf("postgres://postgres:postgres@%s:%s/postgres", DBHost, resource.GetPort("5432/tcp"))), &gorm.Config{})
 		if err != nil {
 			return err
 		}
@@ -73,10 +84,10 @@ func StartupRabbitMQ(t *testing.T) RabbitMQServer {
 	require.NoError(err, "connect to docker")
 
 	resource, err := pool.RunWithOptions(&dockertest.RunOptions{
-		Name: "keibi_test_rabbitmq",
-		Hostname: "keibi_test_rabbitmq",
-		Repository: "bitnami/rabbitmq",
-		Tag:        "3.8.23-debian-10-r18",
+		Name:         "keibi_test_rabbitmq",
+		Hostname:     "keibi_test_rabbitmq",
+		Repository:   "bitnami/rabbitmq",
+		Tag:          "3.8.23-debian-10-r18",
 		ExposedPorts: []string{"15672"},
 		PortBindings: map[dc.Port][]dc.PortBinding{
 			"15672": {{
@@ -97,7 +108,7 @@ func StartupRabbitMQ(t *testing.T) RabbitMQServer {
 
 	// exponential backoff-retry, because the application in the container might not be ready to accept connections yet
 	err = pool.Retry(func() error {
-		for i := 0; i < 3; i ++ {
+		for i := 0; i < 3; i++ {
 			res, err := http.Get("http://user:bitnami@localhost:15672/api/aliveness-test/%2F")
 			if err != nil {
 				return err

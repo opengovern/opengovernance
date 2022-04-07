@@ -20,6 +20,8 @@ func DynamoDbTable(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 		}
 
 		for _, table := range page.TableNames {
+			// This prevents Implicit memory aliasing in for loop
+			table := table
 			v, err := client.DescribeTable(ctx, &dynamodb.DescribeTableInput{
 				TableName: &table,
 			})

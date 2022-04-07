@@ -1,19 +1,22 @@
 package test
 
 import (
-	"github.com/google/uuid"
-	"github.com/stretchr/testify/assert"
-	compliancereport "gitlab.com/keibiengine/keibi-engine/pkg/compliance-report"
-	"gitlab.com/keibiengine/keibi-engine/pkg/internal/dockertest"
-	"gopkg.in/Shopify/sarama.v1"
 	"io/ioutil"
 	"os"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/google/uuid"
+	"github.com/stretchr/testify/assert"
+	"gopkg.in/Shopify/sarama.v1"
+
+	compliancereport "gitlab.com/keibiengine/keibi-engine/pkg/compliance-report"
+	"gitlab.com/keibiengine/keibi-engine/pkg/internal/dockertest"
 )
 
 func TestJob_Do(t *testing.T) {
+	t.Skip()
 	job := compliancereport.Job{
 		JobID:      100,
 		SourceID:   uuid.New(),
@@ -70,6 +73,7 @@ ConsumerLoop:
 }
 
 func TestBuildSpecFile(t *testing.T) {
+	t.Skip()
 	err := compliancereport.BuildSpecFile("test", compliancereport.ElasticSearchConfig{
 		Address:  "test-address:1000",
 		Username: "username",
@@ -93,5 +97,6 @@ connection "test" {
 }
 `, string(content))
 
-	_ = os.Remove(userHome + "/.steampipe/config/test.spc")
+	err = os.Remove(userHome + "/.steampipe/config/test.spc")
+	assert.Nil(t, err)
 }
