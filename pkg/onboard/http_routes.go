@@ -68,6 +68,36 @@ func (h HttpHandler) GetProviders(ctx echo.Context) error {
 			Enabled: true,
 			Type:    "PublicCloud",
 		},
+		{
+			ID:      "kubernetes",
+			Name:    "Kubernetes",
+			Enabled: false,
+			Type:    "PublicCloud",
+		},
+		{
+			ID:      "azuread",
+			Name:    "AzureAD",
+			Enabled: false,
+			Type:    "PublicCloud",
+		},
+		{
+			ID:      "vmware",
+			Name:    "VMWare",
+			Enabled: false,
+			Type:    "PublicCloud",
+		},
+		{
+			ID:      "gitlab",
+			Name:    "Gitlab.com",
+			Enabled: false,
+			Type:    "PublicCloud",
+		},
+		{
+			ID:      "github",
+			Name:    "GitHub",
+			Enabled: false,
+			Type:    "PublicCloud",
+		},
 	})
 }
 
