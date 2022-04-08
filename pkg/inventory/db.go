@@ -36,7 +36,7 @@ func (db Database) AddQuery(q *SmartQuery) error {
 // GetQueries gets list of all queries
 func (db Database) GetQueries() ([]SmartQuery, error) {
 	var s []SmartQuery
-	tx := db.orm.Find(&s)
+	tx := db.orm.Preload("Tags").Find(&s)
 
 	if tx.Error != nil {
 		return nil, tx.Error
