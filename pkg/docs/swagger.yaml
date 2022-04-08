@@ -54,6 +54,23 @@ definitions:
       subscriptionID:
         type: string
     type: object
+  api.Benchmark:
+    properties:
+      description:
+        type: string
+      id:
+        type: integer
+      provider:
+        type: string
+      state:
+        type: string
+      tags:
+        additionalProperties:
+          type: string
+        type: object
+      title:
+        type: string
+    type: object
   api.ComplianceReport:
     properties:
       failureMessage:
@@ -162,6 +179,30 @@ definitions:
           $ref: '#/definitions/api.AzureResource'
         type: array
     type: object
+  api.GetBenchmarkDetailsResponse:
+    properties:
+      categories:
+        items:
+          type: string
+        type: array
+      sections:
+        items:
+          type: string
+        type: array
+      subcategories:
+        items:
+          type: string
+        type: array
+    type: object
+  api.GetBenchmarkTag:
+    properties:
+      count:
+        type: integer
+      key:
+        type: string
+      value:
+        type: string
+    type: object
   api.GetComplianceReportRequest:
     properties:
       filters:
@@ -232,6 +273,37 @@ definitions:
         type: integer
     required:
     - size
+    type: object
+  api.Policy:
+    properties:
+      category:
+        type: string
+      commandLineRemedation:
+        type: string
+      description:
+        type: string
+      id:
+        type: integer
+      manualRemedation:
+        type: string
+      manualVerification:
+        type: string
+      provider:
+        type: string
+      queryToRun:
+        type: string
+      section:
+        type: string
+      severity:
+        type: string
+      subcategory:
+        type: string
+      tags:
+        additionalProperties:
+          type: string
+        type: object
+      title:
+        type: string
     type: object
   api.Provider:
     properties:
@@ -495,6 +567,106 @@ info:
   title: Keibi Service API
   version: "1.0"
 paths:
+  /benchmarks:
+    get:
+      consumes:
+      - application/json
+      description: In order to filter benchmarks by tags provide the tag key-value
+        as query param
+      parameters:
+      - description: Provider
+        enum:
+        - AWS
+        - Azure
+        in: query
+        name: provider
+        type: string
+      - description: Tags in key-value query param
+        in: query
+        name: tags
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/api.Benchmark'
+            type: array
+      summary: Returns list of benchmarks
+      tags:
+      - benchmarks
+  /benchmarks/{benchmarkId}:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: BenchmarkID
+        in: path
+        name: benchmarkId
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/api.GetBenchmarkDetailsResponse'
+      summary: Returns details of a given benchmark
+      tags:
+      - benchmarks
+  /benchmarks/{benchmarkId}/policies:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: BenchmarkID
+        in: path
+        name: benchmarkId
+        required: true
+        type: integer
+      - description: Category Filter
+        in: query
+        name: category
+        type: string
+      - description: Subcategory Filter
+        in: query
+        name: subcategory
+        type: string
+      - description: Section Filter
+        in: query
+        name: section
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/api.Policy'
+            type: array
+      summary: Returns list of policies of a given benchmark
+      tags:
+      - benchmarks
+  /benchmarks/tags:
+    get:
+      consumes:
+      - application/json
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/api.GetBenchmarkTag'
+            type: array
+      summary: Returns list of benchmark tags
+      tags:
+      - benchmarks
   /inventory/api/v1/locations/{provider}:
     get:
       description: Getting locations by provider

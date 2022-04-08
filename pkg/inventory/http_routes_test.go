@@ -820,6 +820,92 @@ func (s *HttpHandlerSuite) TestGetComplianceReport_Result() {
 	}
 }
 
+func (s *HttpHandlerSuite) TestGetBenchmarks() {
+	require := s.Require()
+
+	var res []api.Benchmark
+	_, err := doRequestJSONResponse(s.router, "GET",
+		"/api/v1/benchmarks", nil, &res)
+	require.NoError(err)
+	require.Len(res, 2)
+
+	_, err = doRequestJSONResponse(s.router, "GET",
+		"/api/v1/benchmarks?provider=AWS", nil, &res)
+	require.NoError(err)
+	require.Len(res, 1)
+
+	_, err = doRequestJSONResponse(s.router, "GET",
+		"/api/v1/benchmarks?provider=Azure", nil, &res)
+	require.NoError(err)
+	require.Len(res, 1)
+
+	_, err = doRequestJSONResponse(s.router, "GET",
+		"/api/v1/benchmarks?tagKey=tagValue", nil, &res)
+	require.NoError(err)
+	require.Len(res, 2)
+
+	_, err = doRequestJSONResponse(s.router, "GET",
+		"/api/v1/benchmarks?tag1=val1", nil, &res)
+	require.NoError(err)
+	require.Len(res, 1)
+
+	_, err = doRequestJSONResponse(s.router, "GET",
+		"/api/v1/benchmarks?tag1=val2", nil, &res)
+	require.NoError(err)
+	require.Len(res, 0)
+}
+
+func (s *HttpHandlerSuite) TestGetBenchmarkTags() {
+	require := s.Require()
+
+	var res []api.GetBenchmarkTag
+	_, err := doRequestJSONResponse(s.router, "GET",
+		"/api/v1/benchmarks/tags", nil, &res)
+	require.NoError(err)
+	require.True(len(res) > 0)
+	for _, b := range res {
+		require.Equal(b.Count, 1)
+	}
+}
+
+func (s *HttpHandlerSuite) TestGetBenchmarkDetails() {
+	require := s.Require()
+
+	var res api.GetBenchmarkDetailsResponse
+	_, err := doRequestJSONResponse(s.router, "GET",
+		"/api/v1/benchmarks/1", nil, &res)
+	require.NoError(err)
+	require.Len(res.Sections, 1)
+	require.Len(res.Categories, 1)
+	require.Len(res.Subcategories, 1)
+}
+
+func (s *HttpHandlerSuite) TestGetPolicies() {
+	require := s.Require()
+
+	var res []api.Policy
+	_, err := doRequestJSONResponse(s.router, "GET",
+		"/api/v1/benchmarks/1/policies", nil, &res)
+	require.NoError(err)
+	require.Len(res, 1)
+	for _, policy := range res {
+		require.Equal("category1", policy.Category)
+	}
+
+	_, err = doRequestJSONResponse(s.router, "GET",
+		"/api/v1/benchmarks/2/policies?category=category2", nil, &res)
+	require.NoError(err)
+	require.Len(res, 1)
+	for _, policy := range res {
+		require.Equal("category2", policy.Category)
+	}
+
+	_, err = doRequestJSONResponse(s.router, "GET",
+		"/api/v1/benchmarks/2/policies?category=category10", nil, &res)
+	require.NoError(err)
+	require.Len(res, 0)
+}
+
 func TestHttpHandlerSuite(t *testing.T) {
 	t.Skip()
 	suite.Run(t, &HttpHandlerSuite{})

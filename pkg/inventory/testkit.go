@@ -183,6 +183,89 @@ func PopulatePostgres(db Database) error {
 	if err != nil {
 		return err
 	}
+
+	err = db.AddBenchmark(&Benchmark{
+		Title:       "Benchmark 1",
+		Description: "this is a benchmark",
+		Provider:    "AWS",
+		Tags: []BenchmarkTag{
+			{
+				Key:   "tagKey",
+				Value: "tagValue",
+			},
+		},
+		Policies: []Policy{
+			{
+				Title:                 "Policy 1",
+				Description:           "description of policy 1",
+				Tags:                  []PolicyTag{},
+				Provider:              "AWS",
+				Category:              "category1",
+				SubCategory:           "sub_category1",
+				Section:               "section1",
+				Severity:              "high",
+				ManualVerification:    "step1",
+				ManualRemedation:      "step2",
+				CommandLineRemedation: "step3",
+				QueryToRun:            "query",
+				KeibiManaged:          true,
+			},
+		},
+	})
+	if err != nil {
+		return err
+	}
+
+	err = db.AddBenchmark(&Benchmark{
+		Title:       "Benchmark 2",
+		Description: "this is another benchmark",
+		Provider:    "Azure",
+		Tags: []BenchmarkTag{
+			{
+				Key:   "tagKey",
+				Value: "tagValue",
+			},
+			{
+				Key:   "tag1",
+				Value: "val1",
+			},
+		},
+		Policies: []Policy{
+			{
+				Title:                 "Policy 2",
+				Description:           "description of policy 2",
+				Tags:                  []PolicyTag{},
+				Provider:              "Azure",
+				Category:              "category2",
+				SubCategory:           "sub_category2",
+				Section:               "section2",
+				Severity:              "warn",
+				ManualVerification:    "step1",
+				ManualRemedation:      "step2",
+				CommandLineRemedation: "step3",
+				QueryToRun:            "query",
+				KeibiManaged:          true,
+			},
+			{
+				Title:                 "Policy 3",
+				Description:           "description of policy 3",
+				Tags:                  []PolicyTag{},
+				Provider:              "Azure",
+				Category:              "category3",
+				SubCategory:           "sub_category3",
+				Section:               "section3",
+				Severity:              "warn",
+				ManualVerification:    "step1",
+				ManualRemedation:      "step2",
+				CommandLineRemedation: "step3",
+				QueryToRun:            "query",
+				KeibiManaged:          true,
+			},
+		},
+	})
+	if err != nil {
+		return err
+	}
 	return nil
 }
 

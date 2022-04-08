@@ -243,3 +243,47 @@ type GetComplianceReportResponse struct {
 	Reports []compliance_report.Report `json:"reports"`
 	Page    api.Page                   `json:"page"`
 }
+
+type BenchmarkState string
+
+const (
+	BenchmarkStateEnabled  = "enabled"
+	BenchmarkStateDisabled = "disabled"
+)
+
+type Benchmark struct {
+	ID          uint       `json:"id"`
+	Title       string     `json:"title"`
+	Description string     `json:"description"`
+	Provider    SourceType `json:"provider"`
+	State       BenchmarkState
+	Tags        map[string]string `json:"tags"`
+}
+
+type GetBenchmarkTag struct {
+	Key   string `json:"key"`
+	Value string `json:"value"`
+	Count int    `json:"count"`
+}
+
+type GetBenchmarkDetailsResponse struct {
+	Categories    []string `json:"categories"`
+	Subcategories []string `json:"subcategories"`
+	Sections      []string `json:"sections"`
+}
+
+type Policy struct {
+	ID                    uint              `json:"id"`
+	Title                 string            `json:"title"`
+	Description           string            `json:"description"`
+	Category              string            `json:"category"`
+	Subcategory           string            `json:"subcategory"`
+	Section               string            `json:"section"`
+	Severity              string            `json:"severity"`
+	Provider              string            `json:"provider"`
+	ManualVerification    string            `json:"manualVerification"`
+	ManualRemedation      string            `json:"manualRemedation"`
+	CommandLineRemedation string            `json:"commandLineRemedation"`
+	QueryToRun            string            `json:"queryToRun"`
+	Tags                  map[string]string `json:"tags"`
+}
