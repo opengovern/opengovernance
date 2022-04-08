@@ -10,6 +10,158 @@
     },
     "host": "dev-cluster.keibi.io",
     "paths": {
+        "/benchmarks": {
+            "get": {
+                "description": "In order to filter benchmarks by tags provide the tag key-value as query param",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "benchmarks"
+                ],
+                "summary": "Returns list of benchmarks",
+                "parameters": [
+                    {
+                        "enum": [
+                            "AWS",
+                            "Azure"
+                        ],
+                        "type": "string",
+                        "description": "Provider",
+                        "name": "provider",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Tags in key-value query param",
+                        "name": "tags",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/api.Benchmark"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/benchmarks/tags": {
+            "get": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "benchmarks"
+                ],
+                "summary": "Returns list of benchmark tags",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/api.GetBenchmarkTag"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/benchmarks/{benchmarkId}": {
+            "get": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "benchmarks"
+                ],
+                "summary": "Returns details of a given benchmark",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "BenchmarkID",
+                        "name": "benchmarkId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/api.GetBenchmarkDetailsResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/benchmarks/{benchmarkId}/policies": {
+            "get": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "benchmarks"
+                ],
+                "summary": "Returns list of policies of a given benchmark",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "BenchmarkID",
+                        "name": "benchmarkId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Category Filter",
+                        "name": "category",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Subcategory Filter",
+                        "name": "subcategory",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Section Filter",
+                        "name": "section",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/api.Policy"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/inventory/api/v1/locations/{provider}": {
             "get": {
                 "description": "Getting locations by provider",
@@ -995,6 +1147,32 @@
                 }
             }
         },
+        "api.Benchmark": {
+            "type": "object",
+            "properties": {
+                "description": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "provider": {
+                    "type": "string"
+                },
+                "state": {
+                    "type": "string"
+                },
+                "tags": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
+                },
+                "title": {
+                    "type": "string"
+                }
+            }
+        },
         "api.ComplianceReport": {
             "type": "object",
             "properties": {
@@ -1153,6 +1331,43 @@
                 }
             }
         },
+        "api.GetBenchmarkDetailsResponse": {
+            "type": "object",
+            "properties": {
+                "categories": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "sections": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "subcategories": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
+        "api.GetBenchmarkTag": {
+            "type": "object",
+            "properties": {
+                "count": {
+                    "type": "integer"
+                },
+                "key": {
+                    "type": "string"
+                },
+                "value": {
+                    "type": "string"
+                }
+            }
+        },
         "api.GetComplianceReportRequest": {
             "type": "object",
             "required": [
@@ -1253,6 +1468,53 @@
                 "size": {
                     "type": "integer",
                     "minimum": 1
+                }
+            }
+        },
+        "api.Policy": {
+            "type": "object",
+            "properties": {
+                "category": {
+                    "type": "string"
+                },
+                "commandLineRemedation": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "manualRemedation": {
+                    "type": "string"
+                },
+                "manualVerification": {
+                    "type": "string"
+                },
+                "provider": {
+                    "type": "string"
+                },
+                "queryToRun": {
+                    "type": "string"
+                },
+                "section": {
+                    "type": "string"
+                },
+                "severity": {
+                    "type": "string"
+                },
+                "subcategory": {
+                    "type": "string"
+                },
+                "tags": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
+                },
+                "title": {
+                    "type": "string"
                 }
             }
         },

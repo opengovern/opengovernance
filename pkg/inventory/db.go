@@ -12,6 +12,10 @@ type Database struct {
 func (db Database) Initialize() error {
 	err := db.orm.AutoMigrate(
 		&SmartQuery{},
+		&Policy{},
+		&PolicyTag{},
+		&Benchmark{},
+		&BenchmarkTag{},
 	)
 	if err != nil {
 		return err
@@ -54,6 +58,95 @@ func (db Database) GetQuery(id string) (SmartQuery, error) {
 		return SmartQuery{}, tx.Error
 	} else if tx.RowsAffected != 1 {
 		return SmartQuery{}, pgx.ErrNoRows
+	}
+
+	return s, nil
+}
+
+// =========== Benchmarks ===========
+
+func (db Database) AddBenchmark(q *Benchmark) error {
+	tx := db.orm.Create(q)
+
+	if tx.Error != nil {
+		return tx.Error
+	}
+
+	return nil
+}
+
+func (db Database) ListBenchmarksWithFilters(provider *string, tags map[string]string) ([]Benchmark, error) {
+	var s []Benchmark
+	m := db.orm.Model(&Benchmark{}).
+		Preload("Tags").
+		Preload("Policies")
+	if provider != nil {
+		m = m.Where("provider = ?", *provider)
+	}
+	for key, value := range tags {
+		m = m.Where("id IN (SELECT benchmark_id FROM benchmark_tag_rel WHERE benchmark_tag_id IN (SELECT id FROM benchmark_tags WHERE key = ? AND value = ?))", key, value)
+	}
+
+	tx := m.Find(&s)
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+
+	return s, nil
+}
+
+func (db Database) GetBenchmark(benchmarkId uint) (*Benchmark, error) {
+	var s Benchmark
+	tx := db.orm.Model(&Benchmark{}).
+		Preload("Tags").
+		Preload("Policies").
+		Where("id = ?", benchmarkId).
+		Find(&s)
+
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+
+	return &s, nil
+}
+
+// =========== Policy ===========
+
+func (db Database) GetPoliciesWithFilters(benchmarkId uint,
+	category *string, subcategory *string, section *string) ([]Policy, error) {
+	var s []Policy
+	m := db.orm.Model(&Policy{}).
+		Preload("Tags").
+		Where("id IN (SELECT policy_id FROM benchmark_policies WHERE benchmark_id = ?)", benchmarkId)
+
+	if category != nil {
+		m = m.Where("category = ?", *category)
+	}
+	if subcategory != nil {
+		m = m.Where("subcategory = ?", *subcategory)
+	}
+	if section != nil {
+		m = m.Where("section = ?", *section)
+	}
+	tx := m.Find(&s)
+
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+
+	return s, nil
+}
+
+// =========== Benchmark Tags ===========
+
+func (db Database) ListBenchmarkTags() ([]BenchmarkTag, error) {
+	var s []BenchmarkTag
+	tx := db.orm.
+		Preload("Benchmarks").
+		Find(&s)
+
+	if tx.Error != nil {
+		return nil, tx.Error
 	}
 
 	return s, nil

@@ -48,6 +48,188 @@ func (h *HttpHandler) Register(v1 *echo.Group) {
 
 	v1.GET("/reports/compliance/:sourceId", h.GetComplianceReports)
 	v1.GET("/reports/compliance/:sourceId/:reportId", h.GetComplianceReports)
+
+	v1.GET("/benchmarks", h.GetBenchmarks)
+	v1.GET("/benchmarks/tags", h.GetBenchmarkTags)
+	v1.GET("/benchmarks/:benchmarkId", h.GetBenchmarkDetails)
+	v1.GET("/benchmarks/:benchmarkId/policies", h.GetPolicies)
+}
+
+// GetBenchmarks godoc
+// @Summary      Returns list of benchmarks
+// @Description  In order to filter benchmarks by tags provide the tag key-value as query param
+// @Tags         benchmarks
+// @Accept       json
+// @Produce      json
+// @Param        provider	query	string	false	"Provider"	Enums(AWS,Azure)
+// @Param        tags		query	string	false	"Tags in key-value query param"
+// @Success      200  {object}  []api.Benchmark
+// @Router       /benchmarks [get]
+func (h *HttpHandler) GetBenchmarks(ctx echo.Context) error {
+	var provider *string
+	tagFilters := make(map[string]string)
+	for k, v := range ctx.QueryParams() {
+		if k == "provider" {
+			if len(v) == 1 {
+				provider = &v[0]
+			}
+			continue
+		}
+		if len(v) == 1 {
+			tagFilters[k] = v[0]
+		}
+	}
+	benchmarks, err := h.db.ListBenchmarksWithFilters(provider, tagFilters)
+	if err != nil {
+		return err
+	}
+
+	var response []api.Benchmark
+	for _, benchmark := range benchmarks {
+		tags := make(map[string]string)
+		for _, tag := range benchmark.Tags {
+			tags[tag.Key] = tag.Value
+		}
+		response = append(response, api.Benchmark{
+			ID:          benchmark.ID,
+			Title:       benchmark.Title,
+			Description: benchmark.Description,
+			Provider:    api.SourceType(benchmark.Provider),
+			State:       api.BenchmarkState(benchmark.State),
+			Tags:        tags,
+		})
+	}
+
+	return ctx.JSON(http.StatusOK, response)
+}
+
+// GetBenchmarkTags godoc
+// @Summary      Returns list of benchmark tags
+// @Tags         benchmarks
+// @Accept       json
+// @Produce      json
+// @Success      200  {object}  []api.GetBenchmarkTag
+// @Router       /benchmarks/tags [get]
+func (h *HttpHandler) GetBenchmarkTags(ctx echo.Context) error {
+	tags, err := h.db.ListBenchmarkTags()
+	if err != nil {
+		return err
+	}
+
+	var response []api.GetBenchmarkTag
+	for _, tag := range tags {
+		response = append(response, api.GetBenchmarkTag{
+			Key:   tag.Key,
+			Value: tag.Value,
+			Count: len(tag.Benchmarks),
+		})
+	}
+
+	return ctx.JSON(http.StatusOK, response)
+}
+
+// GetBenchmarkDetails godoc
+// @Summary      Returns details of a given benchmark
+// @Tags         benchmarks
+// @Accept       json
+// @Produce      json
+// @Param        benchmarkId	path	int	true	"BenchmarkID"
+// @Success      200  {object}  api.GetBenchmarkDetailsResponse
+// @Router       /benchmarks/{benchmarkId} [get]
+func (h *HttpHandler) GetBenchmarkDetails(ctx echo.Context) error {
+	benchmarkId, err := strconv.Atoi(ctx.Param("benchmarkId"))
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid benchmark id")
+	}
+
+	benchmark, err := h.db.GetBenchmark(uint(benchmarkId))
+	if err != nil {
+		return echo.NewHTTPError(http.StatusNotFound, "benchmark not found")
+	}
+
+	resp := api.GetBenchmarkDetailsResponse{}
+
+	categories := make(map[string]string)
+	subcategories := make(map[string]string)
+	sections := make(map[string]string)
+	for _, policy := range benchmark.Policies {
+		categories[policy.Category] = ""
+		subcategories[policy.SubCategory] = ""
+		sections[policy.Section] = ""
+	}
+
+	for k := range categories {
+		resp.Categories = append(resp.Categories, k)
+	}
+	for k := range subcategories {
+		resp.Subcategories = append(resp.Subcategories, k)
+	}
+	for k := range sections {
+		resp.Sections = append(resp.Sections, k)
+	}
+
+	return ctx.JSON(http.StatusOK, resp)
+}
+
+// GetPolicies godoc
+// @Summary      Returns list of policies of a given benchmark
+// @Tags         benchmarks
+// @Accept       json
+// @Produce      json
+// @Param        benchmarkId	path	int		true	"BenchmarkID"
+// @Param        category		query	string	false	"Category Filter"
+// @Param        subcategory	query	string	false	"Subcategory Filter"
+// @Param        section		query	string	false	"Section Filter"
+// @Success      200  {object}  []api.Policy
+// @Router       /benchmarks/{benchmarkId}/policies [get]
+func (h *HttpHandler) GetPolicies(ctx echo.Context) error {
+	benchmarkId, err := strconv.Atoi(ctx.Param("benchmarkId"))
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid benchmark id")
+	}
+	var category, subcategory, section *string
+	if len(ctx.QueryParam("category")) > 0 {
+		temp := ctx.QueryParam("category")
+		category = &temp
+	}
+	if len(ctx.QueryParam("subcategory")) > 0 {
+		temp := ctx.QueryParam("subcategory")
+		subcategory = &temp
+	}
+	if len(ctx.QueryParam("section")) > 0 {
+		temp := ctx.QueryParam("section")
+		section = &temp
+	}
+
+	policies, err := h.db.GetPoliciesWithFilters(uint(benchmarkId), category, subcategory, section)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusNotFound, "benchmark not found")
+	}
+
+	var resp []api.Policy
+	for _, policy := range policies {
+		tags := make(map[string]string)
+		for _, tag := range policy.Tags {
+			tags[tag.Key] = tag.Value
+		}
+		resp = append(resp, api.Policy{
+			ID:                    policy.ID,
+			Title:                 policy.Title,
+			Description:           policy.Description,
+			Category:              policy.Category,
+			Subcategory:           policy.SubCategory,
+			Section:               policy.Section,
+			Severity:              policy.Severity,
+			Provider:              policy.Provider,
+			ManualVerification:    policy.ManualVerification,
+			ManualRemedation:      policy.ManualRemedation,
+			CommandLineRemedation: policy.CommandLineRemedation,
+			QueryToRun:            policy.QueryToRun,
+			Tags:                  nil,
+		})
+	}
+
+	return ctx.JSON(http.StatusOK, resp)
 }
 
 // GetResource godoc
