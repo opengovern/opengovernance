@@ -875,9 +875,9 @@ func (s *HttpHandlerSuite) TestGetBenchmarkDetails() {
 	_, err := doRequestJSONResponse(s.router, "GET",
 		"/api/v1/benchmarks/1", nil, &res)
 	require.NoError(err)
-	require.Len(res.Sections,1)
-	require.Len(res.Categories,1)
-	require.Len(res.Subcategories,1)
+	require.Len(res.Sections, 1)
+	require.Len(res.Categories, 1)
+	require.Len(res.Subcategories, 1)
 }
 
 func (s *HttpHandlerSuite) TestGetPolicies() {
@@ -887,7 +887,7 @@ func (s *HttpHandlerSuite) TestGetPolicies() {
 	_, err := doRequestJSONResponse(s.router, "GET",
 		"/api/v1/benchmarks/1/policies", nil, &res)
 	require.NoError(err)
-	require.Len(res,1)
+	require.Len(res, 1)
 	for _, policy := range res {
 		require.Equal("category1", policy.Category)
 	}
@@ -895,7 +895,7 @@ func (s *HttpHandlerSuite) TestGetPolicies() {
 	_, err = doRequestJSONResponse(s.router, "GET",
 		"/api/v1/benchmarks/2/policies?category=category2", nil, &res)
 	require.NoError(err)
-	require.Len(res,1)
+	require.Len(res, 1)
 	for _, policy := range res {
 		require.Equal("category2", policy.Category)
 	}
@@ -903,7 +903,7 @@ func (s *HttpHandlerSuite) TestGetPolicies() {
 	_, err = doRequestJSONResponse(s.router, "GET",
 		"/api/v1/benchmarks/2/policies?category=category10", nil, &res)
 	require.NoError(err)
-	require.Len(res,0)
+	require.Len(res, 0)
 }
 
 func TestHttpHandlerSuite(t *testing.T) {

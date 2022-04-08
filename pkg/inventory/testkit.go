@@ -188,13 +188,13 @@ func PopulatePostgres(db Database) error {
 		Title:       "Benchmark 1",
 		Description: "this is a benchmark",
 		Provider:    "AWS",
-		Tags:        []BenchmarkTag{
+		Tags: []BenchmarkTag{
 			{
-				Key:        "tagKey",
-				Value:      "tagValue",
+				Key:   "tagKey",
+				Value: "tagValue",
 			},
 		},
-		Policies:    []Policy{
+		Policies: []Policy{
 			{
 				Title:                 "Policy 1",
 				Description:           "description of policy 1",
@@ -220,17 +220,17 @@ func PopulatePostgres(db Database) error {
 		Title:       "Benchmark 2",
 		Description: "this is another benchmark",
 		Provider:    "Azure",
-		Tags:        []BenchmarkTag{
+		Tags: []BenchmarkTag{
 			{
-				Key:        "tagKey",
-				Value:      "tagValue",
+				Key:   "tagKey",
+				Value: "tagValue",
 			},
 			{
-				Key:        "tag1",
-				Value:      "val1",
+				Key:   "tag1",
+				Value: "val1",
 			},
 		},
-		Policies:    []Policy{
+		Policies: []Policy{
 			{
 				Title:                 "Policy 2",
 				Description:           "description of policy 2",
