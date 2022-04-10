@@ -175,11 +175,11 @@ func (h HttpHandler) GetProviderTypes(ctx echo.Context) error {
 // @Description  Creating AWS source
 // @Tags         onboard
 // @Produce      json
-// @Success      200  {object}  api.CreateSourceResponse
-// @Param        name              body      string  true  "name"
-// @Param        description       body      string  true  "description"
-// @Param        config            body      api.SourceConfigAWS  true  "config"
-// @Router       /onboard/api/v1/aws [post]
+// @Success      200          {object}  api.CreateSourceResponse
+// @Param        name         body      string               true  "name"
+// @Param        description  body      string               true  "description"
+// @Param        config       body      api.SourceConfigAWS  true  "config"
+// @Router       /onboard/api/v1/source/aws [post]
 func (h HttpHandler) PostSourceAws(ctx echo.Context) error {
 	var req api.SourceAwsRequest
 	if err := bindValidate(ctx, &req); err != nil {
@@ -223,11 +223,11 @@ func (h HttpHandler) PostSourceAws(ctx echo.Context) error {
 // @Description  Creating Azure source
 // @Tags         onboard
 // @Produce      json
-// @Success      200  {object}  api.CreateSourceResponse
-// @Param        name              body      string  true  "name"
-// @Param        description       body      string  true  "description"
-// @Param        config            body      api.SourceConfigAzure  true  "config"
-// @Router       /onboard/api/v1/azure [post]
+// @Success      200          {object}  api.CreateSourceResponse
+// @Param        name         body      string                 true  "name"
+// @Param        description  body      string                 true  "description"
+// @Param        config       body      api.SourceConfigAzure  true  "config"
+// @Router       /onboard/api/v1/source/azure [post]
 func (h HttpHandler) PostSourceAzure(ctx echo.Context) error {
 	var req api.SourceAzureRequest
 
@@ -277,9 +277,9 @@ func (h HttpHandler) PostSourceAzure(ctx echo.Context) error {
 // @Description  Returning single source either AWS / Azure.
 // @Tags         onboard
 // @Produce      json
-// @Success      200  {object}  api.Source
-// @Param        sourceId   path      integer  true  "SourceID"
-// @Router       /onboard/api/v1/{sourceId} [get]
+// @Success      200       {object}  api.Source
+// @Param        sourceId  path      integer  true  "SourceID"
+// @Router       /onboard/api/v1/source/{sourceId} [get]
 func (h HttpHandler) GetSource(ctx echo.Context) error {
 	srcId, err := uuid.Parse(ctx.Param(paramSourceId))
 	if err != nil {
@@ -309,8 +309,8 @@ func (h HttpHandler) GetSource(ctx echo.Context) error {
 // @Tags         onboard
 // @Produce      json
 // @Success      200
-// @Param        sourceId   path      integer  true  "SourceID"
-// @Router       /onboard/api/v1/{sourceId} [delete]
+// @Param        sourceId  path  integer  true  "SourceID"
+// @Router       /onboard/api/v1/source/{sourceId} [delete]
 func (h HttpHandler) DeleteSource(ctx echo.Context) error {
 	srcId, err := uuid.Parse(ctx.Param(paramSourceId))
 	if err != nil {
@@ -360,8 +360,8 @@ func (h HttpHandler) DeleteSource(ctx echo.Context) error {
 // @Description  Returning a list of sources including both AWS and Azure unless filtered by Type.
 // @Tags         onboard
 // @Produce      json
-// @Param        type query string false "Type" Enums(aws,azure)
-// @Success      200  {object}  api.GetSourcesResponse
+// @Param        type  query     string  false  "Type"  Enums(aws,azure)
+// @Success      200   {object}  api.GetSourcesResponse
 // @Router       /onboard/api/v1/sources [get]
 func (h HttpHandler) GetSources(ctx echo.Context) error {
 	sType := ctx.QueryParam("type")
@@ -404,13 +404,13 @@ func (h HttpHandler) PutSource(ctx echo.Context) error {
 }
 
 // DiscoverAwsAccounts godoc
-// @Summary     Returns the list of available AWS accounts given the credentials.
+// @Summary      Returns the list of available AWS accounts given the credentials.
 // @Description  If the account is part of an organization and the account has premission to list the accounts, it will return all the accounts in that organization. Otherwise, it will return the single account these credentials belong to.
 // @Tags         onboard
 // @Produce      json
-// @Success      200  {object}  []api.DiscoverAWSAccountsResponse
-// @Param        accessKey       body      string  true  "AccessKey"
-// @Param        secretKey       body      string  true  "SecretKey"
+// @Success      200        {object}  []api.DiscoverAWSAccountsResponse
+// @Param        accessKey  body      string  true  "AccessKey"
+// @Param        secretKey  body      string  true  "SecretKey"
 // @Router       /onboard/api/v1/discover/aws/accounts [post]
 func (h HttpHandler) DiscoverAwsAccounts(ctx echo.Context) error {
 	// DiscoverAwsAccounts returns the list of available AWS accounts given the credentials.
@@ -441,14 +441,14 @@ func (h HttpHandler) DiscoverAwsAccounts(ctx echo.Context) error {
 }
 
 // DiscoverAzureSubscriptions godoc
-// @Summary     Returns the list of available Azure subscriptions.
+// @Summary      Returns the list of available Azure subscriptions.
 // @Description  Returning the list of available Azure subscriptions.
 // @Tags         onboard
 // @Produce      json
-// @Success      200  {object}  []api.DiscoverAzureSubscriptionsResponse
-// @Param        tenantId       body      string  true  "TenantId"
-// @Param        clientId       body      string  true  "ClientId"
-// @Param        clientSecret   body      string  true  "ClientSecret"
+// @Success      200           {object}  []api.DiscoverAzureSubscriptionsResponse
+// @Param        tenantId      body      string  true  "TenantId"
+// @Param        clientId      body      string  true  "ClientId"
+// @Param        clientSecret  body      string  true  "ClientSecret"
 // @Router       /onboard/api/v1/discover/azure/subscriptions [post]
 func (h *HttpHandler) DiscoverAzureSubscriptions(ctx echo.Context) error {
 	var req api.DiscoverAzureSubscriptionsRequest

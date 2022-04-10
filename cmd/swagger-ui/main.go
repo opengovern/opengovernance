@@ -16,10 +16,10 @@ var (
 
 //go:generate ../../scripts/generate_doc.sh
 
-// @title           Keibi Service API
-// @version         1.0
-// @host 			dev-cluster.keibi.io
-// @schemes         https
+// @title    Keibi Service API
+// @version  1.0
+// @host     dev-cluster.keibi.io
+// @schemes  https
 func main() {
 	e := echo.New()
 	e.Logger.SetLevel(log.DEBUG) // TODO: change in prod

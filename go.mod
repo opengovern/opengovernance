@@ -66,10 +66,14 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/wafv2 v1.14.0
 	github.com/aws/aws-sdk-go-v2/service/workspaces v1.10.1
 	github.com/aws/smithy-go v1.10.0
+	github.com/brpaz/echozap v1.1.2
 	github.com/cenkalti/backoff/v3 v3.2.2
+	github.com/coreos/go-oidc/v3 v3.1.0
 	github.com/elastic/go-elasticsearch/v7 v7.16.0
+	github.com/envoyproxy/go-control-plane v0.10.1
 	github.com/gocarina/gocsv v0.0.0-20211203214250-4735fba0c1d9
 	github.com/gofrs/uuid v4.0.0+incompatible
+	github.com/gogo/googleapis v1.4.1
 	github.com/golang/protobuf v1.5.2
 	github.com/google/uuid v1.3.0
 	github.com/hashicorp/go-hclog v1.0.0
@@ -78,6 +82,7 @@ require (
 	github.com/jackc/pgx/v4 v4.13.0
 	github.com/labstack/echo/v4 v4.6.1
 	github.com/labstack/gommon v0.3.1
+	github.com/lib/pq v1.10.2
 	github.com/manicminer/hamilton v0.41.1
 	github.com/ory/dockertest/v3 v3.8.1
 	github.com/spf13/cobra v1.3.0
@@ -92,6 +97,8 @@ require (
 	gitlab.com/keibiengine/steampipe-plugin-azure v0.23.2-0.20220401174801-d61359c2d790
 	gitlab.com/keibiengine/steampipe-plugin-azuread v0.1.1-0.20220401174905-60626bc2deea
 	go.uber.org/zap v1.21.0
+	google.golang.org/genproto v0.0.0-20211208223120-3a66f561d7aa
+	google.golang.org/grpc v1.42.0
 	gopkg.in/Shopify/sarama.v1 v1.20.1
 	gopkg.in/go-playground/validator.v9 v9.31.0
 	gorm.io/driver/postgres v1.2.2
@@ -135,6 +142,7 @@ require (
 	github.com/btubbs/datetime v0.1.1 // indirect
 	github.com/cenkalti/backoff/v4 v4.1.2 // indirect
 	github.com/cespare/xxhash/v2 v2.1.2 // indirect
+	github.com/cncf/xds/go v0.0.0-20211130200136-a8f946100490 // indirect
 	github.com/containerd/continuity v0.2.2 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/dgraph-io/ristretto v0.1.0 // indirect
@@ -147,6 +155,7 @@ require (
 	github.com/eapache/go-resiliency v1.2.0 // indirect
 	github.com/eapache/go-xerial-snappy v0.0.0-20180814174437-776d5712da21 // indirect
 	github.com/eapache/queue v1.1.0 // indirect
+	github.com/envoyproxy/protoc-gen-validate v0.6.2 // indirect
 	github.com/ettle/strcase v0.1.1 // indirect
 	github.com/fatih/color v1.13.0 // indirect
 	github.com/form3tech-oss/jwt-go v3.2.3+incompatible // indirect
@@ -197,6 +206,7 @@ require (
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/kr/pretty v0.3.0 // indirect
+	github.com/kylelemons/godebug v1.1.0 // indirect
 	github.com/leodido/go-urn v1.2.1 // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
 	github.com/mattn/go-colorable v0.1.12 // indirect
@@ -244,8 +254,6 @@ require (
 	golang.org/x/time v0.0.0-20211116232009-f0f3c7e86c11 // indirect
 	golang.org/x/tools v0.1.9 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
-	google.golang.org/genproto v0.0.0-20211208223120-3a66f561d7aa // indirect
-	google.golang.org/grpc v1.42.0 // indirect
 	google.golang.org/protobuf v1.27.1 // indirect
 	gopkg.in/go-playground/assert.v1 v1.2.1 // indirect
 	gopkg.in/square/go-jose.v2 v2.6.0 // indirect

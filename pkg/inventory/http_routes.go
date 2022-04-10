@@ -58,12 +58,12 @@ func (h *HttpHandler) Register(v1 *echo.Group) {
 // GetBenchmarks godoc
 // @Summary      Returns list of benchmarks
 // @Description  In order to filter benchmarks by tags provide the tag key-value as query param
-// @Tags         benchmarks
-// @Accept       json
-// @Produce      json
-// @Param        provider	query	string	false	"Provider"	Enums(AWS,Azure)
-// @Param        tags		query	string	false	"Tags in key-value query param"
-// @Success      200  {object}  []api.Benchmark
+// @Tags     benchmarks
+// @Accept   json
+// @Produce  json
+// @Param        provider  query     string  false  "Provider"  Enums(AWS,Azure)
+// @Param        tags      query     string  false  "Tags in key-value query param"
+// @Success      200       {object}  []api.Benchmark
 // @Router       /benchmarks [get]
 func (h *HttpHandler) GetBenchmarks(ctx echo.Context) error {
 	var provider *string
@@ -104,12 +104,12 @@ func (h *HttpHandler) GetBenchmarks(ctx echo.Context) error {
 }
 
 // GetBenchmarkTags godoc
-// @Summary      Returns list of benchmark tags
-// @Tags         benchmarks
-// @Accept       json
-// @Produce      json
-// @Success      200  {object}  []api.GetBenchmarkTag
-// @Router       /benchmarks/tags [get]
+// @Summary  Returns list of benchmark tags
+// @Tags     benchmarks
+// @Accept   json
+// @Produce  json
+// @Success  200  {object}  []api.GetBenchmarkTag
+// @Router   /benchmarks/tags [get]
 func (h *HttpHandler) GetBenchmarkTags(ctx echo.Context) error {
 	tags, err := h.db.ListBenchmarkTags()
 	if err != nil {
@@ -129,13 +129,13 @@ func (h *HttpHandler) GetBenchmarkTags(ctx echo.Context) error {
 }
 
 // GetBenchmarkDetails godoc
-// @Summary      Returns details of a given benchmark
-// @Tags         benchmarks
-// @Accept       json
-// @Produce      json
-// @Param        benchmarkId	path	int	true	"BenchmarkID"
-// @Success      200  {object}  api.GetBenchmarkDetailsResponse
-// @Router       /benchmarks/{benchmarkId} [get]
+// @Summary  Returns details of a given benchmark
+// @Tags     benchmarks
+// @Accept   json
+// @Produce  json
+// @Param    benchmarkId  path      int  true  "BenchmarkID"
+// @Success  200          {object}  api.GetBenchmarkDetailsResponse
+// @Router   /benchmarks/{benchmarkId} [get]
 func (h *HttpHandler) GetBenchmarkDetails(ctx echo.Context) error {
 	benchmarkId, err := strconv.Atoi(ctx.Param("benchmarkId"))
 	if err != nil {
@@ -172,16 +172,16 @@ func (h *HttpHandler) GetBenchmarkDetails(ctx echo.Context) error {
 }
 
 // GetPolicies godoc
-// @Summary      Returns list of policies of a given benchmark
+// @Summary  Returns list of policies of a given benchmark
 // @Tags         benchmarks
 // @Accept       json
 // @Produce      json
-// @Param        benchmarkId	path	int		true	"BenchmarkID"
-// @Param        category		query	string	false	"Category Filter"
-// @Param        subcategory	query	string	false	"Subcategory Filter"
-// @Param        section		query	string	false	"Section Filter"
-// @Success      200  {object}  []api.Policy
-// @Router       /benchmarks/{benchmarkId}/policies [get]
+// @Param    benchmarkId  path      int     true   "BenchmarkID"
+// @Param    category     query     string  false  "Category Filter"
+// @Param    subcategory  query     string  false  "Subcategory Filter"
+// @Param    section      query     string  false  "Section Filter"
+// @Success  200          {object}  []api.Policy
+// @Router   /benchmarks/{benchmarkId}/policies [get]
 func (h *HttpHandler) GetPolicies(ctx echo.Context) error {
 	benchmarkId, err := strconv.Atoi(ctx.Param("benchmarkId"))
 	if err != nil {
@@ -238,7 +238,7 @@ func (h *HttpHandler) GetPolicies(ctx echo.Context) error {
 // @Tags         resource
 // @Accepts      json
 // @Produce      json
-// @Param        request	body	api.GetResourceRequest	true	"Request Body"
+// @Param        request  body  api.GetResourceRequest  true  "Request Body"
 // @Router       /inventory/api/v1/resource [post]
 func (h *HttpHandler) GetResource(ectx echo.Context) error {
 	ctx := ectx.(*Context)
@@ -327,10 +327,10 @@ func (h *HttpHandler) ListQueries(ectx echo.Context) error {
 // @Tags         smart_query
 // @Accepts      json
 // @Produce      json,text/csv
-// @Param        queryId	path	string				true	"QueryID"
-// @Param        request	body	api.RunQueryRequest	true	"Request Body"
-// @Param        accept		header	string				true	"Accept header"		Enums(application/json,text/csv)
-// @Success      200  {object}  api.RunQueryResponse
+// @Param        queryId  path      string               true  "QueryID"
+// @Param        request  body      api.RunQueryRequest  true  "Request Body"
+// @Param        accept   header    string               true  "Accept header"  Enums(application/json,text/csv)
+// @Success      200      {object}  api.RunQueryResponse
 // @Router       /inventory/api/v1/query/{queryId} [post]
 func (h *HttpHandler) RunQuery(ectx echo.Context) error {
 	ctx := ectx.(*Context)
@@ -406,8 +406,8 @@ func (h *HttpHandler) RunQuery(ectx echo.Context) error {
 // @Description  Getting locations by provider
 // @Tags         location
 // @Produce      json
-// @Param        provider   path      string  true  "Provider" Enums(aws,azure)
-// @Success      200  {object}  []api.LocationByProviderResponse
+// @Param        provider  path      string  true  "Provider"  Enums(aws,azure)
+// @Success      200       {object}  []api.LocationByProviderResponse
 // @Router       /inventory/api/v1/locations/{provider} [get]
 func (h *HttpHandler) GetLocations(ctx echo.Context) error {
 	cc := extractContext(ctx)
@@ -466,9 +466,9 @@ func (h *HttpHandler) GetLocations(ctx echo.Context) error {
 // @Tags         inventory
 // @Accept       json
 // @Produce      json,text/csv
-// @Param        request	body	api.GetResourcesRequest	true	"Request Body"
-// @Param        accept		header	string					true	"Accept header"		Enums(application/json,text/csv)
-// @Success      200  {object}  api.GetAzureResourceResponse
+// @Param        request  body      api.GetResourcesRequest  true  "Request Body"
+// @Param        accept   header    string                   true  "Accept header"  Enums(application/json,text/csv)
+// @Success      200      {object}  api.GetAzureResourceResponse
 // @Router       /inventory/api/v1/resources/azure [post]
 func (h *HttpHandler) GetAzureResources(ectx echo.Context) error {
 	provider := api.SourceCloudAzure
@@ -489,9 +489,9 @@ func (h *HttpHandler) GetAzureResources(ectx echo.Context) error {
 // @Tags         inventory
 // @Accept       json
 // @Produce      json,text/csv
-// @Param        request	body	api.GetResourcesRequest	true	"Request Body"
-// @Param        accept		header	string					true	"Accept header"		Enums(application/json,text/csv)
-// @Success      200  {object}  api.GetAWSResourceResponse
+// @Param        request  body      api.GetResourcesRequest  true  "Request Body"
+// @Param        accept   header    string                   true  "Accept header"  Enums(application/json,text/csv)
+// @Success      200      {object}  api.GetAWSResourceResponse
 // @Router       /inventory/api/v1/resources/aws [post]
 func (h *HttpHandler) GetAWSResources(ectx echo.Context) error {
 	provider := api.SourceCloudAWS
@@ -513,9 +513,9 @@ func (h *HttpHandler) GetAWSResources(ectx echo.Context) error {
 // @Tags         inventory
 // @Accept       json
 // @Produce      json,text/csv
-// @Param        request	body	api.GetResourcesRequest	true	"Request Body"
-// @Param        accept		header	string					true	"Accept header"		Enums(application/json,text/csv)
-// @Success      200  {object}  api.GetResourcesResponse
+// @Param        request  body      api.GetResourcesRequest  true  "Request Body"
+// @Param        accept   header    string                   true  "Accept header"  Enums(application/json,text/csv)
+// @Success      200      {object}  api.GetResourcesResponse
 // @Router       /inventory/api/v1/resources [post]
 func (h *HttpHandler) GetAllResources(ectx echo.Context) error {
 	if accepts := ectx.Request().Header.Get("accept"); accepts != "" {
@@ -687,12 +687,12 @@ func (h *HttpHandler) GetResourcesCSV(ectx echo.Context, provider *api.SourceTyp
 // @Tags         compliance_report
 // @Accept       json
 // @Produce      json
-// @Param        source_id		path	string							true	"Source ID"
-// @Param        report_id		path	string							false	"Report Job ID"
-// @Param        request		body	api.GetComplianceReportRequest	true	"Request Body"
-// @Success      200  {object}  []compliance_report.Report
-// @Router       /reports/compliance/{source_id} [get]
-// @Router       /reports/compliance/{source_id}/{report_id} [get]
+// @Param        source_id  path      string                          true   "Source ID"
+// @Param        report_id  path      string                          false  "Report Job ID"
+// @Param        request    body      api.GetComplianceReportRequest  true   "Request Body"
+// @Success      200        {object}  []compliance_report.Report
+// @Router       /inventory/api/v1/reports/compliance/{source_id} [get]
+// @Router       /inventory/api/v1/reports/compliance/{source_id}/{report_id} [get]
 func (h *HttpHandler) GetComplianceReports(ctx echo.Context) error {
 	cc := ctx.(*Context)
 
