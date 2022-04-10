@@ -92,8 +92,8 @@ func (s HttpServer) HandleListSources(ctx echo.Context) error {
 // @Description  List source describe jobs
 // @Tags         schedule
 // @Produce      json
-// @Param        source_id   path      string  true  "SourceID"
-// @Success      200  {object}  []api.DescribeSource
+// @Param        source_id  path      string  true  "SourceID"
+// @Success      200        {object}  []api.DescribeSource
 // @Router       /schedule/api/v1/sources/{source_id}/jobs/describe [get]
 func (s HttpServer) HandleListSourceDescribeJobs(ctx echo.Context) error {
 	sourceID := ctx.Param("source_id")
@@ -134,10 +134,10 @@ func (s HttpServer) HandleListSourceDescribeJobs(ctx echo.Context) error {
 // @Description  List source compliance reports
 // @Tags         schedule
 // @Produce      json
-// @Param        source_id   path      string  true  "SourceID"
-// @Param        from	query	int	false	"From Time (TimeRange)"
-// @Param        to		query	int	false	"To Time (TimeRange)"
-// @Success      200  {object}  []api.ComplianceReport
+// @Param        source_id  path      string  true   "SourceID"
+// @Param        from       query     int     false  "From Time (TimeRange)"
+// @Param        to         query     int     false  "To Time (TimeRange)"
+// @Success      200        {object}  []api.ComplianceReport
 // @Router       /schedule/api/v1/sources/{source_id}/jobs/compliance [get]
 func (s HttpServer) HandleListSourceComplianceReports(ctx echo.Context) error {
 	sourceID := ctx.Param("source_id")
@@ -198,7 +198,7 @@ func (s HttpServer) HandleListSourceComplianceReports(ctx echo.Context) error {
 // @Description  Run compliance report jobs
 // @Tags         schedule
 // @Produce      json
-// @Param        source_id   path      string  true  "SourceID"
+// @Param        source_id  path  string  true  "SourceID"
 // @Router       /schedule/api/v1/sources/{source_id}/jobs/compliance/refresh [post]
 func (s HttpServer) RunComplianceReportJobs(ctx echo.Context) error {
 	sourceID := ctx.Param("source_id")
@@ -222,7 +222,7 @@ func (s HttpServer) RunComplianceReportJobs(ctx echo.Context) error {
 // @Description  Run describe jobs
 // @Tags         schedule
 // @Produce      json
-// @Param        source_id   path      string  true  "SourceID"
+// @Param        source_id  path  string  true  "SourceID"
 // @Router       /schedule/api/v1/sources/{source_id}/jobs/describe/refresh [post]
 func (s HttpServer) RunDescribeJobs(ctx echo.Context) error {
 	sourceID := ctx.Param("source_id")
@@ -246,7 +246,7 @@ func (s HttpServer) RunDescribeJobs(ctx echo.Context) error {
 // @Description  Assign source to policy
 // @Tags         schedule
 // @Produce      json
-// @Param        source_id   path      string  true  "SourceID"
+// @Param        source_id  path  string  true  "SourceID"
 // @Router       /schedule/api/v1/sources/{source_id}/policy/{policy_id} [get]
 func (s HttpServer) AssignPolicyToSource(ctx echo.Context) error {
 	sourceID := ctx.Param("source_id")
@@ -285,8 +285,8 @@ func (s HttpServer) AssignPolicyToSource(ctx echo.Context) error {
 // @Description  get resource type by provider
 // @Tags         schedule
 // @Produce      json
-// @Param        provider   path      string  true  "Provider" Enums(aws,azure)
-// @Success      200  {object}  []string
+// @Param        provider  path      string  true  "Provider"  Enums(aws,azure)
+// @Success      200       {object}  []string
 // @Router       /schedule/api/v1/resource_type/{provider} [get]
 func (s HttpServer) GetResourceTypesByProvider(ctx echo.Context) error {
 	provider := ctx.Param("provider")

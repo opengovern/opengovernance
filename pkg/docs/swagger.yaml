@@ -138,6 +138,11 @@ definitions:
       subscriptionId:
         type: string
     type: object
+  api.ErrorResponse:
+    properties:
+      message:
+        type: string
+    type: object
   api.Filters:
     description: if you provide two values for same filter OR operation would be used
       if you provide value for two filters AND operation would be used
@@ -258,6 +263,21 @@ definitions:
           $ref: '#/definitions/api.AllResource'
         type: array
     type: object
+  api.GetRoleBindingResponse:
+    properties:
+      assignedAt:
+        type: string
+      emails:
+        items:
+          type: string
+        type: array
+      name:
+        type: string
+      role:
+        type: string
+      userId:
+        type: string
+    type: object
   api.LocationByProviderResponse:
     properties:
       name:
@@ -345,6 +365,21 @@ definitions:
         - resource_group
         - location
         - source_id
+        type: string
+    type: object
+  api.RoleBinding:
+    properties:
+      assignedAt:
+        type: string
+      emails:
+        items:
+          type: string
+        type: array
+      name:
+        type: string
+      role:
+        type: string
+      userId:
         type: string
     type: object
   api.RunQueryRequest:
@@ -567,6 +602,82 @@ info:
   title: Keibi Service API
   version: "1.0"
 paths:
+  /auth/api/v1/role/binding:
+    get:
+      consumes:
+      - application/json
+      description: RoleBinding defines the roles and actions a user can perform. There
+        are currently three roles (ADMIN, EDITOR, VIEWER).
+      parameters:
+      - description: userId
+        in: body
+        name: userId
+        required: true
+        schema:
+          type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/api.GetRoleBindingResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+      summary: Get RoleBinding for a single user.
+      tags:
+      - auth
+  /auth/api/v1/role/bindings:
+    get:
+      description: RoleBinding defines the roles and actions a user can perform. There
+        are currently three roles (ADMIN, EDITOR, VIEWER).
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/api.RoleBinding'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+      summary: Get RoleBinding for all users.
+      tags:
+      - auth
+    put:
+      description: RoleBinding defines the roles and actions a user can perform. There
+        are currently three roles (ADMIN, EDITOR, VIEWER). User must exist before
+        you can update its RoleBinding
+      parameters:
+      - description: userId
+        in: body
+        name: userId
+        required: true
+        schema:
+          type: string
+      - description: role
+        in: body
+        name: role
+        required: true
+        schema:
+          type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: ""
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+      summary: Update RoleBinding for a user.
+      tags:
+      - auth
   /benchmarks:
     get:
       consumes:
@@ -743,6 +854,74 @@ paths:
       summary: Run a specific smart query
       tags:
       - smart_query
+  /inventory/api/v1/reports/compliance/{source_id}:
+    get:
+      consumes:
+      - application/json
+      description: Returns list of compliance report groups of specified job id (if
+        not specified, last one will be returned)
+      parameters:
+      - description: Source ID
+        in: path
+        name: source_id
+        required: true
+        type: string
+      - description: Report Job ID
+        in: path
+        name: report_id
+        type: string
+      - description: Request Body
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/api.GetComplianceReportRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/compliance_report.Report'
+            type: array
+      summary: Returns list of compliance report groups
+      tags:
+      - compliance_report
+  /inventory/api/v1/reports/compliance/{source_id}/{report_id}:
+    get:
+      consumes:
+      - application/json
+      description: Returns list of compliance report groups of specified job id (if
+        not specified, last one will be returned)
+      parameters:
+      - description: Source ID
+        in: path
+        name: source_id
+        required: true
+        type: string
+      - description: Report Job ID
+        in: path
+        name: report_id
+        type: string
+      - description: Request Body
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/api.GetComplianceReportRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/compliance_report.Report'
+            type: array
+      summary: Returns list of compliance report groups
+      tags:
+      - compliance_report
   /inventory/api/v1/resource:
     post:
       description: Getting resource details by id and resource type
@@ -862,105 +1041,6 @@ paths:
       summary: Get Azure resources
       tags:
       - inventory
-  /onboard/api/v1/{sourceId}:
-    delete:
-      description: Deleting a single source either AWS / Azure.
-      parameters:
-      - description: SourceID
-        in: path
-        name: sourceId
-        required: true
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: ""
-      summary: Delete a single source
-      tags:
-      - onboard
-    get:
-      description: Returning single source either AWS / Azure.
-      parameters:
-      - description: SourceID
-        in: path
-        name: sourceId
-        required: true
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/gitlab.com_keibiengine_keibi-engine_pkg_onboard_api.Source'
-      summary: Returns a single source
-      tags:
-      - onboard
-  /onboard/api/v1/aws:
-    post:
-      description: Creating AWS source
-      parameters:
-      - description: name
-        in: body
-        name: name
-        required: true
-        schema:
-          type: string
-      - description: description
-        in: body
-        name: description
-        required: true
-        schema:
-          type: string
-      - description: config
-        in: body
-        name: config
-        required: true
-        schema:
-          $ref: '#/definitions/api.SourceConfigAWS'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/api.CreateSourceResponse'
-      summary: Create AWS source
-      tags:
-      - onboard
-  /onboard/api/v1/azure:
-    post:
-      description: Creating Azure source
-      parameters:
-      - description: name
-        in: body
-        name: name
-        required: true
-        schema:
-          type: string
-      - description: description
-        in: body
-        name: description
-        required: true
-        schema:
-          type: string
-      - description: config
-        in: body
-        name: config
-        required: true
-        schema:
-          $ref: '#/definitions/api.SourceConfigAzure'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/api.CreateSourceResponse'
-      summary: Create Azure source
-      tags:
-      - onboard
   /onboard/api/v1/discover/aws/accounts:
     post:
       description: If the account is part of an organization and the account has premission
@@ -1055,6 +1135,105 @@ paths:
       summary: Get provider types
       tags:
       - onboard
+  /onboard/api/v1/source/{sourceId}:
+    delete:
+      description: Deleting a single source either AWS / Azure.
+      parameters:
+      - description: SourceID
+        in: path
+        name: sourceId
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: ""
+      summary: Delete a single source
+      tags:
+      - onboard
+    get:
+      description: Returning single source either AWS / Azure.
+      parameters:
+      - description: SourceID
+        in: path
+        name: sourceId
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/gitlab.com_keibiengine_keibi-engine_pkg_onboard_api.Source'
+      summary: Returns a single source
+      tags:
+      - onboard
+  /onboard/api/v1/source/aws:
+    post:
+      description: Creating AWS source
+      parameters:
+      - description: name
+        in: body
+        name: name
+        required: true
+        schema:
+          type: string
+      - description: description
+        in: body
+        name: description
+        required: true
+        schema:
+          type: string
+      - description: config
+        in: body
+        name: config
+        required: true
+        schema:
+          $ref: '#/definitions/api.SourceConfigAWS'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/api.CreateSourceResponse'
+      summary: Create AWS source
+      tags:
+      - onboard
+  /onboard/api/v1/source/azure:
+    post:
+      description: Creating Azure source
+      parameters:
+      - description: name
+        in: body
+        name: name
+        required: true
+        schema:
+          type: string
+      - description: description
+        in: body
+        name: description
+        required: true
+        schema:
+          type: string
+      - description: config
+        in: body
+        name: config
+        required: true
+        schema:
+          $ref: '#/definitions/api.SourceConfigAzure'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/api.CreateSourceResponse'
+      summary: Create Azure source
+      tags:
+      - onboard
   /onboard/api/v1/sources:
     get:
       description: Returning a list of sources including both AWS and Azure unless
@@ -1079,74 +1258,6 @@ paths:
       summary: Returns a list of sources
       tags:
       - onboard
-  /reports/compliance/{source_id}:
-    get:
-      consumes:
-      - application/json
-      description: Returns list of compliance report groups of specified job id (if
-        not specified, last one will be returned)
-      parameters:
-      - description: Source ID
-        in: path
-        name: source_id
-        required: true
-        type: string
-      - description: Report Job ID
-        in: path
-        name: report_id
-        type: string
-      - description: Request Body
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/api.GetComplianceReportRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            items:
-              $ref: '#/definitions/compliance_report.Report'
-            type: array
-      summary: Returns list of compliance report groups
-      tags:
-      - compliance_report
-  /reports/compliance/{source_id}/{report_id}:
-    get:
-      consumes:
-      - application/json
-      description: Returns list of compliance report groups of specified job id (if
-        not specified, last one will be returned)
-      parameters:
-      - description: Source ID
-        in: path
-        name: source_id
-        required: true
-        type: string
-      - description: Report Job ID
-        in: path
-        name: report_id
-        type: string
-      - description: Request Body
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/api.GetComplianceReportRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            items:
-              $ref: '#/definitions/compliance_report.Report'
-            type: array
-      summary: Returns list of compliance report groups
-      tags:
-      - compliance_report
   /schedule/api/v1/resource_type/{provider}:
     get:
       description: get resource type by provider
