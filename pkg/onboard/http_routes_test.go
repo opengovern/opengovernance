@@ -21,6 +21,8 @@ import (
 
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
+
+	idocker "gitlab.com/keibiengine/keibi-engine/pkg/internal/dockertest"
 )
 
 type HttpHandlerSuite struct {
@@ -48,7 +50,7 @@ func (s *HttpHandlerSuite) SetupSuite() {
 	var orm *gorm.DB
 	// exponential backoff-retry, because the application in the container might not be ready to accept connections yet
 	err = pool.Retry(func() error {
-		orm, err = gorm.Open(postgres.Open(fmt.Sprintf("postgres://postgres:mysecretpassword@localhost:%s/postgres", resource.GetPort("5432/tcp"))), &gorm.Config{})
+		orm, err = gorm.Open(postgres.Open(fmt.Sprintf("postgres://postgres:mysecretpassword@%s:%s/postgres", idocker.GetDockerHost(), resource.GetPort("5432/tcp"))), &gorm.Config{})
 		if err != nil {
 			return err
 		}
@@ -294,7 +296,6 @@ func (s *HttpHandlerSuite) TestGetProviders() {
 }
 
 func TestHttpHandlerSuite(t *testing.T) {
-	t.Skip()
 	suite.Run(t, &HttpHandlerSuite{})
 }
 

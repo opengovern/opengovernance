@@ -689,6 +689,5 @@ func (s *SchedulerTestSuite) TestRunComplianceReport() {
 }
 
 func TestScheduler(t *testing.T) {
-	t.Skip()
 	suite.Run(t, &SchedulerTestSuite{})
 }

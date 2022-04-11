@@ -31,7 +31,7 @@ build:
     - make
 
 golangci-lint:
-  stage: test
+  stage: lint
   image:
     name: golangci/golangci-lint:v1.45
     entrypoint: [""]
@@ -50,18 +50,27 @@ golangci-lint:
   script:
     - golangci-lint run -v
 
+
 test:
   stage: test
-  extends: build
-  when: manual
+  extends: .go-cache
   services:
     - docker:dind
   variables:
-    DOCKER_HOST: tcp://docker:2375
-    DOCKER_DRIVER: overlay2
-    YOUR_APP_DB_HOST: docker
+    DOCKER_HOST: tcp://docker:2376
+    DOCKER_TLS_CERTDIR: "/certs"
+    DOCKER_TLS_VERIFY: 1
+    DOCKER_CERT_PATH: "$DOCKER_TLS_CERTDIR/client"
+    DOCKERTEST_HOST: docker
   script:
-    - go test -race ./...
+    - go test -v ./...
+  allow_failure: true
+  cache:
+    - key: go-cache
+      paths:
+        - .go/pkg/mod/
+        - .cache/
+      policy: pull
 
 deploy: # This job runs in the deploy stage.
   stage: deploy # It only runs when *both* jobs in the test stage complete successfully.

@@ -16,7 +16,6 @@ import (
 )
 
 func TestJob_Do(t *testing.T) {
-	t.Skip()
 	job := compliancereport.Job{
 		JobID:      100,
 		SourceID:   uuid.New(),
@@ -73,7 +72,6 @@ ConsumerLoop:
 }
 
 func TestBuildSpecFile(t *testing.T) {
-	t.Skip()
 	err := compliancereport.BuildSpecFile("test", compliancereport.ElasticSearchConfig{
 		Address:  "test-address:1000",
 		Username: "username",
