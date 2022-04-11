@@ -21,6 +21,7 @@ type Tag struct {
 
 type Benchmark struct {
 	gorm.Model
+	ID          string
 	Title       string
 	Description string
 	Provider    string
@@ -38,6 +39,7 @@ type BenchmarkTag struct {
 
 type Policy struct {
 	gorm.Model
+	ID                    string
 	Title                 string
 	Description           string
 	Tags                  []PolicyTag `gorm:"many2many:policy_tag_rel;"`

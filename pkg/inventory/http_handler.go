@@ -2,7 +2,6 @@ package inventory
 
 import (
 	"fmt"
-
 	"gitlab.com/keibiengine/keibi-engine/pkg/keibi-es-sdk"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"

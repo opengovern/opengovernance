@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/csv"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -874,7 +875,7 @@ func (s *HttpHandlerSuite) TestGetBenchmarkDetails() {
 
 	var res api.GetBenchmarkDetailsResponse
 	_, err := doRequestJSONResponse(s.router, "GET",
-		"/api/v1/benchmarks/1", nil, &res)
+		"/api/v1/benchmarks/test_compliance.benchmark1", nil, &res)
 	require.NoError(err)
 	require.Len(res.Sections, 1)
 	require.Len(res.Categories, 1)
@@ -886,15 +887,16 @@ func (s *HttpHandlerSuite) TestGetPolicies() {
 
 	var res []api.Policy
 	_, err := doRequestJSONResponse(s.router, "GET",
-		"/api/v1/benchmarks/1/policies", nil, &res)
+		"/api/v1/benchmarks/test_compliance.benchmark1/policies", nil, &res)
 	require.NoError(err)
 	require.Len(res, 1)
 	for _, policy := range res {
+		require.Equal("test_compliance.benchmark1.policy1", policy.ID)
 		require.Equal("category1", policy.Category)
 	}
 
 	_, err = doRequestJSONResponse(s.router, "GET",
-		"/api/v1/benchmarks/2/policies?category=category2", nil, &res)
+		"/api/v1/benchmarks/mod.azure_compliance/policies?category=category2", nil, &res)
 	require.NoError(err)
 	require.Len(res, 1)
 	for _, policy := range res {
@@ -902,9 +904,87 @@ func (s *HttpHandlerSuite) TestGetPolicies() {
 	}
 
 	_, err = doRequestJSONResponse(s.router, "GET",
-		"/api/v1/benchmarks/2/policies?category=category10", nil, &res)
+		"/api/v1/benchmarks/mod.azure_compliance/policies?category=category10", nil, &res)
 	require.NoError(err)
 	require.Len(res, 0)
+}
+
+func (s *HttpHandlerSuite) TestGetBenchmarkResult() {
+	require := s.Require()
+
+	sourceId, err := uuid.Parse("2a87b978-b8bf-4d7e-bc19-cf0a99a430cf")
+	require.NoError(err)
+
+	j1 := describe.ComplianceReportJob{
+		Model: gorm.Model{
+			ID:        1020,
+			CreatedAt: time.Now(),
+			UpdatedAt: time.Now(),
+			DeletedAt: gorm.DeletedAt{},
+		},
+		SourceID:       sourceId,
+		Status:         compliance_report.ComplianceReportJobCompleted,
+		FailureMessage: "",
+	}
+	s.describe.SetResponse(j1)
+
+	var res compliance_report.ReportGroupObj
+	_, err = doRequestJSONResponse(s.router, "GET",
+		"/api/v1/benchmarks/mod.azure_compliance/2a87b978-b8bf-4d7e-bc19-cf0a99a430cf/result", nil, &res)
+	require.NoError(err)
+	require.Equal(2783, res.Summary.Status.OK)
+}
+
+func (s *HttpHandlerSuite) TestGetBenchmarkResultPolicies() {
+	require := s.Require()
+
+	sourceId, err := uuid.Parse("2a87b978-b8bf-4d7e-bc19-cf0a99a430cf")
+	require.NoError(err)
+
+	j1 := describe.ComplianceReportJob{
+		Model: gorm.Model{
+			ID:        1020,
+			CreatedAt: time.Now(),
+			UpdatedAt: time.Now(),
+			DeletedAt: gorm.DeletedAt{},
+		},
+		SourceID:       sourceId,
+		Status:         compliance_report.ComplianceReportJobCompleted,
+		FailureMessage: "",
+	}
+	s.describe.SetResponse(j1)
+
+	var res []*api.PolicyResult
+	_, err = doRequestJSONResponse(s.router, "GET",
+		"/api/v1/benchmarks/mod.azure_compliance/2a87b978-b8bf-4d7e-bc19-cf0a99a430cf/result/policies", nil, &res)
+	require.NoError(err)
+	require.Len(res, 2)
+	require.Equal(api.PolicyResultStatusFailed, res[0].Status)
+	require.Equal(api.PolicyResultStatusPassed, res[1].Status)
+
+	require.Equal(3, res[0].TotalResources)
+	require.Equal(0, res[0].CompliantResources)
+
+	require.Equal(1, res[1].TotalResources)
+	require.Equal(1, res[1].CompliantResources)
+
+	_, err = doRequestJSONResponse(s.router, "GET",
+		"/api/v1/benchmarks/mod.azure_compliance/2a87b978-b8bf-4d7e-bc19-cf0a99a430cf/result/policies?status=passed", nil, &res)
+	require.NoError(err)
+	require.Len(res, 1)
+	require.Equal(api.PolicyResultStatusPassed, res[0].Status)
+
+	_, err = doRequestJSONResponse(s.router, "GET",
+		"/api/v1/benchmarks/mod.azure_compliance/2a87b978-b8bf-4d7e-bc19-cf0a99a430cf/result/policies?severity=warn", nil, &res)
+	require.NoError(err)
+	require.Len(res, 1)
+	require.Equal(api.PolicyResultStatusPassed, res[0].Status)
+
+	_, err = doRequestJSONResponse(s.router, "GET",
+		"/api/v1/benchmarks/mod.azure_compliance/2a87b978-b8bf-4d7e-bc19-cf0a99a430cf/result/policies?section=section2", nil, &res)
+	require.NoError(err)
+	require.Len(res, 1)
+	require.Equal(api.PolicyResultStatusFailed, res[0].Status)
 }
 
 func TestHttpHandlerSuite(t *testing.T) {
@@ -932,6 +1012,10 @@ func doRequestJSONResponse(router *echo.Echo, method string, path string, reques
 			fmt.Println("Unmarshal error on response: " + string(resp))
 			return nil, err
 		}
+	}
+
+	if rec.Code != 200 {
+		return nil, errors.New("not ok response code")
 	}
 	return rec, nil
 }

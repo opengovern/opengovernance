@@ -252,7 +252,7 @@ const (
 )
 
 type Benchmark struct {
-	ID          uint       `json:"id"`
+	ID          string     `json:"id"`
 	Title       string     `json:"title"`
 	Description string     `json:"description"`
 	Provider    SourceType `json:"provider"`
@@ -273,7 +273,7 @@ type GetBenchmarkDetailsResponse struct {
 }
 
 type Policy struct {
-	ID                    uint              `json:"id"`
+	ID                    string            `json:"id"`
 	Title                 string            `json:"title"`
 	Description           string            `json:"description"`
 	Category              string            `json:"category"`
@@ -286,4 +286,25 @@ type Policy struct {
 	CommandLineRemedation string            `json:"commandLineRemedation"`
 	QueryToRun            string            `json:"queryToRun"`
 	Tags                  map[string]string `json:"tags"`
+}
+
+type PolicyResultStatus string
+
+const (
+	PolicyResultStatusFailed     PolicyResultStatus = "failed"
+	PolicyResultStatusPassed     PolicyResultStatus = "passed"
+	PolicyResultStatusNoResource PolicyResultStatus = "no_resource"
+)
+
+type PolicyResult struct {
+	ID                 string             `json:"id"`
+	Title              string             `json:"title"`
+	Category           string             `json:"category"`
+	Subcategory        string             `json:"subcategory"`
+	Section            string             `json:"section"`
+	Severity           string             `json:"severity"`
+	Provider           string             `json:"provider"`
+	Status             PolicyResultStatus `json:"status" enums:"no_resource,passed,failed"`
+	CompliantResources int                `json:"compliant_resources"`
+	TotalResources     int                `json:"total_resources"`
 }

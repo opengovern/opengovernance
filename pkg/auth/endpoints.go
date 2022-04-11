@@ -92,6 +92,16 @@ var endpoints = []endpoint{
 		Method:      http.MethodGet,
 		MinimumRole: api.ViewerRole,
 	},
+	{
+		Path:        "/benchmarks/:benchmarkId/:sourceId/result",
+		Method:      http.MethodGet,
+		MinimumRole: api.ViewerRole,
+	},
+	{
+		Path:        "/benchmarks/:benchmarkId/:sourceId/result/policies",
+		Method:      http.MethodGet,
+		MinimumRole: api.ViewerRole,
+	},
 	// ============ Onboard Service ============
 	{
 		Path:        "/onboard/api/v1/source/aws",

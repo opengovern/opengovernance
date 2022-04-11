@@ -95,7 +95,7 @@ func (db Database) ListBenchmarksWithFilters(provider *string, tags map[string]s
 	return s, nil
 }
 
-func (db Database) GetBenchmark(benchmarkId uint) (*Benchmark, error) {
+func (db Database) GetBenchmark(benchmarkId string) (*Benchmark, error) {
 	var s Benchmark
 	tx := db.orm.Model(&Benchmark{}).
 		Preload("Tags").
@@ -112,8 +112,8 @@ func (db Database) GetBenchmark(benchmarkId uint) (*Benchmark, error) {
 
 // =========== Policy ===========
 
-func (db Database) GetPoliciesWithFilters(benchmarkId uint,
-	category *string, subcategory *string, section *string) ([]Policy, error) {
+func (db Database) GetPoliciesWithFilters(benchmarkId string,
+	category, subcategory, section, severity *string) ([]Policy, error) {
 	var s []Policy
 	m := db.orm.Model(&Policy{}).
 		Preload("Tags").
@@ -127,6 +127,9 @@ func (db Database) GetPoliciesWithFilters(benchmarkId uint,
 	}
 	if section != nil {
 		m = m.Where("section = ?", *section)
+	}
+	if severity != nil {
+		m = m.Where("severity = ?", *severity)
 	}
 	tx := m.Find(&s)
 
