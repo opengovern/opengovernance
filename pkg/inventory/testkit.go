@@ -8,6 +8,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io/ioutil"
+	"math/rand"
+	"net/http"
+	"os"
+	"strconv"
+	"time"
+
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2020-05-01/network"
 	ec2 "github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	elasticsearchv7 "github.com/elastic/go-elasticsearch/v7"
@@ -20,12 +27,6 @@ import (
 	compliance_report "gitlab.com/keibiengine/keibi-engine/pkg/compliance-report"
 	"gitlab.com/keibiengine/keibi-engine/pkg/describe"
 	"gitlab.com/keibiengine/keibi-engine/pkg/describe/api"
-	"io/ioutil"
-	"math/rand"
-	"net/http"
-	"os"
-	"strconv"
-	"time"
 )
 
 func PopulateElastic(address string) error {
