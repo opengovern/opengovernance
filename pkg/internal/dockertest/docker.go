@@ -28,8 +28,15 @@ func getEnv(key, fallback string) string {
 	return value
 }
 
+func GetDockerHost() string {
+	return getEnv("DOCKERTEST_HOST", "localhost")
+}
+
+func GetDockerHostPort() string {
+	return getEnv("DOCKER_HOST", "tcp://localhost:2375")
+}
+
 func StartupPostgreSQL(t *testing.T) *gorm.DB {
-	DBHost := getEnv("YOUR_APP_DB_HOST", "localhost")
 	t.Helper()
 
 	require := require.New(t)
@@ -48,7 +55,7 @@ func StartupPostgreSQL(t *testing.T) *gorm.DB {
 	var orm *gorm.DB
 	// exponential backoff-retry, because the application in the container might not be ready to accept connections yet
 	err = pool.Retry(func() error {
-		orm, err = gorm.Open(postgres.Open(fmt.Sprintf("postgres://postgres:postgres@%s:%s/postgres", DBHost, resource.GetPort("5432/tcp"))), &gorm.Config{})
+		orm, err = gorm.Open(postgres.Open(fmt.Sprintf("postgres://postgres:postgres@%s:%s/postgres", GetDockerHost(), resource.GetPort("5432/tcp"))), &gorm.Config{})
 		if err != nil {
 			return err
 		}
@@ -109,7 +116,7 @@ func StartupRabbitMQ(t *testing.T) RabbitMQServer {
 	// exponential backoff-retry, because the application in the container might not be ready to accept connections yet
 	err = pool.Retry(func() error {
 		for i := 0; i < 3; i++ {
-			res, err := http.Get("http://user:bitnami@localhost:15672/api/aliveness-test/%2F")
+			res, err := http.Get(fmt.Sprintf("http://user:bitnami@%s:15672/api/aliveness-test/", GetDockerHost()) + "%2F")
 			if err != nil {
 				return err
 			}
@@ -124,7 +131,7 @@ func StartupRabbitMQ(t *testing.T) RabbitMQServer {
 		url := fmt.Sprintf("amqp://%s:%s@%s:%d/",
 			"user",
 			"bitnami",
-			"localhost",
+			GetDockerHost(),
 			port,
 		)
 
@@ -143,7 +150,7 @@ func StartupRabbitMQ(t *testing.T) RabbitMQServer {
 	require.NoError(err, "wait for rabbitmq connection")
 
 	return RabbitMQServer{
-		Host:     "localhost",
+		Host:     GetDockerHost(),
 		Port:     port,
 		Username: "user",
 		Password: "bitnami",
@@ -194,7 +201,7 @@ func StartupKafka(t *testing.T) KafkaServer {
 		Env: []string{
 			"KAFKA_BROKER_ID=1",
 			"KAFKA_ZOOKEEPER_CONNECT=keibi_test_zookeeper:2181",
-			"KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://keibi_test_kafka:9092,PLAINTEXT_HOST://localhost:29092",
+			fmt.Sprintf("KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://keibi_test_kafka:9092,PLAINTEXT_HOST://%s:29092", GetDockerHost()),
 			"KAFKA_LISTENER_SECURITY_PROTOCOL_MAP=PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT",
 			"KAFKA_INTER_BROKER_LISTENER_NAME=PLAINTEXT",
 			"KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR=1",
@@ -214,7 +221,7 @@ func StartupKafka(t *testing.T) KafkaServer {
 	})
 	require.NoError(err, "status kafka")
 
-	kafkaUrl := "localhost:" + kafkaResource.GetPort("29092/tcp")
+	kafkaUrl := fmt.Sprintf("%s:", GetDockerHost()) + kafkaResource.GetPort("29092/tcp")
 	// exponential backoff-retry, because the application in the container might not be ready to accept connections yet
 	var producer sarama.SyncProducer
 	err = pool.Retry(func() error {
@@ -261,7 +268,7 @@ func StartupElasticSearch(t *testing.T) ElasticSearchServer {
 		},
 	})
 	require.NoError(err, "status elasticsearch")
-	esUrl := "http://localhost:" + resource.GetPort("9200/tcp")
+	esUrl := fmt.Sprintf("http://%s:", GetDockerHost()) + resource.GetPort("9200/tcp")
 	t.Cleanup(func() {
 		err := pool.Purge(resource)
 		require.NoError(err, "purge resource %s", resource)

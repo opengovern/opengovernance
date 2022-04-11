@@ -23,6 +23,7 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/describe"
 	api2 "gitlab.com/keibiengine/keibi-engine/pkg/describe/api"
 	pagination "gitlab.com/keibiengine/keibi-engine/pkg/internal/api"
+	idocker "gitlab.com/keibiengine/keibi-engine/pkg/internal/dockertest"
 	"gitlab.com/keibiengine/keibi-engine/pkg/inventory/api"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -45,7 +46,7 @@ func (s *HttpHandlerSuite) SetupSuite() {
 	require.NoError(err, "connect to docker")
 
 	net, err := pool.CreateNetwork("keibi")
-	require.NoError(err, "create a network")
+	require.NoError(err, err.Error())
 	t.Cleanup(func() {
 		err = pool.RemoveNetwork(net)
 		require.NoError(err, "remove network")
@@ -63,7 +64,7 @@ func (s *HttpHandlerSuite) SetupSuite() {
 		Networks: []*dockertest.Network{net},
 	})
 	require.NoError(err, "status elasticsearch")
-	s.elasticUrl = "http://localhost:" + elasticResource.GetPort("9200/tcp")
+	s.elasticUrl = fmt.Sprintf("http://%s:", idocker.GetDockerHost()) + elasticResource.GetPort("9200/tcp")
 
 	t.Cleanup(func() {
 		err := pool.Purge(elasticResource)
@@ -158,7 +159,7 @@ func (s *HttpHandlerSuite) SetupSuite() {
 	var orm *gorm.DB
 	// exponential backoff-retry, because the application in the container might not be ready to accept connections yet
 	err = pool.Retry(func() error {
-		orm, err = gorm.Open(postgres.Open(fmt.Sprintf("postgres://postgres:mysecretpassword@localhost:%s/postgres", postgresResource.GetPort("5432/tcp"))), &gorm.Config{})
+		orm, err = gorm.Open(postgres.Open(fmt.Sprintf("postgres://postgres:mysecretpassword@%s:%s/postgres", idocker.GetDockerHost(), postgresResource.GetPort("5432/tcp"))), &gorm.Config{})
 		if err != nil {
 			return err
 		}
@@ -184,7 +185,7 @@ func (s *HttpHandlerSuite) SetupSuite() {
 
 	// exponential backoff-retry, because the application in the container might not be ready to accept connections yet
 	err = pool.Retry(func() error {
-		orm, err = gorm.Open(postgres.Open(fmt.Sprintf("postgres://steampipe:abcd@localhost:%s/steampipe", steampipeResource.GetPort("9193/tcp"))), &gorm.Config{})
+		orm, err = gorm.Open(postgres.Open(fmt.Sprintf("postgres://steampipe:abcd@%s:%s/steampipe", idocker.GetDockerHost(), steampipeResource.GetPort("9193/tcp"))), &gorm.Config{})
 		if err != nil {
 			return err
 		}
@@ -200,9 +201,9 @@ func (s *HttpHandlerSuite) SetupSuite() {
 
 	s.router = InitializeRouter()
 	s.handler, _ = InitializeHttpHandler(s.elasticUrl, "", "",
-		"localhost", postgresResource.GetPort("5432/tcp"), "postgres", "postgres", "mysecretpassword",
-		"localhost", steampipeResource.GetPort("9193/tcp"), "steampipe", "steampipe", "abcd",
-		"http://localhost:1234",
+		idocker.GetDockerHost(), postgresResource.GetPort("5432/tcp"), "postgres", "postgres", "mysecretpassword",
+		idocker.GetDockerHost(), steampipeResource.GetPort("9193/tcp"), "steampipe", "steampipe", "abcd",
+		fmt.Sprintf("http://%s:1234", idocker.GetDockerHost()),
 	)
 
 	s.describe = &DescribeMock{}
@@ -907,7 +908,6 @@ func (s *HttpHandlerSuite) TestGetPolicies() {
 }
 
 func TestHttpHandlerSuite(t *testing.T) {
-	t.Skip()
 	suite.Run(t, &HttpHandlerSuite{})
 }
 
