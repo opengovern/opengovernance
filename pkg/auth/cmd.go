@@ -72,6 +72,12 @@ func start(ctx context.Context) error {
 	logger.Info("Instantiated a new Open ID Connect verifier")
 
 	db := Database{orm: orm}
+
+	err = db.Initialize()
+	if err != nil {
+		return fmt.Errorf("initialize database: %w", err)
+	}
+
 	authServer := Server{
 		db:       db,
 		verifier: verifier,
