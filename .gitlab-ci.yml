@@ -88,6 +88,7 @@ deploy: # This job runs in the deploy stage.
     - podman build -f  docker/InventoryServiceDockerfile . -t registry.digitalocean.com/keibi/inventory-service:0.0.1
     - podman build -f  docker/SwaggerUIDockerfile . -t registry.digitalocean.com/keibi/swagger-ui:0.0.1
     - podman build -f  docker/SteampipeServiceDockerfile . -t registry.digitalocean.com/keibi/steampipe-service:0.0.1
+    - podman build -f  docker/AuthServiceDockerfile . -t registry.digitalocean.com/keibi/auth-service:0.0.1
     - podman push registry.digitalocean.com/keibi/describe-scheduler:0.0.1
     - podman push registry.digitalocean.com/keibi/describe-worker:0.0.1
     - podman push registry.digitalocean.com/keibi/describe-cleanup-worker:0.0.1
@@ -96,3 +97,4 @@ deploy: # This job runs in the deploy stage.
     - podman push registry.digitalocean.com/keibi/inventory-service:0.0.1
     - podman push registry.digitalocean.com/keibi/swagger-ui:0.0.1
     - podman push registry.digitalocean.com/keibi/steampipe-service:0.0.1
+    - podman push registry.digitalocean.com/keibi/auth-service:0.0.1
