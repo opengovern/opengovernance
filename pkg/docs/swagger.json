@@ -1777,7 +1777,7 @@
                 "category": {
                     "type": "string"
                 },
-                "compliant_resources": {
+                "compliantResources": {
                     "type": "integer"
                 },
                 "id": {
@@ -1806,7 +1806,7 @@
                 "title": {
                     "type": "string"
                 },
-                "total_resources": {
+                "totalResources": {
                     "type": "integer"
                 }
             }

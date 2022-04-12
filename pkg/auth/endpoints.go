@@ -93,12 +93,32 @@ var endpoints = []endpoint{
 		MinimumRole: api.ViewerRole,
 	},
 	{
-		Path:        "/benchmarks/:benchmarkId/:sourceId/result",
+		Path:        "/inventory/api/v1/benchmarks",
 		Method:      http.MethodGet,
 		MinimumRole: api.ViewerRole,
 	},
 	{
-		Path:        "/benchmarks/:benchmarkId/:sourceId/result/policies",
+		Path:        "/inventory/api/v1/benchmarks/tags",
+		Method:      http.MethodGet,
+		MinimumRole: api.ViewerRole,
+	},
+	{
+		Path:        "/inventory/api/v1/benchmarks/:benchmarkId",
+		Method:      http.MethodGet,
+		MinimumRole: api.ViewerRole,
+	},
+	{
+		Path:        "/inventory/api/v1/benchmarks/:benchmarkId/policies",
+		Method:      http.MethodGet,
+		MinimumRole: api.ViewerRole,
+	},
+	{
+		Path:        "/inventory/api/v1/benchmarks/:benchmarkId/:sourceId/result",
+		Method:      http.MethodGet,
+		MinimumRole: api.ViewerRole,
+	},
+	{
+		Path:        "/inventory/api/v1/benchmarks/:benchmarkId/:sourceId/result/policies",
 		Method:      http.MethodGet,
 		MinimumRole: api.ViewerRole,
 	},

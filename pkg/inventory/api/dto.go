@@ -305,6 +305,6 @@ type PolicyResult struct {
 	Severity           string             `json:"severity"`
 	Provider           string             `json:"provider"`
 	Status             PolicyResultStatus `json:"status" enums:"no_resource,passed,failed"`
-	CompliantResources int                `json:"compliant_resources"`
-	TotalResources     int                `json:"total_resources"`
+	CompliantResources int                `json:"compliantResources"`
+	TotalResources     int                `json:"totalResources"`
 }

@@ -329,7 +329,7 @@ definitions:
     properties:
       category:
         type: string
-      compliant_resources:
+      compliantResources:
         type: integer
       id:
         type: string
@@ -349,7 +349,7 @@ definitions:
         type: string
       title:
         type: string
-      total_resources:
+      totalResources:
         type: integer
     type: object
   api.Provider:

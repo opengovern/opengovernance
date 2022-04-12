@@ -1783,7 +1783,7 @@ const docTemplate = `{
                 "category": {
                     "type": "string"
                 },
-                "compliant_resources": {
+                "compliantResources": {
                     "type": "integer"
                 },
                 "id": {
@@ -1812,7 +1812,7 @@ const docTemplate = `{
                 "title": {
                     "type": "string"
                 },
-                "total_resources": {
+                "totalResources": {
                     "type": "integer"
                 }
             }

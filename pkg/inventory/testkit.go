@@ -11,6 +11,7 @@ import (
 	"io/ioutil"
 	"math/rand"
 	"net/http"
+	"net/http/httptest"
 	"os"
 	"strconv"
 	"time"
@@ -520,6 +521,7 @@ func IndexKafkaResource(es *elasticsearchv7.Client, kafkaRes describe.KafkaResou
 
 type DescribeMock struct {
 	Response []describe.ComplianceReportJob
+	MockServer *httptest.Server
 }
 
 func (m *DescribeMock) HelloServer(w http.ResponseWriter, r *http.Request) {
@@ -555,7 +557,7 @@ func (m *DescribeMock) SetResponse(jobs ...describe.ComplianceReportJob) {
 }
 
 func (m *DescribeMock) Run() {
-	http.HandleFunc("/api/v1/sources/", m.HelloServer)
-	go http.ListenAndServe(":1234", nil)
-	time.Sleep(100 * time.Millisecond)
+	mux := http.NewServeMux()
+	mux.HandleFunc("/api/v1/sources/", m.HelloServer)
+	m.MockServer = httptest.NewServer(mux)
 }
