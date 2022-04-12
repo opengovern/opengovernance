@@ -53,14 +53,16 @@ func (h *HttpHandler) Register(v1 *echo.Group) {
 	v1.GET("/benchmarks/tags", h.GetBenchmarkTags)
 	v1.GET("/benchmarks/:benchmarkId", h.GetBenchmarkDetails)
 	v1.GET("/benchmarks/:benchmarkId/policies", h.GetPolicies)
+	v1.GET("/benchmarks/:benchmarkId/:sourceId/result", h.GetBenchmarkResult)
+	v1.GET("/benchmarks/:benchmarkId/:sourceId/result/policies", h.GetResultPolicies)
 }
 
 // GetBenchmarks godoc
 // @Summary      Returns list of benchmarks
 // @Description  In order to filter benchmarks by tags provide the tag key-value as query param
-// @Tags     benchmarks
-// @Accept   json
-// @Produce  json
+// @Tags         benchmarks
+// @Accept       json
+// @Produce      json
 // @Param        provider  query     string  false  "Provider"  Enums(AWS,Azure)
 // @Param        tags      query     string  false  "Tags in key-value query param"
 // @Success      200       {object}  []api.Benchmark
@@ -105,9 +107,9 @@ func (h *HttpHandler) GetBenchmarks(ctx echo.Context) error {
 
 // GetBenchmarkTags godoc
 // @Summary  Returns list of benchmark tags
-// @Tags     benchmarks
-// @Accept   json
-// @Produce  json
+// @Tags         benchmarks
+// @Accept       json
+// @Produce      json
 // @Success  200  {object}  []api.GetBenchmarkTag
 // @Router   /benchmarks/tags [get]
 func (h *HttpHandler) GetBenchmarkTags(ctx echo.Context) error {
@@ -137,12 +139,9 @@ func (h *HttpHandler) GetBenchmarkTags(ctx echo.Context) error {
 // @Success  200          {object}  api.GetBenchmarkDetailsResponse
 // @Router   /benchmarks/{benchmarkId} [get]
 func (h *HttpHandler) GetBenchmarkDetails(ctx echo.Context) error {
-	benchmarkId, err := strconv.Atoi(ctx.Param("benchmarkId"))
-	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, "invalid benchmark id")
-	}
+	benchmarkId := ctx.Param("benchmarkId")
 
-	benchmark, err := h.db.GetBenchmark(uint(benchmarkId))
+	benchmark, err := h.db.GetBenchmark(benchmarkId)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusNotFound, "benchmark not found")
 	}
@@ -183,10 +182,8 @@ func (h *HttpHandler) GetBenchmarkDetails(ctx echo.Context) error {
 // @Success  200          {object}  []api.Policy
 // @Router   /benchmarks/{benchmarkId}/policies [get]
 func (h *HttpHandler) GetPolicies(ctx echo.Context) error {
-	benchmarkId, err := strconv.Atoi(ctx.Param("benchmarkId"))
-	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, "invalid benchmark id")
-	}
+	benchmarkId := ctx.Param("benchmarkId")
+
 	var category, subcategory, section *string
 	if len(ctx.QueryParam("category")) > 0 {
 		temp := ctx.QueryParam("category")
@@ -201,7 +198,7 @@ func (h *HttpHandler) GetPolicies(ctx echo.Context) error {
 		section = &temp
 	}
 
-	policies, err := h.db.GetPoliciesWithFilters(uint(benchmarkId), category, subcategory, section)
+	policies, err := h.db.GetPoliciesWithFilters(benchmarkId, category, subcategory, section, nil)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusNotFound, "benchmark not found")
 	}
@@ -227,6 +224,199 @@ func (h *HttpHandler) GetPolicies(ctx echo.Context) error {
 			QueryToRun:            policy.QueryToRun,
 			Tags:                  nil,
 		})
+	}
+
+	return ctx.JSON(http.StatusOK, resp)
+}
+
+// GetBenchmarkResult godoc
+// @Summary      Returns summary of benchmark result
+// @Description  Returns summary of benchmark, category, subcategory or section's result
+// @Tags     benchmarks
+// @Accept   json
+// @Produce  json
+// @Param        benchmarkId  query     string  false  "ID of Benchmark/Category/Subcategory/Section"
+// @Param        sourceId     query     string  false  "SourceID"
+// @Success      200          {object}  compliance_report.ReportGroupObj
+// @Router       /benchmarks/{benchmarkId}/{sourceId}/result [get]
+func (h *HttpHandler) GetBenchmarkResult(ctx echo.Context) error {
+	benchmarkID := ctx.Param("benchmarkId")
+
+	sourceUUID, err := uuid.Parse(ctx.Param("sourceId"))
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid source uuid")
+	}
+
+	var jobIDs []int
+	jobs, err := api.ListComplianceReportJobs(h.schedulerBaseUrl, sourceUUID, nil)
+	if err != nil {
+		return err
+	}
+	for _, report := range jobs {
+		jobIDs = append(jobIDs, int(report.ID))
+	}
+
+	// Since benchmark ID must be unique the result must be one record.
+	// Keeping size to 2 and returning error on length != 1 if there's a mistake
+	query := compliance_report.QueryReports(sourceUUID, jobIDs,
+		[]compliance_report.ReportType{compliance_report.ReportTypeBenchmark},
+		&benchmarkID, nil, 2, 0)
+	b, err := json.Marshal(query)
+	if err != nil {
+		return err
+	}
+
+	var response compliance_report.ReportQueryResponse
+	err = h.client.Search(context.Background(), compliance_report.ComplianceReportIndex,
+		string(b), &response)
+	if err != nil {
+		return err
+	}
+
+	if len(response.Hits.Hits) != 1 {
+		return echo.NewHTTPError(http.StatusNotFound, "benchmark not found")
+	}
+
+	if response.Hits.Hits[0].Source.Group == nil {
+		return errors.New("benchmark doesnt have group")
+	}
+
+	return ctx.JSON(http.StatusOK, *response.Hits.Hits[0].Source.Group)
+}
+
+// GetResultPolicies godoc
+// @Summary      Returns policy results of specific benchmark
+// @Description  Returns policy results of specific benchmark
+// @Tags     benchmarks
+// @Accept   json
+// @Produce  json
+// @Param        benchmarkId  query     string  false  "ID of Benchmark/Category/Subcategory/Section"
+// @Param        sourceId     query     string  false  "SourceID"
+// @Param        category     query     string  false  "Category Filter"
+// @Param        subcategory  query     string  false  "Subcategory Filter"
+// @Param        section      query     string  false  "Section Filter"
+// @Param        severity     query     string  false  "Severity Filter"
+// @Param        status       query     string  false  "Severity Filter"  Enums(passed,failed,no_resource)
+// @Success      200          {object}  []api.PolicyResult
+// @Router       /benchmarks/{benchmarkId}/{sourceId}/result/policies [get]
+func (h *HttpHandler) GetResultPolicies(ctx echo.Context) error {
+	benchmarkID := ctx.Param("benchmarkId")
+
+	sourceUUID, err := uuid.Parse(ctx.Param("sourceId"))
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid source uuid")
+	}
+
+	var status, severity, category, subcategory, section *string
+	if len(ctx.QueryParam("status")) > 0 {
+		temp := ctx.QueryParam("status")
+		status = &temp
+	}
+	if len(ctx.QueryParam("severity")) > 0 {
+		temp := ctx.QueryParam("severity")
+		severity = &temp
+	}
+	if len(ctx.QueryParam("category")) > 0 {
+		temp := ctx.QueryParam("category")
+		category = &temp
+	}
+	if len(ctx.QueryParam("subcategory")) > 0 {
+		temp := ctx.QueryParam("subcategory")
+		subcategory = &temp
+	}
+	if len(ctx.QueryParam("section")) > 0 {
+		temp := ctx.QueryParam("section")
+		section = &temp
+	}
+
+	var jobIDs []int
+	jobs, err := api.ListComplianceReportJobs(h.schedulerBaseUrl, sourceUUID, nil)
+	if err != nil {
+		return err
+	}
+
+	for _, report := range jobs {
+		jobIDs = append(jobIDs, int(report.ID))
+	}
+
+	policies, err := h.db.GetPoliciesWithFilters(benchmarkID, category, subcategory,
+		section, severity)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusNotFound, "benchmark not found")
+	}
+
+	var resp []*api.PolicyResult
+	for _, policy := range policies {
+		resp = append(resp, &api.PolicyResult{
+			ID:          policy.ID,
+			Title:       policy.Title,
+			Category:    policy.Category,
+			Subcategory: policy.SubCategory,
+			Section:     policy.Section,
+			Severity:    policy.Severity,
+			Provider:    policy.Provider,
+			Status:      api.PolicyResultStatusNoResource,
+		})
+	}
+
+	lastIdx := 0
+	pageSize := 1000
+	for {
+		query := compliance_report.QueryReports(sourceUUID, jobIDs,
+			[]compliance_report.ReportType{compliance_report.ReportTypeResult},
+			nil, &benchmarkID, pageSize, lastIdx)
+		lastIdx += pageSize
+		b, err := json.Marshal(query)
+		if err != nil {
+			return err
+		}
+
+		var response compliance_report.ReportQueryResponse
+		err = h.client.Search(context.Background(), compliance_report.ComplianceReportIndex,
+			string(b), &response)
+		if err != nil {
+			return err
+		}
+
+		if len(response.Hits.Hits) == 0 {
+			break
+		}
+
+		for _, hit := range response.Hits.Hits {
+			if hit.Source.Result != nil {
+				res := *hit.Source.Result
+				for _, r := range resp {
+					if r.ID == res.ControlId {
+						r.TotalResources++
+
+						switch res.Result.Status {
+						case compliance_report.ResultStatusInfo,
+							compliance_report.ResultStatusOK,
+							compliance_report.ResultStatusSkip:
+
+							if r.Status == api.PolicyResultStatusNoResource {
+								r.Status = api.PolicyResultStatusPassed
+							}
+							r.CompliantResources++
+						case compliance_report.ResultStatusAlarm,
+							compliance_report.ResultStatusError:
+
+							r.Status = api.PolicyResultStatusFailed
+						}
+					}
+				}
+			}
+		}
+	}
+
+	if status != nil {
+		var temp []*api.PolicyResult
+		for _, res := range resp {
+			if *status == string(res.Status) {
+				temp = append(temp, res)
+			}
+		}
+		resp = temp
 	}
 
 	return ctx.JSON(http.StatusOK, resp)
@@ -736,8 +926,9 @@ func (h *HttpHandler) GetComplianceReports(ctx echo.Context) error {
 		}
 	}
 
-	query := compliance_report.QueryReports(sourceUUID, jobIDs, req.ReportType,
-		req.Filters.GroupID, req.Page.Size, lastIdx)
+	query := compliance_report.QueryReports(sourceUUID, jobIDs,
+		[]compliance_report.ReportType{req.ReportType},
+		req.Filters.GroupID, nil, req.Page.Size, lastIdx)
 	b, err := json.Marshal(query)
 	if err != nil {
 		return err

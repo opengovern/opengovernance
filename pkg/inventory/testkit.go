@@ -11,6 +11,7 @@ import (
 	"io/ioutil"
 	"math/rand"
 	"net/http"
+	"net/http/httptest"
 	"os"
 	"strconv"
 	"time"
@@ -19,10 +20,12 @@ import (
 	ec2 "github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	elasticsearchv7 "github.com/elastic/go-elasticsearch/v7"
 	"github.com/elastic/go-elasticsearch/v7/esapi"
+	"github.com/google/uuid"
 	awsdescriber "gitlab.com/keibiengine/keibi-engine/pkg/aws/describer"
 	awsmodel "gitlab.com/keibiengine/keibi-engine/pkg/aws/model"
 	azuredescriber "gitlab.com/keibiengine/keibi-engine/pkg/azure/describer"
 	azuremodel "gitlab.com/keibiengine/keibi-engine/pkg/azure/model"
+	compliance_report "gitlab.com/keibiengine/keibi-engine/pkg/compliance-report"
 	"gitlab.com/keibiengine/keibi-engine/pkg/describe"
 	"gitlab.com/keibiengine/keibi-engine/pkg/describe/api"
 )
@@ -73,6 +76,16 @@ func PopulateElastic(address string) error {
 	}
 
 	err = GenerateResources(es)
+	if err != nil {
+		return err
+	}
+
+	u, err := uuid.Parse("2a87b978-b8bf-4d7e-bc19-cf0a99a430cf")
+	if err != nil {
+		return err
+	}
+
+	err = GenerateComplianceReport(es, u)
 	if err != nil {
 		return err
 	}
@@ -185,6 +198,7 @@ func PopulatePostgres(db Database) error {
 	}
 
 	err = db.AddBenchmark(&Benchmark{
+		ID:          "test_compliance.benchmark1",
 		Title:       "Benchmark 1",
 		Description: "this is a benchmark",
 		Provider:    "AWS",
@@ -196,6 +210,7 @@ func PopulatePostgres(db Database) error {
 		},
 		Policies: []Policy{
 			{
+				ID:                    "test_compliance.benchmark1.policy1",
 				Title:                 "Policy 1",
 				Description:           "description of policy 1",
 				Tags:                  []PolicyTag{},
@@ -217,6 +232,7 @@ func PopulatePostgres(db Database) error {
 	}
 
 	err = db.AddBenchmark(&Benchmark{
+		ID:          "mod.azure_compliance",
 		Title:       "Benchmark 2",
 		Description: "this is another benchmark",
 		Provider:    "Azure",
@@ -232,6 +248,7 @@ func PopulatePostgres(db Database) error {
 		},
 		Policies: []Policy{
 			{
+				ID:                    "control.cis_v130_1_21",
 				Title:                 "Policy 2",
 				Description:           "description of policy 2",
 				Tags:                  []PolicyTag{},
@@ -239,7 +256,7 @@ func PopulatePostgres(db Database) error {
 				Category:              "category2",
 				SubCategory:           "sub_category2",
 				Section:               "section2",
-				Severity:              "warn",
+				Severity:              "high",
 				ManualVerification:    "step1",
 				ManualRemedation:      "step2",
 				CommandLineRemedation: "step3",
@@ -247,6 +264,7 @@ func PopulatePostgres(db Database) error {
 				KeibiManaged:          true,
 			},
 			{
+				ID:                    "control.cis_v130_1_23",
 				Title:                 "Policy 3",
 				Description:           "description of policy 3",
 				Tags:                  []PolicyTag{},
@@ -266,6 +284,56 @@ func PopulatePostgres(db Database) error {
 	if err != nil {
 		return err
 	}
+	return nil
+}
+
+func GenerateComplianceReport(es *elasticsearchv7.Client, sourceId uuid.UUID) error {
+	r, err := compliance_report.ParseReport(
+		"test/result-964df7ca-3ba4-48b6-a695-1ed9db5723f8-1645119195.json",
+		1020,
+		sourceId,
+	)
+	if err != nil {
+		return err
+	}
+
+	for _, re := range r {
+		b, err := json.Marshal(re)
+		if err != nil {
+			return err
+		}
+
+		u, err := uuid.NewUUID()
+		if err != nil {
+			return err
+		}
+		documentID := u.String()
+		// Set up the request object.
+		req := esapi.IndexRequest{
+			Index:      compliance_report.ComplianceReportIndex,
+			DocumentID: documentID,
+			Body:       bytes.NewReader(b),
+			Refresh:    "true",
+		}
+
+		// Perform the request with the client.
+		res, err := req.Do(context.Background(), es)
+		if err != nil {
+			return err
+		}
+		defer res.Body.Close()
+
+		if res.IsError() {
+			return fmt.Errorf("[%s] Error indexing document ID=%s", res.Status(), documentID)
+		} else {
+			// Deserialize the response into a map.
+			var r map[string]interface{}
+			if err := json.NewDecoder(res.Body).Decode(&r); err != nil {
+				return err
+			}
+		}
+	}
+
 	return nil
 }
 
@@ -452,7 +520,8 @@ func IndexKafkaResource(es *elasticsearchv7.Client, kafkaRes describe.KafkaResou
 }
 
 type DescribeMock struct {
-	Response []describe.ComplianceReportJob
+	Response   []describe.ComplianceReportJob
+	MockServer *httptest.Server
 }
 
 func (m *DescribeMock) HelloServer(w http.ResponseWriter, r *http.Request) {
@@ -488,6 +557,7 @@ func (m *DescribeMock) SetResponse(jobs ...describe.ComplianceReportJob) {
 }
 
 func (m *DescribeMock) Run() {
-	http.HandleFunc("/api/v1/sources/", m.HelloServer)
-	go http.ListenAndServe(":1234", nil)
+	mux := http.NewServeMux()
+	mux.HandleFunc("/api/v1/sources/", m.HelloServer)
+	m.MockServer = httptest.NewServer(mux)
 }

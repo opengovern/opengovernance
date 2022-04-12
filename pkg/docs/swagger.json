@@ -272,6 +272,118 @@
                 }
             }
         },
+        "/benchmarks/{benchmarkId}/{sourceId}/result": {
+            "get": {
+                "description": "Returns summary of benchmark, category, subcategory or section's result",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "benchmarks"
+                ],
+                "summary": "Returns summary of benchmark result",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "ID of Benchmark/Category/Subcategory/Section",
+                        "name": "benchmarkId",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "SourceID",
+                        "name": "sourceId",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/compliance_report.ReportGroupObj"
+                        }
+                    }
+                }
+            }
+        },
+        "/benchmarks/{benchmarkId}/{sourceId}/result/policies": {
+            "get": {
+                "description": "Returns policy results of specific benchmark",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "benchmarks"
+                ],
+                "summary": "Returns policy results of specific benchmark",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "ID of Benchmark/Category/Subcategory/Section",
+                        "name": "benchmarkId",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "SourceID",
+                        "name": "sourceId",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Category Filter",
+                        "name": "category",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Subcategory Filter",
+                        "name": "subcategory",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Section Filter",
+                        "name": "section",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Severity Filter",
+                        "name": "severity",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "passed",
+                            "failed",
+                            "no_resource"
+                        ],
+                        "type": "string",
+                        "description": "Severity Filter",
+                        "name": "status",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/api.PolicyResult"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/inventory/api/v1/locations/{provider}": {
             "get": {
                 "description": "Getting locations by provider",
@@ -1264,7 +1376,7 @@
                     "type": "string"
                 },
                 "id": {
-                    "type": "integer"
+                    "type": "string"
                 },
                 "provider": {
                     "type": "string"
@@ -1625,7 +1737,7 @@
                     "type": "string"
                 },
                 "id": {
-                    "type": "integer"
+                    "type": "string"
                 },
                 "manualRemedation": {
                     "type": "string"
@@ -1656,6 +1768,46 @@
                 },
                 "title": {
                     "type": "string"
+                }
+            }
+        },
+        "api.PolicyResult": {
+            "type": "object",
+            "properties": {
+                "category": {
+                    "type": "string"
+                },
+                "compliantResources": {
+                    "type": "integer"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "provider": {
+                    "type": "string"
+                },
+                "section": {
+                    "type": "string"
+                },
+                "severity": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string",
+                    "enum": [
+                        "no_resource",
+                        "passed",
+                        "failed"
+                    ]
+                },
+                "subcategory": {
+                    "type": "string"
+                },
+                "title": {
+                    "type": "string"
+                },
+                "totalResources": {
+                    "type": "integer"
                 }
             }
         },
@@ -1992,7 +2144,14 @@
                     "type": "string"
                 },
                 "status": {
-                    "type": "string"
+                    "type": "string",
+                    "enum": [
+                        "ok",
+                        "info",
+                        "skip",
+                        "alarm",
+                        "error"
+                    ]
                 }
             }
         },

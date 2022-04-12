@@ -88,11 +88,21 @@ type Dimension struct {
 	Value string `json:"value"`
 }
 
+type ResultStatus string
+
+const (
+	ResultStatusAlarm = "alarm"
+	ResultStatusInfo  = "info"
+	ResultStatusOK    = "ok"
+	ResultStatusSkip  = "skip"
+	ResultStatusError = "error"
+)
+
 type Result struct {
-	Reason     string      `json:"reason"`
-	Resource   string      `json:"resource"`
-	Status     string      `json:"status"`
-	Dimensions []Dimension `json:"dimensions"`
+	Reason     string       `json:"reason"`
+	Resource   string       `json:"resource"`
+	Status     ResultStatus `json:"status" enums:"ok,info,skip,alarm,error"`
+	Dimensions []Dimension  `json:"dimensions"`
 }
 
 type Control struct {
@@ -155,6 +165,7 @@ func ExtractNodes(root Group, tree []string, reportJobID uint, sourceID uuid.UUI
 		},
 		ReportJobId: reportJobID,
 		Type:        ReportTypeBenchmark,
+		SourceID:    sourceID,
 	}
 	nodes = append(nodes, me)
 
@@ -241,18 +252,24 @@ func ParseReport(path string, reportJobID uint, sourceID uuid.UUID) ([]Report, e
 	return append(nodes, leaves...), nil
 }
 
-func QueryReports(sourceID uuid.UUID, jobIDs []int, type_ ReportType, groupID *string, size, lastIdx int) map[string]interface{} {
+func QueryReports(sourceID uuid.UUID, jobIDs []int, types []ReportType, groupID *string, containsParentGroupId *string, size, lastIdx int) map[string]interface{} {
 	res := make(map[string]interface{})
 	var filters []interface{}
 	var jobIDsStr []string
 	for _, jobID := range jobIDs {
 		jobIDsStr = append(jobIDsStr, strconv.Itoa(jobID))
 	}
+
+	var typesStr []string
+	for _, t := range types {
+		typesStr = append(typesStr, string(t))
+	}
+
 	filters = append(filters, map[string]interface{}{
 		"terms": map[string][]string{"reportJobID": jobIDsStr},
 	})
 	filters = append(filters, map[string]interface{}{
-		"terms": map[string][]string{"type": {string(type_)}},
+		"terms": map[string][]string{"type": typesStr},
 	})
 	filters = append(filters, map[string]interface{}{
 		"terms": map[string][]string{"sourceID": {sourceID.String()}},
@@ -262,6 +279,12 @@ func QueryReports(sourceID uuid.UUID, jobIDs []int, type_ ReportType, groupID *s
 			"terms": map[string][]string{"group.id": {*groupID}},
 		})
 	}
+	if containsParentGroupId != nil {
+		filters = append(filters, map[string]interface{}{
+			"terms": map[string][]string{"result.parentGroupIDs": {*containsParentGroupId}},
+		})
+	}
+
 	res["size"] = size
 	res["from"] = lastIdx
 

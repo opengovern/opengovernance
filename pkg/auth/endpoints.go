@@ -92,6 +92,36 @@ var endpoints = []endpoint{
 		Method:      http.MethodGet,
 		MinimumRole: api.ViewerRole,
 	},
+	{
+		Path:        "/inventory/api/v1/benchmarks",
+		Method:      http.MethodGet,
+		MinimumRole: api.ViewerRole,
+	},
+	{
+		Path:        "/inventory/api/v1/benchmarks/tags",
+		Method:      http.MethodGet,
+		MinimumRole: api.ViewerRole,
+	},
+	{
+		Path:        "/inventory/api/v1/benchmarks/:benchmarkId",
+		Method:      http.MethodGet,
+		MinimumRole: api.ViewerRole,
+	},
+	{
+		Path:        "/inventory/api/v1/benchmarks/:benchmarkId/policies",
+		Method:      http.MethodGet,
+		MinimumRole: api.ViewerRole,
+	},
+	{
+		Path:        "/inventory/api/v1/benchmarks/:benchmarkId/:sourceId/result",
+		Method:      http.MethodGet,
+		MinimumRole: api.ViewerRole,
+	},
+	{
+		Path:        "/inventory/api/v1/benchmarks/:benchmarkId/:sourceId/result/policies",
+		Method:      http.MethodGet,
+		MinimumRole: api.ViewerRole,
+	},
 	// ============ Onboard Service ============
 	{
 		Path:        "/onboard/api/v1/source/aws",
