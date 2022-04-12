@@ -520,7 +520,7 @@ func IndexKafkaResource(es *elasticsearchv7.Client, kafkaRes describe.KafkaResou
 }
 
 type DescribeMock struct {
-	Response []describe.ComplianceReportJob
+	Response   []describe.ComplianceReportJob
 	MockServer *httptest.Server
 }
 
