@@ -43,20 +43,47 @@ func (s Server) Check(ctx context.Context, req *envoyauth.CheckRequest) (*envoya
 		},
 	}
 
-	headers := req.GetAttributes().GetRequest().GetHttp().GetHeaders()
+	httpRequest := req.GetAttributes().GetRequest().GetHttp()
+	headers := httpRequest.GetHeaders()
+
 	user, err := s.Verify(ctx, headers[strings.ToLower(echo.HeaderAuthorization)])
 	if err != nil {
+		s.logger.Warn("denied access due to unsuccessful token verification",
+			zap.String("reqId", httpRequest.Id),
+			zap.String("path", httpRequest.Path),
+			zap.String("method", httpRequest.Method),
+			zap.Error(err))
 		return unAuth, nil
 	}
 
 	rb, err := s.FindUserRoleBinding(ctx, user)
 	if err != nil {
+		s.logger.Warn("denied access due to failure in retrieving user role",
+			zap.String("reqId", httpRequest.Id),
+			zap.String("path", httpRequest.Path),
+			zap.String("method", httpRequest.Method),
+			zap.Error(err))
 		return unAuth, nil
 	}
 
 	if err := s.Authorize(req, rb); err != nil {
+		s.logger.Warn("denied access due to unauthorized access",
+			zap.String("userId", rb.UserID),
+			zap.String("role", string(rb.Role)),
+			zap.String("reqId", httpRequest.Id),
+			zap.String("path", httpRequest.Path),
+			zap.String("method", httpRequest.Method),
+			zap.Error(err))
 		return unAuth, nil
 	}
+
+	s.logger.Debug("granted access",
+		zap.String("userId", rb.UserID),
+		zap.String("role", string(rb.Role)),
+		zap.String("reqId", httpRequest.Id),
+		zap.String("path", httpRequest.Path),
+		zap.String("method", httpRequest.Method),
+	)
 
 	return &envoyauth.CheckResponse{
 		Status: &status.Status{
@@ -90,7 +117,7 @@ func (s Server) Verify(ctx context.Context, authToken string) (*User, error) {
 	}
 	token := strings.TrimSpace(strings.TrimPrefix(authToken, "Bearer "))
 	if token == "" {
-		return nil, errors.New("invalid authorization token")
+		return nil, errors.New("missing authorization token")
 	}
 
 	t, err := s.verifier.Verify(context.Background(), token)
@@ -117,7 +144,7 @@ func (s Server) FindUserRoleBinding(ctx context.Context, user *User) (RoleBindin
 
 	err := s.db.GetRoleBindingOrCreate(&defaultRb)
 	if err != nil {
-		return RoleBinding{}, errors.New("failed to authorize user")
+		return RoleBinding{}, err
 	}
 
 	return defaultRb, nil

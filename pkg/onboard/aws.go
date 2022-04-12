@@ -43,7 +43,7 @@ func discoverAwsAccounts(ctx context.Context, req api.DiscoverAWSAccountsRequest
 		}
 	}
 
-	var discovered []api.DiscoverAWSAccountsResponse
+	discovered := make([]api.DiscoverAWSAccountsResponse, 0, len(accounts))
 	for _, acc := range accounts {
 		discovered = append(discovered, api.DiscoverAWSAccountsResponse{
 			AccountID:      *acc.Id,
