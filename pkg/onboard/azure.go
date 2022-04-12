@@ -28,7 +28,7 @@ func discoverAzureSubscriptions(ctx context.Context, req api.DiscoverAzureSubscr
 		return nil, err
 	}
 
-	var subs []api.DiscoverAzureSubscriptionsResponse
+	subs := []api.DiscoverAzureSubscriptionsResponse{} // don't convert to var so the returned list won't be nil
 	for it.NotDone() {
 		v := it.Value()
 		subs = append(subs, api.DiscoverAzureSubscriptionsResponse{
