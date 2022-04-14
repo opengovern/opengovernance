@@ -47,7 +47,7 @@ func (s *HttpHandlerSuite) SetupSuite() {
 	require.NoError(err, "connect to docker")
 
 	net, err := pool.CreateNetwork("keibi")
-	require.NoError(err, err.Error())
+	require.NoError(err)
 	t.Cleanup(func() {
 		err = pool.RemoveNetwork(net)
 		require.NoError(err, "remove network")
@@ -507,11 +507,26 @@ func (s *HttpHandlerSuite) TestGetAzureResources() {
 func (s *HttpHandlerSuite) TestGetQueries() {
 	require := s.Require()
 
+	req := api.ListQueryRequest{}
 	var response []SmartQuery
-	rec, err := doRequestJSONResponse(s.router, echo.GET, "/api/v1/query", nil, &response)
+
+	rec, err := doRequestJSONResponse(s.router, echo.GET, "/api/v1/query", &req, &response)
 	require.NoError(err, "request")
 	require.Equal(http.StatusOK, rec.Code)
 	require.Len(response, 4)
+
+	req.TitleFilter = "4"
+	rec, err = doRequestJSONResponse(s.router, echo.GET, "/api/v1/query", &req, &response)
+	require.NoError(err, "request")
+	require.Equal(http.StatusOK, rec.Code)
+	require.Len(response, 1)
+
+	req.TitleFilter = ""
+	req.Labels = []string{"tag1"}
+	rec, err = doRequestJSONResponse(s.router, echo.GET, "/api/v1/query", &req, &response)
+	require.NoError(err, "request")
+	require.Equal(http.StatusOK, rec.Code)
+	require.Len(response, 1)
 }
 
 func (s *HttpHandlerSuite) TestRunQuery() {

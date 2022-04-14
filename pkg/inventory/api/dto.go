@@ -220,7 +220,7 @@ type SmartQueryItem struct {
 	Title       string   `json:"title"`
 	Description string   `json:"description"`
 	Query       string   `json:"query"`
-	Tags        []string `json:"tags"`
+	Labels      []string `json:"labels"`
 }
 
 type TimeRangeFilter struct {
@@ -307,4 +307,9 @@ type PolicyResult struct {
 	Status             PolicyResultStatus `json:"status" enums:"no_resource,passed,failed"`
 	CompliantResources int                `json:"compliantResources"`
 	TotalResources     int                `json:"totalResources"`
+}
+
+type ListQueryRequest struct {
+	TitleFilter string   `yaml:"titleFilter"`
+	Labels      []string `yaml:"labels"`
 }

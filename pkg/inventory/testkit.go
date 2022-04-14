@@ -182,6 +182,11 @@ func PopulatePostgres(db Database) error {
 		Title:       "Query 3",
 		Description: "description 3",
 		Query:       "select * from azure_virtual_network",
+		Tags: []Tag{
+			{
+				Value: "tag1",
+			},
+		},
 	})
 	if err != nil {
 		return err

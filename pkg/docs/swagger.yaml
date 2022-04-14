@@ -445,14 +445,14 @@ definitions:
         type: string
       id:
         type: integer
+      labels:
+        items:
+          type: string
+        type: array
       provider:
         type: string
       query:
         type: string
-      tags:
-        items:
-          type: string
-        type: array
       title:
         type: string
     type: object

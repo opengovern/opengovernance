@@ -49,6 +49,27 @@ func (db Database) GetQueries() ([]SmartQuery, error) {
 	return s, nil
 }
 
+// GetQueriesWithFilters gets list of all queries filtered by tags and search
+func (db Database) GetQueriesWithFilters(search *string, labels []string) ([]SmartQuery, error) {
+	var s []SmartQuery
+	m := db.orm.Model(&SmartQuery{}).
+		Preload("Tags")
+
+	if search != nil {
+		m = m.Where("title like ?", "%" + *search + "%")
+	}
+	for _, value := range labels {
+		m = m.Where("id IN (SELECT smart_query_id FROM smartquery_tags WHERE tag_id IN (SELECT id FROM tags WHERE value = ?))", value)
+	}
+	tx := m.Find(&s)
+
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+
+	return s, nil
+}
+
 // GetQuery gets a query with matching id
 func (db Database) GetQuery(id string) (SmartQuery, error) {
 	var s SmartQuery
