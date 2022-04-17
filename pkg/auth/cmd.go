@@ -2,7 +2,10 @@ package auth
 
 import (
 	"context"
+	"crypto/tls"
+	"crypto/x509"
 	"fmt"
+	"io/ioutil"
 	"net"
 	"os"
 
@@ -11,6 +14,7 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpserver"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
@@ -30,6 +34,9 @@ var (
 	httpServerAddress = os.Getenv("HTTP_ADDRESS")
 
 	grpcServerAddress = os.Getenv("GRPC_ADDRESS")
+	grpcTlsCertPath   = os.Getenv("GRPC_TLS_CERT_PATH")
+	grpcTlsKeyPath    = os.Getenv("GRPC_TLS_KEY_PATH")
+	grpcTlsCAPath     = os.Getenv("GRPC_TLS_CA_PATH")
 )
 
 func Command() *cobra.Command {
@@ -85,7 +92,16 @@ func start(ctx context.Context) error {
 		logger:   logger,
 	}
 
-	grpcServer := grpc.NewServer()
+	creds, err := newServerCredentials(
+		grpcTlsCertPath,
+		grpcTlsKeyPath,
+		grpcTlsCAPath,
+	)
+	if err != nil {
+		return fmt.Errorf("grpc tls creds: %w", err)
+	}
+
+	grpcServer := grpc.NewServer(grpc.Creds(creds))
 	envoyauth.RegisterAuthorizationServer(grpcServer, authServer)
 
 	lis, err := net.Listen("tcp", grpcServerAddress)
@@ -103,4 +119,29 @@ func start(ctx context.Context) error {
 	}()
 
 	return <-errors
+}
+
+// newServerCredentials loads TLS transport credentials for the GRPC server.
+func newServerCredentials(certPath string, keyPath string, caPath string) (credentials.TransportCredentials, error) {
+	srv, err := tls.LoadX509KeyPair(certPath, keyPath)
+	if err != nil {
+		return nil, err
+	}
+
+	p := x509.NewCertPool()
+
+	if caPath != "" {
+		ca, err := ioutil.ReadFile(caPath) //nolint(gosec)
+		if err != nil {
+			return nil, err
+		}
+
+		p.AppendCertsFromPEM(ca)
+	}
+
+	return credentials.NewTLS(&tls.Config{
+		MinVersion:   tls.VersionTLS13,
+		Certificates: []tls.Certificate{srv},
+		RootCAs:      p,
+	}), nil
 }
