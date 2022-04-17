@@ -5,7 +5,8 @@ FROM registry.digitalocean.com/keibi/steampipe-plugin-azuread:0.0.1 as azuread
 FROM docker.io/turbot/steampipe:0.12.2
 
 USER root
-RUN apt install -y git
+RUN apt-get update --fix-missing && \
+    apt-get install -y git
 USER steampipe
 
 COPY --from=aws /steampipe-plugin-aws.plugin /home/steampipe/.steampipe/plugins/hub.steampipe.io/plugins/turbot/aws@latest/steampipe-plugin-aws.plugin
