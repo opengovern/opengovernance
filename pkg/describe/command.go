@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
+	"go.uber.org/zap"
 )
 
 const (
@@ -112,6 +113,11 @@ func WorkerCommand() *cobra.Command {
 			}
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
+			logger, err := zap.NewProduction()
+			if err != nil {
+				return err
+			}
+
 			cmd.SilenceUsage = true
 
 			w, err := InitializeWorker(
@@ -127,6 +133,7 @@ func WorkerCommand() *cobra.Command {
 				VaultAddress,
 				VaultRoleName,
 				VaultToken,
+				logger,
 			)
 			if err != nil {
 				return err
@@ -158,6 +165,11 @@ func CleanupWorkerCommand() *cobra.Command {
 			}
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
+			logger, err := zap.NewProduction()
+			if err != nil {
+				return err
+			}
+
 			cmd.SilenceUsage = true
 
 			w, err := InitializeCleanupWorker(
@@ -170,6 +182,7 @@ func CleanupWorkerCommand() *cobra.Command {
 				ElasticSearchAddress,
 				ElasticSearchUsername,
 				ElasticSearchPassword,
+				logger,
 			)
 			if err != nil {
 				return err

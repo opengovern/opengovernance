@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"github.com/spf13/cobra"
+	"go.uber.org/zap"
 )
 
 const (
@@ -83,12 +84,17 @@ func WorkerCommand() *cobra.Command {
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cmd.SilenceUsage = true
+			logger, err := zap.NewProduction()
+			if err != nil {
+				return err
+			}
 
 			w, err := InitializeWorker(
 				id,
 				config,
 				JobsQueueName,
 				ResultsQueueName,
+				logger,
 			)
 			if err != nil {
 				return err

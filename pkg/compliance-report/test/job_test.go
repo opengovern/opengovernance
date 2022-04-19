@@ -9,6 +9,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/zap"
 	"gopkg.in/Shopify/sarama.v1"
 
 	compliancereport "gitlab.com/keibiengine/keibi-engine/pkg/compliance-report"
@@ -16,6 +17,11 @@ import (
 )
 
 func TestJob_Do(t *testing.T) {
+	logger, err := zap.NewProduction()
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	job := compliancereport.Job{
 		JobID:      100,
 		SourceID:   uuid.New(),
@@ -33,7 +39,7 @@ func TestJob_Do(t *testing.T) {
 		ElasticSearch: compliancereport.ElasticSearchConfig{
 			Address: es.Address,
 		},
-	})
+	}, logger)
 	assert.Equal(t, "", result.Error)
 
 	conf := sarama.NewConfig()
