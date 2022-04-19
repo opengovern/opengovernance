@@ -32,24 +32,45 @@ build:
 
 golangci-lint:
   stage: lint
+  only:
+    - merge_requests
   image:
     name: golangci/golangci-lint:v1.45
-    entrypoint: [""]
-  extends: .go-cache
+    entrypoint: [ "" ]
   variables:
     GOLANGCI_LINT_CACHE: ${CI_PROJECT_DIR}/.linter-cache
+    GOPATH: $CI_PROJECT_DIR/.go
+    GOCACHE: $CI_PROJECT_DIR/.cache/linux
   cache:
     - key: linter-cache
       paths:
         - .linter-cache/
-    - key: go-cache
-      paths:
         - .go/pkg/mod/
         - .cache/
       policy: pull
   script:
     - golangci-lint run -v
 
+golangci-lint-main:
+  stage: lint
+  only:
+    - main
+  image:
+    name: golangci/golangci-lint:v1.45
+    entrypoint: [ "" ]
+  variables:
+    GOLANGCI_LINT_CACHE: ${CI_PROJECT_DIR}/.linter-cache
+    GOPATH: $CI_PROJECT_DIR/.go
+    GOCACHE: $CI_PROJECT_DIR/.cache/linux
+  cache:
+    - key: linter-cache
+      paths:
+        - .linter-cache/
+        - .go/pkg/mod/
+        - .cache/
+      policy: pull-push
+  script:
+    - golangci-lint run -v
 
 test:
   stage: test
