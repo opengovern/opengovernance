@@ -1,5 +1,12 @@
 image: golang:latest
 
+variables:
+  SVER_DOCKER_REGISTRY: keibi/inventory-service  # Optional. If specified, sver will calculate the tags for this docker registry.
+  SVER_DOCKER_SERVER: registry.digitalocean.com # Optional. Server for the docker registry.
+  SVER_DOCKER_USERNAME: "" # Optional. Username for connecting to the docker server.
+  SVER_DOCKER_PASSWORD: "" # Optional. Password for connecting to the docker server.
+  SVER_IMAGE_VERSION: "1" # Optional. The version of the sver docker image to use.
+
 stages:
   - build
   - lint
@@ -72,29 +79,47 @@ test:
         - .cache/
       policy: pull
 
+sver-tags:
+  stage: deploy
+  image:
+    name: 'ghcr.io/aserto-dev/sver:${SVER_IMAGE_VERSION}'
+    entrypoint: [""]
+  script:
+    - ./scripts/sver.sh >> sver.env
+  artifacts:
+    reports:
+      dotenv: sver.env
+
+
 deploy: # This job runs in the deploy stage.
   stage: deploy # It only runs when *both* jobs in the test stage complete successfully.
+  needs:
+    - sver-tags
+  dependencies:
+    - sver-tags
   only:
     - main
   image:
     name: quay.io/podman/stable
   script:
     - podman login -u "${DO_API_TOKEN}" -p "${DO_API_TOKEN}" "registry.digitalocean.com/keibi"
-    - podman build -f  docker/DescribeSchedulerDockerfile . -t registry.digitalocean.com/keibi/describe-scheduler:0.0.1
-    - podman build -f  docker/DescribeWorkerDockerfile . -t registry.digitalocean.com/keibi/describe-worker:0.0.1
-    - podman build -f  docker/DescribeCleanupWorkerDockerfile . -t registry.digitalocean.com/keibi/describe-cleanup-worker:0.0.1
-    - podman build -f  docker/ComplianceReportWorkerDockerfile . -t registry.digitalocean.com/keibi/compliance-report-worker:0.0.1
-    - podman build -f  docker/OnboardServiceDockerfile . -t registry.digitalocean.com/keibi/onboard-service:0.0.1
-    - podman build -f  docker/InventoryServiceDockerfile . -t registry.digitalocean.com/keibi/inventory-service:0.0.1
-    - podman build -f  docker/SwaggerUIDockerfile . -t registry.digitalocean.com/keibi/swagger-ui:0.0.1
-    - podman build -f  docker/SteampipeServiceDockerfile . -t registry.digitalocean.com/keibi/steampipe-service:0.0.1
-    - podman build -f  docker/AuthServiceDockerfile . -t registry.digitalocean.com/keibi/auth-service:0.0.1
-    - podman push registry.digitalocean.com/keibi/describe-scheduler:0.0.1
-    - podman push registry.digitalocean.com/keibi/describe-worker:0.0.1
-    - podman push registry.digitalocean.com/keibi/describe-cleanup-worker:0.0.1
-    - podman push registry.digitalocean.com/keibi/compliance-report-worker:0.0.1
-    - podman push registry.digitalocean.com/keibi/onboard-service:0.0.1
-    - podman push registry.digitalocean.com/keibi/inventory-service:0.0.1
-    - podman push registry.digitalocean.com/keibi/swagger-ui:0.0.1
-    - podman push registry.digitalocean.com/keibi/steampipe-service:0.0.1
-    - podman push registry.digitalocean.com/keibi/auth-service:0.0.1
+    - podman build -f  docker/DescribeSchedulerDockerfile . -t registry.digitalocean.com/keibi/describe-scheduler:$SVER_VERSION
+    - podman build -f  docker/DescribeWorkerDockerfile . -t registry.digitalocean.com/keibi/describe-worker:$SVER_VERSION
+    - podman build -f  docker/DescribeCleanupWorkerDockerfile . -t registry.digitalocean.com/keibi/describe-cleanup-worker:$SVER_VERSION
+    - podman build -f  docker/ComplianceReportWorkerDockerfile . -t registry.digitalocean.com/keibi/compliance-report-worker:$SVER_VERSION
+    - podman build -f  docker/OnboardServiceDockerfile . -t registry.digitalocean.com/keibi/onboard-service:$SVER_VERSION
+    - podman build -f  docker/InventoryServiceDockerfile . -t registry.digitalocean.com/keibi/inventory-service:$SVER_VERSION
+    - podman build -f  docker/SwaggerUIDockerfile . -t registry.digitalocean.com/keibi/swagger-ui:$SVER_VERSION
+    - podman build -f  docker/SteampipeServiceDockerfile . -t registry.digitalocean.com/keibi/steampipe-service:$SVER_VERSION
+    - podman build -f  docker/AuthServiceDockerfile . -t registry.digitalocean.com/keibi/auth-service:$SVER_VERSION
+    - git tag $SVER_VERSION &> /dev/null
+    - git push "https://${GITLAB_CICD_USERNAME}:${GITLAB_CICD_TOKEN}@gitlab.com/${CI_PROJECT_PATH}.git" --tags
+    - podman push registry.digitalocean.com/keibi/describe-scheduler:$SVER_VERSION
+    - podman push registry.digitalocean.com/keibi/describe-worker:$SVER_VERSION
+    - podman push registry.digitalocean.com/keibi/describe-cleanup-worker:$SVER_VERSION
+    - podman push registry.digitalocean.com/keibi/compliance-report-worker:$SVER_VERSION
+    - podman push registry.digitalocean.com/keibi/onboard-service:$SVER_VERSION
+    - podman push registry.digitalocean.com/keibi/inventory-service:$SVER_VERSION
+    - podman push registry.digitalocean.com/keibi/swagger-ui:$SVER_VERSION
+    - podman push registry.digitalocean.com/keibi/steampipe-service:$SVER_VERSION
+    - podman push registry.digitalocean.com/keibi/auth-service:$SVER_VERSION
