@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -42,6 +43,9 @@ type HttpHandlerSuite struct {
 func (s *HttpHandlerSuite) SetupSuite() {
 	t := s.T()
 	require := s.Require()
+
+	s.describe = &DescribeMock{}
+	s.describe.Run()
 
 	pool, err := dockertest.NewPool("")
 	require.NoError(err, "connect to docker")
@@ -154,7 +158,7 @@ func (s *HttpHandlerSuite) SetupSuite() {
 	})
 	require.NoError(err, "wait for elastic search connection")
 
-	err = PopulateElastic(s.elasticUrl)
+	err = PopulateElastic(s.elasticUrl, s.describe)
 	require.NoError(err, "populating elastic")
 
 	var orm *gorm.DB
@@ -199,9 +203,6 @@ func (s *HttpHandlerSuite) SetupSuite() {
 		return d.Ping()
 	})
 	require.NoError(err, "wait for postgres connection")
-
-	s.describe = &DescribeMock{}
-	s.describe.Run()
 
 	s.router = InitializeRouter()
 	s.handler, _ = InitializeHttpHandler(s.elasticUrl, "", "",
@@ -1017,8 +1018,8 @@ func (s *HttpHandlerSuite) TestGetBenchmarkResultPolicies() {
 	require.Equal(3, res[0].TotalResources)
 	require.Equal(0, res[0].CompliantResources)
 
-	require.Equal(1, res[1].TotalResources)
-	require.Equal(1, res[1].CompliantResources)
+	require.Equal(0, res[1].TotalResources)
+	require.Equal(0, res[1].CompliantResources)
 
 	_, err = doRequestJSONResponse(s.router, "GET",
 		"/api/v1/benchmarks/mod.azure_compliance/2a87b978-b8bf-4d7e-bc19-cf0a99a430cf/result/policies?status=passed", nil, &res)
@@ -1037,6 +1038,92 @@ func (s *HttpHandlerSuite) TestGetBenchmarkResultPolicies() {
 	require.NoError(err)
 	require.Len(res, 1)
 	require.Equal(api.PolicyResultStatusFailed, res[0].Status)
+}
+
+func (s *HttpHandlerSuite) TestGetBenchmarksInTime() {
+	require := s.Require()
+
+	var res []api.Benchmark
+	_, err := doRequestJSONResponse(s.router, "GET",
+		"/api/v1/benchmarks/history/list/Azure/"+strconv.FormatInt(time.Now().UnixMilli(), 10), nil, &res)
+	require.NoError(err)
+	require.Len(res, 1)
+	require.Equal("azure_compliance.benchmark.cis_v130", res[0].ID)
+}
+
+func (s *HttpHandlerSuite) TestGetBenchmarkComplianceTrend() {
+	require := s.Require()
+
+	sourceId, err := uuid.Parse("2a87b978-b8bf-4d7e-bc19-cf0a99a430cf")
+	require.NoError(err)
+
+	var res []api.TrendDataPoint
+	_, err = doRequestJSONResponse(s.router, "GET",
+		"/api/v1/benchmarks/mod.azure_compliance/"+sourceId.String()+"/compliance/trend", nil, &res)
+	require.NoError(err)
+	require.Len(res, 2)
+}
+
+func (s *HttpHandlerSuite) TestGetBenchmarkAccountCompliance() {
+	require := s.Require()
+	sourceID, err := uuid.Parse("2a87b978-b8bf-4d7e-bc19-cf0a99a430cf")
+	require.NoError(err)
+
+	t := time.Now()
+	start := time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, t.Location())
+
+	cr, err := api.ListComplianceReportJobs(s.describe.MockServer.URL, sourceID, &api.TimeRangeFilter{
+		From: start.UnixMilli(),
+		To:   t.UnixMilli(),
+	})
+	require.NoError(err)
+
+	var reportTimes []int64
+	for _, c := range cr {
+		reportTimes = append(reportTimes, c.ReportCreatedAt)
+	}
+
+	url := fmt.Sprintf("/api/v1/benchmarks/%s/%d/accounts/compliance",
+		"azure_compliance.benchmark.cis_v130",
+		reportTimes[0],
+	)
+	var res api.BenchmarkAccountComplianceResponse
+	_, err = doRequestJSONResponse(s.router, "GET", url, nil, &res)
+
+	require.NoError(err)
+	require.Equal(1, res.TotalNonCompliantAccounts)
+	require.Equal(0, res.TotalCompliantAccounts)
+}
+
+func (s *HttpHandlerSuite) TestGetBenchmarkAccounts() {
+	require := s.Require()
+	sourceID, err := uuid.Parse("2a87b978-b8bf-4d7e-bc19-cf0a99a430cf")
+	require.NoError(err)
+
+	t := time.Now()
+	start := time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, t.Location())
+
+	cr, err := api.ListComplianceReportJobs(s.describe.MockServer.URL, sourceID, &api.TimeRangeFilter{
+		From: start.UnixMilli(),
+		To:   t.UnixMilli(),
+	})
+	require.NoError(err)
+
+	var reportTimes []int64
+	for _, c := range cr {
+		reportTimes = append(reportTimes, c.ReportCreatedAt)
+	}
+
+	url := fmt.Sprintf("/api/v1/benchmarks/%s/%d/accounts?order=asc&size=10",
+		"azure_compliance.benchmark.cis_v130",
+		reportTimes[0],
+	)
+	var res []compliance_report.AccountReport
+	_, err = doRequestJSONResponse(s.router, "GET", url, nil, &res)
+
+	require.NoError(err)
+	require.Len(res, 1)
+	require.Equal(res[0].CompliancePercentage, 0.99)
 }
 
 func TestHttpHandlerSuite(t *testing.T) {

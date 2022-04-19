@@ -32,9 +32,10 @@ type DescribeSourceJob struct {
 
 type ComplianceReportJob struct {
 	gorm.Model
-	SourceID       uuid.UUID // Not the primary key but should be a unique identifier
-	Status         compliance_report.ComplianceReportJobStatus
-	FailureMessage string // Should be NULLSTRING
+	SourceID        uuid.UUID // Not the primary key but should be a unique identifier
+	ReportCreatedAt int64
+	Status          compliance_report.ComplianceReportJobStatus
+	FailureMessage  string // Should be NULLSTRING
 }
 
 type Assignment struct {

@@ -13,6 +13,7 @@ import (
 const (
 	esIndexHeader         = "elasticsearch_index"
 	ComplianceReportIndex = "compliance_report"
+	AccountReportIndex    = "account_report"
 )
 
 type ReportType string
@@ -38,6 +39,7 @@ type ReportGroupObj struct {
 	ChildGroupIds  []string          `json:"groupIDs"`
 	ControlIds     []string          `json:"controlIDs"`
 	ParentGroupIds []string          `json:"parentGroupIDs"`
+	Level          int               `json:"level"`
 }
 
 type Report struct {
@@ -46,6 +48,8 @@ type Report struct {
 	Type        ReportType       `json:"type"`
 	ReportJobId uint             `json:"reportJobID"`
 	SourceID    uuid.UUID        `json:"sourceID"`
+	Provider    SourceType       `json:"provider"`
+	CreatedAt   int64            `json:"createdAt"`
 }
 
 func (r Report) AsProducerMessage() (*sarama.ProducerMessage, error) {
@@ -65,6 +69,40 @@ func (r Report) AsProducerMessage() (*sarama.ProducerMessage, error) {
 			{
 				Key:   []byte(esIndexHeader),
 				Value: []byte(ComplianceReportIndex),
+			},
+		},
+		Value: sarama.ByteEncoder(value),
+	}, nil
+}
+
+type AccountReport struct {
+	SourceID             uuid.UUID `json:"sourceID"`
+	BenchmarkID          string    `json:"benchmarkID"`
+	ReportJobId          uint      `json:"reportJobID"`
+	Summary              Summary   `json:"summary"`
+	CreatedAt            int64     `json:"createdAt"`
+	TotalResources       int       `json:"totalResources"`
+	TotalCompliant       int       `json:"totalCompliant"`
+	CompliancePercentage float64   `json:"compliancePercentage"`
+}
+
+func (r AccountReport) AsProducerMessage() (*sarama.ProducerMessage, error) {
+	value, err := json.Marshal(r)
+	if err != nil {
+		return nil, err
+	}
+
+	u, err := uuid.NewUUID()
+	if err != nil {
+		return nil, err
+	}
+
+	return &sarama.ProducerMessage{
+		Key: sarama.StringEncoder(u.String()),
+		Headers: []sarama.RecordHeader{
+			{
+				Key:   []byte(esIndexHeader),
+				Value: []byte(AccountReportIndex),
 			},
 		},
 		Value: sarama.ByteEncoder(value),
@@ -141,7 +179,24 @@ type ReportQueryHit struct {
 	Sort    []interface{} `json:"sort"`
 }
 
-func ExtractNodes(root Group, tree []string, reportJobID uint, sourceID uuid.UUID) []Report {
+type AccountReportQueryResponse struct {
+	Hits AccountReportQueryHits `json:"hits"`
+}
+type AccountReportQueryHits struct {
+	Total keibi.SearchTotal       `json:"total"`
+	Hits  []AccountReportQueryHit `json:"hits"`
+}
+type AccountReportQueryHit struct {
+	ID      string        `json:"_id"`
+	Score   float64       `json:"_score"`
+	Index   string        `json:"_index"`
+	Type    string        `json:"_type"`
+	Version int64         `json:"_version,omitempty"`
+	Source  AccountReport `json:"_source"`
+	Sort    []interface{} `json:"sort"`
+}
+
+func ExtractNodes(root Group, provider SourceType, tree []string, reportJobID uint, sourceID uuid.UUID, createdAt int64) []Report {
 	var nodes []Report
 
 	var controlIds, childGroupIds []string
@@ -162,10 +217,13 @@ func ExtractNodes(root Group, tree []string, reportJobID uint, sourceID uuid.UUI
 			ChildGroupIds:  childGroupIds,
 			ControlIds:     controlIds,
 			ParentGroupIds: tree,
+			Level:          len(tree),
 		},
 		ReportJobId: reportJobID,
 		Type:        ReportTypeBenchmark,
 		SourceID:    sourceID,
+		Provider:    provider,
+		CreatedAt:   createdAt,
 	}
 	nodes = append(nodes, me)
 
@@ -184,23 +242,26 @@ func ExtractNodes(root Group, tree []string, reportJobID uint, sourceID uuid.UUI
 				ChildGroupIds:  nil,
 				ControlIds:     nil,
 				ParentGroupIds: newTree,
+				Level:          len(tree),
 			},
 			ReportJobId: reportJobID,
 			Type:        ReportTypeControl,
 			SourceID:    sourceID,
+			Provider:    provider,
+			CreatedAt:   createdAt,
 		}
 		nodes = append(nodes, controlNode)
 	}
 
 	for _, group := range root.Groups {
-		newNodes := ExtractNodes(group, newTree, reportJobID, sourceID)
+		newNodes := ExtractNodes(group, provider, newTree, reportJobID, sourceID, createdAt)
 		nodes = append(nodes, newNodes...)
 	}
 
 	return nodes
 }
 
-func ExtractLeaves(root Group, tree []string, reportJobID uint, sourceID uuid.UUID) []Report {
+func ExtractLeaves(root Group, provider SourceType, tree []string, reportJobID uint, sourceID uuid.UUID, createdAt int64) []Report {
 	var leaves []Report
 	if root.Controls != nil {
 		for _, control := range root.Controls {
@@ -218,6 +279,8 @@ func ExtractLeaves(root Group, tree []string, reportJobID uint, sourceID uuid.UU
 					ReportJobId: reportJobID,
 					Type:        ReportTypeResult,
 					SourceID:    sourceID,
+					Provider:    provider,
+					CreatedAt:   createdAt,
 				})
 			}
 		}
@@ -229,13 +292,13 @@ func ExtractLeaves(root Group, tree []string, reportJobID uint, sourceID uuid.UU
 	newTree = append(newTree, root.GroupId)
 
 	for _, group := range root.Groups {
-		newLeaves := ExtractLeaves(group, newTree, reportJobID, sourceID)
+		newLeaves := ExtractLeaves(group, provider, newTree, reportJobID, sourceID, createdAt)
 		leaves = append(leaves, newLeaves...)
 	}
 	return leaves
 }
 
-func ParseReport(path string, reportJobID uint, sourceID uuid.UUID) ([]Report, error) {
+func ParseReport(path string, reportJobID uint, sourceID uuid.UUID, createdAt int64, provider SourceType) ([]Report, error) {
 	content, err := ioutil.ReadFile(path)
 	if err != nil {
 		return nil, err
@@ -247,12 +310,63 @@ func ParseReport(path string, reportJobID uint, sourceID uuid.UUID) ([]Report, e
 		return nil, err
 	}
 
-	nodes := ExtractNodes(root, nil, reportJobID, sourceID)
-	leaves := ExtractLeaves(root, nil, reportJobID, sourceID)
+	nodes := ExtractNodes(root, provider, nil, reportJobID, sourceID, createdAt)
+	leaves := ExtractLeaves(root, provider, nil, reportJobID, sourceID, createdAt)
 	return append(nodes, leaves...), nil
 }
 
-func QueryReports(sourceID uuid.UUID, jobIDs []int, types []ReportType, groupID *string, containsParentGroupId *string, size, lastIdx int) map[string]interface{} {
+func QueryReports(sourceID uuid.UUID, jobIDs []int, types []ReportType, groupID *string, containsParentGroupId *string, size int, searchAfter []interface{}) map[string]interface{} {
+	res := make(map[string]interface{})
+	var filters []interface{}
+	var jobIDsStr []string
+	for _, jobID := range jobIDs {
+		jobIDsStr = append(jobIDsStr, strconv.Itoa(jobID))
+	}
+
+	var typesStr []string
+	for _, t := range types {
+		typesStr = append(typesStr, string(t))
+	}
+
+	filters = append(filters, map[string]interface{}{
+		"terms": map[string][]string{"reportJobID": jobIDsStr},
+	})
+	filters = append(filters, map[string]interface{}{
+		"terms": map[string][]string{"type": typesStr},
+	})
+	filters = append(filters, map[string]interface{}{
+		"terms": map[string][]string{"sourceID": {sourceID.String()}},
+	})
+	if groupID != nil {
+		filters = append(filters, map[string]interface{}{
+			"terms": map[string][]string{"group.id": {*groupID}},
+		})
+	}
+	if containsParentGroupId != nil {
+		filters = append(filters, map[string]interface{}{
+			"terms": map[string][]string{"result.parentGroupIDs": {*containsParentGroupId}},
+		})
+	}
+
+	res["size"] = size
+	if searchAfter != nil {
+		res["search_after"] = searchAfter
+	}
+	res["sort"] = []map[string]interface{}{
+		{
+			"_id": "asc",
+		},
+	}
+
+	res["query"] = map[string]interface{}{
+		"bool": map[string]interface{}{
+			"filter": filters,
+		},
+	}
+	return res
+}
+
+func QueryReportsFrom(sourceID uuid.UUID, jobIDs []int, types []ReportType, groupID *string, containsParentGroupId *string, size, lastIdx int) map[string]interface{} {
 	res := make(map[string]interface{})
 	var filters []interface{}
 	var jobIDsStr []string
@@ -294,4 +408,123 @@ func QueryReports(sourceID uuid.UUID, jobIDs []int, types []ReportType, groupID 
 		},
 	}
 	return res
+}
+
+func QueryTrend(sourceID uuid.UUID, benchmarkID string, createdAtFrom, createdAtTo int64, size int32, searchAfter []interface{}) (string, error) {
+	res := make(map[string]interface{})
+	var filters []interface{}
+
+	filters = append(filters, map[string]interface{}{
+		"terms": map[string][]string{"type": {"benchmark"}},
+	})
+	filters = append(filters, map[string]interface{}{
+		"terms": map[string][]string{"sourceID": {sourceID.String()}},
+	})
+	filters = append(filters, map[string]interface{}{
+		"terms": map[string][]string{"group.id": {benchmarkID}},
+	})
+	filters = append(filters, map[string]interface{}{
+		"range": map[string]interface{}{
+			"createdAt": map[string]string{
+				"gte": strconv.FormatInt(createdAtFrom, 10),
+				"lte": strconv.FormatInt(createdAtTo, 10),
+			},
+		},
+	})
+	res["size"] = size
+	res["sort"] = []map[string]interface{}{
+		{
+			"_id": "asc",
+		},
+	}
+	if searchAfter != nil {
+		res["search_after"] = searchAfter
+	}
+
+	res["query"] = map[string]interface{}{
+		"bool": map[string]interface{}{
+			"filter": filters,
+		},
+	}
+	b, err := json.Marshal(res)
+	return string(b), err
+}
+
+func QueryProviderResult(benchmarkID string, createdAt int64, order string, size int32, searchAfter []interface{}) (string, error) {
+	res := make(map[string]interface{})
+	var filters []interface{}
+
+	filters = append(filters, map[string]interface{}{
+		"terms": map[string][]string{"benchmarkID": {benchmarkID}},
+	})
+	filters = append(filters, map[string]interface{}{
+		"terms": map[string][]interface{}{"createdAt": {createdAt}},
+	})
+	res["size"] = size
+	if searchAfter != nil {
+		res["search_after"] = searchAfter
+	}
+
+	res["query"] = map[string]interface{}{
+		"bool": map[string]interface{}{
+			"filter": filters,
+		},
+	}
+	res["sort"] = []map[string]interface{}{
+		{
+			"compliancePercentage": order,
+		},
+		{
+			"_id": "asc",
+		},
+	}
+	b, err := json.Marshal(res)
+	return string(b), err
+}
+
+func QueryBenchmarks(provider *string, createdAt int64, level, size int32, searchAfter []interface{}) (string, error) {
+	res := make(map[string]interface{})
+	var filters []interface{}
+
+	filters = append(filters, map[string]interface{}{
+		"terms": map[string][]string{"type": {"benchmark"}},
+	})
+	filters = append(filters, map[string]interface{}{
+		"terms": map[string][]string{"group.parentGroupIDs": {"root_result_group"}},
+	})
+	if provider != nil {
+		filters = append(filters, map[string]interface{}{
+			"terms": map[string][]string{"provider": {*provider}},
+		})
+	}
+	filters = append(filters, map[string]interface{}{
+		"range": map[string]interface{}{
+			"createdAt": map[string]interface{}{
+				// just to make sure we get the benchmarks at the time
+				"gte": createdAt - 1*60*1000,
+				"lte": createdAt + 1*60*1000,
+			},
+		},
+	})
+	filters = append(filters, map[string]interface{}{
+		"terms": map[string][]interface{}{"group.level": {level}},
+	})
+	res["sort"] = []map[string]interface{}{
+		{
+			"_id": "asc",
+		},
+	}
+	res["size"] = size
+	if searchAfter != nil {
+		res["search_after"] = searchAfter
+	}
+
+	res["query"] = map[string]interface{}{
+		"bool": map[string]interface{}{
+			"filter": filters,
+		},
+	}
+
+	b, err := json.Marshal(res)
+	return string(b), err
 }

@@ -71,6 +71,13 @@ definitions:
       title:
         type: string
     type: object
+  api.BenchmarkAccountComplianceResponse:
+    properties:
+      totalCompliantAccounts:
+        type: integer
+      totalNonCompliantAccounts:
+        type: integer
+    type: object
   api.ComplianceReport:
     properties:
       failureMessage:
@@ -341,7 +348,6 @@ definitions:
         type: string
       status:
         enum:
-        - no_resource
         - passed
         - failed
         type: string
@@ -509,6 +515,13 @@ definitions:
         description: from epoch millisecond
         type: integer
     type: object
+  api.TrendDataPoint:
+    properties:
+      timestamp:
+        type: integer
+      value:
+        type: integer
+    type: object
   compliance_report.Dimension:
     properties:
       key:
@@ -518,8 +531,12 @@ definitions:
     type: object
   compliance_report.Report:
     properties:
+      createdAt:
+        type: integer
       group:
         $ref: '#/definitions/compliance_report.ReportGroupObj'
+      provider:
+        type: string
       reportJobID:
         type: integer
       result:
@@ -544,6 +561,8 @@ definitions:
       id:
         description: benchmark id / control id
         type: string
+      level:
+        type: integer
       parentGroupIDs:
         items:
           type: string
@@ -761,6 +780,107 @@ paths:
       summary: Returns details of a given benchmark
       tags:
       - benchmarks
+  /benchmarks/{benchmarkId}/{createdAt}/accounts:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: BenchmarkID
+        in: path
+        name: benchmarkId
+        required: true
+        type: string
+      - description: CreatedAt
+        in: path
+        name: createdAt
+        required: true
+        type: string
+      - description: Order
+        enum:
+        - asc
+        - desc
+        in: query
+        name: order
+        required: true
+        type: string
+      - description: Size
+        in: query
+        name: size
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/api.BenchmarkAccountComplianceResponse'
+      summary: Returns list of accounts compliance scores ordered by compliance ratio
+      tags:
+      - benchmarks
+  /benchmarks/{benchmarkId}/{createdAt}/accounts/compliance:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: BenchmarkID
+        in: path
+        name: benchmarkId
+        required: true
+        type: string
+      - description: CreatedAt
+        in: path
+        name: createdAt
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/api.BenchmarkAccountComplianceResponse'
+      summary: Returns no of compliant & non-compliant accounts
+      tags:
+      - benchmarks
+  /benchmarks/{benchmarkId}/{sourceId}/compliance/trend:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: BenchmarkID
+        in: path
+        name: benchmarkId
+        required: true
+        type: string
+      - description: SourceID
+        in: path
+        name: sourceId
+        required: true
+        type: string
+      - description: Time Window
+        enum:
+        - 24h
+        - 1w
+        - 3m
+        - 1y
+        - max
+        in: query
+        name: timeWindow
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/api.TrendDataPoint'
+            type: array
+      summary: Returns trend of a benchmark compliance for specific account
+      tags:
+      - benchmarks
   /benchmarks/{benchmarkId}/{sourceId}/result:
     get:
       consumes:
@@ -816,11 +936,10 @@ paths:
         in: query
         name: severity
         type: string
-      - description: Severity Filter
+      - description: Status Filter
         enum:
         - passed
         - failed
-        - no_resource
         in: query
         name: status
         type: string
@@ -868,6 +987,71 @@ paths:
               $ref: '#/definitions/api.Policy'
             type: array
       summary: Returns list of policies of a given benchmark
+      tags:
+      - benchmarks
+  /benchmarks/history/{sourceId}/reports/time:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: SourceID
+        in: path
+        name: sourceId
+        required: true
+        type: string
+      - description: From
+        in: query
+        name: from
+        required: true
+        type: integer
+      - description: To
+        in: query
+        name: to
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              type: integer
+            type: array
+      summary: Returns list of all compliance report timestamps within a selected
+        time
+      tags:
+      - benchmark
+  /benchmarks/history/list/{provider}/{createdAt}:
+    get:
+      consumes:
+      - application/json
+      description: You should fetch the benchmark report times from /benchmarks/history/:year/:month/:day
+      parameters:
+      - description: Provider
+        enum:
+        - AWS
+        - Azure
+        - All
+        in: path
+        name: provider
+        required: true
+        type: string
+      - description: CreatedAt
+        in: path
+        name: createdAt
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/api.Benchmark'
+            type: array
+      summary: Returns all benchmark existed at the specified time
       tags:
       - benchmarks
   /benchmarks/tags:
@@ -1366,6 +1550,39 @@ paths:
       summary: Returns a list of sources
       tags:
       - onboard
+  /resources/{sourceId}/trend:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: SourceID
+        in: path
+        name: sourceId
+        required: true
+        type: string
+      - description: Time Window
+        enum:
+        - 24h
+        - 1w
+        - 3m
+        - 1y
+        - max
+        in: query
+        name: timeWindow
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/api.TrendDataPoint'
+            type: array
+      summary: Returns trend of a no of resources for specific account
+      tags:
+      - inventory
   /schedule/api/v1/resource_type/{provider}:
     get:
       description: get resource type by provider

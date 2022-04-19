@@ -170,6 +170,101 @@ const docTemplate = `{
                 }
             }
         },
+        "/benchmarks/history/list/{provider}/{createdAt}": {
+            "get": {
+                "description": "You should fetch the benchmark report times from /benchmarks/history/:year/:month/:day",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "benchmarks"
+                ],
+                "summary": "Returns all benchmark existed at the specified time",
+                "parameters": [
+                    {
+                        "enum": [
+                            "AWS",
+                            "Azure",
+                            "All"
+                        ],
+                        "type": "string",
+                        "description": "Provider",
+                        "name": "provider",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "CreatedAt",
+                        "name": "createdAt",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/api.Benchmark"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/benchmarks/history/{sourceId}/reports/time": {
+            "get": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "benchmark"
+                ],
+                "summary": "Returns list of all compliance report timestamps within a selected time",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "SourceID",
+                        "name": "sourceId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "From",
+                        "name": "from",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "To",
+                        "name": "to",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "integer"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/benchmarks/tags": {
             "get": {
                 "consumes": [
@@ -278,6 +373,155 @@ const docTemplate = `{
                 }
             }
         },
+        "/benchmarks/{benchmarkId}/{createdAt}/accounts": {
+            "get": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "benchmarks"
+                ],
+                "summary": "Returns list of accounts compliance scores ordered by compliance ratio",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "BenchmarkID",
+                        "name": "benchmarkId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "CreatedAt",
+                        "name": "createdAt",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "enum": [
+                            "asc",
+                            "desc"
+                        ],
+                        "type": "string",
+                        "description": "Order",
+                        "name": "order",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Size",
+                        "name": "size",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/api.BenchmarkAccountComplianceResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/benchmarks/{benchmarkId}/{createdAt}/accounts/compliance": {
+            "get": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "benchmarks"
+                ],
+                "summary": "Returns no of compliant \u0026 non-compliant accounts",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "BenchmarkID",
+                        "name": "benchmarkId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "CreatedAt",
+                        "name": "createdAt",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/api.BenchmarkAccountComplianceResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/benchmarks/{benchmarkId}/{sourceId}/compliance/trend": {
+            "get": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "benchmarks"
+                ],
+                "summary": "Returns trend of a benchmark compliance for specific account",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "BenchmarkID",
+                        "name": "benchmarkId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "SourceID",
+                        "name": "sourceId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "enum": [
+                            "24h",
+                            "1w",
+                            "3m",
+                            "1y",
+                            "max"
+                        ],
+                        "type": "string",
+                        "description": "Time Window",
+                        "name": "timeWindow",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/api.TrendDataPoint"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/benchmarks/{benchmarkId}/{sourceId}/result": {
             "get": {
                 "description": "Returns summary of benchmark, category, subcategory or section's result",
@@ -368,11 +612,10 @@ const docTemplate = `{
                     {
                         "enum": [
                             "passed",
-                            "failed",
-                            "no_resource"
+                            "failed"
                         ],
                         "type": "string",
-                        "description": "Severity Filter",
+                        "description": "Status Filter",
                         "name": "status",
                         "in": "query"
                     }
@@ -1088,6 +1331,54 @@ const docTemplate = `{
                 }
             }
         },
+        "/resources/{sourceId}/trend": {
+            "get": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "inventory"
+                ],
+                "summary": "Returns trend of a no of resources for specific account",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "SourceID",
+                        "name": "sourceId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "enum": [
+                            "24h",
+                            "1w",
+                            "3m",
+                            "1y",
+                            "max"
+                        ],
+                        "type": "string",
+                        "description": "Time Window",
+                        "name": "timeWindow",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/api.TrendDataPoint"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/schedule/api/v1/resource_type/{provider}": {
             "get": {
                 "description": "get resource type by provider",
@@ -1398,6 +1689,17 @@ const docTemplate = `{
                 },
                 "title": {
                     "type": "string"
+                }
+            }
+        },
+        "api.BenchmarkAccountComplianceResponse": {
+            "type": "object",
+            "properties": {
+                "totalCompliantAccounts": {
+                    "type": "integer"
+                },
+                "totalNonCompliantAccounts": {
+                    "type": "integer"
                 }
             }
         },
@@ -1801,7 +2103,6 @@ const docTemplate = `{
                 "status": {
                     "type": "string",
                     "enum": [
-                        "no_resource",
                         "passed",
                         "failed"
                     ]
@@ -2044,6 +2345,17 @@ const docTemplate = `{
                 }
             }
         },
+        "api.TrendDataPoint": {
+            "type": "object",
+            "properties": {
+                "timestamp": {
+                    "type": "integer"
+                },
+                "value": {
+                    "type": "integer"
+                }
+            }
+        },
         "compliance_report.Dimension": {
             "type": "object",
             "properties": {
@@ -2058,8 +2370,14 @@ const docTemplate = `{
         "compliance_report.Report": {
             "type": "object",
             "properties": {
+                "createdAt": {
+                    "type": "integer"
+                },
                 "group": {
                     "$ref": "#/definitions/compliance_report.ReportGroupObj"
+                },
+                "provider": {
+                    "type": "string"
                 },
                 "reportJobID": {
                     "type": "integer"
@@ -2096,6 +2414,9 @@ const docTemplate = `{
                 "id": {
                     "description": "benchmark id / control id",
                     "type": "string"
+                },
+                "level": {
+                    "type": "integer"
                 },
                 "parentGroupIDs": {
                     "type": "array",

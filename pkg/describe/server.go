@@ -183,10 +183,11 @@ func (s HttpServer) HandleListSourceComplianceReports(ctx echo.Context) error {
 	var objs []api.ComplianceReport
 	for _, job := range jobs {
 		objs = append(objs, api.ComplianceReport{
-			ID:             job.ID,
-			UpdatedAt:      job.UpdatedAt,
-			Status:         job.Status,
-			FailureMessage: job.FailureMessage,
+			ID:              job.ID,
+			UpdatedAt:       job.UpdatedAt,
+			ReportCreatedAt: job.ReportCreatedAt,
+			Status:          job.Status,
+			FailureMessage:  job.FailureMessage,
 		})
 	}
 

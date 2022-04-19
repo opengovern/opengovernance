@@ -41,7 +41,7 @@ func QuerySummaryResources(
 		return nil, err
 	}
 
-	resources, err := SummaryQueryES(client, ctx, "inventory_summary", queryStr)
+	resources, err := SummaryQueryES(client, ctx, describe.InventorySummaryIndex, queryStr)
 	if err != nil {
 		return nil, err
 	}

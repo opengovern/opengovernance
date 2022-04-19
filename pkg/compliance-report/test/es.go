@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"time"
 
 	elasticsearchv7 "github.com/elastic/go-elasticsearch/v7"
 	"github.com/elastic/go-elasticsearch/v7/esapi"
@@ -51,6 +52,8 @@ func GenerateReports() []report.Report {
 	benchmarks := []string{"cis.001", "cis.002", "cis.003"}
 	results := []string{"cis.001.control1", "cis.001.control2", "cis.001.control3"}
 
+	createdAt := time.Now().UnixMilli()
+
 	var reports []report.Report
 	for _, jobID := range jobIDs {
 		for _, sourceID := range sourceIDs {
@@ -66,10 +69,12 @@ func GenerateReports() []report.Report {
 						ChildGroupIds:  nil,
 						ControlIds:     nil,
 						ParentGroupIds: nil,
+						Level:          0,
 					},
 					Type:        report.ReportTypeBenchmark,
 					ReportJobId: jobID,
 					SourceID:    sourceID,
+					CreatedAt:   createdAt,
 				}
 				reports = append(reports, r)
 			}
@@ -80,7 +85,7 @@ func GenerateReports() []report.Report {
 						Result: report.Result{
 							Reason:     "",
 							Resource:   "",
-							Status:     "",
+							Status:     report.ResultStatusOK,
 							Dimensions: nil,
 						},
 						ControlId:      result,
@@ -90,6 +95,7 @@ func GenerateReports() []report.Report {
 					Type:        report.ReportTypeResult,
 					ReportJobId: jobID,
 					SourceID:    sourceID,
+					CreatedAt:   createdAt,
 				}
 				reports = append(reports, r)
 			}

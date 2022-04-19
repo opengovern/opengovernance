@@ -663,7 +663,7 @@ func (s *Scheduler) RunComplianceReportJobResultsConsumer() error {
 				zap.Uint("jobId", result.JobID),
 				zap.String("status", string(result.Status)),
 			)
-			err := s.db.UpdateComplianceReportJob(result.JobID, result.Status, result.Error)
+			err := s.db.UpdateComplianceReportJob(result.JobID, result.Status, result.ReportCreatedAt, result.Error)
 			if err != nil {
 				s.logger.Error("Failed to update the status of ComplianceReportJob",
 					zap.Uint("jobId", result.JobID),
@@ -793,7 +793,7 @@ func enqueueComplianceReportJobs(logger *zap.Logger, db Database, q queue.Interf
 		errMsg = fmt.Sprintf("queue: %s", err.Error())
 	}
 
-	err = db.UpdateComplianceReportJob(crj.ID, nextStatus, errMsg)
+	err = db.UpdateComplianceReportJob(crj.ID, nextStatus, 0, errMsg)
 	if err != nil {
 		logger.Error("Failed to update ComplianceReportJob",
 			zap.Uint("jobId", crj.ID),

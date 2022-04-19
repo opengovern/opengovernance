@@ -16,6 +16,8 @@ import (
 	"strconv"
 	"time"
 
+	"gorm.io/gorm"
+
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2020-05-01/network"
 	ec2 "github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	elasticsearchv7 "github.com/elastic/go-elasticsearch/v7"
@@ -30,7 +32,7 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/describe/api"
 )
 
-func PopulateElastic(address string) error {
+func PopulateElastic(address string, d *DescribeMock) error {
 	cfg := elasticsearchv7.Config{
 		Addresses: []string{address},
 		Username:  "",
@@ -47,24 +49,14 @@ func PopulateElastic(address string) error {
 		return err
 	}
 
-	c, err := ioutil.ReadFile("test/compliance_report_template.json")
+	err = ApplyTemplate(address, "compliance_report_template")
 	if err != nil {
 		return err
 	}
 
-	req, err := http.NewRequest("PUT", address+"/_index_template/compliance_report_template", bytes.NewReader(c))
+	err = ApplyTemplate(address, "account_report_template")
 	if err != nil {
 		return err
-	}
-	req.Header.Add("Content-type", "application/json")
-
-	res, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return err
-	}
-
-	if res.StatusCode != 200 {
-		return errors.New("invalid status code")
 	}
 
 	resources := GenerateLookupResources()
@@ -85,11 +77,60 @@ func PopulateElastic(address string) error {
 		return err
 	}
 
-	err = GenerateComplianceReport(es, u)
+	createdAt := time.Now().UnixMilli()
+	j1 := describe.ComplianceReportJob{
+		Model: gorm.Model{
+			ID:        1,
+			CreatedAt: time.Now(),
+			UpdatedAt: time.Now(),
+			DeletedAt: gorm.DeletedAt{},
+		},
+		SourceID:        u,
+		Status:          compliance_report.ComplianceReportJobCompleted,
+		ReportCreatedAt: createdAt,
+		FailureMessage:  "",
+	}
+	d.SetResponse(j1)
+
+	err = GenerateAccountReport(es, u, 1020, createdAt)
 	if err != nil {
 		return err
 	}
 
+	err = GenerateComplianceReport(es, u, 1020, createdAt)
+	if err != nil {
+		return err
+	}
+
+	createdAt = time.Now().UnixMilli()
+	err = GenerateComplianceReport(es, u, 1023, createdAt)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func ApplyTemplate(address string, templateName string) error {
+	c, err := ioutil.ReadFile("test/" + templateName + ".json")
+	if err != nil {
+		return err
+	}
+
+	req, err := http.NewRequest("PUT", address+"/_index_template/"+templateName, bytes.NewReader(c))
+	if err != nil {
+		return err
+	}
+	req.Header.Add("Content-type", "application/json")
+
+	res, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return err
+	}
+
+	if res.StatusCode != 200 {
+		return errors.New("invalid status code")
+	}
 	return nil
 }
 
@@ -131,7 +172,7 @@ func IndexLookupResource(es *elasticsearchv7.Client, resource describe.KafkaLook
 
 	// Set up the request object.
 	req := esapi.IndexRequest{
-		Index:      "inventory_summary",
+		Index:      describe.InventorySummaryIndex,
 		DocumentID: documentID,
 		Body:       bytes.NewReader(js),
 		Refresh:    "true",
@@ -269,7 +310,7 @@ func PopulatePostgres(db Database) error {
 				KeibiManaged:          true,
 			},
 			{
-				ID:                    "control.cis_v130_1_23",
+				ID:                    "control.cis_v130_7_1",
 				Title:                 "Policy 3",
 				Description:           "description of policy 3",
 				Tags:                  []PolicyTag{},
@@ -292,11 +333,69 @@ func PopulatePostgres(db Database) error {
 	return nil
 }
 
-func GenerateComplianceReport(es *elasticsearchv7.Client, sourceId uuid.UUID) error {
+func GenerateAccountReport(es *elasticsearchv7.Client, sourceId uuid.UUID, jobID uint, createdAt int64) error {
+	r := compliance_report.AccountReport{
+		SourceID:    sourceId,
+		BenchmarkID: "azure_compliance.benchmark.cis_v130",
+		ReportJobId: jobID,
+		Summary: compliance_report.Summary{
+			Status: compliance_report.SummaryStatus{
+				Alarm: 0,
+				OK:    20,
+				Info:  0,
+				Skip:  1,
+				Error: 0,
+			},
+		},
+		CreatedAt:            createdAt,
+		TotalResources:       21,
+		TotalCompliant:       20,
+		CompliancePercentage: 0.99,
+	}
+
+	b, err := json.Marshal(r)
+	if err != nil {
+		return err
+	}
+
+	u, err := uuid.NewUUID()
+	if err != nil {
+		return err
+	}
+	documentID := u.String()
+	// Set up the request object.
+	req := esapi.IndexRequest{
+		Index:      compliance_report.AccountReportIndex,
+		DocumentID: documentID,
+		Body:       bytes.NewReader(b),
+		Refresh:    "true",
+	}
+
+	// Perform the request with the client.
+	res, err := req.Do(context.Background(), es)
+	if err != nil {
+		return err
+	}
+	defer res.Body.Close()
+
+	if res.IsError() {
+		return fmt.Errorf("[%s] Error indexing document ID=%s", res.Status(), documentID)
+	} else {
+		// Deserialize the response into a map.
+		var r map[string]interface{}
+		if err := json.NewDecoder(res.Body).Decode(&r); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+func GenerateComplianceReport(es *elasticsearchv7.Client, sourceId uuid.UUID, jobID uint, createdAt int64) error {
 	r, err := compliance_report.ParseReport(
 		"test/result-964df7ca-3ba4-48b6-a695-1ed9db5723f8-1645119195.json",
-		1020,
+		jobID,
 		sourceId,
+		createdAt,
+		compliance_report.SourceCloudAzure,
 	)
 	if err != nil {
 		return err

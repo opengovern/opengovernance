@@ -406,13 +406,14 @@ func (db Database) CreateComplianceReportJob(job *ComplianceReportJob) error {
 
 // UpdateComplianceReportJob updates the ComplianceReportJob
 func (db Database) UpdateComplianceReportJob(
-	id uint, status compliance_report.ComplianceReportJobStatus, failureMsg string) error {
+	id uint, status compliance_report.ComplianceReportJobStatus, reportCreatedAt int64, failureMsg string) error {
 	tx := db.orm.
 		Model(&ComplianceReportJob{}).
 		Where("id = ?", id).
 		Updates(ComplianceReportJob{
-			Status:         status,
-			FailureMessage: failureMsg,
+			Status:          status,
+			ReportCreatedAt: reportCreatedAt,
+			FailureMessage:  failureMsg,
 		})
 	if tx.Error != nil {
 		return tx.Error

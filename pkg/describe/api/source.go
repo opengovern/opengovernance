@@ -42,10 +42,11 @@ type DescribeResource struct {
 }
 
 type ComplianceReport struct {
-	ID             uint                         `json:"id"`
-	UpdatedAt      time.Time                    `json:"updatedAt"`
-	Status         cr.ComplianceReportJobStatus `json:"status"`
-	FailureMessage string                       `json:"failureMessage"`
+	ID              uint                         `json:"id"`
+	UpdatedAt       time.Time                    `json:"updatedAt"`
+	ReportCreatedAt int64                        `json:"reportCreatedAt"`
+	Status          cr.ComplianceReportJobStatus `json:"status"`
+	FailureMessage  string                       `json:"failureMessage"`
 }
 
 type ErrorResponse struct {
