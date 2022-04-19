@@ -9,7 +9,7 @@ import (
 	"net"
 	"os"
 
-	envoyauth "github.com/envoyproxy/go-control-plane/envoy/service/auth/v2"
+	envoyauth "github.com/envoyproxy/go-control-plane/envoy/service/auth/v3"
 	"github.com/spf13/cobra"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpserver"
 	"go.uber.org/zap"
@@ -140,7 +140,7 @@ func newServerCredentials(certPath string, keyPath string, caPath string) (crede
 	}
 
 	return credentials.NewTLS(&tls.Config{
-		MinVersion:   tls.VersionTLS13,
+		MinVersion:   tls.VersionTLS12,
 		Certificates: []tls.Certificate{srv},
 		RootCAs:      p,
 	}), nil

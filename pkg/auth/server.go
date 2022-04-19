@@ -9,9 +9,9 @@ import (
 	"time"
 
 	"github.com/coreos/go-oidc/v3/oidc"
-	envoycore "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
-	envoyauth "github.com/envoyproxy/go-control-plane/envoy/service/auth/v2"
-	envoytype "github.com/envoyproxy/go-control-plane/envoy/type"
+	envoycore "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	envoyauth "github.com/envoyproxy/go-control-plane/envoy/service/auth/v3"
+	envoytype "github.com/envoyproxy/go-control-plane/envoy/type/v3"
 	"github.com/gogo/googleapis/google/rpc"
 	"github.com/labstack/echo/v4"
 	"gitlab.com/keibiengine/keibi-engine/pkg/auth/api"
@@ -38,7 +38,7 @@ func (s Server) Check(ctx context.Context, req *envoyauth.CheckRequest) (*envoya
 		HttpResponse: &envoyauth.CheckResponse_DeniedResponse{
 			DeniedResponse: &envoyauth.DeniedHttpResponse{
 				Status: &envoytype.HttpStatus{Code: 401},
-				Body:   "Invalid Authorization Token",
+				Body:   http.StatusText(http.StatusUnauthorized),
 			},
 		},
 	}

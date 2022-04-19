@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"testing"
 
-	envoyauth "github.com/envoyproxy/go-control-plane/envoy/service/auth/v2"
+	envoyauth "github.com/envoyproxy/go-control-plane/envoy/service/auth/v3"
 	"github.com/stretchr/testify/require"
 	"gitlab.com/keibiengine/keibi-engine/pkg/auth/api"
 	"go.uber.org/zap"
