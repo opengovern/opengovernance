@@ -8,6 +8,7 @@ import (
 	"github.com/hashicorp/vault/api/auth/kubernetes"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/queue"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/vault"
+	"go.uber.org/zap"
 	"gopkg.in/Shopify/sarama.v1"
 )
 
@@ -19,12 +20,14 @@ type Worker struct {
 	vault          vault.SourceConfig
 	kfkProducer    sarama.SyncProducer
 	kfkTopic       string
+	logger         *zap.Logger
 }
 
 func InitializeWorker(
 	id string,
 	config Config,
 	complianceReportJobQueue, complianceReportJobResultQueue string,
+	logger *zap.Logger,
 ) (w *Worker, err error) {
 	if id == "" {
 		return nil, fmt.Errorf("'id' must be set to a non empty string")
@@ -73,6 +76,7 @@ func InitializeWorker(
 	}
 	w.kfkProducer = producer
 	w.config = config
+	w.logger = logger
 
 	k8sAuth, err := kubernetes.NewKubernetesAuth(
 		config.Vault.RoleName,
@@ -100,29 +104,30 @@ func (w *Worker) Run() error {
 		return err
 	}
 
-	fmt.Printf("Waiting indefinitly for messages. To exit press CTRL+C\n")
+	w.logger.Info("Waiting indefinitly for messages. To exit press CTRL+C\n")
 	for msg := range msgs {
 		var job Job
 		if err := json.Unmarshal(msg.Body, &job); err != nil {
-			fmt.Printf("Failed to unmarshal task: %s", err.Error())
+			w.logger.Error("Failed to unmarshal task", zap.Error(err))
+
 			err = msg.Nack(false, false)
 			if err != nil {
-				fmt.Printf("Failed nacking message: %v\n", err.Error())
+				w.logger.Error("Failed nacking message", zap.Error(err))
 			}
 			continue
 		}
 
-		result := job.Do(w.vault, w.kfkProducer, w.kfkTopic, w.config)
+		result := job.Do(w.vault, w.kfkProducer, w.kfkTopic, w.config, w.logger)
 
 		err := w.jobResultQueue.Publish(result)
 		if err != nil {
-			fmt.Printf("Failed to send results to queue: %s", err.Error())
+			w.logger.Error("Failed to send results to queue", zap.Error(err))
 		}
 
-		fmt.Printf("A job is done and result is published into the result queue, result: %v\n", result)
+		w.logger.Info("A job is done and result is published into the result queue", zap.String("result", fmt.Sprintf("%v", result)))
 		err = msg.Ack(false)
 		if err != nil {
-			fmt.Printf("Failed acking message: %v\n", err.Error())
+			w.logger.Error("Failed acking message", zap.Error(err))
 		}
 	}
 

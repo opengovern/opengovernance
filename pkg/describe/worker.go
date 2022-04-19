@@ -11,6 +11,7 @@ import (
 	"github.com/hashicorp/vault/api/auth/kubernetes"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/queue"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/vault"
+	"go.uber.org/zap"
 	"gopkg.in/Shopify/sarama.v1"
 )
 
@@ -21,6 +22,7 @@ type Worker struct {
 	kfkProducer    sarama.SyncProducer
 	kfkTopic       string
 	vault          vault.SourceConfig
+	logger         *zap.Logger
 }
 
 func InitializeWorker(
@@ -36,6 +38,7 @@ func InitializeWorker(
 	vaultAddress string,
 	vaultRoleName string,
 	vaultToken string,
+	logger *zap.Logger,
 ) (w *Worker, err error) {
 	if id == "" {
 		return nil, fmt.Errorf("'id' must be set to a non empty string")
@@ -101,7 +104,9 @@ func InitializeWorker(
 		return nil, err
 	}
 
-	fmt.Println("Connected to vault:", vaultAddress)
+	w.logger = logger
+
+	w.logger.Info("Connected to vault:", zap.String("vaultAddress", vaultAddress))
 	w.vault = v
 
 	return w, nil
@@ -113,28 +118,28 @@ func (w *Worker) Run() error {
 		return err
 	}
 
-	fmt.Printf("Waiting indefinitly for messages. To exit press CTRL+C")
+	w.logger.Error("Waiting indefinitly for messages. To exit press CTRL+C")
 	for msg := range msgs {
 		var job DescribeJob
 		if err := json.Unmarshal(msg.Body, &job); err != nil {
-			fmt.Printf("Failed to unmarshal task: %s", err.Error())
+			w.logger.Error("Failed to unmarshal task", zap.Error(err))
 			err = msg.Nack(false, false)
 			if err != nil {
-				fmt.Printf("Failed nacking message: %v\n", err.Error())
+				w.logger.Error("Failed nacking message", zap.Error(err))
 			}
 			continue
 		}
 
-		result := job.Do(w.vault, w.kfkProducer, w.kfkTopic)
+		result := job.Do(w.vault, w.kfkProducer, w.kfkTopic, w.logger)
 
 		err := w.jobResultQueue.Publish(result)
 		if err != nil {
-			fmt.Printf("Failed to send results to queue: %s", err.Error())
+			w.logger.Error("Failed to send results to queue: %s", zap.Error(err))
 		}
 
 		err = msg.Ack(false)
 		if err != nil {
-			fmt.Printf("Failed acking message: %v\n", err.Error())
+			w.logger.Error("Failed acking message", zap.Error(err))
 		}
 	}
 
@@ -177,6 +182,7 @@ type CleanupWorker struct {
 	id              string
 	cleanupJobQueue queue.Interface
 	esClient        *elasticsearch.Client
+	logger          *zap.Logger
 }
 
 func InitializeCleanupWorker(
@@ -189,6 +195,7 @@ func InitializeCleanupWorker(
 	elasticAddress string,
 	elasticUsername string,
 	elasticPassword string,
+	logger *zap.Logger,
 ) (w *CleanupWorker, err error) {
 	if id == "" {
 		return nil, fmt.Errorf("'id' must be set to a non empty string")
@@ -231,6 +238,7 @@ func InitializeCleanupWorker(
 	}
 
 	w.esClient = esClient
+	w.logger = logger
 
 	return w, nil
 }
@@ -241,31 +249,31 @@ func (w *CleanupWorker) Run() error {
 		return err
 	}
 
-	fmt.Printf("Waiting indefinitly for messages. To exit press CTRL+C")
+	w.logger.Error("Waiting indefinitly for messages. To exit press CTRL+C")
 	for msg := range msgs {
 		var job DescribeCleanupJob
 		if err := json.Unmarshal(msg.Body, &job); err != nil {
-			fmt.Printf("Failed to unmarshal task: %s", err.Error())
+			w.logger.Error("Failed to unmarshal task: %s", zap.Error(err))
 			err = msg.Nack(false, false)
 			if err != nil {
-				fmt.Printf("Failed nacking message: %v\n", err.Error())
+				w.logger.Error("Failed nacking message", zap.Error(err))
 			}
 			continue
 		}
 
 		err := job.Do(w.esClient)
 		if err != nil {
-			fmt.Printf("Failed to cleanup resources: %s\n", err.Error())
+			w.logger.Error("Failed to cleanup resources", zap.Error(err))
 			err = msg.Nack(false, true) // Requeue if there is any failure
 			if err != nil {
-				fmt.Printf("Failed nacking message: %v\n", err.Error())
+				w.logger.Error("Failed nacking message", zap.Error(err))
 			}
 			continue
 		}
 
 		err = msg.Ack(false)
 		if err != nil {
-			fmt.Printf("Failed acking message: %v\n", err.Error())
+			w.logger.Error("Failed acking message", zap.Error(err))
 		}
 	}
 

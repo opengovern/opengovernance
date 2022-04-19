@@ -15,6 +15,7 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/describe/api"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/vault"
 	"gitlab.com/keibiengine/keibi-engine/pkg/keibi-es-sdk"
+	"go.uber.org/zap"
 	"gopkg.in/Shopify/sarama.v1"
 )
 
@@ -101,7 +102,7 @@ type DescribeJobResult struct {
 // do its best to complete the task even if some errors occur along the way. However,
 // if any error occurs, The JobResult will indicate that through the Status and Error
 // will be set to the first error that occured.
-func (j DescribeJob) Do(vlt vault.SourceConfig, producer sarama.SyncProducer, topic string) (r DescribeJobResult) {
+func (j DescribeJob) Do(vlt vault.SourceConfig, producer sarama.SyncProducer, topic string, logger *zap.Logger) (r DescribeJobResult) {
 	defer func() {
 		if err := recover(); err != nil {
 			r = DescribeJobResult{
@@ -133,7 +134,7 @@ func (j DescribeJob) Do(vlt vault.SourceConfig, producer sarama.SyncProducer, to
 	if err != nil {
 		fail(fmt.Errorf("resource source config: %w", err))
 	} else {
-		resources, lookups, err := doDescribe(ctx, j, config)
+		resources, lookups, err := doDescribe(ctx, j, config, logger)
 		if err != nil {
 			// Don't return here. In certain cases, such as AWS, resources might be
 			// available for some regions while there was failures in other regions.
@@ -141,7 +142,7 @@ func (j DescribeJob) Do(vlt vault.SourceConfig, producer sarama.SyncProducer, to
 			fail(fmt.Errorf("describe resources: %w", err))
 		}
 
-		if err := doSendToKafka(producer, topic, resources, lookups); err != nil {
+		if err := doSendToKafka(producer, topic, resources, lookups, logger); err != nil {
 			fail(fmt.Errorf("send to kafka: %w", err))
 		}
 	}
@@ -160,8 +161,8 @@ func (j DescribeJob) Do(vlt vault.SourceConfig, producer sarama.SyncProducer, to
 }
 
 // doDescribe describes the sources, e.g. AWS, Azure and returns the responses.
-func doDescribe(ctx context.Context, job DescribeJob, config map[string]interface{}) ([]KafkaResource, []KafkaLookupResource, error) {
-	fmt.Printf("Proccessing Job: ID[%d] ParentJobID[%d] RosourceType[%s]\n", job.JobID, job.ParentJobID, job.ResourceType)
+func doDescribe(ctx context.Context, job DescribeJob, config map[string]interface{}, logger *zap.Logger) ([]KafkaResource, []KafkaLookupResource, error) {
+	logger.Info(fmt.Sprintf("Proccessing Job: ID[%d] ParentJobID[%d] RosourceType[%s]\n", job.JobID, job.ParentJobID, job.ResourceType))
 
 	switch job.SourceType {
 	case api.SourceCloudAWS:
@@ -401,12 +402,12 @@ func ResourceTypeToESIndex(t string) string {
 	return strings.ToLower(t)
 }
 
-func doSendToKafka(producer sarama.SyncProducer, topic string, resources []KafkaResource, lookups []KafkaLookupResource) error {
+func doSendToKafka(producer sarama.SyncProducer, topic string, resources []KafkaResource, lookups []KafkaLookupResource, logger *zap.Logger) error {
 	var msgs []*sarama.ProducerMessage
 	for _, v := range resources {
 		msg, err := v.AsProducerMessage()
 		if err != nil {
-			fmt.Printf("Failed to convert resource[%s] to Kafka ProducerMessage, ignoring...", v.ID)
+			logger.Error("Failed calling AsProducerMessage", zap.Error(fmt.Errorf("Failed to convert resource[%s] to Kafka ProducerMessage, ignoring...", v.ID)))
 			continue
 		}
 
@@ -419,7 +420,7 @@ func doSendToKafka(producer sarama.SyncProducer, topic string, resources []Kafka
 	for _, v := range lookups {
 		msg, err := v.AsProducerMessage()
 		if err != nil {
-			fmt.Printf("Failed to convert lookup[%s] to Kafka ProducerMessage, ignoring...", v.ResourceID)
+			logger.Error("Failed calling AsProducerMessage", zap.Error(fmt.Errorf("Failed to convert lookup[%s] to Kafka ProducerMessage, ignoring...", v.ResourceID)))
 			continue
 		}
 
@@ -436,7 +437,7 @@ func doSendToKafka(producer sarama.SyncProducer, topic string, resources []Kafka
 	if err := producer.SendMessages(msgs); err != nil {
 		if errs, ok := err.(sarama.ProducerErrors); ok {
 			for _, e := range errs {
-				fmt.Printf("Failed to persist resource[%s] in kafka topic[%s]: %s\nMessage: %v\n", e.Msg.Key, e.Msg.Topic, e.Error(), e.Msg)
+				logger.Error("Falied calling SendMessages", zap.Error(fmt.Errorf("Failed to persist resource[%s] in kafka topic[%s]: %s\nMessage: %v\n", e.Msg.Key, e.Msg.Topic, e.Error(), e.Msg)))
 			}
 		}
 

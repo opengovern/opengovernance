@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"os"
 	"os/exec"
 	"time"
@@ -15,6 +14,7 @@ import (
 	"github.com/google/uuid"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/vault"
 	"gitlab.com/keibiengine/keibi-engine/pkg/keibi-es-sdk"
+	"go.uber.org/zap"
 	"gopkg.in/Shopify/sarama.v1"
 )
 
@@ -40,6 +40,7 @@ type Job struct {
 	SourceID   uuid.UUID
 	SourceType SourceType
 	ConfigReg  string
+	logger     *zap.Logger
 }
 
 type JobResult struct {
@@ -70,7 +71,7 @@ func (j *Job) failed(msg string, args ...interface{}) JobResult {
 	}
 }
 
-func (j *Job) Do(vlt vault.SourceConfig, producer sarama.SyncProducer, topic string, config Config) JobResult {
+func (j *Job) Do(vlt vault.SourceConfig, producer sarama.SyncProducer, topic string, config Config, logger *zap.Logger) JobResult {
 	cfg, err := vlt.Read(j.ConfigReg)
 	if err != nil {
 		return j.failed("error: read source config: " + err.Error())
@@ -113,7 +114,7 @@ func (j *Job) Do(vlt vault.SourceConfig, producer sarama.SyncProducer, topic str
 	defer func() {
 		err := os.Remove(resultFileName)
 		if err != nil {
-			log.Println(err)
+			logger.Error("Cannot remove file", zap.Error(err))
 		}
 	}()
 
@@ -132,7 +133,7 @@ func (j *Job) Do(vlt vault.SourceConfig, producer sarama.SyncProducer, topic str
 		return j.failed("error: Parse report: " + err.Error())
 	}
 
-	err = doSendToKafka(producer, topic, reports)
+	err = doSendToKafka(producer, topic, reports, j.logger)
 	if err != nil {
 		return j.failed("error: SendingToKafka: " + err.Error())
 	}
@@ -143,12 +144,12 @@ func (j *Job) Do(vlt vault.SourceConfig, producer sarama.SyncProducer, topic str
 	}
 }
 
-func doSendToKafka(producer sarama.SyncProducer, topic string, reports []Report) error {
+func doSendToKafka(producer sarama.SyncProducer, topic string, reports []Report, logger *zap.Logger) error {
 	var msgs []*sarama.ProducerMessage
 	for _, v := range reports {
 		msg, err := v.AsProducerMessage()
 		if err != nil {
-			fmt.Printf("Failed to convert report[%v] to Kafka ProducerMessage, ignoring...", v)
+			logger.Error(fmt.Sprintf("Failed to convert report[%v] to Kafka ProducerMessage, ignoring...", v))
 			continue
 		}
 
