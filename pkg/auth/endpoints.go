@@ -32,17 +32,17 @@ type endpoint struct {
 var endpoints = []endpoint{
 	// ============ Auth Service ============
 	{
-		Path:        "/auth/api/v1/rolebinding",
+		Path:        "/auth/api/v1/role/binding",
 		Method:      http.MethodGet,
 		MinimumRole: api.AdminRole,
 	},
 	{
-		Path:        "/auth/api/v1/rolebinding",
+		Path:        "/auth/api/v1/role/binding",
 		Method:      http.MethodPut,
 		MinimumRole: api.AdminRole,
 	},
 	{
-		Path:        "/auth/api/v1/rolebindings",
+		Path:        "/auth/api/v1/role/bindings",
 		Method:      http.MethodGet,
 		MinimumRole: api.AdminRole,
 	},
