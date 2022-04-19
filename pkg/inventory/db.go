@@ -56,7 +56,7 @@ func (db Database) GetQueriesWithFilters(search *string, labels []string) ([]Sma
 		Preload("Tags")
 
 	if search != nil {
-		m = m.Where("title like ?", "%" + *search + "%")
+		m = m.Where("title like ?", "%"+*search+"%")
 	}
 	for _, value := range labels {
 		m = m.Where("id IN (SELECT smart_query_id FROM smartquery_tags WHERE tag_id IN (SELECT id FROM tags WHERE value = ?))", value)
