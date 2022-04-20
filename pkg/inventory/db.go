@@ -52,14 +52,17 @@ func (db Database) GetQueries() ([]SmartQuery, error) {
 // GetQueriesWithFilters gets list of all queries filtered by tags and search
 func (db Database) GetQueriesWithFilters(search *string, labels []string) ([]SmartQuery, error) {
 	var s []SmartQuery
-	m := db.orm.Model(&SmartQuery{}).
-		Preload("Tags")
 
+	m := db.orm.Model(&SmartQuery{}).
+		Preload("Tags").
+		Joins("LEFT JOIN smartquery_tags on smart_queries.id = smart_query_id " +
+			"LEFT JOIN tags on smartquery_tags.tag_id = tags.id ")
+
+	if len(labels) != 0 {
+		m = m.Where("tags.value in ?", labels)
+	}
 	if search != nil {
 		m = m.Where("title like ?", "%"+*search+"%")
-	}
-	for _, value := range labels {
-		m = m.Where("id IN (SELECT smart_query_id FROM smartquery_tags WHERE tag_id IN (SELECT id FROM tags WHERE value = ?))", value)
 	}
 	tx := m.Find(&s)
 

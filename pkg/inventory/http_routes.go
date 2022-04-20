@@ -488,7 +488,7 @@ func (h *HttpHandler) ListQueries(ectx echo.Context) error {
 
 	req := &api.ListQueryRequest{}
 	if err := ctx.BindValidate(req); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, "Invalid request")
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
 	var search *string
@@ -537,7 +537,7 @@ func (h *HttpHandler) RunQuery(ectx echo.Context) error {
 
 	req := &api.RunQueryRequest{}
 	if err := ctx.BindValidate(req); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, "Invalid request")
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
 	queryId := ctx.Param("queryId")
