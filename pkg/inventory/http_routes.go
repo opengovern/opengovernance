@@ -486,16 +486,26 @@ func (h *HttpHandler) GetResource(ectx echo.Context) error {
 func (h *HttpHandler) ListQueries(ectx echo.Context) error {
 	ctx := ectx.(*Context)
 
-	queries, err := h.db.GetQueries()
+	req := &api.ListQueryRequest{}
+	if err := ctx.BindValidate(req); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	var search *string
+	if len(req.TitleFilter) > 0 {
+		search = &req.TitleFilter
+	}
+
+	queries, err := h.db.GetQueriesWithFilters(search, req.Labels)
 	if err != nil {
 		return err
 	}
 
 	var result []api.SmartQueryItem
 	for _, item := range queries {
-		var tags []string
-		for _, tag := range item.Tags {
-			tags = append(tags, tag.Value)
+		var labels []string
+		for _, label := range item.Tags {
+			labels = append(labels, label.Value)
 		}
 		result = append(result, api.SmartQueryItem{
 			ID:          item.Model.ID,
@@ -503,7 +513,7 @@ func (h *HttpHandler) ListQueries(ectx echo.Context) error {
 			Title:       item.Title,
 			Description: item.Description,
 			Query:       item.Query,
-			Tags:        tags,
+			Labels:      labels,
 		})
 	}
 	return ctx.JSON(200, result)
@@ -527,7 +537,7 @@ func (h *HttpHandler) RunQuery(ectx echo.Context) error {
 
 	req := &api.RunQueryRequest{}
 	if err := ctx.BindValidate(req); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, "Invalid request")
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
 	queryId := ctx.Param("queryId")

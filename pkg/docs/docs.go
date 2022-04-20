@@ -1950,17 +1950,17 @@ const docTemplate = `{
                 "id": {
                     "type": "integer"
                 },
+                "labels": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
                 "provider": {
                     "type": "string"
                 },
                 "query": {
                     "type": "string"
-                },
-                "tags": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
                 },
                 "title": {
                     "type": "string"
