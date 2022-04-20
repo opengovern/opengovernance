@@ -74,6 +74,8 @@ test:
 
 sver-tags:
   stage: deploy
+  only:
+    - main
   variables:
     SVER_IMAGE_VERSION: "1" # Optional. The version of the sver docker image to use.
   image:
