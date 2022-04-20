@@ -538,6 +538,12 @@ func (s *HttpHandlerSuite) TestRunQuery() {
 	require.Equal(http.StatusOK, rec.Code)
 	require.Len(queryList, 4)
 
+	var id uint
+	for _, q := range queryList {
+		if q.Title == "Query 1" {
+			id = q.ID
+		}
+	}
 	req := api.RunQueryRequest{
 		Page: pagination.Page{
 			NextMarker: "",
@@ -545,7 +551,7 @@ func (s *HttpHandlerSuite) TestRunQuery() {
 		},
 	}
 	var response api.RunQueryResponse
-	rec, err = doRequestJSONResponse(s.router, echo.POST, fmt.Sprintf("/api/v1/query/%d", queryList[0].ID), &req, &response)
+	rec, err = doRequestJSONResponse(s.router, echo.POST, fmt.Sprintf("/api/v1/query/%d", id), &req, &response)
 	require.NoError(err, "request")
 	require.Equal(http.StatusOK, rec.Code)
 	require.Len(response.Result, 1)
@@ -574,8 +580,14 @@ func (s *HttpHandlerSuite) TestRunQuery_Sort() {
 			},
 		},
 	}
+	var id uint
+	for _, q := range queryList {
+		if q.Title == "Query 3" {
+			id = q.ID
+		}
+	}
 	var response api.RunQueryResponse
-	rec, err = doRequestJSONResponse(s.router, echo.POST, fmt.Sprintf("/api/v1/query/%d", queryList[2].ID), &req, &response)
+	rec, err = doRequestJSONResponse(s.router, echo.POST, fmt.Sprintf("/api/v1/query/%d", id), &req, &response)
 	require.NoError(err, "request")
 	require.Equal(http.StatusOK, rec.Code)
 	require.Len(response.Result, 2)
@@ -595,7 +607,7 @@ func (s *HttpHandlerSuite) TestRunQuery_Sort() {
 			},
 		},
 	}
-	rec, err = doRequestJSONResponse(s.router, echo.POST, fmt.Sprintf("/api/v1/query/%d", queryList[2].ID), &req, &response)
+	rec, err = doRequestJSONResponse(s.router, echo.POST, fmt.Sprintf("/api/v1/query/%d", id), &req, &response)
 	require.NoError(err, "request")
 	require.Equal(http.StatusOK, rec.Code)
 	require.Len(response.Result, 2)
@@ -613,6 +625,12 @@ func (s *HttpHandlerSuite) TestRunQuery_Page() {
 	require.Equal(http.StatusOK, rec.Code)
 	require.Len(queryList, 4)
 
+	var id uint
+	for _, q := range queryList {
+		if q.Title == "Query 3" {
+			id = q.ID
+		}
+	}
 	req := api.RunQueryRequest{
 		Page: pagination.Page{
 			NextMarker: "",
@@ -626,7 +644,7 @@ func (s *HttpHandlerSuite) TestRunQuery_Page() {
 		},
 	}
 	var response api.RunQueryResponse
-	rec, err = doRequestJSONResponse(s.router, echo.POST, fmt.Sprintf("/api/v1/query/%d", queryList[2].ID), &req, &response)
+	rec, err = doRequestJSONResponse(s.router, echo.POST, fmt.Sprintf("/api/v1/query/%d", id), &req, &response)
 	require.NoError(err, "request")
 	require.Equal(http.StatusOK, rec.Code)
 	require.Len(response.Result, 1)
@@ -634,7 +652,7 @@ func (s *HttpHandlerSuite) TestRunQuery_Page() {
 	require.Equal("ss1", response.Result[0][17])
 
 	req.Page = response.Page
-	rec, err = doRequestJSONResponse(s.router, echo.POST, fmt.Sprintf("/api/v1/query/%d", queryList[2].ID), &req, &response)
+	rec, err = doRequestJSONResponse(s.router, echo.POST, fmt.Sprintf("/api/v1/query/%d", id), &req, &response)
 	require.NoError(err, "request")
 	require.Equal(http.StatusOK, rec.Code)
 	require.Len(response.Result, 1)
@@ -651,6 +669,12 @@ func (s *HttpHandlerSuite) TestRunQuery_CSV() {
 	require.Equal(http.StatusOK, rec.Code)
 	require.Len(queryList, 4)
 
+	var id uint
+	for _, q := range queryList {
+		if q.Title == "Query 3" {
+			id = q.ID
+		}
+	}
 	req := api.RunQueryRequest{
 		Page: pagination.Page{
 			NextMarker: "",
@@ -663,7 +687,7 @@ func (s *HttpHandlerSuite) TestRunQuery_CSV() {
 			},
 		},
 	}
-	rec, response, err := doRequestCSVResponse(s.router, echo.POST, fmt.Sprintf("/api/v1/query/%d", queryList[2].ID), &req)
+	rec, response, err := doRequestCSVResponse(s.router, echo.POST, fmt.Sprintf("/api/v1/query/%d", id), &req)
 	require.NoError(err, "request")
 	require.Equal(http.StatusOK, rec.Code)
 	require.Len(response, 3) // first is header
