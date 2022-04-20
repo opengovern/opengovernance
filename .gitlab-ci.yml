@@ -75,10 +75,6 @@ test:
 sver-tags:
   stage: deploy
   variables:
-    SVER_DOCKER_REGISTRY: keibi/inventory-service  # Optional. If specified, sver will calculate the tags for this docker registry.
-    SVER_DOCKER_SERVER: registry.digitalocean.com # Optional. Server for the docker registry.
-    SVER_DOCKER_USERNAME: "" # Optional. Username for connecting to the docker server.
-    SVER_DOCKER_PASSWORD: "" # Optional. Password for connecting to the docker server.
     SVER_IMAGE_VERSION: "1" # Optional. The version of the sver docker image to use.
   image:
     name: 'ghcr.io/aserto-dev/sver:${SVER_IMAGE_VERSION}'
