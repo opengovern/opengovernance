@@ -7,6 +7,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/turbot/steampipe-plugin-sdk/grpc/proto"
+	"gitlab.com/keibiengine/keibi-engine/pkg/steampipe"
 	"io"
 	"log"
 	"mime"
@@ -469,10 +471,48 @@ func (h *HttpHandler) GetResource(ectx echo.Context) error {
 		source = hit.Source
 	}
 
-	var resp interface{}
-	if source != nil {
-		resp = source["description"]
+	var cells map[string]*proto.Column
+	pluginProvider := steampipe.ExtractPlugin(req.ResourceType)
+	pluginTableName := steampipe.ExtractTableName(req.ResourceType)
+	if pluginProvider == steampipe.SteampipePluginAWS {
+		desc, err := api.ConvertToDescription(req.ResourceType, source)
+		if err != nil {
+			return err
+		}
+
+		cells, err = steampipe.AWSDescriptionToRecord(desc, pluginTableName)
+		if err != nil {
+			return err
+		}
+	} else if pluginProvider == steampipe.SteampipePluginAzure || pluginProvider == steampipe.SteampipePluginAzureAD {
+		desc, err := api.ConvertToDescription(req.ResourceType, source)
+		if err != nil {
+			return err
+		}
+
+		if pluginProvider == steampipe.SteampipePluginAzure {
+			cells, err = steampipe.AzureDescriptionToRecord(desc, pluginTableName)
+			if err != nil {
+				return err
+			}
+		} else {
+			cells, err = steampipe.AzureADDescriptionToRecord(desc, pluginTableName)
+			if err != nil {
+				return err
+			}
+		}
+	} else {
+		return errors.New("invalid provider")
 	}
+
+	resp := map[string]string{}
+	for k,v := range cells {
+		val := v.GetStringValue()
+		if len(val) > 0 {
+			resp[k] = v.GetStringValue()
+		}
+	}
+
 	return ctx.JSON(200, resp)
 }
 

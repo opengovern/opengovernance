@@ -47,7 +47,7 @@ func (s *HttpHandlerSuite) SetupSuite() {
 	require.NoError(err, "connect to docker")
 
 	net, err := pool.CreateNetwork("keibi")
-	require.NoError(err, err.Error())
+	require.NoError(err)
 	t.Cleanup(func() {
 		err = pool.RemoveNetwork(net)
 		require.NoError(err, "remove network")
@@ -502,6 +502,19 @@ func (s *HttpHandlerSuite) TestGetAzureResources() {
 	for _, resource := range response.Resources {
 		require.Equal(true, strings.HasPrefix(resource.ResourceType, "Microsoft"), "resource type is %s", resource.ResourceType)
 	}
+}
+
+func (s *HttpHandlerSuite) TestGetResource() {
+	require := s.Require()
+
+	var response map[string]string
+	rec, err := doRequestJSONResponse(s.router, echo.POST, "/api/v1/resource", api.GetResourceRequest{
+		ResourceType: "AWS::EC2::Instance",
+		ID:           "abcd",
+	}, &response)
+	require.NoError(err, "request")
+	require.Equal(http.StatusOK, rec.Code)
+	fmt.Println(response)
 }
 
 func (s *HttpHandlerSuite) TestGetQueries() {
