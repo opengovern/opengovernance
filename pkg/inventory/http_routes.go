@@ -7,14 +7,15 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/turbot/steampipe-plugin-sdk/grpc/proto"
-	"gitlab.com/keibiengine/keibi-engine/pkg/steampipe"
 	"io"
 	"log"
 	"mime"
 	"net/http"
 	"strconv"
 	"strings"
+
+	"github.com/turbot/steampipe-plugin-sdk/grpc/proto"
+	"gitlab.com/keibiengine/keibi-engine/pkg/steampipe"
 
 	"github.com/google/uuid"
 	"github.com/hashicorp/go-hclog"
@@ -506,7 +507,7 @@ func (h *HttpHandler) GetResource(ectx echo.Context) error {
 	}
 
 	resp := map[string]string{}
-	for k,v := range cells {
+	for k, v := range cells {
 		val := v.GetStringValue()
 		if len(val) > 0 {
 			resp[k] = v.GetStringValue()
