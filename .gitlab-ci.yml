@@ -77,10 +77,12 @@ sver-tags:
   only:
     - main
   variables:
-    SVER_IMAGE_VERSION: "1" # Optional. The version of the sver docker image to use.
+    SVER_IMAGE_VERSION: "1.3.9" # Optional. The version of the sver docker image to use.
   image:
     name: 'ghcr.io/aserto-dev/sver:${SVER_IMAGE_VERSION}'
     entrypoint: [""]
+  before_script:
+    - git status --short
   script:
     - ./scripts/sver.sh >> sver.env
     - source ./sver.env
