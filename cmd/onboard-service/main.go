@@ -26,6 +26,7 @@ var (
 	VaultAddress  = os.Getenv("VAULT_ADDRESS")
 	VaultToken    = os.Getenv("VAULT_TOKEN")
 	VaultRoleName = os.Getenv("VAULT_ROLE")
+	VaultCaPath   = os.Getenv("VAULT_TLS_CA_PATH")
 
 	HttpAddress = os.Getenv("HTTP_ADDRESS")
 )
@@ -47,6 +48,7 @@ func main() {
 		VaultAddress,
 		VaultToken,
 		VaultRoleName,
+		VaultCaPath,
 	)
 	if err != nil {
 		fmt.Println(err)

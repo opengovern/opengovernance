@@ -37,6 +37,7 @@ type VaultConfig struct {
 	Address  string
 	RoleName string
 	Token    string
+	CaPath   string
 }
 
 type KafkaConfig struct {
@@ -72,6 +73,7 @@ func WorkerCommand() *cobra.Command {
 	config.Vault.Address = os.Getenv("VAULT_ADDRESS")
 	config.Vault.Token = os.Getenv("VAULT_TOKEN")
 	config.Vault.RoleName = os.Getenv("VAULT_ROLE")
+	config.Vault.CaPath = os.Getenv("VAULT_TLS_CA_PATH")
 
 	cmd := &cobra.Command{
 		PreRunE: func(cmd *cobra.Command, args []string) error {

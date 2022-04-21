@@ -36,6 +36,7 @@ var (
 	VaultAddress  = os.Getenv("VAULT_ADDRESS")
 	VaultToken    = os.Getenv("VAULT_TOKEN")
 	VaultRoleName = os.Getenv("VAULT_ROLE")
+	VaultCaPath   = os.Getenv("VAULT_TLS_CA_PATH")
 
 	ElasticSearchAddress  = os.Getenv("ES_ADDRESS")
 	ElasticSearchUsername = os.Getenv("ES_USERNAME")
@@ -133,6 +134,7 @@ func WorkerCommand() *cobra.Command {
 				VaultAddress,
 				VaultRoleName,
 				VaultToken,
+				VaultCaPath,
 				logger,
 			)
 			if err != nil {
