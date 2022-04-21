@@ -31,6 +31,7 @@ build:
     - make
 
 golangci-lint:
+  when: manual
   stage: lint
   image:
     name: golangci/golangci-lint:v1.45
@@ -52,6 +53,7 @@ golangci-lint:
 
 
 test:
+  when: manual
   stage: test
   extends: .go-cache
   services:
