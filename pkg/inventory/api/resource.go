@@ -139,7 +139,7 @@ func QueryResourcesWithSteampipeColumns(
 					Attributes:   make(map[string]string),
 				}
 
-				desc, err := convertToDescription(resourceType, hit.Source)
+				desc, err := ConvertToDescription(resourceType, hit.Source)
 				if err != nil {
 					return nil, err
 				}
@@ -179,7 +179,7 @@ func QueryResourcesWithSteampipeColumns(
 					Attributes:     make(map[string]string),
 				}
 
-				desc, err := convertToDescription(resourceType, hit.Source)
+				desc, err := ConvertToDescription(resourceType, hit.Source)
 				if err != nil {
 					return nil, err
 				}
@@ -327,7 +327,7 @@ func SourceTypeByResourceType(resourceType string) SourceType {
 	}
 }
 
-func convertToDescription(resourceType string, data interface{}) (interface{}, error) {
+func ConvertToDescription(resourceType string, data interface{}) (interface{}, error) {
 	b, err := json.Marshal(data)
 	if err != nil {
 		return nil, err

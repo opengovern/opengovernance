@@ -504,6 +504,19 @@ func (s *HttpHandlerSuite) TestGetAzureResources() {
 	}
 }
 
+func (s *HttpHandlerSuite) TestGetResource() {
+	require := s.Require()
+
+	var response map[string]string
+	rec, err := doRequestJSONResponse(s.router, echo.POST, "/api/v1/resource", api.GetResourceRequest{
+		ResourceType: "AWS::EC2::Instance",
+		ID:           "abcd",
+	}, &response)
+	require.NoError(err, "request")
+	require.Equal(http.StatusOK, rec.Code)
+	fmt.Println(response)
+}
+
 func (s *HttpHandlerSuite) TestGetQueries() {
 	require := s.Require()
 
