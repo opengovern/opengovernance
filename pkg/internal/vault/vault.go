@@ -19,9 +19,15 @@ type vaultSourceConfig struct {
 	client *vault.Client
 }
 
-func NewSourceConfig(vaultAddress string, auth vault.AuthMethod) (SourceConfig, error) {
+func NewSourceConfig(vaultAddress string, caPath string, auth vault.AuthMethod) (SourceConfig, error) {
 	conf := vault.DefaultConfig()
 	conf.Address = vaultAddress
+
+	if err := conf.ConfigureTLS(&vault.TLSConfig{
+		CAPath: caPath,
+	}); err != nil {
+		return nil, err
+	}
 
 	c, err := vault.NewClient(conf)
 	if err != nil {
@@ -33,12 +39,12 @@ func NewSourceConfig(vaultAddress string, auth vault.AuthMethod) (SourceConfig, 
 		return nil, fmt.Errorf("vault authenticate: %w", err)
 	}
 
-	vault := vaultSourceConfig{client: c}
-	if err := vault.watchSecret(secret); err != nil {
+	v := vaultSourceConfig{client: c}
+	if err := v.watchSecret(secret); err != nil {
 		return nil, err
 	}
 
-	return vault, nil
+	return v, nil
 }
 
 func (v vaultSourceConfig) watchSecret(s *vault.Secret) error {
