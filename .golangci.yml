@@ -1,5 +1,5 @@
 run:
-  go: '1.18'
+  go: '1.17'
   timeout: 30m
   issues-exit-code: 1
   tests: true
