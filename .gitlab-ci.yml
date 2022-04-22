@@ -31,29 +31,29 @@ build:
     - make
 
 golangci-lint:
-  when: manual
   stage: lint
   image:
     name: golangci/golangci-lint:v1.45
     entrypoint: [""]
-  extends: .go-cache
   variables:
     GOLANGCI_LINT_CACHE: ${CI_PROJECT_DIR}/.linter-cache
+    GOPATH: ${CI_PROJECT_DIR}/.go
+    GOCACHE: ${CI_PROJECT_DIR}/.cache/linux
+  before_script:
+    - mkdir -p .go
+    - mkdir -p .cache
+    - mkdir -p .linter-cache
   cache:
     - key: linter-cache
       paths:
         - .linter-cache/
-    - key: go-cache
-      paths:
         - .go/pkg/mod/
         - .cache/
-      policy: pull
   script:
     - golangci-lint run -v
 
 
 test:
-  when: manual
   stage: test
   extends: .go-cache
   services:
