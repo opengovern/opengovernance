@@ -87,7 +87,7 @@ func InitializeWorker(
 	}
 
 	// setup vault
-	v, err := vault.NewSourceConfig(config.Vault.Address, config.Vault.CaPath, k8sAuth)
+	v, err := vault.NewSourceConfig(config.Vault.Address, config.Vault.CaPath, k8sAuth, config.Vault.UseTLS)
 	if err != nil {
 		return nil, err
 	}

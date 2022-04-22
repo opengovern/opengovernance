@@ -31,6 +31,7 @@ func InitializeHttpHandler(
 	vaultToken string,
 	vaultRoleName string,
 	vaultCaPath string,
+	vaultUseTLS bool,
 ) (h HttpHandler, err error) {
 
 	fmt.Println("Initializing http handler")
@@ -76,7 +77,7 @@ func InitializeHttpHandler(
 	}
 
 	// setup vault
-	v, err := vault.NewSourceConfig(vaultAddress, vaultCaPath, k8sAuth)
+	v, err := vault.NewSourceConfig(vaultAddress, vaultCaPath, k8sAuth, vaultUseTLS)
 	if err != nil {
 		return HttpHandler{}, err
 	}

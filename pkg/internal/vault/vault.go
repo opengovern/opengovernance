@@ -19,14 +19,16 @@ type vaultSourceConfig struct {
 	client *vault.Client
 }
 
-func NewSourceConfig(vaultAddress string, caPath string, auth vault.AuthMethod) (SourceConfig, error) {
+func NewSourceConfig(vaultAddress string, caPath string, auth vault.AuthMethod, useTLS bool) (SourceConfig, error) {
 	conf := vault.DefaultConfig()
 	conf.Address = vaultAddress
 
-	if err := conf.ConfigureTLS(&vault.TLSConfig{
-		CAPath: caPath,
-	}); err != nil {
-		return nil, err
+	if useTLS {
+		if err := conf.ConfigureTLS(&vault.TLSConfig{
+			CAPath: caPath,
+		}); err != nil {
+			return nil, err
+		}
 	}
 
 	c, err := vault.NewClient(conf)

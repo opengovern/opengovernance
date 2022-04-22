@@ -3,6 +3,7 @@ package compliance_report
 import (
 	"errors"
 	"os"
+	"strings"
 
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"
@@ -38,6 +39,7 @@ type VaultConfig struct {
 	RoleName string
 	Token    string
 	CaPath   string
+	UseTLS   bool
 }
 
 type KafkaConfig struct {
@@ -74,6 +76,7 @@ func WorkerCommand() *cobra.Command {
 	config.Vault.Token = os.Getenv("VAULT_TOKEN")
 	config.Vault.RoleName = os.Getenv("VAULT_ROLE")
 	config.Vault.CaPath = os.Getenv("VAULT_TLS_CA_PATH")
+	config.Vault.UseTLS = strings.ToLower(strings.TrimSpace(os.Getenv("VAULT_USE_TLS"))) == "true"
 
 	cmd := &cobra.Command{
 		PreRunE: func(cmd *cobra.Command, args []string) error {
