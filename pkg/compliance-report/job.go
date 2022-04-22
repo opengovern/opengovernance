@@ -44,9 +44,10 @@ type Job struct {
 }
 
 type JobResult struct {
-	JobID  uint
-	Status ComplianceReportJobStatus
-	Error  string
+	JobID           uint
+	Status          ComplianceReportJobStatus
+	ReportCreatedAt int64
+	Error           string
 }
 
 type SteampipeResultJson struct {
@@ -123,28 +124,42 @@ func (j *Job) Do(vlt vault.SourceConfig, producer sarama.SyncProducer, topic str
 		return j.failed("error: RunSteampipeCheckAll: " + err.Error())
 	}
 
-	err = RunSteampipeCheckAll(j.SourceType, resultFileName)
-	if err != nil {
-		return j.failed("error: RunSteampipeCheckAll: " + err.Error())
-	}
-
-	reports, err := ParseReport(resultFileName, j.JobID, j.SourceID)
+	createdAt := time.Now().UnixMilli()
+	reports, err := ParseReport(resultFileName, j.JobID, j.SourceID, createdAt, j.SourceType)
 	if err != nil {
 		return j.failed("error: Parse report: " + err.Error())
 	}
 
-	err = doSendToKafka(producer, topic, reports, j.logger)
+	var summary Summary
+	for _, report := range reports {
+		if report.Type == ReportTypeBenchmark && report.Group.ID == "root_result_group" {
+			summary = report.Group.Summary
+		}
+	}
+	totalResource := summary.Status.OK + summary.Status.Info + summary.Status.Error + summary.Status.Alarm + summary.Status.Skip
+	acr := AccountReport{
+		SourceID:             j.SourceID,
+		ReportJobId:          j.JobID,
+		Summary:              summary,
+		CreatedAt:            createdAt,
+		TotalResources:       totalResource,
+		TotalCompliant:       summary.Status.OK,
+		CompliancePercentage: float64(summary.Status.OK) / float64(totalResource),
+	}
+
+	err = doSendToKafka(producer, topic, reports, acr, j.logger)
 	if err != nil {
 		return j.failed("error: SendingToKafka: " + err.Error())
 	}
 
 	return JobResult{
-		JobID:  j.JobID,
-		Status: ComplianceReportJobCompleted,
+		JobID:           j.JobID,
+		ReportCreatedAt: createdAt,
+		Status:          ComplianceReportJobCompleted,
 	}
 }
 
-func doSendToKafka(producer sarama.SyncProducer, topic string, reports []Report, logger *zap.Logger) error {
+func doSendToKafka(producer sarama.SyncProducer, topic string, reports []Report, accountReport AccountReport, logger *zap.Logger) error {
 	var msgs []*sarama.ProducerMessage
 	for _, v := range reports {
 		msg, err := v.AsProducerMessage()
@@ -156,6 +171,15 @@ func doSendToKafka(producer sarama.SyncProducer, topic string, reports []Report,
 		// Override the topic
 		msg.Topic = topic
 
+		msgs = append(msgs, msg)
+	}
+
+	msg, err := accountReport.AsProducerMessage()
+	if err != nil {
+		fmt.Printf("Failed to convert accountReport[%v] to Kafka ProducerMessage, ignoring...", accountReport.SourceID)
+	} else {
+		// Override the topic
+		msg.Topic = topic
 		msgs = append(msgs, msg)
 	}
 

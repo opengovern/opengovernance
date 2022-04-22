@@ -291,9 +291,8 @@ type Policy struct {
 type PolicyResultStatus string
 
 const (
-	PolicyResultStatusFailed     PolicyResultStatus = "failed"
-	PolicyResultStatusPassed     PolicyResultStatus = "passed"
-	PolicyResultStatusNoResource PolicyResultStatus = "no_resource"
+	PolicyResultStatusFailed PolicyResultStatus = "failed"
+	PolicyResultStatusPassed PolicyResultStatus = "passed"
 )
 
 type PolicyResult struct {
@@ -304,9 +303,20 @@ type PolicyResult struct {
 	Section            string             `json:"section"`
 	Severity           string             `json:"severity"`
 	Provider           string             `json:"provider"`
-	Status             PolicyResultStatus `json:"status" enums:"no_resource,passed,failed"`
+	Status             PolicyResultStatus `json:"status" enums:"passed,failed"`
 	CompliantResources int                `json:"compliantResources"`
 	TotalResources     int                `json:"totalResources"`
+}
+
+type TrendDataPoint struct {
+	Timestamp      int64 `json:"timestamp"`
+	Compliant      int64 `json:"compliant"`
+	TotalResources int64 `json:"totalResources"`
+}
+
+type BenchmarkAccountComplianceResponse struct {
+	TotalCompliantAccounts    int `json:"totalCompliantAccounts"`
+	TotalNonCompliantAccounts int `json:"totalNonCompliantAccounts"`
 }
 
 type ListQueryRequest struct {
