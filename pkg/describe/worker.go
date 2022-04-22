@@ -39,6 +39,7 @@ func InitializeWorker(
 	vaultRoleName string,
 	vaultToken string,
 	vaultCaPath string,
+	vaultUseTLS bool,
 	logger *zap.Logger,
 ) (w *Worker, err error) {
 	if id == "" {
@@ -100,7 +101,7 @@ func InitializeWorker(
 	}
 
 	// setup vault
-	v, err := vault.NewSourceConfig(vaultAddress, vaultCaPath, k8sAuth)
+	v, err := vault.NewSourceConfig(vaultAddress, vaultCaPath, k8sAuth, vaultUseTLS)
 	if err != nil {
 		return nil, err
 	}

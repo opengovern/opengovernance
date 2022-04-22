@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/onboard"
 )
@@ -27,6 +28,7 @@ var (
 	VaultToken    = os.Getenv("VAULT_TOKEN")
 	VaultRoleName = os.Getenv("VAULT_ROLE")
 	VaultCaPath   = os.Getenv("VAULT_TLS_CA_PATH")
+	VaultUseTLS   = strings.ToLower(strings.TrimSpace(os.Getenv("VAULT_USE_TLS"))) == "true"
 
 	HttpAddress = os.Getenv("HTTP_ADDRESS")
 )
@@ -49,6 +51,7 @@ func main() {
 		VaultToken,
 		VaultRoleName,
 		VaultCaPath,
+		VaultUseTLS,
 	)
 	if err != nil {
 		fmt.Println(err)
