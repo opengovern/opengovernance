@@ -24,7 +24,7 @@ func NewSourceConfig(vaultAddress string, caPath string, auth vault.AuthMethod) 
 	conf.Address = vaultAddress
 
 	if err := conf.ConfigureTLS(&vault.TLSConfig{
-		CACert: caPath,
+		CAPath: caPath,
 	}); err != nil {
 		return nil, err
 	}
