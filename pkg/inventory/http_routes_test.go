@@ -529,6 +529,12 @@ func (s *HttpHandlerSuite) TestGetQueries() {
 	require.Equal(http.StatusOK, rec.Code)
 	require.Len(response, 4)
 
+	var c int
+	rec, err = doRequestJSONResponse(s.router, echo.GET, "/api/v1/query/count", &req, &c)
+	require.NoError(err, "request")
+	require.Equal(http.StatusOK, rec.Code)
+	require.Equal(c, 4)
+
 	req.TitleFilter = "4"
 	rec, err = doRequestJSONResponse(s.router, echo.GET, "/api/v1/query", &req, &response)
 	require.NoError(err, "request")
