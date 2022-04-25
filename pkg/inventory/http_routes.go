@@ -29,7 +29,7 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/inventory/api"
 )
 
-const ES_FETCH_PAGE_SIZE = 10000
+const EsFetchPageSize = 10000
 
 func extractContext(ctx echo.Context) context.Context {
 	cc := ctx.Request().Context()
@@ -101,7 +101,7 @@ func (h *HttpHandler) GetBenchmarksInTime(ctx echo.Context) error {
 	uniqueBenchmarkIDs := map[string]api.Benchmark{}
 	var searchAfter []interface{}
 	for {
-		query, err := compliance_report.QueryBenchmarks(provider, timeInt, 2, ES_FETCH_PAGE_SIZE, searchAfter)
+		query, err := compliance_report.QueryBenchmarks(provider, timeInt, 2, EsFetchPageSize, searchAfter)
 		if err != nil {
 			return err
 		}
@@ -174,7 +174,7 @@ func (h *HttpHandler) GetBenchmarkComplianceTrend(ctx echo.Context) error {
 	var hits []compliance_report.ReportQueryHit
 	var searchAfter []interface{}
 	for {
-		query, err := compliance_report.QueryTrend(sourceUUID, benchmarkId, fromTime, toTime, ES_FETCH_PAGE_SIZE, searchAfter)
+		query, err := compliance_report.QueryTrend(sourceUUID, benchmarkId, fromTime, toTime, EsFetchPageSize, searchAfter)
 		if err != nil {
 			return err
 		}
@@ -229,7 +229,7 @@ func (h *HttpHandler) GetBenchmarkAccountCompliance(ctx echo.Context) error {
 	var searchAfter []interface{}
 	var resp api.BenchmarkAccountComplianceResponse
 	for {
-		query, err := compliance_report.QueryProviderResult(benchmarkId, tim, "asc", ES_FETCH_PAGE_SIZE, searchAfter)
+		query, err := compliance_report.QueryProviderResult(benchmarkId, tim, "asc", EsFetchPageSize, searchAfter)
 		if err != nil {
 			return err
 		}
@@ -610,7 +610,7 @@ func (h *HttpHandler) GetResultPolicies(ctx echo.Context) error {
 	for {
 		query := compliance_report.QueryReports(sourceUUID, jobIDs,
 			[]compliance_report.ReportType{compliance_report.ReportTypeResult},
-			nil, &benchmarkID, ES_FETCH_PAGE_SIZE, searchAfter)
+			nil, &benchmarkID, EsFetchPageSize, searchAfter)
 		b, err := json.Marshal(query)
 		if err != nil {
 			return err
@@ -633,6 +633,7 @@ func (h *HttpHandler) GetResultPolicies(ctx echo.Context) error {
 				for _, r := range resp {
 					if r.ID == res.ControlId {
 						r.TotalResources++
+						r.CreatedAt = hit.Source.CreatedAt
 
 						switch res.Result.Status {
 						case compliance_report.ResultStatusOK:

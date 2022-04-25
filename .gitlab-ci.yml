@@ -1,5 +1,8 @@
 image: golang:latest
 
+variables:
+  GOPRIVATE: gitlab.com/keibiengine
+
 stages:
   - build
   - lint
@@ -40,6 +43,7 @@ golangci-lint:
     GOPATH: ${CI_PROJECT_DIR}/.go
     GOCACHE: ${CI_PROJECT_DIR}/.cache/linux
   before_script:
+    - echo -e "machine gitlab.com login gitlab-ci-token password ${CI_JOB_TOKEN}" > ~/.netrc
     - mkdir -p .go
     - mkdir -p .cache
     - mkdir -p .linter-cache
