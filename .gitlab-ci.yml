@@ -73,6 +73,8 @@ stages:
 build-mr:
   stage: build
   extends: .go-cache
+  only:
+    - merge_requests
   artifacts:
     paths:
       - build/
@@ -83,6 +85,8 @@ build-mr:
 build-main:
   stage: build
   extends: .go-cache-pullpush
+  only:
+    - main
   artifacts:
     paths:
       - build/
@@ -93,6 +97,8 @@ build-main:
 golangci-lint-mr:
   stage: lint
   extends: .lint-cache
+  only:
+    - merge_requests
   image:
     name: golangci/golangci-lint:v1.45
     entrypoint: [""]
@@ -102,6 +108,8 @@ golangci-lint-mr:
 golangci-lint-main:
   stage: lint
   extends: .lint-cache-pullpush
+  only:
+    - main
   image:
     name: golangci/golangci-lint:v1.45
     entrypoint: [""]
