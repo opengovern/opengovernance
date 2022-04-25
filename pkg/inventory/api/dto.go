@@ -306,6 +306,7 @@ type PolicyResult struct {
 	Status             PolicyResultStatus `json:"status" enums:"passed,failed"`
 	CompliantResources int                `json:"compliantResources"`
 	TotalResources     int                `json:"totalResources"`
+	CreatedAt          int64              `json:"createdAt"`
 }
 
 type TrendDataPoint struct {
