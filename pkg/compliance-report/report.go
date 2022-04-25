@@ -76,14 +76,15 @@ func (r Report) AsProducerMessage() (*sarama.ProducerMessage, error) {
 }
 
 type AccountReport struct {
-	SourceID             uuid.UUID `json:"sourceID"`
-	BenchmarkID          string    `json:"benchmarkID"`
-	ReportJobId          uint      `json:"reportJobID"`
-	Summary              Summary   `json:"summary"`
-	CreatedAt            int64     `json:"createdAt"`
-	TotalResources       int       `json:"totalResources"`
-	TotalCompliant       int       `json:"totalCompliant"`
-	CompliancePercentage float64   `json:"compliancePercentage"`
+	SourceID             uuid.UUID  `json:"sourceID"`
+	Provider             SourceType `json:"provider"`
+	BenchmarkID          string     `json:"benchmarkID"`
+	ReportJobId          uint       `json:"reportJobID"`
+	Summary              Summary    `json:"summary"`
+	CreatedAt            int64      `json:"createdAt"`
+	TotalResources       int        `json:"totalResources"`
+	TotalCompliant       int        `json:"totalCompliant"`
+	CompliancePercentage float64    `json:"compliancePercentage"`
 }
 
 func (r AccountReport) AsProducerMessage() (*sarama.ProducerMessage, error) {
