@@ -39,6 +39,7 @@ golangci-lint:
     GOLANGCI_LINT_CACHE: ${CI_PROJECT_DIR}/.linter-cache
     GOPATH: ${CI_PROJECT_DIR}/.go
     GOCACHE: ${CI_PROJECT_DIR}/.cache/linux
+  allow_failure: true
   before_script:
     - mkdir -p .go
     - mkdir -p .cache
