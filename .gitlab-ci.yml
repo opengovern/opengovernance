@@ -23,22 +23,21 @@ stages:
       paths:
         - .go/pkg/mod/
         - .cache/
+      policy: pull
 
-build:
-  stage: build
-  extends: .go-cache
-  artifacts:
-    paths:
-      - build/
-    expire_in: 1 hour
-  script:
-    - make
+.go-cache-pullpush:
+  before_script:
+    - mkdir -p .go
+    - mkdir -p .cache
+    - echo -e "machine gitlab.com login gitlab-ci-token password ${CI_JOB_TOKEN}" > ~/.netrc
+  cache:
+    - key: go-cache
+      paths:
+        - .go/pkg/mod/
+        - .cache/
+      policy: pull-push
 
-golangci-lint:
-  stage: lint
-  image:
-    name: golangci/golangci-lint:v1.45
-    entrypoint: [""]
+.lint-cache:
   variables:
     GOLANGCI_LINT_CACHE: ${CI_PROJECT_DIR}/.linter-cache
   before_script:
@@ -52,6 +51,68 @@ golangci-lint:
         - .linter-cache/
         - .go/pkg/mod/
         - .cache/
+      policy: pull
+
+.lint-cache-pullpush:
+  variables:
+    GOLANGCI_LINT_CACHE: ${CI_PROJECT_DIR}/.linter-cache
+  before_script:
+    - mkdir -p .go
+    - mkdir -p .cache
+    - mkdir -p .linter-cache
+    - echo -e "machine gitlab.com login gitlab-ci-token password ${CI_JOB_TOKEN}" > ~/.netrc
+  cache:
+    - key: linter-cache
+      paths:
+        - .linter-cache/
+        - .go/pkg/mod/
+        - .cache/
+      policy: pull-push
+
+
+build-mr:
+  stage: build
+  extends: .go-cache
+  only:
+    - merge_requests
+  artifacts:
+    paths:
+      - build/
+    expire_in: 1 hour
+  script:
+    - make
+
+build-main:
+  stage: build
+  extends: .go-cache-pullpush
+  only:
+    - main
+  artifacts:
+    paths:
+      - build/
+    expire_in: 1 hour
+  script:
+    - make
+
+golangci-lint-mr:
+  stage: lint
+  extends: .lint-cache
+  only:
+    - merge_requests
+  image:
+    name: golangci/golangci-lint:v1.45
+    entrypoint: [""]
+  script:
+    - golangci-lint run -v
+
+golangci-lint-main:
+  stage: lint
+  extends: .lint-cache-pullpush
+  only:
+    - main
+  image:
+    name: golangci/golangci-lint:v1.45
+    entrypoint: [""]
   script:
     - golangci-lint run -v
 
@@ -100,10 +161,10 @@ deploy: # This job runs in the deploy stage.
   stage: deploy # It only runs when *both* jobs in the test stage complete successfully.
   needs:
     - sver-tags
-    - build
+    - build-main
   dependencies:
     - sver-tags
-    - build
+    - build-main
   only:
     - main
   image:
