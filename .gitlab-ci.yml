@@ -1,7 +1,11 @@
-image: golang:latest
+image: golang:1.17.9
 
 variables:
   GOPRIVATE: gitlab.com/keibiengine
+  GOPATH: ${CI_PROJECT_DIR}/.go
+  GOCACHE: ${CI_PROJECT_DIR}/.cache
+  GOOS: linux
+  GOARCH: amd64
 
 stages:
   - build
@@ -10,12 +14,10 @@ stages:
   - deploy
 
 .go-cache:
-  variables:
-    GOPATH: $CI_PROJECT_DIR/.go
-    GOCACHE: $CI_PROJECT_DIR/.cache/linux
   before_script:
     - mkdir -p .go
     - mkdir -p .cache
+    - echo -e "machine gitlab.com login gitlab-ci-token password ${CI_JOB_TOKEN}" > ~/.netrc
   cache:
     - key: go-cache
       paths:
@@ -30,7 +32,6 @@ build:
       - build/
     expire_in: 1 hour
   script:
-    - echo -e "machine gitlab.com login gitlab-ci-token password ${CI_JOB_TOKEN}" > ~/.netrc
     - make
 
 golangci-lint:
@@ -40,14 +41,11 @@ golangci-lint:
     entrypoint: [""]
   variables:
     GOLANGCI_LINT_CACHE: ${CI_PROJECT_DIR}/.linter-cache
-    GOPATH: ${CI_PROJECT_DIR}/.go
-    GOCACHE: ${CI_PROJECT_DIR}/.cache/linux
-  allow_failure: true
   before_script:
-    - echo -e "machine gitlab.com login gitlab-ci-token password ${CI_JOB_TOKEN}" > ~/.netrc
     - mkdir -p .go
     - mkdir -p .cache
     - mkdir -p .linter-cache
+    - echo -e "machine gitlab.com login gitlab-ci-token password ${CI_JOB_TOKEN}" > ~/.netrc
   cache:
     - key: linter-cache
       paths:
@@ -56,7 +54,6 @@ golangci-lint:
         - .cache/
   script:
     - golangci-lint run -v
-
 
 test:
   stage: test
