@@ -2,6 +2,7 @@ package inventory
 
 import (
 	"github.com/jackc/pgx/v4"
+	"gitlab.com/keibiengine/keibi-engine/pkg/inventory/api"
 	"gorm.io/gorm"
 )
 
@@ -50,7 +51,7 @@ func (db Database) GetQueries() ([]SmartQuery, error) {
 }
 
 // GetQueriesWithFilters gets list of all queries filtered by tags and search
-func (db Database) GetQueriesWithFilters(search *string, labels []string) ([]SmartQuery, error) {
+func (db Database) GetQueriesWithFilters(search *string, labels []string, provider *api.SourceType) ([]SmartQuery, error) {
 	var s []SmartQuery
 
 	m := db.orm.Model(&SmartQuery{}).
@@ -64,6 +65,9 @@ func (db Database) GetQueriesWithFilters(search *string, labels []string) ([]Sma
 	if search != nil {
 		m = m.Where("title like ?", "%"+*search+"%")
 	}
+	if provider != nil {
+		m = m.Where("provider = ?", string(*provider))
+	}
 	tx := m.Find(&s)
 
 	if tx.Error != nil {
@@ -71,6 +75,32 @@ func (db Database) GetQueriesWithFilters(search *string, labels []string) ([]Sma
 	}
 
 	return s, nil
+}
+
+// CountQueriesWithFilters count list of all queries filtered by tags and search
+func (db Database) CountQueriesWithFilters(search *string, labels []string, provider *api.SourceType) (*int64, error) {
+	var s int64
+
+	m := db.orm.Model(&SmartQuery{}).
+		Preload("Tags").
+		Joins("LEFT JOIN smartquery_tags on smart_queries.id = smart_query_id " +
+			"LEFT JOIN tags on smartquery_tags.tag_id = tags.id ")
+
+	if len(labels) != 0 {
+		m = m.Where("tags.value in ?", labels)
+	}
+	if search != nil {
+		m = m.Where("title like ?", "%"+*search+"%")
+	}
+	if provider != nil {
+		m = m.Where("provider = ?", string(*provider))
+	}
+	tx := m.Count(&s)
+
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+	return &s, nil
 }
 
 // GetQuery gets a query with matching id

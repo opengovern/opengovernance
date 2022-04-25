@@ -84,6 +84,8 @@ definitions:
         type: string
       id:
         type: integer
+      reportCreatedAt:
+        type: integer
       status:
         type: string
       updatedAt:
@@ -283,6 +285,17 @@ definitions:
       role:
         type: string
       userId:
+        type: string
+    type: object
+  api.ListQueryRequest:
+    properties:
+      labels:
+        items:
+          type: string
+        type: array
+      providerFilter:
+        type: string
+      titleFilter:
         type: string
     type: object
   api.LocationByProviderResponse:
@@ -517,9 +530,11 @@ definitions:
     type: object
   api.TrendDataPoint:
     properties:
+      compliant:
+        type: integer
       timestamp:
         type: integer
-      value:
+      totalResources:
         type: integer
     type: object
   compliance_report.Dimension:
@@ -989,39 +1004,6 @@ paths:
       summary: Returns list of policies of a given benchmark
       tags:
       - benchmarks
-  /benchmarks/history/{sourceId}/reports/time:
-    get:
-      consumes:
-      - application/json
-      parameters:
-      - description: SourceID
-        in: path
-        name: sourceId
-        required: true
-        type: string
-      - description: From
-        in: query
-        name: from
-        required: true
-        type: integer
-      - description: To
-        in: query
-        name: to
-        required: true
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            items:
-              type: integer
-            type: array
-      summary: Returns list of all compliance report timestamps within a selected
-        time
-      tags:
-      - benchmark
   /benchmarks/history/list/{provider}/{createdAt}:
     get:
       consumes:
@@ -1097,6 +1079,13 @@ paths:
   /inventory/api/v1/query:
     get:
       description: Listing smart queries
+      parameters:
+      - description: Request Body
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/api.ListQueryRequest'
       produces:
       - application/json
       responses:
@@ -1144,6 +1133,26 @@ paths:
           schema:
             $ref: '#/definitions/api.RunQueryResponse'
       summary: Run a specific smart query
+      tags:
+      - smart_query
+  /inventory/api/v1/query/count:
+    get:
+      description: Counting smart queries
+      parameters:
+      - description: Request Body
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/api.ListQueryRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: integer
+      summary: Count smart queries
       tags:
       - smart_query
   /inventory/api/v1/reports/compliance/{source_id}:
@@ -1550,39 +1559,6 @@ paths:
       summary: Returns a list of sources
       tags:
       - onboard
-  /resources/{sourceId}/trend:
-    get:
-      consumes:
-      - application/json
-      parameters:
-      - description: SourceID
-        in: path
-        name: sourceId
-        required: true
-        type: string
-      - description: Time Window
-        enum:
-        - 24h
-        - 1w
-        - 3m
-        - 1y
-        - max
-        in: query
-        name: timeWindow
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            items:
-              $ref: '#/definitions/api.TrendDataPoint'
-            type: array
-      summary: Returns trend of a no of resources for specific account
-      tags:
-      - inventory
   /schedule/api/v1/resource_type/{provider}:
     get:
       description: get resource type by provider

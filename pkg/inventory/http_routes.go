@@ -50,6 +50,7 @@ func (h *HttpHandler) Register(v1 *echo.Group) {
 	v1.POST("/resource", h.GetResource)
 
 	v1.GET("/query", h.ListQueries)
+	v1.GET("/query/count", h.CountQueries)
 	v1.POST("/query/:queryId", h.RunQuery)
 
 	v1.GET("/reports/compliance/:sourceId", h.GetComplianceReports)
@@ -72,8 +73,8 @@ func (h *HttpHandler) Register(v1 *echo.Group) {
 // @Summary      Returns all benchmark existed at the specified time
 // @Description  You should fetch the benchmark report times from /benchmarks/history/:year/:month/:day
 // @Tags         benchmarks
-// @Accept   json
-// @Produce  json
+// @Accept       json
+// @Produce      json
 // @Param        provider   path      string  true  "Provider"  Enums(AWS,Azure,All)
 // @Param        createdAt  path      string  true  "CreatedAt"
 // @Success      200        {object}  []api.Benchmark
@@ -140,7 +141,7 @@ func (h *HttpHandler) GetBenchmarksInTime(ctx echo.Context) error {
 // @Summary  Returns trend of a benchmark compliance for specific account
 // @Tags         benchmarks
 // @Accept       json
-// @Produce  json
+// @Produce      json
 // @Param    benchmarkId  path      string  true  "BenchmarkID"
 // @Param    sourceId     path      string  true  "SourceID"
 // @Param    timeWindow   query     string  true  "Time Window"  Enums(24h,1w,3m,1y,max)
@@ -213,7 +214,7 @@ func (h *HttpHandler) GetBenchmarkComplianceTrend(ctx echo.Context) error {
 // GetBenchmarkAccountCompliance godoc
 // @Summary  Returns no of compliant & non-compliant accounts
 // @Tags         benchmarks
-// @Accept   json
+// @Accept       json
 // @Produce      json
 // @Param    benchmarkId  path      string  true  "BenchmarkID"
 // @Param    createdAt    path      string  true  "CreatedAt"
@@ -763,7 +764,8 @@ func (h *HttpHandler) GetResource(ectx echo.Context) error {
 // @Description  Listing smart queries
 // @Tags         smart_query
 // @Produce      json
-// @Success      200  {object}  []api.SmartQueryItem
+// @Param        request  body      api.ListQueryRequest  true  "Request Body"
+// @Success      200      {object}  []api.SmartQueryItem
 // @Router       /inventory/api/v1/query [get]
 func (h *HttpHandler) ListQueries(ectx echo.Context) error {
 	ctx := ectx.(*Context)
@@ -778,7 +780,7 @@ func (h *HttpHandler) ListQueries(ectx echo.Context) error {
 		search = &req.TitleFilter
 	}
 
-	queries, err := h.db.GetQueriesWithFilters(search, req.Labels)
+	queries, err := h.db.GetQueriesWithFilters(search, req.Labels, req.ProviderFilter)
 	if err != nil {
 		return err
 	}
@@ -799,6 +801,34 @@ func (h *HttpHandler) ListQueries(ectx echo.Context) error {
 		})
 	}
 	return ctx.JSON(200, result)
+}
+
+// CountQueries godoc
+// @Summary      Count smart queries
+// @Description  Counting smart queries
+// @Tags         smart_query
+// @Produce      json
+// @Param        request  body      api.ListQueryRequest  true  "Request Body"
+// @Success      200      {object}  int
+// @Router       /inventory/api/v1/query/count [get]
+func (h *HttpHandler) CountQueries(ectx echo.Context) error {
+	ctx := ectx.(*Context)
+
+	req := &api.ListQueryRequest{}
+	if err := ctx.BindValidate(req); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	var search *string
+	if len(req.TitleFilter) > 0 {
+		search = &req.TitleFilter
+	}
+
+	c, err := h.db.CountQueriesWithFilters(search, req.Labels, req.ProviderFilter)
+	if err != nil {
+		return err
+	}
+	return ctx.JSON(200, *c)
 }
 
 // RunQuery godoc

@@ -217,54 +217,6 @@ const docTemplate = `{
                 }
             }
         },
-        "/benchmarks/history/{sourceId}/reports/time": {
-            "get": {
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "benchmark"
-                ],
-                "summary": "Returns list of all compliance report timestamps within a selected time",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "SourceID",
-                        "name": "sourceId",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "integer",
-                        "description": "From",
-                        "name": "from",
-                        "in": "query",
-                        "required": true
-                    },
-                    {
-                        "type": "integer",
-                        "description": "To",
-                        "name": "to",
-                        "in": "query",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "type": "integer"
-                            }
-                        }
-                    }
-                }
-            }
-        },
         "/benchmarks/tags": {
             "get": {
                 "consumes": [
@@ -679,6 +631,17 @@ const docTemplate = `{
                     "smart_query"
                 ],
                 "summary": "List smart queries",
+                "parameters": [
+                    {
+                        "description": "Request Body",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/api.ListQueryRequest"
+                        }
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -687,6 +650,37 @@ const docTemplate = `{
                             "items": {
                                 "$ref": "#/definitions/api.SmartQueryItem"
                             }
+                        }
+                    }
+                }
+            }
+        },
+        "/inventory/api/v1/query/count": {
+            "get": {
+                "description": "Counting smart queries",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "smart_query"
+                ],
+                "summary": "Count smart queries",
+                "parameters": [
+                    {
+                        "description": "Request Body",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/api.ListQueryRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "integer"
                         }
                     }
                 }
@@ -1331,54 +1325,6 @@ const docTemplate = `{
                 }
             }
         },
-        "/resources/{sourceId}/trend": {
-            "get": {
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "inventory"
-                ],
-                "summary": "Returns trend of a no of resources for specific account",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "SourceID",
-                        "name": "sourceId",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "enum": [
-                            "24h",
-                            "1w",
-                            "3m",
-                            "1y",
-                            "max"
-                        ],
-                        "type": "string",
-                        "description": "Time Window",
-                        "name": "timeWindow",
-                        "in": "query",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/api.TrendDataPoint"
-                            }
-                        }
-                    }
-                }
-            }
-        },
         "/schedule/api/v1/resource_type/{provider}": {
             "get": {
                 "description": "get resource type by provider",
@@ -1712,6 +1658,9 @@ const docTemplate = `{
                 "id": {
                     "type": "integer"
                 },
+                "reportCreatedAt": {
+                    "type": "integer"
+                },
                 "status": {
                     "type": "string"
                 },
@@ -2004,6 +1953,23 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "userId": {
+                    "type": "string"
+                }
+            }
+        },
+        "api.ListQueryRequest": {
+            "type": "object",
+            "properties": {
+                "labels": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "providerFilter": {
+                    "type": "string"
+                },
+                "titleFilter": {
                     "type": "string"
                 }
             }
@@ -2348,10 +2314,13 @@ const docTemplate = `{
         "api.TrendDataPoint": {
             "type": "object",
             "properties": {
+                "compliant": {
+                    "type": "integer"
+                },
                 "timestamp": {
                     "type": "integer"
                 },
-                "value": {
+                "totalResources": {
                     "type": "integer"
                 }
             }
