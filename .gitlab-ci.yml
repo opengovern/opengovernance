@@ -127,8 +127,11 @@ test:
     DOCKER_TLS_VERIFY: 1
     DOCKER_CERT_PATH: "$DOCKER_TLS_CERTDIR/client"
     DOCKERTEST_HOST: docker
+  before_script:
+    - echo -e "machine gitlab.com login gitlab-ci-token password ${CI_JOB_TOKEN}" > ~/.netrc
   script:
-    - go test -v ./...
+    - go install gotest.tools/gotestsum@v1.8.0
+    - .go/bin/gotestsum --junitfile report.xml --format testname
   allow_failure: true
   cache:
     - key: go-cache
@@ -136,6 +139,10 @@ test:
         - .go/pkg/mod/
         - .cache/
       policy: pull
+  artifacts:
+    when: always
+    reports:
+      junit: report.xml
 
 sver-tags:
   stage: deploy
