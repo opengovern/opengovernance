@@ -131,14 +131,18 @@ func (j *Job) Do(vlt vault.SourceConfig, producer sarama.SyncProducer, topic str
 	}
 
 	var summary Summary
+	benchmarkID := ""
 	for _, report := range reports {
-		if report.Type == ReportTypeBenchmark && report.Group.ID == "root_result_group" {
+		if report.Type == ReportTypeBenchmark && report.Group.Level == 1 {
+			benchmarkID = report.Group.ID
 			summary = report.Group.Summary
 		}
 	}
 	totalResource := summary.Status.OK + summary.Status.Info + summary.Status.Error + summary.Status.Alarm + summary.Status.Skip
 	acr := AccountReport{
 		SourceID:             j.SourceID,
+		Provider:             j.SourceType,
+		BenchmarkID:          benchmarkID,
 		ReportJobId:          j.JobID,
 		Summary:              summary,
 		CreatedAt:            createdAt,
@@ -232,9 +236,9 @@ func RunSteampipeCheckAll(sourceType SourceType, exportFileName string) error {
 		return err
 	}
 
-	if v.Summary.Status.Error > 0 {
-		return fmt.Errorf("steampipe returned %d errors", v.Summary.Status.Error)
-	}
+	//if v.Summary.Status.Error > 0 {
+	//	return fmt.Errorf("steampipe returned %d errors", v.Summary.Status.Error)
+	//}
 	return nil
 }
 
