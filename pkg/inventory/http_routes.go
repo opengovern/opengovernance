@@ -787,7 +787,7 @@ func (h *HttpHandler) ListQueries(ectx echo.Context) error {
 
 	var result []api.SmartQueryItem
 	for _, item := range queries {
-		var tags map[string]string
+		tags := map[string]string{}
 		for _, tag := range item.Tags {
 			tags[tag.Key] = tag.Value
 		}
