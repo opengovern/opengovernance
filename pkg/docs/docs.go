@@ -126,7 +126,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/benchmarks": {
+        "/inventory/api/v1/benchmarks": {
             "get": {
                 "description": "In order to filter benchmarks by tags provide the tag key-value as query param",
                 "consumes": [
@@ -170,7 +170,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/benchmarks/history/list/{provider}/{createdAt}": {
+        "/inventory/api/v1/benchmarks/history/list/{provider}/{createdAt}": {
             "get": {
                 "description": "You should fetch the benchmark report times from /benchmarks/history/:year/:month/:day",
                 "consumes": [
@@ -217,7 +217,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/benchmarks/tags": {
+        "/inventory/api/v1/benchmarks/tags": {
             "get": {
                 "consumes": [
                     "application/json"
@@ -242,7 +242,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/benchmarks/{benchmarkId}": {
+        "/inventory/api/v1/benchmarks/{benchmarkId}": {
             "get": {
                 "consumes": [
                     "application/json"
@@ -273,7 +273,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/benchmarks/{benchmarkId}/policies": {
+        "/inventory/api/v1/benchmarks/{benchmarkId}/policies": {
             "get": {
                 "consumes": [
                     "application/json"
@@ -325,7 +325,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/benchmarks/{benchmarkId}/{createdAt}/accounts": {
+        "/inventory/api/v1/benchmarks/{benchmarkId}/{createdAt}/accounts": {
             "get": {
                 "consumes": [
                     "application/json"
@@ -381,7 +381,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/benchmarks/{benchmarkId}/{createdAt}/accounts/compliance": {
+        "/inventory/api/v1/benchmarks/{benchmarkId}/{createdAt}/accounts/compliance": {
             "get": {
                 "consumes": [
                     "application/json"
@@ -419,7 +419,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/benchmarks/{benchmarkId}/{sourceId}/compliance/trend": {
+        "/inventory/api/v1/benchmarks/{benchmarkId}/{sourceId}/compliance/trend": {
             "get": {
                 "consumes": [
                     "application/json"
@@ -474,7 +474,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/benchmarks/{benchmarkId}/{sourceId}/result": {
+        "/inventory/api/v1/benchmarks/{benchmarkId}/{sourceId}/result": {
             "get": {
                 "description": "Returns summary of benchmark, category, subcategory or section's result",
                 "consumes": [
@@ -511,7 +511,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/benchmarks/{benchmarkId}/{sourceId}/result/policies": {
+        "/inventory/api/v1/benchmarks/{benchmarkId}/{sourceId}/result/policies": {
             "get": {
                 "description": "Returns policy results of specific benchmark",
                 "consumes": [
