@@ -2054,6 +2054,9 @@ const docTemplate = `{
                 "compliantResources": {
                     "type": "integer"
                 },
+                "createdAt": {
+                    "type": "integer"
+                },
                 "id": {
                     "type": "string"
                 },
@@ -2217,17 +2220,17 @@ const docTemplate = `{
                 "id": {
                     "type": "integer"
                 },
-                "labels": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
                 "provider": {
                     "type": "string"
                 },
                 "query": {
                     "type": "string"
+                },
+                "tags": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
                 },
                 "title": {
                     "type": "string"
