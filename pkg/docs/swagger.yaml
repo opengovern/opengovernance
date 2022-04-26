@@ -747,7 +747,7 @@ paths:
       summary: Update RoleBinding for a user.
       tags:
       - auth
-  /benchmarks:
+  /inventory/api/v1/benchmarks:
     get:
       consumes:
       - application/json
@@ -777,7 +777,7 @@ paths:
       summary: Returns list of benchmarks
       tags:
       - benchmarks
-  /benchmarks/{benchmarkId}:
+  /inventory/api/v1/benchmarks/{benchmarkId}:
     get:
       consumes:
       - application/json
@@ -797,7 +797,7 @@ paths:
       summary: Returns details of a given benchmark
       tags:
       - benchmarks
-  /benchmarks/{benchmarkId}/{createdAt}/accounts:
+  /inventory/api/v1/benchmarks/{benchmarkId}/{createdAt}/accounts:
     get:
       consumes:
       - application/json
@@ -835,7 +835,7 @@ paths:
       summary: Returns list of accounts compliance scores ordered by compliance ratio
       tags:
       - benchmarks
-  /benchmarks/{benchmarkId}/{createdAt}/accounts/compliance:
+  /inventory/api/v1/benchmarks/{benchmarkId}/{createdAt}/accounts/compliance:
     get:
       consumes:
       - application/json
@@ -860,7 +860,7 @@ paths:
       summary: Returns no of compliant & non-compliant accounts
       tags:
       - benchmarks
-  /benchmarks/{benchmarkId}/{sourceId}/compliance/trend:
+  /inventory/api/v1/benchmarks/{benchmarkId}/{sourceId}/compliance/trend:
     get:
       consumes:
       - application/json
@@ -898,7 +898,7 @@ paths:
       summary: Returns trend of a benchmark compliance for specific account
       tags:
       - benchmarks
-  /benchmarks/{benchmarkId}/{sourceId}/result:
+  /inventory/api/v1/benchmarks/{benchmarkId}/{sourceId}/result:
     get:
       consumes:
       - application/json
@@ -923,7 +923,7 @@ paths:
       summary: Returns summary of benchmark result
       tags:
       - benchmarks
-  /benchmarks/{benchmarkId}/{sourceId}/result/policies:
+  /inventory/api/v1/benchmarks/{benchmarkId}/{sourceId}/result/policies:
     get:
       consumes:
       - application/json
@@ -972,7 +972,7 @@ paths:
       summary: Returns policy results of specific benchmark
       tags:
       - benchmarks
-  /benchmarks/{benchmarkId}/policies:
+  /inventory/api/v1/benchmarks/{benchmarkId}/policies:
     get:
       consumes:
       - application/json
@@ -1006,7 +1006,7 @@ paths:
       summary: Returns list of policies of a given benchmark
       tags:
       - benchmarks
-  /benchmarks/history/list/{provider}/{createdAt}:
+  /inventory/api/v1/benchmarks/history/list/{provider}/{createdAt}:
     get:
       consumes:
       - application/json
@@ -1038,7 +1038,7 @@ paths:
       summary: Returns all benchmark existed at the specified time
       tags:
       - benchmarks
-  /benchmarks/tags:
+  /inventory/api/v1/benchmarks/tags:
     get:
       consumes:
       - application/json
