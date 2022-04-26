@@ -351,6 +351,8 @@ definitions:
         type: string
       compliantResources:
         type: integer
+      createdAt:
+        type: integer
       id:
         type: string
       provider:
@@ -464,14 +466,14 @@ definitions:
         type: string
       id:
         type: integer
-      labels:
-        items:
-          type: string
-        type: array
       provider:
         type: string
       query:
         type: string
+      tags:
+        additionalProperties:
+          type: string
+        type: object
       title:
         type: string
     type: object

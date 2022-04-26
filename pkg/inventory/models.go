@@ -15,6 +15,7 @@ type SmartQuery struct {
 
 type Tag struct {
 	gorm.Model
+	Key          string
 	Value        string
 	SmartQueries []SmartQuery `gorm:"many2many:smartquery_tags;"`
 }

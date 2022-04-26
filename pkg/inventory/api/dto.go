@@ -215,12 +215,12 @@ type GenericQueryHit struct {
 }
 
 type SmartQueryItem struct {
-	ID          uint     `json:"id"`
-	Provider    string   `json:"provider"`
-	Title       string   `json:"title"`
-	Description string   `json:"description"`
-	Query       string   `json:"query"`
-	Labels      []string `json:"labels"`
+	ID          uint              `json:"id"`
+	Provider    string            `json:"provider"`
+	Title       string            `json:"title"`
+	Description string            `json:"description"`
+	Query       string            `json:"query"`
+	Tags        map[string]string `json:"tags"`
 }
 
 type TimeRangeFilter struct {

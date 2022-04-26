@@ -787,9 +787,9 @@ func (h *HttpHandler) ListQueries(ectx echo.Context) error {
 
 	var result []api.SmartQueryItem
 	for _, item := range queries {
-		var labels []string
-		for _, label := range item.Tags {
-			labels = append(labels, label.Value)
+		var tags map[string]string
+		for _, tag := range item.Tags {
+			tags[tag.Key] = tag.Value
 		}
 		result = append(result, api.SmartQueryItem{
 			ID:          item.Model.ID,
@@ -797,7 +797,7 @@ func (h *HttpHandler) ListQueries(ectx echo.Context) error {
 			Title:       item.Title,
 			Description: item.Description,
 			Query:       item.Query,
-			Labels:      labels,
+			Tags:        tags,
 		})
 	}
 	return ctx.JSON(200, result)
