@@ -7,6 +7,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"gitlab.com/keibiengine/keibi-engine/pkg/describe"
+	"gitlab.com/keibiengine/keibi-engine/pkg/inventory/es"
+	"gitlab.com/keibiengine/keibi-engine/pkg/utils"
 	"io"
 	"log"
 	"mime"
@@ -48,6 +51,8 @@ func (h *HttpHandler) Register(v1 *echo.Group) {
 	v1.POST("/resources/aws", h.GetAWSResources)
 
 	v1.POST("/resource", h.GetResource)
+
+	v1.GET("/resources/trend", h.GetResourceGrowthTrend)
 
 	v1.GET("/query", h.ListQueries)
 	v1.GET("/query/count", h.CountQueries)
@@ -145,7 +150,7 @@ func (h *HttpHandler) GetBenchmarksInTime(ctx echo.Context) error {
 // @Param    benchmarkId  path      string  true  "BenchmarkID"
 // @Param    sourceId     path      string  true  "SourceID"
 // @Param    timeWindow   query     string  true  "Time Window"  Enums(24h,1w,3m,1y,max)
-// @Success  200          {object}  []api.TrendDataPoint
+// @Success  200          {object}  []api.ComplianceTrendDataPoint
 // @Router   /inventory/api/v1/benchmarks/{benchmarkId}/{sourceId}/compliance/trend [get]
 func (h *HttpHandler) GetBenchmarkComplianceTrend(ctx echo.Context) error {
 	benchmarkId := ctx.Param("benchmarkId")
@@ -196,16 +201,126 @@ func (h *HttpHandler) GetBenchmarkComplianceTrend(ctx echo.Context) error {
 		}
 	}
 
+	var rhits []es.ResourceGrowthQueryHit
+	searchAfter = nil
+	for {
+		query, err := es.ResourceGrowth{}.FindDataPointsQuery(&sourceUUID, nil,
+			fromTime, toTime, EsFetchPageSize, searchAfter)
+		if err != nil {
+			return err
+		}
+
+		var response es.ResourceGrowthQueryResponse
+		err = h.client.Search(context.Background(), describe.ResourceGrowthIndex, query, &response)
+		if err != nil {
+			return err
+		}
+
+		if len(response.Hits.Hits) == 0 {
+			break
+		}
+
+		for _, hit := range response.Hits.Hits {
+			rhits = append(rhits, hit)
+			searchAfter = hit.Sort
+		}
+	}
+
+	var resp []api.ComplianceTrendDataPoint
+	for _, hit := range hits {
+		var total int64 = 0
+		for _, rhit := range rhits {
+			if rhit.Source.CreatedAt == hit.Source.CreatedAt {
+				total = int64(rhit.Source.ResourceCount)
+				break
+			}
+		}
+
+		resp = append(resp, api.ComplianceTrendDataPoint{
+			Timestamp: hit.Source.CreatedAt,
+			Compliant: int64(hit.Source.Group.Summary.Status.OK),
+			TotalResources: total,
+		})
+	}
+	return ctx.JSON(http.StatusOK, resp)
+}
+
+// GetResourceGrowthTrend godoc
+// @Summary  Returns trend of resource growth for specific account
+// @Tags         benchmarks
+// @Accept       json
+// @Produce      json
+// @Param    sourceId     query     string  true  "SourceID"
+// @Param    provider     query     string  true  "Provider"
+// @Param    timeWindow   query     string  true  "Time Window"  Enums(24h,1w,3m,1y,max)
+// @Success  200          {object}  []api.TrendDataPoint
+// @Router   /inventory/api/v1/resources/trend [get]
+func (h *HttpHandler) GetResourceGrowthTrend(ctx echo.Context) error {
+	provider := ctx.QueryParam("provider")
+	sourceID := ctx.QueryParam("sourceId")
+	timeWindow := ctx.QueryParam("timeWindow")
+
+	if timeWindow == "" {
+		timeWindow = "24h"
+	}
+
+	if provider == "" && sourceID == "" {
+		return echo.NewHTTPError(http.StatusBadRequest, "you should specify either provider or sourceId")
+	}
+
+	var providerPtr *string
+	if provider != "" {
+		providerPtr = &provider
+	}
+
+	var sourceUUID *uuid.UUID
+	var err error
+	if sourceID != "" {
+		u, err := uuid.Parse(sourceID)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "invalid source uuid")
+		}
+		sourceUUID = &u
+	}
+
+	var fromTime, toTime int64
+	toTime = time.Now().UnixMilli()
+	tw, err := utils.ParseTimeWindow(ctx.QueryParam("timeWindow"))
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid timeWindow")
+	}
+	fromTime = time.Now().Add(-1 * tw).UnixMilli()
+
+	var hits []es.ResourceGrowthQueryHit
+	var searchAfter []interface{}
+	for {
+		query, err := es.ResourceGrowth{}.FindDataPointsQuery(sourceUUID, providerPtr,
+			fromTime, toTime, EsFetchPageSize, searchAfter)
+		if err != nil {
+			return err
+		}
+
+		var response es.ResourceGrowthQueryResponse
+		err = h.client.Search(context.Background(), describe.ResourceGrowthIndex, query, &response)
+		if err != nil {
+			return err
+		}
+
+		if len(response.Hits.Hits) == 0 {
+			break
+		}
+
+		for _, hit := range response.Hits.Hits {
+			hits = append(hits, hit)
+			searchAfter = hit.Sort
+		}
+	}
+
 	var resp []api.TrendDataPoint
 	for _, hit := range hits {
 		resp = append(resp, api.TrendDataPoint{
 			Timestamp: hit.Source.CreatedAt,
-			Compliant: int64(hit.Source.Group.Summary.Status.OK),
-			TotalResources: int64(hit.Source.Group.Summary.Status.OK +
-				hit.Source.Group.Summary.Status.Skip +
-				hit.Source.Group.Summary.Status.Info +
-				hit.Source.Group.Summary.Status.Alarm +
-				hit.Source.Group.Summary.Status.Error),
+			Value:     int64(hit.Source.ResourceCount),
 		})
 	}
 	return ctx.JSON(http.StatusOK, resp)

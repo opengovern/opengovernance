@@ -522,7 +522,7 @@ func (s *HttpHandlerSuite) TestGetQueries() {
 	require := s.Require()
 
 	req := api.ListQueryRequest{}
-	var response []SmartQuery
+	var response []api.SmartQueryItem
 
 	rec, err := doRequestJSONResponse(s.router, echo.GET, "/api/v1/query", &req, &response)
 	require.NoError(err, "request")
@@ -552,7 +552,7 @@ func (s *HttpHandlerSuite) TestGetQueries() {
 func (s *HttpHandlerSuite) TestRunQuery() {
 	require := s.Require()
 
-	var queryList []SmartQuery
+	var queryList []api.SmartQueryItem
 	rec, err := doRequestJSONResponse(s.router, echo.GET, "/api/v1/query", nil, &queryList)
 	require.NoError(err, "request")
 	require.Equal(http.StatusOK, rec.Code)
@@ -582,7 +582,7 @@ func (s *HttpHandlerSuite) TestRunQuery() {
 func (s *HttpHandlerSuite) TestRunQuery_Sort() {
 	require := s.Require()
 
-	var queryList []SmartQuery
+	var queryList []api.SmartQueryItem
 	rec, err := doRequestJSONResponse(s.router, echo.GET, "/api/v1/query", nil, &queryList)
 	require.NoError(err, "request")
 	require.Equal(http.StatusOK, rec.Code)
@@ -639,7 +639,7 @@ func (s *HttpHandlerSuite) TestRunQuery_Sort() {
 func (s *HttpHandlerSuite) TestRunQuery_Page() {
 	require := s.Require()
 
-	var queryList []SmartQuery
+	var queryList []api.SmartQueryItem
 	rec, err := doRequestJSONResponse(s.router, echo.GET, "/api/v1/query", nil, &queryList)
 	require.NoError(err, "request")
 	require.Equal(http.StatusOK, rec.Code)
@@ -683,7 +683,7 @@ func (s *HttpHandlerSuite) TestRunQuery_Page() {
 func (s *HttpHandlerSuite) TestRunQuery_CSV() {
 	require := s.Require()
 
-	var queryList []SmartQuery
+	var queryList []api.SmartQueryItem
 	rec, err := doRequestJSONResponse(s.router, echo.GET, "/api/v1/query", nil, &queryList)
 	require.NoError(err, "request")
 	require.Equal(http.StatusOK, rec.Code)
@@ -1130,6 +1130,30 @@ func (s *HttpHandlerSuite) TestGetBenchmarkAccounts() {
 	require.NoError(err)
 	require.Len(res, 1)
 	require.Equal(res[0].CompliancePercentage, 0.99)
+}
+
+func (s *HttpHandlerSuite) TestGetResourceGrowthTrendOfProvider() {
+	require := s.Require()
+
+	url := "/api/v1/resources/trend?provider=AWS&timeWindow=24h"
+	var res []api.TrendDataPoint
+	_, err := doRequestJSONResponse(s.router, "GET", url, nil, &res)
+
+	require.NoError(err)
+	require.Len(res, 4)
+}
+
+func (s *HttpHandlerSuite) TestGetResourceGrowthTrendOfAccount() {
+	require := s.Require()
+	sourceID, err := uuid.Parse("2a87b978-b8bf-4d7e-bc19-cf0a99a430cf")
+	require.NoError(err)
+
+	url := fmt.Sprintf("/api/v1/resources/trend?sourceId=%s&timeWindow=24h", sourceID.String())
+	var res []api.TrendDataPoint
+	_, err = doRequestJSONResponse(s.router, "GET", url, nil, &res)
+
+	require.NoError(err)
+	require.Len(res, 4)
 }
 
 func TestHttpHandlerSuite(t *testing.T) {

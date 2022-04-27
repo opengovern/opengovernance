@@ -75,6 +75,10 @@ func (r Report) AsProducerMessage() (*sarama.ProducerMessage, error) {
 	}, nil
 }
 
+func (r Report) MessageID() string {
+	return strconv.FormatInt(int64(r.ReportJobId), 10)
+}
+
 type AccountReport struct {
 	SourceID             uuid.UUID  `json:"sourceID"`
 	Provider             SourceType `json:"provider"`
@@ -108,6 +112,10 @@ func (r AccountReport) AsProducerMessage() (*sarama.ProducerMessage, error) {
 		},
 		Value: sarama.ByteEncoder(value),
 	}, nil
+}
+
+func (r AccountReport) MessageID() string {
+	return r.SourceID.String()
 }
 
 type SummaryStatus struct {

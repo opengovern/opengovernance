@@ -1,0 +1,61 @@
+{
+  "index_patterns": [
+    "resource_growth"
+  ],
+  "template": {
+    "mappings": {
+      "_source": {
+        "enabled": true
+      },
+      "dynamic": false,
+      "dynamic_templates": [
+        {
+          "strings_as_keyword": {
+            "match_mapping_type": "string",
+            "mapping": {
+              "type": "keyword"
+            }
+          }
+        },
+        {
+          "double": {
+            "match_mapping_type": "double",
+            "mapping": {
+              "type": "double",
+              "ignore_malformed": true
+            }
+          }
+        },
+        {
+          "long": {
+            "match_mapping_type": "long",
+            "mapping": {
+              "type": "long",
+              "ignore_malformed": true
+            }
+          }
+        }
+      ],
+      "properties": {
+        "source_id": {
+          "type": "keyword"
+        },
+        "source_type": {
+          "type": "keyword"
+        },
+        "source_job_id": {
+          "type": "long"
+        },
+        "created_at": {
+          "type": "long"
+        },
+        "resource_count": {
+          "type": "long"
+        }
+      }
+    }
+  },
+  "_meta": {
+    "description": "Resource growth index"
+  }
+}

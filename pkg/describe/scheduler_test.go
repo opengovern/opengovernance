@@ -293,6 +293,34 @@ func (s *SchedulerTestSuite) TestDescribeResultJobQueue() {
 	ack.AssertNumberOfCalls(s.T(), "Ack", 1)
 }
 
+func (s *SchedulerTestSuite) TestUpdateNextDescribeAt() {
+	require := s.Require()
+
+	id := uuid.New()
+	err := s.db.CreateSource(&Source{
+		ID:                     id,
+		Type:                   api.SourceCloudAWS,
+		ConfigRef:              "aws/config",
+		LastDescribedAt:        sql.NullTime{},
+		NextDescribeAt:         sql.NullTime{},
+		LastComplianceReportAt: sql.NullTime{},
+		NextComplianceReportAt: sql.NullTime{},
+		DescribeSourceJobs:     nil,
+		ComplianceReportJobs:   nil,
+	})
+	require.NoError(err)
+
+	err = s.db.UpdateSourceDescribed(id, time.Now())
+	require.NoError(err)
+
+	source, err := s.db.GetSourceByUUID(id)
+	require.NoError(err)
+	require.True(source.LastDescribedAt.Valid)
+	require.True(source.LastDescribedAt.Time.Before(time.Now()))
+	require.True(source.NextDescribeAt.Valid)
+	require.True(source.NextDescribeAt.Time.After(time.Now().Add(time.Hour)))
+}
+
 func (s *SchedulerTestSuite) TestDescribeResultJobQueueFailed() {
 	require := s.Require()
 
