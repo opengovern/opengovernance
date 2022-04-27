@@ -7,9 +7,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"gitlab.com/keibiengine/keibi-engine/pkg/describe"
-	"gitlab.com/keibiengine/keibi-engine/pkg/inventory/es"
-	"gitlab.com/keibiengine/keibi-engine/pkg/utils"
 	"io"
 	"log"
 	"mime"
@@ -17,6 +14,10 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"gitlab.com/keibiengine/keibi-engine/pkg/describe"
+	"gitlab.com/keibiengine/keibi-engine/pkg/inventory/es"
+	"gitlab.com/keibiengine/keibi-engine/pkg/utils"
 
 	"github.com/turbot/steampipe-plugin-sdk/grpc/proto"
 	"gitlab.com/keibiengine/keibi-engine/pkg/steampipe"
@@ -237,8 +238,8 @@ func (h *HttpHandler) GetBenchmarkComplianceTrend(ctx echo.Context) error {
 		}
 
 		resp = append(resp, api.ComplianceTrendDataPoint{
-			Timestamp: hit.Source.CreatedAt,
-			Compliant: int64(hit.Source.Group.Summary.Status.OK),
+			Timestamp:      hit.Source.CreatedAt,
+			Compliant:      int64(hit.Source.Group.Summary.Status.OK),
 			TotalResources: total,
 		})
 	}

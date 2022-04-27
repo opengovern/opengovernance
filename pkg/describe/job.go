@@ -5,10 +5,11 @@ import (
 	"crypto/sha256"
 	"encoding/json"
 	"fmt"
-	"github.com/google/uuid"
 	"regexp"
 	"strings"
 	"time"
+
+	"github.com/google/uuid"
 
 	"github.com/elastic/go-elasticsearch/v7"
 	"gitlab.com/keibiengine/keibi-engine/pkg/aws"

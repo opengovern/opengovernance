@@ -339,7 +339,7 @@ func GenerateAccountReport(es *elasticsearchv7.Client, sourceId uuid.UUID, jobID
 		TotalCompliant:       20,
 		CompliancePercentage: 0.99,
 	}
-	return IndexKafkaMessage(es,r)
+	return IndexKafkaMessage(es, r)
 }
 func GenerateComplianceReport(es *elasticsearchv7.Client, sourceId uuid.UUID, jobID uint, createdAt int64) error {
 	r, err := compliance_report.ParseReport(

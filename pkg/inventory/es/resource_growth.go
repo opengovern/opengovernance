@@ -2,10 +2,11 @@ package es
 
 import (
 	"encoding/json"
+	"strconv"
+
 	"github.com/google/uuid"
 	"gitlab.com/keibiengine/keibi-engine/pkg/describe"
 	"gitlab.com/keibiengine/keibi-engine/pkg/keibi-es-sdk"
-	"strconv"
 )
 
 type ResourceGrowth struct {
