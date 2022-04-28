@@ -34,6 +34,7 @@ type AccountReportType string
 const (
 	AccountReportTypeResourceGrowthTrend  = "resource_growth_trend"
 	AccountReportTypeLocationDistribution = "location_distribution"
+	AccountReportTypeLastSummary = "last_summary"
 	AccountReportTypeCompliancyTrend      = "compliancy_trend"
 )
 
@@ -253,6 +254,7 @@ func doDescribeAWS(ctx context.Context, job DescribeJob, config map[string]inter
 			locationDistribution[resource.Region]++
 		}
 	}
+
 	trend := KafkaSourceResourcesSummary{
 		SourceID:      job.SourceID,
 		SourceType:    job.SourceType,
@@ -262,6 +264,12 @@ func doDescribeAWS(ctx context.Context, job DescribeJob, config map[string]inter
 		ReportType:    AccountReportTypeResourceGrowthTrend,
 	}
 	msgs = append(msgs, trend)
+
+	last := KafkaSourceResourcesLastSummary{
+		trend,
+	}
+	last.ReportType = AccountReportTypeLastSummary
+	msgs = append(msgs, last)
 
 	locDistribution := KafkaLocationDistributionResource{
 		SourceID:             job.SourceID,
@@ -355,6 +363,12 @@ func doDescribeAzure(ctx context.Context, job DescribeJob, config map[string]int
 		ResourceCount: len(output.Resources),
 	}
 	msgs = append(msgs, trend)
+
+	last := KafkaSourceResourcesLastSummary{
+		trend,
+	}
+	last.ReportType = AccountReportTypeLastSummary
+	msgs = append(msgs, last)
 
 	locDistribution := KafkaLocationDistributionResource{
 		SourceID:             job.SourceID,
@@ -497,6 +511,32 @@ func (r KafkaSourceResourcesSummary) MessageID() string {
 	return r.SourceID
 }
 
+type KafkaSourceResourcesLastSummary struct {
+	KafkaSourceResourcesSummary
+}
+
+func (r KafkaSourceResourcesLastSummary) AsProducerMessage() (*sarama.ProducerMessage, error) {
+	value, err := json.Marshal(r)
+	if err != nil {
+		return nil, err
+	}
+
+	h := sha256.New()
+	h.Write([]byte(r.SourceID))
+	h.Write([]byte(r.ReportType))
+
+	return &sarama.ProducerMessage{
+		Key: sarama.StringEncoder(fmt.Sprintf("%x", h.Sum(nil))),
+		Headers: []sarama.RecordHeader{
+			{
+				Key:   []byte(esIndexHeader),
+				Value: []byte(SourceResourcesSummary),
+			},
+		},
+		Value: sarama.ByteEncoder(value),
+	}, nil
+}
+
 type KafkaLocationDistributionResource struct {
 	// SourceID is aws account id or azure subscription id
 	SourceID string `json:"source_id"`
@@ -518,6 +558,7 @@ func (r KafkaLocationDistributionResource) AsProducerMessage() (*sarama.Producer
 
 	h := sha256.New()
 	h.Write([]byte(r.SourceID))
+	h.Write([]byte(r.ReportType))
 
 	return &sarama.ProducerMessage{
 		Key: sarama.StringEncoder(fmt.Sprintf("%x", h.Sum(nil))),

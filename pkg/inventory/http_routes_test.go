@@ -1140,7 +1140,10 @@ func (s *HttpHandlerSuite) TestGetResourceGrowthTrendOfProvider() {
 	_, err := doRequestJSONResponse(s.router, "GET", url, nil, &res)
 
 	require.NoError(err)
-	require.Len(res, 4)
+	require.Len(res, 3)
+	require.Equal(int64(20), res[0].Value)
+	require.Equal(int64(20), res[1].Value)
+	require.Equal(int64(30), res[2].Value)
 }
 
 func (s *HttpHandlerSuite) TestGetResourceGrowthTrendOfAccount() {
@@ -1154,6 +1157,39 @@ func (s *HttpHandlerSuite) TestGetResourceGrowthTrendOfAccount() {
 
 	require.NoError(err)
 	require.Len(res, 3)
+	require.Equal(int64(10), res[0].Value)
+	require.Equal(int64(20), res[1].Value)
+	require.Equal(int64(30), res[2].Value)
+}
+
+func (s *HttpHandlerSuite) TestGetTopNAccount() {
+	require := s.Require()
+
+	url := "/api/v1/resources/top/accounts?count=1&provider=AWS"
+	var res []api.TopAccountResponse
+	_, err := doRequestJSONResponse(s.router, "GET", url, nil, &res)
+
+	require.NoError(err)
+	require.Len(res, 1)
+	require.Equal("2a87b978-b8bf-4d7e-bc19-cf0a99a430cf", res[0].SourceID)
+	require.Equal(20, res[0].ResourceCount)
+}
+
+func (s *HttpHandlerSuite) TestCountBenchmarksAndPolicies() {
+	require := s.Require()
+
+	url := "/api/v1/benchmarks/count?provider=AWS"
+	var res int64
+	_, err := doRequestJSONResponse(s.router, "GET", url, nil, &res)
+
+	require.NoError(err)
+	require.Equal(int64(1), res)
+
+	url = "/api/v1/policies/count?provider=AWS"
+	_, err = doRequestJSONResponse(s.router, "GET", url, nil, &res)
+
+	require.NoError(err)
+	require.Equal(int64(1), res)
 }
 
 func (s *HttpHandlerSuite) TestGetLocationDistributionOfAccount() {

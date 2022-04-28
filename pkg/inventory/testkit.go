@@ -76,6 +76,12 @@ func PopulateElastic(address string, d *DescribeMock) error {
 			return err
 		}
 	}
+	for _, resource := range GenerateLastSummary() {
+		err := IndexKafkaMessage(es, resource)
+		if err != nil {
+			return err
+		}
+	}
 	for _, resource := range GenerateLocationDistribution() {
 		err := IndexKafkaMessage(es, resource)
 		if err != nil {
@@ -177,13 +183,14 @@ func GenerateLookupResources() []describe.KafkaLookupResource {
 
 func GenerateResourceGrowth() []describe.KafkaSourceResourcesSummary {
 	var resources []describe.KafkaSourceResourcesSummary
+	startTime := time.Now().UnixMilli()
 	for i := 0; i < 3; i++ {
 		resource := describe.KafkaSourceResourcesSummary{
 			SourceID:      "2a87b978-b8bf-4d7e-bc19-cf0a99a430cf",
 			SourceType:    "AWS",
 			SourceJobID:   1020,
-			DescribedAt:   time.Now().UnixMilli(),
-			ResourceCount: i * 10,
+			DescribedAt:   startTime + int64(i),
+			ResourceCount: (i + 1) * 10,
 			ReportType:    describe.AccountReportTypeResourceGrowthTrend,
 		}
 		resources = append(resources, resource)
@@ -193,12 +200,40 @@ func GenerateResourceGrowth() []describe.KafkaSourceResourcesSummary {
 			SourceID:      uuid.New().String(),
 			SourceType:    "AWS",
 			SourceJobID:   1021,
-			DescribedAt:   time.Now().UnixMilli(),
-			ResourceCount: i * 10,
+			DescribedAt:   startTime + int64(i),
+			ResourceCount: (i + 1) * 10,
 			ReportType:    describe.AccountReportTypeResourceGrowthTrend,
 		}
 		resources = append(resources, resource)
 	}
+	return resources
+}
+
+func GenerateLastSummary() []describe.KafkaSourceResourcesLastSummary {
+	var resources []describe.KafkaSourceResourcesLastSummary
+	startTime := time.Now().UnixMilli()
+
+	resources = append(resources, describe.KafkaSourceResourcesLastSummary{
+		KafkaSourceResourcesSummary: describe.KafkaSourceResourcesSummary{
+			SourceID:      uuid.New().String(),
+			SourceType:    "AWS",
+			SourceJobID:   1021,
+			DescribedAt:   startTime,
+			ResourceCount: 10,
+			ReportType:    describe.AccountReportTypeLastSummary,
+		},
+	})
+
+	resources = append(resources, describe.KafkaSourceResourcesLastSummary{
+		KafkaSourceResourcesSummary: describe.KafkaSourceResourcesSummary{
+			SourceID:      "2a87b978-b8bf-4d7e-bc19-cf0a99a430cf",
+			SourceType:    "AWS",
+			SourceJobID:   1020,
+			DescribedAt:   startTime + int64(2),
+			ResourceCount: 20,
+			ReportType:    describe.AccountReportTypeLastSummary,
+		},
+	})
 	return resources
 }
 

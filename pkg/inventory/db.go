@@ -149,6 +149,36 @@ func (db Database) ListBenchmarksWithFilters(provider *string, tags map[string]s
 	return s, nil
 }
 
+func (db Database) CountBenchmarksWithFilters(provider *string, tags map[string]string) (int64, error) {
+	var s int64
+	m := db.orm.Model(&Benchmark{}).
+		Preload("Tags").
+		Preload("Policies")
+	if provider != nil {
+		m = m.Where("provider = ?", *provider)
+	}
+	for key, value := range tags {
+		m = m.Where("id IN (SELECT benchmark_id FROM benchmark_tag_rel WHERE benchmark_tag_id IN (SELECT id FROM benchmark_tags WHERE key = ? AND value = ?))", key, value)
+	}
+
+	tx := m.Count(&s)
+	if tx.Error != nil {
+		return 0, tx.Error
+	}
+
+	return s, nil
+}
+
+func (db Database) CountPolicies(provider string) (int64, error) {
+	var s int64
+	tx := db.orm.Model(&Policy{}).Where("provider = ?", provider).Count(&s)
+	if tx.Error != nil {
+		return 0, tx.Error
+	}
+
+	return s, nil
+}
+
 func (db Database) GetBenchmark(benchmarkId string) (*Benchmark, error) {
 	var s Benchmark
 	tx := db.orm.Model(&Benchmark{}).
