@@ -76,6 +76,12 @@ func PopulateElastic(address string, d *DescribeMock) error {
 			return err
 		}
 	}
+	for _, resource := range GenerateLocationDistribution() {
+		err := IndexKafkaMessage(es, resource)
+		if err != nil {
+			return err
+		}
+	}
 
 	err = GenerateResources(es)
 	if err != nil {
@@ -171,13 +177,56 @@ func GenerateLookupResources() []describe.KafkaLookupResource {
 
 func GenerateResourceGrowth() []describe.KafkaSourceResourcesSummary {
 	var resources []describe.KafkaSourceResourcesSummary
-	for i := 0; i < 4; i++ {
+	for i := 0; i < 3; i++ {
 		resource := describe.KafkaSourceResourcesSummary{
 			SourceID:      "2a87b978-b8bf-4d7e-bc19-cf0a99a430cf",
 			SourceType:    "AWS",
 			SourceJobID:   1020,
 			DescribedAt:   time.Now().UnixMilli(),
 			ResourceCount: i * 10,
+			ReportType:    describe.AccountReportTypeResourceGrowthTrend,
+		}
+		resources = append(resources, resource)
+	}
+	for i := 0; i < 1; i++ {
+		resource := describe.KafkaSourceResourcesSummary{
+			SourceID:      uuid.New().String(),
+			SourceType:    "AWS",
+			SourceJobID:   1021,
+			DescribedAt:   time.Now().UnixMilli(),
+			ResourceCount: i * 10,
+			ReportType:    describe.AccountReportTypeResourceGrowthTrend,
+		}
+		resources = append(resources, resource)
+	}
+	return resources
+}
+
+func GenerateLocationDistribution() []describe.KafkaLocationDistributionResource {
+	var resources []describe.KafkaLocationDistributionResource
+	for i := 0; i < 3; i++ {
+		resource := describe.KafkaLocationDistributionResource{
+			SourceID:    "2a87b978-b8bf-4d7e-bc19-cf0a99a430cf",
+			SourceType:  "AWS",
+			SourceJobID: 1020,
+			LocationDistribution: map[string]int{
+				"us-east-1": 5,
+				"us-west-1": 5,
+			},
+			ReportType: describe.AccountReportTypeLocationDistribution,
+		}
+		resources = append(resources, resource)
+	}
+	for i := 0; i < 1; i++ {
+		resource := describe.KafkaLocationDistributionResource{
+			SourceID:    uuid.New().String(),
+			SourceType:  "AWS",
+			SourceJobID: 1021,
+			LocationDistribution: map[string]int{
+				"us-east-2": 5,
+				"us-west-2": 5,
+			},
+			ReportType: describe.AccountReportTypeLocationDistribution,
 		}
 		resources = append(resources, resource)
 	}
