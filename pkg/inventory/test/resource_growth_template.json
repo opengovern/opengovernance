@@ -1,6 +1,6 @@
 {
   "index_patterns": [
-    "compliance_report"
+    "source_resources_summary"
   ],
   "template": {
     "mappings": {
@@ -37,33 +37,25 @@
         }
       ],
       "properties": {
-        "type": {
+        "source_id": {
           "type": "keyword"
         },
-        "reportJobID": {
+        "source_type": {
+          "type": "keyword"
+        },
+        "source_job_id": {
           "type": "long"
         },
-        "describedAt": {
+        "described_at": {
           "type": "long"
         },
-        "provider": {
-          "type": "keyword"
-        },
-        "sourceID": {
-          "type": "keyword"
-        },
-        "group": {
-          "type": "object",
-          "dynamic": true
-        },
-        "result": {
-          "type": "object",
-          "dynamic": true
+        "resource_count": {
+          "type": "long"
         }
       }
     }
   },
   "_meta": {
-    "description": "Compliance report index"
+    "description": "Resource growth index"
   }
 }

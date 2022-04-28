@@ -344,7 +344,8 @@ func (s Scheduler) scheduleDescribeJob() {
 			continue
 		}
 
-		enqueueDescribeResourceJobs(s.logger, s.db, s.describeJobQueue, source, daj)
+		describedAt := time.Now()
+		enqueueDescribeResourceJobs(s.logger, s.db, s.describeJobQueue, source, daj, describedAt)
 
 		err = s.db.UpdateDescribeSourceJob(daj.ID, api.DescribeSourceJobInProgress)
 		if err != nil {
@@ -356,7 +357,7 @@ func (s Scheduler) scheduleDescribeJob() {
 		}
 		daj.Status = api.DescribeSourceJobInProgress
 
-		err = s.db.UpdateSourceDescribed(source.ID)
+		err = s.db.UpdateSourceDescribed(source.ID, describedAt)
 		if err != nil {
 			s.logger.Error("Failed to update Source",
 				zap.String("sourceId", source.ID.String()),
@@ -739,7 +740,7 @@ func newComplianceReportJob(a Source) ComplianceReportJob {
 	}
 }
 
-func enqueueDescribeResourceJobs(logger *zap.Logger, db Database, q queue.Interface, a Source, daj DescribeSourceJob) {
+func enqueueDescribeResourceJobs(logger *zap.Logger, db Database, q queue.Interface, a Source, daj DescribeSourceJob, describedAt time.Time) {
 	for i, drj := range daj.DescribeResourceJobs {
 		nextStatus := api.DescribeResourceJobQueued
 		errMsg := ""
@@ -747,8 +748,10 @@ func enqueueDescribeResourceJobs(logger *zap.Logger, db Database, q queue.Interf
 		err := q.Publish(DescribeJob{
 			JobID:        drj.ID,
 			ParentJobID:  daj.ID,
+			SourceID:     daj.SourceID.String(),
 			SourceType:   a.Type,
 			ResourceType: drj.ResourceType,
+			DescribedAt:  describedAt.UnixMilli(),
 			ConfigReg:    a.ConfigRef,
 		})
 		if err != nil {
@@ -778,10 +781,11 @@ func enqueueComplianceReportJobs(logger *zap.Logger, db Database, q queue.Interf
 	errMsg := ""
 
 	err := q.Publish(compliancereport.Job{
-		JobID:      crj.ID,
-		SourceID:   a.ID,
-		SourceType: compliancereport.SourceType(a.Type),
-		ConfigReg:  a.ConfigRef,
+		JobID:       crj.ID,
+		SourceID:    a.ID,
+		SourceType:  compliancereport.SourceType(a.Type),
+		DescribedAt: a.LastDescribedAt.Time.UnixMilli(),
+		ConfigReg:   a.ConfigRef,
 	})
 	if err != nil {
 		logger.Error("Failed to queue ComplianceReportJob",

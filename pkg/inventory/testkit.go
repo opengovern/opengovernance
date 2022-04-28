@@ -3,7 +3,6 @@ package inventory
 import (
 	"bytes"
 	"context"
-	"crypto/sha256"
 	"crypto/tls"
 	"encoding/json"
 	"errors"
@@ -58,10 +57,21 @@ func PopulateElastic(address string, d *DescribeMock) error {
 	if err != nil {
 		return err
 	}
+	err = ApplyTemplate(address, "resource_growth_template")
+	if err != nil {
+		return err
+	}
 
 	resources := GenerateLookupResources()
 	for _, resource := range resources {
-		err := IndexLookupResource(es, resource)
+		err := IndexKafkaMessage(es, resource)
+		if err != nil {
+			return err
+		}
+	}
+
+	for _, resource := range GenerateResourceGrowth() {
+		err := IndexKafkaMessage(es, resource)
 		if err != nil {
 			return err
 		}
@@ -159,42 +169,19 @@ func GenerateLookupResources() []describe.KafkaLookupResource {
 	return resources
 }
 
-func IndexLookupResource(es *elasticsearchv7.Client, resource describe.KafkaLookupResource) error {
-	js, err := json.Marshal(resource)
-	if err != nil {
-		return err
-	}
-
-	h := sha256.New()
-	h.Write([]byte(resource.ResourceID))
-	h.Write([]byte(resource.SourceType))
-	documentID := fmt.Sprintf("%x", h.Sum(nil))
-
-	// Set up the request object.
-	req := esapi.IndexRequest{
-		Index:      describe.InventorySummaryIndex,
-		DocumentID: documentID,
-		Body:       bytes.NewReader(js),
-		Refresh:    "true",
-	}
-
-	// Perform the request with the client.
-	res, err := req.Do(context.Background(), es)
-	if err != nil {
-		return err
-	}
-	defer res.Body.Close()
-
-	if res.IsError() {
-		return fmt.Errorf("[%s] Error indexing document ID=%s", res.Status(), documentID)
-	} else {
-		// Deserialize the response into a map.
-		var r map[string]interface{}
-		if err := json.NewDecoder(res.Body).Decode(&r); err != nil {
-			return err
+func GenerateResourceGrowth() []describe.KafkaSourceResourcesSummary {
+	var resources []describe.KafkaSourceResourcesSummary
+	for i := 0; i < 4; i++ {
+		resource := describe.KafkaSourceResourcesSummary{
+			SourceID:      "2a87b978-b8bf-4d7e-bc19-cf0a99a430cf",
+			SourceType:    "AWS",
+			SourceJobID:   1020,
+			DescribedAt:   time.Now().UnixMilli(),
+			ResourceCount: i * 10,
 		}
+		resources = append(resources, resource)
 	}
-	return nil
+	return resources
 }
 
 func PopulatePostgres(db Database) error {
@@ -352,42 +339,7 @@ func GenerateAccountReport(es *elasticsearchv7.Client, sourceId uuid.UUID, jobID
 		TotalCompliant:       20,
 		CompliancePercentage: 0.99,
 	}
-
-	b, err := json.Marshal(r)
-	if err != nil {
-		return err
-	}
-
-	u, err := uuid.NewUUID()
-	if err != nil {
-		return err
-	}
-	documentID := u.String()
-	// Set up the request object.
-	req := esapi.IndexRequest{
-		Index:      compliance_report.AccountReportIndex,
-		DocumentID: documentID,
-		Body:       bytes.NewReader(b),
-		Refresh:    "true",
-	}
-
-	// Perform the request with the client.
-	res, err := req.Do(context.Background(), es)
-	if err != nil {
-		return err
-	}
-	defer res.Body.Close()
-
-	if res.IsError() {
-		return fmt.Errorf("[%s] Error indexing document ID=%s", res.Status(), documentID)
-	} else {
-		// Deserialize the response into a map.
-		var r map[string]interface{}
-		if err := json.NewDecoder(res.Body).Decode(&r); err != nil {
-			return err
-		}
-	}
-	return nil
+	return IndexKafkaMessage(es, r)
 }
 func GenerateComplianceReport(es *elasticsearchv7.Client, sourceId uuid.UUID, jobID uint, createdAt int64) error {
 	r, err := compliance_report.ParseReport(
@@ -402,39 +354,9 @@ func GenerateComplianceReport(es *elasticsearchv7.Client, sourceId uuid.UUID, jo
 	}
 
 	for _, re := range r {
-		b, err := json.Marshal(re)
+		err = IndexKafkaMessage(es, re)
 		if err != nil {
 			return err
-		}
-
-		u, err := uuid.NewUUID()
-		if err != nil {
-			return err
-		}
-		documentID := u.String()
-		// Set up the request object.
-		req := esapi.IndexRequest{
-			Index:      compliance_report.ComplianceReportIndex,
-			DocumentID: documentID,
-			Body:       bytes.NewReader(b),
-			Refresh:    "true",
-		}
-
-		// Perform the request with the client.
-		res, err := req.Do(context.Background(), es)
-		if err != nil {
-			return err
-		}
-		defer res.Body.Close()
-
-		if res.IsError() {
-			return fmt.Errorf("[%s] Error indexing document ID=%s", res.Status(), documentID)
-		} else {
-			// Deserialize the response into a map.
-			var r map[string]interface{}
-			if err := json.NewDecoder(res.Body).Decode(&r); err != nil {
-				return err
-			}
 		}
 	}
 
@@ -564,7 +486,7 @@ func IndexAWSResource(es *elasticsearchv7.Client, resource awsdescriber.Resource
 			"account_id": resource.Account,
 		},
 	}
-	return IndexKafkaResource(es, kafkaRes)
+	return IndexKafkaMessage(es, kafkaRes)
 }
 
 func IndexAzureResource(es *elasticsearchv7.Client, resource azuredescriber.Resource) error {
@@ -583,24 +505,37 @@ func IndexAzureResource(es *elasticsearchv7.Client, resource azuredescriber.Reso
 			"cloud_environment": "Azure",
 		},
 	}
-	return IndexKafkaResource(es, kafkaRes)
+	return IndexKafkaMessage(es, kafkaRes)
 }
 
-func IndexKafkaResource(es *elasticsearchv7.Client, kafkaRes describe.KafkaResource) error {
-	js, err := json.Marshal(kafkaRes)
+func IndexKafkaMessage(es *elasticsearchv7.Client, kafkaRes describe.KafkaMessage) error {
+	r, err := kafkaRes.AsProducerMessage()
 	if err != nil {
 		return err
 	}
 
-	h := sha256.New()
-	h.Write([]byte(kafkaRes.ID))
-	documentID := fmt.Sprintf("%x", h.Sum(nil))
+	id, err := r.Key.Encode()
+	if err != nil {
+		return err
+	}
+
+	body, err := r.Value.Encode()
+	if err != nil {
+		return err
+	}
+
+	var index string
+	for _, header := range r.Headers {
+		if string(header.Key) == "elasticsearch_index" {
+			index = string(header.Value)
+		}
+	}
 
 	// Set up the request object.
 	req := esapi.IndexRequest{
-		Index:      describe.ResourceTypeToESIndex(kafkaRes.ResourceType),
-		DocumentID: documentID,
-		Body:       bytes.NewReader(js),
+		Index:      index,
+		DocumentID: string(id),
+		Body:       bytes.NewReader(body),
 		Refresh:    "true",
 	}
 
@@ -612,7 +547,7 @@ func IndexKafkaResource(es *elasticsearchv7.Client, kafkaRes describe.KafkaResou
 	defer res.Body.Close()
 
 	if res.IsError() {
-		return fmt.Errorf("[%s] Error indexing document ID=%s", res.Status(), documentID)
+		return fmt.Errorf("[%s] Error indexing document ID=%s", res.Status(), string(id))
 	} else {
 		// Deserialize the response into a map.
 		var r map[string]interface{}

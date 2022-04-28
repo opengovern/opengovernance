@@ -309,10 +309,15 @@ type PolicyResult struct {
 	CreatedAt          int64              `json:"createdAt"`
 }
 
-type TrendDataPoint struct {
+type ComplianceTrendDataPoint struct {
 	Timestamp      int64 `json:"timestamp"`
 	Compliant      int64 `json:"compliant"`
 	TotalResources int64 `json:"totalResources"`
+}
+
+type TrendDataPoint struct {
+	Timestamp int64 `json:"timestamp"`
+	Value     int64 `json:"value"`
 }
 
 type BenchmarkAccountComplianceResponse struct {

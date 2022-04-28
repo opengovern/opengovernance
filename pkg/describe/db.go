@@ -104,13 +104,13 @@ func (db Database) CreateSources(a []Source) error {
 
 // UpdateSourceDescribed updates the source last_described_at to
 // **NOW()** and next_describe_at to **NOW() + 2 Hours**.
-func (db Database) UpdateSourceDescribed(id uuid.UUID) error {
+func (db Database) UpdateSourceDescribed(id uuid.UUID, describedAt time.Time) error {
 	tx := db.orm.
 		Model(&Source{}).
 		Where("id = ?", id.String()).
 		Updates(map[string]interface{}{
-			"last_described_at": gorm.Expr("NOW()"),
-			"next_describe_at":  gorm.Expr("NOW() + INTERVAL '2 HOURS'"),
+			"last_described_at": describedAt,                    // gorm.Expr("NOW()"),
+			"next_describe_at":  describedAt.Add(2 * time.Hour), //gorm.Expr("NOW() + INTERVAL '2 HOURS'"),
 		})
 	if tx.Error != nil {
 		return tx.Error

@@ -9,6 +9,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/google/uuid"
+
 	"github.com/elastic/go-elasticsearch/v7"
 	"gitlab.com/keibiengine/keibi-engine/pkg/aws"
 	"gitlab.com/keibiengine/keibi-engine/pkg/azure"
@@ -20,10 +22,11 @@ import (
 )
 
 const (
-	esIndexHeader         = "elasticsearch_index"
-	InventorySummaryIndex = "inventory_summary"
-	describeJobTimeout    = 5 * time.Minute
-	cleanupJobTimeout     = 5 * time.Minute
+	esIndexHeader          = "elasticsearch_index"
+	InventorySummaryIndex  = "inventory_summary"
+	SourceResourcesSummary = "source_resources_summary"
+	describeJobTimeout     = 5 * time.Minute
+	cleanupJobTimeout      = 5 * time.Minute
 )
 
 var stopWordsRe = regexp.MustCompile(`\W+`)
@@ -82,6 +85,8 @@ type DescribeJob struct {
 	JobID        uint // DescribeResourceJob ID
 	ParentJobID  uint // DescribeSourceJob ID
 	ResourceType string
+	SourceID     string
+	DescribedAt  int64
 	SourceType   api.SourceType
 	ConfigReg    string
 }
@@ -203,7 +208,6 @@ func doDescribeAWS(ctx context.Context, job DescribeJob, config map[string]inter
 	}
 
 	var msgs []KafkaMessage
-	createdAt := time.Now().UnixMilli()
 	for _, resources := range output.Resources {
 		for _, resource := range resources {
 			if resource.Description == nil {
@@ -235,10 +239,18 @@ func doDescribeAWS(ctx context.Context, job DescribeJob, config map[string]inter
 				SourceID:      resource.Account,
 				ResourceJobID: job.JobID,
 				SourceJobID:   job.ParentJobID,
-				CreatedAt:     createdAt,
+				CreatedAt:     job.DescribedAt,
 			})
 		}
 	}
+	trend := KafkaSourceResourcesSummary{
+		SourceID:      job.SourceID,
+		SourceType:    job.SourceType,
+		SourceJobID:   job.JobID,
+		DescribedAt:   job.DescribedAt,
+		ResourceCount: len(output.Resources),
+	}
+	msgs = append(msgs, trend)
 
 	// For AWS resources, since they are queries independently per region,
 	// if there is an error in some regions, return those errors. For the regions
@@ -279,7 +291,6 @@ func doDescribeAzure(ctx context.Context, job DescribeJob, config map[string]int
 	}
 
 	var msgs []KafkaMessage
-	createdAt := time.Now().UnixMilli()
 	for _, resource := range output.Resources {
 		if resource.Description == nil {
 			continue
@@ -311,9 +322,17 @@ func doDescribeAzure(ctx context.Context, job DescribeJob, config map[string]int
 			SourceID:      resource.SubscriptionID,
 			ResourceJobID: job.JobID,
 			SourceJobID:   job.ParentJobID,
-			CreatedAt:     createdAt,
+			CreatedAt:     job.DescribedAt,
 		})
 	}
+	trend := KafkaSourceResourcesSummary{
+		SourceID:      job.SourceID,
+		SourceType:    job.SourceType,
+		SourceJobID:   job.JobID,
+		DescribedAt:   job.DescribedAt,
+		ResourceCount: len(output.Resources),
+	}
+	msgs = append(msgs, trend)
 
 	return msgs, nil
 }
@@ -410,6 +429,40 @@ func (r KafkaLookupResource) AsProducerMessage() (*sarama.ProducerMessage, error
 }
 func (r KafkaLookupResource) MessageID() string {
 	return r.ResourceID
+}
+
+type KafkaSourceResourcesSummary struct {
+	// SourceID is aws account id or azure subscription id
+	SourceID string `json:"source_id"`
+	// SourceType is the type of the source of the resource, i.e. AWS Cloud, Azure Cloud.
+	SourceType api.SourceType `json:"source_type"`
+	// SourceJobID is the DescribeSourceJob ID that the ResourceJobID was created for
+	SourceJobID uint `json:"source_job_id"`
+	// DescribedAt is when the DescribeSourceJob is created
+	DescribedAt int64 `json:"described_at"`
+	// ResourceCount is total of resources for specified account
+	ResourceCount int `json:"resource_count"`
+}
+
+func (r KafkaSourceResourcesSummary) AsProducerMessage() (*sarama.ProducerMessage, error) {
+	value, err := json.Marshal(r)
+	if err != nil {
+		return nil, err
+	}
+
+	return &sarama.ProducerMessage{
+		Key: sarama.StringEncoder(uuid.New().String()),
+		Headers: []sarama.RecordHeader{
+			{
+				Key:   []byte(esIndexHeader),
+				Value: []byte(SourceResourcesSummary),
+			},
+		},
+		Value: sarama.ByteEncoder(value),
+	}, nil
+}
+func (r KafkaSourceResourcesSummary) MessageID() string {
+	return r.SourceID
 }
 
 func ResourceTypeToESIndex(t string) string {

@@ -74,7 +74,7 @@ func GenerateReports() []report.Report {
 					Type:        report.ReportTypeBenchmark,
 					ReportJobId: jobID,
 					SourceID:    sourceID,
-					CreatedAt:   createdAt,
+					DescribedAt: createdAt,
 				}
 				reports = append(reports, r)
 			}
@@ -95,7 +95,7 @@ func GenerateReports() []report.Report {
 					Type:        report.ReportTypeResult,
 					ReportJobId: jobID,
 					SourceID:    sourceID,
-					CreatedAt:   createdAt,
+					DescribedAt: createdAt,
 				}
 				reports = append(reports, r)
 			}
