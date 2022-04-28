@@ -22,11 +22,11 @@ import (
 )
 
 const (
-	esIndexHeader         = "elasticsearch_index"
-	InventorySummaryIndex = "inventory_summary"
-	ResourceGrowthIndex   = "resource_growth"
-	describeJobTimeout    = 5 * time.Minute
-	cleanupJobTimeout     = 5 * time.Minute
+	esIndexHeader          = "elasticsearch_index"
+	InventorySummaryIndex  = "inventory_summary"
+	SourceResourcesSummary = "source_resources_summary"
+	describeJobTimeout     = 5 * time.Minute
+	cleanupJobTimeout      = 5 * time.Minute
 )
 
 var stopWordsRe = regexp.MustCompile(`\W+`)
@@ -86,7 +86,7 @@ type DescribeJob struct {
 	ParentJobID  uint // DescribeSourceJob ID
 	ResourceType string
 	SourceID     string
-	DescribeAt   int64
+	DescribedAt  int64
 	SourceType   api.SourceType
 	ConfigReg    string
 }
@@ -239,15 +239,15 @@ func doDescribeAWS(ctx context.Context, job DescribeJob, config map[string]inter
 				SourceID:      resource.Account,
 				ResourceJobID: job.JobID,
 				SourceJobID:   job.ParentJobID,
-				CreatedAt:     job.DescribeAt,
+				CreatedAt:     job.DescribedAt,
 			})
 		}
 	}
-	trend := KafkaResourceGrowthTrendResource{
+	trend := KafkaSourceResourcesSummary{
 		SourceID:      job.SourceID,
 		SourceType:    job.SourceType,
 		SourceJobID:   job.JobID,
-		CreatedAt:     job.DescribeAt,
+		DescribedAt:   job.DescribedAt,
 		ResourceCount: len(output.Resources),
 	}
 	msgs = append(msgs, trend)
@@ -322,14 +322,14 @@ func doDescribeAzure(ctx context.Context, job DescribeJob, config map[string]int
 			SourceID:      resource.SubscriptionID,
 			ResourceJobID: job.JobID,
 			SourceJobID:   job.ParentJobID,
-			CreatedAt:     job.DescribeAt,
+			CreatedAt:     job.DescribedAt,
 		})
 	}
-	trend := KafkaResourceGrowthTrendResource{
+	trend := KafkaSourceResourcesSummary{
 		SourceID:      job.SourceID,
 		SourceType:    job.SourceType,
 		SourceJobID:   job.JobID,
-		CreatedAt:     job.DescribeAt,
+		DescribedAt:   job.DescribedAt,
 		ResourceCount: len(output.Resources),
 	}
 	msgs = append(msgs, trend)
@@ -431,20 +431,20 @@ func (r KafkaLookupResource) MessageID() string {
 	return r.ResourceID
 }
 
-type KafkaResourceGrowthTrendResource struct {
+type KafkaSourceResourcesSummary struct {
 	// SourceID is aws account id or azure subscription id
 	SourceID string `json:"source_id"`
 	// SourceType is the type of the source of the resource, i.e. AWS Cloud, Azure Cloud.
 	SourceType api.SourceType `json:"source_type"`
 	// SourceJobID is the DescribeSourceJob ID that the ResourceJobID was created for
 	SourceJobID uint `json:"source_job_id"`
-	// CreatedAt is when the DescribeSourceJob is created
-	CreatedAt int64 `json:"created_at"`
+	// DescribedAt is when the DescribeSourceJob is created
+	DescribedAt int64 `json:"described_at"`
 	// ResourceCount is total of resources for specified account
 	ResourceCount int `json:"resource_count"`
 }
 
-func (r KafkaResourceGrowthTrendResource) AsProducerMessage() (*sarama.ProducerMessage, error) {
+func (r KafkaSourceResourcesSummary) AsProducerMessage() (*sarama.ProducerMessage, error) {
 	value, err := json.Marshal(r)
 	if err != nil {
 		return nil, err
@@ -455,13 +455,13 @@ func (r KafkaResourceGrowthTrendResource) AsProducerMessage() (*sarama.ProducerM
 		Headers: []sarama.RecordHeader{
 			{
 				Key:   []byte(esIndexHeader),
-				Value: []byte(ResourceGrowthIndex),
+				Value: []byte(SourceResourcesSummary),
 			},
 		},
 		Value: sarama.ByteEncoder(value),
 	}, nil
 }
-func (r KafkaResourceGrowthTrendResource) MessageID() string {
+func (r KafkaSourceResourcesSummary) MessageID() string {
 	return r.SourceID
 }
 

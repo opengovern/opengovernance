@@ -169,14 +169,14 @@ func GenerateLookupResources() []describe.KafkaLookupResource {
 	return resources
 }
 
-func GenerateResourceGrowth() []describe.KafkaResourceGrowthTrendResource {
-	var resources []describe.KafkaResourceGrowthTrendResource
+func GenerateResourceGrowth() []describe.KafkaSourceResourcesSummary {
+	var resources []describe.KafkaSourceResourcesSummary
 	for i := 0; i < 4; i++ {
-		resource := describe.KafkaResourceGrowthTrendResource{
+		resource := describe.KafkaSourceResourcesSummary{
 			SourceID:      "2a87b978-b8bf-4d7e-bc19-cf0a99a430cf",
 			SourceType:    "AWS",
 			SourceJobID:   1020,
-			CreatedAt:     time.Now().UnixMilli(),
+			DescribedAt:   time.Now().UnixMilli(),
 			ResourceCount: i * 10,
 		}
 		resources = append(resources, resource)

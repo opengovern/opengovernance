@@ -212,7 +212,7 @@ func (h *HttpHandler) GetBenchmarkComplianceTrend(ctx echo.Context) error {
 		}
 
 		var response es.ResourceGrowthQueryResponse
-		err = h.client.Search(context.Background(), describe.ResourceGrowthIndex, query, &response)
+		err = h.client.Search(context.Background(), describe.SourceResourcesSummary, query, &response)
 		if err != nil {
 			return err
 		}
@@ -231,14 +231,14 @@ func (h *HttpHandler) GetBenchmarkComplianceTrend(ctx echo.Context) error {
 	for _, hit := range hits {
 		var total int64 = 0
 		for _, rhit := range rhits {
-			if rhit.Source.CreatedAt == hit.Source.CreatedAt {
+			if rhit.Source.DescribedAt == hit.Source.DescribedAt {
 				total = int64(rhit.Source.ResourceCount)
 				break
 			}
 		}
 
 		resp = append(resp, api.ComplianceTrendDataPoint{
-			Timestamp:      hit.Source.CreatedAt,
+			Timestamp:      hit.Source.DescribedAt,
 			Compliant:      int64(hit.Source.Group.Summary.Status.OK),
 			TotalResources: total,
 		})
@@ -302,7 +302,7 @@ func (h *HttpHandler) GetResourceGrowthTrend(ctx echo.Context) error {
 		}
 
 		var response es.ResourceGrowthQueryResponse
-		err = h.client.Search(context.Background(), describe.ResourceGrowthIndex, query, &response)
+		err = h.client.Search(context.Background(), describe.SourceResourcesSummary, query, &response)
 		if err != nil {
 			return err
 		}
@@ -320,7 +320,7 @@ func (h *HttpHandler) GetResourceGrowthTrend(ctx echo.Context) error {
 	var resp []api.TrendDataPoint
 	for _, hit := range hits {
 		resp = append(resp, api.TrendDataPoint{
-			Timestamp: hit.Source.CreatedAt,
+			Timestamp: hit.Source.DescribedAt,
 			Value:     int64(hit.Source.ResourceCount),
 		})
 	}
@@ -750,7 +750,7 @@ func (h *HttpHandler) GetResultPolicies(ctx echo.Context) error {
 				for _, r := range resp {
 					if r.ID == res.ControlId {
 						r.TotalResources++
-						r.CreatedAt = hit.Source.CreatedAt
+						r.CreatedAt = hit.Source.DescribedAt
 
 						switch res.Result.Status {
 						case compliance_report.ResultStatusOK:

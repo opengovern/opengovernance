@@ -49,7 +49,7 @@ type Report struct {
 	ReportJobId uint             `json:"reportJobID"`
 	SourceID    uuid.UUID        `json:"sourceID"`
 	Provider    SourceType       `json:"provider"`
-	CreatedAt   int64            `json:"createdAt"`
+	DescribedAt int64            `json:"describedAt"`
 }
 
 func (r Report) AsProducerMessage() (*sarama.ProducerMessage, error) {
@@ -205,7 +205,7 @@ type AccountReportQueryHit struct {
 	Sort    []interface{} `json:"sort"`
 }
 
-func ExtractNodes(root Group, provider SourceType, tree []string, reportJobID uint, sourceID uuid.UUID, createdAt int64) []Report {
+func ExtractNodes(root Group, provider SourceType, tree []string, reportJobID uint, sourceID uuid.UUID, describedAt int64) []Report {
 	var nodes []Report
 
 	var controlIds, childGroupIds []string
@@ -232,7 +232,7 @@ func ExtractNodes(root Group, provider SourceType, tree []string, reportJobID ui
 		Type:        ReportTypeBenchmark,
 		SourceID:    sourceID,
 		Provider:    provider,
-		CreatedAt:   createdAt,
+		DescribedAt: describedAt,
 	}
 	nodes = append(nodes, me)
 
@@ -257,13 +257,13 @@ func ExtractNodes(root Group, provider SourceType, tree []string, reportJobID ui
 			Type:        ReportTypeControl,
 			SourceID:    sourceID,
 			Provider:    provider,
-			CreatedAt:   createdAt,
+			DescribedAt: describedAt,
 		}
 		nodes = append(nodes, controlNode)
 	}
 
 	for _, group := range root.Groups {
-		newNodes := ExtractNodes(group, provider, newTree, reportJobID, sourceID, createdAt)
+		newNodes := ExtractNodes(group, provider, newTree, reportJobID, sourceID, describedAt)
 		nodes = append(nodes, newNodes...)
 	}
 
@@ -289,7 +289,7 @@ func ExtractLeaves(root Group, provider SourceType, tree []string, reportJobID u
 					Type:        ReportTypeResult,
 					SourceID:    sourceID,
 					Provider:    provider,
-					CreatedAt:   createdAt,
+					DescribedAt: createdAt,
 				})
 			}
 		}
@@ -307,7 +307,7 @@ func ExtractLeaves(root Group, provider SourceType, tree []string, reportJobID u
 	return leaves
 }
 
-func ParseReport(path string, reportJobID uint, sourceID uuid.UUID, createdAt int64, provider SourceType) ([]Report, error) {
+func ParseReport(path string, reportJobID uint, sourceID uuid.UUID, describedAt int64, provider SourceType) ([]Report, error) {
 	content, err := ioutil.ReadFile(path)
 	if err != nil {
 		return nil, err
@@ -319,8 +319,8 @@ func ParseReport(path string, reportJobID uint, sourceID uuid.UUID, createdAt in
 		return nil, err
 	}
 
-	nodes := ExtractNodes(root, provider, nil, reportJobID, sourceID, createdAt)
-	leaves := ExtractLeaves(root, provider, nil, reportJobID, sourceID, createdAt)
+	nodes := ExtractNodes(root, provider, nil, reportJobID, sourceID, describedAt)
+	leaves := ExtractLeaves(root, provider, nil, reportJobID, sourceID, describedAt)
 	return append(nodes, leaves...), nil
 }
 
@@ -434,7 +434,7 @@ func QueryTrend(sourceID uuid.UUID, benchmarkID string, createdAtFrom, createdAt
 	})
 	filters = append(filters, map[string]interface{}{
 		"range": map[string]interface{}{
-			"createdAt": map[string]string{
+			"describedAt": map[string]string{
 				"gte": strconv.FormatInt(createdAtFrom, 10),
 				"lte": strconv.FormatInt(createdAtTo, 10),
 			},
@@ -508,7 +508,7 @@ func QueryBenchmarks(provider *string, createdAt int64, level, size int32, searc
 	}
 	filters = append(filters, map[string]interface{}{
 		"range": map[string]interface{}{
-			"createdAt": map[string]interface{}{
+			"describedAt": map[string]interface{}{
 				// just to make sure we get the benchmarks at the time
 				"gte": createdAt - 1*60*1000,
 				"lte": createdAt + 1*60*1000,

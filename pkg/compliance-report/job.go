@@ -36,12 +36,12 @@ const (
 )
 
 type Job struct {
-	JobID      uint
-	SourceID   uuid.UUID
-	SourceType SourceType
-	ConfigReg  string
-	DescribeAt int64
-	logger     *zap.Logger
+	JobID       uint
+	SourceID    uuid.UUID
+	SourceType  SourceType
+	ConfigReg   string
+	DescribedAt int64
+	logger      *zap.Logger
 }
 
 type JobResult struct {
@@ -125,7 +125,7 @@ func (j *Job) Do(vlt vault.SourceConfig, producer sarama.SyncProducer, topic str
 		return j.failed("error: RunSteampipeCheckAll: " + err.Error())
 	}
 
-	reports, err := ParseReport(resultFileName, j.JobID, j.SourceID, j.DescribeAt, j.SourceType)
+	reports, err := ParseReport(resultFileName, j.JobID, j.SourceID, j.DescribedAt, j.SourceType)
 	if err != nil {
 		return j.failed("error: Parse report: " + err.Error())
 	}
@@ -145,7 +145,7 @@ func (j *Job) Do(vlt vault.SourceConfig, producer sarama.SyncProducer, topic str
 		BenchmarkID:          benchmarkID,
 		ReportJobId:          j.JobID,
 		Summary:              summary,
-		CreatedAt:            j.DescribeAt,
+		CreatedAt:            j.DescribedAt,
 		TotalResources:       totalResource,
 		TotalCompliant:       summary.Status.OK,
 		CompliancePercentage: float64(summary.Status.OK) / float64(totalResource),
@@ -158,7 +158,7 @@ func (j *Job) Do(vlt vault.SourceConfig, producer sarama.SyncProducer, topic str
 
 	return JobResult{
 		JobID:           j.JobID,
-		ReportCreatedAt: j.DescribeAt,
+		ReportCreatedAt: j.DescribedAt,
 		Status:          ComplianceReportJobCompleted,
 	}
 }

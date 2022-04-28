@@ -43,7 +43,7 @@
         "reportJobID": {
           "type": "long"
         },
-        "createdAt": {
+        "describedAt": {
           "type": "long"
         },
         "provider": {

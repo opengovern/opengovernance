@@ -1,6 +1,6 @@
 {
   "index_patterns": [
-    "resource_growth"
+    "source_resources_summary"
   ],
   "template": {
     "mappings": {
@@ -46,7 +46,7 @@
         "source_job_id": {
           "type": "long"
         },
-        "created_at": {
+        "described_at": {
           "type": "long"
         },
         "resource_count": {

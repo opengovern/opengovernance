@@ -20,13 +20,13 @@ type ResourceGrowthQueryHits struct {
 	Hits  []ResourceGrowthQueryHit `json:"hits"`
 }
 type ResourceGrowthQueryHit struct {
-	ID      string                                    `json:"_id"`
-	Score   float64                                   `json:"_score"`
-	Index   string                                    `json:"_index"`
-	Type    string                                    `json:"_type"`
-	Version int64                                     `json:"_version,omitempty"`
-	Source  describe.KafkaResourceGrowthTrendResource `json:"_source"`
-	Sort    []interface{}                             `json:"sort"`
+	ID      string                               `json:"_id"`
+	Score   float64                              `json:"_score"`
+	Index   string                               `json:"_index"`
+	Type    string                               `json:"_type"`
+	Version int64                                `json:"_version,omitempty"`
+	Source  describe.KafkaSourceResourcesSummary `json:"_source"`
+	Sort    []interface{}                        `json:"sort"`
 }
 
 func (r ResourceGrowth) FindDataPointsQuery(sourceID *uuid.UUID, provider *string,
@@ -49,7 +49,7 @@ func (r ResourceGrowth) FindDataPointsQuery(sourceID *uuid.UUID, provider *strin
 
 	filters = append(filters, map[string]interface{}{
 		"range": map[string]interface{}{
-			"created_at": map[string]string{
+			"described_at": map[string]string{
 				"gte": strconv.FormatInt(createdAtFrom, 10),
 				"lte": strconv.FormatInt(createdAtTo, 10),
 			},

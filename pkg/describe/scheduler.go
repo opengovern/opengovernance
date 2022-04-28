@@ -751,7 +751,7 @@ func enqueueDescribeResourceJobs(logger *zap.Logger, db Database, q queue.Interf
 			SourceID:     daj.SourceID.String(),
 			SourceType:   a.Type,
 			ResourceType: drj.ResourceType,
-			DescribeAt:   describedAt.UnixMilli(),
+			DescribedAt:  describedAt.UnixMilli(),
 			ConfigReg:    a.ConfigRef,
 		})
 		if err != nil {
@@ -781,11 +781,11 @@ func enqueueComplianceReportJobs(logger *zap.Logger, db Database, q queue.Interf
 	errMsg := ""
 
 	err := q.Publish(compliancereport.Job{
-		JobID:      crj.ID,
-		SourceID:   a.ID,
-		SourceType: compliancereport.SourceType(a.Type),
-		DescribeAt: a.LastDescribedAt.Time.UnixMilli(),
-		ConfigReg:  a.ConfigRef,
+		JobID:       crj.ID,
+		SourceID:    a.ID,
+		SourceType:  compliancereport.SourceType(a.Type),
+		DescribedAt: a.LastDescribedAt.Time.UnixMilli(),
+		ConfigReg:   a.ConfigRef,
 	})
 	if err != nil {
 		logger.Error("Failed to queue ComplianceReportJob",
