@@ -34,7 +34,7 @@ type AccountReportType string
 const (
 	AccountReportTypeResourceGrowthTrend  = "resource_growth_trend"
 	AccountReportTypeLocationDistribution = "location_distribution"
-	AccountReportTypeLastSummary = "last_summary"
+	AccountReportTypeLastSummary          = "last_summary"
 	AccountReportTypeCompliancyTrend      = "compliancy_trend"
 )
 
