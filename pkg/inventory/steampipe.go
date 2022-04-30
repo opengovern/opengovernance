@@ -41,6 +41,9 @@ func NewSteampipeDatabase(option SteampipeOption) (*SteampipeDatabase, error) {
 	if err != nil {
 		return nil, err
 	}
+	if err := conn.Ping(context.Background()); err != nil {
+		return nil, err
+	}
 
 	return &SteampipeDatabase{conn: conn}, nil
 }
