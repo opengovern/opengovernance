@@ -118,9 +118,9 @@ golangci-lint-main:
 
 test:
   stage: test
-  only:
-    - merge_requests
   extends: .go-cache
+  rules:
+    - when: always
   services:
     - docker:dind
   variables:
