@@ -29,6 +29,14 @@ const (
 	cleanupJobTimeout      = 5 * time.Minute
 )
 
+type AccountReportType string
+
+const (
+	AccountReportTypeResourceGrowthTrend  = "resource_growth_trend"
+	AccountReportTypeLocationDistribution = "location_distribution"
+	AccountReportTypeCompliancyTrend      = "compliancy_trend"
+)
+
 var stopWordsRe = regexp.MustCompile(`\W+`)
 
 type AWSAccountConfig struct {
@@ -208,6 +216,7 @@ func doDescribeAWS(ctx context.Context, job DescribeJob, config map[string]inter
 	}
 
 	var msgs []KafkaMessage
+	locationDistribution := map[string]int{}
 	for _, resources := range output.Resources {
 		for _, resource := range resources {
 			if resource.Description == nil {
@@ -241,6 +250,7 @@ func doDescribeAWS(ctx context.Context, job DescribeJob, config map[string]inter
 				SourceJobID:   job.ParentJobID,
 				CreatedAt:     job.DescribedAt,
 			})
+			locationDistribution[resource.Region]++
 		}
 	}
 	trend := KafkaSourceResourcesSummary{
@@ -249,8 +259,18 @@ func doDescribeAWS(ctx context.Context, job DescribeJob, config map[string]inter
 		SourceJobID:   job.JobID,
 		DescribedAt:   job.DescribedAt,
 		ResourceCount: len(output.Resources),
+		ReportType:    AccountReportTypeResourceGrowthTrend,
 	}
 	msgs = append(msgs, trend)
+
+	locDistribution := KafkaLocationDistributionResource{
+		SourceID:             job.SourceID,
+		SourceType:           job.SourceType,
+		SourceJobID:          job.JobID,
+		LocationDistribution: locationDistribution,
+		ReportType:           AccountReportTypeLocationDistribution,
+	}
+	msgs = append(msgs, locDistribution)
 
 	// For AWS resources, since they are queries independently per region,
 	// if there is an error in some regions, return those errors. For the regions
@@ -291,6 +311,7 @@ func doDescribeAzure(ctx context.Context, job DescribeJob, config map[string]int
 	}
 
 	var msgs []KafkaMessage
+	locationDistribution := map[string]int{}
 	for _, resource := range output.Resources {
 		if resource.Description == nil {
 			continue
@@ -324,6 +345,7 @@ func doDescribeAzure(ctx context.Context, job DescribeJob, config map[string]int
 			SourceJobID:   job.ParentJobID,
 			CreatedAt:     job.DescribedAt,
 		})
+		locationDistribution[resource.Location]++
 	}
 	trend := KafkaSourceResourcesSummary{
 		SourceID:      job.SourceID,
@@ -333,6 +355,14 @@ func doDescribeAzure(ctx context.Context, job DescribeJob, config map[string]int
 		ResourceCount: len(output.Resources),
 	}
 	msgs = append(msgs, trend)
+
+	locDistribution := KafkaLocationDistributionResource{
+		SourceID:             job.SourceID,
+		SourceType:           job.SourceType,
+		SourceJobID:          job.JobID,
+		LocationDistribution: locationDistribution,
+	}
+	msgs = append(msgs, locDistribution)
 
 	return msgs, nil
 }
@@ -442,6 +472,8 @@ type KafkaSourceResourcesSummary struct {
 	DescribedAt int64 `json:"described_at"`
 	// ResourceCount is total of resources for specified account
 	ResourceCount int `json:"resource_count"`
+	// ReportType of document
+	ReportType AccountReportType `json:"report_type"`
 }
 
 func (r KafkaSourceResourcesSummary) AsProducerMessage() (*sarama.ProducerMessage, error) {
@@ -462,6 +494,43 @@ func (r KafkaSourceResourcesSummary) AsProducerMessage() (*sarama.ProducerMessag
 	}, nil
 }
 func (r KafkaSourceResourcesSummary) MessageID() string {
+	return r.SourceID
+}
+
+type KafkaLocationDistributionResource struct {
+	// SourceID is aws account id or azure subscription id
+	SourceID string `json:"source_id"`
+	// SourceType is the type of the source of the resource, i.e. AWS Cloud, Azure Cloud.
+	SourceType api.SourceType `json:"source_type"`
+	// SourceJobID is the DescribeSourceJob ID that the ResourceJobID was created for
+	SourceJobID uint `json:"source_job_id"`
+	// LocationDistribution is total of resources per location for specified account
+	LocationDistribution map[string]int `json:"location_distribution"`
+	// ReportType of document
+	ReportType AccountReportType `json:"report_type"`
+}
+
+func (r KafkaLocationDistributionResource) AsProducerMessage() (*sarama.ProducerMessage, error) {
+	value, err := json.Marshal(r)
+	if err != nil {
+		return nil, err
+	}
+
+	h := sha256.New()
+	h.Write([]byte(r.SourceID))
+
+	return &sarama.ProducerMessage{
+		Key: sarama.StringEncoder(fmt.Sprintf("%x", h.Sum(nil))),
+		Headers: []sarama.RecordHeader{
+			{
+				Key:   []byte(esIndexHeader),
+				Value: []byte(SourceResourcesSummary),
+			},
+		},
+		Value: sarama.ByteEncoder(value),
+	}, nil
+}
+func (r KafkaLocationDistributionResource) MessageID() string {
 	return r.SourceID
 }
 

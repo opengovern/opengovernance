@@ -49,8 +49,15 @@
         "described_at": {
           "type": "long"
         },
+        "location_distribution": {
+          "type": "object",
+          "dynamic": true
+        },
         "resource_count": {
           "type": "long"
+        },
+        "report_type": {
+          "type": "keyword"
         }
       }
     }

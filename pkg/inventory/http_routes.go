@@ -54,6 +54,7 @@ func (h *HttpHandler) Register(v1 *echo.Group) {
 	v1.POST("/resource", h.GetResource)
 
 	v1.GET("/resources/trend", h.GetResourceGrowthTrend)
+	v1.GET("/resources/distribution", h.GetResourceDistribution)
 
 	v1.GET("/query", h.ListQueries)
 	v1.GET("/query/count", h.CountQueries)
@@ -205,7 +206,7 @@ func (h *HttpHandler) GetBenchmarkComplianceTrend(ctx echo.Context) error {
 	var rhits []es.ResourceGrowthQueryHit
 	searchAfter = nil
 	for {
-		query, err := es.ResourceGrowth{}.FindDataPointsQuery(&sourceUUID, nil,
+		query, err := es.ResourceGrowth{}.FindResourceGrowthTrendQuery(&sourceUUID, nil,
 			fromTime, toTime, EsFetchPageSize, searchAfter)
 		if err != nil {
 			return err
@@ -295,7 +296,7 @@ func (h *HttpHandler) GetResourceGrowthTrend(ctx echo.Context) error {
 	var hits []es.ResourceGrowthQueryHit
 	var searchAfter []interface{}
 	for {
-		query, err := es.ResourceGrowth{}.FindDataPointsQuery(sourceUUID, providerPtr,
+		query, err := es.ResourceGrowth{}.FindResourceGrowthTrendQuery(sourceUUID, providerPtr,
 			fromTime, toTime, EsFetchPageSize, searchAfter)
 		if err != nil {
 			return err
@@ -325,6 +326,66 @@ func (h *HttpHandler) GetResourceGrowthTrend(ctx echo.Context) error {
 		})
 	}
 	return ctx.JSON(http.StatusOK, resp)
+}
+
+// GetResourceDistribution godoc
+// @Summary  Returns distribution of resource for specific account
+// @Tags         benchmarks
+// @Accept       json
+// @Produce      json
+// @Param    sourceId     query     string  true  "SourceID"
+// @Param    provider     query     string  true  "Provider"
+// @Param    timeWindow   query     string  true  "Time Window"  Enums(24h,1w,3m,1y,max)
+// @Success  200          {object}  map[string]int
+// @Router   /inventory/api/v1/resources/distribution [get]
+func (h *HttpHandler) GetResourceDistribution(ctx echo.Context) error {
+	provider := ctx.QueryParam("provider")
+	sourceID := ctx.QueryParam("sourceId")
+
+	if provider == "" && sourceID == "" {
+		return echo.NewHTTPError(http.StatusBadRequest, "you should specify either provider or sourceId")
+	}
+
+	var providerPtr *string
+	if provider != "" {
+		providerPtr = &provider
+	}
+
+	var sourceUUID *uuid.UUID
+	if sourceID != "" {
+		u, err := uuid.Parse(sourceID)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "invalid source uuid")
+		}
+		sourceUUID = &u
+	}
+
+	locationDistribution := map[string]int{}
+	var searchAfter []interface{}
+	for {
+		query, err := es.ResourceGrowth{}.FindLocationDistributionQuery(sourceUUID, providerPtr, EsFetchPageSize, searchAfter)
+		if err != nil {
+			return err
+		}
+
+		var response es.LocationDistributionQueryResponse
+		err = h.client.Search(context.Background(), describe.SourceResourcesSummary, query, &response)
+		if err != nil {
+			return err
+		}
+
+		if len(response.Hits.Hits) == 0 {
+			break
+		}
+
+		for _, hit := range response.Hits.Hits {
+			for k, v := range hit.Source.LocationDistribution {
+				locationDistribution[k] += v
+			}
+			searchAfter = hit.Sort
+		}
+	}
+	return ctx.JSON(http.StatusOK, locationDistribution)
 }
 
 // GetBenchmarkAccountCompliance godoc

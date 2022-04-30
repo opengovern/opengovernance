@@ -1153,6 +1153,30 @@ func (s *HttpHandlerSuite) TestGetResourceGrowthTrendOfAccount() {
 	_, err = doRequestJSONResponse(s.router, "GET", url, nil, &res)
 
 	require.NoError(err)
+	require.Len(res, 3)
+}
+
+func (s *HttpHandlerSuite) TestGetLocationDistributionOfAccount() {
+	require := s.Require()
+	sourceID, err := uuid.Parse("2a87b978-b8bf-4d7e-bc19-cf0a99a430cf")
+	require.NoError(err)
+
+	url := fmt.Sprintf("/api/v1/resources/distribution?sourceId=%s", sourceID.String())
+	var res map[string]int
+	_, err = doRequestJSONResponse(s.router, "GET", url, nil, &res)
+
+	require.NoError(err)
+	require.Len(res, 2)
+}
+
+func (s *HttpHandlerSuite) TestGetLocationDistributionOfProvider() {
+	require := s.Require()
+
+	url := "/api/v1/resources/distribution?provider=AWS"
+	var res map[string]int
+	_, err := doRequestJSONResponse(s.router, "GET", url, nil, &res)
+
+	require.NoError(err)
 	require.Len(res, 4)
 }
 
