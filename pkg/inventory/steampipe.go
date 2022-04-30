@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"regexp"
 
-	"github.com/jackc/pgx/v4"
+	"github.com/jackc/pgx/v4/pgxpool"
 	"gitlab.com/keibiengine/keibi-engine/pkg/inventory/api"
 )
 
@@ -19,7 +19,7 @@ type SteampipeOption struct {
 }
 
 type SteampipeDatabase struct {
-	conn *pgx.Conn
+	conn *pgxpool.Pool
 }
 
 type SteampipeResult struct {
@@ -29,15 +29,19 @@ type SteampipeResult struct {
 
 func NewSteampipeDatabase(option SteampipeOption) (*SteampipeDatabase, error) {
 	var err error
-	dsn := fmt.Sprintf(`host=%s port=%s user=%s password=%s dbname=%s sslmode=disable TimeZone=GMT`,
+	connString := fmt.Sprintf(`host=%s port=%s user=%s password=%s dbname=%s sslmode=disable TimeZone=GMT`,
 		option.Host,
 		option.Port,
 		option.User,
 		option.Pass,
 		option.Db,
 	)
-	conn, err := pgx.Connect(context.Background(), dsn)
+
+	conn, err := pgxpool.Connect(context.Background(), connString)
 	if err != nil {
+		return nil, err
+	}
+	if err := conn.Ping(context.Background()); err != nil {
 		return nil, err
 	}
 
@@ -72,10 +76,10 @@ func (s *SteampipeDatabase) Query(query string, from, size int, orderBy string,
 
 	r, err := s.conn.Query(context.Background(),
 		query, size, from)
-	defer r.Close()
 	if err != nil {
 		return nil, err
 	}
+	defer r.Close()
 
 	var headers []string
 	for _, field := range r.FieldDescriptions() {
