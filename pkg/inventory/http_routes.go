@@ -55,6 +55,7 @@ func (h *HttpHandler) Register(v1 *echo.Group) {
 
 	v1.GET("/resources/trend", h.GetResourceGrowthTrend)
 	v1.GET("/resources/distribution", h.GetResourceDistribution)
+	v1.GET("/resources/top/accounts", h.GetTopAccountsByResourceCount)
 
 	v1.GET("/query", h.ListQueries)
 	v1.GET("/query/count", h.CountQueries)
@@ -74,6 +75,9 @@ func (h *HttpHandler) Register(v1 *echo.Group) {
 	v1.GET("/benchmarks/:benchmarkId/:sourceId/compliance/trend", h.GetBenchmarkComplianceTrend)
 	v1.GET("/benchmarks/:benchmarkId/:createdAt/accounts/compliance", h.GetBenchmarkAccountCompliance)
 	v1.GET("/benchmarks/:benchmarkId/:createdAt/accounts", h.GetBenchmarkAccounts)
+
+	v1.GET("/benchmarks/count", h.CountBenchmarks)
+	v1.GET("/policies/count", h.CountPolicies)
 }
 
 // GetBenchmarksInTime godoc
@@ -318,14 +322,56 @@ func (h *HttpHandler) GetResourceGrowthTrend(ctx echo.Context) error {
 		}
 	}
 
-	var resp []api.TrendDataPoint
+	datapoints := map[int64]int{}
 	for _, hit := range hits {
+		datapoints[hit.Source.DescribedAt] += hit.Source.ResourceCount
+	}
+
+	var resp []api.TrendDataPoint
+	for k, v := range datapoints {
 		resp = append(resp, api.TrendDataPoint{
-			Timestamp: hit.Source.DescribedAt,
-			Value:     int64(hit.Source.ResourceCount),
+			Timestamp: k,
+			Value:     int64(v),
 		})
 	}
 	return ctx.JSON(http.StatusOK, resp)
+}
+
+// GetTopAccountsByResourceCount godoc
+// @Summary  Returns top n accounts of specified provider by resource count
+// @Tags         benchmarks
+// @Accept       json
+// @Produce      json
+// @Param    count        query     int     true  "count"
+// @Param    provider     query     string  true  "Provider"
+// @Success  200          {object}  []api.TopAccountResponse
+// @Router   /inventory/api/v1/resources/top/accounts [get]
+func (h *HttpHandler) GetTopAccountsByResourceCount(ctx echo.Context) error {
+	provider := ctx.QueryParam("provider")
+	count, err := strconv.Atoi(ctx.QueryParam("count"))
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid count")
+	}
+
+	query, err := es.ResourceGrowth{}.FindTopAccountsQuery(provider, count)
+	if err != nil {
+		return err
+	}
+
+	var response es.ResourceGrowthQueryResponse
+	err = h.client.Search(context.Background(), describe.SourceResourcesSummary, query, &response)
+	if err != nil {
+		return err
+	}
+
+	var res []api.TopAccountResponse
+	for _, hit := range response.Hits.Hits {
+		res = append(res, api.TopAccountResponse{
+			SourceID:      hit.Source.SourceID,
+			ResourceCount: hit.Source.ResourceCount,
+		})
+	}
+	return ctx.JSON(http.StatusOK, res)
 }
 
 // GetResourceDistribution godoc
@@ -528,6 +574,53 @@ func (h *HttpHandler) GetBenchmarks(ctx echo.Context) error {
 	}
 
 	return ctx.JSON(http.StatusOK, response)
+}
+
+// CountBenchmarks godoc
+// @Summary      Returns count of benchmarks
+// @Description  In order to filter benchmarks by tags provide the tag key-value as query param
+// @Tags     benchmarks
+// @Accept   json
+// @Produce  json
+// @Param        provider  query     string  false  "Provider"  Enums(AWS,Azure)
+// @Param        tags      query     string  false  "Tags in key-value query param"
+// @Success      200       {object}  []api.Benchmark
+// @Router       /inventory/api/v1/benchmarks/count [get]
+func (h *HttpHandler) CountBenchmarks(ctx echo.Context) error {
+	var provider *string
+	tagFilters := make(map[string]string)
+	for k, v := range ctx.QueryParams() {
+		if k == "provider" {
+			if len(v) == 1 {
+				provider = &v[0]
+			}
+			continue
+		}
+		if len(v) == 1 {
+			tagFilters[k] = v[0]
+		}
+	}
+	benchmarks, err := h.db.CountBenchmarksWithFilters(provider, tagFilters)
+	if err != nil {
+		return err
+	}
+	return ctx.JSON(http.StatusOK, benchmarks)
+}
+
+// CountPolicies godoc
+// @Summary      Returns count of policies
+// @Tags     benchmarks
+// @Accept   json
+// @Produce  json
+// @Param        provider  query     string  false  "Provider"  Enums(AWS,Azure)
+// @Success      200       {object}  []api.Benchmark
+// @Router       /inventory/api/v1/policies/count [get]
+func (h *HttpHandler) CountPolicies(ctx echo.Context) error {
+	c, err := h.db.CountPolicies(ctx.QueryParam("provider"))
+	if err != nil {
+		return err
+	}
+	return ctx.JSON(http.StatusOK, c)
 }
 
 // GetBenchmarkTags godoc

@@ -63,6 +63,9 @@ func (r ResourceGrowth) FindResourceGrowthTrendQuery(sourceID *uuid.UUID, provid
 	res["size"] = fetchSize
 	res["sort"] = []map[string]interface{}{
 		{
+			"described_at": "asc",
+		},
+		{
 			"_id": "asc",
 		},
 	}
@@ -70,6 +73,33 @@ func (r ResourceGrowth) FindResourceGrowthTrendQuery(sourceID *uuid.UUID, provid
 		res["search_after"] = searchAfter
 	}
 
+	res["query"] = map[string]interface{}{
+		"bool": map[string]interface{}{
+			"filter": filters,
+		},
+	}
+	b, err := json.Marshal(res)
+	return string(b), err
+}
+
+func (r ResourceGrowth) FindTopAccountsQuery(provider string, fetchSize int) (string, error) {
+	res := make(map[string]interface{})
+	var filters []interface{}
+
+	filters = append(filters, map[string]interface{}{
+		"terms": map[string][]string{"report_type": {describe.AccountReportTypeLastSummary}},
+	})
+
+	filters = append(filters, map[string]interface{}{
+		"terms": map[string][]string{"source_type": {provider}},
+	})
+
+	res["size"] = fetchSize
+	res["sort"] = []map[string]interface{}{
+		{
+			"resource_count": "desc",
+		},
+	}
 	res["query"] = map[string]interface{}{
 		"bool": map[string]interface{}{
 			"filter": filters,

@@ -326,7 +326,12 @@ type BenchmarkAccountComplianceResponse struct {
 }
 
 type ListQueryRequest struct {
-	TitleFilter    string      `yaml:"titleFilter"`
-	ProviderFilter *SourceType `yaml:"providerFilter"`
-	Labels         []string    `yaml:"labels"`
+	TitleFilter    string      `json:"titleFilter"`
+	ProviderFilter *SourceType `json:"providerFilter"`
+	Labels         []string    `json:"labels"`
+}
+
+type TopAccountResponse struct {
+	SourceID      string `json:"sourceID"`
+	ResourceCount int    `json:"resourceCount"`
 }
