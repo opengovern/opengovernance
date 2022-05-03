@@ -246,12 +246,15 @@ func doDescribeAWS(ctx context.Context, job DescribeJob, config map[string]inter
 				ResourceType:  job.ResourceType,
 				ResourceGroup: "",
 				Location:      resource.Region,
-				SourceID:      resource.Account,
+				SourceID:      job.SourceID,
 				ResourceJobID: job.JobID,
 				SourceJobID:   job.ParentJobID,
 				CreatedAt:     job.DescribedAt,
 			})
-			locationDistribution[resource.Region]++
+			region := strings.TrimSpace(resource.Region)
+			if region != "" {
+				locationDistribution[region]++
+			}
 		}
 	}
 
@@ -348,12 +351,15 @@ func doDescribeAzure(ctx context.Context, job DescribeJob, config map[string]int
 			ResourceType:  job.ResourceType,
 			ResourceGroup: resource.ResourceGroup,
 			Location:      resource.Location,
-			SourceID:      resource.SubscriptionID,
+			SourceID:      job.SourceID,
 			ResourceJobID: job.JobID,
 			SourceJobID:   job.ParentJobID,
 			CreatedAt:     job.DescribedAt,
 		})
-		locationDistribution[resource.Location]++
+		location := strings.TrimSpace(resource.Location)
+		if location != "" {
+			locationDistribution[location]++
+		}
 	}
 	trend := KafkaSourceResourcesSummary{
 		SourceID:      job.SourceID,
