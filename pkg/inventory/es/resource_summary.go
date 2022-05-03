@@ -2,8 +2,9 @@ package es
 
 import (
 	"encoding/json"
-	"gitlab.com/keibiengine/keibi-engine/pkg/describe/kafka"
 	"strconv"
+
+	"gitlab.com/keibiengine/keibi-engine/pkg/describe/kafka"
 
 	"github.com/google/uuid"
 	"gitlab.com/keibiengine/keibi-engine/pkg/keibi-es-sdk"

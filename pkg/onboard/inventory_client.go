@@ -2,10 +2,11 @@ package onboard
 
 import (
 	"encoding/json"
-	"gitlab.com/keibiengine/keibi-engine/pkg/inventory/api"
 	"io/ioutil"
 	"net/http"
 	"time"
+
+	"gitlab.com/keibiengine/keibi-engine/pkg/inventory/api"
 )
 
 type InventoryClient interface {

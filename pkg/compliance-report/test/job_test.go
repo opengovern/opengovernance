@@ -1,6 +1,7 @@
 package test
 
 import (
+	"gitlab.com/keibiengine/keibi-engine/pkg/utils"
 	"io/ioutil"
 	"os"
 	"strings"
@@ -27,7 +28,7 @@ func TestJob_Do(t *testing.T) {
 	job := compliancereport.Job{
 		JobID:      100,
 		SourceID:   uuid.New(),
-		SourceType: compliancereport.SourceCloudAzure,
+		SourceType: utils.SourceCloudAzure,
 		ConfigReg:  "azure",
 	}
 

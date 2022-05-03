@@ -2,6 +2,7 @@ package kafka
 
 import (
 	"fmt"
+
 	"go.uber.org/zap"
 	"gopkg.in/Shopify/sarama.v1"
 )

@@ -12,9 +12,9 @@ const (
 )
 
 type ComplianceReport struct {
-	ID              uint                         `json:"id"`
-	UpdatedAt       time.Time                    `json:"updatedAt"`
-	ReportCreatedAt int64                        `json:"reportCreatedAt"`
+	ID              uint                      `json:"id"`
+	UpdatedAt       time.Time                 `json:"updatedAt"`
+	ReportCreatedAt int64                     `json:"reportCreatedAt"`
 	Status          ComplianceReportJobStatus `json:"status"`
-	FailureMessage  string                       `json:"failureMessage"`
+	FailureMessage  string                    `json:"failureMessage"`
 }

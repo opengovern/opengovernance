@@ -259,7 +259,7 @@ func doDescribeAWS(ctx context.Context, job DescribeJob, config map[string]inter
 	msgs = append(msgs, trend)
 
 	last := kafka.KafkaSourceResourcesLastSummary{
-		trend,
+		KafkaSourceResourcesSummary: trend,
 	}
 	last.ReportType = kafka.ResourceSummaryTypeLastSummary
 	msgs = append(msgs, last)
@@ -362,7 +362,7 @@ func doDescribeAzure(ctx context.Context, job DescribeJob, config map[string]int
 	msgs = append(msgs, trend)
 
 	last := kafka.KafkaSourceResourcesLastSummary{
-		trend,
+		KafkaSourceResourcesSummary: trend,
 	}
 	last.ReportType = kafka.ResourceSummaryTypeLastSummary
 	msgs = append(msgs, last)
