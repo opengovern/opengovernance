@@ -5,6 +5,8 @@ import (
 	"io/ioutil"
 	"strconv"
 
+	"gitlab.com/keibiengine/keibi-engine/pkg/utils"
+
 	"github.com/google/uuid"
 	"gitlab.com/keibiengine/keibi-engine/pkg/keibi-es-sdk"
 	"gopkg.in/Shopify/sarama.v1"
@@ -48,7 +50,7 @@ type Report struct {
 	Type        ReportType       `json:"type"`
 	ReportJobId uint             `json:"reportJobID"`
 	SourceID    uuid.UUID        `json:"sourceID"`
-	Provider    SourceType       `json:"provider"`
+	Provider    utils.SourceType `json:"provider"`
 	DescribedAt int64            `json:"describedAt"`
 }
 
@@ -80,15 +82,15 @@ func (r Report) MessageID() string {
 }
 
 type AccountReport struct {
-	SourceID             uuid.UUID  `json:"sourceID"`
-	Provider             SourceType `json:"provider"`
-	BenchmarkID          string     `json:"benchmarkID"`
-	ReportJobId          uint       `json:"reportJobID"`
-	Summary              Summary    `json:"summary"`
-	CreatedAt            int64      `json:"createdAt"`
-	TotalResources       int        `json:"totalResources"`
-	TotalCompliant       int        `json:"totalCompliant"`
-	CompliancePercentage float64    `json:"compliancePercentage"`
+	SourceID             uuid.UUID        `json:"sourceID"`
+	Provider             utils.SourceType `json:"provider"`
+	BenchmarkID          string           `json:"benchmarkID"`
+	ReportJobId          uint             `json:"reportJobID"`
+	Summary              Summary          `json:"summary"`
+	CreatedAt            int64            `json:"createdAt"`
+	TotalResources       int              `json:"totalResources"`
+	TotalCompliant       int              `json:"totalCompliant"`
+	CompliancePercentage float64          `json:"compliancePercentage"`
 }
 
 func (r AccountReport) AsProducerMessage() (*sarama.ProducerMessage, error) {
@@ -144,6 +146,23 @@ const (
 	ResultStatusSkip  = "skip"
 	ResultStatusError = "error"
 )
+
+func (r ResultStatus) SeverityLevel() int {
+	switch r {
+	case ResultStatusOK:
+		return 0
+	case ResultStatusSkip:
+		return 1
+	case ResultStatusInfo:
+		return 2
+	case ResultStatusError:
+		return 3
+	case ResultStatusAlarm:
+		return 4
+	default:
+		return -1
+	}
+}
 
 type Result struct {
 	Reason     string       `json:"reason"`
@@ -205,7 +224,7 @@ type AccountReportQueryHit struct {
 	Sort    []interface{} `json:"sort"`
 }
 
-func ExtractNodes(root Group, provider SourceType, tree []string, reportJobID uint, sourceID uuid.UUID, describedAt int64) []Report {
+func ExtractNodes(root Group, provider utils.SourceType, tree []string, reportJobID uint, sourceID uuid.UUID, describedAt int64) []Report {
 	var nodes []Report
 
 	var controlIds, childGroupIds []string
@@ -270,7 +289,7 @@ func ExtractNodes(root Group, provider SourceType, tree []string, reportJobID ui
 	return nodes
 }
 
-func ExtractLeaves(root Group, provider SourceType, tree []string, reportJobID uint, sourceID uuid.UUID, createdAt int64) []Report {
+func ExtractLeaves(root Group, provider utils.SourceType, tree []string, reportJobID uint, sourceID uuid.UUID, createdAt int64) []Report {
 	var leaves []Report
 	if root.Controls != nil {
 		for _, control := range root.Controls {
@@ -307,7 +326,7 @@ func ExtractLeaves(root Group, provider SourceType, tree []string, reportJobID u
 	return leaves
 }
 
-func ParseReport(path string, reportJobID uint, sourceID uuid.UUID, describedAt int64, provider SourceType) ([]Report, error) {
+func ParseReport(path string, reportJobID uint, sourceID uuid.UUID, describedAt int64, provider utils.SourceType) ([]Report, error) {
 	content, err := ioutil.ReadFile(path)
 	if err != nil {
 		return nil, err

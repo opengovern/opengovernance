@@ -9,6 +9,10 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
+
+	api3 "gitlab.com/keibiengine/keibi-engine/pkg/describe/api"
+	api2 "gitlab.com/keibiengine/keibi-engine/pkg/inventory/api"
 
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
@@ -72,6 +76,8 @@ func (s *HttpHandlerSuite) SetupSuite() {
 		db:                Database{orm: orm},
 		sourceEventsQueue: &queuemocks.Interface{},
 		vault:             &vaultmocks.SourceConfig{},
+		inventoryClient:   InventoryMockClient{s},
+		describeClient:    DescribeMockClient{s},
 	}
 
 	s.handler.Register(s.router)
@@ -283,6 +289,8 @@ func (s *HttpHandlerSuite) TestGetSources_Success() {
 	require.NoError(err, "request")
 	require.Equal(http.StatusOK, rec.Code)
 	require.Equal(1, len(response5))
+	require.Equal(10, response5[0].ResourceCount)
+	require.True(response5[0].LastDescribedDate.Add(5 * time.Minute).After(time.Now()))
 }
 
 func (s *HttpHandlerSuite) TestGetProviders() {
@@ -329,4 +337,46 @@ func doSimpleJSONRequest(router *echo.Echo, method string, path string, request,
 	}
 
 	return rec, nil
+}
+
+type InventoryMockClient struct {
+	s *HttpHandlerSuite
+}
+
+func (c InventoryMockClient) ListAccountsResourceCount() ([]api2.TopAccountResponse, error) {
+	sources, err := c.s.handler.db.GetSources()
+	if err != nil {
+		return nil, err
+	}
+
+	var resp []api2.TopAccountResponse
+	for _, s := range sources {
+		resp = append(resp, api2.TopAccountResponse{
+			SourceID:      s.ID.String(),
+			ResourceCount: 10,
+		})
+	}
+	return resp, nil
+}
+
+type DescribeMockClient struct {
+	s *HttpHandlerSuite
+}
+
+func (c DescribeMockClient) ListSources() ([]api3.Source, error) {
+	sources, err := c.s.handler.db.GetSources()
+	if err != nil {
+		return nil, err
+	}
+
+	var resp []api3.Source
+	for _, s := range sources {
+		resp = append(resp, api3.Source{
+			ID:                     s.ID,
+			Type:                   api3.SourceType(s.Type),
+			LastDescribedAt:        time.Now(),
+			LastComplianceReportAt: time.Now(),
+		})
+	}
+	return resp, nil
 }

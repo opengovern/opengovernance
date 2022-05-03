@@ -385,15 +385,42 @@ func (h HttpHandler) GetSources(ctx echo.Context) error {
 		}
 	}
 
+	count, err := h.inventoryClient.ListAccountsResourceCount()
+	if err != nil {
+		return err
+	}
+
+	desc, err := h.describeClient.ListSources()
+	if err != nil {
+		return err
+	}
+
 	resp := api.GetSourcesResponse{}
 	for _, s := range sources {
-		resp = append(resp, api.Source{
+		source := api.Source{
 			ID:          s.ID,
 			Name:        s.Name,
 			SourceId:    s.SourceId,
 			Type:        s.Type,
 			Description: s.Description,
-		})
+			OnboardDate: s.CreatedAt,
+		}
+
+		for _, c := range count {
+			if c.SourceID == s.ID.String() {
+				source.ResourceCount = c.ResourceCount
+				break
+			}
+		}
+
+		for _, d := range desc {
+			if d.ID == s.ID {
+				source.LastDescribedDate = d.LastDescribedAt
+				break
+			}
+		}
+
+		resp = append(resp, source)
 	}
 
 	return ctx.JSON(http.StatusOK, resp)

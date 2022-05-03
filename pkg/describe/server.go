@@ -5,6 +5,8 @@ import (
 	"strconv"
 	"time"
 
+	api2 "gitlab.com/keibiengine/keibi-engine/pkg/compliance-report/api"
+
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
@@ -180,9 +182,9 @@ func (s HttpServer) HandleListSourceComplianceReports(ctx echo.Context) error {
 		}
 	}
 
-	var objs []api.ComplianceReport
+	var objs []api2.ComplianceReport
 	for _, job := range jobs {
-		objs = append(objs, api.ComplianceReport{
+		objs = append(objs, api2.ComplianceReport{
 			ID:              job.ID,
 			UpdatedAt:       job.UpdatedAt,
 			ReportCreatedAt: job.ReportCreatedAt,

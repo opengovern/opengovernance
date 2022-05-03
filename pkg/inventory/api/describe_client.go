@@ -7,11 +7,12 @@ import (
 	"net/http"
 	"time"
 
+	api2 "gitlab.com/keibiengine/keibi-engine/pkg/compliance-report/api"
+
 	"github.com/google/uuid"
-	"gitlab.com/keibiengine/keibi-engine/pkg/describe/api"
 )
 
-func ListComplianceReportJobs(baseUrl string, sourceID uuid.UUID, filter *TimeRangeFilter) ([]api.ComplianceReport, error) {
+func ListComplianceReportJobs(baseUrl string, sourceID uuid.UUID, filter *TimeRangeFilter) ([]api2.ComplianceReport, error) {
 	url := baseUrl + "/api/v1/sources/" + sourceID.String() + "/jobs/compliance"
 	if filter != nil {
 		url = fmt.Sprintf("%s?from=%d&to=%d", url, filter.From, filter.To)
@@ -35,7 +36,7 @@ func ListComplianceReportJobs(baseUrl string, sourceID uuid.UUID, filter *TimeRa
 		return nil, err
 	}
 
-	var response []api.ComplianceReport
+	var response []api2.ComplianceReport
 	err = json.Unmarshal(body, &response)
 	if err != nil {
 		return nil, err

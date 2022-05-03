@@ -11,6 +11,7 @@ import (
 	"log"
 	"mime"
 	"net/http"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -56,6 +57,7 @@ func (h *HttpHandler) Register(v1 *echo.Group) {
 	v1.GET("/resources/trend", h.GetResourceGrowthTrend)
 	v1.GET("/resources/distribution", h.GetResourceDistribution)
 	v1.GET("/resources/top/accounts", h.GetTopAccountsByResourceCount)
+	v1.GET("/accounts/resource/count", h.GetAccountsResourceCount)
 
 	v1.GET("/query", h.ListQueries)
 	v1.GET("/query/count", h.CountQueries)
@@ -75,6 +77,9 @@ func (h *HttpHandler) Register(v1 *echo.Group) {
 	v1.GET("/benchmarks/:benchmarkId/:sourceId/compliance/trend", h.GetBenchmarkComplianceTrend)
 	v1.GET("/benchmarks/:benchmarkId/:createdAt/accounts/compliance", h.GetBenchmarkAccountCompliance)
 	v1.GET("/benchmarks/:benchmarkId/:createdAt/accounts", h.GetBenchmarkAccounts)
+
+	v1.GET("/benchmarks/:provider/list", h.GetBenchmarkDetails)
+	v1.GET("/compliancy/trend", h.GetCompliancyTrend)
 
 	v1.GET("/benchmarks/count", h.CountBenchmarks)
 	v1.GET("/policies/count", h.CountPolicies)
@@ -210,7 +215,7 @@ func (h *HttpHandler) GetBenchmarkComplianceTrend(ctx echo.Context) error {
 	var rhits []es.ResourceGrowthQueryHit
 	searchAfter = nil
 	for {
-		query, err := es.ResourceGrowth{}.FindResourceGrowthTrendQuery(&sourceUUID, nil,
+		query, err := es.FindResourceGrowthTrendQuery(&sourceUUID, nil,
 			fromTime, toTime, EsFetchPageSize, searchAfter)
 		if err != nil {
 			return err
@@ -300,7 +305,7 @@ func (h *HttpHandler) GetResourceGrowthTrend(ctx echo.Context) error {
 	var hits []es.ResourceGrowthQueryHit
 	var searchAfter []interface{}
 	for {
-		query, err := es.ResourceGrowth{}.FindResourceGrowthTrendQuery(sourceUUID, providerPtr,
+		query, err := es.FindResourceGrowthTrendQuery(sourceUUID, providerPtr,
 			fromTime, toTime, EsFetchPageSize, searchAfter)
 		if err != nil {
 			return err
@@ -334,6 +339,98 @@ func (h *HttpHandler) GetResourceGrowthTrend(ctx echo.Context) error {
 			Value:     int64(v),
 		})
 	}
+	sort.SliceStable(resp, func(i, j int) bool {
+		return resp[i].Timestamp < resp[j].Timestamp
+	})
+	return ctx.JSON(http.StatusOK, resp)
+}
+
+// GetCompliancyTrend godoc
+// @Summary  Returns trend of compliancy for specific account
+// @Tags         benchmarks
+// @Accept       json
+// @Produce      json
+// @Param    sourceId     query     string  true  "SourceID"
+// @Param    provider     query     string  true  "Provider"
+// @Param    timeWindow   query     string  true  "Time Window"  Enums(24h,1w,3m,1y,max)
+// @Success  200          {object}  []api.TrendDataPoint
+// @Router   /inventory/api/v1/compliancy/trend [get]
+func (h *HttpHandler) GetCompliancyTrend(ctx echo.Context) error {
+	provider := ctx.QueryParam("provider")
+	sourceID := ctx.QueryParam("sourceId")
+	timeWindow := ctx.QueryParam("timeWindow")
+
+	if timeWindow == "" {
+		timeWindow = "24h"
+	}
+
+	if provider == "" && sourceID == "" {
+		return echo.NewHTTPError(http.StatusBadRequest, "you should specify either provider or sourceId")
+	}
+
+	var providerPtr *string
+	if provider != "" {
+		providerPtr = &provider
+	}
+
+	var sourceUUID *uuid.UUID
+	var err error
+	if sourceID != "" {
+		u, err := uuid.Parse(sourceID)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "invalid source uuid")
+		}
+		sourceUUID = &u
+	}
+
+	var fromTime, toTime int64
+	toTime = time.Now().UnixMilli()
+	tw, err := utils.ParseTimeWindow(ctx.QueryParam("timeWindow"))
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid timeWindow")
+	}
+	fromTime = time.Now().Add(-1 * tw).UnixMilli()
+
+	var hits []es.ComplianceTrendQueryHit
+	var searchAfter []interface{}
+	for {
+		query, err := es.FindCompliancyTrendQuery(sourceUUID, providerPtr,
+			fromTime, toTime, EsFetchPageSize, searchAfter)
+		if err != nil {
+			return err
+		}
+
+		var response es.ComplianceTrendQueryResponse
+		err = h.client.Search(context.Background(), describe.SourceResourcesSummary, query, &response)
+		if err != nil {
+			return err
+		}
+
+		if len(response.Hits.Hits) == 0 {
+			break
+		}
+
+		for _, hit := range response.Hits.Hits {
+			hits = append(hits, hit)
+			searchAfter = hit.Sort
+		}
+	}
+
+	datapoints := map[int64]int{}
+	for _, hit := range hits {
+		datapoints[hit.Source.DescribedAt] += hit.Source.CompliantResourceCount
+	}
+
+	var resp []api.TrendDataPoint
+	for k, v := range datapoints {
+		resp = append(resp, api.TrendDataPoint{
+			Timestamp: k,
+			Value:     int64(v),
+		})
+	}
+	sort.SliceStable(resp, func(i, j int) bool {
+		return resp[i].Timestamp < resp[j].Timestamp
+	})
 	return ctx.JSON(http.StatusOK, resp)
 }
 
@@ -353,7 +450,7 @@ func (h *HttpHandler) GetTopAccountsByResourceCount(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid count")
 	}
 
-	query, err := es.ResourceGrowth{}.FindTopAccountsQuery(provider, count)
+	query, err := es.FindTopAccountsQuery(provider, count)
 	if err != nil {
 		return err
 	}
@@ -370,6 +467,47 @@ func (h *HttpHandler) GetTopAccountsByResourceCount(ctx echo.Context) error {
 			SourceID:      hit.Source.SourceID,
 			ResourceCount: hit.Source.ResourceCount,
 		})
+	}
+	return ctx.JSON(http.StatusOK, res)
+}
+
+// GetAccountsResourceCount godoc
+// @Summary  Returns resource count of accounts
+// @Tags         benchmarks
+// @Accept       json
+// @Produce      json
+// @Param    provider     query     string  true  "Provider"
+// @Success  200          {object}  []api.TopAccountResponse
+// @Router   /inventory/api/v1/accounts/resource/count [get]
+func (h *HttpHandler) GetAccountsResourceCount(ctx echo.Context) error {
+	provider := ctx.QueryParam("provider")
+
+	var searchAfter []interface{}
+	var res []api.TopAccountResponse
+
+	for {
+		query, err := es.ListAccountResourceCountQuery(provider, EsFetchPageSize, searchAfter)
+		if err != nil {
+			return err
+		}
+
+		var response es.ResourceGrowthQueryResponse
+		err = h.client.Search(context.Background(), describe.SourceResourcesSummary, query, &response)
+		if err != nil {
+			return err
+		}
+
+		if len(response.Hits.Hits) == 0 {
+			break
+		}
+
+		for _, hit := range response.Hits.Hits {
+			searchAfter = hit.Sort
+			res = append(res, api.TopAccountResponse{
+				SourceID:      hit.Source.SourceID,
+				ResourceCount: hit.Source.ResourceCount,
+			})
+		}
 	}
 	return ctx.JSON(http.StatusOK, res)
 }
@@ -409,7 +547,7 @@ func (h *HttpHandler) GetResourceDistribution(ctx echo.Context) error {
 	locationDistribution := map[string]int{}
 	var searchAfter []interface{}
 	for {
-		query, err := es.ResourceGrowth{}.FindLocationDistributionQuery(sourceUUID, providerPtr, EsFetchPageSize, searchAfter)
+		query, err := es.FindLocationDistributionQuery(sourceUUID, providerPtr, EsFetchPageSize, searchAfter)
 		if err != nil {
 			return err
 		}

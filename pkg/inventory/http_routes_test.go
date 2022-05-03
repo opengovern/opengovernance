@@ -16,6 +16,8 @@ import (
 	"testing"
 	"time"
 
+	api3 "gitlab.com/keibiengine/keibi-engine/pkg/compliance-report/api"
+
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
 	"github.com/ory/dockertest/v3"
@@ -737,7 +739,7 @@ func (s *HttpHandlerSuite) TestGetComplianceReport_Benchmark() {
 			DeletedAt: gorm.DeletedAt{},
 		},
 		SourceID:       source.ID,
-		Status:         compliance_report.ComplianceReportJobCompleted,
+		Status:         api3.ComplianceReportJobCompleted,
 		FailureMessage: "",
 	}
 	time.Sleep(10 * time.Millisecond)
@@ -751,7 +753,7 @@ func (s *HttpHandlerSuite) TestGetComplianceReport_Benchmark() {
 			DeletedAt: gorm.DeletedAt{},
 		},
 		SourceID:       source.ID,
-		Status:         compliance_report.ComplianceReportJobCompleted,
+		Status:         api3.ComplianceReportJobCompleted,
 		FailureMessage: "",
 	}
 	time.Sleep(10 * time.Millisecond)
@@ -862,7 +864,7 @@ func (s *HttpHandlerSuite) TestGetComplianceReport_Result() {
 			DeletedAt: gorm.DeletedAt{},
 		},
 		SourceID: source.ID,
-		Status:   compliance_report.ComplianceReportJobCompleted,
+		Status:   api3.ComplianceReportJobCompleted,
 	}
 	require.NoError(err)
 	s.describe.SetResponse(j1)
@@ -982,7 +984,7 @@ func (s *HttpHandlerSuite) TestGetBenchmarkResult() {
 			DeletedAt: gorm.DeletedAt{},
 		},
 		SourceID:       sourceId,
-		Status:         compliance_report.ComplianceReportJobCompleted,
+		Status:         api3.ComplianceReportJobCompleted,
 		FailureMessage: "",
 	}
 	s.describe.SetResponse(j1)
@@ -1008,7 +1010,7 @@ func (s *HttpHandlerSuite) TestGetBenchmarkResultPolicies() {
 			DeletedAt: gorm.DeletedAt{},
 		},
 		SourceID:       sourceId,
-		Status:         compliance_report.ComplianceReportJobCompleted,
+		Status:         api3.ComplianceReportJobCompleted,
 		FailureMessage: "",
 	}
 	s.describe.SetResponse(j1)
@@ -1141,6 +1143,7 @@ func (s *HttpHandlerSuite) TestGetResourceGrowthTrendOfProvider() {
 
 	require.NoError(err)
 	require.Len(res, 3)
+	fmt.Println(res)
 	require.Equal(int64(20), res[0].Value)
 	require.Equal(int64(20), res[1].Value)
 	require.Equal(int64(30), res[2].Value)
@@ -1160,6 +1163,36 @@ func (s *HttpHandlerSuite) TestGetResourceGrowthTrendOfAccount() {
 	require.Equal(int64(10), res[0].Value)
 	require.Equal(int64(20), res[1].Value)
 	require.Equal(int64(30), res[2].Value)
+}
+
+func (s *HttpHandlerSuite) TestGetCompliancyTrendOfProvider() {
+	require := s.Require()
+
+	url := "/api/v1/compliancy/trend?provider=AWS&timeWindow=24h"
+	var res []api.TrendDataPoint
+	_, err := doRequestJSONResponse(s.router, "GET", url, nil, &res)
+
+	require.NoError(err)
+	require.Len(res, 3)
+	require.Equal(int64(10), res[0].Value)
+	require.Equal(int64(15), res[1].Value)
+	require.Equal(int64(25), res[2].Value)
+}
+
+func (s *HttpHandlerSuite) TestGetCompliancyTrendOfAccount() {
+	require := s.Require()
+	sourceID, err := uuid.Parse("2a87b978-b8bf-4d7e-bc19-cf0a99a430cf")
+	require.NoError(err)
+
+	url := fmt.Sprintf("/api/v1/compliancy/trend?sourceId=%s&timeWindow=24h", sourceID.String())
+	var res []api.TrendDataPoint
+	_, err = doRequestJSONResponse(s.router, "GET", url, nil, &res)
+
+	require.NoError(err)
+	require.Len(res, 3)
+	require.Equal(int64(5), res[0].Value)
+	require.Equal(int64(15), res[1].Value)
+	require.Equal(int64(25), res[2].Value)
 }
 
 func (s *HttpHandlerSuite) TestGetTopNAccount() {
