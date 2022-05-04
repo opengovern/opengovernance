@@ -874,6 +874,7 @@ func (h *HttpHandler) GetResultPolicies(ctx echo.Context) error {
 			Severity:    policy.Severity,
 			Provider:    policy.Provider,
 			Status:      api.PolicyResultStatusPassed,
+			CreatedAt:   policy.CreatedAt.UnixMilli(),
 		})
 	}
 
@@ -904,7 +905,7 @@ func (h *HttpHandler) GetResultPolicies(ctx echo.Context) error {
 				for _, r := range resp {
 					if r.ID == res.ControlId {
 						r.TotalResources++
-						r.CreatedAt = hit.Source.DescribedAt
+						r.DescribedAt = hit.Source.DescribedAt
 
 						switch res.Result.Status {
 						case compliance_report.ResultStatusOK:
