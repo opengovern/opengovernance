@@ -112,14 +112,12 @@ type CreateSourceResponse struct {
 }
 
 type Source struct {
-	ID                uuid.UUID  `json:"id"`
-	SourceId          string     `json:"sourceId"`
-	Name              string     `json:"name"`
-	Type              SourceType `json:"type"`
-	Description       string     `json:"description"`
-	ResourceCount     int        `json:"resourceCount"`
-	OnboardDate       time.Time  `json:"onboardDate"`
-	LastDescribedDate time.Time  `json:"lastDescribedDate"`
+	ID          uuid.UUID  `json:"id"`
+	SourceId    string     `json:"sourceId"`
+	Name        string     `json:"name"`
+	Type        SourceType `json:"type"`
+	Description string     `json:"description"`
+	OnboardDate time.Time  `json:"onboardDate"`
 }
 
 type GetSourcesResponse []Source

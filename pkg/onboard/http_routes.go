@@ -385,16 +385,6 @@ func (h HttpHandler) GetSources(ctx echo.Context) error {
 		}
 	}
 
-	count, err := h.inventoryClient.ListAccountsResourceCount()
-	if err != nil {
-		return err
-	}
-
-	desc, err := h.describeClient.ListSources()
-	if err != nil {
-		return err
-	}
-
 	resp := api.GetSourcesResponse{}
 	for _, s := range sources {
 		source := api.Source{
@@ -405,21 +395,6 @@ func (h HttpHandler) GetSources(ctx echo.Context) error {
 			Description: s.Description,
 			OnboardDate: s.CreatedAt,
 		}
-
-		for _, c := range count {
-			if c.SourceID == s.ID.String() {
-				source.ResourceCount = c.ResourceCount
-				break
-			}
-		}
-
-		for _, d := range desc {
-			if d.ID == s.ID {
-				source.LastDescribedDate = d.LastDescribedAt
-				break
-			}
-		}
-
 		resp = append(resp, source)
 	}
 

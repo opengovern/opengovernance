@@ -1,12 +1,13 @@
 package test
 
 import (
-	"gitlab.com/keibiengine/keibi-engine/pkg/utils"
 	"io/ioutil"
 	"os"
 	"strings"
 	"testing"
 	"time"
+
+	"gitlab.com/keibiengine/keibi-engine/pkg/utils"
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
