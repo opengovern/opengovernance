@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"strings"
 
 	"github.com/turbot/go-kit/helpers"
@@ -79,26 +80,22 @@ func QueryResourcesWithSteampipeColumns(
 		terms := make(map[string][]string)
 		if !FilterIsEmpty(req.Filters.Location) {
 			if sourceType == SourceCloudAWS {
-				terms["metadata.region.keyword"] = req.Filters.Location
+				terms["metadata.region"] = req.Filters.Location
 			} else {
-				terms["metadata.location.keyword"] = req.Filters.Location
+				terms["metadata.location"] = req.Filters.Location
 			}
 		}
 
 		if !FilterIsEmpty(req.Filters.ResourceType) {
-			terms["resource_type.keyword"] = req.Filters.ResourceType
+			terms["resource_type"] = req.Filters.ResourceType
 		}
 
 		if !FilterIsEmpty(req.Filters.SourceID) {
-			if sourceType == SourceCloudAWS {
-				terms["account_id.keyword"] = req.Filters.SourceID
-			} else {
-				terms["subscription_id.keyword"] = req.Filters.SourceID
-			}
+			terms["source_id"] = req.Filters.SourceID
 		}
 
 		if provider != nil {
-			terms["source_type.keyword"] = []string{string(*provider)}
+			terms["source_type"] = []string{string(*provider)}
 		}
 
 		query, err := BuildResourceQuery(req.Query, terms, req.Page.Size, idx, req.Sorts, sourceType)
@@ -106,6 +103,7 @@ func QueryResourcesWithSteampipeColumns(
 			return nil, err
 		}
 
+		fmt.Println("======", query)
 		err = client.Search(ctx,
 			indexName,
 			query,
@@ -289,28 +287,24 @@ func BuildSortResource(sorts []ResourceSortItem, provider SourceType) []map[stri
 		field := ""
 		switch item.Field {
 		case SortFieldResourceID:
-			field = "id.keyword"
+			field = "id"
 		case SortFieldName:
-			field = "metadata.name.keyword"
+			field = "metadata.name"
 		case SortFieldSourceType:
-			field = "source_type.keyword"
+			field = "source_type"
 		case SortFieldResourceType:
-			field = "resource_type.keyword"
+			field = "resource_type"
 		case SortFieldResourceGroup:
-			field = "description.ResourceGroup.keyword"
+			field = "description.ResourceGroup"
 		case SortFieldLocation:
 			if provider == SourceCloudAWS {
-				field = "metadata.region.keyword"
+				field = "metadata.region"
 			} else {
-				field = "metadata.location.keyword"
+				field = "metadata.location"
 			}
 
 		case SortFieldSourceID:
-			if provider == SourceCloudAWS {
-				field = "metadata.account_id.keyword"
-			} else {
-				field = "metadata.subscription_id.keyword"
-			}
+			field = "source_id"
 		}
 
 		dir := string(item.Direction)

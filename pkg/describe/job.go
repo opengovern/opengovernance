@@ -231,6 +231,7 @@ func doDescribeAWS(ctx context.Context, job DescribeJob, config map[string]inter
 				ResourceType:  job.ResourceType,
 				ResourceJobID: job.JobID,
 				SourceJobID:   job.ParentJobID,
+				SourceID:      job.SourceID,
 				Metadata: map[string]string{
 					"name":       resource.Name,
 					"partition":  resource.Partition,
@@ -335,6 +336,7 @@ func doDescribeAzure(ctx context.Context, job DescribeJob, config map[string]int
 			ResourceType:  output.Metadata.ResourceType,
 			ResourceJobID: job.JobID,
 			SourceJobID:   job.ParentJobID,
+			SourceID:      job.SourceID,
 			Metadata: map[string]string{
 				"id":                resource.ID,
 				"name":              resource.Name,
@@ -405,6 +407,8 @@ type KafkaResource struct {
 	ResourceJobID uint `json:"resource_job_id"`
 	// SourceJobID is the DescribeSourceJob ID that the ResourceJobID was created for
 	SourceJobID uint `json:"source_job_id"`
+	// SourceID is the Source ID that the resource belongs to
+	SourceID string `json:"source_id"`
 	// Metadata is arbitrary data associated with each resource
 	Metadata map[string]string `json:"metadata"`
 }

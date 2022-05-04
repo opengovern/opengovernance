@@ -72,8 +72,8 @@ func (s *HttpHandlerSuite) SetupSuite() {
 	s.elasticUrl = fmt.Sprintf("http://%s:", idocker.GetDockerHost()) + elasticResource.GetPort("9200/tcp")
 
 	t.Cleanup(func() {
-		err := pool.Purge(elasticResource)
-		require.NoError(err, "purge resource %s", elasticResource)
+		//err := pool.Purge(elasticResource)
+		//require.NoError(err, "purge resource %s", elasticResource)
 	})
 
 	postgresResource, err := pool.RunWithOptions(&dockertest.RunOptions{
