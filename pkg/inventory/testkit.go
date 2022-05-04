@@ -48,16 +48,31 @@ func PopulateElastic(address string, d *DescribeMock) error {
 		return err
 	}
 
-	err = ApplyTemplate(address, "compliance_report_template")
+	err = ApplyTemplate(address, "_component_template/resource_component_template", "resource_component_template.json")
 	if err != nil {
 		return err
 	}
 
-	err = ApplyTemplate(address, "account_report_template")
+	err = ApplyTemplate(address, "_index_template/aws_resource_index_template", "aws_resource_index_template.json")
 	if err != nil {
 		return err
 	}
-	err = ApplyTemplate(address, "resource_growth_template")
+
+	err = ApplyTemplate(address, "_index_template/azure_resource_index_template", "azure_resource_index_template.json")
+	if err != nil {
+		return err
+	}
+
+	err = ApplyTemplate(address, "_index_template/compliance_report_template", "compliance_report_template.json")
+	if err != nil {
+		return err
+	}
+
+	err = ApplyTemplate(address, "_index_template/account_report_template", "account_report_template.json")
+	if err != nil {
+		return err
+	}
+	err = ApplyTemplate(address, "_index_template/resource_growth_template", "resource_growth_template.json")
 	if err != nil {
 		return err
 	}
@@ -133,13 +148,13 @@ func PopulateElastic(address string, d *DescribeMock) error {
 	return nil
 }
 
-func ApplyTemplate(address string, templateName string) error {
-	c, err := ioutil.ReadFile("test/" + templateName + ".json")
+func ApplyTemplate(address string, url, templateFile string) error {
+	c, err := ioutil.ReadFile("test/" + templateFile)
 	if err != nil {
 		return err
 	}
 
-	req, err := http.NewRequest("PUT", address+"/_index_template/"+templateName, bytes.NewReader(c))
+	req, err := http.NewRequest("PUT", address+"/"+url, bytes.NewReader(c))
 	if err != nil {
 		return err
 	}
@@ -151,6 +166,8 @@ func ApplyTemplate(address string, templateName string) error {
 	}
 
 	if res.StatusCode != 200 {
+		b, _ := ioutil.ReadAll(res.Body)
+		fmt.Println(string(b))
 		return errors.New("invalid status code")
 	}
 	return nil
@@ -564,6 +581,7 @@ func IndexAWSResource(es *elasticsearchv7.Client, resource awsdescriber.Resource
 		ResourceType:  resource.Type,
 		ResourceJobID: uint(rand.Uint32()),
 		SourceJobID:   uint(rand.Uint32()),
+		SourceID:      uuid.New().String(),
 		Metadata: map[string]string{
 			"partition":  resource.Partition,
 			"region":     resource.Region,
@@ -581,6 +599,7 @@ func IndexAzureResource(es *elasticsearchv7.Client, resource azuredescriber.Reso
 		ResourceType:  resource.Type,
 		ResourceJobID: uint(rand.Uint32()),
 		SourceJobID:   uint(rand.Uint32()),
+		SourceID:      uuid.New().String(),
 		Metadata: map[string]string{
 			"id":                resource.ID,
 			"name":              resource.Name,
