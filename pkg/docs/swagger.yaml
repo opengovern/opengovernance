@@ -99,6 +99,15 @@ definitions:
       timeRange:
         $ref: '#/definitions/api.TimeRangeFilter'
     type: object
+  api.ComplianceTrendDataPoint:
+    properties:
+      compliant:
+        type: integer
+      timestamp:
+        type: integer
+      totalResources:
+        type: integer
+    type: object
   api.CreateSourceResponse:
     properties:
       id:
@@ -353,6 +362,8 @@ definitions:
         type: integer
       createdAt:
         type: integer
+      describedAt:
+        type: integer
       id:
         type: string
       provider:
@@ -530,13 +541,18 @@ definitions:
         description: from epoch millisecond
         type: integer
     type: object
+  api.TopAccountResponse:
+    properties:
+      resourceCount:
+        type: integer
+      sourceID:
+        type: string
+    type: object
   api.TrendDataPoint:
     properties:
-      compliant:
-        type: integer
       timestamp:
         type: integer
-      totalResources:
+      value:
         type: integer
     type: object
   compliance_report.Dimension:
@@ -548,7 +564,7 @@ definitions:
     type: object
   compliance_report.Report:
     properties:
-      createdAt:
+      describedAt:
         type: integer
       group:
         $ref: '#/definitions/compliance_report.ReportGroupObj'
@@ -893,7 +909,7 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/api.TrendDataPoint'
+              $ref: '#/definitions/api.ComplianceTrendDataPoint'
             type: array
       summary: Returns trend of a benchmark compliance for specific account
       tags:
@@ -1006,6 +1022,36 @@ paths:
       summary: Returns list of policies of a given benchmark
       tags:
       - benchmarks
+  /inventory/api/v1/benchmarks/count:
+    get:
+      consumes:
+      - application/json
+      description: In order to filter benchmarks by tags provide the tag key-value
+        as query param
+      parameters:
+      - description: Provider
+        enum:
+        - AWS
+        - Azure
+        in: query
+        name: provider
+        type: string
+      - description: Tags in key-value query param
+        in: query
+        name: tags
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/api.Benchmark'
+            type: array
+      summary: Returns count of benchmarks
+      tags:
+      - benchmarks
   /inventory/api/v1/benchmarks/history/list/{provider}/{createdAt}:
     get:
       consumes:
@@ -1078,6 +1124,30 @@ paths:
       summary: Get locations
       tags:
       - location
+  /inventory/api/v1/policies/count:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: Provider
+        enum:
+        - AWS
+        - Azure
+        in: query
+        name: provider
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/api.Benchmark'
+            type: array
+      summary: Returns count of policies
+      tags:
+      - benchmarks
   /inventory/api/v1/query:
     get:
       description: Listing smart queries
@@ -1344,6 +1414,109 @@ paths:
       summary: Get Azure resources
       tags:
       - inventory
+  /inventory/api/v1/resources/distribution:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: SourceID
+        in: query
+        name: sourceId
+        required: true
+        type: string
+      - description: Provider
+        in: query
+        name: provider
+        required: true
+        type: string
+      - description: Time Window
+        enum:
+        - 24h
+        - 1w
+        - 3m
+        - 1y
+        - max
+        in: query
+        name: timeWindow
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: integer
+            type: object
+      summary: Returns distribution of resource for specific account
+      tags:
+      - benchmarks
+  /inventory/api/v1/resources/top/accounts:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: count
+        in: query
+        name: count
+        required: true
+        type: integer
+      - description: Provider
+        in: query
+        name: provider
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/api.TopAccountResponse'
+            type: array
+      summary: Returns top n accounts of specified provider by resource count
+      tags:
+      - benchmarks
+  /inventory/api/v1/resources/trend:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: SourceID
+        in: query
+        name: sourceId
+        required: true
+        type: string
+      - description: Provider
+        in: query
+        name: provider
+        required: true
+        type: string
+      - description: Time Window
+        enum:
+        - 24h
+        - 1w
+        - 3m
+        - 1y
+        - max
+        in: query
+        name: timeWindow
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/api.TrendDataPoint'
+            type: array
+      summary: Returns trend of resource growth for specific account
+      tags:
+      - benchmarks
   /onboard/api/v1/discover/aws/accounts:
     post:
       description: If the account is part of an organization and the account has premission
@@ -1678,21 +1851,6 @@ paths:
       - application/json
       responses: {}
       summary: Run describe jobs
-      tags:
-      - schedule
-  /schedule/api/v1/sources/{source_id}/policy/{policy_id}:
-    get:
-      description: Assign source to policy
-      parameters:
-      - description: SourceID
-        in: path
-        name: source_id
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses: {}
-      summary: Assign source to policy
       tags:
       - schedule
 schemes:
