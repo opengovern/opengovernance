@@ -44,8 +44,6 @@ func (s *HttpServer) Initialize() error {
 	v1.POST("/sources/:source_id/jobs/describe/refresh", s.RunDescribeJobs)
 	v1.POST("/sources/:source_id/jobs/compliance/refresh", s.RunComplianceReportJobs)
 
-	v1.PUT("/sources/:source_id/policy/:policy_id", s.AssignPolicyToSource)
-
 	v1.GET("/resource_type/:provider", s.GetResourceTypesByProvider)
 
 	return e.Start(s.Address)
@@ -237,45 +235,6 @@ func (s HttpServer) RunDescribeJobs(ctx echo.Context) error {
 	if err != nil {
 		ctx.Logger().Errorf("update source next describe run: %v", err)
 		return ctx.JSON(http.StatusInternalServerError, api.ErrorResponse{Message: "internal error"})
-	}
-
-	return ctx.String(http.StatusOK, "")
-}
-
-// AssignPolicyToSource godoc
-// @Summary      Assign source to policy
-// @Description  Assign source to policy
-// @Tags         schedule
-// @Produce      json
-// @Param        source_id  path  string  true  "SourceID"
-// @Router       /schedule/api/v1/sources/{source_id}/policy/{policy_id} [get]
-func (s HttpServer) AssignPolicyToSource(ctx echo.Context) error {
-	sourceID := ctx.Param("source_id")
-	sourceUUID, err := uuid.Parse(sourceID)
-	if err != nil {
-		ctx.Logger().Errorf("parsing source uuid: %v", err)
-		return ctx.JSON(http.StatusBadRequest, api.ErrorResponse{Message: "invalid source uuid"})
-	}
-
-	policyID := ctx.Param("policy_id")
-	policyUUID, err := uuid.Parse(policyID)
-	if err != nil {
-		ctx.Logger().Errorf("parsing policy uuid: %v", err)
-		return ctx.JSON(http.StatusBadRequest, api.ErrorResponse{Message: "invalid policy uuid"})
-	}
-
-	//TODO-Saleh check whether assigned policy exists in policy engine
-
-	err = s.DB.CreateAssignment(&Assignment{
-		SourceID:  sourceUUID,
-		PolicyID:  policyUUID,
-		Enabled:   true,
-		CreatedAt: time.Now(),
-		UpdatedAt: time.Now(),
-	})
-	if err != nil {
-		ctx.Logger().Errorf("assigning policy to source: %v", err)
-		return ctx.JSON(http.StatusInternalServerError, api.ErrorResponse{Message: "failed to assign policy"})
 	}
 
 	return ctx.String(http.StatusOK, "")

@@ -164,6 +164,50 @@
                 }
             }
         },
+        "/inventory/api/v1/benchmarks/count": {
+            "get": {
+                "description": "In order to filter benchmarks by tags provide the tag key-value as query param",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "benchmarks"
+                ],
+                "summary": "Returns count of benchmarks",
+                "parameters": [
+                    {
+                        "enum": [
+                            "AWS",
+                            "Azure"
+                        ],
+                        "type": "string",
+                        "description": "Provider",
+                        "name": "provider",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Tags in key-value query param",
+                        "name": "tags",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/api.Benchmark"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/inventory/api/v1/benchmarks/history/list/{provider}/{createdAt}": {
             "get": {
                 "description": "You should fetch the benchmark report times from /benchmarks/history/:year/:month/:day",
@@ -461,7 +505,7 @@
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/api.TrendDataPoint"
+                                "$ref": "#/definitions/api.ComplianceTrendDataPoint"
                             }
                         }
                     }
@@ -609,6 +653,43 @@
                             "type": "array",
                             "items": {
                                 "$ref": "#/definitions/api.LocationByProviderResponse"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/inventory/api/v1/policies/count": {
+            "get": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "benchmarks"
+                ],
+                "summary": "Returns count of policies",
+                "parameters": [
+                    {
+                        "enum": [
+                            "AWS",
+                            "Azure"
+                        ],
+                        "type": "string",
+                        "description": "Provider",
+                        "name": "provider",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/api.Benchmark"
                             }
                         }
                     }
@@ -987,6 +1068,157 @@
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/api.GetAzureResourceResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/inventory/api/v1/resources/distribution": {
+            "get": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "benchmarks"
+                ],
+                "summary": "Returns distribution of resource for specific account",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "SourceID",
+                        "name": "sourceId",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Provider",
+                        "name": "provider",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "enum": [
+                            "24h",
+                            "1w",
+                            "3m",
+                            "1y",
+                            "max"
+                        ],
+                        "type": "string",
+                        "description": "Time Window",
+                        "name": "timeWindow",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "integer"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/inventory/api/v1/resources/top/accounts": {
+            "get": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "benchmarks"
+                ],
+                "summary": "Returns top n accounts of specified provider by resource count",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "count",
+                        "name": "count",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Provider",
+                        "name": "provider",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/api.TopAccountResponse"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/inventory/api/v1/resources/trend": {
+            "get": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "benchmarks"
+                ],
+                "summary": "Returns trend of resource growth for specific account",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "SourceID",
+                        "name": "sourceId",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Provider",
+                        "name": "provider",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "enum": [
+                            "24h",
+                            "1w",
+                            "3m",
+                            "1y",
+                            "max"
+                        ],
+                        "type": "string",
+                        "description": "Time Window",
+                        "name": "timeWindow",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/api.TrendDataPoint"
+                            }
                         }
                     }
                 }
@@ -1497,28 +1729,6 @@
                 ],
                 "responses": {}
             }
-        },
-        "/schedule/api/v1/sources/{source_id}/policy/{policy_id}": {
-            "get": {
-                "description": "Assign source to policy",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "schedule"
-                ],
-                "summary": "Assign source to policy",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "SourceID",
-                        "name": "source_id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {}
-            }
         }
     },
     "definitions": {
@@ -1672,6 +1882,20 @@
                 },
                 "timeRange": {
                     "$ref": "#/definitions/api.TimeRangeFilter"
+                }
+            }
+        },
+        "api.ComplianceTrendDataPoint": {
+            "type": "object",
+            "properties": {
+                "compliant": {
+                    "type": "integer"
+                },
+                "timestamp": {
+                    "type": "integer"
+                },
+                "totalResources": {
+                    "type": "integer"
                 }
             }
         },
@@ -2051,6 +2275,9 @@
                 "createdAt": {
                     "type": "integer"
                 },
+                "describedAt": {
+                    "type": "integer"
+                },
                 "id": {
                     "type": "string"
                 },
@@ -2308,16 +2535,24 @@
                 }
             }
         },
+        "api.TopAccountResponse": {
+            "type": "object",
+            "properties": {
+                "resourceCount": {
+                    "type": "integer"
+                },
+                "sourceID": {
+                    "type": "string"
+                }
+            }
+        },
         "api.TrendDataPoint": {
             "type": "object",
             "properties": {
-                "compliant": {
-                    "type": "integer"
-                },
                 "timestamp": {
                     "type": "integer"
                 },
-                "totalResources": {
+                "value": {
                     "type": "integer"
                 }
             }
@@ -2336,7 +2571,7 @@
         "compliance_report.Report": {
             "type": "object",
             "properties": {
-                "createdAt": {
+                "describedAt": {
                     "type": "integer"
                 },
                 "group": {

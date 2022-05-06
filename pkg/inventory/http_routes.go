@@ -155,7 +155,7 @@ func (h *HttpHandler) GetBenchmarksInTime(ctx echo.Context) error {
 // @Produce      json
 // @Param    benchmarkId  path      string  true  "BenchmarkID"
 // @Param    sourceId     path      string  true  "SourceID"
-// @Param    timeWindow   query     string  true  "Time Window"  Enums(24h,1w,3m,1y,max)
+// @Param    timeWindow  query     string  true  "Time Window"  Enums(24h,1w,3m,1y,max)
 // @Success  200          {object}  []api.ComplianceTrendDataPoint
 // @Router   /inventory/api/v1/benchmarks/{benchmarkId}/{sourceId}/compliance/trend [get]
 func (h *HttpHandler) GetBenchmarkComplianceTrend(ctx echo.Context) error {
@@ -256,10 +256,10 @@ func (h *HttpHandler) GetBenchmarkComplianceTrend(ctx echo.Context) error {
 // @Tags         benchmarks
 // @Accept       json
 // @Produce      json
-// @Param    sourceId     query     string  true  "SourceID"
-// @Param    provider     query     string  true  "Provider"
-// @Param    timeWindow   query     string  true  "Time Window"  Enums(24h,1w,3m,1y,max)
-// @Success  200          {object}  []api.TrendDataPoint
+// @Param    sourceId    query     string  true  "SourceID"
+// @Param    provider    query     string  true  "Provider"
+// @Param    timeWindow  query     string  true  "Time Window"  Enums(24h,1w,3m,1y,max)
+// @Success  200         {object}  []api.TrendDataPoint
 // @Router   /inventory/api/v1/resources/trend [get]
 func (h *HttpHandler) GetResourceGrowthTrend(ctx echo.Context) error {
 	provider := ctx.QueryParam("provider")
@@ -339,12 +339,12 @@ func (h *HttpHandler) GetResourceGrowthTrend(ctx echo.Context) error {
 
 // GetTopAccountsByResourceCount godoc
 // @Summary  Returns top n accounts of specified provider by resource count
-// @Tags         benchmarks
-// @Accept       json
-// @Produce      json
-// @Param    count        query     int     true  "count"
-// @Param    provider     query     string  true  "Provider"
-// @Success  200          {object}  []api.TopAccountResponse
+// @Tags     benchmarks
+// @Accept   json
+// @Produce  json
+// @Param    count     query     int     true  "count"
+// @Param    provider  query     string  true  "Provider"
+// @Success  200       {object}  []api.TopAccountResponse
 // @Router   /inventory/api/v1/resources/top/accounts [get]
 func (h *HttpHandler) GetTopAccountsByResourceCount(ctx echo.Context) error {
 	provider := ctx.QueryParam("provider")
@@ -376,13 +376,13 @@ func (h *HttpHandler) GetTopAccountsByResourceCount(ctx echo.Context) error {
 
 // GetResourceDistribution godoc
 // @Summary  Returns distribution of resource for specific account
-// @Tags         benchmarks
-// @Accept       json
-// @Produce      json
-// @Param    sourceId     query     string  true  "SourceID"
-// @Param    provider     query     string  true  "Provider"
+// @Tags     benchmarks
+// @Accept   json
+// @Produce  json
+// @Param    sourceId    query     string  true  "SourceID"
+// @Param    provider    query     string  true  "Provider"
 // @Param    timeWindow   query     string  true  "Time Window"  Enums(24h,1w,3m,1y,max)
-// @Success  200          {object}  map[string]int
+// @Success  200         {object}  map[string]int
 // @Router   /inventory/api/v1/resources/distribution [get]
 func (h *HttpHandler) GetResourceDistribution(ctx echo.Context) error {
 	provider := ctx.QueryParam("provider")
@@ -534,9 +534,9 @@ func (h *HttpHandler) GetBenchmarkAccounts(ctx echo.Context) error {
 // @Tags     benchmarks
 // @Accept   json
 // @Produce  json
-// @Param        provider  query     string  false  "Provider"  Enums(AWS,Azure)
+// @Param    provider  query     string  false  "Provider"  Enums(AWS,Azure)
 // @Param        tags      query     string  false  "Tags in key-value query param"
-// @Success      200       {object}  []api.Benchmark
+// @Success  200       {object}  []api.Benchmark
 // @Router       /inventory/api/v1/benchmarks [get]
 func (h *HttpHandler) GetBenchmarks(ctx echo.Context) error {
 	var provider *string
@@ -608,13 +608,13 @@ func (h *HttpHandler) CountBenchmarks(ctx echo.Context) error {
 }
 
 // CountPolicies godoc
-// @Summary      Returns count of policies
+// @Summary  Returns count of policies
 // @Tags     benchmarks
 // @Accept   json
 // @Produce  json
 // @Param        provider  query     string  false  "Provider"  Enums(AWS,Azure)
 // @Success      200       {object}  []api.Benchmark
-// @Router       /inventory/api/v1/policies/count [get]
+// @Router   /inventory/api/v1/policies/count [get]
 func (h *HttpHandler) CountPolicies(ctx echo.Context) error {
 	c, err := h.db.CountPolicies(ctx.QueryParam("provider"))
 	if err != nil {

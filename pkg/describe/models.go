@@ -2,7 +2,6 @@ package describe
 
 import (
 	"database/sql"
-	"time"
 
 	"github.com/google/uuid"
 	compliance_report "gitlab.com/keibiengine/keibi-engine/pkg/compliance-report"
@@ -36,14 +35,6 @@ type ComplianceReportJob struct {
 	ReportCreatedAt int64
 	Status          compliance_report.ComplianceReportJobStatus
 	FailureMessage  string // Should be NULLSTRING
-}
-
-type Assignment struct {
-	SourceID  uuid.UUID `gorm:"primarykey"`
-	PolicyID  uuid.UUID `gorm:"primarykey"`
-	Enabled   bool
-	CreatedAt time.Time
-	UpdatedAt time.Time
 }
 
 type DescribeResourceJob struct {
