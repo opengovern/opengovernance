@@ -341,3 +341,8 @@ type TopServicesResponse struct {
 	ServiceName   string `json:"serviceName"`
 	ResourceCount int    `json:"resourceCount"`
 }
+
+type CategoriesResponse struct {
+	CategoryName  string `json:"serviceName"`
+	ResourceCount int    `json:"resourceCount"`
+}

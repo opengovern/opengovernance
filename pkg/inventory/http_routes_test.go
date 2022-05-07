@@ -1221,6 +1221,25 @@ func (s *HttpHandlerSuite) TestGetTopNServices() {
 	require.Equal(20, res[0].ResourceCount)
 }
 
+func (s *HttpHandlerSuite) TestGetCategories() {
+	require := s.Require()
+
+	url := "/api/v1/resources/categories?provider=AWS"
+	var res []api.CategoriesResponse
+	_, err := doRequestJSONResponse(s.router, "GET", url, nil, &res)
+
+	require.NoError(err)
+	require.Len(res, 2)
+	require.Contains(res, api.CategoriesResponse{
+		CategoryName:  "Infrastructure",
+		ResourceCount: 20,
+	})
+	require.Contains(res, api.CategoriesResponse{
+		CategoryName:  "Security",
+		ResourceCount: 10,
+	})
+}
+
 func (s *HttpHandlerSuite) TestCountBenchmarksAndPolicies() {
 	require := s.Require()
 

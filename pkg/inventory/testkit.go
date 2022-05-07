@@ -115,6 +115,12 @@ func PopulateElastic(address string, d *DescribeMock) error {
 			return err
 		}
 	}
+	for _, resource := range GenerateLastCategorySummary() {
+		err := IndexKafkaMessage(es, resource)
+		if err != nil {
+			return err
+		}
+	}
 	for _, resource := range GenerateLocationDistribution() {
 		err := IndexKafkaMessage(es, resource)
 		if err != nil {
@@ -322,6 +328,30 @@ func GenerateLastServiceSummary() []kafka.SourceServicesSummary {
 		DescribedAt:   startTime + int64(2),
 		ResourceCount: 10,
 		ReportType:    kafka.ResourceSummaryTypeLastServiceSummary,
+	})
+	return resources
+}
+
+func GenerateLastCategorySummary() []kafka.SourceCategorySummary {
+	var resources []kafka.SourceCategorySummary
+	startTime := time.Now().UnixMilli()
+
+	resources = append(resources, kafka.SourceCategorySummary{
+		CategoryName:  cloudservice.CategoryByResourceType("AWS::EC2::Instance"),
+		SourceType:    "AWS",
+		SourceJobID:   1021,
+		DescribedAt:   startTime,
+		ResourceCount: 20,
+		ReportType:    kafka.ResourceSummaryTypeLastCategorySummary,
+	})
+
+	resources = append(resources, kafka.SourceCategorySummary{
+		CategoryName:  cloudservice.CategoryByResourceType("AWS::KMS::Alias"),
+		SourceType:    "AWS",
+		SourceJobID:   1020,
+		DescribedAt:   startTime + int64(2),
+		ResourceCount: 10,
+		ReportType:    kafka.ResourceSummaryTypeLastCategorySummary,
 	})
 	return resources
 }

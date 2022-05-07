@@ -29,6 +29,7 @@ const (
 	ResourceSummaryTypeLocationDistribution = "location_distribution"
 	ResourceSummaryTypeLastSummary          = "last_summary"
 	ResourceSummaryTypeLastServiceSummary   = "last_service_summary"
+	ResourceSummaryTypeLastCategorySummary  = "last_category_summary"
 	ResourceSummaryTypeCompliancyTrend      = "compliancy_trend"
 )
 
@@ -224,6 +225,42 @@ func (r SourceServicesSummary) AsProducerMessage() (*sarama.ProducerMessage, err
 }
 func (r SourceServicesSummary) MessageID() string {
 	return r.ServiceName
+}
+
+type SourceCategorySummary struct {
+	// CategoryName is category name of the resource
+	CategoryName string `json:"category_name"`
+	// SourceType is the type of the source of the resource, i.e. AWS Cloud, Azure Cloud.
+	SourceType api.SourceType `json:"source_type"`
+	// SourceJobID is the DescribeSourceJob ID that the ResourceJobID was created for
+	SourceJobID uint `json:"source_job_id"`
+	// DescribedAt is when the DescribeSourceJob is created
+	DescribedAt int64 `json:"described_at"`
+	// ResourceCount is total of resources for specified account
+	ResourceCount int `json:"resource_count"`
+	// ReportType of document
+	ReportType ResourceSummaryType `json:"report_type"`
+}
+
+func (r SourceCategorySummary) AsProducerMessage() (*sarama.ProducerMessage, error) {
+	value, err := json.Marshal(r)
+	if err != nil {
+		return nil, err
+	}
+
+	return &sarama.ProducerMessage{
+		Key: sarama.StringEncoder(hashOf(r.CategoryName, string(r.ReportType))),
+		Headers: []sarama.RecordHeader{
+			{
+				Key:   []byte(esIndexHeader),
+				Value: []byte(SourceResourcesSummaryIndex),
+			},
+		},
+		Value: sarama.ByteEncoder(value),
+	}, nil
+}
+func (r SourceCategorySummary) MessageID() string {
+	return r.CategoryName
 }
 
 type SourceResourcesLastSummary struct {

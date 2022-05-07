@@ -210,6 +210,7 @@ func doDescribeAWS(ctx context.Context, job DescribeJob, config map[string]inter
 	var msgs []kafka.Message
 	locationDistribution := map[string]int{}
 
+	var categoryCount map[string]int
 	var serviceCount map[string]int
 	for _, resources := range output.Resources {
 		for _, resource := range resources {
@@ -253,6 +254,9 @@ func doDescribeAWS(ctx context.Context, job DescribeJob, config map[string]inter
 			if s := cloudservice.ServiceNameByResourceType(resource.Type); s != "" {
 				serviceCount[s]++
 			}
+			if s := cloudservice.CategoryByResourceType(resource.Type); s != "" {
+				categoryCount[s]++
+			}
 		}
 	}
 
@@ -264,6 +268,18 @@ func doDescribeAWS(ctx context.Context, job DescribeJob, config map[string]inter
 			DescribedAt:   job.DescribedAt,
 			ResourceCount: count,
 			ReportType:    kafka.ResourceSummaryTypeLastServiceSummary,
+		}
+		msgs = append(msgs, services)
+	}
+
+	for name, count := range categoryCount {
+		services := kafka.SourceCategorySummary{
+			CategoryName:  name,
+			SourceType:    job.SourceType,
+			SourceJobID:   job.JobID,
+			DescribedAt:   job.DescribedAt,
+			ResourceCount: count,
+			ReportType:    kafka.ResourceSummaryTypeLastCategorySummary,
 		}
 		msgs = append(msgs, services)
 	}
@@ -331,6 +347,8 @@ func doDescribeAzure(ctx context.Context, job DescribeJob, config map[string]int
 		return nil, fmt.Errorf("Azure: %w", err)
 	}
 
+	var categoryCount map[string]int
+	var serviceCount map[string]int
 	var msgs []kafka.Message
 	locationDistribution := map[string]int{}
 	for _, resource := range output.Resources {
@@ -371,7 +389,38 @@ func doDescribeAzure(ctx context.Context, job DescribeJob, config map[string]int
 		if location != "" {
 			locationDistribution[location]++
 		}
+		if s := cloudservice.ServiceNameByResourceType(resource.Type); s != "" {
+			serviceCount[s]++
+		}
+		if s := cloudservice.CategoryByResourceType(resource.Type); s != "" {
+			categoryCount[s]++
+		}
 	}
+
+	for name, count := range serviceCount {
+		services := kafka.SourceServicesSummary{
+			ServiceName:   name,
+			SourceType:    job.SourceType,
+			SourceJobID:   job.JobID,
+			DescribedAt:   job.DescribedAt,
+			ResourceCount: count,
+			ReportType:    kafka.ResourceSummaryTypeLastServiceSummary,
+		}
+		msgs = append(msgs, services)
+	}
+
+	for name, count := range categoryCount {
+		services := kafka.SourceCategorySummary{
+			CategoryName:  name,
+			SourceType:    job.SourceType,
+			SourceJobID:   job.JobID,
+			DescribedAt:   job.DescribedAt,
+			ResourceCount: count,
+			ReportType:    kafka.ResourceSummaryTypeLastCategorySummary,
+		}
+		msgs = append(msgs, services)
+	}
+
 	trend := kafka.SourceResourcesSummary{
 		SourceID:      job.SourceID,
 		SourceType:    job.SourceType,

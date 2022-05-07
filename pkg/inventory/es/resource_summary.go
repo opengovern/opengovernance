@@ -148,6 +148,50 @@ func FindTopServicesQuery(provider string, fetchSize int) (string, error) {
 	return string(b), err
 }
 
+type CategoriesQueryResponse struct {
+	Hits CategoriesQueryHits `json:"hits"`
+}
+type CategoriesQueryHits struct {
+	Total keibi.SearchTotal    `json:"total"`
+	Hits  []CategoriesQueryHit `json:"hits"`
+}
+type CategoriesQueryHit struct {
+	ID      string                      `json:"_id"`
+	Score   float64                     `json:"_score"`
+	Index   string                      `json:"_index"`
+	Type    string                      `json:"_type"`
+	Version int64                       `json:"_version,omitempty"`
+	Source  kafka.SourceCategorySummary `json:"_source"`
+	Sort    []interface{}               `json:"sort"`
+}
+
+func GetCategoriesQuery(provider string, fetchSize int) (string, error) {
+	res := make(map[string]interface{})
+	var filters []interface{}
+
+	filters = append(filters, map[string]interface{}{
+		"terms": map[string][]string{"report_type": {kafka.ResourceSummaryTypeLastCategorySummary}},
+	})
+
+	filters = append(filters, map[string]interface{}{
+		"terms": map[string][]string{"source_type": {provider}},
+	})
+
+	res["size"] = fetchSize
+	res["sort"] = []map[string]interface{}{
+		{
+			"resource_count": "desc",
+		},
+	}
+	res["query"] = map[string]interface{}{
+		"bool": map[string]interface{}{
+			"filter": filters,
+		},
+	}
+	b, err := json.Marshal(res)
+	return string(b), err
+}
+
 func ListAccountResourceCountQuery(provider string, fetchSize int, searchAfter []interface{}) (string, error) {
 	res := make(map[string]interface{})
 	var filters []interface{}

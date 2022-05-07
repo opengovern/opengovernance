@@ -58,6 +58,7 @@ func (h *HttpHandler) Register(v1 *echo.Group) {
 	v1.GET("/resources/distribution", h.GetResourceDistribution)
 	v1.GET("/resources/top/accounts", h.GetTopAccountsByResourceCount)
 	v1.GET("/resources/top/services", h.GetTopServicesByResourceCount)
+	v1.GET("/resources/categories", h.GetCategories)
 	v1.GET("/accounts/resource/count", h.GetAccountsResourceCount)
 
 	v1.GET("/query", h.ListQueries)
@@ -503,6 +504,38 @@ func (h *HttpHandler) GetTopServicesByResourceCount(ctx echo.Context) error {
 	for _, hit := range response.Hits.Hits {
 		res = append(res, api.TopServicesResponse{
 			ServiceName:   hit.Source.ServiceName,
+			ResourceCount: hit.Source.ResourceCount,
+		})
+	}
+	return ctx.JSON(http.StatusOK, res)
+}
+
+// GetCategories godoc
+// @Summary  Return resource categories and number of resources
+// @Tags     inventory
+// @Accept   json
+// @Produce  json
+// @Param    provider  query     string  true  "Provider"
+// @Success  200       {object}  []api.TopAccountResponse
+// @Router   /inventory/api/v1/resources/categories [get]
+func (h *HttpHandler) GetCategories(ctx echo.Context) error {
+	provider := ctx.QueryParam("provider")
+
+	query, err := es.GetCategoriesQuery(provider, EsFetchPageSize)
+	if err != nil {
+		return err
+	}
+
+	var response es.CategoriesQueryResponse
+	err = h.client.Search(context.Background(), describe.SourceResourcesSummary, query, &response)
+	if err != nil {
+		return err
+	}
+
+	var res []api.CategoriesResponse
+	for _, hit := range response.Hits.Hits {
+		res = append(res, api.CategoriesResponse{
+			CategoryName:  hit.Source.CategoryName,
 			ResourceCount: hit.Source.ResourceCount,
 		})
 	}
