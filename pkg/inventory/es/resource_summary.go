@@ -18,13 +18,13 @@ type ResourceGrowthQueryHits struct {
 	Hits  []ResourceGrowthQueryHit `json:"hits"`
 }
 type ResourceGrowthQueryHit struct {
-	ID      string                            `json:"_id"`
-	Score   float64                           `json:"_score"`
-	Index   string                            `json:"_index"`
-	Type    string                            `json:"_type"`
-	Version int64                             `json:"_version,omitempty"`
-	Source  kafka.KafkaSourceResourcesSummary `json:"_source"`
-	Sort    []interface{}                     `json:"sort"`
+	ID      string                       `json:"_id"`
+	Score   float64                      `json:"_score"`
+	Index   string                       `json:"_index"`
+	Type    string                       `json:"_type"`
+	Version int64                        `json:"_version,omitempty"`
+	Source  kafka.SourceResourcesSummary `json:"_source"`
+	Sort    []interface{}                `json:"sort"`
 }
 
 func FindResourceGrowthTrendQuery(sourceID *uuid.UUID, provider *string,
@@ -104,6 +104,50 @@ func FindTopAccountsQuery(provider string, fetchSize int) (string, error) {
 	return string(b), err
 }
 
+type TopServicesQueryResponse struct {
+	Hits TopServicesQueryHits `json:"hits"`
+}
+type TopServicesQueryHits struct {
+	Total keibi.SearchTotal     `json:"total"`
+	Hits  []TopServicesQueryHit `json:"hits"`
+}
+type TopServicesQueryHit struct {
+	ID      string                      `json:"_id"`
+	Score   float64                     `json:"_score"`
+	Index   string                      `json:"_index"`
+	Type    string                      `json:"_type"`
+	Version int64                       `json:"_version,omitempty"`
+	Source  kafka.SourceServicesSummary `json:"_source"`
+	Sort    []interface{}               `json:"sort"`
+}
+
+func FindTopServicesQuery(provider string, fetchSize int) (string, error) {
+	res := make(map[string]interface{})
+	var filters []interface{}
+
+	filters = append(filters, map[string]interface{}{
+		"terms": map[string][]string{"report_type": {kafka.ResourceSummaryTypeLastServiceSummary}},
+	})
+
+	filters = append(filters, map[string]interface{}{
+		"terms": map[string][]string{"source_type": {provider}},
+	})
+
+	res["size"] = fetchSize
+	res["sort"] = []map[string]interface{}{
+		{
+			"resource_count": "desc",
+		},
+	}
+	res["query"] = map[string]interface{}{
+		"bool": map[string]interface{}{
+			"filter": filters,
+		},
+	}
+	b, err := json.Marshal(res)
+	return string(b), err
+}
+
 func ListAccountResourceCountQuery(provider string, fetchSize int, searchAfter []interface{}) (string, error) {
 	res := make(map[string]interface{})
 	var filters []interface{}
@@ -142,13 +186,13 @@ type LocationDistributionQueryHits struct {
 	Hits  []LocationDistributionQueryHit `json:"hits"`
 }
 type LocationDistributionQueryHit struct {
-	ID      string                                  `json:"_id"`
-	Score   float64                                 `json:"_score"`
-	Index   string                                  `json:"_index"`
-	Type    string                                  `json:"_type"`
-	Version int64                                   `json:"_version,omitempty"`
-	Source  kafka.KafkaLocationDistributionResource `json:"_source"`
-	Sort    []interface{}                           `json:"sort"`
+	ID      string                             `json:"_id"`
+	Score   float64                            `json:"_score"`
+	Index   string                             `json:"_index"`
+	Type    string                             `json:"_type"`
+	Version int64                              `json:"_version,omitempty"`
+	Source  kafka.LocationDistributionResource `json:"_source"`
+	Sort    []interface{}                      `json:"sort"`
 }
 
 func FindLocationDistributionQuery(sourceID *uuid.UUID, provider *string,
@@ -200,13 +244,13 @@ type ComplianceTrendQueryHits struct {
 	Hits  []ComplianceTrendQueryHit `json:"hits"`
 }
 type ComplianceTrendQueryHit struct {
-	ID      string                                     `json:"_id"`
-	Score   float64                                    `json:"_score"`
-	Index   string                                     `json:"_index"`
-	Type    string                                     `json:"_type"`
-	Version int64                                      `json:"_version,omitempty"`
-	Source  kafka.KafkaResourceCompliancyTrendResource `json:"_source"`
-	Sort    []interface{}                              `json:"sort"`
+	ID      string                                `json:"_id"`
+	Score   float64                               `json:"_score"`
+	Index   string                                `json:"_index"`
+	Type    string                                `json:"_type"`
+	Version int64                                 `json:"_version,omitempty"`
+	Source  kafka.ResourceCompliancyTrendResource `json:"_source"`
+	Sort    []interface{}                         `json:"sort"`
 }
 
 func FindCompliancyTrendQuery(sourceID *uuid.UUID, provider *string,

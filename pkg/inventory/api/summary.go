@@ -18,7 +18,7 @@ func QuerySummaryResources(
 	provider *SourceType,
 	size, lastIndex int,
 	sorts []ResourceSortItem,
-) ([]kafka.KafkaLookupResource, error) {
+) ([]kafka.LookupResource, error) {
 	var err error
 
 	terms := make(map[string][]string)
@@ -96,14 +96,14 @@ func BuildSummaryQuery(query string, terms map[string][]string, size, lastIdx in
 	return string(queryBytes), nil
 }
 
-func SummaryQueryES(client keibi.Client, ctx context.Context, index string, query string) ([]kafka.KafkaLookupResource, error) {
+func SummaryQueryES(client keibi.Client, ctx context.Context, index string, query string) ([]kafka.LookupResource, error) {
 	var response SummaryQueryResponse
 	err := client.Search(ctx, index, query, &response)
 	if err != nil {
 		return nil, err
 	}
 
-	var resources []kafka.KafkaLookupResource
+	var resources []kafka.LookupResource
 	for _, hits := range response.Hits.Hits {
 		resources = append(resources, hits.Source)
 	}

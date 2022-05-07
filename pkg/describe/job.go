@@ -8,6 +8,8 @@ import (
 	"strings"
 	"time"
 
+	"gitlab.com/keibiengine/keibi-engine/pkg/cloudservice"
+
 	"gitlab.com/keibiengine/keibi-engine/pkg/describe/kafka"
 
 	"github.com/elastic/go-elasticsearch/v7"
@@ -164,7 +166,7 @@ func (j DescribeJob) Do(vlt vault.SourceConfig, producer sarama.SyncProducer, to
 }
 
 // doDescribe describes the sources, e.g. AWS, Azure and returns the responses.
-func doDescribe(ctx context.Context, job DescribeJob, config map[string]interface{}, logger *zap.Logger) ([]kafka.KafkaMessage, error) {
+func doDescribe(ctx context.Context, job DescribeJob, config map[string]interface{}, logger *zap.Logger) ([]kafka.Message, error) {
 	logger.Info(fmt.Sprintf("Proccessing Job: ID[%d] ParentJobID[%d] RosourceType[%s]\n", job.JobID, job.ParentJobID, job.ResourceType))
 
 	switch job.SourceType {
@@ -177,7 +179,7 @@ func doDescribe(ctx context.Context, job DescribeJob, config map[string]interfac
 	}
 }
 
-func doDescribeAWS(ctx context.Context, job DescribeJob, config map[string]interface{}) ([]kafka.KafkaMessage, error) {
+func doDescribeAWS(ctx context.Context, job DescribeJob, config map[string]interface{}) ([]kafka.Message, error) {
 	creds, err := AWSAccountConfigFromMap(config)
 	if err != nil {
 		return nil, fmt.Errorf("aws account credentials: %w", err)
@@ -205,15 +207,17 @@ func doDescribeAWS(ctx context.Context, job DescribeJob, config map[string]inter
 		}
 	}
 
-	var msgs []kafka.KafkaMessage
+	var msgs []kafka.Message
 	locationDistribution := map[string]int{}
+
+	var serviceCount map[string]int
 	for _, resources := range output.Resources {
 		for _, resource := range resources {
 			if resource.Description == nil {
 				continue
 			}
 
-			msgs = append(msgs, kafka.KafkaResource{
+			msgs = append(msgs, kafka.Resource{
 				ID:            resource.UniqueID(),
 				Description:   resource.Description,
 				SourceType:    api.SourceCloudAWS,
@@ -229,7 +233,7 @@ func doDescribeAWS(ctx context.Context, job DescribeJob, config map[string]inter
 				},
 			})
 
-			msgs = append(msgs, kafka.KafkaLookupResource{
+			msgs = append(msgs, kafka.LookupResource{
 				ResourceID:    resource.UniqueID(),
 				Name:          resource.Name,
 				SourceType:    api.SourceCloudAWS,
@@ -245,10 +249,26 @@ func doDescribeAWS(ctx context.Context, job DescribeJob, config map[string]inter
 			if region != "" {
 				locationDistribution[region]++
 			}
+
+			if s := cloudservice.ServiceNameByResourceType(resource.Type); s != "" {
+				serviceCount[s]++
+			}
 		}
 	}
 
-	trend := kafka.KafkaSourceResourcesSummary{
+	for name, count := range serviceCount {
+		services := kafka.SourceServicesSummary{
+			ServiceName:   name,
+			SourceType:    job.SourceType,
+			SourceJobID:   job.JobID,
+			DescribedAt:   job.DescribedAt,
+			ResourceCount: count,
+			ReportType:    kafka.ResourceSummaryTypeLastServiceSummary,
+		}
+		msgs = append(msgs, services)
+	}
+
+	trend := kafka.SourceResourcesSummary{
 		SourceID:      job.SourceID,
 		SourceType:    job.SourceType,
 		SourceJobID:   job.JobID,
@@ -258,13 +278,13 @@ func doDescribeAWS(ctx context.Context, job DescribeJob, config map[string]inter
 	}
 	msgs = append(msgs, trend)
 
-	last := kafka.KafkaSourceResourcesLastSummary{
-		KafkaSourceResourcesSummary: trend,
+	last := kafka.SourceResourcesLastSummary{
+		SourceResourcesSummary: trend,
 	}
 	last.ReportType = kafka.ResourceSummaryTypeLastSummary
 	msgs = append(msgs, last)
 
-	locDistribution := kafka.KafkaLocationDistributionResource{
+	locDistribution := kafka.LocationDistributionResource{
 		SourceID:             job.SourceID,
 		SourceType:           job.SourceType,
 		SourceJobID:          job.JobID,
@@ -285,7 +305,7 @@ func doDescribeAWS(ctx context.Context, job DescribeJob, config map[string]inter
 	return msgs, nil
 }
 
-func doDescribeAzure(ctx context.Context, job DescribeJob, config map[string]interface{}) ([]kafka.KafkaMessage, error) {
+func doDescribeAzure(ctx context.Context, job DescribeJob, config map[string]interface{}) ([]kafka.Message, error) {
 	creds, err := AzureSubscriptionConfigFromMap(config)
 	if err != nil {
 		return nil, fmt.Errorf("aure subscription credentials: %w", err)
@@ -311,14 +331,14 @@ func doDescribeAzure(ctx context.Context, job DescribeJob, config map[string]int
 		return nil, fmt.Errorf("Azure: %w", err)
 	}
 
-	var msgs []kafka.KafkaMessage
+	var msgs []kafka.Message
 	locationDistribution := map[string]int{}
 	for _, resource := range output.Resources {
 		if resource.Description == nil {
 			continue
 		}
 
-		msgs = append(msgs, kafka.KafkaResource{
+		msgs = append(msgs, kafka.Resource{
 			ID:            resource.UniqueID(),
 			Description:   resource.Description,
 			SourceType:    api.SourceCloudAzure,
@@ -335,7 +355,7 @@ func doDescribeAzure(ctx context.Context, job DescribeJob, config map[string]int
 			},
 		})
 
-		msgs = append(msgs, kafka.KafkaLookupResource{
+		msgs = append(msgs, kafka.LookupResource{
 			ResourceID:    resource.UniqueID(),
 			Name:          resource.Name,
 			SourceType:    api.SourceCloudAzure,
@@ -352,7 +372,7 @@ func doDescribeAzure(ctx context.Context, job DescribeJob, config map[string]int
 			locationDistribution[location]++
 		}
 	}
-	trend := kafka.KafkaSourceResourcesSummary{
+	trend := kafka.SourceResourcesSummary{
 		SourceID:      job.SourceID,
 		SourceType:    job.SourceType,
 		SourceJobID:   job.JobID,
@@ -361,13 +381,13 @@ func doDescribeAzure(ctx context.Context, job DescribeJob, config map[string]int
 	}
 	msgs = append(msgs, trend)
 
-	last := kafka.KafkaSourceResourcesLastSummary{
-		KafkaSourceResourcesSummary: trend,
+	last := kafka.SourceResourcesLastSummary{
+		SourceResourcesSummary: trend,
 	}
 	last.ReportType = kafka.ResourceSummaryTypeLastSummary
 	msgs = append(msgs, last)
 
-	locDistribution := kafka.KafkaLocationDistributionResource{
+	locDistribution := kafka.LocationDistributionResource{
 		SourceID:             job.SourceID,
 		SourceType:           job.SourceType,
 		SourceJobID:          job.JobID,

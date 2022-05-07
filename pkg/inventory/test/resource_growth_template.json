@@ -40,6 +40,9 @@
         "source_id": {
           "type": "keyword"
         },
+        "service_name": {
+          "type": "keyword"
+        },
         "source_type": {
           "type": "keyword"
         },

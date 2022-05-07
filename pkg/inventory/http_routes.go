@@ -57,6 +57,7 @@ func (h *HttpHandler) Register(v1 *echo.Group) {
 	v1.GET("/resources/trend", h.GetResourceGrowthTrend)
 	v1.GET("/resources/distribution", h.GetResourceDistribution)
 	v1.GET("/resources/top/accounts", h.GetTopAccountsByResourceCount)
+	v1.GET("/resources/top/services", h.GetTopServicesByResourceCount)
 	v1.GET("/accounts/resource/count", h.GetAccountsResourceCount)
 
 	v1.GET("/query", h.ListQueries)
@@ -465,6 +466,43 @@ func (h *HttpHandler) GetTopAccountsByResourceCount(ctx echo.Context) error {
 	for _, hit := range response.Hits.Hits {
 		res = append(res, api.TopAccountResponse{
 			SourceID:      hit.Source.SourceID,
+			ResourceCount: hit.Source.ResourceCount,
+		})
+	}
+	return ctx.JSON(http.StatusOK, res)
+}
+
+// GetTopServicesByResourceCount godoc
+// @Summary  Returns top n services of specified provider by resource count
+// @Tags     benchmarks
+// @Accept   json
+// @Produce  json
+// @Param    count     query     int     true  "count"
+// @Param    provider  query     string  true  "Provider"
+// @Success  200       {object}  []api.TopAccountResponse
+// @Router   /inventory/api/v1/resources/top/services [get]
+func (h *HttpHandler) GetTopServicesByResourceCount(ctx echo.Context) error {
+	provider := ctx.QueryParam("provider")
+	count, err := strconv.Atoi(ctx.QueryParam("count"))
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid count")
+	}
+
+	query, err := es.FindTopServicesQuery(provider, count)
+	if err != nil {
+		return err
+	}
+
+	var response es.TopServicesQueryResponse
+	err = h.client.Search(context.Background(), describe.SourceResourcesSummary, query, &response)
+	if err != nil {
+		return err
+	}
+
+	var res []api.TopServicesResponse
+	for _, hit := range response.Hits.Hits {
+		res = append(res, api.TopServicesResponse{
+			ServiceName:   hit.Source.ServiceName,
 			ResourceCount: hit.Source.ResourceCount,
 		})
 	}

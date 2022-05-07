@@ -74,8 +74,8 @@ func (s *HttpHandlerSuite) SetupSuite() {
 	s.elasticUrl = fmt.Sprintf("http://%s:", idocker.GetDockerHost()) + elasticResource.GetPort("9200/tcp")
 
 	t.Cleanup(func() {
-		//err := pool.Purge(elasticResource)
-		//require.NoError(err, "purge resource %s", elasticResource)
+		err := pool.Purge(elasticResource)
+		require.NoError(err, "purge resource %s", elasticResource)
 	})
 
 	postgresResource, err := pool.RunWithOptions(&dockertest.RunOptions{
@@ -1205,6 +1205,19 @@ func (s *HttpHandlerSuite) TestGetTopNAccount() {
 	require.NoError(err)
 	require.Len(res, 1)
 	require.Equal("2a87b978-b8bf-4d7e-bc19-cf0a99a430cf", res[0].SourceID)
+	require.Equal(20, res[0].ResourceCount)
+}
+
+func (s *HttpHandlerSuite) TestGetTopNServices() {
+	require := s.Require()
+
+	url := "/api/v1/resources/top/services?count=1&provider=AWS"
+	var res []api.TopServicesResponse
+	_, err := doRequestJSONResponse(s.router, "GET", url, nil, &res)
+
+	require.NoError(err)
+	require.Len(res, 1)
+	require.Equal("EC2 Instance", res[0].ServiceName)
 	require.Equal(20, res[0].ResourceCount)
 }
 
