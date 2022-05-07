@@ -5,6 +5,9 @@ import (
 	"fmt"
 	"time"
 
+	api2 "gitlab.com/keibiengine/keibi-engine/pkg/compliance-report/api"
+	"gitlab.com/keibiengine/keibi-engine/pkg/utils"
+
 	"gitlab.com/keibiengine/keibi-engine/pkg/aws"
 	"gitlab.com/keibiengine/keibi-engine/pkg/azure"
 	compliancereport "gitlab.com/keibiengine/keibi-engine/pkg/compliance-report"
@@ -736,7 +739,7 @@ func newDescribeSourceJob(a Source) DescribeSourceJob {
 func newComplianceReportJob(a Source) ComplianceReportJob {
 	return ComplianceReportJob{
 		SourceID: a.ID,
-		Status:   compliancereport.ComplianceReportJobCreated,
+		Status:   api2.ComplianceReportJobCreated,
 	}
 }
 
@@ -777,13 +780,13 @@ func enqueueDescribeResourceJobs(logger *zap.Logger, db Database, q queue.Interf
 }
 
 func enqueueComplianceReportJobs(logger *zap.Logger, db Database, q queue.Interface, a Source, crj *ComplianceReportJob) {
-	nextStatus := compliancereport.ComplianceReportJobInProgress
+	nextStatus := api2.ComplianceReportJobInProgress
 	errMsg := ""
 
 	err := q.Publish(compliancereport.Job{
 		JobID:       crj.ID,
 		SourceID:    a.ID,
-		SourceType:  compliancereport.SourceType(a.Type),
+		SourceType:  utils.SourceType(a.Type),
 		DescribedAt: a.LastDescribedAt.Time.UnixMilli(),
 		ConfigReg:   a.ConfigRef,
 	})
@@ -793,7 +796,7 @@ func enqueueComplianceReportJobs(logger *zap.Logger, db Database, q queue.Interf
 			zap.Error(err),
 		)
 
-		nextStatus = compliancereport.ComplianceReportJobCompletedWithFailure
+		nextStatus = api2.ComplianceReportJobCompletedWithFailure
 		errMsg = fmt.Sprintf("queue: %s", err.Error())
 	}
 

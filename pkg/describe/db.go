@@ -4,7 +4,8 @@ import (
 	"fmt"
 	"time"
 
-	compliance_report "gitlab.com/keibiengine/keibi-engine/pkg/compliance-report"
+	api2 "gitlab.com/keibiengine/keibi-engine/pkg/compliance-report/api"
+
 	"gitlab.com/keibiengine/keibi-engine/pkg/describe/api"
 
 	"github.com/google/uuid"
@@ -406,7 +407,7 @@ func (db Database) CreateComplianceReportJob(job *ComplianceReportJob) error {
 
 // UpdateComplianceReportJob updates the ComplianceReportJob
 func (db Database) UpdateComplianceReportJob(
-	id uint, status compliance_report.ComplianceReportJobStatus, reportCreatedAt int64, failureMsg string) error {
+	id uint, status api2.ComplianceReportJobStatus, reportCreatedAt int64, failureMsg string) error {
 	tx := db.orm.
 		Model(&ComplianceReportJob{}).
 		Where("id = ?", id).
@@ -429,8 +430,8 @@ func (db Database) UpdateComplianceReportJobsTimedOut() error {
 	tx := db.orm.
 		Model(&ComplianceReportJob{}).
 		Where("created_at < NOW() - INTERVAL '4 HOURS'").
-		Where("status IN ?", []string{string(compliance_report.ComplianceReportJobCreated), string(compliance_report.ComplianceReportJobInProgress)}).
-		Updates(ComplianceReportJob{Status: compliance_report.ComplianceReportJobCompletedWithFailure, FailureMessage: "Job timed out"})
+		Where("status IN ?", []string{string(api2.ComplianceReportJobCreated), string(api2.ComplianceReportJobInProgress)}).
+		Updates(ComplianceReportJob{Status: api2.ComplianceReportJobCompletedWithFailure, FailureMessage: "Job timed out"})
 	if tx.Error != nil {
 		return tx.Error
 	}
@@ -453,7 +454,7 @@ func (db Database) ListComplianceReports(sourceID uuid.UUID) ([]ComplianceReport
 func (db Database) GetLastCompletedComplianceReport(sourceID uuid.UUID) (*ComplianceReportJob, error) {
 	var job ComplianceReportJob
 	tx := db.orm.
-		Where("source_id = ? AND status = ?", sourceID, compliance_report.ComplianceReportJobCompleted).
+		Where("source_id = ? AND status = ?", sourceID, api2.ComplianceReportJobCompleted).
 		Order("updated_at DESC").
 		First(&job)
 	if tx.Error != nil {
@@ -468,7 +469,7 @@ func (db Database) ListCompletedComplianceReportByDate(sourceID uuid.UUID, fromD
 	var jobs []ComplianceReportJob
 	tx := db.orm.
 		Where("source_id = ? AND status = ? AND updated_at > ? AND updated_at < ?",
-			sourceID, compliance_report.ComplianceReportJobCompleted, fromDate, toDate).
+			sourceID, api2.ComplianceReportJobCompleted, fromDate, toDate).
 		Order("updated_at DESC").
 		Find(&jobs)
 	if tx.Error != nil {

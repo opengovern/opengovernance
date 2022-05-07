@@ -3,6 +3,7 @@ package api
 import (
 	"encoding/json"
 	"strings"
+	"time"
 
 	"github.com/google/uuid"
 )
@@ -116,6 +117,7 @@ type Source struct {
 	Name        string     `json:"name"`
 	Type        SourceType `json:"type"`
 	Description string     `json:"description"`
+	OnboardDate time.Time  `json:"onboardDate"`
 }
 
 type GetSourcesResponse []Source

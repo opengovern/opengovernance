@@ -7,6 +7,8 @@ import (
 	"testing"
 	"time"
 
+	"gitlab.com/keibiengine/keibi-engine/pkg/utils"
+
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap"
@@ -27,7 +29,7 @@ func TestJob_Do(t *testing.T) {
 	job := compliancereport.Job{
 		JobID:      100,
 		SourceID:   uuid.New(),
-		SourceType: compliancereport.SourceCloudAzure,
+		SourceType: utils.SourceCloudAzure,
 		ConfigReg:  "azure",
 	}
 

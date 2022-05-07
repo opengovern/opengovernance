@@ -7,6 +7,8 @@ import (
 	"testing"
 	"time"
 
+	api2 "gitlab.com/keibiengine/keibi-engine/pkg/compliance-report/api"
+
 	"github.com/cenkalti/backoff/v3"
 	compliance_report "gitlab.com/keibiengine/keibi-engine/pkg/compliance-report"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/queue"
@@ -675,7 +677,7 @@ func (s *SchedulerTestSuite) TestRunComplianceReport() {
 
 		for _, job := range jobs {
 			if job.SourceID == source.ID {
-				if job.Status != compliance_report.ComplianceReportJobInProgress {
+				if job.Status != api2.ComplianceReportJobInProgress {
 					return errors.New("job not in progress")
 				}
 			}

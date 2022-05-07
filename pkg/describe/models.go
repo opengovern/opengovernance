@@ -3,8 +3,9 @@ package describe
 import (
 	"database/sql"
 
+	api2 "gitlab.com/keibiengine/keibi-engine/pkg/compliance-report/api"
+
 	"github.com/google/uuid"
-	compliance_report "gitlab.com/keibiengine/keibi-engine/pkg/compliance-report"
 	"gitlab.com/keibiengine/keibi-engine/pkg/describe/api"
 	"gorm.io/gorm"
 )
@@ -33,7 +34,7 @@ type ComplianceReportJob struct {
 	gorm.Model
 	SourceID        uuid.UUID // Not the primary key but should be a unique identifier
 	ReportCreatedAt int64
-	Status          compliance_report.ComplianceReportJobStatus
+	Status          api2.ComplianceReportJobStatus
 	FailureMessage  string // Should be NULLSTRING
 }
 

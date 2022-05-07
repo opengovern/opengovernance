@@ -30,6 +30,9 @@ var (
 	VaultCaPath   = os.Getenv("VAULT_TLS_CA_PATH")
 	VaultUseTLS   = strings.ToLower(strings.TrimSpace(os.Getenv("VAULT_USE_TLS"))) == "true"
 
+	InventoryAddress         = os.Getenv("INVENTORY_ADDRESS")
+	DescribeSchedulerAddress = os.Getenv("DESCRIBE_ADDRESS")
+
 	HttpAddress = os.Getenv("HTTP_ADDRESS")
 )
 
@@ -52,6 +55,8 @@ func main() {
 		VaultRoleName,
 		VaultCaPath,
 		VaultUseTLS,
+		InventoryAddress,
+		DescribeSchedulerAddress,
 	)
 	if err != nil {
 		fmt.Println(err)

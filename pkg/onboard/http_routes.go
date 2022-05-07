@@ -387,13 +387,15 @@ func (h HttpHandler) GetSources(ctx echo.Context) error {
 
 	resp := api.GetSourcesResponse{}
 	for _, s := range sources {
-		resp = append(resp, api.Source{
+		source := api.Source{
 			ID:          s.ID,
 			Name:        s.Name,
 			SourceId:    s.SourceId,
 			Type:        s.Type,
 			Description: s.Description,
-		})
+			OnboardDate: s.CreatedAt,
+		}
+		resp = append(resp, source)
 	}
 
 	return ctx.JSON(http.StatusOK, resp)

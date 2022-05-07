@@ -4,7 +4,6 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	cr "gitlab.com/keibiengine/keibi-engine/pkg/compliance-report"
 )
 
 type SourceType string
@@ -39,14 +38,6 @@ type DescribeResource struct {
 	ResourceType   string                    `json:"resourceType"`
 	Status         DescribeResourceJobStatus `json:"status"`
 	FailureMessage string                    `json:"failureMessage"`
-}
-
-type ComplianceReport struct {
-	ID              uint                         `json:"id"`
-	UpdatedAt       time.Time                    `json:"updatedAt"`
-	ReportCreatedAt int64                        `json:"reportCreatedAt"`
-	Status          cr.ComplianceReportJobStatus `json:"status"`
-	FailureMessage  string                       `json:"failureMessage"`
 }
 
 type ErrorResponse struct {

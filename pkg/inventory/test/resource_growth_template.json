@@ -46,6 +46,9 @@
         "source_job_id": {
           "type": "long"
         },
+        "compliance_job_id": {
+          "type": "long"
+        },
         "described_at": {
           "type": "long"
         },
@@ -54,6 +57,12 @@
           "dynamic": true
         },
         "resource_count": {
+          "type": "long"
+        },
+        "compliant_resource_count": {
+          "type": "long"
+        },
+        "non_compliant_resource_count": {
           "type": "long"
         },
         "report_type": {

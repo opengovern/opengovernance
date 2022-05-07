@@ -15,6 +15,10 @@ import (
 	"strconv"
 	"time"
 
+	api2 "gitlab.com/keibiengine/keibi-engine/pkg/compliance-report/api"
+	"gitlab.com/keibiengine/keibi-engine/pkg/describe/kafka"
+	"gitlab.com/keibiengine/keibi-engine/pkg/utils"
+
 	"gorm.io/gorm"
 
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2020-05-01/network"
@@ -91,6 +95,12 @@ func PopulateElastic(address string, d *DescribeMock) error {
 			return err
 		}
 	}
+	for _, resource := range GenerateCompliancyTrend() {
+		err := IndexKafkaMessage(es, resource)
+		if err != nil {
+			return err
+		}
+	}
 	for _, resource := range GenerateLastSummary() {
 		err := IndexKafkaMessage(es, resource)
 		if err != nil {
@@ -123,7 +133,7 @@ func PopulateElastic(address string, d *DescribeMock) error {
 			DeletedAt: gorm.DeletedAt{},
 		},
 		SourceID:        u,
-		Status:          compliance_report.ComplianceReportJobCompleted,
+		Status:          api2.ComplianceReportJobCompleted,
 		ReportCreatedAt: createdAt,
 		FailureMessage:  "",
 	}
@@ -173,7 +183,7 @@ func ApplyTemplate(address string, url, templateFile string) error {
 	return nil
 }
 
-func GenerateLookupResources() []describe.KafkaLookupResource {
+func GenerateLookupResources() []kafka.KafkaLookupResource {
 	sourceTypes := []string{"AWS", "AWS", "Azure", "Azure"}
 	names := []string{"0001", "0002", "0003", "0004"}
 	resourceIds := []string{"aaa0", "aaa1", "aaa2", "aaa3"}
@@ -182,9 +192,9 @@ func GenerateLookupResources() []describe.KafkaLookupResource {
 	locations := []string{"us-east1", "us-east2", "us-east1", "us-east2"}
 	sourceIDs := []string{"ss1", "ss1", "ss2", "ss2"}
 
-	var resources []describe.KafkaLookupResource
+	var resources []kafka.KafkaLookupResource
 	for i := 0; i < len(resourceIds); i++ {
-		resource := describe.KafkaLookupResource{
+		resource := kafka.KafkaLookupResource{
 			ResourceID:    resourceIds[i],
 			Name:          names[i],
 			SourceType:    api.SourceType(sourceTypes[i]),
@@ -198,66 +208,96 @@ func GenerateLookupResources() []describe.KafkaLookupResource {
 	return resources
 }
 
-func GenerateResourceGrowth() []describe.KafkaSourceResourcesSummary {
-	var resources []describe.KafkaSourceResourcesSummary
+func GenerateResourceGrowth() []kafka.KafkaSourceResourcesSummary {
+	var resources []kafka.KafkaSourceResourcesSummary
 	startTime := time.Now().UnixMilli()
 	for i := 0; i < 3; i++ {
-		resource := describe.KafkaSourceResourcesSummary{
+		resource := kafka.KafkaSourceResourcesSummary{
 			SourceID:      "2a87b978-b8bf-4d7e-bc19-cf0a99a430cf",
 			SourceType:    "AWS",
 			SourceJobID:   1020,
 			DescribedAt:   startTime + int64(i),
 			ResourceCount: (i + 1) * 10,
-			ReportType:    describe.AccountReportTypeResourceGrowthTrend,
+			ReportType:    kafka.ResourceSummaryTypeResourceGrowthTrend,
 		}
 		resources = append(resources, resource)
 	}
 	for i := 0; i < 1; i++ {
-		resource := describe.KafkaSourceResourcesSummary{
+		resource := kafka.KafkaSourceResourcesSummary{
 			SourceID:      uuid.New().String(),
 			SourceType:    "AWS",
 			SourceJobID:   1021,
 			DescribedAt:   startTime + int64(i),
 			ResourceCount: (i + 1) * 10,
-			ReportType:    describe.AccountReportTypeResourceGrowthTrend,
+			ReportType:    kafka.ResourceSummaryTypeResourceGrowthTrend,
 		}
 		resources = append(resources, resource)
 	}
 	return resources
 }
 
-func GenerateLastSummary() []describe.KafkaSourceResourcesLastSummary {
-	var resources []describe.KafkaSourceResourcesLastSummary
+func GenerateCompliancyTrend() []kafka.KafkaResourceCompliancyTrendResource {
+	var resources []kafka.KafkaResourceCompliancyTrendResource
+	startTime := time.Now().UnixMilli()
+	for i := 0; i < 3; i++ {
+		resource := kafka.KafkaResourceCompliancyTrendResource{
+			SourceID:                  "2a87b978-b8bf-4d7e-bc19-cf0a99a430cf",
+			SourceType:                "AWS",
+			ComplianceJobID:           1020,
+			DescribedAt:               startTime + int64(i),
+			CompliantResourceCount:    (i+1)*10 - 5,
+			NonCompliantResourceCount: 5,
+			ResourceSummaryType:       kafka.ResourceSummaryTypeCompliancyTrend,
+		}
+		resources = append(resources, resource)
+	}
+	for i := 0; i < 1; i++ {
+		resource := kafka.KafkaResourceCompliancyTrendResource{
+			SourceID:                  uuid.New().String(),
+			SourceType:                "AWS",
+			ComplianceJobID:           1020,
+			DescribedAt:               startTime + int64(i),
+			CompliantResourceCount:    (i+1)*10 - 5,
+			NonCompliantResourceCount: 5,
+			ResourceSummaryType:       kafka.ResourceSummaryTypeCompliancyTrend,
+		}
+		resources = append(resources, resource)
+	}
+	return resources
+}
+
+func GenerateLastSummary() []kafka.KafkaSourceResourcesLastSummary {
+	var resources []kafka.KafkaSourceResourcesLastSummary
 	startTime := time.Now().UnixMilli()
 
-	resources = append(resources, describe.KafkaSourceResourcesLastSummary{
-		KafkaSourceResourcesSummary: describe.KafkaSourceResourcesSummary{
+	resources = append(resources, kafka.KafkaSourceResourcesLastSummary{
+		KafkaSourceResourcesSummary: kafka.KafkaSourceResourcesSummary{
 			SourceID:      uuid.New().String(),
 			SourceType:    "AWS",
 			SourceJobID:   1021,
 			DescribedAt:   startTime,
 			ResourceCount: 10,
-			ReportType:    describe.AccountReportTypeLastSummary,
+			ReportType:    kafka.ResourceSummaryTypeLastSummary,
 		},
 	})
 
-	resources = append(resources, describe.KafkaSourceResourcesLastSummary{
-		KafkaSourceResourcesSummary: describe.KafkaSourceResourcesSummary{
+	resources = append(resources, kafka.KafkaSourceResourcesLastSummary{
+		KafkaSourceResourcesSummary: kafka.KafkaSourceResourcesSummary{
 			SourceID:      "2a87b978-b8bf-4d7e-bc19-cf0a99a430cf",
 			SourceType:    "AWS",
 			SourceJobID:   1020,
 			DescribedAt:   startTime + int64(2),
 			ResourceCount: 20,
-			ReportType:    describe.AccountReportTypeLastSummary,
+			ReportType:    kafka.ResourceSummaryTypeLastSummary,
 		},
 	})
 	return resources
 }
 
-func GenerateLocationDistribution() []describe.KafkaLocationDistributionResource {
-	var resources []describe.KafkaLocationDistributionResource
+func GenerateLocationDistribution() []kafka.KafkaLocationDistributionResource {
+	var resources []kafka.KafkaLocationDistributionResource
 	for i := 0; i < 3; i++ {
-		resource := describe.KafkaLocationDistributionResource{
+		resource := kafka.KafkaLocationDistributionResource{
 			SourceID:    "2a87b978-b8bf-4d7e-bc19-cf0a99a430cf",
 			SourceType:  "AWS",
 			SourceJobID: 1020,
@@ -265,12 +305,12 @@ func GenerateLocationDistribution() []describe.KafkaLocationDistributionResource
 				"us-east-1": 5,
 				"us-west-1": 5,
 			},
-			ReportType: describe.AccountReportTypeLocationDistribution,
+			ReportType: kafka.ResourceSummaryTypeLocationDistribution,
 		}
 		resources = append(resources, resource)
 	}
 	for i := 0; i < 1; i++ {
-		resource := describe.KafkaLocationDistributionResource{
+		resource := kafka.KafkaLocationDistributionResource{
 			SourceID:    uuid.New().String(),
 			SourceType:  "AWS",
 			SourceJobID: 1021,
@@ -278,7 +318,7 @@ func GenerateLocationDistribution() []describe.KafkaLocationDistributionResource
 				"us-east-2": 5,
 				"us-west-2": 5,
 			},
-			ReportType: describe.AccountReportTypeLocationDistribution,
+			ReportType: kafka.ResourceSummaryTypeLocationDistribution,
 		}
 		resources = append(resources, resource)
 	}
@@ -448,7 +488,7 @@ func GenerateComplianceReport(es *elasticsearchv7.Client, sourceId uuid.UUID, jo
 		jobID,
 		sourceId,
 		createdAt,
-		compliance_report.SourceCloudAzure,
+		utils.SourceCloudAzure,
 	)
 	if err != nil {
 		return err
@@ -574,7 +614,7 @@ func GenerateResources(es *elasticsearchv7.Client) error {
 }
 
 func IndexAWSResource(es *elasticsearchv7.Client, resource awsdescriber.Resource) error {
-	kafkaRes := describe.KafkaResource{
+	kafkaRes := kafka.KafkaResource{
 		ID:            resource.UniqueID(),
 		Description:   resource.Description,
 		SourceType:    api.SourceCloudAWS,
@@ -592,7 +632,7 @@ func IndexAWSResource(es *elasticsearchv7.Client, resource awsdescriber.Resource
 }
 
 func IndexAzureResource(es *elasticsearchv7.Client, resource azuredescriber.Resource) error {
-	kafkaRes := describe.KafkaResource{
+	kafkaRes := kafka.KafkaResource{
 		ID:            resource.UniqueID(),
 		Description:   resource.Description,
 		SourceType:    api.SourceCloudAzure,
@@ -611,7 +651,7 @@ func IndexAzureResource(es *elasticsearchv7.Client, resource azuredescriber.Reso
 	return IndexKafkaMessage(es, kafkaRes)
 }
 
-func IndexKafkaMessage(es *elasticsearchv7.Client, kafkaRes describe.KafkaMessage) error {
+func IndexKafkaMessage(es *elasticsearchv7.Client, kafkaRes kafka.KafkaMessage) error {
 	r, err := kafkaRes.AsProducerMessage()
 	if err != nil {
 		return err

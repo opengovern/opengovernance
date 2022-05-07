@@ -10,6 +10,10 @@ import (
 	"os/exec"
 	"time"
 
+	"gitlab.com/keibiengine/keibi-engine/pkg/compliance-report/api"
+	"gitlab.com/keibiengine/keibi-engine/pkg/describe/kafka"
+	"gitlab.com/keibiengine/keibi-engine/pkg/utils"
+
 	"github.com/elastic/go-elasticsearch/v7"
 	"github.com/google/uuid"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/vault"
@@ -18,27 +22,14 @@ import (
 	"gopkg.in/Shopify/sarama.v1"
 )
 
-type SourceType string
-
 const (
-	SourceCloudAWS    SourceType = "AWS"
-	SourceCloudAzure  SourceType = "Azure"
-	cleanupJobTimeout            = 5 * time.Minute
-)
-
-type ComplianceReportJobStatus string
-
-const (
-	ComplianceReportJobCreated              ComplianceReportJobStatus = "CREATED"
-	ComplianceReportJobInProgress           ComplianceReportJobStatus = "IN_PROGRESS"
-	ComplianceReportJobCompletedWithFailure ComplianceReportJobStatus = "COMPLETED_WITH_FAILURE"
-	ComplianceReportJobCompleted            ComplianceReportJobStatus = "COMPLETED"
+	cleanupJobTimeout = 5 * time.Minute
 )
 
 type Job struct {
 	JobID       uint
 	SourceID    uuid.UUID
-	SourceType  SourceType
+	SourceType  utils.SourceType
 	ConfigReg   string
 	DescribedAt int64
 	logger      *zap.Logger
@@ -46,7 +37,7 @@ type Job struct {
 
 type JobResult struct {
 	JobID           uint
-	Status          ComplianceReportJobStatus
+	Status          api.ComplianceReportJobStatus
 	ReportCreatedAt int64
 	Error           string
 }
@@ -69,7 +60,7 @@ func (j *Job) failed(msg string, args ...interface{}) JobResult {
 	return JobResult{
 		JobID:  j.JobID,
 		Error:  fmt.Sprintf(msg, args...),
-		Status: ComplianceReportJobCompletedWithFailure,
+		Status: api.ComplianceReportJobCompletedWithFailure,
 	}
 }
 
@@ -81,7 +72,7 @@ func (j *Job) Do(vlt vault.SourceConfig, producer sarama.SyncProducer, topic str
 
 	var accountID string
 	switch j.SourceType {
-	case SourceCloudAWS:
+	case utils.SourceCloudAWS:
 		creds, err := AWSAccountConfigFromMap(cfg)
 		if err != nil {
 			return j.failed("error: AWSAccountConfigFromMap: " + err.Error())
@@ -92,7 +83,7 @@ func (j *Job) Do(vlt vault.SourceConfig, producer sarama.SyncProducer, topic str
 		if err != nil {
 			return j.failed("error: BuildSpecFile: " + err.Error())
 		}
-	case SourceCloudAzure:
+	case utils.SourceCloudAzure:
 		creds, err := AzureSubscriptionConfigFromMap(cfg)
 		if err != nil {
 			return j.failed("error: AzureSubscriptionConfigFromMap: " + err.Error())
@@ -151,7 +142,43 @@ func (j *Job) Do(vlt vault.SourceConfig, producer sarama.SyncProducer, topic str
 		CompliancePercentage: float64(summary.Status.OK) / float64(totalResource),
 	}
 
-	err = doSendToKafka(producer, topic, reports, acr, j.logger)
+	resourceStatus := map[string]ResultStatus{}
+	for _, r := range reports {
+		if r.Type == ReportTypeResult {
+			current := resourceStatus[r.Result.Result.Resource]
+			next := r.Result.Result.Status
+			if current.SeverityLevel() < next.SeverityLevel() {
+				resourceStatus[r.Result.Result.Resource] = next
+			}
+		}
+	}
+	nonCompliant := 0
+	compliant := 0
+	for _, status := range resourceStatus {
+		if status == ResultStatusAlarm || status == ResultStatusError || status == ResultStatusInfo {
+			nonCompliant++
+		} else if status == ResultStatusOK {
+			compliant++
+		} else {
+			// ResultStatusSkip
+		}
+	}
+	resource := kafka.KafkaResourceCompliancyTrendResource{
+		SourceID:                  j.SourceID.String(),
+		SourceType:                j.SourceType,
+		ComplianceJobID:           j.JobID,
+		DescribedAt:               j.DescribedAt,
+		CompliantResourceCount:    compliant,
+		NonCompliantResourceCount: nonCompliant,
+		ResourceSummaryType:       kafka.ResourceSummaryTypeCompliancyTrend,
+	}
+
+	var msgs []kafka.KafkaMessage
+	msgs = append(msgs, acr, resource)
+	for _, r := range reports {
+		msgs = append(msgs, r)
+	}
+	err = kafka.DoSendToKafka(producer, topic, msgs, j.logger)
 	if err != nil {
 		return j.failed("error: SendingToKafka: " + err.Error())
 	}
@@ -159,58 +186,17 @@ func (j *Job) Do(vlt vault.SourceConfig, producer sarama.SyncProducer, topic str
 	return JobResult{
 		JobID:           j.JobID,
 		ReportCreatedAt: j.DescribedAt,
-		Status:          ComplianceReportJobCompleted,
+		Status:          api.ComplianceReportJobCompleted,
 	}
 }
 
-func doSendToKafka(producer sarama.SyncProducer, topic string, reports []Report, accountReport AccountReport, logger *zap.Logger) error {
-	var msgs []*sarama.ProducerMessage
-	for _, v := range reports {
-		msg, err := v.AsProducerMessage()
-		if err != nil {
-			logger.Error(fmt.Sprintf("Failed to convert report[%v] to Kafka ProducerMessage, ignoring...", v))
-			continue
-		}
-
-		// Override the topic
-		msg.Topic = topic
-
-		msgs = append(msgs, msg)
-	}
-
-	msg, err := accountReport.AsProducerMessage()
-	if err != nil {
-		fmt.Printf("Failed to convert accountReport[%v] to Kafka ProducerMessage, ignoring...", accountReport.SourceID)
-	} else {
-		// Override the topic
-		msg.Topic = topic
-		msgs = append(msgs, msg)
-	}
-
-	if len(msgs) == 0 {
-		return nil
-	}
-
-	if err := producer.SendMessages(msgs); err != nil {
-		if errs, ok := err.(sarama.ProducerErrors); ok {
-			for _, e := range errs {
-				fmt.Printf("Failed to persist resource[%s] in kafka topic[%s]: %s\nMessage: %v\n", e.Msg.Key, e.Msg.Topic, e.Error(), e.Msg)
-			}
-		}
-
-		return err
-	}
-
-	return nil
-}
-
-func RunSteampipeCheckAll(sourceType SourceType, exportFileName string) error {
+func RunSteampipeCheckAll(sourceType utils.SourceType, exportFileName string) error {
 	workspaceDir := ""
 
 	switch sourceType {
-	case SourceCloudAWS:
+	case utils.SourceCloudAWS:
 		workspaceDir = "/steampipe-mod-aws-compliance"
-	case SourceCloudAzure:
+	case utils.SourceCloudAzure:
 		workspaceDir = "/steampipe-mod-azure-compliance"
 	default:
 		return errors.New("invalid source type")

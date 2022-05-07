@@ -9,6 +9,10 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
+
+	describeapi "gitlab.com/keibiengine/keibi-engine/pkg/describe/api"
+	inventoryapi "gitlab.com/keibiengine/keibi-engine/pkg/inventory/api"
 
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
@@ -72,6 +76,8 @@ func (s *HttpHandlerSuite) SetupSuite() {
 		db:                Database{orm: orm},
 		sourceEventsQueue: &queuemocks.Interface{},
 		vault:             &vaultmocks.SourceConfig{},
+		inventoryClient:   InventoryMockClient{s},
+		describeClient:    DescribeMockClient{s},
 	}
 
 	s.handler.Register(s.router)
@@ -329,4 +335,46 @@ func doSimpleJSONRequest(router *echo.Echo, method string, path string, request,
 	}
 
 	return rec, nil
+}
+
+type InventoryMockClient struct {
+	s *HttpHandlerSuite
+}
+
+func (c InventoryMockClient) ListAccountsResourceCount() ([]inventoryapi.TopAccountResponse, error) {
+	sources, err := c.s.handler.db.GetSources()
+	if err != nil {
+		return nil, err
+	}
+
+	var resp []inventoryapi.TopAccountResponse
+	for _, s := range sources {
+		resp = append(resp, inventoryapi.TopAccountResponse{
+			SourceID:      s.ID.String(),
+			ResourceCount: 10,
+		})
+	}
+	return resp, nil
+}
+
+type DescribeMockClient struct {
+	s *HttpHandlerSuite
+}
+
+func (c DescribeMockClient) ListSources() ([]describeapi.Source, error) {
+	sources, err := c.s.handler.db.GetSources()
+	if err != nil {
+		return nil, err
+	}
+
+	var resp []describeapi.Source
+	for _, s := range sources {
+		resp = append(resp, describeapi.Source{
+			ID:                     s.ID,
+			Type:                   describeapi.SourceType(s.Type),
+			LastDescribedAt:        time.Now(),
+			LastComplianceReportAt: time.Now(),
+		})
+	}
+	return resp, nil
 }
