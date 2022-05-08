@@ -7,7 +7,7 @@ import (
 	"io/ioutil"
 	"strconv"
 
-	"gitlab.com/keibiengine/keibi-engine/pkg/utils"
+	"gitlab.com/keibiengine/keibi-engine/pkg/source"
 
 	"github.com/google/uuid"
 	"gitlab.com/keibiengine/keibi-engine/pkg/keibi-es-sdk"
@@ -59,7 +59,7 @@ type Report struct {
 	Type        ReportType       `json:"type"`
 	ReportJobId uint             `json:"reportJobID"`
 	SourceID    uuid.UUID        `json:"sourceID"`
-	Provider    utils.SourceType `json:"provider"`
+	Provider    source.Type      `json:"provider"`
 	DescribedAt int64            `json:"describedAt"`
 }
 
@@ -92,7 +92,7 @@ func (r Report) MessageID() string {
 
 type AccountReport struct {
 	SourceID             uuid.UUID         `json:"sourceID"`
-	Provider             utils.SourceType  `json:"provider"`
+	Provider             source.Type       `json:"provider"`
 	BenchmarkID          string            `json:"benchmarkID"`
 	ReportJobId          uint              `json:"reportJobID"`
 	Summary              Summary           `json:"summary"`
@@ -243,7 +243,7 @@ type AccountReportQueryHit struct {
 	Sort    []interface{} `json:"sort"`
 }
 
-func ExtractNodes(root Group, provider utils.SourceType, tree []string, reportJobID uint, sourceID uuid.UUID, describedAt int64) []Report {
+func ExtractNodes(root Group, provider source.Type, tree []string, reportJobID uint, sourceID uuid.UUID, describedAt int64) []Report {
 	var nodes []Report
 
 	var controlIds, childGroupIds []string
@@ -308,7 +308,7 @@ func ExtractNodes(root Group, provider utils.SourceType, tree []string, reportJo
 	return nodes
 }
 
-func ExtractLeaves(root Group, provider utils.SourceType, tree []string, reportJobID uint, sourceID uuid.UUID, createdAt int64) []Report {
+func ExtractLeaves(root Group, provider source.Type, tree []string, reportJobID uint, sourceID uuid.UUID, createdAt int64) []Report {
 	var leaves []Report
 	if root.Controls != nil {
 		for _, control := range root.Controls {
@@ -345,7 +345,7 @@ func ExtractLeaves(root Group, provider utils.SourceType, tree []string, reportJ
 	return leaves
 }
 
-func ParseReport(path string, reportJobID uint, sourceID uuid.UUID, describedAt int64, provider utils.SourceType) ([]Report, error) {
+func ParseReport(path string, reportJobID uint, sourceID uuid.UUID, describedAt int64, provider source.Type) ([]Report, error) {
 	content, err := ioutil.ReadFile(path)
 	if err != nil {
 		return nil, err

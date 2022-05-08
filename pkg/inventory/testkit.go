@@ -15,12 +15,12 @@ import (
 	"strconv"
 	"time"
 
+	"gitlab.com/keibiengine/keibi-engine/pkg/source"
+
 	"gitlab.com/keibiengine/keibi-engine/pkg/cloudservice"
 
 	api2 "gitlab.com/keibiengine/keibi-engine/pkg/compliance-report/api"
 	"gitlab.com/keibiengine/keibi-engine/pkg/describe/kafka"
-	"gitlab.com/keibiengine/keibi-engine/pkg/utils"
-
 	"gorm.io/gorm"
 
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2020-05-01/network"
@@ -526,7 +526,7 @@ func PopulatePostgres(db Database) error {
 func GenerateAccountReport(es *elasticsearchv7.Client, sourceId uuid.UUID, jobID uint, createdAt int64) error {
 	r := compliance_report.AccountReport{
 		SourceID:    sourceId,
-		Provider:    utils.SourceCloudAzure,
+		Provider:    source.CloudAzure,
 		BenchmarkID: "azure_compliance.benchmark.cis_v130",
 		ReportJobId: jobID,
 		Summary: compliance_report.Summary{
@@ -551,7 +551,7 @@ func GenerateAccountReport(es *elasticsearchv7.Client, sourceId uuid.UUID, jobID
 
 	r = compliance_report.AccountReport{
 		SourceID:    sourceId,
-		Provider:    utils.SourceCloudAzure,
+		Provider:    source.CloudAzure,
 		BenchmarkID: "azure_compliance.benchmark.cis_v130",
 		ReportJobId: jobID,
 		Summary: compliance_report.Summary{
@@ -581,7 +581,7 @@ func GenerateComplianceReport(es *elasticsearchv7.Client, sourceId uuid.UUID, jo
 		jobID,
 		sourceId,
 		createdAt,
-		utils.SourceCloudAzure,
+		source.CloudAzure,
 	)
 	if err != nil {
 		return err

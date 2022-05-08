@@ -3,11 +3,12 @@ package es
 import (
 	"encoding/json"
 
+	"gitlab.com/keibiengine/keibi-engine/pkg/source"
+
 	compliance_report "gitlab.com/keibiengine/keibi-engine/pkg/compliance-report"
-	"gitlab.com/keibiengine/keibi-engine/pkg/utils"
 )
 
-func ComplianceScoreByProviderQuery(provider utils.SourceType, size int, searchAfter []interface{}) (string, error) {
+func ComplianceScoreByProviderQuery(provider source.Type, size int, searchAfter []interface{}) (string, error) {
 	res := make(map[string]interface{})
 	var filters []interface{}
 

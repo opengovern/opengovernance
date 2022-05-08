@@ -16,6 +16,8 @@ import (
 	"strings"
 	"time"
 
+	"gitlab.com/keibiengine/keibi-engine/pkg/source"
+
 	"gitlab.com/keibiengine/keibi-engine/pkg/describe"
 	"gitlab.com/keibiengine/keibi-engine/pkg/inventory/es"
 	"gitlab.com/keibiengine/keibi-engine/pkg/utils"
@@ -81,7 +83,6 @@ func (h *HttpHandler) Register(v1 *echo.Group) {
 	v1.GET("/benchmarks/:benchmarkId/:createdAt/accounts/compliance", h.GetBenchmarkAccountCompliance)
 	v1.GET("/benchmarks/:benchmarkId/:createdAt/accounts", h.GetBenchmarkAccounts)
 
-	v1.GET("/benchmarks/:provider/accounts/compliance", h.GetBenchmarkAccountCompliance)
 	v1.GET("/benchmarks/:provider/list", h.GetListOfBenchmarks)
 	v1.GET("/compliancy/trend", h.GetCompliancyTrend)
 
@@ -169,7 +170,7 @@ func (h *HttpHandler) GetBenchmarksInTime(ctx echo.Context) error {
 // @Success      200        {object}  []api.BenchmarkScoreResponse
 // @Router       /inventory/api/v1/benchmarks/{provider}/list [get]
 func (h *HttpHandler) GetListOfBenchmarks(ctx echo.Context) error {
-	provider, err := utils.ParseSourceType(ctx.Param("provider"))
+	provider, err := source.ParseType(ctx.Param("provider"))
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid provider")
 	}
