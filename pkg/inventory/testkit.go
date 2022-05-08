@@ -15,6 +15,8 @@ import (
 	"strconv"
 	"time"
 
+	es2 "gitlab.com/keibiengine/keibi-engine/pkg/compliance-report/es"
+
 	"gitlab.com/keibiengine/keibi-engine/pkg/source"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/cloudservice"
@@ -75,6 +77,10 @@ func PopulateElastic(address string, d *DescribeMock) error {
 	}
 
 	err = ApplyTemplate(address, "_index_template/account_report_template", "account_report_template.json")
+	if err != nil {
+		return err
+	}
+	err = ApplyTemplate(address, "_index_template/compliance_summary_template", "compliance_summary_template.json")
 	if err != nil {
 		return err
 	}
@@ -154,6 +160,11 @@ func PopulateElastic(address string, d *DescribeMock) error {
 	d.SetResponse(j1)
 
 	err = GenerateAccountReport(es, u, 1020, createdAt)
+	if err != nil {
+		return err
+	}
+
+	err = GenerateServiceComplianceSummary(es, 1020, createdAt)
 	if err != nil {
 		return err
 	}
@@ -568,6 +579,43 @@ func GenerateAccountReport(es *elasticsearchv7.Client, sourceId uuid.UUID, jobID
 		TotalCompliant:       20,
 		CompliancePercentage: 0.99,
 		AccountReportType:    compliance_report.AccountReportTypeLast,
+	}
+	err = IndexKafkaMessage(es, r)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func GenerateServiceComplianceSummary(es *elasticsearchv7.Client, jobID uint, createdAt int64) error {
+	r := es2.ServiceCompliancySummary{
+		ServiceName:          "EC2 Instance",
+		TotalResources:       21,
+		TotalCompliant:       20,
+		CompliancePercentage: 0.99,
+		CompliancySummary: es2.CompliancySummary{
+			CompliancySummaryType: es2.CompliancySummaryTypeServiceSummary,
+			ReportJobId:           jobID,
+			Provider:              source.CloudAzure,
+			DescribedAt:           createdAt,
+		},
+	}
+	err := IndexKafkaMessage(es, r)
+	if err != nil {
+		return err
+	}
+
+	r = es2.ServiceCompliancySummary{
+		ServiceName:          "EC2 VPC",
+		TotalResources:       21,
+		TotalCompliant:       20,
+		CompliancePercentage: 0.99,
+		CompliancySummary: es2.CompliancySummary{
+			CompliancySummaryType: es2.CompliancySummaryTypeServiceSummary,
+			ReportJobId:           jobID,
+			Provider:              source.CloudAzure,
+			DescribedAt:           createdAt,
+		},
 	}
 	err = IndexKafkaMessage(es, r)
 	if err != nil {

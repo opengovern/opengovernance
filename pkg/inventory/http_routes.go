@@ -83,6 +83,8 @@ func (h *HttpHandler) Register(v1 *echo.Group) {
 	v1.GET("/benchmarks/:benchmarkId/:createdAt/accounts/compliance", h.GetBenchmarkAccountCompliance)
 	v1.GET("/benchmarks/:benchmarkId/:createdAt/accounts", h.GetBenchmarkAccounts)
 
+	v1.GET("/benchmarks/compliancy/:provider/top/accounts", h.GetTopAccountsByBenchmarkCompliancy)
+	v1.GET("/benchmarks/compliancy/:provider/top/services", h.GetTopServicesByBenchmarkCompliancy)
 	v1.GET("/benchmarks/:provider/list", h.GetListOfBenchmarks)
 	v1.GET("/compliancy/trend", h.GetCompliancyTrend)
 
@@ -179,7 +181,7 @@ func (h *HttpHandler) GetListOfBenchmarks(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid count")
 	}
 
-	query, err := compliance_es.ComplianceScoreByProviderQuery(provider, count, nil)
+	query, err := compliance_es.ComplianceScoreByProviderQuery(provider, count, "desc", nil)
 	if err != nil {
 		return err
 	}
@@ -199,6 +201,144 @@ func (h *HttpHandler) GetListOfBenchmarks(ctx echo.Context) error {
 		})
 	}
 
+	return ctx.JSON(http.StatusOK, res)
+}
+
+// GetTopAccountsByBenchmarkCompliancy godoc
+// @Summary      Return top accounts by benchmark compliancy
+// @Tags         provider_dashboard
+// @Accept       json
+// @Produce      json
+// @Param	     count      query     int     true  "Count"
+// @Param	     order      query     string  true  "Order"     Enums(asc,desc)
+// @Param        provider   path      string  true  "Provider"  Enums(AWS,Azure)
+// @Success      200        {object}  []api.AccountCompliancyResponse
+// @Router       /benchmarks/compliancy/{provider}/top/accounts [get]
+func (h *HttpHandler) GetTopAccountsByBenchmarkCompliancy(ctx echo.Context) error {
+	provider, err := source.ParseType(ctx.Param("provider"))
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid provider")
+	}
+	count, err := strconv.Atoi(ctx.QueryParam("count"))
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid count")
+	}
+	order := strings.ToLower(ctx.QueryParam("order"))
+	if order != "asc" && order != "desc" {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid order")
+	}
+
+	var searchAfter []interface{}
+	accountTotal := map[uuid.UUID]int{}
+	accountCompliant := map[uuid.UUID]int{}
+	for {
+		query, err := compliance_es.ComplianceScoreByProviderQuery(provider, EsFetchPageSize, order, searchAfter)
+		if err != nil {
+			return err
+		}
+
+		var response compliance_report.AccountReportQueryResponse
+		err = h.client.Search(context.Background(), compliance_report.AccountReportIndex, query, &response)
+		if err != nil {
+			return err
+		}
+
+		if len(response.Hits.Hits) == 0 {
+			break
+		}
+
+		for _, hit := range response.Hits.Hits {
+			accountTotal[hit.Source.SourceID] += hit.Source.TotalResources
+			accountCompliant[hit.Source.SourceID] += hit.Source.TotalCompliant
+
+			searchAfter = hit.Sort
+		}
+	}
+	var res []api.AccountCompliancyResponse
+	for k, v := range accountTotal {
+		res = append(res, api.AccountCompliancyResponse{
+			SourceID:       k,
+			TotalResources: v,
+			TotalCompliant: accountCompliant[k],
+		})
+	}
+	sort.Slice(res, func(i, j int) bool {
+		return (float64(res[i].TotalCompliant) / float64(res[i].TotalResources)) <
+			(float64(res[j].TotalCompliant) / float64(res[j].TotalResources))
+	})
+
+	if len(res) > count {
+		res = res[:count]
+	}
+	return ctx.JSON(http.StatusOK, res)
+}
+
+// GetTopServicesByBenchmarkCompliancy godoc
+// @Summary      Return top accounts by benchmark compliancy
+// @Tags         provider_dashboard
+// @Accept       json
+// @Produce      json
+// @Param	     count      query     int     true  "Count"
+// @Param	     order      query     string  true  "Order"     Enums(asc,desc)
+// @Param        provider   path      string  true  "Provider"  Enums(AWS,Azure)
+// @Success      200        {object}  []api.ServiceCompliancyResponse
+// @Router       /benchmarks/compliancy/{provider}/top/services [get]
+func (h *HttpHandler) GetTopServicesByBenchmarkCompliancy(ctx echo.Context) error {
+	provider, err := source.ParseType(ctx.Param("provider"))
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid provider")
+	}
+	count, err := strconv.Atoi(ctx.QueryParam("count"))
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid count")
+	}
+	order := strings.ToLower(ctx.QueryParam("order"))
+	if order != "asc" && order != "desc" {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid order")
+	}
+
+	var searchAfter []interface{}
+	serviceTotal := map[string]int{}
+	serviceCompliant := map[string]int{}
+	for {
+		query, err := compliance_es.ServiceComplianceScoreByProviderQuery(provider, EsFetchPageSize, order, searchAfter)
+		if err != nil {
+			return err
+		}
+
+		var response compliance_es.ServiceCompliancySummaryQueryResponse
+		err = h.client.Search(context.Background(), compliance_es.CompliancySummaryIndex, query, &response)
+		if err != nil {
+			return err
+		}
+
+		if len(response.Hits.Hits) == 0 {
+			break
+		}
+
+		for _, hit := range response.Hits.Hits {
+			serviceTotal[hit.Source.ServiceName] += hit.Source.TotalResources
+			serviceCompliant[hit.Source.ServiceName] += hit.Source.TotalCompliant
+
+			searchAfter = hit.Sort
+		}
+	}
+	var res []api.ServiceCompliancyResponse
+	for k, v := range serviceTotal {
+		res = append(res, api.ServiceCompliancyResponse{
+			ServiceName:    k,
+			TotalResources: v,
+			TotalCompliant: serviceCompliant[k],
+		})
+	}
+	sort.Slice(res, func(i, j int) bool {
+		return (float64(res[i].TotalCompliant) / float64(res[i].TotalResources)) <
+			(float64(res[j].TotalCompliant) / float64(res[j].TotalResources))
+	})
+
+	if len(res) > count {
+		res = res[:count]
+	}
 	return ctx.JSON(http.StatusOK, res)
 }
 
@@ -527,6 +667,7 @@ func (h *HttpHandler) GetTopAccountsByResourceCount(ctx echo.Context) error {
 // @Produce  json
 // @Param    count     query     int     true  "count"
 // @Param    provider  query     string  true  "Provider"
+// @Param    sourceId  query     string  false  "SourceID"
 // @Success  200       {object}  []api.TopAccountResponse
 // @Router   /inventory/api/v1/resources/top/services [get]
 func (h *HttpHandler) GetTopServicesByResourceCount(ctx echo.Context) error {
@@ -536,7 +677,18 @@ func (h *HttpHandler) GetTopServicesByResourceCount(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid count")
 	}
 
-	query, err := es.FindTopServicesQuery(provider, count)
+	var sourceID *string
+	sID := ctx.QueryParam("sourceId")
+	if sID != "" {
+		sourceUUID, err := uuid.Parse(sID)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "invalid sourceID")
+		}
+		s := sourceUUID.String()
+		sourceID = &s
+	}
+
+	query, err := es.FindTopServicesQuery(provider, sourceID, count)
 	if err != nil {
 		return err
 	}

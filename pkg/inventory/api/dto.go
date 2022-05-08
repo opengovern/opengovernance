@@ -1,6 +1,7 @@
 package api
 
 import (
+	"github.com/google/uuid"
 	compliance_report "gitlab.com/keibiengine/keibi-engine/pkg/compliance-report"
 	"gitlab.com/keibiengine/keibi-engine/pkg/describe/kafka"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/api"
@@ -350,4 +351,16 @@ type CategoriesResponse struct {
 type BenchmarkScoreResponse struct {
 	BenchmarkID       string `json:"benchmarkID"`
 	NonCompliantCount int    `json:"nonCompliantCount"`
+}
+
+type AccountCompliancyResponse struct {
+	SourceID       uuid.UUID `json:"sourceID"`
+	TotalResources int       `json:"totalResources"`
+	TotalCompliant int       `json:"totalCompliant"`
+}
+
+type ServiceCompliancyResponse struct {
+	ServiceName    string `json:"serviceName"`
+	TotalResources int    `json:"totalResources"`
+	TotalCompliant int    `json:"totalCompliant"`
 }

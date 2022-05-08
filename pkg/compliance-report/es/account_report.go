@@ -8,7 +8,7 @@ import (
 	compliance_report "gitlab.com/keibiengine/keibi-engine/pkg/compliance-report"
 )
 
-func ComplianceScoreByProviderQuery(provider source.Type, size int, searchAfter []interface{}) (string, error) {
+func ComplianceScoreByProviderQuery(provider source.Type, size int, order string, searchAfter []interface{}) (string, error) {
 	res := make(map[string]interface{})
 	var filters []interface{}
 
@@ -22,7 +22,7 @@ func ComplianceScoreByProviderQuery(provider source.Type, size int, searchAfter 
 	res["size"] = size
 	res["sort"] = []map[string]interface{}{
 		{
-			"compliancePercentage": "desc",
+			"compliancePercentage": order,
 		},
 		{
 			"_id": "asc",

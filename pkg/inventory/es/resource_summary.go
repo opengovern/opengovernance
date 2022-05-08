@@ -121,7 +121,7 @@ type TopServicesQueryHit struct {
 	Sort    []interface{}               `json:"sort"`
 }
 
-func FindTopServicesQuery(provider string, fetchSize int) (string, error) {
+func FindTopServicesQuery(provider string, sourceID *string, fetchSize int) (string, error) {
 	res := make(map[string]interface{})
 	var filters []interface{}
 
@@ -132,6 +132,11 @@ func FindTopServicesQuery(provider string, fetchSize int) (string, error) {
 	filters = append(filters, map[string]interface{}{
 		"terms": map[string][]string{"source_type": {provider}},
 	})
+	if sourceID != nil {
+		filters = append(filters, map[string]interface{}{
+			"terms": map[string][]string{"source_id": {*sourceID}},
+		})
+	}
 
 	res["size"] = fetchSize
 	res["sort"] = []map[string]interface{}{

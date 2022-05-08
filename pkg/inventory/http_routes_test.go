@@ -1255,6 +1255,39 @@ func (s *HttpHandlerSuite) TestGetListOfBenchmarks() {
 	})
 }
 
+func (s *HttpHandlerSuite) TestGetTopAccountsByCompliancy() {
+	require := s.Require()
+
+	url := "/api/v1/benchmarks/compliancy/Azure/top/accounts?count=5&order=desc"
+	var res []api.AccountCompliancyResponse
+	_, err := doRequestJSONResponse(s.router, "GET", url, nil, &res)
+
+	require.NoError(err)
+	require.Len(res, 1)
+	sourceID, _ := uuid.Parse("2a87b978-b8bf-4d7e-bc19-cf0a99a430cf")
+	require.Contains(res, api.AccountCompliancyResponse{
+		SourceID:       sourceID,
+		TotalResources: 21,
+		TotalCompliant: 20,
+	})
+}
+
+func (s *HttpHandlerSuite) TestGetTopServicesByCompliancy() {
+	require := s.Require()
+
+	url := "/api/v1/benchmarks/compliancy/Azure/top/services?count=5&order=desc"
+	var res []api.ServiceCompliancyResponse
+	_, err := doRequestJSONResponse(s.router, "GET", url, nil, &res)
+
+	require.NoError(err)
+	require.Len(res, 2)
+	require.Contains(res, api.ServiceCompliancyResponse{
+		ServiceName:    "EC2 Instance",
+		TotalResources: 21,
+		TotalCompliant: 20,
+	})
+}
+
 func (s *HttpHandlerSuite) TestCountBenchmarksAndPolicies() {
 	require := s.Require()
 
