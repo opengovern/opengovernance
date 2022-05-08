@@ -1,7 +1,9 @@
 package compliance_report
 
 import (
+	"crypto/sha256"
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"strconv"
 
@@ -24,6 +26,13 @@ const (
 	ReportTypeBenchmark = "benchmark"
 	ReportTypeControl   = "control"
 	ReportTypeResult    = "result"
+)
+
+type AccountReportType string
+
+const (
+	AccountReportTypeLast   = "last"
+	AccountReportTypeInTime = "intime"
 )
 
 type ReportResultObj struct {
@@ -82,15 +91,16 @@ func (r Report) MessageID() string {
 }
 
 type AccountReport struct {
-	SourceID             uuid.UUID        `json:"sourceID"`
-	Provider             utils.SourceType `json:"provider"`
-	BenchmarkID          string           `json:"benchmarkID"`
-	ReportJobId          uint             `json:"reportJobID"`
-	Summary              Summary          `json:"summary"`
-	CreatedAt            int64            `json:"createdAt"`
-	TotalResources       int              `json:"totalResources"`
-	TotalCompliant       int              `json:"totalCompliant"`
-	CompliancePercentage float64          `json:"compliancePercentage"`
+	SourceID             uuid.UUID         `json:"sourceID"`
+	Provider             utils.SourceType  `json:"provider"`
+	BenchmarkID          string            `json:"benchmarkID"`
+	ReportJobId          uint              `json:"reportJobID"`
+	Summary              Summary           `json:"summary"`
+	CreatedAt            int64             `json:"createdAt"`
+	TotalResources       int               `json:"totalResources"`
+	TotalCompliant       int               `json:"totalCompliant"`
+	CompliancePercentage float64           `json:"compliancePercentage"`
+	AccountReportType    AccountReportType `json:"accountReportType"`
 }
 
 func (r AccountReport) AsProducerMessage() (*sarama.ProducerMessage, error) {
@@ -99,13 +109,22 @@ func (r AccountReport) AsProducerMessage() (*sarama.ProducerMessage, error) {
 		return nil, err
 	}
 
-	u, err := uuid.NewUUID()
-	if err != nil {
-		return nil, err
+	var key string
+	if r.AccountReportType == AccountReportTypeLast {
+		h := sha256.New()
+		h.Write([]byte(r.BenchmarkID))
+		h.Write([]byte(r.SourceID.String()))
+		key = fmt.Sprintf("%x", h.Sum(nil))
+	} else {
+		u, err := uuid.NewUUID()
+		if err != nil {
+			return nil, err
+		}
+		key = u.String()
 	}
 
 	return &sarama.ProducerMessage{
-		Key: sarama.StringEncoder(u.String()),
+		Key: sarama.StringEncoder(key),
 		Headers: []sarama.RecordHeader{
 			{
 				Key:   []byte(esIndexHeader),
@@ -487,6 +506,9 @@ func QueryProviderResult(benchmarkID string, createdAt int64, order string, size
 	})
 	filters = append(filters, map[string]interface{}{
 		"terms": map[string][]interface{}{"createdAt": {createdAt}},
+	})
+	filters = append(filters, map[string]interface{}{
+		"terms": map[string][]interface{}{"accountReportType": {AccountReportTypeInTime}},
 	})
 	res["size"] = size
 	if searchAfter != nil {

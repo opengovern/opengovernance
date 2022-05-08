@@ -526,6 +526,7 @@ func PopulatePostgres(db Database) error {
 func GenerateAccountReport(es *elasticsearchv7.Client, sourceId uuid.UUID, jobID uint, createdAt int64) error {
 	r := compliance_report.AccountReport{
 		SourceID:    sourceId,
+		Provider:    utils.SourceCloudAzure,
 		BenchmarkID: "azure_compliance.benchmark.cis_v130",
 		ReportJobId: jobID,
 		Summary: compliance_report.Summary{
@@ -541,8 +542,38 @@ func GenerateAccountReport(es *elasticsearchv7.Client, sourceId uuid.UUID, jobID
 		TotalResources:       21,
 		TotalCompliant:       20,
 		CompliancePercentage: 0.99,
+		AccountReportType:    compliance_report.AccountReportTypeInTime,
 	}
-	return IndexKafkaMessage(es, r)
+	err := IndexKafkaMessage(es, r)
+	if err != nil {
+		return err
+	}
+
+	r = compliance_report.AccountReport{
+		SourceID:    sourceId,
+		Provider:    utils.SourceCloudAzure,
+		BenchmarkID: "azure_compliance.benchmark.cis_v130",
+		ReportJobId: jobID,
+		Summary: compliance_report.Summary{
+			Status: compliance_report.SummaryStatus{
+				Alarm: 0,
+				OK:    20,
+				Info:  0,
+				Skip:  1,
+				Error: 0,
+			},
+		},
+		CreatedAt:            createdAt,
+		TotalResources:       21,
+		TotalCompliant:       20,
+		CompliancePercentage: 0.99,
+		AccountReportType:    compliance_report.AccountReportTypeLast,
+	}
+	err = IndexKafkaMessage(es, r)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 func GenerateComplianceReport(es *elasticsearchv7.Client, sourceId uuid.UUID, jobID uint, createdAt int64) error {
 	r, err := compliance_report.ParseReport(

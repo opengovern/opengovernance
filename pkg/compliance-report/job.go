@@ -140,7 +140,11 @@ func (j *Job) Do(vlt vault.SourceConfig, producer sarama.SyncProducer, topic str
 		TotalResources:       totalResource,
 		TotalCompliant:       summary.Status.OK,
 		CompliancePercentage: float64(summary.Status.OK) / float64(totalResource),
+		AccountReportType:    AccountReportTypeInTime,
 	}
+
+	acrLast := acr
+	acrLast.AccountReportType = AccountReportTypeLast
 
 	resourceStatus := map[string]ResultStatus{}
 	for _, r := range reports {
@@ -174,7 +178,7 @@ func (j *Job) Do(vlt vault.SourceConfig, producer sarama.SyncProducer, topic str
 	}
 
 	var msgs []kafka.Message
-	msgs = append(msgs, acr, resource)
+	msgs = append(msgs, acr, acrLast, resource)
 	for _, r := range reports {
 		msgs = append(msgs, r)
 	}

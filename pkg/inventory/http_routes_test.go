@@ -1240,6 +1240,21 @@ func (s *HttpHandlerSuite) TestGetCategories() {
 	})
 }
 
+func (s *HttpHandlerSuite) TestGetListOfBenchmarks() {
+	require := s.Require()
+
+	url := "/api/v1/benchmarks/Azure/list?count=5"
+	var res []api.BenchmarkScoreResponse
+	_, err := doRequestJSONResponse(s.router, "GET", url, nil, &res)
+
+	require.NoError(err)
+	require.Len(res, 1)
+	require.Contains(res, api.BenchmarkScoreResponse{
+		BenchmarkID:       "azure_compliance.benchmark.cis_v130",
+		NonCompliantCount: 1,
+	})
+}
+
 func (s *HttpHandlerSuite) TestCountBenchmarksAndPolicies() {
 	require := s.Require()
 

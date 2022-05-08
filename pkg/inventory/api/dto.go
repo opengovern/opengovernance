@@ -346,3 +346,8 @@ type CategoriesResponse struct {
 	CategoryName  string `json:"serviceName"`
 	ResourceCount int    `json:"resourceCount"`
 }
+
+type BenchmarkScoreResponse struct {
+	BenchmarkID       string `json:"benchmarkID"`
+	NonCompliantCount int    `json:"nonCompliantCount"`
+}

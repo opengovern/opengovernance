@@ -14,8 +14,6 @@ type HttpHandler struct {
 	db                Database
 	sourceEventsQueue queue.Interface
 	vault             vault.SourceConfig
-	inventoryClient   InventoryClient
-	describeClient    DescribeSchedulerClient
 }
 
 func InitializeHttpHandler(
@@ -34,8 +32,6 @@ func InitializeHttpHandler(
 	vaultRoleName string,
 	vaultCaPath string,
 	vaultUseTLS bool,
-	inventoryAddress string,
-	describeSchedulerAddress string,
 ) (h HttpHandler, err error) {
 
 	fmt.Println("Initializing http handler")
@@ -88,14 +84,9 @@ func InitializeHttpHandler(
 
 	fmt.Println("Connected to vault:", vaultAddress)
 
-	describeClient := NewDescribeSchedulerClient(describeSchedulerAddress)
-	inventoryClient := NewInventoryClient(inventoryAddress)
-
 	return HttpHandler{
 		vault:             v,
 		db:                Database{orm: db},
 		sourceEventsQueue: sourceEventsQueue,
-		describeClient:    describeClient,
-		inventoryClient:   inventoryClient,
 	}, nil
 }
