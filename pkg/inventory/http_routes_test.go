@@ -1318,6 +1318,21 @@ func (s *HttpHandlerSuite) TestGetLocationDistributionOfAccount() {
 	require.Len(res, 2)
 }
 
+func (s *HttpHandlerSuite) TestGetServiceDistributionOfAccount() {
+	require := s.Require()
+	sourceID, err := uuid.Parse("2a87b978-b8bf-4d7e-bc19-cf0a99a430cf")
+	require.NoError(err)
+
+	url := fmt.Sprintf("/api/v1/services/distribution?sourceId=%s", sourceID.String())
+	var res []api.ServiceDistributionItem
+	_, err = doRequestJSONResponse(s.router, "GET", url, nil, &res)
+
+	require.NoError(err)
+	require.Len(res, 1)
+	require.Equal(res[0].ServiceName, "EC2 Instance")
+	require.Equal(res[0].Distribution["us-east-1"], 5)
+}
+
 func (s *HttpHandlerSuite) TestGetLocationDistributionOfProvider() {
 	require := s.Require()
 

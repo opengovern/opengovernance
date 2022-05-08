@@ -134,6 +134,13 @@ func PopulateElastic(address string, d *DescribeMock) error {
 		}
 	}
 
+	for _, resource := range GenerateServiceDistribution() {
+		err := IndexKafkaMessage(es, resource)
+		if err != nil {
+			return err
+		}
+	}
+
 	err = GenerateResources(es)
 	if err != nil {
 		return err
@@ -392,6 +399,39 @@ func GenerateLocationDistribution() []kafka.LocationDistributionResource {
 				"us-west-2": 5,
 			},
 			ReportType: kafka.ResourceSummaryTypeLocationDistribution,
+		}
+		resources = append(resources, resource)
+	}
+	return resources
+}
+
+func GenerateServiceDistribution() []kafka.SourceServiceDistributionResource {
+	var resources []kafka.SourceServiceDistributionResource
+	for i := 0; i < 3; i++ {
+		resource := kafka.SourceServiceDistributionResource{
+			SourceID:    "2a87b978-b8bf-4d7e-bc19-cf0a99a430cf",
+			ServiceName: "EC2 Instance",
+			SourceType:  "AWS",
+			SourceJobID: 1020,
+			LocationDistribution: map[string]int{
+				"us-east-1": 5,
+				"us-west-1": 5,
+			},
+			ReportType: kafka.ResourceSummaryTypeServiceDistributionSummary,
+		}
+		resources = append(resources, resource)
+	}
+	for i := 0; i < 1; i++ {
+		resource := kafka.SourceServiceDistributionResource{
+			SourceID:    uuid.New().String(),
+			ServiceName: "EC2 VPC",
+			SourceType:  "AWS",
+			SourceJobID: 1021,
+			LocationDistribution: map[string]int{
+				"us-east-2": 5,
+				"us-west-2": 5,
+			},
+			ReportType: kafka.ResourceSummaryTypeServiceDistributionSummary,
 		}
 		resources = append(resources, resource)
 	}

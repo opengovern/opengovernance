@@ -63,6 +63,7 @@ func (h *HttpHandler) Register(v1 *echo.Group) {
 	v1.GET("/resources/top/services", h.GetTopServicesByResourceCount)
 	v1.GET("/resources/categories", h.GetCategories)
 	v1.GET("/accounts/resource/count", h.GetAccountsResourceCount)
+	v1.GET("/services/distribution", h.GetServiceDistribution)
 
 	v1.GET("/query", h.ListQueries)
 	v1.GET("/query/count", h.CountQueries)
@@ -840,6 +841,51 @@ func (h *HttpHandler) GetResourceDistribution(ctx echo.Context) error {
 		}
 	}
 	return ctx.JSON(http.StatusOK, locationDistribution)
+}
+
+// GetServiceDistribution godoc
+// @Summary  Returns distribution of services for specific account
+// @Tags     benchmarks
+// @Accept   json
+// @Produce  json
+// @Param    sourceId    query     string  true  "SourceID"
+// @Param    provider    query     string  true  "Provider"
+// @Success  200         {object}  []api.ServiceDistributionItem
+// @Router   /inventory/api/v1/services/distribution [get]
+func (h *HttpHandler) GetServiceDistribution(ctx echo.Context) error {
+	sourceID := ctx.QueryParam("sourceId")
+	sourceUUID, err := uuid.Parse(sourceID)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid source uuid")
+	}
+
+	var res []api.ServiceDistributionItem
+	var searchAfter []interface{}
+	for {
+		query, err := es.FindSourceServiceDistributionQuery(sourceUUID, EsFetchPageSize, searchAfter)
+		if err != nil {
+			return err
+		}
+
+		var response es.ServiceDistributionQueryResponse
+		err = h.client.Search(context.Background(), describe.SourceResourcesSummary, query, &response)
+		if err != nil {
+			return err
+		}
+
+		if len(response.Hits.Hits) == 0 {
+			break
+		}
+
+		for _, hit := range response.Hits.Hits {
+			res = append(res, api.ServiceDistributionItem{
+				ServiceName:  hit.Source.ServiceName,
+				Distribution: hit.Source.LocationDistribution,
+			})
+			searchAfter = hit.Sort
+		}
+	}
+	return ctx.JSON(http.StatusOK, res)
 }
 
 // GetBenchmarkAccountCompliance godoc

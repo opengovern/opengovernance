@@ -364,3 +364,8 @@ type ServiceCompliancyResponse struct {
 	TotalResources int    `json:"totalResources"`
 	TotalCompliant int    `json:"totalCompliant"`
 }
+
+type ServiceDistributionItem struct {
+	ServiceName  string         `json:"serviceName"`
+	Distribution map[string]int `json:"distribution"`
+}
