@@ -171,6 +171,11 @@ func PopulateElastic(address string, d *DescribeMock) error {
 		return err
 	}
 
+	err = GenerateAccountReport(es, uuid.New(), 1022, createdAt+2)
+	if err != nil {
+		return err
+	}
+
 	err = GenerateServiceComplianceSummary(es, 1020, createdAt)
 	if err != nil {
 		return err

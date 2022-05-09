@@ -1251,6 +1251,16 @@ func (s *HttpHandlerSuite) TestGetListOfBenchmarks() {
 	require.Len(res, 1)
 	require.Contains(res, api.BenchmarkScoreResponse{
 		BenchmarkID:       "azure_compliance.benchmark.cis_v130",
+		NonCompliantCount: 2,
+	})
+
+	url = "/api/v1/benchmarks/Azure/list?count=5&sourceId=2a87b978-b8bf-4d7e-bc19-cf0a99a430cf"
+	_, err = doRequestJSONResponse(s.router, "GET", url, nil, &res)
+
+	require.NoError(err)
+	require.Len(res, 1)
+	require.Contains(res, api.BenchmarkScoreResponse{
+		BenchmarkID:       "azure_compliance.benchmark.cis_v130",
 		NonCompliantCount: 1,
 	})
 }
@@ -1263,7 +1273,7 @@ func (s *HttpHandlerSuite) TestGetTopAccountsByCompliancy() {
 	_, err := doRequestJSONResponse(s.router, "GET", url, nil, &res)
 
 	require.NoError(err)
-	require.Len(res, 1)
+	require.Len(res, 2)
 	sourceID, _ := uuid.Parse("2a87b978-b8bf-4d7e-bc19-cf0a99a430cf")
 	require.Contains(res, api.AccountCompliancyResponse{
 		SourceID:       sourceID,

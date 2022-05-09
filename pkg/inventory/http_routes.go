@@ -168,6 +168,7 @@ func (h *HttpHandler) GetBenchmarksInTime(ctx echo.Context) error {
 // @Accept       json
 // @Produce      json
 // @Param	     count     query     int     true  "count"
+// @Param	     sourceId     query     string     false  "SourceID"
 // @Param        provider   path      string  true  "Provider"  Enums(AWS,Azure)
 // @Param        createdAt  path      string  true  "CreatedAt"
 // @Success      200        {object}  []api.BenchmarkScoreResponse
@@ -182,26 +183,55 @@ func (h *HttpHandler) GetListOfBenchmarks(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid count")
 	}
 
-	query, err := compliance_es.ComplianceScoreByProviderQuery(provider, count, "desc", nil)
-	if err != nil {
-		return err
+	sID := ctx.QueryParam("sourceId")
+	var sourceID *string
+	if sID != "" {
+		sourceUUID, err := uuid.Parse(sID)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "invalid source uuid")
+		}
+		s := sourceUUID.String()
+		sourceID = &s
 	}
 
-	var response compliance_report.AccountReportQueryResponse
-	err = h.client.Search(context.Background(), compliance_report.AccountReportIndex, query, &response)
-	if err != nil {
-		return err
+	var searchAfter []interface{}
+	benchmarkScore := map[string]int{}
+	for {
+		query, err := compliance_es.ComplianceScoreByProviderQuery(provider, sourceID, EsFetchPageSize, "desc", searchAfter)
+		if err != nil {
+			return err
+		}
+
+		var response compliance_report.AccountReportQueryResponse
+		err = h.client.Search(context.Background(), compliance_report.AccountReportIndex, query, &response)
+		if err != nil {
+			return err
+		}
+
+		if len(response.Hits.Hits) == 0 {
+			break
+		}
+
+		for _, hit := range response.Hits.Hits {
+			nonCompliant := hit.Source.TotalResources - hit.Source.TotalCompliant
+			benchmarkScore[hit.Source.BenchmarkID] += nonCompliant
+			searchAfter = hit.Sort
+		}
 	}
 
 	var res []api.BenchmarkScoreResponse
-	for _, hit := range response.Hits.Hits {
-		nonCompliant := hit.Source.TotalResources - hit.Source.TotalCompliant
+	for id, score := range benchmarkScore {
 		res = append(res, api.BenchmarkScoreResponse{
-			BenchmarkID:       hit.Source.BenchmarkID,
-			NonCompliantCount: nonCompliant,
+			BenchmarkID:       id,
+			NonCompliantCount: score,
 		})
 	}
-
+	sort.Slice(res, func(i, j int) bool {
+		return res[i].NonCompliantCount < res[j].NonCompliantCount
+	})
+	if len(res) > count {
+		res = res[:count]
+	}
 	return ctx.JSON(http.StatusOK, res)
 }
 
@@ -233,7 +263,7 @@ func (h *HttpHandler) GetTopAccountsByBenchmarkCompliancy(ctx echo.Context) erro
 	accountTotal := map[uuid.UUID]int{}
 	accountCompliant := map[uuid.UUID]int{}
 	for {
-		query, err := compliance_es.ComplianceScoreByProviderQuery(provider, EsFetchPageSize, order, searchAfter)
+		query, err := compliance_es.ComplianceScoreByProviderQuery(provider, nil, EsFetchPageSize, order, searchAfter)
 		if err != nil {
 			return err
 		}
