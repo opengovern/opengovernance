@@ -188,13 +188,13 @@ type SummaryQueryHits struct {
 	Hits  []SummaryQueryHit `json:"hits"`
 }
 type SummaryQueryHit struct {
-	ID      string                    `json:"_id"`
-	Score   float64                   `json:"_score"`
-	Index   string                    `json:"_index"`
-	Type    string                    `json:"_type"`
-	Version int64                     `json:"_version,omitempty"`
-	Source  kafka.KafkaLookupResource `json:"_source"`
-	Sort    []interface{}             `json:"sort"`
+	ID      string               `json:"_id"`
+	Score   float64              `json:"_score"`
+	Index   string               `json:"_index"`
+	Type    string               `json:"_type"`
+	Version int64                `json:"_version,omitempty"`
+	Source  kafka.LookupResource `json:"_source"`
+	Sort    []interface{}        `json:"sort"`
 }
 
 type GenericQueryResponse struct {
@@ -334,5 +334,15 @@ type ListQueryRequest struct {
 
 type TopAccountResponse struct {
 	SourceID      string `json:"sourceID"`
+	ResourceCount int    `json:"resourceCount"`
+}
+
+type TopServicesResponse struct {
+	ServiceName   string `json:"serviceName"`
+	ResourceCount int    `json:"resourceCount"`
+}
+
+type CategoriesResponse struct {
+	CategoryName  string `json:"serviceName"`
 	ResourceCount int    `json:"resourceCount"`
 }

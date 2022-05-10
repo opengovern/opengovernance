@@ -7,7 +7,7 @@ import (
 	"gopkg.in/Shopify/sarama.v1"
 )
 
-func DoSendToKafka(producer sarama.SyncProducer, topic string, kafkaMsgs []KafkaMessage, logger *zap.Logger) error {
+func DoSendToKafka(producer sarama.SyncProducer, topic string, kafkaMsgs []Message, logger *zap.Logger) error {
 	var msgs []*sarama.ProducerMessage
 	for _, v := range kafkaMsgs {
 		msg, err := v.AsProducerMessage()

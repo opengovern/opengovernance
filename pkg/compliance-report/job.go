@@ -163,7 +163,7 @@ func (j *Job) Do(vlt vault.SourceConfig, producer sarama.SyncProducer, topic str
 			// ResultStatusSkip
 		}
 	}
-	resource := kafka.KafkaResourceCompliancyTrendResource{
+	resource := kafka.ResourceCompliancyTrendResource{
 		SourceID:                  j.SourceID.String(),
 		SourceType:                j.SourceType,
 		ComplianceJobID:           j.JobID,
@@ -173,7 +173,7 @@ func (j *Job) Do(vlt vault.SourceConfig, producer sarama.SyncProducer, topic str
 		ResourceSummaryType:       kafka.ResourceSummaryTypeCompliancyTrend,
 	}
 
-	var msgs []kafka.KafkaMessage
+	var msgs []kafka.Message
 	msgs = append(msgs, acr, resource)
 	for _, r := range reports {
 		msgs = append(msgs, r)
