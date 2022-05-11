@@ -349,13 +349,13 @@ func (h *HttpHandler) GetResourceGrowthTrend(ctx echo.Context) error {
 
 // GetCompliancyTrend godoc
 // @Summary  Returns trend of compliancy for specific account
-// @Tags         benchmarks
-// @Accept       json
-// @Produce      json
-// @Param    sourceId     query     string  true  "SourceID"
-// @Param    provider     query     string  true  "Provider"
-// @Param    timeWindow   query     string  true  "Time Window"  Enums(24h,1w,3m,1y,max)
-// @Success  200          {object}  []api.TrendDataPoint
+// @Tags     benchmarks
+// @Accept   json
+// @Produce  json
+// @Param    sourceId    query     string  true  "SourceID"
+// @Param    provider    query     string  true  "Provider"
+// @Param    timeWindow  query     string  true  "Time Window"  Enums(24h,1w,3m,1y,max)
+// @Success  200         {object}  []api.TrendDataPoint
 // @Router   /inventory/api/v1/compliancy/trend [get]
 func (h *HttpHandler) GetCompliancyTrend(ctx echo.Context) error {
 	provider := ctx.QueryParam("provider")
@@ -544,11 +544,11 @@ func (h *HttpHandler) GetCategories(ctx echo.Context) error {
 
 // GetAccountsResourceCount godoc
 // @Summary  Returns resource count of accounts
-// @Tags         benchmarks
-// @Accept       json
-// @Produce      json
-// @Param    provider     query     string  true  "Provider"
-// @Success  200          {object}  []api.TopAccountResponse
+// @Tags     benchmarks
+// @Accept   json
+// @Produce  json
+// @Param    provider  query     string  true  "Provider"
+// @Success  200       {object}  []api.TopAccountResponse
 // @Router   /inventory/api/v1/accounts/resource/count [get]
 func (h *HttpHandler) GetAccountsResourceCount(ctx echo.Context) error {
 	provider := ctx.QueryParam("provider")
