@@ -57,8 +57,9 @@ type RunQueryResponse struct {
 }
 
 type GetResourcesRequest struct {
-	Query   string  `json:"query"`                       // search query
-	Filters Filters `json:"filters" validate:"required"` // search filters
+	Query      string  `json:"query"`                          // search query
+	Filters    Filters `json:"filters" validate:"required"`    // search filters
+	FilterNots Filters `json:"filterNots" validate:"required"` // search filters
 	// NOTE: we don't support multi-field sort for now, if sort is empty, results would be sorted by first column
 	Sorts []ResourceSortItem `json:"sorts"`
 	Page  api.Page           `json:"page" validate:"required"`

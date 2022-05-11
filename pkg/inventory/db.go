@@ -74,7 +74,19 @@ func (db Database) GetQueriesWithFilters(search *string, labels []string, provid
 		return nil, tx.Error
 	}
 
-	return s, nil
+	v := map[uint]SmartQuery{}
+	for _, item := range s {
+		if c, ok := v[item.ID]; ok {
+			c.Tags = append(c.Tags, item.Tags...)
+		} else {
+			v[item.ID] = item
+		}
+	}
+	var res []SmartQuery
+	for _, val := range v {
+		res = append(res, val)
+	}
+	return res, nil
 }
 
 // CountQueriesWithFilters count list of all queries filtered by tags and search
@@ -84,7 +96,8 @@ func (db Database) CountQueriesWithFilters(search *string, labels []string, prov
 	m := db.orm.Model(&SmartQuery{}).
 		Preload("Tags").
 		Joins("LEFT JOIN smartquery_tags on smart_queries.id = smart_query_id " +
-			"LEFT JOIN tags on smartquery_tags.tag_id = tags.id ")
+			"LEFT JOIN tags on smartquery_tags.tag_id = tags.id ").
+		Distinct("smart_queries.id")
 
 	if len(labels) != 0 {
 		m = m.Where("tags.value in ?", labels)

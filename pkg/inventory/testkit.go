@@ -449,6 +449,16 @@ func PopulatePostgres(db Database) error {
 		Title:       "Query 1",
 		Description: "description 1",
 		Query:       "select count(*) from aws_ec2_instance",
+		Tags: []Tag{
+			{
+				Key:   "key1",
+				Value: "value1",
+			},
+			{
+				Key:   "key2",
+				Value: "value2",
+			},
+		},
 	})
 	if err != nil {
 		return err

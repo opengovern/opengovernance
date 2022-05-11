@@ -545,6 +545,13 @@ func (s *HttpHandlerSuite) TestGetQueries() {
 	require.NoError(err, "request")
 	require.Equal(http.StatusOK, rec.Code)
 	require.Len(response, 4)
+	containsTag := false
+	for _, sm := range response {
+		if len(sm.Tags) > 0 {
+			containsTag = true
+		}
+	}
+	require.True(containsTag)
 
 	var c int
 	rec, err = doRequestJSONResponse(s.router, echo.GET, "/api/v1/query/count", &req, &c)
