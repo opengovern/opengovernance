@@ -27,12 +27,13 @@ type Message interface {
 type ResourceSummaryType string
 
 const (
-	ResourceSummaryTypeResourceGrowthTrend  = "resource_growth_trend"
-	ResourceSummaryTypeLocationDistribution = "location_distribution"
-	ResourceSummaryTypeLastSummary          = "last_summary"
-	ResourceSummaryTypeLastServiceSummary   = "last_service_summary"
-	ResourceSummaryTypeLastCategorySummary  = "last_category_summary"
-	ResourceSummaryTypeCompliancyTrend      = "compliancy_trend"
+	ResourceSummaryTypeResourceGrowthTrend        = "resource_growth_trend"
+	ResourceSummaryTypeLocationDistribution       = "location_distribution"
+	ResourceSummaryTypeLastSummary                = "last_summary"
+	ResourceSummaryTypeLastServiceSummary         = "last_service_summary"
+	ResourceSummaryTypeServiceDistributionSummary = "service_distribution_summary"
+	ResourceSummaryTypeLastCategorySummary        = "last_category_summary"
+	ResourceSummaryTypeCompliancyTrend            = "compliancy_trend"
 )
 
 type ResourceCompliancyTrendResource struct {
@@ -58,16 +59,8 @@ func (r ResourceCompliancyTrendResource) AsProducerMessage() (*sarama.ProducerMe
 		return nil, err
 	}
 
-	return &sarama.ProducerMessage{
-		Key: sarama.StringEncoder(uuid.New().String()),
-		Headers: []sarama.RecordHeader{
-			{
-				Key:   []byte(esIndexHeader),
-				Value: []byte(SourceResourcesSummaryIndex),
-			},
-		},
-		Value: sarama.ByteEncoder(value),
-	}, nil
+	return kafkaMsg(uuid.New().String(),
+		value, SourceResourcesSummaryIndex), nil
 }
 func (r ResourceCompliancyTrendResource) MessageID() string {
 	return r.SourceID
@@ -98,16 +91,8 @@ func (r Resource) AsProducerMessage() (*sarama.ProducerMessage, error) {
 		return nil, err
 	}
 
-	return &sarama.ProducerMessage{
-		Key: sarama.StringEncoder(hashOf(r.ID)),
-		Headers: []sarama.RecordHeader{
-			{
-				Key:   []byte(esIndexHeader),
-				Value: []byte(utils.ResourceTypeToESIndex(r.ResourceType)),
-			},
-		},
-		Value: sarama.ByteEncoder(value),
-	}, nil
+	return kafkaMsg(hashOf(r.ID),
+		value, utils.ResourceTypeToESIndex(r.ResourceType)), nil
 }
 func (r Resource) MessageID() string {
 	return r.ID
@@ -142,16 +127,8 @@ func (r LookupResource) AsProducerMessage() (*sarama.ProducerMessage, error) {
 		return nil, err
 	}
 
-	return &sarama.ProducerMessage{
-		Key: sarama.StringEncoder(hashOf(r.ResourceID, string(r.SourceType))),
-		Headers: []sarama.RecordHeader{
-			{
-				Key:   []byte(esIndexHeader),
-				Value: []byte(InventorySummaryIndex),
-			},
-		},
-		Value: sarama.ByteEncoder(value),
-	}, nil
+	return kafkaMsg(hashOf(r.ResourceID, string(r.SourceType)),
+		value, InventorySummaryIndex), nil
 }
 func (r LookupResource) MessageID() string {
 	return r.ResourceID
@@ -178,16 +155,8 @@ func (r SourceResourcesSummary) AsProducerMessage() (*sarama.ProducerMessage, er
 		return nil, err
 	}
 
-	return &sarama.ProducerMessage{
-		Key: sarama.StringEncoder(uuid.New().String()),
-		Headers: []sarama.RecordHeader{
-			{
-				Key:   []byte(esIndexHeader),
-				Value: []byte(SourceResourcesSummaryIndex),
-			},
-		},
-		Value: sarama.ByteEncoder(value),
-	}, nil
+	return kafkaMsg(uuid.New().String(),
+		value, SourceResourcesSummaryIndex), nil
 }
 func (r SourceResourcesSummary) MessageID() string {
 	return r.SourceID
@@ -214,16 +183,8 @@ func (r SourceServicesSummary) AsProducerMessage() (*sarama.ProducerMessage, err
 		return nil, err
 	}
 
-	return &sarama.ProducerMessage{
-		Key: sarama.StringEncoder(hashOf(r.ServiceName, string(r.ReportType))),
-		Headers: []sarama.RecordHeader{
-			{
-				Key:   []byte(esIndexHeader),
-				Value: []byte(SourceResourcesSummaryIndex),
-			},
-		},
-		Value: sarama.ByteEncoder(value),
-	}, nil
+	return kafkaMsg(hashOf(r.ServiceName, string(r.ReportType)),
+		value, SourceResourcesSummaryIndex), nil
 }
 func (r SourceServicesSummary) MessageID() string {
 	return r.ServiceName
@@ -250,16 +211,8 @@ func (r SourceCategorySummary) AsProducerMessage() (*sarama.ProducerMessage, err
 		return nil, err
 	}
 
-	return &sarama.ProducerMessage{
-		Key: sarama.StringEncoder(hashOf(r.CategoryName, string(r.ReportType))),
-		Headers: []sarama.RecordHeader{
-			{
-				Key:   []byte(esIndexHeader),
-				Value: []byte(SourceResourcesSummaryIndex),
-			},
-		},
-		Value: sarama.ByteEncoder(value),
-	}, nil
+	return kafkaMsg(hashOf(r.CategoryName, string(r.ReportType)),
+		value, SourceResourcesSummaryIndex), nil
 }
 func (r SourceCategorySummary) MessageID() string {
 	return r.CategoryName
@@ -274,17 +227,8 @@ func (r SourceResourcesLastSummary) AsProducerMessage() (*sarama.ProducerMessage
 	if err != nil {
 		return nil, err
 	}
-
-	return &sarama.ProducerMessage{
-		Key: sarama.StringEncoder(hashOf(r.SourceID, string(r.ReportType))),
-		Headers: []sarama.RecordHeader{
-			{
-				Key:   []byte(esIndexHeader),
-				Value: []byte(SourceResourcesSummaryIndex),
-			},
-		},
-		Value: sarama.ByteEncoder(value),
-	}, nil
+	return kafkaMsg(hashOf(r.SourceID, string(r.ReportType)),
+		value, SourceResourcesSummaryIndex), nil
 }
 
 type LocationDistributionResource struct {
@@ -306,19 +250,39 @@ func (r LocationDistributionResource) AsProducerMessage() (*sarama.ProducerMessa
 		return nil, err
 	}
 
-	return &sarama.ProducerMessage{
-		Key: sarama.StringEncoder(hashOf(r.SourceID, string(r.ReportType))),
-		Headers: []sarama.RecordHeader{
-			{
-				Key:   []byte(esIndexHeader),
-				Value: []byte(SourceResourcesSummaryIndex),
-			},
-		},
-		Value: sarama.ByteEncoder(value),
-	}, nil
+	return kafkaMsg(hashOf(r.SourceID, string(r.ReportType)),
+		value, SourceResourcesSummaryIndex), nil
 }
 func (r LocationDistributionResource) MessageID() string {
 	return r.SourceID
+}
+
+type SourceServiceDistributionResource struct {
+	// SourceID is aws account id or azure subscription id
+	SourceID string `json:"source_id"`
+	// ServiceName is name of service
+	ServiceName string `json:"service_name"`
+	// SourceType is the type of the source of the resource, i.e. AWS Cloud, Azure Cloud.
+	SourceType api.SourceType `json:"source_type"`
+	// SourceJobID is the DescribeSourceJob ID that the ResourceJobID was created for
+	SourceJobID uint `json:"source_job_id"`
+	// LocationDistribution is total of resources per location for specified account
+	LocationDistribution map[string]int `json:"location_distribution"`
+	// ReportType of document
+	ReportType ResourceSummaryType `json:"report_type"`
+}
+
+func (r SourceServiceDistributionResource) AsProducerMessage() (*sarama.ProducerMessage, error) {
+	value, err := json.Marshal(r)
+	if err != nil {
+		return nil, err
+	}
+
+	return kafkaMsg(hashOf(r.SourceID, r.ServiceName, string(r.ReportType)),
+		value, SourceResourcesSummaryIndex), nil
+}
+func (r SourceServiceDistributionResource) MessageID() string {
+	return r.ServiceName
 }
 
 func hashOf(strings ...string) string {
@@ -327,4 +291,17 @@ func hashOf(strings ...string) string {
 		h.Write([]byte(s))
 	}
 	return fmt.Sprintf("%x", h.Sum(nil))
+}
+
+func kafkaMsg(key string, value []byte, index string) *sarama.ProducerMessage {
+	return &sarama.ProducerMessage{
+		Key: sarama.StringEncoder(key),
+		Headers: []sarama.RecordHeader{
+			{
+				Key:   []byte(esIndexHeader),
+				Value: []byte(index),
+			},
+		},
+		Value: sarama.ByteEncoder(value),
+	}
 }
