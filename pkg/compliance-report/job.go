@@ -10,12 +10,12 @@ import (
 	"os/exec"
 	"time"
 
-	"gitlab.com/keibiengine/keibi-engine/pkg/compliance-report/api"
-	"gitlab.com/keibiengine/keibi-engine/pkg/describe/kafka"
-	"gitlab.com/keibiengine/keibi-engine/pkg/utils"
+	"gitlab.com/keibiengine/keibi-engine/pkg/source"
 
 	"github.com/elastic/go-elasticsearch/v7"
 	"github.com/google/uuid"
+	"gitlab.com/keibiengine/keibi-engine/pkg/compliance-report/api"
+	"gitlab.com/keibiengine/keibi-engine/pkg/describe/kafka"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/vault"
 	"gitlab.com/keibiengine/keibi-engine/pkg/keibi-es-sdk"
 	"go.uber.org/zap"
@@ -29,7 +29,7 @@ const (
 type Job struct {
 	JobID       uint
 	SourceID    uuid.UUID
-	SourceType  utils.SourceType
+	SourceType  source.Type
 	ConfigReg   string
 	DescribedAt int64
 	logger      *zap.Logger
@@ -72,7 +72,7 @@ func (j *Job) Do(vlt vault.SourceConfig, producer sarama.SyncProducer, topic str
 
 	var accountID string
 	switch j.SourceType {
-	case utils.SourceCloudAWS:
+	case source.CloudAWS:
 		creds, err := AWSAccountConfigFromMap(cfg)
 		if err != nil {
 			return j.failed("error: AWSAccountConfigFromMap: " + err.Error())
@@ -83,7 +83,7 @@ func (j *Job) Do(vlt vault.SourceConfig, producer sarama.SyncProducer, topic str
 		if err != nil {
 			return j.failed("error: BuildSpecFile: " + err.Error())
 		}
-	case utils.SourceCloudAzure:
+	case source.CloudAzure:
 		creds, err := AzureSubscriptionConfigFromMap(cfg)
 		if err != nil {
 			return j.failed("error: AzureSubscriptionConfigFromMap: " + err.Error())
@@ -140,7 +140,11 @@ func (j *Job) Do(vlt vault.SourceConfig, producer sarama.SyncProducer, topic str
 		TotalResources:       totalResource,
 		TotalCompliant:       summary.Status.OK,
 		CompliancePercentage: float64(summary.Status.OK) / float64(totalResource),
+		AccountReportType:    AccountReportTypeInTime,
 	}
+
+	acrLast := acr
+	acrLast.AccountReportType = AccountReportTypeLast
 
 	resourceStatus := map[string]ResultStatus{}
 	for _, r := range reports {
@@ -174,7 +178,7 @@ func (j *Job) Do(vlt vault.SourceConfig, producer sarama.SyncProducer, topic str
 	}
 
 	var msgs []kafka.Message
-	msgs = append(msgs, acr, resource)
+	msgs = append(msgs, acr, acrLast, resource)
 	for _, r := range reports {
 		msgs = append(msgs, r)
 	}
@@ -190,13 +194,13 @@ func (j *Job) Do(vlt vault.SourceConfig, producer sarama.SyncProducer, topic str
 	}
 }
 
-func RunSteampipeCheckAll(sourceType utils.SourceType, exportFileName string) error {
+func RunSteampipeCheckAll(sourceType source.Type, exportFileName string) error {
 	workspaceDir := ""
 
 	switch sourceType {
-	case utils.SourceCloudAWS:
+	case source.CloudAWS:
 		workspaceDir = "/steampipe-mod-aws-compliance"
-	case utils.SourceCloudAzure:
+	case source.CloudAzure:
 		workspaceDir = "/steampipe-mod-azure-compliance"
 	default:
 		return errors.New("invalid source type")

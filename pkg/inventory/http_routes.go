@@ -16,6 +16,8 @@ import (
 	"strings"
 	"time"
 
+	"gitlab.com/keibiengine/keibi-engine/pkg/source"
+
 	"gitlab.com/keibiengine/keibi-engine/pkg/describe"
 	"gitlab.com/keibiengine/keibi-engine/pkg/inventory/es"
 	"gitlab.com/keibiengine/keibi-engine/pkg/utils"
@@ -30,6 +32,7 @@ import (
 	"github.com/turbot/steampipe-plugin-sdk/logging"
 	"github.com/turbot/steampipe-plugin-sdk/plugin/context_key"
 	compliance_report "gitlab.com/keibiengine/keibi-engine/pkg/compliance-report"
+	compliance_es "gitlab.com/keibiengine/keibi-engine/pkg/compliance-report/es"
 	pagination "gitlab.com/keibiengine/keibi-engine/pkg/internal/api"
 	"gitlab.com/keibiengine/keibi-engine/pkg/inventory/api"
 )
@@ -80,7 +83,7 @@ func (h *HttpHandler) Register(v1 *echo.Group) {
 	v1.GET("/benchmarks/:benchmarkId/:createdAt/accounts/compliance", h.GetBenchmarkAccountCompliance)
 	v1.GET("/benchmarks/:benchmarkId/:createdAt/accounts", h.GetBenchmarkAccounts)
 
-	v1.GET("/benchmarks/:provider/list", h.GetBenchmarkDetails)
+	v1.GET("/benchmarks/:provider/list", h.GetListOfBenchmarks)
 	v1.GET("/compliancy/trend", h.GetCompliancyTrend)
 
 	v1.GET("/benchmarks/count", h.CountBenchmarks)
@@ -153,6 +156,50 @@ func (h *HttpHandler) GetBenchmarksInTime(ctx echo.Context) error {
 		resp = append(resp, v)
 	}
 	return ctx.JSON(http.StatusOK, resp)
+}
+
+// GetListOfBenchmarks godoc
+// @Summary      Returns all benchmark existed at the specified time
+// @Description  You should fetch the benchmark report times from /benchmarks/history/:year/:month/:day
+// @Tags         benchmarks
+// @Accept       json
+// @Produce      json
+// @Param	     count     query     int     true  "count"
+// @Param        provider   path      string  true  "Provider"  Enums(AWS,Azure)
+// @Param        createdAt  path      string  true  "CreatedAt"
+// @Success      200        {object}  []api.BenchmarkScoreResponse
+// @Router       /inventory/api/v1/benchmarks/{provider}/list [get]
+func (h *HttpHandler) GetListOfBenchmarks(ctx echo.Context) error {
+	provider, err := source.ParseType(ctx.Param("provider"))
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid provider")
+	}
+	count, err := strconv.Atoi(ctx.QueryParam("count"))
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid count")
+	}
+
+	query, err := compliance_es.ComplianceScoreByProviderQuery(provider, count, nil)
+	if err != nil {
+		return err
+	}
+
+	var response compliance_report.AccountReportQueryResponse
+	err = h.client.Search(context.Background(), compliance_report.AccountReportIndex, query, &response)
+	if err != nil {
+		return err
+	}
+
+	var res []api.BenchmarkScoreResponse
+	for _, hit := range response.Hits.Hits {
+		nonCompliant := hit.Source.TotalResources - hit.Source.TotalCompliant
+		res = append(res, api.BenchmarkScoreResponse{
+			BenchmarkID:       hit.Source.BenchmarkID,
+			NonCompliantCount: nonCompliant,
+		})
+	}
+
+	return ctx.JSON(http.StatusOK, res)
 }
 
 // GetBenchmarkComplianceTrend godoc

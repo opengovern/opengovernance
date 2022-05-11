@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"gitlab.com/keibiengine/keibi-engine/pkg/source"
+
 	"github.com/google/uuid"
 	"gitlab.com/keibiengine/keibi-engine/pkg/describe/api"
 	"gitlab.com/keibiengine/keibi-engine/pkg/utils"
@@ -37,7 +39,7 @@ type ResourceCompliancyTrendResource struct {
 	// SourceID is aws account id or azure subscription id
 	SourceID string `json:"source_id"`
 	// SourceType is the type of the source of the resource, i.e. AWS Cloud, Azure Cloud.
-	SourceType utils.SourceType `json:"source_type"`
+	SourceType source.Type `json:"source_type"`
 	// ComplianceJobID is the ID that the Report was created for
 	ComplianceJobID uint `json:"compliance_job_id"`
 	// CompliantResourceCount is number of resources which is non-compliant

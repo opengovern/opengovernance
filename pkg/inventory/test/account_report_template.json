@@ -40,6 +40,9 @@
         "sourceID": {
           "type": "keyword"
         },
+        "provider": {
+          "type": "keyword"
+        },
         "benchmarkID": {
           "type": "keyword"
         },
@@ -61,6 +64,9 @@
         },
         "compliancePercentage": {
           "type": "double"
+        },
+        "accountReportType": {
+          "type": "keyword"
         }
       }
     }

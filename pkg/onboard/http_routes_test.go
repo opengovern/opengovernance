@@ -76,8 +76,6 @@ func (s *HttpHandlerSuite) SetupSuite() {
 		db:                Database{orm: orm},
 		sourceEventsQueue: &queuemocks.Interface{},
 		vault:             &vaultmocks.SourceConfig{},
-		inventoryClient:   InventoryMockClient{s},
-		describeClient:    DescribeMockClient{s},
 	}
 
 	s.handler.Register(s.router)

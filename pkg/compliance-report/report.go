@@ -1,11 +1,13 @@
 package compliance_report
 
 import (
+	"crypto/sha256"
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"strconv"
 
-	"gitlab.com/keibiengine/keibi-engine/pkg/utils"
+	"gitlab.com/keibiengine/keibi-engine/pkg/source"
 
 	"github.com/google/uuid"
 	"gitlab.com/keibiengine/keibi-engine/pkg/keibi-es-sdk"
@@ -24,6 +26,13 @@ const (
 	ReportTypeBenchmark = "benchmark"
 	ReportTypeControl   = "control"
 	ReportTypeResult    = "result"
+)
+
+type AccountReportType string
+
+const (
+	AccountReportTypeLast   = "last"
+	AccountReportTypeInTime = "intime"
 )
 
 type ReportResultObj struct {
@@ -50,7 +59,7 @@ type Report struct {
 	Type        ReportType       `json:"type"`
 	ReportJobId uint             `json:"reportJobID"`
 	SourceID    uuid.UUID        `json:"sourceID"`
-	Provider    utils.SourceType `json:"provider"`
+	Provider    source.Type      `json:"provider"`
 	DescribedAt int64            `json:"describedAt"`
 }
 
@@ -82,15 +91,16 @@ func (r Report) MessageID() string {
 }
 
 type AccountReport struct {
-	SourceID             uuid.UUID        `json:"sourceID"`
-	Provider             utils.SourceType `json:"provider"`
-	BenchmarkID          string           `json:"benchmarkID"`
-	ReportJobId          uint             `json:"reportJobID"`
-	Summary              Summary          `json:"summary"`
-	CreatedAt            int64            `json:"createdAt"`
-	TotalResources       int              `json:"totalResources"`
-	TotalCompliant       int              `json:"totalCompliant"`
-	CompliancePercentage float64          `json:"compliancePercentage"`
+	SourceID             uuid.UUID         `json:"sourceID"`
+	Provider             source.Type       `json:"provider"`
+	BenchmarkID          string            `json:"benchmarkID"`
+	ReportJobId          uint              `json:"reportJobID"`
+	Summary              Summary           `json:"summary"`
+	CreatedAt            int64             `json:"createdAt"`
+	TotalResources       int               `json:"totalResources"`
+	TotalCompliant       int               `json:"totalCompliant"`
+	CompliancePercentage float64           `json:"compliancePercentage"`
+	AccountReportType    AccountReportType `json:"accountReportType"`
 }
 
 func (r AccountReport) AsProducerMessage() (*sarama.ProducerMessage, error) {
@@ -99,13 +109,22 @@ func (r AccountReport) AsProducerMessage() (*sarama.ProducerMessage, error) {
 		return nil, err
 	}
 
-	u, err := uuid.NewUUID()
-	if err != nil {
-		return nil, err
+	var key string
+	if r.AccountReportType == AccountReportTypeLast {
+		h := sha256.New()
+		h.Write([]byte(r.BenchmarkID))
+		h.Write([]byte(r.SourceID.String()))
+		key = fmt.Sprintf("%x", h.Sum(nil))
+	} else {
+		u, err := uuid.NewUUID()
+		if err != nil {
+			return nil, err
+		}
+		key = u.String()
 	}
 
 	return &sarama.ProducerMessage{
-		Key: sarama.StringEncoder(u.String()),
+		Key: sarama.StringEncoder(key),
 		Headers: []sarama.RecordHeader{
 			{
 				Key:   []byte(esIndexHeader),
@@ -224,7 +243,7 @@ type AccountReportQueryHit struct {
 	Sort    []interface{} `json:"sort"`
 }
 
-func ExtractNodes(root Group, provider utils.SourceType, tree []string, reportJobID uint, sourceID uuid.UUID, describedAt int64) []Report {
+func ExtractNodes(root Group, provider source.Type, tree []string, reportJobID uint, sourceID uuid.UUID, describedAt int64) []Report {
 	var nodes []Report
 
 	var controlIds, childGroupIds []string
@@ -289,7 +308,7 @@ func ExtractNodes(root Group, provider utils.SourceType, tree []string, reportJo
 	return nodes
 }
 
-func ExtractLeaves(root Group, provider utils.SourceType, tree []string, reportJobID uint, sourceID uuid.UUID, createdAt int64) []Report {
+func ExtractLeaves(root Group, provider source.Type, tree []string, reportJobID uint, sourceID uuid.UUID, createdAt int64) []Report {
 	var leaves []Report
 	if root.Controls != nil {
 		for _, control := range root.Controls {
@@ -326,7 +345,7 @@ func ExtractLeaves(root Group, provider utils.SourceType, tree []string, reportJ
 	return leaves
 }
 
-func ParseReport(path string, reportJobID uint, sourceID uuid.UUID, describedAt int64, provider utils.SourceType) ([]Report, error) {
+func ParseReport(path string, reportJobID uint, sourceID uuid.UUID, describedAt int64, provider source.Type) ([]Report, error) {
 	content, err := ioutil.ReadFile(path)
 	if err != nil {
 		return nil, err
@@ -487,6 +506,9 @@ func QueryProviderResult(benchmarkID string, createdAt int64, order string, size
 	})
 	filters = append(filters, map[string]interface{}{
 		"terms": map[string][]interface{}{"createdAt": {createdAt}},
+	})
+	filters = append(filters, map[string]interface{}{
+		"terms": map[string][]interface{}{"accountReportType": {AccountReportTypeInTime}},
 	})
 	res["size"] = size
 	if searchAfter != nil {
