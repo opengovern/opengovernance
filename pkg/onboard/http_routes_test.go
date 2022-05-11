@@ -153,6 +153,62 @@ func (s *HttpHandlerSuite) TestCreateAWSSource_Success() {
 	})
 }
 
+func (s *HttpHandlerSuite) TestChangeAWSSecret() {
+	require := s.Require()
+
+	qmock := s.handler.sourceEventsQueue.(*queuemocks.Interface)
+	vmock := s.handler.vault.(*vaultmocks.SourceConfig)
+
+	qmock.On("Publish", mock.Anything).Return(error(nil))
+	vmock.On("Write", mock.Anything, mock.Anything).Return(error(nil))
+	vmock.On("Read", mock.Anything).Return(map[string]interface{}{
+		"accountId": "123456789012",
+		"accessKey": "ACCESS_KEY",
+		"secretKey": "SECRET_KEY",
+	}, error(nil))
+
+	var response api.CreateSourceResponse
+	rec, err := doSimpleJSONRequest(s.router, echo.POST, "/api/v1/source/aws", api.SourceAwsRequest{
+		Name:        "Account1",
+		Description: "Account1 Description",
+		Config: api.SourceConfigAWS{
+			AccountId: "123456789012",
+			AccessKey: "ACCESS_KEY",
+			SecretKey: "SECRET_KEY",
+		},
+	}, &response)
+	require.NoError(err, "request")
+	require.Equal(http.StatusOK, rec.Code)
+	require.NotEmpty(response.ID)
+
+	pathRef := fmt.Sprintf("sources/aws/%s", response.ID)
+	vmock.AssertCalled(s.T(), "Write", pathRef, map[string]interface{}{
+		"accountId": "123456789012",
+		"accessKey": "ACCESS_KEY",
+		"secretKey": "SECRET_KEY",
+	})
+
+	path := fmt.Sprintf("/api/v1/source/%s/credentials", response.ID.String())
+	var credRes api.AWSCredential
+	rec, err = doSimpleJSONRequest(s.router, echo.GET, path, nil, &credRes)
+	require.NoError(err, "request")
+	require.Equal(http.StatusOK, rec.Code)
+	require.Equal(credRes.AccessKey, "ACCESS_KEY")
+	require.Equal(credRes.SecretKey, "")
+
+	rec, err = doSimpleJSONRequest(s.router, echo.PUT, path, &api.AWSCredential{
+		AccessKey: "TEMP",
+		SecretKey: "SECRET_KEY2",
+	}, nil)
+	require.NoError(err, "request")
+	require.Equal(http.StatusOK, rec.Code)
+	vmock.AssertCalled(s.T(), "Write", pathRef, map[string]interface{}{
+		"accountId": "123456789012",
+		"accessKey": "ACCESS_KEY",
+		"secretKey": "SECRET_KEY2",
+	})
+}
+
 func (s *HttpHandlerSuite) TestCreateAzureSource_Success() {
 	require := s.Require()
 

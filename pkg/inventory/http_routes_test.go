@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -15,6 +16,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"gorm.io/gorm/logger"
 
 	api3 "gitlab.com/keibiengine/keibi-engine/pkg/compliance-report/api"
 
@@ -166,7 +169,19 @@ func (s *HttpHandlerSuite) SetupSuite() {
 	var orm *gorm.DB
 	// exponential backoff-retry, because the application in the container might not be ready to accept connections yet
 	err = pool.Retry(func() error {
-		orm, err = gorm.Open(postgres.Open(fmt.Sprintf("postgres://postgres:mysecretpassword@%s:%s/postgres", idocker.GetDockerHost(), postgresResource.GetPort("5432/tcp"))), &gorm.Config{})
+		newLogger := logger.New(
+			log.New(os.Stdout, "\r\n", log.LstdFlags), // io writer
+			logger.Config{
+				SlowThreshold:             time.Second, // Slow SQL threshold
+				LogLevel:                  logger.Info, // Log level
+				IgnoreRecordNotFoundError: true,        // Ignore ErrRecordNotFound error for logger
+				Colorful:                  true,        // Disable color
+			},
+		)
+
+		orm, err = gorm.Open(postgres.Open(fmt.Sprintf("postgres://postgres:mysecretpassword@%s:%s/postgres", idocker.GetDockerHost(), postgresResource.GetPort("5432/tcp"))), &gorm.Config{
+			Logger: newLogger,
+		})
 		if err != nil {
 			return err
 		}
