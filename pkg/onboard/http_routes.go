@@ -1,8 +1,11 @@
 package onboard
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
+
+	"gitlab.com/keibiengine/keibi-engine/pkg/describe"
 
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
@@ -22,6 +25,8 @@ func (h HttpHandler) Register(r *echo.Echo) {
 	source.POST("/aws", h.PostSourceAws)
 	source.POST("/azure", h.PostSourceAzure)
 	source.GET("/:sourceId", h.GetSource)
+	source.GET("/:sourceId/credentials", h.GetSourceCred)
+	source.PUT("/:sourceId/credentials", h.PutSourceCred)
 	source.PUT("/:sourceId", h.PutSource)
 	source.DELETE("/:sourceId", h.DeleteSource)
 
@@ -270,6 +275,123 @@ func (h HttpHandler) PostSourceAzure(ctx echo.Context) error {
 	}
 
 	return ctx.JSON(http.StatusOK, src.toSourceResponse())
+}
+
+// GetSourceCred godoc
+// @Summary      Get source credential
+// @Tags         onboard
+// @Produce      json
+// @Success      200          {object}  api.GetCredentialAWSResponse
+// @Param        sourceId     query     string  true  "Source ID"
+// @Router       /onboard/api/v1/{sourceId}/credentials [post]
+func (h HttpHandler) GetSourceCred(ctx echo.Context) error {
+	sourceUUID, err := uuid.Parse(ctx.Param("sourceId"))
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid source uuid")
+	}
+
+	src, err := h.db.GetSource(sourceUUID)
+	if err != nil {
+		return err
+	}
+
+	cnf, err := h.vault.Read(src.ConfigRef)
+	if err != nil {
+		return err
+	}
+
+	switch src.Type {
+	case api.SourceCloudAWS:
+		awsCnf, err := describe.AWSAccountConfigFromMap(cnf)
+		if err != nil {
+			return err
+		}
+		return ctx.JSON(http.StatusOK, api.AWSCredential{
+			AccessKey: awsCnf.AccessKey,
+		})
+	case api.SourceCloudAzure:
+		azureCnf, err := describe.AzureSubscriptionConfigFromMap(cnf)
+		if err != nil {
+			return err
+		}
+		return ctx.JSON(http.StatusOK, api.AzureCredential{
+			ClientID: azureCnf.ClientID,
+			TenantID: azureCnf.TenantID,
+		})
+	default:
+		return errors.New("invalid provider")
+	}
+}
+
+// PutSourceCred godoc
+// @Summary      Put source credential
+// @Tags         onboard
+// @Produce      json
+// @Success      200          {object}  api.GetCredentialAWSResponse
+// @Param        sourceId     query     string  true  "Source ID"
+// @Router       /onboard/api/v1/{sourceId}/credentials [post]
+func (h HttpHandler) PutSourceCred(ctx echo.Context) error {
+	sourceUUID, err := uuid.Parse(ctx.Param("sourceId"))
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid source uuid")
+	}
+
+	src, err := h.db.GetSource(sourceUUID)
+	if err != nil {
+		return err
+	}
+
+	cnf, err := h.vault.Read(src.ConfigRef)
+	if err != nil {
+		return err
+	}
+
+	switch src.Type {
+	case api.SourceCloudAWS:
+		awsCnf, err := describe.AWSAccountConfigFromMap(cnf)
+		if err != nil {
+			return err
+		}
+
+		var req api.AWSCredential
+		if err := bindValidate(ctx, &req); err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
+		}
+
+		newCnf := api.SourceConfigAWS{
+			AccountId: awsCnf.AccountID,
+			Regions:   awsCnf.Regions,
+			AccessKey: awsCnf.AccessKey,
+			SecretKey: req.SecretKey,
+		}
+		if err := h.vault.Write(src.ConfigRef, newCnf.AsMap()); err != nil {
+			return err
+		}
+		return ctx.NoContent(http.StatusOK)
+	case api.SourceCloudAzure:
+		azureCnf, err := describe.AzureSubscriptionConfigFromMap(cnf)
+		if err != nil {
+			return err
+		}
+
+		var req api.AzureCredential
+		if err := bindValidate(ctx, &req); err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
+		}
+
+		newCnf := api.SourceConfigAzure{
+			SubscriptionId: azureCnf.SubscriptionID,
+			TenantId:       azureCnf.TenantID,
+			ClientId:       azureCnf.ClientID,
+			ClientSecret:   req.ClientSecret,
+		}
+		if err := h.vault.Write(src.ConfigRef, newCnf.AsMap()); err != nil {
+			return err
+		}
+		return ctx.NoContent(http.StatusOK)
+	default:
+		return errors.New("invalid provider")
+	}
 }
 
 // GetSource godoc
