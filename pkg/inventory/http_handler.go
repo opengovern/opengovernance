@@ -2,6 +2,7 @@ package inventory
 
 import (
 	"fmt"
+
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 
