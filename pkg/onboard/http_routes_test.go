@@ -343,6 +343,17 @@ func (s *HttpHandlerSuite) TestGetSources_Success() {
 	require.NoError(err, "request")
 	require.Equal(http.StatusOK, rec.Code)
 	require.Equal(1, len(response5))
+
+	var response6 int64
+	rec, err = doSimpleJSONRequest(s.router, echo.GET, "/api/v1/sources/count", nil, &response6)
+	require.NoError(err, "request")
+	require.Equal(http.StatusOK, rec.Code)
+	require.Equal(int64(2), response6)
+
+	rec, err = doSimpleJSONRequest(s.router, echo.GET, "/api/v1/sources/count?type=aws", nil, &response6)
+	require.NoError(err, "request")
+	require.Equal(http.StatusOK, rec.Code)
+	require.Equal(int64(1), response6)
 }
 
 func (s *HttpHandlerSuite) TestGetProviders() {

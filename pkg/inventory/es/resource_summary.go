@@ -85,9 +85,11 @@ func FindTopAccountsQuery(provider string, fetchSize int) (string, error) {
 		"terms": map[string][]string{"report_type": {kafka.ResourceSummaryTypeLastSummary}},
 	})
 
-	filters = append(filters, map[string]interface{}{
-		"terms": map[string][]string{"source_type": {provider}},
-	})
+	if provider != "" {
+		filters = append(filters, map[string]interface{}{
+			"terms": map[string][]string{"source_type": {provider}},
+		})
+	}
 
 	res["size"] = fetchSize
 	res["sort"] = []map[string]interface{}{
@@ -129,9 +131,12 @@ func FindTopServicesQuery(provider string, sourceID *string, fetchSize int) (str
 		"terms": map[string][]string{"report_type": {kafka.ResourceSummaryTypeLastServiceSummary}},
 	})
 
-	filters = append(filters, map[string]interface{}{
-		"terms": map[string][]string{"source_type": {provider}},
-	})
+	if provider != "" {
+		filters = append(filters, map[string]interface{}{
+			"terms": map[string][]string{"source_type": {provider}},
+		})
+	}
+
 	if sourceID != nil {
 		filters = append(filters, map[string]interface{}{
 			"terms": map[string][]string{"source_id": {*sourceID}},
@@ -178,9 +183,11 @@ func GetCategoriesQuery(provider string, fetchSize int) (string, error) {
 		"terms": map[string][]string{"report_type": {kafka.ResourceSummaryTypeLastCategorySummary}},
 	})
 
-	filters = append(filters, map[string]interface{}{
-		"terms": map[string][]string{"source_type": {provider}},
-	})
+	if provider != "" {
+		filters = append(filters, map[string]interface{}{
+			"terms": map[string][]string{"source_type": {provider}},
+		})
+	}
 
 	res["size"] = fetchSize
 	res["sort"] = []map[string]interface{}{

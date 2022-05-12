@@ -31,6 +31,7 @@ func (h HttpHandler) Register(r *echo.Echo) {
 	source.DELETE("/:sourceId", h.DeleteSource)
 
 	v1.GET("/sources", h.GetSources)
+	v1.GET("/sources/count", h.CountSources)
 
 	disc := v1.Group("/discover")
 
@@ -521,6 +522,39 @@ func (h HttpHandler) GetSources(ctx echo.Context) error {
 	}
 
 	return ctx.JSON(http.StatusOK, resp)
+}
+
+// CountSources godoc
+// @Summary      Returns a count of sources
+// @Description  Returning a count of sources including both AWS and Azure unless filtered by Type.
+// @Tags         onboard
+// @Produce      json
+// @Param        type  query     string  false  "Type"  Enums(aws,azure)
+// @Success      200   {object}  int64
+// @Router       /onboard/api/v1/sources/count [get]
+func (h HttpHandler) CountSources(ctx echo.Context) error {
+	sType := ctx.QueryParam("type")
+	var count int64
+	if sType != "" {
+		st, ok := api.AsSourceType(sType)
+		if !ok {
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("invalid source type: %s", sType))
+		}
+
+		var err error
+		count, err = h.db.CountSourcesOfType(st)
+		if err != nil {
+			return err
+		}
+	} else {
+		var err error
+		count, err = h.db.CountSources()
+		if err != nil {
+			return err
+		}
+	}
+
+	return ctx.JSON(http.StatusOK, count)
 }
 
 func (h HttpHandler) PutSource(ctx echo.Context) error {

@@ -93,12 +93,13 @@ type GetResourcesResponse struct {
 }
 
 type AllResource struct {
-	Name         string     `json:"name"`
-	Provider     SourceType `json:"provider"`
-	ResourceType string     `json:"resourceType"`
-	Location     string     `json:"location"`
-	ResourceID   string     `json:"resourceID"`
-	SourceID     string     `json:"sourceID"`
+	Name             string     `json:"name"`
+	Provider         SourceType `json:"provider"`
+	ResourceType     string     `json:"resourceType"`
+	ResourceTypeName string     `json:"resourceTypeName"`
+	Location         string     `json:"location"`
+	ResourceID       string     `json:"resourceID"`
+	SourceID         string     `json:"sourceID"`
 
 	Attributes map[string]string `json:"attributes"`
 }
@@ -137,12 +138,13 @@ type GetAzureResourceResponse struct {
 }
 
 type AzureResource struct {
-	Name           string `json:"name"`
-	ResourceType   string `json:"resourceType"`
-	ResourceGroup  string `json:"resourceGroup"`
-	Location       string `json:"location"`
-	ResourceID     string `json:"resourceID"`
-	SubscriptionID string `json:"subscriptionID"`
+	Name             string `json:"name"`
+	ResourceType     string `json:"resourceType"`
+	ResourceTypeName string `json:"resourceTypeName"`
+	ResourceGroup    string `json:"resourceGroup"`
+	Location         string `json:"location"`
+	ResourceID       string `json:"resourceID"`
+	SubscriptionID   string `json:"subscriptionID"`
 
 	Attributes map[string]string `json:"attributes"`
 }
@@ -168,11 +170,12 @@ type GetAWSResourceResponse struct {
 }
 
 type AWSResource struct {
-	Name         string `json:"name"`
-	ResourceType string `json:"resourceType"`
-	ResourceID   string `json:"resourceID"`
-	Region       string `json:"location"`
-	AccountID    string `json:"accountID"`
+	Name             string `json:"name"`
+	ResourceType     string `json:"resourceType"`
+	ResourceTypeName string `json:"resourceTypeName"`
+	ResourceID       string `json:"resourceID"`
+	Region           string `json:"location"`
+	AccountID        string `json:"accountID"`
 
 	Attributes map[string]string `json:"attributes"`
 }

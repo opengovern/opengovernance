@@ -675,13 +675,13 @@ func (h *HttpHandler) GetCompliancyTrend(ctx echo.Context) error {
 // @Success  200       {object}  []api.TopAccountResponse
 // @Router   /inventory/api/v1/resources/top/accounts [get]
 func (h *HttpHandler) GetTopAccountsByResourceCount(ctx echo.Context) error {
-	provider := ctx.QueryParam("provider")
+	provider, _ := source.ParseType(ctx.QueryParam("provider"))
 	count, err := strconv.Atoi(ctx.QueryParam("count"))
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid count")
 	}
 
-	query, err := es.FindTopAccountsQuery(provider, count)
+	query, err := es.FindTopAccountsQuery(string(provider), count)
 	if err != nil {
 		return err
 	}
@@ -710,10 +710,10 @@ func (h *HttpHandler) GetTopAccountsByResourceCount(ctx echo.Context) error {
 // @Param    count     query     int     true  "count"
 // @Param    provider  query     string  true  "Provider"
 // @Param    sourceId  query     string  false  "SourceID"
-// @Success  200       {object}  []api.TopAccountResponse
+// @Success  200       {object}  []api.TopServicesResponse
 // @Router   /inventory/api/v1/resources/top/services [get]
 func (h *HttpHandler) GetTopServicesByResourceCount(ctx echo.Context) error {
-	provider := ctx.QueryParam("provider")
+	provider, _ := source.ParseType(ctx.QueryParam("provider"))
 	count, err := strconv.Atoi(ctx.QueryParam("count"))
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid count")
@@ -730,7 +730,7 @@ func (h *HttpHandler) GetTopServicesByResourceCount(ctx echo.Context) error {
 		sourceID = &s
 	}
 
-	query, err := es.FindTopServicesQuery(provider, sourceID, count)
+	query, err := es.FindTopServicesQuery(string(provider), sourceID, count)
 	if err != nil {
 		return err
 	}
@@ -760,9 +760,9 @@ func (h *HttpHandler) GetTopServicesByResourceCount(ctx echo.Context) error {
 // @Success  200       {object}  []api.TopAccountResponse
 // @Router   /inventory/api/v1/resources/categories [get]
 func (h *HttpHandler) GetCategories(ctx echo.Context) error {
-	provider := ctx.QueryParam("provider")
+	provider, _ := source.ParseType(ctx.QueryParam("provider"))
 
-	query, err := es.GetCategoriesQuery(provider, EsFetchPageSize)
+	query, err := es.GetCategoriesQuery(string(provider), EsFetchPageSize)
 	if err != nil {
 		return err
 	}
