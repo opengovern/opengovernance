@@ -40,6 +40,7 @@ func (s *HttpServer) Initialize() error {
 	v1 := e.Group("/api/v1")
 
 	v1.GET("/sources", s.HandleListSources)
+	v1.GET("/sources/:source_id", s.HandleGetSource)
 	v1.GET("/sources/:source_id/jobs/describe", s.HandleListSourceDescribeJobs)
 	v1.GET("/sources/:source_id/jobs/compliance", s.HandleListSourceComplianceReports)
 
@@ -85,6 +86,44 @@ func (s HttpServer) HandleListSources(ctx echo.Context) error {
 	}
 
 	return ctx.JSON(http.StatusOK, objs)
+}
+
+// HandleGetSource godoc
+// @Summary      Get Source by id
+// @Description  Getting Keibi source by id
+// @Tags         schedule
+// @Produce      json
+// @Param        source_id  path      string  true  "SourceID"
+// @Success      200        {object}  api.Source
+// @Router       /schedule/api/v1/sources/{source_id} [get]
+func (s HttpServer) HandleGetSource(ctx echo.Context) error {
+	sourceID := ctx.Param("source_id")
+	sourceUUID, err := uuid.Parse(sourceID)
+	if err != nil {
+		ctx.Logger().Errorf("parsing uuid: %v", err)
+		return ctx.JSON(http.StatusBadRequest, api.ErrorResponse{Message: "invalid source uuid"})
+	}
+	source, err := s.DB.GetSourceByUUID(sourceUUID)
+	if err != nil {
+		ctx.Logger().Errorf("fetching source %s: %v", sourceID, err)
+		return ctx.JSON(http.StatusInternalServerError, api.ErrorResponse{Message: "fetching source"})
+	}
+
+	lastDescribeAt := time.Time{}
+	lastComplianceReportAt := time.Time{}
+	if source.LastDescribedAt.Valid {
+		lastDescribeAt = source.LastDescribedAt.Time
+	}
+	if source.LastComplianceReportAt.Valid {
+		lastComplianceReportAt = source.LastComplianceReportAt.Time
+	}
+
+	return ctx.JSON(http.StatusOK, api.Source{
+		ID:                     source.ID,
+		Type:                   source.Type,
+		LastDescribedAt:        lastDescribeAt,
+		LastComplianceReportAt: lastComplianceReportAt,
+	})
 }
 
 // HandleListSourceDescribeJobs godoc

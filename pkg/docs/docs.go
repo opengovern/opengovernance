@@ -261,6 +261,41 @@ const docTemplate = `{
                 }
             }
         },
+        "/inventory/api/v1/benchmarks/source/{source_id}": {
+            "get": {
+                "description": "Returns all benchmark assignments with source id",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "benchmarks_assignment"
+                ],
+                "summary": "Get all benchmark assignments with source id",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Source ID",
+                        "name": "source_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/api.BenchmarkAssignment"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/inventory/api/v1/benchmarks/tags": {
             "get": {
                 "consumes": [
@@ -623,6 +658,114 @@ const docTemplate = `{
                             "type": "array",
                             "items": {
                                 "$ref": "#/definitions/api.PolicyResult"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/inventory/api/v1/benchmarks/{benchmark_id}/source/{source_id}": {
+            "post": {
+                "description": "Returns benchmark assignment which insert",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "benchmarks_assignment"
+                ],
+                "summary": "Create benchmark assignment for inventory service",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Benchmark ID",
+                        "name": "benchmark_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Source ID",
+                        "name": "source_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/api.BenchmarkAssignment"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "description": "Delete benchmark assignment with source id and benchmark id",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "benchmarks_assignment"
+                ],
+                "summary": "Delete benchmark assignment for inventory service",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Benchmark ID",
+                        "name": "benchmark_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Source ID",
+                        "name": "source_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/inventory/api/v1/benchmarks/{benchmark_id}/sources": {
+            "get": {
+                "description": "Returns all benchmark assigned sources with benchmark id",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "benchmarks_assignment"
+                ],
+                "summary": "Get all benchmark assigned sources with benchmark id",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Benchmark ID",
+                        "name": "benchmark_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/api.BenchmarkAssignedSource"
                             }
                         }
                     }
@@ -1616,6 +1759,35 @@ const docTemplate = `{
                 }
             }
         },
+        "/schedule/api/v1/sources/{source_id}": {
+            "get": {
+                "description": "Getting Keibi source by id",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "schedule"
+                ],
+                "summary": "Get Source by id",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "SourceID",
+                        "name": "source_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/gitlab.com_keibiengine_keibi-engine_pkg_describe_api.Source"
+                        }
+                    }
+                }
+            }
+        },
         "/schedule/api/v1/sources/{source_id}/jobs/compliance": {
             "get": {
                 "description": "List source compliance reports",
@@ -1856,6 +2028,31 @@ const docTemplate = `{
                 },
                 "totalNonCompliantAccounts": {
                     "type": "integer"
+                }
+            }
+        },
+        "api.BenchmarkAssignedSource": {
+            "type": "object",
+            "properties": {
+                "assignedAt": {
+                    "type": "integer"
+                },
+                "sourceId": {
+                    "type": "string"
+                }
+            }
+        },
+        "api.BenchmarkAssignment": {
+            "type": "object",
+            "properties": {
+                "assignedAt": {
+                    "type": "integer"
+                },
+                "benchmarkId": {
+                    "type": "string"
+                },
+                "sourceId": {
+                    "type": "string"
                 }
             }
         },

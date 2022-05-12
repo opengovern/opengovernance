@@ -9,7 +9,7 @@ import (
 )
 
 func FilterIsEmpty(filter []string) bool {
-	return filter == nil || len(filter) == 0
+	return len(filter) == 0
 }
 
 func BuildSort(sorts []api.ResourceSortItem) []map[string]interface{} {

@@ -32,6 +32,7 @@ import (
 	pagination "gitlab.com/keibiengine/keibi-engine/pkg/internal/api"
 	idocker "gitlab.com/keibiengine/keibi-engine/pkg/internal/dockertest"
 	"gitlab.com/keibiengine/keibi-engine/pkg/inventory/api"
+	"gitlab.com/keibiengine/keibi-engine/pkg/inventory/client"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
@@ -1095,7 +1096,7 @@ func (s *HttpHandlerSuite) TestGetBenchmarkAccountCompliance() {
 	t := time.Now()
 	start := time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, t.Location())
 
-	cr, err := api.ListComplianceReportJobs(s.describe.MockServer.URL, sourceID, &api.TimeRangeFilter{
+	cr, err := client.ListComplianceReportJobs(s.describe.MockServer.URL, sourceID, &api.TimeRangeFilter{
 		From: start.UnixMilli(),
 		To:   t.UnixMilli(),
 	})
@@ -1126,7 +1127,7 @@ func (s *HttpHandlerSuite) TestGetBenchmarkAccounts() {
 	t := time.Now()
 	start := time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, t.Location())
 
-	cr, err := api.ListComplianceReportJobs(s.describe.MockServer.URL, sourceID, &api.TimeRangeFilter{
+	cr, err := client.ListComplianceReportJobs(s.describe.MockServer.URL, sourceID, &api.TimeRangeFilter{
 		From: start.UnixMilli(),
 		To:   t.UnixMilli(),
 	})

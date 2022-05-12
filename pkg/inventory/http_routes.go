@@ -17,6 +17,7 @@ import (
 	"time"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/source"
+	"gorm.io/gorm"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/describe"
 	"gitlab.com/keibiengine/keibi-engine/pkg/inventory/es"
@@ -35,9 +36,14 @@ import (
 	compliance_es "gitlab.com/keibiengine/keibi-engine/pkg/compliance-report/es"
 	pagination "gitlab.com/keibiengine/keibi-engine/pkg/internal/api"
 	"gitlab.com/keibiengine/keibi-engine/pkg/inventory/api"
+	"gitlab.com/keibiengine/keibi-engine/pkg/inventory/client"
 )
 
 const EsFetchPageSize = 10000
+
+var (
+	ErrInternalServer = errors.New("internal server error")
+)
 
 func extractContext(ctx echo.Context) context.Context {
 	cc := ctx.Request().Context()
@@ -84,6 +90,11 @@ func (h *HttpHandler) Register(v1 *echo.Group) {
 	v1.GET("/benchmarks/:benchmarkId/:createdAt/accounts/compliance", h.GetBenchmarkAccountCompliance)
 	v1.GET("/benchmarks/:benchmarkId/:createdAt/accounts", h.GetBenchmarkAccounts)
 
+	v1.POST("/benchmarks/:benchmark_id/source/:source_id", h.CreateBenchmarkAssignment)
+	v1.GET("/benchmarks/source/:source_id", h.GetAllBenchmarkAssignmentsBySourceId)
+	v1.GET("/benchmarks/:benchmark_id/sources", h.GetAllBenchmarkAssignedSourcesByBenchmarkId)
+	v1.DELETE("/benchmarks/:benchmark_id/source/:source_id", h.DeleteBenchmarkAssignment)
+	v1.GET("/benchmarks/:provider/list", h.GetBenchmarkDetails)
 	v1.GET("/benchmarks/compliancy/:provider/top/accounts", h.GetTopAccountsByBenchmarkCompliancy)
 	v1.GET("/benchmarks/compliancy/:provider/top/services", h.GetTopServicesByBenchmarkCompliancy)
 	v1.GET("/benchmarks/:provider/list", h.GetListOfBenchmarks)
@@ -567,13 +578,13 @@ func (h *HttpHandler) GetResourceGrowthTrend(ctx echo.Context) error {
 
 // GetCompliancyTrend godoc
 // @Summary  Returns trend of compliancy for specific account
-// @Tags         benchmarks
-// @Accept       json
-// @Produce      json
-// @Param    sourceId     query     string  true  "SourceID"
-// @Param    provider     query     string  true  "Provider"
-// @Param    timeWindow   query     string  true  "Time Window"  Enums(24h,1w,3m,1y,max)
-// @Success  200          {object}  []api.TrendDataPoint
+// @Tags     benchmarks
+// @Accept   json
+// @Produce  json
+// @Param    sourceId    query     string  true  "SourceID"
+// @Param    provider    query     string  true  "Provider"
+// @Param    timeWindow  query     string  true  "Time Window"  Enums(24h,1w,3m,1y,max)
+// @Success  200         {object}  []api.TrendDataPoint
 // @Router   /inventory/api/v1/compliancy/trend [get]
 func (h *HttpHandler) GetCompliancyTrend(ctx echo.Context) error {
 	provider := ctx.QueryParam("provider")
@@ -774,11 +785,11 @@ func (h *HttpHandler) GetCategories(ctx echo.Context) error {
 
 // GetAccountsResourceCount godoc
 // @Summary  Returns resource count of accounts
-// @Tags         benchmarks
-// @Accept       json
-// @Produce      json
-// @Param    provider     query     string  true  "Provider"
-// @Success  200          {object}  []api.TopAccountResponse
+// @Tags     benchmarks
+// @Accept   json
+// @Produce  json
+// @Param    provider  query     string  true  "Provider"
+// @Success  200       {object}  []api.TopAccountResponse
 // @Router   /inventory/api/v1/accounts/resource/count [get]
 func (h *HttpHandler) GetAccountsResourceCount(ctx echo.Context) error {
 	provider := ctx.QueryParam("provider")
@@ -1250,7 +1261,7 @@ func (h *HttpHandler) GetBenchmarkResult(ctx echo.Context) error {
 	}
 
 	var jobIDs []int
-	jobs, err := api.ListComplianceReportJobs(h.schedulerBaseUrl, sourceUUID, nil)
+	jobs, err := client.ListComplianceReportJobs(h.schedulerBaseUrl, sourceUUID, nil)
 	if err != nil {
 		return err
 	}
@@ -1332,7 +1343,7 @@ func (h *HttpHandler) GetResultPolicies(ctx echo.Context) error {
 	}
 
 	var jobIDs []int
-	jobs, err := api.ListComplianceReportJobs(h.schedulerBaseUrl, sourceUUID, nil)
+	jobs, err := client.ListComplianceReportJobs(h.schedulerBaseUrl, sourceUUID, nil)
 	if err != nil {
 		return err
 	}
@@ -1993,7 +2004,7 @@ func (h *HttpHandler) GetComplianceReports(ctx echo.Context) error {
 		}
 		jobIDs = append(jobIDs, jobID)
 	} else {
-		reports, err := api.ListComplianceReportJobs(h.schedulerBaseUrl, sourceUUID, req.Filters.TimeRange)
+		reports, err := client.ListComplianceReportJobs(h.schedulerBaseUrl, sourceUUID, req.Filters.TimeRange)
 		if err != nil {
 			return err
 		}
@@ -2041,4 +2052,178 @@ func (c *Context) BindValidate(i interface{}) error {
 	}
 
 	return nil
+}
+
+// CreateBenchmarkAssignment godoc
+// @Summary      Create benchmark assignment for inventory service
+// @Description  Returns benchmark assignment which insert
+// @Tags         benchmarks_assignment
+// @Accept       json
+// @Produce      json
+// @Param        benchmark_id  path      string  true  "Benchmark ID"
+// @Param        source_id     path      string  true  "Source ID"
+// @Success      200           {object}  api.BenchmarkAssignment
+// @Router       /inventory/api/v1/benchmarks/{benchmark_id}/source/{source_id} [post]
+func (h *HttpHandler) CreateBenchmarkAssignment(ctx echo.Context) error {
+	sourceId := ctx.Param("source_id")
+	if sourceId == "" {
+		return echo.NewHTTPError(http.StatusBadRequest, "source id is empty")
+	}
+	sourceUUID, err := uuid.Parse(sourceId)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid source uuid")
+	}
+
+	benchmarkId := ctx.Param("benchmark_id")
+	if benchmarkId == "" {
+		return echo.NewHTTPError(http.StatusBadRequest, "benchmark id is empty")
+	}
+	benchmark, err := h.db.GetBenchmark(benchmarkId)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("benchmark %s not found", benchmarkId))
+		}
+		ctx.Logger().Errorf("find benchmark assignment: %v", err)
+		return echo.NewHTTPError(http.StatusInternalServerError, ErrInternalServer)
+	}
+
+	source, err := client.GetSource(h.schedulerBaseUrl, sourceUUID)
+	if err != nil {
+		ctx.Logger().Errorf(fmt.Sprintf("request source: %v", err))
+		return echo.NewHTTPError(http.StatusInternalServerError, ErrInternalServer)
+	}
+	if benchmark.Provider != string(source.Type) {
+		return echo.NewHTTPError(http.StatusBadRequest, "source type not match")
+	}
+
+	assignment := &BenchmarkAssignment{
+		BenchmarkId: benchmarkId,
+		SourceId:    sourceUUID,
+		AssignedAt:  time.Now(),
+	}
+	if err := h.db.AddBenchmarkAssignment(assignment); err != nil {
+		ctx.Logger().Errorf("add benchmark assignment: %v", err)
+		return echo.NewHTTPError(http.StatusInternalServerError, ErrInternalServer)
+	}
+
+	return ctx.JSON(http.StatusOK, api.BenchmarkAssignment{
+		BenchmarkId: benchmarkId,
+		SourceId:    sourceUUID.String(),
+		AssignedAt:  assignment.AssignedAt.Unix(),
+	})
+}
+
+// GetAllBenchmarkAssignmentsBySourceId godoc
+// @Summary      Get all benchmark assignments with source id
+// @Description  Returns all benchmark assignments with source id
+// @Tags         benchmarks_assignment
+// @Accept       json
+// @Produce      json
+// @Param        source_id  path      string  true  "Source ID"
+// @Success      200        {object}  []api.BenchmarkAssignment
+// @Router       /inventory/api/v1/benchmarks/source/{source_id} [get]
+func (h *HttpHandler) GetAllBenchmarkAssignmentsBySourceId(ctx echo.Context) error {
+	sourceId := ctx.Param("source_id")
+	if sourceId == "" {
+		return echo.NewHTTPError(http.StatusBadRequest, "source id is empty")
+	}
+	sourceUUID, err := uuid.Parse(sourceId)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid source uuid")
+	}
+
+	dbAssignments, err := h.db.GetBenchmarkAssignmentsBySourceId(sourceUUID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("benchmark assignments for %s not found", sourceId))
+		}
+		ctx.Logger().Errorf("find benchmark assignments by source %s: %v", sourceId, err)
+		return echo.NewHTTPError(http.StatusInternalServerError, ErrInternalServer)
+	}
+
+	assignments := []api.BenchmarkAssignment{}
+	for _, assignment := range dbAssignments {
+		assignments = append(assignments, api.BenchmarkAssignment{
+			BenchmarkId: assignment.BenchmarkId,
+			SourceId:    assignment.SourceId.String(),
+			AssignedAt:  assignment.AssignedAt.Unix(),
+		})
+	}
+
+	return ctx.JSON(http.StatusOK, assignments)
+}
+
+// GetAllBenchmarkAssignedSourcesByBenchmarkId godoc
+// @Summary      Get all benchmark assigned sources with benchmark id
+// @Description  Returns all benchmark assigned sources with benchmark id
+// @Tags         benchmarks_assignment
+// @Accept       json
+// @Produce      json
+// @Param        benchmark_id  path      string  true  "Benchmark ID"
+// @Success      200           {object}  []api.BenchmarkAssignedSource
+// @Router       /inventory/api/v1/benchmarks/{benchmark_id}/sources [get]
+func (h *HttpHandler) GetAllBenchmarkAssignedSourcesByBenchmarkId(ctx echo.Context) error {
+	benchmarkId := ctx.Param("benchmark_id")
+	if benchmarkId == "" {
+		return echo.NewHTTPError(http.StatusBadRequest, "benchmark id is empty")
+	}
+
+	dbAssignments, err := h.db.GetBenchmarkAssignmentsByBenchmarkId(benchmarkId)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("benchmark assignments for %s not found", benchmarkId))
+		}
+		ctx.Logger().Errorf("find benchmark assignments by benchmark %s: %v", benchmarkId, err)
+		return echo.NewHTTPError(http.StatusInternalServerError, ErrInternalServer)
+	}
+
+	sources := []api.BenchmarkAssignedSource{}
+	for _, assignment := range dbAssignments {
+		sources = append(sources, api.BenchmarkAssignedSource{
+			SourceId:   assignment.SourceId.String(),
+			AssignedAt: assignment.AssignedAt.Unix(),
+		})
+	}
+
+	return ctx.JSON(http.StatusOK, sources)
+}
+
+// DeleteBenchmarkAssignment godoc
+// @Summary      Delete benchmark assignment for inventory service
+// @Description  Delete benchmark assignment with source id and benchmark id
+// @Tags         benchmarks_assignment
+// @Accept       json
+// @Produce      json
+// @Param        benchmark_id  path  string  true  "Benchmark ID"
+// @Param        source_id     path  string  true  "Source ID"
+// @Success      200
+// @Router       /inventory/api/v1/benchmarks/{benchmark_id}/source/{source_id} [delete]
+func (h *HttpHandler) DeleteBenchmarkAssignment(ctx echo.Context) error {
+	sourceId := ctx.Param("source_id")
+	if sourceId == "" {
+		return echo.NewHTTPError(http.StatusBadRequest, "source id is empty")
+	}
+	sourceUUID, err := uuid.Parse(sourceId)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid source uuid")
+	}
+	benchmarkId := ctx.Param("benchmark_id")
+	if benchmarkId == "" {
+		return echo.NewHTTPError(http.StatusBadRequest, "benchmark id is empty")
+	}
+
+	if _, err := h.db.GetBenchmarkAssignmentByIds(sourceUUID, benchmarkId); err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return echo.NewHTTPError(http.StatusFound, "benchmark assignment not found")
+		}
+		ctx.Logger().Errorf("find benchmark assignment: %v", err)
+		return echo.NewHTTPError(http.StatusInternalServerError, ErrInternalServer)
+	}
+
+	if err := h.db.DeleteBenchmarkAssignmentById(sourceUUID, benchmarkId); err != nil {
+		ctx.Logger().Errorf("delete benchmark assignment: %v", err)
+		return echo.NewHTTPError(http.StatusInternalServerError, ErrInternalServer)
+	}
+
+	return ctx.JSON(http.StatusOK, nil)
 }
