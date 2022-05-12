@@ -16,7 +16,7 @@ type Workspace struct {
 	gorm.Model
 
 	WorkspaceId string    `json:"workspace_id"`
-	Name        uuid.UUID `json:"name"`
+	Name        uuid.UUID `gorm:"uniqueIndex" json:"name"`
 	OwnerId     string    `json:"owner_id"`
 	Domain      string    `json:"domain"`
 	Status      string    `json:"status"`
@@ -52,7 +52,7 @@ func (s *Database) UpdateWorkspaceStatus(workspaceId, status string) error {
 
 func (s *Database) GetWorkspace(workspaceId string) (*Workspace, error) {
 	var workspace Workspace
-	if err := s.db.Model(&Workspace{}).Where(Workspace{WorkspaceId: workspaceId}).Scan(&workspace).Error; err != nil {
+	if err := s.db.Model(&Workspace{}).Where(Workspace{WorkspaceId: workspaceId}).First(&workspace).Error; err != nil {
 		return nil, err
 	}
 	return &workspace, nil

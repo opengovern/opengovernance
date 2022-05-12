@@ -185,7 +185,7 @@ func (s *Server) DeleteWorkspace(c echo.Context) error {
 	workspace, err := s.db.GetWorkspace(workspaceId)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return echo.NewHTTPError(http.StatusFound, "workspace not found")
+			return echo.NewHTTPError(http.StatusNotFound, "workspace not found")
 		}
 		c.Logger().Errorf("find workspace: %v", err)
 		return echo.NewHTTPError(http.StatusInternalServerError, ErrInternalServer)

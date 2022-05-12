@@ -16,7 +16,10 @@ func TestSuite(t *testing.T) {
 type testSuite struct {
 	suite.Suite
 
-	db *Database
+	server *Server
+
+	name  string
+	owner string
 }
 
 func (s *testSuite) SetupSuite() {
@@ -31,7 +34,7 @@ func (s *testSuite) SetupSuite() {
 		s.NoError(pool.RemoveNetwork(net), "remove network")
 	})
 
-	user, pass, name, port := "postgres", "123456", "test", "5432"
+	user, pass, name, port := "postgres", "123456", "workspace", "5432"
 	resource, err := pool.RunWithOptions(&dockertest.RunOptions{
 		Name:         "keibi_workspace",
 		Repository:   "postgres",
@@ -48,7 +51,7 @@ func (s *testSuite) SetupSuite() {
 	t.Cleanup(func() {
 		s.NoError(pool.Purge(resource), "purge resource")
 	})
-	time.Sleep(time.Second * 3)
+	time.Sleep(time.Second * 2)
 
 	settings := Config{
 		Host:     idocker.GetDockerHost(),
@@ -59,15 +62,18 @@ func (s *testSuite) SetupSuite() {
 	}
 	db, err := NewDatabase(&settings)
 	s.NoError(err, "new database")
-	s.db = db
+
+	s.server = &Server{
+		db: db,
+	}
+	s.name = "cda6498a-235d-4f7e-ae19-661d41bc154c"
+	s.owner = "00000000-0000-0000-0000-000000000000"
 }
 
 func (ts *testSuite) TearDownSuite() {
 }
 
 func (ts *testSuite) TearDownTest() {
-	// tx := ts.handler.db.orm.Exec("delete from benchmarks where id = ?", ts.benchmarkId)
-	// ts.NoError(tx.Error)
-	// tx = ts.handler.db.orm.Exec("delete from benchmark_assignments where benchmark_id = ?", ts.benchmarkId)
-	// ts.NoError(tx.Error)
+	tx := ts.server.db.db.Exec("delete from workspaces")
+	ts.NoError(tx.Error)
 }
