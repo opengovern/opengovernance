@@ -1,6 +1,7 @@
 package workspace
 
 import (
+	"context"
 	"errors"
 	"net/http"
 	"time"
@@ -8,6 +9,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
+	"github.com/labstack/gommon/log"
 	"github.com/lithammer/shortuuid/v4"
 	"gorm.io/gorm"
 )
@@ -27,32 +29,83 @@ var (
 	ErrInternalServer = errors.New("internal server error")
 )
 
-type HTTPServer struct {
-	Address string
-	DB      *Database
+type Server struct {
+	e        *echo.Echo
+	settings *Config
+	db       *Database
 }
 
-func NewServer(address string, db *Database) *HTTPServer {
-	return &HTTPServer{
-		Address: address,
-		DB:      db,
+func NewServer(settings *Config) *Server {
+	s := &Server{
+		e:        echo.New(),
+		settings: settings,
 	}
-}
+	s.e.HideBanner = true
+	s.e.HidePort = true
 
-func (s *HTTPServer) Start() error {
-	e := echo.New()
+	s.e.Logger.SetHeader(`{"time":"${time_rfc3339}",` +
+		`"level":"${level}",` +
+		`"file":"${short_file}",` +
+		`"line":"${line}"` +
+		`}`)
+	s.e.Logger.SetLevel(log.INFO)
 
-	e.Use(middleware.LoggerWithConfig(middleware.LoggerConfig{
-		Format: "method=${method}, uri=${uri}, status=${status}\n",
+	s.e.Use(middleware.Recover())
+	s.e.Use(middleware.LoggerWithConfig(middleware.LoggerConfig{
+		Skipper: middleware.DefaultSkipper,
+		Format: `{"time":"${time_rfc3339}",` +
+			`"remote_ip":"${remote_ip}",` +
+			`"method":"${method}",` +
+			`"uri":"${uri}",` +
+			`"bytes_in":${bytes_in},` +
+			`"bytes_out":${bytes_out},` +
+			`"status":${status},` +
+			`"error":"${error}",` +
+			`"latency_human":"${latency_human}"` +
+			`}` + "\n",
+		CustomTimeFormat: "2006-01-02 15:04:05.000",
 	}))
 
-	v1 := e.Group("/api/v1")
+	db, err := NewDatabase(settings)
+	if err != nil {
+		s.e.Logger.Fatalf("new database: %v", err)
+	}
+	s.db = db
 
+	// init the http routers
+	v1 := s.e.Group("/api/v1")
 	v1.POST("/workspace", s.CreateWorkspace)
 	v1.DELETE("/workspace/:workspace_id", s.DeleteWorkspace)
 	v1.GET("/workspaces", s.ListWorkspaces)
 
-	return e.Start(s.Address)
+	// init the cronjobs
+
+	return s
+}
+
+func (s *Server) Start(ctx context.Context) {
+	go func() {
+		s.e.Logger.Infof("workspace service is started on %s", s.settings.ServerAddr)
+		if err := s.e.Start(s.settings.ServerAddr); err != nil {
+			if !errors.Is(err, http.ErrServerClosed) {
+				s.e.Logger.Errorf("echo start: %v", err)
+			}
+		}
+	}()
+}
+
+func (s *Server) Stop() error {
+	if s.e != nil {
+		if err := s.e.Shutdown(context.Background()); err != nil {
+			s.e.Logger.Errorf("shutdown workspace service: %v", err)
+		}
+	}
+	s.e.Logger.Info("workspace service is stopped")
+	return nil
+}
+
+func (s *Server) Run() error {
+	return nil
 }
 
 type CreateWorkspaceRequest struct {
@@ -73,7 +126,7 @@ type CreateWorkspaceResponse struct {
 // @Param        request  body  CreateWorkspaceRequest  true  "Create workspace request"
 // @Success      200      {object}
 // @Router       /workspace/api/v1/workspace [post]
-func (s *HTTPServer) CreateWorkspace(c echo.Context) error {
+func (s *Server) CreateWorkspace(c echo.Context) error {
 	var request CreateWorkspaceRequest
 	if err := c.Bind(&request); err != nil {
 		c.Logger().Errorf("bind the request: %v", err)
@@ -100,7 +153,7 @@ func (s *HTTPServer) CreateWorkspace(c echo.Context) error {
 		Status:      StatusProvisioning,
 		Description: request.Description,
 	}
-	if err := s.DB.CreateWorkspace(workspace); err != nil {
+	if err := s.db.CreateWorkspace(workspace); err != nil {
 		c.Logger().Errorf("create workspace: %v", err)
 		return echo.NewHTTPError(http.StatusInternalServerError, ErrInternalServer)
 	}
@@ -118,7 +171,7 @@ func (s *HTTPServer) CreateWorkspace(c echo.Context) error {
 // @Param        workspace_id  path  string  true  "Workspace ID"
 // @Success      200
 // @Router       /workspace/api/v1/workspace/:workspace_id [delete]
-func (s *HTTPServer) DeleteWorkspace(c echo.Context) error {
+func (s *Server) DeleteWorkspace(c echo.Context) error {
 	workspaceId := c.Param("workspace_id")
 	if workspaceId == "" {
 		return echo.NewHTTPError(http.StatusBadRequest, "workspace id is empty")
@@ -129,7 +182,7 @@ func (s *HTTPServer) DeleteWorkspace(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusUnauthorized, "user id is empty")
 	}
 
-	workspace, err := s.DB.GetWorkspace(workspaceId)
+	workspace, err := s.db.GetWorkspace(workspaceId)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return echo.NewHTTPError(http.StatusFound, "workspace not found")
@@ -141,7 +194,7 @@ func (s *HTTPServer) DeleteWorkspace(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusForbidden, "operation is forbidden")
 	}
 
-	if err := s.DB.UpdateWorkspaceStatus(workspaceId, StatusDeleting); err != nil {
+	if err := s.db.UpdateWorkspaceStatus(workspaceId, StatusDeleting); err != nil {
 		c.Logger().Errorf("delete workspace: %v", err)
 		return echo.NewHTTPError(http.StatusInternalServerError, ErrInternalServer)
 	}
@@ -166,13 +219,13 @@ type WorkspaceResponse struct {
 // @Produce      json
 // @Success      200  {object}  []WorkspaceResponse
 // @Router       /workspace/api/v1/workspaces [get]
-func (s *HTTPServer) ListWorkspaces(c echo.Context) error {
+func (s *Server) ListWorkspaces(c echo.Context) error {
 	ownerId := c.Request().Header.Get(KeibiUserID)
 	if ownerId == "" {
 		return echo.NewHTTPError(http.StatusUnauthorized, "user id is empty")
 	}
 
-	dbWorkspaces, err := s.DB.ListWorkspacesByOwner(ownerId)
+	dbWorkspaces, err := s.db.ListWorkspacesByOwner(ownerId)
 	if err != nil {
 		c.Logger().Errorf("list workspaces: %v", err)
 		return echo.NewHTTPError(http.StatusInternalServerError, ErrInternalServer)

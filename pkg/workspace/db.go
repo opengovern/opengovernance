@@ -23,14 +23,23 @@ type Workspace struct {
 	Description string    `json:"description"`
 }
 
-func (s *Database) Open(dns string) error {
+func NewDatabase(settings *Config) (*Database, error) {
+	dns := fmt.Sprintf(`host=%s port=%s user=%s password=%s dbname=%s sslmode=disable TimeZone=GMT`,
+		settings.Host,
+		settings.Port,
+		settings.User,
+		settings.Password,
+		settings.DBName,
+	)
+
 	db, err := gorm.Open(postgres.Open(dns), &gorm.Config{})
 	if err != nil {
-		return fmt.Errorf("gorm open: %w", err)
+		return nil, fmt.Errorf("gorm open: %w", err)
 	}
-	s.db = db
-
-	return db.AutoMigrate()
+	if err := db.AutoMigrate(&Workspace{}); err != nil {
+		return nil, fmt.Errorf("gorm migrate: %w", err)
+	}
+	return &Database{db: db}, nil
 }
 
 func (s *Database) CreateWorkspace(m *Workspace) error {
