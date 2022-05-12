@@ -78,6 +78,22 @@ definitions:
       totalNonCompliantAccounts:
         type: integer
     type: object
+  api.BenchmarkAssignedSource:
+    properties:
+      assignedAt:
+        type: integer
+      sourceId:
+        type: string
+    type: object
+  api.BenchmarkAssignment:
+    properties:
+      assignedAt:
+        type: integer
+      benchmarkId:
+        type: string
+      sourceId:
+        type: string
+    type: object
   api.ComplianceReport:
     properties:
       failureMessage:
@@ -793,6 +809,78 @@ paths:
       summary: Returns list of benchmarks
       tags:
       - benchmarks
+  /inventory/api/v1/benchmarks/{benchmark_id}/source/{source_id}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete benchmark assignment with source id and benchmark id
+      parameters:
+      - description: Benchmark ID
+        in: path
+        name: benchmark_id
+        required: true
+        type: string
+      - description: Source ID
+        in: path
+        name: source_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: ""
+      summary: Delete benchmark assignment for inventory service
+      tags:
+      - benchmarks_assignment
+    post:
+      consumes:
+      - application/json
+      description: Returns benchmark assignment which insert
+      parameters:
+      - description: Benchmark ID
+        in: path
+        name: benchmark_id
+        required: true
+        type: string
+      - description: Source ID
+        in: path
+        name: source_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/api.BenchmarkAssignment'
+      summary: Create benchmark assignment for inventory service
+      tags:
+      - benchmarks_assignment
+  /inventory/api/v1/benchmarks/{benchmark_id}/sources:
+    get:
+      consumes:
+      - application/json
+      description: Returns all benchmark assigned sources with benchmark id
+      parameters:
+      - description: Benchmark ID
+        in: path
+        name: benchmark_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/api.BenchmarkAssignedSource'
+            type: array
+      summary: Get all benchmark assigned sources with benchmark id
+      tags:
+      - benchmarks_assignment
   /inventory/api/v1/benchmarks/{benchmarkId}:
     get:
       consumes:
@@ -1084,6 +1172,29 @@ paths:
       summary: Returns all benchmark existed at the specified time
       tags:
       - benchmarks
+  /inventory/api/v1/benchmarks/source/{source_id}:
+    get:
+      consumes:
+      - application/json
+      description: Returns all benchmark assignments with source id
+      parameters:
+      - description: Source ID
+        in: path
+        name: source_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/api.BenchmarkAssignment'
+            type: array
+      summary: Get all benchmark assignments with source id
+      tags:
+      - benchmarks_assignment
   /inventory/api/v1/benchmarks/tags:
     get:
       consumes:
@@ -1771,6 +1882,25 @@ paths:
               $ref: '#/definitions/gitlab.com_keibiengine_keibi-engine_pkg_describe_api.Source'
             type: array
       summary: List Sources
+      tags:
+      - schedule
+  /schedule/api/v1/sources/{source_id}:
+    get:
+      description: Getting Keibi source by id
+      parameters:
+      - description: SourceID
+        in: path
+        name: source_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/gitlab.com_keibiengine_keibi-engine_pkg_describe_api.Source'
+      summary: Get Source by id
       tags:
       - schedule
   /schedule/api/v1/sources/{source_id}/jobs/compliance:

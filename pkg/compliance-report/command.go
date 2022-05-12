@@ -48,10 +48,11 @@ type KafkaConfig struct {
 }
 
 type Config struct {
-	RabbitMQ      RabbitMQConfig
-	ElasticSearch ElasticSearchConfig
-	Kafka         KafkaConfig
-	Vault         VaultConfig
+	RabbitMQ         RabbitMQConfig
+	ElasticSearch    ElasticSearchConfig
+	Kafka            KafkaConfig
+	Vault            VaultConfig
+	InventoryBaseUrl string
 }
 
 func WorkerCommand() *cobra.Command {
@@ -77,6 +78,8 @@ func WorkerCommand() *cobra.Command {
 	config.Vault.RoleName = os.Getenv("VAULT_ROLE")
 	config.Vault.CaPath = os.Getenv("VAULT_TLS_CA_PATH")
 	config.Vault.UseTLS = strings.ToLower(strings.TrimSpace(os.Getenv("VAULT_USE_TLS"))) == "true"
+
+	config.InventoryBaseUrl = os.Getenv("INVENTORY_BASE_URL")
 
 	cmd := &cobra.Command{
 		PreRunE: func(cmd *cobra.Command, args []string) error {

@@ -103,6 +103,17 @@ type AllResource struct {
 	Attributes map[string]string `json:"attributes"`
 }
 
+type BenchmarkAssignment struct {
+	BenchmarkId string `json:"benchmarkId"`
+	SourceId    string `json:"sourceId"`
+	AssignedAt  int64  `json:"assignedAt"`
+}
+
+type BenchmarkAssignedSource struct {
+	SourceId   string `json:"sourceId"`
+	AssignedAt int64  `json:"assignedAt"`
+}
+
 func (r AllResource) ToCSVRecord() []string {
 	h := []string{r.Name, string(r.Provider), r.ResourceType, r.Location,
 		r.ResourceID, r.SourceID}

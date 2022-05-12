@@ -1,6 +1,7 @@
 package inventory
 
 import (
+	"github.com/google/uuid"
 	"github.com/jackc/pgx/v4"
 	"gitlab.com/keibiengine/keibi-engine/pkg/inventory/api"
 	"gorm.io/gorm"
@@ -17,6 +18,7 @@ func (db Database) Initialize() error {
 		&PolicyTag{},
 		&Benchmark{},
 		&BenchmarkTag{},
+		&BenchmarkAssignment{},
 	)
 	if err != nil {
 		return err
@@ -185,7 +187,7 @@ func (db Database) GetBenchmark(benchmarkId string) (*Benchmark, error) {
 		Preload("Tags").
 		Preload("Policies").
 		Where("id = ?", benchmarkId).
-		Find(&s)
+		First(&s)
 
 	if tx.Error != nil {
 		return nil, tx.Error
@@ -237,4 +239,62 @@ func (db Database) ListBenchmarkTags() ([]BenchmarkTag, error) {
 	}
 
 	return s, nil
+}
+
+// =========== BenchmarkAssignment ===========
+
+func (db Database) AddBenchmarkAssignment(assignment *BenchmarkAssignment) error {
+	tx := db.orm.Where(BenchmarkAssignment{
+		BenchmarkId: assignment.BenchmarkId,
+		SourceId:    assignment.SourceId,
+	}).FirstOrCreate(assignment)
+
+	if tx.Error != nil {
+		return tx.Error
+	}
+
+	return nil
+}
+
+func (db Database) GetBenchmarkAssignmentsBySourceId(sourceId uuid.UUID) ([]BenchmarkAssignment, error) {
+	var s []BenchmarkAssignment
+	tx := db.orm.Model(&BenchmarkAssignment{}).Where(BenchmarkAssignment{SourceId: sourceId}).Scan(&s)
+
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+
+	return s, nil
+}
+
+func (db Database) GetBenchmarkAssignmentsByBenchmarkId(benchmarkId string) ([]BenchmarkAssignment, error) {
+	var s []BenchmarkAssignment
+	tx := db.orm.Model(&BenchmarkAssignment{}).Where(BenchmarkAssignment{BenchmarkId: benchmarkId}).Scan(&s)
+
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+
+	return s, nil
+}
+
+func (db Database) GetBenchmarkAssignmentByIds(sourceId uuid.UUID, benchmarkId string) (*BenchmarkAssignment, error) {
+	var s BenchmarkAssignment
+	tx := db.orm.Model(&BenchmarkAssignment{}).Where(BenchmarkAssignment{BenchmarkId: benchmarkId, SourceId: sourceId}).Scan(&s)
+
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+
+	return &s, nil
+}
+
+func (db Database) DeleteBenchmarkAssignmentById(sourceId uuid.UUID, benchmarkId string) error {
+	tx := db.orm.Where(BenchmarkAssignment{BenchmarkId: benchmarkId, SourceId: sourceId}).Delete(&BenchmarkAssignment{})
+
+	if tx.Error != nil {
+		return tx.Error
+	}
+
+	return nil
 }

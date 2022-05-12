@@ -914,7 +914,7 @@ func (m *DescribeMock) HelloServer(w http.ResponseWriter, r *http.Request) {
 		fmt.Printf("Failed marshaling json: %v\n", err.Error())
 	}
 
-	_, err = fmt.Fprintf(w, string(b))
+	_, err = fmt.Fprint(w, string(b))
 	if err != nil {
 		fmt.Printf("Failed writing to response: %v\n", err.Error())
 	}
