@@ -15,25 +15,28 @@ var (
 	PostgresUser     = os.Getenv("POSTGRES_USERNAME")
 	PostgresPassword = os.Getenv("POSTGRES_PASSWORD")
 	ServerAddr       = os.Getenv("SERVER_ADDR")
+	DomainSuffix     = os.Getenv("DOMAIN_SUFFIX")
 )
 
 type Config struct {
-	Host       string
-	Port       string
-	User       string
-	Password   string
-	DBName     string
-	ServerAddr string
+	Host         string
+	Port         string
+	User         string
+	Password     string
+	DBName       string
+	ServerAddr   string
+	DomainSuffix string
 }
 
 func NewConfig() *Config {
 	return &Config{
-		Host:       PostgresHost,
-		Port:       PostgresPort,
-		User:       PostgresUser,
-		Password:   PostgresPassword,
-		DBName:     PostgresDBName,
-		ServerAddr: ServerAddr,
+		Host:         PostgresHost,
+		Port:         PostgresPort,
+		User:         PostgresUser,
+		Password:     PostgresPassword,
+		DBName:       PostgresDBName,
+		ServerAddr:   ServerAddr,
+		DomainSuffix: DomainSuffix,
 	}
 }
 

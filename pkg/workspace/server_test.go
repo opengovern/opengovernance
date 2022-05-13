@@ -11,21 +11,16 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
-	"github.com/lithammer/shortuuid/v4"
+	"gitlab.com/keibiengine/keibi-engine/pkg/workspace/api"
 )
 
 func (ts *testSuite) initWorkspace() (*Workspace, error) {
-	name, err := uuid.Parse(ts.name)
-	if err != nil {
-		return nil, err
-	}
-
 	workspace := &Workspace{
-		WorkspaceId: shortuuid.New(),
-		Name:        name,
+		WorkspaceId: uuid.New(),
+		Name:        ts.name,
 		OwnerId:     ts.owner,
-		Domain:      name.String() + WorkspaceDomainSuffix,
-		Status:      StatusProvisioning,
+		Domain:      ts.name + ts.domainSuffix,
+		Status:      StatusProvisioning.String(),
 		Description: "workspace",
 	}
 	if err := ts.server.db.CreateWorkspace(workspace); err != nil {
@@ -36,13 +31,13 @@ func (ts *testSuite) initWorkspace() (*Workspace, error) {
 
 func (ts *testSuite) TestCreateWorkspace() {
 	createWorkspaceTestCases := []struct {
-		Workspace CreateWorkspaceRequest
+		Workspace api.CreateWorkspaceRequest
 		Owner     string
 		Code      int
 		Error     string
 	}{
 		{
-			Workspace: CreateWorkspaceRequest{
+			Workspace: api.CreateWorkspaceRequest{
 				Name:        ts.name,
 				Description: "workspace description",
 			},
@@ -50,31 +45,23 @@ func (ts *testSuite) TestCreateWorkspace() {
 			Code:  http.StatusOK,
 		},
 		{
-			Workspace: CreateWorkspaceRequest{
+			Workspace: api.CreateWorkspaceRequest{
 				Name:        ts.name,
 				Description: "workspace description",
 			},
 			Owner: ts.owner,
-			Code:  http.StatusInternalServerError,
-			Error: "internal server error",
+			Code:  http.StatusFound,
+			Error: "workspace already exists",
 		},
 		{
-			Workspace: CreateWorkspaceRequest{
+			Workspace: api.CreateWorkspaceRequest{
 				Description: "workspace description",
 			},
 			Code:  http.StatusBadRequest,
 			Error: "name is empty",
 		},
 		{
-			Workspace: CreateWorkspaceRequest{
-				Name:        "invalid name",
-				Description: "workspace description",
-			},
-			Code:  http.StatusBadRequest,
-			Error: "invalid name",
-		},
-		{
-			Workspace: CreateWorkspaceRequest{
+			Workspace: api.CreateWorkspaceRequest{
 				Name:        ts.name,
 				Description: "workspace description",
 			},
@@ -108,7 +95,7 @@ func (ts *testSuite) TestCreateWorkspace() {
 				return
 			}
 
-			var response CreateWorkspaceResponse
+			var response api.CreateWorkspaceResponse
 			if err := json.NewDecoder(w.Body).Decode(&response); err != nil {
 				ts.T().Fatalf("json decode: %v", err)
 			}
@@ -122,7 +109,7 @@ func (ts *testSuite) TestDeleteWorkspace() {
 	ts.NoError(err)
 
 	deleteWorkspaceTestCases := []struct {
-		WorkspaceId string
+		WorkspaceId uuid.UUID
 		Owner       string
 		Code        int
 		Error       string
@@ -133,16 +120,12 @@ func (ts *testSuite) TestDeleteWorkspace() {
 			Code:        http.StatusOK,
 		},
 		{
-			Code:  http.StatusBadRequest,
-			Error: "workspace id is empty",
-		},
-		{
 			WorkspaceId: workspace.WorkspaceId,
 			Code:        http.StatusUnauthorized,
 			Error:       "user id is empty",
 		},
 		{
-			WorkspaceId: "workspace not found",
+			WorkspaceId: uuid.UUID{},
 			Owner:       ts.owner,
 			Code:        http.StatusNotFound,
 			Error:       "workspace not found",
@@ -166,7 +149,7 @@ func (ts *testSuite) TestDeleteWorkspace() {
 			c := echo.New().NewContext(r, w)
 			c.SetPath("/api/v1/workspace/:workspace_id")
 			c.SetParamNames("workspace_id")
-			c.SetParamValues(tc.WorkspaceId)
+			c.SetParamValues(tc.WorkspaceId.String())
 
 			err := ts.server.DeleteWorkspace(c)
 			if err != nil {
@@ -179,7 +162,7 @@ func (ts *testSuite) TestDeleteWorkspace() {
 
 			workspace, err := ts.server.db.GetWorkspace(tc.WorkspaceId)
 			ts.NoError(err)
-			ts.Equal(StatusDeleting, workspace.Status)
+			ts.Equal(StatusDeleting.String(), workspace.Status)
 		})
 	}
 }

@@ -12,17 +12,6 @@ type Database struct {
 	db *gorm.DB
 }
 
-type Workspace struct {
-	gorm.Model
-
-	WorkspaceId string    `json:"workspace_id"`
-	Name        uuid.UUID `gorm:"uniqueIndex" json:"name"`
-	OwnerId     string    `json:"owner_id"`
-	Domain      string    `json:"domain"`
-	Status      string    `json:"status"`
-	Description string    `json:"description"`
-}
-
 func NewDatabase(settings *Config) (*Database, error) {
 	dns := fmt.Sprintf(`host=%s port=%s user=%s password=%s dbname=%s sslmode=disable TimeZone=GMT`,
 		settings.Host,
@@ -46,11 +35,11 @@ func (s *Database) CreateWorkspace(m *Workspace) error {
 	return s.db.Model(&Workspace{}).Create(m).Error
 }
 
-func (s *Database) UpdateWorkspaceStatus(workspaceId, status string) error {
-	return s.db.Model(&Workspace{}).Where("workspace_id = ?", workspaceId).Update("status", status).Error
+func (s *Database) UpdateWorkspaceStatus(workspaceId uuid.UUID, status WorkspaceStatus) error {
+	return s.db.Model(&Workspace{}).Where("workspace_id = ?", workspaceId).Update("status", status.String()).Error
 }
 
-func (s *Database) GetWorkspace(workspaceId string) (*Workspace, error) {
+func (s *Database) GetWorkspace(workspaceId uuid.UUID) (*Workspace, error) {
 	var workspace Workspace
 	if err := s.db.Model(&Workspace{}).Where(Workspace{WorkspaceId: workspaceId}).First(&workspace).Error; err != nil {
 		return nil, err

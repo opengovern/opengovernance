@@ -18,8 +18,9 @@ type testSuite struct {
 
 	server *Server
 
-	name  string
-	owner string
+	name         string
+	owner        string
+	domainSuffix string
 }
 
 func (s *testSuite) SetupSuite() {
@@ -53,21 +54,24 @@ func (s *testSuite) SetupSuite() {
 	})
 	time.Sleep(time.Second * 2)
 
-	settings := Config{
-		Host:     idocker.GetDockerHost(),
-		Port:     resource.GetPort("5432/tcp"),
-		User:     user,
-		Password: pass,
-		DBName:   name,
+	cfg := &Config{
+		Host:         idocker.GetDockerHost(),
+		Port:         resource.GetPort("5432/tcp"),
+		User:         user,
+		Password:     pass,
+		DBName:       name,
+		DomainSuffix: ".app.keibi.io",
 	}
-	db, err := NewDatabase(&settings)
+	db, err := NewDatabase(cfg)
 	s.NoError(err, "new database")
 
 	s.server = &Server{
-		db: db,
+		db:  db,
+		cfg: cfg,
 	}
-	s.name = "cda6498a-235d-4f7e-ae19-661d41bc154c"
+	s.name = "cda6498a-235d"
 	s.owner = "00000000-0000-0000-0000-000000000000"
+	s.domainSuffix = cfg.DomainSuffix
 }
 
 func (ts *testSuite) TearDownSuite() {
