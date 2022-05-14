@@ -94,13 +94,14 @@ type GetResourcesResponse struct {
 }
 
 type AllResource struct {
-	Name             string     `json:"name"`
-	Provider         SourceType `json:"provider"`
-	ResourceType     string     `json:"resourceType"`
+	Name         string     `json:"name"`
+	Provider     SourceType `json:"provider"`
+	ResourceType string     `json:"resourceType"`
 	ResourceTypeName string     `json:"resourceTypeName"`
-	Location         string     `json:"location"`
-	ResourceID       string     `json:"resourceID"`
-	SourceID         string     `json:"sourceID"`
+	Location     string     `json:"location"`
+	ResourceID   string     `json:"resourceID"`
+	SourceID     string     `json:"sourceID"`
+	SourceName   string     `json:"sourceName"`
 
 	Attributes map[string]string `json:"attributes"`
 }
@@ -146,6 +147,7 @@ type AzureResource struct {
 	Location         string `json:"location"`
 	ResourceID       string `json:"resourceID"`
 	SubscriptionID   string `json:"subscriptionID"`
+	SubscriptionName string `json:"sourceName"`
 
 	Attributes map[string]string `json:"attributes"`
 }
@@ -171,12 +173,13 @@ type GetAWSResourceResponse struct {
 }
 
 type AWSResource struct {
-	Name             string `json:"name"`
-	ResourceType     string `json:"resourceType"`
+	Name         string `json:"name"`
+	ResourceType string `json:"resourceType"`
 	ResourceTypeName string `json:"resourceTypeName"`
-	ResourceID       string `json:"resourceID"`
-	Region           string `json:"location"`
-	AccountID        string `json:"accountID"`
+	ResourceID   string `json:"resourceID"`
+	Region       string `json:"location"`
+	AccountID    string `json:"accountID"`
+	AccountName  string `json:"accountName"`
 
 	Attributes map[string]string `json:"attributes"`
 }

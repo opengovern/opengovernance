@@ -15,6 +15,8 @@ import (
 	"strconv"
 	"time"
 
+	onboardapi "gitlab.com/keibiengine/keibi-engine/pkg/onboard/api"
+
 	es2 "gitlab.com/keibiengine/keibi-engine/pkg/compliance-report/es"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/source"
@@ -930,6 +932,28 @@ func (m *DescribeMock) HelloServer(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func (m *DescribeMock) GetSource(w http.ResponseWriter, r *http.Request) {
+	uuid1, _ := uuid.Parse("c29c0dae-823f-4726-ade0-5fa94a941e88")
+	res := onboardapi.Source{
+		ID:          uuid1,
+		SourceId:    "aaa0",
+		Name:        "Name",
+		Type:        onboardapi.SourceCloudAWS,
+		Description: "",
+		OnboardDate: time.Now(),
+	}
+
+	b, err := json.Marshal(res)
+	if err != nil {
+		fmt.Printf("Failed marshaling json: %v\n", err.Error())
+	}
+
+	_, err = fmt.Fprintf(w, string(b))
+	if err != nil {
+		fmt.Printf("Failed writing to response: %v\n", err.Error())
+	}
+}
+
 func (m *DescribeMock) SetResponse(jobs ...describe.ComplianceReportJob) {
 	m.Response = jobs
 }
@@ -937,5 +961,6 @@ func (m *DescribeMock) SetResponse(jobs ...describe.ComplianceReportJob) {
 func (m *DescribeMock) Run() {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/api/v1/sources/", m.HelloServer)
+	mux.HandleFunc("/api/v1/source/", m.GetSource)
 	m.MockServer = httptest.NewServer(mux)
 }
