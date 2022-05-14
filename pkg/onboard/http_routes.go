@@ -5,10 +5,9 @@ import (
 	"fmt"
 	"net/http"
 
-	"gitlab.com/keibiengine/keibi-engine/pkg/describe"
-
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
+	"gitlab.com/keibiengine/keibi-engine/pkg/describe"
 	"gitlab.com/keibiengine/keibi-engine/pkg/onboard/api"
 	"gorm.io/gorm"
 )
@@ -57,8 +56,8 @@ func bindValidate(ctx echo.Context, i interface{}) error {
 // GetProviders godoc
 // @Summary      Get providers
 // @Description  Getting cloud providers
-// @Tags         onboard
-// @Produce      json
+// @Tags     onboard
+// @Produce  json
 // @Success      200  {object}  api.ProvidersResponse
 // @Router       /onboard/api/v1/providers [get]
 func (h HttpHandler) GetProviders(ctx echo.Context) error {
@@ -149,8 +148,8 @@ func (h HttpHandler) GetProviders(ctx echo.Context) error {
 // GetProviderTypes godoc
 // @Summary      Get provider types
 // @Description  Getting provider types
-// @Tags         onboard
-// @Produce      json
+// @Tags     onboard
+// @Produce  json
 // @Success      200  {object}  api.ProviderTypesResponse
 // @Router       /onboard/api/v1/providers/types [get]
 func (h HttpHandler) GetProviderTypes(ctx echo.Context) error {
@@ -279,12 +278,11 @@ func (h HttpHandler) PostSourceAzure(ctx echo.Context) error {
 }
 
 // GetSourceCred godoc
-// @Summary      Get source credential
+// @Summary  Get source credential
 // @Tags         onboard
 // @Produce      json
-// @Success      200          {object}  api.GetCredentialAWSResponse
-// @Param        sourceId     query     string  true  "Source ID"
-// @Router       /onboard/api/v1/{sourceId}/credentials [post]
+// @Param    sourceId  query  string  true  "Source ID"
+// @Router   /onboard/api/v1/{sourceId}/credentials [post]
 func (h HttpHandler) GetSourceCred(ctx echo.Context) error {
 	sourceUUID, err := uuid.Parse(ctx.Param("sourceId"))
 	if err != nil {
@@ -325,12 +323,11 @@ func (h HttpHandler) GetSourceCred(ctx echo.Context) error {
 }
 
 // PutSourceCred godoc
-// @Summary      Put source credential
+// @Summary  Put source credential
 // @Tags         onboard
 // @Produce      json
-// @Success      200          {object}  api.GetCredentialAWSResponse
-// @Param        sourceId     query     string  true  "Source ID"
-// @Router       /onboard/api/v1/{sourceId}/credentials [post]
+// @Param    sourceId  query  string  true  "Source ID"
+// @Router   /onboard/api/v1/{sourceId}/credentials [post]
 func (h HttpHandler) PutSourceCred(ctx echo.Context) error {
 	sourceUUID, err := uuid.Parse(ctx.Param("sourceId"))
 	if err != nil {
