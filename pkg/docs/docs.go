@@ -126,6 +126,152 @@ const docTemplate = `{
                 }
             }
         },
+        "/benchmarks/compliancy/{provider}/top/accounts": {
+            "get": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "provider_dashboard"
+                ],
+                "summary": "Return top accounts by benchmark compliancy",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Count",
+                        "name": "count",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "enum": [
+                            "asc",
+                            "desc"
+                        ],
+                        "type": "string",
+                        "description": "Order",
+                        "name": "order",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "enum": [
+                            "AWS",
+                            "Azure"
+                        ],
+                        "type": "string",
+                        "description": "Provider",
+                        "name": "provider",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/api.AccountCompliancyResponse"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/benchmarks/compliancy/{provider}/top/services": {
+            "get": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "provider_dashboard"
+                ],
+                "summary": "Return top accounts by benchmark compliancy",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Count",
+                        "name": "count",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "enum": [
+                            "asc",
+                            "desc"
+                        ],
+                        "type": "string",
+                        "description": "Order",
+                        "name": "order",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "enum": [
+                            "AWS",
+                            "Azure"
+                        ],
+                        "type": "string",
+                        "description": "Provider",
+                        "name": "provider",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/api.ServiceCompliancyResponse"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/inventory/api/v1/accounts/resource/count": {
+            "get": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "benchmarks"
+                ],
+                "summary": "Returns resource count of accounts",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Provider",
+                        "name": "provider",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/api.TopAccountResponse"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/inventory/api/v1/benchmarks": {
             "get": {
                 "description": "In order to filter benchmarks by tags provide the tag key-value as query param",
@@ -772,6 +918,120 @@ const docTemplate = `{
                 }
             }
         },
+        "/inventory/api/v1/benchmarks/{provider}/list": {
+            "get": {
+                "description": "You should fetch the benchmark report times from /benchmarks/history/:year/:month/:day",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "benchmarks"
+                ],
+                "summary": "Returns all benchmark existed at the specified time",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "count",
+                        "name": "count",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "SourceID",
+                        "name": "sourceId",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "AWS",
+                            "Azure"
+                        ],
+                        "type": "string",
+                        "description": "Provider",
+                        "name": "provider",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "CreatedAt",
+                        "name": "createdAt",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/api.BenchmarkScoreResponse"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/inventory/api/v1/compliancy/trend": {
+            "get": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "benchmarks"
+                ],
+                "summary": "Returns trend of compliancy for specific account",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "SourceID",
+                        "name": "sourceId",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Provider",
+                        "name": "provider",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "enum": [
+                            "24h",
+                            "1w",
+                            "3m",
+                            "1y",
+                            "max"
+                        ],
+                        "type": "string",
+                        "description": "Time Window",
+                        "name": "timeWindow",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/api.TrendDataPoint"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/inventory/api/v1/locations/{provider}": {
             "get": {
                 "description": "Getting locations by provider",
@@ -1222,6 +1482,40 @@ const docTemplate = `{
                 }
             }
         },
+        "/inventory/api/v1/resources/categories": {
+            "get": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "inventory"
+                ],
+                "summary": "Return resource categories and number of resources",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Provider",
+                        "name": "provider",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/api.TopAccountResponse"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/inventory/api/v1/resources/distribution": {
             "get": {
                 "consumes": [
@@ -1318,6 +1612,53 @@ const docTemplate = `{
                 }
             }
         },
+        "/inventory/api/v1/resources/top/services": {
+            "get": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "benchmarks"
+                ],
+                "summary": "Returns top n services of specified provider by resource count",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "count",
+                        "name": "count",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Provider",
+                        "name": "provider",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "SourceID",
+                        "name": "sourceId",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/api.TopServicesResponse"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/inventory/api/v1/resources/trend": {
             "get": {
                 "consumes": [
@@ -1367,6 +1708,47 @@ const docTemplate = `{
                             "type": "array",
                             "items": {
                                 "$ref": "#/definitions/api.TrendDataPoint"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/inventory/api/v1/services/distribution": {
+            "get": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "benchmarks"
+                ],
+                "summary": "Returns distribution of services for specific account",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "SourceID",
+                        "name": "sourceId",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Provider",
+                        "name": "provider",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/api.ServiceDistributionItem"
                             }
                         }
                     }
@@ -1700,6 +2082,59 @@ const docTemplate = `{
                 }
             }
         },
+        "/onboard/api/v1/sources/count": {
+            "get": {
+                "description": "Returning a count of sources including both AWS and Azure unless filtered by Type.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "onboard"
+                ],
+                "summary": "Returns a count of sources",
+                "parameters": [
+                    {
+                        "enum": [
+                            "aws",
+                            "azure"
+                        ],
+                        "type": "string",
+                        "description": "Type",
+                        "name": "type",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                }
+            }
+        },
+        "/onboard/api/v1/{sourceId}/credentials": {
+            "post": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "onboard"
+                ],
+                "summary": "Put source credential",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Source ID",
+                        "name": "sourceId",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {}
+            }
+        },
         "/schedule/api/v1/resource_type/{provider}": {
             "get": {
                 "description": "get resource type by provider",
@@ -1933,6 +2368,23 @@ const docTemplate = `{
                 },
                 "resourceType": {
                     "type": "string"
+                },
+                "resourceTypeName": {
+                    "type": "string"
+                }
+            }
+        },
+        "api.AccountCompliancyResponse": {
+            "type": "object",
+            "properties": {
+                "sourceID": {
+                    "type": "string"
+                },
+                "totalCompliant": {
+                    "type": "integer"
+                },
+                "totalResources": {
+                    "type": "integer"
                 }
             }
         },
@@ -1958,6 +2410,9 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "resourceType": {
+                    "type": "string"
+                },
+                "resourceTypeName": {
                     "type": "string"
                 },
                 "sourceID": {
@@ -1987,6 +2442,9 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "resourceType": {
+                    "type": "string"
+                },
+                "resourceTypeName": {
                     "type": "string"
                 },
                 "subscriptionID": {
@@ -2053,6 +2511,17 @@ const docTemplate = `{
                 },
                 "sourceId": {
                     "type": "string"
+                }
+            }
+        },
+        "api.BenchmarkScoreResponse": {
+            "type": "object",
+            "properties": {
+                "benchmarkID": {
+                    "type": "string"
+                },
+                "nonCompliantCount": {
+                    "type": "integer"
                 }
             }
         },
@@ -2317,10 +2786,15 @@ const docTemplate = `{
         "api.GetResourcesRequest": {
             "type": "object",
             "required": [
+                "filterNots",
                 "filters",
                 "page"
             ],
             "properties": {
+                "filterNots": {
+                    "description": "search filters",
+                    "$ref": "#/definitions/api.Filters"
+                },
                 "filters": {
                     "description": "search filters",
                     "$ref": "#/definitions/api.Filters"
@@ -2635,6 +3109,34 @@ const docTemplate = `{
                 }
             }
         },
+        "api.ServiceCompliancyResponse": {
+            "type": "object",
+            "properties": {
+                "serviceName": {
+                    "type": "string"
+                },
+                "totalCompliant": {
+                    "type": "integer"
+                },
+                "totalResources": {
+                    "type": "integer"
+                }
+            }
+        },
+        "api.ServiceDistributionItem": {
+            "type": "object",
+            "properties": {
+                "distribution": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "integer"
+                    }
+                },
+                "serviceName": {
+                    "type": "string"
+                }
+            }
+        },
         "api.SmartQueryItem": {
             "type": "object",
             "properties": {
@@ -2745,6 +3247,17 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "sourceID": {
+                    "type": "string"
+                }
+            }
+        },
+        "api.TopServicesResponse": {
+            "type": "object",
+            "properties": {
+                "resourceCount": {
+                    "type": "integer"
+                },
+                "serviceName": {
                     "type": "string"
                 }
             }
@@ -2941,6 +3454,9 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "name": {
+                    "type": "string"
+                },
+                "onboardDate": {
                     "type": "string"
                 },
                 "sourceId": {

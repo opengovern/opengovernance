@@ -176,7 +176,7 @@ func (s HttpServer) HandleListSourceDescribeJobs(ctx echo.Context) error {
 // @Param        source_id  path      string  true   "SourceID"
 // @Param        from       query     int     false  "From Time (TimeRange)"
 // @Param        to         query     int     false  "To Time (TimeRange)"
-// @Success      200        {object}  []api.ComplianceReport
+// @Success      200        {object}  []complianceapi.ComplianceReport
 // @Router       /schedule/api/v1/sources/{source_id}/jobs/compliance [get]
 func (s HttpServer) HandleListSourceComplianceReports(ctx echo.Context) error {
 	sourceID := ctx.Param("source_id")

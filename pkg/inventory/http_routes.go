@@ -111,7 +111,7 @@ func (h *HttpHandler) Register(v1 *echo.Group) {
 // @Accept       json
 // @Produce      json
 // @Param        provider   path      string  true  "Provider"  Enums(AWS,Azure,All)
-// @Param        createdAt  path      string  true  "CreatedAt"
+// @Param        createdAt  path      string  true   "CreatedAt"
 // @Success      200        {object}  []api.Benchmark
 // @Router       /inventory/api/v1/benchmarks/history/list/{provider}/{createdAt} [get]
 func (h *HttpHandler) GetBenchmarksInTime(ctx echo.Context) error {
@@ -178,9 +178,9 @@ func (h *HttpHandler) GetBenchmarksInTime(ctx echo.Context) error {
 // @Tags         benchmarks
 // @Accept       json
 // @Produce      json
-// @Param	     count     query     int     true  "count"
-// @Param	     sourceId     query     string     false  "SourceID"
-// @Param        provider   path      string  true  "Provider"  Enums(AWS,Azure)
+// @Param        count      query     int     true   "count"
+// @Param        sourceId   query     string  false  "SourceID"
+// @Param        provider   path      string  true   "Provider"  Enums(AWS,Azure)
 // @Param        createdAt  path      string  true  "CreatedAt"
 // @Success      200        {object}  []api.BenchmarkScoreResponse
 // @Router       /inventory/api/v1/benchmarks/{provider}/list [get]
@@ -247,15 +247,15 @@ func (h *HttpHandler) GetListOfBenchmarks(ctx echo.Context) error {
 }
 
 // GetTopAccountsByBenchmarkCompliancy godoc
-// @Summary      Return top accounts by benchmark compliancy
-// @Tags         provider_dashboard
+// @Summary  Return top accounts by benchmark compliancy
+// @Tags     provider_dashboard
 // @Accept       json
 // @Produce      json
-// @Param	     count      query     int     true  "Count"
-// @Param	     order      query     string  true  "Order"     Enums(asc,desc)
-// @Param        provider   path      string  true  "Provider"  Enums(AWS,Azure)
-// @Success      200        {object}  []api.AccountCompliancyResponse
-// @Router       /benchmarks/compliancy/{provider}/top/accounts [get]
+// @Param    count     query     int     true  "Count"
+// @Param    order     query     string  true  "Order"     Enums(asc,desc)
+// @Param    provider  path      string  true  "Provider"  Enums(AWS,Azure)
+// @Success  200       {object}  []api.AccountCompliancyResponse
+// @Router   /benchmarks/compliancy/{provider}/top/accounts [get]
 func (h *HttpHandler) GetTopAccountsByBenchmarkCompliancy(ctx echo.Context) error {
 	provider, err := source.ParseType(ctx.Param("provider"))
 	if err != nil {
@@ -316,15 +316,15 @@ func (h *HttpHandler) GetTopAccountsByBenchmarkCompliancy(ctx echo.Context) erro
 }
 
 // GetTopServicesByBenchmarkCompliancy godoc
-// @Summary      Return top accounts by benchmark compliancy
-// @Tags         provider_dashboard
-// @Accept       json
-// @Produce      json
-// @Param	     count      query     int     true  "Count"
-// @Param	     order      query     string  true  "Order"     Enums(asc,desc)
-// @Param        provider   path      string  true  "Provider"  Enums(AWS,Azure)
-// @Success      200        {object}  []api.ServiceCompliancyResponse
-// @Router       /benchmarks/compliancy/{provider}/top/services [get]
+// @Summary  Return top accounts by benchmark compliancy
+// @Tags     provider_dashboard
+// @Accept   json
+// @Produce  json
+// @Param    count     query     int     true  "Count"
+// @Param    order     query     string  true  "Order"     Enums(asc,desc)
+// @Param    provider  path      string  true  "Provider"  Enums(AWS,Azure)
+// @Success  200       {object}  []api.ServiceCompliancyResponse
+// @Router   /benchmarks/compliancy/{provider}/top/services [get]
 func (h *HttpHandler) GetTopServicesByBenchmarkCompliancy(ctx echo.Context) error {
 	provider, err := source.ParseType(ctx.Param("provider"))
 	if err != nil {
@@ -387,8 +387,8 @@ func (h *HttpHandler) GetTopServicesByBenchmarkCompliancy(ctx echo.Context) erro
 // GetBenchmarkComplianceTrend godoc
 // @Summary  Returns trend of a benchmark compliance for specific account
 // @Tags         benchmarks
-// @Accept       json
-// @Produce      json
+// @Accept   json
+// @Produce  json
 // @Param    benchmarkId  path      string  true  "BenchmarkID"
 // @Param    sourceId     path      string  true  "SourceID"
 // @Param    timeWindow  query     string  true  "Time Window"  Enums(24h,1w,3m,1y,max)
@@ -492,8 +492,8 @@ func (h *HttpHandler) GetBenchmarkComplianceTrend(ctx echo.Context) error {
 // @Tags         benchmarks
 // @Accept       json
 // @Produce      json
-// @Param    sourceId    query     string  true  "SourceID"
-// @Param    provider    query     string  true  "Provider"
+// @Param    sourceId  query     string  true  "SourceID"
+// @Param    provider  query     string  true  "Provider"
 // @Param    timeWindow  query     string  true  "Time Window"  Enums(24h,1w,3m,1y,max)
 // @Success  200         {object}  []api.TrendDataPoint
 // @Router   /inventory/api/v1/resources/trend [get]
@@ -670,8 +670,8 @@ func (h *HttpHandler) GetCompliancyTrend(ctx echo.Context) error {
 // @Tags     benchmarks
 // @Accept   json
 // @Produce  json
-// @Param    count     query     int     true  "count"
-// @Param    provider  query     string  true  "Provider"
+// @Param    count     query     int     true   "count"
+// @Param    provider  query     string  true   "Provider"
 // @Success  200       {object}  []api.TopAccountResponse
 // @Router   /inventory/api/v1/resources/top/accounts [get]
 func (h *HttpHandler) GetTopAccountsByResourceCount(ctx echo.Context) error {
@@ -891,7 +891,7 @@ func (h *HttpHandler) GetResourceDistribution(ctx echo.Context) error {
 // @Produce  json
 // @Param    sourceId    query     string  true  "SourceID"
 // @Param    provider    query     string  true  "Provider"
-// @Success  200         {object}  []api.ServiceDistributionItem
+// @Success  200       {object}  []api.ServiceDistributionItem
 // @Router   /inventory/api/v1/services/distribution [get]
 func (h *HttpHandler) GetServiceDistribution(ctx echo.Context) error {
 	sourceID := ctx.QueryParam("sourceId")
