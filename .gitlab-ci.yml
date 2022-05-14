@@ -69,7 +69,6 @@ stages:
         - .cache/
       policy: pull-push
 
-
 build-mr:
   stage: build
   extends: .go-cache
@@ -153,7 +152,7 @@ sver-tags:
   variables:
     SVER_IMAGE_VERSION: "1.3.9" # Optional. The version of the sver docker image to use.
   image:
-    name: 'ghcr.io/aserto-dev/sver:${SVER_IMAGE_VERSION}'
+    name: "ghcr.io/aserto-dev/sver:${SVER_IMAGE_VERSION}"
     entrypoint: [""]
   before_script:
     - git status --short
@@ -189,6 +188,7 @@ deploy: # This job runs in the deploy stage.
     - podman build -f  docker/SwaggerUIDockerfile . -t registry.digitalocean.com/keibi/swagger-ui:$SVER_VERSION
     - podman build -f  docker/SteampipeServiceDockerfile . -t registry.digitalocean.com/keibi/steampipe-service:$SVER_VERSION
     - podman build -f  docker/AuthServiceDockerfile . -t registry.digitalocean.com/keibi/auth-service:$SVER_VERSION
+    - podman build -f  docker/WorkspaceServiceDockerfile . -t registry.digitalocean.com/keibi/workspace-service:$SVER_VERSION
     - podman push registry.digitalocean.com/keibi/describe-scheduler:$SVER_VERSION
     - podman push registry.digitalocean.com/keibi/describe-worker:$SVER_VERSION
     - podman push registry.digitalocean.com/keibi/describe-cleanup-worker:$SVER_VERSION
@@ -198,3 +198,4 @@ deploy: # This job runs in the deploy stage.
     - podman push registry.digitalocean.com/keibi/swagger-ui:$SVER_VERSION
     - podman push registry.digitalocean.com/keibi/steampipe-service:$SVER_VERSION
     - podman push registry.digitalocean.com/keibi/auth-service:$SVER_VERSION
+    - podman push registry.digitalocean.com/keibi/workspace-service:$SVER_VERSION

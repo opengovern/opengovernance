@@ -2,8 +2,6 @@ package workspace
 
 import (
 	"os"
-	"os/signal"
-	"syscall"
 
 	"github.com/spf13/cobra"
 )
@@ -43,21 +41,9 @@ func NewConfig() *Config {
 func Command() *cobra.Command {
 	cmd := &cobra.Command{
 		RunE: func(cmd *cobra.Command, args []string) error {
-			ctx, cancel := signal.NotifyContext(cmd.Context(), syscall.SIGINT, syscall.SIGTERM)
-			defer cancel()
+			cfg := NewConfig()
 
-			// init the server configuration
-			settings := NewConfig()
-
-			s := NewServer(settings)
-			// start the http server
-			s.Start(ctx)
-
-			// block until received the terminate signal
-			<-ctx.Done()
-
-			// stop the http server
-			return s.Stop()
+			return NewServer(cfg).Start()
 		},
 	}
 	return cmd

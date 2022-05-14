@@ -1,7 +1,6 @@
 package workspace
 
 import (
-	"context"
 	"errors"
 	"net/http"
 	"strings"
@@ -12,11 +11,11 @@ import (
 	"github.com/labstack/gommon/log"
 	"gitlab.com/keibiengine/keibi-engine/pkg/workspace/api"
 	"gorm.io/gorm"
+	"k8s.io/apimachinery/pkg/util/validation"
 )
 
 const (
-	KeibiUserID           = "X-Keibi-UserID"
-	WorkspaceNameLenLimit = 20
+	KeibiUserID = "X-Keibi-UserID"
 )
 
 var (
@@ -77,25 +76,10 @@ func NewServer(cfg *Config) *Server {
 	return s
 }
 
-func (s *Server) Start(ctx context.Context) {
-	go func() {
-		s.e.Logger.Infof("workspace service is started on %s", s.cfg.ServerAddr)
-		if err := s.e.Start(s.cfg.ServerAddr); err != nil {
-			if !errors.Is(err, http.ErrServerClosed) {
-				s.e.Logger.Errorf("echo start: %v", err)
-			}
-		}
-	}()
-}
+func (s *Server) Start() error {
+	s.e.Logger.Infof("workspace service is started on %s", s.cfg.ServerAddr)
 
-func (s *Server) Stop() error {
-	if s.e != nil {
-		if err := s.e.Shutdown(context.Background()); err != nil {
-			s.e.Logger.Errorf("shutdown workspace service: %v", err)
-		}
-	}
-	s.e.Logger.Info("workspace service is stopped")
-	return nil
+	return s.e.Start(s.cfg.ServerAddr)
 }
 
 // CreateWorkspace godoc
@@ -116,8 +100,11 @@ func (s *Server) CreateWorkspace(c echo.Context) error {
 	if request.Name == "" {
 		return echo.NewHTTPError(http.StatusBadRequest, "name is empty")
 	}
-	if len(request.Name) > WorkspaceNameLenLimit {
-		return echo.NewHTTPError(http.StatusBadRequest, "name length should be less than 20")
+
+	domain := request.Name + s.cfg.DomainSuffix
+	if errors := validation.IsQualifiedName(domain); len(errors) > 0 {
+		c.Logger().Errorf("invalid domain: %v", errors)
+		return echo.NewHTTPError(http.StatusBadGateway, "invalid name")
 	}
 
 	ownerId := c.Request().Header.Get(KeibiUserID)
@@ -126,10 +113,10 @@ func (s *Server) CreateWorkspace(c echo.Context) error {
 	}
 
 	workspace := &Workspace{
-		WorkspaceId: uuid.New(),
+		ID:          uuid.New(),
 		Name:        request.Name,
 		OwnerId:     ownerId,
-		Domain:      request.Name + s.cfg.DomainSuffix,
+		Domain:      domain,
 		Status:      StatusProvisioning.String(),
 		Description: request.Description,
 	}
@@ -141,7 +128,7 @@ func (s *Server) CreateWorkspace(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, ErrInternalServer)
 	}
 	return c.JSON(http.StatusOK, api.CreateWorkspaceResponse{
-		WorkspaceId: workspace.WorkspaceId.String(),
+		ID: workspace.ID.String(),
 	})
 }
 
@@ -159,7 +146,7 @@ func (s *Server) DeleteWorkspace(c echo.Context) error {
 	if value == "" {
 		return echo.NewHTTPError(http.StatusBadRequest, "workspace id is empty")
 	}
-	workspaceId, err := uuid.Parse(value)
+	id, err := uuid.Parse(value)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid workspace id")
 	}
@@ -169,7 +156,7 @@ func (s *Server) DeleteWorkspace(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusUnauthorized, "user id is empty")
 	}
 
-	workspace, err := s.db.GetWorkspace(workspaceId)
+	workspace, err := s.db.GetWorkspace(id)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return echo.NewHTTPError(http.StatusNotFound, "workspace not found")
@@ -181,7 +168,7 @@ func (s *Server) DeleteWorkspace(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusForbidden, "operation is forbidden")
 	}
 
-	if err := s.db.UpdateWorkspaceStatus(workspaceId, StatusDeleting); err != nil {
+	if err := s.db.UpdateWorkspaceStatus(id, StatusDeleting); err != nil {
 		c.Logger().Errorf("delete workspace: %v", err)
 		return echo.NewHTTPError(http.StatusInternalServerError, ErrInternalServer)
 	}
@@ -207,10 +194,10 @@ func (s *Server) ListWorkspaces(c echo.Context) error {
 		c.Logger().Errorf("list workspaces: %v", err)
 		return echo.NewHTTPError(http.StatusInternalServerError, ErrInternalServer)
 	}
-	workspaces := make([]*api.WorkspaceResponse, 0)
+	workspaces := make([]*api.WorkspaceResponse, len(dbWorkspaces))
 	for _, workspace := range dbWorkspaces {
 		workspaces = append(workspaces, &api.WorkspaceResponse{
-			WorkspaceId: workspace.WorkspaceId.String(),
+			ID:          workspace.ID.String(),
 			OwnerId:     workspace.OwnerId,
 			Domain:      workspace.Domain,
 			Name:        workspace.Name,

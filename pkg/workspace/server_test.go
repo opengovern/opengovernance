@@ -12,11 +12,12 @@ import (
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
 	"gitlab.com/keibiengine/keibi-engine/pkg/workspace/api"
+	"k8s.io/apimachinery/pkg/util/validation"
 )
 
 func (ts *testSuite) initWorkspace() (*Workspace, error) {
 	workspace := &Workspace{
-		WorkspaceId: uuid.New(),
+		ID:          uuid.New(),
 		Name:        ts.name,
 		OwnerId:     ts.owner,
 		Domain:      ts.name + ts.domainSuffix,
@@ -99,7 +100,7 @@ func (ts *testSuite) TestCreateWorkspace() {
 			if err := json.NewDecoder(w.Body).Decode(&response); err != nil {
 				ts.T().Fatalf("json decode: %v", err)
 			}
-			ts.NotEmpty(response.WorkspaceId)
+			ts.NotEmpty(response.ID)
 		})
 	}
 }
@@ -109,32 +110,32 @@ func (ts *testSuite) TestDeleteWorkspace() {
 	ts.NoError(err)
 
 	deleteWorkspaceTestCases := []struct {
-		WorkspaceId uuid.UUID
-		Owner       string
-		Code        int
-		Error       string
+		ID    uuid.UUID
+		Owner string
+		Code  int
+		Error string
 	}{
 		{
-			WorkspaceId: workspace.WorkspaceId,
-			Owner:       ts.owner,
-			Code:        http.StatusOK,
+			ID:    workspace.ID,
+			Owner: ts.owner,
+			Code:  http.StatusOK,
 		},
 		{
-			WorkspaceId: workspace.WorkspaceId,
-			Code:        http.StatusUnauthorized,
-			Error:       "user id is empty",
+			ID:    workspace.ID,
+			Code:  http.StatusUnauthorized,
+			Error: "user id is empty",
 		},
 		{
-			WorkspaceId: uuid.UUID{},
-			Owner:       ts.owner,
-			Code:        http.StatusNotFound,
-			Error:       "workspace not found",
+			ID:    uuid.UUID{},
+			Owner: ts.owner,
+			Code:  http.StatusNotFound,
+			Error: "workspace not found",
 		},
 		{
-			WorkspaceId: workspace.WorkspaceId,
-			Owner:       "invalid owner",
-			Code:        http.StatusForbidden,
-			Error:       "operation is forbidden",
+			ID:    workspace.ID,
+			Owner: "invalid owner",
+			Code:  http.StatusForbidden,
+			Error: "operation is forbidden",
 		},
 	}
 
@@ -149,7 +150,7 @@ func (ts *testSuite) TestDeleteWorkspace() {
 			c := echo.New().NewContext(r, w)
 			c.SetPath("/api/v1/workspace/:workspace_id")
 			c.SetParamNames("workspace_id")
-			c.SetParamValues(tc.WorkspaceId.String())
+			c.SetParamValues(tc.ID.String())
 
 			err := ts.server.DeleteWorkspace(c)
 			if err != nil {
@@ -160,7 +161,7 @@ func (ts *testSuite) TestDeleteWorkspace() {
 				return
 			}
 
-			workspace, err := ts.server.db.GetWorkspace(tc.WorkspaceId)
+			workspace, err := ts.server.db.GetWorkspace(tc.ID)
 			ts.NoError(err)
 			ts.Equal(StatusDeleting.String(), workspace.Status)
 		})
@@ -213,5 +214,20 @@ func (ts *testSuite) TestListWorkspaces() {
 			}
 		})
 	}
+}
 
+func (ts *testSuite) TestIsDomainName() {
+	names := map[string]bool{
+		"abc .org": false,
+		"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.geeksforgeeks.org": false, // 64 chars
+		"QQQ.org":                      true,
+		"geeksforgeeks.org":            true,
+		"contribute.geeksforgeeks.org": true,
+		"-geeksforgeeks.org":           false,
+		".org":                         false,
+		"geeksforgeeks.app.keibi.io":   true,
+	}
+	for name, valid := range names {
+		ts.Equal(valid, len(validation.IsQualifiedName(name)) == 0, name)
+	}
 }

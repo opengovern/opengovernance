@@ -35,13 +35,13 @@ func (s *Database) CreateWorkspace(m *Workspace) error {
 	return s.db.Model(&Workspace{}).Create(m).Error
 }
 
-func (s *Database) UpdateWorkspaceStatus(workspaceId uuid.UUID, status WorkspaceStatus) error {
-	return s.db.Model(&Workspace{}).Where("workspace_id = ?", workspaceId).Update("status", status.String()).Error
+func (s *Database) UpdateWorkspaceStatus(id uuid.UUID, status WorkspaceStatus) error {
+	return s.db.Model(&Workspace{}).Where("id = ?", id).Update("status", status.String()).Error
 }
 
-func (s *Database) GetWorkspace(workspaceId uuid.UUID) (*Workspace, error) {
+func (s *Database) GetWorkspace(id uuid.UUID) (*Workspace, error) {
 	var workspace Workspace
-	if err := s.db.Model(&Workspace{}).Where(Workspace{WorkspaceId: workspaceId}).First(&workspace).Error; err != nil {
+	if err := s.db.Model(&Workspace{}).Where(Workspace{ID: id}).First(&workspace).Error; err != nil {
 		return nil, err
 	}
 	return &workspace, nil

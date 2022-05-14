@@ -69,7 +69,7 @@ func (s *testSuite) SetupSuite() {
 		db:  db,
 		cfg: cfg,
 	}
-	s.name = "cda6498a-235d"
+	s.name = "geeksforgeeks"
 	s.owner = "00000000-0000-0000-0000-000000000000"
 	s.domainSuffix = cfg.DomainSuffix
 }

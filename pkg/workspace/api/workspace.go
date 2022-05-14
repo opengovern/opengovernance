@@ -8,11 +8,11 @@ type CreateWorkspaceRequest struct {
 }
 
 type CreateWorkspaceResponse struct {
-	WorkspaceId string `json:"workspaceId"`
+	ID string `json:"id"`
 }
 
 type WorkspaceResponse struct {
-	WorkspaceId string    `json:"workspaceId"`
+	ID          string    `json:"id"`
 	Name        string    `json:"name"`
 	OwnerId     string    `json:"ownerId"`
 	Domain      string    `json:"domain"`
