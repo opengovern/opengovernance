@@ -1,21 +1,29 @@
 package workspace
 
 import (
+	"context"
 	"errors"
+	"fmt"
 	"net/http"
 	"strings"
+	"time"
 
+	apimeta "github.com/fluxcd/pkg/apis/meta"
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	"github.com/labstack/gommon/log"
 	"gitlab.com/keibiengine/keibi-engine/pkg/workspace/api"
 	"gorm.io/gorm"
+	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/util/validation"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 const (
 	KeibiUserID = "X-Keibi-UserID"
+
+	ReconcilerInterval = 30
 )
 
 var (
@@ -23,9 +31,10 @@ var (
 )
 
 type Server struct {
-	e   *echo.Echo
-	cfg *Config
-	db  *Database
+	e          *echo.Echo
+	cfg        *Config
+	db         *Database
+	kubeClient client.Client // the kubernetes client
 }
 
 func NewServer(cfg *Config) *Server {
@@ -65,21 +74,96 @@ func NewServer(cfg *Config) *Server {
 	}
 	s.db = db
 
+	kubeClient, err := s.newKubeClient()
+	if err != nil {
+		s.e.Logger.Fatalf("new kube client: %v", err)
+	}
+	s.kubeClient = kubeClient
+
 	// init the http routers
 	v1 := s.e.Group("/api/v1")
 	v1.POST("/workspace", s.CreateWorkspace)
 	v1.DELETE("/workspace/:workspace_id", s.DeleteWorkspace)
 	v1.GET("/workspaces", s.ListWorkspaces)
 
-	// init the cronjobs
-
 	return s
 }
 
 func (s *Server) Start() error {
-	s.e.Logger.Infof("workspace service is started on %s", s.cfg.ServerAddr)
+	go s.startReconciler()
 
+	s.e.Logger.Infof("workspace service is started on %s", s.cfg.ServerAddr)
 	return s.e.Start(s.cfg.ServerAddr)
+}
+
+func (s *Server) startReconciler() {
+	ticker := time.NewTimer(time.Second * ReconcilerInterval)
+	defer ticker.Stop()
+
+	for range ticker.C {
+		workspaces, err := s.db.ListWorkspaces()
+		if err != nil {
+			s.e.Logger.Errorf("list workspaces: %v", err)
+		} else {
+			for _, workspace := range workspaces {
+				if err := s.handleWorkspace(&workspace); err != nil {
+					s.e.Logger.Errorf("handle workspace %s: %v", workspace.ID.String(), err)
+				}
+			}
+		}
+		// reset the time ticker
+		ticker.Reset(time.Second * ReconcilerInterval)
+	}
+}
+
+func (s *Server) handleWorkspace(workspace *Workspace) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	status := WorkspaceStatus(workspace.Status)
+	switch status {
+	case StatusProvisioning:
+		helmRelease, err := s.findHelmRelease(ctx, workspace)
+		if err != nil {
+			return fmt.Errorf("find helm release: %w", err)
+		}
+		if helmRelease == nil {
+			if err := s.createHelmRelease(ctx, workspace); err != nil {
+				return fmt.Errorf("create helm release: %w", err)
+			}
+			// update the workspace status next loop
+			return nil
+		}
+
+		newStatus := status
+		// check the status of helm release
+		if meta.IsStatusConditionTrue(helmRelease.Status.Conditions, apimeta.ReadyCondition) {
+			newStatus = StatusProvisioned
+		} else if meta.IsStatusConditionTrue(helmRelease.Status.Conditions, apimeta.StalledCondition) {
+			newStatus = StatusProvisioningFailed
+		}
+		if newStatus != status {
+			if err := s.db.UpdateWorkspaceStatus(workspace.ID, newStatus); err != nil {
+				return fmt.Errorf("update workspace status: %w", err)
+			}
+		}
+	case StatusDeleting:
+		helmRelease, err := s.findHelmRelease(ctx, workspace)
+		if err != nil {
+			return fmt.Errorf("find helm release: %w", err)
+		}
+		if helmRelease != nil {
+			if err := s.deleteHelmRelease(ctx, workspace); err != nil {
+				return fmt.Errorf("delete helm release: %w", err)
+			}
+			// update the workspace status next loop
+			return nil
+		}
+		if err := s.db.UpdateWorkspaceStatus(workspace.ID, StatusDeleted); err != nil {
+			return fmt.Errorf("update workspace status: %w", err)
+		}
+	}
+	return nil
 }
 
 // CreateWorkspace godoc
