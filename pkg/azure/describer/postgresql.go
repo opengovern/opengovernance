@@ -51,16 +51,6 @@ func PostgresqlServer(ctx context.Context, authorizer autorest.Authorizer, subsc
 			kop = append(kop, keysListOp.Values()...)
 		}
 
-		var serverKeys []postgresql.ServerKey
-		serverKeys = append(serverKeys, keysListOp.Values()...)
-		for keysListOp.NotDone() {
-			err = keysListOp.NextWithContext(ctx)
-			if err != nil {
-				return nil, err
-			}
-			serverKeys = append(serverKeys, keysListOp.Values()...)
-		}
-
 		firewallListByServerOp, err := firewallClient.ListByServer(ctx, resourceGroupName, *server.Name)
 		if err != nil {
 			return nil, err

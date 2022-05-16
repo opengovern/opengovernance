@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
-	"time"
 
 	"github.com/coreos/go-oidc/v3/oidc"
 	envoycore "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
@@ -14,20 +13,17 @@ import (
 	envoytype "github.com/envoyproxy/go-control-plane/envoy/type/v3"
 	"github.com/gogo/googleapis/google/rpc"
 	"github.com/labstack/echo/v4"
-	"gitlab.com/keibiengine/keibi-engine/pkg/auth/api"
+	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpserver"
 	"go.uber.org/zap"
 	"google.golang.org/genproto/googleapis/rpc/status"
 )
 
-const roleCtxKey = "role"
-
 type Server struct {
+	hostSuffix string
+
 	db       Database
 	verifier *oidc.IDTokenVerifier
-
-	authEcho *echo.Echo
-
-	logger *zap.Logger
+	logger   *zap.Logger
 }
 
 func (s Server) Check(ctx context.Context, req *envoyauth.CheckRequest) (*envoyauth.CheckResponse, error) {
@@ -56,20 +52,11 @@ func (s Server) Check(ctx context.Context, req *envoyauth.CheckRequest) (*envoya
 		return unAuth, nil
 	}
 
-	rb, err := s.FindUserRoleBinding(ctx, user)
-	if err != nil {
-		s.logger.Warn("denied access due to failure in retrieving user role",
-			zap.String("reqId", httpRequest.Id),
-			zap.String("path", httpRequest.Path),
-			zap.String("method", httpRequest.Method),
-			zap.Error(err))
-		return unAuth, nil
-	}
+	workspaceName := strings.TrimSuffix(httpRequest.Host, s.hostSuffix)
 
-	if err := s.Authorize(req, rb); err != nil {
-		s.logger.Warn("denied access due to unauthorized access",
-			zap.String("userId", rb.UserID),
-			zap.String("role", string(rb.Role)),
+	rb, err := s.db.GetRoleBindingForWorkspace(user.ExternalUserID, workspaceName)
+	if err != nil {
+		s.logger.Warn("denied access due to failure in retrieving auth user host",
 			zap.String("reqId", httpRequest.Id),
 			zap.String("path", httpRequest.Path),
 			zap.String("method", httpRequest.Method),
@@ -78,7 +65,8 @@ func (s Server) Check(ctx context.Context, req *envoyauth.CheckRequest) (*envoya
 	}
 
 	s.logger.Debug("granted access",
-		zap.String("userId", rb.UserID),
+		zap.String("userId", rb.UserID.String()),
+		zap.String("extUserId", rb.ExternalID),
 		zap.String("role", string(rb.Role)),
 		zap.String("reqId", httpRequest.Id),
 		zap.String("path", httpRequest.Path),
@@ -89,13 +77,26 @@ func (s Server) Check(ctx context.Context, req *envoyauth.CheckRequest) (*envoya
 		Status: &status.Status{
 			Code: int32(rpc.OK),
 		},
+
 		HttpResponse: &envoyauth.CheckResponse_OkResponse{
 			OkResponse: &envoyauth.OkHttpResponse{
 				Headers: []*envoycore.HeaderValueOption{
 					{
 						Header: &envoycore.HeaderValue{
-							Key:   "X-Keibi-UserId",
-							Value: rb.UserID,
+							Key:   httpserver.XKeibiWorkspaceNameHeader,
+							Value: rb.WorkspaceName,
+						},
+					},
+					{
+						Header: &envoycore.HeaderValue{
+							Key:   httpserver.XKeibiUserIDHeader,
+							Value: rb.UserID.String(),
+						},
+					},
+					{
+						Header: &envoycore.HeaderValue{
+							Key:   httpserver.XKeibiUserRoleHeader,
+							Value: string(rb.Role),
 						},
 					},
 				},
@@ -104,16 +105,15 @@ func (s Server) Check(ctx context.Context, req *envoyauth.CheckRequest) (*envoya
 	}, nil
 }
 
-type User struct {
-	UserID    string   `json:"sub"`
-	GivenName string   `json:"given_name"`
-	Emails    []string `json:"emails"`
+type userClaim struct {
+	ExternalUserID string   `json:"sub"`
+	GivenName      string   `json:"given_name"`
+	Emails         []string `json:"emails"`
 }
 
-func (s Server) Verify(ctx context.Context, authToken string) (*User, error) {
+func (s Server) Verify(ctx context.Context, authToken string) (*userClaim, error) {
 	if !strings.HasPrefix(authToken, "Bearer ") {
 		return nil, errors.New("invalid authorization token")
-
 	}
 	token := strings.TrimSpace(strings.TrimPrefix(authToken, "Bearer "))
 	if token == "" {
@@ -125,42 +125,12 @@ func (s Server) Verify(ctx context.Context, authToken string) (*User, error) {
 		return nil, err
 	}
 
-	var u User
+	var u userClaim
 	if err := t.Claims(&u); err != nil {
 		return nil, err
 	}
 
 	return &u, nil
-}
-
-func (s Server) FindUserRoleBinding(ctx context.Context, user *User) (RoleBinding, error) {
-	defaultRb := RoleBinding{
-		UserID:     user.UserID,
-		Name:       user.GivenName,
-		Emails:     user.Emails,
-		Role:       api.ViewerRole,
-		AssignedAt: time.Now(),
-	}
-
-	err := s.db.GetRoleBindingOrCreate(&defaultRb)
-	if err != nil {
-		return RoleBinding{}, err
-	}
-
-	return defaultRb, nil
-}
-
-func (s Server) Authorize(req *envoyauth.CheckRequest, rb RoleBinding) error {
-	eCtx := s.authEcho.NewContext(&http.Request{}, nil)
-	httpReq := req.GetAttributes().GetRequest().GetHttp()
-	s.authEcho.Router().Find(httpReq.Method, httpReq.Path, eCtx)
-
-	eCtx.Set(roleCtxKey, rb)
-	if err := eCtx.Handler()(eCtx); err != nil {
-		return err
-	}
-
-	return nil
 }
 
 func newOidcVerifier(ctx context.Context, tenantName, tenantId, clientId, policy string) (*oidc.IDTokenVerifier, error) {
@@ -178,24 +148,4 @@ func newOidcVerifier(ctx context.Context, tenantName, tenantId, clientId, policy
 	return provider.Verifier(&oidc.Config{
 		ClientID: clientId,
 	}), nil
-}
-
-func buildEchoRoutes() *echo.Echo {
-	e := echo.New()
-	for _, endpoint := range endpoints {
-		e.Add(endpoint.Method, endpoint.Path, authHandlerFunc(endpoint.MinimumRole))
-	}
-
-	return e
-}
-
-func authHandlerFunc(minRole api.Role) func(ctx echo.Context) error {
-	return func(ctx echo.Context) error {
-		rb := ctx.Get(roleCtxKey).(RoleBinding)
-		if !hasAccess(rb.Role, minRole) {
-			return echo.ErrUnauthorized
-		}
-
-		return nil
-	}
 }

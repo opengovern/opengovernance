@@ -11,6 +11,8 @@ import (
 
 	envoyauth "github.com/envoyproxy/go-control-plane/envoy/service/auth/v3"
 	"github.com/spf13/cobra"
+	"gitlab.com/keibiengine/keibi-engine/pkg/auth/extauth"
+	"gitlab.com/keibiengine/keibi-engine/pkg/internal/email"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpserver"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
@@ -26,12 +28,20 @@ var (
 	postgreSQLUser     = os.Getenv("POSTGRESQL_USERNAME")
 	postgreSQLPassword = os.Getenv("POSTGRESQL_PASSWORD")
 
+	mailApiKey     = os.Getenv("EMAIL_API_KEY")
+	mailSender     = os.Getenv("EMAIL_SENDER")
+	mailSenderName = os.Getenv("EMAIL_SENDER_NAME")
+
 	azureAuthTenantName   = os.Getenv("AZURE_OAUTH_TENANT_NAME")
 	azureAuthTenantID     = os.Getenv("AZURE_OAUTH_TENANT_ID")
 	azureAuthClientID     = os.Getenv("AZURE_OAUTH_CLIENT_ID")
 	azureAuthSignInPolicy = os.Getenv("AZURE_OAUTH_POLICY")
+	azureAuthClientSecret = os.Getenv("AZURE_OAUTH_CLIENT_SECRET")
+	azureIdentityIssuer   = os.Getenv("AZURE_OAUTH_IDENTITY_ISSUER")
 
 	httpServerAddress = os.Getenv("HTTP_ADDRESS")
+
+	keibiHost = os.Getenv("KEIBI_HOST")
 
 	grpcServerAddress = os.Getenv("GRPC_ADDRESS")
 	grpcTlsCertPath   = os.Getenv("GRPC_TLS_CERT_PATH")
@@ -58,7 +68,7 @@ func start(ctx context.Context) error {
 		return err
 	}
 
-	dsn := fmt.Sprintf(`host=%s port=%s user=%s password=%s dbname=%s sslmode=disable TimeZone=GMT`,
+	dsn := fmt.Sprintf(`hostSuffix=%s port=%s user=%s password=%s dbname=%s sslmode=disable TimeZone=GMT`,
 		postgreSQLHost,
 		postgreSQLPort,
 		postgreSQLUser,
@@ -78,18 +88,17 @@ func start(ctx context.Context) error {
 	}
 	logger.Info("Instantiated a new Open ID Connect verifier")
 
-	db := Database{orm: orm}
-
+	db := NewDatabase(orm)
 	err = db.Initialize()
 	if err != nil {
 		return fmt.Errorf("initialize database: %w", err)
 	}
 
 	authServer := Server{
-		db:       db,
-		verifier: verifier,
-		authEcho: buildEchoRoutes(),
-		logger:   logger,
+		hostSuffix: keibiHost,
+		db:         db,
+		verifier:   verifier,
+		logger:     logger,
 	}
 
 	creds, err := newServerCredentials(
@@ -114,8 +123,27 @@ func start(ctx context.Context) error {
 		errors <- fmt.Errorf("grpc server: %w", grpcServer.Serve(lis))
 	}()
 
+	extAuth, err := extauth.NewAzureADB2CProvider(
+		ctx,
+		azureAuthTenantID,
+		azureAuthClientID,
+		azureAuthClientSecret,
+		azureIdentityIssuer,
+		logger)
+	if err != nil {
+		return fmt.Errorf("initialize Azure client: %w", err)
+	}
+
+	m := email.NewSendGripClient(mailApiKey, mailSender, mailSenderName, logger)
+
 	go func() {
-		errors <- fmt.Errorf("http server: %w", httpserver.RegisterAndStart(logger, httpServerAddress, httpRoutes{db: db}))
+		routes := httpRoutes{
+			logger:       logger,
+			db:           db,
+			authProvider: extAuth,
+			emailService: m,
+		}
+		errors <- fmt.Errorf("http server: %w", httpserver.RegisterAndStart(logger, httpServerAddress, &routes))
 	}()
 
 	return <-errors
