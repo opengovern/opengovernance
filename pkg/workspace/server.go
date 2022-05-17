@@ -172,8 +172,8 @@ func (s *Server) handleWorkspace(workspace *Workspace) error {
 // @Tags         workspace
 // @Accept       json
 // @Produce      json
-// @Param        request  body  api.CreateWorkspaceRequest  true  "Create workspace request"
-// @Success      200      {object}
+// @Param        request  body      api.CreateWorkspaceRequest  true  "Create workspace request"
+// @Success      200      {object}  api.CreateWorkspaceResponse
 // @Router       /workspace/api/v1/workspace [post]
 func (s *Server) CreateWorkspace(c echo.Context) error {
 	var request api.CreateWorkspaceRequest
@@ -265,7 +265,7 @@ func (s *Server) DeleteWorkspace(c echo.Context) error {
 // @Tags         workspace
 // @Accept       json
 // @Produce      json
-// @Success      200  {object}  []api.WorkspaceResponse
+// @Success      200  {array}  []api.WorkspaceResponse
 // @Router       /workspace/api/v1/workspaces [get]
 func (s *Server) ListWorkspaces(c echo.Context) error {
 	ownerId := c.Request().Header.Get(KeibiUserID)

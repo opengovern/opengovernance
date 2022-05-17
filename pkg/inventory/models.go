@@ -1,6 +1,9 @@
 package inventory
 
 import (
+	"time"
+
+	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
@@ -36,6 +39,13 @@ type BenchmarkTag struct {
 	Key        string
 	Value      string
 	Benchmarks []Benchmark `gorm:"many2many:benchmark_tag_rel;"`
+}
+
+type BenchmarkAssignment struct {
+	gorm.Model
+	BenchmarkId string    `gorm:"index:idx_benchmark_source"`
+	SourceId    uuid.UUID `gorm:"index:idx_benchmark_source"`
+	AssignedAt  time.Time
 }
 
 type Policy struct {

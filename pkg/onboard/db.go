@@ -36,6 +36,18 @@ func (db Database) GetSources() ([]Source, error) {
 	return s, nil
 }
 
+// CountSources gets list of all source
+func (db Database) CountSources() (int64, error) {
+	var c int64
+	tx := db.orm.Model(&Source{}).Count(&c)
+
+	if tx.Error != nil {
+		return 0, tx.Error
+	}
+
+	return c, nil
+}
+
 // GetSources gets list of sources with matching type
 func (db Database) GetSourcesOfType(rType api.SourceType) ([]Source, error) {
 	var s []Source
@@ -46,6 +58,18 @@ func (db Database) GetSourcesOfType(rType api.SourceType) ([]Source, error) {
 	}
 
 	return s, nil
+}
+
+// CountSources gets list of sources with matching type
+func (db Database) CountSourcesOfType(rType api.SourceType) (int64, error) {
+	var c int64
+	tx := db.orm.Model(&Source{}).Where("type = ?", rType).Count(&c)
+
+	if tx.Error != nil {
+		return 0, tx.Error
+	}
+
+	return c, nil
 }
 
 // GetSource gets a source with matching id

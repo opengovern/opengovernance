@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"strings"
 
+	"gitlab.com/keibiengine/keibi-engine/pkg/cloudservice"
+
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe-plugin-sdk/grpc/proto"
 	awsmodel "gitlab.com/keibiengine/keibi-engine/pkg/aws/model"
@@ -129,12 +131,13 @@ func QueryResourcesWithSteampipeColumns(
 				}
 
 				resource := AWSResource{
-					Name:         metadata.Name,
-					ResourceType: resourceType,
-					ResourceID:   hit.Source.ID,
-					Region:       metadata.Region,
-					AccountID:    metadata.AccountID,
-					Attributes:   make(map[string]string),
+					Name:             metadata.Name,
+					ResourceType:     resourceType,
+					ResourceTypeName: cloudservice.ServiceNameByResourceType(resourceType),
+					ResourceID:       hit.Source.ID,
+					Region:           metadata.Region,
+					AccountID:        metadata.AccountID,
+					Attributes:       make(map[string]string),
 				}
 
 				desc, err := ConvertToDescription(resourceType, hit.Source)
@@ -168,13 +171,14 @@ func QueryResourcesWithSteampipeColumns(
 				}
 
 				resource := AzureResource{
-					Name:           metadata.Name,
-					ResourceType:   resourceType,
-					ResourceID:     hit.Source.ID,
-					ResourceGroup:  resourceGroup,
-					Location:       metadata.Location,
-					SubscriptionID: metadata.SubscriptionID,
-					Attributes:     make(map[string]string),
+					Name:             metadata.Name,
+					ResourceType:     resourceType,
+					ResourceTypeName: cloudservice.ServiceNameByResourceType(resourceType),
+					ResourceID:       hit.Source.ID,
+					ResourceGroup:    resourceGroup,
+					Location:         metadata.Location,
+					SubscriptionID:   metadata.SubscriptionID,
+					Attributes:       make(map[string]string),
 				}
 
 				desc, err := ConvertToDescription(resourceType, hit.Source)
@@ -210,25 +214,27 @@ func QueryResourcesWithSteampipeColumns(
 	if provider == nil {
 		for _, aws := range result.AWSResources {
 			result.AllResources = append(result.AllResources, AllResource{
-				Name:         aws.Name,
-				Provider:     SourceCloudAWS,
-				ResourceType: aws.ResourceType,
-				Location:     aws.Region,
-				ResourceID:   aws.ResourceID,
-				SourceID:     aws.AccountID,
-				Attributes:   aws.Attributes,
+				Name:             aws.Name,
+				Provider:         SourceCloudAWS,
+				ResourceType:     aws.ResourceType,
+				ResourceTypeName: cloudservice.ServiceNameByResourceType(aws.ResourceType),
+				Location:         aws.Region,
+				ResourceID:       aws.ResourceID,
+				SourceID:         aws.AccountID,
+				Attributes:       aws.Attributes,
 			})
 		}
 
 		for _, azure := range result.AzureResources {
 			result.AllResources = append(result.AllResources, AllResource{
-				Name:         azure.Name,
-				Provider:     SourceCloudAzure,
-				ResourceType: azure.ResourceType,
-				Location:     azure.Location,
-				ResourceID:   azure.ResourceID,
-				SourceID:     azure.SubscriptionID,
-				Attributes:   azure.Attributes,
+				Name:             azure.Name,
+				Provider:         SourceCloudAzure,
+				ResourceType:     azure.ResourceType,
+				ResourceTypeName: cloudservice.ServiceNameByResourceType(azure.ResourceType),
+				Location:         azure.Location,
+				ResourceID:       azure.ResourceID,
+				SourceID:         azure.SubscriptionID,
+				Attributes:       azure.Attributes,
 			})
 		}
 	}

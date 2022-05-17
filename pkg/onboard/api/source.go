@@ -154,3 +154,14 @@ type SourceEvent struct {
 	SourceType SourceType
 	ConfigRef  string
 }
+
+type AWSCredential struct {
+	AccessKey string `json:"accessKey"`
+	SecretKey string `json:"secretKey"`
+}
+
+type AzureCredential struct {
+	ClientID     string `json:"clientID"`
+	TenantID     string `json:"tenantID"`
+	ClientSecret string `json:"clientSecret"`
+}

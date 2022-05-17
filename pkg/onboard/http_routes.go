@@ -1,11 +1,13 @@
 package onboard
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
+	"gitlab.com/keibiengine/keibi-engine/pkg/describe"
 	"gitlab.com/keibiengine/keibi-engine/pkg/onboard/api"
 	"gorm.io/gorm"
 )
@@ -22,10 +24,13 @@ func (h HttpHandler) Register(r *echo.Echo) {
 	source.POST("/aws", h.PostSourceAws)
 	source.POST("/azure", h.PostSourceAzure)
 	source.GET("/:sourceId", h.GetSource)
+	source.GET("/:sourceId/credentials", h.GetSourceCred)
+	source.PUT("/:sourceId/credentials", h.PutSourceCred)
 	source.PUT("/:sourceId", h.PutSource)
 	source.DELETE("/:sourceId", h.DeleteSource)
 
 	v1.GET("/sources", h.GetSources)
+	v1.GET("/sources/count", h.CountSources)
 
 	disc := v1.Group("/discover")
 
@@ -51,8 +56,8 @@ func bindValidate(ctx echo.Context, i interface{}) error {
 // GetProviders godoc
 // @Summary      Get providers
 // @Description  Getting cloud providers
-// @Tags         onboard
-// @Produce      json
+// @Tags     onboard
+// @Produce  json
 // @Success      200  {object}  api.ProvidersResponse
 // @Router       /onboard/api/v1/providers [get]
 func (h HttpHandler) GetProviders(ctx echo.Context) error {
@@ -143,8 +148,8 @@ func (h HttpHandler) GetProviders(ctx echo.Context) error {
 // GetProviderTypes godoc
 // @Summary      Get provider types
 // @Description  Getting provider types
-// @Tags         onboard
-// @Produce      json
+// @Tags     onboard
+// @Produce  json
 // @Success      200  {object}  api.ProviderTypesResponse
 // @Router       /onboard/api/v1/providers/types [get]
 func (h HttpHandler) GetProviderTypes(ctx echo.Context) error {
@@ -270,6 +275,121 @@ func (h HttpHandler) PostSourceAzure(ctx echo.Context) error {
 	}
 
 	return ctx.JSON(http.StatusOK, src.toSourceResponse())
+}
+
+// GetSourceCred godoc
+// @Summary  Get source credential
+// @Tags         onboard
+// @Produce      json
+// @Param    sourceId  query  string  true  "Source ID"
+// @Router   /onboard/api/v1/{sourceId}/credentials [post]
+func (h HttpHandler) GetSourceCred(ctx echo.Context) error {
+	sourceUUID, err := uuid.Parse(ctx.Param("sourceId"))
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid source uuid")
+	}
+
+	src, err := h.db.GetSource(sourceUUID)
+	if err != nil {
+		return err
+	}
+
+	cnf, err := h.vault.Read(src.ConfigRef)
+	if err != nil {
+		return err
+	}
+
+	switch src.Type {
+	case api.SourceCloudAWS:
+		awsCnf, err := describe.AWSAccountConfigFromMap(cnf)
+		if err != nil {
+			return err
+		}
+		return ctx.JSON(http.StatusOK, api.AWSCredential{
+			AccessKey: awsCnf.AccessKey,
+		})
+	case api.SourceCloudAzure:
+		azureCnf, err := describe.AzureSubscriptionConfigFromMap(cnf)
+		if err != nil {
+			return err
+		}
+		return ctx.JSON(http.StatusOK, api.AzureCredential{
+			ClientID: azureCnf.ClientID,
+			TenantID: azureCnf.TenantID,
+		})
+	default:
+		return errors.New("invalid provider")
+	}
+}
+
+// PutSourceCred godoc
+// @Summary  Put source credential
+// @Tags         onboard
+// @Produce      json
+// @Param    sourceId  query  string  true  "Source ID"
+// @Router   /onboard/api/v1/{sourceId}/credentials [post]
+func (h HttpHandler) PutSourceCred(ctx echo.Context) error {
+	sourceUUID, err := uuid.Parse(ctx.Param("sourceId"))
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid source uuid")
+	}
+
+	src, err := h.db.GetSource(sourceUUID)
+	if err != nil {
+		return err
+	}
+
+	cnf, err := h.vault.Read(src.ConfigRef)
+	if err != nil {
+		return err
+	}
+
+	switch src.Type {
+	case api.SourceCloudAWS:
+		awsCnf, err := describe.AWSAccountConfigFromMap(cnf)
+		if err != nil {
+			return err
+		}
+
+		var req api.AWSCredential
+		if err := bindValidate(ctx, &req); err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
+		}
+
+		newCnf := api.SourceConfigAWS{
+			AccountId: awsCnf.AccountID,
+			Regions:   awsCnf.Regions,
+			AccessKey: awsCnf.AccessKey,
+			SecretKey: req.SecretKey,
+		}
+		if err := h.vault.Write(src.ConfigRef, newCnf.AsMap()); err != nil {
+			return err
+		}
+		return ctx.NoContent(http.StatusOK)
+	case api.SourceCloudAzure:
+		azureCnf, err := describe.AzureSubscriptionConfigFromMap(cnf)
+		if err != nil {
+			return err
+		}
+
+		var req api.AzureCredential
+		if err := bindValidate(ctx, &req); err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
+		}
+
+		newCnf := api.SourceConfigAzure{
+			SubscriptionId: azureCnf.SubscriptionID,
+			TenantId:       azureCnf.TenantID,
+			ClientId:       azureCnf.ClientID,
+			ClientSecret:   req.ClientSecret,
+		}
+		if err := h.vault.Write(src.ConfigRef, newCnf.AsMap()); err != nil {
+			return err
+		}
+		return ctx.NoContent(http.StatusOK)
+	default:
+		return errors.New("invalid provider")
+	}
 }
 
 // GetSource godoc
@@ -399,6 +519,39 @@ func (h HttpHandler) GetSources(ctx echo.Context) error {
 	}
 
 	return ctx.JSON(http.StatusOK, resp)
+}
+
+// CountSources godoc
+// @Summary      Returns a count of sources
+// @Description  Returning a count of sources including both AWS and Azure unless filtered by Type.
+// @Tags         onboard
+// @Produce      json
+// @Param        type  query     string  false  "Type"  Enums(aws,azure)
+// @Success      200   {object}  int64
+// @Router       /onboard/api/v1/sources/count [get]
+func (h HttpHandler) CountSources(ctx echo.Context) error {
+	sType := ctx.QueryParam("type")
+	var count int64
+	if sType != "" {
+		st, ok := api.AsSourceType(sType)
+		if !ok {
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("invalid source type: %s", sType))
+		}
+
+		var err error
+		count, err = h.db.CountSourcesOfType(st)
+		if err != nil {
+			return err
+		}
+	} else {
+		var err error
+		count, err = h.db.CountSources()
+		if err != nil {
+			return err
+		}
+	}
+
+	return ctx.JSON(http.StatusOK, count)
 }
 
 func (h HttpHandler) PutSource(ctx echo.Context) error {

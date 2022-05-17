@@ -3,6 +3,8 @@ package api
 import (
 	"context"
 
+	"gitlab.com/keibiengine/keibi-engine/pkg/cloudservice"
+
 	internal "gitlab.com/keibiengine/keibi-engine/pkg/internal/api"
 	"gitlab.com/keibiengine/keibi-engine/pkg/keibi-es-sdk"
 )
@@ -42,11 +44,12 @@ func QueryResourcesFromInventorySummary(ctx context.Context, client keibi.Client
 		var awsResources []AWSResource
 		for _, resource := range resources {
 			awsResources = append(awsResources, AWSResource{
-				Name:         resource.Name,
-				ResourceType: resource.ResourceType,
-				ResourceID:   resource.ResourceID,
-				Region:       resource.Location,
-				AccountID:    resource.SourceID,
+				Name:             resource.Name,
+				ResourceType:     resource.ResourceType,
+				ResourceTypeName: cloudservice.ServiceNameByResourceType(resource.ResourceType),
+				ResourceID:       resource.ResourceID,
+				Region:           resource.Location,
+				AccountID:        resource.SourceID,
 			})
 		}
 		return &GetResourcesResult{
@@ -59,12 +62,13 @@ func QueryResourcesFromInventorySummary(ctx context.Context, client keibi.Client
 		var azureResources []AzureResource
 		for _, resource := range resources {
 			azureResources = append(azureResources, AzureResource{
-				Name:           resource.Name,
-				ResourceType:   resource.ResourceType,
-				ResourceGroup:  resource.ResourceGroup,
-				Location:       resource.Location,
-				ResourceID:     resource.ResourceID,
-				SubscriptionID: resource.SourceID,
+				Name:             resource.Name,
+				ResourceType:     resource.ResourceType,
+				ResourceTypeName: cloudservice.ServiceNameByResourceType(resource.ResourceType),
+				ResourceGroup:    resource.ResourceGroup,
+				Location:         resource.Location,
+				ResourceID:       resource.ResourceID,
+				SubscriptionID:   resource.SourceID,
 			})
 		}
 		return &GetResourcesResult{
@@ -76,12 +80,13 @@ func QueryResourcesFromInventorySummary(ctx context.Context, client keibi.Client
 	var allResources []AllResource
 	for _, resource := range resources {
 		allResources = append(allResources, AllResource{
-			Name:         resource.Name,
-			Provider:     SourceType(resource.SourceType),
-			ResourceType: resource.ResourceType,
-			Location:     resource.Location,
-			ResourceID:   resource.ResourceID,
-			SourceID:     resource.SourceID,
+			Name:             resource.Name,
+			Provider:         SourceType(resource.SourceType),
+			ResourceType:     resource.ResourceType,
+			ResourceTypeName: cloudservice.ServiceNameByResourceType(resource.ResourceType),
+			Location:         resource.Location,
+			ResourceID:       resource.ResourceID,
+			SourceID:         resource.SourceID,
 		})
 	}
 	return &GetResourcesResult{

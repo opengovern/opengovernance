@@ -1,6 +1,7 @@
 package api
 
 import (
+	"github.com/google/uuid"
 	compliance_report "gitlab.com/keibiengine/keibi-engine/pkg/compliance-report"
 	"gitlab.com/keibiengine/keibi-engine/pkg/describe/kafka"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/api"
@@ -56,8 +57,9 @@ type RunQueryResponse struct {
 }
 
 type GetResourcesRequest struct {
-	Query   string  `json:"query"`                       // search query
-	Filters Filters `json:"filters" validate:"required"` // search filters
+	Query      string  `json:"query"`                          // search query
+	Filters    Filters `json:"filters" validate:"required"`    // search filters
+	FilterNots Filters `json:"filterNots" validate:"required"` // search filters
 	// NOTE: we don't support multi-field sort for now, if sort is empty, results would be sorted by first column
 	Sorts []ResourceSortItem `json:"sorts"`
 	Page  api.Page           `json:"page" validate:"required"`
@@ -92,14 +94,27 @@ type GetResourcesResponse struct {
 }
 
 type AllResource struct {
-	Name         string     `json:"name"`
-	Provider     SourceType `json:"provider"`
-	ResourceType string     `json:"resourceType"`
-	Location     string     `json:"location"`
-	ResourceID   string     `json:"resourceID"`
-	SourceID     string     `json:"sourceID"`
+	Name             string     `json:"name"`
+	Provider         SourceType `json:"provider"`
+	ResourceType     string     `json:"resourceType"`
+	ResourceTypeName string     `json:"resourceTypeName"`
+	Location         string     `json:"location"`
+	ResourceID       string     `json:"resourceID"`
+	SourceID         string     `json:"sourceID"`
+	SourceName       string     `json:"sourceName"`
 
 	Attributes map[string]string `json:"attributes"`
+}
+
+type BenchmarkAssignment struct {
+	BenchmarkId string `json:"benchmarkId"`
+	SourceId    string `json:"sourceId"`
+	AssignedAt  int64  `json:"assignedAt"`
+}
+
+type BenchmarkAssignedSource struct {
+	SourceId   string `json:"sourceId"`
+	AssignedAt int64  `json:"assignedAt"`
 }
 
 func (r AllResource) ToCSVRecord() []string {
@@ -125,12 +140,14 @@ type GetAzureResourceResponse struct {
 }
 
 type AzureResource struct {
-	Name           string `json:"name"`
-	ResourceType   string `json:"resourceType"`
-	ResourceGroup  string `json:"resourceGroup"`
-	Location       string `json:"location"`
-	ResourceID     string `json:"resourceID"`
-	SubscriptionID string `json:"subscriptionID"`
+	Name             string `json:"name"`
+	ResourceType     string `json:"resourceType"`
+	ResourceTypeName string `json:"resourceTypeName"`
+	ResourceGroup    string `json:"resourceGroup"`
+	Location         string `json:"location"`
+	ResourceID       string `json:"resourceID"`
+	SubscriptionID   string `json:"subscriptionID"`
+	SubscriptionName string `json:"sourceName"`
 
 	Attributes map[string]string `json:"attributes"`
 }
@@ -156,11 +173,13 @@ type GetAWSResourceResponse struct {
 }
 
 type AWSResource struct {
-	Name         string `json:"name"`
-	ResourceType string `json:"resourceType"`
-	ResourceID   string `json:"resourceID"`
-	Region       string `json:"location"`
-	AccountID    string `json:"accountID"`
+	Name             string `json:"name"`
+	ResourceType     string `json:"resourceType"`
+	ResourceTypeName string `json:"resourceTypeName"`
+	ResourceID       string `json:"resourceID"`
+	Region           string `json:"location"`
+	AccountID        string `json:"accountID"`
+	AccountName      string `json:"accountName"`
 
 	Attributes map[string]string `json:"attributes"`
 }
@@ -345,4 +364,26 @@ type TopServicesResponse struct {
 type CategoriesResponse struct {
 	CategoryName  string `json:"serviceName"`
 	ResourceCount int    `json:"resourceCount"`
+}
+
+type BenchmarkScoreResponse struct {
+	BenchmarkID       string `json:"benchmarkID"`
+	NonCompliantCount int    `json:"nonCompliantCount"`
+}
+
+type AccountCompliancyResponse struct {
+	SourceID       uuid.UUID `json:"sourceID"`
+	TotalResources int       `json:"totalResources"`
+	TotalCompliant int       `json:"totalCompliant"`
+}
+
+type ServiceCompliancyResponse struct {
+	ServiceName    string `json:"serviceName"`
+	TotalResources int    `json:"totalResources"`
+	TotalCompliant int    `json:"totalCompliant"`
+}
+
+type ServiceDistributionItem struct {
+	ServiceName  string         `json:"serviceName"`
+	Distribution map[string]int `json:"distribution"`
 }

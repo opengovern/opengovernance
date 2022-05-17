@@ -3,6 +3,8 @@ definitions:
     properties:
       accountID:
         type: string
+      accountName:
+        type: string
       attributes:
         additionalProperties:
           type: string
@@ -15,6 +17,17 @@ definitions:
         type: string
       resourceType:
         type: string
+      resourceTypeName:
+        type: string
+    type: object
+  api.AccountCompliancyResponse:
+    properties:
+      sourceID:
+        type: string
+      totalCompliant:
+        type: integer
+      totalResources:
+        type: integer
     type: object
   api.AllResource:
     properties:
@@ -32,7 +45,11 @@ definitions:
         type: string
       resourceType:
         type: string
+      resourceTypeName:
+        type: string
       sourceID:
+        type: string
+      sourceName:
         type: string
     type: object
   api.AzureResource:
@@ -50,6 +67,10 @@ definitions:
       resourceID:
         type: string
       resourceType:
+        type: string
+      resourceTypeName:
+        type: string
+      sourceName:
         type: string
       subscriptionID:
         type: string
@@ -76,6 +97,29 @@ definitions:
       totalCompliantAccounts:
         type: integer
       totalNonCompliantAccounts:
+        type: integer
+    type: object
+  api.BenchmarkAssignedSource:
+    properties:
+      assignedAt:
+        type: integer
+      sourceId:
+        type: string
+    type: object
+  api.BenchmarkAssignment:
+    properties:
+      assignedAt:
+        type: integer
+      benchmarkId:
+        type: string
+      sourceId:
+        type: string
+    type: object
+  api.BenchmarkScoreResponse:
+    properties:
+      benchmarkID:
+        type: string
+      nonCompliantCount:
         type: integer
     type: object
   api.ComplianceReport:
@@ -109,6 +153,18 @@ definitions:
         type: integer
     type: object
   api.CreateSourceResponse:
+    properties:
+      id:
+        type: string
+    type: object
+  api.CreateWorkspaceRequest:
+    properties:
+      description:
+        type: string
+      name:
+        type: string
+    type: object
+  api.CreateWorkspaceResponse:
     properties:
       id:
         type: string
@@ -254,6 +310,9 @@ definitions:
     type: object
   api.GetResourcesRequest:
     properties:
+      filterNots:
+        $ref: '#/definitions/api.Filters'
+        description: search filters
       filters:
         $ref: '#/definitions/api.Filters'
         description: search filters
@@ -269,6 +328,7 @@ definitions:
           $ref: '#/definitions/api.ResourceSortItem'
         type: array
     required:
+    - filterNots
     - filters
     - page
     type: object
@@ -471,6 +531,24 @@ definitions:
           type: array
         type: array
     type: object
+  api.ServiceCompliancyResponse:
+    properties:
+      serviceName:
+        type: string
+      totalCompliant:
+        type: integer
+      totalResources:
+        type: integer
+    type: object
+  api.ServiceDistributionItem:
+    properties:
+      distribution:
+        additionalProperties:
+          type: integer
+        type: object
+      serviceName:
+        type: string
+    type: object
   api.SmartQueryItem:
     properties:
       description:
@@ -548,12 +626,36 @@ definitions:
       sourceID:
         type: string
     type: object
+  api.TopServicesResponse:
+    properties:
+      resourceCount:
+        type: integer
+      serviceName:
+        type: string
+    type: object
   api.TrendDataPoint:
     properties:
       timestamp:
         type: integer
       value:
         type: integer
+    type: object
+  api.WorkspaceResponse:
+    properties:
+      createdAt:
+        type: string
+      description:
+        type: string
+      domain:
+        type: string
+      id:
+        type: string
+      name:
+        type: string
+      ownerId:
+        type: string
+      status:
+        type: string
     type: object
   compliance_report.Dimension:
     properties:
@@ -676,6 +778,8 @@ definitions:
         type: string
       name:
         type: string
+      onboardDate:
+        type: string
       sourceId:
         type: string
       type:
@@ -763,6 +867,104 @@ paths:
       summary: Update RoleBinding for a user.
       tags:
       - auth
+  /benchmarks/compliancy/{provider}/top/accounts:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: Count
+        in: query
+        name: count
+        required: true
+        type: integer
+      - description: Order
+        enum:
+        - asc
+        - desc
+        in: query
+        name: order
+        required: true
+        type: string
+      - description: Provider
+        enum:
+        - AWS
+        - Azure
+        in: path
+        name: provider
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/api.AccountCompliancyResponse'
+            type: array
+      summary: Return top accounts by benchmark compliancy
+      tags:
+      - provider_dashboard
+  /benchmarks/compliancy/{provider}/top/services:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: Count
+        in: query
+        name: count
+        required: true
+        type: integer
+      - description: Order
+        enum:
+        - asc
+        - desc
+        in: query
+        name: order
+        required: true
+        type: string
+      - description: Provider
+        enum:
+        - AWS
+        - Azure
+        in: path
+        name: provider
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/api.ServiceCompliancyResponse'
+            type: array
+      summary: Return top accounts by benchmark compliancy
+      tags:
+      - provider_dashboard
+  /inventory/api/v1/accounts/resource/count:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: Provider
+        in: query
+        name: provider
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/api.TopAccountResponse'
+            type: array
+      summary: Returns resource count of accounts
+      tags:
+      - benchmarks
   /inventory/api/v1/benchmarks:
     get:
       consumes:
@@ -793,6 +995,78 @@ paths:
       summary: Returns list of benchmarks
       tags:
       - benchmarks
+  /inventory/api/v1/benchmarks/{benchmark_id}/source/{source_id}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete benchmark assignment with source id and benchmark id
+      parameters:
+      - description: Benchmark ID
+        in: path
+        name: benchmark_id
+        required: true
+        type: string
+      - description: Source ID
+        in: path
+        name: source_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: ""
+      summary: Delete benchmark assignment for inventory service
+      tags:
+      - benchmarks_assignment
+    post:
+      consumes:
+      - application/json
+      description: Returns benchmark assignment which insert
+      parameters:
+      - description: Benchmark ID
+        in: path
+        name: benchmark_id
+        required: true
+        type: string
+      - description: Source ID
+        in: path
+        name: source_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/api.BenchmarkAssignment'
+      summary: Create benchmark assignment for inventory service
+      tags:
+      - benchmarks_assignment
+  /inventory/api/v1/benchmarks/{benchmark_id}/sources:
+    get:
+      consumes:
+      - application/json
+      description: Returns all benchmark assigned sources with benchmark id
+      parameters:
+      - description: Benchmark ID
+        in: path
+        name: benchmark_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/api.BenchmarkAssignedSource'
+            type: array
+      summary: Get all benchmark assigned sources with benchmark id
+      tags:
+      - benchmarks_assignment
   /inventory/api/v1/benchmarks/{benchmarkId}:
     get:
       consumes:
@@ -1022,6 +1296,46 @@ paths:
       summary: Returns list of policies of a given benchmark
       tags:
       - benchmarks
+  /inventory/api/v1/benchmarks/{provider}/list:
+    get:
+      consumes:
+      - application/json
+      description: You should fetch the benchmark report times from /benchmarks/history/:year/:month/:day
+      parameters:
+      - description: count
+        in: query
+        name: count
+        required: true
+        type: integer
+      - description: SourceID
+        in: query
+        name: sourceId
+        type: string
+      - description: Provider
+        enum:
+        - AWS
+        - Azure
+        in: path
+        name: provider
+        required: true
+        type: string
+      - description: CreatedAt
+        in: path
+        name: createdAt
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/api.BenchmarkScoreResponse'
+            type: array
+      summary: Returns all benchmark existed at the specified time
+      tags:
+      - benchmarks
   /inventory/api/v1/benchmarks/count:
     get:
       consumes:
@@ -1084,6 +1398,29 @@ paths:
       summary: Returns all benchmark existed at the specified time
       tags:
       - benchmarks
+  /inventory/api/v1/benchmarks/source/{source_id}:
+    get:
+      consumes:
+      - application/json
+      description: Returns all benchmark assignments with source id
+      parameters:
+      - description: Source ID
+        in: path
+        name: source_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/api.BenchmarkAssignment'
+            type: array
+      summary: Get all benchmark assignments with source id
+      tags:
+      - benchmarks_assignment
   /inventory/api/v1/benchmarks/tags:
     get:
       consumes:
@@ -1098,6 +1435,44 @@ paths:
               $ref: '#/definitions/api.GetBenchmarkTag'
             type: array
       summary: Returns list of benchmark tags
+      tags:
+      - benchmarks
+  /inventory/api/v1/compliancy/trend:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: SourceID
+        in: query
+        name: sourceId
+        required: true
+        type: string
+      - description: Provider
+        in: query
+        name: provider
+        required: true
+        type: string
+      - description: Time Window
+        enum:
+        - 24h
+        - 1w
+        - 3m
+        - 1y
+        - max
+        in: query
+        name: timeWindow
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/api.TrendDataPoint'
+            type: array
+      summary: Returns trend of compliancy for specific account
       tags:
       - benchmarks
   /inventory/api/v1/locations/{provider}:
@@ -1414,6 +1789,28 @@ paths:
       summary: Get Azure resources
       tags:
       - inventory
+  /inventory/api/v1/resources/categories:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: Provider
+        in: query
+        name: provider
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/api.TopAccountResponse'
+            type: array
+      summary: Return resource categories and number of resources
+      tags:
+      - inventory
   /inventory/api/v1/resources/distribution:
     get:
       consumes:
@@ -1479,6 +1876,37 @@ paths:
       summary: Returns top n accounts of specified provider by resource count
       tags:
       - benchmarks
+  /inventory/api/v1/resources/top/services:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: count
+        in: query
+        name: count
+        required: true
+        type: integer
+      - description: Provider
+        in: query
+        name: provider
+        required: true
+        type: string
+      - description: SourceID
+        in: query
+        name: sourceId
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/api.TopServicesResponse'
+            type: array
+      summary: Returns top n services of specified provider by resource count
+      tags:
+      - benchmarks
   /inventory/api/v1/resources/trend:
     get:
       consumes:
@@ -1517,6 +1945,47 @@ paths:
       summary: Returns trend of resource growth for specific account
       tags:
       - benchmarks
+  /inventory/api/v1/services/distribution:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: SourceID
+        in: query
+        name: sourceId
+        required: true
+        type: string
+      - description: Provider
+        in: query
+        name: provider
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/api.ServiceDistributionItem'
+            type: array
+      summary: Returns distribution of services for specific account
+      tags:
+      - benchmarks
+  /onboard/api/v1/{sourceId}/credentials:
+    post:
+      parameters:
+      - description: Source ID
+        in: query
+        name: sourceId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses: {}
+      summary: Put source credential
+      tags:
+      - onboard
   /onboard/api/v1/discover/aws/accounts:
     post:
       description: If the account is part of an organization and the account has premission
@@ -1734,6 +2203,28 @@ paths:
       summary: Returns a list of sources
       tags:
       - onboard
+  /onboard/api/v1/sources/count:
+    get:
+      description: Returning a count of sources including both AWS and Azure unless
+        filtered by Type.
+      parameters:
+      - description: Type
+        enum:
+        - aws
+        - azure
+        in: query
+        name: type
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: integer
+      summary: Returns a count of sources
+      tags:
+      - onboard
   /schedule/api/v1/resource_type/{provider}:
     get:
       description: get resource type by provider
@@ -1771,6 +2262,25 @@ paths:
               $ref: '#/definitions/gitlab.com_keibiengine_keibi-engine_pkg_describe_api.Source'
             type: array
       summary: List Sources
+      tags:
+      - schedule
+  /schedule/api/v1/sources/{source_id}:
+    get:
+      description: Getting Keibi source by id
+      parameters:
+      - description: SourceID
+        in: path
+        name: source_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/gitlab.com_keibiengine_keibi-engine_pkg_describe_api.Source'
+      summary: Get Source by id
       tags:
       - schedule
   /schedule/api/v1/sources/{source_id}/jobs/compliance:
@@ -1853,6 +2363,66 @@ paths:
       summary: Run describe jobs
       tags:
       - schedule
+  /workspace/api/v1/workspace:
+    post:
+      consumes:
+      - application/json
+      description: Returns workspace created
+      parameters:
+      - description: Create workspace request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/api.CreateWorkspaceRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/api.CreateWorkspaceResponse'
+      summary: Create workspace for workspace service
+      tags:
+      - workspace
+  /workspace/api/v1/workspace/:workspace_id:
+    delete:
+      consumes:
+      - application/json
+      description: Delete workspace with workspace id
+      parameters:
+      - description: Workspace ID
+        in: path
+        name: workspace_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: ""
+      summary: Delete workspace for workspace service
+      tags:
+      - workspace
+  /workspace/api/v1/workspaces:
+    get:
+      consumes:
+      - application/json
+      description: Returns all workspaces with owner id
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              items:
+                $ref: '#/definitions/api.WorkspaceResponse'
+              type: array
+            type: array
+      summary: List all workspaces with owner id
+      tags:
+      - workspace
 schemes:
 - https
 swagger: "2.0"

@@ -3,19 +3,19 @@ package compliance_report
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"os"
 	"os/exec"
 	"time"
 
-	"gitlab.com/keibiengine/keibi-engine/pkg/compliance-report/api"
-	"gitlab.com/keibiengine/keibi-engine/pkg/describe/kafka"
-	"gitlab.com/keibiengine/keibi-engine/pkg/utils"
+	"gitlab.com/keibiengine/keibi-engine/pkg/source"
 
 	"github.com/elastic/go-elasticsearch/v7"
 	"github.com/google/uuid"
+	"gitlab.com/keibiengine/keibi-engine/pkg/compliance-report/api"
+	"gitlab.com/keibiengine/keibi-engine/pkg/compliance-report/client"
+	"gitlab.com/keibiengine/keibi-engine/pkg/describe/kafka"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/vault"
 	"gitlab.com/keibiengine/keibi-engine/pkg/keibi-es-sdk"
 	"go.uber.org/zap"
@@ -29,7 +29,7 @@ const (
 type Job struct {
 	JobID       uint
 	SourceID    uuid.UUID
-	SourceType  utils.SourceType
+	SourceType  source.Type
 	ConfigReg   string
 	DescribedAt int64
 	logger      *zap.Logger
@@ -72,7 +72,7 @@ func (j *Job) Do(vlt vault.SourceConfig, producer sarama.SyncProducer, topic str
 
 	var accountID string
 	switch j.SourceType {
-	case utils.SourceCloudAWS:
+	case source.CloudAWS:
 		creds, err := AWSAccountConfigFromMap(cfg)
 		if err != nil {
 			return j.failed("error: AWSAccountConfigFromMap: " + err.Error())
@@ -83,7 +83,7 @@ func (j *Job) Do(vlt vault.SourceConfig, producer sarama.SyncProducer, topic str
 		if err != nil {
 			return j.failed("error: BuildSpecFile: " + err.Error())
 		}
-	case utils.SourceCloudAzure:
+	case source.CloudAzure:
 		creds, err := AzureSubscriptionConfigFromMap(cfg)
 		if err != nil {
 			return j.failed("error: AzureSubscriptionConfigFromMap: " + err.Error())
@@ -111,9 +111,17 @@ func (j *Job) Do(vlt vault.SourceConfig, producer sarama.SyncProducer, topic str
 		}
 	}()
 
-	err = RunSteampipeCheckAll(j.SourceType, resultFileName)
+	assignments, err := client.GetBenchmarkAssignmentsBySourceId(config.InventoryBaseUrl, j.SourceID)
 	if err != nil {
-		return j.failed("error: RunSteampipeCheckAll: " + err.Error())
+		return j.failed("error: Get benchmark assignments by source: " + err.Error())
+	}
+
+	var benchmakrs []string
+	for _, assignment := range assignments {
+		benchmakrs = append(benchmakrs, assignment.BenchmarkId)
+	}
+	if err := RunSteampipeCheckBenchmarks(j.SourceType, benchmakrs, resultFileName); err != nil {
+		return j.failed("error: RunSteampipeCheckBenchmarks: " + err.Error())
 	}
 
 	reports, err := ParseReport(resultFileName, j.JobID, j.SourceID, j.DescribedAt, j.SourceType)
@@ -140,7 +148,11 @@ func (j *Job) Do(vlt vault.SourceConfig, producer sarama.SyncProducer, topic str
 		TotalResources:       totalResource,
 		TotalCompliant:       summary.Status.OK,
 		CompliancePercentage: float64(summary.Status.OK) / float64(totalResource),
+		AccountReportType:    AccountReportTypeInTime,
 	}
+
+	acrLast := acr
+	acrLast.AccountReportType = AccountReportTypeLast
 
 	resourceStatus := map[string]ResultStatus{}
 	for _, r := range reports {
@@ -159,8 +171,6 @@ func (j *Job) Do(vlt vault.SourceConfig, producer sarama.SyncProducer, topic str
 			nonCompliant++
 		} else if status == ResultStatusOK {
 			compliant++
-		} else {
-			// ResultStatusSkip
 		}
 	}
 	resource := kafka.ResourceCompliancyTrendResource{
@@ -174,7 +184,7 @@ func (j *Job) Do(vlt vault.SourceConfig, producer sarama.SyncProducer, topic str
 	}
 
 	var msgs []kafka.Message
-	msgs = append(msgs, acr, resource)
+	msgs = append(msgs, acr, acrLast, resource)
 	for _, r := range reports {
 		msgs = append(msgs, r)
 	}
@@ -190,41 +200,43 @@ func (j *Job) Do(vlt vault.SourceConfig, producer sarama.SyncProducer, topic str
 	}
 }
 
-func RunSteampipeCheckAll(sourceType utils.SourceType, exportFileName string) error {
+func RunSteampipeCheckBenchmarks(sourceType source.Type, benchmarks []string, exportFileName string) error {
 	workspaceDir := ""
-
 	switch sourceType {
-	case utils.SourceCloudAWS:
+	case source.CloudAWS:
 		workspaceDir = "/steampipe-mod-aws-compliance"
-	case utils.SourceCloudAzure:
+	case source.CloudAzure:
 		workspaceDir = "/steampipe-mod-azure-compliance"
 	default:
-		return errors.New("invalid source type")
+		return fmt.Errorf("invalid source type: %s", sourceType)
 	}
 
-	cmd := exec.Command("steampipe", "check", "all",
-		"--export", exportFileName, "--workspace-chdir", workspaceDir)
+	var args []string
+	args = append(args, "check")
+	if len(benchmarks) > 0 {
+		args = append(args, benchmarks...)
+	} else {
+		args = append(args, "all")
+	}
+	args = append(args, "--export")
+	args = append(args, exportFileName)
+	args = append(args, "--workspace-chdir")
+	args = append(args, workspaceDir)
+
 	// steampipe will return total of alarms + errors as exit code
 	// that would result in error on cmd.Run() output.
 	// to prevent error on having alarms we ignore the error reported by cmd.Run()
 	// exported json summery object is being used for discovering whether
 	// there's an error or not
-	_ = cmd.Run()
+	_ = exec.Command("steampipe", args...).Run()
 
-	contentBytes, err := ioutil.ReadFile(exportFileName)
+	data, err := ioutil.ReadFile(exportFileName)
 	if err != nil {
 		return err
 	}
-
-	var v SteampipeResultJson
-	err = json.Unmarshal(contentBytes, &v)
-	if err != nil {
-		return err
+	if !json.Valid(data) {
+		return fmt.Errorf("%s is invalid json file", exportFileName)
 	}
-
-	//if v.Summary.Status.Error > 0 {
-	//	return fmt.Errorf("steampipe returned %d errors", v.Summary.Status.Error)
-	//}
 	return nil
 }
 

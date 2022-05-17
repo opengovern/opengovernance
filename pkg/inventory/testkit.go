@@ -15,12 +15,16 @@ import (
 	"strconv"
 	"time"
 
+	onboardapi "gitlab.com/keibiengine/keibi-engine/pkg/onboard/api"
+
+	es2 "gitlab.com/keibiengine/keibi-engine/pkg/compliance-report/es"
+
+	"gitlab.com/keibiengine/keibi-engine/pkg/source"
+
 	"gitlab.com/keibiengine/keibi-engine/pkg/cloudservice"
 
 	api2 "gitlab.com/keibiengine/keibi-engine/pkg/compliance-report/api"
 	"gitlab.com/keibiengine/keibi-engine/pkg/describe/kafka"
-	"gitlab.com/keibiengine/keibi-engine/pkg/utils"
-
 	"gorm.io/gorm"
 
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2020-05-01/network"
@@ -78,6 +82,10 @@ func PopulateElastic(address string, d *DescribeMock) error {
 	if err != nil {
 		return err
 	}
+	err = ApplyTemplate(address, "_index_template/compliance_summary_template", "compliance_summary_template.json")
+	if err != nil {
+		return err
+	}
 	err = ApplyTemplate(address, "_index_template/resource_growth_template", "resource_growth_template.json")
 	if err != nil {
 		return err
@@ -128,6 +136,13 @@ func PopulateElastic(address string, d *DescribeMock) error {
 		}
 	}
 
+	for _, resource := range GenerateServiceDistribution() {
+		err := IndexKafkaMessage(es, resource)
+		if err != nil {
+			return err
+		}
+	}
+
 	err = GenerateResources(es)
 	if err != nil {
 		return err
@@ -154,6 +169,16 @@ func PopulateElastic(address string, d *DescribeMock) error {
 	d.SetResponse(j1)
 
 	err = GenerateAccountReport(es, u, 1020, createdAt)
+	if err != nil {
+		return err
+	}
+
+	err = GenerateAccountReport(es, uuid.New(), 1022, createdAt+2)
+	if err != nil {
+		return err
+	}
+
+	err = GenerateServiceComplianceSummary(es, 1020, createdAt)
 	if err != nil {
 		return err
 	}
@@ -387,12 +412,55 @@ func GenerateLocationDistribution() []kafka.LocationDistributionResource {
 	return resources
 }
 
+func GenerateServiceDistribution() []kafka.SourceServiceDistributionResource {
+	var resources []kafka.SourceServiceDistributionResource
+	for i := 0; i < 3; i++ {
+		resource := kafka.SourceServiceDistributionResource{
+			SourceID:    "2a87b978-b8bf-4d7e-bc19-cf0a99a430cf",
+			ServiceName: "EC2 Instance",
+			SourceType:  "AWS",
+			SourceJobID: 1020,
+			LocationDistribution: map[string]int{
+				"us-east-1": 5,
+				"us-west-1": 5,
+			},
+			ReportType: kafka.ResourceSummaryTypeServiceDistributionSummary,
+		}
+		resources = append(resources, resource)
+	}
+	for i := 0; i < 1; i++ {
+		resource := kafka.SourceServiceDistributionResource{
+			SourceID:    uuid.New().String(),
+			ServiceName: "EC2 VPC",
+			SourceType:  "AWS",
+			SourceJobID: 1021,
+			LocationDistribution: map[string]int{
+				"us-east-2": 5,
+				"us-west-2": 5,
+			},
+			ReportType: kafka.ResourceSummaryTypeServiceDistributionSummary,
+		}
+		resources = append(resources, resource)
+	}
+	return resources
+}
+
 func PopulatePostgres(db Database) error {
 	err := db.AddQuery(&SmartQuery{
 		Provider:    "AWS",
 		Title:       "Query 1",
 		Description: "description 1",
 		Query:       "select count(*) from aws_ec2_instance",
+		Tags: []Tag{
+			{
+				Key:   "key1",
+				Value: "value1",
+			},
+			{
+				Key:   "key2",
+				Value: "value2",
+			},
+		},
 	})
 	if err != nil {
 		return err
@@ -526,6 +594,7 @@ func PopulatePostgres(db Database) error {
 func GenerateAccountReport(es *elasticsearchv7.Client, sourceId uuid.UUID, jobID uint, createdAt int64) error {
 	r := compliance_report.AccountReport{
 		SourceID:    sourceId,
+		Provider:    source.CloudAzure,
 		BenchmarkID: "azure_compliance.benchmark.cis_v130",
 		ReportJobId: jobID,
 		Summary: compliance_report.Summary{
@@ -541,8 +610,75 @@ func GenerateAccountReport(es *elasticsearchv7.Client, sourceId uuid.UUID, jobID
 		TotalResources:       21,
 		TotalCompliant:       20,
 		CompliancePercentage: 0.99,
+		AccountReportType:    compliance_report.AccountReportTypeInTime,
 	}
-	return IndexKafkaMessage(es, r)
+	err := IndexKafkaMessage(es, r)
+	if err != nil {
+		return err
+	}
+
+	r = compliance_report.AccountReport{
+		SourceID:    sourceId,
+		Provider:    source.CloudAzure,
+		BenchmarkID: "azure_compliance.benchmark.cis_v130",
+		ReportJobId: jobID,
+		Summary: compliance_report.Summary{
+			Status: compliance_report.SummaryStatus{
+				Alarm: 0,
+				OK:    20,
+				Info:  0,
+				Skip:  1,
+				Error: 0,
+			},
+		},
+		CreatedAt:            createdAt,
+		TotalResources:       21,
+		TotalCompliant:       20,
+		CompliancePercentage: 0.99,
+		AccountReportType:    compliance_report.AccountReportTypeLast,
+	}
+	err = IndexKafkaMessage(es, r)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func GenerateServiceComplianceSummary(es *elasticsearchv7.Client, jobID uint, createdAt int64) error {
+	r := es2.ServiceCompliancySummary{
+		ServiceName:          "EC2 Instance",
+		TotalResources:       21,
+		TotalCompliant:       20,
+		CompliancePercentage: 0.99,
+		CompliancySummary: es2.CompliancySummary{
+			CompliancySummaryType: es2.CompliancySummaryTypeServiceSummary,
+			ReportJobId:           jobID,
+			Provider:              source.CloudAzure,
+			DescribedAt:           createdAt,
+		},
+	}
+	err := IndexKafkaMessage(es, r)
+	if err != nil {
+		return err
+	}
+
+	r = es2.ServiceCompliancySummary{
+		ServiceName:          "EC2 VPC",
+		TotalResources:       21,
+		TotalCompliant:       20,
+		CompliancePercentage: 0.99,
+		CompliancySummary: es2.CompliancySummary{
+			CompliancySummaryType: es2.CompliancySummaryTypeServiceSummary,
+			ReportJobId:           jobID,
+			Provider:              source.CloudAzure,
+			DescribedAt:           createdAt,
+		},
+	}
+	err = IndexKafkaMessage(es, r)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 func GenerateComplianceReport(es *elasticsearchv7.Client, sourceId uuid.UUID, jobID uint, createdAt int64) error {
 	r, err := compliance_report.ParseReport(
@@ -550,7 +686,7 @@ func GenerateComplianceReport(es *elasticsearchv7.Client, sourceId uuid.UUID, jo
 		jobID,
 		sourceId,
 		createdAt,
-		utils.SourceCloudAzure,
+		source.CloudAzure,
 	)
 	if err != nil {
 		return err
@@ -790,6 +926,28 @@ func (m *DescribeMock) HelloServer(w http.ResponseWriter, r *http.Request) {
 		fmt.Printf("Failed marshaling json: %v\n", err.Error())
 	}
 
+	_, err = fmt.Fprint(w, string(b))
+	if err != nil {
+		fmt.Printf("Failed writing to response: %v\n", err.Error())
+	}
+}
+
+func (m *DescribeMock) GetSource(w http.ResponseWriter, r *http.Request) {
+	uuid1, _ := uuid.Parse("c29c0dae-823f-4726-ade0-5fa94a941e88")
+	res := onboardapi.Source{
+		ID:          uuid1,
+		SourceId:    "aaa0",
+		Name:        "Name",
+		Type:        onboardapi.SourceCloudAWS,
+		Description: "",
+		OnboardDate: time.Now(),
+	}
+
+	b, err := json.Marshal(res)
+	if err != nil {
+		fmt.Printf("Failed marshaling json: %v\n", err.Error())
+	}
+
 	_, err = fmt.Fprintf(w, string(b))
 	if err != nil {
 		fmt.Printf("Failed writing to response: %v\n", err.Error())
@@ -803,5 +961,6 @@ func (m *DescribeMock) SetResponse(jobs ...describe.ComplianceReportJob) {
 func (m *DescribeMock) Run() {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/api/v1/sources/", m.HelloServer)
+	mux.HandleFunc("/api/v1/source/", m.GetSource)
 	m.MockServer = httptest.NewServer(mux)
 }

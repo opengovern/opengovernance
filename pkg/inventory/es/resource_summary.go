@@ -85,9 +85,11 @@ func FindTopAccountsQuery(provider string, fetchSize int) (string, error) {
 		"terms": map[string][]string{"report_type": {kafka.ResourceSummaryTypeLastSummary}},
 	})
 
-	filters = append(filters, map[string]interface{}{
-		"terms": map[string][]string{"source_type": {provider}},
-	})
+	if provider != "" {
+		filters = append(filters, map[string]interface{}{
+			"terms": map[string][]string{"source_type": {provider}},
+		})
+	}
 
 	res["size"] = fetchSize
 	res["sort"] = []map[string]interface{}{
@@ -121,7 +123,7 @@ type TopServicesQueryHit struct {
 	Sort    []interface{}               `json:"sort"`
 }
 
-func FindTopServicesQuery(provider string, fetchSize int) (string, error) {
+func FindTopServicesQuery(provider string, sourceID *string, fetchSize int) (string, error) {
 	res := make(map[string]interface{})
 	var filters []interface{}
 
@@ -129,9 +131,17 @@ func FindTopServicesQuery(provider string, fetchSize int) (string, error) {
 		"terms": map[string][]string{"report_type": {kafka.ResourceSummaryTypeLastServiceSummary}},
 	})
 
-	filters = append(filters, map[string]interface{}{
-		"terms": map[string][]string{"source_type": {provider}},
-	})
+	if provider != "" {
+		filters = append(filters, map[string]interface{}{
+			"terms": map[string][]string{"source_type": {provider}},
+		})
+	}
+
+	if sourceID != nil {
+		filters = append(filters, map[string]interface{}{
+			"terms": map[string][]string{"source_id": {*sourceID}},
+		})
+	}
 
 	res["size"] = fetchSize
 	res["sort"] = []map[string]interface{}{
@@ -173,9 +183,11 @@ func GetCategoriesQuery(provider string, fetchSize int) (string, error) {
 		"terms": map[string][]string{"report_type": {kafka.ResourceSummaryTypeLastCategorySummary}},
 	})
 
-	filters = append(filters, map[string]interface{}{
-		"terms": map[string][]string{"source_type": {provider}},
-	})
+	if provider != "" {
+		filters = append(filters, map[string]interface{}{
+			"terms": map[string][]string{"source_type": {provider}},
+		})
+	}
 
 	res["size"] = fetchSize
 	res["sort"] = []map[string]interface{}{
@@ -239,6 +251,23 @@ type LocationDistributionQueryHit struct {
 	Sort    []interface{}                      `json:"sort"`
 }
 
+type ServiceDistributionQueryResponse struct {
+	Hits ServiceDistributionQueryHits `json:"hits"`
+}
+type ServiceDistributionQueryHits struct {
+	Total keibi.SearchTotal             `json:"total"`
+	Hits  []ServiceDistributionQueryHit `json:"hits"`
+}
+type ServiceDistributionQueryHit struct {
+	ID      string                                  `json:"_id"`
+	Score   float64                                 `json:"_score"`
+	Index   string                                  `json:"_index"`
+	Type    string                                  `json:"_type"`
+	Version int64                                   `json:"_version,omitempty"`
+	Source  kafka.SourceServiceDistributionResource `json:"_source"`
+	Sort    []interface{}                           `json:"sort"`
+}
+
 func FindLocationDistributionQuery(sourceID *uuid.UUID, provider *string,
 	fetchSize int, searchAfter []interface{}) (string, error) {
 
@@ -260,6 +289,37 @@ func FindLocationDistributionQuery(sourceID *uuid.UUID, provider *string,
 			"terms": map[string][]string{"source_id": {sourceID.String()}},
 		})
 	}
+
+	res["size"] = fetchSize
+	res["sort"] = []map[string]interface{}{
+		{
+			"_id": "asc",
+		},
+	}
+	if searchAfter != nil {
+		res["search_after"] = searchAfter
+	}
+
+	res["query"] = map[string]interface{}{
+		"bool": map[string]interface{}{
+			"filter": filters,
+		},
+	}
+	b, err := json.Marshal(res)
+	return string(b), err
+}
+
+func FindSourceServiceDistributionQuery(sourceID uuid.UUID, fetchSize int, searchAfter []interface{}) (string, error) {
+	res := make(map[string]interface{})
+	var filters []interface{}
+
+	filters = append(filters, map[string]interface{}{
+		"terms": map[string][]string{"report_type": {kafka.ResourceSummaryTypeServiceDistributionSummary}},
+	})
+
+	filters = append(filters, map[string]interface{}{
+		"terms": map[string][]string{"source_id": {sourceID.String()}},
+	})
 
 	res["size"] = fetchSize
 	res["sort"] = []map[string]interface{}{

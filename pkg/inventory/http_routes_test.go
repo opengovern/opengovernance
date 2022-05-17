@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -15,6 +16,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"gorm.io/gorm/logger"
 
 	api3 "gitlab.com/keibiengine/keibi-engine/pkg/compliance-report/api"
 
@@ -29,6 +32,7 @@ import (
 	pagination "gitlab.com/keibiengine/keibi-engine/pkg/internal/api"
 	idocker "gitlab.com/keibiengine/keibi-engine/pkg/internal/dockertest"
 	"gitlab.com/keibiengine/keibi-engine/pkg/inventory/api"
+	"gitlab.com/keibiengine/keibi-engine/pkg/inventory/client"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
@@ -166,7 +170,19 @@ func (s *HttpHandlerSuite) SetupSuite() {
 	var orm *gorm.DB
 	// exponential backoff-retry, because the application in the container might not be ready to accept connections yet
 	err = pool.Retry(func() error {
-		orm, err = gorm.Open(postgres.Open(fmt.Sprintf("postgres://postgres:mysecretpassword@%s:%s/postgres", idocker.GetDockerHost(), postgresResource.GetPort("5432/tcp"))), &gorm.Config{})
+		newLogger := logger.New(
+			log.New(os.Stdout, "\r\n", log.LstdFlags), // io writer
+			logger.Config{
+				SlowThreshold:             time.Second, // Slow SQL threshold
+				LogLevel:                  logger.Info, // Log level
+				IgnoreRecordNotFoundError: true,        // Ignore ErrRecordNotFound error for logger
+				Colorful:                  true,        // Disable color
+			},
+		)
+
+		orm, err = gorm.Open(postgres.Open(fmt.Sprintf("postgres://postgres:mysecretpassword@%s:%s/postgres", idocker.GetDockerHost(), postgresResource.GetPort("5432/tcp"))), &gorm.Config{
+			Logger: newLogger,
+		})
 		if err != nil {
 			return err
 		}
@@ -238,6 +254,7 @@ func (s *HttpHandlerSuite) TestGetAllResources() {
 	require.NoError(err, "request")
 	require.Equal(http.StatusOK, rec.Code)
 	require.Len(response.Resources, 4)
+	require.Equal("Name", response.Resources[0].SourceName)
 }
 
 func (s *HttpHandlerSuite) TestGetAllResources_Sort() {
@@ -530,6 +547,13 @@ func (s *HttpHandlerSuite) TestGetQueries() {
 	require.NoError(err, "request")
 	require.Equal(http.StatusOK, rec.Code)
 	require.Len(response, 4)
+	containsTag := false
+	for _, sm := range response {
+		if len(sm.Tags) > 0 {
+			containsTag = true
+		}
+	}
+	require.True(containsTag)
 
 	var c int
 	rec, err = doRequestJSONResponse(s.router, echo.GET, "/api/v1/query/count", &req, &c)
@@ -1080,7 +1104,7 @@ func (s *HttpHandlerSuite) TestGetBenchmarkAccountCompliance() {
 	t := time.Now()
 	start := time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, t.Location())
 
-	cr, err := api.ListComplianceReportJobs(s.describe.MockServer.URL, sourceID, &api.TimeRangeFilter{
+	cr, err := client.ListComplianceReportJobs(s.describe.MockServer.URL, sourceID, &api.TimeRangeFilter{
 		From: start.UnixMilli(),
 		To:   t.UnixMilli(),
 	})
@@ -1111,7 +1135,7 @@ func (s *HttpHandlerSuite) TestGetBenchmarkAccounts() {
 	t := time.Now()
 	start := time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, t.Location())
 
-	cr, err := api.ListComplianceReportJobs(s.describe.MockServer.URL, sourceID, &api.TimeRangeFilter{
+	cr, err := client.ListComplianceReportJobs(s.describe.MockServer.URL, sourceID, &api.TimeRangeFilter{
 		From: start.UnixMilli(),
 		To:   t.UnixMilli(),
 	})
@@ -1240,6 +1264,64 @@ func (s *HttpHandlerSuite) TestGetCategories() {
 	})
 }
 
+func (s *HttpHandlerSuite) TestGetListOfBenchmarks() {
+	require := s.Require()
+
+	url := "/api/v1/benchmarks/Azure/list?count=5"
+	var res []api.BenchmarkScoreResponse
+	_, err := doRequestJSONResponse(s.router, "GET", url, nil, &res)
+
+	require.NoError(err)
+	require.Len(res, 1)
+	require.Contains(res, api.BenchmarkScoreResponse{
+		BenchmarkID:       "azure_compliance.benchmark.cis_v130",
+		NonCompliantCount: 2,
+	})
+
+	url = "/api/v1/benchmarks/Azure/list?count=5&sourceId=2a87b978-b8bf-4d7e-bc19-cf0a99a430cf"
+	_, err = doRequestJSONResponse(s.router, "GET", url, nil, &res)
+
+	require.NoError(err)
+	require.Len(res, 1)
+	require.Contains(res, api.BenchmarkScoreResponse{
+		BenchmarkID:       "azure_compliance.benchmark.cis_v130",
+		NonCompliantCount: 1,
+	})
+}
+
+func (s *HttpHandlerSuite) TestGetTopAccountsByCompliancy() {
+	require := s.Require()
+
+	url := "/api/v1/benchmarks/compliancy/Azure/top/accounts?count=5&order=desc"
+	var res []api.AccountCompliancyResponse
+	_, err := doRequestJSONResponse(s.router, "GET", url, nil, &res)
+
+	require.NoError(err)
+	require.Len(res, 2)
+	sourceID, _ := uuid.Parse("2a87b978-b8bf-4d7e-bc19-cf0a99a430cf")
+	require.Contains(res, api.AccountCompliancyResponse{
+		SourceID:       sourceID,
+		TotalResources: 21,
+		TotalCompliant: 20,
+	})
+}
+
+func (s *HttpHandlerSuite) TestGetTopServicesByCompliancy() {
+	require := s.Require()
+
+	url := "/api/v1/benchmarks/compliancy/Azure/top/services?count=5&order=desc"
+	var res []api.ServiceCompliancyResponse
+	_, err := doRequestJSONResponse(s.router, "GET", url, nil, &res)
+
+	require.NoError(err)
+	require.Len(res, 2)
+	require.Contains(res, api.ServiceCompliancyResponse{
+		ServiceName:    "EC2 Instance",
+		TotalResources: 21,
+		TotalCompliant: 20,
+	})
+}
+
 func (s *HttpHandlerSuite) TestCountBenchmarksAndPolicies() {
 	require := s.Require()
 
@@ -1268,6 +1350,21 @@ func (s *HttpHandlerSuite) TestGetLocationDistributionOfAccount() {
 
 	require.NoError(err)
 	require.Len(res, 2)
+}
+
+func (s *HttpHandlerSuite) TestGetServiceDistributionOfAccount() {
+	require := s.Require()
+	sourceID, err := uuid.Parse("2a87b978-b8bf-4d7e-bc19-cf0a99a430cf")
+	require.NoError(err)
+
+	url := fmt.Sprintf("/api/v1/services/distribution?sourceId=%s", sourceID.String())
+	var res []api.ServiceDistributionItem
+	_, err = doRequestJSONResponse(s.router, "GET", url, nil, &res)
+
+	require.NoError(err)
+	require.Len(res, 1)
+	require.Equal(res[0].ServiceName, "EC2 Instance")
+	require.Equal(res[0].Distribution["us-east-1"], 5)
 }
 
 func (s *HttpHandlerSuite) TestGetLocationDistributionOfProvider() {

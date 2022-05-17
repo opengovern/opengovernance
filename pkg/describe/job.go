@@ -210,8 +210,9 @@ func doDescribeAWS(ctx context.Context, job DescribeJob, config map[string]inter
 	var msgs []kafka.Message
 	locationDistribution := map[string]int{}
 
-	var categoryCount map[string]int
-	var serviceCount map[string]int
+	categoryCount := map[string]int{}
+	serviceCount := map[string]int{}
+	serviceDistribution := map[string]map[string]int{}
 	for _, resources := range output.Resources {
 		for _, resource := range resources {
 			if resource.Description == nil {
@@ -249,6 +250,13 @@ func doDescribeAWS(ctx context.Context, job DescribeJob, config map[string]inter
 			region := strings.TrimSpace(resource.Region)
 			if region != "" {
 				locationDistribution[region]++
+				if s := cloudservice.ServiceNameByResourceType(resource.Type); s != "" {
+					if serviceDistribution[s] == nil {
+						serviceDistribution[s] = make(map[string]int)
+					}
+
+					serviceDistribution[s][region]++
+				}
 			}
 
 			if s := cloudservice.ServiceNameByResourceType(resource.Type); s != "" {
@@ -309,6 +317,17 @@ func doDescribeAWS(ctx context.Context, job DescribeJob, config map[string]inter
 	}
 	msgs = append(msgs, locDistribution)
 
+	for serviceName, m := range serviceDistribution {
+		msgs = append(msgs, kafka.SourceServiceDistributionResource{
+			SourceID:             job.SourceID,
+			ServiceName:          serviceName,
+			SourceType:           job.SourceType,
+			SourceJobID:          job.JobID,
+			LocationDistribution: m,
+			ReportType:           kafka.ResourceSummaryTypeServiceDistributionSummary,
+		})
+	}
+
 	// For AWS resources, since they are queries independently per region,
 	// if there is an error in some regions, return those errors. For the regions
 	// with no error, return the list of resources.
@@ -347,8 +366,9 @@ func doDescribeAzure(ctx context.Context, job DescribeJob, config map[string]int
 		return nil, fmt.Errorf("Azure: %w", err)
 	}
 
-	var categoryCount map[string]int
-	var serviceCount map[string]int
+	serviceDistribution := map[string]map[string]int{}
+	categoryCount := map[string]int{}
+	serviceCount := map[string]int{}
 	var msgs []kafka.Message
 	locationDistribution := map[string]int{}
 	for _, resource := range output.Resources {
@@ -388,6 +408,13 @@ func doDescribeAzure(ctx context.Context, job DescribeJob, config map[string]int
 		location := strings.TrimSpace(resource.Location)
 		if location != "" {
 			locationDistribution[location]++
+			if s := cloudservice.ServiceNameByResourceType(resource.Type); s != "" {
+				if serviceDistribution[s] == nil {
+					serviceDistribution[s] = make(map[string]int)
+				}
+
+				serviceDistribution[s][location]++
+			}
 		}
 		if s := cloudservice.ServiceNameByResourceType(resource.Type); s != "" {
 			serviceCount[s]++
@@ -421,12 +448,24 @@ func doDescribeAzure(ctx context.Context, job DescribeJob, config map[string]int
 		msgs = append(msgs, services)
 	}
 
+	for serviceName, m := range serviceDistribution {
+		msgs = append(msgs, kafka.SourceServiceDistributionResource{
+			SourceID:             job.SourceID,
+			ServiceName:          serviceName,
+			SourceType:           job.SourceType,
+			SourceJobID:          job.JobID,
+			LocationDistribution: m,
+			ReportType:           kafka.ResourceSummaryTypeServiceDistributionSummary,
+		})
+	}
+
 	trend := kafka.SourceResourcesSummary{
 		SourceID:      job.SourceID,
 		SourceType:    job.SourceType,
 		SourceJobID:   job.JobID,
 		DescribedAt:   job.DescribedAt,
 		ResourceCount: len(output.Resources),
+		ReportType:    kafka.ResourceSummaryTypeResourceGrowthTrend,
 	}
 	msgs = append(msgs, trend)
 
@@ -441,6 +480,7 @@ func doDescribeAzure(ctx context.Context, job DescribeJob, config map[string]int
 		SourceType:           job.SourceType,
 		SourceJobID:          job.JobID,
 		LocationDistribution: locationDistribution,
+		ReportType:           kafka.ResourceSummaryTypeLocationDistribution,
 	}
 	msgs = append(msgs, locDistribution)
 

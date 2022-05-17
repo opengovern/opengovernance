@@ -1,6 +1,6 @@
 {
   "index_patterns": [
-    "account_report"
+    "compliance_summary"
   ],
   "template": {
     "mappings": {
@@ -37,23 +37,16 @@
         }
       ],
       "properties": {
-        "sourceID": {
+        "serviceName": {
           "type": "keyword"
         },
         "provider": {
           "type": "keyword"
         },
-        "benchmarkID": {
-          "type": "keyword"
-        },
         "reportJobID": {
           "type": "long"
         },
-        "summary": {
-          "type": "object",
-          "dynamic": true
-        },
-        "createdAt": {
+        "describedAt": {
           "type": "long"
         },
         "totalResources": {
@@ -65,13 +58,13 @@
         "compliancePercentage": {
           "type": "double"
         },
-        "accountReportType": {
+        "compliancySummaryType": {
           "type": "keyword"
         }
       }
     }
   },
   "_meta": {
-    "description": "Account report index"
+    "description": "Compliance summary index"
   }
 }
