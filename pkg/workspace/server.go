@@ -101,7 +101,7 @@ func (s *Server) CreateWorkspace(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "name is empty")
 	}
 
-	domain := request.Name + s.cfg.DomainSuffix
+	domain := strings.ToLower(request.Name + s.cfg.DomainSuffix)
 	if errors := validation.IsQualifiedName(domain); len(errors) > 0 {
 		c.Logger().Errorf("invalid domain: %v", errors)
 		return echo.NewHTTPError(http.StatusBadRequest, errors)
@@ -116,7 +116,7 @@ func (s *Server) CreateWorkspace(c echo.Context) error {
 		ID:          uuid.New(),
 		Name:        strings.ToLower(request.Name),
 		OwnerId:     ownerId,
-		Domain:      strings.ToLower(domain),
+		Domain:      domain,
 		Status:      StatusProvisioning.String(),
 		Description: request.Description,
 	}
