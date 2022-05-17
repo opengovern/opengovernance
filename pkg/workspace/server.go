@@ -104,7 +104,7 @@ func (s *Server) CreateWorkspace(c echo.Context) error {
 	domain := request.Name + s.cfg.DomainSuffix
 	if errors := validation.IsQualifiedName(domain); len(errors) > 0 {
 		c.Logger().Errorf("invalid domain: %v", errors)
-		return echo.NewHTTPError(http.StatusBadGateway, "invalid name")
+		return echo.NewHTTPError(http.StatusBadRequest, errors)
 	}
 
 	ownerId := c.Request().Header.Get(KeibiUserID)
@@ -114,9 +114,9 @@ func (s *Server) CreateWorkspace(c echo.Context) error {
 
 	workspace := &Workspace{
 		ID:          uuid.New(),
-		Name:        request.Name,
+		Name:        strings.ToLower(request.Name),
 		OwnerId:     ownerId,
-		Domain:      domain,
+		Domain:      strings.ToLower(domain),
 		Status:      StatusProvisioning.String(),
 		Description: request.Description,
 	}
