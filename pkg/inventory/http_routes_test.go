@@ -254,6 +254,7 @@ func (s *HttpHandlerSuite) TestGetAllResources() {
 	require.NoError(err, "request")
 	require.Equal(http.StatusOK, rec.Code)
 	require.Len(response.Resources, 4)
+	require.Equal("Name", response.Resources[0].SourceName)
 }
 
 func (s *HttpHandlerSuite) TestGetAllResources_Sort() {

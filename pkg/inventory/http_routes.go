@@ -1865,16 +1865,61 @@ func (h *HttpHandler) GetResources(ectx echo.Context, provider *api.SourceType) 
 	}
 
 	if provider == nil {
+		uniqueSourceIds := map[string]string{}
+		for _, resource := range res.AllResources {
+			uniqueSourceIds[resource.SourceID] = ""
+		}
+		for sourceId := range uniqueSourceIds {
+			src, err := api.GetSource(h.schedulerBaseUrl, sourceId)
+			if err != nil {
+				return err
+			}
+
+			uniqueSourceIds[sourceId] = src.Name
+		}
+		for idx := range res.AllResources {
+			res.AllResources[idx].SourceName = uniqueSourceIds[res.AllResources[idx].SourceID]
+		}
 		return cc.JSON(http.StatusOK, api.GetResourcesResponse{
 			Resources: res.AllResources,
 			Page:      res.Page,
 		})
 	} else if *provider == api.SourceCloudAWS {
+		uniqueSourceIds := map[string]string{}
+		for _, resource := range res.AWSResources {
+			uniqueSourceIds[resource.AccountID] = ""
+		}
+		for sourceId := range uniqueSourceIds {
+			src, err := api.GetSource(h.schedulerBaseUrl, sourceId)
+			if err != nil {
+				return err
+			}
+
+			uniqueSourceIds[sourceId] = src.Name
+		}
+		for _, resource := range res.AWSResources {
+			resource.AccountName = uniqueSourceIds[resource.AccountID]
+		}
 		return cc.JSON(http.StatusOK, api.GetAWSResourceResponse{
 			Resources: res.AWSResources,
 			Page:      res.Page,
 		})
 	} else if *provider == api.SourceCloudAzure {
+		uniqueSourceIds := map[string]string{}
+		for _, resource := range res.AzureResources {
+			uniqueSourceIds[resource.SubscriptionID] = ""
+		}
+		for sourceId := range uniqueSourceIds {
+			src, err := api.GetSource(h.schedulerBaseUrl, sourceId)
+			if err != nil {
+				return err
+			}
+
+			uniqueSourceIds[sourceId] = src.Name
+		}
+		for _, resource := range res.AzureResources {
+			resource.SubscriptionName = uniqueSourceIds[resource.SubscriptionID]
+		}
 		return cc.JSON(http.StatusOK, api.GetAzureResourceResponse{
 			Resources: res.AzureResources,
 			Page:      res.Page,

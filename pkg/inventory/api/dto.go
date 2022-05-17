@@ -101,6 +101,7 @@ type AllResource struct {
 	Location         string     `json:"location"`
 	ResourceID       string     `json:"resourceID"`
 	SourceID         string     `json:"sourceID"`
+	SourceName       string     `json:"sourceName"`
 
 	Attributes map[string]string `json:"attributes"`
 }
@@ -146,6 +147,7 @@ type AzureResource struct {
 	Location         string `json:"location"`
 	ResourceID       string `json:"resourceID"`
 	SubscriptionID   string `json:"subscriptionID"`
+	SubscriptionName string `json:"sourceName"`
 
 	Attributes map[string]string `json:"attributes"`
 }
@@ -177,6 +179,7 @@ type AWSResource struct {
 	ResourceID       string `json:"resourceID"`
 	Region           string `json:"location"`
 	AccountID        string `json:"accountID"`
+	AccountName      string `json:"accountName"`
 
 	Attributes map[string]string `json:"attributes"`
 }
