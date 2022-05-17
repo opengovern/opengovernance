@@ -69,7 +69,11 @@ func (s *testSuite) SetupSuite() {
 		db:  db,
 		cfg: cfg,
 	}
-	s.name = "geeksforgeeks"
+	kubeClient, err := s.server.newKubeClient()
+	s.NoError(err, "new kube client")
+	s.server.kubeClient = kubeClient
+
+	s.name = "geeks"
 	s.owner = "00000000-0000-0000-0000-000000000000"
 	s.domainSuffix = cfg.DomainSuffix
 }
