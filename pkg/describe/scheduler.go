@@ -790,6 +790,7 @@ func enqueueComplianceReportJobs(logger *zap.Logger, db Database, q queue.Interf
 		SourceType:  source.Type(a.Type),
 		DescribedAt: a.LastDescribedAt.Time.UnixMilli(),
 		ConfigReg:   a.ConfigRef,
+		ReportID:    a.NextComplianceReportID,
 	})
 	if err != nil {
 		logger.Error("Failed to queue ComplianceReportJob",

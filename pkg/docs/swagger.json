@@ -544,6 +544,220 @@
                 }
             }
         },
+        "/inventory/api/v1/benchmarks/{benchmarkId}/result/findings": {
+            "get": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "benchmarks"
+                ],
+                "summary": "Returns compliancy of policies in result of benchmark",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "BenchmarkID",
+                        "name": "benchmarkId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Category Filter",
+                        "name": "category",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Subcategory Filter",
+                        "name": "subcategory",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Section Filter",
+                        "name": "section",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Severity Filter",
+                        "name": "severity",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "passed",
+                            "failed"
+                        ],
+                        "type": "string",
+                        "description": "Status Filter",
+                        "name": "status",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/api.ResultCompliancy"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/inventory/api/v1/benchmarks/{benchmarkId}/result/policies": {
+            "get": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "benchmarks"
+                ],
+                "summary": "Returns policies of result of benchmark",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "BenchmarkID",
+                        "name": "benchmarkId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Category Filter",
+                        "name": "category",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Subcategory Filter",
+                        "name": "subcategory",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Section Filter",
+                        "name": "section",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Severity Filter",
+                        "name": "severity",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "passed",
+                            "failed"
+                        ],
+                        "type": "string",
+                        "description": "Status Filter",
+                        "name": "status",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/api.ResultPolicy"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/inventory/api/v1/benchmarks/{benchmarkId}/result/policies/{policy_id}/findings": {
+            "get": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "benchmarks"
+                ],
+                "summary": "Returns findings of a policy in results of a benchmark",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/es.Finding"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/inventory/api/v1/benchmarks/{benchmarkId}/result/policies/{policy_id}/resources/summary": {
+            "get": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "benchmarks"
+                ],
+                "summary": "Returns summary of resources of a policy in results of a benchmark",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/api.ResultPolicyResourceSummary"
+                        }
+                    }
+                }
+            }
+        },
+        "/inventory/api/v1/benchmarks/{benchmarkId}/result/summary": {
+            "get": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "benchmarks"
+                ],
+                "summary": "Returns summary of result of benchmark",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "BenchmarkID",
+                        "name": "benchmarkId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/compliance_report.SummaryStatus"
+                        }
+                    }
+                }
+            }
+        },
         "/inventory/api/v1/benchmarks/{benchmarkId}/{createdAt}/accounts": {
             "get": {
                 "consumes": [
@@ -3039,6 +3253,101 @@
                 }
             }
         },
+        "api.ResultCompliancy": {
+            "type": "object",
+            "properties": {
+                "category": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "provider": {
+                    "type": "string"
+                },
+                "resourcesWithIssue": {
+                    "type": "integer"
+                },
+                "section": {
+                    "type": "string"
+                },
+                "severity": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string",
+                    "enum": [
+                        "passed",
+                        "failed"
+                    ]
+                },
+                "subcategory": {
+                    "type": "string"
+                },
+                "title": {
+                    "type": "string"
+                },
+                "totalResources": {
+                    "type": "integer"
+                }
+            }
+        },
+        "api.ResultPolicy": {
+            "type": "object",
+            "properties": {
+                "category": {
+                    "type": "string"
+                },
+                "createdAt": {
+                    "type": "integer"
+                },
+                "describedAt": {
+                    "type": "integer"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "provider": {
+                    "type": "string"
+                },
+                "section": {
+                    "type": "string"
+                },
+                "severity": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string",
+                    "enum": [
+                        "passed",
+                        "failed"
+                    ]
+                },
+                "subcategory": {
+                    "type": "string"
+                },
+                "title": {
+                    "type": "string"
+                }
+            }
+        },
+        "api.ResultPolicyResourceSummary": {
+            "type": "object",
+            "properties": {
+                "compliantResourceCount": {
+                    "type": "integer"
+                },
+                "nonCompliantResourceCount": {
+                    "type": "integer"
+                },
+                "resourcesByLocation": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "integer"
+                    }
+                }
+            }
+        },
         "api.RoleBinding": {
             "type": "object",
             "properties": {
@@ -3290,6 +3599,9 @@
                 "provider": {
                     "type": "string"
                 },
+                "reportID": {
+                    "type": "integer"
+                },
                 "reportJobID": {
                     "type": "integer"
                 },
@@ -3418,6 +3730,44 @@
                 },
                 "skip": {
                     "type": "integer"
+                }
+            }
+        },
+        "es.Finding": {
+            "type": "object",
+            "properties": {
+                "accountID": {
+                    "type": "string"
+                },
+                "controlID": {
+                    "type": "string"
+                },
+                "describedAt": {
+                    "type": "integer"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "parentBenchmarkIDs": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "reportJobID": {
+                    "type": "integer"
+                },
+                "resourceID": {
+                    "type": "string"
+                },
+                "resourceLocation": {
+                    "type": "string"
+                },
+                "resourceName": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
                 }
             }
         },

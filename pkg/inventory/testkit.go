@@ -129,6 +129,12 @@ func PopulateElastic(address string, d *DescribeMock) error {
 			return err
 		}
 	}
+	for _, resource := range GenerateFindings() {
+		err := IndexKafkaMessage(es, resource)
+		if err != nil {
+			return err
+		}
+	}
 	for _, resource := range GenerateLocationDistribution() {
 		err := IndexKafkaMessage(es, resource)
 		if err != nil {
@@ -381,6 +387,41 @@ func GenerateLastCategorySummary() []kafka.SourceCategorySummary {
 	return resources
 }
 
+func GenerateFindings() []es2.Finding {
+	var res []es2.Finding
+	startTime := time.Now().UnixMilli()
+
+	sourceId, _ := uuid.Parse("2a87b978-b8bf-4d7e-bc19-cf0a99a430cf")
+	res = append(res, es2.Finding{
+		ID:                 uuid.New(),
+		ReportJobID:        1021,
+		ReportID:           3030,
+		ResourceID:         "resource1",
+		ResourceName:       "ResourceName",
+		ResourceLocation:   "ResourceLocation",
+		SourceID:           sourceId,
+		ControlID:          "control.cis_v130_1_21",
+		ParentBenchmarkIDs: []string{"mod.azure_compliance"},
+		Status:             compliance_report.ResultStatusOK,
+		DescribedAt:        startTime,
+	})
+
+	res = append(res, es2.Finding{
+		ID:                 uuid.New(),
+		ReportJobID:        1020,
+		ReportID:           3031,
+		ResourceID:         "resource1",
+		ResourceName:       "ResourceName",
+		ResourceLocation:   "ResourceLocation",
+		SourceID:           sourceId,
+		ControlID:          "control.cis_v130_1_21",
+		ParentBenchmarkIDs: []string{"mod.azure_compliance"},
+		Status:             compliance_report.ResultStatusAlarm,
+		DescribedAt:        startTime,
+	})
+	return res
+}
+
 func GenerateLocationDistribution() []kafka.LocationDistributionResource {
 	var resources []kafka.LocationDistributionResource
 	for i := 0; i < 3; i++ {
@@ -610,7 +651,7 @@ func GenerateAccountReport(es *elasticsearchv7.Client, sourceId uuid.UUID, jobID
 		TotalResources:       21,
 		TotalCompliant:       20,
 		CompliancePercentage: 0.99,
-		AccountReportType:    compliance_report.AccountReportTypeInTime,
+		AccountReportType:    es2.AccountReportTypeInTime,
 	}
 	err := IndexKafkaMessage(es, r)
 	if err != nil {
@@ -635,7 +676,7 @@ func GenerateAccountReport(es *elasticsearchv7.Client, sourceId uuid.UUID, jobID
 		TotalResources:       21,
 		TotalCompliant:       20,
 		CompliancePercentage: 0.99,
-		AccountReportType:    compliance_report.AccountReportTypeLast,
+		AccountReportType:    es2.AccountReportTypeLast,
 	}
 	err = IndexKafkaMessage(es, r)
 	if err != nil {
@@ -684,6 +725,7 @@ func GenerateComplianceReport(es *elasticsearchv7.Client, sourceId uuid.UUID, jo
 	r, err := compliance_report.ParseReport(
 		"test/result-964df7ca-3ba4-48b6-a695-1ed9db5723f8-1645119195.json",
 		jobID,
+		1,
 		sourceId,
 		createdAt,
 		source.CloudAzure,
@@ -954,6 +996,18 @@ func (m *DescribeMock) GetSource(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func (m *DescribeMock) GetLastCompletedReportID(w http.ResponseWriter, r *http.Request) {
+	b, err := json.Marshal(3030)
+	if err != nil {
+		fmt.Printf("Failed marshaling json: %v\n", err.Error())
+	}
+
+	_, err = fmt.Fprintf(w, string(b))
+	if err != nil {
+		fmt.Printf("Failed writing to response: %v\n", err.Error())
+	}
+}
+
 func (m *DescribeMock) SetResponse(jobs ...describe.ComplianceReportJob) {
 	m.Response = jobs
 }
@@ -962,5 +1016,6 @@ func (m *DescribeMock) Run() {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/api/v1/sources/", m.HelloServer)
 	mux.HandleFunc("/api/v1/source/", m.GetSource)
+	mux.HandleFunc("/api/v1/compliance/report/last/completed", m.GetLastCompletedReportID)
 	m.MockServer = httptest.NewServer(mux)
 }

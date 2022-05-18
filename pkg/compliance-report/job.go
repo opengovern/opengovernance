@@ -9,6 +9,11 @@ import (
 	"os/exec"
 	"time"
 
+	aws "gitlab.com/keibiengine/keibi-engine/pkg/aws/model"
+	azure "gitlab.com/keibiengine/keibi-engine/pkg/azure/model"
+
+	"gitlab.com/keibiengine/keibi-engine/pkg/compliance-report/es"
+
 	"gitlab.com/keibiengine/keibi-engine/pkg/source"
 
 	"github.com/elastic/go-elasticsearch/v7"
@@ -27,6 +32,7 @@ const (
 )
 
 type Job struct {
+	ReportID    uint
 	JobID       uint
 	SourceID    uuid.UUID
 	SourceType  source.Type
@@ -124,17 +130,57 @@ func (j *Job) Do(vlt vault.SourceConfig, producer sarama.SyncProducer, topic str
 		return j.failed("error: RunSteampipeCheckBenchmarks: " + err.Error())
 	}
 
-	reports, err := ParseReport(resultFileName, j.JobID, j.SourceID, j.DescribedAt, j.SourceType)
+	reports, err := ParseReport(resultFileName, j.JobID, j.ReportID, j.SourceID, j.DescribedAt, j.SourceType)
 	if err != nil {
 		return j.failed("error: Parse report: " + err.Error())
 	}
 
+	var findings []es.Finding
 	var summary Summary
 	benchmarkID := ""
 	for _, report := range reports {
 		if report.Type == ReportTypeBenchmark && report.Group.Level == 1 {
 			benchmarkID = report.Group.ID
 			summary = report.Group.Summary
+		}
+
+		if report.Type == ReportTypeResult {
+			var name, location string
+			for _, dim := range report.Result.Result.Dimensions {
+				if dim.Key == "metadata" {
+					switch j.SourceType {
+					case source.CloudAWS:
+						var metadata aws.Metadata
+						err = json.Unmarshal([]byte(dim.Value), &metadata)
+						if err != nil {
+							return j.failed("error: Parse metadata: " + err.Error())
+						}
+						name = metadata.Name
+						location = metadata.Region
+					case source.CloudAzure:
+						var metadata azure.Metadata
+						err = json.Unmarshal([]byte(dim.Value), &metadata)
+						if err != nil {
+							return j.failed("error: Parse metadata: " + err.Error())
+						}
+						name = metadata.Name
+						location = metadata.Location
+					}
+				}
+			}
+			findings = append(findings, es.Finding{
+				ID:                 uuid.New(),
+				ReportJobID:        j.JobID,
+				ReportID:           j.ReportID,
+				ResourceID:         report.Result.Result.Resource,
+				ResourceName:       name,
+				ResourceLocation:   location,
+				SourceID:           j.SourceID,
+				ControlID:          report.Result.ControlId,
+				ParentBenchmarkIDs: report.Result.ParentGroupIds,
+				Status:             string(report.Result.Result.Status),
+				DescribedAt:        report.DescribedAt,
+			})
 		}
 	}
 	totalResource := summary.Status.OK + summary.Status.Info + summary.Status.Error + summary.Status.Alarm + summary.Status.Skip
@@ -148,11 +194,11 @@ func (j *Job) Do(vlt vault.SourceConfig, producer sarama.SyncProducer, topic str
 		TotalResources:       totalResource,
 		TotalCompliant:       summary.Status.OK,
 		CompliancePercentage: float64(summary.Status.OK) / float64(totalResource),
-		AccountReportType:    AccountReportTypeInTime,
+		AccountReportType:    es.AccountReportTypeInTime,
 	}
 
 	acrLast := acr
-	acrLast.AccountReportType = AccountReportTypeLast
+	acrLast.AccountReportType = es.AccountReportTypeLast
 
 	resourceStatus := map[string]ResultStatus{}
 	for _, r := range reports {
@@ -187,6 +233,9 @@ func (j *Job) Do(vlt vault.SourceConfig, producer sarama.SyncProducer, topic str
 	msgs = append(msgs, acr, acrLast, resource)
 	for _, r := range reports {
 		msgs = append(msgs, r)
+	}
+	for _, f := range findings {
+		msgs = append(msgs, f)
 	}
 	err = kafka.DoSendToKafka(producer, topic, msgs, j.logger)
 	if err != nil {

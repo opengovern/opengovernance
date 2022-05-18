@@ -146,6 +146,7 @@ func (db Database) UpdateSourceReportGenerated(id uuid.UUID) error {
 		Updates(map[string]interface{}{
 			"last_compliance_report_at": gorm.Expr("NOW()"),
 			"next_compliance_report_at": gorm.Expr("NOW() + INTERVAL '2 HOURS'"),
+			"next_compliance_report_id": gorm.Expr("next_compliance_report_id + 1"),
 		})
 	if tx.Error != nil {
 		return tx.Error
@@ -450,8 +451,8 @@ func (db Database) ListComplianceReports(sourceID uuid.UUID) ([]ComplianceReport
 	return jobs, nil
 }
 
-// GetLastCompletedComplianceReport returns the ComplianceReportJob which is completed.
-func (db Database) GetLastCompletedComplianceReport(sourceID uuid.UUID) (*ComplianceReportJob, error) {
+// GetLastCompletedSourceComplianceReport returns the ComplianceReportJob which is completed.
+func (db Database) GetLastCompletedSourceComplianceReport(sourceID uuid.UUID) (*ComplianceReportJob, error) {
 	var job ComplianceReportJob
 	tx := db.orm.
 		Where("source_id = ? AND status = ?", sourceID, api2.ComplianceReportJobCompleted).
@@ -462,6 +463,19 @@ func (db Database) GetLastCompletedComplianceReport(sourceID uuid.UUID) (*Compli
 	}
 
 	return &job, nil
+}
+
+// GetLastCompletedComplianceReportID returns id of last completed compliance report.
+func (db Database) GetLastCompletedComplianceReportID() (uint, error) {
+	var id uint
+	tx := db.orm.
+		Select("MIN(next_compliance_report_id)").
+		First(&id)
+	if tx.Error != nil {
+		return 0, tx.Error
+	}
+
+	return id - 1, nil
 }
 
 // ListCompletedComplianceReportByDate returns list of ComplianceReportJob s which is completed within the date range.

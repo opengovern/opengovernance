@@ -22,3 +22,12 @@ func ListComplianceReportJobs(baseUrl string, sourceID uuid.UUID, filter *invent
 	}
 	return reports, nil
 }
+
+func GetLastComplianceReportID(baseUrl string) (uint, error) {
+	url := fmt.Sprintf("%s/api/v1/compliance/report/last/completed", baseUrl)
+	var res uint
+	if err := httprequest.DoRequest(http.MethodGet, url, nil, &res); err != nil {
+		return 0, err
+	}
+	return res, nil
+}

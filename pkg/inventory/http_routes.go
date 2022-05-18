@@ -75,26 +75,39 @@ func (h *HttpHandler) Register(v1 *echo.Group) {
 	v1.GET("/query/count", h.CountQueries)
 	v1.POST("/query/:queryId", h.RunQuery)
 
-	v1.GET("/reports/compliance/:sourceId", h.GetComplianceReports)
-	v1.GET("/reports/compliance/:sourceId/:reportId", h.GetComplianceReports)
+	//TODO- Deprecated
+	/*
+		v1.GET("/reports/compliance/:sourceId", h.GetComplianceReports)
+		v1.GET("/reports/compliance/:sourceId/:reportId", h.GetComplianceReports)
+		v1.GET("/benchmarks/:benchmarkId", h.GetBenchmarkDetails)
+		v1.GET("/benchmarks/:benchmarkId/:sourceId/result", h.GetBenchmarkResult)
+		v1.GET("/benchmarks/:benchmarkId/:sourceId/result/policies", h.GetResultPolicies)
+	*/
 
+	// benchmark details
 	v1.GET("/benchmarks", h.GetBenchmarks)
 	v1.GET("/benchmarks/tags", h.GetBenchmarkTags)
-	v1.GET("/benchmarks/:benchmarkId", h.GetBenchmarkDetails)
 	v1.GET("/benchmarks/:benchmarkId/policies", h.GetPolicies)
-	v1.GET("/benchmarks/:benchmarkId/:sourceId/result", h.GetBenchmarkResult)
-	v1.GET("/benchmarks/:benchmarkId/:sourceId/result/policies", h.GetResultPolicies)
 
+	v1.GET("/benchmarks/:benchmarkId/result/summary", h.GetBenchmarkResultSummary)
+	v1.GET("/benchmarks/:benchmarkId/result/policies", h.GetBenchmarkResultPolicies)
+	v1.GET("/benchmarks/:benchmarkId/result/compliancy", h.GetBenchmarkResultCompliancy)
+	v1.GET("/benchmarks/:benchmarkId/result/policies/:policyId/findings", h.GetBenchmarkResultPolicyFindings)
+	v1.GET("/benchmarks/:benchmarkId/result/policies/:policyId/resources/summary", h.GetBenchmarkResultPolicyResourcesSummary)
+
+	// benchmark dashboard
 	v1.GET("/benchmarks/history/list/:provider/:createdAt", h.GetBenchmarksInTime)
 	v1.GET("/benchmarks/:benchmarkId/:sourceId/compliance/trend", h.GetBenchmarkComplianceTrend)
 	v1.GET("/benchmarks/:benchmarkId/:createdAt/accounts/compliance", h.GetBenchmarkAccountCompliance)
 	v1.GET("/benchmarks/:benchmarkId/:createdAt/accounts", h.GetBenchmarkAccounts)
 
+	// benchmark assignment
 	v1.POST("/benchmarks/:benchmark_id/source/:source_id", h.CreateBenchmarkAssignment)
 	v1.GET("/benchmarks/source/:source_id", h.GetAllBenchmarkAssignmentsBySourceId)
 	v1.GET("/benchmarks/:benchmark_id/sources", h.GetAllBenchmarkAssignedSourcesByBenchmarkId)
 	v1.DELETE("/benchmarks/:benchmark_id/source/:source_id", h.DeleteBenchmarkAssignment)
-	v1.GET("/benchmarks/:provider/list", h.GetBenchmarkDetails)
+
+	// policy dashboard
 	v1.GET("/benchmarks/compliancy/:provider/top/accounts", h.GetTopAccountsByBenchmarkCompliancy)
 	v1.GET("/benchmarks/compliancy/:provider/top/services", h.GetTopServicesByBenchmarkCompliancy)
 	v1.GET("/benchmarks/:provider/list", h.GetListOfBenchmarks)
@@ -172,12 +185,340 @@ func (h *HttpHandler) GetBenchmarksInTime(ctx echo.Context) error {
 	return ctx.JSON(http.StatusOK, resp)
 }
 
-// GetListOfBenchmarks godoc
-// @Summary      Returns all benchmark existed at the specified time
-// @Description  You should fetch the benchmark report times from /benchmarks/history/:year/:month/:day
+// GetBenchmarkResultSummary godoc
+// @Summary  Returns summary of result of benchmark
 // @Tags         benchmarks
 // @Accept       json
 // @Produce      json
+// @Param    benchmarkId  path      string  true  "BenchmarkID"
+// @Success  200          {object}  compliance_report.SummaryStatus
+// @Router   /inventory/api/v1/benchmarks/{benchmarkId}/result/summary [get]
+func (h *HttpHandler) GetBenchmarkResultSummary(ctx echo.Context) error {
+	benchmarkID := ctx.Param("benchmarkId")
+
+	reportID, err := client.GetLastComplianceReportID(h.schedulerBaseUrl)
+	if err != nil {
+		return err
+	}
+
+	resp := compliance_report.SummaryStatus{}
+	var searchAfter []interface{}
+	for {
+		query, err := compliance_es.FindingsByBenchmarkID(benchmarkID, nil, reportID, EsFetchPageSize, searchAfter)
+		if err != nil {
+			return err
+		}
+
+		var response compliance_es.FindingsQueryResponse
+		err = h.client.Search(context.Background(), compliance_es.FindingsIndex, query, &response)
+		if err != nil {
+			return err
+		}
+
+		if len(response.Hits.Hits) == 0 {
+			break
+		}
+
+		for _, hit := range response.Hits.Hits {
+			switch hit.Source.Status {
+			case compliance_report.ResultStatusOK:
+				resp.OK++
+			case compliance_report.ResultStatusAlarm:
+				resp.Alarm++
+			case compliance_report.ResultStatusInfo:
+				resp.Info++
+			case compliance_report.ResultStatusSkip:
+				resp.Skip++
+			case compliance_report.ResultStatusError:
+				resp.Error++
+			}
+			searchAfter = hit.Sort
+		}
+	}
+
+	return ctx.JSON(http.StatusOK, resp)
+}
+
+// GetBenchmarkResultPolicies godoc
+// @Summary  Returns policies of result of benchmark
+// @Tags         benchmarks
+// @Accept       json
+// @Produce      json
+// @Param    benchmarkId  path      string  true   "BenchmarkID"
+// @Param    category     query     string  false  "Category Filter"
+// @Param    subcategory  query     string  false  "Subcategory Filter"
+// @Param    section      query     string  false  "Section Filter"
+// @Param    severity     query     string  false  "Severity Filter"
+// @Param    status       query     string  false  "Status Filter"  Enums(passed,failed)
+// @Success  200          {object}  []api.ResultPolicy
+// @Router   /inventory/api/v1/benchmarks/{benchmarkId}/result/policies [get]
+func (h *HttpHandler) GetBenchmarkResultPolicies(ctx echo.Context) error {
+	benchmarkID := ctx.Param("benchmarkId")
+	reportID, err := client.GetLastComplianceReportID(h.schedulerBaseUrl)
+	if err != nil {
+		return err
+	}
+
+	var status, severity, category, subcategory, section *string
+	if v := ctx.QueryParam("status"); len(v) > 0 {
+		status = &v
+	}
+	if v := ctx.QueryParam("severity"); len(v) > 0 {
+		severity = &v
+	}
+	if v := ctx.QueryParam("category"); len(v) > 0 {
+		category = &v
+	}
+	if v := ctx.QueryParam("subcategory"); len(v) > 0 {
+		subcategory = &v
+	}
+	if v := ctx.QueryParam("section"); len(v) > 0 {
+		section = &v
+	}
+
+	policies, err := h.db.GetPoliciesWithFilters(benchmarkID, category, subcategory,
+		section, severity)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusNotFound, "benchmark not found")
+	}
+
+	var resp []api.ResultPolicy
+	for _, policy := range policies {
+		resp = append(resp, api.ResultPolicy{
+			ID:          policy.ID,
+			Title:       policy.Title,
+			Category:    policy.Category,
+			Subcategory: policy.SubCategory,
+			Section:     policy.Section,
+			Severity:    policy.Severity,
+			Provider:    policy.Provider,
+			Status:      api.PolicyResultStatusPassed,
+			CreatedAt:   policy.CreatedAt.UnixMilli(),
+		})
+	}
+
+	var searchAfter []interface{}
+	for {
+		query, err := compliance_es.FindingsByBenchmarkID(benchmarkID, status, reportID, EsFetchPageSize, searchAfter)
+		if err != nil {
+			return err
+		}
+
+		var response compliance_es.FindingsQueryResponse
+		err = h.client.Search(context.Background(), compliance_es.FindingsIndex, query, &response)
+		if err != nil {
+			return err
+		}
+
+		if len(response.Hits.Hits) == 0 {
+			break
+		}
+
+		for _, hit := range response.Hits.Hits {
+			for idx, r := range resp {
+				if r.ID == hit.Source.ControlID {
+					resp[idx].DescribedAt = hit.Source.DescribedAt
+					if hit.Source.Status != compliance_report.ResultStatusOK {
+						resp[idx].Status = api.PolicyResultStatusFailed
+					}
+				}
+			}
+			searchAfter = hit.Sort
+		}
+	}
+
+	return ctx.JSON(http.StatusOK, resp)
+}
+
+// GetBenchmarkResultCompliancy godoc
+// @Summary  Returns compliancy of policies in result of benchmark
+// @Tags     benchmarks
+// @Accept   json
+// @Produce  json
+// @Param    benchmarkId  path      string  true   "BenchmarkID"
+// @Param    category     query     string  false  "Category Filter"
+// @Param    subcategory  query     string  false  "Subcategory Filter"
+// @Param    section      query     string  false  "Section Filter"
+// @Param    severity     query     string  false  "Severity Filter"
+// @Param    status       query     string  false  "Status Filter"  Enums(passed,failed)
+// @Success  200          {object}  []api.ResultCompliancy
+// @Router   /inventory/api/v1/benchmarks/{benchmarkId}/result/findings [get]
+func (h *HttpHandler) GetBenchmarkResultCompliancy(ctx echo.Context) error {
+	benchmarkID := ctx.Param("benchmarkId")
+	reportID, err := client.GetLastComplianceReportID(h.schedulerBaseUrl)
+	if err != nil {
+		return err
+	}
+
+	var status, severity, category, subcategory, section *string
+	if v := ctx.QueryParam("status"); len(v) > 0 {
+		status = &v
+	}
+	if v := ctx.QueryParam("severity"); len(v) > 0 {
+		severity = &v
+	}
+	if v := ctx.QueryParam("category"); len(v) > 0 {
+		category = &v
+	}
+	if v := ctx.QueryParam("subcategory"); len(v) > 0 {
+		subcategory = &v
+	}
+	if v := ctx.QueryParam("section"); len(v) > 0 {
+		section = &v
+	}
+
+	policies, err := h.db.GetPoliciesWithFilters(benchmarkID, category, subcategory,
+		section, severity)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusNotFound, "benchmark not found")
+	}
+
+	var resp []api.ResultCompliancy
+	for _, policy := range policies {
+		resp = append(resp, api.ResultCompliancy{
+			ID:          policy.ID,
+			Title:       policy.Title,
+			Category:    policy.Category,
+			Subcategory: policy.SubCategory,
+			Section:     policy.Section,
+			Severity:    policy.Severity,
+			Provider:    policy.Provider,
+			Status:      api.PolicyResultStatusPassed,
+		})
+	}
+
+	var searchAfter []interface{}
+	for {
+		query, err := compliance_es.FindingsByBenchmarkID(benchmarkID, status, reportID, EsFetchPageSize, searchAfter)
+		if err != nil {
+			return err
+		}
+
+		var response compliance_es.FindingsQueryResponse
+		err = h.client.Search(context.Background(), compliance_es.FindingsIndex, query, &response)
+		if err != nil {
+			return err
+		}
+
+		if len(response.Hits.Hits) == 0 {
+			break
+		}
+
+		for _, hit := range response.Hits.Hits {
+			for idx, r := range resp {
+				if r.ID == hit.Source.ControlID {
+					resp[idx].TotalResources++
+					if hit.Source.Status != compliance_report.ResultStatusOK {
+						resp[idx].Status = api.PolicyResultStatusFailed
+						resp[idx].ResourcesWithIssue++
+					}
+				}
+			}
+			searchAfter = hit.Sort
+		}
+	}
+
+	return ctx.JSON(http.StatusOK, resp)
+}
+
+// GetBenchmarkResultPolicyResourcesSummary godoc
+// @Summary  Returns summary of resources of a policy in results of a benchmark
+// @Tags     benchmarks
+// @Accept   json
+// @Produce  json
+// @Success  200  {object}  api.ResultPolicyResourceSummary
+// @Router   /inventory/api/v1/benchmarks/{benchmarkId}/result/policies/{policy_id}/resources/summary [get]
+func (h *HttpHandler) GetBenchmarkResultPolicyResourcesSummary(ctx echo.Context) error {
+	benchmarkID := ctx.Param("benchmarkId")
+	policyID := ctx.Param("policyId")
+	reportID, err := client.GetLastComplianceReportID(h.schedulerBaseUrl)
+	if err != nil {
+		return err
+	}
+
+	res := api.ResultPolicyResourceSummary{
+		ResourcesByLocation: make(map[string]int),
+	}
+	var searchAfter []interface{}
+	for {
+		query, err := compliance_es.FindingsByPolicyID(benchmarkID, policyID, reportID, EsFetchPageSize, searchAfter)
+		if err != nil {
+			return err
+		}
+
+		var response compliance_es.FindingsQueryResponse
+		err = h.client.Search(context.Background(), compliance_es.FindingsIndex, query, &response)
+		if err != nil {
+			return err
+		}
+
+		if len(response.Hits.Hits) == 0 {
+			break
+		}
+
+		for _, hit := range response.Hits.Hits {
+			if hit.Source.Status == compliance_report.ResultStatusOK {
+				res.CompliantResourceCount++
+			} else {
+				res.NonCompliantResourceCount++
+			}
+			res.ResourcesByLocation[hit.Source.ResourceLocation]++
+
+			searchAfter = hit.Sort
+		}
+	}
+
+	return ctx.JSON(http.StatusOK, res)
+}
+
+// GetBenchmarkResultPolicyFindings godoc
+// @Summary  Returns findings of a policy in results of a benchmark
+// @Tags     benchmarks
+// @Accept   json
+// @Produce  json
+// @Success  200  {object}  []compliance_es.Finding
+// @Router   /inventory/api/v1/benchmarks/{benchmarkId}/result/policies/{policy_id}/findings [get]
+func (h *HttpHandler) GetBenchmarkResultPolicyFindings(ctx echo.Context) error {
+	benchmarkID := ctx.Param("benchmarkId")
+	policyID := ctx.Param("policyId")
+	reportID, err := client.GetLastComplianceReportID(h.schedulerBaseUrl)
+	if err != nil {
+		return err
+	}
+
+	var findings []compliance_es.Finding
+	var searchAfter []interface{}
+	for {
+		query, err := compliance_es.FindingsByPolicyID(benchmarkID, policyID, reportID, EsFetchPageSize, searchAfter)
+		if err != nil {
+			return err
+		}
+
+		var response compliance_es.FindingsQueryResponse
+		err = h.client.Search(context.Background(), compliance_es.FindingsIndex, query, &response)
+		if err != nil {
+			return err
+		}
+
+		if len(response.Hits.Hits) == 0 {
+			break
+		}
+
+		for _, hit := range response.Hits.Hits {
+			findings = append(findings, hit.Source)
+			searchAfter = hit.Sort
+		}
+	}
+
+	return ctx.JSON(http.StatusOK, findings)
+}
+
+// GetListOfBenchmarks godoc
+// @Summary      Returns all benchmark existed at the specified time
+// @Description  You should fetch the benchmark report times from /benchmarks/history/:year/:month/:day
+// @Tags     benchmarks
+// @Accept   json
+// @Produce  json
 // @Param        count      query     int     true   "count"
 // @Param        sourceId   query     string  false  "SourceID"
 // @Param        provider   path      string  true   "Provider"  Enums(AWS,Azure)
@@ -249,8 +590,8 @@ func (h *HttpHandler) GetListOfBenchmarks(ctx echo.Context) error {
 // GetTopAccountsByBenchmarkCompliancy godoc
 // @Summary  Return top accounts by benchmark compliancy
 // @Tags     provider_dashboard
-// @Accept       json
-// @Produce      json
+// @Accept   json
+// @Produce  json
 // @Param    count     query     int     true  "Count"
 // @Param    order     query     string  true  "Order"     Enums(asc,desc)
 // @Param    provider  path      string  true  "Provider"  Enums(AWS,Azure)
@@ -386,7 +727,7 @@ func (h *HttpHandler) GetTopServicesByBenchmarkCompliancy(ctx echo.Context) erro
 
 // GetBenchmarkComplianceTrend godoc
 // @Summary  Returns trend of a benchmark compliance for specific account
-// @Tags         benchmarks
+// @Tags     benchmarks
 // @Accept   json
 // @Produce  json
 // @Param    benchmarkId  path      string  true  "BenchmarkID"
