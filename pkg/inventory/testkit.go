@@ -849,7 +849,7 @@ func IndexAzureResource(es *elasticsearchv7.Client, resource azuredescriber.Reso
 	return IndexKafkaMessage(es, kafkaRes)
 }
 
-func IndexKafkaMessage(es *elasticsearchv7.Client, kafkaRes kafka.Message) error {
+func IndexKafkaMessage(es *elasticsearchv7.Client, kafkaRes kafka.DescribedResource) error {
 	r, err := kafkaRes.AsProducerMessage()
 	if err != nil {
 		return err

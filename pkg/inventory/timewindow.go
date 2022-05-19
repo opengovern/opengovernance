@@ -1,4 +1,4 @@
-package utils
+package inventory
 
 import (
 	"errors"

@@ -21,7 +21,6 @@ import (
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/describe"
 	"gitlab.com/keibiengine/keibi-engine/pkg/inventory/es"
-	"gitlab.com/keibiengine/keibi-engine/pkg/utils"
 
 	"github.com/turbot/steampipe-plugin-sdk/grpc/proto"
 	"gitlab.com/keibiengine/keibi-engine/pkg/steampipe"
@@ -527,7 +526,7 @@ func (h *HttpHandler) GetResourceGrowthTrend(ctx echo.Context) error {
 
 	var fromTime, toTime int64
 	toTime = time.Now().UnixMilli()
-	tw, err := utils.ParseTimeWindow(ctx.QueryParam("timeWindow"))
+	tw, err := ParseTimeWindow(ctx.QueryParam("timeWindow"))
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid timeWindow")
 	}
@@ -616,7 +615,7 @@ func (h *HttpHandler) GetCompliancyTrend(ctx echo.Context) error {
 
 	var fromTime, toTime int64
 	toTime = time.Now().UnixMilli()
-	tw, err := utils.ParseTimeWindow(ctx.QueryParam("timeWindow"))
+	tw, err := ParseTimeWindow(ctx.QueryParam("timeWindow"))
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid timeWindow")
 	}

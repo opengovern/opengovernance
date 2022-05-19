@@ -183,7 +183,7 @@ func (j *Job) Do(vlt vault.SourceConfig, producer sarama.SyncProducer, topic str
 		ResourceSummaryType:       kafka.ResourceSummaryTypeCompliancyTrend,
 	}
 
-	var msgs []kafka.Message
+	var msgs []kafka.DescribedResource
 	msgs = append(msgs, acr, acrLast, resource)
 	for _, r := range reports {
 		msgs = append(msgs, r)
