@@ -25,13 +25,13 @@ const (
 type SortFieldType string
 
 const (
-	SortFieldResourceID    SortFieldType = "resource_id"
+	SortFieldResourceID    SortFieldType = "resourceID"
 	SortFieldName          SortFieldType = "name"
-	SortFieldSourceType    SortFieldType = "source_type"
-	SortFieldResourceType  SortFieldType = "resource_type"
-	SortFieldResourceGroup SortFieldType = "resource_group"
+	SortFieldSourceType    SortFieldType = "provider"
+	SortFieldResourceType  SortFieldType = "resourceType"
+	SortFieldResourceGroup SortFieldType = "resourceGroup"
 	SortFieldLocation      SortFieldType = "location"
-	SortFieldSourceID      SortFieldType = "source_id"
+	SortFieldSourceID      SortFieldType = "sourceID"
 )
 
 type GetResourceRequest struct {
@@ -78,7 +78,7 @@ type Filters struct {
 }
 
 type ResourceSortItem struct {
-	Field     SortFieldType `json:"field" enums:"resource_id,name,source_type,resource_type,resource_group,location,source_id"`
+	Field     SortFieldType `json:"field" enums:"resourceID,name,provider,resourceType,resourceGroup,location,sourceID"`
 	Direction DirectionType `json:"direction" enums:"asc,desc"`
 }
 
