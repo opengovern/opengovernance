@@ -23,7 +23,7 @@ import (
 const (
 	KeibiUserID = "X-Keibi-UserID"
 
-	ReconcilerInterval = 30
+	reconcilerInterval = 30 * time.Second
 )
 
 var (
@@ -53,20 +53,7 @@ func NewServer(cfg *Config) *Server {
 	s.e.Logger.SetLevel(log.INFO)
 
 	s.e.Use(middleware.Recover())
-	s.e.Use(middleware.LoggerWithConfig(middleware.LoggerConfig{
-		Skipper: middleware.DefaultSkipper,
-		Format: `{"time":"${time_rfc3339}",` +
-			`"remote_ip":"${remote_ip}",` +
-			`"method":"${method}",` +
-			`"uri":"${uri}",` +
-			`"bytes_in":${bytes_in},` +
-			`"bytes_out":${bytes_out},` +
-			`"status":${status},` +
-			`"error":"${error}",` +
-			`"latency_human":"${latency_human}"` +
-			`}` + "\n",
-		CustomTimeFormat: "2006-01-02 15:04:05.000",
-	}))
+	s.e.Use(middleware.Logger())
 
 	db, err := NewDatabase(cfg)
 	if err != nil {
@@ -97,7 +84,7 @@ func (s *Server) Start() error {
 }
 
 func (s *Server) startReconciler() {
-	ticker := time.NewTimer(time.Second * ReconcilerInterval)
+	ticker := time.NewTimer(reconcilerInterval)
 	defer ticker.Stop()
 
 	for range ticker.C {
@@ -112,7 +99,7 @@ func (s *Server) startReconciler() {
 			}
 		}
 		// reset the time ticker
-		ticker.Reset(time.Second * ReconcilerInterval)
+		ticker.Reset(reconcilerInterval)
 	}
 }
 
@@ -128,6 +115,7 @@ func (s *Server) handleWorkspace(workspace *Workspace) error {
 			return fmt.Errorf("find helm release: %w", err)
 		}
 		if helmRelease == nil {
+			s.e.Logger.Infof("create helm release %s with status %s", workspace.ID.String(), workspace.Status)
 			if err := s.createHelmRelease(ctx, workspace); err != nil {
 				return fmt.Errorf("create helm release: %w", err)
 			}
@@ -153,6 +141,7 @@ func (s *Server) handleWorkspace(workspace *Workspace) error {
 			return fmt.Errorf("find helm release: %w", err)
 		}
 		if helmRelease != nil {
+			s.e.Logger.Infof("delete helm release %s with status %s", workspace.ID.String(), workspace.Status)
 			if err := s.deleteHelmRelease(ctx, workspace); err != nil {
 				return fmt.Errorf("delete helm release: %w", err)
 			}
