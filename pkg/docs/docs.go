@@ -2342,6 +2342,98 @@ const docTemplate = `{
                 ],
                 "responses": {}
             }
+        },
+        "/workspace/api/v1/workspace": {
+            "post": {
+                "description": "Returns workspace created",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "workspace"
+                ],
+                "summary": "Create workspace for workspace service",
+                "parameters": [
+                    {
+                        "description": "Create workspace request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/api.CreateWorkspaceRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/api.CreateWorkspaceResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/workspace/api/v1/workspace/:workspace_id": {
+            "delete": {
+                "description": "Delete workspace with workspace id",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "workspace"
+                ],
+                "summary": "Delete workspace for workspace service",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Workspace ID",
+                        "name": "workspace_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/workspace/api/v1/workspaces": {
+            "get": {
+                "description": "Returns all workspaces with owner id",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "workspace"
+                ],
+                "summary": "List all workspaces with owner id",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "array",
+                                "items": {
+                                    "$ref": "#/definitions/api.WorkspaceResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
@@ -2349,6 +2441,9 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "accountID": {
+                    "type": "string"
+                },
+                "accountName": {
                     "type": "string"
                 },
                 "attributes": {
@@ -2417,6 +2512,9 @@ const docTemplate = `{
                 },
                 "sourceID": {
                     "type": "string"
+                },
+                "sourceName": {
+                    "type": "string"
                 }
             }
         },
@@ -2445,6 +2543,9 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "resourceTypeName": {
+                    "type": "string"
+                },
+                "sourceName": {
                     "type": "string"
                 },
                 "subscriptionID": {
@@ -2572,6 +2673,25 @@ const docTemplate = `{
             }
         },
         "api.CreateSourceResponse": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string"
+                }
+            }
+        },
+        "api.CreateWorkspaceRequest": {
+            "type": "object",
+            "properties": {
+                "description": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                }
+            }
+        },
+        "api.CreateWorkspaceResponse": {
             "type": "object",
             "properties": {
                 "id": {
@@ -3270,6 +3390,32 @@ const docTemplate = `{
                 },
                 "value": {
                     "type": "integer"
+                }
+            }
+        },
+        "api.WorkspaceResponse": {
+            "type": "object",
+            "properties": {
+                "createdAt": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "domain": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "ownerId": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
                 }
             }
         },

@@ -3,6 +3,8 @@ definitions:
     properties:
       accountID:
         type: string
+      accountName:
+        type: string
       attributes:
         additionalProperties:
           type: string
@@ -47,6 +49,8 @@ definitions:
         type: string
       sourceID:
         type: string
+      sourceName:
+        type: string
     type: object
   api.AzureResource:
     properties:
@@ -65,6 +69,8 @@ definitions:
       resourceType:
         type: string
       resourceTypeName:
+        type: string
+      sourceName:
         type: string
       subscriptionID:
         type: string
@@ -147,6 +153,18 @@ definitions:
         type: integer
     type: object
   api.CreateSourceResponse:
+    properties:
+      id:
+        type: string
+    type: object
+  api.CreateWorkspaceRequest:
+    properties:
+      description:
+        type: string
+      name:
+        type: string
+    type: object
+  api.CreateWorkspaceResponse:
     properties:
       id:
         type: string
@@ -621,6 +639,23 @@ definitions:
         type: integer
       value:
         type: integer
+    type: object
+  api.WorkspaceResponse:
+    properties:
+      createdAt:
+        type: string
+      description:
+        type: string
+      domain:
+        type: string
+      id:
+        type: string
+      name:
+        type: string
+      ownerId:
+        type: string
+      status:
+        type: string
     type: object
   compliance_report.Dimension:
     properties:
@@ -2328,6 +2363,66 @@ paths:
       summary: Run describe jobs
       tags:
       - schedule
+  /workspace/api/v1/workspace:
+    post:
+      consumes:
+      - application/json
+      description: Returns workspace created
+      parameters:
+      - description: Create workspace request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/api.CreateWorkspaceRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/api.CreateWorkspaceResponse'
+      summary: Create workspace for workspace service
+      tags:
+      - workspace
+  /workspace/api/v1/workspace/:workspace_id:
+    delete:
+      consumes:
+      - application/json
+      description: Delete workspace with workspace id
+      parameters:
+      - description: Workspace ID
+        in: path
+        name: workspace_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: ""
+      summary: Delete workspace for workspace service
+      tags:
+      - workspace
+  /workspace/api/v1/workspaces:
+    get:
+      consumes:
+      - application/json
+      description: Returns all workspaces with owner id
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              items:
+                $ref: '#/definitions/api.WorkspaceResponse'
+              type: array
+            type: array
+      summary: List all workspaces with owner id
+      tags:
+      - workspace
 schemes:
 - https
 swagger: "2.0"
