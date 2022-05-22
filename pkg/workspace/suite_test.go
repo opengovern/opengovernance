@@ -4,9 +4,12 @@ import (
 	"testing"
 	"time"
 
+	helmv2 "github.com/fluxcd/helm-controller/api/v2beta1"
 	"github.com/ory/dockertest/v3"
 	"github.com/stretchr/testify/suite"
 	idocker "gitlab.com/keibiengine/keibi-engine/pkg/internal/dockertest"
+	"k8s.io/apimachinery/pkg/runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
 func TestSuite(t *testing.T) {
@@ -69,9 +72,10 @@ func (s *testSuite) SetupSuite() {
 		db:  db,
 		cfg: cfg,
 	}
-	kubeClient, err := s.server.newKubeClient()
-	s.NoError(err, "new kube client")
-	s.server.kubeClient = kubeClient
+
+	scheme := runtime.NewScheme()
+	s.NoError(helmv2.AddToScheme(scheme), "add scheme")
+	s.server.kubeClient = fake.NewClientBuilder().WithScheme(scheme).Build()
 
 	s.name = "geeks"
 	s.owner = "00000000-0000-0000-0000-000000000000"
