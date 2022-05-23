@@ -21,6 +21,7 @@ type Source struct {
 	NextComplianceReportAt sql.NullTime
 	DescribeSourceJobs     []DescribeSourceJob   `gorm:"foreignKey:SourceID;constraint:OnDelete:CASCADE;"`
 	ComplianceReportJobs   []ComplianceReportJob `gorm:"foreignKey:SourceID;constraint:OnDelete:CASCADE;"`
+	NextComplianceReportID uint                  `gorm:"default:0"`
 }
 
 type DescribeSourceJob struct {

@@ -4,8 +4,13 @@ import (
 	"encoding/json"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/source"
+)
 
-	compliance_report "gitlab.com/keibiengine/keibi-engine/pkg/compliance-report"
+type AccountReportType string
+
+const (
+	AccountReportTypeLast   = "last"
+	AccountReportTypeInTime = "intime"
 )
 
 func ComplianceScoreByProviderQuery(provider source.Type, sourceID *string, size int, order string, searchAfter []interface{}) (string, error) {
@@ -21,7 +26,7 @@ func ComplianceScoreByProviderQuery(provider source.Type, sourceID *string, size
 		})
 	}
 	filters = append(filters, map[string]interface{}{
-		"terms": map[string][]interface{}{"accountReportType": {compliance_report.AccountReportTypeLast}},
+		"terms": map[string][]interface{}{"accountReportType": {AccountReportTypeLast}},
 	})
 
 	res["size"] = size

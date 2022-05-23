@@ -329,6 +329,38 @@ type PolicyResult struct {
 	CreatedAt          int64              `json:"createdAt"`
 }
 
+type ResultPolicy struct {
+	ID          string             `json:"id"`
+	Title       string             `json:"title"`
+	Category    string             `json:"category"`
+	Subcategory string             `json:"subcategory"`
+	Section     string             `json:"section"`
+	Severity    string             `json:"severity"`
+	Provider    string             `json:"provider"`
+	Status      PolicyResultStatus `json:"status" enums:"passed,failed"`
+	DescribedAt int64              `json:"describedAt"`
+	CreatedAt   int64              `json:"createdAt"`
+}
+
+type ResultCompliancy struct {
+	ID                 string             `json:"id"`
+	Title              string             `json:"title"`
+	Category           string             `json:"category"`
+	Subcategory        string             `json:"subcategory"`
+	Section            string             `json:"section"`
+	Severity           string             `json:"severity"`
+	Provider           string             `json:"provider"`
+	Status             PolicyResultStatus `json:"status" enums:"passed,failed"`
+	ResourcesWithIssue int                `json:"resourcesWithIssue"`
+	TotalResources     int                `json:"totalResources"`
+}
+
+type ResultPolicyResourceSummary struct {
+	ResourcesByLocation       map[string]int `json:"resourcesByLocation"`
+	CompliantResourceCount    int            `json:"compliantResourceCount"`
+	NonCompliantResourceCount int            `json:"nonCompliantResourceCount"`
+}
+
 type ComplianceTrendDataPoint struct {
 	Timestamp      int64 `json:"timestamp"`
 	Compliant      int64 `json:"compliant"`

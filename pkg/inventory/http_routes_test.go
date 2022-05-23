@@ -17,6 +17,8 @@ import (
 	"testing"
 	"time"
 
+	compliance_es "gitlab.com/keibiengine/keibi-engine/pkg/compliance-report/es"
+
 	"gorm.io/gorm/logger"
 
 	api3 "gitlab.com/keibiengine/keibi-engine/pkg/compliance-report/api"
@@ -957,6 +959,7 @@ func (s *HttpHandlerSuite) TestGetBenchmarkTags() {
 
 func (s *HttpHandlerSuite) TestGetBenchmarkDetails() {
 	require := s.Require()
+	s.T().Skip("deprecated")
 
 	var res api.GetBenchmarkDetailsResponse
 	_, err := doRequestJSONResponse(s.router, "GET",
@@ -996,6 +999,7 @@ func (s *HttpHandlerSuite) TestGetPolicies() {
 
 func (s *HttpHandlerSuite) TestGetBenchmarkResult() {
 	require := s.Require()
+	s.T().Skip("deprecated")
 
 	sourceId, err := uuid.Parse("2a87b978-b8bf-4d7e-bc19-cf0a99a430cf")
 	require.NoError(err)
@@ -1022,6 +1026,7 @@ func (s *HttpHandlerSuite) TestGetBenchmarkResult() {
 
 func (s *HttpHandlerSuite) TestGetBenchmarkResultPolicies() {
 	require := s.Require()
+	s.T().Skip("deprecated")
 
 	sourceId, err := uuid.Parse("2a87b978-b8bf-4d7e-bc19-cf0a99a430cf")
 	require.NoError(err)
@@ -1376,6 +1381,75 @@ func (s *HttpHandlerSuite) TestGetLocationDistributionOfProvider() {
 
 	require.NoError(err)
 	require.Len(res, 4)
+}
+
+func (s *HttpHandlerSuite) TestGetBenchmarkResultSummary() {
+	require := s.Require()
+
+	var res compliance_report.SummaryStatus
+	_, err := doRequestJSONResponse(s.router, "GET",
+		"/api/v1/benchmarks/mod.azure_compliance/result/summary", nil, &res)
+	require.NoError(err)
+
+	require.Equal(1, res.OK)
+	require.Equal(0, res.Alarm)
+}
+
+func (s *HttpHandlerSuite) TestGetBenchmarkResultPoliciesNew() {
+	require := s.Require()
+
+	var res []api.ResultPolicy
+	_, err := doRequestJSONResponse(s.router, "GET",
+		"/api/v1/benchmarks/mod.azure_compliance/result/policies", nil, &res)
+	require.NoError(err)
+
+	require.Len(res, 2)
+	require.Equal(api.PolicyResultStatusPassed, res[0].Status)
+	require.Equal(api.PolicyResultStatusPassed, res[1].Status)
+}
+
+func (s *HttpHandlerSuite) TestGetBenchmarkResultCompliancy() {
+	require := s.Require()
+
+	var res []api.ResultCompliancy
+	_, err := doRequestJSONResponse(s.router, "GET",
+		"/api/v1/benchmarks/mod.azure_compliance/result/compliancy", nil, &res)
+	require.NoError(err)
+
+	require.Len(res, 2)
+	for _, r := range res {
+		if r.ID == "control.cis_v130_1_21" {
+			require.Equal(api.PolicyResultStatusPassed, r.Status)
+			require.Equal(1, r.TotalResources)
+			require.Equal(0, r.ResourcesWithIssue)
+		}
+	}
+}
+
+func (s *HttpHandlerSuite) TestGetBenchmarkResultPolicyFindings() {
+	require := s.Require()
+
+	var res []compliance_es.Finding
+	_, err := doRequestJSONResponse(s.router, "GET",
+		"/api/v1/benchmarks/mod.azure_compliance/result/policies/control.cis_v130_1_21/findings", nil, &res)
+	require.NoError(err)
+
+	require.Len(res, 1)
+	require.Equal("resource1", res[0].ResourceID)
+	require.Equal(compliance_report.ResultStatusOK, res[0].Status)
+}
+
+func (s *HttpHandlerSuite) TestGetBenchmarkResultPolicyResourcesSummary() {
+	require := s.Require()
+
+	var res api.ResultPolicyResourceSummary
+	_, err := doRequestJSONResponse(s.router, "GET",
+		"/api/v1/benchmarks/mod.azure_compliance/result/policies/control.cis_v130_1_21/resources/summary", nil, &res)
+	require.NoError(err)
+
+	require.Equal(1, res.CompliantResourceCount)
+	require.Equal(0, res.NonCompliantResourceCount)
+	require.Equal(1, res.ResourcesByLocation["ResourceLocation"])
 }
 
 func TestHttpHandlerSuite(t *testing.T) {

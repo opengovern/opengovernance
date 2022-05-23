@@ -7,6 +7,8 @@ import (
 	"io/ioutil"
 	"strconv"
 
+	"gitlab.com/keibiengine/keibi-engine/pkg/compliance-report/es"
+
 	"gitlab.com/keibiengine/keibi-engine/pkg/source"
 
 	"github.com/google/uuid"
@@ -26,13 +28,6 @@ const (
 	ReportTypeBenchmark = "benchmark"
 	ReportTypeControl   = "control"
 	ReportTypeResult    = "result"
-)
-
-type AccountReportType string
-
-const (
-	AccountReportTypeLast   = "last"
-	AccountReportTypeInTime = "intime"
 )
 
 type ReportResultObj struct {
@@ -58,6 +53,7 @@ type Report struct {
 	Group       *ReportGroupObj  `json:"group,omitempty"`
 	Type        ReportType       `json:"type"`
 	ReportJobId uint             `json:"reportJobID"`
+	ReportID    uint             `json:"reportID"`
 	SourceID    uuid.UUID        `json:"sourceID"`
 	Provider    source.Type      `json:"provider"`
 	DescribedAt int64            `json:"describedAt"`
@@ -91,16 +87,16 @@ func (r Report) MessageID() string {
 }
 
 type AccountReport struct {
-	SourceID             uuid.UUID         `json:"sourceID"`
-	Provider             source.Type       `json:"provider"`
-	BenchmarkID          string            `json:"benchmarkID"`
-	ReportJobId          uint              `json:"reportJobID"`
-	Summary              Summary           `json:"summary"`
-	CreatedAt            int64             `json:"createdAt"`
-	TotalResources       int               `json:"totalResources"`
-	TotalCompliant       int               `json:"totalCompliant"`
-	CompliancePercentage float64           `json:"compliancePercentage"`
-	AccountReportType    AccountReportType `json:"accountReportType"`
+	SourceID             uuid.UUID            `json:"sourceID"`
+	Provider             source.Type          `json:"provider"`
+	BenchmarkID          string               `json:"benchmarkID"`
+	ReportJobId          uint                 `json:"reportJobID"`
+	Summary              Summary              `json:"summary"`
+	CreatedAt            int64                `json:"createdAt"`
+	TotalResources       int                  `json:"totalResources"`
+	TotalCompliant       int                  `json:"totalCompliant"`
+	CompliancePercentage float64              `json:"compliancePercentage"`
+	AccountReportType    es.AccountReportType `json:"accountReportType"`
 }
 
 func (r AccountReport) AsProducerMessage() (*sarama.ProducerMessage, error) {
@@ -110,7 +106,7 @@ func (r AccountReport) AsProducerMessage() (*sarama.ProducerMessage, error) {
 	}
 
 	var key string
-	if r.AccountReportType == AccountReportTypeLast {
+	if r.AccountReportType == es.AccountReportTypeLast {
 		h := sha256.New()
 		h.Write([]byte(r.BenchmarkID))
 		h.Write([]byte(r.SourceID.String()))
@@ -243,7 +239,7 @@ type AccountReportQueryHit struct {
 	Sort    []interface{} `json:"sort"`
 }
 
-func ExtractNodes(root Group, provider source.Type, tree []string, reportJobID uint, sourceID uuid.UUID, describedAt int64) []Report {
+func ExtractNodes(root Group, provider source.Type, tree []string, reportJobID uint, reportID uint, sourceID uuid.UUID, describedAt int64) []Report {
 	var nodes []Report
 
 	var controlIds, childGroupIds []string
@@ -269,6 +265,7 @@ func ExtractNodes(root Group, provider source.Type, tree []string, reportJobID u
 		ReportJobId: reportJobID,
 		Type:        ReportTypeBenchmark,
 		SourceID:    sourceID,
+		ReportID:    reportID,
 		Provider:    provider,
 		DescribedAt: describedAt,
 	}
@@ -293,6 +290,7 @@ func ExtractNodes(root Group, provider source.Type, tree []string, reportJobID u
 			},
 			ReportJobId: reportJobID,
 			Type:        ReportTypeControl,
+			ReportID:    reportID,
 			SourceID:    sourceID,
 			Provider:    provider,
 			DescribedAt: describedAt,
@@ -301,14 +299,14 @@ func ExtractNodes(root Group, provider source.Type, tree []string, reportJobID u
 	}
 
 	for _, group := range root.Groups {
-		newNodes := ExtractNodes(group, provider, newTree, reportJobID, sourceID, describedAt)
+		newNodes := ExtractNodes(group, provider, newTree, reportJobID, reportID, sourceID, describedAt)
 		nodes = append(nodes, newNodes...)
 	}
 
 	return nodes
 }
 
-func ExtractLeaves(root Group, provider source.Type, tree []string, reportJobID uint, sourceID uuid.UUID, createdAt int64) []Report {
+func ExtractLeaves(root Group, provider source.Type, tree []string, reportJobID uint, reportID uint, sourceID uuid.UUID, createdAt int64) []Report {
 	var leaves []Report
 	if root.Controls != nil {
 		for _, control := range root.Controls {
@@ -325,6 +323,7 @@ func ExtractLeaves(root Group, provider source.Type, tree []string, reportJobID 
 					},
 					ReportJobId: reportJobID,
 					Type:        ReportTypeResult,
+					ReportID:    reportID,
 					SourceID:    sourceID,
 					Provider:    provider,
 					DescribedAt: createdAt,
@@ -339,13 +338,13 @@ func ExtractLeaves(root Group, provider source.Type, tree []string, reportJobID 
 	newTree = append(newTree, root.GroupId)
 
 	for _, group := range root.Groups {
-		newLeaves := ExtractLeaves(group, provider, newTree, reportJobID, sourceID, createdAt)
+		newLeaves := ExtractLeaves(group, provider, newTree, reportJobID, reportID, sourceID, createdAt)
 		leaves = append(leaves, newLeaves...)
 	}
 	return leaves
 }
 
-func ParseReport(path string, reportJobID uint, sourceID uuid.UUID, describedAt int64, provider source.Type) ([]Report, error) {
+func ParseReport(path string, reportJobID uint, reportID uint, sourceID uuid.UUID, describedAt int64, provider source.Type) ([]Report, error) {
 	content, err := ioutil.ReadFile(path)
 	if err != nil {
 		return nil, err
@@ -357,8 +356,8 @@ func ParseReport(path string, reportJobID uint, sourceID uuid.UUID, describedAt 
 		return nil, err
 	}
 
-	nodes := ExtractNodes(root, provider, nil, reportJobID, sourceID, describedAt)
-	leaves := ExtractLeaves(root, provider, nil, reportJobID, sourceID, describedAt)
+	nodes := ExtractNodes(root, provider, nil, reportJobID, reportID, sourceID, describedAt)
+	leaves := ExtractLeaves(root, provider, nil, reportJobID, reportID, sourceID, describedAt)
 	return append(nodes, leaves...), nil
 }
 
@@ -508,7 +507,7 @@ func QueryProviderResult(benchmarkID string, createdAt int64, order string, size
 		"terms": map[string][]interface{}{"createdAt": {createdAt}},
 	})
 	filters = append(filters, map[string]interface{}{
-		"terms": map[string][]interface{}{"accountReportType": {AccountReportTypeInTime}},
+		"terms": map[string][]interface{}{"accountReportType": {es.AccountReportTypeInTime}},
 	})
 	res["size"] = size
 	if searchAfter != nil {

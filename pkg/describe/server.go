@@ -49,6 +49,7 @@ func (s *HttpServer) Initialize() error {
 
 	v1.GET("/resource_type/:provider", s.GetResourceTypesByProvider)
 
+	v1.GET("/compliance/report/last/completed", s.HandleGetLastCompletedComplianceReport)
 	return e.Start(s.Address)
 }
 
@@ -191,7 +192,7 @@ func (s HttpServer) HandleListSourceComplianceReports(ctx echo.Context) error {
 
 	var jobs []ComplianceReportJob
 	if from == "" && to == "" {
-		report, err := s.DB.GetLastCompletedComplianceReport(sourceUUID)
+		report, err := s.DB.GetLastCompletedSourceComplianceReport(sourceUUID)
 		if err != nil {
 			return ctx.JSON(http.StatusInternalServerError, api.ErrorResponse{Message: err.Error()})
 		}
@@ -255,6 +256,21 @@ func (s HttpServer) RunComplianceReportJobs(ctx echo.Context) error {
 	}
 
 	return ctx.String(http.StatusOK, "")
+}
+
+// HandleGetLastCompletedComplianceReport godoc
+// @Summary      Get last completed compliance report
+// @Tags         schedule
+// @Produce      json
+// @Success      200        {object}  int
+// @Router       /schedule/api/v1/compliance/report/last/completed [get]
+func (s HttpServer) HandleGetLastCompletedComplianceReport(ctx echo.Context) error {
+	id, err := s.DB.GetLastCompletedComplianceReportID()
+	if err != nil {
+		return err
+	}
+
+	return ctx.JSON(http.StatusOK, id)
 }
 
 // RunDescribeJobs godoc
