@@ -22,7 +22,24 @@ func BuildSort(sorts []ResourceSortItem) []map[string]interface{} {
 	var result []map[string]interface{}
 	for _, item := range sorts {
 		dir := string(item.Direction)
-		result = append(result, map[string]interface{}{string(item.Field) + ".keyword": dir})
+		field := ""
+		switch item.Field {
+		case SortFieldResourceID:
+			field = "resource_id"
+		case SortFieldName:
+			field = "name"
+		case SortFieldSourceType:
+			field = "source_type"
+		case SortFieldResourceType:
+			field = "resource_type"
+		case SortFieldResourceGroup:
+			field = "resource_group"
+		case SortFieldLocation:
+			field = "location"
+		case SortFieldSourceID:
+			field = "source_id"
+		}
+		result = append(result, map[string]interface{}{field + ".keyword": dir})
 	}
 	return result
 }
