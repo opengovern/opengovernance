@@ -166,7 +166,7 @@ func (j DescribeJob) Do(vlt vault.SourceConfig, producer sarama.SyncProducer, to
 }
 
 // doDescribe describes the sources, e.g. AWS, Azure and returns the responses.
-func doDescribe(ctx context.Context, job DescribeJob, config map[string]interface{}, logger *zap.Logger) ([]kafka.Message, error) {
+func doDescribe(ctx context.Context, job DescribeJob, config map[string]interface{}, logger *zap.Logger) ([]kafka.DescribedResource, error) {
 	logger.Info(fmt.Sprintf("Proccessing Job: ID[%d] ParentJobID[%d] RosourceType[%s]\n", job.JobID, job.ParentJobID, job.ResourceType))
 
 	switch job.SourceType {
@@ -179,7 +179,7 @@ func doDescribe(ctx context.Context, job DescribeJob, config map[string]interfac
 	}
 }
 
-func doDescribeAWS(ctx context.Context, job DescribeJob, config map[string]interface{}) ([]kafka.Message, error) {
+func doDescribeAWS(ctx context.Context, job DescribeJob, config map[string]interface{}) ([]kafka.DescribedResource, error) {
 	creds, err := AWSAccountConfigFromMap(config)
 	if err != nil {
 		return nil, fmt.Errorf("aws account credentials: %w", err)
@@ -207,7 +207,7 @@ func doDescribeAWS(ctx context.Context, job DescribeJob, config map[string]inter
 		}
 	}
 
-	var msgs []kafka.Message
+	var msgs []kafka.DescribedResource
 	locationDistribution := map[string]int{}
 
 	categoryCount := map[string]int{}
@@ -340,7 +340,7 @@ func doDescribeAWS(ctx context.Context, job DescribeJob, config map[string]inter
 	return msgs, nil
 }
 
-func doDescribeAzure(ctx context.Context, job DescribeJob, config map[string]interface{}) ([]kafka.Message, error) {
+func doDescribeAzure(ctx context.Context, job DescribeJob, config map[string]interface{}) ([]kafka.DescribedResource, error) {
 	creds, err := AzureSubscriptionConfigFromMap(config)
 	if err != nil {
 		return nil, fmt.Errorf("aure subscription credentials: %w", err)
@@ -369,7 +369,7 @@ func doDescribeAzure(ctx context.Context, job DescribeJob, config map[string]int
 	serviceDistribution := map[string]map[string]int{}
 	categoryCount := map[string]int{}
 	serviceCount := map[string]int{}
-	var msgs []kafka.Message
+	var msgs []kafka.DescribedResource
 	locationDistribution := map[string]int{}
 	for _, resource := range output.Resources {
 		if resource.Description == nil {

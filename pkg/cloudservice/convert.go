@@ -1,15 +1,19 @@
 package cloudservice
 
-import "strings"
+import (
+	"strings"
 
-const (
-	cloudProviderIdx      = 0
-	resourceTypePrefixIdx = 1
-	serviceNameIdx        = 2
-	categoryIdx           = 3
+	"gitlab.com/keibiengine/keibi-engine/pkg/source"
 )
 
-var mapping = [][]string{
+type ResourceType struct {
+	Provider           source.Type
+	ResourceTypePrefix string
+	Service            string
+	Category           string
+}
+
+var mapping = []ResourceType{
 	{"Azure", "Microsoft.AAD", "Azure Active Directory", "Identity"},
 	{"Azure", "Microsoft.Addons", "Azure Core", "Other"},
 	{"Azure", "Microsoft.App", "Azure Container Apps", "Container"},
@@ -904,11 +908,11 @@ var mapping = [][]string{
 	{"AWS", "aws::shield::", "Shield", "Security"},
 }
 
-func findRecord(resourceType string) []string {
+func findRecord(resourceType string) *ResourceType {
 	resourceType = strings.ToLower(resourceType)
 	for _, v := range mapping {
-		if strings.HasPrefix(resourceType, strings.ToLower(v[resourceTypePrefixIdx])) {
-			return v
+		if strings.HasPrefix(resourceType, strings.ToLower(v.ResourceTypePrefix)) {
+			return &v
 		}
 	}
 	return nil
@@ -917,7 +921,7 @@ func findRecord(resourceType string) []string {
 func CategoryByResourceType(resourceType string) string {
 	record := findRecord(resourceType)
 	if record != nil {
-		return record[categoryIdx]
+		return record.Category
 	}
 	return ""
 }
@@ -925,7 +929,7 @@ func CategoryByResourceType(resourceType string) string {
 func CloudProviderByResourceType(resourceType string) string {
 	record := findRecord(resourceType)
 	if record != nil {
-		return record[cloudProviderIdx]
+		return string(record.Provider)
 	}
 	return ""
 }
@@ -933,7 +937,7 @@ func CloudProviderByResourceType(resourceType string) string {
 func ServiceNameByResourceType(resourceType string) string {
 	record := findRecord(resourceType)
 	if record != nil {
-		return record[serviceNameIdx]
+		return record.Service
 	}
 	return ""
 }

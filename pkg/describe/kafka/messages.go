@@ -4,12 +4,13 @@ import (
 	"crypto/sha256"
 	"encoding/json"
 	"fmt"
+	"regexp"
+	"strings"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/source"
 
 	"github.com/google/uuid"
 	"gitlab.com/keibiengine/keibi-engine/pkg/describe/api"
-	"gitlab.com/keibiengine/keibi-engine/pkg/utils"
 	"gopkg.in/Shopify/sarama.v1"
 )
 
@@ -19,7 +20,7 @@ const (
 	SourceResourcesSummaryIndex = "source_resources_summary"
 )
 
-type Message interface {
+type DescribedResource interface {
 	AsProducerMessage() (*sarama.ProducerMessage, error)
 	MessageID() string
 }
@@ -92,7 +93,7 @@ func (r Resource) AsProducerMessage() (*sarama.ProducerMessage, error) {
 	}
 
 	return kafkaMsg(hashOf(r.ID),
-		value, utils.ResourceTypeToESIndex(r.ResourceType)), nil
+		value, ResourceTypeToESIndex(r.ResourceType)), nil
 }
 func (r Resource) MessageID() string {
 	return r.ID
@@ -304,4 +305,11 @@ func kafkaMsg(key string, value []byte, index string) *sarama.ProducerMessage {
 		},
 		Value: sarama.ByteEncoder(value),
 	}
+}
+
+var stopWordsRe = regexp.MustCompile(`\W+`)
+
+func ResourceTypeToESIndex(t string) string {
+	t = stopWordsRe.ReplaceAllString(t, "_")
+	return strings.ToLower(t)
 }
