@@ -300,7 +300,7 @@ func (c Client) Search(ctx context.Context, index string, query string, response
 	opts := []func(*esapi.SearchRequest){
 		c.es.Search.WithContext(ctx),
 		c.es.Search.WithBody(strings.NewReader(query)),
-		c.es.Search.WithTrackTotalHits(false),
+		c.es.Search.WithTrackTotalHits(true),
 		c.es.Search.WithIndex(index),
 	}
 

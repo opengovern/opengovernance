@@ -257,6 +257,11 @@ func (s *HttpHandlerSuite) TestGetAllResources() {
 	require.Equal(http.StatusOK, rec.Code)
 	require.Len(response.Resources, 4)
 	require.Equal("Name", response.Resources[0].SourceName)
+	for _, r := range response.Resources {
+		if r.ResourceType == "AWS::EC2::Region" {
+			require.Fail("AWS::EC2::Region should be excluded from get resource api")
+		}
+	}
 }
 
 func (s *HttpHandlerSuite) TestGetAllResources_Sort() {
@@ -301,7 +306,8 @@ func (s *HttpHandlerSuite) TestGetAllResources_Paging() {
 	require.NoError(err, "request")
 	require.Equal(http.StatusOK, rec.Code)
 	require.Len(response.Resources, 1)
-	require.Equal(response.Resources[0].ResourceID, "aaa3")
+	require.Equal("aaa3", response.Resources[0].ResourceID)
+	require.Equal(int64(4), response.ResultCount.Value)
 
 	req.Page.NextMarker = response.Page.NextMarker
 	rec, err = doRequestJSONResponse(s.router, echo.POST, "/api/v1/resources", req, &response)
@@ -536,6 +542,8 @@ func (s *HttpHandlerSuite) TestGetResource() {
 	}, &response)
 	require.NoError(err, "request")
 	require.Equal(http.StatusOK, rec.Code)
+	_, ok := response["tags"]
+	require.True(ok)
 	fmt.Println(response)
 }
 

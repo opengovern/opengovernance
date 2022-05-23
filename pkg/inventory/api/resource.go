@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"strings"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/cloudservice"
@@ -105,7 +104,6 @@ func QueryResourcesWithSteampipeColumns(
 			return nil, err
 		}
 
-		fmt.Println("======", query)
 		err = client.Search(ctx,
 			indexName,
 			query,
@@ -113,6 +111,11 @@ func QueryResourcesWithSteampipeColumns(
 		)
 		if err != nil {
 			return nil, err
+		}
+
+		result.ResultCount.Value = +response.Hits.Total.Value
+		if result.ResultCount.Relation == "eq" {
+			result.ResultCount.Relation = response.Hits.Total.Relation
 		}
 
 		for _, hit := range response.Hits.Hits {
@@ -279,6 +282,7 @@ func BuildResourceQuery(query string, terms map[string][]string, size, lastIdx i
 			"bool": boolQuery,
 		}
 	}
+	q["track_total_hits"] = true
 
 	queryBytes, err := json.Marshal(q)
 	if err != nil {
@@ -343,7 +347,7 @@ func ConvertToDescription(resourceType string, data interface{}) (interface{}, e
 		d = helpers.DereferencePointer(d)
 		return d, nil
 	} else {
-		d := steampipe.AWSDescriptionMap[resourceType]
+		d := steampipe.AzureDescriptionMap[resourceType]
 		err = json.Unmarshal(b, &d)
 		if err != nil {
 			return nil, err
