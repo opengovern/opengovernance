@@ -104,10 +104,11 @@ func QueryResourcesWithSteampipeColumns(
 			return nil, err
 		}
 
-		err = client.Search(ctx,
+		err = client.SearchWithTrackTotalHits(ctx,
 			indexName,
 			query,
 			&response,
+			true,
 		)
 		if err != nil {
 			return nil, err
@@ -282,7 +283,6 @@ func BuildResourceQuery(query string, terms map[string][]string, size, lastIdx i
 			"bool": boolQuery,
 		}
 	}
-	q["track_total_hits"] = true
 
 	queryBytes, err := json.Marshal(q)
 	if err != nil {

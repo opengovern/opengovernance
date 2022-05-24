@@ -297,10 +297,14 @@ func (p *baseESPaginator) updateState(numHits int64, searchAfter []interface{}, 
 }
 
 func (c Client) Search(ctx context.Context, index string, query string, response interface{}) error {
+	return c.SearchWithTrackTotalHits(ctx, index, query, response, false)
+}
+
+func (c Client) SearchWithTrackTotalHits(ctx context.Context, index string, query string, response interface{}, trackTotalHits interface{}) error {
 	opts := []func(*esapi.SearchRequest){
 		c.es.Search.WithContext(ctx),
 		c.es.Search.WithBody(strings.NewReader(query)),
-		c.es.Search.WithTrackTotalHits(true),
+		c.es.Search.WithTrackTotalHits(trackTotalHits),
 		c.es.Search.WithIndex(index),
 	}
 

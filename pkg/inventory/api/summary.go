@@ -118,7 +118,6 @@ func BuildSummaryQuery(query string, terms map[string][]string, notTerms map[str
 			"bool": boolQuery,
 		}
 	}
-	q["track_total_hits"] = true
 
 	queryBytes, err := json.Marshal(q)
 	if err != nil {
@@ -129,7 +128,7 @@ func BuildSummaryQuery(query string, terms map[string][]string, notTerms map[str
 
 func SummaryQueryES(client keibi.Client, ctx context.Context, index string, query string) ([]kafka.LookupResource, keibi.SearchTotal, error) {
 	var response SummaryQueryResponse
-	err := client.Search(ctx, index, query, &response)
+	err := client.SearchWithTrackTotalHits(ctx, index, query, &response, true)
 	if err != nil {
 		return nil, keibi.SearchTotal{}, err
 	}
