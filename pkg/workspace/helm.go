@@ -66,6 +66,9 @@ func (s *Server) createHelmRelease(ctx context.Context, workspace *Workspace) er
 			Values: &apiextensionsv1.JSON{
 				Raw: []byte(`{"domain": "` + workspace.Domain + `"}`),
 			},
+			Install: &helmv2.Install{
+				CreateNamespace: true,
+			},
 		},
 	}
 	if err := s.kubeClient.Create(ctx, &helmRelease); err != nil {
