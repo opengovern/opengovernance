@@ -1854,8 +1854,26 @@ func (h *HttpHandler) GetResource(ectx echo.Context) error {
 		return errors.New("invalid provider")
 	}
 
-	resp := map[string]string{}
+	resp := map[string]interface{}{}
 	for k, v := range cells {
+		if k == "tags" {
+			var respTags []interface{}
+			if jsonBytes := v.GetJsonValue(); jsonBytes != nil {
+				var tags map[string]interface{}
+				err = json.Unmarshal(jsonBytes, &tags)
+				if err != nil {
+					return err
+				}
+				for tagKey, tagValue := range tags {
+					respTags = append(respTags, map[string]interface{}{
+						"key":   tagKey,
+						"value": tagValue,
+					})
+				}
+			}
+			resp["tags"] = respTags
+		}
+
 		val := v.GetStringValue()
 		if len(val) > 0 {
 			resp[k] = v.GetStringValue()
@@ -2221,8 +2239,9 @@ func (h *HttpHandler) GetResources(ectx echo.Context, provider *api.SourceType) 
 			res.AllResources[idx].SourceName = uniqueSourceIds[res.AllResources[idx].SourceID]
 		}
 		return cc.JSON(http.StatusOK, api.GetResourcesResponse{
-			Resources: res.AllResources,
-			Page:      res.Page,
+			Resources:   res.AllResources,
+			Page:        res.Page,
+			ResultCount: res.ResultCount,
 		})
 	} else if *provider == api.SourceCloudAWS {
 		uniqueSourceIds := map[string]string{}
@@ -2241,8 +2260,9 @@ func (h *HttpHandler) GetResources(ectx echo.Context, provider *api.SourceType) 
 			resource.AccountName = uniqueSourceIds[resource.AccountID]
 		}
 		return cc.JSON(http.StatusOK, api.GetAWSResourceResponse{
-			Resources: res.AWSResources,
-			Page:      res.Page,
+			Resources:   res.AWSResources,
+			Page:        res.Page,
+			ResultCount: res.ResultCount,
 		})
 	} else if *provider == api.SourceCloudAzure {
 		uniqueSourceIds := map[string]string{}
@@ -2261,8 +2281,9 @@ func (h *HttpHandler) GetResources(ectx echo.Context, provider *api.SourceType) 
 			resource.SubscriptionName = uniqueSourceIds[resource.SubscriptionID]
 		}
 		return cc.JSON(http.StatusOK, api.GetAzureResourceResponse{
-			Resources: res.AzureResources,
-			Page:      res.Page,
+			Resources:   res.AzureResources,
+			Page:        res.Page,
+			ResultCount: res.ResultCount,
 		})
 	} else {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid provider")

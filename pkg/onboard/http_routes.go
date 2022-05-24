@@ -242,13 +242,9 @@ func (h HttpHandler) PostSourceAzure(ctx echo.Context) error {
 
 	src := NewAzureSource(req)
 
-	err := h.vault.Write(src.ConfigRef, req.Config.AsMap())
-	if err != nil {
-		return err
-	}
-
-	err = h.db.orm.Transaction(func(tx *gorm.DB) error {
-		err = h.db.CreateSource(&src)
+	//verify spn exist
+	err := h.db.orm.Transaction(func(tx *gorm.DB) error {
+		err := h.db.CreateSource(&src)
 		if err != nil {
 			return err
 		}

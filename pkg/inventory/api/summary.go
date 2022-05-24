@@ -18,7 +18,7 @@ func QuerySummaryResources(
 	provider *SourceType,
 	size, lastIndex int,
 	sorts []ResourceSortItem,
-) ([]kafka.LookupResource, error) {
+) ([]kafka.LookupResource, keibi.SearchTotal, error) {
 	var err error
 
 	terms := make(map[string][]string)
@@ -38,20 +38,38 @@ func QuerySummaryResources(
 		terms["source_type.keyword"] = []string{string(*provider)}
 	}
 
-	queryStr, err := BuildSummaryQuery(query, terms, size, lastIndex, sorts)
+	notTerms := make(map[string][]string)
+	ignoreResourceTypes := []string{
+		"Microsoft.Resources/subscriptions/locations",
+		"Microsoft.Authorization/roleDefinitions",
+		"microsoft.security/autoProvisioningSettings",
+		"microsoft.security/settings",
+		"Microsoft.Authorization/elevateAccessRoleAssignment",
+		"Microsoft.AppConfiguration/configurationStores",
+		"Microsoft.KeyVault/vaults/keys",
+		"microsoft.security/pricings",
+		"Microsoft.Security/autoProvisioningSettings",
+		"Microsoft.Security/securityContacts",
+		"Microsoft.Security/locations/jitNetworkAccessPolicies",
+		"AWS::EC2::Region",
+		"AWS::EC2::RegionalSettings",
+	}
+	notTerms["resource_type.keyword"] = ignoreResourceTypes
+
+	queryStr, err := BuildSummaryQuery(query, terms, notTerms, size, lastIndex, sorts)
 	if err != nil {
-		return nil, err
+		return nil, keibi.SearchTotal{}, err
 	}
 
-	resources, err := SummaryQueryES(client, ctx, describe.InventorySummaryIndex, queryStr)
+	resources, resultCount, err := SummaryQueryES(client, ctx, describe.InventorySummaryIndex, queryStr)
 	if err != nil {
-		return nil, err
+		return nil, keibi.SearchTotal{}, err
 	}
 
-	return resources, nil
+	return resources, resultCount, nil
 }
 
-func BuildSummaryQuery(query string, terms map[string][]string, size, lastIdx int, sorts []ResourceSortItem) (string, error) {
+func BuildSummaryQuery(query string, terms map[string][]string, notTerms map[string][]string, size, lastIdx int, sorts []ResourceSortItem) (string, error) {
 	q := map[string]interface{}{
 		"size": size,
 		"from": lastIdx,
@@ -83,6 +101,18 @@ func BuildSummaryQuery(query string, terms map[string][]string, size, lastIdx in
 			},
 		}
 	}
+	if len(notTerms) > 0 {
+		var filters []map[string]interface{}
+		for k, vs := range notTerms {
+			filters = append(filters, map[string]interface{}{
+				"terms": map[string][]string{
+					k: vs,
+				},
+			})
+		}
+
+		boolQuery["must_not"] = filters
+	}
 	if len(boolQuery) > 0 {
 		q["query"] = map[string]interface{}{
 			"bool": boolQuery,
@@ -96,11 +126,11 @@ func BuildSummaryQuery(query string, terms map[string][]string, size, lastIdx in
 	return string(queryBytes), nil
 }
 
-func SummaryQueryES(client keibi.Client, ctx context.Context, index string, query string) ([]kafka.LookupResource, error) {
+func SummaryQueryES(client keibi.Client, ctx context.Context, index string, query string) ([]kafka.LookupResource, keibi.SearchTotal, error) {
 	var response SummaryQueryResponse
-	err := client.Search(ctx, index, query, &response)
+	err := client.SearchWithTrackTotalHits(ctx, index, query, &response, true)
 	if err != nil {
-		return nil, err
+		return nil, keibi.SearchTotal{}, err
 	}
 
 	var resources []kafka.LookupResource
@@ -108,5 +138,5 @@ func SummaryQueryES(client keibi.Client, ctx context.Context, index string, quer
 		resources = append(resources, hits.Source)
 	}
 
-	return resources, nil
+	return resources, response.Hits.Total, nil
 }

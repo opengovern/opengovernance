@@ -89,8 +89,9 @@ type SmartQuerySortItem struct {
 }
 
 type GetResourcesResponse struct {
-	Resources []AllResource `json:"resources"`
-	Page      api.Page      `json:"page"`
+	Resources   []AllResource     `json:"resources"`
+	Page        api.Page          `json:"page"`
+	ResultCount keibi.SearchTotal `json:"resultCount"`
 }
 
 type AllResource struct {
@@ -135,8 +136,9 @@ func (r AllResource) ToCSVHeaders() []string {
 }
 
 type GetAzureResourceResponse struct {
-	Resources []AzureResource `json:"resources"`
-	Page      api.Page        `json:"page"`
+	Resources   []AzureResource   `json:"resources"`
+	Page        api.Page          `json:"page"`
+	ResultCount keibi.SearchTotal `json:"resultCount"`
 }
 
 type AzureResource struct {
@@ -168,8 +170,9 @@ func (r AzureResource) ToCSVHeaders() []string {
 }
 
 type GetAWSResourceResponse struct {
-	Resources []AWSResource `json:"resources"`
-	Page      api.Page      `json:"page"`
+	Resources   []AWSResource     `json:"resources"`
+	Page        api.Page          `json:"page"`
+	ResultCount keibi.SearchTotal `json:"resultCount"`
 }
 
 type AWSResource struct {

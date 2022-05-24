@@ -229,13 +229,13 @@ func ApplyTemplate(address string, url, templateFile string) error {
 }
 
 func GenerateLookupResources() []kafka.LookupResource {
-	sourceTypes := []string{"AWS", "AWS", "Azure", "Azure"}
-	names := []string{"0001", "0002", "0003", "0004"}
-	resourceIds := []string{"aaa0", "aaa1", "aaa2", "aaa3"}
-	resourceTypes := []string{"AWS::EC2::Instance", "AWS::EC2::Instance", "Microsoft.Network/virtualNetworks", "Microsoft.Network/virtualNetworks"}
-	resourceGroups := []string{"AA", "AB", "BA", "BB"}
-	locations := []string{"us-east1", "us-east2", "us-east1", "us-east2"}
-	sourceIDs := []string{"ss1", "ss1", "ss2", "ss2"}
+	sourceTypes := []string{"AWS", "AWS", "Azure", "Azure", "AWS"}
+	names := []string{"0001", "0002", "0003", "0004", "0005"}
+	resourceIds := []string{"aaa0", "aaa1", "aaa2", "aaa3", "aaa4"}
+	resourceTypes := []string{"AWS::EC2::Instance", "AWS::EC2::Instance", "Microsoft.Network/virtualNetworks", "Microsoft.Network/virtualNetworks", "AWS::EC2::Region"}
+	resourceGroups := []string{"AA", "AB", "BA", "BB", "BC"}
+	locations := []string{"us-east1", "us-east2", "us-east1", "us-east2", "us-west1"}
+	sourceIDs := []string{"ss1", "ss1", "ss2", "ss2", "ss1"}
 
 	var resources []kafka.LookupResource
 	for i := 0; i < len(resourceIds); i++ {

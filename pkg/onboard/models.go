@@ -75,6 +75,7 @@ func NewAzureSource(in api.SourceAzureRequest) Source {
 	id := uuid.New()
 	provider := api.SourceCloudAzure
 
+	// SPN -> PK: TenantID & ClientID
 	s := Source{
 		ID:          id,
 		SourceId:    in.Config.SubscriptionId,

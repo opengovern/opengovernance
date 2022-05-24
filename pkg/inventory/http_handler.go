@@ -6,12 +6,10 @@ import (
 	"os"
 	"time"
 
-	"gorm.io/gorm/logger"
-
+	"gitlab.com/keibiengine/keibi-engine/pkg/keibi-es-sdk"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
-
-	"gitlab.com/keibiengine/keibi-engine/pkg/keibi-es-sdk"
+	"gorm.io/gorm/logger"
 )
 
 type HttpHandler struct {

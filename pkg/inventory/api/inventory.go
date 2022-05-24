@@ -14,6 +14,7 @@ type GetResourcesResult struct {
 	AzureResources []AzureResource
 	AWSResources   []AWSResource
 	Page           internal.Page
+	ResultCount    keibi.SearchTotal
 }
 
 func QueryResources(ctx context.Context, client keibi.Client, req *GetResourcesRequest, provider *SourceType) (*GetResourcesResult, error) {
@@ -30,7 +31,7 @@ func QueryResourcesFromInventorySummary(ctx context.Context, client keibi.Client
 		return nil, err
 	}
 
-	resources, err := QuerySummaryResources(ctx, client, req.Query, req.Filters, provider, req.Page.Size, lastIdx, req.Sorts)
+	resources, resultCount, err := QuerySummaryResources(ctx, client, req.Query, req.Filters, provider, req.Page.Size, lastIdx, req.Sorts)
 	if err != nil {
 		return nil, err
 	}
@@ -55,6 +56,7 @@ func QueryResourcesFromInventorySummary(ctx context.Context, client keibi.Client
 		return &GetResourcesResult{
 			AWSResources: awsResources,
 			Page:         page,
+			ResultCount:  resultCount,
 		}, nil
 	}
 
@@ -74,6 +76,7 @@ func QueryResourcesFromInventorySummary(ctx context.Context, client keibi.Client
 		return &GetResourcesResult{
 			AzureResources: azureResources,
 			Page:           page,
+			ResultCount:    resultCount,
 		}, nil
 	}
 
@@ -92,5 +95,6 @@ func QueryResourcesFromInventorySummary(ctx context.Context, client keibi.Client
 	return &GetResourcesResult{
 		AllResources: allResources,
 		Page:         page,
+		ResultCount:  resultCount,
 	}, nil
 }
