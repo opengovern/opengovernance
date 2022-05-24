@@ -16,6 +16,7 @@ type Database struct {
 func (db Database) Initialize() error {
 	err := db.orm.AutoMigrate(
 		&Source{},
+		&SPN{},
 	)
 	if err != nil {
 		return err
@@ -149,4 +150,34 @@ func (db Database) DeleteSource(id uuid.UUID) error {
 	}
 
 	return nil
+}
+
+// CreateSPN creates a new spn
+func (db Database) CreateSPN(s *SPN) error {
+	tx := db.orm.
+		Model(&SPN{}).
+		Clauses(clause.OnConflict{DoNothing: true}).
+		Create(s)
+
+	if tx.Error != nil {
+		return tx.Error
+	} else if tx.RowsAffected != 1 {
+		return fmt.Errorf("create spn: didn't create spn due to id conflict")
+	}
+
+	return nil
+}
+
+// GetSPN gets a spn with matching id
+func (db Database) GetSPN(id uuid.UUID) (SPN, error) {
+	var s SPN
+	tx := db.orm.First(&s, "id = ?", id)
+
+	if tx.Error != nil {
+		return SPN{}, tx.Error
+	} else if tx.RowsAffected != 1 {
+		return SPN{}, gorm.ErrRecordNotFound
+	}
+
+	return s, nil
 }
