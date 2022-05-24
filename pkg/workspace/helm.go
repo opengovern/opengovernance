@@ -64,7 +64,13 @@ func (s *Server) createHelmRelease(ctx context.Context, workspace *Workspace) er
 				},
 			},
 			Values: &apiextensionsv1.JSON{
-				Raw: []byte(`{"domain": "` + workspace.Domain + `"}`),
+				Raw: []byte(`
+{
+  "keibi": {
+    "domain": "` + workspace.Domain + `"
+  }
+}
+`),
 			},
 			Install: &helmv2.Install{
 				CreateNamespace: true,
