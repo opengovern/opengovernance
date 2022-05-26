@@ -8,6 +8,7 @@ import (
 	"github.com/ory/dockertest/v3"
 	"github.com/stretchr/testify/suite"
 	idocker "gitlab.com/keibiengine/keibi-engine/pkg/internal/dockertest"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
@@ -75,6 +76,7 @@ func (s *testSuite) SetupSuite() {
 
 	scheme := runtime.NewScheme()
 	s.NoError(helmv2.AddToScheme(scheme), "add scheme")
+	s.NoError(corev1.AddToScheme(scheme), "add scheme")
 	s.server.kubeClient = fake.NewClientBuilder().WithScheme(scheme).Build()
 
 	s.name = "geeks"

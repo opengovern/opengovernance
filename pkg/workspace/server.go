@@ -93,7 +93,7 @@ func (s *Server) startReconciler() {
 			s.e.Logger.Errorf("list workspaces: %v", err)
 		} else {
 			for _, workspace := range workspaces {
-				if err := s.handleWorkspace(&workspace); err != nil {
+				if err := s.handleWorkspace(workspace); err != nil {
 					s.e.Logger.Errorf("handle workspace %s: %v", workspace.ID.String(), err)
 				}
 			}
@@ -148,6 +148,20 @@ func (s *Server) handleWorkspace(workspace *Workspace) error {
 			// update the workspace status next loop
 			return nil
 		}
+
+		namespace, err := s.findTargetNamespace(ctx, workspace.ID.String())
+		if err != nil {
+			return fmt.Errorf("find target namespace: %w", err)
+		}
+		if namespace != nil {
+			s.e.Logger.Infof("delete target namespace %s with status %s", workspace.ID.String(), workspace.Status)
+			if err := s.deleteTargetNamespace(ctx, workspace.ID.String()); err != nil {
+				return fmt.Errorf("delete target namespace: %w", err)
+			}
+			// update the workspace status next loop
+			return nil
+		}
+
 		if err := s.db.UpdateWorkspaceStatus(workspace.ID, StatusDeleted); err != nil {
 			return fmt.Errorf("update workspace status: %w", err)
 		}
@@ -172,6 +186,9 @@ func (s *Server) CreateWorkspace(c echo.Context) error {
 	}
 	if request.Name == "" {
 		return echo.NewHTTPError(http.StatusBadRequest, "name is empty")
+	}
+	if strings.Contains(request.Name, ".") {
+		return echo.NewHTTPError(http.StatusBadRequest, "name is invalid")
 	}
 
 	domain := strings.ToLower(request.Name + s.cfg.DomainSuffix)
@@ -245,7 +262,7 @@ func (s *Server) DeleteWorkspace(c echo.Context) error {
 		c.Logger().Errorf("delete workspace: %v", err)
 		return echo.NewHTTPError(http.StatusInternalServerError, ErrInternalServer)
 	}
-	return c.JSON(http.StatusOK, "success")
+	return c.JSON(http.StatusOK, map[string]string{"message": "success"})
 }
 
 // ListWorkspaces godoc
@@ -267,7 +284,7 @@ func (s *Server) ListWorkspaces(c echo.Context) error {
 		c.Logger().Errorf("list workspaces: %v", err)
 		return echo.NewHTTPError(http.StatusInternalServerError, ErrInternalServer)
 	}
-	workspaces := make([]*api.WorkspaceResponse, len(dbWorkspaces))
+	workspaces := make([]*api.WorkspaceResponse, 0)
 	for _, workspace := range dbWorkspaces {
 		workspaces = append(workspaces, &api.WorkspaceResponse{
 			ID:          workspace.ID.String(),

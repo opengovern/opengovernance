@@ -6,6 +6,7 @@ import (
 	"time"
 
 	helmv2 "github.com/fluxcd/helm-controller/api/v2beta1"
+	corev1 "k8s.io/api/core/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -22,6 +23,9 @@ const (
 func (s *Server) newKubeClient() (client.Client, error) {
 	scheme := runtime.NewScheme()
 	if err := helmv2.AddToScheme(scheme); err != nil {
+		return nil, err
+	}
+	if err := corev1.AddToScheme(scheme); err != nil {
 		return nil, err
 	}
 	kubeClient, err := client.New(ctrl.GetConfigOrDie(), client.Options{Scheme: scheme})
@@ -81,6 +85,38 @@ func (s *Server) createHelmRelease(ctx context.Context, workspace *Workspace) er
 		return fmt.Errorf("create helm release: %w", err)
 	}
 	return nil
+}
+
+func (s *Server) deleteTargetNamespace(ctx context.Context, name string) error {
+	ns := corev1.Namespace{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: name,
+		},
+	}
+	return s.kubeClient.Delete(ctx, &ns)
+}
+
+func (s *Server) createTargetNamespace(ctx context.Context, name string) error {
+	ns := corev1.Namespace{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: name,
+		},
+	}
+	return s.kubeClient.Create(ctx, &ns)
+}
+
+func (s *Server) findTargetNamespace(ctx context.Context, name string) (*corev1.Namespace, error) {
+	key := client.ObjectKey{
+		Name: name,
+	}
+	var ns corev1.Namespace
+	if err := s.kubeClient.Get(ctx, key, &ns); err != nil {
+		if apierrors.IsNotFound(err) {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("find target namespace: %w", err)
+	}
+	return &ns, nil
 }
 
 func (s *Server) findHelmRelease(ctx context.Context, workspace *Workspace) (*helmv2.HelmRelease, error) {
