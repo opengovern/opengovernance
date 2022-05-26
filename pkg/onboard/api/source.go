@@ -101,17 +101,7 @@ type SourceAzureSPNRequest struct {
 	Name           string    `json:"name"`
 	Description    string    `json:"description"`
 	SubscriptionId string    `json:"subscriptionId" validate:"required,uuid_rfc4122"`
-	TenantId       string    `json:"tenantId" validate:"required,uuid_rfc4122"`
 	SPNId          uuid.UUID `json:"spnId"`
-}
-
-type CreateSPNRequest struct {
-	Name   string            `json:"name"`
-	Config SourceConfigAzure `json:"config"`
-}
-
-type CreateSPNResponse struct {
-	ID uuid.UUID `json:"id"`
 }
 
 type AWSMetadataResponse struct {

@@ -35,8 +35,8 @@ func (h HttpHandler) Register(r *echo.Echo) {
 
 	spn := v1.Group("/spn")
 	spn.POST("/azure", h.PostSPN)
-	spn.GET("/:spnId/credentials", h.GetSPNCred)
-	spn.PUT("/:spnId/credentials", h.PutSPNCred)
+	spn.GET("/:spnId", h.GetSPNCred)
+	spn.PUT("/:spnId", h.PutSPNCred)
 
 	disc := v1.Group("/discover")
 
@@ -368,7 +368,7 @@ func (h HttpHandler) PostSPN(ctx echo.Context) error {
 // @Tags         onboard
 // @Produce      json
 // @Param    spnId  query  string  true  "SPN ID"
-// @Router   /onboard/api/v1/spn/{spnId}/credentials [post]
+// @Router   /onboard/api/v1/spn/{spnId} [post]
 func (h HttpHandler) GetSPNCred(ctx echo.Context) error {
 	spnUUID, err := uuid.Parse(ctx.Param("spnId"))
 	if err != nil {
@@ -390,7 +390,8 @@ func (h HttpHandler) GetSPNCred(ctx echo.Context) error {
 		return err
 	}
 
-	return ctx.JSON(http.StatusOK, api.AzureCredential{
+	return ctx.JSON(http.StatusOK, api.SPNCredential{
+		SPNName:  fmt.Sprintf("SPN-%d", src.Model.ID),
 		ClientID: azureCnf.ClientID,
 		TenantID: azureCnf.TenantID,
 	})
@@ -401,7 +402,7 @@ func (h HttpHandler) GetSPNCred(ctx echo.Context) error {
 // @Tags         onboard
 // @Produce      json
 // @Param    spnId  query  string  true  "SPN ID"
-// @Router   /onboard/api/v1/spn/{spnId}/credentials [post]
+// @Router   /onboard/api/v1/spn/{spnId} [post]
 func (h HttpHandler) PutSPNCred(ctx echo.Context) error {
 	spnUUID, err := uuid.Parse(ctx.Param("spnId"))
 	if err != nil {
@@ -427,11 +428,10 @@ func (h HttpHandler) PutSPNCred(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
 	}
 
-	newCnf := api.SourceConfigAzure{
-		SubscriptionId: azureCnf.SubscriptionID,
-		TenantId:       azureCnf.TenantID,
-		ClientId:       azureCnf.ClientID,
-		ClientSecret:   req.ClientSecret,
+	newCnf := api.SPNConfigAzure{
+		TenantId:     azureCnf.TenantID,
+		ClientId:     azureCnf.ClientID,
+		ClientSecret: req.ClientSecret,
 	}
 	if err := h.vault.Write(src.ConfigRef, newCnf.AsMap()); err != nil {
 		return err

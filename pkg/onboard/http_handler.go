@@ -61,7 +61,7 @@ func InitializeHttpHandler(
 		postgresDb,
 	)
 
-	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
+	orm, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	if err != nil {
 		return HttpHandler{}, err
 	}
@@ -84,9 +84,16 @@ func InitializeHttpHandler(
 
 	fmt.Println("Connected to vault:", vaultAddress)
 
+	db := Database{orm: orm}
+	err = h.db.Initialize()
+	if err != nil {
+		return HttpHandler{}, err
+	}
+	fmt.Println("Initialized postgres database: ", postgresDb)
+
 	return HttpHandler{
 		vault:             v,
-		db:                Database{orm: db},
+		db:                db,
 		sourceEventsQueue: sourceEventsQueue,
 	}, nil
 }

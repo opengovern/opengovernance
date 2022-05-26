@@ -161,7 +161,6 @@ func (s *HttpHandlerSuite) TestCreateAzureSourceWithSPN_SPNNotExists() {
 		Name:           "Account1",
 		Description:    "Account1 Description",
 		SubscriptionId: "6948DF80-14BD-4E04-8842-7668D9C001F5", // RANDOM UUID
-		TenantId:       "4B8302DA-21AD-401F-AF45-1DFD956B80B5", // RANDOM UUID
 		SPNId:          uuid.New(),
 	}, &response)
 	require.NoError(err, "request")
@@ -179,37 +178,33 @@ func (s *HttpHandlerSuite) TestCreateAzureSourceWithSPN_Success() {
 
 	var spnResponse api.CreateSPNResponse
 	rec, err := doSimpleJSONRequest(s.router, echo.POST, "/api/v1/spn/azure", api.CreateSPNRequest{
-		Name: "Account1",
-		Config: api.SourceConfigAzure{
-			SubscriptionId: "6948DF80-14BD-4E04-8842-7668D9C001F5", // RANDOM UUID
-			TenantId:       "4B8302DA-21AD-401F-AF45-1DFD956B80B5", // RANDOM UUID
-			ClientId:       "8628FE7C-A4E9-4056-91BD-FD6AA7817E39", // RANDOM UUID
-			ClientSecret:   "SECRET",
+		Config: api.SPNConfigAzure{
+			TenantId:     "297bd476-4f40-499e-81e8-420621500a1b", // RANDOM UUID
+			ClientId:     "2578aa74-e8ec-445c-8142-7bdebf33fed4", // RANDOM UUID
+			ClientSecret: "SECRET",
 		},
 	}, &spnResponse)
 	require.NoError(err, "request")
 	require.Equal(http.StatusOK, rec.Code)
 	require.NotEmpty(spnResponse.ID)
 
+	pathRef := fmt.Sprintf("sources/azure/spn/%s", spnResponse.ID)
+	vmock.AssertCalled(s.T(), "Write", pathRef, map[string]interface{}{
+		"tenantId":     "297bd476-4f40-499e-81e8-420621500a1b",
+		"clientId":     "2578aa74-e8ec-445c-8142-7bdebf33fed4",
+		"clientSecret": "SECRET",
+	})
+
 	var response api.CreateSourceResponse
 	rec, err = doSimpleJSONRequest(s.router, echo.POST, "/api/v1/source/azure/spn", api.SourceAzureSPNRequest{
 		Name:           "Account1",
 		Description:    "Account1 Description",
 		SubscriptionId: "6948DF80-14BD-4E04-8842-7668D9C001F5", // RANDOM UUID
-		TenantId:       "4B8302DA-21AD-401F-AF45-1DFD956B80B5", // RANDOM UUID
 		SPNId:          spnResponse.ID,
 	}, &response)
 	require.NoError(err, "request")
 	require.Equal(http.StatusOK, rec.Code)
 	require.NotEmpty(response.ID)
-
-	pathRef := fmt.Sprintf("sources/azure/spn/%s", spnResponse.ID)
-	vmock.AssertCalled(s.T(), "Write", pathRef, map[string]interface{}{
-		"subscriptionId": "6948DF80-14BD-4E04-8842-7668D9C001F5",
-		"tenantId":       "4B8302DA-21AD-401F-AF45-1DFD956B80B5",
-		"clientId":       "8628FE7C-A4E9-4056-91BD-FD6AA7817E39",
-		"clientSecret":   "SECRET",
-	})
 
 	qmock.AssertCalled(s.T(), "Publish", api.SourceEvent{
 		Action:     api.SourceCreated,
@@ -227,21 +222,13 @@ func (s *HttpHandlerSuite) TestChangeAzureSPNSecret() {
 
 	qmock.On("Publish", mock.Anything).Return(error(nil))
 	vmock.On("Write", mock.Anything, mock.Anything).Return(error(nil))
-	vmock.On("Read", mock.Anything).Return(map[string]interface{}{
-		"subscriptionId": "6948DF80-14BD-4E04-8842-7668D9C001F5",
-		"tenantId":       "4B8302DA-21AD-401F-AF45-1DFD956B80B5",
-		"clientId":       "8628FE7C-A4E9-4056-91BD-FD6AA7817E39",
-		"clientSecret":   "SECRET",
-	}, error(nil))
 
 	var spnResponse api.CreateSPNResponse
 	rec, err := doSimpleJSONRequest(s.router, echo.POST, "/api/v1/spn/azure", api.CreateSPNRequest{
-		Name: "Account1",
-		Config: api.SourceConfigAzure{
-			SubscriptionId: "6948DF80-14BD-4E04-8842-7668D9C001F5", // RANDOM UUID
-			TenantId:       "4B8302DA-21AD-401F-AF45-1DFD956B80B5", // RANDOM UUID
-			ClientId:       "8628FE7C-A4E9-4056-91BD-FD6AA7817E39", // RANDOM UUID
-			ClientSecret:   "SECRET",
+		Config: api.SPNConfigAzure{
+			TenantId:     "4B8302DA-21AD-401F-AF45-1DFD956B80B5", // RANDOM UUID
+			ClientId:     "8628FE7C-A4E9-4056-91BD-FD6AA7817E39", // RANDOM UUID
+			ClientSecret: "SECRET",
 		},
 	}, &spnResponse)
 	require.NoError(err, "request")
@@ -250,17 +237,23 @@ func (s *HttpHandlerSuite) TestChangeAzureSPNSecret() {
 
 	pathRef := fmt.Sprintf("sources/azure/spn/%s", spnResponse.ID)
 	vmock.AssertCalled(s.T(), "Write", pathRef, map[string]interface{}{
-		"subscriptionId": "6948DF80-14BD-4E04-8842-7668D9C001F5",
-		"tenantId":       "4B8302DA-21AD-401F-AF45-1DFD956B80B5",
-		"clientId":       "8628FE7C-A4E9-4056-91BD-FD6AA7817E39",
-		"clientSecret":   "SECRET",
+		"tenantId":     "4B8302DA-21AD-401F-AF45-1DFD956B80B5",
+		"clientId":     "8628FE7C-A4E9-4056-91BD-FD6AA7817E39",
+		"clientSecret": "SECRET",
 	})
 
-	path := fmt.Sprintf("/api/v1/spn/%s/credentials", spnResponse.ID.String())
+	vmock.On("Read", fmt.Sprintf("sources/azure/spn/%s", spnResponse.ID.String())).Return(map[string]interface{}{
+		"tenantId":     "4B8302DA-21AD-401F-AF45-1DFD956B80B5",
+		"clientId":     "8628FE7C-A4E9-4056-91BD-FD6AA7817E39",
+		"clientSecret": "SECRET",
+	}, error(nil))
+
+	path := fmt.Sprintf("/api/v1/spn/%s", spnResponse.ID.String())
 	var credRes api.AzureCredential
 	rec, err = doSimpleJSONRequest(s.router, echo.GET, path, nil, &credRes)
 	require.NoError(err, "request")
 	require.Equal(http.StatusOK, rec.Code)
+
 	require.Equal("8628FE7C-A4E9-4056-91BD-FD6AA7817E39", credRes.ClientID)
 	require.Equal("4B8302DA-21AD-401F-AF45-1DFD956B80B5", credRes.TenantID)
 	require.Equal("", credRes.ClientSecret)
@@ -273,10 +266,9 @@ func (s *HttpHandlerSuite) TestChangeAzureSPNSecret() {
 	require.NoError(err, "request")
 	require.Equal(http.StatusOK, rec.Code)
 	vmock.AssertCalled(s.T(), "Write", pathRef, map[string]interface{}{
-		"subscriptionId": "6948DF80-14BD-4E04-8842-7668D9C001F5",
-		"tenantId":       "4B8302DA-21AD-401F-AF45-1DFD956B80B5",
-		"clientId":       "8628FE7C-A4E9-4056-91BD-FD6AA7817E39",
-		"clientSecret":   "SECRET2",
+		"tenantId":     "4B8302DA-21AD-401F-AF45-1DFD956B80B5",
+		"clientId":     "8628FE7C-A4E9-4056-91BD-FD6AA7817E39",
+		"clientSecret": "SECRET2",
 	})
 }
 
@@ -288,11 +280,6 @@ func (s *HttpHandlerSuite) TestChangeAWSSecret() {
 
 	qmock.On("Publish", mock.Anything).Return(error(nil))
 	vmock.On("Write", mock.Anything, mock.Anything).Return(error(nil))
-	vmock.On("Read", mock.Anything).Return(map[string]interface{}{
-		"accountId": "123456789012",
-		"accessKey": "ACCESS_KEY",
-		"secretKey": "SECRET_KEY",
-	}, error(nil))
 
 	var response api.CreateSourceResponse
 	rec, err := doSimpleJSONRequest(s.router, echo.POST, "/api/v1/source/aws", api.SourceAwsRequest{
@@ -314,6 +301,12 @@ func (s *HttpHandlerSuite) TestChangeAWSSecret() {
 		"accessKey": "ACCESS_KEY",
 		"secretKey": "SECRET_KEY",
 	})
+
+	vmock.On("Read", fmt.Sprintf("sources/aws/%s", response.ID)).Return(map[string]interface{}{
+		"accountId": "123456789012",
+		"accessKey": "ACCESS_KEY",
+		"secretKey": "SECRET_KEY",
+	}, error(nil))
 
 	path := fmt.Sprintf("/api/v1/source/%s/credentials", response.ID.String())
 	var credRes api.AWSCredential

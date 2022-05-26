@@ -123,7 +123,6 @@ type SPN struct {
 	ID        uuid.UUID `gorm:"primaryKey;type:uuid;default:uuid_generate_v4()"`
 	TenantId  string    `gorm:"index:idx_tenant_client_id,unique"`
 	ClientId  string    `gorm:"index:idx_tenant_client_id,unique"`
-	Name      string    `gorm:"not null"`
 	ConfigRef string
 }
 
@@ -139,7 +138,8 @@ func NewSPN(in api.CreateSPNRequest) SPN {
 
 	return SPN{
 		ID:        id,
-		Name:      in.Name,
+		ClientId:  in.Config.ClientId,
+		TenantId:  in.Config.TenantId,
 		ConfigRef: fmt.Sprintf("sources/%s/spn/%s", strings.ToLower(string(provider)), id),
 	}
 }
