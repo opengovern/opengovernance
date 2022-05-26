@@ -212,6 +212,12 @@ func (ts *testSuite) TestListWorkspaces() {
 				ts.Contains(he.Message, tc.Error)
 				return
 			}
+
+			var workspaces []*api.WorkspaceResponse
+			if err := json.NewDecoder(w.Body).Decode(&workspaces); err != nil {
+				ts.T().Fatalf("json decode: %v", err)
+			}
+			ts.Equal(tc.Count, len(workspaces))
 		})
 	}
 }

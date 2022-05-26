@@ -47,25 +47,25 @@ func (s *Database) GetWorkspace(id uuid.UUID) (*Workspace, error) {
 	return &workspace, nil
 }
 
-func (s *Database) ListWorkspacesByOwner(ownerId string) ([]Workspace, error) {
-	var workspaces []Workspace
-	if err := s.db.Model(&Workspace{}).Where(Workspace{OwnerId: ownerId}).Scan(&workspaces).Error; err != nil {
+func (s *Database) ListWorkspacesByOwner(ownerId string) ([]*Workspace, error) {
+	var workspaces []*Workspace
+	if err := s.db.Model(&Workspace{}).Where(Workspace{OwnerId: ownerId}).Find(&workspaces).Error; err != nil {
 		return nil, err
 	}
 	return workspaces, nil
 }
 
-func (s *Database) ListWorkspaces() ([]Workspace, error) {
-	var workspaces []Workspace
-	if err := s.db.Model(&Workspace{}).Scan(&workspaces).Error; err != nil {
+func (s *Database) ListWorkspaces() ([]*Workspace, error) {
+	var workspaces []*Workspace
+	if err := s.db.Model(&Workspace{}).Find(&workspaces).Error; err != nil {
 		return nil, err
 	}
 	return workspaces, nil
 }
 
-func (s *Database) ListWorkspacesByStatus(status string) ([]Workspace, error) {
-	var workspaces []Workspace
-	if err := s.db.Model(&Workspace{}).Where(Workspace{Status: status}).Scan(&workspaces).Error; err != nil {
+func (s *Database) ListWorkspacesByStatus(status string) ([]*Workspace, error) {
+	var workspaces []*Workspace
+	if err := s.db.Model(&Workspace{}).Where(Workspace{Status: status}).Find(&workspaces).Error; err != nil {
 		return nil, err
 	}
 	return workspaces, nil
