@@ -753,6 +753,7 @@ func (s *HttpHandlerSuite) TestRunQuery_CSV() {
 }
 
 func (s *HttpHandlerSuite) TestGetComplianceReport_Benchmark() {
+	s.T().Skip("deprecated")
 	require := s.Require()
 
 	err := test.PopulateElastic(s.elasticUrl)
@@ -879,6 +880,7 @@ func (s *HttpHandlerSuite) TestGetComplianceReport_Benchmark() {
 }
 
 func (s *HttpHandlerSuite) TestGetComplianceReport_Result() {
+	s.T().Skip("deprecated")
 	require := s.Require()
 
 	err := test.PopulateElastic(s.elasticUrl)

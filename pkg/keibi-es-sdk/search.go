@@ -13,13 +13,6 @@ type SearchRequest struct {
 	SearchAfter []interface{}            `json:"search_after,omitempty"`
 }
 
-type Relation string
-
-const (
-	EqRelation  Relation = "eq"
-	GteRelation Relation = "gte"
-)
-
 type SearchTotal struct {
 	Value    int64  `json:"value"`
 	Relation string `json:"relation"`

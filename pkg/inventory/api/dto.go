@@ -88,10 +88,22 @@ type SmartQuerySortItem struct {
 	Direction DirectionType `json:"direction" enums:"asc,desc"`
 }
 
+type Relation string
+
+const (
+	EqualsRelation            Relation = "eq"
+	GreaterThanEqualsRelation Relation = "gte"
+)
+
+type ResultCount struct {
+	Value    int64    `json:"value"`
+	Relation Relation `json:"relation"`
+}
+
 type GetResourcesResponse struct {
-	Resources   []AllResource     `json:"resources"`
-	Page        api.Page          `json:"page"`
-	ResultCount keibi.SearchTotal `json:"resultCount"`
+	Resources   []AllResource `json:"resources"`
+	Page        api.Page      `json:"page"`
+	ResultCount ResultCount   `json:"resultCount"`
 }
 
 type AllResource struct {
@@ -136,9 +148,9 @@ func (r AllResource) ToCSVHeaders() []string {
 }
 
 type GetAzureResourceResponse struct {
-	Resources   []AzureResource   `json:"resources"`
-	Page        api.Page          `json:"page"`
-	ResultCount keibi.SearchTotal `json:"resultCount"`
+	Resources   []AzureResource `json:"resources"`
+	Page        api.Page        `json:"page"`
+	ResultCount ResultCount     `json:"resultCount"`
 }
 
 type AzureResource struct {
@@ -170,9 +182,9 @@ func (r AzureResource) ToCSVHeaders() []string {
 }
 
 type GetAWSResourceResponse struct {
-	Resources   []AWSResource     `json:"resources"`
-	Page        api.Page          `json:"page"`
-	ResultCount keibi.SearchTotal `json:"resultCount"`
+	Resources   []AWSResource `json:"resources"`
+	Page        api.Page      `json:"page"`
+	ResultCount ResultCount   `json:"resultCount"`
 }
 
 type AWSResource struct {

@@ -2239,9 +2239,12 @@ func (h *HttpHandler) GetResources(ectx echo.Context, provider *api.SourceType) 
 			res.AllResources[idx].SourceName = uniqueSourceIds[res.AllResources[idx].SourceID]
 		}
 		return cc.JSON(http.StatusOK, api.GetResourcesResponse{
-			Resources:   res.AllResources,
-			Page:        res.Page,
-			ResultCount: res.ResultCount,
+			Resources: res.AllResources,
+			Page:      res.Page,
+			ResultCount: api.ResultCount{
+				Value:    res.ResultCount.Value,
+				Relation: api.Relation(res.ResultCount.Relation),
+			},
 		})
 	} else if *provider == api.SourceCloudAWS {
 		uniqueSourceIds := map[string]string{}
@@ -2260,9 +2263,12 @@ func (h *HttpHandler) GetResources(ectx echo.Context, provider *api.SourceType) 
 			resource.AccountName = uniqueSourceIds[resource.AccountID]
 		}
 		return cc.JSON(http.StatusOK, api.GetAWSResourceResponse{
-			Resources:   res.AWSResources,
-			Page:        res.Page,
-			ResultCount: res.ResultCount,
+			Resources: res.AWSResources,
+			Page:      res.Page,
+			ResultCount: api.ResultCount{
+				Value:    res.ResultCount.Value,
+				Relation: api.Relation(res.ResultCount.Relation),
+			},
 		})
 	} else if *provider == api.SourceCloudAzure {
 		uniqueSourceIds := map[string]string{}
@@ -2281,9 +2287,12 @@ func (h *HttpHandler) GetResources(ectx echo.Context, provider *api.SourceType) 
 			resource.SubscriptionName = uniqueSourceIds[resource.SubscriptionID]
 		}
 		return cc.JSON(http.StatusOK, api.GetAzureResourceResponse{
-			Resources:   res.AzureResources,
-			Page:        res.Page,
-			ResultCount: res.ResultCount,
+			Resources: res.AzureResources,
+			Page:      res.Page,
+			ResultCount: api.ResultCount{
+				Value:    res.ResultCount.Value,
+				Relation: api.Relation(res.ResultCount.Relation),
+			},
 		})
 	} else {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid provider")
