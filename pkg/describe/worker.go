@@ -131,9 +131,7 @@ func (w *Worker) Run() error {
 			}
 			continue
 		}
-
 		result := job.Do(w.vault, w.kfkProducer, w.kfkTopic, w.logger)
-
 		err := w.jobResultQueue.Publish(result)
 		if err != nil {
 			w.logger.Error("Failed to send results to queue: %s", zap.Error(err))

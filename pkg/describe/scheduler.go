@@ -17,6 +17,9 @@ import (
 	"go.uber.org/zap"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
+
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
 )
 
 const (
@@ -25,6 +28,38 @@ const (
 	JobComplianceReportInterval = 1 * time.Minute
 	JobTimeoutCheckInterval     = 15 * time.Minute
 )
+
+var DescribeJobsCount = promauto.NewCounterVec(prometheus.CounterOpts{
+	Namespace: "keibi",
+	Subsystem: "scheduler",
+	Name:      "schedule_describe_jobs_total",
+	Help:      "Count of describe jobs in scheduler service",
+}, []string{"status"})
+
+var DescribeSourceJobsCount = promauto.NewCounterVec(prometheus.CounterOpts{
+	Name: "keibi_scheduler_schedule_describe_source_jobs_total",
+	Help: "Count of describe source jobs in scheduler service",
+}, []string{"status"})
+
+var DescribeCleanupJobsCount = promauto.NewCounterVec(prometheus.CounterOpts{
+	Name: "keibi_scheduler_schedule_describe_cleanup_jobs_total",
+	Help: "Count of describe jobs in scheduler service",
+}, []string{"status"})
+
+var DescribeCleanupSourceJobsCount = promauto.NewCounterVec(prometheus.CounterOpts{
+	Name: "keibi_scheduler_schedule_describe_cleanup_source_jobs_total",
+	Help: "Count of describe source jobs in scheduler service",
+}, []string{"status"})
+
+var ComplianceJobsCount = promauto.NewCounterVec(prometheus.CounterOpts{
+	Name: "keibi_scheduler_schedule_compliance_job_total",
+	Help: "Count of describe jobs in scheduler service",
+}, []string{"status"})
+
+var ComplianceSourceJobsCount = promauto.NewCounterVec(prometheus.CounterOpts{
+	Name: "keibi_scheduler_schedule_compliance_source_job_total",
+	Help: "Count of describe source jobs in scheduler service",
+}, []string{"status"})
 
 type Scheduler struct {
 	id         string
@@ -331,6 +366,7 @@ func (s Scheduler) scheduleDescribeJob() {
 	sources, err := s.db.QuerySourcesDueForDescribe()
 	if err != nil {
 		s.logger.Error("Failed to find the next sources to create DescribeSourceJob", zap.Error(err))
+		DescribeJobsCount.WithLabelValues("failure").Inc()
 		return
 	}
 
@@ -340,6 +376,7 @@ func (s Scheduler) scheduleDescribeJob() {
 		daj := newDescribeSourceJob(source)
 		err := s.db.CreateDescribeSourceJob(&daj)
 		if err != nil {
+			DescribeSourceJobsCount.WithLabelValues("failure").Inc()
 			s.logger.Error("Failed to create DescribeSourceJob",
 				zap.Uint("jobId", daj.ID),
 				zap.String("sourceId", source.ID.String()),
@@ -351,25 +388,35 @@ func (s Scheduler) scheduleDescribeJob() {
 		describedAt := time.Now()
 		enqueueDescribeResourceJobs(s.logger, s.db, s.describeJobQueue, source, daj, describedAt)
 
+		isSuccessful := true
+
 		err = s.db.UpdateDescribeSourceJob(daj.ID, api.DescribeSourceJobInProgress)
 		if err != nil {
+			DescribeSourceJobsCount.WithLabelValues("failure").Inc()
 			s.logger.Error("Failed to update DescribeSourceJob",
 				zap.Uint("jobId", daj.ID),
 				zap.String("sourceId", source.ID.String()),
 				zap.Error(err),
 			)
+			isSuccessful = false
 		}
 		daj.Status = api.DescribeSourceJobInProgress
 
 		err = s.db.UpdateSourceDescribed(source.ID, describedAt)
 		if err != nil {
+			DescribeSourceJobsCount.WithLabelValues("failure").Inc()
 			s.logger.Error("Failed to update Source",
 				zap.String("sourceId", source.ID.String()),
 				zap.Error(err),
 			)
+			isSuccessful = false
 		}
-		daj.Status = api.DescribeSourceJobInProgress
+
+		if isSuccessful {
+			DescribeSourceJobsCount.WithLabelValues("successful").Inc()
+		}
 	}
+	DescribeJobsCount.WithLabelValues("successful").Inc()
 }
 func (s *Scheduler) RunComplianceReportCleanupJobScheduler() {
 	s.logger.Info("Running compliance report cleanup job scheduler")
@@ -399,7 +446,7 @@ func (s Scheduler) cleanupDescribeJob() {
 		s.logger.Error("Failed to find older than 5 recent completed DescribeSourceJob for each source",
 			zap.Error(err),
 		)
-
+		DescribeCleanupJobsCount.WithLabelValues("failure").Inc()
 		return
 	}
 
@@ -411,8 +458,8 @@ func (s Scheduler) cleanupDescribeJob() {
 				zap.Uint("jobId", sj.ID),
 				zap.Error(err),
 			)
-
-			return
+			DescribeCleanupSourceJobsCount.WithLabelValues("failure").Inc()
+			continue
 		}
 
 		success := true
@@ -427,7 +474,8 @@ func (s Scheduler) cleanupDescribeJob() {
 					zap.Error(err),
 				)
 				success = false
-				return
+				DescribeCleanupSourceJobsCount.WithLabelValues("failure").Inc()
+				continue
 			}
 
 			err = s.db.DeleteDescribeResourceJob(rj.ID)
@@ -437,7 +485,8 @@ func (s Scheduler) cleanupDescribeJob() {
 					zap.Error(err),
 				)
 				success = false
-				return
+				DescribeCleanupSourceJobsCount.WithLabelValues("failure").Inc()
+				continue
 			}
 		}
 
@@ -448,13 +497,19 @@ func (s Scheduler) cleanupDescribeJob() {
 					zap.Uint("jobId", sj.ID),
 					zap.Error(err),
 				)
+				DescribeCleanupSourceJobsCount.WithLabelValues("failure").Inc()
+			} else {
+				DescribeCleanupSourceJobsCount.WithLabelValues("successful").Inc()
 			}
+		} else {
+			DescribeCleanupSourceJobsCount.WithLabelValues("failure").Inc()
 		}
 
 		s.logger.Info("Successfully deleted DescribeSourceJob and its DescribeResourceJobs",
 			zap.Uint("jobId", sj.ID),
 		)
 	}
+	DescribeCleanupJobsCount.WithLabelValues("successful").Inc()
 }
 
 func (s Scheduler) cleanupComplianceReportJob() {
@@ -606,6 +661,7 @@ func (s *Scheduler) RunComplianceReportScheduler() {
 		sources, err := s.db.QuerySourcesDueForComplianceReport()
 		if err != nil {
 			s.logger.Error("Failed to find the next sources to create ComplianceReportJob", zap.Error(err))
+			ComplianceJobsCount.WithLabelValues("failure").Inc()
 			continue
 		}
 
@@ -615,6 +671,7 @@ func (s *Scheduler) RunComplianceReportScheduler() {
 			crj := newComplianceReportJob(source)
 			err := s.db.CreateComplianceReportJob(&crj)
 			if err != nil {
+				ComplianceSourceJobsCount.WithLabelValues("failure").Inc()
 				s.logger.Error("Failed to create ComplianceReportJob for Source",
 					zap.Uint("jobId", crj.ID),
 					zap.String("sourceId", source.ID.String()),
@@ -628,8 +685,12 @@ func (s *Scheduler) RunComplianceReportScheduler() {
 			err = s.db.UpdateSourceReportGenerated(source.ID)
 			if err != nil {
 				s.logger.Error("Failed to update report job of Source: %s\n", zap.String("sourceId", source.ID.String()), zap.Error(err))
+				ComplianceSourceJobsCount.WithLabelValues("failure").Inc()
+				continue
 			}
+			ComplianceSourceJobsCount.WithLabelValues("successful").Inc()
 		}
+		ComplianceJobsCount.WithLabelValues("successful").Inc()
 	}
 }
 

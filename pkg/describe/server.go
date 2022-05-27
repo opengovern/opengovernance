@@ -5,6 +5,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/labstack/echo-contrib/prometheus"
 	complianceapi "gitlab.com/keibiengine/keibi-engine/pkg/compliance-report/api"
 
 	"github.com/google/uuid"
@@ -36,6 +37,8 @@ func (s *HttpServer) Initialize() error {
 	e.Use(middleware.LoggerWithConfig(middleware.LoggerConfig{
 		Format: "method=${method}, uri=${uri}, status=${status}\n",
 	}))
+	p := prometheus.NewPrometheus("keibi_http", nil)
+	p.Use(e)
 
 	v1 := e.Group("/api/v1")
 

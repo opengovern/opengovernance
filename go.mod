@@ -83,11 +83,13 @@ require (
 	github.com/hashicorp/vault/api v1.3.0
 	github.com/hashicorp/vault/api/auth/kubernetes v0.1.0
 	github.com/jackc/pgx/v4 v4.13.0
+	github.com/labstack/echo-contrib v0.12.0
 	github.com/labstack/echo/v4 v4.6.1
 	github.com/labstack/gommon v0.3.1
 	github.com/lib/pq v1.10.2
 	github.com/manicminer/hamilton v0.41.1
 	github.com/ory/dockertest/v3 v3.8.1
+	github.com/prometheus/client_golang v1.11.1
 	github.com/spf13/cobra v1.3.0
 	github.com/streadway/amqp v1.0.0
 	github.com/stretchr/testify v1.7.0
@@ -101,7 +103,7 @@ require (
 	gitlab.com/keibiengine/steampipe-plugin-azuread v0.1.1-0.20220401174905-60626bc2deea
 	go.uber.org/zap v1.21.0
 	google.golang.org/genproto v0.0.0-20211208223120-3a66f561d7aa
-	google.golang.org/grpc v1.42.0
+	google.golang.org/grpc v1.43.0
 	gopkg.in/Shopify/sarama.v1 v1.20.1
 	gopkg.in/go-playground/validator.v9 v9.31.0
 	gorm.io/driver/postgres v1.2.2
@@ -246,15 +248,14 @@ require (
 	github.com/oklog/run v1.1.0 // indirect
 	github.com/olekukonko/tablewriter v0.0.4 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
-	github.com/opencontainers/image-spec v1.0.2 // indirect
-	github.com/opencontainers/runc v1.1.0 // indirect
+	github.com/opencontainers/image-spec v1.0.3-0.20211202183452-c5a74bcca799 // indirect
+	github.com/opencontainers/runc v1.1.1 // indirect
 	github.com/pierrec/lz4 v2.6.1+incompatible // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
-	github.com/prometheus/client_golang v1.11.0 // indirect
 	github.com/prometheus/client_model v0.2.0 // indirect
-	github.com/prometheus/common v0.28.0 // indirect
-	github.com/prometheus/procfs v0.6.0 // indirect
+	github.com/prometheus/common v0.32.1 // indirect
+	github.com/prometheus/procfs v0.7.3 // indirect
 	github.com/rcrowley/go-metrics v0.0.0-20201227073835-cf1acfcdf475 // indirect
 	github.com/rivo/uniseg v0.2.0 // indirect
 	github.com/ryanuber/go-glob v1.0.0 // indirect
