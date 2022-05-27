@@ -97,3 +97,49 @@ func (s Source) toSourceResponse() *api.CreateSourceResponse {
 		ID: s.ID,
 	}
 }
+
+func NewAzureSourceWithSPN(in api.SourceAzureSPNRequest) Source {
+	id := uuid.New()
+	provider := api.SourceCloudAzure
+
+	s := Source{
+		ID:          id,
+		SourceId:    in.SubscriptionId,
+		Name:        in.Name,
+		Description: in.Description,
+		Type:        provider,
+		ConfigRef:   fmt.Sprintf("sources/%s/spn/%s", strings.ToLower(string(provider)), in.SPNId),
+	}
+
+	if len(strings.TrimSpace(s.Name)) == 0 {
+		s.Name = s.SourceId
+	}
+
+	return s
+}
+
+type SPN struct {
+	gorm.Model
+	ID        uuid.UUID `gorm:"primaryKey;type:uuid;default:uuid_generate_v4()"`
+	TenantId  string    `gorm:"index:idx_tenant_client_id,unique"`
+	ClientId  string    `gorm:"index:idx_tenant_client_id,unique"`
+	ConfigRef string
+}
+
+func (s SPN) toSPNResponse() *api.CreateSPNResponse {
+	return &api.CreateSPNResponse{
+		ID: s.ID,
+	}
+}
+
+func NewSPN(in api.CreateSPNRequest) SPN {
+	id := uuid.New()
+	provider := api.SourceCloudAzure
+
+	return SPN{
+		ID:        id,
+		ClientId:  in.Config.ClientId,
+		TenantId:  in.Config.TenantId,
+		ConfigRef: fmt.Sprintf("sources/%s/spn/%s", strings.ToLower(string(provider)), id),
+	}
+}

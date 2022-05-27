@@ -23,6 +23,7 @@ func (h HttpHandler) Register(r *echo.Echo) {
 
 	source.POST("/aws", h.PostSourceAws)
 	source.POST("/azure", h.PostSourceAzure)
+	source.POST("/azure/spn", h.PostSourceAzureSPN)
 	source.GET("/:sourceId", h.GetSource)
 	source.GET("/:sourceId/credentials", h.GetSourceCred)
 	source.PUT("/:sourceId/credentials", h.PutSourceCred)
@@ -31,6 +32,11 @@ func (h HttpHandler) Register(r *echo.Echo) {
 
 	v1.GET("/sources", h.GetSources)
 	v1.GET("/sources/count", h.CountSources)
+
+	spn := v1.Group("/spn")
+	spn.POST("/azure", h.PostSPN)
+	spn.GET("/:spnId", h.GetSPNCred)
+	spn.PUT("/:spnId", h.PutSPNCred)
 
 	disc := v1.Group("/discover")
 
@@ -242,7 +248,6 @@ func (h HttpHandler) PostSourceAzure(ctx echo.Context) error {
 
 	src := NewAzureSource(req)
 
-	//verify spn exist
 	err := h.db.orm.Transaction(func(tx *gorm.DB) error {
 		err := h.db.CreateSource(&src)
 		if err != nil {
@@ -271,6 +276,167 @@ func (h HttpHandler) PostSourceAzure(ctx echo.Context) error {
 	}
 
 	return ctx.JSON(http.StatusOK, src.toSourceResponse())
+}
+
+// PostSourceAzureSPN godoc
+// @Summary      Create Azure source with SPN
+// @Description  Creating Azure source with SPN
+// @Tags         onboard
+// @Produce      json
+// @Success      200          {object}  api.CreateSourceResponse
+// @Param        name         body      string                 true  "name"
+// @Param        description  body      string                 true  "description"
+// @Param        config       body      api.SourceConfigAzure  true  "config"
+// @Router       /onboard/api/v1/source/azure/spn [post]
+func (h HttpHandler) PostSourceAzureSPN(ctx echo.Context) error {
+	var req api.SourceAzureSPNRequest
+
+	if err := bindValidate(ctx, &req); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
+	}
+
+	src := NewAzureSourceWithSPN(req)
+
+	_, err := h.db.GetSPN(req.SPNId)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusNotFound, "SPN not found")
+	}
+
+	err = h.db.orm.Transaction(func(tx *gorm.DB) error {
+		err := h.db.CreateSource(&src)
+		if err != nil {
+			return err
+		}
+
+		err = h.sourceEventsQueue.Publish(api.SourceEvent{
+			Action:     api.SourceCreated,
+			SourceID:   src.ID,
+			SourceType: src.Type,
+			ConfigRef:  src.ConfigRef,
+		})
+		if err != nil {
+			return err
+		}
+
+		return nil
+	})
+	if err != nil {
+		return err
+	}
+
+	return ctx.JSON(http.StatusOK, src.toSourceResponse())
+}
+
+// PostSPN godoc
+// @Summary      Create Azure SPN
+// @Description  Creating Azure SPN
+// @Tags         onboard
+// @Produce      json
+// @Success      200          {object}  api.CreateSPNResponse
+// @Param        name         body      string                 true  "name"
+// @Param        config       body      api.SourceConfigAzure  true  "config"
+// @Router       /onboard/api/v1/spn/azure [post]
+func (h HttpHandler) PostSPN(ctx echo.Context) error {
+	var req api.CreateSPNRequest
+
+	if err := bindValidate(ctx, &req); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
+	}
+
+	src := NewSPN(req)
+	err := h.db.orm.Transaction(func(tx *gorm.DB) error {
+		if err := h.db.CreateSPN(&src); err != nil {
+			return err
+		}
+
+		// TODO: Handle edge case where writing to Vault succeeds and writing to event queue fails.
+		if err := h.vault.Write(src.ConfigRef, req.Config.AsMap()); err != nil {
+			return err
+		}
+
+		return nil
+	})
+	if err != nil {
+		return err
+	}
+
+	return ctx.JSON(http.StatusOK, src.toSPNResponse())
+}
+
+// GetSPNCred godoc
+// @Summary  Get SPN credential
+// @Tags         onboard
+// @Produce      json
+// @Param    spnId  query  string  true  "SPN ID"
+// @Router   /onboard/api/v1/spn/{spnId} [post]
+func (h HttpHandler) GetSPNCred(ctx echo.Context) error {
+	spnUUID, err := uuid.Parse(ctx.Param("spnId"))
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid SPN uuid")
+	}
+
+	src, err := h.db.GetSPN(spnUUID)
+	if err != nil {
+		return err
+	}
+
+	cnf, err := h.vault.Read(src.ConfigRef)
+	if err != nil {
+		return err
+	}
+
+	azureCnf, err := describe.AzureSubscriptionConfigFromMap(cnf)
+	if err != nil {
+		return err
+	}
+
+	return ctx.JSON(http.StatusOK, api.SPNCredential{
+		SPNName:  fmt.Sprintf("SPN-%d", src.Model.ID),
+		ClientID: azureCnf.ClientID,
+		TenantID: azureCnf.TenantID,
+	})
+}
+
+// PutSPNCred godoc
+// @Summary  Put SPN credential
+// @Tags         onboard
+// @Produce      json
+// @Param    spnId  query  string  true  "SPN ID"
+// @Router   /onboard/api/v1/spn/{spnId} [post]
+func (h HttpHandler) PutSPNCred(ctx echo.Context) error {
+	spnUUID, err := uuid.Parse(ctx.Param("spnId"))
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid SPN uuid")
+	}
+
+	src, err := h.db.GetSPN(spnUUID)
+	if err != nil {
+		return err
+	}
+
+	cnf, err := h.vault.Read(src.ConfigRef)
+	if err != nil {
+		return err
+	}
+	azureCnf, err := describe.AzureSubscriptionConfigFromMap(cnf)
+	if err != nil {
+		return err
+	}
+
+	var req api.AzureCredential
+	if err := bindValidate(ctx, &req); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
+	}
+
+	newCnf := api.SPNConfigAzure{
+		TenantId:     azureCnf.TenantID,
+		ClientId:     azureCnf.ClientID,
+		ClientSecret: req.ClientSecret,
+	}
+	if err := h.vault.Write(src.ConfigRef, newCnf.AsMap()); err != nil {
+		return err
+	}
+	return ctx.NoContent(http.StatusOK)
 }
 
 // GetSourceCred godoc
