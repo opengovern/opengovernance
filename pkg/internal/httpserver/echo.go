@@ -2,6 +2,7 @@ package httpserver
 
 import (
 	"github.com/brpaz/echozap"
+	"github.com/labstack/echo-contrib/prometheus"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	"go.uber.org/zap"
@@ -15,6 +16,9 @@ type Routes interface {
 func Register(logger *zap.Logger, routes Routes) *echo.Echo {
 	e := echo.New()
 	e.Use(echozap.ZapLogger(logger))
+	p := prometheus.NewPrometheus("keibi_http", nil)
+	p.Use(e)
+
 	e.Pre(middleware.RemoveTrailingSlash())
 
 	e.Validator = customValidator{
