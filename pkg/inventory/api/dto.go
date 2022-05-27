@@ -44,14 +44,14 @@ type LocationByProviderResponse struct {
 }
 
 type RunQueryRequest struct {
-	Page api.Page `json:"page" validate:"required"`
+	Page api.PageRequest `json:"page" validate:"required"`
 	// NOTE: we don't support multi-field sort for now, if sort is empty, results would be sorted by first column
 	Sorts []SmartQuerySortItem `json:"sorts"`
 }
 
 type RunQueryResponse struct {
-	Page    api.Page `json:"page"`
-	Headers []string `json:"headers"` // column names
+	Page    api.PageResponse `json:"page"`
+	Headers []string         `json:"headers"` // column names
 	// result of query. in order to access a specific cell please use Result[Row][Column]
 	Result [][]interface{} `json:"result"`
 }
@@ -62,7 +62,7 @@ type GetResourcesRequest struct {
 	FilterNots Filters `json:"filterNots" validate:"required"` // search filters
 	// NOTE: we don't support multi-field sort for now, if sort is empty, results would be sorted by first column
 	Sorts []ResourceSortItem `json:"sorts"`
-	Page  api.Page           `json:"page" validate:"required"`
+	Page  api.PageRequest    `json:"page" validate:"required"`
 }
 
 // Filters model
@@ -88,22 +88,9 @@ type SmartQuerySortItem struct {
 	Direction DirectionType `json:"direction" enums:"asc,desc"`
 }
 
-type Relation string
-
-const (
-	EqualsRelation            Relation = "eq"
-	GreaterThanEqualsRelation Relation = "gte"
-)
-
-type ResultCount struct {
-	Value    int64    `json:"value"`
-	Relation Relation `json:"relation"`
-}
-
 type GetResourcesResponse struct {
-	Resources   []AllResource `json:"resources"`
-	Page        api.Page      `json:"page"`
-	ResultCount ResultCount   `json:"resultCount"`
+	Resources []AllResource    `json:"resources"`
+	Page      api.PageResponse `json:"page"`
 }
 
 type AllResource struct {
@@ -148,9 +135,8 @@ func (r AllResource) ToCSVHeaders() []string {
 }
 
 type GetAzureResourceResponse struct {
-	Resources   []AzureResource `json:"resources"`
-	Page        api.Page        `json:"page"`
-	ResultCount ResultCount     `json:"resultCount"`
+	Resources []AzureResource  `json:"resources"`
+	Page      api.PageResponse `json:"page"`
 }
 
 type AzureResource struct {
@@ -182,9 +168,8 @@ func (r AzureResource) ToCSVHeaders() []string {
 }
 
 type GetAWSResourceResponse struct {
-	Resources   []AWSResource `json:"resources"`
-	Page        api.Page      `json:"page"`
-	ResultCount ResultCount   `json:"resultCount"`
+	Resources []AWSResource    `json:"resources"`
+	Page      api.PageResponse `json:"page"`
 }
 
 type AWSResource struct {
@@ -270,12 +255,12 @@ type ComplianceReportFilters struct {
 type GetComplianceReportRequest struct {
 	Filters    ComplianceReportFilters      `json:"filters"`
 	ReportType compliance_report.ReportType `json:"reportType" enums:"benchmark,control,result"`
-	Page       api.Page                     `json:"page" validate:"required"`
+	Page       api.PageRequest              `json:"page" validate:"required"`
 }
 
 type GetComplianceReportResponse struct {
 	Reports []compliance_report.Report `json:"reports"`
-	Page    api.Page                   `json:"page"`
+	Page    api.PageResponse           `json:"page"`
 }
 
 type BenchmarkState string

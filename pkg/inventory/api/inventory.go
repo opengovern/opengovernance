@@ -13,8 +13,7 @@ type GetResourcesResult struct {
 	AllResources   []AllResource
 	AzureResources []AzureResource
 	AWSResources   []AWSResource
-	Page           internal.Page
-	ResultCount    keibi.SearchTotal
+	Page           internal.PageResponse
 }
 
 func QueryResources(ctx context.Context, client keibi.Client, req *GetResourcesRequest, provider *SourceType) (*GetResourcesResult, error) {
@@ -55,8 +54,7 @@ func QueryResourcesFromInventorySummary(ctx context.Context, client keibi.Client
 		}
 		return &GetResourcesResult{
 			AWSResources: awsResources,
-			Page:         page,
-			ResultCount:  resultCount,
+			Page:         page.ToResponse(resultCount.Value),
 		}, nil
 	}
 
@@ -75,8 +73,7 @@ func QueryResourcesFromInventorySummary(ctx context.Context, client keibi.Client
 		}
 		return &GetResourcesResult{
 			AzureResources: azureResources,
-			Page:           page,
-			ResultCount:    resultCount,
+			Page:           page.ToResponse(resultCount.Value),
 		}, nil
 	}
 
@@ -94,7 +91,6 @@ func QueryResourcesFromInventorySummary(ctx context.Context, client keibi.Client
 	}
 	return &GetResourcesResult{
 		AllResources: allResources,
-		Page:         page,
-		ResultCount:  resultCount,
+		Page:         page.ToResponse(resultCount.Value),
 	}, nil
 }
