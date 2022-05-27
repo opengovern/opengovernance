@@ -70,7 +70,7 @@ func QueryResourcesWithSteampipeColumns(
 	}
 
 	result := GetResourcesResult{
-		Page: page,
+		Page: page.ToResponse(0),
 	}
 	for _, resourceType := range req.Filters.ResourceType {
 		var response ResourceQueryResponse
@@ -114,10 +114,7 @@ func QueryResourcesWithSteampipeColumns(
 			return nil, err
 		}
 
-		result.ResultCount.Value = +response.Hits.Total.Value
-		if result.ResultCount.Relation == "eq" {
-			result.ResultCount.Relation = response.Hits.Total.Relation
-		}
+		result.Page.TotalCount += response.Hits.Total.Value
 
 		for _, hit := range response.Hits.Hits {
 			pluginProvider := steampipe.ExtractPlugin(resourceType)

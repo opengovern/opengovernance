@@ -1981,7 +1981,7 @@ func (h *HttpHandler) RunQuery(ectx echo.Context) error {
 	if accepts := ectx.Request().Header.Get("accept"); accepts != "" {
 		mediaType, _, err := mime.ParseMediaType(accepts)
 		if err == nil && mediaType == "text/csv" {
-			req.Page = pagination.Page{
+			req.Page = pagination.PageRequest{
 				NextMarker: "",
 				Size:       5000,
 			}
@@ -2194,13 +2194,13 @@ func (h *HttpHandler) RunSmartQuery(query string,
 		return nil, err
 	}
 
-	newPage, err := pagination.NextPage(req.Page)
+	newPage, err := req.Page.NextPage()
 	if err != nil {
 		return nil, err
 	}
 
 	resp := api.RunQueryResponse{
-		Page:    newPage,
+		Page:    newPage.ToResponse(0),
 		Headers: res.headers,
 		Result:  res.data,
 	}
@@ -2239,9 +2239,8 @@ func (h *HttpHandler) GetResources(ectx echo.Context, provider *api.SourceType) 
 			res.AllResources[idx].SourceName = uniqueSourceIds[res.AllResources[idx].SourceID]
 		}
 		return cc.JSON(http.StatusOK, api.GetResourcesResponse{
-			Resources:   res.AllResources,
-			Page:        res.Page,
-			ResultCount: res.ResultCount,
+			Resources: res.AllResources,
+			Page:      res.Page,
 		})
 	} else if *provider == api.SourceCloudAWS {
 		uniqueSourceIds := map[string]string{}
@@ -2260,9 +2259,8 @@ func (h *HttpHandler) GetResources(ectx echo.Context, provider *api.SourceType) 
 			resource.AccountName = uniqueSourceIds[resource.AccountID]
 		}
 		return cc.JSON(http.StatusOK, api.GetAWSResourceResponse{
-			Resources:   res.AWSResources,
-			Page:        res.Page,
-			ResultCount: res.ResultCount,
+			Resources: res.AWSResources,
+			Page:      res.Page,
 		})
 	} else if *provider == api.SourceCloudAzure {
 		uniqueSourceIds := map[string]string{}
@@ -2281,9 +2279,8 @@ func (h *HttpHandler) GetResources(ectx echo.Context, provider *api.SourceType) 
 			resource.SubscriptionName = uniqueSourceIds[resource.SubscriptionID]
 		}
 		return cc.JSON(http.StatusOK, api.GetAzureResourceResponse{
-			Resources:   res.AzureResources,
-			Page:        res.Page,
-			ResultCount: res.ResultCount,
+			Resources: res.AzureResources,
+			Page:      res.Page,
 		})
 	} else {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid provider")
@@ -2309,7 +2306,7 @@ func (h *HttpHandler) GetResourcesCSV(ectx echo.Context, provider *api.SourceTyp
 	if err := cc.BindValidate(req); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
 	}
-	req.Page = pagination.Page{
+	req.Page = pagination.PageRequest{
 		NextMarker: "",
 		Size:       5000,
 	}
@@ -2395,7 +2392,7 @@ func (h *HttpHandler) GetComplianceReports(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid page")
 	}
 
-	nextPage, err := pagination.NextPage(req.Page)
+	nextPage, err := req.Page.NextPage()
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid page")
 	}
@@ -2442,7 +2439,7 @@ func (h *HttpHandler) GetComplianceReports(ctx echo.Context) error {
 
 	resp := api.GetComplianceReportResponse{
 		Reports: reports,
-		Page:    nextPage,
+		Page:    nextPage.ToResponse(0),
 	}
 
 	return ctx.JSON(http.StatusOK, resp)

@@ -249,7 +249,7 @@ func (s *HttpHandlerSuite) TestGetAllResources() {
 	rec, err := doRequestJSONResponse(s.router, echo.POST, "/api/v1/resources", api.GetResourcesRequest{
 		Filters: api.Filters{},
 		Sorts:   []api.ResourceSortItem{},
-		Page: pagination.Page{
+		Page: pagination.PageRequest{
 			Size: 10,
 		},
 	}, &response)
@@ -276,7 +276,7 @@ func (s *HttpHandlerSuite) TestGetAllResources_Sort() {
 				Direction: api.DirectionDescending,
 			},
 		},
-		Page: pagination.Page{
+		Page: pagination.PageRequest{
 			Size: 10,
 		},
 	}, &response)
@@ -297,7 +297,7 @@ func (s *HttpHandlerSuite) TestGetAllResources_Paging() {
 				Direction: api.DirectionDescending,
 			},
 		},
-		Page: pagination.Page{
+		Page: pagination.PageRequest{
 			Size: 1,
 		},
 	}
@@ -307,7 +307,7 @@ func (s *HttpHandlerSuite) TestGetAllResources_Paging() {
 	require.Equal(http.StatusOK, rec.Code)
 	require.Len(response.Resources, 1)
 	require.Equal("aaa3", response.Resources[0].ResourceID)
-	require.Equal(int64(4), response.ResultCount.Value)
+	require.Equal(int64(4), response.Page.TotalCount)
 
 	req.Page.NextMarker = response.Page.NextMarker
 	rec, err = doRequestJSONResponse(s.router, echo.POST, "/api/v1/resources", req, &response)
@@ -348,7 +348,7 @@ func (s *HttpHandlerSuite) TestGetAllResources_Filters() {
 				Direction: api.DirectionAscending,
 			},
 		},
-		Page: pagination.Page{
+		Page: pagination.PageRequest{
 			Size: 10,
 		},
 	}
@@ -405,7 +405,7 @@ func (s *HttpHandlerSuite) TestGetAllResources_Query() {
 				Direction: api.DirectionAscending,
 			},
 		},
-		Page: pagination.Page{
+		Page: pagination.PageRequest{
 			Size: 10,
 		},
 	}
@@ -434,7 +434,7 @@ func (s *HttpHandlerSuite) TestGetAllResources_QueryMicrosoft() {
 				Direction: api.DirectionAscending,
 			},
 		},
-		Page: pagination.Page{
+		Page: pagination.PageRequest{
 			Size: 10,
 		},
 	}
@@ -459,7 +459,7 @@ func (s *HttpHandlerSuite) TestGetAllResources_CSV() {
 				Direction: api.DirectionAscending,
 			},
 		},
-		Page: pagination.Page{
+		Page: pagination.PageRequest{
 			Size: 10,
 		},
 	}
@@ -495,7 +495,7 @@ func (s *HttpHandlerSuite) TestGetAWSResources() {
 			SourceID:     nil,
 		},
 		Sorts: []api.ResourceSortItem{},
-		Page: pagination.Page{
+		Page: pagination.PageRequest{
 			NextMarker: "",
 			Size:       10,
 		},
@@ -519,7 +519,7 @@ func (s *HttpHandlerSuite) TestGetAzureResources() {
 			SourceID:     nil,
 		},
 		Sorts: []api.ResourceSortItem{},
-		Page: pagination.Page{
+		Page: pagination.PageRequest{
 			NextMarker: "",
 			Size:       10,
 		},
@@ -601,7 +601,7 @@ func (s *HttpHandlerSuite) TestRunQuery() {
 		}
 	}
 	req := api.RunQueryRequest{
-		Page: pagination.Page{
+		Page: pagination.PageRequest{
 			NextMarker: "",
 			Size:       10,
 		},
@@ -625,7 +625,7 @@ func (s *HttpHandlerSuite) TestRunQuery_Sort() {
 	require.Len(queryList, 4)
 
 	req := api.RunQueryRequest{
-		Page: pagination.Page{
+		Page: pagination.PageRequest{
 			NextMarker: "",
 			Size:       10,
 		},
@@ -652,7 +652,7 @@ func (s *HttpHandlerSuite) TestRunQuery_Sort() {
 	require.Equal("ss2", response.Result[1][17])
 
 	req = api.RunQueryRequest{
-		Page: pagination.Page{
+		Page: pagination.PageRequest{
 			NextMarker: "",
 			Size:       10,
 		},
@@ -688,7 +688,7 @@ func (s *HttpHandlerSuite) TestRunQuery_Page() {
 		}
 	}
 	req := api.RunQueryRequest{
-		Page: pagination.Page{
+		Page: pagination.PageRequest{
 			NextMarker: "",
 			Size:       1,
 		},
@@ -707,7 +707,7 @@ func (s *HttpHandlerSuite) TestRunQuery_Page() {
 	require.Greater(len(response.Result[0]), 0)
 	require.Equal("ss1", response.Result[0][17])
 
-	req.Page = response.Page
+	req.Page = response.Page.ToRequest()
 	rec, err = doRequestJSONResponse(s.router, echo.POST, fmt.Sprintf("/api/v1/query/%d", id), &req, &response)
 	require.NoError(err, "request")
 	require.Equal(http.StatusOK, rec.Code)
@@ -732,7 +732,7 @@ func (s *HttpHandlerSuite) TestRunQuery_CSV() {
 		}
 	}
 	req := api.RunQueryRequest{
-		Page: pagination.Page{
+		Page: pagination.PageRequest{
 			NextMarker: "",
 			Size:       1,
 		},
@@ -753,6 +753,7 @@ func (s *HttpHandlerSuite) TestRunQuery_CSV() {
 }
 
 func (s *HttpHandlerSuite) TestGetComplianceReport_Benchmark() {
+	s.T().Skip("deprecated")
 	require := s.Require()
 
 	err := test.PopulateElastic(s.elasticUrl)
@@ -800,7 +801,7 @@ func (s *HttpHandlerSuite) TestGetComplianceReport_Benchmark() {
 	_, err = doRequestJSONResponse(s.router, "GET",
 		"/api/v1/reports/compliance/"+source.ID.String(), &api.GetComplianceReportRequest{
 			ReportType: compliance_report.ReportTypeBenchmark,
-			Page:       pagination.Page{Size: 10},
+			Page:       pagination.PageRequest{Size: 10},
 		}, &res)
 	require.NoError(err)
 	require.True(len(res.Reports) > 0)
@@ -819,7 +820,7 @@ func (s *HttpHandlerSuite) TestGetComplianceReport_Benchmark() {
 				},
 			},
 			ReportType: compliance_report.ReportTypeBenchmark,
-			Page:       pagination.Page{Size: 10},
+			Page:       pagination.PageRequest{Size: 10},
 		}, &res)
 	require.NoError(err)
 	require.True(len(res.Reports) > 0)
@@ -838,7 +839,7 @@ func (s *HttpHandlerSuite) TestGetComplianceReport_Benchmark() {
 				},
 			},
 			ReportType: compliance_report.ReportTypeBenchmark,
-			Page:       pagination.Page{Size: 10},
+			Page:       pagination.PageRequest{Size: 10},
 		}, &res)
 	require.NoError(err)
 	require.True(len(res.Reports) > 0)
@@ -855,7 +856,7 @@ func (s *HttpHandlerSuite) TestGetComplianceReport_Benchmark() {
 				GroupID: &groupID,
 			},
 			ReportType: compliance_report.ReportTypeBenchmark,
-			Page:       pagination.Page{Size: 10},
+			Page:       pagination.PageRequest{Size: 10},
 		}, &res)
 	require.NoError(err)
 	require.True(len(res.Reports) > 0)
@@ -868,7 +869,7 @@ func (s *HttpHandlerSuite) TestGetComplianceReport_Benchmark() {
 	_, err = doRequestJSONResponse(s.router, "GET",
 		"/api/v1/reports/compliance/"+source.ID.String()+"/1", &api.GetComplianceReportRequest{
 			ReportType: compliance_report.ReportTypeBenchmark,
-			Page:       pagination.Page{Size: 10},
+			Page:       pagination.PageRequest{Size: 10},
 		}, &res)
 	require.NoError(err)
 	require.True(len(res.Reports) > 0)
@@ -879,6 +880,7 @@ func (s *HttpHandlerSuite) TestGetComplianceReport_Benchmark() {
 }
 
 func (s *HttpHandlerSuite) TestGetComplianceReport_Result() {
+	s.T().Skip("deprecated")
 	require := s.Require()
 
 	err := test.PopulateElastic(s.elasticUrl)
@@ -907,7 +909,7 @@ func (s *HttpHandlerSuite) TestGetComplianceReport_Result() {
 	_, err = doRequestJSONResponse(s.router, "GET",
 		"/api/v1/reports/compliance/"+source.ID.String(), &api.GetComplianceReportRequest{
 			ReportType: compliance_report.ReportTypeResult,
-			Page:       pagination.Page{Size: 10},
+			Page:       pagination.PageRequest{Size: 10},
 		}, &res)
 	require.NoError(err)
 	require.True(len(res.Reports) > 0)
