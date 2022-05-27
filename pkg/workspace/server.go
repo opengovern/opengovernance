@@ -8,6 +8,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/labstack/echo-contrib/prometheus"
+
 	apimeta "github.com/fluxcd/pkg/apis/meta"
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
@@ -54,6 +56,8 @@ func NewServer(cfg *Config) *Server {
 
 	s.e.Use(middleware.Recover())
 	s.e.Use(middleware.Logger())
+	p := prometheus.NewPrometheus("keibi_http", nil)
+	p.Use(s.e)
 
 	db, err := NewDatabase(cfg)
 	if err != nil {
