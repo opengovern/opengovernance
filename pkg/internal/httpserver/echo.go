@@ -15,14 +15,18 @@ type Routes interface {
 
 func Register(logger *zap.Logger, routes Routes) *echo.Echo {
 	e := echo.New()
+	e.HideBanner = true
+
+	e.Use(middleware.Recover())
 	e.Use(echozap.ZapLogger(logger))
+
 	p := prometheus.NewPrometheus("keibi_http", nil)
 	p.Use(e)
 
 	e.Pre(middleware.RemoveTrailingSlash())
 
 	e.Validator = customValidator{
-		v: validator.New(),
+		validate: validator.New(),
 	}
 
 	routes.Register(e)
@@ -36,9 +40,9 @@ func RegisterAndStart(logger *zap.Logger, address string, routes Routes) error {
 }
 
 type customValidator struct {
-	v *validator.Validate
+	validate *validator.Validate
 }
 
 func (v customValidator) Validate(i interface{}) error {
-	return v.v.Struct(i)
+	return v.validate.Struct(i)
 }

@@ -7,3 +7,5 @@ build/*
 cache/*
 
 sver.env
+
+.env

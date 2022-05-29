@@ -1,6 +1,7 @@
 package workspace
 
 import (
+	"fmt"
 	"os"
 
 	"github.com/spf13/cobra"
@@ -43,7 +44,11 @@ func Command() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg := NewConfig()
 
-			return NewServer(cfg).Start()
+			s, err := NewServer(cfg)
+			if err != nil {
+				return fmt.Errorf("new server: %w", err)
+			}
+			return s.Start()
 		},
 	}
 	return cmd

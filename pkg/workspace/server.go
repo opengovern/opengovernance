@@ -8,14 +8,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/labstack/echo-contrib/prometheus"
-
 	apimeta "github.com/fluxcd/pkg/apis/meta"
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
-	"github.com/labstack/echo/v4/middleware"
-	"github.com/labstack/gommon/log"
+	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpserver"
 	"gitlab.com/keibiengine/keibi-engine/pkg/workspace/api"
+	"go.uber.org/zap"
 	"gorm.io/gorm"
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/util/validation"
@@ -39,45 +37,38 @@ type Server struct {
 	kubeClient client.Client // the kubernetes client
 }
 
-func NewServer(cfg *Config) *Server {
+func NewServer(cfg *Config) (*Server, error) {
 	s := &Server{
-		e:   echo.New(),
 		cfg: cfg,
 	}
-	s.e.HideBanner = true
-	s.e.HidePort = true
 
-	s.e.Logger.SetHeader(`{"time":"${time_rfc3339}",` +
-		`"level":"${level}",` +
-		`"file":"${short_file}",` +
-		`"line":"${line}"` +
-		`}`)
-	s.e.Logger.SetLevel(log.INFO)
-
-	s.e.Use(middleware.Recover())
-	s.e.Use(middleware.Logger())
-	p := prometheus.NewPrometheus("keibi_http", nil)
-	p.Use(s.e)
+	logger, err := zap.NewProduction()
+	if err != nil {
+		return nil, fmt.Errorf("new zap logger: %s", err)
+	}
+	s.e = httpserver.Register(logger, s)
 
 	db, err := NewDatabase(cfg)
 	if err != nil {
-		s.e.Logger.Fatalf("new database: %v", err)
+		return nil, fmt.Errorf("new database: %w", err)
 	}
 	s.db = db
 
 	kubeClient, err := s.newKubeClient()
 	if err != nil {
-		s.e.Logger.Fatalf("new kube client: %v", err)
+		return nil, fmt.Errorf("new kube client: %w", err)
 	}
 	s.kubeClient = kubeClient
 
-	// init the http routers
-	v1 := s.e.Group("/api/v1")
+	return s, nil
+}
+
+func (s *Server) Register(e *echo.Echo) {
+	v1 := e.Group("/api/v1")
+
 	v1.POST("/workspace", s.CreateWorkspace)
 	v1.DELETE("/workspace/:workspace_id", s.DeleteWorkspace)
 	v1.GET("/workspaces", s.ListWorkspaces)
-
-	return s
 }
 
 func (s *Server) Start() error {
