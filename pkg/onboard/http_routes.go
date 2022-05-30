@@ -184,8 +184,8 @@ func (h HttpHandler) GetProviderTypes(ctx echo.Context) error {
 // PostSourceAws godoc
 // @Summary      Create AWS source
 // @Description  Creating AWS source
-// @Tags         onboard
-// @Produce      json
+// @Tags     onboard
+// @Produce  json
 // @Success      200          {object}  api.CreateSourceResponse
 // @Param        name         body      string               true  "name"
 // @Param        description  body      string               true  "description"
@@ -232,12 +232,12 @@ func (h HttpHandler) PostSourceAws(ctx echo.Context) error {
 // PostSourceAzure godoc
 // @Summary      Create Azure source
 // @Description  Creating Azure source
-// @Tags         onboard
-// @Produce      json
+// @Tags     onboard
+// @Produce  json
 // @Success      200          {object}  api.CreateSourceResponse
-// @Param        name         body      string                 true  "name"
+// @Param        name    body      string                 true  "name"
 // @Param        description  body      string                 true  "description"
-// @Param        config       body      api.SourceConfigAzure  true  "config"
+// @Param        config  body      api.SourceConfigAzure  true  "config"
 // @Router       /onboard/api/v1/source/azure [post]
 func (h HttpHandler) PostSourceAzure(ctx echo.Context) error {
 	var req api.SourceAzureRequest
@@ -332,7 +332,7 @@ func (h HttpHandler) PostSourceAzureSPN(ctx echo.Context) error {
 // @Description  Creating Azure SPN
 // @Tags         onboard
 // @Produce      json
-// @Success      200          {object}  api.CreateSPNResponse
+// @Success      200     {object}  api.CreateSPNResponse
 // @Param        name         body      string                 true  "name"
 // @Param        config       body      api.SourceConfigAzure  true  "config"
 // @Router       /onboard/api/v1/spn/azure [post]
