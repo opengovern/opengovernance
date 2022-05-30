@@ -73,6 +73,7 @@ require (
 	github.com/envoyproxy/go-control-plane v0.10.1
 	github.com/fluxcd/helm-controller/api v0.21.0
 	github.com/fluxcd/pkg/apis/meta v0.13.0
+	github.com/globocom/echo-prometheus v0.1.2
 	github.com/gocarina/gocsv v0.0.0-20211203214250-4735fba0c1d9
 	github.com/gofrs/uuid v4.0.0+incompatible
 	github.com/gogo/googleapis v1.4.1
