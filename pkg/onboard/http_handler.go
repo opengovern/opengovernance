@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/hashicorp/vault/api/auth/kubernetes"
+
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/queue"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/vault"
 	"gorm.io/driver/postgres"
@@ -32,7 +33,7 @@ func InitializeHttpHandler(
 	vaultRoleName string,
 	vaultCaPath string,
 	vaultUseTLS bool,
-) (h HttpHandler, err error) {
+) (HttpHandler, error) {
 
 	fmt.Println("Initializing http handler")
 
@@ -85,7 +86,7 @@ func InitializeHttpHandler(
 	fmt.Println("Connected to vault:", vaultAddress)
 
 	db := Database{orm: orm}
-	err = h.db.Initialize()
+	err = db.Initialize()
 	if err != nil {
 		return HttpHandler{}, err
 	}
