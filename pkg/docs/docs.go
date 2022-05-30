@@ -2208,6 +2208,55 @@ const docTemplate = `{
                 }
             }
         },
+        "/onboard/api/v1/source/azure/spn": {
+            "post": {
+                "description": "Creating Azure source with SPN",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "onboard"
+                ],
+                "summary": "Create Azure source with SPN",
+                "parameters": [
+                    {
+                        "description": "name",
+                        "name": "name",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "description": "description",
+                        "name": "description",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "description": "config",
+                        "name": "config",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/api.SourceConfigAzure"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/api.CreateSourceResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/onboard/api/v1/source/{sourceId}": {
             "get": {
                 "description": "Returning single source either AWS / Azure.",
@@ -2328,6 +2377,67 @@ const docTemplate = `{
                 }
             }
         },
+        "/onboard/api/v1/spn/azure": {
+            "post": {
+                "description": "Creating Azure SPN",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "onboard"
+                ],
+                "summary": "Create Azure SPN",
+                "parameters": [
+                    {
+                        "description": "name",
+                        "name": "name",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "description": "config",
+                        "name": "config",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/api.SourceConfigAzure"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/api.CreateSPNResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/onboard/api/v1/spn/{spnId}": {
+            "post": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "onboard"
+                ],
+                "summary": "Put SPN credential",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "SPN ID",
+                        "name": "spnId",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {}
+            }
+        },
         "/onboard/api/v1/{sourceId}/credentials": {
             "post": {
                 "produces": [
@@ -2347,6 +2457,25 @@ const docTemplate = `{
                     }
                 ],
                 "responses": {}
+            }
+        },
+        "/schedule/api/v1/compliance/report/last/completed": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "schedule"
+                ],
+                "summary": "Get last completed compliance report",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                }
             }
         },
         "/schedule/api/v1/resource_type/{provider}": {
@@ -2886,6 +3015,14 @@ const docTemplate = `{
                 }
             }
         },
+        "api.CreateSPNResponse": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string"
+                }
+            }
+        },
         "api.CreateSourceResponse": {
             "type": "object",
             "properties": {
@@ -3018,7 +3155,7 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "page": {
-                    "$ref": "#/definitions/api.Page"
+                    "$ref": "#/definitions/api.PageResponse"
                 },
                 "resources": {
                     "type": "array",
@@ -3032,7 +3169,7 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "page": {
-                    "$ref": "#/definitions/api.Page"
+                    "$ref": "#/definitions/api.PageResponse"
                 },
                 "resources": {
                     "type": "array",
@@ -3089,7 +3226,7 @@ const docTemplate = `{
                     "$ref": "#/definitions/api.ComplianceReportFilters"
                 },
                 "page": {
-                    "$ref": "#/definitions/api.Page"
+                    "$ref": "#/definitions/api.PageRequest"
                 },
                 "reportType": {
                     "type": "string",
@@ -3134,7 +3271,7 @@ const docTemplate = `{
                     "$ref": "#/definitions/api.Filters"
                 },
                 "page": {
-                    "$ref": "#/definitions/api.Page"
+                    "$ref": "#/definitions/api.PageRequest"
                 },
                 "query": {
                     "description": "search query",
@@ -3153,7 +3290,7 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "page": {
-                    "$ref": "#/definitions/api.Page"
+                    "$ref": "#/definitions/api.PageResponse"
                 },
                 "resources": {
                     "type": "array",
@@ -3211,7 +3348,8 @@ const docTemplate = `{
                 }
             }
         },
-        "api.Page": {
+        "api.PageRequest": {
+            "description": "Please fill nextMarker with \"\" for the first request. After that fill it with last response of server. e.g.: {\"nextMarker\": \"\", \"size\": 10} --\u003e Server Server --\u003e {\"nextMarker\": \"MGT=\", \"size\": 10} {\"nextMarker\": \"MGT=\", \"size\": 10} --\u003e Server",
             "type": "object",
             "required": [
                 "size"
@@ -3224,6 +3362,20 @@ const docTemplate = `{
                 "size": {
                     "type": "integer",
                     "minimum": 1
+                }
+            }
+        },
+        "api.PageResponse": {
+            "type": "object",
+            "properties": {
+                "nextMarker": {
+                    "type": "string"
+                },
+                "size": {
+                    "type": "integer"
+                },
+                "totalCount": {
+                    "type": "integer"
                 }
             }
         },
@@ -3368,13 +3520,13 @@ const docTemplate = `{
                 "field": {
                     "type": "string",
                     "enum": [
-                        "resource_id",
+                        "resourceID",
                         "name",
-                        "source_type",
-                        "resource_type",
-                        "resource_group",
+                        "provider",
+                        "resourceType",
+                        "resourceGroup",
                         "location",
-                        "source_id"
+                        "sourceID"
                     ]
                 }
             }
@@ -3504,7 +3656,7 @@ const docTemplate = `{
             ],
             "properties": {
                 "page": {
-                    "$ref": "#/definitions/api.Page"
+                    "$ref": "#/definitions/api.PageRequest"
                 },
                 "sorts": {
                     "description": "NOTE: we don't support multi-field sort for now, if sort is empty, results would be sorted by first column",
@@ -3526,7 +3678,7 @@ const docTemplate = `{
                     }
                 },
                 "page": {
-                    "$ref": "#/definitions/api.Page"
+                    "$ref": "#/definitions/api.PageResponse"
                 },
                 "result": {
                     "description": "result of query. in order to access a specific cell please use Result[Row][Column]",
@@ -3905,6 +4057,9 @@ const docTemplate = `{
                     "items": {
                         "type": "string"
                     }
+                },
+                "reportID": {
+                    "type": "integer"
                 },
                 "reportJobID": {
                     "type": "integer"

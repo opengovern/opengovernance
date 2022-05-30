@@ -42,25 +42,15 @@ func (s *HttpServer) Initialize() error {
 
 	e.Use(echoPrometheus.MetricsMiddlewareWithConfig(echoPrometheus.Config{
 		Namespace: "keibi",
-		Subsystem: "inventory",
+		Subsystem: "http",
 		Buckets: []float64{
-			0.0005,
 			0.001, // 1ms
-			0.002,
-			0.005,
-			0.01, // 10ms
-			0.02,
-			0.05,
-			0.1, // 100 ms
+			0.01,  // 10ms
+			0.1,   // 100 ms
 			0.2,
 			0.5,
-			1.0, // 1s
-			2.0,
-			5.0,
+			1.0,  // 1s
 			10.0, // 10s
-			15.0,
-			20.0,
-			30.0,
 		},
 		NormalizeHTTPStatus: true,
 	}))
@@ -85,8 +75,8 @@ func (s *HttpServer) Initialize() error {
 // HandleListSources godoc
 // @Summary      List Sources
 // @Description  Getting all of Keibi sources
-// @Tags         schedule
-// @Produce      json
+// @Tags     schedule
+// @Produce  json
 // @Success      200  {object}  []api.Source
 // @Router       /schedule/api/v1/sources [get]
 func (s HttpServer) HandleListSources(ctx echo.Context) error {
@@ -288,11 +278,11 @@ func (s HttpServer) RunComplianceReportJobs(ctx echo.Context) error {
 }
 
 // HandleGetLastCompletedComplianceReport godoc
-// @Summary      Get last completed compliance report
+// @Summary  Get last completed compliance report
 // @Tags         schedule
 // @Produce      json
-// @Success      200        {object}  int
-// @Router       /schedule/api/v1/compliance/report/last/completed [get]
+// @Success  200  {object}  int
+// @Router   /schedule/api/v1/compliance/report/last/completed [get]
 func (s HttpServer) HandleGetLastCompletedComplianceReport(ctx echo.Context) error {
 	id, err := s.DB.GetLastCompletedComplianceReportID()
 	if err != nil {

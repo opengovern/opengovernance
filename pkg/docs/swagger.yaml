@@ -152,6 +152,11 @@ definitions:
       totalResources:
         type: integer
     type: object
+  api.CreateSPNResponse:
+    properties:
+      id:
+        type: string
+    type: object
   api.CreateSourceResponse:
     properties:
       id:
@@ -243,7 +248,7 @@ definitions:
   api.GetAWSResourceResponse:
     properties:
       page:
-        $ref: '#/definitions/api.Page'
+        $ref: '#/definitions/api.PageResponse'
       resources:
         items:
           $ref: '#/definitions/api.AWSResource'
@@ -252,7 +257,7 @@ definitions:
   api.GetAzureResourceResponse:
     properties:
       page:
-        $ref: '#/definitions/api.Page'
+        $ref: '#/definitions/api.PageResponse'
       resources:
         items:
           $ref: '#/definitions/api.AzureResource'
@@ -287,7 +292,7 @@ definitions:
       filters:
         $ref: '#/definitions/api.ComplianceReportFilters'
       page:
-        $ref: '#/definitions/api.Page'
+        $ref: '#/definitions/api.PageRequest'
       reportType:
         enum:
         - benchmark
@@ -317,7 +322,7 @@ definitions:
         $ref: '#/definitions/api.Filters'
         description: search filters
       page:
-        $ref: '#/definitions/api.Page'
+        $ref: '#/definitions/api.PageRequest'
       query:
         description: search query
         type: string
@@ -335,7 +340,7 @@ definitions:
   api.GetResourcesResponse:
     properties:
       page:
-        $ref: '#/definitions/api.Page'
+        $ref: '#/definitions/api.PageResponse'
       resources:
         items:
           $ref: '#/definitions/api.AllResource'
@@ -372,7 +377,11 @@ definitions:
       name:
         type: string
     type: object
-  api.Page:
+  api.PageRequest:
+    description: 'Please fill nextMarker with "" for the first request. After that
+      fill it with last response of server. e.g.: {"nextMarker": "", "size": 10} -->
+      Server Server --> {"nextMarker": "MGT=", "size": 10} {"nextMarker": "MGT=",
+      "size": 10} --> Server'
     properties:
       nextMarker:
         description: fill it with empty for the first request
@@ -382,6 +391,15 @@ definitions:
         type: integer
     required:
     - size
+    type: object
+  api.PageResponse:
+    properties:
+      nextMarker:
+        type: string
+      size:
+        type: integer
+      totalCount:
+        type: integer
     type: object
   api.Policy:
     properties:
@@ -477,13 +495,13 @@ definitions:
         type: string
       field:
         enum:
-        - resource_id
+        - resourceID
         - name
-        - source_type
-        - resource_type
-        - resource_group
+        - provider
+        - resourceType
+        - resourceGroup
         - location
-        - source_id
+        - sourceID
         type: string
     type: object
   api.ResultCompliancy:
@@ -567,7 +585,7 @@ definitions:
   api.RunQueryRequest:
     properties:
       page:
-        $ref: '#/definitions/api.Page'
+        $ref: '#/definitions/api.PageRequest'
       sorts:
         description: 'NOTE: we don''t support multi-field sort for now, if sort is
           empty, results would be sorted by first column'
@@ -585,7 +603,7 @@ definitions:
           type: string
         type: array
       page:
-        $ref: '#/definitions/api.Page'
+        $ref: '#/definitions/api.PageResponse'
       result:
         description: result of query. in order to access a specific cell please use
           Result[Row][Column]
@@ -838,6 +856,8 @@ definitions:
         items:
           type: string
         type: array
+      reportID:
+        type: integer
       reportJobID:
         type: integer
       resourceID:
@@ -2409,6 +2429,38 @@ paths:
       summary: Create Azure source
       tags:
       - onboard
+  /onboard/api/v1/source/azure/spn:
+    post:
+      description: Creating Azure source with SPN
+      parameters:
+      - description: name
+        in: body
+        name: name
+        required: true
+        schema:
+          type: string
+      - description: description
+        in: body
+        name: description
+        required: true
+        schema:
+          type: string
+      - description: config
+        in: body
+        name: config
+        required: true
+        schema:
+          $ref: '#/definitions/api.SourceConfigAzure'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/api.CreateSourceResponse'
+      summary: Create Azure source with SPN
+      tags:
+      - onboard
   /onboard/api/v1/sources:
     get:
       description: Returning a list of sources including both AWS and Azure unless
@@ -2455,6 +2507,58 @@ paths:
       summary: Returns a count of sources
       tags:
       - onboard
+  /onboard/api/v1/spn/{spnId}:
+    post:
+      parameters:
+      - description: SPN ID
+        in: query
+        name: spnId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses: {}
+      summary: Put SPN credential
+      tags:
+      - onboard
+  /onboard/api/v1/spn/azure:
+    post:
+      description: Creating Azure SPN
+      parameters:
+      - description: name
+        in: body
+        name: name
+        required: true
+        schema:
+          type: string
+      - description: config
+        in: body
+        name: config
+        required: true
+        schema:
+          $ref: '#/definitions/api.SourceConfigAzure'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/api.CreateSPNResponse'
+      summary: Create Azure SPN
+      tags:
+      - onboard
+  /schedule/api/v1/compliance/report/last/completed:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: integer
+      summary: Get last completed compliance report
+      tags:
+      - schedule
   /schedule/api/v1/resource_type/{provider}:
     get:
       description: get resource type by provider
