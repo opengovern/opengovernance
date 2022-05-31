@@ -33,6 +33,8 @@ func S3Bucket(ctx context.Context, cfg aws.Config, regions []string) (map[string
 		regionalValues[r] = make([]Resource, 0)
 	}
 
+	describeCtx := GetDescribeContext(ctx)
+
 	client := s3.NewFromConfig(cfg)
 	output, err := client.ListBuckets(ctx, &s3.ListBucketsInput{})
 	if err != nil {
@@ -55,8 +57,9 @@ func S3Bucket(ctx context.Context, cfg aws.Config, regions []string) (map[string
 		}
 
 		if _, ok := regionalValues[region]; ok {
+			arn := "arn:" + describeCtx.Partition + ":s3:::" + *bucket.Name
 			regionalValues[region] = append(regionalValues[region], Resource{
-				ID:          *bucket.Name,
+				ARN:         arn,
 				Name:        *bucket.Name,
 				Description: desc,
 			})

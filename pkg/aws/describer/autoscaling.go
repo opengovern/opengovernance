@@ -36,7 +36,6 @@ func AutoScalingAutoScalingGroup(ctx context.Context, cfg aws.Config) ([]Resourc
 				Name:        *v.AutoScalingGroupName,
 				Description: desc,
 			})
-
 		}
 	}
 

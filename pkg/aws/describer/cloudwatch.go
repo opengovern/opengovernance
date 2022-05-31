@@ -250,6 +250,8 @@ func CloudWatchLogsMetricFilter(ctx context.Context, cfg aws.Config) ([]Resource
 	client := cloudwatchlogs.NewFromConfig(cfg)
 	paginator := cloudwatchlogs.NewDescribeMetricFiltersPaginator(client, &cloudwatchlogs.DescribeMetricFiltersInput{})
 
+	describeCtx := GetDescribeContext(ctx)
+
 	var values []Resource
 	for paginator.HasMorePages() {
 		page, err := paginator.NextPage(ctx)
@@ -258,7 +260,9 @@ func CloudWatchLogsMetricFilter(ctx context.Context, cfg aws.Config) ([]Resource
 		}
 
 		for _, v := range page.MetricFilters {
+			arn := "arn:" + describeCtx.Partition + ":logs:" + describeCtx.Region + ":" + describeCtx.AccountID + ":log-group:" + *v.LogGroupName + ":metric-filter:" + *v.FilterName
 			values = append(values, Resource{
+				ARN:  arn,
 				ID:   *v.FilterName,
 				Name: *v.FilterName,
 				Description: model.CloudWatchLogsMetricFilterDescription{

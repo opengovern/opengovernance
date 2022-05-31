@@ -9,6 +9,8 @@ import (
 )
 
 func ConfigConfigurationRecorder(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+	describeCtx := GetDescribeContext(ctx)
+
 	client := configservice.NewFromConfig(cfg)
 	out, err := client.DescribeConfigurationRecorders(ctx, &configservice.DescribeConfigurationRecordersInput{})
 	if err != nil {
@@ -24,8 +26,9 @@ func ConfigConfigurationRecorder(ctx context.Context, cfg aws.Config) ([]Resourc
 			return nil, err
 		}
 
+		arn := "arn:" + describeCtx.Partition + ":config:" + describeCtx.Region + ":" + describeCtx.AccountID + ":config-recorder" + "/" + *item.Name
 		values = append(values, Resource{
-			ID:   *item.Name,
+			ARN:  arn,
 			Name: *item.Name,
 			Description: model.ConfigConfigurationRecorderDescription{
 				ConfigurationRecorder:        item,

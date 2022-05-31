@@ -155,6 +155,8 @@ func ElasticLoadBalancingLoadBalancer(ctx context.Context, cfg aws.Config) ([]Re
 	client := elasticloadbalancing.NewFromConfig(cfg)
 	paginator := elasticloadbalancing.NewDescribeLoadBalancersPaginator(client, &elasticloadbalancing.DescribeLoadBalancersInput{})
 
+	describeCtx := GetDescribeContext(ctx)
+
 	var values []Resource
 	for paginator.HasMorePages() {
 		page, err := paginator.NextPage(ctx)
@@ -186,8 +188,9 @@ func ElasticLoadBalancingLoadBalancer(ctx context.Context, cfg aws.Config) ([]Re
 				description.Tags = tags.TagDescriptions[0].Tags
 			}
 
+			arn := "arn:" + describeCtx.Partition + ":elasticloadbalancing:" + describeCtx.Region + ":" + describeCtx.AccountID + ":loadbalancer/" + *v.LoadBalancerName
 			values = append(values, Resource{
-				ID:          *v.LoadBalancerName,
+				ARN:         arn,
 				Name:        *v.LoadBalancerName,
 				Description: description,
 			})

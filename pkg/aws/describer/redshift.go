@@ -3,6 +3,7 @@ package describer
 import (
 	"context"
 	"errors"
+	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/redshift"
@@ -61,6 +62,8 @@ func RedshiftClusterParameterGroup(ctx context.Context, cfg aws.Config) ([]Resou
 	client := redshift.NewFromConfig(cfg)
 	paginator := redshift.NewDescribeClusterParameterGroupsPaginator(client, &redshift.DescribeClusterParameterGroupsInput{})
 
+	describeCtx := GetDescribeContext(ctx)
+
 	var values []Resource
 	for paginator.HasMorePages() {
 		page, err := paginator.NextPage(ctx)
@@ -76,8 +79,14 @@ func RedshiftClusterParameterGroup(ctx context.Context, cfg aws.Config) ([]Resou
 				return nil, err
 			}
 
+			arn := "arn:" + describeCtx.Partition + ":redshift:" + describeCtx.Region + ":" + describeCtx.AccountID + ":parametergroup"
+			if strings.HasPrefix(*v.ParameterGroupName, ":") {
+				arn = arn + *v.ParameterGroupName
+			} else {
+				arn = arn + ":" + *v.ParameterGroupName
+			}
 			values = append(values, Resource{
-				ID:   *v.ParameterGroupName,
+				ARN:  arn,
 				Name: *v.ParameterGroupName,
 				Description: model.RedshiftClusterParameterGroupDescription{
 					ClusterParameterGroup: v,
