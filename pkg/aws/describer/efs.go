@@ -91,6 +91,8 @@ func EFSFileSystem(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 func EFSMountTarget(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	client := efs.NewFromConfig(cfg)
 
+	describeCtx := GetDescribeContext(ctx)
+
 	var values []Resource
 
 	accessPoints, err := EFSAccessPoint(ctx, cfg)
@@ -109,8 +111,9 @@ func EFSMountTarget(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 			}
 
 			for _, v := range output.MountTargets {
+				arn := "arn:" + describeCtx.Partition + ":elasticfilesystem:" + describeCtx.Region + ":" + describeCtx.AccountID + ":file-system/" + *v.FileSystemId + "/mount-target/" + *v.MountTargetId
 				values = append(values, Resource{
-					ID:          *v.MountTargetId,
+					ARN:         arn,
 					Name:        *v.MountTargetId,
 					Description: v,
 				})

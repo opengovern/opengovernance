@@ -12,6 +12,8 @@ import (
 func ApplicationAutoScalingTarget(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	client := applicationautoscaling.NewFromConfig(cfg)
 
+	describeCtx := GetDescribeContext(ctx)
+
 	var values []Resource
 	for _, serviceNameSpace := range types.ServiceNamespaceEcs.Values() {
 		paginator := applicationautoscaling.NewDescribeScalableTargetsPaginator(client, &applicationautoscaling.DescribeScalableTargetsInput{
@@ -25,8 +27,10 @@ func ApplicationAutoScalingTarget(ctx context.Context, cfg aws.Config) ([]Resour
 			}
 
 			for _, item := range page.ScalableTargets {
+				arn := "arn:" + describeCtx.Partition + ":application-autoscaling:" + describeCtx.Region + ":" + describeCtx.AccountID + ":service-namespace:" + string(item.ServiceNamespace) + "/target/" + *item.ResourceId
+
 				values = append(values, Resource{
-					ID:   *item.ResourceId,
+					ARN:  arn,
 					Name: *item.ResourceId,
 					Description: model.ApplicationAutoScalingTargetDescription{
 						ScalableTarget: item,

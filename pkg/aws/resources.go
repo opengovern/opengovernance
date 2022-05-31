@@ -14,7 +14,7 @@ type ResourceDescriber func(context.Context, aws.Config, string, []string, strin
 var resourceTypeToDescriber = map[string]ResourceDescriber{
 	"AWS::AccessAnalyzer::Analyzer": ParallelDescribeRegional(describer.AccessAnalyzerAnalyzer),
 	// "AWS::ApplicationInsights::Application":                       ParallelDescribeRegional(describer.ApplicationInsightsApplication),
-	"AWS::ApplicationAutoScaling::Target":   ParallelDescribeRegional(describer.ApplicationAutoScalingTarget),
+	"AWS::ApplicationAutoScaling::Target":   ParallelDescribeRegional(describer.ApplicationAutoScalingTarget), // IGNORE
 	"AWS::AutoScaling::AutoScalingGroup":    ParallelDescribeRegional(describer.AutoScalingAutoScalingGroup),
 	"AWS::AutoScaling::LaunchConfiguration": ParallelDescribeRegional(describer.AutoScalingLaunchConfiguration),
 	// "AWS::AutoScaling::LifecycleHook":                             ParallelDescribeRegional(describer.AutoScalingLifecycleHook),
@@ -73,7 +73,7 @@ var resourceTypeToDescriber = map[string]ResourceDescriber{
 	// "AWS::EC2::PrefixList":                                        ParallelDescribeRegional(describer.EC2PrefixList),
 	"AWS::EC2::RouteTable":       ParallelDescribeRegional(describer.EC2RouteTable),
 	"AWS::EC2::Region":           SequentialDescribeGlobal(describer.EC2Region),
-	"AWS::EC2::RegionalSettings": ParallelDescribeRegional(describer.EC2RegionalSettings),
+	"AWS::EC2::RegionalSettings": ParallelDescribeRegional(describer.EC2RegionalSettings), // IGNORE
 	"AWS::EC2::SecurityGroup":    ParallelDescribeRegional(describer.EC2SecurityGroup),
 	// "AWS::EC2::SpotFleet":                                         ParallelDescribeRegional(describer.EC2SpotFleet),
 	"AWS::EC2::Subnet": ParallelDescribeRegional(describer.EC2Subnet),
@@ -117,7 +117,7 @@ var resourceTypeToDescriber = map[string]ResourceDescriber{
 	// "AWS::EKS::IdentityProviderConfig":                            ParallelDescribeRegional(describer.EKSIdentityProviderConfig),
 	"AWS::ElasticBeanstalk::Environment":      ParallelDescribeRegional(describer.ElasticBeanstalkEnvironment),
 	"AWS::ElastiCache::ReplicationGroup":      ParallelDescribeRegional(describer.ElastiCacheReplicationGroup),
-	"AWS::ElasticLoadBalancing::LoadBalancer": ParallelDescribeRegional(describer.ElasticLoadBalancingLoadBalancer),
+	"AWS::ElasticLoadBalancing::LoadBalancer": ParallelDescribeRegional(describer.ElasticLoadBalancingLoadBalancer), // IGNORE
 	"AWS::ElasticLoadBalancingV2::Listener":   ParallelDescribeRegional(describer.ElasticLoadBalancingV2Listener),
 	// "AWS::ElasticLoadBalancingV2::ListenerRule":                   ParallelDescribeRegional(describer.ElasticLoadBalancingV2ListenerRule),
 	"AWS::ElasticLoadBalancingV2::LoadBalancer": ParallelDescribeRegional(describer.ElasticLoadBalancingV2LoadBalancer),
@@ -131,7 +131,7 @@ var resourceTypeToDescriber = map[string]ResourceDescriber{
 	"AWS::IAM::Account":                  SequentialDescribeGlobal(describer.IAMAccount),
 	"AWS::IAM::IAMAccountPasswordPolicy": SequentialDescribeGlobal(describer.IAMAccountPasswordPolicy),
 	"AWS::IAM::AccountSummary":           SequentialDescribeGlobal(describer.IAMAccountSummary),
-	"AWS::IAM::CredentialReport":         SequentialDescribeGlobal(describer.IAMCredentialReport),
+	"AWS::IAM::CredentialReport":         SequentialDescribeGlobal(describer.IAMCredentialReport), // IGNORE
 	"AWS::IAM::Group":                    SequentialDescribeGlobal(describer.IAMGroup),
 	// "AWS::IAM::InstanceProfile":                                   SequentialDescribeGlobal(describer.IAMInstanceProfile),
 	// "AWS::IAM::ManagedPolicy":                                     SequentialDescribeGlobal(describer.IAMManagedPolicy),
@@ -144,7 +144,7 @@ var resourceTypeToDescriber = map[string]ResourceDescriber{
 	// "AWS::IAM::SAMLProvider":                                      SequentialDescribeGlobal(describer.IAMSAMLProvider),
 	"AWS::IAM::ServerCertificate": SequentialDescribeGlobal(describer.IAMServerCertificate),
 	"AWS::IAM::User":              SequentialDescribeGlobal(describer.IAMUser),
-	"AWS::IAM::VirtualMFADevice":  SequentialDescribeGlobal(describer.IAMVirtualMFADevice),
+	"AWS::IAM::VirtualMFADevice":  SequentialDescribeGlobal(describer.IAMVirtualMFADevice), // IGNORE
 	"AWS::ApiGateway::Stage":      ParallelDescribeRegional(describer.ApiGatewayStage),
 	// "AWS::KMS::Alias":                                             ParallelDescribeRegional(describer.KMSAlias),
 	"AWS::KMS::Key": ParallelDescribeRegional(describer.KMSKey),
@@ -195,7 +195,7 @@ var resourceTypeToDescriber = map[string]ResourceDescriber{
 	// "AWS::Route53Resolver::ResolverRuleAssociation":               ParallelDescribeRegional(describer.Route53ResolverResolverRuleAssociation),
 	"AWS::S3::AccessPoint":                  ParallelDescribeRegional(describer.S3AccessPoint),
 	"AWS::S3::AccountSetting":               SequentialDescribeGlobal(describer.S3AccountSetting),
-	"AWS::S3::Bucket":                       SequentialDescribeS3(describer.S3Bucket), // Global
+	"AWS::S3::Bucket":                       SequentialDescribeS3(describer.S3Bucket),
 	"AWS::S3::StorageLens":                  ParallelDescribeRegional(describer.S3StorageLens),
 	"AWS::SageMaker::EndpointConfiguration": ParallelDescribeRegional(describer.SageMakerEndpointConfiguration),
 	"AWS::SageMaker::NotebookInstance":      ParallelDescribeRegional(describer.SageMakerNotebookInstance),
@@ -329,6 +329,12 @@ func ParallelDescribeRegional(describe func(context.Context, aws.Config) ([]desc
 				rCfg := cfg.Copy()
 				rCfg.Region = r
 
+				partition, _ := partitionOf(r)
+				ctx = describer.WithDescribeContext(ctx, describer.DescribeContext{
+					AccountID: account,
+					Region:    r,
+					Partition: partition,
+				})
 				resources, err := describe(ctx, rCfg)
 				input <- result{region: r, resources: resources, err: err}
 			}(region)
@@ -379,6 +385,12 @@ func SequentialDescribeGlobal(describe func(context.Context, aws.Config) ([]desc
 			rCfg := cfg.Copy()
 			rCfg.Region = region
 
+			partition, _ := partitionOf(region)
+			ctx = describer.WithDescribeContext(ctx, describer.DescribeContext{
+				AccountID: account,
+				Region:    region,
+				Partition: partition,
+			})
 			resources, err := describe(ctx, rCfg)
 			if err != nil {
 				if !IsUnsupportedOrInvalidError(rType, region, err) {
@@ -391,7 +403,6 @@ func SequentialDescribeGlobal(describe func(context.Context, aws.Config) ([]desc
 				resources = []describer.Resource{}
 			}
 
-			partition, _ := partitionOf(region)
 			for i := range resources {
 				resources[i].Account = account
 				resources[i].Region = "global"

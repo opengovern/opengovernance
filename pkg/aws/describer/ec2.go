@@ -23,6 +23,8 @@ func EC2VolumeSnapshot(ctx context.Context, cfg aws.Config) ([]Resource, error) 
 		},
 	}
 
+	describeCtx := GetDescribeContext(ctx)
+
 	paginator := ec2.NewDescribeSnapshotsPaginator(client, &ec2.DescribeSnapshotsInput{
 		Filters: []types.Filter{
 			ownerFilter,
@@ -45,8 +47,9 @@ func EC2VolumeSnapshot(ctx context.Context, cfg aws.Config) ([]Resource, error) 
 				return nil, err
 			}
 
+			arn := "arn:" + describeCtx.Partition + ":ec2:" + describeCtx.Region + ":" + describeCtx.AccountID + ":snapshot/" + *snapshot.SnapshotId
 			values = append(values, Resource{
-				ID:   *snapshot.SnapshotId,
+				ARN:  arn,
 				Name: *snapshot.SnapshotId,
 				Description: model.EC2VolumeSnapshotDescription{
 					Snapshot:                &snapshot,
@@ -62,6 +65,8 @@ func EC2VolumeSnapshot(ctx context.Context, cfg aws.Config) ([]Resource, error) 
 func EC2Volume(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	var values []Resource
 	client := ec2.NewFromConfig(cfg)
+
+	describeCtx := GetDescribeContext(ctx)
 
 	paginator := ec2.NewDescribeVolumesPaginator(client, &ec2.DescribeVolumesInput{})
 	for paginator.HasMorePages() {
@@ -97,8 +102,9 @@ func EC2Volume(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 				}
 			}
 
+			arn := "arn:" + describeCtx.Partition + ":ec2:" + describeCtx.Region + ":" + describeCtx.AccountID + ":volume/" + *volume.VolumeId
 			values = append(values, Resource{
-				ID:          *volume.VolumeId,
+				ARN:         arn,
 				Name:        *volume.VolumeId,
 				Description: description,
 			})
@@ -368,6 +374,8 @@ func EC2EgressOnlyInternetGateway(ctx context.Context, cfg aws.Config) ([]Resour
 }
 
 func EC2EIP(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+	describeCtx := GetDescribeContext(ctx)
+
 	client := ec2.NewFromConfig(cfg)
 	output, err := client.DescribeAddresses(ctx, &ec2.DescribeAddressesInput{})
 	if err != nil {
@@ -376,8 +384,9 @@ func EC2EIP(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 
 	var values []Resource
 	for _, v := range output.Addresses {
+		arn := "arn:" + describeCtx.Partition + ":ec2:" + describeCtx.Region + ":" + describeCtx.AccountID + ":eip/" + *v.AllocationId
 		values = append(values, Resource{
-			ID:   *v.AllocationId,
+			ARN:  arn,
 			Name: *v.AllocationId,
 			Description: model.EC2EIPDescription{
 				Address: v,
@@ -420,6 +429,8 @@ func EC2EnclaveCertificateIamRoleAssociation(ctx context.Context, cfg aws.Config
 }
 
 func EC2FlowLog(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+	describeCtx := GetDescribeContext(ctx)
+
 	client := ec2.NewFromConfig(cfg)
 	paginator := ec2.NewDescribeFlowLogsPaginator(client, &ec2.DescribeFlowLogsInput{})
 
@@ -431,8 +442,9 @@ func EC2FlowLog(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 		}
 
 		for _, v := range page.FlowLogs {
+			arn := "arn:" + describeCtx.Partition + ":ec2:" + describeCtx.Region + ":" + describeCtx.AccountID + ":vpc-flow-log/" + *v.FlowLogId
 			values = append(values, Resource{
-				ID:   *v.FlowLogId,
+				ARN:  arn,
 				Name: *v.FlowLogId,
 				Description: model.EC2FlowLogDescription{
 					FlowLog: v,
@@ -470,6 +482,8 @@ func EC2Host(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 func EC2Instance(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	client := ec2.NewFromConfig(cfg)
 	paginator := ec2.NewDescribeInstancesPaginator(client, &ec2.DescribeInstancesInput{})
+
+	describeCtx := GetDescribeContext(ctx)
 
 	var values []Resource
 	for paginator.HasMorePages() {
@@ -520,9 +534,9 @@ func EC2Instance(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 						desc.Attributes.DisableApiTermination = aws.ToBool(output.DisableApiTermination.Value)
 					}
 				}
-
+				arn := "arn:" + describeCtx.Partition + ":ec2:" + describeCtx.Region + ":" + describeCtx.AccountID + ":instance/" + *v.InstanceId
 				values = append(values, Resource{
-					ID:          *v.InstanceId,
+					ARN:         arn,
 					Name:        *v.InstanceId,
 					Description: desc,
 				})
@@ -537,6 +551,8 @@ func EC2InternetGateway(ctx context.Context, cfg aws.Config) ([]Resource, error)
 	client := ec2.NewFromConfig(cfg)
 	paginator := ec2.NewDescribeInternetGatewaysPaginator(client, &ec2.DescribeInternetGatewaysInput{})
 
+	describeCtx := GetDescribeContext(ctx)
+
 	var values []Resource
 	for paginator.HasMorePages() {
 		page, err := paginator.NextPage(ctx)
@@ -545,8 +561,9 @@ func EC2InternetGateway(ctx context.Context, cfg aws.Config) ([]Resource, error)
 		}
 
 		for _, v := range page.InternetGateways {
+			arn := "arn:" + describeCtx.Partition + ":ec2:" + describeCtx.Region + ":" + describeCtx.AccountID + ":internet-gateway/" + *v.InternetGatewayId
 			values = append(values, Resource{
-				ID:   *v.InternetGatewayId,
+				ARN:  arn,
 				Name: *v.InternetGatewayId,
 				Description: model.EC2InternetGatewayDescription{
 					InternetGateway: v,
@@ -585,6 +602,8 @@ func EC2NatGateway(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	client := ec2.NewFromConfig(cfg)
 	paginator := ec2.NewDescribeNatGatewaysPaginator(client, &ec2.DescribeNatGatewaysInput{})
 
+	describeCtx := GetDescribeContext(ctx)
+
 	var values []Resource
 	for paginator.HasMorePages() {
 		page, err := paginator.NextPage(ctx)
@@ -593,8 +612,9 @@ func EC2NatGateway(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 		}
 
 		for _, v := range page.NatGateways {
+			arn := "arn:" + describeCtx.Partition + ":ec2:" + describeCtx.Region + ":" + describeCtx.AccountID + ":natgateway/" + *v.NatGatewayId
 			values = append(values, Resource{
-				ID:   *v.NatGatewayId,
+				ARN:  arn,
 				Name: *v.NatGatewayId,
 				Description: model.EC2NatGatewayDescription{
 					NatGateway: v,
@@ -610,6 +630,8 @@ func EC2NetworkAcl(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	client := ec2.NewFromConfig(cfg)
 	paginator := ec2.NewDescribeNetworkAclsPaginator(client, &ec2.DescribeNetworkAclsInput{})
 
+	describeCtx := GetDescribeContext(ctx)
+
 	var values []Resource
 	for paginator.HasMorePages() {
 		page, err := paginator.NextPage(ctx)
@@ -618,8 +640,9 @@ func EC2NetworkAcl(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 		}
 
 		for _, v := range page.NetworkAcls {
+			arn := "arn:" + describeCtx.Partition + ":ec2:" + describeCtx.Region + ":" + describeCtx.AccountID + ":network-acl/" + *v.NetworkAclId
 			values = append(values, Resource{
-				ID:   *v.NetworkAclId,
+				ARN:  arn,
 				Name: *v.NetworkAclId,
 				Description: model.EC2NetworkAclDescription{
 					NetworkAcl: v,
@@ -681,6 +704,8 @@ func EC2NetworkInterface(ctx context.Context, cfg aws.Config) ([]Resource, error
 	client := ec2.NewFromConfig(cfg)
 	paginator := ec2.NewDescribeNetworkInterfacesPaginator(client, &ec2.DescribeNetworkInterfacesInput{})
 
+	describeCtx := GetDescribeContext(ctx)
+
 	var values []Resource
 	for paginator.HasMorePages() {
 		page, err := paginator.NextPage(ctx)
@@ -689,8 +714,9 @@ func EC2NetworkInterface(ctx context.Context, cfg aws.Config) ([]Resource, error
 		}
 
 		for _, v := range page.NetworkInterfaces {
+			arn := "arn:" + describeCtx.Partition + ":ec2:" + describeCtx.Region + ":" + describeCtx.AccountID + ":network-interface/" + *v.NetworkInterfaceId
 			values = append(values, Resource{
-				ID:   *v.NetworkInterfaceId,
+				ARN:  arn,
 				Name: *v.NetworkInterfaceId,
 				Description: model.EC2NetworkInterfaceDescription{
 					NetworkInterface: v,
@@ -795,6 +821,8 @@ func EC2RouteTable(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	client := ec2.NewFromConfig(cfg)
 	paginator := ec2.NewDescribeRouteTablesPaginator(client, &ec2.DescribeRouteTablesInput{})
 
+	describeCtx := GetDescribeContext(ctx)
+
 	var values []Resource
 	for paginator.HasMorePages() {
 		page, err := paginator.NextPage(ctx)
@@ -803,8 +831,10 @@ func EC2RouteTable(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 		}
 
 		for _, v := range page.RouteTables {
+			arn := "arn:" + describeCtx.Partition + ":ec2:" + describeCtx.Region + ":" + describeCtx.AccountID + ":route-table/" + *v.RouteTableId
+
 			values = append(values, Resource{
-				ID:   *v.RouteTableId,
+				ARN:  arn,
 				Name: *v.RouteTableId,
 				Description: model.EC2RouteTableDescription{
 					RouteTable: v,
@@ -956,6 +986,8 @@ func EC2SecurityGroup(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	client := ec2.NewFromConfig(cfg)
 	paginator := ec2.NewDescribeSecurityGroupsPaginator(client, &ec2.DescribeSecurityGroupsInput{})
 
+	describeCtx := GetDescribeContext(ctx)
+
 	var values []Resource
 	for paginator.HasMorePages() {
 		page, err := paginator.NextPage(ctx)
@@ -964,8 +996,9 @@ func EC2SecurityGroup(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 		}
 
 		for _, v := range page.SecurityGroups {
+			arn := "arn:" + describeCtx.Partition + ":ec2:" + describeCtx.Region + ":" + describeCtx.AccountID + ":security-group/" + *v.GroupId
 			values = append(values, Resource{
-				ID:   *v.GroupId,
+				ARN:  arn,
 				Name: *v.GroupName,
 				Description: model.EC2SecurityGroupDescription{
 					SecurityGroup: v,
@@ -1323,6 +1356,8 @@ func EC2VPC(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	client := ec2.NewFromConfig(cfg)
 	paginator := ec2.NewDescribeVpcsPaginator(client, &ec2.DescribeVpcsInput{})
 
+	describeCtx := GetDescribeContext(ctx)
+
 	var values []Resource
 	for paginator.HasMorePages() {
 		page, err := paginator.NextPage(ctx)
@@ -1331,8 +1366,9 @@ func EC2VPC(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 		}
 
 		for _, v := range page.Vpcs {
+			arn := "arn:" + describeCtx.Partition + ":ec2:" + describeCtx.Region + ":" + describeCtx.AccountID + ":vpc/" + *v.VpcId
 			values = append(values, Resource{
-				ID:   *v.VpcId,
+				ARN:  arn,
 				Name: *v.VpcId,
 				Description: model.EC2VpcDescription{
 					Vpc: v,
@@ -1348,6 +1384,8 @@ func EC2VPCEndpoint(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	client := ec2.NewFromConfig(cfg)
 	paginator := ec2.NewDescribeVpcEndpointsPaginator(client, &ec2.DescribeVpcEndpointsInput{})
 
+	describeCtx := GetDescribeContext(ctx)
+
 	var values []Resource
 	for paginator.HasMorePages() {
 		page, err := paginator.NextPage(ctx)
@@ -1356,7 +1394,9 @@ func EC2VPCEndpoint(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 		}
 
 		for _, v := range page.VpcEndpoints {
+			arn := "arn:" + describeCtx.Partition + ":ec2:" + describeCtx.Region + ":" + describeCtx.AccountID + ":vpc-endpoint/" + *v.VpcEndpointId
 			values = append(values, Resource{
+				ARN:  arn,
 				ID:   *v.VpcEndpointId,
 				Name: *v.VpcEndpointId,
 				Description: model.EC2VPCEndpointDescription{
@@ -1490,10 +1530,13 @@ func EC2VPNConnection(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 		return nil, err
 	}
 
+	describeCtx := GetDescribeContext(ctx)
+
 	var values []Resource
 	for _, v := range output.VpnConnections {
+		arn := "arn:" + describeCtx.Partition + ":ec2:" + describeCtx.Region + ":" + describeCtx.AccountID + ":vpn-connection/" + *v.VpnConnectionId
 		values = append(values, Resource{
-			ID:   *v.VpnConnectionId,
+			ARN:  arn,
 			Name: *v.VpnConnectionId,
 			Description: model.EC2VPNConnectionDescription{
 				VpnConnection: v,
@@ -1532,10 +1575,13 @@ func EC2Region(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 		return nil, err
 	}
 
+	describeCtx := GetDescribeContext(ctx)
+
 	var values []Resource
 	for _, v := range output.Regions {
+		arn := "arn:" + describeCtx.Partition + "::" + *v.RegionName + ":" + describeCtx.AccountID
 		values = append(values, Resource{
-			ID:   *v.RegionName,
+			ARN:  arn,
 			Name: *v.RegionName,
 			Description: model.EC2RegionDescription{
 				Region: v,

@@ -62,6 +62,8 @@ func GuardDutyDetector(ctx context.Context, cfg aws.Config) ([]Resource, error) 
 
 	client := guardduty.NewFromConfig(cfg)
 
+	describeCtx := GetDescribeContext(ctx)
+
 	paginator := guardduty.NewListDetectorsPaginator(client, &guardduty.ListDetectorsInput{})
 	for paginator.HasMorePages() {
 		page, err := paginator.NextPage(ctx)
@@ -78,8 +80,9 @@ func GuardDutyDetector(ctx context.Context, cfg aws.Config) ([]Resource, error) 
 				return nil, err
 			}
 
+			arn := "arn:" + describeCtx.Partition + ":guardduty:" + describeCtx.Region + ":" + describeCtx.AccountID + ":detector/" + id
 			values = append(values, Resource{
-				ID:   id,
+				ARN:  arn,
 				Name: id,
 				Description: model.GuardDutyDetectorDescription{
 					DetectorId: id,
