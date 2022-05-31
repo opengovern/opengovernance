@@ -1,11 +1,10 @@
 package onboard
 
 import (
-	echoPrometheus "github.com/globocom/echo-prometheus"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	"github.com/labstack/gommon/log"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"gitlab.com/keibiengine/keibi-engine/pkg/metrics"
 	"gopkg.in/go-playground/validator.v9"
 )
 
@@ -14,21 +13,7 @@ func InitializeRouter() *echo.Echo {
 	e.Logger.SetLevel(log.DEBUG) // TODO: change in prod
 	e.Pre(middleware.RemoveTrailingSlash())
 
-	e.Use(echoPrometheus.MetricsMiddlewareWithConfig(echoPrometheus.Config{
-		Namespace: "keibi",
-		Subsystem: "http",
-		Buckets: []float64{
-			0.001, // 1ms
-			0.01,  // 10ms
-			0.1,   // 100 ms
-			0.2,
-			0.5,
-			1.0,  // 1s
-			10.0, // 10s
-		},
-		NormalizeHTTPStatus: true,
-	}))
-	e.GET("/metrics", echo.WrapHandler(promhttp.Handler()))
+	metrics.AddEchoMiddleware(e)
 
 	e.Use(middleware.Logger())
 	e.Validator = newValidator()
