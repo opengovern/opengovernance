@@ -5,8 +5,7 @@ import (
 	"strconv"
 	"time"
 
-	echoPrometheus "github.com/globocom/echo-prometheus"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"gitlab.com/keibiengine/keibi-engine/pkg/metrics"
 
 	complianceapi "gitlab.com/keibiengine/keibi-engine/pkg/compliance-report/api"
 
@@ -40,22 +39,7 @@ func (s *HttpServer) Initialize() error {
 		Format: "method=${method}, uri=${uri}, status=${status}\n",
 	}))
 
-	e.Use(echoPrometheus.MetricsMiddlewareWithConfig(echoPrometheus.Config{
-		Namespace: "keibi",
-		Subsystem: "http",
-		Buckets: []float64{
-			0.001, // 1ms
-			0.01,  // 10ms
-			0.1,   // 100 ms
-			0.2,
-			0.5,
-			1.0,  // 1s
-			10.0, // 10s
-		},
-		NormalizeHTTPStatus: true,
-	}))
-	e.GET("/metrics", echo.WrapHandler(promhttp.Handler()))
-
+	metrics.AddEchoMiddleware(e)
 	v1 := e.Group("/api/v1")
 
 	v1.GET("/sources", s.HandleListSources)
