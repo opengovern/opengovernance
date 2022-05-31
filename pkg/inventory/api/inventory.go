@@ -16,21 +16,21 @@ type GetResourcesResult struct {
 	Page           internal.PageResponse
 }
 
-func QueryResources(ctx context.Context, client keibi.Client, req *GetResourcesRequest, provider *SourceType) (*GetResourcesResult, error) {
+func QueryResources(ctx context.Context, client keibi.Client, req *GetResourcesRequest, provider *SourceType, commonFilter *bool) (*GetResourcesResult, error) {
 	if req.Filters.ResourceType == nil || len(req.Filters.ResourceType) == 0 {
-		return QueryResourcesFromInventorySummary(ctx, client, req, provider)
+		return QueryResourcesFromInventorySummary(ctx, client, req, provider, commonFilter)
 	} else {
-		return QueryResourcesWithSteampipeColumns(ctx, client, req, provider)
+		return QueryResourcesWithSteampipeColumns(ctx, client, req, provider, commonFilter)
 	}
 }
 
-func QueryResourcesFromInventorySummary(ctx context.Context, client keibi.Client, req *GetResourcesRequest, provider *SourceType) (*GetResourcesResult, error) {
+func QueryResourcesFromInventorySummary(ctx context.Context, client keibi.Client, req *GetResourcesRequest, provider *SourceType, commonFilter *bool) (*GetResourcesResult, error) {
 	lastIdx, err := req.Page.GetIndex()
 	if err != nil {
 		return nil, err
 	}
 
-	resources, resultCount, err := QuerySummaryResources(ctx, client, req.Query, req.Filters, provider, req.Page.Size, lastIdx, req.Sorts)
+	resources, resultCount, err := QuerySummaryResources(ctx, client, req.Query, req.Filters, provider, req.Page.Size, lastIdx, req.Sorts, commonFilter)
 	if err != nil {
 		return nil, err
 	}

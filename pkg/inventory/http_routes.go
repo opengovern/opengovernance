@@ -2104,17 +2104,28 @@ func (h *HttpHandler) GetLocations(ctx echo.Context) error {
 // @Produce      json,text/csv
 // @Param        request  body      api.GetResourcesRequest  true  "Request Body"
 // @Param        accept   header    string                   true  "Accept header"  Enums(application/json,text/csv)
+// @Param        common   query     bool                     false "Common filter"  Enums(true,false)
 // @Success      200      {object}  api.GetAzureResourceResponse
 // @Router       /inventory/api/v1/resources/azure [post]
 func (h *HttpHandler) GetAzureResources(ectx echo.Context) error {
 	provider := api.SourceCloudAzure
+	commonQuery := ectx.QueryParam("common")
+	var common *bool
+	if commonQuery == "true" {
+		v := true
+		common = &v
+	} else if commonQuery == "false" {
+		v := false
+		common = &v
+	}
+
 	if accepts := ectx.Request().Header.Get("accept"); accepts != "" {
 		mediaType, _, err := mime.ParseMediaType(accepts)
 		if err == nil && mediaType == "text/csv" {
-			return h.GetResourcesCSV(ectx, &provider)
+			return h.GetResourcesCSV(ectx, &provider, common)
 		}
 	}
-	return h.GetResources(ectx, &provider)
+	return h.GetResources(ectx, &provider, common)
 }
 
 // GetAWSResources godoc
@@ -2127,17 +2138,28 @@ func (h *HttpHandler) GetAzureResources(ectx echo.Context) error {
 // @Produce      json,text/csv
 // @Param        request  body      api.GetResourcesRequest  true  "Request Body"
 // @Param        accept   header    string                   true  "Accept header"  Enums(application/json,text/csv)
+// @Param        common   query     bool                     false "Common filter"  Enums(true,false)
 // @Success      200      {object}  api.GetAWSResourceResponse
 // @Router       /inventory/api/v1/resources/aws [post]
 func (h *HttpHandler) GetAWSResources(ectx echo.Context) error {
 	provider := api.SourceCloudAWS
+	commonQuery := ectx.QueryParam("common")
+	var common *bool
+	if commonQuery == "true" {
+		v := true
+		common = &v
+	} else if commonQuery == "false" {
+		v := false
+		common = &v
+	}
+
 	if accepts := ectx.Request().Header.Get("accept"); accepts != "" {
 		mediaType, _, err := mime.ParseMediaType(accepts)
 		if err == nil && mediaType == "text/csv" {
-			return h.GetResourcesCSV(ectx, &provider)
+			return h.GetResourcesCSV(ectx, &provider, common)
 		}
 	}
-	return h.GetResources(ectx, &provider)
+	return h.GetResources(ectx, &provider, common)
 }
 
 // GetAllResources godoc
@@ -2151,16 +2173,27 @@ func (h *HttpHandler) GetAWSResources(ectx echo.Context) error {
 // @Produce      json,text/csv
 // @Param        request  body      api.GetResourcesRequest  true  "Request Body"
 // @Param        accept   header    string                   true  "Accept header"  Enums(application/json,text/csv)
+// @Param        common   query     bool                     false "Common filter"  Enums(true,false)
 // @Success      200      {object}  api.GetResourcesResponse
 // @Router       /inventory/api/v1/resources [post]
 func (h *HttpHandler) GetAllResources(ectx echo.Context) error {
+	commonQuery := ectx.QueryParam("common")
+	var common *bool
+	if commonQuery == "true" {
+		v := true
+		common = &v
+	} else if commonQuery == "false" {
+		v := false
+		common = &v
+	}
+
 	if accepts := ectx.Request().Header.Get("accept"); accepts != "" {
 		mediaType, _, err := mime.ParseMediaType(accepts)
 		if err == nil && mediaType == "text/csv" {
-			return h.GetResourcesCSV(ectx, nil)
+			return h.GetResourcesCSV(ectx, nil, common)
 		}
 	}
-	return h.GetResources(ectx, nil)
+	return h.GetResources(ectx, nil, common)
 }
 
 func (h *HttpHandler) RunSmartQuery(query string,
@@ -2207,7 +2240,7 @@ func (h *HttpHandler) RunSmartQuery(query string,
 	return &resp, nil
 }
 
-func (h *HttpHandler) GetResources(ectx echo.Context, provider *api.SourceType) error {
+func (h *HttpHandler) GetResources(ectx echo.Context, provider *api.SourceType, commonFilter *bool) error {
 	var err error
 	cc := ectx.(*Context)
 	req := &api.GetResourcesRequest{}
@@ -2217,7 +2250,7 @@ func (h *HttpHandler) GetResources(ectx echo.Context, provider *api.SourceType) 
 
 	ctx := extractContext(ectx)
 
-	res, err := api.QueryResources(ctx, h.client, req, provider)
+	res, err := api.QueryResources(ctx, h.client, req, provider, commonFilter)
 	if err != nil {
 		return err
 	}
@@ -2297,7 +2330,7 @@ func Csv(record []string, w io.Writer) error {
 	return nil
 }
 
-func (h *HttpHandler) GetResourcesCSV(ectx echo.Context, provider *api.SourceType) error {
+func (h *HttpHandler) GetResourcesCSV(ectx echo.Context, provider *api.SourceType, commonFilter *bool) error {
 	var err error
 	cc := ectx.(*Context)
 	ctx := extractContext(ectx)
@@ -2314,7 +2347,7 @@ func (h *HttpHandler) GetResourcesCSV(ectx echo.Context, provider *api.SourceTyp
 	ectx.Response().Header().Set(echo.HeaderContentType, "text/csv")
 	ectx.Response().WriteHeader(http.StatusOK)
 
-	res, err := api.QueryResources(ctx, h.client, req, provider)
+	res, err := api.QueryResources(ctx, h.client, req, provider, commonFilter)
 	if err != nil {
 		return err
 	}

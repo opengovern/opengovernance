@@ -53,7 +53,7 @@ type SteampipeResource struct {
 }
 
 func QueryResourcesWithSteampipeColumns(
-	ctx context.Context, client keibi.Client, req *GetResourcesRequest, provider *SourceType,
+	ctx context.Context, client keibi.Client, req *GetResourcesRequest, provider *SourceType, commonFilter *bool,
 ) (*GetResourcesResult, error) {
 	if req.Filters.ResourceType == nil || len(req.Filters.ResourceType) == 0 {
 		return nil, nil
@@ -73,6 +73,13 @@ func QueryResourcesWithSteampipeColumns(
 		Page: page.ToResponse(0),
 	}
 	for _, resourceType := range req.Filters.ResourceType {
+		if commonFilter != nil {
+			isCommon := cloudservice.IsCommonByResourceType(resourceType)
+			if (!isCommon && *commonFilter) || (isCommon && !*commonFilter) {
+				continue
+			}
+		}
+
 		var response ResourceQueryResponse
 		indexName := describe.ResourceTypeToESIndex(resourceType)
 
