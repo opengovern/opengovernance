@@ -246,6 +246,7 @@ func doDescribeAWS(ctx context.Context, job DescribeJob, config map[string]inter
 				ResourceJobID: job.JobID,
 				SourceJobID:   job.ParentJobID,
 				CreatedAt:     job.DescribedAt,
+				IsCommon:      cloudservice.IsCommonByResourceType(job.ResourceType),
 			})
 			region := strings.TrimSpace(resource.Region)
 			if region != "" {
@@ -404,6 +405,7 @@ func doDescribeAzure(ctx context.Context, job DescribeJob, config map[string]int
 			ResourceJobID: job.JobID,
 			SourceJobID:   job.ParentJobID,
 			CreatedAt:     job.DescribedAt,
+			IsCommon:      cloudservice.IsCommonByResourceType(job.ResourceType),
 		})
 		location := strings.TrimSpace(resource.Location)
 		if location != "" {

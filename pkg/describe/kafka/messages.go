@@ -120,6 +120,8 @@ type LookupResource struct {
 	SourceJobID uint `json:"source_job_id"`
 	// CreatedAt is when the DescribeSourceJob is created
 	CreatedAt int64 `json:"created_at"`
+	// IsCommon
+	IsCommon bool `json:"is_common"`
 }
 
 func (r LookupResource) AsProducerMessage() (*sarama.ProducerMessage, error) {
