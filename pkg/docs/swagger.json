@@ -1586,6 +1586,16 @@
                         "name": "accept",
                         "in": "header",
                         "required": true
+                    },
+                    {
+                        "enum": [
+                            true,
+                            false
+                        ],
+                        "type": "boolean",
+                        "description": "Common filter",
+                        "name": "common",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -1632,6 +1642,16 @@
                         "name": "accept",
                         "in": "header",
                         "required": true
+                    },
+                    {
+                        "enum": [
+                            true,
+                            false
+                        ],
+                        "type": "boolean",
+                        "description": "Common filter",
+                        "name": "common",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -1678,6 +1698,16 @@
                         "name": "accept",
                         "in": "header",
                         "required": true
+                    },
+                    {
+                        "enum": [
+                            true,
+                            false
+                        ],
+                        "type": "boolean",
+                        "description": "Common filter",
+                        "name": "common",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -3251,15 +3281,10 @@
         "api.GetResourcesRequest": {
             "type": "object",
             "required": [
-                "filterNots",
                 "filters",
                 "page"
             ],
             "properties": {
-                "filterNots": {
-                    "description": "search filters",
-                    "$ref": "#/definitions/api.Filters"
-                },
                 "filters": {
                     "description": "search filters",
                     "$ref": "#/definitions/api.Filters"

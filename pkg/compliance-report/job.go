@@ -9,6 +9,8 @@ import (
 	"os/exec"
 	"time"
 
+	"gitlab.com/keibiengine/keibi-engine/pkg/cloudservice"
+
 	aws "gitlab.com/keibiengine/keibi-engine/pkg/aws/model"
 	azure "gitlab.com/keibiengine/keibi-engine/pkg/azure/model"
 
@@ -138,6 +140,8 @@ func (j *Job) Do(vlt vault.SourceConfig, producer sarama.SyncProducer, topic str
 	var findings []es.Finding
 	var summary Summary
 	benchmarkID := ""
+	serviceTotalChecks := map[string]int{}
+	serviceNonCompliantChecks := map[string]int{}
 	for _, report := range reports {
 		if report.Type == ReportTypeBenchmark && report.Group.Level == 1 {
 			benchmarkID = report.Group.ID
@@ -145,7 +149,7 @@ func (j *Job) Do(vlt vault.SourceConfig, producer sarama.SyncProducer, topic str
 		}
 
 		if report.Type == ReportTypeResult {
-			var name, location string
+			var name, location, resourceType string
 			for _, dim := range report.Result.Result.Dimensions {
 				if dim.Key == "metadata" {
 					switch j.SourceType {
@@ -157,6 +161,7 @@ func (j *Job) Do(vlt vault.SourceConfig, producer sarama.SyncProducer, topic str
 						}
 						name = metadata.Name
 						location = metadata.Region
+						resourceType = metadata.ResourceType
 					case source.CloudAzure:
 						var metadata azure.Metadata
 						err = json.Unmarshal([]byte(dim.Value), &metadata)
@@ -165,6 +170,7 @@ func (j *Job) Do(vlt vault.SourceConfig, producer sarama.SyncProducer, topic str
 						}
 						name = metadata.Name
 						location = metadata.Location
+						resourceType = metadata.ResourceType
 					}
 				}
 			}
@@ -181,6 +187,12 @@ func (j *Job) Do(vlt vault.SourceConfig, producer sarama.SyncProducer, topic str
 				Status:             string(report.Result.Result.Status),
 				DescribedAt:        report.DescribedAt,
 			})
+
+			sn := cloudservice.ServiceNameByResourceType(resourceType)
+			serviceTotalChecks[sn]++
+			if report.Result.Result.Status != ResultStatusOK {
+				serviceNonCompliantChecks[sn]++
+			}
 		}
 	}
 	totalResource := summary.Status.OK + summary.Status.Info + summary.Status.Error + summary.Status.Alarm + summary.Status.Skip
@@ -195,6 +207,26 @@ func (j *Job) Do(vlt vault.SourceConfig, producer sarama.SyncProducer, topic str
 		TotalCompliant:       summary.Status.OK,
 		CompliancePercentage: float64(summary.Status.OK) / float64(totalResource),
 		AccountReportType:    es.AccountReportTypeInTime,
+	}
+
+	var sc []es.ServiceCompliancySummary
+	for sn, total := range serviceTotalChecks {
+		compliant := total
+		if nc, ok := serviceNonCompliantChecks[sn]; ok {
+			compliant = total - nc
+		}
+		sc = append(sc, es.ServiceCompliancySummary{
+			ServiceName:          sn,
+			TotalResources:       total,
+			TotalCompliant:       compliant,
+			CompliancePercentage: float64(compliant) / float64(total),
+			CompliancySummary: es.CompliancySummary{
+				CompliancySummaryType: es.CompliancySummaryTypeServiceSummary,
+				ReportJobId:           j.JobID,
+				Provider:              j.SourceType,
+				DescribedAt:           j.DescribedAt,
+			},
+		})
 	}
 
 	acrLast := acr
@@ -236,6 +268,9 @@ func (j *Job) Do(vlt vault.SourceConfig, producer sarama.SyncProducer, topic str
 	}
 	for _, f := range findings {
 		msgs = append(msgs, f)
+	}
+	for _, s := range sc {
+		msgs = append(msgs, s)
 	}
 	err = kafka.DoSendToKafka(producer, topic, msgs, j.logger)
 	if err != nil {
