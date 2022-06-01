@@ -228,10 +228,11 @@ func doDescribeAWS(ctx context.Context, job DescribeJob, config map[string]inter
 				SourceJobID:   job.ParentJobID,
 				SourceID:      job.SourceID,
 				Metadata: map[string]string{
-					"name":       resource.Name,
-					"partition":  resource.Partition,
-					"region":     resource.Region,
-					"account_id": resource.Account,
+					"name":          resource.Name,
+					"partition":     resource.Partition,
+					"region":        resource.Region,
+					"account_id":    resource.Account,
+					"resource_type": resource.Type,
 				},
 			})
 
@@ -391,6 +392,7 @@ func doDescribeAzure(ctx context.Context, job DescribeJob, config map[string]int
 				"subscription_id":   strings.Join(output.Metadata.SubscriptionIds, ","),
 				"location":          resource.Location,
 				"cloud_environment": output.Metadata.CloudEnvironment,
+				"resource_type":     resource.Type,
 			},
 		})
 

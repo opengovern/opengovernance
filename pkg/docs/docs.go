@@ -1592,6 +1592,16 @@ const docTemplate = `{
                         "name": "accept",
                         "in": "header",
                         "required": true
+                    },
+                    {
+                        "enum": [
+                            true,
+                            false
+                        ],
+                        "type": "boolean",
+                        "description": "Common filter",
+                        "name": "common",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -1638,6 +1648,16 @@ const docTemplate = `{
                         "name": "accept",
                         "in": "header",
                         "required": true
+                    },
+                    {
+                        "enum": [
+                            true,
+                            false
+                        ],
+                        "type": "boolean",
+                        "description": "Common filter",
+                        "name": "common",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -1684,6 +1704,16 @@ const docTemplate = `{
                         "name": "accept",
                         "in": "header",
                         "required": true
+                    },
+                    {
+                        "enum": [
+                            true,
+                            false
+                        ],
+                        "type": "boolean",
+                        "description": "Common filter",
+                        "name": "common",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -3257,15 +3287,10 @@ const docTemplate = `{
         "api.GetResourcesRequest": {
             "type": "object",
             "required": [
-                "filterNots",
                 "filters",
                 "page"
             ],
             "properties": {
-                "filterNots": {
-                    "description": "search filters",
-                    "$ref": "#/definitions/api.Filters"
-                },
                 "filters": {
                     "description": "search filters",
                     "$ref": "#/definitions/api.Filters"

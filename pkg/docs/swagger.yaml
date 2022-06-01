@@ -315,9 +315,6 @@ definitions:
     type: object
   api.GetResourcesRequest:
     properties:
-      filterNots:
-        $ref: '#/definitions/api.Filters'
-        description: search filters
       filters:
         $ref: '#/definitions/api.Filters'
         description: search filters
@@ -333,7 +330,6 @@ definitions:
           $ref: '#/definitions/api.ResourceSortItem'
         type: array
     required:
-    - filterNots
     - filters
     - page
     type: object
@@ -1960,6 +1956,13 @@ paths:
         name: accept
         required: true
         type: string
+      - description: Common filter
+        enum:
+        - true
+        - false
+        in: query
+        name: common
+        type: boolean
       produces:
       - application/json
       - text/csv
@@ -1994,6 +1997,13 @@ paths:
         name: accept
         required: true
         type: string
+      - description: Common filter
+        enum:
+        - true
+        - false
+        in: query
+        name: common
+        type: boolean
       produces:
       - application/json
       - text/csv
@@ -2028,6 +2038,13 @@ paths:
         name: accept
         required: true
         type: string
+      - description: Common filter
+        enum:
+        - true
+        - false
+        in: query
+        name: common
+        type: boolean
       produces:
       - application/json
       - text/csv

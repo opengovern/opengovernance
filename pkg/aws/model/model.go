@@ -56,10 +56,11 @@ import (
 )
 
 type Metadata struct {
-	Name      string `json:"name"`
-	AccountID string `json:"account_id"`
-	Region    string `json:"region"`
-	Partition string `json:"partition"`
+	Name         string `json:"name"`
+	AccountID    string `json:"account_id"`
+	Region       string `json:"region"`
+	Partition    string `json:"partition"`
+	ResourceType string `json:"resource_type"`
 }
 
 //  ===================  Access Analyzer ==================

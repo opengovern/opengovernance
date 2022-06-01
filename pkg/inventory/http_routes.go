@@ -2102,9 +2102,9 @@ func (h *HttpHandler) GetLocations(ctx echo.Context) error {
 // @Tags         inventory
 // @Accept       json
 // @Produce      json,text/csv
-// @Param        request  body      api.GetResourcesRequest  true  "Request Body"
-// @Param        accept   header    string                   true  "Accept header"  Enums(application/json,text/csv)
-// @Param        common   query     bool                     false "Common filter"  Enums(true,false)
+// @Param        request  body      api.GetResourcesRequest  true   "Request Body"
+// @Param        accept   header    string                   true   "Accept header"  Enums(application/json,text/csv)
+// @Param        common   query     bool                     false  "Common filter"  Enums(true,false)
 // @Success      200      {object}  api.GetAzureResourceResponse
 // @Router       /inventory/api/v1/resources/azure [post]
 func (h *HttpHandler) GetAzureResources(ectx echo.Context) error {
@@ -2136,9 +2136,9 @@ func (h *HttpHandler) GetAzureResources(ectx echo.Context) error {
 // @Tags         inventory
 // @Accept       json
 // @Produce      json,text/csv
-// @Param        request  body      api.GetResourcesRequest  true  "Request Body"
-// @Param        accept   header    string                   true  "Accept header"  Enums(application/json,text/csv)
-// @Param        common   query     bool                     false "Common filter"  Enums(true,false)
+// @Param        request  body      api.GetResourcesRequest  true   "Request Body"
+// @Param        accept   header    string                   true   "Accept header"  Enums(application/json,text/csv)
+// @Param        common   query     bool                     false  "Common filter"  Enums(true,false)
 // @Success      200      {object}  api.GetAWSResourceResponse
 // @Router       /inventory/api/v1/resources/aws [post]
 func (h *HttpHandler) GetAWSResources(ectx echo.Context) error {
@@ -2171,9 +2171,9 @@ func (h *HttpHandler) GetAWSResources(ectx echo.Context) error {
 // @Tags         inventory
 // @Accept       json
 // @Produce      json,text/csv
-// @Param        request  body      api.GetResourcesRequest  true  "Request Body"
-// @Param        accept   header    string                   true  "Accept header"  Enums(application/json,text/csv)
-// @Param        common   query     bool                     false "Common filter"  Enums(true,false)
+// @Param        request  body      api.GetResourcesRequest  true   "Request Body"
+// @Param        accept   header    string                   true   "Accept header"  Enums(application/json,text/csv)
+// @Param        common   query     bool                     false  "Common filter"  Enums(true,false)
 // @Success      200      {object}  api.GetResourcesResponse
 // @Router       /inventory/api/v1/resources [post]
 func (h *HttpHandler) GetAllResources(ectx echo.Context) error {
