@@ -6,6 +6,6 @@ build/*
 
 cache/*
 
-sver.env
+*.env
 
-.env
+*.pem

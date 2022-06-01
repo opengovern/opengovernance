@@ -5,6 +5,7 @@ import (
 	"time"
 
 	helmv2 "github.com/fluxcd/helm-controller/api/v2beta1"
+	"github.com/google/uuid"
 	"github.com/ory/dockertest/v3"
 	"github.com/stretchr/testify/suite"
 	idocker "gitlab.com/keibiengine/keibi-engine/pkg/internal/dockertest"
@@ -23,7 +24,7 @@ type testSuite struct {
 	server *Server
 
 	name         string
-	owner        string
+	owner        uuid.UUID
 	domainSuffix string
 }
 
@@ -43,7 +44,7 @@ func (s *testSuite) SetupSuite() {
 	resource, err := pool.RunWithOptions(&dockertest.RunOptions{
 		Name:         "keibi_workspace",
 		Repository:   "postgres",
-		Tag:          "12.2-alpine",
+		Tag:          "14",
 		ExposedPorts: []string{port},
 		Env: []string{
 			"POSTGRES_USER=" + user,
@@ -80,7 +81,7 @@ func (s *testSuite) SetupSuite() {
 	s.server.kubeClient = fake.NewClientBuilder().WithScheme(scheme).Build()
 
 	s.name = "geeks"
-	s.owner = "00000000-0000-0000-0000-000000000000"
+	s.owner = uuid.New()
 	s.domainSuffix = cfg.DomainSuffix
 }
 

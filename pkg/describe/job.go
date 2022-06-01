@@ -339,7 +339,7 @@ func doDescribeAWS(ctx context.Context, job DescribeJob, config map[string]inter
 		err = nil
 	}
 
-	return msgs, nil
+	return msgs, err
 }
 
 func doDescribeAzure(ctx context.Context, job DescribeJob, config map[string]interface{}) ([]kafka.DescribedResource, error) {

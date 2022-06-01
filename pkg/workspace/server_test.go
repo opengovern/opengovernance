@@ -11,6 +11,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
+	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpserver"
 	"gitlab.com/keibiengine/keibi-engine/pkg/workspace/api"
 	"k8s.io/apimachinery/pkg/util/validation"
 )
@@ -33,7 +34,7 @@ func (ts *testSuite) initWorkspace() (*Workspace, error) {
 func (ts *testSuite) TestCreateWorkspace() {
 	createWorkspaceTestCases := []struct {
 		Workspace api.CreateWorkspaceRequest
-		Owner     string
+		Owner     uuid.UUID
 		Code      int
 		Error     string
 	}{
@@ -58,16 +59,9 @@ func (ts *testSuite) TestCreateWorkspace() {
 			Workspace: api.CreateWorkspaceRequest{
 				Description: "workspace description",
 			},
+			Owner: ts.owner,
 			Code:  http.StatusBadRequest,
 			Error: "name is empty",
-		},
-		{
-			Workspace: api.CreateWorkspaceRequest{
-				Name:        ts.name,
-				Description: "workspace description",
-			},
-			Code:  http.StatusUnauthorized,
-			Error: "user id is empty",
 		},
 	}
 
@@ -78,7 +72,7 @@ func (ts *testSuite) TestCreateWorkspace() {
 
 			r := httptest.NewRequest(http.MethodPost, "/api/v1/workspace", bytes.NewBuffer(data))
 			r.Header.Set("Content-Type", "application/json; charset=utf8")
-			r.Header.Set(KeibiUserID, tc.Owner)
+			r.Header.Set(httpserver.XKeibiUserIDHeader, tc.Owner.String())
 			w := httptest.NewRecorder()
 
 			c := echo.New().NewContext(r, w)
@@ -86,12 +80,12 @@ func (ts *testSuite) TestCreateWorkspace() {
 			if err != nil {
 				var he *echo.HTTPError
 				ts.Equal(true, errors.As(err, &he))
-				ts.Equal(tc.Code, he.Code)
+				ts.Equal(tc.Code, he.Code, "case %d", i)
 
 				if v, ok := he.Message.(error); ok {
-					ts.Contains(v.Error(), tc.Error)
+					ts.Contains(v.Error(), tc.Error, "case %d", i)
 				} else {
-					ts.Contains(he.Message, tc.Error)
+					ts.Contains(he.Message, tc.Error, "case %d", i)
 				}
 				return
 			}
@@ -111,7 +105,7 @@ func (ts *testSuite) TestDeleteWorkspace() {
 
 	deleteWorkspaceTestCases := []struct {
 		ID    uuid.UUID
-		Owner string
+		Owner uuid.UUID
 		Code  int
 		Error string
 	}{
@@ -121,19 +115,14 @@ func (ts *testSuite) TestDeleteWorkspace() {
 			Code:  http.StatusOK,
 		},
 		{
-			ID:    workspace.ID,
-			Code:  http.StatusUnauthorized,
-			Error: "user id is empty",
-		},
-		{
-			ID:    uuid.UUID{},
+			ID:    uuid.New(),
 			Owner: ts.owner,
 			Code:  http.StatusNotFound,
 			Error: "workspace not found",
 		},
 		{
 			ID:    workspace.ID,
-			Owner: "invalid owner",
+			Owner: uuid.New(),
 			Code:  http.StatusForbidden,
 			Error: "operation is forbidden",
 		},
@@ -144,7 +133,7 @@ func (ts *testSuite) TestDeleteWorkspace() {
 		ts.T().Run(fmt.Sprintf("DeleteWorkspaceTestCases-%d", i), func(t *testing.T) {
 			r := httptest.NewRequest(http.MethodDelete, "/", nil)
 			r.Header.Set("Content-Type", "application/json; charset=utf8")
-			r.Header.Set(KeibiUserID, tc.Owner)
+			r.Header.Set(httpserver.XKeibiUserIDHeader, tc.Owner.String())
 			w := httptest.NewRecorder()
 
 			c := echo.New().NewContext(r, w)
@@ -173,22 +162,18 @@ func (ts *testSuite) TestListWorkspaces() {
 	ts.NoError(err)
 
 	listWorkspacesTestCases := []struct {
-		Owner string
+		Owner uuid.UUID
 		Count int
 		Code  int
 		Error string
 	}{
-		{
-			Code:  http.StatusUnauthorized,
-			Error: "user id is empty",
-		},
 		{
 			Owner: ts.owner,
 			Code:  http.StatusOK,
 			Count: 1,
 		},
 		{
-			Owner: "invalid owner",
+			Owner: uuid.New(),
 			Code:  http.StatusOK,
 			Count: 0,
 		},
@@ -199,7 +184,7 @@ func (ts *testSuite) TestListWorkspaces() {
 		ts.T().Run(fmt.Sprintf("ListWorkspacesTestCases-%d", i), func(t *testing.T) {
 			r := httptest.NewRequest(http.MethodGet, "/api/v1/workspaces", nil)
 			r.Header.Set("Content-Type", "application/json; charset=utf8")
-			r.Header.Set(KeibiUserID, tc.Owner)
+			r.Header.Set(httpserver.XKeibiUserIDHeader, tc.Owner.String())
 			w := httptest.NewRecorder()
 
 			c := echo.New().NewContext(r, w)

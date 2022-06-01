@@ -191,7 +191,6 @@ func getBucketVersioning(ctx context.Context, client *s3.Client, bucket types.Bu
 	output, err := client.GetBucketVersioning(ctx, &s3.GetBucketVersioningInput{
 		Bucket: bucket.Name,
 	})
-
 	if err != nil {
 		return nil, err
 	}
@@ -203,7 +202,6 @@ func getBucketEncryption(ctx context.Context, client *s3.Client, bucket types.Bu
 	output, err := client.GetBucketEncryption(ctx, &s3.GetBucketEncryptionInput{
 		Bucket: bucket.Name,
 	})
-
 	if err != nil {
 		if isErr(err, s3ServerSideEncryptionConfigurationNotFoundError) {
 			return &s3.GetBucketEncryptionOutput{}, nil
@@ -219,7 +217,6 @@ func getBucketPublicAccessBlock(ctx context.Context, client *s3.Client, bucket t
 	output, err := client.GetPublicAccessBlock(ctx, &s3.GetPublicAccessBlockInput{
 		Bucket: bucket.Name,
 	})
-
 	if err != nil {
 		// If the GetPublicAccessBlock is called on buckets which were created before Public Access Block setting was
 		// introduced, sometime it fails with error NoSuchPublicAccessBlockConfiguration
@@ -244,7 +241,6 @@ func getBucketACL(ctx context.Context, client *s3.Client, bucket types.Bucket) (
 	output, err := client.GetBucketAcl(ctx, &s3.GetBucketAclInput{
 		Bucket: bucket.Name,
 	})
-
 	if err != nil {
 		return nil, err
 	}
@@ -256,7 +252,6 @@ func getBucketLifecycle(ctx context.Context, client *s3.Client, bucket types.Buc
 	output, err := client.GetBucketLifecycleConfiguration(ctx, &s3.GetBucketLifecycleConfigurationInput{
 		Bucket: bucket.Name,
 	})
-
 	if err != nil {
 		if isErr(err, s3NoSuchLifecycleConfiguration) {
 			return &s3.GetBucketLifecycleConfigurationOutput{}, nil
@@ -272,7 +267,6 @@ func getBucketLogging(ctx context.Context, client *s3.Client, bucket types.Bucke
 	output, err := client.GetBucketLogging(ctx, &s3.GetBucketLoggingInput{
 		Bucket: bucket.Name,
 	})
-
 	if err != nil {
 		return nil, err
 	}
@@ -284,7 +278,6 @@ func getBucketPolicy(ctx context.Context, client *s3.Client, bucket types.Bucket
 	output, err := client.GetBucketPolicy(ctx, &s3.GetBucketPolicyInput{
 		Bucket: bucket.Name,
 	})
-
 	if err != nil {
 		if isErr(err, s3NoSuchBucketPolicy) {
 			return &s3.GetBucketPolicyOutput{}, nil
@@ -300,7 +293,6 @@ func getBucketReplication(ctx context.Context, client *s3.Client, bucket types.B
 	output, err := client.GetBucketReplication(ctx, &s3.GetBucketReplicationInput{
 		Bucket: bucket.Name,
 	})
-
 	if err != nil {
 		if isErr(err, s3ReplicationConfigurationNotFoundError) {
 			return &s3.GetBucketReplicationOutput{}, nil
@@ -316,7 +308,6 @@ func getObjectLockConfiguration(ctx context.Context, client *s3.Client, bucket t
 	output, err := client.GetObjectLockConfiguration(ctx, &s3.GetObjectLockConfigurationInput{
 		Bucket: bucket.Name,
 	})
-
 	if err != nil {
 		if isErr(err, s3ObjectLockConfigurationNotFoundError) {
 			return &s3.GetObjectLockConfigurationOutput{}, nil
@@ -332,7 +323,6 @@ func getBucketTagging(ctx context.Context, client *s3.Client, bucket types.Bucke
 	output, err := client.GetBucketTagging(ctx, &s3.GetBucketTaggingInput{
 		Bucket: bucket.Name,
 	})
-
 	if err != nil {
 		return nil, err
 	}
@@ -397,6 +387,9 @@ func S3AccessPoint(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 				AccountId: output.Account,
 			}
 			apps, err := client.GetAccessPointPolicyStatus(ctx, appsParams)
+			if err != nil {
+				return nil, err
+			}
 
 			values = append(values, Resource{
 				ARN:  *v.AccessPointArn,

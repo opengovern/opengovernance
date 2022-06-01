@@ -1,6 +1,10 @@
 package api
 
-import "time"
+import (
+	"time"
+
+	"github.com/google/uuid"
+)
 
 type CreateWorkspaceRequest struct {
 	Name        string `json:"name"`
@@ -14,7 +18,7 @@ type CreateWorkspaceResponse struct {
 type WorkspaceResponse struct {
 	ID          string    `json:"id"`
 	Name        string    `json:"name"`
-	OwnerId     string    `json:"ownerId"`
+	OwnerId     uuid.UUID `json:"ownerId"`
 	Domain      string    `json:"domain"`
 	Status      string    `json:"status"`
 	Description string    `json:"description"`

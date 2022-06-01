@@ -1,0 +1,41 @@
+version: "3.8"
+#  this is compose file for local development
+services:
+  db:
+    image: postgres:14.2
+    container_name: local_pgdb
+    restart: always
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: keibi_auth
+      POSTGRES_USER: keibi
+      POSTGRES_PASSWORD: keibi
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - postgres-compose-network
+
+  pgadmin:
+    image: dpage/pgadmin4:6.9
+    container_name: pgadmin4_container
+    restart: always
+    ports:
+      - "5050:80"
+    environment:
+      PGADMIN_DEFAULT_EMAIL: jrudenko@keibi.io
+      PGADMIN_DEFAULT_PASSWORD: pass
+    volumes:
+      - pgadmin:/var/lib/pgadmin
+    depends_on:
+      - db
+    networks:
+      - postgres-compose-network
+
+volumes:
+  pgdata:
+  pgadmin:
+
+networks:
+  postgres-compose-network:
+    driver: bridge

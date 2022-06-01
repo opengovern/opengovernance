@@ -209,6 +209,10 @@ func GetResources(
 		err = fmt.Errorf("invalid auth type: %s", v)
 	}
 
+	if err != nil {
+		return nil, err
+	}
+
 	hamiltonAuthorizer, err := hamiltonAuth.NewAutorestAuthorizerWrapper(authorizer)
 	if err != nil {
 		return nil, err
