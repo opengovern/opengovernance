@@ -9,6 +9,9 @@ import (
 	"os/exec"
 	"time"
 
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
+
 	"gitlab.com/keibiengine/keibi-engine/pkg/cloudservice"
 
 	aws "gitlab.com/keibiengine/keibi-engine/pkg/aws/model"
@@ -28,6 +31,36 @@ import (
 	"go.uber.org/zap"
 	"gopkg.in/Shopify/sarama.v1"
 )
+
+var DoComplianceReportJobsCount = promauto.NewCounterVec(prometheus.CounterOpts{
+	Namespace: "keibi",
+	Subsystem: "compliance-worker",
+	Name:      "do_compliance_report_jobs_total",
+	Help:      "Count of done compliance report jobs in compliance-worker service",
+}, []string{"provider", "status"})
+
+var DoComplianceReportJobsDuration = promauto.NewHistogramVec(prometheus.HistogramOpts{
+	Namespace: "keibi",
+	Subsystem: "compliance-worker",
+	Name:      "do_compliance_report_jobs_duration_seconds",
+	Help:      "Duration of done compliance report jobs in compliance-worker service",
+	Buckets:   []float64{5, 60, 300, 600, 1800, 3600, 7200, 36000},
+}, []string{"provider", "status"})
+
+var DoComplianceReportCleanupJobsCount = promauto.NewCounterVec(prometheus.CounterOpts{
+	Namespace: "keibi",
+	Subsystem: "compliance-cleanup-worker",
+	Name:      "do_compliance_report_cleanup_jobs_total",
+	Help:      "Count of done compliance report cleanup jobs in compliance-cleanup-worker service",
+}, []string{"provider", "status"})
+
+var DoComplianceReportCleanupJobsDuration = promauto.NewHistogramVec(prometheus.HistogramOpts{
+	Namespace: "keibi",
+	Subsystem: "compliance-cleanup-worker",
+	Name:      "do_compliance_report_cleanup_jobs_duration_seconds",
+	Help:      "Duration of done compliance report cleanup jobs in compliance-cleanup-worker service",
+	Buckets:   []float64{5, 60, 300, 600, 1800, 3600, 7200, 36000},
+}, []string{"provider", "status"})
 
 const (
 	cleanupJobTimeout = 5 * time.Minute
@@ -73,8 +106,12 @@ func (j *Job) failed(msg string, args ...interface{}) JobResult {
 }
 
 func (j *Job) Do(vlt vault.SourceConfig, producer sarama.SyncProducer, topic string, config Config, logger *zap.Logger) JobResult {
+	startTime := time.Now().Unix()
+
 	cfg, err := vlt.Read(j.ConfigReg)
 	if err != nil {
+		DoComplianceReportJobsDuration.WithLabelValues(string(j.SourceType), "failure").Observe(float64(time.Now().Unix() - startTime))
+		DoComplianceReportJobsCount.WithLabelValues(string(j.SourceType), "failure").Inc()
 		return j.failed("error: read source config: " + err.Error())
 	}
 
@@ -83,31 +120,43 @@ func (j *Job) Do(vlt vault.SourceConfig, producer sarama.SyncProducer, topic str
 	case source.CloudAWS:
 		creds, err := AWSAccountConfigFromMap(cfg)
 		if err != nil {
+			DoComplianceReportJobsDuration.WithLabelValues(string(j.SourceType), "failure").Observe(float64(time.Now().Unix() - startTime))
+			DoComplianceReportJobsCount.WithLabelValues(string(j.SourceType), "failure").Inc()
 			return j.failed("error: AWSAccountConfigFromMap: " + err.Error())
 		}
 		accountID = creds.AccountID
 
 		err = BuildSpecFile("aws", config.ElasticSearch, accountID)
 		if err != nil {
+			DoComplianceReportJobsDuration.WithLabelValues(string(j.SourceType), "failure").Observe(float64(time.Now().Unix() - startTime))
+			DoComplianceReportJobsCount.WithLabelValues(string(j.SourceType), "failure").Inc()
 			return j.failed("error: BuildSpecFile: " + err.Error())
 		}
 	case source.CloudAzure:
 		creds, err := AzureSubscriptionConfigFromMap(cfg)
 		if err != nil {
+			DoComplianceReportJobsDuration.WithLabelValues(string(j.SourceType), "failure").Observe(float64(time.Now().Unix() - startTime))
+			DoComplianceReportJobsCount.WithLabelValues(string(j.SourceType), "failure").Inc()
 			return j.failed("error: AzureSubscriptionConfigFromMap: " + err.Error())
 		}
 		accountID = creds.SubscriptionID
 
 		err = BuildSpecFile("azure", config.ElasticSearch, accountID)
 		if err != nil {
+			DoComplianceReportJobsDuration.WithLabelValues(string(j.SourceType), "failure").Observe(float64(time.Now().Unix() - startTime))
+			DoComplianceReportJobsCount.WithLabelValues(string(j.SourceType), "failure").Inc()
 			return j.failed("error: BuildSpecFile(azure): " + err.Error())
 		}
 
 		err = BuildSpecFile("azuread", config.ElasticSearch, accountID)
 		if err != nil {
+			DoComplianceReportJobsDuration.WithLabelValues(string(j.SourceType), "failure").Observe(float64(time.Now().Unix() - startTime))
+			DoComplianceReportJobsCount.WithLabelValues(string(j.SourceType), "failure").Inc()
 			return j.failed("error: BuildSpecFile(azuread) " + err.Error())
 		}
 	default:
+		DoComplianceReportJobsDuration.WithLabelValues(string(j.SourceType), "failure").Observe(float64(time.Now().Unix() - startTime))
+		DoComplianceReportJobsCount.WithLabelValues(string(j.SourceType), "failure").Inc()
 		return j.failed("error: invalid source type")
 	}
 
@@ -121,6 +170,8 @@ func (j *Job) Do(vlt vault.SourceConfig, producer sarama.SyncProducer, topic str
 
 	assignments, err := client.GetBenchmarkAssignmentsBySourceId(config.InventoryBaseUrl, j.SourceID)
 	if err != nil {
+		DoComplianceReportJobsDuration.WithLabelValues(string(j.SourceType), "failure").Observe(float64(time.Now().Unix() - startTime))
+		DoComplianceReportJobsCount.WithLabelValues(string(j.SourceType), "failure").Inc()
 		return j.failed("error: Get benchmark assignments by source: " + err.Error())
 	}
 
@@ -129,11 +180,15 @@ func (j *Job) Do(vlt vault.SourceConfig, producer sarama.SyncProducer, topic str
 		benchmakrs = append(benchmakrs, assignment.BenchmarkId)
 	}
 	if err := RunSteampipeCheckBenchmarks(j.SourceType, benchmakrs, resultFileName); err != nil {
+		DoComplianceReportJobsDuration.WithLabelValues(string(j.SourceType), "failure").Observe(float64(time.Now().Unix() - startTime))
+		DoComplianceReportJobsCount.WithLabelValues(string(j.SourceType), "failure").Inc()
 		return j.failed("error: RunSteampipeCheckBenchmarks: " + err.Error())
 	}
 
 	reports, err := ParseReport(resultFileName, j.JobID, j.ReportID, j.SourceID, j.DescribedAt, j.SourceType)
 	if err != nil {
+		DoComplianceReportJobsDuration.WithLabelValues(string(j.SourceType), "failure").Observe(float64(time.Now().Unix() - startTime))
+		DoComplianceReportJobsCount.WithLabelValues(string(j.SourceType), "failure").Inc()
 		return j.failed("error: Parse report: " + err.Error())
 	}
 
@@ -157,6 +212,8 @@ func (j *Job) Do(vlt vault.SourceConfig, producer sarama.SyncProducer, topic str
 						var metadata aws.Metadata
 						err = json.Unmarshal([]byte(dim.Value), &metadata)
 						if err != nil {
+							DoComplianceReportJobsDuration.WithLabelValues(string(j.SourceType), "failure").Observe(float64(time.Now().Unix() - startTime))
+							DoComplianceReportJobsCount.WithLabelValues(string(j.SourceType), "failure").Inc()
 							return j.failed("error: Parse metadata: " + err.Error())
 						}
 						name = metadata.Name
@@ -166,6 +223,8 @@ func (j *Job) Do(vlt vault.SourceConfig, producer sarama.SyncProducer, topic str
 						var metadata azure.Metadata
 						err = json.Unmarshal([]byte(dim.Value), &metadata)
 						if err != nil {
+							DoComplianceReportJobsDuration.WithLabelValues(string(j.SourceType), "failure").Observe(float64(time.Now().Unix() - startTime))
+							DoComplianceReportJobsCount.WithLabelValues(string(j.SourceType), "failure").Inc()
 							return j.failed("error: Parse metadata: " + err.Error())
 						}
 						name = metadata.Name
@@ -274,9 +333,13 @@ func (j *Job) Do(vlt vault.SourceConfig, producer sarama.SyncProducer, topic str
 	}
 	err = kafka.DoSendToKafka(producer, topic, msgs, j.logger)
 	if err != nil {
+		DoComplianceReportJobsDuration.WithLabelValues(string(j.SourceType), "failure").Observe(float64(time.Now().Unix() - startTime))
+		DoComplianceReportJobsCount.WithLabelValues(string(j.SourceType), "failure").Inc()
 		return j.failed("error: SendingToKafka: " + err.Error())
 	}
 
+	DoComplianceReportJobsDuration.WithLabelValues(string(j.SourceType), "successful").Observe(float64(time.Now().Unix() - startTime))
+	DoComplianceReportJobsCount.WithLabelValues(string(j.SourceType), "successful").Inc()
 	return JobResult{
 		JobID:           j.JobID,
 		ReportCreatedAt: j.DescribedAt,
@@ -348,6 +411,8 @@ type ComplianceReportCleanupJob struct {
 }
 
 func (j ComplianceReportCleanupJob) Do(esClient *elasticsearch.Client) error {
+	startTime := time.Now().Unix()
+
 	ctx, cancel := context.WithTimeout(context.Background(), cleanupJobTimeout)
 	defer cancel()
 
@@ -370,18 +435,26 @@ func (j ComplianceReportCleanupJob) Do(esClient *elasticsearch.Client) error {
 		esClient.DeleteByQuery.WithConflicts("proceed"),
 	)
 	if err != nil {
+		DoComplianceReportCleanupJobsDuration.WithLabelValues("failure").Observe(float64(time.Now().Unix() - startTime))
+		DoComplianceReportCleanupJobsCount.WithLabelValues("failure").Inc()
 		return err
 	}
 
 	if len(resp.Failures) != 0 {
 		body, err := json.Marshal(resp)
 		if err != nil {
+			DoComplianceReportCleanupJobsDuration.WithLabelValues("failure").Observe(float64(time.Now().Unix() - startTime))
+			DoComplianceReportCleanupJobsCount.WithLabelValues("failure").Inc()
 			return err
 		}
 
+		DoComplianceReportCleanupJobsDuration.WithLabelValues("failure").Observe(float64(time.Now().Unix() - startTime))
+		DoComplianceReportCleanupJobsCount.WithLabelValues("failure").Inc()
 		return fmt.Errorf("elasticsearch: delete by query: %s", string(body))
 	}
 
 	fmt.Printf("Successfully delete %d reports\n", resp.Deleted)
+	DoComplianceReportCleanupJobsDuration.WithLabelValues("successful").Observe(float64(time.Now().Unix() - startTime))
+	DoComplianceReportCleanupJobsCount.WithLabelValues("successful").Inc()
 	return nil
 }

@@ -8,6 +8,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
+
 	"gitlab.com/keibiengine/keibi-engine/pkg/cloudservice"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/describe/kafka"
@@ -21,6 +24,36 @@ import (
 	"go.uber.org/zap"
 	"gopkg.in/Shopify/sarama.v1"
 )
+
+var DoDescribeJobsCount = promauto.NewCounterVec(prometheus.CounterOpts{
+	Namespace: "keibi",
+	Subsystem: "describe-worker",
+	Name:      "do_describe_jobs_total",
+	Help:      "Count of done describe jobs in describe-worker service",
+}, []string{"provider", "resource-type", "status"})
+
+var DoDescribeJobsDuration = promauto.NewHistogramVec(prometheus.HistogramOpts{
+	Namespace: "keibi",
+	Subsystem: "describe-worker",
+	Name:      "do_describe_jobs_duration_seconds",
+	Help:      "Duration of done describe jobs in describe-worker service",
+	Buckets:   []float64{5, 60, 300, 600, 1800, 3600, 7200, 36000},
+}, []string{"provider", "resource-type", "status"})
+
+var DoDescribeCleanupJobsCount = promauto.NewCounterVec(prometheus.CounterOpts{
+	Namespace: "keibi",
+	Subsystem: "describe-cleanup-worker",
+	Name:      "do_describe_cleanup_jobs_total",
+	Help:      "Count of done describe cleanup jobs in describe-worker service",
+}, []string{"resource-type", "status"})
+
+var DoDescribeCleanupJobsDuration = promauto.NewHistogramVec(prometheus.HistogramOpts{
+	Namespace: "keibi",
+	Subsystem: "describe-cleanup-worker",
+	Name:      "do_describe_cleanup_jobs_duration_seconds",
+	Help:      "Duration of done describe cleanup jobs in describe-worker service",
+	Buckets:   []float64{5, 60, 300, 600, 1800, 3600, 7200, 36000},
+}, []string{"resource-type", "status"})
 
 const (
 	InventorySummaryIndex  = "inventory_summary"
@@ -108,8 +141,11 @@ type DescribeJobResult struct {
 // if any error occurs, The JobResult will indicate that through the Status and Error
 // will be set to the first error that occured.
 func (j DescribeJob) Do(vlt vault.SourceConfig, producer sarama.SyncProducer, topic string, logger *zap.Logger) (r DescribeJobResult) {
+	startTime := time.Now().Unix()
 	defer func() {
 		if err := recover(); err != nil {
+			DoDescribeJobsDuration.WithLabelValues(string(j.SourceType), j.ResourceType, "failure").Observe(float64(time.Now().Unix() - startTime))
+			DoDescribeJobsCount.WithLabelValues(string(j.SourceType), j.ResourceType, "failure").Inc()
 			r = DescribeJobResult{
 				JobID:       j.JobID,
 				ParentJobID: j.ParentJobID,
@@ -126,6 +162,8 @@ func (j DescribeJob) Do(vlt vault.SourceConfig, producer sarama.SyncProducer, to
 	)
 
 	fail := func(err error) {
+		DoDescribeJobsDuration.WithLabelValues(string(j.SourceType), j.ResourceType, "failure").Observe(float64(time.Now().Unix() - startTime))
+		DoDescribeJobsCount.WithLabelValues(string(j.SourceType), j.ResourceType, "failure").Inc()
 		status = api.DescribeResourceJobFailed
 		if firstErr == nil {
 			firstErr = err
@@ -155,6 +193,10 @@ func (j DescribeJob) Do(vlt vault.SourceConfig, producer sarama.SyncProducer, to
 	errMsg := ""
 	if firstErr != nil {
 		errMsg = firstErr.Error()
+	}
+	if status == api.DescribeResourceJobSucceeded {
+		DoDescribeJobsDuration.WithLabelValues(string(j.SourceType), j.ResourceType, "successful").Observe(float64(time.Now().Unix() - startTime))
+		DoDescribeJobsCount.WithLabelValues(string(j.SourceType), j.ResourceType, "successful").Inc()
 	}
 
 	return DescribeJobResult{
@@ -506,6 +548,7 @@ type DescribeCleanupJob struct {
 }
 
 func (j DescribeCleanupJob) Do(esClient *elasticsearch.Client) error {
+	startTime := time.Now().Unix()
 	ctx, cancel := context.WithTimeout(context.Background(), cleanupJobTimeout)
 	defer cancel()
 
@@ -531,6 +574,8 @@ func (j DescribeCleanupJob) Do(esClient *elasticsearch.Client) error {
 		esClient.DeleteByQuery.WithConflicts("proceed"),
 	)
 	if err != nil {
+		DoDescribeCleanupJobsDuration.WithLabelValues(j.ResourceType, "failure").Observe(float64(time.Now().Unix() - startTime))
+		DoDescribeCleanupJobsCount.WithLabelValues(j.ResourceType, "failure").Inc()
 		return err
 	}
 
@@ -540,9 +585,13 @@ func (j DescribeCleanupJob) Do(esClient *elasticsearch.Client) error {
 			return err
 		}
 
+		DoDescribeCleanupJobsDuration.WithLabelValues(j.ResourceType, "failure").Observe(float64(time.Now().Unix() - startTime))
+		DoDescribeCleanupJobsCount.WithLabelValues(j.ResourceType, "failure").Inc()
 		return fmt.Errorf("elasticsearch: delete by query: %s", string(body))
 	}
 
 	fmt.Printf("Successfully delete %d resources of type %s\n", resp.Deleted, j.ResourceType)
+	DoDescribeCleanupJobsDuration.WithLabelValues(j.ResourceType, "successful").Observe(float64(time.Now().Unix() - startTime))
+	DoDescribeCleanupJobsCount.WithLabelValues(j.ResourceType, "successful").Inc()
 	return nil
 }

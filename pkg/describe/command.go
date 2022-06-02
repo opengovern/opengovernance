@@ -44,6 +44,8 @@ var (
 	ElasticSearchPassword = os.Getenv("ES_PASSWORD")
 
 	HttpServerAddress = os.Getenv("HTTP_ADDRESS")
+
+	PrometheusPushAddress = os.Getenv("PROMETHEUS_PUSH_ADDRESS")
 )
 
 func SchedulerCommand() *cobra.Command {
@@ -138,6 +140,7 @@ func WorkerCommand() *cobra.Command {
 				VaultCaPath,
 				VaultUseTLS,
 				logger,
+				PrometheusPushAddress,
 			)
 			if err != nil {
 				return err
@@ -187,6 +190,7 @@ func CleanupWorkerCommand() *cobra.Command {
 				ElasticSearchUsername,
 				ElasticSearchPassword,
 				logger,
+				PrometheusPushAddress,
 			)
 			if err != nil {
 				return err
