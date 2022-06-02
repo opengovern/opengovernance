@@ -53,6 +53,7 @@ type Config struct {
 	Kafka            KafkaConfig
 	Vault            VaultConfig
 	InventoryBaseUrl string
+	PrometheusPushAddress string
 }
 
 func WorkerCommand() *cobra.Command {
@@ -81,6 +82,8 @@ func WorkerCommand() *cobra.Command {
 
 	config.InventoryBaseUrl = os.Getenv("INVENTORY_BASE_URL")
 
+	config.PrometheusPushAddress = os.Getenv("PROMETHEUS_PUSH_ADDRESS")
+
 	cmd := &cobra.Command{
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			switch {
@@ -103,6 +106,7 @@ func WorkerCommand() *cobra.Command {
 				JobsQueueName,
 				ResultsQueueName,
 				logger,
+				config.PrometheusPushAddress,
 			)
 			if err != nil {
 				return err

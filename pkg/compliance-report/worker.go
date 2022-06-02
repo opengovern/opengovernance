@@ -3,6 +3,7 @@ package compliance_report
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/prometheus/client_golang/prometheus/push"
 	"strings"
 
 	"github.com/hashicorp/vault/api/auth/kubernetes"
@@ -21,6 +22,7 @@ type Worker struct {
 	kfkProducer    sarama.SyncProducer
 	kfkTopic       string
 	logger         *zap.Logger
+	pusher         *push.Pusher
 }
 
 func InitializeWorker(
@@ -28,6 +30,7 @@ func InitializeWorker(
 	config Config,
 	complianceReportJobQueue, complianceReportJobResultQueue string,
 	logger *zap.Logger,
+	prometheusPushAddress string,
 ) (w *Worker, err error) {
 	if id == "" {
 		return nil, fmt.Errorf("'id' must be set to a non empty string")
@@ -94,6 +97,12 @@ func InitializeWorker(
 
 	fmt.Println("Connected to vault:", config.Vault.Address)
 	w.vault = v
+
+	w.pusher = push.New(prometheusPushAddress, "compliance-report")
+	w.pusher.Collector(DoComplianceReportJobsCount).
+		Collector(DoComplianceReportJobsDuration).
+		Collector(DoComplianceReportCleanupJobsCount).
+		Collector(DoComplianceReportCleanupJobsDuration)
 
 	return w, nil
 }
