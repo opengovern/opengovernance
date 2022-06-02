@@ -485,6 +485,13 @@ definitions:
         - sourceID
         type: string
     type: object
+  api.ResourceTypeDetail:
+    properties:
+      resourceTypeARN:
+        type: string
+      resourceTypeName:
+        type: string
+    type: object
   api.ResultCompliancy:
     properties:
       category:
@@ -2587,7 +2594,7 @@ paths:
           description: OK
           schema:
             items:
-              type: string
+              $ref: '#/definitions/api.ResourceTypeDetail'
             type: array
       summary: get resource type by provider
       tags:

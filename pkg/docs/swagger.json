@@ -2527,7 +2527,7 @@
                         "schema": {
                             "type": "array",
                             "items": {
-                                "type": "string"
+                                "$ref": "#/definitions/api.ResourceTypeDetail"
                             }
                         }
                     }
@@ -3520,6 +3520,17 @@
                         "location",
                         "sourceID"
                     ]
+                }
+            }
+        },
+        "api.ResourceTypeDetail": {
+            "type": "object",
+            "properties": {
+                "resourceTypeARN": {
+                    "type": "string"
+                },
+                "resourceTypeName": {
+                    "type": "string"
                 }
             }
         },

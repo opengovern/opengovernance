@@ -265,7 +265,9 @@ func doDescribeAWS(ctx context.Context, job DescribeJob, config map[string]inter
 				serviceCount[s]++
 			}
 			if s := cloudservice.CategoryByResourceType(resource.Type); s != "" {
-				categoryCount[s]++
+				if cloudservice.IsCommonByResourceType(resource.Type) {
+					categoryCount[s]++
+				}
 			}
 		}
 	}
@@ -424,7 +426,9 @@ func doDescribeAzure(ctx context.Context, job DescribeJob, config map[string]int
 			serviceCount[s]++
 		}
 		if s := cloudservice.CategoryByResourceType(resource.Type); s != "" {
-			categoryCount[s]++
+			if cloudservice.IsCommonByResourceType(resource.Type) {
+				categoryCount[s]++
+			}
 		}
 	}
 
