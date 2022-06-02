@@ -68,7 +68,7 @@ func start(ctx context.Context) error {
 		return err
 	}
 
-	dsn := fmt.Sprintf(`hostSuffix=%s port=%s user=%s password=%s dbname=%s sslmode=disable TimeZone=GMT`,
+	dsn := fmt.Sprintf(`host=%s port=%s user=%s password=%s dbname=%s sslmode=disable TimeZone=GMT`,
 		postgreSQLHost,
 		postgreSQLPort,
 		postgreSQLUser,
