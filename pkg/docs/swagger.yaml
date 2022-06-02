@@ -1958,11 +1958,12 @@ paths:
         type: string
       - description: Common filter
         enum:
-        - true
-        - false
+        - "true"
+        - "false"
+        - all
         in: query
         name: common
-        type: boolean
+        type: string
       produces:
       - application/json
       - text/csv
@@ -1999,11 +2000,12 @@ paths:
         type: string
       - description: Common filter
         enum:
-        - true
-        - false
+        - "true"
+        - "false"
+        - all
         in: query
         name: common
-        type: boolean
+        type: string
       produces:
       - application/json
       - text/csv
@@ -2040,11 +2042,12 @@ paths:
         type: string
       - description: Common filter
         enum:
-        - true
-        - false
+        - "true"
+        - "false"
+        - all
         in: query
         name: common
-        type: boolean
+        type: string
       produces:
       - application/json
       - text/csv
