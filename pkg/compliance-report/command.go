@@ -48,11 +48,11 @@ type KafkaConfig struct {
 }
 
 type Config struct {
-	RabbitMQ         RabbitMQConfig
-	ElasticSearch    ElasticSearchConfig
-	Kafka            KafkaConfig
-	Vault            VaultConfig
-	InventoryBaseUrl string
+	RabbitMQ              RabbitMQConfig
+	ElasticSearch         ElasticSearchConfig
+	Kafka                 KafkaConfig
+	Vault                 VaultConfig
+	InventoryBaseUrl      string
 	PrometheusPushAddress string
 }
 

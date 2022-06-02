@@ -4,9 +4,10 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
-	"github.com/prometheus/client_golang/prometheus/push"
 	"net/http"
 	"strings"
+
+	"github.com/prometheus/client_golang/prometheus/push"
 
 	"github.com/elastic/go-elasticsearch/v7"
 	"github.com/hashicorp/vault/api/auth/kubernetes"
@@ -192,7 +193,7 @@ type CleanupWorker struct {
 	cleanupJobQueue queue.Interface
 	esClient        *elasticsearch.Client
 	logger          *zap.Logger
-	pusher         *push.Pusher
+	pusher          *push.Pusher
 }
 
 func InitializeCleanupWorker(
@@ -253,7 +254,6 @@ func InitializeCleanupWorker(
 	w.pusher = push.New(prometheusPushAddress, "describe-worker")
 	w.pusher.Collector(DoDescribeJobsCount).
 		Collector(DoDescribeJobsDuration)
-
 
 	return w, nil
 }

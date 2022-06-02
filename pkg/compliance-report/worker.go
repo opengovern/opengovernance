@@ -3,8 +3,9 @@ package compliance_report
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/prometheus/client_golang/prometheus/push"
 	"strings"
+
+	"github.com/prometheus/client_golang/prometheus/push"
 
 	"github.com/hashicorp/vault/api/auth/kubernetes"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/queue"

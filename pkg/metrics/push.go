@@ -7,7 +7,7 @@ import (
 
 type Push struct {
 	Address string
-	Job string
+	Job     string
 
 	Pusher *push.Pusher
 }
