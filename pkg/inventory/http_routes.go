@@ -2104,14 +2104,14 @@ func (h *HttpHandler) GetLocations(ctx echo.Context) error {
 // @Produce      json,text/csv
 // @Param        request  body      api.GetResourcesRequest  true   "Request Body"
 // @Param        accept   header    string                   true   "Accept header"  Enums(application/json,text/csv)
-// @Param        common   query     bool                     false  "Common filter"  Enums(true,false)
+// @Param        common   query     string                     false  "Common filter"  Enums(true,false,all)
 // @Success      200      {object}  api.GetAzureResourceResponse
 // @Router       /inventory/api/v1/resources/azure [post]
 func (h *HttpHandler) GetAzureResources(ectx echo.Context) error {
 	provider := api.SourceCloudAzure
 	commonQuery := ectx.QueryParam("common")
 	var common *bool
-	if commonQuery == "true" {
+	if commonQuery == "" || commonQuery == "true" {
 		v := true
 		common = &v
 	} else if commonQuery == "false" {
@@ -2138,14 +2138,14 @@ func (h *HttpHandler) GetAzureResources(ectx echo.Context) error {
 // @Produce      json,text/csv
 // @Param        request  body      api.GetResourcesRequest  true   "Request Body"
 // @Param        accept   header    string                   true   "Accept header"  Enums(application/json,text/csv)
-// @Param        common   query     bool                     false  "Common filter"  Enums(true,false)
+// @Param        common   query     string                     false  "Common filter"  Enums(true,false,all)
 // @Success      200      {object}  api.GetAWSResourceResponse
 // @Router       /inventory/api/v1/resources/aws [post]
 func (h *HttpHandler) GetAWSResources(ectx echo.Context) error {
 	provider := api.SourceCloudAWS
 	commonQuery := ectx.QueryParam("common")
 	var common *bool
-	if commonQuery == "true" {
+	if commonQuery == "" || commonQuery == "true" {
 		v := true
 		common = &v
 	} else if commonQuery == "false" {
@@ -2173,13 +2173,13 @@ func (h *HttpHandler) GetAWSResources(ectx echo.Context) error {
 // @Produce      json,text/csv
 // @Param        request  body      api.GetResourcesRequest  true   "Request Body"
 // @Param        accept   header    string                   true   "Accept header"  Enums(application/json,text/csv)
-// @Param        common   query     bool                     false  "Common filter"  Enums(true,false)
+// @Param        common   query     string                     false  "Common filter"  Enums(true,false,all)
 // @Success      200      {object}  api.GetResourcesResponse
 // @Router       /inventory/api/v1/resources [post]
 func (h *HttpHandler) GetAllResources(ectx echo.Context) error {
 	commonQuery := ectx.QueryParam("common")
 	var common *bool
-	if commonQuery == "true" {
+	if commonQuery == "" || commonQuery == "true" {
 		v := true
 		common = &v
 	} else if commonQuery == "false" {

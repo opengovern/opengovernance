@@ -1588,10 +1588,11 @@ const docTemplate = `{
                     },
                     {
                         "enum": [
-                            true,
-                            false
+                            "true",
+                            "false",
+                            "all"
                         ],
-                        "type": "boolean",
+                        "type": "string",
                         "description": "Common filter",
                         "name": "common",
                         "in": "query"
@@ -1644,10 +1645,11 @@ const docTemplate = `{
                     },
                     {
                         "enum": [
-                            true,
-                            false
+                            "true",
+                            "false",
+                            "all"
                         ],
-                        "type": "boolean",
+                        "type": "string",
                         "description": "Common filter",
                         "name": "common",
                         "in": "query"
@@ -1700,10 +1702,11 @@ const docTemplate = `{
                     },
                     {
                         "enum": [
-                            true,
-                            false
+                            "true",
+                            "false",
+                            "all"
                         ],
-                        "type": "boolean",
+                        "type": "string",
                         "description": "Common filter",
                         "name": "common",
                         "in": "query"
