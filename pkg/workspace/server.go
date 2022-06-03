@@ -11,6 +11,7 @@ import (
 	apimeta "github.com/fluxcd/pkg/apis/meta"
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
+	authapi "gitlab.com/keibiengine/keibi-engine/pkg/auth/api"
 	"gitlab.com/keibiengine/keibi-engine/pkg/auth/client"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpserver"
 	"gitlab.com/keibiengine/keibi-engine/pkg/workspace/api"
@@ -121,8 +122,17 @@ func (s *Server) handleWorkspace(workspace *Workspace) error {
 		// check the status of helm release
 		if meta.IsStatusConditionTrue(helmRelease.Status.Conditions, apimeta.ReadyCondition) {
 			// when the helm release installed successfully, set the rolebinding
-			if err := client.SetRoleBinding(s.cfg.AuthBaseUrl, workspace.OwnerId, workspace.Name); err != nil {
-				return fmt.Errorf("set role binding: %w", err)
+			authClient := client.NewAuthServiceClient(s.cfg.AuthBaseUrl)
+			authCtx := &client.Context{
+				UserID:        workspace.OwnerId,
+				UserRole:      authapi.AdminRole,
+				WorkspaceName: workspace.Name,
+			}
+			if err := authClient.PutRoleBinding(authCtx, &authapi.PutRoleBindingRequest{
+				UserID: workspace.OwnerId,
+				Role:   authapi.AdminRole,
+			}); err != nil {
+				return fmt.Errorf("put role binding: %w", err)
 			}
 
 			newStatus = StatusProvisioned
