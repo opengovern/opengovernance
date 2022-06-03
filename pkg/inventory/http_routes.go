@@ -8,7 +8,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
 	"mime"
 	"net/http"
 	"sort"
@@ -26,11 +25,8 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/steampipe"
 
 	"github.com/google/uuid"
-	"github.com/hashicorp/go-hclog"
 	"github.com/jackc/pgx/v4"
 	"github.com/labstack/echo/v4"
-	"github.com/turbot/steampipe-plugin-sdk/logging"
-	"github.com/turbot/steampipe-plugin-sdk/plugin/context_key"
 	compliance_report "gitlab.com/keibiengine/keibi-engine/pkg/compliance-report"
 	compliance_es "gitlab.com/keibiengine/keibi-engine/pkg/compliance-report/es"
 	pagination "gitlab.com/keibiengine/keibi-engine/pkg/internal/api"
@@ -43,15 +39,6 @@ const EsFetchPageSize = 10000
 var (
 	ErrInternalServer = errors.New("internal server error")
 )
-
-func extractContext(ctx echo.Context) context.Context {
-	cc := ctx.Request().Context()
-	logger := logging.NewLogger(&hclog.LoggerOptions{DisableTime: true})
-	log.SetOutput(logger.StandardWriter(&hclog.StandardLoggerOptions{InferLevels: true}))
-	log.SetPrefix("")
-	log.SetFlags(0)
-	return context.WithValue(cc, context_key.Logger, logger)
-}
 
 func (h *HttpHandler) Register(e *echo.Echo) {
 	v1 := e.Group("/api/v1")
@@ -116,6 +103,18 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 
 	v1.GET("/benchmarks/count", h.CountBenchmarks)
 	v1.GET("/policies/count", h.CountPolicies)
+}
+
+func bindValidate(ctx echo.Context, i interface{}) error {
+	if err := ctx.Bind(i); err != nil {
+		return err
+	}
+
+	if err := ctx.Validate(i); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // GetBenchmarksInTime godoc
@@ -1783,12 +1782,9 @@ func (h *HttpHandler) GetResultPolicies(ctx echo.Context) error {
 // @Produce      json
 // @Param        request  body  api.GetResourceRequest  true  "Request Body"
 // @Router       /inventory/api/v1/resource [post]
-func (h *HttpHandler) GetResource(ectx echo.Context) error {
-	ctx := ectx.(*Context)
-	cc := extractContext(ctx)
-
-	req := &api.GetResourceRequest{}
-	if err := ctx.BindValidate(req); err != nil {
+func (h *HttpHandler) GetResource(ctx echo.Context) error {
+	var req api.GetResourceRequest
+	if err := bindValidate(ctx, &req); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "Invalid request")
 	}
 
@@ -1812,7 +1808,7 @@ func (h *HttpHandler) GetResource(ectx echo.Context) error {
 	}
 
 	var response api.GenericQueryResponse
-	err = h.client.Search(cc, index, string(queryBytes), &response)
+	err = h.client.Search(ctx.Request().Context(), index, string(queryBytes), &response)
 	if err != nil {
 		return err
 	}
@@ -1893,12 +1889,10 @@ func (h *HttpHandler) GetResource(ectx echo.Context) error {
 // @Param        request  body      api.ListQueryRequest  true  "Request Body"
 // @Success      200      {object}  []api.SmartQueryItem
 // @Router       /inventory/api/v1/query [get]
-func (h *HttpHandler) ListQueries(ectx echo.Context) error {
-	ctx := ectx.(*Context)
-
-	req := &api.ListQueryRequest{}
-	if err := ctx.BindValidate(req); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+func (h *HttpHandler) ListQueries(ctx echo.Context) error {
+	var req api.ListQueryRequest
+	if err := bindValidate(ctx, &req); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
 	}
 
 	var search *string
@@ -1937,12 +1931,10 @@ func (h *HttpHandler) ListQueries(ectx echo.Context) error {
 // @Param        request  body      api.ListQueryRequest  true  "Request Body"
 // @Success      200      {object}  int
 // @Router       /inventory/api/v1/query/count [get]
-func (h *HttpHandler) CountQueries(ectx echo.Context) error {
-	ctx := ectx.(*Context)
-
-	req := &api.ListQueryRequest{}
-	if err := ctx.BindValidate(req); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+func (h *HttpHandler) CountQueries(ctx echo.Context) error {
+	var req api.ListQueryRequest
+	if err := bindValidate(ctx, &req); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
 	}
 
 	var search *string
@@ -1970,17 +1962,15 @@ func (h *HttpHandler) CountQueries(ectx echo.Context) error {
 // @Param        accept   header    string               true  "Accept header"  Enums(application/json,text/csv)
 // @Success      200      {object}  api.RunQueryResponse
 // @Router       /inventory/api/v1/query/{queryId} [post]
-func (h *HttpHandler) RunQuery(ectx echo.Context) error {
-	ctx := ectx.(*Context)
-
-	req := &api.RunQueryRequest{}
-	if err := ctx.BindValidate(req); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+func (h *HttpHandler) RunQuery(ctx echo.Context) error {
+	var req api.RunQueryRequest
+	if err := bindValidate(ctx, &req); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
 	}
 
 	queryId := ctx.Param("queryId")
 
-	if accepts := ectx.Request().Header.Get("accept"); accepts != "" {
+	if accepts := ctx.Request().Header.Get("accept"); accepts != "" {
 		mediaType, _, err := mime.ParseMediaType(accepts)
 		if err == nil && mediaType == "text/csv" {
 			req.Page = pagination.PageRequest{
@@ -1988,8 +1978,8 @@ func (h *HttpHandler) RunQuery(ectx echo.Context) error {
 				Size:       5000,
 			}
 
-			ectx.Response().Header().Set(echo.HeaderContentType, "text/csv")
-			ectx.Response().WriteHeader(http.StatusOK)
+			ctx.Response().Header().Set(echo.HeaderContentType, "text/csv")
+			ctx.Response().WriteHeader(http.StatusOK)
 
 			query, err := h.db.GetQuery(queryId)
 			if err != nil {
@@ -1999,7 +1989,7 @@ func (h *HttpHandler) RunQuery(ectx echo.Context) error {
 				return err
 			}
 
-			resp, err := h.RunSmartQuery(query.Query, req)
+			resp, err := h.RunSmartQuery(query.Query, &req)
 			if err != nil {
 				return err
 			}
@@ -2020,7 +2010,7 @@ func (h *HttpHandler) RunQuery(ectx echo.Context) error {
 				}
 			}
 
-			ectx.Response().Flush()
+			ctx.Response().Flush()
 			return nil
 		}
 	}
@@ -2032,7 +2022,7 @@ func (h *HttpHandler) RunQuery(ectx echo.Context) error {
 		}
 		return err
 	}
-	resp, err := h.RunSmartQuery(query.Query, req)
+	resp, err := h.RunSmartQuery(query.Query, &req)
 	if err != nil {
 		return err
 	}
@@ -2048,7 +2038,6 @@ func (h *HttpHandler) RunQuery(ectx echo.Context) error {
 // @Success      200       {object}  []api.LocationByProviderResponse
 // @Router       /inventory/api/v1/locations/{provider} [get]
 func (h *HttpHandler) GetLocations(ctx echo.Context) error {
-	cc := extractContext(ctx)
 	provider := ctx.Param("provider")
 
 	var locations []api.LocationByProviderResponse
@@ -2060,7 +2049,7 @@ func (h *HttpHandler) GetLocations(ctx echo.Context) error {
 		}
 
 		for regions.HasNext() {
-			regions, err := regions.NextPage(cc)
+			regions, err := regions.NextPage(ctx.Request().Context())
 			if err != nil {
 				return err
 			}
@@ -2080,7 +2069,7 @@ func (h *HttpHandler) GetLocations(ctx echo.Context) error {
 		}
 
 		for locs.HasNext() {
-			locpage, err := locs.NextPage(cc)
+			locpage, err := locs.NextPage(ctx.Request().Context())
 			if err != nil {
 				return err
 			}
@@ -2109,9 +2098,9 @@ func (h *HttpHandler) GetLocations(ctx echo.Context) error {
 // @Param        common   query     string                   false  "Common filter"  Enums(true,false,all)
 // @Success      200      {object}  api.GetAzureResourceResponse
 // @Router       /inventory/api/v1/resources/azure [post]
-func (h *HttpHandler) GetAzureResources(ectx echo.Context) error {
+func (h *HttpHandler) GetAzureResources(ctx echo.Context) error {
 	provider := api.SourceCloudAzure
-	commonQuery := ectx.QueryParam("common")
+	commonQuery := ctx.QueryParam("common")
 	var common *bool
 	if commonQuery == "" || commonQuery == "true" {
 		v := true
@@ -2121,13 +2110,13 @@ func (h *HttpHandler) GetAzureResources(ectx echo.Context) error {
 		common = &v
 	}
 
-	if accepts := ectx.Request().Header.Get("accept"); accepts != "" {
+	if accepts := ctx.Request().Header.Get("accept"); accepts != "" {
 		mediaType, _, err := mime.ParseMediaType(accepts)
 		if err == nil && mediaType == "text/csv" {
-			return h.GetResourcesCSV(ectx, &provider, common)
+			return h.GetResourcesCSV(ctx, &provider, common)
 		}
 	}
-	return h.GetResources(ectx, &provider, common)
+	return h.GetResources(ctx, &provider, common)
 }
 
 // GetAWSResources godoc
@@ -2143,9 +2132,9 @@ func (h *HttpHandler) GetAzureResources(ectx echo.Context) error {
 // @Param        common   query     string                   false  "Common filter"  Enums(true,false,all)
 // @Success      200      {object}  api.GetAWSResourceResponse
 // @Router       /inventory/api/v1/resources/aws [post]
-func (h *HttpHandler) GetAWSResources(ectx echo.Context) error {
+func (h *HttpHandler) GetAWSResources(ctx echo.Context) error {
 	provider := api.SourceCloudAWS
-	commonQuery := ectx.QueryParam("common")
+	commonQuery := ctx.QueryParam("common")
 	var common *bool
 	if commonQuery == "" || commonQuery == "true" {
 		v := true
@@ -2155,13 +2144,13 @@ func (h *HttpHandler) GetAWSResources(ectx echo.Context) error {
 		common = &v
 	}
 
-	if accepts := ectx.Request().Header.Get("accept"); accepts != "" {
+	if accepts := ctx.Request().Header.Get("accept"); accepts != "" {
 		mediaType, _, err := mime.ParseMediaType(accepts)
 		if err == nil && mediaType == "text/csv" {
-			return h.GetResourcesCSV(ectx, &provider, common)
+			return h.GetResourcesCSV(ctx, &provider, common)
 		}
 	}
-	return h.GetResources(ectx, &provider, common)
+	return h.GetResources(ctx, &provider, common)
 }
 
 // GetAllResources godoc
@@ -2178,8 +2167,8 @@ func (h *HttpHandler) GetAWSResources(ectx echo.Context) error {
 // @Param        common   query     string                   false  "Common filter"  Enums(true,false,all)
 // @Success      200      {object}  api.GetResourcesResponse
 // @Router       /inventory/api/v1/resources [post]
-func (h *HttpHandler) GetAllResources(ectx echo.Context) error {
-	commonQuery := ectx.QueryParam("common")
+func (h *HttpHandler) GetAllResources(ctx echo.Context) error {
+	commonQuery := ctx.QueryParam("common")
 	var common *bool
 	if commonQuery == "" || commonQuery == "true" {
 		v := true
@@ -2189,13 +2178,13 @@ func (h *HttpHandler) GetAllResources(ectx echo.Context) error {
 		common = &v
 	}
 
-	if accepts := ectx.Request().Header.Get("accept"); accepts != "" {
+	if accepts := ctx.Request().Header.Get("accept"); accepts != "" {
 		mediaType, _, err := mime.ParseMediaType(accepts)
 		if err == nil && mediaType == "text/csv" {
-			return h.GetResourcesCSV(ectx, nil, common)
+			return h.GetResourcesCSV(ctx, nil, common)
 		}
 	}
-	return h.GetResources(ectx, nil, common)
+	return h.GetResources(ctx, nil, common)
 }
 
 func (h *HttpHandler) RunSmartQuery(query string,
@@ -2242,17 +2231,13 @@ func (h *HttpHandler) RunSmartQuery(query string,
 	return &resp, nil
 }
 
-func (h *HttpHandler) GetResources(ectx echo.Context, provider *api.SourceType, commonFilter *bool) error {
-	var err error
-	cc := ectx.(*Context)
-	req := &api.GetResourcesRequest{}
-	if err := cc.BindValidate(req); err != nil {
+func (h *HttpHandler) GetResources(ctx echo.Context, provider *api.SourceType, commonFilter *bool) error {
+	var req api.GetResourcesRequest
+	if err := bindValidate(ctx, &req); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
 	}
 
-	ctx := extractContext(ectx)
-
-	res, err := api.QueryResources(ctx, h.client, req, provider, commonFilter)
+	res, err := api.QueryResources(ctx.Request().Context(), h.client, &req, provider, commonFilter)
 	if err != nil {
 		return err
 	}
@@ -2273,7 +2258,7 @@ func (h *HttpHandler) GetResources(ectx echo.Context, provider *api.SourceType, 
 		for idx := range res.AllResources {
 			res.AllResources[idx].SourceName = uniqueSourceIds[res.AllResources[idx].SourceID]
 		}
-		return cc.JSON(http.StatusOK, api.GetResourcesResponse{
+		return ctx.JSON(http.StatusOK, api.GetResourcesResponse{
 			Resources: res.AllResources,
 			Page:      res.Page,
 		})
@@ -2293,7 +2278,7 @@ func (h *HttpHandler) GetResources(ectx echo.Context, provider *api.SourceType, 
 		for _, resource := range res.AWSResources {
 			resource.AccountName = uniqueSourceIds[resource.AccountID]
 		}
-		return cc.JSON(http.StatusOK, api.GetAWSResourceResponse{
+		return ctx.JSON(http.StatusOK, api.GetAWSResourceResponse{
 			Resources: res.AWSResources,
 			Page:      res.Page,
 		})
@@ -2313,7 +2298,7 @@ func (h *HttpHandler) GetResources(ectx echo.Context, provider *api.SourceType, 
 		for _, resource := range res.AzureResources {
 			resource.SubscriptionName = uniqueSourceIds[resource.SubscriptionID]
 		}
-		return cc.JSON(http.StatusOK, api.GetAzureResourceResponse{
+		return ctx.JSON(http.StatusOK, api.GetAzureResourceResponse{
 			Resources: res.AzureResources,
 			Page:      res.Page,
 		})
@@ -2332,13 +2317,9 @@ func Csv(record []string, w io.Writer) error {
 	return nil
 }
 
-func (h *HttpHandler) GetResourcesCSV(ectx echo.Context, provider *api.SourceType, commonFilter *bool) error {
-	var err error
-	cc := ectx.(*Context)
-	ctx := extractContext(ectx)
-
-	req := &api.GetResourcesRequest{}
-	if err := cc.BindValidate(req); err != nil {
+func (h *HttpHandler) GetResourcesCSV(ctx echo.Context, provider *api.SourceType, commonFilter *bool) error {
+	var req api.GetResourcesRequest
+	if err := bindValidate(ctx, &req); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
 	}
 	req.Page = pagination.PageRequest{
@@ -2346,46 +2327,46 @@ func (h *HttpHandler) GetResourcesCSV(ectx echo.Context, provider *api.SourceTyp
 		Size:       5000,
 	}
 
-	ectx.Response().Header().Set(echo.HeaderContentType, "text/csv")
-	ectx.Response().WriteHeader(http.StatusOK)
+	ctx.Response().Header().Set(echo.HeaderContentType, "text/csv")
+	ctx.Response().WriteHeader(http.StatusOK)
 
-	res, err := api.QueryResources(ctx, h.client, req, provider, commonFilter)
+	res, err := api.QueryResources(ctx.Request().Context(), h.client, &req, provider, commonFilter)
 	if err != nil {
 		return err
 	}
 
 	if provider == nil {
-		err := Csv(api.AllResource{}.ToCSVHeaders(), cc.Response())
+		err := Csv(api.AllResource{}.ToCSVHeaders(), ctx.Response())
 		if err != nil {
 			return err
 		}
 
 		for _, resource := range res.AllResources {
-			err := Csv(resource.ToCSVRecord(), cc.Response())
+			err := Csv(resource.ToCSVRecord(), ctx.Response())
 			if err != nil {
 				return err
 			}
 		}
 	} else if *provider == api.SourceCloudAWS {
-		err := Csv(api.AWSResource{}.ToCSVHeaders(), cc.Response())
+		err := Csv(api.AWSResource{}.ToCSVHeaders(), ctx.Response())
 		if err != nil {
 			return err
 		}
 
 		for _, resource := range res.AWSResources {
-			err := Csv(resource.ToCSVRecord(), cc.Response())
+			err := Csv(resource.ToCSVRecord(), ctx.Response())
 			if err != nil {
 				return err
 			}
 		}
 	} else if *provider == api.SourceCloudAzure {
-		err := Csv(api.AzureResource{}.ToCSVHeaders(), cc.Response())
+		err := Csv(api.AzureResource{}.ToCSVHeaders(), ctx.Response())
 		if err != nil {
 			return err
 		}
 
 		for _, resource := range res.AzureResources {
-			err := Csv(resource.ToCSVRecord(), cc.Response())
+			err := Csv(resource.ToCSVRecord(), ctx.Response())
 			if err != nil {
 				return err
 			}
@@ -2393,7 +2374,7 @@ func (h *HttpHandler) GetResourcesCSV(ectx echo.Context, provider *api.SourceTyp
 	} else {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid provider")
 	}
-	cc.Response().Flush()
+	ctx.Response().Flush()
 	return nil
 }
 
@@ -2410,15 +2391,13 @@ func (h *HttpHandler) GetResourcesCSV(ectx echo.Context, provider *api.SourceTyp
 // @Router       /inventory/api/v1/reports/compliance/{source_id} [get]
 // @Router       /inventory/api/v1/reports/compliance/{source_id}/{report_id} [get]
 func (h *HttpHandler) GetComplianceReports(ctx echo.Context) error {
-	cc := ctx.(*Context)
-
 	sourceUUID, err := uuid.Parse(ctx.Param("sourceId"))
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid source uuid")
 	}
 
-	req := &api.GetComplianceReportRequest{}
-	if err := cc.BindValidate(req); err != nil {
+	var req api.GetComplianceReportRequest
+	if err := bindValidate(ctx, &req); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
 	}
 
@@ -2478,18 +2457,6 @@ func (h *HttpHandler) GetComplianceReports(ctx echo.Context) error {
 	}
 
 	return ctx.JSON(http.StatusOK, resp)
-}
-
-func (c *Context) BindValidate(i interface{}) error {
-	if err := c.Bind(i); err != nil {
-		return err
-	}
-
-	if err := c.Validate(i); err != nil {
-		return err
-	}
-
-	return nil
 }
 
 // CreateBenchmarkAssignment godoc

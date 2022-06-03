@@ -33,6 +33,7 @@ import (
 	api2 "gitlab.com/keibiengine/keibi-engine/pkg/describe/api"
 	pagination "gitlab.com/keibiengine/keibi-engine/pkg/internal/api"
 	idocker "gitlab.com/keibiengine/keibi-engine/pkg/internal/dockertest"
+	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpserver"
 	"gitlab.com/keibiengine/keibi-engine/pkg/inventory/api"
 	"gitlab.com/keibiengine/keibi-engine/pkg/inventory/client"
 	"gorm.io/driver/postgres"
@@ -229,7 +230,7 @@ func (s *HttpHandlerSuite) SetupSuite() {
 		idocker.GetDockerHost(), steampipeResource.GetPort("9193/tcp"), "steampipe", "steampipe", "abcd",
 		s.describe.MockServer.URL,
 	)
-	s.router, _ = InitializeRouter(s.handler)
+	s.router = httpserver.Register(nil, s.handler)
 }
 
 func (s *HttpHandlerSuite) BeforeTest(suiteName, testName string) {

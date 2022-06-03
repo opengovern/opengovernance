@@ -19,6 +19,7 @@ import (
 	"github.com/ory/dockertest/v3"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
+	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpserver"
 	queuemocks "gitlab.com/keibiengine/keibi-engine/pkg/internal/queue/mocks"
 	vaultmocks "gitlab.com/keibiengine/keibi-engine/pkg/internal/vault/mocks"
 	"gitlab.com/keibiengine/keibi-engine/pkg/onboard/api"
@@ -76,7 +77,7 @@ func (s *HttpHandlerSuite) SetupSuite() {
 		sourceEventsQueue: &queuemocks.Interface{},
 		vault:             &vaultmocks.SourceConfig{},
 	}
-	s.router, _ = InitializeRouter(s.handler)
+	s.router = httpserver.Register(nil, s.handler)
 }
 
 func (s *HttpHandlerSuite) BeforeTest(suiteName, testName string) {

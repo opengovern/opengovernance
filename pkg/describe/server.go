@@ -1,16 +1,12 @@
 package describe
 
 import (
-	"fmt"
 	"net/http"
 	"strconv"
 	"time"
 
-	"go.uber.org/zap"
-
 	"gitlab.com/keibiengine/keibi-engine/pkg/cloudservice"
 	complianceapi "gitlab.com/keibiengine/keibi-engine/pkg/compliance-report/api"
-	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpserver"
 
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
@@ -49,17 +45,6 @@ func (s *HttpServer) Register(e *echo.Echo) {
 	v1.GET("/resource_type/:provider", s.GetResourceTypesByProvider)
 
 	v1.GET("/compliance/report/last/completed", s.HandleGetLastCompletedComplianceReport)
-}
-
-func (s *HttpServer) Initialize() error {
-	logger, err := zap.NewProduction()
-	if err != nil {
-		return fmt.Errorf("new zap logger: %s", err)
-	}
-
-	e := httpserver.Register(logger, s)
-
-	return e.Start(s.Address)
 }
 
 // HandleListSources godoc
