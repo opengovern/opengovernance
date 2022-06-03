@@ -27,14 +27,14 @@ import (
 
 var DoDescribeJobsCount = promauto.NewCounterVec(prometheus.CounterOpts{
 	Namespace: "keibi",
-	Subsystem: "describe-worker",
+	Subsystem: "describe_worker",
 	Name:      "do_describe_jobs_total",
 	Help:      "Count of done describe jobs in describe-worker service",
 }, []string{"provider", "resource-type", "status"})
 
 var DoDescribeJobsDuration = promauto.NewHistogramVec(prometheus.HistogramOpts{
 	Namespace: "keibi",
-	Subsystem: "describe-worker",
+	Subsystem: "describe_worker",
 	Name:      "do_describe_jobs_duration_seconds",
 	Help:      "Duration of done describe jobs in describe-worker service",
 	Buckets:   []float64{5, 60, 300, 600, 1800, 3600, 7200, 36000},
@@ -42,14 +42,14 @@ var DoDescribeJobsDuration = promauto.NewHistogramVec(prometheus.HistogramOpts{
 
 var DoDescribeCleanupJobsCount = promauto.NewCounterVec(prometheus.CounterOpts{
 	Namespace: "keibi",
-	Subsystem: "describe-cleanup-worker",
+	Subsystem: "describe_cleanup_worker",
 	Name:      "do_describe_cleanup_jobs_total",
 	Help:      "Count of done describe cleanup jobs in describe-worker service",
 }, []string{"resource-type", "status"})
 
 var DoDescribeCleanupJobsDuration = promauto.NewHistogramVec(prometheus.HistogramOpts{
 	Namespace: "keibi",
-	Subsystem: "describe-cleanup-worker",
+	Subsystem: "describe_cleanup_worker",
 	Name:      "do_describe_cleanup_jobs_duration_seconds",
 	Help:      "Duration of done describe cleanup jobs in describe-worker service",
 	Buckets:   []float64{5, 60, 300, 600, 1800, 3600, 7200, 36000},

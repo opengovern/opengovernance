@@ -34,14 +34,14 @@ import (
 
 var DoComplianceReportJobsCount = promauto.NewCounterVec(prometheus.CounterOpts{
 	Namespace: "keibi",
-	Subsystem: "compliance-worker",
+	Subsystem: "compliance_worker",
 	Name:      "do_compliance_report_jobs_total",
 	Help:      "Count of done compliance report jobs in compliance-worker service",
 }, []string{"provider", "status"})
 
 var DoComplianceReportJobsDuration = promauto.NewHistogramVec(prometheus.HistogramOpts{
 	Namespace: "keibi",
-	Subsystem: "compliance-worker",
+	Subsystem: "compliance_worker",
 	Name:      "do_compliance_report_jobs_duration_seconds",
 	Help:      "Duration of done compliance report jobs in compliance-worker service",
 	Buckets:   []float64{5, 60, 300, 600, 1800, 3600, 7200, 36000},
@@ -49,14 +49,14 @@ var DoComplianceReportJobsDuration = promauto.NewHistogramVec(prometheus.Histogr
 
 var DoComplianceReportCleanupJobsCount = promauto.NewCounterVec(prometheus.CounterOpts{
 	Namespace: "keibi",
-	Subsystem: "compliance-cleanup-worker",
+	Subsystem: "compliance_cleanup_worker",
 	Name:      "do_compliance_report_cleanup_jobs_total",
 	Help:      "Count of done compliance report cleanup jobs in compliance-cleanup-worker service",
 }, []string{"provider", "status"})
 
 var DoComplianceReportCleanupJobsDuration = promauto.NewHistogramVec(prometheus.HistogramOpts{
 	Namespace: "keibi",
-	Subsystem: "compliance-cleanup-worker",
+	Subsystem: "compliance_cleanup_worker",
 	Name:      "do_compliance_report_cleanup_jobs_duration_seconds",
 	Help:      "Duration of done compliance report cleanup jobs in compliance-cleanup-worker service",
 	Buckets:   []float64{5, 60, 300, 600, 1800, 3600, 7200, 36000},
