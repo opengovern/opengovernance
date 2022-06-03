@@ -32,7 +32,7 @@ import (
 type HttpHandlerSuite struct {
 	suite.Suite
 
-	handler HttpHandler
+	handler *HttpHandler
 	router  *echo.Echo
 }
 
@@ -71,14 +71,12 @@ func (s *HttpHandlerSuite) SetupSuite() {
 	tx := orm.Exec(`CREATE EXTENSION IF NOT EXISTS "uuid-ossp";`)
 	require.NoError(tx.Error, "enable uuid v4")
 
-	s.router = InitializeRouter()
-	s.handler = HttpHandler{
+	s.handler = &HttpHandler{
 		db:                Database{orm: orm},
 		sourceEventsQueue: &queuemocks.Interface{},
 		vault:             &vaultmocks.SourceConfig{},
 	}
-
-	s.handler.Register(s.router)
+	s.router, _ = InitializeRouter(s.handler)
 }
 
 func (s *HttpHandlerSuite) BeforeTest(suiteName, testName string) {

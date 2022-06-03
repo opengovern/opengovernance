@@ -34,9 +34,8 @@ var (
 )
 
 func main() {
-	r := onboard.InitializeRouter()
 	// TODO: http handler shouldn't be initializing the queue & the db.
-	h, err := onboard.InitializeHttpHandler(
+	handler, err := onboard.InitializeHttpHandler(
 		RabbitMQUsername,
 		RabbitMQPassword,
 		RabbitMQService,
@@ -58,6 +57,10 @@ func main() {
 		os.Exit(1)
 	}
 
-	h.Register(r)
+	r, err := onboard.InitializeRouter(handler)
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
 	r.Logger.Fatal(r.Start(HttpAddress))
 }
