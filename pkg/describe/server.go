@@ -8,6 +8,7 @@ import (
 
 	"go.uber.org/zap"
 
+	"gitlab.com/keibiengine/keibi-engine/pkg/cloudservice"
 	complianceapi "gitlab.com/keibiengine/keibi-engine/pkg/compliance-report/api"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpserver"
 
@@ -311,18 +312,28 @@ func (s HttpServer) RunDescribeJobs(ctx echo.Context) error {
 // @Tags         schedule
 // @Produce      json
 // @Param        provider  path      string  true  "Provider"  Enums(aws,azure)
-// @Success      200       {object}  []string
+// @Success      200       {object}  []api.ResourceTypeDetail
 // @Router       /schedule/api/v1/resource_type/{provider} [get]
 func (s HttpServer) GetResourceTypesByProvider(ctx echo.Context) error {
 	provider := ctx.Param("provider")
 
-	var resourceTypes []string
+	var resourceTypes []api.ResourceTypeDetail
 
 	if provider == "azure" || provider == "all" {
-		resourceTypes = append(resourceTypes, azure.ListResourceTypes()...)
+		for _, resourceType := range azure.ListResourceTypes() {
+			resourceTypes = append(resourceTypes, api.ResourceTypeDetail{
+				ResourceTypeARN:  resourceType,
+				ResourceTypeName: cloudservice.ServiceNameByResourceType(resourceType),
+			})
+		}
 	}
 	if provider == "aws" || provider == "all" {
-		resourceTypes = append(resourceTypes, aws.ListResourceTypes()...)
+		for _, resourceType := range aws.ListResourceTypes() {
+			resourceTypes = append(resourceTypes, api.ResourceTypeDetail{
+				ResourceTypeARN:  resourceType,
+				ResourceTypeName: cloudservice.ServiceNameByResourceType(resourceType),
+			})
+		}
 	}
 
 	return ctx.JSON(http.StatusOK, resourceTypes)

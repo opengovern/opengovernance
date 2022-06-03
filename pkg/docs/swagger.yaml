@@ -217,11 +217,6 @@ definitions:
       subscriptionId:
         type: string
     type: object
-  api.ErrorResponse:
-    properties:
-      message:
-        type: string
-    type: object
   api.Filters:
     description: if you provide two values for same filter OR operation would be used
       if you provide value for two filters AND operation would be used
@@ -315,9 +310,6 @@ definitions:
     type: object
   api.GetResourcesRequest:
     properties:
-      filterNots:
-        $ref: '#/definitions/api.Filters'
-        description: search filters
       filters:
         $ref: '#/definitions/api.Filters'
         description: search filters
@@ -333,7 +325,6 @@ definitions:
           $ref: '#/definitions/api.ResourceSortItem'
         type: array
     required:
-    - filterNots
     - filters
     - page
     type: object
@@ -346,18 +337,8 @@ definitions:
           $ref: '#/definitions/api.AllResource'
         type: array
     type: object
-  api.GetRoleBindingResponse:
+  api.InviteUserResponse:
     properties:
-      assignedAt:
-        type: string
-      emails:
-        items:
-          type: string
-        type: array
-      name:
-        type: string
-      role:
-        type: string
       userId:
         type: string
     type: object
@@ -504,6 +485,13 @@ definitions:
         - sourceID
         type: string
     type: object
+  api.ResourceTypeDetail:
+    properties:
+      resourceTypeARN:
+        type: string
+      resourceTypeName:
+        type: string
+    type: object
   api.ResultCompliancy:
     properties:
       category:
@@ -571,15 +559,9 @@ definitions:
     properties:
       assignedAt:
         type: string
-      emails:
-        items:
-          type: string
-        type: array
-      name:
-        type: string
       role:
         type: string
-      userId:
+      workspaceName:
         type: string
     type: object
   api.RunQueryRequest:
@@ -736,6 +718,15 @@ definitions:
       ownerId:
         type: string
       status:
+        type: string
+    type: object
+  api.WorkspaceRoleBinding:
+    properties:
+      assignedAt:
+        type: string
+      role:
+        type: string
+      userId:
         type: string
     type: object
   compliance_report.Dimension:
@@ -901,57 +892,13 @@ info:
   title: Keibi Service API
   version: "1.0"
 paths:
-  /auth/api/v1/role/binding:
-    get:
-      consumes:
-      - application/json
-      description: RoleBinding defines the roles and actions a user can perform. There
-        are currently three roles (ADMIN, EDITOR, VIEWER).
-      parameters:
-      - description: userId
-        in: body
-        name: userId
-        required: true
-        schema:
-          type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/api.GetRoleBindingResponse'
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/api.ErrorResponse'
-      summary: Get RoleBinding for a single user.
-      tags:
-      - auth
   /auth/api/v1/role/bindings:
-    get:
-      description: RoleBinding defines the roles and actions a user can perform. There
-        are currently three roles (ADMIN, EDITOR, VIEWER).
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            items:
-              $ref: '#/definitions/api.RoleBinding'
-            type: array
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/api.ErrorResponse'
-      summary: Get RoleBinding for all users.
-      tags:
-      - auth
     put:
       description: RoleBinding defines the roles and actions a user can perform. There
         are currently three roles (ADMIN, EDITOR, VIEWER). User must exist before
-        you can update its RoleBinding
+        you can update its RoleBinding. If you want to add a role binding for a user
+        given the email address, call invite first to get a user id. Then call this
+        endpoint.
       parameters:
       - description: userId
         in: body
@@ -970,11 +917,56 @@ paths:
       responses:
         "200":
           description: ""
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/api.ErrorResponse'
       summary: Update RoleBinding for a user.
+      tags:
+      - auth
+  /auth/api/v1/user/invite:
+    post:
+      description: RoleBinding defines the roles and actions a user can perform. There
+        are currently three roles (ADMIN, EDITOR, VIEWER). The workspace path is based
+        on the DNS such as (workspace1.app.keibi.io)
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/api.InviteUserResponse'
+      summary: Invites a user by sending them an email and creating an internal ID
+        for that user.
+      tags:
+      - auth
+  /auth/api/v1/user/role/bindings:
+    get:
+      description: RoleBinding defines the roles and actions a user can perform. There
+        are currently three roles (ADMIN, EDITOR, VIEWER).
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/api.RoleBinding'
+            type: array
+      summary: Get RoleBindings for the calling user
+      tags:
+      - auth
+  /auth/api/v1/workspace/role/bindings:
+    get:
+      description: RoleBinding defines the roles and actions a user can perform. There
+        are currently three roles (ADMIN, EDITOR, VIEWER). The workspace path is based
+        on the DNS such as (workspace1.app.keibi.io)
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/api.WorkspaceRoleBinding'
+            type: array
+      summary: Get all the user RoleBindings for the given workspace.
       tags:
       - auth
   /benchmarks/compliancy/{provider}/top/accounts:
@@ -1960,6 +1952,14 @@ paths:
         name: accept
         required: true
         type: string
+      - description: Common filter
+        enum:
+        - "true"
+        - "false"
+        - all
+        in: query
+        name: common
+        type: string
       produces:
       - application/json
       - text/csv
@@ -1994,6 +1994,14 @@ paths:
         name: accept
         required: true
         type: string
+      - description: Common filter
+        enum:
+        - "true"
+        - "false"
+        - all
+        in: query
+        name: common
+        type: string
       produces:
       - application/json
       - text/csv
@@ -2027,6 +2035,14 @@ paths:
         in: header
         name: accept
         required: true
+        type: string
+      - description: Common filter
+        enum:
+        - "true"
+        - "false"
+        - all
+        in: query
+        name: common
         type: string
       produces:
       - application/json
@@ -2578,7 +2594,7 @@ paths:
           description: OK
           schema:
             items:
-              type: string
+              $ref: '#/definitions/api.ResourceTypeDetail'
             type: array
       summary: get resource type by provider
       tags:

@@ -11,10 +11,15 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 	"gitlab.com/keibiengine/keibi-engine/pkg/auth/api"
+	"gitlab.com/keibiengine/keibi-engine/pkg/auth/extauth"
+	extauthmocks "gitlab.com/keibiengine/keibi-engine/pkg/auth/extauth/mocks"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/dockertest"
+	emailmocks "gitlab.com/keibiengine/keibi-engine/pkg/internal/email/mocks"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpserver"
 	"go.uber.org/zap"
 	"gorm.io/gorm"
@@ -24,23 +29,28 @@ type HTTPRouteSuite struct {
 	suite.Suite
 
 	orm        *gorm.DB
+	db         Database
 	router     *echo.Echo
-	httpRoutes httpRoutes
+	httpRoutes *httpRoutes
+}
+
+func TestHTTPRoutes(t *testing.T) {
+	suite.Run(t, &HTTPRouteSuite{})
 }
 
 func (s *HTTPRouteSuite) SetupSuite() {
 	require := s.Require()
 
 	s.orm = dockertest.StartupPostgreSQL(s.T())
-
-	s.httpRoutes = httpRoutes{
-		db: Database{
-			orm: s.orm,
-		},
-	}
+	s.db = NewDatabase(s.orm)
 
 	logger, err := zap.NewDevelopment()
-	require.NoError(err)
+	require.NoError(err, "failed to create logger")
+
+	s.httpRoutes = &httpRoutes{
+		logger: logger,
+		db:     s.db,
+	}
 
 	s.router = httpserver.Register(logger, s.httpRoutes)
 }
@@ -50,6 +60,9 @@ func (s *HTTPRouteSuite) BeforeTest(suiteName, testName string) {
 
 	err := s.httpRoutes.db.Initialize()
 	require.NoError(err, "initialize db")
+
+	s.httpRoutes.authProvider = &extauthmocks.Provider{}
+	s.httpRoutes.emailService = &emailmocks.Service{}
 }
 
 func (s *HTTPRouteSuite) AfterTest(suiteName, testName string) {
@@ -59,78 +72,105 @@ func (s *HTTPRouteSuite) AfterTest(suiteName, testName string) {
 
 	tx := db.orm.Exec("DROP TABLE IF EXISTS role_bindings;")
 	require.NoError(tx.Error, "drop role_bindings")
+
+	tx = db.orm.Exec("DROP TABLE IF EXISTS users;")
+	require.NoError(tx.Error, "drop users")
 }
 
 func (s *HTTPRouteSuite) TestGetRoleBindings_Empty() {
 	require := s.Require()
 
 	var resp api.GetRoleBindingsResponse
-	recorder, err := doSimpleJSONRequest(s.router, http.MethodGet, "/api/v1/role/bindings", nil, &resp)
+	recorder, err := doSimpleJSONRequest(s.router, http.MethodGet, "/api/v1/user/role/bindings",
+		uuid.New(),
+		api.ViewerRole,
+		"workspace1",
+		nil, &resp)
 	require.NoError(err, "get role bindings")
 	require.Equal(http.StatusOK, recorder.Result().StatusCode, mustRead(recorder.Result().Body))
 
 	require.Equal(0, len(resp))
 }
 
-func (s *HTTPRouteSuite) TestCreateAndGetRoleBinding() {
+func (s *HTTPRouteSuite) TestCreateAndGetRoleBindings() {
 	require := s.Require()
 
-	// Need to create users before being able to update their role bindings
-	rb := RoleBinding{
-		UserID: "RandomUser",
-		Role:   api.AdminRole,
-		Name:   "Nima",
-		Emails: []string{
-			"nima@keibi.io",
-			"nima2@keibi.io",
+	cases := []RoleBinding{
+		{
+			UserID:        uuid.New(),
+			ExternalID:    "user-1",
+			WorkspaceName: "workspace1",
+			Role:          api.AdminRole,
+			AssignedAt:    time.Now(),
 		},
-		AssignedAt: time.Now(),
+		{
+			UserID:        uuid.New(),
+			ExternalID:    "user-2",
+			WorkspaceName: "workspace2",
+			Role:          api.EditorRole,
+			AssignedAt:    time.Now(),
+		},
+		{
+			UserID:        uuid.New(),
+			ExternalID:    "user-3",
+			WorkspaceName: "workspace3",
+			Role:          api.ViewerRole,
+			AssignedAt:    time.Now(),
+		},
 	}
-	require.NoError(s.httpRoutes.db.GetRoleBindingOrCreate(&rb))
 
-	req := api.GetRoleBindingRequest{
-		UserID: "RandomUser",
+	for _, rb := range cases {
+		require.NoError(s.httpRoutes.db.CreateOrUpdateRoleBinding(&rb))
+
+		var resp api.GetRoleBindingsResponse
+		recorder, err := doSimpleJSONRequest(s.router, http.MethodGet, "/api/v1/user/role/bindings", rb.UserID, rb.Role, rb.WorkspaceName, nil, &resp)
+		require.NoError(err, "get role binding")
+		require.Equal(http.StatusOK, recorder.Result().StatusCode, mustRead(recorder.Result().Body))
+
+		require.Len(resp, 1)
+		require.Equal(rb.Role, resp[0].Role)
+		require.Equal(rb.WorkspaceName, resp[0].WorkspaceName)
+		require.Equal(rb.AssignedAt.UnixMilli(), resp[0].AssignedAt.UnixMilli())
 	}
-	var resp api.GetRoleBindingResponse
-	recorder, err := doSimpleJSONRequest(s.router, http.MethodGet, "/api/v1/role/binding", req, &resp)
-	require.NoError(err, "get role binding")
-	require.Equal(http.StatusOK, recorder.Result().StatusCode, mustRead(recorder.Result().Body))
-
-	require.Equal(rb.UserID, resp.UserID)
-	require.Equal(rb.Role, resp.Role)
-	require.Equal(rb.Name, resp.Name)
-	require.Equal([]string(rb.Emails), resp.Emails)
-	require.Equal(rb.AssignedAt.UnixMilli(), resp.AssignedAt.UnixMilli())
 }
 
 func (s *HTTPRouteSuite) TestCreateRoleBinding_UserDoesNotExist() {
 	require := s.Require()
 
 	request := api.PutRoleBindingRequest{
-		UserID: "admin-user",
-		Role:   api.AdminRole,
+		UserID: uuid.New(),
+		Role:   api.ViewerRole,
 	}
 
-	var response api.ErrorResponse
-	recorder, err := doSimpleJSONRequest(s.router, http.MethodPut, "/api/v1/role/binding", request, &response)
+	var response = struct {
+		Message string
+	}{}
+	recorder, err := doSimpleJSONRequest(s.router, http.MethodPut, "/api/v1/user/role/binding",
+		uuid.New(),
+		api.AdminRole,
+		"workspace1",
+		request,
+		&response)
 	require.NoError(err, "put role binding")
 	require.Equal(http.StatusBadRequest, recorder.Result().StatusCode, mustRead(recorder.Result().Body))
-	require.Equal("update role binding: user with id admin-user doesn't exist", response.Message)
+	require.Equal("user not found", response.Message)
 }
 
 func (s *HTTPRouteSuite) TestPutRoleBinding() {
 	require := s.Require()
 
-	const (
-		admin  = "admin-user"
-		viewer = "viewer-user"
-		editor = "editor-user"
+	var (
+		admin  = uuid.New()
+		viewer = uuid.New()
+		editor = uuid.New()
 	)
 
 	// Need to create users before being able to update their role bindings
-	for _, user := range []string{admin, viewer, editor} {
-		require.NoError(s.httpRoutes.db.GetRoleBindingOrCreate(&RoleBinding{
-			UserID: user,
+	for i, user := range []uuid.UUID{admin, viewer, editor} {
+		require.NoError(s.httpRoutes.db.CreateUser(&User{
+			ID:         user,
+			Email:      fmt.Sprintf("nima%d@keibi.io", i),
+			ExternalID: fmt.Sprintf("external-id-%d", i),
 		}))
 	}
 
@@ -149,14 +189,24 @@ func (s *HTTPRouteSuite) TestPutRoleBinding() {
 		},
 	}
 
+	adminID := uuid.New()
 	for _, request := range requests {
-		recorder, err := doSimpleJSONRequest(s.router, http.MethodPut, "/api/v1/role/binding", request, nil)
+		recorder, err := doSimpleJSONRequest(s.router, http.MethodPut, "/api/v1/user/role/binding",
+			adminID,
+			api.AdminRole,
+			"workspace1",
+			request,
+			nil)
 		require.NoError(err, "put role binding")
 		require.Equal(http.StatusOK, recorder.Result().StatusCode, mustRead(recorder.Result().Body))
 	}
 
-	var resp api.GetRoleBindingsResponse
-	recorder, err := doSimpleJSONRequest(s.router, http.MethodGet, "/api/v1/role/bindings", nil, &resp)
+	var resp api.GetWorkspaceRoleBindingResponse
+	recorder, err := doSimpleJSONRequest(s.router, http.MethodGet, "/api/v1/host/role/bindings",
+		adminID,
+		api.AdminRole,
+		"workspace1",
+		nil, &resp)
 	require.NoError(err, "get role bindings")
 	require.Equal(http.StatusOK, recorder.Result().StatusCode, mustRead(recorder.Result().Body))
 
@@ -164,8 +214,6 @@ func (s *HTTPRouteSuite) TestPutRoleBinding() {
 
 	each := []int{0, 0, 0}
 	for _, rb := range resp {
-		require.Empty(rb.Name)
-		require.Empty(rb.Emails)
 		require.False(rb.AssignedAt.IsZero())
 
 		switch rb.UserID {
@@ -182,13 +230,172 @@ func (s *HTTPRouteSuite) TestPutRoleBinding() {
 	}
 
 	require.Equal([]int{1, 1, 1}, each)
+
+	var resp2 api.GetWorkspaceRoleBindingResponse
+	recorder, err = doSimpleJSONRequest(s.router, http.MethodGet, "/api/v1/host/role/bindings",
+		adminID,
+		api.AdminRole,
+		"workspace2",
+		nil,
+		&resp2)
+	require.NoError(err, "get role bindings")
+	require.Equal(http.StatusOK, recorder.Result().StatusCode, mustRead(recorder.Result().Body))
+
+	require.Equal(0, len(resp2))
 }
 
-func TestHTTPRoutes(t *testing.T) {
-	suite.Run(t, &HTTPRouteSuite{})
+func (s *HTTPRouteSuite) TestPutRoleBinding_UpdateExisting() {
+	require := s.Require()
+
+	var (
+		user1 = uuid.New()
+	)
+
+	require.NoError(s.httpRoutes.db.CreateUser(&User{
+		ID:         user1,
+		Email:      fmt.Sprintf("nima@keibi.io"),
+		ExternalID: fmt.Sprintf("external-id-1"),
+	}))
+
+	requests := []api.PutRoleBindingRequest{
+		{
+			UserID: user1,
+			Role:   api.ViewerRole,
+		},
+		{
+			UserID: user1,
+			Role:   api.AdminRole,
+		},
+		{
+			UserID: user1,
+			Role:   api.EditorRole,
+		},
+	}
+
+	adminID := uuid.New()
+	for _, request := range requests {
+		recorder, err := doSimpleJSONRequest(s.router, http.MethodPut, "/api/v1/user/role/binding",
+			adminID,
+			api.AdminRole,
+			"workspace1",
+			request,
+			nil)
+		require.NoError(err, "put role binding")
+		require.Equal(http.StatusOK, recorder.Result().StatusCode, mustRead(recorder.Result().Body))
+
+		var resp api.GetWorkspaceRoleBindingResponse
+		recorder, err = doSimpleJSONRequest(s.router, http.MethodGet, "/api/v1/host/role/bindings",
+			adminID,
+			api.AdminRole,
+			"workspace1",
+			nil, &resp)
+		require.NoError(err, "get role bindings")
+		require.Equal(http.StatusOK, recorder.Result().StatusCode, mustRead(recorder.Result().Body))
+
+		require.Equal(1, len(resp))
+		require.Equal(request.UserID, resp[0].UserID)
+		require.Equal(request.Role, resp[0].Role)
+	}
 }
 
-func doSimpleJSONRequest(router *echo.Echo, method string, path string, request, response interface{}) (*httptest.ResponseRecorder, error) {
+func (s *HTTPRouteSuite) TestInviteUser_UserDoesntExists() {
+	require := s.Require()
+
+	email := "nima@keibi.io"
+	extId := "external-user-1"
+
+	s.httpRoutes.authProvider.(*extauthmocks.Provider).On("FetchUser", mock.Anything, email).Return(extauth.AzureADUser{}, extauth.ErrUserNotExists)
+	s.httpRoutes.authProvider.(*extauthmocks.Provider).On("CreateUser", mock.Anything, email).Return(extauth.AzureADUser{
+		ID:          extId,
+		DisplayName: "nima",
+		PasswordProfile: extauth.PasswordProfile{
+			Password: "123456",
+		},
+	}, (error)(nil))
+	s.httpRoutes.emailService.(*emailmocks.Service).On("SendEmail", mock.Anything, email, "123456", "workspace1").Return((error)(nil))
+
+	req := api.InviteUserRequest{
+		Email: email,
+	}
+	var resp api.InviteUserResponse
+	recorder, err := doSimpleJSONRequest(s.router, http.MethodPost, "/api/v1/user/invite", uuid.New(), api.AdminRole, "workspace1", req, &resp)
+	require.NoError(err, "invite user")
+	require.Equal(http.StatusOK, recorder.Result().StatusCode, mustRead(recorder.Result().Body))
+
+	usr, err := s.db.GetUserByEmail(email)
+	require.NoError(err, "get user")
+	require.Equal(usr.Email, email)
+	require.Equal(usr.ExternalID, extId)
+}
+
+func (s *HTTPRouteSuite) TestInviteUser_UserExistsInAzureButNotAuthService() {
+	require := s.Require()
+
+	email := "nima@keibi.io"
+	extId := "external-user-1"
+
+	s.httpRoutes.authProvider.(*extauthmocks.Provider).On("FetchUser", mock.Anything, email).Return(extauth.AzureADUser{
+		ID:          extId,
+		DisplayName: "nima",
+	}, (error)(nil))
+
+	req := api.InviteUserRequest{
+		Email: email,
+	}
+	var resp api.InviteUserResponse
+	recorder, err := doSimpleJSONRequest(s.router, http.MethodPost, "/api/v1/user/invite", uuid.New(), api.AdminRole, "workspace1", req, &resp)
+	require.NoError(err, "invite user")
+	require.Equal(http.StatusOK, recorder.Result().StatusCode, mustRead(recorder.Result().Body))
+
+	usr, err := s.db.GetUserByEmail(email)
+	require.NoError(err, "get user")
+	require.Equal(usr.Email, email)
+	require.Equal(usr.ExternalID, extId)
+	require.Equal(usr.ID, resp.UserID)
+
+	s.httpRoutes.authProvider.(*extauthmocks.Provider).AssertNotCalled(s.T(), "CreateUser", mock.Anything, mock.Anything)
+}
+
+func (s *HTTPRouteSuite) TestInviteUser_UserExists() {
+	require := s.Require()
+
+	email := "nima@keibi.io"
+	extId := "external-user-1"
+
+	user := User{
+		Email:      email,
+		ExternalID: extId,
+	}
+	err := s.db.CreateUser(&user)
+	require.NoError(err, "create user")
+
+	req := api.InviteUserRequest{
+		Email: email,
+	}
+	var resp api.InviteUserResponse
+	recorder, err := doSimpleJSONRequest(s.router, http.MethodPost, "/api/v1/user/invite", uuid.New(), api.AdminRole, "workspace1", req, &resp)
+	require.NoError(err, "invite user")
+	require.Equal(http.StatusOK, recorder.Result().StatusCode, mustRead(recorder.Result().Body))
+
+	require.NoError(err, "get user")
+	require.Equal(user.Email, email)
+	require.Equal(user.ExternalID, extId)
+	require.Equal(user.ID, resp.UserID)
+
+	s.httpRoutes.authProvider.(*extauthmocks.Provider).AssertNotCalled(s.T(), "FetchUser", mock.Anything, mock.Anything)
+	s.httpRoutes.authProvider.(*extauthmocks.Provider).AssertNotCalled(s.T(), "CreateUser", mock.Anything, mock.Anything)
+	s.httpRoutes.emailService.(*emailmocks.Service).AssertNotCalled(s.T(), "SendEmail", mock.Anything, mock.Anything, mock.Anything, mock.Anything)
+}
+
+func doSimpleJSONRequest(
+	router *echo.Echo,
+	method string,
+	path string,
+	userId uuid.UUID,
+	userRole api.Role,
+	workspaceName string,
+	request,
+	response interface{}) (*httptest.ResponseRecorder, error) {
 	var r io.Reader
 	if request != nil {
 		out, err := json.Marshal(request)
@@ -201,6 +408,9 @@ func doSimpleJSONRequest(router *echo.Echo, method string, path string, request,
 
 	req := httptest.NewRequest(method, path, r)
 	req.Header.Add("content-type", "application/json")
+	req.Header.Add(httpserver.XKeibiUserIDHeader, userId.String())
+	req.Header.Add(httpserver.XKeibiUserRoleHeader, string(userRole))
+	req.Header.Add(httpserver.XKeibiWorkspaceNameHeader, workspaceName)
 
 	rec := httptest.NewRecorder()
 	router.ServeHTTP(rec, req)

@@ -108,6 +108,8 @@ func BackupProtectedResource(ctx context.Context, cfg aws.Config) ([]Resource, e
 }
 
 func BackupSelection(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+	describeCtx := GetDescribeContext(ctx)
+
 	plans, err := BackupPlan(ctx, cfg)
 	if err != nil {
 		return nil, err
@@ -136,8 +138,9 @@ func BackupSelection(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 					return nil, err
 				}
 
+				name := "arn:" + describeCtx.Partition + ":backup:" + describeCtx.Region + ":" + describeCtx.AccountID + ":backup-plan:" + *v.BackupPlanId + "/selection/" + *v.SelectionId
 				values = append(values, Resource{
-					ID:   CompositeID(*v.BackupPlanId, *v.SelectionId),
+					ARN:  name,
 					Name: *v.SelectionName,
 					Description: model.BackupSelectionDescription{
 						BackupSelection: v,

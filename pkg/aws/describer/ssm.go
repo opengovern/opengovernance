@@ -13,6 +13,8 @@ func SSMManagedInstance(ctx context.Context, cfg aws.Config) ([]Resource, error)
 	client := ssm.NewFromConfig(cfg)
 	paginator := ssm.NewDescribeInstanceInformationPaginator(client, &ssm.DescribeInstanceInformationInput{})
 
+	describeCtx := GetDescribeContext(ctx)
+
 	var values []Resource
 	for paginator.HasMorePages() {
 		page, err := paginator.NextPage(ctx)
@@ -21,8 +23,9 @@ func SSMManagedInstance(ctx context.Context, cfg aws.Config) ([]Resource, error)
 		}
 
 		for _, item := range page.InstanceInformationList {
+			arn := "arn:" + describeCtx.Partition + ":ssm:" + describeCtx.Region + ":" + describeCtx.AccountID + ":managed-instance/" + *item.InstanceId
 			values = append(values, Resource{
-				ID:   *item.InstanceId,
+				ARN:  arn,
 				Name: *item.Name,
 				Description: model.SSMManagedInstanceDescription{
 					InstanceInformation: item,
@@ -36,6 +39,8 @@ func SSMManagedInstance(ctx context.Context, cfg aws.Config) ([]Resource, error)
 func SSMManagedInstanceCompliance(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	client := ssm.NewFromConfig(cfg)
 	paginator := ssm.NewDescribeInstanceInformationPaginator(client, &ssm.DescribeInstanceInformationInput{})
+
+	describeCtx := GetDescribeContext(ctx)
 
 	var values []Resource
 	for paginator.HasMorePages() {
@@ -56,8 +61,9 @@ func SSMManagedInstanceCompliance(ctx context.Context, cfg aws.Config) ([]Resour
 				}
 
 				for _, item := range cpage.ComplianceItems {
+					arn := "arn:" + describeCtx.Partition + ":ssm:" + describeCtx.Region + ":" + describeCtx.AccountID + ":managed-instance/" + *item.ResourceId + "/compliance-item/" + *item.Id + ":" + *item.ComplianceType
 					values = append(values, Resource{
-						ID:   *item.Id,
+						ARN:  arn,
 						Name: *item.Title,
 						Description: model.SSMManagedInstanceComplianceDescription{
 							ComplianceItem: item,

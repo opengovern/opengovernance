@@ -2,6 +2,8 @@ package api
 
 import (
 	"time"
+
+	"github.com/google/uuid"
 )
 
 type Role string
@@ -12,31 +14,37 @@ const (
 	ViewerRole Role = "VIEWER"
 )
 
-type ErrorResponse struct {
-	Message string `json:"message"`
-}
-
 type PutRoleBindingRequest struct {
-	UserID string `json:"userId" validate:"required"`
-	Role   Role   `json:"role" validate:"required"`
-}
-
-type GetRoleBindingRequest struct {
-	UserID string `json:"userId" validate:"required"`
+	UserID uuid.UUID `json:"userId" validate:"required"`
+	Role   Role      `json:"role" validate:"required"`
 }
 
 type RoleBinding struct {
-	UserID     string    `json:"userId"`
-	Name       string    `json:"name"`
-	Emails     []string  `json:"emails"`
-	Role       Role      `json:"role"`
-	AssignedAt time.Time `json:"assignedAt"`
+	WorkspaceName string    `json:"workspaceName"`
+	Role          Role      `json:"role"`
+	AssignedAt    time.Time `json:"assignedAt"`
 }
 
 type GetRoleBindingResponse RoleBinding
 
 type GetRoleBindingsResponse []RoleBinding
 
+type WorkspaceRoleBinding struct {
+	UserID     uuid.UUID `json:"userId"`
+	Role       Role      `json:"role"`
+	AssignedAt time.Time `json:"assignedAt"`
+}
+
+type GetWorkspaceRoleBindingResponse []WorkspaceRoleBinding
+
 type DeleteRoleBindingRequest struct {
 	UserID string `json:"userId" validate:"required"`
+}
+
+type InviteUserRequest struct {
+	Email string `json:"email" validate:"required,email"`
+}
+
+type InviteUserResponse struct {
+	UserID uuid.UUID `json:"userId"`
 }

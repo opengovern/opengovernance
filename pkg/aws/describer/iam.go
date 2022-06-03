@@ -147,6 +147,8 @@ func IAMAccessKey(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	client := iam.NewFromConfig(cfg)
 	paginator := iam.NewListAccessKeysPaginator(client, &iam.ListAccessKeysInput{})
 
+	describeCtx := GetDescribeContext(ctx)
+
 	var values []Resource
 	for paginator.HasMorePages() {
 		page, err := paginator.NextPage(ctx)
@@ -155,8 +157,9 @@ func IAMAccessKey(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 		}
 
 		for _, v := range page.AccessKeyMetadata {
+			arn := "arn:" + describeCtx.Partition + ":iam::" + describeCtx.AccountID + ":user/" + *v.UserName + "/accesskey/" + *v.AccessKeyId
 			values = append(values, Resource{
-				ID:   *v.AccessKeyId,
+				ARN:  arn,
 				Name: *v.UserName,
 				Description: model.IAMAccessKeyDescription{
 					AccessKey: v,
@@ -877,7 +880,7 @@ func IAMVirtualMFADevice(ctx context.Context, cfg aws.Config) ([]Resource, error
 		}
 
 		values = append(values, Resource{
-			ID:   *v.SerialNumber,
+			ARN:  *v.SerialNumber,
 			Name: *v.SerialNumber,
 			Description: model.IAMVirtualMFADeviceDescription{
 				VirtualMFADevice: v,

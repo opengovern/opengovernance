@@ -16,76 +16,9 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
-        "/auth/api/v1/role/binding": {
-            "get": {
-                "description": "RoleBinding defines the roles and actions a user can perform. There are currently three roles (ADMIN, EDITOR, VIEWER).",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "auth"
-                ],
-                "summary": "Get RoleBinding for a single user.",
-                "parameters": [
-                    {
-                        "description": "userId",
-                        "name": "userId",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "type": "string"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/api.GetRoleBindingResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/api.ErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
         "/auth/api/v1/role/bindings": {
-            "get": {
-                "description": "RoleBinding defines the roles and actions a user can perform. There are currently three roles (ADMIN, EDITOR, VIEWER).",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "auth"
-                ],
-                "summary": "Get RoleBinding for all users.",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/api.RoleBinding"
-                            }
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/api.ErrorResponse"
-                        }
-                    }
-                }
-            },
             "put": {
-                "description": "RoleBinding defines the roles and actions a user can perform. There are currently three roles (ADMIN, EDITOR, VIEWER). User must exist before you can update its RoleBinding",
+                "description": "RoleBinding defines the roles and actions a user can perform. There are currently three roles (ADMIN, EDITOR, VIEWER). User must exist before you can update its RoleBinding. If you want to add a role binding for a user given the email address, call invite first to get a user id. Then call this endpoint.",
                 "produces": [
                     "application/json"
                 ],
@@ -116,11 +49,71 @@ const docTemplate = `{
                 "responses": {
                     "200": {
                         "description": ""
-                    },
-                    "400": {
-                        "description": "Bad Request",
+                    }
+                }
+            }
+        },
+        "/auth/api/v1/user/invite": {
+            "post": {
+                "description": "RoleBinding defines the roles and actions a user can perform. There are currently three roles (ADMIN, EDITOR, VIEWER). The workspace path is based on the DNS such as (workspace1.app.keibi.io)",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Invites a user by sending them an email and creating an internal ID for that user.",
+                "responses": {
+                    "200": {
+                        "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/api.ErrorResponse"
+                            "$ref": "#/definitions/api.InviteUserResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/api/v1/user/role/bindings": {
+            "get": {
+                "description": "RoleBinding defines the roles and actions a user can perform. There are currently three roles (ADMIN, EDITOR, VIEWER).",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Get RoleBindings for the calling user",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/api.RoleBinding"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/api/v1/workspace/role/bindings": {
+            "get": {
+                "description": "RoleBinding defines the roles and actions a user can perform. There are currently three roles (ADMIN, EDITOR, VIEWER). The workspace path is based on the DNS such as (workspace1.app.keibi.io)",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Get all the user RoleBindings for the given workspace.",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/api.WorkspaceRoleBinding"
+                            }
                         }
                     }
                 }
@@ -1592,6 +1585,17 @@ const docTemplate = `{
                         "name": "accept",
                         "in": "header",
                         "required": true
+                    },
+                    {
+                        "enum": [
+                            "true",
+                            "false",
+                            "all"
+                        ],
+                        "type": "string",
+                        "description": "Common filter",
+                        "name": "common",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -1638,6 +1642,17 @@ const docTemplate = `{
                         "name": "accept",
                         "in": "header",
                         "required": true
+                    },
+                    {
+                        "enum": [
+                            "true",
+                            "false",
+                            "all"
+                        ],
+                        "type": "string",
+                        "description": "Common filter",
+                        "name": "common",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -1684,6 +1699,17 @@ const docTemplate = `{
                         "name": "accept",
                         "in": "header",
                         "required": true
+                    },
+                    {
+                        "enum": [
+                            "true",
+                            "false",
+                            "all"
+                        ],
+                        "type": "string",
+                        "description": "Common filter",
+                        "name": "common",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -2507,7 +2533,7 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "type": "string"
+                                "$ref": "#/definitions/api.ResourceTypeDetail"
                             }
                         }
                     }
@@ -3116,14 +3142,6 @@ const docTemplate = `{
                 }
             }
         },
-        "api.ErrorResponse": {
-            "type": "object",
-            "properties": {
-                "message": {
-                    "type": "string"
-                }
-            }
-        },
         "api.Filters": {
             "description": "if you provide two values for same filter OR operation would be used if you provide value for two filters AND operation would be used",
             "type": "object",
@@ -3257,15 +3275,10 @@ const docTemplate = `{
         "api.GetResourcesRequest": {
             "type": "object",
             "required": [
-                "filterNots",
                 "filters",
                 "page"
             ],
             "properties": {
-                "filterNots": {
-                    "description": "search filters",
-                    "$ref": "#/definitions/api.Filters"
-                },
                 "filters": {
                     "description": "search filters",
                     "$ref": "#/definitions/api.Filters"
@@ -3300,24 +3313,9 @@ const docTemplate = `{
                 }
             }
         },
-        "api.GetRoleBindingResponse": {
+        "api.InviteUserResponse": {
             "type": "object",
             "properties": {
-                "assignedAt": {
-                    "type": "string"
-                },
-                "emails": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "name": {
-                    "type": "string"
-                },
-                "role": {
-                    "type": "string"
-                },
                 "userId": {
                     "type": "string"
                 }
@@ -3531,6 +3529,17 @@ const docTemplate = `{
                 }
             }
         },
+        "api.ResourceTypeDetail": {
+            "type": "object",
+            "properties": {
+                "resourceTypeARN": {
+                    "type": "string"
+                },
+                "resourceTypeName": {
+                    "type": "string"
+                }
+            }
+        },
         "api.ResultCompliancy": {
             "type": "object",
             "properties": {
@@ -3632,19 +3641,10 @@ const docTemplate = `{
                 "assignedAt": {
                     "type": "string"
                 },
-                "emails": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "name": {
-                    "type": "string"
-                },
                 "role": {
                     "type": "string"
                 },
-                "userId": {
+                "workspaceName": {
                     "type": "string"
                 }
             }
@@ -3876,6 +3876,20 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "status": {
+                    "type": "string"
+                }
+            }
+        },
+        "api.WorkspaceRoleBinding": {
+            "type": "object",
+            "properties": {
+                "assignedAt": {
+                    "type": "string"
+                },
+                "role": {
+                    "type": "string"
+                },
+                "userId": {
                     "type": "string"
                 }
             }

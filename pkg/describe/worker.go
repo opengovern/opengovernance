@@ -7,6 +7,8 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/prometheus/client_golang/prometheus/push"
+
 	"github.com/elastic/go-elasticsearch/v7"
 	"github.com/hashicorp/vault/api/auth/kubernetes"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/queue"
@@ -23,6 +25,7 @@ type Worker struct {
 	kfkTopic       string
 	vault          vault.SourceConfig
 	logger         *zap.Logger
+	pusher         *push.Pusher
 }
 
 func InitializeWorker(
@@ -41,6 +44,7 @@ func InitializeWorker(
 	vaultCaPath string,
 	vaultUseTLS bool,
 	logger *zap.Logger,
+	prometheusPushAddress string,
 ) (w *Worker, err error) {
 	if id == "" {
 		return nil, fmt.Errorf("'id' must be set to a non empty string")
@@ -111,6 +115,10 @@ func InitializeWorker(
 	w.logger.Info("Connected to vault:", zap.String("vaultAddress", vaultAddress))
 	w.vault = v
 
+	w.pusher = push.New(prometheusPushAddress, "describe-worker")
+	w.pusher.Collector(DoDescribeJobsCount).
+		Collector(DoDescribeJobsDuration)
+
 	return w, nil
 }
 
@@ -147,6 +155,8 @@ func (w *Worker) Run() error {
 }
 
 func (w *Worker) Stop() {
+	w.pusher.Push()
+
 	if w.jobQueue != nil {
 		w.jobQueue.Close() //nolint,gosec
 		w.jobQueue = nil
@@ -183,6 +193,7 @@ type CleanupWorker struct {
 	cleanupJobQueue queue.Interface
 	esClient        *elasticsearch.Client
 	logger          *zap.Logger
+	pusher          *push.Pusher
 }
 
 func InitializeCleanupWorker(
@@ -196,6 +207,7 @@ func InitializeCleanupWorker(
 	elasticUsername string,
 	elasticPassword string,
 	logger *zap.Logger,
+	prometheusPushAddress string,
 ) (w *CleanupWorker, err error) {
 	if id == "" {
 		return nil, fmt.Errorf("'id' must be set to a non empty string")
@@ -239,6 +251,9 @@ func InitializeCleanupWorker(
 
 	w.esClient = esClient
 	w.logger = logger
+	w.pusher = push.New(prometheusPushAddress, "describe-worker")
+	w.pusher.Collector(DoDescribeJobsCount).
+		Collector(DoDescribeJobsDuration)
 
 	return w, nil
 }
@@ -281,6 +296,7 @@ func (w *CleanupWorker) Run() error {
 }
 
 func (w *CleanupWorker) Stop() {
+	w.pusher.Push()
 	if w.cleanupJobQueue != nil {
 		w.cleanupJobQueue.Close()
 		w.cleanupJobQueue = nil

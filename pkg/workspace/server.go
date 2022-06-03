@@ -174,6 +174,8 @@ func (s *Server) handleWorkspace(workspace *Workspace) error {
 // @Success      200      {object}  api.CreateWorkspaceResponse
 // @Router       /workspace/api/v1/workspace [post]
 func (s *Server) CreateWorkspace(c echo.Context) error {
+	userID := httpserver.GetUserID(c)
+
 	var request api.CreateWorkspaceRequest
 	if err := c.Bind(&request); err != nil {
 		c.Logger().Errorf("bind the request: %v", err)
@@ -192,15 +194,10 @@ func (s *Server) CreateWorkspace(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, errors)
 	}
 
-	ownerId := c.Request().Header.Get(KeibiUserID)
-	if ownerId == "" {
-		return echo.NewHTTPError(http.StatusUnauthorized, "user id is empty")
-	}
-
 	workspace := &Workspace{
 		ID:          uuid.New(),
 		Name:        strings.ToLower(request.Name),
-		OwnerId:     ownerId,
+		OwnerId:     userID,
 		Domain:      domain,
 		Status:      StatusProvisioning.String(),
 		Description: request.Description,
@@ -227,6 +224,8 @@ func (s *Server) CreateWorkspace(c echo.Context) error {
 // @Success      200
 // @Router       /workspace/api/v1/workspace/:workspace_id [delete]
 func (s *Server) DeleteWorkspace(c echo.Context) error {
+	userID := httpserver.GetUserID(c)
+
 	value := c.Param("workspace_id")
 	if value == "" {
 		return echo.NewHTTPError(http.StatusBadRequest, "workspace id is empty")
@@ -234,11 +233,6 @@ func (s *Server) DeleteWorkspace(c echo.Context) error {
 	id, err := uuid.Parse(value)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid workspace id")
-	}
-
-	ownerId := c.Request().Header.Get(KeibiUserID)
-	if ownerId == "" {
-		return echo.NewHTTPError(http.StatusUnauthorized, "user id is empty")
 	}
 
 	workspace, err := s.db.GetWorkspace(id)
@@ -249,7 +243,7 @@ func (s *Server) DeleteWorkspace(c echo.Context) error {
 		c.Logger().Errorf("find workspace: %v", err)
 		return echo.NewHTTPError(http.StatusInternalServerError, ErrInternalServer)
 	}
-	if workspace.OwnerId != ownerId {
+	if workspace.OwnerId != userID {
 		return echo.NewHTTPError(http.StatusForbidden, "operation is forbidden")
 	}
 
@@ -269,12 +263,9 @@ func (s *Server) DeleteWorkspace(c echo.Context) error {
 // @Success      200  {array}  []api.WorkspaceResponse
 // @Router       /workspace/api/v1/workspaces [get]
 func (s *Server) ListWorkspaces(c echo.Context) error {
-	ownerId := c.Request().Header.Get(KeibiUserID)
-	if ownerId == "" {
-		return echo.NewHTTPError(http.StatusUnauthorized, "user id is empty")
-	}
+	userID := httpserver.GetUserID(c)
 
-	dbWorkspaces, err := s.db.ListWorkspacesByOwner(ownerId)
+	dbWorkspaces, err := s.db.ListWorkspacesByOwner(userID)
 	if err != nil {
 		c.Logger().Errorf("list workspaces: %v", err)
 		return echo.NewHTTPError(http.StatusInternalServerError, ErrInternalServer)

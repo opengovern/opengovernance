@@ -67,6 +67,7 @@ type Metadata struct {
 	SubscriptionID   string `json:"subscription_id"`
 	Location         string `json:"location"`
 	CloudEnvironment string `json:"cloud_environment"`
+	ResourceType     string `json:"resource_type"`
 }
 
 //  ===================  APIManagement ==================

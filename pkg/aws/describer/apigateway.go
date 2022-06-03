@@ -14,6 +14,8 @@ func ApiGatewayStage(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	client := apigateway.NewFromConfig(cfg)
 	paginator := apigateway.NewGetRestApisPaginator(client, &apigateway.GetRestApisInput{})
 
+	describeCtx := GetDescribeContext(ctx)
+
 	var values []Resource
 	for paginator.HasMorePages() {
 		page, err := paginator.NextPage(ctx)
@@ -30,8 +32,9 @@ func ApiGatewayStage(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 			}
 
 			for _, stageItem := range out.Item {
+				arn := "arn:" + describeCtx.Partition + ":apigateway:" + describeCtx.Region + "::/restapis/" + *restItem.Id + "/stages/" + *stageItem.StageName
 				values = append(values, Resource{
-					ID:   CompositeID(*restItem.Id, *stageItem.StageName),
+					ARN:  arn,
 					Name: *restItem.Name,
 					Description: model.ApiGatewayStageDescription{
 						RestApiId: restItem.Id,

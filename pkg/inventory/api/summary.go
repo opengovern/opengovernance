@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/describe/kafka"
 
@@ -18,6 +19,7 @@ func QuerySummaryResources(
 	provider *SourceType,
 	size, lastIndex int,
 	sorts []ResourceSortItem,
+	commonFilter *bool,
 ) ([]kafka.LookupResource, keibi.SearchTotal, error) {
 	var err error
 
@@ -36,6 +38,10 @@ func QuerySummaryResources(
 
 	if provider != nil {
 		terms["source_type.keyword"] = []string{string(*provider)}
+	}
+
+	if commonFilter != nil {
+		terms["is_common"] = []string{fmt.Sprintf("%v", *commonFilter)}
 	}
 
 	notTerms := make(map[string][]string)
