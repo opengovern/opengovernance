@@ -13,16 +13,15 @@ import (
 	"github.com/labstack/echo/v4"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpserver"
 	"gitlab.com/keibiengine/keibi-engine/pkg/workspace/api"
+	"gitlab.com/keibiengine/keibi-engine/pkg/workspace/client"
 	"go.uber.org/zap"
 	"gorm.io/gorm"
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/util/validation"
-	"sigs.k8s.io/controller-runtime/pkg/client"
+	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 const (
-	KeibiUserID = "X-Keibi-UserID"
-
 	reconcilerInterval = 30 * time.Second
 )
 
@@ -34,7 +33,7 @@ type Server struct {
 	e          *echo.Echo
 	cfg        *Config
 	db         *Database
-	kubeClient client.Client // the kubernetes client
+	kubeClient k8sclient.Client // the kubernetes client
 }
 
 func NewServer(cfg *Config) (*Server, error) {
@@ -121,6 +120,11 @@ func (s *Server) handleWorkspace(workspace *Workspace) error {
 		newStatus := status
 		// check the status of helm release
 		if meta.IsStatusConditionTrue(helmRelease.Status.Conditions, apimeta.ReadyCondition) {
+			// when the helm release installed successfully, set the rolebinding
+			if err := client.SetRoleBinding(s.cfg.AuthBaseUrl, workspace.OwnerId, workspace.Name); err != nil {
+				return fmt.Errorf("set role binding: %w", err)
+			}
+
 			newStatus = StatusProvisioned
 		} else if meta.IsStatusConditionTrue(helmRelease.Status.Conditions, apimeta.StalledCondition) {
 			newStatus = StatusProvisioningFailed

@@ -15,6 +15,7 @@ var (
 	PostgresPassword = os.Getenv("POSTGRES_PASSWORD")
 	ServerAddr       = os.Getenv("SERVER_ADDR")
 	DomainSuffix     = os.Getenv("DOMAIN_SUFFIX")
+	AuthBaseURL      = os.Getenv("AUTH_BASE_URL")
 )
 
 type Config struct {
@@ -25,6 +26,7 @@ type Config struct {
 	DBName       string
 	ServerAddr   string
 	DomainSuffix string
+	AuthBaseUrl  string
 }
 
 func NewConfig() *Config {
@@ -36,6 +38,7 @@ func NewConfig() *Config {
 		DBName:       PostgresDBName,
 		ServerAddr:   ServerAddr,
 		DomainSuffix: DomainSuffix,
+		AuthBaseUrl:  AuthBaseURL,
 	}
 }
 

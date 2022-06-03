@@ -53,7 +53,7 @@ func bindValidate(ctx echo.Context, i interface{}) error {
 // @Success      200
 // @Param        userId  body  string  true  "userId"
 // @Param        role    body  string  true  "role"
-// @Router       /auth/api/v1/role/bindings [put]
+// @Router       /auth/api/v1/role/binding [put]
 func (r httpRoutes) PutRoleBinding(ctx echo.Context) error {
 	var req api.PutRoleBindingRequest
 	if err := bindValidate(ctx, &req); err != nil {

@@ -1,20 +1,24 @@
 package httprequest
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
-	"io"
 	"io/ioutil"
 	"net/http"
 	"time"
 )
 
-func DoRequest(method, url string, body io.Reader, v interface{}) error {
-	req, err := http.NewRequest(method, url, body)
+func DoRequest(method, url string, headers map[string]string, payload []byte, v interface{}) error {
+	req, err := http.NewRequest(method, url, bytes.NewReader(payload))
 	if err != nil {
 		return fmt.Errorf("new request: %w", err)
 	}
 	req.Header.Set("Content-Type", "application/json")
+
+	for k, v := range headers {
+		req.Header.Add(k, v)
+	}
 
 	client := http.Client{
 		Timeout: 5 * time.Second,
@@ -32,9 +36,8 @@ func DoRequest(method, url string, body io.Reader, v interface{}) error {
 		}
 		return fmt.Errorf("http status: %d: %s", res.StatusCode, d)
 	}
-
-	if err := json.NewDecoder(res.Body).Decode(v); err != nil {
-		return fmt.Errorf("json decode: %w", err)
+	if v == nil {
+		return nil
 	}
-	return nil
+	return json.NewDecoder(res.Body).Decode(v)
 }

@@ -18,7 +18,7 @@ func GetBenchmarkAssignmentsBySourceId(baseUrl string, sourceID uuid.UUID) ([]Be
 	url := fmt.Sprintf("%s/api/v1/benchmarks/source/%s", baseUrl, sourceID.String())
 
 	assignments := []BenchmarkAssignment{}
-	if err := httprequest.DoRequest(http.MethodGet, url, nil, &assignments); err != nil {
+	if err := httprequest.DoRequest(http.MethodGet, url, nil, nil, &assignments); err != nil {
 		return nil, err
 	}
 	return assignments, nil
