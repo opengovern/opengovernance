@@ -24,7 +24,7 @@ func SetRoleBinding(baseUrl string, userID uuid.UUID, workspaceName string) erro
 
 	headers := map[string]string{
 		httpserver.XKeibiUserIDHeader:        userID.String(),
-		httpserver.XKeibiUserRoleHeader:      "admin",
+		httpserver.XKeibiUserRoleHeader:      string(api.AdminRole),
 		httpserver.XKeibiWorkspaceNameHeader: workspaceName,
 	}
 	return httprequest.DoRequest(http.MethodPut, url, headers, payload, nil)
