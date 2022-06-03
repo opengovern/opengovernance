@@ -53,7 +53,9 @@ func extractContext(ctx echo.Context) context.Context {
 	return context.WithValue(cc, context_key.Logger, logger)
 }
 
-func (h *HttpHandler) Register(v1 *echo.Group) {
+func (h *HttpHandler) Register(e *echo.Echo) {
+	v1 := e.Group("/api/v1")
+
 	v1.GET("/locations/:provider", h.GetLocations)
 
 	v1.POST("/resources", h.GetAllResources)

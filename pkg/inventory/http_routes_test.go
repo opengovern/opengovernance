@@ -224,14 +224,12 @@ func (s *HttpHandlerSuite) SetupSuite() {
 	})
 	require.NoError(err, "wait for postgres connection")
 
-	s.router = InitializeRouter()
 	s.handler, _ = InitializeHttpHandler(s.elasticUrl, "", "",
 		idocker.GetDockerHost(), postgresResource.GetPort("5432/tcp"), "postgres", "postgres", "mysecretpassword",
 		idocker.GetDockerHost(), steampipeResource.GetPort("9193/tcp"), "steampipe", "steampipe", "abcd",
 		s.describe.MockServer.URL,
 	)
-
-	s.handler.Register(s.router.Group("/api/v1"))
+	s.router, _ = InitializeRouter(s.handler)
 }
 
 func (s *HttpHandlerSuite) BeforeTest(suiteName, testName string) {

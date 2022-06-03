@@ -30,9 +30,7 @@ var (
 )
 
 func main() {
-	r := inventory.InitializeRouter()
-
-	h, err := inventory.InitializeHttpHandler(
+	handler, err := inventory.InitializeHttpHandler(
 		ElasticSearchAddress,
 		ElasticSearchUsername,
 		ElasticSearchPassword,
@@ -53,6 +51,10 @@ func main() {
 		os.Exit(1)
 	}
 
-	h.Register(r.Group("/api/v1"))
+	r, err := inventory.InitializeRouter(handler)
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
 	r.Logger.Fatal(r.Start(HttpAddress))
 }
