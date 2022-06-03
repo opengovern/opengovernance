@@ -1,18 +1,18 @@
 package describe
 
 import (
+	"fmt"
 	"net/http"
 	"strconv"
 	"time"
 
-	echoPrometheus "github.com/globocom/echo-prometheus"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"go.uber.org/zap"
 
 	complianceapi "gitlab.com/keibiengine/keibi-engine/pkg/compliance-report/api"
+	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpserver"
 
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
-	"github.com/labstack/echo/v4/middleware"
 	"gitlab.com/keibiengine/keibi-engine/pkg/aws"
 	"gitlab.com/keibiengine/keibi-engine/pkg/azure"
 	"gitlab.com/keibiengine/keibi-engine/pkg/describe/api"
@@ -34,28 +34,7 @@ func NewHTTPServer(
 	}
 }
 
-func (s *HttpServer) Initialize() error {
-	e := echo.New()
-	e.Use(middleware.LoggerWithConfig(middleware.LoggerConfig{
-		Format: "method=${method}, uri=${uri}, status=${status}\n",
-	}))
-
-	e.Use(echoPrometheus.MetricsMiddlewareWithConfig(echoPrometheus.Config{
-		Namespace: "keibi",
-		Subsystem: "http",
-		Buckets: []float64{
-			0.001, // 1ms
-			0.01,  // 10ms
-			0.1,   // 100 ms
-			0.2,
-			0.5,
-			1.0,  // 1s
-			10.0, // 10s
-		},
-		NormalizeHTTPStatus: true,
-	}))
-	e.GET("/metrics", echo.WrapHandler(promhttp.Handler()))
-
+func (s *HttpServer) Register(e *echo.Echo) {
 	v1 := e.Group("/api/v1")
 
 	v1.GET("/sources", s.HandleListSources)
@@ -69,6 +48,16 @@ func (s *HttpServer) Initialize() error {
 	v1.GET("/resource_type/:provider", s.GetResourceTypesByProvider)
 
 	v1.GET("/compliance/report/last/completed", s.HandleGetLastCompletedComplianceReport)
+}
+
+func (s *HttpServer) Initialize() error {
+	logger, err := zap.NewProduction()
+	if err != nil {
+		return fmt.Errorf("new zap logger: %s", err)
+	}
+
+	e := httpserver.Register(logger, s)
+
 	return e.Start(s.Address)
 }
 
