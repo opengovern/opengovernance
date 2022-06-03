@@ -17,7 +17,7 @@ func ListComplianceReportJobs(baseUrl string, sourceID uuid.UUID, filter *invent
 	}
 
 	reports := []api.ComplianceReport{}
-	if err := httprequest.DoRequest(http.MethodGet, url, nil, &reports); err != nil {
+	if err := httprequest.DoRequest(http.MethodGet, url, nil, nil, &reports); err != nil {
 		return nil, err
 	}
 	return reports, nil
@@ -26,7 +26,7 @@ func ListComplianceReportJobs(baseUrl string, sourceID uuid.UUID, filter *invent
 func GetLastComplianceReportID(baseUrl string) (uint, error) {
 	url := fmt.Sprintf("%s/api/v1/compliance/report/last/completed", baseUrl)
 	var res uint
-	if err := httprequest.DoRequest(http.MethodGet, url, nil, &res); err != nil {
+	if err := httprequest.DoRequest(http.MethodGet, url, nil, nil, &res); err != nil {
 		return 0, err
 	}
 	return res, nil
