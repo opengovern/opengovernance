@@ -13,6 +13,7 @@ import (
 
 	describeapi "gitlab.com/keibiengine/keibi-engine/pkg/describe/api"
 	inventoryapi "gitlab.com/keibiengine/keibi-engine/pkg/inventory/api"
+	"go.uber.org/zap"
 
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
@@ -77,7 +78,11 @@ func (s *HttpHandlerSuite) SetupSuite() {
 		sourceEventsQueue: &queuemocks.Interface{},
 		vault:             &vaultmocks.SourceConfig{},
 	}
-	s.router = httpserver.Register(nil, s.handler)
+
+	logger, err := zap.NewProduction()
+	require.NoError(err, "new logger")
+
+	s.router = httpserver.Register(logger, s.handler)
 }
 
 func (s *HttpHandlerSuite) BeforeTest(suiteName, testName string) {

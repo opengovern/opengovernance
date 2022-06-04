@@ -1785,7 +1785,7 @@ func (h *HttpHandler) GetResultPolicies(ctx echo.Context) error {
 func (h *HttpHandler) GetResource(ctx echo.Context) error {
 	var req api.GetResourceRequest
 	if err := bindValidate(ctx, &req); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, "Invalid request")
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
 	hash := sha256.New()
@@ -1892,7 +1892,7 @@ func (h *HttpHandler) GetResource(ctx echo.Context) error {
 func (h *HttpHandler) ListQueries(ctx echo.Context) error {
 	var req api.ListQueryRequest
 	if err := bindValidate(ctx, &req); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
 	var search *string
@@ -1934,7 +1934,7 @@ func (h *HttpHandler) ListQueries(ctx echo.Context) error {
 func (h *HttpHandler) CountQueries(ctx echo.Context) error {
 	var req api.ListQueryRequest
 	if err := bindValidate(ctx, &req); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
 	var search *string
@@ -1965,7 +1965,7 @@ func (h *HttpHandler) CountQueries(ctx echo.Context) error {
 func (h *HttpHandler) RunQuery(ctx echo.Context) error {
 	var req api.RunQueryRequest
 	if err := bindValidate(ctx, &req); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
 	queryId := ctx.Param("queryId")
@@ -2234,7 +2234,7 @@ func (h *HttpHandler) RunSmartQuery(query string,
 func (h *HttpHandler) GetResources(ctx echo.Context, provider *api.SourceType, commonFilter *bool) error {
 	var req api.GetResourcesRequest
 	if err := bindValidate(ctx, &req); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
 	res, err := api.QueryResources(ctx.Request().Context(), h.client, &req, provider, commonFilter)
@@ -2320,7 +2320,7 @@ func Csv(record []string, w io.Writer) error {
 func (h *HttpHandler) GetResourcesCSV(ctx echo.Context, provider *api.SourceType, commonFilter *bool) error {
 	var req api.GetResourcesRequest
 	if err := bindValidate(ctx, &req); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 	req.Page = pagination.PageRequest{
 		NextMarker: "",
@@ -2398,7 +2398,7 @@ func (h *HttpHandler) GetComplianceReports(ctx echo.Context) error {
 
 	var req api.GetComplianceReportRequest
 	if err := bindValidate(ctx, &req); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
 	lastIdx, err := pagination.MarkerToIdx(req.Page.NextMarker)
