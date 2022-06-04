@@ -13,12 +13,14 @@ import (
 
 	describeapi "gitlab.com/keibiengine/keibi-engine/pkg/describe/api"
 	inventoryapi "gitlab.com/keibiengine/keibi-engine/pkg/inventory/api"
+	"go.uber.org/zap"
 
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
 	"github.com/ory/dockertest/v3"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
+	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpserver"
 	queuemocks "gitlab.com/keibiengine/keibi-engine/pkg/internal/queue/mocks"
 	vaultmocks "gitlab.com/keibiengine/keibi-engine/pkg/internal/vault/mocks"
 	"gitlab.com/keibiengine/keibi-engine/pkg/onboard/api"
@@ -32,7 +34,7 @@ import (
 type HttpHandlerSuite struct {
 	suite.Suite
 
-	handler HttpHandler
+	handler *HttpHandler
 	router  *echo.Echo
 }
 
@@ -71,14 +73,16 @@ func (s *HttpHandlerSuite) SetupSuite() {
 	tx := orm.Exec(`CREATE EXTENSION IF NOT EXISTS "uuid-ossp";`)
 	require.NoError(tx.Error, "enable uuid v4")
 
-	s.router = InitializeRouter()
-	s.handler = HttpHandler{
+	s.handler = &HttpHandler{
 		db:                Database{orm: orm},
 		sourceEventsQueue: &queuemocks.Interface{},
 		vault:             &vaultmocks.SourceConfig{},
 	}
 
-	s.handler.Register(s.router)
+	logger, err := zap.NewProduction()
+	require.NoError(err, "new logger")
+
+	s.router = httpserver.Register(logger, s.handler)
 }
 
 func (s *HttpHandlerSuite) BeforeTest(suiteName, testName string) {

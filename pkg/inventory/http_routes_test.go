@@ -18,6 +18,7 @@ import (
 	"time"
 
 	compliance_es "gitlab.com/keibiengine/keibi-engine/pkg/compliance-report/es"
+	"go.uber.org/zap"
 
 	"gorm.io/gorm/logger"
 
@@ -33,6 +34,7 @@ import (
 	api2 "gitlab.com/keibiengine/keibi-engine/pkg/describe/api"
 	pagination "gitlab.com/keibiengine/keibi-engine/pkg/internal/api"
 	idocker "gitlab.com/keibiengine/keibi-engine/pkg/internal/dockertest"
+	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpserver"
 	"gitlab.com/keibiengine/keibi-engine/pkg/inventory/api"
 	"gitlab.com/keibiengine/keibi-engine/pkg/inventory/client"
 	"gorm.io/driver/postgres"
@@ -224,14 +226,16 @@ func (s *HttpHandlerSuite) SetupSuite() {
 	})
 	require.NoError(err, "wait for postgres connection")
 
-	s.router = InitializeRouter()
-	s.handler, _ = InitializeHttpHandler(s.elasticUrl, "", "",
+	s.handler, err = InitializeHttpHandler(s.elasticUrl, "", "",
 		idocker.GetDockerHost(), postgresResource.GetPort("5432/tcp"), "postgres", "postgres", "mysecretpassword",
 		idocker.GetDockerHost(), steampipeResource.GetPort("9193/tcp"), "steampipe", "steampipe", "abcd",
 		s.describe.MockServer.URL,
 	)
+	require.NoError(err, "init http handler")
 
-	s.handler.Register(s.router.Group("/api/v1"))
+	logger, err := zap.NewProduction()
+	require.NoError(err, "new logger")
+	s.router = httpserver.Register(logger, s.handler)
 }
 
 func (s *HttpHandlerSuite) BeforeTest(suiteName, testName string) {

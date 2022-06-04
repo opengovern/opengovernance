@@ -13,6 +13,7 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/azure"
 	compliancereport "gitlab.com/keibiengine/keibi-engine/pkg/compliance-report"
 	"gitlab.com/keibiengine/keibi-engine/pkg/describe/api"
+	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpserver"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/queue"
 	"go.uber.org/zap"
 	"gorm.io/driver/postgres"
@@ -283,10 +284,7 @@ func (s *Scheduler) Run() error {
 		s.logger.Fatal("ComplianceReportJobResult consumer exited", zap.Error(s.RunComplianceReportJobResultsConsumer()))
 	}()
 
-	// httpServer.Initialize() shouldn't return.
-	// If it does indicates a failure HTTP server.
-	// If it does, indicates a failure with consume
-	return s.httpServer.Initialize()
+	return httpserver.RegisterAndStart(s.logger, s.httpServer.Address, s.httpServer)
 }
 
 func (s *Scheduler) RunDescribeJobCompletionUpdater() {

@@ -33,7 +33,7 @@ func InitializeHttpHandler(
 	vaultRoleName string,
 	vaultCaPath string,
 	vaultUseTLS bool,
-) (HttpHandler, error) {
+) (*HttpHandler, error) {
 
 	fmt.Println("Initializing http handler")
 
@@ -48,7 +48,7 @@ func InitializeHttpHandler(
 	qCfg.Producer.ID = "onboard-service"
 	sourceEventsQueue, err := queue.New(qCfg)
 	if err != nil {
-		return HttpHandler{}, err
+		return nil, err
 	}
 
 	fmt.Println("Connected to the source queue: ", sourceEventsQueueName)
@@ -64,7 +64,7 @@ func InitializeHttpHandler(
 
 	orm, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	if err != nil {
-		return HttpHandler{}, err
+		return nil, err
 	}
 
 	fmt.Println("Connected to the postgres database: ", postgresDb)
@@ -74,13 +74,13 @@ func InitializeHttpHandler(
 		kubernetes.WithServiceAccountToken(vaultToken),
 	)
 	if err != nil {
-		return HttpHandler{}, err
+		return nil, err
 	}
 
 	// setup vault
 	v, err := vault.NewSourceConfig(vaultAddress, vaultCaPath, k8sAuth, vaultUseTLS)
 	if err != nil {
-		return HttpHandler{}, err
+		return nil, err
 	}
 
 	fmt.Println("Connected to vault:", vaultAddress)
@@ -88,11 +88,11 @@ func InitializeHttpHandler(
 	db := Database{orm: orm}
 	err = db.Initialize()
 	if err != nil {
-		return HttpHandler{}, err
+		return nil, err
 	}
 	fmt.Println("Initialized postgres database: ", postgresDb)
 
-	return HttpHandler{
+	return &HttpHandler{
 		vault:             v,
 		db:                db,
 		sourceEventsQueue: sourceEventsQueue,

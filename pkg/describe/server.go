@@ -6,14 +6,10 @@ import (
 	"time"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/cloudservice"
-
-	"gitlab.com/keibiengine/keibi-engine/pkg/metrics"
-
 	complianceapi "gitlab.com/keibiengine/keibi-engine/pkg/compliance-report/api"
 
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
-	"github.com/labstack/echo/v4/middleware"
 	"gitlab.com/keibiengine/keibi-engine/pkg/aws"
 	"gitlab.com/keibiengine/keibi-engine/pkg/azure"
 	"gitlab.com/keibiengine/keibi-engine/pkg/describe/api"
@@ -35,13 +31,7 @@ func NewHTTPServer(
 	}
 }
 
-func (s *HttpServer) Initialize() error {
-	e := echo.New()
-	e.Use(middleware.LoggerWithConfig(middleware.LoggerConfig{
-		Format: "method=${method}, uri=${uri}, status=${status}\n",
-	}))
-
-	metrics.AddEchoMiddleware(e)
+func (s *HttpServer) Register(e *echo.Echo) {
 	v1 := e.Group("/api/v1")
 
 	v1.GET("/sources", s.HandleListSources)
@@ -55,7 +45,6 @@ func (s *HttpServer) Initialize() error {
 	v1.GET("/resource_type/:provider", s.GetResourceTypesByProvider)
 
 	v1.GET("/compliance/report/last/completed", s.HandleGetLastCompletedComplianceReport)
-	return e.Start(s.Address)
 }
 
 // HandleListSources godoc
