@@ -1872,9 +1872,25 @@ func (h *HttpHandler) GetResource(ctx echo.Context) error {
 			resp["tags"] = respTags
 		}
 
-		val := v.GetStringValue()
+		var val string
+		if x, ok := v.GetValue().(*proto.Column_DoubleValue); ok {
+			val = fmt.Sprintf("%f", x.DoubleValue)
+		} else if x, ok := v.GetValue().(*proto.Column_IntValue); ok {
+			val = fmt.Sprintf("%d", x.IntValue)
+		} else if x, ok := v.GetValue().(*proto.Column_StringValue); ok {
+			val = x.StringValue
+		} else if x, ok := v.GetValue().(*proto.Column_BoolValue); ok {
+			val = fmt.Sprintf("%v", x.BoolValue)
+		} else if x, ok := v.GetValue().(*proto.Column_TimestampValue); ok {
+			val = fmt.Sprintf("%v", x.TimestampValue.AsTime())
+		} else if x, ok := v.GetValue().(*proto.Column_IpAddrValue); ok {
+			val = x.IpAddrValue
+		} else if x, ok := v.GetValue().(*proto.Column_CidrRangeValue); ok {
+			val = x.CidrRangeValue
+		}
+
 		if len(val) > 0 {
-			resp[k] = v.GetStringValue()
+			resp[k] = val
 		}
 	}
 
