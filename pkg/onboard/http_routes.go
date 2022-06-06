@@ -210,13 +210,12 @@ func (h HttpHandler) PostSourceAws(ctx echo.Context) error {
 			return err
 		}
 
-		err = h.sourceEventsQueue.Publish(api.SourceEvent{
+		if err := h.sourceEventsQueue.Publish(api.SourceEvent{
 			Action:     api.SourceCreated,
 			SourceID:   src.ID,
 			SourceType: src.Type,
 			ConfigRef:  src.ConfigRef,
-		})
-		if err != nil {
+		}); err != nil {
 			return err
 		}
 
@@ -259,13 +258,12 @@ func (h HttpHandler) PostSourceAzure(ctx echo.Context) error {
 			return err
 		}
 
-		err = h.sourceEventsQueue.Publish(api.SourceEvent{
+		if err := h.sourceEventsQueue.Publish(api.SourceEvent{
 			Action:     api.SourceCreated,
 			SourceID:   src.ID,
 			SourceType: src.Type,
 			ConfigRef:  src.ConfigRef,
-		})
-		if err != nil {
+		}); err != nil {
 			return err
 		}
 
@@ -308,13 +306,12 @@ func (h HttpHandler) PostSourceAzureSPN(ctx echo.Context) error {
 			return err
 		}
 
-		err = h.sourceEventsQueue.Publish(api.SourceEvent{
+		if err := h.sourceEventsQueue.Publish(api.SourceEvent{
 			Action:     api.SourceCreated,
 			SourceID:   src.ID,
 			SourceType: src.Type,
 			ConfigRef:  src.ConfigRef,
-		})
-		if err != nil {
+		}); err != nil {
 			return err
 		}
 
@@ -618,13 +615,12 @@ func (h HttpHandler) DeleteSource(ctx echo.Context) error {
 			return err
 		}
 
-		err = h.sourceEventsQueue.Publish(api.SourceEvent{
+		if err := h.sourceEventsQueue.Publish(api.SourceEvent{
 			Action:     api.SourceDeleted,
 			SourceID:   src.ID,
 			SourceType: src.Type,
 			ConfigRef:  src.ConfigRef,
-		})
-		if err != nil {
+		}); err != nil {
 			return err
 		}
 

@@ -16,6 +16,8 @@ const (
 //go:generate mockery --name Interface
 //go:generate mockery --name Acknowledger --srcpkg github.com/streadway/amqp
 type Interface interface {
+	Len() (int, error)
+	Name() string
 	Consume() (<-chan amqp.Delivery, error)
 	Publish(v interface{}) error
 	Close()
@@ -166,4 +168,16 @@ func (q *queue) Close() {
 	if q.ch != nil {
 		_ = q.ch.Close()
 	}
+}
+
+func (q *queue) Len() (int, error) {
+	queue, err := q.ch.QueueInspect(q.Name())
+	if err != nil {
+		return 0, err
+	}
+	return queue.Messages, nil
+}
+
+func (q *queue) Name() string {
+	return q.cfg.Queue.Name
 }

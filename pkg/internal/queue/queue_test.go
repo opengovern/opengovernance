@@ -65,3 +65,67 @@ func TestRabbitMQ(t *testing.T) {
 		// pass
 	}
 }
+
+func TestRabbitMQGetQueueInfo(t *testing.T) {
+	require := require.New(t)
+	server := dockertest.StartupRabbitMQ(t)
+
+	cfg := Config{
+		Server: server,
+	}
+
+	cfg.Queue.Name = "test-queue-1"
+	cfg.Consumer.ID = "test-consumer"
+	cfg.Producer.ID = "test-producer"
+
+	qu, err := New(cfg)
+	require.NoError(err, "create queue")
+	// new queue with no data
+	count, err := qu.Len()
+	require.NoError(err, "get queue length")
+	require.Equal(0, count)
+	require.Equal(cfg.Queue.Name, qu.Name())
+
+	type Message struct {
+		ID uint
+	}
+
+	msgs, err := qu.Consume()
+	require.NoError(err, "consume")
+
+	// Try to retrieve one without any message
+	select {
+	case msg := <-msgs:
+		require.FailNow("unexpected message: %#v", msg)
+	default:
+		// pass
+	}
+
+	err = qu.Publish(Message{
+		ID: 1,
+	})
+	require.NoError(err, "publish")
+
+	select {
+	case msg := <-msgs:
+		require.Equal("application/json", msg.ContentType)
+		require.Equal(qu.Name(), msg.RoutingKey)
+		require.Equal("test-producer", msg.AppId)
+		require.Equal("test-consumer", msg.ConsumerTag)
+		require.Equal("", msg.Expiration)
+		require.Equal(`{"ID":1}`, string(msg.Body))
+		err := msg.Ack(false)
+		require.NoError(err, "ack")
+	case <-time.After(10 * time.Second):
+		require.FailNow("timed out: exptected message with id 1")
+	}
+
+	// Try to retrieve another one
+	select {
+	case msg := <-msgs:
+		require.FailNow("unexpected message: %#v", msg)
+	default:
+		// pass
+	}
+
+}
