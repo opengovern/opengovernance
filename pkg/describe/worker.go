@@ -149,6 +149,11 @@ func (w *Worker) Run() error {
 		if err != nil {
 			w.logger.Error("Failed acking message", zap.Error(err))
 		}
+
+		err = w.pusher.Push()
+		if err != nil {
+			w.logger.Error("Failed to push metrics", zap.Error(err))
+		}
 	}
 
 	return fmt.Errorf("descibe jobs channel is closed")
