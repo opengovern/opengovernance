@@ -28,7 +28,15 @@ const (
 	JobSchedulingInterval       = 1 * time.Minute
 	JobComplianceReportInterval = 1 * time.Minute
 	JobTimeoutCheckInterval     = 15 * time.Minute
+	MaxJobInQueue               = 10000
 )
+
+var DescribePublishingBlocked = promauto.NewGaugeVec(prometheus.GaugeOpts{
+	Namespace: "keibi",
+	Subsystem: "scheduler",
+	Name:      "queue_job_publishing_blocked",
+	Help:      "The gauge whether publishing tasks to a queue is blocked: 0 for resumed and 1 for blocked",
+}, []string{"queue_name"})
 
 var DescribeJobsCount = promauto.NewCounterVec(prometheus.CounterOpts{
 	Namespace: "keibi",
@@ -352,6 +360,7 @@ func (s *Scheduler) RunDescribeJobCompletionUpdater() {
 
 func (s Scheduler) RunDescribeJobScheduler() {
 	s.logger.Info("Scheduling describe jobs on a timer")
+
 	t := time.NewTicker(JobSchedulingInterval)
 	defer t.Stop()
 
@@ -369,8 +378,12 @@ func (s Scheduler) scheduleDescribeJob() {
 	}
 
 	for _, source := range sources {
-		s.logger.Info("Source is due for a describe. Creating a job now", zap.String("sourceId", source.ID.String()))
+		if isPublishingBlocked(s.logger, s.describeJobQueue) {
+			s.logger.Warn("The jobs in queue is over the threshold", zap.Error(err))
+			return
+		}
 
+		s.logger.Info("Source is due for a describe. Creating a job now", zap.String("sourceId", source.ID.String()))
 		daj := newDescribeSourceJob(source)
 		err := s.db.CreateDescribeSourceJob(&daj)
 		if err != nil {
@@ -462,11 +475,15 @@ func (s Scheduler) cleanupDescribeJob() {
 
 		success := true
 		for _, rj := range drj {
-			err := s.describeCleanupJobQueue.Publish(DescribeCleanupJob{
+			if isPublishingBlocked(s.logger, s.describeCleanupJobQueue) {
+				s.logger.Warn("The jobs in queue is over the threshold", zap.Error(err))
+				return
+			}
+
+			if err := s.describeCleanupJobQueue.Publish(DescribeCleanupJob{
 				JobID:        rj.ID,
 				ResourceType: rj.ResourceType,
-			})
-			if err != nil {
+			}); err != nil {
 				s.logger.Error("Failed to publish describe clean up job to queue for DescribeResourceJob",
 					zap.Uint("jobId", rj.ID),
 					zap.Error(err),
@@ -521,10 +538,9 @@ func (s Scheduler) cleanupComplianceReportJob() {
 	}
 
 	for _, sj := range dsj {
-		err := s.complianceReportCleanupJobQueue.Publish(compliancereport.ComplianceReportCleanupJob{
+		if err := s.complianceReportCleanupJobQueue.Publish(compliancereport.ComplianceReportCleanupJob{
 			JobID: sj.ID,
-		})
-		if err != nil {
+		}); err != nil {
 			s.logger.Error("Failed to publish compliance report clean up job to queue for ComplianceReportJob",
 				zap.Uint("jobId", sj.ID),
 				zap.Error(err),
@@ -580,8 +596,7 @@ func (s *Scheduler) RunSourceEventsConsumer() error {
 			continue
 		}
 
-		err = msg.Ack(false)
-		if err != nil {
+		if err := msg.Ack(false); err != nil {
 			s.logger.Error("Failed acking message", zap.Error(err))
 		}
 	}
@@ -637,8 +652,7 @@ func (s *Scheduler) RunDescribeJobResultsConsumer() error {
 				continue
 			}
 
-			err = msg.Ack(false)
-			if err != nil {
+			if err := msg.Ack(false); err != nil {
 				s.logger.Error("Failed acking message", zap.Error(err))
 			}
 		case <-t.C:
@@ -664,8 +678,12 @@ func (s *Scheduler) RunComplianceReportScheduler() {
 		}
 
 		for _, source := range sources {
-			s.logger.Error("Source is due for a steampipe check. Creating a ComplianceReportJob now", zap.String("sourceId", source.ID.String()))
+			if isPublishingBlocked(s.logger, s.complianceReportJobQueue) {
+				s.logger.Warn("The jobs in queue is over the threshold", zap.Error(err))
+				break
+			}
 
+			s.logger.Error("Source is due for a steampipe check. Creating a ComplianceReportJob now", zap.String("sourceId", source.ID.String()))
 			crj := newComplianceReportJob(source)
 			err := s.db.CreateComplianceReportJob(&crj)
 			if err != nil {
@@ -739,8 +757,7 @@ func (s *Scheduler) RunComplianceReportJobResultsConsumer() error {
 				continue
 			}
 
-			err = msg.Ack(false)
-			if err != nil {
+			if err := msg.Ack(false); err != nil {
 				s.logger.Error("Failed acking message", zap.Error(err))
 			}
 		case <-t.C:
@@ -808,7 +825,7 @@ func enqueueDescribeResourceJobs(logger *zap.Logger, db Database, q queue.Interf
 		nextStatus := api.DescribeResourceJobQueued
 		errMsg := ""
 
-		err := q.Publish(DescribeJob{
+		if err := q.Publish(DescribeJob{
 			JobID:        drj.ID,
 			ParentJobID:  daj.ID,
 			SourceID:     daj.SourceID.String(),
@@ -816,8 +833,7 @@ func enqueueDescribeResourceJobs(logger *zap.Logger, db Database, q queue.Interf
 			ResourceType: drj.ResourceType,
 			DescribedAt:  describedAt.UnixMilli(),
 			ConfigReg:    a.ConfigRef,
-		})
-		if err != nil {
+		}); err != nil {
 			logger.Error("Failed to queue DescribeResourceJob",
 				zap.Uint("jobId", drj.ID),
 				zap.Error(err),
@@ -827,8 +843,7 @@ func enqueueDescribeResourceJobs(logger *zap.Logger, db Database, q queue.Interf
 			errMsg = fmt.Sprintf("queue: %s", err.Error())
 		}
 
-		err = db.UpdateDescribeResourceJobStatus(drj.ID, nextStatus, errMsg)
-		if err != nil {
+		if err := db.UpdateDescribeResourceJobStatus(drj.ID, nextStatus, errMsg); err != nil {
 			logger.Error("Failed to update DescribeResourceJob",
 				zap.Uint("jobId", drj.ID),
 				zap.Error(err),
@@ -843,15 +858,14 @@ func enqueueComplianceReportJobs(logger *zap.Logger, db Database, q queue.Interf
 	nextStatus := complianceapi.ComplianceReportJobInProgress
 	errMsg := ""
 
-	err := q.Publish(compliancereport.Job{
+	if err := q.Publish(compliancereport.Job{
 		JobID:       crj.ID,
 		SourceID:    a.ID,
 		SourceType:  source.Type(a.Type),
 		DescribedAt: a.LastDescribedAt.Time.UnixMilli(),
 		ConfigReg:   a.ConfigRef,
 		ReportID:    a.NextComplianceReportID,
-	})
-	if err != nil {
+	}); err != nil {
 		logger.Error("Failed to queue ComplianceReportJob",
 			zap.Uint("jobId", crj.ID),
 			zap.Error(err),
@@ -861,8 +875,7 @@ func enqueueComplianceReportJobs(logger *zap.Logger, db Database, q queue.Interf
 		errMsg = fmt.Sprintf("queue: %s", err.Error())
 	}
 
-	err = db.UpdateComplianceReportJob(crj.ID, nextStatus, 0, errMsg)
-	if err != nil {
+	if err := db.UpdateComplianceReportJob(crj.ID, nextStatus, 0, errMsg); err != nil {
 		logger.Error("Failed to update ComplianceReportJob",
 			zap.Uint("jobId", crj.ID),
 			zap.Error(err),
@@ -870,4 +883,19 @@ func enqueueComplianceReportJobs(logger *zap.Logger, db Database, q queue.Interf
 	}
 
 	crj.Status = nextStatus
+}
+
+func isPublishingBlocked(logger *zap.Logger, queue queue.Interface) bool {
+	count, err := queue.Len()
+	if err != nil {
+		logger.Error("Failed to get queue len", zap.String("queueName", queue.Name()), zap.Error(err))
+		DescribePublishingBlocked.WithLabelValues(queue.Name()).Set(0)
+		return false
+	}
+	if count >= MaxJobInQueue {
+		DescribePublishingBlocked.WithLabelValues(queue.Name()).Set(1)
+		return true
+	}
+	DescribePublishingBlocked.WithLabelValues(queue.Name()).Set(0)
+	return false
 }

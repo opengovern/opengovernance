@@ -145,8 +145,7 @@ func (w *Worker) Run() error {
 			w.logger.Error("Failed to send results to queue: %s", zap.Error(err))
 		}
 
-		err = msg.Ack(false)
-		if err != nil {
+		if err := msg.Ack(false); err != nil {
 			w.logger.Error("Failed acking message", zap.Error(err))
 		}
 
@@ -291,8 +290,7 @@ func (w *CleanupWorker) Run() error {
 			continue
 		}
 
-		err = msg.Ack(false)
-		if err != nil {
+		if err := msg.Ack(false); err != nil {
 			w.logger.Error("Failed acking message", zap.Error(err))
 		}
 	}

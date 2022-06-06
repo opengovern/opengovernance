@@ -129,14 +129,12 @@ func (w *Worker) Run() error {
 
 		result := job.Do(w.vault, w.kfkProducer, w.kfkTopic, w.config, w.logger)
 
-		err := w.jobResultQueue.Publish(result)
-		if err != nil {
+		if err := w.jobResultQueue.Publish(result); err != nil {
 			w.logger.Error("Failed to send results to queue", zap.Error(err))
 		}
 
 		w.logger.Info("A job is done and result is published into the result queue", zap.String("result", fmt.Sprintf("%v", result)))
-		err = msg.Ack(false)
-		if err != nil {
+		if err := msg.Ack(false); err != nil {
 			w.logger.Error("Failed acking message", zap.Error(err))
 		}
 
