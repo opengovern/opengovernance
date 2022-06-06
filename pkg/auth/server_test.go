@@ -12,8 +12,11 @@ import (
 	envoyauth "github.com/envoyproxy/go-control-plane/envoy/service/auth/v3"
 	"github.com/gogo/googleapis/google/rpc"
 	"github.com/google/uuid"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 	"gitlab.com/keibiengine/keibi-engine/pkg/auth/api"
+	"gitlab.com/keibiengine/keibi-engine/pkg/auth/extauth"
+	"gitlab.com/keibiengine/keibi-engine/pkg/auth/extauth/mocks"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/dockertest"
 	"go.uber.org/zap"
 	"gorm.io/gorm"
@@ -83,41 +86,64 @@ func (s *ServerSuite) TestServer_Check() {
 			SkipExpiryCheck:   true,
 			SkipIssuerCheck:   true,
 		}),
-		db:         s.db,
-		hostSuffix: ".app.keibi.io",
+		extAuth: &mocks.Provider{},
+		db:      s.db,
+		host:    "app.keibi.io",
+	}
+
+	user1 := User{
+		ID:         uuid.New(),
+		ExternalID: "1",
+		Email:      "1@gmail.com",
+	}
+
+	user2 := User{
+		ID:         uuid.New(),
+		ExternalID: "2",
+		Email:      "2@gmail.com",
 	}
 
 	rb1 := RoleBinding{
-		UserID:        uuid.New(),
-		ExternalID:    "1",
+		UserID:        user1.ID,
+		ExternalID:    user1.ExternalID,
 		WorkspaceName: "workspace1",
 		Role:          api.AdminRole,
 		AssignedAt:    time.Now(),
 	}
 
 	rb2 := RoleBinding{
-		UserID:        uuid.New(),
-		ExternalID:    "2",
+		UserID:        user2.ID,
+		ExternalID:    user2.ExternalID,
 		WorkspaceName: "workspace1",
 		Role:          api.ViewerRole,
 		AssignedAt:    time.Now(),
 	}
 
 	rb3 := RoleBinding{
-		UserID:        rb1.UserID,
-		ExternalID:    "1",
+		UserID:        user1.ID,
+		ExternalID:    user1.ExternalID,
 		WorkspaceName: "workspace2",
 		Role:          api.EditorRole,
 		AssignedAt:    time.Now(),
 	}
 
+	require.NoError(server.db.CreateUser(&user1))
+	require.NoError(server.db.CreateUser(&user2))
+
 	require.NoError(server.db.CreateOrUpdateRoleBinding(&rb1), "create rolebinding 1", rb1.ExternalID)
 	require.NoError(server.db.CreateOrUpdateRoleBinding(&rb2), "create rolebinding 2", rb2.ExternalID)
 	require.NoError(server.db.CreateOrUpdateRoleBinding(&rb3), "create rolebinding 3", rb3.ExternalID)
 
+	server.extAuth.(*mocks.Provider).On("FetchUser", mock.Anything, "3").Return(extauth.AzureADUser{
+		ID:   "3",
+		Mail: "3@gmail.com",
+	}, error(nil))
+
+	server.extAuth.(*mocks.Provider).On("FetchUser", mock.Anything, "4").Return(extauth.AzureADUser{}, extauth.ErrUserNotExists)
+
 	type args struct {
 		token             string
-		host              string
+		workspace         string
 		auth              bool
 		expectedId        uuid.UUID
 		expectedRole      api.Role
@@ -134,7 +160,7 @@ func (s *ServerSuite) TestServer_Check() {
 			//  ]
 			//}
 			token:             "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxIiwiZ2l2ZW5fbmFtZSI6InVzZXIxIiwiZW1haWxzIjpbIjFAZ21haWwuY29tIl19.SM3WDS8i_yBHKEigcd9bYE4N8dH4eJwiqo5Q5QtTsh9oYyOE2_kkfSpH5h5if6-z2pr6uPgJlY1a0VEE0MTVueeCsfyag3uDP941AKpchgYgJQCXxCpXL9fBf5I691hl4kZ9eVMraOrb39AK1wCn9anjrIEonKTmfdIxJMa6UpsvwUBjMLPubKSzv66UcqfMRbdSHh__cXWbH1lsj9MURMUpkd_HmJVLrhVGPCdd9jaQWQAUwWmGN9UOr7WJaEbpCN93b_6f508awN8F8ByEmmhXj1JG2zlHQctgjAt8sVeUh_LVBEq29hG1f3AyZvTxOMY_Xz14yrasDV79x1KWaA",
-			host:              "workspace1.app.keibi.io",
+			workspace:         "workspace1",
 			auth:              true,
 			expectedId:        rb1.UserID,
 			expectedRole:      rb1.Role,
@@ -149,7 +175,7 @@ func (s *ServerSuite) TestServer_Check() {
 			//  ]
 			//}
 			token:             "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIyIiwiZ2l2ZW5fbmFtZSI6InVzZXIyIiwiZW1haWxzIjpbIjJAZ21haWwuY29tIl19.ei5Agr-hbKhaAAzgkaz_ou5IxpIsiVr0roo0FF46P-t4v2zGRyd63NaIp6mrCZkheA2_gK54N6t0v8SQuJr9nr0d2w0rWypMRXda2i2cltpNgvPJk3undh4-YcJZ8qfNI71zk_5NZK-iygNh6qC7N62SNu9kG_DAaIzvzq3hCyE6p7jzptKLP4ZVR6_lNqyukMdufPZATwJNWwtEGJRrpYOY73XwjP4dezRNe1dRFHrS6kCl8AGfLQcbVdnFZT27fuYAuT2z0LrmRs91msrWVdKz-GL4ro09L-mN9HUU2_lbgvnE7bMyBAdTpgqnrFbL3XSFdnQJtRFbdGl0SawEjg",
-			host:              "workspace1.app.keibi.io",
+			workspace:         "workspace1",
 			auth:              true,
 			expectedId:        rb2.UserID,
 			expectedRole:      rb2.Role,
@@ -164,7 +190,7 @@ func (s *ServerSuite) TestServer_Check() {
 			//  ]
 			//}
 			token:             "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxIiwiZ2l2ZW5fbmFtZSI6InVzZXIxIiwiZW1haWxzIjpbIjFAZ21haWwuY29tIl19.SM3WDS8i_yBHKEigcd9bYE4N8dH4eJwiqo5Q5QtTsh9oYyOE2_kkfSpH5h5if6-z2pr6uPgJlY1a0VEE0MTVueeCsfyag3uDP941AKpchgYgJQCXxCpXL9fBf5I691hl4kZ9eVMraOrb39AK1wCn9anjrIEonKTmfdIxJMa6UpsvwUBjMLPubKSzv66UcqfMRbdSHh__cXWbH1lsj9MURMUpkd_HmJVLrhVGPCdd9jaQWQAUwWmGN9UOr7WJaEbpCN93b_6f508awN8F8ByEmmhXj1JG2zlHQctgjAt8sVeUh_LVBEq29hG1f3AyZvTxOMY_Xz14yrasDV79x1KWaA",
-			host:              "workspace2.app.keibi.io",
+			workspace:         "workspace2",
 			auth:              true,
 			expectedId:        rb3.UserID,
 			expectedRole:      rb3.Role,
@@ -178,9 +204,9 @@ func (s *ServerSuite) TestServer_Check() {
 			//    "2@gmail.com"
 			//  ]
 			//}
-			token: "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIyIiwiZ2l2ZW5fbmFtZSI6InVzZXIyIiwiZW1haWxzIjpbIjJAZ21haWwuY29tIl19.ei5Agr-hbKhaAAzgkaz_ou5IxpIsiVr0roo0FF46P-t4v2zGRyd63NaIp6mrCZkheA2_gK54N6t0v8SQuJr9nr0d2w0rWypMRXda2i2cltpNgvPJk3undh4-YcJZ8qfNI71zk_5NZK-iygNh6qC7N62SNu9kG_DAaIzvzq3hCyE6p7jzptKLP4ZVR6_lNqyukMdufPZATwJNWwtEGJRrpYOY73XwjP4dezRNe1dRFHrS6kCl8AGfLQcbVdnFZT27fuYAuT2z0LrmRs91msrWVdKz-GL4ro09L-mN9HUU2_lbgvnE7bMyBAdTpgqnrFbL3XSFdnQJtRFbdGl0SawEjg",
-			host:  "workspace2.app.keibi.io",
-			auth:  false,
+			token:     "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIyIiwiZ2l2ZW5fbmFtZSI6InVzZXIyIiwiZW1haWxzIjpbIjJAZ21haWwuY29tIl19.ei5Agr-hbKhaAAzgkaz_ou5IxpIsiVr0roo0FF46P-t4v2zGRyd63NaIp6mrCZkheA2_gK54N6t0v8SQuJr9nr0d2w0rWypMRXda2i2cltpNgvPJk3undh4-YcJZ8qfNI71zk_5NZK-iygNh6qC7N62SNu9kG_DAaIzvzq3hCyE6p7jzptKLP4ZVR6_lNqyukMdufPZATwJNWwtEGJRrpYOY73XwjP4dezRNe1dRFHrS6kCl8AGfLQcbVdnFZT27fuYAuT2z0LrmRs91msrWVdKz-GL4ro09L-mN9HUU2_lbgvnE7bMyBAdTpgqnrFbL3XSFdnQJtRFbdGl0SawEjg",
+			workspace: "workspace2",
+			auth:      false,
 		},
 		{
 			// {
@@ -190,27 +216,27 @@ func (s *ServerSuite) TestServer_Check() {
 			//    "3@gmail.com"
 			//  ]
 			//}
-			token: "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIzIiwiZ2l2ZW5fbmFtZSI6InVzZXIzIiwiZW1haWxzIjpbIjNAZ21haWwuY29tIl19.kKrCbMYjsZcvoc_LZ-z0mUgijMpGArFAPtRY_ETjgLJT4cz3a_VM6xU5HiKGR3BtVHRy9DSyjiaP4q_hARHJL2PivaxXp2LZvgIdz_pG1kA0b_6PiOqwtNlBKU8Nzrka1cn2sA5XkCHHagQ-mDPJBlx32MReVKnQePOg5CyREyVs2pgAzNBNC5YFzXIq5rKgaf0fpncvlebxBlermfuyXTCFxcLfnMIaAwTqw6Xo901Qq2GSG755O6G21TxMYDbwZARJC_-4on1BQA0BtKdcSuC15xRx29qAdl0Dkz4SkZZjVhqsYKDBjH01SHJfq6Rukmgt2aA1_B0JZdUrruEY-Q",
-			host:  "workspace1.app.keibi.io",
-			auth:  false,
+			token:     "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIzIiwiZ2l2ZW5fbmFtZSI6InVzZXIzIiwiZW1haWxzIjpbIjNAZ21haWwuY29tIl19.kKrCbMYjsZcvoc_LZ-z0mUgijMpGArFAPtRY_ETjgLJT4cz3a_VM6xU5HiKGR3BtVHRy9DSyjiaP4q_hARHJL2PivaxXp2LZvgIdz_pG1kA0b_6PiOqwtNlBKU8Nzrka1cn2sA5XkCHHagQ-mDPJBlx32MReVKnQePOg5CyREyVs2pgAzNBNC5YFzXIq5rKgaf0fpncvlebxBlermfuyXTCFxcLfnMIaAwTqw6Xo901Qq2GSG755O6G21TxMYDbwZARJC_-4on1BQA0BtKdcSuC15xRx29qAdl0Dkz4SkZZjVhqsYKDBjH01SHJfq6Rukmgt2aA1_B0JZdUrruEY-Q",
+			workspace: "workspace1",
+			auth:      false,
+		},
+		{
+			// {
+			//  "sub": "4",
+			//  "given_name": "user4",
+			//  "emails": [
+			//    "4@gmail.com"
+			//  ]
+			//}
+			token:     "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI0IiwiZ2l2ZW5fbmFtZSI6InVzZXI0IiwiZW1haWxzIjpbIjRAZ21haWwuY29tIl19.bghMsGaEoRauL6QrV1T5yhL3ylECd7jjMWy-6XripZuKu1x1oToqJFW-id1ZgzqyeScM8qiA8DK2Nl8iPT4hY0BjeTpziq85FTBm8dKyKAWI4JrjVbzgicArD25fuvtL5zEG1zr0PCtvYiVxF6wpDmrBnDjxAFw_U3HcHyVZ6axKiR9LMifTiimdEt0elPUcsVpNj8TO0MTTMvX6l6jcwwhJAO_30LexV8-xfjtQ9dzxdCDN9f4YuY3F87bANgU8w2LxVLZgxclhDZ4oXbHBcRLnmekChY0UiXO7Q4XHU17BscBcLAy5X0lmmhZsmKNQrfbkpinylPATmSnZ41x2Gg",
+			workspace: "ThirdWorkspace",
+			auth:      false,
 		},
 		// wrong token
 		{
-			token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIzIiwiZ2l2ZW5fbmFtZSI6InVzZXIzIiwiZW1haWxzIjpbIjNAZ21haWwuY29tIl19.owxoniWrQ_jefJU3rxzQGtJPiz3-ww4V6AxD_-fbsD0",
-			host:  "ThirdWorkspace",
-			auth:  false,
-		},
-		// user not found
-		{
-			token: "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJub3QgZm91bmQiLCJnaXZlbl9uYW1lIjoidXNlcm5vdGZvdW5kIiwiZW1haWxzIjpbIm5vdGZvdW5kQGdtYWlsLmNvbSJdfQ.m1LtiG_A5Qy-9JJ4eLM_G3n7rl698f7msC5mMH0bU0JIAbFzeLumbaVvR3__hnxHqCBKvddKmRHM9RflYRoC4hCXk3hDRw9hAfp4E2UYYWhj3SZy7-LLR7uBLQxtIOi_ARtxyRAXAYAZ0fUhjJRFowlKDnCD7BG97HE_SocDFCFGzheOR9UU0iRg0eb6BiJWglovflOke1Ncm8J_0nZj2zUzluITB10ujUjw6AvjUT1uCPMadbZVvnDfDAgM3H046-OpJXwutXvylbeT8WjuBGrOx9hpmQSPbTug-j5egzK4ZySHs6d4GtxtkpbRKegP9FCq2FcjsWbn3lVde4zagA",
-			host:  "NotFoundWorkspace",
-			auth:  false,
-		},
-		// host not found
-		{
-			token: "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI0IiwiZ2l2ZW5fbmFtZSI6InVzZXI0IiwiZW1haWxzIjpbIjRAZ21haWwuY29tIl19.bghMsGaEoRauL6QrV1T5yhL3ylECd7jjMWy-6XripZuKu1x1oToqJFW-id1ZgzqyeScM8qiA8DK2Nl8iPT4hY0BjeTpziq85FTBm8dKyKAWI4JrjVbzgicArD25fuvtL5zEG1zr0PCtvYiVxF6wpDmrBnDjxAFw_U3HcHyVZ6axKiR9LMifTiimdEt0elPUcsVpNj8TO0MTTMvX6l6jcwwhJAO_30LexV8-xfjtQ9dzxdCDN9f4YuY3F87bANgU8w2LxVLZgxclhDZ4oXbHBcRLnmekChY0UiXO7Q4XHU17BscBcLAy5X0lmmhZsmKNQrfbkpinylPATmSnZ41x2Gg",
-			host:  "ThirdWorkspace",
-			auth:  false,
+			token:     "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIzIiwiZ2l2ZW5fbmFtZSI6InVzZXIzIiwiZW1haWxzIjpbIjNAZ21haWwuY29tIl19.owxoniWrQ_jefJU3rxzQGtJPiz3-ww4V6AxD_-fbsD0",
+			workspace: "ThirdWorkspace",
+			auth:      false,
 		},
 	}
 
@@ -222,7 +248,7 @@ func (s *ServerSuite) TestServer_Check() {
 						Headers: map[string]string{
 							"authorization": "Bearer " + tc.token,
 						},
-						Host: tc.host,
+						Host: fmt.Sprintf("%s.%s", tc.workspace, server.host),
 					},
 				},
 			},
@@ -245,4 +271,12 @@ func (s *ServerSuite) TestServer_Check() {
 			require.Empty(resp.GetDeniedResponse().GetHeaders())
 		}
 	}
+
+	u, err := s.db.GetUserByExternalID("3")
+	require.NoError(err)
+	require.Equal(u.Email, "3@gmail.com")
+	require.Equal(uuid.RFC4122, u.ID.Variant())
+
+	u, err = s.db.GetUserByExternalID("4")
+	require.ErrorIs(err, gorm.ErrRecordNotFound)
 }

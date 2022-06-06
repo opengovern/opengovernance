@@ -13,15 +13,19 @@ import (
 	envoytype "github.com/envoyproxy/go-control-plane/envoy/type/v3"
 	"github.com/gogo/googleapis/google/rpc"
 	"github.com/labstack/echo/v4"
+	"gitlab.com/keibiengine/keibi-engine/pkg/auth/api"
+	"gitlab.com/keibiengine/keibi-engine/pkg/auth/extauth"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpserver"
 	"go.uber.org/zap"
 	"google.golang.org/genproto/googleapis/rpc/status"
+	"gorm.io/gorm"
 )
 
 type Server struct {
-	hostSuffix string
+	host string
 
 	db       Database
+	extAuth  extauth.Provider
 	verifier *oidc.IDTokenVerifier
 	logger   *zap.Logger
 }
@@ -52,16 +56,61 @@ func (s Server) Check(ctx context.Context, req *envoyauth.CheckRequest) (*envoya
 		return unAuth, nil
 	}
 
-	workspaceName := strings.TrimSuffix(httpRequest.Host, s.hostSuffix)
-
-	rb, err := s.db.GetRoleBindingForWorkspace(user.ExternalUserID, workspaceName)
+	internalUser, err := s.db.GetUserByExternalID(user.ExternalUserID)
 	if err != nil {
-		s.logger.Warn("denied access due to failure in retrieving auth user host",
-			zap.String("reqId", httpRequest.Id),
-			zap.String("path", httpRequest.Path),
-			zap.String("method", httpRequest.Method),
-			zap.Error(err))
-		return unAuth, nil
+		if !errors.Is(err, gorm.ErrRecordNotFound) {
+			s.logger.Warn("denied access due to failure in retrieving internal user",
+				zap.String("reqId", httpRequest.Id),
+				zap.String("path", httpRequest.Path),
+				zap.String("method", httpRequest.Method),
+				zap.Error(err))
+			return unAuth, nil
+		}
+
+		azureADUser, err := s.extAuth.FetchUser(ctx, user.ExternalUserID)
+		if err != nil {
+			s.logger.Warn("denied access due to failure in retrieving auth user",
+				zap.String("reqId", httpRequest.Id),
+				zap.String("path", httpRequest.Path),
+				zap.String("method", httpRequest.Method),
+				zap.Error(err))
+			return unAuth, nil
+		}
+		internalUser = User{
+			Email:      azureADUser.Mail,
+			ExternalID: azureADUser.ID,
+		}
+		if err := s.db.CreateUser(&internalUser); err != nil {
+			s.logger.Warn("denied access due to failure in retrieving auth user host",
+				zap.String("reqId", httpRequest.Id),
+				zap.String("path", httpRequest.Path),
+				zap.String("method", httpRequest.Method),
+				zap.Error(err))
+			return unAuth, nil
+		}
+	}
+
+	var rb RoleBinding
+	if httpRequest.Host == s.host {
+		// e.g: app.keibi.io
+		rb = RoleBinding{
+			UserID: internalUser.ID,
+			Role:   api.EditorRole,
+		}
+	} else {
+		// e.g: workspace.app.keibi.io
+		workspaceName := strings.TrimSuffix(httpRequest.Host, s.host)
+		workspaceName = strings.TrimSuffix(workspaceName, ".")
+		rb, err = s.db.GetRoleBindingForWorkspace(user.ExternalUserID, workspaceName)
+		if err != nil {
+			s.logger.Warn("denied access due to failure in retrieving auth user host",
+				zap.String("reqId", httpRequest.Id),
+				zap.String("path", httpRequest.Path),
+				zap.String("method", httpRequest.Method),
+				zap.String("workspace", workspaceName),
+				zap.Error(err))
+			return unAuth, nil
+		}
 	}
 
 	s.logger.Debug("granted access",

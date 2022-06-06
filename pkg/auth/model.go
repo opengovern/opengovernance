@@ -13,7 +13,7 @@ type User struct {
 
 	ID         uuid.UUID `gorm:"primaryKey;type:uuid;default:uuid_generate_v4()"`
 	Email      string    `gorm:"unique;not null"`
-	ExternalID string    `gorm:"unique"`
+	ExternalID string    `gorm:"unique;not null"`
 }
 
 type RoleBinding struct {
