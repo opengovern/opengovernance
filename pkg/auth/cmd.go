@@ -95,10 +95,10 @@ func start(ctx context.Context) error {
 	}
 
 	authServer := Server{
-		hostSuffix: keibiHost,
-		db:         db,
-		verifier:   verifier,
-		logger:     logger,
+		host:     keibiHost,
+		db:       db,
+		verifier: verifier,
+		logger:   logger,
 	}
 
 	creds, err := newServerCredentials(

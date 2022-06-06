@@ -122,6 +122,19 @@ func (db Database) GetUserByID(id uuid.UUID) (User, error) {
 	return au, nil
 }
 
+func (db Database) GetUserByExternalID(extId string) (User, error) {
+	var au User
+	tx := db.orm.
+		Model(&User{}).
+		Where(User{ExternalID: extId}).
+		First(&au)
+	if tx.Error != nil {
+		return User{}, tx.Error
+	}
+
+	return au, nil
+}
+
 func (db Database) CreateUser(user *User) error {
 	tx := db.orm.
 		Create(user)
