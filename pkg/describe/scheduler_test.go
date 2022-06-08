@@ -98,6 +98,7 @@ func (s *SchedulerTestSuite) TestSourceEventCreate() {
 	err := ProcessSourceAction(s.Scheduler.db, SourceEvent{
 		Action:     SourceCreate,
 		SourceID:   uuid,
+		AccountID:  "1234567890",
 		SourceType: api.SourceCloudAWS,
 		ConfigRef:  "config/ref/path",
 	})
@@ -122,6 +123,7 @@ func (s *SchedulerTestSuite) TestSourceEventUpdate() {
 	err := ProcessSourceAction(s.Scheduler.db, SourceEvent{
 		Action:     SourceCreate,
 		SourceID:   uuid,
+		AccountID:  "1234567890",
 		SourceType: api.SourceCloudAWS,
 		ConfigRef:  "config/ref/path",
 	})
@@ -130,6 +132,7 @@ func (s *SchedulerTestSuite) TestSourceEventUpdate() {
 	err = ProcessSourceAction(s.Scheduler.db, SourceEvent{
 		Action:     SourceUpdate,
 		SourceID:   uuid,
+		AccountID:  "1234567890",
 		SourceType: api.SourceCloudAzure,
 		ConfigRef:  "config/ref/path2",
 	})
@@ -154,6 +157,7 @@ func (s *SchedulerTestSuite) TestSourceEventDelete() {
 	err := ProcessSourceAction(s.Scheduler.db, SourceEvent{
 		Action:     SourceCreate,
 		SourceID:   uuid,
+		AccountID:  "1234567890",
 		SourceType: api.SourceCloudAWS,
 		ConfigRef:  "config/ref/path",
 	})
@@ -203,12 +207,15 @@ func (s *SchedulerTestSuite) TestDescribeJobQueue() {
 	err := ProcessSourceAction(s.Scheduler.db, SourceEvent{
 		Action:     SourceCreate,
 		SourceID:   uuid,
+		AccountID:  "1234567890",
 		SourceType: api.SourceCloudAWS,
 		ConfigRef:  "config/ref/path",
 	})
 	require.NoError(err, "create source")
 
 	s.Scheduler.describeJobQueue.(*mocksqueue.Interface).On("Publish", mock.Anything).Return(error(nil))
+	s.Scheduler.describeJobQueue.(*mocksqueue.Interface).On("Len", mock.Anything).Return(0, nil)
+	s.Scheduler.describeJobQueue.(*mocksqueue.Interface).On("Name", mock.Anything).Return("temp")
 
 	s.scheduleDescribeJob()
 
@@ -621,6 +628,9 @@ func (s *SchedulerTestSuite) TestDescribeCleanup() {
 
 	err := s.db.CreateSource(&source)
 	require.NoError(err, "create source")
+
+	s.Scheduler.describeCleanupJobQueue.(*mocksqueue.Interface).On("Len", mock.Anything).Return(0, nil)
+	s.Scheduler.describeCleanupJobQueue.(*mocksqueue.Interface).On("Name", mock.Anything).Return("temp")
 
 	s.cleanupDescribeJob()
 
