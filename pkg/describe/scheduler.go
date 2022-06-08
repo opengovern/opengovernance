@@ -787,6 +787,7 @@ func (s *Scheduler) Stop() {
 func newDescribeSourceJob(a Source) DescribeSourceJob {
 	daj := DescribeSourceJob{
 		SourceID:             a.ID,
+		AccountID:            a.AccountID,
 		DescribeResourceJobs: []DescribeResourceJob{},
 		Status:               api.DescribeSourceJobCreated,
 	}
@@ -829,6 +830,7 @@ func enqueueDescribeResourceJobs(logger *zap.Logger, db Database, q queue.Interf
 			JobID:        drj.ID,
 			ParentJobID:  daj.ID,
 			SourceID:     daj.SourceID.String(),
+			AccountID:    daj.AccountID,
 			SourceType:   a.Type,
 			ResourceType: drj.ResourceType,
 			DescribedAt:  describedAt.UnixMilli(),

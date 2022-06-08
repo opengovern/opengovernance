@@ -13,6 +13,7 @@ import (
 type Source struct {
 	gorm.Model
 	ID                     uuid.UUID `gorm:"type:uuid;default:uuid_generate_v4()"`
+	AccountID              string
 	Type                   api.SourceType
 	ConfigRef              string
 	LastDescribedAt        sql.NullTime
@@ -26,7 +27,8 @@ type Source struct {
 
 type DescribeSourceJob struct {
 	gorm.Model
-	SourceID             uuid.UUID             // Not the primary key but should be a unique identifier
+	SourceID             uuid.UUID // Not the primary key but should be a unique identifier
+	AccountID            string
 	DescribeResourceJobs []DescribeResourceJob `gorm:"foreignKey:ParentJobID;constraint:OnDelete:CASCADE;"`
 	Status               api.DescribeSourceJobStatus
 }

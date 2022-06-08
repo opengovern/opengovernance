@@ -213,6 +213,7 @@ func (h HttpHandler) PostSourceAws(ctx echo.Context) error {
 		if err := h.sourceEventsQueue.Publish(api.SourceEvent{
 			Action:     api.SourceCreated,
 			SourceID:   src.ID,
+			AccountID:  src.SourceId,
 			SourceType: src.Type,
 			ConfigRef:  src.ConfigRef,
 		}); err != nil {
@@ -261,6 +262,7 @@ func (h HttpHandler) PostSourceAzure(ctx echo.Context) error {
 		if err := h.sourceEventsQueue.Publish(api.SourceEvent{
 			Action:     api.SourceCreated,
 			SourceID:   src.ID,
+			AccountID:  src.SourceId,
 			SourceType: src.Type,
 			ConfigRef:  src.ConfigRef,
 		}); err != nil {
@@ -309,6 +311,7 @@ func (h HttpHandler) PostSourceAzureSPN(ctx echo.Context) error {
 		if err := h.sourceEventsQueue.Publish(api.SourceEvent{
 			Action:     api.SourceCreated,
 			SourceID:   src.ID,
+			AccountID:  src.SourceId,
 			SourceType: src.Type,
 			ConfigRef:  src.ConfigRef,
 		}); err != nil {

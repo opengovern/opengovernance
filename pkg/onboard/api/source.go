@@ -158,6 +158,7 @@ type DiscoverAzureSubscriptionsResponse struct {
 type SourceEvent struct {
 	Action     SourceAction
 	SourceID   uuid.UUID
+	AccountID  string
 	SourceType SourceType
 	ConfigRef  string
 }

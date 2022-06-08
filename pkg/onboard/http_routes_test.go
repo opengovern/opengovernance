@@ -152,6 +152,7 @@ func (s *HttpHandlerSuite) TestCreateAWSSource_Success() {
 	qmock.AssertCalled(s.T(), "Publish", api.SourceEvent{
 		Action:     api.SourceCreated,
 		SourceID:   response.ID,
+		AccountID:  "123456789012",
 		SourceType: api.SourceCloudAWS,
 		ConfigRef:  pathRef,
 	})
@@ -213,6 +214,7 @@ func (s *HttpHandlerSuite) TestCreateAzureSourceWithSPN_Success() {
 	qmock.AssertCalled(s.T(), "Publish", api.SourceEvent{
 		Action:     api.SourceCreated,
 		SourceID:   response.ID,
+		AccountID:  "6948DF80-14BD-4E04-8842-7668D9C001F5",
 		SourceType: api.SourceCloudAzure,
 		ConfigRef:  pathRef,
 	})
@@ -368,6 +370,7 @@ func (s *HttpHandlerSuite) TestCreateAzureSource_Success() {
 	qmock.AssertCalled(s.T(), "Publish", api.SourceEvent{
 		Action:     api.SourceCreated,
 		SourceID:   response.ID,
+		AccountID:  "6948DF80-14BD-4E04-8842-7668D9C001F5",
 		SourceType: api.SourceCloudAzure,
 		ConfigRef:  pathRef,
 	})
