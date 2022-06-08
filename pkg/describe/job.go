@@ -119,6 +119,7 @@ type DescribeJob struct {
 	ParentJobID  uint // DescribeSourceJob ID
 	ResourceType string
 	SourceID     string
+	AccountID    string
 	DescribedAt  int64
 	SourceType   api.SourceType
 	ConfigReg    string
@@ -392,10 +393,15 @@ func doDescribeAzure(ctx context.Context, job DescribeJob, config map[string]int
 		return nil, fmt.Errorf("aure subscription credentials: %w", err)
 	}
 
+	subscriptionId := job.AccountID
+	if len(subscriptionId) == 0 {
+		subscriptionId = creds.SubscriptionID
+	}
+
 	output, err := azure.GetResources(
 		ctx,
 		job.ResourceType,
-		[]string{creds.SubscriptionID},
+		[]string{subscriptionId},
 		azure.AuthConfig{
 			TenantID:            creds.TenantID,
 			ClientID:            creds.ClientID,

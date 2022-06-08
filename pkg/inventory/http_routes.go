@@ -2064,6 +2064,7 @@ func (h *HttpHandler) GetLocations(ctx echo.Context) error {
 			return err
 		}
 
+		var res map[string]interface{}
 		for regions.HasNext() {
 			regions, err := regions.NextPage(ctx.Request().Context())
 			if err != nil {
@@ -2071,10 +2072,13 @@ func (h *HttpHandler) GetLocations(ctx echo.Context) error {
 			}
 
 			for _, region := range regions {
-				locations = append(locations, api.LocationByProviderResponse{
-					Name: *region.Description.Region.RegionName,
-				})
+				res[*region.Description.Region.RegionName] = 0
 			}
+		}
+		for regionName := range res {
+			locations = append(locations, api.LocationByProviderResponse{
+				Name: regionName,
+			})
 		}
 	}
 
@@ -2084,6 +2088,7 @@ func (h *HttpHandler) GetLocations(ctx echo.Context) error {
 			return err
 		}
 
+		var res map[string]interface{}
 		for locs.HasNext() {
 			locpage, err := locs.NextPage(ctx.Request().Context())
 			if err != nil {
@@ -2091,10 +2096,13 @@ func (h *HttpHandler) GetLocations(ctx echo.Context) error {
 			}
 
 			for _, location := range locpage {
-				locations = append(locations, api.LocationByProviderResponse{
-					Name: *location.Description.Location.Name,
-				})
+				res[*location.Description.Location.Name] = 0
 			}
+		}
+		for regionName := range res {
+			locations = append(locations, api.LocationByProviderResponse{
+				Name: regionName,
+			})
 		}
 	}
 

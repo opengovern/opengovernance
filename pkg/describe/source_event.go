@@ -20,6 +20,7 @@ const (
 type SourceEvent struct {
 	Action     SourceAction
 	SourceID   uuid.UUID
+	AccountID  string
 	SourceType api.SourceType
 	ConfigRef  string
 }
@@ -53,6 +54,8 @@ func CreateSource(db Database, event SourceEvent) error {
 	switch {
 	case len(event.SourceID) == 0 || event.SourceID.Variant() == uuid.Invalid:
 		return fmt.Errorf("source has invalid uuid format")
+	case len(event.AccountID) == 0:
+		return fmt.Errorf("account id must be provided")
 	case !api.IsValidSourceType(event.SourceType):
 		return fmt.Errorf("source has invalid source type")
 	case event.ConfigRef == "": // TODO: should check if the config ref exists?
@@ -61,6 +64,7 @@ func CreateSource(db Database, event SourceEvent) error {
 
 	err := db.CreateSource(&Source{
 		ID:             event.SourceID,
+		AccountID:      event.AccountID,
 		Type:           event.SourceType,
 		ConfigRef:      event.ConfigRef,
 		NextDescribeAt: sql.NullTime{Time: time.Now(), Valid: true},
@@ -76,6 +80,8 @@ func UpdateSource(db Database, event SourceEvent) error {
 	switch {
 	case len(event.SourceID) == 0 || event.SourceID.Variant() == uuid.Invalid:
 		return fmt.Errorf("source has invalid uuid format")
+	case len(event.AccountID) == 0:
+		return fmt.Errorf("account id must be provided")
 	case event.SourceType != "" && !api.IsValidSourceType(event.SourceType):
 		return fmt.Errorf("source has invalid source type")
 	case event.ConfigRef == "": // TODO: should check if the config ref exists?
@@ -84,6 +90,7 @@ func UpdateSource(db Database, event SourceEvent) error {
 
 	err := db.UpdateSource(&Source{
 		ID:        event.SourceID,
+		AccountID: event.AccountID,
 		Type:      event.SourceType,
 		ConfigRef: event.ConfigRef,
 	})
