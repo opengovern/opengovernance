@@ -29,6 +29,7 @@ const (
 	JobComplianceReportInterval = 1 * time.Minute
 	JobTimeoutCheckInterval     = 15 * time.Minute
 	MaxJobInQueue               = 10000
+	ConcurrentDeletedSources    = 1000
 )
 
 var DescribePublishingBlocked = promauto.NewGaugeVec(prometheus.GaugeOpts{
@@ -89,6 +90,9 @@ type Scheduler struct {
 	complianceReportJobResultQueue  queue.Interface
 	complianceReportCleanupJobQueue queue.Interface
 
+	// watch the deleted source
+	deletedSources chan string
+
 	logger *zap.Logger
 }
 
@@ -119,7 +123,10 @@ func InitializeScheduler(
 		return nil, fmt.Errorf("'id' must be set to a non empty string")
 	}
 
-	s = &Scheduler{id: id}
+	s = &Scheduler{
+		id:             id,
+		deletedSources: make(chan string, ConcurrentDeletedSources),
+	}
 	defer func() {
 		if err != nil && s != nil {
 			s.Stop()
@@ -446,22 +453,34 @@ func (s *Scheduler) RunDescribeCleanupJobScheduler() {
 	t := time.NewTicker(JobSchedulingInterval)
 	defer t.Stop()
 
-	for range t.C {
-		s.cleanupDescribeJob()
+	for {
+		select {
+		case <-t.C:
+			s.cleanupDescribeJob()
+		case sourceId := <-s.deletedSources:
+			s.cleanupDescribeJobForSource(sourceId)
+		}
 	}
 }
 
-func (s Scheduler) cleanupDescribeJob() {
-	dsj, err := s.db.QueryOlderThanNRecentCompletedDescribeSourceJobs(5)
+func (s Scheduler) cleanupDescribeJobForSource(sourceId string) {
+	jobs, err := s.db.QueryDescribeSourceJobs(sourceId)
 	if err != nil {
-		s.logger.Error("Failed to find older than 5 recent completed DescribeSourceJob for each source",
+		s.logger.Error("Failed to find all completed DescribeSourceJob for source",
+			zap.String("sourceId", sourceId),
 			zap.Error(err),
 		)
 		DescribeCleanupJobsCount.WithLabelValues("failure").Inc()
 		return
 	}
 
-	for _, sj := range dsj {
+	s.handleDescribeJobs(jobs)
+
+	DescribeCleanupJobsCount.WithLabelValues("successful").Inc()
+}
+
+func (s Scheduler) handleDescribeJobs(jobs []DescribeSourceJob) {
+	for _, sj := range jobs {
 		// I purposefully didn't embbed this query in the previous query to keep returned results count low.
 		drj, err := s.db.ListDescribeResourceJobs(sj.ID)
 		if err != nil {
@@ -476,7 +495,7 @@ func (s Scheduler) cleanupDescribeJob() {
 		success := true
 		for _, rj := range drj {
 			if isPublishingBlocked(s.logger, s.describeCleanupJobQueue) {
-				s.logger.Warn("The jobs in queue is over the threshold", zap.Error(err))
+				s.logger.Warn("The jobs in queue is over the threshold")
 				return
 			}
 
@@ -524,6 +543,20 @@ func (s Scheduler) cleanupDescribeJob() {
 			zap.Uint("jobId", sj.ID),
 		)
 	}
+}
+
+func (s Scheduler) cleanupDescribeJob() {
+	jobs, err := s.db.QueryOlderThanNRecentCompletedDescribeSourceJobs(5)
+	if err != nil {
+		s.logger.Error("Failed to find older than 5 recent completed DescribeSourceJob for each source",
+			zap.Error(err),
+		)
+		DescribeCleanupJobsCount.WithLabelValues("failure").Inc()
+		return
+	}
+
+	s.handleDescribeJobs(jobs)
+
 	DescribeCleanupJobsCount.WithLabelValues("successful").Inc()
 }
 
@@ -598,6 +631,10 @@ func (s *Scheduler) RunSourceEventsConsumer() error {
 
 		if err := msg.Ack(false); err != nil {
 			s.logger.Error("Failed acking message", zap.Error(err))
+		}
+
+		if event.Action == SourceDelete {
+			s.deletedSources <- event.SourceID.String()
 		}
 	}
 

@@ -302,6 +302,17 @@ WHERE rank > ?
 	return results, nil
 }
 
+func (db Database) QueryDescribeSourceJobs(id string) ([]DescribeSourceJob, error) {
+	status := []string{string(api.DescribeSourceJobCompleted), string(api.DescribeSourceJobCompletedWithFailure)}
+
+	var jobs []DescribeSourceJob
+	tx := db.orm.Where("status IN ? AND deleted_at IS NULL AND source_id = ?", status, id).Find(&jobs)
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+	return jobs, nil
+}
+
 func (db Database) DeleteDescribeSourceJob(id uint) error {
 	tx := db.orm.
 		Where("id = ?", id).
