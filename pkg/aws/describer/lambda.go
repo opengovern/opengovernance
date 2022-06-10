@@ -8,6 +8,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/lambda"
 	"github.com/aws/aws-sdk-go-v2/service/lambda/types"
+	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/smithy-go"
 	"gitlab.com/keibiengine/keibi-engine/pkg/aws/model"
 )
@@ -30,7 +31,16 @@ func LambdaFunction(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 				FunctionName: v.FunctionName,
 			})
 			if err != nil {
-				return nil, err
+				if awsErr, ok := err.(awserr.Error); ok {
+					if awsErr.Code() == "ResourceNotFoundException" {
+						policy = &lambda.GetPolicyOutput{}
+						err = nil
+					}
+				}
+
+				if err != nil {
+					return nil, err
+				}
 			}
 
 			function, err := client.GetFunction(ctx, &lambda.GetFunctionInput{

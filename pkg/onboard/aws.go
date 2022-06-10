@@ -12,7 +12,14 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/onboard/api"
 )
 
+var PermissionError = errors.New("PermissionError")
+
 func discoverAwsAccounts(ctx context.Context, req api.DiscoverAWSAccountsRequest) ([]api.DiscoverAWSAccountsResponse, error) {
+	err := keibiaws.CheckDescribeRegionsPermission(req.AccessKey, req.SecretKey)
+	if err != nil {
+		return nil, PermissionError
+	}
+
 	cfg, err := keibiaws.GetConfig(ctx, req.AccessKey, req.SecretKey, "", "")
 	if err != nil {
 		return nil, err

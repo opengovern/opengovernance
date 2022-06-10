@@ -307,7 +307,7 @@ func (db Database) GetBenchmarkAssignmentByIds(sourceId uuid.UUID, benchmarkId s
 }
 
 func (db Database) DeleteBenchmarkAssignmentById(sourceId uuid.UUID, benchmarkId string) error {
-	tx := db.orm.Where(BenchmarkAssignment{BenchmarkId: benchmarkId, SourceId: sourceId}).Delete(&BenchmarkAssignment{})
+	tx := db.orm.Unscoped().Where(BenchmarkAssignment{BenchmarkId: benchmarkId, SourceId: sourceId}).Delete(&BenchmarkAssignment{})
 
 	if tx.Error != nil {
 		return tx.Error

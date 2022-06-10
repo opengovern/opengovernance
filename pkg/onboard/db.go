@@ -141,6 +141,7 @@ func (db Database) UpdateSource(s *Source) (*Source, error) {
 func (db Database) DeleteSource(id uuid.UUID) error {
 	tx := db.orm.
 		Where("id = ?", id.String()).
+		Unscoped().
 		Delete(&Source{})
 
 	if tx.Error != nil {
