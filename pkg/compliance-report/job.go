@@ -175,11 +175,12 @@ func (j *Job) Do(vlt vault.SourceConfig, producer sarama.SyncProducer, topic str
 		return j.failed("error: Get benchmark assignments by source: " + err.Error())
 	}
 
-	var benchmakrs []string
+	var benchmarks []string
 	for _, assignment := range assignments {
-		benchmakrs = append(benchmakrs, assignment.BenchmarkId)
+		benchmarks = append(benchmarks, assignment.BenchmarkId)
 	}
-	if err := RunSteampipeCheckBenchmarks(j.SourceType, benchmakrs, resultFileName); err != nil {
+
+	if err := RunSteampipeCheckBenchmarks(j.SourceType, benchmarks, resultFileName); err != nil {
 		DoComplianceReportJobsDuration.WithLabelValues(string(j.SourceType), "failure").Observe(float64(time.Now().Unix() - startTime))
 		DoComplianceReportJobsCount.WithLabelValues(string(j.SourceType), "failure").Inc()
 		return j.failed("error: RunSteampipeCheckBenchmarks: " + err.Error())
@@ -348,6 +349,10 @@ func (j *Job) Do(vlt vault.SourceConfig, producer sarama.SyncProducer, topic str
 }
 
 func RunSteampipeCheckBenchmarks(sourceType source.Type, benchmarks []string, exportFileName string) error {
+	if len(benchmarks) == 0 {
+		return nil
+	}
+
 	workspaceDir := ""
 	switch sourceType {
 	case source.CloudAWS:
@@ -360,11 +365,7 @@ func RunSteampipeCheckBenchmarks(sourceType source.Type, benchmarks []string, ex
 
 	var args []string
 	args = append(args, "check")
-	if len(benchmarks) > 0 {
-		args = append(args, benchmarks...)
-	} else {
-		args = append(args, "all")
-	}
+	args = append(args, benchmarks...)
 	args = append(args, "--export")
 	args = append(args, exportFileName)
 	args = append(args, "--workspace-chdir")
