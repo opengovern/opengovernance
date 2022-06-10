@@ -68,6 +68,7 @@ func (db Database) UpdateSource(a *Source) error {
 func (db Database) DeleteSource(a Source) error {
 	tx := db.orm.
 		Where("id = ?", a.ID.String()).
+		Unscoped().
 		Delete(&Source{})
 	if tx.Error != nil {
 		return tx.Error
@@ -304,6 +305,7 @@ WHERE rank > ?
 func (db Database) DeleteDescribeSourceJob(id uint) error {
 	tx := db.orm.
 		Where("id = ?", id).
+		Unscoped().
 		Delete(&DescribeSourceJob{})
 	if tx.Error != nil {
 		return tx.Error
@@ -381,6 +383,7 @@ func (db Database) ListDescribeResourceJobs(describeSourceJobID uint) ([]Describ
 func (db Database) DeleteDescribeResourceJob(id uint) error {
 	tx := db.orm.
 		Where("id = ?", id).
+		Unscoped().
 		Delete(&DescribeResourceJob{})
 	if tx.Error != nil {
 		return tx.Error
@@ -496,6 +499,7 @@ func (db Database) ListCompletedComplianceReportByDate(sourceID uuid.UUID, fromD
 func (db Database) DeleteComplianceReportJob(id uint) error {
 	tx := db.orm.
 		Where("id = ?", id).
+		Unscoped().
 		Delete(&ComplianceReportJob{})
 	if tx.Error != nil {
 		return tx.Error

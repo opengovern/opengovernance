@@ -740,6 +740,9 @@ func (h HttpHandler) DiscoverAwsAccounts(ctx echo.Context) error {
 
 	accounts, err := discoverAwsAccounts(ctx.Request().Context(), req)
 	if err != nil {
+		if err == PermissionError {
+			return ctx.JSON(http.StatusForbidden, "Key doesn't have enough permission")
+		}
 		return err
 	}
 

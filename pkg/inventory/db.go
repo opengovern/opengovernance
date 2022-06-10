@@ -186,11 +186,15 @@ func (db Database) CountBenchmarksWithFilters(provider *string, tags map[string]
 
 func (db Database) CountPolicies(provider string) (int64, error) {
 	var s int64
-	tx := db.orm.Model(&Policy{}).Where("provider = ?", provider).Count(&s)
+	tx := db.orm.Model(&Policy{})
+	if provider != "" {
+		tx = tx.Where("provider = ?", provider)
+	}
+	tx = tx.Count(&s)
+
 	if tx.Error != nil {
 		return 0, tx.Error
 	}
-
 	return s, nil
 }
 
@@ -303,7 +307,7 @@ func (db Database) GetBenchmarkAssignmentByIds(sourceId uuid.UUID, benchmarkId s
 }
 
 func (db Database) DeleteBenchmarkAssignmentById(sourceId uuid.UUID, benchmarkId string) error {
-	tx := db.orm.Where(BenchmarkAssignment{BenchmarkId: benchmarkId, SourceId: sourceId}).Delete(&BenchmarkAssignment{})
+	tx := db.orm.Unscoped().Where(BenchmarkAssignment{BenchmarkId: benchmarkId, SourceId: sourceId}).Delete(&BenchmarkAssignment{})
 
 	if tx.Error != nil {
 		return tx.Error

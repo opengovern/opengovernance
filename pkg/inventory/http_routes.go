@@ -1452,7 +1452,8 @@ func (h *HttpHandler) CountBenchmarks(ctx echo.Context) error {
 // @Success      200       {object}  []api.Benchmark
 // @Router   /inventory/api/v1/policies/count [get]
 func (h *HttpHandler) CountPolicies(ctx echo.Context) error {
-	c, err := h.db.CountPolicies(ctx.QueryParam("provider"))
+	sourceType, _ := source.ParseType(ctx.QueryParam("provider"))
+	c, err := h.db.CountPolicies(string(sourceType))
 	if err != nil {
 		return err
 	}

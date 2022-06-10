@@ -5,7 +5,6 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/backup"
-	"github.com/aws/aws-sdk-go-v2/service/backup/types"
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"gitlab.com/keibiengine/keibi-engine/pkg/aws/model"
 )
@@ -120,7 +119,7 @@ func BackupSelection(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	var values []Resource
 	for _, plan := range plans {
 		paginator := backup.NewListBackupSelectionsPaginator(client, &backup.ListBackupSelectionsInput{
-			BackupPlanId: plan.Description.(types.BackupPlansListMember).BackupPlanId,
+			BackupPlanId: plan.Description.(model.BackupPlanDescription).BackupPlan.BackupPlanId,
 		})
 
 		for paginator.HasMorePages() {
