@@ -186,11 +186,15 @@ func (db Database) CountBenchmarksWithFilters(provider *string, tags map[string]
 
 func (db Database) CountPolicies(provider string) (int64, error) {
 	var s int64
-	tx := db.orm.Model(&Policy{}).Where("provider = ?", provider).Count(&s)
+	tx := db.orm.Model(&Policy{})
+	if provider != "" {
+		tx = tx.Where("provider = ?", provider)
+	}
+	tx = tx.Count(&s)
+
 	if tx.Error != nil {
 		return 0, tx.Error
 	}
-
 	return s, nil
 }
 
