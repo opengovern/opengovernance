@@ -130,10 +130,10 @@ func EFSMountTarget(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 		return nil, err
 	}
 	for _, fs := range filesystems {
-		filesystem := fs.Description.(types.FileSystemDescription)
+		filesystem := fs.Description.(model.EFSFileSystemDescription)
 		err := PaginateRetrieveAll(func(prevToken *string) (nextToken *string, err error) {
 			output, err := client.DescribeMountTargets(ctx, &efs.DescribeMountTargetsInput{
-				FileSystemId: filesystem.FileSystemId,
+				FileSystemId: filesystem.FileSystem.FileSystemId,
 				Marker:       prevToken,
 			})
 			if err != nil {

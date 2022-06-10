@@ -127,6 +127,10 @@ func IAMAccountPasswordPolicy(ctx context.Context, cfg aws.Config) ([]Resource, 
 		output = &iam.GetAccountPasswordPolicyOutput{}
 	}
 
+	if output.PasswordPolicy == nil {
+		return nil, nil
+	}
+
 	accountId, err := STSAccount(ctx, cfg)
 	if err != nil {
 		return nil, err
