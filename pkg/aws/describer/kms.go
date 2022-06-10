@@ -3,6 +3,9 @@ package describer
 import (
 	"context"
 
+	"github.com/aws/aws-sdk-go/aws/awserr"
+	"github.com/turbot/go-kit/helpers"
+
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/kms"
 	"github.com/aws/aws-sdk-go-v2/service/kms/types"
@@ -69,7 +72,17 @@ func KMSKey(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 				KeyId: v.KeyId,
 			})
 			if err != nil {
-				return nil, err
+				// For AWS managed KMS keys GetKeyRotationStatus API generates exceptions
+				if a, ok := err.(awserr.Error); ok {
+					if helpers.StringSliceContains([]string{"AccessDeniedException", "UnsupportedOperationException"}, a.Code()) {
+						rotationStatus = &kms.GetKeyRotationStatusOutput{}
+						err = nil
+					}
+				}
+
+				if err != nil {
+					return nil, err
+				}
 			}
 
 			var defaultPolicy = "default"

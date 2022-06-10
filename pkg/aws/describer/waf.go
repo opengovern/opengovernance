@@ -4,6 +4,8 @@ import (
 	"context"
 	"strings"
 
+	"github.com/aws/aws-sdk-go/aws/awserr"
+
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/cloudfront"
 	"github.com/aws/aws-sdk-go-v2/service/wafregional"
@@ -196,7 +198,16 @@ func WAFv2WebACL(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 				ResourceArn: out.WebACL.ARN,
 			})
 			if err != nil {
-				return nil, err
+				if a, ok := err.(awserr.Error); ok {
+					if a.Code() == "WAFNonexistentItemException" {
+						logC = nil
+						err = nil
+					}
+				}
+
+				if err != nil {
+					return nil, err
+				}
 			}
 
 			tags, err := client.ListTagsForResource(ctx, &wafv2.ListTagsForResourceInput{
