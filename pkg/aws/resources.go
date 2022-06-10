@@ -434,6 +434,12 @@ func SequentialDescribeS3(describe func(context.Context, aws.Config, []string) (
 			rCfg := cfg.Copy()
 			rCfg.Region = region
 
+			partition, _ := partitionOf(region)
+			ctx = describer.WithDescribeContext(ctx, describer.DescribeContext{
+				AccountID: account,
+				Region:    region,
+				Partition: partition,
+			})
 			resources, err := describe(ctx, rCfg, regions)
 			if err != nil {
 				if !IsUnsupportedOrInvalidError(rType, region, err) {
