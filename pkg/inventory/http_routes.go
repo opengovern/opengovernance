@@ -2273,7 +2273,7 @@ func (h *HttpHandler) GetResources(ctx echo.Context, provider *api.SourceType, c
 			uniqueSourceIds[resource.SourceID] = ""
 		}
 		for sourceId := range uniqueSourceIds {
-			src, err := api.GetSource(h.schedulerBaseUrl, sourceId)
+			src, err := client.GetSource(h.schedulerBaseUrl, sourceId)
 			if err != nil {
 				return err
 			}
@@ -2293,7 +2293,7 @@ func (h *HttpHandler) GetResources(ctx echo.Context, provider *api.SourceType, c
 			uniqueSourceIds[resource.AccountID] = ""
 		}
 		for sourceId := range uniqueSourceIds {
-			src, err := api.GetSource(h.schedulerBaseUrl, sourceId)
+			src, err := client.GetSource(h.schedulerBaseUrl, sourceId)
 			if err != nil {
 				return err
 			}
@@ -2313,7 +2313,7 @@ func (h *HttpHandler) GetResources(ctx echo.Context, provider *api.SourceType, c
 			uniqueSourceIds[resource.SubscriptionID] = ""
 		}
 		for sourceId := range uniqueSourceIds {
-			src, err := api.GetSource(h.schedulerBaseUrl, sourceId)
+			src, err := client.GetSource(h.schedulerBaseUrl, sourceId)
 			if err != nil {
 				return err
 			}
@@ -2517,7 +2517,7 @@ func (h *HttpHandler) CreateBenchmarkAssignment(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, ErrInternalServer)
 	}
 
-	source, err := client.GetSource(h.schedulerBaseUrl, sourceUUID)
+	source, err := client.GetSource(h.schedulerBaseUrl, sourceUUID.String())
 	if err != nil {
 		ctx.Logger().Errorf(fmt.Sprintf("request source: %v", err))
 		return echo.NewHTTPError(http.StatusInternalServerError, ErrInternalServer)

@@ -1202,16 +1202,10 @@ github.com/zclconf/go-cty v1.8.2/go.mod h1:vVKLxnk3puL4qRAv72AO+W99LUD4da90g3uUA
 github.com/zclconf/go-cty-debug v0.0.0-20191215020915-b22d67c1ba0b/go.mod h1:ZRKQfBXbGkpdV6QMzT3rU1kSTAnfu1dO8dPKjYprgj8=
 github.com/zenazn/goji v0.9.0/go.mod h1:7S9M489iMyHBNxwZnk9/EHS098H4/F6TATF2mIxtB1Q=
 gitlab.com/keibiengine/keibi-engine v0.0.0-20220322223402-4ba9461973b1/go.mod h1:/KPGh3SRqRZZ4oRsLB1qigabc/XE1qcyFj00fzmQufw=
-gitlab.com/keibiengine/steampipe-plugin-aws v0.0.0-20220401174834-4d29274e8abe h1:4IwWaZF3cID2yNRhFJ3PfEjbcl8NiVbSi4Iw2JEXxD8=
-gitlab.com/keibiengine/steampipe-plugin-aws v0.0.0-20220401174834-4d29274e8abe/go.mod h1:0mEb+eDbfJiOgPQ+1I6/ckBGVFTsrPLLQ5Au6JZ/fiY=
 gitlab.com/keibiengine/steampipe-plugin-aws v0.0.0-20220518191108-1786a042605a h1:fRpDblEl3bGZW7XeT4S1NSMX3d21D84WVIB3ZdNqAe8=
 gitlab.com/keibiengine/steampipe-plugin-aws v0.0.0-20220518191108-1786a042605a/go.mod h1:0mEb+eDbfJiOgPQ+1I6/ckBGVFTsrPLLQ5Au6JZ/fiY=
-gitlab.com/keibiengine/steampipe-plugin-azure v0.23.2-0.20220401174801-d61359c2d790 h1:H9XueFb09eCwOdKf9Uki0weysyfO2AU+5gEOosyoHEs=
-gitlab.com/keibiengine/steampipe-plugin-azure v0.23.2-0.20220401174801-d61359c2d790/go.mod h1:y+ZVNYMerTVjdUlZa0EVJr0PFZP686ZUTACmq0YWogU=
 gitlab.com/keibiengine/steampipe-plugin-azure v0.23.2-0.20220610141809-f39926dc987e h1:luhIMs/A9NNLL63F42gIQywQWd/IV1hFRE+sEsTk1YI=
 gitlab.com/keibiengine/steampipe-plugin-azure v0.23.2-0.20220610141809-f39926dc987e/go.mod h1:y+ZVNYMerTVjdUlZa0EVJr0PFZP686ZUTACmq0YWogU=
-gitlab.com/keibiengine/steampipe-plugin-azuread v0.1.1-0.20220401174905-60626bc2deea h1:0/kLE5YiMqjKHdSgfPUAWRQF/U3CSz8BuJ8tyq+czS0=
-gitlab.com/keibiengine/steampipe-plugin-azuread v0.1.1-0.20220401174905-60626bc2deea/go.mod h1:eOf15hN/jXDi/zDJDA9x2ChHj04GE22kF8xF+PVKFA0=
 gitlab.com/keibiengine/steampipe-plugin-azuread v0.1.1-0.20220518191201-bd20078e9eaf h1:51IiNHr7h1XfzhaJLtSgZxNsKF4Wy7BTnBnn+nw/ybs=
 gitlab.com/keibiengine/steampipe-plugin-azuread v0.1.1-0.20220518191201-bd20078e9eaf/go.mod h1:eOf15hN/jXDi/zDJDA9x2ChHj04GE22kF8xF+PVKFA0=
 go.etcd.io/bbolt v1.3.2/go.mod h1:IbVyRI1SCnLcuJnV2u8VeU0CEYM7e686BmAb1XKL+uU=
