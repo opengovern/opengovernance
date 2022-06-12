@@ -71,8 +71,6 @@ func (s *SchedulerTestSuite) BeforeTest(suiteName, testName string) {
 	}
 	err = s.Scheduler.db.Initialize()
 	require.NoError(err, "initialize db")
-
-	go s.RunDescribeCleanupJobScheduler()
 }
 
 func (s *SchedulerTestSuite) AfterTest(suiteName, testName string) {
