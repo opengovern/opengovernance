@@ -454,8 +454,8 @@ func (db Database) UpdateComplianceReportJobsTimedOut() error {
 	return nil
 }
 
-// ListComplianceReports lists the ComplianceReportJob .
-func (db Database) ListComplianceReports(sourceID uuid.UUID) ([]ComplianceReportJob, error) {
+// ListComplianceReportJobs lists the ComplianceReportJob .
+func (db Database) ListComplianceReportJobs(sourceID uuid.UUID) ([]ComplianceReportJob, error) {
 	var jobs []ComplianceReportJob
 	tx := db.orm.Where("source_id = ?", sourceID).Find(&jobs)
 	if tx.Error != nil {
@@ -535,11 +535,22 @@ FROM (
 	WHERE status IN ? AND deleted_at IS NULL) 
 jobs
 WHERE rank > ?
-`, []string{string(api.DescribeSourceJobCompleted), string(api.DescribeSourceJobCompletedWithFailure)}, n).Scan(&results)
+`, []string{string(api2.ComplianceReportJobCompleted), string(api2.ComplianceReportJobCompletedWithFailure)}, n).Scan(&results)
 
 	if tx.Error != nil {
 		return nil, tx.Error
 	}
 
 	return results, nil
+}
+
+func (db Database) QueryComplianceReportJobs(id string) ([]ComplianceReportJob, error) {
+	status := []string{string(api2.ComplianceReportJobCompleted), string(api2.ComplianceReportJobCompletedWithFailure)}
+
+	var jobs []ComplianceReportJob
+	tx := db.orm.Where("status IN ? AND deleted_at IS NULL AND source_id = ?", status, id).Find(&jobs)
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+	return jobs, nil
 }

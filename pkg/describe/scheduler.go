@@ -283,6 +283,7 @@ func (s *Scheduler) Run() error {
 	go s.RunDescribeJobScheduler()
 	go s.RunDescribeCleanupJobScheduler()
 	go s.RunComplianceReportScheduler()
+	go s.RunDeletedSourceCleanup()
 
 	// In order to have history of reports, we won't clean up compliance reports for now.
 	//go s.RunComplianceReportCleanupJobScheduler()
@@ -453,20 +454,24 @@ func (s *Scheduler) RunDescribeCleanupJobScheduler() {
 	t := time.NewTicker(JobSchedulingInterval)
 	defer t.Stop()
 
-	for {
-		select {
-		case <-t.C:
-			s.cleanupDescribeJob()
-		case sourceId := <-s.deletedSources:
-			s.cleanupDescribeJobForSource(sourceId)
-		}
+	for range t.C {
+		s.cleanupDescribeJob()
 	}
 }
 
-func (s Scheduler) cleanupDescribeJobForSource(sourceId string) {
+func (s *Scheduler) RunDeletedSourceCleanup() {
+	for id := range s.deletedSources {
+		// cleanup describe job for deleted source
+		s.cleanupDescribeJobForDeletedSource(id)
+		// cleanup compliance report job for deleted source
+		s.cleanupComplianceReportJobForDeletedSource(id)
+	}
+}
+
+func (s Scheduler) cleanupDescribeJobForDeletedSource(sourceId string) {
 	jobs, err := s.db.QueryDescribeSourceJobs(sourceId)
 	if err != nil {
-		s.logger.Error("Failed to find all completed DescribeSourceJob for source",
+		s.logger.Error("Failed to find all completed DescribeSourceJobs for source",
 			zap.String("sourceId", sourceId),
 			zap.Error(err),
 		)
@@ -560,38 +565,49 @@ func (s Scheduler) cleanupDescribeJob() {
 	DescribeCleanupJobsCount.WithLabelValues("successful").Inc()
 }
 
+func (s Scheduler) cleanupComplianceReportJobForDeletedSource(sourceId string) {
+	jobs, err := s.db.QueryComplianceReportJobs(sourceId)
+	if err != nil {
+		s.logger.Error("Failed to find all completed ComplianceReportJobs for source",
+			zap.String("sourceId", sourceId),
+			zap.Error(err),
+		)
+		return
+	}
+	s.handleComplianceReportJobs(jobs)
+}
+
+func (s Scheduler) handleComplianceReportJobs(jobs []ComplianceReportJob) {
+	for _, job := range jobs {
+		if err := s.complianceReportCleanupJobQueue.Publish(compliancereport.ComplianceReportCleanupJob{
+			JobID: job.ID,
+		}); err != nil {
+			s.logger.Error("Failed to publish compliance report clean up job to queue for ComplianceReportJob",
+				zap.Uint("jobId", job.ID),
+				zap.Error(err),
+			)
+			return
+		}
+
+		if err := s.db.DeleteComplianceReportJob(job.ID); err != nil {
+			s.logger.Error("Failed to delete ComplianceReportJob",
+				zap.Uint("jobId", job.ID),
+				zap.Error(err),
+			)
+		}
+		s.logger.Info("Successfully deleted ComplianceReportJob", zap.Uint("jobId", job.ID))
+	}
+}
+
 func (s Scheduler) cleanupComplianceReportJob() {
-	dsj, err := s.db.QueryOlderThanNRecentCompletedComplianceReportJobs(5)
+	jobs, err := s.db.QueryOlderThanNRecentCompletedComplianceReportJobs(5)
 	if err != nil {
 		s.logger.Error("Failed to find older than 5 recent completed ComplianceReportJobs for each source",
 			zap.Error(err),
 		)
 		return
 	}
-
-	for _, sj := range dsj {
-		if err := s.complianceReportCleanupJobQueue.Publish(compliancereport.ComplianceReportCleanupJob{
-			JobID: sj.ID,
-		}); err != nil {
-			s.logger.Error("Failed to publish compliance report clean up job to queue for ComplianceReportJob",
-				zap.Uint("jobId", sj.ID),
-				zap.Error(err),
-			)
-			return
-		}
-
-		err = s.db.DeleteComplianceReportJob(sj.ID)
-		if err != nil {
-			s.logger.Error("Failed to delete ComplianceReportJob",
-				zap.Uint("jobId", sj.ID),
-				zap.Error(err),
-			)
-		}
-
-		s.logger.Info("Successfully deleted ComplianceReportJob",
-			zap.Uint("jobId", sj.ID),
-		)
-	}
+	s.handleComplianceReportJobs(jobs)
 }
 
 // Consume events from the source queue. Based on the action of the event,
