@@ -67,9 +67,12 @@ func (s *SchedulerTestSuite) BeforeTest(suiteName, testName string) {
 		complianceReportJobQueue: s.queueInt,
 		logger:                   logger,
 		httpServer:               NewHTTPServer("localhost:2345", db),
+		deletedSources:           make(chan string, ConcurrentDeletedSources),
 	}
 	err = s.Scheduler.db.Initialize()
 	require.NoError(err, "initialize db")
+
+	go s.RunDescribeCleanupJobScheduler()
 }
 
 func (s *SchedulerTestSuite) AfterTest(suiteName, testName string) {
@@ -553,6 +556,62 @@ func (s *SchedulerTestSuite) TestDescribeCleanup_NothingReadyToClean() {
 	sources, err := s.db.ListDescribeSourceJobs(source.ID)
 	require.NoError(err, "list describe source jobs")
 	require.Equal(6, len(sources))
+}
+
+func (s *SchedulerTestSuite) TestDescribeCleanup_DeleteSource() {
+	require := s.Require()
+
+	id := uuid.New()
+	jobs, err := s.db.ListDescribeSourceJobs(id)
+	require.NoError(err, "list describe source jobs")
+	s.Equal(0, len(jobs))
+
+	// Create a fake source with jobs
+	source := Source{
+		ID:   id,
+		Type: api.SourceCloudAWS,
+		DescribeSourceJobs: []DescribeSourceJob{
+			{
+				Model: gorm.Model{
+					ID: 1,
+				},
+				Status: api.DescribeSourceJobCompleted,
+			},
+			{
+				Model: gorm.Model{
+					ID: 2,
+				},
+				Status: api.DescribeSourceJobCompleted,
+			},
+			{
+				Model: gorm.Model{
+					ID: 3,
+				},
+				Status: api.DescribeSourceJobCompleted,
+			},
+			{
+				Model: gorm.Model{
+					ID: 4,
+				},
+				Status: api.DescribeSourceJobCompleted,
+			},
+			{
+				Model: gorm.Model{
+					ID: 5,
+				},
+				Status: api.DescribeSourceJobCompleted,
+			},
+		},
+	}
+
+	err = s.db.CreateSource(&source)
+	require.NoError(err, "create source")
+
+	jobs, err = s.db.ListDescribeSourceJobs(source.ID)
+	require.NoError(err, "list describe source jobs")
+	s.Equal(len(source.DescribeSourceJobs), len(jobs))
+
+	s.cleanupDescribeJobForSource(id.String())
 }
 
 func (s *SchedulerTestSuite) TestDescribeCleanup() {

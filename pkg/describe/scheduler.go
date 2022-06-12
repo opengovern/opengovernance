@@ -566,7 +566,6 @@ func (s Scheduler) cleanupComplianceReportJob() {
 		s.logger.Error("Failed to find older than 5 recent completed ComplianceReportJobs for each source",
 			zap.Error(err),
 		)
-
 		return
 	}
 
