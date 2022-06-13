@@ -59,14 +59,17 @@ func (s *SchedulerTestSuite) BeforeTest(suiteName, testName string) {
 		orm: s.orm,
 	}
 	s.Scheduler = Scheduler{
-		id:                       "test-scheduler",
-		db:                       db,
-		describeJobQueue:         &mocksqueue.Interface{},
-		describeJobResultQueue:   &mocksqueue.Interface{},
-		describeCleanupJobQueue:  &mocksqueue.Interface{},
-		complianceReportJobQueue: s.queueInt,
-		logger:                   logger,
-		httpServer:               NewHTTPServer("localhost:2345", db),
+		id:                              "test-scheduler",
+		db:                              db,
+		describeJobQueue:                &mocksqueue.Interface{},
+		describeJobResultQueue:          &mocksqueue.Interface{},
+		describeCleanupJobQueue:         &mocksqueue.Interface{},
+		complianceReportJobQueue:        &mocksqueue.Interface{},
+		complianceReportJobResultQueue:  &mocksqueue.Interface{},
+		complianceReportCleanupJobQueue: &mocksqueue.Interface{},
+		logger:                          logger,
+		httpServer:                      NewHTTPServer("localhost:2345", db),
+		deletedSources:                  make(chan string, ConcurrentDeletedSources),
 	}
 	err = s.Scheduler.db.Initialize()
 	require.NoError(err, "initialize db")
@@ -555,6 +558,98 @@ func (s *SchedulerTestSuite) TestDescribeCleanup_NothingReadyToClean() {
 	require.Equal(6, len(sources))
 }
 
+func (s *SchedulerTestSuite) TestDescribeCleanup_DeleteSource() {
+	require := s.Require()
+
+	id := uuid.New()
+	sourceJobs, err := s.db.ListDescribeSourceJobs(id)
+	require.NoError(err, "list describe source jobs")
+	s.Equal(0, len(sourceJobs))
+
+	// Create a fake source with jobs
+	source := Source{
+		ID:   id,
+		Type: api.SourceCloudAWS,
+		DescribeSourceJobs: []DescribeSourceJob{
+			{
+				Model: gorm.Model{
+					ID: 1,
+				},
+				Status: api.DescribeSourceJobCompleted,
+			},
+			{
+				Model: gorm.Model{
+					ID: 2,
+				},
+				Status: api.DescribeSourceJobCompleted,
+			},
+			{
+				Model: gorm.Model{
+					ID: 3,
+				},
+				Status: api.DescribeSourceJobCompleted,
+			},
+			{
+				Model: gorm.Model{
+					ID: 4,
+				},
+				Status: api.DescribeSourceJobCompleted,
+			},
+			{
+				Model: gorm.Model{
+					ID: 5,
+				},
+				Status: api.DescribeSourceJobCompleted,
+			},
+		},
+		ComplianceReportJobs: []ComplianceReportJob{
+			{
+				Model: gorm.Model{
+					ID: 1,
+				},
+				Status: api2.ComplianceReportJobCompleted,
+			},
+			{
+				Model: gorm.Model{
+					ID: 2,
+				},
+				Status: api2.ComplianceReportJobCompleted,
+			},
+			{
+				Model: gorm.Model{
+					ID: 3,
+				},
+				Status: api2.ComplianceReportJobCompleted,
+			},
+			{
+				Model: gorm.Model{
+					ID: 4,
+				},
+				Status: api2.ComplianceReportJobCompleted,
+			},
+			{
+				Model: gorm.Model{
+					ID: 5,
+				},
+				Status: api2.ComplianceReportJobCompleted,
+			},
+		},
+	}
+
+	err = s.db.CreateSource(&source)
+	require.NoError(err, "create source")
+
+	sourceJobs, err = s.db.ListDescribeSourceJobs(source.ID)
+	require.NoError(err, "list describe source jobs")
+	s.Equal(len(source.DescribeSourceJobs), len(sourceJobs))
+
+	reportJobs, err := s.db.ListComplianceReportJobs(source.ID)
+	require.NoError(err, "list compliance report jobs")
+	s.Equal(len(source.ComplianceReportJobs), len(reportJobs))
+
+	s.cleanupDescribeJobForDeletedSource(id.String())
+}
+
 func (s *SchedulerTestSuite) TestDescribeCleanup() {
 	require := s.Require()
 
@@ -676,7 +771,7 @@ func (s *SchedulerTestSuite) TestRunComplianceReport() {
 	go s.Scheduler.RunComplianceReportScheduler()
 
 	err = backoff.Retry(func() error {
-		jobs, err := s.Scheduler.db.ListComplianceReports(source.ID)
+		jobs, err := s.Scheduler.db.ListComplianceReportJobs(source.ID)
 		if err != nil {
 			return err
 		}

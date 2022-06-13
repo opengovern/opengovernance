@@ -415,7 +415,7 @@ func doDescribeAzure(ctx context.Context, job DescribeJob, config map[string]int
 		"",
 	)
 	if err != nil {
-		return nil, fmt.Errorf("Azure: %w", err)
+		return nil, fmt.Errorf("azure: %w", err)
 	}
 
 	serviceDistribution := map[string]map[string]int{}

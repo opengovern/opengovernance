@@ -51,6 +51,7 @@ func StartupPostgreSQL(t *testing.T) *gorm.DB {
 		err := pool.Purge(resource)
 		require.NoError(err, "purge resource %s", resource)
 	})
+	time.Sleep(time.Second * 5)
 
 	var orm *gorm.DB
 	// exponential backoff-retry, because the application in the container might not be ready to accept connections yet
