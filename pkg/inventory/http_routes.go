@@ -2118,7 +2118,7 @@ func (h *HttpHandler) GetLocations(ctx echo.Context) error {
 			return err
 		}
 
-		var res map[string]interface{}
+		res := map[string]interface{}{}
 		for locs.HasNext() {
 			locpage, err := locs.NextPage(ctx.Request().Context())
 			if err != nil {
