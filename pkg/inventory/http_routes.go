@@ -59,6 +59,9 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	v1.GET("/accounts/resource/count", h.GetAccountsResourceCount)
 	v1.GET("/services/distribution", h.GetServiceDistribution)
 
+	v1.GET("/cost/top/accounts", h.GetTopAccountsByCost)
+	v1.GET("/cost/top/services", h.GetTopServicesByCost)
+
 	v1.GET("/query", h.ListQueries)
 	v1.GET("/query/count", h.CountQueries)
 	v1.POST("/query/:queryId", h.RunQuery)
@@ -1004,6 +1007,32 @@ func (h *HttpHandler) GetCompliancyTrend(ctx echo.Context) error {
 		return resp[i].Timestamp < resp[j].Timestamp
 	})
 	return ctx.JSON(http.StatusOK, resp)
+}
+
+// GetTopAccountsByCost godoc
+// @Summary  Returns top n accounts of specified provider by cost
+// @Tags     cost
+// @Accept   json
+// @Produce  json
+// @Param    count     query     int     true   "count"
+// @Param    provider  query     string  true   "Provider"
+// @Success  200       {object}  []api.TopAccountResponse
+// @Router   /inventory/api/v1/cost/top/accounts [get]
+func (h *HttpHandler) GetTopAccountsByCost(ctx echo.Context) error {
+	return ctx.JSON(http.StatusNotImplemented, nil)
+}
+
+// GetTopServicesByCost godoc
+// @Summary  Returns top n services of specified provider by cost
+// @Tags     cost
+// @Accept   json
+// @Produce  json
+// @Param    count     query     int     true   "count"
+// @Param    provider  query     string  true   "Provider"
+// @Success  200       {object}  []api.TopAccountResponse
+// @Router   /inventory/api/v1/cost/top/services [get]
+func (h *HttpHandler) GetTopServicesByCost(ctx echo.Context) error {
+	return ctx.JSON(http.StatusNotImplemented, nil)
 }
 
 // GetTopAccountsByResourceCount godoc
@@ -2089,7 +2118,7 @@ func (h *HttpHandler) GetLocations(ctx echo.Context) error {
 			return err
 		}
 
-		var res map[string]interface{}
+		res := map[string]interface{}{}
 		for locs.HasNext() {
 			locpage, err := locs.NextPage(ctx.Request().Context())
 			if err != nil {
