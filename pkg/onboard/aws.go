@@ -14,8 +14,13 @@ import (
 
 var PermissionError = errors.New("PermissionError")
 
-func discoverAwsAccounts(ctx context.Context, req api.DiscoverAWSAccountsRequest) ([]api.DiscoverAWSAccountsResponse, error) {
+func discoverAwsAccounts(ctx context.Context, req api.DiscoverAWSAccountsRequest, awsPermissionCheckURL string) ([]api.DiscoverAWSAccountsResponse, error) {
 	err := keibiaws.CheckDescribeRegionsPermission(req.AccessKey, req.SecretKey)
+	if err != nil {
+		return nil, PermissionError
+	}
+
+	err = keibiaws.CheckEnoughPermission(awsPermissionCheckURL, req.AccessKey, req.SecretKey)
 	if err != nil {
 		return nil, PermissionError
 	}

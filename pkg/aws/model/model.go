@@ -906,3 +906,41 @@ type S3AccessPointDescription struct {
 	Policy       *string
 	PolicyStatus *s3controltypes.PolicyStatus
 }
+
+type CostExplorerRow struct {
+	Estimated bool
+
+	// The time period that the result covers.
+	PeriodStart *string
+	PeriodEnd   *string
+
+	Dimension1 *string
+	Dimension2 *string
+	//Tag *string
+
+	BlendedCostAmount      *string
+	UnblendedCostAmount    *string
+	NetUnblendedCostAmount *string
+	AmortizedCostAmount    *string
+	NetAmortizedCostAmount *string
+	UsageQuantityAmount    *string
+	NormalizedUsageAmount  *string
+
+	BlendedCostUnit      *string
+	UnblendedCostUnit    *string
+	NetUnblendedCostUnit *string
+	AmortizedCostUnit    *string
+	NetAmortizedCostUnit *string
+	UsageQuantityUnit    *string
+	NormalizedUsageUnit  *string
+}
+
+//index:aws_costexplorer_byaccountmonthly
+type CostExplorerByAccountMonthlyDescription struct {
+	CostExplorerRow
+}
+
+//index:aws_costexplorer_byservicemonthly
+type CostExplorerByServiceMonthlyDescription struct {
+	CostExplorerRow
+}

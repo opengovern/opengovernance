@@ -12,9 +12,10 @@ import (
 )
 
 type HttpHandler struct {
-	db                Database
-	sourceEventsQueue queue.Interface
-	vault             vault.SourceConfig
+	db                    Database
+	sourceEventsQueue     queue.Interface
+	vault                 vault.SourceConfig
+	awsPermissionCheckURL string
 }
 
 func InitializeHttpHandler(
@@ -33,6 +34,7 @@ func InitializeHttpHandler(
 	vaultRoleName string,
 	vaultCaPath string,
 	vaultUseTLS bool,
+	awsPermissionCheckURL string,
 ) (*HttpHandler, error) {
 
 	fmt.Println("Initializing http handler")
@@ -93,8 +95,9 @@ func InitializeHttpHandler(
 	fmt.Println("Initialized postgres database: ", postgresDb)
 
 	return &HttpHandler{
-		vault:             v,
-		db:                db,
-		sourceEventsQueue: sourceEventsQueue,
+		vault:                 v,
+		db:                    db,
+		sourceEventsQueue:     sourceEventsQueue,
+		awsPermissionCheckURL: awsPermissionCheckURL,
 	}, nil
 }
