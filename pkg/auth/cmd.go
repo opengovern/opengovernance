@@ -93,13 +93,18 @@ func start(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("initialize database: %w", err)
 	}
-
-	authServer := Server{
-		host:     keibiHost,
-		db:       db,
-		verifier: verifier,
-		logger:   logger,
+	extAuth, err := extauth.NewAzureADB2CProvider(
+		ctx,
+		azureAuthTenantID,
+		azureAuthClientID,
+		azureAuthClientSecret,
+		azureIdentityIssuer,
+		logger)
+	if err != nil {
+		return fmt.Errorf("initialize Azure client: %w", err)
 	}
+
+	m := email.NewSendGripClient(mailApiKey, mailSender, mailSenderName, logger)
 
 	creds, err := newServerCredentials(
 		grpcTlsCertPath,
@@ -108,6 +113,14 @@ func start(ctx context.Context) error {
 	)
 	if err != nil {
 		return fmt.Errorf("grpc tls creds: %w", err)
+	}
+
+	authServer := Server{
+		host:     keibiHost,
+		db:       db,
+		verifier: verifier,
+		logger:   logger,
+		extAuth:  extAuth,
 	}
 
 	grpcServer := grpc.NewServer(grpc.Creds(creds))
@@ -122,19 +135,6 @@ func start(ctx context.Context) error {
 	go func() {
 		errors <- fmt.Errorf("grpc server: %w", grpcServer.Serve(lis))
 	}()
-
-	extAuth, err := extauth.NewAzureADB2CProvider(
-		ctx,
-		azureAuthTenantID,
-		azureAuthClientID,
-		azureAuthClientSecret,
-		azureIdentityIssuer,
-		logger)
-	if err != nil {
-		return fmt.Errorf("initialize Azure client: %w", err)
-	}
-
-	m := email.NewSendGripClient(mailApiKey, mailSender, mailSenderName, logger)
 
 	go func() {
 		routes := httpRoutes{
