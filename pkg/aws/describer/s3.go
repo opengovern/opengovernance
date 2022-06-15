@@ -324,6 +324,9 @@ func getBucketTagging(ctx context.Context, client *s3.Client, bucket types.Bucke
 		Bucket: bucket.Name,
 	})
 	if err != nil {
+		if isErr(err, "NoSuchTagSet") {
+			return &s3.GetBucketTaggingOutput{}, nil
+		}
 		return nil, err
 	}
 
