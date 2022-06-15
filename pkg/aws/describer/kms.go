@@ -108,7 +108,11 @@ func KMSKey(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 				KeyId: v.KeyId,
 			})
 			if err != nil {
-				return nil, err
+				if isErr(err, "AccessDeniedException") {
+					tags = &kms.ListResourceTagsOutput{}
+				} else {
+					return nil, err
+				}
 			}
 
 			values = append(values, Resource{
