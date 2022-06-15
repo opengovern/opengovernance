@@ -12,7 +12,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 )
 
-func setRowMetrics(row model.CostExplorerRow, metrics map[string]types.MetricValue) {
+func setRowMetrics(row *model.CostExplorerRow, metrics map[string]types.MetricValue) {
 	if _, ok := metrics["BlendedCost"]; ok {
 		row.BlendedCostAmount = metrics["BlendedCost"].Amount
 		row.BlendedCostUnit = metrics["BlendedCost"].Unit
@@ -90,7 +90,7 @@ func costMonthly(ctx context.Context, cfg aws.Config, by string, startDate, endD
 				row.PeriodStart = result.TimePeriod.Start
 				row.PeriodEnd = result.TimePeriod.End
 
-				setRowMetrics(row, result.Total)
+				setRowMetrics(&row, result.Total)
 				values = append(values, row)
 			}
 			// make a row per group
@@ -107,7 +107,7 @@ func costMonthly(ctx context.Context, cfg aws.Config, by string, startDate, endD
 						row.Dimension2 = aws.String(group.Keys[1])
 					}
 				}
-				setRowMetrics(row, group.Metrics)
+				setRowMetrics(&row, group.Metrics)
 
 				values = append(values, row)
 			}
