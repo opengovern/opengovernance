@@ -177,33 +177,30 @@ func BackupVault(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 						return nil, err
 					}
 				}
+				if isErr(err, "ResourceNotFoundException") || isErr(err, "InvalidParameter") {
+					notification = &backup.GetBackupVaultNotificationsOutput{}
+				}
 			}
 
 			accessPolicy, err := client.GetBackupVaultAccessPolicy(ctx, &backup.GetBackupVaultAccessPolicyInput{
 				BackupVaultName: v.BackupVaultName,
 			})
-			if a, ok := err.(awserr.Error); ok {
-				if a.Code() == "ResourceNotFoundException" || a.Code() == "InvalidParameter" {
+			if err != nil {
+				if a, ok := err.(awserr.Error); ok {
+					if a.Code() == "ResourceNotFoundException" || a.Code() == "InvalidParameter" {
+						accessPolicy = &backup.GetBackupVaultAccessPolicyOutput{}
+					} else {
+						return nil, err
+					}
+				}
+				if isErr(err, "ResourceNotFoundException") || isErr(err, "InvalidParameter") {
 					accessPolicy = &backup.GetBackupVaultAccessPolicyOutput{}
-				} else {
-					return nil, err
 				}
 			}
 
-			arn := ""
-			if v.BackupVaultArn != nil {
-				arn = *v.BackupVaultArn
-			}
-
-			name := ""
-			if v.BackupVaultName != nil {
-				name = *v.BackupVaultName
-			} else {
-				name = arn
-			}
 			values = append(values, Resource{
-				ARN:  arn,
-				Name: name,
+				ARN:  *v.BackupVaultArn,
+				Name: *v.BackupVaultName,
 				Description: model.BackupVaultDescription{
 					BackupVault:       v,
 					Policy:            accessPolicy.Policy,
