@@ -2,6 +2,9 @@ package describer
 
 import (
 	"context"
+	"errors"
+
+	"github.com/aws/smithy-go"
 
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/turbot/go-kit/helpers"
@@ -73,6 +76,13 @@ func KMSKey(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 			})
 			if err != nil {
 				// For AWS managed KMS keys GetKeyRotationStatus API generates exceptions
+				var ae smithy.APIError
+				if errors.As(err, &ae) &&
+					helpers.StringSliceContains([]string{"AccessDeniedException", "UnsupportedOperationException"}, ae.ErrorCode()) {
+					rotationStatus = &kms.GetKeyRotationStatusOutput{}
+					err = nil
+				}
+
 				if a, ok := err.(awserr.Error); ok {
 					if helpers.StringSliceContains([]string{"AccessDeniedException", "UnsupportedOperationException"}, a.Code()) {
 						rotationStatus = &kms.GetKeyRotationStatusOutput{}

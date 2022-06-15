@@ -190,14 +190,19 @@ func BackupVault(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 				}
 			}
 
+			arn := ""
+			if v.BackupVaultArn != nil {
+				arn = *v.BackupVaultArn
+			}
+
 			name := ""
 			if v.BackupVaultName != nil {
 				name = *v.BackupVaultName
 			} else {
-				name = *v.BackupVaultArn
+				name = arn
 			}
 			values = append(values, Resource{
-				ARN:  *v.BackupVaultArn,
+				ARN:  arn,
 				Name: name,
 				Description: model.BackupVaultDescription{
 					BackupVault:       v,
