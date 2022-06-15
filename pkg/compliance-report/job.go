@@ -179,6 +179,13 @@ func (j *Job) Do(vlt vault.SourceConfig, producer sarama.SyncProducer, topic str
 	for _, assignment := range assignments {
 		benchmarks = append(benchmarks, assignment.BenchmarkId)
 	}
+	if len(benchmarks) == 0 {
+		return JobResult{
+			JobID:           j.JobID,
+			ReportCreatedAt: j.DescribedAt,
+			Status:          api.ComplianceReportJobCompleted,
+		}
+	}
 
 	if err := RunSteampipeCheckBenchmarks(j.SourceType, benchmarks, resultFileName); err != nil {
 		DoComplianceReportJobsDuration.WithLabelValues(string(j.SourceType), "failure").Observe(float64(time.Now().Unix() - startTime))
@@ -349,10 +356,6 @@ func (j *Job) Do(vlt vault.SourceConfig, producer sarama.SyncProducer, topic str
 }
 
 func RunSteampipeCheckBenchmarks(sourceType source.Type, benchmarks []string, exportFileName string) error {
-	if len(benchmarks) == 0 {
-		return nil
-	}
-
 	workspaceDir := ""
 	switch sourceType {
 	case source.CloudAWS:
