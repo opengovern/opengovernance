@@ -2,6 +2,7 @@ package describer
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/Azure/azure-sdk-for-go/profiles/latest/resources/mgmt/policy"
 	"github.com/Azure/go-autorest/autorest"
@@ -20,6 +21,8 @@ func PolicyAssignment(ctx context.Context, authorizer autorest.Authorizer, subsc
 	var values []Resource
 	for {
 		for _, v := range result.Values() {
+			fmt.Println("============", v.ID, v.Name, v.Location)
+
 			values = append(values, Resource{
 				ID:       *v.ID,
 				Name:     *v.Name,
