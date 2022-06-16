@@ -49,7 +49,7 @@ func (x azStructMarshaller) MarshalJSON() ([]byte, error) {
 	num := v.Type().NumField()
 	for i := 0; i < num; i++ {
 		field := v.Type().Field(i)
-		if !v.Field(i).CanInterface() {
+		if !field.IsExported() {
 			continue
 		}
 
