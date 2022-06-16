@@ -5,7 +5,7 @@ import (
 	"net/http"
 
 	"github.com/google/uuid"
-	"gitlab.com/keibiengine/keibi-engine/pkg/httprequest"
+	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpclient"
 )
 
 type BenchmarkAssignment struct {
@@ -18,7 +18,7 @@ func GetBenchmarkAssignmentsBySourceId(baseUrl string, sourceID uuid.UUID) ([]Be
 	url := fmt.Sprintf("%s/api/v1/benchmarks/source/%s", baseUrl, sourceID.String())
 
 	assignments := []BenchmarkAssignment{}
-	if err := httprequest.DoRequest(http.MethodGet, url, nil, nil, &assignments); err != nil {
+	if err := httpclient.DoRequest(http.MethodGet, url, nil, nil, &assignments); err != nil {
 		return nil, err
 	}
 	return assignments, nil

@@ -6,6 +6,7 @@ import (
 	"os"
 	"time"
 
+	"gitlab.com/keibiengine/keibi-engine/pkg/describe/client"
 	"gitlab.com/keibiengine/keibi-engine/pkg/keibi-es-sdk"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -13,10 +14,10 @@ import (
 )
 
 type HttpHandler struct {
-	client           keibi.Client
-	db               Database
-	steampipeConn    *SteampipeDatabase
-	schedulerBaseUrl string
+	client          keibi.Client
+	db              Database
+	steampipeConn   *SteampipeDatabase
+	schedulerClient client.SchedulerServiceClient
 }
 
 func InitializeHttpHandler(
@@ -97,7 +98,7 @@ func InitializeHttpHandler(
 	if err != nil {
 		return nil, err
 	}
-	h.schedulerBaseUrl = schedulerBaseUrl
+	h.schedulerClient = client.NewSchedulerServiceClient(schedulerBaseUrl)
 
 	return h, nil
 }

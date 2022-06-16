@@ -34,9 +34,9 @@ import (
 	api2 "gitlab.com/keibiengine/keibi-engine/pkg/describe/api"
 	pagination "gitlab.com/keibiengine/keibi-engine/pkg/internal/api"
 	idocker "gitlab.com/keibiengine/keibi-engine/pkg/internal/dockertest"
+	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpclient"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpserver"
 	"gitlab.com/keibiengine/keibi-engine/pkg/inventory/api"
-	"gitlab.com/keibiengine/keibi-engine/pkg/inventory/client"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
@@ -972,9 +972,8 @@ func (s *HttpHandlerSuite) TestGetBenchmarkTags() {
 }
 
 func (s *HttpHandlerSuite) TestGetBenchmarkDetails() {
-	require := s.Require()
 	s.T().Skip("deprecated")
-
+	require := s.Require()
 	var res api.GetBenchmarkDetailsResponse
 	_, err := doRequestJSONResponse(s.router, "GET",
 		"/api/v1/benchmarks/test_compliance.benchmark1", nil, &res)
@@ -1012,8 +1011,8 @@ func (s *HttpHandlerSuite) TestGetPolicies() {
 }
 
 func (s *HttpHandlerSuite) TestGetBenchmarkResult() {
-	require := s.Require()
 	s.T().Skip("deprecated")
+	require := s.Require()
 
 	sourceId, err := uuid.Parse("2a87b978-b8bf-4d7e-bc19-cf0a99a430cf")
 	require.NoError(err)
@@ -1039,8 +1038,8 @@ func (s *HttpHandlerSuite) TestGetBenchmarkResult() {
 }
 
 func (s *HttpHandlerSuite) TestGetBenchmarkResultPolicies() {
-	require := s.Require()
 	s.T().Skip("deprecated")
+	require := s.Require()
 
 	sourceId, err := uuid.Parse("2a87b978-b8bf-4d7e-bc19-cf0a99a430cf")
 	require.NoError(err)
@@ -1123,7 +1122,7 @@ func (s *HttpHandlerSuite) TestGetBenchmarkAccountCompliance() {
 	t := time.Now()
 	start := time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, t.Location())
 
-	cr, err := client.ListComplianceReportJobs(s.describe.MockServer.URL, sourceID, &api.TimeRangeFilter{
+	cr, err := s.handler.schedulerClient.ListComplianceReportJobs(&httpclient.Context{}, sourceID.String(), &api.TimeRangeFilter{
 		From: start.UnixMilli(),
 		To:   t.UnixMilli(),
 	})
@@ -1154,7 +1153,7 @@ func (s *HttpHandlerSuite) TestGetBenchmarkAccounts() {
 	t := time.Now()
 	start := time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, t.Location())
 
-	cr, err := client.ListComplianceReportJobs(s.describe.MockServer.URL, sourceID, &api.TimeRangeFilter{
+	cr, err := s.handler.schedulerClient.ListComplianceReportJobs(&httpclient.Context{}, sourceID.String(), &api.TimeRangeFilter{
 		From: start.UnixMilli(),
 		To:   t.UnixMilli(),
 	})

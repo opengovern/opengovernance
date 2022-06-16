@@ -13,6 +13,7 @@ import (
 	"github.com/labstack/echo/v4"
 	authapi "gitlab.com/keibiengine/keibi-engine/pkg/auth/api"
 	"gitlab.com/keibiengine/keibi-engine/pkg/auth/client"
+	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpclient"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpserver"
 	"gitlab.com/keibiengine/keibi-engine/pkg/workspace/api"
 	"go.uber.org/zap"
@@ -123,8 +124,8 @@ func (s *Server) handleWorkspace(workspace *Workspace) error {
 		if meta.IsStatusConditionTrue(helmRelease.Status.Conditions, apimeta.ReadyCondition) {
 			// when the helm release installed successfully, set the rolebinding
 			authClient := client.NewAuthServiceClient(s.cfg.AuthBaseUrl)
-			authCtx := &client.Context{
-				UserID:        workspace.OwnerId,
+			authCtx := &httpclient.Context{
+				UserID:        workspace.OwnerId.String(),
 				UserRole:      authapi.AdminRole,
 				WorkspaceName: workspace.Name,
 			}

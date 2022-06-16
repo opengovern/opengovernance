@@ -15,6 +15,7 @@ import (
 	"github.com/ory/dockertest/v3"
 	"github.com/stretchr/testify/suite"
 	describe "gitlab.com/keibiengine/keibi-engine/pkg/describe/api"
+	"gitlab.com/keibiengine/keibi-engine/pkg/describe/client"
 	idocker "gitlab.com/keibiengine/keibi-engine/pkg/internal/dockertest"
 	"gitlab.com/keibiengine/keibi-engine/pkg/inventory/api"
 	"gorm.io/driver/postgres"
@@ -66,9 +67,9 @@ func (s *testSuite) mockSchedulerServer(t *testing.T) string {
 func (s *testSuite) SetupSuite() {
 	t := s.T()
 
-	s.handler = &HttpHandler{
-		schedulerBaseUrl: s.mockSchedulerServer(t),
-	}
+	s.handler = &HttpHandler{}
+	s.handler.schedulerClient = client.NewSchedulerServiceClient(s.mockSchedulerServer(t))
+
 	s.benchmarkId = "benchmark-test"
 	s.sourceId = "705e4dcb-3ecd-24f3-3a35-3e926e4bded5"
 	s.sourceType = "AWS"

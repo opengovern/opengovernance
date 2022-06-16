@@ -30,8 +30,8 @@ import (
 	compliance_report "gitlab.com/keibiengine/keibi-engine/pkg/compliance-report"
 	compliance_es "gitlab.com/keibiengine/keibi-engine/pkg/compliance-report/es"
 	pagination "gitlab.com/keibiengine/keibi-engine/pkg/internal/api"
+	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpclient"
 	"gitlab.com/keibiengine/keibi-engine/pkg/inventory/api"
-	"gitlab.com/keibiengine/keibi-engine/pkg/inventory/client"
 )
 
 const EsFetchPageSize = 10000
@@ -196,7 +196,7 @@ func (h *HttpHandler) GetBenchmarksInTime(ctx echo.Context) error {
 func (h *HttpHandler) GetBenchmarkResultSummary(ctx echo.Context) error {
 	benchmarkID := ctx.Param("benchmarkId")
 
-	reportID, err := client.GetLastComplianceReportID(h.schedulerBaseUrl)
+	reportID, err := h.schedulerClient.GetLastComplianceReportID(httpclient.FromEchoContext(ctx))
 	if err != nil {
 		return err
 	}
@@ -254,7 +254,8 @@ func (h *HttpHandler) GetBenchmarkResultSummary(ctx echo.Context) error {
 // @Router   /inventory/api/v1/benchmarks/{benchmarkId}/result/policies [get]
 func (h *HttpHandler) GetBenchmarkResultPolicies(ctx echo.Context) error {
 	benchmarkID := ctx.Param("benchmarkId")
-	reportID, err := client.GetLastComplianceReportID(h.schedulerBaseUrl)
+
+	reportID, err := h.schedulerClient.GetLastComplianceReportID(httpclient.FromEchoContext(ctx))
 	if err != nil {
 		return err
 	}
@@ -345,7 +346,8 @@ func (h *HttpHandler) GetBenchmarkResultPolicies(ctx echo.Context) error {
 // @Router   /inventory/api/v1/benchmarks/{benchmarkId}/result/findings [get]
 func (h *HttpHandler) GetBenchmarkResultCompliancy(ctx echo.Context) error {
 	benchmarkID := ctx.Param("benchmarkId")
-	reportID, err := client.GetLastComplianceReportID(h.schedulerBaseUrl)
+
+	reportID, err := h.schedulerClient.GetLastComplianceReportID(httpclient.FromEchoContext(ctx))
 	if err != nil {
 		return err
 	}
@@ -431,7 +433,8 @@ func (h *HttpHandler) GetBenchmarkResultCompliancy(ctx echo.Context) error {
 func (h *HttpHandler) GetBenchmarkResultPolicyResourcesSummary(ctx echo.Context) error {
 	benchmarkID := ctx.Param("benchmarkId")
 	policyID := ctx.Param("policyId")
-	reportID, err := client.GetLastComplianceReportID(h.schedulerBaseUrl)
+
+	reportID, err := h.schedulerClient.GetLastComplianceReportID(httpclient.FromEchoContext(ctx))
 	if err != nil {
 		return err
 	}
@@ -481,7 +484,8 @@ func (h *HttpHandler) GetBenchmarkResultPolicyResourcesSummary(ctx echo.Context)
 func (h *HttpHandler) GetBenchmarkResultPolicyFindings(ctx echo.Context) error {
 	benchmarkID := ctx.Param("benchmarkId")
 	policyID := ctx.Param("policyId")
-	reportID, err := client.GetLastComplianceReportID(h.schedulerBaseUrl)
+
+	reportID, err := h.schedulerClient.GetLastComplianceReportID(httpclient.FromEchoContext(ctx))
 	if err != nil {
 		return err
 	}
@@ -1602,11 +1606,11 @@ func (h *HttpHandler) GetBenchmarkResult(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid source uuid")
 	}
 
-	var jobIDs []int
-	jobs, err := client.ListComplianceReportJobs(h.schedulerBaseUrl, sourceUUID, nil)
+	jobs, err := h.schedulerClient.ListComplianceReportJobs(httpclient.FromEchoContext(ctx), sourceUUID.String(), nil)
 	if err != nil {
 		return err
 	}
+	var jobIDs []int
 	for _, report := range jobs {
 		jobIDs = append(jobIDs, int(report.ID))
 	}
@@ -1684,12 +1688,11 @@ func (h *HttpHandler) GetResultPolicies(ctx echo.Context) error {
 		section = &temp
 	}
 
-	var jobIDs []int
-	jobs, err := client.ListComplianceReportJobs(h.schedulerBaseUrl, sourceUUID, nil)
+	jobs, err := h.schedulerClient.ListComplianceReportJobs(httpclient.FromEchoContext(ctx), sourceUUID.String(), nil)
 	if err != nil {
 		return err
 	}
-
+	var jobIDs []int
 	for _, report := range jobs {
 		jobIDs = append(jobIDs, int(report.ID))
 	}
@@ -2273,7 +2276,7 @@ func (h *HttpHandler) GetResources(ctx echo.Context, provider *api.SourceType, c
 			uniqueSourceIds[resource.SourceID] = ""
 		}
 		for sourceId := range uniqueSourceIds {
-			src, err := client.GetSource(h.schedulerBaseUrl, sourceId)
+			src, err := h.schedulerClient.GetSource(httpclient.FromEchoContext(ctx), sourceId)
 			if err != nil {
 				return err
 			}
@@ -2293,7 +2296,7 @@ func (h *HttpHandler) GetResources(ctx echo.Context, provider *api.SourceType, c
 			uniqueSourceIds[resource.AccountID] = ""
 		}
 		for sourceId := range uniqueSourceIds {
-			src, err := client.GetSource(h.schedulerBaseUrl, sourceId)
+			src, err := h.schedulerClient.GetSource(httpclient.FromEchoContext(ctx), sourceId)
 			if err != nil {
 				return err
 			}
@@ -2313,7 +2316,7 @@ func (h *HttpHandler) GetResources(ctx echo.Context, provider *api.SourceType, c
 			uniqueSourceIds[resource.SubscriptionID] = ""
 		}
 		for sourceId := range uniqueSourceIds {
-			src, err := client.GetSource(h.schedulerBaseUrl, sourceId)
+			src, err := h.schedulerClient.GetSource(httpclient.FromEchoContext(ctx), sourceId)
 			if err != nil {
 				return err
 			}
@@ -2446,11 +2449,10 @@ func (h *HttpHandler) GetComplianceReports(ctx echo.Context) error {
 		}
 		jobIDs = append(jobIDs, jobID)
 	} else {
-		reports, err := client.ListComplianceReportJobs(h.schedulerBaseUrl, sourceUUID, req.Filters.TimeRange)
+		reports, err := h.schedulerClient.ListComplianceReportJobs(httpclient.FromEchoContext(ctx), sourceUUID.String(), req.Filters.TimeRange)
 		if err != nil {
 			return err
 		}
-
 		for _, report := range reports {
 			jobIDs = append(jobIDs, int(report.ID))
 		}
@@ -2517,7 +2519,7 @@ func (h *HttpHandler) CreateBenchmarkAssignment(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, ErrInternalServer)
 	}
 
-	source, err := client.GetSource(h.schedulerBaseUrl, sourceUUID.String())
+	source, err := h.schedulerClient.GetSource(httpclient.FromEchoContext(ctx), sourceUUID.String())
 	if err != nil {
 		ctx.Logger().Errorf(fmt.Sprintf("request source: %v", err))
 		return echo.NewHTTPError(http.StatusInternalServerError, ErrInternalServer)
