@@ -51,7 +51,7 @@ func (x azStructMarshaller) MarshalJSON() ([]byte, error) {
 		if !v.Field(i).CanInterface() {
 			continue
 		}
-		
+
 		jsonTag := field.Tag.Get("json")
 		jsonFields := strings.Split(jsonTag, ",")
 		jsonField := jsonFields[0]
