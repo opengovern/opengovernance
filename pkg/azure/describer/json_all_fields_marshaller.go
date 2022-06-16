@@ -2,6 +2,7 @@ package describer
 
 import (
 	"encoding/json"
+	"errors"
 	"reflect"
 	"strings"
 )
@@ -87,6 +88,10 @@ func (x azPtrMarshaller) MarshalJSON() ([]byte, error) {
 		val = val.Elem()
 	}
 
+	if !val.CanInterface() {
+		return nil, errors.New("cannot interface ptr marshaller")
+	}
+
 	return JSONAllFieldsMarshaller{Value: val.Interface()}.MarshalJSON()
 }
 
@@ -98,6 +103,10 @@ func (x azSliceMarshaller) MarshalJSON() ([]byte, error) {
 	num := x.Value.Len()
 	list := make([]JSONAllFieldsMarshaller, 0, num)
 	for i := 0; i < num; i++ {
+		if !x.Value.Index(i).CanInterface() {
+			continue
+		}
+
 		list = append(list, JSONAllFieldsMarshaller{Value: x.Value.Index(i).Interface()})
 	}
 
