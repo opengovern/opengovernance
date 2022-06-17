@@ -2,8 +2,6 @@ package describer
 
 import (
 	"context"
-	"fmt"
-
 	"github.com/Azure/azure-sdk-for-go/profiles/latest/resources/mgmt/policy"
 	"github.com/Azure/go-autorest/autorest"
 	"gitlab.com/keibiengine/keibi-engine/pkg/azure/model"
@@ -21,12 +19,15 @@ func PolicyAssignment(ctx context.Context, authorizer autorest.Authorizer, subsc
 	var values []Resource
 	for {
 		for _, v := range result.Values() {
-			fmt.Println("============", v.ID, v.Name, v.Location)
+			location := ""
+			if v.Location != nil {
+				location = *v.Location
+			}
 
 			values = append(values, Resource{
 				ID:       *v.ID,
 				Name:     *v.Name,
-				Location: *v.Location,
+				Location: location,
 				Description: model.PolicyAssignmentDescription{
 					Assignment: v,
 				},
