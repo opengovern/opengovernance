@@ -21,11 +21,11 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpserver"
+	"gitlab.com/keibiengine/keibi-engine/pkg/internal/postgres"
 	queuemocks "gitlab.com/keibiengine/keibi-engine/pkg/internal/queue/mocks"
 	vaultmocks "gitlab.com/keibiengine/keibi-engine/pkg/internal/vault/mocks"
 	"gitlab.com/keibiengine/keibi-engine/pkg/onboard/api"
 
-	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 
 	idocker "gitlab.com/keibiengine/keibi-engine/pkg/internal/dockertest"
@@ -45,21 +45,31 @@ func (s *HttpHandlerSuite) SetupSuite() {
 	pool, err := dockertest.NewPool("")
 	require.NoError(err, "connect to docker")
 
-	resource, err := pool.Run("postgres", "latest", []string{"POSTGRES_PASSWORD=mysecretpassword"})
+	resource, err := pool.Run("postgres", "14.2-alpine", []string{"POSTGRES_PASSWORD=mysecretpassword"})
 	require.NoError(err, "status postgres")
 
 	t.Cleanup(func() {
 		err := pool.Purge(resource)
 		require.NoError(err, "purge resource %s", resource)
 	})
+	time.Sleep(5 * time.Second)
 
 	var orm *gorm.DB
 	// exponential backoff-retry, because the application in the container might not be ready to accept connections yet
 	err = pool.Retry(func() error {
-		orm, err = gorm.Open(postgres.Open(fmt.Sprintf("postgres://postgres:mysecretpassword@%s:%s/postgres", idocker.GetDockerHost(), resource.GetPort("5432/tcp"))), &gorm.Config{})
-		if err != nil {
-			return err
+		cfg := &postgres.Config{
+			Host:   idocker.GetDockerHost(),
+			Port:   resource.GetPort("5432/tcp"),
+			User:   "postgres",
+			Passwd: "mysecretpassword",
+			DB:     "postgres",
 		}
+
+		logger, err := zap.NewProduction()
+		require.NoError(err, "new zap logger")
+
+		orm, err = postgres.NewClient(cfg, logger)
+		require.NoError(err, "new postgres client")
 
 		d, err := orm.DB()
 		if err != nil {

@@ -47,6 +47,11 @@ func Command() *cobra.Command {
 }
 
 func start(ctx context.Context) error {
+	logger, err := zap.NewProduction()
+	if err != nil {
+		return fmt.Errorf("new logger: %w", err)
+	}
+
 	handler, err := InitializeHttpHandler(
 		RabbitMQUsername,
 		RabbitMQPassword,
@@ -63,15 +68,11 @@ func start(ctx context.Context) error {
 		VaultRoleName,
 		VaultCaPath,
 		VaultUseTLS,
+		logger,
 		AWSPermissionCheckURL,
 	)
 	if err != nil {
 		return fmt.Errorf("init http handler: %w", err)
-	}
-
-	logger, err := zap.NewProduction()
-	if err != nil {
-		return fmt.Errorf("new logger: %w", err)
 	}
 
 	return httpserver.RegisterAndStart(logger, HttpAddress, handler)

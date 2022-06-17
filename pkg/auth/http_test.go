@@ -253,8 +253,8 @@ func (s *HTTPRouteSuite) TestPutRoleBinding_UpdateExisting() {
 
 	require.NoError(s.httpRoutes.db.CreateUser(&User{
 		ID:         user1,
-		Email:      fmt.Sprintf("nima@keibi.io"),
-		ExternalID: fmt.Sprintf("external-id-1"),
+		Email:      "nima@keibi.io",
+		ExternalID: "external-id-1",
 	}))
 
 	requests := []api.PutRoleBindingRequest{

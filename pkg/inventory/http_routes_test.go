@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -19,8 +18,6 @@ import (
 
 	compliance_es "gitlab.com/keibiengine/keibi-engine/pkg/compliance-report/es"
 	"go.uber.org/zap"
-
-	"gorm.io/gorm/logger"
 
 	api3 "gitlab.com/keibiengine/keibi-engine/pkg/compliance-report/api"
 
@@ -35,9 +32,9 @@ import (
 	pagination "gitlab.com/keibiengine/keibi-engine/pkg/internal/api"
 	idocker "gitlab.com/keibiengine/keibi-engine/pkg/internal/dockertest"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpserver"
+	"gitlab.com/keibiengine/keibi-engine/pkg/internal/postgres"
 	"gitlab.com/keibiengine/keibi-engine/pkg/inventory/api"
 	"gitlab.com/keibiengine/keibi-engine/pkg/inventory/client"
-	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
 
@@ -89,7 +86,7 @@ func (s *HttpHandlerSuite) SetupSuite() {
 	postgresResource, err := pool.RunWithOptions(&dockertest.RunOptions{
 		Name:         "keibi_test_psql",
 		Repository:   "postgres",
-		Tag:          "latest",
+		Tag:          "12.2-alpine",
 		ExposedPorts: []string{"5432"},
 		Env: []string{
 			"POSTGRES_PASSWORD=mysecretpassword",
@@ -102,6 +99,7 @@ func (s *HttpHandlerSuite) SetupSuite() {
 		err := pool.Purge(postgresResource)
 		require.NoError(err, "purge resource %s", postgresResource)
 	})
+	time.Sleep(5 * time.Second)
 
 	azureSpc, err := BuildTempSpecFile("azure", "http://keibi_test_es:9200")
 	t.Cleanup(func() {
@@ -145,6 +143,7 @@ func (s *HttpHandlerSuite) SetupSuite() {
 		err := pool.Purge(steampipeResource)
 		require.NoError(err, "purge resource %s", steampipeResource)
 	})
+	time.Sleep(5 * time.Second)
 
 	// exponential backoff-retry, because the application in the container might not be ready to accept connections yet
 	err = pool.Retry(func() error {
@@ -171,25 +170,21 @@ func (s *HttpHandlerSuite) SetupSuite() {
 	err = PopulateElastic(s.elasticUrl, s.describe)
 	require.NoError(err, "populating elastic")
 
+	logger, err := zap.NewProduction()
+	require.NoError(err, "new zap logger")
+
 	var orm *gorm.DB
 	// exponential backoff-retry, because the application in the container might not be ready to accept connections yet
 	err = pool.Retry(func() error {
-		newLogger := logger.New(
-			log.New(os.Stdout, "\r\n", log.LstdFlags), // io writer
-			logger.Config{
-				SlowThreshold:             time.Second, // Slow SQL threshold
-				LogLevel:                  logger.Info, // Log level
-				IgnoreRecordNotFoundError: true,        // Ignore ErrRecordNotFound error for logger
-				Colorful:                  true,        // Disable color
-			},
-		)
-
-		orm, err = gorm.Open(postgres.Open(fmt.Sprintf("postgres://postgres:mysecretpassword@%s:%s/postgres", idocker.GetDockerHost(), postgresResource.GetPort("5432/tcp"))), &gorm.Config{
-			Logger: newLogger,
-		})
-		if err != nil {
-			return err
+		cfg := &postgres.Config{
+			Host:   idocker.GetDockerHost(),
+			Port:   postgresResource.GetPort("5432/tcp"),
+			User:   "postgres",
+			Passwd: "mysecretpassword",
+			DB:     "postgres",
 		}
+		orm, err = postgres.NewClient(cfg, logger)
+		require.NoError(err, "new postgres client")
 
 		d, err := orm.DB()
 		if err != nil {
@@ -212,10 +207,16 @@ func (s *HttpHandlerSuite) SetupSuite() {
 
 	// exponential backoff-retry, because the application in the container might not be ready to accept connections yet
 	err = pool.Retry(func() error {
-		orm, err = gorm.Open(postgres.Open(fmt.Sprintf("postgres://steampipe:abcd@%s:%s/steampipe", idocker.GetDockerHost(), steampipeResource.GetPort("9193/tcp"))), &gorm.Config{})
-		if err != nil {
-			return err
+		cfg := &postgres.Config{
+			Host:   idocker.GetDockerHost(),
+			Port:   steampipeResource.GetPort("9193/tcp"),
+			User:   "steampipe",
+			Passwd: "abcd",
+			DB:     "steampipe",
 		}
+
+		orm, err = postgres.NewClient(cfg, logger)
+		require.NoError(err, "new postgres client")
 
 		d, err := orm.DB()
 		if err != nil {
@@ -229,12 +230,10 @@ func (s *HttpHandlerSuite) SetupSuite() {
 	s.handler, err = InitializeHttpHandler(s.elasticUrl, "", "",
 		idocker.GetDockerHost(), postgresResource.GetPort("5432/tcp"), "postgres", "postgres", "mysecretpassword",
 		idocker.GetDockerHost(), steampipeResource.GetPort("9193/tcp"), "steampipe", "steampipe", "abcd",
-		s.describe.MockServer.URL,
+		s.describe.MockServer.URL, logger,
 	)
 	require.NoError(err, "init http handler")
 
-	logger, err := zap.NewProduction()
-	require.NoError(err, "new logger")
 	s.router = httpserver.Register(logger, s.handler)
 }
 

@@ -4,44 +4,44 @@ import (
 	"fmt"
 
 	"github.com/google/uuid"
-	"gorm.io/driver/postgres"
+	"gitlab.com/keibiengine/keibi-engine/pkg/internal/postgres"
+	"go.uber.org/zap"
 	"gorm.io/gorm"
 )
 
 type Database struct {
-	db *gorm.DB
+	orm *gorm.DB
 }
 
-func NewDatabase(settings *Config) (*Database, error) {
-	dns := fmt.Sprintf(`host=%s port=%s user=%s password=%s dbname=%s sslmode=disable TimeZone=GMT`,
-		settings.Host,
-		settings.Port,
-		settings.User,
-		settings.Password,
-		settings.DBName,
-	)
-
-	db, err := gorm.Open(postgres.Open(dns), &gorm.Config{})
-	if err != nil {
-		return nil, fmt.Errorf("gorm open: %w", err)
+func NewDatabase(settings *Config, logger *zap.Logger) (*Database, error) {
+	cfg := postgres.Config{
+		Host:   settings.Host,
+		Port:   settings.Port,
+		User:   settings.User,
+		Passwd: settings.Password,
+		DB:     settings.DBName,
 	}
-	if err := db.AutoMigrate(&Workspace{}); err != nil {
+	orm, err := postgres.NewClient(&cfg, logger)
+	if err != nil {
+		return nil, fmt.Errorf("new postgres client: %w", err)
+	}
+	if err := orm.AutoMigrate(&Workspace{}); err != nil {
 		return nil, fmt.Errorf("gorm migrate: %w", err)
 	}
-	return &Database{db: db}, nil
+	return &Database{orm: orm}, nil
 }
 
 func (s *Database) CreateWorkspace(m *Workspace) error {
-	return s.db.Model(&Workspace{}).Create(m).Error
+	return s.orm.Model(&Workspace{}).Create(m).Error
 }
 
 func (s *Database) UpdateWorkspaceStatus(id uuid.UUID, status WorkspaceStatus) error {
-	return s.db.Model(&Workspace{}).Where("id = ?", id).Update("status", status.String()).Error
+	return s.orm.Model(&Workspace{}).Where("id = ?", id).Update("status", status.String()).Error
 }
 
 func (s *Database) GetWorkspace(id uuid.UUID) (*Workspace, error) {
 	var workspace Workspace
-	if err := s.db.Model(&Workspace{}).Where(Workspace{ID: id}).First(&workspace).Error; err != nil {
+	if err := s.orm.Model(&Workspace{}).Where(Workspace{ID: id}).First(&workspace).Error; err != nil {
 		return nil, err
 	}
 	return &workspace, nil
@@ -49,7 +49,7 @@ func (s *Database) GetWorkspace(id uuid.UUID) (*Workspace, error) {
 
 func (s *Database) ListWorkspacesByOwner(ownerId uuid.UUID) ([]*Workspace, error) {
 	var workspaces []*Workspace
-	if err := s.db.Model(&Workspace{}).Where(Workspace{OwnerId: ownerId}).Find(&workspaces).Error; err != nil {
+	if err := s.orm.Model(&Workspace{}).Where(Workspace{OwnerId: ownerId}).Find(&workspaces).Error; err != nil {
 		return nil, err
 	}
 	return workspaces, nil
@@ -57,7 +57,7 @@ func (s *Database) ListWorkspacesByOwner(ownerId uuid.UUID) ([]*Workspace, error
 
 func (s *Database) ListWorkspaces() ([]*Workspace, error) {
 	var workspaces []*Workspace
-	if err := s.db.Model(&Workspace{}).Find(&workspaces).Error; err != nil {
+	if err := s.orm.Model(&Workspace{}).Find(&workspaces).Error; err != nil {
 		return nil, err
 	}
 	return workspaces, nil
@@ -65,7 +65,7 @@ func (s *Database) ListWorkspaces() ([]*Workspace, error) {
 
 func (s *Database) ListWorkspacesByStatus(status string) ([]*Workspace, error) {
 	var workspaces []*Workspace
-	if err := s.db.Model(&Workspace{}).Where(Workspace{Status: status}).Find(&workspaces).Error; err != nil {
+	if err := s.orm.Model(&Workspace{}).Where(Workspace{Status: status}).Find(&workspaces).Error; err != nil {
 		return nil, err
 	}
 	return workspaces, nil

@@ -58,7 +58,6 @@ func TestServer(t *testing.T) {
 const testIssuer = "http://example.com"
 
 type testKeySet struct {
-	payload []byte
 }
 
 func (tks *testKeySet) VerifySignature(ctx context.Context, jwt string) (payload []byte, err error) {

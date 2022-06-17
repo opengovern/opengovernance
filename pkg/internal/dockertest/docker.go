@@ -11,12 +11,14 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/ory/dockertest/v3"
 	dc "github.com/ory/dockertest/v3/docker"
 	"github.com/streadway/amqp"
 	"github.com/stretchr/testify/require"
+	"gitlab.com/keibiengine/keibi-engine/pkg/internal/postgres"
+	"go.uber.org/zap"
 	"gopkg.in/Shopify/sarama.v1"
-	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
 
@@ -44,22 +46,30 @@ func StartupPostgreSQL(t *testing.T) *gorm.DB {
 	pool, err := dockertest.NewPool("")
 	require.NoError(err, "connect to docker")
 
-	resource, err := pool.Run("postgres", "14", []string{"POSTGRES_PASSWORD=postgres"})
+	resource, err := pool.Run("postgres", "12.2-alpine", []string{"POSTGRES_PASSWORD=postgres"})
 	require.NoError(err, "status postgres")
 
 	t.Cleanup(func() {
 		err := pool.Purge(resource)
 		require.NoError(err, "purge resource %s", resource)
 	})
-	time.Sleep(time.Second * 5)
+	time.Sleep(5 * time.Second)
 
 	var orm *gorm.DB
 	// exponential backoff-retry, because the application in the container might not be ready to accept connections yet
 	err = pool.Retry(func() error {
-		orm, err = gorm.Open(postgres.Open(fmt.Sprintf("postgres://postgres:postgres@%s:%s/postgres", GetDockerHost(), resource.GetPort("5432/tcp"))), &gorm.Config{})
-		if err != nil {
-			return err
+		cfg := &postgres.Config{
+			Host:   GetDockerHost(),
+			Port:   resource.GetPort("5432/tcp"),
+			User:   "postgres",
+			Passwd: "postgres",
+			DB:     "postgres",
 		}
+		logger, err := zap.NewProduction()
+		require.NoError(err, "new zap logger")
+
+		orm, err = postgres.NewClient(cfg, logger)
+		require.NoError(err, "new postgres client")
 
 		d, err := orm.DB()
 		if err != nil {
@@ -91,18 +101,12 @@ func StartupRabbitMQ(t *testing.T) RabbitMQServer {
 	pool, err := dockertest.NewPool("")
 	require.NoError(err, "connect to docker")
 
+	name := "keibi-rabbitmq-" + uuid.NewString()
 	resource, err := pool.RunWithOptions(&dockertest.RunOptions{
-		Name:         "keibi_test_rabbitmq",
-		Hostname:     "keibi_test_rabbitmq",
-		Repository:   "bitnami/rabbitmq",
-		Tag:          "3.8.23-debian-10-r18",
-		ExposedPorts: []string{"15672"},
-		PortBindings: map[dc.Port][]dc.PortBinding{
-			"15672": {{
-				HostIP:   "0.0.0.0",
-				HostPort: "15672",
-			}},
-		},
+		Name:       name,
+		Hostname:   name,
+		Repository: "bitnami/rabbitmq",
+		Tag:        "3.8.23-debian-10-r18",
 	})
 	require.NoError(err, "status rabbitmq")
 
@@ -117,7 +121,7 @@ func StartupRabbitMQ(t *testing.T) RabbitMQServer {
 	// exponential backoff-retry, because the application in the container might not be ready to accept connections yet
 	err = pool.Retry(func() error {
 		for i := 0; i < 3; i++ {
-			res, err := http.Get(fmt.Sprintf("http://user:bitnami@%s:15672/api/aliveness-test/", GetDockerHost()) + "%2F")
+			res, err := http.Get(fmt.Sprintf("http://user:bitnami@%s:%s/api/aliveness-test/", GetDockerHost(), resource.GetPort("15672/tcp")) + "%2F")
 			if err != nil {
 				return err
 			}
@@ -129,11 +133,11 @@ func StartupRabbitMQ(t *testing.T) RabbitMQServer {
 			time.Sleep(time.Second)
 		}
 
-		url := fmt.Sprintf("amqp://%s:%s@%s:%d/",
+		url := fmt.Sprintf("amqp://%s:%s@%s:%s/",
 			"user",
 			"bitnami",
 			GetDockerHost(),
-			port,
+			resource.GetPort("5672/tcp"),
 		)
 
 		conn, err := amqp.Dial(url)
@@ -222,6 +226,8 @@ func StartupKafka(t *testing.T) KafkaServer {
 	})
 	require.NoError(err, "status kafka")
 
+	time.Sleep(5 * time.Second)
+
 	kafkaUrl := fmt.Sprintf("%s:", GetDockerHost()) + kafkaResource.GetPort("29092/tcp")
 	// exponential backoff-retry, because the application in the container might not be ready to accept connections yet
 	var producer sarama.SyncProducer
@@ -274,6 +280,7 @@ func StartupElasticSearch(t *testing.T) ElasticSearchServer {
 		err := pool.Purge(resource)
 		require.NoError(err, "purge resource %s", resource)
 	})
+	time.Sleep(5 * time.Second)
 
 	// exponential backoff-retry, because the application in the container might not be ready to accept connections yet
 	err = pool.Retry(func() error {
