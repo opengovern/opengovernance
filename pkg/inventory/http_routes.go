@@ -1028,7 +1028,7 @@ func (h *HttpHandler) GetTopAccountsByCost(ctx echo.Context) error {
 // @Tags     cost
 // @Accept   json
 // @Produce  json
-// @Param    count     query     int     true  "count"
+// @Param    count     query     int     true   "count"
 // @Param    provider  query     string  true  "Provider"
 // @Success  200       {object}  []api.TopAccountResponse
 // @Router   /inventory/api/v1/cost/top/services [get]
@@ -1079,16 +1079,27 @@ func (h *HttpHandler) GetTopAccountsByResourceCount(ctx echo.Context) error {
 // @Accept   json
 // @Produce  json
 // @Param    count     query     int     true  "count"
-// @Param    provider  query     string  true  "Provider"
+// @Param    provider  query     string  false  "Provider"
+// @Param    sourceId  query     string  false  "SourceId"
 // @Success  200       {object}  []api.CategoriesResponse
 // @Router   /inventory/api/v1/resources/top/regions [get]
 func (h *HttpHandler) GetTopRegionsByResourceCount(ctx echo.Context) error {
 	provider, _ := source.ParseType(ctx.QueryParam("provider"))
 	count, err := strconv.Atoi(ctx.QueryParam("count"))
-
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid count")
 	}
+
+	var sourceUUID *uuid.UUID
+	sourceId := ctx.QueryParam("sourceId")
+	if len(sourceId) > 0 {
+		suuid, err := uuid.Parse(sourceId)
+		if err != nil {
+			return err
+		}
+		sourceUUID = &suuid
+	}
+
 	var providerPtr *string
 	if len(string(provider)) > 0 {
 		tmp := string(provider)
@@ -1098,7 +1109,7 @@ func (h *HttpHandler) GetTopRegionsByResourceCount(ctx echo.Context) error {
 	locationDistribution := map[string]int{}
 	var searchAfter []interface{}
 	for {
-		query, err := es.FindLocationDistributionQuery(nil, providerPtr, EsFetchPageSize, searchAfter)
+		query, err := es.FindLocationDistributionQuery(sourceUUID, providerPtr, EsFetchPageSize, searchAfter)
 		if err != nil {
 			return err
 		}

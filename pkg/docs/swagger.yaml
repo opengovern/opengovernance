@@ -2218,7 +2218,10 @@ paths:
       - description: Provider
         in: query
         name: provider
-        required: true
+        type: string
+      - description: SourceId
+        in: query
+        name: sourceId
         type: string
       produces:
       - application/json

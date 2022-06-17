@@ -1958,8 +1958,13 @@ const docTemplate = `{
                         "type": "string",
                         "description": "Provider",
                         "name": "provider",
-                        "in": "query",
-                        "required": true
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "SourceId",
+                        "name": "sourceId",
+                        "in": "query"
                     }
                 ],
                 "responses": {
