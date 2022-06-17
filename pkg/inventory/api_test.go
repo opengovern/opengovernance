@@ -17,9 +17,9 @@ import (
 	describe "gitlab.com/keibiengine/keibi-engine/pkg/describe/api"
 	"gitlab.com/keibiengine/keibi-engine/pkg/describe/client"
 	idocker "gitlab.com/keibiengine/keibi-engine/pkg/internal/dockertest"
+	"gitlab.com/keibiengine/keibi-engine/pkg/internal/postgres"
 	"gitlab.com/keibiengine/keibi-engine/pkg/inventory/api"
-	"gorm.io/driver/postgres"
-	"gorm.io/gorm"
+	"go.uber.org/zap"
 )
 
 func TestSuite(t *testing.T) {
@@ -100,25 +100,21 @@ func (s *testSuite) SetupSuite() {
 	t.Cleanup(func() {
 		s.NoError(pool.Purge(resource), "purge resource")
 	})
-	time.Sleep(time.Second * 3)
+	time.Sleep(time.Second * 5)
 
-	dns := fmt.Sprintf(`host=%s port=%s user=%s password=%s dbname=%s sslmode=disable`,
-		idocker.GetDockerHost(),
-		resource.GetPort("5432/tcp"),
-		user,
-		pass,
-		name,
-	)
-	db, err := gorm.Open(postgres.Open(dns), &gorm.Config{})
-	s.NoError(err, "gorm open")
-	raw, err := db.DB()
-	t.Cleanup(func() {
-		s.NoError(raw.Close(), "close db")
-	})
-	s.NoError(err, "raw db")
-	s.NoError(raw.Ping(), "db ping")
+	logger, err := zap.NewProduction()
+	s.NoError(err, "new zap logger")
+	cfg := postgres.Config{
+		Host:   idocker.GetDockerHost(),
+		Port:   resource.GetPort("5432/tcp"),
+		User:   user,
+		Passwd: pass,
+		DB:     name,
+	}
+	orm, err := postgres.NewClient(&cfg, logger)
+	s.NoError(err, "new postgres client")
 
-	s.handler.db = Database{orm: db}
+	s.handler.db = Database{orm: orm}
 	s.NoError(s.handler.db.Initialize(), "init database schema")
 }
 

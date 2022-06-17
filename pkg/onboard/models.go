@@ -1,11 +1,12 @@
 package onboard
 
 import (
+	"database/sql"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/google/uuid"
-	"gorm.io/gorm"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/onboard/api"
 )
@@ -19,7 +20,6 @@ func InitializeDb(db *Database) (err error) {
 }
 
 type AWSMetadata struct {
-	gorm.Model
 	ID             uuid.UUID `gorm:"primaryKey;type:uuid;default:uuid_generate_v4()"`
 	SourceID       string
 	AccountID      string
@@ -27,6 +27,10 @@ type AWSMetadata struct {
 	Email          string
 	Name           string
 	SupportTier    string
+
+	CreatedAt time.Time
+	UpdatedAt time.Time
+	DeletedAt sql.NullTime `gorm:"index"`
 }
 
 func (a AWSMetadata) toAWSMetadataResponse() *api.AWSMetadataResponse {
@@ -42,13 +46,15 @@ func (a AWSMetadata) toAWSMetadataResponse() *api.AWSMetadataResponse {
 }
 
 type Source struct {
-	gorm.Model
 	ID          uuid.UUID      `gorm:"primaryKey;type:uuid;default:uuid_generate_v4()"`
 	SourceId    string         `gorm:"index:idx_source_id,unique"`
 	Name        string         `gorm:"not null"`
 	Type        api.SourceType `gorm:"not null"`
 	Description string
 	ConfigRef   string
+	CreatedAt   time.Time
+	UpdatedAt   time.Time
+	DeletedAt   sql.NullTime `gorm:"index"`
 }
 
 func NewAWSSource(in api.SourceAwsRequest) Source {
@@ -119,11 +125,14 @@ func NewAzureSourceWithSPN(in api.SourceAzureSPNRequest) Source {
 }
 
 type SPN struct {
-	gorm.Model
 	ID        uuid.UUID `gorm:"primaryKey;type:uuid;default:uuid_generate_v4()"`
 	TenantId  string    `gorm:"index:idx_tenant_client_id,unique"`
 	ClientId  string    `gorm:"index:idx_tenant_client_id,unique"`
 	ConfigRef string
+
+	CreatedAt time.Time
+	UpdatedAt time.Time
+	DeletedAt sql.NullTime `gorm:"index"`
 }
 
 func (s SPN) toSPNResponse() *api.CreateSPNResponse {

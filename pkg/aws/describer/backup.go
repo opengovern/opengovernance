@@ -5,7 +5,6 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/backup"
-	"github.com/aws/aws-sdk-go/aws/awserr"
 	"gitlab.com/keibiengine/keibi-engine/pkg/aws/model"
 )
 
@@ -170,20 +169,18 @@ func BackupVault(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 				BackupVaultName: v.BackupVaultName,
 			})
 			if err != nil {
-				if a, ok := err.(awserr.Error); ok {
-					if a.Code() == "ResourceNotFoundException" || a.Code() == "InvalidParameter" {
-						notification = &backup.GetBackupVaultNotificationsOutput{}
-					} else {
-						return nil, err
-					}
+				if isErr(err, "ResourceNotFoundException") || isErr(err, "InvalidParameter") {
+					notification = &backup.GetBackupVaultNotificationsOutput{}
+				} else {
+					return nil, err
 				}
 			}
 
 			accessPolicy, err := client.GetBackupVaultAccessPolicy(ctx, &backup.GetBackupVaultAccessPolicyInput{
 				BackupVaultName: v.BackupVaultName,
 			})
-			if a, ok := err.(awserr.Error); ok {
-				if a.Code() == "ResourceNotFoundException" || a.Code() == "InvalidParameter" {
+			if err != nil {
+				if isErr(err, "ResourceNotFoundException") || isErr(err, "InvalidParameter") {
 					accessPolicy = &backup.GetBackupVaultAccessPolicyOutput{}
 				} else {
 					return nil, err

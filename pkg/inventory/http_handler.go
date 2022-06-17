@@ -2,15 +2,11 @@ package inventory
 
 import (
 	"fmt"
-	"log"
-	"os"
-	"time"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/describe/client"
+	"gitlab.com/keibiengine/keibi-engine/pkg/internal/postgres"
 	"gitlab.com/keibiengine/keibi-engine/pkg/keibi-es-sdk"
-	"gorm.io/driver/postgres"
-	"gorm.io/gorm"
-	"gorm.io/gorm/logger"
+	"go.uber.org/zap"
 )
 
 type HttpHandler struct {
@@ -35,6 +31,7 @@ func InitializeHttpHandler(
 	steampipeUsername string,
 	steampipePassword string,
 	schedulerBaseUrl string,
+	logger *zap.Logger,
 ) (h *HttpHandler, err error) {
 
 	h = &HttpHandler{}
@@ -42,30 +39,19 @@ func InitializeHttpHandler(
 	fmt.Println("Initializing http handler")
 
 	// setup postgres connection
-	dsn := fmt.Sprintf(`host=%s port=%s user=%s password=%s dbname=%s sslmode=disable TimeZone=GMT`,
-		postgresHost,
-		postgresPort,
-		postgresUsername,
-		postgresPassword,
-		postgresDb,
-	)
-	newLogger := logger.New(
-		log.New(os.Stdout, "\r\n", log.LstdFlags), // io writer
-		logger.Config{
-			SlowThreshold:             time.Second, // Slow SQL threshold
-			LogLevel:                  logger.Info, // Log level
-			IgnoreRecordNotFoundError: true,        // Ignore ErrRecordNotFound error for logger
-			Colorful:                  true,        // Disable color
-		},
-	)
-
-	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{
-		Logger: newLogger,
-	})
-	if err != nil {
-		return nil, err
+	cfg := postgres.Config{
+		Host:   postgresHost,
+		Port:   postgresPort,
+		User:   postgresUsername,
+		Passwd: postgresPassword,
+		DB:     postgresDb,
 	}
-	h.db = Database{orm: db}
+	orm, err := postgres.NewClient(&cfg, logger)
+	if err != nil {
+		return nil, fmt.Errorf("new postgres client: %w", err)
+	}
+
+	h.db = Database{orm: orm}
 	fmt.Println("Connected to the postgres database: ", postgresDb)
 
 	err = h.db.Initialize()

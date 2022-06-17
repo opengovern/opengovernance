@@ -19,9 +19,15 @@ func Tenant(ctx context.Context, authorizer autorest.Authorizer, subscription st
 
 	var values []Resource
 	for _, v := range result.Values() {
+		name := ""
+		if v.DisplayName != nil {
+			name = *v.DisplayName
+		} else {
+			name = *v.ID
+		}
 		values = append(values, Resource{
 			ID:       *v.ID,
-			Name:     *v.DisplayName,
+			Name:     name,
 			Location: "global",
 			Description: model.TenantDescription{
 				TenantIDDescription: v,

@@ -12398,3 +12398,273 @@ func GetS3AccessPoint(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydrat
 }
 
 // ==========================  END: S3AccessPoint =============================
+
+// ==========================  START: CostExplorerByAccountMonthly =============================
+
+type CostExplorerByAccountMonthly struct {
+	Description aws.CostExplorerByAccountMonthlyDescription `json:"description"`
+	Metadata    aws.Metadata                                `json:"metadata"`
+}
+
+type CostExplorerByAccountMonthlyHit struct {
+	ID      string                       `json:"_id"`
+	Score   float64                      `json:"_score"`
+	Index   string                       `json:"_index"`
+	Type    string                       `json:"_type"`
+	Version int64                        `json:"_version,omitempty"`
+	Source  CostExplorerByAccountMonthly `json:"_source"`
+	Sort    []interface{}                `json:"sort"`
+}
+
+type CostExplorerByAccountMonthlyHits struct {
+	Total SearchTotal                       `json:"total"`
+	Hits  []CostExplorerByAccountMonthlyHit `json:"hits"`
+}
+
+type CostExplorerByAccountMonthlySearchResponse struct {
+	PitID string                           `json:"pit_id"`
+	Hits  CostExplorerByAccountMonthlyHits `json:"hits"`
+}
+
+type CostExplorerByAccountMonthlyPaginator struct {
+	paginator *baseESPaginator
+}
+
+func (k Client) NewCostExplorerByAccountMonthlyPaginator(filters []BoolFilter, limit *int64) (CostExplorerByAccountMonthlyPaginator, error) {
+	paginator, err := newPaginator(k.es, "aws_costexplorer_byaccountmonthly", filters, limit)
+	if err != nil {
+		return CostExplorerByAccountMonthlyPaginator{}, err
+	}
+
+	p := CostExplorerByAccountMonthlyPaginator{
+		paginator: paginator,
+	}
+
+	return p, nil
+}
+
+func (p CostExplorerByAccountMonthlyPaginator) HasNext() bool {
+	return !p.paginator.done
+}
+
+func (p CostExplorerByAccountMonthlyPaginator) NextPage(ctx context.Context) ([]CostExplorerByAccountMonthly, error) {
+	var response CostExplorerByAccountMonthlySearchResponse
+	err := p.paginator.search(ctx, &response)
+	if err != nil {
+		return nil, err
+	}
+
+	var values []CostExplorerByAccountMonthly
+	for _, hit := range response.Hits.Hits {
+		values = append(values, hit.Source)
+	}
+
+	hits := int64(len(response.Hits.Hits))
+	if hits > 0 {
+		p.paginator.updateState(hits, response.Hits.Hits[hits-1].Sort, response.PitID)
+	} else {
+		p.paginator.updateState(hits, nil, "")
+	}
+
+	return values, nil
+}
+
+var listCostExplorerByAccountMonthlyFilters = map[string]string{}
+
+func ListCostExplorerByAccountMonthly(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("ListCostExplorerByAccountMonthly")
+
+	// create service
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	paginator, err := k.NewCostExplorerByAccountMonthlyPaginator(buildFilter(d.KeyColumnQuals, listCostExplorerByAccountMonthlyFilters, "aws", *cfg.AccountID), d.QueryContext.Limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			d.StreamListItem(ctx, v)
+		}
+	}
+
+	return nil, nil
+}
+
+var getCostExplorerByAccountMonthlyFilters = map[string]string{}
+
+func GetCostExplorerByAccountMonthly(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("GetCostExplorerByAccountMonthly")
+
+	// create service
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	limit := int64(1)
+	paginator, err := k.NewCostExplorerByAccountMonthlyPaginator(buildFilter(d.KeyColumnQuals, getCostExplorerByAccountMonthlyFilters, "aws", *cfg.AccountID), &limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			return v, nil
+		}
+	}
+
+	return nil, nil
+}
+
+// ==========================  END: CostExplorerByAccountMonthly =============================
+
+// ==========================  START: CostExplorerByServiceMonthly =============================
+
+type CostExplorerByServiceMonthly struct {
+	Description aws.CostExplorerByServiceMonthlyDescription `json:"description"`
+	Metadata    aws.Metadata                                `json:"metadata"`
+}
+
+type CostExplorerByServiceMonthlyHit struct {
+	ID      string                       `json:"_id"`
+	Score   float64                      `json:"_score"`
+	Index   string                       `json:"_index"`
+	Type    string                       `json:"_type"`
+	Version int64                        `json:"_version,omitempty"`
+	Source  CostExplorerByServiceMonthly `json:"_source"`
+	Sort    []interface{}                `json:"sort"`
+}
+
+type CostExplorerByServiceMonthlyHits struct {
+	Total SearchTotal                       `json:"total"`
+	Hits  []CostExplorerByServiceMonthlyHit `json:"hits"`
+}
+
+type CostExplorerByServiceMonthlySearchResponse struct {
+	PitID string                           `json:"pit_id"`
+	Hits  CostExplorerByServiceMonthlyHits `json:"hits"`
+}
+
+type CostExplorerByServiceMonthlyPaginator struct {
+	paginator *baseESPaginator
+}
+
+func (k Client) NewCostExplorerByServiceMonthlyPaginator(filters []BoolFilter, limit *int64) (CostExplorerByServiceMonthlyPaginator, error) {
+	paginator, err := newPaginator(k.es, "aws_costexplorer_byservicemonthly", filters, limit)
+	if err != nil {
+		return CostExplorerByServiceMonthlyPaginator{}, err
+	}
+
+	p := CostExplorerByServiceMonthlyPaginator{
+		paginator: paginator,
+	}
+
+	return p, nil
+}
+
+func (p CostExplorerByServiceMonthlyPaginator) HasNext() bool {
+	return !p.paginator.done
+}
+
+func (p CostExplorerByServiceMonthlyPaginator) NextPage(ctx context.Context) ([]CostExplorerByServiceMonthly, error) {
+	var response CostExplorerByServiceMonthlySearchResponse
+	err := p.paginator.search(ctx, &response)
+	if err != nil {
+		return nil, err
+	}
+
+	var values []CostExplorerByServiceMonthly
+	for _, hit := range response.Hits.Hits {
+		values = append(values, hit.Source)
+	}
+
+	hits := int64(len(response.Hits.Hits))
+	if hits > 0 {
+		p.paginator.updateState(hits, response.Hits.Hits[hits-1].Sort, response.PitID)
+	} else {
+		p.paginator.updateState(hits, nil, "")
+	}
+
+	return values, nil
+}
+
+var listCostExplorerByServiceMonthlyFilters = map[string]string{}
+
+func ListCostExplorerByServiceMonthly(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("ListCostExplorerByServiceMonthly")
+
+	// create service
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	paginator, err := k.NewCostExplorerByServiceMonthlyPaginator(buildFilter(d.KeyColumnQuals, listCostExplorerByServiceMonthlyFilters, "aws", *cfg.AccountID), d.QueryContext.Limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			d.StreamListItem(ctx, v)
+		}
+	}
+
+	return nil, nil
+}
+
+var getCostExplorerByServiceMonthlyFilters = map[string]string{}
+
+func GetCostExplorerByServiceMonthly(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("GetCostExplorerByServiceMonthly")
+
+	// create service
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	limit := int64(1)
+	paginator, err := k.NewCostExplorerByServiceMonthlyPaginator(buildFilter(d.KeyColumnQuals, getCostExplorerByServiceMonthlyFilters, "aws", *cfg.AccountID), &limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			return v, nil
+		}
+	}
+
+	return nil, nil
+}
+
+// ==========================  END: CostExplorerByServiceMonthly =============================

@@ -2,6 +2,11 @@ package aws
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
+	"io/ioutil"
+	"net/http"
+	"strings"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -10,8 +15,38 @@ import (
 	"github.com/aws/aws-sdk-go/aws/endpoints"
 )
 
+func CheckEnoughPermission(awsPermissionCheckUrl, accessKey, secretKey string) error {
+	client := http.Client{
+		Timeout: 5 * time.Second,
+	}
+	body := fmt.Sprintf(`{"access_key_id": "%s", "secret_access_key": "%s"}`, accessKey, secretKey)
+	resp, err := client.Post(awsPermissionCheckUrl, "application/json", strings.NewReader(body))
+	if err != nil {
+		return err
+	}
+
+	if resp.StatusCode != 200 {
+		return fmt.Errorf("non-200 status code: %d", resp.StatusCode)
+	}
+
+	content, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return err
+	}
+
+	var js map[string]string
+	err = json.Unmarshal(content, &js)
+	if err != nil {
+		return err
+	}
+
+	//accountID := js["account_id"]
+	//accountName := js["account_alias"]
+	return nil
+}
+
 func CheckDescribeRegionsPermission(accessKey, secretKey string) error {
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
 	cfg, err := GetConfig(ctx, accessKey, secretKey, "", "")

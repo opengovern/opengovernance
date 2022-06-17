@@ -1,19 +1,20 @@
 package auth
 
 import (
+	"database/sql"
 	"time"
 
 	"github.com/google/uuid"
 	"gitlab.com/keibiengine/keibi-engine/pkg/auth/api"
-	"gorm.io/gorm"
 )
 
 type User struct {
-	gorm.Model
-
 	ID         uuid.UUID `gorm:"primaryKey;type:uuid;default:uuid_generate_v4()"`
 	Email      string    `gorm:"unique;not null"`
 	ExternalID string    `gorm:"unique;not null"`
+	CreatedAt  time.Time
+	UpdatedAt  time.Time
+	DeletedAt  sql.NullTime `gorm:"index"`
 }
 
 type RoleBinding struct {

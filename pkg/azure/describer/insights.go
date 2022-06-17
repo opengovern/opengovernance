@@ -68,11 +68,14 @@ func LogProfile(ctx context.Context, authorizer autorest.Authorizer, subscriptio
 	var values []Resource
 	for _, logProfile := range *result.Value {
 		resourceGroup := strings.Split(*logProfile.ID, "/")[4]
-
+		location := ""
+		if logProfile.Location != nil {
+			location = *logProfile.Location
+		}
 		values = append(values, Resource{
 			ID:       *logProfile.ID,
 			Name:     *logProfile.Name,
-			Location: *logProfile.Location,
+			Location: location,
 			Description: model.LogProfileDescription{
 				LogProfileResource: logProfile,
 				ResourceGroup:      resourceGroup,

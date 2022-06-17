@@ -33,6 +33,8 @@ var (
 	VaultCaPath   = os.Getenv("VAULT_TLS_CA_PATH")
 	VaultUseTLS   = strings.ToLower(strings.TrimSpace(os.Getenv("VAULT_USE_TLS"))) == "true"
 
+	AWSPermissionCheckURL = os.Getenv("AWS_PERMISSION_CHECK_URL")
+
 	HttpAddress = os.Getenv("HTTP_ADDRESS")
 )
 
@@ -45,6 +47,11 @@ func Command() *cobra.Command {
 }
 
 func start(ctx context.Context) error {
+	logger, err := zap.NewProduction()
+	if err != nil {
+		return fmt.Errorf("new logger: %w", err)
+	}
+
 	handler, err := InitializeHttpHandler(
 		RabbitMQUsername,
 		RabbitMQPassword,
@@ -61,14 +68,11 @@ func start(ctx context.Context) error {
 		VaultRoleName,
 		VaultCaPath,
 		VaultUseTLS,
+		logger,
+		AWSPermissionCheckURL,
 	)
 	if err != nil {
 		return fmt.Errorf("init http handler: %w", err)
-	}
-
-	logger, err := zap.NewProduction()
-	if err != nil {
-		return fmt.Errorf("new logger: %w", err)
 	}
 
 	return httpserver.RegisterAndStart(logger, HttpAddress, handler)

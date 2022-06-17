@@ -16,6 +16,7 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/describe/kafka"
 
 	"github.com/elastic/go-elasticsearch/v7"
+	"github.com/go-errors/errors"
 	"gitlab.com/keibiengine/keibi-engine/pkg/aws"
 	"gitlab.com/keibiengine/keibi-engine/pkg/azure"
 	"gitlab.com/keibiengine/keibi-engine/pkg/describe/api"
@@ -145,6 +146,9 @@ func (j DescribeJob) Do(vlt vault.SourceConfig, producer sarama.SyncProducer, to
 	startTime := time.Now().Unix()
 	defer func() {
 		if err := recover(); err != nil {
+			fmt.Println("paniced with error:", err)
+			fmt.Println(errors.Wrap(err, 2).ErrorStack())
+
 			DoDescribeJobsDuration.WithLabelValues(string(j.SourceType), j.ResourceType, "failure").Observe(float64(time.Now().Unix() - startTime))
 			DoDescribeJobsCount.WithLabelValues(string(j.SourceType), j.ResourceType, "failure").Inc()
 			r = DescribeJobResult{
@@ -415,7 +419,7 @@ func doDescribeAzure(ctx context.Context, job DescribeJob, config map[string]int
 		"",
 	)
 	if err != nil {
-		return nil, fmt.Errorf("Azure: %w", err)
+		return nil, fmt.Errorf("azure: %w", err)
 	}
 
 	serviceDistribution := map[string]map[string]int{}

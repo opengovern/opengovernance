@@ -14,10 +14,9 @@ import (
 	compliancereport "gitlab.com/keibiengine/keibi-engine/pkg/compliance-report"
 	"gitlab.com/keibiengine/keibi-engine/pkg/describe/api"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpserver"
+	"gitlab.com/keibiengine/keibi-engine/pkg/internal/postgres"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/queue"
 	"go.uber.org/zap"
-	"gorm.io/driver/postgres"
-	"gorm.io/gorm"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
@@ -29,6 +28,7 @@ const (
 	JobComplianceReportInterval = 1 * time.Minute
 	JobTimeoutCheckInterval     = 15 * time.Minute
 	MaxJobInQueue               = 10000
+	ConcurrentDeletedSources    = 1000
 )
 
 var DescribePublishingBlocked = promauto.NewGaugeVec(prometheus.GaugeOpts{
@@ -89,6 +89,9 @@ type Scheduler struct {
 	complianceReportJobResultQueue  queue.Interface
 	complianceReportCleanupJobQueue queue.Interface
 
+	// watch the deleted source
+	deletedSources chan string
+
 	logger *zap.Logger
 }
 
@@ -119,7 +122,10 @@ func InitializeScheduler(
 		return nil, fmt.Errorf("'id' must be set to a non empty string")
 	}
 
-	s = &Scheduler{id: id}
+	s = &Scheduler{
+		id:             id,
+		deletedSources: make(chan string, ConcurrentDeletedSources),
+	}
 	defer func() {
 		if err != nil && s != nil {
 			s.Stop()
@@ -245,21 +251,20 @@ func InitializeScheduler(
 	s.logger.Info("Connected to the compliance report jobs result queue", zap.String("queue", complianceReportJobResultQueueName))
 	s.complianceReportJobResultQueue = complianceReportJobsResultQueue
 
-	dsn := fmt.Sprintf(`host=%s port=%s user=%s password=%s dbname=%s sslmode=disable TimeZone=GMT`,
-		postgresHost,
-		postgresPort,
-		postgresUsername,
-		postgresPassword,
-		postgresDb,
-	)
-
-	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
+	cfg := postgres.Config{
+		Host:   postgresHost,
+		Port:   postgresPort,
+		User:   postgresUsername,
+		Passwd: postgresPassword,
+		DB:     postgresDb,
+	}
+	orm, err := postgres.NewClient(&cfg, s.logger)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("new postgres client: %w", err)
 	}
 
 	s.logger.Info("Connected to the postgres database: ", zap.String("db", postgresDb))
-	s.db = Database{orm: db}
+	s.db = Database{orm: orm}
 
 	s.httpServer = NewHTTPServer(httpServerAddress, s.db)
 
@@ -276,6 +281,7 @@ func (s *Scheduler) Run() error {
 	go s.RunDescribeJobScheduler()
 	go s.RunDescribeCleanupJobScheduler()
 	go s.RunComplianceReportScheduler()
+	go s.RunDeletedSourceCleanup()
 
 	// In order to have history of reports, we won't clean up compliance reports for now.
 	//go s.RunComplianceReportCleanupJobScheduler()
@@ -451,17 +457,33 @@ func (s *Scheduler) RunDescribeCleanupJobScheduler() {
 	}
 }
 
-func (s Scheduler) cleanupDescribeJob() {
-	dsj, err := s.db.QueryOlderThanNRecentCompletedDescribeSourceJobs(5)
+func (s *Scheduler) RunDeletedSourceCleanup() {
+	for id := range s.deletedSources {
+		// cleanup describe job for deleted source
+		s.cleanupDescribeJobForDeletedSource(id)
+		// cleanup compliance report job for deleted source
+		s.cleanupComplianceReportJobForDeletedSource(id)
+	}
+}
+
+func (s Scheduler) cleanupDescribeJobForDeletedSource(sourceId string) {
+	jobs, err := s.db.QueryDescribeSourceJobs(sourceId)
 	if err != nil {
-		s.logger.Error("Failed to find older than 5 recent completed DescribeSourceJob for each source",
+		s.logger.Error("Failed to find all completed DescribeSourceJobs for source",
+			zap.String("sourceId", sourceId),
 			zap.Error(err),
 		)
 		DescribeCleanupJobsCount.WithLabelValues("failure").Inc()
 		return
 	}
 
-	for _, sj := range dsj {
+	s.handleDescribeJobs(jobs)
+
+	DescribeCleanupJobsCount.WithLabelValues("successful").Inc()
+}
+
+func (s Scheduler) handleDescribeJobs(jobs []DescribeSourceJob) {
+	for _, sj := range jobs {
 		// I purposefully didn't embbed this query in the previous query to keep returned results count low.
 		drj, err := s.db.ListDescribeResourceJobs(sj.ID)
 		if err != nil {
@@ -476,7 +498,7 @@ func (s Scheduler) cleanupDescribeJob() {
 		success := true
 		for _, rj := range drj {
 			if isPublishingBlocked(s.logger, s.describeCleanupJobQueue) {
-				s.logger.Warn("The jobs in queue is over the threshold", zap.Error(err))
+				s.logger.Warn("The jobs in queue is over the threshold")
 				return
 			}
 
@@ -524,42 +546,66 @@ func (s Scheduler) cleanupDescribeJob() {
 			zap.Uint("jobId", sj.ID),
 		)
 	}
-	DescribeCleanupJobsCount.WithLabelValues("successful").Inc()
 }
 
-func (s Scheduler) cleanupComplianceReportJob() {
-	dsj, err := s.db.QueryOlderThanNRecentCompletedComplianceReportJobs(5)
+func (s Scheduler) cleanupDescribeJob() {
+	jobs, err := s.db.QueryOlderThanNRecentCompletedDescribeSourceJobs(5)
 	if err != nil {
-		s.logger.Error("Failed to find older than 5 recent completed ComplianceReportJobs for each source",
+		s.logger.Error("Failed to find older than 5 recent completed DescribeSourceJob for each source",
 			zap.Error(err),
 		)
-
+		DescribeCleanupJobsCount.WithLabelValues("failure").Inc()
 		return
 	}
 
-	for _, sj := range dsj {
+	s.handleDescribeJobs(jobs)
+
+	DescribeCleanupJobsCount.WithLabelValues("successful").Inc()
+}
+
+func (s Scheduler) cleanupComplianceReportJobForDeletedSource(sourceId string) {
+	jobs, err := s.db.QueryComplianceReportJobs(sourceId)
+	if err != nil {
+		s.logger.Error("Failed to find all completed ComplianceReportJobs for source",
+			zap.String("sourceId", sourceId),
+			zap.Error(err),
+		)
+		return
+	}
+	s.handleComplianceReportJobs(jobs)
+}
+
+func (s Scheduler) handleComplianceReportJobs(jobs []ComplianceReportJob) {
+	for _, job := range jobs {
 		if err := s.complianceReportCleanupJobQueue.Publish(compliancereport.ComplianceReportCleanupJob{
-			JobID: sj.ID,
+			JobID: job.ID,
 		}); err != nil {
 			s.logger.Error("Failed to publish compliance report clean up job to queue for ComplianceReportJob",
-				zap.Uint("jobId", sj.ID),
+				zap.Uint("jobId", job.ID),
 				zap.Error(err),
 			)
 			return
 		}
 
-		err = s.db.DeleteComplianceReportJob(sj.ID)
-		if err != nil {
+		if err := s.db.DeleteComplianceReportJob(job.ID); err != nil {
 			s.logger.Error("Failed to delete ComplianceReportJob",
-				zap.Uint("jobId", sj.ID),
+				zap.Uint("jobId", job.ID),
 				zap.Error(err),
 			)
 		}
-
-		s.logger.Info("Successfully deleted ComplianceReportJob",
-			zap.Uint("jobId", sj.ID),
-		)
+		s.logger.Info("Successfully deleted ComplianceReportJob", zap.Uint("jobId", job.ID))
 	}
+}
+
+func (s Scheduler) cleanupComplianceReportJob() {
+	jobs, err := s.db.QueryOlderThanNRecentCompletedComplianceReportJobs(5)
+	if err != nil {
+		s.logger.Error("Failed to find older than 5 recent completed ComplianceReportJobs for each source",
+			zap.Error(err),
+		)
+		return
+	}
+	s.handleComplianceReportJobs(jobs)
 }
 
 // Consume events from the source queue. Based on the action of the event,
@@ -598,6 +644,10 @@ func (s *Scheduler) RunSourceEventsConsumer() error {
 
 		if err := msg.Ack(false); err != nil {
 			s.logger.Error("Failed acking message", zap.Error(err))
+		}
+
+		if event.Action == SourceDelete {
+			s.deletedSources <- event.SourceID.String()
 		}
 	}
 

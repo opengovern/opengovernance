@@ -124,7 +124,8 @@ func AppServiceWebApp(ctx context.Context, authorizer autorest.Authorizer, subsc
 
 			// Return nil, if no virtual network is configured
 			var vnetInfo web.VnetInfo
-			if *v.SiteConfig.VnetName != "" {
+			if v.SiteConfig != nil && v.SiteConfig.VnetName != nil &&
+				*v.SiteConfig.VnetName != "" {
 				vnetInfo, err = webClient.GetVnetConnection(ctx, *v.SiteProperties.ResourceGroup, *v.Name, *v.SiteConfig.VnetName)
 				if err != nil {
 					return nil, err
@@ -136,10 +137,15 @@ func AppServiceWebApp(ctx context.Context, authorizer autorest.Authorizer, subsc
 				return nil, err
 			}
 
+			location := ""
+			if v.Location != nil {
+				location = *v.Location
+			}
+
 			values = append(values, Resource{
 				ID:       *v.ID,
 				Name:     *v.Name,
-				Location: *v.Location,
+				Location: location,
 				Description: model.AppServiceWebAppDescription{
 					Site:               v,
 					SiteConfigResource: op,

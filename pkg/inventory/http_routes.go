@@ -54,10 +54,14 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	v1.GET("/resources/trend", h.GetResourceGrowthTrend)
 	v1.GET("/resources/distribution", h.GetResourceDistribution)
 	v1.GET("/resources/top/accounts", h.GetTopAccountsByResourceCount)
+	v1.GET("/resources/top/regions", h.GetTopRegionsByResourceCount)
 	v1.GET("/resources/top/services", h.GetTopServicesByResourceCount)
 	v1.GET("/resources/categories", h.GetCategories)
 	v1.GET("/accounts/resource/count", h.GetAccountsResourceCount)
 	v1.GET("/services/distribution", h.GetServiceDistribution)
+
+	v1.GET("/cost/top/accounts", h.GetTopAccountsByCost)
+	v1.GET("/cost/top/services", h.GetTopServicesByCost)
 
 	v1.GET("/query", h.ListQueries)
 	v1.GET("/query/count", h.CountQueries)
@@ -1010,6 +1014,32 @@ func (h *HttpHandler) GetCompliancyTrend(ctx echo.Context) error {
 	return ctx.JSON(http.StatusOK, resp)
 }
 
+// GetTopAccountsByCost godoc
+// @Summary  Returns top n accounts of specified provider by cost
+// @Tags     cost
+// @Accept   json
+// @Produce  json
+// @Param    count     query     int     true   "count"
+// @Param    provider  query     string  true   "Provider"
+// @Success  200       {object}  []api.TopAccountResponse
+// @Router   /inventory/api/v1/cost/top/accounts [get]
+func (h *HttpHandler) GetTopAccountsByCost(ctx echo.Context) error {
+	return ctx.JSON(http.StatusNotImplemented, nil)
+}
+
+// GetTopServicesByCost godoc
+// @Summary  Returns top n services of specified provider by cost
+// @Tags     cost
+// @Accept   json
+// @Produce  json
+// @Param    count     query     int     true   "count"
+// @Param    provider  query     string  true   "Provider"
+// @Success  200       {object}  []api.TopAccountResponse
+// @Router   /inventory/api/v1/cost/top/services [get]
+func (h *HttpHandler) GetTopServicesByCost(ctx echo.Context) error {
+	return ctx.JSON(http.StatusNotImplemented, nil)
+}
+
 // GetTopAccountsByResourceCount godoc
 // @Summary  Returns top n accounts of specified provider by resource count
 // @Tags     benchmarks
@@ -1045,6 +1075,69 @@ func (h *HttpHandler) GetTopAccountsByResourceCount(ctx echo.Context) error {
 		})
 	}
 	return ctx.JSON(http.StatusOK, res)
+}
+
+// GetTopRegionsByResourceCount godoc
+// @Summary  Returns top n regions of specified provider by resource count
+// @Tags     inventory
+// @Accept   json
+// @Produce  json
+// @Param    count     query     int     true   "count"
+// @Param    provider  query     string  true   "Provider"
+// @Success  200       {object}  []api.CategoriesResponse
+// @Router   /inventory/api/v1/resources/top/regions [get]
+func (h *HttpHandler) GetTopRegionsByResourceCount(ctx echo.Context) error {
+	provider, _ := source.ParseType(ctx.QueryParam("provider"))
+	count, err := strconv.Atoi(ctx.QueryParam("count"))
+
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid count")
+	}
+	var providerPtr *string
+	if len(string(provider)) > 0 {
+		tmp := string(provider)
+		providerPtr = &tmp
+	}
+
+	locationDistribution := map[string]int{}
+	var searchAfter []interface{}
+	for {
+		query, err := es.FindLocationDistributionQuery(nil, providerPtr, EsFetchPageSize, searchAfter)
+		if err != nil {
+			return err
+		}
+
+		var response es.LocationDistributionQueryResponse
+		err = h.client.Search(context.Background(), describe.SourceResourcesSummary, query, &response)
+		if err != nil {
+			return err
+		}
+
+		if len(response.Hits.Hits) == 0 {
+			break
+		}
+
+		for _, hit := range response.Hits.Hits {
+			for k, v := range hit.Source.LocationDistribution {
+				locationDistribution[k] += v
+			}
+			searchAfter = hit.Sort
+		}
+	}
+	var response []api.CategoriesResponse
+	for region, count := range locationDistribution {
+		response = append(response, api.CategoriesResponse{
+			CategoryName:  region,
+			ResourceCount: count,
+		})
+	}
+	sort.Slice(response, func(i, j int) bool {
+		return response[i].ResourceCount > response[j].ResourceCount
+	})
+	if len(response) > count {
+		response = response[:count]
+	}
+	return ctx.JSON(http.StatusOK, response)
 }
 
 // GetTopServicesByResourceCount godoc
@@ -2068,7 +2161,7 @@ func (h *HttpHandler) GetLocations(ctx echo.Context) error {
 			return err
 		}
 
-		var res map[string]interface{}
+		res := map[string]interface{}{}
 		for regions.HasNext() {
 			regions, err := regions.NextPage(ctx.Request().Context())
 			if err != nil {
@@ -2092,7 +2185,7 @@ func (h *HttpHandler) GetLocations(ctx echo.Context) error {
 			return err
 		}
 
-		var res map[string]interface{}
+		res := map[string]interface{}{}
 		for locs.HasNext() {
 			locpage, err := locs.NextPage(ctx.Request().Context())
 			if err != nil {

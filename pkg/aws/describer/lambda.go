@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/lambda"
@@ -31,7 +32,14 @@ func LambdaFunction(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 				FunctionName: v.FunctionName,
 			})
 			if err != nil {
+				var ae smithy.APIError
+				if errors.As(err, &ae) && ae.ErrorCode() == "ResourceNotFoundException" {
+					policy = &lambda.GetPolicyOutput{}
+					err = nil
+				}
+
 				if awsErr, ok := err.(awserr.Error); ok {
+					log.Println("Describe Lambda Error:", awsErr.Code(), awsErr.Message())
 					if awsErr.Code() == "ResourceNotFoundException" {
 						policy = &lambda.GetPolicyOutput{}
 						err = nil

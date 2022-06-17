@@ -24,9 +24,15 @@ func SSMManagedInstance(ctx context.Context, cfg aws.Config) ([]Resource, error)
 
 		for _, item := range page.InstanceInformationList {
 			arn := "arn:" + describeCtx.Partition + ":ssm:" + describeCtx.Region + ":" + describeCtx.AccountID + ":managed-instance/" + *item.InstanceId
+			name := ""
+			if item.Name != nil {
+				name = *item.Name
+			} else {
+				name = *item.InstanceId
+			}
 			values = append(values, Resource{
 				ARN:  arn,
-				Name: *item.Name,
+				Name: name,
 				Description: model.SSMManagedInstanceDescription{
 					InstanceInformation: item,
 				},

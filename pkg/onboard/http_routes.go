@@ -391,7 +391,7 @@ func (h HttpHandler) GetSPNCred(ctx echo.Context) error {
 	}
 
 	return ctx.JSON(http.StatusOK, api.SPNCredential{
-		SPNName:  fmt.Sprintf("SPN-%d", src.Model.ID),
+		SPNName:  fmt.Sprintf("SPN-%s", src.ID.String()),
 		ClientID: azureCnf.ClientID,
 		TenantID: azureCnf.TenantID,
 	})
@@ -738,7 +738,7 @@ func (h HttpHandler) DiscoverAwsAccounts(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
 	}
 
-	accounts, err := discoverAwsAccounts(ctx.Request().Context(), req)
+	accounts, err := discoverAwsAccounts(ctx.Request().Context(), req, h.awsPermissionCheckURL)
 	if err != nil {
 		if err == PermissionError {
 			return ctx.JSON(http.StatusForbidden, "Key doesn't have enough permission")
@@ -746,7 +746,7 @@ func (h HttpHandler) DiscoverAwsAccounts(ctx echo.Context) error {
 		return err
 	}
 
-	for _, account := range accounts {
+	for idx, account := range accounts {
 		_, err := h.db.GetSourceBySourceID(account.AccountID)
 		if err != nil {
 			if err == gorm.ErrRecordNotFound {
@@ -754,7 +754,7 @@ func (h HttpHandler) DiscoverAwsAccounts(ctx echo.Context) error {
 			}
 			return err
 		}
-		account.Status = "DUPLICATE"
+		accounts[idx].Status = "DUPLICATE"
 	}
 	return ctx.JSON(http.StatusOK, accounts)
 }

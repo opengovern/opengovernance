@@ -198,9 +198,13 @@ func WAFv2WebACL(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 				ResourceArn: out.WebACL.ARN,
 			})
 			if err != nil {
+				if isErr(err, "WAFNonexistentItemException") {
+					logC = &wafv2.GetLoggingConfigurationOutput{}
+					err = nil
+				}
 				if a, ok := err.(awserr.Error); ok {
 					if a.Code() == "WAFNonexistentItemException" {
-						logC = nil
+						logC = &wafv2.GetLoggingConfigurationOutput{}
 						err = nil
 					}
 				}
