@@ -28,7 +28,7 @@ func (r *httpRoutes) Register(e *echo.Echo) {
 	v1.PUT("/user/role/binding", httpserver.AuthorizeHandler(r.PutRoleBinding, api.AdminRole))
 	v1.GET("/user/role/bindings", httpserver.AuthorizeHandler(r.GetRoleBindings, api.ViewerRole))
 	v1.POST("/user/invite", httpserver.AuthorizeHandler(r.InviteUser, api.AdminRole))
-	v1.GET("/host/role/bindings", httpserver.AuthorizeHandler(r.GetWorkspaceRoleBindings, api.AdminRole))
+	v1.GET("/workspace/role/bindings", httpserver.AuthorizeHandler(r.GetWorkspaceRoleBindings, api.AdminRole))
 }
 
 func bindValidate(ctx echo.Context, i interface{}) error {
