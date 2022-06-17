@@ -34,35 +34,36 @@ func discoverAwsAccounts(ctx context.Context, req api.DiscoverAWSAccountsRequest
 		cfg.Region = "us-east-1"
 	}
 
+	acc, err := currentAwsAccount(ctx, cfg)
+	if err != nil {
+		return nil, err
+	}
+	if acc.Name == "" {
+		acc.Name = acc.AccountID
+	}
+
 	accounts, err := describer.OrganizationAccounts(ctx, cfg)
 	if err != nil {
 		if !ignoreAwsOrgError(err) {
 			return nil, err
 		}
-
-		acc, err := currentAwsAccount(ctx, cfg)
-		if err != nil {
-			return nil, err
-		}
-
+		return []api.DiscoverAWSAccountsResponse{acc}, nil
+	}
+	if len(accounts) == 0 {
 		return []api.DiscoverAWSAccountsResponse{acc}, nil
 	}
 
-	org, err := describer.OrganizationOrganization(ctx, cfg)
-	if err != nil {
-		if !ignoreAwsOrgError(err) {
-			return nil, err
-		}
-	}
-
 	discovered := make([]api.DiscoverAWSAccountsResponse, 0, len(accounts))
-	for _, acc := range accounts {
+	for _, item := range accounts {
+		if *item.Name == "" {
+			*item.Name = *item.Id
+		}
 		discovered = append(discovered, api.DiscoverAWSAccountsResponse{
-			AccountID:      *acc.Id,
-			Status:         string(acc.Status),
-			Name:           *acc.Name,
-			Email:          *acc.Email,
-			OrganizationID: *org.Id,
+			AccountID:      *item.Id,
+			Status:         string(item.Status),
+			Name:           *item.Name,
+			Email:          *item.Email,
+			OrganizationID: acc.OrganizationID,
 		})
 	}
 

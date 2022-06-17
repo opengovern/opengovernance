@@ -582,6 +582,7 @@ func (h HttpHandler) GetSource(ctx echo.Context) error {
 		Name:        src.Name,
 		Type:        src.Type,
 		Description: src.Description,
+		OnboardDate: src.CreatedAt,
 	})
 }
 

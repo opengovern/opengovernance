@@ -16,7 +16,7 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
-        "/auth/api/v1/role/bindings": {
+        "/auth/api/v1/role/binding": {
             "put": {
                 "description": "RoleBinding defines the roles and actions a user can perform. There are currently three roles (ADMIN, EDITOR, VIEWER). User must exist before you can update its RoleBinding. If you want to add a role binding for a user given the email address, call invite first to get a user id. Then call this endpoint.",
                 "produces": [
@@ -1239,6 +1239,88 @@ const docTemplate = `{
                 }
             }
         },
+        "/inventory/api/v1/cost/top/accounts": {
+            "get": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "cost"
+                ],
+                "summary": "Returns top n accounts of specified provider by cost",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "count",
+                        "name": "count",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Provider",
+                        "name": "provider",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/api.TopAccountResponse"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/inventory/api/v1/cost/top/services": {
+            "get": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "cost"
+                ],
+                "summary": "Returns top n services of specified provider by cost",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "count",
+                        "name": "count",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Provider",
+                        "name": "provider",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/api.TopAccountResponse"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/inventory/api/v1/locations/{provider}": {
             "get": {
                 "description": "Getting locations by provider",
@@ -1846,6 +1928,52 @@ const docTemplate = `{
                             "type": "array",
                             "items": {
                                 "$ref": "#/definitions/api.TopAccountResponse"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/inventory/api/v1/resources/top/regions": {
+            "get": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "inventory"
+                ],
+                "summary": "Returns top n regions of specified provider by resource count",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "count",
+                        "name": "count",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Provider",
+                        "name": "provider",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "SourceId",
+                        "name": "sourceId",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/api.CategoriesResponse"
                             }
                         }
                     }
@@ -2995,6 +3123,17 @@ const docTemplate = `{
                 }
             }
         },
+        "api.CategoriesResponse": {
+            "type": "object",
+            "properties": {
+                "resourceCount": {
+                    "type": "integer"
+                },
+                "serviceName": {
+                    "type": "string"
+                }
+            }
+        },
         "api.ComplianceReport": {
             "type": "object",
             "properties": {
@@ -4099,6 +4238,9 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "lastComplianceReportAt": {
+                    "type": "string"
+                },
+                "lastDescribeJobStatus": {
                     "type": "string"
                 },
                 "lastDescribedAt": {

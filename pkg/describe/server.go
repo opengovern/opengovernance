@@ -72,11 +72,22 @@ func (s HttpServer) HandleListSources(ctx echo.Context) error {
 			lastComplianceReportAt = source.LastComplianceReportAt.Time
 		}
 
+		job, err := s.DB.GetLastDescribeSourceJob(source.ID)
+		if err != nil {
+			ctx.Logger().Errorf("fetching source last describe job %s: %v", source.ID, err)
+			return ctx.JSON(http.StatusInternalServerError, api.ErrorResponse{Message: "fetching source last describe job"})
+		}
+		lastJobStatus := ""
+		if job != nil {
+			lastJobStatus = string(job.Status)
+		}
+
 		objs = append(objs, api.Source{
 			ID:                     source.ID,
 			Type:                   source.Type,
 			LastDescribedAt:        lastDescribeAt,
 			LastComplianceReportAt: lastComplianceReportAt,
+			LastDescribeJobStatus:  lastJobStatus,
 		})
 	}
 
@@ -104,6 +115,12 @@ func (s HttpServer) HandleGetSource(ctx echo.Context) error {
 		return ctx.JSON(http.StatusInternalServerError, api.ErrorResponse{Message: "fetching source"})
 	}
 
+	job, err := s.DB.GetLastDescribeSourceJob(sourceUUID)
+	if err != nil {
+		ctx.Logger().Errorf("fetching source last describe job %s: %v", sourceID, err)
+		return ctx.JSON(http.StatusInternalServerError, api.ErrorResponse{Message: "fetching source last describe job"})
+	}
+
 	lastDescribeAt := time.Time{}
 	lastComplianceReportAt := time.Time{}
 	if source.LastDescribedAt.Valid {
@@ -112,12 +129,17 @@ func (s HttpServer) HandleGetSource(ctx echo.Context) error {
 	if source.LastComplianceReportAt.Valid {
 		lastComplianceReportAt = source.LastComplianceReportAt.Time
 	}
+	lastJobStatus := ""
+	if job != nil {
+		lastJobStatus = string(job.Status)
+	}
 
 	return ctx.JSON(http.StatusOK, api.Source{
 		ID:                     source.ID,
 		Type:                   source.Type,
 		LastDescribedAt:        lastDescribeAt,
 		LastComplianceReportAt: lastComplianceReportAt,
+		LastDescribeJobStatus:  lastJobStatus,
 	})
 }
 
