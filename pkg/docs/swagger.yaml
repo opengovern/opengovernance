@@ -122,6 +122,13 @@ definitions:
       nonCompliantCount:
         type: integer
     type: object
+  api.CategoriesResponse:
+    properties:
+      resourceCount:
+        type: integer
+      serviceName:
+        type: string
+    type: object
   api.ComplianceReport:
     properties:
       failureMessage:
@@ -866,6 +873,8 @@ definitions:
         type: string
       lastComplianceReportAt:
         type: string
+      lastDescribeJobStatus:
+        type: string
       lastDescribedAt:
         type: string
       type:
@@ -892,7 +901,7 @@ info:
   title: Keibi Service API
   version: "1.0"
 paths:
-  /auth/api/v1/role/bindings:
+  /auth/api/v1/role/binding:
     put:
       description: RoleBinding defines the roles and actions a user can perform. There
         are currently three roles (ADMIN, EDITOR, VIEWER). User must exist before
@@ -1717,6 +1726,60 @@ paths:
       summary: Returns trend of compliancy for specific account
       tags:
       - benchmarks
+  /inventory/api/v1/cost/top/accounts:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: count
+        in: query
+        name: count
+        required: true
+        type: integer
+      - description: Provider
+        in: query
+        name: provider
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/api.TopAccountResponse'
+            type: array
+      summary: Returns top n accounts of specified provider by cost
+      tags:
+      - cost
+  /inventory/api/v1/cost/top/services:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: count
+        in: query
+        name: count
+        required: true
+        type: integer
+      - description: Provider
+        in: query
+        name: provider
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/api.TopAccountResponse'
+            type: array
+      summary: Returns top n services of specified provider by cost
+      tags:
+      - cost
   /inventory/api/v1/locations/{provider}:
     get:
       description: Getting locations by provider
@@ -2142,6 +2205,33 @@ paths:
       summary: Returns top n accounts of specified provider by resource count
       tags:
       - benchmarks
+  /inventory/api/v1/resources/top/regions:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: count
+        in: query
+        name: count
+        required: true
+        type: integer
+      - description: Provider
+        in: query
+        name: provider
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/api.CategoriesResponse'
+            type: array
+      summary: Returns top n regions of specified provider by resource count
+      tags:
+      - inventory
   /inventory/api/v1/resources/top/services:
     get:
       consumes:

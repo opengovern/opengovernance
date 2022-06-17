@@ -1028,8 +1028,8 @@ func (h *HttpHandler) GetTopAccountsByCost(ctx echo.Context) error {
 // @Tags     cost
 // @Accept   json
 // @Produce  json
-// @Param    count     query     int     true   "count"
-// @Param    provider  query     string  true   "Provider"
+// @Param    count     query     int     true  "count"
+// @Param    provider  query     string  true  "Provider"
 // @Success  200       {object}  []api.TopAccountResponse
 // @Router   /inventory/api/v1/cost/top/services [get]
 func (h *HttpHandler) GetTopServicesByCost(ctx echo.Context) error {
@@ -1041,8 +1041,8 @@ func (h *HttpHandler) GetTopServicesByCost(ctx echo.Context) error {
 // @Tags     benchmarks
 // @Accept   json
 // @Produce  json
-// @Param    count     query     int     true   "count"
-// @Param    provider  query     string  true   "Provider"
+// @Param    count     query     int     true  "count"
+// @Param    provider  query     string  true  "Provider"
 // @Success  200       {object}  []api.TopAccountResponse
 // @Router   /inventory/api/v1/resources/top/accounts [get]
 func (h *HttpHandler) GetTopAccountsByResourceCount(ctx echo.Context) error {
@@ -1078,8 +1078,8 @@ func (h *HttpHandler) GetTopAccountsByResourceCount(ctx echo.Context) error {
 // @Tags     inventory
 // @Accept   json
 // @Produce  json
-// @Param    count     query     int     true   "count"
-// @Param    provider  query     string  true   "Provider"
+// @Param    count     query     int     true  "count"
+// @Param    provider  query     string  true  "Provider"
 // @Success  200       {object}  []api.CategoriesResponse
 // @Router   /inventory/api/v1/resources/top/regions [get]
 func (h *HttpHandler) GetTopRegionsByResourceCount(ctx echo.Context) error {
