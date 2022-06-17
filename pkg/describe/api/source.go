@@ -26,6 +26,7 @@ type Source struct {
 	ID                     uuid.UUID  `json:"id"`
 	Type                   SourceType `json:"type"`
 	LastDescribedAt        time.Time  `json:"lastDescribedAt"`
+	LastDescribeJobStatus  string     `json:"lastDescribeJobStatus"`
 	LastComplianceReportAt time.Time  `json:"lastComplianceReportAt"`
 }
 

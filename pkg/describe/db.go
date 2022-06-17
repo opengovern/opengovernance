@@ -1,6 +1,7 @@
 package describe
 
 import (
+	"errors"
 	"fmt"
 	"time"
 
@@ -249,6 +250,20 @@ func (db Database) ListDescribeSourceJobs(sourceID uuid.UUID) ([]DescribeSourceJ
 	}
 
 	return jobs, nil
+}
+
+// GetLastDescribeSourceJob returns the last DescribeSourceJobs for the given source.
+func (db Database) GetLastDescribeSourceJob(sourceID uuid.UUID) (*DescribeSourceJob, error) {
+	var job DescribeSourceJob
+	tx := db.orm.Preload(clause.Associations).Where("source_id = ?", sourceID).Order("updated_at DESC").First(&job)
+	if tx.Error != nil {
+		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
+		return nil, tx.Error
+	}
+
+	return &job, nil
 }
 
 type DescribedSourceJobDescribeResourceJobStatus struct {
