@@ -13,7 +13,9 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 
+	auth_api "gitlab.com/keibiengine/keibi-engine/pkg/auth/api"
 	"gitlab.com/keibiengine/keibi-engine/pkg/cloudservice"
+	"gitlab.com/keibiengine/keibi-engine/pkg/inventory/client"
 
 	aws "gitlab.com/keibiengine/keibi-engine/pkg/aws/model"
 	azure "gitlab.com/keibiengine/keibi-engine/pkg/azure/model"
@@ -25,8 +27,8 @@ import (
 	"github.com/elastic/go-elasticsearch/v7"
 	"github.com/google/uuid"
 	"gitlab.com/keibiengine/keibi-engine/pkg/compliance-report/api"
-	"gitlab.com/keibiengine/keibi-engine/pkg/compliance-report/client"
 	"gitlab.com/keibiengine/keibi-engine/pkg/describe/kafka"
+	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpclient"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/vault"
 	"gitlab.com/keibiengine/keibi-engine/pkg/keibi-es-sdk"
 	"go.uber.org/zap"
@@ -169,7 +171,12 @@ func (j *Job) Do(vlt vault.SourceConfig, producer sarama.SyncProducer, topic str
 		}
 	}()
 
-	assignments, err := client.GetBenchmarkAssignmentsBySourceId(config.InventoryBaseUrl, j.SourceID)
+	inventoryClient := client.NewInventoryServiceClient(config.InventoryBaseUrl)
+	assignments, err := inventoryClient.GetAllBenchmarkAssignmentsBySourceId(&httpclient.Context{
+		UserRole:      auth_api.ViewerRole,
+		WorkspaceName: "empty",
+		UserID:        "empty",
+	}, j.SourceID.String())
 	if err != nil {
 		DoComplianceReportJobsDuration.WithLabelValues(string(j.SourceType), "failure").Observe(float64(time.Now().Unix() - startTime))
 		DoComplianceReportJobsCount.WithLabelValues(string(j.SourceType), "failure").Inc()

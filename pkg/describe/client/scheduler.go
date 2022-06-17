@@ -41,7 +41,7 @@ func (s *schedulerClient) ListComplianceReportJobs(ctx *httpclient.Context, sour
 	}
 
 	reports := []*compliance.ComplianceReport{}
-	if err := httpclient.DoRequest(http.MethodGet, url, nil, nil, &reports); err != nil {
+	if err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &reports); err != nil {
 		return nil, err
 	}
 	return reports, nil
