@@ -118,7 +118,10 @@ require (
 	sigs.k8s.io/controller-runtime v0.11.2
 )
 
-require github.com/aws/aws-sdk-go-v2/service/costexplorer v1.19.0
+require (
+	github.com/aws/aws-sdk-go-v2/service/costexplorer v1.19.0
+	github.com/go-errors/errors v1.4.2
+)
 
 require (
 	github.com/Azure/azure-pipeline-go v0.2.3 // indirect

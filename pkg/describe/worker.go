@@ -140,6 +140,15 @@ func (w *Worker) Run() error {
 			continue
 		}
 		result := job.Do(w.vault, w.kfkProducer, w.kfkTopic, w.logger)
+		if strings.Contains(result.Error, "ThrottlingException") ||
+			strings.Contains(result.Error, "Rate exceeded") ||
+			strings.Contains(result.Error, "RateExceeded") {
+			if err := msg.Nack(false, true); err != nil {
+				w.logger.Error("Failed requeueing message", zap.Error(err))
+			}
+			continue
+		}
+
 		err := w.jobResultQueue.Publish(result)
 		if err != nil {
 			w.logger.Error("Failed to send results to queue: %s", zap.Error(err))
