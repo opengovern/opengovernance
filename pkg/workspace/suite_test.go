@@ -9,6 +9,7 @@ import (
 	"github.com/ory/dockertest/v3"
 	"github.com/stretchr/testify/suite"
 	idocker "gitlab.com/keibiengine/keibi-engine/pkg/internal/dockertest"
+	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
@@ -44,7 +45,7 @@ func (s *testSuite) SetupSuite() {
 	resource, err := pool.RunWithOptions(&dockertest.RunOptions{
 		Name:         "keibi_workspace",
 		Repository:   "postgres",
-		Tag:          "14",
+		Tag:          "12.2-alpine",
 		ExposedPorts: []string{port},
 		Env: []string{
 			"POSTGRES_USER=" + user,
@@ -57,8 +58,10 @@ func (s *testSuite) SetupSuite() {
 	t.Cleanup(func() {
 		s.NoError(pool.Purge(resource), "purge resource")
 	})
-	time.Sleep(time.Second * 2)
+	time.Sleep(time.Second * 5)
 
+	logger, err := zap.NewProduction()
+	s.NoError(err, "new zap logger")
 	cfg := &Config{
 		Host:         idocker.GetDockerHost(),
 		Port:         resource.GetPort("5432/tcp"),
@@ -67,7 +70,7 @@ func (s *testSuite) SetupSuite() {
 		DBName:       name,
 		DomainSuffix: ".app.keibi.io",
 	}
-	db, err := NewDatabase(cfg)
+	db, err := NewDatabase(cfg, logger)
 	s.NoError(err, "new database")
 
 	s.server = &Server{
@@ -89,6 +92,6 @@ func (ts *testSuite) TearDownSuite() {
 }
 
 func (ts *testSuite) TearDownTest() {
-	tx := ts.server.db.db.Exec("delete from workspaces")
+	tx := ts.server.db.orm.Exec("delete from workspaces")
 	ts.NoError(tx.Error)
 }

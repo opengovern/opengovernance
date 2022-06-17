@@ -4,11 +4,11 @@ import (
 	"fmt"
 
 	"github.com/hashicorp/vault/api/auth/kubernetes"
+	"go.uber.org/zap"
 
+	"gitlab.com/keibiengine/keibi-engine/pkg/internal/postgres"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/queue"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/vault"
-	"gorm.io/driver/postgres"
-	"gorm.io/gorm"
 )
 
 type HttpHandler struct {
@@ -34,6 +34,7 @@ func InitializeHttpHandler(
 	vaultRoleName string,
 	vaultCaPath string,
 	vaultUseTLS bool,
+	logger *zap.Logger,
 	awsPermissionCheckURL string,
 ) (*HttpHandler, error) {
 
@@ -55,20 +56,17 @@ func InitializeHttpHandler(
 
 	fmt.Println("Connected to the source queue: ", sourceEventsQueueName)
 
-	// setup postgres connection
-	dsn := fmt.Sprintf(`host=%s port=%s user=%s password=%s dbname=%s sslmode=disable TimeZone=GMT`,
-		postgresHost,
-		postgresPort,
-		postgresUsername,
-		postgresPassword,
-		postgresDb,
-	)
-
-	orm, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
-	if err != nil {
-		return nil, err
+	cfg := postgres.Config{
+		Host:   postgresHost,
+		Port:   postgresPort,
+		User:   postgresUsername,
+		Passwd: postgresPassword,
+		DB:     postgresDb,
 	}
-
+	orm, err := postgres.NewClient(&cfg, logger)
+	if err != nil {
+		return nil, fmt.Errorf("new postgres client: %w", err)
+	}
 	fmt.Println("Connected to the postgres database: ", postgresDb)
 
 	k8sAuth, err := kubernetes.NewKubernetesAuth(

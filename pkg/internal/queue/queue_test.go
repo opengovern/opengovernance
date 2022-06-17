@@ -4,16 +4,27 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/require"
+	"github.com/stretchr/testify/suite"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/dockertest"
 )
 
-func TestRabbitMQ(t *testing.T) {
-	require := require.New(t)
-	server := dockertest.StartupRabbitMQ(t)
+type QueueTestSuite struct {
+	suite.Suite
 
+	rabbit dockertest.RabbitMQServer
+}
+
+func TestQueue(t *testing.T) {
+	suite.Run(t, &QueueTestSuite{})
+}
+
+func (ts *QueueTestSuite) SetupSuite() {
+	ts.rabbit = dockertest.StartupRabbitMQ(ts.T())
+}
+
+func (ts *QueueTestSuite) TestRabbitMQ() {
 	cfg := Config{
-		Server: server,
+		Server: ts.rabbit,
 	}
 
 	cfg.Queue.Name = "test-queue"
@@ -21,111 +32,103 @@ func TestRabbitMQ(t *testing.T) {
 	cfg.Producer.ID = "test-producer"
 
 	qu, err := New(cfg)
-	require.NoError(err, "create queue")
+	ts.NoError(err, "create queue")
 
 	type Message struct {
 		ID uint
 	}
 
 	msgs, err := qu.Consume()
-	require.NoError(err, "consume")
+	ts.NoError(err, "consume")
 
-	// Try to retrieve one without any message
+	// try to retrieve one without any message
 	select {
 	case msg := <-msgs:
-		require.FailNow("unexpected message: %#v", msg)
+		ts.FailNow("unexpected message: %#v", msg)
 	default:
-		// pass
 	}
 
 	err = qu.Publish(Message{
 		ID: 1,
 	})
-	require.NoError(err, "publish")
+	ts.NoError(err, "publish")
 
 	select {
 	case msg := <-msgs:
-		require.Equal("application/json", msg.ContentType)
-		require.Equal("test-queue", msg.RoutingKey)
-		require.Equal("test-producer", msg.AppId)
-		require.Equal("test-consumer", msg.ConsumerTag)
-		require.Equal("", msg.Expiration)
-		require.Equal(`{"ID":1}`, string(msg.Body))
+		ts.Equal("application/json", msg.ContentType)
+		ts.Equal("test-queue", msg.RoutingKey)
+		ts.Equal("test-producer", msg.AppId)
+		ts.Equal("test-consumer", msg.ConsumerTag)
+		ts.Equal("", msg.Expiration)
+		ts.Equal(`{"ID":1}`, string(msg.Body))
 		err := msg.Ack(false)
-		require.NoError(err, "ack")
+		ts.NoError(err, "ack")
 	case <-time.After(10 * time.Second):
-		require.FailNow("timed out: exptected message with id 1")
+		ts.FailNow("timed out: exptected message with id 1")
 	}
 
-	// Try to retrieve another one
+	// try to retrieve another one
 	select {
 	case msg := <-msgs:
-		require.FailNow("unexpected message: %#v", msg)
+		ts.FailNow("unexpected message: %#v", msg)
 	default:
-		// pass
 	}
 }
 
-func TestRabbitMQGetQueueInfo(t *testing.T) {
-	require := require.New(t)
-	server := dockertest.StartupRabbitMQ(t)
-
+func (ts *QueueTestSuite) TestRabbitMQGetQueueInfo() {
 	cfg := Config{
-		Server: server,
+		Server: ts.rabbit,
 	}
 
 	cfg.Queue.Name = "test-queue-1"
 	cfg.Consumer.ID = "test-consumer"
 	cfg.Producer.ID = "test-producer"
 
-	qu, err := New(cfg)
-	require.NoError(err, "create queue")
+	queue, err := New(cfg)
+	ts.NoError(err, "create queue")
 	// new queue with no data
-	count, err := qu.Len()
-	require.NoError(err, "get queue length")
-	require.Equal(0, count)
-	require.Equal(cfg.Queue.Name, qu.Name())
+	count, err := queue.Len()
+	ts.NoError(err, "get queue length")
+	ts.Equal(0, count)
+	ts.Equal(cfg.Queue.Name, queue.Name())
 
 	type Message struct {
 		ID uint
 	}
 
-	msgs, err := qu.Consume()
-	require.NoError(err, "consume")
+	msgs, err := queue.Consume()
+	ts.NoError(err, "consume")
 
-	// Try to retrieve one without any message
+	// try to retrieve one without any message
 	select {
 	case msg := <-msgs:
-		require.FailNow("unexpected message: %#v", msg)
+		ts.FailNow("unexpected message: %#v", msg)
 	default:
-		// pass
 	}
 
-	err = qu.Publish(Message{
+	err = queue.Publish(Message{
 		ID: 1,
 	})
-	require.NoError(err, "publish")
+	ts.NoError(err, "publish")
 
 	select {
 	case msg := <-msgs:
-		require.Equal("application/json", msg.ContentType)
-		require.Equal(qu.Name(), msg.RoutingKey)
-		require.Equal("test-producer", msg.AppId)
-		require.Equal("test-consumer", msg.ConsumerTag)
-		require.Equal("", msg.Expiration)
-		require.Equal(`{"ID":1}`, string(msg.Body))
+		ts.Equal("application/json", msg.ContentType)
+		ts.Equal(queue.Name(), msg.RoutingKey)
+		ts.Equal("test-producer", msg.AppId)
+		ts.Equal("test-consumer", msg.ConsumerTag)
+		ts.Equal("", msg.Expiration)
+		ts.Equal(`{"ID":1}`, string(msg.Body))
 		err := msg.Ack(false)
-		require.NoError(err, "ack")
+		ts.NoError(err, "ack")
 	case <-time.After(10 * time.Second):
-		require.FailNow("timed out: exptected message with id 1")
+		ts.FailNow("timed out: exptected message with id 1")
 	}
 
-	// Try to retrieve another one
+	// try to retrieve another one
 	select {
 	case msg := <-msgs:
-		require.FailNow("unexpected message: %#v", msg)
+		ts.FailNow("unexpected message: %#v", msg)
 	default:
-		// pass
 	}
-
 }

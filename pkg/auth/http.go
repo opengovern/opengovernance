@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/coreos/go-oidc/v3/oidc"
 	"github.com/labstack/echo/v4"
 	"gitlab.com/keibiengine/keibi-engine/pkg/auth/api"
 	"gitlab.com/keibiengine/keibi-engine/pkg/auth/extauth"
@@ -19,7 +18,6 @@ import (
 type httpRoutes struct {
 	logger       *zap.Logger
 	db           Database
-	verifier     *oidc.IDTokenVerifier
 	authProvider extauth.Provider
 	emailService email.Service
 }

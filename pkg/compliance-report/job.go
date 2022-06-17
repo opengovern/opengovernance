@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
@@ -407,6 +408,7 @@ connection "` + plugin + `" {
 	}
 
 	filePath := dirname + "/.steampipe/config/" + plugin + ".spc"
+	os.MkdirAll(filepath.Dir(filePath), os.ModePerm)
 	return ioutil.WriteFile(filePath, []byte(content), os.ModePerm)
 }
 

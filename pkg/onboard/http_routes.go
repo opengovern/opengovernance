@@ -391,7 +391,7 @@ func (h HttpHandler) GetSPNCred(ctx echo.Context) error {
 	}
 
 	return ctx.JSON(http.StatusOK, api.SPNCredential{
-		SPNName:  fmt.Sprintf("SPN-%d", src.Model.ID),
+		SPNName:  fmt.Sprintf("SPN-%s", src.ID.String()),
 		ClientID: azureCnf.ClientID,
 		TenantID: azureCnf.TenantID,
 	})

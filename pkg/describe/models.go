@@ -2,6 +2,7 @@ package describe
 
 import (
 	"database/sql"
+	"time"
 
 	api2 "gitlab.com/keibiengine/keibi-engine/pkg/compliance-report/api"
 
@@ -11,7 +12,6 @@ import (
 )
 
 type Source struct {
-	gorm.Model
 	ID                     uuid.UUID `gorm:"type:uuid;default:uuid_generate_v4()"`
 	AccountID              string
 	Type                   api.SourceType
@@ -23,6 +23,10 @@ type Source struct {
 	DescribeSourceJobs     []DescribeSourceJob   `gorm:"foreignKey:SourceID;constraint:OnDelete:CASCADE;"`
 	ComplianceReportJobs   []ComplianceReportJob `gorm:"foreignKey:SourceID;constraint:OnDelete:CASCADE;"`
 	NextComplianceReportID uint                  `gorm:"default:0"`
+
+	CreatedAt time.Time
+	UpdatedAt time.Time
+	DeletedAt sql.NullTime `gorm:"index"`
 }
 
 type DescribeSourceJob struct {

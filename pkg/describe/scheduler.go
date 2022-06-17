@@ -14,10 +14,9 @@ import (
 	compliancereport "gitlab.com/keibiengine/keibi-engine/pkg/compliance-report"
 	"gitlab.com/keibiengine/keibi-engine/pkg/describe/api"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpserver"
+	"gitlab.com/keibiengine/keibi-engine/pkg/internal/postgres"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/queue"
 	"go.uber.org/zap"
-	"gorm.io/driver/postgres"
-	"gorm.io/gorm"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
@@ -252,21 +251,20 @@ func InitializeScheduler(
 	s.logger.Info("Connected to the compliance report jobs result queue", zap.String("queue", complianceReportJobResultQueueName))
 	s.complianceReportJobResultQueue = complianceReportJobsResultQueue
 
-	dsn := fmt.Sprintf(`host=%s port=%s user=%s password=%s dbname=%s sslmode=disable TimeZone=GMT`,
-		postgresHost,
-		postgresPort,
-		postgresUsername,
-		postgresPassword,
-		postgresDb,
-	)
-
-	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
+	cfg := postgres.Config{
+		Host:   postgresHost,
+		Port:   postgresPort,
+		User:   postgresUsername,
+		Passwd: postgresPassword,
+		DB:     postgresDb,
+	}
+	orm, err := postgres.NewClient(&cfg, s.logger)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("new postgres client: %w", err)
 	}
 
 	s.logger.Info("Connected to the postgres database: ", zap.String("db", postgresDb))
-	s.db = Database{orm: db}
+	s.db = Database{orm: orm}
 
 	s.httpServer = NewHTTPServer(httpServerAddress, s.db)
 

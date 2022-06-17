@@ -48,7 +48,7 @@ func NewServer(cfg *Config) (*Server, error) {
 	}
 	s.e = httpserver.Register(logger, s)
 
-	db, err := NewDatabase(cfg)
+	db, err := NewDatabase(cfg, logger)
 	if err != nil {
 		return nil, fmt.Errorf("new database: %w", err)
 	}
