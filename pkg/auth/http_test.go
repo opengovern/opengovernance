@@ -202,7 +202,7 @@ func (s *HTTPRouteSuite) TestPutRoleBinding() {
 	}
 
 	var resp api.GetWorkspaceRoleBindingResponse
-	recorder, err := doSimpleJSONRequest(s.router, http.MethodGet, "/api/v1/host/role/bindings",
+	recorder, err := doSimpleJSONRequest(s.router, http.MethodGet, "/api/v1/workspace/role/bindings",
 		adminID,
 		api.AdminRole,
 		"workspace1",
@@ -232,7 +232,7 @@ func (s *HTTPRouteSuite) TestPutRoleBinding() {
 	require.Equal([]int{1, 1, 1}, each)
 
 	var resp2 api.GetWorkspaceRoleBindingResponse
-	recorder, err = doSimpleJSONRequest(s.router, http.MethodGet, "/api/v1/host/role/bindings",
+	recorder, err = doSimpleJSONRequest(s.router, http.MethodGet, "/api/v1/workspace/role/bindings",
 		adminID,
 		api.AdminRole,
 		"workspace2",
@@ -284,7 +284,7 @@ func (s *HTTPRouteSuite) TestPutRoleBinding_UpdateExisting() {
 		require.Equal(http.StatusOK, recorder.Result().StatusCode, mustRead(recorder.Result().Body))
 
 		var resp api.GetWorkspaceRoleBindingResponse
-		recorder, err = doSimpleJSONRequest(s.router, http.MethodGet, "/api/v1/host/role/bindings",
+		recorder, err = doSimpleJSONRequest(s.router, http.MethodGet, "/api/v1/workspace/role/bindings",
 			adminID,
 			api.AdminRole,
 			"workspace1",
