@@ -173,9 +173,8 @@ func (j *Job) Do(vlt vault.SourceConfig, producer sarama.SyncProducer, topic str
 
 	inventoryClient := client.NewInventoryServiceClient(config.InventoryBaseUrl)
 	assignments, err := inventoryClient.GetAllBenchmarkAssignmentsBySourceId(&httpclient.Context{
-		UserRole:      auth_api.ViewerRole,
-		WorkspaceName: "empty",
-		UserID:        "empty",
+		UserRole: auth_api.AdminRole,
+		UserID:   uuid.NewString(),
 	}, j.SourceID.String())
 	if err != nil {
 		DoComplianceReportJobsDuration.WithLabelValues(string(j.SourceType), "failure").Observe(float64(time.Now().Unix() - startTime))
