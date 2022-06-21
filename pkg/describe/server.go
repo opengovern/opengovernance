@@ -7,9 +7,11 @@ import (
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/cloudservice"
 	complianceapi "gitlab.com/keibiengine/keibi-engine/pkg/compliance-report/api"
+	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpserver"
 
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
+	auth_api "gitlab.com/keibiengine/keibi-engine/pkg/auth/api"
 	"gitlab.com/keibiengine/keibi-engine/pkg/aws"
 	"gitlab.com/keibiengine/keibi-engine/pkg/azure"
 	"gitlab.com/keibiengine/keibi-engine/pkg/describe/api"
@@ -35,16 +37,16 @@ func (s *HttpServer) Register(e *echo.Echo) {
 	v1 := e.Group("/api/v1")
 
 	v1.GET("/sources", s.HandleListSources)
-	v1.GET("/sources/:source_id", s.HandleGetSource)
+	v1.GET("/sources/:source_id", httpserver.AuthorizeHandler(s.HandleGetSource, auth_api.AdminRole))
 	v1.GET("/sources/:source_id/jobs/describe", s.HandleListSourceDescribeJobs)
-	v1.GET("/sources/:source_id/jobs/compliance", s.HandleListSourceComplianceReports)
+	v1.GET("/sources/:source_id/jobs/compliance", httpserver.AuthorizeHandler(s.HandleListSourceComplianceReports, auth_api.AdminRole))
 
 	v1.POST("/sources/:source_id/jobs/describe/refresh", s.RunDescribeJobs)
 	v1.POST("/sources/:source_id/jobs/compliance/refresh", s.RunComplianceReportJobs)
 
 	v1.GET("/resource_type/:provider", s.GetResourceTypesByProvider)
 
-	v1.GET("/compliance/report/last/completed", s.HandleGetLastCompletedComplianceReport)
+	v1.GET("/compliance/report/last/completed", httpserver.AuthorizeHandler(s.HandleGetLastCompletedComplianceReport, auth_api.AdminRole))
 }
 
 // HandleListSources godoc

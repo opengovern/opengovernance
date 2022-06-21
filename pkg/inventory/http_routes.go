@@ -27,10 +27,12 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v4"
 	"github.com/labstack/echo/v4"
+	auth_api "gitlab.com/keibiengine/keibi-engine/pkg/auth/api"
 	compliance_report "gitlab.com/keibiengine/keibi-engine/pkg/compliance-report"
 	compliance_es "gitlab.com/keibiengine/keibi-engine/pkg/compliance-report/es"
 	pagination "gitlab.com/keibiengine/keibi-engine/pkg/internal/api"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpclient"
+	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpserver"
 	"gitlab.com/keibiengine/keibi-engine/pkg/inventory/api"
 )
 
@@ -95,7 +97,7 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 
 	// benchmark assignment
 	v1.POST("/benchmarks/:benchmark_id/source/:source_id", h.CreateBenchmarkAssignment)
-	v1.GET("/benchmarks/source/:source_id", h.GetAllBenchmarkAssignmentsBySourceId)
+	v1.GET("/benchmarks/source/:source_id", httpserver.AuthorizeHandler(h.GetAllBenchmarkAssignmentsBySourceId, auth_api.AdminRole))
 	v1.GET("/benchmarks/:benchmark_id/sources", h.GetAllBenchmarkAssignedSourcesByBenchmarkId)
 	v1.DELETE("/benchmarks/:benchmark_id/source/:source_id", h.DeleteBenchmarkAssignment)
 
