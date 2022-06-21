@@ -5,20 +5,13 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/google/uuid"
 	"gitlab.com/keibiengine/keibi-engine/pkg/auth/api"
-	"gitlab.com/keibiengine/keibi-engine/pkg/httprequest"
+	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpclient"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpserver"
 )
 
-type Context struct {
-	UserID        uuid.UUID
-	UserRole      api.Role
-	WorkspaceName string
-}
-
 type AuthServiceClient interface {
-	PutRoleBinding(ctx *Context, request *api.PutRoleBindingRequest) error
+	PutRoleBinding(ctx *httpclient.Context, request *api.PutRoleBindingRequest) error
 }
 
 type authClient struct {
@@ -29,7 +22,7 @@ func NewAuthServiceClient(baseURL string) AuthServiceClient {
 	return &authClient{baseURL: baseURL}
 }
 
-func (c *authClient) PutRoleBinding(ctx *Context, request *api.PutRoleBindingRequest) error {
+func (c *authClient) PutRoleBinding(ctx *httpclient.Context, request *api.PutRoleBindingRequest) error {
 	url := fmt.Sprintf("%s/api/v1/user/role/binding", c.baseURL)
 
 	payload, err := json.Marshal(api.PutRoleBindingRequest{
@@ -41,9 +34,9 @@ func (c *authClient) PutRoleBinding(ctx *Context, request *api.PutRoleBindingReq
 	}
 
 	headers := map[string]string{
-		httpserver.XKeibiUserIDHeader:        ctx.UserID.String(),
+		httpserver.XKeibiUserIDHeader:        ctx.UserID,
 		httpserver.XKeibiUserRoleHeader:      string(ctx.UserRole),
 		httpserver.XKeibiWorkspaceNameHeader: ctx.WorkspaceName,
 	}
-	return httprequest.DoRequest(http.MethodPut, url, headers, payload, nil)
+	return httpclient.DoRequest(http.MethodPut, url, headers, payload, nil)
 }

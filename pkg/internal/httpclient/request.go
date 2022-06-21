@@ -1,4 +1,4 @@
-package httprequest
+package httpclient
 
 import (
 	"bytes"
@@ -7,7 +7,36 @@ import (
 	"io/ioutil"
 	"net/http"
 	"time"
+
+	"github.com/labstack/echo/v4"
+	"gitlab.com/keibiengine/keibi-engine/pkg/auth/api"
+	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpserver"
 )
+
+type Context struct {
+	UserRole      api.Role
+	UserID        string
+	WorkspaceName string
+}
+
+func (ctx *Context) ToHeaders() map[string]string {
+	return map[string]string{
+		httpserver.XKeibiUserIDHeader:        ctx.UserID,
+		httpserver.XKeibiUserRoleHeader:      string(ctx.UserRole),
+		httpserver.XKeibiWorkspaceNameHeader: ctx.WorkspaceName,
+	}
+}
+
+func FromEchoContext(c echo.Context) *Context {
+	name := c.Request().Header.Get(httpserver.XKeibiWorkspaceNameHeader)
+	role := c.Request().Header.Get(httpserver.XKeibiUserRoleHeader)
+	id := c.Request().Header.Get(httpserver.XKeibiUserIDHeader)
+	return &Context{
+		WorkspaceName: name,
+		UserRole:      api.Role(role),
+		UserID:        id,
+	}
+}
 
 func DoRequest(method, url string, headers map[string]string, payload []byte, v interface{}) error {
 	req, err := http.NewRequest(method, url, bytes.NewReader(payload))

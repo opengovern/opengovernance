@@ -3,16 +3,17 @@ package inventory
 import (
 	"fmt"
 
+	"gitlab.com/keibiengine/keibi-engine/pkg/describe/client"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/postgres"
 	"gitlab.com/keibiengine/keibi-engine/pkg/keibi-es-sdk"
 	"go.uber.org/zap"
 )
 
 type HttpHandler struct {
-	client           keibi.Client
-	db               Database
-	steampipeConn    *SteampipeDatabase
-	schedulerBaseUrl string
+	client          keibi.Client
+	db              Database
+	steampipeConn   *SteampipeDatabase
+	schedulerClient client.SchedulerServiceClient
 }
 
 func InitializeHttpHandler(
@@ -83,7 +84,7 @@ func InitializeHttpHandler(
 	if err != nil {
 		return nil, err
 	}
-	h.schedulerBaseUrl = schedulerBaseUrl
+	h.schedulerClient = client.NewSchedulerServiceClient(schedulerBaseUrl)
 
 	return h, nil
 }
