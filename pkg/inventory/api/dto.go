@@ -388,8 +388,8 @@ type TopAccountResponse struct {
 }
 
 type TopAccountCostResponse struct {
-	SourceID string `json:"sourceID"`
-	Cost     float64  `json:"cost"`
+	SourceID string  `json:"sourceID"`
+	Cost     float64 `json:"cost"`
 }
 
 type TopServicesResponse struct {
@@ -398,8 +398,8 @@ type TopServicesResponse struct {
 }
 
 type TopServiceCostResponse struct {
-	ServiceName string `json:"serviceName"`
-	Cost        float64  `json:"cost"`
+	ServiceName string  `json:"serviceName"`
+	Cost        float64 `json:"cost"`
 }
 
 type CategoriesResponse struct {
