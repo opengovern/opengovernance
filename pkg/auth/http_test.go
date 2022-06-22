@@ -16,7 +16,6 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 	"gitlab.com/keibiengine/keibi-engine/pkg/auth/api"
-	"gitlab.com/keibiengine/keibi-engine/pkg/auth/extauth"
 	extauthmocks "gitlab.com/keibiengine/keibi-engine/pkg/auth/extauth/mocks"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/dockertest"
 	emailmocks "gitlab.com/keibiengine/keibi-engine/pkg/internal/email/mocks"
@@ -142,7 +141,7 @@ func (s *HTTPRouteSuite) TestCreateRoleBinding_UserDoesNotExist() {
 		Role:   api.ViewerRole,
 	}
 
-	var response = struct {
+	response := struct {
 		Message string
 	}{}
 	recorder, err := doSimpleJSONRequest(s.router, http.MethodPut, "/api/v1/user/role/binding",
@@ -247,9 +246,7 @@ func (s *HTTPRouteSuite) TestPutRoleBinding() {
 func (s *HTTPRouteSuite) TestPutRoleBinding_UpdateExisting() {
 	require := s.Require()
 
-	var (
-		user1 = uuid.New()
-	)
+	user1 := uuid.New()
 
 	require.NoError(s.httpRoutes.db.CreateUser(&User{
 		ID:         user1,
@@ -298,95 +295,6 @@ func (s *HTTPRouteSuite) TestPutRoleBinding_UpdateExisting() {
 	}
 }
 
-func (s *HTTPRouteSuite) TestInviteUser_UserDoesntExists() {
-	require := s.Require()
-
-	email := "nima@keibi.io"
-	extId := "external-user-1"
-
-	s.httpRoutes.authProvider.(*extauthmocks.Provider).On("FetchUser", mock.Anything, email).Return(extauth.AzureADUser{}, extauth.ErrUserNotExists)
-	s.httpRoutes.authProvider.(*extauthmocks.Provider).On("CreateUser", mock.Anything, email).Return(extauth.AzureADUser{
-		ID:          extId,
-		DisplayName: "nima",
-		PasswordProfile: extauth.PasswordProfile{
-			Password: "123456",
-		},
-	}, (error)(nil))
-	s.httpRoutes.emailService.(*emailmocks.Service).On("SendEmail", mock.Anything, email, "123456", "workspace1").Return((error)(nil))
-
-	req := api.InviteUserRequest{
-		Email: email,
-	}
-	var resp api.InviteUserResponse
-	recorder, err := doSimpleJSONRequest(s.router, http.MethodPost, "/api/v1/user/invite", uuid.New(), api.AdminRole, "workspace1", req, &resp)
-	require.NoError(err, "invite user")
-	require.Equal(http.StatusOK, recorder.Result().StatusCode, mustRead(recorder.Result().Body))
-
-	usr, err := s.db.GetUserByEmail(email)
-	require.NoError(err, "get user")
-	require.Equal(usr.Email, email)
-	require.Equal(usr.ExternalID, extId)
-}
-
-func (s *HTTPRouteSuite) TestInviteUser_UserExistsInAzureButNotAuthService() {
-	require := s.Require()
-
-	email := "nima@keibi.io"
-	extId := "external-user-1"
-
-	s.httpRoutes.authProvider.(*extauthmocks.Provider).On("FetchUser", mock.Anything, email).Return(extauth.AzureADUser{
-		ID:          extId,
-		DisplayName: "nima",
-	}, (error)(nil))
-
-	req := api.InviteUserRequest{
-		Email: email,
-	}
-	var resp api.InviteUserResponse
-	recorder, err := doSimpleJSONRequest(s.router, http.MethodPost, "/api/v1/user/invite", uuid.New(), api.AdminRole, "workspace1", req, &resp)
-	require.NoError(err, "invite user")
-	require.Equal(http.StatusOK, recorder.Result().StatusCode, mustRead(recorder.Result().Body))
-
-	usr, err := s.db.GetUserByEmail(email)
-	require.NoError(err, "get user")
-	require.Equal(usr.Email, email)
-	require.Equal(usr.ExternalID, extId)
-	require.Equal(usr.ID, resp.UserID)
-
-	s.httpRoutes.authProvider.(*extauthmocks.Provider).AssertNotCalled(s.T(), "CreateUser", mock.Anything, mock.Anything)
-}
-
-func (s *HTTPRouteSuite) TestInviteUser_UserExists() {
-	require := s.Require()
-
-	email := "nima@keibi.io"
-	extId := "external-user-1"
-
-	user := User{
-		Email:      email,
-		ExternalID: extId,
-	}
-	err := s.db.CreateUser(&user)
-	require.NoError(err, "create user")
-
-	req := api.InviteUserRequest{
-		Email: email,
-	}
-	var resp api.InviteUserResponse
-	recorder, err := doSimpleJSONRequest(s.router, http.MethodPost, "/api/v1/user/invite", uuid.New(), api.AdminRole, "workspace1", req, &resp)
-	require.NoError(err, "invite user")
-	require.Equal(http.StatusOK, recorder.Result().StatusCode, mustRead(recorder.Result().Body))
-
-	require.NoError(err, "get user")
-	require.Equal(user.Email, email)
-	require.Equal(user.ExternalID, extId)
-	require.Equal(user.ID, resp.UserID)
-
-	s.httpRoutes.authProvider.(*extauthmocks.Provider).AssertNotCalled(s.T(), "FetchUser", mock.Anything, mock.Anything)
-	s.httpRoutes.authProvider.(*extauthmocks.Provider).AssertNotCalled(s.T(), "CreateUser", mock.Anything, mock.Anything)
-	s.httpRoutes.emailService.(*emailmocks.Service).AssertNotCalled(s.T(), "SendEmail", mock.Anything, mock.Anything, mock.Anything, mock.Anything)
-}
-
 func doSimpleJSONRequest(
 	router *echo.Echo,
 	method string,
@@ -395,7 +303,8 @@ func doSimpleJSONRequest(
 	userRole api.Role,
 	workspaceName string,
 	request,
-	response interface{}) (*httptest.ResponseRecorder, error) {
+	response interface{},
+) (*httptest.ResponseRecorder, error) {
 	var r io.Reader
 	if request != nil {
 		out, err := json.Marshal(request)
@@ -437,4 +346,118 @@ func mustRead(reader io.ReadCloser) string {
 	}
 
 	return string(all)
+}
+
+func (s *HTTPRouteSuite) TestInvite_NewInvite() {
+	require := s.Require()
+	assert := s.Assert()
+
+	user := User{
+		Email:      "test@examplpe.com",
+		ExternalID: "external-user-test",
+	}
+	err := s.db.CreateUser(&user)
+	require.NoError(err, "create user")
+
+	s.httpRoutes.emailService.(*emailmocks.Service).
+		On("SendEmail", mock.Anything, mock.Anything, mock.Anything).Return(nil)
+
+	req := api.InviteRequest{
+		Email: "test@examplpe.com",
+	}
+
+	ws := "workspace-test"
+
+	var resp api.InviteResponse
+	recorder, err := doSimpleJSONRequest(s.router, http.MethodPost, "/api/v1/invite", uuid.New(), api.AdminRole, ws, req, &resp)
+	require.NoError(err, "invite user")
+	require.Equal(http.StatusOK, recorder.Result().StatusCode, mustRead(recorder.Result().Body))
+
+	inv, err := s.db.GetInvitationByID(resp.InviteID)
+	require.NoError(err, "get invite")
+
+	assert.Equal(ws, inv.WorkspaceName)
+	assert.WithinDuration(time.Now().Add(time.Hour*24*7), inv.ExpiredAt, time.Second)
+
+	s.httpRoutes.authProvider.(*extauthmocks.Provider).AssertNotCalled(s.T(), "FetchUser", mock.Anything, mock.Anything)
+	s.httpRoutes.authProvider.(*extauthmocks.Provider).AssertNotCalled(s.T(), "CreateUser", mock.Anything, mock.Anything)
+	s.httpRoutes.emailService.(*emailmocks.Service).AssertNumberOfCalls(s.T(), "SendEmail", 1)
+}
+
+func (s *HTTPRouteSuite) TestInvite_AcceptInvitationExists() {
+	require := s.Require()
+	assert := s.Assert()
+
+	user := User{
+		Email:      "test@examplpe.com",
+		ExternalID: "external-user-test",
+	}
+	err := s.db.CreateUser(&user)
+	require.NoError(err, "create user")
+
+	inv := Invitation{
+		WorkspaceName: "workspace-test",
+		ExpiredAt:     time.Now().Add(time.Hour),
+	}
+	err = s.db.CreateInvitation(&inv)
+	require.NoError(err, "create invitation")
+
+	recorder, err := doSimpleJSONRequest(s.router, http.MethodGet, "/api/v1/invite/"+inv.ID.String(), user.ID, api.AdminRole, "workspace1", nil, nil)
+	require.NoError(err, "invite user")
+	require.Equal(http.StatusOK, recorder.Result().StatusCode, mustRead(recorder.Result().Body))
+
+	_, err = s.db.GetInvitationByID(inv.ID)
+	require.ErrorIs(err, gorm.ErrRecordNotFound)
+
+	rb, err := s.db.GetRoleBindingForWorkspace(user.ExternalID, inv.WorkspaceName)
+	require.NoError(err, "get role binding")
+
+	assert.Equal(user.ID, rb.UserID)
+	assert.Equal(inv.WorkspaceName, rb.WorkspaceName)
+	assert.Equal(api.ViewerRole, rb.Role)
+
+	s.httpRoutes.authProvider.(*extauthmocks.Provider).AssertNotCalled(s.T(), "FetchUser", mock.Anything, mock.Anything)
+	s.httpRoutes.authProvider.(*extauthmocks.Provider).AssertNotCalled(s.T(), "CreateUser", mock.Anything, mock.Anything)
+	s.httpRoutes.emailService.(*emailmocks.Service).AssertNotCalled(s.T(), "SendEmail", mock.Anything, mock.Anything, mock.Anything)
+}
+
+func (s *HTTPRouteSuite) TestInvite_AcceptInvitationExpired() {
+	require := s.Require()
+
+	user := User{
+		Email:      "test@examplpe.com",
+		ExternalID: "external-user-test",
+	}
+	err := s.db.CreateUser(&user)
+	require.NoError(err, "create user")
+
+	inv := Invitation{
+		WorkspaceName: "workspace-test",
+		ExpiredAt:     time.Now().Add(-time.Hour),
+	}
+	err = s.db.CreateInvitation(&inv)
+	require.NoError(err, "create invitation")
+
+	recorder, err := doSimpleJSONRequest(s.router, http.MethodGet, "/api/v1/invite/"+inv.ID.String(), uuid.New(), api.AdminRole, "workspace1", nil, nil)
+	require.NoError(err, "invite user")
+	require.Equal(http.StatusBadRequest, recorder.Result().StatusCode, mustRead(recorder.Result().Body))
+
+	_, err = s.db.GetRoleBindingForWorkspace(user.ExternalID, inv.WorkspaceName)
+	require.ErrorIs(err, gorm.ErrRecordNotFound)
+
+	s.httpRoutes.authProvider.(*extauthmocks.Provider).AssertNotCalled(s.T(), "FetchUser", mock.Anything, mock.Anything)
+	s.httpRoutes.authProvider.(*extauthmocks.Provider).AssertNotCalled(s.T(), "CreateUser", mock.Anything, mock.Anything)
+	s.httpRoutes.emailService.(*emailmocks.Service).AssertNotCalled(s.T(), "SendEmail", mock.Anything, mock.Anything, mock.Anything)
+}
+
+func (s *HTTPRouteSuite) TestInvite_AcceptInvitationDeleted() {
+	require := s.Require()
+
+	recorder, err := doSimpleJSONRequest(s.router, http.MethodGet, "/api/v1/invite/"+uuid.NewString(), uuid.New(), api.AdminRole, "workspace1", nil, nil)
+	require.NoError(err, "invite user")
+	require.Equal(http.StatusBadRequest, recorder.Result().StatusCode, mustRead(recorder.Result().Body))
+
+	s.httpRoutes.authProvider.(*extauthmocks.Provider).AssertNotCalled(s.T(), "FetchUser", mock.Anything, mock.Anything)
+	s.httpRoutes.authProvider.(*extauthmocks.Provider).AssertNotCalled(s.T(), "CreateUser", mock.Anything, mock.Anything)
+	s.httpRoutes.emailService.(*emailmocks.Service).AssertNotCalled(s.T(), "SendEmail", mock.Anything, mock.Anything, mock.Anything)
 }

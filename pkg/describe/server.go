@@ -55,8 +55,8 @@ func (s *HttpServer) Register(e *echo.Echo) {
 // HandleListSources godoc
 // @Summary      List Sources
 // @Description  Getting all of Keibi sources
-// @Tags     schedule
-// @Produce  json
+// @Tags         schedule
+// @Produce      json
 // @Success      200  {object}  []api.Source
 // @Router       /schedule/api/v1/sources [get]
 func (s HttpServer) HandleListSources(ctx echo.Context) error {
@@ -352,12 +352,12 @@ func (s HttpServer) GetResourceTypesByProvider(ctx echo.Context) error {
 }
 
 // CreateInsight godoc
-// @Summary      Create a new insight
-// @Tags         insights
-// @Produce      json
-// @Param        request  body      api.CreateInsightRequest  true  "Request Body"
-// @Success      200      {object}  uint
-// @Router       /schedule/api/v1/insight [put]
+// @Summary  Create a new insight
+// @Tags     insights
+// @Produce  json
+// @Param    request  body      api.CreateInsightRequest  true  "Request Body"
+// @Success  200      {object}  uint
+// @Router   /schedule/api/v1/insight [put]
 func (h *HttpServer) CreateInsight(ctx echo.Context) error {
 	var req api.CreateInsightRequest
 	if err := bindValidate(ctx, &req); err != nil {
@@ -383,12 +383,12 @@ func (h *HttpServer) CreateInsight(ctx echo.Context) error {
 }
 
 // DeleteInsight godoc
-// @Summary      Delete an insight
-// @Tags         insights
-// @Produce      json
-// @Param        request  body      uint  true  "Request Body"
-// @Success      200
-// @Router       /schedule/api/v1/insight/{id} [delete]
+// @Summary  Delete an insight
+// @Tags     insights
+// @Produce  json
+// @Param    request  body  uint  true  "Request Body"
+// @Success  200
+// @Router   /schedule/api/v1/insight/{id} [delete]
 func (h *HttpServer) DeleteInsight(ctx echo.Context) error {
 	id, err := strconv.Atoi(ctx.Param("id"))
 	if err != nil {

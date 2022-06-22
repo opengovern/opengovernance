@@ -1,13 +1,15 @@
 package auth
 
 import (
-	"context"
 	"errors"
+	"fmt"
 	"net/http"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
 	"gitlab.com/keibiengine/keibi-engine/pkg/auth/api"
+	"gitlab.com/keibiengine/keibi-engine/pkg/auth/emails"
 	"gitlab.com/keibiengine/keibi-engine/pkg/auth/extauth"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/email"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpserver"
@@ -15,11 +17,14 @@ import (
 	"gorm.io/gorm"
 )
 
+const inviteDuration = time.Hour * 24 * 7
+
 type httpRoutes struct {
-	logger       *zap.Logger
-	db           Database
-	authProvider extauth.Provider
-	emailService email.Service
+	logger             *zap.Logger
+	db                 Database
+	authProvider       extauth.Provider
+	emailService       email.Service
+	inviteLinkTemplate string
 }
 
 func (r *httpRoutes) Register(e *echo.Echo) {
@@ -27,8 +32,9 @@ func (r *httpRoutes) Register(e *echo.Echo) {
 
 	v1.PUT("/user/role/binding", httpserver.AuthorizeHandler(r.PutRoleBinding, api.AdminRole))
 	v1.GET("/user/role/bindings", httpserver.AuthorizeHandler(r.GetRoleBindings, api.ViewerRole))
-	v1.POST("/user/invite", httpserver.AuthorizeHandler(r.InviteUser, api.AdminRole))
 	v1.GET("/workspace/role/bindings", httpserver.AuthorizeHandler(r.GetWorkspaceRoleBindings, api.AdminRole))
+	v1.POST("/invite", httpserver.AuthorizeHandler(r.Invite, api.AdminRole))
+	v1.GET("/invite/:invite_id", httpserver.AuthorizeHandler(r.AcceptInvitation, api.ViewerRole))
 }
 
 func bindValidate(ctx echo.Context, i interface{}) error {
@@ -48,9 +54,9 @@ func bindValidate(ctx echo.Context, i interface{}) error {
 // @Description  RoleBinding defines the roles and actions a user can perform. There are currently three roles (ADMIN, EDITOR, VIEWER). User must exist before you can update its RoleBinding. If you want to add a role binding for a user given the email address, call invite first to get a user id. Then call this endpoint.
 // @Tags         auth
 // @Produce      json
-// @Success      200
-// @Param        userId  body  string  true  "userId"
-// @Param        role    body  string  true  "role"
+// @Success      200     {object}  nil
+// @Param        userId  body      string  true  "userId"
+// @Param        role    body      string  true  "role"
 // @Router       /auth/api/v1/role/binding [put]
 func (r httpRoutes) PutRoleBinding(ctx echo.Context) error {
 	var req api.PutRoleBindingRequest
@@ -139,69 +145,114 @@ func (r *httpRoutes) GetWorkspaceRoleBindings(ctx echo.Context) error {
 	return ctx.JSON(http.StatusOK, resp)
 }
 
-// InviteUser godoc
-// @Summary      Invites a user by sending them an email and creating an internal ID for that user.
-// @Description  RoleBinding defines the roles and actions a user can perform. There are currently three roles (ADMIN, EDITOR, VIEWER). The workspace path is based on the DNS such as (workspace1.app.keibi.io)
-// @Tags         auth
-// @Produce      json
-// @Success      200  {object}  api.InviteUserResponse
-// @Router       /auth/api/v1/user/invite [post]
-func (r *httpRoutes) InviteUser(ctx echo.Context) error {
-	var req api.InviteUserRequest
+// Invite godoc
+// @Summary  Invites a user by sending them an email and registering invitation.
+// @Tags     auth
+// @Produce  json
+// @Success  200  {object}  api.InviteResponse
+// @Router   /auth/api/v1/invite [post]
+func (r *httpRoutes) Invite(ctx echo.Context) error {
+	var req api.InviteRequest
 	if err := bindValidate(ctx, &req); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err)
 	}
 
-	usr, err := r.inviteUser(ctx.Request().Context(), req.Email, httpserver.GetWorkspaceName(ctx))
+	workspaceName := httpserver.GetWorkspaceName(ctx)
+
+	inv := Invitation{
+		ExpiredAt:     time.Now().UTC().Add(inviteDuration),
+		WorkspaceName: workspaceName,
+	}
+
+	err := r.db.CreateInvitation(&inv)
 	if err != nil {
-		r.logger.Error("inviting user",
-			zap.String("path", ctx.Path()),
-			zap.String("method", ctx.Request().Method),
-			zap.Error(err))
 		return err
 	}
 
-	return ctx.JSON(http.StatusOK, api.InviteUserResponse{
-		UserID: usr.ID,
+	invLink := fmt.Sprintf(r.inviteLinkTemplate, inv.ID)
+	mBody, err := emails.GetInviteMailBody(invLink, workspaceName)
+	if err != nil {
+		return err
+	}
+
+	err = r.emailService.SendEmail(ctx.Request().Context(), req.Email, mBody)
+	if err != nil {
+		return err
+	}
+
+	return ctx.JSON(http.StatusOK, api.InviteResponse{
+		InviteID: inv.ID,
 	})
 }
 
-func (r *httpRoutes) inviteUser(ctx context.Context, email string, workspace string) (User, error) {
-	usr, err := r.db.GetUserByEmail(email)
-	if err == nil {
-		return usr, nil
+// AcceptInvitation godoc
+// @Summary  Accepts users invitation and creates default (VIEW) role in invited workspace.
+// @Tags     auth
+// @Produce  json
+// @Success  200  {object}  nil
+// @Router   /auth/api/v1/invite/invite_id [get]
+func (r *httpRoutes) AcceptInvitation(ctx echo.Context) error {
+	invIDPrm := ctx.Param("invite_id")
+	if invIDPrm == "" {
+		return echo.NewHTTPError(http.StatusBadRequest, errors.New("empty invitation id"))
 	}
 
-	if !errors.Is(err, gorm.ErrRecordNotFound) {
-		return User{}, err
-	}
-
-	newAzureUser, err := r.authProvider.FetchUser(ctx, email)
+	invID, err := uuid.Parse(invIDPrm)
 	if err != nil {
-		if !errors.Is(err, extauth.ErrUserNotExists) {
-			return User{}, err
-		}
-
-		newAzureUser, err = r.authProvider.CreateUser(ctx, email)
-		if err != nil {
-			return User{}, err
-		}
-
-		// This is awful. If we lose the password, the user can never sign-in and we have to reset the password manually
-		err := r.emailService.SendEmail(ctx, email, newAzureUser.PasswordProfile.Password, workspace)
-		if err != nil {
-			return User{}, err
-		}
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Errorf("bad invitation id: %w", err))
 	}
 
-	usr = User{
-		Email:      email,
-		ExternalID: newAzureUser.ID,
-	}
-	err = r.db.CreateUser(&usr)
+	// check that invitation exists
+	inv, err := r.db.GetInvitationByID(invID)
 	if err != nil {
-		return User{}, err
+		r.logger.Error("invitation not found",
+			zap.String("path", ctx.Path()),
+			zap.String("method", ctx.Request().Method),
+			zap.Error(err))
+
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return echo.NewHTTPError(http.StatusBadRequest, "invitation not found")
+		}
+
+		return err
 	}
 
-	return usr, nil
+	if inv.ExpiredAt.Before(time.Now()) {
+		r.logger.Error("invitation expired",
+			zap.String("path", ctx.Path()),
+			zap.String("method", ctx.Request().Method),
+			zap.String("invitationID", invIDPrm))
+		return echo.NewHTTPError(http.StatusBadRequest, "invitation expired")
+	}
+
+	userID := httpserver.GetUserID(ctx)
+
+	// check that invited user exists
+	usr, err := r.db.GetUserByID(userID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return echo.NewHTTPError(http.StatusBadRequest, "user not found")
+		}
+
+		return err
+	}
+
+	// if binding exists do not change Role
+	err = r.db.CreateBindingIfNotExists(&RoleBinding{
+		UserID:        userID,
+		ExternalID:    usr.ExternalID,
+		WorkspaceName: inv.WorkspaceName,
+		Role:          api.ViewerRole,
+		AssignedAt:    time.Now(),
+	})
+	if err != nil {
+		return err
+	}
+
+	err = r.db.DeleteInvitation(inv.ID)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

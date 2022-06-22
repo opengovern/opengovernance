@@ -142,14 +142,6 @@ definitions:
       updatedAt:
         type: string
     type: object
-  api.ComplianceReportFilters:
-    properties:
-      groupID:
-        description: benchmark id or control id
-        type: string
-      timeRange:
-        $ref: '#/definitions/api.TimeRangeFilter'
-    type: object
   api.ComplianceTrendDataPoint:
     properties:
       compliant:
@@ -158,6 +150,17 @@ definitions:
         type: integer
       totalResources:
         type: integer
+    type: object
+  api.CreateInsightRequest:
+    properties:
+      description:
+        type: string
+      labels:
+        items:
+          type: string
+        type: array
+      query:
+        type: string
     type: object
   api.CreateSPNResponse:
     properties:
@@ -265,21 +268,6 @@ definitions:
           $ref: '#/definitions/api.AzureResource'
         type: array
     type: object
-  api.GetBenchmarkDetailsResponse:
-    properties:
-      categories:
-        items:
-          type: string
-        type: array
-      sections:
-        items:
-          type: string
-        type: array
-      subcategories:
-        items:
-          type: string
-        type: array
-    type: object
   api.GetBenchmarkTag:
     properties:
       count:
@@ -288,21 +276,6 @@ definitions:
         type: string
       value:
         type: string
-    type: object
-  api.GetComplianceReportRequest:
-    properties:
-      filters:
-        $ref: '#/definitions/api.ComplianceReportFilters'
-      page:
-        $ref: '#/definitions/api.PageRequest'
-      reportType:
-        enum:
-        - benchmark
-        - control
-        - result
-        type: string
-    required:
-    - page
     type: object
   api.GetResourceRequest:
     properties:
@@ -344,10 +317,41 @@ definitions:
           $ref: '#/definitions/api.AllResource'
         type: array
     type: object
-  api.InviteUserResponse:
+  api.Insight:
     properties:
-      userId:
+      description:
         type: string
+      id:
+        type: integer
+      labels:
+        items:
+          type: string
+        type: array
+      query:
+        type: string
+    type: object
+  api.InviteResponse:
+    properties:
+      inviteId:
+        type: string
+    type: object
+  api.ListInsightResultsRequest:
+    properties:
+      descriptionFilter:
+        type: string
+      labels:
+        items:
+          type: string
+        type: array
+    type: object
+  api.ListInsightsRequest:
+    properties:
+      descriptionFilter:
+        type: string
+      labels:
+        items:
+          type: string
+        type: array
     type: object
   api.ListQueryRequest:
     properties:
@@ -419,36 +423,6 @@ definitions:
         type: object
       title:
         type: string
-    type: object
-  api.PolicyResult:
-    properties:
-      category:
-        type: string
-      compliantResources:
-        type: integer
-      createdAt:
-        type: integer
-      describedAt:
-        type: integer
-      id:
-        type: string
-      provider:
-        type: string
-      section:
-        type: string
-      severity:
-        type: string
-      status:
-        enum:
-        - passed
-        - failed
-        type: string
-      subcategory:
-        type: string
-      title:
-        type: string
-      totalResources:
-        type: integer
     type: object
   api.Provider:
     properties:
@@ -680,20 +654,25 @@ definitions:
     - subscriptionId
     - tenantId
     type: object
-  api.TimeRangeFilter:
+  api.TopAccountCostResponse:
     properties:
-      from:
-        description: from epoch millisecond
-        type: integer
-      to:
-        description: from epoch millisecond
-        type: integer
+      cost:
+        type: number
+      sourceID:
+        type: string
     type: object
   api.TopAccountResponse:
     properties:
       resourceCount:
         type: integer
       sourceID:
+        type: string
+    type: object
+  api.TopServiceCostResponse:
+    properties:
+      cost:
+        type: number
+      serviceName:
         type: string
     type: object
   api.TopServicesResponse:
@@ -735,97 +714,6 @@ definitions:
         type: string
       userId:
         type: string
-    type: object
-  compliance_report.Dimension:
-    properties:
-      key:
-        type: string
-      value:
-        type: string
-    type: object
-  compliance_report.Report:
-    properties:
-      describedAt:
-        type: integer
-      group:
-        $ref: '#/definitions/compliance_report.ReportGroupObj'
-      provider:
-        type: string
-      reportID:
-        type: integer
-      reportJobID:
-        type: integer
-      result:
-        $ref: '#/definitions/compliance_report.ReportResultObj'
-      sourceID:
-        type: string
-      type:
-        type: string
-    type: object
-  compliance_report.ReportGroupObj:
-    properties:
-      controlIDs:
-        items:
-          type: string
-        type: array
-      description:
-        type: string
-      groupIDs:
-        items:
-          type: string
-        type: array
-      id:
-        description: benchmark id / control id
-        type: string
-      level:
-        type: integer
-      parentGroupIDs:
-        items:
-          type: string
-        type: array
-      summary:
-        $ref: '#/definitions/compliance_report.Summary'
-      tags:
-        additionalProperties:
-          type: string
-        type: object
-      title:
-        type: string
-    type: object
-  compliance_report.ReportResultObj:
-    properties:
-      controlId:
-        type: string
-      parentGroupIDs:
-        items:
-          type: string
-        type: array
-      result:
-        $ref: '#/definitions/compliance_report.Result'
-    type: object
-  compliance_report.Result:
-    properties:
-      dimensions:
-        items:
-          $ref: '#/definitions/compliance_report.Dimension'
-        type: array
-      reason:
-        type: string
-      resource:
-        type: string
-      status:
-        enum:
-        - ok
-        - info
-        - skip
-        - alarm
-        - error
-        type: string
-    type: object
-  compliance_report.Summary:
-    properties:
-      status:
-        $ref: '#/definitions/compliance_report.SummaryStatus'
     type: object
   compliance_report.SummaryStatus:
     properties:
@@ -901,6 +789,29 @@ info:
   title: Keibi Service API
   version: "1.0"
 paths:
+  /auth/api/v1/invite:
+    post:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/api.InviteResponse'
+      summary: Invites a user by sending them an email and registering invitation.
+      tags:
+      - auth
+  /auth/api/v1/invite/invite_id:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+      summary: Accepts users invitation and creates default (VIEW) role in invited
+        workspace.
+      tags:
+      - auth
   /auth/api/v1/role/binding:
     put:
       description: RoleBinding defines the roles and actions a user can perform. There
@@ -925,24 +836,8 @@ paths:
       - application/json
       responses:
         "200":
-          description: ""
-      summary: Update RoleBinding for a user.
-      tags:
-      - auth
-  /auth/api/v1/user/invite:
-    post:
-      description: RoleBinding defines the roles and actions a user can perform. There
-        are currently three roles (ADMIN, EDITOR, VIEWER). The workspace path is based
-        on the DNS such as (workspace1.app.keibi.io)
-      produces:
-      - application/json
-      responses:
-        "200":
           description: OK
-          schema:
-            $ref: '#/definitions/api.InviteUserResponse'
-      summary: Invites a user by sending them an email and creating an internal ID
-        for that user.
+      summary: Update RoleBinding for a user.
       tags:
       - auth
   /auth/api/v1/user/role/bindings:
@@ -1178,26 +1073,6 @@ paths:
       summary: Get all benchmark assigned sources with benchmark id
       tags:
       - benchmarks_assignment
-  /inventory/api/v1/benchmarks/{benchmarkId}:
-    get:
-      consumes:
-      - application/json
-      parameters:
-      - description: BenchmarkID
-        in: path
-        name: benchmarkId
-        required: true
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/api.GetBenchmarkDetailsResponse'
-      summary: Returns details of a given benchmark
-      tags:
-      - benchmarks
   /inventory/api/v1/benchmarks/{benchmarkId}/{createdAt}/accounts:
     get:
       consumes:
@@ -1297,80 +1172,6 @@ paths:
               $ref: '#/definitions/api.ComplianceTrendDataPoint'
             type: array
       summary: Returns trend of a benchmark compliance for specific account
-      tags:
-      - benchmarks
-  /inventory/api/v1/benchmarks/{benchmarkId}/{sourceId}/result:
-    get:
-      consumes:
-      - application/json
-      description: Returns summary of benchmark, category, subcategory or section's
-        result
-      parameters:
-      - description: ID of Benchmark/Category/Subcategory/Section
-        in: query
-        name: benchmarkId
-        type: string
-      - description: SourceID
-        in: query
-        name: sourceId
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/compliance_report.ReportGroupObj'
-      summary: Returns summary of benchmark result
-      tags:
-      - benchmarks
-  /inventory/api/v1/benchmarks/{benchmarkId}/{sourceId}/result/policies:
-    get:
-      consumes:
-      - application/json
-      description: Returns policy results of specific benchmark
-      parameters:
-      - description: ID of Benchmark/Category/Subcategory/Section
-        in: query
-        name: benchmarkId
-        type: string
-      - description: SourceID
-        in: query
-        name: sourceId
-        type: string
-      - description: Category Filter
-        in: query
-        name: category
-        type: string
-      - description: Subcategory Filter
-        in: query
-        name: subcategory
-        type: string
-      - description: Section Filter
-        in: query
-        name: section
-        type: string
-      - description: Severity Filter
-        in: query
-        name: severity
-        type: string
-      - description: Status Filter
-        enum:
-        - passed
-        - failed
-        in: query
-        name: status
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            items:
-              $ref: '#/definitions/api.PolicyResult'
-            type: array
-      summary: Returns policy results of specific benchmark
       tags:
       - benchmarks
   /inventory/api/v1/benchmarks/{benchmarkId}/policies:
@@ -1748,7 +1549,7 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/api.TopAccountResponse'
+              $ref: '#/definitions/api.TopAccountCostResponse'
             type: array
       summary: Returns top n accounts of specified provider by cost
       tags:
@@ -1768,6 +1569,11 @@ paths:
         name: provider
         required: true
         type: string
+      - description: SourceID
+        in: query
+        name: sourceId
+        required: true
+        type: string
       produces:
       - application/json
       responses:
@@ -1775,11 +1581,28 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/api.TopAccountResponse'
+              $ref: '#/definitions/api.TopServiceCostResponse'
             type: array
       summary: Returns top n services of specified provider by cost
       tags:
       - cost
+  /inventory/api/v1/insight/result:
+    get:
+      parameters:
+      - description: Request Body
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/api.ListInsightResultsRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: ""
+      summary: List insight results for specified account
+      tags:
+      - insights
   /inventory/api/v1/locations/{provider}:
     get:
       description: Getting locations by provider
@@ -1907,74 +1730,6 @@ paths:
       summary: Count smart queries
       tags:
       - smart_query
-  /inventory/api/v1/reports/compliance/{source_id}:
-    get:
-      consumes:
-      - application/json
-      description: Returns list of compliance report groups of specified job id (if
-        not specified, last one will be returned)
-      parameters:
-      - description: Source ID
-        in: path
-        name: source_id
-        required: true
-        type: string
-      - description: Report Job ID
-        in: path
-        name: report_id
-        type: string
-      - description: Request Body
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/api.GetComplianceReportRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            items:
-              $ref: '#/definitions/compliance_report.Report'
-            type: array
-      summary: Returns list of compliance report groups
-      tags:
-      - compliance_report
-  /inventory/api/v1/reports/compliance/{source_id}/{report_id}:
-    get:
-      consumes:
-      - application/json
-      description: Returns list of compliance report groups of specified job id (if
-        not specified, last one will be returned)
-      parameters:
-      - description: Source ID
-        in: path
-        name: source_id
-        required: true
-        type: string
-      - description: Report Job ID
-        in: path
-        name: report_id
-        type: string
-      - description: Request Body
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/api.GetComplianceReportRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            items:
-              $ref: '#/definitions/compliance_report.Report'
-            type: array
-      summary: Returns list of compliance report groups
-      tags:
-      - compliance_report
   /inventory/api/v1/resource:
     post:
       description: Getting resource details by id and resource type
@@ -2668,6 +2423,63 @@ paths:
       summary: Get last completed compliance report
       tags:
       - schedule
+  /schedule/api/v1/insight:
+    get:
+      description: Listing insights
+      parameters:
+      - description: Request Body
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/api.ListInsightsRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/api.Insight'
+            type: array
+      summary: List insights
+      tags:
+      - insights
+    put:
+      parameters:
+      - description: Request Body
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/api.CreateInsightRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: integer
+      summary: Create a new insight
+      tags:
+      - insights
+  /schedule/api/v1/insight/{id}:
+    delete:
+      parameters:
+      - description: Request Body
+        in: body
+        name: request
+        required: true
+        schema:
+          type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: ""
+      summary: Delete an insight
+      tags:
+      - insights
   /schedule/api/v1/resource_type/{provider}:
     get:
       description: get resource type by provider

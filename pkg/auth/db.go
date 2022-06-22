@@ -24,6 +24,7 @@ func (db Database) Initialize() error {
 	err := db.orm.AutoMigrate(
 		&User{},
 		&RoleBinding{},
+		&Invitation{},
 	)
 	if err != nil {
 		return err
@@ -96,6 +97,21 @@ func (db Database) CreateOrUpdateRoleBinding(rb *RoleBinding) error {
 	return nil
 }
 
+func (db Database) CreateBindingIfNotExists(rb *RoleBinding) error {
+	tx := db.orm.
+		Model(&RoleBinding{}).
+		Where(RoleBinding{UserID: rb.UserID, WorkspaceName: rb.WorkspaceName}).
+		Clauses(clause.OnConflict{
+			DoNothing: true,
+		}).
+		Create(rb)
+	if tx.Error != nil {
+		return tx.Error
+	}
+
+	return nil
+}
+
 func (db Database) GetUserByEmail(email string) (User, error) {
 	var au User
 	tx := db.orm.
@@ -138,6 +154,41 @@ func (db Database) GetUserByExternalID(extId string) (User, error) {
 func (db Database) CreateUser(user *User) error {
 	tx := db.orm.
 		Create(user)
+	if tx.Error != nil {
+		return tx.Error
+	}
+
+	return nil
+}
+
+func (db Database) CreateInvitation(invitation *Invitation) error {
+	tx := db.orm.
+		Create(invitation)
+	if tx.Error != nil {
+		return tx.Error
+	}
+
+	return nil
+}
+
+func (db Database) GetInvitationByID(invID uuid.UUID) (Invitation, error) {
+	var inv Invitation
+	tx := db.orm.
+		Model(&Invitation{}).
+		Where(Invitation{
+			ID: invID,
+		}).
+		First(&inv)
+	if tx.Error != nil {
+		return Invitation{}, tx.Error
+	}
+
+	return inv, nil
+}
+
+func (db Database) DeleteInvitation(invID uuid.UUID) error {
+	tx := db.orm.
+		Delete(&Invitation{ID: invID})
 	if tx.Error != nil {
 		return tx.Error
 	}
