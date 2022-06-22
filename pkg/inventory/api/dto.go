@@ -387,9 +387,19 @@ type TopAccountResponse struct {
 	ResourceCount int    `json:"resourceCount"`
 }
 
+type TopAccountCostResponse struct {
+	SourceID string `json:"sourceID"`
+	Cost     int64  `json:"cost"`
+}
+
 type TopServicesResponse struct {
 	ServiceName   string `json:"serviceName"`
 	ResourceCount int    `json:"resourceCount"`
+}
+
+type TopServiceCostResponse struct {
+	ServiceName string `json:"serviceName"`
+	Cost        int64  `json:"cost"`
 }
 
 type CategoriesResponse struct {
