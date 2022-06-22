@@ -242,9 +242,9 @@ func (h *HttpHandler) GetBenchmarkResultSummary(ctx echo.Context) error {
 
 // GetBenchmarkResultPolicies godoc
 // @Summary  Returns policies of result of benchmark
-// @Tags         benchmarks
-// @Accept       json
-// @Produce      json
+// @Tags     benchmarks
+// @Accept   json
+// @Produce  json
 // @Param    benchmarkId  path      string  true   "BenchmarkID"
 // @Param    category     query     string  false  "Category Filter"
 // @Param    subcategory  query     string  false  "Subcategory Filter"
@@ -1018,10 +1018,58 @@ func (h *HttpHandler) GetCompliancyTrend(ctx echo.Context) error {
 // @Produce  json
 // @Param    count     query     int     true   "count"
 // @Param    provider  query     string  true   "Provider"
-// @Success  200       {object}  []api.TopAccountResponse
+// @Success  200       {object}  []api.TopAccountCostResponse
 // @Router   /inventory/api/v1/cost/top/accounts [get]
 func (h *HttpHandler) GetTopAccountsByCost(ctx echo.Context) error {
-	return ctx.JSON(http.StatusNotImplemented, nil)
+	provider, _ := source.ParseType(ctx.QueryParam("provider"))
+	count, err := strconv.Atoi(ctx.QueryParam("count"))
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid count")
+	}
+
+	if provider != source.CloudAWS {
+		return ctx.JSON(http.StatusNotImplemented, nil)
+	}
+
+	paginator, err := h.client.NewCostExplorerByAccountMonthlyPaginator(nil, nil)
+	if err != nil {
+		return err
+	}
+
+	accountCostMap := map[string]float64{}
+	c := context.Background()
+	for {
+		page, err := paginator.NextPage(c)
+		if err != nil {
+			return err
+		}
+
+		for _, item := range page {
+			accountId := *item.Description.Dimension1
+			cost, err := strconv.ParseFloat(*item.Description.UnblendedCostAmount, 64)
+			if err != nil {
+				return err
+			}
+
+			if v, ok := accountCostMap[accountId]; ok {
+				cost += v
+			}
+			accountCostMap[accountId] = cost
+		}
+
+		if !paginator.HasNext() {
+			break
+		}
+	}
+	var accountCost []api.TopAccountCostResponse
+	for key, value := range accountCostMap {
+		accountCost = append(accountCost, api.TopAccountCostResponse{
+			SourceID: key,
+			Cost:     value,
+		})
+	}
+
+	return ctx.JSON(http.StatusOK, accountCost[:count])
 }
 
 // GetTopServicesByCost godoc
@@ -1031,10 +1079,70 @@ func (h *HttpHandler) GetTopAccountsByCost(ctx echo.Context) error {
 // @Produce  json
 // @Param    count     query     int     true   "count"
 // @Param    provider  query     string  true  "Provider"
-// @Success  200       {object}  []api.TopAccountResponse
+// @Param    sourceId  query     string  true  "SourceID"
+// @Success  200       {object}  []api.TopServiceCostResponse
 // @Router   /inventory/api/v1/cost/top/services [get]
 func (h *HttpHandler) GetTopServicesByCost(ctx echo.Context) error {
-	return ctx.JSON(http.StatusNotImplemented, nil)
+	provider, _ := source.ParseType(ctx.QueryParam("provider"))
+	count, err := strconv.Atoi(ctx.QueryParam("count"))
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid count")
+	}
+
+	if provider != source.CloudAWS {
+		return ctx.JSON(http.StatusNotImplemented, nil)
+	}
+
+	//TODO-Saleh
+	//var sourceUUID *uuid.UUID
+	//sourceId := ctx.QueryParam("sourceId")
+	//if len(sourceId) > 0 {
+	//	suuid, err := uuid.Parse(sourceId)
+	//	if err != nil {
+	//		return err
+	//	}
+	//	sourceUUID = &suuid
+	//}
+
+	paginator, err := h.client.NewCostExplorerByServiceMonthlyPaginator(nil, nil)
+	if err != nil {
+		return err
+	}
+
+	serviceCostMap := map[string]float64{}
+	c := context.Background()
+	for {
+		page, err := paginator.NextPage(c)
+		if err != nil {
+			return err
+		}
+
+		for _, item := range page {
+			serviceName := *item.Description.Dimension1
+			cost, err := strconv.ParseFloat(*item.Description.UnblendedCostAmount, 64)
+			if err != nil {
+				return err
+			}
+
+			if v, ok := serviceCostMap[serviceName]; ok {
+				cost += v
+			}
+			serviceCostMap[serviceName] = cost
+		}
+
+		if !paginator.HasNext() {
+			break
+		}
+	}
+	var serviceCost []api.TopServiceCostResponse
+	for key, value := range serviceCostMap {
+		serviceCost = append(serviceCost, api.TopServiceCostResponse{
+			ServiceName: key,
+			Cost:        value,
+		})
+	}
+
+	return ctx.JSON(http.StatusOK, serviceCost[:count])
 }
 
 // GetTopAccountsByResourceCount godoc
@@ -1377,9 +1485,9 @@ func (h *HttpHandler) GetServiceDistribution(ctx echo.Context) error {
 
 // GetBenchmarkAccountCompliance godoc
 // @Summary  Returns no of compliant & non-compliant accounts
-// @Tags         benchmarks
-// @Accept       json
-// @Produce      json
+// @Tags     benchmarks
+// @Accept   json
+// @Produce  json
 // @Param    benchmarkId  path      string  true  "BenchmarkID"
 // @Param    createdAt    path      string  true  "CreatedAt"
 // @Success  200          {object}  api.BenchmarkAccountComplianceResponse
@@ -1520,9 +1628,9 @@ func (h *HttpHandler) GetBenchmarks(ctx echo.Context) error {
 // CountBenchmarks godoc
 // @Summary      Returns count of benchmarks
 // @Description  In order to filter benchmarks by tags provide the tag key-value as query param
-// @Tags     benchmarks
-// @Accept   json
-// @Produce  json
+// @Tags         benchmarks
+// @Accept       json
+// @Produce      json
 // @Param        provider  query     string  false  "Provider"  Enums(AWS,Azure)
 // @Param        tags      query     string  false  "Tags in key-value query param"
 // @Success      200       {object}  []api.Benchmark
@@ -1815,12 +1923,12 @@ func (h *HttpHandler) ListQueries(ctx echo.Context) error {
 }
 
 // ListInsightsResults godoc
-// @Summary      List insight results for specified account
-// @Tags         insights
-// @Produce      json
-// @Param        request  body      api.ListInsightResultsRequest  true  "Request Body"
-// @Success      200
-// @Router       /inventory/api/v1/insight/result [get]
+// @Summary  List insight results for specified account
+// @Tags     insights
+// @Produce  json
+// @Param    request  body  api.ListInsightResultsRequest  true  "Request Body"
+// @Success  200
+// @Router   /inventory/api/v1/insight/result [get]
 func (h *HttpHandler) ListInsightsResults(ctx echo.Context) error {
 	var req api.ListInsightResultsRequest
 	if err := bindValidate(ctx, &req); err != nil {
