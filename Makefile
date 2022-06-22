@@ -12,6 +12,7 @@ docker-build:
 	docker build -f  docker/ComplianceReportWorkerDockerfile . -t registry.digitalocean.com/keibi/compliance-report-worker:0.0.1
 	docker build -f  docker/AuthServiceDockerfile . -t registry.digitalocean.com/keibi/auth-service:0.0.1
 	docker build -f  docker/WorkspaceDockerfile . -t registry.digitalocean.com/keibi/workspace-service:0.0.1
+	docker build -f  docker/InsightWorkerDockerfile . -t registry.digitalocean.com/keibi/insight-worker:0.0.1
 
 docker-push:
 	docker push registry.digitalocean.com/keibi/describe-scheduler:0.0.1
@@ -22,6 +23,7 @@ docker-push:
 	docker push registry.digitalocean.com/keibi/compliance-report-worker:0.0.1
 	docker push registry.digitalocean.com/keibi/auth-service:0.0.1
 	docker push registry.digitalocean.com/keibi/workspace-service:0.0.1
+	docker push registry.digitalocean.com/keibi/insight-worker:0.0.1
 
 clean:
 	rm -r ./build

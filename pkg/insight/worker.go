@@ -1,0 +1,185 @@
+package insight
+
+import (
+	"encoding/json"
+	"fmt"
+
+	"gitlab.com/keibiengine/keibi-engine/pkg/steampipe"
+
+	"github.com/prometheus/client_golang/prometheus/push"
+	"gitlab.com/keibiengine/keibi-engine/pkg/internal/queue"
+	"go.uber.org/zap"
+	"gopkg.in/Shopify/sarama.v1"
+)
+
+type Worker struct {
+	id             string
+	jobQueue       queue.Interface
+	jobResultQueue queue.Interface
+	kfkProducer    sarama.SyncProducer
+	kfkTopic       string
+	logger         *zap.Logger
+	steampipeConn  *steampipe.Database
+	pusher         *push.Pusher
+}
+
+func InitializeWorker(
+	id string,
+	rabbitMQUsername string,
+	rabbitMQPassword string,
+	rabbitMQHost string,
+	rabbitMQPort int,
+	insightJobQueue string,
+	insightJobResultQueue string,
+	kafkaBrokers []string,
+	kafkaTopic string,
+	logger *zap.Logger,
+	prometheusPushAddress string,
+	steampipeHost string,
+	steampipePort string,
+	steampipeDb string,
+	steampipeUsername string,
+	steampipePassword string,
+) (w *Worker, err error) {
+	if id == "" {
+		return nil, fmt.Errorf("'id' must be set to a non empty string")
+	} else if kafkaTopic == "" {
+		return nil, fmt.Errorf("'kfkTopic' must be set to a non empty string")
+	}
+
+	w = &Worker{id: id, kfkTopic: kafkaTopic}
+	defer func() {
+		if err != nil && w != nil {
+			w.Stop()
+		}
+	}()
+
+	qCfg := queue.Config{}
+	qCfg.Server.Username = rabbitMQUsername
+	qCfg.Server.Password = rabbitMQPassword
+	qCfg.Server.Host = rabbitMQHost
+	qCfg.Server.Port = rabbitMQPort
+	qCfg.Queue.Name = insightJobQueue
+	qCfg.Queue.Durable = true
+	qCfg.Consumer.ID = w.id
+	insightQueue, err := queue.New(qCfg)
+	if err != nil {
+		return nil, err
+	}
+
+	w.jobQueue = insightQueue
+
+	qCfg = queue.Config{}
+	qCfg.Server.Username = rabbitMQUsername
+	qCfg.Server.Password = rabbitMQPassword
+	qCfg.Server.Host = rabbitMQHost
+	qCfg.Server.Port = rabbitMQPort
+	qCfg.Queue.Name = insightJobResultQueue
+	qCfg.Queue.Durable = true
+	qCfg.Producer.ID = w.id
+	insightResultsQueue, err := queue.New(qCfg)
+	if err != nil {
+		return nil, err
+	}
+
+	w.jobResultQueue = insightResultsQueue
+
+	producer, err := newKafkaProducer(kafkaBrokers)
+	if err != nil {
+		return nil, err
+	}
+
+	w.kfkProducer = producer
+
+	w.logger = logger
+
+	// setup steampipe connection
+	steampipeConn, err := steampipe.NewSteampipeDatabase(steampipe.Option{
+		Host: steampipeHost,
+		Port: steampipePort,
+		User: steampipeUsername,
+		Pass: steampipePassword,
+		Db:   steampipeDb,
+	})
+	w.steampipeConn = steampipeConn
+	if err != nil {
+		return nil, err
+	}
+	fmt.Println("Initialized steampipe database: ", steampipeConn)
+
+	w.pusher = push.New(prometheusPushAddress, "insight-worker")
+	w.pusher.Collector(DoInsightJobsCount).
+		Collector(DoInsightJobsDuration)
+
+	return w, nil
+}
+
+func (w *Worker) Run() error {
+	msgs, err := w.jobQueue.Consume()
+	if err != nil {
+		return err
+	}
+
+	w.logger.Error("Waiting indefinitly for messages. To exit press CTRL+C")
+	for msg := range msgs {
+		var job Job
+		if err := json.Unmarshal(msg.Body, &job); err != nil {
+			w.logger.Error("Failed to unmarshal task", zap.Error(err))
+			err = msg.Nack(false, false)
+			if err != nil {
+				w.logger.Error("Failed nacking message", zap.Error(err))
+			}
+			continue
+		}
+		result := job.Do(w.steampipeConn, w.kfkProducer, w.kfkTopic, w.logger)
+		err := w.jobResultQueue.Publish(result)
+		if err != nil {
+			w.logger.Error("Failed to send results to queue: %s", zap.Error(err))
+		}
+
+		if err := msg.Ack(false); err != nil {
+			w.logger.Error("Failed acking message", zap.Error(err))
+		}
+
+		err = w.pusher.Push()
+		if err != nil {
+			w.logger.Error("Failed to push metrics", zap.Error(err))
+		}
+	}
+
+	return fmt.Errorf("descibe jobs channel is closed")
+}
+
+func (w *Worker) Stop() {
+	w.pusher.Push()
+
+	if w.jobQueue != nil {
+		w.jobQueue.Close() //nolint,gosec
+		w.jobQueue = nil
+	}
+
+	if w.jobResultQueue != nil {
+		w.jobResultQueue.Close() //nolint,gosec
+		w.jobResultQueue = nil
+	}
+
+	if w.kfkProducer != nil {
+		w.kfkProducer.Close() //nolint,gosec
+		w.kfkProducer = nil
+	}
+}
+
+func newKafkaProducer(brokers []string) (sarama.SyncProducer, error) {
+	cfg := sarama.NewConfig()
+	cfg.Producer.Retry.Max = 3
+	cfg.Producer.RequiredAcks = sarama.WaitForAll
+	cfg.Producer.Return.Successes = true
+	cfg.Version = sarama.V2_1_0_0
+
+	producer, err := sarama.NewSyncProducer(brokers, cfg)
+	if err != nil {
+		return nil, err
+	}
+
+	return producer, nil
+}

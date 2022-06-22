@@ -4,6 +4,8 @@ import (
 	"database/sql"
 	"time"
 
+	insightapi "gitlab.com/keibiengine/keibi-engine/pkg/insight/api"
+
 	api2 "gitlab.com/keibiengine/keibi-engine/pkg/compliance-report/api"
 
 	"github.com/google/uuid"
@@ -51,4 +53,24 @@ type DescribeResourceJob struct {
 	ResourceType   string
 	Status         api.DescribeResourceJobStatus
 	FailureMessage string // Should be NULLSTRING
+}
+
+type Insight struct {
+	gorm.Model
+	Description string
+	Query       string
+	Labels      []InsightLabel `gorm:"many2many:insight_label_map;"`
+}
+
+type InsightLabel struct {
+	gorm.Model
+	Value    string
+	Insights []Insight `gorm:"many2many:insight_label_map;"`
+}
+
+type InsightJob struct {
+	gorm.Model
+	InsightID      uint
+	Status         insightapi.InsightJobStatus
+	FailureMessage string
 }
