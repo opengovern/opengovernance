@@ -1034,7 +1034,7 @@ func (h *HttpHandler) GetTopAccountsByCost(ctx echo.Context) error {
 		return err
 	}
 
-	accountCostMap := map[string]int64{}
+	accountCostMap := map[string]float64{}
 	c := context.Background()
 	for {
 		page, err := paginator.NextPage(c)
@@ -1044,7 +1044,7 @@ func (h *HttpHandler) GetTopAccountsByCost(ctx echo.Context) error {
 
 		for _, item := range page {
 			accountId := *item.Description.Dimension1
-			cost, err := strconv.ParseInt(*item.Description.UnblendedCostAmount, 10, 64)
+			cost, err := strconv.ParseFloat(*item.Description.UnblendedCostAmount, 64)
 			if err != nil {
 				return err
 			}
@@ -1107,7 +1107,7 @@ func (h *HttpHandler) GetTopServicesByCost(ctx echo.Context) error {
 		return err
 	}
 
-	serviceCostMap := map[string]int64{}
+	serviceCostMap := map[string]float64{}
 	c := context.Background()
 	for {
 		page, err := paginator.NextPage(c)
@@ -1117,7 +1117,7 @@ func (h *HttpHandler) GetTopServicesByCost(ctx echo.Context) error {
 
 		for _, item := range page {
 			serviceName := *item.Description.Dimension1
-			cost, err := strconv.ParseInt(*item.Description.UnblendedCostAmount, 10, 64)
+			cost, err := strconv.ParseFloat(*item.Description.UnblendedCostAmount, 64)
 			if err != nil {
 				return err
 			}
