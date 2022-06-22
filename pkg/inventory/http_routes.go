@@ -1016,10 +1016,58 @@ func (h *HttpHandler) GetCompliancyTrend(ctx echo.Context) error {
 // @Produce  json
 // @Param    count     query     int     true   "count"
 // @Param    provider  query     string  true   "Provider"
-// @Success  200       {object}  []api.TopAccountResponse
+// @Success  200       {object}  []api.TopAccountCostResponse
 // @Router   /inventory/api/v1/cost/top/accounts [get]
 func (h *HttpHandler) GetTopAccountsByCost(ctx echo.Context) error {
-	return ctx.JSON(http.StatusNotImplemented, nil)
+	provider, _ := source.ParseType(ctx.QueryParam("provider"))
+	count, err := strconv.Atoi(ctx.QueryParam("count"))
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid count")
+	}
+
+	if provider != source.CloudAWS {
+		return ctx.JSON(http.StatusNotImplemented, nil)
+	}
+
+	paginator, err := h.client.NewCostExplorerByAccountMonthlyPaginator(nil, nil)
+	if err != nil {
+		return err
+	}
+
+	accountCostMap := map[string]int64{}
+	c := context.Background()
+	for {
+		page, err := paginator.NextPage(c)
+		if err != nil {
+			return err
+		}
+
+		for _, item := range page {
+			accountId := *item.Description.Dimension1
+			cost, err := strconv.ParseInt(*item.Description.UnblendedCostAmount, 10, 64)
+			if err != nil {
+				return err
+			}
+
+			if v, ok := accountCostMap[accountId]; ok {
+				cost += v
+			}
+			accountCostMap[accountId] = cost
+		}
+
+		if !paginator.HasNext() {
+			break
+		}
+	}
+	var accountCost []api.TopAccountCostResponse
+	for key, value := range accountCostMap {
+		accountCost = append(accountCost, api.TopAccountCostResponse{
+			SourceID: key,
+			Cost:     value,
+		})
+	}
+
+	return ctx.JSON(http.StatusOK, accountCost[:count])
 }
 
 // GetTopServicesByCost godoc
@@ -1029,10 +1077,70 @@ func (h *HttpHandler) GetTopAccountsByCost(ctx echo.Context) error {
 // @Produce  json
 // @Param    count     query     int     true   "count"
 // @Param    provider  query     string  true  "Provider"
-// @Success  200       {object}  []api.TopAccountResponse
+// @Param    sourceId  query     string  true   "SourceID"
+// @Success  200       {object}  []api.TopServiceCostResponse
 // @Router   /inventory/api/v1/cost/top/services [get]
 func (h *HttpHandler) GetTopServicesByCost(ctx echo.Context) error {
-	return ctx.JSON(http.StatusNotImplemented, nil)
+	provider, _ := source.ParseType(ctx.QueryParam("provider"))
+	count, err := strconv.Atoi(ctx.QueryParam("count"))
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid count")
+	}
+
+	if provider != source.CloudAWS {
+		return ctx.JSON(http.StatusNotImplemented, nil)
+	}
+
+	//TODO-Saleh
+	//var sourceUUID *uuid.UUID
+	//sourceId := ctx.QueryParam("sourceId")
+	//if len(sourceId) > 0 {
+	//	suuid, err := uuid.Parse(sourceId)
+	//	if err != nil {
+	//		return err
+	//	}
+	//	sourceUUID = &suuid
+	//}
+
+	paginator, err := h.client.NewCostExplorerByServiceMonthlyPaginator(nil, nil)
+	if err != nil {
+		return err
+	}
+
+	serviceCostMap := map[string]int64{}
+	c := context.Background()
+	for {
+		page, err := paginator.NextPage(c)
+		if err != nil {
+			return err
+		}
+
+		for _, item := range page {
+			serviceName := *item.Description.Dimension1
+			cost, err := strconv.ParseInt(*item.Description.UnblendedCostAmount, 10, 64)
+			if err != nil {
+				return err
+			}
+
+			if v, ok := serviceCostMap[serviceName]; ok {
+				cost += v
+			}
+			serviceCostMap[serviceName] = cost
+		}
+
+		if !paginator.HasNext() {
+			break
+		}
+	}
+	var serviceCost []api.TopServiceCostResponse
+	for key, value := range serviceCostMap {
+		serviceCost = append(serviceCost, api.TopServiceCostResponse{
+			ServiceName: key,
+			Cost:        value,
+		})
+	}
+
+	return ctx.JSON(http.StatusOK, serviceCost[:count])
 }
 
 // GetTopAccountsByResourceCount godoc
