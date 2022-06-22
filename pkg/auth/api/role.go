@@ -48,3 +48,11 @@ type InviteUserRequest struct {
 type InviteUserResponse struct {
 	UserID uuid.UUID `json:"userId"`
 }
+
+type InviteRequest struct {
+	Email string `json:"email" validate:"required,email"`
+}
+
+type InviteResponse struct {
+	InviteID uuid.UUID `json:"inviteId"`
+}

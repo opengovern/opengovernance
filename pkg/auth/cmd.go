@@ -38,7 +38,8 @@ var (
 	azureAuthClientSecret = os.Getenv("AZURE_OAUTH_CLIENT_SECRET")
 	azureIdentityIssuer   = os.Getenv("AZURE_OAUTH_IDENTITY_ISSUER")
 
-	httpServerAddress = os.Getenv("HTTP_ADDRESS")
+	httpServerAddress  = os.Getenv("HTTP_ADDRESS")
+	inviteLinkTemplate = os.Getenv("INVITE_LINK_TEMPLATE")
 
 	keibiHost = os.Getenv("KEIBI_HOST")
 
@@ -102,7 +103,7 @@ func start(ctx context.Context) error {
 		return fmt.Errorf("initialize Azure client: %w", err)
 	}
 
-	m := email.NewSendGripClient(mailApiKey, mailSender, mailSenderName, logger)
+	m := email.NewSendGridClient(mailApiKey, mailSender, mailSenderName, logger)
 
 	creds, err := newServerCredentials(
 		grpcTlsCertPath,
@@ -136,10 +137,11 @@ func start(ctx context.Context) error {
 
 	go func() {
 		routes := httpRoutes{
-			logger:       logger,
-			db:           db,
-			authProvider: extAuth,
-			emailService: m,
+			logger:             logger,
+			db:                 db,
+			authProvider:       extAuth,
+			emailService:       m,
+			inviteLinkTemplate: inviteLinkTemplate,
 		}
 		errors <- fmt.Errorf("http server: %w", httpserver.RegisterAndStart(logger, httpServerAddress, &routes))
 	}()

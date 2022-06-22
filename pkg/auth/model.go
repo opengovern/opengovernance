@@ -24,3 +24,9 @@ type RoleBinding struct {
 	Role          api.Role
 	AssignedAt    time.Time
 }
+
+type Invitation struct {
+	ID            uuid.UUID `gorm:"primaryKey;type:uuid;default:uuid_generate_v4()"`
+	WorkspaceName string    `gorm:"not null"`
+	ExpiredAt     time.Time `gorm:"not null"`
+}

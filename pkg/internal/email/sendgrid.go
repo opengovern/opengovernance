@@ -2,7 +2,6 @@ package email
 
 import (
 	"context"
-	"fmt"
 
 	sendgridgo "github.com/sendgrid/sendgrid-go"
 	"github.com/sendgrid/sendgrid-go/helpers/mail"
@@ -11,7 +10,7 @@ import (
 
 //go:generate mockery --name Service
 type Service interface {
-	SendEmail(ctx context.Context, email, password, workspace string) error
+	SendEmail(ctx context.Context, email, htmlBody string) error
 }
 
 type sendGridClient struct {
@@ -21,7 +20,7 @@ type sendGridClient struct {
 	logger     *zap.Logger
 }
 
-func NewSendGripClient(apiKey, sender, senderName string, logger *zap.Logger) Service {
+func NewSendGridClient(apiKey, sender, senderName string, logger *zap.Logger) Service {
 	return sendGridClient{
 		client:     sendgridgo.NewSendClient(apiKey),
 		sender:     sender,
@@ -30,24 +29,12 @@ func NewSendGripClient(apiKey, sender, senderName string, logger *zap.Logger) Se
 	}
 }
 
-func (c sendGridClient) SendEmail(ctx context.Context, email, password, workspace string) error {
-	var msg string
-
-	if password != "" {
-		msg = fmt.Sprintf(`You have been added to a "Service".
-			A one-time password has been generated for you to enter the system.
-			Use it, after which you will be prompted to come up with a new password.
-			Your first login password :%s`, password)
-	} else {
-		msg = fmt.Sprintf(`You have been invited to a new workspace : %s .
-			To log in, use the login and password of an existing account in the service.`, workspace)
-	}
-
+func (c sendGridClient) SendEmail(ctx context.Context, email, htmlBody string) error {
 	from := mail.NewEmail(c.senderName, c.sender)
 	subject := "Invite to a Service"
 	to := mail.NewEmail(email, email)
 
-	message := mail.NewSingleEmail(from, subject, to, msg, "")
+	message := mail.NewSingleEmail(from, subject, to, "", htmlBody)
 	resp, err := c.client.Send(message)
 	if err != nil {
 		c.logger.Error("send email error",

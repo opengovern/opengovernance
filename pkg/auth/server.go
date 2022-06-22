@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"sort"
 	"strings"
 
 	"github.com/coreos/go-oidc/v3/oidc"
@@ -80,8 +81,22 @@ func (s Server) Check(ctx context.Context, req *envoyauth.CheckRequest) (*envoya
 			Email:      azureADUser.Mail,
 			ExternalID: azureADUser.ID,
 		}
+
+		if internalUser.Email == "" {
+			if len(user.Emails) == 0 {
+				s.logger.Warn("denied access due to failure in retrieving auth user email",
+					zap.String("reqId", httpRequest.Id),
+					zap.String("path", httpRequest.Path),
+					zap.String("method", httpRequest.Method),
+					zap.Error(err))
+				return unAuth, nil
+			}
+
+			sort.Strings(user.Emails)
+			internalUser.Email = user.Emails[0]
+		}
 		if err := s.db.CreateUser(&internalUser); err != nil {
-			s.logger.Warn("denied access due to failure in retrieving auth user host",
+			s.logger.Warn("denied access due to failure in creating the user",
 				zap.String("reqId", httpRequest.Id),
 				zap.String("path", httpRequest.Path),
 				zap.String("method", httpRequest.Method),
