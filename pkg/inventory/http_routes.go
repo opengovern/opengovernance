@@ -15,6 +15,8 @@ import (
 	"strings"
 	"time"
 
+	"gitlab.com/keibiengine/keibi-engine/pkg/insight/kafka"
+
 	"gitlab.com/keibiengine/keibi-engine/pkg/source"
 	"gorm.io/gorm"
 
@@ -67,14 +69,7 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	v1.GET("/query/count", h.CountQueries)
 	v1.POST("/query/:queryId", h.RunQuery)
 
-	//TODO- Deprecated
-	/*
-		v1.GET("/reports/compliance/:sourceId", h.GetComplianceReports)
-		v1.GET("/reports/compliance/:sourceId/:reportId", h.GetComplianceReports)
-		v1.GET("/benchmarks/:benchmarkId", h.GetBenchmarkDetails)
-		v1.GET("/benchmarks/:benchmarkId/:sourceId/result", h.GetBenchmarkResult)
-		v1.GET("/benchmarks/:benchmarkId/:sourceId/result/policies", h.GetResultPolicies)
-	*/
+	v1.GET("/insight/results", h.ListInsightsResults)
 
 	// benchmark details
 	v1.GET("/benchmarks", h.GetBenchmarks)
@@ -1593,46 +1588,6 @@ func (h *HttpHandler) GetBenchmarkTags(ctx echo.Context) error {
 	return ctx.JSON(http.StatusOK, response)
 }
 
-// GetBenchmarkDetails godoc
-// @Summary  Returns details of a given benchmark
-// @Tags     benchmarks
-// @Accept   json
-// @Produce  json
-// @Param    benchmarkId  path      int  true  "BenchmarkID"
-// @Success  200          {object}  api.GetBenchmarkDetailsResponse
-// @Router   /inventory/api/v1/benchmarks/{benchmarkId} [get]
-func (h *HttpHandler) GetBenchmarkDetails(ctx echo.Context) error {
-	benchmarkId := ctx.Param("benchmarkId")
-
-	benchmark, err := h.db.GetBenchmark(benchmarkId)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusNotFound, "benchmark not found")
-	}
-
-	resp := api.GetBenchmarkDetailsResponse{}
-
-	categories := make(map[string]string)
-	subcategories := make(map[string]string)
-	sections := make(map[string]string)
-	for _, policy := range benchmark.Policies {
-		categories[policy.Category] = ""
-		subcategories[policy.SubCategory] = ""
-		sections[policy.Section] = ""
-	}
-
-	for k := range categories {
-		resp.Categories = append(resp.Categories, k)
-	}
-	for k := range subcategories {
-		resp.Subcategories = append(resp.Subcategories, k)
-	}
-	for k := range sections {
-		resp.Sections = append(resp.Sections, k)
-	}
-
-	return ctx.JSON(http.StatusOK, resp)
-}
-
 // GetPolicies godoc
 // @Summary  Returns list of policies of a given benchmark
 // @Tags         benchmarks
@@ -1687,196 +1642,6 @@ func (h *HttpHandler) GetPolicies(ctx echo.Context) error {
 			QueryToRun:            policy.QueryToRun,
 			Tags:                  nil,
 		})
-	}
-
-	return ctx.JSON(http.StatusOK, resp)
-}
-
-// GetBenchmarkResult godoc
-// @Summary      Returns summary of benchmark result
-// @Description  Returns summary of benchmark, category, subcategory or section's result
-// @Tags     benchmarks
-// @Accept   json
-// @Produce  json
-// @Param        benchmarkId  query     string  false  "ID of Benchmark/Category/Subcategory/Section"
-// @Param        sourceId     query     string  false  "SourceID"
-// @Success      200          {object}  compliance_report.ReportGroupObj
-// @Router       /inventory/api/v1/benchmarks/{benchmarkId}/{sourceId}/result [get]
-func (h *HttpHandler) GetBenchmarkResult(ctx echo.Context) error {
-	benchmarkID := ctx.Param("benchmarkId")
-
-	sourceUUID, err := uuid.Parse(ctx.Param("sourceId"))
-	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, "invalid source uuid")
-	}
-
-	jobs, err := h.schedulerClient.ListComplianceReportJobs(httpclient.FromEchoContext(ctx), sourceUUID.String(), nil)
-	if err != nil {
-		return err
-	}
-	var jobIDs []int
-	for _, report := range jobs {
-		jobIDs = append(jobIDs, int(report.ID))
-	}
-
-	// Since benchmark ID must be unique the result must be one record.
-	// Keeping size to 2 and returning error on length != 1 if there's a mistake
-	query := compliance_report.QueryReports(sourceUUID, jobIDs,
-		[]compliance_report.ReportType{compliance_report.ReportTypeBenchmark},
-		&benchmarkID, nil, 2, nil)
-	b, err := json.Marshal(query)
-	if err != nil {
-		return err
-	}
-
-	var response compliance_report.ReportQueryResponse
-	err = h.client.Search(context.Background(), compliance_report.ComplianceReportIndex,
-		string(b), &response)
-	if err != nil {
-		return err
-	}
-
-	if len(response.Hits.Hits) != 1 {
-		return echo.NewHTTPError(http.StatusNotFound, "benchmark not found")
-	}
-
-	if response.Hits.Hits[0].Source.Group == nil {
-		return errors.New("benchmark doesnt have group")
-	}
-
-	return ctx.JSON(http.StatusOK, *response.Hits.Hits[0].Source.Group)
-}
-
-// GetResultPolicies godoc
-// @Summary      Returns policy results of specific benchmark
-// @Description  Returns policy results of specific benchmark
-// @Tags     benchmarks
-// @Accept   json
-// @Produce  json
-// @Param        benchmarkId  query     string  false  "ID of Benchmark/Category/Subcategory/Section"
-// @Param        sourceId     query     string  false  "SourceID"
-// @Param        category     query     string  false  "Category Filter"
-// @Param        subcategory  query     string  false  "Subcategory Filter"
-// @Param        section      query     string  false  "Section Filter"
-// @Param        severity     query     string  false  "Severity Filter"
-// @Param        status       query     string  false  "Status Filter"  Enums(passed,failed)
-// @Success      200          {object}  []api.PolicyResult
-// @Router       /inventory/api/v1/benchmarks/{benchmarkId}/{sourceId}/result/policies [get]
-func (h *HttpHandler) GetResultPolicies(ctx echo.Context) error {
-	benchmarkID := ctx.Param("benchmarkId")
-
-	sourceUUID, err := uuid.Parse(ctx.Param("sourceId"))
-	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, "invalid source uuid")
-	}
-
-	var status, severity, category, subcategory, section *string
-	if len(ctx.QueryParam("status")) > 0 {
-		temp := ctx.QueryParam("status")
-		status = &temp
-	}
-	if len(ctx.QueryParam("severity")) > 0 {
-		temp := ctx.QueryParam("severity")
-		severity = &temp
-	}
-	if len(ctx.QueryParam("category")) > 0 {
-		temp := ctx.QueryParam("category")
-		category = &temp
-	}
-	if len(ctx.QueryParam("subcategory")) > 0 {
-		temp := ctx.QueryParam("subcategory")
-		subcategory = &temp
-	}
-	if len(ctx.QueryParam("section")) > 0 {
-		temp := ctx.QueryParam("section")
-		section = &temp
-	}
-
-	jobs, err := h.schedulerClient.ListComplianceReportJobs(httpclient.FromEchoContext(ctx), sourceUUID.String(), nil)
-	if err != nil {
-		return err
-	}
-	var jobIDs []int
-	for _, report := range jobs {
-		jobIDs = append(jobIDs, int(report.ID))
-	}
-
-	policies, err := h.db.GetPoliciesWithFilters(benchmarkID, category, subcategory,
-		section, severity)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusNotFound, "benchmark not found")
-	}
-
-	var resp []*api.PolicyResult
-	for _, policy := range policies {
-		resp = append(resp, &api.PolicyResult{
-			ID:          policy.ID,
-			Title:       policy.Title,
-			Category:    policy.Category,
-			Subcategory: policy.SubCategory,
-			Section:     policy.Section,
-			Severity:    policy.Severity,
-			Provider:    policy.Provider,
-			Status:      api.PolicyResultStatusPassed,
-			CreatedAt:   policy.CreatedAt.UnixMilli(),
-		})
-	}
-
-	var searchAfter []interface{}
-	for {
-		query := compliance_report.QueryReports(sourceUUID, jobIDs,
-			[]compliance_report.ReportType{compliance_report.ReportTypeResult},
-			nil, &benchmarkID, EsFetchPageSize, searchAfter)
-		b, err := json.Marshal(query)
-		if err != nil {
-			return err
-		}
-
-		var response compliance_report.ReportQueryResponse
-		err = h.client.Search(context.Background(), compliance_report.ComplianceReportIndex,
-			string(b), &response)
-		if err != nil {
-			return err
-		}
-
-		if len(response.Hits.Hits) == 0 {
-			break
-		}
-
-		for _, hit := range response.Hits.Hits {
-			if hit.Source.Result != nil {
-				res := *hit.Source.Result
-				for _, r := range resp {
-					if r.ID == res.ControlId {
-						r.TotalResources++
-						r.DescribedAt = hit.Source.DescribedAt
-
-						switch res.Result.Status {
-						case compliance_report.ResultStatusOK:
-
-							r.CompliantResources++
-						case compliance_report.ResultStatusAlarm,
-							compliance_report.ResultStatusError,
-							compliance_report.ResultStatusSkip,
-							compliance_report.ResultStatusInfo:
-
-							r.Status = api.PolicyResultStatusFailed
-						}
-					}
-				}
-			}
-			searchAfter = hit.Sort
-		}
-	}
-
-	if status != nil {
-		var temp []*api.PolicyResult
-		for _, res := range resp {
-			if *status == string(res.Status) {
-				temp = append(temp, res)
-			}
-		}
-		resp = temp
 	}
 
 	return ctx.JSON(http.StatusOK, resp)
@@ -2045,6 +1810,42 @@ func (h *HttpHandler) ListQueries(ctx echo.Context) error {
 		})
 	}
 	return ctx.JSON(200, result)
+}
+
+// ListInsightsResults godoc
+// @Summary      List insight results for specified account
+// @Tags         insights
+// @Produce      json
+// @Param        request  body      api.ListInsightResultsRequest  true  "Request Body"
+// @Success      200
+// @Router       /inventory/api/v1/insight/result [get]
+func (h *HttpHandler) ListInsightsResults(ctx echo.Context) error {
+	var req api.ListInsightResultsRequest
+	if err := bindValidate(ctx, &req); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	query, err := es.FindInsightResults(req.DescriptionFilter, req.Labels)
+	if err != nil {
+		return err
+	}
+
+	var response es.InsightResultQueryResponse
+	err = h.client.Search(context.Background(), kafka.InsightsIndex,
+		query, &response)
+	if err != nil {
+		return err
+	}
+
+	resp := api.ListInsightResultsResponse{}
+	for _, item := range response.Hits.Hits {
+		resp.Results = append(resp.Results, api.InsightResult{
+			Query:      item.Source.Query,
+			ExecutedAt: item.Source.ExecutedAt,
+			Result:     item.Source.Result,
+		})
+	}
+	return ctx.JSON(200, resp)
 }
 
 // CountQueries godoc
@@ -2345,7 +2146,7 @@ func (h *HttpHandler) RunSmartQuery(query string,
 		return nil, errors.New("multiple sort items not supported")
 	}
 
-	res, err := h.steampipeConn.Query(query, lastIdx, req.Page.Size, req.Sorts[0].Field, req.Sorts[0].Direction)
+	res, err := h.steampipeConn.Query(query, lastIdx, req.Page.Size, req.Sorts[0].Field, steampipe.DirectionType(req.Sorts[0].Direction))
 	if err != nil {
 		return nil, err
 	}
@@ -2357,8 +2158,8 @@ func (h *HttpHandler) RunSmartQuery(query string,
 
 	resp := api.RunQueryResponse{
 		Page:    newPage.ToResponse(0),
-		Headers: res.headers,
-		Result:  res.data,
+		Headers: res.Headers,
+		Result:  res.Data,
 	}
 	return &resp, nil
 }
@@ -2508,86 +2309,6 @@ func (h *HttpHandler) GetResourcesCSV(ctx echo.Context, provider *api.SourceType
 	}
 	ctx.Response().Flush()
 	return nil
-}
-
-// GetComplianceReports godoc
-// @Summary      Returns list of compliance report groups
-// @Description  Returns list of compliance report groups of specified job id (if not specified, last one will be returned)
-// @Tags         compliance_report
-// @Accept       json
-// @Produce      json
-// @Param        source_id  path      string                          true   "Source ID"
-// @Param        report_id  path      string                          false  "Report Job ID"
-// @Param        request    body      api.GetComplianceReportRequest  true   "Request Body"
-// @Success      200        {object}  []compliance_report.Report
-// @Router       /inventory/api/v1/reports/compliance/{source_id} [get]
-// @Router       /inventory/api/v1/reports/compliance/{source_id}/{report_id} [get]
-func (h *HttpHandler) GetComplianceReports(ctx echo.Context) error {
-	sourceUUID, err := uuid.Parse(ctx.Param("sourceId"))
-	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, "invalid source uuid")
-	}
-
-	var req api.GetComplianceReportRequest
-	if err := bindValidate(ctx, &req); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
-	}
-
-	lastIdx, err := pagination.MarkerToIdx(req.Page.NextMarker)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, "invalid page")
-	}
-
-	nextPage, err := req.Page.NextPage()
-	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, "invalid page")
-	}
-
-	var jobIDs []int
-	jobIDStr := ctx.Param("reportId")
-	if jobIDStr != "" {
-		jobID, err := strconv.Atoi(jobIDStr)
-		if err != nil {
-			ctx.Logger().Errorf("parsing jobid: %v", err)
-			return echo.NewHTTPError(http.StatusBadRequest, "invalid job id")
-		}
-		jobIDs = append(jobIDs, jobID)
-	} else {
-		reports, err := h.schedulerClient.ListComplianceReportJobs(httpclient.FromEchoContext(ctx), sourceUUID.String(), req.Filters.TimeRange)
-		if err != nil {
-			return err
-		}
-		for _, report := range reports {
-			jobIDs = append(jobIDs, int(report.ID))
-		}
-	}
-
-	query := compliance_report.QueryReportsFrom(sourceUUID, jobIDs,
-		[]compliance_report.ReportType{req.ReportType},
-		req.Filters.GroupID, nil, req.Page.Size, lastIdx)
-	b, err := json.Marshal(query)
-	if err != nil {
-		return err
-	}
-
-	var response compliance_report.ReportQueryResponse
-	err = h.client.Search(context.Background(), compliance_report.ComplianceReportIndex,
-		string(b), &response)
-	if err != nil {
-		return err
-	}
-
-	var reports []compliance_report.Report
-	for _, hits := range response.Hits.Hits {
-		reports = append(reports, hits.Source)
-	}
-
-	resp := api.GetComplianceReportResponse{
-		Reports: reports,
-		Page:    nextPage.ToResponse(0),
-	}
-
-	return ctx.JSON(http.StatusOK, resp)
 }
 
 // CreateBenchmarkAssignment godoc

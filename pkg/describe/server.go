@@ -1,6 +1,7 @@
 package describe
 
 import (
+	"fmt"
 	"net/http"
 	"strconv"
 	"time"
@@ -45,6 +46,10 @@ func (s *HttpServer) Register(e *echo.Echo) {
 	v1.GET("/resource_type/:provider", s.GetResourceTypesByProvider)
 
 	v1.GET("/compliance/report/last/completed", s.HandleGetLastCompletedComplianceReport)
+
+	v1.GET("/insight", s.ListInsights)
+	v1.PUT("/insight", s.CreateInsight)
+	v1.DELETE("/insight/:id", s.DeleteInsight)
 }
 
 // HandleListSources godoc
@@ -344,4 +349,108 @@ func (s HttpServer) GetResourceTypesByProvider(ctx echo.Context) error {
 	}
 
 	return ctx.JSON(http.StatusOK, resourceTypes)
+}
+
+// CreateInsight godoc
+// @Summary      Create a new insight
+// @Tags         insights
+// @Produce      json
+// @Param        request  body      api.CreateInsightRequest  true  "Request Body"
+// @Success      200      {object}  uint
+// @Router       /schedule/api/v1/insight [put]
+func (h *HttpServer) CreateInsight(ctx echo.Context) error {
+	var req api.CreateInsightRequest
+	if err := bindValidate(ctx, &req); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	var labels []InsightLabel
+	for _, value := range req.Labels {
+		labels = append(labels, InsightLabel{
+			Value: value,
+		})
+	}
+	ins := Insight{
+		Description: req.Description,
+		Query:       req.Query,
+		Labels:      labels,
+	}
+	err := h.DB.AddInsight(&ins)
+	if err != nil {
+		return err
+	}
+	return ctx.JSON(200, ins.ID)
+}
+
+// DeleteInsight godoc
+// @Summary      Delete an insight
+// @Tags         insights
+// @Produce      json
+// @Param        request  body      uint  true  "Request Body"
+// @Success      200
+// @Router       /schedule/api/v1/insight/{id} [delete]
+func (h *HttpServer) DeleteInsight(ctx echo.Context) error {
+	id, err := strconv.Atoi(ctx.Param("id"))
+	if err != nil {
+		fmt.Println(err.Error())
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid id")
+	}
+
+	err = h.DB.DeleteInsight(uint(id))
+	if err != nil {
+		return err
+	}
+	return ctx.NoContent(200)
+}
+
+// ListInsights godoc
+// @Summary      List insights
+// @Description  Listing insights
+// @Tags         insights
+// @Produce      json
+// @Param        request  body      api.ListInsightsRequest  true  "Request Body"
+// @Success      200      {object}  []api.Insight
+// @Router       /schedule/api/v1/insight [get]
+func (h *HttpServer) ListInsights(ctx echo.Context) error {
+	var req api.ListInsightsRequest
+	if err := bindValidate(ctx, &req); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	var search *string
+	if len(req.DescriptionFilter) > 0 {
+		search = &req.DescriptionFilter
+	}
+
+	queries, err := h.DB.ListInsightsWithFilters(search, req.Labels)
+	if err != nil {
+		return err
+	}
+
+	var result []api.Insight
+	for _, item := range queries {
+		var labels []string
+		for _, i := range item.Labels {
+			labels = append(labels, i.Value)
+		}
+		result = append(result, api.Insight{
+			ID:          item.Model.ID,
+			Description: item.Description,
+			Query:       item.Query,
+			Labels:      labels,
+		})
+	}
+	return ctx.JSON(200, result)
+}
+
+func bindValidate(ctx echo.Context, i interface{}) error {
+	if err := ctx.Bind(i); err != nil {
+		return err
+	}
+
+	if err := ctx.Validate(i); err != nil {
+		return err
+	}
+
+	return nil
 }

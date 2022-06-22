@@ -7,6 +7,9 @@ import (
 	"testing"
 	"time"
 
+	"gitlab.com/keibiengine/keibi-engine/pkg/insight"
+	insightapi "gitlab.com/keibiengine/keibi-engine/pkg/insight/api"
+
 	api2 "gitlab.com/keibiengine/keibi-engine/pkg/compliance-report/api"
 
 	"github.com/cenkalti/backoff/v3"
@@ -67,6 +70,8 @@ func (s *SchedulerTestSuite) BeforeTest(suiteName, testName string) {
 		complianceReportJobQueue:        &mocksqueue.Interface{},
 		complianceReportJobResultQueue:  &mocksqueue.Interface{},
 		complianceReportCleanupJobQueue: &mocksqueue.Interface{},
+		insightJobQueue:                 &mocksqueue.Interface{},
+		insightJobResultQueue:           &mocksqueue.Interface{},
 		logger:                          logger,
 		httpServer:                      NewHTTPServer("localhost:2345", db),
 		deletedSources:                  make(chan string, ConcurrentDeletedSources),
@@ -821,6 +826,70 @@ func (s *SchedulerTestSuite) TestRunComplianceReport() {
 		}
 	}, backoff.WithMaxRetries(backoff.NewConstantBackOff(time.Second), 30))
 	s.Require().NoError(err)
+}
+
+func (s *SchedulerTestSuite) TestRunInsightJob() {
+	s.Scheduler.insightJobQueue.(*mocksqueue.Interface).On("Len", mock.Anything).Return(0, nil)
+	s.Scheduler.insightJobQueue.(*mocksqueue.Interface).On("Name", mock.Anything).Return("temp")
+	s.Scheduler.insightJobQueue.(*mocksqueue.Interface).On("Publish", mock.Anything).Return(error(nil))
+
+	ins := Insight{
+		Description: "this is a test insight",
+		Query:       "select count(*) from aws_ec2_instance",
+		Labels: []InsightLabel{
+			{
+				Value: "AWS",
+			},
+			{
+				Value: "EC2",
+			},
+		},
+	}
+
+	err := s.Scheduler.db.AddInsight(&ins)
+	s.Require().NoError(err)
+
+	go s.Scheduler.RunInsightJobScheduler()
+
+	err = backoff.Retry(func() error {
+		jobs, err := s.Scheduler.db.ListInsightJobs()
+		if err != nil {
+			return err
+		}
+
+		if jobs == nil || len(jobs) < 1 {
+			return errors.New("job not found")
+		}
+
+		for _, job := range jobs {
+			if job.InsightID == ins.ID {
+				if job.Status != insightapi.InsightJobInProgress {
+					return errors.New("job not in progress")
+				}
+			}
+		}
+
+		insJob, err := s.Scheduler.db.FetchLastInsightJob()
+		if err != nil {
+			return err
+		}
+		s.Require().True(insJob.CreatedAt.Add(5 * time.Minute).After(time.Now()))
+
+		return nil
+	}, backoff.WithMaxRetries(backoff.NewConstantBackOff(time.Second), 30))
+	s.Require().NoError(err)
+
+	isOK := false
+	for _, call := range s.Scheduler.insightJobQueue.(*mocksqueue.Interface).Calls {
+		if call.Method == "Publish" {
+			if v, ok := call.Arguments.Get(0).(insight.Job); ok {
+				if v.QueryID == ins.ID {
+					isOK = true
+				}
+			}
+		}
+	}
+	s.Require().True(isOK)
 }
 
 func TestScheduler(t *testing.T) {

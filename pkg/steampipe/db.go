@@ -1,4 +1,4 @@
-package inventory
+package steampipe
 
 import (
 	"context"
@@ -7,10 +7,16 @@ import (
 	"regexp"
 
 	"github.com/jackc/pgx/v4/pgxpool"
-	"gitlab.com/keibiengine/keibi-engine/pkg/inventory/api"
 )
 
-type SteampipeOption struct {
+type DirectionType string
+
+const (
+	DirectionAscending  DirectionType = "asc"
+	DirectionDescending DirectionType = "desc"
+)
+
+type Option struct {
 	Host string
 	Port string
 	User string
@@ -18,16 +24,16 @@ type SteampipeOption struct {
 	Db   string
 }
 
-type SteampipeDatabase struct {
+type Database struct {
 	conn *pgxpool.Pool
 }
 
-type SteampipeResult struct {
-	headers []string
-	data    [][]interface{}
+type Result struct {
+	Headers []string
+	Data    [][]interface{}
 }
 
-func NewSteampipeDatabase(option SteampipeOption) (*SteampipeDatabase, error) {
+func NewSteampipeDatabase(option Option) (*Database, error) {
 	var err error
 	connString := fmt.Sprintf(`host=%s port=%s user=%s password=%s dbname=%s sslmode=disable TimeZone=GMT`,
 		option.Host,
@@ -45,11 +51,11 @@ func NewSteampipeDatabase(option SteampipeOption) (*SteampipeDatabase, error) {
 		return nil, err
 	}
 
-	return &SteampipeDatabase{conn: conn}, nil
+	return &Database{conn: conn}, nil
 }
 
-func (s *SteampipeDatabase) Query(query string, from, size int, orderBy string,
-	orderDir api.DirectionType) (*SteampipeResult, error) {
+func (s *Database) Query(query string, from, size int, orderBy string,
+	orderDir DirectionType) (*Result, error) {
 
 	// parameterize order by is not supported by steampipe.
 	// in order to prevent SQL Injection, we ensure that orderby field is only consists of
@@ -63,9 +69,9 @@ func (s *SteampipeDatabase) Query(query string, from, size int, orderBy string,
 
 	orderStr := ""
 	if orderBy != "" {
-		if orderDir == api.DirectionAscending {
+		if orderDir == DirectionAscending {
 			orderStr = " order by " + orderBy + " asc"
-		} else if orderDir == api.DirectionDescending {
+		} else if orderDir == DirectionDescending {
 			orderStr = " order by " + orderBy + " desc"
 		} else {
 			return nil, errors.New("invalid order direction:" + string(orderDir))
@@ -95,8 +101,8 @@ func (s *SteampipeDatabase) Query(query string, from, size int, orderBy string,
 		result = append(result, v)
 	}
 
-	return &SteampipeResult{
-		headers: headers,
-		data:    result,
+	return &Result{
+		Headers: headers,
+		Data:    result,
 	}, nil
 }

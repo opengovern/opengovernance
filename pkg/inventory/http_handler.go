@@ -5,6 +5,8 @@ import (
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/describe/client"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/postgres"
+	"gitlab.com/keibiengine/keibi-engine/pkg/steampipe"
+
 	"gitlab.com/keibiengine/keibi-engine/pkg/keibi-es-sdk"
 	"go.uber.org/zap"
 )
@@ -12,7 +14,7 @@ import (
 type HttpHandler struct {
 	client          keibi.Client
 	db              Database
-	steampipeConn   *SteampipeDatabase
+	steampipeConn   *steampipe.Database
 	schedulerClient client.SchedulerServiceClient
 }
 
@@ -61,7 +63,7 @@ func InitializeHttpHandler(
 	fmt.Println("Initialized postgres database: ", postgresDb)
 
 	// setup steampipe connection
-	steampipeConn, err := NewSteampipeDatabase(SteampipeOption{
+	steampipeConn, err := steampipe.NewSteampipeDatabase(steampipe.Option{
 		Host: steampipeHost,
 		Port: steampipePort,
 		User: steampipeUsername,
