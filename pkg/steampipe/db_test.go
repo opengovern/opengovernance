@@ -1,4 +1,4 @@
-package inventory
+package steampipe
 
 import (
 	"context"
@@ -41,7 +41,7 @@ func TestNewStampipeDatabase(t *testing.T) {
 		require.NoError(t, err, "purge resource %s", resource)
 	})
 
-	option := SteampipeOption{
+	option := Option{
 		Host: idocker.GetDockerHost(),
 		Port: resource.GetPort("5432/tcp"),
 		User: user,
@@ -49,7 +49,7 @@ func TestNewStampipeDatabase(t *testing.T) {
 		Db:   name,
 	}
 
-	var db *SteampipeDatabase
+	var db *Database
 	err = pool.Retry(func() error {
 		db, err = NewSteampipeDatabase(option)
 		if err != nil {

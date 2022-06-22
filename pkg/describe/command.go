@@ -16,6 +16,8 @@ const (
 	ComplianceReportJobsQueueName        = "compliance-report-jobs-queue"
 	ComplianceReportResultsQueueName     = "compliance-report-results-queue"
 	ComplianceReportCleanupJobsQueueName = "compliance-report-cleanup-jobs-queue"
+	InsightJobsQueueName                 = "insight-jobs-queue"
+	InsightResultsQueueName              = "insight-results-queue"
 	SourceEventsQueueName                = "source-events-queue"
 )
 
@@ -74,6 +76,8 @@ func SchedulerCommand() *cobra.Command {
 				ComplianceReportJobsQueueName,
 				ComplianceReportResultsQueueName,
 				ComplianceReportCleanupJobsQueueName,
+				InsightJobsQueueName,
+				InsightResultsQueueName,
 				SourceEventsQueueName,
 				PostgreSQLUser,
 				PostgreSQLPassword,
@@ -81,9 +85,6 @@ func SchedulerCommand() *cobra.Command {
 				PostgreSQLPort,
 				PostgreSQLDb,
 				HttpServerAddress,
-				VaultAddress,
-				VaultRoleName,
-				VaultToken,
 			)
 			if err != nil {
 				return err

@@ -1,0 +1,61 @@
+package kafka
+
+import (
+	"crypto/sha256"
+	"encoding/json"
+	"fmt"
+
+	"gopkg.in/Shopify/sarama.v1"
+)
+
+const (
+	esIndexHeader = "elasticsearch_index"
+	InsightsIndex = "insights"
+)
+
+type InsightResource struct {
+	// JobID is the ID of the job which produced this resource
+	JobID uint `json:"job_id"`
+	// QueryID is the ID of steampipe query which has been executed
+	QueryID uint `json:"query_id"`
+	// Query
+	Query string `json:"query"`
+	// ExecutedAt is when the query is executed
+	ExecutedAt int64 `json:"executed_at"`
+	// Result of query
+	Result int `json:"result"`
+}
+
+func (r InsightResource) AsProducerMessage() (*sarama.ProducerMessage, error) {
+	value, err := json.Marshal(r)
+	if err != nil {
+		return nil, err
+	}
+
+	return kafkaMsg(hashOf(fmt.Sprintf("%d", r.QueryID)),
+		value, InsightsIndex), nil
+}
+func (r InsightResource) MessageID() string {
+	return fmt.Sprintf("%d", r.QueryID)
+}
+
+func hashOf(strings ...string) string {
+	h := sha256.New()
+	for _, s := range strings {
+		h.Write([]byte(s))
+	}
+	return fmt.Sprintf("%x", h.Sum(nil))
+}
+
+func kafkaMsg(key string, value []byte, index string) *sarama.ProducerMessage {
+	return &sarama.ProducerMessage{
+		Key: sarama.StringEncoder(key),
+		Headers: []sarama.RecordHeader{
+			{
+				Key:   []byte(esIndexHeader),
+				Value: []byte(index),
+			},
+		},
+		Value: sarama.ByteEncoder(value),
+	}
+}

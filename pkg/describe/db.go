@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"time"
 
+	insightapi "gitlab.com/keibiengine/keibi-engine/pkg/insight/api"
+
 	api2 "gitlab.com/keibiengine/keibi-engine/pkg/compliance-report/api"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/describe/api"
@@ -19,7 +21,9 @@ type Database struct {
 }
 
 func (db Database) Initialize() error {
-	return db.orm.AutoMigrate(&Source{}, &DescribeSourceJob{}, &DescribeResourceJob{}, &ComplianceReportJob{})
+	return db.orm.AutoMigrate(&Source{}, &DescribeSourceJob{}, &DescribeResourceJob{},
+		&ComplianceReportJob{}, &Insight{}, &InsightLabel{}, &InsightJob{},
+	)
 }
 
 // ==================================== Source ====================================
@@ -568,4 +572,144 @@ func (db Database) QueryComplianceReportJobs(id string) ([]ComplianceReportJob, 
 		return nil, tx.Error
 	}
 	return jobs, nil
+}
+
+func (db Database) AddInsight(insight *Insight) error {
+	tx := db.orm.Model(&Insight{}).
+		Preload("Labels").
+		Create(&insight)
+	if tx.Error != nil {
+		return tx.Error
+	}
+	return nil
+}
+
+func (db Database) GetInsight(id uint) (*Insight, error) {
+	var res Insight
+	tx := db.orm.Model(&Insight{}).
+		Preload("Labels").
+		Where("id = ?", id).
+		First(&res)
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+	return &res, nil
+}
+
+func (db Database) ListInsightsWithFilters(search *string, labels []string) ([]Insight, error) {
+	var s []Insight
+
+	m := db.orm.Model(&Insight{}).
+		Preload("Labels").
+		Joins("LEFT JOIN insight_label_map on insights.id = insight_id " +
+			"LEFT JOIN insight_labels on insight_label_map.insight_label_id = insight_labels.id ")
+
+	if len(labels) != 0 {
+		m = m.Where("insight_labels.value in ?", labels)
+	}
+	if search != nil {
+		m = m.Where("description like ?", "%"+*search+"%")
+	}
+	tx := m.Find(&s)
+
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+
+	v := map[uint]Insight{}
+	for _, item := range s {
+		if c, ok := v[item.ID]; ok {
+			c.Labels = append(c.Labels, item.Labels...)
+		} else {
+			v[item.ID] = item
+		}
+	}
+	var res []Insight
+	for _, val := range v {
+		res = append(res, val)
+	}
+	return res, nil
+}
+
+func (db Database) DeleteInsight(id uint) error {
+	tx := db.orm.Model(&Insight{}).
+		Where("id = ?", id).
+		Delete(&Insight{})
+	if tx.Error != nil {
+		return tx.Error
+	}
+	if tx.RowsAffected == 0 {
+		return errors.New("record not found")
+	}
+	return nil
+}
+
+func (db Database) AddInsightJob(job *InsightJob) error {
+	tx := db.orm.Model(&InsightJob{}).
+		Create(job)
+	if tx.Error != nil {
+		return tx.Error
+	}
+	return nil
+}
+
+func (db Database) UpdateInsightJobStatus(job InsightJob) error {
+	tx := db.orm.Model(&InsightJob{}).
+		Where("id = ?", job.ID).
+		Update("status", job.Status)
+	if tx.Error != nil {
+		return tx.Error
+	}
+	return nil
+}
+
+func (db Database) UpdateInsightJob(jobID uint, status insightapi.InsightJobStatus, failedMessage string) error {
+	tx := db.orm.Model(&InsightJob{}).
+		Where("id = ?", jobID).
+		Updates(InsightJob{
+			Status:         status,
+			FailureMessage: failedMessage,
+		})
+	if tx.Error != nil {
+		return tx.Error
+	}
+	return nil
+}
+
+func (db Database) FetchLastInsightJob() (*InsightJob, error) {
+	var job InsightJob
+	tx := db.orm.Model(&InsightJob{}).
+		Order("created_at DESC").First(&job)
+	if tx.Error != nil {
+		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
+		return nil, tx.Error
+	}
+	return &job, nil
+}
+
+func (db Database) ListInsightJobs() ([]InsightJob, error) {
+	var job []InsightJob
+	tx := db.orm.Model(&InsightJob{}).Find(&job)
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+	return job, nil
+}
+
+// UpdateInsightJobsTimedOut updates the status of InsightJobs
+// that have timed out while in the status of 'IN_PROGRESS' for longer
+// than 4 hours.
+func (db Database) UpdateInsightJobsTimedOut() error {
+	tx := db.orm.
+		Model(&InsightJob{}).
+		Where("created_at < NOW() - INTERVAL '4 HOURS'").
+		Where("status IN ?", []string{string(insightapi.InsightJobInProgress)}).
+		Updates(InsightJob{Status: insightapi.InsightJobFailed, FailureMessage: "Job timed out"})
+	if tx.Error != nil {
+		return tx.Error
+	}
+
+	return nil
 }
