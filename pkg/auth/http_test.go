@@ -82,7 +82,7 @@ func (s *HTTPRouteSuite) TestGetRoleBindings_Empty() {
 	var resp api.GetRoleBindingsResponse
 	recorder, err := doSimpleJSONRequest(s.router, http.MethodGet, "/api/v1/user/role/bindings",
 		uuid.New(),
-		api.ViewerRole,
+		api.AdminRole,
 		"workspace1",
 		nil, &resp)
 	require.NoError(err, "get role bindings")
@@ -106,14 +106,14 @@ func (s *HTTPRouteSuite) TestCreateAndGetRoleBindings() {
 			UserID:        uuid.New(),
 			ExternalID:    "user-2",
 			WorkspaceName: "workspace2",
-			Role:          api.EditorRole,
+			Role:          api.AdminRole,
 			AssignedAt:    time.Now(),
 		},
 		{
 			UserID:        uuid.New(),
 			ExternalID:    "user-3",
 			WorkspaceName: "workspace3",
-			Role:          api.ViewerRole,
+			Role:          api.AdminRole,
 			AssignedAt:    time.Now(),
 		},
 	}
