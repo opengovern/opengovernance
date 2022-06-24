@@ -79,7 +79,7 @@ func (j Job) Do(steampipeConn *steampipe.Database, producer sarama.SyncProducer,
 		}
 	}
 
-	res, err := steampipeConn.Query(j.Query, 0, 1, "1", steampipe.DirectionAscending)
+	res, err := steampipeConn.Count(j.Query)
 	if err == nil {
 		result := res.Data[0][0]
 		if v, ok := result.(int); ok {
