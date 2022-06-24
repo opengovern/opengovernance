@@ -131,7 +131,9 @@ func (w *Worker) Run() error {
 			}
 			continue
 		}
+		w.logger.Info("Processing job", zap.Int("jobID", int(job.JobID)))
 		result := job.Do(w.steampipeConn, w.kfkProducer, w.kfkTopic, w.logger)
+		w.logger.Info("Publishing job result", zap.Int("jobID", int(job.JobID)))
 		err := w.jobResultQueue.Publish(result)
 		if err != nil {
 			w.logger.Error("Failed to send results to queue: %s", zap.Error(err))
