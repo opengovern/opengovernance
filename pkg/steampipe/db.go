@@ -106,3 +106,30 @@ func (s *Database) Query(query string, from, size int, orderBy string,
 		Data:    result,
 	}, nil
 }
+
+func (s *Database) Count(query string) (*Result, error) {
+	r, err := s.conn.Query(context.Background(), query)
+	if err != nil {
+		return nil, err
+	}
+	defer r.Close()
+
+	var headers []string
+	for _, field := range r.FieldDescriptions() {
+		headers = append(headers, string(field.Name))
+	}
+	var result [][]interface{}
+	for r.Next() {
+		v, err := r.Values()
+		if err != nil {
+			return nil, err
+		}
+
+		result = append(result, v)
+	}
+
+	return &Result{
+		Headers: headers,
+		Data:    result,
+	}, nil
+}
