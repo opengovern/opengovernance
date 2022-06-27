@@ -27,15 +27,16 @@ type InsightResultQueryHit struct {
 }
 
 func FindInsightResults(descriptionFilter *string, labelFilter []string) (string, error) {
-	res := make(map[string]interface{})
-	var filters []interface{}
-
-	filters = append(filters, map[string]interface{}{
-		"terms": map[string][]string{"labels": labelFilter},
-	})
-
 	boolQuery := map[string]interface{}{}
-	boolQuery["filter"] = filters
+
+	if labelFilter != nil && len(labelFilter) > 0 {
+		var filters []interface{}
+		filters = append(filters, map[string]interface{}{
+			"terms": map[string][]string{"labels": labelFilter},
+		})
+		boolQuery["filter"] = filters
+	}
+
 	if descriptionFilter != nil && len(*descriptionFilter) > 0 {
 		boolQuery["must"] = map[string]interface{}{
 			"multi_match": map[string]interface{}{
@@ -46,6 +47,7 @@ func FindInsightResults(descriptionFilter *string, labelFilter []string) (string
 		}
 	}
 
+	res := make(map[string]interface{})
 	res["size"] = MAX_INSIGHTS
 	res["sort"] = []map[string]interface{}{
 		{
@@ -53,8 +55,10 @@ func FindInsightResults(descriptionFilter *string, labelFilter []string) (string
 		},
 	}
 
-	res["query"] = map[string]interface{}{
-		"bool": boolQuery,
+	if len(boolQuery) > 0 {
+		res["query"] = map[string]interface{}{
+			"bool": boolQuery,
+		}
 	}
 	b, err := json.Marshal(res)
 	return string(b), err

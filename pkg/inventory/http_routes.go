@@ -1926,7 +1926,7 @@ func (h *HttpHandler) ListQueries(ctx echo.Context) error {
 // @Produce  json
 // @Param    request  body  api.ListInsightResultsRequest  true  "Request Body"
 // @Success  200
-// @Router   /inventory/api/v1/insight/result [get]
+// @Router   /inventory/api/v1/insight/results [get]
 func (h *HttpHandler) ListInsightsResults(ctx echo.Context) error {
 	var req api.ListInsightResultsRequest
 	if err := bindValidate(ctx, &req); err != nil {
