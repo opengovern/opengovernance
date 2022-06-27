@@ -698,6 +698,22 @@ func (db Database) ListInsightJobs() ([]InsightJob, error) {
 	return job, nil
 }
 
+func (db Database) GetOldCompletedInsightJob(insightID uint, nDaysBefore int) (*InsightJob, error) {
+	var job *InsightJob
+	tx := db.orm.Model(&InsightJob{}).
+		Where("status = ?", insightapi.InsightJobSucceeded).
+		Where("insight_id = ?", insightID).
+		Where(fmt.Sprintf("updated_at < now() - interval '%d days'", nDaysBefore)).
+		Order("updated_at DESC").
+		First(&job)
+	if tx.Error != nil {
+		return nil, tx.Error
+	} else if tx.RowsAffected != 1 {
+		return nil, nil
+	}
+	return job, nil
+}
+
 // UpdateInsightJobsTimedOut updates the status of InsightJobs
 // that have timed out while in the status of 'IN_PROGRESS' for longer
 // than 4 hours.

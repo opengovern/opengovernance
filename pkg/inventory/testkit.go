@@ -25,6 +25,7 @@ import (
 
 	api2 "gitlab.com/keibiengine/keibi-engine/pkg/compliance-report/api"
 	"gitlab.com/keibiengine/keibi-engine/pkg/describe/kafka"
+	insightkafka "gitlab.com/keibiengine/keibi-engine/pkg/insight/kafka"
 	"gorm.io/gorm"
 
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2020-05-01/network"
@@ -143,6 +144,13 @@ func PopulateElastic(address string, d *DescribeMock) error {
 	}
 
 	for _, resource := range GenerateServiceDistribution() {
+		err := IndexKafkaMessage(es, resource)
+		if err != nil {
+			return err
+		}
+	}
+
+	for _, resource := range GenerateInsightResult() {
 		err := IndexKafkaMessage(es, resource)
 		if err != nil {
 			return err
@@ -482,6 +490,29 @@ func GenerateServiceDistribution() []kafka.SourceServiceDistributionResource {
 			ReportType: kafka.ResourceSummaryTypeServiceDistributionSummary,
 		}
 		resources = append(resources, resource)
+	}
+	return resources
+}
+
+func GenerateInsightResult() []insightkafka.InsightResource {
+	var resources []insightkafka.InsightResource
+	for j := 0; j < 3; j++ {
+		for q := 0; q < 3; q++ {
+			for _, resourceType := range []insightkafka.InsightResourceType{insightkafka.InsightResourceHistory, insightkafka.InsightResourceLast} {
+				resources = append(resources, insightkafka.InsightResource{
+					JobID:            uint(100 + j),
+					QueryID:          uint(q),
+					Query:            " select count(name) from aws_iam_user cross join jsonb_array_elements_text(attached_policy_arns) as attachments where split_part(attachments, '/', 2) = 'AdministratorAccess';",
+					ExecutedAt:       time.Now().UnixMilli(),
+					Result:           int64(10*j + q),
+					LastDayValue:     0,
+					LastWeekValue:    0,
+					LastQuarterValue: 0,
+					LastYearValue:    0,
+					ResourceType:     resourceType,
+				})
+			}
+		}
 	}
 	return resources
 }

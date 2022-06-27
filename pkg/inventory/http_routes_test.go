@@ -1464,6 +1464,18 @@ func (s *HttpHandlerSuite) TestGetBenchmarkResultPolicyResourcesSummary() {
 	require.Equal(1, res.ResourcesByLocation["ResourceLocation"])
 }
 
+func (s *HttpHandlerSuite) TestGetInsightResult() {
+	require := s.Require()
+
+	var res api.ListInsightResultsResponse
+	_, err := doRequestJSONResponse(s.router, "GET",
+		"/api/v1/insight/results", nil, &res)
+	require.NoError(err)
+
+	require.Len(res.Results, 3)
+	require.Equal(int64(20), res.Results[0].Result)
+}
+
 func TestHttpHandlerSuite(t *testing.T) {
 	suite.Run(t, &HttpHandlerSuite{})
 }

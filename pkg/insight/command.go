@@ -15,6 +15,10 @@ const (
 )
 
 var (
+	ElasticSearchAddress  = os.Getenv("ES_ADDRESS")
+	ElasticSearchUsername = os.Getenv("ES_USERNAME")
+	ElasticSearchPassword = os.Getenv("ES_PASSWORD")
+
 	RabbitMQService  = os.Getenv("RABBITMQ_SERVICE")
 	RabbitMQPort     = 5672
 	RabbitMQUsername = os.Getenv("RABBITMQ_USERNAME")
@@ -72,6 +76,9 @@ func WorkerCommand() *cobra.Command {
 				SteampipeDb,
 				SteampipeUser,
 				SteampipePassword,
+				ElasticSearchAddress,
+				ElasticSearchUsername,
+				ElasticSearchPassword,
 			)
 			if err != nil {
 				return err

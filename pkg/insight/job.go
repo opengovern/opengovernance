@@ -1,10 +1,13 @@
 package insight
 
 import (
+	"context"
 	"fmt"
 	"reflect"
 	"strconv"
 	"time"
+
+	"gitlab.com/keibiengine/keibi-engine/pkg/keibi-es-sdk"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/steampipe"
 
@@ -35,10 +38,14 @@ var DoInsightJobsDuration = promauto.NewHistogramVec(prometheus.HistogramOpts{
 }, []string{"queryid", "status"})
 
 type Job struct {
-	JobID      uint
-	QueryID    uint
-	Query      string
-	ExecutedAt int64
+	JobID            uint
+	QueryID          uint
+	Query            string
+	ExecutedAt       int64
+	LastDayJobID     uint
+	LastWeekJobID    uint
+	LastQuarterJobID uint
+	LastYearJobID    uint
 }
 
 type JobResult struct {
@@ -47,8 +54,7 @@ type JobResult struct {
 	Error  string
 }
 
-func (j Job) Do(steampipeConn *steampipe.Database, producer sarama.SyncProducer, topic string, logger *zap.Logger) (r JobResult) {
-
+func (j Job) Do(es keibi.Client, steampipeConn *steampipe.Database, producer sarama.SyncProducer, topic string, logger *zap.Logger) (r JobResult) {
 	startTime := time.Now().Unix()
 	defer func() {
 		if err := recover(); err != nil {
@@ -84,14 +90,49 @@ func (j Job) Do(steampipeConn *steampipe.Database, producer sarama.SyncProducer,
 	if err == nil {
 		result := res.Data[0][0]
 		if v, ok := result.(int64); ok {
-			resource := kafka.InsightResource{
-				JobID:      j.JobID,
-				QueryID:    j.QueryID,
-				Query:      j.Query,
-				ExecutedAt: time.Now().UnixMilli(),
-				Result:     v,
+			var lastDayValue, lastWeekValue, lastQuarterValue, lastYearValue int64
+			for idx, jobID := range []uint{j.LastDayJobID, j.LastWeekJobID, j.LastQuarterJobID, j.LastYearJobID} {
+				var response ResultQueryResponse
+				query, err := FindOldInsightValue(jobID, j.QueryID)
+				if err != nil {
+					fail(fmt.Errorf("failed to build query: %w", err))
+				}
+				err = es.Search(context.Background(), kafka.InsightsIndex, query, &response)
+				if err != nil {
+					fail(fmt.Errorf("failed to run query: %w", err))
+				}
+
+				if len(response.Hits.Hits) > 0 {
+					// there will be only one result anyway
+					switch idx {
+					case 0:
+						lastDayValue = response.Hits.Hits[0].Source.Result
+					case 1:
+						lastWeekValue = response.Hits.Hits[0].Source.Result
+					case 2:
+						lastQuarterValue = response.Hits.Hits[0].Source.Result
+					case 3:
+						lastYearValue = response.Hits.Hits[0].Source.Result
+					}
+				}
 			}
-			if err := kafka.DoSendToKafka(producer, topic, []kafka.InsightResource{resource}, logger); err != nil {
+
+			var resources []kafka.InsightResource
+			for _, resourceType := range []kafka.InsightResourceType{kafka.InsightResourceHistory, kafka.InsightResourceLast} {
+				resources = append(resources, kafka.InsightResource{
+					JobID:            j.JobID,
+					QueryID:          j.QueryID,
+					Query:            j.Query,
+					ExecutedAt:       time.Now().UnixMilli(),
+					Result:           v,
+					LastDayValue:     lastDayValue,
+					LastWeekValue:    lastWeekValue,
+					LastQuarterValue: lastQuarterValue,
+					LastYearValue:    lastYearValue,
+					ResourceType:     resourceType,
+				})
+			}
+			if err := kafka.DoSendToKafka(producer, topic, resources, logger); err != nil {
 				fail(fmt.Errorf("send to kafka: %w", err))
 			}
 		} else {

@@ -28,14 +28,18 @@ type InsightResultQueryHit struct {
 
 func FindInsightResults(descriptionFilter *string, labelFilter []string) (string, error) {
 	boolQuery := map[string]interface{}{}
+	var filters []interface{}
+	filters = append(filters, map[string]interface{}{
+		"terms": map[string][]string{"resource_type": {kafka.InsightResourceLast}},
+	})
 
 	if labelFilter != nil && len(labelFilter) > 0 {
-		var filters []interface{}
 		filters = append(filters, map[string]interface{}{
 			"terms": map[string][]string{"labels": labelFilter},
 		})
-		boolQuery["filter"] = filters
 	}
+
+	boolQuery["filter"] = filters
 
 	if descriptionFilter != nil && len(*descriptionFilter) > 0 {
 		boolQuery["must"] = map[string]interface{}{

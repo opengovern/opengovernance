@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"gitlab.com/keibiengine/keibi-engine/pkg/keibi-es-sdk"
+
 	"gitlab.com/keibiengine/keibi-engine/pkg/steampipe"
 
 	"github.com/prometheus/client_golang/prometheus/push"
@@ -20,6 +22,7 @@ type Worker struct {
 	kfkTopic       string
 	logger         *zap.Logger
 	steampipeConn  *steampipe.Database
+	es             keibi.Client
 	pusher         *push.Pusher
 }
 
@@ -40,6 +43,9 @@ func InitializeWorker(
 	steampipeDb string,
 	steampipeUsername string,
 	steampipePassword string,
+	elasticSearchAddress string,
+	elasticSearchUsername string,
+	elasticSearchPassword string,
 ) (w *Worker, err error) {
 	if id == "" {
 		return nil, fmt.Errorf("'id' must be set to a non empty string")
@@ -111,6 +117,17 @@ func InitializeWorker(
 	w.pusher.Collector(DoInsightJobsCount).
 		Collector(DoInsightJobsDuration)
 
+	defaultAccountID := "default"
+	w.es, err = keibi.NewClient(keibi.ClientConfig{
+		Addresses: []string{elasticSearchAddress},
+		Username:  &elasticSearchUsername,
+		Password:  &elasticSearchPassword,
+		AccountID: &defaultAccountID,
+	})
+	if err != nil {
+		return nil, err
+	}
+
 	return w, nil
 }
 
@@ -132,7 +149,7 @@ func (w *Worker) Run() error {
 			continue
 		}
 		w.logger.Info("Processing job", zap.Int("jobID", int(job.JobID)))
-		result := job.Do(w.steampipeConn, w.kfkProducer, w.kfkTopic, w.logger)
+		result := job.Do(w.es, w.steampipeConn, w.kfkProducer, w.kfkTopic, w.logger)
 		w.logger.Info("Publishing job result", zap.Int("jobID", int(job.JobID)))
 		err := w.jobResultQueue.Publish(result)
 		if err != nil {
