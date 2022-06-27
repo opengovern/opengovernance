@@ -83,7 +83,7 @@ func (j Job) Do(steampipeConn *steampipe.Database, producer sarama.SyncProducer,
 	res, err := steampipeConn.Count(j.Query)
 	if err == nil {
 		result := res.Data[0][0]
-		if v, ok := result.(int); ok {
+		if v, ok := result.(int64); ok {
 			resource := kafka.InsightResource{
 				JobID:      j.JobID,
 				QueryID:    j.QueryID,
