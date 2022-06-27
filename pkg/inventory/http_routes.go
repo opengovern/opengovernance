@@ -1948,9 +1948,13 @@ func (h *HttpHandler) ListInsightsResults(ctx echo.Context) error {
 	resp := api.ListInsightResultsResponse{}
 	for _, item := range response.Hits.Hits {
 		resp.Results = append(resp.Results, api.InsightResult{
-			Query:      item.Source.Query,
-			ExecutedAt: item.Source.ExecutedAt,
-			Result:     item.Source.Result,
+			Query:            item.Source.Query,
+			ExecutedAt:       item.Source.ExecutedAt,
+			Result:           item.Source.Result,
+			LastDayValue:     item.Source.LastDayValue,
+			LastWeekValue:    item.Source.LastWeekValue,
+			LastQuarterValue: item.Source.LastQuarterValue,
+			LastYearValue:    item.Source.LastYearValue,
 		})
 	}
 	return ctx.JSON(200, resp)
