@@ -1,10 +1,11 @@
 package api
 
 type Insight struct {
-	ID          uint     `json:"id"`
-	Description string   `json:"description"`
-	Query       string   `json:"query"`
-	Labels      []string `json:"labels"`
+	ID           uint     `json:"id"`
+	Description  string   `json:"description"`
+	Query        string   `json:"query"`
+	SmartQueryID uint     `json:"smartQueryID"`
+	Labels       []string `json:"labels"`
 }
 
 type ListInsightsRequest struct {
@@ -13,7 +14,8 @@ type ListInsightsRequest struct {
 }
 
 type CreateInsightRequest struct {
-	Description string   `json:"description"`
-	Query       string   `json:"query"`
-	Labels      []string `json:"labels"`
+	Description  string   `json:"description"`
+	Query        string   `json:"query"`
+	SmartQueryID uint     `json:"smartQueryID"`
+	Labels       []string `json:"labels"`
 }

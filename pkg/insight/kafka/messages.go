@@ -25,8 +25,12 @@ type InsightResource struct {
 	JobID uint `json:"job_id"`
 	// QueryID is the ID of steampipe query which has been executed
 	QueryID uint `json:"query_id"`
+	// SmartQueryID is the ID of smart query id which is connected to this insight
+	SmartQueryID uint `json:"smart_query_id"`
 	// Query
 	Query string `json:"query"`
+	// Description
+	Description string `json:"description"`
 	// ExecutedAt is when the query is executed
 	ExecutedAt int64 `json:"executed_at"`
 	// Result of query

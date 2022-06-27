@@ -371,9 +371,10 @@ func (h *HttpServer) CreateInsight(ctx echo.Context) error {
 		})
 	}
 	ins := Insight{
-		Description: req.Description,
-		Query:       req.Query,
-		Labels:      labels,
+		Description:  req.Description,
+		Query:        req.Query,
+		SmartQueryID: req.SmartQueryID,
+		Labels:       labels,
 	}
 	err := h.DB.AddInsight(&ins)
 	if err != nil {
@@ -434,10 +435,11 @@ func (h *HttpServer) ListInsights(ctx echo.Context) error {
 			labels = append(labels, i.Value)
 		}
 		result = append(result, api.Insight{
-			ID:          item.Model.ID,
-			Description: item.Description,
-			Query:       item.Query,
-			Labels:      labels,
+			ID:           item.Model.ID,
+			Description:  item.Description,
+			Query:        item.Query,
+			SmartQueryID: item.SmartQueryID,
+			Labels:       labels,
 		})
 	}
 	return ctx.JSON(200, result)

@@ -57,9 +57,10 @@ type DescribeResourceJob struct {
 
 type Insight struct {
 	gorm.Model
-	Description string
-	Query       string
-	Labels      []InsightLabel `gorm:"many2many:insight_label_map;"`
+	Description  string
+	Query        string
+	SmartQueryID uint
+	Labels       []InsightLabel `gorm:"many2many:insight_label_map;"`
 }
 
 type InsightLabel struct {
