@@ -2,6 +2,7 @@ package insight
 
 import (
 	"fmt"
+	"reflect"
 	"strconv"
 	"time"
 
@@ -94,7 +95,7 @@ func (j Job) Do(steampipeConn *steampipe.Database, producer sarama.SyncProducer,
 				fail(fmt.Errorf("send to kafka: %w", err))
 			}
 		} else {
-			fail(fmt.Errorf("result is not int"))
+			fail(fmt.Errorf("result is not int: %v [%s]", result, reflect.TypeOf(result)))
 		}
 	} else {
 		fail(fmt.Errorf("describe resources: %w", err))

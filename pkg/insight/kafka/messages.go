@@ -32,7 +32,7 @@ func (r InsightResource) AsProducerMessage() (*sarama.ProducerMessage, error) {
 		return nil, err
 	}
 
-	return kafkaMsg(hashOf(fmt.Sprintf("%d", r.QueryID)),
+	return kafkaMsg(hashOf(fmt.Sprintf("%d", r.QueryID), fmt.Sprintf("%d", r.JobID)),
 		value, InsightsIndex), nil
 }
 func (r InsightResource) MessageID() string {
