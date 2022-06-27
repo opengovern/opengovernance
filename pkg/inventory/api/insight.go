@@ -10,11 +10,13 @@ type ListInsightResultsResponse struct {
 }
 
 type InsightResult struct {
+	SmartQueryID     uint   `json:"smartQueryID"`
 	Query            string `json:"query"`
+	Description      string `json:"description"`
 	ExecutedAt       int64  `json:"executedAt"`
 	Result           int64  `json:"result"`
-	LastDayValue     int64  `json:"last_day_value"`
-	LastWeekValue    int64  `json:"last_week_value"`
-	LastQuarterValue int64  `json:"last_quarter_value"`
-	LastYearValue    int64  `json:"last_year_value"`
+	LastDayValue     int64  `json:"lastDayValue"`
+	LastWeekValue    int64  `json:"lastWeekValue"`
+	LastQuarterValue int64  `json:"lastQuarterValue"`
+	LastYearValue    int64  `json:"lastYearValue"`
 }

@@ -40,7 +40,9 @@ var DoInsightJobsDuration = promauto.NewHistogramVec(prometheus.HistogramOpts{
 type Job struct {
 	JobID            uint
 	QueryID          uint
+	SmartQueryID     uint
 	Query            string
+	Description      string
 	ExecutedAt       int64
 	LastDayJobID     uint
 	LastWeekJobID    uint
@@ -122,7 +124,9 @@ func (j Job) Do(es keibi.Client, steampipeConn *steampipe.Database, producer sar
 				resources = append(resources, kafka.InsightResource{
 					JobID:            j.JobID,
 					QueryID:          j.QueryID,
+					SmartQueryID:     j.SmartQueryID,
 					Query:            j.Query,
+					Description:      j.Description,
 					ExecutedAt:       time.Now().UnixMilli(),
 					Result:           v,
 					LastDayValue:     lastDayValue,

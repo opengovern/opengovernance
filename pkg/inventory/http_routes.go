@@ -1948,6 +1948,8 @@ func (h *HttpHandler) ListInsightsResults(ctx echo.Context) error {
 	resp := api.ListInsightResultsResponse{}
 	for _, item := range response.Hits.Hits {
 		resp.Results = append(resp.Results, api.InsightResult{
+			SmartQueryID:     item.Source.SmartQueryID,
+			Description:      item.Source.Description,
 			Query:            item.Source.Query,
 			ExecutedAt:       item.Source.ExecutedAt,
 			Result:           item.Source.Result,

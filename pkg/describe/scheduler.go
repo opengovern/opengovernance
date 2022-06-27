@@ -1117,6 +1117,8 @@ func enqueueInsightJobs(db Database, q queue.Interface, job InsightJob) error {
 		JobID:            job.ID,
 		QueryID:          job.InsightID,
 		Query:            ins.Query,
+		SmartQueryID:     ins.SmartQueryID,
+		Description:      ins.Description,
 		ExecutedAt:       job.CreatedAt.UnixMilli(),
 		LastDayJobID:     lastDayJobID,
 		LastWeekJobID:    lastWeekJobID,
