@@ -1079,11 +1079,35 @@ func enqueueInsightJobs(db Database, q queue.Interface, job InsightJob) error {
 		return err
 	}
 
+	lastDay, err := db.GetOldCompletedInsightJob(job.InsightID, 1)
+	if err != nil {
+		return err
+	}
+
+	lastWeek, err := db.GetOldCompletedInsightJob(job.InsightID, 7)
+	if err != nil {
+		return err
+	}
+
+	lastQuarter, err := db.GetOldCompletedInsightJob(job.InsightID, 93)
+	if err != nil {
+		return err
+	}
+
+	lastYear, err := db.GetOldCompletedInsightJob(job.InsightID, 428)
+	if err != nil {
+		return err
+	}
+
 	if err := q.Publish(insight.Job{
-		JobID:      job.ID,
-		QueryID:    job.InsightID,
-		Query:      ins.Query,
-		ExecutedAt: job.CreatedAt.UnixMilli(),
+		JobID:            job.ID,
+		QueryID:          job.InsightID,
+		Query:            ins.Query,
+		ExecutedAt:       job.CreatedAt.UnixMilli(),
+		LastDayJobID:     lastDay.ID,
+		LastWeekJobID:    lastWeek.ID,
+		LastQuarterJobID: lastQuarter.ID,
+		LastYearJobID:    lastYear.ID,
 	}); err != nil {
 		return err
 	}

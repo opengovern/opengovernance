@@ -13,6 +13,13 @@ const (
 	InsightsIndex = "insights"
 )
 
+type InsightResourceType string
+
+const (
+	InsightResourceHistory = "history"
+	InsightResourceLast    = "last"
+)
+
 type InsightResource struct {
 	// JobID is the ID of the job which produced this resource
 	JobID uint `json:"job_id"`
@@ -32,6 +39,8 @@ type InsightResource struct {
 	LastQuarterValue int64 `json:"last_quarter_value"`
 	// LastYearValue result of the same query last year
 	LastYearValue int64 `json:"last_year_value"`
+	// ResourceType shows which collection of docs this resource belongs to
+	ResourceType InsightResourceType `json:"resource_type"`
 }
 
 func (r InsightResource) AsProducerMessage() (*sarama.ProducerMessage, error) {
@@ -40,7 +49,11 @@ func (r InsightResource) AsProducerMessage() (*sarama.ProducerMessage, error) {
 		return nil, err
 	}
 
-	return kafkaMsg(hashOf(fmt.Sprintf("%d", r.QueryID), fmt.Sprintf("%d", r.JobID)),
+	if r.ResourceType == InsightResourceHistory {
+		return kafkaMsg(hashOf(string(r.ResourceType), fmt.Sprintf("%d", r.QueryID), fmt.Sprintf("%d", r.JobID)),
+			value, InsightsIndex), nil
+	}
+	return kafkaMsg(hashOf(string(r.ResourceType), fmt.Sprintf("%d", r.QueryID)),
 		value, InsightsIndex), nil
 }
 func (r InsightResource) MessageID() string {
