@@ -707,6 +707,9 @@ func (db Database) GetOldCompletedInsightJob(insightID uint, nDaysBefore int) (*
 		Order("updated_at DESC").
 		First(&job)
 	if tx.Error != nil {
+		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
 		return nil, tx.Error
 	} else if tx.RowsAffected != 1 {
 		return nil, nil
