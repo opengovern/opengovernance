@@ -29,12 +29,10 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v4"
 	"github.com/labstack/echo/v4"
-	authapi "gitlab.com/keibiengine/keibi-engine/pkg/auth/api"
 	compliance_report "gitlab.com/keibiengine/keibi-engine/pkg/compliance-report"
 	compliance_es "gitlab.com/keibiengine/keibi-engine/pkg/compliance-report/es"
 	pagination "gitlab.com/keibiengine/keibi-engine/pkg/internal/api"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpclient"
-	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpserver"
 	"gitlab.com/keibiengine/keibi-engine/pkg/inventory/api"
 )
 
@@ -47,63 +45,63 @@ var (
 func (h *HttpHandler) Register(e *echo.Echo) {
 	v1 := e.Group("/api/v1")
 
-	v1.GET("/locations/:provider", httpserver.AuthorizeHandler(h.GetLocations, authapi.ViewerRole))
+	v1.GET("/locations/:provider", h.GetLocations)
 
-	v1.POST("/resources", httpserver.AuthorizeHandler(h.GetAllResources, authapi.ViewerRole))
-	v1.POST("/resources/azure", httpserver.AuthorizeHandler(h.GetAzureResources, authapi.ViewerRole))
-	v1.POST("/resources/aws", httpserver.AuthorizeHandler(h.GetAWSResources, authapi.ViewerRole))
+	v1.POST("/resources", h.GetAllResources)
+	v1.POST("/resources/azure", h.GetAzureResources)
+	v1.POST("/resources/aws", h.GetAWSResources)
 
-	v1.POST("/resource", httpserver.AuthorizeHandler(h.GetResource, authapi.ViewerRole))
+	v1.POST("/resource", h.GetResource)
 
-	v1.GET("/resources/trend", httpserver.AuthorizeHandler(h.GetResourceGrowthTrend, authapi.ViewerRole))
-	v1.GET("/resources/distribution", httpserver.AuthorizeHandler(h.GetResourceDistribution, authapi.ViewerRole))
-	v1.GET("/resources/top/accounts", httpserver.AuthorizeHandler(h.GetTopAccountsByResourceCount, authapi.ViewerRole))
-	v1.GET("/resources/top/regions", httpserver.AuthorizeHandler(h.GetTopRegionsByResourceCount, authapi.ViewerRole))
-	v1.GET("/resources/top/services", httpserver.AuthorizeHandler(h.GetTopServicesByResourceCount, authapi.ViewerRole))
-	v1.GET("/resources/categories", httpserver.AuthorizeHandler(h.GetCategories, authapi.ViewerRole))
-	v1.GET("/accounts/resource/count", httpserver.AuthorizeHandler(h.GetAccountsResourceCount, authapi.ViewerRole))
-	v1.GET("/services/distribution", httpserver.AuthorizeHandler(h.GetServiceDistribution, authapi.ViewerRole))
+	v1.GET("/resources/trend", h.GetResourceGrowthTrend)
+	v1.GET("/resources/distribution", h.GetResourceDistribution)
+	v1.GET("/resources/top/accounts", h.GetTopAccountsByResourceCount)
+	v1.GET("/resources/top/regions", h.GetTopRegionsByResourceCount)
+	v1.GET("/resources/top/services", h.GetTopServicesByResourceCount)
+	v1.GET("/resources/categories", h.GetCategories)
+	v1.GET("/accounts/resource/count", h.GetAccountsResourceCount)
+	v1.GET("/services/distribution", h.GetServiceDistribution)
 
-	v1.GET("/cost/top/accounts", httpserver.AuthorizeHandler(h.GetTopAccountsByCost, authapi.ViewerRole))
-	v1.GET("/cost/top/services", httpserver.AuthorizeHandler(h.GetTopServicesByCost, authapi.ViewerRole))
+	v1.GET("/cost/top/accounts", h.GetTopAccountsByCost)
+	v1.GET("/cost/top/services", h.GetTopServicesByCost)
 
-	v1.GET("/query", httpserver.AuthorizeHandler(h.ListQueries, authapi.ViewerRole))
-	v1.GET("/query/count", httpserver.AuthorizeHandler(h.CountQueries, authapi.ViewerRole))
-	v1.POST("/query/:queryId", httpserver.AuthorizeHandler(h.RunQuery, authapi.ViewerRole))
+	v1.GET("/query", h.ListQueries)
+	v1.GET("/query/count", h.CountQueries)
+	v1.POST("/query/:queryId", h.RunQuery)
 
-	v1.GET("/insight/results", httpserver.AuthorizeHandler(h.ListInsightsResults, authapi.ViewerRole))
+	v1.GET("/insight/results", h.ListInsightsResults)
 
 	// benchmark details
-	v1.GET("/benchmarks", httpserver.AuthorizeHandler(h.GetBenchmarks, authapi.ViewerRole))
-	v1.GET("/benchmarks/tags", httpserver.AuthorizeHandler(h.GetBenchmarkTags, authapi.ViewerRole))
-	v1.GET("/benchmarks/:benchmarkId/policies", httpserver.AuthorizeHandler(h.GetPolicies, authapi.ViewerRole))
+	v1.GET("/benchmarks", h.GetBenchmarks)
+	v1.GET("/benchmarks/tags", h.GetBenchmarkTags)
+	v1.GET("/benchmarks/:benchmarkId/policies", h.GetPolicies)
 
-	v1.GET("/benchmarks/:benchmarkId/result/summary", httpserver.AuthorizeHandler(h.GetBenchmarkResultSummary, authapi.ViewerRole))
-	v1.GET("/benchmarks/:benchmarkId/result/policies", httpserver.AuthorizeHandler(h.GetBenchmarkResultPolicies, authapi.ViewerRole))
-	v1.GET("/benchmarks/:benchmarkId/result/compliancy", httpserver.AuthorizeHandler(h.GetBenchmarkResultCompliancy, authapi.ViewerRole))
-	v1.GET("/benchmarks/:benchmarkId/result/policies/:policyId/findings", httpserver.AuthorizeHandler(h.GetBenchmarkResultPolicyFindings, authapi.ViewerRole))
-	v1.GET("/benchmarks/:benchmarkId/result/policies/:policyId/resources/summary", httpserver.AuthorizeHandler(h.GetBenchmarkResultPolicyResourcesSummary, authapi.ViewerRole))
+	v1.GET("/benchmarks/:benchmarkId/result/summary", h.GetBenchmarkResultSummary)
+	v1.GET("/benchmarks/:benchmarkId/result/policies", h.GetBenchmarkResultPolicies)
+	v1.GET("/benchmarks/:benchmarkId/result/compliancy", h.GetBenchmarkResultCompliancy)
+	v1.GET("/benchmarks/:benchmarkId/result/policies/:policyId/findings", h.GetBenchmarkResultPolicyFindings)
+	v1.GET("/benchmarks/:benchmarkId/result/policies/:policyId/resources/summary", h.GetBenchmarkResultPolicyResourcesSummary)
 
 	// benchmark dashboard
-	v1.GET("/benchmarks/history/list/:provider/:createdAt", httpserver.AuthorizeHandler(h.GetBenchmarksInTime, authapi.ViewerRole))
-	v1.GET("/benchmarks/:benchmarkId/:sourceId/compliance/trend", httpserver.AuthorizeHandler(h.GetBenchmarkComplianceTrend, authapi.ViewerRole))
-	v1.GET("/benchmarks/:benchmarkId/:createdAt/accounts/compliance", httpserver.AuthorizeHandler(h.GetBenchmarkAccountCompliance, authapi.ViewerRole))
-	v1.GET("/benchmarks/:benchmarkId/:createdAt/accounts", httpserver.AuthorizeHandler(h.GetBenchmarkAccounts, authapi.ViewerRole))
+	v1.GET("/benchmarks/history/list/:provider/:createdAt", h.GetBenchmarksInTime)
+	v1.GET("/benchmarks/:benchmarkId/:sourceId/compliance/trend", h.GetBenchmarkComplianceTrend)
+	v1.GET("/benchmarks/:benchmarkId/:createdAt/accounts/compliance", h.GetBenchmarkAccountCompliance)
+	v1.GET("/benchmarks/:benchmarkId/:createdAt/accounts", h.GetBenchmarkAccounts)
 
 	// benchmark assignment
-	v1.POST("/benchmarks/:benchmark_id/source/:source_id", httpserver.AuthorizeHandler(h.CreateBenchmarkAssignment, authapi.EditorRole))
-	v1.GET("/benchmarks/source/:source_id", httpserver.AuthorizeHandler(h.GetAllBenchmarkAssignmentsBySourceId, authapi.ViewerRole))
-	v1.GET("/benchmarks/:benchmark_id/sources", httpserver.AuthorizeHandler(h.GetAllBenchmarkAssignedSourcesByBenchmarkId, authapi.ViewerRole))
-	v1.DELETE("/benchmarks/:benchmark_id/source/:source_id", httpserver.AuthorizeHandler(h.DeleteBenchmarkAssignment, authapi.EditorRole))
+	v1.POST("/benchmarks/:benchmark_id/source/:source_id", h.CreateBenchmarkAssignment)
+	v1.GET("/benchmarks/source/:source_id", h.GetAllBenchmarkAssignmentsBySourceId)
+	v1.GET("/benchmarks/:benchmark_id/sources", h.GetAllBenchmarkAssignedSourcesByBenchmarkId)
+	v1.DELETE("/benchmarks/:benchmark_id/source/:source_id", h.DeleteBenchmarkAssignment)
 
 	// policy dashboard
-	v1.GET("/benchmarks/compliancy/:provider/top/accounts", httpserver.AuthorizeHandler(h.GetTopAccountsByBenchmarkCompliancy, authapi.ViewerRole))
-	v1.GET("/benchmarks/compliancy/:provider/top/services", httpserver.AuthorizeHandler(h.GetTopServicesByBenchmarkCompliancy, authapi.ViewerRole))
-	v1.GET("/benchmarks/:provider/list", httpserver.AuthorizeHandler(h.GetListOfBenchmarks, authapi.ViewerRole))
-	v1.GET("/compliancy/trend", httpserver.AuthorizeHandler(h.GetCompliancyTrend, authapi.ViewerRole))
+	v1.GET("/benchmarks/compliancy/:provider/top/accounts", h.GetTopAccountsByBenchmarkCompliancy)
+	v1.GET("/benchmarks/compliancy/:provider/top/services", h.GetTopServicesByBenchmarkCompliancy)
+	v1.GET("/benchmarks/:provider/list", h.GetListOfBenchmarks)
+	v1.GET("/compliancy/trend", h.GetCompliancyTrend)
 
-	v1.GET("/benchmarks/count", httpserver.AuthorizeHandler(h.CountBenchmarks, authapi.ViewerRole))
-	v1.GET("/policies/count", httpserver.AuthorizeHandler(h.CountPolicies, authapi.ViewerRole))
+	v1.GET("/benchmarks/count", h.CountBenchmarks)
+	v1.GET("/policies/count", h.CountPolicies)
 }
 
 func bindValidate(ctx echo.Context, i interface{}) error {
@@ -344,7 +342,7 @@ func (h *HttpHandler) GetBenchmarkResultPolicies(ctx echo.Context) error {
 // @Param    severity     query     string  false  "Severity Filter"
 // @Param    status       query     string  false  "Status Filter"  Enums(passed,failed)
 // @Success  200          {object}  []api.ResultCompliancy
-// @Router   /inventory/api/v1/benchmarks/{benchmarkId}/result/compliancy [get]
+// @Router   /inventory/api/v1/benchmarks/{benchmarkId}/result/findings [get]
 func (h *HttpHandler) GetBenchmarkResultCompliancy(ctx echo.Context) error {
 	benchmarkID := ctx.Param("benchmarkId")
 

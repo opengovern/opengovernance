@@ -67,9 +67,9 @@ func NewServer(cfg *Config) (*Server, error) {
 func (s *Server) Register(e *echo.Echo) {
 	v1 := e.Group("/api/v1")
 
-	v1.POST("/workspace", httpserver.AuthorizeHandler(s.CreateWorkspace, authapi.EditorRole))
-	v1.DELETE("/workspace/:workspace_id", httpserver.AuthorizeHandler(s.DeleteWorkspace, authapi.EditorRole))
-	v1.GET("/workspaces", httpserver.AuthorizeHandler(s.ListWorkspaces, authapi.EditorRole))
+	v1.POST("/workspace", s.CreateWorkspace)
+	v1.DELETE("/workspace/:workspace_id", s.DeleteWorkspace)
+	v1.GET("/workspaces", s.ListWorkspaces)
 }
 
 func (s *Server) Start() error {

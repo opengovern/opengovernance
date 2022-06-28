@@ -11,7 +11,6 @@ import (
 	"testing"
 	"time"
 
-	authapi "gitlab.com/keibiengine/keibi-engine/pkg/auth/api"
 	describeapi "gitlab.com/keibiengine/keibi-engine/pkg/describe/api"
 	inventoryapi "gitlab.com/keibiengine/keibi-engine/pkg/inventory/api"
 	"go.uber.org/zap"
@@ -124,10 +123,6 @@ func (s *HttpHandlerSuite) TestGetSource() {
 	require.NoError(err)
 
 	req := httptest.NewRequest(echo.GET, fmt.Sprintf("/api/v1/source/%s", srcId), nil)
-	req.Header.Add("content-type", "application/json")
-	req.Header.Add(httpserver.XKeibiUserIDHeader, uuid.New().String())
-	req.Header.Add(httpserver.XKeibiUserRoleHeader, string(authapi.AdminRole))
-
 	rec := httptest.NewRecorder()
 	s.router.ServeHTTP(rec, req)
 
@@ -525,8 +520,6 @@ func doSimpleJSONRequest(router *echo.Echo, method string, path string, request,
 
 	req := httptest.NewRequest(method, path, r)
 	req.Header.Add("content-type", "application/json")
-	req.Header.Add(httpserver.XKeibiUserIDHeader, uuid.New().String())
-	req.Header.Add(httpserver.XKeibiUserRoleHeader, string(authapi.AdminRole))
 
 	rec := httptest.NewRecorder()
 	router.ServeHTTP(rec, req)
