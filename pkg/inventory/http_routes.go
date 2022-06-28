@@ -58,20 +58,20 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	v1.GET("/resources/trend", httpserver.AuthorizeHandler(h.GetResourceGrowthTrend, authapi.ViewerRole))
 	v1.GET("/resources/distribution", httpserver.AuthorizeHandler(h.GetResourceDistribution, authapi.ViewerRole))
 	v1.GET("/resources/top/accounts", httpserver.AuthorizeHandler(h.GetTopAccountsByResourceCount, authapi.ViewerRole))
-	v1.GET("/resources/top/regions", h.GetTopRegionsByResourceCount)
+	v1.GET("/resources/top/regions", httpserver.AuthorizeHandler(h.GetTopRegionsByResourceCount, authapi.ViewerRole))
 	v1.GET("/resources/top/services", httpserver.AuthorizeHandler(h.GetTopServicesByResourceCount, authapi.ViewerRole))
 	v1.GET("/resources/categories", httpserver.AuthorizeHandler(h.GetCategories, authapi.ViewerRole))
 	v1.GET("/accounts/resource/count", httpserver.AuthorizeHandler(h.GetAccountsResourceCount, authapi.ViewerRole))
 	v1.GET("/services/distribution", httpserver.AuthorizeHandler(h.GetServiceDistribution, authapi.ViewerRole))
 
-	v1.GET("/cost/top/accounts", h.GetTopAccountsByCost)
-	v1.GET("/cost/top/services", h.GetTopServicesByCost)
+	v1.GET("/cost/top/accounts", httpserver.AuthorizeHandler(h.GetTopAccountsByCost, authapi.ViewerRole))
+	v1.GET("/cost/top/services", httpserver.AuthorizeHandler(h.GetTopServicesByCost, authapi.ViewerRole))
 
 	v1.GET("/query", httpserver.AuthorizeHandler(h.ListQueries, authapi.ViewerRole))
 	v1.GET("/query/count", httpserver.AuthorizeHandler(h.CountQueries, authapi.ViewerRole))
 	v1.POST("/query/:queryId", httpserver.AuthorizeHandler(h.RunQuery, authapi.ViewerRole))
 
-	v1.GET("/insight/results", h.ListInsightsResults)
+	v1.GET("/insight/results", httpserver.AuthorizeHandler(h.ListInsightsResults, authapi.ViewerRole))
 
 	// benchmark details
 	v1.GET("/benchmarks", httpserver.AuthorizeHandler(h.GetBenchmarks, authapi.ViewerRole))

@@ -22,14 +22,13 @@ func (h HttpHandler) Register(r *echo.Echo) {
 	v1 := r.Group("/api/v1")
 
 	source := v1.Group("/source")
-
 	source.POST("/aws", httpserver.AuthorizeHandler(h.PostSourceAws, authapi.EditorRole))
 	source.POST("/azure", httpserver.AuthorizeHandler(h.PostSourceAzure, authapi.EditorRole))
 	source.POST("/azure/spn", httpserver.AuthorizeHandler(h.PostSourceAzureSPN, authapi.EditorRole))
 	source.GET("/:sourceId", httpserver.AuthorizeHandler(h.GetSource, authapi.ViewerRole))
-	source.GET("/:sourceId/credentials", h.GetSourceCred)
+	source.GET("/:sourceId/credentials", httpserver.AuthorizeHandler(h.GetSourceCred, authapi.ViewerRole))
 	source.PUT("/:sourceId/credentials", httpserver.AuthorizeHandler(h.PutSourceCred, authapi.EditorRole))
-	source.PUT("/:sourceId", h.PutSource)
+	source.PUT("/:sourceId", httpserver.AuthorizeHandler(h.PutSource, authapi.EditorRole))
 	source.DELETE("/:sourceId", httpserver.AuthorizeHandler(h.DeleteSource, authapi.EditorRole))
 
 	v1.GET("/sources", httpserver.AuthorizeHandler(h.GetSources, authapi.ViewerRole))
@@ -37,11 +36,10 @@ func (h HttpHandler) Register(r *echo.Echo) {
 
 	spn := v1.Group("/spn")
 	spn.POST("/azure", httpserver.AuthorizeHandler(h.PostSPN, authapi.EditorRole))
-	spn.GET("/:spnId", h.GetSPNCred)
+	spn.GET("/:spnId", httpserver.AuthorizeHandler(h.GetSPNCred, authapi.ViewerRole))
 	spn.PUT("/:spnId", httpserver.AuthorizeHandler(h.PutSPNCred, authapi.EditorRole))
 
 	disc := v1.Group("/discover")
-
 	disc.POST("/aws/accounts", httpserver.AuthorizeHandler(h.DiscoverAwsAccounts, authapi.EditorRole))
 	disc.POST("/azure/subscriptions", httpserver.AuthorizeHandler(h.DiscoverAzureSubscriptions, authapi.EditorRole))
 
