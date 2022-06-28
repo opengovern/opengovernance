@@ -37,7 +37,7 @@ func NewHTTPServer(
 func (s *HttpServer) Register(e *echo.Echo) {
 	v1 := e.Group("/api/v1")
 
-	v1.GET("/sources", s.HandleListSources)
+	v1.GET("/sources", httpserver.AuthorizeHandler(s.HandleListSources, authapi.ViewerRole))
 	v1.GET("/sources/:source_id", httpserver.AuthorizeHandler(s.HandleGetSource, authapi.ViewerRole))
 	v1.GET("/sources/:source_id/jobs/describe", httpserver.AuthorizeHandler(s.HandleListSourceDescribeJobs, authapi.ViewerRole))
 	v1.GET("/sources/:source_id/jobs/compliance", httpserver.AuthorizeHandler(s.HandleListSourceComplianceReports, authapi.ViewerRole))
@@ -49,9 +49,9 @@ func (s *HttpServer) Register(e *echo.Echo) {
 
 	v1.GET("/compliance/report/last/completed", httpserver.AuthorizeHandler(s.HandleGetLastCompletedComplianceReport, authapi.ViewerRole))
 
-	v1.GET("/insight", s.ListInsights)
-	v1.PUT("/insight", s.CreateInsight)
-	v1.DELETE("/insight/:id", s.DeleteInsight)
+	v1.GET("/insight", httpserver.AuthorizeHandler(s.ListInsights, authapi.ViewerRole))
+	v1.PUT("/insight", httpserver.AuthorizeHandler(s.CreateInsight, authapi.EditorRole))
+	v1.DELETE("/insight/:id", httpserver.AuthorizeHandler(s.DeleteInsight, authapi.EditorRole))
 }
 
 // HandleListSources godoc
