@@ -7,7 +7,9 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
+	authapi "gitlab.com/keibiengine/keibi-engine/pkg/auth/api"
 	"gitlab.com/keibiengine/keibi-engine/pkg/describe"
+	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpserver"
 	"gitlab.com/keibiengine/keibi-engine/pkg/onboard/api"
 	"gorm.io/gorm"
 )
@@ -20,31 +22,29 @@ func (h HttpHandler) Register(r *echo.Echo) {
 	v1 := r.Group("/api/v1")
 
 	source := v1.Group("/source")
+	source.POST("/aws", httpserver.AuthorizeHandler(h.PostSourceAws, authapi.EditorRole))
+	source.POST("/azure", httpserver.AuthorizeHandler(h.PostSourceAzure, authapi.EditorRole))
+	source.POST("/azure/spn", httpserver.AuthorizeHandler(h.PostSourceAzureSPN, authapi.EditorRole))
+	source.GET("/:sourceId", httpserver.AuthorizeHandler(h.GetSource, authapi.ViewerRole))
+	source.GET("/:sourceId/credentials", httpserver.AuthorizeHandler(h.GetSourceCred, authapi.ViewerRole))
+	source.PUT("/:sourceId/credentials", httpserver.AuthorizeHandler(h.PutSourceCred, authapi.EditorRole))
+	source.PUT("/:sourceId", httpserver.AuthorizeHandler(h.PutSource, authapi.EditorRole))
+	source.DELETE("/:sourceId", httpserver.AuthorizeHandler(h.DeleteSource, authapi.EditorRole))
 
-	source.POST("/aws", h.PostSourceAws)
-	source.POST("/azure", h.PostSourceAzure)
-	source.POST("/azure/spn", h.PostSourceAzureSPN)
-	source.GET("/:sourceId", h.GetSource)
-	source.GET("/:sourceId/credentials", h.GetSourceCred)
-	source.PUT("/:sourceId/credentials", h.PutSourceCred)
-	source.PUT("/:sourceId", h.PutSource)
-	source.DELETE("/:sourceId", h.DeleteSource)
-
-	v1.GET("/sources", h.GetSources)
-	v1.GET("/sources/count", h.CountSources)
+	v1.GET("/sources", httpserver.AuthorizeHandler(h.GetSources, authapi.ViewerRole))
+	v1.GET("/sources/count", httpserver.AuthorizeHandler(h.CountSources, authapi.ViewerRole))
 
 	spn := v1.Group("/spn")
-	spn.POST("/azure", h.PostSPN)
-	spn.GET("/:spnId", h.GetSPNCred)
-	spn.PUT("/:spnId", h.PutSPNCred)
+	spn.POST("/azure", httpserver.AuthorizeHandler(h.PostSPN, authapi.EditorRole))
+	spn.GET("/:spnId", httpserver.AuthorizeHandler(h.GetSPNCred, authapi.ViewerRole))
+	spn.PUT("/:spnId", httpserver.AuthorizeHandler(h.PutSPNCred, authapi.EditorRole))
 
 	disc := v1.Group("/discover")
+	disc.POST("/aws/accounts", httpserver.AuthorizeHandler(h.DiscoverAwsAccounts, authapi.EditorRole))
+	disc.POST("/azure/subscriptions", httpserver.AuthorizeHandler(h.DiscoverAzureSubscriptions, authapi.EditorRole))
 
-	disc.POST("/aws/accounts", h.DiscoverAwsAccounts)
-	disc.POST("/azure/subscriptions", h.DiscoverAzureSubscriptions)
-
-	v1.GET("/providers", h.GetProviders)
-	v1.GET("/providers/types", h.GetProviderTypes)
+	v1.GET("/providers", httpserver.AuthorizeHandler(h.GetProviders, authapi.ViewerRole))
+	v1.GET("/providers/types", httpserver.AuthorizeHandler(h.GetProviderTypes, authapi.ViewerRole))
 }
 
 func bindValidate(ctx echo.Context, i interface{}) error {
