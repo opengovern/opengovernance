@@ -31,7 +31,7 @@ func (r *httpRoutes) Register(e *echo.Echo) {
 	v1 := e.Group("/api/v1")
 
 	v1.PUT("/user/role/binding", httpserver.AuthorizeHandler(r.PutRoleBinding, api.AdminRole))
-	v1.GET("/user/role/bindings", httpserver.AuthorizeHandler(r.GetRoleBindings, api.AdminRole))
+	v1.GET("/user/role/bindings", httpserver.AuthorizeHandler(r.GetRoleBindings, api.ViewerRole))
 	v1.GET("/workspace/role/bindings", httpserver.AuthorizeHandler(r.GetWorkspaceRoleBindings, api.AdminRole))
 	v1.POST("/invite", httpserver.AuthorizeHandler(r.Invite, api.AdminRole))
 	v1.GET("/invite/:invite_id", httpserver.AuthorizeHandler(r.AcceptInvitation, api.ViewerRole))
