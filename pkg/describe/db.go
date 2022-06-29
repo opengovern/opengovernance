@@ -270,6 +270,26 @@ func (db Database) GetLastDescribeSourceJob(sourceID uuid.UUID) (*DescribeSource
 	return &job, nil
 }
 
+// GetOldCompletedSourceJob returns the last DescribeSourceJobs for the given source at nDaysBefore
+func (db Database) GetOldCompletedSourceJob(sourceID uuid.UUID, nDaysBefore int) (*DescribeSourceJob, error) {
+	var job *DescribeSourceJob
+	tx := db.orm.Model(&DescribeSourceJob{}).
+		Where("status in ?", []string{string(api.DescribeSourceJobCompleted), string(api.DescribeSourceJobCompletedWithFailure)}).
+		Where("source_id = ?", sourceID.String()).
+		Where(fmt.Sprintf("updated_at <= now() - interval '%d days'", nDaysBefore)).
+		Order("updated_at DESC").
+		First(&job)
+	if tx.Error != nil {
+		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
+		return nil, tx.Error
+	} else if tx.RowsAffected != 1 {
+		return nil, nil
+	}
+	return job, nil
+}
+
 type DescribedSourceJobDescribeResourceJobStatus struct {
 	DescribeSourceJobID       uint                          `gorm:"column:id"`
 	DescribeResourceJobStatus api.DescribeResourceJobStatus `gorm:"column:status"`
@@ -703,7 +723,7 @@ func (db Database) GetOldCompletedInsightJob(insightID uint, nDaysBefore int) (*
 	tx := db.orm.Model(&InsightJob{}).
 		Where("status = ?", insightapi.InsightJobSucceeded).
 		Where("insight_id = ?", insightID).
-		Where(fmt.Sprintf("updated_at < now() - interval '%d days'", nDaysBefore)).
+		Where(fmt.Sprintf("updated_at <= now() - interval '%d days'", nDaysBefore)).
 		Order("updated_at DESC").
 		First(&job)
 	if tx.Error != nil {

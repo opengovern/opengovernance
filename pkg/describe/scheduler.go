@@ -925,27 +925,87 @@ func newComplianceReportJob(a Source) ComplianceReportJob {
 }
 
 func enqueueDescribeResourceJobs(logger *zap.Logger, db Database, q queue.Interface, a Source, daj DescribeSourceJob, describedAt time.Time) {
+	var oldJobFailed error
+	var lastDayJobID, lastWeekJobID, lastQuarterJobID, lastYearJobID uint
+
+	lastDay, err := db.GetOldCompletedSourceJob(daj.SourceID, 1)
+	if err != nil {
+		logger.Error("Failed to GetOldCompletedSourceJob",
+			zap.String("sourceId", daj.SourceID.String()),
+			zap.Error(err),
+		)
+		oldJobFailed = err
+	}
+	if lastDay != nil {
+		lastDayJobID = lastDay.ID
+	}
+
+	lastWeek, err := db.GetOldCompletedSourceJob(daj.SourceID, 7)
+	if err != nil {
+		logger.Error("Failed to GetOldCompletedSourceJob",
+			zap.String("sourceId", daj.SourceID.String()),
+			zap.Error(err),
+		)
+		oldJobFailed = err
+	}
+	if lastWeek != nil {
+		lastWeekJobID = lastWeek.ID
+	}
+
+	lastQuarter, err := db.GetOldCompletedSourceJob(daj.SourceID, 93)
+	if err != nil {
+		logger.Error("Failed to GetOldCompletedSourceJob",
+			zap.String("sourceId", daj.SourceID.String()),
+			zap.Error(err),
+		)
+		oldJobFailed = err
+	}
+	if lastQuarter != nil {
+		lastQuarterJobID = lastQuarter.ID
+	}
+
+	lastYear, err := db.GetOldCompletedSourceJob(daj.SourceID, 428)
+	if err != nil {
+		logger.Error("Failed to GetOldCompletedSourceJob",
+			zap.String("sourceId", daj.SourceID.String()),
+			zap.Error(err),
+		)
+		oldJobFailed = err
+	}
+	if lastYear != nil {
+		lastYearJobID = lastYear.ID
+	}
+
 	for i, drj := range daj.DescribeResourceJobs {
 		nextStatus := api.DescribeResourceJobQueued
 		errMsg := ""
 
-		if err := q.Publish(DescribeJob{
-			JobID:        drj.ID,
-			ParentJobID:  daj.ID,
-			SourceID:     daj.SourceID.String(),
-			AccountID:    daj.AccountID,
-			SourceType:   a.Type,
-			ResourceType: drj.ResourceType,
-			DescribedAt:  describedAt.UnixMilli(),
-			ConfigReg:    a.ConfigRef,
-		}); err != nil {
-			logger.Error("Failed to queue DescribeResourceJob",
-				zap.Uint("jobId", drj.ID),
-				zap.Error(err),
-			)
+		if oldJobFailed == nil {
+			if err := q.Publish(DescribeJob{
+				JobID:                  drj.ID,
+				ParentJobID:            daj.ID,
+				ResourceType:           drj.ResourceType,
+				SourceID:               daj.SourceID.String(),
+				AccountID:              daj.AccountID,
+				DescribedAt:            describedAt.UnixMilli(),
+				SourceType:             a.Type,
+				ConfigReg:              a.ConfigRef,
+				LastDaySourceJobID:     lastDayJobID,
+				LastWeekSourceJobID:    lastWeekJobID,
+				LastQuarterSourceJobID: lastQuarterJobID,
+				LastYearSourceJobID:    lastYearJobID,
+			}); err != nil {
+				logger.Error("Failed to queue DescribeResourceJob",
+					zap.Uint("jobId", drj.ID),
+					zap.Error(err),
+				)
 
+				nextStatus = api.DescribeResourceJobFailed
+				errMsg = fmt.Sprintf("queue: %s", err.Error())
+			}
+		} else {
 			nextStatus = api.DescribeResourceJobFailed
-			errMsg = fmt.Sprintf("queue: %s", err.Error())
+			errMsg = fmt.Sprintf("queue: %s", oldJobFailed.Error())
 		}
 
 		if err := db.UpdateDescribeResourceJobStatus(drj.ID, nextStatus, errMsg); err != nil {
