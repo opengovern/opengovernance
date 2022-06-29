@@ -55,8 +55,8 @@ func (s *HttpServer) Register(e *echo.Echo) {
 // HandleListSources godoc
 // @Summary      List Sources
 // @Description  Getting all of Keibi sources
-// @Tags         schedule
-// @Produce      json
+// @Tags     schedule
+// @Produce  json
 // @Success      200  {object}  []api.Source
 // @Router       /schedule/api/v1/sources [get]
 func (s HttpServer) HandleListSources(ctx echo.Context) error {

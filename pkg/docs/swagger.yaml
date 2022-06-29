@@ -124,6 +124,14 @@ definitions:
     type: object
   api.CategoriesResponse:
     properties:
+      lastDayCount:
+        type: integer
+      lastQuarterCount:
+        type: integer
+      lastWeekCount:
+        type: integer
+      lastYearCount:
+        type: integer
       resourceCount:
         type: integer
       serviceName:
@@ -161,6 +169,8 @@ definitions:
         type: array
       query:
         type: string
+      smartQueryID:
+        type: integer
     type: object
   api.CreateSPNResponse:
     properties:
@@ -329,6 +339,8 @@ definitions:
         type: array
       query:
         type: string
+      smartQueryID:
+        type: integer
     type: object
   api.InviteResponse:
     properties:
@@ -677,6 +689,14 @@ definitions:
     type: object
   api.TopServicesResponse:
     properties:
+      lastDayCount:
+        type: integer
+      lastQuarterCount:
+        type: integer
+      lastWeekCount:
+        type: integer
+      lastYearCount:
+        type: integer
       resourceCount:
         type: integer
       serviceName:
@@ -1586,7 +1606,7 @@ paths:
       summary: Returns top n services of specified provider by cost
       tags:
       - cost
-  /inventory/api/v1/insight/result:
+  /inventory/api/v1/insight/results:
     get:
       parameters:
       - description: Request Body
