@@ -2049,12 +2049,10 @@ paths:
       - description: SourceID
         in: query
         name: sourceId
-        required: true
         type: string
       - description: Provider
         in: query
         name: provider
-        required: true
         type: string
       - description: Time Window
         enum:
@@ -2065,7 +2063,6 @@ paths:
         - max
         in: query
         name: timeWindow
-        required: true
         type: string
       produces:
       - application/json

@@ -1851,15 +1851,13 @@ const docTemplate = `{
                         "type": "string",
                         "description": "SourceID",
                         "name": "sourceId",
-                        "in": "query",
-                        "required": true
+                        "in": "query"
                     },
                     {
                         "type": "string",
                         "description": "Provider",
                         "name": "provider",
-                        "in": "query",
-                        "required": true
+                        "in": "query"
                     },
                     {
                         "enum": [
@@ -1872,8 +1870,7 @@ const docTemplate = `{
                         "type": "string",
                         "description": "Time Window",
                         "name": "timeWindow",
-                        "in": "query",
-                        "required": true
+                        "in": "query"
                     }
                 ],
                 "responses": {

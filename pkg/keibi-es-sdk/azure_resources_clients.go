@@ -11,8 +11,14 @@ import (
 // ==========================  START: APIManagement =============================
 
 type APIManagement struct {
-	Description azure.APIManagementDescription `json:"description"`
-	Metadata    azure.Metadata                 `json:"metadata"`
+	Description   azure.APIManagementDescription `json:"description"`
+	Metadata      azure.Metadata                 `json:"metadata"`
+	ResourceJobID int                            `json:"resource_job_id"`
+	SourceJobID   int                            `json:"source_job_id"`
+	ResourceType  string                         `json:"resource_type"`
+	SourceType    string                         `json:"source_type"`
+	ID            string                         `json:"id"`
+	SourceID      string                         `json:"source_id"`
 }
 
 type APIManagementHit struct {
@@ -149,8 +155,14 @@ func GetAPIManagement(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydrat
 // ==========================  START: AppConfiguration =============================
 
 type AppConfiguration struct {
-	Description azure.AppConfigurationDescription `json:"description"`
-	Metadata    azure.Metadata                    `json:"metadata"`
+	Description   azure.AppConfigurationDescription `json:"description"`
+	Metadata      azure.Metadata                    `json:"metadata"`
+	ResourceJobID int                               `json:"resource_job_id"`
+	SourceJobID   int                               `json:"source_job_id"`
+	ResourceType  string                            `json:"resource_type"`
+	SourceType    string                            `json:"source_type"`
+	ID            string                            `json:"id"`
+	SourceID      string                            `json:"source_id"`
 }
 
 type AppConfigurationHit struct {
@@ -287,8 +299,14 @@ func GetAppConfiguration(ctx context.Context, d *plugin.QueryData, _ *plugin.Hyd
 // ==========================  START: AppServiceEnvironment =============================
 
 type AppServiceEnvironment struct {
-	Description azure.AppServiceEnvironmentDescription `json:"description"`
-	Metadata    azure.Metadata                         `json:"metadata"`
+	Description   azure.AppServiceEnvironmentDescription `json:"description"`
+	Metadata      azure.Metadata                         `json:"metadata"`
+	ResourceJobID int                                    `json:"resource_job_id"`
+	SourceJobID   int                                    `json:"source_job_id"`
+	ResourceType  string                                 `json:"resource_type"`
+	SourceType    string                                 `json:"source_type"`
+	ID            string                                 `json:"id"`
+	SourceID      string                                 `json:"source_id"`
 }
 
 type AppServiceEnvironmentHit struct {
@@ -425,8 +443,14 @@ func GetAppServiceEnvironment(ctx context.Context, d *plugin.QueryData, _ *plugi
 // ==========================  START: AppServiceFunctionApp =============================
 
 type AppServiceFunctionApp struct {
-	Description azure.AppServiceFunctionAppDescription `json:"description"`
-	Metadata    azure.Metadata                         `json:"metadata"`
+	Description   azure.AppServiceFunctionAppDescription `json:"description"`
+	Metadata      azure.Metadata                         `json:"metadata"`
+	ResourceJobID int                                    `json:"resource_job_id"`
+	SourceJobID   int                                    `json:"source_job_id"`
+	ResourceType  string                                 `json:"resource_type"`
+	SourceType    string                                 `json:"source_type"`
+	ID            string                                 `json:"id"`
+	SourceID      string                                 `json:"source_id"`
 }
 
 type AppServiceFunctionAppHit struct {
@@ -563,8 +587,14 @@ func GetAppServiceFunctionApp(ctx context.Context, d *plugin.QueryData, _ *plugi
 // ==========================  START: AppServiceWebApp =============================
 
 type AppServiceWebApp struct {
-	Description azure.AppServiceWebAppDescription `json:"description"`
-	Metadata    azure.Metadata                    `json:"metadata"`
+	Description   azure.AppServiceWebAppDescription `json:"description"`
+	Metadata      azure.Metadata                    `json:"metadata"`
+	ResourceJobID int                               `json:"resource_job_id"`
+	SourceJobID   int                               `json:"source_job_id"`
+	ResourceType  string                            `json:"resource_type"`
+	SourceType    string                            `json:"source_type"`
+	ID            string                            `json:"id"`
+	SourceID      string                            `json:"source_id"`
 }
 
 type AppServiceWebAppHit struct {
@@ -701,8 +731,14 @@ func GetAppServiceWebApp(ctx context.Context, d *plugin.QueryData, _ *plugin.Hyd
 // ==========================  START: ComputeDisk =============================
 
 type ComputeDisk struct {
-	Description azure.ComputeDiskDescription `json:"description"`
-	Metadata    azure.Metadata               `json:"metadata"`
+	Description   azure.ComputeDiskDescription `json:"description"`
+	Metadata      azure.Metadata               `json:"metadata"`
+	ResourceJobID int                          `json:"resource_job_id"`
+	SourceJobID   int                          `json:"source_job_id"`
+	ResourceType  string                       `json:"resource_type"`
+	SourceType    string                       `json:"source_type"`
+	ID            string                       `json:"id"`
+	SourceID      string                       `json:"source_id"`
 }
 
 type ComputeDiskHit struct {
@@ -839,8 +875,14 @@ func GetComputeDisk(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateD
 // ==========================  START: ComputeDiskAccess =============================
 
 type ComputeDiskAccess struct {
-	Description azure.ComputeDiskAccessDescription `json:"description"`
-	Metadata    azure.Metadata                     `json:"metadata"`
+	Description   azure.ComputeDiskAccessDescription `json:"description"`
+	Metadata      azure.Metadata                     `json:"metadata"`
+	ResourceJobID int                                `json:"resource_job_id"`
+	SourceJobID   int                                `json:"source_job_id"`
+	ResourceType  string                             `json:"resource_type"`
+	SourceType    string                             `json:"source_type"`
+	ID            string                             `json:"id"`
+	SourceID      string                             `json:"source_id"`
 }
 
 type ComputeDiskAccessHit struct {
@@ -977,8 +1019,14 @@ func GetComputeDiskAccess(ctx context.Context, d *plugin.QueryData, _ *plugin.Hy
 // ==========================  START: ComputeVirtualMachineScaleSet =============================
 
 type ComputeVirtualMachineScaleSet struct {
-	Description azure.ComputeVirtualMachineScaleSetDescription `json:"description"`
-	Metadata    azure.Metadata                                 `json:"metadata"`
+	Description   azure.ComputeVirtualMachineScaleSetDescription `json:"description"`
+	Metadata      azure.Metadata                                 `json:"metadata"`
+	ResourceJobID int                                            `json:"resource_job_id"`
+	SourceJobID   int                                            `json:"source_job_id"`
+	ResourceType  string                                         `json:"resource_type"`
+	SourceType    string                                         `json:"source_type"`
+	ID            string                                         `json:"id"`
+	SourceID      string                                         `json:"source_id"`
 }
 
 type ComputeVirtualMachineScaleSetHit struct {
@@ -1115,8 +1163,14 @@ func GetComputeVirtualMachineScaleSet(ctx context.Context, d *plugin.QueryData, 
 // ==========================  START: DataboxEdgeDevice =============================
 
 type DataboxEdgeDevice struct {
-	Description azure.DataboxEdgeDeviceDescription `json:"description"`
-	Metadata    azure.Metadata                     `json:"metadata"`
+	Description   azure.DataboxEdgeDeviceDescription `json:"description"`
+	Metadata      azure.Metadata                     `json:"metadata"`
+	ResourceJobID int                                `json:"resource_job_id"`
+	SourceJobID   int                                `json:"source_job_id"`
+	ResourceType  string                             `json:"resource_type"`
+	SourceType    string                             `json:"source_type"`
+	ID            string                             `json:"id"`
+	SourceID      string                             `json:"source_id"`
 }
 
 type DataboxEdgeDeviceHit struct {
@@ -1253,8 +1307,14 @@ func GetDataboxEdgeDevice(ctx context.Context, d *plugin.QueryData, _ *plugin.Hy
 // ==========================  START: HealthcareService =============================
 
 type HealthcareService struct {
-	Description azure.HealthcareServiceDescription `json:"description"`
-	Metadata    azure.Metadata                     `json:"metadata"`
+	Description   azure.HealthcareServiceDescription `json:"description"`
+	Metadata      azure.Metadata                     `json:"metadata"`
+	ResourceJobID int                                `json:"resource_job_id"`
+	SourceJobID   int                                `json:"source_job_id"`
+	ResourceType  string                             `json:"resource_type"`
+	SourceType    string                             `json:"source_type"`
+	ID            string                             `json:"id"`
+	SourceID      string                             `json:"source_id"`
 }
 
 type HealthcareServiceHit struct {
@@ -1391,8 +1451,14 @@ func GetHealthcareService(ctx context.Context, d *plugin.QueryData, _ *plugin.Hy
 // ==========================  START: HpcCache =============================
 
 type HpcCache struct {
-	Description azure.HpcCacheDescription `json:"description"`
-	Metadata    azure.Metadata            `json:"metadata"`
+	Description   azure.HpcCacheDescription `json:"description"`
+	Metadata      azure.Metadata            `json:"metadata"`
+	ResourceJobID int                       `json:"resource_job_id"`
+	SourceJobID   int                       `json:"source_job_id"`
+	ResourceType  string                    `json:"resource_type"`
+	SourceType    string                    `json:"source_type"`
+	ID            string                    `json:"id"`
+	SourceID      string                    `json:"source_id"`
 }
 
 type HpcCacheHit struct {
@@ -1529,8 +1595,14 @@ func GetHpcCache(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData
 // ==========================  START: KeyVaultKey =============================
 
 type KeyVaultKey struct {
-	Description azure.KeyVaultKeyDescription `json:"description"`
-	Metadata    azure.Metadata               `json:"metadata"`
+	Description   azure.KeyVaultKeyDescription `json:"description"`
+	Metadata      azure.Metadata               `json:"metadata"`
+	ResourceJobID int                          `json:"resource_job_id"`
+	SourceJobID   int                          `json:"source_job_id"`
+	ResourceType  string                       `json:"resource_type"`
+	SourceType    string                       `json:"source_type"`
+	ID            string                       `json:"id"`
+	SourceID      string                       `json:"source_id"`
 }
 
 type KeyVaultKeyHit struct {
@@ -1668,8 +1740,14 @@ func GetKeyVaultKey(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateD
 // ==========================  START: KubernetesCluster =============================
 
 type KubernetesCluster struct {
-	Description azure.KubernetesClusterDescription `json:"description"`
-	Metadata    azure.Metadata                     `json:"metadata"`
+	Description   azure.KubernetesClusterDescription `json:"description"`
+	Metadata      azure.Metadata                     `json:"metadata"`
+	ResourceJobID int                                `json:"resource_job_id"`
+	SourceJobID   int                                `json:"source_job_id"`
+	ResourceType  string                             `json:"resource_type"`
+	SourceType    string                             `json:"source_type"`
+	ID            string                             `json:"id"`
+	SourceID      string                             `json:"source_id"`
 }
 
 type KubernetesClusterHit struct {
@@ -1806,8 +1884,14 @@ func GetKubernetesCluster(ctx context.Context, d *plugin.QueryData, _ *plugin.Hy
 // ==========================  START: NetworkInterface =============================
 
 type NetworkInterface struct {
-	Description azure.NetworkInterfaceDescription `json:"description"`
-	Metadata    azure.Metadata                    `json:"metadata"`
+	Description   azure.NetworkInterfaceDescription `json:"description"`
+	Metadata      azure.Metadata                    `json:"metadata"`
+	ResourceJobID int                               `json:"resource_job_id"`
+	SourceJobID   int                               `json:"source_job_id"`
+	ResourceType  string                            `json:"resource_type"`
+	SourceType    string                            `json:"source_type"`
+	ID            string                            `json:"id"`
+	SourceID      string                            `json:"source_id"`
 }
 
 type NetworkInterfaceHit struct {
@@ -1944,8 +2028,14 @@ func GetNetworkInterface(ctx context.Context, d *plugin.QueryData, _ *plugin.Hyd
 // ==========================  START: NetworkWatcherFlowLog =============================
 
 type NetworkWatcherFlowLog struct {
-	Description azure.NetworkWatcherFlowLogDescription `json:"description"`
-	Metadata    azure.Metadata                         `json:"metadata"`
+	Description   azure.NetworkWatcherFlowLogDescription `json:"description"`
+	Metadata      azure.Metadata                         `json:"metadata"`
+	ResourceJobID int                                    `json:"resource_job_id"`
+	SourceJobID   int                                    `json:"source_job_id"`
+	ResourceType  string                                 `json:"resource_type"`
+	SourceType    string                                 `json:"source_type"`
+	ID            string                                 `json:"id"`
+	SourceID      string                                 `json:"source_id"`
 }
 
 type NetworkWatcherFlowLogHit struct {
@@ -2083,8 +2173,14 @@ func GetNetworkWatcherFlowLog(ctx context.Context, d *plugin.QueryData, _ *plugi
 // ==========================  START: PolicyAssignment =============================
 
 type PolicyAssignment struct {
-	Description azure.PolicyAssignmentDescription `json:"description"`
-	Metadata    azure.Metadata                    `json:"metadata"`
+	Description   azure.PolicyAssignmentDescription `json:"description"`
+	Metadata      azure.Metadata                    `json:"metadata"`
+	ResourceJobID int                               `json:"resource_job_id"`
+	SourceJobID   int                               `json:"source_job_id"`
+	ResourceType  string                            `json:"resource_type"`
+	SourceType    string                            `json:"source_type"`
+	ID            string                            `json:"id"`
+	SourceID      string                            `json:"source_id"`
 }
 
 type PolicyAssignmentHit struct {
@@ -2220,8 +2316,14 @@ func GetPolicyAssignment(ctx context.Context, d *plugin.QueryData, _ *plugin.Hyd
 // ==========================  START: RedisCache =============================
 
 type RedisCache struct {
-	Description azure.RedisCacheDescription `json:"description"`
-	Metadata    azure.Metadata              `json:"metadata"`
+	Description   azure.RedisCacheDescription `json:"description"`
+	Metadata      azure.Metadata              `json:"metadata"`
+	ResourceJobID int                         `json:"resource_job_id"`
+	SourceJobID   int                         `json:"source_job_id"`
+	ResourceType  string                      `json:"resource_type"`
+	SourceType    string                      `json:"source_type"`
+	ID            string                      `json:"id"`
+	SourceID      string                      `json:"source_id"`
 }
 
 type RedisCacheHit struct {
@@ -2358,8 +2460,14 @@ func GetRedisCache(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateDa
 // ==========================  START: ResourceLink =============================
 
 type ResourceLink struct {
-	Description azure.ResourceLinkDescription `json:"description"`
-	Metadata    azure.Metadata                `json:"metadata"`
+	Description   azure.ResourceLinkDescription `json:"description"`
+	Metadata      azure.Metadata                `json:"metadata"`
+	ResourceJobID int                           `json:"resource_job_id"`
+	SourceJobID   int                           `json:"source_job_id"`
+	ResourceType  string                        `json:"resource_type"`
+	SourceType    string                        `json:"source_type"`
+	ID            string                        `json:"id"`
+	SourceID      string                        `json:"source_id"`
 }
 
 type ResourceLinkHit struct {
@@ -2495,8 +2603,14 @@ func GetResourceLink(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydrate
 // ==========================  START: RoleAssignment =============================
 
 type RoleAssignment struct {
-	Description azure.RoleAssignmentDescription `json:"description"`
-	Metadata    azure.Metadata                  `json:"metadata"`
+	Description   azure.RoleAssignmentDescription `json:"description"`
+	Metadata      azure.Metadata                  `json:"metadata"`
+	ResourceJobID int                             `json:"resource_job_id"`
+	SourceJobID   int                             `json:"source_job_id"`
+	ResourceType  string                          `json:"resource_type"`
+	SourceType    string                          `json:"source_type"`
+	ID            string                          `json:"id"`
+	SourceID      string                          `json:"source_id"`
 }
 
 type RoleAssignmentHit struct {
@@ -2632,8 +2746,14 @@ func GetRoleAssignment(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydra
 // ==========================  START: RoleDefinition =============================
 
 type RoleDefinition struct {
-	Description azure.RoleDefinitionDescription `json:"description"`
-	Metadata    azure.Metadata                  `json:"metadata"`
+	Description   azure.RoleDefinitionDescription `json:"description"`
+	Metadata      azure.Metadata                  `json:"metadata"`
+	ResourceJobID int                             `json:"resource_job_id"`
+	SourceJobID   int                             `json:"source_job_id"`
+	ResourceType  string                          `json:"resource_type"`
+	SourceType    string                          `json:"source_type"`
+	ID            string                          `json:"id"`
+	SourceID      string                          `json:"source_id"`
 }
 
 type RoleDefinitionHit struct {
@@ -2769,8 +2889,14 @@ func GetRoleDefinition(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydra
 // ==========================  START: SecurityCenterAutoProvisioning =============================
 
 type SecurityCenterAutoProvisioning struct {
-	Description azure.SecurityCenterAutoProvisioningDescription `json:"description"`
-	Metadata    azure.Metadata                                  `json:"metadata"`
+	Description   azure.SecurityCenterAutoProvisioningDescription `json:"description"`
+	Metadata      azure.Metadata                                  `json:"metadata"`
+	ResourceJobID int                                             `json:"resource_job_id"`
+	SourceJobID   int                                             `json:"source_job_id"`
+	ResourceType  string                                          `json:"resource_type"`
+	SourceType    string                                          `json:"source_type"`
+	ID            string                                          `json:"id"`
+	SourceID      string                                          `json:"source_id"`
 }
 
 type SecurityCenterAutoProvisioningHit struct {
@@ -2906,8 +3032,14 @@ func GetSecurityCenterAutoProvisioning(ctx context.Context, d *plugin.QueryData,
 // ==========================  START: SecurityCenterContact =============================
 
 type SecurityCenterContact struct {
-	Description azure.SecurityCenterContactDescription `json:"description"`
-	Metadata    azure.Metadata                         `json:"metadata"`
+	Description   azure.SecurityCenterContactDescription `json:"description"`
+	Metadata      azure.Metadata                         `json:"metadata"`
+	ResourceJobID int                                    `json:"resource_job_id"`
+	SourceJobID   int                                    `json:"source_job_id"`
+	ResourceType  string                                 `json:"resource_type"`
+	SourceType    string                                 `json:"source_type"`
+	ID            string                                 `json:"id"`
+	SourceID      string                                 `json:"source_id"`
 }
 
 type SecurityCenterContactHit struct {
@@ -3043,8 +3175,14 @@ func GetSecurityCenterContact(ctx context.Context, d *plugin.QueryData, _ *plugi
 // ==========================  START: SecurityCenterJitNetworkAccessPolicy =============================
 
 type SecurityCenterJitNetworkAccessPolicy struct {
-	Description azure.SecurityCenterJitNetworkAccessPolicyDescription `json:"description"`
-	Metadata    azure.Metadata                                        `json:"metadata"`
+	Description   azure.SecurityCenterJitNetworkAccessPolicyDescription `json:"description"`
+	Metadata      azure.Metadata                                        `json:"metadata"`
+	ResourceJobID int                                                   `json:"resource_job_id"`
+	SourceJobID   int                                                   `json:"source_job_id"`
+	ResourceType  string                                                `json:"resource_type"`
+	SourceType    string                                                `json:"source_type"`
+	ID            string                                                `json:"id"`
+	SourceID      string                                                `json:"source_id"`
 }
 
 type SecurityCenterJitNetworkAccessPolicyHit struct {
@@ -3178,8 +3316,14 @@ func GetSecurityCenterJitNetworkAccessPolicy(ctx context.Context, d *plugin.Quer
 // ==========================  START: SecurityCenterSetting =============================
 
 type SecurityCenterSetting struct {
-	Description azure.SecurityCenterSettingDescription `json:"description"`
-	Metadata    azure.Metadata                         `json:"metadata"`
+	Description   azure.SecurityCenterSettingDescription `json:"description"`
+	Metadata      azure.Metadata                         `json:"metadata"`
+	ResourceJobID int                                    `json:"resource_job_id"`
+	SourceJobID   int                                    `json:"source_job_id"`
+	ResourceType  string                                 `json:"resource_type"`
+	SourceType    string                                 `json:"source_type"`
+	ID            string                                 `json:"id"`
+	SourceID      string                                 `json:"source_id"`
 }
 
 type SecurityCenterSettingHit struct {
@@ -3315,8 +3459,14 @@ func GetSecurityCenterSetting(ctx context.Context, d *plugin.QueryData, _ *plugi
 // ==========================  START: SecurityCenterSubscriptionPricing =============================
 
 type SecurityCenterSubscriptionPricing struct {
-	Description azure.SecurityCenterSubscriptionPricingDescription `json:"description"`
-	Metadata    azure.Metadata                                     `json:"metadata"`
+	Description   azure.SecurityCenterSubscriptionPricingDescription `json:"description"`
+	Metadata      azure.Metadata                                     `json:"metadata"`
+	ResourceJobID int                                                `json:"resource_job_id"`
+	SourceJobID   int                                                `json:"source_job_id"`
+	ResourceType  string                                             `json:"resource_type"`
+	SourceType    string                                             `json:"source_type"`
+	ID            string                                             `json:"id"`
+	SourceID      string                                             `json:"source_id"`
 }
 
 type SecurityCenterSubscriptionPricingHit struct {
@@ -3452,8 +3602,14 @@ func GetSecurityCenterSubscriptionPricing(ctx context.Context, d *plugin.QueryDa
 // ==========================  START: StorageContainer =============================
 
 type StorageContainer struct {
-	Description azure.StorageContainerDescription `json:"description"`
-	Metadata    azure.Metadata                    `json:"metadata"`
+	Description   azure.StorageContainerDescription `json:"description"`
+	Metadata      azure.Metadata                    `json:"metadata"`
+	ResourceJobID int                               `json:"resource_job_id"`
+	SourceJobID   int                               `json:"source_job_id"`
+	ResourceType  string                            `json:"resource_type"`
+	SourceType    string                            `json:"source_type"`
+	ID            string                            `json:"id"`
+	SourceID      string                            `json:"source_id"`
 }
 
 type StorageContainerHit struct {
@@ -3591,8 +3747,14 @@ func GetStorageContainer(ctx context.Context, d *plugin.QueryData, _ *plugin.Hyd
 // ==========================  START: Subnet =============================
 
 type Subnet struct {
-	Description azure.SubnetDescription `json:"description"`
-	Metadata    azure.Metadata          `json:"metadata"`
+	Description   azure.SubnetDescription `json:"description"`
+	Metadata      azure.Metadata          `json:"metadata"`
+	ResourceJobID int                     `json:"resource_job_id"`
+	SourceJobID   int                     `json:"source_job_id"`
+	ResourceType  string                  `json:"resource_type"`
+	SourceType    string                  `json:"source_type"`
+	ID            string                  `json:"id"`
+	SourceID      string                  `json:"source_id"`
 }
 
 type SubnetHit struct {
@@ -3730,8 +3892,14 @@ func GetSubnet(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) 
 // ==========================  START: VirtualNetwork =============================
 
 type VirtualNetwork struct {
-	Description azure.VirtualNetworkDescription `json:"description"`
-	Metadata    azure.Metadata                  `json:"metadata"`
+	Description   azure.VirtualNetworkDescription `json:"description"`
+	Metadata      azure.Metadata                  `json:"metadata"`
+	ResourceJobID int                             `json:"resource_job_id"`
+	SourceJobID   int                             `json:"source_job_id"`
+	ResourceType  string                          `json:"resource_type"`
+	SourceType    string                          `json:"source_type"`
+	ID            string                          `json:"id"`
+	SourceID      string                          `json:"source_id"`
 }
 
 type VirtualNetworkHit struct {
@@ -3868,8 +4036,14 @@ func GetVirtualNetwork(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydra
 // ==========================  START: Tenant =============================
 
 type Tenant struct {
-	Description azure.TenantDescription `json:"description"`
-	Metadata    azure.Metadata          `json:"metadata"`
+	Description   azure.TenantDescription `json:"description"`
+	Metadata      azure.Metadata          `json:"metadata"`
+	ResourceJobID int                     `json:"resource_job_id"`
+	SourceJobID   int                     `json:"source_job_id"`
+	ResourceType  string                  `json:"resource_type"`
+	SourceType    string                  `json:"source_type"`
+	ID            string                  `json:"id"`
+	SourceID      string                  `json:"source_id"`
 }
 
 type TenantHit struct {
@@ -4003,8 +4177,14 @@ func GetTenant(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) 
 // ==========================  START: Subscription =============================
 
 type Subscription struct {
-	Description azure.SubscriptionDescription `json:"description"`
-	Metadata    azure.Metadata                `json:"metadata"`
+	Description   azure.SubscriptionDescription `json:"description"`
+	Metadata      azure.Metadata                `json:"metadata"`
+	ResourceJobID int                           `json:"resource_job_id"`
+	SourceJobID   int                           `json:"source_job_id"`
+	ResourceType  string                        `json:"resource_type"`
+	SourceType    string                        `json:"source_type"`
+	ID            string                        `json:"id"`
+	SourceID      string                        `json:"source_id"`
 }
 
 type SubscriptionHit struct {
@@ -4138,8 +4318,14 @@ func GetSubscription(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydrate
 // ==========================  START: ApplicationGateway =============================
 
 type ApplicationGateway struct {
-	Description azure.ApplicationGatewayDescription `json:"description"`
-	Metadata    azure.Metadata                      `json:"metadata"`
+	Description   azure.ApplicationGatewayDescription `json:"description"`
+	Metadata      azure.Metadata                      `json:"metadata"`
+	ResourceJobID int                                 `json:"resource_job_id"`
+	SourceJobID   int                                 `json:"source_job_id"`
+	ResourceType  string                              `json:"resource_type"`
+	SourceType    string                              `json:"source_type"`
+	ID            string                              `json:"id"`
+	SourceID      string                              `json:"source_id"`
 }
 
 type ApplicationGatewayHit struct {
@@ -4276,8 +4462,14 @@ func GetApplicationGateway(ctx context.Context, d *plugin.QueryData, _ *plugin.H
 // ==========================  START: BatchAccount =============================
 
 type BatchAccount struct {
-	Description azure.BatchAccountDescription `json:"description"`
-	Metadata    azure.Metadata                `json:"metadata"`
+	Description   azure.BatchAccountDescription `json:"description"`
+	Metadata      azure.Metadata                `json:"metadata"`
+	ResourceJobID int                           `json:"resource_job_id"`
+	SourceJobID   int                           `json:"source_job_id"`
+	ResourceType  string                        `json:"resource_type"`
+	SourceType    string                        `json:"source_type"`
+	ID            string                        `json:"id"`
+	SourceID      string                        `json:"source_id"`
 }
 
 type BatchAccountHit struct {
@@ -4414,8 +4606,14 @@ func GetBatchAccount(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydrate
 // ==========================  START: CognitiveAccount =============================
 
 type CognitiveAccount struct {
-	Description azure.CognitiveAccountDescription `json:"description"`
-	Metadata    azure.Metadata                    `json:"metadata"`
+	Description   azure.CognitiveAccountDescription `json:"description"`
+	Metadata      azure.Metadata                    `json:"metadata"`
+	ResourceJobID int                               `json:"resource_job_id"`
+	SourceJobID   int                               `json:"source_job_id"`
+	ResourceType  string                            `json:"resource_type"`
+	SourceType    string                            `json:"source_type"`
+	ID            string                            `json:"id"`
+	SourceID      string                            `json:"source_id"`
 }
 
 type CognitiveAccountHit struct {
@@ -4552,8 +4750,14 @@ func GetCognitiveAccount(ctx context.Context, d *plugin.QueryData, _ *plugin.Hyd
 // ==========================  START: ComputeVirtualMachine =============================
 
 type ComputeVirtualMachine struct {
-	Description azure.ComputeVirtualMachineDescription `json:"description"`
-	Metadata    azure.Metadata                         `json:"metadata"`
+	Description   azure.ComputeVirtualMachineDescription `json:"description"`
+	Metadata      azure.Metadata                         `json:"metadata"`
+	ResourceJobID int                                    `json:"resource_job_id"`
+	SourceJobID   int                                    `json:"source_job_id"`
+	ResourceType  string                                 `json:"resource_type"`
+	SourceType    string                                 `json:"source_type"`
+	ID            string                                 `json:"id"`
+	SourceID      string                                 `json:"source_id"`
 }
 
 type ComputeVirtualMachineHit struct {
@@ -4690,8 +4894,14 @@ func GetComputeVirtualMachine(ctx context.Context, d *plugin.QueryData, _ *plugi
 // ==========================  START: ContainerRegistry =============================
 
 type ContainerRegistry struct {
-	Description azure.ContainerRegistryDescription `json:"description"`
-	Metadata    azure.Metadata                     `json:"metadata"`
+	Description   azure.ContainerRegistryDescription `json:"description"`
+	Metadata      azure.Metadata                     `json:"metadata"`
+	ResourceJobID int                                `json:"resource_job_id"`
+	SourceJobID   int                                `json:"source_job_id"`
+	ResourceType  string                             `json:"resource_type"`
+	SourceType    string                             `json:"source_type"`
+	ID            string                             `json:"id"`
+	SourceID      string                             `json:"source_id"`
 }
 
 type ContainerRegistryHit struct {
@@ -4828,8 +5038,14 @@ func GetContainerRegistry(ctx context.Context, d *plugin.QueryData, _ *plugin.Hy
 // ==========================  START: CosmosdbAccount =============================
 
 type CosmosdbAccount struct {
-	Description azure.CosmosdbAccountDescription `json:"description"`
-	Metadata    azure.Metadata                   `json:"metadata"`
+	Description   azure.CosmosdbAccountDescription `json:"description"`
+	Metadata      azure.Metadata                   `json:"metadata"`
+	ResourceJobID int                              `json:"resource_job_id"`
+	SourceJobID   int                              `json:"source_job_id"`
+	ResourceType  string                           `json:"resource_type"`
+	SourceType    string                           `json:"source_type"`
+	ID            string                           `json:"id"`
+	SourceID      string                           `json:"source_id"`
 }
 
 type CosmosdbAccountHit struct {
@@ -4966,8 +5182,14 @@ func GetCosmosdbAccount(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydr
 // ==========================  START: DataFactory =============================
 
 type DataFactory struct {
-	Description azure.DataFactoryDescription `json:"description"`
-	Metadata    azure.Metadata               `json:"metadata"`
+	Description   azure.DataFactoryDescription `json:"description"`
+	Metadata      azure.Metadata               `json:"metadata"`
+	ResourceJobID int                          `json:"resource_job_id"`
+	SourceJobID   int                          `json:"source_job_id"`
+	ResourceType  string                       `json:"resource_type"`
+	SourceType    string                       `json:"source_type"`
+	ID            string                       `json:"id"`
+	SourceID      string                       `json:"source_id"`
 }
 
 type DataFactoryHit struct {
@@ -5104,8 +5326,14 @@ func GetDataFactory(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateD
 // ==========================  START: DataLakeAnalyticsAccount =============================
 
 type DataLakeAnalyticsAccount struct {
-	Description azure.DataLakeAnalyticsAccountDescription `json:"description"`
-	Metadata    azure.Metadata                            `json:"metadata"`
+	Description   azure.DataLakeAnalyticsAccountDescription `json:"description"`
+	Metadata      azure.Metadata                            `json:"metadata"`
+	ResourceJobID int                                       `json:"resource_job_id"`
+	SourceJobID   int                                       `json:"source_job_id"`
+	ResourceType  string                                    `json:"resource_type"`
+	SourceType    string                                    `json:"source_type"`
+	ID            string                                    `json:"id"`
+	SourceID      string                                    `json:"source_id"`
 }
 
 type DataLakeAnalyticsAccountHit struct {
@@ -5242,8 +5470,14 @@ func GetDataLakeAnalyticsAccount(ctx context.Context, d *plugin.QueryData, _ *pl
 // ==========================  START: DataLakeStore =============================
 
 type DataLakeStore struct {
-	Description azure.DataLakeStoreDescription `json:"description"`
-	Metadata    azure.Metadata                 `json:"metadata"`
+	Description   azure.DataLakeStoreDescription `json:"description"`
+	Metadata      azure.Metadata                 `json:"metadata"`
+	ResourceJobID int                            `json:"resource_job_id"`
+	SourceJobID   int                            `json:"source_job_id"`
+	ResourceType  string                         `json:"resource_type"`
+	SourceType    string                         `json:"source_type"`
+	ID            string                         `json:"id"`
+	SourceID      string                         `json:"source_id"`
 }
 
 type DataLakeStoreHit struct {
@@ -5380,8 +5614,14 @@ func GetDataLakeStore(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydrat
 // ==========================  START: DiagnosticSetting =============================
 
 type DiagnosticSetting struct {
-	Description azure.DiagnosticSettingDescription `json:"description"`
-	Metadata    azure.Metadata                     `json:"metadata"`
+	Description   azure.DiagnosticSettingDescription `json:"description"`
+	Metadata      azure.Metadata                     `json:"metadata"`
+	ResourceJobID int                                `json:"resource_job_id"`
+	SourceJobID   int                                `json:"source_job_id"`
+	ResourceType  string                             `json:"resource_type"`
+	SourceType    string                             `json:"source_type"`
+	ID            string                             `json:"id"`
+	SourceID      string                             `json:"source_id"`
 }
 
 type DiagnosticSettingHit struct {
@@ -5518,8 +5758,14 @@ func GetDiagnosticSetting(ctx context.Context, d *plugin.QueryData, _ *plugin.Hy
 // ==========================  START: EventGridDomain =============================
 
 type EventGridDomain struct {
-	Description azure.EventGridDomainDescription `json:"description"`
-	Metadata    azure.Metadata                   `json:"metadata"`
+	Description   azure.EventGridDomainDescription `json:"description"`
+	Metadata      azure.Metadata                   `json:"metadata"`
+	ResourceJobID int                              `json:"resource_job_id"`
+	SourceJobID   int                              `json:"source_job_id"`
+	ResourceType  string                           `json:"resource_type"`
+	SourceType    string                           `json:"source_type"`
+	ID            string                           `json:"id"`
+	SourceID      string                           `json:"source_id"`
 }
 
 type EventGridDomainHit struct {
@@ -5656,8 +5902,14 @@ func GetEventGridDomain(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydr
 // ==========================  START: EventGridTopic =============================
 
 type EventGridTopic struct {
-	Description azure.EventGridTopicDescription `json:"description"`
-	Metadata    azure.Metadata                  `json:"metadata"`
+	Description   azure.EventGridTopicDescription `json:"description"`
+	Metadata      azure.Metadata                  `json:"metadata"`
+	ResourceJobID int                             `json:"resource_job_id"`
+	SourceJobID   int                             `json:"source_job_id"`
+	ResourceType  string                          `json:"resource_type"`
+	SourceType    string                          `json:"source_type"`
+	ID            string                          `json:"id"`
+	SourceID      string                          `json:"source_id"`
 }
 
 type EventGridTopicHit struct {
@@ -5794,8 +6046,14 @@ func GetEventGridTopic(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydra
 // ==========================  START: EventhubNamespace =============================
 
 type EventhubNamespace struct {
-	Description azure.EventhubNamespaceDescription `json:"description"`
-	Metadata    azure.Metadata                     `json:"metadata"`
+	Description   azure.EventhubNamespaceDescription `json:"description"`
+	Metadata      azure.Metadata                     `json:"metadata"`
+	ResourceJobID int                                `json:"resource_job_id"`
+	SourceJobID   int                                `json:"source_job_id"`
+	ResourceType  string                             `json:"resource_type"`
+	SourceType    string                             `json:"source_type"`
+	ID            string                             `json:"id"`
+	SourceID      string                             `json:"source_id"`
 }
 
 type EventhubNamespaceHit struct {
@@ -5932,8 +6190,14 @@ func GetEventhubNamespace(ctx context.Context, d *plugin.QueryData, _ *plugin.Hy
 // ==========================  START: Frontdoor =============================
 
 type Frontdoor struct {
-	Description azure.FrontdoorDescription `json:"description"`
-	Metadata    azure.Metadata             `json:"metadata"`
+	Description   azure.FrontdoorDescription `json:"description"`
+	Metadata      azure.Metadata             `json:"metadata"`
+	ResourceJobID int                        `json:"resource_job_id"`
+	SourceJobID   int                        `json:"source_job_id"`
+	ResourceType  string                     `json:"resource_type"`
+	SourceType    string                     `json:"source_type"`
+	ID            string                     `json:"id"`
+	SourceID      string                     `json:"source_id"`
 }
 
 type FrontdoorHit struct {
@@ -6070,8 +6334,14 @@ func GetFrontdoor(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateDat
 // ==========================  START: HdinsightCluster =============================
 
 type HdinsightCluster struct {
-	Description azure.HdinsightClusterDescription `json:"description"`
-	Metadata    azure.Metadata                    `json:"metadata"`
+	Description   azure.HdinsightClusterDescription `json:"description"`
+	Metadata      azure.Metadata                    `json:"metadata"`
+	ResourceJobID int                               `json:"resource_job_id"`
+	SourceJobID   int                               `json:"source_job_id"`
+	ResourceType  string                            `json:"resource_type"`
+	SourceType    string                            `json:"source_type"`
+	ID            string                            `json:"id"`
+	SourceID      string                            `json:"source_id"`
 }
 
 type HdinsightClusterHit struct {
@@ -6208,8 +6478,14 @@ func GetHdinsightCluster(ctx context.Context, d *plugin.QueryData, _ *plugin.Hyd
 // ==========================  START: HybridComputeMachine =============================
 
 type HybridComputeMachine struct {
-	Description azure.HybridComputeMachineDescription `json:"description"`
-	Metadata    azure.Metadata                        `json:"metadata"`
+	Description   azure.HybridComputeMachineDescription `json:"description"`
+	Metadata      azure.Metadata                        `json:"metadata"`
+	ResourceJobID int                                   `json:"resource_job_id"`
+	SourceJobID   int                                   `json:"source_job_id"`
+	ResourceType  string                                `json:"resource_type"`
+	SourceType    string                                `json:"source_type"`
+	ID            string                                `json:"id"`
+	SourceID      string                                `json:"source_id"`
 }
 
 type HybridComputeMachineHit struct {
@@ -6346,8 +6622,14 @@ func GetHybridComputeMachine(ctx context.Context, d *plugin.QueryData, _ *plugin
 // ==========================  START: IOTHub =============================
 
 type IOTHub struct {
-	Description azure.IOTHubDescription `json:"description"`
-	Metadata    azure.Metadata          `json:"metadata"`
+	Description   azure.IOTHubDescription `json:"description"`
+	Metadata      azure.Metadata          `json:"metadata"`
+	ResourceJobID int                     `json:"resource_job_id"`
+	SourceJobID   int                     `json:"source_job_id"`
+	ResourceType  string                  `json:"resource_type"`
+	SourceType    string                  `json:"source_type"`
+	ID            string                  `json:"id"`
+	SourceID      string                  `json:"source_id"`
 }
 
 type IOTHubHit struct {
@@ -6484,8 +6766,14 @@ func GetIOTHub(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) 
 // ==========================  START: KeyVault =============================
 
 type KeyVault struct {
-	Description azure.KeyVaultDescription `json:"description"`
-	Metadata    azure.Metadata            `json:"metadata"`
+	Description   azure.KeyVaultDescription `json:"description"`
+	Metadata      azure.Metadata            `json:"metadata"`
+	ResourceJobID int                       `json:"resource_job_id"`
+	SourceJobID   int                       `json:"source_job_id"`
+	ResourceType  string                    `json:"resource_type"`
+	SourceType    string                    `json:"source_type"`
+	ID            string                    `json:"id"`
+	SourceID      string                    `json:"source_id"`
 }
 
 type KeyVaultHit struct {
@@ -6622,8 +6910,14 @@ func GetKeyVault(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData
 // ==========================  START: KeyVaultManagedHardwareSecurityModule =============================
 
 type KeyVaultManagedHardwareSecurityModule struct {
-	Description azure.KeyVaultManagedHardwareSecurityModuleDescription `json:"description"`
-	Metadata    azure.Metadata                                         `json:"metadata"`
+	Description   azure.KeyVaultManagedHardwareSecurityModuleDescription `json:"description"`
+	Metadata      azure.Metadata                                         `json:"metadata"`
+	ResourceJobID int                                                    `json:"resource_job_id"`
+	SourceJobID   int                                                    `json:"source_job_id"`
+	ResourceType  string                                                 `json:"resource_type"`
+	SourceType    string                                                 `json:"source_type"`
+	ID            string                                                 `json:"id"`
+	SourceID      string                                                 `json:"source_id"`
 }
 
 type KeyVaultManagedHardwareSecurityModuleHit struct {
@@ -6760,8 +7054,14 @@ func GetKeyVaultManagedHardwareSecurityModule(ctx context.Context, d *plugin.Que
 // ==========================  START: KeyVaultSecret =============================
 
 type KeyVaultSecret struct {
-	Description azure.KeyVaultSecretDescription `json:"description"`
-	Metadata    azure.Metadata                  `json:"metadata"`
+	Description   azure.KeyVaultSecretDescription `json:"description"`
+	Metadata      azure.Metadata                  `json:"metadata"`
+	ResourceJobID int                             `json:"resource_job_id"`
+	SourceJobID   int                             `json:"source_job_id"`
+	ResourceType  string                          `json:"resource_type"`
+	SourceType    string                          `json:"source_type"`
+	ID            string                          `json:"id"`
+	SourceID      string                          `json:"source_id"`
 }
 
 type KeyVaultSecretHit struct {
@@ -6898,8 +7198,14 @@ func GetKeyVaultSecret(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydra
 // ==========================  START: KustoCluster =============================
 
 type KustoCluster struct {
-	Description azure.KustoClusterDescription `json:"description"`
-	Metadata    azure.Metadata                `json:"metadata"`
+	Description   azure.KustoClusterDescription `json:"description"`
+	Metadata      azure.Metadata                `json:"metadata"`
+	ResourceJobID int                           `json:"resource_job_id"`
+	SourceJobID   int                           `json:"source_job_id"`
+	ResourceType  string                        `json:"resource_type"`
+	SourceType    string                        `json:"source_type"`
+	ID            string                        `json:"id"`
+	SourceID      string                        `json:"source_id"`
 }
 
 type KustoClusterHit struct {
@@ -7036,8 +7342,14 @@ func GetKustoCluster(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydrate
 // ==========================  START: LogAlert =============================
 
 type LogAlert struct {
-	Description azure.LogAlertDescription `json:"description"`
-	Metadata    azure.Metadata            `json:"metadata"`
+	Description   azure.LogAlertDescription `json:"description"`
+	Metadata      azure.Metadata            `json:"metadata"`
+	ResourceJobID int                       `json:"resource_job_id"`
+	SourceJobID   int                       `json:"source_job_id"`
+	ResourceType  string                    `json:"resource_type"`
+	SourceType    string                    `json:"source_type"`
+	ID            string                    `json:"id"`
+	SourceID      string                    `json:"source_id"`
 }
 
 type LogAlertHit struct {
@@ -7174,8 +7486,14 @@ func GetLogAlert(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData
 // ==========================  START: LogProfile =============================
 
 type LogProfile struct {
-	Description azure.LogProfileDescription `json:"description"`
-	Metadata    azure.Metadata              `json:"metadata"`
+	Description   azure.LogProfileDescription `json:"description"`
+	Metadata      azure.Metadata              `json:"metadata"`
+	ResourceJobID int                         `json:"resource_job_id"`
+	SourceJobID   int                         `json:"source_job_id"`
+	ResourceType  string                      `json:"resource_type"`
+	SourceType    string                      `json:"source_type"`
+	ID            string                      `json:"id"`
+	SourceID      string                      `json:"source_id"`
 }
 
 type LogProfileHit struct {
@@ -7312,8 +7630,14 @@ func GetLogProfile(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateDa
 // ==========================  START: LogicAppWorkflow =============================
 
 type LogicAppWorkflow struct {
-	Description azure.LogicAppWorkflowDescription `json:"description"`
-	Metadata    azure.Metadata                    `json:"metadata"`
+	Description   azure.LogicAppWorkflowDescription `json:"description"`
+	Metadata      azure.Metadata                    `json:"metadata"`
+	ResourceJobID int                               `json:"resource_job_id"`
+	SourceJobID   int                               `json:"source_job_id"`
+	ResourceType  string                            `json:"resource_type"`
+	SourceType    string                            `json:"source_type"`
+	ID            string                            `json:"id"`
+	SourceID      string                            `json:"source_id"`
 }
 
 type LogicAppWorkflowHit struct {
@@ -7450,8 +7774,14 @@ func GetLogicAppWorkflow(ctx context.Context, d *plugin.QueryData, _ *plugin.Hyd
 // ==========================  START: MachineLearningWorkspace =============================
 
 type MachineLearningWorkspace struct {
-	Description azure.MachineLearningWorkspaceDescription `json:"description"`
-	Metadata    azure.Metadata                            `json:"metadata"`
+	Description   azure.MachineLearningWorkspaceDescription `json:"description"`
+	Metadata      azure.Metadata                            `json:"metadata"`
+	ResourceJobID int                                       `json:"resource_job_id"`
+	SourceJobID   int                                       `json:"source_job_id"`
+	ResourceType  string                                    `json:"resource_type"`
+	SourceType    string                                    `json:"source_type"`
+	ID            string                                    `json:"id"`
+	SourceID      string                                    `json:"source_id"`
 }
 
 type MachineLearningWorkspaceHit struct {
@@ -7588,8 +7918,14 @@ func GetMachineLearningWorkspace(ctx context.Context, d *plugin.QueryData, _ *pl
 // ==========================  START: MariadbServer =============================
 
 type MariadbServer struct {
-	Description azure.MariadbServerDescription `json:"description"`
-	Metadata    azure.Metadata                 `json:"metadata"`
+	Description   azure.MariadbServerDescription `json:"description"`
+	Metadata      azure.Metadata                 `json:"metadata"`
+	ResourceJobID int                            `json:"resource_job_id"`
+	SourceJobID   int                            `json:"source_job_id"`
+	ResourceType  string                         `json:"resource_type"`
+	SourceType    string                         `json:"source_type"`
+	ID            string                         `json:"id"`
+	SourceID      string                         `json:"source_id"`
 }
 
 type MariadbServerHit struct {
@@ -7726,8 +8062,14 @@ func GetMariadbServer(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydrat
 // ==========================  START: MysqlServer =============================
 
 type MysqlServer struct {
-	Description azure.MysqlServerDescription `json:"description"`
-	Metadata    azure.Metadata               `json:"metadata"`
+	Description   azure.MysqlServerDescription `json:"description"`
+	Metadata      azure.Metadata               `json:"metadata"`
+	ResourceJobID int                          `json:"resource_job_id"`
+	SourceJobID   int                          `json:"source_job_id"`
+	ResourceType  string                       `json:"resource_type"`
+	SourceType    string                       `json:"source_type"`
+	ID            string                       `json:"id"`
+	SourceID      string                       `json:"source_id"`
 }
 
 type MysqlServerHit struct {
@@ -7864,8 +8206,14 @@ func GetMysqlServer(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateD
 // ==========================  START: NetworkSecurityGroup =============================
 
 type NetworkSecurityGroup struct {
-	Description azure.NetworkSecurityGroupDescription `json:"description"`
-	Metadata    azure.Metadata                        `json:"metadata"`
+	Description   azure.NetworkSecurityGroupDescription `json:"description"`
+	Metadata      azure.Metadata                        `json:"metadata"`
+	ResourceJobID int                                   `json:"resource_job_id"`
+	SourceJobID   int                                   `json:"source_job_id"`
+	ResourceType  string                                `json:"resource_type"`
+	SourceType    string                                `json:"source_type"`
+	ID            string                                `json:"id"`
+	SourceID      string                                `json:"source_id"`
 }
 
 type NetworkSecurityGroupHit struct {
@@ -8002,8 +8350,14 @@ func GetNetworkSecurityGroup(ctx context.Context, d *plugin.QueryData, _ *plugin
 // ==========================  START: NetworkWatcher =============================
 
 type NetworkWatcher struct {
-	Description azure.NetworkWatcherDescription `json:"description"`
-	Metadata    azure.Metadata                  `json:"metadata"`
+	Description   azure.NetworkWatcherDescription `json:"description"`
+	Metadata      azure.Metadata                  `json:"metadata"`
+	ResourceJobID int                             `json:"resource_job_id"`
+	SourceJobID   int                             `json:"source_job_id"`
+	ResourceType  string                          `json:"resource_type"`
+	SourceType    string                          `json:"source_type"`
+	ID            string                          `json:"id"`
+	SourceID      string                          `json:"source_id"`
 }
 
 type NetworkWatcherHit struct {
@@ -8140,8 +8494,14 @@ func GetNetworkWatcher(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydra
 // ==========================  START: SearchService =============================
 
 type SearchService struct {
-	Description azure.SearchServiceDescription `json:"description"`
-	Metadata    azure.Metadata                 `json:"metadata"`
+	Description   azure.SearchServiceDescription `json:"description"`
+	Metadata      azure.Metadata                 `json:"metadata"`
+	ResourceJobID int                            `json:"resource_job_id"`
+	SourceJobID   int                            `json:"source_job_id"`
+	ResourceType  string                         `json:"resource_type"`
+	SourceType    string                         `json:"source_type"`
+	ID            string                         `json:"id"`
+	SourceID      string                         `json:"source_id"`
 }
 
 type SearchServiceHit struct {
@@ -8278,8 +8638,14 @@ func GetSearchService(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydrat
 // ==========================  START: ServiceFabricCluster =============================
 
 type ServiceFabricCluster struct {
-	Description azure.ServiceFabricClusterDescription `json:"description"`
-	Metadata    azure.Metadata                        `json:"metadata"`
+	Description   azure.ServiceFabricClusterDescription `json:"description"`
+	Metadata      azure.Metadata                        `json:"metadata"`
+	ResourceJobID int                                   `json:"resource_job_id"`
+	SourceJobID   int                                   `json:"source_job_id"`
+	ResourceType  string                                `json:"resource_type"`
+	SourceType    string                                `json:"source_type"`
+	ID            string                                `json:"id"`
+	SourceID      string                                `json:"source_id"`
 }
 
 type ServiceFabricClusterHit struct {
@@ -8416,8 +8782,14 @@ func GetServiceFabricCluster(ctx context.Context, d *plugin.QueryData, _ *plugin
 // ==========================  START: ServicebusNamespace =============================
 
 type ServicebusNamespace struct {
-	Description azure.ServicebusNamespaceDescription `json:"description"`
-	Metadata    azure.Metadata                       `json:"metadata"`
+	Description   azure.ServicebusNamespaceDescription `json:"description"`
+	Metadata      azure.Metadata                       `json:"metadata"`
+	ResourceJobID int                                  `json:"resource_job_id"`
+	SourceJobID   int                                  `json:"source_job_id"`
+	ResourceType  string                               `json:"resource_type"`
+	SourceType    string                               `json:"source_type"`
+	ID            string                               `json:"id"`
+	SourceID      string                               `json:"source_id"`
 }
 
 type ServicebusNamespaceHit struct {
@@ -8554,8 +8926,14 @@ func GetServicebusNamespace(ctx context.Context, d *plugin.QueryData, _ *plugin.
 // ==========================  START: SignalrService =============================
 
 type SignalrService struct {
-	Description azure.SignalrServiceDescription `json:"description"`
-	Metadata    azure.Metadata                  `json:"metadata"`
+	Description   azure.SignalrServiceDescription `json:"description"`
+	Metadata      azure.Metadata                  `json:"metadata"`
+	ResourceJobID int                             `json:"resource_job_id"`
+	SourceJobID   int                             `json:"source_job_id"`
+	ResourceType  string                          `json:"resource_type"`
+	SourceType    string                          `json:"source_type"`
+	ID            string                          `json:"id"`
+	SourceID      string                          `json:"source_id"`
 }
 
 type SignalrServiceHit struct {
@@ -8692,8 +9070,14 @@ func GetSignalrService(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydra
 // ==========================  START: SpringCloudService =============================
 
 type SpringCloudService struct {
-	Description azure.SpringCloudServiceDescription `json:"description"`
-	Metadata    azure.Metadata                      `json:"metadata"`
+	Description   azure.SpringCloudServiceDescription `json:"description"`
+	Metadata      azure.Metadata                      `json:"metadata"`
+	ResourceJobID int                                 `json:"resource_job_id"`
+	SourceJobID   int                                 `json:"source_job_id"`
+	ResourceType  string                              `json:"resource_type"`
+	SourceType    string                              `json:"source_type"`
+	ID            string                              `json:"id"`
+	SourceID      string                              `json:"source_id"`
 }
 
 type SpringCloudServiceHit struct {
@@ -8830,8 +9214,14 @@ func GetSpringCloudService(ctx context.Context, d *plugin.QueryData, _ *plugin.H
 // ==========================  START: StreamAnalyticsJob =============================
 
 type StreamAnalyticsJob struct {
-	Description azure.StreamAnalyticsJobDescription `json:"description"`
-	Metadata    azure.Metadata                      `json:"metadata"`
+	Description   azure.StreamAnalyticsJobDescription `json:"description"`
+	Metadata      azure.Metadata                      `json:"metadata"`
+	ResourceJobID int                                 `json:"resource_job_id"`
+	SourceJobID   int                                 `json:"source_job_id"`
+	ResourceType  string                              `json:"resource_type"`
+	SourceType    string                              `json:"source_type"`
+	ID            string                              `json:"id"`
+	SourceID      string                              `json:"source_id"`
 }
 
 type StreamAnalyticsJobHit struct {
@@ -8968,8 +9358,14 @@ func GetStreamAnalyticsJob(ctx context.Context, d *plugin.QueryData, _ *plugin.H
 // ==========================  START: SynapseWorkspace =============================
 
 type SynapseWorkspace struct {
-	Description azure.SynapseWorkspaceDescription `json:"description"`
-	Metadata    azure.Metadata                    `json:"metadata"`
+	Description   azure.SynapseWorkspaceDescription `json:"description"`
+	Metadata      azure.Metadata                    `json:"metadata"`
+	ResourceJobID int                               `json:"resource_job_id"`
+	SourceJobID   int                               `json:"source_job_id"`
+	ResourceType  string                            `json:"resource_type"`
+	SourceType    string                            `json:"source_type"`
+	ID            string                            `json:"id"`
+	SourceID      string                            `json:"source_id"`
 }
 
 type SynapseWorkspaceHit struct {
@@ -9106,8 +9502,14 @@ func GetSynapseWorkspace(ctx context.Context, d *plugin.QueryData, _ *plugin.Hyd
 // ==========================  START: Location =============================
 
 type Location struct {
-	Description azure.LocationDescription `json:"description"`
-	Metadata    azure.Metadata            `json:"metadata"`
+	Description   azure.LocationDescription `json:"description"`
+	Metadata      azure.Metadata            `json:"metadata"`
+	ResourceJobID int                       `json:"resource_job_id"`
+	SourceJobID   int                       `json:"source_job_id"`
+	ResourceType  string                    `json:"resource_type"`
+	SourceType    string                    `json:"source_type"`
+	ID            string                    `json:"id"`
+	SourceID      string                    `json:"source_id"`
 }
 
 type LocationHit struct {
@@ -9244,8 +9646,14 @@ func GetLocation(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData
 // ==========================  START: AdUsers =============================
 
 type AdUsers struct {
-	Description azure.AdUsersDescription `json:"description"`
-	Metadata    azure.Metadata           `json:"metadata"`
+	Description   azure.AdUsersDescription `json:"description"`
+	Metadata      azure.Metadata           `json:"metadata"`
+	ResourceJobID int                      `json:"resource_job_id"`
+	SourceJobID   int                      `json:"source_job_id"`
+	ResourceType  string                   `json:"resource_type"`
+	SourceType    string                   `json:"source_type"`
+	ID            string                   `json:"id"`
+	SourceID      string                   `json:"source_id"`
 }
 
 type AdUsersHit struct {
@@ -9389,8 +9797,14 @@ func GetAdUsers(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData)
 // ==========================  START: PostgresqlServer =============================
 
 type PostgresqlServer struct {
-	Description azure.PostgresqlServerDescription `json:"description"`
-	Metadata    azure.Metadata                    `json:"metadata"`
+	Description   azure.PostgresqlServerDescription `json:"description"`
+	Metadata      azure.Metadata                    `json:"metadata"`
+	ResourceJobID int                               `json:"resource_job_id"`
+	SourceJobID   int                               `json:"source_job_id"`
+	ResourceType  string                            `json:"resource_type"`
+	SourceType    string                            `json:"source_type"`
+	ID            string                            `json:"id"`
+	SourceID      string                            `json:"source_id"`
 }
 
 type PostgresqlServerHit struct {
@@ -9527,8 +9941,14 @@ func GetPostgresqlServer(ctx context.Context, d *plugin.QueryData, _ *plugin.Hyd
 // ==========================  START: StorageSync =============================
 
 type StorageSync struct {
-	Description azure.StorageSyncDescription `json:"description"`
-	Metadata    azure.Metadata               `json:"metadata"`
+	Description   azure.StorageSyncDescription `json:"description"`
+	Metadata      azure.Metadata               `json:"metadata"`
+	ResourceJobID int                          `json:"resource_job_id"`
+	SourceJobID   int                          `json:"source_job_id"`
+	ResourceType  string                       `json:"resource_type"`
+	SourceType    string                       `json:"source_type"`
+	ID            string                       `json:"id"`
+	SourceID      string                       `json:"source_id"`
 }
 
 type StorageSyncHit struct {
@@ -9665,8 +10085,14 @@ func GetStorageSync(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateD
 // ==========================  START: MssqlManagedInstance =============================
 
 type MssqlManagedInstance struct {
-	Description azure.MssqlManagedInstanceDescription `json:"description"`
-	Metadata    azure.Metadata                        `json:"metadata"`
+	Description   azure.MssqlManagedInstanceDescription `json:"description"`
+	Metadata      azure.Metadata                        `json:"metadata"`
+	ResourceJobID int                                   `json:"resource_job_id"`
+	SourceJobID   int                                   `json:"source_job_id"`
+	ResourceType  string                                `json:"resource_type"`
+	SourceType    string                                `json:"source_type"`
+	ID            string                                `json:"id"`
+	SourceID      string                                `json:"source_id"`
 }
 
 type MssqlManagedInstanceHit struct {
@@ -9803,8 +10229,14 @@ func GetMssqlManagedInstance(ctx context.Context, d *plugin.QueryData, _ *plugin
 // ==========================  START: SqlDatabase =============================
 
 type SqlDatabase struct {
-	Description azure.SqlDatabaseDescription `json:"description"`
-	Metadata    azure.Metadata               `json:"metadata"`
+	Description   azure.SqlDatabaseDescription `json:"description"`
+	Metadata      azure.Metadata               `json:"metadata"`
+	ResourceJobID int                          `json:"resource_job_id"`
+	SourceJobID   int                          `json:"source_job_id"`
+	ResourceType  string                       `json:"resource_type"`
+	SourceType    string                       `json:"source_type"`
+	ID            string                       `json:"id"`
+	SourceID      string                       `json:"source_id"`
 }
 
 type SqlDatabaseHit struct {
@@ -9941,8 +10373,14 @@ func GetSqlDatabase(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateD
 // ==========================  START: SqlServer =============================
 
 type SqlServer struct {
-	Description azure.SqlServerDescription `json:"description"`
-	Metadata    azure.Metadata             `json:"metadata"`
+	Description   azure.SqlServerDescription `json:"description"`
+	Metadata      azure.Metadata             `json:"metadata"`
+	ResourceJobID int                        `json:"resource_job_id"`
+	SourceJobID   int                        `json:"source_job_id"`
+	ResourceType  string                     `json:"resource_type"`
+	SourceType    string                     `json:"source_type"`
+	ID            string                     `json:"id"`
+	SourceID      string                     `json:"source_id"`
 }
 
 type SqlServerHit struct {
@@ -10079,8 +10517,14 @@ func GetSqlServer(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateDat
 // ==========================  START: StorageAccount =============================
 
 type StorageAccount struct {
-	Description azure.StorageAccountDescription `json:"description"`
-	Metadata    azure.Metadata                  `json:"metadata"`
+	Description   azure.StorageAccountDescription `json:"description"`
+	Metadata      azure.Metadata                  `json:"metadata"`
+	ResourceJobID int                             `json:"resource_job_id"`
+	SourceJobID   int                             `json:"source_job_id"`
+	ResourceType  string                          `json:"resource_type"`
+	SourceType    string                          `json:"source_type"`
+	ID            string                          `json:"id"`
+	SourceID      string                          `json:"source_id"`
 }
 
 type StorageAccountHit struct {
