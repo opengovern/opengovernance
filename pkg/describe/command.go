@@ -141,6 +141,9 @@ func WorkerCommand() *cobra.Command {
 				VaultCaPath,
 				VaultUseTLS,
 				logger,
+				ElasticSearchAddress,
+				ElasticSearchUsername,
+				ElasticSearchPassword,
 				PrometheusPushAddress,
 			)
 			if err != nil {

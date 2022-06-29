@@ -1296,8 +1296,12 @@ func (h *HttpHandler) GetTopServicesByResourceCount(ctx echo.Context) error {
 	var res []api.TopServicesResponse
 	for _, hit := range response.Hits.Hits {
 		res = append(res, api.TopServicesResponse{
-			ServiceName:   hit.Source.ServiceName,
-			ResourceCount: hit.Source.ResourceCount,
+			ServiceName:      hit.Source.ServiceName,
+			ResourceCount:    hit.Source.ResourceCount,
+			LastDayCount:     hit.Source.LastDayCount,
+			LastWeekCount:    hit.Source.LastWeekCount,
+			LastQuarterCount: hit.Source.LastQuarterCount,
+			LastYearCount:    hit.Source.LastYearCount,
 		})
 	}
 	return ctx.JSON(http.StatusOK, res)
@@ -1328,8 +1332,12 @@ func (h *HttpHandler) GetCategories(ctx echo.Context) error {
 	var res []api.CategoriesResponse
 	for _, hit := range response.Hits.Hits {
 		res = append(res, api.CategoriesResponse{
-			CategoryName:  hit.Source.CategoryName,
-			ResourceCount: hit.Source.ResourceCount,
+			CategoryName:     hit.Source.CategoryName,
+			ResourceCount:    hit.Source.ResourceCount,
+			LastDayCount:     hit.Source.LastDayCount,
+			LastWeekCount:    hit.Source.LastWeekCount,
+			LastQuarterCount: hit.Source.LastQuarterCount,
+			LastYearCount:    hit.Source.LastYearCount,
 		})
 	}
 	return ctx.JSON(http.StatusOK, res)

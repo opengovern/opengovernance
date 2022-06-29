@@ -31,8 +31,10 @@ const (
 	ResourceSummaryTypeResourceGrowthTrend        = "resource_growth_trend"
 	ResourceSummaryTypeLocationDistribution       = "location_distribution"
 	ResourceSummaryTypeLastSummary                = "last_summary"
+	ResourceSummaryTypeServiceHistorySummary      = "service_history_summary"
 	ResourceSummaryTypeLastServiceSummary         = "last_service_summary"
 	ResourceSummaryTypeServiceDistributionSummary = "service_distribution_summary"
+	ResourceSummaryTypeCategoryHistorySummary     = "category_history_summary"
 	ResourceSummaryTypeLastCategorySummary        = "last_category_summary"
 	ResourceSummaryTypeCompliancyTrend            = "compliancy_trend"
 )
@@ -176,6 +178,14 @@ type SourceServicesSummary struct {
 	DescribedAt int64 `json:"described_at"`
 	// ResourceCount is total of resources for specified account
 	ResourceCount int `json:"resource_count"`
+	// LastDayCount number of resources in the category at the same time yesterday
+	LastDayCount int `json:"last_day_count"`
+	// LastWeekCount number of resources in the category at the same time a week ago
+	LastWeekCount int `json:"last_week_count"`
+	// LastQuarterCount number of resources in the category at the same time a quarter ago
+	LastQuarterCount int `json:"last_quarter_count"`
+	// LastYearCount number of resources in the category at the same time a year ago
+	LastYearCount int `json:"last_year_count"`
 	// ReportType of document
 	ReportType ResourceSummaryType `json:"report_type"`
 }
@@ -184,6 +194,11 @@ func (r SourceServicesSummary) AsProducerMessage() (*sarama.ProducerMessage, err
 	value, err := json.Marshal(r)
 	if err != nil {
 		return nil, err
+	}
+
+	if r.ReportType == ResourceSummaryTypeCategoryHistorySummary {
+		return kafkaMsg(hashOf(r.ServiceName, fmt.Sprintf("%d", r.SourceJobID), string(r.ReportType)),
+			value, SourceResourcesSummaryIndex), nil
 	}
 
 	return kafkaMsg(hashOf(r.ServiceName, string(r.ReportType)),
@@ -204,6 +219,14 @@ type SourceCategorySummary struct {
 	DescribedAt int64 `json:"described_at"`
 	// ResourceCount is total of resources for specified account
 	ResourceCount int `json:"resource_count"`
+	// LastDayCount number of resources in the category at the same time yesterday
+	LastDayCount int `json:"last_day_count"`
+	// LastWeekCount number of resources in the category at the same time a week ago
+	LastWeekCount int `json:"last_week_count"`
+	// LastQuarterCount number of resources in the category at the same time a quarter ago
+	LastQuarterCount int `json:"last_quarter_count"`
+	// LastYearCount number of resources in the category at the same time a year ago
+	LastYearCount int `json:"last_year_count"`
 	// ReportType of document
 	ReportType ResourceSummaryType `json:"report_type"`
 }
@@ -212,6 +235,11 @@ func (r SourceCategorySummary) AsProducerMessage() (*sarama.ProducerMessage, err
 	value, err := json.Marshal(r)
 	if err != nil {
 		return nil, err
+	}
+
+	if r.ReportType == ResourceSummaryTypeCategoryHistorySummary {
+		return kafkaMsg(hashOf(r.CategoryName, fmt.Sprintf("%d", r.SourceJobID), string(r.ReportType)),
+			value, SourceResourcesSummaryIndex), nil
 	}
 
 	return kafkaMsg(hashOf(r.CategoryName, string(r.ReportType)),

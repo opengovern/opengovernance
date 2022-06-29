@@ -7,6 +7,8 @@ import (
 	"net/http"
 	"strings"
 
+	"gitlab.com/keibiengine/keibi-engine/pkg/keibi-es-sdk"
+
 	"github.com/prometheus/client_golang/prometheus/push"
 
 	"github.com/elastic/go-elasticsearch/v7"
@@ -24,6 +26,7 @@ type Worker struct {
 	kfkProducer    sarama.SyncProducer
 	kfkTopic       string
 	vault          vault.SourceConfig
+	es             keibi.Client
 	logger         *zap.Logger
 	pusher         *push.Pusher
 }
@@ -44,6 +47,9 @@ func InitializeWorker(
 	vaultCaPath string,
 	vaultUseTLS bool,
 	logger *zap.Logger,
+	elasticSearchAddress string,
+	elasticSearchUsername string,
+	elasticSearchPassword string,
 	prometheusPushAddress string,
 ) (w *Worker, err error) {
 	if id == "" {
@@ -114,6 +120,16 @@ func InitializeWorker(
 
 	w.logger.Info("Connected to vault:", zap.String("vaultAddress", vaultAddress))
 	w.vault = v
+	defaultAccountID := "default"
+	w.es, err = keibi.NewClient(keibi.ClientConfig{
+		Addresses: []string{elasticSearchAddress},
+		Username:  &elasticSearchUsername,
+		Password:  &elasticSearchPassword,
+		AccountID: &defaultAccountID,
+	})
+	if err != nil {
+		return nil, err
+	}
 
 	w.pusher = push.New(prometheusPushAddress, "describe-worker")
 	w.pusher.Collector(DoDescribeJobsCount).
@@ -139,7 +155,7 @@ func (w *Worker) Run() error {
 			}
 			continue
 		}
-		result := job.Do(w.vault, w.kfkProducer, w.kfkTopic, w.logger)
+		result := job.Do(w.vault, w.es, w.kfkProducer, w.kfkTopic, w.logger)
 		if strings.Contains(result.Error, "ThrottlingException") ||
 			strings.Contains(result.Error, "Rate exceeded") ||
 			strings.Contains(result.Error, "RateExceeded") {
