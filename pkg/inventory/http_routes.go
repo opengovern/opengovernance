@@ -119,9 +119,9 @@ func bindValidate(ctx echo.Context, i interface{}) error {
 // GetBenchmarksInTime godoc
 // @Summary      Returns all benchmark existed at the specified time
 // @Description  You should fetch the benchmark report times from /benchmarks/history/:year/:month/:day
-// @Tags         benchmarks
-// @Accept       json
-// @Produce      json
+// @Tags     benchmarks
+// @Accept   json
+// @Produce  json
 // @Param        provider   path      string  true  "Provider"  Enums(AWS,Azure,All)
 // @Param        createdAt  path      string  true   "CreatedAt"
 // @Success      200        {object}  []api.Benchmark

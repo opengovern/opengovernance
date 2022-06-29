@@ -1195,7 +1195,7 @@
                 }
             }
         },
-        "/inventory/api/v1/insight/result": {
+        "/inventory/api/v1/insight/results": {
             "get": {
                 "produces": [
                     "application/json"
@@ -3016,6 +3016,18 @@
         "api.CategoriesResponse": {
             "type": "object",
             "properties": {
+                "lastDayCount": {
+                    "type": "integer"
+                },
+                "lastQuarterCount": {
+                    "type": "integer"
+                },
+                "lastWeekCount": {
+                    "type": "integer"
+                },
+                "lastYearCount": {
+                    "type": "integer"
+                },
                 "resourceCount": {
                     "type": "integer"
                 },
@@ -3072,6 +3084,9 @@
                 },
                 "query": {
                     "type": "string"
+                },
+                "smartQueryID": {
+                    "type": "integer"
                 }
             }
         },
@@ -3319,6 +3334,9 @@
                 },
                 "query": {
                     "type": "string"
+                },
+                "smartQueryID": {
+                    "type": "integer"
                 }
             }
         },
@@ -3836,6 +3854,18 @@
         "api.TopServicesResponse": {
             "type": "object",
             "properties": {
+                "lastDayCount": {
+                    "type": "integer"
+                },
+                "lastQuarterCount": {
+                    "type": "integer"
+                },
+                "lastWeekCount": {
+                    "type": "integer"
+                },
+                "lastYearCount": {
+                    "type": "integer"
+                },
                 "resourceCount": {
                     "type": "integer"
                 },
