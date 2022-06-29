@@ -37,8 +37,14 @@ func main() {
 // ==========================  START: {{ .Name }} =============================
 
 type {{ .Name }} struct {
-	Description {{ .SourceType }}.{{ .Name }}Description 	` + "`json:\"description\"`" + `
-	Metadata    {{ .SourceType }}.Metadata 					` + "`json:\"metadata\"`" + `
+	Description   {{ .SourceType }}.{{ .Name }}Description 	` + "`json:\"description\"`" + `
+	Metadata      {{ .SourceType }}.Metadata 					` + "`json:\"metadata\"`" + `
+	ResourceJobID int ` + "`json:\"resource_job_id\"`" + `
+	SourceJobID   int ` + "`json:\"source_job_id\"`" + `
+	ResourceType  string ` + "`json:\"resource_type\"`" + `
+	SourceType    string ` + "`json:\"source_type\"`" + `
+	ID            string ` + "`json:\"id\"`" + `
+	SourceID      string ` + "`json:\"source_id\"`" + `
 }
 
 type {{ .Name }}Hit struct {

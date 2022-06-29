@@ -409,3 +409,31 @@ func FindCompliancyTrendQuery(sourceID *uuid.UUID, provider *string,
 	b, err := json.Marshal(res)
 	return string(b), err
 }
+
+func FindAWSCostQuery(sourceID *uuid.UUID, fetchSize int, searchAfter []interface{}) (string, error) {
+	res := make(map[string]interface{})
+
+	res["size"] = fetchSize
+	res["sort"] = []map[string]interface{}{
+		{
+			"_id": "asc",
+		},
+	}
+	if searchAfter != nil {
+		res["search_after"] = searchAfter
+	}
+
+	if sourceID != nil {
+		var filters []interface{}
+		filters = append(filters, map[string]interface{}{
+			"terms": map[string][]string{"source_id": {sourceID.String()}},
+		})
+		res["query"] = map[string]interface{}{
+			"bool": map[string]interface{}{
+				"filter": filters,
+			},
+		}
+	}
+	b, err := json.Marshal(res)
+	return string(b), err
+}

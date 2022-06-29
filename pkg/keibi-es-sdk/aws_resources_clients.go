@@ -11,8 +11,14 @@ import (
 // ==========================  START: AccessAnalyzerAnalyzer =============================
 
 type AccessAnalyzerAnalyzer struct {
-	Description aws.AccessAnalyzerAnalyzerDescription `json:"description"`
-	Metadata    aws.Metadata                          `json:"metadata"`
+	Description   aws.AccessAnalyzerAnalyzerDescription `json:"description"`
+	Metadata      aws.Metadata                          `json:"metadata"`
+	ResourceJobID int                                   `json:"resource_job_id"`
+	SourceJobID   int                                   `json:"source_job_id"`
+	ResourceType  string                                `json:"resource_type"`
+	SourceType    string                                `json:"source_type"`
+	ID            string                                `json:"id"`
+	SourceID      string                                `json:"source_id"`
 }
 
 type AccessAnalyzerAnalyzerHit struct {
@@ -150,8 +156,14 @@ func GetAccessAnalyzerAnalyzer(ctx context.Context, d *plugin.QueryData, _ *plug
 // ==========================  START: ApiGatewayStage =============================
 
 type ApiGatewayStage struct {
-	Description aws.ApiGatewayStageDescription `json:"description"`
-	Metadata    aws.Metadata                   `json:"metadata"`
+	Description   aws.ApiGatewayStageDescription `json:"description"`
+	Metadata      aws.Metadata                   `json:"metadata"`
+	ResourceJobID int                            `json:"resource_job_id"`
+	SourceJobID   int                            `json:"source_job_id"`
+	ResourceType  string                         `json:"resource_type"`
+	SourceType    string                         `json:"source_type"`
+	ID            string                         `json:"id"`
+	SourceID      string                         `json:"source_id"`
 }
 
 type ApiGatewayStageHit struct {
@@ -288,8 +300,14 @@ func GetApiGatewayStage(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydr
 // ==========================  START: ApiGatewayV2Stage =============================
 
 type ApiGatewayV2Stage struct {
-	Description aws.ApiGatewayV2StageDescription `json:"description"`
-	Metadata    aws.Metadata                     `json:"metadata"`
+	Description   aws.ApiGatewayV2StageDescription `json:"description"`
+	Metadata      aws.Metadata                     `json:"metadata"`
+	ResourceJobID int                              `json:"resource_job_id"`
+	SourceJobID   int                              `json:"source_job_id"`
+	ResourceType  string                           `json:"resource_type"`
+	SourceType    string                           `json:"source_type"`
+	ID            string                           `json:"id"`
+	SourceID      string                           `json:"source_id"`
 }
 
 type ApiGatewayV2StageHit struct {
@@ -426,8 +444,14 @@ func GetApiGatewayV2Stage(ctx context.Context, d *plugin.QueryData, _ *plugin.Hy
 // ==========================  START: ElasticBeanstalkEnvironment =============================
 
 type ElasticBeanstalkEnvironment struct {
-	Description aws.ElasticBeanstalkEnvironmentDescription `json:"description"`
-	Metadata    aws.Metadata                               `json:"metadata"`
+	Description   aws.ElasticBeanstalkEnvironmentDescription `json:"description"`
+	Metadata      aws.Metadata                               `json:"metadata"`
+	ResourceJobID int                                        `json:"resource_job_id"`
+	SourceJobID   int                                        `json:"source_job_id"`
+	ResourceType  string                                     `json:"resource_type"`
+	SourceType    string                                     `json:"source_type"`
+	ID            string                                     `json:"id"`
+	SourceID      string                                     `json:"source_id"`
 }
 
 type ElasticBeanstalkEnvironmentHit struct {
@@ -563,8 +587,14 @@ func GetElasticBeanstalkEnvironment(ctx context.Context, d *plugin.QueryData, _ 
 // ==========================  START: ElastiCacheReplicationGroup =============================
 
 type ElastiCacheReplicationGroup struct {
-	Description aws.ElastiCacheReplicationGroupDescription `json:"description"`
-	Metadata    aws.Metadata                               `json:"metadata"`
+	Description   aws.ElastiCacheReplicationGroupDescription `json:"description"`
+	Metadata      aws.Metadata                               `json:"metadata"`
+	ResourceJobID int                                        `json:"resource_job_id"`
+	SourceJobID   int                                        `json:"source_job_id"`
+	ResourceType  string                                     `json:"resource_type"`
+	SourceType    string                                     `json:"source_type"`
+	ID            string                                     `json:"id"`
+	SourceID      string                                     `json:"source_id"`
 }
 
 type ElastiCacheReplicationGroupHit struct {
@@ -700,8 +730,14 @@ func GetElastiCacheReplicationGroup(ctx context.Context, d *plugin.QueryData, _ 
 // ==========================  START: ESDomain =============================
 
 type ESDomain struct {
-	Description aws.ESDomainDescription `json:"description"`
-	Metadata    aws.Metadata            `json:"metadata"`
+	Description   aws.ESDomainDescription `json:"description"`
+	Metadata      aws.Metadata            `json:"metadata"`
+	ResourceJobID int                     `json:"resource_job_id"`
+	SourceJobID   int                     `json:"source_job_id"`
+	ResourceType  string                  `json:"resource_type"`
+	SourceType    string                  `json:"source_type"`
+	ID            string                  `json:"id"`
+	SourceID      string                  `json:"source_id"`
 }
 
 type ESDomainHit struct {
@@ -837,8 +873,14 @@ func GetESDomain(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData
 // ==========================  START: EMRCluster =============================
 
 type EMRCluster struct {
-	Description aws.EMRClusterDescription `json:"description"`
-	Metadata    aws.Metadata              `json:"metadata"`
+	Description   aws.EMRClusterDescription `json:"description"`
+	Metadata      aws.Metadata              `json:"metadata"`
+	ResourceJobID int                       `json:"resource_job_id"`
+	SourceJobID   int                       `json:"source_job_id"`
+	ResourceType  string                    `json:"resource_type"`
+	SourceType    string                    `json:"source_type"`
+	ID            string                    `json:"id"`
+	SourceID      string                    `json:"source_id"`
 }
 
 type EMRClusterHit struct {
@@ -974,8 +1016,14 @@ func GetEMRCluster(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateDa
 // ==========================  START: GuardDutyFinding =============================
 
 type GuardDutyFinding struct {
-	Description aws.GuardDutyFindingDescription `json:"description"`
-	Metadata    aws.Metadata                    `json:"metadata"`
+	Description   aws.GuardDutyFindingDescription `json:"description"`
+	Metadata      aws.Metadata                    `json:"metadata"`
+	ResourceJobID int                             `json:"resource_job_id"`
+	SourceJobID   int                             `json:"source_job_id"`
+	ResourceType  string                          `json:"resource_type"`
+	SourceType    string                          `json:"source_type"`
+	ID            string                          `json:"id"`
+	SourceID      string                          `json:"source_id"`
 }
 
 type GuardDutyFindingHit struct {
@@ -1109,8 +1157,14 @@ func GetGuardDutyFinding(ctx context.Context, d *plugin.QueryData, _ *plugin.Hyd
 // ==========================  START: GuardDutyDetector =============================
 
 type GuardDutyDetector struct {
-	Description aws.GuardDutyDetectorDescription `json:"description"`
-	Metadata    aws.Metadata                     `json:"metadata"`
+	Description   aws.GuardDutyDetectorDescription `json:"description"`
+	Metadata      aws.Metadata                     `json:"metadata"`
+	ResourceJobID int                              `json:"resource_job_id"`
+	SourceJobID   int                              `json:"source_job_id"`
+	ResourceType  string                           `json:"resource_type"`
+	SourceType    string                           `json:"source_type"`
+	ID            string                           `json:"id"`
+	SourceID      string                           `json:"source_id"`
 }
 
 type GuardDutyDetectorHit struct {
@@ -1246,8 +1300,14 @@ func GetGuardDutyDetector(ctx context.Context, d *plugin.QueryData, _ *plugin.Hy
 // ==========================  START: BackupPlan =============================
 
 type BackupPlan struct {
-	Description aws.BackupPlanDescription `json:"description"`
-	Metadata    aws.Metadata              `json:"metadata"`
+	Description   aws.BackupPlanDescription `json:"description"`
+	Metadata      aws.Metadata              `json:"metadata"`
+	ResourceJobID int                       `json:"resource_job_id"`
+	SourceJobID   int                       `json:"source_job_id"`
+	ResourceType  string                    `json:"resource_type"`
+	SourceType    string                    `json:"source_type"`
+	ID            string                    `json:"id"`
+	SourceID      string                    `json:"source_id"`
 }
 
 type BackupPlanHit struct {
@@ -1383,8 +1443,14 @@ func GetBackupPlan(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateDa
 // ==========================  START: BackupSelection =============================
 
 type BackupSelection struct {
-	Description aws.BackupSelectionDescription `json:"description"`
-	Metadata    aws.Metadata                   `json:"metadata"`
+	Description   aws.BackupSelectionDescription `json:"description"`
+	Metadata      aws.Metadata                   `json:"metadata"`
+	ResourceJobID int                            `json:"resource_job_id"`
+	SourceJobID   int                            `json:"source_job_id"`
+	ResourceType  string                         `json:"resource_type"`
+	SourceType    string                         `json:"source_type"`
+	ID            string                         `json:"id"`
+	SourceID      string                         `json:"source_id"`
 }
 
 type BackupSelectionHit struct {
@@ -1521,8 +1587,14 @@ func GetBackupSelection(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydr
 // ==========================  START: BackupVault =============================
 
 type BackupVault struct {
-	Description aws.BackupVaultDescription `json:"description"`
-	Metadata    aws.Metadata               `json:"metadata"`
+	Description   aws.BackupVaultDescription `json:"description"`
+	Metadata      aws.Metadata               `json:"metadata"`
+	ResourceJobID int                        `json:"resource_job_id"`
+	SourceJobID   int                        `json:"source_job_id"`
+	ResourceType  string                     `json:"resource_type"`
+	SourceType    string                     `json:"source_type"`
+	ID            string                     `json:"id"`
+	SourceID      string                     `json:"source_id"`
 }
 
 type BackupVaultHit struct {
@@ -1658,8 +1730,14 @@ func GetBackupVault(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateD
 // ==========================  START: BackupRecoveryPoint =============================
 
 type BackupRecoveryPoint struct {
-	Description aws.BackupRecoveryPointDescription `json:"description"`
-	Metadata    aws.Metadata                       `json:"metadata"`
+	Description   aws.BackupRecoveryPointDescription `json:"description"`
+	Metadata      aws.Metadata                       `json:"metadata"`
+	ResourceJobID int                                `json:"resource_job_id"`
+	SourceJobID   int                                `json:"source_job_id"`
+	ResourceType  string                             `json:"resource_type"`
+	SourceType    string                             `json:"source_type"`
+	ID            string                             `json:"id"`
+	SourceID      string                             `json:"source_id"`
 }
 
 type BackupRecoveryPointHit struct {
@@ -1800,8 +1878,14 @@ func GetBackupRecoveryPoint(ctx context.Context, d *plugin.QueryData, _ *plugin.
 // ==========================  START: BackupProtectedResource =============================
 
 type BackupProtectedResource struct {
-	Description aws.BackupProtectedResourceDescription `json:"description"`
-	Metadata    aws.Metadata                           `json:"metadata"`
+	Description   aws.BackupProtectedResourceDescription `json:"description"`
+	Metadata      aws.Metadata                           `json:"metadata"`
+	ResourceJobID int                                    `json:"resource_job_id"`
+	SourceJobID   int                                    `json:"source_job_id"`
+	ResourceType  string                                 `json:"resource_type"`
+	SourceType    string                                 `json:"source_type"`
+	ID            string                                 `json:"id"`
+	SourceID      string                                 `json:"source_id"`
 }
 
 type BackupProtectedResourceHit struct {
@@ -1937,8 +2021,14 @@ func GetBackupProtectedResource(ctx context.Context, d *plugin.QueryData, _ *plu
 // ==========================  START: CloudFrontDistribution =============================
 
 type CloudFrontDistribution struct {
-	Description aws.CloudFrontDistributionDescription `json:"description"`
-	Metadata    aws.Metadata                          `json:"metadata"`
+	Description   aws.CloudFrontDistributionDescription `json:"description"`
+	Metadata      aws.Metadata                          `json:"metadata"`
+	ResourceJobID int                                   `json:"resource_job_id"`
+	SourceJobID   int                                   `json:"source_job_id"`
+	ResourceType  string                                `json:"resource_type"`
+	SourceType    string                                `json:"source_type"`
+	ID            string                                `json:"id"`
+	SourceID      string                                `json:"source_id"`
 }
 
 type CloudFrontDistributionHit struct {
@@ -2074,8 +2164,14 @@ func GetCloudFrontDistribution(ctx context.Context, d *plugin.QueryData, _ *plug
 // ==========================  START: CloudWatchAlarm =============================
 
 type CloudWatchAlarm struct {
-	Description aws.CloudWatchAlarmDescription `json:"description"`
-	Metadata    aws.Metadata                   `json:"metadata"`
+	Description   aws.CloudWatchAlarmDescription `json:"description"`
+	Metadata      aws.Metadata                   `json:"metadata"`
+	ResourceJobID int                            `json:"resource_job_id"`
+	SourceJobID   int                            `json:"source_job_id"`
+	ResourceType  string                         `json:"resource_type"`
+	SourceType    string                         `json:"source_type"`
+	ID            string                         `json:"id"`
+	SourceID      string                         `json:"source_id"`
 }
 
 type CloudWatchAlarmHit struct {
@@ -2214,8 +2310,14 @@ func GetCloudWatchAlarm(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydr
 // ==========================  START: CloudWatchLogsLogGroup =============================
 
 type CloudWatchLogsLogGroup struct {
-	Description aws.CloudWatchLogsLogGroupDescription `json:"description"`
-	Metadata    aws.Metadata                          `json:"metadata"`
+	Description   aws.CloudWatchLogsLogGroupDescription `json:"description"`
+	Metadata      aws.Metadata                          `json:"metadata"`
+	ResourceJobID int                                   `json:"resource_job_id"`
+	SourceJobID   int                                   `json:"source_job_id"`
+	ResourceType  string                                `json:"resource_type"`
+	SourceType    string                                `json:"source_type"`
+	ID            string                                `json:"id"`
+	SourceID      string                                `json:"source_id"`
 }
 
 type CloudWatchLogsLogGroupHit struct {
@@ -2353,8 +2455,14 @@ func GetCloudWatchLogsLogGroup(ctx context.Context, d *plugin.QueryData, _ *plug
 // ==========================  START: CloudWatchLogsMetricFilter =============================
 
 type CloudWatchLogsMetricFilter struct {
-	Description aws.CloudWatchLogsMetricFilterDescription `json:"description"`
-	Metadata    aws.Metadata                              `json:"metadata"`
+	Description   aws.CloudWatchLogsMetricFilterDescription `json:"description"`
+	Metadata      aws.Metadata                              `json:"metadata"`
+	ResourceJobID int                                       `json:"resource_job_id"`
+	SourceJobID   int                                       `json:"source_job_id"`
+	ResourceType  string                                    `json:"resource_type"`
+	SourceType    string                                    `json:"source_type"`
+	ID            string                                    `json:"id"`
+	SourceID      string                                    `json:"source_id"`
 }
 
 type CloudWatchLogsMetricFilterHit struct {
@@ -2495,8 +2603,14 @@ func GetCloudWatchLogsMetricFilter(ctx context.Context, d *plugin.QueryData, _ *
 // ==========================  START: CodeBuildProject =============================
 
 type CodeBuildProject struct {
-	Description aws.CodeBuildProjectDescription `json:"description"`
-	Metadata    aws.Metadata                    `json:"metadata"`
+	Description   aws.CodeBuildProjectDescription `json:"description"`
+	Metadata      aws.Metadata                    `json:"metadata"`
+	ResourceJobID int                             `json:"resource_job_id"`
+	SourceJobID   int                             `json:"source_job_id"`
+	ResourceType  string                          `json:"resource_type"`
+	SourceType    string                          `json:"source_type"`
+	ID            string                          `json:"id"`
+	SourceID      string                          `json:"source_id"`
 }
 
 type CodeBuildProjectHit struct {
@@ -2632,8 +2746,14 @@ func GetCodeBuildProject(ctx context.Context, d *plugin.QueryData, _ *plugin.Hyd
 // ==========================  START: CodeBuildSourceCredential =============================
 
 type CodeBuildSourceCredential struct {
-	Description aws.CodeBuildSourceCredentialDescription `json:"description"`
-	Metadata    aws.Metadata                             `json:"metadata"`
+	Description   aws.CodeBuildSourceCredentialDescription `json:"description"`
+	Metadata      aws.Metadata                             `json:"metadata"`
+	ResourceJobID int                                      `json:"resource_job_id"`
+	SourceJobID   int                                      `json:"source_job_id"`
+	ResourceType  string                                   `json:"resource_type"`
+	SourceType    string                                   `json:"source_type"`
+	ID            string                                   `json:"id"`
+	SourceID      string                                   `json:"source_id"`
 }
 
 type CodeBuildSourceCredentialHit struct {
@@ -2767,8 +2887,14 @@ func GetCodeBuildSourceCredential(ctx context.Context, d *plugin.QueryData, _ *p
 // ==========================  START: ConfigConfigurationRecorder =============================
 
 type ConfigConfigurationRecorder struct {
-	Description aws.ConfigConfigurationRecorderDescription `json:"description"`
-	Metadata    aws.Metadata                               `json:"metadata"`
+	Description   aws.ConfigConfigurationRecorderDescription `json:"description"`
+	Metadata      aws.Metadata                               `json:"metadata"`
+	ResourceJobID int                                        `json:"resource_job_id"`
+	SourceJobID   int                                        `json:"source_job_id"`
+	ResourceType  string                                     `json:"resource_type"`
+	SourceType    string                                     `json:"source_type"`
+	ID            string                                     `json:"id"`
+	SourceID      string                                     `json:"source_id"`
 }
 
 type ConfigConfigurationRecorderHit struct {
@@ -2906,8 +3032,14 @@ func GetConfigConfigurationRecorder(ctx context.Context, d *plugin.QueryData, _ 
 // ==========================  START: DAXCluster =============================
 
 type DAXCluster struct {
-	Description aws.DAXClusterDescription `json:"description"`
-	Metadata    aws.Metadata              `json:"metadata"`
+	Description   aws.DAXClusterDescription `json:"description"`
+	Metadata      aws.Metadata              `json:"metadata"`
+	ResourceJobID int                       `json:"resource_job_id"`
+	SourceJobID   int                       `json:"source_job_id"`
+	ResourceType  string                    `json:"resource_type"`
+	SourceType    string                    `json:"source_type"`
+	ID            string                    `json:"id"`
+	SourceID      string                    `json:"source_id"`
 }
 
 type DAXClusterHit struct {
@@ -3045,8 +3177,14 @@ func GetDAXCluster(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateDa
 // ==========================  START: DMSReplicationInstance =============================
 
 type DMSReplicationInstance struct {
-	Description aws.DMSReplicationInstanceDescription `json:"description"`
-	Metadata    aws.Metadata                          `json:"metadata"`
+	Description   aws.DMSReplicationInstanceDescription `json:"description"`
+	Metadata      aws.Metadata                          `json:"metadata"`
+	ResourceJobID int                                   `json:"resource_job_id"`
+	SourceJobID   int                                   `json:"source_job_id"`
+	ResourceType  string                                `json:"resource_type"`
+	SourceType    string                                `json:"source_type"`
+	ID            string                                `json:"id"`
+	SourceID      string                                `json:"source_id"`
 }
 
 type DMSReplicationInstanceHit struct {
@@ -3187,8 +3325,14 @@ func GetDMSReplicationInstance(ctx context.Context, d *plugin.QueryData, _ *plug
 // ==========================  START: DynamoDbTable =============================
 
 type DynamoDbTable struct {
-	Description aws.DynamoDbTableDescription `json:"description"`
-	Metadata    aws.Metadata                 `json:"metadata"`
+	Description   aws.DynamoDbTableDescription `json:"description"`
+	Metadata      aws.Metadata                 `json:"metadata"`
+	ResourceJobID int                          `json:"resource_job_id"`
+	SourceJobID   int                          `json:"source_job_id"`
+	ResourceType  string                       `json:"resource_type"`
+	SourceType    string                       `json:"source_type"`
+	ID            string                       `json:"id"`
+	SourceID      string                       `json:"source_id"`
 }
 
 type DynamoDbTableHit struct {
@@ -3326,8 +3470,14 @@ func GetDynamoDbTable(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydrat
 // ==========================  START: EC2VolumeSnapshot =============================
 
 type EC2VolumeSnapshot struct {
-	Description aws.EC2VolumeSnapshotDescription `json:"description"`
-	Metadata    aws.Metadata                     `json:"metadata"`
+	Description   aws.EC2VolumeSnapshotDescription `json:"description"`
+	Metadata      aws.Metadata                     `json:"metadata"`
+	ResourceJobID int                              `json:"resource_job_id"`
+	SourceJobID   int                              `json:"source_job_id"`
+	ResourceType  string                           `json:"resource_type"`
+	SourceType    string                           `json:"source_type"`
+	ID            string                           `json:"id"`
+	SourceID      string                           `json:"source_id"`
 }
 
 type EC2VolumeSnapshotHit struct {
@@ -3473,8 +3623,14 @@ func GetEC2VolumeSnapshot(ctx context.Context, d *plugin.QueryData, _ *plugin.Hy
 // ==========================  START: EC2Volume =============================
 
 type EC2Volume struct {
-	Description aws.EC2VolumeDescription `json:"description"`
-	Metadata    aws.Metadata             `json:"metadata"`
+	Description   aws.EC2VolumeDescription `json:"description"`
+	Metadata      aws.Metadata             `json:"metadata"`
+	ResourceJobID int                      `json:"resource_job_id"`
+	SourceJobID   int                      `json:"source_job_id"`
+	ResourceType  string                   `json:"resource_type"`
+	SourceType    string                   `json:"source_type"`
+	ID            string                   `json:"id"`
+	SourceID      string                   `json:"source_id"`
 }
 
 type EC2VolumeHit struct {
@@ -3610,8 +3766,14 @@ func GetEC2Volume(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateDat
 // ==========================  START: EC2Instance =============================
 
 type EC2Instance struct {
-	Description aws.EC2InstanceDescription `json:"description"`
-	Metadata    aws.Metadata               `json:"metadata"`
+	Description   aws.EC2InstanceDescription `json:"description"`
+	Metadata      aws.Metadata               `json:"metadata"`
+	ResourceJobID int                        `json:"resource_job_id"`
+	SourceJobID   int                        `json:"source_job_id"`
+	ResourceType  string                     `json:"resource_type"`
+	SourceType    string                     `json:"source_type"`
+	ID            string                     `json:"id"`
+	SourceID      string                     `json:"source_id"`
 }
 
 type EC2InstanceHit struct {
@@ -3766,8 +3928,14 @@ func GetEC2Instance(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateD
 // ==========================  START: EC2Vpc =============================
 
 type EC2Vpc struct {
-	Description aws.EC2VpcDescription `json:"description"`
-	Metadata    aws.Metadata          `json:"metadata"`
+	Description   aws.EC2VpcDescription `json:"description"`
+	Metadata      aws.Metadata          `json:"metadata"`
+	ResourceJobID int                   `json:"resource_job_id"`
+	SourceJobID   int                   `json:"source_job_id"`
+	ResourceType  string                `json:"resource_type"`
+	SourceType    string                `json:"source_type"`
+	ID            string                `json:"id"`
+	SourceID      string                `json:"source_id"`
 }
 
 type EC2VpcHit struct {
@@ -3903,8 +4071,14 @@ func GetEC2Vpc(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) 
 // ==========================  START: EC2NetworkInterface =============================
 
 type EC2NetworkInterface struct {
-	Description aws.EC2NetworkInterfaceDescription `json:"description"`
-	Metadata    aws.Metadata                       `json:"metadata"`
+	Description   aws.EC2NetworkInterfaceDescription `json:"description"`
+	Metadata      aws.Metadata                       `json:"metadata"`
+	ResourceJobID int                                `json:"resource_job_id"`
+	SourceJobID   int                                `json:"source_job_id"`
+	ResourceType  string                             `json:"resource_type"`
+	SourceType    string                             `json:"source_type"`
+	ID            string                             `json:"id"`
+	SourceID      string                             `json:"source_id"`
 }
 
 type EC2NetworkInterfaceHit struct {
@@ -4040,8 +4214,14 @@ func GetEC2NetworkInterface(ctx context.Context, d *plugin.QueryData, _ *plugin.
 // ==========================  START: EC2RegionalSettings =============================
 
 type EC2RegionalSettings struct {
-	Description aws.EC2RegionalSettingsDescription `json:"description"`
-	Metadata    aws.Metadata                       `json:"metadata"`
+	Description   aws.EC2RegionalSettingsDescription `json:"description"`
+	Metadata      aws.Metadata                       `json:"metadata"`
+	ResourceJobID int                                `json:"resource_job_id"`
+	SourceJobID   int                                `json:"source_job_id"`
+	ResourceType  string                             `json:"resource_type"`
+	SourceType    string                             `json:"source_type"`
+	ID            string                             `json:"id"`
+	SourceID      string                             `json:"source_id"`
 }
 
 type EC2RegionalSettingsHit struct {
@@ -4175,8 +4355,14 @@ func GetEC2RegionalSettings(ctx context.Context, d *plugin.QueryData, _ *plugin.
 // ==========================  START: EC2Subnet =============================
 
 type EC2Subnet struct {
-	Description aws.EC2SubnetDescription `json:"description"`
-	Metadata    aws.Metadata             `json:"metadata"`
+	Description   aws.EC2SubnetDescription `json:"description"`
+	Metadata      aws.Metadata             `json:"metadata"`
+	ResourceJobID int                      `json:"resource_job_id"`
+	SourceJobID   int                      `json:"source_job_id"`
+	ResourceType  string                   `json:"resource_type"`
+	SourceType    string                   `json:"source_type"`
+	ID            string                   `json:"id"`
+	SourceID      string                   `json:"source_id"`
 }
 
 type EC2SubnetHit struct {
@@ -4312,8 +4498,14 @@ func GetEC2Subnet(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateDat
 // ==========================  START: EC2VPCEndpoint =============================
 
 type EC2VPCEndpoint struct {
-	Description aws.EC2VPCEndpointDescription `json:"description"`
-	Metadata    aws.Metadata                  `json:"metadata"`
+	Description   aws.EC2VPCEndpointDescription `json:"description"`
+	Metadata      aws.Metadata                  `json:"metadata"`
+	ResourceJobID int                           `json:"resource_job_id"`
+	SourceJobID   int                           `json:"source_job_id"`
+	ResourceType  string                        `json:"resource_type"`
+	SourceType    string                        `json:"source_type"`
+	ID            string                        `json:"id"`
+	SourceID      string                        `json:"source_id"`
 }
 
 type EC2VPCEndpointHit struct {
@@ -4449,8 +4641,14 @@ func GetEC2VPCEndpoint(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydra
 // ==========================  START: EC2SecurityGroup =============================
 
 type EC2SecurityGroup struct {
-	Description aws.EC2SecurityGroupDescription `json:"description"`
-	Metadata    aws.Metadata                    `json:"metadata"`
+	Description   aws.EC2SecurityGroupDescription `json:"description"`
+	Metadata      aws.Metadata                    `json:"metadata"`
+	ResourceJobID int                             `json:"resource_job_id"`
+	SourceJobID   int                             `json:"source_job_id"`
+	ResourceType  string                          `json:"resource_type"`
+	SourceType    string                          `json:"source_type"`
+	ID            string                          `json:"id"`
+	SourceID      string                          `json:"source_id"`
 }
 
 type EC2SecurityGroupHit struct {
@@ -4586,8 +4784,14 @@ func GetEC2SecurityGroup(ctx context.Context, d *plugin.QueryData, _ *plugin.Hyd
 // ==========================  START: EC2EIP =============================
 
 type EC2EIP struct {
-	Description aws.EC2EIPDescription `json:"description"`
-	Metadata    aws.Metadata          `json:"metadata"`
+	Description   aws.EC2EIPDescription `json:"description"`
+	Metadata      aws.Metadata          `json:"metadata"`
+	ResourceJobID int                   `json:"resource_job_id"`
+	SourceJobID   int                   `json:"source_job_id"`
+	ResourceType  string                `json:"resource_type"`
+	SourceType    string                `json:"source_type"`
+	ID            string                `json:"id"`
+	SourceID      string                `json:"source_id"`
 }
 
 type EC2EIPHit struct {
@@ -4723,8 +4927,14 @@ func GetEC2EIP(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) 
 // ==========================  START: EC2InternetGateway =============================
 
 type EC2InternetGateway struct {
-	Description aws.EC2InternetGatewayDescription `json:"description"`
-	Metadata    aws.Metadata                      `json:"metadata"`
+	Description   aws.EC2InternetGatewayDescription `json:"description"`
+	Metadata      aws.Metadata                      `json:"metadata"`
+	ResourceJobID int                               `json:"resource_job_id"`
+	SourceJobID   int                               `json:"source_job_id"`
+	ResourceType  string                            `json:"resource_type"`
+	SourceType    string                            `json:"source_type"`
+	ID            string                            `json:"id"`
+	SourceID      string                            `json:"source_id"`
 }
 
 type EC2InternetGatewayHit struct {
@@ -4860,8 +5070,14 @@ func GetEC2InternetGateway(ctx context.Context, d *plugin.QueryData, _ *plugin.H
 // ==========================  START: EC2NetworkAcl =============================
 
 type EC2NetworkAcl struct {
-	Description aws.EC2NetworkAclDescription `json:"description"`
-	Metadata    aws.Metadata                 `json:"metadata"`
+	Description   aws.EC2NetworkAclDescription `json:"description"`
+	Metadata      aws.Metadata                 `json:"metadata"`
+	ResourceJobID int                          `json:"resource_job_id"`
+	SourceJobID   int                          `json:"source_job_id"`
+	ResourceType  string                       `json:"resource_type"`
+	SourceType    string                       `json:"source_type"`
+	ID            string                       `json:"id"`
+	SourceID      string                       `json:"source_id"`
 }
 
 type EC2NetworkAclHit struct {
@@ -4997,8 +5213,14 @@ func GetEC2NetworkAcl(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydrat
 // ==========================  START: EC2VPNConnection =============================
 
 type EC2VPNConnection struct {
-	Description aws.EC2VPNConnectionDescription `json:"description"`
-	Metadata    aws.Metadata                    `json:"metadata"`
+	Description   aws.EC2VPNConnectionDescription `json:"description"`
+	Metadata      aws.Metadata                    `json:"metadata"`
+	ResourceJobID int                             `json:"resource_job_id"`
+	SourceJobID   int                             `json:"source_job_id"`
+	ResourceType  string                          `json:"resource_type"`
+	SourceType    string                          `json:"source_type"`
+	ID            string                          `json:"id"`
+	SourceID      string                          `json:"source_id"`
 }
 
 type EC2VPNConnectionHit struct {
@@ -5134,8 +5356,14 @@ func GetEC2VPNConnection(ctx context.Context, d *plugin.QueryData, _ *plugin.Hyd
 // ==========================  START: EC2RouteTable =============================
 
 type EC2RouteTable struct {
-	Description aws.EC2RouteTableDescription `json:"description"`
-	Metadata    aws.Metadata                 `json:"metadata"`
+	Description   aws.EC2RouteTableDescription `json:"description"`
+	Metadata      aws.Metadata                 `json:"metadata"`
+	ResourceJobID int                          `json:"resource_job_id"`
+	SourceJobID   int                          `json:"source_job_id"`
+	ResourceType  string                       `json:"resource_type"`
+	SourceType    string                       `json:"source_type"`
+	ID            string                       `json:"id"`
+	SourceID      string                       `json:"source_id"`
 }
 
 type EC2RouteTableHit struct {
@@ -5271,8 +5499,14 @@ func GetEC2RouteTable(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydrat
 // ==========================  START: EC2NatGateway =============================
 
 type EC2NatGateway struct {
-	Description aws.EC2NatGatewayDescription `json:"description"`
-	Metadata    aws.Metadata                 `json:"metadata"`
+	Description   aws.EC2NatGatewayDescription `json:"description"`
+	Metadata      aws.Metadata                 `json:"metadata"`
+	ResourceJobID int                          `json:"resource_job_id"`
+	SourceJobID   int                          `json:"source_job_id"`
+	ResourceType  string                       `json:"resource_type"`
+	SourceType    string                       `json:"source_type"`
+	ID            string                       `json:"id"`
+	SourceID      string                       `json:"source_id"`
 }
 
 type EC2NatGatewayHit struct {
@@ -5408,8 +5642,14 @@ func GetEC2NatGateway(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydrat
 // ==========================  START: EC2Region =============================
 
 type EC2Region struct {
-	Description aws.EC2RegionDescription `json:"description"`
-	Metadata    aws.Metadata             `json:"metadata"`
+	Description   aws.EC2RegionDescription `json:"description"`
+	Metadata      aws.Metadata             `json:"metadata"`
+	ResourceJobID int                      `json:"resource_job_id"`
+	SourceJobID   int                      `json:"source_job_id"`
+	ResourceType  string                   `json:"resource_type"`
+	SourceType    string                   `json:"source_type"`
+	ID            string                   `json:"id"`
+	SourceID      string                   `json:"source_id"`
 }
 
 type EC2RegionHit struct {
@@ -5545,8 +5785,14 @@ func GetEC2Region(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateDat
 // ==========================  START: EC2FlowLog =============================
 
 type EC2FlowLog struct {
-	Description aws.EC2FlowLogDescription `json:"description"`
-	Metadata    aws.Metadata              `json:"metadata"`
+	Description   aws.EC2FlowLogDescription `json:"description"`
+	Metadata      aws.Metadata              `json:"metadata"`
+	ResourceJobID int                       `json:"resource_job_id"`
+	SourceJobID   int                       `json:"source_job_id"`
+	ResourceType  string                    `json:"resource_type"`
+	SourceType    string                    `json:"source_type"`
+	ID            string                    `json:"id"`
+	SourceID      string                    `json:"source_id"`
 }
 
 type EC2FlowLogHit struct {
@@ -5682,8 +5928,14 @@ func GetEC2FlowLog(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateDa
 // ==========================  START: ElasticLoadBalancingV2LoadBalancer =============================
 
 type ElasticLoadBalancingV2LoadBalancer struct {
-	Description aws.ElasticLoadBalancingV2LoadBalancerDescription `json:"description"`
-	Metadata    aws.Metadata                                      `json:"metadata"`
+	Description   aws.ElasticLoadBalancingV2LoadBalancerDescription `json:"description"`
+	Metadata      aws.Metadata                                      `json:"metadata"`
+	ResourceJobID int                                               `json:"resource_job_id"`
+	SourceJobID   int                                               `json:"source_job_id"`
+	ResourceType  string                                            `json:"resource_type"`
+	SourceType    string                                            `json:"source_type"`
+	ID            string                                            `json:"id"`
+	SourceID      string                                            `json:"source_id"`
 }
 
 type ElasticLoadBalancingV2LoadBalancerHit struct {
@@ -5822,8 +6074,14 @@ func GetElasticLoadBalancingV2LoadBalancer(ctx context.Context, d *plugin.QueryD
 // ==========================  START: ElasticLoadBalancingLoadBalancer =============================
 
 type ElasticLoadBalancingLoadBalancer struct {
-	Description aws.ElasticLoadBalancingLoadBalancerDescription `json:"description"`
-	Metadata    aws.Metadata                                    `json:"metadata"`
+	Description   aws.ElasticLoadBalancingLoadBalancerDescription `json:"description"`
+	Metadata      aws.Metadata                                    `json:"metadata"`
+	ResourceJobID int                                             `json:"resource_job_id"`
+	SourceJobID   int                                             `json:"source_job_id"`
+	ResourceType  string                                          `json:"resource_type"`
+	SourceType    string                                          `json:"source_type"`
+	ID            string                                          `json:"id"`
+	SourceID      string                                          `json:"source_id"`
 }
 
 type ElasticLoadBalancingLoadBalancerHit struct {
@@ -5959,8 +6217,14 @@ func GetElasticLoadBalancingLoadBalancer(ctx context.Context, d *plugin.QueryDat
 // ==========================  START: ElasticLoadBalancingV2Listener =============================
 
 type ElasticLoadBalancingV2Listener struct {
-	Description aws.ElasticLoadBalancingV2ListenerDescription `json:"description"`
-	Metadata    aws.Metadata                                  `json:"metadata"`
+	Description   aws.ElasticLoadBalancingV2ListenerDescription `json:"description"`
+	Metadata      aws.Metadata                                  `json:"metadata"`
+	ResourceJobID int                                           `json:"resource_job_id"`
+	SourceJobID   int                                           `json:"source_job_id"`
+	ResourceType  string                                        `json:"resource_type"`
+	SourceType    string                                        `json:"source_type"`
+	ID            string                                        `json:"id"`
+	SourceID      string                                        `json:"source_id"`
 }
 
 type ElasticLoadBalancingV2ListenerHit struct {
@@ -6096,8 +6360,14 @@ func GetElasticLoadBalancingV2Listener(ctx context.Context, d *plugin.QueryData,
 // ==========================  START: FSXFileSystem =============================
 
 type FSXFileSystem struct {
-	Description aws.FSXFileSystemDescription `json:"description"`
-	Metadata    aws.Metadata                 `json:"metadata"`
+	Description   aws.FSXFileSystemDescription `json:"description"`
+	Metadata      aws.Metadata                 `json:"metadata"`
+	ResourceJobID int                          `json:"resource_job_id"`
+	SourceJobID   int                          `json:"source_job_id"`
+	ResourceType  string                       `json:"resource_type"`
+	SourceType    string                       `json:"source_type"`
+	ID            string                       `json:"id"`
+	SourceID      string                       `json:"source_id"`
 }
 
 type FSXFileSystemHit struct {
@@ -6233,8 +6503,14 @@ func GetFSXFileSystem(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydrat
 // ==========================  START: ApplicationAutoScalingTarget =============================
 
 type ApplicationAutoScalingTarget struct {
-	Description aws.ApplicationAutoScalingTargetDescription `json:"description"`
-	Metadata    aws.Metadata                                `json:"metadata"`
+	Description   aws.ApplicationAutoScalingTargetDescription `json:"description"`
+	Metadata      aws.Metadata                                `json:"metadata"`
+	ResourceJobID int                                         `json:"resource_job_id"`
+	SourceJobID   int                                         `json:"source_job_id"`
+	ResourceType  string                                      `json:"resource_type"`
+	SourceType    string                                      `json:"source_type"`
+	ID            string                                      `json:"id"`
+	SourceID      string                                      `json:"source_id"`
 }
 
 type ApplicationAutoScalingTargetHit struct {
@@ -6375,8 +6651,14 @@ func GetApplicationAutoScalingTarget(ctx context.Context, d *plugin.QueryData, _
 // ==========================  START: AutoScalingGroup =============================
 
 type AutoScalingGroup struct {
-	Description aws.AutoScalingGroupDescription `json:"description"`
-	Metadata    aws.Metadata                    `json:"metadata"`
+	Description   aws.AutoScalingGroupDescription `json:"description"`
+	Metadata      aws.Metadata                    `json:"metadata"`
+	ResourceJobID int                             `json:"resource_job_id"`
+	SourceJobID   int                             `json:"source_job_id"`
+	ResourceType  string                          `json:"resource_type"`
+	SourceType    string                          `json:"source_type"`
+	ID            string                          `json:"id"`
+	SourceID      string                          `json:"source_id"`
 }
 
 type AutoScalingGroupHit struct {
@@ -6512,8 +6794,14 @@ func GetAutoScalingGroup(ctx context.Context, d *plugin.QueryData, _ *plugin.Hyd
 // ==========================  START: AutoScalingLaunchConfiguration =============================
 
 type AutoScalingLaunchConfiguration struct {
-	Description aws.AutoScalingLaunchConfigurationDescription `json:"description"`
-	Metadata    aws.Metadata                                  `json:"metadata"`
+	Description   aws.AutoScalingLaunchConfigurationDescription `json:"description"`
+	Metadata      aws.Metadata                                  `json:"metadata"`
+	ResourceJobID int                                           `json:"resource_job_id"`
+	SourceJobID   int                                           `json:"source_job_id"`
+	ResourceType  string                                        `json:"resource_type"`
+	SourceType    string                                        `json:"source_type"`
+	ID            string                                        `json:"id"`
+	SourceID      string                                        `json:"source_id"`
 }
 
 type AutoScalingLaunchConfigurationHit struct {
@@ -6649,8 +6937,14 @@ func GetAutoScalingLaunchConfiguration(ctx context.Context, d *plugin.QueryData,
 // ==========================  START: CertificateManagerCertificate =============================
 
 type CertificateManagerCertificate struct {
-	Description aws.CertificateManagerCertificateDescription `json:"description"`
-	Metadata    aws.Metadata                                 `json:"metadata"`
+	Description   aws.CertificateManagerCertificateDescription `json:"description"`
+	Metadata      aws.Metadata                                 `json:"metadata"`
+	ResourceJobID int                                          `json:"resource_job_id"`
+	SourceJobID   int                                          `json:"source_job_id"`
+	ResourceType  string                                       `json:"resource_type"`
+	SourceType    string                                       `json:"source_type"`
+	ID            string                                       `json:"id"`
+	SourceID      string                                       `json:"source_id"`
 }
 
 type CertificateManagerCertificateHit struct {
@@ -6788,8 +7082,14 @@ func GetCertificateManagerCertificate(ctx context.Context, d *plugin.QueryData, 
 // ==========================  START: CloudTrailTrail =============================
 
 type CloudTrailTrail struct {
-	Description aws.CloudTrailTrailDescription `json:"description"`
-	Metadata    aws.Metadata                   `json:"metadata"`
+	Description   aws.CloudTrailTrailDescription `json:"description"`
+	Metadata      aws.Metadata                   `json:"metadata"`
+	ResourceJobID int                            `json:"resource_job_id"`
+	SourceJobID   int                            `json:"source_job_id"`
+	ResourceType  string                         `json:"resource_type"`
+	SourceType    string                         `json:"source_type"`
+	ID            string                         `json:"id"`
+	SourceID      string                         `json:"source_id"`
 }
 
 type CloudTrailTrailHit struct {
@@ -6926,8 +7226,14 @@ func GetCloudTrailTrail(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydr
 // ==========================  START: IAMAccount =============================
 
 type IAMAccount struct {
-	Description aws.IAMAccountDescription `json:"description"`
-	Metadata    aws.Metadata              `json:"metadata"`
+	Description   aws.IAMAccountDescription `json:"description"`
+	Metadata      aws.Metadata              `json:"metadata"`
+	ResourceJobID int                       `json:"resource_job_id"`
+	SourceJobID   int                       `json:"source_job_id"`
+	ResourceType  string                    `json:"resource_type"`
+	SourceType    string                    `json:"source_type"`
+	ID            string                    `json:"id"`
+	SourceID      string                    `json:"source_id"`
 }
 
 type IAMAccountHit struct {
@@ -7061,8 +7367,14 @@ func GetIAMAccount(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateDa
 // ==========================  START: IAMAccountSummary =============================
 
 type IAMAccountSummary struct {
-	Description aws.IAMAccountSummaryDescription `json:"description"`
-	Metadata    aws.Metadata                     `json:"metadata"`
+	Description   aws.IAMAccountSummaryDescription `json:"description"`
+	Metadata      aws.Metadata                     `json:"metadata"`
+	ResourceJobID int                              `json:"resource_job_id"`
+	SourceJobID   int                              `json:"source_job_id"`
+	ResourceType  string                           `json:"resource_type"`
+	SourceType    string                           `json:"source_type"`
+	ID            string                           `json:"id"`
+	SourceID      string                           `json:"source_id"`
 }
 
 type IAMAccountSummaryHit struct {
@@ -7196,8 +7508,14 @@ func GetIAMAccountSummary(ctx context.Context, d *plugin.QueryData, _ *plugin.Hy
 // ==========================  START: IAMAccessKey =============================
 
 type IAMAccessKey struct {
-	Description aws.IAMAccessKeyDescription `json:"description"`
-	Metadata    aws.Metadata                `json:"metadata"`
+	Description   aws.IAMAccessKeyDescription `json:"description"`
+	Metadata      aws.Metadata                `json:"metadata"`
+	ResourceJobID int                         `json:"resource_job_id"`
+	SourceJobID   int                         `json:"source_job_id"`
+	ResourceType  string                      `json:"resource_type"`
+	SourceType    string                      `json:"source_type"`
+	ID            string                      `json:"id"`
+	SourceID      string                      `json:"source_id"`
 }
 
 type IAMAccessKeyHit struct {
@@ -7331,8 +7649,14 @@ func GetIAMAccessKey(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydrate
 // ==========================  START: IAMAccountPasswordPolicy =============================
 
 type IAMAccountPasswordPolicy struct {
-	Description aws.IAMAccountPasswordPolicyDescription `json:"description"`
-	Metadata    aws.Metadata                            `json:"metadata"`
+	Description   aws.IAMAccountPasswordPolicyDescription `json:"description"`
+	Metadata      aws.Metadata                            `json:"metadata"`
+	ResourceJobID int                                     `json:"resource_job_id"`
+	SourceJobID   int                                     `json:"source_job_id"`
+	ResourceType  string                                  `json:"resource_type"`
+	SourceType    string                                  `json:"source_type"`
+	ID            string                                  `json:"id"`
+	SourceID      string                                  `json:"source_id"`
 }
 
 type IAMAccountPasswordPolicyHit struct {
@@ -7466,8 +7790,14 @@ func GetIAMAccountPasswordPolicy(ctx context.Context, d *plugin.QueryData, _ *pl
 // ==========================  START: IAMUser =============================
 
 type IAMUser struct {
-	Description aws.IAMUserDescription `json:"description"`
-	Metadata    aws.Metadata           `json:"metadata"`
+	Description   aws.IAMUserDescription `json:"description"`
+	Metadata      aws.Metadata           `json:"metadata"`
+	ResourceJobID int                    `json:"resource_job_id"`
+	SourceJobID   int                    `json:"source_job_id"`
+	ResourceType  string                 `json:"resource_type"`
+	SourceType    string                 `json:"source_type"`
+	ID            string                 `json:"id"`
+	SourceID      string                 `json:"source_id"`
 }
 
 type IAMUserHit struct {
@@ -7604,8 +7934,14 @@ func GetIAMUser(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData)
 // ==========================  START: IAMGroup =============================
 
 type IAMGroup struct {
-	Description aws.IAMGroupDescription `json:"description"`
-	Metadata    aws.Metadata            `json:"metadata"`
+	Description   aws.IAMGroupDescription `json:"description"`
+	Metadata      aws.Metadata            `json:"metadata"`
+	ResourceJobID int                     `json:"resource_job_id"`
+	SourceJobID   int                     `json:"source_job_id"`
+	ResourceType  string                  `json:"resource_type"`
+	SourceType    string                  `json:"source_type"`
+	ID            string                  `json:"id"`
+	SourceID      string                  `json:"source_id"`
 }
 
 type IAMGroupHit struct {
@@ -7742,8 +8078,14 @@ func GetIAMGroup(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData
 // ==========================  START: IAMRole =============================
 
 type IAMRole struct {
-	Description aws.IAMRoleDescription `json:"description"`
-	Metadata    aws.Metadata           `json:"metadata"`
+	Description   aws.IAMRoleDescription `json:"description"`
+	Metadata      aws.Metadata           `json:"metadata"`
+	ResourceJobID int                    `json:"resource_job_id"`
+	SourceJobID   int                    `json:"source_job_id"`
+	ResourceType  string                 `json:"resource_type"`
+	SourceType    string                 `json:"source_type"`
+	ID            string                 `json:"id"`
+	SourceID      string                 `json:"source_id"`
 }
 
 type IAMRoleHit struct {
@@ -7880,8 +8222,14 @@ func GetIAMRole(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData)
 // ==========================  START: IAMServerCertificate =============================
 
 type IAMServerCertificate struct {
-	Description aws.IAMServerCertificateDescription `json:"description"`
-	Metadata    aws.Metadata                        `json:"metadata"`
+	Description   aws.IAMServerCertificateDescription `json:"description"`
+	Metadata      aws.Metadata                        `json:"metadata"`
+	ResourceJobID int                                 `json:"resource_job_id"`
+	SourceJobID   int                                 `json:"source_job_id"`
+	ResourceType  string                              `json:"resource_type"`
+	SourceType    string                              `json:"source_type"`
+	ID            string                              `json:"id"`
+	SourceID      string                              `json:"source_id"`
 }
 
 type IAMServerCertificateHit struct {
@@ -8017,8 +8365,14 @@ func GetIAMServerCertificate(ctx context.Context, d *plugin.QueryData, _ *plugin
 // ==========================  START: IAMPolicy =============================
 
 type IAMPolicy struct {
-	Description aws.IAMPolicyDescription `json:"description"`
-	Metadata    aws.Metadata             `json:"metadata"`
+	Description   aws.IAMPolicyDescription `json:"description"`
+	Metadata      aws.Metadata             `json:"metadata"`
+	ResourceJobID int                      `json:"resource_job_id"`
+	SourceJobID   int                      `json:"source_job_id"`
+	ResourceType  string                   `json:"resource_type"`
+	SourceType    string                   `json:"source_type"`
+	ID            string                   `json:"id"`
+	SourceID      string                   `json:"source_id"`
 }
 
 type IAMPolicyHit struct {
@@ -8154,8 +8508,14 @@ func GetIAMPolicy(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateDat
 // ==========================  START: IAMCredentialReport =============================
 
 type IAMCredentialReport struct {
-	Description aws.IAMCredentialReportDescription `json:"description"`
-	Metadata    aws.Metadata                       `json:"metadata"`
+	Description   aws.IAMCredentialReportDescription `json:"description"`
+	Metadata      aws.Metadata                       `json:"metadata"`
+	ResourceJobID int                                `json:"resource_job_id"`
+	SourceJobID   int                                `json:"source_job_id"`
+	ResourceType  string                             `json:"resource_type"`
+	SourceType    string                             `json:"source_type"`
+	ID            string                             `json:"id"`
+	SourceID      string                             `json:"source_id"`
 }
 
 type IAMCredentialReportHit struct {
@@ -8289,8 +8649,14 @@ func GetIAMCredentialReport(ctx context.Context, d *plugin.QueryData, _ *plugin.
 // ==========================  START: IAMVirtualMFADevice =============================
 
 type IAMVirtualMFADevice struct {
-	Description aws.IAMVirtualMFADeviceDescription `json:"description"`
-	Metadata    aws.Metadata                       `json:"metadata"`
+	Description   aws.IAMVirtualMFADeviceDescription `json:"description"`
+	Metadata      aws.Metadata                       `json:"metadata"`
+	ResourceJobID int                                `json:"resource_job_id"`
+	SourceJobID   int                                `json:"source_job_id"`
+	ResourceType  string                             `json:"resource_type"`
+	SourceType    string                             `json:"source_type"`
+	ID            string                             `json:"id"`
+	SourceID      string                             `json:"source_id"`
 }
 
 type IAMVirtualMFADeviceHit struct {
@@ -8424,8 +8790,14 @@ func GetIAMVirtualMFADevice(ctx context.Context, d *plugin.QueryData, _ *plugin.
 // ==========================  START: RDSDBCluster =============================
 
 type RDSDBCluster struct {
-	Description aws.RDSDBClusterDescription `json:"description"`
-	Metadata    aws.Metadata                `json:"metadata"`
+	Description   aws.RDSDBClusterDescription `json:"description"`
+	Metadata      aws.Metadata                `json:"metadata"`
+	ResourceJobID int                         `json:"resource_job_id"`
+	SourceJobID   int                         `json:"source_job_id"`
+	ResourceType  string                      `json:"resource_type"`
+	SourceType    string                      `json:"source_type"`
+	ID            string                      `json:"id"`
+	SourceID      string                      `json:"source_id"`
 }
 
 type RDSDBClusterHit struct {
@@ -8561,8 +8933,14 @@ func GetRDSDBCluster(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydrate
 // ==========================  START: RDSDBClusterSnapshot =============================
 
 type RDSDBClusterSnapshot struct {
-	Description aws.RDSDBClusterSnapshotDescription `json:"description"`
-	Metadata    aws.Metadata                        `json:"metadata"`
+	Description   aws.RDSDBClusterSnapshotDescription `json:"description"`
+	Metadata      aws.Metadata                        `json:"metadata"`
+	ResourceJobID int                                 `json:"resource_job_id"`
+	SourceJobID   int                                 `json:"source_job_id"`
+	ResourceType  string                              `json:"resource_type"`
+	SourceType    string                              `json:"source_type"`
+	ID            string                              `json:"id"`
+	SourceID      string                              `json:"source_id"`
 }
 
 type RDSDBClusterSnapshotHit struct {
@@ -8703,8 +9081,14 @@ func GetRDSDBClusterSnapshot(ctx context.Context, d *plugin.QueryData, _ *plugin
 // ==========================  START: RDSDBEventSubscription =============================
 
 type RDSDBEventSubscription struct {
-	Description aws.RDSDBEventSubscriptionDescription `json:"description"`
-	Metadata    aws.Metadata                          `json:"metadata"`
+	Description   aws.RDSDBEventSubscriptionDescription `json:"description"`
+	Metadata      aws.Metadata                          `json:"metadata"`
+	ResourceJobID int                                   `json:"resource_job_id"`
+	SourceJobID   int                                   `json:"source_job_id"`
+	ResourceType  string                                `json:"resource_type"`
+	SourceType    string                                `json:"source_type"`
+	ID            string                                `json:"id"`
+	SourceID      string                                `json:"source_id"`
 }
 
 type RDSDBEventSubscriptionHit struct {
@@ -8840,8 +9224,14 @@ func GetRDSDBEventSubscription(ctx context.Context, d *plugin.QueryData, _ *plug
 // ==========================  START: RDSDBInstance =============================
 
 type RDSDBInstance struct {
-	Description aws.RDSDBInstanceDescription `json:"description"`
-	Metadata    aws.Metadata                 `json:"metadata"`
+	Description   aws.RDSDBInstanceDescription `json:"description"`
+	Metadata      aws.Metadata                 `json:"metadata"`
+	ResourceJobID int                          `json:"resource_job_id"`
+	SourceJobID   int                          `json:"source_job_id"`
+	ResourceType  string                       `json:"resource_type"`
+	SourceType    string                       `json:"source_type"`
+	ID            string                       `json:"id"`
+	SourceID      string                       `json:"source_id"`
 }
 
 type RDSDBInstanceHit struct {
@@ -8977,8 +9367,14 @@ func GetRDSDBInstance(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydrat
 // ==========================  START: RDSDBSnapshot =============================
 
 type RDSDBSnapshot struct {
-	Description aws.RDSDBSnapshotDescription `json:"description"`
-	Metadata    aws.Metadata                 `json:"metadata"`
+	Description   aws.RDSDBSnapshotDescription `json:"description"`
+	Metadata      aws.Metadata                 `json:"metadata"`
+	ResourceJobID int                          `json:"resource_job_id"`
+	SourceJobID   int                          `json:"source_job_id"`
+	ResourceType  string                       `json:"resource_type"`
+	SourceType    string                       `json:"source_type"`
+	ID            string                       `json:"id"`
+	SourceID      string                       `json:"source_id"`
 }
 
 type RDSDBSnapshotHit struct {
@@ -9114,8 +9510,14 @@ func GetRDSDBSnapshot(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydrat
 // ==========================  START: RedshiftCluster =============================
 
 type RedshiftCluster struct {
-	Description aws.RedshiftClusterDescription `json:"description"`
-	Metadata    aws.Metadata                   `json:"metadata"`
+	Description   aws.RedshiftClusterDescription `json:"description"`
+	Metadata      aws.Metadata                   `json:"metadata"`
+	ResourceJobID int                            `json:"resource_job_id"`
+	SourceJobID   int                            `json:"source_job_id"`
+	ResourceType  string                         `json:"resource_type"`
+	SourceType    string                         `json:"source_type"`
+	ID            string                         `json:"id"`
+	SourceID      string                         `json:"source_id"`
 }
 
 type RedshiftClusterHit struct {
@@ -9251,8 +9653,14 @@ func GetRedshiftCluster(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydr
 // ==========================  START: RedshiftClusterParameterGroup =============================
 
 type RedshiftClusterParameterGroup struct {
-	Description aws.RedshiftClusterParameterGroupDescription `json:"description"`
-	Metadata    aws.Metadata                                 `json:"metadata"`
+	Description   aws.RedshiftClusterParameterGroupDescription `json:"description"`
+	Metadata      aws.Metadata                                 `json:"metadata"`
+	ResourceJobID int                                          `json:"resource_job_id"`
+	SourceJobID   int                                          `json:"source_job_id"`
+	ResourceType  string                                       `json:"resource_type"`
+	SourceType    string                                       `json:"source_type"`
+	ID            string                                       `json:"id"`
+	SourceID      string                                       `json:"source_id"`
 }
 
 type RedshiftClusterParameterGroupHit struct {
@@ -9388,8 +9796,14 @@ func GetRedshiftClusterParameterGroup(ctx context.Context, d *plugin.QueryData, 
 // ==========================  START: SNSTopic =============================
 
 type SNSTopic struct {
-	Description aws.SNSTopicDescription `json:"description"`
-	Metadata    aws.Metadata            `json:"metadata"`
+	Description   aws.SNSTopicDescription `json:"description"`
+	Metadata      aws.Metadata            `json:"metadata"`
+	ResourceJobID int                     `json:"resource_job_id"`
+	SourceJobID   int                     `json:"source_job_id"`
+	ResourceType  string                  `json:"resource_type"`
+	SourceType    string                  `json:"source_type"`
+	ID            string                  `json:"id"`
+	SourceID      string                  `json:"source_id"`
 }
 
 type SNSTopicHit struct {
@@ -9525,8 +9939,14 @@ func GetSNSTopic(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData
 // ==========================  START: SNSSubscription =============================
 
 type SNSSubscription struct {
-	Description aws.SNSSubscriptionDescription `json:"description"`
-	Metadata    aws.Metadata                   `json:"metadata"`
+	Description   aws.SNSSubscriptionDescription `json:"description"`
+	Metadata      aws.Metadata                   `json:"metadata"`
+	ResourceJobID int                            `json:"resource_job_id"`
+	SourceJobID   int                            `json:"source_job_id"`
+	ResourceType  string                         `json:"resource_type"`
+	SourceType    string                         `json:"source_type"`
+	ID            string                         `json:"id"`
+	SourceID      string                         `json:"source_id"`
 }
 
 type SNSSubscriptionHit struct {
@@ -9662,8 +10082,14 @@ func GetSNSSubscription(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydr
 // ==========================  START: SQSQueue =============================
 
 type SQSQueue struct {
-	Description aws.SQSQueueDescription `json:"description"`
-	Metadata    aws.Metadata            `json:"metadata"`
+	Description   aws.SQSQueueDescription `json:"description"`
+	Metadata      aws.Metadata            `json:"metadata"`
+	ResourceJobID int                     `json:"resource_job_id"`
+	SourceJobID   int                     `json:"source_job_id"`
+	ResourceType  string                  `json:"resource_type"`
+	SourceType    string                  `json:"source_type"`
+	ID            string                  `json:"id"`
+	SourceID      string                  `json:"source_id"`
 }
 
 type SQSQueueHit struct {
@@ -9799,8 +10225,14 @@ func GetSQSQueue(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData
 // ==========================  START: S3Bucket =============================
 
 type S3Bucket struct {
-	Description aws.S3BucketDescription `json:"description"`
-	Metadata    aws.Metadata            `json:"metadata"`
+	Description   aws.S3BucketDescription `json:"description"`
+	Metadata      aws.Metadata            `json:"metadata"`
+	ResourceJobID int                     `json:"resource_job_id"`
+	SourceJobID   int                     `json:"source_job_id"`
+	ResourceType  string                  `json:"resource_type"`
+	SourceType    string                  `json:"source_type"`
+	ID            string                  `json:"id"`
+	SourceID      string                  `json:"source_id"`
 }
 
 type S3BucketHit struct {
@@ -9936,8 +10368,14 @@ func GetS3Bucket(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData
 // ==========================  START: S3AccountSetting =============================
 
 type S3AccountSetting struct {
-	Description aws.S3AccountSettingDescription `json:"description"`
-	Metadata    aws.Metadata                    `json:"metadata"`
+	Description   aws.S3AccountSettingDescription `json:"description"`
+	Metadata      aws.Metadata                    `json:"metadata"`
+	ResourceJobID int                             `json:"resource_job_id"`
+	SourceJobID   int                             `json:"source_job_id"`
+	ResourceType  string                          `json:"resource_type"`
+	SourceType    string                          `json:"source_type"`
+	ID            string                          `json:"id"`
+	SourceID      string                          `json:"source_id"`
 }
 
 type S3AccountSettingHit struct {
@@ -10071,8 +10509,14 @@ func GetS3AccountSetting(ctx context.Context, d *plugin.QueryData, _ *plugin.Hyd
 // ==========================  START: SageMakerEndpointConfiguration =============================
 
 type SageMakerEndpointConfiguration struct {
-	Description aws.SageMakerEndpointConfigurationDescription `json:"description"`
-	Metadata    aws.Metadata                                  `json:"metadata"`
+	Description   aws.SageMakerEndpointConfigurationDescription `json:"description"`
+	Metadata      aws.Metadata                                  `json:"metadata"`
+	ResourceJobID int                                           `json:"resource_job_id"`
+	SourceJobID   int                                           `json:"source_job_id"`
+	ResourceType  string                                        `json:"resource_type"`
+	SourceType    string                                        `json:"source_type"`
+	ID            string                                        `json:"id"`
+	SourceID      string                                        `json:"source_id"`
 }
 
 type SageMakerEndpointConfigurationHit struct {
@@ -10208,8 +10652,14 @@ func GetSageMakerEndpointConfiguration(ctx context.Context, d *plugin.QueryData,
 // ==========================  START: SageMakerNotebookInstance =============================
 
 type SageMakerNotebookInstance struct {
-	Description aws.SageMakerNotebookInstanceDescription `json:"description"`
-	Metadata    aws.Metadata                             `json:"metadata"`
+	Description   aws.SageMakerNotebookInstanceDescription `json:"description"`
+	Metadata      aws.Metadata                             `json:"metadata"`
+	ResourceJobID int                                      `json:"resource_job_id"`
+	SourceJobID   int                                      `json:"source_job_id"`
+	ResourceType  string                                   `json:"resource_type"`
+	SourceType    string                                   `json:"source_type"`
+	ID            string                                   `json:"id"`
+	SourceID      string                                   `json:"source_id"`
 }
 
 type SageMakerNotebookInstanceHit struct {
@@ -10345,8 +10795,14 @@ func GetSageMakerNotebookInstance(ctx context.Context, d *plugin.QueryData, _ *p
 // ==========================  START: SecretsManagerSecret =============================
 
 type SecretsManagerSecret struct {
-	Description aws.SecretsManagerSecretDescription `json:"description"`
-	Metadata    aws.Metadata                        `json:"metadata"`
+	Description   aws.SecretsManagerSecretDescription `json:"description"`
+	Metadata      aws.Metadata                        `json:"metadata"`
+	ResourceJobID int                                 `json:"resource_job_id"`
+	SourceJobID   int                                 `json:"source_job_id"`
+	ResourceType  string                              `json:"resource_type"`
+	SourceType    string                              `json:"source_type"`
+	ID            string                              `json:"id"`
+	SourceID      string                              `json:"source_id"`
 }
 
 type SecretsManagerSecretHit struct {
@@ -10482,8 +10938,14 @@ func GetSecretsManagerSecret(ctx context.Context, d *plugin.QueryData, _ *plugin
 // ==========================  START: SecurityHubHub =============================
 
 type SecurityHubHub struct {
-	Description aws.SecurityHubHubDescription `json:"description"`
-	Metadata    aws.Metadata                  `json:"metadata"`
+	Description   aws.SecurityHubHubDescription `json:"description"`
+	Metadata      aws.Metadata                  `json:"metadata"`
+	ResourceJobID int                           `json:"resource_job_id"`
+	SourceJobID   int                           `json:"source_job_id"`
+	ResourceType  string                        `json:"resource_type"`
+	SourceType    string                        `json:"source_type"`
+	ID            string                        `json:"id"`
+	SourceID      string                        `json:"source_id"`
 }
 
 type SecurityHubHubHit struct {
@@ -10619,8 +11081,14 @@ func GetSecurityHubHub(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydra
 // ==========================  START: SSMManagedInstance =============================
 
 type SSMManagedInstance struct {
-	Description aws.SSMManagedInstanceDescription `json:"description"`
-	Metadata    aws.Metadata                      `json:"metadata"`
+	Description   aws.SSMManagedInstanceDescription `json:"description"`
+	Metadata      aws.Metadata                      `json:"metadata"`
+	ResourceJobID int                               `json:"resource_job_id"`
+	SourceJobID   int                               `json:"source_job_id"`
+	ResourceType  string                            `json:"resource_type"`
+	SourceType    string                            `json:"source_type"`
+	ID            string                            `json:"id"`
+	SourceID      string                            `json:"source_id"`
 }
 
 type SSMManagedInstanceHit struct {
@@ -10754,8 +11222,14 @@ func GetSSMManagedInstance(ctx context.Context, d *plugin.QueryData, _ *plugin.H
 // ==========================  START: SSMManagedInstanceCompliance =============================
 
 type SSMManagedInstanceCompliance struct {
-	Description aws.SSMManagedInstanceComplianceDescription `json:"description"`
-	Metadata    aws.Metadata                                `json:"metadata"`
+	Description   aws.SSMManagedInstanceComplianceDescription `json:"description"`
+	Metadata      aws.Metadata                                `json:"metadata"`
+	ResourceJobID int                                         `json:"resource_job_id"`
+	SourceJobID   int                                         `json:"source_job_id"`
+	ResourceType  string                                      `json:"resource_type"`
+	SourceType    string                                      `json:"source_type"`
+	ID            string                                      `json:"id"`
+	SourceID      string                                      `json:"source_id"`
 }
 
 type SSMManagedInstanceComplianceHit struct {
@@ -10891,8 +11365,14 @@ func GetSSMManagedInstanceCompliance(ctx context.Context, d *plugin.QueryData, _
 // ==========================  START: ECSTaskDefinition =============================
 
 type ECSTaskDefinition struct {
-	Description aws.ECSTaskDefinitionDescription `json:"description"`
-	Metadata    aws.Metadata                     `json:"metadata"`
+	Description   aws.ECSTaskDefinitionDescription `json:"description"`
+	Metadata      aws.Metadata                     `json:"metadata"`
+	ResourceJobID int                              `json:"resource_job_id"`
+	SourceJobID   int                              `json:"source_job_id"`
+	ResourceType  string                           `json:"resource_type"`
+	SourceType    string                           `json:"source_type"`
+	ID            string                           `json:"id"`
+	SourceID      string                           `json:"source_id"`
 }
 
 type ECSTaskDefinitionHit struct {
@@ -11028,8 +11508,14 @@ func GetECSTaskDefinition(ctx context.Context, d *plugin.QueryData, _ *plugin.Hy
 // ==========================  START: ECSCluster =============================
 
 type ECSCluster struct {
-	Description aws.ECSClusterDescription `json:"description"`
-	Metadata    aws.Metadata              `json:"metadata"`
+	Description   aws.ECSClusterDescription `json:"description"`
+	Metadata      aws.Metadata              `json:"metadata"`
+	ResourceJobID int                       `json:"resource_job_id"`
+	SourceJobID   int                       `json:"source_job_id"`
+	ResourceType  string                    `json:"resource_type"`
+	SourceType    string                    `json:"source_type"`
+	ID            string                    `json:"id"`
+	SourceID      string                    `json:"source_id"`
 }
 
 type ECSClusterHit struct {
@@ -11165,8 +11651,14 @@ func GetECSCluster(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateDa
 // ==========================  START: ECSService =============================
 
 type ECSService struct {
-	Description aws.ECSServiceDescription `json:"description"`
-	Metadata    aws.Metadata              `json:"metadata"`
+	Description   aws.ECSServiceDescription `json:"description"`
+	Metadata      aws.Metadata              `json:"metadata"`
+	ResourceJobID int                       `json:"resource_job_id"`
+	SourceJobID   int                       `json:"source_job_id"`
+	ResourceType  string                    `json:"resource_type"`
+	SourceType    string                    `json:"source_type"`
+	ID            string                    `json:"id"`
+	SourceID      string                    `json:"source_id"`
 }
 
 type ECSServiceHit struct {
@@ -11300,8 +11792,14 @@ func GetECSService(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateDa
 // ==========================  START: EFSFileSystem =============================
 
 type EFSFileSystem struct {
-	Description aws.EFSFileSystemDescription `json:"description"`
-	Metadata    aws.Metadata                 `json:"metadata"`
+	Description   aws.EFSFileSystemDescription `json:"description"`
+	Metadata      aws.Metadata                 `json:"metadata"`
+	ResourceJobID int                          `json:"resource_job_id"`
+	SourceJobID   int                          `json:"source_job_id"`
+	ResourceType  string                       `json:"resource_type"`
+	SourceType    string                       `json:"source_type"`
+	ID            string                       `json:"id"`
+	SourceID      string                       `json:"source_id"`
 }
 
 type EFSFileSystemHit struct {
@@ -11437,8 +11935,14 @@ func GetEFSFileSystem(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydrat
 // ==========================  START: EKSCluster =============================
 
 type EKSCluster struct {
-	Description aws.EKSClusterDescription `json:"description"`
-	Metadata    aws.Metadata              `json:"metadata"`
+	Description   aws.EKSClusterDescription `json:"description"`
+	Metadata      aws.Metadata              `json:"metadata"`
+	ResourceJobID int                       `json:"resource_job_id"`
+	SourceJobID   int                       `json:"source_job_id"`
+	ResourceType  string                    `json:"resource_type"`
+	SourceType    string                    `json:"source_type"`
+	ID            string                    `json:"id"`
+	SourceID      string                    `json:"source_id"`
 }
 
 type EKSClusterHit struct {
@@ -11574,8 +12078,14 @@ func GetEKSCluster(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateDa
 // ==========================  START: EKSAddon =============================
 
 type EKSAddon struct {
-	Description aws.EKSAddonDescription `json:"description"`
-	Metadata    aws.Metadata            `json:"metadata"`
+	Description   aws.EKSAddonDescription `json:"description"`
+	Metadata      aws.Metadata            `json:"metadata"`
+	ResourceJobID int                     `json:"resource_job_id"`
+	SourceJobID   int                     `json:"source_job_id"`
+	ResourceType  string                  `json:"resource_type"`
+	SourceType    string                  `json:"source_type"`
+	ID            string                  `json:"id"`
+	SourceID      string                  `json:"source_id"`
 }
 
 type EKSAddonHit struct {
@@ -11712,8 +12222,14 @@ func GetEKSAddon(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData
 // ==========================  START: EKSIdentityProviderConfig =============================
 
 type EKSIdentityProviderConfig struct {
-	Description aws.EKSIdentityProviderConfigDescription `json:"description"`
-	Metadata    aws.Metadata                             `json:"metadata"`
+	Description   aws.EKSIdentityProviderConfigDescription `json:"description"`
+	Metadata      aws.Metadata                             `json:"metadata"`
+	ResourceJobID int                                      `json:"resource_job_id"`
+	SourceJobID   int                                      `json:"source_job_id"`
+	ResourceType  string                                   `json:"resource_type"`
+	SourceType    string                                   `json:"source_type"`
+	ID            string                                   `json:"id"`
+	SourceID      string                                   `json:"source_id"`
 }
 
 type EKSIdentityProviderConfigHit struct {
@@ -11851,8 +12367,14 @@ func GetEKSIdentityProviderConfig(ctx context.Context, d *plugin.QueryData, _ *p
 // ==========================  START: WAFv2WebACL =============================
 
 type WAFv2WebACL struct {
-	Description aws.WAFv2WebACLDescription `json:"description"`
-	Metadata    aws.Metadata               `json:"metadata"`
+	Description   aws.WAFv2WebACLDescription `json:"description"`
+	Metadata      aws.Metadata               `json:"metadata"`
+	ResourceJobID int                        `json:"resource_job_id"`
+	SourceJobID   int                        `json:"source_job_id"`
+	ResourceType  string                     `json:"resource_type"`
+	SourceType    string                     `json:"source_type"`
+	ID            string                     `json:"id"`
+	SourceID      string                     `json:"source_id"`
 }
 
 type WAFv2WebACLHit struct {
@@ -11990,8 +12512,14 @@ func GetWAFv2WebACL(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateD
 // ==========================  START: KMSKey =============================
 
 type KMSKey struct {
-	Description aws.KMSKeyDescription `json:"description"`
-	Metadata    aws.Metadata          `json:"metadata"`
+	Description   aws.KMSKeyDescription `json:"description"`
+	Metadata      aws.Metadata          `json:"metadata"`
+	ResourceJobID int                   `json:"resource_job_id"`
+	SourceJobID   int                   `json:"source_job_id"`
+	ResourceType  string                `json:"resource_type"`
+	SourceType    string                `json:"source_type"`
+	ID            string                `json:"id"`
+	SourceID      string                `json:"source_id"`
 }
 
 type KMSKeyHit struct {
@@ -12127,8 +12655,14 @@ func GetKMSKey(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) 
 // ==========================  START: LambdaFunction =============================
 
 type LambdaFunction struct {
-	Description aws.LambdaFunctionDescription `json:"description"`
-	Metadata    aws.Metadata                  `json:"metadata"`
+	Description   aws.LambdaFunctionDescription `json:"description"`
+	Metadata      aws.Metadata                  `json:"metadata"`
+	ResourceJobID int                           `json:"resource_job_id"`
+	SourceJobID   int                           `json:"source_job_id"`
+	ResourceType  string                        `json:"resource_type"`
+	SourceType    string                        `json:"source_type"`
+	ID            string                        `json:"id"`
+	SourceID      string                        `json:"source_id"`
 }
 
 type LambdaFunctionHit struct {
@@ -12264,8 +12798,14 @@ func GetLambdaFunction(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydra
 // ==========================  START: S3AccessPoint =============================
 
 type S3AccessPoint struct {
-	Description aws.S3AccessPointDescription `json:"description"`
-	Metadata    aws.Metadata                 `json:"metadata"`
+	Description   aws.S3AccessPointDescription `json:"description"`
+	Metadata      aws.Metadata                 `json:"metadata"`
+	ResourceJobID int                          `json:"resource_job_id"`
+	SourceJobID   int                          `json:"source_job_id"`
+	ResourceType  string                       `json:"resource_type"`
+	SourceType    string                       `json:"source_type"`
+	ID            string                       `json:"id"`
+	SourceID      string                       `json:"source_id"`
 }
 
 type S3AccessPointHit struct {
@@ -12402,8 +12942,14 @@ func GetS3AccessPoint(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydrat
 // ==========================  START: CostExplorerByAccountMonthly =============================
 
 type CostExplorerByAccountMonthly struct {
-	Description aws.CostExplorerByAccountMonthlyDescription `json:"description"`
-	Metadata    aws.Metadata                                `json:"metadata"`
+	Description   aws.CostExplorerByAccountMonthlyDescription `json:"description"`
+	Metadata      aws.Metadata                                `json:"metadata"`
+	ResourceJobID int                                         `json:"resource_job_id"`
+	SourceJobID   int                                         `json:"source_job_id"`
+	ResourceType  string                                      `json:"resource_type"`
+	SourceType    string                                      `json:"source_type"`
+	ID            string                                      `json:"id"`
+	SourceID      string                                      `json:"source_id"`
 }
 
 type CostExplorerByAccountMonthlyHit struct {
@@ -12537,8 +13083,14 @@ func GetCostExplorerByAccountMonthly(ctx context.Context, d *plugin.QueryData, _
 // ==========================  START: CostExplorerByServiceMonthly =============================
 
 type CostExplorerByServiceMonthly struct {
-	Description aws.CostExplorerByServiceMonthlyDescription `json:"description"`
-	Metadata    aws.Metadata                                `json:"metadata"`
+	Description   aws.CostExplorerByServiceMonthlyDescription `json:"description"`
+	Metadata      aws.Metadata                                `json:"metadata"`
+	ResourceJobID int                                         `json:"resource_job_id"`
+	SourceJobID   int                                         `json:"source_job_id"`
+	ResourceType  string                                      `json:"resource_type"`
+	SourceType    string                                      `json:"source_type"`
+	ID            string                                      `json:"id"`
+	SourceID      string                                      `json:"source_id"`
 }
 
 type CostExplorerByServiceMonthlyHit struct {

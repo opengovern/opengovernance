@@ -15,6 +15,8 @@ import (
 	"strings"
 	"time"
 
+	"gitlab.com/keibiengine/keibi-engine/pkg/keibi-es-sdk"
+
 	"gitlab.com/keibiengine/keibi-engine/pkg/insight/kafka"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/source"
@@ -836,9 +838,9 @@ func (h *HttpHandler) GetBenchmarkComplianceTrend(ctx echo.Context) error {
 // @Tags         benchmarks
 // @Accept       json
 // @Produce      json
-// @Param    sourceId  query     string  true  "SourceID"
-// @Param    provider  query     string  true  "Provider"
-// @Param    timeWindow  query     string  true  "Time Window"  Enums(24h,1w,3m,1y,max)
+// @Param    sourceId    query     string  false  "SourceID"
+// @Param    provider    query     string  false  "Provider"
+// @Param    timeWindow  query     string  false  "Time Window"  Enums(24h,1w,3m,1y,max)
 // @Success  200         {object}  []api.TrendDataPoint
 // @Router   /inventory/api/v1/resources/trend [get]
 func (h *HttpHandler) GetResourceGrowthTrend(ctx echo.Context) error {
@@ -848,10 +850,6 @@ func (h *HttpHandler) GetResourceGrowthTrend(ctx echo.Context) error {
 
 	if timeWindow == "" {
 		timeWindow = "24h"
-	}
-
-	if provider == "" && sourceID == "" {
-		return echo.NewHTTPError(http.StatusBadRequest, "you should specify either provider or sourceId")
 	}
 
 	var providerPtr *string
@@ -871,7 +869,7 @@ func (h *HttpHandler) GetResourceGrowthTrend(ctx echo.Context) error {
 
 	var fromTime, toTime int64
 	toTime = time.Now().UnixMilli()
-	tw, err := ParseTimeWindow(ctx.QueryParam("timeWindow"))
+	tw, err := ParseTimeWindow(timeWindow)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid timeWindow")
 	}
@@ -925,8 +923,8 @@ func (h *HttpHandler) GetResourceGrowthTrend(ctx echo.Context) error {
 // @Tags     benchmarks
 // @Accept   json
 // @Produce  json
-// @Param    sourceId    query     string  true  "SourceID"
-// @Param    provider    query     string  true  "Provider"
+// @Param    sourceId  query     string  true  "SourceID"
+// @Param    provider  query     string  true  "Provider"
 // @Param    timeWindow  query     string  true  "Time Window"  Enums(24h,1w,3m,1y,max)
 // @Success  200         {object}  []api.TrendDataPoint
 // @Router   /inventory/api/v1/compliancy/trend [get]
@@ -1029,22 +1027,27 @@ func (h *HttpHandler) GetTopAccountsByCost(ctx echo.Context) error {
 		return ctx.JSON(http.StatusNotImplemented, nil)
 	}
 
-	paginator, err := h.client.NewCostExplorerByAccountMonthlyPaginator(nil, nil)
-	if err != nil {
-		return err
-	}
-
 	accountCostMap := map[string]float64{}
-	c := context.Background()
+	var searchAfter []interface{}
 	for {
-		page, err := paginator.NextPage(c)
+		query, err := es.FindAWSCostQuery(nil, EsFetchPageSize, searchAfter)
 		if err != nil {
 			return err
 		}
 
-		for _, item := range page {
-			accountId := *item.Description.Dimension1
-			cost, err := strconv.ParseFloat(*item.Description.UnblendedCostAmount, 64)
+		var response keibi.CostExplorerByAccountMonthlySearchResponse
+		err = h.client.Search(context.Background(), "aws_costexplorer_byaccountmonthly", query, &response)
+		if err != nil {
+			return err
+		}
+
+		if len(response.Hits.Hits) == 0 {
+			break
+		}
+
+		for _, hit := range response.Hits.Hits {
+			accountId := hit.Source.SourceID
+			cost, err := strconv.ParseFloat(*hit.Source.Description.UnblendedCostAmount, 64)
 			if err != nil {
 				return err
 			}
@@ -1053,12 +1056,11 @@ func (h *HttpHandler) GetTopAccountsByCost(ctx echo.Context) error {
 				cost += v
 			}
 			accountCostMap[accountId] = cost
-		}
 
-		if !paginator.HasNext() {
-			break
+			searchAfter = hit.Sort
 		}
 	}
+
 	var accountCost []api.TopAccountCostResponse
 	for key, value := range accountCostMap {
 		accountCost = append(accountCost, api.TopAccountCostResponse{
@@ -1091,33 +1093,37 @@ func (h *HttpHandler) GetTopServicesByCost(ctx echo.Context) error {
 		return ctx.JSON(http.StatusNotImplemented, nil)
 	}
 
-	//TODO-Saleh
-	//var sourceUUID *uuid.UUID
-	//sourceId := ctx.QueryParam("sourceId")
-	//if len(sourceId) > 0 {
-	//	suuid, err := uuid.Parse(sourceId)
-	//	if err != nil {
-	//		return err
-	//	}
-	//	sourceUUID = &suuid
-	//}
-
-	paginator, err := h.client.NewCostExplorerByServiceMonthlyPaginator(nil, nil)
-	if err != nil {
-		return err
+	var sourceUUID *uuid.UUID
+	sourceId := ctx.QueryParam("sourceId")
+	if len(sourceId) > 0 {
+		suuid, err := uuid.Parse(sourceId)
+		if err != nil {
+			return err
+		}
+		sourceUUID = &suuid
 	}
 
 	serviceCostMap := map[string]float64{}
-	c := context.Background()
+	var searchAfter []interface{}
 	for {
-		page, err := paginator.NextPage(c)
+		query, err := es.FindAWSCostQuery(sourceUUID, EsFetchPageSize, searchAfter)
 		if err != nil {
 			return err
 		}
 
-		for _, item := range page {
-			serviceName := *item.Description.Dimension1
-			cost, err := strconv.ParseFloat(*item.Description.UnblendedCostAmount, 64)
+		var response keibi.CostExplorerByServiceMonthlySearchResponse
+		err = h.client.Search(context.Background(), "aws_costexplorer_byservicemonthly", query, &response)
+		if err != nil {
+			return err
+		}
+
+		if len(response.Hits.Hits) == 0 {
+			break
+		}
+
+		for _, hit := range response.Hits.Hits {
+			serviceName := *hit.Source.Description.Dimension1
+			cost, err := strconv.ParseFloat(*hit.Source.Description.UnblendedCostAmount, 64)
 			if err != nil {
 				return err
 			}
@@ -1126,12 +1132,10 @@ func (h *HttpHandler) GetTopServicesByCost(ctx echo.Context) error {
 				cost += v
 			}
 			serviceCostMap[serviceName] = cost
-		}
-
-		if !paginator.HasNext() {
-			break
+			searchAfter = hit.Sort
 		}
 	}
+
 	var serviceCost []api.TopServiceCostResponse
 	for key, value := range serviceCostMap {
 		serviceCost = append(serviceCost, api.TopServiceCostResponse{
