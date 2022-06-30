@@ -2282,7 +2282,7 @@ func (h *HttpHandler) GetResourcesFilters(ctx echo.Context) error {
 	}
 
 	var response es.LookupResourceAggregationResponse
-	err = h.client.Search(context.Background(), kafka.InsightsIndex,
+	err = h.client.Search(context.Background(), describe.InventorySummaryIndex,
 		query, &response)
 	if err != nil {
 		return err
