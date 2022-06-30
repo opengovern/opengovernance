@@ -249,7 +249,7 @@ func (s *HttpHandlerSuite) TestGetAllResources() {
 	require := s.Require()
 
 	var response api.GetResourcesResponse
-	rec, err := doRequestJSONResponse(s.router, echo.POST, "/api/v1/resources", api.GetResourcesRequest{
+	rec, err := doRequestJSONResponse(s.router, echo.POST, "/api/v1/resources?common=all", api.GetResourcesRequest{
 		Filters: api.Filters{},
 		Sorts:   []api.ResourceSortItem{},
 		Page: pagination.PageRequest{
@@ -271,7 +271,7 @@ func (s *HttpHandlerSuite) TestGetAllResources_Sort() {
 	require := s.Require()
 
 	var response api.GetResourcesResponse
-	rec, err := doRequestJSONResponse(s.router, echo.POST, "/api/v1/resources", api.GetResourcesRequest{
+	rec, err := doRequestJSONResponse(s.router, echo.POST, "/api/v1/resources?common=all", api.GetResourcesRequest{
 		Filters: api.Filters{},
 		Sorts: []api.ResourceSortItem{
 			{
@@ -305,7 +305,7 @@ func (s *HttpHandlerSuite) TestGetAllResources_Paging() {
 		},
 	}
 	var response api.GetResourcesResponse
-	rec, err := doRequestJSONResponse(s.router, echo.POST, "/api/v1/resources", req, &response)
+	rec, err := doRequestJSONResponse(s.router, echo.POST, "/api/v1/resources?common=all", req, &response)
 	require.NoError(err, "request")
 	require.Equal(http.StatusOK, rec.Code)
 	require.Len(response.Resources, 1)
@@ -313,28 +313,28 @@ func (s *HttpHandlerSuite) TestGetAllResources_Paging() {
 	require.Equal(int64(4), response.Page.TotalCount)
 
 	req.Page.NextMarker = response.Page.NextMarker
-	rec, err = doRequestJSONResponse(s.router, echo.POST, "/api/v1/resources", req, &response)
+	rec, err = doRequestJSONResponse(s.router, echo.POST, "/api/v1/resources?common=all", req, &response)
 	require.NoError(err, "request")
 	require.Equal(http.StatusOK, rec.Code)
 	require.Len(response.Resources, 1)
 	require.Equal(response.Resources[0].ResourceID, "aaa2")
 
 	req.Page.NextMarker = response.Page.NextMarker
-	rec, err = doRequestJSONResponse(s.router, echo.POST, "/api/v1/resources", req, &response)
+	rec, err = doRequestJSONResponse(s.router, echo.POST, "/api/v1/resources?common=all", req, &response)
 	require.NoError(err, "request")
 	require.Equal(http.StatusOK, rec.Code)
 	require.Len(response.Resources, 1)
 	require.Equal(response.Resources[0].ResourceID, "aaa1")
 
 	req.Page.NextMarker = response.Page.NextMarker
-	rec, err = doRequestJSONResponse(s.router, echo.POST, "/api/v1/resources", req, &response)
+	rec, err = doRequestJSONResponse(s.router, echo.POST, "/api/v1/resources?common=all", req, &response)
 	require.NoError(err, "request")
 	require.Equal(http.StatusOK, rec.Code)
 	require.Len(response.Resources, 1)
 	require.Equal(response.Resources[0].ResourceID, "aaa0")
 
 	req.Page.NextMarker = response.Page.NextMarker
-	rec, err = doRequestJSONResponse(s.router, echo.POST, "/api/v1/resources", req, &response)
+	rec, err = doRequestJSONResponse(s.router, echo.POST, "/api/v1/resources?common=all", req, &response)
 	require.NoError(err, "request")
 	require.Equal(http.StatusOK, rec.Code)
 	require.Len(response.Resources, 0)
@@ -359,7 +359,7 @@ func (s *HttpHandlerSuite) TestGetAllResources_Filters() {
 	var response api.GetResourcesResponse
 	req.Filters = api.Filters{}
 	req.Filters.Location = []string{"us-east1"}
-	rec, err := doRequestJSONResponse(s.router, echo.POST, "/api/v1/resources", req, &response)
+	rec, err := doRequestJSONResponse(s.router, echo.POST, "/api/v1/resources?common=all", req, &response)
 	require.NoError(err, "request")
 	require.Equal(http.StatusOK, rec.Code)
 	require.Len(response.Resources, 2)
@@ -368,7 +368,7 @@ func (s *HttpHandlerSuite) TestGetAllResources_Filters() {
 
 	req.Filters = api.Filters{}
 	req.Filters.SourceID = []string{"ss1"}
-	rec, err = doRequestJSONResponse(s.router, echo.POST, "/api/v1/resources", req, &response)
+	rec, err = doRequestJSONResponse(s.router, echo.POST, "/api/v1/resources?common=all", req, &response)
 	require.NoError(err, "request")
 	require.Equal(http.StatusOK, rec.Code)
 	require.Len(response.Resources, 2)
@@ -377,7 +377,7 @@ func (s *HttpHandlerSuite) TestGetAllResources_Filters() {
 
 	req.Filters = api.Filters{}
 	req.Filters.ResourceType = []string{"Microsoft.Network/virtualNetworks"}
-	rec, err = doRequestJSONResponse(s.router, echo.POST, "/api/v1/resources", req, &response)
+	rec, err = doRequestJSONResponse(s.router, echo.POST, "/api/v1/resources?common=all", req, &response)
 	require.NoError(err, "request")
 	require.Equal(http.StatusOK, rec.Code)
 	require.Len(response.Resources, 2)
@@ -387,7 +387,7 @@ func (s *HttpHandlerSuite) TestGetAllResources_Filters() {
 	req.Filters = api.Filters{}
 	req.Filters.ResourceType = []string{"AWS::EC2::Instance"}
 	req.Filters.Location = []string{"us-east1"}
-	rec, err = doRequestJSONResponse(s.router, echo.POST, "/api/v1/resources", req, &response)
+	rec, err = doRequestJSONResponse(s.router, echo.POST, "/api/v1/resources?common=all", req, &response)
 	require.NoError(err, "request")
 	require.Equal(http.StatusOK, rec.Code)
 	require.Len(response.Resources, 1)
@@ -414,7 +414,7 @@ func (s *HttpHandlerSuite) TestGetAllResources_Query() {
 	}
 
 	var response api.GetResourcesResponse
-	rec, err := doRequestJSONResponse(s.router, echo.POST, "/api/v1/resources", req, &response)
+	rec, err := doRequestJSONResponse(s.router, echo.POST, "/api/v1/resources?common=all", req, &response)
 	require.NoError(err, "request")
 	require.Equal(http.StatusOK, rec.Code)
 	require.Len(response.Resources, 1)
@@ -444,7 +444,7 @@ func (s *HttpHandlerSuite) TestGetAllResources_QueryMicrosoft() {
 
 	var response api.GetResourcesResponse
 	req.Query = "Microsoft"
-	rec, err := doRequestJSONResponse(s.router, echo.POST, "/api/v1/resources", req, &response)
+	rec, err := doRequestJSONResponse(s.router, echo.POST, "/api/v1/resources?common=all", req, &response)
 	require.NoError(err, "request")
 	require.Equal(http.StatusOK, rec.Code)
 	require.Len(response.Resources, 1)
@@ -467,7 +467,7 @@ func (s *HttpHandlerSuite) TestGetAllResources_CSV() {
 		},
 	}
 
-	rec, response, err := doRequestCSVResponse(s.router, echo.POST, "/api/v1/resources", req)
+	rec, response, err := doRequestCSVResponse(s.router, echo.POST, "/api/v1/resources?common=all", req)
 	require.NoError(err, "request")
 	require.Equal(http.StatusOK, rec.Code)
 	require.Len(response, 5) // first is header
@@ -479,7 +479,7 @@ func (s *HttpHandlerSuite) TestGetAllResources_CSV() {
 
 	req.Filters = api.Filters{}
 	req.Filters.Location = []string{"us-east1"}
-	rec, response, err = doRequestCSVResponse(s.router, echo.POST, "/api/v1/resources", req)
+	rec, response, err = doRequestCSVResponse(s.router, echo.POST, "/api/v1/resources?common=all", req)
 	require.NoError(err, "request")
 	require.Equal(http.StatusOK, rec.Code)
 	require.Len(response, 3)
@@ -491,7 +491,7 @@ func (s *HttpHandlerSuite) TestGetAWSResources() {
 	require := s.Require()
 
 	var response api.GetAWSResourceResponse
-	rec, err := doRequestJSONResponse(s.router, echo.POST, "/api/v1/resources/aws", api.GetResourcesRequest{
+	rec, err := doRequestJSONResponse(s.router, echo.POST, "/api/v1/resources/aws?common=all", api.GetResourcesRequest{
 		Filters: api.Filters{
 			ResourceType: nil,
 			Location:     nil,
@@ -515,7 +515,7 @@ func (s *HttpHandlerSuite) TestGetAzureResources() {
 	require := s.Require()
 
 	var response api.GetAzureResourceResponse
-	rec, err := doRequestJSONResponse(s.router, echo.POST, "/api/v1/resources/azure", api.GetResourcesRequest{
+	rec, err := doRequestJSONResponse(s.router, echo.POST, "/api/v1/resources/azure?common=all", api.GetResourcesRequest{
 		Filters: api.Filters{
 			ResourceType: nil,
 			Location:     nil,

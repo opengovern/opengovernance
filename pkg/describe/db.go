@@ -22,7 +22,7 @@ type Database struct {
 
 func (db Database) Initialize() error {
 	return db.orm.AutoMigrate(&Source{}, &DescribeSourceJob{}, &DescribeResourceJob{},
-		&ComplianceReportJob{}, &Insight{}, &InsightLabel{}, &InsightJob{},
+		&ComplianceReportJob{}, &Insight{}, &InsightJob{},
 	)
 }
 
@@ -596,7 +596,6 @@ func (db Database) QueryComplianceReportJobs(id string) ([]ComplianceReportJob, 
 
 func (db Database) AddInsight(insight *Insight) error {
 	tx := db.orm.Model(&Insight{}).
-		Preload("Labels").
 		Create(&insight)
 	if tx.Error != nil {
 		return tx.Error
@@ -607,7 +606,6 @@ func (db Database) AddInsight(insight *Insight) error {
 func (db Database) GetInsight(id uint) (*Insight, error) {
 	var res Insight
 	tx := db.orm.Model(&Insight{}).
-		Preload("Labels").
 		Where("id = ?", id).
 		First(&res)
 	if tx.Error != nil {
@@ -616,39 +614,17 @@ func (db Database) GetInsight(id uint) (*Insight, error) {
 	return &res, nil
 }
 
-func (db Database) ListInsightsWithFilters(search *string, labels []string) ([]Insight, error) {
+func (db Database) ListInsightsWithFilters(search *string) ([]Insight, error) {
 	var s []Insight
-
-	m := db.orm.Model(&Insight{}).
-		Preload("Labels").
-		Joins("LEFT JOIN insight_label_map on insights.id = insight_id " +
-			"LEFT JOIN insight_labels on insight_label_map.insight_label_id = insight_labels.id ")
-
-	if len(labels) != 0 {
-		m = m.Where("insight_labels.value in ?", labels)
-	}
+	m := db.orm.Model(&Insight{})
 	if search != nil {
 		m = m.Where("description like ?", "%"+*search+"%")
 	}
 	tx := m.Find(&s)
-
 	if tx.Error != nil {
 		return nil, tx.Error
 	}
-
-	v := map[uint]Insight{}
-	for _, item := range s {
-		if c, ok := v[item.ID]; ok {
-			c.Labels = append(c.Labels, item.Labels...)
-		} else {
-			v[item.ID] = item
-		}
-	}
-	var res []Insight
-	for _, val := range v {
-		res = append(res, val)
-	}
-	return res, nil
+	return s, nil
 }
 
 func (db Database) DeleteInsight(id uint) error {

@@ -364,17 +364,12 @@ func (h *HttpServer) CreateInsight(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	var labels []InsightLabel
-	for _, value := range req.Labels {
-		labels = append(labels, InsightLabel{
-			Value: value,
-		})
-	}
 	ins := Insight{
 		Description:  req.Description,
 		Query:        req.Query,
 		SmartQueryID: req.SmartQueryID,
-		Labels:       labels,
+		Provider:     req.Provider,
+		Category:     req.Category,
 	}
 	err := h.DB.AddInsight(&ins)
 	if err != nil {
@@ -423,23 +418,20 @@ func (h *HttpServer) ListInsights(ctx echo.Context) error {
 		search = &req.DescriptionFilter
 	}
 
-	queries, err := h.DB.ListInsightsWithFilters(search, req.Labels)
+	queries, err := h.DB.ListInsightsWithFilters(search)
 	if err != nil {
 		return err
 	}
 
 	var result []api.Insight
 	for _, item := range queries {
-		var labels []string
-		for _, i := range item.Labels {
-			labels = append(labels, i.Value)
-		}
 		result = append(result, api.Insight{
 			ID:           item.Model.ID,
 			Description:  item.Description,
 			Query:        item.Query,
+			Provider:     item.Provider,
+			Category:     item.Category,
 			SmartQueryID: item.SmartQueryID,
-			Labels:       labels,
 		})
 	}
 	return ctx.JSON(200, result)

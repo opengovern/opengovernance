@@ -51,9 +51,11 @@ func (s *HttpServerSuite) TestInsightAPIs() {
 
 	var response uint
 	rec, err := doRequestJSONResponse(s.router, echo.PUT, "/api/v1/insight", api.CreateInsightRequest{
-		Description: "No of users",
-		Query:       "select count(*) from aws_users;",
-		Labels:      []string{"AWS", "User"},
+		Description:  "No of users",
+		Query:        "select count(*) from aws_users;",
+		Provider:     "AWS",
+		Category:     "IAM",
+		SmartQueryID: 0,
 	}, &response)
 	require.NoError(err, "request")
 	require.Equal(http.StatusOK, rec.Code)
@@ -61,28 +63,26 @@ func (s *HttpServerSuite) TestInsightAPIs() {
 	var insightList []api.Insight
 	rec, err = doRequestJSONResponse(s.router, echo.GET, "/api/v1/insight", api.ListInsightsRequest{
 		DescriptionFilter: "",
-		Labels:            nil,
 	}, &insightList)
 	require.NoError(err, "request")
 	require.Equal(http.StatusOK, rec.Code)
 	require.Len(insightList, 1)
 	require.Equal("No of users", insightList[0].Description)
 	require.Equal("select count(*) from aws_users;", insightList[0].Query)
-	require.Contains(insightList[0].Labels, "AWS")
-	require.Contains(insightList[0].Labels, "User")
 	deleteId := insightList[0].ID
 
 	rec, err = doRequestJSONResponse(s.router, echo.PUT, "/api/v1/insight", api.CreateInsightRequest{
-		Description: "count expired certificates",
-		Query:       "select count(*) from aws_expired_certificates;",
-		Labels:      []string{"AWS", "Certificate"},
+		Description:  "count expired certificates",
+		Query:        "select count(*) from aws_expired_certificates;",
+		Provider:     "AWS",
+		Category:     "IAM",
+		SmartQueryID: 0,
 	}, &response)
 	require.NoError(err, "request")
 	require.Equal(http.StatusOK, rec.Code)
 
 	rec, err = doRequestJSONResponse(s.router, echo.GET, "/api/v1/insight", api.ListInsightsRequest{
 		DescriptionFilter: "expired",
-		Labels:            nil,
 	}, &insightList)
 	require.NoError(err, "request")
 	require.Equal(http.StatusOK, rec.Code)
@@ -95,7 +95,6 @@ func (s *HttpServerSuite) TestInsightAPIs() {
 
 	rec, err = doRequestJSONResponse(s.router, echo.GET, "/api/v1/insight", api.ListInsightsRequest{
 		DescriptionFilter: "",
-		Labels:            nil,
 	}, &insightList)
 	require.NoError(err, "request")
 	require.Equal(http.StatusOK, rec.Code)

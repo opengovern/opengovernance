@@ -1092,7 +1092,7 @@ func (s Scheduler) scheduleInsightJob() {
 		}
 
 		s.logger.Info("Workspace is due for a insight. Creating a job now")
-		insights, err := s.db.ListInsightsWithFilters(nil, nil)
+		insights, err := s.db.ListInsightsWithFilters(nil)
 		if err != nil {
 			s.logger.Error("Failed to fetch list of insights", zap.Error(err))
 			InsightJobsCount.WithLabelValues("failure").Inc()
@@ -1176,9 +1176,11 @@ func enqueueInsightJobs(db Database, q queue.Interface, job InsightJob) error {
 	if err := q.Publish(insight.Job{
 		JobID:            job.ID,
 		QueryID:          job.InsightID,
-		Query:            ins.Query,
 		SmartQueryID:     ins.SmartQueryID,
+		Query:            ins.Query,
 		Description:      ins.Description,
+		Provider:         ins.Provider,
+		Category:         ins.Category,
 		ExecutedAt:       job.CreatedAt.UnixMilli(),
 		LastDayJobID:     lastDayJobID,
 		LastWeekJobID:    lastWeekJobID,

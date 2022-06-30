@@ -31,6 +31,10 @@ type InsightResource struct {
 	Query string `json:"query"`
 	// Description
 	Description string `json:"description"`
+	// Provider
+	Provider string `json:"provider"`
+	// Category
+	Category string `json:"category"`
 	// ExecutedAt is when the query is executed
 	ExecutedAt int64 `json:"executed_at"`
 	// Result of query

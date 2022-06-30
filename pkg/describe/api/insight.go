@@ -1,21 +1,22 @@
 package api
 
 type Insight struct {
-	ID           uint     `json:"id"`
-	Description  string   `json:"description"`
-	Query        string   `json:"query"`
-	SmartQueryID uint     `json:"smartQueryID"`
-	Labels       []string `json:"labels"`
+	ID           uint   `json:"id"`
+	Description  string `json:"description"`
+	Query        string `json:"query"`
+	Provider     string `json:"provider"`
+	Category     string `json:"category"`
+	SmartQueryID uint   `json:"smartQueryID"`
 }
 
 type ListInsightsRequest struct {
-	DescriptionFilter string   `json:"descriptionFilter"`
-	Labels            []string `json:"labels"`
+	DescriptionFilter string `json:"descriptionFilter"`
 }
 
 type CreateInsightRequest struct {
-	Description  string   `json:"description"`
-	Query        string   `json:"query"`
-	SmartQueryID uint     `json:"smartQueryID"`
-	Labels       []string `json:"labels"`
+	Description  string `json:"description"`
+	Query        string `json:"query"`
+	Provider     string `json:"provider"`
+	Category     string `json:"category"`
+	SmartQueryID uint   `json:"smartQueryID"`
 }
