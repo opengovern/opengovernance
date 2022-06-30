@@ -43,6 +43,8 @@ type Job struct {
 	SmartQueryID     uint
 	Query            string
 	Description      string
+	Provider         string
+	Category         string
 	ExecutedAt       int64
 	LastDayJobID     uint
 	LastWeekJobID    uint
@@ -127,6 +129,8 @@ func (j Job) Do(es keibi.Client, steampipeConn *steampipe.Database, producer sar
 					SmartQueryID:     j.SmartQueryID,
 					Query:            j.Query,
 					Description:      j.Description,
+					Provider:         j.Provider,
+					Category:         j.Category,
 					ExecutedAt:       time.Now().UnixMilli(),
 					Result:           v,
 					LastDayValue:     lastDayValue,

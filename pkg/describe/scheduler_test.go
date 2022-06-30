@@ -834,16 +834,11 @@ func (s *SchedulerTestSuite) TestRunInsightJob() {
 	s.Scheduler.insightJobQueue.(*mocksqueue.Interface).On("Publish", mock.Anything).Return(error(nil))
 
 	ins := Insight{
-		Description: "this is a test insight",
-		Query:       "select count(*) from aws_ec2_instance",
-		Labels: []InsightLabel{
-			{
-				Value: "AWS",
-			},
-			{
-				Value: "EC2",
-			},
-		},
+		Description:  "this is a test insight",
+		Query:        "select count(*) from aws_ec2_instance",
+		SmartQueryID: 0,
+		Provider:     "AWS",
+		Category:     "IAM",
 	}
 
 	err := s.Scheduler.db.AddInsight(&ins)

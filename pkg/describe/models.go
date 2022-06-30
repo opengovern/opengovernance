@@ -60,13 +60,8 @@ type Insight struct {
 	Description  string
 	Query        string
 	SmartQueryID uint
-	Labels       []InsightLabel `gorm:"many2many:insight_label_map;"`
-}
-
-type InsightLabel struct {
-	gorm.Model
-	Value    string
-	Insights []Insight `gorm:"many2many:insight_label_map;"`
+	Provider     string
+	Category     string
 }
 
 type InsightJob struct {

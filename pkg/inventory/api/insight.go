@@ -12,6 +12,8 @@ type ListInsightResultsResponse struct {
 type InsightResult struct {
 	SmartQueryID     uint   `json:"smartQueryID"`
 	Query            string `json:"query"`
+	Category         string `json:"category"`
+	Provider         string `json:"provider"`
 	Description      string `json:"description"`
 	ExecutedAt       int64  `json:"executedAt"`
 	Result           int64  `json:"result"`
