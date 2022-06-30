@@ -53,6 +53,8 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	v1.POST("/resources/azure", h.GetAzureResources)
 	v1.POST("/resources/aws", h.GetAWSResources)
 
+	v1.POST("/resources/filters", h.GetResourcesFilters)
+
 	v1.POST("/resource", h.GetResource)
 
 	v1.GET("/resources/trend", h.GetResourceGrowthTrend)
@@ -2246,6 +2248,60 @@ func (h *HttpHandler) GetAllResources(ctx echo.Context) error {
 		}
 	}
 	return h.GetResources(ctx, nil, common)
+}
+
+// GetResourcesFilters godoc
+// @Summary      Get resource filters
+// @Description  Getting resource filters by filters.
+// @Tags         inventory
+// @Accept       json
+// @Produce      json,text/csv
+// @Param        request  body      api.GetResourcesRequest  true   "Request Body"
+// @Param        common   query     string                   false  "Common filter"  Enums(true,false,all)
+// @Success      200      {object}  api.GetResourcesResponse
+// @Router       /inventory/api/v1/resources/filters [post]
+func (h *HttpHandler) GetResourcesFilters(ctx echo.Context) error {
+	commonQuery := ctx.QueryParam("common")
+	var common *bool
+	if commonQuery == "" || commonQuery == "true" {
+		v := true
+		common = &v
+	} else if commonQuery == "false" {
+		v := false
+		common = &v
+	}
+
+	var req api.GetFiltersRequest
+	if err := bindValidate(ctx, &req); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	query, err := es.BuildFilterQuery(req.Query, req.Filters, common)
+	if err != nil {
+		return err
+	}
+
+	var response es.LookupResourceAggregationResponse
+	err = h.client.Search(context.Background(), kafka.InsightsIndex,
+		query, &response)
+	if err != nil {
+		return err
+	}
+
+	resp := api.GetFiltersResponse{}
+	for _, item := range response.Aggregations.CategoryFilter.Buckets {
+		resp.Filters.Category = append(resp.Filters.Category, item.Key)
+	}
+	for _, item := range response.Aggregations.ResourceTypeFilter.Buckets {
+		resp.Filters.ResourceType = append(resp.Filters.ResourceType, item.Key)
+	}
+	for _, item := range response.Aggregations.LocationFilter.Buckets {
+		resp.Filters.Location = append(resp.Filters.Location, item.Key)
+	}
+	for _, item := range response.Aggregations.SourceTypeFilter.Buckets {
+		resp.Filters.Provider = append(resp.Filters.Provider, item.Key)
+	}
+	return ctx.JSON(200, resp)
 }
 
 func (h *HttpHandler) RunSmartQuery(query string,

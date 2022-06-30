@@ -2,7 +2,10 @@ package es
 
 import (
 	"encoding/json"
+	"fmt"
 	"strconv"
+
+	"gitlab.com/keibiengine/keibi-engine/pkg/inventory/api"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/describe/kafka"
 
@@ -436,4 +439,138 @@ func FindAWSCostQuery(sourceID *uuid.UUID, fetchSize int, searchAfter []interfac
 	}
 	b, err := json.Marshal(res)
 	return string(b), err
+}
+
+type LookupResourceAggregationResponse struct {
+	Aggregations LookupResourceAggregations `json:"aggregations"`
+}
+type LookupResourceAggregations struct {
+	ResourceTypeFilter AggregationResult `json:"resource_type_filter"`
+	SourceTypeFilter   AggregationResult `json:"source_type_filter"`
+	CategoryFilter     AggregationResult `json:"category_filter"`
+	LocationFilter     AggregationResult `json:"location_filter"`
+}
+type AggregationResult struct {
+	DocCountErrorUpperBound int      `json:"doc_count_error_upper_bound"`
+	SumOtherDocCount        int      `json:"sum_other_doc_count"`
+	Buckets                 []Bucket `json:"buckets"`
+}
+type Bucket struct {
+	Key      string `json:"key"`
+	DocCount int    `json:"doc_count"`
+}
+
+func BuildFilterQuery(
+	query string,
+	filters api.ResourceFilters,
+	commonFilter *bool,
+) (string, error) {
+	terms := make(map[string][]string)
+	if !api.FilterIsEmpty(filters.Location) {
+		terms["location.keyword"] = filters.Location
+	}
+
+	if !api.FilterIsEmpty(filters.ResourceType) {
+		terms["resource_type.keyword"] = filters.ResourceType
+	}
+
+	if !api.FilterIsEmpty(filters.Category) {
+		terms["category.keyword"] = filters.Category
+	}
+
+	if !api.FilterIsEmpty(filters.Provider) {
+		terms["source_type.keyword"] = filters.Provider
+	}
+
+	if commonFilter != nil {
+		terms["is_common"] = []string{fmt.Sprintf("%v", *commonFilter)}
+	}
+
+	notTerms := make(map[string][]string)
+	ignoreResourceTypes := []string{
+		"Microsoft.Resources/subscriptions/locations",
+		"Microsoft.Authorization/roleDefinitions",
+		"microsoft.security/autoProvisioningSettings",
+		"microsoft.security/settings",
+		"Microsoft.Authorization/elevateAccessRoleAssignment",
+		"Microsoft.AppConfiguration/configurationStores",
+		"Microsoft.KeyVault/vaults/keys",
+		"microsoft.security/pricings",
+		"Microsoft.Security/autoProvisioningSettings",
+		"Microsoft.Security/securityContacts",
+		"Microsoft.Security/locations/jitNetworkAccessPolicies",
+		"AWS::EC2::Region",
+		"AWS::EC2::RegionalSettings",
+	}
+	notTerms["resource_type.keyword"] = ignoreResourceTypes
+
+	root := map[string]interface{}{}
+	root["size"] = 0
+
+	sourceTypeFilter := map[string]interface{}{
+		"terms": map[string]interface{}{"field": "source_type.keyword", "size": 1000},
+	}
+	categoryFilter := map[string]interface{}{
+		"terms": map[string]interface{}{"field": "category.keyword", "size": 1000},
+	}
+	resourceTypeFilter := map[string]interface{}{
+		"terms": map[string]interface{}{"field": "resource_type.keyword", "size": 1000},
+	}
+	locationFilter := map[string]interface{}{
+		"terms": map[string]interface{}{"field": "location.keyword", "size": 1000},
+	}
+	aggs := map[string]interface{}{
+		"source_type_filter":   sourceTypeFilter,
+		"category_filter":      categoryFilter,
+		"resource_type_filter": resourceTypeFilter,
+		"location_filter":      locationFilter,
+	}
+	root["aggs"] = aggs
+
+	boolQuery := make(map[string]interface{})
+	if terms != nil && len(terms) > 0 {
+		var filters []map[string]interface{}
+		for k, vs := range terms {
+			filters = append(filters, map[string]interface{}{
+				"terms": map[string][]string{
+					k: vs,
+				},
+			})
+		}
+
+		boolQuery["filter"] = filters
+	}
+	if len(query) > 0 {
+		boolQuery["must"] = map[string]interface{}{
+			"multi_match": map[string]interface{}{
+				"fields": []string{"resource_id", "name", "source_type", "resource_type", "resource_group",
+					"location", "source_id"},
+				"query":     query,
+				"fuzziness": "AUTO",
+			},
+		}
+	}
+	if len(notTerms) > 0 {
+		var filters []map[string]interface{}
+		for k, vs := range notTerms {
+			filters = append(filters, map[string]interface{}{
+				"terms": map[string][]string{
+					k: vs,
+				},
+			})
+		}
+
+		boolQuery["must_not"] = filters
+	}
+	if len(boolQuery) > 0 {
+		root["query"] = map[string]interface{}{
+			"bool": boolQuery,
+		}
+	}
+
+	queryBytes, err := json.Marshal(root)
+	if err != nil {
+		return "", err
+	}
+	return string(queryBytes), nil
 }
