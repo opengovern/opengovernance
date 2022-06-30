@@ -76,6 +76,29 @@ type Filters struct {
 	SourceID []string `json:"sourceID"`
 }
 
+// ResourceFilters model
+// @Description if you provide two values for same filter OR operation would be used
+// @Description if you provide value for two filters AND operation would be used
+type ResourceFilters struct {
+	// if you dont need to use this filter, leave them empty. (e.g. [])
+	ResourceType []string `json:"resourceType"`
+	// if you dont need to use this filter, leave them empty. (e.g. [])
+	Category []string `json:"category"`
+	// if you dont need to use this filter, leave them empty. (e.g. [])
+	Location []string `json:"location"`
+	// if you dont need to use this filter, leave them empty. (e.g. [])
+	Provider []string `json:"provider"`
+}
+
+type GetFiltersRequest struct {
+	Query   string          `json:"query"`                       // search query
+	Filters ResourceFilters `json:"filters" validate:"required"` // search filters
+}
+
+type GetFiltersResponse struct {
+	Filters ResourceFilters `json:"filters"` // search filters
+}
+
 type ResourceSortItem struct {
 	Field     SortFieldType `json:"field" enums:"resourceID,name,provider,resourceType,resourceGroup,location,sourceID"`
 	Direction DirectionType `json:"direction" enums:"asc,desc"`
