@@ -1420,6 +1420,23 @@ func (s *HttpHandlerSuite) TestGetBenchmarkResultPoliciesNew() {
 	require.Equal(api.PolicyResultStatusPassed, res[1].Status)
 }
 
+func (s *HttpHandlerSuite) TestGetFilters() {
+	require := s.Require()
+
+	var res api.GetFiltersResponse
+	_, err := doRequestJSONResponse(s.router, "POST",
+		"/api/v1/resources/filters", nil, &res)
+	require.NoError(err)
+	require.Len(res.Filters.ResourceType, 2)
+	require.Len(res.Filters.Provider, 2)
+
+	_, err = doRequestJSONResponse(s.router, "POST",
+		"/api/v1/resources/filters", api.GetFiltersRequest{}, &res)
+	require.NoError(err)
+	require.Len(res.Filters.ResourceType, 2)
+	require.Len(res.Filters.Provider, 2)
+}
+
 func (s *HttpHandlerSuite) TestGetBenchmarkResultCompliancy() {
 	require := s.Require()
 
