@@ -335,7 +335,6 @@ func doDescribeAWS(ctx context.Context, es keibi.Client, job DescribeJob, config
 				errs = append(errs, fmt.Sprintf("failed to build query for service: %v", err.Error()))
 				continue
 			}
-			fmt.Println(query)
 			err = es.Search(context.Background(), kafka.SourceResourcesSummaryIndex, query, &response)
 			if err != nil {
 				errs = append(errs, fmt.Sprintf("failed to run query for service: %v", err.Error()))
@@ -360,7 +359,7 @@ func doDescribeAWS(ctx context.Context, es keibi.Client, job DescribeJob, config
 		msgs = append(msgs, kafka.SourceServicesSummary{
 			ServiceName:      name,
 			SourceType:       job.SourceType,
-			SourceJobID:      job.JobID,
+			SourceJobID:      job.ParentJobID,
 			DescribedAt:      job.DescribedAt,
 			ResourceCount:    count,
 			LastDayCount:     lastDayValue,
@@ -373,7 +372,7 @@ func doDescribeAWS(ctx context.Context, es keibi.Client, job DescribeJob, config
 		msgs = append(msgs, kafka.SourceServicesSummary{
 			ServiceName:      name,
 			SourceType:       job.SourceType,
-			SourceJobID:      job.JobID,
+			SourceJobID:      job.ParentJobID,
 			DescribedAt:      job.DescribedAt,
 			ResourceCount:    count,
 			LastDayCount:     lastDayValue,
@@ -394,7 +393,6 @@ func doDescribeAWS(ctx context.Context, es keibi.Client, job DescribeJob, config
 				errs = append(errs, fmt.Sprintf("failed to build query for category: %v", err.Error()))
 				continue
 			}
-			fmt.Println(query)
 			err = es.Search(context.Background(), kafka.SourceResourcesSummaryIndex, query, &response)
 			if err != nil {
 				errs = append(errs, fmt.Sprintf("failed to run query for category: %v", err.Error()))
@@ -419,7 +417,7 @@ func doDescribeAWS(ctx context.Context, es keibi.Client, job DescribeJob, config
 		msgs = append(msgs, kafka.SourceCategorySummary{
 			CategoryName:     name,
 			SourceType:       job.SourceType,
-			SourceJobID:      job.JobID,
+			SourceJobID:      job.ParentJobID,
 			DescribedAt:      job.DescribedAt,
 			ResourceCount:    count,
 			LastDayCount:     lastDayValue,
@@ -432,7 +430,7 @@ func doDescribeAWS(ctx context.Context, es keibi.Client, job DescribeJob, config
 		msgs = append(msgs, kafka.SourceCategorySummary{
 			CategoryName:     name,
 			SourceType:       job.SourceType,
-			SourceJobID:      job.JobID,
+			SourceJobID:      job.ParentJobID,
 			DescribedAt:      job.DescribedAt,
 			ResourceCount:    count,
 			LastDayCount:     lastDayValue,
@@ -617,7 +615,7 @@ func doDescribeAzure(ctx context.Context, es keibi.Client, job DescribeJob, conf
 		msgs = append(msgs, kafka.SourceServicesSummary{
 			ServiceName:      name,
 			SourceType:       job.SourceType,
-			SourceJobID:      job.JobID,
+			SourceJobID:      job.ParentJobID,
 			DescribedAt:      job.DescribedAt,
 			ResourceCount:    count,
 			LastDayCount:     lastDayValue,
@@ -630,7 +628,7 @@ func doDescribeAzure(ctx context.Context, es keibi.Client, job DescribeJob, conf
 		msgs = append(msgs, kafka.SourceServicesSummary{
 			ServiceName:      name,
 			SourceType:       job.SourceType,
-			SourceJobID:      job.JobID,
+			SourceJobID:      job.ParentJobID,
 			DescribedAt:      job.DescribedAt,
 			ResourceCount:    count,
 			LastDayCount:     lastDayValue,
@@ -673,7 +671,7 @@ func doDescribeAzure(ctx context.Context, es keibi.Client, job DescribeJob, conf
 		msgs = append(msgs, kafka.SourceCategorySummary{
 			CategoryName:     name,
 			SourceType:       job.SourceType,
-			SourceJobID:      job.JobID,
+			SourceJobID:      job.ParentJobID,
 			DescribedAt:      job.DescribedAt,
 			ResourceCount:    count,
 			LastDayCount:     lastDayValue,
@@ -686,7 +684,7 @@ func doDescribeAzure(ctx context.Context, es keibi.Client, job DescribeJob, conf
 		msgs = append(msgs, kafka.SourceCategorySummary{
 			CategoryName:     name,
 			SourceType:       job.SourceType,
-			SourceJobID:      job.JobID,
+			SourceJobID:      job.ParentJobID,
 			DescribedAt:      job.DescribedAt,
 			ResourceCount:    count,
 			LastDayCount:     lastDayValue,
