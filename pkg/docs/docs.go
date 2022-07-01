@@ -1700,6 +1700,52 @@ const docTemplate = `{
                 }
             }
         },
+        "/inventory/api/v1/resources/filters": {
+            "post": {
+                "description": "Getting resource filters by filters.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json",
+                    "text/csv"
+                ],
+                "tags": [
+                    "inventory"
+                ],
+                "summary": "Get resource filters",
+                "parameters": [
+                    {
+                        "description": "Request Body",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/api.GetResourcesRequest"
+                        }
+                    },
+                    {
+                        "enum": [
+                            "true",
+                            "false",
+                            "all"
+                        ],
+                        "type": "string",
+                        "description": "Common filter",
+                        "name": "common",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/api.GetResourcesResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/inventory/api/v1/resources/top/accounts": {
             "get": {
                 "consumes": [
@@ -3076,14 +3122,14 @@ const docTemplate = `{
         "api.CreateInsightRequest": {
             "type": "object",
             "properties": {
+                "category": {
+                    "type": "string"
+                },
                 "description": {
                     "type": "string"
                 },
-                "labels": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
+                "provider": {
+                    "type": "string"
                 },
                 "query": {
                     "type": "string"
@@ -3323,17 +3369,17 @@ const docTemplate = `{
         "api.Insight": {
             "type": "object",
             "properties": {
+                "category": {
+                    "type": "string"
+                },
                 "description": {
                     "type": "string"
                 },
                 "id": {
                     "type": "integer"
                 },
-                "labels": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
+                "provider": {
+                    "type": "string"
                 },
                 "query": {
                     "type": "string"
@@ -3370,12 +3416,6 @@ const docTemplate = `{
             "properties": {
                 "descriptionFilter": {
                     "type": "string"
-                },
-                "labels": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
                 }
             }
         },
