@@ -332,12 +332,13 @@ func doDescribeAWS(ctx context.Context, es keibi.Client, job DescribeJob, config
 			var response ServiceQueryResponse
 			query, err := FindOldServiceValue(jobID, name)
 			if err != nil {
-				errs = append(errs, fmt.Sprintf("failed to build query: %v", err.Error()))
+				errs = append(errs, fmt.Sprintf("failed to build query for service: %v", err.Error()))
 				continue
 			}
+			fmt.Println(query)
 			err = es.Search(context.Background(), kafka.SourceResourcesSummaryIndex, query, &response)
 			if err != nil {
-				errs = append(errs, fmt.Sprintf("failed to run query: %v", err.Error()))
+				errs = append(errs, fmt.Sprintf("failed to run query for service: %v", err.Error()))
 				continue
 			}
 
@@ -390,12 +391,13 @@ func doDescribeAWS(ctx context.Context, es keibi.Client, job DescribeJob, config
 			var response CategoryQueryResponse
 			query, err := FindOldCategoryValue(jobID, name)
 			if err != nil {
-				errs = append(errs, fmt.Sprintf("failed to build query: %v", err.Error()))
+				errs = append(errs, fmt.Sprintf("failed to build query for category: %v", err.Error()))
 				continue
 			}
+			fmt.Println(query)
 			err = es.Search(context.Background(), kafka.SourceResourcesSummaryIndex, query, &response)
 			if err != nil {
-				errs = append(errs, fmt.Sprintf("failed to run query: %v", err.Error()))
+				errs = append(errs, fmt.Sprintf("failed to run query for category: %v", err.Error()))
 				continue
 			}
 
