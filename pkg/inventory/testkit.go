@@ -13,6 +13,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 
 	onboardapi "gitlab.com/keibiengine/keibi-engine/pkg/onboard/api"
@@ -255,6 +256,7 @@ func GenerateLookupResources() []kafka.LookupResource {
 			ResourceGroup: resourceGroups[i],
 			Location:      locations[i],
 			SourceID:      sourceIDs[i],
+			IsCommon:      true,
 		}
 		resources = append(resources, resource)
 	}
@@ -1045,8 +1047,13 @@ func (m *DescribeMock) SetResponse(jobs ...describe.ComplianceReportJob) {
 
 func (m *DescribeMock) Run() {
 	mux := http.NewServeMux()
-	mux.HandleFunc("/api/v1/sources/", m.HelloServer)
-	mux.HandleFunc("/api/v1/source/", m.GetSource)
+	mux.HandleFunc("/api/v1/sources/", func(writer http.ResponseWriter, request *http.Request) {
+		if strings.HasSuffix(request.URL.Path, "/jobs/compliance") {
+			m.HelloServer(writer, request)
+			return
+		}
+		m.GetSource(writer, request)
+	})
 	mux.HandleFunc("/api/v1/compliance/report/last/completed", m.GetLastCompletedReportID)
 	m.MockServer = httptest.NewServer(mux)
 }
