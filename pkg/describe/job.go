@@ -618,10 +618,10 @@ func doDescribeAzure(ctx context.Context, es keibi.Client, job DescribeJob, conf
 			SourceJobID:      job.JobID,
 			DescribedAt:      job.DescribedAt,
 			ResourceCount:    count,
-			LastDayCount:     0,
-			LastWeekCount:    0,
-			LastQuarterCount: 0,
-			LastYearCount:    0,
+			LastDayCount:     lastDayValue,
+			LastWeekCount:    lastWeekValue,
+			LastQuarterCount: lastQuarterValue,
+			LastYearCount:    lastYearValue,
 			ReportType:       kafka.ResourceSummaryTypeLastServiceSummary,
 		})
 
@@ -643,8 +643,8 @@ func doDescribeAzure(ctx context.Context, es keibi.Client, job DescribeJob, conf
 		var lastDayValue, lastWeekValue, lastQuarterValue, lastYearValue int
 		for idx, jobID := range []uint{job.LastDaySourceJobID, job.LastWeekSourceJobID, job.LastQuarterSourceJobID,
 			job.LastYearSourceJobID} {
-			var response ServiceQueryResponse
-			query, err := FindOldServiceValue(jobID, name)
+			var response CategoryQueryResponse
+			query, err := FindOldCategoryValue(jobID, name)
 			if err != nil {
 				return nil, fmt.Errorf("failed to build query: %v", err.Error())
 			}
@@ -687,10 +687,10 @@ func doDescribeAzure(ctx context.Context, es keibi.Client, job DescribeJob, conf
 			SourceJobID:      job.JobID,
 			DescribedAt:      job.DescribedAt,
 			ResourceCount:    count,
-			LastDayCount:     0,
-			LastWeekCount:    0,
-			LastQuarterCount: 0,
-			LastYearCount:    0,
+			LastDayCount:     lastDayValue,
+			LastWeekCount:    lastWeekValue,
+			LastQuarterCount: lastQuarterValue,
+			LastYearCount:    lastYearValue,
 			ReportType:       kafka.ResourceSummaryTypeCategoryHistorySummary,
 		})
 	}

@@ -73,7 +73,6 @@ type ServiceQueryHit struct {
 }
 
 func FindOldServiceValue(jobID uint, categoryName string) (string, error) {
-	boolQuery := map[string]interface{}{}
 	var filters []interface{}
 	filters = append(filters, map[string]interface{}{
 		"terms": map[string][]string{"report_type": {kafka.ResourceSummaryTypeServiceHistorySummary}},
@@ -84,7 +83,6 @@ func FindOldServiceValue(jobID uint, categoryName string) (string, error) {
 	filters = append(filters, map[string]interface{}{
 		"terms": map[string][]interface{}{"service_name": {categoryName}},
 	})
-	boolQuery["filter"] = filters
 	res := make(map[string]interface{})
 	res["size"] = 1
 	res["sort"] = []map[string]interface{}{
@@ -93,10 +91,10 @@ func FindOldServiceValue(jobID uint, categoryName string) (string, error) {
 		},
 	}
 
-	if len(boolQuery) > 0 {
-		res["query"] = map[string]interface{}{
-			"bool": boolQuery,
-		}
+	res["query"] = map[string]interface{}{
+		"bool": map[string]interface{}{
+			"filter": filters,
+		},
 	}
 	b, err := json.Marshal(res)
 	return string(b), err
