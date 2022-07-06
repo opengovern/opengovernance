@@ -5,7 +5,6 @@ import (
 	"errors"
 
 	"github.com/turbot/steampipe-plugin-sdk/grpc/proto"
-	"gitlab.com/keibiengine/keibi-engine/pkg/inventory/api"
 )
 
 func ExtractTags(resourceType string, description interface{}) (map[string]string, error) {
@@ -13,7 +12,7 @@ func ExtractTags(resourceType string, description interface{}) (map[string]strin
 	pluginProvider := ExtractPlugin(resourceType)
 	pluginTableName := ExtractTableName(resourceType)
 	if pluginProvider == SteampipePluginAWS {
-		desc, err := api.ConvertToDescription(resourceType, description)
+		desc, err := ConvertToDescription(resourceType, description)
 		if err != nil {
 			return nil, err
 		}
@@ -23,7 +22,7 @@ func ExtractTags(resourceType string, description interface{}) (map[string]strin
 			return nil, err
 		}
 	} else if pluginProvider == SteampipePluginAzure || pluginProvider == SteampipePluginAzureAD {
-		desc, err := api.ConvertToDescription(resourceType, description)
+		desc, err := ConvertToDescription(resourceType, description)
 		if err != nil {
 			return nil, err
 		}
