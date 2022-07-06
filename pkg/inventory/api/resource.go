@@ -6,9 +6,10 @@ import (
 	"errors"
 	"strings"
 
+	"gitlab.com/keibiengine/keibi-engine/pkg/source"
+
 	"gitlab.com/keibiengine/keibi-engine/pkg/cloudservice"
 
-	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe-plugin-sdk/grpc/proto"
 	awsmodel "gitlab.com/keibiengine/keibi-engine/pkg/aws/model"
 	azuremodel "gitlab.com/keibiengine/keibi-engine/pkg/azure/model"
@@ -83,11 +84,11 @@ func QueryResourcesWithSteampipeColumns(
 		var response ResourceQueryResponse
 		indexName := describe.ResourceTypeToESIndex(resourceType)
 
-		sourceType := SourceTypeByResourceType(resourceType)
+		sourceType := steampipe.SourceTypeByResourceType(resourceType)
 
 		terms := make(map[string][]string)
 		if !FilterIsEmpty(req.Filters.Location) {
-			if sourceType == SourceCloudAWS {
+			if sourceType == source.CloudAWS {
 				terms["metadata.region"] = req.Filters.Location
 			} else {
 				terms["metadata.location"] = req.Filters.Location
@@ -106,7 +107,7 @@ func QueryResourcesWithSteampipeColumns(
 			terms["source_type"] = []string{string(*provider)}
 		}
 
-		query, err := BuildResourceQuery(req.Query, terms, req.Page.Size, idx, req.Sorts, sourceType)
+		query, err := BuildResourceQuery(req.Query, terms, req.Page.Size, idx, req.Sorts, SourceType(sourceType))
 		if err != nil {
 			return nil, err
 		}
@@ -148,7 +149,7 @@ func QueryResourcesWithSteampipeColumns(
 					Attributes:       make(map[string]string),
 				}
 
-				desc, err := ConvertToDescription(resourceType, hit.Source)
+				desc, err := steampipe.ConvertToDescription(resourceType, hit.Source)
 				if err != nil {
 					return nil, err
 				}
@@ -189,7 +190,7 @@ func QueryResourcesWithSteampipeColumns(
 					Attributes:       make(map[string]string),
 				}
 
-				desc, err := ConvertToDescription(resourceType, hit.Source)
+				desc, err := steampipe.ConvertToDescription(resourceType, hit.Source)
 				if err != nil {
 					return nil, err
 				}
@@ -325,38 +326,4 @@ func BuildSortResource(sorts []ResourceSortItem, provider SourceType) []map[stri
 		result = append(result, map[string]interface{}{field: dir})
 	}
 	return result
-}
-
-func SourceTypeByResourceType(resourceType string) SourceType {
-	if strings.HasPrefix(strings.ToLower(resourceType), "aws") {
-		return SourceCloudAWS
-	} else {
-		return SourceCloudAzure
-	}
-}
-
-func ConvertToDescription(resourceType string, data interface{}) (interface{}, error) {
-	b, err := json.Marshal(data)
-	if err != nil {
-		return nil, err
-	}
-
-	sourceType := SourceTypeByResourceType(resourceType)
-	if sourceType == SourceCloudAWS {
-		d := steampipe.AWSDescriptionMap[resourceType]
-		err = json.Unmarshal(b, d)
-		if err != nil {
-			return nil, err
-		}
-		d = helpers.DereferencePointer(d)
-		return d, nil
-	} else {
-		d := steampipe.AzureDescriptionMap[resourceType]
-		err = json.Unmarshal(b, &d)
-		if err != nil {
-			return nil, err
-		}
-		d = helpers.DereferencePointer(d)
-		return d, nil
-	}
 }

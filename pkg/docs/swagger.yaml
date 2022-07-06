@@ -161,12 +161,12 @@ definitions:
     type: object
   api.CreateInsightRequest:
     properties:
+      category:
+        type: string
       description:
         type: string
-      labels:
-        items:
-          type: string
-        type: array
+      provider:
+        type: string
       query:
         type: string
       smartQueryID:
@@ -329,14 +329,14 @@ definitions:
     type: object
   api.Insight:
     properties:
+      category:
+        type: string
       description:
         type: string
       id:
         type: integer
-      labels:
-        items:
-          type: string
-        type: array
+      provider:
+        type: string
       query:
         type: string
       smartQueryID:
@@ -360,10 +360,6 @@ definitions:
     properties:
       descriptionFilter:
         type: string
-      labels:
-        items:
-          type: string
-        type: array
     type: object
   api.ListQueryRequest:
     properties:
@@ -1953,6 +1949,37 @@ paths:
       summary: Returns distribution of resource for specific account
       tags:
       - benchmarks
+  /inventory/api/v1/resources/filters:
+    post:
+      consumes:
+      - application/json
+      description: Getting resource filters by filters.
+      parameters:
+      - description: Request Body
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/api.GetResourcesRequest'
+      - description: Common filter
+        enum:
+        - "true"
+        - "false"
+        - all
+        in: query
+        name: common
+        type: string
+      produces:
+      - application/json
+      - text/csv
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/api.GetResourcesResponse'
+      summary: Get resource filters
+      tags:
+      - inventory
   /inventory/api/v1/resources/top/accounts:
     get:
       consumes:

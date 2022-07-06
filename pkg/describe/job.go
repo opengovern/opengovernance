@@ -8,6 +8,8 @@ import (
 	"strings"
 	"time"
 
+	"gitlab.com/keibiengine/keibi-engine/pkg/steampipe"
+
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 
@@ -288,6 +290,12 @@ func doDescribeAWS(ctx context.Context, es keibi.Client, job DescribeJob, config
 				},
 			})
 
+			tags, err := steampipe.ExtractTags(job.ResourceType, resource.Description)
+			if err != nil {
+				errs = append(errs, fmt.Sprintf("failed to build tags for service: %v", err.Error()))
+				continue
+			}
+
 			msgs = append(msgs, kafka.LookupResource{
 				ResourceID:    resource.UniqueID(),
 				Name:          resource.Name,
@@ -301,6 +309,7 @@ func doDescribeAWS(ctx context.Context, es keibi.Client, job DescribeJob, config
 				SourceJobID:   job.ParentJobID,
 				CreatedAt:     job.DescribedAt,
 				IsCommon:      cloudservice.IsCommonByResourceType(job.ResourceType),
+				Tags:          tags,
 			})
 			region := strings.TrimSpace(resource.Region)
 			if region != "" {
@@ -548,6 +557,11 @@ func doDescribeAzure(ctx context.Context, es keibi.Client, job DescribeJob, conf
 			},
 		})
 
+		tags, err := steampipe.ExtractTags(job.ResourceType, resource.Description)
+		if err != nil {
+			return nil, fmt.Errorf("failed to build tags: %v", err.Error())
+		}
+
 		msgs = append(msgs, kafka.LookupResource{
 			ResourceID:    resource.UniqueID(),
 			Name:          resource.Name,
@@ -561,6 +575,7 @@ func doDescribeAzure(ctx context.Context, es keibi.Client, job DescribeJob, conf
 			SourceJobID:   job.ParentJobID,
 			CreatedAt:     job.DescribedAt,
 			IsCommon:      cloudservice.IsCommonByResourceType(job.ResourceType),
+			Tags:          tags,
 		})
 		location := strings.TrimSpace(resource.Location)
 		if location != "" {

@@ -6,6 +6,9 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"strings"
+
+	"gitlab.com/keibiengine/keibi-engine/pkg/source"
 
 	"github.com/golang/protobuf/ptypes"
 	"github.com/hashicorp/go-hclog"
@@ -188,4 +191,38 @@ func interfaceToColumnValue(column *plugin.Column, val interface{}) (*proto.Colu
 
 	return columnValue, nil
 
+}
+
+func SourceTypeByResourceType(resourceType string) source.Type {
+	if strings.HasPrefix(strings.ToLower(resourceType), "aws") {
+		return source.CloudAWS
+	} else {
+		return source.CloudAzure
+	}
+}
+
+func ConvertToDescription(resourceType string, data interface{}) (interface{}, error) {
+	b, err := json.Marshal(data)
+	if err != nil {
+		return nil, err
+	}
+
+	sourceType := SourceTypeByResourceType(resourceType)
+	if sourceType == source.CloudAWS {
+		d := AWSDescriptionMap[resourceType]
+		err = json.Unmarshal(b, d)
+		if err != nil {
+			return nil, err
+		}
+		d = helpers.DereferencePointer(d)
+		return d, nil
+	} else {
+		d := AzureDescriptionMap[resourceType]
+		err = json.Unmarshal(b, &d)
+		if err != nil {
+			return nil, err
+		}
+		d = helpers.DereferencePointer(d)
+		return d, nil
+	}
 }

@@ -36,6 +36,10 @@ func QuerySummaryResources(
 		terms["source_id.keyword"] = filters.SourceID
 	}
 
+	for key, value := range filters.Tags {
+		terms[fmt.Sprintf("tags.%s.keyword", key)] = []string{value}
+	}
+
 	if provider != nil {
 		terms["source_type.keyword"] = []string{string(*provider)}
 	}

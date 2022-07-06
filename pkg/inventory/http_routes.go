@@ -1817,7 +1817,7 @@ func (h *HttpHandler) GetResource(ctx echo.Context) error {
 	pluginProvider := steampipe.ExtractPlugin(req.ResourceType)
 	pluginTableName := steampipe.ExtractTableName(req.ResourceType)
 	if pluginProvider == steampipe.SteampipePluginAWS {
-		desc, err := api.ConvertToDescription(req.ResourceType, source)
+		desc, err := steampipe.ConvertToDescription(req.ResourceType, source)
 		if err != nil {
 			return err
 		}
@@ -1827,7 +1827,7 @@ func (h *HttpHandler) GetResource(ctx echo.Context) error {
 			return err
 		}
 	} else if pluginProvider == steampipe.SteampipePluginAzure || pluginProvider == steampipe.SteampipePluginAzureAD {
-		desc, err := api.ConvertToDescription(req.ResourceType, source)
+		desc, err := steampipe.ConvertToDescription(req.ResourceType, source)
 		if err != nil {
 			return err
 		}
