@@ -127,7 +127,7 @@ type LookupResource struct {
 	// IsCommon
 	IsCommon bool `json:"is_common"`
 	// Tags
-	Tags map[string]string
+	Tags map[string]string `json:"tags"`
 }
 
 func (r LookupResource) AsProducerMessage() (*sarama.ProducerMessage, error) {
