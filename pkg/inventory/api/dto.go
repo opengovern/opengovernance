@@ -74,6 +74,8 @@ type Filters struct {
 	Location []string `json:"location"`
 	// if you dont need to use this filter, leave them empty. (e.g. [])
 	SourceID []string `json:"sourceID"`
+	// if you dont need to use this filter, leave them empty. (e.g. {})
+	Tags map[string]string `json:"tags"`
 }
 
 // ResourceFilters model
