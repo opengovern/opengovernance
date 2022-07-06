@@ -296,6 +296,9 @@ func doDescribeAWS(ctx context.Context, es keibi.Client, job DescribeJob, config
 				continue
 			}
 
+			fmt.Printf("description is: %v\n", resource.Description)
+			fmt.Printf("Found these tags for name=%s: %v\n", resource.Name, tags)
+
 			msgs = append(msgs, kafka.LookupResource{
 				ResourceID:    resource.UniqueID(),
 				Name:          resource.Name,
