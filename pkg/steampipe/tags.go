@@ -8,32 +8,23 @@ import (
 )
 
 func ExtractTags(resourceType string, description interface{}) (map[string]string, error) {
+	var err error
 	var cells map[string]*proto.Column
 	pluginProvider := ExtractPlugin(resourceType)
 	pluginTableName := ExtractTableName(resourceType)
 	if pluginProvider == SteampipePluginAWS {
-		desc, err := ConvertToDescription(resourceType, description)
-		if err != nil {
-			return nil, err
-		}
-
-		cells, err = AWSDescriptionToRecord(desc, pluginTableName)
+		cells, err = AWSDescriptionToRecord(description, pluginTableName)
 		if err != nil {
 			return nil, err
 		}
 	} else if pluginProvider == SteampipePluginAzure || pluginProvider == SteampipePluginAzureAD {
-		desc, err := ConvertToDescription(resourceType, description)
-		if err != nil {
-			return nil, err
-		}
-
 		if pluginProvider == SteampipePluginAzure {
-			cells, err = AzureDescriptionToRecord(desc, pluginTableName)
+			cells, err = AzureDescriptionToRecord(description, pluginTableName)
 			if err != nil {
 				return nil, err
 			}
 		} else {
-			cells, err = AzureADDescriptionToRecord(desc, pluginTableName)
+			cells, err = AzureADDescriptionToRecord(description, pluginTableName)
 			if err != nil {
 				return nil, err
 			}

@@ -225,7 +225,7 @@ func doDescribe(ctx context.Context, es keibi.Client, job DescribeJob, config ma
 
 	switch job.SourceType {
 	case api.SourceCloudAWS:
-		return doDescribeAWS(ctx, es, job, config)
+		return doDescribeAWS(ctx, es, job, config, logger)
 	case api.SourceCloudAzure:
 		return doDescribeAzure(ctx, es, job, config)
 	default:
@@ -233,7 +233,7 @@ func doDescribe(ctx context.Context, es keibi.Client, job DescribeJob, config ma
 	}
 }
 
-func doDescribeAWS(ctx context.Context, es keibi.Client, job DescribeJob, config map[string]interface{}) ([]kafka.DescribedResource, error) {
+func doDescribeAWS(ctx context.Context, es keibi.Client, job DescribeJob, config map[string]interface{}, logger *zap.Logger) ([]kafka.DescribedResource, error) {
 	creds, err := AWSAccountConfigFromMap(config)
 	if err != nil {
 		return nil, fmt.Errorf("aws account credentials: %w", err)
@@ -296,8 +296,8 @@ func doDescribeAWS(ctx context.Context, es keibi.Client, job DescribeJob, config
 				continue
 			}
 
-			fmt.Printf("description is: %v\n", resource.Description)
-			fmt.Printf("Found these tags for name=%s: %v\n", resource.Name, tags)
+			logger.Info(fmt.Sprintf("description is: %v\n", resource.Description))
+			logger.Info(fmt.Sprintf("Found these tags for name=%s: %v\n", resource.Name, tags))
 
 			msgs = append(msgs, kafka.LookupResource{
 				ResourceID:    resource.UniqueID(),
