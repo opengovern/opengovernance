@@ -343,17 +343,19 @@ const (
 	SteampipePluginAWS     = "aws"
 	SteampipePluginAzure   = "azure"
 	SteampipePluginAzureAD = "azuread"
+	SteampipePluginUnknown = ""
 )
 
 func ExtractPlugin(resourceType string) SteampipePlugin {
 	if strings.HasPrefix(resourceType, "AWS::") {
 		return SteampipePluginAWS
-	} else {
+	} else if strings.HasPrefix(resourceType, "Microsoft") {
 		if resourceType == "Microsoft.Resources/users" {
 			return SteampipePluginAzureAD
 		}
 		return SteampipePluginAzure
 	}
+	return SteampipePluginUnknown
 }
 
 func ExtractTableName(resourceType string) string {

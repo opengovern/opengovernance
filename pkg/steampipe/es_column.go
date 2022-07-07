@@ -42,10 +42,14 @@ func AWSDescriptionToRecord(resource interface{}, indexName string) (map[string]
 }
 
 func DescriptionToRecord(plg *plugin.Plugin, resource interface{}, indexName string) (map[string]*proto.Column, error) {
-	ctx := buildContext()
-	table := plg.TableMap[indexName]
-	table.Plugin = plg
 	cells := make(map[string]*proto.Column)
+	ctx := buildContext()
+	table, ok := plg.TableMap[indexName]
+	if !ok {
+		fmt.Println("Invalid index name:", indexName)
+		return cells, nil
+	}
+	table.Plugin = plg
 	for _, column := range table.Columns {
 		transformData := transform.TransformData{
 			HydrateItem:    resource,
