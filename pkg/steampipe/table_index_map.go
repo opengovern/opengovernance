@@ -7,6 +7,10 @@ import (
 )
 
 var awsMap = map[string]string{
+	"AWS::CostExplorer::ByAccountMonthly": "aws_cost_by_account_monthly",
+	"AWS::CostExplorer::ByServiceMonthly": "aws_cost_by_service_monthly",
+	//"AWS::EFS::AccessPoint":                     "aws_efs_access_point",
+	//"AWS::EFS::MountTarget":                     "aws_efs_mount_target",
 	"AWS::SSM::ManagedInstanceCompliance":       "aws_ssm_managed_instance_compliance",
 	"AWS::ApplicationAutoScaling::Target":       "aws_appautoscaling_target",
 	"AWS::EKS::Cluster":                         "aws_eks_cluster",
@@ -172,6 +176,10 @@ var azureMap = map[string]string{
 	"Microsoft.Storage/storageAccounts/containers":          "azure_storage_container",
 }
 var AWSDescriptionMap = map[string]interface{}{
+	"AWS::CostExplorer::ByAccountMonthly": &keibi.CostExplorerByAccountMonthly{},
+	"AWS::CostExplorer::ByServiceMonthly": &keibi.CostExplorerByServiceMonthly{},
+	//"AWS::EFS::AccessPoint":                     &keibi.EFSAccesspoint{},
+	//"AWS::EFS::MountTarget":                     &keibi.Mount,
 	"AWS::Logs::MetricFilter":                   &keibi.CloudWatchLogsMetricFilter{},
 	"AWS::RDS::DBCluster":                       &keibi.RDSDBCluster{},
 	"AWS::SQS::Queue":                           &keibi.SQSQueue{},
