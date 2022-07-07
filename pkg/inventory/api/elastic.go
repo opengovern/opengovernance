@@ -39,7 +39,7 @@ func BuildSort(sorts []ResourceSortItem) []map[string]interface{} {
 		case SortFieldSourceID:
 			field = "source_id"
 		}
-		result = append(result, map[string]interface{}{field + ".keyword": dir})
+		result = append(result, map[string]interface{}{field: dir})
 	}
 	return result
 }
