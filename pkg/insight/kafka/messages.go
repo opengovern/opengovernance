@@ -40,13 +40,13 @@ type InsightResource struct {
 	// Result of query
 	Result int64 `json:"result"`
 	// LastDayValue result of the same query last day
-	LastDayValue int64 `json:"last_day_value"`
+	LastDayValue *int64 `json:"last_day_value"`
 	// LastWeekValue result of the same query last week
-	LastWeekValue int64 `json:"last_week_value"`
+	LastWeekValue *int64 `json:"last_week_value"`
 	// LastQuarterValue result of the same query last quarter
-	LastQuarterValue int64 `json:"last_quarter_value"`
+	LastQuarterValue *int64 `json:"last_quarter_value"`
 	// LastYearValue result of the same query last year
-	LastYearValue int64 `json:"last_year_value"`
+	LastYearValue *int64 `json:"last_year_value"`
 	// ResourceType shows which collection of docs this resource belongs to
 	ResourceType InsightResourceType `json:"resource_type"`
 }

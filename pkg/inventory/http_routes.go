@@ -1919,13 +1919,19 @@ func (h *HttpHandler) ListQueries(ctx echo.Context) error {
 	var result []api.SmartQueryItem
 	for _, item := range queries {
 		tags := map[string]string{}
+		category := ""
+
 		for _, tag := range item.Tags {
 			tags[tag.Key] = tag.Value
+			if strings.ToLower(tag.Key) == "category" {
+				category = tag.Value
+			}
 		}
 		result = append(result, api.SmartQueryItem{
 			ID:          item.Model.ID,
 			Provider:    item.Provider,
 			Title:       item.Title,
+			Category:    category,
 			Description: item.Description,
 			Query:       item.Query,
 			Tags:        tags,

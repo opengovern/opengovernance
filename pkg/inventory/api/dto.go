@@ -90,6 +90,10 @@ type ResourceFilters struct {
 	Location []string `json:"location"`
 	// if you dont need to use this filter, leave them empty. (e.g. [])
 	Provider []string `json:"provider"`
+	// if you dont need to use this filter, leave them empty. (e.g. [])
+	TagKeys []string `json:"tagKeys"`
+	// if you dont need to use this filter, leave them empty. (e.g. [])
+	TagValues []string `json:"tagValues"`
 }
 
 type GetFiltersRequest struct {
@@ -262,6 +266,7 @@ type SmartQueryItem struct {
 	Provider    string            `json:"provider"`
 	Title       string            `json:"title"`
 	Description string            `json:"description"`
+	Category    string            `json:"category"`
 	Query       string            `json:"query"`
 	Tags        map[string]string `json:"tags"`
 }

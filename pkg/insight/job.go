@@ -94,7 +94,7 @@ func (j Job) Do(es keibi.Client, steampipeConn *steampipe.Database, producer sar
 	if err == nil {
 		result := res.Data[0][0]
 		if v, ok := result.(int64); ok {
-			var lastDayValue, lastWeekValue, lastQuarterValue, lastYearValue int64
+			var lastDayValue, lastWeekValue, lastQuarterValue, lastYearValue *int64
 			for idx, jobID := range []uint{j.LastDayJobID, j.LastWeekJobID, j.LastQuarterJobID, j.LastYearJobID} {
 				var response ResultQueryResponse
 				query, err := FindOldInsightValue(jobID, j.QueryID)
@@ -110,13 +110,13 @@ func (j Job) Do(es keibi.Client, steampipeConn *steampipe.Database, producer sar
 					// there will be only one result anyway
 					switch idx {
 					case 0:
-						lastDayValue = response.Hits.Hits[0].Source.Result
+						lastDayValue = &response.Hits.Hits[0].Source.Result
 					case 1:
-						lastWeekValue = response.Hits.Hits[0].Source.Result
+						lastWeekValue = &response.Hits.Hits[0].Source.Result
 					case 2:
-						lastQuarterValue = response.Hits.Hits[0].Source.Result
+						lastQuarterValue = &response.Hits.Hits[0].Source.Result
 					case 3:
-						lastYearValue = response.Hits.Hits[0].Source.Result
+						lastYearValue = &response.Hits.Hits[0].Source.Result
 					}
 				}
 			}
