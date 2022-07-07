@@ -1920,6 +1920,7 @@ func (h *HttpHandler) ListQueries(ctx echo.Context) error {
 	for _, item := range queries {
 		tags := map[string]string{}
 		category := ""
+
 		for _, tag := range item.Tags {
 			tags[tag.Key] = tag.Value
 			if strings.ToLower(tag.Key) == "category" {
