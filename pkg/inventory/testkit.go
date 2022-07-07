@@ -507,10 +507,10 @@ func GenerateInsightResult() []insightkafka.InsightResource {
 					Query:            " select count(name) from aws_iam_user cross join jsonb_array_elements_text(attached_policy_arns) as attachments where split_part(attachments, '/', 2) = 'AdministratorAccess';",
 					ExecutedAt:       time.Now().UnixMilli(),
 					Result:           int64(10*j + q),
-					LastDayValue:     0,
-					LastWeekValue:    0,
-					LastQuarterValue: 0,
-					LastYearValue:    0,
+					LastDayValue:     nil,
+					LastWeekValue:    nil,
+					LastQuarterValue: nil,
+					LastYearValue:    nil,
 					ResourceType:     resourceType,
 				})
 			}
