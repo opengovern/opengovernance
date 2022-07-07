@@ -2,7 +2,7 @@ package steampipe
 
 import (
 	"encoding/json"
-	"errors"
+	"fmt"
 
 	"github.com/turbot/steampipe-plugin-sdk/grpc/proto"
 )
@@ -12,6 +12,9 @@ func ExtractTags(resourceType string, description interface{}) (map[string]strin
 	var cells map[string]*proto.Column
 	pluginProvider := ExtractPlugin(resourceType)
 	pluginTableName := ExtractTableName(resourceType)
+	if pluginTableName == "" {
+		return nil, fmt.Errorf("cannot find table name for resourceType: %s", resourceType)
+	}
 	if pluginProvider == SteampipePluginAWS {
 		cells, err = AWSDescriptionToRecord(description, pluginTableName)
 		if err != nil {
@@ -30,7 +33,7 @@ func ExtractTags(resourceType string, description interface{}) (map[string]strin
 			}
 		}
 	} else {
-		return nil, errors.New("invalid provider")
+		return nil, fmt.Errorf("invalid provider for resource type: %s", resourceType)
 	}
 
 	tags := map[string]string{}
