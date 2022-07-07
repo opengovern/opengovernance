@@ -25,23 +25,23 @@ func QuerySummaryResources(
 
 	terms := make(map[string][]string)
 	if !FilterIsEmpty(filters.Location) {
-		terms["location.keyword"] = filters.Location
+		terms["location"] = filters.Location
 	}
 
 	if !FilterIsEmpty(filters.ResourceType) {
-		terms["resource_type.keyword"] = filters.ResourceType
+		terms["resource_type"] = filters.ResourceType
 	}
 
 	if !FilterIsEmpty(filters.SourceID) {
-		terms["source_id.keyword"] = filters.SourceID
+		terms["source_id"] = filters.SourceID
 	}
 
 	for key, value := range filters.Tags {
-		terms[fmt.Sprintf("tags.%s.keyword", key)] = []string{value}
+		terms[fmt.Sprintf("tags.%s", key)] = []string{value}
 	}
 
 	if provider != nil {
-		terms["source_type.keyword"] = []string{string(*provider)}
+		terms["source_type"] = []string{string(*provider)}
 	}
 
 	if commonFilter != nil {
@@ -64,7 +64,7 @@ func QuerySummaryResources(
 		"AWS::EC2::Region",
 		"AWS::EC2::RegionalSettings",
 	}
-	notTerms["resource_type.keyword"] = ignoreResourceTypes
+	notTerms["resource_type"] = ignoreResourceTypes
 
 	queryStr, err := BuildSummaryQuery(query, terms, notTerms, size, lastIndex, sorts)
 	if err != nil {

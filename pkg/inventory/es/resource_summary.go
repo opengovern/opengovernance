@@ -467,19 +467,19 @@ func BuildFilterQuery(
 ) (string, error) {
 	terms := make(map[string][]string)
 	if !api.FilterIsEmpty(filters.Location) {
-		terms["location.keyword"] = filters.Location
+		terms["location"] = filters.Location
 	}
 
 	if !api.FilterIsEmpty(filters.ResourceType) {
-		terms["resource_type.keyword"] = filters.ResourceType
+		terms["resource_type"] = filters.ResourceType
 	}
 
 	if !api.FilterIsEmpty(filters.Category) {
-		terms["category.keyword"] = filters.Category
+		terms["category"] = filters.Category
 	}
 
 	if !api.FilterIsEmpty(filters.Provider) {
-		terms["source_type.keyword"] = filters.Provider
+		terms["source_type"] = filters.Provider
 	}
 
 	if commonFilter != nil {
@@ -502,22 +502,22 @@ func BuildFilterQuery(
 		"AWS::EC2::Region",
 		"AWS::EC2::RegionalSettings",
 	}
-	notTerms["resource_type.keyword"] = ignoreResourceTypes
+	notTerms["resource_type"] = ignoreResourceTypes
 
 	root := map[string]interface{}{}
 	root["size"] = 0
 
 	sourceTypeFilter := map[string]interface{}{
-		"terms": map[string]interface{}{"field": "source_type.keyword", "size": 1000},
+		"terms": map[string]interface{}{"field": "source_type", "size": 1000},
 	}
 	categoryFilter := map[string]interface{}{
-		"terms": map[string]interface{}{"field": "category.keyword", "size": 1000},
+		"terms": map[string]interface{}{"field": "category", "size": 1000},
 	}
 	resourceTypeFilter := map[string]interface{}{
-		"terms": map[string]interface{}{"field": "resource_type.keyword", "size": 1000},
+		"terms": map[string]interface{}{"field": "resource_type", "size": 1000},
 	}
 	locationFilter := map[string]interface{}{
-		"terms": map[string]interface{}{"field": "location.keyword", "size": 1000},
+		"terms": map[string]interface{}{"field": "location", "size": 1000},
 	}
 	aggs := map[string]interface{}{
 		"source_type_filter":   sourceTypeFilter,
