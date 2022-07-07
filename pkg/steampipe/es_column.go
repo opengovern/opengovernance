@@ -56,17 +56,22 @@ func DescriptionToRecord(plg *plugin.Plugin, resource interface{}, indexName str
 			ColumnName:     column.Name,
 			KeyColumnQuals: nil,
 		}
-		value, err := column.Transform.Execute(ctx, &transformData, getDefaultColumnTransform(table, column))
-		if err != nil {
-			return nil, err
-		}
 
-		c, err := interfaceToColumnValue(column, value)
-		if err != nil {
-			return nil, err
-		}
+		if column != nil && column.Transform != nil {
+			value, err := column.Transform.Execute(ctx, &transformData, getDefaultColumnTransform(table, column))
+			if err != nil {
+				return nil, err
+			}
 
-		cells[column.Name] = c
+			c, err := interfaceToColumnValue(column, value)
+			if err != nil {
+				return nil, err
+			}
+
+			cells[column.Name] = c
+		} else {
+			fmt.Println("column or transform is null", column, column.Transform)
+		}
 	}
 
 	return cells, nil

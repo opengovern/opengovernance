@@ -273,7 +273,7 @@ func doDescribeAWS(ctx context.Context, es keibi.Client, job DescribeJob, config
 				continue
 			}
 
-			msgs = append(msgs, kafka.Resource{
+			kafkaResource := kafka.Resource{
 				ID:            resource.UniqueID(),
 				Description:   resource.Description,
 				SourceType:    api.SourceCloudAWS,
@@ -288,9 +288,10 @@ func doDescribeAWS(ctx context.Context, es keibi.Client, job DescribeJob, config
 					"account_id":    resource.Account,
 					"resource_type": resource.Type,
 				},
-			})
+			}
+			msgs = append(msgs, kafkaResource)
 
-			tags, err := steampipe.ExtractTags(job.ResourceType, resource.Description)
+			tags, err := steampipe.ExtractTags(job.ResourceType, kafkaResource)
 			if err != nil {
 				errs = append(errs, fmt.Sprintf("failed to build tags for service: %v", err.Error()))
 				continue
@@ -542,7 +543,7 @@ func doDescribeAzure(ctx context.Context, es keibi.Client, job DescribeJob, conf
 			continue
 		}
 
-		msgs = append(msgs, kafka.Resource{
+		kafkaResource := kafka.Resource{
 			ID:            resource.UniqueID(),
 			Description:   resource.Description,
 			SourceType:    api.SourceCloudAzure,
@@ -558,9 +559,10 @@ func doDescribeAzure(ctx context.Context, es keibi.Client, job DescribeJob, conf
 				"cloud_environment": output.Metadata.CloudEnvironment,
 				"resource_type":     resource.Type,
 			},
-		})
+		}
+		msgs = append(msgs, kafkaResource)
 
-		tags, err := steampipe.ExtractTags(job.ResourceType, resource.Description)
+		tags, err := steampipe.ExtractTags(job.ResourceType, kafkaResource)
 		if err != nil {
 			return nil, fmt.Errorf("failed to build tags: %v", err.Error())
 		}

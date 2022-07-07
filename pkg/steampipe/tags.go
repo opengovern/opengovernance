@@ -7,8 +7,7 @@ import (
 	"github.com/turbot/steampipe-plugin-sdk/grpc/proto"
 )
 
-func ExtractTags(resourceType string, description interface{}) (map[string]string, error) {
-	var err error
+func ExtractTags(resourceType string, source interface{}) (map[string]string, error) {
 	var cells map[string]*proto.Column
 	pluginProvider := ExtractPlugin(resourceType)
 	pluginTableName := ExtractTableName(resourceType)
@@ -16,18 +15,33 @@ func ExtractTags(resourceType string, description interface{}) (map[string]strin
 		return nil, fmt.Errorf("cannot find table name for resourceType: %s", resourceType)
 	}
 	if pluginProvider == SteampipePluginAWS {
-		cells, err = AWSDescriptionToRecord(description, pluginTableName)
+		desc, err := ConvertToDescription(resourceType, source)
+		if err != nil {
+			return nil, err
+		}
+
+		cells, err = AWSDescriptionToRecord(desc, pluginTableName)
 		if err != nil {
 			return nil, err
 		}
 	} else if pluginProvider == SteampipePluginAzure || pluginProvider == SteampipePluginAzureAD {
 		if pluginProvider == SteampipePluginAzure {
-			cells, err = AzureDescriptionToRecord(description, pluginTableName)
+			desc, err := ConvertToDescription(resourceType, source)
+			if err != nil {
+				return nil, err
+			}
+
+			cells, err = AzureDescriptionToRecord(desc, pluginTableName)
 			if err != nil {
 				return nil, err
 			}
 		} else {
-			cells, err = AzureADDescriptionToRecord(description, pluginTableName)
+			desc, err := ConvertToDescription(resourceType, source)
+			if err != nil {
+				return nil, err
+			}
+
+			cells, err = AzureADDescriptionToRecord(desc, pluginTableName)
 			if err != nil {
 				return nil, err
 			}
