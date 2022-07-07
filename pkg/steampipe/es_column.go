@@ -46,8 +46,7 @@ func DescriptionToRecord(plg *plugin.Plugin, resource interface{}, indexName str
 	ctx := buildContext()
 	table, ok := plg.TableMap[indexName]
 	if !ok {
-		fmt.Println("Invalid index name:", indexName)
-		return cells, nil
+		return cells, fmt.Errorf("invalid index name: %s", indexName)
 	}
 	table.Plugin = plg
 	for _, column := range table.Columns {
