@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/go-redis/redis/v8"
+	"github.com/go-redis/redis/v7"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/steampipe"
 
@@ -300,13 +300,13 @@ func doDescribeAWS(ctx context.Context, rdb *redis.Client, es keibi.Client, job 
 			}
 
 			for key, value := range tags {
-				_, err = rdb.SAdd(context.Background(), "tag-"+key, value).Result()
+				_, err = rdb.SAdd("tag-"+key, value).Result()
 				if err != nil {
 					errs = append(errs, fmt.Sprintf("failed to push tag into redis: %v", err.Error()))
 					continue
 				}
 
-				_, err = rdb.Expire(context.Background(), "tag-"+key, 4*time.Hour).Result() //TODO-Saleh set time based on describe interval
+				_, err = rdb.Expire("tag-"+key, 4*time.Hour).Result() //TODO-Saleh set time based on describe interval
 				if err != nil {
 					errs = append(errs, fmt.Sprintf("failed to set tag expire into redis: %v", err.Error()))
 					continue
@@ -584,12 +584,12 @@ func doDescribeAzure(ctx context.Context, rdb *redis.Client, es keibi.Client, jo
 		}
 
 		for key, value := range tags {
-			_, err = rdb.SAdd(context.Background(), "tag-"+key, value).Result()
+			_, err = rdb.SAdd("tag-"+key, value).Result()
 			if err != nil {
 				return nil, fmt.Errorf("failed to push tag into redis: %v", err.Error())
 			}
 
-			_, err = rdb.Expire(context.Background(), "tag-"+key, 4*time.Hour).Result() //TODO-Saleh set time based on describe interval
+			_, err = rdb.Expire("tag-"+key, 4*time.Hour).Result() //TODO-Saleh set time based on describe interval
 			if err != nil {
 				return nil, fmt.Errorf("failed to set tag expire into redis: %v", err.Error())
 			}

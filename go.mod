@@ -124,6 +124,7 @@ require (
 )
 
 require (
+	github.com/go-redis/redis/v7 v7.4.1
 	github.com/go-redis/redis/v8 v8.11.5
 	gorm.io/plugin/prometheus v0.0.0-20220517015831-ca6bfaf20bf4
 	moul.io/zapgorm2 v1.1.3

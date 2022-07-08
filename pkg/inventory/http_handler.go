@@ -3,7 +3,7 @@ package inventory
 import (
 	"fmt"
 
-	"github.com/go-redis/redis/v8"
+	"github.com/go-redis/redis/v7"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/describe/client"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/postgres"

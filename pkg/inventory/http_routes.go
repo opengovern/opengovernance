@@ -2311,7 +2311,7 @@ func (h *HttpHandler) GetResourcesFilters(ctx echo.Context) error {
 	if len(req.Filters.TagKeys) > 0 {
 		resp.Filters.TagValues = make(map[string][]string)
 		for _, key := range req.Filters.TagKeys {
-			set, err := h.rdb.SMembers(context.Background(), "tag-"+key).Result()
+			set, err := h.rdb.SMembers("tag-"+key).Result()
 			if err != nil {
 				return err
 			}
@@ -2321,7 +2321,8 @@ func (h *HttpHandler) GetResourcesFilters(ctx echo.Context) error {
 		var cursor uint64 = 0
 		for {
 			var keys []string
-			cmd := h.rdb.Scan(context.Background(), cursor, "tag-*", 0)
+			cmd := h.rdb.Scan(cursor, "tag-*", 0)
+			fmt.Println(cmd)
 			keys, cursor, err = cmd.Result()
 			if err != nil {
 				return err
