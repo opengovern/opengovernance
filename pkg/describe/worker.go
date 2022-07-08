@@ -7,6 +7,8 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/go-redis/redis/v8"
+
 	"gitlab.com/keibiengine/keibi-engine/pkg/keibi-es-sdk"
 
 	"github.com/prometheus/client_golang/prometheus/push"
@@ -26,6 +28,7 @@ type Worker struct {
 	kfkProducer    sarama.SyncProducer
 	kfkTopic       string
 	vault          vault.SourceConfig
+	rdb            *redis.Client
 	es             keibi.Client
 	logger         *zap.Logger
 	pusher         *push.Pusher
@@ -51,6 +54,7 @@ func InitializeWorker(
 	elasticSearchUsername string,
 	elasticSearchPassword string,
 	prometheusPushAddress string,
+	redisAddress string,
 ) (w *Worker, err error) {
 	if id == "" {
 		return nil, fmt.Errorf("'id' must be set to a non empty string")
@@ -135,6 +139,11 @@ func InitializeWorker(
 	w.pusher.Collector(DoDescribeJobsCount).
 		Collector(DoDescribeJobsDuration)
 
+	w.rdb = redis.NewClient(&redis.Options{
+		Addr:     redisAddress,
+		Password: "", // no password set
+		DB:       0,  // use default DB
+	})
 	return w, nil
 }
 
@@ -155,7 +164,7 @@ func (w *Worker) Run() error {
 			}
 			continue
 		}
-		result := job.Do(w.vault, w.es, w.kfkProducer, w.kfkTopic, w.logger)
+		result := job.Do(w.vault, w.rdb, w.es, w.kfkProducer, w.kfkTopic, w.logger)
 		if strings.Contains(result.Error, "ThrottlingException") ||
 			strings.Contains(result.Error, "Rate exceeded") ||
 			strings.Contains(result.Error, "RateExceeded") {

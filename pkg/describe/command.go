@@ -48,6 +48,8 @@ var (
 	HttpServerAddress = os.Getenv("HTTP_ADDRESS")
 
 	PrometheusPushAddress = os.Getenv("PROMETHEUS_PUSH_ADDRESS")
+
+	RedisAddress = os.Getenv("REDIS_ADDRESS")
 )
 
 func SchedulerCommand() *cobra.Command {
@@ -145,6 +147,7 @@ func WorkerCommand() *cobra.Command {
 				ElasticSearchUsername,
 				ElasticSearchPassword,
 				PrometheusPushAddress,
+				RedisAddress,
 			)
 			if err != nil {
 				return err
