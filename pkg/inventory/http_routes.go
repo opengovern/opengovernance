@@ -2311,7 +2311,7 @@ func (h *HttpHandler) GetResourcesFilters(ctx echo.Context) error {
 	if len(req.Filters.TagKeys) > 0 {
 		resp.Filters.TagValues = make(map[string][]string)
 		for _, key := range req.Filters.TagKeys {
-			set, err := h.rdb.SMembers("tag-"+key).Result()
+			set, err := h.rdb.SMembers("tag-" + key).Result()
 			if err != nil {
 				return err
 			}
