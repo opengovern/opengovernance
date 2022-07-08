@@ -124,6 +124,7 @@ require (
 )
 
 require (
+	github.com/go-redis/redis/v9 v9.0.0-beta.1
 	gorm.io/plugin/prometheus v0.0.0-20220517015831-ca6bfaf20bf4
 	moul.io/zapgorm2 v1.1.3
 )
@@ -172,6 +173,7 @@ require (
 	github.com/containerd/continuity v0.2.2 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/dgraph-io/ristretto v0.1.0 // indirect
+	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
 	github.com/dimchansky/utfbom v1.1.1 // indirect
 	github.com/docker/cli v20.10.11+incompatible // indirect
 	github.com/docker/docker v20.10.7+incompatible // indirect

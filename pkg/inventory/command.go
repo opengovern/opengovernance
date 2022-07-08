@@ -11,6 +11,8 @@ import (
 )
 
 var (
+	RedisAddress = os.Getenv("REDIS_ADDRESS")
+
 	ElasticSearchAddress  = os.Getenv("ES_ADDRESS")
 	ElasticSearchUsername = os.Getenv("ES_USERNAME")
 	ElasticSearchPassword = os.Getenv("ES_PASSWORD")
@@ -62,6 +64,7 @@ func start(ctx context.Context) error {
 		SteampipePassword,
 		SchedulerBaseUrl,
 		logger,
+		RedisAddress,
 	)
 	if err != nil {
 		return fmt.Errorf("init http handler: %w", err)

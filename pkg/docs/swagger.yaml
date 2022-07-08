@@ -259,6 +259,12 @@ definitions:
         items:
           type: string
         type: array
+      tags:
+        additionalProperties:
+          type: string
+        description: if you dont need to use this filter, leave them empty. (e.g.
+          {})
+        type: object
     type: object
   api.GetAWSResourceResponse:
     properties:
@@ -286,6 +292,23 @@ definitions:
         type: string
       value:
         type: string
+    type: object
+  api.GetFiltersRequest:
+    properties:
+      filters:
+        $ref: '#/definitions/api.ResourceFilters'
+        description: search filters
+      query:
+        description: search query
+        type: string
+    required:
+    - filters
+    type: object
+  api.GetFiltersResponse:
+    properties:
+      filters:
+        $ref: '#/definitions/api.ResourceFilters'
+        description: search filters
     type: object
   api.GetResourceRequest:
     properties:
@@ -456,6 +479,49 @@ definitions:
       typeName:
         type: string
     type: object
+  api.ResourceFilters:
+    description: if you provide two values for same filter OR operation would be used
+      if you provide value for two filters AND operation would be used
+    properties:
+      category:
+        description: if you dont need to use this filter, leave them empty. (e.g.
+          [])
+        items:
+          type: string
+        type: array
+      location:
+        description: if you dont need to use this filter, leave them empty. (e.g.
+          [])
+        items:
+          type: string
+        type: array
+      provider:
+        description: if you dont need to use this filter, leave them empty. (e.g.
+          [])
+        items:
+          type: string
+        type: array
+      resourceType:
+        description: if you dont need to use this filter, leave them empty. (e.g.
+          [])
+        items:
+          type: string
+        type: array
+      tagKeys:
+        description: if you dont need to use this filter, leave them empty. (e.g.
+          [])
+        items:
+          type: string
+        type: array
+      tagValues:
+        additionalProperties:
+          items:
+            type: string
+          type: array
+        description: if you dont need to use this filter, leave them empty. (e.g.
+          [])
+        type: object
+    type: object
   api.ResourceSortItem:
     properties:
       direction:
@@ -603,6 +669,8 @@ definitions:
     type: object
   api.SmartQueryItem:
     properties:
+      category:
+        type: string
       description:
         type: string
       id:
@@ -1960,7 +2028,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/api.GetResourcesRequest'
+          $ref: '#/definitions/api.GetFiltersRequest'
       - description: Common filter
         enum:
         - "true"
@@ -1976,7 +2044,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/api.GetResourcesResponse'
+            $ref: '#/definitions/api.GetFiltersResponse'
       summary: Get resource filters
       tags:
       - inventory

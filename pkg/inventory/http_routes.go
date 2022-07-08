@@ -2164,7 +2164,7 @@ func (h *HttpHandler) GetLocations(ctx echo.Context) error {
 // @Produce      json,text/csv
 // @Param        request  body      api.GetResourcesRequest  true   "Request Body"
 // @Param        accept   header    string                   true   "Accept header"  Enums(application/json,text/csv)
-// @Param        common   query     string                   false  "Common filter"  Enums(true,false,all)
+// @Param        common   query     string                 false  "Common filter"  Enums(true,false,all)
 // @Success      200      {object}  api.GetAzureResourceResponse
 // @Router       /inventory/api/v1/resources/azure [post]
 func (h *HttpHandler) GetAzureResources(ctx echo.Context) error {
@@ -2262,9 +2262,9 @@ func (h *HttpHandler) GetAllResources(ctx echo.Context) error {
 // @Tags         inventory
 // @Accept       json
 // @Produce      json,text/csv
-// @Param        request  body      api.GetResourcesRequest  true   "Request Body"
+// @Param        request  body      api.GetFiltersRequest  true   "Request Body"
 // @Param        common   query     string                   false  "Common filter"  Enums(true,false,all)
-// @Success      200      {object}  api.GetResourcesResponse
+// @Success      200      {object}  api.GetFiltersResponse
 // @Router       /inventory/api/v1/resources/filters [post]
 func (h *HttpHandler) GetResourcesFilters(ctx echo.Context) error {
 	commonQuery := ctx.QueryParam("common")
@@ -2307,6 +2307,36 @@ func (h *HttpHandler) GetResourcesFilters(ctx echo.Context) error {
 	for _, item := range response.Aggregations.SourceTypeFilter.Buckets {
 		resp.Filters.Provider = append(resp.Filters.Provider, item.Key)
 	}
+
+	if len(req.Filters.TagKeys) > 0 {
+		resp.Filters.TagValues = make(map[string][]string)
+		for _, key := range req.Filters.TagKeys {
+			set, err := h.rdb.SMembers(context.Background(), "tag-"+key).Result()
+			if err != nil {
+				return err
+			}
+			resp.Filters.TagValues[key] = set
+		}
+	} else {
+		var cursor uint64 = 0
+		for {
+			var keys []string
+			cmd := h.rdb.Scan(context.Background(), cursor, "tag-*", 0)
+			keys, cursor, err = cmd.Result()
+			if err != nil {
+				return err
+			}
+
+			if cursor == 0 {
+				break
+			}
+
+			for _, key := range keys {
+				resp.Filters.TagKeys = append(resp.Filters.TagKeys, key[4:])
+			}
+		}
+	}
+
 	return ctx.JSON(200, resp)
 }
 
