@@ -93,7 +93,7 @@ type ResourceFilters struct {
 	// if you dont need to use this filter, leave them empty. (e.g. [])
 	TagKeys []string `json:"tagKeys"`
 	// if you dont need to use this filter, leave them empty. (e.g. [])
-	TagValues []string `json:"tagValues"`
+	TagValues map[string][]string `json:"tagValues"`
 }
 
 type GetFiltersRequest struct {
