@@ -8,6 +8,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/go-redis/redis/v8"
+
 	"gitlab.com/keibiengine/keibi-engine/pkg/steampipe"
 
 	"github.com/prometheus/client_golang/prometheus"
@@ -149,7 +151,7 @@ type DescribeJobResult struct {
 // do its best to complete the task even if some errors occur along the way. However,
 // if any error occurs, The JobResult will indicate that through the Status and Error
 // will be set to the first error that occured.
-func (j DescribeJob) Do(vlt vault.SourceConfig, es keibi.Client, producer sarama.SyncProducer, topic string, logger *zap.Logger) (r DescribeJobResult) {
+func (j DescribeJob) Do(vlt vault.SourceConfig, rdb *redis.Client, es keibi.Client, producer sarama.SyncProducer, topic string, logger *zap.Logger) (r DescribeJobResult) {
 	startTime := time.Now().Unix()
 	defer func() {
 		if err := recover(); err != nil {
@@ -189,7 +191,7 @@ func (j DescribeJob) Do(vlt vault.SourceConfig, es keibi.Client, producer sarama
 	if err != nil {
 		fail(fmt.Errorf("resource source config: %w", err))
 	} else {
-		msgs, err := doDescribe(ctx, es, j, config, logger)
+		msgs, err := doDescribe(ctx, rdb, es, j, config, logger)
 		if err != nil {
 			// Don't return here. In certain cases, such as AWS, resources might be
 			// available for some regions while there was failures in other regions.
@@ -220,20 +222,20 @@ func (j DescribeJob) Do(vlt vault.SourceConfig, es keibi.Client, producer sarama
 }
 
 // doDescribe describes the sources, e.g. AWS, Azure and returns the responses.
-func doDescribe(ctx context.Context, es keibi.Client, job DescribeJob, config map[string]interface{}, logger *zap.Logger) ([]kafka.DescribedResource, error) {
+func doDescribe(ctx context.Context, rdb *redis.Client, es keibi.Client, job DescribeJob, config map[string]interface{}, logger *zap.Logger) ([]kafka.DescribedResource, error) {
 	logger.Info(fmt.Sprintf("Proccessing Job: ID[%d] ParentJobID[%d] RosourceType[%s]\n", job.JobID, job.ParentJobID, job.ResourceType))
 
 	switch job.SourceType {
 	case api.SourceCloudAWS:
-		return doDescribeAWS(ctx, es, job, config, logger)
+		return doDescribeAWS(ctx, rdb, es, job, config, logger)
 	case api.SourceCloudAzure:
-		return doDescribeAzure(ctx, es, job, config)
+		return doDescribeAzure(ctx, rdb, es, job, config)
 	default:
 		return nil, fmt.Errorf("invalid SourceType: %s", job.SourceType)
 	}
 }
 
-func doDescribeAWS(ctx context.Context, es keibi.Client, job DescribeJob, config map[string]interface{}, logger *zap.Logger) ([]kafka.DescribedResource, error) {
+func doDescribeAWS(ctx context.Context, rdb *redis.Client, es keibi.Client, job DescribeJob, config map[string]interface{}, logger *zap.Logger) ([]kafka.DescribedResource, error) {
 	creds, err := AWSAccountConfigFromMap(config)
 	if err != nil {
 		return nil, fmt.Errorf("aws account credentials: %w", err)
@@ -295,6 +297,20 @@ func doDescribeAWS(ctx context.Context, es keibi.Client, job DescribeJob, config
 			if err != nil {
 				errs = append(errs, fmt.Sprintf("failed to build tags for service: %v", err.Error()))
 				continue
+			}
+
+			for key, value := range tags {
+				_, err = rdb.SAdd(context.Background(), "tag-"+key, value).Result()
+				if err != nil {
+					errs = append(errs, fmt.Sprintf("failed to push tag into redis: %v", err.Error()))
+					continue
+				}
+
+				_, err = rdb.Expire(context.Background(), "tag-"+key, 4*time.Hour).Result() //TODO-Saleh set time based on describe interval
+				if err != nil {
+					errs = append(errs, fmt.Sprintf("failed to set tag expire into redis: %v", err.Error()))
+					continue
+				}
 			}
 
 			logger.Info(fmt.Sprintf("description is: %v\n", resource.Description))
@@ -502,7 +518,7 @@ func doDescribeAWS(ctx context.Context, es keibi.Client, job DescribeJob, config
 	return msgs, err
 }
 
-func doDescribeAzure(ctx context.Context, es keibi.Client, job DescribeJob, config map[string]interface{}) ([]kafka.DescribedResource, error) {
+func doDescribeAzure(ctx context.Context, rdb *redis.Client, es keibi.Client, job DescribeJob, config map[string]interface{}) ([]kafka.DescribedResource, error) {
 	creds, err := AzureSubscriptionConfigFromMap(config)
 	if err != nil {
 		return nil, fmt.Errorf("aure subscription credentials: %w", err)
@@ -565,6 +581,18 @@ func doDescribeAzure(ctx context.Context, es keibi.Client, job DescribeJob, conf
 		tags, err := steampipe.ExtractTags(job.ResourceType, kafkaResource)
 		if err != nil {
 			return nil, fmt.Errorf("failed to build tags: %v", err.Error())
+		}
+
+		for key, value := range tags {
+			_, err = rdb.SAdd(context.Background(), "tag-"+key, value).Result()
+			if err != nil {
+				return nil, fmt.Errorf("failed to push tag into redis: %v", err.Error())
+			}
+
+			_, err = rdb.Expire(context.Background(), "tag-"+key, 4*time.Hour).Result() //TODO-Saleh set time based on describe interval
+			if err != nil {
+				return nil, fmt.Errorf("failed to set tag expire into redis: %v", err.Error())
+			}
 		}
 
 		msgs = append(msgs, kafka.LookupResource{

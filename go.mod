@@ -124,7 +124,7 @@ require (
 )
 
 require (
-	github.com/go-redis/redis/v9 v9.0.0-beta.1
+	github.com/go-redis/redis/v8 v8.11.5
 	gorm.io/plugin/prometheus v0.0.0-20220517015831-ca6bfaf20bf4
 	moul.io/zapgorm2 v1.1.3
 )
@@ -265,6 +265,7 @@ require (
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
 	github.com/oklog/run v1.1.0 // indirect
 	github.com/olekukonko/tablewriter v0.0.4 // indirect
+	github.com/onsi/gomega v1.19.0 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.0.3-0.20211202183452-c5a74bcca799 // indirect
 	github.com/opencontainers/runc v1.1.1 // indirect
