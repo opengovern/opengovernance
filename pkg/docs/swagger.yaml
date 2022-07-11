@@ -326,8 +326,8 @@ definitions:
       filters:
         $ref: '#/definitions/api.Filters'
         description: search filters
-      pageNo:
-        type: integer
+      page:
+        $ref: '#/definitions/api.Page'
       query:
         description: search query
         type: string
@@ -339,7 +339,7 @@ definitions:
         type: array
     required:
     - filters
-    - pageNo
+    - page
     type: object
   api.GetResourcesResponse:
     properties:
@@ -399,6 +399,13 @@ definitions:
     properties:
       name:
         type: string
+    type: object
+  api.Page:
+    properties:
+      "no":
+        type: integer
+      size:
+        type: integer
     type: object
   api.PageRequest:
     description: 'Please fill nextMarker with "" for the first request. After that

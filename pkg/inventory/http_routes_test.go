@@ -252,7 +252,10 @@ func (s *HttpHandlerSuite) TestGetAllResources() {
 	rec, err := doRequestJSONResponse(s.router, echo.POST, "/api/v1/resources?common=all", api.GetResourcesRequest{
 		Filters: api.Filters{},
 		Sorts:   []api.ResourceSortItem{},
-		PageNo:  0,
+		Page: api.Page{
+			No:   1,
+			Size: 20,
+		},
 	}, &response)
 	require.NoError(err, "request")
 	require.Equal(http.StatusOK, rec.Code)
@@ -277,7 +280,10 @@ func (s *HttpHandlerSuite) TestGetAllResources_Sort() {
 				Direction: api.DirectionDescending,
 			},
 		},
-		PageNo: 0,
+		Page: api.Page{
+			No:   1,
+			Size: 20,
+		},
 	}, &response)
 	require.NoError(err, "request")
 	require.Equal(http.StatusOK, rec.Code)
@@ -296,7 +302,10 @@ func (s *HttpHandlerSuite) TestGetAllResources_Paging() {
 				Direction: api.DirectionDescending,
 			},
 		},
-		PageNo: 0,
+		Page: api.Page{
+			No:   1,
+			Size: 20,
+		},
 	}
 	var response api.GetResourcesResponse
 	rec, err := doRequestJSONResponse(s.router, echo.POST, "/api/v1/resources?common=all", req, &response)
@@ -306,28 +315,28 @@ func (s *HttpHandlerSuite) TestGetAllResources_Paging() {
 	require.Equal("aaa3", response.Resources[0].ResourceID)
 	require.Equal(int64(4), response.TotalCount)
 
-	req.PageNo++
+	req.Page.No++
 	rec, err = doRequestJSONResponse(s.router, echo.POST, "/api/v1/resources?common=all", req, &response)
 	require.NoError(err, "request")
 	require.Equal(http.StatusOK, rec.Code)
 	require.Len(response.Resources, 1)
 	require.Equal(response.Resources[0].ResourceID, "aaa2")
 
-	req.PageNo++
+	req.Page.No++
 	rec, err = doRequestJSONResponse(s.router, echo.POST, "/api/v1/resources?common=all", req, &response)
 	require.NoError(err, "request")
 	require.Equal(http.StatusOK, rec.Code)
 	require.Len(response.Resources, 1)
 	require.Equal(response.Resources[0].ResourceID, "aaa1")
 
-	req.PageNo++
+	req.Page.No++
 	rec, err = doRequestJSONResponse(s.router, echo.POST, "/api/v1/resources?common=all", req, &response)
 	require.NoError(err, "request")
 	require.Equal(http.StatusOK, rec.Code)
 	require.Len(response.Resources, 1)
 	require.Equal(response.Resources[0].ResourceID, "aaa0")
 
-	req.PageNo++
+	req.Page.No++
 	rec, err = doRequestJSONResponse(s.router, echo.POST, "/api/v1/resources?common=all", req, &response)
 	require.NoError(err, "request")
 	require.Equal(http.StatusOK, rec.Code)
@@ -345,7 +354,10 @@ func (s *HttpHandlerSuite) TestGetAllResources_Filters() {
 				Direction: api.DirectionAscending,
 			},
 		},
-		PageNo: 0,
+		Page: api.Page{
+			No:   1,
+			Size: 20,
+		},
 	}
 
 	var response api.GetResourcesResponse
@@ -400,7 +412,10 @@ func (s *HttpHandlerSuite) TestGetAllResources_Query() {
 				Direction: api.DirectionAscending,
 			},
 		},
-		PageNo: 0,
+		Page: api.Page{
+			No:   1,
+			Size: 20,
+		},
 	}
 
 	var response api.GetResourcesResponse
@@ -427,7 +442,10 @@ func (s *HttpHandlerSuite) TestGetAllResources_QueryMicrosoft() {
 				Direction: api.DirectionAscending,
 			},
 		},
-		PageNo: 0,
+		Page: api.Page{
+			No:   1,
+			Size: 20,
+		},
 	}
 
 	var response api.GetResourcesResponse
@@ -450,7 +468,10 @@ func (s *HttpHandlerSuite) TestGetAllResources_CSV() {
 				Direction: api.DirectionAscending,
 			},
 		},
-		PageNo: 0,
+		Page: api.Page{
+			No:   1,
+			Size: 20,
+		},
 	}
 
 	rec, response, err := doRequestCSVResponse(s.router, echo.POST, "/api/v1/resources?common=all", req)
@@ -483,8 +504,11 @@ func (s *HttpHandlerSuite) TestGetAWSResources() {
 			Location:     nil,
 			SourceID:     nil,
 		},
-		Sorts:  []api.ResourceSortItem{},
-		PageNo: 0,
+		Sorts: []api.ResourceSortItem{},
+		Page: api.Page{
+			No:   1,
+			Size: 20,
+		},
 	}, &response)
 	require.NoError(err, "request")
 	require.Equal(http.StatusOK, rec.Code)
@@ -504,8 +528,11 @@ func (s *HttpHandlerSuite) TestGetAzureResources() {
 			Location:     nil,
 			SourceID:     nil,
 		},
-		Sorts:  []api.ResourceSortItem{},
-		PageNo: 0,
+		Sorts: []api.ResourceSortItem{},
+		Page: api.Page{
+			No:   1,
+			Size: 20,
+		},
 	}, &response)
 	require.NoError(err, "request")
 	require.Equal(http.StatusOK, rec.Code)

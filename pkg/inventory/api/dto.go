@@ -56,12 +56,17 @@ type RunQueryResponse struct {
 	Result [][]interface{} `json:"result"`
 }
 
+type Page struct {
+	No   int `json:"no,omitempty"`
+	Size int `json:"size,omitempty"`
+}
+
 type GetResourcesRequest struct {
 	Query   string  `json:"query"`                       // search query
 	Filters Filters `json:"filters" validate:"required"` // search filters
 	// NOTE: we don't support multi-field sort for now, if sort is empty, results would be sorted by first column
-	Sorts  []ResourceSortItem `json:"sorts"`
-	PageNo int                `json:"pageNo" validate:"required"`
+	Sorts []ResourceSortItem `json:"sorts"`
+	Page  Page               `json:"page" validate:"required"`
 }
 
 // Filters model
