@@ -60,8 +60,8 @@ type GetResourcesRequest struct {
 	Query   string  `json:"query"`                       // search query
 	Filters Filters `json:"filters" validate:"required"` // search filters
 	// NOTE: we don't support multi-field sort for now, if sort is empty, results would be sorted by first column
-	Sorts []ResourceSortItem `json:"sorts"`
-	Page  api.PageRequest    `json:"page" validate:"required"`
+	Sorts  []ResourceSortItem `json:"sorts"`
+	PageNo int                `json:"pageNo" validate:"required"`
 }
 
 // Filters model
@@ -117,8 +117,8 @@ type SmartQuerySortItem struct {
 }
 
 type GetResourcesResponse struct {
-	Resources []AllResource    `json:"resources"`
-	Page      api.PageResponse `json:"page"`
+	Resources  []AllResource `json:"resources"`
+	TotalCount int64         `json:"totalCount,omitempty"`
 }
 
 type AllResource struct {
@@ -163,8 +163,8 @@ func (r AllResource) ToCSVHeaders() []string {
 }
 
 type GetAzureResourceResponse struct {
-	Resources []AzureResource  `json:"resources"`
-	Page      api.PageResponse `json:"page"`
+	Resources  []AzureResource `json:"resources"`
+	TotalCount int64           `json:"totalCount,omitempty"`
 }
 
 type AzureResource struct {
@@ -196,8 +196,8 @@ func (r AzureResource) ToCSVHeaders() []string {
 }
 
 type GetAWSResourceResponse struct {
-	Resources []AWSResource    `json:"resources"`
-	Page      api.PageResponse `json:"page"`
+	Resources  []AWSResource `json:"resources"`
+	TotalCount int64         `json:"totalCount,omitempty"`
 }
 
 type AWSResource struct {
