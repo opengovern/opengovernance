@@ -3277,28 +3277,28 @@ const docTemplate = `{
         "api.GetAWSResourceResponse": {
             "type": "object",
             "properties": {
-                "page": {
-                    "$ref": "#/definitions/api.PageResponse"
-                },
                 "resources": {
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/api.AWSResource"
                     }
+                },
+                "totalCount": {
+                    "type": "integer"
                 }
             }
         },
         "api.GetAzureResourceResponse": {
             "type": "object",
             "properties": {
-                "page": {
-                    "$ref": "#/definitions/api.PageResponse"
-                },
                 "resources": {
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/api.AzureResource"
                     }
+                },
+                "totalCount": {
+                    "type": "integer"
                 }
             }
         },
@@ -3361,15 +3361,15 @@ const docTemplate = `{
             "type": "object",
             "required": [
                 "filters",
-                "page"
+                "pageNo"
             ],
             "properties": {
                 "filters": {
                     "description": "search filters",
                     "$ref": "#/definitions/api.Filters"
                 },
-                "page": {
-                    "$ref": "#/definitions/api.PageRequest"
+                "pageNo": {
+                    "type": "integer"
                 },
                 "query": {
                     "description": "search query",
@@ -3387,14 +3387,14 @@ const docTemplate = `{
         "api.GetResourcesResponse": {
             "type": "object",
             "properties": {
-                "page": {
-                    "$ref": "#/definitions/api.PageResponse"
-                },
                 "resources": {
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/api.AllResource"
                     }
+                },
+                "totalCount": {
+                    "type": "integer"
                 }
             }
         },
