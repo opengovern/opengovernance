@@ -8,8 +8,6 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/keibi-es-sdk"
 )
 
-var ResourcesPageSize = 20
-
 type GetResourcesResult struct {
 	AllResources   []AllResource
 	AzureResources []AzureResource
@@ -26,9 +24,9 @@ func QueryResources(ctx context.Context, client keibi.Client, req *GetResourcesR
 }
 
 func QueryResourcesFromInventorySummary(ctx context.Context, client keibi.Client, req *GetResourcesRequest, provider *SourceType, commonFilter *bool) (*GetResourcesResult, error) {
-	lastIdx := req.PageNo * ResourcesPageSize
+	lastIdx := (req.Page.No - 1) * req.Page.Size
 
-	resources, resultCount, err := QuerySummaryResources(ctx, client, req.Query, req.Filters, provider, ResourcesPageSize, lastIdx, req.Sorts, commonFilter)
+	resources, resultCount, err := QuerySummaryResources(ctx, client, req.Query, req.Filters, provider, req.Page.Size, lastIdx, req.Sorts, commonFilter)
 	if err != nil {
 		return nil, err
 	}

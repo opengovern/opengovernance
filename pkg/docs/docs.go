@@ -3361,15 +3361,15 @@ const docTemplate = `{
             "type": "object",
             "required": [
                 "filters",
-                "pageNo"
+                "page"
             ],
             "properties": {
                 "filters": {
                     "description": "search filters",
                     "$ref": "#/definitions/api.Filters"
                 },
-                "pageNo": {
-                    "type": "integer"
+                "page": {
+                    "$ref": "#/definitions/api.Page"
                 },
                 "query": {
                     "description": "search query",
@@ -3473,6 +3473,17 @@ const docTemplate = `{
             "properties": {
                 "name": {
                     "type": "string"
+                }
+            }
+        },
+        "api.Page": {
+            "type": "object",
+            "properties": {
+                "no": {
+                    "type": "integer"
+                },
+                "size": {
+                    "type": "integer"
                 }
             }
         },

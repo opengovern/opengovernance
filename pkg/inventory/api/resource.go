@@ -60,7 +60,7 @@ func QueryResourcesWithSteampipeColumns(
 		return nil, nil
 	}
 
-	idx := req.PageNo * ResourcesPageSize
+	idx := (req.Page.No - 1) * req.Page.Size
 
 	result := GetResourcesResult{
 		TotalCount: 0,
@@ -99,7 +99,7 @@ func QueryResourcesWithSteampipeColumns(
 			terms["source_type"] = []string{string(*provider)}
 		}
 
-		query, err := BuildResourceQuery(req.Query, terms, ResourcesPageSize, idx, req.Sorts, SourceType(sourceType))
+		query, err := BuildResourceQuery(req.Query, terms, req.Page.Size, idx, req.Sorts, SourceType(sourceType))
 		if err != nil {
 			return nil, err
 		}
