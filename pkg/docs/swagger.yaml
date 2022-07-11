@@ -268,21 +268,21 @@ definitions:
     type: object
   api.GetAWSResourceResponse:
     properties:
-      page:
-        $ref: '#/definitions/api.PageResponse'
       resources:
         items:
           $ref: '#/definitions/api.AWSResource'
         type: array
+      totalCount:
+        type: integer
     type: object
   api.GetAzureResourceResponse:
     properties:
-      page:
-        $ref: '#/definitions/api.PageResponse'
       resources:
         items:
           $ref: '#/definitions/api.AzureResource'
         type: array
+      totalCount:
+        type: integer
     type: object
   api.GetBenchmarkTag:
     properties:
@@ -326,8 +326,8 @@ definitions:
       filters:
         $ref: '#/definitions/api.Filters'
         description: search filters
-      page:
-        $ref: '#/definitions/api.PageRequest'
+      pageNo:
+        type: integer
       query:
         description: search query
         type: string
@@ -339,16 +339,16 @@ definitions:
         type: array
     required:
     - filters
-    - page
+    - pageNo
     type: object
   api.GetResourcesResponse:
     properties:
-      page:
-        $ref: '#/definitions/api.PageResponse'
       resources:
         items:
           $ref: '#/definitions/api.AllResource'
         type: array
+      totalCount:
+        type: integer
     type: object
   api.Insight:
     properties:
