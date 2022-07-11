@@ -60,18 +60,10 @@ func QueryResourcesWithSteampipeColumns(
 		return nil, nil
 	}
 
-	idx, err := req.Page.GetIndex()
-	if err != nil {
-		return nil, err
-	}
-
-	page, err := req.Page.NextPage()
-	if err != nil {
-		return nil, err
-	}
+	idx := req.PageNo * ResourcesPageSize
 
 	result := GetResourcesResult{
-		Page: page.ToResponse(0),
+		TotalCount: 0,
 	}
 	for _, resourceType := range req.Filters.ResourceType {
 		if commonFilter != nil {
@@ -107,7 +99,7 @@ func QueryResourcesWithSteampipeColumns(
 			terms["source_type"] = []string{string(*provider)}
 		}
 
-		query, err := BuildResourceQuery(req.Query, terms, req.Page.Size, idx, req.Sorts, SourceType(sourceType))
+		query, err := BuildResourceQuery(req.Query, terms, ResourcesPageSize, idx, req.Sorts, SourceType(sourceType))
 		if err != nil {
 			return nil, err
 		}
@@ -122,7 +114,7 @@ func QueryResourcesWithSteampipeColumns(
 			return nil, err
 		}
 
-		result.Page.TotalCount += response.Hits.Total.Value
+		result.TotalCount += response.Hits.Total.Value
 
 		for _, hit := range response.Hits.Hits {
 			pluginProvider := steampipe.ExtractPlugin(resourceType)

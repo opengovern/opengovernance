@@ -252,9 +252,7 @@ func (s *HttpHandlerSuite) TestGetAllResources() {
 	rec, err := doRequestJSONResponse(s.router, echo.POST, "/api/v1/resources?common=all", api.GetResourcesRequest{
 		Filters: api.Filters{},
 		Sorts:   []api.ResourceSortItem{},
-		Page: pagination.PageRequest{
-			Size: 10,
-		},
+		PageNo:  0,
 	}, &response)
 	require.NoError(err, "request")
 	require.Equal(http.StatusOK, rec.Code)
@@ -279,9 +277,7 @@ func (s *HttpHandlerSuite) TestGetAllResources_Sort() {
 				Direction: api.DirectionDescending,
 			},
 		},
-		Page: pagination.PageRequest{
-			Size: 10,
-		},
+		PageNo: 0,
 	}, &response)
 	require.NoError(err, "request")
 	require.Equal(http.StatusOK, rec.Code)
@@ -300,9 +296,7 @@ func (s *HttpHandlerSuite) TestGetAllResources_Paging() {
 				Direction: api.DirectionDescending,
 			},
 		},
-		Page: pagination.PageRequest{
-			Size: 1,
-		},
+		PageNo: 0,
 	}
 	var response api.GetResourcesResponse
 	rec, err := doRequestJSONResponse(s.router, echo.POST, "/api/v1/resources?common=all", req, &response)
@@ -310,30 +304,30 @@ func (s *HttpHandlerSuite) TestGetAllResources_Paging() {
 	require.Equal(http.StatusOK, rec.Code)
 	require.Len(response.Resources, 1)
 	require.Equal("aaa3", response.Resources[0].ResourceID)
-	require.Equal(int64(4), response.Page.TotalCount)
+	require.Equal(int64(4), response.TotalCount)
 
-	req.Page.NextMarker = response.Page.NextMarker
+	req.PageNo++
 	rec, err = doRequestJSONResponse(s.router, echo.POST, "/api/v1/resources?common=all", req, &response)
 	require.NoError(err, "request")
 	require.Equal(http.StatusOK, rec.Code)
 	require.Len(response.Resources, 1)
 	require.Equal(response.Resources[0].ResourceID, "aaa2")
 
-	req.Page.NextMarker = response.Page.NextMarker
+	req.PageNo++
 	rec, err = doRequestJSONResponse(s.router, echo.POST, "/api/v1/resources?common=all", req, &response)
 	require.NoError(err, "request")
 	require.Equal(http.StatusOK, rec.Code)
 	require.Len(response.Resources, 1)
 	require.Equal(response.Resources[0].ResourceID, "aaa1")
 
-	req.Page.NextMarker = response.Page.NextMarker
+	req.PageNo++
 	rec, err = doRequestJSONResponse(s.router, echo.POST, "/api/v1/resources?common=all", req, &response)
 	require.NoError(err, "request")
 	require.Equal(http.StatusOK, rec.Code)
 	require.Len(response.Resources, 1)
 	require.Equal(response.Resources[0].ResourceID, "aaa0")
 
-	req.Page.NextMarker = response.Page.NextMarker
+	req.PageNo++
 	rec, err = doRequestJSONResponse(s.router, echo.POST, "/api/v1/resources?common=all", req, &response)
 	require.NoError(err, "request")
 	require.Equal(http.StatusOK, rec.Code)
@@ -351,9 +345,7 @@ func (s *HttpHandlerSuite) TestGetAllResources_Filters() {
 				Direction: api.DirectionAscending,
 			},
 		},
-		Page: pagination.PageRequest{
-			Size: 10,
-		},
+		PageNo: 0,
 	}
 
 	var response api.GetResourcesResponse
@@ -408,9 +400,7 @@ func (s *HttpHandlerSuite) TestGetAllResources_Query() {
 				Direction: api.DirectionAscending,
 			},
 		},
-		Page: pagination.PageRequest{
-			Size: 10,
-		},
+		PageNo: 0,
 	}
 
 	var response api.GetResourcesResponse
@@ -437,9 +427,7 @@ func (s *HttpHandlerSuite) TestGetAllResources_QueryMicrosoft() {
 				Direction: api.DirectionAscending,
 			},
 		},
-		Page: pagination.PageRequest{
-			Size: 10,
-		},
+		PageNo: 0,
 	}
 
 	var response api.GetResourcesResponse
@@ -462,9 +450,7 @@ func (s *HttpHandlerSuite) TestGetAllResources_CSV() {
 				Direction: api.DirectionAscending,
 			},
 		},
-		Page: pagination.PageRequest{
-			Size: 10,
-		},
+		PageNo: 0,
 	}
 
 	rec, response, err := doRequestCSVResponse(s.router, echo.POST, "/api/v1/resources?common=all", req)
@@ -497,11 +483,8 @@ func (s *HttpHandlerSuite) TestGetAWSResources() {
 			Location:     nil,
 			SourceID:     nil,
 		},
-		Sorts: []api.ResourceSortItem{},
-		Page: pagination.PageRequest{
-			NextMarker: "",
-			Size:       10,
-		},
+		Sorts:  []api.ResourceSortItem{},
+		PageNo: 0,
 	}, &response)
 	require.NoError(err, "request")
 	require.Equal(http.StatusOK, rec.Code)
@@ -521,11 +504,8 @@ func (s *HttpHandlerSuite) TestGetAzureResources() {
 			Location:     nil,
 			SourceID:     nil,
 		},
-		Sorts: []api.ResourceSortItem{},
-		Page: pagination.PageRequest{
-			NextMarker: "",
-			Size:       10,
-		},
+		Sorts:  []api.ResourceSortItem{},
+		PageNo: 0,
 	}, &response)
 	require.NoError(err, "request")
 	require.Equal(http.StatusOK, rec.Code)

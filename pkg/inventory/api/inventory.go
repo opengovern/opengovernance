@@ -5,15 +5,16 @@ import (
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/cloudservice"
 
-	internal "gitlab.com/keibiengine/keibi-engine/pkg/internal/api"
 	"gitlab.com/keibiengine/keibi-engine/pkg/keibi-es-sdk"
 )
+
+var ResourcesPageSize = 20
 
 type GetResourcesResult struct {
 	AllResources   []AllResource
 	AzureResources []AzureResource
 	AWSResources   []AWSResource
-	Page           internal.PageResponse
+	TotalCount     int64 `json:"totalCount,omitempty"`
 }
 
 func QueryResources(ctx context.Context, client keibi.Client, req *GetResourcesRequest, provider *SourceType, commonFilter *bool) (*GetResourcesResult, error) {
@@ -25,17 +26,9 @@ func QueryResources(ctx context.Context, client keibi.Client, req *GetResourcesR
 }
 
 func QueryResourcesFromInventorySummary(ctx context.Context, client keibi.Client, req *GetResourcesRequest, provider *SourceType, commonFilter *bool) (*GetResourcesResult, error) {
-	lastIdx, err := req.Page.GetIndex()
-	if err != nil {
-		return nil, err
-	}
+	lastIdx := req.PageNo * ResourcesPageSize
 
-	resources, resultCount, err := QuerySummaryResources(ctx, client, req.Query, req.Filters, provider, req.Page.Size, lastIdx, req.Sorts, commonFilter)
-	if err != nil {
-		return nil, err
-	}
-
-	page, err := req.Page.NextPage()
+	resources, resultCount, err := QuerySummaryResources(ctx, client, req.Query, req.Filters, provider, ResourcesPageSize, lastIdx, req.Sorts, commonFilter)
 	if err != nil {
 		return nil, err
 	}
@@ -54,7 +47,7 @@ func QueryResourcesFromInventorySummary(ctx context.Context, client keibi.Client
 		}
 		return &GetResourcesResult{
 			AWSResources: awsResources,
-			Page:         page.ToResponse(resultCount.Value),
+			TotalCount:   resultCount.Value,
 		}, nil
 	}
 
@@ -73,7 +66,7 @@ func QueryResourcesFromInventorySummary(ctx context.Context, client keibi.Client
 		}
 		return &GetResourcesResult{
 			AzureResources: azureResources,
-			Page:           page.ToResponse(resultCount.Value),
+			TotalCount:     resultCount.Value,
 		}, nil
 	}
 
@@ -91,6 +84,6 @@ func QueryResourcesFromInventorySummary(ctx context.Context, client keibi.Client
 	}
 	return &GetResourcesResult{
 		AllResources: allResources,
-		Page:         page.ToResponse(resultCount.Value),
+		TotalCount:   resultCount.Value,
 	}, nil
 }

@@ -2322,6 +2322,7 @@ func (h *HttpHandler) GetResourcesFilters(ctx echo.Context) error {
 		for {
 			var keys []string
 			cmd := h.rdb.Scan(context.Background(), cursor, "tag-*", 0)
+			fmt.Println(cmd)
 			keys, cursor, err = cmd.Result()
 			if err != nil {
 				return err
@@ -2412,8 +2413,8 @@ func (h *HttpHandler) GetResources(ctx echo.Context, provider *api.SourceType, c
 			res.AllResources[idx].SourceName = uniqueSourceIds[res.AllResources[idx].SourceID]
 		}
 		return ctx.JSON(http.StatusOK, api.GetResourcesResponse{
-			Resources: res.AllResources,
-			Page:      res.Page,
+			Resources:  res.AllResources,
+			TotalCount: res.TotalCount,
 		})
 	} else if *provider == api.SourceCloudAWS {
 		uniqueSourceIds := map[string]string{}
@@ -2432,8 +2433,8 @@ func (h *HttpHandler) GetResources(ctx echo.Context, provider *api.SourceType, c
 			resource.AccountName = uniqueSourceIds[resource.AccountID]
 		}
 		return ctx.JSON(http.StatusOK, api.GetAWSResourceResponse{
-			Resources: res.AWSResources,
-			Page:      res.Page,
+			Resources:  res.AWSResources,
+			TotalCount: res.TotalCount,
 		})
 	} else if *provider == api.SourceCloudAzure {
 		uniqueSourceIds := map[string]string{}
@@ -2452,8 +2453,8 @@ func (h *HttpHandler) GetResources(ctx echo.Context, provider *api.SourceType, c
 			resource.SubscriptionName = uniqueSourceIds[resource.SubscriptionID]
 		}
 		return ctx.JSON(http.StatusOK, api.GetAzureResourceResponse{
-			Resources: res.AzureResources,
-			Page:      res.Page,
+			Resources:  res.AzureResources,
+			TotalCount: res.TotalCount,
 		})
 	} else {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid provider")
@@ -2475,10 +2476,7 @@ func (h *HttpHandler) GetResourcesCSV(ctx echo.Context, provider *api.SourceType
 	if err := bindValidate(ctx, &req); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
-	req.Page = pagination.PageRequest{
-		NextMarker: "",
-		Size:       5000,
-	}
+	req.PageNo = 0
 
 	ctx.Response().Header().Set(echo.HeaderContentType, "text/csv")
 	ctx.Response().WriteHeader(http.StatusOK)
