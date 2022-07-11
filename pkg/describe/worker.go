@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/go-redis/redis/v7"
+	"github.com/go-redis/redis/v8"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/keibi-es-sdk"
 

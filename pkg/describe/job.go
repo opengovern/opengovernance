@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/go-redis/redis/v7"
+	"github.com/go-redis/redis/v8"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/steampipe"
 
