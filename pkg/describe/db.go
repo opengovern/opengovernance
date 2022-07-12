@@ -111,13 +111,13 @@ func (db Database) CreateSources(a []Source) error {
 
 // UpdateSourceDescribed updates the source last_described_at to
 // **NOW()** and next_describe_at to **NOW() + 2 Hours**.
-func (db Database) UpdateSourceDescribed(id uuid.UUID, describedAt time.Time) error {
+func (db Database) UpdateSourceDescribed(id uuid.UUID, describedAt time.Time, interval time.Duration) error {
 	tx := db.orm.
 		Model(&Source{}).
 		Where("id = ?", id.String()).
 		Updates(map[string]interface{}{
-			"last_described_at": describedAt,                    // gorm.Expr("NOW()"),
-			"next_describe_at":  describedAt.Add(2 * time.Hour), //gorm.Expr("NOW() + INTERVAL '2 HOURS'"),
+			"last_described_at": describedAt,               // gorm.Expr("NOW()"),
+			"next_describe_at":  describedAt.Add(interval), //gorm.Expr("NOW() + INTERVAL '2 HOURS'"),
 		})
 	if tx.Error != nil {
 		return tx.Error
@@ -145,13 +145,13 @@ func (db Database) UpdateSourceNextDescribeAtToNow(id uuid.UUID) error {
 
 // UpdateSourceReportGenerated updates the source last_compliance_report_at to
 // **NOW()** and next_compliance_report_at to **NOW() + 2 Hours**.
-func (db Database) UpdateSourceReportGenerated(id uuid.UUID) error {
+func (db Database) UpdateSourceReportGenerated(id uuid.UUID, complianceIntervalHours int64) error {
 	tx := db.orm.
 		Model(&Source{}).
 		Where("id = ?", id.String()).
 		Updates(map[string]interface{}{
 			"last_compliance_report_at": gorm.Expr("NOW()"),
-			"next_compliance_report_at": gorm.Expr("NOW() + INTERVAL '2 HOURS'"),
+			"next_compliance_report_at": gorm.Expr(fmt.Sprintf("NOW() + INTERVAL '%d HOURS'", complianceIntervalHours)),
 			"next_compliance_report_id": gorm.Expr("next_compliance_report_id + 1"),
 		})
 	if tx.Error != nil {
@@ -395,10 +395,10 @@ func (db Database) UpdateDescribeResourceJobStatus(id uint, status api.DescribeR
 // UpdateDescribeResourceJobsTimedOut updates the status of DescribeResourceJobs
 // that have timed out while in the status of 'CREATED' or 'QUEUED' for longer
 // than 4 hours.
-func (db Database) UpdateDescribeResourceJobsTimedOut() error {
+func (db Database) UpdateDescribeResourceJobsTimedOut(describeIntervalHours int64) error {
 	tx := db.orm.
 		Model(&DescribeResourceJob{}).
-		Where("created_at < NOW() - INTERVAL '4 HOURS'").
+		Where(fmt.Sprintf("created_at < NOW() - INTERVAL '%d HOURS'", describeIntervalHours*2)).
 		Where("status IN ?", []string{string(api.DescribeResourceJobCreated), string(api.DescribeResourceJobQueued)}).
 		Updates(DescribeResourceJob{Status: api.DescribeResourceJobFailed, FailureMessage: "Job timed out"})
 	if tx.Error != nil {
@@ -480,10 +480,10 @@ func (db Database) UpdateComplianceReportJob(
 // UpdateComplianceReportJobsTimedOut updates the status of ComplianceReportJob
 // that have timed out while in the status of 'CREATED' or 'QUEUED' for longer
 // than 4 hours.
-func (db Database) UpdateComplianceReportJobsTimedOut() error {
+func (db Database) UpdateComplianceReportJobsTimedOut(complianceIntervalHours int64) error {
 	tx := db.orm.
 		Model(&ComplianceReportJob{}).
-		Where("created_at < NOW() - INTERVAL '4 HOURS'").
+		Where(fmt.Sprintf("created_at < NOW() - INTERVAL '%d HOURS'", complianceIntervalHours*2)).
 		Where("status IN ?", []string{string(api2.ComplianceReportJobCreated), string(api2.ComplianceReportJobInProgress)}).
 		Updates(ComplianceReportJob{Status: api2.ComplianceReportJobCompletedWithFailure, FailureMessage: "Job timed out"})
 	if tx.Error != nil {
@@ -716,10 +716,10 @@ func (db Database) GetOldCompletedInsightJob(insightID uint, nDaysBefore int) (*
 // UpdateInsightJobsTimedOut updates the status of InsightJobs
 // that have timed out while in the status of 'IN_PROGRESS' for longer
 // than 4 hours.
-func (db Database) UpdateInsightJobsTimedOut() error {
+func (db Database) UpdateInsightJobsTimedOut(insightIntervalHours int64) error {
 	tx := db.orm.
 		Model(&InsightJob{}).
-		Where("created_at < NOW() - INTERVAL '4 HOURS'").
+		Where(fmt.Sprintf("created_at < NOW() - INTERVAL '%d HOURS'", insightIntervalHours*2)).
 		Where("status IN ?", []string{string(insightapi.InsightJobInProgress)}).
 		Updates(InsightJob{Status: insightapi.InsightJobFailed, FailureMessage: "Job timed out"})
 	if tx.Error != nil {

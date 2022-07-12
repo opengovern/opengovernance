@@ -327,7 +327,7 @@ func (s *SchedulerTestSuite) TestUpdateNextDescribeAt() {
 	})
 	require.NoError(err)
 
-	err = s.db.UpdateSourceDescribed(id, time.Now())
+	err = s.db.UpdateSourceDescribed(id, time.Now(), 2*time.Hour)
 	require.NoError(err)
 
 	source, err := s.db.GetSourceByUUID(id)

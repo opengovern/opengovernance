@@ -50,6 +50,10 @@ var (
 	PrometheusPushAddress = os.Getenv("PROMETHEUS_PUSH_ADDRESS")
 
 	RedisAddress = os.Getenv("REDIS_ADDRESS")
+
+	DescribeIntervalHours   = os.Getenv("DESCRIBE_INTERVAL_HOURS")
+	ComplianceIntervalHours = os.Getenv("COMPLIANCE_INTERVAL_HOURS")
+	InsightIntervalHours    = os.Getenv("INSIGHT_INTERVAL_HOURS")
 )
 
 func SchedulerCommand() *cobra.Command {
@@ -87,6 +91,9 @@ func SchedulerCommand() *cobra.Command {
 				PostgreSQLPort,
 				PostgreSQLDb,
 				HttpServerAddress,
+				DescribeIntervalHours,
+				ComplianceIntervalHours,
+				InsightIntervalHours,
 			)
 			if err != nil {
 				return err
