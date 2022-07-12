@@ -447,11 +447,16 @@ func (s Scheduler) RunDescribeJobScheduler() {
 }
 
 func (s Scheduler) scheduleDescribeJob() {
+	s.logger.Info("Checking sources due for describe")
 	sources, err := s.db.QuerySourcesDueForDescribe()
 	if err != nil {
 		s.logger.Error("Failed to find the next sources to create DescribeSourceJob", zap.Error(err))
 		DescribeJobsCount.WithLabelValues("failure").Inc()
 		return
+	}
+
+	if len(sources) > 0 {
+		s.logger.Info("There are some sources that need to be described", zap.Int("count", len(sources)))
 	}
 
 	for _, source := range sources {
