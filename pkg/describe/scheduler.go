@@ -3,6 +3,7 @@ package describe
 import (
 	"encoding/json"
 	"fmt"
+	"strconv"
 	"time"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/insight"
@@ -107,6 +108,10 @@ type Scheduler struct {
 	// watch the deleted source
 	deletedSources chan string
 
+	describeIntervalHours   int64
+	complianceIntervalHours int64
+	insightIntervalHours    int64
+
 	logger *zap.Logger
 }
 
@@ -131,6 +136,9 @@ func InitializeScheduler(
 	postgresPort string,
 	postgresDb string,
 	httpServerAddress string,
+	describeIntervalHours string,
+	complianceIntervalHours string,
+	insightIntervalHours string,
 ) (s *Scheduler, err error) {
 	if id == "" {
 		return nil, fmt.Errorf("'id' must be set to a non empty string")
@@ -313,6 +321,18 @@ func InitializeScheduler(
 	s.db = Database{orm: orm}
 
 	s.httpServer = NewHTTPServer(httpServerAddress, s.db)
+	s.describeIntervalHours, err = strconv.ParseInt(describeIntervalHours, 10, 64)
+	if err != nil {
+		return nil, err
+	}
+	s.complianceIntervalHours, err = strconv.ParseInt(complianceIntervalHours, 10, 64)
+	if err != nil {
+		return nil, err
+	}
+	s.insightIntervalHours, err = strconv.ParseInt(insightIntervalHours, 10, 64)
+	if err != nil {
+		return nil, err
+	}
 
 	return s, nil
 }
@@ -470,7 +490,7 @@ func (s Scheduler) scheduleDescribeJob() {
 		}
 		daj.Status = api.DescribeSourceJobInProgress
 
-		err = s.db.UpdateSourceDescribed(source.ID, describedAt)
+		err = s.db.UpdateSourceDescribed(source.ID, describedAt, time.Duration(s.describeIntervalHours)*time.Hour)
 		if err != nil {
 			DescribeSourceJobsCount.WithLabelValues("failure").Inc()
 			s.logger.Error("Failed to update Source",
@@ -757,7 +777,7 @@ func (s *Scheduler) RunDescribeJobResultsConsumer() error {
 				s.logger.Error("Failed acking message", zap.Error(err))
 			}
 		case <-t.C:
-			err := s.db.UpdateDescribeResourceJobsTimedOut()
+			err := s.db.UpdateDescribeResourceJobsTimedOut(s.describeIntervalHours)
 			if err != nil {
 				s.logger.Error("Failed to update timed out DescribeResourceJobs", zap.Error(err))
 			}
@@ -799,7 +819,7 @@ func (s *Scheduler) RunComplianceReportScheduler() {
 
 			enqueueComplianceReportJobs(s.logger, s.db, s.complianceReportJobQueue, source, &crj)
 
-			err = s.db.UpdateSourceReportGenerated(source.ID)
+			err = s.db.UpdateSourceReportGenerated(source.ID, s.complianceIntervalHours)
 			if err != nil {
 				s.logger.Error("Failed to update report job of Source: %s\n", zap.String("sourceId", source.ID.String()), zap.Error(err))
 				ComplianceSourceJobsCount.WithLabelValues("failure").Inc()
@@ -862,7 +882,7 @@ func (s *Scheduler) RunComplianceReportJobResultsConsumer() error {
 				s.logger.Error("Failed acking message", zap.Error(err))
 			}
 		case <-t.C:
-			err := s.db.UpdateComplianceReportJobsTimedOut()
+			err := s.db.UpdateComplianceReportJobsTimedOut(s.complianceIntervalHours)
 			if err != nil {
 				s.logger.Error("Failed to update timed out ComplianceReportJob", zap.Error(err))
 			}
@@ -1084,7 +1104,8 @@ func (s Scheduler) scheduleInsightJob() {
 		return
 	}
 
-	if insightJob == nil || insightJob.CreatedAt.Add(2*time.Hour).Before(time.Now()) {
+	if insightJob == nil ||
+		insightJob.CreatedAt.Add(time.Duration(s.insightIntervalHours)*time.Hour).Before(time.Now()) {
 		if isPublishingBlocked(s.logger, s.insightJobQueue) {
 			s.logger.Warn("The jobs in queue is over the threshold", zap.Error(err))
 			InsightJobsCount.WithLabelValues("failure").Inc()
@@ -1243,7 +1264,7 @@ func (s *Scheduler) RunInsightJobResultsConsumer() error {
 				s.logger.Error("Failed acking message", zap.Error(err))
 			}
 		case <-t.C:
-			err := s.db.UpdateInsightJobsTimedOut()
+			err := s.db.UpdateInsightJobsTimedOut(s.insightIntervalHours)
 			if err != nil {
 				s.logger.Error("Failed to update timed out InsightJob", zap.Error(err))
 			}
