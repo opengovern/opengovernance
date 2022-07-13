@@ -71,6 +71,9 @@ func (s *Server) createHelmRelease(ctx context.Context, workspace *Workspace) er
 				Raw: []byte(`
 {
   "keibi": {
+    "workspace": {
+      "name": "` + workspace.Name + `"
+    },
     "domain": "` + workspace.Domain + `"
   }
 }
