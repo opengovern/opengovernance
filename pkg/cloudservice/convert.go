@@ -2002,14 +2002,6 @@ func CategoryByResourceType(resourceType string) string {
 	return ""
 }
 
-func CloudProviderByResourceType(resourceType string) string {
-	record := findRecord(resourceType)
-	if record != nil {
-		return string(record.Provider)
-	}
-	return ""
-}
-
 func ServiceNameByResourceType(resourceType string) string {
 	if record := findResourceTypeRecord(resourceType); record != nil {
 		return record.Name
@@ -2021,9 +2013,8 @@ func ServiceNameByResourceType(resourceType string) string {
 }
 
 func IsCommonByResourceType(resourceType string) bool {
-	record := findRecord(resourceType)
-	if record != nil {
-		return record.Common
+	if record := findResourceTypeRecord(resourceType); record != nil {
+		return true
 	}
 	return false
 }
