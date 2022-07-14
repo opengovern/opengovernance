@@ -127,14 +127,14 @@ type GetResourcesResponse struct {
 }
 
 type AllResource struct {
-	Name             string     `json:"name"`
-	Provider         SourceType `json:"provider"`
-	ResourceType     string     `json:"resourceType"`
-	ResourceTypeName string     `json:"resourceTypeName"`
-	Location         string     `json:"location"`
-	ResourceID       string     `json:"resourceID"`
-	SourceID         string     `json:"sourceID"`
-	SourceName       string     `json:"sourceName"`
+	Name                string     `json:"name"`
+	Provider            SourceType `json:"provider"`
+	ResourceType        string     `json:"resourceType"`
+	ResourceTypeName    string     `json:"resourceTypeName"`
+	Location            string     `json:"location"`
+	ResourceID          string     `json:"resourceID"`
+	ProviderAccountID   string     `json:"providerAccountID"`
+	ProviderAccountName string     `json:"providerAccountName"`
 
 	Attributes map[string]string `json:"attributes"`
 }
@@ -152,7 +152,7 @@ type BenchmarkAssignedSource struct {
 
 func (r AllResource) ToCSVRecord() []string {
 	h := []string{r.Name, string(r.Provider), r.ResourceType, r.Location,
-		r.ResourceID, r.SourceID}
+		r.ResourceID, r.ProviderAccountID}
 	for _, value := range r.Attributes {
 		h = append(h, value)
 	}
@@ -160,7 +160,7 @@ func (r AllResource) ToCSVRecord() []string {
 }
 
 func (r AllResource) ToCSVHeaders() []string {
-	h := []string{"Name", "Provider", "ResourceType", "Location", "ResourceID", "SourceID"}
+	h := []string{"Name", "Provider", "ResourceType", "Location", "ResourceID", "ProviderAccountID"}
 	for key := range r.Attributes {
 		h = append(h, key)
 	}

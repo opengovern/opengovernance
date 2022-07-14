@@ -41,15 +41,15 @@ definitions:
         type: string
       provider:
         type: string
+      providerAccountID:
+        type: string
+      providerAccountName:
+        type: string
       resourceID:
         type: string
       resourceType:
         type: string
       resourceTypeName:
-        type: string
-      sourceID:
-        type: string
-      sourceName:
         type: string
     type: object
   api.AzureResource:
