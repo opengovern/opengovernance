@@ -260,7 +260,7 @@ func (s *HttpHandlerSuite) TestGetAllResources() {
 	require.NoError(err, "request")
 	require.Equal(http.StatusOK, rec.Code)
 	require.Len(response.Resources, 4)
-	require.Equal("Name", response.Resources[0].ProviderAccountName)
+	require.Equal("Name", response.Resources[0].ProviderConnectionName)
 	for _, r := range response.Resources {
 		if r.ResourceType == "AWS::EC2::Region" {
 			require.Fail("AWS::EC2::Region should be excluded from get resource api")

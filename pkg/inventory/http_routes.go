@@ -2397,60 +2397,75 @@ func (h *HttpHandler) GetResources(ctx echo.Context, provider *api.SourceType, c
 	}
 
 	if provider == nil {
-		uniqueSourceIds := map[string]string{}
+		connectionID := map[string]string{}
+		connectionName := map[string]string{}
 		for _, resource := range res.AllResources {
-			uniqueSourceIds[resource.ProviderAccountID] = ""
+			connectionName[resource.ProviderConnectionID] = "Unknown"
+			connectionID[resource.ProviderConnectionID] = ""
 		}
-		for sourceId := range uniqueSourceIds {
+		for sourceId := range connectionName {
 			src, err := h.schedulerClient.GetSource(httpclient.FromEchoContext(ctx), sourceId)
 			if err != nil {
 				return err
 			}
 
-			uniqueSourceIds[sourceId] = src.Name
+			connectionName[sourceId] = src.Name
+			connectionID[sourceId] = src.SourceId
 		}
-		for idx := range res.AllResources {
-			res.AllResources[idx].ProviderAccountName = uniqueSourceIds[res.AllResources[idx].ProviderAccountID]
+		for _, resource := range res.AllResources {
+			id := resource.ProviderConnectionID
+			resource.ProviderConnectionID = connectionID[id]
+			resource.ProviderConnectionName = connectionName[id]
 		}
 		return ctx.JSON(http.StatusOK, api.GetResourcesResponse{
 			Resources:  res.AllResources,
 			TotalCount: res.TotalCount,
 		})
 	} else if *provider == api.SourceCloudAWS {
-		uniqueSourceIds := map[string]string{}
+		connectionID := map[string]string{}
+		connectionName := map[string]string{}
 		for _, resource := range res.AWSResources {
-			uniqueSourceIds[resource.AccountID] = ""
+			connectionName[resource.ProviderConnectionID] = "Unknown"
+			connectionID[resource.ProviderConnectionID] = ""
 		}
-		for sourceId := range uniqueSourceIds {
+		for sourceId := range connectionName {
 			src, err := h.schedulerClient.GetSource(httpclient.FromEchoContext(ctx), sourceId)
 			if err != nil {
 				return err
 			}
 
-			uniqueSourceIds[sourceId] = src.Name
+			connectionName[sourceId] = src.Name
+			connectionID[sourceId] = src.SourceId
 		}
 		for _, resource := range res.AWSResources {
-			resource.AccountName = uniqueSourceIds[resource.AccountID]
+			id := resource.ProviderConnectionID
+			resource.ProviderConnectionID = connectionID[id]
+			resource.ProviderConnectionName = connectionName[id]
 		}
 		return ctx.JSON(http.StatusOK, api.GetAWSResourceResponse{
 			Resources:  res.AWSResources,
 			TotalCount: res.TotalCount,
 		})
 	} else if *provider == api.SourceCloudAzure {
-		uniqueSourceIds := map[string]string{}
+		connectionID := map[string]string{}
+		connectionName := map[string]string{}
 		for _, resource := range res.AzureResources {
-			uniqueSourceIds[resource.SubscriptionID] = ""
+			connectionName[resource.ProviderConnectionID] = "Unknown"
+			connectionID[resource.ProviderConnectionID] = ""
 		}
-		for sourceId := range uniqueSourceIds {
+		for sourceId := range connectionName {
 			src, err := h.schedulerClient.GetSource(httpclient.FromEchoContext(ctx), sourceId)
 			if err != nil {
 				return err
 			}
 
-			uniqueSourceIds[sourceId] = src.Name
+			connectionName[sourceId] = src.Name
+			connectionID[sourceId] = src.SourceId
 		}
 		for _, resource := range res.AzureResources {
-			resource.SubscriptionName = uniqueSourceIds[resource.SubscriptionID]
+			id := resource.ProviderConnectionID
+			resource.ProviderConnectionID = connectionID[id]
+			resource.ProviderConnectionName = connectionName[id]
 		}
 		return ctx.JSON(http.StatusOK, api.GetAzureResourceResponse{
 			Resources:  res.AzureResources,

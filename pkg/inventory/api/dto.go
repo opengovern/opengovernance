@@ -26,12 +26,12 @@ type SortFieldType string
 
 const (
 	SortFieldResourceID    SortFieldType = "resourceID"
-	SortFieldName          SortFieldType = "name"
+	SortFieldName          SortFieldType = "resourceName"
 	SortFieldSourceType    SortFieldType = "provider"
 	SortFieldResourceType  SortFieldType = "resourceType"
 	SortFieldResourceGroup SortFieldType = "resourceGroup"
 	SortFieldLocation      SortFieldType = "location"
-	SortFieldSourceID      SortFieldType = "sourceID"
+	SortFieldSourceID      SortFieldType = "connectionID"
 )
 
 type GetResourceRequest struct {
@@ -76,6 +76,10 @@ type Filters struct {
 	// if you dont need to use this filter, leave them empty. (e.g. [])
 	ResourceType []string `json:"resourceType"`
 	// if you dont need to use this filter, leave them empty. (e.g. [])
+	Category []string `json:"category"`
+	// if you dont need to use this filter, leave them empty. (e.g. [])
+	Service []string `json:"service"`
+	// if you dont need to use this filter, leave them empty. (e.g. [])
 	Location []string `json:"location"`
 	// if you dont need to use this filter, leave them empty. (e.g. [])
 	SourceID []string `json:"sourceID"`
@@ -111,7 +115,7 @@ type GetFiltersResponse struct {
 }
 
 type ResourceSortItem struct {
-	Field     SortFieldType `json:"field" enums:"resourceID,name,provider,resourceType,resourceGroup,location,sourceID"`
+	Field     SortFieldType `json:"field" enums:"resourceID,resourceName,provider,resourceType,resourceGroup,location,connectionID"`
 	Direction DirectionType `json:"direction" enums:"asc,desc"`
 }
 
@@ -127,14 +131,14 @@ type GetResourcesResponse struct {
 }
 
 type AllResource struct {
-	Name                string     `json:"name"`
-	Provider            SourceType `json:"provider"`
-	ResourceType        string     `json:"resourceType"`
-	ResourceTypeName    string     `json:"resourceTypeName"`
-	Location            string     `json:"location"`
-	ResourceID          string     `json:"resourceID"`
-	ProviderAccountID   string     `json:"providerAccountID"`
-	ProviderAccountName string     `json:"providerAccountName"`
+	ResourceName           string     `json:"resourceName"`
+	ResourceID             string     `json:"resourceID"`
+	ResourceType           string     `json:"resourceType"`
+	ResourceTypeName       string     `json:"resourceTypeName"`
+	Provider               SourceType `json:"provider"`
+	Location               string     `json:"location"`
+	ProviderConnectionID   string     `json:"providerConnectionID"`
+	ProviderConnectionName string     `json:"providerConnectionName"`
 
 	Attributes map[string]string `json:"attributes"`
 }
@@ -151,8 +155,8 @@ type BenchmarkAssignedSource struct {
 }
 
 func (r AllResource) ToCSVRecord() []string {
-	h := []string{r.Name, string(r.Provider), r.ResourceType, r.Location,
-		r.ResourceID, r.ProviderAccountID}
+	h := []string{r.ResourceName, string(r.Provider), r.ResourceTypeName, r.Location,
+		r.ResourceID, r.ProviderConnectionID}
 	for _, value := range r.Attributes {
 		h = append(h, value)
 	}
@@ -173,20 +177,20 @@ type GetAzureResourceResponse struct {
 }
 
 type AzureResource struct {
-	Name             string `json:"name"`
-	ResourceType     string `json:"resourceType"`
-	ResourceTypeName string `json:"resourceTypeName"`
-	ResourceGroup    string `json:"resourceGroup"`
-	Location         string `json:"location"`
-	ResourceID       string `json:"resourceID"`
-	SubscriptionID   string `json:"subscriptionID"`
-	SubscriptionName string `json:"subscriptionName"`
+	ResourceName           string `json:"resourceName"`
+	ResourceID             string `json:"resourceID"`
+	ResourceType           string `json:"resourceType"`
+	ResourceTypeName       string `json:"resourceTypeName"`
+	ResourceGroup          string `json:"resourceGroup"`
+	Location               string `json:"location"`
+	ProviderConnectionID   string `json:"providerConnectionID"`
+	ProviderConnectionName string `json:"providerConnectionName"`
 
 	Attributes map[string]string `json:"attributes"`
 }
 
 func (r AzureResource) ToCSVRecord() []string {
-	h := []string{r.Name, r.ResourceType, r.ResourceGroup, r.Location, r.ResourceID, r.SubscriptionID}
+	h := []string{r.ResourceName, r.ResourceTypeName, r.ResourceGroup, r.Location, r.ResourceID, r.ProviderConnectionID}
 	for _, value := range r.Attributes {
 		h = append(h, value)
 	}
@@ -206,26 +210,26 @@ type GetAWSResourceResponse struct {
 }
 
 type AWSResource struct {
-	Name             string `json:"name"`
-	ResourceType     string `json:"resourceType"`
-	ResourceTypeName string `json:"resourceTypeName"`
-	ResourceID       string `json:"resourceID"`
-	Region           string `json:"location"`
-	AccountID        string `json:"accountID"`
-	AccountName      string `json:"accountName"`
+	ResourceName           string `json:"resourceName"`
+	ResourceID             string `json:"resourceID"`
+	ResourceType           string `json:"resourceType"`
+	ResourceTypeName       string `json:"resourceTypeName"`
+	Location               string `json:"location"`
+	ProviderConnectionID   string `json:"providerConnectionID"`
+	ProviderConnectionName string `json:"providerConnectionName"`
 
 	Attributes map[string]string `json:"attributes"`
 }
 
 func (r AWSResource) ToCSVRecord() []string {
-	h := []string{r.Name, r.ResourceType, r.ResourceID, r.Region, r.AccountID}
+	h := []string{r.ResourceName, r.ResourceTypeName, r.ResourceID, r.Location, r.ProviderConnectionID}
 	for _, value := range r.Attributes {
 		h = append(h, value)
 	}
 	return h
 }
 func (r AWSResource) ToCSVHeaders() []string {
-	h := []string{"Name", "ResourceType", "ResourceID", "Region", "AccountID"}
+	h := []string{"ResourceName", "ResourceType", "ResourceID", "Location", "ProviderConnectionID"}
 	for key := range r.Attributes {
 		h = append(h, key)
 	}
