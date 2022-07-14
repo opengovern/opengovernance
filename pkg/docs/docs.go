@@ -2876,12 +2876,6 @@ const docTemplate = `{
         "api.AWSResource": {
             "type": "object",
             "properties": {
-                "accountID": {
-                    "type": "string"
-                },
-                "accountName": {
-                    "type": "string"
-                },
                 "attributes": {
                     "type": "object",
                     "additionalProperties": {
@@ -2891,10 +2885,16 @@ const docTemplate = `{
                 "location": {
                     "type": "string"
                 },
-                "name": {
+                "providerConnectionID": {
+                    "type": "string"
+                },
+                "providerConnectionName": {
                     "type": "string"
                 },
                 "resourceID": {
+                    "type": "string"
+                },
+                "resourceName": {
                     "type": "string"
                 },
                 "resourceType": {
@@ -2931,19 +2931,19 @@ const docTemplate = `{
                 "location": {
                     "type": "string"
                 },
-                "name": {
-                    "type": "string"
-                },
                 "provider": {
                     "type": "string"
                 },
-                "providerAccountID": {
+                "providerConnectionID": {
                     "type": "string"
                 },
-                "providerAccountName": {
+                "providerConnectionName": {
                     "type": "string"
                 },
                 "resourceID": {
+                    "type": "string"
+                },
+                "resourceName": {
                     "type": "string"
                 },
                 "resourceType": {
@@ -2966,7 +2966,10 @@ const docTemplate = `{
                 "location": {
                     "type": "string"
                 },
-                "name": {
+                "providerConnectionID": {
+                    "type": "string"
+                },
+                "providerConnectionName": {
                     "type": "string"
                 },
                 "resourceGroup": {
@@ -2975,16 +2978,13 @@ const docTemplate = `{
                 "resourceID": {
                     "type": "string"
                 },
+                "resourceName": {
+                    "type": "string"
+                },
                 "resourceType": {
                     "type": "string"
                 },
                 "resourceTypeName": {
-                    "type": "string"
-                },
-                "sourceName": {
-                    "type": "string"
-                },
-                "subscriptionID": {
                     "type": "string"
                 }
             }
@@ -3244,6 +3244,13 @@ const docTemplate = `{
             "description": "if you provide two values for same filter OR operation would be used if you provide value for two filters AND operation would be used",
             "type": "object",
             "properties": {
+                "category": {
+                    "description": "if you dont need to use this filter, leave them empty. (e.g. [])",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
                 "location": {
                     "description": "if you dont need to use this filter, leave them empty. (e.g. [])",
                     "type": "array",
@@ -3252,6 +3259,13 @@ const docTemplate = `{
                     }
                 },
                 "resourceType": {
+                    "description": "if you dont need to use this filter, leave them empty. (e.g. [])",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "service": {
                     "description": "if you dont need to use this filter, leave them empty. (e.g. [])",
                     "type": "array",
                     "items": {
@@ -3666,12 +3680,12 @@ const docTemplate = `{
                     "type": "string",
                     "enum": [
                         "resourceID",
-                        "name",
+                        "resourceName",
                         "provider",
                         "resourceType",
                         "resourceGroup",
                         "location",
-                        "sourceID"
+                        "connectionID"
                     ]
                 }
             }

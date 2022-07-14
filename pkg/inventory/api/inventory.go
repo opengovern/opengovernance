@@ -35,12 +35,12 @@ func QueryResourcesFromInventorySummary(ctx context.Context, client keibi.Client
 		var awsResources []AWSResource
 		for _, resource := range resources {
 			awsResources = append(awsResources, AWSResource{
-				Name:             resource.Name,
-				ResourceType:     resource.ResourceType,
-				ResourceTypeName: cloudservice.ServiceNameByResourceType(resource.ResourceType),
-				ResourceID:       resource.ResourceID,
-				Region:           resource.Location,
-				AccountID:        resource.SourceID,
+				ResourceName:         resource.Name,
+				ResourceType:         resource.ResourceType,
+				ResourceTypeName:     cloudservice.ServiceNameByResourceType(resource.ResourceType),
+				ResourceID:           resource.ResourceID,
+				Location:             resource.Location,
+				ProviderConnectionID: resource.SourceID,
 			})
 		}
 		return &GetResourcesResult{
@@ -53,13 +53,13 @@ func QueryResourcesFromInventorySummary(ctx context.Context, client keibi.Client
 		var azureResources []AzureResource
 		for _, resource := range resources {
 			azureResources = append(azureResources, AzureResource{
-				Name:             resource.Name,
-				ResourceType:     resource.ResourceType,
-				ResourceTypeName: cloudservice.ServiceNameByResourceType(resource.ResourceType),
-				ResourceGroup:    resource.ResourceGroup,
-				Location:         resource.Location,
-				ResourceID:       resource.ResourceID,
-				SubscriptionID:   resource.SourceID,
+				ResourceName:         resource.Name,
+				ResourceType:         resource.ResourceType,
+				ResourceTypeName:     cloudservice.ServiceNameByResourceType(resource.ResourceType),
+				ResourceGroup:        resource.ResourceGroup,
+				Location:             resource.Location,
+				ResourceID:           resource.ResourceID,
+				ProviderConnectionID: resource.SourceID,
 			})
 		}
 		return &GetResourcesResult{
@@ -71,13 +71,13 @@ func QueryResourcesFromInventorySummary(ctx context.Context, client keibi.Client
 	var allResources []AllResource
 	for _, resource := range resources {
 		allResources = append(allResources, AllResource{
-			Name:              resource.Name,
-			Provider:          SourceType(resource.SourceType),
-			ResourceType:      resource.ResourceType,
-			ResourceTypeName:  cloudservice.ServiceNameByResourceType(resource.ResourceType),
-			Location:          resource.Location,
-			ResourceID:        resource.ResourceID,
-			ProviderAccountID: resource.SourceID,
+			ResourceName:         resource.Name,
+			Provider:             SourceType(resource.SourceType),
+			ResourceType:         resource.ResourceType,
+			ResourceTypeName:     cloudservice.ServiceNameByResourceType(resource.ResourceType),
+			Location:             resource.Location,
+			ResourceID:           resource.ResourceID,
+			ProviderConnectionID: resource.SourceID,
 		})
 	}
 	return &GetResourcesResult{

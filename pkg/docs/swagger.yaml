@@ -1,19 +1,19 @@
 definitions:
   api.AWSResource:
     properties:
-      accountID:
-        type: string
-      accountName:
-        type: string
       attributes:
         additionalProperties:
           type: string
         type: object
       location:
         type: string
-      name:
+      providerConnectionID:
+        type: string
+      providerConnectionName:
         type: string
       resourceID:
+        type: string
+      resourceName:
         type: string
       resourceType:
         type: string
@@ -37,15 +37,15 @@ definitions:
         type: object
       location:
         type: string
-      name:
-        type: string
       provider:
         type: string
-      providerAccountID:
+      providerConnectionID:
         type: string
-      providerAccountName:
+      providerConnectionName:
         type: string
       resourceID:
+        type: string
+      resourceName:
         type: string
       resourceType:
         type: string
@@ -60,19 +60,19 @@ definitions:
         type: object
       location:
         type: string
-      name:
+      providerConnectionID:
+        type: string
+      providerConnectionName:
         type: string
       resourceGroup:
         type: string
       resourceID:
         type: string
+      resourceName:
+        type: string
       resourceType:
         type: string
       resourceTypeName:
-        type: string
-      sourceName:
-        type: string
-      subscriptionID:
         type: string
     type: object
   api.Benchmark:
@@ -241,6 +241,12 @@ definitions:
     description: if you provide two values for same filter OR operation would be used
       if you provide value for two filters AND operation would be used
     properties:
+      category:
+        description: if you dont need to use this filter, leave them empty. (e.g.
+          [])
+        items:
+          type: string
+        type: array
       location:
         description: if you dont need to use this filter, leave them empty. (e.g.
           [])
@@ -248,6 +254,12 @@ definitions:
           type: string
         type: array
       resourceType:
+        description: if you dont need to use this filter, leave them empty. (e.g.
+          [])
+        items:
+          type: string
+        type: array
+      service:
         description: if you dont need to use this filter, leave them empty. (e.g.
           [])
         items:
@@ -539,12 +551,12 @@ definitions:
       field:
         enum:
         - resourceID
-        - name
+        - resourceName
         - provider
         - resourceType
         - resourceGroup
         - location
-        - sourceID
+        - connectionID
         type: string
     type: object
   api.ResourceTypeDetail:

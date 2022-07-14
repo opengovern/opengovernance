@@ -110,6 +110,8 @@ type LookupResource struct {
 	SourceType api.SourceType `json:"source_type"`
 	// ResourceType is the type of the resource.
 	ResourceType string `json:"resource_type"`
+	// ServiceName is the service of the resource.
+	ServiceName string `json:"service_name"`
 	// Category is the category of the resource.
 	Category string `json:"category"`
 	// ResourceGroup is the group of resource (Azure only)
