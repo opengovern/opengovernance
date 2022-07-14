@@ -30,6 +30,7 @@ var (
 	SteampipePassword = os.Getenv("STEAMPIPE_PASSWORD")
 
 	SchedulerBaseUrl = os.Getenv("SCHEDULER_BASE_URL")
+	OnboardBaseUrl   = os.Getenv("ONBOARD_BASE_URL")
 
 	HttpAddress = os.Getenv("HTTP_ADDRESS")
 )
@@ -63,6 +64,7 @@ func start(ctx context.Context) error {
 		SteampipeUser,
 		SteampipePassword,
 		SchedulerBaseUrl,
+		OnboardBaseUrl,
 		logger,
 		RedisAddress,
 	)

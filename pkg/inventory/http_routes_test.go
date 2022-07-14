@@ -230,7 +230,7 @@ func (s *HttpHandlerSuite) SetupSuite() {
 	s.handler, err = InitializeHttpHandler(s.elasticUrl, "", "",
 		idocker.GetDockerHost(), postgresResource.GetPort("5432/tcp"), "postgres", "postgres", "mysecretpassword",
 		idocker.GetDockerHost(), steampipeResource.GetPort("9193/tcp"), "steampipe", "steampipe", "abcd",
-		s.describe.MockServer.URL, logger, "",
+		s.describe.MockServer.URL, s.describe.MockServer.URL, logger, "",
 	)
 	require.NoError(err, "init http handler")
 
