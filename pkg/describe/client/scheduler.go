@@ -4,10 +4,11 @@ import (
 	"fmt"
 	"net/http"
 
+	"gitlab.com/keibiengine/keibi-engine/pkg/describe/api"
+
 	compliance "gitlab.com/keibiengine/keibi-engine/pkg/compliance-report/api"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpclient"
 	inventory "gitlab.com/keibiengine/keibi-engine/pkg/inventory/api"
-	"gitlab.com/keibiengine/keibi-engine/pkg/onboard/api"
 )
 
 type SchedulerServiceClient interface {

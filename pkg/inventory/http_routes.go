@@ -2404,7 +2404,7 @@ func (h *HttpHandler) GetResources(ctx echo.Context, provider *api.SourceType, c
 			connectionID[resource.ProviderConnectionID] = ""
 		}
 		for sourceId := range connectionName {
-			src, err := h.schedulerClient.GetSource(httpclient.FromEchoContext(ctx), sourceId)
+			src, err := h.onboardClient.GetSource(httpclient.FromEchoContext(ctx), sourceId)
 			if err != nil {
 				return err
 			}
@@ -2412,10 +2412,10 @@ func (h *HttpHandler) GetResources(ctx echo.Context, provider *api.SourceType, c
 			connectionName[sourceId] = src.Name
 			connectionID[sourceId] = src.SourceId
 		}
-		for _, resource := range res.AllResources {
-			id := resource.ProviderConnectionID
-			resource.ProviderConnectionID = connectionID[id]
-			resource.ProviderConnectionName = connectionName[id]
+		for idx := range res.AllResources {
+			id := res.AllResources[idx].ProviderConnectionID
+			res.AllResources[idx].ProviderConnectionID = connectionID[id]
+			res.AllResources[idx].ProviderConnectionName = connectionName[id]
 		}
 		return ctx.JSON(http.StatusOK, api.GetResourcesResponse{
 			Resources:  res.AllResources,
@@ -2429,7 +2429,7 @@ func (h *HttpHandler) GetResources(ctx echo.Context, provider *api.SourceType, c
 			connectionID[resource.ProviderConnectionID] = ""
 		}
 		for sourceId := range connectionName {
-			src, err := h.schedulerClient.GetSource(httpclient.FromEchoContext(ctx), sourceId)
+			src, err := h.onboardClient.GetSource(httpclient.FromEchoContext(ctx), sourceId)
 			if err != nil {
 				return err
 			}
@@ -2437,10 +2437,10 @@ func (h *HttpHandler) GetResources(ctx echo.Context, provider *api.SourceType, c
 			connectionName[sourceId] = src.Name
 			connectionID[sourceId] = src.SourceId
 		}
-		for _, resource := range res.AWSResources {
-			id := resource.ProviderConnectionID
-			resource.ProviderConnectionID = connectionID[id]
-			resource.ProviderConnectionName = connectionName[id]
+		for idx := range res.AWSResources {
+			id := res.AWSResources[idx].ProviderConnectionID
+			res.AWSResources[idx].ProviderConnectionID = connectionID[id]
+			res.AWSResources[idx].ProviderConnectionName = connectionName[id]
 		}
 		return ctx.JSON(http.StatusOK, api.GetAWSResourceResponse{
 			Resources:  res.AWSResources,
@@ -2454,7 +2454,7 @@ func (h *HttpHandler) GetResources(ctx echo.Context, provider *api.SourceType, c
 			connectionID[resource.ProviderConnectionID] = ""
 		}
 		for sourceId := range connectionName {
-			src, err := h.schedulerClient.GetSource(httpclient.FromEchoContext(ctx), sourceId)
+			src, err := h.onboardClient.GetSource(httpclient.FromEchoContext(ctx), sourceId)
 			if err != nil {
 				return err
 			}
@@ -2462,10 +2462,10 @@ func (h *HttpHandler) GetResources(ctx echo.Context, provider *api.SourceType, c
 			connectionName[sourceId] = src.Name
 			connectionID[sourceId] = src.SourceId
 		}
-		for _, resource := range res.AzureResources {
-			id := resource.ProviderConnectionID
-			resource.ProviderConnectionID = connectionID[id]
-			resource.ProviderConnectionName = connectionName[id]
+		for idx := range res.AzureResources {
+			id := res.AzureResources[idx].ProviderConnectionID
+			res.AzureResources[idx].ProviderConnectionID = connectionID[id]
+			res.AzureResources[idx].ProviderConnectionName = connectionName[id]
 		}
 		return ctx.JSON(http.StatusOK, api.GetAzureResourceResponse{
 			Resources:  res.AzureResources,

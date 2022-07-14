@@ -3,6 +3,8 @@ package inventory
 import (
 	"fmt"
 
+	client2 "gitlab.com/keibiengine/keibi-engine/pkg/onboard/client"
+
 	"github.com/go-redis/redis/v8"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/describe/client"
@@ -18,6 +20,7 @@ type HttpHandler struct {
 	db              Database
 	steampipeConn   *steampipe.Database
 	schedulerClient client.SchedulerServiceClient
+	onboardClient   client2.OnboardServiceClient
 	rdb             *redis.Client
 }
 
@@ -36,6 +39,7 @@ func InitializeHttpHandler(
 	steampipeUsername string,
 	steampipePassword string,
 	schedulerBaseUrl string,
+	onboardBaseUrl string,
 	logger *zap.Logger,
 	redisAddress string,
 ) (h *HttpHandler, err error) {
@@ -91,6 +95,7 @@ func InitializeHttpHandler(
 		return nil, err
 	}
 	h.schedulerClient = client.NewSchedulerServiceClient(schedulerBaseUrl)
+	h.onboardClient = client2.NewOnboardServiceClient(onboardBaseUrl)
 	h.rdb = redis.NewClient(&redis.Options{
 		Addr:     redisAddress,
 		Password: "", // no password set
