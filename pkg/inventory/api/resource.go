@@ -215,27 +215,27 @@ func QueryResourcesWithSteampipeColumns(
 	if provider == nil {
 		for _, aws := range result.AWSResources {
 			result.AllResources = append(result.AllResources, AllResource{
-				Name:             aws.Name,
-				Provider:         SourceCloudAWS,
-				ResourceType:     aws.ResourceType,
-				ResourceTypeName: cloudservice.ServiceNameByResourceType(aws.ResourceType),
-				Location:         aws.Region,
-				ResourceID:       aws.ResourceID,
-				SourceID:         aws.AccountID,
-				Attributes:       aws.Attributes,
+				Name:              aws.Name,
+				Provider:          SourceCloudAWS,
+				ResourceType:      aws.ResourceType,
+				ResourceTypeName:  cloudservice.ServiceNameByResourceType(aws.ResourceType),
+				Location:          aws.Region,
+				ResourceID:        aws.ResourceID,
+				ProviderAccountID: aws.AccountID,
+				Attributes:        aws.Attributes,
 			})
 		}
 
 		for _, azure := range result.AzureResources {
 			result.AllResources = append(result.AllResources, AllResource{
-				Name:             azure.Name,
-				Provider:         SourceCloudAzure,
-				ResourceType:     azure.ResourceType,
-				ResourceTypeName: cloudservice.ServiceNameByResourceType(azure.ResourceType),
-				Location:         azure.Location,
-				ResourceID:       azure.ResourceID,
-				SourceID:         azure.SubscriptionID,
-				Attributes:       azure.Attributes,
+				Name:              azure.Name,
+				Provider:          SourceCloudAzure,
+				ResourceType:      azure.ResourceType,
+				ResourceTypeName:  cloudservice.ServiceNameByResourceType(azure.ResourceType),
+				Location:          azure.Location,
+				ResourceID:        azure.ResourceID,
+				ProviderAccountID: azure.SubscriptionID,
+				Attributes:        azure.Attributes,
 			})
 		}
 	}
