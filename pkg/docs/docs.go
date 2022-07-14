@@ -2937,6 +2937,12 @@ const docTemplate = `{
                 "provider": {
                     "type": "string"
                 },
+                "providerAccountID": {
+                    "type": "string"
+                },
+                "providerAccountName": {
+                    "type": "string"
+                },
                 "resourceID": {
                     "type": "string"
                 },
@@ -2944,12 +2950,6 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "resourceTypeName": {
-                    "type": "string"
-                },
-                "sourceID": {
-                    "type": "string"
-                },
-                "sourceName": {
                     "type": "string"
                 }
             }

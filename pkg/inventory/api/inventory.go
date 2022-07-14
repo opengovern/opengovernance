@@ -71,13 +71,13 @@ func QueryResourcesFromInventorySummary(ctx context.Context, client keibi.Client
 	var allResources []AllResource
 	for _, resource := range resources {
 		allResources = append(allResources, AllResource{
-			Name:             resource.Name,
-			Provider:         SourceType(resource.SourceType),
-			ResourceType:     resource.ResourceType,
-			ResourceTypeName: cloudservice.ServiceNameByResourceType(resource.ResourceType),
-			Location:         resource.Location,
-			ResourceID:       resource.ResourceID,
-			SourceID:         resource.SourceID,
+			Name:              resource.Name,
+			Provider:          SourceType(resource.SourceType),
+			ResourceType:      resource.ResourceType,
+			ResourceTypeName:  cloudservice.ServiceNameByResourceType(resource.ResourceType),
+			Location:          resource.Location,
+			ResourceID:        resource.ResourceID,
+			ProviderAccountID: resource.SourceID,
 		})
 	}
 	return &GetResourcesResult{

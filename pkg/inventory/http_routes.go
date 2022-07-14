@@ -2399,7 +2399,7 @@ func (h *HttpHandler) GetResources(ctx echo.Context, provider *api.SourceType, c
 	if provider == nil {
 		uniqueSourceIds := map[string]string{}
 		for _, resource := range res.AllResources {
-			uniqueSourceIds[resource.SourceID] = ""
+			uniqueSourceIds[resource.ProviderAccountID] = ""
 		}
 		for sourceId := range uniqueSourceIds {
 			src, err := h.schedulerClient.GetSource(httpclient.FromEchoContext(ctx), sourceId)
@@ -2410,7 +2410,7 @@ func (h *HttpHandler) GetResources(ctx echo.Context, provider *api.SourceType, c
 			uniqueSourceIds[sourceId] = src.Name
 		}
 		for idx := range res.AllResources {
-			res.AllResources[idx].SourceName = uniqueSourceIds[res.AllResources[idx].SourceID]
+			res.AllResources[idx].ProviderAccountName = uniqueSourceIds[res.AllResources[idx].ProviderAccountID]
 		}
 		return ctx.JSON(http.StatusOK, api.GetResourcesResponse{
 			Resources:  res.AllResources,
