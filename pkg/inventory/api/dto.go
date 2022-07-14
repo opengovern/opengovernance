@@ -180,7 +180,7 @@ type AzureResource struct {
 	Location         string `json:"location"`
 	ResourceID       string `json:"resourceID"`
 	SubscriptionID   string `json:"subscriptionID"`
-	SubscriptionName string `json:"sourceName"`
+	SubscriptionName string `json:"subscriptionName"`
 
 	Attributes map[string]string `json:"attributes"`
 }
