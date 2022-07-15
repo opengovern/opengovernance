@@ -1264,7 +1264,7 @@ func (h *HttpHandler) GetTopFastestGrowingAccountsByResourceCount(ctx echo.Conte
 		diffI := hits[i].Source.ResourceCount - *lastValueI
 		diffJ := hits[j].Source.ResourceCount - *lastValueJ
 
-		return diffI < diffJ
+		return diffI > diffJ
 	})
 
 	if len(hits) > count {
