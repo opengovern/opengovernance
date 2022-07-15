@@ -55,6 +55,50 @@ func FindOldCategoryValue(jobID uint, categoryName string) (string, error) {
 	return string(b), err
 }
 
+type ResourceQueryResponse struct {
+	Hits ResourceQueryHits `json:"hits"`
+}
+type ResourceQueryHits struct {
+	Total keibi.SearchTotal  `json:"total"`
+	Hits  []ResourceQueryHit `json:"hits"`
+}
+type ResourceQueryHit struct {
+	ID      string                       `json:"_id"`
+	Score   float64                      `json:"_score"`
+	Index   string                       `json:"_index"`
+	Type    string                       `json:"_type"`
+	Version int64                        `json:"_version,omitempty"`
+	Source  kafka.SourceResourcesSummary `json:"_source"`
+	Sort    []interface{}                `json:"sort"`
+}
+
+func FindOldResourceValue(jobID uint) (string, error) {
+	boolQuery := map[string]interface{}{}
+	var filters []interface{}
+	filters = append(filters, map[string]interface{}{
+		"terms": map[string][]string{"report_type": {kafka.ResourceSummaryTypeResourceGrowthTrend}},
+	})
+	filters = append(filters, map[string]interface{}{
+		"terms": map[string][]interface{}{"source_job_id": {jobID}},
+	})
+	boolQuery["filter"] = filters
+	res := make(map[string]interface{})
+	res["size"] = 1
+	res["sort"] = []map[string]interface{}{
+		{
+			"executed_at": "desc",
+		},
+	}
+
+	if len(boolQuery) > 0 {
+		res["query"] = map[string]interface{}{
+			"bool": boolQuery,
+		}
+	}
+	b, err := json.Marshal(res)
+	return string(b), err
+}
+
 type ServiceQueryResponse struct {
 	Hits ServiceQueryHits `json:"hits"`
 }

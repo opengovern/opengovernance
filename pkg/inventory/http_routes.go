@@ -58,6 +58,7 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	v1.POST("/resource", h.GetResource)
 
 	v1.GET("/resources/trend", h.GetResourceGrowthTrend)
+	v1.GET("/resources/top/growing/accounts", h.GetTopFastestGrowingAccountsByResourceCount)
 	v1.GET("/resources/top/accounts", h.GetTopAccountsByResourceCount)
 	v1.GET("/resources/top/regions", h.GetTopRegionsByResourceCount)
 	v1.GET("/resources/top/services", h.GetTopServicesByResourceCount)
@@ -1015,8 +1016,8 @@ func (h *HttpHandler) GetCompliancyTrend(ctx echo.Context) error {
 // @Tags     cost
 // @Accept   json
 // @Produce  json
-// @Param    count     query     int     true   "count"
-// @Param    provider  query     string  true   "Provider"
+// @Param    count       query     int     true  "count"
+// @Param    provider    query     string  true  "Provider"
 // @Success  200       {object}  []api.TopAccountCostResponse
 // @Router   /inventory/api/v1/cost/top/accounts [get]
 func (h *HttpHandler) GetTopAccountsByCost(ctx echo.Context) error {
@@ -1087,7 +1088,7 @@ func (h *HttpHandler) GetTopAccountsByCost(ctx echo.Context) error {
 // @Accept   json
 // @Produce  json
 // @Param    count     query     int     true   "count"
-// @Param    provider  query     string  true  "Provider"
+// @Param    provider  query     string  true   "Provider"
 // @Param    sourceId  query     string  true  "SourceID"
 // @Success  200       {object}  []api.TopServiceCostResponse
 // @Router   /inventory/api/v1/cost/top/services [get]
@@ -1161,9 +1162,9 @@ func (h *HttpHandler) GetTopServicesByCost(ctx echo.Context) error {
 // @Tags     benchmarks
 // @Accept   json
 // @Produce  json
-// @Param    count     query     int     true  "count"
+// @Param    count     query     int     true   "count"
 // @Param    provider  query     string  true  "Provider"
-// @Success  200       {object}  []api.TopAccountResponse
+// @Success  200         {object}  []api.TopAccountResponse
 // @Router   /inventory/api/v1/resources/top/accounts [get]
 func (h *HttpHandler) GetTopAccountsByResourceCount(ctx echo.Context) error {
 	provider, _ := source.ParseType(ctx.QueryParam("provider"))
@@ -1185,6 +1186,93 @@ func (h *HttpHandler) GetTopAccountsByResourceCount(ctx echo.Context) error {
 
 	var res []api.TopAccountResponse
 	for _, hit := range response.Hits.Hits {
+		src, err := h.onboardClient.GetSource(httpclient.FromEchoContext(ctx), hit.Source.SourceID)
+		if err != nil {
+			return err
+		}
+
+		res = append(res, api.TopAccountResponse{
+			SourceID:               hit.Source.SourceID,
+			ProviderConnectionName: src.ConnectionName,
+			ProviderConnectionID:   src.ConnectionID,
+			ResourceCount:          hit.Source.ResourceCount,
+		})
+	}
+	return ctx.JSON(http.StatusOK, res)
+}
+
+// GetTopFastestGrowingAccountsByResourceCount godoc
+// @Summary  Returns top n accounts of specified provider by resource count
+// @Tags     benchmarks
+// @Accept   json
+// @Produce  json
+// @Param    count     query     int     true  "count"
+// @Param    provider  query     string  true  "Provider"
+// @Param    timeWindow  query     string  true  "TimeWindow"  Enums(1d,1w,3m,1y)
+// @Success  200       {object}  []api.TopAccountResponse
+// @Router   /inventory/api/v1/resources/top/growing/accounts [get]
+func (h *HttpHandler) GetTopFastestGrowingAccountsByResourceCount(ctx echo.Context) error {
+	provider, _ := source.ParseType(ctx.QueryParam("provider"))
+	timeWindow := ctx.QueryParam("timeWindow")
+	switch timeWindow {
+	case "1d", "1w", "3m", "1y":
+	default:
+		return fmt.Errorf("invalid timeWindow")
+	}
+
+	count, err := strconv.Atoi(ctx.QueryParam("count"))
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid count")
+	}
+
+	query, err := es.FindTopAccountsQuery(string(provider), EsFetchPageSize)
+	if err != nil {
+		return err
+	}
+
+	var response es.ResourceGrowthQueryResponse
+	err = h.client.Search(context.Background(), describe.SourceResourcesSummary, query, &response)
+	if err != nil {
+		return err
+	}
+
+	var hits = response.Hits.Hits
+	sort.Slice(hits, func(i, j int) bool {
+		var lastValueI, lastValueJ *int
+		switch timeWindow {
+		case "1d":
+			lastValueI = hits[i].Source.LastDayCount
+			lastValueJ = hits[j].Source.LastDayCount
+		case "1w":
+			lastValueI = hits[i].Source.LastWeekCount
+			lastValueJ = hits[j].Source.LastWeekCount
+		case "3m":
+			lastValueI = hits[i].Source.LastQuarterCount
+			lastValueJ = hits[j].Source.LastQuarterCount
+		case "1y":
+			lastValueI = hits[i].Source.LastYearCount
+			lastValueJ = hits[j].Source.LastYearCount
+		}
+
+		if zero := 0; lastValueI == nil {
+			lastValueI = &zero
+		}
+		if zero := 0; lastValueJ == nil {
+			lastValueJ = &zero
+		}
+
+		diffI := hits[i].Source.ResourceCount - *lastValueI
+		diffJ := hits[j].Source.ResourceCount - *lastValueJ
+
+		return diffI < diffJ
+	})
+
+	if len(hits) > count {
+		hits = hits[:count]
+	}
+
+	var res []api.TopAccountResponse
+	for _, hit := range hits {
 		src, err := h.onboardClient.GetSource(httpclient.FromEchoContext(ctx), hit.Source.SourceID)
 		if err != nil {
 			return err
