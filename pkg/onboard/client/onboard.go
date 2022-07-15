@@ -22,7 +22,7 @@ func NewOnboardServiceClient(baseURL string) OnboardServiceClient {
 }
 
 func (s *onboardClient) GetSource(ctx *httpclient.Context, sourceID string) (*api.Source, error) {
-	url := fmt.Sprintf("%s/api/v1/sources/%s", s.baseURL, sourceID)
+	url := fmt.Sprintf("%s/api/v1/source/%s", s.baseURL, sourceID)
 
 	var source api.Source
 	if err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &source); err != nil {
