@@ -577,12 +577,12 @@ func (h HttpHandler) GetSource(ctx echo.Context) error {
 	}
 
 	return ctx.JSON(http.StatusOK, &api.Source{
-		ID:          src.ID,
-		SourceId:    src.SourceId,
-		Name:        src.Name,
-		Type:        src.Type,
-		Description: src.Description,
-		OnboardDate: src.CreatedAt,
+		ID:             src.ID,
+		ConnectionID:   src.SourceId,
+		ConnectionName: src.Name,
+		Type:           src.Type,
+		Description:    src.Description,
+		OnboardDate:    src.CreatedAt,
 	})
 }
 
@@ -670,12 +670,12 @@ func (h HttpHandler) GetSources(ctx echo.Context) error {
 	resp := api.GetSourcesResponse{}
 	for _, s := range sources {
 		source := api.Source{
-			ID:          s.ID,
-			Name:        s.Name,
-			SourceId:    s.SourceId,
-			Type:        s.Type,
-			Description: s.Description,
-			OnboardDate: s.CreatedAt,
+			ID:             s.ID,
+			ConnectionName: s.Name,
+			ConnectionID:   s.SourceId,
+			Type:           s.Type,
+			Description:    s.Description,
+			OnboardDate:    s.CreatedAt,
 		}
 		resp = append(resp, source)
 	}

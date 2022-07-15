@@ -3647,6 +3647,13 @@ const docTemplate = `{
                         "type": "string"
                     }
                 },
+                "service": {
+                    "description": "if you dont need to use this filter, leave them empty. (e.g. [])",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
                 "tagKeys": {
                     "description": "if you dont need to use this filter, leave them empty. (e.g. [])",
                     "type": "array",
@@ -4169,13 +4176,13 @@ const docTemplate = `{
                 "id": {
                     "type": "string"
                 },
-                "name": {
-                    "type": "string"
-                },
                 "onboardDate": {
                     "type": "string"
                 },
-                "sourceId": {
+                "providerConnectionID": {
+                    "type": "string"
+                },
+                "providerConnectionName": {
                     "type": "string"
                 },
                 "type": {

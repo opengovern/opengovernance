@@ -96,6 +96,8 @@ type ResourceFilters struct {
 	// if you dont need to use this filter, leave them empty. (e.g. [])
 	Category []string `json:"category"`
 	// if you dont need to use this filter, leave them empty. (e.g. [])
+	Service []string `json:"service"`
+	// if you dont need to use this filter, leave them empty. (e.g. [])
 	Location []string `json:"location"`
 	// if you dont need to use this filter, leave them empty. (e.g. [])
 	Provider []string `json:"provider"`
