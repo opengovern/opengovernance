@@ -424,13 +424,17 @@ type ListQueryRequest struct {
 }
 
 type TopAccountResponse struct {
-	SourceID      string `json:"sourceID"`
-	ResourceCount int    `json:"resourceCount"`
+	SourceID               string `json:"sourceID"`
+	ProviderConnectionName string `json:"providerConnectionName"`
+	ProviderConnectionID   string `json:"providerConnectionID"`
+	ResourceCount          int    `json:"resourceCount"`
 }
 
 type TopAccountCostResponse struct {
-	SourceID string  `json:"sourceID"`
-	Cost     float64 `json:"cost"`
+	SourceID               string  `json:"sourceID"`
+	ProviderConnectionName string  `json:"providerConnectionName"`
+	ProviderConnectionID   string  `json:"providerConnectionID"`
+	Cost                   float64 `json:"cost"`
 }
 
 type TopServicesResponse struct {

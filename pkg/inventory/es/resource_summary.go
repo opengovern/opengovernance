@@ -281,7 +281,7 @@ func FindLocationDistributionQuery(sourceID *uuid.UUID, provider *string,
 		"terms": map[string][]string{"report_type": {kafka.ResourceSummaryTypeLocationDistribution}},
 	})
 
-	if provider != nil {
+	if provider != nil && *provider != "all" {
 		filters = append(filters, map[string]interface{}{
 			"terms": map[string][]string{"source_type": {*provider}},
 		})
