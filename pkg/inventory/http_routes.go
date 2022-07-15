@@ -1066,9 +1066,15 @@ func (h *HttpHandler) GetTopAccountsByCost(ctx echo.Context) error {
 
 	var accountCost []api.TopAccountCostResponse
 	for key, value := range accountCostMap {
+		src, err := h.onboardClient.GetSource(httpclient.FromEchoContext(ctx), key)
+		if err != nil {
+			return err
+		}
 		accountCost = append(accountCost, api.TopAccountCostResponse{
-			SourceID: key,
-			Cost:     value,
+			SourceID:               key,
+			ProviderConnectionName: src.ConnectionName,
+			ProviderConnectionID:   src.ConnectionID,
+			Cost:                   value,
 		})
 	}
 

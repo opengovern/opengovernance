@@ -431,8 +431,10 @@ type TopAccountResponse struct {
 }
 
 type TopAccountCostResponse struct {
-	SourceID string  `json:"sourceID"`
-	Cost     float64 `json:"cost"`
+	SourceID               string  `json:"sourceID"`
+	ProviderConnectionName string  `json:"providerConnectionName"`
+	ProviderConnectionID   string  `json:"providerConnectionID"`
+	Cost                   float64 `json:"cost"`
 }
 
 type TopServicesResponse struct {
