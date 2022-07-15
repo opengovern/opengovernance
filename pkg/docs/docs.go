@@ -273,7 +273,7 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/api.TopAccountResponse"
+                                "$ref": "#/definitions/api.AccountResourceCountResponse"
                             }
                         }
                     }
@@ -2924,6 +2924,26 @@ const docTemplate = `{
                 }
             }
         },
+        "api.AccountResourceCountResponse": {
+            "type": "object",
+            "properties": {
+                "onboardDate": {
+                    "type": "string"
+                },
+                "providerConnectionID": {
+                    "type": "string"
+                },
+                "providerConnectionName": {
+                    "type": "string"
+                },
+                "resourceCount": {
+                    "type": "integer"
+                },
+                "sourceID": {
+                    "type": "string"
+                }
+            }
+        },
         "api.AllResource": {
             "type": "object",
             "properties": {
@@ -3989,6 +4009,12 @@ const docTemplate = `{
             "properties": {
                 "cost": {
                     "type": "number"
+                },
+                "providerConnectionID": {
+                    "type": "string"
+                },
+                "providerConnectionName": {
+                    "type": "string"
                 },
                 "sourceID": {
                     "type": "string"

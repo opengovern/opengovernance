@@ -1369,13 +1369,13 @@ func (h *HttpHandler) GetCategories(ctx echo.Context) error {
 // @Accept   json
 // @Produce  json
 // @Param    provider  query     string  true  "Provider"
-// @Success  200       {object}  []api.TopAccountResponse
+// @Success  200       {object}  []api.AccountResourceCountResponse
 // @Router   /inventory/api/v1/accounts/resource/count [get]
 func (h *HttpHandler) GetAccountsResourceCount(ctx echo.Context) error {
 	provider := ctx.QueryParam("provider")
 
 	var searchAfter []interface{}
-	var res []api.TopAccountResponse
+	var res []api.AccountResourceCountResponse
 
 	for {
 		query, err := es.ListAccountResourceCountQuery(provider, EsFetchPageSize, searchAfter)
@@ -1395,9 +1395,17 @@ func (h *HttpHandler) GetAccountsResourceCount(ctx echo.Context) error {
 
 		for _, hit := range response.Hits.Hits {
 			searchAfter = hit.Sort
-			res = append(res, api.TopAccountResponse{
-				SourceID:      hit.Source.SourceID,
-				ResourceCount: hit.Source.ResourceCount,
+			src, err := h.onboardClient.GetSource(httpclient.FromEchoContext(ctx), hit.Source.SourceID)
+			if err != nil {
+				return err
+			}
+
+			res = append(res, api.AccountResourceCountResponse{
+				SourceID:               hit.Source.SourceID,
+				ProviderConnectionName: src.ConnectionName,
+				ProviderConnectionID:   src.ConnectionID,
+				ResourceCount:          hit.Source.ResourceCount,
+				OnboardDate:            src.OnboardDate,
 			})
 		}
 	}

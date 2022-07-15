@@ -29,6 +29,19 @@ definitions:
       totalResources:
         type: integer
     type: object
+  api.AccountResourceCountResponse:
+    properties:
+      onboardDate:
+        type: string
+      providerConnectionID:
+        type: string
+      providerConnectionName:
+        type: string
+      resourceCount:
+        type: integer
+      sourceID:
+        type: string
+    type: object
   api.AllResource:
     properties:
       attributes:
@@ -759,6 +772,10 @@ definitions:
     properties:
       cost:
         type: number
+      providerConnectionID:
+        type: string
+      providerConnectionName:
+        type: string
       sourceID:
         type: string
     type: object
@@ -1079,7 +1096,7 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/api.TopAccountResponse'
+              $ref: '#/definitions/api.AccountResourceCountResponse'
             type: array
       summary: Returns resource count of accounts
       tags:
