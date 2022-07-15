@@ -58,12 +58,13 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	v1.POST("/resource", h.GetResource)
 
 	v1.GET("/resources/trend", h.GetResourceGrowthTrend)
-	v1.GET("/resources/distribution", h.GetResourceDistribution)
 	v1.GET("/resources/top/accounts", h.GetTopAccountsByResourceCount)
 	v1.GET("/resources/top/regions", h.GetTopRegionsByResourceCount)
 	v1.GET("/resources/top/services", h.GetTopServicesByResourceCount)
 	v1.GET("/resources/categories", h.GetCategories)
 	v1.GET("/accounts/resource/count", h.GetAccountsResourceCount)
+
+	v1.GET("/resources/distribution", h.GetResourceDistribution)
 	v1.GET("/services/distribution", h.GetServiceDistribution)
 
 	v1.GET("/cost/top/accounts", h.GetTopAccountsByCost)
@@ -1178,9 +1179,16 @@ func (h *HttpHandler) GetTopAccountsByResourceCount(ctx echo.Context) error {
 
 	var res []api.TopAccountResponse
 	for _, hit := range response.Hits.Hits {
+		src, err := h.onboardClient.GetSource(httpclient.FromEchoContext(ctx), hit.Source.SourceID)
+		if err != nil {
+			return err
+		}
+
 		res = append(res, api.TopAccountResponse{
-			SourceID:      hit.Source.SourceID,
-			ResourceCount: hit.Source.ResourceCount,
+			SourceID:               hit.Source.SourceID,
+			ProviderConnectionName: src.ConnectionName,
+			ProviderConnectionID:   src.ConnectionID,
+			ResourceCount:          hit.Source.ResourceCount,
 		})
 	}
 	return ctx.JSON(http.StatusOK, res)
@@ -1396,7 +1404,7 @@ func (h *HttpHandler) GetAccountsResourceCount(ctx echo.Context) error {
 // @Accept   json
 // @Produce  json
 // @Param    sourceId    query     string  true  "SourceID"
-// @Param    provider    query     string  true  "Provider"
+// @Param    provider    query     string  true  "Provider"     Enums(AWS,Azure,all)
 // @Param    timeWindow   query     string  true  "Time Window"  Enums(24h,1w,3m,1y,max)
 // @Success  200         {object}  map[string]int
 // @Router   /inventory/api/v1/resources/distribution [get]

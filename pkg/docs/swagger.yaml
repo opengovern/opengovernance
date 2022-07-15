@@ -764,6 +764,10 @@ definitions:
     type: object
   api.TopAccountResponse:
     properties:
+      providerConnectionID:
+        type: string
+      providerConnectionName:
+        type: string
       resourceCount:
         type: integer
       sourceID:
@@ -2015,6 +2019,10 @@ paths:
         required: true
         type: string
       - description: Provider
+        enum:
+        - AWS
+        - Azure
+        - all
         in: query
         name: provider
         required: true

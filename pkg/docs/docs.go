@@ -1666,6 +1666,11 @@ const docTemplate = `{
                         "required": true
                     },
                     {
+                        "enum": [
+                            "AWS",
+                            "Azure",
+                            "all"
+                        ],
                         "type": "string",
                         "description": "Provider",
                         "name": "provider",
@@ -3993,6 +3998,12 @@ const docTemplate = `{
         "api.TopAccountResponse": {
             "type": "object",
             "properties": {
+                "providerConnectionID": {
+                    "type": "string"
+                },
+                "providerConnectionName": {
+                    "type": "string"
+                },
                 "resourceCount": {
                     "type": "integer"
                 },

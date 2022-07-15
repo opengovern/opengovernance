@@ -355,6 +355,7 @@ func doDescribeAWS(ctx context.Context, rdb *redis.Client, es keibi.Client, job 
 		}
 	}
 
+	logger.Info(fmt.Sprintf("job[%d] lastDay=%d, lastWeek=%d lastQuarter=%d lastYear=%d\n", job.JobID, job.LastDaySourceJobID, job.LastWeekSourceJobID, job.LastQuarterSourceJobID, job.LastYearSourceJobID))
 	for name, count := range serviceCount {
 		var lastDayValue, lastWeekValue, lastQuarterValue, lastYearValue int
 		for idx, jobID := range []uint{job.LastDaySourceJobID, job.LastWeekSourceJobID, job.LastQuarterSourceJobID,
@@ -362,15 +363,19 @@ func doDescribeAWS(ctx context.Context, rdb *redis.Client, es keibi.Client, job 
 			var response ServiceQueryResponse
 			query, err := FindOldServiceValue(jobID, name)
 			if err != nil {
+				logger.Error(fmt.Sprintf("failed to build query for service: %v", err.Error()))
 				errs = append(errs, fmt.Sprintf("failed to build query for service: %v", err.Error()))
 				continue
 			}
+			logger.Info(fmt.Sprintf("Query for lastDay: %s", query))
 			err = es.Search(context.Background(), kafka.SourceResourcesSummaryIndex, query, &response)
 			if err != nil {
+				logger.Error(fmt.Sprintf("failed to run query for service: %v", err.Error()))
 				errs = append(errs, fmt.Sprintf("failed to run query for service: %v", err.Error()))
 				continue
 			}
 
+			logger.Info(fmt.Sprintf("Response count for lastDay: %d", len(response.Hits.Hits)))
 			if len(response.Hits.Hits) > 0 {
 				// there will be only one result anyway
 				switch idx {
