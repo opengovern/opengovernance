@@ -419,7 +419,7 @@ func doDescribeAWS(ctx context.Context, rdb *redis.Client, es keibi.Client, job 
 	}
 
 	for name, count := range categoryCount {
-		var lastDayValue, lastWeekValue, lastQuarterValue, lastYearValue int
+		var lastDayValue, lastWeekValue, lastQuarterValue, lastYearValue *int
 		for idx, jobID := range []uint{job.LastDaySourceJobID, job.LastWeekSourceJobID, job.LastQuarterSourceJobID,
 			job.LastYearSourceJobID} {
 			var response CategoryQueryResponse
@@ -438,13 +438,13 @@ func doDescribeAWS(ctx context.Context, rdb *redis.Client, es keibi.Client, job 
 				// there will be only one result anyway
 				switch idx {
 				case 0:
-					lastDayValue = response.Hits.Hits[0].Source.ResourceCount
+					lastDayValue = &response.Hits.Hits[0].Source.ResourceCount
 				case 1:
-					lastWeekValue = response.Hits.Hits[0].Source.ResourceCount
+					lastWeekValue = &response.Hits.Hits[0].Source.ResourceCount
 				case 2:
-					lastQuarterValue = response.Hits.Hits[0].Source.ResourceCount
+					lastQuarterValue = &response.Hits.Hits[0].Source.ResourceCount
 				case 3:
-					lastYearValue = response.Hits.Hits[0].Source.ResourceCount
+					lastYearValue = &response.Hits.Hits[0].Source.ResourceCount
 				}
 			}
 		}
@@ -476,13 +476,46 @@ func doDescribeAWS(ctx context.Context, rdb *redis.Client, es keibi.Client, job 
 		})
 	}
 
+	var lastDayValue, lastWeekValue, lastQuarterValue, lastYearValue *int
+	for idx, jobID := range []uint{job.LastDaySourceJobID, job.LastWeekSourceJobID, job.LastQuarterSourceJobID,
+		job.LastYearSourceJobID} {
+		var response CategoryQueryResponse
+		query, err := FindOldResourceValue(jobID)
+		if err != nil {
+			errs = append(errs, fmt.Sprintf("failed to build query for category: %v", err.Error()))
+			continue
+		}
+		err = es.Search(context.Background(), kafka.SourceResourcesSummaryIndex, query, &response)
+		if err != nil {
+			errs = append(errs, fmt.Sprintf("failed to run query for category: %v", err.Error()))
+			continue
+		}
+
+		if len(response.Hits.Hits) > 0 {
+			// there will be only one result anyway
+			switch idx {
+			case 0:
+				lastDayValue = &response.Hits.Hits[0].Source.ResourceCount
+			case 1:
+				lastWeekValue = &response.Hits.Hits[0].Source.ResourceCount
+			case 2:
+				lastQuarterValue = &response.Hits.Hits[0].Source.ResourceCount
+			case 3:
+				lastYearValue = &response.Hits.Hits[0].Source.ResourceCount
+			}
+		}
+	}
 	trend := kafka.SourceResourcesSummary{
-		SourceID:      job.SourceID,
-		SourceType:    job.SourceType,
-		SourceJobID:   job.JobID,
-		DescribedAt:   job.DescribedAt,
-		ResourceCount: len(output.Resources),
-		ReportType:    kafka.ResourceSummaryTypeResourceGrowthTrend,
+		SourceID:         job.SourceID,
+		SourceType:       job.SourceType,
+		SourceJobID:      job.JobID,
+		DescribedAt:      job.DescribedAt,
+		ResourceCount:    len(output.Resources),
+		ReportType:       kafka.ResourceSummaryTypeResourceGrowthTrend,
+		LastDayCount:     lastDayValue,
+		LastWeekCount:    lastWeekValue,
+		LastQuarterCount: lastQuarterValue,
+		LastYearCount:    lastYearValue,
 	}
 	msgs = append(msgs, trend)
 
@@ -695,7 +728,7 @@ func doDescribeAzure(ctx context.Context, rdb *redis.Client, es keibi.Client, jo
 	}
 
 	for name, count := range categoryCount {
-		var lastDayValue, lastWeekValue, lastQuarterValue, lastYearValue int
+		var lastDayValue, lastWeekValue, lastQuarterValue, lastYearValue *int
 		for idx, jobID := range []uint{job.LastDaySourceJobID, job.LastWeekSourceJobID, job.LastQuarterSourceJobID,
 			job.LastYearSourceJobID} {
 			var response CategoryQueryResponse
@@ -712,13 +745,13 @@ func doDescribeAzure(ctx context.Context, rdb *redis.Client, es keibi.Client, jo
 				// there will be only one result anyway
 				switch idx {
 				case 0:
-					lastDayValue = response.Hits.Hits[0].Source.ResourceCount
+					lastDayValue = &response.Hits.Hits[0].Source.ResourceCount
 				case 1:
-					lastWeekValue = response.Hits.Hits[0].Source.ResourceCount
+					lastWeekValue = &response.Hits.Hits[0].Source.ResourceCount
 				case 2:
-					lastQuarterValue = response.Hits.Hits[0].Source.ResourceCount
+					lastQuarterValue = &response.Hits.Hits[0].Source.ResourceCount
 				case 3:
-					lastYearValue = response.Hits.Hits[0].Source.ResourceCount
+					lastYearValue = &response.Hits.Hits[0].Source.ResourceCount
 				}
 			}
 		}
@@ -761,13 +794,44 @@ func doDescribeAzure(ctx context.Context, rdb *redis.Client, es keibi.Client, jo
 		})
 	}
 
+	var lastDayValue, lastWeekValue, lastQuarterValue, lastYearValue *int
+	for idx, jobID := range []uint{job.LastDaySourceJobID, job.LastWeekSourceJobID, job.LastQuarterSourceJobID,
+		job.LastYearSourceJobID} {
+		var response CategoryQueryResponse
+		query, err := FindOldResourceValue(jobID)
+		if err != nil {
+			return nil, fmt.Errorf("failed to build query for category: %v", err.Error())
+		}
+		err = es.Search(context.Background(), kafka.SourceResourcesSummaryIndex, query, &response)
+		if err != nil {
+			return nil, fmt.Errorf("failed to run query for category: %v", err.Error())
+		}
+
+		if len(response.Hits.Hits) > 0 {
+			// there will be only one result anyway
+			switch idx {
+			case 0:
+				lastDayValue = &response.Hits.Hits[0].Source.ResourceCount
+			case 1:
+				lastWeekValue = &response.Hits.Hits[0].Source.ResourceCount
+			case 2:
+				lastQuarterValue = &response.Hits.Hits[0].Source.ResourceCount
+			case 3:
+				lastYearValue = &response.Hits.Hits[0].Source.ResourceCount
+			}
+		}
+	}
 	trend := kafka.SourceResourcesSummary{
-		SourceID:      job.SourceID,
-		SourceType:    job.SourceType,
-		SourceJobID:   job.JobID,
-		DescribedAt:   job.DescribedAt,
-		ResourceCount: len(output.Resources),
-		ReportType:    kafka.ResourceSummaryTypeResourceGrowthTrend,
+		SourceID:         job.SourceID,
+		SourceType:       job.SourceType,
+		SourceJobID:      job.JobID,
+		DescribedAt:      job.DescribedAt,
+		ResourceCount:    len(output.Resources),
+		ReportType:       kafka.ResourceSummaryTypeResourceGrowthTrend,
+		LastDayCount:     lastDayValue,
+		LastWeekCount:    lastWeekValue,
+		LastQuarterCount: lastQuarterValue,
+		LastYearCount:    lastYearValue,
 	}
 	msgs = append(msgs, trend)
 

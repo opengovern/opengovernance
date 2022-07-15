@@ -2125,6 +2125,43 @@ paths:
       summary: Returns top n accounts of specified provider by resource count
       tags:
       - benchmarks
+  /inventory/api/v1/resources/top/growing/accounts:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: count
+        in: query
+        name: count
+        required: true
+        type: integer
+      - description: Provider
+        in: query
+        name: provider
+        required: true
+        type: string
+      - description: TimeWindow
+        enum:
+        - 1d
+        - 1w
+        - 3m
+        - 1y
+        in: query
+        name: timeWindow
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/api.TopAccountResponse'
+            type: array
+      summary: Returns top n accounts of specified provider by resource count
+      tags:
+      - benchmarks
   /inventory/api/v1/resources/top/regions:
     get:
       consumes:

@@ -158,6 +158,14 @@ type SourceResourcesSummary struct {
 	ResourceCount int `json:"resource_count"`
 	// ReportType of document
 	ReportType ResourceSummaryType `json:"report_type"`
+	// LastDayCount number of resources in the category at the same time yesterday
+	LastDayCount *int `json:"last_day_count"`
+	// LastWeekCount number of resources in the category at the same time a week ago
+	LastWeekCount *int `json:"last_week_count"`
+	// LastQuarterCount number of resources in the category at the same time a quarter ago
+	LastQuarterCount *int `json:"last_quarter_count"`
+	// LastYearCount number of resources in the category at the same time a year ago
+	LastYearCount *int `json:"last_year_count"`
 }
 
 func (r SourceResourcesSummary) AsProducerMessage() (*sarama.ProducerMessage, error) {
@@ -226,13 +234,13 @@ type SourceCategorySummary struct {
 	// ResourceCount is total of resources for specified account
 	ResourceCount int `json:"resource_count"`
 	// LastDayCount number of resources in the category at the same time yesterday
-	LastDayCount int `json:"last_day_count"`
+	LastDayCount *int `json:"last_day_count"`
 	// LastWeekCount number of resources in the category at the same time a week ago
-	LastWeekCount int `json:"last_week_count"`
+	LastWeekCount *int `json:"last_week_count"`
 	// LastQuarterCount number of resources in the category at the same time a quarter ago
-	LastQuarterCount int `json:"last_quarter_count"`
+	LastQuarterCount *int `json:"last_quarter_count"`
 	// LastYearCount number of resources in the category at the same time a year ago
-	LastYearCount int `json:"last_year_count"`
+	LastYearCount *int `json:"last_year_count"`
 	// ReportType of document
 	ReportType ResourceSummaryType `json:"report_type"`
 }

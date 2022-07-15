@@ -1792,6 +1792,60 @@ const docTemplate = `{
                 }
             }
         },
+        "/inventory/api/v1/resources/top/growing/accounts": {
+            "get": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "benchmarks"
+                ],
+                "summary": "Returns top n accounts of specified provider by resource count",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "count",
+                        "name": "count",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Provider",
+                        "name": "provider",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "enum": [
+                            "1d",
+                            "1w",
+                            "3m",
+                            "1y"
+                        ],
+                        "type": "string",
+                        "description": "TimeWindow",
+                        "name": "timeWindow",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/api.TopAccountResponse"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/inventory/api/v1/resources/top/regions": {
             "get": {
                 "consumes": [

@@ -20,6 +20,8 @@ func ParseTimeWindow(s string) (time.Duration, error) {
 	switch s[len(s)-1] {
 	case 'h':
 		return time.Duration(i) * time.Hour, nil
+	case 'd':
+		return time.Duration(i) * 24 * time.Hour, nil
 	case 'w':
 		return time.Duration(i) * 7 * 24 * time.Hour, nil
 	case 'm':
