@@ -119,12 +119,12 @@ type CreateSourceResponse struct {
 }
 
 type Source struct {
-	ID          uuid.UUID  `json:"id"`
-	SourceId    string     `json:"sourceId"`
-	Name        string     `json:"name"`
-	Type        SourceType `json:"type"`
-	Description string     `json:"description"`
-	OnboardDate time.Time  `json:"onboardDate"`
+	ID             uuid.UUID  `json:"id"`
+	ConnectionID   string     `json:"providerConnectionID"`
+	ConnectionName string     `json:"providerConnectionName"`
+	Type           SourceType `json:"type"`
+	Description    string     `json:"description"`
+	OnboardDate    time.Time  `json:"onboardDate"`
 }
 
 type GetSourcesResponse []Source

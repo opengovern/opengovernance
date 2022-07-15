@@ -1010,12 +1010,12 @@ func (m *DescribeMock) HelloServer(w http.ResponseWriter, r *http.Request) {
 func (m *DescribeMock) GetSource(w http.ResponseWriter, r *http.Request) {
 	uuid1, _ := uuid.Parse("c29c0dae-823f-4726-ade0-5fa94a941e88")
 	res := onboardapi.Source{
-		ID:          uuid1,
-		SourceId:    "aaa0",
-		Name:        "Name",
-		Type:        onboardapi.SourceCloudAWS,
-		Description: "",
-		OnboardDate: time.Now(),
+		ID:             uuid1,
+		ConnectionID:   "aaa0",
+		ConnectionName: "Name",
+		Type:           onboardapi.SourceCloudAWS,
+		Description:    "",
+		OnboardDate:    time.Now(),
 	}
 
 	b, err := json.Marshal(res)

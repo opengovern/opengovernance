@@ -2298,6 +2298,9 @@ func (h *HttpHandler) GetResourcesFilters(ctx echo.Context) error {
 	for _, item := range response.Aggregations.CategoryFilter.Buckets {
 		resp.Filters.Category = append(resp.Filters.Category, item.Key)
 	}
+	for _, item := range response.Aggregations.ServiceFilter.Buckets {
+		resp.Filters.Service = append(resp.Filters.Service, item.Key)
+	}
 	for _, item := range response.Aggregations.ResourceTypeFilter.Buckets {
 		resp.Filters.ResourceType = append(resp.Filters.ResourceType, item.Key)
 	}
@@ -2409,8 +2412,8 @@ func (h *HttpHandler) GetResources(ctx echo.Context, provider *api.SourceType, c
 				return err
 			}
 
-			connectionName[sourceId] = src.Name
-			connectionID[sourceId] = src.SourceId
+			connectionName[sourceId] = src.ConnectionName
+			connectionID[sourceId] = src.ConnectionID
 		}
 		for idx := range res.AllResources {
 			id := res.AllResources[idx].ProviderConnectionID
@@ -2434,8 +2437,8 @@ func (h *HttpHandler) GetResources(ctx echo.Context, provider *api.SourceType, c
 				return err
 			}
 
-			connectionName[sourceId] = src.Name
-			connectionID[sourceId] = src.SourceId
+			connectionName[sourceId] = src.ConnectionName
+			connectionID[sourceId] = src.ConnectionID
 		}
 		for idx := range res.AWSResources {
 			id := res.AWSResources[idx].ProviderConnectionID
@@ -2459,8 +2462,8 @@ func (h *HttpHandler) GetResources(ctx echo.Context, provider *api.SourceType, c
 				return err
 			}
 
-			connectionName[sourceId] = src.Name
-			connectionID[sourceId] = src.SourceId
+			connectionName[sourceId] = src.ConnectionName
+			connectionID[sourceId] = src.ConnectionID
 		}
 		for idx := range res.AzureResources {
 			id := res.AzureResources[idx].ProviderConnectionID
