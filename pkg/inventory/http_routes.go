@@ -2605,8 +2605,8 @@ func (h *HttpHandler) GetResourcesCSV(ctx echo.Context, provider *api.SourceType
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 	req.Page = api.Page{
-		No:   0,
-		Size: 100,
+		No:   1,
+		Size: 10000,
 	}
 
 	ctx.Response().Header().Set(echo.HeaderContentType, "text/csv")
