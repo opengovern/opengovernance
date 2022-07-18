@@ -288,6 +288,7 @@ func doDescribeAWS(ctx context.Context, rdb *redis.Client, es keibi.Client, job 
 					"partition":     resource.Partition,
 					"region":        resource.Region,
 					"account_id":    resource.Account,
+					"source_id":     job.SourceID,
 					"resource_type": resource.Type,
 				},
 			}
@@ -613,6 +614,7 @@ func doDescribeAzure(ctx context.Context, rdb *redis.Client, es keibi.Client, jo
 				"location":          resource.Location,
 				"cloud_environment": output.Metadata.CloudEnvironment,
 				"resource_type":     resource.Type,
+				"source_id":         job.SourceID,
 			},
 		}
 		msgs = append(msgs, kafkaResource)

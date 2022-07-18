@@ -68,6 +68,7 @@ type Metadata struct {
 	Location         string `json:"location"`
 	CloudEnvironment string `json:"cloud_environment"`
 	ResourceType     string `json:"resource_type"`
+	SourceID         string `json:"source_id"`
 }
 
 //  ===================  APIManagement ==================

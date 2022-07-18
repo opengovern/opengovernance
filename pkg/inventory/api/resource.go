@@ -137,7 +137,7 @@ func QueryResourcesWithSteampipeColumns(
 					ResourceTypeName:     cloudservice.ServiceNameByResourceType(resourceType),
 					ResourceID:           hit.Source.ID,
 					Location:             metadata.Region,
-					ProviderConnectionID: metadata.AccountID,
+					ProviderConnectionID: metadata.SourceID,
 					Attributes:           make(map[string]string),
 				}
 
@@ -178,7 +178,7 @@ func QueryResourcesWithSteampipeColumns(
 					ResourceID:           hit.Source.ID,
 					ResourceGroup:        resourceGroup,
 					Location:             metadata.Location,
-					ProviderConnectionID: metadata.SubscriptionID,
+					ProviderConnectionID: metadata.SourceID,
 					Attributes:           make(map[string]string),
 				}
 
