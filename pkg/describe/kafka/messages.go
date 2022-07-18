@@ -210,7 +210,7 @@ func (r SourceServicesSummary) AsProducerMessage() (*sarama.ProducerMessage, err
 		return nil, err
 	}
 
-	if r.ReportType == ResourceSummaryTypeCategoryHistorySummary {
+	if r.ReportType == ResourceSummaryTypeServiceHistorySummary {
 		return kafkaMsg(hashOf(r.ServiceName, fmt.Sprintf("%d", r.SourceJobID), string(r.ReportType)),
 			value, SourceResourcesSummaryIndex), nil
 	}
