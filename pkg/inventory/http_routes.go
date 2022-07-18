@@ -108,6 +108,8 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 
 	v1.GET("/benchmarks/count", h.CountBenchmarks)
 	v1.GET("/policies/count", h.CountPolicies)
+
+	v1.GET("/metrics/summary", h.GetSummaryMetrics)
 }
 
 func bindValidate(ctx echo.Context, i interface{}) error {
@@ -1446,6 +1448,74 @@ func (h *HttpHandler) GetCategories(ctx echo.Context) error {
 			LastWeekCount:    hit.Source.LastWeekCount,
 			LastQuarterCount: hit.Source.LastQuarterCount,
 			LastYearCount:    hit.Source.LastYearCount,
+		})
+	}
+	return ctx.JSON(http.StatusOK, res)
+}
+
+// GetSummaryMetrics godoc
+// @Summary  Return resource categories and number of resources
+// @Tags     inventory
+// @Accept   json
+// @Produce  json
+// @Param    provider  query     string  true  "Provider"
+// @Success  200       {object}  []api.TopAccountResponse
+// @Router   /inventory/api/v1/metrics/summary [get]
+func (h *HttpHandler) GetSummaryMetrics(ctx echo.Context) error {
+	var sourceID *string
+
+	provider, _ := source.ParseType(ctx.QueryParam("provider"))
+	if sID := ctx.QueryParam("sourceId"); sID != "" {
+		sourceUUID, err := uuid.Parse(sID)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "invalid sourceID")
+		}
+		s := sourceUUID.String()
+		sourceID = &s
+	}
+
+	query, err := es.GetCategoriesQuery(string(provider), EsFetchPageSize)
+	if err != nil {
+		return err
+	}
+
+	var responseCat es.CategoriesQueryResponse
+	err = h.client.Search(context.Background(), describe.SourceResourcesSummary, query, &responseCat)
+	if err != nil {
+		return err
+	}
+
+	var res []api.MetricsResponse
+	for _, hit := range responseCat.Hits.Hits {
+		res = append(res, api.MetricsResponse{
+			MetricsName:      hit.Source.CategoryName,
+			Value:            hit.Source.ResourceCount,
+			LastDayValue:     hit.Source.LastDayCount,
+			LastWeekValue:    hit.Source.LastWeekCount,
+			LastQuarterValue: hit.Source.LastQuarterCount,
+			LastYearValue:    hit.Source.LastYearCount,
+		})
+	}
+
+	query, err = es.FindTopServicesQuery(string(provider), sourceID, EsFetchPageSize)
+	if err != nil {
+		return err
+	}
+
+	var response es.TopServicesQueryResponse
+	err = h.client.Search(context.Background(), describe.SourceResourcesSummary, query, &response)
+	if err != nil {
+		return err
+	}
+
+	for _, hit := range response.Hits.Hits {
+		res = append(res, api.MetricsResponse{
+			MetricsName:      hit.Source.ServiceName,
+			Value:            hit.Source.ResourceCount,
+			LastDayValue:     hit.Source.LastDayCount,
+			LastWeekValue:    hit.Source.LastWeekCount,
+			LastQuarterValue: hit.Source.LastQuarterCount,
+			LastYearValue:    hit.Source.LastYearCount,
 		})
 	}
 	return ctx.JSON(http.StatusOK, res)

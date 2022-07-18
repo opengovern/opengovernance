@@ -1757,6 +1757,28 @@ paths:
       summary: Get locations
       tags:
       - location
+  /inventory/api/v1/metrics/summary:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: Provider
+        in: query
+        name: provider
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/api.TopAccountResponse'
+            type: array
+      summary: Return resource categories and number of resources
+      tags:
+      - inventory
   /inventory/api/v1/policies/count:
     get:
       consumes:

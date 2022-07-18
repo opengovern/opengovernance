@@ -450,10 +450,10 @@ type TopAccountCostResponse struct {
 type TopServicesResponse struct {
 	ServiceName      string `json:"serviceName"`
 	ResourceCount    int    `json:"resourceCount"`
-	LastDayCount     int    `json:"lastDayCount"`
-	LastWeekCount    int    `json:"lastWeekCount"`
-	LastQuarterCount int    `json:"lastQuarterCount"`
-	LastYearCount    int    `json:"lastYearCount"`
+	LastDayCount     *int   `json:"lastDayCount"`
+	LastWeekCount    *int   `json:"lastWeekCount"`
+	LastQuarterCount *int   `json:"lastQuarterCount"`
+	LastYearCount    *int   `json:"lastYearCount"`
 }
 
 type TopServiceCostResponse struct {
@@ -468,6 +468,15 @@ type CategoriesResponse struct {
 	LastWeekCount    *int   `json:"lastWeekCount"`
 	LastQuarterCount *int   `json:"lastQuarterCount"`
 	LastYearCount    *int   `json:"lastYearCount"`
+}
+
+type MetricsResponse struct {
+	MetricsName      string `json:"metricsName"`
+	Value            int    `json:"value"`
+	LastDayValue     *int   `json:"lastDayValue"`
+	LastWeekValue    *int   `json:"lastWeekValue"`
+	LastQuarterValue *int   `json:"lastQuarterValue"`
+	LastYearValue    *int   `json:"lastYearValue"`
 }
 
 type BenchmarkScoreResponse struct {
