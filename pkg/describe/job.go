@@ -358,7 +358,7 @@ func doDescribeAWS(ctx context.Context, rdb *redis.Client, es keibi.Client, job 
 
 	logger.Info(fmt.Sprintf("job[%d] lastDay=%d, lastWeek=%d lastQuarter=%d lastYear=%d\n", job.JobID, job.LastDaySourceJobID, job.LastWeekSourceJobID, job.LastQuarterSourceJobID, job.LastYearSourceJobID))
 	for name, count := range serviceCount {
-		var lastDayValue, lastWeekValue, lastQuarterValue, lastYearValue int
+		var lastDayValue, lastWeekValue, lastQuarterValue, lastYearValue *int
 		for idx, jobID := range []uint{job.LastDaySourceJobID, job.LastWeekSourceJobID, job.LastQuarterSourceJobID,
 			job.LastYearSourceJobID} {
 			var response ServiceQueryResponse
@@ -381,13 +381,13 @@ func doDescribeAWS(ctx context.Context, rdb *redis.Client, es keibi.Client, job 
 				// there will be only one result anyway
 				switch idx {
 				case 0:
-					lastDayValue = response.Hits.Hits[0].Source.ResourceCount
+					lastDayValue = &response.Hits.Hits[0].Source.ResourceCount
 				case 1:
-					lastWeekValue = response.Hits.Hits[0].Source.ResourceCount
+					lastWeekValue = &response.Hits.Hits[0].Source.ResourceCount
 				case 2:
-					lastQuarterValue = response.Hits.Hits[0].Source.ResourceCount
+					lastQuarterValue = &response.Hits.Hits[0].Source.ResourceCount
 				case 3:
-					lastYearValue = response.Hits.Hits[0].Source.ResourceCount
+					lastYearValue = &response.Hits.Hits[0].Source.ResourceCount
 				}
 			}
 		}
@@ -454,6 +454,7 @@ func doDescribeAWS(ctx context.Context, rdb *redis.Client, es keibi.Client, job 
 			CategoryName:     name,
 			SourceType:       job.SourceType,
 			SourceJobID:      job.ParentJobID,
+			SourceID:         job.SourceID,
 			DescribedAt:      job.DescribedAt,
 			ResourceCount:    count,
 			LastDayCount:     lastDayValue,
@@ -466,6 +467,7 @@ func doDescribeAWS(ctx context.Context, rdb *redis.Client, es keibi.Client, job 
 		msgs = append(msgs, kafka.SourceCategorySummary{
 			CategoryName:     name,
 			SourceType:       job.SourceType,
+			SourceID:         job.SourceID,
 			SourceJobID:      job.ParentJobID,
 			DescribedAt:      job.DescribedAt,
 			ResourceCount:    count,
@@ -674,7 +676,7 @@ func doDescribeAzure(ctx context.Context, rdb *redis.Client, es keibi.Client, jo
 	}
 
 	for name, count := range serviceCount {
-		var lastDayValue, lastWeekValue, lastQuarterValue, lastYearValue int
+		var lastDayValue, lastWeekValue, lastQuarterValue, lastYearValue *int
 		for idx, jobID := range []uint{job.LastDaySourceJobID, job.LastWeekSourceJobID, job.LastQuarterSourceJobID,
 			job.LastYearSourceJobID} {
 			var response ServiceQueryResponse
@@ -691,13 +693,13 @@ func doDescribeAzure(ctx context.Context, rdb *redis.Client, es keibi.Client, jo
 				// there will be only one result anyway
 				switch idx {
 				case 0:
-					lastDayValue = response.Hits.Hits[0].Source.ResourceCount
+					lastDayValue = &response.Hits.Hits[0].Source.ResourceCount
 				case 1:
-					lastWeekValue = response.Hits.Hits[0].Source.ResourceCount
+					lastWeekValue = &response.Hits.Hits[0].Source.ResourceCount
 				case 2:
-					lastQuarterValue = response.Hits.Hits[0].Source.ResourceCount
+					lastQuarterValue = &response.Hits.Hits[0].Source.ResourceCount
 				case 3:
-					lastYearValue = response.Hits.Hits[0].Source.ResourceCount
+					lastYearValue = &response.Hits.Hits[0].Source.ResourceCount
 				}
 			}
 		}
@@ -761,6 +763,7 @@ func doDescribeAzure(ctx context.Context, rdb *redis.Client, es keibi.Client, jo
 		msgs = append(msgs, kafka.SourceCategorySummary{
 			CategoryName:     name,
 			SourceType:       job.SourceType,
+			SourceID:         job.SourceID,
 			SourceJobID:      job.ParentJobID,
 			DescribedAt:      job.DescribedAt,
 			ResourceCount:    count,
@@ -774,6 +777,7 @@ func doDescribeAzure(ctx context.Context, rdb *redis.Client, es keibi.Client, jo
 		msgs = append(msgs, kafka.SourceCategorySummary{
 			CategoryName:     name,
 			SourceType:       job.SourceType,
+			SourceID:         job.SourceID,
 			SourceJobID:      job.ParentJobID,
 			DescribedAt:      job.DescribedAt,
 			ResourceCount:    count,
