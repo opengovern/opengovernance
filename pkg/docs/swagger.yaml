@@ -1765,7 +1765,10 @@ paths:
       - description: Provider
         in: query
         name: provider
-        required: true
+        type: string
+      - description: SourceID
+        in: query
+        name: sourceId
         type: string
       produces:
       - application/json
@@ -2035,6 +2038,10 @@ paths:
         name: provider
         required: true
         type: string
+      - description: SourceID
+        in: query
+        name: sourceId
+        type: string
       produces:
       - application/json
       responses:
@@ -2042,7 +2049,7 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/api.TopAccountResponse'
+              $ref: '#/definitions/api.CategoriesResponse'
             type: array
       summary: Return resource categories and number of resources
       tags:
