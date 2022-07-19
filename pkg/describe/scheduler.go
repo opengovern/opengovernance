@@ -625,7 +625,7 @@ func (s Scheduler) handleDescribeJobs(jobs []DescribeSourceJob) {
 }
 
 func (s Scheduler) cleanupDescribeJob() {
-	jobs, err := s.db.QueryOlderThanNRecentCompletedDescribeSourceJobs(5)
+	jobs, err := s.db.QueryOlderThanNRecentCompletedDescribeSourceJobs(50)
 	if err != nil {
 		s.logger.Error("Failed to find older than 5 recent completed DescribeSourceJob for each source",
 			zap.Error(err),
