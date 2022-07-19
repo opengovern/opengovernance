@@ -1219,7 +1219,7 @@ func (h *HttpHandler) GetTopFastestGrowingAccountsByResourceCount(ctx echo.Conte
 	switch timeWindow {
 	case "1d", "1w", "3m", "1y":
 	default:
-		return fmt.Errorf("invalid timeWindow")
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid timeWindow")
 	}
 
 	count, err := strconv.Atoi(ctx.QueryParam("count"))

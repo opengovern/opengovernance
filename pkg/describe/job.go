@@ -231,7 +231,7 @@ func doDescribe(ctx context.Context, rdb *redis.Client, es keibi.Client, job Des
 	case api.SourceCloudAWS:
 		return doDescribeAWS(ctx, rdb, es, job, config, logger)
 	case api.SourceCloudAzure:
-		return doDescribeAzure(ctx, rdb, es, job, config)
+		return doDescribeAzure(ctx, rdb, es, job, config, logger)
 	default:
 		return nil, fmt.Errorf("invalid SourceType: %s", job.SourceType)
 	}
@@ -335,7 +335,7 @@ func doDescribeAWS(ctx context.Context, rdb *redis.Client, es keibi.Client, job 
 
 	logger.Info(fmt.Sprintf("job[%d] lastDay=%d, lastWeek=%d lastQuarter=%d lastYear=%d\n", job.JobID, job.LastDaySourceJobID, job.LastWeekSourceJobID, job.LastQuarterSourceJobID, job.LastYearSourceJobID))
 
-	serviceResources, err := ExtractServiceSummary(es, job, lookupResources)
+	serviceResources, err := ExtractServiceSummary(es, job, lookupResources, logger)
 	if err == nil {
 		msgs = append(msgs, serviceResources...)
 	} else {
@@ -375,7 +375,7 @@ func doDescribeAWS(ctx context.Context, rdb *redis.Client, es keibi.Client, job 
 	return msgs, err
 }
 
-func doDescribeAzure(ctx context.Context, rdb *redis.Client, es keibi.Client, job DescribeJob, config map[string]interface{}) ([]kafka.DescribedResource, error) {
+func doDescribeAzure(ctx context.Context, rdb *redis.Client, es keibi.Client, job DescribeJob, config map[string]interface{}, logger *zap.Logger) ([]kafka.DescribedResource, error) {
 	creds, err := AzureSubscriptionConfigFromMap(config)
 	if err != nil {
 		return nil, fmt.Errorf("aure subscription credentials: %w", err)
@@ -470,8 +470,9 @@ func doDescribeAzure(ctx context.Context, rdb *redis.Client, es keibi.Client, jo
 		msgs = append(msgs, lookupResource)
 		lookupResources = append(lookupResources, lookupResource)
 	}
+	logger.Info(fmt.Sprintf("job[%d] lastDay=%d, lastWeek=%d lastQuarter=%d lastYear=%d\n", job.JobID, job.LastDaySourceJobID, job.LastWeekSourceJobID, job.LastQuarterSourceJobID, job.LastYearSourceJobID))
 
-	serviceResources, err := ExtractServiceSummary(es, job, lookupResources)
+	serviceResources, err := ExtractServiceSummary(es, job, lookupResources, logger)
 	if err != nil {
 		return nil, err
 	}
