@@ -5,12 +5,14 @@ import (
 	"fmt"
 	"strings"
 
+	"go.uber.org/zap"
+
 	"gitlab.com/keibiengine/keibi-engine/pkg/cloudservice"
 	"gitlab.com/keibiengine/keibi-engine/pkg/describe/kafka"
 	"gitlab.com/keibiengine/keibi-engine/pkg/keibi-es-sdk"
 )
 
-func ExtractServiceSummary(es keibi.Client, job DescribeJob, lookupResources []kafka.LookupResource) ([]kafka.DescribedResource, error) {
+func ExtractServiceSummary(es keibi.Client, job DescribeJob, lookupResources []kafka.LookupResource, logger *zap.Logger) ([]kafka.DescribedResource, error) {
 	var msgs []kafka.DescribedResource
 	serviceCount := map[string]int{}
 	for _, resource := range lookupResources {
@@ -36,6 +38,7 @@ func ExtractServiceSummary(es keibi.Client, job DescribeJob, lookupResources []k
 					return nil, fmt.Errorf("failed to run query for service: %v", err.Error())
 				}
 
+				logger.Info(fmt.Sprintf("job[%d] idx=%d query=%s resCount=%d\n", job.JobID, idx, query, len(response.Hits.Hits)))
 				if len(response.Hits.Hits) == 0 {
 					break
 				}
