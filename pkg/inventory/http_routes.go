@@ -1392,27 +1392,50 @@ func (h *HttpHandler) GetTopServicesByResourceCount(ctx echo.Context) error {
 		sourceID = &s
 	}
 
-	query, err := es.FindTopServicesQuery(string(provider), sourceID, count)
-	if err != nil {
-		return err
-	}
+	var searchAfter []interface{}
+	serviceResponse := map[string]api.TopServicesResponse{}
+	for {
+		query, err := es.FetchServicesQuery(string(provider), sourceID, EsFetchPageSize, searchAfter)
+		if err != nil {
+			return err
+		}
 
-	var response es.TopServicesQueryResponse
-	err = h.client.Search(context.Background(), describe.SourceResourcesSummary, query, &response)
-	if err != nil {
-		return err
+		var response es.FetchServicesQueryResponse
+		err = h.client.Search(context.Background(), describe.SourceResourcesSummary, query, &response)
+		if err != nil {
+			return err
+		}
+
+		if len(response.Hits.Hits) == 0 {
+			break
+		}
+
+		for _, hit := range response.Hits.Hits {
+			if v, ok := serviceResponse[hit.Source.ServiceName]; ok {
+				v.ResourceCount += hit.Source.ResourceCount
+			} else {
+				serviceResponse[hit.Source.ServiceName] = api.TopServicesResponse{
+					ServiceName:      hit.Source.ServiceName,
+					ResourceCount:    hit.Source.ResourceCount,
+					LastDayCount:     hit.Source.LastDayCount,
+					LastWeekCount:    hit.Source.LastWeekCount,
+					LastQuarterCount: hit.Source.LastQuarterCount,
+					LastYearCount:    hit.Source.LastYearCount,
+				}
+			}
+			searchAfter = hit.Sort
+		}
 	}
 
 	var res []api.TopServicesResponse
-	for _, hit := range response.Hits.Hits {
-		res = append(res, api.TopServicesResponse{
-			ServiceName:      hit.Source.ServiceName,
-			ResourceCount:    hit.Source.ResourceCount,
-			LastDayCount:     hit.Source.LastDayCount,
-			LastWeekCount:    hit.Source.LastWeekCount,
-			LastQuarterCount: hit.Source.LastQuarterCount,
-			LastYearCount:    hit.Source.LastYearCount,
-		})
+	for _, v := range serviceResponse {
+		res = append(res, v)
+	}
+	sort.Slice(res, func(i, j int) bool {
+		return res[i].ResourceCount > res[j].ResourceCount
+	})
+	if len(res) > count {
+		res = res[:count]
 	}
 	return ctx.JSON(http.StatusOK, res)
 }
@@ -1428,27 +1451,44 @@ func (h *HttpHandler) GetTopServicesByResourceCount(ctx echo.Context) error {
 func (h *HttpHandler) GetCategories(ctx echo.Context) error {
 	provider, _ := source.ParseType(ctx.QueryParam("provider"))
 
-	query, err := es.GetCategoriesQuery(string(provider), EsFetchPageSize)
-	if err != nil {
-		return err
-	}
+	var searchAfter []interface{}
+	categoryMap := map[string]api.CategoriesResponse{}
+	for {
+		query, err := es.GetCategoriesQuery(string(provider), EsFetchPageSize, searchAfter)
+		if err != nil {
+			return err
+		}
 
-	var response es.CategoriesQueryResponse
-	err = h.client.Search(context.Background(), describe.SourceResourcesSummary, query, &response)
-	if err != nil {
-		return err
+		var response es.CategoriesQueryResponse
+		err = h.client.Search(context.Background(), describe.SourceResourcesSummary, query, &response)
+		if err != nil {
+			return err
+		}
+
+		if len(response.Hits.Hits) == 0 {
+			break
+		}
+
+		for _, hit := range response.Hits.Hits {
+			if v, ok := categoryMap[hit.Source.CategoryName]; ok {
+				v.ResourceCount += hit.Source.ResourceCount
+			} else {
+				categoryMap[hit.Source.CategoryName] = api.CategoriesResponse{
+					CategoryName:     hit.Source.CategoryName,
+					ResourceCount:    hit.Source.ResourceCount,
+					LastDayCount:     hit.Source.LastDayCount,
+					LastWeekCount:    hit.Source.LastWeekCount,
+					LastQuarterCount: hit.Source.LastQuarterCount,
+					LastYearCount:    hit.Source.LastYearCount,
+				}
+			}
+			searchAfter = hit.Sort
+		}
 	}
 
 	var res []api.CategoriesResponse
-	for _, hit := range response.Hits.Hits {
-		res = append(res, api.CategoriesResponse{
-			CategoryName:     hit.Source.CategoryName,
-			ResourceCount:    hit.Source.ResourceCount,
-			LastDayCount:     hit.Source.LastDayCount,
-			LastWeekCount:    hit.Source.LastWeekCount,
-			LastQuarterCount: hit.Source.LastQuarterCount,
-			LastYearCount:    hit.Source.LastYearCount,
-		})
+	for _, v := range categoryMap {
+		res = append(res, v)
 	}
 	return ctx.JSON(http.StatusOK, res)
 }
@@ -1473,50 +1513,84 @@ func (h *HttpHandler) GetSummaryMetrics(ctx echo.Context) error {
 		s := sourceUUID.String()
 		sourceID = &s
 	}
-
-	query, err := es.GetCategoriesQuery(string(provider), EsFetchPageSize)
-	if err != nil {
-		return err
-	}
-
-	var responseCat es.CategoriesQueryResponse
-	err = h.client.Search(context.Background(), describe.SourceResourcesSummary, query, &responseCat)
-	if err != nil {
-		return err
-	}
-
 	var res []api.MetricsResponse
-	for _, hit := range responseCat.Hits.Hits {
-		res = append(res, api.MetricsResponse{
-			MetricsName:      hit.Source.CategoryName,
-			Value:            hit.Source.ResourceCount,
-			LastDayValue:     hit.Source.LastDayCount,
-			LastWeekValue:    hit.Source.LastWeekCount,
-			LastQuarterValue: hit.Source.LastQuarterCount,
-			LastYearValue:    hit.Source.LastYearCount,
-		})
+
+	var searchAfter []interface{}
+	categoryMap := map[string]api.MetricsResponse{}
+	for {
+		query, err := es.GetCategoriesQuery(string(provider), EsFetchPageSize, searchAfter)
+		if err != nil {
+			return err
+		}
+
+		var response es.CategoriesQueryResponse
+		err = h.client.Search(context.Background(), describe.SourceResourcesSummary, query, &response)
+		if err != nil {
+			return err
+		}
+
+		if len(response.Hits.Hits) == 0 {
+			break
+		}
+
+		for _, hit := range response.Hits.Hits {
+			if v, ok := categoryMap[hit.Source.CategoryName]; ok {
+				v.Value += hit.Source.ResourceCount
+			} else {
+				categoryMap[hit.Source.CategoryName] = api.MetricsResponse{
+					MetricsName:      hit.Source.CategoryName,
+					Value:            hit.Source.ResourceCount,
+					LastDayValue:     hit.Source.LastDayCount,
+					LastWeekValue:    hit.Source.LastWeekCount,
+					LastQuarterValue: hit.Source.LastQuarterCount,
+					LastYearValue:    hit.Source.LastYearCount,
+				}
+			}
+			searchAfter = hit.Sort
+		}
 	}
 
-	query, err = es.FindTopServicesQuery(string(provider), sourceID, EsFetchPageSize)
-	if err != nil {
-		return err
+	for _, v := range categoryMap {
+		res = append(res, v)
 	}
 
-	var response es.TopServicesQueryResponse
-	err = h.client.Search(context.Background(), describe.SourceResourcesSummary, query, &response)
-	if err != nil {
-		return err
+	searchAfter = nil
+	serviceResponse := map[string]api.MetricsResponse{}
+	for {
+		query, err := es.FetchServicesQuery(string(provider), sourceID, EsFetchPageSize, searchAfter)
+		if err != nil {
+			return err
+		}
+
+		var response es.FetchServicesQueryResponse
+		err = h.client.Search(context.Background(), describe.SourceResourcesSummary, query, &response)
+		if err != nil {
+			return err
+		}
+
+		if len(response.Hits.Hits) == 0 {
+			break
+		}
+
+		for _, hit := range response.Hits.Hits {
+			if v, ok := serviceResponse[hit.Source.ServiceName]; ok {
+				v.Value += hit.Source.ResourceCount
+			} else {
+				serviceResponse[hit.Source.ServiceName] = api.MetricsResponse{
+					MetricsName:      hit.Source.ServiceName,
+					Value:            hit.Source.ResourceCount,
+					LastDayValue:     hit.Source.LastDayCount,
+					LastWeekValue:    hit.Source.LastWeekCount,
+					LastQuarterValue: hit.Source.LastQuarterCount,
+					LastYearValue:    hit.Source.LastYearCount,
+				}
+			}
+			searchAfter = hit.Sort
+		}
 	}
 
-	for _, hit := range response.Hits.Hits {
-		res = append(res, api.MetricsResponse{
-			MetricsName:      hit.Source.ServiceName,
-			Value:            hit.Source.ResourceCount,
-			LastDayValue:     hit.Source.LastDayCount,
-			LastWeekValue:    hit.Source.LastWeekCount,
-			LastQuarterValue: hit.Source.LastQuarterCount,
-			LastYearValue:    hit.Source.LastYearCount,
-		})
+	for _, v := range serviceResponse {
+		res = append(res, v)
 	}
 	return ctx.JSON(http.StatusOK, res)
 }

@@ -25,7 +25,7 @@ type CategoryQueryHit struct {
 	Sort    []interface{}               `json:"sort"`
 }
 
-func FindOldCategoryValue(jobID uint, categoryName string) (string, error) {
+func FindOldCategoryValue(jobID uint, categoryName string, count int, searchAfter []interface{}) (string, error) {
 	boolQuery := map[string]interface{}{}
 	var filters []interface{}
 	filters = append(filters, map[string]interface{}{
@@ -39,10 +39,16 @@ func FindOldCategoryValue(jobID uint, categoryName string) (string, error) {
 	})
 	boolQuery["filter"] = filters
 	res := make(map[string]interface{})
-	res["size"] = 1
+	res["size"] = count
+	if searchAfter != nil {
+		res["search_after"] = searchAfter
+	}
 	res["sort"] = []map[string]interface{}{
 		{
 			"executed_at": "desc",
+		},
+		{
+			"_id": "desc",
 		},
 	}
 
@@ -72,7 +78,7 @@ type ResourceQueryHit struct {
 	Sort    []interface{}                `json:"sort"`
 }
 
-func FindOldResourceValue(jobID uint) (string, error) {
+func FindOldResourceValue(jobID uint, count int, searchAfter []interface{}) (string, error) {
 	boolQuery := map[string]interface{}{}
 	var filters []interface{}
 	filters = append(filters, map[string]interface{}{
@@ -83,10 +89,16 @@ func FindOldResourceValue(jobID uint) (string, error) {
 	})
 	boolQuery["filter"] = filters
 	res := make(map[string]interface{})
-	res["size"] = 1
+	res["size"] = count
+	if searchAfter != nil {
+		res["search_after"] = searchAfter
+	}
 	res["sort"] = []map[string]interface{}{
 		{
 			"executed_at": "desc",
+		},
+		{
+			"_id": "desc",
 		},
 	}
 
@@ -116,7 +128,7 @@ type ServiceQueryHit struct {
 	Sort    []interface{}               `json:"sort"`
 }
 
-func FindOldServiceValue(jobID uint, categoryName string) (string, error) {
+func FindOldServiceValue(jobID uint, serviceName string, count int, searchAfter []interface{}) (string, error) {
 	var filters []interface{}
 	filters = append(filters, map[string]interface{}{
 		"terms": map[string][]string{"report_type": {kafka.ResourceSummaryTypeServiceHistorySummary}},
@@ -125,13 +137,20 @@ func FindOldServiceValue(jobID uint, categoryName string) (string, error) {
 		"terms": map[string][]interface{}{"source_job_id": {jobID}},
 	})
 	filters = append(filters, map[string]interface{}{
-		"terms": map[string][]interface{}{"service_name": {categoryName}},
+		"terms": map[string][]interface{}{"service_name": {serviceName}},
 	})
 	res := make(map[string]interface{})
-	res["size"] = 1
+	res["size"] = count
+	if searchAfter != nil {
+		res["search_after"] = searchAfter
+	}
+
 	res["sort"] = []map[string]interface{}{
 		{
 			"executed_at": "desc",
+		},
+		{
+			"_id": "desc",
 		},
 	}
 

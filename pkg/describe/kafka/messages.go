@@ -158,6 +158,8 @@ type SourceResourcesSummary struct {
 	ResourceCount int `json:"resource_count"`
 	// ReportType of document
 	ReportType ResourceSummaryType `json:"report_type"`
+	// ResourceType is type of resource
+	ResourceType string `json:"resource_type"`
 	// LastDayCount number of resources in the category at the same time yesterday
 	LastDayCount *int `json:"last_day_count"`
 	// LastWeekCount number of resources in the category at the same time a week ago
@@ -184,6 +186,10 @@ func (r SourceResourcesSummary) MessageID() string {
 type SourceServicesSummary struct {
 	// ServiceName is service name of the resource
 	ServiceName string `json:"service_name"`
+	// SourceID is the source id
+	SourceID string `json:"source_id"`
+	// ResourceType is type of the resource
+	ResourceType string `json:"resource_type"`
 	// SourceType is the type of the source of the resource, i.e. AWS Cloud, Azure Cloud.
 	SourceType api.SourceType `json:"source_type"`
 	// SourceJobID is the DescribeSourceJob ID that the ResourceJobID was created for
@@ -211,11 +217,11 @@ func (r SourceServicesSummary) AsProducerMessage() (*sarama.ProducerMessage, err
 	}
 
 	if r.ReportType == ResourceSummaryTypeServiceHistorySummary {
-		return kafkaMsg(hashOf(r.ServiceName, fmt.Sprintf("%d", r.SourceJobID), string(r.ReportType)),
+		return kafkaMsg(hashOf(r.ServiceName, r.SourceID, r.ResourceType, fmt.Sprintf("%d", r.SourceJobID), string(r.ReportType)),
 			value, SourceResourcesSummaryIndex), nil
 	}
 
-	return kafkaMsg(hashOf(r.ServiceName, string(r.ReportType)),
+	return kafkaMsg(hashOf(r.ServiceName, r.SourceID, r.ResourceType, string(r.ReportType)),
 		value, SourceResourcesSummaryIndex), nil
 }
 func (r SourceServicesSummary) MessageID() string {
@@ -229,6 +235,8 @@ type SourceCategorySummary struct {
 	SourceType api.SourceType `json:"source_type"`
 	// SourceID id of the source of the resource
 	SourceID string `json:"source_id"`
+	// ResourceType type of the resource
+	ResourceType string `json:"resource_type"`
 	// SourceJobID is the DescribeSourceJob ID that the ResourceJobID was created for
 	SourceJobID uint `json:"source_job_id"`
 	// DescribedAt is when the DescribeSourceJob is created
@@ -254,11 +262,11 @@ func (r SourceCategorySummary) AsProducerMessage() (*sarama.ProducerMessage, err
 	}
 
 	if r.ReportType == ResourceSummaryTypeCategoryHistorySummary {
-		return kafkaMsg(hashOf(r.CategoryName, r.SourceID, fmt.Sprintf("%d", r.SourceJobID), string(r.ReportType)),
+		return kafkaMsg(hashOf(r.CategoryName, r.ResourceType, r.SourceID, fmt.Sprintf("%d", r.SourceJobID), string(r.ReportType)),
 			value, SourceResourcesSummaryIndex), nil
 	}
 
-	return kafkaMsg(hashOf(r.CategoryName, r.SourceID, string(r.ReportType)),
+	return kafkaMsg(hashOf(r.CategoryName, r.ResourceType, r.SourceID, string(r.ReportType)),
 		value, SourceResourcesSummaryIndex), nil
 }
 func (r SourceCategorySummary) MessageID() string {
@@ -274,7 +282,7 @@ func (r SourceResourcesLastSummary) AsProducerMessage() (*sarama.ProducerMessage
 	if err != nil {
 		return nil, err
 	}
-	return kafkaMsg(hashOf(r.SourceID, string(r.ReportType)),
+	return kafkaMsg(hashOf(r.SourceID, r.ResourceType, string(r.ReportType)),
 		value, SourceResourcesSummaryIndex), nil
 }
 
@@ -285,6 +293,8 @@ type LocationDistributionResource struct {
 	SourceType api.SourceType `json:"source_type"`
 	// SourceJobID is the DescribeSourceJob ID that the ResourceJobID was created for
 	SourceJobID uint `json:"source_job_id"`
+	// ResourceType is type of the resource
+	ResourceType string `json:"resource_type"`
 	// LocationDistribution is total of resources per location for specified account
 	LocationDistribution map[string]int `json:"location_distribution"`
 	// ReportType of document
@@ -297,7 +307,7 @@ func (r LocationDistributionResource) AsProducerMessage() (*sarama.ProducerMessa
 		return nil, err
 	}
 
-	return kafkaMsg(hashOf(r.SourceID, string(r.ReportType)),
+	return kafkaMsg(hashOf(r.SourceID, r.ResourceType, string(r.ReportType)),
 		value, SourceResourcesSummaryIndex), nil
 }
 func (r LocationDistributionResource) MessageID() string {
@@ -309,6 +319,8 @@ type SourceServiceDistributionResource struct {
 	SourceID string `json:"source_id"`
 	// ServiceName is name of service
 	ServiceName string `json:"service_name"`
+	// ResourceType is type of the resource
+	ResourceType string `json:"resource_type"`
 	// SourceType is the type of the source of the resource, i.e. AWS Cloud, Azure Cloud.
 	SourceType api.SourceType `json:"source_type"`
 	// SourceJobID is the DescribeSourceJob ID that the ResourceJobID was created for
@@ -325,7 +337,7 @@ func (r SourceServiceDistributionResource) AsProducerMessage() (*sarama.Producer
 		return nil, err
 	}
 
-	return kafkaMsg(hashOf(r.SourceID, r.ServiceName, string(r.ReportType)),
+	return kafkaMsg(hashOf(r.SourceID, r.ResourceType, r.ServiceName, string(r.ReportType)),
 		value, SourceResourcesSummaryIndex), nil
 }
 func (r SourceServiceDistributionResource) MessageID() string {
