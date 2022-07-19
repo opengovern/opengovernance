@@ -185,7 +185,7 @@ type CategoriesQueryHit struct {
 	Sort    []interface{}               `json:"sort"`
 }
 
-func GetCategoriesQuery(provider string, fetchSize int, searchAfter []interface{}) (string, error) {
+func GetCategoriesQuery(provider string, sourceID *string, fetchSize int, searchAfter []interface{}) (string, error) {
 	res := make(map[string]interface{})
 	var filters []interface{}
 
@@ -196,6 +196,12 @@ func GetCategoriesQuery(provider string, fetchSize int, searchAfter []interface{
 	if provider != "" {
 		filters = append(filters, map[string]interface{}{
 			"terms": map[string][]string{"source_type": {provider}},
+		})
+	}
+
+	if sourceID != nil {
+		filters = append(filters, map[string]interface{}{
+			"terms": map[string][]string{"source_id": {*sourceID}},
 		})
 	}
 

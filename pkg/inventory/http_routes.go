@@ -1165,7 +1165,7 @@ func (h *HttpHandler) GetTopServicesByCost(ctx echo.Context) error {
 // @Accept   json
 // @Produce  json
 // @Param    count     query     int     true   "count"
-// @Param    provider  query     string  true  "Provider"
+// @Param    provider  query     string  true   "Provider"
 // @Success  200         {object}  []api.TopAccountResponse
 // @Router   /inventory/api/v1/resources/top/accounts [get]
 func (h *HttpHandler) GetTopAccountsByResourceCount(ctx echo.Context) error {
@@ -1446,15 +1446,25 @@ func (h *HttpHandler) GetTopServicesByResourceCount(ctx echo.Context) error {
 // @Accept   json
 // @Produce  json
 // @Param    provider  query     string  true  "Provider"
-// @Success  200       {object}  []api.TopAccountResponse
+// @Param    sourceId  query     string  false  "SourceID"
+// @Success  200       {object}  []api.CategoriesResponse
 // @Router   /inventory/api/v1/resources/categories [get]
 func (h *HttpHandler) GetCategories(ctx echo.Context) error {
+	var sourceID *string
 	provider, _ := source.ParseType(ctx.QueryParam("provider"))
+	if sID := ctx.QueryParam("sourceId"); sID != "" {
+		sourceUUID, err := uuid.Parse(sID)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "invalid sourceID")
+		}
+		s := sourceUUID.String()
+		sourceID = &s
+	}
 
 	var searchAfter []interface{}
 	categoryMap := map[string]api.CategoriesResponse{}
 	for {
-		query, err := es.GetCategoriesQuery(string(provider), EsFetchPageSize, searchAfter)
+		query, err := es.GetCategoriesQuery(string(provider), sourceID, EsFetchPageSize, searchAfter)
 		if err != nil {
 			return err
 		}
@@ -1498,7 +1508,8 @@ func (h *HttpHandler) GetCategories(ctx echo.Context) error {
 // @Tags     inventory
 // @Accept   json
 // @Produce  json
-// @Param    provider  query     string  true  "Provider"
+// @Param    provider  query     string  false  "Provider"
+// @Param    sourceId  query     string  false  "SourceID"
 // @Success  200       {object}  []api.TopAccountResponse
 // @Router   /inventory/api/v1/metrics/summary [get]
 func (h *HttpHandler) GetSummaryMetrics(ctx echo.Context) error {
@@ -1518,7 +1529,7 @@ func (h *HttpHandler) GetSummaryMetrics(ctx echo.Context) error {
 	var searchAfter []interface{}
 	categoryMap := map[string]api.MetricsResponse{}
 	for {
-		query, err := es.GetCategoriesQuery(string(provider), EsFetchPageSize, searchAfter)
+		query, err := es.GetCategoriesQuery(string(provider), sourceID, EsFetchPageSize, searchAfter)
 		if err != nil {
 			return err
 		}

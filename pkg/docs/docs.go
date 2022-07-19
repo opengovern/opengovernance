@@ -1281,8 +1281,13 @@ const docTemplate = `{
                         "type": "string",
                         "description": "Provider",
                         "name": "provider",
-                        "in": "query",
-                        "required": true
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "SourceID",
+                        "name": "sourceId",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -1664,6 +1669,12 @@ const docTemplate = `{
                         "name": "provider",
                         "in": "query",
                         "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "SourceID",
+                        "name": "sourceId",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -1672,7 +1683,7 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/api.TopAccountResponse"
+                                "$ref": "#/definitions/api.CategoriesResponse"
                             }
                         }
                     }
