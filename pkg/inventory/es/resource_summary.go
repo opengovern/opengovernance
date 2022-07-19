@@ -109,14 +109,14 @@ func FindTopAccountsQuery(provider string, fetchSize int) (string, error) {
 	return string(b), err
 }
 
-type TopServicesQueryResponse struct {
-	Hits TopServicesQueryHits `json:"hits"`
+type FetchServicesQueryResponse struct {
+	Hits FetchServicesQueryHits `json:"hits"`
 }
-type TopServicesQueryHits struct {
-	Total keibi.SearchTotal     `json:"total"`
-	Hits  []TopServicesQueryHit `json:"hits"`
+type FetchServicesQueryHits struct {
+	Total keibi.SearchTotal       `json:"total"`
+	Hits  []FetchServicesQueryHit `json:"hits"`
 }
-type TopServicesQueryHit struct {
+type FetchServicesQueryHit struct {
 	ID      string                      `json:"_id"`
 	Score   float64                     `json:"_score"`
 	Index   string                      `json:"_index"`
@@ -126,7 +126,7 @@ type TopServicesQueryHit struct {
 	Sort    []interface{}               `json:"sort"`
 }
 
-func FindTopServicesQuery(provider string, sourceID *string, fetchSize int) (string, error) {
+func FetchServicesQuery(provider string, sourceID *string, fetchSize int, searchAfter []interface{}) (string, error) {
 	res := make(map[string]interface{})
 	var filters []interface{}
 
@@ -147,9 +147,16 @@ func FindTopServicesQuery(provider string, sourceID *string, fetchSize int) (str
 	}
 
 	res["size"] = fetchSize
+	if searchAfter != nil {
+		res["search_after"] = searchAfter
+	}
+
 	res["sort"] = []map[string]interface{}{
 		{
 			"resource_count": "desc",
+		},
+		{
+			"_id": "desc",
 		},
 	}
 	res["query"] = map[string]interface{}{
@@ -178,7 +185,7 @@ type CategoriesQueryHit struct {
 	Sort    []interface{}               `json:"sort"`
 }
 
-func GetCategoriesQuery(provider string, fetchSize int) (string, error) {
+func GetCategoriesQuery(provider string, fetchSize int, searchAfter []interface{}) (string, error) {
 	res := make(map[string]interface{})
 	var filters []interface{}
 
@@ -193,9 +200,15 @@ func GetCategoriesQuery(provider string, fetchSize int) (string, error) {
 	}
 
 	res["size"] = fetchSize
+	if searchAfter != nil {
+		res["search_after"] = searchAfter
+	}
 	res["sort"] = []map[string]interface{}{
 		{
 			"resource_count": "desc",
+		},
+		{
+			"_id": "desc",
 		},
 	}
 	res["query"] = map[string]interface{}{

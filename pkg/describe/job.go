@@ -30,6 +30,8 @@ import (
 	"gopkg.in/Shopify/sarama.v1"
 )
 
+const EsFetchPageSize = 10000
+
 var DoDescribeJobsCount = promauto.NewCounterVec(prometheus.CounterOpts{
 	Namespace: "keibi",
 	Subsystem: "describe_worker",
@@ -264,11 +266,8 @@ func doDescribeAWS(ctx context.Context, rdb *redis.Client, es keibi.Client, job 
 	}
 
 	var msgs []kafka.DescribedResource
-	locationDistribution := map[string]int{}
+	var lookupResources []kafka.LookupResource
 
-	categoryCount := map[string]int{}
-	serviceCount := map[string]int{}
-	serviceDistribution := map[string]map[string]int{}
 	for _, resources := range output.Resources {
 		for _, resource := range resources {
 			if resource.Description == nil {
@@ -307,17 +306,13 @@ func doDescribeAWS(ctx context.Context, rdb *redis.Client, es keibi.Client, job 
 					continue
 				}
 
-				_, err = rdb.Expire(context.Background(), "tag-"+key, 4*time.Hour).Result() //TODO-Saleh set time based on describe interval
+				_, err = rdb.Expire(context.Background(), "tag-"+key, 12*time.Hour).Result() //TODO-Saleh set time based on describe interval
 				if err != nil {
 					errs = append(errs, fmt.Sprintf("failed to set tag expire into redis: %v", err.Error()))
 					continue
 				}
 			}
-
-			logger.Info(fmt.Sprintf("description is: %v\n", resource.Description))
-			logger.Info(fmt.Sprintf("Found these tags for name=%s: %v\n", resource.Name, tags))
-
-			msgs = append(msgs, kafka.LookupResource{
+			lookupResource := kafka.LookupResource{
 				ResourceID:    resource.UniqueID(),
 				Name:          resource.Name,
 				SourceType:    api.SourceCloudAWS,
@@ -332,220 +327,40 @@ func doDescribeAWS(ctx context.Context, rdb *redis.Client, es keibi.Client, job 
 				CreatedAt:     job.DescribedAt,
 				IsCommon:      cloudservice.IsCommonByResourceType(job.ResourceType),
 				Tags:          tags,
-			})
-			region := strings.TrimSpace(resource.Region)
-			if region != "" {
-				locationDistribution[region]++
-				if s := cloudservice.ServiceNameByResourceType(resource.Type); s != "" {
-					if serviceDistribution[s] == nil {
-						serviceDistribution[s] = make(map[string]int)
-					}
-
-					serviceDistribution[s][region]++
-				}
 			}
-
-			if s := cloudservice.ServiceNameByResourceType(resource.Type); s != "" {
-				serviceCount[s]++
-			}
-			if s := cloudservice.CategoryByResourceType(resource.Type); s != "" {
-				if cloudservice.IsCommonByResourceType(resource.Type) {
-					categoryCount[s]++
-				}
-			}
+			msgs = append(msgs, lookupResource)
+			lookupResources = append(lookupResources, lookupResource)
 		}
 	}
 
 	logger.Info(fmt.Sprintf("job[%d] lastDay=%d, lastWeek=%d lastQuarter=%d lastYear=%d\n", job.JobID, job.LastDaySourceJobID, job.LastWeekSourceJobID, job.LastQuarterSourceJobID, job.LastYearSourceJobID))
-	for name, count := range serviceCount {
-		var lastDayValue, lastWeekValue, lastQuarterValue, lastYearValue *int
-		for idx, jobID := range []uint{job.LastDaySourceJobID, job.LastWeekSourceJobID, job.LastQuarterSourceJobID,
-			job.LastYearSourceJobID} {
-			var response ServiceQueryResponse
-			query, err := FindOldServiceValue(jobID, name)
-			if err != nil {
-				logger.Error(fmt.Sprintf("failed to build query for service: %v", err.Error()))
-				errs = append(errs, fmt.Sprintf("failed to build query for service: %v", err.Error()))
-				continue
-			}
-			logger.Info(fmt.Sprintf("Query for lastDay: %s", query))
-			err = es.Search(context.Background(), kafka.SourceResourcesSummaryIndex, query, &response)
-			if err != nil {
-				logger.Error(fmt.Sprintf("failed to run query for service: %v", err.Error()))
-				errs = append(errs, fmt.Sprintf("failed to run query for service: %v", err.Error()))
-				continue
-			}
 
-			logger.Info(fmt.Sprintf("Response count for lastDay: %d", len(response.Hits.Hits)))
-			if len(response.Hits.Hits) > 0 {
-				// there will be only one result anyway
-				switch idx {
-				case 0:
-					lastDayValue = &response.Hits.Hits[0].Source.ResourceCount
-				case 1:
-					lastWeekValue = &response.Hits.Hits[0].Source.ResourceCount
-				case 2:
-					lastQuarterValue = &response.Hits.Hits[0].Source.ResourceCount
-				case 3:
-					lastYearValue = &response.Hits.Hits[0].Source.ResourceCount
-				}
-			}
-		}
-
-		msgs = append(msgs, kafka.SourceServicesSummary{
-			ServiceName:      name,
-			SourceType:       job.SourceType,
-			SourceJobID:      job.ParentJobID,
-			DescribedAt:      job.DescribedAt,
-			ResourceCount:    count,
-			LastDayCount:     lastDayValue,
-			LastWeekCount:    lastWeekValue,
-			LastQuarterCount: lastQuarterValue,
-			LastYearCount:    lastYearValue,
-			ReportType:       kafka.ResourceSummaryTypeLastServiceSummary,
-		})
-
-		msgs = append(msgs, kafka.SourceServicesSummary{
-			ServiceName:      name,
-			SourceType:       job.SourceType,
-			SourceJobID:      job.ParentJobID,
-			DescribedAt:      job.DescribedAt,
-			ResourceCount:    count,
-			LastDayCount:     lastDayValue,
-			LastWeekCount:    lastWeekValue,
-			LastQuarterCount: lastQuarterValue,
-			LastYearCount:    lastYearValue,
-			ReportType:       kafka.ResourceSummaryTypeServiceHistorySummary,
-		})
+	serviceResources, err := ExtractServiceSummary(es, job, lookupResources)
+	if err == nil {
+		msgs = append(msgs, serviceResources...)
+	} else {
+		errs = append(errs, err.Error())
 	}
 
-	for name, count := range categoryCount {
-		var lastDayValue, lastWeekValue, lastQuarterValue, lastYearValue *int
-		for idx, jobID := range []uint{job.LastDaySourceJobID, job.LastWeekSourceJobID, job.LastQuarterSourceJobID,
-			job.LastYearSourceJobID} {
-			var response CategoryQueryResponse
-			query, err := FindOldCategoryValue(jobID, name)
-			if err != nil {
-				errs = append(errs, fmt.Sprintf("failed to build query for category: %v", err.Error()))
-				continue
-			}
-			err = es.Search(context.Background(), kafka.SourceResourcesSummaryIndex, query, &response)
-			if err != nil {
-				errs = append(errs, fmt.Sprintf("failed to run query for category: %v", err.Error()))
-				continue
-			}
-
-			if len(response.Hits.Hits) > 0 {
-				// there will be only one result anyway
-				switch idx {
-				case 0:
-					lastDayValue = &response.Hits.Hits[0].Source.ResourceCount
-				case 1:
-					lastWeekValue = &response.Hits.Hits[0].Source.ResourceCount
-				case 2:
-					lastQuarterValue = &response.Hits.Hits[0].Source.ResourceCount
-				case 3:
-					lastYearValue = &response.Hits.Hits[0].Source.ResourceCount
-				}
-			}
-		}
-
-		msgs = append(msgs, kafka.SourceCategorySummary{
-			CategoryName:     name,
-			SourceType:       job.SourceType,
-			SourceJobID:      job.ParentJobID,
-			SourceID:         job.SourceID,
-			DescribedAt:      job.DescribedAt,
-			ResourceCount:    count,
-			LastDayCount:     lastDayValue,
-			LastWeekCount:    lastWeekValue,
-			LastQuarterCount: lastQuarterValue,
-			LastYearCount:    lastYearValue,
-			ReportType:       kafka.ResourceSummaryTypeLastCategorySummary,
-		})
-
-		msgs = append(msgs, kafka.SourceCategorySummary{
-			CategoryName:     name,
-			SourceType:       job.SourceType,
-			SourceID:         job.SourceID,
-			SourceJobID:      job.ParentJobID,
-			DescribedAt:      job.DescribedAt,
-			ResourceCount:    count,
-			LastDayCount:     lastDayValue,
-			LastWeekCount:    lastWeekValue,
-			LastQuarterCount: lastQuarterValue,
-			LastYearCount:    lastYearValue,
-			ReportType:       kafka.ResourceSummaryTypeCategoryHistorySummary,
-		})
+	categoryResources, err := ExtractCategorySummary(es, job, lookupResources)
+	if err == nil {
+		msgs = append(msgs, categoryResources...)
+	} else {
+		errs = append(errs, err.Error())
 	}
 
-	var lastDayValue, lastWeekValue, lastQuarterValue, lastYearValue *int
-	for idx, jobID := range []uint{job.LastDaySourceJobID, job.LastWeekSourceJobID, job.LastQuarterSourceJobID,
-		job.LastYearSourceJobID} {
-		var response CategoryQueryResponse
-		query, err := FindOldResourceValue(jobID)
-		if err != nil {
-			errs = append(errs, fmt.Sprintf("failed to build query for category: %v", err.Error()))
-			continue
-		}
-		err = es.Search(context.Background(), kafka.SourceResourcesSummaryIndex, query, &response)
-		if err != nil {
-			errs = append(errs, fmt.Sprintf("failed to run query for category: %v", err.Error()))
-			continue
-		}
-
-		if len(response.Hits.Hits) > 0 {
-			// there will be only one result anyway
-			switch idx {
-			case 0:
-				lastDayValue = &response.Hits.Hits[0].Source.ResourceCount
-			case 1:
-				lastWeekValue = &response.Hits.Hits[0].Source.ResourceCount
-			case 2:
-				lastQuarterValue = &response.Hits.Hits[0].Source.ResourceCount
-			case 3:
-				lastYearValue = &response.Hits.Hits[0].Source.ResourceCount
-			}
-		}
+	trendResources, err := ExtractResourceTrend(es, job, lookupResources)
+	if err == nil {
+		msgs = append(msgs, trendResources...)
+	} else {
+		errs = append(errs, err.Error())
 	}
-	trend := kafka.SourceResourcesSummary{
-		SourceID:         job.SourceID,
-		SourceType:       job.SourceType,
-		SourceJobID:      job.JobID,
-		DescribedAt:      job.DescribedAt,
-		ResourceCount:    len(output.Resources),
-		ReportType:       kafka.ResourceSummaryTypeResourceGrowthTrend,
-		LastDayCount:     lastDayValue,
-		LastWeekCount:    lastWeekValue,
-		LastQuarterCount: lastQuarterValue,
-		LastYearCount:    lastYearValue,
-	}
-	msgs = append(msgs, trend)
 
-	last := kafka.SourceResourcesLastSummary{
-		SourceResourcesSummary: trend,
-	}
-	last.ReportType = kafka.ResourceSummaryTypeLastSummary
-	msgs = append(msgs, last)
-
-	locDistribution := kafka.LocationDistributionResource{
-		SourceID:             job.SourceID,
-		SourceType:           job.SourceType,
-		SourceJobID:          job.JobID,
-		LocationDistribution: locationDistribution,
-		ReportType:           kafka.ResourceSummaryTypeLocationDistribution,
-	}
-	msgs = append(msgs, locDistribution)
-
-	for serviceName, m := range serviceDistribution {
-		msgs = append(msgs, kafka.SourceServiceDistributionResource{
-			SourceID:             job.SourceID,
-			ServiceName:          serviceName,
-			SourceType:           job.SourceType,
-			SourceJobID:          job.JobID,
-			LocationDistribution: m,
-			ReportType:           kafka.ResourceSummaryTypeServiceDistributionSummary,
-		})
+	distResources, err := ExtractDistribution(es, job, lookupResources)
+	if err == nil {
+		msgs = append(msgs, distResources...)
+	} else {
+		errs = append(errs, err.Error())
 	}
 
 	// For AWS resources, since they are queries independently per region,
@@ -591,11 +406,9 @@ func doDescribeAzure(ctx context.Context, rdb *redis.Client, es keibi.Client, jo
 		return nil, fmt.Errorf("azure: %w", err)
 	}
 
-	serviceDistribution := map[string]map[string]int{}
-	categoryCount := map[string]int{}
-	serviceCount := map[string]int{}
 	var msgs []kafka.DescribedResource
-	locationDistribution := map[string]int{}
+	var lookupResources []kafka.LookupResource
+
 	for _, resource := range output.Resources {
 		if resource.Description == nil {
 			continue
@@ -632,13 +445,13 @@ func doDescribeAzure(ctx context.Context, rdb *redis.Client, es keibi.Client, jo
 				return nil, fmt.Errorf("failed to push tag into redis: %v", err.Error())
 			}
 
-			_, err = rdb.Expire(context.Background(), "tag-"+key, 4*time.Hour).Result() //TODO-Saleh set time based on describe interval
+			_, err = rdb.Expire(context.Background(), "tag-"+key, 12*time.Hour).Result() //TODO-Saleh set time based on describe interval
 			if err != nil {
 				return nil, fmt.Errorf("failed to set tag expire into redis: %v", err.Error())
 			}
 		}
 
-		msgs = append(msgs, kafka.LookupResource{
+		lookupResource := kafka.LookupResource{
 			ResourceID:    resource.UniqueID(),
 			Name:          resource.Name,
 			SourceType:    api.SourceCloudAzure,
@@ -653,209 +466,34 @@ func doDescribeAzure(ctx context.Context, rdb *redis.Client, es keibi.Client, jo
 			CreatedAt:     job.DescribedAt,
 			IsCommon:      cloudservice.IsCommonByResourceType(job.ResourceType),
 			Tags:          tags,
-		})
-		location := strings.TrimSpace(resource.Location)
-		if location != "" {
-			locationDistribution[location]++
-			if s := cloudservice.ServiceNameByResourceType(resource.Type); s != "" {
-				if serviceDistribution[s] == nil {
-					serviceDistribution[s] = make(map[string]int)
-				}
-
-				serviceDistribution[s][location]++
-			}
 		}
-		if s := cloudservice.ServiceNameByResourceType(resource.Type); s != "" {
-			serviceCount[s]++
-		}
-		if s := cloudservice.CategoryByResourceType(resource.Type); s != "" {
-			if cloudservice.IsCommonByResourceType(resource.Type) {
-				categoryCount[s]++
-			}
-		}
+		msgs = append(msgs, lookupResource)
+		lookupResources = append(lookupResources, lookupResource)
 	}
 
-	for name, count := range serviceCount {
-		var lastDayValue, lastWeekValue, lastQuarterValue, lastYearValue *int
-		for idx, jobID := range []uint{job.LastDaySourceJobID, job.LastWeekSourceJobID, job.LastQuarterSourceJobID,
-			job.LastYearSourceJobID} {
-			var response ServiceQueryResponse
-			query, err := FindOldServiceValue(jobID, name)
-			if err != nil {
-				return nil, fmt.Errorf("failed to build query: %v", err.Error())
-			}
-			err = es.Search(context.Background(), kafka.SourceResourcesSummaryIndex, query, &response)
-			if err != nil {
-				return nil, fmt.Errorf("failed to run query: %v", err.Error())
-			}
-
-			if len(response.Hits.Hits) > 0 {
-				// there will be only one result anyway
-				switch idx {
-				case 0:
-					lastDayValue = &response.Hits.Hits[0].Source.ResourceCount
-				case 1:
-					lastWeekValue = &response.Hits.Hits[0].Source.ResourceCount
-				case 2:
-					lastQuarterValue = &response.Hits.Hits[0].Source.ResourceCount
-				case 3:
-					lastYearValue = &response.Hits.Hits[0].Source.ResourceCount
-				}
-			}
-		}
-
-		msgs = append(msgs, kafka.SourceServicesSummary{
-			ServiceName:      name,
-			SourceType:       job.SourceType,
-			SourceJobID:      job.ParentJobID,
-			DescribedAt:      job.DescribedAt,
-			ResourceCount:    count,
-			LastDayCount:     lastDayValue,
-			LastWeekCount:    lastWeekValue,
-			LastQuarterCount: lastQuarterValue,
-			LastYearCount:    lastYearValue,
-			ReportType:       kafka.ResourceSummaryTypeLastServiceSummary,
-		})
-
-		msgs = append(msgs, kafka.SourceServicesSummary{
-			ServiceName:      name,
-			SourceType:       job.SourceType,
-			SourceJobID:      job.ParentJobID,
-			DescribedAt:      job.DescribedAt,
-			ResourceCount:    count,
-			LastDayCount:     lastDayValue,
-			LastWeekCount:    lastWeekValue,
-			LastQuarterCount: lastQuarterValue,
-			LastYearCount:    lastYearValue,
-			ReportType:       kafka.ResourceSummaryTypeServiceHistorySummary,
-		})
+	serviceResources, err := ExtractServiceSummary(es, job, lookupResources)
+	if err != nil {
+		return nil, err
 	}
+	msgs = append(msgs, serviceResources...)
 
-	for name, count := range categoryCount {
-		var lastDayValue, lastWeekValue, lastQuarterValue, lastYearValue *int
-		for idx, jobID := range []uint{job.LastDaySourceJobID, job.LastWeekSourceJobID, job.LastQuarterSourceJobID,
-			job.LastYearSourceJobID} {
-			var response CategoryQueryResponse
-			query, err := FindOldCategoryValue(jobID, name)
-			if err != nil {
-				return nil, fmt.Errorf("failed to build query: %v", err.Error())
-			}
-			err = es.Search(context.Background(), kafka.SourceResourcesSummaryIndex, query, &response)
-			if err != nil {
-				return nil, fmt.Errorf("failed to run query: %v", err.Error())
-			}
-
-			if len(response.Hits.Hits) > 0 {
-				// there will be only one result anyway
-				switch idx {
-				case 0:
-					lastDayValue = &response.Hits.Hits[0].Source.ResourceCount
-				case 1:
-					lastWeekValue = &response.Hits.Hits[0].Source.ResourceCount
-				case 2:
-					lastQuarterValue = &response.Hits.Hits[0].Source.ResourceCount
-				case 3:
-					lastYearValue = &response.Hits.Hits[0].Source.ResourceCount
-				}
-			}
-		}
-
-		msgs = append(msgs, kafka.SourceCategorySummary{
-			CategoryName:     name,
-			SourceType:       job.SourceType,
-			SourceID:         job.SourceID,
-			SourceJobID:      job.ParentJobID,
-			DescribedAt:      job.DescribedAt,
-			ResourceCount:    count,
-			LastDayCount:     lastDayValue,
-			LastWeekCount:    lastWeekValue,
-			LastQuarterCount: lastQuarterValue,
-			LastYearCount:    lastYearValue,
-			ReportType:       kafka.ResourceSummaryTypeLastCategorySummary,
-		})
-
-		msgs = append(msgs, kafka.SourceCategorySummary{
-			CategoryName:     name,
-			SourceType:       job.SourceType,
-			SourceID:         job.SourceID,
-			SourceJobID:      job.ParentJobID,
-			DescribedAt:      job.DescribedAt,
-			ResourceCount:    count,
-			LastDayCount:     lastDayValue,
-			LastWeekCount:    lastWeekValue,
-			LastQuarterCount: lastQuarterValue,
-			LastYearCount:    lastYearValue,
-			ReportType:       kafka.ResourceSummaryTypeCategoryHistorySummary,
-		})
+	categoryResources, err := ExtractCategorySummary(es, job, lookupResources)
+	if err != nil {
+		return nil, err
 	}
+	msgs = append(msgs, categoryResources...)
 
-	for serviceName, m := range serviceDistribution {
-		msgs = append(msgs, kafka.SourceServiceDistributionResource{
-			SourceID:             job.SourceID,
-			ServiceName:          serviceName,
-			SourceType:           job.SourceType,
-			SourceJobID:          job.JobID,
-			LocationDistribution: m,
-			ReportType:           kafka.ResourceSummaryTypeServiceDistributionSummary,
-		})
+	trendResources, err := ExtractResourceTrend(es, job, lookupResources)
+	if err != nil {
+		return nil, err
 	}
+	msgs = append(msgs, trendResources...)
 
-	var lastDayValue, lastWeekValue, lastQuarterValue, lastYearValue *int
-	for idx, jobID := range []uint{job.LastDaySourceJobID, job.LastWeekSourceJobID, job.LastQuarterSourceJobID,
-		job.LastYearSourceJobID} {
-		var response CategoryQueryResponse
-		query, err := FindOldResourceValue(jobID)
-		if err != nil {
-			return nil, fmt.Errorf("failed to build query for category: %v", err.Error())
-		}
-		err = es.Search(context.Background(), kafka.SourceResourcesSummaryIndex, query, &response)
-		if err != nil {
-			return nil, fmt.Errorf("failed to run query for category: %v", err.Error())
-		}
-
-		if len(response.Hits.Hits) > 0 {
-			// there will be only one result anyway
-			switch idx {
-			case 0:
-				lastDayValue = &response.Hits.Hits[0].Source.ResourceCount
-			case 1:
-				lastWeekValue = &response.Hits.Hits[0].Source.ResourceCount
-			case 2:
-				lastQuarterValue = &response.Hits.Hits[0].Source.ResourceCount
-			case 3:
-				lastYearValue = &response.Hits.Hits[0].Source.ResourceCount
-			}
-		}
+	distResources, err := ExtractDistribution(es, job, lookupResources)
+	if err != nil {
+		return nil, err
 	}
-	trend := kafka.SourceResourcesSummary{
-		SourceID:         job.SourceID,
-		SourceType:       job.SourceType,
-		SourceJobID:      job.JobID,
-		DescribedAt:      job.DescribedAt,
-		ResourceCount:    len(output.Resources),
-		ReportType:       kafka.ResourceSummaryTypeResourceGrowthTrend,
-		LastDayCount:     lastDayValue,
-		LastWeekCount:    lastWeekValue,
-		LastQuarterCount: lastQuarterValue,
-		LastYearCount:    lastYearValue,
-	}
-	msgs = append(msgs, trend)
-
-	last := kafka.SourceResourcesLastSummary{
-		SourceResourcesSummary: trend,
-	}
-	last.ReportType = kafka.ResourceSummaryTypeLastSummary
-	msgs = append(msgs, last)
-
-	locDistribution := kafka.LocationDistributionResource{
-		SourceID:             job.SourceID,
-		SourceType:           job.SourceType,
-		SourceJobID:          job.JobID,
-		LocationDistribution: locationDistribution,
-		ReportType:           kafka.ResourceSummaryTypeLocationDistribution,
-	}
-	msgs = append(msgs, locDistribution)
-
+	msgs = append(msgs, distResources...)
 	return msgs, nil
 }
 
