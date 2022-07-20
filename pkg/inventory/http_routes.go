@@ -2649,6 +2649,7 @@ func (h *HttpHandler) RunSmartQuery(query string,
 	}
 
 	resp := api.RunQueryResponse{
+		Query:   query,
 		Page:    newPage.ToResponse(0),
 		Headers: res.Headers,
 		Result:  res.Data,

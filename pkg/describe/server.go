@@ -335,7 +335,7 @@ func (s HttpServer) GetResourceTypesByProvider(ctx echo.Context) error {
 		for _, resourceType := range azure.ListResourceTypes() {
 			resourceTypes = append(resourceTypes, api.ResourceTypeDetail{
 				ResourceTypeARN:  resourceType,
-				ResourceTypeName: cloudservice.ServiceNameByResourceType(resourceType),
+				ResourceTypeName: cloudservice.ResourceTypeName(resourceType),
 			})
 		}
 	}
@@ -343,7 +343,7 @@ func (s HttpServer) GetResourceTypesByProvider(ctx echo.Context) error {
 		for _, resourceType := range aws.ListResourceTypes() {
 			resourceTypes = append(resourceTypes, api.ResourceTypeDetail{
 				ResourceTypeARN:  resourceType,
-				ResourceTypeName: cloudservice.ServiceNameByResourceType(resourceType),
+				ResourceTypeName: cloudservice.ResourceTypeName(resourceType),
 			})
 		}
 	}

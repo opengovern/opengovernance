@@ -37,7 +37,7 @@ func QueryResourcesFromInventorySummary(ctx context.Context, client keibi.Client
 			awsResources = append(awsResources, AWSResource{
 				ResourceName:         resource.Name,
 				ResourceType:         resource.ResourceType,
-				ResourceTypeName:     cloudservice.ServiceNameByResourceType(resource.ResourceType),
+				ResourceTypeName:     cloudservice.ResourceTypeName(resource.ResourceType),
 				ResourceID:           resource.ResourceID,
 				Location:             resource.Location,
 				ProviderConnectionID: resource.SourceID,
@@ -55,7 +55,7 @@ func QueryResourcesFromInventorySummary(ctx context.Context, client keibi.Client
 			azureResources = append(azureResources, AzureResource{
 				ResourceName:         resource.Name,
 				ResourceType:         resource.ResourceType,
-				ResourceTypeName:     cloudservice.ServiceNameByResourceType(resource.ResourceType),
+				ResourceTypeName:     cloudservice.ResourceTypeName(resource.ResourceType),
 				ResourceGroup:        resource.ResourceGroup,
 				Location:             resource.Location,
 				ResourceID:           resource.ResourceID,
@@ -74,7 +74,7 @@ func QueryResourcesFromInventorySummary(ctx context.Context, client keibi.Client
 			ResourceName:         resource.Name,
 			Provider:             SourceType(resource.SourceType),
 			ResourceType:         resource.ResourceType,
-			ResourceTypeName:     cloudservice.ServiceNameByResourceType(resource.ResourceType),
+			ResourceTypeName:     cloudservice.ResourceTypeName(resource.ResourceType),
 			Location:             resource.Location,
 			ResourceID:           resource.ResourceID,
 			ProviderConnectionID: resource.SourceID,

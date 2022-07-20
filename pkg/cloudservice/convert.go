@@ -149,11 +149,18 @@ func CategoryByResourceType(resourceType string) string {
 }
 
 func ServiceNameByResourceType(resourceType string) string {
+	if record := findCloudServiceRecord(resourceType); record != nil {
+		return record.FullServiceName
+	}
+	return ""
+}
+
+func ResourceTypeName(resourceType string) string {
 	if record := findResourceListRecord(resourceType); record != nil {
 		return record.ResourceTypeName
 	}
 	if record := findCloudServiceRecord(resourceType); record != nil {
-		return record.FullServiceName
+		return record.FullServiceName + " Resource"
 	}
 	return ""
 }
