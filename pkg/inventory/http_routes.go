@@ -1392,45 +1392,11 @@ func (h *HttpHandler) GetTopServicesByResourceCount(ctx echo.Context) error {
 		sourceID = &s
 	}
 
-	var searchAfter []interface{}
-	serviceResponse := map[string]api.TopServicesResponse{}
-	for {
-		query, err := es.FetchServicesQuery(string(provider), sourceID, EsFetchPageSize, searchAfter)
-		if err != nil {
-			return err
-		}
-
-		var response es.FetchServicesQueryResponse
-		err = h.client.Search(context.Background(), describe.SourceResourcesSummary, query, &response)
-		if err != nil {
-			return err
-		}
-
-		if len(response.Hits.Hits) == 0 {
-			break
-		}
-
-		for _, hit := range response.Hits.Hits {
-			if v, ok := serviceResponse[hit.Source.ServiceName]; ok {
-				v.ResourceCount += hit.Source.ResourceCount
-			} else {
-				serviceResponse[hit.Source.ServiceName] = api.TopServicesResponse{
-					ServiceName:      hit.Source.ServiceName,
-					ResourceCount:    hit.Source.ResourceCount,
-					LastDayCount:     hit.Source.LastDayCount,
-					LastWeekCount:    hit.Source.LastWeekCount,
-					LastQuarterCount: hit.Source.LastQuarterCount,
-					LastYearCount:    hit.Source.LastYearCount,
-				}
-			}
-			searchAfter = hit.Sort
-		}
+	res, err := GetServices(h.client, provider, sourceID)
+	if err != nil {
+		return err
 	}
 
-	var res []api.TopServicesResponse
-	for _, v := range serviceResponse {
-		res = append(res, v)
-	}
 	sort.Slice(res, func(i, j int) bool {
 		return res[i].ResourceCount > res[j].ResourceCount
 	})
@@ -1461,44 +1427,9 @@ func (h *HttpHandler) GetCategories(ctx echo.Context) error {
 		sourceID = &s
 	}
 
-	var searchAfter []interface{}
-	categoryMap := map[string]api.CategoriesResponse{}
-	for {
-		query, err := es.GetCategoriesQuery(string(provider), sourceID, EsFetchPageSize, searchAfter)
-		if err != nil {
-			return err
-		}
-
-		var response es.CategoriesQueryResponse
-		err = h.client.Search(context.Background(), describe.SourceResourcesSummary, query, &response)
-		if err != nil {
-			return err
-		}
-
-		if len(response.Hits.Hits) == 0 {
-			break
-		}
-
-		for _, hit := range response.Hits.Hits {
-			if v, ok := categoryMap[hit.Source.CategoryName]; ok {
-				v.ResourceCount += hit.Source.ResourceCount
-			} else {
-				categoryMap[hit.Source.CategoryName] = api.CategoriesResponse{
-					CategoryName:     hit.Source.CategoryName,
-					ResourceCount:    hit.Source.ResourceCount,
-					LastDayCount:     hit.Source.LastDayCount,
-					LastWeekCount:    hit.Source.LastWeekCount,
-					LastQuarterCount: hit.Source.LastQuarterCount,
-					LastYearCount:    hit.Source.LastYearCount,
-				}
-			}
-			searchAfter = hit.Sort
-		}
-	}
-
-	var res []api.CategoriesResponse
-	for _, v := range categoryMap {
-		res = append(res, v)
+	res, err := GetCategories(h.client, provider, sourceID)
+	if err != nil {
+		return err
 	}
 	return ctx.JSON(http.StatusOK, res)
 }
@@ -1526,83 +1457,155 @@ func (h *HttpHandler) GetSummaryMetrics(ctx echo.Context) error {
 	}
 	var res []api.MetricsResponse
 
-	var searchAfter []interface{}
-	categoryMap := map[string]api.MetricsResponse{}
-	for {
-		query, err := es.GetCategoriesQuery(string(provider), sourceID, EsFetchPageSize, searchAfter)
-		if err != nil {
-			return err
-		}
-
-		var response es.CategoriesQueryResponse
-		err = h.client.Search(context.Background(), describe.SourceResourcesSummary, query, &response)
-		if err != nil {
-			return err
-		}
-
-		if len(response.Hits.Hits) == 0 {
-			break
-		}
-
-		for _, hit := range response.Hits.Hits {
-			if v, ok := categoryMap[hit.Source.CategoryName]; ok {
-				v.Value += hit.Source.ResourceCount
-			} else {
-				categoryMap[hit.Source.CategoryName] = api.MetricsResponse{
-					MetricsName:      hit.Source.CategoryName,
-					Value:            hit.Source.ResourceCount,
-					LastDayValue:     hit.Source.LastDayCount,
-					LastWeekValue:    hit.Source.LastWeekCount,
-					LastQuarterValue: hit.Source.LastQuarterCount,
-					LastYearValue:    hit.Source.LastYearCount,
-				}
-			}
-			searchAfter = hit.Sort
-		}
+	categories, err := GetCategories(h.client, provider, sourceID)
+	if err != nil {
+		return err
 	}
 
-	for _, v := range categoryMap {
-		res = append(res, v)
+	services, err := GetServices(h.client, provider, sourceID)
+	if err != nil {
+		return err
 	}
 
-	searchAfter = nil
-	serviceResponse := map[string]api.MetricsResponse{}
-	for {
-		query, err := es.FetchServicesQuery(string(provider), sourceID, EsFetchPageSize, searchAfter)
-		if err != nil {
-			return err
+	padd := func(x, y *int) *int {
+		var v *int
+		if x != nil && y != nil {
+			t := *x + *y
+			v = &t
+		} else if x != nil {
+			v = x
+		} else if y != nil {
+			v = y
 		}
-
-		var response es.FetchServicesQueryResponse
-		err = h.client.Search(context.Background(), describe.SourceResourcesSummary, query, &response)
-		if err != nil {
-			return err
-		}
-
-		if len(response.Hits.Hits) == 0 {
-			break
-		}
-
-		for _, hit := range response.Hits.Hits {
-			if v, ok := serviceResponse[hit.Source.ServiceName]; ok {
-				v.Value += hit.Source.ResourceCount
-			} else {
-				serviceResponse[hit.Source.ServiceName] = api.MetricsResponse{
-					MetricsName:      hit.Source.ServiceName,
-					Value:            hit.Source.ResourceCount,
-					LastDayValue:     hit.Source.LastDayCount,
-					LastWeekValue:    hit.Source.LastWeekCount,
-					LastQuarterValue: hit.Source.LastQuarterCount,
-					LastYearValue:    hit.Source.LastYearCount,
-				}
-			}
-			searchAfter = hit.Sort
-		}
+		return v
 	}
 
-	for _, v := range serviceResponse {
-		res = append(res, v)
+	res = append(res, api.MetricsResponse{
+		MetricsName:      "Total Accounts",
+		Value:            0,
+		LastDayValue:     nil,
+		LastWeekValue:    nil,
+		LastQuarterValue: nil,
+		LastYearValue:    nil,
+	})
+
+	res = append(res, api.MetricsResponse{
+		MetricsName:      "Total # of Resources",
+		Value:            0,
+		LastDayValue:     nil,
+		LastWeekValue:    nil,
+		LastQuarterValue: nil,
+		LastYearValue:    nil,
+	})
+
+	var aws api.TopServicesResponse
+	var azure api.TopServicesResponse
+
+	for _, s := range services {
+		if s.ServiceName == "EC2 Instance" {
+			aws = s
+		}
 	}
+	res = append(res, api.MetricsResponse{
+		MetricsName:      "Total # of virtual machines",
+		Value:            aws.ResourceCount,
+		LastDayValue:     aws.LastDayCount,
+		LastWeekValue:    aws.LastWeekCount,
+		LastQuarterValue: aws.LastQuarterCount,
+		LastYearValue:    aws.LastYearCount,
+	})
+
+	aws = api.TopServicesResponse{}
+	azure = api.TopServicesResponse{}
+	for _, s := range services {
+		if s.ServiceName == "Virtual network" {
+			azure = s
+		}
+		if s.ServiceName == "EC2 VPC" {
+			aws = s
+		}
+	}
+	res = append(res, api.MetricsResponse{
+		MetricsName:      "Total # of Networks",
+		Value:            aws.ResourceCount + azure.ResourceCount,
+		LastDayValue:     padd(aws.LastDayCount, azure.LastDayCount),
+		LastWeekValue:    padd(aws.LastWeekCount, azure.LastWeekCount),
+		LastQuarterValue: padd(aws.LastQuarterCount, azure.LastQuarterCount),
+		LastYearValue:    padd(aws.LastYearCount, azure.LastYearCount),
+	})
+
+	res = append(res, api.MetricsResponse{
+		MetricsName:      "Total storage",
+		Value:            0,
+		LastDayValue:     nil,
+		LastWeekValue:    nil,
+		LastQuarterValue: nil,
+		LastYearValue:    nil,
+	})
+
+	var cat api.CategoriesResponse
+	for _, c := range categories {
+		if c.CategoryName == "Serverless" {
+			cat = c
+		}
+	}
+	res = append(res, api.MetricsResponse{
+		MetricsName:      "Database services",
+		Value:            cat.ResourceCount,
+		LastDayValue:     cat.LastDayCount,
+		LastWeekValue:    cat.LastWeekCount,
+		LastQuarterValue: cat.LastQuarterCount,
+		LastYearValue:    cat.LastYearCount,
+	})
+
+	res = append(res, api.MetricsResponse{
+		MetricsName:      "Object stores",
+		Value:            0,
+		LastDayValue:     nil,
+		LastWeekValue:    nil,
+		LastQuarterValue: nil,
+		LastYearValue:    nil,
+	})
+
+	res = append(res, api.MetricsResponse{
+		MetricsName:      "Kubernetes clusters",
+		Value:            0,
+		LastDayValue:     nil,
+		LastWeekValue:    nil,
+		LastQuarterValue: nil,
+		LastYearValue:    nil,
+	})
+
+	cat = api.CategoriesResponse{}
+	for _, c := range categories {
+		if c.CategoryName == "Serverless" {
+			cat = c
+		}
+	}
+	res = append(res, api.MetricsResponse{
+		MetricsName:      "Serverless deployments",
+		Value:            cat.ResourceCount,
+		LastDayValue:     cat.LastDayCount,
+		LastWeekValue:    cat.LastWeekCount,
+		LastQuarterValue: cat.LastQuarterCount,
+		LastYearValue:    cat.LastYearCount,
+	})
+
+	cat = api.CategoriesResponse{}
+	for _, c := range categories {
+		if c.CategoryName == "PaaS" {
+			cat = c
+		}
+	}
+	res = append(res, api.MetricsResponse{
+		MetricsName:      "PaaS",
+		Value:            cat.ResourceCount,
+		LastDayValue:     cat.LastDayCount,
+		LastWeekValue:    cat.LastWeekCount,
+		LastQuarterValue: cat.LastQuarterCount,
+		LastYearValue:    cat.LastYearCount,
+	})
+
 	return ctx.JSON(http.StatusOK, res)
 }
 
