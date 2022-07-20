@@ -109,11 +109,7 @@ func ExtractCategorySummary(es keibi.Client, job DescribeJob, lookupResources []
 	var msgs []kafka.DescribedResource
 	categoryCount := map[string]int{}
 	for _, resource := range lookupResources {
-		if s := cloudservice.CategoryByResourceType(resource.ResourceType); s != "" {
-			if cloudservice.IsCommonByResourceType(resource.ResourceType) {
-				categoryCount[s]++
-			}
-		}
+		categoryCount[resource.Category]++
 	}
 
 	for name, count := range categoryCount {
