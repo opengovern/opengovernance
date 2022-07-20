@@ -80,6 +80,70 @@ func FindResourceGrowthTrendQuery(sourceID *uuid.UUID, provider *string,
 	return string(b), err
 }
 
+type ResourceTypeQueryResponse struct {
+	Hits ResourceTypeQueryHits `json:"hits"`
+}
+type ResourceTypeQueryHits struct {
+	Total keibi.SearchTotal      `json:"total"`
+	Hits  []ResourceTypeQueryHit `json:"hits"`
+}
+type ResourceTypeQueryHit struct {
+	ID      string                       `json:"_id"`
+	Score   float64                      `json:"_score"`
+	Index   string                       `json:"_index"`
+	Type    string                       `json:"_type"`
+	Version int64                        `json:"_version,omitempty"`
+	Source  kafka.SourceResourcesSummary `json:"_source"`
+	Sort    []interface{}                `json:"sort"`
+}
+
+func GetResourceTypeQuery(provider string, sourceID *string, resourceTypes []string,
+	fetchSize int, searchAfter []interface{}) (string, error) {
+
+	res := make(map[string]interface{})
+	var filters []interface{}
+
+	filters = append(filters, map[string]interface{}{
+		"terms": map[string][]string{"report_type": {kafka.ResourceSummaryTypeResourceGrowthTrend}},
+	})
+
+	filters = append(filters, map[string]interface{}{
+		"terms": map[string][]string{"resource_type": resourceTypes},
+	})
+
+	if provider != "" {
+		filters = append(filters, map[string]interface{}{
+			"terms": map[string][]string{"source_type": {provider}},
+		})
+	}
+
+	if sourceID != nil {
+		filters = append(filters, map[string]interface{}{
+			"terms": map[string][]string{"source_id": {*sourceID}},
+		})
+	}
+
+	res["size"] = fetchSize
+	if searchAfter != nil {
+		res["search_after"] = searchAfter
+	}
+	res["sort"] = []map[string]interface{}{
+		{
+			"resource_count": "desc",
+		},
+		{
+			"_id": "desc",
+		},
+	}
+	res["query"] = map[string]interface{}{
+		"bool": map[string]interface{}{
+			"filter": filters,
+		},
+	}
+	b, err := json.Marshal(res)
+	return string(b), err
+}
+
 func FindTopAccountsQuery(provider string, fetchSize int) (string, error) {
 	res := make(map[string]interface{})
 	var filters []interface{}

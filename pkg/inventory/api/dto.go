@@ -463,6 +463,15 @@ type TopServiceCostResponse struct {
 	Cost        float64 `json:"cost"`
 }
 
+type ResourceTypeResponse struct {
+	ResourceType     string `json:"resourceType"`
+	ResourceCount    int    `json:"resourceCount"`
+	LastDayCount     *int   `json:"lastDayCount"`
+	LastWeekCount    *int   `json:"lastWeekCount"`
+	LastQuarterCount *int   `json:"lastQuarterCount"`
+	LastYearCount    *int   `json:"lastYearCount"`
+}
+
 type CategoriesResponse struct {
 	CategoryName     string `json:"serviceName"`
 	ResourceCount    int    `json:"resourceCount"`

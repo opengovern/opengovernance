@@ -171,3 +171,51 @@ func IsCommonByResourceType(resourceType string) bool {
 	}
 	return false
 }
+
+func ListCategories() []string {
+	initCloudService()
+
+	m := map[string]interface{}{}
+	for _, v := range cloudServices {
+		m[v.Category] = true
+	}
+
+	var cat []string
+	for k := range m {
+		cat = append(cat, k)
+	}
+	return cat
+}
+
+func ResourceListByCategory(category string) []string {
+	initCloudService()
+
+	var res []string
+	for _, v := range cloudServices {
+		if v.Category == category {
+			var vtype string
+			if v.Provider == source.CloudAWS {
+				vtype = ParseARN(v.ServiceNamespace).Type()
+			} else {
+				vtype = strings.ToLower(v.ServiceNamespace)
+			}
+			for _, r := range resourceList {
+				if r.Provider != v.Provider {
+					continue
+				}
+
+				var rtype string
+				if r.Provider == source.CloudAWS {
+					rtype = ParseARN(r.ServiceNamespace).Type()
+				} else {
+					rtype = strings.ToLower(r.ServiceNamespace)
+				}
+
+				if strings.HasPrefix(rtype, vtype) {
+					res = append(res, rtype)
+				}
+			}
+		}
+	}
+	return res
+}

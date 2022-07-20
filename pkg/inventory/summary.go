@@ -96,3 +96,46 @@ func GetServices(client keibi.Client, provider source.Type, sourceID *string) ([
 	}
 	return res, nil
 }
+
+func GetResources(client keibi.Client, provider source.Type, sourceID *string, resourceTypes []string) ([]api.ResourceTypeResponse, error) {
+	var searchAfter []interface{}
+	resourceTypeResponse := map[string]api.ResourceTypeResponse{}
+	for {
+		query, err := es.GetResourceTypeQuery(string(provider), sourceID, resourceTypes, EsFetchPageSize, searchAfter)
+		if err != nil {
+			return nil, err
+		}
+
+		var response es.ResourceTypeQueryResponse
+		err = client.Search(context.Background(), describe.SourceResourcesSummary, query, &response)
+		if err != nil {
+			return nil, err
+		}
+
+		if len(response.Hits.Hits) == 0 {
+			break
+		}
+
+		for _, hit := range response.Hits.Hits {
+			if v, ok := resourceTypeResponse[hit.Source.ResourceType]; ok {
+				v.ResourceCount += hit.Source.ResourceCount
+			} else {
+				resourceTypeResponse[hit.Source.ResourceType] = api.ResourceTypeResponse{
+					ResourceType:     hit.Source.ResourceType,
+					ResourceCount:    hit.Source.ResourceCount,
+					LastDayCount:     hit.Source.LastDayCount,
+					LastWeekCount:    hit.Source.LastWeekCount,
+					LastQuarterCount: hit.Source.LastQuarterCount,
+					LastYearCount:    hit.Source.LastYearCount,
+				}
+			}
+			searchAfter = hit.Sort
+		}
+	}
+
+	var res []api.ResourceTypeResponse
+	for _, v := range resourceTypeResponse {
+		res = append(res, v)
+	}
+	return res, nil
+}

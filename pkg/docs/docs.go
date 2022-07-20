@@ -1264,6 +1264,52 @@ const docTemplate = `{
                 }
             }
         },
+        "/inventory/api/v1/metrics/categorized": {
+            "get": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "inventory"
+                ],
+                "summary": "Return categorized metrics, their value and their history",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Category",
+                        "name": "category",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Provider",
+                        "name": "provider",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "SourceID",
+                        "name": "sourceId",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/api.ResourceTypeResponse"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/inventory/api/v1/metrics/summary": {
             "get": {
                 "consumes": [
@@ -1275,7 +1321,7 @@ const docTemplate = `{
                 "tags": [
                     "inventory"
                 ],
-                "summary": "Return resource categories and number of resources",
+                "summary": "Return metrics, their value and their history",
                 "parameters": [
                     {
                         "type": "string",
@@ -1296,7 +1342,7 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/api.TopAccountResponse"
+                                "$ref": "#/definitions/api.MetricsResponse"
                             }
                         }
                     }
@@ -3614,6 +3660,29 @@ const docTemplate = `{
                 }
             }
         },
+        "api.MetricsResponse": {
+            "type": "object",
+            "properties": {
+                "lastDayValue": {
+                    "type": "integer"
+                },
+                "lastQuarterValue": {
+                    "type": "integer"
+                },
+                "lastWeekValue": {
+                    "type": "integer"
+                },
+                "lastYearValue": {
+                    "type": "integer"
+                },
+                "metricsName": {
+                    "type": "string"
+                },
+                "value": {
+                    "type": "integer"
+                }
+            }
+        },
         "api.Page": {
             "type": "object",
             "properties": {
@@ -3828,6 +3897,29 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "resourceTypeName": {
+                    "type": "string"
+                }
+            }
+        },
+        "api.ResourceTypeResponse": {
+            "type": "object",
+            "properties": {
+                "lastDayCount": {
+                    "type": "integer"
+                },
+                "lastQuarterCount": {
+                    "type": "integer"
+                },
+                "lastWeekCount": {
+                    "type": "integer"
+                },
+                "lastYearCount": {
+                    "type": "integer"
+                },
+                "resourceCount": {
+                    "type": "integer"
+                },
+                "resourceType": {
                     "type": "string"
                 }
             }
