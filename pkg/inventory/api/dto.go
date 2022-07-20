@@ -52,6 +52,7 @@ type RunQueryRequest struct {
 }
 
 type RunQueryResponse struct {
+	Title   string           `json:"title"`
 	Query   string           `json:"query"`
 	Page    api.PageResponse `json:"page"`
 	Headers []string         `json:"headers"` // column names

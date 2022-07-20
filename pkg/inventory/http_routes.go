@@ -2318,7 +2318,7 @@ func (h *HttpHandler) RunQuery(ctx echo.Context) error {
 				return err
 			}
 
-			resp, err := h.RunSmartQuery(query.Query, &req)
+			resp, err := h.RunSmartQuery(query.Title, query.Query, &req)
 			if err != nil {
 				return err
 			}
@@ -2351,7 +2351,7 @@ func (h *HttpHandler) RunQuery(ctx echo.Context) error {
 		}
 		return err
 	}
-	resp, err := h.RunSmartQuery(query.Query, &req)
+	resp, err := h.RunSmartQuery(query.Title, query.Query, &req)
 	if err != nil {
 		return err
 	}
@@ -2612,7 +2612,7 @@ func (h *HttpHandler) GetResourcesFilters(ctx echo.Context) error {
 	return ctx.JSON(200, resp)
 }
 
-func (h *HttpHandler) RunSmartQuery(query string,
+func (h *HttpHandler) RunSmartQuery(title, query string,
 	req *api.RunQueryRequest) (*api.RunQueryResponse, error) {
 
 	var err error
@@ -2649,6 +2649,7 @@ func (h *HttpHandler) RunSmartQuery(query string,
 	}
 
 	resp := api.RunQueryResponse{
+		Title:   title,
 		Query:   query,
 		Page:    newPage.ToResponse(0),
 		Headers: res.Headers,

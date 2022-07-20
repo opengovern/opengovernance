@@ -688,6 +688,8 @@ definitions:
           items: {}
           type: array
         type: array
+      title:
+        type: string
     type: object
   api.ServiceCompliancyResponse:
     properties:

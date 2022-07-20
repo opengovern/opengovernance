@@ -3982,6 +3982,9 @@ const docTemplate = `{
                         "type": "array",
                         "items": {}
                     }
+                },
+                "title": {
+                    "type": "string"
                 }
             }
         },
