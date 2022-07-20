@@ -15,6 +15,8 @@ import (
 	"strings"
 	"time"
 
+	"gitlab.com/keibiengine/keibi-engine/pkg/cloudservice"
+
 	"gitlab.com/keibiengine/keibi-engine/pkg/keibi-es-sdk"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/insight/kafka"
@@ -110,6 +112,7 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	v1.GET("/policies/count", h.CountPolicies)
 
 	v1.GET("/metrics/summary", h.GetSummaryMetrics)
+	v1.GET("/metrics/categorized", h.GetCategorizedMetrics)
 }
 
 func bindValidate(ctx echo.Context, i interface{}) error {
@@ -1435,13 +1438,13 @@ func (h *HttpHandler) GetCategories(ctx echo.Context) error {
 }
 
 // GetSummaryMetrics godoc
-// @Summary  Return resource categories and number of resources
+// @Summary  Return metrics, their value and their history
 // @Tags     inventory
 // @Accept   json
 // @Produce  json
 // @Param    provider  query     string  false  "Provider"
 // @Param    sourceId  query     string  false  "SourceID"
-// @Success  200       {object}  []api.TopAccountResponse
+// @Success  200       {object}  []api.MetricsResponse
 // @Router   /inventory/api/v1/metrics/summary [get]
 func (h *HttpHandler) GetSummaryMetrics(ctx echo.Context) error {
 	var sourceID *string
@@ -1607,6 +1610,43 @@ func (h *HttpHandler) GetSummaryMetrics(ctx echo.Context) error {
 	})
 
 	return ctx.JSON(http.StatusOK, res)
+}
+
+// GetCategorizedMetrics godoc
+// @Summary  Return categorized metrics, their value and their history
+// @Tags     inventory
+// @Accept   json
+// @Produce  json
+// @Param    category  query     string  true   "Category"
+// @Param    provider  query     string  false  "Provider"
+// @Param    sourceId  query     string  false  "SourceID"
+// @Success  200       {object}  []api.ResourceTypeResponse
+// @Router   /inventory/api/v1/metrics/categorized [get]
+func (h *HttpHandler) GetCategorizedMetrics(ctx echo.Context) error {
+	category := ctx.QueryParam("category")
+	if category == "" {
+		return echo.NewHTTPError(http.StatusBadRequest, "please specify the category")
+	}
+
+	provider, _ := source.ParseType(ctx.QueryParam("provider"))
+
+	var sourceID *string
+	if sID := ctx.QueryParam("sourceId"); sID != "" {
+		sourceUUID, err := uuid.Parse(sID)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "invalid sourceID")
+		}
+		s := sourceUUID.String()
+		sourceID = &s
+	}
+
+	resourceList := cloudservice.ResourceListByCategory(category)
+	v, err := GetResources(h.client, provider, sourceID, resourceList)
+	if err != nil {
+		return err
+	}
+
+	return ctx.JSON(http.StatusOK, v)
 }
 
 // GetAccountsResourceCount godoc

@@ -147,7 +147,7 @@ arn:aws:backup:::backup-plan:,Backup Plan
 arn:aws:backup:::backup-vault:,Backup Vault
 arn:aws:batch:::compute-environment/,Batch Compute Environment
 arn:aws:batch:::job/,Batch Job
-arn:aws:cassandra:::/keyspace/,Cassandra Keyspace
+arn:aws:cassandra:::keyspace/,Cassandra Keyspace
 arn:aws:cloudformation:::changeSet/,CloudFormation Change
 arn:aws:cloudformation:::stack/,CloudFormation Stack
 arn:aws:cloudformation:::stackset/,CloudFormation StackSet
