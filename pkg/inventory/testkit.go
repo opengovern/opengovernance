@@ -378,7 +378,7 @@ func GenerateLastCategorySummary() []kafka.SourceCategorySummary {
 	startTime := time.Now().UnixMilli()
 
 	resources = append(resources, kafka.SourceCategorySummary{
-		CategoryName:  cloudservice.CategoryByResourceType("AWS::EC2::Instance"),
+		CategoryName:  "Infrastructure",
 		SourceType:    "AWS",
 		SourceJobID:   1021,
 		DescribedAt:   startTime,
@@ -387,7 +387,7 @@ func GenerateLastCategorySummary() []kafka.SourceCategorySummary {
 	})
 
 	resources = append(resources, kafka.SourceCategorySummary{
-		CategoryName:  cloudservice.CategoryByResourceType("AWS::KMS::Alias"),
+		CategoryName:  "Security",
 		SourceType:    "AWS",
 		SourceJobID:   1020,
 		DescribedAt:   startTime + int64(2),
