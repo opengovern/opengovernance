@@ -3972,6 +3972,9 @@ const docTemplate = `{
                 "page": {
                     "$ref": "#/definitions/api.PageResponse"
                 },
+                "query": {
+                    "type": "string"
+                },
                 "result": {
                     "description": "result of query. in order to access a specific cell please use Result[Row][Column]",
                     "type": "array",

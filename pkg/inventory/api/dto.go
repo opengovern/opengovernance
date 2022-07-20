@@ -52,6 +52,7 @@ type RunQueryRequest struct {
 }
 
 type RunQueryResponse struct {
+	Query   string           `json:"query"`
 	Page    api.PageResponse `json:"page"`
 	Headers []string         `json:"headers"` // column names
 	// result of query. in order to access a specific cell please use Result[Row][Column]
