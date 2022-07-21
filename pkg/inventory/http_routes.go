@@ -113,7 +113,7 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 
 	v1.GET("/metrics/summary", h.GetSummaryMetrics)
 	v1.GET("/metrics/categorized", h.GetCategorizedMetrics)
-	v1.GET("/categories", h.GetCategories)
+	v1.GET("/categories", h.ListCategories)
 }
 
 func bindValidate(ctx echo.Context, i interface{}) error {
@@ -1654,14 +1654,14 @@ func (h *HttpHandler) GetCategorizedMetrics(ctx echo.Context) error {
 	return ctx.JSON(http.StatusOK, v)
 }
 
-// GetCategories godoc
+// ListCategories godoc
 // @Summary  Return list of categories
 // @Tags     inventory
 // @Accept   json
 // @Produce  json
 // @Success  200  {object}  []string
 // @Router   /inventory/api/v1/categories [get]
-func (h *HttpHandler) GetCategories(ctx echo.Context) error {
+func (h *HttpHandler) ListCategories(ctx echo.Context) error {
 	return ctx.JSON(http.StatusOK, cloudservice.ListCategories())
 }
 
