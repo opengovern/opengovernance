@@ -1653,6 +1653,22 @@ paths:
       summary: Returns list of benchmark tags
       tags:
       - benchmarks
+  /inventory/api/v1/categories:
+    get:
+      consumes:
+      - application/json
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              type: string
+            type: array
+      summary: Return list of categories
+      tags:
+      - inventory
   /inventory/api/v1/compliancy/trend:
     get:
       consumes:

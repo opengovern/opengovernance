@@ -1659,7 +1659,7 @@ func (h *HttpHandler) GetCategorizedMetrics(ctx echo.Context) error {
 // @Tags     inventory
 // @Accept   json
 // @Produce  json
-// @Success  200       {object}  []string
+// @Success  200  {object}  []string
 // @Router   /inventory/api/v1/categories [get]
 func (h *HttpHandler) GetCategories(ctx echo.Context) error {
 	return ctx.JSON(http.StatusOK, cloudservice.ListCategories())
