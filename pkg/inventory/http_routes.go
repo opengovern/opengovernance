@@ -1641,6 +1641,10 @@ func (h *HttpHandler) GetCategorizedMetrics(ctx echo.Context) error {
 	}
 
 	resourceList := cloudservice.ResourceListByCategory(category)
+	if len(resourceList) == 0 {
+		return echo.NewHTTPError(http.StatusBadRequest, "Invalid category")
+	}
+
 	v, err := GetResources(h.client, provider, sourceID, resourceList)
 	if err != nil {
 		return err

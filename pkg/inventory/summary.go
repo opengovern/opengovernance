@@ -2,6 +2,7 @@ package inventory
 
 import (
 	"context"
+	"fmt"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/describe"
 	"gitlab.com/keibiengine/keibi-engine/pkg/inventory/api"
@@ -106,6 +107,7 @@ func GetResources(client keibi.Client, provider source.Type, sourceID *string, r
 			return nil, err
 		}
 
+		fmt.Println("get category query:", query)
 		var response es.ResourceTypeQueryResponse
 		err = client.Search(context.Background(), describe.SourceResourcesSummary, query, &response)
 		if err != nil {
