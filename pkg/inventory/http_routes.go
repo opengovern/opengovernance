@@ -1448,23 +1448,28 @@ func (h *HttpHandler) GetCategories(ctx echo.Context) error {
 // @Success  200       {object}  []api.MetricsResponse
 // @Router   /inventory/api/v1/metrics/summary [get]
 func (h *HttpHandler) GetSummaryMetrics(ctx echo.Context) error {
-	var sourceID *string
+	var err error
+	var provider source.Type
+	var providerPtr *source.Type
+	var providerStr *string
+	if provider, err = source.ParseType(ctx.QueryParam("provider")); err != nil {
+		providerPtr = &provider
+		ts := string(provider)
+		providerStr = &ts
+	}
 
-	provider, _ := source.ParseType(ctx.QueryParam("provider"))
-	if sID := ctx.QueryParam("sourceId"); sID != "" {
-		sourceUUID, err := uuid.Parse(sID)
+	var sourceUUID *uuid.UUID
+	var sourceID *string
+	if s := ctx.QueryParam("sourceId"); s != "" {
+		su, err := uuid.Parse(s)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "invalid sourceID")
 		}
-		s := sourceUUID.String()
+		sourceUUID = &su
 		sourceID = &s
 	}
-	var res []api.MetricsResponse
 
-	categories, err := GetCategories(h.client, provider, sourceID)
-	if err != nil {
-		return err
-	}
+	var res []api.MetricsResponse
 
 	services, err := GetServices(h.client, provider, sourceID)
 	if err != nil {
@@ -1484,59 +1489,113 @@ func (h *HttpHandler) GetSummaryMetrics(ctx echo.Context) error {
 		return v
 	}
 
+	extractMetric := func(allProviderName, awsName, awsServiceName, azureName, azureServiceName string) api.MetricsResponse {
+		var aws api.TopServicesResponse
+		var azure api.TopServicesResponse
+		metricName := allProviderName
+		switch provider {
+		case source.CloudAWS:
+			metricName = awsName
+		case source.CloudAzure:
+			metricName = azureName
+		}
+		if metricName == "" {
+			return api.MetricsResponse{}
+		}
+
+		for _, s := range services {
+			if s.ServiceName == awsServiceName && awsServiceName != "" {
+				aws = s
+			}
+			if s.ServiceName == azureServiceName && azureServiceName != "" {
+				azure = s
+			}
+		}
+		return api.MetricsResponse{
+			MetricsName:      metricName,
+			Value:            azure.ResourceCount + aws.ResourceCount,
+			LastDayValue:     padd(azure.LastDayCount, aws.LastDayCount),
+			LastWeekValue:    padd(azure.LastWeekCount, aws.LastWeekCount),
+			LastQuarterValue: padd(azure.LastQuarterCount, aws.LastQuarterCount),
+			LastYearValue:    padd(azure.LastYearCount, aws.LastYearCount),
+		}
+	}
+
+	totalAccounts, err := h.onboardClient.CountSources(httpclient.FromEchoContext(ctx), providerPtr)
+	if err != nil {
+		return err
+	}
+
 	res = append(res, api.MetricsResponse{
 		MetricsName:      "Total Accounts",
-		Value:            0,
+		Value:            int(totalAccounts),
 		LastDayValue:     nil,
 		LastWeekValue:    nil,
 		LastQuarterValue: nil,
 		LastYearValue:    nil,
 	})
 
+	var lastDayResourceCount, lastWeekResourceCount, lastQuarterResourceCount, lastYearResourceCount *int
+	for idx, timeWindow := range []time.Duration{24 * time.Hour, 7 * 24 * time.Hour, 93 * 24 * time.Hour, 428 * 24 * time.Hour} {
+		fromTime := time.Now().Add(-1 * timeWindow)
+		toTime := fromTime.Add(24 * time.Hour)
+
+		var count = 0
+		var searchAfter []interface{}
+		for {
+			query, err := es.FindResourceGrowthTrendQuery(sourceUUID, providerStr, fromTime.UnixMilli(), toTime.UnixMilli(), EsFetchPageSize, searchAfter)
+			if err != nil {
+				return err
+			}
+
+			var response es.ResourceGrowthQueryResponse
+			err = h.client.Search(context.Background(), describe.SourceResourcesSummary, query, &response)
+			if err != nil {
+				return err
+			}
+
+			if len(response.Hits.Hits) == 0 {
+				break
+			}
+
+			for _, hit := range response.Hits.Hits {
+				count += hit.Source.ResourceCount
+				searchAfter = hit.Sort
+			}
+		}
+
+		switch idx {
+		case 0:
+			lastDayResourceCount = &count
+		case 1:
+			lastWeekResourceCount = &count
+		case 2:
+			lastQuarterResourceCount = &count
+		case 3:
+			lastYearResourceCount = &count
+		}
+	}
+
 	res = append(res, api.MetricsResponse{
-		MetricsName:      "Total # of Resources",
+		MetricsName:      "Cloud Resources",
 		Value:            0,
-		LastDayValue:     nil,
-		LastWeekValue:    nil,
-		LastQuarterValue: nil,
-		LastYearValue:    nil,
+		LastDayValue:     lastDayResourceCount,
+		LastWeekValue:    lastWeekResourceCount,
+		LastQuarterValue: lastQuarterResourceCount,
+		LastYearValue:    lastYearResourceCount,
 	})
 
-	var aws api.TopServicesResponse
-	var azure api.TopServicesResponse
+	res = append(res, extractMetric("Virtual Machines",
+		"Virtual Machines", "EC2 Instance",
+		"Virtual Machines", "Virtual machine"))
 
-	for _, s := range services {
-		if s.ServiceName == "EC2 Instance" {
-			aws = s
-		}
-	}
-	res = append(res, api.MetricsResponse{
-		MetricsName:      "Total # of virtual machines",
-		Value:            aws.ResourceCount,
-		LastDayValue:     aws.LastDayCount,
-		LastWeekValue:    aws.LastWeekCount,
-		LastQuarterValue: aws.LastQuarterCount,
-		LastYearValue:    aws.LastYearCount,
-	})
+	res = append(res, extractMetric("Networks",
+		"Networks (VPC)", "EC2 VPC",
+		"Networks (vNets)", "Virtual network"))
 
-	aws = api.TopServicesResponse{}
-	azure = api.TopServicesResponse{}
-	for _, s := range services {
-		if s.ServiceName == "Virtual network" {
-			azure = s
-		}
-		if s.ServiceName == "EC2 VPC" {
-			aws = s
-		}
-	}
-	res = append(res, api.MetricsResponse{
-		MetricsName:      "Total # of Networks",
-		Value:            aws.ResourceCount + azure.ResourceCount,
-		LastDayValue:     padd(aws.LastDayCount, azure.LastDayCount),
-		LastWeekValue:    padd(aws.LastWeekCount, azure.LastWeekCount),
-		LastQuarterValue: padd(aws.LastQuarterCount, azure.LastQuarterCount),
-		LastYearValue:    padd(aws.LastYearCount, azure.LastYearCount),
-	})
+	res = append(res, extractMetric("Disks",
+		"Disks", "EC2 Volume",
+		"Managed Disks", "Managed disk (data)"))
 
 	res = append(res, api.MetricsResponse{
 		MetricsName:      "Total storage",
@@ -1547,68 +1606,31 @@ func (h *HttpHandler) GetSummaryMetrics(ctx echo.Context) error {
 		LastYearValue:    nil,
 	})
 
-	var cat api.CategoriesResponse
-	for _, c := range categories {
-		if c.CategoryName == "Serverless" {
-			cat = c
+	res = append(res, extractMetric("DB Services",
+		"RDS Instances", "RDS Cluster",
+		"SQL Instances", "SQL Managed Instance"))
+
+	res = append(res, extractMetric("",
+		"S3 Buckets", "S3 Bucket",
+		"Storage Accounts", "Storage account"))
+
+	res = append(res, extractMetric("Kubernetes Cluster",
+		"Kubernetes Cluster", "EKS Clusters",
+		"Azure Kubernetes", "Azure Arc enabled Kubernetes cluster"))
+
+	res = append(res, extractMetric("Serverless",
+		"Lambda", "Lambda Function",
+		"", ""))
+
+	res = append(res, extractMetric("PaaS",
+		"Elastic Beanstalk", "Elastic Bean Stalk Environment",
+		"Apps", "")) //TODO
+
+	for i := 0; i < len(res); i++ {
+		if res[i].MetricsName == "" {
+			res = append(res[:i], res[i+1:]...)
 		}
 	}
-	res = append(res, api.MetricsResponse{
-		MetricsName:      "Database services",
-		Value:            cat.ResourceCount,
-		LastDayValue:     cat.LastDayCount,
-		LastWeekValue:    cat.LastWeekCount,
-		LastQuarterValue: cat.LastQuarterCount,
-		LastYearValue:    cat.LastYearCount,
-	})
-
-	res = append(res, api.MetricsResponse{
-		MetricsName:      "Object stores",
-		Value:            0,
-		LastDayValue:     nil,
-		LastWeekValue:    nil,
-		LastQuarterValue: nil,
-		LastYearValue:    nil,
-	})
-
-	res = append(res, api.MetricsResponse{
-		MetricsName:      "Kubernetes clusters",
-		Value:            0,
-		LastDayValue:     nil,
-		LastWeekValue:    nil,
-		LastQuarterValue: nil,
-		LastYearValue:    nil,
-	})
-
-	cat = api.CategoriesResponse{}
-	for _, c := range categories {
-		if c.CategoryName == "Serverless" {
-			cat = c
-		}
-	}
-	res = append(res, api.MetricsResponse{
-		MetricsName:      "Serverless deployments",
-		Value:            cat.ResourceCount,
-		LastDayValue:     cat.LastDayCount,
-		LastWeekValue:    cat.LastWeekCount,
-		LastQuarterValue: cat.LastQuarterCount,
-		LastYearValue:    cat.LastYearCount,
-	})
-
-	cat = api.CategoriesResponse{}
-	for _, c := range categories {
-		if c.CategoryName == "PaaS" {
-			cat = c
-		}
-	}
-	res = append(res, api.MetricsResponse{
-		MetricsName:      "PaaS",
-		Value:            cat.ResourceCount,
-		LastDayValue:     cat.LastDayCount,
-		LastWeekValue:    cat.LastWeekCount,
-		LastQuarterValue: cat.LastQuarterCount,
-		LastYearValue:    cat.LastYearCount,
-	})
 
 	return ctx.JSON(http.StatusOK, res)
 }

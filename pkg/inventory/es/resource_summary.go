@@ -104,7 +104,7 @@ func GetResourceTypeQuery(provider string, sourceID *string, resourceTypes []str
 	var filters []interface{}
 
 	filters = append(filters, map[string]interface{}{
-		"terms": map[string][]string{"report_type": {kafka.ResourceSummaryTypeResourceGrowthTrend}},
+		"terms": map[string][]string{"report_type": {kafka.ResourceSummaryTypeLastSummary}},
 	})
 
 	filters = append(filters, map[string]interface{}{

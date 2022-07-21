@@ -74,7 +74,7 @@ func ExtractServiceSummary(es keibi.Client, job DescribeJob, lookupResources []k
 		msgs = append(msgs, kafka.SourceServicesSummary{
 			ServiceName:      name,
 			SourceID:         job.SourceID,
-			ResourceType:     job.ResourceType,
+			ResourceType:     strings.ToLower(job.ResourceType),
 			SourceType:       job.SourceType,
 			SourceJobID:      job.ParentJobID,
 			DescribedAt:      job.DescribedAt,
@@ -89,7 +89,7 @@ func ExtractServiceSummary(es keibi.Client, job DescribeJob, lookupResources []k
 		msgs = append(msgs, kafka.SourceServicesSummary{
 			ServiceName:      name,
 			SourceID:         job.SourceID,
-			ResourceType:     job.ResourceType,
+			ResourceType:     strings.ToLower(job.ResourceType),
 			SourceType:       job.SourceType,
 			SourceJobID:      job.ParentJobID,
 			DescribedAt:      job.DescribedAt,
