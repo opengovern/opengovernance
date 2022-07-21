@@ -246,7 +246,7 @@ func ExtractResourceTrend(es keibi.Client, job DescribeJob, lookupResources []ka
 	trend := kafka.SourceResourcesSummary{
 		SourceID:         job.SourceID,
 		SourceType:       job.SourceType,
-		ResourceType:     job.ResourceType,
+		ResourceType:     strings.ToLower(job.ResourceType),
 		SourceJobID:      job.JobID,
 		DescribedAt:      job.DescribedAt,
 		ResourceCount:    len(lookupResources),
