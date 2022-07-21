@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	"gitlab.com/keibiengine/keibi-engine/pkg/cloudservice"
+
 	"gitlab.com/keibiengine/keibi-engine/pkg/describe"
 	"gitlab.com/keibiengine/keibi-engine/pkg/inventory/api"
 	"gitlab.com/keibiengine/keibi-engine/pkg/inventory/es"
@@ -123,7 +125,7 @@ func GetResources(client keibi.Client, provider source.Type, sourceID *string, r
 				v.ResourceCount += hit.Source.ResourceCount
 			} else {
 				resourceTypeResponse[hit.Source.ResourceType] = api.ResourceTypeResponse{
-					ResourceType:     hit.Source.ResourceType,
+					ResourceType:     cloudservice.ResourceTypeName(hit.Source.ResourceType),
 					ResourceCount:    hit.Source.ResourceCount,
 					LastDayCount:     hit.Source.LastDayCount,
 					LastWeekCount:    hit.Source.LastWeekCount,
