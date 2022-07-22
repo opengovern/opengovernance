@@ -370,8 +370,17 @@ func ExtractPlugin(resourceType string) SteampipePlugin {
 func ExtractTableName(resourceType string) string {
 	resourceType = strings.ToLower(resourceType)
 	if strings.HasPrefix(resourceType, "aws::") {
-		return awsMap[resourceType]
+		for k, v := range awsMap {
+			if resourceType == strings.ToLower(k) {
+				return v
+			}
+		}
 	} else {
-		return azureMap[resourceType]
+		for k, v := range azureMap {
+			if resourceType == strings.ToLower(k) {
+				return v
+			}
+		}
 	}
+	return ""
 }
