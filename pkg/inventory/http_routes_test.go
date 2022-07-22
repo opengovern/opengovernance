@@ -611,9 +611,9 @@ func (s *HttpHandlerSuite) TestRunQuery() {
 		}
 	}
 	req := api.RunQueryRequest{
-		Page: pagination.PageRequest{
-			NextMarker: "",
-			Size:       10,
+		Page: api.Page{
+			No:   1,
+			Size: 10,
 		},
 	}
 	var response api.RunQueryResponse
@@ -635,9 +635,9 @@ func (s *HttpHandlerSuite) TestRunQuery_Sort() {
 	require.Len(queryList, 4)
 
 	req := api.RunQueryRequest{
-		Page: pagination.PageRequest{
-			NextMarker: "",
-			Size:       10,
+		Page: api.Page{
+			No:   1,
+			Size: 10,
 		},
 		Sorts: []api.SmartQuerySortItem{
 			{
@@ -662,9 +662,9 @@ func (s *HttpHandlerSuite) TestRunQuery_Sort() {
 	require.Equal("ss2", response.Result[1][17])
 
 	req = api.RunQueryRequest{
-		Page: pagination.PageRequest{
-			NextMarker: "",
-			Size:       10,
+		Page: api.Page{
+			No:   1,
+			Size: 10,
 		},
 		Sorts: []api.SmartQuerySortItem{
 			{
@@ -698,9 +698,9 @@ func (s *HttpHandlerSuite) TestRunQuery_Page() {
 		}
 	}
 	req := api.RunQueryRequest{
-		Page: pagination.PageRequest{
-			NextMarker: "",
-			Size:       1,
+		Page: api.Page{
+			No:   1,
+			Size: 1,
 		},
 		Sorts: []api.SmartQuerySortItem{
 			{
@@ -717,7 +717,7 @@ func (s *HttpHandlerSuite) TestRunQuery_Page() {
 	require.Greater(len(response.Result[0]), 0)
 	require.Equal("ss1", response.Result[0][17])
 
-	req.Page = response.Page.ToRequest()
+	req.Page.No++
 	rec, err = doRequestJSONResponse(s.router, echo.POST, fmt.Sprintf("/api/v1/query/%d", id), &req, &response)
 	require.NoError(err, "request")
 	require.Equal(http.StatusOK, rec.Code)
@@ -742,9 +742,9 @@ func (s *HttpHandlerSuite) TestRunQuery_CSV() {
 		}
 	}
 	req := api.RunQueryRequest{
-		Page: pagination.PageRequest{
-			NextMarker: "",
-			Size:       1,
+		Page: api.Page{
+			No:   1,
+			Size: 1,
 		},
 		Sorts: []api.SmartQuerySortItem{
 			{

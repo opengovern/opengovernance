@@ -35,7 +35,6 @@ import (
 	"github.com/labstack/echo/v4"
 	compliance_report "gitlab.com/keibiengine/keibi-engine/pkg/compliance-report"
 	compliance_es "gitlab.com/keibiengine/keibi-engine/pkg/compliance-report/es"
-	pagination "gitlab.com/keibiengine/keibi-engine/pkg/internal/api"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpclient"
 	"gitlab.com/keibiengine/keibi-engine/pkg/inventory/api"
 )
@@ -2228,6 +2227,10 @@ func (h *HttpHandler) GetResource(ctx echo.Context) error {
 			val = x.IpAddrValue
 		} else if x, ok := v.GetValue().(*proto.Column_CidrRangeValue); ok {
 			val = x.CidrRangeValue
+		} else if x, ok := v.GetValue().(*proto.Column_JsonValue); ok {
+			val = string(x.JsonValue)
+		} else {
+			val = fmt.Sprintf("unknown type: %v", v.GetValue())
 		}
 
 		if len(val) > 0 {
@@ -2380,9 +2383,9 @@ func (h *HttpHandler) RunQuery(ctx echo.Context) error {
 	if accepts := ctx.Request().Header.Get("accept"); accepts != "" {
 		mediaType, _, err := mime.ParseMediaType(accepts)
 		if err == nil && mediaType == "text/csv" {
-			req.Page = pagination.PageRequest{
-				NextMarker: "",
-				Size:       5000,
+			req.Page = api.Page{
+				No:   1,
+				Size: 5000,
 			}
 
 			ctx.Response().Header().Set(echo.HeaderContentType, "text/csv")
@@ -2694,15 +2697,7 @@ func (h *HttpHandler) RunSmartQuery(title, query string,
 	req *api.RunQueryRequest) (*api.RunQueryResponse, error) {
 
 	var err error
-	var lastIdx int
-	if req.Page.NextMarker != "" && len(req.Page.NextMarker) > 0 {
-		lastIdx, err = pagination.MarkerToIdx(req.Page.NextMarker)
-		if err != nil {
-			return nil, err
-		}
-	} else {
-		lastIdx = 0
-	}
+	lastIdx := (req.Page.No - 1) * req.Page.Size
 
 	if req.Sorts == nil || len(req.Sorts) == 0 {
 		req.Sorts = []api.SmartQuerySortItem{
@@ -2721,15 +2716,9 @@ func (h *HttpHandler) RunSmartQuery(title, query string,
 		return nil, err
 	}
 
-	newPage, err := req.Page.NextPage()
-	if err != nil {
-		return nil, err
-	}
-
 	resp := api.RunQueryResponse{
 		Title:   title,
 		Query:   query,
-		Page:    newPage.ToResponse(0),
 		Headers: res.Headers,
 		Result:  res.Data,
 	}

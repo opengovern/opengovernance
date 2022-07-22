@@ -46,16 +46,15 @@ type LocationByProviderResponse struct {
 }
 
 type RunQueryRequest struct {
-	Page api.PageRequest `json:"page" validate:"required"`
+	Page Page `json:"page" validate:"required"`
 	// NOTE: we don't support multi-field sort for now, if sort is empty, results would be sorted by first column
 	Sorts []SmartQuerySortItem `json:"sorts"`
 }
 
 type RunQueryResponse struct {
-	Title   string           `json:"title"`
-	Query   string           `json:"query"`
-	Page    api.PageResponse `json:"page"`
-	Headers []string         `json:"headers"` // column names
+	Title   string   `json:"title"`
+	Query   string   `json:"query"`
+	Headers []string `json:"headers"` // column names
 	// result of query. in order to access a specific cell please use Result[Row][Column]
 	Result [][]interface{} `json:"result"`
 }
