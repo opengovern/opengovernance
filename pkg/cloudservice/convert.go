@@ -145,7 +145,7 @@ func CategoryByResourceType(resourceType string) string {
 	if r := findCloudServiceRecord(resourceType); r != nil {
 		return r.Category
 	}
-	return ""
+	return "Others"
 }
 
 func ServiceNameByResourceType(resourceType string) string {

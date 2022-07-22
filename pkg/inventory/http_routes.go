@@ -1698,7 +1698,7 @@ func (h *HttpHandler) GetAccountsResourceCount(ctx echo.Context) error {
 	provider := ctx.QueryParam("provider")
 
 	var searchAfter []interface{}
-	var res []api.AccountResourceCountResponse
+	var res map[string]api.AccountResourceCountResponse
 
 	for {
 		query, err := es.ListAccountResourceCountQuery(provider, EsFetchPageSize, searchAfter)
@@ -1723,16 +1723,24 @@ func (h *HttpHandler) GetAccountsResourceCount(ctx echo.Context) error {
 				return err
 			}
 
-			res = append(res, api.AccountResourceCountResponse{
-				SourceID:               hit.Source.SourceID,
-				ProviderConnectionName: src.ConnectionName,
-				ProviderConnectionID:   src.ConnectionID,
-				ResourceCount:          hit.Source.ResourceCount,
-				OnboardDate:            src.OnboardDate,
-			})
+			if v, ok := res[hit.Source.SourceID]; ok {
+				v.ResourceCount += hit.Source.ResourceCount
+			} else {
+				res[hit.Source.SourceID] = api.AccountResourceCountResponse{
+					SourceID:               hit.Source.SourceID,
+					ProviderConnectionName: src.ConnectionName,
+					ProviderConnectionID:   src.ConnectionID,
+					ResourceCount:          hit.Source.ResourceCount,
+					OnboardDate:            src.OnboardDate,
+				}
+			}
 		}
 	}
-	return ctx.JSON(http.StatusOK, res)
+	var response []api.AccountResourceCountResponse
+	for _, v := range res {
+		response = append(response, v)
+	}
+	return ctx.JSON(http.StatusOK, response)
 }
 
 // GetResourceDistribution godoc
