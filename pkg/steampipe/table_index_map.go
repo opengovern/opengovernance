@@ -355,10 +355,11 @@ const (
 )
 
 func ExtractPlugin(resourceType string) SteampipePlugin {
-	if strings.HasPrefix(resourceType, "AWS::") {
+	resourceType = strings.ToLower(resourceType)
+	if strings.HasPrefix(resourceType, "aws::") {
 		return SteampipePluginAWS
-	} else if strings.HasPrefix(resourceType, "Microsoft") {
-		if resourceType == "Microsoft.Resources/users" {
+	} else if strings.HasPrefix(resourceType, "microsoft") {
+		if resourceType == "microsoft.resources/users" {
 			return SteampipePluginAzureAD
 		}
 		return SteampipePluginAzure
