@@ -1698,7 +1698,7 @@ func (h *HttpHandler) GetAccountsResourceCount(ctx echo.Context) error {
 	provider := ctx.QueryParam("provider")
 
 	var searchAfter []interface{}
-	var res map[string]api.AccountResourceCountResponse
+	res := map[string]api.AccountResourceCountResponse{}
 
 	for {
 		query, err := es.ListAccountResourceCountQuery(provider, EsFetchPageSize, searchAfter)
