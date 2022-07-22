@@ -115,36 +115,36 @@ golangci-lint-main:
   script:
     - golangci-lint run -v
 
-test:
-  stage: test
-  extends: .go-cache
-  only:
-    - main
-    - merge_requests
-  services:
-    - docker:dind
-  variables:
-    DOCKER_HOST: tcp://docker:2376
-    DOCKER_TLS_CERTDIR: "/certs"
-    DOCKER_TLS_VERIFY: 1
-    DOCKER_CERT_PATH: "$DOCKER_TLS_CERTDIR/client"
-    DOCKERTEST_HOST: docker
-  before_script:
-    - echo -e "machine gitlab.com login gitlab-ci-token password ${CI_JOB_TOKEN}" > ~/.netrc
-  script:
-    - go install gotest.tools/gotestsum@v1.8.0
-    - .go/bin/gotestsum --junitfile report.xml --format testname
-  allow_failure: true
-  cache:
-    - key: go-cache
-      paths:
-        - .go/pkg/mod/
-        - .cache/
-      policy: pull
-  artifacts:
-    when: always
-    reports:
-      junit: report.xml
+#test:
+#  stage: test
+#  extends: .go-cache
+#  only:
+#    - main
+#    - merge_requests
+#  services:
+#    - docker:dind
+#  variables:
+#    DOCKER_HOST: tcp://docker:2376
+#    DOCKER_TLS_CERTDIR: "/certs"
+#    DOCKER_TLS_VERIFY: 1
+#    DOCKER_CERT_PATH: "$DOCKER_TLS_CERTDIR/client"
+#    DOCKERTEST_HOST: docker
+#  before_script:
+#    - echo -e "machine gitlab.com login gitlab-ci-token password ${CI_JOB_TOKEN}" > ~/.netrc
+#  script:
+#    - go install gotest.tools/gotestsum@v1.8.0
+#    - .go/bin/gotestsum --junitfile report.xml --format testname
+#  allow_failure: true
+#  cache:
+#    - key: go-cache
+#      paths:
+#        - .go/pkg/mod/
+#        - .cache/
+#      policy: pull
+#  artifacts:
+#    when: always
+#    reports:
+#      junit: report.xml
 
 sver-tags:
   stage: deploy
