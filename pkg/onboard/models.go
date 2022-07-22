@@ -49,6 +49,7 @@ type Source struct {
 	ID          uuid.UUID      `gorm:"primaryKey;type:uuid;default:uuid_generate_v4()"`
 	SourceId    string         `gorm:"index:idx_source_id,unique"`
 	Name        string         `gorm:"not null"`
+	Email       string         `gorm:"not null"`
 	Type        api.SourceType `gorm:"not null"`
 	Description string
 	ConfigRef   string
@@ -65,6 +66,7 @@ func NewAWSSource(in api.SourceAwsRequest) Source {
 		ID:          id,
 		SourceId:    in.Config.AccountId,
 		Name:        in.Name,
+		Email:       in.Email,
 		Description: in.Description,
 		Type:        provider,
 		ConfigRef:   fmt.Sprintf("sources/%s/%s", strings.ToLower(string(provider)), id),

@@ -67,6 +67,7 @@ func (s SourceConfigAWS) AsMap() map[string]interface{} {
 type SourceAwsRequest struct {
 	Name        string          `json:"name"`
 	Description string          `json:"description"`
+	Email       string          `json:"email"`
 	Config      SourceConfigAWS `json:"config"`
 }
 
@@ -122,6 +123,7 @@ type Source struct {
 	ID             uuid.UUID  `json:"id"`
 	ConnectionID   string     `json:"providerConnectionID"`
 	ConnectionName string     `json:"providerConnectionName"`
+	Email          string     `json:"email"`
 	Type           SourceType `json:"type"`
 	Description    string     `json:"description"`
 	OnboardDate    time.Time  `json:"onboardDate"`

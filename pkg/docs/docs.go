@@ -3719,37 +3719,6 @@ const docTemplate = `{
                 }
             }
         },
-        "api.PageRequest": {
-            "description": "Please fill nextMarker with \"\" for the first request. After that fill it with last response of server. e.g.: {\"nextMarker\": \"\", \"size\": 10} --\u003e Server Server --\u003e {\"nextMarker\": \"MGT=\", \"size\": 10} {\"nextMarker\": \"MGT=\", \"size\": 10} --\u003e Server",
-            "type": "object",
-            "required": [
-                "size"
-            ],
-            "properties": {
-                "nextMarker": {
-                    "description": "fill it with empty for the first request",
-                    "type": "string"
-                },
-                "size": {
-                    "type": "integer",
-                    "minimum": 1
-                }
-            }
-        },
-        "api.PageResponse": {
-            "type": "object",
-            "properties": {
-                "nextMarker": {
-                    "type": "string"
-                },
-                "size": {
-                    "type": "integer"
-                },
-                "totalCount": {
-                    "type": "integer"
-                }
-            }
-        },
         "api.Policy": {
             "type": "object",
             "properties": {
@@ -4065,7 +4034,7 @@ const docTemplate = `{
             ],
             "properties": {
                 "page": {
-                    "$ref": "#/definitions/api.PageRequest"
+                    "$ref": "#/definitions/api.Page"
                 },
                 "sorts": {
                     "description": "NOTE: we don't support multi-field sort for now, if sort is empty, results would be sorted by first column",
@@ -4085,9 +4054,6 @@ const docTemplate = `{
                     "items": {
                         "type": "string"
                     }
-                },
-                "page": {
-                    "$ref": "#/definitions/api.PageResponse"
                 },
                 "query": {
                     "type": "string"
@@ -4430,6 +4396,9 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "description": {
+                    "type": "string"
+                },
+                "email": {
                     "type": "string"
                 },
                 "id": {

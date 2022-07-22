@@ -447,30 +447,6 @@ definitions:
       size:
         type: integer
     type: object
-  api.PageRequest:
-    description: 'Please fill nextMarker with "" for the first request. After that
-      fill it with last response of server. e.g.: {"nextMarker": "", "size": 10} -->
-      Server Server --> {"nextMarker": "MGT=", "size": 10} {"nextMarker": "MGT=",
-      "size": 10} --> Server'
-    properties:
-      nextMarker:
-        description: fill it with empty for the first request
-        type: string
-      size:
-        minimum: 1
-        type: integer
-    required:
-    - size
-    type: object
-  api.PageResponse:
-    properties:
-      nextMarker:
-        type: string
-      size:
-        type: integer
-      totalCount:
-        type: integer
-    type: object
   api.Policy:
     properties:
       category:
@@ -690,7 +666,7 @@ definitions:
   api.RunQueryRequest:
     properties:
       page:
-        $ref: '#/definitions/api.PageRequest'
+        $ref: '#/definitions/api.Page'
       sorts:
         description: 'NOTE: we don''t support multi-field sort for now, if sort is
           empty, results would be sorted by first column'
@@ -707,8 +683,6 @@ definitions:
         items:
           type: string
         type: array
-      page:
-        $ref: '#/definitions/api.PageResponse'
       query:
         type: string
       result:
@@ -935,6 +909,8 @@ definitions:
   gitlab.com_keibiengine_keibi-engine_pkg_onboard_api.Source:
     properties:
       description:
+        type: string
+      email:
         type: string
       id:
         type: string

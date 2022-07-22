@@ -8,6 +8,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/turbot/steampipe-plugin-sdk/grpc/proto"
+
 	"github.com/go-redis/redis/v8"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/steampipe"
@@ -291,6 +293,21 @@ func doDescribeAWS(ctx context.Context, rdb *redis.Client, es keibi.Client, job 
 					"resource_type": resource.Type,
 				},
 			}
+			pluginTableName := steampipe.ExtractTableName(job.ResourceType)
+			desc, err := steampipe.ConvertToDescription(job.ResourceType, kafkaResource)
+			if err != nil {
+				return nil, err
+			}
+			cells, err := steampipe.AWSDescriptionToRecord(desc, pluginTableName)
+			if err != nil {
+				return nil, err
+			}
+			for name, v := range cells {
+				if name == "title" || name == "name" {
+					kafkaResource.Metadata["name"] = v.GetStringValue()
+				}
+			}
+
 			msgs = append(msgs, kafkaResource)
 
 			tags, err := steampipe.ExtractTags(job.ResourceType, kafkaResource)
@@ -432,6 +449,30 @@ func doDescribeAzure(ctx context.Context, rdb *redis.Client, es keibi.Client, jo
 				"source_id":         job.SourceID,
 			},
 		}
+		pluginTableName := steampipe.ExtractTableName(job.ResourceType)
+		desc, err := steampipe.ConvertToDescription(job.ResourceType, kafkaResource)
+		if err != nil {
+			return nil, err
+		}
+		pluginProvider := steampipe.ExtractPlugin(job.ResourceType)
+		var cells map[string]*proto.Column
+		if pluginProvider == steampipe.SteampipePluginAzure {
+			cells, err = steampipe.AzureDescriptionToRecord(desc, pluginTableName)
+			if err != nil {
+				return nil, err
+			}
+		} else {
+			cells, err = steampipe.AzureADDescriptionToRecord(desc, pluginTableName)
+			if err != nil {
+				return nil, err
+			}
+		}
+		for name, v := range cells {
+			if name == "title" || name == "name" {
+				kafkaResource.Metadata["name"] = v.GetStringValue()
+			}
+		}
+
 		msgs = append(msgs, kafkaResource)
 
 		tags, err := steampipe.ExtractTags(job.ResourceType, kafkaResource)
