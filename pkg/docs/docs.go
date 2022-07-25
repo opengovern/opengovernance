@@ -4212,6 +4212,9 @@ const docTemplate = `{
         "api.TopAccountResponse": {
             "type": "object",
             "properties": {
+                "provider": {
+                    "type": "string"
+                },
                 "providerConnectionID": {
                     "type": "string"
                 },
