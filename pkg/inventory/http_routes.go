@@ -2220,6 +2220,7 @@ func (h *HttpHandler) GetResource(ctx echo.Context) error {
 				}
 			}
 			resp["tags"] = respTags
+			continue
 		}
 
 		var val string
