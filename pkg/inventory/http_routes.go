@@ -2722,6 +2722,7 @@ func (h *HttpHandler) RunSmartQuery(title, query string,
 		return nil, errors.New("multiple sort items not supported")
 	}
 
+	fmt.Println("smart query is: ", query)
 	res, err := h.steampipeConn.Query(query, lastIdx, req.Page.Size, req.Sorts[0].Field, steampipe.DirectionType(req.Sorts[0].Direction))
 	if err != nil {
 		return nil, err

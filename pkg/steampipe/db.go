@@ -80,6 +80,9 @@ func (s *Database) Query(query string, from, size int, orderBy string,
 
 	query = query + orderStr + " LIMIT $1 OFFSET $2;"
 
+	fmt.Println("query is: ", query)
+	fmt.Println("size: ", size, "from:", from)
+
 	r, err := s.conn.Query(context.Background(),
 		query, size, from)
 	if err != nil {
