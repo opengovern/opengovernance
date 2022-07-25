@@ -1,11 +1,22 @@
 package describe
 
 import (
+	"context"
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
+
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/exporters/jaeger"
+	"go.opentelemetry.io/otel/sdk/resource"
+	"go.opentelemetry.io/otel/sdk/trace"
+
+	//"go.opentelemetry.io/otel/semconv"
 	"net/http"
 	"strings"
+
+	trace2 "gitlab.com/keibiengine/keibi-engine/pkg/trace"
+	"go.opentelemetry.io/otel/codes"
 
 	"github.com/go-redis/redis/v8"
 
@@ -19,6 +30,8 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/vault"
 	"go.uber.org/zap"
 	"gopkg.in/Shopify/sarama.v1"
+
+	"go.opentelemetry.io/otel"
 )
 
 type Worker struct {
@@ -32,6 +45,7 @@ type Worker struct {
 	es             keibi.Client
 	logger         *zap.Logger
 	pusher         *push.Pusher
+	tp             *trace.TracerProvider
 }
 
 func InitializeWorker(
@@ -55,6 +69,7 @@ func InitializeWorker(
 	elasticSearchPassword string,
 	prometheusPushAddress string,
 	redisAddress string,
+	jaegerAddress string,
 ) (w *Worker, err error) {
 	if id == "" {
 		return nil, fmt.Errorf("'id' must be set to a non empty string")
@@ -144,10 +159,26 @@ func InitializeWorker(
 		Password: "", // no password set
 		DB:       0,  // use default DB
 	})
+
+	exp, _ := jaeger.New(jaeger.WithCollectorEndpoint(jaeger.WithEndpoint(JaegerAddress)))
+	r, _ := resource.Merge(
+		resource.Default(),
+		resource.NewWithAttributes(
+			"http://keibi.io/",
+			attribute.String("environment", "production"),
+		),
+	)
+
+	w.tp = trace.NewTracerProvider(
+		trace.WithBatcher(exp),
+		trace.WithResource(r),
+	)
+	otel.SetTracerProvider(w.tp)
+
 	return w, nil
 }
 
-func (w *Worker) Run() error {
+func (w *Worker) Run(ctx context.Context) error {
 	msgs, err := w.jobQueue.Consume()
 	if err != nil {
 		return err
@@ -155,6 +186,8 @@ func (w *Worker) Run() error {
 
 	w.logger.Error("Waiting indefinitly for messages. To exit press CTRL+C")
 	for msg := range msgs {
+		ctx, span := otel.Tracer(trace2.DescribeWorkerTrace).Start(ctx, "HandleMessage")
+
 		var job DescribeJob
 		if err := json.Unmarshal(msg.Body, &job); err != nil {
 			w.logger.Error("Failed to unmarshal task", zap.Error(err))
@@ -162,31 +195,44 @@ func (w *Worker) Run() error {
 			if err != nil {
 				w.logger.Error("Failed nacking message", zap.Error(err))
 			}
+			span.RecordError(err)
+			span.SetStatus(codes.Error, err.Error())
+			span.End()
 			continue
 		}
-		result := job.Do(w.vault, w.rdb, w.es, w.kfkProducer, w.kfkTopic, w.logger)
+		result := job.Do(ctx, w.vault, w.rdb, w.es, w.kfkProducer, w.kfkTopic, w.logger)
 		if strings.Contains(result.Error, "ThrottlingException") ||
 			strings.Contains(result.Error, "Rate exceeded") ||
 			strings.Contains(result.Error, "RateExceeded") {
 			if err := msg.Nack(false, true); err != nil {
 				w.logger.Error("Failed requeueing message", zap.Error(err))
 			}
+			span.RecordError(err)
+			span.SetStatus(codes.Error, err.Error())
+			span.End()
 			continue
 		}
 
 		err := w.jobResultQueue.Publish(result)
 		if err != nil {
 			w.logger.Error("Failed to send results to queue: %s", zap.Error(err))
+			span.RecordError(err)
+			span.SetStatus(codes.Error, err.Error())
 		}
 
 		if err := msg.Ack(false); err != nil {
 			w.logger.Error("Failed acking message", zap.Error(err))
+			span.RecordError(err)
+			span.SetStatus(codes.Error, err.Error())
 		}
 
 		err = w.pusher.Push()
 		if err != nil {
 			w.logger.Error("Failed to push metrics", zap.Error(err))
+			span.RecordError(err)
+			span.SetStatus(codes.Error, err.Error())
 		}
+		span.End()
 	}
 
 	return fmt.Errorf("descibe jobs channel is closed")
@@ -209,6 +255,8 @@ func (w *Worker) Stop() {
 		w.kfkProducer.Close() //nolint,gosec
 		w.kfkProducer = nil
 	}
+
+	w.tp.Shutdown(context.Background())
 }
 
 func newKafkaProducer(brokers []string) (sarama.SyncProducer, error) {

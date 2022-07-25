@@ -8,6 +8,9 @@ import (
 	"strings"
 	"time"
 
+	trace2 "gitlab.com/keibiengine/keibi-engine/pkg/trace"
+	"go.opentelemetry.io/otel"
+
 	"github.com/turbot/steampipe-plugin-sdk/grpc/proto"
 
 	"github.com/go-redis/redis/v8"
@@ -155,13 +158,15 @@ type DescribeJobResult struct {
 // do its best to complete the task even if some errors occur along the way. However,
 // if any error occurs, The JobResult will indicate that through the Status and Error
 // will be set to the first error that occured.
-func (j DescribeJob) Do(vlt vault.SourceConfig, rdb *redis.Client, es keibi.Client, producer sarama.SyncProducer, topic string, logger *zap.Logger) (r DescribeJobResult) {
+func (j DescribeJob) Do(ctx context.Context, vlt vault.SourceConfig, rdb *redis.Client, es keibi.Client, producer sarama.SyncProducer, topic string, logger *zap.Logger) (r DescribeJobResult) {
+	ctx, span := otel.Tracer(trace2.DescribeWorkerTrace).Start(ctx, "Do")
+	defer span.End()
+
 	startTime := time.Now().Unix()
 	defer func() {
 		if err := recover(); err != nil {
 			fmt.Println("paniced with error:", err)
 			fmt.Println(errors.Wrap(err, 2).ErrorStack())
-
 			DoDescribeJobsDuration.WithLabelValues(string(j.SourceType), j.ResourceType, "failure").Observe(float64(time.Now().Unix() - startTime))
 			DoDescribeJobsCount.WithLabelValues(string(j.SourceType), j.ResourceType, "failure").Inc()
 			r = DescribeJobResult{
@@ -227,6 +232,9 @@ func (j DescribeJob) Do(vlt vault.SourceConfig, rdb *redis.Client, es keibi.Clie
 
 // doDescribe describes the sources, e.g. AWS, Azure and returns the responses.
 func doDescribe(ctx context.Context, rdb *redis.Client, es keibi.Client, job DescribeJob, config map[string]interface{}, logger *zap.Logger) ([]kafka.DescribedResource, error) {
+	ctx, span := otel.Tracer(trace2.DescribeWorkerTrace).Start(ctx, "DoDescribe")
+	defer span.End()
+
 	logger.Info(fmt.Sprintf("Proccessing Job: ID[%d] ParentJobID[%d] RosourceType[%s]\n", job.JobID, job.ParentJobID, job.ResourceType))
 
 	switch job.SourceType {
@@ -240,22 +248,30 @@ func doDescribe(ctx context.Context, rdb *redis.Client, es keibi.Client, job Des
 }
 
 func doDescribeAWS(ctx context.Context, rdb *redis.Client, es keibi.Client, job DescribeJob, config map[string]interface{}, logger *zap.Logger) ([]kafka.DescribedResource, error) {
+	ctx, span := otel.Tracer(trace2.DescribeWorkerTrace).Start(ctx, "DoDescribeAWS")
+	defer span.End()
+
 	creds, err := AWSAccountConfigFromMap(config)
 	if err != nil {
 		return nil, fmt.Errorf("aws account credentials: %w", err)
 	}
 
-	output, err := aws.GetResources(
-		ctx,
-		job.ResourceType,
-		creds.AccountID,
-		creds.Regions,
-		creds.AccessKey,
-		creds.SecretKey,
-		creds.SessionToken,
-		creds.AssumeRoleARN,
-		false,
-	)
+	output, err := func(ctx context.Context) (*aws.Resources, error) {
+		ctx, span := otel.Tracer(trace2.DescribeWorkerTrace).Start(ctx, "awsGetResources")
+		defer span.End()
+
+		return aws.GetResources(
+			ctx,
+			job.ResourceType,
+			creds.AccountID,
+			creds.Regions,
+			creds.AccessKey,
+			creds.SecretKey,
+			creds.SessionToken,
+			creds.AssumeRoleARN,
+			false,
+		)
+	}(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("AWS: %w", err)
 	}
@@ -393,6 +409,9 @@ func doDescribeAWS(ctx context.Context, rdb *redis.Client, es keibi.Client, job 
 }
 
 func doDescribeAzure(ctx context.Context, rdb *redis.Client, es keibi.Client, job DescribeJob, config map[string]interface{}, logger *zap.Logger) ([]kafka.DescribedResource, error) {
+	ctx, span := otel.Tracer(trace2.DescribeWorkerTrace).Start(ctx, "DoDescribeAzure")
+	defer span.End()
+
 	creds, err := AzureSubscriptionConfigFromMap(config)
 	if err != nil {
 		return nil, fmt.Errorf("aure subscription credentials: %w", err)
@@ -403,22 +422,27 @@ func doDescribeAzure(ctx context.Context, rdb *redis.Client, es keibi.Client, jo
 		subscriptionId = creds.SubscriptionID
 	}
 
-	output, err := azure.GetResources(
-		ctx,
-		job.ResourceType,
-		[]string{subscriptionId},
-		azure.AuthConfig{
-			TenantID:            creds.TenantID,
-			ClientID:            creds.ClientID,
-			ClientSecret:        creds.ClientSecret,
-			CertificatePath:     creds.CertificatePath,
-			CertificatePassword: creds.CertificatePass,
-			Username:            creds.Username,
-			Password:            creds.Password,
-		},
-		string(azure.AuthEnv),
-		"",
-	)
+	output, err := func(ctx context.Context) (*azure.Resources, error) {
+		ctx, span := otel.Tracer(trace2.DescribeWorkerTrace).Start(ctx, "azureGetResources")
+		defer span.End()
+
+		return azure.GetResources(
+			ctx,
+			job.ResourceType,
+			[]string{subscriptionId},
+			azure.AuthConfig{
+				TenantID:            creds.TenantID,
+				ClientID:            creds.ClientID,
+				ClientSecret:        creds.ClientSecret,
+				CertificatePath:     creds.CertificatePath,
+				CertificatePassword: creds.CertificatePass,
+				Username:            creds.Username,
+				Password:            creds.Password,
+			},
+			string(azure.AuthEnv),
+			"",
+		)
+	}(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("azure: %w", err)
 	}

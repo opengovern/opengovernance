@@ -1,6 +1,7 @@
 package describe
 
 import (
+	"context"
 	"errors"
 	"os"
 	"strings"
@@ -49,7 +50,8 @@ var (
 
 	PrometheusPushAddress = os.Getenv("PROMETHEUS_PUSH_ADDRESS")
 
-	RedisAddress = os.Getenv("REDIS_ADDRESS")
+	RedisAddress  = os.Getenv("REDIS_ADDRESS")
+	JaegerAddress = os.Getenv("JAEGER_ADDRESS")
 
 	DescribeIntervalHours   = os.Getenv("DESCRIBE_INTERVAL_HOURS")
 	ComplianceIntervalHours = os.Getenv("COMPLIANCE_INTERVAL_HOURS")
@@ -155,6 +157,7 @@ func WorkerCommand() *cobra.Command {
 				ElasticSearchPassword,
 				PrometheusPushAddress,
 				RedisAddress,
+				JaegerAddress,
 			)
 			if err != nil {
 				return err
@@ -162,7 +165,7 @@ func WorkerCommand() *cobra.Command {
 
 			defer w.Stop()
 
-			return w.Run()
+			return w.Run(context.Background())
 		},
 	}
 
