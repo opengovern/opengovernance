@@ -1198,6 +1198,7 @@ func (h *HttpHandler) GetTopAccountsByResourceCount(ctx echo.Context) error {
 
 		res = append(res, api.TopAccountResponse{
 			SourceID:               hit.Source.SourceID,
+			Provider:               string(src.Type),
 			ProviderConnectionName: src.ConnectionName,
 			ProviderConnectionID:   src.ConnectionID,
 			ResourceCount:          hit.Source.ResourceCount,
@@ -1285,6 +1286,7 @@ func (h *HttpHandler) GetTopFastestGrowingAccountsByResourceCount(ctx echo.Conte
 
 		res = append(res, api.TopAccountResponse{
 			SourceID:               hit.Source.SourceID,
+			Provider:               string(src.Type),
 			ProviderConnectionName: src.ConnectionName,
 			ProviderConnectionID:   src.ConnectionID,
 			ResourceCount:          hit.Source.ResourceCount,

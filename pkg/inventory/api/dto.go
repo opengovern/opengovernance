@@ -436,6 +436,7 @@ type AccountResourceCountResponse struct {
 
 type TopAccountResponse struct {
 	SourceID               string `json:"sourceID"`
+	Provider               string `json:"provider"`
 	ProviderConnectionName string `json:"providerConnectionName"`
 	ProviderConnectionID   string `json:"providerConnectionID"`
 	ResourceCount          int    `json:"resourceCount"`

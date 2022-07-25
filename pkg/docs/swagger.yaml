@@ -789,6 +789,8 @@ definitions:
     type: object
   api.TopAccountResponse:
     properties:
+      provider:
+        type: string
       providerConnectionID:
         type: string
       providerConnectionName:
