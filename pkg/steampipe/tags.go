@@ -3,6 +3,7 @@ package steampipe
 import (
 	"encoding/json"
 	"fmt"
+	"reflect"
 
 	"github.com/turbot/steampipe-plugin-sdk/grpc/proto"
 )
@@ -54,9 +55,22 @@ func ExtractTags(resourceType string, source interface{}) (map[string]string, er
 	for k, v := range cells {
 		if k == "tags" {
 			if jsonBytes := v.GetJsonValue(); jsonBytes != nil {
-				err := json.Unmarshal(jsonBytes, &tags)
+				var t interface{}
+				err := json.Unmarshal(jsonBytes, &t)
 				if err != nil {
 					return nil, err
+				}
+				if tmap, ok := t.(map[string]string); ok {
+					tags = tmap
+				} /*else if tarr, ok := t.([]map[string]string); ok {
+					for _, tr := range tarr {
+						for tk, tv := range tr {
+							tags[tk] = tv
+						}
+					}
+				} */else {
+					fmt.Printf("invalid tag type for: %s\n", string(jsonBytes))
+					return nil, fmt.Errorf("invalid tags type: %s", reflect.TypeOf(t))
 				}
 			}
 		}
