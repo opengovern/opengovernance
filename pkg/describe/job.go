@@ -256,8 +256,8 @@ func doDescribeAWS(ictx context.Context, rdb *redis.Client, es keibi.Client, job
 		return nil, fmt.Errorf("aws account credentials: %w", err)
 	}
 
-	output, err := func(ctx context.Context) (*aws.Resources, error) {
-		ctx, span := otel.Tracer(trace2.DescribeWorkerTrace).Start(ctx, "awsGetResources")
+	output, err := func(ictx context.Context) (*aws.Resources, error) {
+		ctx, span := otel.Tracer(trace2.DescribeWorkerTrace).Start(ictx, "awsGetResources")
 		defer span.End()
 
 		return aws.GetResources(
