@@ -160,7 +160,7 @@ func InitializeWorker(
 		DB:       0,  // use default DB
 	})
 
-	exp, _ := jaeger.New(jaeger.WithCollectorEndpoint(jaeger.WithEndpoint(JaegerAddress)))
+	exp, _ := jaeger.New(jaeger.WithCollectorEndpoint(jaeger.WithEndpoint(jaegerAddress)))
 	r, _ := resource.Merge(
 		resource.Default(),
 		resource.NewWithAttributes(

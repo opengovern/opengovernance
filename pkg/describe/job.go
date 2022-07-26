@@ -158,8 +158,8 @@ type DescribeJobResult struct {
 // do its best to complete the task even if some errors occur along the way. However,
 // if any error occurs, The JobResult will indicate that through the Status and Error
 // will be set to the first error that occured.
-func (j DescribeJob) Do(ctx context.Context, vlt vault.SourceConfig, rdb *redis.Client, es keibi.Client, producer sarama.SyncProducer, topic string, logger *zap.Logger) (r DescribeJobResult) {
-	ctx, span := otel.Tracer(trace2.DescribeWorkerTrace).Start(ctx, "Do")
+func (j DescribeJob) Do(ictx context.Context, vlt vault.SourceConfig, rdb *redis.Client, es keibi.Client, producer sarama.SyncProducer, topic string, logger *zap.Logger) (r DescribeJobResult) {
+	ctx, span := otel.Tracer(trace2.DescribeWorkerTrace).Start(ictx, "Do")
 	defer span.End()
 
 	startTime := time.Now().Unix()
@@ -231,8 +231,8 @@ func (j DescribeJob) Do(ctx context.Context, vlt vault.SourceConfig, rdb *redis.
 }
 
 // doDescribe describes the sources, e.g. AWS, Azure and returns the responses.
-func doDescribe(ctx context.Context, rdb *redis.Client, es keibi.Client, job DescribeJob, config map[string]interface{}, logger *zap.Logger) ([]kafka.DescribedResource, error) {
-	ctx, span := otel.Tracer(trace2.DescribeWorkerTrace).Start(ctx, "DoDescribe")
+func doDescribe(ictx context.Context, rdb *redis.Client, es keibi.Client, job DescribeJob, config map[string]interface{}, logger *zap.Logger) ([]kafka.DescribedResource, error) {
+	ctx, span := otel.Tracer(trace2.DescribeWorkerTrace).Start(ictx, "DoDescribe")
 	defer span.End()
 
 	logger.Info(fmt.Sprintf("Proccessing Job: ID[%d] ParentJobID[%d] RosourceType[%s]\n", job.JobID, job.ParentJobID, job.ResourceType))
@@ -247,8 +247,8 @@ func doDescribe(ctx context.Context, rdb *redis.Client, es keibi.Client, job Des
 	}
 }
 
-func doDescribeAWS(ctx context.Context, rdb *redis.Client, es keibi.Client, job DescribeJob, config map[string]interface{}, logger *zap.Logger) ([]kafka.DescribedResource, error) {
-	ctx, span := otel.Tracer(trace2.DescribeWorkerTrace).Start(ctx, "DoDescribeAWS")
+func doDescribeAWS(ictx context.Context, rdb *redis.Client, es keibi.Client, job DescribeJob, config map[string]interface{}, logger *zap.Logger) ([]kafka.DescribedResource, error) {
+	ctx, span := otel.Tracer(trace2.DescribeWorkerTrace).Start(ictx, "DoDescribeAWS")
 	defer span.End()
 
 	creds, err := AWSAccountConfigFromMap(config)
