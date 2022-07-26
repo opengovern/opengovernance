@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/tls"
 	"encoding/json"
+	"errors"
 	"fmt"
 
 	"go.opentelemetry.io/otel/attribute"
@@ -207,8 +208,8 @@ func (w *Worker) Run(ctx context.Context) error {
 			if err := msg.Nack(false, true); err != nil {
 				w.logger.Error("Failed requeueing message", zap.Error(err))
 			}
-			span.RecordError(err)
-			span.SetStatus(codes.Error, err.Error())
+			span.RecordError(errors.New(result.Error))
+			span.SetStatus(codes.Error, result.Error)
 			span.End()
 			continue
 		}
