@@ -62,13 +62,7 @@ func ExtractTags(resourceType string, source interface{}) (map[string]string, er
 				}
 				if tmap, ok := t.(map[string]string); ok {
 					tags = tmap
-				} /*else if tarr, ok := t.([]map[string]string); ok {
-					for _, tr := range tarr {
-						for tk, tv := range tr {
-							tags[tk] = tv
-						}
-					}
-				} */else {
+				} else {
 					fmt.Printf("invalid tag type for: %s\n", string(jsonBytes))
 					return nil, fmt.Errorf("invalid tags type: %s", reflect.TypeOf(t))
 				}
