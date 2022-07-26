@@ -62,6 +62,40 @@ func ExtractTags(resourceType string, source interface{}) (map[string]string, er
 				}
 				if tmap, ok := t.(map[string]string); ok {
 					tags = tmap
+				} else if tmap, ok := t.(map[string]interface{}); ok {
+					for tk, tv := range tmap {
+						if ts, ok := tv.(string); ok {
+							tags[tk] = ts
+						} else {
+							return nil, fmt.Errorf("invalid tags value type: %s", reflect.TypeOf(tv))
+						}
+					}
+				} else if tarr, ok := t.([]interface{}); ok {
+					for _, tr := range tarr {
+						if tmap, ok := tr.(map[string]string); ok {
+							var key string
+							for tk, tv := range tmap {
+								if tk == "TagKey" {
+									key = tv
+								} else if tk == "TagValue" {
+									tags[key] = tv
+								}
+							}
+						} else if tmap, ok := tr.(map[string]interface{}); ok {
+							var key string
+							for tk, tv := range tmap {
+								if ts, ok := tv.(string); ok {
+									if tk == "TagKey" {
+										key = ts
+									} else if tk == "TagValue" {
+										tags[key] = ts
+									}
+								} else {
+									return nil, fmt.Errorf("invalid tags js value type: %s", reflect.TypeOf(tv))
+								}
+							}
+						}
+					}
 				} else {
 					fmt.Printf("invalid tag type for: %s\n", string(jsonBytes))
 					return nil, fmt.Errorf("invalid tags type: %s", reflect.TypeOf(t))
