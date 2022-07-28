@@ -1074,6 +1074,9 @@ func (h *HttpHandler) GetTopAccountsByCost(ctx echo.Context) error {
 	for key, value := range accountCostMap {
 		src, err := h.onboardClient.GetSource(httpclient.FromEchoContext(ctx), key)
 		if err != nil {
+			if err.Error() == "source not found" { //source has been deleted
+				continue
+			}
 			return err
 		}
 		accountCost = append(accountCost, api.TopAccountCostResponse{
@@ -1193,6 +1196,9 @@ func (h *HttpHandler) GetTopAccountsByResourceCount(ctx echo.Context) error {
 	for _, hit := range response.Hits.Hits {
 		src, err := h.onboardClient.GetSource(httpclient.FromEchoContext(ctx), hit.Source.SourceID)
 		if err != nil {
+			if err.Error() == "source not found" { //source has been deleted
+				continue
+			}
 			return err
 		}
 
@@ -1281,6 +1287,9 @@ func (h *HttpHandler) GetTopFastestGrowingAccountsByResourceCount(ctx echo.Conte
 	for _, hit := range hits {
 		src, err := h.onboardClient.GetSource(httpclient.FromEchoContext(ctx), hit.Source.SourceID)
 		if err != nil {
+			if err.Error() == "source not found" { //source has been deleted
+				continue
+			}
 			return err
 		}
 
@@ -1722,6 +1731,9 @@ func (h *HttpHandler) GetAccountsResourceCount(ctx echo.Context) error {
 			searchAfter = hit.Sort
 			src, err := h.onboardClient.GetSource(httpclient.FromEchoContext(ctx), hit.Source.SourceID)
 			if err != nil {
+				if err.Error() == "source not found" { //source has been deleted
+					continue
+				}
 				return err
 			}
 
@@ -2758,6 +2770,9 @@ func (h *HttpHandler) GetResources(ctx echo.Context, provider *api.SourceType, c
 		for sourceId := range connectionName {
 			src, err := h.onboardClient.GetSource(httpclient.FromEchoContext(ctx), sourceId)
 			if err != nil {
+				if err.Error() == "source not found" { //source has been deleted
+					continue
+				}
 				return err
 			}
 
@@ -2783,6 +2798,9 @@ func (h *HttpHandler) GetResources(ctx echo.Context, provider *api.SourceType, c
 		for sourceId := range connectionName {
 			src, err := h.onboardClient.GetSource(httpclient.FromEchoContext(ctx), sourceId)
 			if err != nil {
+				if err.Error() == "source not found" { //source has been deleted
+					continue
+				}
 				return err
 			}
 
@@ -2808,6 +2826,9 @@ func (h *HttpHandler) GetResources(ctx echo.Context, provider *api.SourceType, c
 		for sourceId := range connectionName {
 			src, err := h.onboardClient.GetSource(httpclient.FromEchoContext(ctx), sourceId)
 			if err != nil {
+				if err.Error() == "source not found" { //source has been deleted
+					continue
+				}
 				return err
 			}
 
