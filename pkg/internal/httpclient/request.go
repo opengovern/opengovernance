@@ -13,6 +13,9 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpserver"
 )
 
+type EchoError struct {
+	Message string `json:"message"`
+}
 type Context struct {
 	UserRole      api.Role
 	UserID        string
@@ -63,6 +66,12 @@ func DoRequest(method, url string, headers map[string]string, payload []byte, v 
 		if err != nil {
 			return fmt.Errorf("read body: %w", err)
 		}
+
+		var echoerr EchoError
+		if jserr := json.Unmarshal(d, &echoerr); jserr == nil {
+			return fmt.Errorf(echoerr.Message)
+		}
+
 		return fmt.Errorf("http status: %d: %s", res.StatusCode, d)
 	}
 	if v == nil {
