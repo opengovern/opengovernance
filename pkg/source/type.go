@@ -1,7 +1,7 @@
 package source
 
 import (
-	"errors"
+	"fmt"
 	"strings"
 )
 
@@ -20,6 +20,6 @@ func ParseType(str string) (Type, error) {
 	case "azure":
 		return CloudAzure, nil
 	default:
-		return "", errors.New("invalid provider")
+		return "", fmt.Errorf("invalid provider: %s", str)
 	}
 }

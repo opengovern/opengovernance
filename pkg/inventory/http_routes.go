@@ -1087,7 +1087,10 @@ func (h *HttpHandler) GetTopAccountsByCost(ctx echo.Context) error {
 		})
 	}
 
-	return ctx.JSON(http.StatusOK, accountCost[:count])
+	if len(accountCost) > count {
+		accountCost = accountCost[:count]
+	}
+	return ctx.JSON(http.StatusOK, accountCost)
 }
 
 // GetTopServicesByCost godoc
@@ -1162,7 +1165,10 @@ func (h *HttpHandler) GetTopServicesByCost(ctx echo.Context) error {
 		})
 	}
 
-	return ctx.JSON(http.StatusOK, serviceCost[:count])
+	if len(serviceCost) > count {
+		serviceCost = serviceCost[:count]
+	}
+	return ctx.JSON(http.StatusOK, serviceCost)
 }
 
 // GetTopAccountsByResourceCount godoc
@@ -1466,6 +1472,8 @@ func (h *HttpHandler) GetSummaryMetrics(ctx echo.Context) error {
 		providerPtr = &provider
 		ts := string(provider)
 		providerStr = &ts
+	} else if ctx.QueryParam("provider") != "" && ctx.QueryParam("provider") != "all" {
+		return err
 	}
 
 	var sourceUUID *uuid.UUID
