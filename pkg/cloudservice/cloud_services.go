@@ -423,8 +423,8 @@ IoT,Microsoft.IoTSpaces,Azure Digital Twins
 Management,Microsoft.Intune,Azure Monitor
 Security,Microsoft.KeyVault,Key Vault
 Containers,Microsoft.Kubernetes,Azure Kubernetes
-,Microsoft.Kusto,Azure Data Explorer
-,Microsoft.LabServices,Azure Lab Services
+Data Service,Microsoft.Kusto,Azure Data Explorer
+DevOps,Microsoft.LabServices,Azure Lab Services
 PaaS,Microsoft.Logic,Logic Apps
 AI + ML,Microsoft.MachineLearning,Machine Learning Studio
 AI + ML,Microsoft.MachineLearningServices,Azure Machine Learning
