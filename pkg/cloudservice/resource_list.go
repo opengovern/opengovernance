@@ -125,6 +125,8 @@ Time Series Insights environment,Microsoft.TimeSeriesInsights/environments
 App Service plan,Microsoft.Web/serverFarms
 App Service,Microsoft.Web/sites
 Static web app,Microsoft.Web/staticSites
+Container Apps,microsoft.app/containerapps
+App Managed Environments,microsoft.app/managedenvironments
 `
 
 var awsResourceListCSV = `
