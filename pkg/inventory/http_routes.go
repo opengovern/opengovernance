@@ -1468,12 +1468,10 @@ func (h *HttpHandler) GetSummaryMetrics(ctx echo.Context) error {
 	var provider source.Type
 	var providerPtr *source.Type
 	var providerStr *string
-	if provider, err = source.ParseType(ctx.QueryParam("provider")); err != nil {
+	if provider, err = source.ParseType(ctx.QueryParam("provider")); err == nil {
 		providerPtr = &provider
 		ts := string(provider)
 		providerStr = &ts
-	} else if ctx.QueryParam("provider") != "" && ctx.QueryParam("provider") != "all" {
-		return err
 	}
 
 	var sourceUUID *uuid.UUID
