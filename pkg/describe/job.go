@@ -593,6 +593,7 @@ func (j DescribeCleanupJob) Do(esClient *elasticsearch.Client) error {
 	indices := []string{
 		rIndex,
 		InventorySummaryIndex,
+		SourceResourcesSummary,
 	}
 
 	resp, err := keibi.DeleteByQuery(ctx, esClient, indices, query,

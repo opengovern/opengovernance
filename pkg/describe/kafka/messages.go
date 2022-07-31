@@ -152,6 +152,8 @@ type SourceResourcesSummary struct {
 	SourceType api.SourceType `json:"source_type"`
 	// SourceJobID is the DescribeSourceJob ID that the ResourceJobID was created for
 	SourceJobID uint `json:"source_job_id"`
+	// ResourceJobID is the DescribeResourceJob ID that the ResourceJobID was created for
+	ResourceJobID uint `json:"resource_job_id"`
 	// DescribedAt is when the DescribeSourceJob is created
 	DescribedAt int64 `json:"described_at"`
 	// ResourceCount is total of resources for specified account
@@ -194,6 +196,8 @@ type SourceServicesSummary struct {
 	SourceType api.SourceType `json:"source_type"`
 	// SourceJobID is the DescribeSourceJob ID that the ResourceJobID was created for
 	SourceJobID uint `json:"source_job_id"`
+	// ResourceJobID is the DescribeResourceJob ID that the ResourceJobID was created for
+	ResourceJobID uint `json:"resource_job_id"`
 	// DescribedAt is when the DescribeSourceJob is created
 	DescribedAt int64 `json:"described_at"`
 	// ResourceCount is total of resources for specified account
@@ -239,6 +243,8 @@ type SourceCategorySummary struct {
 	ResourceType string `json:"resource_type"`
 	// SourceJobID is the DescribeSourceJob ID that the ResourceJobID was created for
 	SourceJobID uint `json:"source_job_id"`
+	// ResourceJobID is the DescribeResourceJob ID that the ResourceJobID was created for
+	ResourceJobID uint `json:"resource_job_id"`
 	// DescribedAt is when the DescribeSourceJob is created
 	DescribedAt int64 `json:"described_at"`
 	// ResourceCount is total of resources for specified account
@@ -293,6 +299,8 @@ type LocationDistributionResource struct {
 	SourceType api.SourceType `json:"source_type"`
 	// SourceJobID is the DescribeSourceJob ID that the ResourceJobID was created for
 	SourceJobID uint `json:"source_job_id"`
+	// ResourceJobID is the DescribeResourceJob ID that the ResourceJobID was created for
+	ResourceJobID uint `json:"resource_job_id"`
 	// ResourceType is type of the resource
 	ResourceType string `json:"resource_type"`
 	// LocationDistribution is total of resources per location for specified account
@@ -325,6 +333,8 @@ type SourceServiceDistributionResource struct {
 	SourceType api.SourceType `json:"source_type"`
 	// SourceJobID is the DescribeSourceJob ID that the ResourceJobID was created for
 	SourceJobID uint `json:"source_job_id"`
+	// ResourceJobID is the DescribeResourceJob ID that the ResourceJobID was created for
+	ResourceJobID uint `json:"resource_job_id"`
 	// LocationDistribution is total of resources per location for specified account
 	LocationDistribution map[string]int `json:"location_distribution"`
 	// ReportType of document
