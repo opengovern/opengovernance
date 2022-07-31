@@ -1304,13 +1304,6 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Category",
-                        "name": "category",
-                        "in": "query",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
                         "description": "Provider",
                         "name": "provider",
                         "in": "query"
@@ -1326,10 +1319,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/api.ResourceTypeResponse"
-                            }
+                            "$ref": "#/definitions/api.CategorizedMetricsResponse"
                         }
                     }
                 }
@@ -3280,6 +3270,20 @@ const docTemplate = `{
                 }
             }
         },
+        "api.CategorizedMetricsResponse": {
+            "type": "object",
+            "properties": {
+                "category": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/definitions/api.ResourceTypeResponse"
+                        }
+                    }
+                }
+            }
+        },
         "api.ComplianceReport": {
             "type": "object",
             "properties": {
@@ -4254,6 +4258,9 @@ const docTemplate = `{
                 },
                 "lastYearCount": {
                     "type": "integer"
+                },
+                "provider": {
+                    "type": "string"
                 },
                 "resourceCount": {
                     "type": "integer"

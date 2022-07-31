@@ -473,6 +473,10 @@ type ResourceTypeResponse struct {
 	LastYearCount    *int   `json:"lastYearCount"`
 }
 
+type CategorizedMetricsResponse struct {
+	Category map[string][]ResourceTypeResponse `json:"category"`
+}
+
 type CategoriesResponse struct {
 	CategoryName     string `json:"serviceName"`
 	ResourceCount    int    `json:"resourceCount"`

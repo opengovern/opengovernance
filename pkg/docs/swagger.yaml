@@ -150,6 +150,15 @@ definitions:
       serviceName:
         type: string
     type: object
+  api.CategorizedMetricsResponse:
+    properties:
+      category:
+        additionalProperties:
+          items:
+            $ref: '#/definitions/api.ResourceTypeResponse'
+          type: array
+        type: object
+    type: object
   api.ComplianceReport:
     properties:
       failureMessage:
@@ -817,6 +826,8 @@ definitions:
         type: integer
       lastYearCount:
         type: integer
+      provider:
+        type: string
       resourceCount:
         type: integer
       serviceName:
@@ -1790,11 +1801,6 @@ paths:
       consumes:
       - application/json
       parameters:
-      - description: Category
-        in: query
-        name: category
-        required: true
-        type: string
       - description: Provider
         in: query
         name: provider
@@ -1809,9 +1815,7 @@ paths:
         "200":
           description: OK
           schema:
-            items:
-              $ref: '#/definitions/api.ResourceTypeResponse'
-            type: array
+            $ref: '#/definitions/api.CategorizedMetricsResponse'
       summary: Return categorized metrics, their value and their history
       tags:
       - inventory

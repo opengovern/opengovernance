@@ -1656,17 +1656,11 @@ func (h *HttpHandler) GetSummaryMetrics(ctx echo.Context) error {
 // @Tags     inventory
 // @Accept   json
 // @Produce  json
-// @Param    category  query     string  true   "Category"
 // @Param    provider  query     string  false  "Provider"
 // @Param    sourceId  query     string  false  "SourceID"
-// @Success  200       {object}  []api.ResourceTypeResponse
+// @Success  200       {object}  api.CategorizedMetricsResponse
 // @Router   /inventory/api/v1/metrics/categorized [get]
 func (h *HttpHandler) GetCategorizedMetrics(ctx echo.Context) error {
-	category := ctx.QueryParam("category")
-	if category == "" {
-		return echo.NewHTTPError(http.StatusBadRequest, "please specify the category")
-	}
-
 	provider, _ := source.ParseType(ctx.QueryParam("provider"))
 
 	var sourceID *string
@@ -1679,17 +1673,22 @@ func (h *HttpHandler) GetCategorizedMetrics(ctx echo.Context) error {
 		sourceID = &s
 	}
 
-	resourceList := cloudservice.ResourceListByCategory(category)
-	if len(resourceList) == 0 {
-		return echo.NewHTTPError(http.StatusBadRequest, "Invalid category")
-	}
+	var res api.CategorizedMetricsResponse
+	res.Category = make(map[string][]api.ResourceTypeResponse)
+	for _, category := range cloudservice.ListCategories() {
+		resourceList := cloudservice.ResourceListByCategory(category)
+		if len(resourceList) == 0 {
+			continue
+		}
 
-	v, err := GetResources(h.client, provider, sourceID, resourceList)
-	if err != nil {
-		return err
-	}
+		v, err := GetResources(h.client, provider, sourceID, resourceList)
+		if err != nil {
+			return err
+		}
 
-	return ctx.JSON(http.StatusOK, v)
+		res.Category[category] = v
+	}
+	return ctx.JSON(http.StatusOK, res)
 }
 
 // ListCategories godoc
