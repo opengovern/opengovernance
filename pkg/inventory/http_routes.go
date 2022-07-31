@@ -1686,6 +1686,10 @@ func (h *HttpHandler) GetCategorizedMetrics(ctx echo.Context) error {
 			return err
 		}
 
+		if v == nil || len(v) == 0 {
+			continue
+		}
+
 		res.Category[category] = v
 	}
 	return ctx.JSON(http.StatusOK, res)

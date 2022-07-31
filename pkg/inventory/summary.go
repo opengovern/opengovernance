@@ -140,6 +140,10 @@ func GetResources(client keibi.Client, provider source.Type, sourceID *string, r
 
 	var res []api.ResourceTypeResponse
 	for _, v := range resourceTypeResponse {
+		if v.ResourceCount == 0 {
+			continue
+		}
+
 		res = append(res, v)
 	}
 	return res, nil
