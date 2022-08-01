@@ -60,8 +60,11 @@ func ExtractTags(resourceType string, source interface{}) (map[string]string, er
 				if err != nil {
 					return nil, err
 				}
+
 				if tmap, ok := t.(map[string]string); ok {
 					tags = tmap
+				} else if t == nil {
+					return tags, nil
 				} else if tmap, ok := t.(map[string]interface{}); ok {
 					for tk, tv := range tmap {
 						if ts, ok := tv.(string); ok {
