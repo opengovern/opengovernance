@@ -79,6 +79,7 @@ func GetServices(client keibi.Client, provider source.Type, sourceID *string) ([
 		for _, hit := range response.Hits.Hits {
 			if v, ok := serviceResponse[hit.Source.ServiceName]; ok {
 				v.ResourceCount += hit.Source.ResourceCount
+				serviceResponse[hit.Source.ServiceName] = v
 			} else {
 				serviceResponse[hit.Source.ServiceName] = api.TopServicesResponse{
 					ServiceName:      hit.Source.ServiceName,

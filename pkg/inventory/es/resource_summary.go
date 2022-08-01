@@ -66,6 +66,9 @@ func FindResourceGrowthTrendQuery(sourceID *uuid.UUID, provider *string,
 		{
 			"described_at": "asc",
 		},
+		{
+			"_id": "desc",
+		},
 	}
 	if searchAfter != nil {
 		res["search_after"] = searchAfter
