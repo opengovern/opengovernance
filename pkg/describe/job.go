@@ -366,7 +366,10 @@ func doDescribeAWS(ictx context.Context, rdb *redis.Client, es keibi.Client, job
 		}
 	}
 
-	logger.Info(fmt.Sprintf("job[%d] lastDay=%d, lastWeek=%d lastQuarter=%d lastYear=%d\n", job.JobID, job.LastDaySourceJobID, job.LastWeekSourceJobID, job.LastQuarterSourceJobID, job.LastYearSourceJobID))
+	logger.Info(fmt.Sprintf("job[%d] parent[%d] resourceType[%s] lastDay=%d, lastWeek=%d lastQuarter=%d lastYear=%d noOfResources=%d\n",
+		job.JobID, job.ParentJobID, job.ResourceType,
+		job.LastDaySourceJobID, job.LastWeekSourceJobID, job.LastQuarterSourceJobID, job.LastYearSourceJobID,
+		len(lookupResources)))
 
 	serviceResources, err := ExtractServiceSummary(es, job, lookupResources, logger)
 	if err == nil {
