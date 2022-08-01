@@ -35,6 +35,7 @@ func GetCategories(client keibi.Client, provider source.Type, sourceID *string) 
 		for _, hit := range response.Hits.Hits {
 			if v, ok := categoryMap[hit.Source.CategoryName]; ok {
 				v.ResourceCount += hit.Source.ResourceCount
+				categoryMap[hit.Source.CategoryName] = v
 			} else {
 				categoryMap[hit.Source.CategoryName] = api.CategoriesResponse{
 					CategoryName:     hit.Source.CategoryName,
@@ -125,6 +126,7 @@ func GetResources(client keibi.Client, provider source.Type, sourceID *string, r
 		for _, hit := range response.Hits.Hits {
 			if v, ok := resourceTypeResponse[hit.Source.ResourceType]; ok {
 				v.ResourceCount += hit.Source.ResourceCount
+				resourceTypeResponse[hit.Source.ResourceType] = v
 			} else {
 				resourceTypeResponse[hit.Source.ResourceType] = api.ResourceTypeResponse{
 					ResourceType:     cloudservice.ResourceTypeName(hit.Source.ResourceType),
