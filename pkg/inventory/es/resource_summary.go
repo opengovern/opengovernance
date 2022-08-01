@@ -144,7 +144,7 @@ func GetResourceTypeQuery(provider string, sourceID *string, resourceTypes []str
 	return string(b), err
 }
 
-func FindTopAccountsQuery(provider string, fetchSize int) (string, error) {
+func FindTopAccountsQuery(provider string, fetchSize int, searchAfter []interface{}) (string, error) {
 	res := make(map[string]interface{})
 	var filters []interface{}
 
@@ -158,10 +158,17 @@ func FindTopAccountsQuery(provider string, fetchSize int) (string, error) {
 		})
 	}
 
+	if searchAfter != nil {
+		res["search_after"] = searchAfter
+	}
+
 	res["size"] = fetchSize
 	res["sort"] = []map[string]interface{}{
 		{
 			"resource_count": "desc",
+		},
+		{
+			"_id": "desc",
 		},
 	}
 	res["query"] = map[string]interface{}{

@@ -15,6 +15,8 @@ import (
 	"strings"
 	"time"
 
+	kafka2 "gitlab.com/keibiengine/keibi-engine/pkg/describe/kafka"
+
 	"gitlab.com/keibiengine/keibi-engine/pkg/cloudservice"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/keibi-es-sdk"
@@ -1187,20 +1189,37 @@ func (h *HttpHandler) GetTopAccountsByResourceCount(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid count")
 	}
 
-	query, err := es.FindTopAccountsQuery(string(provider), count)
-	if err != nil {
-		return err
-	}
+	var sourceSummary map[string]kafka2.SourceResourcesSummary
+	var searchAfter []interface{}
+	for {
+		query, err := es.FindTopAccountsQuery(string(provider), EsFetchPageSize, searchAfter)
+		if err != nil {
+			return err
+		}
 
-	var response es.ResourceGrowthQueryResponse
-	err = h.client.Search(context.Background(), describe.SourceResourcesSummary, query, &response)
-	if err != nil {
-		return err
+		var response es.ResourceGrowthQueryResponse
+		err = h.client.Search(context.Background(), describe.SourceResourcesSummary, query, &response)
+		if err != nil {
+			return err
+		}
+
+		if len(response.Hits.Hits) == 0 {
+			break
+		}
+
+		for _, hit := range response.Hits.Hits {
+			if v, ok := sourceSummary[hit.Source.SourceID]; ok {
+				v.ResourceCount += hit.Source.ResourceCount
+			} else {
+				sourceSummary[hit.Source.SourceID] = hit.Source
+			}
+			searchAfter = hit.Sort
+		}
 	}
 
 	var res []api.TopAccountResponse
-	for _, hit := range response.Hits.Hits {
-		src, err := h.onboardClient.GetSource(httpclient.FromEchoContext(ctx), hit.Source.SourceID)
+	for _, v := range sourceSummary {
+		src, err := h.onboardClient.GetSource(httpclient.FromEchoContext(ctx), v.SourceID)
 		if err != nil {
 			if err.Error() == "source not found" { //source has been deleted
 				continue
@@ -1209,13 +1228,18 @@ func (h *HttpHandler) GetTopAccountsByResourceCount(ctx echo.Context) error {
 		}
 
 		res = append(res, api.TopAccountResponse{
-			SourceID:               hit.Source.SourceID,
+			SourceID:               v.SourceID,
 			Provider:               string(src.Type),
 			ProviderConnectionName: src.ConnectionName,
 			ProviderConnectionID:   src.ConnectionID,
-			ResourceCount:          hit.Source.ResourceCount,
+			ResourceCount:          v.ResourceCount,
 		})
 	}
+
+	if len(res) > count {
+		res = res[:count]
+	}
+
 	return ctx.JSON(http.StatusOK, res)
 }
 
@@ -1243,33 +1267,54 @@ func (h *HttpHandler) GetTopFastestGrowingAccountsByResourceCount(ctx echo.Conte
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid count")
 	}
 
-	query, err := es.FindTopAccountsQuery(string(provider), EsFetchPageSize)
-	if err != nil {
-		return err
+	var sourceSummary map[string]kafka2.SourceResourcesSummary
+	var searchAfter []interface{}
+	for {
+		query, err := es.FindTopAccountsQuery(string(provider), EsFetchPageSize, searchAfter)
+		if err != nil {
+			return err
+		}
+
+		var response es.ResourceGrowthQueryResponse
+		err = h.client.Search(context.Background(), describe.SourceResourcesSummary, query, &response)
+		if err != nil {
+			return err
+		}
+
+		if len(response.Hits.Hits) == 0 {
+			break
+		}
+
+		for _, hit := range response.Hits.Hits {
+			if v, ok := sourceSummary[hit.Source.SourceID]; ok {
+				v.ResourceCount += hit.Source.ResourceCount
+			} else {
+				sourceSummary[hit.Source.SourceID] = hit.Source
+			}
+			searchAfter = hit.Sort
+		}
 	}
 
-	var response es.ResourceGrowthQueryResponse
-	err = h.client.Search(context.Background(), describe.SourceResourcesSummary, query, &response)
-	if err != nil {
-		return err
+	var summaryList []kafka2.SourceResourcesSummary
+	for _, v := range sourceSummary {
+		summaryList = append(summaryList, v)
 	}
 
-	var hits = response.Hits.Hits
-	sort.Slice(hits, func(i, j int) bool {
+	sort.Slice(summaryList, func(i, j int) bool {
 		var lastValueI, lastValueJ *int
 		switch timeWindow {
 		case "1d":
-			lastValueI = hits[i].Source.LastDayCount
-			lastValueJ = hits[j].Source.LastDayCount
+			lastValueI = summaryList[i].LastDayCount
+			lastValueJ = summaryList[j].LastDayCount
 		case "1w":
-			lastValueI = hits[i].Source.LastWeekCount
-			lastValueJ = hits[j].Source.LastWeekCount
+			lastValueI = summaryList[i].LastWeekCount
+			lastValueJ = summaryList[j].LastWeekCount
 		case "3m":
-			lastValueI = hits[i].Source.LastQuarterCount
-			lastValueJ = hits[j].Source.LastQuarterCount
+			lastValueI = summaryList[i].LastQuarterCount
+			lastValueJ = summaryList[j].LastQuarterCount
 		case "1y":
-			lastValueI = hits[i].Source.LastYearCount
-			lastValueJ = hits[j].Source.LastYearCount
+			lastValueI = summaryList[i].LastYearCount
+			lastValueJ = summaryList[j].LastYearCount
 		}
 
 		if zero := 0; lastValueI == nil {
@@ -1279,19 +1324,19 @@ func (h *HttpHandler) GetTopFastestGrowingAccountsByResourceCount(ctx echo.Conte
 			lastValueJ = &zero
 		}
 
-		diffI := hits[i].Source.ResourceCount - *lastValueI
-		diffJ := hits[j].Source.ResourceCount - *lastValueJ
+		diffI := summaryList[i].ResourceCount - *lastValueI
+		diffJ := summaryList[j].ResourceCount - *lastValueJ
 
 		return diffI > diffJ
 	})
 
-	if len(hits) > count {
-		hits = hits[:count]
+	if len(summaryList) > count {
+		summaryList = summaryList[:count]
 	}
 
 	var res []api.TopAccountResponse
-	for _, hit := range hits {
-		src, err := h.onboardClient.GetSource(httpclient.FromEchoContext(ctx), hit.Source.SourceID)
+	for _, hit := range summaryList {
+		src, err := h.onboardClient.GetSource(httpclient.FromEchoContext(ctx), hit.SourceID)
 		if err != nil {
 			if err.Error() == "source not found" { //source has been deleted
 				continue
@@ -1300,11 +1345,11 @@ func (h *HttpHandler) GetTopFastestGrowingAccountsByResourceCount(ctx echo.Conte
 		}
 
 		res = append(res, api.TopAccountResponse{
-			SourceID:               hit.Source.SourceID,
+			SourceID:               hit.SourceID,
 			Provider:               string(src.Type),
 			ProviderConnectionName: src.ConnectionName,
 			ProviderConnectionID:   src.ConnectionID,
-			ResourceCount:          hit.Source.ResourceCount,
+			ResourceCount:          hit.ResourceCount,
 		})
 	}
 	return ctx.JSON(http.StatusOK, res)
