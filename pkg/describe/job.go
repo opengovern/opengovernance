@@ -199,6 +199,8 @@ func (j DescribeJob) Do(ictx context.Context, vlt vault.SourceConfig, rdb *redis
 	config, err := vlt.Read(j.ConfigReg)
 	if err != nil {
 		fail(fmt.Errorf("resource source config: %w", err))
+	} else if config == nil {
+		fail(fmt.Errorf("config is null! path is: %s", j.ConfigReg))
 	} else {
 		msgs, err := doDescribe(ctx, rdb, es, j, config, logger)
 		if err != nil {
