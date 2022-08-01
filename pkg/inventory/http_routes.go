@@ -1210,6 +1210,7 @@ func (h *HttpHandler) GetTopAccountsByResourceCount(ctx echo.Context) error {
 		for _, hit := range response.Hits.Hits {
 			if v, ok := sourceSummary[hit.Source.SourceID]; ok {
 				v.ResourceCount += hit.Source.ResourceCount
+				sourceSummary[hit.Source.SourceID] = v
 			} else {
 				sourceSummary[hit.Source.SourceID] = hit.Source
 			}
@@ -1288,6 +1289,7 @@ func (h *HttpHandler) GetTopFastestGrowingAccountsByResourceCount(ctx echo.Conte
 		for _, hit := range response.Hits.Hits {
 			if v, ok := sourceSummary[hit.Source.SourceID]; ok {
 				v.ResourceCount += hit.Source.ResourceCount
+				sourceSummary[hit.Source.SourceID] = v
 			} else {
 				sourceSummary[hit.Source.SourceID] = hit.Source
 			}
@@ -1793,6 +1795,7 @@ func (h *HttpHandler) GetAccountsResourceCount(ctx echo.Context) error {
 
 			if v, ok := res[hit.Source.SourceID]; ok {
 				v.ResourceCount += hit.Source.ResourceCount
+				res[hit.Source.SourceID] = v
 			} else {
 				res[hit.Source.SourceID] = api.AccountResourceCountResponse{
 					SourceID:               hit.Source.SourceID,
