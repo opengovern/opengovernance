@@ -1189,7 +1189,7 @@ func (h *HttpHandler) GetTopAccountsByResourceCount(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid count")
 	}
 
-	var sourceSummary map[string]kafka2.SourceResourcesSummary
+	sourceSummary := map[string]kafka2.SourceResourcesSummary{}
 	var searchAfter []interface{}
 	for {
 		query, err := es.FindTopAccountsQuery(string(provider), EsFetchPageSize, searchAfter)
@@ -1267,7 +1267,7 @@ func (h *HttpHandler) GetTopFastestGrowingAccountsByResourceCount(ctx echo.Conte
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid count")
 	}
 
-	var sourceSummary map[string]kafka2.SourceResourcesSummary
+	sourceSummary := map[string]kafka2.SourceResourcesSummary{}
 	var searchAfter []interface{}
 	for {
 		query, err := es.FindTopAccountsQuery(string(provider), EsFetchPageSize, searchAfter)
