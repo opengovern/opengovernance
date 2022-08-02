@@ -11,7 +11,6 @@ import (
 
 	envoyauth "github.com/envoyproxy/go-control-plane/envoy/service/auth/v3"
 	"github.com/spf13/cobra"
-	"gitlab.com/keibiengine/keibi-engine/pkg/internal/email"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpserver"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/postgres"
 	"go.uber.org/zap"
@@ -108,7 +107,7 @@ func start(ctx context.Context) error {
 	//	return fmt.Errorf("initialize Azure client: %w", err)
 	//}
 
-	m := email.NewSendGridClient(mailApiKey, mailSender, mailSenderName, logger)
+	//m := email.NewSendGridClient(mailApiKey, mailSender, mailSenderName, logger)
 
 	creds, err := newServerCredentials(
 		grpcTlsCertPath,
@@ -145,7 +144,7 @@ func start(ctx context.Context) error {
 			logger: logger,
 			db:     db,
 			//authProvider:       extAuth,
-			emailService:       m,
+			//emailService:       m,
 			inviteLinkTemplate: inviteLinkTemplate,
 		}
 		errors <- fmt.Errorf("http server: %w", httpserver.RegisterAndStart(logger, httpServerAddress, &routes))

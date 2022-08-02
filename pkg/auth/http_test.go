@@ -18,7 +18,6 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/auth/api"
 	extauthmocks "gitlab.com/keibiengine/keibi-engine/pkg/auth/extauth/mocks"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/dockertest"
-	emailmocks "gitlab.com/keibiengine/keibi-engine/pkg/internal/email/mocks"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpserver"
 	"go.uber.org/zap"
 	"gorm.io/gorm"
@@ -61,7 +60,7 @@ func (s *HTTPRouteSuite) BeforeTest(suiteName, testName string) {
 	require.NoError(err, "initialize db")
 
 	s.httpRoutes.authProvider = &extauthmocks.Provider{}
-	s.httpRoutes.emailService = &emailmocks.Service{}
+	//s.httpRoutes.emailService = &emailmocks.Service{}
 }
 
 func (s *HTTPRouteSuite) AfterTest(suiteName, testName string) {
@@ -359,8 +358,8 @@ func (s *HTTPRouteSuite) TestInvite_NewInvite() {
 	err := s.db.CreateUser(&user)
 	require.NoError(err, "create user")
 
-	s.httpRoutes.emailService.(*emailmocks.Service).
-		On("SendEmail", mock.Anything, mock.Anything, mock.Anything).Return(nil)
+	//s.httpRoutes.emailService.(*emailmocks.Service).
+	//	On("SendEmail", mock.Anything, mock.Anything, mock.Anything).Return(nil)
 
 	req := api.InviteRequest{
 		Email: "test@examplpe.com",
@@ -381,7 +380,7 @@ func (s *HTTPRouteSuite) TestInvite_NewInvite() {
 
 	s.httpRoutes.authProvider.(*extauthmocks.Provider).AssertNotCalled(s.T(), "FetchUser", mock.Anything, mock.Anything)
 	s.httpRoutes.authProvider.(*extauthmocks.Provider).AssertNotCalled(s.T(), "CreateUser", mock.Anything, mock.Anything)
-	s.httpRoutes.emailService.(*emailmocks.Service).AssertNumberOfCalls(s.T(), "SendEmail", 1)
+	//s.httpRoutes.emailService.(*emailmocks.Service).AssertNumberOfCalls(s.T(), "SendEmail", 1)
 }
 
 func (s *HTTPRouteSuite) TestInvite_AcceptInvitationExists() {
@@ -418,7 +417,7 @@ func (s *HTTPRouteSuite) TestInvite_AcceptInvitationExists() {
 
 	s.httpRoutes.authProvider.(*extauthmocks.Provider).AssertNotCalled(s.T(), "FetchUser", mock.Anything, mock.Anything)
 	s.httpRoutes.authProvider.(*extauthmocks.Provider).AssertNotCalled(s.T(), "CreateUser", mock.Anything, mock.Anything)
-	s.httpRoutes.emailService.(*emailmocks.Service).AssertNotCalled(s.T(), "SendEmail", mock.Anything, mock.Anything, mock.Anything)
+	//s.httpRoutes.emailService.(*emailmocks.Service).AssertNotCalled(s.T(), "SendEmail", mock.Anything, mock.Anything, mock.Anything)
 }
 
 func (s *HTTPRouteSuite) TestInvite_AcceptInvitationExpired() {
@@ -447,7 +446,7 @@ func (s *HTTPRouteSuite) TestInvite_AcceptInvitationExpired() {
 
 	s.httpRoutes.authProvider.(*extauthmocks.Provider).AssertNotCalled(s.T(), "FetchUser", mock.Anything, mock.Anything)
 	s.httpRoutes.authProvider.(*extauthmocks.Provider).AssertNotCalled(s.T(), "CreateUser", mock.Anything, mock.Anything)
-	s.httpRoutes.emailService.(*emailmocks.Service).AssertNotCalled(s.T(), "SendEmail", mock.Anything, mock.Anything, mock.Anything)
+	//s.httpRoutes.emailService.(*emailmocks.Service).AssertNotCalled(s.T(), "SendEmail", mock.Anything, mock.Anything, mock.Anything)
 }
 
 func (s *HTTPRouteSuite) TestInvite_AcceptInvitationDeleted() {
@@ -459,5 +458,5 @@ func (s *HTTPRouteSuite) TestInvite_AcceptInvitationDeleted() {
 
 	s.httpRoutes.authProvider.(*extauthmocks.Provider).AssertNotCalled(s.T(), "FetchUser", mock.Anything, mock.Anything)
 	s.httpRoutes.authProvider.(*extauthmocks.Provider).AssertNotCalled(s.T(), "CreateUser", mock.Anything, mock.Anything)
-	s.httpRoutes.emailService.(*emailmocks.Service).AssertNotCalled(s.T(), "SendEmail", mock.Anything, mock.Anything, mock.Anything)
+	//s.httpRoutes.emailService.(*emailmocks.Service).AssertNotCalled(s.T(), "SendEmail", mock.Anything, mock.Anything, mock.Anything)
 }
