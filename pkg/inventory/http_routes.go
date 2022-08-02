@@ -1538,6 +1538,7 @@ func (h *HttpHandler) GetSummaryMetrics(ctx echo.Context) error {
 	if err != nil {
 		return err
 	}
+	fmt.Println("===============", services)
 
 	padd := func(x, y *int) *int {
 		var v *int
@@ -1552,7 +1553,10 @@ func (h *HttpHandler) GetSummaryMetrics(ctx echo.Context) error {
 		return v
 	}
 
-	extractMetric := func(allProviderName, awsName, awsServiceName, azureName, azureServiceName string) api.MetricsResponse {
+	extractMetric := func(allProviderName, awsName, awsResourceType, azureName, azureResourceType string) api.MetricsResponse {
+		awsResourceType = strings.ToLower(awsResourceType)
+		azureResourceType = strings.ToLower(azureResourceType)
+
 		var aws api.TopServicesResponse
 		var azure api.TopServicesResponse
 		metricName := allProviderName
@@ -1567,10 +1571,10 @@ func (h *HttpHandler) GetSummaryMetrics(ctx echo.Context) error {
 		}
 
 		for _, s := range services {
-			if s.ServiceName == awsServiceName && awsServiceName != "" {
+			if s.ServiceName == awsResourceType && awsResourceType != "" {
 				aws = s
 			}
-			if s.ServiceName == azureServiceName && azureServiceName != "" {
+			if s.ServiceName == azureResourceType && azureResourceType != "" {
 				azure = s
 			}
 		}
@@ -1649,16 +1653,16 @@ func (h *HttpHandler) GetSummaryMetrics(ctx echo.Context) error {
 	})
 
 	res = append(res, extractMetric("Virtual Machines",
-		"Virtual Machines", "EC2 Instance",
-		"Virtual Machines", "Virtual machine"))
+		"Virtual Machines", "aws::ec2::instance",
+		"Virtual Machines", "Microsoft.Compute/virtualMachines"))
 
 	res = append(res, extractMetric("Networks",
-		"Networks (VPC)", "EC2 VPC",
-		"Networks (vNets)", "Virtual network"))
+		"Networks (VPC)", "aws::ec2::vpc",
+		"Networks (vNets)", "Microsoft.Network/virtualNetworks"))
 
 	res = append(res, extractMetric("Disks",
-		"Disks", "EC2 Volume",
-		"Managed Disks", "Managed disk (data)"))
+		"Disks", "aws::ec2::volume",
+		"Managed Disks", "Microsoft.Compute/disks"))
 
 	res = append(res, api.MetricsResponse{
 		MetricsName:      "Total storage",
@@ -1670,24 +1674,24 @@ func (h *HttpHandler) GetSummaryMetrics(ctx echo.Context) error {
 	})
 
 	res = append(res, extractMetric("DB Services",
-		"RDS Instances", "RDS Cluster",
-		"SQL Instances", "SQL Managed Instance"))
+		"RDS Instances", "aws::rds::dbcluster",
+		"SQL Instances", "Microsoft.Sql/managedInstances"))
 
 	res = append(res, extractMetric("",
-		"S3 Buckets", "S3 Bucket",
-		"Storage Accounts", "Storage account"))
+		"S3 Buckets", "aws::s3::bucket",
+		"Storage Accounts", "Microsoft.Storage/storageAccounts"))
 
 	res = append(res, extractMetric("Kubernetes Cluster",
-		"Kubernetes Cluster", "EKS Clusters",
-		"Azure Kubernetes", "Azure Arc enabled Kubernetes cluster"))
+		"Kubernetes Cluster", "aws::eks::cluster",
+		"Azure Kubernetes", "Microsoft.Kubernetes/connectedClusters"))
 
 	res = append(res, extractMetric("Serverless",
-		"Lambda", "Lambda Function",
+		"Lambda", "aws::lambda::function",
 		"", ""))
 
 	res = append(res, extractMetric("PaaS",
-		"Elastic Beanstalk", "Elastic Bean Stalk Environment",
-		"Apps", "")) //TODO
+		"Elastic Beanstalk", "aws::elasticbeanstalk::environment",
+		"Apps", "microsoft.app/containerapps"))
 
 	for i := 0; i < len(res); i++ {
 		if res[i].MetricsName == "" {
