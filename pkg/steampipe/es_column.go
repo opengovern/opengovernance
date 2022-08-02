@@ -219,7 +219,7 @@ func ConvertToDescription(resourceType string, data interface{}) (interface{}, e
 	if sourceType == source.CloudAWS {
 		var d interface{}
 		for k, v := range AWSDescriptionMap {
-			if resourceType == strings.ToLower(k) {
+			if strings.ToLower(resourceType) == strings.ToLower(k) {
 				d = v
 			}
 		}
@@ -232,7 +232,7 @@ func ConvertToDescription(resourceType string, data interface{}) (interface{}, e
 	} else {
 		var d interface{}
 		for k, v := range AzureDescriptionMap {
-			if resourceType == strings.ToLower(k) {
+			if strings.ToLower(resourceType) == strings.ToLower(k) {
 				d = v
 			}
 		}
