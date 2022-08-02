@@ -19,4 +19,5 @@ type CreateInsightRequest struct {
 	Provider     string `json:"provider"`
 	Category     string `json:"category"`
 	SmartQueryID uint   `json:"smartQueryID"`
+	Internal     bool   `json:"internal"`
 }

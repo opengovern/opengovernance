@@ -29,6 +29,8 @@ type InsightResource struct {
 	SmartQueryID uint `json:"smart_query_id"`
 	// Query
 	Query string `json:"query"`
+	// Internal hidden to user
+	Internal bool `json:"internal"`
 	// Description
 	Description string `json:"description"`
 	// Provider

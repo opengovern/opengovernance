@@ -60,6 +60,7 @@ type Insight struct {
 	Description  string
 	Query        string
 	SmartQueryID uint
+	Internal     bool
 	Provider     string
 	Category     string
 }

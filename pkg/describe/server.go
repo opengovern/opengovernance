@@ -370,6 +370,7 @@ func (h *HttpServer) CreateInsight(ctx echo.Context) error {
 		SmartQueryID: req.SmartQueryID,
 		Provider:     req.Provider,
 		Category:     req.Category,
+		Internal:     req.Internal,
 	}
 	err := h.DB.AddInsight(&ins)
 	if err != nil {

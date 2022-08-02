@@ -41,6 +41,7 @@ type Job struct {
 	JobID            uint
 	QueryID          uint
 	SmartQueryID     uint
+	Internal         bool
 	Query            string
 	Description      string
 	Provider         string
@@ -128,6 +129,7 @@ func (j Job) Do(es keibi.Client, steampipeConn *steampipe.Database, producer sar
 					QueryID:          j.QueryID,
 					SmartQueryID:     j.SmartQueryID,
 					Query:            j.Query,
+					Internal:         j.Internal,
 					Description:      j.Description,
 					Provider:         j.Provider,
 					Category:         j.Category,
