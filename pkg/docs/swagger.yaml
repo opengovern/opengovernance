@@ -2376,20 +2376,6 @@ paths:
       summary: Returns distribution of services for specific account
       tags:
       - benchmarks
-  /onboard/api/v1/{sourceId}/credentials:
-    post:
-      parameters:
-      - description: Source ID
-        in: query
-        name: sourceId
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses: {}
-      summary: Put source credential
-      tags:
-      - onboard
   /onboard/api/v1/discover/aws/accounts:
     post:
       description: If the account is part of an organization and the account has premission
@@ -2517,6 +2503,33 @@ paths:
           schema:
             $ref: '#/definitions/gitlab.com_keibiengine_keibi-engine_pkg_onboard_api.Source'
       summary: Returns a single source
+      tags:
+      - onboard
+  /onboard/api/v1/source/{sourceId}/credentials:
+    post:
+      parameters:
+      - description: Source ID
+        in: query
+        name: sourceId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses: {}
+      summary: Get source credential
+      tags:
+      - onboard
+    put:
+      parameters:
+      - description: Source ID
+        in: query
+        name: sourceId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses: {}
+      summary: Put source credential
       tags:
       - onboard
   /onboard/api/v1/source/aws:
@@ -2663,6 +2676,19 @@ paths:
       - onboard
   /onboard/api/v1/spn/{spnId}:
     post:
+      parameters:
+      - description: SPN ID
+        in: query
+        name: spnId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses: {}
+      summary: Get SPN credential
+      tags:
+      - onboard
+    put:
       parameters:
       - description: SPN ID
         in: query

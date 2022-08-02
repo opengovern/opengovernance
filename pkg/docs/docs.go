@@ -2479,6 +2479,46 @@ const docTemplate = `{
                 }
             }
         },
+        "/onboard/api/v1/source/{sourceId}/credentials": {
+            "put": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "onboard"
+                ],
+                "summary": "Put source credential",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Source ID",
+                        "name": "sourceId",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {}
+            },
+            "post": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "onboard"
+                ],
+                "summary": "Get source credential",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Source ID",
+                        "name": "sourceId",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {}
+            }
+        },
         "/onboard/api/v1/sources": {
             "get": {
                 "description": "Returning a list of sources including both AWS and Azure unless filtered by Type.",
@@ -2587,7 +2627,7 @@ const docTemplate = `{
             }
         },
         "/onboard/api/v1/spn/{spnId}": {
-            "post": {
+            "put": {
                 "produces": [
                     "application/json"
                 ],
@@ -2605,9 +2645,7 @@ const docTemplate = `{
                     }
                 ],
                 "responses": {}
-            }
-        },
-        "/onboard/api/v1/{sourceId}/credentials": {
+            },
             "post": {
                 "produces": [
                     "application/json"
@@ -2615,12 +2653,12 @@ const docTemplate = `{
                 "tags": [
                     "onboard"
                 ],
-                "summary": "Put source credential",
+                "summary": "Get SPN credential",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Source ID",
-                        "name": "sourceId",
+                        "description": "SPN ID",
+                        "name": "spnId",
                         "in": "query",
                         "required": true
                     }

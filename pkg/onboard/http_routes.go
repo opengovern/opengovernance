@@ -402,7 +402,7 @@ func (h HttpHandler) GetSPNCred(ctx echo.Context) error {
 // @Tags         onboard
 // @Produce      json
 // @Param    spnId  query  string  true  "SPN ID"
-// @Router   /onboard/api/v1/spn/{spnId} [post]
+// @Router   /onboard/api/v1/spn/{spnId} [put]
 func (h HttpHandler) PutSPNCred(ctx echo.Context) error {
 	spnUUID, err := uuid.Parse(ctx.Param("spnId"))
 	if err != nil {
@@ -444,7 +444,7 @@ func (h HttpHandler) PutSPNCred(ctx echo.Context) error {
 // @Tags         onboard
 // @Produce      json
 // @Param    sourceId  query  string  true  "Source ID"
-// @Router   /onboard/api/v1/{sourceId}/credentials [post]
+// @Router   /onboard/api/v1/source/{sourceId}/credentials [post]
 func (h HttpHandler) GetSourceCred(ctx echo.Context) error {
 	sourceUUID, err := uuid.Parse(ctx.Param("sourceId"))
 	if err != nil {
@@ -489,7 +489,7 @@ func (h HttpHandler) GetSourceCred(ctx echo.Context) error {
 // @Tags         onboard
 // @Produce      json
 // @Param    sourceId  query  string  true  "Source ID"
-// @Router   /onboard/api/v1/{sourceId}/credentials [post]
+// @Router   /onboard/api/v1/source/{sourceId}/credentials [put]
 func (h HttpHandler) PutSourceCred(ctx echo.Context) error {
 	sourceUUID, err := uuid.Parse(ctx.Param("sourceId"))
 	if err != nil {
