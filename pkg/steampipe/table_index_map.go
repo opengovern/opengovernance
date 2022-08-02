@@ -94,7 +94,7 @@ var awsMap = map[string]string{
 	"AWS::Redshift::Cluster":                    "aws_redshift_cluster",
 	"AWS::S3::Bucket":                           "aws_s3_bucket",
 	"AWS::EC2::VolumeSnapshot":                  "aws_ebs_snapshot",
-	"AWS::EC2::FlowLog":                         "aws_vpc_flowlog",
+	"AWS::EC2::FlowLog":                         "aws_vpc_flow_log",
 	"AWS::EC2::Region":                          "aws_region",
 	"AWS::FSX::FileSystem":                      "aws_fsx_file_system",
 	"AWS::RDS::DBClusterSnapshot":               "aws_rds_db_cluster_snapshot",

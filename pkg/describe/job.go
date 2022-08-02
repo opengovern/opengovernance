@@ -70,7 +70,7 @@ var DoDescribeCleanupJobsDuration = promauto.NewHistogramVec(prometheus.Histogra
 const (
 	InventorySummaryIndex  = "inventory_summary"
 	SourceResourcesSummary = "source_resources_summary"
-	describeJobTimeout     = 5 * time.Minute
+	describeJobTimeout     = 10 * time.Minute
 	cleanupJobTimeout      = 5 * time.Minute
 )
 
