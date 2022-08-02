@@ -12,11 +12,8 @@ import (
 	envoyauth "github.com/envoyproxy/go-control-plane/envoy/service/auth/v3"
 	"github.com/gogo/googleapis/google/rpc"
 	"github.com/google/uuid"
-	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 	"gitlab.com/keibiengine/keibi-engine/pkg/auth/api"
-	"gitlab.com/keibiengine/keibi-engine/pkg/auth/extauth"
-	"gitlab.com/keibiengine/keibi-engine/pkg/auth/extauth/mocks"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/dockertest"
 	"go.uber.org/zap"
 	"gorm.io/gorm"
@@ -85,9 +82,9 @@ func (s *ServerSuite) TestServer_Check() {
 			SkipExpiryCheck:   true,
 			SkipIssuerCheck:   true,
 		}),
-		extAuth: &mocks.Provider{},
-		db:      s.db,
-		host:    "app.keibi.io",
+		//extAuth: &mocks.Provider{},
+		db:   s.db,
+		host: "app.keibi.io",
 	}
 
 	user1 := User{
@@ -132,13 +129,13 @@ func (s *ServerSuite) TestServer_Check() {
 	require.NoError(server.db.CreateOrUpdateRoleBinding(&rb1), "create rolebinding 1", rb1.ExternalID)
 	require.NoError(server.db.CreateOrUpdateRoleBinding(&rb2), "create rolebinding 2", rb2.ExternalID)
 	require.NoError(server.db.CreateOrUpdateRoleBinding(&rb3), "create rolebinding 3", rb3.ExternalID)
-
-	server.extAuth.(*mocks.Provider).On("FetchUser", mock.Anything, "3").Return(extauth.AzureADUser{
-		ID:   "3",
-		Mail: "3@gmail.com",
-	}, error(nil))
-
-	server.extAuth.(*mocks.Provider).On("FetchUser", mock.Anything, "4").Return(extauth.AzureADUser{}, extauth.ErrUserNotExists)
+	//
+	//server.extAuth.(*mocks.Provider).On("FetchUser", mock.Anything, "3").Return(extauth.AzureADUser{
+	//	ID:   "3",
+	//	Mail: "3@gmail.com",
+	//}, error(nil))
+	//
+	//server.extAuth.(*mocks.Provider).On("FetchUser", mock.Anything, "4").Return(extauth.AzureADUser{}, extauth.ErrUserNotExists)
 
 	type args struct {
 		token             string

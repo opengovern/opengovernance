@@ -15,7 +15,8 @@ import (
 	"github.com/gogo/googleapis/google/rpc"
 	"github.com/labstack/echo/v4"
 	"gitlab.com/keibiengine/keibi-engine/pkg/auth/api"
-	"gitlab.com/keibiengine/keibi-engine/pkg/auth/extauth"
+
+	//"gitlab.com/keibiengine/keibi-engine/pkg/auth/extauth"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpserver"
 	"go.uber.org/zap"
 	"google.golang.org/genproto/googleapis/rpc/status"
@@ -25,8 +26,8 @@ import (
 type Server struct {
 	host string
 
-	db       Database
-	extAuth  extauth.Provider
+	db Database
+	//extAuth  extauth.Provider
 	verifier *oidc.IDTokenVerifier
 	logger   *zap.Logger
 }
@@ -68,18 +69,19 @@ func (s Server) Check(ctx context.Context, req *envoyauth.CheckRequest) (*envoya
 			return unAuth, nil
 		}
 
-		azureADUser, err := s.extAuth.FetchUser(ctx, user.ExternalUserID)
-		if err != nil {
-			s.logger.Warn("denied access due to failure in retrieving auth user",
-				zap.String("reqId", httpRequest.Id),
-				zap.String("path", httpRequest.Path),
-				zap.String("method", httpRequest.Method),
-				zap.Error(err))
-			return unAuth, nil
-		}
+		//
+		//azureADUser, err := s.extAuth.FetchUser(ctx, user.ExternalUserID)
+		//if err != nil {
+		//	s.logger.Warn("denied access due to failure in retrieving auth user",
+		//		zap.String("reqId", httpRequest.Id),
+		//		zap.String("path", httpRequest.Path),
+		//		zap.String("method", httpRequest.Method),
+		//		zap.Error(err))
+		//	return unAuth, nil
+		//}
 		internalUser = User{
-			Email:      azureADUser.Mail,
-			ExternalID: azureADUser.ID,
+			//Email:      azureADUser.Mail,
+			ExternalID: user.ExternalUserID,
 		}
 
 		if internalUser.Email == "" {
@@ -106,6 +108,7 @@ func (s Server) Check(ctx context.Context, req *envoyauth.CheckRequest) (*envoya
 	}
 
 	var rb RoleBinding
+	//TODO-Saleh
 	if httpRequest.Host == s.host {
 		// e.g: app.keibi.io
 		rb = RoleBinding{
@@ -205,6 +208,17 @@ func newOidcVerifier(ctx context.Context, tenantName, tenantId, clientId, policy
 	issuer := fmt.Sprintf("https://%s.b2clogin.com/%s/v2.0/", tenantName, tenantId)
 
 	provider, err := oidc.NewProvider(oidc.InsecureIssuerURLContext(ctx, issuer), discovery)
+	if err != nil {
+		return nil, err
+	}
+
+	return provider.Verifier(&oidc.Config{
+		ClientID: clientId,
+	}), nil
+}
+
+func newAuth0OidcVerifier(ctx context.Context, auth0Domain, clientId string) (*oidc.IDTokenVerifier, error) {
+	provider, err := oidc.NewProvider(ctx, auth0Domain)
 	if err != nil {
 		return nil, err
 	}
