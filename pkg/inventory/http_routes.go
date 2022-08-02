@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"math"
 	"mime"
 	"net/http"
 	"sort"
@@ -1538,7 +1539,6 @@ func (h *HttpHandler) GetSummaryMetrics(ctx echo.Context) error {
 	if err != nil {
 		return err
 	}
-	fmt.Println("===============", services)
 
 	padd := func(x, y *int) *int {
 		var v *int
@@ -1602,12 +1602,16 @@ func (h *HttpHandler) GetSummaryMetrics(ctx echo.Context) error {
 		LastYearValue:    nil,
 	})
 
+	var lastValue int
+	var lastDescribedAt int64 = 0
+
 	var lastDayResourceCount, lastWeekResourceCount, lastQuarterResourceCount, lastYearResourceCount *int
 	for idx, timeWindow := range []time.Duration{24 * time.Hour, 7 * 24 * time.Hour, 93 * 24 * time.Hour, 428 * 24 * time.Hour} {
 		fromTime := time.Now().Add(-1 * timeWindow)
 		toTime := fromTime.Add(24 * time.Hour)
 
-		var count = 0
+		countMap := map[int64]int{}
+		firstDescribedAt := int64(math.MaxInt64)
 		var searchAfter []interface{}
 		for {
 			query, err := es.FindResourceGrowthTrendQuery(sourceUUID, providerStr, fromTime.UnixMilli(), toTime.UnixMilli(), EsFetchPageSize, searchAfter)
@@ -1626,14 +1630,30 @@ func (h *HttpHandler) GetSummaryMetrics(ctx echo.Context) error {
 			}
 
 			for _, hit := range response.Hits.Hits {
-				count += hit.Source.ResourceCount
+				if v, ok := countMap[hit.Source.DescribedAt]; ok {
+					countMap[hit.Source.DescribedAt] = v + hit.Source.ResourceCount
+				} else {
+					countMap[hit.Source.DescribedAt] = hit.Source.ResourceCount
+				}
+				if firstDescribedAt > hit.Source.DescribedAt {
+					firstDescribedAt = hit.Source.DescribedAt
+				}
+
+				// for last value
+				if lastDescribedAt < hit.Source.DescribedAt {
+					lastDescribedAt = hit.Source.DescribedAt
+				}
 				searchAfter = hit.Sort
 			}
 		}
 
+		count := countMap[firstDescribedAt]
 		switch idx {
 		case 0:
 			lastDayResourceCount = &count
+			if v, ok := countMap[lastDescribedAt]; ok {
+				lastValue = v
+			}
 		case 1:
 			lastWeekResourceCount = &count
 		case 2:
@@ -1645,7 +1665,7 @@ func (h *HttpHandler) GetSummaryMetrics(ctx echo.Context) error {
 
 	res = append(res, api.MetricsResponse{
 		MetricsName:      "Cloud Resources",
-		Value:            0,
+		Value:            lastValue,
 		LastDayValue:     lastDayResourceCount,
 		LastWeekValue:    lastWeekResourceCount,
 		LastQuarterValue: lastQuarterResourceCount,
