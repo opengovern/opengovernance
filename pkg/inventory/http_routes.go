@@ -1535,11 +1535,6 @@ func (h *HttpHandler) GetSummaryMetrics(ctx echo.Context) error {
 
 	var res []api.MetricsResponse
 
-	services, err := GetServices(h.client, provider, sourceID)
-	if err != nil {
-		return err
-	}
-
 	padd := func(x, y *int) *int {
 		var v *int
 		if x != nil && y != nil {
@@ -1553,12 +1548,11 @@ func (h *HttpHandler) GetSummaryMetrics(ctx echo.Context) error {
 		return v
 	}
 
-	extractMetric := func(allProviderName, awsName, awsResourceType, azureName, azureResourceType string) api.MetricsResponse {
+	extractMetric := func(allProviderName, awsName, awsResourceType, azureName, azureResourceType string) error {
 		awsResourceType = strings.ToLower(awsResourceType)
 		azureResourceType = strings.ToLower(azureResourceType)
 
-		var aws api.TopServicesResponse
-		var azure api.TopServicesResponse
+		var aws, azure api.ResourceTypeResponse
 		metricName := allProviderName
 		switch provider {
 		case source.CloudAWS:
@@ -1567,25 +1561,38 @@ func (h *HttpHandler) GetSummaryMetrics(ctx echo.Context) error {
 			metricName = azureName
 		}
 		if metricName == "" {
-			return api.MetricsResponse{}
+			return nil
 		}
 
-		for _, s := range services {
-			if s.ServiceName == awsResourceType && awsResourceType != "" {
-				aws = s
+		if awsResourceType != "" {
+			v, err := GetResources(h.client, provider, sourceID, []string{awsResourceType})
+			if err != nil {
+				return err
 			}
-			if s.ServiceName == azureResourceType && azureResourceType != "" {
-				azure = s
+			if len(v) > 0 {
+				aws = v[0]
 			}
 		}
-		return api.MetricsResponse{
+
+		if azureResourceType != "" {
+			v, err := GetResources(h.client, provider, sourceID, []string{azureResourceType})
+			if err != nil {
+				return err
+			}
+			if len(v) > 0 {
+				azure = v[0]
+			}
+		}
+
+		res = append(res, api.MetricsResponse{
 			MetricsName:      metricName,
 			Value:            azure.ResourceCount + aws.ResourceCount,
 			LastDayValue:     padd(azure.LastDayCount, aws.LastDayCount),
 			LastWeekValue:    padd(azure.LastWeekCount, aws.LastWeekCount),
 			LastQuarterValue: padd(azure.LastQuarterCount, aws.LastQuarterCount),
 			LastYearValue:    padd(azure.LastYearCount, aws.LastYearCount),
-		}
+		})
+		return nil
 	}
 
 	totalAccounts, err := h.onboardClient.CountSources(httpclient.FromEchoContext(ctx), providerPtr)
@@ -1672,17 +1679,23 @@ func (h *HttpHandler) GetSummaryMetrics(ctx echo.Context) error {
 		LastYearValue:    lastYearResourceCount,
 	})
 
-	res = append(res, extractMetric("Virtual Machines",
+	if err := extractMetric("Virtual Machines",
 		"Virtual Machines", "aws::ec2::instance",
-		"Virtual Machines", "Microsoft.Compute/virtualMachines"))
+		"Virtual Machines", "Microsoft.Compute/virtualMachines"); err != nil {
+		return err
+	}
 
-	res = append(res, extractMetric("Networks",
+	if err := extractMetric("Networks",
 		"Networks (VPC)", "aws::ec2::vpc",
-		"Networks (vNets)", "Microsoft.Network/virtualNetworks"))
+		"Networks (vNets)", "Microsoft.Network/virtualNetworks"); err != nil {
+		return err
+	}
 
-	res = append(res, extractMetric("Disks",
+	if err := extractMetric("Disks",
 		"Disks", "aws::ec2::volume",
-		"Managed Disks", "Microsoft.Compute/disks"))
+		"Managed Disks", "Microsoft.Compute/disks"); err != nil {
+		return err
+	}
 
 	res = append(res, api.MetricsResponse{
 		MetricsName:      "Total storage",
@@ -1693,25 +1706,35 @@ func (h *HttpHandler) GetSummaryMetrics(ctx echo.Context) error {
 		LastYearValue:    nil,
 	})
 
-	res = append(res, extractMetric("DB Services",
+	if err := extractMetric("DB Services",
 		"RDS Instances", "aws::rds::dbcluster",
-		"SQL Instances", "Microsoft.Sql/managedInstances"))
+		"SQL Instances", "Microsoft.Sql/managedInstances"); err != nil {
+		return err
+	}
 
-	res = append(res, extractMetric("",
+	if err := extractMetric("",
 		"S3 Buckets", "aws::s3::bucket",
-		"Storage Accounts", "Microsoft.Storage/storageAccounts"))
+		"Storage Accounts", "Microsoft.Storage/storageAccounts"); err != nil {
+		return err
+	}
 
-	res = append(res, extractMetric("Kubernetes Cluster",
+	if err := extractMetric("Kubernetes Cluster",
 		"Kubernetes Cluster", "aws::eks::cluster",
-		"Azure Kubernetes", "Microsoft.Kubernetes/connectedClusters"))
+		"Azure Kubernetes", "Microsoft.Kubernetes/connectedClusters"); err != nil {
+		return err
+	}
 
-	res = append(res, extractMetric("Serverless",
+	if err := extractMetric("Serverless",
 		"Lambda", "aws::lambda::function",
-		"", ""))
+		"", ""); err != nil {
+		return err
+	}
 
-	res = append(res, extractMetric("PaaS",
+	if err := extractMetric("PaaS",
 		"Elastic Beanstalk", "aws::elasticbeanstalk::environment",
-		"Apps", "microsoft.app/containerapps"))
+		"Apps", "microsoft.app/containerapps"); err != nil {
+		return err
+	}
 
 	for i := 0; i < len(res); i++ {
 		if res[i].MetricsName == "" {
