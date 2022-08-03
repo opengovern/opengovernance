@@ -1547,6 +1547,20 @@ func (h *HttpHandler) GetSummaryMetrics(ctx echo.Context) error {
 		}
 		return v
 	}
+	padd64 := func(x, y *int64) *int {
+		var v *int
+		if x != nil && y != nil {
+			t := int(*x) + int(*y)
+			v = &t
+		} else if x != nil {
+			t := int(*x)
+			v = &t
+		} else if y != nil {
+			t := int(*y)
+			v = &t
+		}
+		return v
+	}
 
 	extractMetric := func(allProviderName, awsName, awsResourceType, azureName, azureResourceType string) error {
 		awsResourceType = strings.ToLower(awsResourceType)
@@ -1654,19 +1668,22 @@ func (h *HttpHandler) GetSummaryMetrics(ctx echo.Context) error {
 			}
 		}
 
-		count := countMap[firstDescribedAt]
+		var count *int
+		if v, ok := countMap[firstDescribedAt]; ok {
+			count = &v
+		}
 		switch idx {
 		case 0:
-			lastDayResourceCount = &count
+			lastDayResourceCount = count
 			if v, ok := countMap[lastDescribedAt]; ok {
 				lastValue = v
 			}
 		case 1:
-			lastWeekResourceCount = &count
+			lastWeekResourceCount = count
 		case 2:
-			lastQuarterResourceCount = &count
+			lastQuarterResourceCount = count
 		case 3:
-			lastYearResourceCount = &count
+			lastYearResourceCount = count
 		}
 	}
 
@@ -1697,13 +1714,45 @@ func (h *HttpHandler) GetSummaryMetrics(ctx echo.Context) error {
 		return err
 	}
 
+	query, err := es.FindInsightResults(nil, nil)
+	if err != nil {
+		return err
+	}
+
+	var response es.InsightResultQueryResponse
+	err = h.client.Search(context.Background(), kafka.InsightsIndex,
+		query, &response)
+	if err != nil {
+		return err
+	}
+
+	includeAWS, includeAzure := false, false
+	switch provider {
+	case source.CloudAWS:
+		includeAWS = true
+	case source.CloudAzure:
+		includeAzure = true
+	default:
+		includeAzure, includeAWS = true, true
+	}
+
+	var awsStorage, azureStorage kafka.InsightResource
+	for _, item := range response.Hits.Hits {
+		if includeAWS && item.Source.Description == "AWS Storage" {
+			awsStorage = item.Source
+		}
+		if includeAzure && item.Source.Description == "Azure Storage" {
+			azureStorage = item.Source
+		}
+	}
+
 	res = append(res, api.MetricsResponse{
 		MetricsName:      "Total storage",
-		Value:            0,
-		LastDayValue:     nil,
-		LastWeekValue:    nil,
-		LastQuarterValue: nil,
-		LastYearValue:    nil,
+		Value:            int(awsStorage.Result + azureStorage.Result),
+		LastDayValue:     padd64(awsStorage.LastDayValue, azureStorage.LastDayValue),
+		LastWeekValue:    padd64(awsStorage.LastWeekValue, azureStorage.LastWeekValue),
+		LastQuarterValue: padd64(awsStorage.LastQuarterValue, azureStorage.LastQuarterValue),
+		LastYearValue:    padd64(awsStorage.LastYearValue, azureStorage.LastYearValue),
 	})
 
 	if err := extractMetric("DB Services",
@@ -2443,6 +2492,10 @@ func (h *HttpHandler) ListInsightsResults(ctx echo.Context) error {
 
 	resp := api.ListInsightResultsResponse{}
 	for _, item := range response.Hits.Hits {
+		if item.Source.Internal {
+			continue
+		}
+
 		resp.Results = append(resp.Results, api.InsightResult{
 			SmartQueryID:     item.Source.SmartQueryID,
 			Description:      item.Source.Description,
