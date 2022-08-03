@@ -3,6 +3,7 @@ package insight
 import (
 	"context"
 	"fmt"
+	"github.com/jackc/pgtype"
 	"reflect"
 	"strconv"
 	"time"
@@ -94,6 +95,10 @@ func (j Job) Do(es keibi.Client, steampipeConn *steampipe.Database, producer sar
 	res, err := steampipeConn.Count(j.Query)
 	if err == nil {
 		result := res.Data[0][0]
+		if v, ok := result.(pgtype.Numeric); ok {
+			result = v.Int.Int64()
+		}
+
 		if v, ok := result.(int64); ok {
 			var lastDayValue, lastWeekValue, lastQuarterValue, lastYearValue *int64
 			for idx, jobID := range []uint{j.LastDayJobID, j.LastWeekJobID, j.LastQuarterJobID, j.LastYearJobID} {
