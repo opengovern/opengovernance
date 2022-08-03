@@ -224,7 +224,7 @@ func newAuth0OidcVerifier(ctx context.Context, auth0Domain, clientId string) (*o
 	}
 
 	return provider.Verifier(&oidc.Config{
-		ClientID: clientId,
+		ClientID:          clientId,
 		SkipClientIDCheck: true,
 	}), nil
 }
