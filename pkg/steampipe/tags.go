@@ -54,7 +54,7 @@ func ExtractTags(resourceType string, source interface{}) (map[string]string, er
 	tags := map[string]string{}
 	for k, v := range cells {
 		if k == "tags" {
-			if jsonBytes := v.GetJsonValue(); jsonBytes != nil {
+			if jsonBytes := v.GetJsonValue(); jsonBytes != nil && len(jsonBytes) > 0 && string(jsonBytes) != "null" {
 				var t interface{}
 				err := json.Unmarshal(jsonBytes, &t)
 				if err != nil {
