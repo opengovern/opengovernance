@@ -1756,7 +1756,7 @@ func (h *HttpHandler) GetSummaryMetrics(ctx echo.Context) error {
 	})
 
 	if err := extractMetric("DB Services",
-		"RDS Instances", "aws::rds::dbcluster",
+		"RDS Instances", "aws::rds::dbinstance",
 		"SQL Instances", "Microsoft.Sql/managedInstances"); err != nil {
 		return err
 	}
