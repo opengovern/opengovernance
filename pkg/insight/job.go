@@ -3,10 +3,11 @@ package insight
 import (
 	"context"
 	"fmt"
-	"github.com/jackc/pgtype"
 	"reflect"
 	"strconv"
 	"time"
+
+	"github.com/jackc/pgtype"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/keibi-es-sdk"
 
