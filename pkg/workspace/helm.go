@@ -18,6 +18,7 @@ import (
 
 const (
 	FluxSystemNamespace = "flux-system"
+	OctopusNamespace    = "keibi-octopus"
 )
 
 func (s *Server) newKubeClient() (client.Client, error) {

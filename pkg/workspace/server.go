@@ -8,6 +8,9 @@ import (
 	"strings"
 	"time"
 
+	contourv1 "github.com/projectcontour/contour/apis/projectcontour/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	apimeta "github.com/fluxcd/pkg/apis/meta"
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
@@ -93,10 +96,52 @@ func (s *Server) startReconciler() {
 					s.e.Logger.Errorf("handle workspace %s: %v", workspace.ID.String(), err)
 				}
 			}
+
+			if err := s.syncHTTPProxy(workspaces); err != nil {
+				s.e.Logger.Errorf("syncing http proxy: %v", err)
+			}
 		}
 		// reset the time ticker
 		ticker.Reset(reconcilerInterval)
 	}
+}
+
+func (s *Server) syncHTTPProxy(workspaces []*Workspace) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
+	defer cancel()
+
+	var includes []contourv1.Include
+	for _, w := range workspaces {
+		includes = append(includes, contourv1.Include{
+			Name:      "http-proxy-route",
+			Namespace: w.ID.String(),
+			Conditions: []contourv1.MatchCondition{
+				{
+					Prefix: "/" + w.Name,
+				},
+			},
+		})
+	}
+
+	err := s.kubeClient.Create(ctx, &contourv1.HTTPProxy{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "HTTPProxy",
+			APIVersion: "projectcontour.io/v1",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "http-proxy-route",
+			Namespace: OctopusNamespace,
+		},
+		Spec: contourv1.HTTPProxySpec{
+			Includes: includes,
+		},
+		Status: contourv1.HTTPProxyStatus{},
+	})
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (s *Server) handleWorkspace(workspace *Workspace) error {
