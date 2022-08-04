@@ -146,6 +146,7 @@ func (s *Server) syncHTTPProxy(workspaces []*Workspace) error {
 		}
 	}
 
+	resourceVersion := httpProxy.GetResourceVersion()
 	httpProxy = contourv1.HTTPProxy{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "HTTPProxy",
@@ -162,6 +163,7 @@ func (s *Server) syncHTTPProxy(workspaces []*Workspace) error {
 	}
 
 	if exists {
+		httpProxy.SetResourceVersion(resourceVersion)
 		err := s.kubeClient.Update(ctx, &httpProxy)
 		if err != nil {
 			return err
