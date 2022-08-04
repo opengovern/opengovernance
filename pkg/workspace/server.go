@@ -64,6 +64,11 @@ func NewServer(cfg *Config) (*Server, error) {
 	}
 	s.kubeClient = kubeClient
 
+	err = contourv1.AddToScheme(s.kubeClient.Scheme())
+	if err != nil {
+		return nil, fmt.Errorf("add contourv1 to scheme: %w", err)
+	}
+
 	return s, nil
 }
 
