@@ -13,10 +13,8 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
-	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 	"gitlab.com/keibiengine/keibi-engine/pkg/auth/api"
-	extauthmocks "gitlab.com/keibiengine/keibi-engine/pkg/auth/extauth/mocks"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/dockertest"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpserver"
 	"go.uber.org/zap"
@@ -59,8 +57,6 @@ func (s *HTTPRouteSuite) BeforeTest(suiteName, testName string) {
 	err := s.httpRoutes.db.Initialize()
 	require.NoError(err, "initialize db")
 
-	s.httpRoutes.authProvider = &extauthmocks.Provider{}
-	//s.httpRoutes.emailService = &emailmocks.Service{}
 }
 
 func (s *HTTPRouteSuite) AfterTest(suiteName, testName string) {
@@ -377,10 +373,6 @@ func (s *HTTPRouteSuite) TestInvite_NewInvite() {
 
 	assert.Equal(ws, inv.WorkspaceName)
 	assert.WithinDuration(time.Now().Add(time.Hour*24*7), inv.ExpiredAt, time.Second)
-
-	s.httpRoutes.authProvider.(*extauthmocks.Provider).AssertNotCalled(s.T(), "FetchUser", mock.Anything, mock.Anything)
-	s.httpRoutes.authProvider.(*extauthmocks.Provider).AssertNotCalled(s.T(), "CreateUser", mock.Anything, mock.Anything)
-	//s.httpRoutes.emailService.(*emailmocks.Service).AssertNumberOfCalls(s.T(), "SendEmail", 1)
 }
 
 func (s *HTTPRouteSuite) TestInvite_AcceptInvitationExists() {
@@ -415,9 +407,6 @@ func (s *HTTPRouteSuite) TestInvite_AcceptInvitationExists() {
 	assert.Equal(inv.WorkspaceName, rb.WorkspaceName)
 	assert.Equal(api.ViewerRole, rb.Role)
 
-	s.httpRoutes.authProvider.(*extauthmocks.Provider).AssertNotCalled(s.T(), "FetchUser", mock.Anything, mock.Anything)
-	s.httpRoutes.authProvider.(*extauthmocks.Provider).AssertNotCalled(s.T(), "CreateUser", mock.Anything, mock.Anything)
-	//s.httpRoutes.emailService.(*emailmocks.Service).AssertNotCalled(s.T(), "SendEmail", mock.Anything, mock.Anything, mock.Anything)
 }
 
 func (s *HTTPRouteSuite) TestInvite_AcceptInvitationExpired() {
@@ -443,10 +432,6 @@ func (s *HTTPRouteSuite) TestInvite_AcceptInvitationExpired() {
 
 	_, err = s.db.GetRoleBindingForWorkspace(user.ExternalID, inv.WorkspaceName)
 	require.ErrorIs(err, gorm.ErrRecordNotFound)
-
-	s.httpRoutes.authProvider.(*extauthmocks.Provider).AssertNotCalled(s.T(), "FetchUser", mock.Anything, mock.Anything)
-	s.httpRoutes.authProvider.(*extauthmocks.Provider).AssertNotCalled(s.T(), "CreateUser", mock.Anything, mock.Anything)
-	//s.httpRoutes.emailService.(*emailmocks.Service).AssertNotCalled(s.T(), "SendEmail", mock.Anything, mock.Anything, mock.Anything)
 }
 
 func (s *HTTPRouteSuite) TestInvite_AcceptInvitationDeleted() {
@@ -455,8 +440,4 @@ func (s *HTTPRouteSuite) TestInvite_AcceptInvitationDeleted() {
 	recorder, err := doSimpleJSONRequest(s.router, http.MethodGet, "/api/v1/invite/"+uuid.NewString(), uuid.New(), api.AdminRole, "workspace1", nil, nil)
 	require.NoError(err, "invite user")
 	require.Equal(http.StatusBadRequest, recorder.Result().StatusCode, mustRead(recorder.Result().Body))
-
-	s.httpRoutes.authProvider.(*extauthmocks.Provider).AssertNotCalled(s.T(), "FetchUser", mock.Anything, mock.Anything)
-	s.httpRoutes.authProvider.(*extauthmocks.Provider).AssertNotCalled(s.T(), "CreateUser", mock.Anything, mock.Anything)
-	//s.httpRoutes.emailService.(*emailmocks.Service).AssertNotCalled(s.T(), "SendEmail", mock.Anything, mock.Anything, mock.Anything)
 }
