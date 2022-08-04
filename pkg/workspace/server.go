@@ -199,6 +199,9 @@ func (s *Server) CreateWorkspace(c echo.Context) error {
 	if request.Name == "" {
 		return echo.NewHTTPError(http.StatusBadRequest, "name is empty")
 	}
+	if request.Name == "keibi" {
+		return echo.NewHTTPError(http.StatusBadRequest, "name cannot be keibi")
+	}
 	if strings.Contains(request.Name, ".") {
 		return echo.NewHTTPError(http.StatusBadRequest, "name is invalid")
 	}

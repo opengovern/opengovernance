@@ -3365,6 +3365,9 @@ const docTemplate = `{
                 "description": {
                     "type": "string"
                 },
+                "internal": {
+                    "type": "boolean"
+                },
                 "provider": {
                     "type": "string"
                 },

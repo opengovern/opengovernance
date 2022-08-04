@@ -11,7 +11,6 @@ import (
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
 	"gitlab.com/keibiengine/keibi-engine/pkg/auth/api"
-	"gitlab.com/keibiengine/keibi-engine/pkg/auth/extauth"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpserver"
 	"go.uber.org/zap"
 	"gorm.io/gorm"
@@ -20,10 +19,8 @@ import (
 const inviteDuration = time.Hour * 24 * 7
 
 type httpRoutes struct {
-	logger       *zap.Logger
-	db           Database
-	authProvider extauth.Provider
-	//emailService       email.Service
+	logger             *zap.Logger
+	db                 Database
 	inviteLinkTemplate string
 }
 

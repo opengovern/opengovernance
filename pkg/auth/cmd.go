@@ -25,21 +25,8 @@ var (
 	postgreSQLUser     = os.Getenv("POSTGRESQL_USERNAME")
 	postgreSQLPassword = os.Getenv("POSTGRESQL_PASSWORD")
 
-	mailApiKey     = os.Getenv("EMAIL_API_KEY")
-	mailSender     = os.Getenv("EMAIL_SENDER")
-	mailSenderName = os.Getenv("EMAIL_SENDER_NAME")
-
-	//azureAuthTenantName   = os.Getenv("AZURE_OAUTH_TENANT_NAME")
-	//azureAuthTenantID     = os.Getenv("AZURE_OAUTH_TENANT_ID")
-	//azureAuthClientID     = os.Getenv("AZURE_OAUTH_CLIENT_ID")
-	//azureAuthSignInPolicy = os.Getenv("AZURE_OAUTH_POLICY")
-	//azureAuthClientSecret = os.Getenv("AZURE_OAUTH_CLIENT_SECRET")
-	//azureIdentityIssuer   = os.Getenv("AZURE_OAUTH_IDENTITY_ISSUER")
-
-	auth0Domain       = os.Getenv("AUTH0_DOMAIN")
-	auth0ClientID     = os.Getenv("AUTH0_CLIENT_ID")
-	auth0ClientSecret = os.Getenv("AUTH0_CLIENT_SECRET")
-	auth0CallbackURL  = os.Getenv("AUTH0_CALLBACK_URL")
+	auth0Domain   = os.Getenv("AUTH0_DOMAIN")
+	auth0ClientID = os.Getenv("AUTH0_CLIENT_ID")
 
 	httpServerAddress  = os.Getenv("HTTP_ADDRESS")
 	inviteLinkTemplate = os.Getenv("INVITE_LINK_TEMPLATE")
@@ -84,7 +71,6 @@ func start(ctx context.Context) error {
 	}
 	logger.Info("Connected to the postgres database: ", zap.String("orm", "postgresDb"))
 
-	//verifier, err := newOidcVerifier(ctx, azureAuthTenantName, azureAuthTenantID, azureAuthClientID, azureAuthSignInPolicy)
 	verifier, err := newAuth0OidcVerifier(ctx, auth0Domain, auth0ClientID)
 	if err != nil {
 		return fmt.Errorf("open id connect verifier: %w", err)
@@ -96,18 +82,6 @@ func start(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("initialize database: %w", err)
 	}
-	//extAuth, err := extauth.NewAzureADB2CProvider(
-	//	ctx,
-	//	azureAuthTenantID,
-	//	azureAuthClientID,
-	//	azureAuthClientSecret,
-	//	azureIdentityIssuer,
-	//	logger)
-	//if err != nil {
-	//	return fmt.Errorf("initialize Azure client: %w", err)
-	//}
-
-	//m := email.NewSendGridClient(mailApiKey, mailSender, mailSenderName, logger)
 
 	creds, err := newServerCredentials(
 		grpcTlsCertPath,
@@ -123,7 +97,6 @@ func start(ctx context.Context) error {
 		db:       db,
 		verifier: verifier,
 		logger:   logger,
-		//extAuth:  extAuth,
 	}
 
 	grpcServer := grpc.NewServer(grpc.Creds(creds))
@@ -141,10 +114,8 @@ func start(ctx context.Context) error {
 
 	go func() {
 		routes := httpRoutes{
-			logger: logger,
-			db:     db,
-			//authProvider:       extAuth,
-			//emailService:       m,
+			logger:             logger,
+			db:                 db,
 			inviteLinkTemplate: inviteLinkTemplate,
 		}
 		errors <- fmt.Errorf("http server: %w", httpserver.RegisterAndStart(logger, httpServerAddress, &routes))
