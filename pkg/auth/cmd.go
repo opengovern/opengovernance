@@ -9,6 +9,8 @@ import (
 	"net"
 	"os"
 
+	"gitlab.com/keibiengine/keibi-engine/pkg/internal/email"
+
 	envoyauth "github.com/envoyproxy/go-control-plane/envoy/service/auth/v3"
 	"github.com/spf13/cobra"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpserver"
@@ -24,6 +26,10 @@ var (
 	postgreSQLDb       = os.Getenv("POSTGRESQL_DB")
 	postgreSQLUser     = os.Getenv("POSTGRESQL_USERNAME")
 	postgreSQLPassword = os.Getenv("POSTGRESQL_PASSWORD")
+
+	mailApiKey     = os.Getenv("EMAIL_API_KEY")
+	mailSender     = os.Getenv("EMAIL_SENDER")
+	mailSenderName = os.Getenv("EMAIL_SENDER_NAME")
 
 	auth0Domain   = os.Getenv("AUTH0_DOMAIN")
 	auth0ClientID = os.Getenv("AUTH0_CLIENT_ID")
@@ -76,6 +82,7 @@ func start(ctx context.Context) error {
 		return fmt.Errorf("open id connect verifier: %w", err)
 	}
 	logger.Info("Instantiated a new Open ID Connect verifier")
+	m := email.NewSendGridClient(mailApiKey, mailSender, mailSenderName, logger)
 
 	db := NewDatabase(orm)
 	err = db.Initialize()
@@ -116,6 +123,7 @@ func start(ctx context.Context) error {
 		routes := httpRoutes{
 			logger:             logger,
 			db:                 db,
+			emailService:       m,
 			inviteLinkTemplate: inviteLinkTemplate,
 		}
 		errors <- fmt.Errorf("http server: %w", httpserver.RegisterAndStart(logger, httpServerAddress, &routes))

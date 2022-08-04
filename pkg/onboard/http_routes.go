@@ -521,7 +521,7 @@ func (h HttpHandler) PutSourceCred(ctx echo.Context) error {
 		newCnf := api.SourceConfigAWS{
 			AccountId: awsCnf.AccountID,
 			Regions:   awsCnf.Regions,
-			AccessKey: awsCnf.AccessKey,
+			AccessKey: req.AccessKey,
 			SecretKey: req.SecretKey,
 		}
 		if err := h.vault.Write(src.ConfigRef, newCnf.AsMap()); err != nil {
@@ -542,7 +542,7 @@ func (h HttpHandler) PutSourceCred(ctx echo.Context) error {
 		newCnf := api.SourceConfigAzure{
 			SubscriptionId: azureCnf.SubscriptionID,
 			TenantId:       azureCnf.TenantID,
-			ClientId:       azureCnf.ClientID,
+			ClientId:       req.ClientID,
 			ClientSecret:   req.ClientSecret,
 		}
 		if err := h.vault.Write(src.ConfigRef, newCnf.AsMap()); err != nil {

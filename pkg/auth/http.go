@@ -6,6 +6,8 @@ import (
 	"net/http"
 	"time"
 
+	"gitlab.com/keibiengine/keibi-engine/pkg/internal/email"
+
 	"gitlab.com/keibiengine/keibi-engine/pkg/auth/emails"
 
 	"github.com/google/uuid"
@@ -21,6 +23,7 @@ const inviteDuration = time.Hour * 24 * 7
 type httpRoutes struct {
 	logger             *zap.Logger
 	db                 Database
+	emailService       email.Service
 	inviteLinkTemplate string
 }
 
@@ -171,12 +174,11 @@ func (r *httpRoutes) Invite(ctx echo.Context) error {
 	if err != nil {
 		return err
 	}
-	fmt.Println("inviting", mBody)
 
-	//err = r.emailService.SendEmail(ctx.Request().Context(), req.Email, mBody)
-	//if err != nil {
-	//	return err
-	//}
+	err = r.emailService.SendEmail(ctx.Request().Context(), req.Email, mBody)
+	if err != nil {
+		return err
+	}
 
 	return ctx.JSON(http.StatusOK, api.InviteResponse{
 		InviteID: inv.ID,
