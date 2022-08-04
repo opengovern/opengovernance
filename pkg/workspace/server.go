@@ -8,6 +8,9 @@ import (
 	"strings"
 	"time"
 
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/types"
+
 	contourv1 "github.com/projectcontour/contour/apis/projectcontour/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -128,7 +131,22 @@ func (s *Server) syncHTTPProxy(workspaces []*Workspace) error {
 		})
 	}
 
-	err := s.kubeClient.Create(ctx, &contourv1.HTTPProxy{
+	key := types.NamespacedName{
+		Name:      "http-proxy-route",
+		Namespace: OctopusNamespace,
+	}
+	var httpProxy contourv1.HTTPProxy
+
+	exists := true
+	if err := s.kubeClient.Get(ctx, key, &httpProxy); err != nil {
+		if apierrors.IsNotFound(err) {
+			exists = false
+		} else {
+			return err
+		}
+	}
+
+	httpProxy = contourv1.HTTPProxy{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "HTTPProxy",
 			APIVersion: "projectcontour.io/v1",
@@ -141,9 +159,18 @@ func (s *Server) syncHTTPProxy(workspaces []*Workspace) error {
 			Includes: includes,
 		},
 		Status: contourv1.HTTPProxyStatus{},
-	})
-	if err != nil {
-		return err
+	}
+
+	if exists {
+		err := s.kubeClient.Update(ctx, &httpProxy)
+		if err != nil {
+			return err
+		}
+	} else {
+		err := s.kubeClient.Create(ctx, &httpProxy)
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil
