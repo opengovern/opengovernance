@@ -1,0 +1,596 @@
+[
+  {
+    "connector_id": "conn-1",
+    "connector_name": "Active Directory",
+    "connector_icon": "https://www.pngwing.com/en/free-png-cyzxt",
+    "connector_status": "Coming Soon",
+    "connector_popular": "No",
+    "connector_type": "Source",
+    "connector_description": "Active Directory (AD) is Microsoft's proprietary directory service that runs on Windows Server and enables administrators to manage permissions and access to network resources. Active Directory stores data pertaining t a user, group, application or device such as a printer."
+  },
+  {
+    "connector_id": "conn-2",
+    "connector_name": "ActiveMQ",
+    "connector_icon": "https://www.vectorlogo.zone/logos/apache_activemq/index.html",
+    "connector_status": "Coming Soon",
+    "connector_popular": "No",
+    "connector_type": "Source",
+    "connector_description": "ActiveMQ is a popular open source messaging service that is built on top of Java. It works as a message-oriented middleware"
+  },
+  {
+    "connector_id": "conn-3",
+    "connector_name": "Akamai CDN",
+    "connector_icon": "https://www.akamai.com/newsroom/media-resources",
+    "connector_status": "Coming Soon",
+    "connector_popular": "No",
+    "connector_type": "Source",
+    "connector_description": "Akamai Technologies, Inc. is a content delivery network (CDN), a cybersecurity, and cloud service company, providing web and Internet security services."
+  },
+  {
+    "connector_id": "conn-4",
+    "connector_name": "Amazon S3",
+    "connector_icon": "",
+    "connector_status": "Coming Soon",
+    "connector_popular": "No",
+    "connector_type": "Source",
+    "connector_description": "Amazon Simple Storage Service is an internet storage service for web-developers, enabling them to store and retrieve any amount of data, at any time and from anywhere on the web."
+  },
+  {
+    "connector_id": "conn-5",
+    "connector_name": "Amazon SES",
+    "connector_icon": "",
+    "connector_status": "Coming Soon",
+    "connector_popular": "No",
+    "connector_type": "Source",
+    "connector_description": "Amazon SES is a cost-effective, scalable to send transactional, marketing, or mass email communication."
+  },
+  {
+    "connector_id": "conn-6",
+    "connector_name": "Amazon SNS",
+    "connector_icon": "",
+    "connector_status": "Coming Soon",
+    "connector_popular": "No",
+    "connector_type": "Source",
+    "connector_description": "AWS Notification Service"
+  },
+  {
+    "connector_id": "conn-7",
+    "connector_name": "Amazon Web Services (AWS) Account",
+    "connector_icon": "",
+    "connector_status": "Enabled",
+    "connector_popular": "Yes",
+    "connector_type": "Source",
+    "connector_description": "Amazon Web Services, Inc. (AWS) is a subsidiary of Amazon that provides on-demand cloud computing platforms and APIs to individuals, companies, and governments, on a metered pay-as-you-go basis."
+  },
+  {
+    "connector_id": "conn-8",
+    "connector_name": "Ansible AWX",
+    "connector_icon": "",
+    "connector_status": "Coming Soon",
+    "connector_popular": "No",
+    "connector_type": "Source",
+    "connector_description": "The Ansible AWX project is a Redhat sponsosed open source  project  that enables users to better control their community Ansible project use in IT environments. AWX is the upstream project from which the automation controller component is ultimately derived."
+  },
+  {
+    "connector_id": "conn-9",
+    "connector_name": "Apache Kafka",
+    "connector_icon": "",
+    "connector_status": "Coming Soon",
+    "connector_popular": "No",
+    "connector_type": "Source",
+    "connector_description": "Apache Kafka is a distributed event store and stream-processing platform. It is an open-source system developed by the Apache Software Foundation written in Java and Scala."
+  },
+  {
+    "connector_id": "conn-10",
+    "connector_name": "AppViewX",
+    "connector_icon": "",
+    "connector_status": "Coming Soon",
+    "connector_popular": "No",
+    "connector_type": "Source",
+    "connector_description": "AppViewX Lifecycle Management Solution for Certificates and keys, F5 ADC, Load Balancers and WAF to avoid network outages due to unplanned certificate."
+  },
+  {
+    "connector_id": "conn-11",
+    "connector_name": "Asana",
+    "connector_icon": "",
+    "connector_status": "Coming Soon",
+    "connector_popular": "No",
+    "connector_type": "Source",
+    "connector_description": "Asana is a project management application for teams of all sizes, available on web and mobile"
+  },
+  {
+    "connector_id": "conn-12",
+    "connector_name": "Automation.io",
+    "connector_icon": "",
+    "connector_status": "Coming Soon",
+    "connector_popular": "No",
+    "connector_type": "Source",
+    "connector_description": "Automate.io connects all your cloud applications with amazing ease"
+  },
+  {
+    "connector_id": "conn-13",
+    "connector_name": "AWS Elastic Container Registry (ECR)",
+    "connector_icon": "",
+    "connector_status": "Coming Soon",
+    "connector_popular": "No",
+    "connector_type": "Source",
+    "connector_description": "AWS managed container registry"
+  },
+  {
+    "connector_id": "conn-14",
+    "connector_name": "AWS Elastic Kuberenetes (EKS)",
+    "connector_icon": "",
+    "connector_status": "Coming Soon",
+    "connector_popular": "No",
+    "connector_type": "Source",
+    "connector_description": "Amazon Elastic Kubernetes Service (EKS) is a managed service and certified Kubernetes conformant to run Kubernetes on AWS and on-premises integrated to AWS."
+  },
+  {
+    "connector_id": "conn-15",
+    "connector_name": "AWS Lambda",
+    "connector_icon": "",
+    "connector_status": "Coming Soon",
+    "connector_popular": "No",
+    "connector_type": "Source",
+    "connector_description": "Serverless Solution from AWS"
+  },
+  {
+    "connector_id": "conn-16",
+    "connector_name": "Azure Active Directory",
+    "connector_icon": "",
+    "connector_status": "Coming Soon",
+    "connector_popular": "No",
+    "connector_type": "Source",
+    "connector_description": "Azure Active Directory (Azure AD), part of Microsoft Entra, is an enterprise identity service that provides single sign-on, multifactor authentication, and conditional access."
+  },
+  {
+    "connector_id": "conn-17",
+    "connector_name": "Azure Container Registry",
+    "connector_icon": "",
+    "connector_status": "Coming Soon",
+    "connector_popular": "No",
+    "connector_type": "Source",
+    "connector_description": "Azure Container Registry allows you to build, store, and manage container images and artifacts in a private registry for all types of container deployments."
+  },
+  {
+    "connector_id": "conn-18",
+    "connector_name": "Azure DevOps",
+    "connector_icon": "",
+    "connector_status": "Coming Soon",
+    "connector_popular": "No",
+    "connector_type": "Source",
+    "connector_description": "Azure DevOps is a platform from Microsoft that provides an end-to-end DevOps toolchain for developing and deploying software."
+  },
+  {
+    "connector_id": "conn-19",
+    "connector_name": "Azure Function",
+    "connector_icon": "",
+    "connector_status": "Coming Soon",
+    "connector_popular": "No",
+    "connector_type": "Source",
+    "connector_description": "Azure Functions is a serverless solution from Azure."
+  },
+  {
+    "connector_id": "conn-20",
+    "connector_name": "Azure Kuberenetes (AKS)",
+    "connector_icon": "",
+    "connector_status": "Coming Soon",
+    "connector_popular": "No",
+    "connector_type": "Source",
+    "connector_description": "Azure Kubernetes Service (AKS) simplifies deploying a managed Kubernetes cluster in Azure by offloading the operational overhead to Azure."
+  },
+  {
+    "connector_id": "conn-21",
+    "connector_name": "Bigfix",
+    "connector_icon": "",
+    "connector_status": "Coming Soon",
+    "connector_popular": "No",
+    "connector_type": "Source",
+    "connector_description": "Chef Configuration Management to perform infra automation"
+  },
+  {
+    "connector_id": "conn-22",
+    "connector_name": "Chef Configuration Management",
+    "connector_icon": "",
+    "connector_status": "Coming Soon",
+    "connector_popular": "No",
+    "connector_type": "Source",
+    "connector_description": "Chef Configuration Management to perform infra automation."
+  },
+  {
+    "connector_id": "conn-23",
+    "connector_name": "Clarizen",
+    "connector_icon": "",
+    "connector_status": "Coming Soon",
+    "connector_popular": "No",
+    "connector_type": "Source",
+    "connector_description": "Clarizen provides the ability to share views, such as roadmaps, module views, project views, and reports for organizations that require cross-company engagement."
+  },
+  {
+    "connector_id": "conn-24",
+    "connector_name": "ClickUp",
+    "connector_icon": "",
+    "connector_status": "Coming Soon",
+    "connector_popular": "No",
+    "connector_type": "Source",
+    "connector_description": "ClickUp is a cloud-based collaboration and project management tool suitable for businesses of all sizes and industries. It helps to consolidate all your work in one place: Tasks, docs, chat, goals, & more."
+  },
+  {
+    "connector_id": "conn-25",
+    "connector_name": "Cloudflare",
+    "connector_icon": "",
+    "connector_status": "Coming Soon",
+    "connector_popular": "No",
+    "connector_type": "Source",
+    "connector_description": "Cloudflare secures and ensures the reliability of your external-facing resources such as websites, APIs, and applications."
+  },
+  {
+    "connector_id": "conn-26",
+    "connector_name": "Coupa",
+    "connector_icon": "",
+    "connector_status": "Coming Soon",
+    "connector_popular": "No",
+    "connector_type": "Source",
+    "connector_description": "Coupa Software is the cloud platform for business spend management (BSM)."
+  },
+  {
+    "connector_id": "conn-27",
+    "connector_name": "Craft.io",
+    "connector_icon": "",
+    "connector_status": "Coming Soon",
+    "connector_popular": "No",
+    "connector_type": "Source",
+    "connector_description": "Popular product management tool"
+  },
+  {
+    "connector_id": "conn-28",
+    "connector_name": "Cyberark Privileged Access Management",
+    "connector_icon": "",
+    "connector_status": "Coming Soon",
+    "connector_popular": "No",
+    "connector_type": "Source",
+    "connector_description": "Cyberark Privilege access management allows organizations  to control, monitor, secure and audit all identities across an IT environment."
+  },
+  {
+    "connector_id": "conn-29",
+    "connector_name": "Elastic Container Registry (ECR)",
+    "connector_icon": "",
+    "connector_status": "Coming Soon",
+    "connector_popular": "No",
+    "connector_type": "Source",
+    "connector_description": "Amazon Elastic Container Registry (ECR) is a fully managed Docker container registry that makes it easy to store, share, and deploy container images."
+  },
+  {
+    "connector_id": "conn-30",
+    "connector_name": "Generic Webhook",
+    "connector_icon": "",
+    "connector_status": "Coming Soon",
+    "connector_popular": "No",
+    "connector_type": "Source",
+    "connector_description": "A generic webhook that can call a remote endpoint."
+  },
+  {
+    "connector_id": "conn-31",
+    "connector_name": "Github",
+    "connector_icon": "",
+    "connector_status": "Coming Soon",
+    "connector_popular": "No",
+    "connector_type": "Source",
+    "connector_description": "GitHub is a leading development platform that allows developers to collaboratively manage code and build software"
+  },
+  {
+    "connector_id": "conn-32",
+    "connector_name": "Gitlab",
+    "connector_icon": "",
+    "connector_status": "Coming Soon",
+    "connector_popular": "No",
+    "connector_type": "Source",
+    "connector_description": "GitLab is an open-source DevOps lifecycle tool that provides a Git repository manager providing wiki, issue-tracking and continuous integration and deployment pipeline features."
+  },
+  {
+    "connector_id": "conn-33",
+    "connector_name": "Google Cloud Platform",
+    "connector_icon": "",
+    "connector_status": "Coming Soon",
+    "connector_popular": "No",
+    "connector_type": "Source",
+    "connector_description": "Google Cloud Platform (GCP) is a suite of cloud computing services offered by Google, that provides a series of modular cloud services including computing, data storage, data analytics and machine learning."
+  },
+  {
+    "connector_id": "conn-34",
+    "connector_name": "Grafana Cloud",
+    "connector_icon": "",
+    "connector_status": "Coming Soon",
+    "connector_popular": "No",
+    "connector_type": "Source",
+    "connector_description": "Grafana Cloud is a highly available, performant, and scalable observability platform offered as SaaS for your applications and infrastructure."
+  },
+  {
+    "connector_id": "conn-35",
+    "connector_name": "HCP Vault",
+    "connector_icon": "",
+    "connector_status": "Coming Soon",
+    "connector_popular": "No",
+    "connector_type": "Source",
+    "connector_description": "HCP Vault is a hosted version of Vault, which is operated by HashiCorp to allow organizations to get up and running quickly."
+  },
+  {
+    "connector_id": "conn-36",
+    "connector_name": "Jira",
+    "connector_icon": "",
+    "connector_status": "Coming Soon",
+    "connector_popular": "No",
+    "connector_type": "Destination",
+    "connector_description": "Jira is a popular project management tool for software development. Plan your project, track progress and analyze."
+  },
+  {
+    "connector_id": "conn-37",
+    "connector_name": "JIRA Service Desk",
+    "connector_icon": "",
+    "connector_status": "Coming Soon",
+    "connector_popular": "No",
+    "connector_type": "Destination",
+    "connector_description": "JIRA Service Desk is an ITSM software built upon JIRA platform to help you deliver seamless IT service. Integrated fully with JIRA project management, it helps you get an increased visibiltiy to who's working on what and helps your agents get more done."
+  },
+  {
+    "connector_id": "conn-38",
+    "connector_name": "Mailgun",
+    "connector_icon": "",
+    "connector_status": "Coming Soon",
+    "connector_popular": "No",
+    "connector_type": "Source",
+    "connector_description": "Mailgun's powerful transactional email APIs enables developers and information technology professionals to send out transactional emails, monitor their performance, and optimize emails for higher engagement rates."
+  },
+  {
+    "connector_id": "conn-39",
+    "connector_name": "Microsoft Azure Subscription",
+    "connector_icon": "",
+    "connector_status": "Enabled",
+    "connector_popular": "Yes",
+    "connector_type": "Source",
+    "connector_description": "Microsoft Azure, often referred to as Azure, is a cloud computing service operated by Microsoft for application management via Microsoft-managed data centers."
+  },
+  {
+    "connector_id": "conn-40",
+    "connector_name": "Microsoft Intune",
+    "connector_icon": "",
+    "connector_status": "Coming Soon",
+    "connector_popular": "No",
+    "connector_type": "Source",
+    "connector_description": "Enterprise Device Manager from Microsoft"
+  },
+  {
+    "connector_id": "conn-41",
+    "connector_name": "Microsoft Teams",
+    "connector_icon": "",
+    "connector_status": "Coming Soon",
+    "connector_popular": "No",
+    "connector_type": "Source",
+    "connector_description": "Microsoft Teams is a unified communications platform that combines persistent workplace chat, video meetings, file storage, and application integration"
+  },
+  {
+    "connector_id": "conn-42",
+    "connector_name": "Monday.com",
+    "connector_icon": "",
+    "connector_status": "Coming Soon",
+    "connector_popular": "No",
+    "connector_type": "Source",
+    "connector_description": "monday.com is an intuitive team management platform for effective teamwork. Teams use monday.com to plan, organize and track their work in one visual, collaborative space."
+  },
+  {
+    "connector_id": "conn-43",
+    "connector_name": "MongoDB Atlas",
+    "connector_icon": "",
+    "connector_status": "Coming Soon",
+    "connector_popular": "No",
+    "connector_type": "Source",
+    "connector_description": "Fully Managed and hosted MongoDB database from MongoDB"
+  },
+  {
+    "connector_id": "conn-44",
+    "connector_name": "NewRelic",
+    "connector_icon": "",
+    "connector_status": "Coming Soon",
+    "connector_popular": "No",
+    "connector_type": "Source",
+    "connector_description": "New Relic is a Software as a Service offering that focuses on performance and availability monitoring. It uses a standardized Apdex (application performance index) score to set and rate application performance across the environment in a unified manner."
+  },
+  {
+    "connector_id": "conn-45",
+    "connector_name": "Notion",
+    "connector_icon": "",
+    "connector_status": "Coming Soon",
+    "connector_popular": "No",
+    "connector_type": "Source",
+    "connector_description": "Notion is an all-in-one workspace for note-taking and project management. It helps users to create tasks, wikis, and databases all at one place."
+  },
+  {
+    "connector_id": "conn-46",
+    "connector_name": "Office 365 Email",
+    "connector_icon": "",
+    "connector_status": "Coming Soon",
+    "connector_popular": "No",
+    "connector_type": "Source",
+    "connector_description": "Microsoft offered messaging and collaboration suite for organizations of all sizes."
+  },
+  {
+    "connector_id": "conn-47",
+    "connector_name": "Okta User Management",
+    "connector_icon": "",
+    "connector_status": "Coming Soon",
+    "connector_popular": "No",
+    "connector_type": "Source",
+    "connector_description": "Okta is an identity management platform that is used to manage customer, partner, and employee identity"
+  },
+  {
+    "connector_id": "conn-48",
+    "connector_name": "PagerDuty",
+    "connector_icon": "",
+    "connector_status": "Coming Soon",
+    "connector_popular": "No",
+    "connector_type": "Source",
+    "connector_description": "PagerDuty helps team detect & fix infrastructure problems quickly with it's incident management platform. It provides reliable notifications, automatic escalations, on-call scheduling, and other functionalities."
+  },
+  {
+    "connector_id": "conn-49",
+    "connector_name": "ProductPlan",
+    "connector_icon": "",
+    "connector_status": "Coming Soon",
+    "connector_popular": "No",
+    "connector_type": "Source",
+    "connector_description": "ProductPlan allows you build and share product roadmaps."
+  },
+  {
+    "connector_id": "conn-50",
+    "connector_name": "Puppet",
+    "connector_icon": "",
+    "connector_status": "Coming Soon",
+    "connector_popular": "No",
+    "connector_type": "Source",
+    "connector_description": "Puppet is a software configuration management tool which includes its own declarative language to describe system configuration."
+  },
+  {
+    "connector_id": "conn-51",
+    "connector_name": "RabbitMQ",
+    "connector_icon": "",
+    "connector_status": "Coming Soon",
+    "connector_popular": "No",
+    "connector_type": "Source",
+    "connector_description": "RabbitMQ is an open-source message-broker software that originally implemented the Advanced Message Queuing Protocol and has since been extended with a plug-in architecture to support Streaming Text Oriented Messaging Protocol, MQ Telemetry Transport, and other protocols."
+  },
+  {
+    "connector_id": "conn-52",
+    "connector_name": "REST API",
+    "connector_icon": "",
+    "connector_status": "Coming Soon",
+    "connector_popular": "No",
+    "connector_type": "Source",
+    "connector_description": "A public API to trigger"
+  },
+  {
+    "connector_id": "conn-53",
+    "connector_name": "Sendgrid",
+    "connector_icon": "",
+    "connector_status": "Coming Soon",
+    "connector_popular": "No",
+    "connector_type": "Source",
+    "connector_description": "Twilio SendGrid is communication platform for transactional and marketing email."
+  },
+  {
+    "connector_id": "conn-54",
+    "connector_name": "ServiceNow",
+    "connector_icon": "",
+    "connector_status": "Coming Soon",
+    "connector_popular": "No",
+    "connector_type": "Source",
+    "connector_description": "ServiceNow is a leading solution for business operations and IT management solution. It helps enterprises run IT, HR and customer service operations effectively."
+  },
+  {
+    "connector_id": "conn-55",
+    "connector_name": "Slack",
+    "connector_icon": "",
+    "connector_status": "Coming Soon",
+    "connector_popular": "No",
+    "connector_type": "Source",
+    "connector_description": "Slack is a new generation communication application. It unites your team and your apps for better information sharing and collaboration."
+  },
+  {
+    "connector_id": "conn-56",
+    "connector_name": "Snow Software Asset Management",
+    "connector_icon": "",
+    "connector_status": "Coming Soon",
+    "connector_popular": "No",
+    "connector_type": "Source",
+    "connector_description": "Snow is a market-tested developer of software asset management tools."
+  },
+  {
+    "connector_id": "conn-57",
+    "connector_name": "Snowflake",
+    "connector_icon": "",
+    "connector_status": "Coming Soon",
+    "connector_popular": "No",
+    "connector_type": "Source",
+    "connector_description": "Snowflake enables data storage, processing, and analytic solutions that are faster, easier to use, and far more flexible than traditional offerings."
+  },
+  {
+    "connector_id": "conn-58",
+    "connector_name": "Tableau",
+    "connector_icon": "",
+    "connector_status": "Coming Soon",
+    "connector_popular": "No",
+    "connector_type": "Source",
+    "connector_description": "Tableau Software is an American interactive data visualization software company focused on business intelligence."
+  },
+  {
+    "connector_id": "conn-59",
+    "connector_name": "Todoist",
+    "connector_icon": "",
+    "connector_status": "Coming Soon",
+    "connector_popular": "No",
+    "connector_type": "Source",
+    "connector_description": "Todoist helps you get things done. Manage your personal or work tasks, collaborate with others, and access them anywhere."
+  },
+  {
+    "connector_id": "conn-60",
+    "connector_name": "Trello",
+    "connector_icon": "",
+    "connector_status": "Coming Soon",
+    "connector_popular": "No",
+    "connector_type": "Source",
+    "connector_description": "Trello is a new age collaboration and project management tool that brings your team together on the same page."
+  },
+  {
+    "connector_id": "conn-61",
+    "connector_name": "Twilio Sendgrid",
+    "connector_icon": "",
+    "connector_status": "Coming Soon",
+    "connector_popular": "No",
+    "connector_type": "Source",
+    "connector_description": "SendGrid delivers your transactional and marketing emails through the world's largest cloud-based email delivery platform."
+  },
+  {
+    "connector_id": "conn-62",
+    "connector_name": "VMWare vCenter",
+    "connector_icon": "",
+    "connector_status": "Coming Soon",
+    "connector_popular": "No",
+    "connector_type": "Source",
+    "connector_description": "VMware vCenter Server is an advanced server management software that provides a centralized platform for controlling vSphere environments for visibility across hybrid clouds."
+  },
+  {
+    "connector_id": "conn-63",
+    "connector_name": "Workato",
+    "connector_icon": "",
+    "connector_status": "Coming Soon",
+    "connector_popular": "No",
+    "connector_type": "Source",
+    "connector_description": "Workato automation plato enables business and IT teams to integrate apps and automate business workflows."
+  },
+  {
+    "connector_id": "conn-64",
+    "connector_name": "Workday",
+    "connector_icon": "",
+    "connector_status": "Coming Soon",
+    "connector_popular": "No",
+    "connector_type": "Source",
+    "connector_description": "Workday , is an on‑demand financial management, human capital management and Student information system software vendor."
+  },
+  {
+    "connector_id": "conn-65",
+    "connector_name": "Zapier",
+    "connector_icon": "",
+    "connector_status": "Coming Soon",
+    "connector_popular": "No",
+    "connector_type": "Source",
+    "connector_description": "Workflow automation tool that allows Keibi to integrate with a large portfolio of integrations."
+  },
+  {
+    "connector_id": "conn-66",
+    "connector_name": "Zendesk",
+    "connector_icon": "",
+    "connector_status": "Coming Soon",
+    "connector_popular": "No",
+    "connector_type": "Destination",
+    "connector_description": "Zendesk is a popular multi-channel help desk software loaded with features for helpdesk automation, SLA management, support portal and more."
+  }
+]

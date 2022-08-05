@@ -1,0 +1,386 @@
+[
+  {
+    "category_id": "cat-1",
+    "conn_id": "conn-28"
+  },
+  {
+    "category_id": "cat-1",
+    "conn_id": "conn-66"
+  },
+  {
+    "category_id": "cat-2",
+    "conn_id": "conn-58"
+  },
+  {
+    "category_id": "cat-2",
+    "conn_id": "conn-15"
+  },
+  {
+    "category_id": "cat-2",
+    "conn_id": "conn-19"
+  },
+  {
+    "category_id": "cat-2",
+    "conn_id": "conn-52"
+  },
+  {
+    "category_id": "cat-3",
+    "conn_id": "conn-56"
+  },
+  {
+    "category_id": "cat-4",
+    "conn_id": "conn-5"
+  },
+  {
+    "category_id": "cat-4",
+    "conn_id": "conn-6"
+  },
+  {
+    "category_id": "cat-4",
+    "conn_id": "conn-8"
+  },
+  {
+    "category_id": "cat-4",
+    "conn_id": "conn-12"
+  },
+  {
+    "category_id": "cat-4",
+    "conn_id": "conn-15"
+  },
+  {
+    "category_id": "cat-4",
+    "conn_id": "conn-19"
+  },
+  {
+    "category_id": "cat-4",
+    "conn_id": "conn-22"
+  },
+  {
+    "category_id": "cat-4",
+    "conn_id": "conn-50"
+  },
+  {
+    "category_id": "cat-4",
+    "conn_id": "conn-63"
+  },
+  {
+    "category_id": "cat-4",
+    "conn_id": "conn-65"
+  },
+  {
+    "category_id": "cat-5",
+    "conn_id": "conn-11"
+  },
+  {
+    "category_id": "cat-5",
+    "conn_id": "conn-23"
+  },
+  {
+    "category_id": "cat-5",
+    "conn_id": "conn-24"
+  },
+  {
+    "category_id": "cat-5",
+    "conn_id": "conn-41"
+  },
+  {
+    "category_id": "cat-5",
+    "conn_id": "conn-42"
+  },
+  {
+    "category_id": "cat-5",
+    "conn_id": "conn-45"
+  },
+  {
+    "category_id": "cat-5",
+    "conn_id": "conn-55"
+  },
+  {
+    "category_id": "cat-6",
+    "conn_id": "conn-8"
+  },
+  {
+    "category_id": "cat-7",
+    "conn_id": "conn-13"
+  },
+  {
+    "category_id": "cat-7",
+    "conn_id": "conn-14"
+  },
+  {
+    "category_id": "cat-7",
+    "conn_id": "conn-17"
+  },
+  {
+    "category_id": "cat-7",
+    "conn_id": "conn-20"
+  },
+  {
+    "category_id": "cat-7",
+    "conn_id": "conn-29"
+  },
+  {
+    "category_id": "cat-7",
+    "conn_id": "conn-20"
+  },
+  {
+    "category_id": "cat-8",
+    "conn_id": "conn-3"
+  },
+  {
+    "category_id": "cat-8",
+    "conn_id": "conn-25"
+  },
+  {
+    "category_id": "cat-10",
+    "conn_id": "conn-66"
+  },
+  {
+    "category_id": "cat-11",
+    "conn_id": "conn-57"
+  },
+  {
+    "category_id": "cat-11",
+    "conn_id": "conn-58"
+  },
+  {
+    "category_id": "cat-12",
+    "conn_id": "conn-28"
+  },
+  {
+    "category_id": "cat-12",
+    "conn_id": "conn-43"
+  },
+  {
+    "category_id": "cat-13",
+    "conn_id": "conn-40"
+  },
+  {
+    "category_id": "cat-14",
+    "conn_id": "conn-18"
+  },
+  {
+    "category_id": "cat-14",
+    "conn_id": "conn-18"
+  },
+  {
+    "category_id": "cat-14",
+    "conn_id": "conn-31"
+  },
+  {
+    "category_id": "cat-14",
+    "conn_id": "conn-32"
+  },
+  {
+    "category_id": "cat-17",
+    "conn_id": "conn-5"
+  },
+  {
+    "category_id": "cat-17",
+    "conn_id": "conn-38"
+  },
+  {
+    "category_id": "cat-17",
+    "conn_id": "conn-61"
+  },
+  {
+    "category_id": "cat-19",
+    "conn_id": "conn-26"
+  },
+  {
+    "category_id": "cat-20",
+    "conn_id": "conn-30"
+  },
+  {
+    "category_id": "cat-23",
+    "conn_id": "conn-64"
+  },
+  {
+    "category_id": "cat-24",
+    "conn_id": "conn-1"
+  },
+  {
+    "category_id": "cat-24",
+    "conn_id": "conn-16"
+  },
+  {
+    "category_id": "cat-24",
+    "conn_id": "conn-47"
+  },
+  {
+    "category_id": "cat-27",
+    "conn_id": "conn-2"
+  },
+  {
+    "category_id": "cat-27",
+    "conn_id": "conn-5"
+  },
+  {
+    "category_id": "cat-27",
+    "conn_id": "conn-9"
+  },
+  {
+    "category_id": "cat-27",
+    "conn_id": "conn-38"
+  },
+  {
+    "category_id": "cat-27",
+    "conn_id": "conn-46"
+  },
+  {
+    "category_id": "cat-27",
+    "conn_id": "conn-51"
+  },
+  {
+    "category_id": "cat-27",
+    "conn_id": "conn-55"
+  },
+  {
+    "category_id": "cat-28",
+    "conn_id": "conn-44"
+  },
+  {
+    "category_id": "cat-29",
+    "conn_id": "conn-3"
+  },
+  {
+    "category_id": "cat-29",
+    "conn_id": "conn-25"
+  },
+  {
+    "category_id": "cat-30",
+    "conn_id": "conn-6"
+  },
+  {
+    "category_id": "cat-30",
+    "conn_id": "conn-48"
+  },
+  {
+    "category_id": "cat-30",
+    "conn_id": "conn-61"
+  },
+  {
+    "category_id": "cat-31",
+    "conn_id": "conn-34"
+  },
+  {
+    "category_id": "cat-31",
+    "conn_id": "conn-44"
+  },
+  {
+    "category_id": "cat-32",
+    "conn_id": "conn-21"
+  },
+  {
+    "category_id": "cat-32",
+    "conn_id": "conn-37"
+  },
+  {
+    "category_id": "cat-32",
+    "conn_id": "conn-54"
+  },
+  {
+    "category_id": "cat-32",
+    "conn_id": "conn-66"
+  },
+  {
+    "category_id": "cat-33",
+    "conn_id": "conn-21"
+  },
+  {
+    "category_id": "cat-34",
+    "conn_id": "conn-62"
+  },
+  {
+    "category_id": "cat-35",
+    "conn_id": "conn-23"
+  },
+  {
+    "category_id": "cat-35",
+    "conn_id": "conn-27"
+  },
+  {
+    "category_id": "cat-35",
+    "conn_id": "conn-49"
+  },
+  {
+    "category_id": "cat-36",
+    "conn_id": "conn-59"
+  },
+  {
+    "category_id": "cat-37",
+    "conn_id": "conn-11"
+  },
+  {
+    "category_id": "cat-37",
+    "conn_id": "conn-23"
+  },
+  {
+    "category_id": "cat-37",
+    "conn_id": "conn-24"
+  },
+  {
+    "category_id": "cat-37",
+    "conn_id": "conn-36"
+  },
+  {
+    "category_id": "cat-37",
+    "conn_id": "conn-37"
+  },
+  {
+    "category_id": "cat-37",
+    "conn_id": "conn-42"
+  },
+  {
+    "category_id": "cat-37",
+    "conn_id": "conn-45"
+  },
+  {
+    "category_id": "cat-37",
+    "conn_id": "conn-59"
+  },
+  {
+    "category_id": "cat-37",
+    "conn_id": "conn-60"
+  },
+  {
+    "category_id": "cat-38",
+    "conn_id": "conn-4"
+  },
+  {
+    "category_id": "cat-38",
+    "conn_id": "conn-6"
+  },
+  {
+    "category_id": "cat-38",
+    "conn_id": "conn-15"
+  },
+  {
+    "category_id": "cat-38",
+    "conn_id": "conn-16"
+  },
+  {
+    "category_id": "cat-38",
+    "conn_id": "conn-17"
+  },
+  {
+    "category_id": "cat-38",
+    "conn_id": "conn-33"
+  },
+  {
+    "category_id": "cat-38",
+    "conn_id": "conn-38"
+  },
+  {
+    "category_id": "cat-39",
+    "conn_id": "conn-10"
+  },
+  {
+    "category_id": "cat-39",
+    "conn_id": "conn-25"
+  },
+  {
+    "category_id": "cat-39",
+    "conn_id": "conn-35"
+  }
+]

@@ -4,6 +4,9 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strings"
+
+	"gitlab.com/keibiengine/keibi-engine/pkg/onboard/connector"
 
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
@@ -45,6 +48,9 @@ func (h HttpHandler) Register(r *echo.Echo) {
 
 	v1.GET("/providers", h.GetProviders)
 	v1.GET("/providers/types", h.GetProviderTypes)
+
+	v1.GET("/connectors/categories", h.GetConnectorCategories)
+	v1.GET("/connectors", h.GetConnector)
 }
 
 func bindValidate(ctx echo.Context, i interface{}) error {
@@ -149,6 +155,56 @@ func (h HttpHandler) GetProviders(ctx echo.Context) error {
 		{Name: "NewRelic", ID: "newrelic", Type: "Observability", State: api.ProviderStateDisabled},
 		{Name: "DynaTrace", ID: "dynatrace", Type: "Observability", State: api.ProviderStateDisabled},
 	})
+}
+
+// GetConnectorCategories godoc
+// @Summary      Get connector categories
+// @Description  Getting connector categories
+// @Tags     onboard
+// @Produce  json
+// @Success      200  {object}  []connector.Category
+// @Router       /onboard/api/v1/connectors/categories [get]
+func (h HttpHandler) GetConnectorCategories(ctx echo.Context) error {
+	return ctx.JSON(http.StatusOK, connector.CategoryList)
+}
+
+// GetConnector godoc
+// @Summary      Get connectors
+// @Description  Getting connectors
+// @Tags     onboard
+// @Produce  json
+// @Success      200  {object}  []connector.Connector
+// @Param        category  query      string               false  "category"
+// @Router       /onboard/api/v1/connectors [get]
+func (h HttpHandler) GetConnector(ctx echo.Context) error {
+	category := ctx.QueryParam("category")
+	categoryID := ""
+	if len(category) > 0 {
+		for _, cat := range connector.CategoryList {
+			if strings.EqualFold(cat.Name, category) {
+				categoryID = cat.ID
+			}
+		}
+	}
+
+	var res []connector.Connector
+	for _, c := range connector.Connectors {
+		ok := false
+		if len(category) > 0 {
+			for _, m := range connector.CategoryConnectorMapping {
+				if m.CategoryID == categoryID && m.ConnectorID == c.ID {
+					ok = true
+				}
+			}
+		} else {
+			ok = true
+		}
+
+		if ok {
+			res = append(res, c)
+		}
+	}
+	return ctx.JSON(http.StatusOK, connector.Connectors)
 }
 
 // GetProviderTypes godoc

@@ -1,0 +1,162 @@
+[
+  {
+    "category_id": "cat-1",
+    "category_name": "Access Management"
+  },
+  {
+    "category_id": "cat-2",
+    "category_name": "Analytics"
+  },
+  {
+    "category_id": "cat-3",
+    "category_name": "Asset Management"
+  },
+  {
+    "category_id": "cat-4",
+    "category_name": "Automation"
+  },
+  {
+    "category_id": "cat-5",
+    "category_name": "Collaboration"
+  },
+  {
+    "category_id": "cat-6",
+    "category_name": "Configuration Management"
+  },
+  {
+    "category_id": "cat-7",
+    "category_name": "Containers"
+  },
+  {
+    "category_id": "cat-8",
+    "category_name": "Content Delivery (CDN)"
+  },
+  {
+    "category_id": "cat-9",
+    "category_name": "Content Management"
+  },
+  {
+    "category_id": "cat-10",
+    "category_name": "Customer Management"
+  },
+  {
+    "category_id": "cat-11",
+    "category_name": "Data Management"
+  },
+  {
+    "category_id": "cat-12",
+    "category_name": "Databases"
+  },
+  {
+    "category_id": "cat-13",
+    "category_name": "Device Management"
+  },
+  {
+    "category_id": "cat-14",
+    "category_name": "DevOps"
+  },
+  {
+    "category_id": "cat-15",
+    "category_name": "Distributed Systems"
+  },
+  {
+    "category_id": "cat-16",
+    "category_name": "Edge Compute"
+  },
+  {
+    "category_id": "cat-17",
+    "category_name": "Email"
+  },
+  {
+    "category_id": "cat-18",
+    "category_name": "Encryption"
+  },
+  {
+    "category_id": "cat-19",
+    "category_name": "Enterprise Applications"
+  },
+  {
+    "category_id": "cat-20",
+    "category_name": "General API"
+  },
+  {
+    "category_id": "cat-21",
+    "category_name": "General Infrastructure"
+  },
+  {
+    "category_id": "cat-22",
+    "category_name": "Governance"
+  },
+  {
+    "category_id": "cat-23",
+    "category_name": "HR Information System"
+  },
+  {
+    "category_id": "cat-24",
+    "category_name": "Identity"
+  },
+  {
+    "category_id": "cat-25",
+    "category_name": "IoT"
+  },
+  {
+    "category_id": "cat-26",
+    "category_name": "Marketing"
+  },
+  {
+    "category_id": "cat-27",
+    "category_name": "Messaging"
+  },
+  {
+    "category_id": "cat-28",
+    "category_name": "Monitoring"
+  },
+  {
+    "category_id": "cat-29",
+    "category_name": "Networking"
+  },
+  {
+    "category_id": "cat-30",
+    "category_name": "Notification"
+  },
+  {
+    "category_id": "cat-31",
+    "category_name": "Observability"
+  },
+  {
+    "category_id": "cat-32",
+    "category_name": "Operations"
+  },
+  {
+    "category_id": "cat-33",
+    "category_name": "Patch Management"
+  },
+  {
+    "category_id": "cat-34",
+    "category_name": "Private Cloud"
+  },
+  {
+    "category_id": "cat-35",
+    "category_name": "Product Management"
+  },
+  {
+    "category_id": "cat-36",
+    "category_name": "Productivity"
+  },
+  {
+    "category_id": "cat-37",
+    "category_name": "Project Management"
+  },
+  {
+    "category_id": "cat-38",
+    "category_name": "Public Cloud"
+  },
+  {
+    "category_id": "cat-39",
+    "category_name": "Security"
+  },
+  {
+    "category_id": "cat-40",
+    "category_name": "Support"
+  }
+]
