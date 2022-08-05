@@ -486,7 +486,7 @@ func (h HttpHandler) PutSPNCred(ctx echo.Context) error {
 
 	newCnf := api.SPNConfigAzure{
 		TenantId:     azureCnf.TenantID,
-		ClientId:     azureCnf.ClientID,
+		ClientId:     req.ClientID,
 		ClientSecret: req.ClientSecret,
 	}
 	if err := h.vault.Write(src.ConfigRef, newCnf.AsMap()); err != nil {
