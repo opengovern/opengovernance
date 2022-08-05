@@ -881,6 +881,30 @@ definitions:
       skip:
         type: integer
     type: object
+  connector.Category:
+    properties:
+      category_id:
+        type: string
+      category_name:
+        type: string
+    type: object
+  connector.Connector:
+    properties:
+      connector_description:
+        type: string
+      connector_icon:
+        type: string
+      connector_id:
+        type: string
+      connector_name:
+        type: string
+      connector_popular:
+        type: string
+      connector_status:
+        type: string
+      connector_type:
+        type: string
+    type: object
   es.Finding:
     properties:
       accountID:
@@ -2378,6 +2402,41 @@ paths:
       summary: Returns distribution of services for specific account
       tags:
       - benchmarks
+  /onboard/api/v1/connectors:
+    get:
+      description: Getting connectors
+      parameters:
+      - description: category
+        in: query
+        name: category
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/connector.Connector'
+            type: array
+      summary: Get connectors
+      tags:
+      - onboard
+  /onboard/api/v1/connectors/categories:
+    get:
+      description: Getting connector categories
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/connector.Category'
+            type: array
+      summary: Get connector categories
+      tags:
+      - onboard
   /onboard/api/v1/discover/aws/accounts:
     post:
       description: If the account is part of an organization and the account has premission

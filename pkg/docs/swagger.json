@@ -2132,6 +2132,60 @@
                 }
             }
         },
+        "/onboard/api/v1/connectors": {
+            "get": {
+                "description": "Getting connectors",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "onboard"
+                ],
+                "summary": "Get connectors",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "category",
+                        "name": "category",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/connector.Connector"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/onboard/api/v1/connectors/categories": {
+            "get": {
+                "description": "Getting connector categories",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "onboard"
+                ],
+                "summary": "Get connector categories",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/connector.Category"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/onboard/api/v1/discover/aws/accounts": {
             "post": {
                 "description": "If the account is part of an organization and the account has premission to list the accounts, it will return all the accounts in that organization. Otherwise, it will return the single account these credentials belong to.",
@@ -4373,6 +4427,43 @@
                 },
                 "skip": {
                     "type": "integer"
+                }
+            }
+        },
+        "connector.Category": {
+            "type": "object",
+            "properties": {
+                "category_id": {
+                    "type": "string"
+                },
+                "category_name": {
+                    "type": "string"
+                }
+            }
+        },
+        "connector.Connector": {
+            "type": "object",
+            "properties": {
+                "connector_description": {
+                    "type": "string"
+                },
+                "connector_icon": {
+                    "type": "string"
+                },
+                "connector_id": {
+                    "type": "string"
+                },
+                "connector_name": {
+                    "type": "string"
+                },
+                "connector_popular": {
+                    "type": "string"
+                },
+                "connector_status": {
+                    "type": "string"
+                },
+                "connector_type": {
+                    "type": "string"
                 }
             }
         },

@@ -173,8 +173,8 @@ func (h HttpHandler) GetConnectorCategories(ctx echo.Context) error {
 // @Description  Getting connectors
 // @Tags     onboard
 // @Produce  json
-// @Success      200  {object}  []connector.Connector
-// @Param        category  query      string               false  "category"
+// @Success      200       {object}  []connector.Connector
+// @Param        category  query     string  false  "category"
 // @Router       /onboard/api/v1/connectors [get]
 func (h HttpHandler) GetConnector(ctx echo.Context) error {
 	category := ctx.QueryParam("category")
@@ -240,8 +240,8 @@ func (h HttpHandler) GetProviderTypes(ctx echo.Context) error {
 // PostSourceAws godoc
 // @Summary      Create AWS source
 // @Description  Creating AWS source
-// @Tags     onboard
-// @Produce  json
+// @Tags         onboard
+// @Produce      json
 // @Success      200          {object}  api.CreateSourceResponse
 // @Param        name         body      string               true  "name"
 // @Param        description  body      string               true  "description"
@@ -288,8 +288,8 @@ func (h HttpHandler) PostSourceAws(ctx echo.Context) error {
 // PostSourceAzure godoc
 // @Summary      Create Azure source
 // @Description  Creating Azure source
-// @Tags     onboard
-// @Produce  json
+// @Tags         onboard
+// @Produce      json
 // @Success      200          {object}  api.CreateSourceResponse
 // @Param        name    body      string                 true  "name"
 // @Param        description  body      string                 true  "description"
