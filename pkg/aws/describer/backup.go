@@ -169,7 +169,7 @@ func BackupVault(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 				BackupVaultName: v.BackupVaultName,
 			})
 			if err != nil {
-				if isErr(err, "ResourceNotFoundException") || isErr(err, "InvalidParameter") || *v.BackupVaultName == "Default" {
+				if isErr(err, "ResourceNotFoundException") || isErr(err, "InvalidParameter") {
 					notification = &backup.GetBackupVaultNotificationsOutput{}
 				} else {
 					return nil, err
@@ -180,7 +180,7 @@ func BackupVault(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 				BackupVaultName: v.BackupVaultName,
 			})
 			if err != nil {
-				if isErr(err, "ResourceNotFoundException") || isErr(err, "InvalidParameter") || *v.BackupVaultName == "Default" {
+				if isErr(err, "ResourceNotFoundException") || isErr(err, "InvalidParameter") {
 					accessPolicy = &backup.GetBackupVaultAccessPolicyOutput{}
 				} else {
 					return nil, err

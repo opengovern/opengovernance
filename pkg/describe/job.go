@@ -233,10 +233,7 @@ func (j DescribeJob) Do(ictx context.Context, vlt vault.SourceConfig, rdb *redis
 }
 
 // doDescribe describes the sources, e.g. AWS, Azure and returns the responses.
-func doDescribe(ictx context.Context, rdb *redis.Client, es keibi.Client, job DescribeJob, config map[string]interface{}, logger *zap.Logger) ([]kafka.DescribedResource, error) {
-	ctx, span := otel.Tracer(trace2.DescribeWorkerTrace).Start(ictx, "DoDescribe")
-	defer span.End()
-
+func doDescribe(ctx context.Context, rdb *redis.Client, es keibi.Client, job DescribeJob, config map[string]interface{}, logger *zap.Logger) ([]kafka.DescribedResource, error) {
 	logger.Info(fmt.Sprintf("Proccessing Job: ID[%d] ParentJobID[%d] RosourceType[%s]\n", job.JobID, job.ParentJobID, job.ResourceType))
 
 	switch job.SourceType {
@@ -249,31 +246,23 @@ func doDescribe(ictx context.Context, rdb *redis.Client, es keibi.Client, job De
 	}
 }
 
-func doDescribeAWS(ictx context.Context, rdb *redis.Client, es keibi.Client, job DescribeJob, config map[string]interface{}, logger *zap.Logger) ([]kafka.DescribedResource, error) {
-	ctx, span := otel.Tracer(trace2.DescribeWorkerTrace).Start(ictx, "DoDescribeAWS")
-	defer span.End()
-
+func doDescribeAWS(ctx context.Context, rdb *redis.Client, es keibi.Client, job DescribeJob, config map[string]interface{}, logger *zap.Logger) ([]kafka.DescribedResource, error) {
 	creds, err := AWSAccountConfigFromMap(config)
 	if err != nil {
 		return nil, fmt.Errorf("aws account credentials: %w", err)
 	}
 
-	output, err := func(ictx context.Context) (*aws.Resources, error) {
-		ctx, span := otel.Tracer(trace2.DescribeWorkerTrace).Start(ictx, "awsGetResources")
-		defer span.End()
-
-		return aws.GetResources(
-			ctx,
-			job.ResourceType,
-			creds.AccountID,
-			creds.Regions,
-			creds.AccessKey,
-			creds.SecretKey,
-			creds.SessionToken,
-			creds.AssumeRoleARN,
-			false,
-		)
-	}(ctx)
+	output, err := aws.GetResources(
+		ctx,
+		job.ResourceType,
+		creds.AccountID,
+		creds.Regions,
+		creds.AccessKey,
+		creds.SecretKey,
+		creds.SessionToken,
+		creds.AssumeRoleARN,
+		false,
+	)
 	if err != nil {
 		return nil, fmt.Errorf("AWS: %w", err)
 	}

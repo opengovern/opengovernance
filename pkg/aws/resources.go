@@ -5,10 +5,6 @@ import (
 	"fmt"
 	"sort"
 
-	trace2 "gitlab.com/keibiengine/keibi-engine/pkg/trace"
-	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/attribute"
-
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"gitlab.com/keibiengine/keibi-engine/pkg/aws/describer"
 )
@@ -301,15 +297,11 @@ func GetResources(
 }
 
 func describe(
-	ictx context.Context,
+	ctx context.Context,
 	cfg aws.Config,
 	account string,
 	regions []string,
 	resourceType string) (*Resources, error) {
-	ctx, span := otel.Tracer(trace2.DescribeWorkerTrace).Start(ictx, "awsDescribe")
-	span.SetAttributes(attribute.String("resourceType", resourceType))
-	defer span.End()
-
 	describe, ok := resourceTypeToDescriber[resourceType]
 	if !ok {
 		return nil, fmt.Errorf("unsupported resource type: %s", resourceType)
