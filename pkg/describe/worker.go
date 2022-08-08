@@ -237,7 +237,7 @@ func (w *Worker) Run(ctx context.Context) error {
 	}
 	span.End()
 
-	w.logger.Info("Job[%d]: Succeeded", zap.Uint("jobId", job.JobID))
+	w.logger.Info(fmt.Sprintf("Job[%d]: Succeeded",  job.JobID))
 	return nil
 }
 

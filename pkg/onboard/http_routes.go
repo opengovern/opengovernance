@@ -3,10 +3,8 @@ package onboard
 import (
 	"errors"
 	"fmt"
-	"net/http"
-	"strings"
-
 	"gitlab.com/keibiengine/keibi-engine/pkg/onboard/connector"
+	"net/http"
 
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
@@ -177,20 +175,12 @@ func (h HttpHandler) GetConnectorCategories(ctx echo.Context) error {
 // @Param        category  query     string  false  "category"
 // @Router       /onboard/api/v1/connectors [get]
 func (h HttpHandler) GetConnector(ctx echo.Context) error {
-	category := ctx.QueryParam("category")
-	categoryID := ""
-	if len(category) > 0 {
-		for _, cat := range connector.CategoryList {
-			if strings.EqualFold(cat.Name, category) {
-				categoryID = cat.ID
-			}
-		}
-	}
+	categoryID := ctx.QueryParam("categoryID")
 
 	var res []connector.Connector
 	for _, c := range connector.Connectors {
 		ok := false
-		if len(category) > 0 {
+		if len(categoryID) > 0 {
 			for _, m := range connector.CategoryConnectorMapping {
 				if m.CategoryID == categoryID && m.ConnectorID == c.ID {
 					ok = true
@@ -204,7 +194,7 @@ func (h HttpHandler) GetConnector(ctx echo.Context) error {
 			res = append(res, c)
 		}
 	}
-	return ctx.JSON(http.StatusOK, connector.Connectors)
+	return ctx.JSON(http.StatusOK, res)
 }
 
 // GetProviderTypes godoc
