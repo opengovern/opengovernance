@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"time"
 
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/exporters/jaeger"
@@ -206,6 +207,7 @@ func (w *Worker) Run(ctx context.Context) error {
 		strings.Contains(result.Error, "Rate exceeded") ||
 		strings.Contains(result.Error, "RateExceeded") {
 		w.logger.Error("Rate error happened, retrying in a bit")
+		time.Sleep(5 * time.Second)
 
 		if err := msg.Nack(false, true); err != nil {
 			w.logger.Error("Failed requeueing message", zap.Error(err))
