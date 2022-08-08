@@ -1921,7 +1921,7 @@ func (h *HttpHandler) GetAccountsResourceCount(ctx echo.Context) error {
 // @Success  200         {object}  map[string]int
 // @Router   /inventory/api/v1/resources/distribution [get]
 func (h *HttpHandler) GetResourceDistribution(ctx echo.Context) error {
-	provider := ctx.QueryParam("provider")
+	provider, _ := source.ParseType(ctx.QueryParam("provider"))
 	sourceID := ctx.QueryParam("sourceId")
 
 	if provider == "" && sourceID == "" {
@@ -1930,7 +1930,8 @@ func (h *HttpHandler) GetResourceDistribution(ctx echo.Context) error {
 
 	var providerPtr *string
 	if provider != "" {
-		providerPtr = &provider
+		v := string(provider)
+		providerPtr = &v
 	}
 
 	var sourceUUID *uuid.UUID
