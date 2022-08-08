@@ -185,58 +185,60 @@ func (w *Worker) Run(ctx context.Context) error {
 		return err
 	}
 
-	w.logger.Error("Waiting indefinitly for messages. To exit press CTRL+C")
-	for msg := range msgs {
-		ctx, span := otel.Tracer(trace2.DescribeWorkerTrace).Start(ctx, "HandleMessage")
+	msg := <-msgs
 
-		var job DescribeJob
-		if err := json.Unmarshal(msg.Body, &job); err != nil {
-			w.logger.Error("Failed to unmarshal task", zap.Error(err))
-			err = msg.Nack(false, false)
-			if err != nil {
-				w.logger.Error("Failed nacking message", zap.Error(err))
-			}
-			span.RecordError(err)
-			span.SetStatus(codes.Error, err.Error())
-			span.End()
-			continue
-		}
-		result := job.Do(ctx, w.vault, w.rdb, w.es, w.kfkProducer, w.kfkTopic, w.logger)
-		if strings.Contains(result.Error, "ThrottlingException") ||
-			strings.Contains(result.Error, "Rate exceeded") ||
-			strings.Contains(result.Error, "RateExceeded") {
-			if err := msg.Nack(false, true); err != nil {
-				w.logger.Error("Failed requeueing message", zap.Error(err))
-			}
-			span.RecordError(errors.New(result.Error))
-			span.SetStatus(codes.Error, result.Error)
-			span.End()
-			continue
-		}
+	ctx, span := otel.Tracer(trace2.DescribeWorkerTrace).Start(ctx, "HandleMessage")
 
-		err := w.jobResultQueue.Publish(result)
+	var job DescribeJob
+	if err := json.Unmarshal(msg.Body, &job); err != nil {
+		w.logger.Error("Failed to unmarshal task", zap.Error(err))
+		err = msg.Nack(false, false)
 		if err != nil {
-			w.logger.Error("Failed to send results to queue: %s", zap.Error(err))
-			span.RecordError(err)
-			span.SetStatus(codes.Error, err.Error())
+			w.logger.Error("Failed nacking message", zap.Error(err))
 		}
-
-		if err := msg.Ack(false); err != nil {
-			w.logger.Error("Failed acking message", zap.Error(err))
-			span.RecordError(err)
-			span.SetStatus(codes.Error, err.Error())
-		}
-
-		err = w.pusher.Push()
-		if err != nil {
-			w.logger.Error("Failed to push metrics", zap.Error(err))
-			span.RecordError(err)
-			span.SetStatus(codes.Error, err.Error())
-		}
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
 		span.End()
+		return err
+	}
+	result := job.Do(ctx, w.vault, w.rdb, w.es, w.kfkProducer, w.kfkTopic, w.logger)
+	if strings.Contains(result.Error, "ThrottlingException") ||
+		strings.Contains(result.Error, "Rate exceeded") ||
+		strings.Contains(result.Error, "RateExceeded") {
+		w.logger.Error("Rate error happened, retrying in a bit")
+
+		if err := msg.Nack(false, true); err != nil {
+			w.logger.Error("Failed requeueing message", zap.Error(err))
+		}
+		span.RecordError(errors.New(result.Error))
+		span.SetStatus(codes.Error, result.Error)
+		span.End()
+		return nil
 	}
 
-	return fmt.Errorf("descibe jobs channel is closed")
+	err = w.jobResultQueue.Publish(result)
+	if err != nil {
+		w.logger.Error("Failed to send results to queue: %s", zap.Error(err))
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
+	}
+
+	if err := msg.Ack(false); err != nil {
+		w.logger.Error("Failed acking message", zap.Error(err))
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
+	}
+
+	err = w.pusher.Push()
+	if err != nil {
+		w.logger.Error("Failed to push metrics", zap.Error(err))
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
+	}
+	span.End()
+
+	w.logger.Info("Job[%d]: Succeeded", zap.Uint("jobId", job.JobID))
+	return nil
 }
 
 func (w *Worker) Stop() {

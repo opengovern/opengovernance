@@ -9,7 +9,7 @@ import (
 )
 
 const (
-	prefetchCount = 10
+	prefetchCount = 1
 	prefetchSize  = 0 // Disabled prefetch size
 )
 
