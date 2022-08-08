@@ -3,8 +3,9 @@ package onboard
 import (
 	"errors"
 	"fmt"
-	"gitlab.com/keibiengine/keibi-engine/pkg/onboard/connector"
 	"net/http"
+
+	"gitlab.com/keibiengine/keibi-engine/pkg/onboard/connector"
 
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
