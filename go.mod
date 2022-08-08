@@ -99,7 +99,7 @@ require (
 	github.com/tombuildsstuff/giovanni v0.18.0
 	github.com/turbot/go-kit v0.3.0
 	github.com/turbot/steampipe-plugin-sdk v1.8.3
-	gitlab.com/keibiengine/steampipe-plugin-aws v0.0.0-20220805162426-1882ecc1e2c8
+	gitlab.com/keibiengine/steampipe-plugin-aws v0.0.0-20220808075202-f6142f6f36e2
 	gitlab.com/keibiengine/steampipe-plugin-azure v0.23.2-0.20220610141809-f39926dc987e
 	gitlab.com/keibiengine/steampipe-plugin-azuread v0.1.1-0.20220518191201-bd20078e9eaf
 	go.uber.org/zap v1.21.0
