@@ -50,8 +50,8 @@ func S3Bucket(ctx context.Context, cfg aws.Config, regions []string) (map[string
 	}
 
 	done := make(chan interface{})
-	jobChan := make(chan types.Bucket)
-	resultChan := make(chan s3bucketResult)
+	jobChan := make(chan types.Bucket, len(output.Buckets)+1)
+	resultChan := make(chan s3bucketResult, len(output.Buckets)+1)
 
 	describer := func(bucket types.Bucket) {
 		fmt.Println("S3Bucket", "getting location", bucket.Name)
@@ -60,10 +60,12 @@ func S3Bucket(ctx context.Context, cfg aws.Config, regions []string) (map[string
 			resultChan <- s3bucketResult{
 				Err: err,
 			}
+			fmt.Println("S3Bucket", "get location error", bucket.Name)
 			return
 		}
 
 		if !isIncludedInRegions(regions, region) {
+			fmt.Println("S3Bucket", "not included in regions", bucket.Name)
 			return
 		}
 
@@ -73,6 +75,7 @@ func S3Bucket(ctx context.Context, cfg aws.Config, regions []string) (map[string
 			resultChan <- s3bucketResult{
 				Err: err,
 			}
+			fmt.Println("S3Bucket", "describing error", bucket.Name)
 			return
 		}
 
