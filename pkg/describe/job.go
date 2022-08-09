@@ -303,11 +303,13 @@ func doDescribeAWS(ctx context.Context, rdb *redis.Client, es keibi.Client, job 
 			pluginTableName := steampipe.ExtractTableName(job.ResourceType)
 			desc, err := steampipe.ConvertToDescription(job.ResourceType, kafkaResource)
 			if err != nil {
-				return nil, err
+				errs = append(errs, fmt.Sprintf("convertToDescription: %v", err.Error()))
+				continue
 			}
 			cells, err := steampipe.AWSDescriptionToRecord(desc, pluginTableName)
 			if err != nil {
-				return nil, err
+				errs = append(errs, fmt.Sprintf("awsdescriptionToRecord: %v", err.Error()))
+				continue
 			}
 			for name, v := range cells {
 				if name == "title" || name == "name" {
@@ -366,28 +368,28 @@ func doDescribeAWS(ctx context.Context, rdb *redis.Client, es keibi.Client, job 
 	if err == nil {
 		msgs = append(msgs, serviceResources...)
 	} else {
-		errs = append(errs, err.Error())
+		errs = append(errs, fmt.Sprintf("ExtractServiceSummary: %v", err))
 	}
 
 	categoryResources, err := ExtractCategorySummary(es, job, lookupResources)
 	if err == nil {
 		msgs = append(msgs, categoryResources...)
 	} else {
-		errs = append(errs, err.Error())
+		errs = append(errs, fmt.Sprintf("ExtractCategorySummary: %v", err))
 	}
 
 	trendResources, err := ExtractResourceTrend(es, job, lookupResources)
 	if err == nil {
 		msgs = append(msgs, trendResources...)
 	} else {
-		errs = append(errs, err.Error())
+		errs = append(errs, fmt.Sprintf("ExtractResourceTrend: %v", err))
 	}
 
 	distResources, err := ExtractDistribution(es, job, lookupResources)
 	if err == nil {
 		msgs = append(msgs, distResources...)
 	} else {
-		errs = append(errs, err.Error())
+		errs = append(errs, fmt.Sprintf("ExtractDistribution: %v", err))
 	}
 
 	// For AWS resources, since they are queries independently per region,
@@ -403,12 +405,9 @@ func doDescribeAWS(ctx context.Context, rdb *redis.Client, es keibi.Client, job 
 }
 
 func doDescribeAzure(ctx context.Context, rdb *redis.Client, es keibi.Client, job DescribeJob, config map[string]interface{}, logger *zap.Logger) ([]kafka.DescribedResource, error) {
-	ctx, span := otel.Tracer(trace2.DescribeWorkerTrace).Start(ctx, "DoDescribeAzure")
-	defer span.End()
-
 	creds, err := AzureSubscriptionConfigFromMap(config)
 	if err != nil {
-		return nil, fmt.Errorf("aure subscription credentials: %w", err)
+		return nil, fmt.Errorf("azure subscription credentials: %w", err)
 	}
 
 	subscriptionId := job.AccountID
@@ -416,27 +415,22 @@ func doDescribeAzure(ctx context.Context, rdb *redis.Client, es keibi.Client, jo
 		subscriptionId = creds.SubscriptionID
 	}
 
-	output, err := func(ctx context.Context) (*azure.Resources, error) {
-		ctx, span := otel.Tracer(trace2.DescribeWorkerTrace).Start(ctx, "azureGetResources")
-		defer span.End()
-
-		return azure.GetResources(
-			ctx,
-			job.ResourceType,
-			[]string{subscriptionId},
-			azure.AuthConfig{
-				TenantID:            creds.TenantID,
-				ClientID:            creds.ClientID,
-				ClientSecret:        creds.ClientSecret,
-				CertificatePath:     creds.CertificatePath,
-				CertificatePassword: creds.CertificatePass,
-				Username:            creds.Username,
-				Password:            creds.Password,
-			},
-			string(azure.AuthEnv),
-			"",
-		)
-	}(ctx)
+	output, err := azure.GetResources(
+		ctx,
+		job.ResourceType,
+		[]string{subscriptionId},
+		azure.AuthConfig{
+			TenantID:            creds.TenantID,
+			ClientID:            creds.ClientID,
+			ClientSecret:        creds.ClientSecret,
+			CertificatePath:     creds.CertificatePath,
+			CertificatePassword: creds.CertificatePass,
+			Username:            creds.Username,
+			Password:            creds.Password,
+		},
+		string(azure.AuthEnv),
+		"",
+	)
 	if err != nil {
 		return nil, fmt.Errorf("azure: %w", err)
 	}
@@ -470,19 +464,19 @@ func doDescribeAzure(ctx context.Context, rdb *redis.Client, es keibi.Client, jo
 		pluginTableName := steampipe.ExtractTableName(job.ResourceType)
 		desc, err := steampipe.ConvertToDescription(job.ResourceType, kafkaResource)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("convertToDescription: %v", err)
 		}
 		pluginProvider := steampipe.ExtractPlugin(job.ResourceType)
 		var cells map[string]*proto.Column
 		if pluginProvider == steampipe.SteampipePluginAzure {
 			cells, err = steampipe.AzureDescriptionToRecord(desc, pluginTableName)
 			if err != nil {
-				return nil, err
+				return nil, fmt.Errorf("azureDescriptionToRecord: %v", err)
 			}
 		} else {
 			cells, err = steampipe.AzureADDescriptionToRecord(desc, pluginTableName)
 			if err != nil {
-				return nil, err
+				return nil, fmt.Errorf("azureADDescriptionToRecord: %v", err)
 			}
 		}
 		for name, v := range cells {
@@ -533,25 +527,25 @@ func doDescribeAzure(ctx context.Context, rdb *redis.Client, es keibi.Client, jo
 
 	serviceResources, err := ExtractServiceSummary(es, job, lookupResources, logger)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("ExtractServiceSummary: %v", err)
 	}
 	msgs = append(msgs, serviceResources...)
 
 	categoryResources, err := ExtractCategorySummary(es, job, lookupResources)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("ExtractCategorySummary: %v", err)
 	}
 	msgs = append(msgs, categoryResources...)
 
 	trendResources, err := ExtractResourceTrend(es, job, lookupResources)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("ExtractResourceTrend: %v", err)
 	}
 	msgs = append(msgs, trendResources...)
 
 	distResources, err := ExtractDistribution(es, job, lookupResources)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("ExtractDistribution: %v", err)
 	}
 	msgs = append(msgs, distResources...)
 	return msgs, nil

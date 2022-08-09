@@ -47,6 +47,7 @@ func S3Bucket(ctx context.Context, cfg aws.Config, regions []string) (map[string
 	client := s3.NewFromConfig(cfg)
 	output, err := client.ListBuckets(ctx, &s3.ListBucketsInput{})
 	if err != nil {
+		fmt.Println("Error listing buckets")
 		return nil, err
 	}
 
@@ -124,6 +125,7 @@ func S3Bucket(ctx context.Context, cfg aws.Config, regions []string) (map[string
 		res := <-resultChan
 		if res.Err != nil {
 			globalErr = res.Err
+			fmt.Println("S3Bucket Error", "global", res)
 		} else if res.Region != "" {
 			if _, ok := regionalValues[res.Region]; ok {
 				regionalValues[res.Region] = append(regionalValues[res.Region], res.Resource)
@@ -134,6 +136,7 @@ func S3Bucket(ctx context.Context, cfg aws.Config, regions []string) (map[string
 	for i := 0; i < s3BucketNoOfWorkers; i++ {
 		done <- i
 	}
+	fmt.Println("S3Bucket", "return", regionalValues, globalErr)
 	return regionalValues, globalErr
 }
 
