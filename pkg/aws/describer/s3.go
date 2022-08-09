@@ -3,7 +3,6 @@ package describer
 import (
 	"context"
 	"errors"
-	"fmt"
 	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -23,13 +22,19 @@ const (
 	s3ObjectLockConfigurationNotFoundError           = "ObjectLockConfigurationNotFoundError"
 	s3ReplicationConfigurationNotFoundError          = "ReplicationConfigurationNotFoundError"
 	s3ServerSideEncryptionConfigurationNotFoundError = "ServerSideEncryptionConfigurationNotFoundError"
+	s3BucketNoOfWorkers                              = 8
 )
+
+type s3bucketResult struct {
+	Resource Resource
+	Region   string
+	Err      error
+}
 
 // S3Bucket describe S3 buckets.
 // ListBuckets returns buckets in all regions. However, this function categorizes the buckets based
 // on their location constaint, aka the regions they reside in.
 func S3Bucket(ctx context.Context, cfg aws.Config, regions []string) (map[string][]Resource, error) {
-	fmt.Println("S3Bucket", "regions:", regions)
 	regionalValues := make(map[string][]Resource, len(regions))
 	for _, r := range regions {
 		regionalValues[r] = make([]Resource, 0)
@@ -43,37 +48,77 @@ func S3Bucket(ctx context.Context, cfg aws.Config, regions []string) (map[string
 		return nil, err
 	}
 
-	fmt.Println("S3Bucket", "buckets:", len(output.Buckets))
-	for _, bucket := range output.Buckets {
-		fmt.Println("S3Bucket", "getlocation:", bucket)
+	done := make(chan interface{})
+	jobChan := make(chan types.Bucket)
+	resultChan := make(chan s3bucketResult)
+
+	describer := func(bucket types.Bucket) {
 		region, err := getBucketLocation(ctx, client, bucket)
 		if err != nil {
-			return nil, err
+			resultChan <- s3bucketResult{
+				Err: err,
+			}
+			return
 		}
 
 		if !isIncludedInRegions(regions, region) {
-			fmt.Println("S3Bucket", "not included:", region)
-			continue
+			return
 		}
 
-		fmt.Println("S3Bucket", "describe:", bucket)
 		desc, err := getBucketDescription(ctx, cfg, bucket, region)
 		if err != nil {
-			return nil, err
+			resultChan <- s3bucketResult{
+				Err: err,
+			}
+			return
 		}
 
 		if _, ok := regionalValues[region]; ok {
 			arn := "arn:" + describeCtx.Partition + ":s3:::" + *bucket.Name
-			regionalValues[region] = append(regionalValues[region], Resource{
-				ARN:         arn,
-				Name:        *bucket.Name,
-				Description: desc,
-			})
+			resultChan <- s3bucketResult{
+				Resource: Resource{
+					ARN:         arn,
+					Name:        *bucket.Name,
+					Description: desc,
+				},
+				Region: region,
+			}
 		}
 	}
 
-	fmt.Println("S3Bucket", "DONE")
-	return regionalValues, nil
+	worker := func() {
+		for {
+			select {
+			case j := <-jobChan:
+				describer(j)
+			case <-done:
+				return
+			}
+		}
+	}
+
+	for i := 0; i < s3BucketNoOfWorkers; i++ {
+		go worker()
+	}
+
+	for _, bucket := range output.Buckets {
+		jobChan <- bucket
+	}
+
+	var globalErr error
+	for range output.Buckets {
+		res := <-resultChan
+		if res.Err != nil {
+			globalErr = res.Err
+		} else {
+			regionalValues[res.Region] = append(regionalValues[res.Region], res.Resource)
+		}
+	}
+
+	for i := 0; i < s3BucketNoOfWorkers; i++ {
+		done <- i
+	}
+	return regionalValues, globalErr
 }
 
 func getBucketLocation(ctx context.Context, client *s3.Client, bucket types.Bucket) (string, error) {
