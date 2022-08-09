@@ -331,6 +331,10 @@ func getBucketLifecycle(ctx context.Context, client *s3.Client, bucket types.Buc
 		return nil, err
 	}
 
+	for idx := range output.Rules {
+		output.Rules[idx].Filter = nil
+	}
+
 	return output, nil
 }
 
