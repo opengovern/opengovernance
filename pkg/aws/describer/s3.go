@@ -27,6 +27,7 @@ const (
 )
 
 type s3bucketResult struct {
+	Bucket   types.Bucket
 	Resource Resource
 	Region   string
 	Err      error
@@ -58,14 +59,19 @@ func S3Bucket(ctx context.Context, cfg aws.Config, regions []string) (map[string
 		region, err := getBucketLocation(ctx, client, bucket)
 		if err != nil {
 			resultChan <- s3bucketResult{
-				Err: err,
+				Err:    err,
+				Bucket: bucket,
 			}
-			fmt.Println("S3Bucket", "get location error", bucket.Name)
+			fmt.Println("S3Bucket Error", "get location error", bucket.Name)
+			fmt.Println(err)
 			return
 		}
 
 		if !isIncludedInRegions(regions, region) {
-			fmt.Println("S3Bucket", "not included in regions", bucket.Name)
+			resultChan <- s3bucketResult{
+				Bucket: bucket,
+			}
+			fmt.Println("S3Bucket Error", "not included in regions", bucket.Name)
 			return
 		}
 
@@ -73,9 +79,11 @@ func S3Bucket(ctx context.Context, cfg aws.Config, regions []string) (map[string
 		desc, err := getBucketDescription(ctx, cfg, bucket, region)
 		if err != nil {
 			resultChan <- s3bucketResult{
-				Err: err,
+				Bucket: bucket,
+				Err:    err,
 			}
-			fmt.Println("S3Bucket", "describing error", bucket.Name)
+			fmt.Println("S3Bucket Error", "describing error", bucket.Name)
+			fmt.Println(err)
 			return
 		}
 
@@ -87,6 +95,7 @@ func S3Bucket(ctx context.Context, cfg aws.Config, regions []string) (map[string
 				Description: desc,
 			},
 			Region: region,
+			Bucket: bucket,
 		}
 		fmt.Println("S3Bucket", "result sent", bucket.Name)
 	}
@@ -115,7 +124,7 @@ func S3Bucket(ctx context.Context, cfg aws.Config, regions []string) (map[string
 		res := <-resultChan
 		if res.Err != nil {
 			globalErr = res.Err
-		} else {
+		} else if res.Region != "" {
 			if _, ok := regionalValues[res.Region]; ok {
 				regionalValues[res.Region] = append(regionalValues[res.Region], res.Resource)
 			}
