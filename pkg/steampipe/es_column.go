@@ -8,6 +8,8 @@ import (
 	"net"
 	"strings"
 
+	"gitlab.com/keibiengine/keibi-engine/pkg/aws/model"
+
 	"gitlab.com/keibiengine/keibi-engine/pkg/source"
 
 	"github.com/golang/protobuf/ptypes"
@@ -221,6 +223,12 @@ func ConvertToDescription(resourceType string, data interface{}) (interface{}, e
 		for k, v := range AWSDescriptionMap {
 			if strings.ToLower(resourceType) == strings.ToLower(k) {
 				d = v
+			}
+		}
+		if strings.ToLower(resourceType) == "aws::s3::bucket" {
+			b, err = model.FixS3Bucket(b)
+			if err != nil {
+				return nil, err
 			}
 		}
 		err = json.Unmarshal(b, d)
