@@ -3,6 +3,7 @@ package describer
 import (
 	"context"
 	"errors"
+	"fmt"
 	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -53,6 +54,7 @@ func S3Bucket(ctx context.Context, cfg aws.Config, regions []string) (map[string
 	resultChan := make(chan s3bucketResult)
 
 	describer := func(bucket types.Bucket) {
+		fmt.Println("S3Bucket", "getting location", bucket.Name)
 		region, err := getBucketLocation(ctx, client, bucket)
 		if err != nil {
 			resultChan <- s3bucketResult{
@@ -65,6 +67,7 @@ func S3Bucket(ctx context.Context, cfg aws.Config, regions []string) (map[string
 			return
 		}
 
+		fmt.Println("S3Bucket", "describing", bucket.Name)
 		desc, err := getBucketDescription(ctx, cfg, bucket, region)
 		if err != nil {
 			resultChan <- s3bucketResult{
@@ -73,17 +76,16 @@ func S3Bucket(ctx context.Context, cfg aws.Config, regions []string) (map[string
 			return
 		}
 
-		if _, ok := regionalValues[region]; ok {
-			arn := "arn:" + describeCtx.Partition + ":s3:::" + *bucket.Name
-			resultChan <- s3bucketResult{
-				Resource: Resource{
-					ARN:         arn,
-					Name:        *bucket.Name,
-					Description: desc,
-				},
-				Region: region,
-			}
+		arn := "arn:" + describeCtx.Partition + ":s3:::" + *bucket.Name
+		resultChan <- s3bucketResult{
+			Resource: Resource{
+				ARN:         arn,
+				Name:        *bucket.Name,
+				Description: desc,
+			},
+			Region: region,
 		}
+		fmt.Println("S3Bucket", "result sent", bucket.Name)
 	}
 
 	worker := func() {
@@ -111,7 +113,9 @@ func S3Bucket(ctx context.Context, cfg aws.Config, regions []string) (map[string
 		if res.Err != nil {
 			globalErr = res.Err
 		} else {
-			regionalValues[res.Region] = append(regionalValues[res.Region], res.Resource)
+			if _, ok := regionalValues[res.Region]; ok {
+				regionalValues[res.Region] = append(regionalValues[res.Region], res.Resource)
+			}
 		}
 	}
 
