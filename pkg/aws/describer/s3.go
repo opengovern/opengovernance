@@ -184,10 +184,10 @@ func getBucketDescription(ctx context.Context, cfg aws.Config, bucket types.Buck
 		return nil, err
 	}
 
-	o6, err := getBucketLifecycle(ctx, rClient, bucket)
-	if err != nil {
-		return nil, err
-	}
+	//o6, err := getBucketLifecycle(ctx, rClient, bucket)
+	//if err != nil {
+	//	return nil, err
+	//}
 
 	o7, err := getBucketLogging(ctx, rClient, bucket)
 	if err != nil {
@@ -233,7 +233,7 @@ func getBucketDescription(ctx context.Context, cfg aws.Config, bucket types.Buck
 			MFADelete: o2.MFADelete,
 			Status:    o2.Status,
 		},
-		LifecycleRules:                    o6.Rules,
+		//LifecycleRules:                    o6.Rules,
 		LoggingEnabled:                    o7.LoggingEnabled,
 		ServerSideEncryptionConfiguration: o3.ServerSideEncryptionConfiguration,
 		ObjectLockConfiguration:           o10.ObjectLockConfiguration,
