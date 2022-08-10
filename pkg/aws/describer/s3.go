@@ -2,6 +2,7 @@ package describer
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"strings"
@@ -184,10 +185,10 @@ func getBucketDescription(ctx context.Context, cfg aws.Config, bucket types.Buck
 		return nil, err
 	}
 
-	//o6, err := getBucketLifecycle(ctx, rClient, bucket)
-	//if err != nil {
-	//	return nil, err
-	//}
+	o6, err := getBucketLifecycle(ctx, rClient, bucket)
+	if err != nil {
+		return nil, err
+	}
 
 	o7, err := getBucketLogging(ctx, rClient, bucket)
 	if err != nil {
@@ -214,6 +215,16 @@ func getBucketDescription(ctx context.Context, cfg aws.Config, bucket types.Buck
 		return nil, err
 	}
 
+	rulesJson, err := json.Marshal(o6.Rules)
+	if err != nil {
+		return nil, err
+	}
+
+	replicationJson, err := json.Marshal(o9.ReplicationConfiguration)
+	if err != nil {
+		return nil, err
+	}
+
 	return &model.S3BucketDescription{
 		Bucket: bucket,
 		BucketAcl: struct {
@@ -233,11 +244,11 @@ func getBucketDescription(ctx context.Context, cfg aws.Config, bucket types.Buck
 			MFADelete: o2.MFADelete,
 			Status:    o2.Status,
 		},
-		//LifecycleRules:                    o6.Rules,
+		LifecycleRules:                    string(rulesJson),
 		LoggingEnabled:                    o7.LoggingEnabled,
 		ServerSideEncryptionConfiguration: o3.ServerSideEncryptionConfiguration,
 		ObjectLockConfiguration:           o10.ObjectLockConfiguration,
-		ReplicationConfiguration:          o9.ReplicationConfiguration,
+		ReplicationConfiguration:          string(replicationJson),
 		Tags:                              o11.TagSet,
 	}, nil
 }
@@ -329,10 +340,6 @@ func getBucketLifecycle(ctx context.Context, client *s3.Client, bucket types.Buc
 		}
 
 		return nil, err
-	}
-
-	for idx := range output.Rules {
-		output.Rules[idx].Filter = nil
 	}
 
 	return output, nil

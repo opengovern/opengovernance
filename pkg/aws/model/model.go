@@ -750,11 +750,11 @@ type S3BucketDescription struct {
 		MFADelete s3.MFADeleteStatus
 		Status    s3.BucketVersioningStatus
 	}
-	LifecycleRules                    []s3.LifecycleRule
+	LifecycleRules                    string
 	LoggingEnabled                    *s3.LoggingEnabled
 	ServerSideEncryptionConfiguration *s3.ServerSideEncryptionConfiguration
 	ObjectLockConfiguration           *s3.ObjectLockConfiguration
-	ReplicationConfiguration          *s3.ReplicationConfiguration
+	ReplicationConfiguration          string
 	Tags                              []s3.Tag
 }
 
