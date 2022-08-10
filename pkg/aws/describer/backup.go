@@ -165,16 +165,18 @@ func BackupVault(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 		}
 
 		for _, v := range page.BackupVaultList {
-			notification, err := client.GetBackupVaultNotifications(ctx, &backup.GetBackupVaultNotificationsInput{
-				BackupVaultName: v.BackupVaultName,
-			})
-			if err != nil {
-				if isErr(err, "ResourceNotFoundException") || isErr(err, "InvalidParameter") {
-					notification = &backup.GetBackupVaultNotificationsOutput{}
-				} else {
-					return nil, err
-				}
-			}
+			notification := &backup.GetBackupVaultNotificationsOutput{}
+			//TODO-Saleh getting rid of this to prevent error in describe job
+			//notification, err := client.GetBackupVaultNotifications(ctx, &backup.GetBackupVaultNotificationsInput{
+			//	BackupVaultName: v.BackupVaultName,
+			//})
+			//if err != nil {
+			//	if isErr(err, "ResourceNotFoundException") || isErr(err, "InvalidParameter") {
+			//		notification = &backup.GetBackupVaultNotificationsOutput{}
+			//	} else {
+			//		return nil, err
+			//	}
+			//}
 
 			accessPolicy, err := client.GetBackupVaultAccessPolicy(ctx, &backup.GetBackupVaultAccessPolicyInput{
 				BackupVaultName: v.BackupVaultName,
