@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strings"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/onboard/connector"
 
@@ -37,6 +38,7 @@ func (h HttpHandler) Register(r *echo.Echo) {
 
 	spn := v1.Group("/spn")
 	spn.POST("/azure", h.PostSPN)
+	spn.DELETE("/:spnId", h.DeleteSPN)
 	spn.GET("/:spnId", h.GetSPNCred)
 	spn.GET("/list", h.ListSPNs)
 	spn.PUT("/:spnId", h.PutSPNCred)
@@ -280,8 +282,8 @@ func (h HttpHandler) PostSourceAws(ctx echo.Context) error {
 // PostSourceAzure godoc
 // @Summary      Create Azure source
 // @Description  Creating Azure source
-// @Tags         onboard
-// @Produce      json
+// @Tags     onboard
+// @Produce  json
 // @Success      200          {object}  api.CreateSourceResponse
 // @Param        name    body      string                 true  "name"
 // @Param        description  body      string                 true  "description"
@@ -394,6 +396,9 @@ func (h HttpHandler) PostSPN(ctx echo.Context) error {
 	src := NewSPN(req)
 	err := h.db.orm.Transaction(func(tx *gorm.DB) error {
 		if err := h.db.CreateSPN(&src); err != nil {
+			if strings.Contains(err.Error(), "id conflict") {
+				return echo.NewHTTPError(http.StatusBadRequest, "SPN is already created")
+			}
 			return err
 		}
 
@@ -504,6 +509,30 @@ func (h HttpHandler) PutSPNCred(ctx echo.Context) error {
 		ClientSecret: req.ClientSecret,
 	}
 	if err := h.vault.Write(src.ConfigRef, newCnf.AsMap()); err != nil {
+		return err
+	}
+	return ctx.NoContent(http.StatusOK)
+}
+
+// DeleteSPN godoc
+// @Summary  Delete SPN credential
+// @Tags         onboard
+// @Produce      json
+// @Param    spnId  query  string  true  "SPN ID"
+// @Router   /onboard/api/v1/spn/{spnId} [delete]
+func (h HttpHandler) DeleteSPN(ctx echo.Context) error {
+	spnUUID, err := uuid.Parse(ctx.Param("spnId"))
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid SPN uuid")
+	}
+
+	src, err := h.db.DeleteSPN(spnUUID)
+	if err != nil {
+		return err
+	}
+
+	err = h.vault.Delete(src.ConfigRef)
+	if err != nil {
 		return err
 	}
 	return ctx.NoContent(http.StatusOK)

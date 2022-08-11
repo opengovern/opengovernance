@@ -2736,6 +2736,19 @@ paths:
       tags:
       - onboard
   /onboard/api/v1/spn/{spnId}:
+    delete:
+      parameters:
+      - description: SPN ID
+        in: query
+        name: spnId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses: {}
+      summary: Delete SPN credential
+      tags:
+      - onboard
     post:
       parameters:
       - description: SPN ID

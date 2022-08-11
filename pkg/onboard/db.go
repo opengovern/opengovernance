@@ -162,7 +162,7 @@ func (db Database) CreateSPN(s *SPN) error {
 
 	if tx.Error != nil {
 		return tx.Error
-	} else if tx.RowsAffected != 1 {
+	} else if tx.RowsAffected == 0 {
 		return fmt.Errorf("create spn: didn't create spn due to id conflict")
 	}
 
@@ -173,6 +173,20 @@ func (db Database) CreateSPN(s *SPN) error {
 func (db Database) GetSPN(id uuid.UUID) (SPN, error) {
 	var s SPN
 	tx := db.orm.First(&s, "id = ?", id)
+
+	if tx.Error != nil {
+		return SPN{}, tx.Error
+	} else if tx.RowsAffected != 1 {
+		return SPN{}, gorm.ErrRecordNotFound
+	}
+
+	return s, nil
+}
+
+// DeleteSPN deletes a spn with matching id
+func (db Database) DeleteSPN(id uuid.UUID) (SPN, error) {
+	var s SPN
+	tx := db.orm.Delete(&s, "id = ?", id)
 
 	if tx.Error != nil {
 		return SPN{}, tx.Error

@@ -2730,6 +2730,25 @@ const docTemplate = `{
                     }
                 ],
                 "responses": {}
+            },
+            "delete": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "onboard"
+                ],
+                "summary": "Delete SPN credential",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "SPN ID",
+                        "name": "spnId",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {}
             }
         },
         "/schedule/api/v1/compliance/report/last/completed": {
