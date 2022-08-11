@@ -150,6 +150,10 @@ type DiscoverAzureSubscriptionsRequest struct {
 	ClientSecret string `json:"clientSecret" validate:"required"`
 }
 
+type DiscoverAzureSubscriptionsSPNRequest struct {
+	SPNId uuid.UUID `json:"spnId"`
+}
+
 type DiscoverAzureSubscriptionsResponse struct {
 	ID             string `json:"id"`
 	SubscriptionID string `json:"subscriptionId"`

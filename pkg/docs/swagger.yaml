@@ -261,6 +261,11 @@ definitions:
       subscriptionId:
         type: string
     type: object
+  api.DiscoverAzureSubscriptionsSPNRequest:
+    properties:
+      spnId:
+        type: string
+    type: object
   api.Filters:
     description: if you provide two values for same filter OR operation would be used
       if you provide value for two filters AND operation would be used
@@ -2489,6 +2494,28 @@ paths:
         required: true
         schema:
           type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/api.DiscoverAzureSubscriptionsResponse'
+            type: array
+      summary: Returns the list of available Azure subscriptions.
+      tags:
+      - onboard
+  /onboard/api/v1/discover/azure/subscriptions/spn:
+    post:
+      description: Returning the list of available Azure subscriptions.
+      parameters:
+      - description: Request Body
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/api.DiscoverAzureSubscriptionsSPNRequest'
       produces:
       - application/json
       responses:

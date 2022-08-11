@@ -47,6 +47,7 @@ func (h HttpHandler) Register(r *echo.Echo) {
 
 	disc.POST("/aws/accounts", h.DiscoverAwsAccounts)
 	disc.POST("/azure/subscriptions", h.DiscoverAzureSubscriptions)
+	disc.POST("/azure/subscriptions/spn", h.DiscoverAzureSubscriptionsWithSPN)
 
 	v1.GET("/providers", h.GetProviders)
 	v1.GET("/providers/types", h.GetProviderTypes)
@@ -866,7 +867,7 @@ func (h HttpHandler) DiscoverAwsAccounts(ctx echo.Context) error {
 // @Description  Returning the list of available Azure subscriptions.
 // @Tags         onboard
 // @Produce      json
-// @Success      200           {object}  []api.DiscoverAzureSubscriptionsResponse
+// @Success      200      {object}  []api.DiscoverAzureSubscriptionsResponse
 // @Param        tenantId      body      string  true  "TenantId"
 // @Param        clientId      body      string  true  "ClientId"
 // @Param        clientSecret  body      string  true  "ClientSecret"
@@ -878,6 +879,57 @@ func (h *HttpHandler) DiscoverAzureSubscriptions(ctx echo.Context) error {
 	}
 
 	subs, err := discoverAzureSubscriptions(ctx.Request().Context(), req)
+	if err != nil {
+		return err
+	}
+
+	for _, sub := range subs {
+		_, err := h.db.GetSourceBySourceID(sub.SubscriptionID)
+		if err != nil {
+			if err == gorm.ErrRecordNotFound {
+				continue
+			}
+			return err
+		}
+		sub.Status = "DUPLICATE"
+	}
+	return ctx.JSON(http.StatusOK, subs)
+}
+
+// DiscoverAzureSubscriptionsWithSPN godoc
+// @Summary      Returns the list of available Azure subscriptions.
+// @Description  Returning the list of available Azure subscriptions.
+// @Tags         onboard
+// @Produce      json
+// @Success      200           {object}  []api.DiscoverAzureSubscriptionsResponse
+// @Param        request  body      api.DiscoverAzureSubscriptionsSPNRequest  true  "Request Body"
+// @Router       /onboard/api/v1/discover/azure/subscriptions/spn [post]
+func (h *HttpHandler) DiscoverAzureSubscriptionsWithSPN(ctx echo.Context) error {
+	var req api.DiscoverAzureSubscriptionsSPNRequest
+	if err := bindValidate(ctx, &req); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
+	}
+
+	spn, err := h.db.GetSPN(req.SPNId)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusNotFound, "SPN not found")
+	}
+
+	cnf, err := h.vault.Read(spn.ConfigRef)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusNotFound, "SPN ref not found")
+	}
+
+	azureCnf, err := describe.AzureSubscriptionConfigFromMap(cnf)
+	if err != nil {
+		return err
+	}
+
+	var discoveryReq api.DiscoverAzureSubscriptionsRequest
+	discoveryReq.TenantId = azureCnf.TenantID
+	discoveryReq.ClientId = azureCnf.ClientID
+	discoveryReq.ClientSecret = azureCnf.ClientSecret
+	subs, err := discoverAzureSubscriptions(ctx.Request().Context(), discoveryReq)
 	if err != nil {
 		return err
 	}

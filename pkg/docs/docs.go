@@ -2287,6 +2287,40 @@ const docTemplate = `{
                 }
             }
         },
+        "/onboard/api/v1/discover/azure/subscriptions/spn": {
+            "post": {
+                "description": "Returning the list of available Azure subscriptions.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "onboard"
+                ],
+                "summary": "Returns the list of available Azure subscriptions.",
+                "parameters": [
+                    {
+                        "description": "Request Body",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/api.DiscoverAzureSubscriptionsSPNRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/api.DiscoverAzureSubscriptionsResponse"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/onboard/api/v1/providers": {
             "get": {
                 "description": "Getting cloud providers",
@@ -3561,6 +3595,14 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "subscriptionId": {
+                    "type": "string"
+                }
+            }
+        },
+        "api.DiscoverAzureSubscriptionsSPNRequest": {
+            "type": "object",
+            "properties": {
+                "spnId": {
                     "type": "string"
                 }
             }
