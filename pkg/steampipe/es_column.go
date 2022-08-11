@@ -239,7 +239,7 @@ func ConvertToDescription(resourceType string, data interface{}) (interface{}, e
 		}
 		err = json.Unmarshal(b, &d)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("unmarshalling %s: %v", string(b), err)
 		}
 		d = helpers.DereferencePointer(d)
 		return d, nil

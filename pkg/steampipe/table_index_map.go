@@ -155,6 +155,7 @@ var azureMap = map[string]string{
 	"Microsoft.Web/staticSites":                             "azure_app_service_web_app",
 	"Microsoft.Insights/activityLogAlerts":                  "azure_log_alert",
 	"Microsoft.Resources/subscriptions/locations":           "azure_location",
+	"Microsoft.Resources/subscriptions/resourceGroups":      "azure_resource_group",
 	"Microsoft.Compute/virtualMachines":                     "azure_compute_virtual_machine",
 	"Microsoft.DBforPostgreSQL/servers":                     "azure_postgresql_server",
 	"Microsoft.EventGrid/topics":                            "azure_eventgrid_topic",
