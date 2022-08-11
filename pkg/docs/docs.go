@@ -2680,6 +2680,18 @@ const docTemplate = `{
                 }
             }
         },
+        "/onboard/api/v1/spn/list": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "onboard"
+                ],
+                "summary": "List SPN credentials",
+                "responses": {}
+            }
+        },
         "/onboard/api/v1/spn/{spnId}": {
             "put": {
                 "produces": [

@@ -38,6 +38,7 @@ func (h HttpHandler) Register(r *echo.Echo) {
 	spn := v1.Group("/spn")
 	spn.POST("/azure", h.PostSPN)
 	spn.GET("/:spnId", h.GetSPNCred)
+	spn.GET("/list", h.ListSPNs)
 	spn.PUT("/:spnId", h.PutSPNCred)
 
 	disc := v1.Group("/discover")
@@ -231,8 +232,8 @@ func (h HttpHandler) GetProviderTypes(ctx echo.Context) error {
 // PostSourceAws godoc
 // @Summary      Create AWS source
 // @Description  Creating AWS source
-// @Tags         onboard
-// @Produce      json
+// @Tags     onboard
+// @Produce  json
 // @Success      200          {object}  api.CreateSourceResponse
 // @Param        name         body      string               true  "name"
 // @Param        description  body      string               true  "description"
@@ -442,6 +443,28 @@ func (h HttpHandler) GetSPNCred(ctx echo.Context) error {
 		ClientID: azureCnf.ClientID,
 		TenantID: azureCnf.TenantID,
 	})
+}
+
+// ListSPNs godoc
+// @Summary  List SPN credentials
+// @Tags         onboard
+// @Produce      json
+// @Router   /onboard/api/v1/spn/list [get]
+func (h HttpHandler) ListSPNs(ctx echo.Context) error {
+	src, err := h.db.GetAllSPNs()
+	if err != nil {
+		return err
+	}
+
+	var res []api.SPNRecord
+	for _, r := range src {
+		res = append(res, api.SPNRecord{
+			SPNName:  fmt.Sprintf("SPN-%s", r.ID.String()),
+			ClientID: r.ClientId,
+			TenantID: r.TenantId,
+		})
+	}
+	return ctx.JSON(http.StatusOK, res)
 }
 
 // PutSPNCred godoc

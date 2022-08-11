@@ -2788,6 +2788,14 @@ paths:
       summary: Create Azure SPN
       tags:
       - onboard
+  /onboard/api/v1/spn/list:
+    get:
+      produces:
+      - application/json
+      responses: {}
+      summary: List SPN credentials
+      tags:
+      - onboard
   /schedule/api/v1/compliance/report/last/completed:
     get:
       produces:

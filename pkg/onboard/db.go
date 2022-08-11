@@ -182,3 +182,14 @@ func (db Database) GetSPN(id uuid.UUID) (SPN, error) {
 
 	return s, nil
 }
+
+// GetAllSPNs lists all spns
+func (db Database) GetAllSPNs() ([]SPN, error) {
+	var s []SPN
+	tx := db.orm.Find(&s)
+
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+	return s, nil
+}
