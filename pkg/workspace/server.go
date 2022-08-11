@@ -120,6 +120,9 @@ func (s *Server) syncHTTPProxy(workspaces []*Workspace) error {
 
 	var includes []contourv1.Include
 	for _, w := range workspaces {
+		if w.Status != string(StatusProvisioned) {
+			continue
+		}
 		includes = append(includes, contourv1.Include{
 			Name:      "http-proxy-route",
 			Namespace: w.ID.String(),
