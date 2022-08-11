@@ -42,6 +42,7 @@ type SPNCredential struct {
 }
 
 type SPNRecord struct {
+	SPNID    string `json:"spnID"`
 	SPNName  string `json:"spnName"`
 	ClientID string `json:"clientID"`
 	TenantID string `json:"tenantID"`

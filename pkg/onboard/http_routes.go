@@ -465,6 +465,7 @@ func (h HttpHandler) ListSPNs(ctx echo.Context) error {
 	var res []api.SPNRecord
 	for _, r := range src {
 		res = append(res, api.SPNRecord{
+			SPNID:    r.ID.String(),
 			SPNName:  fmt.Sprintf("SPN-%s", r.ID.String()),
 			ClientID: r.ClientId,
 			TenantID: r.TenantId,
