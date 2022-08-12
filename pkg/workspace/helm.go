@@ -75,7 +75,7 @@ func (s *Server) createHelmRelease(ctx context.Context, workspace *Workspace) er
     "workspace": {
       "name": "` + workspace.Name + `"
     },
-    "domain": "` + workspace.Domain + `"
+    "domain": "` + workspace.URI + `"
   }
 }
 `),
