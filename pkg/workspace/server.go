@@ -25,7 +25,6 @@ import (
 	"go.uber.org/zap"
 	"gorm.io/gorm"
 	"k8s.io/apimachinery/pkg/api/meta"
-	"k8s.io/apimachinery/pkg/util/validation"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -288,19 +287,20 @@ func (s *Server) CreateWorkspace(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "name is invalid")
 	}
 
-	domain := strings.ToLower(request.Name + s.cfg.DomainSuffix)
-	if errors := validation.IsQualifiedName(domain); len(errors) > 0 {
-		c.Logger().Errorf("invalid domain: %v", errors)
-		return echo.NewHTTPError(http.StatusBadRequest, errors)
+	switch request.Tier {
+	case string(Tier_Free), string(Tier_Teams):
+	default:
+		return echo.NewHTTPError(http.StatusBadRequest, "Invalid Tier")
 	}
-
+	uri := strings.ToLower("https://" + s.cfg.DomainSuffix + "/" + request.Name)
 	workspace := &Workspace{
 		ID:          uuid.New(),
 		Name:        strings.ToLower(request.Name),
 		OwnerId:     userID,
-		Domain:      domain,
+		URI:         uri,
 		Status:      StatusProvisioning.String(),
 		Description: request.Description,
+		Tier:        Tier(request.Tier),
 	}
 	if err := s.db.CreateWorkspace(workspace); err != nil {
 		if strings.Contains(err.Error(), "duplicate key value") {
@@ -375,7 +375,7 @@ func (s *Server) ListWorkspaces(c echo.Context) error {
 		workspaces = append(workspaces, &api.WorkspaceResponse{
 			ID:          workspace.ID.String(),
 			OwnerId:     workspace.OwnerId,
-			Domain:      workspace.Domain,
+			URI:         workspace.URI,
 			Name:        workspace.Name,
 			Status:      workspace.Status,
 			Description: workspace.Description,

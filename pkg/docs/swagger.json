@@ -3516,6 +3516,9 @@
                 },
                 "name": {
                     "type": "string"
+                },
+                "tier": {
+                    "type": "string"
                 }
             }
         },
@@ -4452,9 +4455,6 @@
                 "description": {
                     "type": "string"
                 },
-                "domain": {
-                    "type": "string"
-                },
                 "id": {
                     "type": "string"
                 },
@@ -4465,6 +4465,9 @@
                     "type": "string"
                 },
                 "status": {
+                    "type": "string"
+                },
+                "uri": {
                     "type": "string"
                 }
             }

@@ -25,7 +25,8 @@ type Workspace struct {
 	ID          uuid.UUID `json:"id"`
 	Name        string    `gorm:"uniqueIndex" json:"name"`
 	OwnerId     uuid.UUID `json:"owner_id"`
-	Domain      string    `json:"domain"`
+	URI         string    `json:"uri"`
 	Status      string    `json:"status"`
 	Description string    `json:"description"`
+	Tier        Tier      `json:"tier"`
 }

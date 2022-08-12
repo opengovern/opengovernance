@@ -3522,6 +3522,9 @@ const docTemplate = `{
                 },
                 "name": {
                     "type": "string"
+                },
+                "tier": {
+                    "type": "string"
                 }
             }
         },
@@ -4458,9 +4461,6 @@ const docTemplate = `{
                 "description": {
                     "type": "string"
                 },
-                "domain": {
-                    "type": "string"
-                },
                 "id": {
                     "type": "string"
                 },
@@ -4471,6 +4471,9 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "status": {
+                    "type": "string"
+                },
+                "uri": {
                     "type": "string"
                 }
             }

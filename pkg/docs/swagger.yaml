@@ -212,6 +212,8 @@ definitions:
         type: string
       name:
         type: string
+      tier:
+        type: string
     type: object
   api.CreateWorkspaceResponse:
     properties:
@@ -853,8 +855,6 @@ definitions:
         type: string
       description:
         type: string
-      domain:
-        type: string
       id:
         type: string
       name:
@@ -862,6 +862,8 @@ definitions:
       ownerId:
         type: string
       status:
+        type: string
+      uri:
         type: string
     type: object
   api.WorkspaceRoleBinding:
