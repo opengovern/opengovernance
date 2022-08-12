@@ -183,6 +183,19 @@ func (db Database) GetSPN(id uuid.UUID) (SPN, error) {
 	return s, nil
 }
 
+// GetSPNByTenantClientID gets a spn with matching clientID and tenantID
+func (db Database) GetSPNByTenantClientID(tenantId, clientId string) (SPN, error) {
+	var s SPN
+	tx := db.orm.First(&s, "tenant_id = ? AND client_id = ?", tenantId, clientId)
+
+	if tx.Error != nil {
+		return SPN{}, tx.Error
+	} else if tx.RowsAffected != 1 {
+		return SPN{}, gorm.ErrRecordNotFound
+	}
+	return s, nil
+}
+
 // DeleteSPN deletes a spn with matching id
 func (db Database) DeleteSPN(id uuid.UUID) (SPN, error) {
 	var s SPN

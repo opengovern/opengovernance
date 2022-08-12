@@ -398,7 +398,13 @@ func (h HttpHandler) PostSPN(ctx echo.Context) error {
 	err := h.db.orm.Transaction(func(tx *gorm.DB) error {
 		if err := h.db.CreateSPN(&src); err != nil {
 			if strings.Contains(err.Error(), "id conflict") {
-				return echo.NewHTTPError(http.StatusBadRequest, "SPN is already created")
+				spn, err := h.db.GetSPNByTenantClientID(src.TenantId, src.ClientId)
+				if err != nil {
+					return err
+				}
+
+				return ctx.JSON(http.StatusBadRequest, api.DuplicateSPNResponse{ErrorMessage: "SPN is already created",
+					SpnID: spn.ID.String()})
 			}
 			return err
 		}

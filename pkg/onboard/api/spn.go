@@ -34,6 +34,11 @@ type CreateSPNResponse struct {
 	ID uuid.UUID `json:"id"`
 }
 
+type DuplicateSPNResponse struct {
+	ErrorMessage string `json:"message"`
+	SpnID        string `json:"spnID"`
+}
+
 type SPNCredential struct {
 	SPNName      string `json:"spnName"`
 	ClientID     string `json:"clientID"`
