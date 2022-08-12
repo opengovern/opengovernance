@@ -21,7 +21,7 @@ func (ts *testSuite) initWorkspace() (*Workspace, error) {
 		ID:          uuid.New(),
 		Name:        ts.name,
 		OwnerId:     ts.owner,
-		Domain:      ts.name + ts.domainSuffix,
+		URI:      ts.name + ts.domainSuffix,
 		Status:      StatusProvisioning.String(),
 		Description: "workspace",
 	}
