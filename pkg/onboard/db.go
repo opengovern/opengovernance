@@ -94,10 +94,9 @@ func (db Database) GetSourceBySourceID(id string) (Source, error) {
 
 	if tx.Error != nil {
 		return Source{}, tx.Error
-	} else if tx.RowsAffected != 1 {
+	} else if s.SourceId != id {
 		return Source{}, gorm.ErrRecordNotFound
 	}
-
 	return s, nil
 }
 
