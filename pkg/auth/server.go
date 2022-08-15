@@ -7,6 +7,8 @@ import (
 	"net/http"
 	"strings"
 
+	api2 "gitlab.com/keibiengine/keibi-engine/pkg/workspace/api"
+
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpclient"
 	"gitlab.com/keibiengine/keibi-engine/pkg/workspace/client"
 
@@ -128,17 +130,20 @@ func (s Server) Check(ctx context.Context, req *envoyauth.CheckRequest) (*envoya
 		zap.String("method", httpRequest.Method),
 	)
 
-	limits, err := s.workspaceClient.GetLimits(&httpclient.Context{
-		UserRole: rb.Role, UserID: rb.UserID.String(), WorkspaceName: workspaceName,
-	})
-	if err != nil {
-		s.logger.Warn("denied access due to failure in retrieving limits",
-			zap.String("reqId", httpRequest.Id),
-			zap.String("path", httpRequest.Path),
-			zap.String("method", httpRequest.Method),
-			zap.String("workspace", workspaceName),
-			zap.Error(err))
-		return nil, err
+	var limits api2.WorkspaceLimits
+	if workspaceName != "keibi" {
+		limits, err = s.workspaceClient.GetLimits(&httpclient.Context{
+			UserRole: rb.Role, UserID: rb.UserID.String(), WorkspaceName: workspaceName,
+		})
+		if err != nil {
+			s.logger.Warn("denied access due to failure in retrieving limits",
+				zap.String("reqId", httpRequest.Id),
+				zap.String("path", httpRequest.Path),
+				zap.String("method", httpRequest.Method),
+				zap.String("workspace", workspaceName),
+				zap.Error(err))
+			return nil, err
+		}
 	}
 
 	return &envoyauth.CheckResponse{
