@@ -6,6 +6,8 @@ import (
 	"net/http"
 	"strings"
 
+	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpserver"
+
 	"gitlab.com/keibiengine/keibi-engine/pkg/onboard/connector"
 
 	"github.com/google/uuid"
@@ -248,9 +250,16 @@ func (h HttpHandler) PostSourceAws(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
 	}
 
-	src := NewAWSSource(req)
+	count, err := h.db.CountSources()
+	if err != nil {
+		return err
+	}
+	if count >= httpserver.GetMaxConnections(ctx) {
+		return echo.NewHTTPError(http.StatusBadRequest, "maximum number of connections reached")
+	}
 
-	err := h.db.orm.Transaction(func(tx *gorm.DB) error {
+	src := NewAWSSource(req)
+	err = h.db.orm.Transaction(func(tx *gorm.DB) error {
 		err := h.db.CreateSource(&src)
 		if err != nil {
 			return err
@@ -297,9 +306,16 @@ func (h HttpHandler) PostSourceAzure(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
 	}
 
-	src := NewAzureSource(req)
+	count, err := h.db.CountSources()
+	if err != nil {
+		return err
+	}
+	if count >= httpserver.GetMaxConnections(ctx) {
+		return echo.NewHTTPError(http.StatusBadRequest, "maximum number of connections reached")
+	}
 
-	err := h.db.orm.Transaction(func(tx *gorm.DB) error {
+	src := NewAzureSource(req)
+	err = h.db.orm.Transaction(func(tx *gorm.DB) error {
 		err := h.db.CreateSource(&src)
 		if err != nil {
 			return err
@@ -346,9 +362,16 @@ func (h HttpHandler) PostSourceAzureSPN(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
 	}
 
-	src := NewAzureSourceWithSPN(req)
+	count, err := h.db.CountSources()
+	if err != nil {
+		return err
+	}
+	if count >= httpserver.GetMaxConnections(ctx) {
+		return echo.NewHTTPError(http.StatusBadRequest, "maximum number of connections reached")
+	}
 
-	_, err := h.db.GetSPN(req.SPNId)
+	src := NewAzureSourceWithSPN(req)
+	_, err = h.db.GetSPN(req.SPNId)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusNotFound, "SPN not found")
 	}

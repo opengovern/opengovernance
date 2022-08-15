@@ -79,6 +79,7 @@ func (s *Server) Register(e *echo.Echo) {
 
 	v1.POST("/workspace", s.CreateWorkspace)
 	v1.DELETE("/workspace/:workspace_id", s.DeleteWorkspace)
+	v1.GET("/workspace/limits/:workspace_name", s.GetWorkspaceLimits)
 	v1.GET("/workspaces", s.ListWorkspaces)
 }
 
@@ -210,10 +211,13 @@ func (s *Server) handleWorkspace(workspace *Workspace) error {
 				UserRole:      authapi.AdminRole,
 				WorkspaceName: workspace.Name,
 			}
+
+			limits := GetLimitsByTier(workspace.Tier)
+
 			if err := authClient.PutRoleBinding(authCtx, &authapi.PutRoleBindingRequest{
 				UserID: workspace.OwnerId,
 				Role:   authapi.AdminRole,
-			}); err != nil {
+			}, limits); err != nil {
 				return fmt.Errorf("put role binding: %w", err)
 			}
 
@@ -383,4 +387,21 @@ func (s *Server) ListWorkspaces(c echo.Context) error {
 		})
 	}
 	return c.JSON(http.StatusOK, workspaces)
+}
+
+// GetWorkspaceLimits godoc
+// @Summary      Get workspace limits
+// @Tags         workspace
+// @Accept       json
+// @Produce      json
+// @Param        workspace_name  path  string  true  "Workspace Name"
+// @Success      200  {array}  api.WorkspaceLimits
+// @Router       /workspace/api/v1/workspace/limits/{workspace_name} [get]
+func (s *Server) GetWorkspaceLimits(c echo.Context) error {
+	workspaceName := c.Param("workspace_name")
+	dbWorkspace, err := s.db.GetWorkspaceByName(workspaceName)
+	if err != nil {
+		return err
+	}
+	return c.JSON(http.StatusOK, GetLimitsByTier(dbWorkspace.Tier))
 }

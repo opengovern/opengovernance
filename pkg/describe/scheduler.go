@@ -1,10 +1,17 @@
 package describe
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"strconv"
 	"time"
+
+	"github.com/go-redis/redis/v8"
+	api2 "gitlab.com/keibiengine/keibi-engine/pkg/auth/api"
+	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpclient"
+	"gitlab.com/keibiengine/keibi-engine/pkg/keibi-es-sdk"
+	workspaceClient "gitlab.com/keibiengine/keibi-engine/pkg/workspace/client"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/insight"
 	insightapi "gitlab.com/keibiengine/keibi-engine/pkg/insight/api"
@@ -33,6 +40,8 @@ const (
 	JobTimeoutCheckInterval     = 15 * time.Minute
 	MaxJobInQueue               = 10000
 	ConcurrentDeletedSources    = 1000
+
+	RedisKeyWorkspaceResourceRemaining = "workspace_resource_remaining"
 )
 
 var DescribePublishingBlocked = promauto.NewGaugeVec(prometheus.GaugeOpts{
@@ -112,7 +121,10 @@ type Scheduler struct {
 	complianceIntervalHours int64
 	insightIntervalHours    int64
 
-	logger *zap.Logger
+	logger          *zap.Logger
+	workspaceClient workspaceClient.WorkspaceServiceClient
+	es              keibi.Client
+	rdb             *redis.Client
 }
 
 func InitializeScheduler(
@@ -334,6 +346,19 @@ func InitializeScheduler(
 		return nil, err
 	}
 
+	s.workspaceClient = workspaceClient.NewWorkspaceClient(WorkspaceBaseURL)
+	defaultAccountID := "default"
+	s.es, err = keibi.NewClient(keibi.ClientConfig{
+		Addresses: []string{ElasticSearchAddress},
+		Username:  &ElasticSearchUsername,
+		Password:  &ElasticSearchPassword,
+		AccountID: &defaultAccountID,
+	})
+	s.rdb = redis.NewClient(&redis.Options{
+		Addr:     RedisAddress,
+		Password: "", // no password set
+		DB:       0,  // use default DB
+	})
 	return s, nil
 }
 
@@ -457,6 +482,51 @@ func (s Scheduler) scheduleDescribeJob() {
 
 	if len(sources) > 0 {
 		s.logger.Info("There are some sources that need to be described", zap.Int("count", len(sources)))
+	} else {
+		DescribeJobsCount.WithLabelValues("successful").Inc()
+		return
+	}
+
+	limit, err := s.workspaceClient.GetLimits(&httpclient.Context{
+		UserRole:      api2.ViewerRole,
+		WorkspaceName: CurrentWorkspaceName,
+	})
+	if err != nil {
+		DescribeSourceJobsCount.WithLabelValues("failure").Inc()
+		s.logger.Error("Failed to get workspace limits",
+			zap.String("workspace", CurrentWorkspaceName),
+			zap.Error(err),
+		)
+		return
+	}
+
+	currentResourceCount, err := s.es.Count(context.Background(), InventorySummaryIndex)
+	if err != nil {
+		DescribeSourceJobsCount.WithLabelValues("failure").Inc()
+		s.logger.Error("Failed to get count of current resources",
+			zap.String("workspace", CurrentWorkspaceName),
+			zap.Error(err),
+		)
+		return
+	}
+
+	if currentResourceCount >= limit.MaxResources {
+		DescribeSourceJobsCount.WithLabelValues("failure").Inc()
+		s.logger.Error("Workspace has reached its max resources limit",
+			zap.String("workspace", CurrentWorkspaceName),
+			zap.Error(err),
+		)
+		return
+	}
+
+	if err = s.rdb.Set(context.Background(), RedisKeyWorkspaceResourceRemaining,
+		limit.MaxResources-currentResourceCount, time.Hour).Err(); err != nil {
+		DescribeSourceJobsCount.WithLabelValues("failure").Inc()
+		s.logger.Error("Failed to set workspace resource remaining on redis",
+			zap.String("workspace", CurrentWorkspaceName),
+			zap.Error(err),
+		)
+		return
 	}
 
 	for _, source := range sources {

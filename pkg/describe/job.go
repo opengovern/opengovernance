@@ -283,6 +283,17 @@ func doDescribeAWS(ctx context.Context, rdb *redis.Client, es keibi.Client, job 
 				continue
 			}
 
+			res, err := rdb.Decr(ctx, RedisKeyWorkspaceResourceRemaining).Result()
+			if err != nil {
+				errs = append(errs, fmt.Sprintf("redisDecr: %v", err.Error()))
+				continue
+			}
+
+			if res < 0 {
+				errs = append(errs, fmt.Sprintf("workspace has reached its max resources limit"))
+				continue
+			}
+
 			kafkaResource := kafka.Resource{
 				ID:            resource.UniqueID(),
 				Description:   resource.Description,
@@ -441,6 +452,14 @@ func doDescribeAzure(ctx context.Context, rdb *redis.Client, es keibi.Client, jo
 	for _, resource := range output.Resources {
 		if resource.Description == nil {
 			continue
+		}
+		res, err := rdb.Decr(ctx, RedisKeyWorkspaceResourceRemaining).Result()
+		if err != nil {
+			return nil, fmt.Errorf("redisDecr: %v", err.Error())
+		}
+
+		if res < 0 {
+			return nil, fmt.Errorf("workspace has reached its max resources limit")
 		}
 
 		kafkaResource := kafka.Resource{

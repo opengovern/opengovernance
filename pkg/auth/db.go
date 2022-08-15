@@ -97,6 +97,24 @@ func (db Database) CreateOrUpdateRoleBinding(rb *RoleBinding) error {
 	return nil
 }
 
+// UpdateRoleBinding updates the role binding for the specified userId.
+func (db Database) UpdateRoleBinding(rb *RoleBinding) error {
+	tx := db.orm.
+		Model(&RoleBinding{}).
+		Where(RoleBinding{UserID: rb.UserID, WorkspaceName: rb.WorkspaceName}).
+		Updates(map[string]interface{}{
+			"role":        rb.Role,
+			"assigned_at": rb.AssignedAt,
+		})
+	if tx.Error != nil {
+		return tx.Error
+	} else if tx.RowsAffected != 1 {
+		return fmt.Errorf("update role binding: user with id %s doesn't exist", rb.UserID)
+	}
+
+	return nil
+}
+
 func (db Database) CreateBindingIfNotExists(rb *RoleBinding) error {
 	tx := db.orm.
 		Model(&RoleBinding{}).
@@ -194,4 +212,14 @@ func (db Database) DeleteInvitation(invID uuid.UUID) error {
 	}
 
 	return nil
+}
+
+func (db Database) CountRoleBindings(workspaceName string) (int64, error) {
+	var count int64
+	tx := db.orm.Model(&RoleBinding{}).
+		Where(RoleBinding{WorkspaceName: workspaceName}).Count(&count)
+	if tx.Error != nil {
+		return 0, tx.Error
+	}
+	return count, nil
 }
