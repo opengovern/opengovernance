@@ -175,7 +175,7 @@ func newPaginator(client *elasticsearchv7.Client, index string, filters []BoolFi
 		client:   client,
 		index:    index,
 		query:    query,
-		pageSize: 10_000,
+		pageSize: 10000,
 		limit:    max,
 		queried:  0,
 	}, nil
@@ -298,6 +298,39 @@ func (p *baseESPaginator) updateState(numHits int64, searchAfter []interface{}, 
 
 func (c Client) Search(ctx context.Context, index string, query string, response interface{}) error {
 	return c.SearchWithTrackTotalHits(ctx, index, query, response, false)
+}
+
+type CountResponse struct {
+	Count int64 `json:"count"`
+}
+
+func (c Client) Count(ctx context.Context, index string) (int64, error) {
+	opts := []func(*esapi.SearchRequest){
+		c.es.Search.WithContext(ctx),
+		c.es.Search.WithIndex(index),
+	}
+
+	res, err := c.es.Search(opts...)
+	defer closeSafe(res)
+	if err != nil {
+		return 0, err
+	} else if err := checkError(res); err != nil {
+		if isIndexNotFoundErr(err) {
+			return 0, nil
+		}
+		return 0, err
+	}
+
+	b, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		return 0, fmt.Errorf("read response: %w", err)
+	}
+
+	var response CountResponse
+	if err := json.Unmarshal(b, &response); err != nil {
+		return 0, fmt.Errorf("unmarshal response: %w", err)
+	}
+	return response.Count, nil
 }
 
 func (c Client) SearchWithTrackTotalHits(ctx context.Context, index string, query string, response interface{}, trackTotalHits interface{}) error {

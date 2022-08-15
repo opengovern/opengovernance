@@ -3,6 +3,7 @@ package httpserver
 import (
 	"fmt"
 	"net/http"
+	"strconv"
 	"strings"
 
 	"github.com/google/uuid"
@@ -14,6 +15,10 @@ const (
 	XKeibiWorkspaceNameHeader = "X-Keibi-WorkspaceName"
 	XKeibiUserIDHeader        = "X-Keibi-UserId"
 	XKeibiUserRoleHeader      = "X-Keibi-UserRole"
+
+	XKeibiMaxUsersHeader       = "X-Keibi-MaxUsers"
+	XKeibiMaxConnectionsHeader = "X-Keibi-MaxConnections"
+	XKeibiMaxResourcesHeader   = "X-Keibi-MaxResources"
 )
 
 func AuthorizeHandler(h echo.HandlerFunc, minRole api.Role) echo.HandlerFunc {
@@ -64,6 +69,45 @@ func GetUserID(ctx echo.Context) uuid.UUID {
 	}
 
 	return u
+}
+
+func GetMaxUsers(ctx echo.Context) int64 {
+	max := ctx.Request().Header.Get(XKeibiMaxUsersHeader)
+	if strings.TrimSpace(max) == "" {
+		panic(fmt.Errorf("header %s is missing", XKeibiMaxUsersHeader))
+	}
+
+	c, err := strconv.ParseInt(max, 10, 64)
+	if err != nil {
+		panic(err)
+	}
+	return c
+}
+
+func GetMaxConnections(ctx echo.Context) int64 {
+	max := ctx.Request().Header.Get(XKeibiMaxConnectionsHeader)
+	if strings.TrimSpace(max) == "" {
+		panic(fmt.Errorf("header %s is missing", XKeibiMaxConnectionsHeader))
+	}
+
+	c, err := strconv.ParseInt(max, 10, 64)
+	if err != nil {
+		panic(err)
+	}
+	return c
+}
+
+func GetMaxResources(ctx echo.Context) int64 {
+	max := ctx.Request().Header.Get(XKeibiMaxResourcesHeader)
+	if strings.TrimSpace(max) == "" {
+		panic(fmt.Errorf("header %s is missing", XKeibiMaxResourcesHeader))
+	}
+
+	c, err := strconv.ParseInt(max, 10, 64)
+	if err != nil {
+		panic(err)
+	}
+	return c
 }
 
 func roleToPriority(role api.Role) int {

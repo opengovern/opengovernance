@@ -47,6 +47,14 @@ func (s *Database) GetWorkspace(id uuid.UUID) (*Workspace, error) {
 	return &workspace, nil
 }
 
+func (s *Database) GetWorkspaceByName(name string) (*Workspace, error) {
+	var workspace Workspace
+	if err := s.orm.Model(&Workspace{}).Where(Workspace{Name: name}).First(&workspace).Error; err != nil {
+		return nil, err
+	}
+	return &workspace, nil
+}
+
 func (s *Database) ListWorkspacesByOwner(ownerId uuid.UUID) ([]*Workspace, error) {
 	var workspaces []*Workspace
 	if err := s.orm.Model(&Workspace{}).Where(Workspace{OwnerId: ownerId}).Find(&workspaces).Error; err != nil {

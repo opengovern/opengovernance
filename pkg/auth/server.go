@@ -3,8 +3,12 @@ package auth
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/http"
 	"strings"
+
+	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpclient"
+	"gitlab.com/keibiengine/keibi-engine/pkg/workspace/client"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/auth/api"
 
@@ -23,9 +27,10 @@ import (
 type Server struct {
 	host string
 
-	db       Database
-	verifier *oidc.IDTokenVerifier
-	logger   *zap.Logger
+	db              Database
+	verifier        *oidc.IDTokenVerifier
+	logger          *zap.Logger
+	workspaceClient client.WorkspaceServiceClient
 }
 
 func (s Server) Check(ctx context.Context, req *envoyauth.CheckRequest) (*envoyauth.CheckResponse, error) {
@@ -123,6 +128,19 @@ func (s Server) Check(ctx context.Context, req *envoyauth.CheckRequest) (*envoya
 		zap.String("method", httpRequest.Method),
 	)
 
+	limits, err := s.workspaceClient.GetLimits(&httpclient.Context{
+		UserRole: rb.Role, UserID: rb.UserID.String(), WorkspaceName: workspaceName,
+	})
+	if err != nil {
+		s.logger.Warn("denied access due to failure in retrieving limits",
+			zap.String("reqId", httpRequest.Id),
+			zap.String("path", httpRequest.Path),
+			zap.String("method", httpRequest.Method),
+			zap.String("workspace", workspaceName),
+			zap.Error(err))
+		return nil, err
+	}
+
 	return &envoyauth.CheckResponse{
 		Status: &status.Status{
 			Code: int32(rpc.OK),
@@ -147,6 +165,24 @@ func (s Server) Check(ctx context.Context, req *envoyauth.CheckRequest) (*envoya
 						Header: &envoycore.HeaderValue{
 							Key:   httpserver.XKeibiUserRoleHeader,
 							Value: string(rb.Role),
+						},
+					},
+					{
+						Header: &envoycore.HeaderValue{
+							Key:   httpserver.XKeibiMaxUsersHeader,
+							Value: fmt.Sprintf("%d", limits.MaxUsers),
+						},
+					},
+					{
+						Header: &envoycore.HeaderValue{
+							Key:   httpserver.XKeibiMaxConnectionsHeader,
+							Value: fmt.Sprintf("%d", limits.MaxConnections),
+						},
+					},
+					{
+						Header: &envoycore.HeaderValue{
+							Key:   httpserver.XKeibiMaxResourcesHeader,
+							Value: fmt.Sprintf("%d", limits.MaxResources),
 						},
 					},
 				},

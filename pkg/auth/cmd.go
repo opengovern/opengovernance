@@ -9,6 +9,8 @@ import (
 	"net"
 	"os"
 
+	"gitlab.com/keibiengine/keibi-engine/pkg/workspace/client"
+
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/email"
 
 	envoyauth "github.com/envoyproxy/go-control-plane/envoy/service/auth/v3"
@@ -38,6 +40,8 @@ var (
 	inviteLinkTemplate = os.Getenv("INVITE_LINK_TEMPLATE")
 
 	keibiHost = os.Getenv("KEIBI_HOST")
+
+	workspaceBaseUrl = os.Getenv("WORKSPACE_BASE_URL")
 
 	grpcServerAddress = os.Getenv("GRPC_ADDRESS")
 	grpcTlsCertPath   = os.Getenv("GRPC_TLS_CERT_PATH")
@@ -99,11 +103,14 @@ func start(ctx context.Context) error {
 		return fmt.Errorf("grpc tls creds: %w", err)
 	}
 
+	workspaceClient := client.NewWorkspaceClient(workspaceBaseUrl)
+
 	authServer := Server{
-		host:     keibiHost,
-		db:       db,
-		verifier: verifier,
-		logger:   logger,
+		host:            keibiHost,
+		db:              db,
+		verifier:        verifier,
+		logger:          logger,
+		workspaceClient: workspaceClient,
 	}
 
 	grpcServer := grpc.NewServer(grpc.Creds(creds))

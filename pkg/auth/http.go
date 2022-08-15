@@ -6,6 +6,9 @@ import (
 	"net/http"
 	"time"
 
+	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpclient"
+	"gitlab.com/keibiengine/keibi-engine/pkg/workspace/client"
+
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/email"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/auth/emails"
@@ -24,6 +27,7 @@ type httpRoutes struct {
 	logger             *zap.Logger
 	db                 Database
 	emailService       email.Service
+	workspaceClient    client.WorkspaceServiceClient
 	inviteLinkTemplate string
 }
 
@@ -81,13 +85,34 @@ func (r httpRoutes) PutRoleBinding(ctx echo.Context) error {
 		return err
 	}
 
-	err = r.db.CreateOrUpdateRoleBinding(&RoleBinding{
-		UserID:        req.UserID,
-		ExternalID:    usr.ExternalID,
-		WorkspaceName: httpserver.GetWorkspaceName(ctx),
-		Role:          req.Role,
-		AssignedAt:    time.Now(),
-	})
+	workspaceName := httpserver.GetWorkspaceName(ctx)
+	count, err := r.db.CountRoleBindings(workspaceName)
+	if err != nil {
+		return err
+	}
+
+	limits, err := r.workspaceClient.GetLimits(httpclient.FromEchoContext(ctx))
+	if err != nil {
+		return err
+	}
+
+	if count >= limits.MaxUsers {
+		err = r.db.UpdateRoleBinding(&RoleBinding{
+			UserID:        req.UserID,
+			ExternalID:    usr.ExternalID,
+			WorkspaceName: workspaceName,
+			Role:          req.Role,
+			AssignedAt:    time.Now(),
+		})
+	} else {
+		err = r.db.CreateOrUpdateRoleBinding(&RoleBinding{
+			UserID:        req.UserID,
+			ExternalID:    usr.ExternalID,
+			WorkspaceName: workspaceName,
+			Role:          req.Role,
+			AssignedAt:    time.Now(),
+		})
+	}
 	if err != nil {
 		return err
 	}
@@ -164,7 +189,21 @@ func (r *httpRoutes) Invite(ctx echo.Context) error {
 		WorkspaceName: workspaceName,
 	}
 
-	err := r.db.CreateInvitation(&inv)
+	count, err := r.db.CountRoleBindings(workspaceName)
+	if err != nil {
+		return err
+	}
+
+	limits, err := r.workspaceClient.GetLimits(httpclient.FromEchoContext(ctx))
+	if err != nil {
+		return err
+	}
+
+	if count >= limits.MaxUsers {
+		return echo.NewHTTPError(http.StatusBadRequest, "user limit reached")
+	}
+
+	err = r.db.CreateInvitation(&inv)
 	if err != nil {
 		return err
 	}

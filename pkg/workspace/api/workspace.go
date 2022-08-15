@@ -25,3 +25,9 @@ type WorkspaceResponse struct {
 	Description string    `json:"description"`
 	CreatedAt   time.Time `json:"createdAt"`
 }
+
+type WorkspaceLimits struct {
+	MaxUsers       int64 `json:"maxUsers"`
+	MaxConnections int64 `json:"maxConnections"`
+	MaxResources   int64 `json:"maxResources"`
+}
