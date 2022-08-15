@@ -1,13 +1,13 @@
 package steampipe
 
 import (
+	"testing"
+	"time"
+
 	"github.com/aws/aws-sdk-go-v2/service/backup/types"
 	"github.com/stretchr/testify/require"
 	"gitlab.com/keibiengine/keibi-engine/pkg/aws/model"
 	"gitlab.com/keibiengine/keibi-engine/pkg/keibi-es-sdk"
-
-	"testing"
-	"time"
 )
 
 func strptr(str string) *string {
@@ -45,3 +45,46 @@ func TestAWSDescriptionToRecord(t *testing.T) {
 	require.Equal(t, "region", record["region"].GetStringValue())
 	require.Equal(t, "accountID", record["account_id"].GetStringValue())
 }
+
+//
+//func TestJSONMarshal(t *testing.T) {
+//	tim := time.Now()
+//	desc := keibi.BackupProtectedResource{
+//		Metadata: model.Metadata{
+//			Partition: "partition",
+//			Region:    "region",
+//			AccountID: "accountID",
+//		},
+//		Description: model.BackupProtectedResourceDescription{
+//			ProtectedResource: types.ProtectedResource{
+//				LastBackupTime: timeptr(tim),
+//				ResourceArn:    strptr("resource_arn"),
+//				ResourceType:   strptr("resource_type"),
+//			},
+//		},
+//	}
+//	_, err := JSONMarshal(reflect.ValueOf(desc))
+//	require.NoError(t, err)
+//
+//	desc2 := keibi.StorageContainer{
+//		Metadata: azureModel.Metadata{},
+//		Description: azureModel.StorageContainerDescription{
+//			ListContainerItem:  storage.ListContainerItem{
+//				ContainerProperties: &storage.ContainerProperties{
+//					LastModifiedTime:            &date.Time{Time: tim},
+//				},
+//			},
+//		},
+//	}
+//	r, err := JSONMarshal(reflect.ValueOf(desc2))
+//	require.NoError(t, err)
+//
+//	j, err := json.Marshal(r)
+//	require.NoError(t, err)
+//
+//	j0, err := json.Marshal(desc2)
+//	require.NoError(t, err)
+//
+//	require.Equal(t, string(j), string(j0))
+//}
+//

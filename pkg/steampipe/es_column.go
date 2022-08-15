@@ -215,6 +215,27 @@ func ConvertToDescription(resourceType string, data interface{}) (interface{}, e
 		return nil, err
 	}
 
+	bs := string(b)
+	for {
+		idx := strings.Index(bs, ":{\"Time\":{}}")
+		if idx < 0 {
+			break
+		}
+
+		startIdx := idx - 1
+		q := 0
+		for i := idx - 1; i >= 0; i-- {
+			if bs[i] == '"' {
+				q++
+				if q == 2 {
+					startIdx = i
+				}
+			}
+		}
+
+		bs = bs[:startIdx] + bs[idx+len(":{\"Time\":{}}"):]
+	}
+
 	sourceType := SourceTypeByResourceType(resourceType)
 	if sourceType == source.CloudAWS {
 		var d interface{}
@@ -223,7 +244,7 @@ func ConvertToDescription(resourceType string, data interface{}) (interface{}, e
 				d = v
 			}
 		}
-		err = json.Unmarshal(b, d)
+		err = json.Unmarshal([]byte(bs), d)
 		if err != nil {
 			fmt.Println("failed to unmarshal to description: ", string(b))
 			return nil, err
@@ -237,11 +258,76 @@ func ConvertToDescription(resourceType string, data interface{}) (interface{}, e
 				d = v
 			}
 		}
-		err = json.Unmarshal(b, &d)
+		err = json.Unmarshal([]byte(bs), &d)
 		if err != nil {
-			return nil, fmt.Errorf("unmarshalling %s: %v", string(b), err)
+			return nil, fmt.Errorf("unmarshalling: %v", err)
 		}
 		d = helpers.DereferencePointer(d)
 		return d, nil
 	}
 }
+
+//
+//func JSONMarshal(v reflect.Value) (interface{}, error) {
+//	// Indirect through pointers and interfaces
+//	for v.Kind() == reflect.Ptr || v.Kind() == reflect.Interface {
+//		v = v.Elem()
+//	}
+//	fmt.Printf("Visiting %v (%v)\n", v, v.Kind())
+//
+//	switch v.Kind() {
+//	case reflect.Array, reflect.Slice:
+//		var res []interface{}
+//		for i := 0; i < v.Len(); i++ {
+//			r, err := JSONMarshal(v.Index(i))
+//			if err != nil {
+//				return nil, err
+//			}
+//			res = append(res, r)
+//		}
+//		return res, nil
+//	case reflect.Struct:
+//		for i := 0; i < v.Type().NumMethod(); i++ {
+//			if v.Type().Method(i).Name == "MarshalJSON" {
+//				fmt.Println("Found MarshalJSON", v)
+//				return v.Interface(), nil
+//			}
+//		}
+//
+//		res := map[string]interface{}{}
+//		for i := 0; i < v.NumField(); i++ {
+//			if !v.Type().Field(i).IsExported() {
+//				continue
+//			}
+//			if v.Type().Field(i).Tag.Get("json") == "-" {
+//				continue
+//			}
+//
+//			fmt.Println("field: ", v.Type().Field(i).Name)
+//
+//			r, err := JSONMarshal(v.Field(i))
+//			if err != nil {
+//				return nil, err
+//			}
+//
+//			fieldName := v.Type().Field(i).Tag.Get("json")
+//			if fieldName == "" {
+//				fieldName = v.Type().Field(i).Name
+//			}
+//			res[fieldName] = r
+//		}
+//		return res, nil
+//	case reflect.Map:
+//		res := map[string]interface{}{}
+//		for _, k := range v.MapKeys() {
+//			r, err := JSONMarshal(v.MapIndex(k))
+//			if err != nil {
+//				return nil, err
+//			}
+//			res[k.String()] = r
+//		}
+//		return res, nil
+//	default:
+//		return v.Interface(), nil
+//	}
+//}
