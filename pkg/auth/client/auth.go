@@ -5,15 +5,13 @@ import (
 	"fmt"
 	"net/http"
 
-	api2 "gitlab.com/keibiengine/keibi-engine/pkg/workspace/api"
-
 	"gitlab.com/keibiengine/keibi-engine/pkg/auth/api"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpclient"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpserver"
 )
 
 type AuthServiceClient interface {
-	PutRoleBinding(ctx *httpclient.Context, request *api.PutRoleBindingRequest, limits api2.WorkspaceLimits) error
+	PutRoleBinding(ctx *httpclient.Context, request *api.PutRoleBindingRequest) error
 }
 
 type authClient struct {
@@ -24,7 +22,7 @@ func NewAuthServiceClient(baseURL string) AuthServiceClient {
 	return &authClient{baseURL: baseURL}
 }
 
-func (c *authClient) PutRoleBinding(ctx *httpclient.Context, request *api.PutRoleBindingRequest, limits api2.WorkspaceLimits) error {
+func (c *authClient) PutRoleBinding(ctx *httpclient.Context, request *api.PutRoleBindingRequest) error {
 	url := fmt.Sprintf("%s/api/v1/user/role/binding", c.baseURL)
 
 	payload, err := json.Marshal(api.PutRoleBindingRequest{
@@ -40,9 +38,9 @@ func (c *authClient) PutRoleBinding(ctx *httpclient.Context, request *api.PutRol
 		httpserver.XKeibiUserRoleHeader:      string(ctx.UserRole),
 		httpserver.XKeibiWorkspaceNameHeader: ctx.WorkspaceName,
 
-		httpserver.XKeibiMaxUsersHeader:       fmt.Sprintf("%d", limits.MaxUsers),
-		httpserver.XKeibiMaxConnectionsHeader: fmt.Sprintf("%d", limits.MaxConnections),
-		httpserver.XKeibiMaxResourcesHeader:   fmt.Sprintf("%d", limits.MaxResources),
+		httpserver.XKeibiMaxUsersHeader:       fmt.Sprintf("%d", ctx.MaxUsers),
+		httpserver.XKeibiMaxConnectionsHeader: fmt.Sprintf("%d", ctx.MaxConnections),
+		httpserver.XKeibiMaxResourcesHeader:   fmt.Sprintf("%d", ctx.MaxResources),
 	}
 	return httpclient.DoRequest(http.MethodPut, url, headers, payload, nil)
 }

@@ -849,6 +849,15 @@ definitions:
       value:
         type: integer
     type: object
+  api.WorkspaceLimits:
+    properties:
+      maxConnections:
+        type: integer
+      maxResources:
+        type: integer
+      maxUsers:
+        type: integer
+    type: object
   api.WorkspaceResponse:
     properties:
       createdAt:
@@ -3103,6 +3112,28 @@ paths:
               type: array
             type: array
       summary: List all workspaces with owner id
+      tags:
+      - workspace
+  /workspace/api/v1/workspaces/limits/{workspace_name}:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: Workspace Name
+        in: path
+        name: workspace_name
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/api.WorkspaceLimits'
+            type: array
+      summary: Get workspace limits
       tags:
       - workspace
 schemes:
