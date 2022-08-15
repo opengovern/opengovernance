@@ -132,6 +132,7 @@ func start(ctx context.Context) error {
 			db:                 db,
 			emailService:       m,
 			inviteLinkTemplate: inviteLinkTemplate,
+			workspaceClient:    workspaceClient,
 		}
 		errors <- fmt.Errorf("http server: %w", httpserver.RegisterAndStart(logger, httpServerAddress, &routes))
 	}()
