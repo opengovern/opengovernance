@@ -3192,6 +3192,40 @@ const docTemplate = `{
                     }
                 }
             }
+        },
+        "/workspace/api/v1/workspaces/limits/{workspace_name}": {
+            "get": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "workspace"
+                ],
+                "summary": "Get workspace limits",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Workspace Name",
+                        "name": "workspace_name",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/api.WorkspaceLimits"
+                            }
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
@@ -4448,6 +4482,20 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "value": {
+                    "type": "integer"
+                }
+            }
+        },
+        "api.WorkspaceLimits": {
+            "type": "object",
+            "properties": {
+                "maxConnections": {
+                    "type": "integer"
+                },
+                "maxResources": {
+                    "type": "integer"
+                },
+                "maxUsers": {
                     "type": "integer"
                 }
             }
