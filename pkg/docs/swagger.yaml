@@ -159,6 +159,11 @@ definitions:
           type: array
         type: object
     type: object
+  api.ChangeWorkspaceOwnershipRequest:
+    properties:
+      newOwnerUserID:
+        type: string
+    type: object
   api.ComplianceReport:
     properties:
       failureMessage:
@@ -3095,6 +3100,23 @@ paths:
         "200":
           description: ""
       summary: Delete workspace for workspace service
+      tags:
+      - workspace
+  /workspace/api/v1/workspace/{workspace_id}/owner:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Change ownership request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/api.ChangeWorkspaceOwnershipRequest'
+      produces:
+      - application/json
+      responses: {}
+      summary: Change ownership of workspace
       tags:
       - workspace
   /workspace/api/v1/workspaces:

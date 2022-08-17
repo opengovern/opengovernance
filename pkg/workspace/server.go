@@ -274,7 +274,7 @@ func (s *Server) handleWorkspace(workspace *Workspace) error {
 // @Accept   json
 // @Produce  json
 // @Param        request  body      api.CreateWorkspaceRequest  true  "Create workspace request"
-// @Success  200      {object}  api.CreateWorkspaceResponse
+// @Success      200      {object}  api.CreateWorkspaceResponse
 // @Router       /workspace/api/v1/workspace [post]
 func (s *Server) CreateWorkspace(c echo.Context) error {
 	userID := httpserver.GetUserID(c)
@@ -417,7 +417,6 @@ func (s *Server) ListWorkspaces(c echo.Context) error {
 // @Accept   json
 // @Produce  json
 // @Param    request  body  api.ChangeWorkspaceOwnershipRequest  true  "Change ownership request"
-// @Success      200      {object}
 // @Router   /workspace/api/v1/workspace/{workspace_id}/owner [post]
 func (s *Server) ChangeOwnership(c echo.Context) error {
 	userID := httpserver.GetUserID(c)

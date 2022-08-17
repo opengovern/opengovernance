@@ -3164,6 +3164,32 @@ const docTemplate = `{
                 }
             }
         },
+        "/workspace/api/v1/workspace/{workspace_id}/owner": {
+            "post": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "workspace"
+                ],
+                "summary": "Change ownership of workspace",
+                "parameters": [
+                    {
+                        "description": "Change ownership request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/api.ChangeWorkspaceOwnershipRequest"
+                        }
+                    }
+                ],
+                "responses": {}
+            }
+        },
         "/workspace/api/v1/workspaces": {
             "get": {
                 "description": "Returns all workspaces with owner id",
@@ -3472,6 +3498,14 @@ const docTemplate = `{
                             "$ref": "#/definitions/api.ResourceTypeResponse"
                         }
                     }
+                }
+            }
+        },
+        "api.ChangeWorkspaceOwnershipRequest": {
+            "type": "object",
+            "properties": {
+                "newOwnerUserID": {
+                    "type": "string"
                 }
             }
         },
