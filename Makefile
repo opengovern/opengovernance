@@ -6,6 +6,7 @@ build:
 docker-build:
 	docker build -f  docker/DescribeSchedulerDockerfile . -t registry.digitalocean.com/keibi/describe-scheduler:0.0.1
 	docker build -f  docker/DescribeWorkerDockerfile . -t registry.digitalocean.com/keibi/describe-worker:0.0.1
+	docker build -f  docker/DescribeConnectionWorkerDockerfile . -t registry.digitalocean.com/keibi/describe-connection-worker:0.0.1
 	docker build -f  docker/DescribeCleanupWorkerDockerfile . -t registry.digitalocean.com/keibi/describe-cleanup-worker:0.0.1
 	docker build -f  docker/OnboardServiceDockerfile . -t registry.digitalocean.com/keibi/onboard-service:0.0.1
 	docker build -f  docker/InventoryServiceDockerfile . -t registry.digitalocean.com/keibi/inventory-service:0.0.1
@@ -17,6 +18,7 @@ docker-build:
 docker-push:
 	docker push registry.digitalocean.com/keibi/describe-scheduler:0.0.1
 	docker push registry.digitalocean.com/keibi/describe-worker:0.0.1
+	docker push registry.digitalocean.com/keibi/describe-connection-worker:0.0.1
 	docker push registry.digitalocean.com/keibi/describe-cleanup-worker:0.0.1
 	docker push registry.digitalocean.com/keibi/onboard-service:0.0.1
 	docker push registry.digitalocean.com/keibi/inventory-service:0.0.1

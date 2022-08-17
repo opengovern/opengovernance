@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
+	"sync"
 	"time"
 
 	trace2 "gitlab.com/keibiengine/keibi-engine/pkg/trace"
@@ -147,6 +148,98 @@ type DescribeJobResult struct {
 	ParentJobID uint
 	Status      api.DescribeResourceJobStatus
 	Error       string
+}
+
+type DescribeConnectionJob struct {
+	JobID        uint            // DescribeSourceJob ID
+	ResourceJobs map[uint]string // DescribeResourceJob ID -> ResourceType
+	SourceID     string
+	AccountID    string
+	DescribedAt  int64
+	SourceType   api.SourceType
+	ConfigReg    string
+
+	LastDaySourceJobID     uint
+	LastWeekSourceJobID    uint
+	LastQuarterSourceJobID uint
+	LastYearSourceJobID    uint
+}
+
+type DescribeConnectionJobResult struct {
+	JobID  uint
+	Result map[uint]DescribeJobResult // DescribeResourceJob ID -> DescribeJobResult
+}
+
+func (j DescribeConnectionJob) Do(ictx context.Context, vlt vault.SourceConfig, rdb *redis.Client, es keibi.Client, producer sarama.SyncProducer, topic string, logger *zap.Logger) (r DescribeConnectionJobResult) {
+	const workerCount = 8
+
+	workChannel := make(chan DescribeJob, workerCount*2)
+	resultChannel := make(chan DescribeJobResult, len(j.ResourceJobs))
+	doneChannel := make(chan struct{}, workerCount)
+	defer close(doneChannel)
+	defer close(resultChannel)
+	defer close(workChannel)
+
+	var wg sync.WaitGroup
+
+	for i := 0; i < 8; i++ {
+		wg.Add(1)
+		go func() {
+			for {
+				select {
+				case <-doneChannel:
+					wg.Done()
+					return
+				case job := <-workChannel:
+					res := job.Do(ictx, vlt, rdb, es, producer, topic, logger)
+					if strings.Contains(res.Error, "ThrottlingException") ||
+						strings.Contains(res.Error, "Rate exceeded") ||
+						strings.Contains(res.Error, "RateExceeded") {
+
+						logger.Error("Rate error happened, retrying in a bit")
+						time.Sleep(5 * time.Second)
+						workChannel <- job
+						continue
+					}
+
+					resultChannel <- res
+				}
+			}
+		}()
+	}
+
+	for id, resourceType := range j.ResourceJobs {
+		workChannel <- DescribeJob{
+			JobID:                  id,
+			ParentJobID:            j.JobID,
+			ResourceType:           resourceType,
+			SourceID:               j.SourceID,
+			AccountID:              j.AccountID,
+			DescribedAt:            j.DescribedAt,
+			SourceType:             j.SourceType,
+			ConfigReg:              j.ConfigReg,
+			LastDaySourceJobID:     j.LastDaySourceJobID,
+			LastWeekSourceJobID:    j.LastWeekSourceJobID,
+			LastQuarterSourceJobID: j.LastQuarterSourceJobID,
+			LastYearSourceJobID:    j.LastYearSourceJobID,
+		}
+	}
+
+	result := map[uint]DescribeJobResult{}
+	for range j.ResourceJobs {
+		res := <-resultChannel
+		result[res.JobID] = res
+	}
+
+	for i := 0; i < workerCount; i++ {
+		doneChannel <- struct{}{}
+	}
+	wg.Wait()
+
+	return DescribeConnectionJobResult{
+		JobID:  j.JobID,
+		Result: result,
+	}
 }
 
 // Do will perform the job which includes the following tasks:

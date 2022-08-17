@@ -1,5 +1,4 @@
 #!/bin/bash
-
 set -x
 
 if [[ -z $1 ]]; then 
