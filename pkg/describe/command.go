@@ -20,6 +20,8 @@ const (
 	InsightJobsQueueName                 = "insight-jobs-queue"
 	InsightResultsQueueName              = "insight-results-queue"
 	SourceEventsQueueName                = "source-events-queue"
+	DescribeConnectionJobsQueueName      = "describe-connection-jobs-queue"
+	DescribeConnectionResultsQueueName   = "describe-connection-results-queue"
 )
 
 var (
@@ -82,6 +84,8 @@ func SchedulerCommand() *cobra.Command {
 				RabbitMQPort,
 				DescribeJobsQueueName,
 				DescribeResultsQueueName,
+				DescribeConnectionJobsQueueName,
+				DescribeConnectionResultsQueueName,
 				DescribeCleanupJobsQueueName,
 				ComplianceReportJobsQueueName,
 				ComplianceReportResultsQueueName,
@@ -256,8 +260,8 @@ func ConnectionWorkerCommand() *cobra.Command {
 				RabbitMQPassword,
 				RabbitMQService,
 				RabbitMQPort,
-				DescribeJobsQueueName,
-				DescribeResultsQueueName,
+				DescribeConnectionJobsQueueName,
+				DescribeConnectionResultsQueueName,
 				strings.Split(KafkaService, ","),
 				resourcesTopic,
 				VaultAddress,

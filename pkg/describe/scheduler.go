@@ -96,11 +96,15 @@ type Scheduler struct {
 	httpServer *HttpServer
 
 	// describeJobQueue is used to publish describe jobs to be performed by the workers.
-	describeJobQueue queue.Interface
+	//describeJobQueue queue.Interface
 	// describeJobResultQueue is used to consume the describe job results returned by the workers.
-	describeJobResultQueue queue.Interface
+	//describeJobResultQueue queue.Interface
 	// describeCleanupJobQueue is used to publish describe cleanup jobs to be performed by the workers.
 	describeCleanupJobQueue queue.Interface
+	// describeConnectionJobQueue is used to publish describe jobs to be performed by the workers.
+	describeConnectionJobQueue queue.Interface
+	// describeConnectionJobResultQueue is used to consume the describe job results returned by the workers.
+	describeConnectionJobResultQueue queue.Interface
 
 	// sourceQueue is used to consume source updates by the onboarding service.
 	sourceQueue queue.Interface
@@ -135,6 +139,8 @@ func InitializeScheduler(
 	rabbitMQPort int,
 	describeJobQueueName string,
 	describeJobResultQueueName string,
+	describeConnectionJobQueueName string,
+	describeConnectionJobResultQueueName string,
 	describeCleanupJobQueueName string,
 	complianceReportJobQueueName string,
 	complianceReportJobResultQueueName string,
@@ -172,38 +178,70 @@ func InitializeScheduler(
 	}
 
 	s.logger.Info("Initializing the scheduler")
+	//
+	//qCfg := queue.Config{}
+	//qCfg.Server.Username = rabbitMQUsername
+	//qCfg.Server.Password = rabbitMQPassword
+	//qCfg.Server.Host = rabbitMQHost
+	//qCfg.Server.Port = rabbitMQPort
+	//qCfg.Queue.Name = describeJobQueueName
+	//qCfg.Queue.Durable = true
+	//qCfg.Producer.ID = s.id
+	//describeQueue, err := queue.New(qCfg)
+	//if err != nil {
+	//	return nil, err
+	//}
+	//
+	//s.logger.Info("Connected to the describe jobs queue", zap.String("queue", describeJobQueueName))
+	//s.describeJobQueue = describeQueue
+	//
+	//qCfg = queue.Config{}
+	//qCfg.Server.Username = rabbitMQUsername
+	//qCfg.Server.Password = rabbitMQPassword
+	//qCfg.Server.Host = rabbitMQHost
+	//qCfg.Server.Port = rabbitMQPort
+	//qCfg.Queue.Name = describeJobResultQueueName
+	//qCfg.Queue.Durable = true
+	//qCfg.Consumer.ID = s.id
+	//describeResultsQueue, err := queue.New(qCfg)
+	//if err != nil {
+	//	return nil, err
+	//}
+	//
+	//s.logger.Info("Connected to the describe job results queue", zap.String("queue", describeJobResultQueueName))
+	//s.describeJobResultQueue = describeResultsQueue
 
 	qCfg := queue.Config{}
 	qCfg.Server.Username = rabbitMQUsername
 	qCfg.Server.Password = rabbitMQPassword
 	qCfg.Server.Host = rabbitMQHost
 	qCfg.Server.Port = rabbitMQPort
-	qCfg.Queue.Name = describeJobQueueName
+	qCfg.Queue.Name = describeConnectionJobQueueName
 	qCfg.Queue.Durable = true
 	qCfg.Producer.ID = s.id
-	describeQueue, err := queue.New(qCfg)
+	describeConnectionQueue, err := queue.New(qCfg)
 	if err != nil {
 		return nil, err
 	}
 
 	s.logger.Info("Connected to the describe jobs queue", zap.String("queue", describeJobQueueName))
-	s.describeJobQueue = describeQueue
+	s.describeConnectionJobQueue = describeConnectionQueue
 
 	qCfg = queue.Config{}
 	qCfg.Server.Username = rabbitMQUsername
 	qCfg.Server.Password = rabbitMQPassword
 	qCfg.Server.Host = rabbitMQHost
 	qCfg.Server.Port = rabbitMQPort
-	qCfg.Queue.Name = describeJobResultQueueName
+	qCfg.Queue.Name = describeConnectionJobResultQueueName
 	qCfg.Queue.Durable = true
 	qCfg.Consumer.ID = s.id
-	describeResultsQueue, err := queue.New(qCfg)
+	describeConnectionResultsQueue, err := queue.New(qCfg)
 	if err != nil {
 		return nil, err
 	}
 
 	s.logger.Info("Connected to the describe job results queue", zap.String("queue", describeJobResultQueueName))
-	s.describeJobResultQueue = describeResultsQueue
+	s.describeConnectionJobResultQueue = describeConnectionResultsQueue
 
 	qCfg = queue.Config{}
 	qCfg.Server.Username = rabbitMQUsername
@@ -530,7 +568,7 @@ func (s Scheduler) scheduleDescribeJob() {
 	}
 
 	for _, source := range sources {
-		if isPublishingBlocked(s.logger, s.describeJobQueue) {
+		if isPublishingBlocked(s.logger, s.describeConnectionJobQueue) {
 			s.logger.Warn("The jobs in queue is over the threshold", zap.Error(err))
 			return
 		}
@@ -549,7 +587,7 @@ func (s Scheduler) scheduleDescribeJob() {
 		}
 
 		describedAt := time.Now()
-		enqueueDescribeResourceJobs(s.logger, s.db, s.describeJobQueue, source, daj, describedAt)
+		enqueueDescribeConnectionJob(s.logger, s.db, s.describeConnectionJobQueue, source, daj, describedAt)
 
 		isSuccessful := true
 
@@ -806,7 +844,7 @@ func (s *Scheduler) RunSourceEventsConsumer() error {
 func (s *Scheduler) RunDescribeJobResultsConsumer() error {
 	s.logger.Info("Consuming messages from the JobResults queue")
 
-	msgs, err := s.describeJobResultQueue.Consume()
+	msgs, err := s.describeConnectionJobResultQueue.Consume()
 	if err != nil {
 		return err
 	}
@@ -821,9 +859,9 @@ func (s *Scheduler) RunDescribeJobResultsConsumer() error {
 				return fmt.Errorf("tasks channel is closed")
 			}
 
-			var result DescribeJobResult
+			var result DescribeConnectionJobResult
 			if err := json.Unmarshal(msg.Body, &result); err != nil {
-				s.logger.Error("Failed to unmarshal DescribeResourceJob results\n", zap.Error(err))
+				s.logger.Error("Failed to unmarshal DescribeConnectionJobResult results\n", zap.Error(err))
 				err = msg.Nack(false, false)
 				if err != nil {
 					s.logger.Error("Failed nacking message", zap.Error(err))
@@ -831,20 +869,28 @@ func (s *Scheduler) RunDescribeJobResultsConsumer() error {
 				continue
 			}
 
-			s.logger.Info("Processing JobResult for Job",
-				zap.Uint("jobId", result.JobID),
-				zap.String("status", string(result.Status)),
-			)
-			err := s.db.UpdateDescribeResourceJobStatus(result.JobID, result.Status, result.Error)
-			if err != nil {
-				s.logger.Error("Failed to update the status of DescribeResourceJob",
-					zap.Uint("jobId", result.JobID),
-					zap.Error(err),
+			failed := false
+			for jobID, res := range result.Result {
+				s.logger.Info("Processing JobResult for Job",
+					zap.Uint("jobId", jobID),
+					zap.String("status", string(res.Status)),
 				)
-				err = msg.Nack(false, true)
+				err := s.db.UpdateDescribeResourceJobStatus(res.JobID, res.Status, res.Error)
 				if err != nil {
-					s.logger.Error("Failed nacking message", zap.Error(err))
+					failed = true
+					s.logger.Error("Failed to update the status of DescribeResourceJob",
+						zap.Uint("jobId", res.JobID),
+						zap.Error(err),
+					)
+					err = msg.Nack(false, true)
+					if err != nil {
+						s.logger.Error("Failed nacking message", zap.Error(err))
+					}
+					break
 				}
+			}
+
+			if failed {
 				continue
 			}
 
@@ -967,8 +1013,10 @@ func (s *Scheduler) RunComplianceReportJobResultsConsumer() error {
 
 func (s *Scheduler) Stop() {
 	queues := []queue.Interface{
-		s.describeJobQueue,
-		s.describeJobResultQueue,
+		//s.describeJobQueue,
+		//s.describeJobResultQueue,
+		s.describeConnectionJobQueue,
+		s.describeConnectionJobResultQueue,
 		s.describeCleanupJobQueue,
 		s.complianceReportJobQueue,
 		s.complianceReportJobResultQueue,
@@ -1110,6 +1158,103 @@ func enqueueDescribeResourceJobs(logger *zap.Logger, db Database, q queue.Interf
 			)
 		}
 
+		daj.DescribeResourceJobs[i].Status = nextStatus
+	}
+}
+
+func enqueueDescribeConnectionJob(logger *zap.Logger, db Database, q queue.Interface, a Source, daj DescribeSourceJob, describedAt time.Time) {
+	var oldJobFailed error
+	var lastDayJobID, lastWeekJobID, lastQuarterJobID, lastYearJobID uint
+
+	lastDay, err := db.GetOldCompletedSourceJob(daj.SourceID, 1)
+	if err != nil {
+		logger.Error("Failed to GetOldCompletedSourceJob",
+			zap.String("sourceId", daj.SourceID.String()),
+			zap.Error(err),
+		)
+		oldJobFailed = err
+	}
+	if lastDay != nil {
+		lastDayJobID = lastDay.ID
+	}
+
+	lastWeek, err := db.GetOldCompletedSourceJob(daj.SourceID, 7)
+	if err != nil {
+		logger.Error("Failed to GetOldCompletedSourceJob",
+			zap.String("sourceId", daj.SourceID.String()),
+			zap.Error(err),
+		)
+		oldJobFailed = err
+	}
+	if lastWeek != nil {
+		lastWeekJobID = lastWeek.ID
+	}
+
+	lastQuarter, err := db.GetOldCompletedSourceJob(daj.SourceID, 93)
+	if err != nil {
+		logger.Error("Failed to GetOldCompletedSourceJob",
+			zap.String("sourceId", daj.SourceID.String()),
+			zap.Error(err),
+		)
+		oldJobFailed = err
+	}
+	if lastQuarter != nil {
+		lastQuarterJobID = lastQuarter.ID
+	}
+
+	lastYear, err := db.GetOldCompletedSourceJob(daj.SourceID, 428)
+	if err != nil {
+		logger.Error("Failed to GetOldCompletedSourceJob",
+			zap.String("sourceId", daj.SourceID.String()),
+			zap.Error(err),
+		)
+		oldJobFailed = err
+	}
+	if lastYear != nil {
+		lastYearJobID = lastYear.ID
+	}
+
+	nextStatus := api.DescribeResourceJobQueued
+	errMsg := ""
+
+	if oldJobFailed == nil {
+		resourceJobs := map[uint]string{}
+		for _, drj := range daj.DescribeResourceJobs {
+			resourceJobs[drj.ID] = drj.ResourceType
+		}
+		if err := q.Publish(DescribeConnectionJob{
+			JobID:                  daj.ID,
+			ResourceJobs:           resourceJobs,
+			SourceID:               daj.SourceID.String(),
+			AccountID:              daj.AccountID,
+			DescribedAt:            describedAt.UnixMilli(),
+			SourceType:             a.Type,
+			ConfigReg:              a.ConfigRef,
+			LastDaySourceJobID:     lastDayJobID,
+			LastWeekSourceJobID:    lastWeekJobID,
+			LastQuarterSourceJobID: lastQuarterJobID,
+			LastYearSourceJobID:    lastYearJobID,
+		}); err != nil {
+			logger.Error("Failed to queue DescribeConnectionJob",
+				zap.Uint("jobId", daj.ID),
+				zap.Error(err),
+			)
+
+			nextStatus = api.DescribeResourceJobFailed
+			errMsg = fmt.Sprintf("queue: %s", err.Error())
+		}
+	} else {
+		nextStatus = api.DescribeResourceJobFailed
+		errMsg = fmt.Sprintf("queue: %s", oldJobFailed.Error())
+	}
+
+	for i, drj := range daj.DescribeResourceJobs {
+		if err := db.UpdateDescribeResourceJobStatus(drj.ID, nextStatus, errMsg); err != nil {
+			logger.Error("Failed to update DescribeResourceJob",
+				zap.Uint("jobId", drj.ID),
+				zap.Error(err),
+			)
+		}
 		daj.DescribeResourceJobs[i].Status = nextStatus
 	}
 }
