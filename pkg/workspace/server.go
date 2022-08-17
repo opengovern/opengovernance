@@ -18,7 +18,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
 	authapi "gitlab.com/keibiengine/keibi-engine/pkg/auth/api"
-	"gitlab.com/keibiengine/keibi-engine/pkg/auth/client"
+	authclient "gitlab.com/keibiengine/keibi-engine/pkg/auth/client"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpclient"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpserver"
 	"gitlab.com/keibiengine/keibi-engine/pkg/workspace/api"
@@ -40,6 +40,7 @@ type Server struct {
 	e          *echo.Echo
 	cfg        *Config
 	db         *Database
+	authClient authclient.AuthServiceClient
 	kubeClient k8sclient.Client // the kubernetes client
 }
 
@@ -71,6 +72,7 @@ func NewServer(cfg *Config) (*Server, error) {
 		return nil, fmt.Errorf("add contourv1 to scheme: %w", err)
 	}
 
+	s.authClient = authclient.NewAuthServiceClient(cfg.AuthBaseUrl)
 	return s, nil
 }
 
@@ -205,7 +207,6 @@ func (s *Server) handleWorkspace(workspace *Workspace) error {
 		// check the status of helm release
 		if meta.IsStatusConditionTrue(helmRelease.Status.Conditions, apimeta.ReadyCondition) {
 			// when the helm release installed successfully, set the rolebinding
-			authClient := client.NewAuthServiceClient(s.cfg.AuthBaseUrl)
 			limits := GetLimitsByTier(workspace.Tier)
 			authCtx := &httpclient.Context{
 				UserID:         workspace.OwnerId.String(),
@@ -216,7 +217,7 @@ func (s *Server) handleWorkspace(workspace *Workspace) error {
 				MaxResources:   limits.MaxResources,
 			}
 
-			if err := authClient.PutRoleBinding(authCtx, &authapi.PutRoleBindingRequest{
+			if err := s.authClient.PutRoleBinding(authCtx, &authapi.PutRoleBindingRequest{
 				UserID: workspace.OwnerId,
 				Role:   authapi.AdminRole,
 			}); err != nil {
@@ -369,15 +370,33 @@ func (s *Server) DeleteWorkspace(c echo.Context) error {
 // @Success      200  {array}  []api.WorkspaceResponse
 // @Router       /workspace/api/v1/workspaces [get]
 func (s *Server) ListWorkspaces(c echo.Context) error {
-	userID := httpserver.GetUserID(c)
-
-	dbWorkspaces, err := s.db.ListWorkspacesByOwner(userID)
+	resp, err := s.authClient.GetUserRoleBindings(httpclient.FromEchoContext(c))
 	if err != nil {
-		c.Logger().Errorf("list workspaces: %v", err)
-		return echo.NewHTTPError(http.StatusInternalServerError, ErrInternalServer)
+		return fmt.Errorf("GetUserRoleBindings: %v", err)
 	}
+
+	dbWorkspaces, err := s.db.ListWorkspaces()
+	if err != nil {
+		return fmt.Errorf("ListWorkspaces: %v", err)
+	}
+
 	workspaces := make([]*api.WorkspaceResponse, 0)
 	for _, workspace := range dbWorkspaces {
+		if workspace.Status == string(StatusDeleted) {
+			continue
+		}
+
+		show := false
+		for _, rb := range resp {
+			if rb.WorkspaceName == workspace.Name {
+				show = true
+			}
+		}
+
+		if !show {
+			continue
+		}
+
 		workspaces = append(workspaces, &api.WorkspaceResponse{
 			ID:          workspace.ID.String(),
 			OwnerId:     workspace.OwnerId,

@@ -12,6 +12,8 @@ import (
 
 type AuthServiceClient interface {
 	PutRoleBinding(ctx *httpclient.Context, request *api.PutRoleBindingRequest) error
+	GetWorkspaceRoleBindings(ctx *httpclient.Context, workspaceName string) (api.GetWorkspaceRoleBindingResponse, error)
+	GetUserRoleBindings(ctx *httpclient.Context) (api.GetRoleBindingsResponse, error)
 }
 
 type authClient struct {
@@ -43,4 +45,38 @@ func (c *authClient) PutRoleBinding(ctx *httpclient.Context, request *api.PutRol
 		httpserver.XKeibiMaxResourcesHeader:   fmt.Sprintf("%d", ctx.MaxResources),
 	}
 	return httpclient.DoRequest(http.MethodPut, url, headers, payload, nil)
+}
+
+func (c *authClient) GetWorkspaceRoleBindings(ctx *httpclient.Context, workspaceName string) (api.GetWorkspaceRoleBindingResponse, error) {
+	url := fmt.Sprintf("%s/api/v1/workspace/role/bindings", c.baseURL)
+
+	headers := map[string]string{
+		httpserver.XKeibiUserIDHeader:        ctx.UserID,
+		httpserver.XKeibiUserRoleHeader:      string(ctx.UserRole),
+		httpserver.XKeibiWorkspaceNameHeader: workspaceName,
+
+		httpserver.XKeibiMaxUsersHeader:       fmt.Sprintf("%d", ctx.MaxUsers),
+		httpserver.XKeibiMaxConnectionsHeader: fmt.Sprintf("%d", ctx.MaxConnections),
+		httpserver.XKeibiMaxResourcesHeader:   fmt.Sprintf("%d", ctx.MaxResources),
+	}
+	var response api.GetWorkspaceRoleBindingResponse
+	err := httpclient.DoRequest(http.MethodPut, url, headers, nil, &response)
+	return response, err
+}
+
+func (c *authClient) GetUserRoleBindings(ctx *httpclient.Context) (api.GetRoleBindingsResponse, error) {
+	url := fmt.Sprintf("%s/api/v1/user/role/bindings", c.baseURL)
+
+	headers := map[string]string{
+		httpserver.XKeibiUserIDHeader:        ctx.UserID,
+		httpserver.XKeibiUserRoleHeader:      string(ctx.UserRole),
+		httpserver.XKeibiWorkspaceNameHeader: ctx.WorkspaceName,
+
+		httpserver.XKeibiMaxUsersHeader:       fmt.Sprintf("%d", ctx.MaxUsers),
+		httpserver.XKeibiMaxConnectionsHeader: fmt.Sprintf("%d", ctx.MaxConnections),
+		httpserver.XKeibiMaxResourcesHeader:   fmt.Sprintf("%d", ctx.MaxResources),
+	}
+	var response api.GetRoleBindingsResponse
+	err := httpclient.DoRequest(http.MethodPut, url, headers, nil, &response)
+	return response, err
 }
