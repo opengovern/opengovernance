@@ -58,7 +58,7 @@ var (
 	DescribeIntervalHours   = os.Getenv("DESCRIBE_INTERVAL_HOURS")
 	ComplianceIntervalHours = os.Getenv("COMPLIANCE_INTERVAL_HOURS")
 	InsightIntervalHours    = os.Getenv("INSIGHT_INTERVAL_HOURS")
-	CurrentWorkspaceName    = os.Getenv("CURRENT_NAMESPACE")
+	CurrentWorkspaceID      = os.Getenv("CURRENT_NAMESPACE")
 	WorkspaceBaseURL        = os.Getenv("WORKSPACE_BASE_URL")
 )
 

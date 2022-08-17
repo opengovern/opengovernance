@@ -525,14 +525,13 @@ func (s Scheduler) scheduleDescribeJob() {
 		return
 	}
 
-	limit, err := s.workspaceClient.GetLimits(&httpclient.Context{
-		UserRole:      api2.ViewerRole,
-		WorkspaceName: CurrentWorkspaceName,
-	})
+	limit, err := s.workspaceClient.GetLimitsByID(&httpclient.Context{
+		UserRole: api2.ViewerRole,
+	}, CurrentWorkspaceID)
 	if err != nil {
 		DescribeSourceJobsCount.WithLabelValues("failure").Inc()
 		s.logger.Error("Failed to get workspace limits",
-			zap.String("workspace", CurrentWorkspaceName),
+			zap.String("workspace", CurrentWorkspaceID),
 			zap.Error(err),
 		)
 		return
@@ -542,7 +541,7 @@ func (s Scheduler) scheduleDescribeJob() {
 	if err != nil {
 		DescribeSourceJobsCount.WithLabelValues("failure").Inc()
 		s.logger.Error("Failed to get count of current resources",
-			zap.String("workspace", CurrentWorkspaceName),
+			zap.String("workspace", CurrentWorkspaceID),
 			zap.Error(err),
 		)
 		return
@@ -551,7 +550,7 @@ func (s Scheduler) scheduleDescribeJob() {
 	if currentResourceCount >= limit.MaxResources {
 		DescribeSourceJobsCount.WithLabelValues("failure").Inc()
 		s.logger.Error("Workspace has reached its max resources limit",
-			zap.String("workspace", CurrentWorkspaceName),
+			zap.String("workspace", CurrentWorkspaceID),
 			zap.Error(err),
 		)
 		return
@@ -561,7 +560,7 @@ func (s Scheduler) scheduleDescribeJob() {
 		limit.MaxResources-currentResourceCount, time.Hour).Err(); err != nil {
 		DescribeSourceJobsCount.WithLabelValues("failure").Inc()
 		s.logger.Error("Failed to set workspace resource remaining on redis",
-			zap.String("workspace", CurrentWorkspaceName),
+			zap.String("workspace", CurrentWorkspaceID),
 			zap.Error(err),
 		)
 		return

@@ -82,6 +82,7 @@ func (s *Server) Register(e *echo.Echo) {
 	v1.POST("/workspace", s.CreateWorkspace)
 	v1.DELETE("/workspace/:workspace_id", s.DeleteWorkspace)
 	v1.GET("/workspaces/limits/:workspace_name", s.GetWorkspaceLimits)
+	v1.GET("/workspaces/limits/byid/:workspace_id", s.GetWorkspaceLimitsByID)
 	v1.GET("/workspaces", s.ListWorkspaces)
 }
 
@@ -467,6 +468,28 @@ func (s *Server) ChangeOwnership(c echo.Context) error {
 func (s *Server) GetWorkspaceLimits(c echo.Context) error {
 	workspaceName := c.Param("workspace_name")
 	dbWorkspace, err := s.db.GetWorkspaceByName(workspaceName)
+	if err != nil {
+		return err
+	}
+	return c.JSON(http.StatusOK, GetLimitsByTier(dbWorkspace.Tier))
+}
+
+// GetWorkspaceLimitsByID godoc
+// @Summary  Get workspace limits
+// @Tags         workspace
+// @Accept       json
+// @Produce      json
+// @Param    workspace_id  path     string  true  "Workspace Name"
+// @Success  200             {array}  api.WorkspaceLimits
+// @Router   /workspace/api/v1/workspaces/limits/byid/{workspace_id} [get]
+func (s *Server) GetWorkspaceLimitsByID(c echo.Context) error {
+	workspaceID := c.Param("workspace_id")
+	workspaceUUID, err := uuid.Parse(workspaceID)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid workspace id")
+	}
+
+	dbWorkspace, err := s.db.GetWorkspace(workspaceUUID)
 	if err != nil {
 		return err
 	}
