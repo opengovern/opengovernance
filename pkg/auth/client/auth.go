@@ -60,7 +60,7 @@ func (c *authClient) GetWorkspaceRoleBindings(ctx *httpclient.Context, workspace
 		httpserver.XKeibiMaxResourcesHeader:   fmt.Sprintf("%d", ctx.MaxResources),
 	}
 	var response api.GetWorkspaceRoleBindingResponse
-	err := httpclient.DoRequest(http.MethodPut, url, headers, nil, &response)
+	err := httpclient.DoRequest(http.MethodGet, url, headers, nil, &response)
 	return response, err
 }
 
@@ -77,6 +77,6 @@ func (c *authClient) GetUserRoleBindings(ctx *httpclient.Context) (api.GetRoleBi
 		httpserver.XKeibiMaxResourcesHeader:   fmt.Sprintf("%d", ctx.MaxResources),
 	}
 	var response api.GetRoleBindingsResponse
-	err := httpclient.DoRequest(http.MethodPut, url, headers, nil, &response)
+	err := httpclient.DoRequest(http.MethodGet, url, headers, nil, &response)
 	return response, err
 }
