@@ -4521,6 +4521,9 @@ const docTemplate = `{
                 "status": {
                     "type": "string"
                 },
+                "tier": {
+                    "type": "string"
+                },
                 "uri": {
                     "type": "string"
                 }

@@ -274,7 +274,7 @@ func (s *Server) handleWorkspace(workspace *Workspace) error {
 // @Accept   json
 // @Produce  json
 // @Param        request  body      api.CreateWorkspaceRequest  true  "Create workspace request"
-// @Success      200      {object}  api.CreateWorkspaceResponse
+// @Success  200      {object}  api.CreateWorkspaceResponse
 // @Router       /workspace/api/v1/workspace [post]
 func (s *Server) CreateWorkspace(c echo.Context) error {
 	userID := httpserver.GetUserID(c)
@@ -402,13 +402,59 @@ func (s *Server) ListWorkspaces(c echo.Context) error {
 			OwnerId:     workspace.OwnerId,
 			URI:         workspace.URI,
 			Name:        workspace.Name,
-			Tier:        workspace.Tier,
+			Tier:        string(workspace.Tier),
 			Status:      workspace.Status,
 			Description: workspace.Description,
 			CreatedAt:   workspace.CreatedAt,
 		})
 	}
 	return c.JSON(http.StatusOK, workspaces)
+}
+
+// ChangeOwnership godoc
+// @Summary  Change ownership of workspace
+// @Tags     workspace
+// @Accept   json
+// @Produce  json
+// @Param    request  body  api.ChangeWorkspaceOwnershipRequest  true  "Change ownership request"
+// @Success      200      {object}
+// @Router   /workspace/api/v1/workspace/{workspace_id}/owner [post]
+func (s *Server) ChangeOwnership(c echo.Context) error {
+	userID := httpserver.GetUserID(c)
+	workspaceID := c.Param("workspace_id")
+
+	var request api.ChangeWorkspaceOwnershipRequest
+	if err := c.Bind(&request); err != nil {
+		c.Logger().Errorf("bind the request: %v", err)
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
+	}
+	if workspaceID == "" {
+		return echo.NewHTTPError(http.StatusBadRequest, "workspace id is empty")
+	}
+
+	workspaceUUID, err := uuid.Parse(workspaceID)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid workspace id")
+	}
+
+	w, err := s.db.GetWorkspace(workspaceUUID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return echo.NewHTTPError(http.StatusNotFound, "workspace not found")
+		}
+		return err
+	}
+
+	if w.OwnerId != userID {
+		return echo.NewHTTPError(http.StatusForbidden, "operation is forbidden")
+	}
+
+	err = s.db.UpdateWorkspaceOwner(workspaceUUID, request.NewOwnerUserID)
+	if err != nil {
+		return err
+	}
+
+	return c.NoContent(http.StatusOK)
 }
 
 // GetWorkspaceLimits godoc

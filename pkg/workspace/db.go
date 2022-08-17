@@ -78,3 +78,7 @@ func (s *Database) ListWorkspacesByStatus(status string) ([]*Workspace, error) {
 	}
 	return workspaces, nil
 }
+
+func (s *Database) UpdateWorkspaceOwner(workspaceUUID uuid.UUID, newOwnerID string) error {
+	return s.orm.Model(&Workspace{}).Where("id = ?", workspaceUUID).Update("owner_id", newOwnerID).Error
+}

@@ -16,6 +16,10 @@ type CreateWorkspaceResponse struct {
 	ID string `json:"id"`
 }
 
+type ChangeWorkspaceOwnershipRequest struct {
+	NewOwnerUserID string `json:"newOwnerUserID"`
+}
+
 type WorkspaceResponse struct {
 	ID          string    `json:"id"`
 	Name        string    `json:"name"`

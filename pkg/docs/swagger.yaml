@@ -872,6 +872,8 @@ definitions:
         type: string
       status:
         type: string
+      tier:
+        type: string
       uri:
         type: string
     type: object
