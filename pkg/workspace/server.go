@@ -371,6 +371,7 @@ func (s *Server) DeleteWorkspace(c echo.Context) error {
 // @Success      200  {array}  []api.WorkspaceResponse
 // @Router       /workspace/api/v1/workspaces [get]
 func (s *Server) ListWorkspaces(c echo.Context) error {
+	userId := httpserver.GetUserID(c)
 	resp, err := s.authClient.GetUserRoleBindings(httpclient.FromEchoContext(c))
 	if err != nil {
 		return fmt.Errorf("GetUserRoleBindings: %v", err)
@@ -387,14 +388,14 @@ func (s *Server) ListWorkspaces(c echo.Context) error {
 			continue
 		}
 
-		show := false
+		hasRoleInWorkspace := false
 		for _, rb := range resp {
 			if rb.WorkspaceName == workspace.Name {
-				show = true
+				hasRoleInWorkspace = true
 			}
 		}
 
-		if !show {
+		if workspace.OwnerId != userId && !hasRoleInWorkspace {
 			continue
 		}
 
