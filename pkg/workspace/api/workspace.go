@@ -20,6 +20,7 @@ type WorkspaceResponse struct {
 	ID          string    `json:"id"`
 	Name        string    `json:"name"`
 	OwnerId     uuid.UUID `json:"ownerId"`
+	Tier        string    `json:"tier"`
 	URI         string    `json:"uri"`
 	Status      string    `json:"status"`
 	Description string    `json:"description"`

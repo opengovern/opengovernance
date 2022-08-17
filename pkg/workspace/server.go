@@ -402,6 +402,7 @@ func (s *Server) ListWorkspaces(c echo.Context) error {
 			OwnerId:     workspace.OwnerId,
 			URI:         workspace.URI,
 			Name:        workspace.Name,
+			Tier:        workspace.Tier,
 			Status:      workspace.Status,
 			Description: workspace.Description,
 			CreatedAt:   workspace.CreatedAt,
