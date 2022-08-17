@@ -62,10 +62,10 @@ func (s *SchedulerTestSuite) BeforeTest(suiteName, testName string) {
 		orm: s.orm,
 	}
 	s.Scheduler = Scheduler{
-		id:                              "test-scheduler",
-		db:                              db,
-		describeJobQueue:                &mocksqueue.Interface{},
-		describeJobResultQueue:          &mocksqueue.Interface{},
+		id: "test-scheduler",
+		db: db,
+		//describeJobQueue:                &mocksqueue.Interface{},
+		//describeJobResultQueue:          &mocksqueue.Interface{},
 		describeCleanupJobQueue:         &mocksqueue.Interface{},
 		complianceReportJobQueue:        &mocksqueue.Interface{},
 		complianceReportJobResultQueue:  &mocksqueue.Interface{},
@@ -221,9 +221,9 @@ func (s *SchedulerTestSuite) TestDescribeJobQueue() {
 	})
 	require.NoError(err, "create source")
 
-	s.Scheduler.describeJobQueue.(*mocksqueue.Interface).On("Publish", mock.Anything).Return(error(nil))
-	s.Scheduler.describeJobQueue.(*mocksqueue.Interface).On("Len", mock.Anything).Return(0, nil)
-	s.Scheduler.describeJobQueue.(*mocksqueue.Interface).On("Name", mock.Anything).Return("temp")
+	//s.Scheduler.describeJobQueue.(*mocksqueue.Interface).On("Publish", mock.Anything).Return(error(nil))
+	//s.Scheduler.describeJobQueue.(*mocksqueue.Interface).On("Len", mock.Anything).Return(0, nil)
+	//s.Scheduler.describeJobQueue.(*mocksqueue.Interface).On("Name", mock.Anything).Return("temp")
 
 	s.scheduleDescribeJob()
 
@@ -243,9 +243,9 @@ func (s *SchedulerTestSuite) TestDescribeResultJobQueue() {
 	ch := make(chan amqp.Delivery)
 	defer close(ch)
 
-	s.Scheduler.describeJobResultQueue.(*mocksqueue.Interface).
-		On("Consume").
-		Return((<-chan amqp.Delivery)(ch), nil)
+	//s.Scheduler.describeJobResultQueue.(*mocksqueue.Interface).
+	//	On("Consume").
+	//	Return((<-chan amqp.Delivery)(ch), nil)
 
 	go func() {
 		err := s.RunDescribeJobResultsConsumer()
@@ -305,7 +305,7 @@ func (s *SchedulerTestSuite) TestDescribeResultJobQueue() {
 		}
 	}
 
-	s.Scheduler.describeJobResultQueue.(*mocksqueue.Interface).AssertCalled(s.T(), "Consume")
+	//s.Scheduler.describeJobResultQueue.(*mocksqueue.Interface).AssertCalled(s.T(), "Consume")
 	ack.AssertCalled(s.T(), "Ack", uint64(1), false)
 	ack.AssertNumberOfCalls(s.T(), "Ack", 1)
 }
@@ -345,9 +345,9 @@ func (s *SchedulerTestSuite) TestDescribeResultJobQueueFailed() {
 	ch := make(chan amqp.Delivery)
 	defer close(ch)
 
-	s.Scheduler.describeJobResultQueue.(*mocksqueue.Interface).
-		On("Consume").
-		Return((<-chan amqp.Delivery)(ch), nil)
+	//s.Scheduler.describeJobResultQueue.(*mocksqueue.Interface).
+	//	On("Consume").
+	//	Return((<-chan amqp.Delivery)(ch), nil)
 
 	go func() {
 		err := s.RunDescribeJobResultsConsumer()
@@ -408,7 +408,7 @@ func (s *SchedulerTestSuite) TestDescribeResultJobQueueFailed() {
 		}
 	}
 
-	s.Scheduler.describeJobResultQueue.(*mocksqueue.Interface).AssertCalled(s.T(), "Consume")
+	//s.Scheduler.describeJobResultQueue.(*mocksqueue.Interface).AssertCalled(s.T(), "Consume")
 	ack.AssertCalled(s.T(), "Ack", uint64(1), false)
 	ack.AssertNumberOfCalls(s.T(), "Ack", 1)
 }
@@ -420,9 +420,9 @@ func (s *SchedulerTestSuite) TestDescribeResultJobQueueInvalid() {
 	ch := make(chan amqp.Delivery)
 	defer close(ch)
 
-	s.Scheduler.describeJobResultQueue.(*mocksqueue.Interface).
-		On("Consume").
-		Return((<-chan amqp.Delivery)(ch), nil)
+	//s.Scheduler.describeJobResultQueue.(*mocksqueue.Interface).
+	//	On("Consume").
+	//	Return((<-chan amqp.Delivery)(ch), nil)
 
 	go func() {
 		err := s.RunDescribeJobResultsConsumer()
@@ -439,7 +439,7 @@ func (s *SchedulerTestSuite) TestDescribeResultJobQueueInvalid() {
 	}
 
 	<-time.After(10 * time.Millisecond)
-	s.Scheduler.describeJobResultQueue.(*mocksqueue.Interface).AssertCalled(s.T(), "Consume")
+	//s.Scheduler.describeJobResultQueue.(*mocksqueue.Interface).AssertCalled(s.T(), "Consume")
 	ack.AssertCalled(s.T(), "Nack", uint64(1), false, false)
 }
 
