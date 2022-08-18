@@ -145,7 +145,9 @@ func (s *Server) handleAutoSuspend(workspace *Workspace) error {
 
 	res, err := s.rdb.Get(context.Background(), "last_access_"+workspace.Name).Result()
 	if err != nil {
-		return fmt.Errorf("get last access: %v", err)
+		if err != redis.Nil {
+			return fmt.Errorf("get last access: %v", err)
+		}
 	}
 
 	lastAccess, _ := strconv.ParseInt(res, 10, 64)
