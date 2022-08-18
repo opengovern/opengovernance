@@ -111,6 +111,8 @@ func (s *Server) startReconciler() {
 	defer ticker.Stop()
 
 	for range ticker.C {
+		s.e.Logger.Infof("reconsiler started")
+
 		workspaces, err := s.db.ListWorkspaces()
 		if err != nil {
 			s.e.Logger.Errorf("list workspaces: %v", err)
@@ -143,6 +145,8 @@ func (s *Server) handleAutoSuspend(workspace *Workspace) error {
 		return nil
 	}
 
+	s.e.Logger.Infof("checking for auto-suspend %s", workspace.Name)
+
 	res, err := s.rdb.Get(context.Background(), "last_access_"+workspace.Name).Result()
 	if err != nil {
 		if err != redis.Nil {
@@ -151,7 +155,9 @@ func (s *Server) handleAutoSuspend(workspace *Workspace) error {
 	}
 
 	lastAccess, _ := strconv.ParseInt(res, 10, 64)
+	s.e.Logger.Infof("last access: %d [%s]", lastAccess, res)
 	if time.Now().Unix()-lastAccess > int64(s.cfg.AutoSuspendDuration) {
+		s.e.Logger.Infof("suspending workspace %s", workspace.Name)
 		if err := s.db.UpdateWorkspaceStatus(workspace.ID, StatusSuspending); err != nil {
 			return fmt.Errorf("update workspace status: %w", err)
 		}
