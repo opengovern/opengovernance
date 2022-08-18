@@ -166,7 +166,7 @@ func (s *Server) handleAutoSuspend(workspace *Workspace) error {
 
 	lastAccess, _ := strconv.ParseInt(res, 10, 64)
 	fmt.Printf("last access: %d [%s]\n", lastAccess, res)
-	if time.Now().Unix()-lastAccess > int64(s.cfg.AutoSuspendDuration) {
+	if time.Now().UnixMilli()-lastAccess > s.cfg.AutoSuspendDuration.Milliseconds() {
 		fmt.Printf("suspending workspace %s\n", workspace.Name)
 		if err := s.db.UpdateWorkspaceStatus(workspace.ID, StatusSuspending); err != nil {
 			return fmt.Errorf("update workspace status: %w", err)
