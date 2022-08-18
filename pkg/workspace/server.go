@@ -151,10 +151,6 @@ func (s *Server) handleAutoSuspend(workspace *Workspace) error {
 		return nil
 	}
 
-	if workspace.Status != string(StatusProvisioned) {
-		return nil
-	}
-
 	fmt.Printf("checking for auto-suspend %s\n", workspace.Name)
 
 	res, err := s.rdb.Get(context.Background(), "last_access_"+workspace.Name).Result()
@@ -163,13 +159,22 @@ func (s *Server) handleAutoSuspend(workspace *Workspace) error {
 			return fmt.Errorf("get last access: %v", err)
 		}
 	}
-
 	lastAccess, _ := strconv.ParseInt(res, 10, 64)
 	fmt.Printf("last access: %d [%s]\n", lastAccess, res)
+
 	if time.Now().UnixMilli()-lastAccess > s.cfg.AutoSuspendDuration.Milliseconds() {
-		fmt.Printf("suspending workspace %s\n", workspace.Name)
-		if err := s.db.UpdateWorkspaceStatus(workspace.ID, StatusSuspending); err != nil {
-			return fmt.Errorf("update workspace status: %w", err)
+		if workspace.Status == string(StatusProvisioned) {
+			fmt.Printf("suspending workspace %s\n", workspace.Name)
+			if err := s.db.UpdateWorkspaceStatus(workspace.ID, StatusSuspending); err != nil {
+				return fmt.Errorf("update workspace status: %w", err)
+			}
+		}
+	} else {
+		if workspace.Status == string(StatusSuspended) {
+			fmt.Printf("resuming workspace %s\n", workspace.Name)
+			if err := s.db.UpdateWorkspaceStatus(workspace.ID, StatusProvisioning); err != nil {
+				return fmt.Errorf("update workspace status: %w", err)
+			}
 		}
 	}
 	return nil

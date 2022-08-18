@@ -96,8 +96,8 @@ func getReplicaCount(values map[string]interface{}) (int, error) {
 	if v, ok := values["keibi"]; ok {
 		if vm, ok := v.(map[string]interface{}); ok {
 			if v, ok := vm["replicaCount"]; ok {
-				if c, ok := v.(int); ok {
-					return c, nil
+				if c, ok := v.(float64); ok {
+					return int(c), nil
 				} else {
 					return 0, fmt.Errorf("invalid replicaCount type: %v", reflect.TypeOf(v))
 				}
