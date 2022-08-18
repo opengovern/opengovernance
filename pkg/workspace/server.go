@@ -10,6 +10,8 @@ import (
 	"strings"
 	"time"
 
+	v1 "k8s.io/api/apps/v1"
+
 	"github.com/labstack/gommon/log"
 
 	corev1 "k8s.io/api/core/v1"
@@ -149,6 +151,10 @@ func (s *Server) startReconciler() {
 
 func (s *Server) handleAutoSuspend(workspace *Workspace) error {
 	if workspace.Tier != Tier_Free {
+		return nil
+	}
+	switch WorkspaceStatus(workspace.Status) {
+	case StatusDeleting, StatusDeleted:
 		return nil
 	}
 
@@ -349,6 +355,46 @@ func (s *Server) handleWorkspace(workspace *Workspace) error {
 		}
 
 		if currentReplicaCount != 0 {
+			var deploymentList v1.DeploymentList
+			err = s.kubeClient.List(ctx, &deploymentList, k8sclient.InNamespace(workspace.ID.String()))
+			if err != nil {
+				return fmt.Errorf("list deployments: %w", err)
+			}
+
+			for _, deployment := range deploymentList.Items {
+				if deployment.Spec.Replicas != nil && *deployment.Spec.Replicas == 0 {
+					continue
+				}
+
+				var scale int32 = 0
+				deployment.Spec.Replicas = &scale
+
+				err = s.kubeClient.Update(ctx, &deployment)
+				if err != nil {
+					return fmt.Errorf("scale down deployment: %w", err)
+				}
+			}
+
+			var statefulList v1.StatefulSetList
+			err = s.kubeClient.List(ctx, &statefulList, k8sclient.InNamespace(workspace.ID.String()))
+			if err != nil {
+				return fmt.Errorf("list statefulsets: %w", err)
+			}
+
+			for _, stateful := range statefulList.Items {
+				if stateful.Spec.Replicas != nil && *stateful.Spec.Replicas == 0 {
+					continue
+				}
+
+				var scale int32 = 0
+				stateful.Spec.Replicas = &scale
+
+				err = s.kubeClient.Update(ctx, &stateful)
+				if err != nil {
+					return fmt.Errorf("scale down stateful: %w", err)
+				}
+			}
+
 			values, err = updateValuesSetReplicaCount(values, 0)
 			if err != nil {
 				return fmt.Errorf("updateValuesSetReplicaCount: %w", err)
@@ -363,6 +409,7 @@ func (s *Server) handleWorkspace(workspace *Workspace) error {
 			if err != nil {
 				return fmt.Errorf("updating replica count: %w", err)
 			}
+
 			return nil
 		}
 
