@@ -10,6 +10,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/labstack/gommon/log"
+
 	corev1 "k8s.io/api/core/v1"
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -102,6 +104,7 @@ func (s *Server) Register(e *echo.Echo) {
 func (s *Server) Start() error {
 	go s.startReconciler()
 
+	s.e.Logger.SetLevel(log.DEBUG)
 	s.e.Logger.Infof("workspace service is started on %s", s.cfg.ServerAddr)
 	return s.e.Start(s.cfg.ServerAddr)
 }
