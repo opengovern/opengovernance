@@ -102,7 +102,7 @@ func getReplicaCount(values map[string]interface{}) (int, error) {
 					return 0, fmt.Errorf("invalid replicaCount type: %v", reflect.TypeOf(v))
 				}
 			} else {
-				return 0, fmt.Errorf("replicaCount not found")
+				return 1, nil // default
 			}
 		} else {
 			return 0, fmt.Errorf("invalid keibi type: %v", reflect.TypeOf(v))
