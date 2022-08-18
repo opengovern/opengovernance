@@ -109,7 +109,7 @@ func (s *Server) Start() error {
 func (s *Server) startReconciler() {
 	defer func() {
 		if r := recover(); r != nil {
-			s.e.Logger.Errorf("reconciler crashed: %v, restarting ...", r)
+			fmt.Printf("reconciler crashed: %v, restarting ...\n", r)
 			go s.startReconciler()
 		}
 	}()
@@ -118,7 +118,7 @@ func (s *Server) startReconciler() {
 	defer ticker.Stop()
 
 	for range ticker.C {
-		s.e.Logger.Infof("reconsiler started")
+		fmt.Printf("reconsiler started\n")
 
 		workspaces, err := s.db.ListWorkspaces()
 		if err != nil {
@@ -152,7 +152,7 @@ func (s *Server) handleAutoSuspend(workspace *Workspace) error {
 		return nil
 	}
 
-	s.e.Logger.Infof("checking for auto-suspend %s", workspace.Name)
+	fmt.Printf("checking for auto-suspend %s\n", workspace.Name)
 
 	res, err := s.rdb.Get(context.Background(), "last_access_"+workspace.Name).Result()
 	if err != nil {
@@ -162,9 +162,9 @@ func (s *Server) handleAutoSuspend(workspace *Workspace) error {
 	}
 
 	lastAccess, _ := strconv.ParseInt(res, 10, 64)
-	s.e.Logger.Infof("last access: %d [%s]", lastAccess, res)
+	fmt.Printf("last access: %d [%s]\n", lastAccess, res)
 	if time.Now().Unix()-lastAccess > int64(s.cfg.AutoSuspendDuration) {
-		s.e.Logger.Infof("suspending workspace %s", workspace.Name)
+		fmt.Printf("suspending workspace %s\n", workspace.Name)
 		if err := s.db.UpdateWorkspaceStatus(workspace.ID, StatusSuspending); err != nil {
 			return fmt.Errorf("update workspace status: %w", err)
 		}
