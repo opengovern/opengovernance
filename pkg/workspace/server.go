@@ -99,6 +99,7 @@ func (s *Server) Register(e *echo.Echo) {
 	v1.GET("/workspaces/limits/:workspace_name", s.GetWorkspaceLimits)
 	v1.GET("/workspaces/limits/byid/:workspace_id", s.GetWorkspaceLimitsByID)
 	v1.GET("/workspaces", s.ListWorkspaces)
+	v1.POST("/workspace/:workspace_id/owner", s.ChangeOwnership)
 }
 
 func (s *Server) Start() error {
