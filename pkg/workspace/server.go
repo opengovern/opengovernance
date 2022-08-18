@@ -107,6 +107,13 @@ func (s *Server) Start() error {
 }
 
 func (s *Server) startReconciler() {
+	defer func() {
+		if r := recover(); r != nil {
+			s.e.Logger.Errorf("reconciler crashed: %v, restarting ...", r)
+			go s.startReconciler()
+		}
+	}()
+
 	ticker := time.NewTimer(reconcilerInterval)
 	defer ticker.Stop()
 
