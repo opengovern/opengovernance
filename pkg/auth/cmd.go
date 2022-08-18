@@ -9,6 +9,8 @@ import (
 	"net"
 	"os"
 
+	"github.com/go-redis/redis/v8"
+
 	"gitlab.com/keibiengine/keibi-engine/pkg/workspace/client"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/email"
@@ -42,6 +44,8 @@ var (
 	keibiHost = os.Getenv("KEIBI_HOST")
 
 	workspaceBaseUrl = os.Getenv("WORKSPACE_BASE_URL")
+
+	RedisAddress = os.Getenv("REDIS_ADDRESS")
 
 	grpcServerAddress = os.Getenv("GRPC_ADDRESS")
 	grpcTlsCertPath   = os.Getenv("GRPC_TLS_CERT_PATH")
@@ -105,12 +109,19 @@ func start(ctx context.Context) error {
 
 	workspaceClient := client.NewWorkspaceClient(workspaceBaseUrl)
 
+	rdb := redis.NewClient(&redis.Options{
+		Addr:     RedisAddress,
+		Password: "", // no password set
+		DB:       0,  // use default DB
+	})
+
 	authServer := Server{
 		host:            keibiHost,
 		db:              db,
 		verifier:        verifier,
 		logger:          logger,
 		workspaceClient: workspaceClient,
+		rdb:             rdb,
 	}
 
 	grpcServer := grpc.NewServer(grpc.Creds(creds))

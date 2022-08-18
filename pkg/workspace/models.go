@@ -17,6 +17,8 @@ const (
 	StatusProvisioningFailed WorkspaceStatus = "PROVISIONING_FAILED"
 	StatusDeleting           WorkspaceStatus = "DELETING"
 	StatusDeleted            WorkspaceStatus = "DELETED"
+	StatusSuspending         WorkspaceStatus = "SUSPENDING"
+	StatusSuspended          WorkspaceStatus = "SUSPENDED"
 )
 
 type Workspace struct {

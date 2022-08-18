@@ -2,11 +2,15 @@ package workspace
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
+
+	corev1 "k8s.io/api/core/v1"
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
@@ -15,6 +19,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	apimeta "github.com/fluxcd/pkg/apis/meta"
+	"github.com/go-redis/redis/v8"
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
 	authapi "gitlab.com/keibiengine/keibi-engine/pkg/auth/api"
@@ -42,6 +47,7 @@ type Server struct {
 	db         *Database
 	authClient authclient.AuthServiceClient
 	kubeClient k8sclient.Client // the kubernetes client
+	rdb        *redis.Client
 }
 
 func NewServer(cfg *Config) (*Server, error) {
@@ -73,6 +79,13 @@ func NewServer(cfg *Config) (*Server, error) {
 	}
 
 	s.authClient = authclient.NewAuthServiceClient(cfg.AuthBaseUrl)
+
+	s.rdb = redis.NewClient(&redis.Options{
+		Addr:     cfg.RedisAddress,
+		Password: "", // no password set
+		DB:       0,  // use default DB
+	})
+
 	return s, nil
 }
 
@@ -106,6 +119,10 @@ func (s *Server) startReconciler() {
 				if err := s.handleWorkspace(workspace); err != nil {
 					s.e.Logger.Errorf("handle workspace %s: %v", workspace.ID.String(), err)
 				}
+
+				if err := s.handleAutoSuspend(workspace); err != nil {
+					s.e.Logger.Errorf("handleAutoSuspend: %v", err)
+				}
 			}
 
 			if err := s.syncHTTPProxy(workspaces); err != nil {
@@ -115,6 +132,29 @@ func (s *Server) startReconciler() {
 		// reset the time ticker
 		ticker.Reset(reconcilerInterval)
 	}
+}
+
+func (s *Server) handleAutoSuspend(workspace *Workspace) error {
+	if workspace.Tier != Tier_Free {
+		return nil
+	}
+
+	if workspace.Status != string(StatusProvisioned) {
+		return nil
+	}
+
+	res, err := s.rdb.Get(context.Background(), "last_access_"+workspace.Name).Result()
+	if err != nil {
+		return fmt.Errorf("get last access: %v", err)
+	}
+
+	lastAccess, _ := strconv.ParseInt(res, 10, 64)
+	if time.Now().Unix()-lastAccess > int64(s.cfg.AutoSuspendDuration) {
+		if err := s.db.UpdateWorkspaceStatus(workspace.ID, StatusSuspending); err != nil {
+			return fmt.Errorf("update workspace status: %w", err)
+		}
+	}
+	return nil
 }
 
 func (s *Server) syncHTTPProxy(workspaces []*Workspace) error {
@@ -225,6 +265,11 @@ func (s *Server) handleWorkspace(workspace *Workspace) error {
 				return fmt.Errorf("put role binding: %w", err)
 			}
 
+			err = s.rdb.SetEX(context.Background(), "last_access_"+workspace.Name, time.Now().UnixMilli(), s.cfg.AutoSuspendDuration).Err()
+			if err != nil {
+				return fmt.Errorf("set last access: %v", err)
+			}
+
 			newStatus = StatusProvisioned
 		} else if meta.IsStatusConditionTrue(helmRelease.Status.Conditions, apimeta.StalledCondition) {
 			newStatus = StatusProvisioningFailed
@@ -264,6 +309,53 @@ func (s *Server) handleWorkspace(workspace *Workspace) error {
 		if err := s.db.UpdateWorkspaceStatus(workspace.ID, StatusDeleted); err != nil {
 			return fmt.Errorf("update workspace status: %w", err)
 		}
+	case StatusSuspending:
+		helmRelease, err := s.findHelmRelease(ctx, workspace)
+		if err != nil {
+			return fmt.Errorf("find helm release: %w", err)
+		}
+		if helmRelease == nil {
+			return fmt.Errorf("cannot find helmrelease")
+		}
+
+		values := helmRelease.GetValues()
+		currentReplicaCount, err := getReplicaCount(values)
+		if err != nil {
+			return fmt.Errorf("getReplicaCount: %w", err)
+		}
+
+		if currentReplicaCount != 0 {
+			values, err = updateValuesSetReplicaCount(values, 0)
+			if err != nil {
+				return fmt.Errorf("updateValuesSetReplicaCount: %w", err)
+			}
+
+			b, err := json.Marshal(values)
+			if err != nil {
+				return fmt.Errorf("marshalling values: %w", err)
+			}
+			helmRelease.Spec.Values.Raw = b
+			err = s.kubeClient.Update(ctx, helmRelease)
+			if err != nil {
+				return fmt.Errorf("updating replica count: %w", err)
+			}
+			return nil
+		}
+
+		var pods corev1.PodList
+		err = s.kubeClient.List(ctx, &pods, k8sclient.InNamespace(workspace.ID.String()))
+		if err != nil {
+			return fmt.Errorf("fetching list of pods: %w", err)
+		}
+
+		if len(pods.Items) > 0 {
+			// waiting for pods to go down
+			return nil
+		}
+
+		if err := s.db.UpdateWorkspaceStatus(workspace.ID, StatusSuspended); err != nil {
+			return fmt.Errorf("update workspace status: %w", err)
+		}
 	}
 	return nil
 }
@@ -288,8 +380,8 @@ func (s *Server) CreateWorkspace(c echo.Context) error {
 	if request.Name == "" {
 		return echo.NewHTTPError(http.StatusBadRequest, "name is empty")
 	}
-	if request.Name == "keibi" {
-		return echo.NewHTTPError(http.StatusBadRequest, "name cannot be keibi")
+	if request.Name == "keibi" || request.Name == "workspaces" {
+		return echo.NewHTTPError(http.StatusBadRequest, "name cannot be keibi or workspaces")
 	}
 	if strings.Contains(request.Name, ".") {
 		return echo.NewHTTPError(http.StatusBadRequest, "name is invalid")

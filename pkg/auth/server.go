@@ -6,6 +6,9 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
+	"time"
+
+	"github.com/go-redis/redis/v8"
 
 	api2 "gitlab.com/keibiengine/keibi-engine/pkg/workspace/api"
 
@@ -33,6 +36,7 @@ type Server struct {
 	verifier        *oidc.IDTokenVerifier
 	logger          *zap.Logger
 	workspaceClient client.WorkspaceServiceClient
+	rdb             *redis.Client
 }
 
 func (s Server) Check(ctx context.Context, req *envoyauth.CheckRequest) (*envoyauth.CheckResponse, error) {
@@ -112,6 +116,18 @@ func (s Server) Check(ctx context.Context, req *envoyauth.CheckRequest) (*envoya
 		rb, err = s.db.GetRoleBindingForWorkspace(user.ExternalUserID, workspaceName)
 		if err != nil {
 			s.logger.Warn("denied access due to failure in retrieving auth user host",
+				zap.String("reqId", httpRequest.Id),
+				zap.String("path", httpRequest.Path),
+				zap.String("method", httpRequest.Method),
+				zap.String("workspace", workspaceName),
+				zap.Error(err))
+			return unAuth, nil
+		}
+
+		err = s.rdb.SetEX(context.Background(), "last_access_"+workspaceName, time.Now().UnixMilli(),
+			30*24*time.Hour).Err()
+		if err != nil {
+			s.logger.Warn("denied access due to failure in setting last access",
 				zap.String("reqId", httpRequest.Id),
 				zap.String("path", httpRequest.Path),
 				zap.String("method", httpRequest.Method),

@@ -3,6 +3,7 @@ package workspace
 import (
 	"context"
 	"fmt"
+	"reflect"
 	"time"
 
 	helmv2 "github.com/fluxcd/helm-controller/api/v2beta1"
@@ -89,6 +90,40 @@ func (s *Server) createHelmRelease(ctx context.Context, workspace *Workspace) er
 		return fmt.Errorf("create helm release: %w", err)
 	}
 	return nil
+}
+
+func getReplicaCount(values map[string]interface{}) (int, error) {
+	if v, ok := values["keibi"]; ok {
+		if vm, ok := v.(map[string]interface{}); ok {
+			if v, ok := vm["replicaCount"]; ok {
+				if c, ok := v.(int); ok {
+					return c, nil
+				} else {
+					return 0, fmt.Errorf("invalid replicaCount type: %v", reflect.TypeOf(v))
+				}
+			} else {
+				return 0, fmt.Errorf("replicaCount not found")
+			}
+		} else {
+			return 0, fmt.Errorf("invalid keibi type: %v", reflect.TypeOf(v))
+		}
+	} else {
+		return 0, fmt.Errorf("keibi not found")
+	}
+}
+
+func updateValuesSetReplicaCount(values map[string]interface{}, replicaCount int) (map[string]interface{}, error) {
+	if v, ok := values["keibi"]; ok {
+		if vm, ok := v.(map[string]interface{}); ok {
+			vm["replicaCount"] = replicaCount
+			values["keibi"] = vm
+			return values, nil
+		} else {
+			return nil, fmt.Errorf("invalid keibi type: %v", reflect.TypeOf(v))
+		}
+	} else {
+		return nil, fmt.Errorf("keibi not found")
+	}
 }
 
 func (s *Server) deleteTargetNamespace(ctx context.Context, name string) error {
