@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"regexp"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -173,7 +174,14 @@ type DescribeConnectionJobResult struct {
 }
 
 func (j DescribeConnectionJob) Do(ictx context.Context, vlt vault.SourceConfig, rdb *redis.Client, es keibi.Client, producer sarama.SyncProducer, topic string, logger *zap.Logger) (r DescribeConnectionJobResult) {
-	const workerCount = 8
+	workerCount, err := strconv.Atoi(AccountConcurrentDescribe)
+	if err != nil {
+		fmt.Println("Invalid worker count:", AccountConcurrentDescribe, err)
+	}
+
+	if workerCount < 1 {
+		workerCount = 1
+	}
 
 	workChannel := make(chan DescribeJob, workerCount*2)
 	resultChannel := make(chan DescribeJobResult, len(j.ResourceJobs))
@@ -184,7 +192,7 @@ func (j DescribeConnectionJob) Do(ictx context.Context, vlt vault.SourceConfig, 
 
 	var wg sync.WaitGroup
 
-	for i := 0; i < 8; i++ {
+	for i := 0; i < workerCount; i++ {
 		wg.Add(1)
 		go func() {
 			for {
