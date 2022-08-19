@@ -82,6 +82,11 @@ func NewServer(cfg *Config) (*Server, error) {
 		return nil, fmt.Errorf("add contourv1 to scheme: %w", err)
 	}
 
+	err = v1.AddToScheme(s.kubeClient.Scheme())
+	if err != nil {
+		return nil, fmt.Errorf("add v1 to scheme: %w", err)
+	}
+
 	s.authClient = authclient.NewAuthServiceClient(cfg.AuthBaseUrl)
 
 	s.rdb = redis.NewClient(&redis.Options{
