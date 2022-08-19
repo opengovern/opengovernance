@@ -488,9 +488,9 @@ func (s *Server) CreateWorkspace(c echo.Context) error {
 // DeleteWorkspace godoc
 // @Summary      Delete workspace for workspace service
 // @Description  Delete workspace with workspace id
-// @Tags         workspace
-// @Accept       json
-// @Produce      json
+// @Tags     workspace
+// @Accept   json
+// @Produce  json
 // @Param        workspace_id  path  string  true  "Workspace ID"
 // @Success      200
 // @Router       /workspace/api/v1/workspace/:workspace_id [delete]
@@ -627,7 +627,7 @@ func (s *Server) ChangeOwnership(c echo.Context) error {
 // @Accept       json
 // @Produce      json
 // @Param    workspace_name  path     string  true  "Workspace Name"
-// @Success  200             {array}  api.WorkspaceLimits
+// @Success  200           {array}  api.WorkspaceLimitsUsage
 // @Router   /workspace/api/v1/workspaces/limits/{workspace_name} [get]
 func (s *Server) GetWorkspaceLimits(c echo.Context) error {
 	workspaceName := c.Param("workspace_name")
@@ -636,11 +636,24 @@ func (s *Server) GetWorkspaceLimits(c echo.Context) error {
 		return err
 	}
 
+	// no of users - auth
+	resp, err := s.authClient.GetWorkspaceRoleBindings(httpclient.FromEchoContext(c), workspaceName)
+	if err != nil {
+		return fmt.Errorf("GetWorkspaceRoleBindings: %v", err)
+	}
+
 	// no of resources - describe scheduler / inventory
 	// no of connections - onboard
-	// no of users - auth
 
-	return c.JSON(http.StatusOK, GetLimitsByTier(dbWorkspace.Tier))
+	limits := GetLimitsByTier(dbWorkspace.Tier)
+	return c.JSON(http.StatusOK, api.WorkspaceLimitsUsage{
+		CurrentUsers:       int64(len(resp)),
+		CurrentConnections: 0,
+		CurrentResources:   0,
+		MaxUsers:           limits.MaxUsers,
+		MaxConnections:     limits.MaxConnections,
+		MaxResources:       limits.MaxResources,
+	})
 }
 
 // GetWorkspaceLimitsByID godoc

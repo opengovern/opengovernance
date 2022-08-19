@@ -863,6 +863,21 @@ definitions:
       maxUsers:
         type: integer
     type: object
+  api.WorkspaceLimitsUsage:
+    properties:
+      currentConnections:
+        type: integer
+      currentResources:
+        type: integer
+      currentUsers:
+        type: integer
+      maxConnections:
+        type: integer
+      maxResources:
+        type: integer
+      maxUsers:
+        type: integer
+    type: object
   api.WorkspaceResponse:
     properties:
       createdAt:
@@ -3146,6 +3161,28 @@ paths:
       - description: Workspace Name
         in: path
         name: workspace_name
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/api.WorkspaceLimitsUsage'
+            type: array
+      summary: Get workspace limits
+      tags:
+      - workspace
+  /workspace/api/v1/workspaces/limits/byid/{workspace_id}:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: Workspace Name
+        in: path
+        name: workspace_id
         required: true
         type: string
       produces:

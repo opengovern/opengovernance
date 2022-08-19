@@ -36,3 +36,13 @@ type WorkspaceLimits struct {
 	MaxConnections int64 `json:"maxConnections"`
 	MaxResources   int64 `json:"maxResources"`
 }
+
+type WorkspaceLimitsUsage struct {
+	CurrentUsers       int64 `json:"currentUsers"`
+	CurrentConnections int64 `json:"currentConnections"`
+	CurrentResources   int64 `json:"currentResources"`
+
+	MaxUsers       int64 `json:"maxUsers"`
+	MaxConnections int64 `json:"maxConnections"`
+	MaxResources   int64 `json:"maxResources"`
+}

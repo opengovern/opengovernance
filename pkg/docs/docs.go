@@ -3219,6 +3219,40 @@ const docTemplate = `{
                 }
             }
         },
+        "/workspace/api/v1/workspaces/limits/byid/{workspace_id}": {
+            "get": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "workspace"
+                ],
+                "summary": "Get workspace limits",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Workspace Name",
+                        "name": "workspace_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/api.WorkspaceLimits"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/workspace/api/v1/workspaces/limits/{workspace_name}": {
             "get": {
                 "consumes": [
@@ -3246,7 +3280,7 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/api.WorkspaceLimits"
+                                "$ref": "#/definitions/api.WorkspaceLimitsUsage"
                             }
                         }
                     }
@@ -4523,6 +4557,29 @@ const docTemplate = `{
         "api.WorkspaceLimits": {
             "type": "object",
             "properties": {
+                "maxConnections": {
+                    "type": "integer"
+                },
+                "maxResources": {
+                    "type": "integer"
+                },
+                "maxUsers": {
+                    "type": "integer"
+                }
+            }
+        },
+        "api.WorkspaceLimitsUsage": {
+            "type": "object",
+            "properties": {
+                "currentConnections": {
+                    "type": "integer"
+                },
+                "currentResources": {
+                    "type": "integer"
+                },
+                "currentUsers": {
+                    "type": "integer"
+                },
                 "maxConnections": {
                     "type": "integer"
                 },
