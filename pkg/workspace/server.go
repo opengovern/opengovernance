@@ -635,6 +635,11 @@ func (s *Server) GetWorkspaceLimits(c echo.Context) error {
 	if err != nil {
 		return err
 	}
+
+	// no of resources - describe scheduler / inventory
+	// no of connections - onboard
+	// no of users - auth
+
 	return c.JSON(http.StatusOK, GetLimitsByTier(dbWorkspace.Tier))
 }
 
