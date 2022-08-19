@@ -203,11 +203,8 @@ func (j DescribeConnectionJob) Do(ictx context.Context, vlt vault.SourceConfig, 
 				case job := <-workChannel:
 					exp := backoff.NewExponentialBackOff()
 					exp.InitialInterval = 5 * time.Second
-					exp.RandomizationFactor = 0.2
 					exp.Multiplier = 2.0
 					exp.MaxInterval = 2 * time.Minute
-					exp.MaxElapsedTime = 15 * time.Minute
-					exp.Reset()
 
 					err := backoff.Retry(func() error {
 						res := job.Do(ictx, vlt, rdb, es, producer, topic, logger)
@@ -215,7 +212,7 @@ func (j DescribeConnectionJob) Do(ictx context.Context, vlt vault.SourceConfig, 
 							strings.Contains(res.Error, "Rate exceeded") ||
 							strings.Contains(res.Error, "RateExceeded") {
 
-							logger.Error("Rate error happened, retrying in a bit")
+							logger.Error(fmt.Sprintf("Rate error happened, retrying in a bit, %s", res.Error))
 							return errors.New("Rate limit error")
 						}
 

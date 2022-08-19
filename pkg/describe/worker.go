@@ -206,7 +206,7 @@ func (w *Worker) Run(ctx context.Context) error {
 	if strings.Contains(result.Error, "ThrottlingException") ||
 		strings.Contains(result.Error, "Rate exceeded") ||
 		strings.Contains(result.Error, "RateExceeded") {
-		w.logger.Error("Rate error happened, retrying in a bit")
+		w.logger.Error(fmt.Sprintf("Rate error happened, retrying in a bit, %s", result.Error))
 		time.Sleep(5 * time.Second)
 
 		if err := msg.Nack(false, true); err != nil {
