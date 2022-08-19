@@ -279,6 +279,31 @@ func (s *Server) handleWorkspace(workspace *Workspace) error {
 			return nil
 		}
 
+		values := helmRelease.GetValues()
+		currentReplicaCount, err := getReplicaCount(values)
+		if err != nil {
+			return fmt.Errorf("getReplicaCount: %w", err)
+		}
+
+		if currentReplicaCount == 0 {
+			values, err = updateValuesSetReplicaCount(values, 1)
+			if err != nil {
+				return fmt.Errorf("updateValuesSetReplicaCount: %w", err)
+			}
+
+			b, err := json.Marshal(values)
+			if err != nil {
+				return fmt.Errorf("marshalling values: %w", err)
+			}
+			helmRelease.Spec.Values.Raw = b
+			err = s.kubeClient.Update(ctx, helmRelease)
+			if err != nil {
+				return fmt.Errorf("updating replica count: %w", err)
+			}
+
+			return nil
+		}
+
 		newStatus := status
 		// check the status of helm release
 		if meta.IsStatusConditionTrue(helmRelease.Status.Conditions, apimeta.ReadyCondition) {
