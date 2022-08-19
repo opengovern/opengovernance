@@ -31,6 +31,7 @@ type GetRoleBindingsResponse []RoleBinding
 
 type WorkspaceRoleBinding struct {
 	UserID     uuid.UUID `json:"userId"`
+	Email      string    `json:"email"`
 	Role       Role      `json:"role"`
 	AssignedAt time.Time `json:"assignedAt"`
 }

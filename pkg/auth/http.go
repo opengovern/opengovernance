@@ -160,8 +160,14 @@ func (r *httpRoutes) GetWorkspaceRoleBindings(ctx echo.Context) error {
 
 	resp := make(api.GetWorkspaceRoleBindingResponse, 0, len(rbs))
 	for _, rb := range rbs {
+		u, err := r.db.GetUserByID(rb.UserID)
+		if err != nil {
+			return err
+		}
+
 		resp = append(resp, api.WorkspaceRoleBinding{
 			UserID:     rb.UserID,
+			Email:      u.Email,
 			Role:       rb.Role,
 			AssignedAt: rb.AssignedAt,
 		})
