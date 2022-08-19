@@ -378,6 +378,19 @@ func (s *Server) handleWorkspace(workspace *Workspace) error {
 			return fmt.Errorf("cannot find helmrelease")
 		}
 
+		var pods corev1.PodList
+		err = s.kubeClient.List(ctx, &pods, k8sclient.InNamespace(workspace.ID.String()))
+		if err != nil {
+			return fmt.Errorf("fetching list of pods: %w", err)
+		}
+
+		for _, pod := range pods.Items {
+			if strings.HasPrefix(pod.Name, "describe-connection-worker") {
+				// waiting for describe jobs to finish
+				return nil
+			}
+		}
+
 		values := helmRelease.GetValues()
 		currentReplicaCount, err := getReplicaCount(values)
 		if err != nil {
@@ -401,12 +414,6 @@ func (s *Server) handleWorkspace(workspace *Workspace) error {
 			}
 
 			return nil
-		}
-
-		var pods corev1.PodList
-		err = s.kubeClient.List(ctx, &pods, k8sclient.InNamespace(workspace.ID.String()))
-		if err != nil {
-			return fmt.Errorf("fetching list of pods: %w", err)
 		}
 
 		if len(pods.Items) > 0 {
