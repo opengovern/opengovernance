@@ -37,6 +37,7 @@ func (r *httpRoutes) Register(e *echo.Echo) {
 	v1.PUT("/user/role/binding", httpserver.AuthorizeHandler(r.PutRoleBinding, api.AdminRole))
 	v1.GET("/user/role/bindings", httpserver.AuthorizeHandler(r.GetRoleBindings, api.ViewerRole))
 	v1.GET("/workspace/role/bindings", httpserver.AuthorizeHandler(r.GetWorkspaceRoleBindings, api.AdminRole))
+	v1.GET("/invites", httpserver.AuthorizeHandler(r.ListInvites, api.AdminRole))
 	v1.POST("/invite", httpserver.AuthorizeHandler(r.Invite, api.AdminRole))
 	v1.GET("/invite/:invite_id", httpserver.AuthorizeHandler(r.AcceptInvitation, api.ViewerRole))
 }
@@ -191,6 +192,7 @@ func (r *httpRoutes) Invite(ctx echo.Context) error {
 	workspaceName := httpserver.GetWorkspaceName(ctx)
 
 	inv := Invitation{
+		Email:         req.Email,
 		ExpiredAt:     time.Now().UTC().Add(inviteDuration),
 		WorkspaceName: workspaceName,
 	}
@@ -228,6 +230,33 @@ func (r *httpRoutes) Invite(ctx echo.Context) error {
 	return ctx.JSON(http.StatusOK, api.InviteResponse{
 		InviteID: inv.ID,
 	})
+}
+
+// ListInvites godoc
+// @Summary  lists all invites
+// @Tags     auth
+// @Produce  json
+// @Success  200  {object}  []api.InviteItem
+// @Router   /auth/api/v1/invites [get]
+func (r *httpRoutes) ListInvites(ctx echo.Context) error {
+	workspaceName := httpserver.GetWorkspaceName(ctx)
+	invs, err := r.db.ListInvitesByWorkspaceName(workspaceName)
+	if err != nil {
+		return err
+	}
+
+	var resp []api.InviteItem
+	for _, inv := range invs {
+		if inv.ExpiredAt.Before(time.Now()) {
+			continue
+		}
+
+		resp = append(resp, api.InviteItem{
+			Email: inv.Email,
+		})
+	}
+
+	return ctx.JSON(http.StatusOK, resp)
 }
 
 // AcceptInvitation godoc

@@ -413,6 +413,11 @@ definitions:
       smartQueryID:
         type: integer
     type: object
+  api.InviteItem:
+    properties:
+      email:
+        type: string
+    type: object
   api.InviteResponse:
     properties:
       inviteId:
@@ -901,6 +906,8 @@ definitions:
     properties:
       assignedAt:
         type: string
+      email:
+        type: string
       role:
         type: string
       userId:
@@ -1027,6 +1034,20 @@ paths:
           description: OK
       summary: Accepts users invitation and creates default (VIEW) role in invited
         workspace.
+      tags:
+      - auth
+  /auth/api/v1/invites:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/api.InviteItem'
+            type: array
+      summary: lists all invites
       tags:
       - auth
   /auth/api/v1/role/binding:
@@ -2178,6 +2199,21 @@ paths:
               $ref: '#/definitions/api.CategoriesResponse'
             type: array
       summary: Return resource categories and number of resources
+      tags:
+      - inventory
+  /inventory/api/v1/resources/count:
+    post:
+      consumes:
+      - application/json
+      produces:
+      - application/json
+      - text/csv
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: integer
+      summary: Count resources
       tags:
       - inventory
   /inventory/api/v1/resources/distribution:

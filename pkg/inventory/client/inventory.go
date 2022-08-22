@@ -15,6 +15,7 @@ type BenchmarkAssignment struct {
 
 type InventoryServiceClient interface {
 	GetAllBenchmarkAssignmentsBySourceId(ctx *httpclient.Context, sourceID string) ([]*BenchmarkAssignment, error)
+	CountResources(ctx *httpclient.Context) (int64, error)
 }
 
 type inventoryClient struct {
@@ -33,4 +34,14 @@ func (s *inventoryClient) GetAllBenchmarkAssignmentsBySourceId(ctx *httpclient.C
 		return nil, err
 	}
 	return assignments, nil
+}
+
+func (s *inventoryClient) CountResources(ctx *httpclient.Context) (int64, error) {
+	url := fmt.Sprintf("%s/api/v1/resources/count", s.baseURL)
+
+	var count int64
+	if err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &count); err != nil {
+		return 0, err
+	}
+	return count, nil
 }

@@ -10,6 +10,10 @@ import (
 	"strings"
 	"time"
 
+	client2 "gitlab.com/keibiengine/keibi-engine/pkg/inventory/client"
+
+	"gitlab.com/keibiengine/keibi-engine/pkg/onboard/client"
+
 	v1 "k8s.io/api/apps/v1"
 
 	"github.com/labstack/gommon/log"
@@ -46,12 +50,14 @@ var (
 )
 
 type Server struct {
-	e          *echo.Echo
-	cfg        *Config
-	db         *Database
-	authClient authclient.AuthServiceClient
-	kubeClient k8sclient.Client // the kubernetes client
-	rdb        *redis.Client
+	e               *echo.Echo
+	cfg             *Config
+	db              *Database
+	authClient      authclient.AuthServiceClient
+	onboardClient   client.OnboardServiceClient
+	inventoryClient client2.InventoryServiceClient
+	kubeClient      k8sclient.Client // the kubernetes client
+	rdb             *redis.Client
 }
 
 func NewServer(cfg *Config) (*Server, error) {
@@ -88,6 +94,8 @@ func NewServer(cfg *Config) (*Server, error) {
 	}
 
 	s.authClient = authclient.NewAuthServiceClient(cfg.AuthBaseUrl)
+	s.onboardClient = client.NewOnboardServiceClient(cfg.OnboardBaseUrl)
+	s.inventoryClient = client2.NewInventoryServiceClient(cfg.InventoryBaseUrl)
 
 	s.rdb = redis.NewClient(&redis.Options{
 		Addr:     cfg.RedisAddress,
@@ -633,22 +641,18 @@ func (s *Server) GetWorkspaceLimits(c echo.Context) error {
 		return err
 	}
 
-	// no of users - auth
 	resp, err := s.authClient.GetWorkspaceRoleBindings(httpclient.FromEchoContext(c), workspaceName)
 	if err != nil {
 		return fmt.Errorf("GetWorkspaceRoleBindings: %v", err)
 	}
-
-	// no of resources - describe scheduler / inventory
-	//inventory, err := s.inventoryClient.GetWorkspaceInventory(httpclient.FromEchoContext(c), workspaceName)
-
-	// no of connections - onboard
+	resourceCount, err := s.inventoryClient.CountResources(httpclient.FromEchoContext(c))
+	count, err := s.onboardClient.CountSources(httpclient.FromEchoContext(c), nil)
 
 	limits := GetLimitsByTier(dbWorkspace.Tier)
 	return c.JSON(http.StatusOK, api.WorkspaceLimitsUsage{
 		CurrentUsers:       int64(len(resp)),
-		CurrentConnections: 0,
-		CurrentResources:   0,
+		CurrentConnections: count,
+		CurrentResources:   resourceCount,
 		MaxUsers:           limits.MaxUsers,
 		MaxConnections:     limits.MaxConnections,
 		MaxResources:       limits.MaxResources,

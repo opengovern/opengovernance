@@ -56,6 +56,7 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	v1.POST("/resources", h.GetAllResources)
 	v1.POST("/resources/azure", h.GetAzureResources)
 	v1.POST("/resources/aws", h.GetAWSResources)
+	v1.GET("/resources/count", h.CountResources)
 
 	v1.POST("/resources/filters", h.GetResourcesFilters)
 
@@ -201,7 +202,7 @@ func (h *HttpHandler) GetBenchmarksInTime(ctx echo.Context) error {
 // GetBenchmarkResultSummary godoc
 // @Summary  Returns summary of result of benchmark
 // @Tags         benchmarks
-// @Accept       json
+// @Accept   json
 // @Produce      json
 // @Param    benchmarkId  path      string  true  "BenchmarkID"
 // @Success  200          {object}  compliance_report.SummaryStatus
@@ -2551,7 +2552,7 @@ func (h *HttpHandler) CountQueries(ctx echo.Context) error {
 // @Description  Note that csv output doesn't process pagination and returns first 5000 records.
 // @Tags         smart_query
 // @Accepts      json
-// @Produce      json,text/csv
+// @Produce  json,text/csv
 // @Param        queryId  path      string               true  "QueryID"
 // @Param        request  body      api.RunQueryRequest  true  "Request Body"
 // @Param        accept   header    string               true  "Accept header"  Enums(application/json,text/csv)
@@ -2693,7 +2694,7 @@ func (h *HttpHandler) GetLocations(ctx echo.Context) error {
 // @Description  Getting Azure resources by filters.
 // @Description  In order to get the results in CSV format, Accepts header must be filled with `text/csv` value.
 // @Description  Note that csv output doesn't process pagination and returns first 5000 records.
-// @Tags         inventory
+// @Tags     inventory
 // @Accept       json
 // @Produce      json,text/csv
 // @Param        request  body      api.GetResourcesRequest  true   "Request Body"
@@ -2788,6 +2789,22 @@ func (h *HttpHandler) GetAllResources(ctx echo.Context) error {
 		}
 	}
 	return h.GetResources(ctx, nil, common)
+}
+
+// CountResources godoc
+// @Summary  Count resources
+// @Tags         inventory
+// @Accept       json
+// @Produce      json,text/csv
+// @Success  200  {object}  int64
+// @Router   /inventory/api/v1/resources/count [post]
+func (h *HttpHandler) CountResources(ctx echo.Context) error {
+	currentResourceCount, err := h.client.Count(context.Background(), "inventory_summary")
+	if err != nil {
+		return err
+	}
+
+	return ctx.JSON(http.StatusOK, currentResourceCount)
 }
 
 // GetResourcesFilters godoc

@@ -204,6 +204,21 @@ func (db Database) GetInvitationByID(invID uuid.UUID) (Invitation, error) {
 	return inv, nil
 }
 
+func (db Database) ListInvitesByWorkspaceName(workspaceName string) ([]Invitation, error) {
+	var inv []Invitation
+	tx := db.orm.
+		Model(&Invitation{}).
+		Where(Invitation{
+			WorkspaceName: workspaceName,
+		}).
+		Find(&inv)
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+
+	return inv, nil
+}
+
 func (db Database) DeleteInvitation(invID uuid.UUID) error {
 	tx := db.orm.
 		Delete(&Invitation{ID: invID})

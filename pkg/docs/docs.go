@@ -51,6 +51,28 @@ const docTemplate = `{
                 }
             }
         },
+        "/auth/api/v1/invites": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "lists all invites",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/api.InviteItem"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/auth/api/v1/role/binding": {
             "put": {
                 "description": "RoleBinding defines the roles and actions a user can perform. There are currently three roles (ADMIN, EDITOR, VIEWER). User must exist before you can update its RoleBinding. If you want to add a role binding for a user given the email address, call invite first to get a user id. Then call this endpoint.",
@@ -1746,6 +1768,29 @@ const docTemplate = `{
                             "items": {
                                 "$ref": "#/definitions/api.CategoriesResponse"
                             }
+                        }
+                    }
+                }
+            }
+        },
+        "/inventory/api/v1/resources/count": {
+            "post": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json",
+                    "text/csv"
+                ],
+                "tags": [
+                    "inventory"
+                ],
+                "summary": "Count resources",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "integer"
                         }
                     }
                 }
@@ -3907,6 +3952,14 @@ const docTemplate = `{
                 }
             }
         },
+        "api.InviteItem": {
+            "type": "object",
+            "properties": {
+                "email": {
+                    "type": "string"
+                }
+            }
+        },
         "api.InviteResponse": {
             "type": "object",
             "properties": {
@@ -4624,6 +4677,9 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "assignedAt": {
+                    "type": "string"
+                },
+                "email": {
                     "type": "string"
                 },
                 "role": {

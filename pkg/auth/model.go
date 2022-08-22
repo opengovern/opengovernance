@@ -27,6 +27,7 @@ type RoleBinding struct {
 
 type Invitation struct {
 	ID            uuid.UUID `gorm:"primaryKey;type:uuid;default:uuid_generate_v4()"`
+	Email         string    `gorm:"not null"`
 	WorkspaceName string    `gorm:"not null"`
 	ExpiredAt     time.Time `gorm:"not null"`
 }

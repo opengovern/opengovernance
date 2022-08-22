@@ -57,3 +57,7 @@ type InviteRequest struct {
 type InviteResponse struct {
 	InviteID uuid.UUID `json:"inviteId"`
 }
+
+type InviteItem struct {
+	Email string `json:"email"`
+}
