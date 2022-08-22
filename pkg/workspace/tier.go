@@ -27,8 +27,8 @@ func GetLimitsByTier(tier Tier) api.WorkspaceLimits {
 	case Tier_Enterprise:
 		return api.WorkspaceLimits{
 			MaxUsers:       250,
-			MaxConnections: 2500,
-			MaxResources:   1000000,
+			MaxConnections: 25000,
+			MaxResources:   100000000,
 		}
 	}
 	return api.WorkspaceLimits{}
