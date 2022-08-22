@@ -190,12 +190,17 @@ func (j DescribeConnectionJob) Do(ictx context.Context, vlt vault.SourceConfig, 
 
 	var wg sync.WaitGroup
 
+	if err != nil {
+		fmt.Println("Starting workers")
+	}
 	for i := 0; i < workerCount; i++ {
 		wg.Add(1)
 		go func() {
+			myID := i
 			for {
 				select {
 				case <-doneChannel:
+					fmt.Println("I'm finished #", myID)
 					wg.Done()
 					return
 				case job := <-workChannel:
@@ -229,18 +234,22 @@ func (j DescribeConnectionJob) Do(ictx context.Context, vlt vault.SourceConfig, 
 			LastYearSourceJobID:    j.LastYearSourceJobID,
 		}
 	}
+	fmt.Println("sent the jobs")
 
 	result := map[uint]DescribeJobResult{}
 	for range j.ResourceJobs {
 		res := <-resultChannel
 		result[res.JobID] = res
 	}
+	fmt.Println("got the results")
 
 	for i := 0; i < workerCount; i++ {
 		doneChannel <- struct{}{}
 	}
+	fmt.Println("done sent")
 	wg.Wait()
 
+	fmt.Println("going offline")
 	return DescribeConnectionJobResult{
 		JobID:  j.JobID,
 		Result: result,
@@ -308,8 +317,10 @@ func (j DescribeJob) Do(ictx context.Context, vlt vault.SourceConfig, rdb *redis
 			fail(fmt.Errorf("describe resources: %w", err))
 		}
 
-		if err := kafka.DoSendToKafka(producer, topic, msgs, logger); err != nil {
-			fail(fmt.Errorf("send to kafka: %w", err))
+		if len(msgs) > 0 {
+			if err := kafka.DoSendToKafka(producer, topic, msgs, logger); err != nil {
+				fail(fmt.Errorf("send to kafka: %w", err))
+			}
 		}
 	}
 
