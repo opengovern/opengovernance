@@ -19,8 +19,8 @@ var (
 	DomainSuffix              = os.Getenv("DOMAIN_SUFFIX")
 	RedisAddress              = os.Getenv("REDIS_ADDRESS")
 	AuthBaseURL               = os.Getenv("AUTH_BASE_URL")
-	OnboardBaseUrl            = os.Getenv("ONBOARD_BASE_URL")
-	InventoryBaseUrl          = os.Getenv("INVENTORY_BASE_URL")
+	OnboardTemplate           = os.Getenv("ONBOARD_BASE_URL")
+	InventoryTemplate         = os.Getenv("INVENTORY_BASE_URL")
 	AutoSuspendDurationString = os.Getenv("AUTO_SUSPEND_DURATION_MINUTES")
 )
 
@@ -33,8 +33,6 @@ type Config struct {
 	ServerAddr          string
 	DomainSuffix        string
 	AuthBaseUrl         string
-	OnboardBaseUrl      string
-	InventoryBaseUrl    string
 	RedisAddress        string
 	AutoSuspendDuration time.Duration
 }
@@ -51,8 +49,6 @@ func NewConfig() *Config {
 		DomainSuffix:        DomainSuffix,
 		RedisAddress:        RedisAddress,
 		AuthBaseUrl:         AuthBaseURL,
-		OnboardBaseUrl:      OnboardBaseUrl,
-		InventoryBaseUrl:    InventoryBaseUrl,
 		AutoSuspendDuration: time.Duration(d) * time.Minute,
 	}
 }

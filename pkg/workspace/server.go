@@ -50,14 +50,12 @@ var (
 )
 
 type Server struct {
-	e               *echo.Echo
-	cfg             *Config
-	db              *Database
-	authClient      authclient.AuthServiceClient
-	onboardClient   client.OnboardServiceClient
-	inventoryClient client2.InventoryServiceClient
-	kubeClient      k8sclient.Client // the kubernetes client
-	rdb             *redis.Client
+	e          *echo.Echo
+	cfg        *Config
+	db         *Database
+	authClient authclient.AuthServiceClient
+	kubeClient k8sclient.Client // the kubernetes client
+	rdb        *redis.Client
 }
 
 func NewServer(cfg *Config) (*Server, error) {
@@ -94,8 +92,6 @@ func NewServer(cfg *Config) (*Server, error) {
 	}
 
 	s.authClient = authclient.NewAuthServiceClient(cfg.AuthBaseUrl)
-	s.onboardClient = client.NewOnboardServiceClient(cfg.OnboardBaseUrl)
-	s.inventoryClient = client2.NewInventoryServiceClient(cfg.InventoryBaseUrl)
 
 	s.rdb = redis.NewClient(&redis.Options{
 		Addr:     cfg.RedisAddress,
@@ -645,8 +641,14 @@ func (s *Server) GetWorkspaceLimits(c echo.Context) error {
 	if err != nil {
 		return fmt.Errorf("GetWorkspaceRoleBindings: %v", err)
 	}
-	resourceCount, err := s.inventoryClient.CountResources(httpclient.FromEchoContext(c))
-	count, err := s.onboardClient.CountSources(httpclient.FromEchoContext(c), nil)
+
+	inventoryURL := strings.ReplaceAll(InventoryTemplate, "%NAMESPACE%", dbWorkspace.ID.String())
+	inventoryClient := client2.NewInventoryServiceClient(inventoryURL)
+	resourceCount, err := inventoryClient.CountResources(httpclient.FromEchoContext(c))
+
+	onboardURL := strings.ReplaceAll(OnboardTemplate, "%NAMESPACE%", dbWorkspace.ID.String())
+	onboardClient := client.NewOnboardServiceClient(onboardURL)
+	count, err := onboardClient.CountSources(httpclient.FromEchoContext(c), nil)
 
 	limits := GetLimitsByTier(dbWorkspace.Tier)
 	return c.JSON(http.StatusOK, api.WorkspaceLimitsUsage{

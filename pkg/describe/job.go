@@ -182,17 +182,15 @@ func (j DescribeConnectionJob) Do(ictx context.Context, vlt vault.SourceConfig, 
 	}
 
 	workChannel := make(chan DescribeJob, workerCount*2)
-	resultChannel := make(chan DescribeJobResult, len(j.ResourceJobs))
-	doneChannel := make(chan struct{}, workerCount)
+	resultChannel := make(chan DescribeJobResult, len(j.ResourceJobs)*2)
+	doneChannel := make(chan struct{}, workerCount*2)
 	defer close(doneChannel)
 	defer close(resultChannel)
 	defer close(workChannel)
 
 	var wg sync.WaitGroup
 
-	if err != nil {
-		fmt.Println("Starting workers")
-	}
+	fmt.Println("Starting workers")
 	for i := 0; i < workerCount; i++ {
 		myID := i
 		wg.Add(1)
