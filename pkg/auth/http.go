@@ -216,7 +216,7 @@ func (r *httpRoutes) Invite(ctx echo.Context) error {
 		return err
 	}
 
-	invLink := fmt.Sprintf(r.inviteLinkTemplate, inv.ID)
+	invLink := fmt.Sprintf(r.inviteLinkTemplate, inv.ID.String())
 	mBody, err := emails.GetInviteMailBody(invLink, workspaceName)
 	if err != nil {
 		return err
