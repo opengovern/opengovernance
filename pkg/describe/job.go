@@ -194,9 +194,9 @@ func (j DescribeConnectionJob) Do(ictx context.Context, vlt vault.SourceConfig, 
 		fmt.Println("Starting workers")
 	}
 	for i := 0; i < workerCount; i++ {
+		myID := i
 		wg.Add(1)
 		go func() {
-			myID := i
 			for {
 				select {
 				case <-doneChannel:
