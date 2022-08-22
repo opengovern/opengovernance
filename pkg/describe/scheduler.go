@@ -4,8 +4,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"math/rand"
 	"strconv"
 	"time"
+
+	"gitlab.com/keibiengine/keibi-engine/pkg/azure"
 
 	"github.com/go-redis/redis/v8"
 	api2 "gitlab.com/keibiengine/keibi-engine/pkg/auth/api"
@@ -21,7 +24,6 @@ import (
 	complianceapi "gitlab.com/keibiengine/keibi-engine/pkg/compliance-report/api"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/aws"
-	"gitlab.com/keibiengine/keibi-engine/pkg/azure"
 	compliancereport "gitlab.com/keibiengine/keibi-engine/pkg/compliance-report"
 	"gitlab.com/keibiengine/keibi-engine/pkg/describe/api"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpserver"
@@ -1036,17 +1038,20 @@ func newDescribeSourceJob(a Source) DescribeSourceJob {
 		DescribeResourceJobs: []DescribeResourceJob{},
 		Status:               api.DescribeSourceJobCreated,
 	}
-
 	switch sType := api.SourceType(a.Type); sType {
 	case api.SourceCloudAWS:
-		for _, rType := range aws.ListResourceTypes() {
+		resourceTypes := aws.ListResourceTypes()
+		rand.Shuffle(len(resourceTypes), func(i, j int) { resourceTypes[i], resourceTypes[j] = resourceTypes[j], resourceTypes[i] })
+		for _, rType := range resourceTypes {
 			daj.DescribeResourceJobs = append(daj.DescribeResourceJobs, DescribeResourceJob{
 				ResourceType: rType,
 				Status:       api.DescribeResourceJobCreated,
 			})
 		}
 	case api.SourceCloudAzure:
-		for _, rType := range azure.ListResourceTypes() {
+		resourceTypes := azure.ListResourceTypes()
+		rand.Shuffle(len(resourceTypes), func(i, j int) { resourceTypes[i], resourceTypes[j] = resourceTypes[j], resourceTypes[i] })
+		for _, rType := range resourceTypes {
 			daj.DescribeResourceJobs = append(daj.DescribeResourceJobs, DescribeResourceJob{
 				ResourceType: rType,
 				Status:       api.DescribeResourceJobCreated,

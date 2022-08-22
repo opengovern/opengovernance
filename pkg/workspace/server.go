@@ -640,6 +640,8 @@ func (s *Server) GetWorkspaceLimits(c echo.Context) error {
 	}
 
 	// no of resources - describe scheduler / inventory
+	//inventory, err := s.inventoryClient.GetWorkspaceInventory(httpclient.FromEchoContext(c), workspaceName)
+
 	// no of connections - onboard
 
 	limits := GetLimitsByTier(dbWorkspace.Tier)

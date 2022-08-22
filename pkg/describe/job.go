@@ -10,8 +10,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/cenkalti/backoff/v3"
-
 	trace2 "gitlab.com/keibiengine/keibi-engine/pkg/trace"
 	"go.opentelemetry.io/otel"
 
@@ -201,33 +199,15 @@ func (j DescribeConnectionJob) Do(ictx context.Context, vlt vault.SourceConfig, 
 					wg.Done()
 					return
 				case job := <-workChannel:
-					exp := backoff.NewExponentialBackOff()
-					exp.InitialInterval = 5 * time.Second
-					exp.Multiplier = 2.0
-					exp.MaxInterval = 2 * time.Minute
+					res := job.Do(ictx, vlt, rdb, es, producer, topic, logger)
+					//if strings.Contains(res.Error, "ThrottlingException") ||
+					//	strings.Contains(res.Error, "Rate exceeded") ||
+					//	strings.Contains(res.Error, "RateExceeded") {
+					//
+					//	logger.Error(fmt.Sprintf("Rate error happened, retrying in a bit, %s", res.Error))
+					//}
 
-					err := backoff.Retry(func() error {
-						res := job.Do(ictx, vlt, rdb, es, producer, topic, logger)
-						if strings.Contains(res.Error, "ThrottlingException") ||
-							strings.Contains(res.Error, "Rate exceeded") ||
-							strings.Contains(res.Error, "RateExceeded") {
-
-							logger.Error(fmt.Sprintf("Rate error happened, retrying in a bit, %s", res.Error))
-							return errors.New("Rate limit error")
-						}
-
-						resultChannel <- res
-						return nil
-					}, exp)
-
-					if err != nil {
-						resultChannel <- DescribeJobResult{
-							JobID:       job.JobID,
-							ParentJobID: job.ParentJobID,
-							Status:      api.DescribeResourceJobFailed,
-							Error:       err.Error(),
-						}
-					}
+					resultChannel <- res
 				}
 			}
 		}()
