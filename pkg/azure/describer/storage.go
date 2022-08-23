@@ -2,6 +2,7 @@ package describer
 
 import (
 	"context"
+	"fmt"
 	"strings"
 
 	"github.com/Azure/azure-sdk-for-go/profiles/2020-09-01/monitor/mgmt/insights"
@@ -27,6 +28,7 @@ func StorageContainer(ctx context.Context, authorizer autorest.Authorizer, subsc
 		return nil, err
 	}
 
+	fmt.Println("starting storage loop")
 	var values []Resource
 	for {
 		for _, account := range resultAccounts.Values() {
@@ -37,6 +39,7 @@ func StorageContainer(ctx context.Context, authorizer autorest.Authorizer, subsc
 				return nil, err
 			}
 
+			fmt.Println("starting storage account loop")
 			for {
 				for _, v := range result.Values() {
 					resourceGroup := strings.Split(*v.ID, "/")[4]
@@ -47,6 +50,7 @@ func StorageContainer(ctx context.Context, authorizer autorest.Authorizer, subsc
 						return nil, err
 					}
 
+					fmt.Println("addin storage")
 					values = append(values, Resource{
 						ID:       *v.ID,
 						Name:     *v.Name,
@@ -69,6 +73,7 @@ func StorageContainer(ctx context.Context, authorizer autorest.Authorizer, subsc
 					return nil, err
 				}
 			}
+			fmt.Println("finished storage account loop")
 		}
 
 		if !resultAccounts.NotDone() {
@@ -80,6 +85,7 @@ func StorageContainer(ctx context.Context, authorizer autorest.Authorizer, subsc
 			return nil, err
 		}
 	}
+	fmt.Println("finished storage loop")
 	return values, nil
 }
 func StorageAccount(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
