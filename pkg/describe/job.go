@@ -298,7 +298,7 @@ func (j DescribeJob) Do(ictx context.Context, vlt vault.SourceConfig, rdb *redis
 		}
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), describeJobTimeout)
+	ctx, cancel := context.WithTimeout(ctx, describeJobTimeout)
 	defer cancel()
 
 	config, err := vlt.Read(j.ConfigReg)
@@ -523,6 +523,7 @@ func doDescribeAWS(ctx context.Context, rdb *redis.Client, es keibi.Client, job 
 }
 
 func doDescribeAzure(ctx context.Context, rdb *redis.Client, es keibi.Client, job DescribeJob, config map[string]interface{}, logger *zap.Logger) ([]kafka.DescribedResource, error) {
+	logger.Warn("starting to describe azure subscription", zap.String("resourceType", job.ResourceType), zap.Uint("jobID", job.JobID))
 	creds, err := AzureSubscriptionConfigFromMap(config)
 	if err != nil {
 		return nil, fmt.Errorf("azure subscription credentials: %w", err)
@@ -533,6 +534,7 @@ func doDescribeAzure(ctx context.Context, rdb *redis.Client, es keibi.Client, jo
 		subscriptionId = creds.SubscriptionID
 	}
 
+	logger.Warn("getting resources", zap.String("resourceType", job.ResourceType), zap.Uint("jobID", job.JobID))
 	output, err := azure.GetResources(
 		ctx,
 		job.ResourceType,
@@ -552,6 +554,7 @@ func doDescribeAzure(ctx context.Context, rdb *redis.Client, es keibi.Client, jo
 	if err != nil {
 		return nil, fmt.Errorf("azure: %w", err)
 	}
+	logger.Warn("got the resources, finding summaries", zap.String("resourceType", job.ResourceType), zap.Uint("jobID", job.JobID))
 
 	var msgs []kafka.DescribedResource
 	var lookupResources []kafka.LookupResource
@@ -674,6 +677,7 @@ func doDescribeAzure(ctx context.Context, rdb *redis.Client, es keibi.Client, jo
 		return nil, fmt.Errorf("ExtractDistribution: %v", err)
 	}
 	msgs = append(msgs, distResources...)
+	logger.Warn("finished describing azure", zap.String("resourceType", job.ResourceType), zap.Uint("jobID", job.JobID))
 	return msgs, nil
 }
 
