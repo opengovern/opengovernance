@@ -30,53 +30,69 @@ func StorageContainer(ctx context.Context, authorizer autorest.Authorizer, subsc
 		return nil, err
 	}
 
-	wp := concurrency.NewWorkPool(8)
+	wpe := concurrency.NewWorkPool(4)
 	var values []Resource
 	for {
 		for _, account := range resultAccounts.Values() {
-			resourceGroup := &strings.Split(string(*account.ID), "/")[4]
-
-			result, err := client.List(ctx, *resourceGroup, *account.Name, "", "", "")
-			if err != nil {
-				return nil, err
-			}
-
-			for {
-				for _, v := range result.Values() {
-					acc := account
-					va := v
-					wp.AddJob(func() (interface{}, error) {
-						resourceGroup := strings.Split(*va.ID, "/")[4]
-						accountName := strings.Split(*va.ID, "/")[8]
-
-						op, err := blobContainerClient.GetImmutabilityPolicy(ctx, resourceGroup, accountName, *va.Name, "")
-						if err != nil {
-							return nil, err
-						}
-
-						return Resource{
-							ID:       *va.ID,
-							Name:     *va.Name,
-							Location: "global",
-							Description: model.StorageContainerDescription{
-								AccountName:        *acc.Name,
-								ListContainerItem:  va,
-								ImmutabilityPolicy: op,
-								ResourceGroup:      resourceGroup,
-							},
-						}, nil
-					})
-				}
-
-				if !result.NotDone() {
-					break
-				}
-
-				err = result.NextWithContext(ctx)
+			wpe.AddJob(func() (interface{}, error) {
+				resourceGroup := &strings.Split(string(*account.ID), "/")[4]
+				result, err := client.List(ctx, *resourceGroup, *account.Name, "", "", "")
 				if err != nil {
 					return nil, err
 				}
-			}
+
+				wp := concurrency.NewWorkPool(8)
+				for {
+					for _, v := range result.Values() {
+						acc := account
+						va := v
+						wp.AddJob(func() (interface{}, error) {
+							resourceGroup := strings.Split(*va.ID, "/")[4]
+							accountName := strings.Split(*va.ID, "/")[8]
+
+							op, err := blobContainerClient.GetImmutabilityPolicy(ctx, resourceGroup, accountName, *va.Name, "")
+							if err != nil {
+								return nil, err
+							}
+
+							fmt.Println("found one resource")
+							return Resource{
+								ID:       *va.ID,
+								Name:     *va.Name,
+								Location: "global",
+								Description: model.StorageContainerDescription{
+									AccountName:        *acc.Name,
+									ListContainerItem:  va,
+									ImmutabilityPolicy: op,
+									ResourceGroup:      resourceGroup,
+								},
+							}, nil
+						})
+					}
+
+					if !result.NotDone() {
+						break
+					}
+
+					err = result.NextWithContext(ctx)
+					if err != nil {
+						return nil, err
+					}
+				}
+				results := wp.Run()
+				var vvv []Resource
+				for _, r := range results {
+					if r.Error != nil {
+						return nil, err
+					}
+					if r.Value == nil {
+						return nil, fmt.Errorf("r.Value is null")
+					}
+					vvv = append(vvv, r.Value.(Resource))
+				}
+				fmt.Println("return account resource")
+				return vvv, nil
+			})
 		}
 
 		if !resultAccounts.NotDone() {
@@ -89,17 +105,17 @@ func StorageContainer(ctx context.Context, authorizer autorest.Authorizer, subsc
 		}
 	}
 
-	res := wp.Run()
-	for _, r := range res {
+	results := wpe.Run()
+	for _, r := range results {
 		if r.Error != nil {
 			return nil, err
 		}
 		if r.Value == nil {
-			return nil, fmt.Errorf("r.Value is null")
+			return nil, fmt.Errorf("ex: r.Value is null")
 		}
-		values = append(values, r.Value.(Resource))
+		values = append(values, r.Value.([]Resource)...)
 	}
-
+	fmt.Println("return all resource")
 	return values, nil
 }
 func StorageAccount(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
