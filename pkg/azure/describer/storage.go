@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"strings"
 
+	"gitlab.com/keibiengine/keibi-engine/pkg/concurrency"
+
 	"github.com/Azure/azure-sdk-for-go/profiles/2020-09-01/monitor/mgmt/insights"
 	"github.com/Azure/azure-sdk-for-go/services/storage/mgmt/2019-06-01/storage"
 	"github.com/Azure/go-autorest/autorest"
@@ -28,7 +30,7 @@ func StorageContainer(ctx context.Context, authorizer autorest.Authorizer, subsc
 		return nil, err
 	}
 
-	fmt.Println("starting storage loop")
+	wp := concurrency.NewWorkPool(8)
 	var values []Resource
 	for {
 		for _, account := range resultAccounts.Values() {
@@ -39,28 +41,30 @@ func StorageContainer(ctx context.Context, authorizer autorest.Authorizer, subsc
 				return nil, err
 			}
 
-			fmt.Println("starting storage account loop")
 			for {
 				for _, v := range result.Values() {
-					resourceGroup := strings.Split(*v.ID, "/")[4]
-					accountName := strings.Split(*v.ID, "/")[8]
+					acc := account
+					va := v
+					wp.AddJob(func() (interface{}, error) {
+						resourceGroup := strings.Split(*va.ID, "/")[4]
+						accountName := strings.Split(*va.ID, "/")[8]
 
-					op, err := blobContainerClient.GetImmutabilityPolicy(ctx, resourceGroup, accountName, *v.Name, "")
-					if err != nil {
-						return nil, err
-					}
+						op, err := blobContainerClient.GetImmutabilityPolicy(ctx, resourceGroup, accountName, *va.Name, "")
+						if err != nil {
+							return nil, err
+						}
 
-					fmt.Println("addin storage")
-					values = append(values, Resource{
-						ID:       *v.ID,
-						Name:     *v.Name,
-						Location: "global",
-						Description: model.StorageContainerDescription{
-							AccountName:        *account.Name,
-							ListContainerItem:  v,
-							ImmutabilityPolicy: op,
-							ResourceGroup:      resourceGroup,
-						},
+						return Resource{
+							ID:       *va.ID,
+							Name:     *va.Name,
+							Location: "global",
+							Description: model.StorageContainerDescription{
+								AccountName:        *acc.Name,
+								ListContainerItem:  va,
+								ImmutabilityPolicy: op,
+								ResourceGroup:      resourceGroup,
+							},
+						}, nil
 					})
 				}
 
@@ -73,7 +77,6 @@ func StorageContainer(ctx context.Context, authorizer autorest.Authorizer, subsc
 					return nil, err
 				}
 			}
-			fmt.Println("finished storage account loop")
 		}
 
 		if !resultAccounts.NotDone() {
@@ -85,7 +88,18 @@ func StorageContainer(ctx context.Context, authorizer autorest.Authorizer, subsc
 			return nil, err
 		}
 	}
-	fmt.Println("finished storage loop")
+
+	res := wp.Run()
+	for _, r := range res {
+		if r.Error != nil {
+			return nil, err
+		}
+		if r.Value == nil {
+			return nil, fmt.Errorf("r.Value is null")
+		}
+		values = append(values, r.Value.(Resource))
+	}
+
 	return values, nil
 }
 func StorageAccount(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
