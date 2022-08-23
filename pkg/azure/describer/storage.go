@@ -33,7 +33,8 @@ func StorageContainer(ctx context.Context, authorizer autorest.Authorizer, subsc
 	wpe := concurrency.NewWorkPool(4)
 	var values []Resource
 	for {
-		for _, account := range resultAccounts.Values() {
+		for _, ac := range resultAccounts.Values() {
+			account := ac
 			wpe.AddJob(func() (interface{}, error) {
 				resourceGroup := &strings.Split(string(*account.ID), "/")[4]
 				result, err := client.List(ctx, *resourceGroup, *account.Name, "", "", "")
@@ -43,26 +44,26 @@ func StorageContainer(ctx context.Context, authorizer autorest.Authorizer, subsc
 
 				wp := concurrency.NewWorkPool(8)
 				for {
-					for _, v := range result.Values() {
+					for _, vl := range result.Values() {
+						v := vl
 						acc := account
-						va := v
 						wp.AddJob(func() (interface{}, error) {
-							resourceGroup := strings.Split(*va.ID, "/")[4]
-							accountName := strings.Split(*va.ID, "/")[8]
+							resourceGroup := strings.Split(*v.ID, "/")[4]
+							accountName := strings.Split(*v.ID, "/")[8]
 
-							op, err := blobContainerClient.GetImmutabilityPolicy(ctx, resourceGroup, accountName, *va.Name, "")
+							op, err := blobContainerClient.GetImmutabilityPolicy(ctx, resourceGroup, accountName, *v.Name, "")
 							if err != nil {
 								return nil, err
 							}
 
 							fmt.Println("found one resource")
 							return Resource{
-								ID:       *va.ID,
-								Name:     *va.Name,
+								ID:       *v.ID,
+								Name:     *v.Name,
 								Location: "global",
 								Description: model.StorageContainerDescription{
 									AccountName:        *acc.Name,
-									ListContainerItem:  va,
+									ListContainerItem:  v,
 									ImmutabilityPolicy: op,
 									ResourceGroup:      resourceGroup,
 								},

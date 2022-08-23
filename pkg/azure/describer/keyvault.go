@@ -2,7 +2,10 @@ package describer
 
 import (
 	"context"
+	"fmt"
 	"strings"
+
+	"gitlab.com/keibiengine/keibi-engine/pkg/concurrency"
 
 	"github.com/Azure/azure-sdk-for-go/profiles/2020-09-01/monitor/mgmt/insights"
 	"github.com/Azure/azure-sdk-for-go/services/keyvault/mgmt/2019-09-01/keyvault"
@@ -24,49 +27,72 @@ func KeyVaultKey(ctx context.Context, authorizer autorest.Authorizer, subscripti
 		return nil, err
 	}
 
+	wpe := concurrency.NewWorkPool(4)
 	var values []Resource
 	for {
-		for _, vault := range resultKV.Values() {
-			resourceGroup := strings.Split(*vault.ID, "/")[4]
-			result, err := client.List(ctx, resourceGroup, *vault.Name)
-			if err != nil {
-				return nil, err
-			}
-
-			for {
-				for _, v := range result.Values() {
-					op, err := client.Get(ctx, resourceGroup, *vault.Name, *v.Name)
-					if err != nil {
-						return nil, err
-					}
-
-					// In some cases resource does not give any notFound error
-					// instead of notFound error, it returns empty data
-					if op.ID == nil {
-						continue
-					}
-
-					values = append(values, Resource{
-						ID:       *v.ID,
-						Name:     *v.Name,
-						Location: *v.Location,
-						Description: model.KeyVaultKeyDescription{
-							Vault:         vault,
-							Key:           v,
-							ResourceGroup: resourceGroup,
-						},
-					})
-				}
-
-				if !result.NotDone() {
-					break
-				}
-
-				err = result.NextWithContext(ctx)
+		for _, vaultLoop := range resultKV.Values() {
+			vault := vaultLoop
+			wpe.AddJob(func() (interface{}, error) {
+				resourceGroup := strings.Split(*vault.ID, "/")[4]
+				result, err := client.List(ctx, resourceGroup, *vault.Name)
 				if err != nil {
 					return nil, err
 				}
-			}
+
+				wp := concurrency.NewWorkPool(8)
+				for {
+					for _, v := range result.Values() {
+						resourceGroupCopy := resourceGroup
+						vaultCopy := vault
+						vCopy := v
+						wp.AddJob(func() (interface{}, error) {
+							op, err := client.Get(ctx, resourceGroupCopy, *vaultCopy.Name, *vCopy.Name)
+							if err != nil {
+								return nil, err
+							}
+
+							// In some cases resource does not give any notFound error
+							// instead of notFound error, it returns empty data
+							if op.ID == nil {
+								return nil, nil
+							}
+
+							return Resource{
+								ID:       *vCopy.ID,
+								Name:     *vCopy.Name,
+								Location: *vCopy.Location,
+								Description: model.KeyVaultKeyDescription{
+									Vault:         vaultCopy,
+									Key:           vCopy,
+									ResourceGroup: resourceGroupCopy,
+								},
+							}, nil
+						})
+					}
+
+					if !result.NotDone() {
+						break
+					}
+
+					err = result.NextWithContext(ctx)
+					if err != nil {
+						return nil, err
+					}
+				}
+
+				results := wp.Run()
+				var vvv []Resource
+				for _, r := range results {
+					if r.Error != nil {
+						return nil, err
+					}
+					if r.Value == nil {
+						return nil, fmt.Errorf("r.Value is null")
+					}
+					vvv = append(vvv, r.Value.(Resource))
+				}
+				return vvv, nil
+			})
 		}
 
 		if !resultKV.NotDone() {
@@ -79,6 +105,16 @@ func KeyVaultKey(ctx context.Context, authorizer autorest.Authorizer, subscripti
 		}
 	}
 
+	results := wpe.Run()
+	for _, result := range results {
+		if result.Error != nil {
+			return nil, err
+		}
+		if result.Value == nil {
+			return nil, fmt.Errorf("ex: r.Value is null")
+		}
+		values = append(values, result.Value.([]Resource)...)
+	}
 	return values, nil
 }
 
