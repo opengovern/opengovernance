@@ -559,7 +559,7 @@ func (s Scheduler) scheduleDescribeJob() {
 	}
 
 	if err = s.rdb.Set(context.Background(), RedisKeyWorkspaceResourceRemaining,
-		limit.MaxResources-currentResourceCount, time.Hour).Err(); err != nil {
+		limit.MaxResources-currentResourceCount, 12*time.Hour).Err(); err != nil {
 		DescribeSourceJobsCount.WithLabelValues("failure").Inc()
 		s.logger.Error("Failed to set workspace resource remaining on redis",
 			zap.String("workspace", CurrentWorkspaceID),

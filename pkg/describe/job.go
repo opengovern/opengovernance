@@ -444,6 +444,7 @@ func doDescribeAWS(ctx context.Context, rdb *redis.Client, es keibi.Client, job 
 			}
 
 			for key, value := range tags {
+				key = strings.TrimSpace(key)
 				_, err = rdb.SAdd(context.Background(), "tag-"+key, value).Result()
 				if err != nil {
 					errs = append(errs, fmt.Sprintf("failed to push tag into redis: %v", err.Error()))
@@ -622,6 +623,7 @@ func doDescribeAzure(ctx context.Context, rdb *redis.Client, es keibi.Client, jo
 		}
 
 		for key, value := range tags {
+			key = strings.TrimSpace(key)
 			_, err = rdb.SAdd(context.Background(), "tag-"+key, value).Result()
 			if err != nil {
 				return nil, fmt.Errorf("failed to push tag into redis: %v", err.Error())

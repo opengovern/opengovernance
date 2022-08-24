@@ -2,7 +2,6 @@ package describer
 
 import (
 	"context"
-	"fmt"
 	"strings"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/concurrency"
@@ -87,7 +86,7 @@ func KeyVaultKey(ctx context.Context, authorizer autorest.Authorizer, subscripti
 						return nil, err
 					}
 					if r.Value == nil {
-						return nil, fmt.Errorf("r.Value is null")
+						continue
 					}
 					vvv = append(vvv, r.Value.(Resource))
 				}
@@ -111,7 +110,7 @@ func KeyVaultKey(ctx context.Context, authorizer autorest.Authorizer, subscripti
 			return nil, err
 		}
 		if result.Value == nil {
-			return nil, fmt.Errorf("ex: r.Value is null")
+			continue
 		}
 		values = append(values, result.Value.([]Resource)...)
 	}

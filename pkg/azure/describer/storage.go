@@ -2,7 +2,6 @@ package describer
 
 import (
 	"context"
-	"fmt"
 	"strings"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/concurrency"
@@ -56,7 +55,6 @@ func StorageContainer(ctx context.Context, authorizer autorest.Authorizer, subsc
 								return nil, err
 							}
 
-							fmt.Println("found one resource")
 							return Resource{
 								ID:       *v.ID,
 								Name:     *v.Name,
@@ -87,11 +85,10 @@ func StorageContainer(ctx context.Context, authorizer autorest.Authorizer, subsc
 						return nil, err
 					}
 					if r.Value == nil {
-						return nil, fmt.Errorf("r.Value is null")
+						continue
 					}
 					vvv = append(vvv, r.Value.(Resource))
 				}
-				fmt.Println("return account resource")
 				return vvv, nil
 			})
 		}
@@ -112,11 +109,10 @@ func StorageContainer(ctx context.Context, authorizer autorest.Authorizer, subsc
 			return nil, err
 		}
 		if r.Value == nil {
-			return nil, fmt.Errorf("ex: r.Value is null")
+			continue
 		}
 		values = append(values, r.Value.([]Resource)...)
 	}
-	fmt.Println("return all resource")
 	return values, nil
 }
 func StorageAccount(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {

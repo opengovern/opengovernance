@@ -305,12 +305,12 @@ type CountResponse struct {
 }
 
 func (c Client) Count(ctx context.Context, index string) (int64, error) {
-	opts := []func(*esapi.SearchRequest){
-		c.es.Search.WithContext(ctx),
-		c.es.Search.WithIndex(index),
+	opts := []func(count *esapi.CountRequest){
+		c.es.Count.WithContext(ctx),
+		c.es.Count.WithIndex(index),
 	}
 
-	res, err := c.es.Search(opts...)
+	res, err := c.es.Count(opts...)
 	defer closeSafe(res)
 	if err != nil {
 		return 0, err
