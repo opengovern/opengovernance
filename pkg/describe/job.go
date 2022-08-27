@@ -247,29 +247,27 @@ func (j DescribeConnectionJob) Do(ictx context.Context, vlt vault.SourceConfig, 
 	fmt.Println("done sent")
 	wg.Wait()
 
-	for try := 0; try < 3; try++ {
-		for idx, res := range result {
-			if strings.Contains(res.Error, "ThrottlingException") ||
-				strings.Contains(res.Error, "Rate exceeded") ||
-				strings.Contains(res.Error, "RateExceeded") {
-				for id, resourceType := range j.ResourceJobs {
-					if id == res.JobID {
-						job := DescribeJob{
-							JobID:                  id,
-							ParentJobID:            j.JobID,
-							ResourceType:           resourceType,
-							SourceID:               j.SourceID,
-							AccountID:              j.AccountID,
-							DescribedAt:            j.DescribedAt,
-							SourceType:             j.SourceType,
-							ConfigReg:              j.ConfigReg,
-							LastDaySourceJobID:     j.LastDaySourceJobID,
-							LastWeekSourceJobID:    j.LastWeekSourceJobID,
-							LastQuarterSourceJobID: j.LastQuarterSourceJobID,
-							LastYearSourceJobID:    j.LastYearSourceJobID,
-						}
-						result[idx] = job.Do(ictx, vlt, rdb, es, producer, topic, logger)
+	for idx, res := range result {
+		if strings.Contains(res.Error, "ThrottlingException") ||
+			strings.Contains(res.Error, "Rate exceeded") ||
+			strings.Contains(res.Error, "RateExceeded") {
+			for id, resourceType := range j.ResourceJobs {
+				if id == res.JobID {
+					job := DescribeJob{
+						JobID:                  id,
+						ParentJobID:            j.JobID,
+						ResourceType:           resourceType,
+						SourceID:               j.SourceID,
+						AccountID:              j.AccountID,
+						DescribedAt:            j.DescribedAt,
+						SourceType:             j.SourceType,
+						ConfigReg:              j.ConfigReg,
+						LastDaySourceJobID:     j.LastDaySourceJobID,
+						LastWeekSourceJobID:    j.LastWeekSourceJobID,
+						LastQuarterSourceJobID: j.LastQuarterSourceJobID,
+						LastYearSourceJobID:    j.LastYearSourceJobID,
 					}
+					result[idx] = job.Do(ictx, vlt, rdb, es, producer, topic, logger)
 				}
 			}
 		}
