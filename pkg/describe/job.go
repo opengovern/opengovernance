@@ -248,7 +248,6 @@ func (j DescribeConnectionJob) Do(ictx context.Context, vlt vault.SourceConfig, 
 	wg.Wait()
 
 	for try := 0; try < 3; try++ {
-		time.Sleep(5 * time.Second)
 		for idx, res := range result {
 			if strings.Contains(res.Error, "ThrottlingException") ||
 				strings.Contains(res.Error, "Rate exceeded") ||
