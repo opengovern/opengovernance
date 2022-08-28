@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"math/rand"
 	"strconv"
+	"strings"
 	"time"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/azure"
@@ -98,9 +99,9 @@ type Scheduler struct {
 	httpServer *HttpServer
 
 	// describeJobQueue is used to publish describe jobs to be performed by the workers.
-	//describeJobQueue queue.Interface
+	describeJobQueue queue.Interface
 	// describeJobResultQueue is used to consume the describe job results returned by the workers.
-	//describeJobResultQueue queue.Interface
+	describeJobResultQueue queue.Interface
 	// describeCleanupJobQueue is used to publish describe cleanup jobs to be performed by the workers.
 	describeCleanupJobQueue queue.Interface
 	// describeConnectionJobQueue is used to publish describe jobs to be performed by the workers.
@@ -180,40 +181,40 @@ func InitializeScheduler(
 	}
 
 	s.logger.Info("Initializing the scheduler")
-	//
-	//qCfg := queue.Config{}
-	//qCfg.Server.Username = rabbitMQUsername
-	//qCfg.Server.Password = rabbitMQPassword
-	//qCfg.Server.Host = rabbitMQHost
-	//qCfg.Server.Port = rabbitMQPort
-	//qCfg.Queue.Name = describeJobQueueName
-	//qCfg.Queue.Durable = true
-	//qCfg.Producer.ID = s.id
-	//describeQueue, err := queue.New(qCfg)
-	//if err != nil {
-	//	return nil, err
-	//}
-	//
-	//s.logger.Info("Connected to the describe jobs queue", zap.String("queue", describeJobQueueName))
-	//s.describeJobQueue = describeQueue
-	//
-	//qCfg = queue.Config{}
-	//qCfg.Server.Username = rabbitMQUsername
-	//qCfg.Server.Password = rabbitMQPassword
-	//qCfg.Server.Host = rabbitMQHost
-	//qCfg.Server.Port = rabbitMQPort
-	//qCfg.Queue.Name = describeJobResultQueueName
-	//qCfg.Queue.Durable = true
-	//qCfg.Consumer.ID = s.id
-	//describeResultsQueue, err := queue.New(qCfg)
-	//if err != nil {
-	//	return nil, err
-	//}
-	//
-	//s.logger.Info("Connected to the describe job results queue", zap.String("queue", describeJobResultQueueName))
-	//s.describeJobResultQueue = describeResultsQueue
 
 	qCfg := queue.Config{}
+	qCfg.Server.Username = rabbitMQUsername
+	qCfg.Server.Password = rabbitMQPassword
+	qCfg.Server.Host = rabbitMQHost
+	qCfg.Server.Port = rabbitMQPort
+	qCfg.Queue.Name = describeJobQueueName
+	qCfg.Queue.Durable = true
+	qCfg.Producer.ID = s.id
+	describeQueue, err := queue.New(qCfg)
+	if err != nil {
+		return nil, err
+	}
+
+	s.logger.Info("Connected to the describe jobs queue", zap.String("queue", describeJobQueueName))
+	s.describeJobQueue = describeQueue
+
+	qCfg = queue.Config{}
+	qCfg.Server.Username = rabbitMQUsername
+	qCfg.Server.Password = rabbitMQPassword
+	qCfg.Server.Host = rabbitMQHost
+	qCfg.Server.Port = rabbitMQPort
+	qCfg.Queue.Name = describeJobResultQueueName
+	qCfg.Queue.Durable = true
+	qCfg.Consumer.ID = s.id
+	describeResultsQueue, err := queue.New(qCfg)
+	if err != nil {
+		return nil, err
+	}
+
+	s.logger.Info("Connected to the describe job results queue", zap.String("queue", describeJobResultQueueName))
+	s.describeJobResultQueue = describeResultsQueue
+
+	qCfg = queue.Config{}
 	qCfg.Server.Username = rabbitMQUsername
 	qCfg.Server.Password = rabbitMQPassword
 	qCfg.Server.Host = rabbitMQHost
@@ -226,7 +227,7 @@ func InitializeScheduler(
 		return nil, err
 	}
 
-	s.logger.Info("Connected to the describe jobs queue", zap.String("queue", describeJobQueueName))
+	s.logger.Info("Connected to the describe jobs queue", zap.String("queue", describeConnectionJobQueueName))
 	s.describeConnectionJobQueue = describeConnectionQueue
 
 	qCfg = queue.Config{}
@@ -242,7 +243,7 @@ func InitializeScheduler(
 		return nil, err
 	}
 
-	s.logger.Info("Connected to the describe job results queue", zap.String("queue", describeJobResultQueueName))
+	s.logger.Info("Connected to the describe job results queue", zap.String("queue", describeConnectionJobResultQueueName))
 	s.describeConnectionJobResultQueue = describeConnectionResultsQueue
 
 	qCfg = queue.Config{}
@@ -424,6 +425,10 @@ func (s *Scheduler) Run() error {
 
 	go func() {
 		s.logger.Fatal("DescribeJobResult consumer exited", zap.Error(s.RunDescribeJobResultsConsumer()))
+	}()
+
+	go func() {
+		s.logger.Fatal("DescribeConnectionJobResult consumer exited", zap.Error(s.RunDescribeConnectionJobResultsConsumer()))
 	}()
 
 	go func() {
@@ -840,10 +845,10 @@ func (s *Scheduler) RunSourceEventsConsumer() error {
 	return fmt.Errorf("source events queue channel is closed")
 }
 
-// RunDescribeJobResultsConsumer consumes messages from the jobResult queue.
+// RunDescribeConnectionJobResultsConsumer consumes messages from the jobResult queue.
 // It will update the status of the jobs in the database based on the message.
 // It will also update the jobs status that are not completed in certain time to FAILED
-func (s *Scheduler) RunDescribeJobResultsConsumer() error {
+func (s *Scheduler) RunDescribeConnectionJobResultsConsumer() error {
 	s.logger.Info("Consuming messages from the JobResults queue")
 
 	msgs, err := s.describeConnectionJobResultQueue.Consume()
@@ -877,6 +882,25 @@ func (s *Scheduler) RunDescribeJobResultsConsumer() error {
 					zap.Uint("jobId", jobID),
 					zap.String("status", string(res.Status)),
 				)
+
+				if strings.Contains(res.Error, "ThrottlingException") ||
+					strings.Contains(res.Error, "Rate exceeded") ||
+					strings.Contains(res.Error, "RateExceeded") {
+					// sent it to describe jobs
+					s.logger.Info("Needs to be retried",
+						zap.Uint("jobId", jobID),
+						zap.String("status", string(res.Status)),
+					)
+					if err := s.describeJobQueue.Publish(res.DescribeJob); err != nil {
+						s.logger.Error("Failed to queue DescribeConnectionJob",
+							zap.Uint("jobId", res.JobID),
+							zap.Error(err),
+						)
+					} else {
+						continue
+					}
+				}
+
 				err := s.db.UpdateDescribeResourceJobStatus(res.JobID, res.Status, res.Error)
 				if err != nil {
 					failed = true
@@ -893,6 +917,66 @@ func (s *Scheduler) RunDescribeJobResultsConsumer() error {
 			}
 
 			if failed {
+				continue
+			}
+
+			if err := msg.Ack(false); err != nil {
+				s.logger.Error("Failed acking message", zap.Error(err))
+			}
+		case <-t.C:
+			err := s.db.UpdateDescribeResourceJobsTimedOut(s.describeIntervalHours)
+			if err != nil {
+				s.logger.Error("Failed to update timed out DescribeResourceJobs", zap.Error(err))
+			}
+		}
+	}
+}
+
+// RunDescribeJobResultsConsumer consumes messages from the jobResult queue.
+// It will update the status of the jobs in the database based on the message.
+// It will also update the jobs status that are not completed in certain time to FAILED
+func (s *Scheduler) RunDescribeJobResultsConsumer() error {
+	s.logger.Info("Consuming messages from the JobResults queue")
+
+	msgs, err := s.describeJobResultQueue.Consume()
+	if err != nil {
+		return err
+	}
+
+	t := time.NewTicker(JobTimeoutCheckInterval)
+	defer t.Stop()
+
+	for {
+		select {
+		case msg, ok := <-msgs:
+			if !ok {
+				return fmt.Errorf("tasks channel is closed")
+			}
+
+			var result DescribeJobResult
+			if err := json.Unmarshal(msg.Body, &result); err != nil {
+				s.logger.Error("Failed to unmarshal DescribeJobResult results\n", zap.Error(err))
+				err = msg.Nack(false, false)
+				if err != nil {
+					s.logger.Error("Failed nacking message", zap.Error(err))
+				}
+				continue
+			}
+
+			s.logger.Info("Processing JobResult for Job",
+				zap.Uint("jobId", result.JobID),
+				zap.String("status", string(result.Status)),
+			)
+			err := s.db.UpdateDescribeResourceJobStatus(result.JobID, result.Status, result.Error)
+			if err != nil {
+				s.logger.Error("Failed to update the status of DescribeResourceJob",
+					zap.Uint("jobId", result.JobID),
+					zap.Error(err),
+				)
+				err = msg.Nack(false, true)
+				if err != nil {
+					s.logger.Error("Failed nacking message", zap.Error(err))
+				}
 				continue
 			}
 
@@ -1015,8 +1099,8 @@ func (s *Scheduler) RunComplianceReportJobResultsConsumer() error {
 
 func (s *Scheduler) Stop() {
 	queues := []queue.Interface{
-		//s.describeJobQueue,
-		//s.describeJobResultQueue,
+		s.describeJobQueue,
+		s.describeJobResultQueue,
 		s.describeConnectionJobQueue,
 		s.describeConnectionJobResultQueue,
 		s.describeCleanupJobQueue,

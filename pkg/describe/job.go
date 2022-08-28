@@ -149,6 +149,7 @@ type DescribeJobResult struct {
 	ParentJobID uint
 	Status      api.DescribeResourceJobStatus
 	Error       string
+	DescribeJob DescribeJob
 }
 
 type DescribeConnectionJob struct {
@@ -203,12 +204,6 @@ func (j DescribeConnectionJob) Do(ictx context.Context, vlt vault.SourceConfig, 
 					return
 				case job := <-workChannel:
 					res := job.Do(ictx, vlt, rdb, es, producer, topic, logger)
-					//if strings.Contains(res.Error, "ThrottlingException") ||
-					//	strings.Contains(res.Error, "Rate exceeded") ||
-					//	strings.Contains(res.Error, "RateExceeded") {
-					//
-					//	logger.Error(fmt.Sprintf("Rate error happened, retrying in a bit, %s", res.Error))
-					//}
 
 					resultChannel <- res
 				}
@@ -247,31 +242,34 @@ func (j DescribeConnectionJob) Do(ictx context.Context, vlt vault.SourceConfig, 
 	fmt.Println("done sent")
 	wg.Wait()
 
-	for idx, res := range result {
-		if strings.Contains(res.Error, "ThrottlingException") ||
-			strings.Contains(res.Error, "Rate exceeded") ||
-			strings.Contains(res.Error, "RateExceeded") {
-			for id, resourceType := range j.ResourceJobs {
-				if id == res.JobID {
-					job := DescribeJob{
-						JobID:                  id,
-						ParentJobID:            j.JobID,
-						ResourceType:           resourceType,
-						SourceID:               j.SourceID,
-						AccountID:              j.AccountID,
-						DescribedAt:            j.DescribedAt,
-						SourceType:             j.SourceType,
-						ConfigReg:              j.ConfigReg,
-						LastDaySourceJobID:     j.LastDaySourceJobID,
-						LastWeekSourceJobID:    j.LastWeekSourceJobID,
-						LastQuarterSourceJobID: j.LastQuarterSourceJobID,
-						LastYearSourceJobID:    j.LastYearSourceJobID,
-					}
-					result[idx] = job.Do(ictx, vlt, rdb, es, producer, topic, logger)
-				}
-			}
-		}
-	}
+	//for i := 0; i < 2; i++ {
+	//	for idx, res := range result {
+	//		if strings.Contains(res.Error, "ThrottlingException") ||
+	//			strings.Contains(res.Error, "Rate exceeded") ||
+	//			strings.Contains(res.Error, "RateExceeded") {
+	//			for id, resourceType := range j.ResourceJobs {
+	//				if id == res.JobID {
+	//					job := DescribeJob{
+	//						JobID:                  id,
+	//						ParentJobID:            j.JobID,
+	//						ResourceType:           resourceType,
+	//						SourceID:               j.SourceID,
+	//						AccountID:              j.AccountID,
+	//						DescribedAt:            j.DescribedAt,
+	//						SourceType:             j.SourceType,
+	//						ConfigReg:              j.ConfigReg,
+	//						LastDaySourceJobID:     j.LastDaySourceJobID,
+	//						LastWeekSourceJobID:    j.LastWeekSourceJobID,
+	//						LastQuarterSourceJobID: j.LastQuarterSourceJobID,
+	//						LastYearSourceJobID:    j.LastYearSourceJobID,
+	//					}
+	//					result[idx] = job.Do(ictx, vlt, rdb, es, producer, topic, logger)
+	//				}
+	//			}
+	//		}
+	//	}
+	//}
+
 	fmt.Println("going offline")
 	return DescribeConnectionJobResult{
 		JobID:  j.JobID,
@@ -304,6 +302,7 @@ func (j DescribeJob) Do(ictx context.Context, vlt vault.SourceConfig, rdb *redis
 				ParentJobID: j.ParentJobID,
 				Status:      api.DescribeResourceJobFailed,
 				Error:       fmt.Sprintf("paniced: %s", err),
+				DescribeJob: j,
 			}
 		}
 	}()
@@ -361,6 +360,7 @@ func (j DescribeJob) Do(ictx context.Context, vlt vault.SourceConfig, rdb *redis
 		ParentJobID: j.ParentJobID,
 		Status:      status,
 		Error:       errMsg,
+		DescribeJob: j,
 	}
 }
 
