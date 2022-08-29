@@ -288,6 +288,7 @@ var AzureDescriptionMap = map[string]interface{}{
 	"Microsoft.HealthcareApis/services":                     &keibi.HealthcareService{},
 	"Microsoft.DataFactory/factories":                       &keibi.DataFactory{},
 	"Microsoft.EventGrid/domains":                           &keibi.EventGridDomain{},
+	"Microsoft.EventGrid/domains/topics":                    &keibi.EventGridTopic{},
 	"Microsoft.HybridCompute/machines":                      &keibi.HybridComputeMachine{},
 	"Microsoft.ServiceBus/namespaces":                       &keibi.ServicebusNamespace{},
 	"Microsoft.ServiceFabric/clusters":                      &keibi.ServiceFabricCluster{},

@@ -410,10 +410,32 @@ func doDescribeAWS(ctx context.Context, rdb *redis.Client, es keibi.Client, job 
 	var lookupResources []kafka.LookupResource
 
 	for _, resources := range output.Resources {
+		currentResourceLimitRemaining, err := rdb.Get(ctx, RedisKeyWorkspaceResourceRemaining).Result()
+		if err != nil {
+			errs = append(errs, fmt.Sprintf("redisGet: %v", err.Error()))
+			continue
+		}
+		remaining, err := strconv.Atoi(currentResourceLimitRemaining)
+		if remaining <= 0 {
+			errs = append(errs, fmt.Sprintf("workspace has reached its max resources limit"))
+			continue
+		}
+		_, err = rdb.DecrBy(ctx, RedisKeyWorkspaceResourceRemaining, int64(len(output.Resources))).Result()
+		if err != nil {
+			errs = append(errs, fmt.Sprintf("redisDecr: %v", err.Error()))
+			continue
+		}
+
 		for _, resource := range resources {
 			if resource.Description == nil {
 				continue
 			}
+
+			if remaining <= 0 {
+				errs = append(errs, fmt.Sprintf("workspace has reached its max resources limit"))
+				break
+			}
+			remaining--
 
 			res, err := rdb.Decr(ctx, RedisKeyWorkspaceResourceRemaining).Result()
 			if err != nil {
@@ -585,17 +607,28 @@ func doDescribeAzure(ctx context.Context, rdb *redis.Client, es keibi.Client, jo
 	var msgs []kafka.DescribedResource
 	var lookupResources []kafka.LookupResource
 
+	currentResourceLimitRemaining, err := rdb.Get(ctx, RedisKeyWorkspaceResourceRemaining).Result()
+	if err != nil {
+		return nil, fmt.Errorf("redisGet: %v", err.Error())
+	}
+	remaining, err := strconv.Atoi(currentResourceLimitRemaining)
+	if remaining <= 0 {
+		return nil, fmt.Errorf("workspace has reached its max resources limit")
+	}
+
+	_, err = rdb.DecrBy(ctx, RedisKeyWorkspaceResourceRemaining, int64(len(output.Resources))).Result()
+	if err != nil {
+		return nil, fmt.Errorf("redisDecr: %v", err.Error())
+	}
+
 	for _, resource := range output.Resources {
+		if remaining <= 0 {
+			break
+		}
+		remaining--
+
 		if resource.Description == nil {
 			continue
-		}
-		res, err := rdb.Decr(ctx, RedisKeyWorkspaceResourceRemaining).Result()
-		if err != nil {
-			return nil, fmt.Errorf("redisDecr: %v", err.Error())
-		}
-
-		if res < 0 {
-			return nil, fmt.Errorf("workspace has reached its max resources limit")
 		}
 
 		kafkaResource := kafka.Resource{

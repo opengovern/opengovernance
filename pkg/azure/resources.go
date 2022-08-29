@@ -25,12 +25,12 @@ func (fn ResourceDescribeFunc) DescribeResources(c context.Context, a autorest.A
 }
 
 var resourceTypeToDescriber = map[string]ResourceDescriber{
-	"Microsoft.ApiManagement/service":                       DescribeBySubscription(describer.APIManagement),
-	"Microsoft.AppConfiguration/configurationStores":        DescribeBySubscription(describer.AppConfiguration),
-	"Microsoft.Web/hostingEnvironments":                     DescribeBySubscription(describer.AppServiceEnvironment),
-	"Microsoft.Authorization/elevateAccessRoleAssignment":   DescribeBySubscription(describer.RoleAssignment),
-	"Microsoft.Blueprint/blueprints":                        DescribeBySubscription(describer.BlueprintBlueprint),
-	"Microsoft.Blueprint/blueprints/artifacts":              DescribeBySubscription(describer.BlueprintArtifact),
+	"Microsoft.ApiManagement/service":                     DescribeBySubscription(describer.APIManagement),
+	"Microsoft.AppConfiguration/configurationStores":      DescribeBySubscription(describer.AppConfiguration),
+	"Microsoft.Web/hostingEnvironments":                   DescribeBySubscription(describer.AppServiceEnvironment),
+	"Microsoft.Authorization/elevateAccessRoleAssignment": DescribeBySubscription(describer.RoleAssignment),
+	//"Microsoft.Blueprint/blueprints":                        DescribeBySubscription(describer.BlueprintBlueprint),
+	//"Microsoft.Blueprint/blueprints/artifacts":              DescribeBySubscription(describer.BlueprintArtifact),
 	"Microsoft.Cache/redis":                                 DescribeBySubscription(describer.RedisCache),
 	"Microsoft.CognitiveServices/accounts":                  DescribeBySubscription(describer.CognitiveAccount),
 	"Microsoft.Compute/disks":                               DescribeBySubscription(describer.ComputeDisk),

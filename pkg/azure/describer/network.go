@@ -261,8 +261,13 @@ func NetworkSecurityGroup(ctx context.Context, authorizer autorest.Authorizer, s
 			id := *networkSecurityGroup.ID
 			networkListOp, err := client.List(ctx, id)
 			if err != nil {
-				return nil, err
+				if strings.Contains(err.Error(), "ResourceNotFound") {
+					// ignore
+				} else {
+					return nil, err
+				}
 			}
+
 			values = append(values, Resource{
 				ID:       *networkSecurityGroup.ID,
 				Name:     *networkSecurityGroup.Name,
