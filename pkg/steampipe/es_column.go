@@ -232,8 +232,13 @@ func ConvertToDescription(resourceType string, data interface{}) (interface{}, e
 				}
 			}
 		}
-
-		bs = bs[:startIdx] + bs[idx+len(":{\"Time\":{}}"):]
+		endIdx := idx + len(":{\"Time\":{}}")
+		if bs[startIdx-1] == ',' {
+			startIdx--
+		} else if bs[endIdx+1] == ',' {
+			endIdx++
+		}
+		bs = bs[:startIdx] + bs[endIdx:]
 	}
 
 	sourceType := SourceTypeByResourceType(resourceType)
@@ -246,7 +251,7 @@ func ConvertToDescription(resourceType string, data interface{}) (interface{}, e
 		}
 		err = json.Unmarshal([]byte(bs), d)
 		if err != nil {
-			log.Println("failed to unmarshal to description: ", string(b))
+			log.Println("failed to unmarshal to description: ", bs)
 			return nil, fmt.Errorf("unmarshalling error q%v: %s", err, string(b))
 		}
 		d = helpers.DereferencePointer(d)
@@ -260,7 +265,7 @@ func ConvertToDescription(resourceType string, data interface{}) (interface{}, e
 		}
 		err = json.Unmarshal([]byte(bs), &d)
 		if err != nil {
-			log.Println("failed to unmarshal to description: ", string(b))
+			log.Println("failed to unmarshal to description: ", bs)
 			return nil, fmt.Errorf("unmarshalling error %v: %s", err, string(b))
 		}
 		d = helpers.DereferencePointer(d)
