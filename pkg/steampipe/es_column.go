@@ -235,7 +235,7 @@ func ConvertToDescription(resourceType string, data interface{}) (interface{}, e
 		endIdx := idx + len(":{\"Time\":{}}")
 		if bs[startIdx-1] == ',' {
 			startIdx--
-		} else if bs[endIdx+1] == ',' {
+		} else if bs[endIdx] == ',' {
 			endIdx++
 		}
 		bs = bs[:startIdx] + bs[endIdx:]
