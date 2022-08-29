@@ -247,7 +247,7 @@ func ConvertToDescription(resourceType string, data interface{}) (interface{}, e
 		err = json.Unmarshal([]byte(bs), d)
 		if err != nil {
 			log.Println("failed to unmarshal to description: ", string(b))
-			return nil, fmt.Errorf("%v: %s", err, string(b))
+			return nil, fmt.Errorf("unmarshalling error q%v: %s", err, string(b))
 		}
 		d = helpers.DereferencePointer(d)
 		return d, nil
@@ -260,7 +260,8 @@ func ConvertToDescription(resourceType string, data interface{}) (interface{}, e
 		}
 		err = json.Unmarshal([]byte(bs), &d)
 		if err != nil {
-			return nil, fmt.Errorf("unmarshalling: %v", err)
+			log.Println("failed to unmarshal to description: ", string(b))
+			return nil, fmt.Errorf("unmarshalling error %v: %s", err, string(b))
 		}
 		d = helpers.DereferencePointer(d)
 		return d, nil
