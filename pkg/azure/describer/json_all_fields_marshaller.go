@@ -22,7 +22,7 @@ type JSONAllFieldsMarshaller struct {
 }
 
 func (x JSONAllFieldsMarshaller) MarshalJSON() ([]byte, error) {
-	var val interface{} = x.Value
+	var val = x.Value
 
 	v := reflect.ValueOf(x.Value)
 	if _, ok := exclusionTypeSet[v.Type().PkgPath()]; !ok {
@@ -84,7 +84,10 @@ type azPtrMarshaller struct {
 
 func (x azPtrMarshaller) MarshalJSON() ([]byte, error) {
 	val := x.Value
-	for val.Type().Kind() == reflect.Ptr && !val.IsNil() {
+	for val.Type().Kind() == reflect.Ptr {
+		if val.IsNil() {
+			return []byte("null"), nil
+		}
 		val = val.Elem()
 	}
 
