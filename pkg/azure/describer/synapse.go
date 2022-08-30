@@ -30,20 +30,27 @@ func SynapseWorkspace(ctx context.Context, authorizer autorest.Authorizer, subsc
 		for _, config := range result.Values() {
 			resourceGroup := strings.Split(*config.ID, "/")[4]
 
+			ignoreAssesment := false
 			synapseListResult, err := synapseClient.List(ctx, resourceGroup, *config.Name)
 			if err != nil {
-				return nil, err
+				if !strings.Contains(err.Error(), "UnsupportedOperation") {
+					ignoreAssesment = true
+				} else {
+					return nil, err
+				}
 			}
 
 			var serverVulnerabilityAssessments []synapse.ServerVulnerabilityAssessment
-			serverVulnerabilityAssessments = append(serverVulnerabilityAssessments, synapseListResult.Values()...)
-
-			for synapseListResult.NotDone() {
-				err = synapseListResult.NextWithContext(ctx)
-				if err != nil {
-					return nil, err
-				}
+			if !ignoreAssesment {
 				serverVulnerabilityAssessments = append(serverVulnerabilityAssessments, synapseListResult.Values()...)
+
+				for synapseListResult.NotDone() {
+					err = synapseListResult.NextWithContext(ctx)
+					if err != nil {
+						return nil, err
+					}
+					serverVulnerabilityAssessments = append(serverVulnerabilityAssessments, synapseListResult.Values()...)
+				}
 			}
 
 			synapseListOp, err := insightsClient.List(ctx, *config.ID)

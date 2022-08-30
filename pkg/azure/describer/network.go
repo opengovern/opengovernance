@@ -261,7 +261,7 @@ func NetworkSecurityGroup(ctx context.Context, authorizer autorest.Authorizer, s
 			id := *networkSecurityGroup.ID
 			networkListOp, err := client.List(ctx, id)
 			if err != nil {
-				if strings.Contains(err.Error(), "ResourceNotFound") {
+				if strings.Contains(err.Error(), "ResourceNotFound") || strings.Contains(err.Error(), "SubscriptionNotRegistered") {
 					// ignore
 				} else {
 					return nil, err

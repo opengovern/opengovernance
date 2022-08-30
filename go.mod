@@ -100,7 +100,7 @@ require (
 	github.com/turbot/go-kit v0.3.0
 	github.com/turbot/steampipe-plugin-sdk v1.8.3
 	gitlab.com/keibiengine/steampipe-plugin-aws v0.0.0-20220829105655-f0db57ee5864
-	gitlab.com/keibiengine/steampipe-plugin-azure v0.23.2-0.20220829105047-2bcd2fee9fb4
+	gitlab.com/keibiengine/steampipe-plugin-azure v0.23.2-0.20220830042023-4cf8b91a84cf
 	gitlab.com/keibiengine/steampipe-plugin-azuread v0.1.1-0.20220518191201-bd20078e9eaf
 	go.uber.org/zap v1.21.0
 	golang.org/x/text v0.3.7 // indirect
