@@ -3153,6 +3153,24 @@ paths:
       summary: Delete workspace for workspace service
       tags:
       - workspace
+  /workspace/api/v1/workspace/:workspace_id/resume:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Workspace ID
+        in: path
+        name: workspace_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: ""
+      summary: Resume workspace
+      tags:
+      - workspace
   /workspace/api/v1/workspace/{workspace_id}/owner:
     post:
       consumes:

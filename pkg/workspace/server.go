@@ -107,6 +107,7 @@ func (s *Server) Register(e *echo.Echo) {
 
 	v1.POST("/workspace", s.CreateWorkspace)
 	v1.DELETE("/workspace/:workspace_id", s.DeleteWorkspace)
+	v1.POST("/workspace/:workspace_id/resume", s.ResumeWorkspace)
 	v1.GET("/workspaces/limits/:workspace_name", s.GetWorkspaceLimits)
 	v1.GET("/workspaces/limits/byid/:workspace_id", s.GetWorkspaceLimitsByID)
 	v1.GET("/workspaces", s.ListWorkspaces)
@@ -439,7 +440,7 @@ func (s *Server) handleWorkspace(workspace *Workspace) error {
 // @Accept   json
 // @Produce  json
 // @Param        request  body      api.CreateWorkspaceRequest  true  "Create workspace request"
-// @Success      200      {object}  api.CreateWorkspaceResponse
+// @Success  200      {object}  api.CreateWorkspaceResponse
 // @Router       /workspace/api/v1/workspace [post]
 func (s *Server) CreateWorkspace(c echo.Context) error {
 	userID := httpserver.GetUserID(c)
@@ -492,7 +493,7 @@ func (s *Server) CreateWorkspace(c echo.Context) error {
 // @Tags     workspace
 // @Accept   json
 // @Produce  json
-// @Param        workspace_id  path  string  true  "Workspace ID"
+// @Param    workspace_id  path  string  true  "Workspace ID"
 // @Success      200
 // @Router       /workspace/api/v1/workspace/:workspace_id [delete]
 func (s *Server) DeleteWorkspace(c echo.Context) error {
@@ -522,6 +523,41 @@ func (s *Server) DeleteWorkspace(c echo.Context) error {
 	if err := s.db.UpdateWorkspaceStatus(id, StatusDeleting); err != nil {
 		c.Logger().Errorf("delete workspace: %v", err)
 		return echo.NewHTTPError(http.StatusInternalServerError, ErrInternalServer)
+	}
+	return c.JSON(http.StatusOK, map[string]string{"message": "success"})
+}
+
+// ResumeWorkspace godoc
+// @Summary  Resume workspace
+// @Tags     workspace
+// @Accept   json
+// @Produce  json
+// @Param        workspace_id  path  string  true  "Workspace ID"
+// @Success      200
+// @Router   /workspace/api/v1/workspace/:workspace_id/resume [post]
+func (s *Server) ResumeWorkspace(c echo.Context) error {
+	value := c.Param("workspace_id")
+	if value == "" {
+		return echo.NewHTTPError(http.StatusBadRequest, "workspace id is empty")
+	}
+	id, err := uuid.Parse(value)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid workspace id")
+	}
+
+	workspace, err := s.db.GetWorkspace(id)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return echo.NewHTTPError(http.StatusNotFound, "workspace not found")
+		}
+		c.Logger().Errorf("find workspace: %v", err)
+		return echo.NewHTTPError(http.StatusInternalServerError, ErrInternalServer)
+	}
+
+	err = s.rdb.SetEX(context.Background(), "last_access_"+workspace.Name, time.Now().UnixMilli(),
+		30*24*time.Hour).Err()
+	if err != nil {
+		return err
 	}
 	return c.JSON(http.StatusOK, map[string]string{"message": "success"})
 }

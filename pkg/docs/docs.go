@@ -3209,6 +3209,34 @@ const docTemplate = `{
                 }
             }
         },
+        "/workspace/api/v1/workspace/:workspace_id/resume": {
+            "post": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "workspace"
+                ],
+                "summary": "Resume workspace",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Workspace ID",
+                        "name": "workspace_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": ""
+                    }
+                }
+            }
+        },
         "/workspace/api/v1/workspace/{workspace_id}/owner": {
             "post": {
                 "consumes": [
