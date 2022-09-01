@@ -555,6 +555,10 @@ func (s *Server) ResumeWorkspace(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, ErrInternalServer)
 	}
 
+	if workspace.Status != string(StatusSuspended) {
+		return echo.NewHTTPError(http.StatusBadRequest, "workspace is not suspended")
+	}
+
 	err = s.rdb.SetEX(context.Background(), "last_access_"+workspace.Name, time.Now().UnixMilli(),
 		30*24*time.Hour).Err()
 	if err != nil {
@@ -593,6 +597,10 @@ func (s *Server) SuspendWorkspace(c echo.Context) error {
 		}
 		c.Logger().Errorf("find workspace: %v", err)
 		return echo.NewHTTPError(http.StatusInternalServerError, ErrInternalServer)
+	}
+
+	if workspace.Status != string(StatusProvisioned) {
+		return echo.NewHTTPError(http.StatusBadRequest, "workspace is not provisioned")
 	}
 
 	err = s.rdb.Del(context.Background(), "last_access_"+workspace.Name).Err()
