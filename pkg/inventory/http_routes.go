@@ -1522,6 +1522,15 @@ func (h *HttpHandler) GetSummaryMetrics(ctx echo.Context) error {
 		ts := string(provider)
 		providerStr = &ts
 	}
+	includeAWS, includeAzure := false, false
+	switch provider {
+	case source.CloudAWS:
+		includeAWS = true
+	case source.CloudAzure:
+		includeAzure = true
+	default:
+		includeAzure, includeAWS = true, true
+	}
 
 	var sourceUUID *uuid.UUID
 	var sourceID *string
@@ -1610,6 +1619,28 @@ func (h *HttpHandler) GetSummaryMetrics(ctx echo.Context) error {
 		return nil
 	}
 
+	query, err := es.FindInsightResults(nil, nil)
+	if err != nil {
+		return err
+	}
+
+	var response es.InsightResultQueryResponse
+	err = h.client.Search(context.Background(), kafka.InsightsIndex,
+		query, &response)
+	if err != nil {
+		return err
+	}
+
+	var awsAccountCount, azureAccountCount kafka.InsightResource
+	for _, item := range response.Hits.Hits {
+		if includeAWS && item.Source.Description == "AWS Account Count" {
+			awsAccountCount = item.Source
+		}
+		if includeAzure && item.Source.Description == "Azure Account Count" {
+			azureAccountCount = item.Source
+		}
+	}
+
 	totalAccounts, err := h.onboardClient.CountSources(httpclient.FromEchoContext(ctx), providerPtr)
 	if err != nil {
 		return err
@@ -1618,10 +1649,10 @@ func (h *HttpHandler) GetSummaryMetrics(ctx echo.Context) error {
 	res = append(res, api.MetricsResponse{
 		MetricsName:      "Total Accounts",
 		Value:            int(totalAccounts),
-		LastDayValue:     nil,
-		LastWeekValue:    nil,
-		LastQuarterValue: nil,
-		LastYearValue:    nil,
+		LastDayValue:     padd64(awsAccountCount.LastDayValue, azureAccountCount.LastDayValue),
+		LastWeekValue:    padd64(awsAccountCount.LastWeekValue, azureAccountCount.LastWeekValue),
+		LastQuarterValue: padd64(awsAccountCount.LastQuarterValue, azureAccountCount.LastQuarterValue),
+		LastYearValue:    padd64(awsAccountCount.LastYearValue, azureAccountCount.LastYearValue),
 	})
 
 	var lastValue int
@@ -1713,28 +1744,6 @@ func (h *HttpHandler) GetSummaryMetrics(ctx echo.Context) error {
 		"Disks", "aws::ec2::volume",
 		"Managed Disks", "Microsoft.Compute/disks"); err != nil {
 		return err
-	}
-
-	query, err := es.FindInsightResults(nil, nil)
-	if err != nil {
-		return err
-	}
-
-	var response es.InsightResultQueryResponse
-	err = h.client.Search(context.Background(), kafka.InsightsIndex,
-		query, &response)
-	if err != nil {
-		return err
-	}
-
-	includeAWS, includeAzure := false, false
-	switch provider {
-	case source.CloudAWS:
-		includeAWS = true
-	case source.CloudAzure:
-		includeAzure = true
-	default:
-		includeAzure, includeAWS = true, true
 	}
 
 	var awsStorage, azureStorage kafka.InsightResource

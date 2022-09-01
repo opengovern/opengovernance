@@ -3287,6 +3287,34 @@ const docTemplate = `{
                 }
             }
         },
+        "/workspace/api/v1/workspace/:workspace_id/suspend": {
+            "post": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "workspace"
+                ],
+                "summary": "Suspend workspace",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Workspace ID",
+                        "name": "workspace_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": ""
+                    }
+                }
+            }
+        },
         "/workspace/api/v1/workspace/{workspace_id}/owner": {
             "post": {
                 "consumes": [

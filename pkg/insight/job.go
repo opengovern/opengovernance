@@ -5,7 +5,14 @@ import (
 	"fmt"
 	"reflect"
 	"strconv"
+	"strings"
 	"time"
+
+	"gitlab.com/keibiengine/keibi-engine/pkg/source"
+
+	"github.com/aws/aws-sdk-go/service/managedgrafana"
+	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpclient"
+	"gitlab.com/keibiengine/keibi-engine/pkg/onboard/client"
 
 	"github.com/jackc/pgtype"
 
@@ -61,7 +68,7 @@ type JobResult struct {
 	Error  string
 }
 
-func (j Job) Do(es keibi.Client, steampipeConn *steampipe.Database, producer sarama.SyncProducer, topic string, logger *zap.Logger) (r JobResult) {
+func (j Job) Do(es keibi.Client, steampipeConn *steampipe.Database, onboardClient client.OnboardServiceClient, producer sarama.SyncProducer, topic string, logger *zap.Logger) (r JobResult) {
 	startTime := time.Now().Unix()
 	defer func() {
 		if err := recover(); err != nil {
@@ -92,8 +99,18 @@ func (j Job) Do(es keibi.Client, steampipeConn *steampipe.Database, producer sar
 			firstErr = err
 		}
 	}
-
-	res, err := steampipeConn.Count(j.Query)
+	var res *steampipe.Result
+	var err error
+	if strings.TrimSpace(j.Query) == "accounts_count" {
+		pr, _ := source.ParseType(j.Provider)
+		var totalAccounts int64
+		totalAccounts, err = onboardClient.CountSources(&httpclient.Context{
+			UserRole: managedgrafana.RoleAdmin,
+		}, &pr)
+		res.Data = [][]interface{}{{totalAccounts}}
+	} else {
+		res, err = steampipeConn.Count(j.Query)
+	}
 	if err == nil {
 		result := res.Data[0][0]
 		if v, ok := result.(pgtype.Numeric); ok {

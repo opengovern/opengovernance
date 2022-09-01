@@ -33,6 +33,8 @@ var (
 	SteampipePassword = os.Getenv("STEAMPIPE_PASSWORD")
 
 	PrometheusPushAddress = os.Getenv("PROMETHEUS_PUSH_ADDRESS")
+
+	OnboardBaseURL = os.Getenv("ONBOARD_BASE_URL")
 )
 
 func WorkerCommand() *cobra.Command {
@@ -79,6 +81,7 @@ func WorkerCommand() *cobra.Command {
 				ElasticSearchAddress,
 				ElasticSearchUsername,
 				ElasticSearchPassword,
+				OnboardBaseURL,
 			)
 			if err != nil {
 				return err

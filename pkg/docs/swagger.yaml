@@ -3257,6 +3257,24 @@ paths:
       summary: Resume workspace
       tags:
       - workspace
+  /workspace/api/v1/workspace/:workspace_id/suspend:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Workspace ID
+        in: path
+        name: workspace_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: ""
+      summary: Suspend workspace
+      tags:
+      - workspace
   /workspace/api/v1/workspace/{workspace_id}/owner:
     post:
       consumes:

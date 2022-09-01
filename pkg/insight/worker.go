@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"gitlab.com/keibiengine/keibi-engine/pkg/onboard/client"
+
 	"gitlab.com/keibiengine/keibi-engine/pkg/keibi-es-sdk"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/steampipe"
@@ -24,6 +26,7 @@ type Worker struct {
 	steampipeConn  *steampipe.Database
 	es             keibi.Client
 	pusher         *push.Pusher
+	onboardClient  client.OnboardServiceClient
 }
 
 func InitializeWorker(
@@ -46,6 +49,7 @@ func InitializeWorker(
 	elasticSearchAddress string,
 	elasticSearchUsername string,
 	elasticSearchPassword string,
+	onboardBaseURL string,
 ) (w *Worker, err error) {
 	if id == "" {
 		return nil, fmt.Errorf("'id' must be set to a non empty string")
@@ -128,6 +132,7 @@ func InitializeWorker(
 		return nil, err
 	}
 
+	w.onboardClient = client.NewOnboardServiceClient(onboardBaseURL)
 	return w, nil
 }
 
@@ -149,7 +154,7 @@ func (w *Worker) Run() error {
 			continue
 		}
 		w.logger.Info("Processing job", zap.Int("jobID", int(job.JobID)))
-		result := job.Do(w.es, w.steampipeConn, w.kfkProducer, w.kfkTopic, w.logger)
+		result := job.Do(w.es, w.steampipeConn, w.onboardClient, w.kfkProducer, w.kfkTopic, w.logger)
 		w.logger.Info("Publishing job result", zap.Int("jobID", int(job.JobID)))
 		err := w.jobResultQueue.Publish(result)
 		if err != nil {

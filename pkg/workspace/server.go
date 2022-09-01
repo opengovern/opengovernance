@@ -107,6 +107,7 @@ func (s *Server) Register(e *echo.Echo) {
 
 	v1.POST("/workspace", s.CreateWorkspace)
 	v1.DELETE("/workspace/:workspace_id", s.DeleteWorkspace)
+	v1.POST("/workspace/:workspace_id/suspend", s.SuspendWorkspace)
 	v1.POST("/workspace/:workspace_id/resume", s.ResumeWorkspace)
 	v1.GET("/workspaces/limits/:workspace_name", s.GetWorkspaceLimits)
 	v1.GET("/workspaces/limits/byid/:workspace_id", s.GetWorkspaceLimitsByID)
@@ -186,14 +187,14 @@ func (s *Server) handleAutoSuspend(workspace *Workspace) error {
 				return fmt.Errorf("update workspace status: %w", err)
 			}
 		}
-	} else {
+	} /* else {
 		if workspace.Status == string(StatusSuspended) {
 			fmt.Printf("resuming workspace %s\n", workspace.Name)
 			if err := s.db.UpdateWorkspaceStatus(workspace.ID, StatusProvisioning); err != nil {
 				return fmt.Errorf("update workspace status: %w", err)
 			}
 		}
-	}
+	}*/
 	return nil
 }
 
@@ -494,7 +495,7 @@ func (s *Server) CreateWorkspace(c echo.Context) error {
 // @Accept   json
 // @Produce  json
 // @Param    workspace_id  path  string  true  "Workspace ID"
-// @Success      200
+// @Success  200
 // @Router       /workspace/api/v1/workspace/:workspace_id [delete]
 func (s *Server) DeleteWorkspace(c echo.Context) error {
 	userID := httpserver.GetUserID(c)
@@ -532,7 +533,7 @@ func (s *Server) DeleteWorkspace(c echo.Context) error {
 // @Tags     workspace
 // @Accept   json
 // @Produce  json
-// @Param        workspace_id  path  string  true  "Workspace ID"
+// @Param    workspace_id  path  string  true  "Workspace ID"
 // @Success      200
 // @Router   /workspace/api/v1/workspace/:workspace_id/resume [post]
 func (s *Server) ResumeWorkspace(c echo.Context) error {
@@ -559,6 +560,49 @@ func (s *Server) ResumeWorkspace(c echo.Context) error {
 	if err != nil {
 		return err
 	}
+
+	if err := s.db.UpdateWorkspaceStatus(workspace.ID, StatusProvisioning); err != nil {
+		return fmt.Errorf("update workspace status: %w", err)
+	}
+
+	return c.JSON(http.StatusOK, map[string]string{"message": "success"})
+}
+
+// SuspendWorkspace godoc
+// @Summary  Suspend workspace
+// @Tags     workspace
+// @Accept   json
+// @Produce  json
+// @Param        workspace_id  path  string  true  "Workspace ID"
+// @Success      200
+// @Router   /workspace/api/v1/workspace/:workspace_id/suspend [post]
+func (s *Server) SuspendWorkspace(c echo.Context) error {
+	value := c.Param("workspace_id")
+	if value == "" {
+		return echo.NewHTTPError(http.StatusBadRequest, "workspace id is empty")
+	}
+	id, err := uuid.Parse(value)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid workspace id")
+	}
+
+	workspace, err := s.db.GetWorkspace(id)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return echo.NewHTTPError(http.StatusNotFound, "workspace not found")
+		}
+		c.Logger().Errorf("find workspace: %v", err)
+		return echo.NewHTTPError(http.StatusInternalServerError, ErrInternalServer)
+	}
+
+	err = s.rdb.Del(context.Background(), "last_access_"+workspace.Name).Err()
+	if err != nil {
+		return err
+	}
+	if err := s.db.UpdateWorkspaceStatus(workspace.ID, StatusSuspending); err != nil {
+		return fmt.Errorf("update workspace status: %w", err)
+	}
+
 	return c.JSON(http.StatusOK, map[string]string{"message": "success"})
 }
 
