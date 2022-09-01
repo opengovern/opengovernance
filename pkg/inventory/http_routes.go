@@ -2853,7 +2853,10 @@ func (h *HttpHandler) GetResourcesFilters(ctx echo.Context) error {
 		resp.Filters.Service = append(resp.Filters.Service, item.Key)
 	}
 	for _, item := range response.Aggregations.ResourceTypeFilter.Buckets {
-		resp.Filters.ResourceType = append(resp.Filters.ResourceType, item.Key)
+		resp.Filters.ResourceType = append(resp.Filters.ResourceType, api.ResourceTypeFull{
+			ResourceTypeARN:  item.Key,
+			ResourceTypeName: cloudservice.ResourceTypeName(item.Key),
+		})
 	}
 	for _, item := range response.Aggregations.LocationFilter.Buckets {
 		resp.Filters.Location = append(resp.Filters.Location, item.Key)

@@ -110,13 +110,34 @@ type ResourceFilters struct {
 	TagValues map[string][]string `json:"tagValues"`
 }
 
+type ResourceTypeFull struct {
+	ResourceTypeARN  string `json:"resource_type_arn"`
+	ResourceTypeName string `json:"resource_type_name"`
+}
+type ResourceFiltersResponse struct {
+	// if you dont need to use this filter, leave them empty. (e.g. [])
+	ResourceType []ResourceTypeFull `json:"resourceType"`
+	// if you dont need to use this filter, leave them empty. (e.g. [])
+	Category []string `json:"category"`
+	// if you dont need to use this filter, leave them empty. (e.g. [])
+	Service []string `json:"service"`
+	// if you dont need to use this filter, leave them empty. (e.g. [])
+	Location []string `json:"location"`
+	// if you dont need to use this filter, leave them empty. (e.g. [])
+	Provider []string `json:"provider"`
+	// if you dont need to use this filter, leave them empty. (e.g. [])
+	TagKeys []string `json:"tagKeys"`
+	// if you dont need to use this filter, leave them empty. (e.g. [])
+	TagValues map[string][]string `json:"tagValues"`
+}
+
 type GetFiltersRequest struct {
 	Query   string          `json:"query"`                       // search query
 	Filters ResourceFilters `json:"filters" validate:"required"` // search filters
 }
 
 type GetFiltersResponse struct {
-	Filters ResourceFilters `json:"filters"` // search filters
+	Filters ResourceFiltersResponse `json:"filters"` // search filters
 }
 
 type ResourceSortItem struct {

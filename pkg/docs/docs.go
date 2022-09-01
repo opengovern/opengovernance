@@ -3946,7 +3946,7 @@ const docTemplate = `{
             "properties": {
                 "filters": {
                     "description": "search filters",
-                    "$ref": "#/definitions/api.ResourceFilters"
+                    "$ref": "#/definitions/api.ResourceFiltersResponse"
                 }
             }
         },
@@ -4268,6 +4268,63 @@ const docTemplate = `{
                 }
             }
         },
+        "api.ResourceFiltersResponse": {
+            "type": "object",
+            "properties": {
+                "category": {
+                    "description": "if you dont need to use this filter, leave them empty. (e.g. [])",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "location": {
+                    "description": "if you dont need to use this filter, leave them empty. (e.g. [])",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "provider": {
+                    "description": "if you dont need to use this filter, leave them empty. (e.g. [])",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "resourceType": {
+                    "description": "if you dont need to use this filter, leave them empty. (e.g. [])",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/api.ResourceTypeFull"
+                    }
+                },
+                "service": {
+                    "description": "if you dont need to use this filter, leave them empty. (e.g. [])",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "tagKeys": {
+                    "description": "if you dont need to use this filter, leave them empty. (e.g. [])",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "tagValues": {
+                    "description": "if you dont need to use this filter, leave them empty. (e.g. [])",
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
         "api.ResourceSortItem": {
             "type": "object",
             "properties": {
@@ -4299,6 +4356,17 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "resourceTypeName": {
+                    "type": "string"
+                }
+            }
+        },
+        "api.ResourceTypeFull": {
+            "type": "object",
+            "properties": {
+                "resource_type_arn": {
+                    "type": "string"
+                },
+                "resource_type_name": {
                     "type": "string"
                 }
             }
