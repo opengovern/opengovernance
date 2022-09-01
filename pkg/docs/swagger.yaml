@@ -2689,6 +2689,38 @@ paths:
       summary: Put source credential
       tags:
       - onboard
+  /onboard/api/v1/source/{sourceId}/disable:
+    post:
+      parameters:
+      - description: SourceID
+        in: path
+        name: sourceId
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: ""
+      summary: Disable a single source
+      tags:
+      - onboard
+  /onboard/api/v1/source/{sourceId}/enable:
+    post:
+      parameters:
+      - description: SourceID
+        in: path
+        name: sourceId
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: ""
+      summary: Enable a single source
+      tags:
+      - onboard
   /onboard/api/v1/source/aws:
     post:
       description: Creating AWS source

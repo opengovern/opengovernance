@@ -152,6 +152,24 @@ func (db Database) DeleteSource(id uuid.UUID) error {
 	return nil
 }
 
+// UpdateSourceEnabled update source enabled
+func (db Database) UpdateSourceEnabled(id uuid.UUID, enabled bool) error {
+	tx := db.orm.
+		Model(&Source{}).
+		Where("id = ?", id.String()).
+		Updates(map[string]interface{}{
+			"enabled": enabled,
+		})
+
+	if tx.Error != nil {
+		return tx.Error
+	} else if tx.RowsAffected != 1 {
+		return fmt.Errorf("update source: didn't find source to update")
+	}
+
+	return nil
+}
+
 // CreateSPN creates a new spn
 func (db Database) CreateSPN(s *SPN) error {
 	tx := db.orm.

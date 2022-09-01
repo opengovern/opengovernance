@@ -33,6 +33,8 @@ func (h HttpHandler) Register(r *echo.Echo) {
 	source.GET("/:sourceId/credentials", h.GetSourceCred)
 	source.PUT("/:sourceId/credentials", h.PutSourceCred)
 	source.PUT("/:sourceId", h.PutSource)
+	source.POST("/:sourceId/disable", h.DisableSource)
+	source.POST("/:sourceId/enable", h.EnableSource)
 	source.DELETE("/:sourceId", h.DeleteSource)
 
 	v1.GET("/sources", h.GetSources)
@@ -75,7 +77,7 @@ func bindValidate(ctx echo.Context, i interface{}) error {
 // @Description  Getting cloud providers
 // @Tags     onboard
 // @Produce  json
-// @Success      200  {object}  api.ProvidersResponse
+// @Success  200  {object}  api.ProvidersResponse
 // @Router       /onboard/api/v1/providers [get]
 func (h HttpHandler) GetProviders(ctx echo.Context) error {
 	return ctx.JSON(http.StatusOK, api.ProvidersResponse{
@@ -167,7 +169,7 @@ func (h HttpHandler) GetProviders(ctx echo.Context) error {
 // @Description  Getting connector categories
 // @Tags     onboard
 // @Produce  json
-// @Success      200  {object}  []connector.Category
+// @Success  200  {object}  []connector.Category
 // @Router       /onboard/api/v1/connectors/categories [get]
 func (h HttpHandler) GetConnectorCategories(ctx echo.Context) error {
 	return ctx.JSON(http.StatusOK, connector.CategoryList)
@@ -348,8 +350,8 @@ func (h HttpHandler) PostSourceAzure(ctx echo.Context) error {
 // PostSourceAzureSPN godoc
 // @Summary      Create Azure source with SPN
 // @Description  Creating Azure source with SPN
-// @Tags         onboard
-// @Produce      json
+// @Tags     onboard
+// @Produce  json
 // @Success      200          {object}  api.CreateSourceResponse
 // @Param        name         body      string                 true  "name"
 // @Param        description  body      string                 true  "description"
@@ -404,8 +406,8 @@ func (h HttpHandler) PostSourceAzureSPN(ctx echo.Context) error {
 // PostSPN godoc
 // @Summary      Create Azure SPN
 // @Description  Creating Azure SPN
-// @Tags         onboard
-// @Produce      json
+// @Tags     onboard
+// @Produce  json
 // @Success      200     {object}  api.CreateSPNResponse
 // @Param        name         body      string                 true  "name"
 // @Param        config       body      api.SourceConfigAzure  true  "config"
@@ -723,7 +725,7 @@ func (h HttpHandler) GetSource(ctx echo.Context) error {
 // @Tags         onboard
 // @Produce      json
 // @Success      200
-// @Param        sourceId  path  integer  true  "SourceID"
+// @Param    sourceId  path  integer  true  "SourceID"
 // @Router       /onboard/api/v1/source/{sourceId} [delete]
 func (h HttpHandler) DeleteSource(ctx echo.Context) error {
 	srcId, err := uuid.Parse(ctx.Param(paramSourceId))
@@ -759,6 +761,93 @@ func (h HttpHandler) DeleteSource(ctx echo.Context) error {
 			return err
 		}
 
+		return nil
+	})
+	if err != nil {
+		return err
+	}
+
+	return ctx.NoContent(http.StatusOK)
+}
+
+// DisableSource godoc
+// @Summary  Disable a single source
+// @Tags         onboard
+// @Produce      json
+// @Success      200
+// @Param    sourceId  path  integer  true  "SourceID"
+// @Router   /onboard/api/v1/source/{sourceId}/disable [post]
+func (h HttpHandler) DisableSource(ctx echo.Context) error {
+	srcId, err := uuid.Parse(ctx.Param(paramSourceId))
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
+	}
+
+	src, err := h.db.GetSource(srcId)
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return echo.NewHTTPError(http.StatusBadRequest, "source not found")
+		}
+		return err
+	}
+
+	err = h.db.orm.Transaction(func(tx *gorm.DB) error {
+		if err := h.db.UpdateSourceEnabled(srcId, false); err != nil {
+			return err
+		}
+
+		if err := h.sourceEventsQueue.Publish(api.SourceEvent{
+			Action:     api.SourceDeleted,
+			SourceID:   src.ID,
+			SourceType: src.Type,
+			ConfigRef:  src.ConfigRef,
+		}); err != nil {
+			return err
+		}
+		return nil
+	})
+	if err != nil {
+		return err
+	}
+
+	return ctx.NoContent(http.StatusOK)
+}
+
+// EnableSource godoc
+// @Summary  Enable a single source
+// @Tags         onboard
+// @Produce      json
+// @Success      200
+// @Param        sourceId  path  integer  true  "SourceID"
+// @Router   /onboard/api/v1/source/{sourceId}/enable [post]
+func (h HttpHandler) EnableSource(ctx echo.Context) error {
+	srcId, err := uuid.Parse(ctx.Param(paramSourceId))
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
+	}
+
+	src, err := h.db.GetSource(srcId)
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return echo.NewHTTPError(http.StatusBadRequest, "source not found")
+		}
+		return err
+	}
+
+	err = h.db.orm.Transaction(func(tx *gorm.DB) error {
+		if err := h.db.UpdateSourceEnabled(srcId, true); err != nil {
+			return err
+		}
+
+		if err := h.sourceEventsQueue.Publish(api.SourceEvent{
+			Action:     api.SourceCreated,
+			SourceID:   src.ID,
+			AccountID:  src.SourceId,
+			SourceType: src.Type,
+			ConfigRef:  src.ConfigRef,
+		}); err != nil {
+			return err
+		}
 		return nil
 	})
 	if err != nil {

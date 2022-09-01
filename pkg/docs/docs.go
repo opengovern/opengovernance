@@ -2652,6 +2652,56 @@ const docTemplate = `{
                 "responses": {}
             }
         },
+        "/onboard/api/v1/source/{sourceId}/disable": {
+            "post": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "onboard"
+                ],
+                "summary": "Disable a single source",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "SourceID",
+                        "name": "sourceId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/onboard/api/v1/source/{sourceId}/enable": {
+            "post": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "onboard"
+                ],
+                "summary": "Enable a single source",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "SourceID",
+                        "name": "sourceId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": ""
+                    }
+                }
+            }
+        },
         "/onboard/api/v1/sources": {
             "get": {
                 "description": "Returning a list of sources including both AWS and Azure unless filtered by Type.",
