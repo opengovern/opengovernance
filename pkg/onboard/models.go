@@ -53,6 +53,7 @@ type Source struct {
 	Type        api.SourceType `gorm:"not null"`
 	Description string
 	ConfigRef   string
+	Enabled     bool
 	CreatedAt   time.Time
 	UpdatedAt   time.Time
 	DeletedAt   sql.NullTime `gorm:"index"`

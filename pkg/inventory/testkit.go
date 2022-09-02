@@ -1016,6 +1016,7 @@ func (m *DescribeMock) GetSource(w http.ResponseWriter, r *http.Request) {
 		Type:           onboardapi.SourceCloudAWS,
 		Description:    "",
 		OnboardDate:    time.Now(),
+		Enabled:        true,
 	}
 
 	b, err := json.Marshal(res)

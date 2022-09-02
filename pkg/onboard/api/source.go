@@ -127,6 +127,7 @@ type Source struct {
 	Type           SourceType `json:"type"`
 	Description    string     `json:"description"`
 	OnboardDate    time.Time  `json:"onboardDate"`
+	Enabled        bool       `json:"enabled"`
 }
 
 type GetSourcesResponse []Source

@@ -716,6 +716,7 @@ func (h HttpHandler) GetSource(ctx echo.Context) error {
 		Type:           src.Type,
 		Description:    src.Description,
 		OnboardDate:    src.CreatedAt,
+		Enabled:        src.Enabled,
 	})
 }
 
@@ -897,6 +898,7 @@ func (h HttpHandler) GetSources(ctx echo.Context) error {
 			Type:           s.Type,
 			Description:    s.Description,
 			OnboardDate:    s.CreatedAt,
+			Enabled:        s.Enabled,
 		}
 		resp = append(resp, source)
 	}
