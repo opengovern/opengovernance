@@ -71,6 +71,7 @@ func NewAWSSource(in api.SourceAwsRequest) Source {
 		Description: in.Description,
 		Type:        provider,
 		ConfigRef:   fmt.Sprintf("sources/%s/%s", strings.ToLower(string(provider)), id),
+		Enabled:     true,
 	}
 
 	if len(strings.TrimSpace(s.Name)) == 0 {
@@ -92,6 +93,7 @@ func NewAzureSource(in api.SourceAzureRequest) Source {
 		Description: in.Description,
 		Type:        provider,
 		ConfigRef:   fmt.Sprintf("sources/%s/%s", strings.ToLower(string(provider)), id),
+		Enabled:     true,
 	}
 
 	if len(strings.TrimSpace(s.Name)) == 0 {
