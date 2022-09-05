@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -360,6 +361,36 @@ func (s *Server) handleWorkspace(workspace *Workspace) error {
 		if err != nil {
 			return fmt.Errorf("find helm release: %w", err)
 		}
+
+		var list velerov1api.BackupList
+		err = s.kubeClient.List(context.Background(), &list)
+		if err != nil {
+			return err
+		}
+
+		var backup *velerov1api.Backup
+		for _, v := range list.Items {
+			if !strings.HasPrefix(v.Name, workspace.Name+".") {
+				// . is to prevent backups from other workspaces with similar name to
+				// appear in the results
+				continue
+			}
+
+			timeStr := strings.Split(v.Name, ".")
+			tim, err := time.Parse("2006-02-01-15-04-05", timeStr[1])
+			if err != nil {
+				return err
+			}
+			if tim.After(time.Now().Add(-1 * time.Hour)) {
+				backup = &v
+			}
+		}
+		if backup == nil {
+			return s.CreateBackup(*workspace)
+		} else if backup.Status.Phase != velerov1api.BackupPhaseCompleted {
+			return nil
+		}
+
 		if helmRelease != nil {
 			s.e.Logger.Infof("delete helm release %s with status %s", workspace.ID.String(), workspace.Status)
 			if err := s.deleteHelmRelease(ctx, workspace); err != nil {
@@ -467,8 +498,11 @@ func (s *Server) CreateWorkspace(c echo.Context) error {
 	if request.Name == "keibi" || request.Name == "workspaces" {
 		return echo.NewHTTPError(http.StatusBadRequest, "name cannot be keibi or workspaces")
 	}
-	if strings.Contains(request.Name, ".") {
+	if !regexp.MustCompile(`^[a-zA-Z0-9\-]*$`).MatchString(request.Name) {
 		return echo.NewHTTPError(http.StatusBadRequest, "name is invalid")
+	}
+	if len(request.Name) > 150 {
+		return echo.NewHTTPError(http.StatusBadRequest, "name over 150 characters")
 	}
 
 	switch request.Tier {
@@ -751,7 +785,15 @@ func (s *Server) PerformBackup(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusForbidden, "operation is forbidden")
 	}
 
-	backupName := fmt.Sprintf("%s-%s.backup", w.Name, time.Now().Format("2006-02-01-15-04-05"))
+	if err := s.CreateBackup(*w); err != nil {
+		return err
+	}
+
+	return c.NoContent(http.StatusOK)
+}
+
+func (s *Server) CreateBackup(w Workspace) error {
+	backupName := fmt.Sprintf("%s.%s.backup", w.Name, time.Now().Format("2006-02-01-15-04-05"))
 	// performing backup using velero
 	backupSpec := velerov1api.Backup{
 		TypeMeta: metav1.TypeMeta{
@@ -763,7 +805,7 @@ func (s *Server) PerformBackup(c echo.Context) error {
 			Namespace: "velero",
 		},
 		Spec: velerov1api.BackupSpec{
-			IncludedNamespaces: []string{workspaceID},
+			IncludedNamespaces: []string{w.ID.String()},
 			OrLabelSelectors: []*metav1.LabelSelector{
 				{
 					MatchLabels: map[string]string{
@@ -779,12 +821,11 @@ func (s *Server) PerformBackup(c echo.Context) error {
 		},
 	}
 
-	err = s.kubeClient.Create(context.Background(), &backupSpec)
+	err := s.kubeClient.Create(context.Background(), &backupSpec)
 	if err != nil {
 		return err
 	}
-
-	return c.NoContent(http.StatusOK)
+	return nil
 }
 
 // ListBackups godoc
@@ -826,8 +867,8 @@ func (s *Server) ListBackups(c echo.Context) error {
 
 	backupList := map[string]api.BackupStatus{}
 	for _, v := range list.Items {
-		if !strings.HasPrefix(v.Name, w.Name+"-20") {
-			// -20YY is to prevent backups from other workspaces with similar name to
+		if !strings.HasPrefix(v.Name, w.Name+".") {
+			// . is to prevent backups from other workspaces with similar name to
 			// appear in the results
 			continue
 		}
@@ -883,7 +924,7 @@ func (s *Server) PerformRestore(c echo.Context) error {
 	if w.OwnerId != userID {
 		return echo.NewHTTPError(http.StatusForbidden, "operation is forbidden")
 	}
-	restoreName := fmt.Sprintf("%s-%s.restore", w.Name, time.Now().Format("2006-02-01-15-04-05"))
+	restoreName := fmt.Sprintf("%s.%s.restore", w.Name, time.Now().Format("2006-02-01-15-04-05"))
 
 	// performing restore using velero
 	restoreSpec := velerov1api.Restore{
@@ -948,7 +989,7 @@ func (s *Server) ListRestore(c echo.Context) error {
 
 	backupList := map[string]velerov1api.RestoreStatus{}
 	for _, v := range list.Items {
-		if !strings.HasPrefix(v.Name, w.Name+"-20") {
+		if !strings.HasPrefix(v.Name, w.Name+".") {
 			// -20YY is to prevent backups from other workspaces with similar name to
 			// appear in the results
 			continue
