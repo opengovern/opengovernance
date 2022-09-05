@@ -750,7 +750,7 @@ func (s *Server) PerformBackup(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusForbidden, "operation is forbidden")
 	}
 
-	backupName := fmt.Sprintf("%s_backup_%d", workspaceID, time.Now().UnixMilli())
+	backupName := fmt.Sprintf("%s-backup-%d", workspaceID, time.Now().UnixMilli())
 	// performing backup using velero
 	backupSpec := velerov1api.Backup{
 		TypeMeta: metav1.TypeMeta{
@@ -825,9 +825,9 @@ func (s *Server) ListBackups(c echo.Context) error {
 
 	var timestamps []string
 	for _, v := range list.Items {
-		if strings.HasPrefix(v.Name, workspaceID+"_backup_") {
-			if arr := strings.Split(v.Name, "_"); len(arr) == 3 {
-				timestamps = append(timestamps, arr[2])
+		if strings.HasPrefix(v.Name, workspaceID+"-backup-") {
+			if arr := strings.Split(v.Name, "-backup-"); len(arr) == 2 {
+				timestamps = append(timestamps, arr[1])
 			}
 		}
 	}
@@ -877,11 +877,11 @@ func (s *Server) PerformRestore(c echo.Context) error {
 			APIVersion: "velero.io/v1",
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      workspaceID + "_restore_" + timestamp,
+			Name:      workspaceID + "-restore-" + timestamp,
 			Namespace: "velero",
 		},
 		Spec: velerov1api.RestoreSpec{
-			BackupName:         workspaceID + "_backup_" + timestamp,
+			BackupName:         workspaceID + "-backup-" + timestamp,
 			IncludedNamespaces: []string{workspaceID},
 		},
 	}
