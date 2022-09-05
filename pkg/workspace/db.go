@@ -40,7 +40,7 @@ func (s *Database) UpdateWorkspaceStatus(id uuid.UUID, status WorkspaceStatus) e
 }
 
 func (s *Database) DeleteWorkspace(id uuid.UUID) error {
-	return s.orm.Delete(&Workspace{}, "id = ?", id).Error
+	return s.orm.Where("id = ?", id).Unscoped().Delete(&Workspace{}).Error
 }
 
 func (s *Database) GetWorkspace(id uuid.UUID) (*Workspace, error) {
