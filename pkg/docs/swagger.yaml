@@ -1050,6 +1050,8 @@ definitions:
         type: string
       email:
         type: string
+      enabled:
+        type: boolean
       id:
         type: string
       onboardDate:
@@ -3273,6 +3275,35 @@ paths:
         "200":
           description: ""
       summary: Suspend workspace
+      tags:
+      - workspace
+  /workspace/api/v1/workspace/{workspace_id}/backup:
+    get:
+      consumes:
+      - application/json
+      produces:
+      - application/json
+      responses: {}
+      summary: lists backup of workspace
+      tags:
+      - workspace
+    post:
+      consumes:
+      - application/json
+      produces:
+      - application/json
+      responses: {}
+      summary: perform backup of workspace
+      tags:
+      - workspace
+  /workspace/api/v1/workspace/{workspace_id}/backup/{timestamp}/restore:
+    post:
+      consumes:
+      - application/json
+      produces:
+      - application/json
+      responses: {}
+      summary: perform restore of backup of workspace
       tags:
       - workspace
   /workspace/api/v1/workspace/{workspace_id}/owner:

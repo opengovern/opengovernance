@@ -3315,6 +3315,49 @@ const docTemplate = `{
                 }
             }
         },
+        "/workspace/api/v1/workspace/{workspace_id}/backup": {
+            "get": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "workspace"
+                ],
+                "summary": "lists backup of workspace",
+                "responses": {}
+            },
+            "post": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "workspace"
+                ],
+                "summary": "perform backup of workspace",
+                "responses": {}
+            }
+        },
+        "/workspace/api/v1/workspace/{workspace_id}/backup/{timestamp}/restore": {
+            "post": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "workspace"
+                ],
+                "summary": "perform restore of backup of workspace",
+                "responses": {}
+            }
+        },
         "/workspace/api/v1/workspace/{workspace_id}/owner": {
             "post": {
                 "consumes": [
@@ -4990,6 +5033,9 @@ const docTemplate = `{
                 },
                 "email": {
                     "type": "string"
+                },
+                "enabled": {
+                    "type": "boolean"
                 },
                 "id": {
                     "type": "string"

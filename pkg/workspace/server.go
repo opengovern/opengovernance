@@ -30,6 +30,7 @@ import (
 	"github.com/go-redis/redis/v8"
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
+	velerov1api "github.com/vmware-tanzu/velero/pkg/apis/velero/v1"
 	authapi "gitlab.com/keibiengine/keibi-engine/pkg/auth/api"
 	authclient "gitlab.com/keibiengine/keibi-engine/pkg/auth/client"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpclient"
@@ -86,6 +87,11 @@ func NewServer(cfg *Config) (*Server, error) {
 		return nil, fmt.Errorf("add contourv1 to scheme: %w", err)
 	}
 
+	err = velerov1api.AddToScheme(s.kubeClient.Scheme())
+	if err != nil {
+		return nil, fmt.Errorf("add velerov1api to scheme: %w", err)
+	}
+
 	err = v1.AddToScheme(s.kubeClient.Scheme())
 	if err != nil {
 		return nil, fmt.Errorf("add v1 to scheme: %w", err)
@@ -113,6 +119,8 @@ func (s *Server) Register(e *echo.Echo) {
 	v1.GET("/workspaces/limits/byid/:workspace_id", s.GetWorkspaceLimitsByID)
 	v1.GET("/workspaces", s.ListWorkspaces)
 	v1.POST("/workspace/:workspace_id/owner", s.ChangeOwnership)
+	v1.POST("/workspace/:workspace_id/backup", s.PerformBackup)
+	v1.POST("/workspace/:workspace_id/backup/:timestamp/restore", s.PerformRestore)
 }
 
 func (s *Server) Start() error {
@@ -703,6 +711,181 @@ func (s *Server) ChangeOwnership(c echo.Context) error {
 	}
 
 	err = s.db.UpdateWorkspaceOwner(workspaceUUID, request.NewOwnerUserID)
+	if err != nil {
+		return err
+	}
+
+	return c.NoContent(http.StatusOK)
+}
+
+// PerformBackup godoc
+// @Summary  perform backup of workspace
+// @Tags     workspace
+// @Accept   json
+// @Produce  json
+// @Router   /workspace/api/v1/workspace/{workspace_id}/backup [post]
+func (s *Server) PerformBackup(c echo.Context) error {
+	userID := httpserver.GetUserID(c)
+	workspaceID := c.Param("workspace_id")
+
+	if workspaceID == "" {
+		return echo.NewHTTPError(http.StatusBadRequest, "workspace id is empty")
+	}
+
+	workspaceUUID, err := uuid.Parse(workspaceID)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid workspace id")
+	}
+
+	w, err := s.db.GetWorkspace(workspaceUUID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return echo.NewHTTPError(http.StatusNotFound, "workspace not found")
+		}
+		return err
+	}
+
+	if w.OwnerId != userID {
+		return echo.NewHTTPError(http.StatusForbidden, "operation is forbidden")
+	}
+
+	backupName := fmt.Sprintf("%s_backup_%d", workspaceID, time.Now().UnixMilli())
+	// performing backup using velero
+	backupSpec := velerov1api.Backup{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "Backup",
+			APIVersion: "velero.io/v1",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      backupName,
+			Namespace: "velero",
+		},
+		Spec: velerov1api.BackupSpec{
+			IncludedNamespaces: []string{workspaceID},
+			OrLabelSelectors: []*metav1.LabelSelector{
+				{
+					MatchLabels: map[string]string{
+						"app": "vault",
+					},
+				},
+				{
+					MatchLabels: map[string]string{
+						"app": "postgres-cluster",
+					},
+				},
+			},
+		},
+	}
+
+	err = s.kubeClient.Create(context.Background(), &backupSpec)
+	if err != nil {
+		return err
+	}
+
+	return c.NoContent(http.StatusOK)
+}
+
+// ListBackups godoc
+// @Summary  lists backup of workspace
+// @Tags     workspace
+// @Accept   json
+// @Produce  json
+// @Router   /workspace/api/v1/workspace/{workspace_id}/backup [get]
+func (s *Server) ListBackups(c echo.Context) error {
+	userID := httpserver.GetUserID(c)
+	workspaceID := c.Param("workspace_id")
+
+	if workspaceID == "" {
+		return echo.NewHTTPError(http.StatusBadRequest, "workspace id is empty")
+	}
+
+	workspaceUUID, err := uuid.Parse(workspaceID)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid workspace id")
+	}
+
+	w, err := s.db.GetWorkspace(workspaceUUID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return echo.NewHTTPError(http.StatusNotFound, "workspace not found")
+		}
+		return err
+	}
+
+	if w.OwnerId != userID {
+		return echo.NewHTTPError(http.StatusForbidden, "operation is forbidden")
+	}
+
+	var list velerov1api.BackupList
+	err = s.kubeClient.List(context.Background(), &list)
+	if err != nil {
+		return err
+	}
+
+	var timestamps []string
+	for _, v := range list.Items {
+		if strings.HasPrefix(v.Name, workspaceID+"_backup_") {
+			if arr := strings.Split(v.Name, "_"); len(arr) == 3 {
+				timestamps = append(timestamps, arr[2])
+			}
+		}
+	}
+
+	return c.JSON(http.StatusOK, timestamps)
+}
+
+// PerformRestore godoc
+// @Summary  perform restore of backup of workspace
+// @Tags     workspace
+// @Accept   json
+// @Produce  json
+// @Router   /workspace/api/v1/workspace/{workspace_id}/backup/{timestamp}/restore [post]
+func (s *Server) PerformRestore(c echo.Context) error {
+	userID := httpserver.GetUserID(c)
+	workspaceID := c.Param("workspace_id")
+	timestamp := c.Param("timestamp")
+
+	if workspaceID == "" {
+		return echo.NewHTTPError(http.StatusBadRequest, "workspace id is empty")
+	}
+	if timestamp == "" {
+		return echo.NewHTTPError(http.StatusBadRequest, "timestamp is empty")
+	}
+
+	workspaceUUID, err := uuid.Parse(workspaceID)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid workspace id")
+	}
+
+	w, err := s.db.GetWorkspace(workspaceUUID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return echo.NewHTTPError(http.StatusNotFound, "workspace not found")
+		}
+		return err
+	}
+
+	if w.OwnerId != userID {
+		return echo.NewHTTPError(http.StatusForbidden, "operation is forbidden")
+	}
+
+	// performing restore using velero
+	restoreSpec := velerov1api.Restore{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "Restore",
+			APIVersion: "velero.io/v1",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      workspaceID + "_restore_" + timestamp,
+			Namespace: "velero",
+		},
+		Spec: velerov1api.RestoreSpec{
+			BackupName:         workspaceID + "_backup_" + timestamp,
+			IncludedNamespaces: []string{workspaceID},
+		},
+	}
+
+	err = s.kubeClient.Create(context.Background(), &restoreSpec)
 	if err != nil {
 		return err
 	}
