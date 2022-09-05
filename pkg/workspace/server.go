@@ -119,6 +119,7 @@ func (s *Server) Register(e *echo.Echo) {
 	v1.GET("/workspaces/limits/byid/:workspace_id", s.GetWorkspaceLimitsByID)
 	v1.GET("/workspaces", s.ListWorkspaces)
 	v1.POST("/workspace/:workspace_id/owner", s.ChangeOwnership)
+	v1.GET("/workspace/:workspace_id/backup", s.ListBackups)
 	v1.POST("/workspace/:workspace_id/backup", s.PerformBackup)
 	v1.POST("/workspace/:workspace_id/backup/:timestamp/restore", s.PerformRestore)
 }
