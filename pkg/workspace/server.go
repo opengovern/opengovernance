@@ -121,7 +121,8 @@ func (s *Server) Register(e *echo.Echo) {
 	v1.POST("/workspace/:workspace_id/owner", s.ChangeOwnership)
 	v1.GET("/workspace/:workspace_id/backup", s.ListBackups)
 	v1.POST("/workspace/:workspace_id/backup", s.PerformBackup)
-	v1.POST("/workspace/:workspace_id/backup/:timestamp/restore", s.PerformRestore)
+	v1.GET("/workspace/:workspace_id/backup/restores", s.ListRestore)
+	v1.POST("/workspace/:workspace_id/backup/:backup_name/restore", s.PerformRestore)
 }
 
 func (s *Server) Start() error {
@@ -381,7 +382,7 @@ func (s *Server) handleWorkspace(workspace *Workspace) error {
 			return nil
 		}
 
-		if err := s.db.UpdateWorkspaceStatus(workspace.ID, StatusDeleted); err != nil {
+		if err := s.db.DeleteWorkspace(workspace.ID); err != nil {
 			return fmt.Errorf("update workspace status: %w", err)
 		}
 	case StatusSuspending:
@@ -750,7 +751,7 @@ func (s *Server) PerformBackup(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusForbidden, "operation is forbidden")
 	}
 
-	backupName := fmt.Sprintf("%s-backup-%d", workspaceID, time.Now().UnixMilli())
+	backupName := fmt.Sprintf("%s-%s.backup", w.Name, time.Now().Format("2006-02-01-15-04-05"))
 	// performing backup using velero
 	backupSpec := velerov1api.Backup{
 		TypeMeta: metav1.TypeMeta{
@@ -823,16 +824,29 @@ func (s *Server) ListBackups(c echo.Context) error {
 		return err
 	}
 
-	var timestamps []string
+	backupList := map[string]api.BackupStatus{}
 	for _, v := range list.Items {
-		if strings.HasPrefix(v.Name, workspaceID+"-backup-") {
-			if arr := strings.Split(v.Name, "-backup-"); len(arr) == 2 {
-				timestamps = append(timestamps, arr[1])
-			}
+		if !strings.HasPrefix(v.Name, w.Name+"-20") {
+			// -20YY is to prevent backups from other workspaces with similar name to
+			// appear in the results
+			continue
+		}
+		backupList[v.Name] = api.BackupStatus{
+			Phase:               v.Status.Phase,
+			Progress:            v.Status.Progress,
+			Expiration:          v.Status.Expiration,
+			StartTimestamp:      v.Status.StartTimestamp,
+			CompletionTimestamp: v.Status.CompletionTimestamp,
+			TotalAttempted:      v.Status.CSIVolumeSnapshotsAttempted + v.Status.VolumeSnapshotsAttempted,
+			TotalCompleted:      v.Status.CSIVolumeSnapshotsCompleted + v.Status.VolumeSnapshotsCompleted,
+			Warnings:            v.Status.Warnings,
+			Errors:              v.Status.Errors,
+			ValidationErrors:    v.Status.ValidationErrors,
+			FailureReason:       v.Status.FailureReason,
 		}
 	}
 
-	return c.JSON(http.StatusOK, timestamps)
+	return c.JSON(http.StatusOK, backupList)
 }
 
 // PerformRestore godoc
@@ -840,17 +854,73 @@ func (s *Server) ListBackups(c echo.Context) error {
 // @Tags     workspace
 // @Accept   json
 // @Produce  json
-// @Router   /workspace/api/v1/workspace/{workspace_id}/backup/{timestamp}/restore [post]
+// @Router   /workspace/api/v1/workspace/{workspace_id}/backup/{backup_name}/restore [post]
 func (s *Server) PerformRestore(c echo.Context) error {
 	userID := httpserver.GetUserID(c)
 	workspaceID := c.Param("workspace_id")
-	timestamp := c.Param("timestamp")
+	backupName := c.Param("backup_name")
 
 	if workspaceID == "" {
 		return echo.NewHTTPError(http.StatusBadRequest, "workspace id is empty")
 	}
-	if timestamp == "" {
-		return echo.NewHTTPError(http.StatusBadRequest, "timestamp is empty")
+	if backupName == "" {
+		return echo.NewHTTPError(http.StatusBadRequest, "backup name is empty")
+	}
+
+	workspaceUUID, err := uuid.Parse(workspaceID)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid workspace id")
+	}
+
+	w, err := s.db.GetWorkspace(workspaceUUID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return echo.NewHTTPError(http.StatusNotFound, "workspace not found")
+		}
+		return err
+	}
+
+	if w.OwnerId != userID {
+		return echo.NewHTTPError(http.StatusForbidden, "operation is forbidden")
+	}
+	restoreName := fmt.Sprintf("%s-%s.restore", w.Name, time.Now().Format("2006-02-01-15-04-05"))
+
+	// performing restore using velero
+	restoreSpec := velerov1api.Restore{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "Restore",
+			APIVersion: "velero.io/v1",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      restoreName,
+			Namespace: "velero",
+		},
+		Spec: velerov1api.RestoreSpec{
+			BackupName:         backupName,
+			IncludedNamespaces: []string{workspaceID},
+		},
+	}
+
+	err = s.kubeClient.Create(context.Background(), &restoreSpec)
+	if err != nil {
+		return err
+	}
+
+	return c.NoContent(http.StatusOK)
+}
+
+// ListRestore godoc
+// @Summary  lists restore of workspace
+// @Tags     workspace
+// @Accept   json
+// @Produce  json
+// @Router   /workspace/api/v1/workspace/{workspace_id}/backup/restores [get]
+func (s *Server) ListRestore(c echo.Context) error {
+	userID := httpserver.GetUserID(c)
+	workspaceID := c.Param("workspace_id")
+
+	if workspaceID == "" {
+		return echo.NewHTTPError(http.StatusBadRequest, "workspace id is empty")
 	}
 
 	workspaceUUID, err := uuid.Parse(workspaceID)
@@ -870,28 +940,24 @@ func (s *Server) PerformRestore(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusForbidden, "operation is forbidden")
 	}
 
-	// performing restore using velero
-	restoreSpec := velerov1api.Restore{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "Restore",
-			APIVersion: "velero.io/v1",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      workspaceID + "-restore-" + timestamp,
-			Namespace: "velero",
-		},
-		Spec: velerov1api.RestoreSpec{
-			BackupName:         workspaceID + "-backup-" + timestamp,
-			IncludedNamespaces: []string{workspaceID},
-		},
-	}
-
-	err = s.kubeClient.Create(context.Background(), &restoreSpec)
+	var list velerov1api.RestoreList
+	err = s.kubeClient.List(context.Background(), &list)
 	if err != nil {
 		return err
 	}
 
-	return c.NoContent(http.StatusOK)
+	backupList := map[string]velerov1api.RestoreStatus{}
+	for _, v := range list.Items {
+		if !strings.HasPrefix(v.Name, w.Name+"-20") {
+			// -20YY is to prevent backups from other workspaces with similar name to
+			// appear in the results
+			continue
+		}
+
+		backupList[v.Name] = v.Status
+	}
+
+	return c.JSON(http.StatusOK, backupList)
 }
 
 // GetWorkspaceLimits godoc

@@ -3296,7 +3296,7 @@ paths:
       summary: perform backup of workspace
       tags:
       - workspace
-  /workspace/api/v1/workspace/{workspace_id}/backup/{timestamp}/restore:
+  /workspace/api/v1/workspace/{workspace_id}/backup/{backup_name}/restore:
     post:
       consumes:
       - application/json
@@ -3304,6 +3304,16 @@ paths:
       - application/json
       responses: {}
       summary: perform restore of backup of workspace
+      tags:
+      - workspace
+  /workspace/api/v1/workspace/{workspace_id}/backup/restores:
+    get:
+      consumes:
+      - application/json
+      produces:
+      - application/json
+      responses: {}
+      summary: lists restore of workspace
       tags:
       - workspace
   /workspace/api/v1/workspace/{workspace_id}/owner:

@@ -3343,7 +3343,22 @@ const docTemplate = `{
                 "responses": {}
             }
         },
-        "/workspace/api/v1/workspace/{workspace_id}/backup/{timestamp}/restore": {
+        "/workspace/api/v1/workspace/{workspace_id}/backup/restores": {
+            "get": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "workspace"
+                ],
+                "summary": "lists restore of workspace",
+                "responses": {}
+            }
+        },
+        "/workspace/api/v1/workspace/{workspace_id}/backup/{backup_name}/restore": {
             "post": {
                 "consumes": [
                     "application/json"

@@ -3,6 +3,9 @@ package api
 import (
 	"time"
 
+	v1 "github.com/vmware-tanzu/velero/pkg/apis/velero/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	"github.com/google/uuid"
 )
 
@@ -45,4 +48,32 @@ type WorkspaceLimitsUsage struct {
 	MaxUsers       int64 `json:"maxUsers"`
 	MaxConnections int64 `json:"maxConnections"`
 	MaxResources   int64 `json:"maxResources"`
+}
+
+type BackupStatus struct {
+	Phase               v1.BackupPhase     `json:"phase"`
+	Progress            *v1.BackupProgress `json:"progress"`
+	Expiration          *metav1.Time       `json:"expiration"`
+	StartTimestamp      *metav1.Time       `json:"startTimestamp"`
+	CompletionTimestamp *metav1.Time       `json:"completionTimestamp"`
+	TotalAttempted      int                `json:"totalAttempted"`
+	TotalCompleted      int                `json:"totalCompleted"`
+	Warnings            int                `json:"warnings"`
+	Errors              int                `json:"errors"`
+	ValidationErrors    []string           `json:"validationErrors"`
+	FailureReason       string             `json:"failureReason"`
+}
+
+type RestoreStatus struct {
+	Phase               v1.BackupPhase     `json:"phase"`
+	Progress            *v1.BackupProgress `json:"progress"`
+	Expiration          *metav1.Time       `json:"expiration"`
+	StartTimestamp      *metav1.Time       `json:"startTimestamp"`
+	CompletionTimestamp *metav1.Time       `json:"completionTimestamp"`
+	TotalAttempted      int                `json:"totalAttempted"`
+	TotalCompleted      int                `json:"totalCompleted"`
+	Warnings            int                `json:"warnings"`
+	Errors              int                `json:"errors"`
+	ValidationErrors    []string           `json:"validationErrors"`
+	FailureReason       string             `json:"failureReason"`
 }

@@ -39,6 +39,10 @@ func (s *Database) UpdateWorkspaceStatus(id uuid.UUID, status WorkspaceStatus) e
 	return s.orm.Model(&Workspace{}).Where("id = ?", id).Update("status", status.String()).Error
 }
 
+func (s *Database) DeleteWorkspace(id uuid.UUID) error {
+	return s.orm.Delete(&Workspace{}, "id = ?", id).Error
+}
+
 func (s *Database) GetWorkspace(id uuid.UUID) (*Workspace, error) {
 	var workspace Workspace
 	if err := s.orm.Model(&Workspace{}).Where(Workspace{ID: id}).First(&workspace).Error; err != nil {
