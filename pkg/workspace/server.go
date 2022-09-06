@@ -348,6 +348,21 @@ func (s *Server) handleWorkspace(workspace *Workspace) error {
 			}
 
 			newStatus = StatusProvisioned
+		} else if meta.IsStatusConditionFalse(helmRelease.Status.Conditions, apimeta.ReadyCondition) {
+			if !helmRelease.Spec.Suspend {
+				helmRelease.Spec.Suspend = true
+				err = s.kubeClient.Update(ctx, helmRelease)
+				if err != nil {
+					return fmt.Errorf("suspend helmrelease: %v", err)
+				}
+			} else {
+				helmRelease.Spec.Suspend = false
+				err = s.kubeClient.Update(ctx, helmRelease)
+				if err != nil {
+					return fmt.Errorf("suspend helmrelease: %v", err)
+				}
+			}
+			newStatus = StatusProvisioningFailed
 		} else if meta.IsStatusConditionTrue(helmRelease.Status.Conditions, apimeta.StalledCondition) {
 			newStatus = StatusProvisioningFailed
 		}

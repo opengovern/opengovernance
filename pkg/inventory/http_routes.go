@@ -1891,18 +1891,18 @@ func (h *HttpHandler) GetAccountsResourceCount(ctx echo.Context) error {
 
 		for _, hit := range response.Hits.Hits {
 			searchAfter = hit.Sort
-			src, err := h.onboardClient.GetSource(httpclient.FromEchoContext(ctx), hit.Source.SourceID)
-			if err != nil {
-				if err.Error() == "source not found" { //source has been deleted
-					continue
-				}
-				return err
-			}
-
 			if v, ok := res[hit.Source.SourceID]; ok {
 				v.ResourceCount += hit.Source.ResourceCount
 				res[hit.Source.SourceID] = v
 			} else {
+				src, err := h.onboardClient.GetSource(httpclient.FromEchoContext(ctx), hit.Source.SourceID)
+				if err != nil {
+					if err.Error() == "source not found" { //source has been deleted
+						continue
+					}
+					return err
+				}
+
 				res[hit.Source.SourceID] = api.AccountResourceCountResponse{
 					SourceID:               hit.Source.SourceID,
 					ProviderConnectionName: src.ConnectionName,
