@@ -11,9 +11,10 @@ import (
 	"strings"
 	"time"
 
-	client2 "gitlab.com/keibiengine/keibi-engine/pkg/inventory/client"
-
+	"github.com/go-redis/cache/v8"
 	"gitlab.com/keibiengine/keibi-engine/pkg/onboard/client"
+
+	client2 "gitlab.com/keibiengine/keibi-engine/pkg/inventory/client"
 
 	v1 "k8s.io/api/apps/v1"
 
@@ -58,6 +59,7 @@ type Server struct {
 	authClient authclient.AuthServiceClient
 	kubeClient k8sclient.Client // the kubernetes client
 	rdb        *redis.Client
+	cache      *cache.Cache
 }
 
 func NewServer(cfg *Config) (*Server, error) {
@@ -106,6 +108,10 @@ func NewServer(cfg *Config) (*Server, error) {
 		DB:       0,  // use default DB
 	})
 
+	s.cache = cache.New(&cache.Options{
+		Redis:      s.rdb,
+		LocalCache: cache.NewTinyLFU(1000, time.Hour),
+	})
 	return s, nil
 }
 
@@ -1043,7 +1049,7 @@ func (s *Server) GetWorkspaceLimits(c echo.Context) error {
 	resourceCount, err := inventoryClient.CountResources(httpclient.FromEchoContext(c))
 
 	onboardURL := strings.ReplaceAll(OnboardTemplate, "%NAMESPACE%", dbWorkspace.ID.String())
-	onboardClient := client.NewOnboardServiceClient(onboardURL)
+	onboardClient := client.NewOnboardServiceClientWithCache(onboardURL, s.cache)
 	count, err := onboardClient.CountSources(httpclient.FromEchoContext(c), nil)
 
 	limits := GetLimitsByTier(dbWorkspace.Tier)

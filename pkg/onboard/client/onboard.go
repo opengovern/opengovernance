@@ -1,8 +1,13 @@
 package client
 
 import (
+	"context"
 	"fmt"
 	"net/http"
+	"time"
+
+	"github.com/go-redis/cache/v8"
+	"github.com/go-redis/redis/v8"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/source"
 
@@ -18,18 +23,49 @@ type OnboardServiceClient interface {
 
 type onboardClient struct {
 	baseURL string
+	rdb     *redis.Client
+	cache   *cache.Cache
 }
 
-func NewOnboardServiceClient(baseURL string) OnboardServiceClient {
-	return &onboardClient{baseURL: baseURL}
+func NewOnboardServiceClient(baseURL string, rdb *redis.Client) OnboardServiceClient {
+	c := onboardClient{
+		baseURL: baseURL,
+	}
+	if rdb != nil {
+		c.cache = cache.New(&cache.Options{
+			Redis:      rdb,
+			LocalCache: cache.NewTinyLFU(1000, time.Hour),
+		})
+	}
+	return &c
+}
+
+func NewOnboardServiceClientWithCache(baseURL string, cache *cache.Cache) OnboardServiceClient {
+	return &onboardClient{
+		baseURL: baseURL,
+		cache:   cache,
+	}
 }
 
 func (s *onboardClient) GetSource(ctx *httpclient.Context, sourceID string) (*api.Source, error) {
 	url := fmt.Sprintf("%s/api/v1/source/%s", s.baseURL, sourceID)
 
 	var source api.Source
+	if s.cache != nil {
+		if err := s.cache.Get(context.Background(), "get-source-"+sourceID, &source); err == nil {
+			return &source, nil
+		}
+	}
 	if err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &source); err != nil {
 		return nil, err
+	}
+	if s.cache != nil {
+		_ = s.cache.Set(&cache.Item{
+			Ctx:   context.Background(),
+			Key:   "get-source-" + sourceID,
+			Value: source,
+			TTL:   time.Hour,
+		})
 	}
 	return &source, nil
 }

@@ -132,7 +132,7 @@ func InitializeWorker(
 		return nil, err
 	}
 
-	w.onboardClient = client.NewOnboardServiceClient(onboardBaseURL)
+	w.onboardClient = client.NewOnboardServiceClient(onboardBaseURL, nil)
 	return w, nil
 }
 

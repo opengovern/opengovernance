@@ -99,12 +99,12 @@ func InitializeHttpHandler(
 		return nil, err
 	}
 	h.schedulerClient = client.NewSchedulerServiceClient(schedulerBaseUrl)
-	h.onboardClient = client2.NewOnboardServiceClient(onboardBaseUrl)
 	h.rdb = redis.NewClient(&redis.Options{
 		Addr:     redisAddress,
 		Password: "", // no password set
 		DB:       0,  // use default DB
 	})
+	h.onboardClient = client2.NewOnboardServiceClient(onboardBaseUrl, h.rdb)
 	h.cache = cache.New(&cache.Options{
 		Redis:      h.rdb,
 		LocalCache: cache.NewTinyLFU(1000, time.Minute),
