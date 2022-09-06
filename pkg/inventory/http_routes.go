@@ -16,6 +16,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/go-redis/cache/v8"
+
 	kafka2 "gitlab.com/keibiengine/keibi-engine/pkg/describe/kafka"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/cloudservice"
@@ -1589,22 +1591,42 @@ func (h *HttpHandler) GetSummaryMetrics(ctx echo.Context) error {
 		}
 
 		if awsResourceType != "" {
-			v, err := GetResources(h.client, provider, sourceID, []string{awsResourceType})
-			if err != nil {
-				return err
-			}
-			if len(v) > 0 {
-				aws = v[0]
+			key := fmt.Sprintf("summary-metric-aws-%s-%v-%s", provider, sourceID, awsResourceType)
+			if err := h.cache.Get(context.Background(), key, &aws); err != nil {
+				v, err := GetResources(h.client, provider, sourceID, []string{awsResourceType})
+				if err != nil {
+					return err
+				}
+				if len(v) > 0 {
+					aws = v[0]
+				}
+
+				_ = h.cache.Set(&cache.Item{
+					Ctx:   context.Background(),
+					Key:   key,
+					Value: aws,
+					TTL:   15 * time.Minute,
+				})
 			}
 		}
 
 		if azureResourceType != "" {
-			v, err := GetResources(h.client, provider, sourceID, []string{azureResourceType})
-			if err != nil {
-				return err
-			}
-			if len(v) > 0 {
-				azure = v[0]
+			key := fmt.Sprintf("summary-metric-azure-%s-%v-%s", provider, sourceID, azureResourceType)
+			if err := h.cache.Get(context.Background(), key, &azure); err != nil {
+				v, err := GetResources(h.client, provider, sourceID, []string{azureResourceType})
+				if err != nil {
+					return err
+				}
+				if len(v) > 0 {
+					azure = v[0]
+				}
+
+				_ = h.cache.Set(&cache.Item{
+					Ctx:   context.Background(),
+					Key:   key,
+					Value: azure,
+					TTL:   15 * time.Minute,
+				})
 			}
 		}
 

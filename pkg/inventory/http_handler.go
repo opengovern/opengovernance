@@ -2,6 +2,9 @@ package inventory
 
 import (
 	"fmt"
+	"time"
+
+	"github.com/go-redis/cache/v8"
 
 	client2 "gitlab.com/keibiengine/keibi-engine/pkg/onboard/client"
 
@@ -22,6 +25,7 @@ type HttpHandler struct {
 	schedulerClient client.SchedulerServiceClient
 	onboardClient   client2.OnboardServiceClient
 	rdb             *redis.Client
+	cache           *cache.Cache
 }
 
 func InitializeHttpHandler(
@@ -101,6 +105,9 @@ func InitializeHttpHandler(
 		Password: "", // no password set
 		DB:       0,  // use default DB
 	})
-
+	h.cache = cache.New(&cache.Options{
+		Redis:      h.rdb,
+		LocalCache: cache.NewTinyLFU(1000, time.Minute),
+	})
 	return h, nil
 }
