@@ -69,9 +69,13 @@ func DoRequest(method, url string, headers map[string]string, payload []byte, v 
 	for k, v := range headers {
 		req.Header.Add(k, v)
 	}
-
+	t := http.DefaultTransport.(*http.Transport).Clone()
+	t.MaxIdleConns = 100
+	t.MaxConnsPerHost = 100
+	t.MaxIdleConnsPerHost = 100
 	client := http.Client{
-		Timeout: 5 * time.Second,
+		Timeout:   15 * time.Second,
+		Transport: t,
 	}
 	res, err := client.Do(req)
 	if err != nil {
