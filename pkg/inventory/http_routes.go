@@ -1545,7 +1545,18 @@ func (h *HttpHandler) GetSummaryMetrics(ctx echo.Context) error {
 		sourceID = &s
 	}
 
+	cacheKey := "summary-metrics-" + string(provider)
+	if sourceID == nil {
+		cacheKey += "nil"
+	} else {
+		cacheKey += *sourceID
+	}
+
 	var res []api.MetricsResponse
+
+	if err := h.cache.Get(context.Background(), cacheKey, &res); err == nil {
+		return ctx.JSON(http.StatusOK, res)
+	}
 
 	padd := func(x, y *int) *int {
 		var v *int
@@ -1591,42 +1602,22 @@ func (h *HttpHandler) GetSummaryMetrics(ctx echo.Context) error {
 		}
 
 		if awsResourceType != "" {
-			key := fmt.Sprintf("summary-metric-aws-%s-%v-%s", provider, sourceID, awsResourceType)
-			if err := h.cache.Get(context.Background(), key, &aws); err != nil {
-				v, err := GetResources(h.client, provider, sourceID, []string{awsResourceType})
-				if err != nil {
-					return err
-				}
-				if len(v) > 0 {
-					aws = v[0]
-				}
-
-				_ = h.cache.Set(&cache.Item{
-					Ctx:   context.Background(),
-					Key:   key,
-					Value: aws,
-					TTL:   15 * time.Minute,
-				})
+			v, err := GetResources(h.client, provider, sourceID, []string{awsResourceType})
+			if err != nil {
+				return err
+			}
+			if len(v) > 0 {
+				aws = v[0]
 			}
 		}
 
 		if azureResourceType != "" {
-			key := fmt.Sprintf("summary-metric-azure-%s-%v-%s", provider, sourceID, azureResourceType)
-			if err := h.cache.Get(context.Background(), key, &azure); err != nil {
-				v, err := GetResources(h.client, provider, sourceID, []string{azureResourceType})
-				if err != nil {
-					return err
-				}
-				if len(v) > 0 {
-					azure = v[0]
-				}
-
-				_ = h.cache.Set(&cache.Item{
-					Ctx:   context.Background(),
-					Key:   key,
-					Value: azure,
-					TTL:   15 * time.Minute,
-				})
+			v, err := GetResources(h.client, provider, sourceID, []string{azureResourceType})
+			if err != nil {
+				return err
+			}
+			if len(v) > 0 {
+				azure = v[0]
 			}
 		}
 
@@ -1822,6 +1813,13 @@ func (h *HttpHandler) GetSummaryMetrics(ctx echo.Context) error {
 			res = append(res[:i], res[i+1:]...)
 		}
 	}
+
+	_ = h.cache.Set(&cache.Item{
+		Ctx:   context.Background(),
+		Key:   cacheKey,
+		Value: res,
+		TTL:   15 * time.Minute,
+	})
 
 	return ctx.JSON(http.StatusOK, res)
 }
