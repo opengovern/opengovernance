@@ -46,6 +46,8 @@ func AddEchoMiddleware(e *echo.Echo) {
 			0.5,
 			1.0,  // 1s
 			10.0, // 10s
+			30.0, // 30s
+			60.0, // 60s
 		},
 		NormalizeHTTPStatus: true,
 	}
