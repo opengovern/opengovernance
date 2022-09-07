@@ -923,7 +923,7 @@ func (h HttpHandler) GetSources(ctx echo.Context) error {
 	}
 
 	var reqUUIDs []uuid.UUID
-	for _, item := range req {
+	for _, item := range req.SourceIDs {
 		u, err := uuid.Parse(item)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "invalid uuid:"+item)

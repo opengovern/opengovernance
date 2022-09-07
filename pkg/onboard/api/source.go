@@ -130,7 +130,9 @@ type Source struct {
 	Enabled        bool       `json:"enabled"`
 }
 
-type GetSourcesRequest []string
+type GetSourcesRequest struct {
+	SourceIDs []string `json:"source_ids"`
+}
 
 type GetSourcesResponse []Source
 
