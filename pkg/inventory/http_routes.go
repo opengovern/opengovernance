@@ -1191,17 +1191,23 @@ func (h *HttpHandler) GetTopAccountsByResourceCount(ctx echo.Context) error {
 		res = res[:count]
 	}
 
-	for idx, r := range res {
-		src, err := h.onboardClient.GetSource(httpclient.FromEchoContext(ctx), r.SourceID)
-		if err != nil {
-			if err.Error() == "source not found" { //source has been deleted
-				continue
-			}
-			return err
-		}
+	var sourceIds []string
+	for _, r := range res {
+		sourceIds = append(sourceIds, r.SourceID)
+	}
+	srcs, err := h.onboardClient.GetSources(httpclient.FromEchoContext(ctx), sourceIds)
+	if err != nil {
+		return err
+	}
 
-		res[idx].ProviderConnectionID = src.ConnectionID
-		res[idx].ProviderConnectionName = src.ConnectionName
+	for idx, r := range res {
+		for _, src := range srcs {
+			if r.SourceID == src.ID.String() {
+				res[idx].ProviderConnectionID = src.ConnectionID
+				res[idx].ProviderConnectionName = src.ConnectionName
+				break
+			}
+		}
 	}
 	return ctx.JSON(http.StatusOK, res)
 }
@@ -1295,21 +1301,32 @@ func (h *HttpHandler) GetTopFastestGrowingAccountsByResourceCount(ctx echo.Conte
 		summaryList = summaryList[:count]
 	}
 
+	var sourceIds []string
+	for _, r := range summaryList {
+		sourceIds = append(sourceIds, r.SourceID)
+	}
+	srcs, err := h.onboardClient.GetSources(httpclient.FromEchoContext(ctx), sourceIds)
+	if err != nil {
+		return err
+	}
+
 	var res []api.TopAccountResponse
 	for _, hit := range summaryList {
-		src, err := h.onboardClient.GetSource(httpclient.FromEchoContext(ctx), hit.SourceID)
-		if err != nil {
-			if err.Error() == "source not found" { //source has been deleted
-				continue
+		connName := ""
+		connID := ""
+		for _, src := range srcs {
+			if hit.SourceID == src.ID.String() {
+				connID = src.ConnectionID
+				connName = src.ConnectionName
+				break
 			}
-			return err
 		}
 
 		res = append(res, api.TopAccountResponse{
 			SourceID:               hit.SourceID,
-			Provider:               string(src.Type),
-			ProviderConnectionName: src.ConnectionName,
-			ProviderConnectionID:   src.ConnectionID,
+			Provider:               string(hit.SourceType),
+			ProviderConnectionName: connName,
+			ProviderConnectionID:   connID,
 			ResourceCount:          hit.ResourceCount,
 		})
 	}
@@ -2904,21 +2921,23 @@ func (h *HttpHandler) GetResources(ctx echo.Context, provider *api.SourceType, c
 	if provider == nil {
 		connectionID := map[string]string{}
 		connectionName := map[string]string{}
+		var sourceIds []string
 		for _, resource := range res.AllResources {
 			connectionName[resource.ProviderConnectionID] = "Unknown"
 			connectionID[resource.ProviderConnectionID] = ""
+			sourceIds = append(sourceIds, resource.ProviderConnectionID)
+		}
+		srcs, err := h.onboardClient.GetSources(httpclient.FromEchoContext(ctx), sourceIds)
+		if err != nil {
+			return err
 		}
 		for sourceId := range connectionName {
-			src, err := h.onboardClient.GetSource(httpclient.FromEchoContext(ctx), sourceId)
-			if err != nil {
-				if err.Error() == "source not found" { //source has been deleted
-					continue
+			for _, src := range srcs {
+				if sourceId == src.ID.String() {
+					connectionName[sourceId] = src.ConnectionName
+					connectionID[sourceId] = src.ConnectionID
 				}
-				return err
 			}
-
-			connectionName[sourceId] = src.ConnectionName
-			connectionID[sourceId] = src.ConnectionID
 		}
 		for idx := range res.AllResources {
 			id := res.AllResources[idx].ProviderConnectionID
@@ -2932,21 +2951,23 @@ func (h *HttpHandler) GetResources(ctx echo.Context, provider *api.SourceType, c
 	} else if *provider == api.SourceCloudAWS {
 		connectionID := map[string]string{}
 		connectionName := map[string]string{}
+		var sourceIds []string
 		for _, resource := range res.AWSResources {
 			connectionName[resource.ProviderConnectionID] = "Unknown"
 			connectionID[resource.ProviderConnectionID] = ""
+			sourceIds = append(sourceIds, resource.ProviderConnectionID)
+		}
+		srcs, err := h.onboardClient.GetSources(httpclient.FromEchoContext(ctx), sourceIds)
+		if err != nil {
+			return err
 		}
 		for sourceId := range connectionName {
-			src, err := h.onboardClient.GetSource(httpclient.FromEchoContext(ctx), sourceId)
-			if err != nil {
-				if err.Error() == "source not found" { //source has been deleted
-					continue
+			for _, src := range srcs {
+				if sourceId == src.ID.String() {
+					connectionName[sourceId] = src.ConnectionName
+					connectionID[sourceId] = src.ConnectionID
 				}
-				return err
 			}
-
-			connectionName[sourceId] = src.ConnectionName
-			connectionID[sourceId] = src.ConnectionID
 		}
 		for idx := range res.AWSResources {
 			id := res.AWSResources[idx].ProviderConnectionID
@@ -2960,21 +2981,23 @@ func (h *HttpHandler) GetResources(ctx echo.Context, provider *api.SourceType, c
 	} else if *provider == api.SourceCloudAzure {
 		connectionID := map[string]string{}
 		connectionName := map[string]string{}
+		var sourceIds []string
 		for _, resource := range res.AzureResources {
 			connectionName[resource.ProviderConnectionID] = "Unknown"
 			connectionID[resource.ProviderConnectionID] = ""
+			sourceIds = append(sourceIds, resource.ProviderConnectionID)
+		}
+		srcs, err := h.onboardClient.GetSources(httpclient.FromEchoContext(ctx), sourceIds)
+		if err != nil {
+			return err
 		}
 		for sourceId := range connectionName {
-			src, err := h.onboardClient.GetSource(httpclient.FromEchoContext(ctx), sourceId)
-			if err != nil {
-				if err.Error() == "source not found" { //source has been deleted
-					continue
+			for _, src := range srcs {
+				if sourceId == src.ID.String() {
+					connectionName[sourceId] = src.ConnectionName
+					connectionID[sourceId] = src.ConnectionID
 				}
-				return err
 			}
-
-			connectionName[sourceId] = src.ConnectionName
-			connectionID[sourceId] = src.ConnectionID
 		}
 		for idx := range res.AzureResources {
 			id := res.AzureResources[idx].ProviderConnectionID
