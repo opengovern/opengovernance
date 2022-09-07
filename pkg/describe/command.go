@@ -53,6 +53,7 @@ var (
 	PrometheusPushAddress = os.Getenv("PROMETHEUS_PUSH_ADDRESS")
 
 	RedisAddress  = os.Getenv("REDIS_ADDRESS")
+	CacheAddress  = os.Getenv("CACHE_ADDRESS")
 	JaegerAddress = os.Getenv("JAEGER_ADDRESS")
 
 	DescribeIntervalHours   = os.Getenv("DESCRIBE_INTERVAL_HOURS")
@@ -165,6 +166,7 @@ func WorkerCommand() *cobra.Command {
 				ElasticSearchPassword,
 				PrometheusPushAddress,
 				RedisAddress,
+				CacheAddress,
 				JaegerAddress,
 			)
 			if err != nil {
@@ -277,6 +279,7 @@ func ConnectionWorkerCommand() *cobra.Command {
 				ElasticSearchPassword,
 				PrometheusPushAddress,
 				RedisAddress,
+				CacheAddress,
 				JaegerAddress,
 			)
 			if err != nil {

@@ -3,7 +3,11 @@ package describe
 import (
 	"context"
 	"fmt"
+	"log"
 	"strings"
+	"time"
+
+	"github.com/go-redis/cache/v8"
 
 	"go.uber.org/zap"
 
@@ -199,7 +203,7 @@ func ExtractCategorySummary(es keibi.Client, job DescribeJob, lookupResources []
 	return msgs, nil
 }
 
-func ExtractResourceTrend(es keibi.Client, job DescribeJob, lookupResources []kafka.LookupResource) ([]kafka.DescribedResource, error) {
+func ExtractResourceTrend(es keibi.Client, cs *cache.Cache, job DescribeJob, lookupResources []kafka.LookupResource) ([]kafka.DescribedResource, error) {
 	var msgs []kafka.DescribedResource
 	var lastDayValue, lastWeekValue, lastQuarterValue, lastYearValue *int
 	for idx, jobID := range []uint{job.LastDaySourceJobID, job.LastWeekSourceJobID, job.LastQuarterSourceJobID,
@@ -262,11 +266,34 @@ func ExtractResourceTrend(es keibi.Client, job DescribeJob, lookupResources []ka
 		LastYearCount:    lastYearValue,
 	}
 	msgs = append(msgs, trend)
+	key := fmt.Sprintf("cache-%s-%s-%s-%s", kafka.ResourceSummaryTypeResourceGrowthTrend,
+		job.SourceType, job.SourceID, job.ResourceType)
+	err := cs.Set(&cache.Item{
+		Ctx:   context.Background(),
+		Key:   key,
+		Value: trend,
+		TTL:   24 * time.Hour,
+	})
+	if err != nil {
+		log.Printf("failed to cache due to %v", err)
+	}
 
 	last := kafka.SourceResourcesLastSummary{
 		SourceResourcesSummary: trend,
 	}
 	last.ReportType = kafka.ResourceSummaryTypeLastSummary
+	key = fmt.Sprintf("cache-%s-%s-%s-%s", kafka.ResourceSummaryTypeLastSummary,
+		job.SourceType, job.SourceID, job.ResourceType)
+	err = cs.Set(&cache.Item{
+		Ctx:   context.Background(),
+		Key:   key,
+		Value: last,
+		TTL:   24 * time.Hour,
+	})
+	if err != nil {
+		log.Printf("failed to cache due to %v", err)
+	}
+
 	msgs = append(msgs, last)
 	return msgs, nil
 }

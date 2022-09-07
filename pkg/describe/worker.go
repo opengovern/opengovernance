@@ -8,6 +8,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/go-redis/cache/v8"
+
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/exporters/jaeger"
 	"go.opentelemetry.io/otel/sdk/resource"
@@ -44,6 +46,7 @@ type Worker struct {
 	kfkTopic       string
 	vault          vault.SourceConfig
 	rdb            *redis.Client
+	cs             *cache.Cache
 	es             keibi.Client
 	logger         *zap.Logger
 	pusher         *push.Pusher
@@ -71,6 +74,7 @@ func InitializeWorker(
 	elasticSearchPassword string,
 	prometheusPushAddress string,
 	redisAddress string,
+	cacheAddress string,
 	jaegerAddress string,
 ) (w *Worker, err error) {
 	if id == "" {
@@ -162,6 +166,15 @@ func InitializeWorker(
 		DB:       0,  // use default DB
 	})
 
+	w.cs = cache.New(&cache.Options{
+		Redis: redis.NewClient(&redis.Options{
+			Addr:     cacheAddress,
+			Password: "", // no password set
+			DB:       0,  // use default DB
+		}),
+		LocalCache: cache.NewTinyLFU(1000, time.Hour),
+	})
+
 	exp, _ := jaeger.New(jaeger.WithCollectorEndpoint(jaeger.WithEndpoint(jaegerAddress)))
 	r, _ := resource.Merge(
 		resource.Default(),
@@ -202,7 +215,7 @@ func (w *Worker) Run(ctx context.Context) error {
 		span.End()
 		return err
 	}
-	result := job.Do(ctx, w.vault, w.rdb, w.es, w.kfkProducer, w.kfkTopic, w.logger)
+	result := job.Do(ctx, w.vault, w.rdb, w.cs, w.es, w.kfkProducer, w.kfkTopic, w.logger)
 	if strings.Contains(result.Error, "ThrottlingException") ||
 		strings.Contains(result.Error, "Rate exceeded") ||
 		strings.Contains(result.Error, "RateExceeded") {
@@ -401,6 +414,7 @@ type ConnectionWorker struct {
 	kfkTopic       string
 	vault          vault.SourceConfig
 	rdb            *redis.Client
+	cs             *cache.Cache
 	es             keibi.Client
 	logger         *zap.Logger
 	pusher         *push.Pusher
@@ -428,6 +442,7 @@ func InitializeConnectionWorker(
 	elasticSearchPassword string,
 	prometheusPushAddress string,
 	redisAddress string,
+	cacheAddress string,
 	jaegerAddress string,
 ) (w *ConnectionWorker, err error) {
 	if id == "" {
@@ -519,6 +534,15 @@ func InitializeConnectionWorker(
 		DB:       0,  // use default DB
 	})
 
+	w.cs = cache.New(&cache.Options{
+		Redis: redis.NewClient(&redis.Options{
+			Addr:     cacheAddress,
+			Password: "", // no password set
+			DB:       0,  // use default DB
+		}),
+		LocalCache: cache.NewTinyLFU(1000, time.Hour),
+	})
+
 	exp, _ := jaeger.New(jaeger.WithCollectorEndpoint(jaeger.WithEndpoint(jaegerAddress)))
 	r, _ := resource.Merge(
 		resource.Default(),
@@ -559,7 +583,7 @@ func (w *ConnectionWorker) Run(ctx context.Context) error {
 		span.End()
 		return err
 	}
-	result := job.Do(ctx, w.vault, w.rdb, w.es, w.kfkProducer, w.kfkTopic, w.logger)
+	result := job.Do(ctx, w.vault, w.rdb, w.cs, w.es, w.kfkProducer, w.kfkTopic, w.logger)
 
 	err = w.jobResultQueue.Publish(result)
 	if err != nil {

@@ -12,6 +12,7 @@ import (
 
 var (
 	RedisAddress = os.Getenv("REDIS_ADDRESS")
+	CacheAddress = os.Getenv("CACHE_ADDRESS")
 
 	ElasticSearchAddress  = os.Getenv("ES_ADDRESS")
 	ElasticSearchUsername = os.Getenv("ES_USERNAME")
@@ -67,6 +68,7 @@ func start(ctx context.Context) error {
 		OnboardBaseUrl,
 		logger,
 		RedisAddress,
+		CacheAddress,
 	)
 	if err != nil {
 		return fmt.Errorf("init http handler: %w", err)

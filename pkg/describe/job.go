@@ -10,6 +10,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/go-redis/cache/v8"
+
 	trace2 "gitlab.com/keibiengine/keibi-engine/pkg/trace"
 	"go.opentelemetry.io/otel"
 
@@ -172,7 +174,7 @@ type DescribeConnectionJobResult struct {
 	Result map[uint]DescribeJobResult // DescribeResourceJob ID -> DescribeJobResult
 }
 
-func (j DescribeConnectionJob) Do(ictx context.Context, vlt vault.SourceConfig, rdb *redis.Client, es keibi.Client, producer sarama.SyncProducer, topic string, logger *zap.Logger) (r DescribeConnectionJobResult) {
+func (j DescribeConnectionJob) Do(ictx context.Context, vlt vault.SourceConfig, rdb *redis.Client, cs *cache.Cache, es keibi.Client, producer sarama.SyncProducer, topic string, logger *zap.Logger) (r DescribeConnectionJobResult) {
 	workerCount, err := strconv.Atoi(AccountConcurrentDescribe)
 	if err != nil {
 		fmt.Println("Invalid worker count:", AccountConcurrentDescribe, err)
@@ -203,7 +205,7 @@ func (j DescribeConnectionJob) Do(ictx context.Context, vlt vault.SourceConfig, 
 					wg.Done()
 					return
 				case job := <-workChannel:
-					res := job.Do(ictx, vlt, rdb, es, producer, topic, logger)
+					res := job.Do(ictx, vlt, rdb, cs, es, producer, topic, logger)
 
 					resultChannel <- res
 				}
@@ -286,7 +288,7 @@ func (j DescribeConnectionJob) Do(ictx context.Context, vlt vault.SourceConfig, 
 // do its best to complete the task even if some errors occur along the way. However,
 // if any error occurs, The JobResult will indicate that through the Status and Error
 // will be set to the first error that occured.
-func (j DescribeJob) Do(ictx context.Context, vlt vault.SourceConfig, rdb *redis.Client, es keibi.Client, producer sarama.SyncProducer, topic string, logger *zap.Logger) (r DescribeJobResult) {
+func (j DescribeJob) Do(ictx context.Context, vlt vault.SourceConfig, rdb *redis.Client, cs *cache.Cache, es keibi.Client, producer sarama.SyncProducer, topic string, logger *zap.Logger) (r DescribeJobResult) {
 	ctx, span := otel.Tracer(trace2.DescribeWorkerTrace).Start(ictx, "Do")
 	defer span.End()
 
@@ -331,7 +333,7 @@ func (j DescribeJob) Do(ictx context.Context, vlt vault.SourceConfig, rdb *redis
 	} else if config == nil {
 		fail(fmt.Errorf("config is null! path is: %s", j.ConfigReg))
 	} else {
-		msgs, err := doDescribe(ctx, rdb, es, j, config, logger)
+		msgs, err := doDescribe(ctx, rdb, cs, es, j, config, logger)
 		if err != nil {
 			// Don't return here. In certain cases, such as AWS, resources might be
 			// available for some regions while there was failures in other regions.
@@ -365,20 +367,20 @@ func (j DescribeJob) Do(ictx context.Context, vlt vault.SourceConfig, rdb *redis
 }
 
 // doDescribe describes the sources, e.g. AWS, Azure and returns the responses.
-func doDescribe(ctx context.Context, rdb *redis.Client, es keibi.Client, job DescribeJob, config map[string]interface{}, logger *zap.Logger) ([]kafka.DescribedResource, error) {
+func doDescribe(ctx context.Context, rdb *redis.Client, cs *cache.Cache, es keibi.Client, job DescribeJob, config map[string]interface{}, logger *zap.Logger) ([]kafka.DescribedResource, error) {
 	logger.Info(fmt.Sprintf("Proccessing Job: ID[%d] ParentJobID[%d] RosourceType[%s]\n", job.JobID, job.ParentJobID, job.ResourceType))
 
 	switch job.SourceType {
 	case api.SourceCloudAWS:
-		return doDescribeAWS(ctx, rdb, es, job, config, logger)
+		return doDescribeAWS(ctx, rdb, cs, es, job, config, logger)
 	case api.SourceCloudAzure:
-		return doDescribeAzure(ctx, rdb, es, job, config, logger)
+		return doDescribeAzure(ctx, rdb, cs, es, job, config, logger)
 	default:
 		return nil, fmt.Errorf("invalid SourceType: %s", job.SourceType)
 	}
 }
 
-func doDescribeAWS(ctx context.Context, rdb *redis.Client, es keibi.Client, job DescribeJob, config map[string]interface{}, logger *zap.Logger) ([]kafka.DescribedResource, error) {
+func doDescribeAWS(ctx context.Context, rdb *redis.Client, cs *cache.Cache, es keibi.Client, job DescribeJob, config map[string]interface{}, logger *zap.Logger) ([]kafka.DescribedResource, error) {
 	creds, err := AWSAccountConfigFromMap(config)
 	if err != nil {
 		return nil, fmt.Errorf("aws account credentials: %w", err)
@@ -544,7 +546,7 @@ func doDescribeAWS(ctx context.Context, rdb *redis.Client, es keibi.Client, job 
 		errs = append(errs, fmt.Sprintf("ExtractCategorySummary: %v", err))
 	}
 
-	trendResources, err := ExtractResourceTrend(es, job, lookupResources)
+	trendResources, err := ExtractResourceTrend(es, cs, job, lookupResources)
 	if err == nil {
 		msgs = append(msgs, trendResources...)
 	} else {
@@ -570,7 +572,7 @@ func doDescribeAWS(ctx context.Context, rdb *redis.Client, es keibi.Client, job 
 	return msgs, err
 }
 
-func doDescribeAzure(ctx context.Context, rdb *redis.Client, es keibi.Client, job DescribeJob, config map[string]interface{}, logger *zap.Logger) ([]kafka.DescribedResource, error) {
+func doDescribeAzure(ctx context.Context, rdb *redis.Client, cs *cache.Cache, es keibi.Client, job DescribeJob, config map[string]interface{}, logger *zap.Logger) ([]kafka.DescribedResource, error) {
 	logger.Warn("starting to describe azure subscription", zap.String("resourceType", job.ResourceType), zap.Uint("jobID", job.JobID))
 	creds, err := AzureSubscriptionConfigFromMap(config)
 	if err != nil {
@@ -726,7 +728,7 @@ func doDescribeAzure(ctx context.Context, rdb *redis.Client, es keibi.Client, jo
 	}
 	msgs = append(msgs, categoryResources...)
 
-	trendResources, err := ExtractResourceTrend(es, job, lookupResources)
+	trendResources, err := ExtractResourceTrend(es, cs, job, lookupResources)
 	if err != nil {
 		return nil, fmt.Errorf("ExtractResourceTrend: %v", err)
 	}

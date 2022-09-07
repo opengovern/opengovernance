@@ -1893,43 +1893,52 @@ func (h *HttpHandler) GetAccountsResourceCount(ctx echo.Context) error {
 	var searchAfter []interface{}
 	res := map[string]api.AccountResourceCountResponse{}
 
-	for {
-		query, err := es.ListAccountResourceCountQuery(provider, EsFetchPageSize, searchAfter)
-		if err != nil {
-			return err
-		}
+	var sourceList []kafka2.SourceResourcesSummary
+	if cached, err := es.ListAccountResourceCountCached(h.rcache, h.cache, provider); err == nil && len(cached) > 0 {
+		sourceList = cached
+	} else {
+		for {
+			query, err := es.ListAccountResourceCountQuery(provider, EsFetchPageSize, searchAfter)
+			if err != nil {
+				return err
+			}
 
-		var response es.ResourceGrowthQueryResponse
-		err = h.client.Search(context.Background(), describe.SourceResourcesSummary, query, &response)
-		if err != nil {
-			return err
-		}
+			var response es.ResourceGrowthQueryResponse
+			err = h.client.Search(context.Background(), describe.SourceResourcesSummary, query, &response)
+			if err != nil {
+				return err
+			}
 
-		if len(response.Hits.Hits) == 0 {
-			break
-		}
+			if len(response.Hits.Hits) == 0 {
+				break
+			}
 
-		for _, hit := range response.Hits.Hits {
-			searchAfter = hit.Sort
-			if v, ok := res[hit.Source.SourceID]; ok {
-				v.ResourceCount += hit.Source.ResourceCount
-				res[hit.Source.SourceID] = v
-			} else {
-				src, err := h.onboardClient.GetSource(httpclient.FromEchoContext(ctx), hit.Source.SourceID)
-				if err != nil {
-					if err.Error() == "source not found" { //source has been deleted
-						continue
-					}
-					return err
+			for _, hit := range response.Hits.Hits {
+				searchAfter = hit.Sort
+				sourceList = append(sourceList, hit.Source)
+			}
+		}
+	}
+
+	for _, hit := range sourceList {
+		if v, ok := res[hit.SourceID]; ok {
+			v.ResourceCount += hit.ResourceCount
+			res[hit.SourceID] = v
+		} else {
+			src, err := h.onboardClient.GetSource(httpclient.FromEchoContext(ctx), hit.SourceID)
+			if err != nil {
+				if err.Error() == "source not found" { //source has been deleted
+					continue
 				}
+				return err
+			}
 
-				res[hit.Source.SourceID] = api.AccountResourceCountResponse{
-					SourceID:               hit.Source.SourceID,
-					ProviderConnectionName: src.ConnectionName,
-					ProviderConnectionID:   src.ConnectionID,
-					ResourceCount:          hit.Source.ResourceCount,
-					OnboardDate:            src.OnboardDate,
-				}
+			res[hit.SourceID] = api.AccountResourceCountResponse{
+				SourceID:               hit.SourceID,
+				ProviderConnectionName: src.ConnectionName,
+				ProviderConnectionID:   src.ConnectionID,
+				ResourceCount:          hit.ResourceCount,
+				OnboardDate:            src.OnboardDate,
 			}
 		}
 	}

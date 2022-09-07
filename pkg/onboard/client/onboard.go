@@ -64,7 +64,7 @@ func (s *onboardClient) GetSource(ctx *httpclient.Context, sourceID string) (*ap
 			Ctx:   context.Background(),
 			Key:   "get-source-" + sourceID,
 			Value: source,
-			TTL:   time.Hour,
+			TTL:   5 * time.Minute, // dont increase it! for enabled or disabled!
 		})
 	}
 	return &source, nil

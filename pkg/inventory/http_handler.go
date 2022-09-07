@@ -25,6 +25,7 @@ type HttpHandler struct {
 	schedulerClient client.SchedulerServiceClient
 	onboardClient   client2.OnboardServiceClient
 	rdb             *redis.Client
+	rcache          *redis.Client
 	cache           *cache.Cache
 }
 
@@ -46,6 +47,7 @@ func InitializeHttpHandler(
 	onboardBaseUrl string,
 	logger *zap.Logger,
 	redisAddress string,
+	cacheAddress string,
 ) (h *HttpHandler, err error) {
 
 	h = &HttpHandler{}
@@ -105,8 +107,13 @@ func InitializeHttpHandler(
 		DB:       0,  // use default DB
 	})
 	h.onboardClient = client2.NewOnboardServiceClient(onboardBaseUrl, h.rdb)
+	h.rcache = redis.NewClient(&redis.Options{
+		Addr:     cacheAddress,
+		Password: "", // no password set
+		DB:       0,  // use default DB
+	})
 	h.cache = cache.New(&cache.Options{
-		Redis:      h.rdb,
+		Redis:      h.rcache,
 		LocalCache: cache.NewTinyLFU(1000, time.Minute),
 	})
 	return h, nil
