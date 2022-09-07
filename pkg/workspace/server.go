@@ -110,7 +110,7 @@ func NewServer(cfg *Config) (*Server, error) {
 
 	s.cache = cache.New(&cache.Options{
 		Redis:      s.rdb,
-		LocalCache: cache.NewTinyLFU(2000, time.Hour),
+		LocalCache: cache.NewTinyLFU(2000, 1*time.Minute),
 	})
 	return s, nil
 }
@@ -1049,7 +1049,7 @@ func (s *Server) GetWorkspaceLimits(c echo.Context) error {
 	resourceCount, err := inventoryClient.CountResources(httpclient.FromEchoContext(c))
 
 	onboardURL := strings.ReplaceAll(OnboardTemplate, "%NAMESPACE%", dbWorkspace.ID.String())
-	onboardClient := client.NewOnboardServiceClientWithCache(onboardURL, s.cache)
+	onboardClient := client.NewOnboardServiceClient(onboardURL, s.cache)
 	count, err := onboardClient.CountSources(httpclient.FromEchoContext(c), nil)
 
 	limits := GetLimitsByTier(dbWorkspace.Tier)

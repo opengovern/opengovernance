@@ -27,20 +27,7 @@ type onboardClient struct {
 	cache   *cache.Cache
 }
 
-func NewOnboardServiceClient(baseURL string, rdb *redis.Client) OnboardServiceClient {
-	c := onboardClient{
-		baseURL: baseURL,
-	}
-	if rdb != nil {
-		c.cache = cache.New(&cache.Options{
-			Redis:      rdb,
-			LocalCache: cache.NewTinyLFU(2000, time.Hour),
-		})
-	}
-	return &c
-}
-
-func NewOnboardServiceClientWithCache(baseURL string, cache *cache.Cache) OnboardServiceClient {
+func NewOnboardServiceClient(baseURL string, cache *cache.Cache) OnboardServiceClient {
 	return &onboardClient{
 		baseURL: baseURL,
 		cache:   cache,
