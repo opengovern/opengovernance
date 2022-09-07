@@ -37,7 +37,8 @@ func (h HttpHandler) Register(r *echo.Echo) {
 	source.POST("/:sourceId/enable", h.EnableSource)
 	source.DELETE("/:sourceId", h.DeleteSource)
 
-	v1.GET("/sources", h.GetSources)
+	v1.GET("/sources", h.ListSources)
+	v1.POST("/sources", h.GetSources)
 	v1.GET("/sources/count", h.CountSources)
 
 	spn := v1.Group("/spn")
@@ -858,15 +859,15 @@ func (h HttpHandler) EnableSource(ctx echo.Context) error {
 	return ctx.NoContent(http.StatusOK)
 }
 
-// GetSources godoc
+// ListSources godoc
 // @Summary      Returns a list of sources
 // @Description  Returning a list of sources including both AWS and Azure unless filtered by Type.
 // @Tags         onboard
 // @Produce      json
-// @Param        type  query     string  false  "Type"  Enums(aws,azure)
-// @Success      200   {object}  api.GetSourcesResponse
+// @Param        type     query     string                 false  "Type"  Enums(aws,azure)
+// @Success      200      {object}  api.GetSourcesResponse
 // @Router       /onboard/api/v1/sources [get]
-func (h HttpHandler) GetSources(ctx echo.Context) error {
+func (h HttpHandler) ListSources(ctx echo.Context) error {
 	sType := ctx.QueryParam("type")
 	var sources []Source
 	if sType != "" {
@@ -882,7 +883,7 @@ func (h HttpHandler) GetSources(ctx echo.Context) error {
 		}
 	} else {
 		var err error
-		sources, err = h.db.GetSources()
+		sources, err = h.db.ListSources()
 		if err != nil {
 			return err
 		}
@@ -904,6 +905,45 @@ func (h HttpHandler) GetSources(ctx echo.Context) error {
 	}
 
 	return ctx.JSON(http.StatusOK, resp)
+}
+
+// GetSources godoc
+// @Summary      Returns a list of sources
+// @Description  Returning a list of sources including both AWS and Azure unless filtered by Type.
+// @Tags         onboard
+// @Produce      json
+// @Param        type  query     string  false  "Type"  Enums(aws,azure)
+// @Param        request  body      api.GetSourcesRequest  false  "Request Body"
+// @Success      200   {object}  api.GetSourcesResponse
+// @Router       /onboard/api/v1/sources [post]
+func (h HttpHandler) GetSources(ctx echo.Context) error {
+	var req api.GetSourcesRequest
+	if err := bindValidate(ctx, &req); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
+	}
+
+	srcs, err := h.db.GetSources(req)
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return echo.NewHTTPError(http.StatusBadRequest, "source not found")
+		}
+		return err
+	}
+
+	var res []api.Source
+	for _, src := range srcs {
+		res = append(res, api.Source{
+			ID:             src.ID,
+			ConnectionID:   src.SourceId,
+			ConnectionName: src.Name,
+			Email:          src.Email,
+			Type:           src.Type,
+			Description:    src.Description,
+			OnboardDate:    src.CreatedAt,
+			Enabled:        src.Enabled,
+		})
+	}
+	return ctx.JSON(http.StatusOK, res)
 }
 
 // CountSources godoc

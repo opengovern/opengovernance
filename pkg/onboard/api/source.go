@@ -130,6 +130,8 @@ type Source struct {
 	Enabled        bool       `json:"enabled"`
 }
 
+type GetSourcesRequest []uuid.UUID
+
 type GetSourcesResponse []Source
 
 type DiscoverAWSAccountsRequest struct {

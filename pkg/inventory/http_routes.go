@@ -804,37 +804,15 @@ func (h *HttpHandler) GetBenchmarkComplianceTrend(ctx echo.Context) error {
 		}
 	}
 
-	var rhits []es.ResourceGrowthQueryHit
-	searchAfter = nil
-	for {
-		query, err := es.FindResourceGrowthTrendQuery(&sourceUUID, nil,
-			fromTime, toTime, EsFetchPageSize, searchAfter)
-		if err != nil {
-			return err
-		}
-
-		var response es.ResourceGrowthQueryResponse
-		err = h.client.Search(context.Background(), describe.SourceResourcesSummary, query, &response)
-		if err != nil {
-			return err
-		}
-
-		if len(response.Hits.Hits) == 0 {
-			break
-		}
-
-		for _, hit := range response.Hits.Hits {
-			rhits = append(rhits, hit)
-			searchAfter = hit.Sort
-		}
-	}
+	rhits, err := es.FindResourceGrowthTrendQuery(h.client, &sourceUUID, nil,
+		fromTime, toTime)
 
 	var resp []api.ComplianceTrendDataPoint
 	for _, hit := range hits {
 		var total int64 = 0
 		for _, rhit := range rhits {
-			if rhit.Source.DescribedAt == hit.Source.DescribedAt {
-				total = int64(rhit.Source.ResourceCount)
+			if rhit.DescribedAt == hit.Source.DescribedAt {
+				total = int64(rhit.ResourceCount)
 				break
 			}
 		}
@@ -890,34 +868,11 @@ func (h *HttpHandler) GetResourceGrowthTrend(ctx echo.Context) error {
 	}
 	fromTime = time.Now().Add(-1 * tw).UnixMilli()
 
-	var hits []es.ResourceGrowthQueryHit
-	var searchAfter []interface{}
-	for {
-		query, err := es.FindResourceGrowthTrendQuery(sourceUUID, providerPtr,
-			fromTime, toTime, EsFetchPageSize, searchAfter)
-		if err != nil {
-			return err
-		}
-
-		var response es.ResourceGrowthQueryResponse
-		err = h.client.Search(context.Background(), describe.SourceResourcesSummary, query, &response)
-		if err != nil {
-			return err
-		}
-
-		if len(response.Hits.Hits) == 0 {
-			break
-		}
-
-		for _, hit := range response.Hits.Hits {
-			hits = append(hits, hit)
-			searchAfter = hit.Sort
-		}
-	}
+	hits, err := es.FindResourceGrowthTrendQuery(h.client, sourceUUID, providerPtr, fromTime, toTime)
 
 	datapoints := map[int64]int{}
 	for _, hit := range hits {
-		datapoints[hit.Source.DescribedAt] += hit.Source.ResourceCount
+		datapoints[hit.DescribedAt] += hit.ResourceCount
 	}
 
 	var resp []api.TrendDataPoint
@@ -1678,38 +1633,25 @@ func (h *HttpHandler) GetSummaryMetrics(ctx echo.Context) error {
 
 		countMap := map[int64]int{}
 		firstDescribedAt := int64(math.MaxInt64)
-		var searchAfter []interface{}
-		for {
-			query, err := es.FindResourceGrowthTrendQuery(sourceUUID, providerStr, fromTime.UnixMilli(), toTime.UnixMilli(), EsFetchPageSize, searchAfter)
-			if err != nil {
-				return err
+
+		hits, err := es.FindResourceGrowthTrendQuery(h.client, sourceUUID, providerStr, fromTime.UnixMilli(), toTime.UnixMilli())
+		if err != nil {
+			return err
+		}
+
+		for _, hit := range hits {
+			if v, ok := countMap[hit.DescribedAt]; ok {
+				countMap[hit.DescribedAt] = v + hit.ResourceCount
+			} else {
+				countMap[hit.DescribedAt] = hit.ResourceCount
+			}
+			if firstDescribedAt > hit.DescribedAt {
+				firstDescribedAt = hit.DescribedAt
 			}
 
-			var response es.ResourceGrowthQueryResponse
-			err = h.client.Search(context.Background(), describe.SourceResourcesSummary, query, &response)
-			if err != nil {
-				return err
-			}
-
-			if len(response.Hits.Hits) == 0 {
-				break
-			}
-
-			for _, hit := range response.Hits.Hits {
-				if v, ok := countMap[hit.Source.DescribedAt]; ok {
-					countMap[hit.Source.DescribedAt] = v + hit.Source.ResourceCount
-				} else {
-					countMap[hit.Source.DescribedAt] = hit.Source.ResourceCount
-				}
-				if firstDescribedAt > hit.Source.DescribedAt {
-					firstDescribedAt = hit.Source.DescribedAt
-				}
-
-				// for last value
-				if lastDescribedAt < hit.Source.DescribedAt {
-					lastDescribedAt = hit.Source.DescribedAt
-				}
-				searchAfter = hit.Sort
+			// for last value
+			if lastDescribedAt < hit.DescribedAt {
+				lastDescribedAt = hit.DescribedAt
 			}
 		}
 

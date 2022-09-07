@@ -35,57 +35,81 @@ type ResourceGrowthQueryHit struct {
 	Sort    []interface{}                `json:"sort"`
 }
 
-func FindResourceGrowthTrendQuery(sourceID *uuid.UUID, provider *string,
-	createdAtFrom, createdAtTo int64, fetchSize int, searchAfter []interface{}) (string, error) {
+func FindResourceGrowthTrendQuery(client keibi.Client, sourceID *uuid.UUID, provider *string,
+	createdAtFrom, createdAtTo int64) ([]kafka.SourceResourcesSummary, error) {
 
-	res := make(map[string]interface{})
-	var filters []interface{}
+	var hits []kafka.SourceResourcesSummary
+	var searchAfter []interface{}
+	for {
+		res := make(map[string]interface{})
 
-	filters = append(filters, map[string]interface{}{
-		"terms": map[string][]string{"report_type": {kafka.ResourceSummaryTypeResourceGrowthTrend}},
-	})
-
-	if provider != nil {
+		var filters []interface{}
 		filters = append(filters, map[string]interface{}{
-			"terms": map[string][]string{"source_type": {*provider}},
+			"terms": map[string][]string{"report_type": {kafka.ResourceSummaryTypeResourceGrowthTrend}},
 		})
-	}
 
-	if sourceID != nil {
+		if provider != nil {
+			filters = append(filters, map[string]interface{}{
+				"terms": map[string][]string{"source_type": {*provider}},
+			})
+		}
+
+		if sourceID != nil {
+			filters = append(filters, map[string]interface{}{
+				"terms": map[string][]string{"source_id": {sourceID.String()}},
+			})
+		}
+
 		filters = append(filters, map[string]interface{}{
-			"terms": map[string][]string{"source_id": {sourceID.String()}},
-		})
-	}
-
-	filters = append(filters, map[string]interface{}{
-		"range": map[string]interface{}{
-			"described_at": map[string]string{
-				"gte": strconv.FormatInt(createdAtFrom, 10),
-				"lte": strconv.FormatInt(createdAtTo, 10),
+			"range": map[string]interface{}{
+				"described_at": map[string]string{
+					"gte": strconv.FormatInt(createdAtFrom, 10),
+					"lte": strconv.FormatInt(createdAtTo, 10),
+				},
 			},
-		},
-	})
+		})
 
-	res["size"] = fetchSize
-	res["sort"] = []map[string]interface{}{
-		{
-			"described_at": "asc",
-		},
-		{
-			"_id": "desc",
-		},
-	}
-	if searchAfter != nil {
-		res["search_after"] = searchAfter
-	}
+		res["size"] = EsFetchPageSize
+		res["sort"] = []map[string]interface{}{
+			{
+				"described_at": "asc",
+			},
+			{
+				"_id": "desc",
+			},
+		}
+		if searchAfter != nil {
+			res["search_after"] = searchAfter
+		}
 
-	res["query"] = map[string]interface{}{
-		"bool": map[string]interface{}{
-			"filter": filters,
-		},
+		res["query"] = map[string]interface{}{
+			"bool": map[string]interface{}{
+				"filter": filters,
+			},
+		}
+		b, err := json.Marshal(res)
+		if err != nil {
+			return nil, err
+		}
+
+		query := string(b)
+
+		var response ResourceGrowthQueryResponse
+		err = client.Search(context.Background(), describe.SourceResourcesSummary, query, &response)
+		if err != nil {
+			return nil, err
+		}
+
+		if len(response.Hits.Hits) == 0 {
+			break
+		}
+
+		for _, hit := range response.Hits.Hits {
+			hits = append(hits, hit.Source)
+			searchAfter = hit.Sort
+		}
 	}
-	b, err := json.Marshal(res)
-	return string(b), err
+	return hits, nil
 }
 
 func FetchResourceLastSummary(client keibi.Client, provider *string, sourceID *string, resourceType *string) ([]kafka.SourceResourcesSummary, error) {
@@ -154,6 +178,8 @@ func FetchResourceLastSummary(client keibi.Client, provider *string, sourceID *s
 			hits = append(hits, hit.Source)
 		}
 	}
+
+	//TODO-Saleh also put it in the cache
 	return hits, nil
 }
 

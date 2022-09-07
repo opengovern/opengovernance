@@ -2,6 +2,7 @@ package client
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"time"
@@ -18,6 +19,7 @@ import (
 
 type OnboardServiceClient interface {
 	GetSource(ctx *httpclient.Context, sourceID string) (*api.Source, error)
+	GetSources(ctx *httpclient.Context, sourceID []string) ([]api.Source, error)
 	CountSources(ctx *httpclient.Context, provider *source.Type) (int64, error)
 }
 
@@ -55,6 +57,47 @@ func (s *onboardClient) GetSource(ctx *httpclient.Context, sourceID string) (*ap
 		})
 	}
 	return &source, nil
+}
+
+func (s *onboardClient) GetSources(ctx *httpclient.Context, sourceIDs []string) ([]api.Source, error) {
+	url := fmt.Sprintf("%s/api/v1/sources", s.baseURL)
+
+	var req []string
+	var res []api.Source
+
+	for _, sourceID := range sourceIDs {
+		if s.cache != nil {
+			var src api.Source
+			if err := s.cache.Get(context.Background(), "get-source-"+sourceID, &src); err == nil {
+				res = append(res, src)
+				continue
+			}
+		}
+		req = append(req, sourceID)
+	}
+
+	payload, err := json.Marshal(req)
+	if err != nil {
+		return nil, err
+	}
+
+	var response []api.Source
+	if err := httpclient.DoRequest(http.MethodPost, url, ctx.ToHeaders(), payload, &response); err != nil {
+		return nil, err
+	}
+	if s.cache != nil {
+		for _, src := range response {
+			_ = s.cache.Set(&cache.Item{
+				Ctx:   context.Background(),
+				Key:   "get-source-" + src.ID.String(),
+				Value: src,
+				TTL:   5 * time.Minute, // dont increase it! for enabled or disabled!
+			})
+		}
+	}
+
+	res = append(res, response...)
+	return res, nil
 }
 
 func (s *onboardClient) CountSources(ctx *httpclient.Context, provider *source.Type) (int64, error) {

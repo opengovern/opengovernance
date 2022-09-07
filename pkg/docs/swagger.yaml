@@ -2897,6 +2897,36 @@ paths:
       summary: Returns a list of sources
       tags:
       - onboard
+    post:
+      description: Returning a list of sources including both AWS and Azure unless
+        filtered by Type.
+      parameters:
+      - description: Type
+        enum:
+        - aws
+        - azure
+        in: query
+        name: type
+        type: string
+      - description: Request Body
+        in: body
+        name: request
+        schema:
+          items:
+            type: string
+          type: array
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/gitlab.com_keibiengine_keibi-engine_pkg_onboard_api.Source'
+            type: array
+      summary: Returns a list of sources
+      tags:
+      - onboard
   /onboard/api/v1/sources/count:
     get:
       description: Returning a count of sources including both AWS and Azure unless

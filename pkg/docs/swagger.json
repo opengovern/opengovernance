@@ -2729,6 +2729,50 @@
                         }
                     }
                 }
+            },
+            "post": {
+                "description": "Returning a list of sources including both AWS and Azure unless filtered by Type.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "onboard"
+                ],
+                "summary": "Returns a list of sources",
+                "parameters": [
+                    {
+                        "enum": [
+                            "aws",
+                            "azure"
+                        ],
+                        "type": "string",
+                        "description": "Type",
+                        "name": "type",
+                        "in": "query"
+                    },
+                    {
+                        "description": "Request Body",
+                        "name": "request",
+                        "in": "body",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/gitlab.com_keibiengine_keibi-engine_pkg_onboard_api.Source"
+                            }
+                        }
+                    }
+                }
             }
         },
         "/onboard/api/v1/sources/count": {

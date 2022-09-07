@@ -544,7 +544,7 @@ type InventoryMockClient struct {
 }
 
 func (c InventoryMockClient) ListAccountsResourceCount() ([]inventoryapi.TopAccountResponse, error) {
-	sources, err := c.s.handler.db.GetSources()
+	sources, err := c.s.handler.db.ListSources()
 	if err != nil {
 		return nil, err
 	}
@@ -564,7 +564,7 @@ type DescribeMockClient struct {
 }
 
 func (c DescribeMockClient) ListSources() ([]describeapi.Source, error) {
-	sources, err := c.s.handler.db.GetSources()
+	sources, err := c.s.handler.db.ListSources()
 	if err != nil {
 		return nil, err
 	}

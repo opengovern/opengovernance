@@ -25,8 +25,8 @@ func (db Database) Initialize() error {
 	return nil
 }
 
-// GetSources gets list of all source
-func (db Database) GetSources() ([]Source, error) {
+// ListSources gets list of all source
+func (db Database) ListSources() ([]Source, error) {
 	var s []Source
 	tx := db.orm.Find(&s)
 
@@ -34,6 +34,19 @@ func (db Database) GetSources() ([]Source, error) {
 		return nil, tx.Error
 	}
 
+	return s, nil
+}
+
+// GetSources gets list of all source
+func (db Database) GetSources(ids []uuid.UUID) ([]Source, error) {
+	var s []Source
+	tx := db.orm.Find(&s, "id in ?", ids)
+
+	if tx.Error != nil {
+		return nil, tx.Error
+	} else if tx.RowsAffected == 0 {
+		return nil, gorm.ErrRecordNotFound
+	}
 	return s, nil
 }
 
@@ -49,7 +62,7 @@ func (db Database) CountSources() (int64, error) {
 	return c, nil
 }
 
-// GetSources gets list of sources with matching type
+// GetSourcesOfType gets list of sources with matching type
 func (db Database) GetSourcesOfType(rType api.SourceType) ([]Source, error) {
 	var s []Source
 	tx := db.orm.Find(&s, "type = ?", rType)
