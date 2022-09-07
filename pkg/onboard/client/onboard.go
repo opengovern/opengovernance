@@ -34,7 +34,7 @@ func NewOnboardServiceClient(baseURL string, rdb *redis.Client) OnboardServiceCl
 	if rdb != nil {
 		c.cache = cache.New(&cache.Options{
 			Redis:      rdb,
-			LocalCache: cache.NewTinyLFU(1000, time.Hour),
+			LocalCache: cache.NewTinyLFU(2000, time.Hour),
 		})
 	}
 	return &c

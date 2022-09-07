@@ -118,6 +118,7 @@ func GetResources(client keibi.Client, rcache *redis.Client, cache *cache.Cache,
 		if cached, err := es.FetchResourceLastSummaryCached(rcache, cache, providerPtr, sourceID, &resourceType); err == nil && len(cached) > 0 {
 			hits = append(hits, cached...)
 		} else {
+			//TODO-Saleh performance issue: use list of resource types instead
 			result, err := es.FetchResourceLastSummary(client, providerPtr, sourceID, &resourceType)
 			if err != nil {
 				return nil, err

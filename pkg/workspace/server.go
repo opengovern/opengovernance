@@ -110,7 +110,7 @@ func NewServer(cfg *Config) (*Server, error) {
 
 	s.cache = cache.New(&cache.Options{
 		Redis:      s.rdb,
-		LocalCache: cache.NewTinyLFU(1000, time.Hour),
+		LocalCache: cache.NewTinyLFU(2000, time.Hour),
 	})
 	return s, nil
 }

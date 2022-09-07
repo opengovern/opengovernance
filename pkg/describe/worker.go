@@ -172,7 +172,6 @@ func InitializeWorker(
 			Password: "", // no password set
 			DB:       0,  // use default DB
 		}),
-		LocalCache: cache.NewTinyLFU(1000, time.Hour),
 	})
 
 	exp, _ := jaeger.New(jaeger.WithCollectorEndpoint(jaeger.WithEndpoint(jaegerAddress)))
@@ -540,7 +539,6 @@ func InitializeConnectionWorker(
 			Password: "", // no password set
 			DB:       0,  // use default DB
 		}),
-		LocalCache: cache.NewTinyLFU(1000, time.Hour),
 	})
 
 	exp, _ := jaeger.New(jaeger.WithCollectorEndpoint(jaeger.WithEndpoint(jaegerAddress)))

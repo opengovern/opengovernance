@@ -114,7 +114,7 @@ func InitializeHttpHandler(
 	})
 	h.cache = cache.New(&cache.Options{
 		Redis:      h.rcache,
-		LocalCache: cache.NewTinyLFU(1000, time.Minute),
+		LocalCache: cache.NewTinyLFU(100000, time.Minute),
 	})
 	return h, nil
 }
