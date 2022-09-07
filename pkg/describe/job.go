@@ -532,14 +532,14 @@ func doDescribeAWS(ctx context.Context, rdb *redis.Client, cs *cache.Cache, es k
 		job.LastDaySourceJobID, job.LastWeekSourceJobID, job.LastQuarterSourceJobID, job.LastYearSourceJobID,
 		len(lookupResources)))
 
-	serviceResources, err := ExtractServiceSummary(es, job, lookupResources, logger)
+	serviceResources, err := ExtractServiceSummary(es, cs, job, lookupResources, logger)
 	if err == nil {
 		msgs = append(msgs, serviceResources...)
 	} else {
 		errs = append(errs, fmt.Sprintf("ExtractServiceSummary: %v", err))
 	}
 
-	categoryResources, err := ExtractCategorySummary(es, job, lookupResources)
+	categoryResources, err := ExtractCategorySummary(es, cs, job, lookupResources)
 	if err == nil {
 		msgs = append(msgs, categoryResources...)
 	} else {
@@ -553,7 +553,7 @@ func doDescribeAWS(ctx context.Context, rdb *redis.Client, cs *cache.Cache, es k
 		errs = append(errs, fmt.Sprintf("ExtractResourceTrend: %v", err))
 	}
 
-	distResources, err := ExtractDistribution(es, job, lookupResources)
+	distResources, err := ExtractDistribution(es, cs, job, lookupResources)
 	if err == nil {
 		msgs = append(msgs, distResources...)
 	} else {
@@ -716,13 +716,13 @@ func doDescribeAzure(ctx context.Context, rdb *redis.Client, cs *cache.Cache, es
 	}
 	logger.Info(fmt.Sprintf("job[%d] lastDay=%d, lastWeek=%d lastQuarter=%d lastYear=%d\n", job.JobID, job.LastDaySourceJobID, job.LastWeekSourceJobID, job.LastQuarterSourceJobID, job.LastYearSourceJobID))
 
-	serviceResources, err := ExtractServiceSummary(es, job, lookupResources, logger)
+	serviceResources, err := ExtractServiceSummary(es, cs, job, lookupResources, logger)
 	if err != nil {
 		return nil, fmt.Errorf("ExtractServiceSummary: %v", err)
 	}
 	msgs = append(msgs, serviceResources...)
 
-	categoryResources, err := ExtractCategorySummary(es, job, lookupResources)
+	categoryResources, err := ExtractCategorySummary(es, cs, job, lookupResources)
 	if err != nil {
 		return nil, fmt.Errorf("ExtractCategorySummary: %v", err)
 	}
@@ -734,7 +734,7 @@ func doDescribeAzure(ctx context.Context, rdb *redis.Client, cs *cache.Cache, es
 	}
 	msgs = append(msgs, trendResources...)
 
-	distResources, err := ExtractDistribution(es, job, lookupResources)
+	distResources, err := ExtractDistribution(es, cs, job, lookupResources)
 	if err != nil {
 		return nil, fmt.Errorf("ExtractDistribution: %v", err)
 	}

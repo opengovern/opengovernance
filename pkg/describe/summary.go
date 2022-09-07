@@ -16,7 +16,7 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/keibi-es-sdk"
 )
 
-func ExtractServiceSummary(es keibi.Client, job DescribeJob, lookupResources []kafka.LookupResource, logger *zap.Logger) ([]kafka.DescribedResource, error) {
+func ExtractServiceSummary(es keibi.Client, cs *cache.Cache, job DescribeJob, lookupResources []kafka.LookupResource, logger *zap.Logger) ([]kafka.DescribedResource, error) {
 	var msgs []kafka.DescribedResource
 	serviceCount := map[string]int{}
 	for _, resource := range lookupResources {
@@ -75,7 +75,7 @@ func ExtractServiceSummary(es keibi.Client, job DescribeJob, lookupResources []k
 			}
 		}
 
-		msgs = append(msgs, kafka.SourceServicesSummary{
+		item := kafka.SourceServicesSummary{
 			ServiceName:      name,
 			SourceID:         job.SourceID,
 			ResourceType:     strings.ToLower(job.ResourceType),
@@ -89,9 +89,21 @@ func ExtractServiceSummary(es keibi.Client, job DescribeJob, lookupResources []k
 			LastQuarterCount: lastQuarterValue,
 			LastYearCount:    lastYearValue,
 			ReportType:       kafka.ResourceSummaryTypeLastServiceSummary,
+		}
+		msgs = append(msgs, item)
+		key := fmt.Sprintf("cache-%s-%s-%s-%s", kafka.ResourceSummaryTypeLastServiceSummary,
+			job.SourceType, job.SourceID, job.ResourceType)
+		err := cs.Set(&cache.Item{
+			Ctx:   context.Background(),
+			Key:   key,
+			Value: item,
+			TTL:   24 * time.Hour,
 		})
+		if err != nil {
+			log.Printf("failed to cache due to %v", err)
+		}
 
-		msgs = append(msgs, kafka.SourceServicesSummary{
+		item = kafka.SourceServicesSummary{
 			ServiceName:      name,
 			SourceID:         job.SourceID,
 			ResourceType:     strings.ToLower(job.ResourceType),
@@ -105,13 +117,25 @@ func ExtractServiceSummary(es keibi.Client, job DescribeJob, lookupResources []k
 			LastQuarterCount: lastQuarterValue,
 			LastYearCount:    lastYearValue,
 			ReportType:       kafka.ResourceSummaryTypeServiceHistorySummary,
+		}
+		msgs = append(msgs, item)
+		key = fmt.Sprintf("cache-%s-%s-%s-%s", kafka.ResourceSummaryTypeServiceHistorySummary,
+			job.SourceType, job.SourceID, job.ResourceType)
+		err = cs.Set(&cache.Item{
+			Ctx:   context.Background(),
+			Key:   key,
+			Value: item,
+			TTL:   24 * time.Hour,
 		})
+		if err != nil {
+			log.Printf("failed to cache due to %v", err)
+		}
 	}
 
 	return msgs, nil
 }
 
-func ExtractCategorySummary(es keibi.Client, job DescribeJob, lookupResources []kafka.LookupResource) ([]kafka.DescribedResource, error) {
+func ExtractCategorySummary(es keibi.Client, cs *cache.Cache, job DescribeJob, lookupResources []kafka.LookupResource) ([]kafka.DescribedResource, error) {
 	var msgs []kafka.DescribedResource
 	categoryCount := map[string]int{}
 	for _, resource := range lookupResources {
@@ -167,7 +191,7 @@ func ExtractCategorySummary(es keibi.Client, job DescribeJob, lookupResources []
 			}
 		}
 
-		msgs = append(msgs, kafka.SourceCategorySummary{
+		item := kafka.SourceCategorySummary{
 			CategoryName:     name,
 			SourceType:       job.SourceType,
 			SourceJobID:      job.ParentJobID,
@@ -181,9 +205,21 @@ func ExtractCategorySummary(es keibi.Client, job DescribeJob, lookupResources []
 			LastQuarterCount: lastQuarterValue,
 			LastYearCount:    lastYearValue,
 			ReportType:       kafka.ResourceSummaryTypeLastCategorySummary,
+		}
+		msgs = append(msgs, item)
+		key := fmt.Sprintf("cache-%s-%s-%s-%s", kafka.ResourceSummaryTypeLastCategorySummary,
+			job.SourceType, job.SourceID, job.ResourceType)
+		err := cs.Set(&cache.Item{
+			Ctx:   context.Background(),
+			Key:   key,
+			Value: item,
+			TTL:   24 * time.Hour,
 		})
+		if err != nil {
+			log.Printf("failed to cache due to %v", err)
+		}
 
-		msgs = append(msgs, kafka.SourceCategorySummary{
+		item = kafka.SourceCategorySummary{
 			CategoryName:     name,
 			SourceType:       job.SourceType,
 			SourceID:         job.SourceID,
@@ -197,7 +233,19 @@ func ExtractCategorySummary(es keibi.Client, job DescribeJob, lookupResources []
 			LastQuarterCount: lastQuarterValue,
 			LastYearCount:    lastYearValue,
 			ReportType:       kafka.ResourceSummaryTypeCategoryHistorySummary,
+		}
+		msgs = append(msgs, item)
+		key = fmt.Sprintf("cache-%s-%s-%s-%s", kafka.ResourceSummaryTypeCategoryHistorySummary,
+			job.SourceType, job.SourceID, job.ResourceType)
+		err = cs.Set(&cache.Item{
+			Ctx:   context.Background(),
+			Key:   key,
+			Value: item,
+			TTL:   24 * time.Hour,
 		})
+		if err != nil {
+			log.Printf("failed to cache due to %v", err)
+		}
 	}
 
 	return msgs, nil
@@ -298,7 +346,7 @@ func ExtractResourceTrend(es keibi.Client, cs *cache.Cache, job DescribeJob, loo
 	return msgs, nil
 }
 
-func ExtractDistribution(es keibi.Client, job DescribeJob, lookupResources []kafka.LookupResource) ([]kafka.DescribedResource, error) {
+func ExtractDistribution(es keibi.Client, cs *cache.Cache, job DescribeJob, lookupResources []kafka.LookupResource) ([]kafka.DescribedResource, error) {
 	var msgs []kafka.DescribedResource
 	locationDistribution := map[string]int{}
 	serviceDistribution := map[string]map[string]int{}
@@ -326,9 +374,20 @@ func ExtractDistribution(es keibi.Client, job DescribeJob, lookupResources []kaf
 		ReportType:           kafka.ResourceSummaryTypeLocationDistribution,
 	}
 	msgs = append(msgs, locDistribution)
+	key := fmt.Sprintf("cache-%s-%s-%s-%s", kafka.ResourceSummaryTypeLocationDistribution,
+		job.SourceType, job.SourceID, job.ResourceType)
+	err := cs.Set(&cache.Item{
+		Ctx:   context.Background(),
+		Key:   key,
+		Value: locDistribution,
+		TTL:   24 * time.Hour,
+	})
+	if err != nil {
+		log.Printf("failed to cache due to %v", err)
+	}
 
 	for serviceName, m := range serviceDistribution {
-		msgs = append(msgs, kafka.SourceServiceDistributionResource{
+		item := kafka.SourceServiceDistributionResource{
 			SourceID:             job.SourceID,
 			ServiceName:          serviceName,
 			ResourceType:         job.ResourceType,
@@ -337,7 +396,19 @@ func ExtractDistribution(es keibi.Client, job DescribeJob, lookupResources []kaf
 			ResourceJobID:        job.JobID,
 			LocationDistribution: m,
 			ReportType:           kafka.ResourceSummaryTypeServiceDistributionSummary,
+		}
+		msgs = append(msgs, item)
+		key := fmt.Sprintf("cache-%s-%s-%s-%s", kafka.ResourceSummaryTypeServiceDistributionSummary,
+			job.SourceType, job.SourceID, job.ResourceType)
+		err := cs.Set(&cache.Item{
+			Ctx:   context.Background(),
+			Key:   key,
+			Value: item,
+			TTL:   24 * time.Hour,
 		})
+		if err != nil {
+			log.Printf("failed to cache due to %v", err)
+		}
 	}
 	return msgs, nil
 }
