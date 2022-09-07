@@ -1833,6 +1833,19 @@ func (h *HttpHandler) GetAccountsResourceCount(ctx echo.Context) error {
 	provider := ctx.QueryParam("provider")
 
 	res := map[string]api.AccountResourceCountResponse{}
+	allSources, err := h.onboardClient.ListSources(httpclient.FromEchoContext(ctx))
+	if err != nil {
+		return err
+	}
+
+	for _, src := range allSources {
+		res[src.ID.String()] = api.AccountResourceCountResponse{
+			SourceID:               src.ID.String(),
+			ProviderConnectionName: src.ConnectionName,
+			ProviderConnectionID:   src.ConnectionID,
+			OnboardDate:            src.OnboardDate,
+		}
+	}
 
 	var hits []kafka2.SourceResourcesSummary
 	if cached, err := es.FetchResourceLastSummaryCached(h.rcache, h.cache, &provider, nil, nil); err == nil && len(cached) > 0 {
@@ -1848,22 +1861,6 @@ func (h *HttpHandler) GetAccountsResourceCount(ctx echo.Context) error {
 		if v, ok := res[hit.SourceID]; ok {
 			v.ResourceCount += hit.ResourceCount
 			res[hit.SourceID] = v
-		} else {
-			src, err := h.onboardClient.GetSource(httpclient.FromEchoContext(ctx), hit.SourceID)
-			if err != nil {
-				if err.Error() == "source not found" { //source has been deleted
-					continue
-				}
-				return err
-			}
-
-			res[hit.SourceID] = api.AccountResourceCountResponse{
-				SourceID:               hit.SourceID,
-				ProviderConnectionName: src.ConnectionName,
-				ProviderConnectionID:   src.ConnectionID,
-				ResourceCount:          hit.ResourceCount,
-				OnboardDate:            src.OnboardDate,
-			}
 		}
 	}
 	var response []api.AccountResourceCountResponse

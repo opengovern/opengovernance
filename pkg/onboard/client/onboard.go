@@ -20,6 +20,7 @@ import (
 type OnboardServiceClient interface {
 	GetSource(ctx *httpclient.Context, sourceID string) (*api.Source, error)
 	GetSources(ctx *httpclient.Context, sourceID []string) ([]api.Source, error)
+	ListSources(ctx *httpclient.Context) ([]api.Source, error)
 	CountSources(ctx *httpclient.Context, provider *source.Type) (int64, error)
 }
 
@@ -98,6 +99,26 @@ func (s *onboardClient) GetSources(ctx *httpclient.Context, sourceIDs []string) 
 
 	res = append(res, response...)
 	return res, nil
+}
+
+func (s *onboardClient) ListSources(ctx *httpclient.Context) ([]api.Source, error) {
+	url := fmt.Sprintf("%s/api/v1/sources", s.baseURL)
+
+	var response []api.Source
+	if err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &response); err != nil {
+		return nil, err
+	}
+	if s.cache != nil {
+		for _, src := range response {
+			_ = s.cache.Set(&cache.Item{
+				Ctx:   context.Background(),
+				Key:   "get-source-" + src.ID.String(),
+				Value: src,
+				TTL:   5 * time.Minute, // dont increase it! for enabled or disabled!
+			})
+		}
+	}
+	return response, nil
 }
 
 func (s *onboardClient) CountSources(ctx *httpclient.Context, provider *source.Type) (int64, error) {
