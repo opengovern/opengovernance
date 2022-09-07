@@ -77,27 +77,29 @@ func (s *onboardClient) GetSources(ctx *httpclient.Context, sourceIDs []string) 
 		req = append(req, sourceID)
 	}
 
-	payload, err := json.Marshal(req)
-	if err != nil {
-		return nil, err
-	}
-
-	var response []api.Source
-	if err := httpclient.DoRequest(http.MethodPost, url, ctx.ToHeaders(), payload, &response); err != nil {
-		return nil, err
-	}
-	if s.cache != nil {
-		for _, src := range response {
-			_ = s.cache.Set(&cache.Item{
-				Ctx:   context.Background(),
-				Key:   "get-source-" + src.ID.String(),
-				Value: src,
-				TTL:   5 * time.Minute, // dont increase it! for enabled or disabled!
-			})
+	if len(req) > 0 {
+		payload, err := json.Marshal(req)
+		if err != nil {
+			return nil, err
 		}
+
+		var response []api.Source
+		if err := httpclient.DoRequest(http.MethodPost, url, ctx.ToHeaders(), payload, &response); err != nil {
+			return nil, err
+		}
+		if s.cache != nil {
+			for _, src := range response {
+				_ = s.cache.Set(&cache.Item{
+					Ctx:   context.Background(),
+					Key:   "get-source-" + src.ID.String(),
+					Value: src,
+					TTL:   5 * time.Minute, // dont increase it! for enabled or disabled!
+				})
+			}
+		}
+		res = append(res, response...)
 	}
 
-	res = append(res, response...)
 	return res, nil
 }
 
