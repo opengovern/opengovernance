@@ -804,7 +804,7 @@ func (h *HttpHandler) GetBenchmarkComplianceTrend(ctx echo.Context) error {
 		}
 	}
 
-	rhits, err := es.FindResourceGrowthTrendQuery(h.client, &sourceUUID, nil,
+	rhits, err := es.FindResourceGrowthTrend(h.client, &sourceUUID, nil,
 		fromTime, toTime)
 
 	var resp []api.ComplianceTrendDataPoint
@@ -868,7 +868,7 @@ func (h *HttpHandler) GetResourceGrowthTrend(ctx echo.Context) error {
 	}
 	fromTime = time.Now().Add(-1 * tw).UnixMilli()
 
-	hits, err := es.FindResourceGrowthTrendQuery(h.client, sourceUUID, providerPtr, fromTime, toTime)
+	hits, err := es.FindResourceGrowthTrend(h.client, sourceUUID, providerPtr, fromTime, toTime)
 
 	datapoints := map[int64]int{}
 	for _, hit := range hits {
@@ -1351,6 +1351,7 @@ func (h *HttpHandler) GetTopRegionsByResourceCount(ctx echo.Context) error {
 	}
 
 	var sourceUUID *uuid.UUID
+	var sourceID *string
 	sourceId := ctx.QueryParam("sourceId")
 	if len(sourceId) > 0 {
 		suuid, err := uuid.Parse(sourceId)
@@ -1358,6 +1359,7 @@ func (h *HttpHandler) GetTopRegionsByResourceCount(ctx echo.Context) error {
 			return err
 		}
 		sourceUUID = &suuid
+		sourceID = &sourceId
 	}
 
 	var providerPtr *string
@@ -1367,30 +1369,23 @@ func (h *HttpHandler) GetTopRegionsByResourceCount(ctx echo.Context) error {
 	}
 
 	locationDistribution := map[string]int{}
-	var searchAfter []interface{}
-	for {
-		query, err := es.FindLocationDistributionQuery(sourceUUID, providerPtr, EsFetchPageSize, searchAfter)
+	var hits []kafka2.LocationDistributionResource
+	if cached, err := es.FetchLocationDistributionCached(h.rcache, h.cache, providerPtr, sourceID); err == nil && len(cached) > 0 {
+		hits = cached
+	} else {
+		res, err := es.FindLocationDistributionQuery(h.client, providerPtr, sourceUUID)
 		if err != nil {
 			return err
 		}
+		hits = res
+	}
 
-		var response es.LocationDistributionQueryResponse
-		err = h.client.Search(context.Background(), describe.SourceResourcesSummary, query, &response)
-		if err != nil {
-			return err
-		}
-
-		if len(response.Hits.Hits) == 0 {
-			break
-		}
-
-		for _, hit := range response.Hits.Hits {
-			for k, v := range hit.Source.LocationDistribution {
-				locationDistribution[k] += v
-			}
-			searchAfter = hit.Sort
+	for _, hit := range hits {
+		for k, v := range hit.LocationDistribution {
+			locationDistribution[k] += v
 		}
 	}
+
 	var response []api.CategoriesResponse
 	for region, count := range locationDistribution {
 		response = append(response, api.CategoriesResponse{
@@ -1651,7 +1646,7 @@ func (h *HttpHandler) GetSummaryMetrics(ctx echo.Context) error {
 		countMap := map[int64]int{}
 		firstDescribedAt := int64(math.MaxInt64)
 
-		hits, err := es.FindResourceGrowthTrendQuery(h.client, sourceUUID, providerStr, fromTime.UnixMilli(), toTime.UnixMilli())
+		hits, err := es.FindResourceGrowthTrend(h.client, sourceUUID, providerStr, fromTime.UnixMilli(), toTime.UnixMilli())
 		if err != nil {
 			return err
 		}
@@ -1916,37 +1911,32 @@ func (h *HttpHandler) GetResourceDistribution(ctx echo.Context) error {
 	}
 
 	var sourceUUID *uuid.UUID
+	var sourceIDPtr *string
 	if sourceID != "" {
 		u, err := uuid.Parse(sourceID)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "invalid source uuid")
 		}
 		sourceUUID = &u
+		sourceIDPtr = &sourceID
 	}
 
 	locationDistribution := map[string]int{}
-	var searchAfter []interface{}
-	for {
-		query, err := es.FindLocationDistributionQuery(sourceUUID, providerPtr, EsFetchPageSize, searchAfter)
+
+	var hits []kafka2.LocationDistributionResource
+	if cached, err := es.FetchLocationDistributionCached(h.rcache, h.cache, providerPtr, sourceIDPtr); err == nil && len(cached) > 0 {
+		hits = cached
+	} else {
+		res, err := es.FindLocationDistributionQuery(h.client, providerPtr, sourceUUID)
 		if err != nil {
 			return err
 		}
+		hits = res
+	}
 
-		var response es.LocationDistributionQueryResponse
-		err = h.client.Search(context.Background(), describe.SourceResourcesSummary, query, &response)
-		if err != nil {
-			return err
-		}
-
-		if len(response.Hits.Hits) == 0 {
-			break
-		}
-
-		for _, hit := range response.Hits.Hits {
-			for k, v := range hit.Source.LocationDistribution {
-				locationDistribution[k] += v
-			}
-			searchAfter = hit.Sort
+	for _, hit := range hits {
+		for k, v := range hit.LocationDistribution {
+			locationDistribution[k] += v
 		}
 	}
 	return ctx.JSON(http.StatusOK, locationDistribution)

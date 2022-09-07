@@ -1,55 +1,52 @@
 package inventory
 
 import (
-	"context"
-
 	"github.com/go-redis/cache/v8"
 	"github.com/go-redis/redis/v8"
 	"gitlab.com/keibiengine/keibi-engine/pkg/describe/kafka"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/cloudservice"
 
-	"gitlab.com/keibiengine/keibi-engine/pkg/describe"
 	"gitlab.com/keibiengine/keibi-engine/pkg/inventory/api"
 	"gitlab.com/keibiengine/keibi-engine/pkg/inventory/es"
 	"gitlab.com/keibiengine/keibi-engine/pkg/keibi-es-sdk"
 	"gitlab.com/keibiengine/keibi-engine/pkg/source"
 )
 
-func GetCategories(client keibi.Client, provider source.Type, sourceID *string) ([]api.CategoriesResponse, error) {
-	var searchAfter []interface{}
+func GetCategories(client keibi.Client, rcache *redis.Client, cache *cache.Cache,
+	provider source.Type, sourceID *string) ([]api.CategoriesResponse, error) {
+	var hits []kafka.SourceCategorySummary
+
+	var providerPtr *string
+	if provider != "" {
+		v := string(provider)
+		providerPtr = &v
+	}
+
+	if cached, err := es.FetchCategoriesCached(rcache, cache, providerPtr, sourceID); err == nil && len(cached) > 0 {
+		hits = cached
+	} else {
+		res, err := es.GetCategoriesQuery(client, string(provider), sourceID)
+		if err != nil {
+			return nil, err
+		}
+		hits = res
+	}
+
 	categoryMap := map[string]api.CategoriesResponse{}
-	for {
-		query, err := es.GetCategoriesQuery(string(provider), sourceID, EsFetchPageSize, searchAfter)
-		if err != nil {
-			return nil, err
-		}
-
-		var response es.CategoriesQueryResponse
-		err = client.Search(context.Background(), describe.SourceResourcesSummary, query, &response)
-		if err != nil {
-			return nil, err
-		}
-
-		if len(response.Hits.Hits) == 0 {
-			break
-		}
-
-		for _, hit := range response.Hits.Hits {
-			if v, ok := categoryMap[hit.Source.CategoryName]; ok {
-				v.ResourceCount += hit.Source.ResourceCount
-				categoryMap[hit.Source.CategoryName] = v
-			} else {
-				categoryMap[hit.Source.CategoryName] = api.CategoriesResponse{
-					CategoryName:     hit.Source.CategoryName,
-					ResourceCount:    hit.Source.ResourceCount,
-					LastDayCount:     hit.Source.LastDayCount,
-					LastWeekCount:    hit.Source.LastWeekCount,
-					LastQuarterCount: hit.Source.LastQuarterCount,
-					LastYearCount:    hit.Source.LastYearCount,
-				}
+	for _, hit := range hits {
+		if v, ok := categoryMap[hit.CategoryName]; ok {
+			v.ResourceCount += hit.ResourceCount
+			categoryMap[hit.CategoryName] = v
+		} else {
+			categoryMap[hit.CategoryName] = api.CategoriesResponse{
+				CategoryName:     hit.CategoryName,
+				ResourceCount:    hit.ResourceCount,
+				LastDayCount:     hit.LastDayCount,
+				LastWeekCount:    hit.LastWeekCount,
+				LastQuarterCount: hit.LastQuarterCount,
+				LastYearCount:    hit.LastYearCount,
 			}
-			searchAfter = hit.Sort
 		}
 	}
 
@@ -61,41 +58,41 @@ func GetCategories(client keibi.Client, provider source.Type, sourceID *string) 
 	return res, nil
 }
 
-func GetServices(client keibi.Client, provider source.Type, sourceID *string) ([]api.TopServicesResponse, error) {
-	var searchAfter []interface{}
+func GetServices(client keibi.Client, rcache *redis.Client, cache *cache.Cache,
+	provider source.Type, sourceID *string) ([]api.TopServicesResponse, error) {
+	var hits []kafka.SourceServicesSummary
+
+	var providerPtr *string
+	if provider != "" {
+		v := string(provider)
+		providerPtr = &v
+	}
+
+	if cached, err := es.FetchServicesCached(rcache, cache, providerPtr, sourceID); err == nil && len(cached) > 0 {
+		hits = cached
+	} else {
+		res, err := es.FetchServicesQuery(client, string(provider), sourceID)
+		if err != nil {
+			return nil, err
+		}
+		hits = res
+	}
+
 	serviceResponse := map[string]api.TopServicesResponse{}
-	for {
-		query, err := es.FetchServicesQuery(string(provider), sourceID, EsFetchPageSize, searchAfter)
-		if err != nil {
-			return nil, err
-		}
-
-		var response es.FetchServicesQueryResponse
-		err = client.Search(context.Background(), describe.SourceResourcesSummary, query, &response)
-		if err != nil {
-			return nil, err
-		}
-
-		if len(response.Hits.Hits) == 0 {
-			break
-		}
-
-		for _, hit := range response.Hits.Hits {
-			if v, ok := serviceResponse[hit.Source.ServiceName]; ok {
-				v.ResourceCount += hit.Source.ResourceCount
-				serviceResponse[hit.Source.ServiceName] = v
-			} else {
-				serviceResponse[hit.Source.ServiceName] = api.TopServicesResponse{
-					ServiceName:      hit.Source.ServiceName,
-					Provider:         string(hit.Source.SourceType),
-					ResourceCount:    hit.Source.ResourceCount,
-					LastDayCount:     hit.Source.LastDayCount,
-					LastWeekCount:    hit.Source.LastWeekCount,
-					LastQuarterCount: hit.Source.LastQuarterCount,
-					LastYearCount:    hit.Source.LastYearCount,
-				}
+	for _, hit := range hits {
+		if v, ok := serviceResponse[hit.ServiceName]; ok {
+			v.ResourceCount += hit.ResourceCount
+			serviceResponse[hit.ServiceName] = v
+		} else {
+			serviceResponse[hit.ServiceName] = api.TopServicesResponse{
+				ServiceName:      hit.ServiceName,
+				Provider:         string(hit.SourceType),
+				ResourceCount:    hit.ResourceCount,
+				LastDayCount:     hit.LastDayCount,
+				LastWeekCount:    hit.LastWeekCount,
+				LastQuarterCount: hit.LastQuarterCount,
+				LastYearCount:    hit.LastYearCount,
 			}
-			searchAfter = hit.Sort
 		}
 	}
 

@@ -35,7 +35,7 @@ type ResourceGrowthQueryHit struct {
 	Sort    []interface{}                `json:"sort"`
 }
 
-func FindResourceGrowthTrendQuery(client keibi.Client, sourceID *uuid.UUID, provider *string,
+func FindResourceGrowthTrend(client keibi.Client, sourceID *uuid.UUID, provider *string,
 	createdAtFrom, createdAtTo int64) ([]kafka.SourceResourcesSummary, error) {
 
 	var hits []kafka.SourceResourcesSummary
@@ -200,46 +200,70 @@ type FetchServicesQueryHit struct {
 	Sort    []interface{}               `json:"sort"`
 }
 
-func FetchServicesQuery(provider string, sourceID *string, fetchSize int, searchAfter []interface{}) (string, error) {
-	res := make(map[string]interface{})
-	var filters []interface{}
+func FetchServicesQuery(client keibi.Client, provider string, sourceID *string) ([]kafka.SourceServicesSummary, error) {
+	var hits []kafka.SourceServicesSummary
+	var searchAfter []interface{}
+	for {
+		res := make(map[string]interface{})
+		var filters []interface{}
 
-	filters = append(filters, map[string]interface{}{
-		"terms": map[string][]string{"report_type": {kafka.ResourceSummaryTypeLastServiceSummary}},
-	})
-
-	if provider != "" {
 		filters = append(filters, map[string]interface{}{
-			"terms": map[string][]string{"source_type": {provider}},
+			"terms": map[string][]string{"report_type": {kafka.ResourceSummaryTypeLastServiceSummary}},
 		})
-	}
 
-	if sourceID != nil {
-		filters = append(filters, map[string]interface{}{
-			"terms": map[string][]string{"source_id": {*sourceID}},
-		})
-	}
+		if provider != "" {
+			filters = append(filters, map[string]interface{}{
+				"terms": map[string][]string{"source_type": {provider}},
+			})
+		}
 
-	res["size"] = fetchSize
-	if searchAfter != nil {
-		res["search_after"] = searchAfter
-	}
+		if sourceID != nil {
+			filters = append(filters, map[string]interface{}{
+				"terms": map[string][]string{"source_id": {*sourceID}},
+			})
+		}
 
-	res["sort"] = []map[string]interface{}{
-		{
-			"resource_count": "desc",
-		},
-		{
-			"_id": "desc",
-		},
+		res["size"] = EsFetchPageSize
+		if searchAfter != nil {
+			res["search_after"] = searchAfter
+		}
+
+		res["sort"] = []map[string]interface{}{
+			{
+				"resource_count": "desc",
+			},
+			{
+				"_id": "desc",
+			},
+		}
+		res["query"] = map[string]interface{}{
+			"bool": map[string]interface{}{
+				"filter": filters,
+			},
+		}
+		b, err := json.Marshal(res)
+		if err != nil {
+			return nil, err
+		}
+
+		query := string(b)
+
+		var response FetchServicesQueryResponse
+		err = client.Search(context.Background(), describe.SourceResourcesSummary, query, &response)
+		if err != nil {
+			return nil, err
+		}
+
+		if len(response.Hits.Hits) == 0 {
+			break
+		}
+
+		for _, hit := range response.Hits.Hits {
+			hits = append(hits, hit.Source)
+			searchAfter = hit.Sort
+		}
 	}
-	res["query"] = map[string]interface{}{
-		"bool": map[string]interface{}{
-			"filter": filters,
-		},
-	}
-	b, err := json.Marshal(res)
-	return string(b), err
+	return hits, nil
 }
 
 type CategoriesQueryResponse struct {
@@ -259,45 +283,68 @@ type CategoriesQueryHit struct {
 	Sort    []interface{}               `json:"sort"`
 }
 
-func GetCategoriesQuery(provider string, sourceID *string, fetchSize int, searchAfter []interface{}) (string, error) {
-	res := make(map[string]interface{})
-	var filters []interface{}
+func GetCategoriesQuery(client keibi.Client, provider string, sourceID *string) ([]kafka.SourceCategorySummary, error) {
+	var hits []kafka.SourceCategorySummary
+	var searchAfter []interface{}
+	for {
+		res := make(map[string]interface{})
+		var filters []interface{}
 
-	filters = append(filters, map[string]interface{}{
-		"terms": map[string][]string{"report_type": {kafka.ResourceSummaryTypeLastCategorySummary}},
-	})
-
-	if provider != "" {
 		filters = append(filters, map[string]interface{}{
-			"terms": map[string][]string{"source_type": {provider}},
+			"terms": map[string][]string{"report_type": {kafka.ResourceSummaryTypeLastCategorySummary}},
 		})
-	}
 
-	if sourceID != nil {
-		filters = append(filters, map[string]interface{}{
-			"terms": map[string][]string{"source_id": {*sourceID}},
-		})
-	}
+		if provider != "" {
+			filters = append(filters, map[string]interface{}{
+				"terms": map[string][]string{"source_type": {provider}},
+			})
+		}
 
-	res["size"] = fetchSize
-	if searchAfter != nil {
-		res["search_after"] = searchAfter
+		if sourceID != nil {
+			filters = append(filters, map[string]interface{}{
+				"terms": map[string][]string{"source_id": {*sourceID}},
+			})
+		}
+
+		res["size"] = EsFetchPageSize
+		if searchAfter != nil {
+			res["search_after"] = searchAfter
+		}
+		res["sort"] = []map[string]interface{}{
+			{
+				"resource_count": "desc",
+			},
+			{
+				"_id": "desc",
+			},
+		}
+		res["query"] = map[string]interface{}{
+			"bool": map[string]interface{}{
+				"filter": filters,
+			},
+		}
+		b, err := json.Marshal(res)
+		if err != nil {
+			return nil, err
+		}
+		query := string(b)
+
+		var response CategoriesQueryResponse
+		err = client.Search(context.Background(), describe.SourceResourcesSummary, query, &response)
+		if err != nil {
+			return nil, err
+		}
+
+		if len(response.Hits.Hits) == 0 {
+			break
+		}
+
+		for _, hit := range response.Hits.Hits {
+			hits = append(hits, hit.Source)
+			searchAfter = hit.Sort
+		}
 	}
-	res["sort"] = []map[string]interface{}{
-		{
-			"resource_count": "desc",
-		},
-		{
-			"_id": "desc",
-		},
-	}
-	res["query"] = map[string]interface{}{
-		"bool": map[string]interface{}{
-			"filter": filters,
-		},
-	}
-	b, err := json.Marshal(res)
-	return string(b), err
+	return hits, nil
 }
 
 type LocationDistributionQueryResponse struct {
@@ -334,45 +381,67 @@ type ServiceDistributionQueryHit struct {
 	Sort    []interface{}                           `json:"sort"`
 }
 
-func FindLocationDistributionQuery(sourceID *uuid.UUID, provider *string,
-	fetchSize int, searchAfter []interface{}) (string, error) {
+func FindLocationDistributionQuery(client keibi.Client, provider *string, sourceID *uuid.UUID) ([]kafka.LocationDistributionResource, error) {
+	var hits []kafka.LocationDistributionResource
 
-	res := make(map[string]interface{})
-	var filters []interface{}
+	var searchAfter []interface{}
+	for {
+		res := make(map[string]interface{})
+		var filters []interface{}
 
-	filters = append(filters, map[string]interface{}{
-		"terms": map[string][]string{"report_type": {kafka.ResourceSummaryTypeLocationDistribution}},
-	})
-
-	if provider != nil && *provider != "all" {
 		filters = append(filters, map[string]interface{}{
-			"terms": map[string][]string{"source_type": {*provider}},
+			"terms": map[string][]string{"report_type": {kafka.ResourceSummaryTypeLocationDistribution}},
 		})
-	}
 
-	if sourceID != nil {
-		filters = append(filters, map[string]interface{}{
-			"terms": map[string][]string{"source_id": {sourceID.String()}},
-		})
-	}
+		if provider != nil && *provider != "all" {
+			filters = append(filters, map[string]interface{}{
+				"terms": map[string][]string{"source_type": {*provider}},
+			})
+		}
 
-	res["size"] = fetchSize
-	res["sort"] = []map[string]interface{}{
-		{
-			"_id": "asc",
-		},
-	}
-	if searchAfter != nil {
-		res["search_after"] = searchAfter
-	}
+		if sourceID != nil {
+			filters = append(filters, map[string]interface{}{
+				"terms": map[string][]string{"source_id": {sourceID.String()}},
+			})
+		}
 
-	res["query"] = map[string]interface{}{
-		"bool": map[string]interface{}{
-			"filter": filters,
-		},
+		res["size"] = EsFetchPageSize
+		res["sort"] = []map[string]interface{}{
+			{
+				"_id": "asc",
+			},
+		}
+		if searchAfter != nil {
+			res["search_after"] = searchAfter
+		}
+
+		res["query"] = map[string]interface{}{
+			"bool": map[string]interface{}{
+				"filter": filters,
+			},
+		}
+		b, err := json.Marshal(res)
+		if err != nil {
+			return nil, err
+		}
+		query := string(b)
+
+		var response LocationDistributionQueryResponse
+		err = client.Search(context.Background(), describe.SourceResourcesSummary, query, &response)
+		if err != nil {
+			return nil, err
+		}
+
+		if len(response.Hits.Hits) == 0 {
+			break
+		}
+
+		for _, hit := range response.Hits.Hits {
+			hits = append(hits, hit.Source)
+			searchAfter = hit.Sort
+		}
 	}
-	b, err := json.Marshal(res)
-	return string(b), err
+	return hits, nil
 }
 
 func FindSourceServiceDistributionQuery(sourceID uuid.UUID, fetchSize int, searchAfter []interface{}) (string, error) {
