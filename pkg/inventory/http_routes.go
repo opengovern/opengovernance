@@ -1193,38 +1193,51 @@ func (h *HttpHandler) GetTopAccountsByResourceCount(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid count")
 	}
 
+	var hits []kafka2.SourceResourcesSummary
+	var providerPtr *string
+	if provider != "" {
+		v := string(provider)
+		providerPtr = &v
+	}
+
+	if cached, err := es.FetchResourceLastSummaryCached(h.rcache, h.cache, providerPtr, nil, nil); err == nil && len(cached) > 0 {
+		hits = cached
+	} else {
+		hits, err = es.FetchResourceLastSummary(h.client, providerPtr, nil, nil)
+		if err != nil {
+			return err
+		}
+	}
+
 	sourceSummary := map[string]kafka2.SourceResourcesSummary{}
-	var searchAfter []interface{}
-	for {
-		query, err := es.FindTopAccountsQuery(string(provider), EsFetchPageSize, searchAfter)
-		if err != nil {
-			return err
-		}
-
-		var response es.ResourceGrowthQueryResponse
-		err = h.client.Search(context.Background(), describe.SourceResourcesSummary, query, &response)
-		if err != nil {
-			return err
-		}
-
-		if len(response.Hits.Hits) == 0 {
-			break
-		}
-
-		for _, hit := range response.Hits.Hits {
-			if v, ok := sourceSummary[hit.Source.SourceID]; ok {
-				v.ResourceCount += hit.Source.ResourceCount
-				sourceSummary[hit.Source.SourceID] = v
-			} else {
-				sourceSummary[hit.Source.SourceID] = hit.Source
-			}
-			searchAfter = hit.Sort
+	for _, hit := range hits {
+		if v, ok := sourceSummary[hit.SourceID]; ok {
+			v.ResourceCount += hit.ResourceCount
+			sourceSummary[hit.SourceID] = v
+		} else {
+			sourceSummary[hit.SourceID] = hit
 		}
 	}
 
 	var res []api.TopAccountResponse
 	for _, v := range sourceSummary {
-		src, err := h.onboardClient.GetSource(httpclient.FromEchoContext(ctx), v.SourceID)
+		res = append(res, api.TopAccountResponse{
+			SourceID:      v.SourceID,
+			Provider:      string(v.SourceType),
+			ResourceCount: v.ResourceCount,
+		})
+	}
+
+	sort.Slice(res, func(i, j int) bool {
+		return res[i].ResourceCount > res[j].ResourceCount
+	})
+
+	if len(res) > count {
+		res = res[:count]
+	}
+
+	for idx, r := range res {
+		src, err := h.onboardClient.GetSource(httpclient.FromEchoContext(ctx), r.SourceID)
 		if err != nil {
 			if err.Error() == "source not found" { //source has been deleted
 				continue
@@ -1232,19 +1245,9 @@ func (h *HttpHandler) GetTopAccountsByResourceCount(ctx echo.Context) error {
 			return err
 		}
 
-		res = append(res, api.TopAccountResponse{
-			SourceID:               v.SourceID,
-			Provider:               string(src.Type),
-			ProviderConnectionName: src.ConnectionName,
-			ProviderConnectionID:   src.ConnectionID,
-			ResourceCount:          v.ResourceCount,
-		})
+		res[idx].ProviderConnectionID = src.ConnectionID
+		res[idx].ProviderConnectionName = src.ConnectionName
 	}
-
-	if len(res) > count {
-		res = res[:count]
-	}
-
 	return ctx.JSON(http.StatusOK, res)
 }
 
@@ -1260,6 +1263,12 @@ func (h *HttpHandler) GetTopAccountsByResourceCount(ctx echo.Context) error {
 // @Router   /inventory/api/v1/resources/top/growing/accounts [get]
 func (h *HttpHandler) GetTopFastestGrowingAccountsByResourceCount(ctx echo.Context) error {
 	provider, _ := source.ParseType(ctx.QueryParam("provider"))
+	var providerPtr *string
+	if provider != "" {
+		v := string(provider)
+		providerPtr = &v
+	}
+
 	timeWindow := ctx.QueryParam("timeWindow")
 	switch timeWindow {
 	case "1d", "1w", "3m", "1y":
@@ -1272,32 +1281,23 @@ func (h *HttpHandler) GetTopFastestGrowingAccountsByResourceCount(ctx echo.Conte
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid count")
 	}
 
+	var hits []kafka2.SourceResourcesSummary
+	if cached, err := es.FetchResourceLastSummaryCached(h.rcache, h.cache, providerPtr, nil, nil); err == nil && len(cached) > 0 {
+		hits = cached
+	} else {
+		hits, err = es.FetchResourceLastSummary(h.client, providerPtr, nil, nil)
+		if err != nil {
+			return err
+		}
+	}
+
 	sourceSummary := map[string]kafka2.SourceResourcesSummary{}
-	var searchAfter []interface{}
-	for {
-		query, err := es.FindTopAccountsQuery(string(provider), EsFetchPageSize, searchAfter)
-		if err != nil {
-			return err
-		}
-
-		var response es.ResourceGrowthQueryResponse
-		err = h.client.Search(context.Background(), describe.SourceResourcesSummary, query, &response)
-		if err != nil {
-			return err
-		}
-
-		if len(response.Hits.Hits) == 0 {
-			break
-		}
-
-		for _, hit := range response.Hits.Hits {
-			if v, ok := sourceSummary[hit.Source.SourceID]; ok {
-				v.ResourceCount += hit.Source.ResourceCount
-				sourceSummary[hit.Source.SourceID] = v
-			} else {
-				sourceSummary[hit.Source.SourceID] = hit.Source
-			}
-			searchAfter = hit.Sort
+	for _, hit := range hits {
+		if v, ok := sourceSummary[hit.SourceID]; ok {
+			v.ResourceCount += hit.ResourceCount
+			sourceSummary[hit.SourceID] = v
+		} else {
+			sourceSummary[hit.SourceID] = hit
 		}
 	}
 
@@ -1890,37 +1890,19 @@ func (h *HttpHandler) ListCategories(ctx echo.Context) error {
 func (h *HttpHandler) GetAccountsResourceCount(ctx echo.Context) error {
 	provider := ctx.QueryParam("provider")
 
-	var searchAfter []interface{}
 	res := map[string]api.AccountResourceCountResponse{}
 
-	var sourceList []kafka2.SourceResourcesSummary
-	if cached, err := es.ListAccountResourceCountCached(h.rcache, h.cache, provider); err == nil && len(cached) > 0 {
-		sourceList = cached
+	var hits []kafka2.SourceResourcesSummary
+	if cached, err := es.FetchResourceLastSummaryCached(h.rcache, h.cache, &provider, nil, nil); err == nil && len(cached) > 0 {
+		hits = cached
 	} else {
-		for {
-			query, err := es.ListAccountResourceCountQuery(provider, EsFetchPageSize, searchAfter)
-			if err != nil {
-				return err
-			}
-
-			var response es.ResourceGrowthQueryResponse
-			err = h.client.Search(context.Background(), describe.SourceResourcesSummary, query, &response)
-			if err != nil {
-				return err
-			}
-
-			if len(response.Hits.Hits) == 0 {
-				break
-			}
-
-			for _, hit := range response.Hits.Hits {
-				searchAfter = hit.Sort
-				sourceList = append(sourceList, hit.Source)
-			}
+		hits, err = es.FetchResourceLastSummary(h.client, &provider, nil, nil)
+		if err != nil {
+			return err
 		}
 	}
 
-	for _, hit := range sourceList {
+	for _, hit := range hits {
 		if v, ok := res[hit.SourceID]; ok {
 			v.ResourceCount += hit.ResourceCount
 			res[hit.SourceID] = v

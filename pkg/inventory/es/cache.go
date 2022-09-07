@@ -9,9 +9,23 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/describe/kafka"
 )
 
-func ListAccountResourceCountCached(rcache *redis.Client, cs *cache.Cache, provider string) ([]kafka.SourceResourcesSummary, error) {
+func FetchResourceLastSummaryCached(rcache *redis.Client, cs *cache.Cache,
+	provider *string, sourceID *string, resourceType *string) ([]kafka.SourceResourcesSummary, error) {
+	providerFilter := "*"
+	if provider != nil {
+		providerFilter = *provider
+	}
+	sourceIDFilter := "*"
+	if sourceID != nil {
+		sourceIDFilter = *sourceID
+	}
+	resourceTypeFilter := "*"
+	if resourceType != nil {
+		resourceTypeFilter = *resourceType
+	}
+
 	pattern := fmt.Sprintf("cache-%s-%s-%s-%s", kafka.ResourceSummaryTypeLastSummary,
-		provider, "*", "*")
+		providerFilter, sourceIDFilter, resourceTypeFilter)
 
 	var err error
 	var cursor uint64 = 0

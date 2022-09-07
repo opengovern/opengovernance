@@ -1,9 +1,12 @@
 package es
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"strconv"
+
+	"gitlab.com/keibiengine/keibi-engine/pkg/describe"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/inventory/api"
 
@@ -12,6 +15,8 @@ import (
 	"github.com/google/uuid"
 	"gitlab.com/keibiengine/keibi-engine/pkg/keibi-es-sdk"
 )
+
+const EsFetchPageSize = 10000
 
 type ResourceGrowthQueryResponse struct {
 	Hits ResourceGrowthQueryHits `json:"hits"`
@@ -147,40 +152,73 @@ func GetResourceTypeQuery(provider string, sourceID *string, resourceTypes []str
 	return string(b), err
 }
 
-func FindTopAccountsQuery(provider string, fetchSize int, searchAfter []interface{}) (string, error) {
-	res := make(map[string]interface{})
-	var filters []interface{}
+func FetchResourceLastSummary(client keibi.Client, provider *string, sourceID *string, resourceType *string) ([]kafka.SourceResourcesSummary, error) {
+	var hits []kafka.SourceResourcesSummary
+	var searchAfter []interface{}
+	for {
+		res := make(map[string]interface{})
+		var filters []interface{}
 
-	filters = append(filters, map[string]interface{}{
-		"terms": map[string][]string{"report_type": {kafka.ResourceSummaryTypeLastSummary}},
-	})
-
-	if provider != "" {
 		filters = append(filters, map[string]interface{}{
-			"terms": map[string][]string{"source_type": {provider}},
+			"terms": map[string][]string{"report_type": {kafka.ResourceSummaryTypeLastSummary}},
 		})
-	}
 
-	if searchAfter != nil {
-		res["search_after"] = searchAfter
-	}
+		if provider != nil {
+			filters = append(filters, map[string]interface{}{
+				"terms": map[string][]string{"source_type": {*provider}},
+			})
+		}
 
-	res["size"] = fetchSize
-	res["sort"] = []map[string]interface{}{
-		{
-			"resource_count": "desc",
-		},
-		{
-			"_id": "desc",
-		},
+		if sourceID != nil {
+			filters = append(filters, map[string]interface{}{
+				"terms": map[string][]string{"source_id": {*sourceID}},
+			})
+		}
+
+		if resourceType != nil {
+			filters = append(filters, map[string]interface{}{
+				"terms": map[string][]string{"resource_type": {*resourceType}},
+			})
+		}
+
+		if searchAfter != nil {
+			res["search_after"] = searchAfter
+		}
+
+		res["size"] = EsFetchPageSize
+		res["sort"] = []map[string]interface{}{
+			{
+				"_id": "desc",
+			},
+		}
+		res["query"] = map[string]interface{}{
+			"bool": map[string]interface{}{
+				"filter": filters,
+			},
+		}
+		b, err := json.Marshal(res)
+		if err != nil {
+			return nil, err
+		}
+
+		query := string(b)
+
+		var response ResourceGrowthQueryResponse
+		err = client.Search(context.Background(), describe.SourceResourcesSummary, query, &response)
+		if err != nil {
+			return nil, err
+		}
+
+		if len(response.Hits.Hits) == 0 {
+			break
+		}
+
+		for _, hit := range response.Hits.Hits {
+			searchAfter = hit.Sort
+			hits = append(hits, hit.Source)
+		}
 	}
-	res["query"] = map[string]interface{}{
-		"bool": map[string]interface{}{
-			"filter": filters,
-		},
-	}
-	b, err := json.Marshal(res)
-	return string(b), err
+	return hits, nil
 }
 
 type FetchServicesQueryResponse struct {
@@ -290,36 +328,6 @@ func GetCategoriesQuery(provider string, sourceID *string, fetchSize int, search
 		{
 			"_id": "desc",
 		},
-	}
-	res["query"] = map[string]interface{}{
-		"bool": map[string]interface{}{
-			"filter": filters,
-		},
-	}
-	b, err := json.Marshal(res)
-	return string(b), err
-}
-
-func ListAccountResourceCountQuery(provider string, fetchSize int, searchAfter []interface{}) (string, error) {
-	res := make(map[string]interface{})
-	var filters []interface{}
-
-	filters = append(filters, map[string]interface{}{
-		"terms": map[string][]string{"report_type": {kafka.ResourceSummaryTypeLastSummary}},
-	})
-
-	filters = append(filters, map[string]interface{}{
-		"terms": map[string][]string{"source_type": {provider}},
-	})
-
-	res["size"] = fetchSize
-	res["sort"] = []map[string]interface{}{
-		{
-			"_id": "asc",
-		},
-	}
-	if searchAfter != nil {
-		res["search_after"] = searchAfter
 	}
 	res["query"] = map[string]interface{}{
 		"bool": map[string]interface{}{
