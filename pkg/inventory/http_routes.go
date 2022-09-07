@@ -1430,7 +1430,7 @@ func (h *HttpHandler) GetTopServicesByResourceCount(ctx echo.Context) error {
 		sourceID = &s
 	}
 
-	res, err := GetServices(h.client, provider, sourceID)
+	res, err := GetServices(h.client, h.rcache, h.cache, provider, sourceID)
 	if err != nil {
 		return err
 	}
@@ -1465,7 +1465,7 @@ func (h *HttpHandler) GetCategories(ctx echo.Context) error {
 		sourceID = &s
 	}
 
-	res, err := GetCategories(h.client, provider, sourceID)
+	res, err := GetCategories(h.client, h.rcache, h.cache, provider, sourceID)
 	if err != nil {
 		return err
 	}
