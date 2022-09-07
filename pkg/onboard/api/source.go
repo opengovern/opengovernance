@@ -130,7 +130,7 @@ type Source struct {
 	Enabled        bool       `json:"enabled"`
 }
 
-type GetSourcesRequest []uuid.UUID
+type GetSourcesRequest []string
 
 type GetSourcesResponse []Source
 

@@ -922,7 +922,15 @@ func (h HttpHandler) GetSources(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
 	}
 
-	srcs, err := h.db.GetSources(req)
+	var reqUUIDs []uuid.UUID
+	for _, item := range req {
+		u, err := uuid.Parse(item)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "invalid uuid:"+item)
+		}
+		reqUUIDs = append(reqUUIDs, u)
+	}
+	srcs, err := h.db.GetSources(reqUUIDs)
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return echo.NewHTTPError(http.StatusBadRequest, "source not found")
