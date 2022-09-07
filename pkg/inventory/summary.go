@@ -2,7 +2,10 @@ package inventory
 
 import (
 	"context"
-	"fmt"
+
+	"github.com/go-redis/cache/v8"
+	"github.com/go-redis/redis/v8"
+	"gitlab.com/keibiengine/keibi-engine/pkg/describe/kafka"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/cloudservice"
 
@@ -103,41 +106,40 @@ func GetServices(client keibi.Client, provider source.Type, sourceID *string) ([
 	return res, nil
 }
 
-func GetResources(client keibi.Client, provider source.Type, sourceID *string, resourceTypes []string) ([]api.ResourceTypeResponse, error) {
-	var searchAfter []interface{}
-	resourceTypeResponse := map[string]api.ResourceTypeResponse{}
-	for {
-		query, err := es.GetResourceTypeQuery(string(provider), sourceID, resourceTypes, EsFetchPageSize, searchAfter)
-		if err != nil {
-			return nil, err
-		}
+func GetResources(client keibi.Client, rcache *redis.Client, cache *cache.Cache, provider source.Type, sourceID *string, resourceTypes []string) ([]api.ResourceTypeResponse, error) {
+	var providerPtr *string
+	if provider != "" {
+		v := string(provider)
+		providerPtr = &v
+	}
 
-		fmt.Println("get category query:", query)
-		var response es.ResourceTypeQueryResponse
-		err = client.Search(context.Background(), describe.SourceResourcesSummary, query, &response)
-		if err != nil {
-			return nil, err
-		}
-
-		if len(response.Hits.Hits) == 0 {
-			break
-		}
-
-		for _, hit := range response.Hits.Hits {
-			if v, ok := resourceTypeResponse[hit.Source.ResourceType]; ok {
-				v.ResourceCount += hit.Source.ResourceCount
-				resourceTypeResponse[hit.Source.ResourceType] = v
-			} else {
-				resourceTypeResponse[hit.Source.ResourceType] = api.ResourceTypeResponse{
-					ResourceType:     cloudservice.ResourceTypeName(hit.Source.ResourceType),
-					ResourceCount:    hit.Source.ResourceCount,
-					LastDayCount:     hit.Source.LastDayCount,
-					LastWeekCount:    hit.Source.LastWeekCount,
-					LastQuarterCount: hit.Source.LastQuarterCount,
-					LastYearCount:    hit.Source.LastYearCount,
-				}
+	var hits []kafka.SourceResourcesSummary
+	for _, resourceType := range resourceTypes {
+		if cached, err := es.FetchResourceLastSummaryCached(rcache, cache, providerPtr, sourceID, &resourceType); err == nil && len(cached) > 0 {
+			hits = append(hits, cached...)
+		} else {
+			result, err := es.FetchResourceLastSummary(client, providerPtr, sourceID, &resourceType)
+			if err != nil {
+				return nil, err
 			}
-			searchAfter = hit.Sort
+			hits = append(hits, result...)
+		}
+	}
+
+	resourceTypeResponse := map[string]api.ResourceTypeResponse{}
+	for _, hit := range hits {
+		if v, ok := resourceTypeResponse[hit.ResourceType]; ok {
+			v.ResourceCount += hit.ResourceCount
+			resourceTypeResponse[hit.ResourceType] = v
+		} else {
+			resourceTypeResponse[hit.ResourceType] = api.ResourceTypeResponse{
+				ResourceType:     cloudservice.ResourceTypeName(hit.ResourceType),
+				ResourceCount:    hit.ResourceCount,
+				LastDayCount:     hit.LastDayCount,
+				LastWeekCount:    hit.LastWeekCount,
+				LastQuarterCount: hit.LastQuarterCount,
+				LastYearCount:    hit.LastYearCount,
+			}
 		}
 	}
 
