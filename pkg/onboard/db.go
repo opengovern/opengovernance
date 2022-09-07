@@ -44,8 +44,6 @@ func (db Database) GetSources(ids []uuid.UUID) ([]Source, error) {
 
 	if tx.Error != nil {
 		return nil, tx.Error
-	} else if tx.RowsAffected == 0 {
-		return nil, gorm.ErrRecordNotFound
 	}
 	return s, nil
 }
