@@ -574,6 +574,7 @@ func (s Scheduler) scheduleDescribeJob() {
 	}
 
 	rand.Shuffle(len(sources), func(i, j int) { sources[i], sources[j] = sources[j], sources[i] })
+	describedAt := time.Now()
 	for _, source := range sources {
 		if isPublishingBlocked(s.logger, s.describeConnectionJobQueue) {
 			s.logger.Warn("The jobs in queue is over the threshold", zap.Error(err))
@@ -593,7 +594,6 @@ func (s Scheduler) scheduleDescribeJob() {
 			continue
 		}
 
-		describedAt := time.Now()
 		enqueueDescribeConnectionJob(s.logger, s.db, s.describeConnectionJobQueue, source, daj, describedAt)
 
 		isSuccessful := true
