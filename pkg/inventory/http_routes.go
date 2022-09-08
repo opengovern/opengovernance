@@ -1157,11 +1157,13 @@ func (h *HttpHandler) GetTopAccountsByResourceCount(ctx echo.Context) error {
 
 	if cached, err := es.FetchResourceLastSummaryCached(h.rcache, h.cache, providerPtr, nil, nil); err == nil && len(cached) > 0 {
 		hits = cached
+		fmt.Println("fetching last summary from cache")
 	} else {
 		hits, err = es.FetchResourceLastSummary(h.client, providerPtr, nil, nil)
 		if err != nil {
 			return err
 		}
+		fmt.Println("fetching last summary from ES")
 	}
 
 	sourceSummary := map[string]kafka2.SourceResourcesSummary{}
@@ -1244,8 +1246,10 @@ func (h *HttpHandler) GetTopFastestGrowingAccountsByResourceCount(ctx echo.Conte
 
 	var hits []kafka2.SourceResourcesSummary
 	if cached, err := es.FetchResourceLastSummaryCached(h.rcache, h.cache, providerPtr, nil, nil); err == nil && len(cached) > 0 {
+		fmt.Println("fetching last summary from cache")
 		hits = cached
 	} else {
+		fmt.Println("fetching last summary from ES")
 		hits, err = es.FetchResourceLastSummary(h.client, providerPtr, nil, nil)
 		if err != nil {
 			return err
@@ -1862,11 +1866,13 @@ func (h *HttpHandler) GetAccountsResourceCount(ctx echo.Context) error {
 	var hits []kafka2.SourceResourcesSummary
 	if cached, err := es.FetchResourceLastSummaryCached(h.rcache, h.cache, &provider, nil, nil); err == nil && len(cached) > 0 {
 		hits = cached
+		fmt.Println("fetching last summary from cache")
 	} else {
 		hits, err = es.FetchResourceLastSummary(h.client, &provider, nil, nil)
 		if err != nil {
 			return err
 		}
+		fmt.Println("fetching last summary from ES")
 	}
 
 	for _, hit := range hits {

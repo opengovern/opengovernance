@@ -1,6 +1,8 @@
 package inventory
 
 import (
+	"fmt"
+
 	"github.com/go-redis/cache/v8"
 	"github.com/go-redis/redis/v8"
 	"gitlab.com/keibiengine/keibi-engine/pkg/describe/kafka"
@@ -25,12 +27,14 @@ func GetCategories(client keibi.Client, rcache *redis.Client, cache *cache.Cache
 
 	if cached, err := es.FetchCategoriesCached(rcache, cache, providerPtr, sourceID); err == nil && len(cached) > 0 {
 		hits = cached
+		fmt.Println("fetching categories from cached")
 	} else {
 		res, err := es.GetCategoriesQuery(client, string(provider), sourceID)
 		if err != nil {
 			return nil, err
 		}
 		hits = res
+		fmt.Println("fetching categories from ES")
 	}
 
 	categoryMap := map[string]api.CategoriesResponse{}
@@ -70,12 +74,14 @@ func GetServices(client keibi.Client, rcache *redis.Client, cache *cache.Cache,
 
 	if cached, err := es.FetchServicesCached(rcache, cache, providerPtr, sourceID); err == nil && len(cached) > 0 {
 		hits = cached
+		fmt.Println("fetching services from cached")
 	} else {
 		res, err := es.FetchServicesQuery(client, string(provider), sourceID)
 		if err != nil {
 			return nil, err
 		}
 		hits = res
+		fmt.Println("fetching services from ES")
 	}
 
 	serviceResponse := map[string]api.TopServicesResponse{}
@@ -114,6 +120,7 @@ func GetResources(client keibi.Client, rcache *redis.Client, cache *cache.Cache,
 	for _, resourceType := range resourceTypes {
 		if cached, err := es.FetchResourceLastSummaryCached(rcache, cache, providerPtr, sourceID, &resourceType); err == nil && len(cached) > 0 {
 			hits = append(hits, cached...)
+			fmt.Println("fetching resources from cached")
 		} else {
 			//TODO-Saleh performance issue: use list of resource types instead
 			result, err := es.FetchResourceLastSummary(client, providerPtr, sourceID, &resourceType)
@@ -121,6 +128,7 @@ func GetResources(client keibi.Client, rcache *redis.Client, cache *cache.Cache,
 				return nil, err
 			}
 			hits = append(hits, result...)
+			fmt.Println("fetching resources from ES")
 		}
 	}
 
