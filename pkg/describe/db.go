@@ -22,7 +22,7 @@ type Database struct {
 
 func (db Database) Initialize() error {
 	return db.orm.AutoMigrate(&Source{}, &DescribeSourceJob{}, &DescribeResourceJob{},
-		&ComplianceReportJob{}, &Insight{}, &InsightJob{},
+		&ComplianceReportJob{}, &Insight{}, &InsightJob{}, &SummarizerJob{},
 	)
 }
 
@@ -260,6 +260,20 @@ func (db Database) ListDescribeSourceJobs(sourceID uuid.UUID) ([]DescribeSourceJ
 func (db Database) GetLastDescribeSourceJob(sourceID uuid.UUID) (*DescribeSourceJob, error) {
 	var job DescribeSourceJob
 	tx := db.orm.Preload(clause.Associations).Where("source_id = ?", sourceID).Order("updated_at DESC").First(&job)
+	if tx.Error != nil {
+		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
+		return nil, tx.Error
+	}
+
+	return &job, nil
+}
+
+// GetDescribeSourceJob returns the DescribeSourceJobs for the given id.
+func (db Database) GetDescribeSourceJob(jobID uint) (*DescribeSourceJob, error) {
+	var job DescribeSourceJob
+	tx := db.orm.Preload(clause.Associations).Where("id = ?", jobID).First(&job)
 	if tx.Error != nil {
 		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
 			return nil, nil
@@ -726,5 +740,24 @@ func (db Database) UpdateInsightJobsTimedOut(insightIntervalHours int64) error {
 		return tx.Error
 	}
 
+	return nil
+}
+
+func (db Database) AddSummarizerJob(job *SummarizerJob) error {
+	tx := db.orm.Model(&SummarizerJob{}).
+		Create(job)
+	if tx.Error != nil {
+		return tx.Error
+	}
+	return nil
+}
+
+func (db Database) UpdateSummarizerJobStatus(job SummarizerJob) error {
+	tx := db.orm.Model(&SummarizerJob{}).
+		Where("id = ?", job.ID).
+		Update("status", job.Status)
+	if tx.Error != nil {
+		return tx.Error
+	}
 	return nil
 }

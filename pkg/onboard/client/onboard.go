@@ -63,7 +63,7 @@ func (s *onboardClient) GetSource(ctx *httpclient.Context, sourceID string) (*ap
 func (s *onboardClient) GetSources(ctx *httpclient.Context, sourceIDs []string) ([]api.Source, error) {
 	url := fmt.Sprintf("%s/api/v1/sources", s.baseURL)
 
-	var req []string
+	var req api.GetSourcesRequest
 	var res []api.Source
 
 	for _, sourceID := range sourceIDs {
@@ -74,10 +74,10 @@ func (s *onboardClient) GetSources(ctx *httpclient.Context, sourceIDs []string) 
 				continue
 			}
 		}
-		req = append(req, sourceID)
+		req.SourceIDs = append(req.SourceIDs, sourceID)
 	}
 
-	if len(req) > 0 {
+	if len(req.SourceIDs) > 0 {
 		payload, err := json.Marshal(req)
 		if err != nil {
 			return nil, err

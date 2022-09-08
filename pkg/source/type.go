@@ -23,3 +23,11 @@ func ParseType(str string) (Type, error) {
 		return "", fmt.Errorf("invalid provider: %s", str)
 	}
 }
+
+func (t Type) AsStringPtr() *string {
+	if t == "" {
+		return nil
+	}
+	v := string(t)
+	return &v
+}

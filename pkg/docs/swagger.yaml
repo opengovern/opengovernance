@@ -398,6 +398,13 @@ definitions:
       totalCount:
         type: integer
     type: object
+  api.GetSourcesRequest:
+    properties:
+      source_ids:
+        items:
+          type: string
+        type: array
+    type: object
   api.Insight:
     properties:
       category:
@@ -825,6 +832,25 @@ definitions:
         description: fill this with column name
         type: string
     type: object
+  api.Source:
+    properties:
+      description:
+        type: string
+      email:
+        type: string
+      enabled:
+        type: boolean
+      id:
+        type: string
+      onboardDate:
+        type: string
+      providerConnectionID:
+        type: string
+      providerConnectionName:
+        type: string
+      type:
+        type: string
+    type: object
   api.SourceConfigAWS:
     properties:
       accessKey:
@@ -1029,38 +1055,6 @@ definitions:
       resourceName:
         type: string
       status:
-        type: string
-    type: object
-  gitlab.com_keibiengine_keibi-engine_pkg_describe_api.Source:
-    properties:
-      id:
-        type: string
-      lastComplianceReportAt:
-        type: string
-      lastDescribeJobStatus:
-        type: string
-      lastDescribedAt:
-        type: string
-      type:
-        type: string
-    type: object
-  gitlab.com_keibiengine_keibi-engine_pkg_onboard_api.Source:
-    properties:
-      description:
-        type: string
-      email:
-        type: string
-      enabled:
-        type: boolean
-      id:
-        type: string
-      onboardDate:
-        type: string
-      providerConnectionID:
-        type: string
-      providerConnectionName:
-        type: string
-      type:
         type: string
     type: object
 host: dev-cluster.keibi.io
@@ -2714,7 +2708,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/gitlab.com_keibiengine_keibi-engine_pkg_onboard_api.Source'
+            $ref: '#/definitions/api.Source'
       summary: Returns a single source
       tags:
       - onboard
@@ -2892,7 +2886,7 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/gitlab.com_keibiengine_keibi-engine_pkg_onboard_api.Source'
+              $ref: '#/definitions/api.Source'
             type: array
       summary: Returns a list of sources
       tags:
@@ -2912,9 +2906,7 @@ paths:
         in: body
         name: request
         schema:
-          items:
-            type: string
-          type: array
+          $ref: '#/definitions/api.GetSourcesRequest'
       produces:
       - application/json
       responses:
@@ -2922,7 +2914,7 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/gitlab.com_keibiengine_keibi-engine_pkg_onboard_api.Source'
+              $ref: '#/definitions/api.Source'
             type: array
       summary: Returns a list of sources
       tags:
@@ -3126,7 +3118,7 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/gitlab.com_keibiengine_keibi-engine_pkg_describe_api.Source'
+              $ref: '#/definitions/api.Source'
             type: array
       summary: List Sources
       tags:
@@ -3146,7 +3138,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/gitlab.com_keibiengine_keibi-engine_pkg_describe_api.Source'
+            $ref: '#/definitions/api.Source'
       summary: Get Source by id
       tags:
       - schedule

@@ -19,6 +19,8 @@ const (
 	ComplianceReportCleanupJobsQueueName = "compliance-report-cleanup-jobs-queue"
 	InsightJobsQueueName                 = "insight-jobs-queue"
 	InsightResultsQueueName              = "insight-results-queue"
+	SummarizerJobsQueueName              = "summarizer-jobs-queue"
+	SummarizerResultsQueueName           = "summarizer-results-queue"
 	SourceEventsQueueName                = "source-events-queue"
 	DescribeConnectionJobsQueueName      = "describe-connection-jobs-queue"
 	DescribeConnectionResultsQueueName   = "describe-connection-results-queue"
@@ -95,6 +97,8 @@ func SchedulerCommand() *cobra.Command {
 				ComplianceReportCleanupJobsQueueName,
 				InsightJobsQueueName,
 				InsightResultsQueueName,
+				SummarizerJobsQueueName,
+				SummarizerResultsQueueName,
 				SourceEventsQueueName,
 				PostgreSQLUser,
 				PostgreSQLPassword,

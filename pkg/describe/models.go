@@ -4,6 +4,8 @@ import (
 	"database/sql"
 	"time"
 
+	summarizerapi "gitlab.com/keibiengine/keibi-engine/pkg/summarizer/api"
+
 	insightapi "gitlab.com/keibiengine/keibi-engine/pkg/insight/api"
 
 	api2 "gitlab.com/keibiengine/keibi-engine/pkg/compliance-report/api"
@@ -69,5 +71,13 @@ type InsightJob struct {
 	gorm.Model
 	InsightID      uint
 	Status         insightapi.InsightJobStatus
+	FailureMessage string
+}
+
+type SummarizerJob struct {
+	gorm.Model
+	SourceID       uuid.UUID
+	SourceJobID    uint
+	Status         summarizerapi.SummarizerJobStatus
 	FailureMessage string
 }

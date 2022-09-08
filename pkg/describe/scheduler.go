@@ -9,6 +9,11 @@ import (
 	"strings"
 	"time"
 
+	"github.com/google/uuid"
+	"gitlab.com/keibiengine/keibi-engine/pkg/summarizer"
+	summarizerapi "gitlab.com/keibiengine/keibi-engine/pkg/summarizer/api"
+	"gorm.io/gorm"
+
 	"gitlab.com/keibiengine/keibi-engine/pkg/azure"
 
 	"github.com/go-redis/redis/v8"
@@ -59,6 +64,13 @@ var InsightJobsCount = promauto.NewCounterVec(prometheus.CounterOpts{
 	Subsystem: "scheduler",
 	Name:      "schedule_insight_jobs_total",
 	Help:      "Count of insight jobs in scheduler service",
+}, []string{"status"})
+
+var SummarizerJobsCount = promauto.NewCounterVec(prometheus.CounterOpts{
+	Namespace: "keibi",
+	Subsystem: "scheduler",
+	Name:      "schedule_summarizer_jobs_total",
+	Help:      "Count of summarizer jobs in scheduler service",
 }, []string{"status"})
 
 var DescribeJobsCount = promauto.NewCounterVec(prometheus.CounterOpts{
@@ -121,6 +133,11 @@ type Scheduler struct {
 	// insightJobResultQueue is used to consume the insight job results returned by the workers.
 	insightJobResultQueue queue.Interface
 
+	// summarizerJobQueue is used to publish summarizer jobs to be performed by the workers.
+	summarizerJobQueue queue.Interface
+	// summarizerJobResultQueue is used to consume the summarizer job results returned by the workers.
+	summarizerJobResultQueue queue.Interface
+
 	// watch the deleted source
 	deletedSources chan string
 
@@ -150,6 +167,8 @@ func InitializeScheduler(
 	complianceReportCleanupJobQueueName string,
 	insightJobQueueName string,
 	insightJobResultQueueName string,
+	summarizerJobQueueName string,
+	summarizerJobResultQueueName string,
 	sourceQueueName string,
 	postgresUsername string,
 	postgresPassword string,
@@ -277,6 +296,38 @@ func InitializeScheduler(
 
 	s.logger.Info("Connected to the insight job results queue", zap.String("queue", insightJobResultQueueName))
 	s.insightJobResultQueue = insightResultsQueue
+
+	qCfg = queue.Config{}
+	qCfg.Server.Username = rabbitMQUsername
+	qCfg.Server.Password = rabbitMQPassword
+	qCfg.Server.Host = rabbitMQHost
+	qCfg.Server.Port = rabbitMQPort
+	qCfg.Queue.Name = summarizerJobQueueName
+	qCfg.Queue.Durable = true
+	qCfg.Producer.ID = s.id
+	summarizerQueue, err := queue.New(qCfg)
+	if err != nil {
+		return nil, err
+	}
+
+	s.logger.Info("Connected to the summarizer jobs queue", zap.String("queue", summarizerJobQueueName))
+	s.summarizerJobQueue = summarizerQueue
+
+	qCfg = queue.Config{}
+	qCfg.Server.Username = rabbitMQUsername
+	qCfg.Server.Password = rabbitMQPassword
+	qCfg.Server.Host = rabbitMQHost
+	qCfg.Server.Port = rabbitMQPort
+	qCfg.Queue.Name = summarizerJobResultQueueName
+	qCfg.Queue.Durable = true
+	qCfg.Consumer.ID = s.id
+	summarizerResultsQueue, err := queue.New(qCfg)
+	if err != nil {
+		return nil, err
+	}
+
+	s.logger.Info("Connected to the summarizer job results queue", zap.String("queue", summarizerJobResultQueueName))
+	s.summarizerJobResultQueue = summarizerResultsQueue
 
 	qCfg = queue.Config{}
 	qCfg.Server.Username = rabbitMQUsername
@@ -485,6 +536,21 @@ func (s *Scheduler) RunDescribeJobCompletionUpdater() {
 					)
 				}
 
+				job, err := s.db.GetDescribeSourceJob(id)
+				if err != nil {
+					s.logger.Error("Failed to call summarizer\n",
+						zap.Uint("jobId", id),
+						zap.Error(err),
+					)
+				} else {
+					err := s.scheduleSummarizerJob(job.ID, job.SourceID)
+					if err != nil {
+						s.logger.Error("Failed to enqueue summarizer job\n",
+							zap.Uint("jobId", id),
+							zap.Error(err),
+						)
+					}
+				}
 				continue
 			}
 
@@ -1109,6 +1175,8 @@ func (s *Scheduler) Stop() {
 		s.sourceQueue,
 		s.insightJobQueue,
 		s.insightJobResultQueue,
+		s.summarizerJobQueue,
+		s.summarizerJobResultQueue,
 	}
 
 	for _, queue := range queues {
@@ -1463,6 +1531,86 @@ func (s Scheduler) scheduleInsightJob() {
 	InsightJobsCount.WithLabelValues("successful").Inc()
 }
 
+func (s Scheduler) scheduleSummarizerJob(sourceJobID uint, sourceID uuid.UUID) error {
+	job := newSummarizerJob(sourceJobID, sourceID)
+	err := s.db.AddSummarizerJob(&job)
+	if err != nil {
+		SummarizerJobsCount.WithLabelValues("failure").Inc()
+		s.logger.Error("Failed to create SummarizerJob",
+			zap.Uint("jobId", job.ID),
+			zap.Error(err),
+		)
+		return err
+	}
+
+	err = enqueueSummarizerJobs(s.db, s.summarizerJobQueue, job)
+	if err != nil {
+		SummarizerJobsCount.WithLabelValues("failure").Inc()
+		s.logger.Error("Failed to enqueue SummarizerJob",
+			zap.Uint("jobId", job.ID),
+			zap.Error(err),
+		)
+		job.Status = summarizerapi.SummarizerJobFailed
+		err = s.db.UpdateSummarizerJobStatus(job)
+		if err != nil {
+			s.logger.Error("Failed to update SummarizerJob status",
+				zap.Uint("jobId", job.ID),
+				zap.Error(err),
+			)
+		}
+		return err
+	}
+
+	return nil
+}
+
+func enqueueSummarizerJobs(db Database, q queue.Interface, job SummarizerJob) error {
+	var lastDayJobID, lastWeekJobID, lastQuarterJobID, lastYearJobID uint
+
+	lastDay, err := db.GetOldCompletedSourceJob(job.SourceID, 1)
+	if err != nil {
+		return err
+	}
+	if lastDay != nil {
+		lastDayJobID = lastDay.ID
+	}
+	lastWeek, err := db.GetOldCompletedSourceJob(job.SourceID, 7)
+	if err != nil {
+		return err
+	}
+	if lastWeek != nil {
+		lastWeekJobID = lastWeek.ID
+	}
+	lastQuarter, err := db.GetOldCompletedSourceJob(job.SourceID, 93)
+	if err != nil {
+		return err
+	}
+	if lastQuarter != nil {
+		lastQuarterJobID = lastQuarter.ID
+	}
+	lastYear, err := db.GetOldCompletedSourceJob(job.SourceID, 428)
+	if err != nil {
+		return err
+	}
+	if lastYear != nil {
+		lastYearJobID = lastYear.ID
+	}
+
+	if err := q.Publish(summarizer.Job{
+		JobID:                  job.ID,
+		SourceID:               job.SourceID.String(),
+		SourceJobID:            job.SourceJobID,
+		LastDaySourceJobID:     lastDayJobID,
+		LastWeekSourceJobID:    lastWeekJobID,
+		LastQuarterSourceJobID: lastQuarterJobID,
+		LastYearSourceJobID:    lastYearJobID,
+	}); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func enqueueInsightJobs(db Database, q queue.Interface, job InsightJob) error {
 	ins, err := db.GetInsight(job.InsightID)
 	if err != nil {
@@ -1586,5 +1734,15 @@ func newInsightJob(insight Insight) InsightJob {
 	return InsightJob{
 		InsightID: insight.ID,
 		Status:    insightapi.InsightJobInProgress,
+	}
+}
+
+func newSummarizerJob(sourceJobID uint, sourceID uuid.UUID) SummarizerJob {
+	return SummarizerJob{
+		Model:          gorm.Model{},
+		SourceID:       sourceID,
+		SourceJobID:    sourceJobID,
+		Status:         summarizerapi.SummarizerJobInProgress,
+		FailureMessage: "",
 	}
 }
