@@ -124,21 +124,16 @@ func (j Job) BuildResourcesSummary(client keibi.Client) (kafka.SummaryDoc, error
 		return nil, err
 	}
 
-	var summary kafka.ConnectionResourcesSummary
+	summary := kafka.ConnectionResourcesSummary{
+		SummarizerJobID: j.JobID,
+		SourceID:        j.SourceID,
+		SourceJobID:     j.SourceJobID,
+	}
 	for _, hit := range hits {
-		if summary.SourceID != "" {
-			summary.ResourceCount += hit.ResourceCount
-		} else {
-			summary = kafka.ConnectionResourcesSummary{
-				SummarizerJobID: j.JobID,
-				SourceID:        hit.SourceID,
-				SourceType:      source.Type(hit.SourceType),
-				SourceJobID:     hit.SourceJobID,
-				DescribedAt:     hit.DescribedAt,
-				ResourceCount:   hit.ResourceCount,
-				ReportType:      hit.ReportType,
-			}
-		}
+		summary.SourceType = source.Type(hit.SourceType)
+		summary.DescribedAt = hit.DescribedAt
+		summary.ReportType = hit.ReportType
+		summary.ResourceCount += hit.ResourceCount
 	}
 
 	for _, jobID := range []uint{j.LastDaySourceJobID, j.LastWeekSourceJobID, j.LastQuarterSourceJobID, j.LastYearSourceJobID} {
