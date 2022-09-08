@@ -137,6 +137,10 @@ func (j Job) BuildResourcesSummary(client keibi.Client) (kafka.SummaryDoc, error
 	}
 
 	for _, jobID := range []uint{j.LastDaySourceJobID, j.LastWeekSourceJobID, j.LastQuarterSourceJobID, j.LastYearSourceJobID} {
+		if jobID == 0 {
+			continue
+		}
+
 		hits, err := es.FetchResourceSummary(client, jobID, nil, &j.SourceID, nil)
 		if err != nil {
 			return nil, err
