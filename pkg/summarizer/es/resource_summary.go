@@ -5,12 +5,14 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"gitlab.com/keibiengine/keibi-engine/pkg/describe"
 	"gitlab.com/keibiengine/keibi-engine/pkg/describe/kafka"
 	"gitlab.com/keibiengine/keibi-engine/pkg/keibi-es-sdk"
 )
 
-var EsFetchPageSize = 10000
+var (
+	EsFetchPageSize        = 10000
+	SourceResourcesSummary = "source_resources_summary"
+)
 
 type ResourceSummaryQueryResponse struct {
 	Hits ResourceSummaryQueryHits `json:"hits"`
@@ -85,7 +87,7 @@ func FetchResourceSummary(client keibi.Client, jobID uint, provider *string, sou
 		query := string(b)
 
 		var response ResourceSummaryQueryResponse
-		err = client.Search(context.Background(), describe.SourceResourcesSummary, query, &response)
+		err = client.Search(context.Background(), SourceResourcesSummary, query, &response)
 		if err != nil {
 			return nil, err
 		}
