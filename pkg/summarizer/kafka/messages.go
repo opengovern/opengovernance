@@ -17,6 +17,7 @@ const (
 )
 
 type ConnectionResourcesSummary struct {
+	SummarizerJobID uint `json:"summarizer_job_id"`
 	// SourceID is aws account id or azure subscription id
 	SourceID string `json:"source_id"`
 	// SourceType is the type of the source of the resource, i.e. AWS Cloud, Azure Cloud.

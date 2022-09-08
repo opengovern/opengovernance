@@ -130,12 +130,13 @@ func (j Job) BuildResourcesSummary(client keibi.Client) (kafka.SummaryDoc, error
 			summary.ResourceCount += hit.ResourceCount
 		} else {
 			summary = kafka.ConnectionResourcesSummary{
-				SourceID:      hit.SourceID,
-				SourceType:    source.Type(hit.SourceType),
-				SourceJobID:   hit.SourceJobID,
-				DescribedAt:   hit.DescribedAt,
-				ResourceCount: hit.ResourceCount,
-				ReportType:    hit.ReportType,
+				SummarizerJobID: j.JobID,
+				SourceID:        hit.SourceID,
+				SourceType:      source.Type(hit.SourceType),
+				SourceJobID:     hit.SourceJobID,
+				DescribedAt:     hit.DescribedAt,
+				ResourceCount:   hit.ResourceCount,
+				ReportType:      hit.ReportType,
 			}
 		}
 	}
