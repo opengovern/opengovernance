@@ -55,9 +55,11 @@ type JobResult struct {
 }
 
 func (j Job) Do(client keibi.Client, producer sarama.SyncProducer, topic string, logger *zap.Logger) (r JobResult) {
+	logger.Info("Starting summarizing", zap.Int("jobID", int(j.JobID)))
 	startTime := time.Now().Unix()
 	defer func() {
 		if err := recover(); err != nil {
+			logger.Error(fmt.Sprintf("paniced with error: %v", err), zap.Int("jobID", int(j.JobID)))
 			fmt.Println("paniced with error:", err)
 			fmt.Println(errors.Wrap(err, 2).ErrorStack())
 
@@ -88,8 +90,9 @@ func (j Job) Do(client keibi.Client, producer sarama.SyncProducer, topic string,
 
 	var msgs []kafka.SummaryDoc
 
+	logger.Info("Building resources summary", zap.Int("jobID", int(j.JobID)))
 	msg, err := j.BuildResourcesSummary(client)
-	logger.Error(fmt.Sprintf("BuildResourcesSummary:%v, %v", msg, err))
+	logger.Info(fmt.Sprintf("BuildResourcesSummary:%v, %v", msg, err), zap.Int("jobID", int(j.JobID)))
 
 	if err != nil {
 		fail(err)
