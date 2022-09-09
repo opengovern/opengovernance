@@ -89,6 +89,8 @@ func (j Job) Do(client keibi.Client, producer sarama.SyncProducer, topic string,
 	var msgs []kafka.SummaryDoc
 
 	msg, err := j.BuildResourcesSummary(client)
+	logger.Error(fmt.Sprintf("BuildResourcesSummary:%v, %v", msg, err))
+
 	if err != nil {
 		fail(err)
 	} else {
