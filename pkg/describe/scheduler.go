@@ -144,6 +144,7 @@ type Scheduler struct {
 	describeIntervalHours   int64
 	complianceIntervalHours int64
 	insightIntervalHours    int64
+	summarizerIntervalHours int64
 
 	logger          *zap.Logger
 	workspaceClient workspaceClient.WorkspaceServiceClient
@@ -1725,6 +1726,65 @@ func (s *Scheduler) RunInsightJobResultsConsumer() error {
 			err := s.db.UpdateInsightJobsTimedOut(s.insightIntervalHours)
 			if err != nil {
 				s.logger.Error("Failed to update timed out InsightJob", zap.Error(err))
+			}
+		}
+	}
+}
+
+// RunSummarizerJobResultsConsumer consumes messages from the summarizerJobResultQueue queue.
+// It will update the status of the jobs in the database based on the message.
+// It will also update the jobs status that are not completed in certain time to FAILED
+func (s *Scheduler) RunSummarizerJobResultsConsumer() error {
+	s.logger.Info("Consuming messages from the summarizerJobResultQueue queue")
+
+	msgs, err := s.summarizerJobResultQueue.Consume()
+	if err != nil {
+		return err
+	}
+
+	t := time.NewTicker(JobTimeoutCheckInterval)
+	defer t.Stop()
+
+	for {
+		select {
+		case msg, ok := <-msgs:
+			if !ok {
+				return fmt.Errorf("tasks channel is closed")
+			}
+
+			var result summarizer.JobResult
+			if err := json.Unmarshal(msg.Body, &result); err != nil {
+				s.logger.Error("Failed to unmarshal SummarizerJobResult results", zap.Error(err))
+				err = msg.Nack(false, false)
+				if err != nil {
+					s.logger.Error("Failed nacking message", zap.Error(err))
+				}
+				continue
+			}
+
+			s.logger.Info("Processing SummarizerJobResult for Job",
+				zap.Uint("jobId", result.JobID),
+				zap.String("status", string(result.Status)),
+			)
+			err := s.db.UpdateSummarizerJob(result.JobID, result.Status, result.Error)
+			if err != nil {
+				s.logger.Error("Failed to update the status of SummarizerJob",
+					zap.Uint("jobId", result.JobID),
+					zap.Error(err))
+				err = msg.Nack(false, true)
+				if err != nil {
+					s.logger.Error("Failed nacking message", zap.Error(err))
+				}
+				continue
+			}
+
+			if err := msg.Ack(false); err != nil {
+				s.logger.Error("Failed acking message", zap.Error(err))
+			}
+		case <-t.C:
+			err := s.db.UpdateSummarizerJobsTimedOut(s.summarizerIntervalHours)
+			if err != nil {
+				s.logger.Error("Failed to update timed out SummarizerJob", zap.Error(err))
 			}
 		}
 	}

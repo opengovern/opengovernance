@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"time"
 
+	summarizerapi "gitlab.com/keibiengine/keibi-engine/pkg/summarizer/api"
+
 	insightapi "gitlab.com/keibiengine/keibi-engine/pkg/insight/api"
 
 	api2 "gitlab.com/keibiengine/keibi-engine/pkg/compliance-report/api"
@@ -740,6 +742,35 @@ func (db Database) UpdateInsightJobsTimedOut(insightIntervalHours int64) error {
 		return tx.Error
 	}
 
+	return nil
+}
+
+// UpdateSummarizerJobsTimedOut updates the status of InsightJobs
+// that have timed out while in the status of 'IN_PROGRESS' for longer
+// than 4 hours.
+func (db Database) UpdateSummarizerJobsTimedOut(summarizerIntervalHours int64) error {
+	tx := db.orm.
+		Model(&SummarizerJob{}).
+		Where(fmt.Sprintf("created_at < NOW() - INTERVAL '%d HOURS'", summarizerIntervalHours*2)).
+		Where("status IN ?", []string{string(summarizerapi.SummarizerJobInProgress)}).
+		Updates(SummarizerJob{Status: summarizerapi.SummarizerJobFailed, FailureMessage: "Job timed out"})
+	if tx.Error != nil {
+		return tx.Error
+	}
+
+	return nil
+}
+
+func (db Database) UpdateSummarizerJob(jobID uint, status summarizerapi.SummarizerJobStatus, failedMessage string) error {
+	tx := db.orm.Model(&SummarizerJob{}).
+		Where("id = ?", jobID).
+		Updates(SummarizerJob{
+			Status:         status,
+			FailureMessage: failedMessage,
+		})
+	if tx.Error != nil {
+		return tx.Error
+	}
 	return nil
 }
 
