@@ -1158,7 +1158,7 @@ func (h *HttpHandler) GetTopAccountsByResourceCount(ctx echo.Context) error {
 	}
 
 	srt := []map[string]interface{}{{"resource_count": "desc"}}
-	hits, err = es.FetchConnectionResourcesSummary(h.client, providerPtr, nil, srt, count)
+	hits, err = es.FetchConnectionResourcesSummaryPage(h.client, providerPtr, nil, srt, count)
 	var res []api.TopAccountResponse
 	for _, v := range hits {
 		res = append(res, api.TopAccountResponse{

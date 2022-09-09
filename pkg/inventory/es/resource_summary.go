@@ -735,62 +735,50 @@ type ConnectionResourcesSummaryQueryHit struct {
 	Sort    []interface{}                     `json:"sort"`
 }
 
-func FetchConnectionResourcesSummary(client keibi.Client, provider *string, sourceID *string, sort []map[string]interface{}, size int) ([]kafka2.ConnectionResourcesSummary, error) {
+func FetchConnectionResourcesSummaryPage(client keibi.Client, provider *string, sourceID *string, sort []map[string]interface{}, size int) ([]kafka2.ConnectionResourcesSummary, error) {
 	var hits []kafka2.ConnectionResourcesSummary
-	var searchAfter []interface{}
-	for {
-		res := make(map[string]interface{})
-		var filters []interface{}
+	res := make(map[string]interface{})
+	var filters []interface{}
 
-		if provider != nil {
-			filters = append(filters, map[string]interface{}{
-				"terms": map[string][]string{"source_type": {*provider}},
-			})
-		}
+	if provider != nil {
+		filters = append(filters, map[string]interface{}{
+			"terms": map[string][]string{"source_type": {*provider}},
+		})
+	}
 
-		if sourceID != nil {
-			filters = append(filters, map[string]interface{}{
-				"terms": map[string][]string{"source_id": {*sourceID}},
-			})
-		}
+	if sourceID != nil {
+		filters = append(filters, map[string]interface{}{
+			"terms": map[string][]string{"source_id": {*sourceID}},
+		})
+	}
 
-		if searchAfter != nil {
-			res["search_after"] = searchAfter
-		}
+	sort = append(sort,
+		map[string]interface{}{
+			"_id": "desc",
+		},
+	)
+	res["size"] = size
+	res["sort"] = sort
+	res["query"] = map[string]interface{}{
+		"bool": map[string]interface{}{
+			"filter": filters,
+		},
+	}
+	b, err := json.Marshal(res)
+	if err != nil {
+		return nil, err
+	}
 
-		sort = append(sort,
-			map[string]interface{}{
-				"_id": "desc",
-			},
-		)
-		res["size"] = size
-		res["sort"] = sort
-		res["query"] = map[string]interface{}{
-			"bool": map[string]interface{}{
-				"filter": filters,
-			},
-		}
-		b, err := json.Marshal(res)
-		if err != nil {
-			return nil, err
-		}
+	query := string(b)
 
-		query := string(b)
+	var response ConnectionResourcesSummaryQueryResponse
+	err = client.Search(context.Background(), kafka2.ConnectionSummaryIndex, query, &response)
+	if err != nil {
+		return nil, err
+	}
 
-		var response ConnectionResourcesSummaryQueryResponse
-		err = client.Search(context.Background(), kafka2.ConnectionSummaryIndex, query, &response)
-		if err != nil {
-			return nil, err
-		}
-
-		if len(response.Hits.Hits) == 0 {
-			break
-		}
-
-		for _, hit := range response.Hits.Hits {
-			searchAfter = hit.Sort
-			hits = append(hits, hit.Source)
-		}
+	for _, hit := range response.Hits.Hits {
+		hits = append(hits, hit.Source)
 	}
 	return hits, nil
 }
