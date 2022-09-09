@@ -782,3 +782,68 @@ func FetchConnectionResourcesSummaryPage(client keibi.Client, provider *string, 
 	}
 	return hits, nil
 }
+
+type ConnectionServicesSummaryQueryResponse struct {
+	Hits ConnectionServicesSummaryQueryHits `json:"hits"`
+}
+type ConnectionServicesSummaryQueryHits struct {
+	Total keibi.SearchTotal                   `json:"total"`
+	Hits  []ConnectionServicesSummaryQueryHit `json:"hits"`
+}
+type ConnectionServicesSummaryQueryHit struct {
+	ID      string                           `json:"_id"`
+	Score   float64                          `json:"_score"`
+	Index   string                           `json:"_index"`
+	Type    string                           `json:"_type"`
+	Version int64                            `json:"_version,omitempty"`
+	Source  kafka2.ConnectionServicesSummary `json:"_source"`
+	Sort    []interface{}                    `json:"sort"`
+}
+
+func FetchConnectionServicesSummaryPage(client keibi.Client, provider *string, sourceID *string, sort []map[string]interface{}, size int) ([]kafka2.ConnectionServicesSummary, error) {
+	var hits []kafka2.ConnectionServicesSummary
+	res := make(map[string]interface{})
+	var filters []interface{}
+
+	if provider != nil {
+		filters = append(filters, map[string]interface{}{
+			"terms": map[string][]string{"source_type": {*provider}},
+		})
+	}
+
+	if sourceID != nil {
+		filters = append(filters, map[string]interface{}{
+			"terms": map[string][]string{"source_id": {*sourceID}},
+		})
+	}
+
+	sort = append(sort,
+		map[string]interface{}{
+			"_id": "desc",
+		},
+	)
+	res["size"] = size
+	res["sort"] = sort
+	res["query"] = map[string]interface{}{
+		"bool": map[string]interface{}{
+			"filter": filters,
+		},
+	}
+	b, err := json.Marshal(res)
+	if err != nil {
+		return nil, err
+	}
+
+	query := string(b)
+
+	var response ConnectionResourcesSummaryQueryResponse
+	err = client.Search(context.Background(), kafka2.ConnectionSummaryIndex, query, &response)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, hit := range response.Hits.Hits {
+		hits = append(hits, hit.Source)
+	}
+	return hits, nil
+}

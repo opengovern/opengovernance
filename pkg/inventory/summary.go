@@ -72,6 +72,7 @@ func GetServices(client keibi.Client, rcache *redis.Client, cache *cache.Cache,
 		providerPtr = &v
 	}
 
+	//es.FetchConnectionResourcesSummaryPage()
 	if cached, err := es.FetchServicesCached(rcache, cache, providerPtr, sourceID); err == nil && len(cached) > 0 {
 		hits = cached
 		fmt.Println("fetching services from cached")
