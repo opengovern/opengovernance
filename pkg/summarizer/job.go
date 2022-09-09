@@ -418,9 +418,14 @@ func (job Job) BuildLocationsSummary(client keibi.Client, j DescribeJob) (kafka.
 	}
 	for _, hit := range hits {
 		summary.SourceType = source.Type(hit.SourceType)
-		summary.DescribedAt = hit.DescribedAt
 		summary.ReportType = hit.ReportType
-		summary.ResourceCount += hit.ResourceCount
+
+		for k, v := range hit.LocationDistribution {
+			if _, ok := summary.LocationDistribution[k]; !ok {
+				summary.LocationDistribution[k] = 0
+			}
+			summary.LocationDistribution[k] += v
+		}
 	}
 
 	return &summary, nil
