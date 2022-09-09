@@ -800,7 +800,7 @@ type ConnectionServicesSummaryQueryHit struct {
 	Sort    []interface{}                    `json:"sort"`
 }
 
-func FetchConnectionServicesSummaryPage(client keibi.Client, provider *string, sourceID *string, sort []map[string]interface{}, size int) ([]kafka2.ConnectionServicesSummary, error) {
+func FetchConnectionServicesSummaryPage(client keibi.Client, provider *string, sort []map[string]interface{}, size int) ([]kafka2.ConnectionServicesSummary, error) {
 	var hits []kafka2.ConnectionServicesSummary
 	res := make(map[string]interface{})
 	var filters []interface{}
@@ -808,12 +808,6 @@ func FetchConnectionServicesSummaryPage(client keibi.Client, provider *string, s
 	if provider != nil {
 		filters = append(filters, map[string]interface{}{
 			"terms": map[string][]string{"source_type": {*provider}},
-		})
-	}
-
-	if sourceID != nil {
-		filters = append(filters, map[string]interface{}{
-			"terms": map[string][]string{"source_id": {*sourceID}},
 		})
 	}
 

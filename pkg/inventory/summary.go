@@ -64,41 +64,61 @@ func GetCategories(client keibi.Client, rcache *redis.Client, cache *cache.Cache
 
 func GetServices(client keibi.Client, rcache *redis.Client, cache *cache.Cache,
 	provider source.Type, sourceID *string) ([]api.TopServicesResponse, error) {
-	var hits []kafka.SourceServicesSummary
-
 	var providerPtr *string
 	if provider != "" {
 		v := string(provider)
 		providerPtr = &v
 	}
 
-	//es.FetchConnectionResourcesSummaryPage()
-	if cached, err := es.FetchServicesCached(rcache, cache, providerPtr, sourceID); err == nil && len(cached) > 0 {
-		hits = cached
-		fmt.Println("fetching services from cached")
-	} else {
-		res, err := es.FetchServicesQuery(client, string(provider), sourceID)
+	serviceResponse := map[string]api.TopServicesResponse{}
+	if sourceID == nil {
+		hits, err := es.FetchConnectionServicesSummaryPage(client, providerPtr, nil, EsFetchPageSize)
 		if err != nil {
 			return nil, err
 		}
-		hits = res
-		fmt.Println("fetching services from ES")
-	}
-
-	serviceResponse := map[string]api.TopServicesResponse{}
-	for _, hit := range hits {
-		if v, ok := serviceResponse[hit.ServiceName]; ok {
-			v.ResourceCount += hit.ResourceCount
-			serviceResponse[hit.ServiceName] = v
+		for _, hit := range hits {
+			if v, ok := serviceResponse[hit.ServiceName]; ok {
+				v.ResourceCount += hit.ResourceCount
+				serviceResponse[hit.ServiceName] = v
+			} else {
+				serviceResponse[hit.ServiceName] = api.TopServicesResponse{
+					ServiceName:      hit.ServiceName,
+					Provider:         string(hit.SourceType),
+					ResourceCount:    hit.ResourceCount,
+					LastDayCount:     hit.LastDayCount,
+					LastWeekCount:    hit.LastWeekCount,
+					LastQuarterCount: hit.LastQuarterCount,
+					LastYearCount:    hit.LastYearCount,
+				}
+			}
+		}
+	} else {
+		var hits []kafka.SourceServicesSummary
+		if cached, err := es.FetchServicesCached(rcache, cache, providerPtr, sourceID); err == nil && len(cached) > 0 {
+			hits = cached
+			fmt.Println("fetching services from cached")
 		} else {
-			serviceResponse[hit.ServiceName] = api.TopServicesResponse{
-				ServiceName:      hit.ServiceName,
-				Provider:         string(hit.SourceType),
-				ResourceCount:    hit.ResourceCount,
-				LastDayCount:     hit.LastDayCount,
-				LastWeekCount:    hit.LastWeekCount,
-				LastQuarterCount: hit.LastQuarterCount,
-				LastYearCount:    hit.LastYearCount,
+			res, err := es.FetchServicesQuery(client, string(provider), sourceID)
+			if err != nil {
+				return nil, err
+			}
+			hits = res
+			fmt.Println("fetching services from ES")
+		}
+		for _, hit := range hits {
+			if v, ok := serviceResponse[hit.ServiceName]; ok {
+				v.ResourceCount += hit.ResourceCount
+				serviceResponse[hit.ServiceName] = v
+			} else {
+				serviceResponse[hit.ServiceName] = api.TopServicesResponse{
+					ServiceName:      hit.ServiceName,
+					Provider:         string(hit.SourceType),
+					ResourceCount:    hit.ResourceCount,
+					LastDayCount:     hit.LastDayCount,
+					LastWeekCount:    hit.LastWeekCount,
+					LastQuarterCount: hit.LastQuarterCount,
+					LastYearCount:    hit.LastYearCount,
+				}
 			}
 		}
 	}
