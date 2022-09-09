@@ -491,6 +491,10 @@ func (s *Scheduler) Run() error {
 		s.logger.Fatal("InsightJobResult consumer exited", zap.Error(s.RunInsightJobResultsConsumer()))
 	}()
 
+	go func() {
+		s.logger.Fatal("SummarizerJobResult consumer exited", zap.Error(s.RunSummarizerJobResultsConsumer()))
+	}()
+
 	return httpserver.RegisterAndStart(s.logger, s.httpServer.Address, s.httpServer)
 }
 
