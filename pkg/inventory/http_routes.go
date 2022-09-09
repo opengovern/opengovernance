@@ -1799,10 +1799,10 @@ func (h *HttpHandler) ListCategories(ctx echo.Context) error {
 // @Success  200       {object}  []api.AccountResourceCountResponse
 // @Router   /inventory/api/v1/accounts/resource/count [get]
 func (h *HttpHandler) GetAccountsResourceCount(ctx echo.Context) error {
-	provider := ctx.QueryParam("provider")
+	provider, _ := source.ParseType(ctx.QueryParam("provider"))
 
 	res := map[string]api.AccountResourceCountResponse{}
-	allSources, err := h.onboardClient.ListSources(httpclient.FromEchoContext(ctx))
+	allSources, err := h.onboardClient.ListSources(httpclient.FromEchoContext(ctx), provider.AsPtr())
 	if err != nil {
 		return err
 	}
@@ -1816,7 +1816,7 @@ func (h *HttpHandler) GetAccountsResourceCount(ctx echo.Context) error {
 		}
 	}
 
-	hits, err := es.FetchConnectionResourcesSummaryPage(h.client, &provider, nil, nil, EsFetchPageSize)
+	hits, err := es.FetchConnectionResourcesSummaryPage(h.client, provider.AsStringPtr(), nil, nil, EsFetchPageSize)
 	for _, hit := range hits {
 		if v, ok := res[hit.SourceID]; ok {
 			v.ResourceCount += hit.ResourceCount

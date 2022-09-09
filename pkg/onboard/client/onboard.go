@@ -20,7 +20,7 @@ import (
 type OnboardServiceClient interface {
 	GetSource(ctx *httpclient.Context, sourceID string) (*api.Source, error)
 	GetSources(ctx *httpclient.Context, sourceID []string) ([]api.Source, error)
-	ListSources(ctx *httpclient.Context) ([]api.Source, error)
+	ListSources(ctx *httpclient.Context, t *source.Type) ([]api.Source, error)
 	CountSources(ctx *httpclient.Context, provider *source.Type) (int64, error)
 }
 
@@ -103,8 +103,11 @@ func (s *onboardClient) GetSources(ctx *httpclient.Context, sourceIDs []string) 
 	return res, nil
 }
 
-func (s *onboardClient) ListSources(ctx *httpclient.Context) ([]api.Source, error) {
+func (s *onboardClient) ListSources(ctx *httpclient.Context, t *source.Type) ([]api.Source, error) {
 	url := fmt.Sprintf("%s/api/v1/sources", s.baseURL)
+	if t != nil {
+		url += "type=" + string(*t)
+	}
 
 	var response []api.Source
 	if err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &response); err != nil {

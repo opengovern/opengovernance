@@ -31,3 +31,10 @@ func (t Type) AsStringPtr() *string {
 	v := string(t)
 	return &v
 }
+
+func (t Type) AsPtr() *Type {
+	if t == "" {
+		return nil
+	}
+	return &t
+}
