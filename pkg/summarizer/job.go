@@ -104,6 +104,16 @@ func (j Job) Do(client keibi.Client, producer sarama.SyncProducer, topic string,
 		} else {
 			msgs = append(msgs, msg)
 		}
+
+		logger.Info("Building location summary", zap.Int("jobID", int(j.JobID)))
+		msg, err = j.BuildLocationsSummary(client, dsj)
+		logger.Info(fmt.Sprintf("BuildLocationsSummary:%v, %v", msg, err), zap.Int("jobID", int(j.JobID)))
+
+		if err != nil {
+			fail(err)
+		} else {
+			msgs = append(msgs, msg)
+		}
 	}
 
 	res, err := j.BuildServicesSummary(client)
@@ -393,4 +403,25 @@ func (j Job) BuildCategoriesSummary(client keibi.Client) ([]kafka.SummaryDoc, er
 		summaryList = append(summaryList, &v)
 	}
 	return summaryList, nil
+}
+
+func (job Job) BuildLocationsSummary(client keibi.Client, j DescribeJob) (kafka.SummaryDoc, error) {
+	hits, err := es.FetchLocationSummary(client, j.ID, &j.SourceID)
+	if err != nil {
+		return nil, err
+	}
+
+	summary := kafka.ConnectionLocationSummary{
+		SummarizerJobID: job.JobID,
+		SourceID:        j.SourceID,
+		SourceJobID:     j.ID,
+	}
+	for _, hit := range hits {
+		summary.SourceType = source.Type(hit.SourceType)
+		summary.DescribedAt = hit.DescribedAt
+		summary.ReportType = hit.ReportType
+		summary.ResourceCount += hit.ResourceCount
+	}
+
+	return &summary, nil
 }

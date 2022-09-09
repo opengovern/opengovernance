@@ -1858,29 +1858,34 @@ func (h *HttpHandler) GetResourceDistribution(ctx echo.Context) error {
 		providerPtr = &v
 	}
 
-	var sourceUUID *uuid.UUID
+	//var sourceUUID *uuid.UUID
 	var sourceIDPtr *string
 	if sourceID != "" {
-		u, err := uuid.Parse(sourceID)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, "invalid source uuid")
-		}
-		sourceUUID = &u
+		//u, err := uuid.Parse(sourceID)
+		//if err != nil {
+		//	return echo.NewHTTPError(http.StatusBadRequest, "invalid source uuid")
+		//}
+		//sourceUUID = &u
 		sourceIDPtr = &sourceID
 	}
 
 	locationDistribution := map[string]int{}
 
-	var hits []kafka2.LocationDistributionResource
-	if cached, err := es.FetchLocationDistributionCached(h.rcache, h.cache, providerPtr, sourceIDPtr); err == nil && len(cached) > 0 {
-		hits = cached
-	} else {
-		res, err := es.FindLocationDistributionQuery(h.client, providerPtr, sourceUUID)
-		if err != nil {
-			return err
-		}
-		hits = res
+	hits, err := es.FetchConnectionLocationsSummaryPage(h.client, providerPtr, sourceIDPtr, nil, EsFetchPageSize)
+	if err != nil {
+		return err
 	}
+	//
+	//var hits []kafka2.LocationDistributionResource
+	//if cached, err := es.FetchLocationDistributionCached(h.rcache, h.cache, providerPtr, sourceIDPtr); err == nil && len(cached) > 0 {
+	//	hits = cached
+	//} else {
+	//	res, err := es.FindLocationDistributionQuery(h.client, providerPtr, sourceUUID)
+	//	if err != nil {
+	//		return err
+	//	}
+	//	hits = res
+	//}
 
 	for _, hit := range hits {
 		for k, v := range hit.LocationDistribution {

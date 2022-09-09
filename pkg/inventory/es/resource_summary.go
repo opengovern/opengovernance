@@ -740,6 +740,10 @@ func FetchConnectionResourcesSummaryPage(client keibi.Client, provider *string, 
 	res := make(map[string]interface{})
 	var filters []interface{}
 
+	filters = append(filters, map[string]interface{}{
+		"terms": map[string][]string{"report_type": {kafka.ResourceSummaryTypeResourceGrowthTrend}},
+	})
+
 	if provider != nil {
 		filters = append(filters, map[string]interface{}{
 			"terms": map[string][]string{"source_type": {*provider}},
@@ -805,6 +809,10 @@ func FetchConnectionServicesSummaryPage(client keibi.Client, provider *string, s
 	res := make(map[string]interface{})
 	var filters []interface{}
 
+	filters = append(filters, map[string]interface{}{
+		"terms": map[string][]string{"report_type": {kafka.ResourceSummaryTypeServiceHistorySummary}},
+	})
+
 	if provider != nil {
 		filters = append(filters, map[string]interface{}{
 			"terms": map[string][]string{"source_type": {*provider}},
@@ -864,6 +872,10 @@ func FetchConnectionCategoriesSummaryPage(client keibi.Client, provider *string,
 	res := make(map[string]interface{})
 	var filters []interface{}
 
+	filters = append(filters, map[string]interface{}{
+		"terms": map[string][]string{"report_type": {kafka.ResourceSummaryTypeCategoryHistorySummary}},
+	})
+
 	if provider != nil {
 		filters = append(filters, map[string]interface{}{
 			"terms": map[string][]string{"source_type": {*provider}},
@@ -890,6 +902,75 @@ func FetchConnectionCategoriesSummaryPage(client keibi.Client, provider *string,
 	query := string(b)
 
 	var response ConnectionCategoriesSummaryQueryResponse
+	err = client.Search(context.Background(), kafka2.ConnectionSummaryIndex, query, &response)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, hit := range response.Hits.Hits {
+		hits = append(hits, hit.Source)
+	}
+	return hits, nil
+}
+
+type ConnectionLocationsSummaryQueryResponse struct {
+	Hits ConnectionLocationsSummaryQueryHits `json:"hits"`
+}
+type ConnectionLocationsSummaryQueryHits struct {
+	Total keibi.SearchTotal                    `json:"total"`
+	Hits  []ConnectionLocationsSummaryQueryHit `json:"hits"`
+}
+type ConnectionLocationsSummaryQueryHit struct {
+	ID      string                           `json:"_id"`
+	Score   float64                          `json:"_score"`
+	Index   string                           `json:"_index"`
+	Type    string                           `json:"_type"`
+	Version int64                            `json:"_version,omitempty"`
+	Source  kafka2.ConnectionLocationSummary `json:"_source"`
+	Sort    []interface{}                    `json:"sort"`
+}
+
+func FetchConnectionLocationsSummaryPage(client keibi.Client, provider *string, sourceID *string, sort []map[string]interface{}, size int) ([]kafka2.ConnectionLocationSummary, error) {
+	var hits []kafka2.ConnectionLocationSummary
+	res := make(map[string]interface{})
+	var filters []interface{}
+
+	filters = append(filters, map[string]interface{}{
+		"terms": map[string][]string{"report_type": {kafka.ResourceSummaryTypeLocationDistribution}},
+	})
+
+	if provider != nil {
+		filters = append(filters, map[string]interface{}{
+			"terms": map[string][]string{"source_type": {*provider}},
+		})
+	}
+
+	if sourceID != nil {
+		filters = append(filters, map[string]interface{}{
+			"terms": map[string][]string{"source_id": {*sourceID}},
+		})
+	}
+
+	sort = append(sort,
+		map[string]interface{}{
+			"_id": "desc",
+		},
+	)
+	res["size"] = size
+	res["sort"] = sort
+	res["query"] = map[string]interface{}{
+		"bool": map[string]interface{}{
+			"filter": filters,
+		},
+	}
+	b, err := json.Marshal(res)
+	if err != nil {
+		return nil, err
+	}
+
+	query := string(b)
+
+	var response ConnectionLocationsSummaryQueryResponse
 	err = client.Search(context.Background(), kafka2.ConnectionSummaryIndex, query, &response)
 	if err != nil {
 		return nil, err
