@@ -16,6 +16,8 @@ import (
 	"strings"
 	"time"
 
+	kafka3 "gitlab.com/keibiengine/keibi-engine/pkg/summarizer/kafka"
+
 	"github.com/go-redis/cache/v8"
 
 	kafka2 "gitlab.com/keibiengine/keibi-engine/pkg/describe/kafka"
@@ -1148,49 +1150,22 @@ func (h *HttpHandler) GetTopAccountsByResourceCount(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid count")
 	}
 
-	var hits []kafka2.SourceResourcesSummary
+	var hits []kafka3.ConnectionResourcesSummary
 	var providerPtr *string
 	if provider != "" {
 		v := string(provider)
 		providerPtr = &v
 	}
 
-	if cached, err := es.FetchResourceLastSummaryCached(h.rcache, h.cache, providerPtr, nil, nil); err == nil && len(cached) > 0 {
-		hits = cached
-		fmt.Println("fetching last summary from cache")
-	} else {
-		hits, err = es.FetchResourceLastSummary(h.client, providerPtr, nil, nil)
-		if err != nil {
-			return err
-		}
-		fmt.Println("fetching last summary from ES")
-	}
-
-	sourceSummary := map[string]kafka2.SourceResourcesSummary{}
-	for _, hit := range hits {
-		if v, ok := sourceSummary[hit.SourceID]; ok {
-			v.ResourceCount += hit.ResourceCount
-			sourceSummary[hit.SourceID] = v
-		} else {
-			sourceSummary[hit.SourceID] = hit
-		}
-	}
-
+	srt := []map[string]interface{}{{"resource_count": "desc"}}
+	hits, err = es.FetchConnectionResourcesSummary(h.client, providerPtr, nil, srt, count)
 	var res []api.TopAccountResponse
-	for _, v := range sourceSummary {
+	for _, v := range hits {
 		res = append(res, api.TopAccountResponse{
 			SourceID:      v.SourceID,
 			Provider:      string(v.SourceType),
 			ResourceCount: v.ResourceCount,
 		})
-	}
-
-	sort.Slice(res, func(i, j int) bool {
-		return res[i].ResourceCount > res[j].ResourceCount
-	})
-
-	if len(res) > count {
-		res = res[:count]
 	}
 
 	var sourceIds []string

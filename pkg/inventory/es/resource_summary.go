@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"strconv"
 
+	kafka2 "gitlab.com/keibiengine/keibi-engine/pkg/summarizer/kafka"
+
 	"gitlab.com/keibiengine/keibi-engine/pkg/describe"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/inventory/api"
@@ -714,4 +716,81 @@ func BuildFilterQuery(
 		return "", err
 	}
 	return string(queryBytes), nil
+}
+
+type ConnectionResourcesSummaryQueryResponse struct {
+	Hits ConnectionResourcesSummaryQueryHits `json:"hits"`
+}
+type ConnectionResourcesSummaryQueryHits struct {
+	Total keibi.SearchTotal                    `json:"total"`
+	Hits  []ConnectionResourcesSummaryQueryHit `json:"hits"`
+}
+type ConnectionResourcesSummaryQueryHit struct {
+	ID      string                            `json:"_id"`
+	Score   float64                           `json:"_score"`
+	Index   string                            `json:"_index"`
+	Type    string                            `json:"_type"`
+	Version int64                             `json:"_version,omitempty"`
+	Source  kafka2.ConnectionResourcesSummary `json:"_source"`
+	Sort    []interface{}                     `json:"sort"`
+}
+
+func FetchConnectionResourcesSummary(client keibi.Client, provider *string, sourceID *string, sort []map[string]interface{}, size int) ([]kafka2.ConnectionResourcesSummary, error) {
+	var hits []kafka2.ConnectionResourcesSummary
+	var searchAfter []interface{}
+	for {
+		res := make(map[string]interface{})
+		var filters []interface{}
+
+		if provider != nil {
+			filters = append(filters, map[string]interface{}{
+				"terms": map[string][]string{"source_type": {*provider}},
+			})
+		}
+
+		if sourceID != nil {
+			filters = append(filters, map[string]interface{}{
+				"terms": map[string][]string{"source_id": {*sourceID}},
+			})
+		}
+
+		if searchAfter != nil {
+			res["search_after"] = searchAfter
+		}
+
+		sort = append(sort,
+			map[string]interface{}{
+				"_id": "desc",
+			},
+		)
+		res["size"] = size
+		res["sort"] = sort
+		res["query"] = map[string]interface{}{
+			"bool": map[string]interface{}{
+				"filter": filters,
+			},
+		}
+		b, err := json.Marshal(res)
+		if err != nil {
+			return nil, err
+		}
+
+		query := string(b)
+
+		var response ConnectionResourcesSummaryQueryResponse
+		err = client.Search(context.Background(), kafka2.ConnectionSummaryIndex, query, &response)
+		if err != nil {
+			return nil, err
+		}
+
+		if len(response.Hits.Hits) == 0 {
+			break
+		}
+
+		for _, hit := range response.Hits.Hits {
+			searchAfter = hit.Sort
+			hits = append(hits, hit.Source)
+		}
+	}
+	return hits, nil
 }
