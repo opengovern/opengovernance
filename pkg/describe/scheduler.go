@@ -547,6 +547,11 @@ func (s *Scheduler) RunDescribeJobCompletionUpdater() {
 						zap.Uint("jobId", id),
 						zap.Error(err),
 					)
+				} else if job == nil {
+					s.logger.Error("Failed to find the job for summarizer\n",
+						zap.Uint("jobId", id),
+						zap.Error(err),
+					)
 				} else {
 					err := s.scheduleSummarizerJob(job.ID, job.SourceID)
 					if err != nil {
