@@ -836,7 +836,7 @@ func FetchConnectionServicesSummaryPage(client keibi.Client, provider *string, s
 
 	query := string(b)
 
-	var response ConnectionResourcesSummaryQueryResponse
+	var response ConnectionServicesSummaryQueryResponse
 	err = client.Search(context.Background(), kafka2.ConnectionSummaryIndex, query, &response)
 	if err != nil {
 		return nil, err
