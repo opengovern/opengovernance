@@ -9,7 +9,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/google/uuid"
 	"gitlab.com/keibiengine/keibi-engine/pkg/summarizer"
 	summarizerapi "gitlab.com/keibiengine/keibi-engine/pkg/summarizer/api"
 	"gorm.io/gorm"
@@ -462,6 +461,7 @@ func (s *Scheduler) Run() error {
 	}
 
 	go s.RunDescribeJobCompletionUpdater()
+	go s.RunScheduleJobCompletionUpdater()
 	go s.RunDescribeJobScheduler()
 	go s.RunInsightJobScheduler()
 	go s.RunDescribeCleanupJobScheduler()
@@ -496,6 +496,88 @@ func (s *Scheduler) Run() error {
 	}()
 
 	return httpserver.RegisterAndStart(s.logger, s.httpServer.Address, s.httpServer)
+}
+
+func (s *Scheduler) RunScheduleJobCompletionUpdater() {
+	defer func() {
+		if r := recover(); r != nil {
+			err := fmt.Errorf("paniced during RunScheduleJobCompletionUpdater: %v", r)
+			s.logger.Error("Paniced, retry", zap.Error(err))
+			go s.RunScheduleJobCompletionUpdater()
+		}
+	}()
+
+	t := time.NewTicker(JobCompletionInterval)
+	defer t.Stop()
+
+	for ; ; <-t.C {
+		scheduleJob, err := s.db.FetchLastScheduleJob()
+		if err != nil {
+			s.logger.Error("Failed to find ScheduleJobs", zap.Error(err))
+			continue
+		}
+
+		if scheduleJob == nil {
+			continue
+		}
+
+		djs, err := s.db.QueryDescribeSourceJobsForScheduleJob(scheduleJob)
+		if err != nil {
+			s.logger.Error("Failed to find list of describe source jobs", zap.Error(err))
+			continue
+		}
+
+		inProgress := false
+		for _, j := range djs {
+			if j.Status == api.DescribeSourceJobCreated || j.Status == api.DescribeSourceJobInProgress {
+				inProgress = true
+			}
+		}
+
+		if inProgress {
+			continue
+		}
+
+		srcs, err := s.db.ListSources()
+		if err != nil {
+			s.logger.Error("Failed to find list of sources", zap.Error(err))
+			continue
+		}
+
+		inProgress = false
+		for _, src := range srcs {
+			found := false
+			for _, j := range djs {
+				if src.ID == j.SourceID {
+					found = true
+					break
+				}
+			}
+
+			if !found {
+				inProgress = true
+				break
+			}
+		}
+
+		if inProgress {
+			continue
+		}
+
+		err = s.db.UpdateScheduleJobStatus(scheduleJob.ID, summarizerapi.SummarizerJobSucceeded)
+		if err != nil {
+			s.logger.Error("Failed to update ScheduleJob's status", zap.Error(err))
+			continue
+		}
+
+		err = s.scheduleSummarizerJob(djs)
+		if err != nil {
+			s.logger.Error("Failed to enqueue summarizer job\n",
+				zap.Uint("jobId", scheduleJob.ID),
+				zap.Error(err),
+			)
+		}
+	}
 }
 
 func (s *Scheduler) RunDescribeJobCompletionUpdater() {
@@ -553,13 +635,6 @@ func (s *Scheduler) RunDescribeJobCompletionUpdater() {
 						zap.Error(err),
 					)
 				} else {
-					err := s.scheduleSummarizerJob(job.ID, job.SourceID)
-					if err != nil {
-						s.logger.Error("Failed to enqueue summarizer job\n",
-							zap.Uint("jobId", id),
-							zap.Error(err),
-						)
-					}
 				}
 				continue
 			}
@@ -593,12 +668,58 @@ func (s Scheduler) RunDescribeJobScheduler() {
 }
 
 func (s Scheduler) scheduleDescribeJob() {
-	s.logger.Info("Checking sources due for describe")
-	sources, err := s.db.QuerySourcesDueForDescribe()
+	scheduleJob, err := s.db.FetchLastScheduleJob()
 	if err != nil {
-		s.logger.Error("Failed to find the next sources to create DescribeSourceJob", zap.Error(err))
+		s.logger.Error("Failed to fetch last ScheduleJob", zap.Error(err))
 		DescribeJobsCount.WithLabelValues("failure").Inc()
 		return
+	}
+
+	if scheduleJob == nil ||
+		scheduleJob.CreatedAt.Before(time.Now().Add(time.Duration(-s.describeIntervalHours)*time.Hour)) {
+		job := ScheduleJob{
+			Model:          gorm.Model{},
+			Status:         summarizerapi.SummarizerJobInProgress,
+			FailureMessage: "",
+		}
+		err := s.db.AddScheduleJob(&job)
+		if err != nil {
+			s.logger.Error("Failed to add new ScheduleJob", zap.Error(err))
+			DescribeJobsCount.WithLabelValues("failure").Inc()
+			return
+		}
+		scheduleJob = &job
+	}
+
+	s.logger.Info("Checking sources due for this schedule job")
+	describeJobs, err := s.db.QueryDescribeSourceJobsForScheduleJob(scheduleJob)
+	if err != nil {
+		s.logger.Error("Failed to fetch related describe source jobs", zap.Error(err))
+		DescribeJobsCount.WithLabelValues("failure").Inc()
+		return
+	}
+
+	srcs, err := s.db.ListSources()
+	if err != nil {
+		s.logger.Error("Failed to find list of sources", zap.Error(err))
+		DescribeJobsCount.WithLabelValues("failure").Inc()
+		return
+	}
+
+	var sources []Source
+	for _, src := range srcs {
+		hasOne := false
+		for _, j := range describeJobs {
+			if src.ID == j.SourceID {
+				hasOne = true
+				break
+			}
+		}
+		if hasOne {
+			continue
+		}
+
+		sources = append(sources, src)
 	}
 
 	if len(sources) > 0 {
@@ -650,7 +771,6 @@ func (s Scheduler) scheduleDescribeJob() {
 	}
 
 	rand.Shuffle(len(sources), func(i, j int) { sources[i], sources[j] = sources[j], sources[i] })
-	describedAt := time.Now()
 	for _, source := range sources {
 		if isPublishingBlocked(s.logger, s.describeConnectionJobQueue) {
 			s.logger.Warn("The jobs in queue is over the threshold", zap.Error(err))
@@ -658,7 +778,7 @@ func (s Scheduler) scheduleDescribeJob() {
 		}
 
 		s.logger.Info("Source is due for a describe. Creating a job now", zap.String("sourceId", source.ID.String()))
-		daj := newDescribeSourceJob(source)
+		daj := newDescribeSourceJob(source, *scheduleJob)
 		err := s.db.CreateDescribeSourceJob(&daj)
 		if err != nil {
 			DescribeSourceJobsCount.WithLabelValues("failure").Inc()
@@ -670,7 +790,7 @@ func (s Scheduler) scheduleDescribeJob() {
 			continue
 		}
 
-		enqueueDescribeConnectionJob(s.logger, s.db, s.describeConnectionJobQueue, source, daj, describedAt)
+		enqueueDescribeConnectionJob(s.logger, s.db, s.describeConnectionJobQueue, source, daj, scheduleJob.CreatedAt)
 
 		isSuccessful := true
 
@@ -686,7 +806,7 @@ func (s Scheduler) scheduleDescribeJob() {
 		}
 		daj.Status = api.DescribeSourceJobInProgress
 
-		err = s.db.UpdateSourceDescribed(source.ID, describedAt, time.Duration(s.describeIntervalHours)*time.Hour)
+		err = s.db.UpdateSourceDescribed(source.ID, scheduleJob.CreatedAt, time.Duration(s.describeIntervalHours)*time.Hour)
 		if err != nil {
 			DescribeSourceJobsCount.WithLabelValues("failure").Inc()
 			s.logger.Error("Failed to update Source",
@@ -1194,8 +1314,10 @@ func (s *Scheduler) Stop() {
 	}
 }
 
-func newDescribeSourceJob(a Source) DescribeSourceJob {
+func newDescribeSourceJob(a Source, s ScheduleJob) DescribeSourceJob {
 	daj := DescribeSourceJob{
+		ScheduleJobID:        s.ID,
+		DescribedAt:          s.CreatedAt,
 		SourceID:             a.ID,
 		AccountID:            a.AccountID,
 		DescribeResourceJobs: []DescribeResourceJob{},
@@ -1541,8 +1663,8 @@ func (s Scheduler) scheduleInsightJob() {
 	InsightJobsCount.WithLabelValues("successful").Inc()
 }
 
-func (s Scheduler) scheduleSummarizerJob(sourceJobID uint, sourceID uuid.UUID) error {
-	job := newSummarizerJob(sourceJobID, sourceID)
+func (s Scheduler) scheduleSummarizerJob(djs []DescribeSourceJob) error {
+	job := newSummarizerJob()
 	err := s.db.AddSummarizerJob(&job)
 	if err != nil {
 		SummarizerJobsCount.WithLabelValues("failure").Inc()
@@ -1553,7 +1675,7 @@ func (s Scheduler) scheduleSummarizerJob(sourceJobID uint, sourceID uuid.UUID) e
 		return err
 	}
 
-	err = enqueueSummarizerJobs(s.db, s.summarizerJobQueue, job)
+	err = enqueueSummarizerJobs(s.db, s.summarizerJobQueue, job, djs)
 	if err != nil {
 		SummarizerJobsCount.WithLabelValues("failure").Inc()
 		s.logger.Error("Failed to enqueue SummarizerJob",
@@ -1574,46 +1696,52 @@ func (s Scheduler) scheduleSummarizerJob(sourceJobID uint, sourceID uuid.UUID) e
 	return nil
 }
 
-func enqueueSummarizerJobs(db Database, q queue.Interface, job SummarizerJob) error {
-	var lastDayJobID, lastWeekJobID, lastQuarterJobID, lastYearJobID uint
+func enqueueSummarizerJobs(db Database, q queue.Interface, job SummarizerJob, djs []DescribeSourceJob) error {
+	var jobs []summarizer.DescribeJob
+	for _, j := range djs {
+		var lastDayJobID, lastWeekJobID, lastQuarterJobID, lastYearJobID uint
 
-	lastDay, err := db.GetOldCompletedSourceJob(job.SourceID, 1)
-	if err != nil {
-		return err
-	}
-	if lastDay != nil {
-		lastDayJobID = lastDay.ID
-	}
-	lastWeek, err := db.GetOldCompletedSourceJob(job.SourceID, 7)
-	if err != nil {
-		return err
-	}
-	if lastWeek != nil {
-		lastWeekJobID = lastWeek.ID
-	}
-	lastQuarter, err := db.GetOldCompletedSourceJob(job.SourceID, 93)
-	if err != nil {
-		return err
-	}
-	if lastQuarter != nil {
-		lastQuarterJobID = lastQuarter.ID
-	}
-	lastYear, err := db.GetOldCompletedSourceJob(job.SourceID, 428)
-	if err != nil {
-		return err
-	}
-	if lastYear != nil {
-		lastYearJobID = lastYear.ID
+		lastDay, err := db.GetOldCompletedSourceJob(j.SourceID, 1)
+		if err != nil {
+			return err
+		}
+		if lastDay != nil {
+			lastDayJobID = lastDay.ID
+		}
+		lastWeek, err := db.GetOldCompletedSourceJob(j.SourceID, 7)
+		if err != nil {
+			return err
+		}
+		if lastWeek != nil {
+			lastWeekJobID = lastWeek.ID
+		}
+		lastQuarter, err := db.GetOldCompletedSourceJob(j.SourceID, 93)
+		if err != nil {
+			return err
+		}
+		if lastQuarter != nil {
+			lastQuarterJobID = lastQuarter.ID
+		}
+		lastYear, err := db.GetOldCompletedSourceJob(j.SourceID, 428)
+		if err != nil {
+			return err
+		}
+		if lastYear != nil {
+			lastYearJobID = lastYear.ID
+		}
+		jobs = append(jobs, summarizer.DescribeJob{
+			ID:                     j.ID,
+			SourceID:               j.SourceID.String(),
+			LastDaySourceJobID:     lastDayJobID,
+			LastWeekSourceJobID:    lastWeekJobID,
+			LastQuarterSourceJobID: lastQuarterJobID,
+			LastYearSourceJobID:    lastYearJobID,
+		})
 	}
 
 	if err := q.Publish(summarizer.Job{
-		JobID:                  job.ID,
-		SourceID:               job.SourceID.String(),
-		SourceJobID:            job.SourceJobID,
-		LastDaySourceJobID:     lastDayJobID,
-		LastWeekSourceJobID:    lastWeekJobID,
-		LastQuarterSourceJobID: lastQuarterJobID,
-		LastYearSourceJobID:    lastYearJobID,
+		JobID:              job.ID,
+		DescribeSourceJobs: jobs,
 	}); err != nil {
 		return err
 	}
@@ -1806,11 +1934,9 @@ func newInsightJob(insight Insight) InsightJob {
 	}
 }
 
-func newSummarizerJob(sourceJobID uint, sourceID uuid.UUID) SummarizerJob {
+func newSummarizerJob() SummarizerJob {
 	return SummarizerJob{
 		Model:          gorm.Model{},
-		SourceID:       sourceID,
-		SourceJobID:    sourceJobID,
 		Status:         summarizerapi.SummarizerJobInProgress,
 		FailureMessage: "",
 	}

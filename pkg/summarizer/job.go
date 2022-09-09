@@ -37,15 +37,19 @@ var DoSummarizerJobsDuration = promauto.NewHistogramVec(prometheus.HistogramOpts
 	Buckets:   []float64{5, 60, 300, 600, 1800, 3600, 7200, 36000},
 }, []string{"queryid", "status"})
 
-type Job struct {
-	JobID       uint
-	SourceID    string
-	SourceJobID uint
+type DescribeJob struct {
+	ID       uint
+	SourceID string
 
 	LastDaySourceJobID     uint
 	LastWeekSourceJobID    uint
 	LastQuarterSourceJobID uint
 	LastYearSourceJobID    uint
+}
+
+type Job struct {
+	JobID              uint
+	DescribeSourceJobs []DescribeJob
 }
 
 type JobResult struct {
@@ -90,18 +94,20 @@ func (j Job) Do(client keibi.Client, producer sarama.SyncProducer, topic string,
 
 	var msgs []kafka.SummaryDoc
 
-	logger.Info("Building resources summary", zap.Int("jobID", int(j.JobID)))
-	msg, err := j.BuildResourcesSummary(client)
-	logger.Info(fmt.Sprintf("BuildResourcesSummary:%v, %v", msg, err), zap.Int("jobID", int(j.JobID)))
+	for _, dsj := range j.DescribeSourceJobs {
+		logger.Info("Building resources summary", zap.Int("jobID", int(j.JobID)))
+		msg, err := j.BuildResourcesSummary(client, dsj)
+		logger.Info(fmt.Sprintf("BuildResourcesSummary:%v, %v", msg, err), zap.Int("jobID", int(j.JobID)))
 
-	if err != nil {
-		fail(err)
-	} else {
-		msgs = append(msgs, msg)
+		if err != nil {
+			fail(err)
+		} else {
+			msgs = append(msgs, msg)
+		}
 	}
 
 	if len(msgs) > 0 {
-		err = kafka.DoSendToKafka(producer, topic, msgs, logger)
+		err := kafka.DoSendToKafka(producer, topic, msgs, logger)
 		if err != nil {
 			fail(err)
 		}
@@ -123,16 +129,16 @@ func (j Job) Do(client keibi.Client, producer sarama.SyncProducer, topic string,
 	}
 }
 
-func (j Job) BuildResourcesSummary(client keibi.Client) (kafka.SummaryDoc, error) {
-	hits, err := es.FetchResourceSummary(client, j.SourceJobID, nil, &j.SourceID, nil)
+func (job Job) BuildResourcesSummary(client keibi.Client, j DescribeJob) (kafka.SummaryDoc, error) {
+	hits, err := es.FetchResourceSummary(client, j.ID, nil, &j.SourceID, nil)
 	if err != nil {
 		return nil, err
 	}
 
 	summary := kafka.ConnectionResourcesSummary{
-		SummarizerJobID: j.JobID,
+		SummarizerJobID: job.JobID,
 		SourceID:        j.SourceID,
-		SourceJobID:     j.SourceJobID,
+		SourceJobID:     j.ID,
 	}
 	for _, hit := range hits {
 		summary.SourceType = source.Type(hit.SourceType)
@@ -173,4 +179,8 @@ func (j Job) BuildResourcesSummary(client keibi.Client) (kafka.SummaryDoc, error
 	}
 
 	return &summary, nil
+}
+
+func (j Job) BuildServicesSummary(client keibi.Client) (kafka.SummaryDoc, error) {
+	return nil, nil
 }

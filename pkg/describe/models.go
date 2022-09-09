@@ -33,20 +33,28 @@ type Source struct {
 	DeletedAt sql.NullTime `gorm:"index"`
 }
 
-type DescribeSourceJob struct {
-	gorm.Model
-	SourceID             uuid.UUID // Not the primary key but should be a unique identifier
-	AccountID            string
-	DescribeResourceJobs []DescribeResourceJob `gorm:"foreignKey:ParentJobID;constraint:OnDelete:CASCADE;"`
-	Status               api.DescribeSourceJobStatus
-}
-
 type ComplianceReportJob struct {
 	gorm.Model
 	SourceID        uuid.UUID // Not the primary key but should be a unique identifier
 	ReportCreatedAt int64
 	Status          api2.ComplianceReportJobStatus
 	FailureMessage  string // Should be NULLSTRING
+}
+
+type ScheduleJob struct {
+	gorm.Model
+	Status         summarizerapi.SummarizerJobStatus
+	FailureMessage string
+}
+
+type DescribeSourceJob struct {
+	gorm.Model
+	ScheduleJobID        uint
+	DescribedAt          time.Time
+	SourceID             uuid.UUID // Not the primary key but should be a unique identifier
+	AccountID            string
+	DescribeResourceJobs []DescribeResourceJob `gorm:"foreignKey:ParentJobID;constraint:OnDelete:CASCADE;"`
+	Status               api.DescribeSourceJobStatus
 }
 
 type DescribeResourceJob struct {
@@ -76,8 +84,6 @@ type InsightJob struct {
 
 type SummarizerJob struct {
 	gorm.Model
-	SourceID       uuid.UUID
-	SourceJobID    uint
 	Status         summarizerapi.SummarizerJobStatus
 	FailureMessage string
 }

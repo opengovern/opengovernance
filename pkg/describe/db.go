@@ -792,3 +792,57 @@ func (db Database) UpdateSummarizerJobStatus(job SummarizerJob) error {
 	}
 	return nil
 }
+
+func (db Database) AddScheduleJob(job *ScheduleJob) error {
+	tx := db.orm.Model(&ScheduleJob{}).
+		Create(&job)
+	if tx.Error != nil {
+		return tx.Error
+	}
+	return nil
+}
+
+func (db Database) FetchLastScheduleJob() (*ScheduleJob, error) {
+	var job *ScheduleJob
+	tx := db.orm.Model(&ScheduleJob{}).
+		Order("updated_at DESC").
+		First(&job)
+	if tx.Error != nil {
+		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
+		return nil, tx.Error
+	} else if tx.RowsAffected != 1 {
+		return nil, nil
+	}
+	return job, nil
+}
+
+type result struct {
+	Source            Source
+	DescribeSourceJob DescribeSourceJob
+}
+
+func (db Database) QueryDescribeSourceJobsForScheduleJob(job *ScheduleJob) ([]DescribeSourceJob, error) {
+	var res []DescribeSourceJob
+	tx := db.orm.Model(&DescribeSourceJob{}).
+		Where("schedule_job_id = ?", job.ID).
+		Find(&res)
+	if tx.Error != nil {
+		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
+		return nil, tx.Error
+	}
+	return res, nil
+}
+
+func (db Database) UpdateScheduleJobStatus(id uint, status summarizerapi.SummarizerJobStatus) error {
+	tx := db.orm.Model(&ScheduleJob{}).
+		Where("id = ?", id).
+		Update("status", status)
+	if tx.Error != nil {
+		return tx.Error
+	}
+	return nil
+}

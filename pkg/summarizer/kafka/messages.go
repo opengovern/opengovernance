@@ -52,6 +52,41 @@ func (r ConnectionResourcesSummary) MessageID() string {
 	return r.SourceID
 }
 
+type ConnectionServicesSummary struct {
+	// ServiceName is service name of the resource
+	ServiceName string `json:"service_name"`
+	// ResourceType is type of the resource
+	ResourceType string `json:"resource_type"`
+	// SourceType is the type of the source of the resource, i.e. AWS Cloud, Azure Cloud.
+	SourceType source.Type `json:"source_type"`
+	// DescribedAt is when the ScheduleJob is created
+	DescribedAt int64 `json:"described_at"`
+	// ResourceCount is total of resources for specified account
+	ResourceCount int `json:"resource_count"`
+	// LastDayCount number of resources in the category at the same time yesterday
+	LastDayCount *int `json:"last_day_count"`
+	// LastWeekCount number of resources in the category at the same time a week ago
+	LastWeekCount *int `json:"last_week_count"`
+	// LastQuarterCount number of resources in the category at the same time a quarter ago
+	LastQuarterCount *int `json:"last_quarter_count"`
+	// LastYearCount number of resources in the category at the same time a year ago
+	LastYearCount *int `json:"last_year_count"`
+	// ReportType of document
+	ReportType kafka.ResourceSummaryType `json:"report_type"`
+}
+
+func (r ConnectionServicesSummary) AsProducerMessage() (*sarama.ProducerMessage, error) {
+	value, err := json.Marshal(r)
+	if err != nil {
+		return nil, err
+	}
+	return kafkaMsg(hashOf(r.ServiceName), value, ConnectionSummaryIndex), nil
+}
+
+func (r ConnectionServicesSummary) MessageID() string {
+	return r.ServiceName
+}
+
 func hashOf(strings ...string) string {
 	h := sha256.New()
 	for _, s := range strings {
