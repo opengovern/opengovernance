@@ -104,16 +104,16 @@ golangci-lint-mr:
   script:
     - golangci-lint run -v
 
-golangci-lint-main:
-  stage: lint
-  extends: .lint-cache-pullpush
-  only:
-    - main
-  image:
-    name: golangci/golangci-lint:v1.45
-    entrypoint: [""]
-  script:
-    - golangci-lint run -v
+#golangci-lint-main:
+#  stage: lint
+#  extends: .lint-cache-pullpush
+#  only:
+#    - main
+#  image:
+#    name: golangci/golangci-lint:v1.45
+#    entrypoint: [""]
+#  script:
+#    - golangci-lint run -v
 
 #test:
 #  stage: test
