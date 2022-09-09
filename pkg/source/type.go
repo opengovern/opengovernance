@@ -38,3 +38,11 @@ func (t Type) AsPtr() *Type {
 	}
 	return &t
 }
+
+func (t Type) IsNull() bool {
+	return t == ""
+}
+
+func (t Type) String() string {
+	return string(t)
+}

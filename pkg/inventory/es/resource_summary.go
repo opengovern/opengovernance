@@ -841,3 +841,62 @@ func FetchConnectionServicesSummaryPage(client keibi.Client, provider *string, s
 	}
 	return hits, nil
 }
+
+type ConnectionCategoriesSummaryQueryResponse struct {
+	Hits ConnectionCategoriesSummaryQueryHits `json:"hits"`
+}
+type ConnectionCategoriesSummaryQueryHits struct {
+	Total keibi.SearchTotal                     `json:"total"`
+	Hits  []ConnectionCategoriesSummaryQueryHit `json:"hits"`
+}
+type ConnectionCategoriesSummaryQueryHit struct {
+	ID      string                             `json:"_id"`
+	Score   float64                            `json:"_score"`
+	Index   string                             `json:"_index"`
+	Type    string                             `json:"_type"`
+	Version int64                              `json:"_version,omitempty"`
+	Source  kafka2.ConnectionCategoriesSummary `json:"_source"`
+	Sort    []interface{}                      `json:"sort"`
+}
+
+func FetchConnectionCategoriesSummaryPage(client keibi.Client, provider *string, sort []map[string]interface{}, size int) ([]kafka2.ConnectionCategoriesSummary, error) {
+	var hits []kafka2.ConnectionCategoriesSummary
+	res := make(map[string]interface{})
+	var filters []interface{}
+
+	if provider != nil {
+		filters = append(filters, map[string]interface{}{
+			"terms": map[string][]string{"source_type": {*provider}},
+		})
+	}
+
+	sort = append(sort,
+		map[string]interface{}{
+			"_id": "desc",
+		},
+	)
+	res["size"] = size
+	res["sort"] = sort
+	res["query"] = map[string]interface{}{
+		"bool": map[string]interface{}{
+			"filter": filters,
+		},
+	}
+	b, err := json.Marshal(res)
+	if err != nil {
+		return nil, err
+	}
+
+	query := string(b)
+
+	var response ConnectionCategoriesSummaryQueryResponse
+	err = client.Search(context.Background(), kafka2.ConnectionSummaryIndex, query, &response)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, hit := range response.Hits.Hits {
+		hits = append(hits, hit.Source)
+	}
+	return hits, nil
+}

@@ -164,6 +164,78 @@ func FetchServicesSummary(client keibi.Client, sourceJobIDs []uint) ([]kafka.Sou
 	return hits, nil
 }
 
+type CategoriesSummaryQueryResponse struct {
+	Hits CategoriesSummaryQueryHits `json:"hits"`
+}
+type CategoriesSummaryQueryHits struct {
+	Total keibi.SearchTotal           `json:"total"`
+	Hits  []CategoriesSummaryQueryHit `json:"hits"`
+}
+type CategoriesSummaryQueryHit struct {
+	ID      string                      `json:"_id"`
+	Score   float64                     `json:"_score"`
+	Index   string                      `json:"_index"`
+	Type    string                      `json:"_type"`
+	Version int64                       `json:"_version,omitempty"`
+	Source  kafka.SourceCategorySummary `json:"_source"`
+	Sort    []interface{}               `json:"sort"`
+}
+
+func FetchCategoriesSummary(client keibi.Client, sourceJobIDs []uint) ([]kafka.SourceCategorySummary, error) {
+	var hits []kafka.SourceCategorySummary
+	var searchAfter []interface{}
+	for {
+		res := make(map[string]interface{})
+		var filters []interface{}
+
+		filters = append(filters, map[string]interface{}{
+			"terms": map[string][]string{"report_type": {kafka.ResourceSummaryTypeCategoryHistorySummary}},
+		})
+
+		filters = append(filters, map[string]interface{}{
+			"terms": map[string][]uint{"source_job_id": sourceJobIDs},
+		})
+
+		res["size"] = EsFetchPageSize
+		if searchAfter != nil {
+			res["search_after"] = searchAfter
+		}
+
+		res["sort"] = []map[string]interface{}{
+			{
+				"_id": "desc",
+			},
+		}
+		res["query"] = map[string]interface{}{
+			"bool": map[string]interface{}{
+				"filter": filters,
+			},
+		}
+		b, err := json.Marshal(res)
+		if err != nil {
+			return nil, err
+		}
+
+		query := string(b)
+
+		var response CategoriesSummaryQueryResponse
+		err = client.Search(context.Background(), SourceResourcesSummary, query, &response)
+		if err != nil {
+			return nil, err
+		}
+
+		if len(response.Hits.Hits) == 0 {
+			break
+		}
+
+		for _, hit := range response.Hits.Hits {
+			hits = append(hits, hit.Source)
+			searchAfter = hit.Sort
+		}
+	}
+	return hits, nil
+}
+
 //
 //type CategoriesQueryResponse struct {
 //	Hits CategoriesQueryHits `json:"hits"`

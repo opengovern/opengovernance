@@ -17,39 +17,54 @@ import (
 
 func GetCategories(client keibi.Client, rcache *redis.Client, cache *cache.Cache,
 	provider source.Type, sourceID *string) ([]api.CategoriesResponse, error) {
-	var hits []kafka.SourceCategorySummary
 
-	var providerPtr *string
-	if provider != "" {
-		v := string(provider)
-		providerPtr = &v
-	}
-
-	if cached, err := es.FetchCategoriesCached(rcache, cache, providerPtr, sourceID); err == nil && len(cached) > 0 {
-		hits = cached
-		fmt.Println("fetching categories from cached")
-	} else {
-		res, err := es.GetCategoriesQuery(client, string(provider), sourceID)
+	categoryMap := map[string]api.CategoriesResponse{}
+	if provider.IsNull() {
+		hits, err := es.FetchConnectionCategoriesSummaryPage(client, provider.AsStringPtr(), nil, EsFetchPageSize)
 		if err != nil {
 			return nil, err
 		}
-		hits = res
-		fmt.Println("fetching categories from ES")
-	}
-
-	categoryMap := map[string]api.CategoriesResponse{}
-	for _, hit := range hits {
-		if v, ok := categoryMap[hit.CategoryName]; ok {
-			v.ResourceCount += hit.ResourceCount
-			categoryMap[hit.CategoryName] = v
+		for _, hit := range hits {
+			if v, ok := categoryMap[hit.CategoryName]; ok {
+				v.ResourceCount += hit.ResourceCount
+				categoryMap[hit.CategoryName] = v
+			} else {
+				categoryMap[hit.CategoryName] = api.CategoriesResponse{
+					CategoryName:     hit.CategoryName,
+					ResourceCount:    hit.ResourceCount,
+					LastDayCount:     hit.LastDayCount,
+					LastWeekCount:    hit.LastWeekCount,
+					LastQuarterCount: hit.LastQuarterCount,
+					LastYearCount:    hit.LastYearCount,
+				}
+			}
+		}
+	} else {
+		var hits []kafka.SourceCategorySummary
+		if cached, err := es.FetchCategoriesCached(rcache, cache, provider.AsStringPtr(), sourceID); err == nil && len(cached) > 0 {
+			hits = cached
+			fmt.Println("fetching categories from cached")
 		} else {
-			categoryMap[hit.CategoryName] = api.CategoriesResponse{
-				CategoryName:     hit.CategoryName,
-				ResourceCount:    hit.ResourceCount,
-				LastDayCount:     hit.LastDayCount,
-				LastWeekCount:    hit.LastWeekCount,
-				LastQuarterCount: hit.LastQuarterCount,
-				LastYearCount:    hit.LastYearCount,
+			res, err := es.GetCategoriesQuery(client, string(provider), sourceID)
+			if err != nil {
+				return nil, err
+			}
+			hits = res
+			fmt.Println("fetching categories from ES")
+		}
+		for _, hit := range hits {
+			if v, ok := categoryMap[hit.CategoryName]; ok {
+				v.ResourceCount += hit.ResourceCount
+				categoryMap[hit.CategoryName] = v
+			} else {
+				categoryMap[hit.CategoryName] = api.CategoriesResponse{
+					CategoryName:     hit.CategoryName,
+					ResourceCount:    hit.ResourceCount,
+					LastDayCount:     hit.LastDayCount,
+					LastWeekCount:    hit.LastWeekCount,
+					LastQuarterCount: hit.LastQuarterCount,
+					LastYearCount:    hit.LastYearCount,
+				}
 			}
 		}
 	}
