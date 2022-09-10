@@ -106,7 +106,7 @@ func (s *onboardClient) GetSources(ctx *httpclient.Context, sourceIDs []string) 
 func (s *onboardClient) ListSources(ctx *httpclient.Context, t *source.Type) ([]api.Source, error) {
 	url := fmt.Sprintf("%s/api/v1/sources", s.baseURL)
 	if t != nil {
-		url += "type=" + string(*t)
+		url += "?type=" + string(*t)
 	}
 
 	var response []api.Source
