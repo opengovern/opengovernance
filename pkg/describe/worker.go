@@ -223,8 +223,8 @@ func (w *Worker) Run(ctx context.Context) error {
 	}
 	if time.Now().Add(-2 * w.describeIntervalHours).After(time.UnixMilli(job.DescribedAt)) {
 		// already failed
-		w.logger.Error("Job is already failed due to timeout: %s", zap.Error(err))
-		err = msg.Nack(false, false)
+		w.logger.Error("Job is already failed due to timeout", zap.Uint("jobId", job.JobID), zap.Error(err))
+		err = msg.Ack(false)
 		return nil
 	}
 
