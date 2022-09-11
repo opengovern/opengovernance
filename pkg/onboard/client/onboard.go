@@ -21,7 +21,7 @@ type OnboardServiceClient interface {
 	GetSource(ctx *httpclient.Context, sourceID string) (*api.Source, error)
 	GetSources(ctx *httpclient.Context, sourceID []string) ([]api.Source, error)
 	ListSources(ctx *httpclient.Context, t *source.Type) ([]api.Source, error)
-	CountSources(ctx *httpclient.Context, provider *source.Type) (int64, error)
+	CountSources(ctx *httpclient.Context, provider source.Type) (int64, error)
 }
 
 type onboardClient struct {
@@ -126,10 +126,10 @@ func (s *onboardClient) ListSources(ctx *httpclient.Context, t *source.Type) ([]
 	return response, nil
 }
 
-func (s *onboardClient) CountSources(ctx *httpclient.Context, provider *source.Type) (int64, error) {
+func (s *onboardClient) CountSources(ctx *httpclient.Context, provider source.Type) (int64, error) {
 	var url string
-	if provider != nil {
-		url = fmt.Sprintf("%s/api/v1/sources/count?type=%s", s.baseURL, *provider)
+	if !provider.IsNull() {
+		url = fmt.Sprintf("%s/api/v1/sources/count?type=%s", s.baseURL, provider.String())
 	} else {
 		url = fmt.Sprintf("%s/api/v1/sources/count", s.baseURL)
 	}

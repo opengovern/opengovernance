@@ -8,6 +8,8 @@ import (
 type Type string
 
 const (
+	Nil Type = ""
+
 	CloudAWS   Type = "AWS"
 	CloudAzure Type = "Azure"
 )

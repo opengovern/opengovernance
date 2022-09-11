@@ -146,23 +146,11 @@ func bindValidate(ctx echo.Context, i interface{}) error {
 // @Success      200        {object}  []api.Benchmark
 // @Router       /inventory/api/v1/benchmarks/history/list/{provider}/{createdAt} [get]
 func (h *HttpHandler) GetBenchmarksInTime(ctx echo.Context) error {
-	providerStr := ctx.Param("provider")
+	provider, _ := source.ParseType(ctx.Param("provider"))
 	tim := ctx.Param("createdAt")
 	timeInt, err := strconv.ParseInt(tim, 10, 64)
 	if err != nil {
 		return err
-	}
-
-	var provider *string
-	if strings.ToLower(providerStr) == "aws" {
-		providerStr = "AWS"
-		provider = &providerStr
-	} else if strings.ToLower(providerStr) == "azure" {
-		providerStr = "Azure"
-		provider = &providerStr
-	} else if strings.ToLower(providerStr) == "all" {
-	} else {
-		return echo.NewHTTPError(400, "Invalid provider")
 	}
 
 	uniqueBenchmarkIDs := map[string]api.Benchmark{}
@@ -806,7 +794,7 @@ func (h *HttpHandler) GetBenchmarkComplianceTrend(ctx echo.Context) error {
 		}
 	}
 
-	rhits, err := es.FindResourceGrowthTrend(h.client, &sourceUUID, nil,
+	rhits, err := es.FindResourceGrowthTrend(h.client, &sourceUUID, source.Nil,
 		fromTime, toTime)
 
 	var resp []api.ComplianceTrendDataPoint
@@ -839,17 +827,12 @@ func (h *HttpHandler) GetBenchmarkComplianceTrend(ctx echo.Context) error {
 // @Success  200         {object}  []api.TrendDataPoint
 // @Router   /inventory/api/v1/resources/trend [get]
 func (h *HttpHandler) GetResourceGrowthTrend(ctx echo.Context) error {
-	provider := ctx.QueryParam("provider")
+	provider, _ := source.ParseType(ctx.QueryParam("provider"))
 	sourceID := ctx.QueryParam("sourceId")
 	timeWindow := ctx.QueryParam("timeWindow")
 
 	if timeWindow == "" {
 		timeWindow = "24h"
-	}
-
-	var providerPtr *string
-	if provider != "" {
-		providerPtr = &provider
 	}
 
 	var sourceUUID *uuid.UUID
@@ -870,7 +853,7 @@ func (h *HttpHandler) GetResourceGrowthTrend(ctx echo.Context) error {
 	}
 	fromTime = time.Now().Add(-1 * tw).UnixMilli()
 
-	hits, err := es.FindResourceGrowthTrend(h.client, sourceUUID, providerPtr, fromTime, toTime)
+	hits, err := es.FindResourceGrowthTrend(h.client, sourceUUID, provider, fromTime, toTime)
 
 	datapoints := map[int64]int{}
 	for _, hit := range hits {
@@ -901,7 +884,7 @@ func (h *HttpHandler) GetResourceGrowthTrend(ctx echo.Context) error {
 // @Success  200         {object}  []api.TrendDataPoint
 // @Router   /inventory/api/v1/compliancy/trend [get]
 func (h *HttpHandler) GetCompliancyTrend(ctx echo.Context) error {
-	provider := ctx.QueryParam("provider")
+	provider, _ := source.ParseType(ctx.QueryParam("provider"))
 	sourceID := ctx.QueryParam("sourceId")
 	timeWindow := ctx.QueryParam("timeWindow")
 
@@ -911,11 +894,6 @@ func (h *HttpHandler) GetCompliancyTrend(ctx echo.Context) error {
 
 	if provider == "" && sourceID == "" {
 		return echo.NewHTTPError(http.StatusBadRequest, "you should specify either provider or sourceId")
-	}
-
-	var providerPtr *string
-	if provider != "" {
-		providerPtr = &provider
 	}
 
 	var sourceUUID *uuid.UUID
@@ -939,7 +917,7 @@ func (h *HttpHandler) GetCompliancyTrend(ctx echo.Context) error {
 	var hits []es.ComplianceTrendQueryHit
 	var searchAfter []interface{}
 	for {
-		query, err := es.FindCompliancyTrendQuery(sourceUUID, providerPtr,
+		query, err := es.FindCompliancyTrendQuery(sourceUUID, provider,
 			fromTime, toTime, EsFetchPageSize, searchAfter)
 		if err != nil {
 			return err
@@ -1151,14 +1129,9 @@ func (h *HttpHandler) GetTopAccountsByResourceCount(ctx echo.Context) error {
 	}
 
 	var hits []kafka3.ConnectionResourcesSummary
-	var providerPtr *string
-	if provider != "" {
-		v := string(provider)
-		providerPtr = &v
-	}
 
 	srt := []map[string]interface{}{{"resource_count": "desc"}}
-	hits, err = es.FetchConnectionResourcesSummaryPage(h.client, providerPtr, nil, srt, count)
+	hits, err = es.FetchConnectionResourcesSummaryPage(h.client, provider, nil, srt, count)
 	var res []api.TopAccountResponse
 	for _, v := range hits {
 		res = append(res, api.TopAccountResponse{
@@ -1201,11 +1174,6 @@ func (h *HttpHandler) GetTopAccountsByResourceCount(ctx echo.Context) error {
 // @Router   /inventory/api/v1/resources/top/growing/accounts [get]
 func (h *HttpHandler) GetTopFastestGrowingAccountsByResourceCount(ctx echo.Context) error {
 	provider, _ := source.ParseType(ctx.QueryParam("provider"))
-	var providerPtr *string
-	if provider != "" {
-		v := string(provider)
-		providerPtr = &v
-	}
 
 	timeWindow := ctx.QueryParam("timeWindow")
 	switch timeWindow {
@@ -1219,7 +1187,7 @@ func (h *HttpHandler) GetTopFastestGrowingAccountsByResourceCount(ctx echo.Conte
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid count")
 	}
 
-	summaryList, err := es.FetchConnectionResourcesSummaryPage(h.client, providerPtr, nil, nil, EsFetchPageSize)
+	summaryList, err := es.FetchConnectionResourcesSummaryPage(h.client, provider, nil, nil, EsFetchPageSize)
 	if err != nil {
 		return err
 	}
@@ -1319,18 +1287,12 @@ func (h *HttpHandler) GetTopRegionsByResourceCount(ctx echo.Context) error {
 		sourceID = &sourceId
 	}
 
-	var providerPtr *string
-	if len(string(provider)) > 0 {
-		tmp := string(provider)
-		providerPtr = &tmp
-	}
-
 	locationDistribution := map[string]int{}
 	var hits []kafka2.LocationDistributionResource
-	if cached, err := es.FetchLocationDistributionCached(h.rcache, h.cache, providerPtr, sourceID); err == nil && len(cached) > 0 {
+	if cached, err := es.FetchLocationDistributionCached(h.rcache, h.cache, provider, sourceID); err == nil && len(cached) > 0 {
 		hits = cached
 	} else {
-		res, err := es.FindLocationDistributionQuery(h.client, providerPtr, sourceUUID)
+		res, err := es.FindLocationDistributionQuery(h.client, provider, sourceUUID)
 		if err != nil {
 			return err
 		}
@@ -1439,15 +1401,8 @@ func (h *HttpHandler) GetCategories(ctx echo.Context) error {
 // @Success  200       {object}  []api.MetricsResponse
 // @Router   /inventory/api/v1/metrics/summary [get]
 func (h *HttpHandler) GetSummaryMetrics(ctx echo.Context) error {
-	var err error
-	var provider source.Type
-	var providerPtr *source.Type
-	var providerStr *string
-	if provider, err = source.ParseType(ctx.QueryParam("provider")); err == nil {
-		providerPtr = &provider
-		ts := string(provider)
-		providerStr = &ts
-	}
+	provider, _ := source.ParseType(ctx.QueryParam("provider"))
+
 	includeAWS, includeAzure := false, false
 	switch provider {
 	case source.CloudAWS:
@@ -1578,7 +1533,7 @@ func (h *HttpHandler) GetSummaryMetrics(ctx echo.Context) error {
 		}
 	}
 
-	totalAccounts, err := h.onboardClient.CountSources(httpclient.FromEchoContext(ctx), providerPtr)
+	totalAccounts, err := h.onboardClient.CountSources(httpclient.FromEchoContext(ctx), provider)
 	if err != nil {
 		return err
 	}
@@ -1603,7 +1558,7 @@ func (h *HttpHandler) GetSummaryMetrics(ctx echo.Context) error {
 		countMap := map[int64]int{}
 		firstDescribedAt := int64(math.MaxInt64)
 
-		hits, err := es.FindResourceGrowthTrend(h.client, sourceUUID, providerStr, fromTime.UnixMilli(), toTime.UnixMilli())
+		hits, err := es.FindResourceGrowthTrend(h.client, sourceUUID, provider, fromTime.UnixMilli(), toTime.UnixMilli())
 		if err != nil {
 			return err
 		}
@@ -1816,7 +1771,7 @@ func (h *HttpHandler) GetAccountsResourceCount(ctx echo.Context) error {
 		}
 	}
 
-	hits, err := es.FetchConnectionResourcesSummaryPage(h.client, provider.AsStringPtr(), nil, nil, EsFetchPageSize)
+	hits, err := es.FetchConnectionResourcesSummaryPage(h.client, provider, nil, nil, EsFetchPageSize)
 	for _, hit := range hits {
 		if v, ok := res[hit.SourceID]; ok {
 			v.ResourceCount += hit.ResourceCount
@@ -1852,12 +1807,6 @@ func (h *HttpHandler) GetResourceDistribution(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "you should specify either provider or sourceId")
 	}
 
-	var providerPtr *string
-	if provider != "" {
-		v := string(provider)
-		providerPtr = &v
-	}
-
 	//var sourceUUID *uuid.UUID
 	var sourceIDPtr *string
 	if sourceID != "" {
@@ -1871,7 +1820,7 @@ func (h *HttpHandler) GetResourceDistribution(ctx echo.Context) error {
 
 	locationDistribution := map[string]int{}
 
-	hits, err := es.FetchConnectionLocationsSummaryPage(h.client, providerPtr, sourceIDPtr, nil, EsFetchPageSize)
+	hits, err := es.FetchConnectionLocationsSummaryPage(h.client, provider, sourceIDPtr, nil, EsFetchPageSize)
 	if err != nil {
 		return err
 	}
@@ -2045,12 +1994,12 @@ func (h *HttpHandler) GetBenchmarkAccounts(ctx echo.Context) error {
 // @Success  200       {object}  []api.Benchmark
 // @Router       /inventory/api/v1/benchmarks [get]
 func (h *HttpHandler) GetBenchmarks(ctx echo.Context) error {
-	var provider *string
+	var provider source.Type
 	tagFilters := make(map[string]string)
 	for k, v := range ctx.QueryParams() {
 		if k == "provider" {
 			if len(v) == 1 {
-				provider = &v[0]
+				provider, _ = source.ParseType(v[0])
 			}
 			continue
 		}
@@ -2093,12 +2042,12 @@ func (h *HttpHandler) GetBenchmarks(ctx echo.Context) error {
 // @Success      200       {object}  []api.Benchmark
 // @Router       /inventory/api/v1/benchmarks/count [get]
 func (h *HttpHandler) CountBenchmarks(ctx echo.Context) error {
-	var provider *string
+	var provider source.Type
 	tagFilters := make(map[string]string)
 	for k, v := range ctx.QueryParams() {
 		if k == "provider" {
 			if len(v) == 1 {
-				provider = &v[0]
+				provider, _ = source.ParseType(v[0])
 			}
 			continue
 		}

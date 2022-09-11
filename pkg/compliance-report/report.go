@@ -531,7 +531,7 @@ func QueryProviderResult(benchmarkID string, createdAt int64, order string, size
 	return string(b), err
 }
 
-func QueryBenchmarks(provider *string, createdAt int64, level, size int32, searchAfter []interface{}) (string, error) {
+func QueryBenchmarks(provider source.Type, createdAt int64, level, size int32, searchAfter []interface{}) (string, error) {
 	res := make(map[string]interface{})
 	var filters []interface{}
 

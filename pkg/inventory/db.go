@@ -4,6 +4,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v4"
 	"gitlab.com/keibiengine/keibi-engine/pkg/inventory/api"
+	"gitlab.com/keibiengine/keibi-engine/pkg/source"
 	"gorm.io/gorm"
 )
 
@@ -144,13 +145,13 @@ func (db Database) AddBenchmark(q *Benchmark) error {
 	return nil
 }
 
-func (db Database) ListBenchmarksWithFilters(provider *string, tags map[string]string) ([]Benchmark, error) {
+func (db Database) ListBenchmarksWithFilters(provider source.Type, tags map[string]string) ([]Benchmark, error) {
 	var s []Benchmark
 	m := db.orm.Model(&Benchmark{}).
 		Preload("Tags").
 		Preload("Policies")
-	if provider != nil {
-		m = m.Where("provider = ?", *provider)
+	if !provider.IsNull() {
+		m = m.Where("provider = ?", provider.String())
 	}
 	for key, value := range tags {
 		m = m.Where("id IN (SELECT benchmark_id FROM benchmark_tag_rel WHERE benchmark_tag_id IN (SELECT id FROM benchmark_tags WHERE key = ? AND value = ?))", key, value)
@@ -164,13 +165,13 @@ func (db Database) ListBenchmarksWithFilters(provider *string, tags map[string]s
 	return s, nil
 }
 
-func (db Database) CountBenchmarksWithFilters(provider *string, tags map[string]string) (int64, error) {
+func (db Database) CountBenchmarksWithFilters(provider source.Type, tags map[string]string) (int64, error) {
 	var s int64
 	m := db.orm.Model(&Benchmark{}).
 		Preload("Tags").
 		Preload("Policies")
-	if provider != nil {
-		m = m.Where("provider = ?", *provider)
+	if !provider.IsNull() {
+		m = m.Where("provider = ?", provider.String())
 	}
 	for key, value := range tags {
 		m = m.Where("id IN (SELECT benchmark_id FROM benchmark_tag_rel WHERE benchmark_tag_id IN (SELECT id FROM benchmark_tags WHERE key = ? AND value = ?))", key, value)

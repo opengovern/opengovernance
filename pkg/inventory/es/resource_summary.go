@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"strconv"
 
+	"gitlab.com/keibiengine/keibi-engine/pkg/source"
+
 	kafka2 "gitlab.com/keibiengine/keibi-engine/pkg/summarizer/kafka"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/describe"
@@ -37,7 +39,7 @@ type ResourceGrowthQueryHit struct {
 	Sort    []interface{}                `json:"sort"`
 }
 
-func FindResourceGrowthTrend(client keibi.Client, sourceID *uuid.UUID, provider *string,
+func FindResourceGrowthTrend(client keibi.Client, sourceID *uuid.UUID, provider source.Type,
 	createdAtFrom, createdAtTo int64) ([]kafka.SourceResourcesSummary, error) {
 
 	var hits []kafka.SourceResourcesSummary
@@ -50,9 +52,9 @@ func FindResourceGrowthTrend(client keibi.Client, sourceID *uuid.UUID, provider 
 			"terms": map[string][]string{"report_type": {kafka.ResourceSummaryTypeResourceGrowthTrend}},
 		})
 
-		if provider != nil {
+		if !provider.IsNull() {
 			filters = append(filters, map[string]interface{}{
-				"terms": map[string][]string{"source_type": {*provider}},
+				"terms": map[string][]string{"source_type": {provider.String()}},
 			})
 		}
 
@@ -114,7 +116,7 @@ func FindResourceGrowthTrend(client keibi.Client, sourceID *uuid.UUID, provider 
 	return hits, nil
 }
 
-func FetchResourceLastSummary(client keibi.Client, provider *string, sourceID *string, resourceType *string) ([]kafka.SourceResourcesSummary, error) {
+func FetchResourceLastSummary(client keibi.Client, provider source.Type, sourceID *string, resourceType *string) ([]kafka.SourceResourcesSummary, error) {
 	var hits []kafka.SourceResourcesSummary
 	var searchAfter []interface{}
 	for {
@@ -125,9 +127,9 @@ func FetchResourceLastSummary(client keibi.Client, provider *string, sourceID *s
 			"terms": map[string][]string{"report_type": {kafka.ResourceSummaryTypeLastSummary}},
 		})
 
-		if provider != nil {
+		if !provider.IsNull() {
 			filters = append(filters, map[string]interface{}{
-				"terms": map[string][]string{"source_type": {*provider}},
+				"terms": map[string][]string{"source_type": {provider.String()}},
 			})
 		}
 
@@ -383,7 +385,7 @@ type ServiceDistributionQueryHit struct {
 	Sort    []interface{}                           `json:"sort"`
 }
 
-func FindLocationDistributionQuery(client keibi.Client, provider *string, sourceID *uuid.UUID) ([]kafka.LocationDistributionResource, error) {
+func FindLocationDistributionQuery(client keibi.Client, provider source.Type, sourceID *uuid.UUID) ([]kafka.LocationDistributionResource, error) {
 	var hits []kafka.LocationDistributionResource
 
 	var searchAfter []interface{}
@@ -395,9 +397,9 @@ func FindLocationDistributionQuery(client keibi.Client, provider *string, source
 			"terms": map[string][]string{"report_type": {kafka.ResourceSummaryTypeLocationDistribution}},
 		})
 
-		if provider != nil && *provider != "all" {
+		if !provider.IsNull() {
 			filters = append(filters, map[string]interface{}{
-				"terms": map[string][]string{"source_type": {*provider}},
+				"terms": map[string][]string{"source_type": {provider.String()}},
 			})
 		}
 
@@ -494,7 +496,7 @@ type ComplianceTrendQueryHit struct {
 	Sort    []interface{}                         `json:"sort"`
 }
 
-func FindCompliancyTrendQuery(sourceID *uuid.UUID, provider *string,
+func FindCompliancyTrendQuery(sourceID *uuid.UUID, provider source.Type,
 	describedAtFrom, describedAtTo int64, fetchSize int, searchAfter []interface{}) (string, error) {
 
 	res := make(map[string]interface{})
@@ -504,9 +506,9 @@ func FindCompliancyTrendQuery(sourceID *uuid.UUID, provider *string,
 		"terms": map[string][]string{"report_type": {kafka.ResourceSummaryTypeCompliancyTrend}},
 	})
 
-	if provider != nil {
+	if !provider.IsNull() {
 		filters = append(filters, map[string]interface{}{
-			"terms": map[string][]string{"source_type": {*provider}},
+			"terms": map[string][]string{"source_type": {provider.String()}},
 		})
 	}
 
@@ -735,7 +737,7 @@ type ConnectionResourcesSummaryQueryHit struct {
 	Sort    []interface{}                     `json:"sort"`
 }
 
-func FetchConnectionResourcesSummaryPage(client keibi.Client, provider *string, sourceID *string, sort []map[string]interface{}, size int) ([]kafka2.ConnectionResourcesSummary, error) {
+func FetchConnectionResourcesSummaryPage(client keibi.Client, provider source.Type, sourceID *string, sort []map[string]interface{}, size int) ([]kafka2.ConnectionResourcesSummary, error) {
 	var hits []kafka2.ConnectionResourcesSummary
 	res := make(map[string]interface{})
 	var filters []interface{}
@@ -744,9 +746,9 @@ func FetchConnectionResourcesSummaryPage(client keibi.Client, provider *string, 
 		"terms": map[string][]string{"report_type": {kafka.ResourceSummaryTypeResourceGrowthTrend}},
 	})
 
-	if provider != nil {
+	if !provider.IsNull() {
 		filters = append(filters, map[string]interface{}{
-			"terms": map[string][]string{"source_type": {*provider}},
+			"terms": map[string][]string{"source_type": {provider.String()}},
 		})
 	}
 
@@ -804,7 +806,7 @@ type ConnectionServicesSummaryQueryHit struct {
 	Sort    []interface{}                    `json:"sort"`
 }
 
-func FetchConnectionServicesSummaryPage(client keibi.Client, provider *string, sort []map[string]interface{}, size int) ([]kafka2.ConnectionServicesSummary, error) {
+func FetchConnectionServicesSummaryPage(client keibi.Client, provider source.Type, sort []map[string]interface{}, size int) ([]kafka2.ConnectionServicesSummary, error) {
 	var hits []kafka2.ConnectionServicesSummary
 	res := make(map[string]interface{})
 	var filters []interface{}
@@ -813,9 +815,9 @@ func FetchConnectionServicesSummaryPage(client keibi.Client, provider *string, s
 		"terms": map[string][]string{"report_type": {kafka.ResourceSummaryTypeServiceHistorySummary}},
 	})
 
-	if provider != nil {
+	if !provider.IsNull() {
 		filters = append(filters, map[string]interface{}{
-			"terms": map[string][]string{"source_type": {*provider}},
+			"terms": map[string][]string{"source_type": {provider.String()}},
 		})
 	}
 
@@ -867,7 +869,7 @@ type ConnectionCategoriesSummaryQueryHit struct {
 	Sort    []interface{}                      `json:"sort"`
 }
 
-func FetchConnectionCategoriesSummaryPage(client keibi.Client, provider *string, sort []map[string]interface{}, size int) ([]kafka2.ConnectionCategoriesSummary, error) {
+func FetchConnectionCategoriesSummaryPage(client keibi.Client, provider source.Type, sort []map[string]interface{}, size int) ([]kafka2.ConnectionCategoriesSummary, error) {
 	var hits []kafka2.ConnectionCategoriesSummary
 	res := make(map[string]interface{})
 	var filters []interface{}
@@ -876,9 +878,9 @@ func FetchConnectionCategoriesSummaryPage(client keibi.Client, provider *string,
 		"terms": map[string][]string{"report_type": {kafka.ResourceSummaryTypeCategoryHistorySummary}},
 	})
 
-	if provider != nil {
+	if !provider.IsNull() {
 		filters = append(filters, map[string]interface{}{
-			"terms": map[string][]string{"source_type": {*provider}},
+			"terms": map[string][]string{"source_type": {provider.String()}},
 		})
 	}
 
@@ -930,7 +932,7 @@ type ConnectionLocationsSummaryQueryHit struct {
 	Sort    []interface{}                    `json:"sort"`
 }
 
-func FetchConnectionLocationsSummaryPage(client keibi.Client, provider *string, sourceID *string, sort []map[string]interface{}, size int) ([]kafka2.ConnectionLocationSummary, error) {
+func FetchConnectionLocationsSummaryPage(client keibi.Client, provider source.Type, sourceID *string, sort []map[string]interface{}, size int) ([]kafka2.ConnectionLocationSummary, error) {
 	var hits []kafka2.ConnectionLocationSummary
 	res := make(map[string]interface{})
 	var filters []interface{}
@@ -939,9 +941,9 @@ func FetchConnectionLocationsSummaryPage(client keibi.Client, provider *string, 
 		"terms": map[string][]string{"report_type": {kafka.ResourceSummaryTypeLocationDistribution}},
 	})
 
-	if provider != nil {
+	if !provider.IsNull() {
 		filters = append(filters, map[string]interface{}{
-			"terms": map[string][]string{"source_type": {*provider}},
+			"terms": map[string][]string{"source_type": {provider.String()}},
 		})
 	}
 

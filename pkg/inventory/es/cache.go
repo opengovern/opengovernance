@@ -4,16 +4,18 @@ import (
 	"context"
 	"fmt"
 
+	"gitlab.com/keibiengine/keibi-engine/pkg/source"
+
 	"github.com/go-redis/cache/v8"
 	"github.com/go-redis/redis/v8"
 	"gitlab.com/keibiengine/keibi-engine/pkg/describe/kafka"
 )
 
 func FetchResourceLastSummaryCached(rcache *redis.Client, cs *cache.Cache,
-	provider *string, sourceID *string, resourceType *string) ([]kafka.SourceResourcesSummary, error) {
+	provider source.Type, sourceID *string, resourceType *string) ([]kafka.SourceResourcesSummary, error) {
 	providerFilter := "*"
-	if provider != nil {
-		providerFilter = *provider
+	if !provider.IsNull() {
+		providerFilter = provider.String()
 	}
 	sourceIDFilter := "*"
 	if sourceID != nil {
@@ -53,10 +55,10 @@ func FetchResourceLastSummaryCached(rcache *redis.Client, cs *cache.Cache,
 }
 
 func FetchLocationDistributionCached(rcache *redis.Client, cs *cache.Cache,
-	provider *string, sourceID *string) ([]kafka.LocationDistributionResource, error) {
+	provider source.Type, sourceID *string) ([]kafka.LocationDistributionResource, error) {
 	providerFilter := "*"
-	if provider != nil {
-		providerFilter = *provider
+	if !provider.IsNull() {
+		providerFilter = provider.String()
 	}
 	sourceIDFilter := "*"
 	if sourceID != nil {
@@ -92,10 +94,10 @@ func FetchLocationDistributionCached(rcache *redis.Client, cs *cache.Cache,
 }
 
 func FetchCategoriesCached(rcache *redis.Client, cs *cache.Cache,
-	provider *string, sourceID *string) ([]kafka.SourceCategorySummary, error) {
+	provider source.Type, sourceID *string) ([]kafka.SourceCategorySummary, error) {
 	providerFilter := "*"
-	if provider != nil {
-		providerFilter = *provider
+	if !provider.IsNull() {
+		providerFilter = provider.String()
 	}
 	sourceIDFilter := "*"
 	if sourceID != nil {
@@ -132,10 +134,10 @@ func FetchCategoriesCached(rcache *redis.Client, cs *cache.Cache,
 }
 
 func FetchServicesCached(rcache *redis.Client, cs *cache.Cache,
-	provider *string, sourceID *string) ([]kafka.SourceServicesSummary, error) {
+	provider source.Type, sourceID *string) ([]kafka.SourceServicesSummary, error) {
 	providerFilter := "*"
-	if provider != nil {
-		providerFilter = *provider
+	if !provider.IsNull() {
+		providerFilter = provider.String()
 	}
 	sourceIDFilter := "*"
 	if sourceID != nil {
