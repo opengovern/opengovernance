@@ -225,7 +225,7 @@ func (w *Worker) Run(ctx context.Context) error {
 		// already failed
 		w.logger.Error("Job is already failed due to timeout: %s", zap.Error(err))
 		err = msg.Nack(false, false)
-		return errors.New("job already failed: timeout")
+		return nil
 	}
 
 	result := job.Do(ctx, w.vault, w.rdb, w.cs, w.es, w.kfkProducer, w.kfkTopic, w.logger)
