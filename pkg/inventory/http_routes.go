@@ -1799,25 +1799,14 @@ func (h *HttpHandler) GetResourceDistribution(ctx echo.Context) error {
 	provider, _ := source.ParseType(ctx.QueryParam("provider"))
 	sourceID := ctx.QueryParam("sourceId")
 
-	if ctx.QueryParam("provider") == "all" {
-		provider = "all"
-	}
-
 	if provider == "" && sourceID == "" {
 		return echo.NewHTTPError(http.StatusBadRequest, "you should specify either provider or sourceId")
 	}
 
-	//var sourceUUID *uuid.UUID
 	var sourceIDPtr *string
 	if sourceID != "" {
-		//u, err := uuid.Parse(sourceID)
-		//if err != nil {
-		//	return echo.NewHTTPError(http.StatusBadRequest, "invalid source uuid")
-		//}
-		//sourceUUID = &u
 		sourceIDPtr = &sourceID
 	}
-
 	locationDistribution := map[string]int{}
 
 	hits, err := es.FetchConnectionLocationsSummaryPage(h.client, provider, sourceIDPtr, nil, EsFetchPageSize)

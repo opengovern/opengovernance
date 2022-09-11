@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strconv"
 	"time"
 
 	"github.com/go-redis/cache/v8"
@@ -39,18 +40,19 @@ import (
 )
 
 type Worker struct {
-	id             string
-	jobQueue       queue.Interface
-	jobResultQueue queue.Interface
-	kfkProducer    sarama.SyncProducer
-	kfkTopic       string
-	vault          vault.SourceConfig
-	rdb            *redis.Client
-	cs             *cache.Cache
-	es             keibi.Client
-	logger         *zap.Logger
-	pusher         *push.Pusher
-	tp             *trace.TracerProvider
+	id                    string
+	jobQueue              queue.Interface
+	jobResultQueue        queue.Interface
+	kfkProducer           sarama.SyncProducer
+	kfkTopic              string
+	vault                 vault.SourceConfig
+	rdb                   *redis.Client
+	cs                    *cache.Cache
+	es                    keibi.Client
+	logger                *zap.Logger
+	pusher                *push.Pusher
+	tp                    *trace.TracerProvider
+	describeIntervalHours time.Duration
 }
 
 func InitializeWorker(
@@ -189,6 +191,11 @@ func InitializeWorker(
 	)
 	otel.SetTracerProvider(w.tp)
 
+	describeIntervalHours, err := strconv.ParseInt(DescribeIntervalHours, 10, 64)
+	if err != nil {
+		return nil, err
+	}
+	w.describeIntervalHours = time.Duration(describeIntervalHours) * time.Hour
 	return w, nil
 }
 
@@ -214,6 +221,13 @@ func (w *Worker) Run(ctx context.Context) error {
 		span.End()
 		return err
 	}
+	if time.Now().Add(-2 * w.describeIntervalHours).After(time.UnixMilli(job.DescribedAt)) {
+		// already failed
+		w.logger.Error("Job is already failed due to timeout: %s", zap.Error(err))
+		err = msg.Nack(false, false)
+		return errors.New("job already failed: timeout")
+	}
+
 	result := job.Do(ctx, w.vault, w.rdb, w.cs, w.es, w.kfkProducer, w.kfkTopic, w.logger)
 	if strings.Contains(result.Error, "ThrottlingException") ||
 		strings.Contains(result.Error, "Rate exceeded") ||
@@ -406,18 +420,19 @@ func (w *CleanupWorker) Stop() {
 }
 
 type ConnectionWorker struct {
-	id             string
-	jobQueue       queue.Interface
-	jobResultQueue queue.Interface
-	kfkProducer    sarama.SyncProducer
-	kfkTopic       string
-	vault          vault.SourceConfig
-	rdb            *redis.Client
-	cs             *cache.Cache
-	es             keibi.Client
-	logger         *zap.Logger
-	pusher         *push.Pusher
-	tp             *trace.TracerProvider
+	id                    string
+	jobQueue              queue.Interface
+	jobResultQueue        queue.Interface
+	kfkProducer           sarama.SyncProducer
+	kfkTopic              string
+	vault                 vault.SourceConfig
+	describeIntervalHours time.Duration
+	rdb                   *redis.Client
+	cs                    *cache.Cache
+	es                    keibi.Client
+	logger                *zap.Logger
+	pusher                *push.Pusher
+	tp                    *trace.TracerProvider
 }
 
 func InitializeConnectionWorker(
@@ -556,6 +571,11 @@ func InitializeConnectionWorker(
 	)
 	otel.SetTracerProvider(w.tp)
 
+	describeIntervalHours, err := strconv.ParseInt(DescribeIntervalHours, 10, 64)
+	if err != nil {
+		return nil, err
+	}
+	w.describeIntervalHours = time.Duration(describeIntervalHours) * time.Hour
 	return w, nil
 }
 
@@ -581,6 +601,13 @@ func (w *ConnectionWorker) Run(ctx context.Context) error {
 		span.End()
 		return err
 	}
+	if time.Now().Add(-2 * w.describeIntervalHours).After(time.UnixMilli(job.DescribedAt)) {
+		// already failed
+		w.logger.Error("Job is already failed due to timeout: %s", zap.Error(err))
+		err = msg.Nack(false, false)
+		return errors.New("job already failed: timeout")
+	}
+
 	result := job.Do(ctx, w.vault, w.rdb, w.cs, w.es, w.kfkProducer, w.kfkTopic, w.logger)
 
 	err = w.jobResultQueue.Publish(result)
