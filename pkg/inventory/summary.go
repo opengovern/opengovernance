@@ -20,7 +20,7 @@ func GetCategories(client keibi.Client, rcache *redis.Client, cache *cache.Cache
 
 	categoryMap := map[string]api.CategoriesResponse{}
 	if provider.IsNull() {
-		hits, err := es.FetchConnectionCategoriesSummaryPage(client, provider.AsStringPtr(), nil, EsFetchPageSize)
+		hits, err := es.FetchConnectionCategoriesSummaryPage(client, provider, nil, EsFetchPageSize)
 		if err != nil {
 			return nil, err
 		}
@@ -41,7 +41,7 @@ func GetCategories(client keibi.Client, rcache *redis.Client, cache *cache.Cache
 		}
 	} else {
 		var hits []kafka.SourceCategorySummary
-		if cached, err := es.FetchCategoriesCached(rcache, cache, provider.AsStringPtr(), sourceID); err == nil && len(cached) > 0 {
+		if cached, err := es.FetchCategoriesCached(rcache, cache, provider, sourceID); err == nil && len(cached) > 0 {
 			hits = cached
 			fmt.Println("fetching categories from cached")
 		} else {
@@ -79,15 +79,9 @@ func GetCategories(client keibi.Client, rcache *redis.Client, cache *cache.Cache
 
 func GetServices(client keibi.Client, rcache *redis.Client, cache *cache.Cache,
 	provider source.Type, sourceID *string) ([]api.TopServicesResponse, error) {
-	var providerPtr *string
-	if provider != "" {
-		v := string(provider)
-		providerPtr = &v
-	}
-
 	serviceResponse := map[string]api.TopServicesResponse{}
 	if sourceID == nil {
-		hits, err := es.FetchConnectionServicesSummaryPage(client, providerPtr, nil, EsFetchPageSize)
+		hits, err := es.FetchConnectionServicesSummaryPage(client, provider, nil, EsFetchPageSize)
 		if err != nil {
 			return nil, err
 		}
@@ -109,7 +103,7 @@ func GetServices(client keibi.Client, rcache *redis.Client, cache *cache.Cache,
 		}
 	} else {
 		var hits []kafka.SourceServicesSummary
-		if cached, err := es.FetchServicesCached(rcache, cache, providerPtr, sourceID); err == nil && len(cached) > 0 {
+		if cached, err := es.FetchServicesCached(rcache, cache, provider, sourceID); err == nil && len(cached) > 0 {
 			hits = cached
 			fmt.Println("fetching services from cached")
 		} else {
@@ -146,20 +140,14 @@ func GetServices(client keibi.Client, rcache *redis.Client, cache *cache.Cache,
 }
 
 func GetResources(client keibi.Client, rcache *redis.Client, cache *cache.Cache, provider source.Type, sourceID *string, resourceTypes []string) ([]api.ResourceTypeResponse, error) {
-	var providerPtr *string
-	if provider != "" {
-		v := string(provider)
-		providerPtr = &v
-	}
-
 	var hits []kafka.SourceResourcesSummary
 	for _, resourceType := range resourceTypes {
-		if cached, err := es.FetchResourceLastSummaryCached(rcache, cache, providerPtr, sourceID, &resourceType); err == nil && len(cached) > 0 {
+		if cached, err := es.FetchResourceLastSummaryCached(rcache, cache, provider, sourceID, &resourceType); err == nil && len(cached) > 0 {
 			hits = append(hits, cached...)
 			fmt.Println("fetching resources from cached")
 		} else {
 			//TODO-Saleh performance issue: use list of resource types instead
-			result, err := es.FetchResourceLastSummary(client, providerPtr, sourceID, &resourceType)
+			result, err := es.FetchResourceLastSummary(client, provider, sourceID, &resourceType)
 			if err != nil {
 				return nil, err
 			}
