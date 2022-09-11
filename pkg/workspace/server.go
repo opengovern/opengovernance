@@ -11,6 +11,8 @@ import (
 	"strings"
 	"time"
 
+	"gitlab.com/keibiengine/keibi-engine/pkg/source"
+
 	"github.com/go-redis/cache/v8"
 	"gitlab.com/keibiengine/keibi-engine/pkg/onboard/client"
 
@@ -1050,7 +1052,7 @@ func (s *Server) GetWorkspaceLimits(c echo.Context) error {
 
 	onboardURL := strings.ReplaceAll(OnboardTemplate, "%NAMESPACE%", dbWorkspace.ID.String())
 	onboardClient := client.NewOnboardServiceClient(onboardURL, s.cache)
-	count, err := onboardClient.CountSources(httpclient.FromEchoContext(c), nil)
+	count, err := onboardClient.CountSources(httpclient.FromEchoContext(c), source.Nil)
 
 	limits := GetLimitsByTier(dbWorkspace.Tier)
 	return c.JSON(http.StatusOK, api.WorkspaceLimitsUsage{

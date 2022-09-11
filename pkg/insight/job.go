@@ -106,7 +106,7 @@ func (j Job) Do(es keibi.Client, steampipeConn *steampipe.Database, onboardClien
 		var totalAccounts int64
 		totalAccounts, err = onboardClient.CountSources(&httpclient.Context{
 			UserRole: managedgrafana.RoleAdmin,
-		}, &pr)
+		}, pr)
 		res.Data = [][]interface{}{{totalAccounts}}
 	} else {
 		res, err = steampipeConn.Count(j.Query)

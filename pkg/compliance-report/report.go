@@ -541,9 +541,9 @@ func QueryBenchmarks(provider source.Type, createdAt int64, level, size int32, s
 	filters = append(filters, map[string]interface{}{
 		"terms": map[string][]string{"group.parentGroupIDs": {"root_result_group"}},
 	})
-	if provider != nil {
+	if provider.IsNull() {
 		filters = append(filters, map[string]interface{}{
-			"terms": map[string][]string{"provider": {*provider}},
+			"terms": map[string][]string{"provider": {provider.String()}},
 		})
 	}
 	filters = append(filters, map[string]interface{}{
