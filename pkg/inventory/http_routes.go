@@ -827,25 +827,16 @@ func (h *HttpHandler) GetBenchmarkComplianceTrend(ctx echo.Context) error {
 // @Success  200         {object}  []api.TrendDataPoint
 // @Router   /inventory/api/v1/resources/trend [get]
 func (h *HttpHandler) GetResourceGrowthTrend(ctx echo.Context) error {
+	var err error
+	var fromTime, toTime int64
+
 	provider, _ := source.ParseType(ctx.QueryParam("provider"))
 	sourceID := ctx.QueryParam("sourceId")
 	timeWindow := ctx.QueryParam("timeWindow")
-
 	if timeWindow == "" {
 		timeWindow = "24h"
 	}
 
-	var sourceUUID *uuid.UUID
-	var err error
-	if sourceID != "" {
-		u, err := uuid.Parse(sourceID)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, "invalid source uuid")
-		}
-		sourceUUID = &u
-	}
-
-	var fromTime, toTime int64
 	toTime = time.Now().UnixMilli()
 	tw, err := ParseTimeWindow(timeWindow)
 	if err != nil {
@@ -853,11 +844,28 @@ func (h *HttpHandler) GetResourceGrowthTrend(ctx echo.Context) error {
 	}
 	fromTime = time.Now().Add(-1 * tw).UnixMilli()
 
-	hits, err := es.FindResourceGrowthTrend(h.client, sourceUUID, provider, fromTime, toTime)
-
 	datapoints := map[int64]int{}
-	for _, hit := range hits {
-		datapoints[hit.DescribedAt] += hit.ResourceCount
+	sortMap := []map[string]interface{}{
+		{
+			"described_at": "asc",
+		},
+	}
+	if sourceID != "" {
+		hits, err := es.FetchConnectionTrendSummaryPage(h.client, &sourceID, fromTime, toTime, sortMap, EsFetchPageSize)
+		if err != nil {
+			return err
+		}
+		for _, hit := range hits {
+			datapoints[hit.DescribedAt] += hit.ResourceCount
+		}
+	} else {
+		hits, err := es.FetchProviderTrendSummaryPage(h.client, provider, fromTime, toTime, sortMap, EsFetchPageSize)
+		if err != nil {
+			return err
+		}
+		for _, hit := range hits {
+			datapoints[hit.DescribedAt] += hit.ResourceCount
+		}
 	}
 
 	var resp []api.TrendDataPoint

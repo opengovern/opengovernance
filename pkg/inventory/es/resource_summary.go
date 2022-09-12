@@ -983,3 +983,147 @@ func FetchConnectionLocationsSummaryPage(client keibi.Client, provider source.Ty
 	}
 	return hits, nil
 }
+
+type ConnectionTrendSummaryQueryResponse struct {
+	Hits ConnectionTrendSummaryQueryHits `json:"hits"`
+}
+type ConnectionTrendSummaryQueryHits struct {
+	Total keibi.SearchTotal                `json:"total"`
+	Hits  []ConnectionTrendSummaryQueryHit `json:"hits"`
+}
+type ConnectionTrendSummaryQueryHit struct {
+	ID      string                        `json:"_id"`
+	Score   float64                       `json:"_score"`
+	Index   string                        `json:"_index"`
+	Type    string                        `json:"_type"`
+	Version int64                         `json:"_version,omitempty"`
+	Source  kafka2.ConnectionTrendSummary `json:"_source"`
+	Sort    []interface{}                 `json:"sort"`
+}
+
+func FetchConnectionTrendSummaryPage(client keibi.Client, sourceID *string, createdAtFrom, createdAtTo int64,
+	sort []map[string]interface{}, size int) ([]kafka2.ConnectionTrendSummary, error) {
+	var hits []kafka2.ConnectionTrendSummary
+	res := make(map[string]interface{})
+	var filters []interface{}
+
+	filters = append(filters, map[string]interface{}{
+		"terms": map[string][]string{"report_type": {kafka.ResourceSummaryTypeResourceGrowthTrend}},
+	})
+
+	if sourceID != nil {
+		filters = append(filters, map[string]interface{}{
+			"terms": map[string][]string{"source_id": {*sourceID}},
+		})
+	}
+	filters = append(filters, map[string]interface{}{
+		"range": map[string]interface{}{
+			"described_at": map[string]string{
+				"gte": strconv.FormatInt(createdAtFrom, 10),
+				"lte": strconv.FormatInt(createdAtTo, 10),
+			},
+		},
+	})
+
+	sort = append(sort,
+		map[string]interface{}{
+			"_id": "desc",
+		},
+	)
+	res["size"] = size
+	res["sort"] = sort
+	res["query"] = map[string]interface{}{
+		"bool": map[string]interface{}{
+			"filter": filters,
+		},
+	}
+	b, err := json.Marshal(res)
+	if err != nil {
+		return nil, err
+	}
+
+	query := string(b)
+
+	var response ConnectionTrendSummaryQueryResponse
+	err = client.Search(context.Background(), kafka2.ConnectionSummaryIndex, query, &response)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, hit := range response.Hits.Hits {
+		hits = append(hits, hit.Source)
+	}
+	return hits, nil
+}
+
+type ProviderTrendSummaryQueryResponse struct {
+	Hits ProviderTrendSummaryQueryHits `json:"hits"`
+}
+type ProviderTrendSummaryQueryHits struct {
+	Total keibi.SearchTotal              `json:"total"`
+	Hits  []ProviderTrendSummaryQueryHit `json:"hits"`
+}
+type ProviderTrendSummaryQueryHit struct {
+	ID      string                      `json:"_id"`
+	Score   float64                     `json:"_score"`
+	Index   string                      `json:"_index"`
+	Type    string                      `json:"_type"`
+	Version int64                       `json:"_version,omitempty"`
+	Source  kafka2.ProviderTrendSummary `json:"_source"`
+	Sort    []interface{}               `json:"sort"`
+}
+
+func FetchProviderTrendSummaryPage(client keibi.Client, provider source.Type, createdAtFrom, createdAtTo int64,
+	sort []map[string]interface{}, size int) ([]kafka2.ProviderTrendSummary, error) {
+	var hits []kafka2.ProviderTrendSummary
+	res := make(map[string]interface{})
+	var filters []interface{}
+
+	filters = append(filters, map[string]interface{}{
+		"terms": map[string][]string{"report_type": {kafka.ResourceSummaryTypeResourceGrowthTrend}},
+	})
+
+	if !provider.IsNull() {
+		filters = append(filters, map[string]interface{}{
+			"terms": map[string][]string{"source_id": {provider.String()}},
+		})
+	}
+	filters = append(filters, map[string]interface{}{
+		"range": map[string]interface{}{
+			"described_at": map[string]string{
+				"gte": strconv.FormatInt(createdAtFrom, 10),
+				"lte": strconv.FormatInt(createdAtTo, 10),
+			},
+		},
+	})
+
+	sort = append(sort,
+		map[string]interface{}{
+			"_id": "desc",
+		},
+	)
+	res["size"] = size
+	res["sort"] = sort
+	res["query"] = map[string]interface{}{
+		"bool": map[string]interface{}{
+			"filter": filters,
+		},
+	}
+	b, err := json.Marshal(res)
+	if err != nil {
+		return nil, err
+	}
+
+	query := string(b)
+
+	var response ProviderTrendSummaryQueryResponse
+	err = client.Search(context.Background(), kafka2.ProviderSummaryIndex, query, &response)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, hit := range response.Hits.Hits {
+		hits = append(hits, hit.Source)
+	}
+	return hits, nil
+}
