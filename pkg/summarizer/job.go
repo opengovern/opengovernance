@@ -5,6 +5,8 @@ import (
 	"strconv"
 	"time"
 
+	kafka2 "gitlab.com/keibiengine/keibi-engine/pkg/describe/kafka"
+
 	"gitlab.com/keibiengine/keibi-engine/pkg/summarizer/es"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/source"
@@ -93,20 +95,34 @@ func (j Job) Do(client keibi.Client, producer sarama.SyncProducer, topic string,
 	}
 
 	var msgs []kafka.SummaryDoc
+	var describedAt int64
+	providerResourceCount := map[source.Type]int{}
 
 	for _, dsj := range j.DescribeSourceJobs {
 		logger.Info("Building resources summary", zap.Int("jobID", int(j.JobID)))
-		msg, err := j.BuildResourcesSummary(client, dsj)
-		logger.Info(fmt.Sprintf("BuildResourcesSummary:%v, %v", msg, err), zap.Int("jobID", int(j.JobID)))
+		res, err := j.BuildResourcesSummary(client, dsj)
+		logger.Info(fmt.Sprintf("BuildResourcesSummary:%v, %v", res, err), zap.Int("jobID", int(j.JobID)))
 
 		if err != nil {
 			fail(err)
 		} else {
-			msgs = append(msgs, msg)
+			msgs = append(msgs, res)
 		}
 
+		msgs = append(msgs, kafka.ConnectionTrendSummary{
+			SummarizerJobID: res.SummarizerJobID,
+			SourceID:        res.SourceID,
+			SourceType:      res.SourceType,
+			SourceJobID:     res.SourceJobID,
+			DescribedAt:     res.DescribedAt,
+			ResourceCount:   res.ResourceCount,
+			ReportType:      kafka2.ResourceSummaryTypeResourceGrowthTrend,
+		})
+		describedAt = res.DescribedAt
+		providerResourceCount[res.SourceType]++
+
 		logger.Info("Building location summary", zap.Int("jobID", int(j.JobID)))
-		msg, err = j.BuildLocationsSummary(client, dsj)
+		msg, err := j.BuildLocationsSummary(client, dsj)
 		logger.Info(fmt.Sprintf("BuildLocationsSummary:%v, %v", msg, err), zap.Int("jobID", int(j.JobID)))
 
 		if err != nil {
@@ -114,6 +130,16 @@ func (j Job) Do(client keibi.Client, producer sarama.SyncProducer, topic string,
 		} else {
 			msgs = append(msgs, msg)
 		}
+	}
+
+	for _, provider := range source.List {
+		msgs = append(msgs, kafka.ProviderTrendSummary{
+			SummarizerJobID: j.JobID,
+			SourceType:      provider,
+			DescribedAt:     describedAt,
+			ResourceCount:   providerResourceCount[provider],
+			ReportType:      kafka2.ResourceSummaryTypeResourceGrowthTrend,
+		})
 	}
 
 	res, err := j.BuildServicesSummary(client)
@@ -153,7 +179,7 @@ func (j Job) Do(client keibi.Client, producer sarama.SyncProducer, topic string,
 	}
 }
 
-func (job Job) BuildResourcesSummary(client keibi.Client, j DescribeJob) (kafka.SummaryDoc, error) {
+func (job Job) BuildResourcesSummary(client keibi.Client, j DescribeJob) (*kafka.ConnectionResourcesSummary, error) {
 	hits, err := es.FetchResourceSummary(client, j.ID, &j.SourceID)
 	if err != nil {
 		return nil, err
@@ -163,11 +189,11 @@ func (job Job) BuildResourcesSummary(client keibi.Client, j DescribeJob) (kafka.
 		SummarizerJobID: job.JobID,
 		SourceID:        j.SourceID,
 		SourceJobID:     j.ID,
+		ReportType:      kafka2.ResourceSummaryTypeLastSummary,
 	}
 	for _, hit := range hits {
 		summary.SourceType = source.Type(hit.SourceType)
 		summary.DescribedAt = hit.DescribedAt
-		summary.ReportType = hit.ReportType
 		summary.ResourceCount += hit.ResourceCount
 	}
 

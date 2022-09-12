@@ -743,7 +743,7 @@ func FetchConnectionResourcesSummaryPage(client keibi.Client, provider source.Ty
 	var filters []interface{}
 
 	filters = append(filters, map[string]interface{}{
-		"terms": map[string][]string{"report_type": {kafka.ResourceSummaryTypeResourceGrowthTrend}},
+		"terms": map[string][]string{"report_type": {kafka.ResourceSummaryTypeLastSummary}},
 	})
 
 	if !provider.IsNull() {

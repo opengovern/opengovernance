@@ -14,6 +14,10 @@ const (
 	CloudAzure Type = "Azure"
 )
 
+var (
+	List = []Type{CloudAWS, CloudAzure}
+)
+
 func ParseType(str string) (Type, error) {
 	str = strings.ToLower(str)
 	switch str {

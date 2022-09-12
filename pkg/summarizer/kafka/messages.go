@@ -4,6 +4,7 @@ import (
 	"crypto/sha256"
 	"encoding/json"
 	"fmt"
+	"strconv"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/describe/kafka"
 	"gitlab.com/keibiengine/keibi-engine/pkg/source"
@@ -14,6 +15,7 @@ import (
 const (
 	esIndexHeader          = "elasticsearch_index"
 	ConnectionSummaryIndex = "connection_summary"
+	ProviderSummaryIndex   = "provider_summary"
 )
 
 type ConnectionResourcesSummary struct {
@@ -146,6 +148,58 @@ func (r ConnectionLocationSummary) AsProducerMessage() (*sarama.ProducerMessage,
 
 func (r ConnectionLocationSummary) MessageID() string {
 	return r.SourceID
+}
+
+type ConnectionTrendSummary struct {
+	SummarizerJobID uint `json:"summarizer_job_id"`
+	// SourceID is aws account id or azure subscription id
+	SourceID string `json:"source_id"`
+	// SourceType is the type of the source of the resource, i.e. AWS Cloud, Azure Cloud.
+	SourceType source.Type `json:"source_type"`
+	// SourceJobID is the DescribeSourceJob ID
+	SourceJobID uint `json:"source_job_id"`
+	// DescribedAt is when the DescribeSourceJob is created
+	DescribedAt int64 `json:"described_at"`
+	// ResourceCount is total of resources for specified account
+	ResourceCount int `json:"resource_count"`
+	// ReportType of document
+	ReportType kafka.ResourceSummaryType `json:"report_type"`
+}
+
+func (r ConnectionTrendSummary) AsProducerMessage() (*sarama.ProducerMessage, error) {
+	value, err := json.Marshal(r)
+	if err != nil {
+		return nil, err
+	}
+	return kafkaMsg(hashOf(r.SourceID, strconv.FormatInt(r.DescribedAt, 10), string(r.ReportType)), value, ConnectionSummaryIndex), nil
+}
+
+func (r ConnectionTrendSummary) MessageID() string {
+	return fmt.Sprintf("%s [described at %d]", r.SourceID, r.DescribedAt)
+}
+
+type ProviderTrendSummary struct {
+	SummarizerJobID uint `json:"summarizer_job_id"`
+	// SourceType is the type of the source of the resource, i.e. AWS Cloud, Azure Cloud.
+	SourceType source.Type `json:"source_type"`
+	// DescribedAt is when the DescribeSourceJob is created
+	DescribedAt int64 `json:"described_at"`
+	// ResourceCount is total of resources for specified account
+	ResourceCount int `json:"resource_count"`
+	// ReportType of document
+	ReportType kafka.ResourceSummaryType `json:"report_type"`
+}
+
+func (r ProviderTrendSummary) AsProducerMessage() (*sarama.ProducerMessage, error) {
+	value, err := json.Marshal(r)
+	if err != nil {
+		return nil, err
+	}
+	return kafkaMsg(hashOf(r.SourceType.String(), strconv.FormatInt(r.DescribedAt, 10), string(r.ReportType)), value, ProviderSummaryIndex), nil
+}
+
+func (r ProviderTrendSummary) MessageID() string {
+	return fmt.Sprintf("%s [described at %d]", r.SourceType, r.DescribedAt)
 }
 
 func hashOf(strings ...string) string {
