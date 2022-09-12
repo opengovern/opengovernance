@@ -1467,7 +1467,7 @@ func (h *HttpHandler) GetSummaryMetrics(ctx echo.Context) error {
 		}
 
 		if awsResourceType != "" {
-			v, err := GetResources(h.client, h.rcache, h.cache, provider, sourceID, []string{awsResourceType})
+			v, err := GetResources(h.client, provider, sourceID, []string{awsResourceType})
 			if err != nil {
 				return err
 			}
@@ -1477,7 +1477,7 @@ func (h *HttpHandler) GetSummaryMetrics(ctx echo.Context) error {
 		}
 
 		if azureResourceType != "" {
-			v, err := GetResources(h.client, h.rcache, h.cache, provider, sourceID, []string{azureResourceType})
+			v, err := GetResources(h.client, provider, sourceID, []string{azureResourceType})
 			if err != nil {
 				return err
 			}
@@ -1683,7 +1683,7 @@ func (h *HttpHandler) GetCategorizedMetrics(ctx echo.Context) error {
 			continue
 		}
 
-		v, err := GetResources(h.client, h.rcache, h.cache, provider, sourceID, resourceList)
+		v, err := GetResources(h.client, provider, sourceID, resourceList)
 		if err != nil {
 			return err
 		}
