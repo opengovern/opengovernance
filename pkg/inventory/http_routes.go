@@ -8,7 +8,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"math"
 	"mime"
 	"net/http"
 	"sort"
@@ -17,8 +16,6 @@ import (
 	"time"
 
 	kafka3 "gitlab.com/keibiengine/keibi-engine/pkg/summarizer/kafka"
-
-	"github.com/go-redis/cache/v8"
 
 	kafka2 "gitlab.com/keibiengine/keibi-engine/pkg/describe/kafka"
 
@@ -1357,7 +1354,7 @@ func (h *HttpHandler) GetTopServicesByResourceCount(ctx echo.Context) error {
 		sourceID = &s
 	}
 
-	res, err := GetServices(h.client, h.rcache, h.cache, provider, sourceID)
+	res, err := GetServices(h.client, provider, sourceID)
 	if err != nil {
 		return err
 	}
@@ -1392,7 +1389,7 @@ func (h *HttpHandler) GetCategories(ctx echo.Context) error {
 		sourceID = &s
 	}
 
-	res, err := GetCategories(h.client, h.rcache, h.cache, provider, sourceID)
+	res, err := GetCategories(h.client, provider, sourceID)
 	if err != nil {
 		return err
 	}
@@ -1409,7 +1406,11 @@ func (h *HttpHandler) GetCategories(ctx echo.Context) error {
 // @Success  200       {object}  []api.MetricsResponse
 // @Router   /inventory/api/v1/metrics/summary [get]
 func (h *HttpHandler) GetSummaryMetrics(ctx echo.Context) error {
+	var sourceID *string
 	provider, _ := source.ParseType(ctx.QueryParam("provider"))
+	if s := ctx.QueryParam("sourceId"); s != "" {
+		sourceID = &s
+	}
 
 	includeAWS, includeAzure := false, false
 	switch provider {
@@ -1421,30 +1422,7 @@ func (h *HttpHandler) GetSummaryMetrics(ctx echo.Context) error {
 		includeAzure, includeAWS = true, true
 	}
 
-	var sourceUUID *uuid.UUID
-	var sourceID *string
-	if s := ctx.QueryParam("sourceId"); s != "" {
-		su, err := uuid.Parse(s)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, "invalid sourceID")
-		}
-		sourceUUID = &su
-		sourceID = &s
-	}
-
-	cacheKey := "summary-metrics-" + string(provider)
-	if sourceID == nil {
-		cacheKey += "nil"
-	} else {
-		cacheKey += *sourceID
-	}
-
 	var res []api.MetricsResponse
-
-	if err := h.cache.Get(context.Background(), cacheKey, &res); err == nil {
-		return ctx.JSON(http.StatusOK, res)
-	}
-
 	padd := func(x, y *int) *int {
 		var v *int
 		if x != nil && y != nil {
@@ -1555,60 +1533,44 @@ func (h *HttpHandler) GetSummaryMetrics(ctx echo.Context) error {
 		LastYearValue:    padd64(awsAccountCount.LastYearValue, azureAccountCount.LastYearValue),
 	})
 
-	var lastValue int
-	var lastDescribedAt int64 = 0
-
-	var lastDayResourceCount, lastWeekResourceCount, lastQuarterResourceCount, lastYearResourceCount *int
-	for idx, timeWindow := range []time.Duration{24 * time.Hour, 7 * 24 * time.Hour, 93 * 24 * time.Hour, 428 * 24 * time.Hour} {
-		fromTime := time.Now().Add(-1 * timeWindow)
+	var lastValue, lastDayResourceCount, lastWeekResourceCount, lastQuarterResourceCount, lastYearResourceCount *int
+	for _, days := range []int{1, 2, 7, 93, 428} {
+		fromTime := time.Now().Add(-time.Duration(days) * 24 * time.Hour)
 		toTime := fromTime.Add(24 * time.Hour)
-
-		countMap := map[int64]int{}
-		firstDescribedAt := int64(math.MaxInt64)
-
-		hits, err := es.FindResourceGrowthTrend(h.client, sourceUUID, provider, fromTime.UnixMilli(), toTime.UnixMilli())
+		d, err := ExtractTrend(h.client, provider, sourceID, fromTime.UnixMilli(), toTime.UnixMilli())
 		if err != nil {
 			return err
 		}
-
-		for _, hit := range hits {
-			if v, ok := countMap[hit.DescribedAt]; ok {
-				countMap[hit.DescribedAt] = v + hit.ResourceCount
-			} else {
-				countMap[hit.DescribedAt] = hit.ResourceCount
+		if len(d) > 0 {
+			max := 0
+			var maxItem int64
+			for k, v := range d {
+				if k > maxItem {
+					maxItem, max = k, v
+				}
 			}
-			if firstDescribedAt > hit.DescribedAt {
-				firstDescribedAt = hit.DescribedAt
-			}
-
-			// for last value
-			if lastDescribedAt < hit.DescribedAt {
-				lastDescribedAt = hit.DescribedAt
+			switch days {
+			case 1:
+				lastValue = &max
+			case 2:
+				lastDayResourceCount = &max
+			case 7:
+				lastWeekResourceCount = &max
+			case 93:
+				lastQuarterResourceCount = &max
+			case 428:
+				lastYearResourceCount = &max
 			}
 		}
-
-		var count *int
-		if v, ok := countMap[firstDescribedAt]; ok {
-			count = &v
-		}
-		switch idx {
-		case 0:
-			lastDayResourceCount = count
-			if v, ok := countMap[lastDescribedAt]; ok {
-				lastValue = v
-			}
-		case 1:
-			lastWeekResourceCount = count
-		case 2:
-			lastQuarterResourceCount = count
-		case 3:
-			lastYearResourceCount = count
-		}
+	}
+	if lastValue == nil {
+		v := 0
+		lastValue = &v
 	}
 
 	res = append(res, api.MetricsResponse{
 		MetricsName:      "Cloud Resources",
-		Value:            lastValue,
+		Value:            *lastValue,
 		LastDayValue:     lastDayResourceCount,
 		LastWeekValue:    lastWeekResourceCount,
 		LastQuarterValue: lastQuarterResourceCount,
@@ -1687,13 +1649,6 @@ func (h *HttpHandler) GetSummaryMetrics(ctx echo.Context) error {
 			res = append(res[:i], res[i+1:]...)
 		}
 	}
-
-	_ = h.cache.Set(&cache.Item{
-		Ctx:   context.Background(),
-		Key:   cacheKey,
-		Value: res,
-		TTL:   15 * time.Minute,
-	})
 
 	return ctx.JSON(http.StatusOK, res)
 }

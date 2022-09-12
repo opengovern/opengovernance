@@ -15,8 +15,7 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/source"
 )
 
-func GetCategories(client keibi.Client, rcache *redis.Client, cache *cache.Cache,
-	provider source.Type, sourceID *string) ([]api.CategoriesResponse, error) {
+func GetCategories(client keibi.Client, provider source.Type, sourceID *string) ([]api.CategoriesResponse, error) {
 
 	categoryMap := map[string]api.CategoriesResponse{}
 	if sourceID == nil {
@@ -40,17 +39,9 @@ func GetCategories(client keibi.Client, rcache *redis.Client, cache *cache.Cache
 			}
 		}
 	} else {
-		var hits []kafka.SourceCategorySummary
-		if cached, err := es.FetchCategoriesCached(rcache, cache, provider, sourceID); err == nil && len(cached) > 0 {
-			hits = cached
-			fmt.Println("fetching categories from cached")
-		} else {
-			res, err := es.GetCategoriesQuery(client, string(provider), sourceID)
-			if err != nil {
-				return nil, err
-			}
-			hits = res
-			fmt.Println("fetching categories from ES")
+		hits, err := es.GetCategoriesQuery(client, string(provider), sourceID)
+		if err != nil {
+			return nil, err
 		}
 		for _, hit := range hits {
 			if v, ok := categoryMap[hit.CategoryName]; ok {
@@ -77,8 +68,7 @@ func GetCategories(client keibi.Client, rcache *redis.Client, cache *cache.Cache
 	return res, nil
 }
 
-func GetServices(client keibi.Client, rcache *redis.Client, cache *cache.Cache,
-	provider source.Type, sourceID *string) ([]api.TopServicesResponse, error) {
+func GetServices(client keibi.Client, provider source.Type, sourceID *string) ([]api.TopServicesResponse, error) {
 	serviceResponse := map[string]api.TopServicesResponse{}
 	if sourceID == nil {
 		hits, err := es.FetchConnectionServicesSummaryPage(client, provider, nil, EsFetchPageSize)
@@ -103,17 +93,11 @@ func GetServices(client keibi.Client, rcache *redis.Client, cache *cache.Cache,
 		}
 	} else {
 		var hits []kafka.SourceServicesSummary
-		if cached, err := es.FetchServicesCached(rcache, cache, provider, sourceID); err == nil && len(cached) > 0 {
-			hits = cached
-			fmt.Println("fetching services from cached")
-		} else {
-			res, err := es.FetchServicesQuery(client, string(provider), sourceID)
-			if err != nil {
-				return nil, err
-			}
-			hits = res
-			fmt.Println("fetching services from ES")
+		res, err := es.FetchServicesQuery(client, string(provider), sourceID)
+		if err != nil {
+			return nil, err
 		}
+		hits = res
 		for _, hit := range hits {
 			if v, ok := serviceResponse[hit.ServiceName]; ok {
 				v.ResourceCount += hit.ResourceCount
