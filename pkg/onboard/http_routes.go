@@ -748,10 +748,12 @@ func (h HttpHandler) DeleteSource(ctx echo.Context) error {
 			return err
 		}
 
-		// TODO: Handle edge case where deleting from Vault succeeds and writing to event queue fails.
-		err = h.vault.Delete(src.ConfigRef)
-		if err != nil {
-			return err
+		if !strings.HasPrefix(src.ConfigRef, "sources/azure/spn") {
+			// TODO: Handle edge case where deleting from Vault succeeds and writing to event queue fails.
+			err = h.vault.Delete(src.ConfigRef)
+			if err != nil {
+				return err
+			}
 		}
 
 		if err := h.sourceEventsQueue.Publish(api.SourceEvent{

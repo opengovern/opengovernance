@@ -119,6 +119,7 @@ func NewAzureSourceWithSPN(in api.SourceAzureSPNRequest) Source {
 		Name:        in.Name,
 		Description: in.Description,
 		Type:        provider,
+		Enabled:     true,
 		ConfigRef:   fmt.Sprintf("sources/%s/spn/%s", strings.ToLower(string(provider)), in.SPNId),
 	}
 
