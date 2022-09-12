@@ -31,7 +31,7 @@ type ResourceSummaryQueryHit struct {
 	Sort    []interface{}                `json:"sort"`
 }
 
-func FetchResourceSummary(client keibi.Client, jobID uint, sourceID *string) ([]kafka.SourceResourcesSummary, error) {
+func FetchResourceSummary(client keibi.Client, jobIDs []uint, sourceID *string) ([]kafka.SourceResourcesSummary, error) {
 	var hits []kafka.SourceResourcesSummary
 	var searchAfter []interface{}
 	for {
@@ -43,7 +43,7 @@ func FetchResourceSummary(client keibi.Client, jobID uint, sourceID *string) ([]
 		})
 
 		filters = append(filters, map[string]interface{}{
-			"terms": map[string][]string{"source_job_id": {fmt.Sprintf("%d", jobID)}},
+			"terms": map[string]interface{}{"source_job_id": jobIDs},
 		})
 
 		if sourceID != nil {

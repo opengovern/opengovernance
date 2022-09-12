@@ -202,6 +202,38 @@ func (r ProviderTrendSummary) MessageID() string {
 	return fmt.Sprintf("%s [described at %d]", r.SourceType, r.DescribedAt)
 }
 
+type ProviderResourceTypeSummary struct {
+	SummarizerJobID uint `json:"summarizer_job_id"`
+	// ResourceType is type of resource
+	ResourceType string `json:"resource_type"`
+	// SourceType is the type of the source of the resource, i.e. AWS Cloud, Azure Cloud.
+	SourceType source.Type `json:"source_type"`
+	// SourceJobID is the DescribeSourceJob ID
+	ResourceCount int `json:"resource_count"`
+	// LastDayCount number of resources in the category at the same time yesterday
+	LastDayCount *int `json:"last_day_count"`
+	// LastWeekCount number of resources in the category at the same time a week ago
+	LastWeekCount *int `json:"last_week_count"`
+	// LastQuarterCount number of resources in the category at the same time a quarter ago
+	LastQuarterCount *int `json:"last_quarter_count"`
+	// LastYearCount number of resources in the category at the same time a year ago
+	LastYearCount *int `json:"last_year_count"`
+	// ReportType of document
+	ReportType kafka.ResourceSummaryType `json:"report_type"`
+}
+
+func (r ProviderResourceTypeSummary) AsProducerMessage() (*sarama.ProducerMessage, error) {
+	value, err := json.Marshal(r)
+	if err != nil {
+		return nil, err
+	}
+	return kafkaMsg(hashOf(r.ResourceType, r.SourceType.String(), string(r.ReportType)), value, ProviderSummaryIndex), nil
+}
+
+func (r ProviderResourceTypeSummary) MessageID() string {
+	return fmt.Sprintf("%s", r.SourceType)
+}
+
 func hashOf(strings ...string) string {
 	h := sha256.New()
 	for _, s := range strings {

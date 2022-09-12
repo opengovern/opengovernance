@@ -142,7 +142,14 @@ func (j Job) Do(client keibi.Client, producer sarama.SyncProducer, topic string,
 		})
 	}
 
-	res, err := j.BuildServicesSummary(client)
+	res, err := j.BuildResourceTypeSummary(client)
+	if err != nil {
+		fail(err)
+	} else {
+		msgs = append(msgs, res...)
+	}
+
+	res, err = j.BuildServicesSummary(client)
 	if err != nil {
 		fail(err)
 	} else {
@@ -180,7 +187,7 @@ func (j Job) Do(client keibi.Client, producer sarama.SyncProducer, topic string,
 }
 
 func (job Job) BuildResourcesSummary(client keibi.Client, j DescribeJob) (*kafka.ConnectionResourcesSummary, error) {
-	hits, err := es.FetchResourceSummary(client, j.ID, &j.SourceID)
+	hits, err := es.FetchResourceSummary(client, []uint{j.ID}, &j.SourceID)
 	if err != nil {
 		return nil, err
 	}
@@ -202,7 +209,7 @@ func (job Job) BuildResourcesSummary(client keibi.Client, j DescribeJob) (*kafka
 			continue
 		}
 
-		hits, err := es.FetchResourceSummary(client, jobID, &j.SourceID)
+		hits, err := es.FetchResourceSummary(client, []uint{jobID}, &j.SourceID)
 		if err != nil {
 			return nil, err
 		}
@@ -306,6 +313,104 @@ func (j Job) BuildServicesSummary(client keibi.Client) ([]kafka.SummaryDoc, erro
 			v := history[hit.ServiceName]
 			v.ResourceCount += hit.ResourceCount
 			history[hit.ServiceName] = v
+		}
+
+		for k, v := range history {
+			s := summary[k]
+			switch lastDaysValue {
+			case 1:
+				s.LastDayCount = &v.ResourceCount
+			case 7:
+				s.LastWeekCount = &v.ResourceCount
+			case 93:
+				s.LastQuarterCount = &v.ResourceCount
+			case 428:
+				s.LastYearCount = &v.ResourceCount
+			}
+			summary[k] = s
+		}
+	}
+
+	var summaryList []kafka.SummaryDoc
+	for _, v := range summary {
+		summaryList = append(summaryList, &v)
+	}
+	return summaryList, nil
+}
+
+func (j Job) BuildResourceTypeSummary(client keibi.Client) ([]kafka.SummaryDoc, error) {
+	var sourceJobIDs []uint
+	for _, dsj := range j.DescribeSourceJobs {
+		sourceJobIDs = append(sourceJobIDs, dsj.ID)
+	}
+	hits, err := es.FetchResourceSummary(client, sourceJobIDs, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	summary := map[string]kafka.ProviderResourceTypeSummary{}
+	for _, hit := range hits {
+		if _, ok := summary[hit.ResourceType]; !ok {
+			summary[hit.ResourceType] = kafka.ProviderResourceTypeSummary{
+				SummarizerJobID: j.JobID,
+				ResourceType:    hit.ResourceType,
+				SourceType:      source.Type(hit.SourceType),
+				ReportType:      hit.ReportType,
+			}
+		}
+
+		v := summary[hit.ResourceType]
+		v.ResourceCount += hit.ResourceCount
+		summary[hit.ResourceType] = v
+	}
+
+	for _, lastDaysValue := range []uint{1, 7, 93, 428} {
+		var sourceJobIDs []uint
+		for _, dsj := range j.DescribeSourceJobs {
+			var jobID uint = 0
+			switch lastDaysValue {
+			case 1:
+				jobID = dsj.LastDaySourceJobID
+			case 7:
+				jobID = dsj.LastDaySourceJobID
+			case 93:
+				jobID = dsj.LastDaySourceJobID
+			case 428:
+				jobID = dsj.LastDaySourceJobID
+			}
+
+			if jobID == 0 {
+				continue
+			}
+			sourceJobIDs = append(sourceJobIDs, jobID)
+		}
+		if len(sourceJobIDs) == 0 {
+			continue
+		}
+
+		historicHits, err := es.FetchResourceSummary(client, sourceJobIDs, nil)
+		if err != nil {
+			return nil, err
+		}
+
+		if len(historicHits) == 0 {
+			continue
+		}
+
+		history := map[string]kafka.ProviderResourceTypeSummary{}
+		for _, hit := range hits {
+			if _, ok := history[hit.ResourceType]; !ok {
+				history[hit.ResourceType] = kafka.ProviderResourceTypeSummary{
+					SummarizerJobID: j.JobID,
+					ResourceType:    hit.ResourceType,
+					SourceType:      source.Type(hit.SourceType),
+					ReportType:      hit.ReportType,
+				}
+			}
+
+			v := history[hit.ResourceType]
+			v.ResourceCount += hit.ResourceCount
+			history[hit.ResourceType] = v
 		}
 
 		for k, v := range history {
