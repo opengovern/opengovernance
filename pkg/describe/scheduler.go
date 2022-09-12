@@ -517,7 +517,7 @@ func (s *Scheduler) RunScheduleJobCompletionUpdater() {
 			continue
 		}
 
-		if scheduleJob == nil {
+		if scheduleJob == nil || scheduleJob.Status != summarizerapi.SummarizerJobInProgress {
 			continue
 		}
 
