@@ -412,9 +412,10 @@ func (job Job) BuildLocationsSummary(client keibi.Client, j DescribeJob) (kafka.
 	}
 
 	summary := kafka.ConnectionLocationSummary{
-		SummarizerJobID: job.JobID,
-		SourceID:        j.SourceID,
-		SourceJobID:     j.ID,
+		SummarizerJobID:      job.JobID,
+		SourceID:             j.SourceID,
+		SourceJobID:          j.ID,
+		LocationDistribution: map[string]int{},
 	}
 	for _, hit := range hits {
 		summary.SourceType = source.Type(hit.SourceType)
