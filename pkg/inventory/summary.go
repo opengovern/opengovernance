@@ -19,7 +19,7 @@ func GetCategories(client keibi.Client, rcache *redis.Client, cache *cache.Cache
 	provider source.Type, sourceID *string) ([]api.CategoriesResponse, error) {
 
 	categoryMap := map[string]api.CategoriesResponse{}
-	if provider.IsNull() {
+	if sourceID == nil {
 		hits, err := es.FetchConnectionCategoriesSummaryPage(client, provider, nil, EsFetchPageSize)
 		if err != nil {
 			return nil, err

@@ -1799,10 +1799,6 @@ func (h *HttpHandler) GetResourceDistribution(ctx echo.Context) error {
 	provider, _ := source.ParseType(ctx.QueryParam("provider"))
 	sourceID := ctx.QueryParam("sourceId")
 
-	if provider == "" && sourceID == "" {
-		return echo.NewHTTPError(http.StatusBadRequest, "you should specify either provider or sourceId")
-	}
-
 	var sourceIDPtr *string
 	if sourceID != "" {
 		sourceIDPtr = &sourceID
