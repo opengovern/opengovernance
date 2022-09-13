@@ -103,7 +103,7 @@ func (j Job) Do(client keibi.Client, producer sarama.SyncProducer, topic string,
 		if err != nil {
 			fail(err)
 		} else {
-			msgs = append(msgs, res)
+			msgs = append(msgs, *res)
 		}
 
 		msgs = append(msgs, kafka.ConnectionTrendSummary{

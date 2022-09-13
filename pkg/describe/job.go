@@ -623,7 +623,7 @@ func doDescribeAzure(ctx context.Context, rdb *redis.Client, cs *cache.Cache, es
 		return nil, fmt.Errorf("redisDecr: %v", err.Error())
 	}
 
-	for _, resource := range output.Resources {
+	for idx, resource := range output.Resources {
 		if remaining <= 0 {
 			break
 		}
@@ -632,6 +632,8 @@ func doDescribeAzure(ctx context.Context, rdb *redis.Client, cs *cache.Cache, es
 		if resource.Description == nil {
 			continue
 		}
+
+		output.Resources[idx].Location = fixAzureLocation(resource.Location)
 
 		kafkaResource := kafka.Resource{
 			ID:            resource.UniqueID(),
