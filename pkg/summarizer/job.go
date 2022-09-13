@@ -3,6 +3,7 @@ package summarizer
 import (
 	"fmt"
 	"strconv"
+	"strings"
 	"time"
 
 	kafka2 "gitlab.com/keibiengine/keibi-engine/pkg/describe/kafka"
@@ -557,6 +558,7 @@ func (job Job) BuildLocationsSummary(client keibi.Client, j DescribeJob) (kafka.
 		summary.ReportType = hit.ReportType
 
 		for k, v := range hit.LocationDistribution {
+			k = strings.ToLower(strings.ReplaceAll(k, " ", ""))
 			if _, ok := summary.LocationDistribution[k]; !ok {
 				summary.LocationDistribution[k] = 0
 			}
