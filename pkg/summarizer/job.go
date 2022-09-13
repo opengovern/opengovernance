@@ -119,7 +119,7 @@ func (j Job) Do(client keibi.Client, producer sarama.SyncProducer, topic string,
 			ReportType:      kafka2.ResourceSummaryTypeResourceGrowthTrend,
 		})
 		describedAt = res.DescribedAt
-		providerResourceCount[res.SourceType]++
+		providerResourceCount[res.SourceType] += res.ResourceCount
 
 		logger.Info("Building location summary", zap.Int("jobID", int(j.JobID)))
 		msg, err := j.BuildLocationsSummary(client, dsj)
