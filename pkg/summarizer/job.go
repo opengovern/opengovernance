@@ -99,10 +99,7 @@ func (j Job) Do(client keibi.Client, producer sarama.SyncProducer, topic string,
 	providerResourceCount := map[source.Type]int{}
 
 	for _, dsj := range j.DescribeSourceJobs {
-		logger.Info("Building resources summary", zap.Int("jobID", int(j.JobID)))
 		res, err := j.BuildResourcesSummary(client, dsj)
-		logger.Info(fmt.Sprintf("BuildResourcesSummary:%v, %v", res, err), zap.Int("jobID", int(j.JobID)))
-
 		if err != nil {
 			fail(err)
 		} else {
@@ -121,10 +118,7 @@ func (j Job) Do(client keibi.Client, producer sarama.SyncProducer, topic string,
 		describedAt = res.DescribedAt
 		providerResourceCount[res.SourceType] += res.ResourceCount
 
-		logger.Info("Building location summary", zap.Int("jobID", int(j.JobID)))
 		msg, err := j.BuildLocationsSummary(client, dsj)
-		logger.Info(fmt.Sprintf("BuildLocationsSummary:%v, %v", msg, err), zap.Int("jobID", int(j.JobID)))
-
 		if err != nil {
 			fail(err)
 		} else {
@@ -142,7 +136,7 @@ func (j Job) Do(client keibi.Client, producer sarama.SyncProducer, topic string,
 		})
 	}
 
-	res, err := j.BuildResourceTypeSummary(client)
+	res, err := j.BuildResourceTypeSummary(client, logger)
 	if err != nil {
 		fail(err)
 	} else {
@@ -338,16 +332,19 @@ func (j Job) BuildServicesSummary(client keibi.Client) ([]kafka.SummaryDoc, erro
 	return summaryList, nil
 }
 
-func (j Job) BuildResourceTypeSummary(client keibi.Client) ([]kafka.SummaryDoc, error) {
+func (j Job) BuildResourceTypeSummary(client keibi.Client, logger *zap.Logger) ([]kafka.SummaryDoc, error) {
 	var sourceJobIDs []uint
 	for _, dsj := range j.DescribeSourceJobs {
 		sourceJobIDs = append(sourceJobIDs, dsj.ID)
 	}
+
+	logger.Info("Building resource type summary", zap.Int("jobID", int(j.JobID)), zap.Uints("describeJobIDs", sourceJobIDs))
 	hits, err := es.FetchResourceSummary(client, sourceJobIDs, nil)
 	if err != nil {
 		return nil, err
 	}
 
+	logger.Info("Found resource summary", zap.Int("jobID", int(j.JobID)), zap.Int("count", len(hits)))
 	summary := map[string]kafka.ProviderResourceTypeSummary{}
 	for _, hit := range hits {
 		if _, ok := summary[hit.ResourceType]; !ok {
@@ -363,6 +360,7 @@ func (j Job) BuildResourceTypeSummary(client keibi.Client) ([]kafka.SummaryDoc, 
 		v.ResourceCount += hit.ResourceCount
 		summary[hit.ResourceType] = v
 	}
+	logger.Info("Built summary map", zap.Int("jobID", int(j.JobID)), zap.Int("count", len(summary)))
 
 	for _, lastDaysValue := range []uint{1, 7, 93, 428} {
 		var sourceJobIDs []uint
@@ -433,6 +431,7 @@ func (j Job) BuildResourceTypeSummary(client keibi.Client) ([]kafka.SummaryDoc, 
 	for _, v := range summary {
 		summaryList = append(summaryList, &v)
 	}
+	logger.Info("Result summary map", zap.Int("jobID", int(j.JobID)), zap.Int("count", len(summaryList)))
 	return summaryList, nil
 }
 
