@@ -429,6 +429,7 @@ func (j Job) BuildResourceTypeSummary(client keibi.Client, logger *zap.Logger) (
 
 	var summaryList []kafka.SummaryDoc
 	for _, v := range summary {
+		logger.Info(fmt.Sprintf("Result summary map %v", v))
 		summaryList = append(summaryList, &v)
 	}
 	logger.Info("Result summary map", zap.Int("jobID", int(j.JobID)), zap.Int("count", len(summaryList)))
