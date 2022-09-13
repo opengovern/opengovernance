@@ -292,7 +292,8 @@ func (db Database) GetOldCompletedSourceJob(sourceID uuid.UUID, nDaysBefore int)
 	tx := db.orm.Model(&DescribeSourceJob{}).
 		Where("status in ?", []string{string(api.DescribeSourceJobCompleted), string(api.DescribeSourceJobCompletedWithFailure)}).
 		Where("source_id = ?", sourceID.String()).
-		Where(fmt.Sprintf("updated_at <= now() - interval '%d days'", nDaysBefore)).
+		Where(fmt.Sprintf("updated_at < now() - interval '%d days'", nDaysBefore-1)).
+		Where(fmt.Sprintf("updated_at >= now() - interval '%d days'", nDaysBefore)).
 		Order("updated_at DESC").
 		First(&job)
 	if tx.Error != nil {
