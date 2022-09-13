@@ -140,7 +140,9 @@ func (j Job) Do(client keibi.Client, producer sarama.SyncProducer, topic string,
 	if err != nil {
 		fail(err)
 	} else {
+		logger.Info("Result summary map", zap.Int("jobID", int(j.JobID)), zap.Int("count", len(res)), zap.Int("msgsCount", len(msgs)))
 		msgs = append(msgs, res...)
+		logger.Info("Result summary map after", zap.Int("jobID", int(j.JobID)), zap.Int("count", len(res)), zap.Int("msgsCount", len(msgs)))
 	}
 
 	res, err = j.BuildServicesSummary(client)
