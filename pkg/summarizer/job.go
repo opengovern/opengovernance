@@ -327,7 +327,7 @@ func (j Job) BuildServicesSummary(client keibi.Client) ([]kafka.SummaryDoc, erro
 
 	var summaryList []kafka.SummaryDoc
 	for _, v := range summary {
-		summaryList = append(summaryList, &v)
+		summaryList = append(summaryList, v)
 	}
 	return summaryList, nil
 }
@@ -429,8 +429,10 @@ func (j Job) BuildResourceTypeSummary(client keibi.Client, logger *zap.Logger) (
 
 	var summaryList []kafka.SummaryDoc
 	for _, v := range summary {
-		logger.Info(fmt.Sprintf("Result summary map %v", v))
-		summaryList = append(summaryList, &v)
+		p, _ := v.AsProducerMessage()
+		k, _ := p.Key.Encode()
+		logger.Info(fmt.Sprintf("Result summary map [%s] %v", string(k), v))
+		summaryList = append(summaryList, v)
 	}
 	logger.Info("Result summary map", zap.Int("jobID", int(j.JobID)), zap.Int("count", len(summaryList)))
 	return summaryList, nil
@@ -531,7 +533,7 @@ func (j Job) BuildCategoriesSummary(client keibi.Client) ([]kafka.SummaryDoc, er
 
 	var summaryList []kafka.SummaryDoc
 	for _, v := range summary {
-		summaryList = append(summaryList, &v)
+		summaryList = append(summaryList, v)
 	}
 	return summaryList, nil
 }
@@ -560,5 +562,5 @@ func (job Job) BuildLocationsSummary(client keibi.Client, j DescribeJob) (kafka.
 		}
 	}
 
-	return &summary, nil
+	return summary, nil
 }
