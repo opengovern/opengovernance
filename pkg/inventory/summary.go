@@ -123,7 +123,7 @@ func GetResources(client keibi.Client, provider source.Type, sourceID *string, r
 	resourceTypeResponse := map[string]api.ResourceTypeResponse{}
 
 	if sourceID == nil {
-		hits, err := es.FetchProviderResourceTypeSummaryPage(client, provider, nil, EsFetchPageSize)
+		hits, err := es.FetchProviderResourceTypeSummaryPage(client, provider, resourceTypes, nil, EsFetchPageSize)
 		if err != nil {
 			return nil, err
 		}

@@ -1145,7 +1145,7 @@ type ProviderResourceTypeSummaryQueryHit struct {
 	Sort    []interface{}                      `json:"sort"`
 }
 
-func FetchProviderResourceTypeSummaryPage(client keibi.Client, provider source.Type,
+func FetchProviderResourceTypeSummaryPage(client keibi.Client, provider source.Type, resourceType []string,
 	sort []map[string]interface{}, size int) ([]kafka2.ProviderResourceTypeSummary, error) {
 	var hits []kafka2.ProviderResourceTypeSummary
 	res := make(map[string]interface{})
@@ -1158,6 +1158,12 @@ func FetchProviderResourceTypeSummaryPage(client keibi.Client, provider source.T
 	if !provider.IsNull() {
 		filters = append(filters, map[string]interface{}{
 			"terms": map[string][]string{"source_type": {provider.String()}},
+		})
+	}
+
+	if resourceType != nil {
+		filters = append(filters, map[string]interface{}{
+			"terms": map[string][]string{"resource_type": resourceType},
 		})
 	}
 
