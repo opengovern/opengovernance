@@ -3557,6 +3557,9 @@ const docTemplate = `{
                 "providerConnectionName": {
                     "type": "string"
                 },
+                "resourceCategory": {
+                    "type": "string"
+                },
                 "resourceID": {
                     "type": "string"
                 },
@@ -3635,6 +3638,9 @@ const docTemplate = `{
                 "providerConnectionName": {
                     "type": "string"
                 },
+                "resourceCategory": {
+                    "type": "string"
+                },
                 "resourceID": {
                     "type": "string"
                 },
@@ -3665,6 +3671,9 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "providerConnectionName": {
+                    "type": "string"
+                },
+                "resourceCategory": {
                     "type": "string"
                 },
                 "resourceGroup": {

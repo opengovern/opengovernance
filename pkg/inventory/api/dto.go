@@ -163,6 +163,7 @@ type AllResource struct {
 	ResourceID             string     `json:"resourceID"`
 	ResourceType           string     `json:"resourceType"`
 	ResourceTypeName       string     `json:"resourceTypeName"`
+	ResourceCategory       string     `json:"resourceCategory"`
 	Provider               SourceType `json:"provider"`
 	Location               string     `json:"location"`
 	ProviderConnectionID   string     `json:"providerConnectionID"`
@@ -209,6 +210,7 @@ type AzureResource struct {
 	ResourceID             string `json:"resourceID"`
 	ResourceType           string `json:"resourceType"`
 	ResourceTypeName       string `json:"resourceTypeName"`
+	ResourceCategory       string `json:"resourceCategory"`
 	ResourceGroup          string `json:"resourceGroup"`
 	Location               string `json:"location"`
 	ProviderConnectionID   string `json:"providerConnectionID"`
@@ -242,6 +244,7 @@ type AWSResource struct {
 	ResourceID             string `json:"resourceID"`
 	ResourceType           string `json:"resourceType"`
 	ResourceTypeName       string `json:"resourceTypeName"`
+	ResourceCategory       string `json:"resourceCategory"`
 	Location               string `json:"location"`
 	ProviderConnectionID   string `json:"providerConnectionID"`
 	ProviderConnectionName string `json:"providerConnectionName"`

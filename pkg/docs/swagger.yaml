@@ -11,6 +11,8 @@ definitions:
         type: string
       providerConnectionName:
         type: string
+      resourceCategory:
+        type: string
       resourceID:
         type: string
       resourceName:
@@ -62,6 +64,8 @@ definitions:
         type: string
       providerConnectionName:
         type: string
+      resourceCategory:
+        type: string
       resourceID:
         type: string
       resourceName:
@@ -82,6 +86,8 @@ definitions:
       providerConnectionID:
         type: string
       providerConnectionName:
+        type: string
+      resourceCategory:
         type: string
       resourceGroup:
         type: string

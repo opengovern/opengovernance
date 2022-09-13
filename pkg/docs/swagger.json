@@ -3551,6 +3551,9 @@
                 "providerConnectionName": {
                     "type": "string"
                 },
+                "resourceCategory": {
+                    "type": "string"
+                },
                 "resourceID": {
                     "type": "string"
                 },
@@ -3629,6 +3632,9 @@
                 "providerConnectionName": {
                     "type": "string"
                 },
+                "resourceCategory": {
+                    "type": "string"
+                },
                 "resourceID": {
                     "type": "string"
                 },
@@ -3659,6 +3665,9 @@
                     "type": "string"
                 },
                 "providerConnectionName": {
+                    "type": "string"
+                },
+                "resourceCategory": {
                     "type": "string"
                 },
                 "resourceGroup": {
