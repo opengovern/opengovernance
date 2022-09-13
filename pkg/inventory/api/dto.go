@@ -3,6 +3,8 @@ package api
 import (
 	"time"
 
+	"gitlab.com/keibiengine/keibi-engine/pkg/source"
+
 	"github.com/google/uuid"
 	compliance_report "gitlab.com/keibiengine/keibi-engine/pkg/compliance-report"
 	"gitlab.com/keibiengine/keibi-engine/pkg/describe/kafka"
@@ -448,11 +450,14 @@ type ListQueryRequest struct {
 }
 
 type AccountResourceCountResponse struct {
-	SourceID               string    `json:"sourceID"`
-	ProviderConnectionName string    `json:"providerConnectionName"`
-	ProviderConnectionID   string    `json:"providerConnectionID"`
-	ResourceCount          int       `json:"resourceCount"`
-	OnboardDate            time.Time `json:"onboardDate"`
+	SourceID               string      `json:"sourceID"`
+	SourceType             source.Type `json:"sourceType"`
+	ProviderConnectionName string      `json:"providerConnectionName"`
+	ProviderConnectionID   string      `json:"providerConnectionID"`
+	Enabled                bool        `json:"enabled"`
+	ResourceCount          int         `json:"resourceCount"`
+	OnboardDate            time.Time   `json:"onboardDate"`
+	LastInventory          time.Time   `json:"lastInventory"`
 }
 
 type TopAccountResponse struct {

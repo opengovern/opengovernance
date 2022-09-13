@@ -1728,8 +1728,10 @@ func (h *HttpHandler) GetAccountsResourceCount(ctx echo.Context) error {
 	for _, src := range allSources {
 		res[src.ID.String()] = api.AccountResourceCountResponse{
 			SourceID:               src.ID.String(),
+			SourceType:             source.Type(src.Type),
 			ProviderConnectionName: src.ConnectionName,
 			ProviderConnectionID:   src.ConnectionID,
+			Enabled:                src.Enabled,
 			OnboardDate:            src.OnboardDate,
 		}
 	}
@@ -1738,6 +1740,7 @@ func (h *HttpHandler) GetAccountsResourceCount(ctx echo.Context) error {
 	for _, hit := range hits {
 		if v, ok := res[hit.SourceID]; ok {
 			v.ResourceCount += hit.ResourceCount
+			v.LastInventory = time.UnixMilli(hit.DescribedAt)
 			res[hit.SourceID] = v
 		}
 	}
