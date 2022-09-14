@@ -270,11 +270,11 @@ func (j Job) BuildServicesSummary(client keibi.Client) ([]kafka.SummaryDoc, erro
 			case 1:
 				jobID = dsj.LastDaySourceJobID
 			case 7:
-				jobID = dsj.LastDaySourceJobID
+				jobID = dsj.LastWeekSourceJobID
 			case 93:
-				jobID = dsj.LastDaySourceJobID
+				jobID = dsj.LastQuarterSourceJobID
 			case 428:
-				jobID = dsj.LastDaySourceJobID
+				jobID = dsj.LastYearSourceJobID
 			}
 
 			if jobID == 0 {
@@ -373,11 +373,11 @@ func (j Job) BuildResourceTypeSummary(client keibi.Client, logger *zap.Logger) (
 			case 1:
 				jobID = dsj.LastDaySourceJobID
 			case 7:
-				jobID = dsj.LastDaySourceJobID
+				jobID = dsj.LastWeekSourceJobID
 			case 93:
-				jobID = dsj.LastDaySourceJobID
+				jobID = dsj.LastQuarterSourceJobID
 			case 428:
-				jobID = dsj.LastDaySourceJobID
+				jobID = dsj.LastYearSourceJobID
 			}
 
 			if jobID == 0 {
@@ -476,11 +476,11 @@ func (j Job) BuildCategoriesSummary(client keibi.Client) ([]kafka.SummaryDoc, er
 			case 1:
 				jobID = dsj.LastDaySourceJobID
 			case 7:
-				jobID = dsj.LastDaySourceJobID
+				jobID = dsj.LastWeekSourceJobID
 			case 93:
-				jobID = dsj.LastDaySourceJobID
+				jobID = dsj.LastQuarterSourceJobID
 			case 428:
-				jobID = dsj.LastDaySourceJobID
+				jobID = dsj.LastYearSourceJobID
 			}
 
 			if jobID == 0 {
