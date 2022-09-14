@@ -107,10 +107,7 @@ func (j Job) Do(client keibi.Client, producer sarama.SyncProducer, topic string,
 	for {
 		lookups, err := es.FetchLookupsByScheduleJobID(client, j.ScheduleJobID, searchAfter, es.EsFetchPageSize)
 		if err != nil {
-			logger.Error("Failed to fetch lookups", zap.Uint("jobID", j.JobID), zap.Error(err))
-			if firstErr == nil {
-				firstErr = err
-			}
+			fail(fmt.Errorf("Failed to fetch lookups: %v ", err))
 			break
 		}
 
@@ -128,11 +125,7 @@ func (j Job) Do(client keibi.Client, producer sarama.SyncProducer, topic string,
 	for _, b := range builders {
 		err := b.PopulateHistory()
 		if err != nil {
-			logger.Error("Failed to populate history", zap.Uint("jobID", j.JobID), zap.Error(err))
-			if firstErr == nil {
-				firstErr = err
-			}
-			break
+			fail(fmt.Errorf("Failed to populate history: %v ", err))
 		}
 	}
 	for _, b := range builders {
@@ -142,7 +135,7 @@ func (j Job) Do(client keibi.Client, producer sarama.SyncProducer, topic string,
 	if len(msgs) > 0 {
 		err := kafka.DoSend(producer, topic, msgs, logger)
 		if err != nil {
-			fail(err)
+			fail(fmt.Errorf("Failed to send to kafka: %v ", err))
 		}
 	}
 

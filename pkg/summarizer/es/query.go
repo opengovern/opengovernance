@@ -34,7 +34,7 @@ func FetchLookupsByScheduleJobID(client keibi.Client, scheduleJobID uint, search
 	res := make(map[string]interface{})
 	var filters []interface{}
 	filters = append(filters, map[string]interface{}{
-		"terms": map[string]interface{}{"schedule_job_id": scheduleJobID},
+		"terms": map[string][]interface{}{"schedule_job_id": {scheduleJobID}},
 	})
 
 	if searchAfter != nil {
@@ -57,10 +57,8 @@ func FetchLookupsByScheduleJobID(client keibi.Client, scheduleJobID uint, search
 		return LookupQueryResponse{}, err
 	}
 
-	query := string(b)
-
 	var response LookupQueryResponse
-	err = client.Search(context.Background(), InventorySummaryIndex, query, &response)
+	err = client.Search(context.Background(), InventorySummaryIndex, string(b), &response)
 	if err != nil {
 		return LookupQueryResponse{}, err
 	}
