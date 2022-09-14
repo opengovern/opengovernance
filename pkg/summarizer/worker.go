@@ -110,13 +110,22 @@ func InitializeWorker(
 }
 
 func (w *Worker) Run() error {
+	defer func() {
+		if r := recover(); r != nil {
+			w.logger.Error("Paniced while running worker", zap.Error(fmt.Errorf("%v", r)))
+		}
+	}()
+
+	w.logger.Info("Running summarizer")
 	msgs, err := w.jobQueue.Consume()
 	if err != nil {
 		return err
 	}
 
+	w.logger.Info("Consuming")
 	msg := <-msgs
 
+	w.logger.Info("Took the job")
 	var job Job
 	if err := json.Unmarshal(msg.Body, &job); err != nil {
 		w.logger.Error("Failed to unmarshal task", zap.Error(err))

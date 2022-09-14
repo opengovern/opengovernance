@@ -65,12 +65,8 @@ func InitializeWorker(
 	vaultCaPath string,
 	vaultUseTLS bool,
 	logger *zap.Logger,
-	elasticSearchAddress string,
-	elasticSearchUsername string,
-	elasticSearchPassword string,
 	prometheusPushAddress string,
 	redisAddress string,
-	cacheAddress string,
 	jaegerAddress string,
 ) (w *Worker, err error) {
 	if id == "" {

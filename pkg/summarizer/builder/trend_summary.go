@@ -29,8 +29,8 @@ func (b *trendSummaryBuilder) Process(resource describe.LookupResource) {
 			SourceType:    resource.SourceType,
 			SourceJobID:   resource.SourceJobID,
 			DescribedAt:   resource.CreatedAt,
-			ResourceCount: 0,
 			ReportType:    es.TrendConnectionSummary,
+			ResourceCount: 0,
 		}
 	}
 	v := b.connectionSummary[resource.SourceID]
