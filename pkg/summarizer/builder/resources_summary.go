@@ -21,13 +21,17 @@ func NewResourceSummaryBuilder(summarizerJobID uint) *resourceSummaryBuilder {
 func (b *resourceSummaryBuilder) Process(resource describe.LookupResource) {
 	if _, ok := b.connectionSummary[resource.SourceID]; !ok {
 		b.connectionSummary[resource.SourceID] = es.ConnectionResourcesSummary{
-			ScheduleJobID: resource.ScheduleJobID,
-			SourceID:      resource.SourceID,
-			SourceType:    resource.SourceType,
-			SourceJobID:   resource.SourceJobID,
-			DescribedAt:   resource.CreatedAt,
-			ResourceCount: 0,
-			ReportType:    es.ResourceSummary,
+			ScheduleJobID:    resource.ScheduleJobID,
+			SourceID:         resource.SourceID,
+			SourceType:       resource.SourceType,
+			SourceJobID:      resource.SourceJobID,
+			DescribedAt:      resource.CreatedAt,
+			ResourceCount:    0,
+			LastDayCount:     nil,
+			LastWeekCount:    nil,
+			LastQuarterCount: nil,
+			LastYearCount:    nil,
+			ReportType:       es.ResourceSummary,
 		}
 	}
 

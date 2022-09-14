@@ -24,6 +24,9 @@ func (b *serviceLocationSummaryBuilder) Process(resource describe.LookupResource
 	if _, ok := b.connectionSummary[key]; !ok {
 		b.connectionSummary[key] = es.ConnectionServiceLocationSummary{
 			ScheduleJobID:        resource.ScheduleJobID,
+			SourceID:             resource.SourceID,
+			SourceType:           resource.SourceType,
+			SourceJobID:          resource.SourceJobID,
 			ServiceName:          cloudservice.ServiceNameByResourceType(resource.ResourceType),
 			LocationDistribution: map[string]int{},
 			ReportType:           es.ServiceLocationConnectionSummary,
