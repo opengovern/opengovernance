@@ -178,7 +178,7 @@ func (r SourceResourcesSummary) AsProducerMessage() (*sarama.ProducerMessage, er
 		return nil, err
 	}
 
-	return kafkaMsg(uuid.New().String(),
+	return kafkaMsg(hashOf(r.SourceID, r.ResourceType, fmt.Sprintf("%d", r.SourceJobID), string(r.ReportType)),
 		value, SourceResourcesSummaryIndex), nil
 }
 func (r SourceResourcesSummary) MessageID() string {
