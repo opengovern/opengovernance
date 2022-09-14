@@ -1,0 +1,85 @@
+package kafka
+
+import (
+	"crypto/sha256"
+	"encoding/json"
+	"fmt"
+
+	"go.uber.org/zap"
+	"gopkg.in/Shopify/sarama.v1"
+)
+
+const (
+	esIndexHeader = "elasticsearch_index"
+)
+
+type Doc interface {
+	KeysAndIndex() ([]string, string)
+}
+
+func asProducerMessage(r Doc) (*sarama.ProducerMessage, error) {
+	keys, index := r.KeysAndIndex()
+	value, err := json.Marshal(r)
+	if err != nil {
+		return nil, err
+	}
+	return Msg(HashOf(keys...), value, index), nil
+}
+
+func messageID(r Doc) string {
+	k, _ := r.KeysAndIndex()
+	return fmt.Sprintf("%v", k)
+}
+
+func HashOf(strings ...string) string {
+	h := sha256.New()
+	for _, s := range strings {
+		h.Write([]byte(s))
+	}
+	return fmt.Sprintf("%x", h.Sum(nil))
+}
+
+func Msg(key string, value []byte, index string) *sarama.ProducerMessage {
+	return &sarama.ProducerMessage{
+		Key: sarama.StringEncoder(key),
+		Headers: []sarama.RecordHeader{
+			{
+				Key:   []byte(esIndexHeader),
+				Value: []byte(index),
+			},
+		},
+		Value: sarama.ByteEncoder(value),
+	}
+}
+
+func DoSend(producer sarama.SyncProducer, topic string, docs []Doc, logger *zap.Logger) error {
+	var msgs []*sarama.ProducerMessage
+	for _, v := range docs {
+		msg, err := asProducerMessage(v)
+		if err != nil {
+			logger.Error("Failed calling AsProducerMessage", zap.Error(fmt.Errorf("Failed to convert msg[%s] to Kafka ProducerMessage, ignoring...", messageID(v))))
+			continue
+		}
+
+		// Override the topic
+		msg.Topic = topic
+
+		msgs = append(msgs, msg)
+	}
+
+	if len(msgs) == 0 {
+		return nil
+	}
+
+	if err := producer.SendMessages(msgs); err != nil {
+		if errs, ok := err.(sarama.ProducerErrors); ok {
+			for _, e := range errs {
+				logger.Error("Falied calling SendMessages", zap.Error(fmt.Errorf("Failed to persist resource[%s] in kafka topic[%s]: %s\nMessage: %v\n", e.Msg.Key, e.Msg.Topic, e.Error(), e.Msg)))
+			}
+		}
+
+		return err
+	}
+
+	return nil
+}

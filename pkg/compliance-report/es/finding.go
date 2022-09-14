@@ -6,8 +6,6 @@ import (
 
 	"github.com/google/uuid"
 	"gitlab.com/keibiengine/keibi-engine/pkg/keibi-es-sdk"
-
-	"gopkg.in/Shopify/sarama.v1"
 )
 
 const (
@@ -28,26 +26,13 @@ type Finding struct {
 	DescribedAt        int64     `json:"describedAt"`
 }
 
-func (r Finding) AsProducerMessage() (*sarama.ProducerMessage, error) {
-	value, err := json.Marshal(r)
-	if err != nil {
-		return nil, err
-	}
-
-	return kafkaMsg(
-		hashOf(
-			r.ResourceID,
-			r.SourceID.String(),
-			r.ControlID,
-			strconv.FormatInt(int64(r.ReportJobID), 10),
-		),
-		value,
-		FindingsIndex,
-	), nil
-}
-
-func (r Finding) MessageID() string {
-	return strconv.FormatInt(int64(r.ReportJobID), 10)
+func (r Finding) KeysAndIndex() ([]string, string) {
+	return []string{
+		r.ResourceID,
+		r.SourceID.String(),
+		r.ControlID,
+		strconv.FormatInt(int64(r.ReportJobID), 10),
+	}, FindingsIndex
 }
 
 type FindingsQueryResponse struct {

@@ -570,7 +570,7 @@ func (s *Scheduler) RunScheduleJobCompletionUpdater() {
 			continue
 		}
 
-		err = s.scheduleSummarizerJob(djs)
+		err = s.scheduleSummarizerJob(scheduleJob.ID, djs)
 		if err != nil {
 			s.logger.Error("Failed to enqueue summarizer job\n",
 				zap.Uint("jobId", scheduleJob.ID),
@@ -795,7 +795,7 @@ func (s Scheduler) scheduleDescribeJob() {
 			continue
 		}
 
-		enqueueDescribeConnectionJob(s.logger, s.db, s.describeConnectionJobQueue, source, daj, scheduleJob.CreatedAt)
+		enqueueDescribeConnectionJob(s.logger, s.db, s.describeConnectionJobQueue, source, daj, scheduleJob.ID, scheduleJob.CreatedAt)
 
 		isSuccessful := true
 
@@ -1456,7 +1456,7 @@ func enqueueDescribeResourceJobs(logger *zap.Logger, db Database, q queue.Interf
 	}
 }
 
-func enqueueDescribeConnectionJob(logger *zap.Logger, db Database, q queue.Interface, a Source, daj DescribeSourceJob, describedAt time.Time) {
+func enqueueDescribeConnectionJob(logger *zap.Logger, db Database, q queue.Interface, a Source, daj DescribeSourceJob, scheduleJobID uint, describedAt time.Time) {
 	var oldJobFailed error
 	var lastDayJobID, lastWeekJobID, lastQuarterJobID, lastYearJobID uint
 
@@ -1518,6 +1518,7 @@ func enqueueDescribeConnectionJob(logger *zap.Logger, db Database, q queue.Inter
 		}
 		if err := q.Publish(DescribeConnectionJob{
 			JobID:                  daj.ID,
+			ScheduleJobID:          scheduleJobID,
 			ResourceJobs:           resourceJobs,
 			SourceID:               daj.SourceID.String(),
 			AccountID:              daj.AccountID,
@@ -1668,7 +1669,7 @@ func (s Scheduler) scheduleInsightJob() {
 	InsightJobsCount.WithLabelValues("successful").Inc()
 }
 
-func (s Scheduler) scheduleSummarizerJob(djs []DescribeSourceJob) error {
+func (s Scheduler) scheduleSummarizerJob(scheduleJobID uint, djs []DescribeSourceJob) error {
 	job := newSummarizerJob()
 	err := s.db.AddSummarizerJob(&job)
 	if err != nil {
@@ -1680,7 +1681,7 @@ func (s Scheduler) scheduleSummarizerJob(djs []DescribeSourceJob) error {
 		return err
 	}
 
-	err = enqueueSummarizerJobs(s.db, s.summarizerJobQueue, job, djs)
+	err = enqueueSummarizerJobs(s.db, s.summarizerJobQueue, job, djs, scheduleJobID)
 	if err != nil {
 		SummarizerJobsCount.WithLabelValues("failure").Inc()
 		s.logger.Error("Failed to enqueue SummarizerJob",
@@ -1701,7 +1702,7 @@ func (s Scheduler) scheduleSummarizerJob(djs []DescribeSourceJob) error {
 	return nil
 }
 
-func enqueueSummarizerJobs(db Database, q queue.Interface, job SummarizerJob, djs []DescribeSourceJob) error {
+func enqueueSummarizerJobs(db Database, q queue.Interface, job SummarizerJob, djs []DescribeSourceJob, scheduleJobID uint) error {
 	var jobs []summarizer.DescribeJob
 	for _, j := range djs {
 		var lastDayJobID, lastWeekJobID, lastQuarterJobID, lastYearJobID uint
@@ -1746,6 +1747,7 @@ func enqueueSummarizerJobs(db Database, q queue.Interface, job SummarizerJob, dj
 
 	if err := q.Publish(summarizer.Job{
 		JobID:              job.ID,
+		ScheduleJobID:      scheduleJobID,
 		DescribeSourceJobs: jobs,
 	}); err != nil {
 		return err

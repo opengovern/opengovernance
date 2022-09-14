@@ -3,7 +3,8 @@ package es
 import (
 	"encoding/json"
 
-	"gitlab.com/keibiengine/keibi-engine/pkg/insight/kafka"
+	"gitlab.com/keibiengine/keibi-engine/pkg/insight/es"
+
 	"gitlab.com/keibiengine/keibi-engine/pkg/keibi-es-sdk"
 )
 
@@ -17,20 +18,20 @@ type InsightResultQueryHits struct {
 	Hits  []InsightResultQueryHit `json:"hits"`
 }
 type InsightResultQueryHit struct {
-	ID      string                `json:"_id"`
-	Score   float64               `json:"_score"`
-	Index   string                `json:"_index"`
-	Type    string                `json:"_type"`
-	Version int64                 `json:"_version,omitempty"`
-	Source  kafka.InsightResource `json:"_source"`
-	Sort    []interface{}         `json:"sort"`
+	ID      string             `json:"_id"`
+	Score   float64            `json:"_score"`
+	Index   string             `json:"_index"`
+	Type    string             `json:"_type"`
+	Version int64              `json:"_version,omitempty"`
+	Source  es.InsightResource `json:"_source"`
+	Sort    []interface{}      `json:"sort"`
 }
 
 func FindInsightResults(descriptionFilter *string, labelFilter []string) (string, error) {
 	boolQuery := map[string]interface{}{}
 	var filters []interface{}
 	filters = append(filters, map[string]interface{}{
-		"terms": map[string][]string{"resource_type": {kafka.InsightResourceLast}},
+		"terms": map[string][]string{"resource_type": {es.InsightResourceLast}},
 	})
 
 	if labelFilter != nil && len(labelFilter) > 0 {

@@ -115,36 +115,36 @@ func (w *Worker) Run() error {
 		return err
 	}
 
-	w.logger.Error("Waiting indefinitly for messages. To exit press CTRL+C")
-	for msg := range msgs {
-		var job Job
-		if err := json.Unmarshal(msg.Body, &job); err != nil {
-			w.logger.Error("Failed to unmarshal task", zap.Error(err))
-			err = msg.Nack(false, false)
-			if err != nil {
-				w.logger.Error("Failed nacking message", zap.Error(err))
-			}
-			continue
-		}
-		w.logger.Info("Processing job", zap.Int("jobID", int(job.JobID)))
-		result := job.Do(w.es, w.kfkProducer, w.kfkTopic, w.logger)
-		w.logger.Info("Publishing job result", zap.Int("jobID", int(job.JobID)), zap.String("status", string(result.Status)))
-		err := w.jobResultQueue.Publish(result)
-		if err != nil {
-			w.logger.Error("Failed to send results to queue: %s", zap.Error(err))
-		}
+	msg := <-msgs
 
-		if err := msg.Ack(false); err != nil {
-			w.logger.Error("Failed acking message", zap.Error(err))
+	var job Job
+	if err := json.Unmarshal(msg.Body, &job); err != nil {
+		w.logger.Error("Failed to unmarshal task", zap.Error(err))
+		err2 := msg.Nack(false, false)
+		if err2 != nil {
+			w.logger.Error("Failed nacking message", zap.Error(err))
 		}
-
-		err = w.pusher.Push()
-		if err != nil {
-			w.logger.Error("Failed to push metrics", zap.Error(err))
-		}
+		return err
 	}
 
-	return fmt.Errorf("descibe jobs channel is closed")
+	w.logger.Info("Processing job", zap.Int("jobID", int(job.JobID)))
+	result := job.Do(w.es, w.kfkProducer, w.kfkTopic, w.logger)
+	w.logger.Info("Publishing job result", zap.Int("jobID", int(job.JobID)), zap.String("status", string(result.Status)))
+	err = w.jobResultQueue.Publish(result)
+	if err != nil {
+		w.logger.Error("Failed to send results to queue: %s", zap.Error(err))
+	}
+
+	if err := msg.Ack(false); err != nil {
+		w.logger.Error("Failed acking message", zap.Error(err))
+	}
+
+	err = w.pusher.Push()
+	if err != nil {
+		w.logger.Error("Failed to push metrics", zap.Error(err))
+	}
+
+	return nil
 }
 
 func (w *Worker) Stop() {

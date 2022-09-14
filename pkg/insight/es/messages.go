@@ -1,15 +1,10 @@
-package kafka
+package es
 
 import (
-	"crypto/sha256"
-	"encoding/json"
 	"fmt"
-
-	"gopkg.in/Shopify/sarama.v1"
 )
 
 const (
-	esIndexHeader = "elasticsearch_index"
 	InsightsIndex = "insights"
 )
 
@@ -53,40 +48,18 @@ type InsightResource struct {
 	ResourceType InsightResourceType `json:"resource_type"`
 }
 
-func (r InsightResource) AsProducerMessage() (*sarama.ProducerMessage, error) {
-	value, err := json.Marshal(r)
-	if err != nil {
-		return nil, err
+func (r InsightResource) KeysAndIndex() ([]string, string) {
+	keys := []string{
+		string(r.ResourceType),
+		fmt.Sprintf("%d", r.QueryID),
 	}
-
 	if r.ResourceType == InsightResourceHistory {
-		return kafkaMsg(hashOf(string(r.ResourceType), fmt.Sprintf("%d", r.QueryID), fmt.Sprintf("%d", r.JobID)),
-			value, InsightsIndex), nil
+		keys = []string{
+			string(r.ResourceType),
+			fmt.Sprintf("%d", r.QueryID),
+			fmt.Sprintf("%d", r.JobID),
+		}
 	}
-	return kafkaMsg(hashOf(string(r.ResourceType), fmt.Sprintf("%d", r.QueryID)),
-		value, InsightsIndex), nil
-}
-func (r InsightResource) MessageID() string {
-	return fmt.Sprintf("%d", r.QueryID)
-}
 
-func hashOf(strings ...string) string {
-	h := sha256.New()
-	for _, s := range strings {
-		h.Write([]byte(s))
-	}
-	return fmt.Sprintf("%x", h.Sum(nil))
-}
-
-func kafkaMsg(key string, value []byte, index string) *sarama.ProducerMessage {
-	return &sarama.ProducerMessage{
-		Key: sarama.StringEncoder(key),
-		Headers: []sarama.RecordHeader{
-			{
-				Key:   []byte(esIndexHeader),
-				Value: []byte(index),
-			},
-		},
-		Value: sarama.ByteEncoder(value),
-	}
+	return keys, InsightsIndex
 }

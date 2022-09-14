@@ -15,15 +15,13 @@ import (
 	"strings"
 	"time"
 
-	kafka3 "gitlab.com/keibiengine/keibi-engine/pkg/summarizer/kafka"
-
-	kafka2 "gitlab.com/keibiengine/keibi-engine/pkg/describe/kafka"
+	es2 "gitlab.com/keibiengine/keibi-engine/pkg/describe/es"
+	insight "gitlab.com/keibiengine/keibi-engine/pkg/insight/es"
+	summarizer "gitlab.com/keibiengine/keibi-engine/pkg/summarizer/es"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/cloudservice"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/keibi-es-sdk"
-
-	"gitlab.com/keibiengine/keibi-engine/pkg/insight/kafka"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/source"
 	"gorm.io/gorm"
@@ -791,8 +789,16 @@ func (h *HttpHandler) GetBenchmarkComplianceTrend(ctx echo.Context) error {
 		}
 	}
 
-	rhits, err := es.FindResourceGrowthTrend(h.client, &sourceUUID, source.Nil,
-		fromTime, toTime)
+	sortMap := []map[string]interface{}{
+		{
+			"described_at": "asc",
+		},
+	}
+	sourceId := sourceUUID.String()
+	rhits, err := es.FetchConnectionTrendSummaryPage(h.client, &sourceId, fromTime, toTime, sortMap, EsFetchPageSize)
+	if err != nil {
+		return err
+	}
 
 	var resp []api.ComplianceTrendDataPoint
 	for _, hit := range hits {
@@ -929,7 +935,7 @@ func (h *HttpHandler) GetCompliancyTrend(ctx echo.Context) error {
 		}
 
 		var response es.ComplianceTrendQueryResponse
-		err = h.client.Search(context.Background(), describe.SourceResourcesSummary, query, &response)
+		err = h.client.Search(context.Background(), es2.SourceResourcesSummaryIndex, query, &response)
 		if err != nil {
 			return err
 		}
@@ -1133,7 +1139,7 @@ func (h *HttpHandler) GetTopAccountsByResourceCount(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid count")
 	}
 
-	var hits []kafka3.ConnectionResourcesSummary
+	var hits []summarizer.ConnectionResourcesSummary
 
 	srt := []map[string]interface{}{{"resource_count": "desc"}}
 	hits, err = es.FetchConnectionResourcesSummaryPage(h.client, provider, nil, srt, count)
@@ -1280,30 +1286,18 @@ func (h *HttpHandler) GetTopRegionsByResourceCount(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid count")
 	}
 
-	var sourceUUID *uuid.UUID
 	var sourceID *string
 	sourceId := ctx.QueryParam("sourceId")
 	if len(sourceId) > 0 {
-		suuid, err := uuid.Parse(sourceId)
-		if err != nil {
-			return err
-		}
-		sourceUUID = &suuid
 		sourceID = &sourceId
 	}
 
 	locationDistribution := map[string]int{}
-	var hits []kafka2.LocationDistributionResource
-	if cached, err := es.FetchLocationDistributionCached(h.rcache, h.cache, provider, sourceID); err == nil && len(cached) > 0 {
-		hits = cached
-	} else {
-		res, err := es.FindLocationDistributionQuery(h.client, provider, sourceUUID)
-		if err != nil {
-			return err
-		}
-		hits = res
-	}
 
+	hits, err := es.FetchConnectionLocationsSummaryPage(h.client, provider, sourceID, nil, EsFetchPageSize)
+	if err != nil {
+		return err
+	}
 	for _, hit := range hits {
 		for k, v := range hit.LocationDistribution {
 			locationDistribution[k] += v
@@ -1503,13 +1497,13 @@ func (h *HttpHandler) GetSummaryMetrics(ctx echo.Context) error {
 	}
 
 	var response es.InsightResultQueryResponse
-	err = h.client.Search(context.Background(), kafka.InsightsIndex,
+	err = h.client.Search(context.Background(), insight.InsightsIndex,
 		query, &response)
 	if err != nil {
 		return err
 	}
 
-	var awsAccountCount, azureAccountCount kafka.InsightResource
+	var awsAccountCount, azureAccountCount insight.InsightResource
 	for _, item := range response.Hits.Hits {
 		if includeAWS && item.Source.Description == "AWS Account Count" {
 			awsAccountCount = item.Source
@@ -1595,7 +1589,7 @@ func (h *HttpHandler) GetSummaryMetrics(ctx echo.Context) error {
 		return err
 	}
 
-	var awsStorage, azureStorage kafka.InsightResource
+	var awsStorage, azureStorage insight.InsightResource
 	for _, item := range response.Hits.Hits {
 		if includeAWS && item.Source.Description == "AWS Storage" {
 			awsStorage = item.Source
@@ -1806,36 +1800,18 @@ func (h *HttpHandler) GetResourceDistribution(ctx echo.Context) error {
 // @Router   /inventory/api/v1/services/distribution [get]
 func (h *HttpHandler) GetServiceDistribution(ctx echo.Context) error {
 	sourceID := ctx.QueryParam("sourceId")
-	sourceUUID, err := uuid.Parse(sourceID)
+
+	hits, err := es.FetchConnectionServiceLocationsSummaryPage(h.client, source.Nil, &sourceID, nil, EsFetchPageSize)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, "invalid source uuid")
+		return err
 	}
 
 	var res []api.ServiceDistributionItem
-	var searchAfter []interface{}
-	for {
-		query, err := es.FindSourceServiceDistributionQuery(sourceUUID, EsFetchPageSize, searchAfter)
-		if err != nil {
-			return err
-		}
-
-		var response es.ServiceDistributionQueryResponse
-		err = h.client.Search(context.Background(), describe.SourceResourcesSummary, query, &response)
-		if err != nil {
-			return err
-		}
-
-		if len(response.Hits.Hits) == 0 {
-			break
-		}
-
-		for _, hit := range response.Hits.Hits {
-			res = append(res, api.ServiceDistributionItem{
-				ServiceName:  hit.Source.ServiceName,
-				Distribution: hit.Source.LocationDistribution,
-			})
-			searchAfter = hit.Sort
-		}
+	for _, hit := range hits {
+		res = append(res, api.ServiceDistributionItem{
+			ServiceName:  hit.ServiceName,
+			Distribution: hit.LocationDistribution,
+		})
 	}
 	return ctx.JSON(http.StatusOK, res)
 }
@@ -2309,7 +2285,7 @@ func (h *HttpHandler) ListInsightsResults(ctx echo.Context) error {
 	}
 
 	var response es.InsightResultQueryResponse
-	err = h.client.Search(context.Background(), kafka.InsightsIndex,
+	err = h.client.Search(context.Background(), insight.InsightsIndex,
 		query, &response)
 	if err != nil {
 		return err

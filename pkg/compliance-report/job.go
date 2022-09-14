@@ -10,6 +10,8 @@ import (
 	"path/filepath"
 	"time"
 
+	"gitlab.com/keibiengine/keibi-engine/pkg/kafka"
+
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 
@@ -27,7 +29,7 @@ import (
 	"github.com/elastic/go-elasticsearch/v7"
 	"github.com/google/uuid"
 	"gitlab.com/keibiengine/keibi-engine/pkg/compliance-report/api"
-	"gitlab.com/keibiengine/keibi-engine/pkg/describe/kafka"
+	describe "gitlab.com/keibiengine/keibi-engine/pkg/describe/es"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpclient"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/vault"
 	"gitlab.com/keibiengine/keibi-engine/pkg/keibi-es-sdk"
@@ -325,17 +327,17 @@ func (j *Job) Do(vlt vault.SourceConfig, producer sarama.SyncProducer, topic str
 			compliant++
 		}
 	}
-	resource := kafka.ResourceCompliancyTrendResource{
+	resource := describe.ResourceCompliancyTrendResource{
 		SourceID:                  j.SourceID.String(),
 		SourceType:                j.SourceType,
 		ComplianceJobID:           j.JobID,
 		DescribedAt:               j.DescribedAt,
 		CompliantResourceCount:    compliant,
 		NonCompliantResourceCount: nonCompliant,
-		ResourceSummaryType:       kafka.ResourceSummaryTypeCompliancyTrend,
+		ResourceSummaryType:       describe.ResourceSummaryTypeCompliancyTrend,
 	}
 
-	var msgs []kafka.DescribedResource
+	var msgs []kafka.Doc
 	msgs = append(msgs, acr, acrLast, resource)
 	for _, r := range reports {
 		msgs = append(msgs, r)
@@ -346,7 +348,7 @@ func (j *Job) Do(vlt vault.SourceConfig, producer sarama.SyncProducer, topic str
 	for _, s := range sc {
 		msgs = append(msgs, s)
 	}
-	err = kafka.DoSendToKafka(producer, topic, msgs, j.logger)
+	err = kafka.DoSend(producer, topic, msgs, j.logger)
 	if err != nil {
 		DoComplianceReportJobsDuration.WithLabelValues(string(j.SourceType), "failure").Observe(float64(time.Now().Unix() - startTime))
 		DoComplianceReportJobsCount.WithLabelValues(string(j.SourceType), "failure").Inc()

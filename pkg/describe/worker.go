@@ -9,8 +9,6 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/go-redis/cache/v8"
-
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/exporters/jaeger"
 	"go.opentelemetry.io/otel/sdk/resource"
@@ -24,8 +22,6 @@ import (
 	"go.opentelemetry.io/otel/codes"
 
 	"github.com/go-redis/redis/v8"
-
-	"gitlab.com/keibiengine/keibi-engine/pkg/keibi-es-sdk"
 
 	"github.com/prometheus/client_golang/prometheus/push"
 
@@ -47,8 +43,6 @@ type Worker struct {
 	kfkTopic              string
 	vault                 vault.SourceConfig
 	rdb                   *redis.Client
-	cs                    *cache.Cache
-	es                    keibi.Client
 	logger                *zap.Logger
 	pusher                *push.Pusher
 	tp                    *trace.TracerProvider
@@ -147,16 +141,6 @@ func InitializeWorker(
 
 	w.logger.Info("Connected to vault:", zap.String("vaultAddress", vaultAddress))
 	w.vault = v
-	defaultAccountID := "default"
-	w.es, err = keibi.NewClient(keibi.ClientConfig{
-		Addresses: []string{elasticSearchAddress},
-		Username:  &elasticSearchUsername,
-		Password:  &elasticSearchPassword,
-		AccountID: &defaultAccountID,
-	})
-	if err != nil {
-		return nil, err
-	}
 
 	w.pusher = push.New(prometheusPushAddress, "describe-worker")
 	w.pusher.Collector(DoDescribeJobsCount).
@@ -166,14 +150,6 @@ func InitializeWorker(
 		Addr:     redisAddress,
 		Password: "", // no password set
 		DB:       0,  // use default DB
-	})
-
-	w.cs = cache.New(&cache.Options{
-		Redis: redis.NewClient(&redis.Options{
-			Addr:     cacheAddress,
-			Password: "", // no password set
-			DB:       0,  // use default DB
-		}),
 	})
 
 	exp, _ := jaeger.New(jaeger.WithCollectorEndpoint(jaeger.WithEndpoint(jaegerAddress)))
@@ -228,7 +204,7 @@ func (w *Worker) Run(ctx context.Context) error {
 		return nil
 	}
 
-	result := job.Do(ctx, w.vault, w.rdb, w.cs, w.es, w.kfkProducer, w.kfkTopic, w.logger)
+	result := job.Do(ctx, w.vault, w.rdb, w.kfkProducer, w.kfkTopic, w.logger)
 	if strings.Contains(result.Error, "ThrottlingException") ||
 		strings.Contains(result.Error, "Rate exceeded") ||
 		strings.Contains(result.Error, "RateExceeded") {
@@ -428,8 +404,6 @@ type ConnectionWorker struct {
 	vault                 vault.SourceConfig
 	describeIntervalHours time.Duration
 	rdb                   *redis.Client
-	cs                    *cache.Cache
-	es                    keibi.Client
 	logger                *zap.Logger
 	pusher                *push.Pusher
 	tp                    *trace.TracerProvider
@@ -527,16 +501,6 @@ func InitializeConnectionWorker(
 
 	w.logger.Info("Connected to vault:", zap.String("vaultAddress", vaultAddress))
 	w.vault = v
-	defaultAccountID := "default"
-	w.es, err = keibi.NewClient(keibi.ClientConfig{
-		Addresses: []string{elasticSearchAddress},
-		Username:  &elasticSearchUsername,
-		Password:  &elasticSearchPassword,
-		AccountID: &defaultAccountID,
-	})
-	if err != nil {
-		return nil, err
-	}
 
 	w.pusher = push.New(prometheusPushAddress, "describe-connection-worker")
 	w.pusher.Collector(DoDescribeJobsCount).
@@ -546,14 +510,6 @@ func InitializeConnectionWorker(
 		Addr:     redisAddress,
 		Password: "", // no password set
 		DB:       0,  // use default DB
-	})
-
-	w.cs = cache.New(&cache.Options{
-		Redis: redis.NewClient(&redis.Options{
-			Addr:     cacheAddress,
-			Password: "", // no password set
-			DB:       0,  // use default DB
-		}),
 	})
 
 	exp, _ := jaeger.New(jaeger.WithCollectorEndpoint(jaeger.WithEndpoint(jaegerAddress)))
@@ -608,7 +564,7 @@ func (w *ConnectionWorker) Run(ctx context.Context) error {
 		return errors.New("job already failed: timeout")
 	}
 
-	result := job.Do(ctx, w.vault, w.rdb, w.cs, w.es, w.kfkProducer, w.kfkTopic, w.logger)
+	result := job.Do(ctx, w.vault, w.rdb, w.kfkProducer, w.kfkTopic, w.logger)
 
 	err = w.jobResultQueue.Publish(result)
 	if err != nil {

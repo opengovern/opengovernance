@@ -8,6 +8,9 @@ import (
 	"strings"
 	"time"
 
+	"gitlab.com/keibiengine/keibi-engine/pkg/insight/es"
+	"gitlab.com/keibiengine/keibi-engine/pkg/kafka"
+
 	"gitlab.com/keibiengine/keibi-engine/pkg/source"
 
 	"github.com/aws/aws-sdk-go/service/managedgrafana"
@@ -24,7 +27,6 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
-	"gitlab.com/keibiengine/keibi-engine/pkg/insight/kafka"
 
 	"github.com/go-errors/errors"
 	"go.uber.org/zap"
@@ -68,7 +70,7 @@ type JobResult struct {
 	Error  string
 }
 
-func (j Job) Do(es keibi.Client, steampipeConn *steampipe.Database, onboardClient client.OnboardServiceClient, producer sarama.SyncProducer, topic string, logger *zap.Logger) (r JobResult) {
+func (j Job) Do(client keibi.Client, steampipeConn *steampipe.Database, onboardClient client.OnboardServiceClient, producer sarama.SyncProducer, topic string, logger *zap.Logger) (r JobResult) {
 	startTime := time.Now().Unix()
 	defer func() {
 		if err := recover(); err != nil {
@@ -125,7 +127,7 @@ func (j Job) Do(es keibi.Client, steampipeConn *steampipe.Database, onboardClien
 				if err != nil {
 					fail(fmt.Errorf("failed to build query: %w", err))
 				}
-				err = es.Search(context.Background(), kafka.InsightsIndex, query, &response)
+				err = client.Search(context.Background(), es.InsightsIndex, query, &response)
 				if err != nil {
 					fail(fmt.Errorf("failed to run query: %w", err))
 				}
@@ -145,9 +147,9 @@ func (j Job) Do(es keibi.Client, steampipeConn *steampipe.Database, onboardClien
 				}
 			}
 
-			var resources []kafka.InsightResource
-			for _, resourceType := range []kafka.InsightResourceType{kafka.InsightResourceHistory, kafka.InsightResourceLast} {
-				resources = append(resources, kafka.InsightResource{
+			var resources []kafka.Doc
+			for _, resourceType := range []es.InsightResourceType{es.InsightResourceHistory, es.InsightResourceLast} {
+				resources = append(resources, es.InsightResource{
 					JobID:            j.JobID,
 					QueryID:          j.QueryID,
 					SmartQueryID:     j.SmartQueryID,
@@ -165,7 +167,7 @@ func (j Job) Do(es keibi.Client, steampipeConn *steampipe.Database, onboardClien
 					ResourceType:     resourceType,
 				})
 			}
-			if err := kafka.DoSendToKafka(producer, topic, resources, logger); err != nil {
+			if err := kafka.DoSend(producer, topic, resources, logger); err != nil {
 				fail(fmt.Errorf("send to kafka: %w", err))
 			}
 		} else {

@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"gitlab.com/keibiengine/keibi-engine/pkg/describe/kafka"
+	"gitlab.com/keibiengine/keibi-engine/pkg/describe/es"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/describe"
 	"gitlab.com/keibiengine/keibi-engine/pkg/keibi-es-sdk"
@@ -20,7 +20,7 @@ func QuerySummaryResources(
 	size, lastIndex int,
 	sorts []ResourceSortItem,
 	commonFilter *bool,
-) ([]kafka.LookupResource, keibi.SearchTotal, error) {
+) ([]es.LookupResource, keibi.SearchTotal, error) {
 	var err error
 
 	terms := make(map[string][]string)
@@ -144,14 +144,14 @@ func BuildSummaryQuery(query string, terms map[string][]string, notTerms map[str
 	return string(queryBytes), nil
 }
 
-func SummaryQueryES(client keibi.Client, ctx context.Context, index string, query string) ([]kafka.LookupResource, keibi.SearchTotal, error) {
+func SummaryQueryES(client keibi.Client, ctx context.Context, index string, query string) ([]es.LookupResource, keibi.SearchTotal, error) {
 	var response SummaryQueryResponse
 	err := client.SearchWithTrackTotalHits(ctx, index, query, &response, true)
 	if err != nil {
 		return nil, keibi.SearchTotal{}, err
 	}
 
-	var resources []kafka.LookupResource
+	var resources []es.LookupResource
 	for _, hits := range response.Hits.Hits {
 		resources = append(resources, hits.Source)
 	}

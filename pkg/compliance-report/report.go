@@ -1,9 +1,7 @@
 package compliance_report
 
 import (
-	"crypto/sha256"
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"strconv"
 
@@ -13,7 +11,6 @@ import (
 
 	"github.com/google/uuid"
 	"gitlab.com/keibiengine/keibi-engine/pkg/keibi-es-sdk"
-	"gopkg.in/Shopify/sarama.v1"
 )
 
 const (
@@ -59,31 +56,11 @@ type Report struct {
 	DescribedAt int64            `json:"describedAt"`
 }
 
-func (r Report) AsProducerMessage() (*sarama.ProducerMessage, error) {
-	value, err := json.Marshal(r)
-	if err != nil {
-		return nil, err
-	}
-
-	u, err := uuid.NewUUID()
-	if err != nil {
-		return nil, err
-	}
-
-	return &sarama.ProducerMessage{
-		Key: sarama.StringEncoder(u.String()),
-		Headers: []sarama.RecordHeader{
-			{
-				Key:   []byte(esIndexHeader),
-				Value: []byte(ComplianceReportIndex),
-			},
-		},
-		Value: sarama.ByteEncoder(value),
-	}, nil
-}
-
-func (r Report) MessageID() string {
-	return strconv.FormatInt(int64(r.ReportJobId), 10)
+func (r Report) KeysAndIndex() ([]string, string) {
+	u, _ := uuid.NewUUID()
+	return []string{
+		u.String(),
+	}, ComplianceReportIndex
 }
 
 type AccountReport struct {
@@ -99,40 +76,17 @@ type AccountReport struct {
 	AccountReportType    es.AccountReportType `json:"accountReportType"`
 }
 
-func (r AccountReport) AsProducerMessage() (*sarama.ProducerMessage, error) {
-	value, err := json.Marshal(r)
-	if err != nil {
-		return nil, err
-	}
-
-	var key string
+func (r AccountReport) KeysAndIndex() ([]string, string) {
+	u, _ := uuid.NewUUID()
+	keys := []string{u.String()}
 	if r.AccountReportType == es.AccountReportTypeLast {
-		h := sha256.New()
-		h.Write([]byte(r.BenchmarkID))
-		h.Write([]byte(r.SourceID.String()))
-		key = fmt.Sprintf("%x", h.Sum(nil))
-	} else {
-		u, err := uuid.NewUUID()
-		if err != nil {
-			return nil, err
+		keys = []string{
+			r.BenchmarkID,
+			r.SourceID.String(),
 		}
-		key = u.String()
 	}
 
-	return &sarama.ProducerMessage{
-		Key: sarama.StringEncoder(key),
-		Headers: []sarama.RecordHeader{
-			{
-				Key:   []byte(esIndexHeader),
-				Value: []byte(AccountReportIndex),
-			},
-		},
-		Value: sarama.ByteEncoder(value),
-	}, nil
-}
-
-func (r AccountReport) MessageID() string {
-	return r.SourceID.String()
+	return keys, AccountReportIndex
 }
 
 type SummaryStatus struct {

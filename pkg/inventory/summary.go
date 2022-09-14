@@ -1,8 +1,6 @@
 package inventory
 
 import (
-	"gitlab.com/keibiengine/keibi-engine/pkg/describe/kafka"
-
 	"gitlab.com/keibiengine/keibi-engine/pkg/cloudservice"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/inventory/api"
@@ -15,7 +13,7 @@ func GetCategories(client keibi.Client, provider source.Type, sourceID *string) 
 
 	categoryMap := map[string]api.CategoriesResponse{}
 	if sourceID == nil {
-		hits, err := es.FetchConnectionCategoriesSummaryPage(client, provider, nil, EsFetchPageSize)
+		hits, err := es.FetchProviderCategoriesSummaryPage(client, provider, nil, EsFetchPageSize)
 		if err != nil {
 			return nil, err
 		}
@@ -35,7 +33,7 @@ func GetCategories(client keibi.Client, provider source.Type, sourceID *string) 
 			}
 		}
 	} else {
-		hits, err := es.GetCategoriesQuery(client, string(provider), sourceID)
+		hits, err := es.FetchConnectionCategoriesSummaryPage(client, sourceID, nil, EsFetchPageSize)
 		if err != nil {
 			return nil, err
 		}
@@ -67,7 +65,7 @@ func GetCategories(client keibi.Client, provider source.Type, sourceID *string) 
 func GetServices(client keibi.Client, provider source.Type, sourceID *string) ([]api.TopServicesResponse, error) {
 	serviceResponse := map[string]api.TopServicesResponse{}
 	if sourceID == nil {
-		hits, err := es.FetchConnectionServicesSummaryPage(client, provider, nil, EsFetchPageSize)
+		hits, err := es.FetchProviderServicesSummaryPage(client, provider, nil, EsFetchPageSize)
 		if err != nil {
 			return nil, err
 		}
@@ -88,12 +86,10 @@ func GetServices(client keibi.Client, provider source.Type, sourceID *string) ([
 			}
 		}
 	} else {
-		var hits []kafka.SourceServicesSummary
-		res, err := es.FetchServicesQuery(client, string(provider), sourceID)
+		hits, err := es.FetchConnectionServicesSummaryPage(client, sourceID, nil, EsFetchPageSize)
 		if err != nil {
 			return nil, err
 		}
-		hits = res
 		for _, hit := range hits {
 			if v, ok := serviceResponse[hit.ServiceName]; ok {
 				v.ResourceCount += hit.ResourceCount
@@ -144,7 +140,7 @@ func GetResources(client keibi.Client, provider source.Type, sourceID *string, r
 			}
 		}
 	} else {
-		hits, err := es.FetchResourceLastSummary(client, provider, sourceID, resourceTypes)
+		hits, err := es.FetchConnectionResourceTypeSummaryPage(client, sourceID, resourceTypes, nil, EsFetchPageSize)
 		if err != nil {
 			return nil, err
 		}

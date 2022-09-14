@@ -3,11 +3,12 @@ package api
 import (
 	"time"
 
+	"gitlab.com/keibiengine/keibi-engine/pkg/describe/es"
+
 	"gitlab.com/keibiengine/keibi-engine/pkg/source"
 
 	"github.com/google/uuid"
 	compliance_report "gitlab.com/keibiengine/keibi-engine/pkg/compliance-report"
-	"gitlab.com/keibiengine/keibi-engine/pkg/describe/kafka"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/api"
 	"gitlab.com/keibiengine/keibi-engine/pkg/keibi-es-sdk"
 )
@@ -275,13 +276,13 @@ type SummaryQueryHits struct {
 	Hits  []SummaryQueryHit `json:"hits"`
 }
 type SummaryQueryHit struct {
-	ID      string               `json:"_id"`
-	Score   float64              `json:"_score"`
-	Index   string               `json:"_index"`
-	Type    string               `json:"_type"`
-	Version int64                `json:"_version,omitempty"`
-	Source  kafka.LookupResource `json:"_source"`
-	Sort    []interface{}        `json:"sort"`
+	ID      string            `json:"_id"`
+	Score   float64           `json:"_score"`
+	Index   string            `json:"_index"`
+	Type    string            `json:"_type"`
+	Version int64             `json:"_version,omitempty"`
+	Source  es.LookupResource `json:"_source"`
+	Sort    []interface{}     `json:"sort"`
 }
 
 type GenericQueryResponse struct {

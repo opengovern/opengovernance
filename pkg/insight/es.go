@@ -3,7 +3,8 @@ package insight
 import (
 	"encoding/json"
 
-	"gitlab.com/keibiengine/keibi-engine/pkg/insight/kafka"
+	"gitlab.com/keibiengine/keibi-engine/pkg/insight/es"
+
 	"gitlab.com/keibiengine/keibi-engine/pkg/keibi-es-sdk"
 )
 
@@ -15,20 +16,20 @@ type ResultQueryHits struct {
 	Hits  []ResultQueryHit  `json:"hits"`
 }
 type ResultQueryHit struct {
-	ID      string                `json:"_id"`
-	Score   float64               `json:"_score"`
-	Index   string                `json:"_index"`
-	Type    string                `json:"_type"`
-	Version int64                 `json:"_version,omitempty"`
-	Source  kafka.InsightResource `json:"_source"`
-	Sort    []interface{}         `json:"sort"`
+	ID      string             `json:"_id"`
+	Score   float64            `json:"_score"`
+	Index   string             `json:"_index"`
+	Type    string             `json:"_type"`
+	Version int64              `json:"_version,omitempty"`
+	Source  es.InsightResource `json:"_source"`
+	Sort    []interface{}      `json:"sort"`
 }
 
 func FindOldInsightValue(jobID, queryID uint) (string, error) {
 	boolQuery := map[string]interface{}{}
 	var filters []interface{}
 	filters = append(filters, map[string]interface{}{
-		"terms": map[string][]string{"resource_type": {kafka.InsightResourceHistory}},
+		"terms": map[string][]string{"resource_type": {es.InsightResourceHistory}},
 	})
 	filters = append(filters, map[string]interface{}{
 		"terms": map[string][]interface{}{"job_id": {jobID}},

@@ -1,16 +1,12 @@
 package es
 
 import (
-	"crypto/sha256"
 	"encoding/json"
-	"fmt"
 	"strconv"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/keibi-es-sdk"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/source"
-
-	"gopkg.in/Shopify/sarama.v1"
 )
 
 const (
@@ -31,21 +27,11 @@ type CompliancySummary struct {
 	DescribedAt           int64                 `json:"describedAt"`
 }
 
-func (r CompliancySummary) AsProducerMessage() (*sarama.ProducerMessage, error) {
-	value, err := json.Marshal(r)
-	if err != nil {
-		return nil, err
-	}
-
-	return kafkaMsg(
-		hashOf(string(r.CompliancySummaryType), strconv.FormatInt(int64(r.ReportJobId), 10)),
-		value,
-		CompliancySummaryIndex,
-	), nil
-}
-
-func (r CompliancySummary) MessageID() string {
-	return strconv.FormatInt(int64(r.ReportJobId), 10)
+func (r CompliancySummary) KeysAndIndex() ([]string, string) {
+	return []string{
+		string(r.CompliancySummaryType),
+		strconv.FormatInt(int64(r.ReportJobId), 10),
+	}, CompliancySummaryIndex
 }
 
 type ServiceCompliancySummary struct {
@@ -58,38 +44,12 @@ type ServiceCompliancySummary struct {
 	CompliancySummary
 }
 
-func (r ServiceCompliancySummary) AsProducerMessage() (*sarama.ProducerMessage, error) {
-	value, err := json.Marshal(r)
-	if err != nil {
-		return nil, err
-	}
-
-	return kafkaMsg(
-		hashOf(r.ServiceName, string(r.CompliancySummaryType), strconv.FormatInt(int64(r.ReportJobId), 10)),
-		value,
-		CompliancySummaryIndex,
-	), nil
-}
-
-func kafkaMsg(key string, value []byte, index string) *sarama.ProducerMessage {
-	return &sarama.ProducerMessage{
-		Key: sarama.StringEncoder(key),
-		Headers: []sarama.RecordHeader{
-			{
-				Key:   []byte(esIndexHeader),
-				Value: []byte(index),
-			},
-		},
-		Value: sarama.ByteEncoder(value),
-	}
-}
-
-func hashOf(strings ...string) string {
-	h := sha256.New()
-	for _, s := range strings {
-		h.Write([]byte(s))
-	}
-	return fmt.Sprintf("%x", h.Sum(nil))
+func (r ServiceCompliancySummary) KeysAndIndex() ([]string, string) {
+	return []string{
+		r.ServiceName,
+		string(r.CompliancySummaryType),
+		strconv.FormatInt(int64(r.ReportJobId), 10),
+	}, CompliancySummaryIndex
 }
 
 type ServiceCompliancySummaryQueryResponse struct {
