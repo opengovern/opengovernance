@@ -1,7 +1,9 @@
 package es
 
 import (
+	"fmt"
 	"strconv"
+	"strings"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/source"
 )
@@ -35,11 +37,15 @@ type ProviderServiceSummary struct {
 }
 
 func (r ProviderServiceSummary) KeysAndIndex() ([]string, string) {
-	return []string{
+	keys := []string{
 		r.ServiceName,
 		r.SourceType.String(),
 		string(ServiceProviderSummary),
-	}, ProviderSummaryIndex
+	}
+	if strings.HasSuffix(string(r.ReportType), "History") {
+		keys = append(keys, fmt.Sprintf("%d", r.ScheduleJobID))
+	}
+	return keys, ProviderSummaryIndex
 }
 
 type ProviderCategorySummary struct {
@@ -57,11 +63,15 @@ type ProviderCategorySummary struct {
 }
 
 func (r ProviderCategorySummary) KeysAndIndex() ([]string, string) {
-	return []string{
+	keys := []string{
 		r.CategoryName,
 		r.SourceType.String(),
 		string(CategoryProviderSummary),
-	}, ProviderSummaryIndex
+	}
+	if strings.HasSuffix(string(r.ReportType), "History") {
+		keys = append(keys, fmt.Sprintf("%d", r.ScheduleJobID))
+	}
+	return keys, ProviderSummaryIndex
 }
 
 type ProviderTrendSummary struct {
@@ -73,11 +83,15 @@ type ProviderTrendSummary struct {
 }
 
 func (r ProviderTrendSummary) KeysAndIndex() ([]string, string) {
-	return []string{
+	keys := []string{
 		r.SourceType.String(),
 		strconv.FormatInt(r.DescribedAt, 10),
 		string(TrendProviderSummary),
-	}, ProviderSummaryIndex
+	}
+	if strings.HasSuffix(string(r.ReportType), "History") {
+		keys = append(keys, fmt.Sprintf("%d", r.ScheduleJobID))
+	}
+	return keys, ProviderSummaryIndex
 }
 
 type ProviderResourceTypeSummary struct {
@@ -93,11 +107,15 @@ type ProviderResourceTypeSummary struct {
 }
 
 func (r ProviderResourceTypeSummary) KeysAndIndex() ([]string, string) {
-	return []string{
+	keys := []string{
 		r.ResourceType,
 		r.SourceType.String(),
 		string(ResourceTypeProviderSummary),
-	}, ProviderSummaryIndex
+	}
+	if strings.HasSuffix(string(r.ReportType), "History") {
+		keys = append(keys, fmt.Sprintf("%d", r.ScheduleJobID))
+	}
+	return keys, ProviderSummaryIndex
 }
 
 type ProviderLocationSummary struct {
@@ -108,8 +126,12 @@ type ProviderLocationSummary struct {
 }
 
 func (r ProviderLocationSummary) KeysAndIndex() ([]string, string) {
-	return []string{
+	keys := []string{
 		r.SourceType.String(),
 		string(LocationProviderSummary),
-	}, ProviderSummaryIndex
+	}
+	if strings.HasSuffix(string(r.ReportType), "History") {
+		keys = append(keys, fmt.Sprintf("%d", r.ScheduleJobID))
+	}
+	return keys, ProviderSummaryIndex
 }

@@ -1,7 +1,9 @@
 package es
 
 import (
+	"fmt"
 	"strconv"
+	"strings"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/source"
 )
@@ -37,10 +39,14 @@ type ConnectionResourcesSummary struct {
 }
 
 func (r ConnectionResourcesSummary) KeysAndIndex() ([]string, string) {
-	return []string{
+	keys := []string{
 		r.SourceID,
 		string(ResourceSummary),
-	}, ConnectionSummaryIndex
+	}
+	if strings.HasSuffix(string(r.ReportType), "History") {
+		keys = append(keys, fmt.Sprintf("%d", r.ScheduleJobID))
+	}
+	return keys, ConnectionSummaryIndex
 }
 
 type ConnectionLocationSummary struct {
@@ -53,10 +59,14 @@ type ConnectionLocationSummary struct {
 }
 
 func (r ConnectionLocationSummary) KeysAndIndex() ([]string, string) {
-	return []string{
+	keys := []string{
 		r.SourceID,
 		string(LocationConnectionSummary),
-	}, ConnectionSummaryIndex
+	}
+	if strings.HasSuffix(string(r.ReportType), "History") {
+		keys = append(keys, fmt.Sprintf("%d", r.ScheduleJobID))
+	}
+	return keys, ConnectionSummaryIndex
 }
 
 type ConnectionServiceLocationSummary struct {
@@ -70,11 +80,15 @@ type ConnectionServiceLocationSummary struct {
 }
 
 func (r ConnectionServiceLocationSummary) KeysAndIndex() ([]string, string) {
-	return []string{
+	keys := []string{
 		r.ServiceName,
 		r.SourceID,
 		string(ServiceLocationConnectionSummary),
-	}, ConnectionSummaryIndex
+	}
+	if strings.HasSuffix(string(r.ReportType), "History") {
+		keys = append(keys, fmt.Sprintf("%d", r.ScheduleJobID))
+	}
+	return keys, ConnectionSummaryIndex
 }
 
 type ConnectionTrendSummary struct {
@@ -88,11 +102,15 @@ type ConnectionTrendSummary struct {
 }
 
 func (r ConnectionTrendSummary) KeysAndIndex() ([]string, string) {
-	return []string{
+	keys := []string{
 		strconv.FormatInt(r.DescribedAt, 10),
 		r.SourceID,
 		string(TrendConnectionSummary),
-	}, ConnectionSummaryIndex
+	}
+	if strings.HasSuffix(string(r.ReportType), "History") {
+		keys = append(keys, fmt.Sprintf("%d", r.ScheduleJobID))
+	}
+	return keys, ConnectionSummaryIndex
 }
 
 type ConnectionResourceTypeSummary struct {
@@ -110,11 +128,15 @@ type ConnectionResourceTypeSummary struct {
 }
 
 func (r ConnectionResourceTypeSummary) KeysAndIndex() ([]string, string) {
-	return []string{
+	keys := []string{
 		r.ResourceType,
 		r.SourceID,
 		string(ResourceTypeSummary),
-	}, ConnectionSummaryIndex
+	}
+	if strings.HasSuffix(string(r.ReportType), "History") {
+		keys = append(keys, fmt.Sprintf("%d", r.ScheduleJobID))
+	}
+	return keys, ConnectionSummaryIndex
 }
 
 type ConnectionServiceSummary struct {
@@ -134,11 +156,15 @@ type ConnectionServiceSummary struct {
 }
 
 func (r ConnectionServiceSummary) KeysAndIndex() ([]string, string) {
-	return []string{
+	keys := []string{
 		r.ServiceName,
 		r.SourceID,
 		string(ServiceSummary),
-	}, ConnectionSummaryIndex
+	}
+	if strings.HasSuffix(string(r.ReportType), "History") {
+		keys = append(keys, fmt.Sprintf("%d", r.ScheduleJobID))
+	}
+	return keys, ConnectionSummaryIndex
 }
 
 type ConnectionCategorySummary struct {
@@ -158,9 +184,13 @@ type ConnectionCategorySummary struct {
 }
 
 func (r ConnectionCategorySummary) KeysAndIndex() ([]string, string) {
-	return []string{
+	keys := []string{
 		r.CategoryName,
 		r.SourceID,
 		string(CategorySummary),
-	}, ConnectionSummaryIndex
+	}
+	if strings.HasSuffix(string(r.ReportType), "History") {
+		keys = append(keys, fmt.Sprintf("%d", r.ScheduleJobID))
+	}
+	return keys, ConnectionSummaryIndex
 }

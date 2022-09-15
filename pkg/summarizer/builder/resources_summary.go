@@ -48,6 +48,9 @@ func (b *resourceSummaryBuilder) Build() []kafka.Doc {
 	var docs []kafka.Doc
 	for _, v := range b.connectionSummary {
 		docs = append(docs, v)
+		h := v
+		h.ReportType = h.ReportType + "History"
+		docs = append(docs, h)
 	}
 	return docs
 }
