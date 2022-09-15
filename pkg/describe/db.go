@@ -847,3 +847,23 @@ func (db Database) UpdateScheduleJobStatus(id uint, status summarizerapi.Summari
 	}
 	return nil
 }
+
+// GetOldCompletedScheduleJob returns the last ScheduleJob at nDaysBefore
+func (db Database) GetOldCompletedScheduleJob(nDaysBefore int) (*ScheduleJob, error) {
+	var job *ScheduleJob
+	tx := db.orm.Model(&ScheduleJob{}).
+		Where("status = ?", string(summarizerapi.SummarizerJobSucceeded)).
+		Where(fmt.Sprintf("created_at < now() - interval '%d days'", nDaysBefore-1)).
+		Where(fmt.Sprintf("created_at >= now() - interval '%d days'", nDaysBefore)).
+		Order("created_at DESC").
+		First(&job)
+	if tx.Error != nil {
+		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
+		return nil, tx.Error
+	} else if tx.RowsAffected != 1 {
+		return nil, nil
+	}
+	return job, nil
+}

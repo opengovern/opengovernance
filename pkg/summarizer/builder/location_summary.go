@@ -3,18 +3,21 @@ package builder
 import (
 	describe "gitlab.com/keibiengine/keibi-engine/pkg/describe/es"
 	"gitlab.com/keibiengine/keibi-engine/pkg/kafka"
+	"gitlab.com/keibiengine/keibi-engine/pkg/keibi-es-sdk"
 	"gitlab.com/keibiengine/keibi-engine/pkg/source"
 	"gitlab.com/keibiengine/keibi-engine/pkg/summarizer/es"
 )
 
 type locationSummaryBuilder struct {
+	client            keibi.Client
 	summarizerJobID   uint
 	connectionSummary map[string]es.ConnectionLocationSummary
 	providerSummary   map[source.Type]es.ProviderLocationSummary
 }
 
-func NewLocationSummaryBuilder(summarizerJobID uint) *locationSummaryBuilder {
+func NewLocationSummaryBuilder(client keibi.Client, summarizerJobID uint) *locationSummaryBuilder {
 	return &locationSummaryBuilder{
+		client:            client,
 		summarizerJobID:   summarizerJobID,
 		connectionSummary: make(map[string]es.ConnectionLocationSummary),
 		providerSummary:   make(map[source.Type]es.ProviderLocationSummary),
@@ -51,7 +54,7 @@ func (b *locationSummaryBuilder) Process(resource describe.LookupResource) {
 	b.providerSummary[resource.SourceType] = v2
 }
 
-func (b *locationSummaryBuilder) PopulateHistory() error {
+func (b *locationSummaryBuilder) PopulateHistory(lastDayJobID, lastWeekJobID, lastQuarterJobID, lastYearJobID uint) error {
 	return nil
 }
 

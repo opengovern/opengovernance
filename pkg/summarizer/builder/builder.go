@@ -7,6 +7,6 @@ import (
 
 type Builder interface {
 	Process(resource describe.LookupResource)
-	PopulateHistory() error
+	PopulateHistory(lastDayJobID, lastWeekJobID, lastQuarterJobID, lastYearJobID uint) error
 	Build() []kafka.Doc
 }

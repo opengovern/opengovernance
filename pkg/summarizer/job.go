@@ -37,20 +37,14 @@ var DoSummarizerJobsDuration = promauto.NewHistogramVec(prometheus.HistogramOpts
 	Buckets:   []float64{5, 60, 300, 600, 1800, 3600, 7200, 36000},
 }, []string{"queryid", "status"})
 
-type DescribeJob struct {
-	ID       uint
-	SourceID string
-
-	LastDaySourceJobID     uint
-	LastWeekSourceJobID    uint
-	LastQuarterSourceJobID uint
-	LastYearSourceJobID    uint
-}
-
 type Job struct {
-	JobID              uint
-	ScheduleJobID      uint
-	DescribeSourceJobs []DescribeJob
+	JobID         uint
+	ScheduleJobID uint
+
+	LastDayScheduleJobID     uint
+	LastWeekScheduleJobID    uint
+	LastQuarterScheduleJobID uint
+	LastYearScheduleJobID    uint
 }
 
 type JobResult struct {
@@ -123,7 +117,7 @@ func (j Job) Do(client keibi.Client, producer sarama.SyncProducer, topic string,
 		}
 	}
 	for _, b := range builders {
-		err := b.PopulateHistory()
+		err := b.PopulateHistory(j.LastDayScheduleJobID, j.LastWeekScheduleJobID, j.LastQuarterScheduleJobID, j.LastYearScheduleJobID)
 		if err != nil {
 			fail(fmt.Errorf("Failed to populate history: %v ", err))
 		}
