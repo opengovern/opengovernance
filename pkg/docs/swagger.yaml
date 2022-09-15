@@ -198,6 +198,13 @@ definitions:
       totalResources:
         type: integer
     type: object
+  api.ConnectionFull:
+    properties:
+      id:
+        type: string
+      name:
+        type: string
+    type: object
   api.CreateInsightRequest:
     properties:
       category:
@@ -559,6 +566,12 @@ definitions:
         items:
           type: string
         type: array
+      connections:
+        description: if you dont need to use this filter, leave them empty. (e.g.
+          [])
+        items:
+          type: string
+        type: array
       location:
         description: if you dont need to use this filter, leave them empty. (e.g.
           [])
@@ -605,6 +618,12 @@ definitions:
           [])
         items:
           type: string
+        type: array
+      connections:
+        description: if you dont need to use this filter, leave them empty. (e.g.
+          [])
+        items:
+          $ref: '#/definitions/api.ConnectionFull'
         type: array
       location:
         description: if you dont need to use this filter, leave them empty. (e.g.

@@ -108,6 +108,8 @@ type ResourceFilters struct {
 	// if you dont need to use this filter, leave them empty. (e.g. [])
 	Provider []string `json:"provider"`
 	// if you dont need to use this filter, leave them empty. (e.g. [])
+	Connections []string `json:"connections"`
+	// if you dont need to use this filter, leave them empty. (e.g. [])
 	TagKeys []string `json:"tagKeys"`
 	// if you dont need to use this filter, leave them empty. (e.g. [])
 	TagValues map[string][]string `json:"tagValues"`
@@ -116,6 +118,10 @@ type ResourceFilters struct {
 type ResourceTypeFull struct {
 	ResourceTypeARN  string `json:"resource_type_arn"`
 	ResourceTypeName string `json:"resource_type_name"`
+}
+type ConnectionFull struct {
+	ID   string `json:"id"`
+	Name string `json:"name"`
 }
 type ResourceFiltersResponse struct {
 	// if you dont need to use this filter, leave them empty. (e.g. [])
@@ -128,6 +134,8 @@ type ResourceFiltersResponse struct {
 	Location []string `json:"location"`
 	// if you dont need to use this filter, leave them empty. (e.g. [])
 	Provider []string `json:"provider"`
+	// if you dont need to use this filter, leave them empty. (e.g. [])
+	Connections []ConnectionFull `json:"connections"`
 	// if you dont need to use this filter, leave them empty. (e.g. [])
 	TagKeys []string `json:"tagKeys"`
 	// if you dont need to use this filter, leave them empty. (e.g. [])

@@ -125,6 +125,7 @@ type LookupResourceAggregations struct {
 	CategoryFilter     AggregationResult `json:"category_filter"`
 	ServiceFilter      AggregationResult `json:"service_filter"`
 	LocationFilter     AggregationResult `json:"location_filter"`
+	ConnectionFilter   AggregationResult `json:"connection_id_filter"`
 }
 type AggregationResult struct {
 	DocCountErrorUpperBound int      `json:"doc_count_error_upper_bound"`
@@ -160,6 +161,10 @@ func BuildFilterQuery(
 
 	if !api.FilterIsEmpty(filters.Provider) {
 		terms["source_type"] = filters.Provider
+	}
+
+	if !api.FilterIsEmpty(filters.Connections) {
+		terms["source_id"] = filters.Connections
 	}
 
 	if commonFilter != nil {
@@ -202,12 +207,16 @@ func BuildFilterQuery(
 	locationFilter := map[string]interface{}{
 		"terms": map[string]interface{}{"field": "location", "size": 1000},
 	}
+	connectionIDFilter := map[string]interface{}{
+		"terms": map[string]interface{}{"field": "source_id", "size": 1000},
+	}
 	aggs := map[string]interface{}{
 		"source_type_filter":   sourceTypeFilter,
 		"category_filter":      categoryFilter,
 		"service_filter":       serviceFilter,
 		"resource_type_filter": resourceTypeFilter,
 		"location_filter":      locationFilter,
+		"connection_id_filter": connectionIDFilter,
 	}
 	root["aggs"] = aggs
 

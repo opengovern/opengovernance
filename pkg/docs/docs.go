@@ -3845,6 +3845,17 @@ const docTemplate = `{
                 }
             }
         },
+        "api.ConnectionFull": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                }
+            }
+        },
         "api.CreateInsightRequest": {
             "type": "object",
             "properties": {
@@ -4377,6 +4388,13 @@ const docTemplate = `{
                         "type": "string"
                     }
                 },
+                "connections": {
+                    "description": "if you dont need to use this filter, leave them empty. (e.g. [])",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
                 "location": {
                     "description": "if you dont need to use this filter, leave them empty. (e.g. [])",
                     "type": "array",
@@ -4432,6 +4450,13 @@ const docTemplate = `{
                     "type": "array",
                     "items": {
                         "type": "string"
+                    }
+                },
+                "connections": {
+                    "description": "if you dont need to use this filter, leave them empty. (e.g. [])",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/api.ConnectionFull"
                     }
                 },
                 "location": {

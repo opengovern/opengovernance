@@ -2653,6 +2653,27 @@ func (h *HttpHandler) GetResourcesFilters(ctx echo.Context) error {
 			ResourceTypeName: cloudservice.ResourceTypeName(item.Key),
 		})
 	}
+
+	connectionIDs := []string{}
+	for _, item := range response.Aggregations.ConnectionFilter.Buckets {
+		connectionIDs = append(connectionIDs, item.Key)
+	}
+	connections, err := h.onboardClient.GetSources(httpclient.FromEchoContext(ctx), connectionIDs)
+	if err != nil {
+		return err
+	}
+	for _, item := range response.Aggregations.ConnectionFilter.Buckets {
+		connName := item.Key
+		for _, c := range connections {
+			if c.ID.String() == item.Key {
+				connName = c.ConnectionName
+			}
+		}
+		resp.Filters.Connections = append(resp.Filters.Connections, api.ConnectionFull{
+			ID:   item.Key,
+			Name: connName,
+		})
+	}
 	for _, item := range response.Aggregations.LocationFilter.Buckets {
 		resp.Filters.Location = append(resp.Filters.Location, item.Key)
 	}
