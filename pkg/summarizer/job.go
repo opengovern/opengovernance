@@ -89,13 +89,13 @@ func (j Job) Do(client keibi.Client, producer sarama.SyncProducer, topic string,
 
 	var msgs []kafka.Doc
 	builders := []builder.Builder{
-		builder.NewResourceSummaryBuilder(j.JobID),
-		builder.NewTrendSummaryBuilder(j.JobID),
-		builder.NewLocationSummaryBuilder(j.JobID),
-		builder.NewResourceTypeSummaryBuilder(j.JobID),
-		builder.NewServiceSummaryBuilder(j.JobID),
-		builder.NewCategorySummaryBuilder(j.JobID),
-		builder.NewServiceLocationSummaryBuilder(j.JobID),
+		builder.NewResourceSummaryBuilder(client, j.JobID),
+		builder.NewTrendSummaryBuilder(client, j.JobID),
+		builder.NewLocationSummaryBuilder(client, j.JobID),
+		builder.NewResourceTypeSummaryBuilder(client, j.JobID),
+		builder.NewServiceSummaryBuilder(client, j.JobID),
+		builder.NewCategorySummaryBuilder(client, j.JobID),
+		builder.NewServiceLocationSummaryBuilder(client, j.JobID),
 	}
 	var searchAfter []interface{}
 	for {
