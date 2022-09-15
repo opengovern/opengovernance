@@ -152,7 +152,7 @@ func ServiceNameByResourceType(resourceType string) string {
 	if record := findCloudServiceRecord(resourceType); record != nil {
 		return record.FullServiceName
 	}
-	return ""
+	return resourceType
 }
 
 func ResourceTypeName(resourceType string) string {
