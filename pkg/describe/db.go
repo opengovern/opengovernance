@@ -853,8 +853,8 @@ func (db Database) GetOldCompletedScheduleJob(nDaysBefore int) (*ScheduleJob, er
 	var job *ScheduleJob
 	tx := db.orm.Model(&ScheduleJob{}).
 		Where("status = ?", string(summarizerapi.SummarizerJobSucceeded)).
-		Where(fmt.Sprintf("created_at < now() - interval '%d days'", nDaysBefore-1)).
-		Where(fmt.Sprintf("created_at >= now() - interval '%d days'", nDaysBefore)).
+		Where(fmt.Sprintf("created_at < now() - interval '%d days'", nDaysBefore)).
+		Where(fmt.Sprintf("created_at >= now() - interval '%d days'", nDaysBefore+1)).
 		Order("created_at DESC").
 		First(&job)
 	if tx.Error != nil {

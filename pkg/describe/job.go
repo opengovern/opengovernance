@@ -138,11 +138,6 @@ type DescribeJob struct {
 	DescribedAt   int64
 	SourceType    api.SourceType
 	ConfigReg     string
-
-	LastDaySourceJobID     uint
-	LastWeekSourceJobID    uint
-	LastQuarterSourceJobID uint
-	LastYearSourceJobID    uint
 }
 
 type DescribeJobResult struct {
@@ -162,11 +157,6 @@ type DescribeConnectionJob struct {
 	DescribedAt   int64
 	SourceType    api.SourceType
 	ConfigReg     string
-
-	LastDaySourceJobID     uint
-	LastWeekSourceJobID    uint
-	LastQuarterSourceJobID uint
-	LastYearSourceJobID    uint
 }
 
 type DescribeConnectionJobResult struct {
@@ -212,19 +202,15 @@ func (j DescribeConnectionJob) Do(ictx context.Context, vlt vault.SourceConfig, 
 
 	for id, resourceType := range j.ResourceJobs {
 		workChannel <- DescribeJob{
-			JobID:                  id,
-			ScheduleJobID:          j.ScheduleJobID,
-			ParentJobID:            j.JobID,
-			ResourceType:           resourceType,
-			SourceID:               j.SourceID,
-			AccountID:              j.AccountID,
-			DescribedAt:            j.DescribedAt,
-			SourceType:             j.SourceType,
-			ConfigReg:              j.ConfigReg,
-			LastDaySourceJobID:     j.LastDaySourceJobID,
-			LastWeekSourceJobID:    j.LastWeekSourceJobID,
-			LastQuarterSourceJobID: j.LastQuarterSourceJobID,
-			LastYearSourceJobID:    j.LastYearSourceJobID,
+			JobID:         id,
+			ScheduleJobID: j.ScheduleJobID,
+			ParentJobID:   j.JobID,
+			ResourceType:  resourceType,
+			SourceID:      j.SourceID,
+			AccountID:     j.AccountID,
+			DescribedAt:   j.DescribedAt,
+			SourceType:    j.SourceType,
+			ConfigReg:     j.ConfigReg,
 		}
 	}
 
@@ -494,9 +480,8 @@ func doDescribeAWS(ctx context.Context, rdb *redis.Client, job DescribeJob, conf
 		}
 	}
 
-	logger.Info(fmt.Sprintf("job[%d] parent[%d] resourceType[%s] lastDay=%d, lastWeek=%d lastQuarter=%d lastYear=%d noOfResources=%d\n",
+	logger.Info(fmt.Sprintf("job[%d] parent[%d] resourceType[%s] noOfResources=%d\n",
 		job.JobID, job.ParentJobID, job.ResourceType,
-		job.LastDaySourceJobID, job.LastWeekSourceJobID, job.LastQuarterSourceJobID, job.LastYearSourceJobID,
 		len(lookupResources)))
 
 	// For AWS resources, since they are queries independently per region,

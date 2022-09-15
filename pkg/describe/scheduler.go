@@ -692,7 +692,7 @@ func (s Scheduler) scheduleDescribeJob() {
 		scheduleJob = &job
 	}
 
-	s.logger.Info("Checking sources due for this schedule job")
+	s.logger.Info("Checking sources due for this schedule job", zap.Uint("jobID", scheduleJob.ID))
 	describeJobs, err := s.db.QueryDescribeSourceJobsForScheduleJob(scheduleJob)
 	if err != nil {
 		s.logger.Error("Failed to fetch related describe source jobs", zap.Error(err))
@@ -1359,55 +1359,6 @@ func newComplianceReportJob(a Source) ComplianceReportJob {
 
 func enqueueDescribeResourceJobs(logger *zap.Logger, db Database, q queue.Interface, a Source, daj DescribeSourceJob, describedAt time.Time) {
 	var oldJobFailed error
-	var lastDayJobID, lastWeekJobID, lastQuarterJobID, lastYearJobID uint
-
-	lastDay, err := db.GetOldCompletedSourceJob(daj.SourceID, 1)
-	if err != nil {
-		logger.Error("Failed to GetOldCompletedSourceJob",
-			zap.String("sourceId", daj.SourceID.String()),
-			zap.Error(err),
-		)
-		oldJobFailed = err
-	}
-	if lastDay != nil {
-		lastDayJobID = lastDay.ID
-	}
-
-	lastWeek, err := db.GetOldCompletedSourceJob(daj.SourceID, 7)
-	if err != nil {
-		logger.Error("Failed to GetOldCompletedSourceJob",
-			zap.String("sourceId", daj.SourceID.String()),
-			zap.Error(err),
-		)
-		oldJobFailed = err
-	}
-	if lastWeek != nil {
-		lastWeekJobID = lastWeek.ID
-	}
-
-	lastQuarter, err := db.GetOldCompletedSourceJob(daj.SourceID, 93)
-	if err != nil {
-		logger.Error("Failed to GetOldCompletedSourceJob",
-			zap.String("sourceId", daj.SourceID.String()),
-			zap.Error(err),
-		)
-		oldJobFailed = err
-	}
-	if lastQuarter != nil {
-		lastQuarterJobID = lastQuarter.ID
-	}
-
-	lastYear, err := db.GetOldCompletedSourceJob(daj.SourceID, 428)
-	if err != nil {
-		logger.Error("Failed to GetOldCompletedSourceJob",
-			zap.String("sourceId", daj.SourceID.String()),
-			zap.Error(err),
-		)
-		oldJobFailed = err
-	}
-	if lastYear != nil {
-		lastYearJobID = lastYear.ID
-	}
 
 	for i, drj := range daj.DescribeResourceJobs {
 		nextStatus := api.DescribeResourceJobQueued
@@ -1415,18 +1366,14 @@ func enqueueDescribeResourceJobs(logger *zap.Logger, db Database, q queue.Interf
 
 		if oldJobFailed == nil {
 			if err := q.Publish(DescribeJob{
-				JobID:                  drj.ID,
-				ParentJobID:            daj.ID,
-				ResourceType:           drj.ResourceType,
-				SourceID:               daj.SourceID.String(),
-				AccountID:              daj.AccountID,
-				DescribedAt:            describedAt.UnixMilli(),
-				SourceType:             a.Type,
-				ConfigReg:              a.ConfigRef,
-				LastDaySourceJobID:     lastDayJobID,
-				LastWeekSourceJobID:    lastWeekJobID,
-				LastQuarterSourceJobID: lastQuarterJobID,
-				LastYearSourceJobID:    lastYearJobID,
+				JobID:        drj.ID,
+				ParentJobID:  daj.ID,
+				ResourceType: drj.ResourceType,
+				SourceID:     daj.SourceID.String(),
+				AccountID:    daj.AccountID,
+				DescribedAt:  describedAt.UnixMilli(),
+				SourceType:   a.Type,
+				ConfigReg:    a.ConfigRef,
 			}); err != nil {
 				logger.Error("Failed to queue DescribeResourceJob",
 					zap.Uint("jobId", drj.ID),
@@ -1453,90 +1400,30 @@ func enqueueDescribeResourceJobs(logger *zap.Logger, db Database, q queue.Interf
 }
 
 func enqueueDescribeConnectionJob(logger *zap.Logger, db Database, q queue.Interface, a Source, daj DescribeSourceJob, scheduleJobID uint, describedAt time.Time) {
-	var oldJobFailed error
-	var lastDayJobID, lastWeekJobID, lastQuarterJobID, lastYearJobID uint
-
-	lastDay, err := db.GetOldCompletedSourceJob(daj.SourceID, 1)
-	if err != nil {
-		logger.Error("Failed to GetOldCompletedSourceJob",
-			zap.String("sourceId", daj.SourceID.String()),
-			zap.Error(err),
-		)
-		oldJobFailed = err
-	}
-	if lastDay != nil {
-		lastDayJobID = lastDay.ID
-	}
-
-	lastWeek, err := db.GetOldCompletedSourceJob(daj.SourceID, 7)
-	if err != nil {
-		logger.Error("Failed to GetOldCompletedSourceJob",
-			zap.String("sourceId", daj.SourceID.String()),
-			zap.Error(err),
-		)
-		oldJobFailed = err
-	}
-	if lastWeek != nil {
-		lastWeekJobID = lastWeek.ID
-	}
-
-	lastQuarter, err := db.GetOldCompletedSourceJob(daj.SourceID, 93)
-	if err != nil {
-		logger.Error("Failed to GetOldCompletedSourceJob",
-			zap.String("sourceId", daj.SourceID.String()),
-			zap.Error(err),
-		)
-		oldJobFailed = err
-	}
-	if lastQuarter != nil {
-		lastQuarterJobID = lastQuarter.ID
-	}
-
-	lastYear, err := db.GetOldCompletedSourceJob(daj.SourceID, 428)
-	if err != nil {
-		logger.Error("Failed to GetOldCompletedSourceJob",
-			zap.String("sourceId", daj.SourceID.String()),
-			zap.Error(err),
-		)
-		oldJobFailed = err
-	}
-	if lastYear != nil {
-		lastYearJobID = lastYear.ID
-	}
-
 	nextStatus := api.DescribeResourceJobQueued
 	errMsg := ""
 
-	if oldJobFailed == nil {
-		resourceJobs := map[uint]string{}
-		for _, drj := range daj.DescribeResourceJobs {
-			resourceJobs[drj.ID] = drj.ResourceType
-		}
-		if err := q.Publish(DescribeConnectionJob{
-			JobID:                  daj.ID,
-			ScheduleJobID:          scheduleJobID,
-			ResourceJobs:           resourceJobs,
-			SourceID:               daj.SourceID.String(),
-			AccountID:              daj.AccountID,
-			DescribedAt:            describedAt.UnixMilli(),
-			SourceType:             a.Type,
-			ConfigReg:              a.ConfigRef,
-			LastDaySourceJobID:     lastDayJobID,
-			LastWeekSourceJobID:    lastWeekJobID,
-			LastQuarterSourceJobID: lastQuarterJobID,
-			LastYearSourceJobID:    lastYearJobID,
-		}); err != nil {
-			logger.Error("Failed to queue DescribeConnectionJob",
-				zap.Uint("jobId", daj.ID),
-				zap.Error(err),
-			)
+	resourceJobs := map[uint]string{}
+	for _, drj := range daj.DescribeResourceJobs {
+		resourceJobs[drj.ID] = drj.ResourceType
+	}
+	if err := q.Publish(DescribeConnectionJob{
+		JobID:         daj.ID,
+		ScheduleJobID: scheduleJobID,
+		ResourceJobs:  resourceJobs,
+		SourceID:      daj.SourceID.String(),
+		AccountID:     daj.AccountID,
+		DescribedAt:   describedAt.UnixMilli(),
+		SourceType:    a.Type,
+		ConfigReg:     a.ConfigRef,
+	}); err != nil {
+		logger.Error("Failed to queue DescribeConnectionJob",
+			zap.Uint("jobId", daj.ID),
+			zap.Error(err),
+		)
 
-			nextStatus = api.DescribeResourceJobFailed
-			errMsg = fmt.Sprintf("queue: %s", err.Error())
-		}
-	} else {
 		nextStatus = api.DescribeResourceJobFailed
-		errMsg = fmt.Sprintf("queue: %s", oldJobFailed.Error())
+		errMsg = fmt.Sprintf("queue: %s", err.Error())
 	}
 
 	for i, drj := range daj.DescribeResourceJobs {
