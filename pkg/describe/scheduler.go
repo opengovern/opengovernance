@@ -675,13 +675,9 @@ func (s Scheduler) scheduleDescribeJob() {
 		return
 	}
 
-	if scheduleJob != nil && scheduleJob.Status == summarizerapi.SummarizerJobInProgress {
-		DescribeJobsCount.WithLabelValues("successful").Inc()
-		return
-	}
-
 	if scheduleJob == nil ||
-		scheduleJob.CreatedAt.Before(time.Now().Add(time.Duration(-s.describeIntervalHours)*time.Hour)) {
+		(scheduleJob.CreatedAt.Before(time.Now().Add(time.Duration(-s.describeIntervalHours)*time.Hour)) && scheduleJob.Status != summarizerapi.SummarizerJobInProgress) {
+
 		job := ScheduleJob{
 			Model:          gorm.Model{},
 			Status:         summarizerapi.SummarizerJobInProgress,
