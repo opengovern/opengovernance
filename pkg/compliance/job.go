@@ -4,24 +4,22 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"gitlab.com/keibiengine/keibi-engine/pkg/config"
 	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"time"
 
+	"gitlab.com/keibiengine/keibi-engine/pkg/config"
+
 	"gitlab.com/keibiengine/keibi-engine/pkg/kafka"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 
-	auth_api "gitlab.com/keibiengine/keibi-engine/pkg/auth/api"
-	"gitlab.com/keibiengine/keibi-engine/pkg/cloudservice"
-	"gitlab.com/keibiengine/keibi-engine/pkg/inventory/client"
-
 	aws "gitlab.com/keibiengine/keibi-engine/pkg/aws/model"
 	azure "gitlab.com/keibiengine/keibi-engine/pkg/azure/model"
+	"gitlab.com/keibiengine/keibi-engine/pkg/cloudservice"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/compliance/es"
 
@@ -31,7 +29,6 @@ import (
 	"github.com/google/uuid"
 	"gitlab.com/keibiengine/keibi-engine/pkg/compliance/api"
 	describe "gitlab.com/keibiengine/keibi-engine/pkg/describe/es"
-	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpclient"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/vault"
 	"gitlab.com/keibiengine/keibi-engine/pkg/keibi-es-sdk"
 	"go.uber.org/zap"
@@ -174,34 +171,35 @@ func (j *Job) Do(vlt vault.SourceConfig, producer sarama.SyncProducer, topic str
 		}
 	}()
 
-	inventoryClient := client.NewInventoryServiceClient(config.InventoryBaseUrl)
-	assignments, err := inventoryClient.GetAllBenchmarkAssignmentsBySourceId(&httpclient.Context{
-		UserRole: auth_api.AdminRole,
-		UserID:   uuid.NewString(),
-	}, j.SourceID.String())
+	//complianceClient := client.NewInventoryServiceClient(config.InventoryBaseUrl)
+	//assignments, err := complianceClient.GetAllBenchmarkAssignmentsBySourceId(&httpclient.Context{
+	//	UserRole: auth_api.AdminRole,
+	//	UserID:   uuid.NewString(),
+	//}, j.SourceID.String())
 	if err != nil {
 		DoComplianceReportJobsDuration.WithLabelValues(string(j.SourceType), "failure").Observe(float64(time.Now().Unix() - startTime))
 		DoComplianceReportJobsCount.WithLabelValues(string(j.SourceType), "failure").Inc()
 		return j.failed("error: Get benchmark assignments by source: " + err.Error())
 	}
 
-	var benchmarks []string
-	for _, assignment := range assignments {
-		benchmarks = append(benchmarks, assignment.BenchmarkId)
-	}
-	if len(benchmarks) == 0 {
-		return JobResult{
-			JobID:           j.JobID,
-			ReportCreatedAt: j.DescribedAt,
-			Status:          api.ComplianceReportJobCompleted,
-		}
-	}
-
-	if err := RunSteampipeCheckBenchmarks(j.SourceType, benchmarks, resultFileName); err != nil {
-		DoComplianceReportJobsDuration.WithLabelValues(string(j.SourceType), "failure").Observe(float64(time.Now().Unix() - startTime))
-		DoComplianceReportJobsCount.WithLabelValues(string(j.SourceType), "failure").Inc()
-		return j.failed("error: RunSteampipeCheckBenchmarks: " + err.Error())
-	}
+	//TODO-Saleh
+	//var benchmarks []string
+	//for _, assignment := range assignments {
+	//	benchmarks = append(benchmarks, assignment.BenchmarkId)
+	//}
+	//if len(benchmarks) == 0 {
+	//	return JobResult{
+	//		JobID:           j.JobID,
+	//		ReportCreatedAt: j.DescribedAt,
+	//		Status:          api.ComplianceReportJobCompleted,
+	//	}
+	//}
+	//
+	//if err := RunSteampipeCheckBenchmarks(j.SourceType, benchmarks, resultFileName); err != nil {
+	//	DoComplianceReportJobsDuration.WithLabelValues(string(j.SourceType), "failure").Observe(float64(time.Now().Unix() - startTime))
+	//	DoComplianceReportJobsCount.WithLabelValues(string(j.SourceType), "failure").Inc()
+	//	return j.failed("error: RunSteampipeCheckBenchmarks: " + err.Error())
+	//}
 
 	reports, err := ParseReport(resultFileName, j.JobID, j.ReportID, j.SourceID, j.DescribedAt, j.SourceType)
 	if err != nil {

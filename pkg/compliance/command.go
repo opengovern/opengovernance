@@ -21,7 +21,6 @@ type WorkerConfig struct {
 	ElasticSearch         config.ElasticSearch
 	Kafka                 config.Kafka
 	Vault                 config.Vault
-	InventoryBaseUrl      string
 	PrometheusPushAddress string
 }
 
