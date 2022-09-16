@@ -7,10 +7,8 @@ import (
 )
 
 var awsMap = map[string]string{
-	"AWS::CostExplorer::ByAccountMonthly": "aws_cost_by_account_monthly",
-	"AWS::CostExplorer::ByServiceMonthly": "aws_cost_by_service_monthly",
-	//"AWS::EFS::AccessPoint":                     "aws_efs_access_point",
-	//"AWS::EFS::MountTarget":                     "aws_efs_mount_target",
+	"AWS::CostExplorer::ByAccountMonthly":       "aws_cost_by_account_monthly",
+	"AWS::CostExplorer::ByServiceMonthly":       "aws_cost_by_service_monthly",
 	"AWS::SSM::ManagedInstanceCompliance":       "aws_ssm_managed_instance_compliance",
 	"AWS::ApplicationAutoScaling::Target":       "aws_appautoscaling_target",
 	"AWS::EKS::Cluster":                         "aws_eks_cluster",
@@ -98,6 +96,8 @@ var awsMap = map[string]string{
 	"AWS::EC2::Region":                          "aws_region",
 	"AWS::FSX::FileSystem":                      "aws_fsx_file_system",
 	"AWS::RDS::DBClusterSnapshot":               "aws_rds_db_cluster_snapshot",
+	//"AWS::EFS::AccessPoint":                     "aws_efs_access_point",
+	//"AWS::EFS::MountTarget":                     "aws_efs_mount_target",
 }
 var azureMap = map[string]string{
 	"Microsoft.Compute/disks":                               "azure_compute_disk",
