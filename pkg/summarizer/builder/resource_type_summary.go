@@ -255,13 +255,17 @@ func (b *resourceTypeSummaryBuilder) Cleanup(scheduleJobID uint) error {
 	query := map[string]interface{}{
 		"query": map[string]interface{}{
 			"bool": map[string]interface{}{
-				"must_not": map[string]interface{}{
-					"schedule_job_id": scheduleJobID,
-				},
 				"filter": []map[string]interface{}{
 					{
 						"terms": map[string]interface{}{
 							"report_type": []string{string(es.ResourceTypeSummary), string(es.ResourceTypeProviderSummary)},
+						},
+					},
+					{
+						"bool": map[string]interface{}{
+							"must_not": map[string]interface{}{
+								"schedule_job_id": scheduleJobID,
+							},
 						},
 					},
 				},
