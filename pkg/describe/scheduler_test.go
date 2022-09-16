@@ -10,10 +10,10 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/insight"
 	insightapi "gitlab.com/keibiengine/keibi-engine/pkg/insight/api"
 
-	api2 "gitlab.com/keibiengine/keibi-engine/pkg/compliance-report/api"
+	api2 "gitlab.com/keibiengine/keibi-engine/pkg/compliance/api"
 
 	"github.com/cenkalti/backoff/v3"
-	compliance_report "gitlab.com/keibiengine/keibi-engine/pkg/compliance-report"
+	compliance_report "gitlab.com/keibiengine/keibi-engine/pkg/compliance"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/queue"
 
 	"github.com/google/uuid"

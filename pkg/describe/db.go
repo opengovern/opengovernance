@@ -9,7 +9,7 @@ import (
 
 	insightapi "gitlab.com/keibiengine/keibi-engine/pkg/insight/api"
 
-	api2 "gitlab.com/keibiengine/keibi-engine/pkg/compliance-report/api"
+	api2 "gitlab.com/keibiengine/keibi-engine/pkg/compliance/api"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/describe/api"
 

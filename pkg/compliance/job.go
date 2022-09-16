@@ -1,9 +1,10 @@
-package compliance_report
+package compliance
 
 import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"gitlab.com/keibiengine/keibi-engine/pkg/config"
 	"io/ioutil"
 	"os"
 	"os/exec"
@@ -22,13 +23,13 @@ import (
 	aws "gitlab.com/keibiengine/keibi-engine/pkg/aws/model"
 	azure "gitlab.com/keibiengine/keibi-engine/pkg/azure/model"
 
-	"gitlab.com/keibiengine/keibi-engine/pkg/compliance-report/es"
+	"gitlab.com/keibiengine/keibi-engine/pkg/compliance/es"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/source"
 
 	"github.com/elastic/go-elasticsearch/v7"
 	"github.com/google/uuid"
-	"gitlab.com/keibiengine/keibi-engine/pkg/compliance-report/api"
+	"gitlab.com/keibiengine/keibi-engine/pkg/compliance/api"
 	describe "gitlab.com/keibiengine/keibi-engine/pkg/describe/es"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpclient"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/vault"
@@ -110,7 +111,7 @@ func (j *Job) failed(msg string, args ...interface{}) JobResult {
 	}
 }
 
-func (j *Job) Do(vlt vault.SourceConfig, producer sarama.SyncProducer, topic string, config Config, logger *zap.Logger) JobResult {
+func (j *Job) Do(vlt vault.SourceConfig, producer sarama.SyncProducer, topic string, config WorkerConfig, logger *zap.Logger) JobResult {
 	startTime := time.Now().Unix()
 
 	cfg, err := vlt.Read(j.ConfigReg)
@@ -400,7 +401,7 @@ func RunSteampipeCheckBenchmarks(sourceType source.Type, benchmarks []string, ex
 	return nil
 }
 
-func BuildSpecFile(plugin string, config ElasticSearchConfig, accountID string) error {
+func BuildSpecFile(plugin string, config config.ElasticSearch, accountID string) error {
 	content := `
 connection "` + plugin + `" {
   plugin = "` + plugin + `"

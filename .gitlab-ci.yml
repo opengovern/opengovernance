@@ -187,6 +187,7 @@ deploy: # This job runs in the deploy stage.
     - podman build -f  docker/ComplianceReportWorkerDockerfile . -t registry.digitalocean.com/keibi/compliance-report-worker:$SVER_VERSION
     - podman build -f  docker/OnboardServiceDockerfile . -t registry.digitalocean.com/keibi/onboard-service:$SVER_VERSION
     - podman build -f  docker/InventoryServiceDockerfile . -t registry.digitalocean.com/keibi/inventory-service:$SVER_VERSION
+    - podman build -f  docker/ComplianceServiceDockerfile . -t registry.digitalocean.com/keibi/compliance-service:$SVER_VERSION
     - podman build -f  docker/SwaggerUIDockerfile . -t registry.digitalocean.com/keibi/swagger-ui:$SVER_VERSION
     - podman build -f  docker/SteampipeServiceDockerfile . -t registry.digitalocean.com/keibi/steampipe-service:$SVER_VERSION
     - podman build -f  docker/AuthServiceDockerfile . -t registry.digitalocean.com/keibi/auth-service:$SVER_VERSION
@@ -199,6 +200,7 @@ deploy: # This job runs in the deploy stage.
     - podman push registry.digitalocean.com/keibi/describe-cleanup-worker:$SVER_VERSION
     - podman push registry.digitalocean.com/keibi/onboard-service:$SVER_VERSION
     - podman push registry.digitalocean.com/keibi/inventory-service:$SVER_VERSION
+    - podman push registry.digitalocean.com/keibi/compliance-service:$SVER_VERSION
     - podman push registry.digitalocean.com/keibi/swagger-ui:$SVER_VERSION
     - podman push registry.digitalocean.com/keibi/auth-service:$SVER_VERSION
     - podman push registry.digitalocean.com/keibi/workspace-service:$SVER_VERSION

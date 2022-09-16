@@ -12,7 +12,7 @@ import (
 	elasticsearchv7 "github.com/elastic/go-elasticsearch/v7"
 	"github.com/elastic/go-elasticsearch/v7/esapi"
 	"github.com/google/uuid"
-	report "gitlab.com/keibiengine/keibi-engine/pkg/compliance-report"
+	report "gitlab.com/keibiengine/keibi-engine/pkg/compliance"
 )
 
 func PopulateElastic(address string) error {

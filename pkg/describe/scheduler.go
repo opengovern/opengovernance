@@ -26,10 +26,10 @@ import (
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/source"
 
-	complianceapi "gitlab.com/keibiengine/keibi-engine/pkg/compliance-report/api"
+	complianceapi "gitlab.com/keibiengine/keibi-engine/pkg/compliance/api"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/aws"
-	compliancereport "gitlab.com/keibiengine/keibi-engine/pkg/compliance-report"
+	compliancereport "gitlab.com/keibiengine/keibi-engine/pkg/compliance"
 	"gitlab.com/keibiengine/keibi-engine/pkg/describe/api"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpserver"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/postgres"

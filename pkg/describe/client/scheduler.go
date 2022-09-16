@@ -6,7 +6,7 @@ import (
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/describe/api"
 
-	compliance "gitlab.com/keibiengine/keibi-engine/pkg/compliance-report/api"
+	compliance "gitlab.com/keibiengine/keibi-engine/pkg/compliance/api"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpclient"
 	inventory "gitlab.com/keibiengine/keibi-engine/pkg/inventory/api"
 )

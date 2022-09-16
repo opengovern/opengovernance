@@ -1,4 +1,4 @@
-package compliance_report
+package compliance
 
 import (
 	"encoding/json"
@@ -18,7 +18,7 @@ type Worker struct {
 	id             string
 	jobQueue       queue.Interface
 	jobResultQueue queue.Interface
-	config         Config
+	config         WorkerConfig
 	vault          vault.SourceConfig
 	kfkProducer    sarama.SyncProducer
 	kfkTopic       string
@@ -28,7 +28,7 @@ type Worker struct {
 
 func InitializeWorker(
 	id string,
-	config Config,
+	config WorkerConfig,
 	complianceReportJobQueue, complianceReportJobResultQueue string,
 	logger *zap.Logger,
 	prometheusPushAddress string,
@@ -83,7 +83,7 @@ func InitializeWorker(
 	w.logger = logger
 
 	k8sAuth, err := kubernetes.NewKubernetesAuth(
-		config.Vault.RoleName,
+		config.Vault.Role,
 		kubernetes.WithServiceAccountToken(config.Vault.Token),
 	)
 	if err != nil {

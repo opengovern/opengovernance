@@ -1,11 +1,11 @@
-package compliance_report
+package compliance
 
 import (
 	"encoding/json"
 	"io/ioutil"
 	"strconv"
 
-	"gitlab.com/keibiengine/keibi-engine/pkg/compliance-report/es"
+	"gitlab.com/keibiengine/keibi-engine/pkg/compliance/es"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/source"
 

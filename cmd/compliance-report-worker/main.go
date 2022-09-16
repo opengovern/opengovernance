@@ -3,7 +3,7 @@ package main
 import (
 	"os"
 
-	compliance_report "gitlab.com/keibiengine/keibi-engine/pkg/compliance-report"
+	compliance_report "gitlab.com/keibiengine/keibi-engine/pkg/compliance"
 )
 
 func main() {

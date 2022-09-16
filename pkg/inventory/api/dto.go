@@ -8,7 +8,7 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/source"
 
 	"github.com/google/uuid"
-	compliance_report "gitlab.com/keibiengine/keibi-engine/pkg/compliance-report"
+	compliance_report "gitlab.com/keibiengine/keibi-engine/pkg/compliance"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/api"
 	"gitlab.com/keibiengine/keibi-engine/pkg/keibi-es-sdk"
 )

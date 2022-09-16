@@ -1,4 +1,4 @@
-package compliance_report
+package compliance
 
 import "encoding/json"
 

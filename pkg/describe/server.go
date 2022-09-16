@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/cloudservice"
-	complianceapi "gitlab.com/keibiengine/keibi-engine/pkg/compliance-report/api"
+	complianceapi "gitlab.com/keibiengine/keibi-engine/pkg/compliance/api"
 
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"

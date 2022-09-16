@@ -3,7 +3,7 @@ package test
 import (
 	"encoding/json"
 
-	compliancereport "gitlab.com/keibiengine/keibi-engine/pkg/compliance-report"
+	compliancereport "gitlab.com/keibiengine/keibi-engine/pkg/compliance"
 )
 
 type SourceConfigMock struct {

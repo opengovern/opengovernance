@@ -1,6 +1,7 @@
 package test
 
 import (
+	"gitlab.com/keibiengine/keibi-engine/pkg/config"
 	"io/ioutil"
 	"os"
 	"strings"
@@ -14,7 +15,7 @@ import (
 	"go.uber.org/zap"
 	"gopkg.in/Shopify/sarama.v1"
 
-	compliancereport "gitlab.com/keibiengine/keibi-engine/pkg/compliance-report"
+	compliancereport "gitlab.com/keibiengine/keibi-engine/pkg/compliance"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/dockertest"
 )
 
@@ -38,9 +39,9 @@ func TestJob_Do(t *testing.T) {
 	es := dockertest.StartupElasticSearch(t)
 
 	topic := "test"
-	result := job.Do(vault, kafka.Producer, topic, compliancereport.Config{
-		RabbitMQ: compliancereport.RabbitMQConfig{},
-		ElasticSearch: compliancereport.ElasticSearchConfig{
+	result := job.Do(vault, kafka.Producer, topic, compliancereport.WorkerConfig{
+		RabbitMQ: config.RabbitMQ{},
+		ElasticSearch: config.ElasticSearch{
 			Address: es.Address,
 		},
 	}, logger)
@@ -82,7 +83,7 @@ ConsumerLoop:
 }
 
 func TestBuildSpecFile(t *testing.T) {
-	err := compliancereport.BuildSpecFile("test", compliancereport.ElasticSearchConfig{
+	err := compliancereport.BuildSpecFile("test", config.ElasticSearch{
 		Address:  "test-address:1000",
 		Username: "username",
 		Password: "password",
