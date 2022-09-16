@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"math"
 	"net/http"
 	"sort"
 	"strconv"
@@ -12,8 +13,6 @@ import (
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/compliance/api"
 	es3 "gitlab.com/keibiengine/keibi-engine/pkg/inventory/es"
-
-	"gitlab.com/keibiengine/keibi-engine/pkg/inventory"
 
 	es2 "gitlab.com/keibiengine/keibi-engine/pkg/describe/es"
 	"gitlab.com/keibiengine/keibi-engine/pkg/source"
@@ -804,7 +803,7 @@ func (h *HttpHandler) GetCompliancyTrend(ctx echo.Context) error {
 
 	var fromTime, toTime int64
 	toTime = time.Now().UnixMilli()
-	tw, err := inventory.ParseTimeWindow(ctx.QueryParam("timeWindow"))
+	tw, err := ParseTimeWindow(ctx.QueryParam("timeWindow"))
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid timeWindow")
 	}
@@ -1299,4 +1298,29 @@ func (h *HttpHandler) DeleteBenchmarkAssignment(ctx echo.Context) error {
 	}
 
 	return ctx.JSON(http.StatusOK, nil)
+}
+func ParseTimeWindow(s string) (time.Duration, error) {
+	if s == "max" {
+		return time.Duration(math.MaxInt64), nil
+	}
+
+	i, err := strconv.ParseInt(s[:len(s)-1], 10, 64)
+	if err != nil {
+		return 0, err
+	}
+
+	switch s[len(s)-1] {
+	case 'h':
+		return time.Duration(i) * time.Hour, nil
+	case 'd':
+		return time.Duration(i) * 24 * time.Hour, nil
+	case 'w':
+		return time.Duration(i) * 7 * 24 * time.Hour, nil
+	case 'm':
+		return time.Duration(i) * 30 * 24 * time.Hour, nil
+	case 'y':
+		return time.Duration(i) * 265 * 24 * time.Hour, nil
+	default:
+		return 0, errors.New("invalid time window")
+	}
 }
