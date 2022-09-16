@@ -68,3 +68,7 @@ func (b *trendSummaryBuilder) Build() []kafka.Doc {
 	}
 	return docs
 }
+
+func (b *trendSummaryBuilder) Cleanup(scheduleJobID uint) error {
+	return nil
+}

@@ -3,6 +3,7 @@ package builder
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 
 	describe "gitlab.com/keibiengine/keibi-engine/pkg/describe/es"
 	"gitlab.com/keibiengine/keibi-engine/pkg/kafka"
@@ -135,4 +136,40 @@ func (b *resourceSummaryBuilder) queryConnectionResourceCount(scheduleJobID uint
 		return 0, nil
 	}
 	return response.Hits.Hits[0].Source.ResourceCount, nil
+}
+
+func (b *resourceSummaryBuilder) Cleanup(scheduleJobID uint) error {
+	query := map[string]interface{}{
+		"query": map[string]interface{}{
+			"bool": map[string]interface{}{
+				"must_not": map[string]interface{}{
+					"schedule_job_id": scheduleJobID,
+				},
+				"filter": []map[string]interface{}{
+					{
+						"terms": map[string]interface{}{
+							"report_type": []string{string(es.ResourceSummary)},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	esClient := b.client.ES()
+	resp, err := keibi.DeleteByQuery(context.Background(), esClient, []string{es.ProviderSummaryIndex, es.ConnectionSummaryIndex}, query,
+		esClient.DeleteByQuery.WithRefresh(true),
+		esClient.DeleteByQuery.WithConflicts("proceed"),
+	)
+	if err != nil {
+		return err
+	}
+	if len(resp.Failures) != 0 {
+		body, err := json.Marshal(resp)
+		if err != nil {
+			return err
+		}
+		return fmt.Errorf("elasticsearch: delete by query: %s", string(body))
+	}
+	return nil
 }

@@ -105,3 +105,7 @@ func NewClient(c ClientConfig) (Client, error) {
 
 	return Client{es: es}, nil
 }
+
+func (c Client) ES() *elasticsearchv7.Client {
+	return c.es
+}

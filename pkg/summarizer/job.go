@@ -125,6 +125,12 @@ func (j Job) Do(client keibi.Client, producer sarama.SyncProducer, topic string,
 	for _, b := range builders {
 		msgs = append(msgs, b.Build()...)
 	}
+	for _, b := range builders {
+		err := b.Cleanup(j.ScheduleJobID)
+		if err != nil {
+			fail(fmt.Errorf("Failed to cleanup: %v ", err))
+		}
+	}
 
 	if len(msgs) > 0 {
 		err := kafka.DoSend(producer, topic, msgs, logger)
