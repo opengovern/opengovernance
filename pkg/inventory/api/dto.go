@@ -8,8 +8,6 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/source"
 
 	"github.com/google/uuid"
-	compliance_report "gitlab.com/keibiengine/keibi-engine/pkg/compliance"
-	"gitlab.com/keibiengine/keibi-engine/pkg/internal/api"
 	"gitlab.com/keibiengine/keibi-engine/pkg/keibi-es-sdk"
 )
 
@@ -323,22 +321,6 @@ type SmartQueryItem struct {
 type TimeRangeFilter struct {
 	From int64 // from epoch millisecond
 	To   int64 // from epoch millisecond
-}
-
-type ComplianceReportFilters struct {
-	TimeRange *TimeRangeFilter `json:"timeRange"`
-	GroupID   *string          `json:"groupID"` // benchmark id or control id
-}
-
-type GetComplianceReportRequest struct {
-	Filters    ComplianceReportFilters      `json:"filters"`
-	ReportType compliance_report.ReportType `json:"reportType" enums:"benchmark,control,result"`
-	Page       api.PageRequest              `json:"page" validate:"required"`
-}
-
-type GetComplianceReportResponse struct {
-	Reports []compliance_report.Report `json:"reports"`
-	Page    api.PageResponse           `json:"page"`
 }
 
 type BenchmarkState string

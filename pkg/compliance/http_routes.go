@@ -10,19 +10,21 @@ import (
 	"strings"
 	"time"
 
+	"gitlab.com/keibiengine/keibi-engine/pkg/compliance/api"
+	es3 "gitlab.com/keibiengine/keibi-engine/pkg/inventory/es"
+
 	"gitlab.com/keibiengine/keibi-engine/pkg/inventory"
 
 	es2 "gitlab.com/keibiengine/keibi-engine/pkg/describe/es"
 	"gitlab.com/keibiengine/keibi-engine/pkg/source"
 	"gorm.io/gorm"
 
-	"gitlab.com/keibiengine/keibi-engine/pkg/inventory/es"
+	"gitlab.com/keibiengine/keibi-engine/pkg/compliance/es"
 
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
 	compliance_es "gitlab.com/keibiengine/keibi-engine/pkg/compliance/es"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpclient"
-	"gitlab.com/keibiengine/keibi-engine/pkg/inventory/api"
 )
 
 const EsFetchPageSize = 10000
@@ -119,7 +121,7 @@ func (h *HttpHandler) GetBenchmarksInTime(ctx echo.Context) error {
 				ID:          hit.Source.Group.ID,
 				Title:       hit.Source.Group.Title,
 				Description: hit.Source.Group.Description,
-				Provider:    api.SourceType(hit.Source.Provider),
+				Provider:    hit.Source.Provider,
 				State:       api.BenchmarkStateEnabled,
 				Tags:        nil,
 			}
@@ -743,7 +745,7 @@ func (h *HttpHandler) GetBenchmarkComplianceTrend(ctx echo.Context) error {
 		},
 	}
 	sourceId := sourceUUID.String()
-	rhits, err := es.FetchConnectionTrendSummaryPage(h.client, &sourceId, fromTime, toTime, sortMap, EsFetchPageSize)
+	rhits, err := es3.FetchConnectionTrendSummaryPage(h.client, &sourceId, fromTime, toTime, sortMap, EsFetchPageSize)
 	if err != nil {
 		return err
 	}
@@ -984,7 +986,7 @@ func (h *HttpHandler) GetBenchmarks(ctx echo.Context) error {
 			ID:          benchmark.ID,
 			Title:       benchmark.Title,
 			Description: benchmark.Description,
-			Provider:    api.SourceType(benchmark.Provider),
+			Provider:    source.Type(benchmark.Provider),
 			State:       api.BenchmarkState(benchmark.State),
 			Tags:        tags,
 		})
