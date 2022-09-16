@@ -8,12 +8,15 @@ import (
 
 	compliance "gitlab.com/keibiengine/keibi-engine/pkg/compliance/api"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpclient"
-	inventory "gitlab.com/keibiengine/keibi-engine/pkg/inventory/api"
 )
 
+type TimeRangeFilter struct {
+	From int64 // from epoch millisecond
+	To   int64 // from epoch millisecond
+}
 type SchedulerServiceClient interface {
 	GetSource(ctx *httpclient.Context, sourceID string) (*api.Source, error)
-	ListComplianceReportJobs(ctx *httpclient.Context, sourceID string, filter *inventory.TimeRangeFilter) ([]*compliance.ComplianceReport, error)
+	ListComplianceReportJobs(ctx *httpclient.Context, sourceID string, filter *TimeRangeFilter) ([]*compliance.ComplianceReport, error)
 	GetLastComplianceReportID(ctx *httpclient.Context) (uint, error)
 }
 
@@ -35,7 +38,7 @@ func (s *schedulerClient) GetSource(ctx *httpclient.Context, sourceID string) (*
 	return &source, nil
 }
 
-func (s *schedulerClient) ListComplianceReportJobs(ctx *httpclient.Context, sourceID string, filter *inventory.TimeRangeFilter) ([]*compliance.ComplianceReport, error) {
+func (s *schedulerClient) ListComplianceReportJobs(ctx *httpclient.Context, sourceID string, filter *TimeRangeFilter) ([]*compliance.ComplianceReport, error) {
 	url := fmt.Sprintf("%s/api/v1/sources/%s/jobs/compliance", s.baseURL, sourceID)
 	if filter != nil {
 		url = fmt.Sprintf("%s?from=%d&to=%d", url, filter.From, filter.To)
