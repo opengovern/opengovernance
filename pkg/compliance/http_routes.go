@@ -265,7 +265,7 @@ func (h *HttpHandler) GetBenchmarkResultPolicies(ctx echo.Context) error {
 
 		for _, hit := range response.Hits.Hits {
 			for idx, r := range resp {
-				if r.ID == hit.Source.ControlID {
+				if r.ID == hit.Source.PolicyID {
 					resp[idx].DescribedAt = hit.Source.DescribedAt
 					if hit.Source.Status != ResultStatusOK {
 						resp[idx].Status = api.PolicyResultStatusFailed
@@ -356,7 +356,7 @@ func (h *HttpHandler) GetBenchmarkResultCompliancy(ctx echo.Context) error {
 
 		for _, hit := range response.Hits.Hits {
 			for idx, r := range resp {
-				if r.ID == hit.Source.ControlID {
+				if r.ID == hit.Source.PolicyID {
 					resp[idx].TotalResources++
 					if hit.Source.Status != ResultStatusOK {
 						resp[idx].Status = api.PolicyResultStatusFailed
@@ -979,12 +979,16 @@ func (h *HttpHandler) GetBenchmarks(ctx echo.Context) error {
 		for _, tag := range benchmark.Tags {
 			tags[tag.Key] = tag.Value
 		}
+		state := api.BenchmarkStateDisabled
+		if benchmark.Enabled {
+			state = api.BenchmarkStateEnabled
+		}
 		response = append(response, api.Benchmark{
 			ID:          benchmark.ID,
 			Title:       benchmark.Title,
 			Description: benchmark.Description,
 			Provider:    source.Type(benchmark.Provider),
-			State:       api.BenchmarkState(benchmark.State),
+			State:       api.BenchmarkState(state),
 			Tags:        tags,
 		})
 	}

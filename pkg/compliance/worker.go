@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"strings"
 
+	"gitlab.com/keibiengine/keibi-engine/pkg/internal/postgres"
+
 	"github.com/prometheus/client_golang/prometheus/push"
 
 	"github.com/hashicorp/vault/api/auth/kubernetes"
@@ -24,6 +26,7 @@ type Worker struct {
 	kfkTopic       string
 	logger         *zap.Logger
 	pusher         *push.Pusher
+	db             Database
 }
 
 func InitializeWorker(
@@ -99,6 +102,28 @@ func InitializeWorker(
 	fmt.Println("Connected to vault:", config.Vault.Address)
 	w.vault = v
 
+	// setup postgres connection
+	cfg := postgres.Config{
+		Host:   config.PostgreSQL.Host,
+		Port:   config.PostgreSQL.Port,
+		User:   config.PostgreSQL.Username,
+		Passwd: config.PostgreSQL.Password,
+		DB:     config.PostgreSQL.DB,
+	}
+	orm, err := postgres.NewClient(&cfg, logger)
+	if err != nil {
+		return nil, fmt.Errorf("new postgres client: %w", err)
+	}
+
+	w.db = Database{orm: orm}
+	fmt.Println("Connected to the postgres database: ", config.PostgreSQL.DB)
+
+	err = w.db.Initialize()
+	if err != nil {
+		return nil, err
+	}
+	fmt.Println("Initialized postgres database: ", config.PostgreSQL.DB)
+
 	w.pusher = push.New(prometheusPushAddress, "compliance-report")
 	w.pusher.Collector(DoComplianceReportJobsCount).
 		Collector(DoComplianceReportJobsDuration).
@@ -114,34 +139,32 @@ func (w *Worker) Run() error {
 		return err
 	}
 
-	w.logger.Info("Waiting indefinitly for messages. To exit press CTRL+C\n")
-	for msg := range msgs {
-		var job Job
-		if err := json.Unmarshal(msg.Body, &job); err != nil {
-			w.logger.Error("Failed to unmarshal task", zap.Error(err))
+	msg := <-msgs
 
-			err = msg.Nack(false, false)
-			if err != nil {
-				w.logger.Error("Failed nacking message", zap.Error(err))
-			}
-			continue
+	var job Job
+	if err := json.Unmarshal(msg.Body, &job); err != nil {
+		w.logger.Error("Failed to unmarshal task", zap.Error(err))
+
+		if err2 := msg.Nack(false, false); err2 != nil {
+			w.logger.Error("Failed nacking message", zap.Error(err2))
 		}
+		return err
+	}
 
-		result := job.Do(w.vault, w.kfkProducer, w.kfkTopic, w.config, w.logger)
+	result := job.Do(w.db, w.vault, w.kfkProducer, w.kfkTopic, w.config, w.logger)
 
-		if err := w.jobResultQueue.Publish(result); err != nil {
-			w.logger.Error("Failed to send results to queue", zap.Error(err))
-		}
+	if err := w.jobResultQueue.Publish(result); err != nil {
+		w.logger.Error("Failed to send results to queue", zap.Error(err))
+	}
 
-		w.logger.Info("A job is done and result is published into the result queue", zap.String("result", fmt.Sprintf("%v", result)))
-		if err := msg.Ack(false); err != nil {
-			w.logger.Error("Failed acking message", zap.Error(err))
-		}
+	w.logger.Info("A job is done and result is published into the result queue", zap.String("result", fmt.Sprintf("%v", result)))
+	if err := msg.Ack(false); err != nil {
+		w.logger.Error("Failed acking message", zap.Error(err))
+	}
 
-		err = w.pusher.Push()
-		if err != nil {
-			w.logger.Error("Failed to push metrics", zap.Error(err))
-		}
+	err = w.pusher.Push()
+	if err != nil {
+		w.logger.Error("Failed to push metrics", zap.Error(err))
 	}
 
 	return fmt.Errorf("report jobs channel is closed")

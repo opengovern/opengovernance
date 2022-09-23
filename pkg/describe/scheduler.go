@@ -9,6 +9,8 @@ import (
 	"strings"
 	"time"
 
+	"gitlab.com/keibiengine/keibi-engine/pkg/compliance/client"
+
 	"gitlab.com/keibiengine/keibi-engine/pkg/summarizer"
 	summarizerapi "gitlab.com/keibiengine/keibi-engine/pkg/summarizer/api"
 	"gorm.io/gorm"
@@ -145,10 +147,11 @@ type Scheduler struct {
 	insightIntervalHours    int64
 	summarizerIntervalHours int64
 
-	logger          *zap.Logger
-	workspaceClient workspaceClient.WorkspaceServiceClient
-	es              keibi.Client
-	rdb             *redis.Client
+	logger           *zap.Logger
+	workspaceClient  workspaceClient.WorkspaceServiceClient
+	complianceClient client.ComplianceServiceClient
+	es               keibi.Client
+	rdb              *redis.Client
 }
 
 func InitializeScheduler(
@@ -465,7 +468,7 @@ func (s *Scheduler) Run() error {
 	go s.RunDescribeJobScheduler()
 	go s.RunInsightJobScheduler()
 	go s.RunDescribeCleanupJobScheduler()
-	go s.RunComplianceReportScheduler()
+	//go s.RunComplianceReportScheduler()
 	go s.RunDeletedSourceCleanup()
 
 	// In order to have history of reports, we won't clean up compliance reports for now.
@@ -573,6 +576,14 @@ func (s *Scheduler) RunScheduleJobCompletionUpdater() {
 		err = s.scheduleSummarizerJob(scheduleJob.ID)
 		if err != nil {
 			s.logger.Error("Failed to enqueue summarizer job\n",
+				zap.Uint("jobId", scheduleJob.ID),
+				zap.Error(err),
+			)
+		}
+
+		err = s.RunComplianceReport(scheduleJob)
+		if err != nil {
+			s.logger.Error("Failed to enqueue compliance job\n",
 				zap.Uint("jobId", scheduleJob.ID),
 				zap.Error(err),
 			)
@@ -1189,50 +1200,92 @@ func (s *Scheduler) RunDescribeJobResultsConsumer() error {
 	}
 }
 
-func (s *Scheduler) RunComplianceReportScheduler() {
-	s.logger.Info("Scheduling ComplianceReport jobs on a timer")
-	t := time.NewTicker(JobComplianceReportInterval)
-	defer t.Stop()
+//
+//func (s *Scheduler) RunComplianceReportScheduler() {
+//	s.logger.Info("Scheduling ComplianceReport jobs on a timer")
+//	t := time.NewTicker(JobComplianceReportInterval)
+//	defer t.Stop()
+//
+//	for ; ; <-t.C {
+//		sources, err := s.db.QuerySourcesDueForComplianceReport()
+//		if err != nil {
+//			s.logger.Error("Failed to find the next sources to create ComplianceReportJob", zap.Error(err))
+//			ComplianceJobsCount.WithLabelValues("failure").Inc()
+//			continue
+//		}
+//
+//		for _, source := range sources {
+//			if isPublishingBlocked(s.logger, s.complianceReportJobQueue) {
+//				s.logger.Warn("The jobs in queue is over the threshold", zap.Error(err))
+//				break
+//			}
+//
+//			s.logger.Error("Source is due for a steampipe check. Creating a ComplianceReportJob now", zap.String("sourceId", source.ID.String()))
+//			crj := newComplianceReportJob(source)
+//			err := s.db.CreateComplianceReportJob(&crj)
+//			if err != nil {
+//				ComplianceSourceJobsCount.WithLabelValues("failure").Inc()
+//				s.logger.Error("Failed to create ComplianceReportJob for Source",
+//					zap.Uint("jobId", crj.ID),
+//					zap.String("sourceId", source.ID.String()),
+//					zap.Error(err),
+//				)
+//				continue
+//			}
+//
+//			enqueueComplianceReportJobs(s.logger, s.db, s.complianceReportJobQueue, source, &crj)
+//
+//			err = s.db.UpdateSourceReportGenerated(source.ID, s.complianceIntervalHours)
+//			if err != nil {
+//				s.logger.Error("Failed to update report job of Source: %s\n", zap.String("sourceId", source.ID.String()), zap.Error(err))
+//				ComplianceSourceJobsCount.WithLabelValues("failure").Inc()
+//				continue
+//			}
+//			ComplianceSourceJobsCount.WithLabelValues("successful").Inc()
+//		}
+//		ComplianceJobsCount.WithLabelValues("successful").Inc()
+//	}
+//}
 
-	for ; ; <-t.C {
-		sources, err := s.db.QuerySourcesDueForComplianceReport()
+func (s *Scheduler) RunComplianceReport(scheduleJob *ScheduleJob) error {
+	sources, err := s.db.ListSources()
+	if err != nil {
+		ComplianceJobsCount.WithLabelValues("failure").Inc()
+		return fmt.Errorf("error while listing sources: %v", err)
+	}
+
+	for _, source := range sources {
+		ctx := &httpclient.Context{
+			UserRole: api2.ViewerRole,
+		}
+		benchmarks, err := s.complianceClient.GetAllBenchmarkAssignmentsBySourceId(ctx, source.ID)
 		if err != nil {
-			s.logger.Error("Failed to find the next sources to create ComplianceReportJob", zap.Error(err))
 			ComplianceJobsCount.WithLabelValues("failure").Inc()
-			continue
+			return fmt.Errorf("error while getting benchmark assignments: %v", err)
 		}
 
-		for _, source := range sources {
-			if isPublishingBlocked(s.logger, s.complianceReportJobQueue) {
-				s.logger.Warn("The jobs in queue is over the threshold", zap.Error(err))
-				break
-			}
-
-			s.logger.Error("Source is due for a steampipe check. Creating a ComplianceReportJob now", zap.String("sourceId", source.ID.String()))
-			crj := newComplianceReportJob(source)
+		for _, b := range benchmarks {
+			crj := newComplianceReportJob(source, b.BenchmarkId)
 			err := s.db.CreateComplianceReportJob(&crj)
 			if err != nil {
+				ComplianceJobsCount.WithLabelValues("failure").Inc()
 				ComplianceSourceJobsCount.WithLabelValues("failure").Inc()
-				s.logger.Error("Failed to create ComplianceReportJob for Source",
-					zap.Uint("jobId", crj.ID),
-					zap.String("sourceId", source.ID.String()),
-					zap.Error(err),
-				)
-				continue
+				return fmt.Errorf("error while creating compliance job: %v", err)
 			}
 
-			enqueueComplianceReportJobs(s.logger, s.db, s.complianceReportJobQueue, source, &crj)
+			enqueueComplianceReportJobs(s.logger, s.db, s.complianceReportJobQueue, source, &crj, scheduleJob)
 
 			err = s.db.UpdateSourceReportGenerated(source.ID, s.complianceIntervalHours)
 			if err != nil {
-				s.logger.Error("Failed to update report job of Source: %s\n", zap.String("sourceId", source.ID.String()), zap.Error(err))
+				ComplianceJobsCount.WithLabelValues("failure").Inc()
 				ComplianceSourceJobsCount.WithLabelValues("failure").Inc()
-				continue
+				return fmt.Errorf("error while updating compliance job: %v", err)
 			}
 			ComplianceSourceJobsCount.WithLabelValues("successful").Inc()
 		}
-		ComplianceJobsCount.WithLabelValues("successful").Inc()
 	}
+	ComplianceJobsCount.WithLabelValues("successful").Inc()
+	return nil
 }
 
 // RunComplianceReportJobResultsConsumer consumes messages from the complianceReportJobResultQueue queue.
@@ -1350,10 +1403,14 @@ func newDescribeSourceJob(a Source, s ScheduleJob) DescribeSourceJob {
 	return daj
 }
 
-func newComplianceReportJob(a Source) ComplianceReportJob {
+func newComplianceReportJob(a Source, benchmarkID string) ComplianceReportJob {
 	return ComplianceReportJob{
-		SourceID: a.ID,
-		Status:   complianceapi.ComplianceReportJobCreated,
+		Model:           gorm.Model{},
+		SourceID:        a.ID,
+		BenchmarkID:     benchmarkID,
+		ReportCreatedAt: 0,
+		Status:          complianceapi.ComplianceReportJobCreated,
+		FailureMessage:  "",
 	}
 }
 
@@ -1437,17 +1494,18 @@ func enqueueDescribeConnectionJob(logger *zap.Logger, db Database, q queue.Inter
 	}
 }
 
-func enqueueComplianceReportJobs(logger *zap.Logger, db Database, q queue.Interface, a Source, crj *ComplianceReportJob) {
+func enqueueComplianceReportJobs(logger *zap.Logger, db Database, q queue.Interface,
+	a Source, crj *ComplianceReportJob, scheduleJob *ScheduleJob) {
 	nextStatus := complianceapi.ComplianceReportJobInProgress
 	errMsg := ""
 
 	if err := q.Publish(compliancereport.Job{
 		JobID:       crj.ID,
-		SourceID:    a.ID,
+		SourceID:    crj.SourceID,
+		BenchmarkID: crj.BenchmarkID,
 		SourceType:  source.Type(a.Type),
-		DescribedAt: a.LastDescribedAt.Time.UnixMilli(),
 		ConfigReg:   a.ConfigRef,
-		ReportID:    a.NextComplianceReportID,
+		DescribedAt: scheduleJob.CreatedAt.UnixMilli(),
 	}); err != nil {
 		logger.Error("Failed to queue ComplianceReportJob",
 			zap.Uint("jobId", crj.ID),

@@ -36,6 +36,7 @@ type Source struct {
 type ComplianceReportJob struct {
 	gorm.Model
 	SourceID        uuid.UUID // Not the primary key but should be a unique identifier
+	BenchmarkID     string    // Not the primary key but should be a unique identifier
 	ReportCreatedAt int64
 	Status          api2.ComplianceReportJobStatus
 	FailureMessage  string // Should be NULLSTRING

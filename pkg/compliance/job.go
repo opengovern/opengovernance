@@ -3,12 +3,16 @@ package compliance
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"time"
+
+	"gitlab.com/keibiengine/keibi-engine/pkg/compliance/es"
+	"gitlab.com/keibiengine/keibi-engine/pkg/steampipe"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/config"
 
@@ -17,18 +21,11 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 
-	aws "gitlab.com/keibiengine/keibi-engine/pkg/aws/model"
-	azure "gitlab.com/keibiengine/keibi-engine/pkg/azure/model"
-	"gitlab.com/keibiengine/keibi-engine/pkg/cloudservice"
-
-	"gitlab.com/keibiengine/keibi-engine/pkg/compliance/es"
-
 	"gitlab.com/keibiengine/keibi-engine/pkg/source"
 
 	"github.com/elastic/go-elasticsearch/v7"
 	"github.com/google/uuid"
 	"gitlab.com/keibiengine/keibi-engine/pkg/compliance/api"
-	describe "gitlab.com/keibiengine/keibi-engine/pkg/describe/es"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/vault"
 	"gitlab.com/keibiengine/keibi-engine/pkg/keibi-es-sdk"
 	"go.uber.org/zap"
@@ -70,9 +67,9 @@ const (
 )
 
 type Job struct {
-	ReportID    uint
 	JobID       uint
 	SourceID    uuid.UUID
+	BenchmarkID string
 	SourceType  source.Type
 	ConfigReg   string
 	DescribedAt int64
@@ -108,7 +105,7 @@ func (j *Job) failed(msg string, args ...interface{}) JobResult {
 	}
 }
 
-func (j *Job) Do(vlt vault.SourceConfig, producer sarama.SyncProducer, topic string, config WorkerConfig, logger *zap.Logger) JobResult {
+func (j *Job) Do(db Database, vlt vault.SourceConfig, producer sarama.SyncProducer, topic string, config WorkerConfig, logger *zap.Logger) JobResult {
 	startTime := time.Now().Unix()
 
 	cfg, err := vlt.Read(j.ConfigReg)
@@ -163,190 +160,28 @@ func (j *Job) Do(vlt vault.SourceConfig, producer sarama.SyncProducer, topic str
 		return j.failed("error: invalid source type")
 	}
 
-	resultFileName := fmt.Sprintf("result-%s-%d.json", accountID, time.Now().Unix())
-	defer func() {
-		err := os.Remove(resultFileName)
-		if err != nil {
-			logger.Error("Cannot remove file", zap.Error(err))
-		}
-	}()
-
-	//complianceClient := client.NewInventoryServiceClient(config.InventoryBaseUrl)
-	//assignments, err := complianceClient.GetAllBenchmarkAssignmentsBySourceId(&httpclient.Context{
-	//	UserRole: auth_api.AdminRole,
-	//	UserID:   uuid.NewString(),
-	//}, j.SourceID.String())
+	modPath, err := j.BuildMod(db)
 	if err != nil {
 		DoComplianceReportJobsDuration.WithLabelValues(string(j.SourceType), "failure").Observe(float64(time.Now().Unix() - startTime))
 		DoComplianceReportJobsCount.WithLabelValues(string(j.SourceType), "failure").Inc()
-		return j.failed("error: Get benchmark assignments by source: " + err.Error())
+		return j.failed(err.Error())
 	}
 
-	//TODO-Saleh
-	//var benchmarks []string
-	//for _, assignment := range assignments {
-	//	benchmarks = append(benchmarks, assignment.BenchmarkId)
-	//}
-	//if len(benchmarks) == 0 {
-	//	return JobResult{
-	//		JobID:           j.JobID,
-	//		ReportCreatedAt: j.DescribedAt,
-	//		Status:          api.ComplianceReportJobCompleted,
-	//	}
-	//}
-	//
-	//if err := RunSteampipeCheckBenchmarks(j.SourceType, benchmarks, resultFileName); err != nil {
-	//	DoComplianceReportJobsDuration.WithLabelValues(string(j.SourceType), "failure").Observe(float64(time.Now().Unix() - startTime))
-	//	DoComplianceReportJobsCount.WithLabelValues(string(j.SourceType), "failure").Inc()
-	//	return j.failed("error: RunSteampipeCheckBenchmarks: " + err.Error())
-	//}
-
-	reports, err := ParseReport(resultFileName, j.JobID, j.ReportID, j.SourceID, j.DescribedAt, j.SourceType)
+	resultFileName, err := j.RunSteampipeCheckFor(modPath)
 	if err != nil {
 		DoComplianceReportJobsDuration.WithLabelValues(string(j.SourceType), "failure").Observe(float64(time.Now().Unix() - startTime))
 		DoComplianceReportJobsCount.WithLabelValues(string(j.SourceType), "failure").Inc()
-		return j.failed("error: Parse report: " + err.Error())
+		return j.failed(err.Error())
 	}
 
-	var findings []es.Finding
-	var summary Summary
-	benchmarkID := ""
-	serviceTotalChecks := map[string]int{}
-	serviceNonCompliantChecks := map[string]int{}
-	for _, report := range reports {
-		if report.Type == ReportTypeBenchmark && report.Group.Level == 1 {
-			benchmarkID = report.Group.ID
-			summary = report.Group.Summary
-		}
-
-		if report.Type == ReportTypeResult {
-			var name, location, resourceType string
-			for _, dim := range report.Result.Result.Dimensions {
-				if dim.Key == "metadata" {
-					switch j.SourceType {
-					case source.CloudAWS:
-						var metadata aws.Metadata
-						err = json.Unmarshal([]byte(dim.Value), &metadata)
-						if err != nil {
-							DoComplianceReportJobsDuration.WithLabelValues(string(j.SourceType), "failure").Observe(float64(time.Now().Unix() - startTime))
-							DoComplianceReportJobsCount.WithLabelValues(string(j.SourceType), "failure").Inc()
-							return j.failed("error: Parse metadata: " + err.Error())
-						}
-						name = metadata.Name
-						location = metadata.Region
-						resourceType = metadata.ResourceType
-					case source.CloudAzure:
-						var metadata azure.Metadata
-						err = json.Unmarshal([]byte(dim.Value), &metadata)
-						if err != nil {
-							DoComplianceReportJobsDuration.WithLabelValues(string(j.SourceType), "failure").Observe(float64(time.Now().Unix() - startTime))
-							DoComplianceReportJobsCount.WithLabelValues(string(j.SourceType), "failure").Inc()
-							return j.failed("error: Parse metadata: " + err.Error())
-						}
-						name = metadata.Name
-						location = metadata.Location
-						resourceType = metadata.ResourceType
-					}
-				}
-			}
-			findings = append(findings, es.Finding{
-				ID:                 uuid.New(),
-				ReportJobID:        j.JobID,
-				ReportID:           j.ReportID,
-				ResourceID:         report.Result.Result.Resource,
-				ResourceName:       name,
-				ResourceLocation:   location,
-				SourceID:           j.SourceID,
-				ControlID:          report.Result.ControlId,
-				ParentBenchmarkIDs: report.Result.ParentGroupIds,
-				Status:             string(report.Result.Result.Status),
-				DescribedAt:        report.DescribedAt,
-			})
-
-			sn := cloudservice.ServiceNameByResourceType(resourceType)
-			serviceTotalChecks[sn]++
-			if report.Result.Result.Status != ResultStatusOK {
-				serviceNonCompliantChecks[sn]++
-			}
-		}
-	}
-	totalResource := summary.Status.OK + summary.Status.Info + summary.Status.Error + summary.Status.Alarm + summary.Status.Skip
-	acr := AccountReport{
-		SourceID:             j.SourceID,
-		Provider:             j.SourceType,
-		BenchmarkID:          benchmarkID,
-		ReportJobId:          j.JobID,
-		Summary:              summary,
-		CreatedAt:            j.DescribedAt,
-		TotalResources:       totalResource,
-		TotalCompliant:       summary.Status.OK,
-		CompliancePercentage: float64(summary.Status.OK) / float64(totalResource),
-		AccountReportType:    es.AccountReportTypeInTime,
+	evaluatedAt := time.Now().UnixMilli()
+	msgs, err := j.ParseResult(resultFileName, evaluatedAt)
+	if err != nil {
+		DoComplianceReportJobsDuration.WithLabelValues(string(j.SourceType), "failure").Observe(float64(time.Now().Unix() - startTime))
+		DoComplianceReportJobsCount.WithLabelValues(string(j.SourceType), "failure").Inc()
+		return j.failed(err.Error())
 	}
 
-	var sc []es.ServiceCompliancySummary
-	for sn, total := range serviceTotalChecks {
-		compliant := total
-		if nc, ok := serviceNonCompliantChecks[sn]; ok {
-			compliant = total - nc
-		}
-		sc = append(sc, es.ServiceCompliancySummary{
-			ServiceName:          sn,
-			TotalResources:       total,
-			TotalCompliant:       compliant,
-			CompliancePercentage: float64(compliant) / float64(total),
-			CompliancySummary: es.CompliancySummary{
-				CompliancySummaryType: es.CompliancySummaryTypeServiceSummary,
-				ReportJobId:           j.JobID,
-				Provider:              j.SourceType,
-				DescribedAt:           j.DescribedAt,
-			},
-		})
-	}
-
-	acrLast := acr
-	acrLast.AccountReportType = es.AccountReportTypeLast
-
-	resourceStatus := map[string]ResultStatus{}
-	for _, r := range reports {
-		if r.Type == ReportTypeResult {
-			current := resourceStatus[r.Result.Result.Resource]
-			next := r.Result.Result.Status
-			if current.SeverityLevel() < next.SeverityLevel() {
-				resourceStatus[r.Result.Result.Resource] = next
-			}
-		}
-	}
-	nonCompliant := 0
-	compliant := 0
-	for _, status := range resourceStatus {
-		if status == ResultStatusAlarm || status == ResultStatusError || status == ResultStatusInfo {
-			nonCompliant++
-		} else if status == ResultStatusOK {
-			compliant++
-		}
-	}
-	resource := describe.ResourceCompliancyTrendResource{
-		SourceID:                  j.SourceID.String(),
-		SourceType:                j.SourceType,
-		ComplianceJobID:           j.JobID,
-		DescribedAt:               j.DescribedAt,
-		CompliantResourceCount:    compliant,
-		NonCompliantResourceCount: nonCompliant,
-		ResourceSummaryType:       describe.ResourceSummaryTypeCompliancyTrend,
-	}
-
-	var msgs []kafka.Doc
-	msgs = append(msgs, acr, acrLast, resource)
-	for _, r := range reports {
-		msgs = append(msgs, r)
-	}
-	for _, f := range findings {
-		msgs = append(msgs, f)
-	}
-	for _, s := range sc {
-		msgs = append(msgs, s)
-	}
 	err = kafka.DoSend(producer, topic, msgs, j.logger)
 	if err != nil {
 		DoComplianceReportJobsDuration.WithLabelValues(string(j.SourceType), "failure").Observe(float64(time.Now().Unix() - startTime))
@@ -358,29 +193,21 @@ func (j *Job) Do(vlt vault.SourceConfig, producer sarama.SyncProducer, topic str
 	DoComplianceReportJobsCount.WithLabelValues(string(j.SourceType), "successful").Inc()
 	return JobResult{
 		JobID:           j.JobID,
-		ReportCreatedAt: j.DescribedAt,
+		ReportCreatedAt: evaluatedAt,
 		Status:          api.ComplianceReportJobCompleted,
 	}
 }
 
-func RunSteampipeCheckBenchmarks(sourceType source.Type, benchmarks []string, exportFileName string) error {
-	workspaceDir := ""
-	switch sourceType {
-	case source.CloudAWS:
-		workspaceDir = "/steampipe-mod-aws-compliance"
-	case source.CloudAzure:
-		workspaceDir = "/steampipe-mod-azure-compliance"
-	default:
-		return fmt.Errorf("invalid source type: %s", sourceType)
-	}
+func (j *Job) RunSteampipeCheckFor(modPath string) (string, error) {
+	exportFileName := "result.json"
 
 	var args []string
 	args = append(args, "check")
-	args = append(args, benchmarks...)
+	args = append(args, "all")
 	args = append(args, "--export")
 	args = append(args, exportFileName)
 	args = append(args, "--workspace-chdir")
-	args = append(args, workspaceDir)
+	args = append(args, modPath)
 
 	// steampipe will return total of alarms + errors as exit code
 	// that would result in error on cmd.Run() output.
@@ -391,12 +218,104 @@ func RunSteampipeCheckBenchmarks(sourceType source.Type, benchmarks []string, ex
 
 	data, err := ioutil.ReadFile(exportFileName)
 	if err != nil {
-		return err
+		return exportFileName, err
 	}
 	if !json.Valid(data) {
-		return fmt.Errorf("%s is invalid json file", exportFileName)
+		return exportFileName, fmt.Errorf("%s is invalid json file", exportFileName)
 	}
-	return nil
+	return exportFileName, nil
+}
+
+func (j *Job) BuildMod(db Database) (string, error) {
+	mod := steampipe.Mod{
+		ID:    fmt.Sprintf("mod-%d", j.JobID),
+		Title: fmt.Sprintf("Compliance worker mod for job %d", j.JobID),
+	}
+
+	b, err := db.GetBenchmark(j.BenchmarkID)
+	if err != nil {
+		return "", err
+	}
+	if b == nil {
+		return "", errors.New("benchmark not found")
+	}
+
+	var controls []steampipe.Control
+	for _, p := range b.Policies {
+		tags := map[string]string{}
+		for _, tag := range p.Tags {
+			tags[tag.Key] = tag.Value
+		}
+		controls = append(controls, steampipe.Control{
+			ID:          p.ID,
+			Title:       p.Title,
+			Description: p.Description,
+			Severity:    p.Severity,
+			Tags:        tags,
+			SQL:         p.QueryToRun,
+		})
+	}
+	benchmark := steampipe.Benchmark{
+		ID:          b.ID,
+		Title:       b.Title,
+		Description: b.Description,
+		Children:    controls,
+	}
+
+	content := mod.String() + "\n\n" + benchmark.String()
+
+	_ = os.Mkdir(mod.ID, os.ModePerm)
+	filename := mod.ID + "/mod.sp"
+	err = ioutil.WriteFile(filename, []byte(content), os.ModePerm)
+
+	return filename, err
+}
+
+func (j *Job) ParseResult(resultFilename string, evaluatedAt int64) ([]kafka.Doc, error) {
+	content, err := ioutil.ReadFile(resultFilename)
+	if err != nil {
+		return nil, err
+	}
+
+	var root Group
+	err = json.Unmarshal(content, &root)
+	if err != nil {
+		return nil, err
+	}
+
+	findings := j.ExtractFindings(root, evaluatedAt)
+
+	var res []kafka.Doc
+	for _, f := range findings {
+		res = append(res, f)
+	}
+	return res, nil
+}
+
+func (j *Job) ExtractFindings(root Group, evaluatedAt int64) []es.Finding {
+	var findings []es.Finding
+	for _, c := range root.Controls {
+		for _, r := range c.Results {
+			findings = append(findings, es.Finding{
+				ComplianceJobID:  j.JobID,
+				ResourceID:       r.Resource,
+				ResourceName:     "", //TODO-populate later
+				ResourceLocation: "", //TODO-populate later
+				PolicyID:         c.ControlId,
+				BenchmarkID:      j.BenchmarkID,
+				Reason:           r.Reason,
+				Status:           es.Status(r.Status),
+				DescribedAt:      j.DescribedAt,
+				EvaluatedAt:      evaluatedAt,
+				SourceID:         j.SourceID,
+			})
+		}
+	}
+
+	for _, g := range root.Groups {
+		findings = append(findings, j.ExtractFindings(g, evaluatedAt)...)
+	}
+	return findings
 }
 
 func BuildSpecFile(plugin string, config config.ElasticSearch, accountID string) error {

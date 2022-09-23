@@ -12,26 +12,36 @@ const (
 	FindingsIndex = "findings"
 )
 
+type Status string
+
+const (
+	StatusAlarm = "alarm"
+	StatusInfo  = "info"
+	StatusOK    = "ok"
+	StatusSkip  = "skip"
+	StatusError = "error"
+)
+
 type Finding struct {
-	ID                 uuid.UUID `json:"id"`
-	ReportJobID        uint      `json:"reportJobID"`
-	ReportID           uint      `json:"reportID"`
-	ResourceID         string    `json:"resourceID"`
-	ResourceName       string    `json:"resourceName"`
-	ResourceLocation   string    `json:"resourceLocation"`
-	SourceID           uuid.UUID `json:"accountID"`
-	ControlID          string    `json:"controlID"`
-	ParentBenchmarkIDs []string  `json:"parentBenchmarkIDs"`
-	Status             string    `json:"status"`
-	DescribedAt        int64     `json:"describedAt"`
+	ComplianceJobID  uint      `json:"complianceJobID"`
+	ResourceID       string    `json:"resourceID"`
+	ResourceName     string    `json:"resourceName"`
+	ResourceLocation string    `json:"resourceLocation"`
+	PolicyID         string    `json:"policyID"`
+	BenchmarkID      string    `json:"benchmarkID"`
+	Reason           string    `json:"reason"`
+	Status           Status    `json:"status"`
+	DescribedAt      int64     `json:"describedAt"`
+	EvaluatedAt      int64     `json:"evaluatedAt"`
+	SourceID         uuid.UUID `json:"sourceID"`
 }
 
 func (r Finding) KeysAndIndex() ([]string, string) {
 	return []string{
 		r.ResourceID,
 		r.SourceID.String(),
-		r.ControlID,
-		strconv.FormatInt(int64(r.ReportJobID), 10),
+		r.PolicyID,
+		strconv.FormatInt(r.DescribedAt, 10),
 	}, FindingsIndex
 }
 

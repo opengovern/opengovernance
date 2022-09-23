@@ -13,7 +13,7 @@ type Benchmark struct {
 	Title       string
 	Description string
 	Provider    string
-	State       string
+	Enabled     bool
 	Tags        []BenchmarkTag `gorm:"many2many:benchmark_tag_rel;"`
 	Policies    []Policy       `gorm:"many2many:benchmark_policies;"`
 }
