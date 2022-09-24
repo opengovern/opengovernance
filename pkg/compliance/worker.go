@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"strings"
 
+	"gitlab.com/keibiengine/keibi-engine/pkg/onboard/client"
+
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/postgres"
 
 	"github.com/prometheus/client_golang/prometheus/push"
@@ -27,6 +29,7 @@ type Worker struct {
 	logger         *zap.Logger
 	pusher         *push.Pusher
 	db             Database
+	onboardClient  client.OnboardServiceClient
 }
 
 func InitializeWorker(
@@ -151,7 +154,7 @@ func (w *Worker) Run() error {
 		return err
 	}
 
-	result := job.Do(w.db, w.vault, w.kfkProducer, w.kfkTopic, w.config, w.logger)
+	result := job.Do(w)
 
 	if err := w.jobResultQueue.Publish(result); err != nil {
 		w.logger.Error("Failed to send results to queue", zap.Error(err))

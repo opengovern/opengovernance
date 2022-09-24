@@ -32,6 +32,11 @@ var (
 
 func (h *HttpHandler) Register(e *echo.Echo) {
 	v1 := e.Group("/api/v1")
+
+	// finding dashboard
+	v1.GET("/findings", h.GetFindings)
+	v1.GET("/findings/filters", h.GetFindingFilters)
+
 	// benchmark details
 	v1.GET("/benchmarks", h.GetBenchmarks)
 	v1.GET("/benchmarks/tags", h.GetBenchmarkTags)
@@ -75,6 +80,30 @@ func bindValidate(ctx echo.Context, i interface{}) error {
 	}
 
 	return nil
+}
+
+// GetFindingFilters godoc
+// @Summary      Returns all findings with respect to filters
+// @Tags     benchmarks
+// @Accept   json
+// @Produce  json
+// @Param        request  body      api.GetFindingsRequest  true   "Request Body"
+// @Success      200        {object}  api.GetFindingsFiltersResponse
+// @Router       /compliance/api/v1/findings [post]
+func (h *HttpHandler) GetFindingFilters(ctx echo.Context) error {
+	return ctx.JSON(http.StatusNotImplemented, nil)
+}
+
+// GetFindings godoc
+// @Summary      Returns all findings with respect to filters
+// @Tags     benchmarks
+// @Accept   json
+// @Produce  json
+// @Param        request  body      api.GetFindingsRequest  true   "Request Body"
+// @Success      200        {object}  []api.Finding
+// @Router       /compliance/api/v1/findings [post]
+func (h *HttpHandler) GetFindings(ctx echo.Context) error {
+	return ctx.JSON(http.StatusNotImplemented, nil)
 }
 
 // GetBenchmarksInTime godoc

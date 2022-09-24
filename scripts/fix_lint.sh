@@ -1,4 +1,5 @@
 #!/bin/bash
+set -e
 set -x
 
 if [[ -z $1 ]]; then 
@@ -8,3 +9,5 @@ else
   gofmt -s -w $1
   goimports -w $1
 fi
+
+echo "done"

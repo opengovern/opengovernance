@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"strconv"
 
+	"gitlab.com/keibiengine/keibi-engine/pkg/source"
+
 	"github.com/google/uuid"
 	"gitlab.com/keibiengine/keibi-engine/pkg/keibi-es-sdk"
 )
@@ -23,17 +25,24 @@ const (
 )
 
 type Finding struct {
-	ComplianceJobID  uint      `json:"complianceJobID"`
-	ResourceID       string    `json:"resourceID"`
-	ResourceName     string    `json:"resourceName"`
-	ResourceLocation string    `json:"resourceLocation"`
-	PolicyID         string    `json:"policyID"`
-	BenchmarkID      string    `json:"benchmarkID"`
-	Reason           string    `json:"reason"`
-	Status           Status    `json:"status"`
-	DescribedAt      int64     `json:"describedAt"`
-	EvaluatedAt      int64     `json:"evaluatedAt"`
-	SourceID         uuid.UUID `json:"sourceID"`
+	ComplianceJobID        uint        `json:"complianceJobID"`
+	ResourceID             string      `json:"resourceID"`
+	ResourceName           string      `json:"resourceName"`
+	ResourceType           string      `json:"resourceType"`
+	ServiceName            string      `json:"serviceName"`
+	Category               string      `json:"category"`
+	ResourceLocation       string      `json:"resourceLocation"`
+	Reason                 string      `json:"reason"`
+	Status                 Status      `json:"status"`
+	DescribedAt            int64       `json:"describedAt"`
+	EvaluatedAt            int64       `json:"evaluatedAt"`
+	SourceID               uuid.UUID   `json:"sourceID"`
+	ConnectionProviderID   string      `json:"connectionProviderID"`
+	ConnectionProviderName string      `json:"connectionProviderName"`
+	SourceType             source.Type `json:"sourceType"`
+	BenchmarkID            string      `json:"benchmarkID"`
+	PolicyID               string      `json:"policyID"`
+	PolicySeverity         string      `json:"policySeverity"`
 }
 
 func (r Finding) KeysAndIndex() ([]string, string) {

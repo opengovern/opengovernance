@@ -11,6 +11,11 @@ import (
 	"path/filepath"
 	"time"
 
+	api2 "gitlab.com/keibiengine/keibi-engine/pkg/auth/api"
+	"gitlab.com/keibiengine/keibi-engine/pkg/cloudservice"
+	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpclient"
+	"gitlab.com/keibiengine/keibi-engine/pkg/onboard/client"
+
 	"gitlab.com/keibiengine/keibi-engine/pkg/compliance/es"
 	"gitlab.com/keibiengine/keibi-engine/pkg/steampipe"
 
@@ -26,10 +31,8 @@ import (
 	"github.com/elastic/go-elasticsearch/v7"
 	"github.com/google/uuid"
 	"gitlab.com/keibiengine/keibi-engine/pkg/compliance/api"
-	"gitlab.com/keibiengine/keibi-engine/pkg/internal/vault"
 	"gitlab.com/keibiengine/keibi-engine/pkg/keibi-es-sdk"
 	"go.uber.org/zap"
-	"gopkg.in/Shopify/sarama.v1"
 )
 
 var DoComplianceReportJobsCount = promauto.NewCounterVec(prometheus.CounterOpts{
@@ -105,10 +108,10 @@ func (j *Job) failed(msg string, args ...interface{}) JobResult {
 	}
 }
 
-func (j *Job) Do(db Database, vlt vault.SourceConfig, producer sarama.SyncProducer, topic string, config WorkerConfig, logger *zap.Logger) JobResult {
+func (j *Job) Do(w *Worker) JobResult {
 	startTime := time.Now().Unix()
 
-	cfg, err := vlt.Read(j.ConfigReg)
+	cfg, err := w.vault.Read(j.ConfigReg)
 	if err != nil {
 		DoComplianceReportJobsDuration.WithLabelValues(string(j.SourceType), "failure").Observe(float64(time.Now().Unix() - startTime))
 		DoComplianceReportJobsCount.WithLabelValues(string(j.SourceType), "failure").Inc()
@@ -126,7 +129,7 @@ func (j *Job) Do(db Database, vlt vault.SourceConfig, producer sarama.SyncProduc
 		}
 		accountID = creds.AccountID
 
-		err = BuildSpecFile("aws", config.ElasticSearch, accountID)
+		err = BuildSpecFile("aws", w.config.ElasticSearch, accountID)
 		if err != nil {
 			DoComplianceReportJobsDuration.WithLabelValues(string(j.SourceType), "failure").Observe(float64(time.Now().Unix() - startTime))
 			DoComplianceReportJobsCount.WithLabelValues(string(j.SourceType), "failure").Inc()
@@ -141,14 +144,14 @@ func (j *Job) Do(db Database, vlt vault.SourceConfig, producer sarama.SyncProduc
 		}
 		accountID = creds.SubscriptionID
 
-		err = BuildSpecFile("azure", config.ElasticSearch, accountID)
+		err = BuildSpecFile("azure", w.config.ElasticSearch, accountID)
 		if err != nil {
 			DoComplianceReportJobsDuration.WithLabelValues(string(j.SourceType), "failure").Observe(float64(time.Now().Unix() - startTime))
 			DoComplianceReportJobsCount.WithLabelValues(string(j.SourceType), "failure").Inc()
 			return j.failed("error: BuildSpecFile(azure): " + err.Error())
 		}
 
-		err = BuildSpecFile("azuread", config.ElasticSearch, accountID)
+		err = BuildSpecFile("azuread", w.config.ElasticSearch, accountID)
 		if err != nil {
 			DoComplianceReportJobsDuration.WithLabelValues(string(j.SourceType), "failure").Observe(float64(time.Now().Unix() - startTime))
 			DoComplianceReportJobsCount.WithLabelValues(string(j.SourceType), "failure").Inc()
@@ -160,7 +163,7 @@ func (j *Job) Do(db Database, vlt vault.SourceConfig, producer sarama.SyncProduc
 		return j.failed("error: invalid source type")
 	}
 
-	modPath, err := j.BuildMod(db)
+	modPath, err := j.BuildMod(w.db)
 	if err != nil {
 		DoComplianceReportJobsDuration.WithLabelValues(string(j.SourceType), "failure").Observe(float64(time.Now().Unix() - startTime))
 		DoComplianceReportJobsCount.WithLabelValues(string(j.SourceType), "failure").Inc()
@@ -175,14 +178,14 @@ func (j *Job) Do(db Database, vlt vault.SourceConfig, producer sarama.SyncProduc
 	}
 
 	evaluatedAt := time.Now().UnixMilli()
-	msgs, err := j.ParseResult(resultFileName, evaluatedAt)
+	msgs, err := j.ParseResult(w.onboardClient, resultFileName, evaluatedAt)
 	if err != nil {
 		DoComplianceReportJobsDuration.WithLabelValues(string(j.SourceType), "failure").Observe(float64(time.Now().Unix() - startTime))
 		DoComplianceReportJobsCount.WithLabelValues(string(j.SourceType), "failure").Inc()
 		return j.failed(err.Error())
 	}
 
-	err = kafka.DoSend(producer, topic, msgs, j.logger)
+	err = kafka.DoSend(w.kfkProducer, w.kfkTopic, msgs, j.logger)
 	if err != nil {
 		DoComplianceReportJobsDuration.WithLabelValues(string(j.SourceType), "failure").Observe(float64(time.Now().Unix() - startTime))
 		DoComplianceReportJobsCount.WithLabelValues(string(j.SourceType), "failure").Inc()
@@ -271,7 +274,7 @@ func (j *Job) BuildMod(db Database) (string, error) {
 	return filename, err
 }
 
-func (j *Job) ParseResult(resultFilename string, evaluatedAt int64) ([]kafka.Doc, error) {
+func (j *Job) ParseResult(onboardClient client.OnboardServiceClient, resultFilename string, evaluatedAt int64) ([]kafka.Doc, error) {
 	content, err := ioutil.ReadFile(resultFilename)
 	if err != nil {
 		return nil, err
@@ -285,8 +288,25 @@ func (j *Job) ParseResult(resultFilename string, evaluatedAt int64) ([]kafka.Doc
 
 	findings := j.ExtractFindings(root, evaluatedAt)
 
+	var sourceIDs []string
+	for _, f := range findings {
+		sourceIDs = append(sourceIDs, f.SourceID.String())
+	}
+
+	sources, err := onboardClient.GetSources(&httpclient.Context{UserRole: api2.ViewerRole}, sourceIDs)
+	if err != nil {
+		return nil, err
+	}
+
 	var res []kafka.Doc
 	for _, f := range findings {
+		for _, s := range sources {
+			if s.ID == f.SourceID {
+				f.ConnectionProviderID = s.ConnectionID
+				f.ConnectionProviderName = s.ConnectionName
+				break
+			}
+		}
 		res = append(res, f)
 	}
 	return res, nil
@@ -296,18 +316,36 @@ func (j *Job) ExtractFindings(root Group, evaluatedAt int64) []es.Finding {
 	var findings []es.Finding
 	for _, c := range root.Controls {
 		for _, r := range c.Results {
+			var resourceName, resourceLocation, resourceType string
+			for _, d := range r.Dimensions {
+				if d.Key == "name" {
+					resourceName = d.Value
+				} else if d.Key == "location" {
+					resourceLocation = d.Value
+				} else if d.Key == "resourceType" {
+					resourceType = d.Value
+				}
+			}
+
 			findings = append(findings, es.Finding{
-				ComplianceJobID:  j.JobID,
-				ResourceID:       r.Resource,
-				ResourceName:     "", //TODO-populate later
-				ResourceLocation: "", //TODO-populate later
-				PolicyID:         c.ControlId,
-				BenchmarkID:      j.BenchmarkID,
-				Reason:           r.Reason,
-				Status:           es.Status(r.Status),
-				DescribedAt:      j.DescribedAt,
-				EvaluatedAt:      evaluatedAt,
-				SourceID:         j.SourceID,
+				ComplianceJobID:        j.JobID,
+				ResourceID:             r.Resource,
+				ResourceName:           resourceName,
+				ResourceType:           resourceType,
+				ServiceName:            cloudservice.ServiceNameByResourceType(resourceType),
+				Category:               cloudservice.CategoryByResourceType(resourceType),
+				ResourceLocation:       resourceLocation,
+				Reason:                 r.Reason,
+				Status:                 es.Status(r.Status),
+				DescribedAt:            j.DescribedAt,
+				EvaluatedAt:            evaluatedAt,
+				SourceID:               j.SourceID,
+				ConnectionProviderID:   "",
+				ConnectionProviderName: "",
+				SourceType:             j.SourceType,
+				BenchmarkID:            j.BenchmarkID,
+				PolicyID:               c.ControlId,
+				PolicySeverity:         c.Severity,
 			})
 		}
 	}

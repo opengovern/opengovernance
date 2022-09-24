@@ -369,12 +369,12 @@ func doDescribeAWS(ctx context.Context, rdb *redis.Client, job DescribeJob, conf
 			errs = append(errs, fmt.Sprintf("redisGet: %v", err.Error()))
 			continue
 		}
-		remaining, err := strconv.Atoi(currentResourceLimitRemaining)
+		remaining, err := strconv.ParseInt(currentResourceLimitRemaining, 10, 64)
 		if remaining <= 0 {
 			errs = append(errs, fmt.Sprintf("workspace has reached its max resources limit"))
 			continue
 		}
-		_, err = rdb.DecrBy(ctx, RedisKeyWorkspaceResourceRemaining, int64(len(output.Resources))).Result()
+		_, err = rdb.DecrBy(ctx, RedisKeyWorkspaceResourceRemaining, int64(len(resources))).Result()
 		if err != nil {
 			errs = append(errs, fmt.Sprintf("redisDecr: %v", err.Error()))
 			continue
@@ -390,17 +390,6 @@ func doDescribeAWS(ctx context.Context, rdb *redis.Client, job DescribeJob, conf
 				break
 			}
 			remaining--
-
-			res, err := rdb.Decr(ctx, RedisKeyWorkspaceResourceRemaining).Result()
-			if err != nil {
-				errs = append(errs, fmt.Sprintf("redisDecr: %v", err.Error()))
-				continue
-			}
-
-			if res < 0 {
-				errs = append(errs, fmt.Sprintf("workspace has reached its max resources limit"))
-				continue
-			}
 
 			kafkaResource := es.Resource{
 				ID:            resource.UniqueID(),
@@ -537,7 +526,7 @@ func doDescribeAzure(ctx context.Context, rdb *redis.Client, job DescribeJob, co
 	if err != nil {
 		return nil, fmt.Errorf("redisGet: %v", err.Error())
 	}
-	remaining, err := strconv.Atoi(currentResourceLimitRemaining)
+	remaining, err := strconv.ParseInt(currentResourceLimitRemaining, 10, 64)
 	if remaining <= 0 {
 		return nil, fmt.Errorf("workspace has reached its max resources limit")
 	}
