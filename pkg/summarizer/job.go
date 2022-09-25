@@ -79,6 +79,7 @@ func (j Job) Do(client keibi.Client, producer sarama.SyncProducer, topic string,
 	)
 
 	fail := func(err error) {
+		logger.Info("failed due to", zap.Error(err))
 		DoSummarizerJobsDuration.WithLabelValues(strconv.Itoa(int(j.JobID)), "failure").Observe(float64(time.Now().Unix() - startTime))
 		DoSummarizerJobsCount.WithLabelValues(strconv.Itoa(int(j.JobID)), "failure").Inc()
 		status = api.SummarizerJobFailed
@@ -109,6 +110,7 @@ func (j Job) Do(client keibi.Client, producer sarama.SyncProducer, topic string,
 			break
 		}
 
+		logger.Info("got a batch of lookup resources", zap.Int("count", len(lookups.Hits.Hits)))
 		for _, lookup := range lookups.Hits.Hits {
 			for _, b := range builders {
 				b.Process(lookup.Source)
@@ -116,27 +118,32 @@ func (j Job) Do(client keibi.Client, producer sarama.SyncProducer, topic string,
 			searchAfter = lookup.Sort
 		}
 	}
+	logger.Info("processed lookup resources")
 	for _, b := range builders {
 		err := b.PopulateHistory(j.LastDayScheduleJobID, j.LastWeekScheduleJobID, j.LastQuarterScheduleJobID, j.LastYearScheduleJobID)
 		if err != nil {
 			fail(fmt.Errorf("Failed to populate history: %v ", err))
 		}
 	}
+	logger.Info("history populated")
 	for _, b := range builders {
 		msgs = append(msgs, b.Build()...)
 	}
+	logger.Info("built messages", zap.Int("count", len(msgs)))
 	for _, b := range builders {
 		err := b.Cleanup(j.ScheduleJobID)
 		if err != nil {
 			fail(fmt.Errorf("Failed to cleanup: %v ", err))
 		}
 	}
+	logger.Info("cleanup done")
 
 	if len(msgs) > 0 {
 		err := kafka.DoSend(producer, topic, msgs, logger)
 		if err != nil {
 			fail(fmt.Errorf("Failed to send to kafka: %v ", err))
 		}
+		logger.Info("sent to kafka")
 	}
 
 	errMsg := ""

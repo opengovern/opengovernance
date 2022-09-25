@@ -89,7 +89,7 @@ func bindValidate(ctx echo.Context, i interface{}) error {
 // @Produce  json
 // @Param        request  body      api.GetFindingsRequest  true   "Request Body"
 // @Success      200        {object}  api.GetFindingsFiltersResponse
-// @Router       /compliance/api/v1/findings [post]
+// @Router       /compliance/api/v1/findings/filters [post]
 func (h *HttpHandler) GetFindingFilters(ctx echo.Context) error {
 	return ctx.JSON(http.StatusNotImplemented, nil)
 }
