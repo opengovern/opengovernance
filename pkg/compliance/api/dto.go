@@ -2,6 +2,7 @@ package api
 
 import (
 	"github.com/google/uuid"
+	"gitlab.com/keibiengine/keibi-engine/pkg/compliance/es"
 	"gitlab.com/keibiengine/keibi-engine/pkg/source"
 )
 
@@ -145,4 +146,66 @@ type ServiceCompliancyResponse struct {
 	ServiceName    string `json:"serviceName"`
 	TotalResources int    `json:"totalResources"`
 	TotalCompliant int    `json:"totalCompliant"`
+}
+
+type FindingFilters struct {
+	Provider       []source.Type `json:"provider"`
+	ResourceTypeID []string      `json:"resourceTypeID"`
+	SourceID       []uuid.UUID   `json:"sourceID"`
+	FindingStatus  []es.Status   `json:"findingStatus"`
+	BenchmarkID    []string      `json:"benchmarkID"`
+	Severity       []string      `json:"severity"`
+}
+
+type DirectionType string
+
+const (
+	DirectionAscending  DirectionType = "asc"
+	DirectionDescending DirectionType = "desc"
+)
+
+type SortFieldType string
+
+const (
+	FieldResourceID             SortFieldType = "resourceID"
+	FieldResourceName           SortFieldType = "resourceName"
+	FieldResourceType           SortFieldType = "resourceType"
+	FieldServiceName            SortFieldType = "serviceName"
+	FieldCategory               SortFieldType = "category"
+	FieldResourceLocation       SortFieldType = "resourceLocation"
+	FieldStatus                 SortFieldType = "status"
+	FieldDescribedAt            SortFieldType = "describedAt"
+	FieldEvaluatedAt            SortFieldType = "evaluatedAt"
+	FieldSourceID               SortFieldType = "sourceID"
+	FieldConnectionProviderID   SortFieldType = "connectionProviderID"
+	FieldConnectionProviderName SortFieldType = "connectionProviderName"
+	FieldSourceType             SortFieldType = "sourceType"
+	FieldBenchmarkID            SortFieldType = "benchmarkID"
+	FieldPolicyID               SortFieldType = "policyID"
+	FieldPolicySeverity         SortFieldType = "policySeverity"
+)
+
+type FindingSortItem struct {
+	Field     SortFieldType `json:"field" enums:"resourceID,resourceName,resourceType,serviceName,category,resourceLocation,status,describedAt,evaluatedAt,sourceID,connectionProviderID,connectionProviderName,sourceType,benchmarkID,policyID,policySeverity"`
+	Direction DirectionType `json:"direction" enums:"asc,desc"`
+}
+
+type Page struct {
+	No   int `json:"no,omitempty"`
+	Size int `json:"size,omitempty"`
+}
+
+type GetFindingsRequest struct {
+	Filters FindingFilters    `json:"filters"`
+	Sorts   []FindingSortItem `json:"sorts"`
+	Page    Page              `json:"page" validate:"required"`
+}
+
+type GetFindingsResponse struct {
+	Findings   []es.Finding `json:"findings"`
+	TotalCount int64        `json:"totalCount,omitempty"`
+}
+
+type GetFindingsFiltersResponse struct {
+	Filters FindingFilters `json:"filters"`
 }

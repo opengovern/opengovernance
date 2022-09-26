@@ -91,7 +91,42 @@ func bindValidate(ctx echo.Context, i interface{}) error {
 // @Success      200        {object}  api.GetFindingsFiltersResponse
 // @Router       /compliance/api/v1/findings/filters [post]
 func (h *HttpHandler) GetFindingFilters(ctx echo.Context) error {
-	return ctx.JSON(http.StatusNotImplemented, nil)
+	var req api.GetFindingsRequest
+	if err := bindValidate(ctx, &req); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	var response api.GetFindingsFiltersResponse
+	res, err := es.FindingsFiltersQuery(h.client, req.Filters.Provider, req.Filters.ResourceTypeID, req.Filters.SourceID,
+		req.Filters.FindingStatus, req.Filters.BenchmarkID, req.Filters.Severity)
+	if err != nil {
+		return err
+	}
+
+	for _, item := range res.Aggregations.BenchmarkIDFilter.Buckets {
+		response.Filters.BenchmarkID = append(response.Filters.BenchmarkID, item.Key)
+	}
+	for _, item := range res.Aggregations.ResourceTypeFilter.Buckets {
+		response.Filters.ResourceTypeID = append(response.Filters.ResourceTypeID, item.Key)
+	}
+	for _, item := range res.Aggregations.SeverityFilter.Buckets {
+		response.Filters.Severity = append(response.Filters.Severity, item.Key)
+	}
+	for _, item := range res.Aggregations.SourceIDFilter.Buckets {
+		v, err := uuid.Parse(item.Key)
+		if err != nil {
+			continue
+		}
+
+		response.Filters.SourceID = append(response.Filters.SourceID, v)
+	}
+	for _, item := range res.Aggregations.SourceTypeFilter.Buckets {
+		response.Filters.Provider = append(response.Filters.Provider, source.Type(item.Key))
+	}
+	for _, item := range res.Aggregations.StatusFilter.Buckets {
+		response.Filters.FindingStatus = append(response.Filters.FindingStatus, es.Status(item.Key))
+	}
+	return ctx.JSON(http.StatusOK, response)
 }
 
 // GetFindings godoc
@@ -100,10 +135,27 @@ func (h *HttpHandler) GetFindingFilters(ctx echo.Context) error {
 // @Accept   json
 // @Produce  json
 // @Param        request  body      api.GetFindingsRequest  true   "Request Body"
-// @Success      200        {object}  []api.Finding
+// @Success      200        {object}  api.GetFindingsResponse
 // @Router       /compliance/api/v1/findings [post]
 func (h *HttpHandler) GetFindings(ctx echo.Context) error {
-	return ctx.JSON(http.StatusNotImplemented, nil)
+	var req api.GetFindingsRequest
+	if err := bindValidate(ctx, &req); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+	lastIdx := (req.Page.No - 1) * req.Page.Size
+
+	var response api.GetFindingsResponse
+	res, err := es.FindingsQuery(h.client, req.Filters.Provider, req.Filters.ResourceTypeID, req.Filters.SourceID,
+		req.Filters.FindingStatus, req.Filters.BenchmarkID, req.Filters.Severity,
+		req.Sorts, lastIdx, req.Page.Size)
+	if err != nil {
+		return err
+	}
+	for _, h := range res.Hits.Hits {
+		response.Findings = append(response.Findings, h.Source)
+	}
+	response.TotalCount = res.Hits.Total.Value
+	return ctx.JSON(http.StatusOK, response)
 }
 
 // GetBenchmarksInTime godoc

@@ -370,7 +370,31 @@ func (s *Server) handleWorkspace(workspace *Workspace) error {
 					return fmt.Errorf("suspend helmrelease: %v", err)
 				}
 			}
+			newStatus = StatusProvisioning
+		} else if meta.IsStatusConditionTrue(helmRelease.Status.Conditions, apimeta.StalledCondition) {
 			newStatus = StatusProvisioningFailed
+		}
+		if newStatus != status {
+			if err := s.db.UpdateWorkspaceStatus(workspace.ID, newStatus); err != nil {
+				return fmt.Errorf("update workspace status: %w", err)
+			}
+		}
+	case StatusProvisioningFailed:
+		helmRelease, err := s.findHelmRelease(ctx, workspace)
+		if err != nil {
+			return fmt.Errorf("find helm release: %w", err)
+		}
+		if helmRelease == nil {
+			return nil
+		}
+
+		values := helmRelease.GetValues()
+		newStatus := status
+		// check the status of helm release
+		if meta.IsStatusConditionTrue(helmRelease.Status.Conditions, apimeta.ReadyCondition) {
+			newStatus = StatusProvisioning
+		} else if meta.IsStatusConditionFalse(helmRelease.Status.Conditions, apimeta.ReadyCondition) {
+			newStatus = StatusProvisioning
 		} else if meta.IsStatusConditionTrue(helmRelease.Status.Conditions, apimeta.StalledCondition) {
 			newStatus = StatusProvisioningFailed
 		}
