@@ -1,4 +1,43 @@
 definitions:
+  ..Finding:
+    properties:
+      benchmarkID:
+        type: string
+      category:
+        type: string
+      complianceJobID:
+        type: integer
+      connectionProviderID:
+        type: string
+      connectionProviderName:
+        type: string
+      describedAt:
+        type: integer
+      evaluatedAt:
+        type: integer
+      policyID:
+        type: string
+      policySeverity:
+        type: string
+      reason:
+        type: string
+      resourceID:
+        type: string
+      resourceLocation:
+        type: string
+      resourceName:
+        type: string
+      resourceType:
+        type: string
+      serviceName:
+        type: string
+      sourceID:
+        type: string
+      sourceType:
+        type: string
+      status:
+        type: string
+    type: object
   api.AWSResource:
     properties:
       attributes:
@@ -333,6 +372,60 @@ definitions:
           {})
         type: object
     type: object
+  api.FindingFilters:
+    properties:
+      benchmarkID:
+        items:
+          type: string
+        type: array
+      findingStatus:
+        items:
+          type: string
+        type: array
+      provider:
+        items:
+          type: string
+        type: array
+      resourceTypeID:
+        items:
+          type: string
+        type: array
+      severity:
+        items:
+          type: string
+        type: array
+      sourceID:
+        items:
+          type: string
+        type: array
+    type: object
+  api.FindingSortItem:
+    properties:
+      direction:
+        enum:
+        - asc
+        - desc
+        type: string
+      field:
+        enum:
+        - resourceID
+        - resourceName
+        - resourceType
+        - serviceName
+        - category
+        - resourceLocation
+        - status
+        - describedAt
+        - evaluatedAt
+        - sourceID
+        - connectionProviderID
+        - connectionProviderName
+        - sourceType
+        - benchmarkID
+        - policyID
+        - policySeverity
+        type: string
+    type: object
   api.GetAWSResourceResponse:
     properties:
       resources:
@@ -376,6 +469,33 @@ definitions:
       filters:
         $ref: '#/definitions/api.ResourceFiltersResponse'
         description: search filters
+    type: object
+  api.GetFindingsFiltersResponse:
+    properties:
+      filters:
+        $ref: '#/definitions/api.FindingFilters'
+    type: object
+  api.GetFindingsRequest:
+    properties:
+      filters:
+        $ref: '#/definitions/api.FindingFilters'
+      page:
+        $ref: '#/definitions/api.Page'
+      sorts:
+        items:
+          $ref: '#/definitions/api.FindingSortItem'
+        type: array
+    required:
+    - page
+    type: object
+  api.GetFindingsResponse:
+    properties:
+      findings:
+        items:
+          $ref: '#/definitions/..Finding'
+        type: array
+      totalCount:
+        type: integer
     type: object
   api.GetResourceRequest:
     properties:
@@ -1005,19 +1125,6 @@ definitions:
       userId:
         type: string
     type: object
-  compliance_report.SummaryStatus:
-    properties:
-      alarm:
-        type: integer
-      error:
-        type: integer
-      info:
-        type: integer
-      ok:
-        type: integer
-      skip:
-        type: integer
-    type: object
   connector.Category:
     properties:
       category_id:
@@ -1042,29 +1149,54 @@ definitions:
       connector_type:
         type: string
     type: object
-  es.Finding:
+  gitlab.com_keibiengine_keibi-engine_pkg_compliance.SummaryStatus:
     properties:
-      accountID:
+      alarm:
+        type: integer
+      error:
+        type: integer
+      info:
+        type: integer
+      ok:
+        type: integer
+      skip:
+        type: integer
+    type: object
+  gitlab.com_keibiengine_keibi-engine_pkg_compliance_es.Finding:
+    properties:
+      benchmarkID:
         type: string
-      controlID:
+      category:
+        type: string
+      complianceJobID:
+        type: integer
+      connectionProviderID:
+        type: string
+      connectionProviderName:
         type: string
       describedAt:
         type: integer
-      id:
+      evaluatedAt:
+        type: integer
+      policyID:
         type: string
-      parentBenchmarkIDs:
-        items:
-          type: string
-        type: array
-      reportID:
-        type: integer
-      reportJobID:
-        type: integer
+      policySeverity:
+        type: string
+      reason:
+        type: string
       resourceID:
         type: string
       resourceLocation:
         type: string
       resourceName:
+        type: string
+      resourceType:
+        type: string
+      serviceName:
+        type: string
+      sourceID:
+        type: string
+      sourceType:
         type: string
       status:
         type: string
@@ -1281,29 +1413,7 @@ paths:
       summary: Return top accounts by benchmark compliancy
       tags:
       - provider_dashboard
-  /inventory/api/v1/accounts/resource/count:
-    get:
-      consumes:
-      - application/json
-      parameters:
-      - description: Provider
-        in: query
-        name: provider
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            items:
-              $ref: '#/definitions/api.AccountResourceCountResponse'
-            type: array
-      summary: Returns resource count of accounts
-      tags:
-      - benchmarks
-  /inventory/api/v1/benchmarks:
+  /compliance/api/v1/benchmarks:
     get:
       consumes:
       - application/json
@@ -1333,7 +1443,7 @@ paths:
       summary: Returns list of benchmarks
       tags:
       - benchmarks
-  /inventory/api/v1/benchmarks/{benchmark_id}/source/{source_id}:
+  /compliance/api/v1/benchmarks/{benchmark_id}/source/{source_id}:
     delete:
       consumes:
       - application/json
@@ -1353,7 +1463,7 @@ paths:
       - application/json
       responses:
         "200":
-          description: ""
+          description: OK
       summary: Delete benchmark assignment for inventory service
       tags:
       - benchmarks_assignment
@@ -1382,7 +1492,7 @@ paths:
       summary: Create benchmark assignment for inventory service
       tags:
       - benchmarks_assignment
-  /inventory/api/v1/benchmarks/{benchmark_id}/sources:
+  /compliance/api/v1/benchmarks/{benchmark_id}/sources:
     get:
       consumes:
       - application/json
@@ -1405,7 +1515,7 @@ paths:
       summary: Get all benchmark assigned sources with benchmark id
       tags:
       - benchmarks_assignment
-  /inventory/api/v1/benchmarks/{benchmarkId}/{createdAt}/accounts:
+  /compliance/api/v1/benchmarks/{benchmarkId}/{createdAt}/accounts:
     get:
       consumes:
       - application/json
@@ -1443,7 +1553,7 @@ paths:
       summary: Returns list of accounts compliance scores ordered by compliance ratio
       tags:
       - benchmarks
-  /inventory/api/v1/benchmarks/{benchmarkId}/{createdAt}/accounts/compliance:
+  /compliance/api/v1/benchmarks/{benchmarkId}/{createdAt}/accounts/compliance:
     get:
       consumes:
       - application/json
@@ -1468,7 +1578,7 @@ paths:
       summary: Returns no of compliant & non-compliant accounts
       tags:
       - benchmarks
-  /inventory/api/v1/benchmarks/{benchmarkId}/{sourceId}/compliance/trend:
+  /compliance/api/v1/benchmarks/{benchmarkId}/{sourceId}/compliance/trend:
     get:
       consumes:
       - application/json
@@ -1506,7 +1616,7 @@ paths:
       summary: Returns trend of a benchmark compliance for specific account
       tags:
       - benchmarks
-  /inventory/api/v1/benchmarks/{benchmarkId}/policies:
+  /compliance/api/v1/benchmarks/{benchmarkId}/policies:
     get:
       consumes:
       - application/json
@@ -1540,7 +1650,7 @@ paths:
       summary: Returns list of policies of a given benchmark
       tags:
       - benchmarks
-  /inventory/api/v1/benchmarks/{benchmarkId}/result/findings:
+  /compliance/api/v1/benchmarks/{benchmarkId}/result/findings:
     get:
       consumes:
       - application/json
@@ -1585,7 +1695,7 @@ paths:
       summary: Returns compliancy of policies in result of benchmark
       tags:
       - benchmarks
-  /inventory/api/v1/benchmarks/{benchmarkId}/result/policies:
+  /compliance/api/v1/benchmarks/{benchmarkId}/result/policies:
     get:
       consumes:
       - application/json
@@ -1630,7 +1740,7 @@ paths:
       summary: Returns policies of result of benchmark
       tags:
       - benchmarks
-  /inventory/api/v1/benchmarks/{benchmarkId}/result/policies/{policy_id}/findings:
+  /compliance/api/v1/benchmarks/{benchmarkId}/result/policies/{policy_id}/findings:
     get:
       consumes:
       - application/json
@@ -1641,12 +1751,12 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/es.Finding'
+              $ref: '#/definitions/gitlab.com_keibiengine_keibi-engine_pkg_compliance_es.Finding'
             type: array
       summary: Returns findings of a policy in results of a benchmark
       tags:
       - benchmarks
-  /inventory/api/v1/benchmarks/{benchmarkId}/result/policies/{policy_id}/resources/summary:
+  /compliance/api/v1/benchmarks/{benchmarkId}/result/policies/{policy_id}/resources/summary:
     get:
       consumes:
       - application/json
@@ -1660,7 +1770,7 @@ paths:
       summary: Returns summary of resources of a policy in results of a benchmark
       tags:
       - benchmarks
-  /inventory/api/v1/benchmarks/{benchmarkId}/result/summary:
+  /compliance/api/v1/benchmarks/{benchmarkId}/result/summary:
     get:
       consumes:
       - application/json
@@ -1676,11 +1786,11 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/compliance_report.SummaryStatus'
+            $ref: '#/definitions/gitlab.com_keibiengine_keibi-engine_pkg_compliance.SummaryStatus'
       summary: Returns summary of result of benchmark
       tags:
       - benchmarks
-  /inventory/api/v1/benchmarks/{provider}/list:
+  /compliance/api/v1/benchmarks/{provider}/list:
     get:
       consumes:
       - application/json
@@ -1720,7 +1830,7 @@ paths:
       summary: Returns all benchmark existed at the specified time
       tags:
       - benchmarks
-  /inventory/api/v1/benchmarks/count:
+  /compliance/api/v1/benchmarks/count:
     get:
       consumes:
       - application/json
@@ -1750,7 +1860,7 @@ paths:
       summary: Returns count of benchmarks
       tags:
       - benchmarks
-  /inventory/api/v1/benchmarks/history/list/{provider}/{createdAt}:
+  /compliance/api/v1/benchmarks/history/list/{provider}/{createdAt}:
     get:
       consumes:
       - application/json
@@ -1782,7 +1892,7 @@ paths:
       summary: Returns all benchmark existed at the specified time
       tags:
       - benchmarks
-  /inventory/api/v1/benchmarks/source/{source_id}:
+  /compliance/api/v1/benchmarks/source/{source_id}:
     get:
       consumes:
       - application/json
@@ -1805,7 +1915,7 @@ paths:
       summary: Get all benchmark assignments with source id
       tags:
       - benchmarks_assignment
-  /inventory/api/v1/benchmarks/tags:
+  /compliance/api/v1/benchmarks/tags:
     get:
       consumes:
       - application/json
@@ -1821,23 +1931,7 @@ paths:
       summary: Returns list of benchmark tags
       tags:
       - benchmarks
-  /inventory/api/v1/categories:
-    get:
-      consumes:
-      - application/json
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            items:
-              type: string
-            type: array
-      summary: Return list of categories
-      tags:
-      - inventory
-  /inventory/api/v1/compliancy/trend:
+  /compliance/api/v1/compliancy/trend:
     get:
       consumes:
       - application/json
@@ -1875,6 +1969,110 @@ paths:
       summary: Returns trend of compliancy for specific account
       tags:
       - benchmarks
+  /compliance/api/v1/findings:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Request Body
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/api.GetFindingsRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/api.GetFindingsResponse'
+      summary: Returns all findings with respect to filters
+      tags:
+      - benchmarks
+  /compliance/api/v1/findings/filters:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Request Body
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/api.GetFindingsRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/api.GetFindingsFiltersResponse'
+      summary: Returns all findings with respect to filters
+      tags:
+      - benchmarks
+  /compliance/api/v1/policies/count:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: Provider
+        enum:
+        - AWS
+        - Azure
+        in: query
+        name: provider
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/api.Benchmark'
+            type: array
+      summary: Returns count of policies
+      tags:
+      - benchmarks
+  /inventory/api/v1/accounts/resource/count:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: Provider
+        in: query
+        name: provider
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/api.AccountResourceCountResponse'
+            type: array
+      summary: Returns resource count of accounts
+      tags:
+      - benchmarks
+  /inventory/api/v1/categories:
+    get:
+      consumes:
+      - application/json
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              type: string
+            type: array
+      summary: Return list of categories
+      tags:
+      - inventory
   /inventory/api/v1/cost/top/accounts:
     get:
       consumes:
@@ -1947,7 +2145,7 @@ paths:
       - application/json
       responses:
         "200":
-          description: ""
+          description: OK
       summary: List insight results for specified account
       tags:
       - insights
@@ -2023,30 +2221,6 @@ paths:
       summary: Return metrics, their value and their history
       tags:
       - inventory
-  /inventory/api/v1/policies/count:
-    get:
-      consumes:
-      - application/json
-      parameters:
-      - description: Provider
-        enum:
-        - AWS
-        - Azure
-        in: query
-        name: provider
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            items:
-              $ref: '#/definitions/api.Benchmark'
-            type: array
-      summary: Returns count of policies
-      tags:
-      - benchmarks
   /inventory/api/v1/query:
     get:
       description: Listing smart queries
@@ -2734,7 +2908,7 @@ paths:
       - application/json
       responses:
         "200":
-          description: ""
+          description: OK
       summary: Delete a single source
       tags:
       - onboard
@@ -2795,7 +2969,7 @@ paths:
       - application/json
       responses:
         "200":
-          description: ""
+          description: OK
       summary: Disable a single source
       tags:
       - onboard
@@ -2811,7 +2985,7 @@ paths:
       - application/json
       responses:
         "200":
-          description: ""
+          description: OK
       summary: Enable a single source
       tags:
       - onboard
@@ -3124,7 +3298,7 @@ paths:
       - application/json
       responses:
         "200":
-          description: ""
+          description: OK
       summary: Delete an insight
       tags:
       - insights
@@ -3303,7 +3477,7 @@ paths:
       - application/json
       responses:
         "200":
-          description: ""
+          description: OK
       summary: Delete workspace for workspace service
       tags:
       - workspace
@@ -3321,7 +3495,7 @@ paths:
       - application/json
       responses:
         "200":
-          description: ""
+          description: OK
       summary: Resume workspace
       tags:
       - workspace
@@ -3339,7 +3513,7 @@ paths:
       - application/json
       responses:
         "200":
-          description: ""
+          description: OK
       summary: Suspend workspace
       tags:
       - workspace

@@ -83,13 +83,13 @@ func bindValidate(ctx echo.Context, i interface{}) error {
 }
 
 // GetFindingFilters godoc
-// @Summary      Returns all findings with respect to filters
-// @Tags     benchmarks
-// @Accept   json
-// @Produce  json
-// @Param        request  body      api.GetFindingsRequest  true   "Request Body"
-// @Success      200        {object}  api.GetFindingsFiltersResponse
-// @Router       /compliance/api/v1/findings/filters [post]
+// @Summary Returns all findings with respect to filters
+// @Tags    benchmarks
+// @Accept  json
+// @Produce json
+// @Param   request body     api.GetFindingsRequest true "Request Body"
+// @Success 200     {object} api.GetFindingsFiltersResponse
+// @Router  /compliance/api/v1/findings/filters [post]
 func (h *HttpHandler) GetFindingFilters(ctx echo.Context) error {
 	var req api.GetFindingsRequest
 	if err := bindValidate(ctx, &req); err != nil {
@@ -130,13 +130,13 @@ func (h *HttpHandler) GetFindingFilters(ctx echo.Context) error {
 }
 
 // GetFindings godoc
-// @Summary      Returns all findings with respect to filters
-// @Tags     benchmarks
-// @Accept   json
-// @Produce  json
-// @Param        request  body      api.GetFindingsRequest  true   "Request Body"
-// @Success      200        {object}  api.GetFindingsResponse
-// @Router       /compliance/api/v1/findings [post]
+// @Summary Returns all findings with respect to filters
+// @Tags    benchmarks
+// @Accept  json
+// @Produce json
+// @Param   request body     api.GetFindingsRequest true "Request Body"
+// @Success 200     {object} api.GetFindingsResponse
+// @Router  /compliance/api/v1/findings [post]
 func (h *HttpHandler) GetFindings(ctx echo.Context) error {
 	var req api.GetFindingsRequest
 	if err := bindValidate(ctx, &req); err != nil {
@@ -159,15 +159,15 @@ func (h *HttpHandler) GetFindings(ctx echo.Context) error {
 }
 
 // GetBenchmarksInTime godoc
-// @Summary      Returns all benchmark existed at the specified time
-// @Description  You should fetch the benchmark report times from /benchmarks/history/:year/:month/:day
-// @Tags     benchmarks
-// @Accept   json
-// @Produce  json
-// @Param        provider   path      string  true  "Provider"  Enums(AWS,Azure,All)
-// @Param        createdAt  path      string  true   "CreatedAt"
-// @Success      200        {object}  []api.Benchmark
-// @Router       /compliance/api/v1/benchmarks/history/list/{provider}/{createdAt} [get]
+// @Summary     Returns all benchmark existed at the specified time
+// @Description You should fetch the benchmark report times from /benchmarks/history/:year/:month/:day
+// @Tags        benchmarks
+// @Accept      json
+// @Produce     json
+// @Param       provider  path     string true "Provider" Enums(AWS,Azure,All)
+// @Param       createdAt path     string true "CreatedAt"
+// @Success     200       {object} []api.Benchmark
+// @Router      /compliance/api/v1/benchmarks/history/list/{provider}/{createdAt} [get]
 func (h *HttpHandler) GetBenchmarksInTime(ctx echo.Context) error {
 	provider, _ := source.ParseType(ctx.Param("provider"))
 	tim := ctx.Param("createdAt")
@@ -215,13 +215,13 @@ func (h *HttpHandler) GetBenchmarksInTime(ctx echo.Context) error {
 }
 
 // GetBenchmarkResultSummary godoc
-// @Summary  Returns summary of result of benchmark
-// @Tags         benchmarks
-// @Accept   json
-// @Produce      json
-// @Param    benchmarkId  path      string  true  "BenchmarkID"
-// @Success  200          {object}  SummaryStatus
-// @Router   /compliance/api/v1/benchmarks/{benchmarkId}/result/summary [get]
+// @Summary Returns summary of result of benchmark
+// @Tags    benchmarks
+// @Accept  json
+// @Produce json
+// @Param   benchmarkId path     string true "BenchmarkID"
+// @Success 200         {object} SummaryStatus
+// @Router  /compliance/api/v1/benchmarks/{benchmarkId}/result/summary [get]
 func (h *HttpHandler) GetBenchmarkResultSummary(ctx echo.Context) error {
 	benchmarkID := ctx.Param("benchmarkId")
 
@@ -269,18 +269,18 @@ func (h *HttpHandler) GetBenchmarkResultSummary(ctx echo.Context) error {
 }
 
 // GetBenchmarkResultPolicies godoc
-// @Summary  Returns policies of result of benchmark
-// @Tags     benchmarks
-// @Accept   json
-// @Produce  json
-// @Param    benchmarkId  path      string  true   "BenchmarkID"
-// @Param    category     query     string  false  "Category Filter"
-// @Param    subcategory  query     string  false  "Subcategory Filter"
-// @Param    section      query     string  false  "Section Filter"
-// @Param    severity     query     string  false  "Severity Filter"
-// @Param    status       query     string  false  "Status Filter"  Enums(passed,failed)
-// @Success  200          {object}  []api.ResultPolicy
-// @Router   /compliance/api/v1/benchmarks/{benchmarkId}/result/policies [get]
+// @Summary Returns policies of result of benchmark
+// @Tags    benchmarks
+// @Accept  json
+// @Produce json
+// @Param   benchmarkId path     string true  "BenchmarkID"
+// @Param   category    query    string false "Category Filter"
+// @Param   subcategory query    string false "Subcategory Filter"
+// @Param   section     query    string false "Section Filter"
+// @Param   severity    query    string false "Severity Filter"
+// @Param   status      query    string false "Status Filter" Enums(passed,failed)
+// @Success 200         {object} []api.ResultPolicy
+// @Router  /compliance/api/v1/benchmarks/{benchmarkId}/result/policies [get]
 func (h *HttpHandler) GetBenchmarkResultPolicies(ctx echo.Context) error {
 	benchmarkID := ctx.Param("benchmarkId")
 
@@ -361,18 +361,18 @@ func (h *HttpHandler) GetBenchmarkResultPolicies(ctx echo.Context) error {
 }
 
 // GetBenchmarkResultCompliancy godoc
-// @Summary  Returns compliancy of policies in result of benchmark
-// @Tags     benchmarks
-// @Accept   json
-// @Produce  json
-// @Param    benchmarkId  path      string  true   "BenchmarkID"
-// @Param    category     query     string  false  "Category Filter"
-// @Param    subcategory  query     string  false  "Subcategory Filter"
-// @Param    section      query     string  false  "Section Filter"
-// @Param    severity     query     string  false  "Severity Filter"
-// @Param    status       query     string  false  "Status Filter"  Enums(passed,failed)
-// @Success  200          {object}  []api.ResultCompliancy
-// @Router   /compliance/api/v1/benchmarks/{benchmarkId}/result/findings [get]
+// @Summary Returns compliancy of policies in result of benchmark
+// @Tags    benchmarks
+// @Accept  json
+// @Produce json
+// @Param   benchmarkId path     string true  "BenchmarkID"
+// @Param   category    query    string false "Category Filter"
+// @Param   subcategory query    string false "Subcategory Filter"
+// @Param   section     query    string false "Section Filter"
+// @Param   severity    query    string false "Severity Filter"
+// @Param   status      query    string false "Status Filter" Enums(passed,failed)
+// @Success 200         {object} []api.ResultCompliancy
+// @Router  /compliance/api/v1/benchmarks/{benchmarkId}/result/findings [get]
 func (h *HttpHandler) GetBenchmarkResultCompliancy(ctx echo.Context) error {
 	benchmarkID := ctx.Param("benchmarkId")
 
@@ -453,12 +453,12 @@ func (h *HttpHandler) GetBenchmarkResultCompliancy(ctx echo.Context) error {
 }
 
 // GetBenchmarkResultPolicyResourcesSummary godoc
-// @Summary  Returns summary of resources of a policy in results of a benchmark
-// @Tags     benchmarks
-// @Accept   json
-// @Produce  json
-// @Success  200  {object}  api.ResultPolicyResourceSummary
-// @Router   /compliance/api/v1/benchmarks/{benchmarkId}/result/policies/{policy_id}/resources/summary [get]
+// @Summary Returns summary of resources of a policy in results of a benchmark
+// @Tags    benchmarks
+// @Accept  json
+// @Produce json
+// @Success 200 {object} api.ResultPolicyResourceSummary
+// @Router  /compliance/api/v1/benchmarks/{benchmarkId}/result/policies/{policy_id}/resources/summary [get]
 func (h *HttpHandler) GetBenchmarkResultPolicyResourcesSummary(ctx echo.Context) error {
 	benchmarkID := ctx.Param("benchmarkId")
 	policyID := ctx.Param("policyId")
@@ -504,12 +504,12 @@ func (h *HttpHandler) GetBenchmarkResultPolicyResourcesSummary(ctx echo.Context)
 }
 
 // GetBenchmarkResultPolicyFindings godoc
-// @Summary  Returns findings of a policy in results of a benchmark
-// @Tags     benchmarks
-// @Accept   json
-// @Produce  json
-// @Success  200  {object}  []compliance_es.Finding
-// @Router   /compliance/api/v1/benchmarks/{benchmarkId}/result/policies/{policy_id}/findings [get]
+// @Summary Returns findings of a policy in results of a benchmark
+// @Tags    benchmarks
+// @Accept  json
+// @Produce json
+// @Success 200 {object} []compliance_es.Finding
+// @Router  /compliance/api/v1/benchmarks/{benchmarkId}/result/policies/{policy_id}/findings [get]
 func (h *HttpHandler) GetBenchmarkResultPolicyFindings(ctx echo.Context) error {
 	benchmarkID := ctx.Param("benchmarkId")
 	policyID := ctx.Param("policyId")
@@ -547,17 +547,17 @@ func (h *HttpHandler) GetBenchmarkResultPolicyFindings(ctx echo.Context) error {
 }
 
 // GetListOfBenchmarks godoc
-// @Summary      Returns all benchmark existed at the specified time
-// @Description  You should fetch the benchmark report times from /benchmarks/history/:year/:month/:day
-// @Tags     benchmarks
-// @Accept   json
-// @Produce  json
-// @Param        count      query     int     true   "count"
-// @Param        sourceId   query     string  false  "SourceID"
-// @Param        provider   path      string  true   "Provider"  Enums(AWS,Azure)
-// @Param        createdAt  path      string  true  "CreatedAt"
-// @Success      200        {object}  []api.BenchmarkScoreResponse
-// @Router       /compliance/api/v1/benchmarks/{provider}/list [get]
+// @Summary     Returns all benchmark existed at the specified time
+// @Description You should fetch the benchmark report times from /benchmarks/history/:year/:month/:day
+// @Tags        benchmarks
+// @Accept      json
+// @Produce     json
+// @Param       count     query    int    true  "count"
+// @Param       sourceId  query    string false "SourceID"
+// @Param       provider  path     string true  "Provider" Enums(AWS,Azure)
+// @Param       createdAt path     string true  "CreatedAt"
+// @Success     200       {object} []api.BenchmarkScoreResponse
+// @Router      /compliance/api/v1/benchmarks/{provider}/list [get]
 func (h *HttpHandler) GetListOfBenchmarks(ctx echo.Context) error {
 	provider, err := source.ParseType(ctx.Param("provider"))
 	if err != nil {
@@ -621,15 +621,15 @@ func (h *HttpHandler) GetListOfBenchmarks(ctx echo.Context) error {
 }
 
 // GetTopAccountsByBenchmarkCompliancy godoc
-// @Summary  Return top accounts by benchmark compliancy
-// @Tags     provider_dashboard
-// @Accept   json
-// @Produce  json
-// @Param    count     query     int     true  "Count"
-// @Param    order     query     string  true  "Order"     Enums(asc,desc)
-// @Param    provider  path      string  true  "Provider"  Enums(AWS,Azure)
-// @Success  200       {object}  []api.AccountCompliancyResponse
-// @Router   /benchmarks/compliancy/{provider}/top/accounts [get]
+// @Summary Return top accounts by benchmark compliancy
+// @Tags    provider_dashboard
+// @Accept  json
+// @Produce json
+// @Param   count    query    int    true "Count"
+// @Param   order    query    string true "Order"    Enums(asc,desc)
+// @Param   provider path     string true "Provider" Enums(AWS,Azure)
+// @Success 200      {object} []api.AccountCompliancyResponse
+// @Router  /benchmarks/compliancy/{provider}/top/accounts [get]
 func (h *HttpHandler) GetTopAccountsByBenchmarkCompliancy(ctx echo.Context) error {
 	provider, err := source.ParseType(ctx.Param("provider"))
 	if err != nil {
@@ -690,15 +690,15 @@ func (h *HttpHandler) GetTopAccountsByBenchmarkCompliancy(ctx echo.Context) erro
 }
 
 // GetTopServicesByBenchmarkCompliancy godoc
-// @Summary  Return top accounts by benchmark compliancy
-// @Tags     provider_dashboard
-// @Accept   json
-// @Produce  json
-// @Param    count     query     int     true  "Count"
-// @Param    order     query     string  true  "Order"     Enums(asc,desc)
-// @Param    provider  path      string  true  "Provider"  Enums(AWS,Azure)
-// @Success  200       {object}  []api.ServiceCompliancyResponse
-// @Router   /benchmarks/compliancy/{provider}/top/services [get]
+// @Summary Return top accounts by benchmark compliancy
+// @Tags    provider_dashboard
+// @Accept  json
+// @Produce json
+// @Param   count    query    int    true "Count"
+// @Param   order    query    string true "Order"    Enums(asc,desc)
+// @Param   provider path     string true "Provider" Enums(AWS,Azure)
+// @Success 200      {object} []api.ServiceCompliancyResponse
+// @Router  /benchmarks/compliancy/{provider}/top/services [get]
 func (h *HttpHandler) GetTopServicesByBenchmarkCompliancy(ctx echo.Context) error {
 	provider, err := source.ParseType(ctx.Param("provider"))
 	if err != nil {
@@ -759,15 +759,15 @@ func (h *HttpHandler) GetTopServicesByBenchmarkCompliancy(ctx echo.Context) erro
 }
 
 // GetBenchmarkComplianceTrend godoc
-// @Summary  Returns trend of a benchmark compliance for specific account
-// @Tags     benchmarks
-// @Accept   json
-// @Produce  json
-// @Param    benchmarkId  path      string  true  "BenchmarkID"
-// @Param    sourceId     path      string  true  "SourceID"
-// @Param    timeWindow  query     string  true  "Time Window"  Enums(24h,1w,3m,1y,max)
-// @Success  200          {object}  []api.ComplianceTrendDataPoint
-// @Router   /compliance/api/v1/benchmarks/{benchmarkId}/{sourceId}/compliance/trend [get]
+// @Summary Returns trend of a benchmark compliance for specific account
+// @Tags    benchmarks
+// @Accept  json
+// @Produce json
+// @Param   benchmarkId path     string true "BenchmarkID"
+// @Param   sourceId    path     string true "SourceID"
+// @Param   timeWindow  query    string true "Time Window" Enums(24h,1w,3m,1y,max)
+// @Success 200         {object} []api.ComplianceTrendDataPoint
+// @Router  /compliance/api/v1/benchmarks/{benchmarkId}/{sourceId}/compliance/trend [get]
 func (h *HttpHandler) GetBenchmarkComplianceTrend(ctx echo.Context) error {
 	benchmarkId := ctx.Param("benchmarkId")
 	sourceUUID, err := uuid.Parse(ctx.Param("sourceId"))
@@ -848,15 +848,15 @@ func (h *HttpHandler) GetBenchmarkComplianceTrend(ctx echo.Context) error {
 }
 
 // GetCompliancyTrend godoc
-// @Summary  Returns trend of compliancy for specific account
-// @Tags     benchmarks
-// @Accept   json
-// @Produce  json
-// @Param    sourceId  query     string  true  "SourceID"
-// @Param    provider  query     string  true  "Provider"
-// @Param    timeWindow  query     string  true  "Time Window"  Enums(24h,1w,3m,1y,max)
-// @Success  200         {object}  []api.TrendDataPoint
-// @Router   /compliance/api/v1/compliancy/trend [get]
+// @Summary Returns trend of compliancy for specific account
+// @Tags    benchmarks
+// @Accept  json
+// @Produce json
+// @Param   sourceId   query    string true "SourceID"
+// @Param   provider   query    string true "Provider"
+// @Param   timeWindow query    string true "Time Window" Enums(24h,1w,3m,1y,max)
+// @Success 200        {object} []api.TrendDataPoint
+// @Router  /compliance/api/v1/compliancy/trend [get]
 func (h *HttpHandler) GetCompliancyTrend(ctx echo.Context) error {
 	provider, _ := source.ParseType(ctx.QueryParam("provider"))
 	sourceID := ctx.QueryParam("sourceId")
@@ -932,14 +932,14 @@ func (h *HttpHandler) GetCompliancyTrend(ctx echo.Context) error {
 }
 
 // GetBenchmarkAccountCompliance godoc
-// @Summary  Returns no of compliant & non-compliant accounts
-// @Tags     benchmarks
-// @Accept   json
-// @Produce  json
-// @Param    benchmarkId  path      string  true  "BenchmarkID"
-// @Param    createdAt    path      string  true  "CreatedAt"
-// @Success  200          {object}  api.BenchmarkAccountComplianceResponse
-// @Router   /compliance/api/v1/benchmarks/{benchmarkId}/{createdAt}/accounts/compliance [get]
+// @Summary Returns no of compliant & non-compliant accounts
+// @Tags    benchmarks
+// @Accept  json
+// @Produce json
+// @Param   benchmarkId path     string true "BenchmarkID"
+// @Param   createdAt   path     string true "CreatedAt"
+// @Success 200         {object} api.BenchmarkAccountComplianceResponse
+// @Router  /compliance/api/v1/benchmarks/{benchmarkId}/{createdAt}/accounts/compliance [get]
 func (h *HttpHandler) GetBenchmarkAccountCompliance(ctx echo.Context) error {
 	benchmarkId := ctx.Param("benchmarkId")
 	tim, err := strconv.ParseInt(ctx.Param("createdAt"), 10, 64)
@@ -979,16 +979,16 @@ func (h *HttpHandler) GetBenchmarkAccountCompliance(ctx echo.Context) error {
 }
 
 // GetBenchmarkAccounts godoc
-// @Summary  Returns list of accounts compliance scores ordered by compliance ratio
-// @Tags     benchmarks
-// @Accept   json
-// @Produce  json
-// @Param    benchmarkId  path      string  true  "BenchmarkID"
-// @Param    createdAt    path      string  true  "CreatedAt"
-// @Param    order        query     string  true  "Order"  Enums(asc,desc)
-// @Param    size         query     int64   true  "Size"
-// @Success  200          {object}  api.BenchmarkAccountComplianceResponse
-// @Router   /compliance/api/v1/benchmarks/{benchmarkId}/{createdAt}/accounts [get]
+// @Summary Returns list of accounts compliance scores ordered by compliance ratio
+// @Tags    benchmarks
+// @Accept  json
+// @Produce json
+// @Param   benchmarkId path     string true "BenchmarkID"
+// @Param   createdAt   path     string true "CreatedAt"
+// @Param   order       query    string true "Order" Enums(asc,desc)
+// @Param   size        query    int64  true "Size"
+// @Success 200         {object} api.BenchmarkAccountComplianceResponse
+// @Router  /compliance/api/v1/benchmarks/{benchmarkId}/{createdAt}/accounts [get]
 func (h *HttpHandler) GetBenchmarkAccounts(ctx echo.Context) error {
 	benchmarkId := ctx.Param("benchmarkId")
 	order := ctx.QueryParam("order")
@@ -1026,15 +1026,15 @@ func (h *HttpHandler) GetBenchmarkAccounts(ctx echo.Context) error {
 }
 
 // GetBenchmarks godoc
-// @Summary      Returns list of benchmarks
-// @Description  In order to filter benchmarks by tags provide the tag key-value as query param
-// @Tags     benchmarks
-// @Accept   json
-// @Produce  json
-// @Param    provider  query     string  false  "Provider"  Enums(AWS,Azure)
-// @Param        tags      query     string  false  "Tags in key-value query param"
-// @Success  200       {object}  []api.Benchmark
-// @Router       /compliance/api/v1/benchmarks [get]
+// @Summary     Returns list of benchmarks
+// @Description In order to filter benchmarks by tags provide the tag key-value as query param
+// @Tags        benchmarks
+// @Accept      json
+// @Produce     json
+// @Param       provider query    string false "Provider" Enums(AWS,Azure)
+// @Param       tags     query    string false "Tags in key-value query param"
+// @Success     200      {object} []api.Benchmark
+// @Router      /compliance/api/v1/benchmarks [get]
 func (h *HttpHandler) GetBenchmarks(ctx echo.Context) error {
 	var provider source.Type
 	tagFilters := make(map[string]string)
@@ -1078,15 +1078,15 @@ func (h *HttpHandler) GetBenchmarks(ctx echo.Context) error {
 }
 
 // CountBenchmarks godoc
-// @Summary      Returns count of benchmarks
-// @Description  In order to filter benchmarks by tags provide the tag key-value as query param
-// @Tags         benchmarks
-// @Accept       json
-// @Produce      json
-// @Param        provider  query     string  false  "Provider"  Enums(AWS,Azure)
-// @Param        tags      query     string  false  "Tags in key-value query param"
-// @Success      200       {object}  []api.Benchmark
-// @Router       /compliance/api/v1/benchmarks/count [get]
+// @Summary     Returns count of benchmarks
+// @Description In order to filter benchmarks by tags provide the tag key-value as query param
+// @Tags        benchmarks
+// @Accept      json
+// @Produce     json
+// @Param       provider query    string false "Provider" Enums(AWS,Azure)
+// @Param       tags     query    string false "Tags in key-value query param"
+// @Success     200      {object} []api.Benchmark
+// @Router      /compliance/api/v1/benchmarks/count [get]
 func (h *HttpHandler) CountBenchmarks(ctx echo.Context) error {
 	var provider source.Type
 	tagFilters := make(map[string]string)
@@ -1109,13 +1109,13 @@ func (h *HttpHandler) CountBenchmarks(ctx echo.Context) error {
 }
 
 // CountPolicies godoc
-// @Summary  Returns count of policies
-// @Tags     benchmarks
-// @Accept   json
-// @Produce  json
-// @Param        provider  query     string  false  "Provider"  Enums(AWS,Azure)
-// @Success      200       {object}  []api.Benchmark
-// @Router   /compliance/api/v1/policies/count [get]
+// @Summary Returns count of policies
+// @Tags    benchmarks
+// @Accept  json
+// @Produce json
+// @Param   provider query    string false "Provider" Enums(AWS,Azure)
+// @Success 200      {object} []api.Benchmark
+// @Router  /compliance/api/v1/policies/count [get]
 func (h *HttpHandler) CountPolicies(ctx echo.Context) error {
 	sourceType, _ := source.ParseType(ctx.QueryParam("provider"))
 	c, err := h.db.CountPolicies(string(sourceType))
@@ -1126,12 +1126,12 @@ func (h *HttpHandler) CountPolicies(ctx echo.Context) error {
 }
 
 // GetBenchmarkTags godoc
-// @Summary  Returns list of benchmark tags
-// @Tags     benchmarks
-// @Accept   json
-// @Produce  json
-// @Success  200  {object}  []api.GetBenchmarkTag
-// @Router   /compliance/api/v1/benchmarks/tags [get]
+// @Summary Returns list of benchmark tags
+// @Tags    benchmarks
+// @Accept  json
+// @Produce json
+// @Success 200 {object} []api.GetBenchmarkTag
+// @Router  /compliance/api/v1/benchmarks/tags [get]
 func (h *HttpHandler) GetBenchmarkTags(ctx echo.Context) error {
 	tags, err := h.db.ListBenchmarkTags()
 	if err != nil {
@@ -1151,16 +1151,16 @@ func (h *HttpHandler) GetBenchmarkTags(ctx echo.Context) error {
 }
 
 // GetPolicies godoc
-// @Summary  Returns list of policies of a given benchmark
-// @Tags         benchmarks
-// @Accept       json
-// @Produce      json
-// @Param    benchmarkId  path      int     true   "BenchmarkID"
-// @Param    category     query     string  false  "Category Filter"
-// @Param    subcategory  query     string  false  "Subcategory Filter"
-// @Param    section      query     string  false  "Section Filter"
-// @Success  200          {object}  []api.Policy
-// @Router   /compliance/api/v1/benchmarks/{benchmarkId}/policies [get]
+// @Summary Returns list of policies of a given benchmark
+// @Tags    benchmarks
+// @Accept  json
+// @Produce json
+// @Param   benchmarkId path     int    true  "BenchmarkID"
+// @Param   category    query    string false "Category Filter"
+// @Param   subcategory query    string false "Subcategory Filter"
+// @Param   section     query    string false "Section Filter"
+// @Success 200         {object} []api.Policy
+// @Router  /compliance/api/v1/benchmarks/{benchmarkId}/policies [get]
 func (h *HttpHandler) GetPolicies(ctx echo.Context) error {
 	benchmarkId := ctx.Param("benchmarkId")
 
@@ -1210,15 +1210,15 @@ func (h *HttpHandler) GetPolicies(ctx echo.Context) error {
 }
 
 // CreateBenchmarkAssignment godoc
-// @Summary      Create benchmark assignment for inventory service
-// @Description  Returns benchmark assignment which insert
-// @Tags         benchmarks_assignment
-// @Accept       json
-// @Produce      json
-// @Param        benchmark_id  path      string  true  "Benchmark ID"
-// @Param        source_id     path      string  true  "Source ID"
-// @Success      200           {object}  api.BenchmarkAssignment
-// @Router       /compliance/api/v1/benchmarks/{benchmark_id}/source/{source_id} [post]
+// @Summary     Create benchmark assignment for inventory service
+// @Description Returns benchmark assignment which insert
+// @Tags        benchmarks_assignment
+// @Accept      json
+// @Produce     json
+// @Param       benchmark_id path     string true "Benchmark ID"
+// @Param       source_id    path     string true "Source ID"
+// @Success     200          {object} api.BenchmarkAssignment
+// @Router      /compliance/api/v1/benchmarks/{benchmark_id}/source/{source_id} [post]
 func (h *HttpHandler) CreateBenchmarkAssignment(ctx echo.Context) error {
 	sourceId := ctx.Param("source_id")
 	if sourceId == "" {
@@ -1269,14 +1269,14 @@ func (h *HttpHandler) CreateBenchmarkAssignment(ctx echo.Context) error {
 }
 
 // GetAllBenchmarkAssignmentsBySourceId godoc
-// @Summary      Get all benchmark assignments with source id
-// @Description  Returns all benchmark assignments with source id
-// @Tags         benchmarks_assignment
-// @Accept       json
-// @Produce      json
-// @Param        source_id  path      string  true  "Source ID"
-// @Success      200        {object}  []api.BenchmarkAssignment
-// @Router       /compliance/api/v1/benchmarks/source/{source_id} [get]
+// @Summary     Get all benchmark assignments with source id
+// @Description Returns all benchmark assignments with source id
+// @Tags        benchmarks_assignment
+// @Accept      json
+// @Produce     json
+// @Param       source_id path     string true "Source ID"
+// @Success     200       {object} []api.BenchmarkAssignment
+// @Router      /compliance/api/v1/benchmarks/source/{source_id} [get]
 func (h *HttpHandler) GetAllBenchmarkAssignmentsBySourceId(ctx echo.Context) error {
 	sourceId := ctx.Param("source_id")
 	if sourceId == "" {
@@ -1309,14 +1309,14 @@ func (h *HttpHandler) GetAllBenchmarkAssignmentsBySourceId(ctx echo.Context) err
 }
 
 // GetAllBenchmarkAssignedSourcesByBenchmarkId godoc
-// @Summary      Get all benchmark assigned sources with benchmark id
-// @Description  Returns all benchmark assigned sources with benchmark id
-// @Tags         benchmarks_assignment
-// @Accept       json
-// @Produce      json
-// @Param        benchmark_id  path      string  true  "Benchmark ID"
-// @Success      200           {object}  []api.BenchmarkAssignedSource
-// @Router       /compliance/api/v1/benchmarks/{benchmark_id}/sources [get]
+// @Summary     Get all benchmark assigned sources with benchmark id
+// @Description Returns all benchmark assigned sources with benchmark id
+// @Tags        benchmarks_assignment
+// @Accept      json
+// @Produce     json
+// @Param       benchmark_id path     string true "Benchmark ID"
+// @Success     200          {object} []api.BenchmarkAssignedSource
+// @Router      /compliance/api/v1/benchmarks/{benchmark_id}/sources [get]
 func (h *HttpHandler) GetAllBenchmarkAssignedSourcesByBenchmarkId(ctx echo.Context) error {
 	benchmarkId := ctx.Param("benchmark_id")
 	if benchmarkId == "" {
@@ -1344,15 +1344,15 @@ func (h *HttpHandler) GetAllBenchmarkAssignedSourcesByBenchmarkId(ctx echo.Conte
 }
 
 // DeleteBenchmarkAssignment godoc
-// @Summary      Delete benchmark assignment for inventory service
-// @Description  Delete benchmark assignment with source id and benchmark id
-// @Tags         benchmarks_assignment
-// @Accept       json
-// @Produce      json
-// @Param        benchmark_id  path  string  true  "Benchmark ID"
-// @Param        source_id     path  string  true  "Source ID"
-// @Success      200
-// @Router       /compliance/api/v1/benchmarks/{benchmark_id}/source/{source_id} [delete]
+// @Summary     Delete benchmark assignment for inventory service
+// @Description Delete benchmark assignment with source id and benchmark id
+// @Tags        benchmarks_assignment
+// @Accept      json
+// @Produce     json
+// @Param       benchmark_id path string true "Benchmark ID"
+// @Param       source_id    path string true "Source ID"
+// @Success     200
+// @Router      /compliance/api/v1/benchmarks/{benchmark_id}/source/{source_id} [delete]
 func (h *HttpHandler) DeleteBenchmarkAssignment(ctx echo.Context) error {
 	sourceId := ctx.Param("source_id")
 	if sourceId == "" {

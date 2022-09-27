@@ -94,15 +94,15 @@ func bindValidate(ctx echo.Context, i interface{}) error {
 }
 
 // GetResourceGrowthTrend godoc
-// @Summary  Returns trend of resource growth for specific account
-// @Tags         benchmarks
-// @Accept       json
-// @Produce      json
-// @Param    sourceId    query     string  false  "SourceID"
-// @Param    provider    query     string  false  "Provider"
-// @Param    timeWindow  query     string  false  "Time Window"  Enums(24h,1w,3m,1y,max)
-// @Success  200         {object}  []api.TrendDataPoint
-// @Router   /inventory/api/v1/resources/trend [get]
+// @Summary Returns trend of resource growth for specific account
+// @Tags    benchmarks
+// @Accept  json
+// @Produce json
+// @Param   sourceId   query    string false "SourceID"
+// @Param   provider   query    string false "Provider"
+// @Param   timeWindow query    string false "Time Window" Enums(24h,1w,3m,1y,max)
+// @Success 200        {object} []api.TrendDataPoint
+// @Router  /inventory/api/v1/resources/trend [get]
 func (h *HttpHandler) GetResourceGrowthTrend(ctx echo.Context) error {
 	var err error
 	var fromTime, toTime int64
@@ -159,14 +159,14 @@ func (h *HttpHandler) GetResourceGrowthTrend(ctx echo.Context) error {
 }
 
 // GetTopAccountsByCost godoc
-// @Summary  Returns top n accounts of specified provider by cost
-// @Tags     cost
-// @Accept   json
-// @Produce  json
-// @Param    count       query     int     true  "count"
-// @Param    provider    query     string  true  "Provider"
-// @Success  200       {object}  []api.TopAccountCostResponse
-// @Router   /inventory/api/v1/cost/top/accounts [get]
+// @Summary Returns top n accounts of specified provider by cost
+// @Tags    cost
+// @Accept  json
+// @Produce json
+// @Param   count    query    int    true "count"
+// @Param   provider query    string true "Provider"
+// @Success 200      {object} []api.TopAccountCostResponse
+// @Router  /inventory/api/v1/cost/top/accounts [get]
 func (h *HttpHandler) GetTopAccountsByCost(ctx echo.Context) error {
 	provider, _ := source.ParseType(ctx.QueryParam("provider"))
 	count, err := strconv.Atoi(ctx.QueryParam("count"))
@@ -236,15 +236,15 @@ func (h *HttpHandler) GetTopAccountsByCost(ctx echo.Context) error {
 }
 
 // GetTopServicesByCost godoc
-// @Summary  Returns top n services of specified provider by cost
-// @Tags     cost
-// @Accept   json
-// @Produce  json
-// @Param    count     query     int     true   "count"
-// @Param    provider  query     string  true   "Provider"
-// @Param    sourceId  query     string  true  "SourceID"
-// @Success  200       {object}  []api.TopServiceCostResponse
-// @Router   /inventory/api/v1/cost/top/services [get]
+// @Summary Returns top n services of specified provider by cost
+// @Tags    cost
+// @Accept  json
+// @Produce json
+// @Param   count    query    int    true "count"
+// @Param   provider query    string true "Provider"
+// @Param   sourceId query    string true "SourceID"
+// @Success 200      {object} []api.TopServiceCostResponse
+// @Router  /inventory/api/v1/cost/top/services [get]
 func (h *HttpHandler) GetTopServicesByCost(ctx echo.Context) error {
 	provider, _ := source.ParseType(ctx.QueryParam("provider"))
 	count, err := strconv.Atoi(ctx.QueryParam("count"))
@@ -314,14 +314,14 @@ func (h *HttpHandler) GetTopServicesByCost(ctx echo.Context) error {
 }
 
 // GetTopAccountsByResourceCount godoc
-// @Summary  Returns top n accounts of specified provider by resource count
-// @Tags     benchmarks
-// @Accept   json
-// @Produce  json
-// @Param    count     query     int     true   "count"
-// @Param    provider  query     string  true   "Provider"
-// @Success  200         {object}  []api.TopAccountResponse
-// @Router   /inventory/api/v1/resources/top/accounts [get]
+// @Summary Returns top n accounts of specified provider by resource count
+// @Tags    benchmarks
+// @Accept  json
+// @Produce json
+// @Param   count    query    int    true "count"
+// @Param   provider query    string true "Provider"
+// @Success 200      {object} []api.TopAccountResponse
+// @Router  /inventory/api/v1/resources/top/accounts [get]
 func (h *HttpHandler) GetTopAccountsByResourceCount(ctx echo.Context) error {
 	provider, _ := source.ParseType(ctx.QueryParam("provider"))
 	count, err := strconv.Atoi(ctx.QueryParam("count"))
@@ -364,15 +364,15 @@ func (h *HttpHandler) GetTopAccountsByResourceCount(ctx echo.Context) error {
 }
 
 // GetTopFastestGrowingAccountsByResourceCount godoc
-// @Summary  Returns top n accounts of specified provider by resource count
-// @Tags     benchmarks
-// @Accept   json
-// @Produce  json
-// @Param    count     query     int     true  "count"
-// @Param    provider  query     string  true  "Provider"
-// @Param    timeWindow  query     string  true  "TimeWindow"  Enums(1d,1w,3m,1y)
-// @Success  200       {object}  []api.TopAccountResponse
-// @Router   /inventory/api/v1/resources/top/growing/accounts [get]
+// @Summary Returns top n accounts of specified provider by resource count
+// @Tags    benchmarks
+// @Accept  json
+// @Produce json
+// @Param   count      query    int    true "count"
+// @Param   provider   query    string true "Provider"
+// @Param   timeWindow query    string true "TimeWindow" Enums(1d,1w,3m,1y)
+// @Success 200        {object} []api.TopAccountResponse
+// @Router  /inventory/api/v1/resources/top/growing/accounts [get]
 func (h *HttpHandler) GetTopFastestGrowingAccountsByResourceCount(ctx echo.Context) error {
 	provider, _ := source.ParseType(ctx.QueryParam("provider"))
 
@@ -460,15 +460,15 @@ func (h *HttpHandler) GetTopFastestGrowingAccountsByResourceCount(ctx echo.Conte
 }
 
 // GetTopRegionsByResourceCount godoc
-// @Summary  Returns top n regions of specified provider by resource count
-// @Tags     inventory
-// @Accept   json
-// @Produce  json
-// @Param    count     query     int     true  "count"
-// @Param    provider  query     string  false  "Provider"
-// @Param    sourceId  query     string  false  "SourceId"
-// @Success  200       {object}  []api.CategoriesResponse
-// @Router   /inventory/api/v1/resources/top/regions [get]
+// @Summary Returns top n regions of specified provider by resource count
+// @Tags    inventory
+// @Accept  json
+// @Produce json
+// @Param   count    query    int    true  "count"
+// @Param   provider query    string false "Provider"
+// @Param   sourceId query    string false "SourceId"
+// @Success 200      {object} []api.CategoriesResponse
+// @Router  /inventory/api/v1/resources/top/regions [get]
 func (h *HttpHandler) GetTopRegionsByResourceCount(ctx echo.Context) error {
 	provider, _ := source.ParseType(ctx.QueryParam("provider"))
 	count, err := strconv.Atoi(ctx.QueryParam("count"))
@@ -511,15 +511,15 @@ func (h *HttpHandler) GetTopRegionsByResourceCount(ctx echo.Context) error {
 }
 
 // GetTopServicesByResourceCount godoc
-// @Summary  Returns top n services of specified provider by resource count
-// @Tags     benchmarks
-// @Accept   json
-// @Produce  json
-// @Param    count     query     int     true  "count"
-// @Param    provider  query     string  true  "Provider"
-// @Param    sourceId  query     string  false  "SourceID"
-// @Success  200       {object}  []api.TopServicesResponse
-// @Router   /inventory/api/v1/resources/top/services [get]
+// @Summary Returns top n services of specified provider by resource count
+// @Tags    benchmarks
+// @Accept  json
+// @Produce json
+// @Param   count    query    int    true  "count"
+// @Param   provider query    string true  "Provider"
+// @Param   sourceId query    string false "SourceID"
+// @Success 200      {object} []api.TopServicesResponse
+// @Router  /inventory/api/v1/resources/top/services [get]
 func (h *HttpHandler) GetTopServicesByResourceCount(ctx echo.Context) error {
 	provider, _ := source.ParseType(ctx.QueryParam("provider"))
 	count, err := strconv.Atoi(ctx.QueryParam("count"))
@@ -553,14 +553,14 @@ func (h *HttpHandler) GetTopServicesByResourceCount(ctx echo.Context) error {
 }
 
 // GetCategories godoc
-// @Summary  Return resource categories and number of resources
-// @Tags     inventory
-// @Accept   json
-// @Produce  json
-// @Param    provider  query     string  true  "Provider"
-// @Param    sourceId  query     string  false  "SourceID"
-// @Success  200       {object}  []api.CategoriesResponse
-// @Router   /inventory/api/v1/resources/categories [get]
+// @Summary Return resource categories and number of resources
+// @Tags    inventory
+// @Accept  json
+// @Produce json
+// @Param   provider query    string true  "Provider"
+// @Param   sourceId query    string false "SourceID"
+// @Success 200      {object} []api.CategoriesResponse
+// @Router  /inventory/api/v1/resources/categories [get]
 func (h *HttpHandler) GetCategories(ctx echo.Context) error {
 	var sourceID *string
 	provider, _ := source.ParseType(ctx.QueryParam("provider"))
@@ -581,14 +581,14 @@ func (h *HttpHandler) GetCategories(ctx echo.Context) error {
 }
 
 // GetSummaryMetrics godoc
-// @Summary  Return metrics, their value and their history
-// @Tags     inventory
-// @Accept   json
-// @Produce  json
-// @Param    provider  query     string  false  "Provider"
-// @Param    sourceId  query     string  false  "SourceID"
-// @Success  200       {object}  []api.MetricsResponse
-// @Router   /inventory/api/v1/metrics/summary [get]
+// @Summary Return metrics, their value and their history
+// @Tags    inventory
+// @Accept  json
+// @Produce json
+// @Param   provider query    string false "Provider"
+// @Param   sourceId query    string false "SourceID"
+// @Success 200      {object} []api.MetricsResponse
+// @Router  /inventory/api/v1/metrics/summary [get]
 func (h *HttpHandler) GetSummaryMetrics(ctx echo.Context) error {
 	var sourceID *string
 	provider, _ := source.ParseType(ctx.QueryParam("provider"))
@@ -838,14 +838,14 @@ func (h *HttpHandler) GetSummaryMetrics(ctx echo.Context) error {
 }
 
 // GetCategorizedMetrics godoc
-// @Summary  Return categorized metrics, their value and their history
-// @Tags     inventory
-// @Accept   json
-// @Produce  json
-// @Param    provider  query     string  false  "Provider"
-// @Param    sourceId  query     string  false  "SourceID"
-// @Success  200       {object}  api.CategorizedMetricsResponse
-// @Router   /inventory/api/v1/metrics/categorized [get]
+// @Summary Return categorized metrics, their value and their history
+// @Tags    inventory
+// @Accept  json
+// @Produce json
+// @Param   provider query    string false "Provider"
+// @Param   sourceId query    string false "SourceID"
+// @Success 200      {object} api.CategorizedMetricsResponse
+// @Router  /inventory/api/v1/metrics/categorized [get]
 func (h *HttpHandler) GetCategorizedMetrics(ctx echo.Context) error {
 	provider, _ := source.ParseType(ctx.QueryParam("provider"))
 
@@ -882,24 +882,24 @@ func (h *HttpHandler) GetCategorizedMetrics(ctx echo.Context) error {
 }
 
 // ListCategories godoc
-// @Summary  Return list of categories
-// @Tags     inventory
-// @Accept   json
-// @Produce  json
-// @Success  200  {object}  []string
-// @Router   /inventory/api/v1/categories [get]
+// @Summary Return list of categories
+// @Tags    inventory
+// @Accept  json
+// @Produce json
+// @Success 200 {object} []string
+// @Router  /inventory/api/v1/categories [get]
 func (h *HttpHandler) ListCategories(ctx echo.Context) error {
 	return ctx.JSON(http.StatusOK, cloudservice.ListCategories())
 }
 
 // GetAccountsResourceCount godoc
-// @Summary  Returns resource count of accounts
-// @Tags     benchmarks
-// @Accept   json
-// @Produce  json
-// @Param    provider  query     string  true  "Provider"
-// @Success  200       {object}  []api.AccountResourceCountResponse
-// @Router   /inventory/api/v1/accounts/resource/count [get]
+// @Summary Returns resource count of accounts
+// @Tags    benchmarks
+// @Accept  json
+// @Produce json
+// @Param   provider query    string true "Provider"
+// @Success 200      {object} []api.AccountResourceCountResponse
+// @Router  /inventory/api/v1/accounts/resource/count [get]
 func (h *HttpHandler) GetAccountsResourceCount(ctx echo.Context) error {
 	provider, _ := source.ParseType(ctx.QueryParam("provider"))
 
@@ -936,15 +936,15 @@ func (h *HttpHandler) GetAccountsResourceCount(ctx echo.Context) error {
 }
 
 // GetResourceDistribution godoc
-// @Summary  Returns distribution of resource for specific account
-// @Tags     benchmarks
-// @Accept   json
-// @Produce  json
-// @Param    sourceId    query     string  true  "SourceID"
-// @Param    provider    query     string  true  "Provider"     Enums(AWS,Azure,all)
-// @Param    timeWindow   query     string  true  "Time Window"  Enums(24h,1w,3m,1y,max)
-// @Success  200         {object}  map[string]int
-// @Router   /inventory/api/v1/resources/distribution [get]
+// @Summary Returns distribution of resource for specific account
+// @Tags    benchmarks
+// @Accept  json
+// @Produce json
+// @Param   sourceId   query    string true "SourceID"
+// @Param   provider   query    string true "Provider"    Enums(AWS,Azure,all)
+// @Param   timeWindow query    string true "Time Window" Enums(24h,1w,3m,1y,max)
+// @Success 200        {object} map[string]int
+// @Router  /inventory/api/v1/resources/distribution [get]
 func (h *HttpHandler) GetResourceDistribution(ctx echo.Context) error {
 	provider, _ := source.ParseType(ctx.QueryParam("provider"))
 	sourceID := ctx.QueryParam("sourceId")
@@ -969,14 +969,14 @@ func (h *HttpHandler) GetResourceDistribution(ctx echo.Context) error {
 }
 
 // GetServiceDistribution godoc
-// @Summary  Returns distribution of services for specific account
-// @Tags     benchmarks
-// @Accept   json
-// @Produce  json
-// @Param    sourceId    query     string  true  "SourceID"
-// @Param    provider    query     string  true  "Provider"
-// @Success  200       {object}  []api.ServiceDistributionItem
-// @Router   /inventory/api/v1/services/distribution [get]
+// @Summary Returns distribution of services for specific account
+// @Tags    benchmarks
+// @Accept  json
+// @Produce json
+// @Param   sourceId query    string true "SourceID"
+// @Param   provider query    string true "Provider"
+// @Success 200      {object} []api.ServiceDistributionItem
+// @Router  /inventory/api/v1/services/distribution [get]
 func (h *HttpHandler) GetServiceDistribution(ctx echo.Context) error {
 	sourceID := ctx.QueryParam("sourceId")
 
@@ -996,13 +996,13 @@ func (h *HttpHandler) GetServiceDistribution(ctx echo.Context) error {
 }
 
 // GetResource godoc
-// @Summary      Get details of a Resource
-// @Description  Getting resource details by id and resource type
-// @Tags         resource
-// @Accepts      json
-// @Produce      json
-// @Param        request  body  api.GetResourceRequest  true  "Request Body"
-// @Router       /inventory/api/v1/resource [post]
+// @Summary     Get details of a Resource
+// @Description Getting resource details by id and resource type
+// @Tags        resource
+// @Accepts     json
+// @Produce     json
+// @Param       request body api.GetResourceRequest true "Request Body"
+// @Router      /inventory/api/v1/resource [post]
 func (h *HttpHandler) GetResource(ctx echo.Context) error {
 	var req api.GetResourceRequest
 	if err := bindValidate(ctx, &req); err != nil {
@@ -1124,13 +1124,13 @@ func (h *HttpHandler) GetResource(ctx echo.Context) error {
 }
 
 // ListQueries godoc
-// @Summary      List smart queries
-// @Description  Listing smart queries
-// @Tags         smart_query
-// @Produce      json
-// @Param        request  body      api.ListQueryRequest  true  "Request Body"
-// @Success      200      {object}  []api.SmartQueryItem
-// @Router       /inventory/api/v1/query [get]
+// @Summary     List smart queries
+// @Description Listing smart queries
+// @Tags        smart_query
+// @Produce     json
+// @Param       request body     api.ListQueryRequest true "Request Body"
+// @Success     200     {object} []api.SmartQueryItem
+// @Router      /inventory/api/v1/query [get]
 func (h *HttpHandler) ListQueries(ctx echo.Context) error {
 	var req api.ListQueryRequest
 	if err := bindValidate(ctx, &req); err != nil {
@@ -1172,12 +1172,12 @@ func (h *HttpHandler) ListQueries(ctx echo.Context) error {
 }
 
 // ListInsightsResults godoc
-// @Summary  List insight results for specified account
-// @Tags     insights
-// @Produce  json
-// @Param    request  body  api.ListInsightResultsRequest  true  "Request Body"
-// @Success  200
-// @Router   /inventory/api/v1/insight/results [get]
+// @Summary List insight results for specified account
+// @Tags    insights
+// @Produce json
+// @Param   request body api.ListInsightResultsRequest true "Request Body"
+// @Success 200
+// @Router  /inventory/api/v1/insight/results [get]
 func (h *HttpHandler) ListInsightsResults(ctx echo.Context) error {
 	var req api.ListInsightResultsRequest
 	if err := bindValidate(ctx, &req); err != nil {
@@ -1220,13 +1220,13 @@ func (h *HttpHandler) ListInsightsResults(ctx echo.Context) error {
 }
 
 // CountQueries godoc
-// @Summary      Count smart queries
-// @Description  Counting smart queries
-// @Tags         smart_query
-// @Produce      json
-// @Param        request  body      api.ListQueryRequest  true  "Request Body"
-// @Success      200      {object}  int
-// @Router       /inventory/api/v1/query/count [get]
+// @Summary     Count smart queries
+// @Description Counting smart queries
+// @Tags        smart_query
+// @Produce     json
+// @Param       request body     api.ListQueryRequest true "Request Body"
+// @Success     200     {object} int
+// @Router      /inventory/api/v1/query/count [get]
 func (h *HttpHandler) CountQueries(ctx echo.Context) error {
 	var req api.ListQueryRequest
 	if err := bindValidate(ctx, &req); err != nil {
@@ -1246,18 +1246,18 @@ func (h *HttpHandler) CountQueries(ctx echo.Context) error {
 }
 
 // RunQuery godoc
-// @Summary      Run a specific smart query
-// @Description  Run a specific smart query.
-// @Description  In order to get the results in CSV format, Accepts header must be filled with `text/csv` value.
-// @Description  Note that csv output doesn't process pagination and returns first 5000 records.
-// @Tags         smart_query
-// @Accepts      json
-// @Produce  json,text/csv
-// @Param        queryId  path      string               true  "QueryID"
-// @Param        request  body      api.RunQueryRequest  true  "Request Body"
-// @Param        accept   header    string               true  "Accept header"  Enums(application/json,text/csv)
-// @Success      200      {object}  api.RunQueryResponse
-// @Router       /inventory/api/v1/query/{queryId} [post]
+// @Summary     Run a specific smart query
+// @Description Run a specific smart query.
+// @Description In order to get the results in CSV format, Accepts header must be filled with `text/csv` value.
+// @Description Note that csv output doesn't process pagination and returns first 5000 records.
+// @Tags        smart_query
+// @Accepts     json
+// @Produce     json,text/csv
+// @Param       queryId path     string              true "QueryID"
+// @Param       request body     api.RunQueryRequest true "Request Body"
+// @Param       accept  header   string              true "Accept header" Enums(application/json,text/csv)
+// @Success     200     {object} api.RunQueryResponse
+// @Router      /inventory/api/v1/query/{queryId} [post]
 func (h *HttpHandler) RunQuery(ctx echo.Context) error {
 	var req api.RunQueryRequest
 	if err := bindValidate(ctx, &req); err != nil {
@@ -1326,13 +1326,13 @@ func (h *HttpHandler) RunQuery(ctx echo.Context) error {
 }
 
 // GetLocations godoc
-// @Summary      Get locations
-// @Description  Getting locations by provider
-// @Tags         location
-// @Produce      json
-// @Param        provider  path      string  true  "Provider"  Enums(aws,azure)
-// @Success      200       {object}  []api.LocationByProviderResponse
-// @Router       /inventory/api/v1/locations/{provider} [get]
+// @Summary     Get locations
+// @Description Getting locations by provider
+// @Tags        location
+// @Produce     json
+// @Param       provider path     string true "Provider" Enums(aws,azure)
+// @Success     200      {object} []api.LocationByProviderResponse
+// @Router      /inventory/api/v1/locations/{provider} [get]
 func (h *HttpHandler) GetLocations(ctx echo.Context) error {
 	provider := ctx.Param("provider")
 
@@ -1390,18 +1390,18 @@ func (h *HttpHandler) GetLocations(ctx echo.Context) error {
 }
 
 // GetAzureResources godoc
-// @Summary      Get Azure resources
-// @Description  Getting Azure resources by filters.
-// @Description  In order to get the results in CSV format, Accepts header must be filled with `text/csv` value.
-// @Description  Note that csv output doesn't process pagination and returns first 5000 records.
-// @Tags     inventory
-// @Accept       json
-// @Produce      json,text/csv
-// @Param        request  body      api.GetResourcesRequest  true   "Request Body"
-// @Param        accept   header    string                   true   "Accept header"  Enums(application/json,text/csv)
-// @Param        common   query     string                 false  "Common filter"  Enums(true,false,all)
-// @Success      200      {object}  api.GetAzureResourceResponse
-// @Router       /inventory/api/v1/resources/azure [post]
+// @Summary     Get Azure resources
+// @Description Getting Azure resources by filters.
+// @Description In order to get the results in CSV format, Accepts header must be filled with `text/csv` value.
+// @Description Note that csv output doesn't process pagination and returns first 5000 records.
+// @Tags        inventory
+// @Accept      json
+// @Produce     json,text/csv
+// @Param       request body     api.GetResourcesRequest true  "Request Body"
+// @Param       accept  header   string                  true  "Accept header" Enums(application/json,text/csv)
+// @Param       common  query    string                  false "Common filter" Enums(true,false,all)
+// @Success     200     {object} api.GetAzureResourceResponse
+// @Router      /inventory/api/v1/resources/azure [post]
 func (h *HttpHandler) GetAzureResources(ctx echo.Context) error {
 	provider := api.SourceCloudAzure
 	commonQuery := ctx.QueryParam("common")
@@ -1424,18 +1424,18 @@ func (h *HttpHandler) GetAzureResources(ctx echo.Context) error {
 }
 
 // GetAWSResources godoc
-// @Summary      Get AWS resources
-// @Description  Getting AWS resources by filters.
-// @Description  In order to get the results in CSV format, Accepts header must be filled with `text/csv` value.
-// @Description  Note that csv output doesn't process pagination and returns first 5000 records.
-// @Tags         inventory
-// @Accept       json
-// @Produce      json,text/csv
-// @Param        request  body      api.GetResourcesRequest  true   "Request Body"
-// @Param        accept   header    string                   true   "Accept header"  Enums(application/json,text/csv)
-// @Param        common   query     string                   false  "Common filter"  Enums(true,false,all)
-// @Success      200      {object}  api.GetAWSResourceResponse
-// @Router       /inventory/api/v1/resources/aws [post]
+// @Summary     Get AWS resources
+// @Description Getting AWS resources by filters.
+// @Description In order to get the results in CSV format, Accepts header must be filled with `text/csv` value.
+// @Description Note that csv output doesn't process pagination and returns first 5000 records.
+// @Tags        inventory
+// @Accept      json
+// @Produce     json,text/csv
+// @Param       request body     api.GetResourcesRequest true  "Request Body"
+// @Param       accept  header   string                  true  "Accept header" Enums(application/json,text/csv)
+// @Param       common  query    string                  false "Common filter" Enums(true,false,all)
+// @Success     200     {object} api.GetAWSResourceResponse
+// @Router      /inventory/api/v1/resources/aws [post]
 func (h *HttpHandler) GetAWSResources(ctx echo.Context) error {
 	provider := api.SourceCloudAWS
 	commonQuery := ctx.QueryParam("common")
@@ -1458,19 +1458,19 @@ func (h *HttpHandler) GetAWSResources(ctx echo.Context) error {
 }
 
 // GetAllResources godoc
-// @Summary      Get resources
-// @Description  Getting all cloud providers resources by filters.
-// @Description  In order to get the results in CSV format, Accepts header must be filled with `text/csv` value.
-// @Description  Note that csv output doesn't process pagination and returns first 5000 records.
-// @Description  If sort by is empty, result will be sorted by the first column in ascending order.
-// @Tags         inventory
-// @Accept       json
-// @Produce      json,text/csv
-// @Param        request  body      api.GetResourcesRequest  true   "Request Body"
-// @Param        accept   header    string                   true   "Accept header"  Enums(application/json,text/csv)
-// @Param        common   query     string                   false  "Common filter"  Enums(true,false,all)
-// @Success      200      {object}  api.GetResourcesResponse
-// @Router       /inventory/api/v1/resources [post]
+// @Summary     Get resources
+// @Description Getting all cloud providers resources by filters.
+// @Description In order to get the results in CSV format, Accepts header must be filled with `text/csv` value.
+// @Description Note that csv output doesn't process pagination and returns first 5000 records.
+// @Description If sort by is empty, result will be sorted by the first column in ascending order.
+// @Tags        inventory
+// @Accept      json
+// @Produce     json,text/csv
+// @Param       request body     api.GetResourcesRequest true  "Request Body"
+// @Param       accept  header   string                  true  "Accept header" Enums(application/json,text/csv)
+// @Param       common  query    string                  false "Common filter" Enums(true,false,all)
+// @Success     200     {object} api.GetResourcesResponse
+// @Router      /inventory/api/v1/resources [post]
 func (h *HttpHandler) GetAllResources(ctx echo.Context) error {
 	commonQuery := ctx.QueryParam("common")
 	var common *bool
@@ -1492,12 +1492,12 @@ func (h *HttpHandler) GetAllResources(ctx echo.Context) error {
 }
 
 // CountResources godoc
-// @Summary  Count resources
-// @Tags         inventory
-// @Accept       json
-// @Produce      json,text/csv
-// @Success  200  {object}  int64
-// @Router   /inventory/api/v1/resources/count [post]
+// @Summary Count resources
+// @Tags    inventory
+// @Accept  json
+// @Produce json,text/csv
+// @Success 200 {object} int64
+// @Router  /inventory/api/v1/resources/count [post]
 func (h *HttpHandler) CountResources(ctx echo.Context) error {
 	value := 0
 	toTime := time.Now()
@@ -1519,15 +1519,15 @@ func (h *HttpHandler) CountResources(ctx echo.Context) error {
 }
 
 // GetResourcesFilters godoc
-// @Summary      Get resource filters
-// @Description  Getting resource filters by filters.
-// @Tags         inventory
-// @Accept       json
-// @Produce      json,text/csv
-// @Param        request  body      api.GetFiltersRequest  true   "Request Body"
-// @Param        common   query     string                   false  "Common filter"  Enums(true,false,all)
-// @Success      200      {object}  api.GetFiltersResponse
-// @Router       /inventory/api/v1/resources/filters [post]
+// @Summary     Get resource filters
+// @Description Getting resource filters by filters.
+// @Tags        inventory
+// @Accept      json
+// @Produce     json,text/csv
+// @Param       request body     api.GetFiltersRequest true  "Request Body"
+// @Param       common  query    string                false "Common filter" Enums(true,false,all)
+// @Success     200     {object} api.GetFiltersResponse
+// @Router      /inventory/api/v1/resources/filters [post]
 func (h *HttpHandler) GetResourcesFilters(ctx echo.Context) error {
 	commonQuery := ctx.QueryParam("common")
 	var common *bool

@@ -74,12 +74,12 @@ func bindValidate(ctx echo.Context, i interface{}) error {
 }
 
 // GetProviders godoc
-// @Summary      Get providers
-// @Description  Getting cloud providers
-// @Tags     onboard
-// @Produce  json
-// @Success  200  {object}  api.ProvidersResponse
-// @Router       /onboard/api/v1/providers [get]
+// @Summary     Get providers
+// @Description Getting cloud providers
+// @Tags        onboard
+// @Produce     json
+// @Success     200 {object} api.ProvidersResponse
+// @Router      /onboard/api/v1/providers [get]
 func (h HttpHandler) GetProviders(ctx echo.Context) error {
 	return ctx.JSON(http.StatusOK, api.ProvidersResponse{
 		{Name: "Sumo Logic", ID: "sumologic", Type: "IT Operations", State: api.ProviderStateDisabled},
@@ -166,24 +166,24 @@ func (h HttpHandler) GetProviders(ctx echo.Context) error {
 }
 
 // GetConnectorCategories godoc
-// @Summary      Get connector categories
-// @Description  Getting connector categories
-// @Tags     onboard
-// @Produce  json
-// @Success  200  {object}  []connector.Category
-// @Router       /onboard/api/v1/connectors/categories [get]
+// @Summary     Get connector categories
+// @Description Getting connector categories
+// @Tags        onboard
+// @Produce     json
+// @Success     200 {object} []connector.Category
+// @Router      /onboard/api/v1/connectors/categories [get]
 func (h HttpHandler) GetConnectorCategories(ctx echo.Context) error {
 	return ctx.JSON(http.StatusOK, connector.CategoryList)
 }
 
 // GetConnector godoc
-// @Summary      Get connectors
-// @Description  Getting connectors
-// @Tags     onboard
-// @Produce  json
-// @Success      200       {object}  []connector.Connector
-// @Param        category  query     string  false  "category"
-// @Router       /onboard/api/v1/connectors [get]
+// @Summary     Get connectors
+// @Description Getting connectors
+// @Tags        onboard
+// @Produce     json
+// @Success     200      {object} []connector.Connector
+// @Param       category query    string false "category"
+// @Router      /onboard/api/v1/connectors [get]
 func (h HttpHandler) GetConnector(ctx echo.Context) error {
 	categoryID := ctx.QueryParam("categoryID")
 
@@ -208,12 +208,12 @@ func (h HttpHandler) GetConnector(ctx echo.Context) error {
 }
 
 // GetProviderTypes godoc
-// @Summary      Get provider types
-// @Description  Getting provider types
-// @Tags     onboard
-// @Produce  json
-// @Success      200  {object}  api.ProviderTypesResponse
-// @Router       /onboard/api/v1/providers/types [get]
+// @Summary     Get provider types
+// @Description Getting provider types
+// @Tags        onboard
+// @Produce     json
+// @Success     200 {object} api.ProviderTypesResponse
+// @Router      /onboard/api/v1/providers/types [get]
 func (h HttpHandler) GetProviderTypes(ctx echo.Context) error {
 	return ctx.JSON(http.StatusOK, api.ProviderTypesResponse{
 		{ID: "1", TypeName: "Public Cloud", State: api.ProviderTypeStateEnabled},
@@ -238,15 +238,15 @@ func (h HttpHandler) GetProviderTypes(ctx echo.Context) error {
 }
 
 // PostSourceAws godoc
-// @Summary      Create AWS source
-// @Description  Creating AWS source
-// @Tags     onboard
-// @Produce  json
-// @Success      200          {object}  api.CreateSourceResponse
-// @Param        name         body      string               true  "name"
-// @Param        description  body      string               true  "description"
-// @Param        config       body      api.SourceConfigAWS  true  "config"
-// @Router       /onboard/api/v1/source/aws [post]
+// @Summary     Create AWS source
+// @Description Creating AWS source
+// @Tags        onboard
+// @Produce     json
+// @Success     200         {object} api.CreateSourceResponse
+// @Param       name        body     string              true "name"
+// @Param       description body     string              true "description"
+// @Param       config      body     api.SourceConfigAWS true "config"
+// @Router      /onboard/api/v1/source/aws [post]
 func (h HttpHandler) PostSourceAws(ctx echo.Context) error {
 	var req api.SourceAwsRequest
 	if err := bindValidate(ctx, &req); err != nil {
@@ -293,15 +293,15 @@ func (h HttpHandler) PostSourceAws(ctx echo.Context) error {
 }
 
 // PostSourceAzure godoc
-// @Summary      Create Azure source
-// @Description  Creating Azure source
-// @Tags     onboard
-// @Produce  json
-// @Success      200          {object}  api.CreateSourceResponse
-// @Param        name    body      string                 true  "name"
-// @Param        description  body      string                 true  "description"
-// @Param        config  body      api.SourceConfigAzure  true  "config"
-// @Router       /onboard/api/v1/source/azure [post]
+// @Summary     Create Azure source
+// @Description Creating Azure source
+// @Tags        onboard
+// @Produce     json
+// @Success     200         {object} api.CreateSourceResponse
+// @Param       name        body     string                true "name"
+// @Param       description body     string                true "description"
+// @Param       config      body     api.SourceConfigAzure true "config"
+// @Router      /onboard/api/v1/source/azure [post]
 func (h HttpHandler) PostSourceAzure(ctx echo.Context) error {
 	var req api.SourceAzureRequest
 
@@ -349,15 +349,15 @@ func (h HttpHandler) PostSourceAzure(ctx echo.Context) error {
 }
 
 // PostSourceAzureSPN godoc
-// @Summary      Create Azure source with SPN
-// @Description  Creating Azure source with SPN
-// @Tags     onboard
-// @Produce  json
-// @Success      200          {object}  api.CreateSourceResponse
-// @Param        name         body      string                 true  "name"
-// @Param        description  body      string                 true  "description"
-// @Param        config       body      api.SourceConfigAzure  true  "config"
-// @Router       /onboard/api/v1/source/azure/spn [post]
+// @Summary     Create Azure source with SPN
+// @Description Creating Azure source with SPN
+// @Tags        onboard
+// @Produce     json
+// @Success     200         {object} api.CreateSourceResponse
+// @Param       name        body     string                true "name"
+// @Param       description body     string                true "description"
+// @Param       config      body     api.SourceConfigAzure true "config"
+// @Router      /onboard/api/v1/source/azure/spn [post]
 func (h HttpHandler) PostSourceAzureSPN(ctx echo.Context) error {
 	var req api.SourceAzureSPNRequest
 
@@ -405,14 +405,14 @@ func (h HttpHandler) PostSourceAzureSPN(ctx echo.Context) error {
 }
 
 // PostSPN godoc
-// @Summary      Create Azure SPN
-// @Description  Creating Azure SPN
-// @Tags     onboard
-// @Produce  json
-// @Success      200     {object}  api.CreateSPNResponse
-// @Param        name         body      string                 true  "name"
-// @Param        config       body      api.SourceConfigAzure  true  "config"
-// @Router       /onboard/api/v1/spn/azure [post]
+// @Summary     Create Azure SPN
+// @Description Creating Azure SPN
+// @Tags        onboard
+// @Produce     json
+// @Success     200    {object} api.CreateSPNResponse
+// @Param       name   body     string                true "name"
+// @Param       config body     api.SourceConfigAzure true "config"
+// @Router      /onboard/api/v1/spn/azure [post]
 func (h HttpHandler) PostSPN(ctx echo.Context) error {
 	var req api.CreateSPNRequest
 
@@ -450,11 +450,11 @@ func (h HttpHandler) PostSPN(ctx echo.Context) error {
 }
 
 // GetSPNCred godoc
-// @Summary  Get SPN credential
-// @Tags         onboard
-// @Produce      json
-// @Param    spnId  query  string  true  "SPN ID"
-// @Router   /onboard/api/v1/spn/{spnId} [post]
+// @Summary Get SPN credential
+// @Tags    onboard
+// @Produce json
+// @Param   spnId query string true "SPN ID"
+// @Router  /onboard/api/v1/spn/{spnId} [post]
 func (h HttpHandler) GetSPNCred(ctx echo.Context) error {
 	spnUUID, err := uuid.Parse(ctx.Param("spnId"))
 	if err != nil {
@@ -484,10 +484,10 @@ func (h HttpHandler) GetSPNCred(ctx echo.Context) error {
 }
 
 // ListSPNs godoc
-// @Summary  List SPN credentials
-// @Tags         onboard
-// @Produce      json
-// @Router   /onboard/api/v1/spn/list [get]
+// @Summary List SPN credentials
+// @Tags    onboard
+// @Produce json
+// @Router  /onboard/api/v1/spn/list [get]
 func (h HttpHandler) ListSPNs(ctx echo.Context) error {
 	src, err := h.db.GetAllSPNs()
 	if err != nil {
@@ -507,11 +507,11 @@ func (h HttpHandler) ListSPNs(ctx echo.Context) error {
 }
 
 // PutSPNCred godoc
-// @Summary  Put SPN credential
-// @Tags         onboard
-// @Produce      json
-// @Param    spnId  query  string  true  "SPN ID"
-// @Router   /onboard/api/v1/spn/{spnId} [put]
+// @Summary Put SPN credential
+// @Tags    onboard
+// @Produce json
+// @Param   spnId query string true "SPN ID"
+// @Router  /onboard/api/v1/spn/{spnId} [put]
 func (h HttpHandler) PutSPNCred(ctx echo.Context) error {
 	spnUUID, err := uuid.Parse(ctx.Param("spnId"))
 	if err != nil {
@@ -549,11 +549,11 @@ func (h HttpHandler) PutSPNCred(ctx echo.Context) error {
 }
 
 // DeleteSPN godoc
-// @Summary  Delete SPN credential
-// @Tags         onboard
-// @Produce      json
-// @Param    spnId  query  string  true  "SPN ID"
-// @Router   /onboard/api/v1/spn/{spnId} [delete]
+// @Summary Delete SPN credential
+// @Tags    onboard
+// @Produce json
+// @Param   spnId query string true "SPN ID"
+// @Router  /onboard/api/v1/spn/{spnId} [delete]
 func (h HttpHandler) DeleteSPN(ctx echo.Context) error {
 	spnUUID, err := uuid.Parse(ctx.Param("spnId"))
 	if err != nil {
@@ -573,11 +573,11 @@ func (h HttpHandler) DeleteSPN(ctx echo.Context) error {
 }
 
 // GetSourceCred godoc
-// @Summary  Get source credential
-// @Tags         onboard
-// @Produce      json
-// @Param    sourceId  query  string  true  "Source ID"
-// @Router   /onboard/api/v1/source/{sourceId}/credentials [post]
+// @Summary Get source credential
+// @Tags    onboard
+// @Produce json
+// @Param   sourceId query string true "Source ID"
+// @Router  /onboard/api/v1/source/{sourceId}/credentials [post]
 func (h HttpHandler) GetSourceCred(ctx echo.Context) error {
 	sourceUUID, err := uuid.Parse(ctx.Param("sourceId"))
 	if err != nil {
@@ -618,11 +618,11 @@ func (h HttpHandler) GetSourceCred(ctx echo.Context) error {
 }
 
 // PutSourceCred godoc
-// @Summary  Put source credential
-// @Tags         onboard
-// @Produce      json
-// @Param    sourceId  query  string  true  "Source ID"
-// @Router   /onboard/api/v1/source/{sourceId}/credentials [put]
+// @Summary Put source credential
+// @Tags    onboard
+// @Produce json
+// @Param   sourceId query string true "Source ID"
+// @Router  /onboard/api/v1/source/{sourceId}/credentials [put]
 func (h HttpHandler) PutSourceCred(ctx echo.Context) error {
 	sourceUUID, err := uuid.Parse(ctx.Param("sourceId"))
 	if err != nil {
@@ -688,13 +688,13 @@ func (h HttpHandler) PutSourceCred(ctx echo.Context) error {
 }
 
 // GetSource godoc
-// @Summary      Returns a single source
-// @Description  Returning single source either AWS / Azure.
-// @Tags         onboard
-// @Produce      json
-// @Success      200       {object}  api.Source
-// @Param        sourceId  path      integer  true  "SourceID"
-// @Router       /onboard/api/v1/source/{sourceId} [get]
+// @Summary     Returns a single source
+// @Description Returning single source either AWS / Azure.
+// @Tags        onboard
+// @Produce     json
+// @Success     200      {object} api.Source
+// @Param       sourceId path     integer true "SourceID"
+// @Router      /onboard/api/v1/source/{sourceId} [get]
 func (h HttpHandler) GetSource(ctx echo.Context) error {
 	srcId, err := uuid.Parse(ctx.Param(paramSourceId))
 	if err != nil {
@@ -722,13 +722,13 @@ func (h HttpHandler) GetSource(ctx echo.Context) error {
 }
 
 // DeleteSource godoc
-// @Summary      Delete a single source
-// @Description  Deleting a single source either AWS / Azure.
-// @Tags         onboard
-// @Produce      json
-// @Success      200
-// @Param    sourceId  path  integer  true  "SourceID"
-// @Router       /onboard/api/v1/source/{sourceId} [delete]
+// @Summary     Delete a single source
+// @Description Deleting a single source either AWS / Azure.
+// @Tags        onboard
+// @Produce     json
+// @Success     200
+// @Param       sourceId path integer true "SourceID"
+// @Router      /onboard/api/v1/source/{sourceId} [delete]
 func (h HttpHandler) DeleteSource(ctx echo.Context) error {
 	srcId, err := uuid.Parse(ctx.Param(paramSourceId))
 	if err != nil {
@@ -775,12 +775,12 @@ func (h HttpHandler) DeleteSource(ctx echo.Context) error {
 }
 
 // DisableSource godoc
-// @Summary  Disable a single source
-// @Tags         onboard
-// @Produce      json
-// @Success      200
-// @Param    sourceId  path  integer  true  "SourceID"
-// @Router   /onboard/api/v1/source/{sourceId}/disable [post]
+// @Summary Disable a single source
+// @Tags    onboard
+// @Produce json
+// @Success 200
+// @Param   sourceId path integer true "SourceID"
+// @Router  /onboard/api/v1/source/{sourceId}/disable [post]
 func (h HttpHandler) DisableSource(ctx echo.Context) error {
 	srcId, err := uuid.Parse(ctx.Param(paramSourceId))
 	if err != nil {
@@ -818,12 +818,12 @@ func (h HttpHandler) DisableSource(ctx echo.Context) error {
 }
 
 // EnableSource godoc
-// @Summary  Enable a single source
-// @Tags         onboard
-// @Produce      json
-// @Success      200
-// @Param        sourceId  path  integer  true  "SourceID"
-// @Router   /onboard/api/v1/source/{sourceId}/enable [post]
+// @Summary Enable a single source
+// @Tags    onboard
+// @Produce json
+// @Success 200
+// @Param   sourceId path integer true "SourceID"
+// @Router  /onboard/api/v1/source/{sourceId}/enable [post]
 func (h HttpHandler) EnableSource(ctx echo.Context) error {
 	srcId, err := uuid.Parse(ctx.Param(paramSourceId))
 	if err != nil {
@@ -862,13 +862,13 @@ func (h HttpHandler) EnableSource(ctx echo.Context) error {
 }
 
 // ListSources godoc
-// @Summary      Returns a list of sources
-// @Description  Returning a list of sources including both AWS and Azure unless filtered by Type.
-// @Tags         onboard
-// @Produce      json
-// @Param        type     query     string                 false  "Type"  Enums(aws,azure)
-// @Success      200      {object}  api.GetSourcesResponse
-// @Router       /onboard/api/v1/sources [get]
+// @Summary     Returns a list of sources
+// @Description Returning a list of sources including both AWS and Azure unless filtered by Type.
+// @Tags        onboard
+// @Produce     json
+// @Param       type query    string false "Type" Enums(aws,azure)
+// @Success     200  {object} api.GetSourcesResponse
+// @Router      /onboard/api/v1/sources [get]
 func (h HttpHandler) ListSources(ctx echo.Context) error {
 	sType := ctx.QueryParam("type")
 	var sources []Source
@@ -910,14 +910,14 @@ func (h HttpHandler) ListSources(ctx echo.Context) error {
 }
 
 // GetSources godoc
-// @Summary      Returns a list of sources
-// @Description  Returning a list of sources including both AWS and Azure unless filtered by Type.
-// @Tags         onboard
-// @Produce      json
-// @Param        type  query     string  false  "Type"  Enums(aws,azure)
-// @Param        request  body      api.GetSourcesRequest  false  "Request Body"
-// @Success      200   {object}  api.GetSourcesResponse
-// @Router       /onboard/api/v1/sources [post]
+// @Summary     Returns a list of sources
+// @Description Returning a list of sources including both AWS and Azure unless filtered by Type.
+// @Tags        onboard
+// @Produce     json
+// @Param       type    query    string                false "Type" Enums(aws,azure)
+// @Param       request body     api.GetSourcesRequest false "Request Body"
+// @Success     200     {object} api.GetSourcesResponse
+// @Router      /onboard/api/v1/sources [post]
 func (h HttpHandler) GetSources(ctx echo.Context) error {
 	var req api.GetSourcesRequest
 	if err := bindValidate(ctx, &req); err != nil {
@@ -957,13 +957,13 @@ func (h HttpHandler) GetSources(ctx echo.Context) error {
 }
 
 // CountSources godoc
-// @Summary      Returns a count of sources
-// @Description  Returning a count of sources including both AWS and Azure unless filtered by Type.
-// @Tags         onboard
-// @Produce      json
-// @Param        type  query     string  false  "Type"  Enums(aws,azure)
-// @Success      200   {object}  int64
-// @Router       /onboard/api/v1/sources/count [get]
+// @Summary     Returns a count of sources
+// @Description Returning a count of sources including both AWS and Azure unless filtered by Type.
+// @Tags        onboard
+// @Produce     json
+// @Param       type query    string false "Type" Enums(aws,azure)
+// @Success     200  {object} int64
+// @Router      /onboard/api/v1/sources/count [get]
 func (h HttpHandler) CountSources(ctx echo.Context) error {
 	sType := ctx.QueryParam("type")
 	var count int64
@@ -994,14 +994,14 @@ func (h HttpHandler) PutSource(ctx echo.Context) error {
 }
 
 // DiscoverAwsAccounts godoc
-// @Summary      Returns the list of available AWS accounts given the credentials.
-// @Description  If the account is part of an organization and the account has premission to list the accounts, it will return all the accounts in that organization. Otherwise, it will return the single account these credentials belong to.
-// @Tags         onboard
-// @Produce      json
-// @Success      200        {object}  []api.DiscoverAWSAccountsResponse
-// @Param        accessKey  body      string  true  "AccessKey"
-// @Param        secretKey  body      string  true  "SecretKey"
-// @Router       /onboard/api/v1/discover/aws/accounts [post]
+// @Summary     Returns the list of available AWS accounts given the credentials.
+// @Description If the account is part of an organization and the account has premission to list the accounts, it will return all the accounts in that organization. Otherwise, it will return the single account these credentials belong to.
+// @Tags        onboard
+// @Produce     json
+// @Success     200       {object} []api.DiscoverAWSAccountsResponse
+// @Param       accessKey body     string true "AccessKey"
+// @Param       secretKey body     string true "SecretKey"
+// @Router      /onboard/api/v1/discover/aws/accounts [post]
 func (h HttpHandler) DiscoverAwsAccounts(ctx echo.Context) error {
 	// DiscoverAwsAccounts returns the list of available AWS accounts given the credentials.
 	// If the account is part of an organization and the account has premission to
@@ -1034,15 +1034,15 @@ func (h HttpHandler) DiscoverAwsAccounts(ctx echo.Context) error {
 }
 
 // DiscoverAzureSubscriptions godoc
-// @Summary      Returns the list of available Azure subscriptions.
-// @Description  Returning the list of available Azure subscriptions.
-// @Tags         onboard
-// @Produce      json
-// @Success      200      {object}  []api.DiscoverAzureSubscriptionsResponse
-// @Param        tenantId      body      string  true  "TenantId"
-// @Param        clientId      body      string  true  "ClientId"
-// @Param        clientSecret  body      string  true  "ClientSecret"
-// @Router       /onboard/api/v1/discover/azure/subscriptions [post]
+// @Summary     Returns the list of available Azure subscriptions.
+// @Description Returning the list of available Azure subscriptions.
+// @Tags        onboard
+// @Produce     json
+// @Success     200          {object} []api.DiscoverAzureSubscriptionsResponse
+// @Param       tenantId     body     string true "TenantId"
+// @Param       clientId     body     string true "ClientId"
+// @Param       clientSecret body     string true "ClientSecret"
+// @Router      /onboard/api/v1/discover/azure/subscriptions [post]
 func (h *HttpHandler) DiscoverAzureSubscriptions(ctx echo.Context) error {
 	var req api.DiscoverAzureSubscriptionsRequest
 	if err := bindValidate(ctx, &req); err != nil {
@@ -1068,13 +1068,13 @@ func (h *HttpHandler) DiscoverAzureSubscriptions(ctx echo.Context) error {
 }
 
 // DiscoverAzureSubscriptionsWithSPN godoc
-// @Summary      Returns the list of available Azure subscriptions.
-// @Description  Returning the list of available Azure subscriptions.
-// @Tags         onboard
-// @Produce      json
-// @Success      200           {object}  []api.DiscoverAzureSubscriptionsResponse
-// @Param        request  body      api.DiscoverAzureSubscriptionsSPNRequest  true  "Request Body"
-// @Router       /onboard/api/v1/discover/azure/subscriptions/spn [post]
+// @Summary     Returns the list of available Azure subscriptions.
+// @Description Returning the list of available Azure subscriptions.
+// @Tags        onboard
+// @Produce     json
+// @Success     200     {object} []api.DiscoverAzureSubscriptionsResponse
+// @Param       request body     api.DiscoverAzureSubscriptionsSPNRequest true "Request Body"
+// @Router      /onboard/api/v1/discover/azure/subscriptions/spn [post]
 func (h *HttpHandler) DiscoverAzureSubscriptionsWithSPN(ctx echo.Context) error {
 	var req api.DiscoverAzureSubscriptionsSPNRequest
 	if err := bindValidate(ctx, &req); err != nil {

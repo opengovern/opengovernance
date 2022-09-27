@@ -262,41 +262,7 @@
                 }
             }
         },
-        "/inventory/api/v1/accounts/resource/count": {
-            "get": {
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "benchmarks"
-                ],
-                "summary": "Returns resource count of accounts",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Provider",
-                        "name": "provider",
-                        "in": "query",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/api.AccountResourceCountResponse"
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/inventory/api/v1/benchmarks": {
+        "/compliance/api/v1/benchmarks": {
             "get": {
                 "description": "In order to filter benchmarks by tags provide the tag key-value as query param",
                 "consumes": [
@@ -340,7 +306,7 @@
                 }
             }
         },
-        "/inventory/api/v1/benchmarks/count": {
+        "/compliance/api/v1/benchmarks/count": {
             "get": {
                 "description": "In order to filter benchmarks by tags provide the tag key-value as query param",
                 "consumes": [
@@ -384,7 +350,7 @@
                 }
             }
         },
-        "/inventory/api/v1/benchmarks/history/list/{provider}/{createdAt}": {
+        "/compliance/api/v1/benchmarks/history/list/{provider}/{createdAt}": {
             "get": {
                 "description": "You should fetch the benchmark report times from /benchmarks/history/:year/:month/:day",
                 "consumes": [
@@ -431,7 +397,7 @@
                 }
             }
         },
-        "/inventory/api/v1/benchmarks/source/{source_id}": {
+        "/compliance/api/v1/benchmarks/source/{source_id}": {
             "get": {
                 "description": "Returns all benchmark assignments with source id",
                 "consumes": [
@@ -466,7 +432,7 @@
                 }
             }
         },
-        "/inventory/api/v1/benchmarks/tags": {
+        "/compliance/api/v1/benchmarks/tags": {
             "get": {
                 "consumes": [
                     "application/json"
@@ -491,7 +457,7 @@
                 }
             }
         },
-        "/inventory/api/v1/benchmarks/{benchmarkId}/policies": {
+        "/compliance/api/v1/benchmarks/{benchmarkId}/policies": {
             "get": {
                 "consumes": [
                     "application/json"
@@ -543,7 +509,7 @@
                 }
             }
         },
-        "/inventory/api/v1/benchmarks/{benchmarkId}/result/findings": {
+        "/compliance/api/v1/benchmarks/{benchmarkId}/result/findings": {
             "get": {
                 "consumes": [
                     "application/json"
@@ -611,7 +577,7 @@
                 }
             }
         },
-        "/inventory/api/v1/benchmarks/{benchmarkId}/result/policies": {
+        "/compliance/api/v1/benchmarks/{benchmarkId}/result/policies": {
             "get": {
                 "consumes": [
                     "application/json"
@@ -679,7 +645,7 @@
                 }
             }
         },
-        "/inventory/api/v1/benchmarks/{benchmarkId}/result/policies/{policy_id}/findings": {
+        "/compliance/api/v1/benchmarks/{benchmarkId}/result/policies/{policy_id}/findings": {
             "get": {
                 "consumes": [
                     "application/json"
@@ -697,14 +663,14 @@
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/es.Finding"
+                                "$ref": "#/definitions/gitlab.com_keibiengine_keibi-engine_pkg_compliance_es.Finding"
                             }
                         }
                     }
                 }
             }
         },
-        "/inventory/api/v1/benchmarks/{benchmarkId}/result/policies/{policy_id}/resources/summary": {
+        "/compliance/api/v1/benchmarks/{benchmarkId}/result/policies/{policy_id}/resources/summary": {
             "get": {
                 "consumes": [
                     "application/json"
@@ -726,7 +692,7 @@
                 }
             }
         },
-        "/inventory/api/v1/benchmarks/{benchmarkId}/result/summary": {
+        "/compliance/api/v1/benchmarks/{benchmarkId}/result/summary": {
             "get": {
                 "consumes": [
                     "application/json"
@@ -751,13 +717,13 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/compliance_report.SummaryStatus"
+                            "$ref": "#/definitions/gitlab.com_keibiengine_keibi-engine_pkg_compliance.SummaryStatus"
                         }
                     }
                 }
             }
         },
-        "/inventory/api/v1/benchmarks/{benchmarkId}/{createdAt}/accounts": {
+        "/compliance/api/v1/benchmarks/{benchmarkId}/{createdAt}/accounts": {
             "get": {
                 "consumes": [
                     "application/json"
@@ -813,7 +779,7 @@
                 }
             }
         },
-        "/inventory/api/v1/benchmarks/{benchmarkId}/{createdAt}/accounts/compliance": {
+        "/compliance/api/v1/benchmarks/{benchmarkId}/{createdAt}/accounts/compliance": {
             "get": {
                 "consumes": [
                     "application/json"
@@ -851,7 +817,7 @@
                 }
             }
         },
-        "/inventory/api/v1/benchmarks/{benchmarkId}/{sourceId}/compliance/trend": {
+        "/compliance/api/v1/benchmarks/{benchmarkId}/{sourceId}/compliance/trend": {
             "get": {
                 "consumes": [
                     "application/json"
@@ -906,7 +872,7 @@
                 }
             }
         },
-        "/inventory/api/v1/benchmarks/{benchmark_id}/source/{source_id}": {
+        "/compliance/api/v1/benchmarks/{benchmark_id}/source/{source_id}": {
             "post": {
                 "description": "Returns benchmark assignment which insert",
                 "consumes": [
@@ -974,12 +940,12 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": ""
+                        "description": "OK"
                     }
                 }
             }
         },
-        "/inventory/api/v1/benchmarks/{benchmark_id}/sources": {
+        "/compliance/api/v1/benchmarks/{benchmark_id}/sources": {
             "get": {
                 "description": "Returns all benchmark assigned sources with benchmark id",
                 "consumes": [
@@ -1014,7 +980,7 @@
                 }
             }
         },
-        "/inventory/api/v1/benchmarks/{provider}/list": {
+        "/compliance/api/v1/benchmarks/{provider}/list": {
             "get": {
                 "description": "You should fetch the benchmark report times from /benchmarks/history/:year/:month/:day",
                 "consumes": [
@@ -1073,32 +1039,7 @@
                 }
             }
         },
-        "/inventory/api/v1/categories": {
-            "get": {
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "inventory"
-                ],
-                "summary": "Return list of categories",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "type": "string"
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/inventory/api/v1/compliancy/trend": {
+        "/compliance/api/v1/compliancy/trend": {
             "get": {
                 "consumes": [
                     "application/json"
@@ -1147,6 +1088,168 @@
                             "type": "array",
                             "items": {
                                 "$ref": "#/definitions/api.TrendDataPoint"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/compliance/api/v1/findings": {
+            "post": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "benchmarks"
+                ],
+                "summary": "Returns all findings with respect to filters",
+                "parameters": [
+                    {
+                        "description": "Request Body",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/api.GetFindingsRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/api.GetFindingsResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/compliance/api/v1/findings/filters": {
+            "post": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "benchmarks"
+                ],
+                "summary": "Returns all findings with respect to filters",
+                "parameters": [
+                    {
+                        "description": "Request Body",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/api.GetFindingsRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/api.GetFindingsFiltersResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/compliance/api/v1/policies/count": {
+            "get": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "benchmarks"
+                ],
+                "summary": "Returns count of policies",
+                "parameters": [
+                    {
+                        "enum": [
+                            "AWS",
+                            "Azure"
+                        ],
+                        "type": "string",
+                        "description": "Provider",
+                        "name": "provider",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/api.Benchmark"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/inventory/api/v1/accounts/resource/count": {
+            "get": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "benchmarks"
+                ],
+                "summary": "Returns resource count of accounts",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Provider",
+                        "name": "provider",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/api.AccountResourceCountResponse"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/inventory/api/v1/categories": {
+            "get": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "inventory"
+                ],
+                "summary": "Return list of categories",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "string"
                             }
                         }
                     }
@@ -1264,7 +1367,7 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": ""
+                        "description": "OK"
                     }
                 }
             }
@@ -1374,43 +1477,6 @@
                             "type": "array",
                             "items": {
                                 "$ref": "#/definitions/api.MetricsResponse"
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/inventory/api/v1/policies/count": {
-            "get": {
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "benchmarks"
-                ],
-                "summary": "Returns count of policies",
-                "parameters": [
-                    {
-                        "enum": [
-                            "AWS",
-                            "Azure"
-                        ],
-                        "type": "string",
-                        "description": "Provider",
-                        "name": "provider",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/api.Benchmark"
                             }
                         }
                     }
@@ -2601,7 +2667,7 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": ""
+                        "description": "OK"
                     }
                 }
             }
@@ -2666,7 +2732,7 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": ""
+                        "description": "OK"
                     }
                 }
             }
@@ -2691,7 +2757,7 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": ""
+                        "description": "OK"
                     }
                 }
             }
@@ -3018,7 +3084,7 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": ""
+                        "description": "OK"
                     }
                 }
             }
@@ -3289,7 +3355,7 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": ""
+                        "description": "OK"
                     }
                 }
             }
@@ -3317,7 +3383,7 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": ""
+                        "description": "OK"
                     }
                 }
             }
@@ -3345,7 +3411,7 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": ""
+                        "description": "OK"
                     }
                 }
             }
@@ -3533,6 +3599,65 @@
         }
     },
     "definitions": {
+        "..Finding": {
+            "type": "object",
+            "properties": {
+                "benchmarkID": {
+                    "type": "string"
+                },
+                "category": {
+                    "type": "string"
+                },
+                "complianceJobID": {
+                    "type": "integer"
+                },
+                "connectionProviderID": {
+                    "type": "string"
+                },
+                "connectionProviderName": {
+                    "type": "string"
+                },
+                "describedAt": {
+                    "type": "integer"
+                },
+                "evaluatedAt": {
+                    "type": "integer"
+                },
+                "policyID": {
+                    "type": "string"
+                },
+                "policySeverity": {
+                    "type": "string"
+                },
+                "reason": {
+                    "type": "string"
+                },
+                "resourceID": {
+                    "type": "string"
+                },
+                "resourceLocation": {
+                    "type": "string"
+                },
+                "resourceName": {
+                    "type": "string"
+                },
+                "resourceType": {
+                    "type": "string"
+                },
+                "serviceName": {
+                    "type": "string"
+                },
+                "sourceID": {
+                    "type": "string"
+                },
+                "sourceType": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                }
+            }
+        },
         "api.AWSResource": {
             "type": "object",
             "properties": {
@@ -4033,6 +4158,80 @@
                 }
             }
         },
+        "api.FindingFilters": {
+            "type": "object",
+            "properties": {
+                "benchmarkID": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "findingStatus": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "provider": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "resourceTypeID": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "severity": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "sourceID": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
+        "api.FindingSortItem": {
+            "type": "object",
+            "properties": {
+                "direction": {
+                    "type": "string",
+                    "enum": [
+                        "asc",
+                        "desc"
+                    ]
+                },
+                "field": {
+                    "type": "string",
+                    "enum": [
+                        "resourceID",
+                        "resourceName",
+                        "resourceType",
+                        "serviceName",
+                        "category",
+                        "resourceLocation",
+                        "status",
+                        "describedAt",
+                        "evaluatedAt",
+                        "sourceID",
+                        "connectionProviderID",
+                        "connectionProviderName",
+                        "sourceType",
+                        "benchmarkID",
+                        "policyID",
+                        "policySeverity"
+                    ]
+                }
+            }
+        },
         "api.GetAWSResourceResponse": {
             "type": "object",
             "properties": {
@@ -4097,6 +4296,48 @@
                 "filters": {
                     "description": "search filters",
                     "$ref": "#/definitions/api.ResourceFiltersResponse"
+                }
+            }
+        },
+        "api.GetFindingsFiltersResponse": {
+            "type": "object",
+            "properties": {
+                "filters": {
+                    "$ref": "#/definitions/api.FindingFilters"
+                }
+            }
+        },
+        "api.GetFindingsRequest": {
+            "type": "object",
+            "required": [
+                "page"
+            ],
+            "properties": {
+                "filters": {
+                    "$ref": "#/definitions/api.FindingFilters"
+                },
+                "page": {
+                    "$ref": "#/definitions/api.Page"
+                },
+                "sorts": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/api.FindingSortItem"
+                    }
+                }
+            }
+        },
+        "api.GetFindingsResponse": {
+            "type": "object",
+            "properties": {
+                "findings": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/..Finding"
+                    }
+                },
+                "totalCount": {
+                    "type": "integer"
                 }
             }
         },
@@ -5011,26 +5252,6 @@
                 }
             }
         },
-        "compliance_report.SummaryStatus": {
-            "type": "object",
-            "properties": {
-                "alarm": {
-                    "type": "integer"
-                },
-                "error": {
-                    "type": "integer"
-                },
-                "info": {
-                    "type": "integer"
-                },
-                "ok": {
-                    "type": "integer"
-                },
-                "skip": {
-                    "type": "integer"
-                }
-            }
-        },
         "connector.Category": {
             "type": "object",
             "properties": {
@@ -5068,32 +5289,58 @@
                 }
             }
         },
-        "es.Finding": {
+        "gitlab.com_keibiengine_keibi-engine_pkg_compliance.SummaryStatus": {
             "type": "object",
             "properties": {
-                "accountID": {
+                "alarm": {
+                    "type": "integer"
+                },
+                "error": {
+                    "type": "integer"
+                },
+                "info": {
+                    "type": "integer"
+                },
+                "ok": {
+                    "type": "integer"
+                },
+                "skip": {
+                    "type": "integer"
+                }
+            }
+        },
+        "gitlab.com_keibiengine_keibi-engine_pkg_compliance_es.Finding": {
+            "type": "object",
+            "properties": {
+                "benchmarkID": {
                     "type": "string"
                 },
-                "controlID": {
+                "category": {
+                    "type": "string"
+                },
+                "complianceJobID": {
+                    "type": "integer"
+                },
+                "connectionProviderID": {
+                    "type": "string"
+                },
+                "connectionProviderName": {
                     "type": "string"
                 },
                 "describedAt": {
                     "type": "integer"
                 },
-                "id": {
+                "evaluatedAt": {
+                    "type": "integer"
+                },
+                "policyID": {
                     "type": "string"
                 },
-                "parentBenchmarkIDs": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
+                "policySeverity": {
+                    "type": "string"
                 },
-                "reportID": {
-                    "type": "integer"
-                },
-                "reportJobID": {
-                    "type": "integer"
+                "reason": {
+                    "type": "string"
                 },
                 "resourceID": {
                     "type": "string"
@@ -5102,6 +5349,18 @@
                     "type": "string"
                 },
                 "resourceName": {
+                    "type": "string"
+                },
+                "resourceType": {
+                    "type": "string"
+                },
+                "serviceName": {
+                    "type": "string"
+                },
+                "sourceID": {
+                    "type": "string"
+                },
+                "sourceType": {
                     "type": "string"
                 },
                 "status": {
