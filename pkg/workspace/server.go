@@ -388,7 +388,6 @@ func (s *Server) handleWorkspace(workspace *Workspace) error {
 			return nil
 		}
 
-		values := helmRelease.GetValues()
 		newStatus := status
 		// check the status of helm release
 		if meta.IsStatusConditionTrue(helmRelease.Status.Conditions, apimeta.ReadyCondition) {
