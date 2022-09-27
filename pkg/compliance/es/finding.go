@@ -5,8 +5,6 @@ import (
 	"encoding/json"
 	"strconv"
 
-	"gitlab.com/keibiengine/keibi-engine/pkg/compliance/api"
-
 	"gitlab.com/keibiengine/keibi-engine/pkg/source"
 
 	"github.com/google/uuid"
@@ -81,7 +79,7 @@ func FindingsQuery(client keibi.Client,
 	status []Status,
 	benchmarkID []string,
 	severity []string,
-	sort []api.FindingSortItem,
+	sort []map[string]interface{},
 	from, size int) (*FindingsQueryResponse, error) {
 
 	res := make(map[string]interface{})
@@ -125,13 +123,7 @@ func FindingsQuery(client keibi.Client,
 	res["size"] = size
 	res["from"] = from
 
-	var sorts []map[string]interface{}
-	for _, sortItem := range sort {
-		item := map[string]interface{}{}
-		item[string(sortItem.Field)] = sortItem.Direction
-		sorts = append(sorts, item)
-	}
-	res["sort"] = sorts
+	res["sort"] = sort
 
 	res["query"] = map[string]interface{}{
 		"bool": map[string]interface{}{

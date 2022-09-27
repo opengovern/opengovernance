@@ -145,9 +145,16 @@ func (h *HttpHandler) GetFindings(ctx echo.Context) error {
 	lastIdx := (req.Page.No - 1) * req.Page.Size
 
 	var response api.GetFindingsResponse
+	var sorts []map[string]interface{}
+	for _, sortItem := range req.Sorts {
+		item := map[string]interface{}{}
+		item[string(sortItem.Field)] = sortItem.Direction
+		sorts = append(sorts, item)
+	}
+
 	res, err := es.FindingsQuery(h.client, req.Filters.Provider, req.Filters.ResourceTypeID, req.Filters.SourceID,
 		req.Filters.FindingStatus, req.Filters.BenchmarkID, req.Filters.Severity,
-		req.Sorts, lastIdx, req.Page.Size)
+		sorts, lastIdx, req.Page.Size)
 	if err != nil {
 		return err
 	}
