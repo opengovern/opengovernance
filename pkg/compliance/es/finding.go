@@ -27,6 +27,7 @@ const (
 
 type Finding struct {
 	ComplianceJobID        uint        `json:"complianceJobID"`
+	ScheduleJobID          uint        `json:"scheduleJobID"`
 	ResourceID             string      `json:"resourceID"`
 	ResourceName           string      `json:"resourceName"`
 	ResourceType           string      `json:"resourceType"`
@@ -78,6 +79,7 @@ func FindingsQuery(client keibi.Client,
 	sourceID []uuid.UUID,
 	status []Status,
 	benchmarkID []string,
+	policyID []string,
 	severity []string,
 	sort []map[string]interface{},
 	from, size int) (*FindingsQueryResponse, error) {
@@ -88,6 +90,12 @@ func FindingsQuery(client keibi.Client,
 	if len(benchmarkID) > 0 {
 		filters = append(filters, map[string]interface{}{
 			"terms": map[string][]string{"benchmarkID": benchmarkID},
+		})
+	}
+
+	if len(policyID) > 0 {
+		filters = append(filters, map[string]interface{}{
+			"terms": map[string][]string{"policyID": policyID},
 		})
 	}
 
@@ -145,6 +153,7 @@ type FindingFiltersAggregationResponse struct {
 }
 type FindingFiltersAggregations struct {
 	BenchmarkIDFilter  AggregationResult `json:"benchmark_id_filter"`
+	PolicyIDFilter     AggregationResult `json:"policy_id_filter"`
 	StatusFilter       AggregationResult `json:"status_filter"`
 	SeverityFilter     AggregationResult `json:"severity_filter"`
 	SourceIDFilter     AggregationResult `json:"source_id_filter"`
@@ -167,12 +176,17 @@ func FindingsFiltersQuery(client keibi.Client,
 	sourceID []uuid.UUID,
 	status []Status,
 	benchmarkID []string,
+	policyID []string,
 	severity []string,
 ) (*FindingFiltersAggregationResponse, error) {
 	terms := make(map[string]interface{})
 
 	if len(benchmarkID) > 0 {
 		terms["benchmarkID"] = benchmarkID
+	}
+
+	if len(policyID) > 0 {
+		terms["policyID"] = policyID
 	}
 
 	if len(status) > 0 {
@@ -201,6 +215,9 @@ func FindingsFiltersQuery(client keibi.Client,
 	benchmarkIDFilter := map[string]interface{}{
 		"terms": map[string]interface{}{"field": "benchmarkID", "size": 1000},
 	}
+	policyIDFilter := map[string]interface{}{
+		"terms": map[string]interface{}{"field": "policyID", "size": 1000},
+	}
 	statusFilter := map[string]interface{}{
 		"terms": map[string]interface{}{"field": "status", "size": 1000},
 	}
@@ -218,6 +235,7 @@ func FindingsFiltersQuery(client keibi.Client,
 	}
 	aggs := map[string]interface{}{
 		"benchmark_id_filter":  benchmarkIDFilter,
+		"policy_id_filter":     policyIDFilter,
 		"status_filter":        statusFilter,
 		"severity_filter":      severityFilter,
 		"source_id_filter":     sourceIDFilter,

@@ -12,6 +12,13 @@ import (
 	"gopkg.in/Shopify/sarama.v1"
 )
 
+type JobType string
+
+const (
+	JobType_ResourceSummarizer   JobType = "resourceSummarizer"
+	JobType_ComplianceSummarizer JobType = "complianceSummarizer"
+)
+
 type Worker struct {
 	id             string
 	jobQueue       queue.Interface
@@ -92,8 +99,10 @@ func InitializeWorker(
 	w.logger = logger
 
 	w.pusher = push.New(prometheusPushAddress, "summarizer-worker")
-	w.pusher.Collector(DoSummarizerJobsCount).
-		Collector(DoSummarizerJobsDuration)
+	w.pusher.Collector(DoResourceSummarizerJobsCount).
+		Collector(DoResourceSummarizerJobsDuration).
+		Collector(DoComplianceSummarizerJobsCount).
+		Collector(DoComplianceSummarizerJobsDuration)
 
 	defaultAccountID := "default"
 	w.es, err = keibi.NewClient(keibi.ClientConfig{
@@ -126,8 +135,8 @@ func (w *Worker) Run() error {
 	msg := <-msgs
 
 	w.logger.Info("Took the job")
-	var job Job
-	if err := json.Unmarshal(msg.Body, &job); err != nil {
+	var resourceJob ResourceJob
+	if err := json.Unmarshal(msg.Body, &resourceJob); err != nil {
 		w.logger.Error("Failed to unmarshal task", zap.Error(err))
 		err2 := msg.Nack(false, false)
 		if err2 != nil {
@@ -136,12 +145,32 @@ func (w *Worker) Run() error {
 		return err
 	}
 
-	w.logger.Info("Processing job", zap.Int("jobID", int(job.JobID)))
-	result := job.Do(w.es, w.kfkProducer, w.kfkTopic, w.logger)
-	w.logger.Info("Publishing job result", zap.Int("jobID", int(job.JobID)), zap.String("status", string(result.Status)))
-	err = w.jobResultQueue.Publish(result)
-	if err != nil {
-		w.logger.Error("Failed to send results to queue: %s", zap.Error(err))
+	if resourceJob.JobType == "" || resourceJob.JobType == JobType_ResourceSummarizer {
+		w.logger.Info("Processing job", zap.Int("jobID", int(resourceJob.JobID)))
+		result := resourceJob.Do(w.es, w.kfkProducer, w.kfkTopic, w.logger)
+		w.logger.Info("Publishing job result", zap.Int("jobID", int(resourceJob.JobID)), zap.String("status", string(result.Status)))
+		err = w.jobResultQueue.Publish(result)
+		if err != nil {
+			w.logger.Error("Failed to send results to queue: %s", zap.Error(err))
+		}
+	} else {
+		var complianceJob ComplianceJob
+		if err := json.Unmarshal(msg.Body, &complianceJob); err != nil {
+			w.logger.Error("Failed to unmarshal task", zap.Error(err))
+			err2 := msg.Nack(false, false)
+			if err2 != nil {
+				w.logger.Error("Failed nacking message", zap.Error(err))
+			}
+			return err
+		}
+
+		w.logger.Info("Processing job", zap.Int("jobID", int(complianceJob.JobID)))
+		result := complianceJob.Do(w.es, w.kfkProducer, w.kfkTopic, w.logger)
+		w.logger.Info("Publishing job result", zap.Int("jobID", int(complianceJob.JobID)), zap.String("status", string(result.Status)))
+		err = w.jobResultQueue.Publish(result)
+		if err != nil {
+			w.logger.Error("Failed to send results to queue: %s", zap.Error(err))
+		}
 	}
 
 	if err := msg.Ack(false); err != nil {

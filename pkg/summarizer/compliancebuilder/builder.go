@@ -1,12 +1,12 @@
-package builder
+package compliancebuilder
 
 import (
-	describe "gitlab.com/keibiengine/keibi-engine/pkg/describe/es"
+	"gitlab.com/keibiengine/keibi-engine/pkg/compliance/es"
 	"gitlab.com/keibiengine/keibi-engine/pkg/kafka"
 )
 
 type Builder interface {
-	Process(resource describe.LookupResource)
+	Process(resource es.Finding)
 	PopulateHistory(lastDayJobID, lastWeekJobID, lastQuarterJobID, lastYearJobID uint) error
 	Build() []kafka.Doc
 	Cleanup(scheduleJobID uint) error

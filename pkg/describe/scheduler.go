@@ -43,12 +43,11 @@ import (
 )
 
 const (
-	JobCompletionInterval       = 1 * time.Minute
-	JobSchedulingInterval       = 1 * time.Minute
-	JobComplianceReportInterval = 1 * time.Minute
-	JobTimeoutCheckInterval     = 15 * time.Minute
-	MaxJobInQueue               = 10000
-	ConcurrentDeletedSources    = 1000
+	JobCompletionInterval    = 1 * time.Minute
+	JobSchedulingInterval    = 1 * time.Minute
+	JobTimeoutCheckInterval  = 15 * time.Minute
+	MaxJobInQueue            = 10000
+	ConcurrentDeletedSources = 1000
 
 	RedisKeyWorkspaceResourceRemaining = "workspace_resource_remaining"
 )
@@ -567,26 +566,82 @@ func (s *Scheduler) RunScheduleJobCompletionUpdater() {
 			continue
 		}
 
+		j, err := s.db.GetSummarizerJobByScheduleID(scheduleJob.ID, summarizer.JobType_ResourceSummarizer)
+		if err != nil {
+			s.logger.Error("Failed to fetch SummarizerJob", zap.Error(err))
+			continue
+		}
+
+		if j == nil {
+			err = s.scheduleSummarizerJob(scheduleJob.ID)
+			if err != nil {
+				s.logger.Error("Failed to enqueue summarizer job\n",
+					zap.Uint("jobId", scheduleJob.ID),
+					zap.Error(err),
+				)
+			}
+		}
+
+		if j.Status != summarizerapi.SummarizerJobSucceeded {
+			continue
+		}
+
+		cjobs, err := s.db.GetComplianceReportJobsByScheduleID(scheduleJob.ID)
+		if err != nil {
+			s.logger.Error("Failed to get ComplianceJobs", zap.Error(err))
+			continue
+		}
+
+		if cjobs == nil || len(cjobs) == 0 {
+			createdJobCount, err := s.RunComplianceReport(scheduleJob)
+			if err != nil {
+				s.logger.Error("Failed to enqueue compliance job\n",
+					zap.Uint("jobId", scheduleJob.ID),
+					zap.Error(err),
+				)
+			}
+
+			if createdJobCount > 0 {
+				continue
+			}
+		}
+
+		inProgress = false
+		for _, j := range cjobs {
+			if j.Status == complianceapi.ComplianceReportJobCreated ||
+				j.Status == complianceapi.ComplianceReportJobInProgress {
+				inProgress = true
+			}
+		}
+
+		if inProgress {
+			continue
+		}
+
+		j, err = s.db.GetSummarizerJobByScheduleID(scheduleJob.ID, summarizer.JobType_ComplianceSummarizer)
+		if err != nil {
+			s.logger.Error("Failed to fetch SummarizerJob", zap.Error(err))
+			continue
+		}
+
+		if j == nil {
+			err = s.scheduleComplianceSummarizerJob(scheduleJob.ID)
+			if err != nil {
+				s.logger.Error("Failed to enqueue summarizer job\n",
+					zap.Uint("jobId", scheduleJob.ID),
+					zap.Error(err),
+				)
+			}
+		}
+
+		if j.Status != summarizerapi.SummarizerJobSucceeded {
+			continue
+		}
+
 		err = s.db.UpdateScheduleJobStatus(scheduleJob.ID, summarizerapi.SummarizerJobSucceeded)
 		if err != nil {
 			s.logger.Error("Failed to update ScheduleJob's status", zap.Error(err))
 			continue
-		}
-
-		err = s.scheduleSummarizerJob(scheduleJob.ID)
-		if err != nil {
-			s.logger.Error("Failed to enqueue summarizer job\n",
-				zap.Uint("jobId", scheduleJob.ID),
-				zap.Error(err),
-			)
-		}
-
-		err = s.RunComplianceReport(scheduleJob)
-		if err != nil {
-			s.logger.Error("Failed to enqueue compliance job\n",
-				zap.Uint("jobId", scheduleJob.ID),
-				zap.Error(err),
-			)
 		}
 	}
 }
@@ -1247,11 +1302,13 @@ func (s *Scheduler) RunDescribeJobResultsConsumer() error {
 //	}
 //}
 
-func (s *Scheduler) RunComplianceReport(scheduleJob *ScheduleJob) error {
+func (s *Scheduler) RunComplianceReport(scheduleJob *ScheduleJob) (int, error) {
+	createdJobCount := 0
+
 	sources, err := s.db.ListSources()
 	if err != nil {
 		ComplianceJobsCount.WithLabelValues("failure").Inc()
-		return fmt.Errorf("error while listing sources: %v", err)
+		return createdJobCount, fmt.Errorf("error while listing sources: %v", err)
 	}
 
 	for _, source := range sources {
@@ -1261,16 +1318,16 @@ func (s *Scheduler) RunComplianceReport(scheduleJob *ScheduleJob) error {
 		benchmarks, err := s.complianceClient.GetAllBenchmarkAssignmentsBySourceId(ctx, source.ID)
 		if err != nil {
 			ComplianceJobsCount.WithLabelValues("failure").Inc()
-			return fmt.Errorf("error while getting benchmark assignments: %v", err)
+			return createdJobCount, fmt.Errorf("error while getting benchmark assignments: %v", err)
 		}
 
 		for _, b := range benchmarks {
-			crj := newComplianceReportJob(source, b.BenchmarkId)
+			crj := newComplianceReportJob(source, b.BenchmarkId, scheduleJob.ID)
 			err := s.db.CreateComplianceReportJob(&crj)
 			if err != nil {
 				ComplianceJobsCount.WithLabelValues("failure").Inc()
 				ComplianceSourceJobsCount.WithLabelValues("failure").Inc()
-				return fmt.Errorf("error while creating compliance job: %v", err)
+				return createdJobCount, fmt.Errorf("error while creating compliance job: %v", err)
 			}
 
 			enqueueComplianceReportJobs(s.logger, s.db, s.complianceReportJobQueue, source, &crj, scheduleJob)
@@ -1279,13 +1336,14 @@ func (s *Scheduler) RunComplianceReport(scheduleJob *ScheduleJob) error {
 			if err != nil {
 				ComplianceJobsCount.WithLabelValues("failure").Inc()
 				ComplianceSourceJobsCount.WithLabelValues("failure").Inc()
-				return fmt.Errorf("error while updating compliance job: %v", err)
+				return createdJobCount, fmt.Errorf("error while updating compliance job: %v", err)
 			}
 			ComplianceSourceJobsCount.WithLabelValues("successful").Inc()
+			createdJobCount++
 		}
 	}
 	ComplianceJobsCount.WithLabelValues("successful").Inc()
-	return nil
+	return createdJobCount, nil
 }
 
 // RunComplianceReportJobResultsConsumer consumes messages from the complianceReportJobResultQueue queue.
@@ -1403,9 +1461,10 @@ func newDescribeSourceJob(a Source, s ScheduleJob) DescribeSourceJob {
 	return daj
 }
 
-func newComplianceReportJob(a Source, benchmarkID string) ComplianceReportJob {
+func newComplianceReportJob(a Source, benchmarkID string, scheduleJobID uint) ComplianceReportJob {
 	return ComplianceReportJob{
 		Model:           gorm.Model{},
+		ScheduleJobID:   scheduleJobID,
 		SourceID:        a.ID,
 		BenchmarkID:     benchmarkID,
 		ReportCreatedAt: 0,
@@ -1500,12 +1559,13 @@ func enqueueComplianceReportJobs(logger *zap.Logger, db Database, q queue.Interf
 	errMsg := ""
 
 	if err := q.Publish(compliancereport.Job{
-		JobID:       crj.ID,
-		SourceID:    crj.SourceID,
-		BenchmarkID: crj.BenchmarkID,
-		SourceType:  source.Type(a.Type),
-		ConfigReg:   a.ConfigRef,
-		DescribedAt: scheduleJob.CreatedAt.UnixMilli(),
+		JobID:         crj.ID,
+		SourceID:      crj.SourceID,
+		ScheduleJobID: scheduleJob.ID,
+		BenchmarkID:   crj.BenchmarkID,
+		SourceType:    source.Type(a.Type),
+		ConfigReg:     a.ConfigRef,
+		DescribedAt:   scheduleJob.CreatedAt.UnixMilli(),
 	}); err != nil {
 		logger.Error("Failed to queue ComplianceReportJob",
 			zap.Uint("jobId", crj.ID),
@@ -1611,7 +1671,7 @@ func (s Scheduler) scheduleInsightJob() {
 }
 
 func (s Scheduler) scheduleSummarizerJob(scheduleJobID uint) error {
-	job := newSummarizerJob()
+	job := newSummarizerJob(summarizer.JobType_ResourceSummarizer)
 	err := s.db.AddSummarizerJob(&job)
 	if err != nil {
 		SummarizerJobsCount.WithLabelValues("failure").Inc()
@@ -1675,13 +1735,94 @@ func enqueueSummarizerJobs(db Database, q queue.Interface, job SummarizerJob, sc
 		lastYearJobID = lastYear.ID
 	}
 
-	if err := q.Publish(summarizer.Job{
+	if err := q.Publish(summarizer.ResourceJob{
 		JobID:                    job.ID,
 		ScheduleJobID:            scheduleJobID,
 		LastDayScheduleJobID:     lastDayJobID,
 		LastWeekScheduleJobID:    lastWeekJobID,
 		LastQuarterScheduleJobID: lastQuarterJobID,
 		LastYearScheduleJobID:    lastYearJobID,
+		JobType:                  summarizer.JobType_ResourceSummarizer,
+	}); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (s Scheduler) scheduleComplianceSummarizerJob(scheduleJobID uint) error {
+	job := newSummarizerJob(summarizer.JobType_ComplianceSummarizer)
+	err := s.db.AddSummarizerJob(&job)
+	if err != nil {
+		SummarizerJobsCount.WithLabelValues("failure").Inc()
+		s.logger.Error("Failed to create SummarizerJob",
+			zap.Uint("jobId", job.ID),
+			zap.Error(err),
+		)
+		return err
+	}
+
+	err = enqueueComplianceSummarizerJobs(s.db, s.summarizerJobQueue, job, scheduleJobID)
+	if err != nil {
+		SummarizerJobsCount.WithLabelValues("failure").Inc()
+		s.logger.Error("Failed to enqueue SummarizerJob",
+			zap.Uint("jobId", job.ID),
+			zap.Error(err),
+		)
+		job.Status = summarizerapi.SummarizerJobFailed
+		err = s.db.UpdateSummarizerJobStatus(job)
+		if err != nil {
+			s.logger.Error("Failed to update SummarizerJob status",
+				zap.Uint("jobId", job.ID),
+				zap.Error(err),
+			)
+		}
+		return err
+	}
+
+	return nil
+}
+
+func enqueueComplianceSummarizerJobs(db Database, q queue.Interface, job SummarizerJob, scheduleJobID uint) error {
+	var lastDayJobID, lastWeekJobID, lastQuarterJobID, lastYearJobID uint
+
+	lastDay, err := db.GetOldCompletedScheduleJob(1)
+	if err != nil {
+		return err
+	}
+	if lastDay != nil {
+		lastDayJobID = lastDay.ID
+	}
+	lastWeek, err := db.GetOldCompletedScheduleJob(7)
+	if err != nil {
+		return err
+	}
+	if lastWeek != nil {
+		lastWeekJobID = lastWeek.ID
+	}
+	lastQuarter, err := db.GetOldCompletedScheduleJob(93)
+	if err != nil {
+		return err
+	}
+	if lastQuarter != nil {
+		lastQuarterJobID = lastQuarter.ID
+	}
+	lastYear, err := db.GetOldCompletedScheduleJob(428)
+	if err != nil {
+		return err
+	}
+	if lastYear != nil {
+		lastYearJobID = lastYear.ID
+	}
+
+	if err := q.Publish(summarizer.ComplianceJob{
+		JobID:                    job.ID,
+		ScheduleJobID:            scheduleJobID,
+		LastDayScheduleJobID:     lastDayJobID,
+		LastWeekScheduleJobID:    lastWeekJobID,
+		LastQuarterScheduleJobID: lastQuarterJobID,
+		LastYearScheduleJobID:    lastYearJobID,
+		JobType:                  summarizer.JobType_ComplianceSummarizer,
 	}); err != nil {
 		return err
 	}
@@ -1829,7 +1970,7 @@ func (s *Scheduler) RunSummarizerJobResultsConsumer() error {
 				return fmt.Errorf("tasks channel is closed")
 			}
 
-			var result summarizer.JobResult
+			var result summarizer.ResourceJobResult
 			if err := json.Unmarshal(msg.Body, &result); err != nil {
 				s.logger.Error("Failed to unmarshal SummarizerJobResult results", zap.Error(err))
 				err = msg.Nack(false, false)
@@ -1839,20 +1980,48 @@ func (s *Scheduler) RunSummarizerJobResultsConsumer() error {
 				continue
 			}
 
-			s.logger.Info("Processing SummarizerJobResult for Job",
-				zap.Uint("jobId", result.JobID),
-				zap.String("status", string(result.Status)),
-			)
-			err := s.db.UpdateSummarizerJob(result.JobID, result.Status, result.Error)
-			if err != nil {
-				s.logger.Error("Failed to update the status of SummarizerJob",
+			if result.JobType == "" || result.JobType == summarizer.JobType_ResourceSummarizer {
+				s.logger.Info("Processing SummarizerJobResult for Job",
 					zap.Uint("jobId", result.JobID),
-					zap.Error(err))
-				err = msg.Nack(false, true)
+					zap.String("status", string(result.Status)),
+				)
+				err := s.db.UpdateSummarizerJob(result.JobID, result.Status, result.Error)
 				if err != nil {
-					s.logger.Error("Failed nacking message", zap.Error(err))
+					s.logger.Error("Failed to update the status of SummarizerJob",
+						zap.Uint("jobId", result.JobID),
+						zap.Error(err))
+					err = msg.Nack(false, true)
+					if err != nil {
+						s.logger.Error("Failed nacking message", zap.Error(err))
+					}
+					continue
 				}
-				continue
+			} else {
+				var result summarizer.ComplianceJobResult
+				if err := json.Unmarshal(msg.Body, &result); err != nil {
+					s.logger.Error("Failed to unmarshal SummarizerJobResult results", zap.Error(err))
+					err = msg.Nack(false, false)
+					if err != nil {
+						s.logger.Error("Failed nacking message", zap.Error(err))
+					}
+					continue
+				}
+
+				s.logger.Info("Processing SummarizerJobResult for Job",
+					zap.Uint("jobId", result.JobID),
+					zap.String("status", string(result.Status)),
+				)
+				err := s.db.UpdateSummarizerJob(result.JobID, result.Status, result.Error)
+				if err != nil {
+					s.logger.Error("Failed to update the status of SummarizerJob",
+						zap.Uint("jobId", result.JobID),
+						zap.Error(err))
+					err = msg.Nack(false, true)
+					if err != nil {
+						s.logger.Error("Failed nacking message", zap.Error(err))
+					}
+					continue
+				}
 			}
 
 			if err := msg.Ack(false); err != nil {
@@ -1874,10 +2043,11 @@ func newInsightJob(insight Insight) InsightJob {
 	}
 }
 
-func newSummarizerJob() SummarizerJob {
+func newSummarizerJob(jobType summarizer.JobType) SummarizerJob {
 	return SummarizerJob{
 		Model:          gorm.Model{},
 		Status:         summarizerapi.SummarizerJobInProgress,
+		JobType:        jobType,
 		FailureMessage: "",
 	}
 }

@@ -2,8 +2,10 @@ package api
 
 import (
 	"github.com/google/uuid"
+	"gitlab.com/keibiengine/keibi-engine/pkg/compliance"
 	"gitlab.com/keibiengine/keibi-engine/pkg/compliance/es"
 	"gitlab.com/keibiengine/keibi-engine/pkg/source"
+	"gitlab.com/keibiengine/keibi-engine/pkg/steampipe"
 )
 
 type BenchmarkAssignment struct {
@@ -154,6 +156,7 @@ type FindingFilters struct {
 	SourceID       []uuid.UUID   `json:"sourceID"`
 	FindingStatus  []es.Status   `json:"findingStatus"`
 	BenchmarkID    []string      `json:"benchmarkID"`
+	PolicyID       []string      `json:"policyID"`
 	Severity       []string      `json:"severity"`
 }
 
@@ -208,4 +211,49 @@ type GetFindingsResponse struct {
 
 type GetFindingsFiltersResponse struct {
 	Filters FindingFilters `json:"filters"`
+}
+
+type Datapoint struct {
+	Time  int64 `json:"time"`
+	Value int64 `json:"value"`
+}
+
+type StatusCount struct {
+	Passed int64 `json:"passed"`
+	Failed int64 `json:"failed"`
+}
+
+type BenchmarkSummary struct {
+	Title               string                 `json:"title"`
+	Description         string                 `json:"description"`
+	PassedFindingsCount int64                  `json:"passedFindingsCount"`
+	FailedFindingsCount int64                  `json:"failedFindingsCount"`
+	Policies            map[string]StatusCount `json:"policies"`
+	Resources           map[string]StatusCount `json:"resources"`
+	CompliancyTrend     []Datapoint            `json:"trend"`
+	Tags                map[string]string      `json:"tags"`
+	Enabled             bool
+}
+
+type GetBenchmarksSummaryResponse struct {
+	Accounts   map[string]StatusCount `json:"accounts"`
+	Benchmarks []BenchmarkSummary     `json:"benchmarks"`
+}
+
+type PolicySummary struct {
+	Title       string                  `json:"title"`
+	Category    string                  `json:"category"`
+	Subcategory string                  `json:"subcategory"`
+	Severity    steampipe.Severity      `json:"severity"`
+	Status      compliance.ResultStatus `json:"status"`
+	CreatedAt   int64                   `json:"createdAt"`
+}
+
+type GetPoliciesSummaryResponse struct {
+	Title         string                            `json:"title"`
+	Description   string                            `json:"description"`
+	StatusSummary map[compliance.ResultStatus]int64 `json:"statusSummary"`
+	PolicySummary PolicySummary                     `json:"policySummary"`
+	Tags          map[string]string                 `json:"tags"`
+	Enabled       bool                              `json:"enabled"`
 }

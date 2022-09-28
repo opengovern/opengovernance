@@ -1,4 +1,4 @@
-package builder
+package resourcebuilder
 
 import (
 	describe "gitlab.com/keibiengine/keibi-engine/pkg/describe/es"

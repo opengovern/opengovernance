@@ -4,6 +4,8 @@ import (
 	"database/sql"
 	"time"
 
+	"gitlab.com/keibiengine/keibi-engine/pkg/summarizer"
+
 	summarizerapi "gitlab.com/keibiengine/keibi-engine/pkg/summarizer/api"
 
 	insightapi "gitlab.com/keibiengine/keibi-engine/pkg/insight/api"
@@ -35,6 +37,7 @@ type Source struct {
 
 type ComplianceReportJob struct {
 	gorm.Model
+	ScheduleJobID   uint
 	SourceID        uuid.UUID // Not the primary key but should be a unique identifier
 	BenchmarkID     string    // Not the primary key but should be a unique identifier
 	ReportCreatedAt int64
@@ -85,6 +88,8 @@ type InsightJob struct {
 
 type SummarizerJob struct {
 	gorm.Model
+	ScheduleJobID  uint
 	Status         summarizerapi.SummarizerJobStatus
+	JobType        summarizer.JobType
 	FailureMessage string
 }

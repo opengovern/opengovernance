@@ -1,10 +1,11 @@
-package builder
+package resourcebuilder
 
 import (
 	"context"
 	"encoding/json"
 	"fmt"
 
+	"gitlab.com/keibiengine/keibi-engine/pkg/cloudservice"
 	describe "gitlab.com/keibiengine/keibi-engine/pkg/describe/es"
 	"gitlab.com/keibiengine/keibi-engine/pkg/kafka"
 	"gitlab.com/keibiengine/keibi-engine/pkg/keibi-es-sdk"
@@ -12,37 +13,39 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/summarizer/es"
 )
 
-type resourceTypeSummaryBuilder struct {
+type categorySummaryBuilder struct {
 	client            keibi.Client
 	summarizerJobID   uint
-	connectionSummary map[string]es.ConnectionResourceTypeSummary
-	providerSummary   map[string]es.ProviderResourceTypeSummary
+	connectionSummary map[string]es.ConnectionCategorySummary
+	providerSummary   map[string]es.ProviderCategorySummary
 }
 
-func NewResourceTypeSummaryBuilder(client keibi.Client, summarizerJobID uint) *resourceTypeSummaryBuilder {
-	return &resourceTypeSummaryBuilder{
+func NewCategorySummaryBuilder(client keibi.Client, summarizerJobID uint) *categorySummaryBuilder {
+	return &categorySummaryBuilder{
 		client:            client,
 		summarizerJobID:   summarizerJobID,
-		connectionSummary: make(map[string]es.ConnectionResourceTypeSummary),
-		providerSummary:   make(map[string]es.ProviderResourceTypeSummary),
+		connectionSummary: make(map[string]es.ConnectionCategorySummary),
+		providerSummary:   make(map[string]es.ProviderCategorySummary),
 	}
 }
 
-func (b *resourceTypeSummaryBuilder) Process(resource describe.LookupResource) {
-	key := string(resource.SourceID) + "---" + resource.ResourceType
+func (b *categorySummaryBuilder) Process(resource describe.LookupResource) {
+	key := resource.SourceID + "-" + cloudservice.CategoryByResourceType(resource.ResourceType)
 	if _, ok := b.connectionSummary[key]; !ok {
-		b.connectionSummary[key] = es.ConnectionResourceTypeSummary{
+		b.connectionSummary[key] = es.ConnectionCategorySummary{
 			ScheduleJobID:    resource.ScheduleJobID,
 			SourceID:         resource.SourceID,
 			SourceJobID:      resource.SourceJobID,
+			CategoryName:     cloudservice.CategoryByResourceType(resource.ResourceType),
 			ResourceType:     resource.ResourceType,
 			SourceType:       resource.SourceType,
+			DescribedAt:      resource.CreatedAt,
 			ResourceCount:    0,
 			LastDayCount:     nil,
 			LastWeekCount:    nil,
 			LastQuarterCount: nil,
 			LastYearCount:    nil,
-			ReportType:       es.ResourceTypeSummary,
+			ReportType:       es.CategorySummary,
 		}
 	}
 
@@ -50,18 +53,20 @@ func (b *resourceTypeSummaryBuilder) Process(resource describe.LookupResource) {
 	v.ResourceCount++
 	b.connectionSummary[key] = v
 
-	key = string(resource.SourceType) + "---" + resource.ResourceType
+	key = string(resource.SourceType) + "-" + cloudservice.CategoryByResourceType(resource.ResourceType)
 	if _, ok := b.providerSummary[key]; !ok {
-		b.providerSummary[key] = es.ProviderResourceTypeSummary{
+		b.providerSummary[key] = es.ProviderCategorySummary{
 			ScheduleJobID:    resource.ScheduleJobID,
+			CategoryName:     cloudservice.CategoryByResourceType(resource.ResourceType),
 			ResourceType:     resource.ResourceType,
 			SourceType:       resource.SourceType,
+			DescribedAt:      resource.CreatedAt,
 			ResourceCount:    0,
 			LastDayCount:     nil,
 			LastWeekCount:    nil,
 			LastQuarterCount: nil,
 			LastYearCount:    nil,
-			ReportType:       es.ResourceTypeProviderSummary,
+			ReportType:       es.CategoryProviderSummary,
 		}
 	}
 
@@ -70,7 +75,7 @@ func (b *resourceTypeSummaryBuilder) Process(resource describe.LookupResource) {
 	b.providerSummary[key] = v2
 }
 
-func (b *resourceTypeSummaryBuilder) PopulateHistory(lastDayJobID, lastWeekJobID, lastQuarterJobID, lastYearJobID uint) error {
+func (b *categorySummaryBuilder) PopulateHistory(lastDayJobID, lastWeekJobID, lastQuarterJobID, lastYearJobID uint) error {
 	jobIDs := []uint{lastDayJobID, lastWeekJobID, lastQuarterJobID, lastYearJobID}
 	for k, connSummary := range b.connectionSummary {
 		for idx, jid := range jobIDs {
@@ -78,7 +83,7 @@ func (b *resourceTypeSummaryBuilder) PopulateHistory(lastDayJobID, lastWeekJobID
 				continue
 			}
 
-			r, err := b.queryResourceTypeConnectionResourceCount(jid, connSummary.SourceID, connSummary.ResourceType)
+			r, err := b.queryCategoryConnectionResourceCount(jid, connSummary.SourceID, connSummary.CategoryName)
 			if err != nil {
 				return err
 			}
@@ -103,7 +108,7 @@ func (b *resourceTypeSummaryBuilder) PopulateHistory(lastDayJobID, lastWeekJobID
 				continue
 			}
 
-			r, err := b.queryResourceTypeProviderResourceCount(jid, pSummary.SourceType, pSummary.ResourceType)
+			r, err := b.queryCategoryProviderResourceCount(jid, pSummary.SourceType, pSummary.CategoryName)
 			if err != nil {
 				return err
 			}
@@ -124,7 +129,7 @@ func (b *resourceTypeSummaryBuilder) PopulateHistory(lastDayJobID, lastWeekJobID
 	return nil
 }
 
-func (b *resourceTypeSummaryBuilder) Build() []kafka.Doc {
+func (b *categorySummaryBuilder) Build() []kafka.Doc {
 	var docs []kafka.Doc
 	for _, v := range b.connectionSummary {
 		docs = append(docs, v)
@@ -141,31 +146,31 @@ func (b *resourceTypeSummaryBuilder) Build() []kafka.Doc {
 	return docs
 }
 
-type ConnectionResourceTypeResourceCountQueryResponse struct {
-	Hits ConnectionResourceTypeResourceCountQueryHits `json:"hits"`
+type ConnectionCategoryResourceCountQueryResponse struct {
+	Hits ConnectionCategoryResourceCountQueryHits `json:"hits"`
 }
-type ConnectionResourceTypeResourceCountQueryHits struct {
-	Total keibi.SearchTotal                             `json:"total"`
-	Hits  []ConnectionResourceTypeResourceCountQueryHit `json:"hits"`
+type ConnectionCategoryResourceCountQueryHits struct {
+	Total keibi.SearchTotal                         `json:"total"`
+	Hits  []ConnectionCategoryResourceCountQueryHit `json:"hits"`
 }
-type ConnectionResourceTypeResourceCountQueryHit struct {
-	ID      string                           `json:"_id"`
-	Score   float64                          `json:"_score"`
-	Index   string                           `json:"_index"`
-	Type    string                           `json:"_type"`
-	Version int64                            `json:"_version,omitempty"`
-	Source  es.ConnectionResourceTypeSummary `json:"_source"`
-	Sort    []interface{}                    `json:"sort"`
+type ConnectionCategoryResourceCountQueryHit struct {
+	ID      string                       `json:"_id"`
+	Score   float64                      `json:"_score"`
+	Index   string                       `json:"_index"`
+	Type    string                       `json:"_type"`
+	Version int64                        `json:"_version,omitempty"`
+	Source  es.ConnectionCategorySummary `json:"_source"`
+	Sort    []interface{}                `json:"sort"`
 }
 
-func (b *resourceTypeSummaryBuilder) queryResourceTypeConnectionResourceCount(scheduleJobID uint, connectionID string, resourceType string) (int, error) {
+func (b *categorySummaryBuilder) queryCategoryConnectionResourceCount(scheduleJobID uint, connectionID string, category string) (int, error) {
 	res := make(map[string]interface{})
 	var filters []interface{}
 	filters = append(filters, map[string]interface{}{
-		"terms": map[string][]interface{}{"report_type": {es.ResourceTypeSummary + "History"}},
+		"terms": map[string][]interface{}{"report_type": {es.CategorySummary + "History"}},
 	})
 	filters = append(filters, map[string]interface{}{
-		"terms": map[string][]interface{}{"resource_type": {resourceType}},
+		"terms": map[string][]interface{}{"category_name": {category}},
 	})
 	filters = append(filters, map[string]interface{}{
 		"terms": map[string][]interface{}{"schedule_job_id": {scheduleJobID}},
@@ -184,7 +189,7 @@ func (b *resourceTypeSummaryBuilder) queryResourceTypeConnectionResourceCount(sc
 		return 0, err
 	}
 
-	var response ConnectionResourceTypeResourceCountQueryResponse
+	var response ConnectionCategoryResourceCountQueryResponse
 	err = b.client.Search(context.Background(), es.ConnectionSummaryIndex, string(c), &response)
 	if err != nil {
 		return 0, err
@@ -196,14 +201,14 @@ func (b *resourceTypeSummaryBuilder) queryResourceTypeConnectionResourceCount(sc
 	return response.Hits.Hits[0].Source.ResourceCount, nil
 }
 
-type ProviderResourceTypeResourceCountQueryResponse struct {
-	Hits ProviderResourceTypeResourceCountQueryHits `json:"hits"`
+type ProviderCategoryResourceCountQueryResponse struct {
+	Hits ProviderCategoryResourceCountQueryHits `json:"hits"`
 }
-type ProviderResourceTypeResourceCountQueryHits struct {
-	Total keibi.SearchTotal                           `json:"total"`
-	Hits  []ProviderResourceTypeResourceCountQueryHit `json:"hits"`
+type ProviderCategoryResourceCountQueryHits struct {
+	Total keibi.SearchTotal                       `json:"total"`
+	Hits  []ProviderCategoryResourceCountQueryHit `json:"hits"`
 }
-type ProviderResourceTypeResourceCountQueryHit struct {
+type ProviderCategoryResourceCountQueryHit struct {
 	ID      string                     `json:"_id"`
 	Score   float64                    `json:"_score"`
 	Index   string                     `json:"_index"`
@@ -213,14 +218,14 @@ type ProviderResourceTypeResourceCountQueryHit struct {
 	Sort    []interface{}              `json:"sort"`
 }
 
-func (b *resourceTypeSummaryBuilder) queryResourceTypeProviderResourceCount(scheduleJobID uint, provider source.Type, resourceType string) (int, error) {
+func (b *categorySummaryBuilder) queryCategoryProviderResourceCount(scheduleJobID uint, provider source.Type, category string) (int, error) {
 	res := make(map[string]interface{})
 	var filters []interface{}
 	filters = append(filters, map[string]interface{}{
-		"terms": map[string][]interface{}{"report_type": {es.ResourceTypeProviderSummary + "History"}},
+		"terms": map[string][]interface{}{"report_type": {es.CategoryProviderSummary + "History"}},
 	})
 	filters = append(filters, map[string]interface{}{
-		"terms": map[string][]interface{}{"resource_type": {resourceType}},
+		"terms": map[string][]interface{}{"category_name": {category}},
 	})
 	filters = append(filters, map[string]interface{}{
 		"terms": map[string][]interface{}{"schedule_job_id": {scheduleJobID}},
@@ -239,7 +244,7 @@ func (b *resourceTypeSummaryBuilder) queryResourceTypeProviderResourceCount(sche
 		return 0, err
 	}
 
-	var response ProviderResourceTypeResourceCountQueryResponse
+	var response ProviderCategoryResourceCountQueryResponse
 	err = b.client.Search(context.Background(), es.ProviderSummaryIndex, string(c), &response)
 	if err != nil {
 		return 0, err
@@ -251,7 +256,7 @@ func (b *resourceTypeSummaryBuilder) queryResourceTypeProviderResourceCount(sche
 	return response.Hits.Hits[0].Source.ResourceCount, nil
 }
 
-func (b *resourceTypeSummaryBuilder) Cleanup(scheduleJobID uint) error {
+func (b *categorySummaryBuilder) Cleanup(scheduleJobID uint) error {
 	query := map[string]interface{}{
 		"query": map[string]interface{}{
 			"bool": map[string]interface{}{
@@ -265,7 +270,7 @@ func (b *resourceTypeSummaryBuilder) Cleanup(scheduleJobID uint) error {
 				"filter": []map[string]interface{}{
 					{
 						"terms": map[string]interface{}{
-							"report_type": []string{string(es.ResourceTypeSummary), string(es.ResourceTypeProviderSummary)},
+							"report_type": []string{string(es.CategorySummary), string(es.CategoryProviderSummary)},
 						},
 					},
 				},

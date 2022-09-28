@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"time"
 
+	"gitlab.com/keibiengine/keibi-engine/pkg/summarizer"
+
 	summarizerapi "gitlab.com/keibiengine/keibi-engine/pkg/summarizer/api"
 
 	insightapi "gitlab.com/keibiengine/keibi-engine/pkg/insight/api"
@@ -535,6 +537,18 @@ func (db Database) GetLastCompletedSourceComplianceReport(sourceID uuid.UUID) (*
 	return &job, nil
 }
 
+func (db Database) GetComplianceReportJobsByScheduleID(scheduleJobID uint) ([]ComplianceReportJob, error) {
+	var jobs []ComplianceReportJob
+	tx := db.orm.Where("schedule_job_id = ?", scheduleJobID).Find(&jobs)
+	if tx.Error != nil {
+		if tx.Error == gorm.ErrRecordNotFound {
+			return nil, nil
+		}
+		return nil, tx.Error
+	}
+	return jobs, nil
+}
+
 // GetLastCompletedComplianceReportID returns id of last completed compliance report.
 func (db Database) GetLastCompletedComplianceReportID() (uint, error) {
 	var id uint
@@ -792,6 +806,21 @@ func (db Database) UpdateSummarizerJobStatus(job SummarizerJob) error {
 		return tx.Error
 	}
 	return nil
+}
+
+func (db Database) GetSummarizerJobByScheduleID(scheduleJobID uint, jobType summarizer.JobType) (*SummarizerJob, error) {
+	var job SummarizerJob
+	tx := db.orm.Model(&SummarizerJob{}).
+		Where("schedule_job_id = ?", scheduleJobID).
+		Where("job_type = ?", jobType).
+		First(&job)
+	if tx.Error != nil {
+		if tx.Error == gorm.ErrRecordNotFound {
+			return nil, nil
+		}
+		return nil, tx.Error
+	}
+	return &job, nil
 }
 
 func (db Database) AddScheduleJob(job *ScheduleJob) error {

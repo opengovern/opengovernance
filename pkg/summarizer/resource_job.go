@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"time"
 
-	"gitlab.com/keibiengine/keibi-engine/pkg/summarizer/builder"
+	"gitlab.com/keibiengine/keibi-engine/pkg/summarizer/resourcebuilder"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/summarizer/es"
 
@@ -22,14 +22,14 @@ import (
 	"gopkg.in/Shopify/sarama.v1"
 )
 
-var DoSummarizerJobsCount = promauto.NewCounterVec(prometheus.CounterOpts{
+var DoResourceSummarizerJobsCount = promauto.NewCounterVec(prometheus.CounterOpts{
 	Namespace: "keibi",
 	Subsystem: "summarizer_worker",
 	Name:      "do_summarizer_jobs_total",
 	Help:      "Count of done summarizer jobs in summarizer-worker service",
 }, []string{"queryid", "status"})
 
-var DoSummarizerJobsDuration = promauto.NewHistogramVec(prometheus.HistogramOpts{
+var DoResourceSummarizerJobsDuration = promauto.NewHistogramVec(prometheus.HistogramOpts{
 	Namespace: "keibi",
 	Subsystem: "summarizer_worker",
 	Name:      "do_summarizer_jobs_duration_seconds",
@@ -37,7 +37,7 @@ var DoSummarizerJobsDuration = promauto.NewHistogramVec(prometheus.HistogramOpts
 	Buckets:   []float64{5, 60, 300, 600, 1800, 3600, 7200, 36000},
 }, []string{"queryid", "status"})
 
-type Job struct {
+type ResourceJob struct {
 	JobID         uint
 	ScheduleJobID uint
 
@@ -45,15 +45,19 @@ type Job struct {
 	LastWeekScheduleJobID    uint
 	LastQuarterScheduleJobID uint
 	LastYearScheduleJobID    uint
+
+	JobType JobType
 }
 
-type JobResult struct {
+type ResourceJobResult struct {
 	JobID  uint
 	Status api.SummarizerJobStatus
 	Error  string
+
+	JobType JobType
 }
 
-func (j Job) Do(client keibi.Client, producer sarama.SyncProducer, topic string, logger *zap.Logger) (r JobResult) {
+func (j ResourceJob) Do(client keibi.Client, producer sarama.SyncProducer, topic string, logger *zap.Logger) (r ResourceJobResult) {
 	logger.Info("Starting summarizing", zap.Int("jobID", int(j.JobID)))
 	startTime := time.Now().Unix()
 	defer func() {
@@ -62,12 +66,13 @@ func (j Job) Do(client keibi.Client, producer sarama.SyncProducer, topic string,
 			fmt.Println("paniced with error:", err)
 			fmt.Println(errors.Wrap(err, 2).ErrorStack())
 
-			DoSummarizerJobsDuration.WithLabelValues(strconv.Itoa(int(j.JobID)), "failure").Observe(float64(time.Now().Unix() - startTime))
-			DoSummarizerJobsCount.WithLabelValues(strconv.Itoa(int(j.JobID)), "failure").Inc()
-			r = JobResult{
-				JobID:  j.JobID,
-				Status: api.SummarizerJobFailed,
-				Error:  fmt.Sprintf("paniced: %s", err),
+			DoResourceSummarizerJobsDuration.WithLabelValues(strconv.Itoa(int(j.JobID)), "failure").Observe(float64(time.Now().Unix() - startTime))
+			DoResourceSummarizerJobsCount.WithLabelValues(strconv.Itoa(int(j.JobID)), "failure").Inc()
+			r = ResourceJobResult{
+				JobID:   j.JobID,
+				Status:  api.SummarizerJobFailed,
+				Error:   fmt.Sprintf("paniced: %s", err),
+				JobType: JobType_ResourceSummarizer,
 			}
 		}
 	}()
@@ -80,8 +85,8 @@ func (j Job) Do(client keibi.Client, producer sarama.SyncProducer, topic string,
 
 	fail := func(err error) {
 		logger.Info("failed due to", zap.Error(err))
-		DoSummarizerJobsDuration.WithLabelValues(strconv.Itoa(int(j.JobID)), "failure").Observe(float64(time.Now().Unix() - startTime))
-		DoSummarizerJobsCount.WithLabelValues(strconv.Itoa(int(j.JobID)), "failure").Inc()
+		DoResourceSummarizerJobsDuration.WithLabelValues(strconv.Itoa(int(j.JobID)), "failure").Observe(float64(time.Now().Unix() - startTime))
+		DoResourceSummarizerJobsCount.WithLabelValues(strconv.Itoa(int(j.JobID)), "failure").Inc()
 		status = api.SummarizerJobFailed
 		if firstErr == nil {
 			firstErr = err
@@ -89,14 +94,14 @@ func (j Job) Do(client keibi.Client, producer sarama.SyncProducer, topic string,
 	}
 
 	var msgs []kafka.Doc
-	builders := []builder.Builder{
-		builder.NewResourceSummaryBuilder(client, j.JobID),
-		builder.NewTrendSummaryBuilder(client, j.JobID),
-		builder.NewLocationSummaryBuilder(client, j.JobID),
-		builder.NewResourceTypeSummaryBuilder(client, j.JobID),
-		builder.NewServiceSummaryBuilder(client, j.JobID),
-		builder.NewCategorySummaryBuilder(client, j.JobID),
-		builder.NewServiceLocationSummaryBuilder(client, j.JobID),
+	builders := []resourcebuilder.Builder{
+		resourcebuilder.NewResourceSummaryBuilder(client, j.JobID),
+		resourcebuilder.NewTrendSummaryBuilder(client, j.JobID),
+		resourcebuilder.NewLocationSummaryBuilder(client, j.JobID),
+		resourcebuilder.NewResourceTypeSummaryBuilder(client, j.JobID),
+		resourcebuilder.NewServiceSummaryBuilder(client, j.JobID),
+		resourcebuilder.NewCategorySummaryBuilder(client, j.JobID),
+		resourcebuilder.NewServiceLocationSummaryBuilder(client, j.JobID),
 	}
 	var searchAfter []interface{}
 	for {
@@ -151,13 +156,14 @@ func (j Job) Do(client keibi.Client, producer sarama.SyncProducer, topic string,
 		errMsg = firstErr.Error()
 	}
 	if status == api.SummarizerJobSucceeded {
-		DoSummarizerJobsDuration.WithLabelValues(strconv.Itoa(int(j.JobID)), "successful").Observe(float64(time.Now().Unix() - startTime))
-		DoSummarizerJobsCount.WithLabelValues(strconv.Itoa(int(j.JobID)), "successful").Inc()
+		DoResourceSummarizerJobsDuration.WithLabelValues(strconv.Itoa(int(j.JobID)), "successful").Observe(float64(time.Now().Unix() - startTime))
+		DoResourceSummarizerJobsCount.WithLabelValues(strconv.Itoa(int(j.JobID)), "successful").Inc()
 	}
 
-	return JobResult{
-		JobID:  j.JobID,
-		Status: status,
-		Error:  errMsg,
+	return ResourceJobResult{
+		JobID:   j.JobID,
+		Status:  status,
+		Error:   errMsg,
+		JobType: JobType_ResourceSummarizer,
 	}
 }

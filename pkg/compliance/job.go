@@ -70,13 +70,14 @@ const (
 )
 
 type Job struct {
-	JobID       uint
-	SourceID    uuid.UUID
-	BenchmarkID string
-	SourceType  source.Type
-	ConfigReg   string
-	DescribedAt int64
-	logger      *zap.Logger
+	JobID         uint
+	ScheduleJobID uint
+	SourceID      uuid.UUID
+	BenchmarkID   string
+	SourceType    source.Type
+	ConfigReg     string
+	DescribedAt   int64
+	logger        *zap.Logger
 }
 
 type JobResult struct {
@@ -329,6 +330,7 @@ func (j *Job) ExtractFindings(root Group, evaluatedAt int64) []es.Finding {
 
 			findings = append(findings, es.Finding{
 				ComplianceJobID:        j.JobID,
+				ScheduleJobID:          j.ScheduleJobID,
 				ResourceID:             r.Resource,
 				ResourceName:           resourceName,
 				ResourceType:           resourceType,

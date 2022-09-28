@@ -34,8 +34,12 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	v1 := e.Group("/api/v1")
 
 	// finding dashboard
-	v1.GET("/findings", h.GetFindings)
-	v1.GET("/findings/filters", h.GetFindingFilters)
+	v1.POST("/findings", h.GetFindings)
+	v1.POST("/findings/filters", h.GetFindingFilters)
+
+	// benchmark dashboard
+	v1.GET("/benchmarks/summary", h.GetBenchmarksSummary)
+	v1.GET("/policy/summary/:benchmark_id", h.GetPolicySummary)
 
 	// benchmark details
 	v1.GET("/benchmarks", h.GetBenchmarks)
@@ -84,7 +88,7 @@ func bindValidate(ctx echo.Context, i interface{}) error {
 
 // GetFindingFilters godoc
 // @Summary Returns all findings with respect to filters
-// @Tags    benchmarks
+// @Tags    compliance
 // @Accept  json
 // @Produce json
 // @Param   request body     api.GetFindingsRequest true "Request Body"
@@ -98,13 +102,16 @@ func (h *HttpHandler) GetFindingFilters(ctx echo.Context) error {
 
 	var response api.GetFindingsFiltersResponse
 	res, err := es.FindingsFiltersQuery(h.client, req.Filters.Provider, req.Filters.ResourceTypeID, req.Filters.SourceID,
-		req.Filters.FindingStatus, req.Filters.BenchmarkID, req.Filters.Severity)
+		req.Filters.FindingStatus, req.Filters.BenchmarkID, req.Filters.PolicyID, req.Filters.Severity)
 	if err != nil {
 		return err
 	}
 
 	for _, item := range res.Aggregations.BenchmarkIDFilter.Buckets {
 		response.Filters.BenchmarkID = append(response.Filters.BenchmarkID, item.Key)
+	}
+	for _, item := range res.Aggregations.PolicyIDFilter.Buckets {
+		response.Filters.PolicyID = append(response.Filters.PolicyID, item.Key)
 	}
 	for _, item := range res.Aggregations.ResourceTypeFilter.Buckets {
 		response.Filters.ResourceTypeID = append(response.Filters.ResourceTypeID, item.Key)
@@ -131,7 +138,7 @@ func (h *HttpHandler) GetFindingFilters(ctx echo.Context) error {
 
 // GetFindings godoc
 // @Summary Returns all findings with respect to filters
-// @Tags    benchmarks
+// @Tags    compliance
 // @Accept  json
 // @Produce json
 // @Param   request body     api.GetFindingsRequest true "Request Body"
@@ -153,7 +160,7 @@ func (h *HttpHandler) GetFindings(ctx echo.Context) error {
 	}
 
 	res, err := es.FindingsQuery(h.client, req.Filters.Provider, req.Filters.ResourceTypeID, req.Filters.SourceID,
-		req.Filters.FindingStatus, req.Filters.BenchmarkID, req.Filters.Severity,
+		req.Filters.FindingStatus, req.Filters.BenchmarkID, req.Filters.PolicyID, req.Filters.Severity,
 		sorts, lastIdx, req.Page.Size)
 	if err != nil {
 		return err
@@ -162,6 +169,32 @@ func (h *HttpHandler) GetFindings(ctx echo.Context) error {
 		response.Findings = append(response.Findings, h.Source)
 	}
 	response.TotalCount = res.Hits.Total.Value
+	return ctx.JSON(http.StatusOK, response)
+}
+
+// GetBenchmarksSummary godoc
+// @Summary Get benchmark summary
+// @Tags    compliance
+// @Accept  json
+// @Produce json
+// @Success 200     {object} api.GetBenchmarksSummaryResponse
+// @Router  /compliance/api/v1/benchmarks/summary [get]
+func (h *HttpHandler) GetBenchmarksSummary(ctx echo.Context) error {
+	var response api.GetBenchmarksSummaryResponse
+
+	return ctx.JSON(http.StatusOK, response)
+}
+
+// GetPolicySummary godoc
+// @Summary Get benchmark summary
+// @Tags    compliance
+// @Accept  json
+// @Produce json
+// @Param   benchmarkID path     string true "BenchmarkID"
+// @Success 200     {object} api.GetFindingsResponse
+// @Router  /compliance/api/v1/policy/summary/{benchmark_id} [get]
+func (h *HttpHandler) GetPolicySummary(ctx echo.Context) error {
+	var response api.GetFindingsResponse
 	return ctx.JSON(http.StatusOK, response)
 }
 
