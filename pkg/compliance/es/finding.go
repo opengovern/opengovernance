@@ -26,6 +26,7 @@ const (
 )
 
 type Finding struct {
+	ID                     string      `json:"ID"`
 	ComplianceJobID        uint        `json:"complianceJobID"`
 	ScheduleJobID          uint        `json:"scheduleJobID"`
 	ResourceID             string      `json:"resourceID"`

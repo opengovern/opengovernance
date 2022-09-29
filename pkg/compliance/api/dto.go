@@ -2,10 +2,9 @@ package api
 
 import (
 	"github.com/google/uuid"
-	"gitlab.com/keibiengine/keibi-engine/pkg/compliance"
 	"gitlab.com/keibiengine/keibi-engine/pkg/compliance/es"
 	"gitlab.com/keibiengine/keibi-engine/pkg/source"
-	"gitlab.com/keibiengine/keibi-engine/pkg/steampipe"
+	"gitlab.com/keibiengine/keibi-engine/pkg/types"
 )
 
 type BenchmarkAssignment struct {
@@ -15,8 +14,8 @@ type BenchmarkAssignment struct {
 }
 
 type BenchmarkAssignedSource struct {
-	SourceId   string `json:"sourceId"`
-	AssignedAt int64  `json:"assignedAt"`
+	Connection types.FullConnection `json:"connection"`
+	AssignedAt int64                `json:"assignedAt"`
 }
 
 type BenchmarkState string
@@ -153,11 +152,21 @@ type ServiceCompliancyResponse struct {
 type FindingFilters struct {
 	Provider       []source.Type `json:"provider"`
 	ResourceTypeID []string      `json:"resourceTypeID"`
-	SourceID       []uuid.UUID   `json:"sourceID"`
+	ConnectionID   []uuid.UUID   `json:"connectionID"`
 	FindingStatus  []es.Status   `json:"findingStatus"`
 	BenchmarkID    []string      `json:"benchmarkID"`
 	PolicyID       []string      `json:"policyID"`
 	Severity       []string      `json:"severity"`
+}
+
+type FindingResponseFilters struct {
+	Provider      []source.Type            `json:"provider"`
+	ResourceType  []types.FullResourceType `json:"resourceTypeID"`
+	Connections   []types.FullConnection   `json:"connections"`
+	FindingStatus []types.ComplianceResult `json:"findingStatus"`
+	Benchmarks    []types.FullBenchmark    `json:"benchmarks"`
+	Policies      []types.FullPolicy       `json:"policies"`
+	Severity      []string                 `json:"severity"`
 }
 
 type DirectionType string
@@ -210,7 +219,7 @@ type GetFindingsResponse struct {
 }
 
 type GetFindingsFiltersResponse struct {
-	Filters FindingFilters `json:"filters"`
+	Filters FindingResponseFilters `json:"filters"`
 }
 
 type Datapoint struct {
@@ -223,37 +232,85 @@ type StatusCount struct {
 	Failed int64 `json:"failed"`
 }
 
+type BenchmarkSummaryPolicySummary struct {
+	Policy       types.FullPolicy                   `json:"policy"`
+	ShortSummary types.ComplianceResultShortSummary `json:"shortSummary"`
+}
+
+type BenchmarkSummaryResourceSummary struct {
+	Resource     types.FullResource                 `json:"resource"`
+	ShortSummary types.ComplianceResultShortSummary `json:"shortSummary"`
+}
+
 type BenchmarkSummary struct {
-	Title               string                 `json:"title"`
-	Description         string                 `json:"description"`
-	PassedFindingsCount int64                  `json:"passedFindingsCount"`
-	FailedFindingsCount int64                  `json:"failedFindingsCount"`
-	Policies            map[string]StatusCount `json:"policies"`
-	Resources           map[string]StatusCount `json:"resources"`
-	CompliancyTrend     []Datapoint            `json:"trend"`
-	Tags                map[string]string      `json:"tags"`
-	Enabled             bool
+	Title                    string                             `json:"title"`
+	Description              string                             `json:"description"`
+	ShortSummary             types.ComplianceResultShortSummary `json:"shortSummary"`
+	Policies                 []BenchmarkSummaryPolicySummary    `json:"policies"`
+	Resources                []BenchmarkSummaryResourceSummary  `json:"resources"`
+	CompliancyTrend          []Datapoint                        `json:"trend"`
+	AssignedConnectionsCount int64                              `json:"assignedConnectionsCount"`
+	TotalConnectionResources int64                              `json:"totalConnectionResources"`
+	Tags                     map[string]string                  `json:"tags"`
+	Enabled                  bool                               `json:"enabled"`
+}
+
+type BenchmarkSummaryConnectionSummary struct {
+	Connection   types.FullConnection               `json:"connection"`
+	ShortSummary types.ComplianceResultShortSummary `json:"shortSummary"`
 }
 
 type GetBenchmarksSummaryResponse struct {
-	Accounts   map[string]StatusCount `json:"accounts"`
-	Benchmarks []BenchmarkSummary     `json:"benchmarks"`
+	ShortSummary types.ComplianceResultShortSummary  `json:"shortSummary"`
+	TotalAssets  int                                 `json:"totalAssets"`
+	Connections  []BenchmarkSummaryConnectionSummary `json:"connections"`
+	Benchmarks   []BenchmarkSummary                  `json:"benchmarks"`
 }
 
 type PolicySummary struct {
-	Title       string                  `json:"title"`
-	Category    string                  `json:"category"`
-	Subcategory string                  `json:"subcategory"`
-	Severity    steampipe.Severity      `json:"severity"`
-	Status      compliance.ResultStatus `json:"status"`
-	CreatedAt   int64                   `json:"createdAt"`
+	Title       string             `json:"title"`
+	Category    string             `json:"category"`
+	Subcategory string             `json:"subcategory"`
+	Severity    types.Severity     `json:"severity"`
+	Status      types.PolicyStatus `json:"status"`
+	CreatedAt   int64              `json:"createdAt"`
 }
 
 type GetPoliciesSummaryResponse struct {
-	Title         string                            `json:"title"`
-	Description   string                            `json:"description"`
-	StatusSummary map[compliance.ResultStatus]int64 `json:"statusSummary"`
-	PolicySummary PolicySummary                     `json:"policySummary"`
-	Tags          map[string]string                 `json:"tags"`
-	Enabled       bool                              `json:"enabled"`
+	BenchmarkTitle       string                        `json:"title"`
+	BenchmarkDescription string                        `json:"description"`
+	ComplianceSummary    types.ComplianceResultSummary `json:"complianceSummary"`
+	PolicySummary        []PolicySummary               `json:"policySummary"`
+	Tags                 map[string]string             `json:"tags"`
+	Enabled              bool                          `json:"enabled"`
+}
+
+type GetFindingsMetricsResponse struct {
+	TotalFindings   types.HistoricalCount `json:"totalFindings"`
+	FailedFindings  types.HistoricalCount `json:"failedFindings"`
+	PassedFindings  types.HistoricalCount `json:"passedFindings"`
+	UnknownFindings types.HistoricalCount `json:"unknownFindings"`
+}
+
+type GetFindingDetailsResponse struct {
+	Connection        types.FullConnection   `json:"connection"`
+	Resource          types.FullResource     `json:"resource"`
+	ResourceType      types.FullResourceType `json:"resourceType"`
+	State             types.ComplianceResult `json:"state"`
+	CreatedAt         int64                  `json:"createdAt"`
+	PolicyTags        map[string]string      `json:"policyTags"`
+	PolicyDescription string                 `json:"policyDescription"`
+	Reason            string                 `json:"reason"`
+}
+
+type InsightRecord struct {
+	Name  string `json:"name"`
+	Value int64  `json:"value"`
+}
+
+type GetBenchmarkInsightResponse struct {
+	TopResourceType []InsightRecord `json:"topResourceType"`
+	TopCategory     []InsightRecord `json:"topCategory"`
+	TopAccount      []InsightRecord `json:"topAccount"`
+	Severity        []InsightRecord `json:"severity"`
 }

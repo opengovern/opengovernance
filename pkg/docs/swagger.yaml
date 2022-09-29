@@ -1,43 +1,4 @@
 definitions:
-  ..Finding:
-    properties:
-      benchmarkID:
-        type: string
-      category:
-        type: string
-      complianceJobID:
-        type: integer
-      connectionProviderID:
-        type: string
-      connectionProviderName:
-        type: string
-      describedAt:
-        type: integer
-      evaluatedAt:
-        type: integer
-      policyID:
-        type: string
-      policySeverity:
-        type: string
-      reason:
-        type: string
-      resourceID:
-        type: string
-      resourceLocation:
-        type: string
-      resourceName:
-        type: string
-      resourceType:
-        type: string
-      serviceName:
-        type: string
-      sourceID:
-        type: string
-      sourceType:
-        type: string
-      status:
-        type: string
-    type: object
   api.AWSResource:
     properties:
       attributes:
@@ -60,15 +21,6 @@ definitions:
         type: string
       resourceTypeName:
         type: string
-    type: object
-  api.AccountCompliancyResponse:
-    properties:
-      sourceID:
-        type: string
-      totalCompliant:
-        type: integer
-      totalResources:
-        type: integer
     type: object
   api.AccountResourceCountResponse:
     properties:
@@ -139,36 +91,12 @@ definitions:
       resourceTypeName:
         type: string
     type: object
-  api.Benchmark:
-    properties:
-      description:
-        type: string
-      id:
-        type: string
-      provider:
-        type: string
-      state:
-        type: string
-      tags:
-        additionalProperties:
-          type: string
-        type: object
-      title:
-        type: string
-    type: object
-  api.BenchmarkAccountComplianceResponse:
-    properties:
-      totalCompliantAccounts:
-        type: integer
-      totalNonCompliantAccounts:
-        type: integer
-    type: object
   api.BenchmarkAssignedSource:
     properties:
       assignedAt:
         type: integer
-      sourceId:
-        type: string
+      connection:
+        $ref: '#/definitions/types.FullConnection'
     type: object
   api.BenchmarkAssignment:
     properties:
@@ -179,12 +107,57 @@ definitions:
       sourceId:
         type: string
     type: object
-  api.BenchmarkScoreResponse:
+  api.BenchmarkSummary:
     properties:
-      benchmarkID:
-        type: string
-      nonCompliantCount:
+      assignedConnectionsCount:
         type: integer
+      description:
+        type: string
+      enabled:
+        type: boolean
+      policies:
+        items:
+          $ref: '#/definitions/api.BenchmarkSummaryPolicySummary'
+        type: array
+      resources:
+        items:
+          $ref: '#/definitions/api.BenchmarkSummaryResourceSummary'
+        type: array
+      shortSummary:
+        $ref: '#/definitions/types.ComplianceResultShortSummary'
+      tags:
+        additionalProperties:
+          type: string
+        type: object
+      title:
+        type: string
+      totalConnectionResources:
+        type: integer
+      trend:
+        items:
+          $ref: '#/definitions/api.Datapoint'
+        type: array
+    type: object
+  api.BenchmarkSummaryConnectionSummary:
+    properties:
+      connection:
+        $ref: '#/definitions/types.FullConnection'
+      shortSummary:
+        $ref: '#/definitions/types.ComplianceResultShortSummary'
+    type: object
+  api.BenchmarkSummaryPolicySummary:
+    properties:
+      policy:
+        $ref: '#/definitions/types.FullPolicy'
+      shortSummary:
+        $ref: '#/definitions/types.ComplianceResultShortSummary'
+    type: object
+  api.BenchmarkSummaryResourceSummary:
+    properties:
+      resource:
+        $ref: '#/definitions/types.FullResource'
+      shortSummary:
+        $ref: '#/definitions/types.ComplianceResultShortSummary'
     type: object
   api.CategoriesResponse:
     properties:
@@ -227,15 +200,6 @@ definitions:
         type: string
       updatedAt:
         type: string
-    type: object
-  api.ComplianceTrendDataPoint:
-    properties:
-      compliant:
-        type: integer
-      timestamp:
-        type: integer
-      totalResources:
-        type: integer
     type: object
   api.ConnectionFull:
     properties:
@@ -282,6 +246,13 @@ definitions:
     properties:
       id:
         type: string
+    type: object
+  api.Datapoint:
+    properties:
+      time:
+        type: integer
+      value:
+        type: integer
     type: object
   api.DescribeResource:
     properties:
@@ -378,7 +349,15 @@ definitions:
         items:
           type: string
         type: array
+      connectionID:
+        items:
+          type: string
+        type: array
       findingStatus:
+        items:
+          type: string
+        type: array
+      policyID:
         items:
           type: string
         type: array
@@ -394,7 +373,34 @@ definitions:
         items:
           type: string
         type: array
-      sourceID:
+    type: object
+  api.FindingResponseFilters:
+    properties:
+      benchmarks:
+        items:
+          $ref: '#/definitions/types.FullBenchmark'
+        type: array
+      connections:
+        items:
+          $ref: '#/definitions/types.FullConnection'
+        type: array
+      findingStatus:
+        items:
+          type: string
+        type: array
+      policies:
+        items:
+          $ref: '#/definitions/types.FullPolicy'
+        type: array
+      provider:
+        items:
+          type: string
+        type: array
+      resourceTypeID:
+        items:
+          $ref: '#/definitions/types.FullResourceType'
+        type: array
+      severity:
         items:
           type: string
         type: array
@@ -444,14 +450,39 @@ definitions:
       totalCount:
         type: integer
     type: object
-  api.GetBenchmarkTag:
+  api.GetBenchmarkInsightResponse:
     properties:
-      count:
+      severity:
+        items:
+          $ref: '#/definitions/api.InsightRecord'
+        type: array
+      topAccount:
+        items:
+          $ref: '#/definitions/api.InsightRecord'
+        type: array
+      topCategory:
+        items:
+          $ref: '#/definitions/api.InsightRecord'
+        type: array
+      topResourceType:
+        items:
+          $ref: '#/definitions/api.InsightRecord'
+        type: array
+    type: object
+  api.GetBenchmarksSummaryResponse:
+    properties:
+      benchmarks:
+        items:
+          $ref: '#/definitions/api.BenchmarkSummary'
+        type: array
+      connections:
+        items:
+          $ref: '#/definitions/api.BenchmarkSummaryConnectionSummary'
+        type: array
+      shortSummary:
+        $ref: '#/definitions/types.ComplianceResultShortSummary'
+      totalAssets:
         type: integer
-      key:
-        type: string
-      value:
-        type: string
     type: object
   api.GetFiltersRequest:
     properties:
@@ -470,17 +501,49 @@ definitions:
         $ref: '#/definitions/api.ResourceFiltersResponse'
         description: search filters
     type: object
+  api.GetFindingDetailsResponse:
+    properties:
+      connection:
+        $ref: '#/definitions/types.FullConnection'
+      createdAt:
+        type: integer
+      policyDescription:
+        type: string
+      policyTags:
+        additionalProperties:
+          type: string
+        type: object
+      reason:
+        type: string
+      resource:
+        $ref: '#/definitions/types.FullResource'
+      resourceType:
+        $ref: '#/definitions/types.FullResourceType'
+      state:
+        type: string
+    type: object
   api.GetFindingsFiltersResponse:
     properties:
       filters:
-        $ref: '#/definitions/api.FindingFilters'
+        $ref: '#/definitions/api.FindingResponseFilters'
+    type: object
+  api.GetFindingsMetricsResponse:
+    properties:
+      failedFindings:
+        $ref: '#/definitions/types.HistoricalCount'
+      passedFindings:
+        $ref: '#/definitions/types.HistoricalCount'
+      totalFindings:
+        $ref: '#/definitions/types.HistoricalCount'
+      unknownFindings:
+        $ref: '#/definitions/types.HistoricalCount'
     type: object
   api.GetFindingsRequest:
     properties:
       filters:
         $ref: '#/definitions/api.FindingFilters'
       page:
-        $ref: '#/definitions/api.Page'
+        $ref: '#/definitions/gitlab.com_keibiengine_keibi-engine_pkg_compliance_api.Page'
       sorts:
         items:
           $ref: '#/definitions/api.FindingSortItem'
@@ -492,7 +555,7 @@ definitions:
     properties:
       findings:
         items:
-          $ref: '#/definitions/..Finding'
+          $ref: '#/definitions/es.Finding'
         type: array
       totalCount:
         type: integer
@@ -514,7 +577,7 @@ definitions:
         $ref: '#/definitions/api.Filters'
         description: search filters
       page:
-        $ref: '#/definitions/api.Page'
+        $ref: '#/definitions/gitlab.com_keibiengine_keibi-engine_pkg_inventory_api.Page'
       query:
         description: search query
         type: string
@@ -557,6 +620,13 @@ definitions:
       query:
         type: string
       smartQueryID:
+        type: integer
+    type: object
+  api.InsightRecord:
+    properties:
+      name:
+        type: string
+      value:
         type: integer
     type: object
   api.InviteItem:
@@ -613,44 +683,6 @@ definitions:
         type: string
       value:
         type: integer
-    type: object
-  api.Page:
-    properties:
-      "no":
-        type: integer
-      size:
-        type: integer
-    type: object
-  api.Policy:
-    properties:
-      category:
-        type: string
-      commandLineRemedation:
-        type: string
-      description:
-        type: string
-      id:
-        type: string
-      manualRemedation:
-        type: string
-      manualVerification:
-        type: string
-      provider:
-        type: string
-      queryToRun:
-        type: string
-      section:
-        type: string
-      severity:
-        type: string
-      subcategory:
-        type: string
-      tags:
-        additionalProperties:
-          type: string
-        type: object
-      title:
-        type: string
     type: object
   api.Provider:
     properties:
@@ -831,69 +863,6 @@ definitions:
       resourceType:
         type: string
     type: object
-  api.ResultCompliancy:
-    properties:
-      category:
-        type: string
-      id:
-        type: string
-      provider:
-        type: string
-      resourcesWithIssue:
-        type: integer
-      section:
-        type: string
-      severity:
-        type: string
-      status:
-        enum:
-        - passed
-        - failed
-        type: string
-      subcategory:
-        type: string
-      title:
-        type: string
-      totalResources:
-        type: integer
-    type: object
-  api.ResultPolicy:
-    properties:
-      category:
-        type: string
-      createdAt:
-        type: integer
-      describedAt:
-        type: integer
-      id:
-        type: string
-      provider:
-        type: string
-      section:
-        type: string
-      severity:
-        type: string
-      status:
-        enum:
-        - passed
-        - failed
-        type: string
-      subcategory:
-        type: string
-      title:
-        type: string
-    type: object
-  api.ResultPolicyResourceSummary:
-    properties:
-      compliantResourceCount:
-        type: integer
-      nonCompliantResourceCount:
-        type: integer
-      resourcesByLocation:
-        additionalProperties:
-          type: integer
-        type: object
-    type: object
   api.RoleBinding:
     properties:
       assignedAt:
@@ -906,7 +875,7 @@ definitions:
   api.RunQueryRequest:
     properties:
       page:
-        $ref: '#/definitions/api.Page'
+        $ref: '#/definitions/gitlab.com_keibiengine_keibi-engine_pkg_inventory_api.Page'
       sorts:
         description: 'NOTE: we don''t support multi-field sort for now, if sort is
           empty, results would be sorted by first column'
@@ -934,15 +903,6 @@ definitions:
         type: array
       title:
         type: string
-    type: object
-  api.ServiceCompliancyResponse:
-    properties:
-      serviceName:
-        type: string
-      totalCompliant:
-        type: integer
-      totalResources:
-        type: integer
     type: object
   api.ServiceDistributionItem:
     properties:
@@ -1149,21 +1109,10 @@ definitions:
       connector_type:
         type: string
     type: object
-  gitlab.com_keibiengine_keibi-engine_pkg_compliance.SummaryStatus:
+  es.Finding:
     properties:
-      alarm:
-        type: integer
-      error:
-        type: integer
-      info:
-        type: integer
-      ok:
-        type: integer
-      skip:
-        type: integer
-    type: object
-  gitlab.com_keibiengine_keibi-engine_pkg_compliance_es.Finding:
-    properties:
+      ID:
+        type: string
       benchmarkID:
         type: string
       category:
@@ -1192,6 +1141,8 @@ definitions:
         type: string
       resourceType:
         type: string
+      scheduleJobID:
+        type: integer
       serviceName:
         type: string
       sourceID:
@@ -1200,6 +1151,13 @@ definitions:
         type: string
       status:
         type: string
+    type: object
+  gitlab.com_keibiengine_keibi-engine_pkg_compliance_api.Page:
+    properties:
+      "no":
+        type: integer
+      size:
+        type: integer
     type: object
   gitlab.com_keibiengine_keibi-engine_pkg_describe_api.Source:
     properties:
@@ -1213,6 +1171,13 @@ definitions:
         type: string
       type:
         type: string
+    type: object
+  gitlab.com_keibiengine_keibi-engine_pkg_inventory_api.Page:
+    properties:
+      "no":
+        type: integer
+      size:
+        type: integer
     type: object
   gitlab.com_keibiengine_keibi-engine_pkg_onboard_api.Source:
     properties:
@@ -1232,6 +1197,61 @@ definitions:
         type: string
       type:
         type: string
+    type: object
+  types.ComplianceResultShortSummary:
+    properties:
+      failed:
+        type: integer
+      passed:
+        type: integer
+    type: object
+  types.FullBenchmark:
+    properties:
+      id:
+        type: string
+      title:
+        type: string
+    type: object
+  types.FullConnection:
+    properties:
+      id:
+        type: string
+      providerID:
+        type: string
+      providerName:
+        type: string
+    type: object
+  types.FullPolicy:
+    properties:
+      id:
+        type: string
+      title:
+        type: string
+    type: object
+  types.FullResource:
+    properties:
+      id:
+        type: string
+      name:
+        type: string
+    type: object
+  types.FullResourceType:
+    properties:
+      ID:
+        type: string
+      name:
+        type: string
+    type: object
+  types.HistoricalCount:
+    properties:
+      lastDayValue:
+        type: integer
+      lastMonthValue:
+        type: integer
+      lastQuarterValue:
+        type: integer
+      lastYearValue:
+        type: integer
     type: object
 host: dev-cluster.keibi.io
 info:
@@ -1337,30 +1357,14 @@ paths:
       summary: Get all the user RoleBindings for the given workspace.
       tags:
       - auth
-  /benchmarks/compliancy/{provider}/top/accounts:
+  /benchmarks/{benchmark_id}/insight:
     get:
       consumes:
       - application/json
       parameters:
-      - description: Count
-        in: query
-        name: count
-        required: true
-        type: integer
-      - description: Order
-        enum:
-        - asc
-        - desc
-        in: query
-        name: order
-        required: true
-        type: string
-      - description: Provider
-        enum:
-        - AWS
-        - Azure
+      - description: BenchmarkID
         in: path
-        name: provider
+        name: benchmark_id
         required: true
         type: string
       produces:
@@ -1369,80 +1373,10 @@ paths:
         "200":
           description: OK
           schema:
-            items:
-              $ref: '#/definitions/api.AccountCompliancyResponse'
-            type: array
-      summary: Return top accounts by benchmark compliancy
+            $ref: '#/definitions/api.GetBenchmarkInsightResponse'
+      summary: Returns insight of a specific benchmark
       tags:
-      - provider_dashboard
-  /benchmarks/compliancy/{provider}/top/services:
-    get:
-      consumes:
-      - application/json
-      parameters:
-      - description: Count
-        in: query
-        name: count
-        required: true
-        type: integer
-      - description: Order
-        enum:
-        - asc
-        - desc
-        in: query
-        name: order
-        required: true
-        type: string
-      - description: Provider
-        enum:
-        - AWS
-        - Azure
-        in: path
-        name: provider
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            items:
-              $ref: '#/definitions/api.ServiceCompliancyResponse'
-            type: array
-      summary: Return top accounts by benchmark compliancy
-      tags:
-      - provider_dashboard
-  /compliance/api/v1/benchmarks:
-    get:
-      consumes:
-      - application/json
-      description: In order to filter benchmarks by tags provide the tag key-value
-        as query param
-      parameters:
-      - description: Provider
-        enum:
-        - AWS
-        - Azure
-        in: query
-        name: provider
-        type: string
-      - description: Tags in key-value query param
-        in: query
-        name: tags
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            items:
-              $ref: '#/definitions/api.Benchmark'
-            type: array
-      summary: Returns list of benchmarks
-      tags:
-      - benchmarks
+      - compliance
   /compliance/api/v1/benchmarks/{benchmark_id}/source/{source_id}:
     delete:
       consumes:
@@ -1515,383 +1449,6 @@ paths:
       summary: Get all benchmark assigned sources with benchmark id
       tags:
       - benchmarks_assignment
-  /compliance/api/v1/benchmarks/{benchmarkId}/{createdAt}/accounts:
-    get:
-      consumes:
-      - application/json
-      parameters:
-      - description: BenchmarkID
-        in: path
-        name: benchmarkId
-        required: true
-        type: string
-      - description: CreatedAt
-        in: path
-        name: createdAt
-        required: true
-        type: string
-      - description: Order
-        enum:
-        - asc
-        - desc
-        in: query
-        name: order
-        required: true
-        type: string
-      - description: Size
-        in: query
-        name: size
-        required: true
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/api.BenchmarkAccountComplianceResponse'
-      summary: Returns list of accounts compliance scores ordered by compliance ratio
-      tags:
-      - benchmarks
-  /compliance/api/v1/benchmarks/{benchmarkId}/{createdAt}/accounts/compliance:
-    get:
-      consumes:
-      - application/json
-      parameters:
-      - description: BenchmarkID
-        in: path
-        name: benchmarkId
-        required: true
-        type: string
-      - description: CreatedAt
-        in: path
-        name: createdAt
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/api.BenchmarkAccountComplianceResponse'
-      summary: Returns no of compliant & non-compliant accounts
-      tags:
-      - benchmarks
-  /compliance/api/v1/benchmarks/{benchmarkId}/{sourceId}/compliance/trend:
-    get:
-      consumes:
-      - application/json
-      parameters:
-      - description: BenchmarkID
-        in: path
-        name: benchmarkId
-        required: true
-        type: string
-      - description: SourceID
-        in: path
-        name: sourceId
-        required: true
-        type: string
-      - description: Time Window
-        enum:
-        - 24h
-        - 1w
-        - 3m
-        - 1y
-        - max
-        in: query
-        name: timeWindow
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            items:
-              $ref: '#/definitions/api.ComplianceTrendDataPoint'
-            type: array
-      summary: Returns trend of a benchmark compliance for specific account
-      tags:
-      - benchmarks
-  /compliance/api/v1/benchmarks/{benchmarkId}/policies:
-    get:
-      consumes:
-      - application/json
-      parameters:
-      - description: BenchmarkID
-        in: path
-        name: benchmarkId
-        required: true
-        type: integer
-      - description: Category Filter
-        in: query
-        name: category
-        type: string
-      - description: Subcategory Filter
-        in: query
-        name: subcategory
-        type: string
-      - description: Section Filter
-        in: query
-        name: section
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            items:
-              $ref: '#/definitions/api.Policy'
-            type: array
-      summary: Returns list of policies of a given benchmark
-      tags:
-      - benchmarks
-  /compliance/api/v1/benchmarks/{benchmarkId}/result/findings:
-    get:
-      consumes:
-      - application/json
-      parameters:
-      - description: BenchmarkID
-        in: path
-        name: benchmarkId
-        required: true
-        type: string
-      - description: Category Filter
-        in: query
-        name: category
-        type: string
-      - description: Subcategory Filter
-        in: query
-        name: subcategory
-        type: string
-      - description: Section Filter
-        in: query
-        name: section
-        type: string
-      - description: Severity Filter
-        in: query
-        name: severity
-        type: string
-      - description: Status Filter
-        enum:
-        - passed
-        - failed
-        in: query
-        name: status
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            items:
-              $ref: '#/definitions/api.ResultCompliancy'
-            type: array
-      summary: Returns compliancy of policies in result of benchmark
-      tags:
-      - benchmarks
-  /compliance/api/v1/benchmarks/{benchmarkId}/result/policies:
-    get:
-      consumes:
-      - application/json
-      parameters:
-      - description: BenchmarkID
-        in: path
-        name: benchmarkId
-        required: true
-        type: string
-      - description: Category Filter
-        in: query
-        name: category
-        type: string
-      - description: Subcategory Filter
-        in: query
-        name: subcategory
-        type: string
-      - description: Section Filter
-        in: query
-        name: section
-        type: string
-      - description: Severity Filter
-        in: query
-        name: severity
-        type: string
-      - description: Status Filter
-        enum:
-        - passed
-        - failed
-        in: query
-        name: status
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            items:
-              $ref: '#/definitions/api.ResultPolicy'
-            type: array
-      summary: Returns policies of result of benchmark
-      tags:
-      - benchmarks
-  /compliance/api/v1/benchmarks/{benchmarkId}/result/policies/{policy_id}/findings:
-    get:
-      consumes:
-      - application/json
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            items:
-              $ref: '#/definitions/gitlab.com_keibiengine_keibi-engine_pkg_compliance_es.Finding'
-            type: array
-      summary: Returns findings of a policy in results of a benchmark
-      tags:
-      - benchmarks
-  /compliance/api/v1/benchmarks/{benchmarkId}/result/policies/{policy_id}/resources/summary:
-    get:
-      consumes:
-      - application/json
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/api.ResultPolicyResourceSummary'
-      summary: Returns summary of resources of a policy in results of a benchmark
-      tags:
-      - benchmarks
-  /compliance/api/v1/benchmarks/{benchmarkId}/result/summary:
-    get:
-      consumes:
-      - application/json
-      parameters:
-      - description: BenchmarkID
-        in: path
-        name: benchmarkId
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/gitlab.com_keibiengine_keibi-engine_pkg_compliance.SummaryStatus'
-      summary: Returns summary of result of benchmark
-      tags:
-      - benchmarks
-  /compliance/api/v1/benchmarks/{provider}/list:
-    get:
-      consumes:
-      - application/json
-      description: You should fetch the benchmark report times from /benchmarks/history/:year/:month/:day
-      parameters:
-      - description: count
-        in: query
-        name: count
-        required: true
-        type: integer
-      - description: SourceID
-        in: query
-        name: sourceId
-        type: string
-      - description: Provider
-        enum:
-        - AWS
-        - Azure
-        in: path
-        name: provider
-        required: true
-        type: string
-      - description: CreatedAt
-        in: path
-        name: createdAt
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            items:
-              $ref: '#/definitions/api.BenchmarkScoreResponse'
-            type: array
-      summary: Returns all benchmark existed at the specified time
-      tags:
-      - benchmarks
-  /compliance/api/v1/benchmarks/count:
-    get:
-      consumes:
-      - application/json
-      description: In order to filter benchmarks by tags provide the tag key-value
-        as query param
-      parameters:
-      - description: Provider
-        enum:
-        - AWS
-        - Azure
-        in: query
-        name: provider
-        type: string
-      - description: Tags in key-value query param
-        in: query
-        name: tags
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            items:
-              $ref: '#/definitions/api.Benchmark'
-            type: array
-      summary: Returns count of benchmarks
-      tags:
-      - benchmarks
-  /compliance/api/v1/benchmarks/history/list/{provider}/{createdAt}:
-    get:
-      consumes:
-      - application/json
-      description: You should fetch the benchmark report times from /benchmarks/history/:year/:month/:day
-      parameters:
-      - description: Provider
-        enum:
-        - AWS
-        - Azure
-        - All
-        in: path
-        name: provider
-        required: true
-        type: string
-      - description: CreatedAt
-        in: path
-        name: createdAt
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            items:
-              $ref: '#/definitions/api.Benchmark'
-            type: array
-      summary: Returns all benchmark existed at the specified time
-      tags:
-      - benchmarks
   /compliance/api/v1/benchmarks/source/{source_id}:
     get:
       consumes:
@@ -1915,7 +1472,7 @@ paths:
       summary: Get all benchmark assignments with source id
       tags:
       - benchmarks_assignment
-  /compliance/api/v1/benchmarks/tags:
+  /compliance/api/v1/benchmarks/summary:
     get:
       consumes:
       - application/json
@@ -1925,50 +1482,10 @@ paths:
         "200":
           description: OK
           schema:
-            items:
-              $ref: '#/definitions/api.GetBenchmarkTag'
-            type: array
-      summary: Returns list of benchmark tags
+            $ref: '#/definitions/api.GetBenchmarksSummaryResponse'
+      summary: Get benchmark summary
       tags:
-      - benchmarks
-  /compliance/api/v1/compliancy/trend:
-    get:
-      consumes:
-      - application/json
-      parameters:
-      - description: SourceID
-        in: query
-        name: sourceId
-        required: true
-        type: string
-      - description: Provider
-        in: query
-        name: provider
-        required: true
-        type: string
-      - description: Time Window
-        enum:
-        - 24h
-        - 1w
-        - 3m
-        - 1y
-        - max
-        in: query
-        name: timeWindow
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            items:
-              $ref: '#/definitions/api.TrendDataPoint'
-            type: array
-      summary: Returns trend of compliancy for specific account
-      tags:
-      - benchmarks
+      - compliance
   /compliance/api/v1/findings:
     post:
       consumes:
@@ -1989,7 +1506,27 @@ paths:
             $ref: '#/definitions/api.GetFindingsResponse'
       summary: Returns all findings with respect to filters
       tags:
-      - benchmarks
+      - compliance
+  /compliance/api/v1/findings/{finding_id}:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: FindingID
+        in: path
+        name: finding_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/api.GetFindingDetailsResponse'
+      summary: Returns details of a single finding
+      tags:
+      - compliance
   /compliance/api/v1/findings/filters:
     post:
       consumes:
@@ -2010,18 +1547,21 @@ paths:
             $ref: '#/definitions/api.GetFindingsFiltersResponse'
       summary: Returns all findings with respect to filters
       tags:
-      - benchmarks
-  /compliance/api/v1/policies/count:
+      - compliance
+  /compliance/api/v1/findings/metrics:
     get:
       consumes:
       - application/json
       parameters:
-      - description: Provider
+      - description: Time Window
         enum:
-        - AWS
-        - Azure
+        - 24h
+        - 1w
+        - 3m
+        - 1y
+        - max
         in: query
-        name: provider
+        name: timeWindow
         type: string
       produces:
       - application/json
@@ -2029,12 +1569,30 @@ paths:
         "200":
           description: OK
           schema:
-            items:
-              $ref: '#/definitions/api.Benchmark'
-            type: array
-      summary: Returns count of policies
+            $ref: '#/definitions/api.GetFindingsMetricsResponse'
+      summary: Returns findings metrics
       tags:
-      - benchmarks
+      - compliance
+  /compliance/api/v1/policy/summary/{benchmark_id}:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: BenchmarkID
+        in: path
+        name: benchmarkID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/api.GetFindingsResponse'
+      summary: Get benchmark summary
+      tags:
+      - compliance
   /inventory/api/v1/accounts/resource/count:
     get:
       consumes:

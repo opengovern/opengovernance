@@ -4,8 +4,9 @@ import (
 	"fmt"
 	"strings"
 
+	"gitlab.com/keibiengine/keibi-engine/pkg/types"
+
 	"github.com/google/uuid"
-	"gitlab.com/keibiengine/keibi-engine/pkg/compliance/es"
 )
 
 const (
@@ -19,9 +20,9 @@ const (
 )
 
 type ResourceResult struct {
-	ResourceID string    `json:"resource_id"`
-	SourceID   uuid.UUID `json:"source_id"`
-	Result     es.Status `json:"result"`
+	ResourceID string                 `json:"resource_id"`
+	SourceID   uuid.UUID              `json:"source_id"`
+	Result     types.ComplianceResult `json:"result"`
 }
 
 type PolicySummary struct {

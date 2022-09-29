@@ -57,6 +57,15 @@ func (db Database) ListBenchmarksWithFilters(provider source.Type, tags map[stri
 	return s, nil
 }
 
+func (db Database) ListBenchmarks() ([]Benchmark, error) {
+	var s []Benchmark
+	tx := db.orm.Model(&Benchmark{}).Find(&s)
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+	return s, nil
+}
+
 func (db Database) CountBenchmarksWithFilters(provider source.Type, tags map[string]string) (int64, error) {
 	var s int64
 	m := db.orm.Model(&Benchmark{}).
@@ -104,6 +113,42 @@ func (db Database) GetBenchmark(benchmarkId string) (*Benchmark, error) {
 	}
 
 	return &s, nil
+}
+
+func (db Database) GetBenchmarksTitle(ds []string) (map[string]string, error) {
+	var bs []Benchmark
+	tx := db.orm.Model(&Benchmark{}).
+		Where("id in ?", ds).
+		Select("id, title").
+		Find(&bs)
+
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+
+	res := map[string]string{}
+	for _, b := range bs {
+		res[b.ID] = b.Title
+	}
+	return res, nil
+}
+
+func (db Database) GetPoliciesTitle(ds []string) (map[string]string, error) {
+	var bs []Policy
+	tx := db.orm.Model(&Policy{}).
+		Where("id in ?", ds).
+		Select("id, title").
+		Find(&bs)
+
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+
+	res := map[string]string{}
+	for _, b := range bs {
+		res[b.ID] = b.Title
+	}
+	return res, nil
 }
 
 // =========== Policy ===========

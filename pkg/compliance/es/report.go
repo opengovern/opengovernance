@@ -1,11 +1,9 @@
-package compliance
+package es
 
 import (
 	"encoding/json"
 	"io/ioutil"
 	"strconv"
-
-	"gitlab.com/keibiengine/keibi-engine/pkg/compliance/es"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/source"
 
@@ -14,7 +12,6 @@ import (
 )
 
 const (
-	esIndexHeader         = "elasticsearch_index"
 	ComplianceReportIndex = "compliance_report"
 	AccountReportIndex    = "account_report"
 )
@@ -64,22 +61,22 @@ func (r Report) KeysAndIndex() ([]string, string) {
 }
 
 type AccountReport struct {
-	SourceID             uuid.UUID            `json:"sourceID"`
-	Provider             source.Type          `json:"provider"`
-	BenchmarkID          string               `json:"benchmarkID"`
-	ReportJobId          uint                 `json:"reportJobID"`
-	Summary              Summary              `json:"summary"`
-	CreatedAt            int64                `json:"createdAt"`
-	TotalResources       int                  `json:"totalResources"`
-	TotalCompliant       int                  `json:"totalCompliant"`
-	CompliancePercentage float64              `json:"compliancePercentage"`
-	AccountReportType    es.AccountReportType `json:"accountReportType"`
+	SourceID             uuid.UUID         `json:"sourceID"`
+	Provider             source.Type       `json:"provider"`
+	BenchmarkID          string            `json:"benchmarkID"`
+	ReportJobId          uint              `json:"reportJobID"`
+	Summary              Summary           `json:"summary"`
+	CreatedAt            int64             `json:"createdAt"`
+	TotalResources       int               `json:"totalResources"`
+	TotalCompliant       int               `json:"totalCompliant"`
+	CompliancePercentage float64           `json:"compliancePercentage"`
+	AccountReportType    AccountReportType `json:"accountReportType"`
 }
 
 func (r AccountReport) KeysAndIndex() ([]string, string) {
 	u, _ := uuid.NewUUID()
 	keys := []string{u.String()}
-	if r.AccountReportType == es.AccountReportTypeLast {
+	if r.AccountReportType == AccountReportTypeLast {
 		keys = []string{
 			r.BenchmarkID,
 			r.SourceID.String(),
@@ -461,7 +458,7 @@ func QueryProviderResult(benchmarkID string, createdAt int64, order string, size
 		"terms": map[string][]interface{}{"createdAt": {createdAt}},
 	})
 	filters = append(filters, map[string]interface{}{
-		"terms": map[string][]interface{}{"accountReportType": {es.AccountReportTypeInTime}},
+		"terms": map[string][]interface{}{"accountReportType": {AccountReportTypeInTime}},
 	})
 	res["size"] = size
 	if searchAfter != nil {

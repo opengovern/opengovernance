@@ -281,7 +281,7 @@ func (j *Job) ParseResult(onboardClient client.OnboardServiceClient, resultFilen
 		return nil, err
 	}
 
-	var root Group
+	var root es.Group
 	err = json.Unmarshal(content, &root)
 	if err != nil {
 		return nil, err
@@ -313,7 +313,7 @@ func (j *Job) ParseResult(onboardClient client.OnboardServiceClient, resultFilen
 	return res, nil
 }
 
-func (j *Job) ExtractFindings(root Group, evaluatedAt int64) []es.Finding {
+func (j *Job) ExtractFindings(root es.Group, evaluatedAt int64) []es.Finding {
 	var findings []es.Finding
 	for _, c := range root.Controls {
 		for _, r := range c.Results {
@@ -388,7 +388,7 @@ func (j ComplianceReportCleanupJob) Do(esClient *elasticsearch.Client) error {
 	ctx, cancel := context.WithTimeout(context.Background(), cleanupJobTimeout)
 	defer cancel()
 
-	fmt.Printf("Cleaning report with compliance_report_job_id of %d from index %s\n", j.JobID, ComplianceReportIndex)
+	fmt.Printf("Cleaning report with compliance_report_job_id of %d from index %s\n", j.JobID, es.ComplianceReportIndex)
 
 	query := map[string]interface{}{
 		"query": map[string]interface{}{
@@ -399,7 +399,7 @@ func (j ComplianceReportCleanupJob) Do(esClient *elasticsearch.Client) error {
 	}
 
 	indices := []string{
-		ComplianceReportIndex,
+		es.ComplianceReportIndex,
 	}
 
 	resp, err := keibi.DeleteByQuery(ctx, esClient, indices, query,

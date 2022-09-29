@@ -156,7 +156,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/benchmarks/compliancy/{provider}/top/accounts": {
+        "/benchmarks/{benchmark_id}/insight": {
             "get": {
                 "consumes": [
                     "application/json"
@@ -165,36 +165,14 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "provider_dashboard"
+                    "compliance"
                 ],
-                "summary": "Return top accounts by benchmark compliancy",
+                "summary": "Returns insight of a specific benchmark",
                 "parameters": [
                     {
-                        "type": "integer",
-                        "description": "Count",
-                        "name": "count",
-                        "in": "query",
-                        "required": true
-                    },
-                    {
-                        "enum": [
-                            "asc",
-                            "desc"
-                        ],
                         "type": "string",
-                        "description": "Order",
-                        "name": "order",
-                        "in": "query",
-                        "required": true
-                    },
-                    {
-                        "enum": [
-                            "AWS",
-                            "Azure"
-                        ],
-                        "type": "string",
-                        "description": "Provider",
-                        "name": "provider",
+                        "description": "BenchmarkID",
+                        "name": "benchmark_id",
                         "in": "path",
                         "required": true
                     }
@@ -203,201 +181,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/api.AccountCompliancyResponse"
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/benchmarks/compliancy/{provider}/top/services": {
-            "get": {
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "provider_dashboard"
-                ],
-                "summary": "Return top accounts by benchmark compliancy",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "Count",
-                        "name": "count",
-                        "in": "query",
-                        "required": true
-                    },
-                    {
-                        "enum": [
-                            "asc",
-                            "desc"
-                        ],
-                        "type": "string",
-                        "description": "Order",
-                        "name": "order",
-                        "in": "query",
-                        "required": true
-                    },
-                    {
-                        "enum": [
-                            "AWS",
-                            "Azure"
-                        ],
-                        "type": "string",
-                        "description": "Provider",
-                        "name": "provider",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/api.ServiceCompliancyResponse"
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/compliance/api/v1/benchmarks": {
-            "get": {
-                "description": "In order to filter benchmarks by tags provide the tag key-value as query param",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "benchmarks"
-                ],
-                "summary": "Returns list of benchmarks",
-                "parameters": [
-                    {
-                        "enum": [
-                            "AWS",
-                            "Azure"
-                        ],
-                        "type": "string",
-                        "description": "Provider",
-                        "name": "provider",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Tags in key-value query param",
-                        "name": "tags",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/api.Benchmark"
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/compliance/api/v1/benchmarks/count": {
-            "get": {
-                "description": "In order to filter benchmarks by tags provide the tag key-value as query param",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "benchmarks"
-                ],
-                "summary": "Returns count of benchmarks",
-                "parameters": [
-                    {
-                        "enum": [
-                            "AWS",
-                            "Azure"
-                        ],
-                        "type": "string",
-                        "description": "Provider",
-                        "name": "provider",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Tags in key-value query param",
-                        "name": "tags",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/api.Benchmark"
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/compliance/api/v1/benchmarks/history/list/{provider}/{createdAt}": {
-            "get": {
-                "description": "You should fetch the benchmark report times from /benchmarks/history/:year/:month/:day",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "benchmarks"
-                ],
-                "summary": "Returns all benchmark existed at the specified time",
-                "parameters": [
-                    {
-                        "enum": [
-                            "AWS",
-                            "Azure",
-                            "All"
-                        ],
-                        "type": "string",
-                        "description": "Provider",
-                        "name": "provider",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "CreatedAt",
-                        "name": "createdAt",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/api.Benchmark"
-                            }
+                            "$ref": "#/definitions/api.GetBenchmarkInsightResponse"
                         }
                     }
                 }
@@ -438,7 +222,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/compliance/api/v1/benchmarks/tags": {
+        "/compliance/api/v1/benchmarks/summary": {
             "get": {
                 "consumes": [
                     "application/json"
@@ -447,432 +231,14 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "benchmarks"
+                    "compliance"
                 ],
-                "summary": "Returns list of benchmark tags",
+                "summary": "Get benchmark summary",
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/api.GetBenchmarkTag"
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/compliance/api/v1/benchmarks/{benchmarkId}/policies": {
-            "get": {
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "benchmarks"
-                ],
-                "summary": "Returns list of policies of a given benchmark",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "BenchmarkID",
-                        "name": "benchmarkId",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "Category Filter",
-                        "name": "category",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Subcategory Filter",
-                        "name": "subcategory",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Section Filter",
-                        "name": "section",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/api.Policy"
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/compliance/api/v1/benchmarks/{benchmarkId}/result/findings": {
-            "get": {
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "benchmarks"
-                ],
-                "summary": "Returns compliancy of policies in result of benchmark",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "BenchmarkID",
-                        "name": "benchmarkId",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "Category Filter",
-                        "name": "category",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Subcategory Filter",
-                        "name": "subcategory",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Section Filter",
-                        "name": "section",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Severity Filter",
-                        "name": "severity",
-                        "in": "query"
-                    },
-                    {
-                        "enum": [
-                            "passed",
-                            "failed"
-                        ],
-                        "type": "string",
-                        "description": "Status Filter",
-                        "name": "status",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/api.ResultCompliancy"
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/compliance/api/v1/benchmarks/{benchmarkId}/result/policies": {
-            "get": {
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "benchmarks"
-                ],
-                "summary": "Returns policies of result of benchmark",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "BenchmarkID",
-                        "name": "benchmarkId",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "Category Filter",
-                        "name": "category",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Subcategory Filter",
-                        "name": "subcategory",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Section Filter",
-                        "name": "section",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Severity Filter",
-                        "name": "severity",
-                        "in": "query"
-                    },
-                    {
-                        "enum": [
-                            "passed",
-                            "failed"
-                        ],
-                        "type": "string",
-                        "description": "Status Filter",
-                        "name": "status",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/api.ResultPolicy"
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/compliance/api/v1/benchmarks/{benchmarkId}/result/policies/{policy_id}/findings": {
-            "get": {
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "benchmarks"
-                ],
-                "summary": "Returns findings of a policy in results of a benchmark",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/gitlab.com_keibiengine_keibi-engine_pkg_compliance_es.Finding"
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/compliance/api/v1/benchmarks/{benchmarkId}/result/policies/{policy_id}/resources/summary": {
-            "get": {
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "benchmarks"
-                ],
-                "summary": "Returns summary of resources of a policy in results of a benchmark",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/api.ResultPolicyResourceSummary"
-                        }
-                    }
-                }
-            }
-        },
-        "/compliance/api/v1/benchmarks/{benchmarkId}/result/summary": {
-            "get": {
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "benchmarks"
-                ],
-                "summary": "Returns summary of result of benchmark",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "BenchmarkID",
-                        "name": "benchmarkId",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/gitlab.com_keibiengine_keibi-engine_pkg_compliance.SummaryStatus"
-                        }
-                    }
-                }
-            }
-        },
-        "/compliance/api/v1/benchmarks/{benchmarkId}/{createdAt}/accounts": {
-            "get": {
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "benchmarks"
-                ],
-                "summary": "Returns list of accounts compliance scores ordered by compliance ratio",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "BenchmarkID",
-                        "name": "benchmarkId",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "CreatedAt",
-                        "name": "createdAt",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "enum": [
-                            "asc",
-                            "desc"
-                        ],
-                        "type": "string",
-                        "description": "Order",
-                        "name": "order",
-                        "in": "query",
-                        "required": true
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Size",
-                        "name": "size",
-                        "in": "query",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/api.BenchmarkAccountComplianceResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/compliance/api/v1/benchmarks/{benchmarkId}/{createdAt}/accounts/compliance": {
-            "get": {
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "benchmarks"
-                ],
-                "summary": "Returns no of compliant \u0026 non-compliant accounts",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "BenchmarkID",
-                        "name": "benchmarkId",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "CreatedAt",
-                        "name": "createdAt",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/api.BenchmarkAccountComplianceResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/compliance/api/v1/benchmarks/{benchmarkId}/{sourceId}/compliance/trend": {
-            "get": {
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "benchmarks"
-                ],
-                "summary": "Returns trend of a benchmark compliance for specific account",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "BenchmarkID",
-                        "name": "benchmarkId",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "SourceID",
-                        "name": "sourceId",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "enum": [
-                            "24h",
-                            "1w",
-                            "3m",
-                            "1y",
-                            "max"
-                        ],
-                        "type": "string",
-                        "description": "Time Window",
-                        "name": "timeWindow",
-                        "in": "query",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/api.ComplianceTrendDataPoint"
-                            }
+                            "$ref": "#/definitions/api.GetBenchmarksSummaryResponse"
                         }
                     }
                 }
@@ -986,120 +352,6 @@ const docTemplate = `{
                 }
             }
         },
-        "/compliance/api/v1/benchmarks/{provider}/list": {
-            "get": {
-                "description": "You should fetch the benchmark report times from /benchmarks/history/:year/:month/:day",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "benchmarks"
-                ],
-                "summary": "Returns all benchmark existed at the specified time",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "count",
-                        "name": "count",
-                        "in": "query",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "SourceID",
-                        "name": "sourceId",
-                        "in": "query"
-                    },
-                    {
-                        "enum": [
-                            "AWS",
-                            "Azure"
-                        ],
-                        "type": "string",
-                        "description": "Provider",
-                        "name": "provider",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "CreatedAt",
-                        "name": "createdAt",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/api.BenchmarkScoreResponse"
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/compliance/api/v1/compliancy/trend": {
-            "get": {
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "benchmarks"
-                ],
-                "summary": "Returns trend of compliancy for specific account",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "SourceID",
-                        "name": "sourceId",
-                        "in": "query",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "Provider",
-                        "name": "provider",
-                        "in": "query",
-                        "required": true
-                    },
-                    {
-                        "enum": [
-                            "24h",
-                            "1w",
-                            "3m",
-                            "1y",
-                            "max"
-                        ],
-                        "type": "string",
-                        "description": "Time Window",
-                        "name": "timeWindow",
-                        "in": "query",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/api.TrendDataPoint"
-                            }
-                        }
-                    }
-                }
-            }
-        },
         "/compliance/api/v1/findings": {
             "post": {
                 "consumes": [
@@ -1109,7 +361,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "benchmarks"
+                    "compliance"
                 ],
                 "summary": "Returns all findings with respect to filters",
                 "parameters": [
@@ -1142,7 +394,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "benchmarks"
+                    "compliance"
                 ],
                 "summary": "Returns all findings with respect to filters",
                 "parameters": [
@@ -1166,7 +418,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/compliance/api/v1/policies/count": {
+        "/compliance/api/v1/findings/metrics": {
             "get": {
                 "consumes": [
                     "application/json"
@@ -1175,18 +427,21 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "benchmarks"
+                    "compliance"
                 ],
-                "summary": "Returns count of policies",
+                "summary": "Returns findings metrics",
                 "parameters": [
                     {
                         "enum": [
-                            "AWS",
-                            "Azure"
+                            "24h",
+                            "1w",
+                            "3m",
+                            "1y",
+                            "max"
                         ],
                         "type": "string",
-                        "description": "Provider",
-                        "name": "provider",
+                        "description": "Time Window",
+                        "name": "timeWindow",
                         "in": "query"
                     }
                 ],
@@ -1194,10 +449,69 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/api.Benchmark"
-                            }
+                            "$ref": "#/definitions/api.GetFindingsMetricsResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/compliance/api/v1/findings/{finding_id}": {
+            "get": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "compliance"
+                ],
+                "summary": "Returns details of a single finding",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "FindingID",
+                        "name": "finding_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/api.GetFindingDetailsResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/compliance/api/v1/policy/summary/{benchmark_id}": {
+            "get": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "compliance"
+                ],
+                "summary": "Get benchmark summary",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "BenchmarkID",
+                        "name": "benchmarkID",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/api.GetFindingsResponse"
                         }
                     }
                 }
@@ -3605,65 +2919,6 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "..Finding": {
-            "type": "object",
-            "properties": {
-                "benchmarkID": {
-                    "type": "string"
-                },
-                "category": {
-                    "type": "string"
-                },
-                "complianceJobID": {
-                    "type": "integer"
-                },
-                "connectionProviderID": {
-                    "type": "string"
-                },
-                "connectionProviderName": {
-                    "type": "string"
-                },
-                "describedAt": {
-                    "type": "integer"
-                },
-                "evaluatedAt": {
-                    "type": "integer"
-                },
-                "policyID": {
-                    "type": "string"
-                },
-                "policySeverity": {
-                    "type": "string"
-                },
-                "reason": {
-                    "type": "string"
-                },
-                "resourceID": {
-                    "type": "string"
-                },
-                "resourceLocation": {
-                    "type": "string"
-                },
-                "resourceName": {
-                    "type": "string"
-                },
-                "resourceType": {
-                    "type": "string"
-                },
-                "serviceName": {
-                    "type": "string"
-                },
-                "sourceID": {
-                    "type": "string"
-                },
-                "sourceType": {
-                    "type": "string"
-                },
-                "status": {
-                    "type": "string"
-                }
-            }
-        },
         "api.AWSResource": {
             "type": "object",
             "properties": {
@@ -3696,20 +2951,6 @@ const docTemplate = `{
                 },
                 "resourceTypeName": {
                     "type": "string"
-                }
-            }
-        },
-        "api.AccountCompliancyResponse": {
-            "type": "object",
-            "properties": {
-                "sourceID": {
-                    "type": "string"
-                },
-                "totalCompliant": {
-                    "type": "integer"
-                },
-                "totalResources": {
-                    "type": "integer"
                 }
             }
         },
@@ -3818,51 +3059,14 @@ const docTemplate = `{
                 }
             }
         },
-        "api.Benchmark": {
-            "type": "object",
-            "properties": {
-                "description": {
-                    "type": "string"
-                },
-                "id": {
-                    "type": "string"
-                },
-                "provider": {
-                    "type": "string"
-                },
-                "state": {
-                    "type": "string"
-                },
-                "tags": {
-                    "type": "object",
-                    "additionalProperties": {
-                        "type": "string"
-                    }
-                },
-                "title": {
-                    "type": "string"
-                }
-            }
-        },
-        "api.BenchmarkAccountComplianceResponse": {
-            "type": "object",
-            "properties": {
-                "totalCompliantAccounts": {
-                    "type": "integer"
-                },
-                "totalNonCompliantAccounts": {
-                    "type": "integer"
-                }
-            }
-        },
         "api.BenchmarkAssignedSource": {
             "type": "object",
             "properties": {
                 "assignedAt": {
                     "type": "integer"
                 },
-                "sourceId": {
-                    "type": "string"
+                "connection": {
+                    "$ref": "#/definitions/types.FullConnection"
                 }
             }
         },
@@ -3880,14 +3084,83 @@ const docTemplate = `{
                 }
             }
         },
-        "api.BenchmarkScoreResponse": {
+        "api.BenchmarkSummary": {
             "type": "object",
             "properties": {
-                "benchmarkID": {
+                "assignedConnectionsCount": {
+                    "type": "integer"
+                },
+                "description": {
                     "type": "string"
                 },
-                "nonCompliantCount": {
+                "enabled": {
+                    "type": "boolean"
+                },
+                "policies": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/api.BenchmarkSummaryPolicySummary"
+                    }
+                },
+                "resources": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/api.BenchmarkSummaryResourceSummary"
+                    }
+                },
+                "shortSummary": {
+                    "$ref": "#/definitions/types.ComplianceResultShortSummary"
+                },
+                "tags": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
+                },
+                "title": {
+                    "type": "string"
+                },
+                "totalConnectionResources": {
                     "type": "integer"
+                },
+                "trend": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/api.Datapoint"
+                    }
+                }
+            }
+        },
+        "api.BenchmarkSummaryConnectionSummary": {
+            "type": "object",
+            "properties": {
+                "connection": {
+                    "$ref": "#/definitions/types.FullConnection"
+                },
+                "shortSummary": {
+                    "$ref": "#/definitions/types.ComplianceResultShortSummary"
+                }
+            }
+        },
+        "api.BenchmarkSummaryPolicySummary": {
+            "type": "object",
+            "properties": {
+                "policy": {
+                    "$ref": "#/definitions/types.FullPolicy"
+                },
+                "shortSummary": {
+                    "$ref": "#/definitions/types.ComplianceResultShortSummary"
+                }
+            }
+        },
+        "api.BenchmarkSummaryResourceSummary": {
+            "type": "object",
+            "properties": {
+                "resource": {
+                    "$ref": "#/definitions/types.FullResource"
+                },
+                "shortSummary": {
+                    "$ref": "#/definitions/types.ComplianceResultShortSummary"
                 }
             }
         },
@@ -3953,20 +3226,6 @@ const docTemplate = `{
                 },
                 "updatedAt": {
                     "type": "string"
-                }
-            }
-        },
-        "api.ComplianceTrendDataPoint": {
-            "type": "object",
-            "properties": {
-                "compliant": {
-                    "type": "integer"
-                },
-                "timestamp": {
-                    "type": "integer"
-                },
-                "totalResources": {
-                    "type": "integer"
                 }
             }
         },
@@ -4039,6 +3298,17 @@ const docTemplate = `{
             "properties": {
                 "id": {
                     "type": "string"
+                }
+            }
+        },
+        "api.Datapoint": {
+            "type": "object",
+            "properties": {
+                "time": {
+                    "type": "integer"
+                },
+                "value": {
+                    "type": "integer"
                 }
             }
         },
@@ -4173,7 +3443,19 @@ const docTemplate = `{
                         "type": "string"
                     }
                 },
+                "connectionID": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
                 "findingStatus": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "policyID": {
                     "type": "array",
                     "items": {
                         "type": "string"
@@ -4196,8 +3478,49 @@ const docTemplate = `{
                     "items": {
                         "type": "string"
                     }
+                }
+            }
+        },
+        "api.FindingResponseFilters": {
+            "type": "object",
+            "properties": {
+                "benchmarks": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/types.FullBenchmark"
+                    }
                 },
-                "sourceID": {
+                "connections": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/types.FullConnection"
+                    }
+                },
+                "findingStatus": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "policies": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/types.FullPolicy"
+                    }
+                },
+                "provider": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "resourceTypeID": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/types.FullResourceType"
+                    }
+                },
+                "severity": {
                     "type": "array",
                     "items": {
                         "type": "string"
@@ -4266,17 +3589,55 @@ const docTemplate = `{
                 }
             }
         },
-        "api.GetBenchmarkTag": {
+        "api.GetBenchmarkInsightResponse": {
             "type": "object",
             "properties": {
-                "count": {
+                "severity": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/api.InsightRecord"
+                    }
+                },
+                "topAccount": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/api.InsightRecord"
+                    }
+                },
+                "topCategory": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/api.InsightRecord"
+                    }
+                },
+                "topResourceType": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/api.InsightRecord"
+                    }
+                }
+            }
+        },
+        "api.GetBenchmarksSummaryResponse": {
+            "type": "object",
+            "properties": {
+                "benchmarks": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/api.BenchmarkSummary"
+                    }
+                },
+                "connections": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/api.BenchmarkSummaryConnectionSummary"
+                    }
+                },
+                "shortSummary": {
+                    "$ref": "#/definitions/types.ComplianceResultShortSummary"
+                },
+                "totalAssets": {
                     "type": "integer"
-                },
-                "key": {
-                    "type": "string"
-                },
-                "value": {
-                    "type": "string"
                 }
             }
         },
@@ -4305,11 +3666,60 @@ const docTemplate = `{
                 }
             }
         },
+        "api.GetFindingDetailsResponse": {
+            "type": "object",
+            "properties": {
+                "connection": {
+                    "$ref": "#/definitions/types.FullConnection"
+                },
+                "createdAt": {
+                    "type": "integer"
+                },
+                "policyDescription": {
+                    "type": "string"
+                },
+                "policyTags": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
+                },
+                "reason": {
+                    "type": "string"
+                },
+                "resource": {
+                    "$ref": "#/definitions/types.FullResource"
+                },
+                "resourceType": {
+                    "$ref": "#/definitions/types.FullResourceType"
+                },
+                "state": {
+                    "type": "string"
+                }
+            }
+        },
         "api.GetFindingsFiltersResponse": {
             "type": "object",
             "properties": {
                 "filters": {
-                    "$ref": "#/definitions/api.FindingFilters"
+                    "$ref": "#/definitions/api.FindingResponseFilters"
+                }
+            }
+        },
+        "api.GetFindingsMetricsResponse": {
+            "type": "object",
+            "properties": {
+                "failedFindings": {
+                    "$ref": "#/definitions/types.HistoricalCount"
+                },
+                "passedFindings": {
+                    "$ref": "#/definitions/types.HistoricalCount"
+                },
+                "totalFindings": {
+                    "$ref": "#/definitions/types.HistoricalCount"
+                },
+                "unknownFindings": {
+                    "$ref": "#/definitions/types.HistoricalCount"
                 }
             }
         },
@@ -4323,7 +3733,7 @@ const docTemplate = `{
                     "$ref": "#/definitions/api.FindingFilters"
                 },
                 "page": {
-                    "$ref": "#/definitions/api.Page"
+                    "$ref": "#/definitions/gitlab.com_keibiengine_keibi-engine_pkg_compliance_api.Page"
                 },
                 "sorts": {
                     "type": "array",
@@ -4339,7 +3749,7 @@ const docTemplate = `{
                 "findings": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/..Finding"
+                        "$ref": "#/definitions/es.Finding"
                     }
                 },
                 "totalCount": {
@@ -4375,7 +3785,7 @@ const docTemplate = `{
                     "$ref": "#/definitions/api.Filters"
                 },
                 "page": {
-                    "$ref": "#/definitions/api.Page"
+                    "$ref": "#/definitions/gitlab.com_keibiengine_keibi-engine_pkg_inventory_api.Page"
                 },
                 "query": {
                     "description": "search query",
@@ -4434,6 +3844,17 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "smartQueryID": {
+                    "type": "integer"
+                }
+            }
+        },
+        "api.InsightRecord": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string"
+                },
+                "value": {
                     "type": "integer"
                 }
             }
@@ -4521,64 +3942,6 @@ const docTemplate = `{
                 },
                 "value": {
                     "type": "integer"
-                }
-            }
-        },
-        "api.Page": {
-            "type": "object",
-            "properties": {
-                "no": {
-                    "type": "integer"
-                },
-                "size": {
-                    "type": "integer"
-                }
-            }
-        },
-        "api.Policy": {
-            "type": "object",
-            "properties": {
-                "category": {
-                    "type": "string"
-                },
-                "commandLineRemedation": {
-                    "type": "string"
-                },
-                "description": {
-                    "type": "string"
-                },
-                "id": {
-                    "type": "string"
-                },
-                "manualRemedation": {
-                    "type": "string"
-                },
-                "manualVerification": {
-                    "type": "string"
-                },
-                "provider": {
-                    "type": "string"
-                },
-                "queryToRun": {
-                    "type": "string"
-                },
-                "section": {
-                    "type": "string"
-                },
-                "severity": {
-                    "type": "string"
-                },
-                "subcategory": {
-                    "type": "string"
-                },
-                "tags": {
-                    "type": "object",
-                    "additionalProperties": {
-                        "type": "string"
-                    }
-                },
-                "title": {
-                    "type": "string"
                 }
             }
         },
@@ -4816,101 +4179,6 @@ const docTemplate = `{
                 }
             }
         },
-        "api.ResultCompliancy": {
-            "type": "object",
-            "properties": {
-                "category": {
-                    "type": "string"
-                },
-                "id": {
-                    "type": "string"
-                },
-                "provider": {
-                    "type": "string"
-                },
-                "resourcesWithIssue": {
-                    "type": "integer"
-                },
-                "section": {
-                    "type": "string"
-                },
-                "severity": {
-                    "type": "string"
-                },
-                "status": {
-                    "type": "string",
-                    "enum": [
-                        "passed",
-                        "failed"
-                    ]
-                },
-                "subcategory": {
-                    "type": "string"
-                },
-                "title": {
-                    "type": "string"
-                },
-                "totalResources": {
-                    "type": "integer"
-                }
-            }
-        },
-        "api.ResultPolicy": {
-            "type": "object",
-            "properties": {
-                "category": {
-                    "type": "string"
-                },
-                "createdAt": {
-                    "type": "integer"
-                },
-                "describedAt": {
-                    "type": "integer"
-                },
-                "id": {
-                    "type": "string"
-                },
-                "provider": {
-                    "type": "string"
-                },
-                "section": {
-                    "type": "string"
-                },
-                "severity": {
-                    "type": "string"
-                },
-                "status": {
-                    "type": "string",
-                    "enum": [
-                        "passed",
-                        "failed"
-                    ]
-                },
-                "subcategory": {
-                    "type": "string"
-                },
-                "title": {
-                    "type": "string"
-                }
-            }
-        },
-        "api.ResultPolicyResourceSummary": {
-            "type": "object",
-            "properties": {
-                "compliantResourceCount": {
-                    "type": "integer"
-                },
-                "nonCompliantResourceCount": {
-                    "type": "integer"
-                },
-                "resourcesByLocation": {
-                    "type": "object",
-                    "additionalProperties": {
-                        "type": "integer"
-                    }
-                }
-            }
-        },
         "api.RoleBinding": {
             "type": "object",
             "properties": {
@@ -4932,7 +4200,7 @@ const docTemplate = `{
             ],
             "properties": {
                 "page": {
-                    "$ref": "#/definitions/api.Page"
+                    "$ref": "#/definitions/gitlab.com_keibiengine_keibi-engine_pkg_inventory_api.Page"
                 },
                 "sorts": {
                     "description": "NOTE: we don't support multi-field sort for now, if sort is empty, results would be sorted by first column",
@@ -4966,20 +4234,6 @@ const docTemplate = `{
                 },
                 "title": {
                     "type": "string"
-                }
-            }
-        },
-        "api.ServiceCompliancyResponse": {
-            "type": "object",
-            "properties": {
-                "serviceName": {
-                    "type": "string"
-                },
-                "totalCompliant": {
-                    "type": "integer"
-                },
-                "totalResources": {
-                    "type": "integer"
                 }
             }
         },
@@ -5295,29 +4549,12 @@ const docTemplate = `{
                 }
             }
         },
-        "gitlab.com_keibiengine_keibi-engine_pkg_compliance.SummaryStatus": {
+        "es.Finding": {
             "type": "object",
             "properties": {
-                "alarm": {
-                    "type": "integer"
+                "ID": {
+                    "type": "string"
                 },
-                "error": {
-                    "type": "integer"
-                },
-                "info": {
-                    "type": "integer"
-                },
-                "ok": {
-                    "type": "integer"
-                },
-                "skip": {
-                    "type": "integer"
-                }
-            }
-        },
-        "gitlab.com_keibiengine_keibi-engine_pkg_compliance_es.Finding": {
-            "type": "object",
-            "properties": {
                 "benchmarkID": {
                     "type": "string"
                 },
@@ -5360,6 +4597,9 @@ const docTemplate = `{
                 "resourceType": {
                     "type": "string"
                 },
+                "scheduleJobID": {
+                    "type": "integer"
+                },
                 "serviceName": {
                     "type": "string"
                 },
@@ -5371,6 +4611,17 @@ const docTemplate = `{
                 },
                 "status": {
                     "type": "string"
+                }
+            }
+        },
+        "gitlab.com_keibiengine_keibi-engine_pkg_compliance_api.Page": {
+            "type": "object",
+            "properties": {
+                "no": {
+                    "type": "integer"
+                },
+                "size": {
+                    "type": "integer"
                 }
             }
         },
@@ -5391,6 +4642,17 @@ const docTemplate = `{
                 },
                 "type": {
                     "type": "string"
+                }
+            }
+        },
+        "gitlab.com_keibiengine_keibi-engine_pkg_inventory_api.Page": {
+            "type": "object",
+            "properties": {
+                "no": {
+                    "type": "integer"
+                },
+                "size": {
+                    "type": "integer"
                 }
             }
         },
@@ -5420,6 +4682,92 @@ const docTemplate = `{
                 },
                 "type": {
                     "type": "string"
+                }
+            }
+        },
+        "types.ComplianceResultShortSummary": {
+            "type": "object",
+            "properties": {
+                "failed": {
+                    "type": "integer"
+                },
+                "passed": {
+                    "type": "integer"
+                }
+            }
+        },
+        "types.FullBenchmark": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string"
+                },
+                "title": {
+                    "type": "string"
+                }
+            }
+        },
+        "types.FullConnection": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string"
+                },
+                "providerID": {
+                    "type": "string"
+                },
+                "providerName": {
+                    "type": "string"
+                }
+            }
+        },
+        "types.FullPolicy": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string"
+                },
+                "title": {
+                    "type": "string"
+                }
+            }
+        },
+        "types.FullResource": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                }
+            }
+        },
+        "types.FullResourceType": {
+            "type": "object",
+            "properties": {
+                "ID": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                }
+            }
+        },
+        "types.HistoricalCount": {
+            "type": "object",
+            "properties": {
+                "lastDayValue": {
+                    "type": "integer"
+                },
+                "lastMonthValue": {
+                    "type": "integer"
+                },
+                "lastQuarterValue": {
+                    "type": "integer"
+                },
+                "lastYearValue": {
+                    "type": "integer"
                 }
             }
         }
