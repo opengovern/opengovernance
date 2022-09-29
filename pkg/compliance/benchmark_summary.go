@@ -37,5 +37,5 @@ func BuildBenchmarkSummary(es es.BenchmarkSummary, b Benchmark) api.BenchmarkSum
 			},
 		})
 	}
-
+	return bs
 }
