@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"strconv"
 
+	"gitlab.com/keibiengine/keibi-engine/pkg/types"
+
 	"gitlab.com/keibiengine/keibi-engine/pkg/source"
 
 	"github.com/google/uuid"
@@ -15,37 +17,27 @@ const (
 	FindingsIndex = "findings"
 )
 
-type Status string
-
-const (
-	StatusAlarm = "alarm"
-	StatusInfo  = "info"
-	StatusOK    = "ok"
-	StatusSkip  = "skip"
-	StatusError = "error"
-)
-
 type Finding struct {
-	ID                     string      `json:"ID"`
-	ComplianceJobID        uint        `json:"complianceJobID"`
-	ScheduleJobID          uint        `json:"scheduleJobID"`
-	ResourceID             string      `json:"resourceID"`
-	ResourceName           string      `json:"resourceName"`
-	ResourceType           string      `json:"resourceType"`
-	ServiceName            string      `json:"serviceName"`
-	Category               string      `json:"category"`
-	ResourceLocation       string      `json:"resourceLocation"`
-	Reason                 string      `json:"reason"`
-	Status                 Status      `json:"status"`
-	DescribedAt            int64       `json:"describedAt"`
-	EvaluatedAt            int64       `json:"evaluatedAt"`
-	SourceID               uuid.UUID   `json:"sourceID"`
-	ConnectionProviderID   string      `json:"connectionProviderID"`
-	ConnectionProviderName string      `json:"connectionProviderName"`
-	SourceType             source.Type `json:"sourceType"`
-	BenchmarkID            string      `json:"benchmarkID"`
-	PolicyID               string      `json:"policyID"`
-	PolicySeverity         string      `json:"policySeverity"`
+	ID                     string                 `json:"ID"`
+	ComplianceJobID        uint                   `json:"complianceJobID"`
+	ScheduleJobID          uint                   `json:"scheduleJobID"`
+	ResourceID             string                 `json:"resourceID"`
+	ResourceName           string                 `json:"resourceName"`
+	ResourceType           string                 `json:"resourceType"`
+	ServiceName            string                 `json:"serviceName"`
+	Category               string                 `json:"category"`
+	ResourceLocation       string                 `json:"resourceLocation"`
+	Reason                 string                 `json:"reason"`
+	Status                 types.ComplianceResult `json:"status"`
+	DescribedAt            int64                  `json:"describedAt"`
+	EvaluatedAt            int64                  `json:"evaluatedAt"`
+	SourceID               uuid.UUID              `json:"sourceID"`
+	ConnectionProviderID   string                 `json:"connectionProviderID"`
+	ConnectionProviderName string                 `json:"connectionProviderName"`
+	SourceType             source.Type            `json:"sourceType"`
+	BenchmarkID            string                 `json:"benchmarkID"`
+	PolicyID               string                 `json:"policyID"`
+	PolicySeverity         string                 `json:"policySeverity"`
 }
 
 func (r Finding) KeysAndIndex() ([]string, string) {
@@ -78,7 +70,7 @@ func FindingsQuery(client keibi.Client,
 	provider []source.Type,
 	resourceTypeID []string,
 	sourceID []uuid.UUID,
-	status []Status,
+	status []types.ComplianceResult,
 	benchmarkID []string,
 	policyID []string,
 	severity []string,
@@ -175,7 +167,7 @@ func FindingsFiltersQuery(client keibi.Client,
 	provider []source.Type,
 	resourceTypeID []string,
 	sourceID []uuid.UUID,
-	status []Status,
+	status []types.ComplianceResult,
 	benchmarkID []string,
 	policyID []string,
 	severity []string,
