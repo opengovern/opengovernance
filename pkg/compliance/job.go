@@ -1,7 +1,6 @@
 package compliance
 
 import (
-	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -31,7 +30,6 @@ import (
 	"github.com/elastic/go-elasticsearch/v7"
 	"github.com/google/uuid"
 	"gitlab.com/keibiengine/keibi-engine/pkg/compliance/api"
-	"gitlab.com/keibiengine/keibi-engine/pkg/keibi-es-sdk"
 	"go.uber.org/zap"
 )
 
@@ -281,7 +279,7 @@ func (j *Job) ParseResult(onboardClient client.OnboardServiceClient, resultFilen
 		return nil, err
 	}
 
-	var root es.Group
+	var root api.Group
 	err = json.Unmarshal(content, &root)
 	if err != nil {
 		return nil, err
@@ -313,7 +311,7 @@ func (j *Job) ParseResult(onboardClient client.OnboardServiceClient, resultFilen
 	return res, nil
 }
 
-func (j *Job) ExtractFindings(root es.Group, evaluatedAt int64) []es.Finding {
+func (j *Job) ExtractFindings(root api.Group, evaluatedAt int64) []es.Finding {
 	var findings []es.Finding
 	for _, c := range root.Controls {
 		for _, r := range c.Results {
@@ -338,7 +336,7 @@ func (j *Job) ExtractFindings(root es.Group, evaluatedAt int64) []es.Finding {
 				Category:               cloudservice.CategoryByResourceType(resourceType),
 				ResourceLocation:       resourceLocation,
 				Reason:                 r.Reason,
-				Status:                 es.Status(r.Status),
+				Status:                 r.Status,
 				DescribedAt:            j.DescribedAt,
 				EvaluatedAt:            evaluatedAt,
 				SourceID:               j.SourceID,
@@ -383,50 +381,51 @@ type ComplianceReportCleanupJob struct {
 }
 
 func (j ComplianceReportCleanupJob) Do(esClient *elasticsearch.Client) error {
-	startTime := time.Now().Unix()
-
-	ctx, cancel := context.WithTimeout(context.Background(), cleanupJobTimeout)
-	defer cancel()
-
-	fmt.Printf("Cleaning report with compliance_report_job_id of %d from index %s\n", j.JobID, es.ComplianceReportIndex)
-
-	query := map[string]interface{}{
-		"query": map[string]interface{}{
-			"match": map[string]interface{}{
-				"report_job_id": j.JobID,
-			},
-		},
-	}
-
-	indices := []string{
-		es.ComplianceReportIndex,
-	}
-
-	resp, err := keibi.DeleteByQuery(ctx, esClient, indices, query,
-		esClient.DeleteByQuery.WithRefresh(true),
-		esClient.DeleteByQuery.WithConflicts("proceed"),
-	)
-	if err != nil {
-		DoComplianceReportCleanupJobsDuration.WithLabelValues("failure").Observe(float64(time.Now().Unix() - startTime))
-		DoComplianceReportCleanupJobsCount.WithLabelValues("failure").Inc()
-		return err
-	}
-
-	if len(resp.Failures) != 0 {
-		body, err := json.Marshal(resp)
-		if err != nil {
-			DoComplianceReportCleanupJobsDuration.WithLabelValues("failure").Observe(float64(time.Now().Unix() - startTime))
-			DoComplianceReportCleanupJobsCount.WithLabelValues("failure").Inc()
-			return err
-		}
-
-		DoComplianceReportCleanupJobsDuration.WithLabelValues("failure").Observe(float64(time.Now().Unix() - startTime))
-		DoComplianceReportCleanupJobsCount.WithLabelValues("failure").Inc()
-		return fmt.Errorf("elasticsearch: delete by query: %s", string(body))
-	}
-
-	fmt.Printf("Successfully delete %d reports\n", resp.Deleted)
-	DoComplianceReportCleanupJobsDuration.WithLabelValues("successful").Observe(float64(time.Now().Unix() - startTime))
-	DoComplianceReportCleanupJobsCount.WithLabelValues("successful").Inc()
 	return nil
+	//startTime := time.Now().Unix()
+	//
+	//ctx, cancel := context.WithTimeout(context.Background(), cleanupJobTimeout)
+	//defer cancel()
+	//
+	//fmt.Printf("Cleaning report with compliance_report_job_id of %d from index %s\n", j.JobID, es.ComplianceReportIndex)
+	//
+	//query := map[string]interface{}{
+	//	"query": map[string]interface{}{
+	//		"match": map[string]interface{}{
+	//			"report_job_id": j.JobID,
+	//		},
+	//	},
+	//}
+	//
+	//indices := []string{
+	//	es.ComplianceReportIndex,
+	//}
+	//
+	//resp, err := keibi.DeleteByQuery(ctx, esClient, indices, query,
+	//	esClient.DeleteByQuery.WithRefresh(true),
+	//	esClient.DeleteByQuery.WithConflicts("proceed"),
+	//)
+	//if err != nil {
+	//	DoComplianceReportCleanupJobsDuration.WithLabelValues("failure").Observe(float64(time.Now().Unix() - startTime))
+	//	DoComplianceReportCleanupJobsCount.WithLabelValues("failure").Inc()
+	//	return err
+	//}
+	//
+	//if len(resp.Failures) != 0 {
+	//	body, err := json.Marshal(resp)
+	//	if err != nil {
+	//		DoComplianceReportCleanupJobsDuration.WithLabelValues("failure").Observe(float64(time.Now().Unix() - startTime))
+	//		DoComplianceReportCleanupJobsCount.WithLabelValues("failure").Inc()
+	//		return err
+	//	}
+	//
+	//	DoComplianceReportCleanupJobsDuration.WithLabelValues("failure").Observe(float64(time.Now().Unix() - startTime))
+	//	DoComplianceReportCleanupJobsCount.WithLabelValues("failure").Inc()
+	//	return fmt.Errorf("elasticsearch: delete by query: %s", string(body))
+	//}
+	//
+	//fmt.Printf("Successfully delete %d reports\n", resp.Deleted)
+	//DoComplianceReportCleanupJobsDuration.WithLabelValues("successful").Observe(float64(time.Now().Unix() - startTime))
+	//DoComplianceReportCleanupJobsCount.WithLabelValues("successful").Inc()
+	//return nil
 }
