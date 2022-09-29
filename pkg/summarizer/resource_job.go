@@ -5,6 +5,9 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
+
 	"gitlab.com/keibiengine/keibi-engine/pkg/summarizer/resourcebuilder"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/summarizer/es"
@@ -13,8 +16,6 @@ import (
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/summarizer/api"
 
-	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/client_golang/prometheus/promauto"
 	"gitlab.com/keibiengine/keibi-engine/pkg/kafka"
 
 	"github.com/go-errors/errors"
@@ -25,14 +26,14 @@ import (
 var DoResourceSummarizerJobsCount = promauto.NewCounterVec(prometheus.CounterOpts{
 	Namespace: "keibi",
 	Subsystem: "summarizer_worker",
-	Name:      "do_summarizer_jobs_total",
+	Name:      "do_resource_summarizer_jobs_total",
 	Help:      "Count of done summarizer jobs in summarizer-worker service",
 }, []string{"queryid", "status"})
 
 var DoResourceSummarizerJobsDuration = promauto.NewHistogramVec(prometheus.HistogramOpts{
 	Namespace: "keibi",
 	Subsystem: "summarizer_worker",
-	Name:      "do_summarizer_jobs_duration_seconds",
+	Name:      "do_resource_summarizer_jobs_duration_seconds",
 	Help:      "Duration of done summarizer jobs in summarizer-worker service",
 	Buckets:   []float64{5, 60, 300, 600, 1800, 3600, 7200, 36000},
 }, []string{"queryid", "status"})

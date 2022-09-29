@@ -25,14 +25,14 @@ import (
 var DoComplianceSummarizerJobsCount = promauto.NewCounterVec(prometheus.CounterOpts{
 	Namespace: "keibi",
 	Subsystem: "summarizer_worker",
-	Name:      "do_summarizer_jobs_total",
+	Name:      "do_compliance_summarizer_jobs_total",
 	Help:      "Count of done summarizer jobs in summarizer-worker service",
 }, []string{"queryid", "status"})
 
 var DoComplianceSummarizerJobsDuration = promauto.NewHistogramVec(prometheus.HistogramOpts{
 	Namespace: "keibi",
 	Subsystem: "summarizer_worker",
-	Name:      "do_summarizer_jobs_duration_seconds",
+	Name:      "do_compliance_summarizer_jobs_duration_seconds",
 	Help:      "Duration of done summarizer jobs in summarizer-worker service",
 	Buckets:   []float64{5, 60, 300, 600, 1800, 3600, 7200, 36000},
 }, []string{"queryid", "status"})
