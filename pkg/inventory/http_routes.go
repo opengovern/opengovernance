@@ -522,9 +522,15 @@ func (h *HttpHandler) GetTopRegionsByResourceCount(ctx echo.Context) error {
 // @Router  /inventory/api/v1/resources/top/services [get]
 func (h *HttpHandler) GetTopServicesByResourceCount(ctx echo.Context) error {
 	provider, _ := source.ParseType(ctx.QueryParam("provider"))
-	count, err := strconv.Atoi(ctx.QueryParam("count"))
-	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, "invalid count")
+
+	var count *int
+	countStr := ctx.QueryParam("count")
+	if len(countStr) > 0 {
+		c, err := strconv.Atoi(countStr)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "invalid count")
+		}
+		count = &c
 	}
 
 	var sourceID *string
@@ -546,8 +552,8 @@ func (h *HttpHandler) GetTopServicesByResourceCount(ctx echo.Context) error {
 	sort.Slice(res, func(i, j int) bool {
 		return res[i].ResourceCount > res[j].ResourceCount
 	})
-	if len(res) > count {
-		res = res[:count]
+	if count != nil && len(res) > *count {
+		res = res[:*count]
 	}
 	return ctx.JSON(http.StatusOK, res)
 }
