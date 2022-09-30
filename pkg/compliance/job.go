@@ -327,6 +327,7 @@ func (j *Job) ExtractFindings(root api.Group, evaluatedAt int64) []es.Finding {
 			}
 
 			findings = append(findings, es.Finding{
+				ID:                     fmt.Sprintf("%s-%s-%d", r.Resource, c.ControlId, j.ScheduleJobID),
 				ComplianceJobID:        j.JobID,
 				ScheduleJobID:          j.ScheduleJobID,
 				ResourceID:             r.Resource,

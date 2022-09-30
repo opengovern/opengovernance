@@ -10,6 +10,10 @@ const (
 	ComplianceResultERROR ComplianceResult = "error"
 )
 
+func (r ComplianceResult) IsPassed() bool {
+	return r == ComplianceResultOK
+}
+
 type ComplianceResultSummary struct {
 	OkCount    int `json:"okCount"`
 	AlarmCount int `json:"alarmCount"`

@@ -131,7 +131,7 @@ type BenchmarkSummaryConnectionSummary struct {
 
 type GetBenchmarksSummaryResponse struct {
 	ShortSummary types.ComplianceResultShortSummary  `json:"shortSummary"`
-	TotalAssets  int                                 `json:"totalAssets"`
+	TotalAssets  int64                               `json:"totalAssets"`
 	Connections  []BenchmarkSummaryConnectionSummary `json:"connections"`
 	Benchmarks   []BenchmarkSummary                  `json:"benchmarks"`
 }

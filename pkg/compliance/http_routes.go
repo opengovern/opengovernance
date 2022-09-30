@@ -6,6 +6,8 @@ import (
 	"net/http"
 	"time"
 
+	es2 "gitlab.com/keibiengine/keibi-engine/pkg/summarizer/es"
+
 	"gitlab.com/keibiengine/keibi-engine/pkg/summarizer/query"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/cloudservice"
@@ -28,11 +30,11 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	// finding dashboard
 	v1.POST("/findings", h.GetFindings)
 	v1.POST("/findings/filters", h.GetFindingFilters)
-	v1.GET("/findings/metrics", h.GetFindingsMetrics)
+	v1.GET("/findings/metrics", h.GetFindingsMetrics) //TODO-Saleh
 	v1.GET("/findings/:finding_id", h.GetFindingDetails)
 
 	// benchmark dashboard
-	v1.GET("/benchmarks/summary", h.GetBenchmarksSummary)
+	v1.GET("/benchmarks/summary", h.GetBenchmarksSummary) //TODO-Saleh
 	v1.GET("/benchmarks/:benchmark_id/insight", h.GetBenchmarkInsight)
 	v1.GET("/policy/summary/:benchmark_id", h.GetPolicySummary)
 
@@ -176,7 +178,7 @@ func (h *HttpHandler) GetFindings(ctx echo.Context) error {
 		sorts = append(sorts, item)
 	}
 
-	res, err := es.FindingsQuery(h.client, req.Filters.Provider, req.Filters.ResourceTypeID, req.Filters.ConnectionID,
+	res, err := es.FindingsQuery(h.client, nil, req.Filters.Provider, req.Filters.ResourceTypeID, req.Filters.ConnectionID,
 		req.Filters.FindingStatus, req.Filters.BenchmarkID, req.Filters.PolicyID, req.Filters.Severity,
 		sorts, lastIdx, req.Page.Size)
 	if err != nil {
@@ -210,7 +212,48 @@ func (h *HttpHandler) GetFindingsMetrics(ctx echo.Context) error {
 // @Success 200        {object} api.GetFindingDetailsResponse
 // @Router  /compliance/api/v1/findings/{finding_id} [get]
 func (h *HttpHandler) GetFindingDetails(ctx echo.Context) error {
-	return echo.NewHTTPError(http.StatusNotImplemented)
+	findingID := ctx.Param("finding_id")
+	findings, err := es.FindingsQuery(h.client, []string{findingID}, nil, nil, nil, nil,
+		nil, nil, nil, nil, 0, es2.EsFetchPageSize)
+	if err != nil {
+		return err
+	}
+
+	if len(findings.Hits.Hits) == 0 {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid id")
+	}
+
+	finding := findings.Hits.Hits[0].Source
+	p, err := h.db.GetPolicy(finding.PolicyID)
+	if err != nil {
+		return err
+	}
+
+	tags := map[string]string{}
+	for _, t := range p.Tags {
+		tags[t.Key] = t.Value
+	}
+	response := api.GetFindingDetailsResponse{
+		Connection: types.FullConnection{
+			ID:           finding.SourceID,
+			ProviderID:   finding.ConnectionProviderID,
+			ProviderName: finding.ConnectionProviderName,
+		},
+		Resource: types.FullResource{
+			ID:   finding.ResourceID,
+			Name: finding.ResourceName,
+		},
+		ResourceType: types.FullResourceType{
+			ID:   finding.ResourceType,
+			Name: cloudservice.ResourceTypeName(finding.ResourceType),
+		},
+		State:             finding.Status,
+		CreatedAt:         finding.EvaluatedAt,
+		PolicyTags:        tags,
+		PolicyDescription: p.Description,
+		Reason:            finding.Reason,
+	}
+	return echo.NewHTTPError(http.StatusOK, response)
 }
 
 // GetBenchmarkInsight godoc
@@ -222,6 +265,60 @@ func (h *HttpHandler) GetFindingDetails(ctx echo.Context) error {
 // @Success 200          {object} api.GetBenchmarkInsightResponse
 // @Router  /benchmarks/{benchmark_id}/insight [get]
 func (h *HttpHandler) GetBenchmarkInsight(ctx echo.Context) error {
+	benchmarkID := ctx.Param("benchmark_id")
+	findings, err := es.FindingsQuery(h.client, nil, nil, nil, nil, nil, []string{benchmarkID},
+		nil, nil, nil, 0, es2.EsFetchPageSize)
+	if err != nil {
+		return err
+	}
+	var response api.GetBenchmarkInsightResponse
+
+	categoryMap := map[string]int64{}
+	resourceTypeMap := map[string]int64{}
+	accountMap := map[string]int64{}
+	severityMap := map[string]int64{}
+	for _, f := range findings.Hits.Hits {
+		categoryMap[f.Source.Category]++
+		resourceTypeMap[f.Source.ResourceType]++
+		accountMap[f.Source.SourceID.String()]++
+		severityMap[f.Source.PolicySeverity]++
+	}
+
+	for k, v := range categoryMap {
+		response.TopCategory = append(response.TopCategory, api.InsightRecord{
+			Name:  k,
+			Value: v,
+		})
+	}
+
+	for k, v := range resourceTypeMap {
+		response.TopCategory = append(response.TopCategory, api.InsightRecord{
+			Name:  k,
+			Value: v,
+		})
+	}
+
+	for k, v := range accountMap {
+		name := ""
+		for _, f := range findings.Hits.Hits {
+			if f.Source.SourceID.String() == k {
+				name = f.Source.ConnectionProviderName
+				break
+			}
+		}
+		response.TopCategory = append(response.TopCategory, api.InsightRecord{
+			Name:  name,
+			Value: v,
+		})
+	}
+
+	for k, v := range severityMap {
+		response.TopCategory = append(response.TopCategory, api.InsightRecord{
+			Name:  k,
+			Value: v,
+		})
+	}
+
 	return echo.NewHTTPError(http.StatusNotImplemented)
 }
 
@@ -245,104 +342,18 @@ func (h *HttpHandler) GetBenchmarksSummary(ctx echo.Context) error {
 	}
 
 	for _, b := range benchmarks {
-		bs := api.BenchmarkSummary{
-			Title:       b.Title,
-			Description: b.Description,
-			ShortSummary: types.ComplianceResultShortSummary{
-				Passed: 0, //TODO
-				Failed: 0, //TODO
-			},
-			Policies:                 nil,
-			Resources:                nil,
-			CompliancyTrend:          nil, //TODO
-			AssignedConnectionsCount: 0,   //TODO
-			TotalConnectionResources: 0,   //TODO
-			Tags:                     make(map[string]string),
-			Enabled:                  b.Enabled,
-		}
-		for _, t := range b.Tags {
-			bs.Tags[t.Key] = t.Value
-		}
-		for _, p := range b.Policies {
-			bs.Policies = append(bs.Policies, api.BenchmarkSummaryPolicySummary{
-				Policy: types.FullPolicy{
-					ID:    p.ID,
-					Title: p.Title,
-				},
-				ShortSummary: types.ComplianceResultShortSummary{
-					Passed: 0,
-					Failed: 0,
-				},
-			})
-		}
-
-		for _, r := range res {
-			if b.ID != r.BenchmarkID {
-				continue
-			}
-
-			for _, p := range r.Policies {
-				for _, resource := range p.Resources {
-					notFound := true
-					for idx, bsResource := range bs.Resources {
-						if bsResource.Resource.ID == resource.ResourceID {
-							notFound = false
-							// TODO
-							bs.Resources[idx].ShortSummary.Passed++
-							bs.Resources[idx].ShortSummary.Failed++
-						}
-					}
-					if notFound {
-						bs.Resources = append(bs.Resources, api.BenchmarkSummaryResourceSummary{
-							Resource: types.FullResource{
-								ID:   resource.ResourceID,
-								Name: "", //TODO
-							},
-							ShortSummary: types.ComplianceResultShortSummary{
-								Passed: 1,
-								Failed: 1, //TODO
-							},
-						})
-					}
-
-					for idx, bsPolicy := range bs.Policies {
-						if bsPolicy.Policy.ID == p.PolicyID {
-							bs.Policies[idx].ShortSummary.Passed++
-							bs.Policies[idx].ShortSummary.Failed++
-						}
-					}
-
-					notFound = true
-					for idx, cn := range response.Connections {
-						if cn.Connection.ID == resource.SourceID {
-							notFound = false
-							// TODO
-							response.Connections[idx].ShortSummary.Passed++
-							response.Connections[idx].ShortSummary.Failed++
-						}
-					}
-					if notFound {
-						response.Connections = append(response.Connections, api.BenchmarkSummaryConnectionSummary{
-							Connection: types.FullConnection{
-								ID:           resource.SourceID,
-								ProviderID:   "", //TODO
-								ProviderName: "",
-							},
-							ShortSummary: types.ComplianceResultShortSummary{
-								Passed: 1,
-								Failed: 1, //TODO
-							},
-						})
-					}
-				}
+		var e es2.BenchmarkSummary
+		for _, esb := range res {
+			if b.ID == esb.BenchmarkID {
+				e = esb
 			}
 		}
-
+		bs := BuildBenchmarkSummary(e, b)
+		response.ShortSummary.Passed += bs.ShortSummary.Passed
+		response.ShortSummary.Failed += bs.ShortSummary.Failed
+		response.TotalAssets += bs.TotalConnectionResources
 		response.Benchmarks = append(response.Benchmarks, bs)
 	}
-	response.ShortSummary.Passed = 0 //TODO
-	response.ShortSummary.Failed = 0 //TODO
-	response.TotalAssets = 0         //TODO
 	return ctx.JSON(http.StatusOK, response)
 }
 
@@ -383,14 +394,6 @@ func (h *HttpHandler) GetPolicySummary(ctx echo.Context) error {
 		response.Tags[tag.Key] = tag.Value
 	}
 
-	response.ComplianceSummary = types.ComplianceResultSummary{
-		OkCount:    0, //TODO
-		AlarmCount: 0,
-		InfoCount:  0,
-		SkipCount:  0,
-		ErrorCount: 0,
-	}
-
 	for _, p := range benchmark.Policies {
 		policyStatus := types.PolicyStatusPASSED
 		for _, r := range res {
@@ -402,12 +405,23 @@ func (h *HttpHandler) GetPolicySummary(ctx echo.Context) error {
 				for _, resource := range pr.Resources {
 					switch resource.Result {
 					case types.ComplianceResultOK:
-					case types.ComplianceResultALARM, types.ComplianceResultERROR:
+						response.ComplianceSummary.OkCount++
+					case types.ComplianceResultALARM:
 						policyStatus = types.PolicyStatusFAILED
-					case types.ComplianceResultINFO, types.ComplianceResultSKIP:
+						response.ComplianceSummary.AlarmCount++
+					case types.ComplianceResultERROR:
+						policyStatus = types.PolicyStatusFAILED
+						response.ComplianceSummary.ErrorCount++
+					case types.ComplianceResultINFO:
 						if policyStatus == types.PolicyStatusPASSED {
 							policyStatus = types.PolicyStatusUNKNOWN
 						}
+						response.ComplianceSummary.InfoCount++
+					case types.ComplianceResultSKIP:
+						if policyStatus == types.PolicyStatusPASSED {
+							policyStatus = types.PolicyStatusUNKNOWN
+						}
+						response.ComplianceSummary.SkipCount++
 					}
 				}
 			}
@@ -549,16 +563,27 @@ func (h *HttpHandler) GetAllBenchmarkAssignedSourcesByBenchmarkId(ctx echo.Conte
 		return err
 	}
 
+	var sourceIds []string
+	for _, assignment := range dbAssignments {
+		sourceIds = append(sourceIds, assignment.SourceId.String())
+	}
+	srcs, err := h.onboardClient.GetSources(httpclient.FromEchoContext(ctx), sourceIds)
+
 	var sources []api.BenchmarkAssignedSource
 	for _, assignment := range dbAssignments {
-		sources = append(sources, api.BenchmarkAssignedSource{
+		ba := api.BenchmarkAssignedSource{
 			Connection: types.FullConnection{
-				ID:           assignment.SourceId,
-				ProviderID:   "", //TODO
-				ProviderName: "",
+				ID: assignment.SourceId,
 			},
 			AssignedAt: assignment.AssignedAt.Unix(),
-		})
+		}
+		for _, src := range srcs {
+			if src.ID == assignment.SourceId {
+				ba.Connection.ProviderID = src.ConnectionID
+				ba.Connection.ProviderName = src.ConnectionName
+			}
+		}
+		sources = append(sources, ba)
 	}
 
 	return ctx.JSON(http.StatusOK, sources)

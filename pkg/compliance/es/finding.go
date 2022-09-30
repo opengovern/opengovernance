@@ -67,6 +67,7 @@ type FindingsQueryHit struct {
 }
 
 func FindingsQuery(client keibi.Client,
+	id []string,
 	provider []source.Type,
 	resourceTypeID []string,
 	sourceID []uuid.UUID,
@@ -79,6 +80,12 @@ func FindingsQuery(client keibi.Client,
 
 	res := make(map[string]interface{})
 	var filters []interface{}
+
+	if len(id) > 0 {
+		filters = append(filters, map[string]interface{}{
+			"terms": map[string][]string{"id": id},
+		})
+	}
 
 	if len(benchmarkID) > 0 {
 		filters = append(filters, map[string]interface{}{

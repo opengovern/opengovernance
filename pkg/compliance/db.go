@@ -181,6 +181,20 @@ func (db Database) GetPoliciesWithFilters(benchmarkId string,
 	return s, nil
 }
 
+func (db Database) GetPolicy(id string) (*Policy, error) {
+	var s Policy
+	tx := db.orm.Model(&Policy{}).
+		Preload("Tags").
+		Where("id = ?", id).
+		First(&s)
+
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+
+	return &s, nil
+}
+
 // =========== Benchmark Tags ===========
 
 func (db Database) ListBenchmarkTags() ([]BenchmarkTag, error) {
