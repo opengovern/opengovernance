@@ -7,9 +7,10 @@ import (
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/describe/es"
 
-	"gitlab.com/keibiengine/keibi-engine/pkg/describe"
 	"gitlab.com/keibiengine/keibi-engine/pkg/keibi-es-sdk"
 )
+
+const InventorySummaryIndex = "inventory_summary"
 
 func QuerySummaryResources(
 	ctx context.Context,
@@ -79,7 +80,7 @@ func QuerySummaryResources(
 		return nil, keibi.SearchTotal{}, err
 	}
 
-	resources, resultCount, err := SummaryQueryES(client, ctx, describe.InventorySummaryIndex, queryStr)
+	resources, resultCount, err := SummaryQueryES(client, ctx, InventorySummaryIndex, queryStr)
 	if err != nil {
 		return nil, keibi.SearchTotal{}, err
 	}

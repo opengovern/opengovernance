@@ -6,6 +6,8 @@ import (
 	"errors"
 	"strings"
 
+	"gitlab.com/keibiengine/keibi-engine/pkg/types"
+
 	"gitlab.com/keibiengine/keibi-engine/pkg/source"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/cloudservice"
@@ -13,7 +15,6 @@ import (
 	"github.com/turbot/steampipe-plugin-sdk/grpc/proto"
 	awsmodel "gitlab.com/keibiengine/keibi-engine/pkg/aws/model"
 	azuremodel "gitlab.com/keibiengine/keibi-engine/pkg/azure/model"
-	"gitlab.com/keibiengine/keibi-engine/pkg/describe"
 	"gitlab.com/keibiengine/keibi-engine/pkg/keibi-es-sdk"
 	"gitlab.com/keibiengine/keibi-engine/pkg/steampipe"
 )
@@ -74,7 +75,7 @@ func QueryResourcesWithSteampipeColumns(
 		}
 
 		var response ResourceQueryResponse
-		indexName := describe.ResourceTypeToESIndex(resourceType)
+		indexName := types.ResourceTypeToESIndex(resourceType)
 
 		sourceType := steampipe.SourceTypeByResourceType(resourceType)
 

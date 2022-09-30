@@ -773,7 +773,7 @@ func (s *SchedulerTestSuite) TestRunComplianceReport() {
 	delivery, err := s.Scheduler.complianceReportJobQueue.Consume()
 	s.Require().NoError(err)
 
-	go s.Scheduler.RunComplianceReportScheduler()
+	//go s.Scheduler.RunComplianceReportScheduler()
 
 	err = backoff.Retry(func() error {
 		jobs, err := s.Scheduler.db.ListComplianceReportJobs(source.ID)

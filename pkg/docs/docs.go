@@ -1968,7 +1968,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/api.Source"
+                            "$ref": "#/definitions/gitlab.com_keibiengine_keibi-engine_pkg_onboard_api.Source"
                         }
                     }
                 }
@@ -2116,7 +2116,7 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/api.Source"
+                                "$ref": "#/definitions/gitlab.com_keibiengine_keibi-engine_pkg_onboard_api.Source"
                             }
                         }
                     }
@@ -2157,7 +2157,7 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/api.Source"
+                                "$ref": "#/definitions/gitlab.com_keibiengine_keibi-engine_pkg_onboard_api.Source"
                             }
                         }
                     }
@@ -2467,7 +2467,7 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/api.Source"
+                                "$ref": "#/definitions/gitlab.com_keibiengine_keibi-engine_pkg_describe_api.Source"
                             }
                         }
                     }
@@ -2497,7 +2497,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/api.Source"
+                            "$ref": "#/definitions/gitlab.com_keibiengine_keibi-engine_pkg_describe_api.Source"
                         }
                     }
                 }
@@ -2925,17 +2925,6 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "..Page": {
-            "type": "object",
-            "properties": {
-                "no": {
-                    "type": "integer"
-                },
-                "size": {
-                    "type": "integer"
-                }
-            }
-        },
         "api.AWSResource": {
             "type": "object",
             "properties": {
@@ -3727,16 +3716,16 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "failedFindings": {
-                    "$ref": "#/definitions/types.HistoricalCount"
+                    "type": "integer"
                 },
                 "passedFindings": {
-                    "$ref": "#/definitions/types.HistoricalCount"
+                    "type": "integer"
                 },
                 "totalFindings": {
-                    "$ref": "#/definitions/types.HistoricalCount"
+                    "type": "integer"
                 },
                 "unknownFindings": {
-                    "$ref": "#/definitions/types.HistoricalCount"
+                    "type": "integer"
                 }
             }
         },
@@ -3802,7 +3791,7 @@ const docTemplate = `{
                     "$ref": "#/definitions/api.Filters"
                 },
                 "page": {
-                    "$ref": "#/definitions/..Page"
+                    "$ref": "#/definitions/gitlab.com_keibiengine_keibi-engine_pkg_inventory_api.Page"
                 },
                 "query": {
                     "description": "search query",
@@ -4217,7 +4206,7 @@ const docTemplate = `{
             ],
             "properties": {
                 "page": {
-                    "$ref": "#/definitions/..Page"
+                    "$ref": "#/definitions/gitlab.com_keibiengine_keibi-engine_pkg_inventory_api.Page"
                 },
                 "sorts": {
                     "description": "NOTE: we don't support multi-field sort for now, if sort is empty, results would be sorted by first column",
@@ -4309,35 +4298,6 @@ const docTemplate = `{
                 },
                 "field": {
                     "description": "fill this with column name",
-                    "type": "string"
-                }
-            }
-        },
-        "api.Source": {
-            "type": "object",
-            "properties": {
-                "description": {
-                    "type": "string"
-                },
-                "email": {
-                    "type": "string"
-                },
-                "enabled": {
-                    "type": "boolean"
-                },
-                "id": {
-                    "type": "string"
-                },
-                "onboardDate": {
-                    "type": "string"
-                },
-                "providerConnectionID": {
-                    "type": "string"
-                },
-                "providerConnectionName": {
-                    "type": "string"
-                },
-                "type": {
                     "type": "string"
                 }
             }
@@ -4671,6 +4631,66 @@ const docTemplate = `{
                 }
             }
         },
+        "gitlab.com_keibiengine_keibi-engine_pkg_describe_api.Source": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string"
+                },
+                "lastComplianceReportAt": {
+                    "type": "string"
+                },
+                "lastDescribeJobStatus": {
+                    "type": "string"
+                },
+                "lastDescribedAt": {
+                    "type": "string"
+                },
+                "type": {
+                    "type": "string"
+                }
+            }
+        },
+        "gitlab.com_keibiengine_keibi-engine_pkg_inventory_api.Page": {
+            "type": "object",
+            "properties": {
+                "no": {
+                    "type": "integer"
+                },
+                "size": {
+                    "type": "integer"
+                }
+            }
+        },
+        "gitlab.com_keibiengine_keibi-engine_pkg_onboard_api.Source": {
+            "type": "object",
+            "properties": {
+                "description": {
+                    "type": "string"
+                },
+                "email": {
+                    "type": "string"
+                },
+                "enabled": {
+                    "type": "boolean"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "onboardDate": {
+                    "type": "string"
+                },
+                "providerConnectionID": {
+                    "type": "string"
+                },
+                "providerConnectionName": {
+                    "type": "string"
+                },
+                "type": {
+                    "type": "string"
+                }
+            }
+        },
         "types.ComplianceResultShortSummary": {
             "type": "object",
             "properties": {
@@ -4737,23 +4757,6 @@ const docTemplate = `{
                 },
                 "name": {
                     "type": "string"
-                }
-            }
-        },
-        "types.HistoricalCount": {
-            "type": "object",
-            "properties": {
-                "lastDayValue": {
-                    "type": "integer"
-                },
-                "lastMonthValue": {
-                    "type": "integer"
-                },
-                "lastQuarterValue": {
-                    "type": "integer"
-                },
-                "lastYearValue": {
-                    "type": "integer"
                 }
             }
         }
