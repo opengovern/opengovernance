@@ -96,6 +96,7 @@ func (j ComplianceJob) Do(client keibi.Client, producer sarama.SyncProducer, top
 	var msgs []kafka.Doc
 	builders := []compliancebuilder.Builder{
 		compliancebuilder.NewBenchmarkSummaryBuilder(client, j.JobID),
+		compliancebuilder.NewMetricsBuilder(client, j.JobID),
 	}
 	var searchAfter []interface{}
 	for {

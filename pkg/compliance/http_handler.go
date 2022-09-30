@@ -3,6 +3,8 @@ package compliance
 import (
 	"fmt"
 
+	client3 "gitlab.com/keibiengine/keibi-engine/pkg/inventory/client"
+
 	client2 "gitlab.com/keibiengine/keibi-engine/pkg/onboard/client"
 	"go.uber.org/zap"
 
@@ -16,6 +18,7 @@ type HttpHandler struct {
 	db              Database
 	schedulerClient client.SchedulerServiceClient
 	onboardClient   client2.OnboardServiceClient
+	inventoryClient client3.InventoryServiceClient
 }
 
 func InitializeHttpHandler(conf ServerConfig, logger *zap.Logger) (h *HttpHandler, err error) {
@@ -57,6 +60,7 @@ func InitializeHttpHandler(conf ServerConfig, logger *zap.Logger) (h *HttpHandle
 	}
 	h.schedulerClient = client.NewSchedulerServiceClient(conf.Scheduler.BaseURL)
 	h.onboardClient = client2.NewOnboardServiceClient(conf.Onboard.BaseURL, nil)
+	h.inventoryClient = client3.NewInventoryServiceClient(conf.Inventory.BaseURL)
 
 	return h, nil
 }

@@ -14,8 +14,8 @@ func BuildBenchmarkSummary(esb es.BenchmarkSummary, b Benchmark) api.BenchmarkSu
 		Policies:                 nil,
 		Resources:                nil,
 		CompliancyTrend:          nil, //TODO-Saleh
-		AssignedConnectionsCount: 0,   //TODO-Saleh
-		TotalConnectionResources: 0,   //TODO-Saleh
+		AssignedConnectionsCount: 0,
+		TotalConnectionResources: 0,
 		Tags:                     make(map[string]string),
 		Enabled:                  b.Enabled,
 	}
@@ -45,33 +45,32 @@ func BuildBenchmarkSummary(esb es.BenchmarkSummary, b Benchmark) api.BenchmarkSu
 		bs.Policies = append(bs.Policies, ps)
 	}
 
-	resourceMap := map[string]types.ComplianceResultShortSummary{}
+	resourceMap := map[string]api.BenchmarkSummaryResourceSummary{}
 	for _, pe := range esb.Policies {
 		for _, r := range pe.Resources {
-			v := types.ComplianceResultShortSummary{}
+			v := api.BenchmarkSummaryResourceSummary{
+				Resource: types.FullResource{
+					ID:   r.ResourceID,
+					Name: r.ResourceName,
+				},
+			}
 			if ve, ok := resourceMap[r.ResourceID]; ok {
 				v = ve
 			}
 
 			if r.Result.IsPassed() {
 				bs.ShortSummary.Passed++
-				v.Passed++
+				v.ShortSummary.Passed++
 			} else {
 				bs.ShortSummary.Failed++
-				v.Failed++
+				v.ShortSummary.Failed++
 			}
 			resourceMap[r.ResourceID] = v
 		}
 	}
 
-	for id, summary := range resourceMap {
-		bs.Resources = append(bs.Resources, api.BenchmarkSummaryResourceSummary{
-			Resource: types.FullResource{
-				ID:   id,
-				Name: "", // TODO-Saleh
-			},
-			ShortSummary: summary,
-		})
+	for _, v := range resourceMap {
+		bs.Resources = append(bs.Resources, v)
 	}
 	return bs
 }

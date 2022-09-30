@@ -39,9 +39,10 @@ func (b *benchmarkSummaryBuilder) Process(resource es2.Finding) {
 	}
 
 	resourceResult := es.ResourceResult{
-		ResourceID: resource.ResourceID,
-		SourceID:   resource.SourceID,
-		Result:     resource.Status,
+		ResourceID:   resource.ResourceID,
+		ResourceName: resource.ResourceName,
+		SourceID:     resource.SourceID,
+		Result:       resource.Status,
 	}
 
 	v := b.benchmarkSummary[resource.BenchmarkID]

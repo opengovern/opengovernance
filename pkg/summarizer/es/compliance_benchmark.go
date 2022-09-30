@@ -20,9 +20,10 @@ const (
 )
 
 type ResourceResult struct {
-	ResourceID string                 `json:"resource_id"`
-	SourceID   uuid.UUID              `json:"source_id"`
-	Result     types.ComplianceResult `json:"result"`
+	ResourceID   string                 `json:"resource_id"`
+	ResourceName string                 `json:"resource_name"`
+	SourceID     uuid.UUID              `json:"source_id"`
+	Result       types.ComplianceResult `json:"result"`
 }
 
 type PolicySummary struct {

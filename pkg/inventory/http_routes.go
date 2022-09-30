@@ -15,6 +15,8 @@ import (
 	"strings"
 	"time"
 
+	api2 "gitlab.com/keibiengine/keibi-engine/pkg/onboard/api"
+
 	insight "gitlab.com/keibiengine/keibi-engine/pkg/insight/es"
 	summarizer "gitlab.com/keibiengine/keibi-engine/pkg/summarizer/es"
 
@@ -37,10 +39,6 @@ import (
 )
 
 const EsFetchPageSize = 10000
-
-var (
-	ErrInternalServer = errors.New("internal server error")
-)
 
 func (h *HttpHandler) Register(e *echo.Echo) {
 	v1 := e.Group("/api/v1")
@@ -903,14 +901,27 @@ func (h *HttpHandler) ListCategories(ctx echo.Context) error {
 // @Tags    benchmarks
 // @Accept  json
 // @Produce json
-// @Param   provider query    string true "Provider"
+// @Param   provider query    string true  "Provider"
+// @Param   sourceId query    string false "SourceID"
 // @Success 200      {object} []api.AccountResourceCountResponse
 // @Router  /inventory/api/v1/accounts/resource/count [get]
 func (h *HttpHandler) GetAccountsResourceCount(ctx echo.Context) error {
 	provider, _ := source.ParseType(ctx.QueryParam("provider"))
+	sourceId := ctx.QueryParam("sourceId")
+	var sourceIdPtr *string
+	if sourceId != "" {
+		sourceIdPtr = &sourceId
+	}
 
 	res := map[string]api.AccountResourceCountResponse{}
-	allSources, err := h.onboardClient.ListSources(httpclient.FromEchoContext(ctx), provider.AsPtr())
+
+	var err error
+	var allSources []api2.Source
+	if sourceId == "" {
+		allSources, err = h.onboardClient.ListSources(httpclient.FromEchoContext(ctx), provider.AsPtr())
+	} else {
+		allSources, err = h.onboardClient.GetSources(httpclient.FromEchoContext(ctx), []string{sourceId})
+	}
 	if err != nil {
 		return err
 	}
@@ -926,7 +937,7 @@ func (h *HttpHandler) GetAccountsResourceCount(ctx echo.Context) error {
 		}
 	}
 
-	hits, err := es.FetchConnectionResourcesSummaryPage(h.client, provider, nil, nil, EsFetchPageSize)
+	hits, err := es.FetchConnectionResourcesSummaryPage(h.client, provider, sourceIdPtr, nil, EsFetchPageSize)
 	for _, hit := range hits {
 		if v, ok := res[hit.SourceID]; ok {
 			v.ResourceCount += hit.ResourceCount

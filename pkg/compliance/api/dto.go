@@ -155,10 +155,10 @@ type GetPoliciesSummaryResponse struct {
 }
 
 type GetFindingsMetricsResponse struct {
-	TotalFindings   types.HistoricalCount `json:"totalFindings"`
-	FailedFindings  types.HistoricalCount `json:"failedFindings"`
-	PassedFindings  types.HistoricalCount `json:"passedFindings"`
-	UnknownFindings types.HistoricalCount `json:"unknownFindings"`
+	TotalFindings   int64 `json:"totalFindings"`
+	FailedFindings  int64 `json:"failedFindings"`
+	PassedFindings  int64 `json:"passedFindings"`
+	UnknownFindings int64 `json:"unknownFindings"`
 }
 
 type GetFindingDetailsResponse struct {

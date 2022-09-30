@@ -4,11 +4,15 @@ import (
 	"fmt"
 	"net/http"
 
+	"gitlab.com/keibiengine/keibi-engine/pkg/inventory/api"
+	"gitlab.com/keibiengine/keibi-engine/pkg/source"
+
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpclient"
 )
 
 type InventoryServiceClient interface {
 	CountResources(ctx *httpclient.Context) (int64, error)
+	GetAccountsResourceCount(ctx *httpclient.Context, provider source.Type, sourceId *string) ([]api.AccountResourceCountResponse, error)
 }
 
 type inventoryClient struct {
@@ -27,4 +31,17 @@ func (s *inventoryClient) CountResources(ctx *httpclient.Context) (int64, error)
 		return 0, err
 	}
 	return count, nil
+}
+
+func (s *inventoryClient) GetAccountsResourceCount(ctx *httpclient.Context, provider source.Type, sourceId *string) ([]api.AccountResourceCountResponse, error) {
+	url := fmt.Sprintf("%s/api/v1/accounts/resource/count?provider=%s", s.baseURL, provider.String())
+	if sourceId != nil {
+		url += "&sourceId=" + *sourceId
+	}
+
+	var response []api.AccountResourceCountResponse
+	if err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &response); err != nil {
+		return nil, err
+	}
+	return response, nil
 }

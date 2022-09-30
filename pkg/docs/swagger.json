@@ -530,6 +530,12 @@
                         "name": "provider",
                         "in": "query",
                         "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "SourceID",
+                        "name": "sourceId",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -1956,7 +1962,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/gitlab.com_keibiengine_keibi-engine_pkg_onboard_api.Source"
+                            "$ref": "#/definitions/api.Source"
                         }
                     }
                 }
@@ -2104,7 +2110,7 @@
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/gitlab.com_keibiengine_keibi-engine_pkg_onboard_api.Source"
+                                "$ref": "#/definitions/api.Source"
                             }
                         }
                     }
@@ -2145,7 +2151,7 @@
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/gitlab.com_keibiengine_keibi-engine_pkg_onboard_api.Source"
+                                "$ref": "#/definitions/api.Source"
                             }
                         }
                     }
@@ -2455,7 +2461,7 @@
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/gitlab.com_keibiengine_keibi-engine_pkg_describe_api.Source"
+                                "$ref": "#/definitions/api.Source"
                             }
                         }
                     }
@@ -2485,7 +2491,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/gitlab.com_keibiengine_keibi-engine_pkg_describe_api.Source"
+                            "$ref": "#/definitions/api.Source"
                         }
                     }
                 }
@@ -2913,6 +2919,17 @@
         }
     },
     "definitions": {
+        "..Page": {
+            "type": "object",
+            "properties": {
+                "no": {
+                    "type": "integer"
+                },
+                "size": {
+                    "type": "integer"
+                }
+            }
+        },
         "api.AWSResource": {
             "type": "object",
             "properties": {
@@ -3779,7 +3796,7 @@
                     "$ref": "#/definitions/api.Filters"
                 },
                 "page": {
-                    "$ref": "#/definitions/gitlab.com_keibiengine_keibi-engine_pkg_inventory_api.Page"
+                    "$ref": "#/definitions/..Page"
                 },
                 "query": {
                     "description": "search query",
@@ -4194,7 +4211,7 @@
             ],
             "properties": {
                 "page": {
-                    "$ref": "#/definitions/gitlab.com_keibiengine_keibi-engine_pkg_inventory_api.Page"
+                    "$ref": "#/definitions/..Page"
                 },
                 "sorts": {
                     "description": "NOTE: we don't support multi-field sort for now, if sort is empty, results would be sorted by first column",
@@ -4286,6 +4303,35 @@
                 },
                 "field": {
                     "description": "fill this with column name",
+                    "type": "string"
+                }
+            }
+        },
+        "api.Source": {
+            "type": "object",
+            "properties": {
+                "description": {
+                    "type": "string"
+                },
+                "email": {
+                    "type": "string"
+                },
+                "enabled": {
+                    "type": "boolean"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "onboardDate": {
+                    "type": "string"
+                },
+                "providerConnectionID": {
+                    "type": "string"
+                },
+                "providerConnectionName": {
+                    "type": "string"
+                },
+                "type": {
                     "type": "string"
                 }
             }
@@ -4616,66 +4662,6 @@
                 },
                 "size": {
                     "type": "integer"
-                }
-            }
-        },
-        "gitlab.com_keibiengine_keibi-engine_pkg_describe_api.Source": {
-            "type": "object",
-            "properties": {
-                "id": {
-                    "type": "string"
-                },
-                "lastComplianceReportAt": {
-                    "type": "string"
-                },
-                "lastDescribeJobStatus": {
-                    "type": "string"
-                },
-                "lastDescribedAt": {
-                    "type": "string"
-                },
-                "type": {
-                    "type": "string"
-                }
-            }
-        },
-        "gitlab.com_keibiengine_keibi-engine_pkg_inventory_api.Page": {
-            "type": "object",
-            "properties": {
-                "no": {
-                    "type": "integer"
-                },
-                "size": {
-                    "type": "integer"
-                }
-            }
-        },
-        "gitlab.com_keibiengine_keibi-engine_pkg_onboard_api.Source": {
-            "type": "object",
-            "properties": {
-                "description": {
-                    "type": "string"
-                },
-                "email": {
-                    "type": "string"
-                },
-                "enabled": {
-                    "type": "boolean"
-                },
-                "id": {
-                    "type": "string"
-                },
-                "onboardDate": {
-                    "type": "string"
-                },
-                "providerConnectionID": {
-                    "type": "string"
-                },
-                "providerConnectionName": {
-                    "type": "string"
-                },
-                "type": {
-                    "type": "string"
                 }
             }
         },

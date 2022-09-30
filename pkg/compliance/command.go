@@ -76,6 +76,7 @@ type ServerConfig struct {
 	PostgreSQL config.Postgres
 	Scheduler  config.KeibiService
 	Onboard    config.KeibiService
+	Inventory  config.KeibiService
 	Http       config.HttpServer
 }
 

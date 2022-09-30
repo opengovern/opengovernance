@@ -6,6 +6,8 @@ import (
 	"net/http"
 	"time"
 
+	"gitlab.com/keibiengine/keibi-engine/pkg/timewindow"
+
 	es2 "gitlab.com/keibiengine/keibi-engine/pkg/summarizer/es"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/summarizer/query"
@@ -30,11 +32,11 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	// finding dashboard
 	v1.POST("/findings", h.GetFindings)
 	v1.POST("/findings/filters", h.GetFindingFilters)
-	v1.GET("/findings/metrics", h.GetFindingsMetrics) //TODO-Saleh
+	v1.GET("/findings/metrics", h.GetFindingsMetrics)
 	v1.GET("/findings/:finding_id", h.GetFindingDetails)
 
 	// benchmark dashboard
-	v1.GET("/benchmarks/summary", h.GetBenchmarksSummary) //TODO-Saleh
+	v1.GET("/benchmarks/summary", h.GetBenchmarksSummary)
 	v1.GET("/benchmarks/:benchmark_id/insight", h.GetBenchmarkInsight)
 	v1.GET("/policy/summary/:benchmark_id", h.GetPolicySummary)
 
@@ -200,7 +202,29 @@ func (h *HttpHandler) GetFindings(ctx echo.Context) error {
 // @Success 200        {object} api.GetFindingsMetricsResponse
 // @Router  /compliance/api/v1/findings/metrics [get]
 func (h *HttpHandler) GetFindingsMetrics(ctx echo.Context) error {
-	return echo.NewHTTPError(http.StatusNotImplemented)
+	tw, err := timewindow.ParseTimeWindow(ctx.QueryParam("timeWindow"))
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid time window")
+	}
+
+	after := time.Now().Add(-1 * tw)
+	before := after.Add(24 * time.Hour)
+
+	metric, err := query.GetFindingMetrics(h.client, before, after)
+	if err != nil {
+		return err
+	}
+
+	if metric == nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "metrics not found")
+	}
+
+	var response api.GetFindingsMetricsResponse
+	response.TotalFindings = metric.PassedFindingsCount + metric.FailedFindingsCount + metric.UnknownFindingsCount
+	response.PassedFindings = metric.PassedFindingsCount
+	response.FailedFindings = metric.FailedFindingsCount
+	response.UnknownFindings = metric.UnknownFindingsCount
+	return ctx.JSON(http.StatusOK, response)
 }
 
 // GetFindingDetails godoc
@@ -253,7 +277,7 @@ func (h *HttpHandler) GetFindingDetails(ctx echo.Context) error {
 		PolicyDescription: p.Description,
 		Reason:            finding.Reason,
 	}
-	return echo.NewHTTPError(http.StatusOK, response)
+	return ctx.JSON(http.StatusOK, response)
 }
 
 // GetBenchmarkInsight godoc
@@ -319,7 +343,7 @@ func (h *HttpHandler) GetBenchmarkInsight(ctx echo.Context) error {
 		})
 	}
 
-	return echo.NewHTTPError(http.StatusNotImplemented)
+	return ctx.JSON(http.StatusOK, response)
 }
 
 // GetBenchmarksSummary godoc
@@ -349,6 +373,22 @@ func (h *HttpHandler) GetBenchmarksSummary(ctx echo.Context) error {
 			}
 		}
 		bs := BuildBenchmarkSummary(e, b)
+		assignments, err := h.db.GetBenchmarkAssignmentsByBenchmarkId(b.ID)
+		if err != nil {
+			return err
+		}
+		for _, conn := range assignments {
+			srcId := conn.SourceId.String()
+			count, err := h.inventoryClient.GetAccountsResourceCount(httpclient.FromEchoContext(ctx), source.Nil, &srcId)
+			if err != nil {
+				return err
+			}
+			if len(count) == 0 {
+				return errors.New("invalid assignment sourceId")
+			}
+			bs.TotalConnectionResources += int64(count[0].ResourceCount)
+		}
+		bs.AssignedConnectionsCount = int64(len(assignments))
 		response.ShortSummary.Passed += bs.ShortSummary.Passed
 		response.ShortSummary.Failed += bs.ShortSummary.Failed
 		response.TotalAssets += bs.TotalConnectionResources
