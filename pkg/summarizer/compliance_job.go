@@ -96,6 +96,7 @@ func (j ComplianceJob) Do(client keibi.Client, producer sarama.SyncProducer, top
 	var msgs []kafka.Doc
 	builders := []compliancebuilder.Builder{
 		compliancebuilder.NewBenchmarkSummaryBuilder(client, j.JobID),
+		compliancebuilder.NewAlarmsBuilder(client, j.JobID),
 		compliancebuilder.NewMetricsBuilder(client, j.JobID),
 	}
 	var searchAfter []interface{}
@@ -113,7 +114,10 @@ func (j ComplianceJob) Do(client keibi.Client, producer sarama.SyncProducer, top
 		logger.Info("got a batch of findings resources", zap.Int("count", len(findings.Hits.Hits)))
 		for _, finding := range findings.Hits.Hits {
 			for _, b := range builders {
-				b.Process(finding.Source)
+				err := b.Process(finding.Source)
+				if err != nil {
+					fail(fmt.Errorf("Failed to process due to: %v ", err))
+				}
 			}
 			searchAfter = finding.Sort
 		}

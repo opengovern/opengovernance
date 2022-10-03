@@ -26,7 +26,7 @@ func NewBenchmarkSummaryBuilder(client keibi.Client, summarizerJobID uint) *benc
 	}
 }
 
-func (b *benchmarkSummaryBuilder) Process(resource es2.Finding) {
+func (b *benchmarkSummaryBuilder) Process(resource es2.Finding) error {
 	if _, ok := b.benchmarkSummary[resource.BenchmarkID]; !ok {
 		b.benchmarkSummary[resource.BenchmarkID] = es.BenchmarkSummary{
 			BenchmarkID:   resource.BenchmarkID,
@@ -60,6 +60,7 @@ func (b *benchmarkSummaryBuilder) Process(resource es2.Finding) {
 		})
 	}
 	b.benchmarkSummary[resource.BenchmarkID] = v
+	return nil
 }
 
 func (b *benchmarkSummaryBuilder) PopulateHistory(lastDayJobID, lastWeekJobID, lastQuarterJobID, lastYearJobID uint) error {

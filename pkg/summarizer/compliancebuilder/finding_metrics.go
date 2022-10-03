@@ -28,7 +28,7 @@ func NewMetricsBuilder(client keibi.Client, summarizerJobID uint) *findingMetric
 	}
 }
 
-func (b *findingMetricsBuilder) Process(resource es2.Finding) {
+func (b *findingMetricsBuilder) Process(resource es2.Finding) error {
 	b.metrics.ScheduleJobID = b.summarizerJobID
 	b.metrics.EvaluatedAt = resource.EvaluatedAt
 	b.metrics.DescribedAt = resource.DescribedAt
@@ -40,6 +40,7 @@ func (b *findingMetricsBuilder) Process(resource es2.Finding) {
 	case types.ComplianceResultINFO, types.ComplianceResultSKIP:
 		b.metrics.UnknownFindingsCount++
 	}
+	return nil
 }
 
 func (b *findingMetricsBuilder) PopulateHistory(lastDayJobID, lastWeekJobID, lastQuarterJobID, lastYearJobID uint) error {
