@@ -37,7 +37,7 @@ func GetLastActiveAlarm(client keibi.Client, resourceID string, controlID string
 
 	filters = append(filters, map[string]interface{}{
 		"term": map[string]string{
-			"control_id": resourceID,
+			"control_id": controlID,
 		},
 	})
 
@@ -78,4 +78,48 @@ func GetLastActiveAlarm(client keibi.Client, resourceID string, controlID string
 		return &hit.Source, nil
 	}
 	return nil, nil
+}
+
+func GetAlarms(client keibi.Client, resourceID string, controlID string) ([]summarizer.FindingAlarm, error) {
+	res := make(map[string]interface{})
+	var filters []interface{}
+	filters = append(filters, map[string]interface{}{
+		"term": map[string]string{
+			"resource_id": resourceID,
+		},
+	})
+
+	filters = append(filters, map[string]interface{}{
+		"term": map[string]string{
+			"control_id": controlID,
+		},
+	})
+
+	res["size"] = summarizer.EsFetchPageSize
+	res["sort"] = []map[string]interface{}{
+		{"last_evaluated": "desc"},
+	}
+	res["query"] = map[string]interface{}{
+		"bool": map[string]interface{}{
+			"filter": filters,
+		},
+	}
+	b, err := json.Marshal(res)
+	if err != nil {
+		return nil, err
+	}
+
+	query := string(b)
+
+	var response FindingAlarmsQueryResponse
+	err = client.Search(context.Background(), summarizer.AlarmIndex, query, &response)
+	if err != nil {
+		return nil, err
+	}
+
+	var alarms []summarizer.FindingAlarm
+	for _, hit := range response.Hits.Hits {
+		alarms = append(alarms, hit.Source)
+	}
+	return alarms, nil
 }

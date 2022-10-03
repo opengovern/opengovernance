@@ -41,6 +41,15 @@ definitions:
       sourceType:
         type: string
     type: object
+  api.Alarms:
+    properties:
+      created_at:
+        type: integer
+      policy:
+        $ref: '#/definitions/types.FullPolicy'
+      status:
+        type: string
+    type: object
   api.AllResource:
     properties:
       attributes:
@@ -503,6 +512,10 @@ definitions:
     type: object
   api.GetFindingDetailsResponse:
     properties:
+      alarms:
+        items:
+          $ref: '#/definitions/api.Alarms'
+        type: array
       connection:
         $ref: '#/definitions/types.FullConnection'
       createdAt:

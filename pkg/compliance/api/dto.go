@@ -161,6 +161,12 @@ type GetFindingsMetricsResponse struct {
 	UnknownFindings int64 `json:"unknownFindings"`
 }
 
+type Alarms struct {
+	Policy    types.FullPolicy       `json:"policy"`
+	CreatedAt int64                  `json:"created_at"`
+	Status    types.ComplianceResult `json:"status"`
+}
+
 type GetFindingDetailsResponse struct {
 	Connection        types.FullConnection   `json:"connection"`
 	Resource          types.FullResource     `json:"resource"`
@@ -170,6 +176,7 @@ type GetFindingDetailsResponse struct {
 	PolicyTags        map[string]string      `json:"policyTags"`
 	PolicyDescription string                 `json:"policyDescription"`
 	Reason            string                 `json:"reason"`
+	Alarms            []Alarms               `json:"alarms"`
 }
 
 type InsightRecord struct {

@@ -257,6 +257,25 @@ func (h *HttpHandler) GetFindingDetails(ctx echo.Context) error {
 	for _, t := range p.Tags {
 		tags[t.Key] = t.Value
 	}
+
+	var alarms []api.Alarms
+
+	als, err := query.GetAlarms(h.client, finding.ResourceID, finding.PolicyID)
+	if err != nil {
+		return err
+	}
+
+	for _, a := range als {
+		alarms = append(alarms, api.Alarms{
+			Policy: types.FullPolicy{
+				ID:    p.ID,
+				Title: p.Title,
+			},
+			CreatedAt: a.CreatedAt,
+			Status:    a.Status,
+		})
+	}
+
 	response := api.GetFindingDetailsResponse{
 		Connection: types.FullConnection{
 			ID:           finding.SourceID,
@@ -276,6 +295,7 @@ func (h *HttpHandler) GetFindingDetails(ctx echo.Context) error {
 		PolicyTags:        tags,
 		PolicyDescription: p.Description,
 		Reason:            finding.Reason,
+		Alarms:            alarms,
 	}
 	return ctx.JSON(http.StatusOK, response)
 }

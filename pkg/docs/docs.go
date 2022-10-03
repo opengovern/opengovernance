@@ -2989,6 +2989,20 @@ const docTemplate = `{
                 }
             }
         },
+        "api.Alarms": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "integer"
+                },
+                "policy": {
+                    "$ref": "#/definitions/types.FullPolicy"
+                },
+                "status": {
+                    "type": "string"
+                }
+            }
+        },
         "api.AllResource": {
             "type": "object",
             "properties": {
@@ -3675,6 +3689,12 @@ const docTemplate = `{
         "api.GetFindingDetailsResponse": {
             "type": "object",
             "properties": {
+                "alarms": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/api.Alarms"
+                    }
+                },
                 "connection": {
                     "$ref": "#/definitions/types.FullConnection"
                 },
