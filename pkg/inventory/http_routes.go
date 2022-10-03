@@ -322,15 +322,20 @@ func (h *HttpHandler) GetTopServicesByCost(ctx echo.Context) error {
 // @Router  /inventory/api/v1/resources/top/accounts [get]
 func (h *HttpHandler) GetTopAccountsByResourceCount(ctx echo.Context) error {
 	provider, _ := source.ParseType(ctx.QueryParam("provider"))
-	count, err := strconv.Atoi(ctx.QueryParam("count"))
-	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, "invalid count")
+	count := EsFetchPageSize
+	countStr := ctx.QueryParam("count")
+	if len(countStr) > 0 {
+		c, err := strconv.Atoi(countStr)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "invalid count")
+		}
+		count = c
 	}
 
 	var hits []summarizer.ConnectionResourcesSummary
 
 	srt := []map[string]interface{}{{"resource_count": "desc"}}
-	hits, err = es.FetchConnectionResourcesSummaryPage(h.client, provider, nil, srt, count)
+	hits, err := es.FetchConnectionResourcesSummaryPage(h.client, provider, nil, srt, count)
 	var res []api.TopAccountResponse
 	for _, v := range hits {
 		res = append(res, api.TopAccountResponse{
