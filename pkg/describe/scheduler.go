@@ -441,6 +441,7 @@ func InitializeScheduler(
 	}
 
 	s.workspaceClient = workspaceClient.NewWorkspaceClient(WorkspaceBaseURL)
+	s.complianceClient = client.NewComplianceClient(ComplianceBaseURL)
 	defaultAccountID := "default"
 	s.es, err = keibi.NewClient(keibi.ClientConfig{
 		Addresses: []string{ElasticSearchAddress},
@@ -582,7 +583,7 @@ func (s *Scheduler) RunScheduleJobCompletionUpdater() {
 			}
 		}
 
-		if j.Status != summarizerapi.SummarizerJobSucceeded {
+		if j.Status == summarizerapi.SummarizerJobInProgress {
 			continue
 		}
 
