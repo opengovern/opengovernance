@@ -1671,7 +1671,7 @@ func (s Scheduler) scheduleInsightJob() {
 }
 
 func (s Scheduler) scheduleSummarizerJob(scheduleJobID uint) error {
-	job := newSummarizerJob(summarizer.JobType_ResourceSummarizer)
+	job := newSummarizerJob(summarizer.JobType_ResourceSummarizer, scheduleJobID)
 	err := s.db.AddSummarizerJob(&job)
 	if err != nil {
 		SummarizerJobsCount.WithLabelValues("failure").Inc()
@@ -1751,7 +1751,7 @@ func enqueueSummarizerJobs(db Database, q queue.Interface, job SummarizerJob, sc
 }
 
 func (s Scheduler) scheduleComplianceSummarizerJob(scheduleJobID uint) error {
-	job := newSummarizerJob(summarizer.JobType_ComplianceSummarizer)
+	job := newSummarizerJob(summarizer.JobType_ComplianceSummarizer, scheduleJobID)
 	err := s.db.AddSummarizerJob(&job)
 	if err != nil {
 		SummarizerJobsCount.WithLabelValues("failure").Inc()
@@ -2043,9 +2043,10 @@ func newInsightJob(insight Insight) InsightJob {
 	}
 }
 
-func newSummarizerJob(jobType summarizer.JobType) SummarizerJob {
+func newSummarizerJob(jobType summarizer.JobType, scheduleJobID uint) SummarizerJob {
 	return SummarizerJob{
 		Model:          gorm.Model{},
+		ScheduleJobID:  scheduleJobID,
 		Status:         summarizerapi.SummarizerJobInProgress,
 		JobType:        jobType,
 		FailureMessage: "",
