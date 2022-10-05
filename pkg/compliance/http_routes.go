@@ -36,6 +36,7 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	v1.GET("/findings/:finding_id", h.GetFindingDetails)
 
 	// benchmark dashboard
+	v1.GET("/benchmark/:benchmark_id", h.GetBenchmark)
 	v1.GET("/benchmarks/summary", h.GetBenchmarksSummary)
 	v1.GET("/benchmarks/:benchmark_id/insight", h.GetBenchmarkInsight)
 	v1.GET("/policy/summary/:benchmark_id", h.GetPolicySummary)
@@ -413,6 +414,57 @@ func (h *HttpHandler) GetBenchmarksSummary(ctx echo.Context) error {
 		response.ShortSummary.Failed += bs.ShortSummary.Failed
 		response.TotalAssets += bs.TotalConnectionResources
 		response.Benchmarks = append(response.Benchmarks, bs)
+	}
+	return ctx.JSON(http.StatusOK, response)
+}
+
+// GetBenchmark godoc
+// @Summary Get benchmark summary
+// @Tags    compliance
+// @Accept  json
+// @Produce json
+// @Router  /compliance/api/v1/benchmark/:benchmark_id [get]
+func (h *HttpHandler) GetBenchmark(ctx echo.Context) error {
+	benchmarkID := ctx.Param("benchmark_id")
+	benchmark, err := h.db.GetBenchmark(benchmarkID)
+	if err != nil {
+		return err
+	}
+
+	response := api.Benchmark{
+		ID:          benchmark.ID,
+		Title:       benchmark.Title,
+		Description: benchmark.Description,
+		Provider:    benchmark.Provider,
+		Enabled:     benchmark.Enabled,
+		Tags:        make(map[string]string),
+		Policies:    nil,
+	}
+	for _, tag := range benchmark.Tags {
+		response.Tags[tag.Key] = tag.Value
+	}
+
+	for _, p := range benchmark.Policies {
+		policy := api.Policy{
+			ID:                    p.ID,
+			Title:                 p.Title,
+			Description:           p.Description,
+			Tags:                  make(map[string]string),
+			Provider:              p.Provider,
+			Category:              p.Category,
+			SubCategory:           p.SubCategory,
+			Section:               p.Section,
+			Severity:              p.Severity,
+			ManualVerification:    p.ManualVerification,
+			ManualRemedation:      p.ManualRemedation,
+			CommandLineRemedation: p.CommandLineRemedation,
+			QueryToRun:            p.QueryToRun,
+			KeibiManaged:          p.KeibiManaged,
+		}
+		for _, tag := range p.Tags {
+			policy.Tags[tag.Key] = tag.Value
+		}
+		response.Policies = append(response.Policies, policy)
 	}
 	return ctx.JSON(http.StatusOK, response)
 }

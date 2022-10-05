@@ -22,6 +22,8 @@ type WorkerConfig struct {
 	Kafka                 config.Kafka
 	Vault                 config.Vault
 	PostgreSQL            config.Postgres
+	Compliance            config.KeibiService
+	Onboard               config.KeibiService
 	PrometheusPushAddress string
 }
 

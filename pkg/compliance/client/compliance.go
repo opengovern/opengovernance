@@ -12,6 +12,7 @@ import (
 
 type ComplianceServiceClient interface {
 	GetAllBenchmarkAssignmentsBySourceId(ctx *httpclient.Context, sourceID uuid.UUID) ([]compliance.BenchmarkAssignment, error)
+	GetBenchmark(ctx *httpclient.Context, benchmarkID string) (*compliance.Benchmark, error)
 }
 
 type complianceClient struct {
@@ -30,4 +31,14 @@ func (s *complianceClient) GetAllBenchmarkAssignmentsBySourceId(ctx *httpclient.
 		return nil, err
 	}
 	return response, nil
+}
+
+func (s *complianceClient) GetBenchmark(ctx *httpclient.Context, benchmarkID string) (*compliance.Benchmark, error) {
+	url := fmt.Sprintf("%s/api/v1/benchmark/%s", s.baseURL, benchmarkID)
+
+	var response compliance.Benchmark
+	if err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &response); err != nil {
+		return nil, err
+	}
+	return &response, nil
 }

@@ -10,6 +10,8 @@ import (
 	"path/filepath"
 	"time"
 
+	client2 "gitlab.com/keibiengine/keibi-engine/pkg/compliance/client"
+
 	api2 "gitlab.com/keibiengine/keibi-engine/pkg/auth/api"
 	"gitlab.com/keibiengine/keibi-engine/pkg/cloudservice"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpclient"
@@ -162,7 +164,7 @@ func (j *Job) Do(w *Worker) JobResult {
 		return j.failed("error: invalid source type")
 	}
 
-	modPath, err := j.BuildMod(w.db)
+	modPath, err := j.BuildMod(w.complianceClient)
 	if err != nil {
 		DoComplianceReportJobsDuration.WithLabelValues(string(j.SourceType), "failure").Observe(float64(time.Now().Unix() - startTime))
 		DoComplianceReportJobsCount.WithLabelValues(string(j.SourceType), "failure").Inc()
@@ -228,13 +230,13 @@ func (j *Job) RunSteampipeCheckFor(modPath string) (string, error) {
 	return exportFileName, nil
 }
 
-func (j *Job) BuildMod(db Database) (string, error) {
+func (j *Job) BuildMod(client client2.ComplianceServiceClient) (string, error) {
 	mod := steampipe.Mod{
 		ID:    fmt.Sprintf("mod-%d", j.JobID),
 		Title: fmt.Sprintf("Compliance worker mod for job %d", j.JobID),
 	}
 
-	b, err := db.GetBenchmark(j.BenchmarkID)
+	b, err := client.GetBenchmark(&httpclient.Context{UserRole: api2.ViewerRole}, j.BenchmarkID)
 	if err != nil {
 		return "", err
 	}
@@ -244,16 +246,12 @@ func (j *Job) BuildMod(db Database) (string, error) {
 
 	var controls []steampipe.Control
 	for _, p := range b.Policies {
-		tags := map[string]string{}
-		for _, tag := range p.Tags {
-			tags[tag.Key] = tag.Value
-		}
 		controls = append(controls, steampipe.Control{
 			ID:          p.ID,
 			Title:       p.Title,
 			Description: p.Description,
 			Severity:    p.Severity,
-			Tags:        tags,
+			Tags:        p.Tags,
 			SQL:         p.QueryToRun,
 		})
 	}

@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"strings"
 
-	"gitlab.com/keibiengine/keibi-engine/pkg/onboard/client"
+	client2 "gitlab.com/keibiengine/keibi-engine/pkg/compliance/client"
 
-	"gitlab.com/keibiengine/keibi-engine/pkg/internal/postgres"
+	"gitlab.com/keibiengine/keibi-engine/pkg/onboard/client"
 
 	"github.com/prometheus/client_golang/prometheus/push"
 
@@ -19,17 +19,17 @@ import (
 )
 
 type Worker struct {
-	id             string
-	jobQueue       queue.Interface
-	jobResultQueue queue.Interface
-	config         WorkerConfig
-	vault          vault.SourceConfig
-	kfkProducer    sarama.SyncProducer
-	kfkTopic       string
-	logger         *zap.Logger
-	pusher         *push.Pusher
-	db             Database
-	onboardClient  client.OnboardServiceClient
+	id               string
+	jobQueue         queue.Interface
+	jobResultQueue   queue.Interface
+	config           WorkerConfig
+	vault            vault.SourceConfig
+	kfkProducer      sarama.SyncProducer
+	kfkTopic         string
+	logger           *zap.Logger
+	pusher           *push.Pusher
+	onboardClient    client.OnboardServiceClient
+	complianceClient client2.ComplianceServiceClient
 }
 
 func InitializeWorker(
@@ -105,27 +105,8 @@ func InitializeWorker(
 	fmt.Println("Connected to vault:", config.Vault.Address)
 	w.vault = v
 
-	// setup postgres connection
-	cfg := postgres.Config{
-		Host:   config.PostgreSQL.Host,
-		Port:   config.PostgreSQL.Port,
-		User:   config.PostgreSQL.Username,
-		Passwd: config.PostgreSQL.Password,
-		DB:     config.PostgreSQL.DB,
-	}
-	orm, err := postgres.NewClient(&cfg, logger)
-	if err != nil {
-		return nil, fmt.Errorf("new postgres client: %w", err)
-	}
-
-	w.db = Database{orm: orm}
-	fmt.Println("Connected to the postgres database: ", config.PostgreSQL.DB)
-
-	err = w.db.Initialize()
-	if err != nil {
-		return nil, err
-	}
-	fmt.Println("Initialized postgres database: ", config.PostgreSQL.DB)
+	w.onboardClient = client.NewOnboardServiceClient(config.Onboard.BaseURL, nil)
+	w.complianceClient = client2.NewComplianceClient(config.Compliance.BaseURL)
 
 	w.pusher = push.New(prometheusPushAddress, "compliance-report")
 	w.pusher.Collector(DoComplianceReportJobsCount).
