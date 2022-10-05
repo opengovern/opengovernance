@@ -8,6 +8,7 @@ import (
 
 func BuildBenchmarkSummary(esb es.BenchmarkSummary, b Benchmark) api.BenchmarkSummary {
 	bs := api.BenchmarkSummary{
+		ID:                       b.ID,
 		Title:                    b.Title,
 		Description:              b.Description,
 		ShortSummary:             types.ComplianceResultShortSummary{},
