@@ -8,6 +8,10 @@ import (
 )
 
 func ParseTimeWindow(s string) (time.Duration, error) {
+	if len(s) == 0 {
+		return 0, errors.New("invalid time window")
+	}
+
 	if s == "max" {
 		return time.Duration(math.MaxInt64), nil
 	}
