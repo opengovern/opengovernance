@@ -635,7 +635,7 @@ func (s *Scheduler) RunScheduleJobCompletionUpdater() {
 			}
 		}
 
-		if j.Status != summarizerapi.SummarizerJobSucceeded {
+		if j.Status == summarizerapi.SummarizerJobInProgress {
 			continue
 		}
 
@@ -1561,8 +1561,8 @@ func enqueueComplianceReportJobs(logger *zap.Logger, db Database, q queue.Interf
 
 	if err := q.Publish(compliancereport.Job{
 		JobID:         crj.ID,
-		SourceID:      crj.SourceID,
 		ScheduleJobID: scheduleJob.ID,
+		SourceID:      crj.SourceID,
 		BenchmarkID:   crj.BenchmarkID,
 		SourceType:    source.Type(a.Type),
 		ConfigReg:     a.ConfigRef,
