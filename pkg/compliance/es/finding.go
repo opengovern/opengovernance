@@ -131,7 +131,9 @@ func FindingsQuery(client keibi.Client,
 	res["size"] = size
 	res["from"] = from
 
-	res["sort"] = sort
+	if sort != nil && len(sort) > 0 {
+		res["sort"] = sort
+	}
 
 	res["query"] = map[string]interface{}{
 		"bool": map[string]interface{}{
