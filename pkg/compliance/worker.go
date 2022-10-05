@@ -53,8 +53,8 @@ func InitializeWorker(
 	qCfg := queue.Config{}
 	qCfg.Server.Username = config.RabbitMQ.Username
 	qCfg.Server.Password = config.RabbitMQ.Password
-	qCfg.Server.Host = config.RabbitMQ.Host
-	qCfg.Server.Port = config.RabbitMQ.Port
+	qCfg.Server.Host = config.RabbitMQ.Service
+	qCfg.Server.Port = 5672
 	qCfg.Queue.Name = complianceReportJobQueue
 	qCfg.Queue.Durable = true
 	qCfg.Consumer.ID = w.id
@@ -68,8 +68,8 @@ func InitializeWorker(
 	qCfg = queue.Config{}
 	qCfg.Server.Username = config.RabbitMQ.Username
 	qCfg.Server.Password = config.RabbitMQ.Password
-	qCfg.Server.Host = config.RabbitMQ.Host
-	qCfg.Server.Port = config.RabbitMQ.Port
+	qCfg.Server.Host = config.RabbitMQ.Service
+	qCfg.Server.Port = 5672
 	qCfg.Queue.Name = complianceReportJobResultQueue
 	qCfg.Queue.Durable = true
 	qCfg.Producer.ID = w.id

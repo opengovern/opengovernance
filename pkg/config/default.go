@@ -27,8 +27,7 @@ type HttpServer struct {
 }
 
 type RabbitMQ struct {
-	Host     string
-	Port     int
+	Service  string
 	Username string
 	Password string
 }

@@ -21,7 +21,6 @@ type WorkerConfig struct {
 	ElasticSearch         config.ElasticSearch
 	Kafka                 config.Kafka
 	Vault                 config.Vault
-	PostgreSQL            config.Postgres
 	Compliance            config.KeibiService
 	Onboard               config.KeibiService
 	PrometheusPushAddress string
