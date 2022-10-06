@@ -186,6 +186,7 @@ func (j *Job) Do(w *Worker) JobResult {
 		return j.failed(err.Error())
 	}
 
+	time.Sleep(1 * time.Minute)
 	err = kafka.DoSend(w.kfkProducer, w.kfkTopic, msgs, j.logger)
 	if err != nil {
 		DoComplianceReportJobsDuration.WithLabelValues(string(j.SourceType), "failure").Observe(float64(time.Now().Unix() - startTime))
