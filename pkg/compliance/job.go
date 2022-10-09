@@ -219,7 +219,12 @@ func (j *Job) RunSteampipeCheckFor(modPath string) (string, error) {
 	// to prevent error on having alarms we ignore the error reported by cmd.Run()
 	// exported json summery object is being used for discovering whether
 	// there's an error or not
-	_ = exec.Command("steampipe", args...).Run()
+	cmd := exec.Command("steampipe", args...)
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		j.logger.Error("Error while running steampipe", zap.Error(err))
+	}
+	j.logger.Info("Output of steampipe:", zap.String("output", string(out)))
 
 	data, err := ioutil.ReadFile(exportFileName)
 	if err != nil {
