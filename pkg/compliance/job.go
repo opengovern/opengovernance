@@ -224,6 +224,7 @@ func (j *Job) RunSteampipeCheckFor(modPath string) (string, error) {
 	if err != nil {
 		j.logger.Error("Error while running steampipe", zap.Error(err))
 	}
+	fmt.Println("Output of steampipe:\n", string(out))
 	j.logger.Info("Output of steampipe:", zap.String("output", string(out)))
 
 	data, err := ioutil.ReadFile(exportFileName)
