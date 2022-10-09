@@ -171,7 +171,7 @@ func (j *Job) Do(w *Worker) JobResult {
 		return j.failed(err.Error())
 	}
 
-	resultFileName, err := j.RunSteampipeCheckFor(modPath)
+	resultFileName, err := j.RunSteampipeCheckFor(modPath, w.logger)
 	if err != nil {
 		DoComplianceReportJobsDuration.WithLabelValues(string(j.SourceType), "failure").Observe(float64(time.Now().Unix() - startTime))
 		DoComplianceReportJobsCount.WithLabelValues(string(j.SourceType), "failure").Inc()
@@ -203,7 +203,7 @@ func (j *Job) Do(w *Worker) JobResult {
 	}
 }
 
-func (j *Job) RunSteampipeCheckFor(modPath string) (string, error) {
+func (j *Job) RunSteampipeCheckFor(modPath string, logger *zap.Logger) (string, error) {
 	exportFileName := "result.json"
 
 	var args []string
@@ -219,13 +219,14 @@ func (j *Job) RunSteampipeCheckFor(modPath string) (string, error) {
 	// to prevent error on having alarms we ignore the error reported by cmd.Run()
 	// exported json summery object is being used for discovering whether
 	// there's an error or not
+	logger.Info("Running command", zap.Strings("args", args))
 	cmd := exec.Command("steampipe", args...)
 	out, err := cmd.CombinedOutput()
 	if err != nil {
-		j.logger.Error("Error while running steampipe", zap.Error(err))
+		logger.Error("Error while running steampipe", zap.Error(err))
 	}
 	fmt.Println("Output of steampipe:\n", string(out))
-	j.logger.Info("Output of steampipe:", zap.String("output", string(out)))
+	logger.Info("Output of steampipe:", zap.String("output", string(out)))
 
 	data, err := ioutil.ReadFile(exportFileName)
 	if err != nil {
