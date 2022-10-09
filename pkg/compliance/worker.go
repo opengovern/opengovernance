@@ -134,6 +134,7 @@ func (w *Worker) Run() error {
 		}
 		return err
 	}
+	job.logger = w.logger
 
 	result := job.Do(w)
 
