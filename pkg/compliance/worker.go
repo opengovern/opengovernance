@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
+	"time"
 
 	client2 "gitlab.com/keibiengine/keibi-engine/pkg/compliance/client"
 
@@ -118,6 +119,12 @@ func InitializeWorker(
 }
 
 func (w *Worker) Run() error {
+	defer func() {
+		if r := recover(); r != nil {
+			w.logger.Error("paniced with error", zap.Error(fmt.Errorf("%v", r)))
+		}
+	}()
+
 	w.logger.Info("Starting compliance worker")
 
 	msgs, err := w.jobQueue.Consume()
@@ -126,6 +133,8 @@ func (w *Worker) Run() error {
 	}
 
 	msg := <-msgs
+
+	w.logger.Info("Parsing job")
 
 	var job Job
 	if err := json.Unmarshal(msg.Body, &job); err != nil {
@@ -138,7 +147,9 @@ func (w *Worker) Run() error {
 	}
 	job.logger = w.logger
 
+	w.logger.Info("Running the job", zap.Uint("jobID", job.JobID))
 	result := job.Do(w)
+	w.logger.Info("Job finished", zap.Uint("jobID", job.JobID))
 
 	if err := w.jobResultQueue.Publish(result); err != nil {
 		w.logger.Error("Failed to send results to queue", zap.Error(err))
@@ -154,6 +165,7 @@ func (w *Worker) Run() error {
 		w.logger.Error("Failed to push metrics", zap.Error(err))
 	}
 
+	time.Sleep(1 * time.Minute)
 	return fmt.Errorf("report jobs channel is closed")
 }
 
