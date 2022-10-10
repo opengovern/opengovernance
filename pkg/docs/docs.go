@@ -187,6 +187,39 @@ const docTemplate = `{
                 }
             }
         },
+        "/compliance/api/v1/alarms/top": {
+            "post": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "compliance"
+                ],
+                "summary": "Returns all findings with respect to filters",
+                "parameters": [
+                    {
+                        "description": "Request Body",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/api.GetTopFieldRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/api.GetTopFieldResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/compliance/api/v1/benchmark/:benchmark_id": {
             "get": {
                 "consumes": [
@@ -489,7 +522,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/api.GetTopFieldByFindingCount"
+                            "$ref": "#/definitions/api.GetTopFieldRequest"
                         }
                     }
                 ],
@@ -497,7 +530,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/api.GetFindingsFiltersResponse"
+                            "$ref": "#/definitions/api.GetTopFieldResponse"
                         }
                     }
                 }
@@ -3902,7 +3935,7 @@ const docTemplate = `{
                 }
             }
         },
-        "api.GetTopFieldByFindingCount": {
+        "api.GetTopFieldRequest": {
             "type": "object",
             "properties": {
                 "count": {
@@ -3913,6 +3946,17 @@ const docTemplate = `{
                 },
                 "filters": {
                     "$ref": "#/definitions/api.FindingFilters"
+                }
+            }
+        },
+        "api.GetTopFieldResponse": {
+            "type": "object",
+            "properties": {
+                "records": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/api.TopFieldRecord"
+                    }
                 }
             }
         },
@@ -4468,6 +4512,17 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "sourceID": {
+                    "type": "string"
+                }
+            }
+        },
+        "api.TopFieldRecord": {
+            "type": "object",
+            "properties": {
+                "count": {
+                    "type": "integer"
+                },
+                "value": {
                     "type": "string"
                 }
             }

@@ -34,12 +34,18 @@ func (b *alarmsBuilder) Process(resource es2.Finding) error {
 		if resource.Status != types.ComplianceResultOK {
 			// create a new one
 			b.alarms = append(b.alarms, es.FindingAlarm{
-				ResourceID:    resource.ResourceID,
-				ControlID:     resource.PolicyID,
-				CreatedAt:     resource.DescribedAt,
-				ScheduleJobID: resource.ScheduleJobID,
-				LastEvaluated: resource.DescribedAt,
-				Status:        resource.Status,
+				ResourceID:     resource.ResourceID,
+				BenchmarkID:    resource.BenchmarkID,
+				ControlID:      resource.PolicyID,
+				ResourceType:   resource.ResourceType,
+				ServiceName:    resource.ServiceName,
+				SourceID:       resource.SourceID,
+				SourceType:     resource.SourceType,
+				PolicySeverity: resource.PolicySeverity,
+				CreatedAt:      resource.DescribedAt,
+				ScheduleJobID:  resource.ScheduleJobID,
+				LastEvaluated:  resource.DescribedAt,
+				Status:         resource.Status,
 				Events: []es.Event{
 					{
 						ResourceID:    resource.ResourceID,

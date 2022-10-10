@@ -107,7 +107,7 @@ func FindingsQuery(client keibi.Client,
 
 	if len(severity) > 0 {
 		filters = append(filters, map[string]interface{}{
-			"terms": map[string]interface{}{"severity": severity},
+			"terms": map[string]interface{}{"policySeverity": severity},
 		})
 	}
 
@@ -196,7 +196,7 @@ func FindingsFiltersQuery(client keibi.Client,
 	}
 
 	if len(severity) > 0 {
-		terms["severity"] = severity
+		terms["policySeverity"] = severity
 	}
 
 	if len(sourceID) > 0 {
@@ -224,7 +224,7 @@ func FindingsFiltersQuery(client keibi.Client,
 		"terms": map[string]interface{}{"field": "status", "size": 1000},
 	}
 	severityFilter := map[string]interface{}{
-		"terms": map[string]interface{}{"field": "severity", "size": 1000},
+		"terms": map[string]interface{}{"field": "policySeverity", "size": 1000},
 	}
 	sourceIDFilter := map[string]interface{}{
 		"terms": map[string]interface{}{"field": "sourceID", "size": 1000},
@@ -308,7 +308,7 @@ func FindingsTopFieldQuery(client keibi.Client,
 	}
 
 	if len(severity) > 0 {
-		terms["severity"] = severity
+		terms["policySeverity"] = severity
 	}
 
 	if len(sourceID) > 0 {

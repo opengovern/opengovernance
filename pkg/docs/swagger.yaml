@@ -622,7 +622,7 @@ definitions:
           type: string
         type: array
     type: object
-  api.GetTopFieldByFindingCount:
+  api.GetTopFieldRequest:
     properties:
       count:
         type: integer
@@ -630,6 +630,13 @@ definitions:
         type: string
       filters:
         $ref: '#/definitions/api.FindingFilters'
+    type: object
+  api.GetTopFieldResponse:
+    properties:
+      records:
+        items:
+          $ref: '#/definitions/api.TopFieldRecord'
+        type: array
     type: object
   api.Insight:
     properties:
@@ -1024,6 +1031,13 @@ definitions:
       sourceID:
         type: string
     type: object
+  api.TopFieldRecord:
+    properties:
+      count:
+        type: integer
+      value:
+        type: string
+    type: object
   api.TopServiceCostResponse:
     properties:
       cost:
@@ -1390,6 +1404,27 @@ paths:
       summary: Returns insight of a specific benchmark
       tags:
       - compliance
+  /compliance/api/v1/alarms/top:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Request Body
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/api.GetTopFieldRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/api.GetTopFieldResponse'
+      summary: Returns all findings with respect to filters
+      tags:
+      - compliance
   /compliance/api/v1/benchmark/:benchmark_id:
     get:
       consumes:
@@ -1606,14 +1641,14 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/api.GetTopFieldByFindingCount'
+          $ref: '#/definitions/api.GetTopFieldRequest'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/api.GetFindingsFiltersResponse'
+            $ref: '#/definitions/api.GetTopFieldResponse'
       summary: Returns all findings with respect to filters
       tags:
       - compliance

@@ -32,6 +32,7 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	// finding dashboard
 	v1.POST("/findings", h.GetFindings)
 	v1.POST("/findings/filters", h.GetFindingFilters)
+	v1.POST("/findings/top", h.GetTopFieldByFindingCount)
 	v1.GET("/findings/metrics", h.GetFindingsMetrics)
 	v1.GET("/findings/:finding_id", h.GetFindingDetails)
 
@@ -163,17 +164,48 @@ func (h *HttpHandler) GetFindingFilters(ctx echo.Context) error {
 // @Tags    compliance
 // @Accept  json
 // @Produce json
-// @Param   request body     api.GetTopFieldByFindingCount true "Request Body"
-// @Success 200     {object} api.GetFindingsFiltersResponse
+// @Param   request body     api.GetTopFieldRequest true "Request Body"
+// @Success 200     {object} api.GetTopFieldResponse
 // @Router  /compliance/api/v1/findings/top [post]
 func (h *HttpHandler) GetTopFieldByFindingCount(ctx echo.Context) error {
-	var req api.GetTopFieldByFindingCount
+	var req api.GetTopFieldRequest
 	if err := bindValidate(ctx, &req); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
 	var response api.GetTopFieldResponse
 	res, err := es.FindingsTopFieldQuery(h.client, req.Field, req.Filters.Provider, req.Filters.ResourceTypeID,
+		req.Filters.ConnectionID, req.Filters.FindingStatus, req.Filters.BenchmarkID, req.Filters.PolicyID,
+		req.Filters.Severity, req.Count)
+	if err != nil {
+		return err
+	}
+
+	for _, item := range res.Aggregations.FieldFilter.Buckets {
+		response.Records = append(response.Records, api.TopFieldRecord{
+			Value: item.Key,
+			Count: item.DocCount,
+		})
+	}
+	return ctx.JSON(http.StatusOK, response)
+}
+
+// GetTopFieldByAlarmCount godoc
+// @Summary Returns all findings with respect to filters
+// @Tags    compliance
+// @Accept  json
+// @Produce json
+// @Param   request body     api.GetTopFieldRequest true "Request Body"
+// @Success 200     {object} api.GetTopFieldResponse
+// @Router  /compliance/api/v1/alarms/top [post]
+func (h *HttpHandler) GetTopFieldByAlarmCount(ctx echo.Context) error {
+	var req api.GetTopFieldRequest
+	if err := bindValidate(ctx, &req); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	var response api.GetTopFieldResponse
+	res, err := query.AlarmTopFieldQuery(h.client, req.Field, req.Filters.Provider, req.Filters.ResourceTypeID,
 		req.Filters.ConnectionID, req.Filters.FindingStatus, req.Filters.BenchmarkID, req.Filters.PolicyID,
 		req.Filters.Severity, req.Count)
 	if err != nil {

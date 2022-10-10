@@ -91,13 +91,7 @@ const (
 	TopField_Resources    TopField = "resourceID"
 )
 
-type GetTopFieldByFindingCount struct {
-	Field   TopField       `json:"field"`
-	Filters FindingFilters `json:"filters"`
-	Count   int            `json:"count"`
-}
-
-type GetTopFieldByAlarmCount struct {
+type GetTopFieldRequest struct {
 	Field   TopField       `json:"field"`
 	Filters FindingFilters `json:"filters"`
 	Count   int            `json:"count"`
