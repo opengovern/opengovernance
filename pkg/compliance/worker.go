@@ -129,9 +129,11 @@ func (w *Worker) Run() error {
 
 	msgs, err := w.jobQueue.Consume()
 	if err != nil {
+		w.logger.Info("Failed to consume due to error", zap.Error(err))
 		return err
 	}
 
+	w.logger.Info("Reading message")
 	msg := <-msgs
 
 	w.logger.Info("Parsing job")
