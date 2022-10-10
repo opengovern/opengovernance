@@ -158,6 +158,37 @@ func (h *HttpHandler) GetFindingFilters(ctx echo.Context) error {
 	return ctx.JSON(http.StatusOK, response)
 }
 
+// GetTopFieldByFindingCount godoc
+// @Summary Returns all findings with respect to filters
+// @Tags    compliance
+// @Accept  json
+// @Produce json
+// @Param   request body     api.GetTopFieldByFindingCount true "Request Body"
+// @Success 200     {object} api.GetFindingsFiltersResponse
+// @Router  /compliance/api/v1/findings/top [post]
+func (h *HttpHandler) GetTopFieldByFindingCount(ctx echo.Context) error {
+	var req api.GetTopFieldByFindingCount
+	if err := bindValidate(ctx, &req); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	var response api.GetTopFieldResponse
+	res, err := es.FindingsTopFieldQuery(h.client, req.Field, req.Filters.Provider, req.Filters.ResourceTypeID,
+		req.Filters.ConnectionID, req.Filters.FindingStatus, req.Filters.BenchmarkID, req.Filters.PolicyID,
+		req.Filters.Severity, req.Count)
+	if err != nil {
+		return err
+	}
+
+	for _, item := range res.Aggregations.FieldFilter.Buckets {
+		response.Records = append(response.Records, api.TopFieldRecord{
+			Value: item.Key,
+			Count: item.DocCount,
+		})
+	}
+	return ctx.JSON(http.StatusOK, response)
+}
+
 // GetFindings godoc
 // @Summary Returns all findings with respect to filters
 // @Tags    compliance

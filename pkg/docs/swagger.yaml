@@ -124,6 +124,8 @@ definitions:
         type: string
       enabled:
         type: boolean
+      id:
+        type: string
       policies:
         items:
           $ref: '#/definitions/api.BenchmarkSummaryPolicySummary'
@@ -619,6 +621,15 @@ definitions:
         items:
           type: string
         type: array
+    type: object
+  api.GetTopFieldByFindingCount:
+    properties:
+      count:
+        type: integer
+      field:
+        type: string
+      filters:
+        $ref: '#/definitions/api.FindingFilters'
     type: object
   api.Insight:
     properties:
@@ -1379,6 +1390,16 @@ paths:
       summary: Returns insight of a specific benchmark
       tags:
       - compliance
+  /compliance/api/v1/benchmark/:benchmark_id:
+    get:
+      consumes:
+      - application/json
+      produces:
+      - application/json
+      responses: {}
+      summary: Get benchmark summary
+      tags:
+      - compliance
   /compliance/api/v1/benchmarks/{benchmark_id}/source/{source_id}:
     delete:
       consumes:
@@ -1573,6 +1594,27 @@ paths:
           schema:
             $ref: '#/definitions/api.GetFindingsMetricsResponse'
       summary: Returns findings metrics
+      tags:
+      - compliance
+  /compliance/api/v1/findings/top:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Request Body
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/api.GetTopFieldByFindingCount'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/api.GetFindingsFiltersResponse'
+      summary: Returns all findings with respect to filters
       tags:
       - compliance
   /compliance/api/v1/policy/summary/{benchmark_id}:

@@ -118,6 +118,8 @@ func InitializeWorker(
 }
 
 func (w *Worker) Run() error {
+	w.logger.Info("Starting compliance worker")
+
 	msgs, err := w.jobQueue.Consume()
 	if err != nil {
 		return err

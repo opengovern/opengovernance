@@ -187,6 +187,21 @@ const docTemplate = `{
                 }
             }
         },
+        "/compliance/api/v1/benchmark/:benchmark_id": {
+            "get": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "compliance"
+                ],
+                "summary": "Get benchmark summary",
+                "responses": {}
+            }
+        },
         "/compliance/api/v1/benchmarks/source/{source_id}": {
             "get": {
                 "description": "Returns all benchmark assignments with source id",
@@ -450,6 +465,39 @@ const docTemplate = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/api.GetFindingsMetricsResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/compliance/api/v1/findings/top": {
+            "post": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "compliance"
+                ],
+                "summary": "Returns all findings with respect to filters",
+                "parameters": [
+                    {
+                        "description": "Request Body",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/api.GetTopFieldByFindingCount"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/api.GetFindingsFiltersResponse"
                         }
                     }
                 }
@@ -3116,6 +3164,9 @@ const docTemplate = `{
                 "enabled": {
                     "type": "boolean"
                 },
+                "id": {
+                    "type": "string"
+                },
                 "policies": {
                     "type": "array",
                     "items": {
@@ -3848,6 +3899,20 @@ const docTemplate = `{
                     "items": {
                         "type": "string"
                     }
+                }
+            }
+        },
+        "api.GetTopFieldByFindingCount": {
+            "type": "object",
+            "properties": {
+                "count": {
+                    "type": "integer"
+                },
+                "field": {
+                    "type": "string"
+                },
+                "filters": {
+                    "$ref": "#/definitions/api.FindingFilters"
                 }
             }
         },

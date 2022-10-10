@@ -274,3 +274,91 @@ func FindingsFiltersQuery(client keibi.Client,
 	err = client.Search(context.Background(), FindingsIndex, string(queryBytes), &resp)
 	return &resp, err
 }
+
+type FindingsTopFieldResponse struct {
+	Aggregations FindingsTopFieldAggregations `json:"aggregations"`
+}
+type FindingsTopFieldAggregations struct {
+	FieldFilter AggregationResult `json:"field_filter"`
+}
+
+func FindingsTopFieldQuery(client keibi.Client,
+	field string,
+	provider []source.Type,
+	resourceTypeID []string,
+	sourceID []uuid.UUID,
+	status []types.ComplianceResult,
+	benchmarkID []string,
+	policyID []string,
+	severity []string,
+	size int,
+) (*FindingsTopFieldResponse, error) {
+	terms := make(map[string]interface{})
+
+	if len(benchmarkID) > 0 {
+		terms["benchmarkID"] = benchmarkID
+	}
+
+	if len(policyID) > 0 {
+		terms["policyID"] = policyID
+	}
+
+	if len(status) > 0 {
+		terms["status"] = status
+	}
+
+	if len(severity) > 0 {
+		terms["severity"] = severity
+	}
+
+	if len(sourceID) > 0 {
+		terms["sourceID"] = sourceID
+	}
+
+	if len(resourceTypeID) > 0 {
+		terms["resourceType"] = resourceTypeID
+	}
+
+	if len(provider) > 0 {
+		terms["sourceType"] = provider
+	}
+
+	root := map[string]interface{}{}
+	root["size"] = 0
+
+	fieldFilter := map[string]interface{}{
+		"terms": map[string]interface{}{"field": field, "size": size},
+	}
+	aggs := map[string]interface{}{
+		"field_filter": fieldFilter,
+	}
+	root["aggs"] = aggs
+
+	boolQuery := make(map[string]interface{})
+	if terms != nil && len(terms) > 0 {
+		var filters []map[string]interface{}
+		for k, vs := range terms {
+			filters = append(filters, map[string]interface{}{
+				"terms": map[string]interface{}{
+					k: vs,
+				},
+			})
+		}
+
+		boolQuery["filter"] = filters
+	}
+	if len(boolQuery) > 0 {
+		root["query"] = map[string]interface{}{
+			"bool": boolQuery,
+		}
+	}
+
+	queryBytes, err := json.Marshal(root)
+	if err != nil {
+		return nil, err
+	}
+
+	var resp FindingsTopFieldResponse
+	err = client.Search(context.Background(), FindingsIndex, string(queryBytes), &resp)
+	return &resp, err
+}

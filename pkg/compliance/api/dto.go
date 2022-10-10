@@ -82,6 +82,36 @@ type GetFindingsRequest struct {
 	Page    Page              `json:"page" validate:"required"`
 }
 
+type TopField = string
+
+const (
+	TopField_ResourceType TopField = "resourceType"
+	TopField_CloudService TopField = "serviceName"
+	TopField_CloudAccount TopField = "sourceID"
+	TopField_Resources    TopField = "resourceID"
+)
+
+type GetTopFieldByFindingCount struct {
+	Field   TopField       `json:"field"`
+	Filters FindingFilters `json:"filters"`
+	Count   int            `json:"count"`
+}
+
+type GetTopFieldByAlarmCount struct {
+	Field   TopField       `json:"field"`
+	Filters FindingFilters `json:"filters"`
+	Count   int            `json:"count"`
+}
+
+type TopFieldRecord struct {
+	Value string `json:"value"`
+	Count int    `json:"count"`
+}
+
+type GetTopFieldResponse struct {
+	Records []TopFieldRecord `json:"records"`
+}
+
 type GetFindingsResponse struct {
 	Findings   []es.Finding `json:"findings"`
 	TotalCount int64        `json:"totalCount,omitempty"`
