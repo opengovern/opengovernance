@@ -271,11 +271,15 @@ func (j *Job) BuildMod(client client2.ComplianceServiceClient) (string, error) {
 
 	content := mod.String() + "\n\n" + benchmark.String()
 
-	_ = os.Mkdir(mod.ID, os.ModePerm)
+	err = os.Mkdir(mod.ID, os.ModePerm)
+	if err != nil {
+		return "", err
+	}
+
 	filename := mod.ID + "/mod.sp"
 	err = ioutil.WriteFile(filename, []byte(content), os.ModePerm)
 
-	return filename, err
+	return mod.ID, err
 }
 
 func (j *Job) ParseResult(onboardClient client.OnboardServiceClient, resultFilename string, evaluatedAt int64) ([]kafka.Doc, error) {
