@@ -108,7 +108,7 @@ type GetTopFieldResponse struct {
 
 type GetFindingsResponse struct {
 	Findings   []es.Finding `json:"findings"`
-	TotalCount int64        `json:"totalCount,omitempty"`
+	TotalCount int64        `json:"totalCount"`
 }
 
 type GetFindingsFiltersResponse struct {
