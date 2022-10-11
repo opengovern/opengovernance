@@ -3,13 +3,14 @@ package compliance
 import (
 	"fmt"
 
+	"gitlab.com/keibiengine/keibi-engine/pkg/internal/postgres"
+
 	client3 "gitlab.com/keibiengine/keibi-engine/pkg/inventory/client"
 
 	client2 "gitlab.com/keibiengine/keibi-engine/pkg/onboard/client"
 	"go.uber.org/zap"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/describe/client"
-	"gitlab.com/keibiengine/keibi-engine/pkg/internal/postgres"
 	"gitlab.com/keibiengine/keibi-engine/pkg/keibi-es-sdk"
 )
 

@@ -36,6 +36,7 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	v1.GET("/findings/metrics", h.GetFindingsMetrics)
 	v1.GET("/findings/:finding_id", h.GetFindingDetails)
 
+	v1.POST("/alarms/top", h.GetTopFieldByAlarmCount)
 	// benchmark dashboard
 	v1.GET("/benchmark/:benchmark_id", h.GetBenchmark)
 	v1.GET("/benchmarks/summary", h.GetBenchmarksSummary)
