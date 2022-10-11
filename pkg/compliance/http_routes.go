@@ -39,6 +39,7 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	v1.POST("/alarms/top", h.GetTopFieldByAlarmCount)
 	// benchmark dashboard
 	v1.GET("/benchmark/:benchmark_id", h.GetBenchmark)
+	v1.GET("/benchmark/:benchmark_id/summary", h.GetBenchmarkSummary)
 	v1.GET("/benchmarks/summary", h.GetBenchmarksSummary)
 	v1.GET("/benchmarks/:benchmark_id/insight", h.GetBenchmarkInsight)
 	v1.GET("/policy/summary/:benchmark_id", h.GetPolicySummary)
@@ -487,6 +488,7 @@ func (h *HttpHandler) GetBenchmarksSummary(ctx echo.Context) error {
 // @Tags    compliance
 // @Accept  json
 // @Produce json
+// @Success 200 {object} api.Benchmark
 // @Router  /compliance/api/v1/benchmark/:benchmark_id [get]
 func (h *HttpHandler) GetBenchmark(ctx echo.Context) error {
 	benchmarkID := ctx.Param("benchmark_id")
@@ -529,6 +531,44 @@ func (h *HttpHandler) GetBenchmark(ctx echo.Context) error {
 			policy.Tags[tag.Key] = tag.Value
 		}
 		response.Policies = append(response.Policies, policy)
+	}
+	return ctx.JSON(http.StatusOK, response)
+}
+
+// GetBenchmarkSummary godoc
+// @Summary Get benchmark summary
+// @Tags    compliance
+// @Accept  json
+// @Produce json
+// @Success 200 {object} types.ComplianceResultSummary
+// @Router  /compliance/api/v1/benchmark/:benchmark_id/summary [get]
+func (h *HttpHandler) GetBenchmarkSummary(ctx echo.Context) error {
+	benchmarkID := ctx.Param("benchmark_id")
+	row, err := query.ListBenchmarkSummaries(h.client, &benchmarkID)
+	if err != nil {
+		return err
+	}
+
+	if len(row) < 1 {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid benchmarkID")
+	}
+
+	response := types.ComplianceResultSummary{}
+	for _, policy := range row[0].Policies {
+		for _, resource := range policy.Resources {
+			switch resource.Result {
+			case types.ComplianceResultOK:
+				response.OkCount++
+			case types.ComplianceResultSKIP:
+				response.SkipCount++
+			case types.ComplianceResultINFO:
+				response.InfoCount++
+			case types.ComplianceResultERROR:
+				response.ErrorCount++
+			case types.ComplianceResultALARM:
+				response.AlarmCount++
+			}
+		}
 	}
 	return ctx.JSON(http.StatusOK, response)
 }

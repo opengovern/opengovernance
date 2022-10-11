@@ -232,7 +232,36 @@ const docTemplate = `{
                     "compliance"
                 ],
                 "summary": "Get benchmark summary",
-                "responses": {}
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/api.Benchmark"
+                        }
+                    }
+                }
+            }
+        },
+        "/compliance/api/v1/benchmark/:benchmark_id/summary": {
+            "get": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "compliance"
+                ],
+                "summary": "Get benchmark summary",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/types.ComplianceResultSummary"
+                        }
+                    }
+                }
             }
         },
         "/compliance/api/v1/benchmarks/source/{source_id}": {
@@ -3160,6 +3189,38 @@ const docTemplate = `{
                 }
             }
         },
+        "api.Benchmark": {
+            "type": "object",
+            "properties": {
+                "description": {
+                    "type": "string"
+                },
+                "enabled": {
+                    "type": "boolean"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "policies": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/api.Policy"
+                    }
+                },
+                "provider": {
+                    "type": "string"
+                },
+                "tags": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
+                },
+                "title": {
+                    "type": "string"
+                }
+            }
+        },
         "api.BenchmarkAssignedSource": {
             "type": "object",
             "properties": {
@@ -4080,6 +4141,56 @@ const docTemplate = `{
                 }
             }
         },
+        "api.Policy": {
+            "type": "object",
+            "properties": {
+                "category": {
+                    "type": "string"
+                },
+                "commandLineRemedation": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "keibiManaged": {
+                    "type": "boolean"
+                },
+                "manualRemedation": {
+                    "type": "string"
+                },
+                "manualVerification": {
+                    "type": "string"
+                },
+                "provider": {
+                    "type": "string"
+                },
+                "queryToRun": {
+                    "type": "string"
+                },
+                "section": {
+                    "type": "string"
+                },
+                "severity": {
+                    "type": "string"
+                },
+                "subCategory": {
+                    "type": "string"
+                },
+                "tags": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
+                },
+                "title": {
+                    "type": "string"
+                }
+            }
+        },
         "api.Provider": {
             "type": "object",
             "properties": {
@@ -4838,6 +4949,26 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "passed": {
+                    "type": "integer"
+                }
+            }
+        },
+        "types.ComplianceResultSummary": {
+            "type": "object",
+            "properties": {
+                "alarmCount": {
+                    "type": "integer"
+                },
+                "errorCount": {
+                    "type": "integer"
+                },
+                "infoCount": {
+                    "type": "integer"
+                },
+                "okCount": {
+                    "type": "integer"
+                },
+                "skipCount": {
                     "type": "integer"
                 }
             }
