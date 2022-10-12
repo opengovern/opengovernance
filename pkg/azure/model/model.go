@@ -225,6 +225,14 @@ type NetworkWatcherFlowLogDescription struct {
 	ResourceGroup      string
 }
 
+//index:microsoft_network_routetables
+//getfilter:name=description.RouteTable.Name
+//getfilter:resource_group=description.ResourceGroup
+type RouteTablesDescription struct {
+	RouteTable    newnetwork.RouteTable
+	ResourceGroup string
+}
+
 //  =================== policy ==================
 
 //index:microsoft_authorization_policyassignments
