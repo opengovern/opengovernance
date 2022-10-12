@@ -225,6 +225,14 @@ type NetworkWatcherFlowLogDescription struct {
 	ResourceGroup      string
 }
 
+//index:microsoft_network_expressroutecircuit
+//getfilter:name=description.ExpressRouteCircuit.name
+//getfilter:resource_group=description.ResourceGroup
+type ExpressRouteCircuitDescription struct {
+	ExpressRouteCircuit newnetwork.ExpressRouteCircuit
+	ResourceGroup       string
+}
+
 //  =================== policy ==================
 
 //index:microsoft_authorization_policyassignments
