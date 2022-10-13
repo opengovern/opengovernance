@@ -34,7 +34,7 @@ func FetchFindingsByScheduleJobID(client keibi.Client, scheduleJobID uint, searc
 	res := make(map[string]interface{})
 	var filters []interface{}
 	filters = append(filters, map[string]interface{}{
-		"terms": map[string][]interface{}{"schedule_job_id": {scheduleJobID}},
+		"terms": map[string][]interface{}{"scheduleJobID": {scheduleJobID}},
 	})
 
 	if searchAfter != nil {
