@@ -146,7 +146,7 @@ func FindingsQuery(client keibi.Client,
 	}
 
 	var resp FindingsQueryResponse
-	err = client.Search(context.Background(), FindingsIndex, string(b), &resp)
+	err = client.SearchWithTrackTotalHits(context.Background(), FindingsIndex, string(b), &resp, true)
 	return &resp, err
 }
 
