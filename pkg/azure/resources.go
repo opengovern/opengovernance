@@ -118,7 +118,7 @@ var resourceTypeToDescriber = map[string]ResourceDescriber{
 	//"Microsoft.ManagedIdentity/userAssignedIdentities":          nil,
 	//"Microsoft.Management/managementGroups":                     nil,
 	//"Microsoft.Migrate/assessmentProjects":                      nil,
-	//"Microsoft.Network/applicationSecurityGroups":               nil,
+	"Microsoft.Network/applicationSecurityGroups": DescribeBySubscription(describer.NetworkApplicationSecurityGroups),
 	//"Microsoft.Network/azureFirewalls":                          nil,
 	//"Microsoft.Network/bastionHosts":                            nil,
 	//"Microsoft.Network/connections":                             nil,

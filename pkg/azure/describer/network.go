@@ -350,3 +350,51 @@ func RouteTables(ctx context.Context, authorizer autorest.Authorizer, subscripti
 	}
 	return values, nil
 }
+
+func NetworkApplicationSecurityGroups(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
+	client := newnetwork.NewApplicationSecurityGroupsClient(subscription)
+	client.Authorizer = authorizer
+
+	result, err := client.ListAll(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	var values []Resource
+	for _, applicationSecurityGroup := range result.Values() {
+		resourceGroup := strings.Split(*applicationSecurityGroup.ID, "/")[4]
+
+		values = append(values, Resource{
+			ID:       *applicationSecurityGroup.ID,
+			Name:     *applicationSecurityGroup.Name,
+			Location: *applicationSecurityGroup.Location,
+			Description: model.NetworkApplicationSecurityGroupsDescription{
+				ApplicationSecurityGroup: applicationSecurityGroup,
+				ResourceGroup:            resourceGroup,
+			},
+		})
+	}
+
+	for result.NotDone() {
+		err = result.NextWithContext(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, applicationSecurityGroup := range result.Values() {
+			resourceGroup := strings.Split(*applicationSecurityGroup.ID, "/")[4]
+
+			values = append(values, Resource{
+				ID:       *applicationSecurityGroup.ID,
+				Name:     *applicationSecurityGroup.Name,
+				Location: *applicationSecurityGroup.Location,
+				Description: model.NetworkApplicationSecurityGroupsDescription{
+					ApplicationSecurityGroup: applicationSecurityGroup,
+					ResourceGroup:            resourceGroup,
+				},
+			})
+		}
+	}
+
+	return values, nil
+}
