@@ -135,7 +135,7 @@ var resourceTypeToDescriber = map[string]ResourceDescriber{
 	//"Microsoft.Network/publicIPAddresses":                       nil,
 	//"Microsoft.Network/publicIPPrefixes":                        nil,
 	//"Microsoft.Network/routeFilters":                            nil,
-	//"Microsoft.Network/routeTables":                             nil,
+	"Microsoft.Network/routeTables": DescribeBySubscription(describer.RouteTables),
 	//"Microsoft.Network/serviceEndpointPolicies":                 nil,
 	//"Microsoft.Network/trafficManagerProfiles":                  nil,
 	//"Microsoft.Network/virtualNetworkGateways":                  nil,
