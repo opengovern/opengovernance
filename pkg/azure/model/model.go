@@ -151,6 +151,14 @@ type ComputeVirtualMachineScaleSetDescription struct {
 	ResourceGroup                    string
 }
 
+//index:microsoft_compute_snapshots
+//getfilter:name=description.Snapshot.Name
+//getfilter:resource_group=description.ResourceGroup
+type ComputeSnapshotsDescription struct {
+	Snapshot      compute.Snapshot
+	ResourceGroup string
+}
+
 //  =================== databoxedge ==================
 
 //index:microsoft_databoxedge_databoxedgedevices

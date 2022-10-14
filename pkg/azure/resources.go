@@ -161,7 +161,7 @@ var resourceTypeToDescriber = map[string]ResourceDescriber{
 	//"Microsoft.Compute/cloudServices":                           nil,
 	//"Microsoft.Compute/diskEncryptionSets":                      nil,
 	//"Microsoft.Compute/galleries":                               nil,
-	//"Microsoft.Compute/snapshots":                               nil,
+	"Microsoft.Compute/snapshots": DescribeBySubscription(describer.ComputeSnapshots),
 	//"Microsoft.ContainerInstance/containerGroups":               nil,
 }
 
