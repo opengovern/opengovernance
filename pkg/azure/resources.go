@@ -146,7 +146,7 @@ var resourceTypeToDescriber = map[string]ResourceDescriber{
 	//"Microsoft.OperationalInsights/workspaces":                  nil,
 	//"Microsoft.PowerBIDedicated/capacities":                     nil,
 	//"Microsoft.Purview/accounts":                                nil,
-	//"Microsoft.RecoveryServices/vaults":                         nil,
+	"Microsoft.RecoveryServices/vaults": DescribeBySubscription(describer.RecoveryServicesVault),
 	//"Microsoft.StorSimple/managers":                             nil,
 	//"Microsoft.StreamAnalytics/cluster":                         nil,
 	//"Microsoft.Synapse/workspaces/sqlPools":                     nil,
