@@ -6,6 +6,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/profiles/2020-09-01/monitor/mgmt/insights"
 	"github.com/Azure/azure-sdk-for-go/profiles/latest/healthcareapis/mgmt/healthcareapis"
 	"github.com/Azure/azure-sdk-for-go/profiles/latest/hybridcompute/mgmt/hybridcompute"
+	"github.com/Azure/azure-sdk-for-go/profiles/latest/recoveryservices/mgmt/recoveryservices"
 	"github.com/Azure/azure-sdk-for-go/profiles/latest/resources/mgmt/links"
 	"github.com/Azure/azure-sdk-for-go/profiles/latest/resources/mgmt/policy"
 	sub "github.com/Azure/azure-sdk-for-go/profiles/latest/subscription/mgmt/subscription"
@@ -852,4 +853,14 @@ type StorageAccountDescription struct {
 	DiagnosticSettingsResources *[]insights.DiagnosticSettingsResource
 	EncryptionScopes            []storage.EncryptionScope
 	ResourceGroup               string
+}
+
+//  =================== recoveryservice ==================
+
+//index:microsoft_recoveryservices_vault
+//getfilter:name=description.Vault.Name
+//getfilter:resource_group=description.ResourceGroup
+type RecoveryServicesVaultDescription struct {
+	Vault         recoveryservices.Vault
+	ResourceGroup string
 }
