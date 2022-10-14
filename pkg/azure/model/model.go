@@ -242,6 +242,14 @@ type RouteTablesDescription struct {
 	ResourceGroup string
 }
 
+//index:microsoft_network_applicationsecuritygroups
+//getfilter:name=description.ApplicationSecurityGroup.Name
+//getfilter:resource_group=description.ResourceGroup
+type NetworkApplicationSecurityGroupsDescription struct {
+	ApplicationSecurityGroup newnetwork.ApplicationSecurityGroup
+	ResourceGroup            string
+}
+
 //  =================== policy ==================
 
 //index:microsoft_authorization_policyassignments
