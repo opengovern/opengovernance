@@ -6,6 +6,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/profiles/2020-09-01/monitor/mgmt/insights"
 	"github.com/Azure/azure-sdk-for-go/profiles/latest/healthcareapis/mgmt/healthcareapis"
 	"github.com/Azure/azure-sdk-for-go/profiles/latest/hybridcompute/mgmt/hybridcompute"
+	"github.com/Azure/azure-sdk-for-go/profiles/latest/recoveryservices/mgmt/recoveryservices"
 	"github.com/Azure/azure-sdk-for-go/profiles/latest/resources/mgmt/links"
 	"github.com/Azure/azure-sdk-for-go/profiles/latest/resources/mgmt/policy"
 	sub "github.com/Azure/azure-sdk-for-go/profiles/latest/subscription/mgmt/subscription"
@@ -151,6 +152,14 @@ type ComputeVirtualMachineScaleSetDescription struct {
 	ResourceGroup                    string
 }
 
+//index:microsoft_compute_snapshots
+//getfilter:name=description.Snapshot.Name
+//getfilter:resource_group=description.ResourceGroup
+type ComputeSnapshotsDescription struct {
+	Snapshot      compute.Snapshot
+	ResourceGroup string
+}
+
 //  =================== databoxedge ==================
 
 //index:microsoft_databoxedge_databoxedgedevices
@@ -223,6 +232,22 @@ type NetworkWatcherFlowLogDescription struct {
 	NetworkWatcherName string
 	FlowLog            network.FlowLog
 	ResourceGroup      string
+}
+
+//index:microsoft_network_routetables
+//getfilter:name=description.RouteTable.Name
+//getfilter:resource_group=description.ResourceGroup
+type RouteTablesDescription struct {
+	RouteTable    newnetwork.RouteTable
+	ResourceGroup string
+}
+
+//index:microsoft_network_applicationsecuritygroups
+//getfilter:name=description.ApplicationSecurityGroup.Name
+//getfilter:resource_group=description.ResourceGroup
+type NetworkApplicationSecurityGroupsDescription struct {
+	ApplicationSecurityGroup newnetwork.ApplicationSecurityGroup
+	ResourceGroup            string
 }
 
 //  =================== policy ==================
@@ -852,4 +877,14 @@ type StorageAccountDescription struct {
 	DiagnosticSettingsResources *[]insights.DiagnosticSettingsResource
 	EncryptionScopes            []storage.EncryptionScope
 	ResourceGroup               string
+}
+
+//  =================== recoveryservice ==================
+
+//index:microsoft_recoveryservices_vault
+//getfilter:name=description.Vault.Name
+//getfilter:resource_group=description.ResourceGroup
+type RecoveryServicesVaultDescription struct {
+	Vault         recoveryservices.Vault
+	ResourceGroup string
 }

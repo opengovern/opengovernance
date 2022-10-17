@@ -231,3 +231,41 @@ func ComputeVirtualMachine(ctx context.Context, authorizer autorest.Authorizer, 
 	}
 	return values, nil
 }
+
+func ComputeSnapshots(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
+	client := compute.NewSnapshotsClient(subscription)
+	client.Authorizer = authorizer
+
+	result, err := client.List(context.Background())
+	if err != nil {
+		return nil, err
+	}
+
+	var values []Resource
+	for {
+		for _, snapshot := range result.Values() {
+			resourceGroupName := strings.Split(*snapshot.ID, "/")[4]
+
+			values = append(values, Resource{
+				ID:       *snapshot.ID,
+				Name:     *snapshot.Name,
+				Location: *snapshot.Location,
+				Description: model.ComputeSnapshotsDescription{
+					ResourceGroup: resourceGroupName,
+					Snapshot:      snapshot,
+				},
+			})
+		}
+
+		if !result.NotDone() {
+			break
+		}
+
+		err = result.NextWithContext(ctx)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return values, nil
+}

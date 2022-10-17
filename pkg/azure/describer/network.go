@@ -315,3 +315,86 @@ func NetworkWatcher(ctx context.Context, authorizer autorest.Authorizer, subscri
 
 	return values, nil
 }
+
+func RouteTables(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
+	client := newnetwork.NewRouteTablesClient(subscription)
+	client.Authorizer = authorizer
+
+	result, err := client.ListAll(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	var values []Resource
+	for {
+		for _, routeTable := range result.Values() {
+			resourceGroup := strings.Split(*routeTable.ID, "/")[4]
+
+			values = append(values, Resource{
+				ID:       *routeTable.ID,
+				Name:     *routeTable.Name,
+				Location: *routeTable.Location,
+				Description: model.RouteTablesDescription{
+					ResourceGroup: resourceGroup,
+					RouteTable:    routeTable,
+				},
+			})
+		}
+		if !result.NotDone() {
+			break
+		}
+		err = result.NextWithContext(ctx)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return values, nil
+}
+
+func NetworkApplicationSecurityGroups(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
+	client := newnetwork.NewApplicationSecurityGroupsClient(subscription)
+	client.Authorizer = authorizer
+
+	result, err := client.ListAll(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	var values []Resource
+	for _, applicationSecurityGroup := range result.Values() {
+		resourceGroup := strings.Split(*applicationSecurityGroup.ID, "/")[4]
+
+		values = append(values, Resource{
+			ID:       *applicationSecurityGroup.ID,
+			Name:     *applicationSecurityGroup.Name,
+			Location: *applicationSecurityGroup.Location,
+			Description: model.NetworkApplicationSecurityGroupsDescription{
+				ApplicationSecurityGroup: applicationSecurityGroup,
+				ResourceGroup:            resourceGroup,
+			},
+		})
+	}
+
+	for result.NotDone() {
+		err = result.NextWithContext(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, applicationSecurityGroup := range result.Values() {
+			resourceGroup := strings.Split(*applicationSecurityGroup.ID, "/")[4]
+
+			values = append(values, Resource{
+				ID:       *applicationSecurityGroup.ID,
+				Name:     *applicationSecurityGroup.Name,
+				Location: *applicationSecurityGroup.Location,
+				Description: model.NetworkApplicationSecurityGroupsDescription{
+					ApplicationSecurityGroup: applicationSecurityGroup,
+					ResourceGroup:            resourceGroup,
+				},
+			})
+		}
+	}
+
+	return values, nil
+}
