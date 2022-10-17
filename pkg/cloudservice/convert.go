@@ -219,3 +219,15 @@ func ResourceListByCategory(category string) []string {
 	}
 	return res
 }
+
+func ResourceListByServiceName(serviceName string) []string {
+	initCloudService()
+	var response []string
+	for _, v := range resourceList {
+		srv := findCloudServiceRecord(v.ServiceNamespace)
+		if srv.FullServiceName == serviceName {
+			response = append(response, v.ServiceNamespace)
+		}
+	}
+	return response
+}

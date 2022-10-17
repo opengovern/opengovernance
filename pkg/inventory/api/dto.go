@@ -393,3 +393,8 @@ type ServiceDistributionItem struct {
 	ServiceName  string         `json:"serviceName"`
 	Distribution map[string]int `json:"distribution"`
 }
+
+type Category struct {
+	Name        string   `json:"name"`
+	SubCategory []string `json:"subCategory"`
+}

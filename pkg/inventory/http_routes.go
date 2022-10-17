@@ -42,6 +42,7 @@ const EsFetchPageSize = 10000
 
 func (h *HttpHandler) Register(e *echo.Echo) {
 	v1 := e.Group("/api/v1")
+	v2 := e.Group("/api/v2")
 
 	v1.GET("/locations/:provider", h.GetLocations)
 
@@ -77,6 +78,9 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	v1.GET("/metrics/summary", h.GetSummaryMetrics)
 	v1.GET("/metrics/categorized", h.GetCategorizedMetrics)
 	v1.GET("/categories", h.ListCategories)
+
+	v2.GET("/metrics/categorized", h.GetCategorizedMetricsV2)
+	v2.GET("/categories", h.ListCategoriesV2)
 }
 
 func bindValidate(ctx echo.Context, i interface{}) error {
@@ -890,6 +894,62 @@ func (h *HttpHandler) GetCategorizedMetrics(ctx echo.Context) error {
 	return ctx.JSON(http.StatusOK, res)
 }
 
+// GetCategorizedMetricsV2 godoc
+// @Summary Return categorized metrics, their value and their history
+// @Tags    inventory
+// @Accept  json
+// @Produce json
+// @Param   provider query    string false "Provider"
+// @Param   sourceId query    string false "SourceID"
+// @Param   category query    string true "Category"
+// @Param   subCategory query    string true "SubCategory"
+// @Success 200      {object} api.CategorizedMetricsResponse
+// @Router  /inventory/api/v2/metrics/categorized [get]
+func (h *HttpHandler) GetCategorizedMetricsV2(ctx echo.Context) error {
+	category := ctx.QueryParam("category")
+	if len(strings.TrimSpace(category)) == 0 {
+		return echo.NewHTTPError(http.StatusBadRequest, "category is required")
+	}
+
+	subCategory := ctx.QueryParam("subCategory")
+	if len(strings.TrimSpace(subCategory)) == 0 {
+		return echo.NewHTTPError(http.StatusBadRequest, "subCategory is required")
+	}
+
+	provider, _ := source.ParseType(ctx.QueryParam("provider"))
+
+	var sourceID *string
+	if sID := ctx.QueryParam("sourceId"); sID != "" {
+		sourceUUID, err := uuid.Parse(sID)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "invalid sourceID")
+		}
+		s := sourceUUID.String()
+		sourceID = &s
+	}
+
+	cats, err := h.db.GetCategories(category, subCategory)
+	if err != nil {
+		return err
+	}
+
+	var resourceList []string
+	for _, v := range cats {
+		resourceList = append(resourceList, cloudservice.ResourceListByServiceName(v.CloudService)...)
+	}
+
+	if len(resourceList) == 0 {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid category/subcategory")
+	}
+
+	v, err := GetResources(h.client, provider, sourceID, resourceList)
+	if err != nil {
+		return err
+	}
+
+	return ctx.JSON(http.StatusOK, v)
+}
+
 // ListCategories godoc
 // @Summary Return list of categories
 // @Tags    inventory
@@ -899,6 +959,33 @@ func (h *HttpHandler) GetCategorizedMetrics(ctx echo.Context) error {
 // @Router  /inventory/api/v1/categories [get]
 func (h *HttpHandler) ListCategories(ctx echo.Context) error {
 	return ctx.JSON(http.StatusOK, cloudservice.ListCategories())
+}
+
+// ListCategoriesV2 godoc
+// @Summary Return list of categories
+// @Tags    inventory
+// @Accept  json
+// @Produce json
+// @Success 200 {object} []string
+// @Router  /inventory/api/v2/categories [get]
+func (h *HttpHandler) ListCategoriesV2(ctx echo.Context) error {
+	cats, err := h.db.ListCategories()
+	if err != nil {
+		return err
+	}
+
+	cmap := map[string][]string{}
+	for _, c := range cats {
+		cmap[c.Name] = append(cmap[c.Name], c.SubCategory)
+	}
+	var resp []api.Category
+	for k, v := range cmap {
+		resp = append(resp, api.Category{
+			Name:        k,
+			SubCategory: v,
+		})
+	}
+	return ctx.JSON(http.StatusOK, resp)
 }
 
 // GetAccountsResourceCount godoc

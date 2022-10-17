@@ -13,6 +13,7 @@ type Database struct {
 func (db Database) Initialize() error {
 	err := db.orm.AutoMigrate(
 		&SmartQuery{},
+		&Category{},
 	)
 	if err != nil {
 		return err
@@ -121,6 +122,31 @@ func (db Database) GetQuery(id string) (SmartQuery, error) {
 		return SmartQuery{}, tx.Error
 	} else if tx.RowsAffected != 1 {
 		return SmartQuery{}, pgx.ErrNoRows
+	}
+
+	return s, nil
+}
+
+func (db Database) ListCategories() ([]Category, error) {
+	var s []Category
+	tx := db.orm.Find(&s)
+
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+
+	return s, nil
+}
+
+func (db Database) GetCategories(category, subCategory string) ([]Category, error) {
+	var s []Category
+	tx := db.orm.
+		Where("name = ?", category).
+		Where("sub_category = ?", subCategory).
+		Find(&s)
+
+	if tx.Error != nil {
+		return nil, tx.Error
 	}
 
 	return s, nil

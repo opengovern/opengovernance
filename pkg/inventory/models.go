@@ -19,3 +19,11 @@ type Tag struct {
 	Value        string
 	SmartQueries []SmartQuery `gorm:"many2many:smartquery_tags;"`
 }
+
+type Category struct {
+	gorm.Model
+	Name         string
+	SubCategory  string
+	Cloud        string
+	CloudService string
+}
