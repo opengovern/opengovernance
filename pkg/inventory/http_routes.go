@@ -899,11 +899,11 @@ func (h *HttpHandler) GetCategorizedMetrics(ctx echo.Context) error {
 // @Tags    inventory
 // @Accept  json
 // @Produce json
-// @Param   provider query    string false "Provider"
-// @Param   sourceId query    string false "SourceID"
-// @Param   category query    string true "Category"
-// @Param   subCategory query    string true "SubCategory"
-// @Success 200      {object} api.CategorizedMetricsResponse
+// @Param   provider    query    string false "Provider"
+// @Param   sourceId    query    string false "SourceID"
+// @Param   category    query    string true  "Category"
+// @Param   subCategory query    string true  "SubCategory"
+// @Success 200         {object} api.CategorizedMetricsResponse
 // @Router  /inventory/api/v2/metrics/categorized [get]
 func (h *HttpHandler) GetCategorizedMetricsV2(ctx echo.Context) error {
 	category := ctx.QueryParam("category")

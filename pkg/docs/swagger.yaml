@@ -2470,6 +2470,55 @@ paths:
       summary: Returns distribution of services for specific account
       tags:
       - benchmarks
+  /inventory/api/v2/categories:
+    get:
+      consumes:
+      - application/json
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              type: string
+            type: array
+      summary: Return list of categories
+      tags:
+      - inventory
+  /inventory/api/v2/metrics/categorized:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: Provider
+        in: query
+        name: provider
+        type: string
+      - description: SourceID
+        in: query
+        name: sourceId
+        type: string
+      - description: Category
+        in: query
+        name: category
+        required: true
+        type: string
+      - description: SubCategory
+        in: query
+        name: subCategory
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/api.CategorizedMetricsResponse'
+      summary: Return categorized metrics, their value and their history
+      tags:
+      - inventory
   /onboard/api/v1/connectors:
     get:
       description: Getting connectors
