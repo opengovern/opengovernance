@@ -41,33 +41,34 @@ func discoverAwsAccounts(ctx context.Context, req api.DiscoverAWSAccountsRequest
 	if acc.Name == "" {
 		acc.Name = acc.AccountID
 	}
-
-	accounts, err := describer.OrganizationAccounts(ctx, cfg)
-	if err != nil {
-		if !ignoreAwsOrgError(err) {
-			return nil, err
-		}
-		return []api.DiscoverAWSAccountsResponse{acc}, nil
-	}
-	if len(accounts) == 0 {
-		return []api.DiscoverAWSAccountsResponse{acc}, nil
-	}
-
-	discovered := make([]api.DiscoverAWSAccountsResponse, 0, len(accounts))
-	for _, item := range accounts {
-		if *item.Name == "" {
-			*item.Name = *item.Id
-		}
-		discovered = append(discovered, api.DiscoverAWSAccountsResponse{
-			AccountID:      *item.Id,
-			Status:         string(item.Status),
-			Name:           *item.Name,
-			Email:          *item.Email,
-			OrganizationID: acc.OrganizationID,
-		})
-	}
-
-	return discovered, nil
+	return []api.DiscoverAWSAccountsResponse{acc}, nil
+	//
+	//accounts, err := describer.OrganizationAccounts(ctx, cfg)
+	//if err != nil {
+	//	if !ignoreAwsOrgError(err) {
+	//		return nil, err
+	//	}
+	//	return []api.DiscoverAWSAccountsResponse{acc}, nil
+	//}
+	//if len(accounts) == 0 {
+	//	return []api.DiscoverAWSAccountsResponse{acc}, nil
+	//}
+	//
+	//discovered := make([]api.DiscoverAWSAccountsResponse, 0, len(accounts))
+	//for _, item := range accounts {
+	//	if *item.Name == "" {
+	//		*item.Name = *item.Id
+	//	}
+	//	discovered = append(discovered, api.DiscoverAWSAccountsResponse{
+	//		AccountID:      *item.Id,
+	//		Status:         string(item.Status),
+	//		Name:           *item.Name,
+	//		Email:          *item.Email,
+	//		OrganizationID: acc.OrganizationID,
+	//	})
+	//}
+	//
+	//return discovered, nil
 }
 
 func currentAwsAccount(ctx context.Context, cfg aws.Config) (api.DiscoverAWSAccountsResponse, error) {

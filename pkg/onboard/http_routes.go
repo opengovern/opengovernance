@@ -1,10 +1,13 @@
 package onboard
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"net/http"
 	"strings"
+
+	keibiaws "gitlab.com/keibiengine/keibi-engine/pkg/aws"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpserver"
 
@@ -252,6 +255,37 @@ func (h HttpHandler) PostSourceAws(ctx echo.Context) error {
 	if err := bindValidate(ctx, &req); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
 	}
+
+	err := keibiaws.CheckDescribeRegionsPermission(req.Config.AccessKey, req.Config.SecretKey)
+	if err != nil {
+		return PermissionError
+	}
+
+	err = keibiaws.CheckEnoughPermission(h.awsPermissionCheckURL, req.Config.AccessKey, req.Config.SecretKey)
+	if err != nil {
+		return PermissionError
+	}
+
+	cfg, err := keibiaws.GetConfig(context.Background(), req.Config.AccessKey, req.Config.SecretKey, "", "")
+	if err != nil {
+		return err
+	}
+
+	if cfg.Region == "" {
+		cfg.Region = "us-east-1"
+	}
+
+	acc, err := currentAwsAccount(context.Background(), cfg)
+	if err != nil {
+		return err
+	}
+	if acc.Name == "" {
+		acc.Name = acc.AccountID
+	}
+
+	req.Name = acc.Name
+	req.Email = acc.Email
+	req.Config.AccountId = acc.AccountID
 
 	count, err := h.db.CountSources()
 	if err != nil {
