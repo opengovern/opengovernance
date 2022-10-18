@@ -976,6 +976,15 @@ func (h *HttpHandler) ListCategoriesV2(ctx echo.Context) error {
 
 	cmap := map[string][]string{}
 	for _, c := range cats {
+		exists := false
+		for _, s := range cmap[c.Name] {
+			if s == c.SubCategory {
+				exists = true
+			}
+		}
+		if exists {
+			continue
+		}
 		cmap[c.Name] = append(cmap[c.Name], c.SubCategory)
 	}
 	var resp []api.Category
