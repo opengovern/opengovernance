@@ -2601,6 +2601,438 @@ func GetNetworkApplicationSecurityGroups(ctx context.Context, d *plugin.QueryDat
 
 // ==========================  END: NetworkApplicationSecurityGroups =============================
 
+// ==========================  START: NetworkAzureFirewall =============================
+
+type NetworkAzureFirewall struct {
+	Description   azure.NetworkAzureFirewallDescription `json:"description"`
+	Metadata      azure.Metadata                        `json:"metadata"`
+	ResourceJobID int                                   `json:"resource_job_id"`
+	SourceJobID   int                                   `json:"source_job_id"`
+	ResourceType  string                                `json:"resource_type"`
+	SourceType    string                                `json:"source_type"`
+	ID            string                                `json:"id"`
+	SourceID      string                                `json:"source_id"`
+}
+
+type NetworkAzureFirewallHit struct {
+	ID      string               `json:"_id"`
+	Score   float64              `json:"_score"`
+	Index   string               `json:"_index"`
+	Type    string               `json:"_type"`
+	Version int64                `json:"_version,omitempty"`
+	Source  NetworkAzureFirewall `json:"_source"`
+	Sort    []interface{}        `json:"sort"`
+}
+
+type NetworkAzureFirewallHits struct {
+	Total SearchTotal               `json:"total"`
+	Hits  []NetworkAzureFirewallHit `json:"hits"`
+}
+
+type NetworkAzureFirewallSearchResponse struct {
+	PitID string                   `json:"pit_id"`
+	Hits  NetworkAzureFirewallHits `json:"hits"`
+}
+
+type NetworkAzureFirewallPaginator struct {
+	paginator *baseESPaginator
+}
+
+func (k Client) NewNetworkAzureFirewallPaginator(filters []BoolFilter, limit *int64) (NetworkAzureFirewallPaginator, error) {
+	paginator, err := newPaginator(k.es, "microsoft_network_azurefirewall", filters, limit)
+	if err != nil {
+		return NetworkAzureFirewallPaginator{}, err
+	}
+
+	p := NetworkAzureFirewallPaginator{
+		paginator: paginator,
+	}
+
+	return p, nil
+}
+
+func (p NetworkAzureFirewallPaginator) HasNext() bool {
+	return !p.paginator.done
+}
+
+func (p NetworkAzureFirewallPaginator) NextPage(ctx context.Context) ([]NetworkAzureFirewall, error) {
+	var response NetworkAzureFirewallSearchResponse
+	err := p.paginator.search(ctx, &response)
+	if err != nil {
+		return nil, err
+	}
+
+	var values []NetworkAzureFirewall
+	for _, hit := range response.Hits.Hits {
+		values = append(values, hit.Source)
+	}
+
+	hits := int64(len(response.Hits.Hits))
+	if hits > 0 {
+		p.paginator.updateState(hits, response.Hits.Hits[hits-1].Sort, response.PitID)
+	} else {
+		p.paginator.updateState(hits, nil, "")
+	}
+
+	return values, nil
+}
+
+var listNetworkAzureFirewallFilters = map[string]string{}
+
+func ListNetworkAzureFirewall(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("ListNetworkAzureFirewall")
+
+	// create service
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	paginator, err := k.NewNetworkAzureFirewallPaginator(buildFilter(d.KeyColumnQuals, listNetworkAzureFirewallFilters, "azure", *cfg.AccountID), d.QueryContext.Limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			d.StreamListItem(ctx, v)
+		}
+	}
+
+	return nil, nil
+}
+
+var getNetworkAzureFirewallFilters = map[string]string{
+	"name":           "description.AzureFirewall.Name",
+	"resource_group": "description.ResourceGroup",
+}
+
+func GetNetworkAzureFirewall(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("GetNetworkAzureFirewall")
+
+	// create service
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	limit := int64(1)
+	paginator, err := k.NewNetworkAzureFirewallPaginator(buildFilter(d.KeyColumnQuals, getNetworkAzureFirewallFilters, "azure", *cfg.AccountID), &limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			return v, nil
+		}
+	}
+
+	return nil, nil
+}
+
+// ==========================  END: NetworkAzureFirewall =============================
+
+// ==========================  START: ExpressRouteCircuit =============================
+
+type ExpressRouteCircuit struct {
+	Description   azure.ExpressRouteCircuitDescription `json:"description"`
+	Metadata      azure.Metadata                       `json:"metadata"`
+	ResourceJobID int                                  `json:"resource_job_id"`
+	SourceJobID   int                                  `json:"source_job_id"`
+	ResourceType  string                               `json:"resource_type"`
+	SourceType    string                               `json:"source_type"`
+	ID            string                               `json:"id"`
+	SourceID      string                               `json:"source_id"`
+}
+
+type ExpressRouteCircuitHit struct {
+	ID      string              `json:"_id"`
+	Score   float64             `json:"_score"`
+	Index   string              `json:"_index"`
+	Type    string              `json:"_type"`
+	Version int64               `json:"_version,omitempty"`
+	Source  ExpressRouteCircuit `json:"_source"`
+	Sort    []interface{}       `json:"sort"`
+}
+
+type ExpressRouteCircuitHits struct {
+	Total SearchTotal              `json:"total"`
+	Hits  []ExpressRouteCircuitHit `json:"hits"`
+}
+
+type ExpressRouteCircuitSearchResponse struct {
+	PitID string                  `json:"pit_id"`
+	Hits  ExpressRouteCircuitHits `json:"hits"`
+}
+
+type ExpressRouteCircuitPaginator struct {
+	paginator *baseESPaginator
+}
+
+func (k Client) NewExpressRouteCircuitPaginator(filters []BoolFilter, limit *int64) (ExpressRouteCircuitPaginator, error) {
+	paginator, err := newPaginator(k.es, "microsoft_network_expressroutecircuit", filters, limit)
+	if err != nil {
+		return ExpressRouteCircuitPaginator{}, err
+	}
+
+	p := ExpressRouteCircuitPaginator{
+		paginator: paginator,
+	}
+
+	return p, nil
+}
+
+func (p ExpressRouteCircuitPaginator) HasNext() bool {
+	return !p.paginator.done
+}
+
+func (p ExpressRouteCircuitPaginator) NextPage(ctx context.Context) ([]ExpressRouteCircuit, error) {
+	var response ExpressRouteCircuitSearchResponse
+	err := p.paginator.search(ctx, &response)
+	if err != nil {
+		return nil, err
+	}
+
+	var values []ExpressRouteCircuit
+	for _, hit := range response.Hits.Hits {
+		values = append(values, hit.Source)
+	}
+
+	hits := int64(len(response.Hits.Hits))
+	if hits > 0 {
+		p.paginator.updateState(hits, response.Hits.Hits[hits-1].Sort, response.PitID)
+	} else {
+		p.paginator.updateState(hits, nil, "")
+	}
+
+	return values, nil
+}
+
+var listExpressRouteCircuitFilters = map[string]string{}
+
+func ListExpressRouteCircuit(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("ListExpressRouteCircuit")
+
+	// create service
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	paginator, err := k.NewExpressRouteCircuitPaginator(buildFilter(d.KeyColumnQuals, listExpressRouteCircuitFilters, "azure", *cfg.AccountID), d.QueryContext.Limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			d.StreamListItem(ctx, v)
+		}
+	}
+
+	return nil, nil
+}
+
+var getExpressRouteCircuitFilters = map[string]string{
+	"name":           "description.ExpressRouteCircuit.name",
+	"resource_group": "description.ResourceGroup",
+}
+
+func GetExpressRouteCircuit(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("GetExpressRouteCircuit")
+
+	// create service
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	limit := int64(1)
+	paginator, err := k.NewExpressRouteCircuitPaginator(buildFilter(d.KeyColumnQuals, getExpressRouteCircuitFilters, "azure", *cfg.AccountID), &limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			return v, nil
+		}
+	}
+
+	return nil, nil
+}
+
+// ==========================  END: ExpressRouteCircuit =============================
+
+// ==========================  START: LoadBalancers =============================
+
+type LoadBalancers struct {
+	Description   azure.LoadBalancersDescription `json:"description"`
+	Metadata      azure.Metadata                 `json:"metadata"`
+	ResourceJobID int                            `json:"resource_job_id"`
+	SourceJobID   int                            `json:"source_job_id"`
+	ResourceType  string                         `json:"resource_type"`
+	SourceType    string                         `json:"source_type"`
+	ID            string                         `json:"id"`
+	SourceID      string                         `json:"source_id"`
+}
+
+type LoadBalancersHit struct {
+	ID      string        `json:"_id"`
+	Score   float64       `json:"_score"`
+	Index   string        `json:"_index"`
+	Type    string        `json:"_type"`
+	Version int64         `json:"_version,omitempty"`
+	Source  LoadBalancers `json:"_source"`
+	Sort    []interface{} `json:"sort"`
+}
+
+type LoadBalancersHits struct {
+	Total SearchTotal        `json:"total"`
+	Hits  []LoadBalancersHit `json:"hits"`
+}
+
+type LoadBalancersSearchResponse struct {
+	PitID string            `json:"pit_id"`
+	Hits  LoadBalancersHits `json:"hits"`
+}
+
+type LoadBalancersPaginator struct {
+	paginator *baseESPaginator
+}
+
+func (k Client) NewLoadBalancersPaginator(filters []BoolFilter, limit *int64) (LoadBalancersPaginator, error) {
+	paginator, err := newPaginator(k.es, "microsoft_network_loadbalancers", filters, limit)
+	if err != nil {
+		return LoadBalancersPaginator{}, err
+	}
+
+	p := LoadBalancersPaginator{
+		paginator: paginator,
+	}
+
+	return p, nil
+}
+
+func (p LoadBalancersPaginator) HasNext() bool {
+	return !p.paginator.done
+}
+
+func (p LoadBalancersPaginator) NextPage(ctx context.Context) ([]LoadBalancers, error) {
+	var response LoadBalancersSearchResponse
+	err := p.paginator.search(ctx, &response)
+	if err != nil {
+		return nil, err
+	}
+
+	var values []LoadBalancers
+	for _, hit := range response.Hits.Hits {
+		values = append(values, hit.Source)
+	}
+
+	hits := int64(len(response.Hits.Hits))
+	if hits > 0 {
+		p.paginator.updateState(hits, response.Hits.Hits[hits-1].Sort, response.PitID)
+	} else {
+		p.paginator.updateState(hits, nil, "")
+	}
+
+	return values, nil
+}
+
+var listLoadBalancersFilters = map[string]string{}
+
+func ListLoadBalancers(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("ListLoadBalancers")
+
+	// create service
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	paginator, err := k.NewLoadBalancersPaginator(buildFilter(d.KeyColumnQuals, listLoadBalancersFilters, "azure", *cfg.AccountID), d.QueryContext.Limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			d.StreamListItem(ctx, v)
+		}
+	}
+
+	return nil, nil
+}
+
+var getLoadBalancersFilters = map[string]string{
+	"name":           "description.LoadBalancer.Name",
+	"resource_group": "description.ResourceGroup",
+}
+
+func GetLoadBalancers(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("GetLoadBalancers")
+
+	// create service
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	limit := int64(1)
+	paginator, err := k.NewLoadBalancersPaginator(buildFilter(d.KeyColumnQuals, getLoadBalancersFilters, "azure", *cfg.AccountID), &limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			return v, nil
+		}
+	}
+
+	return nil, nil
+}
+
+// ==========================  END: LoadBalancers =============================
+
 // ==========================  START: PolicyAssignment =============================
 
 type PolicyAssignment struct {

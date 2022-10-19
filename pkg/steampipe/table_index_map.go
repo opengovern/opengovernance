@@ -177,6 +177,13 @@ var azureMap = map[string]string{
 	"Microsoft.AppConfiguration/configurationStores":        "azure_app_configuration",
 	"Microsoft.EventHub/namespaces":                         "azure_eventhub_namespace",
 	"Microsoft.Storage/storageAccounts/containers":          "azure_storage_container",
+	"Microsoft.Network/applicationSecurityGroups":           "azure_network_applicationsecuritygroups",
+	"Microsoft.RecoveryServices/vaults":                     "azure_recoveryservices_vault",
+	"Microsoft.Network/azureFirewalls":                      "azure_network_azurefirewall",
+	"Microsoft.Network/expressRouteCircuits":                "azure_network_expressroutecircuit",
+	"Microsoft.Network/loadBalancers":                       "azure_network_loadbalancers",
+	"Microsoft.Network/routeTables":                         "azure_network_routetables",
+	"Microsoft.Compute/snapshots":                           "azure_compute_snapshots",
 }
 var AWSDescriptionMap = map[string]interface{}{
 	"AWS::CostExplorer::ByAccountMonthly": &keibi.CostExplorerByAccountMonthly{},
@@ -347,6 +354,13 @@ var AzureDescriptionMap = map[string]interface{}{
 	"Microsoft.Authorization/elevateAccessRoleAssignment":   &keibi.RoleAssignment{},
 	"Microsoft.Compute/disks":                               &keibi.ComputeDisk{},
 	"Microsoft.Security/locations/jitNetworkAccessPolicies": &keibi.SecurityCenterJitNetworkAccessPolicy{},
+	"Microsoft.Network/applicationSecurityGroups":           &keibi.NetworkApplicationSecurityGroups{},
+	"Microsoft.RecoveryServices/vaults":                     &keibi.RecoveryServicesVault{},
+	"Microsoft.Network/azureFirewalls":                      &keibi.NetworkAzureFirewall{},
+	"Microsoft.Network/expressRouteCircuits":                &keibi.ExpressRouteCircuit{},
+	"Microsoft.Network/loadBalancers":                       &keibi.LoadBalancers{},
+	"Microsoft.Network/routeTables":                         &keibi.RouteTables{},
+	"Microsoft.Compute/snapshots":                           &keibi.ComputeSnapshots{},
 }
 
 type SteampipePlugin string
