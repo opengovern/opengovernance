@@ -435,3 +435,38 @@ func NetworkAzureFirewall(ctx context.Context, authorizer autorest.Authorizer, s
 
 	return values, nil
 }
+
+func ExpressRouteCircuit(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
+	client := newnetwork.NewExpressRouteCircuitsClient(subscription)
+	client.Authorizer = authorizer
+
+	result, err := client.ListAll(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	var values []Resource
+	for {
+		for _, expressRouteCircuit := range result.Values() {
+			resourceGroup := strings.Split(*expressRouteCircuit.ID, "/")[4]
+
+			values = append(values, Resource{
+				ID:       *expressRouteCircuit.ID,
+				Name:     *expressRouteCircuit.Name,
+				Location: *expressRouteCircuit.Location,
+				Description: model.ExpressRouteCircuitDescription{
+					ExpressRouteCircuit: expressRouteCircuit,
+					ResourceGroup:       resourceGroup,
+				},
+			})
+		}
+		if !result.NotDone() {
+			break
+		}
+		err = result.NextWithContext(ctx)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return values, nil
+}

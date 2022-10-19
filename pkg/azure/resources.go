@@ -123,7 +123,7 @@ var resourceTypeToDescriber = map[string]ResourceDescriber{
 	//"Microsoft.Network/bastionHosts":                            nil,
 	//"Microsoft.Network/connections":                             nil,
 	//"Microsoft.Network/dnsZones":                                nil,
-	//"Microsoft.Network/expressRouteCircuits":                    nil,
+	"Microsoft.Network/expressRouteCircuits": DescribeBySubscription(describer.ExpressRouteCircuit),
 	//"Microsoft.Network/firewallPolicies":                        nil,
 	//"Microsoft.Network/frontdoorWebApplicationFirewallPolicies": nil,
 	//"Microsoft.Network/loadBalancers":                           nil,
