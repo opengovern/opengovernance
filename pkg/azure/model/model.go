@@ -250,6 +250,30 @@ type NetworkApplicationSecurityGroupsDescription struct {
 	ResourceGroup            string
 }
 
+//index:microsoft_network_azurefirewall
+//getfilter:name=description.AzureFirewall.Name
+//getfilter:resource_group=description.ResourceGroup
+type NetworkAzureFirewallDescription struct {
+	AzureFirewall newnetwork.AzureFirewall
+	ResourceGroup string
+}
+
+//index:microsoft_network_expressroutecircuit
+//getfilter:name=description.ExpressRouteCircuit.name
+//getfilter:resource_group=description.ResourceGroup
+type ExpressRouteCircuitDescription struct {
+	ExpressRouteCircuit newnetwork.ExpressRouteCircuit
+	ResourceGroup       string
+}
+
+//index:microsoft_network_loadbalancers
+//getfilter:name=description.LoadBalancer.Name
+//getfilter:resource_group=description.ResourceGroup
+type LoadBalancersDescription struct {
+	LoadBalancer  newnetwork.LoadBalancer
+	ResourceGroup string
+}
+
 //  =================== policy ==================
 
 //index:microsoft_authorization_policyassignments

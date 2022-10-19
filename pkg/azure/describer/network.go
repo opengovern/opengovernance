@@ -398,3 +398,110 @@ func NetworkApplicationSecurityGroups(ctx context.Context, authorizer autorest.A
 
 	return values, nil
 }
+
+func NetworkAzureFirewall(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
+	client := newnetwork.NewAzureFirewallsClient(subscription)
+	client.Authorizer = authorizer
+	result, err := client.ListAll(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	var values []Resource
+
+	for {
+		for _, azureFirewall := range result.Values() {
+			resourceGroup := strings.Split(*azureFirewall.ID, "/")[4]
+
+			values = append(values, Resource{
+				ID:       *azureFirewall.ID,
+				Name:     *azureFirewall.Name,
+				Location: *azureFirewall.Location,
+				Description: model.NetworkAzureFirewallDescription{
+					AzureFirewall: azureFirewall,
+					ResourceGroup: resourceGroup,
+				},
+			})
+		}
+
+		if !result.NotDone() {
+			break
+		}
+		err = result.NextWithContext(ctx)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return values, nil
+}
+
+func ExpressRouteCircuit(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
+	client := newnetwork.NewExpressRouteCircuitsClient(subscription)
+	client.Authorizer = authorizer
+
+	result, err := client.ListAll(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	var values []Resource
+	for {
+		for _, expressRouteCircuit := range result.Values() {
+			resourceGroup := strings.Split(*expressRouteCircuit.ID, "/")[4]
+
+			values = append(values, Resource{
+				ID:       *expressRouteCircuit.ID,
+				Name:     *expressRouteCircuit.Name,
+				Location: *expressRouteCircuit.Location,
+				Description: model.ExpressRouteCircuitDescription{
+					ExpressRouteCircuit: expressRouteCircuit,
+					ResourceGroup:       resourceGroup,
+				},
+			})
+		}
+		if !result.NotDone() {
+			break
+		}
+		err = result.NextWithContext(ctx)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return values, nil
+}
+
+func LoadBalancers(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
+	client := newnetwork.NewLoadBalancersClient(subscription)
+	client.Authorizer = authorizer
+
+	result, err := client.ListAll(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	var values []Resource
+	for {
+		for _, loadBalancer := range result.Values() {
+			resourceGroup := strings.Split(*loadBalancer.ID, "/")[4]
+
+			values = append(values, Resource{
+				ID:       *loadBalancer.ID,
+				Name:     *loadBalancer.Name,
+				Location: *loadBalancer.Location,
+				Description: model.LoadBalancersDescription{
+					ResourceGroup: resourceGroup,
+					LoadBalancer:  loadBalancer,
+				},
+			})
+		}
+		if !result.NotDone() {
+			break
+		}
+		err = result.NextWithContext(ctx)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return values, nil
+}
