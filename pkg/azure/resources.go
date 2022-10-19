@@ -126,7 +126,7 @@ var resourceTypeToDescriber = map[string]ResourceDescriber{
 	"Microsoft.Network/expressRouteCircuits": DescribeBySubscription(describer.ExpressRouteCircuit),
 	//"Microsoft.Network/firewallPolicies":                        nil,
 	//"Microsoft.Network/frontdoorWebApplicationFirewallPolicies": nil,
-	//"Microsoft.Network/loadBalancers":                           nil,
+	"Microsoft.Network/loadBalancers": DescribeBySubscription(describer.LoadBalancers),
 	//"Microsoft.Network/localNetworkGateways":                    nil,
 	//"Microsoft.Network/natGateways":                             nil,
 	//"Microsoft.Network/networkSecurityGroups":                   nil,

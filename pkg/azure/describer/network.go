@@ -470,3 +470,38 @@ func ExpressRouteCircuit(ctx context.Context, authorizer autorest.Authorizer, su
 	}
 	return values, nil
 }
+
+func LoadBalancers(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
+	client := newnetwork.NewLoadBalancersClient(subscription)
+	client.Authorizer = authorizer
+
+	result, err := client.ListAll(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	var values []Resource
+	for {
+		for _, loadBalancer := range result.Values() {
+			resourceGroup := strings.Split(*loadBalancer.ID, "/")[4]
+
+			values = append(values, Resource{
+				ID:       *loadBalancer.ID,
+				Name:     *loadBalancer.Name,
+				Location: *loadBalancer.Location,
+				Description: model.LoadBalancersDescription{
+					ResourceGroup: resourceGroup,
+					LoadBalancer:  loadBalancer,
+				},
+			})
+		}
+		if !result.NotDone() {
+			break
+		}
+		err = result.NextWithContext(ctx)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return values, nil
+}

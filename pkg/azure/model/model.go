@@ -266,6 +266,14 @@ type ExpressRouteCircuitDescription struct {
 	ResourceGroup       string
 }
 
+//index:microsoft_network_loadbalancers
+//getfilter:name=description.LoadBalancer.Name
+//getfilter:resource_group=description.ResourceGroup
+type LoadBalancersDescription struct {
+	LoadBalancer  newnetwork.LoadBalancer
+	ResourceGroup string
+}
+
 //  =================== policy ==================
 
 //index:microsoft_authorization_policyassignments
