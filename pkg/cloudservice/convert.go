@@ -225,7 +225,7 @@ func ResourceListByServiceName(serviceName string) []string {
 	var response []string
 	for _, v := range resourceList {
 		srv := findCloudServiceRecord(v.ServiceNamespace)
-		if srv.FullServiceName == serviceName {
+		if srv != nil && srv.FullServiceName == serviceName {
 			response = append(response, v.ServiceNamespace)
 		}
 	}
