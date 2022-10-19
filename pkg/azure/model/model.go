@@ -250,6 +250,14 @@ type NetworkApplicationSecurityGroupsDescription struct {
 	ResourceGroup            string
 }
 
+//index:microsoft_network_azurefirewall
+//getfilter:name=description.AzureFirewall.Name
+//getfilter:resource_group=description.ResourceGroup
+type NetworkAzureFirewallDescription struct {
+	AzureFirewall newnetwork.AzureFirewall
+	ResourceGroup string
+}
+
 //  =================== policy ==================
 
 //index:microsoft_authorization_policyassignments
