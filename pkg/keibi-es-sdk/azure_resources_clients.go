@@ -4181,6 +4181,149 @@ func GetRoleDefinition(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydra
 
 // ==========================  END: RoleDefinition =============================
 
+// ==========================  START: PolicyDefinition =============================
+
+type PolicyDefinition struct {
+	Description   azure.PolicyDefinitionDescription `json:"description"`
+	Metadata      azure.Metadata                    `json:"metadata"`
+	ResourceJobID int                               `json:"resource_job_id"`
+	SourceJobID   int                               `json:"source_job_id"`
+	ResourceType  string                            `json:"resource_type"`
+	SourceType    string                            `json:"source_type"`
+	ID            string                            `json:"id"`
+	SourceID      string                            `json:"source_id"`
+}
+
+type PolicyDefinitionHit struct {
+	ID      string           `json:"_id"`
+	Score   float64          `json:"_score"`
+	Index   string           `json:"_index"`
+	Type    string           `json:"_type"`
+	Version int64            `json:"_version,omitempty"`
+	Source  PolicyDefinition `json:"_source"`
+	Sort    []interface{}    `json:"sort"`
+}
+
+type PolicyDefinitionHits struct {
+	Total SearchTotal           `json:"total"`
+	Hits  []PolicyDefinitionHit `json:"hits"`
+}
+
+type PolicyDefinitionSearchResponse struct {
+	PitID string               `json:"pit_id"`
+	Hits  PolicyDefinitionHits `json:"hits"`
+}
+
+type PolicyDefinitionPaginator struct {
+	paginator *baseESPaginator
+}
+
+func (k Client) NewPolicyDefinitionPaginator(filters []BoolFilter, limit *int64) (PolicyDefinitionPaginator, error) {
+	paginator, err := newPaginator(k.es, "microsoft_authorization_policydefinition", filters, limit)
+	if err != nil {
+		return PolicyDefinitionPaginator{}, err
+	}
+
+	p := PolicyDefinitionPaginator{
+		paginator: paginator,
+	}
+
+	return p, nil
+}
+
+func (p PolicyDefinitionPaginator) HasNext() bool {
+	return !p.paginator.done
+}
+
+func (p PolicyDefinitionPaginator) NextPage(ctx context.Context) ([]PolicyDefinition, error) {
+	var response PolicyDefinitionSearchResponse
+	err := p.paginator.search(ctx, &response)
+	if err != nil {
+		return nil, err
+	}
+
+	var values []PolicyDefinition
+	for _, hit := range response.Hits.Hits {
+		values = append(values, hit.Source)
+	}
+
+	hits := int64(len(response.Hits.Hits))
+	if hits > 0 {
+		p.paginator.updateState(hits, response.Hits.Hits[hits-1].Sort, response.PitID)
+	} else {
+		p.paginator.updateState(hits, nil, "")
+	}
+
+	return values, nil
+}
+
+var listPolicyDefinitionFilters = map[string]string{}
+
+func ListPolicyDefinition(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("ListPolicyDefinition")
+
+	// create service
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	paginator, err := k.NewPolicyDefinitionPaginator(buildFilter(d.KeyColumnQuals, listPolicyDefinitionFilters, "azure", *cfg.AccountID), d.QueryContext.Limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			d.StreamListItem(ctx, v)
+		}
+	}
+
+	return nil, nil
+}
+
+var getPolicyDefinitionFilters = map[string]string{
+	"name": "description.Definition.Name",
+}
+
+func GetPolicyDefinition(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("GetPolicyDefinition")
+
+	// create service
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	limit := int64(1)
+	paginator, err := k.NewPolicyDefinitionPaginator(buildFilter(d.KeyColumnQuals, getPolicyDefinitionFilters, "azure", *cfg.AccountID), &limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			return v, nil
+		}
+	}
+
+	return nil, nil
+}
+
+// ==========================  END: PolicyDefinition =============================
+
 // ==========================  START: SecurityCenterAutoProvisioning =============================
 
 type SecurityCenterAutoProvisioning struct {
@@ -12096,3 +12239,147 @@ func GetRecoveryServicesVault(ctx context.Context, d *plugin.QueryData, _ *plugi
 }
 
 // ==========================  END: RecoveryServicesVault =============================
+
+// ==========================  START: HybridKubernetesConnectedCluster =============================
+
+type HybridKubernetesConnectedCluster struct {
+	Description   azure.HybridKubernetesConnectedClusterDescription `json:"description"`
+	Metadata      azure.Metadata                                    `json:"metadata"`
+	ResourceJobID int                                               `json:"resource_job_id"`
+	SourceJobID   int                                               `json:"source_job_id"`
+	ResourceType  string                                            `json:"resource_type"`
+	SourceType    string                                            `json:"source_type"`
+	ID            string                                            `json:"id"`
+	SourceID      string                                            `json:"source_id"`
+}
+
+type HybridKubernetesConnectedClusterHit struct {
+	ID      string                           `json:"_id"`
+	Score   float64                          `json:"_score"`
+	Index   string                           `json:"_index"`
+	Type    string                           `json:"_type"`
+	Version int64                            `json:"_version,omitempty"`
+	Source  HybridKubernetesConnectedCluster `json:"_source"`
+	Sort    []interface{}                    `json:"sort"`
+}
+
+type HybridKubernetesConnectedClusterHits struct {
+	Total SearchTotal                           `json:"total"`
+	Hits  []HybridKubernetesConnectedClusterHit `json:"hits"`
+}
+
+type HybridKubernetesConnectedClusterSearchResponse struct {
+	PitID string                               `json:"pit_id"`
+	Hits  HybridKubernetesConnectedClusterHits `json:"hits"`
+}
+
+type HybridKubernetesConnectedClusterPaginator struct {
+	paginator *baseESPaginator
+}
+
+func (k Client) NewHybridKubernetesConnectedClusterPaginator(filters []BoolFilter, limit *int64) (HybridKubernetesConnectedClusterPaginator, error) {
+	paginator, err := newPaginator(k.es, "microsoft_hybridkubernetes_connectedcluster", filters, limit)
+	if err != nil {
+		return HybridKubernetesConnectedClusterPaginator{}, err
+	}
+
+	p := HybridKubernetesConnectedClusterPaginator{
+		paginator: paginator,
+	}
+
+	return p, nil
+}
+
+func (p HybridKubernetesConnectedClusterPaginator) HasNext() bool {
+	return !p.paginator.done
+}
+
+func (p HybridKubernetesConnectedClusterPaginator) NextPage(ctx context.Context) ([]HybridKubernetesConnectedCluster, error) {
+	var response HybridKubernetesConnectedClusterSearchResponse
+	err := p.paginator.search(ctx, &response)
+	if err != nil {
+		return nil, err
+	}
+
+	var values []HybridKubernetesConnectedCluster
+	for _, hit := range response.Hits.Hits {
+		values = append(values, hit.Source)
+	}
+
+	hits := int64(len(response.Hits.Hits))
+	if hits > 0 {
+		p.paginator.updateState(hits, response.Hits.Hits[hits-1].Sort, response.PitID)
+	} else {
+		p.paginator.updateState(hits, nil, "")
+	}
+
+	return values, nil
+}
+
+var listHybridKubernetesConnectedClusterFilters = map[string]string{}
+
+func ListHybridKubernetesConnectedCluster(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("ListHybridKubernetesConnectedCluster")
+
+	// create service
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	paginator, err := k.NewHybridKubernetesConnectedClusterPaginator(buildFilter(d.KeyColumnQuals, listHybridKubernetesConnectedClusterFilters, "azure", *cfg.AccountID), d.QueryContext.Limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			d.StreamListItem(ctx, v)
+		}
+	}
+
+	return nil, nil
+}
+
+var getHybridKubernetesConnectedClusterFilters = map[string]string{
+	"name":           "description.ConnectedCluster.Name",
+	"resource_group": "description.ResourceGroup",
+}
+
+func GetHybridKubernetesConnectedCluster(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("GetHybridKubernetesConnectedCluster")
+
+	// create service
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	limit := int64(1)
+	paginator, err := k.NewHybridKubernetesConnectedClusterPaginator(buildFilter(d.KeyColumnQuals, getHybridKubernetesConnectedClusterFilters, "azure", *cfg.AccountID), &limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			return v, nil
+		}
+	}
+
+	return nil, nil
+}
+
+// ==========================  END: HybridKubernetesConnectedCluster =============================
