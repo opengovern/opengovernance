@@ -7,6 +7,8 @@ import (
 	"net/http"
 	"strings"
 
+	api3 "gitlab.com/keibiengine/keibi-engine/pkg/auth/api"
+
 	keibiaws "gitlab.com/keibiengine/keibi-engine/pkg/aws"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpserver"
@@ -29,39 +31,39 @@ func (h HttpHandler) Register(r *echo.Echo) {
 
 	source := v1.Group("/source")
 
-	source.POST("/aws", h.PostSourceAws)
-	source.POST("/azure", h.PostSourceAzure)
-	source.POST("/azure/spn", h.PostSourceAzureSPN)
-	source.GET("/:sourceId", h.GetSource)
-	source.GET("/:sourceId/credentials", h.GetSourceCred)
-	source.PUT("/:sourceId/credentials", h.PutSourceCred)
-	source.PUT("/:sourceId", h.PutSource)
-	source.POST("/:sourceId/disable", h.DisableSource)
-	source.POST("/:sourceId/enable", h.EnableSource)
-	source.DELETE("/:sourceId", h.DeleteSource)
+	source.POST("/aws", httpserver.AuthorizeHandler(h.PostSourceAws, api3.EditorRole))
+	source.POST("/azure", httpserver.AuthorizeHandler(h.PostSourceAzure, api3.EditorRole))
+	source.POST("/azure/spn", httpserver.AuthorizeHandler(h.PostSourceAzureSPN, api3.EditorRole))
+	source.GET("/:sourceId", httpserver.AuthorizeHandler(h.GetSource, api3.ViewerRole))
+	source.GET("/:sourceId/credentials", httpserver.AuthorizeHandler(h.GetSourceCred, api3.ViewerRole))
+	source.PUT("/:sourceId/credentials", httpserver.AuthorizeHandler(h.PutSourceCred, api3.EditorRole))
+	source.PUT("/:sourceId", httpserver.AuthorizeHandler(h.PutSource, api3.EditorRole))
+	source.POST("/:sourceId/disable", httpserver.AuthorizeHandler(h.DisableSource, api3.EditorRole))
+	source.POST("/:sourceId/enable", httpserver.AuthorizeHandler(h.EnableSource, api3.EditorRole))
+	source.DELETE("/:sourceId", httpserver.AuthorizeHandler(h.DeleteSource, api3.EditorRole))
 
-	v1.GET("/sources", h.ListSources)
-	v1.POST("/sources", h.GetSources)
-	v1.GET("/sources/count", h.CountSources)
+	v1.GET("/sources", httpserver.AuthorizeHandler(h.ListSources, api3.ViewerRole))
+	v1.POST("/sources", httpserver.AuthorizeHandler(h.GetSources, api3.ViewerRole))
+	v1.GET("/sources/count", httpserver.AuthorizeHandler(h.CountSources, api3.ViewerRole))
 
 	spn := v1.Group("/spn")
-	spn.POST("/azure", h.PostSPN)
-	spn.DELETE("/:spnId", h.DeleteSPN)
-	spn.GET("/:spnId", h.GetSPNCred)
-	spn.GET("/list", h.ListSPNs)
-	spn.PUT("/:spnId", h.PutSPNCred)
+	spn.POST("/azure", httpserver.AuthorizeHandler(h.PostSPN, api3.EditorRole))
+	spn.DELETE("/:spnId", httpserver.AuthorizeHandler(h.DeleteSPN, api3.EditorRole))
+	spn.GET("/:spnId", httpserver.AuthorizeHandler(h.GetSPNCred, api3.ViewerRole))
+	spn.GET("/list", httpserver.AuthorizeHandler(h.ListSPNs, api3.ViewerRole))
+	spn.PUT("/:spnId", httpserver.AuthorizeHandler(h.PutSPNCred, api3.EditorRole))
 
 	disc := v1.Group("/discover")
 
-	disc.POST("/aws/accounts", h.DiscoverAwsAccounts)
-	disc.POST("/azure/subscriptions", h.DiscoverAzureSubscriptions)
-	disc.POST("/azure/subscriptions/spn", h.DiscoverAzureSubscriptionsWithSPN)
+	disc.POST("/aws/accounts", httpserver.AuthorizeHandler(h.DiscoverAwsAccounts, api3.EditorRole))
+	disc.POST("/azure/subscriptions", httpserver.AuthorizeHandler(h.DiscoverAzureSubscriptions, api3.EditorRole))
+	disc.POST("/azure/subscriptions/spn", httpserver.AuthorizeHandler(h.DiscoverAzureSubscriptionsWithSPN, api3.EditorRole))
 
-	v1.GET("/providers", h.GetProviders)
-	v1.GET("/providers/types", h.GetProviderTypes)
+	v1.GET("/providers", httpserver.AuthorizeHandler(h.GetProviders, api3.ViewerRole))
+	v1.GET("/providers/types", httpserver.AuthorizeHandler(h.GetProviderTypes, api3.ViewerRole))
 
-	v1.GET("/connectors/categories", h.GetConnectorCategories)
-	v1.GET("/connectors", h.GetConnector)
+	v1.GET("/connectors/categories", httpserver.AuthorizeHandler(h.GetConnectorCategories, api3.ViewerRole))
+	v1.GET("/connectors", httpserver.AuthorizeHandler(h.GetConnector, api3.ViewerRole))
 }
 
 func bindValidate(ctx echo.Context, i interface{}) error {

@@ -5,6 +5,8 @@ import (
 	"strconv"
 	"time"
 
+	"gitlab.com/keibiengine/keibi-engine/pkg/inventory"
+
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 
@@ -58,7 +60,7 @@ type ResourceJobResult struct {
 	JobType JobType
 }
 
-func (j ResourceJob) Do(client keibi.Client, producer sarama.SyncProducer, topic string, logger *zap.Logger) (r ResourceJobResult) {
+func (j ResourceJob) Do(client keibi.Client, db inventory.Database, producer sarama.SyncProducer, topic string, logger *zap.Logger) (r ResourceJobResult) {
 	logger.Info("Starting summarizing", zap.Int("jobID", int(j.JobID)))
 	startTime := time.Now().Unix()
 	defer func() {
@@ -99,7 +101,7 @@ func (j ResourceJob) Do(client keibi.Client, producer sarama.SyncProducer, topic
 		resourcebuilder.NewResourceSummaryBuilder(client, j.JobID),
 		resourcebuilder.NewTrendSummaryBuilder(client, j.JobID),
 		resourcebuilder.NewLocationSummaryBuilder(client, j.JobID),
-		resourcebuilder.NewResourceTypeSummaryBuilder(client, j.JobID),
+		resourcebuilder.NewResourceTypeSummaryBuilder(client, logger, db, j.JobID),
 		resourcebuilder.NewServiceSummaryBuilder(client, j.JobID),
 		resourcebuilder.NewCategorySummaryBuilder(client, j.JobID),
 		resourcebuilder.NewServiceLocationSummaryBuilder(client, j.JobID),

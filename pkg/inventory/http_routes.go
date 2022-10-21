@@ -15,6 +15,9 @@ import (
 	"strings"
 	"time"
 
+	api3 "gitlab.com/keibiengine/keibi-engine/pkg/auth/api"
+	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpserver"
+
 	api2 "gitlab.com/keibiengine/keibi-engine/pkg/onboard/api"
 
 	insight "gitlab.com/keibiengine/keibi-engine/pkg/insight/es"
@@ -44,43 +47,43 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	v1 := e.Group("/api/v1")
 	v2 := e.Group("/api/v2")
 
-	v1.GET("/locations/:provider", h.GetLocations)
+	v1.GET("/locations/:provider", httpserver.AuthorizeHandler(h.GetLocations, api3.ViewerRole))
 
-	v1.POST("/resources", h.GetAllResources)
-	v1.POST("/resources/azure", h.GetAzureResources)
-	v1.POST("/resources/aws", h.GetAWSResources)
-	v1.GET("/resources/count", h.CountResources)
+	v1.POST("/resources", httpserver.AuthorizeHandler(h.GetAllResources, api3.ViewerRole))
+	v1.POST("/resources/azure", httpserver.AuthorizeHandler(h.GetAzureResources, api3.ViewerRole))
+	v1.POST("/resources/aws", httpserver.AuthorizeHandler(h.GetAWSResources, api3.ViewerRole))
+	v1.GET("/resources/count", httpserver.AuthorizeHandler(h.CountResources, api3.ViewerRole))
 
-	v1.POST("/resources/filters", h.GetResourcesFilters)
+	v1.POST("/resources/filters", httpserver.AuthorizeHandler(h.GetResourcesFilters, api3.ViewerRole))
 
-	v1.POST("/resource", h.GetResource)
+	v1.POST("/resource", httpserver.AuthorizeHandler(h.GetResource, api3.ViewerRole))
 
-	v1.GET("/resources/trend", h.GetResourceGrowthTrend)
-	v1.GET("/resources/top/growing/accounts", h.GetTopFastestGrowingAccountsByResourceCount)
-	v1.GET("/resources/top/accounts", h.GetTopAccountsByResourceCount)
-	v1.GET("/resources/top/regions", h.GetTopRegionsByResourceCount)
-	v1.GET("/resources/top/services", h.GetTopServicesByResourceCount)
-	v1.GET("/resources/categories", h.GetCategories)
-	v1.GET("/accounts/resource/count", h.GetAccountsResourceCount)
+	v1.GET("/resources/trend", httpserver.AuthorizeHandler(h.GetResourceGrowthTrend, api3.ViewerRole))
+	v1.GET("/resources/top/growing/accounts", httpserver.AuthorizeHandler(h.GetTopFastestGrowingAccountsByResourceCount, api3.ViewerRole))
+	v1.GET("/resources/top/accounts", httpserver.AuthorizeHandler(h.GetTopAccountsByResourceCount, api3.ViewerRole))
+	v1.GET("/resources/top/regions", httpserver.AuthorizeHandler(h.GetTopRegionsByResourceCount, api3.ViewerRole))
+	v1.GET("/resources/top/services", httpserver.AuthorizeHandler(h.GetTopServicesByResourceCount, api3.ViewerRole))
+	v1.GET("/resources/categories", httpserver.AuthorizeHandler(h.GetCategories, api3.ViewerRole))
+	v1.GET("/accounts/resource/count", httpserver.AuthorizeHandler(h.GetAccountsResourceCount, api3.ViewerRole))
 
-	v1.GET("/resources/distribution", h.GetResourceDistribution)
-	v1.GET("/services/distribution", h.GetServiceDistribution)
+	v1.GET("/resources/distribution", httpserver.AuthorizeHandler(h.GetResourceDistribution, api3.ViewerRole))
+	v1.GET("/services/distribution", httpserver.AuthorizeHandler(h.GetServiceDistribution, api3.ViewerRole))
 
-	v1.GET("/cost/top/accounts", h.GetTopAccountsByCost)
-	v1.GET("/cost/top/services", h.GetTopServicesByCost)
+	v1.GET("/cost/top/accounts", httpserver.AuthorizeHandler(h.GetTopAccountsByCost, api3.ViewerRole))
+	v1.GET("/cost/top/services", httpserver.AuthorizeHandler(h.GetTopServicesByCost, api3.ViewerRole))
 
-	v1.GET("/query", h.ListQueries)
-	v1.GET("/query/count", h.CountQueries)
-	v1.POST("/query/:queryId", h.RunQuery)
+	v1.GET("/query", httpserver.AuthorizeHandler(h.ListQueries, api3.ViewerRole))
+	v1.GET("/query/count", httpserver.AuthorizeHandler(h.CountQueries, api3.ViewerRole))
+	v1.POST("/query/:queryId", httpserver.AuthorizeHandler(h.RunQuery, api3.EditorRole))
 
-	v1.GET("/insight/results", h.ListInsightsResults)
+	v1.GET("/insight/results", httpserver.AuthorizeHandler(h.ListInsightsResults, api3.ViewerRole))
 
-	v1.GET("/metrics/summary", h.GetSummaryMetrics)
-	v1.GET("/metrics/categorized", h.GetCategorizedMetrics)
-	v1.GET("/categories", h.ListCategories)
+	v1.GET("/metrics/summary", httpserver.AuthorizeHandler(h.GetSummaryMetrics, api3.ViewerRole))
+	v1.GET("/metrics/categorized", httpserver.AuthorizeHandler(h.GetCategorizedMetrics, api3.ViewerRole))
+	v1.GET("/categories", httpserver.AuthorizeHandler(h.ListCategories, api3.ViewerRole))
 
-	v2.GET("/metrics/categorized", h.GetCategorizedMetricsV2)
-	v2.GET("/categories", h.ListCategoriesV2)
+	v2.GET("/metrics/categorized", httpserver.AuthorizeHandler(h.GetCategorizedMetricsV2, api3.ViewerRole))
+	v2.GET("/categories", httpserver.AuthorizeHandler(h.ListCategoriesV2, api3.ViewerRole))
 }
 
 func bindValidate(ctx echo.Context, i interface{}) error {
@@ -664,7 +667,7 @@ func (h *HttpHandler) GetSummaryMetrics(ctx echo.Context) error {
 		}
 
 		if awsResourceType != "" {
-			v, err := GetResources(h.client, provider, sourceID, []string{awsResourceType})
+			v, err := GetResourcesFromPostgres(h.db, provider, sourceID, []string{awsResourceType})
 			if err != nil {
 				return err
 			}
@@ -674,7 +677,7 @@ func (h *HttpHandler) GetSummaryMetrics(ctx echo.Context) error {
 		}
 
 		if azureResourceType != "" {
-			v, err := GetResources(h.client, provider, sourceID, []string{azureResourceType})
+			v, err := GetResourcesFromPostgres(h.db, provider, sourceID, []string{azureResourceType})
 			if err != nil {
 				return err
 			}
@@ -880,7 +883,7 @@ func (h *HttpHandler) GetCategorizedMetrics(ctx echo.Context) error {
 			continue
 		}
 
-		v, err := GetResources(h.client, provider, sourceID, resourceList)
+		v, err := GetResourcesFromPostgres(h.db, provider, sourceID, resourceList)
 		if err != nil {
 			return err
 		}
@@ -942,7 +945,7 @@ func (h *HttpHandler) GetCategorizedMetricsV2(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid category/subcategory")
 	}
 
-	v, err := GetResources(h.client, provider, sourceID, resourceList)
+	v, err := GetResourcesFromPostgres(h.db, provider, sourceID, resourceList)
 	if err != nil {
 		return err
 	}

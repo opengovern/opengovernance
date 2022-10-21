@@ -6,22 +6,28 @@ import (
 	"fmt"
 
 	describe "gitlab.com/keibiengine/keibi-engine/pkg/describe/es"
+	"gitlab.com/keibiengine/keibi-engine/pkg/inventory"
 	"gitlab.com/keibiengine/keibi-engine/pkg/kafka"
 	"gitlab.com/keibiengine/keibi-engine/pkg/keibi-es-sdk"
 	"gitlab.com/keibiengine/keibi-engine/pkg/source"
 	"gitlab.com/keibiengine/keibi-engine/pkg/summarizer/es"
+	"go.uber.org/zap"
 )
 
 type resourceTypeSummaryBuilder struct {
 	client            keibi.Client
+	logger            *zap.Logger
+	db                inventory.Database
 	summarizerJobID   uint
 	connectionSummary map[string]es.ConnectionResourceTypeSummary
 	providerSummary   map[string]es.ProviderResourceTypeSummary
 }
 
-func NewResourceTypeSummaryBuilder(client keibi.Client, summarizerJobID uint) *resourceTypeSummaryBuilder {
+func NewResourceTypeSummaryBuilder(client keibi.Client, logger *zap.Logger, db inventory.Database, summarizerJobID uint) *resourceTypeSummaryBuilder {
 	return &resourceTypeSummaryBuilder{
 		client:            client,
+		db:                db,
+		logger:            logger,
 		summarizerJobID:   summarizerJobID,
 		connectionSummary: make(map[string]es.ConnectionResourceTypeSummary),
 		providerSummary:   make(map[string]es.ProviderResourceTypeSummary),
@@ -128,6 +134,20 @@ func (b *resourceTypeSummaryBuilder) Build() []kafka.Doc {
 	var docs []kafka.Doc
 	for _, v := range b.connectionSummary {
 		docs = append(docs, v)
+		if err := b.db.CreateOrUpdateMetric(inventory.Metric{
+			SourceID:         v.SourceID,
+			Provider:         v.SourceType.String(),
+			ResourceType:     v.ResourceType,
+			ScheduleJobID:    v.ScheduleJobID,
+			LastDayCount:     v.LastDayCount,
+			LastWeekCount:    v.LastWeekCount,
+			LastQuarterCount: v.LastQuarterCount,
+			LastYearCount:    v.LastYearCount,
+			Count:            v.ResourceCount,
+		}); err != nil {
+			b.logger.Error("failed to create metrics due to error", zap.Error(err))
+		}
+
 		h := v
 		h.ReportType = h.ReportType + "History"
 		docs = append(docs, h)

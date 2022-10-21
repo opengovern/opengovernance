@@ -120,18 +120,18 @@ func NewServer(cfg *Config) (*Server, error) {
 func (s *Server) Register(e *echo.Echo) {
 	v1 := e.Group("/api/v1")
 
-	v1.POST("/workspace", s.CreateWorkspace)
-	v1.DELETE("/workspace/:workspace_id", s.DeleteWorkspace)
-	v1.POST("/workspace/:workspace_id/suspend", s.SuspendWorkspace)
-	v1.POST("/workspace/:workspace_id/resume", s.ResumeWorkspace)
-	v1.GET("/workspaces/limits/:workspace_name", s.GetWorkspaceLimits)
-	v1.GET("/workspaces/limits/byid/:workspace_id", s.GetWorkspaceLimitsByID)
-	v1.GET("/workspaces", s.ListWorkspaces)
-	v1.POST("/workspace/:workspace_id/owner", s.ChangeOwnership)
-	v1.GET("/workspace/:workspace_id/backup", s.ListBackups)
-	v1.POST("/workspace/:workspace_id/backup", s.PerformBackup)
-	v1.GET("/workspace/:workspace_id/backup/restores", s.ListRestore)
-	v1.POST("/workspace/:workspace_id/backup/:backup_name/restore", s.PerformRestore)
+	v1.POST("/workspace", httpserver.AuthorizeHandler(s.CreateWorkspace, authapi.EditorRole))
+	v1.DELETE("/workspace/:workspace_id", httpserver.AuthorizeHandler(s.DeleteWorkspace, authapi.EditorRole))
+	v1.POST("/workspace/:workspace_id/suspend", httpserver.AuthorizeHandler(s.SuspendWorkspace, authapi.EditorRole))
+	v1.POST("/workspace/:workspace_id/resume", httpserver.AuthorizeHandler(s.ResumeWorkspace, authapi.EditorRole))
+	v1.GET("/workspaces/limits/:workspace_name", httpserver.AuthorizeHandler(s.GetWorkspaceLimits, authapi.ViewerRole))
+	v1.GET("/workspaces/limits/byid/:workspace_id", httpserver.AuthorizeHandler(s.GetWorkspaceLimitsByID, authapi.ViewerRole))
+	v1.GET("/workspaces", httpserver.AuthorizeHandler(s.ListWorkspaces, authapi.ViewerRole))
+	v1.POST("/workspace/:workspace_id/owner", httpserver.AuthorizeHandler(s.ChangeOwnership, authapi.EditorRole))
+	v1.GET("/workspace/:workspace_id/backup", httpserver.AuthorizeHandler(s.ListBackups, authapi.ViewerRole))
+	v1.POST("/workspace/:workspace_id/backup", httpserver.AuthorizeHandler(s.PerformBackup, authapi.EditorRole))
+	v1.GET("/workspace/:workspace_id/backup/restores", httpserver.AuthorizeHandler(s.ListRestore, authapi.ViewerRole))
+	v1.POST("/workspace/:workspace_id/backup/:backup_name/restore", httpserver.AuthorizeHandler(s.PerformRestore, authapi.EditorRole))
 }
 
 func (s *Server) Start() error {

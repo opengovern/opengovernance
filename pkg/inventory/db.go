@@ -3,17 +3,24 @@ package inventory
 import (
 	"github.com/jackc/pgx/v4"
 	"gitlab.com/keibiengine/keibi-engine/pkg/inventory/api"
+	"gitlab.com/keibiengine/keibi-engine/pkg/source"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 type Database struct {
 	orm *gorm.DB
 }
 
+func NewDatabase(orm *gorm.DB) Database {
+	return Database{orm: orm}
+}
+
 func (db Database) Initialize() error {
 	err := db.orm.AutoMigrate(
 		&SmartQuery{},
 		&Category{},
+		&Metric{},
 	)
 	if err != nil {
 		return err
@@ -150,4 +157,43 @@ func (db Database) GetCategories(category, subCategory string) ([]Category, erro
 	}
 
 	return s, nil
+}
+
+func (db Database) CreateOrUpdateMetric(metric Metric) error {
+	return db.orm.Clauses(clause.OnConflict{
+		Columns:   []clause.Column{{Name: "source_id"}, {Name: "resource_type"}},
+		DoUpdates: clause.AssignmentColumns([]string{"schedule_job_id", "count"}),
+	}).Create(metric).Error
+}
+
+func (db Database) FetchConnectionMetrics(sourceID string, resourceTypes []string) ([]Metric, error) {
+	var metrics []Metric
+	tx := db.orm.Model(Metric{}).
+		Where("source_id = ?", sourceID).
+		Where("resource_type in ?", resourceTypes).
+		Find(&metrics)
+	return metrics, tx.Error
+}
+
+func (db Database) FetchProviderMetrics(provider source.Type, resourceTypes []string) ([]Metric, error) {
+	var metrics []Metric
+	tx := db.orm.Model(Metric{}).
+		Where("provider = ?", string(provider)).
+		Where("resource_type in ?", resourceTypes).
+		Find(&metrics)
+	return metrics, tx.Error
+}
+
+func (db Database) FetchMetrics(resourceTypes []string) ([]Metric, error) {
+	var metrics []Metric
+	tx := db.orm.Model(Metric{}).
+		Where("resource_type in ?", resourceTypes).
+		Find(&metrics)
+	return metrics, tx.Error
+}
+
+func (db Database) ListMetrics() ([]Metric, error) {
+	var metrics []Metric
+	tx := db.orm.Model(Metric{}).Find(&metrics)
+	return metrics, tx.Error
 }

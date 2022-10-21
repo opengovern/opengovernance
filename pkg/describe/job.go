@@ -361,7 +361,6 @@ func doDescribeAWS(ctx context.Context, rdb *redis.Client, job DescribeJob, conf
 	}
 
 	var msgs []kafka.Doc
-	var lookupResources []es.LookupResource
 
 	for _, resources := range output.Resources {
 		currentResourceLimitRemaining, err := rdb.Get(ctx, RedisKeyWorkspaceResourceRemaining).Result()
@@ -465,13 +464,11 @@ func doDescribeAWS(ctx context.Context, rdb *redis.Client, job DescribeJob, conf
 				Tags:          tags,
 			}
 			msgs = append(msgs, lookupResource)
-			lookupResources = append(lookupResources, lookupResource)
 		}
 	}
 
-	logger.Info(fmt.Sprintf("job[%d] parent[%d] resourceType[%s] noOfResources=%d\n",
-		job.JobID, job.ParentJobID, job.ResourceType,
-		len(lookupResources)))
+	logger.Info(fmt.Sprintf("job[%d] parent[%d] resourceType[%s]\n",
+		job.JobID, job.ParentJobID, job.ResourceType))
 
 	// For AWS resources, since they are queries independently per region,
 	// if there is an error in some regions, return those errors. For the regions
@@ -520,7 +517,6 @@ func doDescribeAzure(ctx context.Context, rdb *redis.Client, job DescribeJob, co
 	logger.Warn("got the resources, finding summaries", zap.String("resourceType", job.ResourceType), zap.Uint("jobID", job.JobID))
 
 	var msgs []kafka.Doc
-	var lookupResources []es.LookupResource
 
 	currentResourceLimitRemaining, err := rdb.Get(ctx, RedisKeyWorkspaceResourceRemaining).Result()
 	if err != nil {
@@ -628,7 +624,6 @@ func doDescribeAzure(ctx context.Context, rdb *redis.Client, job DescribeJob, co
 			Tags:          tags,
 		}
 		msgs = append(msgs, lookupResource)
-		lookupResources = append(lookupResources, lookupResource)
 	}
 	logger.Warn("finished describing azure", zap.String("resourceType", job.ResourceType), zap.Uint("jobID", job.JobID))
 	return msgs, nil

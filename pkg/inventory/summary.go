@@ -172,3 +172,54 @@ func GetResources(client keibi.Client, provider source.Type, sourceID *string, r
 	}
 	return res, nil
 }
+
+func GetResourcesFromPostgres(db Database, provider source.Type, sourceID *string, resourceTypes []string) ([]api.ResourceTypeResponse, error) {
+	var m []Metric
+	var err error
+
+	if sourceID == nil {
+		if provider.IsNull() {
+			m, err = db.FetchMetrics(resourceTypes)
+			if err != nil {
+				return nil, err
+			}
+		} else {
+			m, err = db.FetchProviderMetrics(provider, resourceTypes)
+			if err != nil {
+				return nil, err
+			}
+		}
+	} else {
+		m, err = db.FetchConnectionMetrics(*sourceID, resourceTypes)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	resourceTypeResponse := map[string]api.ResourceTypeResponse{}
+	for _, hit := range m {
+		if v, ok := resourceTypeResponse[hit.ResourceType]; ok {
+			v.ResourceCount += hit.Count
+			resourceTypeResponse[hit.ResourceType] = v
+		} else {
+			resourceTypeResponse[hit.ResourceType] = api.ResourceTypeResponse{
+				ResourceType:     cloudservice.ResourceTypeName(hit.ResourceType),
+				ResourceCount:    hit.Count,
+				LastDayCount:     hit.LastDayCount,
+				LastWeekCount:    hit.LastWeekCount,
+				LastQuarterCount: hit.LastQuarterCount,
+				LastYearCount:    hit.LastYearCount,
+			}
+		}
+	}
+
+	var res []api.ResourceTypeResponse
+	for _, v := range resourceTypeResponse {
+		if v.ResourceCount == 0 {
+			continue
+		}
+
+		res = append(res, v)
+	}
+	return res, nil
+}

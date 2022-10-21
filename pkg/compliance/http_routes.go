@@ -6,6 +6,9 @@ import (
 	"net/http"
 	"time"
 
+	api3 "gitlab.com/keibiengine/keibi-engine/pkg/auth/api"
+	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpserver"
+
 	"gitlab.com/keibiengine/keibi-engine/pkg/timewindow"
 
 	es2 "gitlab.com/keibiengine/keibi-engine/pkg/summarizer/es"
@@ -30,25 +33,25 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	v1 := e.Group("/api/v1")
 
 	// finding dashboard
-	v1.POST("/findings", h.GetFindings)
-	v1.POST("/findings/filters", h.GetFindingFilters)
-	v1.POST("/findings/top", h.GetTopFieldByFindingCount)
-	v1.GET("/findings/metrics", h.GetFindingsMetrics)
-	v1.GET("/findings/:finding_id", h.GetFindingDetails)
+	v1.POST("/findings", httpserver.AuthorizeHandler(h.GetFindings, api3.ViewerRole))
+	v1.POST("/findings/filters", httpserver.AuthorizeHandler(h.GetFindingFilters, api3.ViewerRole))
+	v1.POST("/findings/top", httpserver.AuthorizeHandler(h.GetTopFieldByFindingCount, api3.ViewerRole))
+	v1.GET("/findings/metrics", httpserver.AuthorizeHandler(h.GetFindingsMetrics, api3.ViewerRole))
+	v1.GET("/findings/:finding_id", httpserver.AuthorizeHandler(h.GetFindingDetails, api3.ViewerRole))
 
-	v1.POST("/alarms/top", h.GetTopFieldByAlarmCount)
+	v1.POST("/alarms/top", httpserver.AuthorizeHandler(h.GetTopFieldByAlarmCount, api3.ViewerRole))
 	// benchmark dashboard
-	v1.GET("/benchmark/:benchmark_id", h.GetBenchmark)
-	v1.GET("/benchmark/:benchmark_id/summary", h.GetBenchmarkSummary)
-	v1.GET("/benchmarks/summary", h.GetBenchmarksSummary)
-	v1.GET("/benchmarks/:benchmark_id/insight", h.GetBenchmarkInsight)
-	v1.GET("/policy/summary/:benchmark_id", h.GetPolicySummary)
+	v1.GET("/benchmark/:benchmark_id", httpserver.AuthorizeHandler(h.GetBenchmark, api3.ViewerRole))
+	v1.GET("/benchmark/:benchmark_id/summary", httpserver.AuthorizeHandler(h.GetBenchmarkSummary, api3.ViewerRole))
+	v1.GET("/benchmarks/summary", httpserver.AuthorizeHandler(h.GetBenchmarksSummary, api3.ViewerRole))
+	v1.GET("/benchmarks/:benchmark_id/insight", httpserver.AuthorizeHandler(h.GetBenchmarkInsight, api3.ViewerRole))
+	v1.GET("/policy/summary/:benchmark_id", httpserver.AuthorizeHandler(h.GetPolicySummary, api3.ViewerRole))
 
 	// benchmark assignment
-	v1.POST("/benchmarks/:benchmark_id/source/:source_id", h.CreateBenchmarkAssignment)
-	v1.GET("/benchmarks/source/:source_id", h.GetAllBenchmarkAssignmentsBySourceId)
-	v1.GET("/benchmarks/:benchmark_id/sources", h.GetAllBenchmarkAssignedSourcesByBenchmarkId)
-	v1.DELETE("/benchmarks/:benchmark_id/source/:source_id", h.DeleteBenchmarkAssignment)
+	v1.POST("/benchmarks/:benchmark_id/source/:source_id", httpserver.AuthorizeHandler(h.CreateBenchmarkAssignment, api3.EditorRole))
+	v1.GET("/benchmarks/source/:source_id", httpserver.AuthorizeHandler(h.GetAllBenchmarkAssignmentsBySourceId, api3.ViewerRole))
+	v1.GET("/benchmarks/:benchmark_id/sources", httpserver.AuthorizeHandler(h.GetAllBenchmarkAssignedSourcesByBenchmarkId, api3.ViewerRole))
+	v1.DELETE("/benchmarks/:benchmark_id/source/:source_id", httpserver.AuthorizeHandler(h.DeleteBenchmarkAssignment, api3.EditorRole))
 }
 
 func bindValidate(ctx echo.Context, i interface{}) error {

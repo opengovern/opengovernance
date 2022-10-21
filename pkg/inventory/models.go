@@ -27,3 +27,15 @@ type Category struct {
 	Cloud        string
 	CloudService string
 }
+
+type Metric struct {
+	SourceID         string `gorm:"primaryKey"`
+	Provider         string `gorm:"index"`
+	ResourceType     string `gorm:"primaryKey"`
+	ScheduleJobID    uint
+	LastDayCount     *int
+	LastWeekCount    *int
+	LastQuarterCount *int
+	LastYearCount    *int
+	Count            int
+}

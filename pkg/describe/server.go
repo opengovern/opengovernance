@@ -6,6 +6,9 @@ import (
 	"strconv"
 	"time"
 
+	api3 "gitlab.com/keibiengine/keibi-engine/pkg/auth/api"
+	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpserver"
+
 	"gitlab.com/keibiengine/keibi-engine/pkg/cloudservice"
 	complianceapi "gitlab.com/keibiengine/keibi-engine/pkg/compliance/api"
 
@@ -35,21 +38,21 @@ func NewHTTPServer(
 func (s *HttpServer) Register(e *echo.Echo) {
 	v1 := e.Group("/api/v1")
 
-	v1.GET("/sources", s.HandleListSources)
-	v1.GET("/sources/:source_id", s.HandleGetSource)
-	v1.GET("/sources/:source_id/jobs/describe", s.HandleListSourceDescribeJobs)
-	v1.GET("/sources/:source_id/jobs/compliance", s.HandleListSourceComplianceReports)
+	v1.GET("/sources", httpserver.AuthorizeHandler(s.HandleListSources, api3.ViewerRole))
+	v1.GET("/sources/:source_id", httpserver.AuthorizeHandler(s.HandleGetSource, api3.ViewerRole))
+	v1.GET("/sources/:source_id/jobs/describe", httpserver.AuthorizeHandler(s.HandleListSourceDescribeJobs, api3.ViewerRole))
+	v1.GET("/sources/:source_id/jobs/compliance", httpserver.AuthorizeHandler(s.HandleListSourceComplianceReports, api3.ViewerRole))
 
-	v1.POST("/sources/:source_id/jobs/describe/refresh", s.RunDescribeJobs)
-	v1.POST("/sources/:source_id/jobs/compliance/refresh", s.RunComplianceReportJobs)
+	v1.POST("/sources/:source_id/jobs/describe/refresh", httpserver.AuthorizeHandler(s.RunDescribeJobs, api3.EditorRole))
+	v1.POST("/sources/:source_id/jobs/compliance/refresh", httpserver.AuthorizeHandler(s.RunComplianceReportJobs, api3.EditorRole))
 
-	v1.GET("/resource_type/:provider", s.GetResourceTypesByProvider)
+	v1.GET("/resource_type/:provider", httpserver.AuthorizeHandler(s.GetResourceTypesByProvider, api3.ViewerRole))
 
-	v1.GET("/compliance/report/last/completed", s.HandleGetLastCompletedComplianceReport)
+	v1.GET("/compliance/report/last/completed", httpserver.AuthorizeHandler(s.HandleGetLastCompletedComplianceReport, api3.ViewerRole))
 
-	v1.GET("/insight", s.ListInsights)
-	v1.PUT("/insight", s.CreateInsight)
-	v1.DELETE("/insight/:id", s.DeleteInsight)
+	v1.GET("/insight", httpserver.AuthorizeHandler(s.ListInsights, api3.ViewerRole))
+	v1.PUT("/insight", httpserver.AuthorizeHandler(s.CreateInsight, api3.EditorRole))
+	v1.DELETE("/insight/:id", httpserver.AuthorizeHandler(s.DeleteInsight, api3.EditorRole))
 }
 
 // HandleListSources godoc

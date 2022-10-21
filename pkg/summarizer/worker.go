@@ -4,6 +4,9 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"gitlab.com/keibiengine/keibi-engine/pkg/internal/postgres"
+	"gitlab.com/keibiengine/keibi-engine/pkg/inventory"
+
 	"gitlab.com/keibiengine/keibi-engine/pkg/keibi-es-sdk"
 
 	"github.com/prometheus/client_golang/prometheus/push"
@@ -27,6 +30,7 @@ type Worker struct {
 	kfkTopic       string
 	logger         *zap.Logger
 	es             keibi.Client
+	db             inventory.Database
 	pusher         *push.Pusher
 }
 
@@ -45,6 +49,11 @@ func InitializeWorker(
 	elasticSearchAddress string,
 	elasticSearchUsername string,
 	elasticSearchPassword string,
+	postgresHost string,
+	postgresPort string,
+	postgresDb string,
+	postgresUsername string,
+	postgresPassword string,
 ) (w *Worker, err error) {
 	if id == "" {
 		return nil, fmt.Errorf("'id' must be set to a non empty string")
@@ -115,6 +124,22 @@ func InitializeWorker(
 		return nil, err
 	}
 
+	// setup postgres connection
+	cfg := postgres.Config{
+		Host:   postgresHost,
+		Port:   postgresPort,
+		User:   postgresUsername,
+		Passwd: postgresPassword,
+		DB:     postgresDb,
+	}
+	orm, err := postgres.NewClient(&cfg, logger)
+	if err != nil {
+		return nil, fmt.Errorf("new postgres client: %w", err)
+	}
+
+	w.db = inventory.NewDatabase(orm)
+	fmt.Println("Connected to the postgres database: ", postgresDb)
+
 	return w, nil
 }
 
@@ -147,7 +172,7 @@ func (w *Worker) Run() error {
 
 	if resourceJob.JobType == "" || resourceJob.JobType == JobType_ResourceSummarizer {
 		w.logger.Info("Processing job", zap.Int("jobID", int(resourceJob.JobID)))
-		result := resourceJob.Do(w.es, w.kfkProducer, w.kfkTopic, w.logger)
+		result := resourceJob.Do(w.es, w.db, w.kfkProducer, w.kfkTopic, w.logger)
 		w.logger.Info("Publishing job result", zap.Int("jobID", int(resourceJob.JobID)), zap.String("status", string(result.Status)))
 		err = w.jobResultQueue.Publish(result)
 		if err != nil {
