@@ -274,6 +274,15 @@ type LoadBalancersDescription struct {
 	ResourceGroup string
 }
 
+//index:microsoft_network_virtualnetworkgateway
+//getfilter:name=description.VirtualNetworkGateway.Name
+//getfilter:resource_group=description.ResourceGroup
+type VirtualNetworkGatewayDescription struct {
+	VirtualNetworkGateway           newnetwork.VirtualNetworkGateway
+	VirtualNetworkGatewayConnection newnetwork.VirtualNetworkGatewayConnection
+	ResourceGroup                   string
+}
+
 //  =================== policy ==================
 
 //index:microsoft_authorization_policyassignments

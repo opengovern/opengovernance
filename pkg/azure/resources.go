@@ -138,7 +138,7 @@ var resourceTypeToDescriber = map[string]ResourceDescriber{
 	"Microsoft.Network/routeTables": DescribeBySubscription(describer.RouteTables),
 	//"Microsoft.Network/serviceEndpointPolicies":                 nil,
 	//"Microsoft.Network/trafficManagerProfiles":                  nil,
-	//"Microsoft.Network/virtualNetworkGateways":                  nil,
+	"Microsoft.Network/virtualNetworkGateways": DescribeBySubscription(describer.VirtualNetworkGateway),
 	//"Microsoft.Network/virtualWans":                             nil,
 	//"Microsoft.Network/vpnGateways":                             nil,
 	//"Microsoft.NotificationHubs/namespaces":                     nil,
