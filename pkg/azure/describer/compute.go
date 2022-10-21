@@ -236,7 +236,7 @@ func ComputeSnapshots(ctx context.Context, authorizer autorest.Authorizer, subsc
 	client := compute.NewSnapshotsClient(subscription)
 	client.Authorizer = authorizer
 
-	result, err := client.List(context.Background())
+	result, err := client.List(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -253,6 +253,82 @@ func ComputeSnapshots(ctx context.Context, authorizer autorest.Authorizer, subsc
 				Description: model.ComputeSnapshotsDescription{
 					ResourceGroup: resourceGroupName,
 					Snapshot:      snapshot,
+				},
+			})
+		}
+
+		if !result.NotDone() {
+			break
+		}
+
+		err = result.NextWithContext(ctx)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return values, nil
+}
+
+func ComputeAvailabilitySet(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
+	client := compute.NewAvailabilitySetsClient(subscription)
+	client.Authorizer = authorizer
+
+	result, err := client.ListBySubscription(ctx, "")
+	if err != nil {
+		return nil, err
+	}
+
+	var values []Resource
+	for {
+		for _, availabilitySet := range result.Values() {
+			resourceGroupName := strings.Split(*availabilitySet.ID, "/")[4]
+
+			values = append(values, Resource{
+				ID:       *availabilitySet.ID,
+				Name:     *availabilitySet.Name,
+				Location: *availabilitySet.Location,
+				Description: model.ComputeAvailabilitySetDescription{
+					ResourceGroup:   resourceGroupName,
+					AvailabilitySet: availabilitySet,
+				},
+			})
+		}
+
+		if !result.NotDone() {
+			break
+		}
+
+		err = result.NextWithContext(ctx)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return values, nil
+}
+
+func ComputeDiskEncryptionSet(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
+	client := compute.NewDiskEncryptionSetsClient(subscription)
+	client.Authorizer = authorizer
+
+	result, err := client.List(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	var values []Resource
+	for {
+		for _, diskEncryptionSet := range result.Values() {
+			resourceGroupName := strings.Split(*diskEncryptionSet.ID, "/")[4]
+
+			values = append(values, Resource{
+				ID:       *diskEncryptionSet.ID,
+				Name:     *diskEncryptionSet.Name,
+				Location: *diskEncryptionSet.Location,
+				Description: model.ComputeDiskEncryptionSetDescription{
+					ResourceGroup:     resourceGroupName,
+					DiskEncryptionSet: diskEncryptionSet,
 				},
 			})
 		}

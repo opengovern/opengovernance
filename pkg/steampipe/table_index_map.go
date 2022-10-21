@@ -185,6 +185,8 @@ var azureMap = map[string]string{
 	"Microsoft.Network/routeTables":                         "azure_network_routetables",
 	"Microsoft.Compute/snapshots":                           "azure_compute_snapshots",
 	"Microsoft.Network/virtualNetworkGateways":              "azure_network_virtualnetworkgateway",
+	"Microsoft.Compute/availabilitySets":                    "azure_compute_availabilityset",
+	"Microsoft.Compute/diskEncryptionSets":                  "azure_compute_diskencryptionset",
 }
 var AWSDescriptionMap = map[string]interface{}{
 	"AWS::CostExplorer::ByAccountMonthly": &keibi.CostExplorerByAccountMonthly{},
@@ -363,6 +365,8 @@ var AzureDescriptionMap = map[string]interface{}{
 	"Microsoft.Network/routeTables":                         &keibi.RouteTables{},
 	"Microsoft.Compute/snapshots":                           &keibi.ComputeSnapshots{},
 	"Microsoft.Network/virtualNetworkGateways":              &keibi.VirtualNetworkGateway{},
+	"Microsoft.Compute/availabilitySets":                    &keibi.ComputeAvailabilitySet{},
+	"Microsoft.Compute/diskEncryptionSets":                  &keibi.ComputeDiskEncryptionSet{},
 }
 
 type SteampipePlugin string

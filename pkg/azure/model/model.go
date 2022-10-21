@@ -160,6 +160,22 @@ type ComputeSnapshotsDescription struct {
 	ResourceGroup string
 }
 
+//index:microsoft_compute_availabilityset
+//getfilter:name=description.AvailabilitySet.Name
+//getfilter:resource_group=description.ResourceGroup
+type ComputeAvailabilitySetDescription struct {
+	AvailabilitySet compute.AvailabilitySet
+	ResourceGroup   string
+}
+
+//index:microsoft_compute_diskencryptionset
+//getfilter:name=description.DiskEncryptionSet.Name
+//getfilter:resource_group=description.ResourceGroup
+type ComputeDiskEncryptionSetDescription struct {
+	DiskEncryptionSet compute.DiskEncryptionSet
+	ResourceGroup     string
+}
+
 //  =================== databoxedge ==================
 
 //index:microsoft_databoxedge_databoxedgedevices
