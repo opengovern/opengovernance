@@ -891,7 +891,7 @@ func (db Database) GetOldCompletedScheduleJob(nDaysBefore int) (*ScheduleJob, er
 			return nil, nil
 		}
 		return nil, tx.Error
-	} else if tx.RowsAffected != 1 {
+	} else if tx.RowsAffected == 0 {
 		return nil, nil
 	}
 	return job, nil
