@@ -581,6 +581,7 @@ func (s *Scheduler) RunScheduleJobCompletionUpdater() {
 					zap.Error(err),
 				)
 			}
+			continue
 		}
 
 		if j.Status == summarizerapi.SummarizerJobInProgress {
