@@ -27,7 +27,6 @@ import (
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/keibi-es-sdk"
 
-	"gitlab.com/keibiengine/keibi-engine/pkg/describe"
 	"gitlab.com/keibiengine/keibi-engine/pkg/inventory/es"
 	"gitlab.com/keibiengine/keibi-engine/pkg/source"
 
@@ -42,6 +41,7 @@ import (
 )
 
 const EsFetchPageSize = 10000
+const InventorySummaryIndex = "inventory_summary"
 
 func (h *HttpHandler) Register(e *echo.Echo) {
 	v1 := e.Group("/api/v1")
@@ -1671,7 +1671,7 @@ func (h *HttpHandler) GetResourcesFilters(ctx echo.Context) error {
 	}
 
 	var response es.LookupResourceAggregationResponse
-	err = h.client.Search(context.Background(), describe.InventorySummaryIndex,
+	err = h.client.Search(context.Background(), InventorySummaryIndex,
 		query, &response)
 	if err != nil {
 		return err
