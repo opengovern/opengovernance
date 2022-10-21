@@ -278,8 +278,9 @@ type LoadBalancersDescription struct {
 //getfilter:name=description.VirtualNetworkGateway.Name
 //getfilter:resource_group=description.ResourceGroup
 type VirtualNetworkGatewayDescription struct {
-	VirtualNetworkGateway newnetwork.VirtualNetworkGateway
-	ResourceGroup         string
+	VirtualNetworkGateway           newnetwork.VirtualNetworkGateway
+	VirtualNetworkGatewayConnection newnetwork.VirtualNetworkGatewayConnection
+	ResourceGroup                   string
 }
 
 //  =================== policy ==================

@@ -510,6 +510,9 @@ func VirtualNetworkGateway(ctx context.Context, authorizer autorest.Authorizer, 
 	client := newnetwork.NewVirtualNetworkGatewaysClient(subscription)
 	client.Authorizer = authorizer
 
+	conClient := newnetwork.NewVirtualNetworkGatewayConnectionsClient(subscription)
+	conClient.Authorizer = authorizer
+
 	rgs, err := resourceGroup(ctx, authorizer, subscription)
 	if err != nil {
 		return nil, err
@@ -524,6 +527,11 @@ func VirtualNetworkGateway(ctx context.Context, authorizer autorest.Authorizer, 
 
 		for {
 			for _, virtualNetworkGateway := range result.Values() {
+				virtualNetworkGatewayConnection, err := conClient.Get(ctx, *rg.Name, *virtualNetworkGateway.Name)
+				if err != nil {
+					return nil, err
+				}
+
 				resourceGroup := strings.Split(*virtualNetworkGateway.ID, "/")[4]
 
 				values = append(values, Resource{
@@ -531,8 +539,9 @@ func VirtualNetworkGateway(ctx context.Context, authorizer autorest.Authorizer, 
 					Name:     *virtualNetworkGateway.Name,
 					Location: *virtualNetworkGateway.Location,
 					Description: model.VirtualNetworkGatewayDescription{
-						ResourceGroup:         resourceGroup,
-						VirtualNetworkGateway: virtualNetworkGateway,
+						ResourceGroup:                   resourceGroup,
+						VirtualNetworkGateway:           virtualNetworkGateway,
+						VirtualNetworkGatewayConnection: virtualNetworkGatewayConnection,
 					},
 				})
 			}
