@@ -505,3 +505,46 @@ func LoadBalancers(ctx context.Context, authorizer autorest.Authorizer, subscrip
 	}
 	return values, nil
 }
+
+func VirtualNetworkGateway(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
+	client := newnetwork.NewVirtualNetworkGatewaysClient(subscription)
+	client.Authorizer = authorizer
+
+	rgs, err := resourceGroup(ctx, authorizer, subscription)
+	if err != nil {
+		return nil, err
+	}
+
+	var values []Resource
+	for _, rg := range rgs {
+		result, err := client.List(ctx, *rg.Name)
+		if err != nil {
+			return nil, err
+		}
+
+		for {
+			for _, virtualNetworkGateway := range result.Values() {
+				resourceGroup := strings.Split(*virtualNetworkGateway.ID, "/")[4]
+
+				values = append(values, Resource{
+					ID:       *virtualNetworkGateway.ID,
+					Name:     *virtualNetworkGateway.Name,
+					Location: *virtualNetworkGateway.Location,
+					Description: model.VirtualNetworkGatewayDescription{
+						ResourceGroup:         resourceGroup,
+						VirtualNetworkGateway: virtualNetworkGateway,
+					},
+				})
+			}
+			if !result.NotDone() {
+				break
+			}
+			err = result.NextWithContext(ctx)
+			if err != nil {
+				return nil, err
+			}
+		}
+	}
+
+	return values, nil
+}
