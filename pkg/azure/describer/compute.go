@@ -236,7 +236,7 @@ func ComputeSnapshots(ctx context.Context, authorizer autorest.Authorizer, subsc
 	client := compute.NewSnapshotsClient(subscription)
 	client.Authorizer = authorizer
 
-	result, err := client.List(context.Background())
+	result, err := client.List(ctx)
 	if err != nil {
 		return nil, err
 	}
