@@ -3033,6 +3033,150 @@ func GetLoadBalancers(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydrat
 
 // ==========================  END: LoadBalancers =============================
 
+// ==========================  START: VirtualNetworkGateway =============================
+
+type VirtualNetworkGateway struct {
+	Description   azure.VirtualNetworkGatewayDescription `json:"description"`
+	Metadata      azure.Metadata                         `json:"metadata"`
+	ResourceJobID int                                    `json:"resource_job_id"`
+	SourceJobID   int                                    `json:"source_job_id"`
+	ResourceType  string                                 `json:"resource_type"`
+	SourceType    string                                 `json:"source_type"`
+	ID            string                                 `json:"id"`
+	SourceID      string                                 `json:"source_id"`
+}
+
+type VirtualNetworkGatewayHit struct {
+	ID      string                `json:"_id"`
+	Score   float64               `json:"_score"`
+	Index   string                `json:"_index"`
+	Type    string                `json:"_type"`
+	Version int64                 `json:"_version,omitempty"`
+	Source  VirtualNetworkGateway `json:"_source"`
+	Sort    []interface{}         `json:"sort"`
+}
+
+type VirtualNetworkGatewayHits struct {
+	Total SearchTotal                `json:"total"`
+	Hits  []VirtualNetworkGatewayHit `json:"hits"`
+}
+
+type VirtualNetworkGatewaySearchResponse struct {
+	PitID string                    `json:"pit_id"`
+	Hits  VirtualNetworkGatewayHits `json:"hits"`
+}
+
+type VirtualNetworkGatewayPaginator struct {
+	paginator *baseESPaginator
+}
+
+func (k Client) NewVirtualNetworkGatewayPaginator(filters []BoolFilter, limit *int64) (VirtualNetworkGatewayPaginator, error) {
+	paginator, err := newPaginator(k.es, "microsoft_network_virtualnetworkgateway", filters, limit)
+	if err != nil {
+		return VirtualNetworkGatewayPaginator{}, err
+	}
+
+	p := VirtualNetworkGatewayPaginator{
+		paginator: paginator,
+	}
+
+	return p, nil
+}
+
+func (p VirtualNetworkGatewayPaginator) HasNext() bool {
+	return !p.paginator.done
+}
+
+func (p VirtualNetworkGatewayPaginator) NextPage(ctx context.Context) ([]VirtualNetworkGateway, error) {
+	var response VirtualNetworkGatewaySearchResponse
+	err := p.paginator.search(ctx, &response)
+	if err != nil {
+		return nil, err
+	}
+
+	var values []VirtualNetworkGateway
+	for _, hit := range response.Hits.Hits {
+		values = append(values, hit.Source)
+	}
+
+	hits := int64(len(response.Hits.Hits))
+	if hits > 0 {
+		p.paginator.updateState(hits, response.Hits.Hits[hits-1].Sort, response.PitID)
+	} else {
+		p.paginator.updateState(hits, nil, "")
+	}
+
+	return values, nil
+}
+
+var listVirtualNetworkGatewayFilters = map[string]string{}
+
+func ListVirtualNetworkGateway(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("ListVirtualNetworkGateway")
+
+	// create service
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	paginator, err := k.NewVirtualNetworkGatewayPaginator(buildFilter(d.KeyColumnQuals, listVirtualNetworkGatewayFilters, "azure", *cfg.AccountID), d.QueryContext.Limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			d.StreamListItem(ctx, v)
+		}
+	}
+
+	return nil, nil
+}
+
+var getVirtualNetworkGatewayFilters = map[string]string{
+	"name":           "description.VirtualNetworkGateway.Name",
+	"resource_group": "description.ResourceGroup",
+}
+
+func GetVirtualNetworkGateway(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("GetVirtualNetworkGateway")
+
+	// create service
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	limit := int64(1)
+	paginator, err := k.NewVirtualNetworkGatewayPaginator(buildFilter(d.KeyColumnQuals, getVirtualNetworkGatewayFilters, "azure", *cfg.AccountID), &limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			return v, nil
+		}
+	}
+
+	return nil, nil
+}
+
+// ==========================  END: VirtualNetworkGateway =============================
+
 // ==========================  START: PolicyAssignment =============================
 
 type PolicyAssignment struct {

@@ -184,6 +184,7 @@ var azureMap = map[string]string{
 	"Microsoft.Network/loadBalancers":                       "azure_network_loadbalancers",
 	"Microsoft.Network/routeTables":                         "azure_network_routetables",
 	"Microsoft.Compute/snapshots":                           "azure_compute_snapshots",
+	"Microsoft.Network/virtualNetworkGateways":              "azure_network_virtualnetworkgateway",
 }
 var AWSDescriptionMap = map[string]interface{}{
 	"AWS::CostExplorer::ByAccountMonthly": &keibi.CostExplorerByAccountMonthly{},
@@ -358,9 +359,10 @@ var AzureDescriptionMap = map[string]interface{}{
 	"Microsoft.RecoveryServices/vaults":                     &keibi.RecoveryServicesVault{},
 	"Microsoft.Network/azureFirewalls":                      &keibi.NetworkAzureFirewall{},
 	"Microsoft.Network/expressRouteCircuits":                &keibi.ExpressRouteCircuit{},
-	"Microsoft.Network/loadBalancers":                       &keibi.LoadBalancers{},
+	"Microsoft.Network/loadBalancers":                       &keibi.LoadBalancers{}, // TODO: Find proper table
 	"Microsoft.Network/routeTables":                         &keibi.RouteTables{},
 	"Microsoft.Compute/snapshots":                           &keibi.ComputeSnapshots{},
+	"Microsoft.Network/virtualNetworkGateways":              &keibi.VirtualNetworkGateway{},
 }
 
 type SteampipePlugin string
