@@ -1303,6 +1303,294 @@ func GetComputeSnapshots(ctx context.Context, d *plugin.QueryData, _ *plugin.Hyd
 
 // ==========================  END: ComputeSnapshots =============================
 
+// ==========================  START: ComputeAvailabilitySet =============================
+
+type ComputeAvailabilitySet struct {
+	Description   azure.ComputeAvailabilitySetDescription `json:"description"`
+	Metadata      azure.Metadata                          `json:"metadata"`
+	ResourceJobID int                                     `json:"resource_job_id"`
+	SourceJobID   int                                     `json:"source_job_id"`
+	ResourceType  string                                  `json:"resource_type"`
+	SourceType    string                                  `json:"source_type"`
+	ID            string                                  `json:"id"`
+	SourceID      string                                  `json:"source_id"`
+}
+
+type ComputeAvailabilitySetHit struct {
+	ID      string                 `json:"_id"`
+	Score   float64                `json:"_score"`
+	Index   string                 `json:"_index"`
+	Type    string                 `json:"_type"`
+	Version int64                  `json:"_version,omitempty"`
+	Source  ComputeAvailabilitySet `json:"_source"`
+	Sort    []interface{}          `json:"sort"`
+}
+
+type ComputeAvailabilitySetHits struct {
+	Total SearchTotal                 `json:"total"`
+	Hits  []ComputeAvailabilitySetHit `json:"hits"`
+}
+
+type ComputeAvailabilitySetSearchResponse struct {
+	PitID string                     `json:"pit_id"`
+	Hits  ComputeAvailabilitySetHits `json:"hits"`
+}
+
+type ComputeAvailabilitySetPaginator struct {
+	paginator *baseESPaginator
+}
+
+func (k Client) NewComputeAvailabilitySetPaginator(filters []BoolFilter, limit *int64) (ComputeAvailabilitySetPaginator, error) {
+	paginator, err := newPaginator(k.es, "microsoft_compute_availabilityset", filters, limit)
+	if err != nil {
+		return ComputeAvailabilitySetPaginator{}, err
+	}
+
+	p := ComputeAvailabilitySetPaginator{
+		paginator: paginator,
+	}
+
+	return p, nil
+}
+
+func (p ComputeAvailabilitySetPaginator) HasNext() bool {
+	return !p.paginator.done
+}
+
+func (p ComputeAvailabilitySetPaginator) NextPage(ctx context.Context) ([]ComputeAvailabilitySet, error) {
+	var response ComputeAvailabilitySetSearchResponse
+	err := p.paginator.search(ctx, &response)
+	if err != nil {
+		return nil, err
+	}
+
+	var values []ComputeAvailabilitySet
+	for _, hit := range response.Hits.Hits {
+		values = append(values, hit.Source)
+	}
+
+	hits := int64(len(response.Hits.Hits))
+	if hits > 0 {
+		p.paginator.updateState(hits, response.Hits.Hits[hits-1].Sort, response.PitID)
+	} else {
+		p.paginator.updateState(hits, nil, "")
+	}
+
+	return values, nil
+}
+
+var listComputeAvailabilitySetFilters = map[string]string{}
+
+func ListComputeAvailabilitySet(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("ListComputeAvailabilitySet")
+
+	// create service
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	paginator, err := k.NewComputeAvailabilitySetPaginator(buildFilter(d.KeyColumnQuals, listComputeAvailabilitySetFilters, "azure", *cfg.AccountID), d.QueryContext.Limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			d.StreamListItem(ctx, v)
+		}
+	}
+
+	return nil, nil
+}
+
+var getComputeAvailabilitySetFilters = map[string]string{
+	"name":           "description.AvailabilitySet.Name",
+	"resource_group": "description.ResourceGroup",
+}
+
+func GetComputeAvailabilitySet(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("GetComputeAvailabilitySet")
+
+	// create service
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	limit := int64(1)
+	paginator, err := k.NewComputeAvailabilitySetPaginator(buildFilter(d.KeyColumnQuals, getComputeAvailabilitySetFilters, "azure", *cfg.AccountID), &limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			return v, nil
+		}
+	}
+
+	return nil, nil
+}
+
+// ==========================  END: ComputeAvailabilitySet =============================
+
+// ==========================  START: ComputeDiskEncryptionSet =============================
+
+type ComputeDiskEncryptionSet struct {
+	Description   azure.ComputeDiskEncryptionSetDescription `json:"description"`
+	Metadata      azure.Metadata                            `json:"metadata"`
+	ResourceJobID int                                       `json:"resource_job_id"`
+	SourceJobID   int                                       `json:"source_job_id"`
+	ResourceType  string                                    `json:"resource_type"`
+	SourceType    string                                    `json:"source_type"`
+	ID            string                                    `json:"id"`
+	SourceID      string                                    `json:"source_id"`
+}
+
+type ComputeDiskEncryptionSetHit struct {
+	ID      string                   `json:"_id"`
+	Score   float64                  `json:"_score"`
+	Index   string                   `json:"_index"`
+	Type    string                   `json:"_type"`
+	Version int64                    `json:"_version,omitempty"`
+	Source  ComputeDiskEncryptionSet `json:"_source"`
+	Sort    []interface{}            `json:"sort"`
+}
+
+type ComputeDiskEncryptionSetHits struct {
+	Total SearchTotal                   `json:"total"`
+	Hits  []ComputeDiskEncryptionSetHit `json:"hits"`
+}
+
+type ComputeDiskEncryptionSetSearchResponse struct {
+	PitID string                       `json:"pit_id"`
+	Hits  ComputeDiskEncryptionSetHits `json:"hits"`
+}
+
+type ComputeDiskEncryptionSetPaginator struct {
+	paginator *baseESPaginator
+}
+
+func (k Client) NewComputeDiskEncryptionSetPaginator(filters []BoolFilter, limit *int64) (ComputeDiskEncryptionSetPaginator, error) {
+	paginator, err := newPaginator(k.es, "microsoft_compute_diskencryptionset", filters, limit)
+	if err != nil {
+		return ComputeDiskEncryptionSetPaginator{}, err
+	}
+
+	p := ComputeDiskEncryptionSetPaginator{
+		paginator: paginator,
+	}
+
+	return p, nil
+}
+
+func (p ComputeDiskEncryptionSetPaginator) HasNext() bool {
+	return !p.paginator.done
+}
+
+func (p ComputeDiskEncryptionSetPaginator) NextPage(ctx context.Context) ([]ComputeDiskEncryptionSet, error) {
+	var response ComputeDiskEncryptionSetSearchResponse
+	err := p.paginator.search(ctx, &response)
+	if err != nil {
+		return nil, err
+	}
+
+	var values []ComputeDiskEncryptionSet
+	for _, hit := range response.Hits.Hits {
+		values = append(values, hit.Source)
+	}
+
+	hits := int64(len(response.Hits.Hits))
+	if hits > 0 {
+		p.paginator.updateState(hits, response.Hits.Hits[hits-1].Sort, response.PitID)
+	} else {
+		p.paginator.updateState(hits, nil, "")
+	}
+
+	return values, nil
+}
+
+var listComputeDiskEncryptionSetFilters = map[string]string{}
+
+func ListComputeDiskEncryptionSet(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("ListComputeDiskEncryptionSet")
+
+	// create service
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	paginator, err := k.NewComputeDiskEncryptionSetPaginator(buildFilter(d.KeyColumnQuals, listComputeDiskEncryptionSetFilters, "azure", *cfg.AccountID), d.QueryContext.Limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			d.StreamListItem(ctx, v)
+		}
+	}
+
+	return nil, nil
+}
+
+var getComputeDiskEncryptionSetFilters = map[string]string{
+	"name":           "description.DiskEncryptionSet.Name",
+	"resource_group": "description.ResourceGroup",
+}
+
+func GetComputeDiskEncryptionSet(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("GetComputeDiskEncryptionSet")
+
+	// create service
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	limit := int64(1)
+	paginator, err := k.NewComputeDiskEncryptionSetPaginator(buildFilter(d.KeyColumnQuals, getComputeDiskEncryptionSetFilters, "azure", *cfg.AccountID), &limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			return v, nil
+		}
+	}
+
+	return nil, nil
+}
+
+// ==========================  END: ComputeDiskEncryptionSet =============================
+
 // ==========================  START: DataboxEdgeDevice =============================
 
 type DataboxEdgeDevice struct {
@@ -3892,6 +4180,149 @@ func GetRoleDefinition(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydra
 }
 
 // ==========================  END: RoleDefinition =============================
+
+// ==========================  START: PolicyDefinition =============================
+
+type PolicyDefinition struct {
+	Description   azure.PolicyDefinitionDescription `json:"description"`
+	Metadata      azure.Metadata                    `json:"metadata"`
+	ResourceJobID int                               `json:"resource_job_id"`
+	SourceJobID   int                               `json:"source_job_id"`
+	ResourceType  string                            `json:"resource_type"`
+	SourceType    string                            `json:"source_type"`
+	ID            string                            `json:"id"`
+	SourceID      string                            `json:"source_id"`
+}
+
+type PolicyDefinitionHit struct {
+	ID      string           `json:"_id"`
+	Score   float64          `json:"_score"`
+	Index   string           `json:"_index"`
+	Type    string           `json:"_type"`
+	Version int64            `json:"_version,omitempty"`
+	Source  PolicyDefinition `json:"_source"`
+	Sort    []interface{}    `json:"sort"`
+}
+
+type PolicyDefinitionHits struct {
+	Total SearchTotal           `json:"total"`
+	Hits  []PolicyDefinitionHit `json:"hits"`
+}
+
+type PolicyDefinitionSearchResponse struct {
+	PitID string               `json:"pit_id"`
+	Hits  PolicyDefinitionHits `json:"hits"`
+}
+
+type PolicyDefinitionPaginator struct {
+	paginator *baseESPaginator
+}
+
+func (k Client) NewPolicyDefinitionPaginator(filters []BoolFilter, limit *int64) (PolicyDefinitionPaginator, error) {
+	paginator, err := newPaginator(k.es, "microsoft_authorization_policydefinition", filters, limit)
+	if err != nil {
+		return PolicyDefinitionPaginator{}, err
+	}
+
+	p := PolicyDefinitionPaginator{
+		paginator: paginator,
+	}
+
+	return p, nil
+}
+
+func (p PolicyDefinitionPaginator) HasNext() bool {
+	return !p.paginator.done
+}
+
+func (p PolicyDefinitionPaginator) NextPage(ctx context.Context) ([]PolicyDefinition, error) {
+	var response PolicyDefinitionSearchResponse
+	err := p.paginator.search(ctx, &response)
+	if err != nil {
+		return nil, err
+	}
+
+	var values []PolicyDefinition
+	for _, hit := range response.Hits.Hits {
+		values = append(values, hit.Source)
+	}
+
+	hits := int64(len(response.Hits.Hits))
+	if hits > 0 {
+		p.paginator.updateState(hits, response.Hits.Hits[hits-1].Sort, response.PitID)
+	} else {
+		p.paginator.updateState(hits, nil, "")
+	}
+
+	return values, nil
+}
+
+var listPolicyDefinitionFilters = map[string]string{}
+
+func ListPolicyDefinition(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("ListPolicyDefinition")
+
+	// create service
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	paginator, err := k.NewPolicyDefinitionPaginator(buildFilter(d.KeyColumnQuals, listPolicyDefinitionFilters, "azure", *cfg.AccountID), d.QueryContext.Limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			d.StreamListItem(ctx, v)
+		}
+	}
+
+	return nil, nil
+}
+
+var getPolicyDefinitionFilters = map[string]string{
+	"name": "description.Definition.Name",
+}
+
+func GetPolicyDefinition(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("GetPolicyDefinition")
+
+	// create service
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	limit := int64(1)
+	paginator, err := k.NewPolicyDefinitionPaginator(buildFilter(d.KeyColumnQuals, getPolicyDefinitionFilters, "azure", *cfg.AccountID), &limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			return v, nil
+		}
+	}
+
+	return nil, nil
+}
+
+// ==========================  END: PolicyDefinition =============================
 
 // ==========================  START: SecurityCenterAutoProvisioning =============================
 
@@ -11808,3 +12239,147 @@ func GetRecoveryServicesVault(ctx context.Context, d *plugin.QueryData, _ *plugi
 }
 
 // ==========================  END: RecoveryServicesVault =============================
+
+// ==========================  START: HybridKubernetesConnectedCluster =============================
+
+type HybridKubernetesConnectedCluster struct {
+	Description   azure.HybridKubernetesConnectedClusterDescription `json:"description"`
+	Metadata      azure.Metadata                                    `json:"metadata"`
+	ResourceJobID int                                               `json:"resource_job_id"`
+	SourceJobID   int                                               `json:"source_job_id"`
+	ResourceType  string                                            `json:"resource_type"`
+	SourceType    string                                            `json:"source_type"`
+	ID            string                                            `json:"id"`
+	SourceID      string                                            `json:"source_id"`
+}
+
+type HybridKubernetesConnectedClusterHit struct {
+	ID      string                           `json:"_id"`
+	Score   float64                          `json:"_score"`
+	Index   string                           `json:"_index"`
+	Type    string                           `json:"_type"`
+	Version int64                            `json:"_version,omitempty"`
+	Source  HybridKubernetesConnectedCluster `json:"_source"`
+	Sort    []interface{}                    `json:"sort"`
+}
+
+type HybridKubernetesConnectedClusterHits struct {
+	Total SearchTotal                           `json:"total"`
+	Hits  []HybridKubernetesConnectedClusterHit `json:"hits"`
+}
+
+type HybridKubernetesConnectedClusterSearchResponse struct {
+	PitID string                               `json:"pit_id"`
+	Hits  HybridKubernetesConnectedClusterHits `json:"hits"`
+}
+
+type HybridKubernetesConnectedClusterPaginator struct {
+	paginator *baseESPaginator
+}
+
+func (k Client) NewHybridKubernetesConnectedClusterPaginator(filters []BoolFilter, limit *int64) (HybridKubernetesConnectedClusterPaginator, error) {
+	paginator, err := newPaginator(k.es, "microsoft_hybridkubernetes_connectedcluster", filters, limit)
+	if err != nil {
+		return HybridKubernetesConnectedClusterPaginator{}, err
+	}
+
+	p := HybridKubernetesConnectedClusterPaginator{
+		paginator: paginator,
+	}
+
+	return p, nil
+}
+
+func (p HybridKubernetesConnectedClusterPaginator) HasNext() bool {
+	return !p.paginator.done
+}
+
+func (p HybridKubernetesConnectedClusterPaginator) NextPage(ctx context.Context) ([]HybridKubernetesConnectedCluster, error) {
+	var response HybridKubernetesConnectedClusterSearchResponse
+	err := p.paginator.search(ctx, &response)
+	if err != nil {
+		return nil, err
+	}
+
+	var values []HybridKubernetesConnectedCluster
+	for _, hit := range response.Hits.Hits {
+		values = append(values, hit.Source)
+	}
+
+	hits := int64(len(response.Hits.Hits))
+	if hits > 0 {
+		p.paginator.updateState(hits, response.Hits.Hits[hits-1].Sort, response.PitID)
+	} else {
+		p.paginator.updateState(hits, nil, "")
+	}
+
+	return values, nil
+}
+
+var listHybridKubernetesConnectedClusterFilters = map[string]string{}
+
+func ListHybridKubernetesConnectedCluster(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("ListHybridKubernetesConnectedCluster")
+
+	// create service
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	paginator, err := k.NewHybridKubernetesConnectedClusterPaginator(buildFilter(d.KeyColumnQuals, listHybridKubernetesConnectedClusterFilters, "azure", *cfg.AccountID), d.QueryContext.Limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			d.StreamListItem(ctx, v)
+		}
+	}
+
+	return nil, nil
+}
+
+var getHybridKubernetesConnectedClusterFilters = map[string]string{
+	"name":           "description.ConnectedCluster.Name",
+	"resource_group": "description.ResourceGroup",
+}
+
+func GetHybridKubernetesConnectedCluster(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("GetHybridKubernetesConnectedCluster")
+
+	// create service
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	limit := int64(1)
+	paginator, err := k.NewHybridKubernetesConnectedClusterPaginator(buildFilter(d.KeyColumnQuals, getHybridKubernetesConnectedClusterFilters, "azure", *cfg.AccountID), &limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			return v, nil
+		}
+	}
+
+	return nil, nil
+}
+
+// ==========================  END: HybridKubernetesConnectedCluster =============================

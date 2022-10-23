@@ -6,6 +6,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/profiles/2020-09-01/monitor/mgmt/insights"
 	"github.com/Azure/azure-sdk-for-go/profiles/latest/healthcareapis/mgmt/healthcareapis"
 	"github.com/Azure/azure-sdk-for-go/profiles/latest/hybridcompute/mgmt/hybridcompute"
+	"github.com/Azure/azure-sdk-for-go/profiles/latest/hybridkubernetes/mgmt/hybridkubernetes"
 	"github.com/Azure/azure-sdk-for-go/profiles/latest/recoveryservices/mgmt/recoveryservices"
 	"github.com/Azure/azure-sdk-for-go/profiles/latest/resources/mgmt/links"
 	"github.com/Azure/azure-sdk-for-go/profiles/latest/resources/mgmt/policy"
@@ -158,6 +159,22 @@ type ComputeVirtualMachineScaleSetDescription struct {
 type ComputeSnapshotsDescription struct {
 	Snapshot      compute.Snapshot
 	ResourceGroup string
+}
+
+//index:microsoft_compute_availabilityset
+//getfilter:name=description.AvailabilitySet.Name
+//getfilter:resource_group=description.ResourceGroup
+type ComputeAvailabilitySetDescription struct {
+	AvailabilitySet compute.AvailabilitySet
+	ResourceGroup   string
+}
+
+//index:microsoft_compute_diskencryptionset
+//getfilter:name=description.DiskEncryptionSet.Name
+//getfilter:resource_group=description.ResourceGroup
+type ComputeDiskEncryptionSetDescription struct {
+	DiskEncryptionSet compute.DiskEncryptionSet
+	ResourceGroup     string
 }
 
 //  =================== databoxedge ==================
@@ -321,6 +338,13 @@ type RoleAssignmentDescription struct {
 //getfilter:name=description.RoleDefinition.name
 type RoleDefinitionDescription struct {
 	RoleDefinition authorization.RoleDefinition
+}
+
+//index:microsoft_authorization_policydefinition
+//getfilter:name=description.Definition.Name
+type PolicyDefinitionDescription struct {
+	Definition policy.Definition
+	TurboData  map[string]interface{}
 }
 
 //  =================== security ==================
@@ -920,4 +944,14 @@ type StorageAccountDescription struct {
 type RecoveryServicesVaultDescription struct {
 	Vault         recoveryservices.Vault
 	ResourceGroup string
+}
+
+//  =================== kubernetes ==================
+
+//index:microsoft_hybridkubernetes_connectedcluster
+//getfilter:name=description.ConnectedCluster.Name
+//getfilter:resource_group=description.ResourceGroup
+type HybridKubernetesConnectedClusterDescription struct {
+	ConnectedCluster hybridkubernetes.ConnectedCluster
+	ResourceGroup    string
 }
