@@ -324,7 +324,7 @@ func (db Database) QueryInProgressDescribedSourceJobGroupByDescribeResourceJobSt
 		Model(&DescribeSourceJob{}).
 		Select("describe_source_jobs.id, describe_resource_jobs.status, COUNT(*)").
 		Joins("JOIN describe_resource_jobs ON describe_source_jobs.id = describe_resource_jobs.parent_job_id").
-		Where("describe_source_jobs.status IN ?", []string{string(api.DescribeSourceJobInProgress)}).
+		Where("describe_source_jobs.status IN ?", []string{string(api.DescribeSourceJobCreated), string(api.DescribeSourceJobInProgress)}).
 		Group("describe_source_jobs.id").
 		Group("describe_resource_jobs.status").
 		Order("describe_source_jobs.id ASC").
