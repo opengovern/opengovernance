@@ -440,6 +440,13 @@ type EC2AMIDescription struct {
 	LaunchPermissions ec2op.DescribeImageAttributeOutput
 }
 
+//index:aws_ec2_reservedinstance
+//getfilter:reserved_instance_id=description.ReservedInstance.ReservedInstancesId
+type EC2ReservedInstancesDescription struct {
+	ReservedInstances   ec2.ReservedInstances
+	ModificationDetails []ec2.ReservedInstancesModification
+}
+
 //  ===================  Elastic Load Balancing  ===================
 
 //index:aws_elasticloadbalancingv2_loadbalancer

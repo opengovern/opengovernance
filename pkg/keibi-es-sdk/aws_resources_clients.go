@@ -6353,6 +6353,149 @@ func GetEC2AMI(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) 
 
 // ==========================  END: EC2AMI =============================
 
+// ==========================  START: EC2ReservedInstances =============================
+
+type EC2ReservedInstances struct {
+	Description   aws.EC2ReservedInstancesDescription `json:"description"`
+	Metadata      aws.Metadata                        `json:"metadata"`
+	ResourceJobID int                                 `json:"resource_job_id"`
+	SourceJobID   int                                 `json:"source_job_id"`
+	ResourceType  string                              `json:"resource_type"`
+	SourceType    string                              `json:"source_type"`
+	ID            string                              `json:"id"`
+	SourceID      string                              `json:"source_id"`
+}
+
+type EC2ReservedInstancesHit struct {
+	ID      string               `json:"_id"`
+	Score   float64              `json:"_score"`
+	Index   string               `json:"_index"`
+	Type    string               `json:"_type"`
+	Version int64                `json:"_version,omitempty"`
+	Source  EC2ReservedInstances `json:"_source"`
+	Sort    []interface{}        `json:"sort"`
+}
+
+type EC2ReservedInstancesHits struct {
+	Total SearchTotal               `json:"total"`
+	Hits  []EC2ReservedInstancesHit `json:"hits"`
+}
+
+type EC2ReservedInstancesSearchResponse struct {
+	PitID string                   `json:"pit_id"`
+	Hits  EC2ReservedInstancesHits `json:"hits"`
+}
+
+type EC2ReservedInstancesPaginator struct {
+	paginator *baseESPaginator
+}
+
+func (k Client) NewEC2ReservedInstancesPaginator(filters []BoolFilter, limit *int64) (EC2ReservedInstancesPaginator, error) {
+	paginator, err := newPaginator(k.es, "aws_ec2_reservedinstance", filters, limit)
+	if err != nil {
+		return EC2ReservedInstancesPaginator{}, err
+	}
+
+	p := EC2ReservedInstancesPaginator{
+		paginator: paginator,
+	}
+
+	return p, nil
+}
+
+func (p EC2ReservedInstancesPaginator) HasNext() bool {
+	return !p.paginator.done
+}
+
+func (p EC2ReservedInstancesPaginator) NextPage(ctx context.Context) ([]EC2ReservedInstances, error) {
+	var response EC2ReservedInstancesSearchResponse
+	err := p.paginator.search(ctx, &response)
+	if err != nil {
+		return nil, err
+	}
+
+	var values []EC2ReservedInstances
+	for _, hit := range response.Hits.Hits {
+		values = append(values, hit.Source)
+	}
+
+	hits := int64(len(response.Hits.Hits))
+	if hits > 0 {
+		p.paginator.updateState(hits, response.Hits.Hits[hits-1].Sort, response.PitID)
+	} else {
+		p.paginator.updateState(hits, nil, "")
+	}
+
+	return values, nil
+}
+
+var listEC2ReservedInstancesFilters = map[string]string{}
+
+func ListEC2ReservedInstances(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("ListEC2ReservedInstances")
+
+	// create service
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	paginator, err := k.NewEC2ReservedInstancesPaginator(buildFilter(d.KeyColumnQuals, listEC2ReservedInstancesFilters, "aws", *cfg.AccountID), d.QueryContext.Limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			d.StreamListItem(ctx, v)
+		}
+	}
+
+	return nil, nil
+}
+
+var getEC2ReservedInstancesFilters = map[string]string{
+	"reserved_instance_id": "description.ReservedInstance.ReservedInstancesId",
+}
+
+func GetEC2ReservedInstances(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("GetEC2ReservedInstances")
+
+	// create service
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	limit := int64(1)
+	paginator, err := k.NewEC2ReservedInstancesPaginator(buildFilter(d.KeyColumnQuals, getEC2ReservedInstancesFilters, "aws", *cfg.AccountID), &limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			return v, nil
+		}
+	}
+
+	return nil, nil
+}
+
+// ==========================  END: EC2ReservedInstances =============================
+
 // ==========================  START: ElasticLoadBalancingV2LoadBalancer =============================
 
 type ElasticLoadBalancingV2LoadBalancer struct {

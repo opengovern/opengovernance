@@ -75,10 +75,11 @@ var resourceTypeToDescriber = map[string]ResourceDescriber{
 	// "AWS::EC2::NetworkInterfacePermission":                        ParallelDescribeRegional(describer.EC2NetworkInterfacePermission),
 	// "AWS::EC2::PlacementGroup":                                    ParallelDescribeRegional(describer.EC2PlacementGroup),
 	// "AWS::EC2::PrefixList":                                        ParallelDescribeRegional(describer.EC2PrefixList),
-	"AWS::EC2::RouteTable":       ParallelDescribeRegional(describer.EC2RouteTable),
-	"AWS::EC2::Region":           SequentialDescribeGlobal(describer.EC2Region),
-	"AWS::EC2::RegionalSettings": ParallelDescribeRegional(describer.EC2RegionalSettings), // IGNORE
-	"AWS::EC2::SecurityGroup":    ParallelDescribeRegional(describer.EC2SecurityGroup),
+	"AWS::EC2::RouteTable":        ParallelDescribeRegional(describer.EC2RouteTable),
+	"AWS::EC2::Region":            SequentialDescribeGlobal(describer.EC2Region),
+	"AWS::EC2::RegionalSettings":  ParallelDescribeRegional(describer.EC2RegionalSettings), // IGNORE
+	"AWS::EC2::ReservedInstances": ParallelDescribeRegional(describer.EC2ReservedInstances),
+	"AWS::EC2::SecurityGroup":     ParallelDescribeRegional(describer.EC2SecurityGroup),
 	// "AWS::EC2::SpotFleet":                                         ParallelDescribeRegional(describer.EC2SpotFleet),
 	"AWS::EC2::Subnet": ParallelDescribeRegional(describer.EC2Subnet),
 	// "AWS::EC2::TrafficMirrorFilter":                               ParallelDescribeRegional(describer.EC2TrafficMirrorFilter),
