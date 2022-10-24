@@ -99,6 +99,7 @@ var awsMap = map[string]string{
 	"AWS::EC2::CapacityReservation":             "aws_ec2_capacity_reservation",
 	"AWS::EC2::KeyPair":                         "aws_ec2_key_pair",
 	"AWS::EC2::Image":                           "aws_ec2_ami",
+	"AWS::EC2::ReservedInstances":               "aws_ec2_reserved_instance",
 	//"AWS::EFS::AccessPoint":                     "aws_efs_access_point",
 	//"AWS::EFS::MountTarget":                     "aws_efs_mount_target",
 }
@@ -288,6 +289,7 @@ var AWSDescriptionMap = map[string]interface{}{
 	"AWS::EC2::CapacityReservation":             &keibi.EC2CapacityReservation{},
 	"AWS::EC2::KeyPair":                         &keibi.EC2KeyPair{},
 	"AWS::EC2::Image":                           &keibi.EC2AMI{},
+	"AWS::EC2::ReservedInstances":               &keibi.EC2ReservedInstances{},
 }
 var AzureDescriptionMap = map[string]interface{}{
 	"Microsoft.CognitiveServices/accounts":                  &keibi.CognitiveAccount{},

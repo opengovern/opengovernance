@@ -1651,3 +1651,48 @@ func EC2AMI(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 
 	return values, nil
 }
+
+func EC2ReservedInstances(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+	describeCtx := GetDescribeContext(ctx)
+
+	client := ec2.NewFromConfig(cfg)
+	output, err := client.DescribeReservedInstances(ctx, &ec2.DescribeReservedInstancesInput{})
+	if err != nil {
+		return nil, err
+	}
+
+	var values []Resource
+
+	filterName := "reserved-instances-id"
+	for _, v := range output.ReservedInstances {
+		var modifications []types.ReservedInstancesModification
+		modificationPaginator := ec2.NewDescribeReservedInstancesModificationsPaginator(client, &ec2.DescribeReservedInstancesModificationsInput{
+			Filters: []types.Filter{
+				{
+					Name:   &filterName,
+					Values: []string{*v.ReservedInstancesId},
+				},
+			},
+		})
+		for modificationPaginator.HasMorePages() {
+			page, err := modificationPaginator.NextPage(ctx)
+			if err != nil {
+				return nil, err
+			}
+
+			modifications = append(modifications, page.ReservedInstancesModifications...)
+		}
+
+		arn := "arn:" + describeCtx.Partition + ":ec2:" + describeCtx.Region + ":" + describeCtx.AccountID + ":reserved-instances/" + *v.ReservedInstancesId
+		values = append(values, Resource{
+			ARN:  arn,
+			Name: *v.ReservedInstancesId,
+			Description: model.EC2ReservedInstancesDescription{
+				ReservedInstances:   v,
+				ModificationDetails: modifications,
+			},
+		})
+	}
+
+	return values, nil
+}
