@@ -62,6 +62,7 @@ var resourceTypeToDescriber = map[string]ResourceDescriber{
 	"AWS::CostExplorer::ByAccountMonthly": SequentialDescribeGlobal(describer.CostByAccountLastMonth),
 	"AWS::CostExplorer::ByServiceMonthly": SequentialDescribeGlobal(describer.CostByServiceLastMonth),
 	"AWS::EC2::InternetGateway":           ParallelDescribeRegional(describer.EC2InternetGateway),
+	"AWS::EC2::KeyPair":                   ParallelDescribeRegional(describer.EC2KeyPair),
 	// "AWS::EC2::LaunchTemplate":                                    ParallelDescribeRegional(describer.EC2LaunchTemplate),
 	// "AWS::EC2::LocalGatewayRouteTable":                            ParallelDescribeRegional(describer.EC2LocalGatewayRouteTable),
 	// "AWS::EC2::LocalGatewayRouteTableVPCAssociation":              ParallelDescribeRegional(describer.EC2LocalGatewayRouteTableVPCAssociation),
