@@ -9,7 +9,10 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/ecr"
 	"github.com/aws/aws-sdk-go-v2/service/ecr/types"
 	"github.com/aws/aws-sdk-go-v2/service/ecrpublic"
+	public_types "github.com/aws/aws-sdk-go-v2/service/ecrpublic/types"
+	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/smithy-go"
+	"gitlab.com/keibiengine/keibi-engine/pkg/aws/model"
 )
 
 func ECRPublicRepository(ctx context.Context, cfg aws.Config) ([]Resource, error) {
@@ -20,7 +23,6 @@ func ECRPublicRepository(ctx context.Context, cfg aws.Config) ([]Resource, error
 
 	client := ecrpublic.NewFromConfig(cfg)
 	paginator := ecrpublic.NewDescribeRepositoriesPaginator(client, &ecrpublic.DescribeRepositoriesInput{})
-
 	var values []Resource
 	for paginator.HasMorePages() {
 		page, err := paginator.NextPage(ctx)
@@ -29,10 +31,47 @@ func ECRPublicRepository(ctx context.Context, cfg aws.Config) ([]Resource, error
 		}
 
 		for _, v := range page.Repositories {
+			var imageDetails []public_types.ImageDetail
+			imagePaginator := ecrpublic.NewDescribeImagesPaginator(client, &ecrpublic.DescribeImagesInput{
+				RepositoryName: v.RepositoryName,
+			})
+			for imagePaginator.HasMorePages() {
+				imagePage, err := imagePaginator.NextPage(ctx)
+				if err != nil {
+					return nil, err
+				}
+				imageDetails = append(imageDetails, imagePage.ImageDetails...)
+			}
+
+			policyOutput, err := client.GetRepositoryPolicy(ctx, &ecrpublic.GetRepositoryPolicyInput{
+				RepositoryName: v.RepositoryName,
+			})
+			if err != nil {
+				if a, ok := err.(awserr.Error); ok {
+					if a.Code() != "RepositoryPolicyNotFoundException" {
+						return nil, err
+					}
+				} else {
+					return nil, err
+				}
+			}
+
+			tagsOutput, err := client.ListTagsForResource(ctx, &ecrpublic.ListTagsForResourceInput{
+				ResourceArn: v.RepositoryArn,
+			})
+			if err != nil {
+				return nil, err
+			}
+
 			values = append(values, Resource{
-				ARN:         *v.RepositoryArn,
-				Name:        *v.RepositoryName,
-				Description: v,
+				ARN:  *v.RepositoryArn,
+				Name: *v.RepositoryName,
+				Description: model.ECRPublicRepositoryDescription{
+					PublicRepository: v,
+					ImageDetails:     imageDetails,
+					Policy:           policyOutput,
+					Tags:             tagsOutput.Tags,
+				},
 			})
 		}
 	}
@@ -52,10 +91,61 @@ func ECRRepository(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 		}
 
 		for _, v := range page.Repositories {
+			lifeCyclePolicyOutput, err := client.GetLifecyclePolicy(ctx, &ecr.GetLifecyclePolicyInput{
+				RepositoryName: v.RepositoryName,
+			})
+			if err != nil {
+				if a, ok := err.(awserr.Error); ok {
+					if a.Code() != "LifecyclePolicyNotFoundException" {
+						return nil, err
+					}
+				} else {
+					return nil, err
+				}
+			}
+
+			var imageDetails []types.ImageDetail
+			imagePaginator := ecr.NewDescribeImagesPaginator(client, &ecr.DescribeImagesInput{
+				RepositoryName: v.RepositoryName,
+			})
+			for imagePaginator.HasMorePages() {
+				imagePage, err := imagePaginator.NextPage(ctx)
+				if err != nil {
+					return nil, err
+				}
+				imageDetails = append(imageDetails, imagePage.ImageDetails...)
+			}
+
+			policyOutput, err := client.GetRepositoryPolicy(ctx, &ecr.GetRepositoryPolicyInput{
+				RepositoryName: v.RepositoryName,
+			})
+			if err != nil {
+				if a, ok := err.(awserr.Error); ok {
+					if a.Code() != "RepositoryPolicyNotFoundException" {
+						return nil, err
+					}
+				} else {
+					return nil, err
+				}
+			}
+
+			tagsOutput, err := client.ListTagsForResource(ctx, &ecr.ListTagsForResourceInput{
+				ResourceArn: v.RepositoryArn,
+			})
+			if err != nil {
+				return nil, err
+			}
+
 			values = append(values, Resource{
-				ARN:         *v.RepositoryArn,
-				Name:        *v.RepositoryName,
-				Description: v,
+				ARN:  *v.RepositoryArn,
+				Name: *v.RepositoryName,
+				Description: model.ECRRepositoryDescription{
+					Repository:      v,
+					LifecyclePolicy: lifeCyclePolicyOutput,
+					ImageDetails:    imageDetails,
+					Policy:          policyOutput,
+					Tags:            tagsOutput.Tags,
+				},
 			})
 		}
 	}

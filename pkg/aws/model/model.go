@@ -25,6 +25,10 @@ import (
 	dynamodb "github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
 	ec2op "github.com/aws/aws-sdk-go-v2/service/ec2"
 	ec2 "github.com/aws/aws-sdk-go-v2/service/ec2/types"
+	ecrop "github.com/aws/aws-sdk-go-v2/service/ecr"
+	ecr "github.com/aws/aws-sdk-go-v2/service/ecr/types"
+	ecrpublicop "github.com/aws/aws-sdk-go-v2/service/ecrpublic"
+	ecrpublic "github.com/aws/aws-sdk-go-v2/service/ecrpublic/types"
 	ecs "github.com/aws/aws-sdk-go-v2/service/ecs/types"
 	efs "github.com/aws/aws-sdk-go-v2/service/efs/types"
 	eks "github.com/aws/aws-sdk-go-v2/service/eks/types"
@@ -971,4 +975,25 @@ type CostExplorerByAccountMonthlyDescription struct {
 //index:aws_costexplorer_byservicemonthly
 type CostExplorerByServiceMonthlyDescription struct {
 	CostExplorerRow
+}
+
+//  ===================  ECR  ===================
+
+//index:aws_ecr_repository
+//getfilter:repository_name=description.Repository.RepositoryName
+type ECRRepositoryDescription struct {
+	Repository      ecr.Repository
+	LifecyclePolicy *ecrop.GetLifecyclePolicyOutput
+	ImageDetails    []ecr.ImageDetail
+	Policy          *ecrop.GetRepositoryPolicyOutput
+	Tags            []ecr.Tag
+}
+
+//index:aws_ecrpublic_repository
+//getfilter:repository_name=description.PublicRepository.RepositoryName
+type ECRPublicRepositoryDescription struct {
+	PublicRepository ecrpublic.Repository
+	ImageDetails     []ecrpublic.ImageDetail
+	Policy           *ecrpublicop.GetRepositoryPolicyOutput
+	Tags             []ecrpublic.Tag
 }
