@@ -44,7 +44,7 @@ var resourceTypeToDescriber = map[string]ResourceDescriber{
 	"AWS::DynamoDb::Table":               ParallelDescribeRegional(describer.DynamoDbTable),
 	"AWS::EC2::VolumeSnapshot":           ParallelDescribeRegional(describer.EC2VolumeSnapshot),
 	"AWS::EC2::Volume":                   ParallelDescribeRegional(describer.EC2Volume),
-	// "AWS::EC2::CapacityReservation":                               ParallelDescribeRegional(describer.EC2CapacityReservation),
+	"AWS::EC2::CapacityReservation":      ParallelDescribeRegional(describer.EC2CapacityReservation),
 	// "AWS::EC2::CarrierGateway":                                    ParallelDescribeRegional(describer.EC2CarrierGateway),
 	// "AWS::EC2::ClientVpnAuthorizationRule":                        ParallelDescribeRegional(describer.EC2ClientVpnAuthorizationRule),
 	// "AWS::EC2::ClientVpnEndpoint":                                 ParallelDescribeRegional(describer.EC2ClientVpnEndpoint),
