@@ -1591,6 +1591,150 @@ func GetComputeDiskEncryptionSet(ctx context.Context, d *plugin.QueryData, _ *pl
 
 // ==========================  END: ComputeDiskEncryptionSet =============================
 
+// ==========================  START: ComputeGallery =============================
+
+type ComputeGallery struct {
+	Description   azure.ComputeGalleryDescription `json:"description"`
+	Metadata      azure.Metadata                  `json:"metadata"`
+	ResourceJobID int                             `json:"resource_job_id"`
+	SourceJobID   int                             `json:"source_job_id"`
+	ResourceType  string                          `json:"resource_type"`
+	SourceType    string                          `json:"source_type"`
+	ID            string                          `json:"id"`
+	SourceID      string                          `json:"source_id"`
+}
+
+type ComputeGalleryHit struct {
+	ID      string         `json:"_id"`
+	Score   float64        `json:"_score"`
+	Index   string         `json:"_index"`
+	Type    string         `json:"_type"`
+	Version int64          `json:"_version,omitempty"`
+	Source  ComputeGallery `json:"_source"`
+	Sort    []interface{}  `json:"sort"`
+}
+
+type ComputeGalleryHits struct {
+	Total SearchTotal         `json:"total"`
+	Hits  []ComputeGalleryHit `json:"hits"`
+}
+
+type ComputeGallerySearchResponse struct {
+	PitID string             `json:"pit_id"`
+	Hits  ComputeGalleryHits `json:"hits"`
+}
+
+type ComputeGalleryPaginator struct {
+	paginator *baseESPaginator
+}
+
+func (k Client) NewComputeGalleryPaginator(filters []BoolFilter, limit *int64) (ComputeGalleryPaginator, error) {
+	paginator, err := newPaginator(k.es, "microsoft_compute_gallery", filters, limit)
+	if err != nil {
+		return ComputeGalleryPaginator{}, err
+	}
+
+	p := ComputeGalleryPaginator{
+		paginator: paginator,
+	}
+
+	return p, nil
+}
+
+func (p ComputeGalleryPaginator) HasNext() bool {
+	return !p.paginator.done
+}
+
+func (p ComputeGalleryPaginator) NextPage(ctx context.Context) ([]ComputeGallery, error) {
+	var response ComputeGallerySearchResponse
+	err := p.paginator.search(ctx, &response)
+	if err != nil {
+		return nil, err
+	}
+
+	var values []ComputeGallery
+	for _, hit := range response.Hits.Hits {
+		values = append(values, hit.Source)
+	}
+
+	hits := int64(len(response.Hits.Hits))
+	if hits > 0 {
+		p.paginator.updateState(hits, response.Hits.Hits[hits-1].Sort, response.PitID)
+	} else {
+		p.paginator.updateState(hits, nil, "")
+	}
+
+	return values, nil
+}
+
+var listComputeGalleryFilters = map[string]string{}
+
+func ListComputeGallery(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("ListComputeGallery")
+
+	// create service
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	paginator, err := k.NewComputeGalleryPaginator(buildFilter(d.KeyColumnQuals, listComputeGalleryFilters, "azure", *cfg.AccountID), d.QueryContext.Limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			d.StreamListItem(ctx, v)
+		}
+	}
+
+	return nil, nil
+}
+
+var getComputeGalleryFilters = map[string]string{
+	"name":           "description.Gallery.Name",
+	"resource_group": "description.ResourceGroup",
+}
+
+func GetComputeGallery(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("GetComputeGallery")
+
+	// create service
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	limit := int64(1)
+	paginator, err := k.NewComputeGalleryPaginator(buildFilter(d.KeyColumnQuals, getComputeGalleryFilters, "azure", *cfg.AccountID), &limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			return v, nil
+		}
+	}
+
+	return nil, nil
+}
+
+// ==========================  END: ComputeGallery =============================
+
 // ==========================  START: DataboxEdgeDevice =============================
 
 type DataboxEdgeDevice struct {
@@ -3464,6 +3608,1158 @@ func GetVirtualNetworkGateway(ctx context.Context, d *plugin.QueryData, _ *plugi
 }
 
 // ==========================  END: VirtualNetworkGateway =============================
+
+// ==========================  START: DNSZone =============================
+
+type DNSZone struct {
+	Description   azure.DNSZoneDescription `json:"description"`
+	Metadata      azure.Metadata           `json:"metadata"`
+	ResourceJobID int                      `json:"resource_job_id"`
+	SourceJobID   int                      `json:"source_job_id"`
+	ResourceType  string                   `json:"resource_type"`
+	SourceType    string                   `json:"source_type"`
+	ID            string                   `json:"id"`
+	SourceID      string                   `json:"source_id"`
+}
+
+type DNSZoneHit struct {
+	ID      string        `json:"_id"`
+	Score   float64       `json:"_score"`
+	Index   string        `json:"_index"`
+	Type    string        `json:"_type"`
+	Version int64         `json:"_version,omitempty"`
+	Source  DNSZone       `json:"_source"`
+	Sort    []interface{} `json:"sort"`
+}
+
+type DNSZoneHits struct {
+	Total SearchTotal  `json:"total"`
+	Hits  []DNSZoneHit `json:"hits"`
+}
+
+type DNSZoneSearchResponse struct {
+	PitID string      `json:"pit_id"`
+	Hits  DNSZoneHits `json:"hits"`
+}
+
+type DNSZonePaginator struct {
+	paginator *baseESPaginator
+}
+
+func (k Client) NewDNSZonePaginator(filters []BoolFilter, limit *int64) (DNSZonePaginator, error) {
+	paginator, err := newPaginator(k.es, "microsoft_network_dnszone", filters, limit)
+	if err != nil {
+		return DNSZonePaginator{}, err
+	}
+
+	p := DNSZonePaginator{
+		paginator: paginator,
+	}
+
+	return p, nil
+}
+
+func (p DNSZonePaginator) HasNext() bool {
+	return !p.paginator.done
+}
+
+func (p DNSZonePaginator) NextPage(ctx context.Context) ([]DNSZone, error) {
+	var response DNSZoneSearchResponse
+	err := p.paginator.search(ctx, &response)
+	if err != nil {
+		return nil, err
+	}
+
+	var values []DNSZone
+	for _, hit := range response.Hits.Hits {
+		values = append(values, hit.Source)
+	}
+
+	hits := int64(len(response.Hits.Hits))
+	if hits > 0 {
+		p.paginator.updateState(hits, response.Hits.Hits[hits-1].Sort, response.PitID)
+	} else {
+		p.paginator.updateState(hits, nil, "")
+	}
+
+	return values, nil
+}
+
+var listDNSZoneFilters = map[string]string{}
+
+func ListDNSZone(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("ListDNSZone")
+
+	// create service
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	paginator, err := k.NewDNSZonePaginator(buildFilter(d.KeyColumnQuals, listDNSZoneFilters, "azure", *cfg.AccountID), d.QueryContext.Limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			d.StreamListItem(ctx, v)
+		}
+	}
+
+	return nil, nil
+}
+
+var getDNSZoneFilters = map[string]string{
+	"name":           "description.Zone.Name",
+	"resource_group": "description.ResourceGroup",
+}
+
+func GetDNSZone(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("GetDNSZone")
+
+	// create service
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	limit := int64(1)
+	paginator, err := k.NewDNSZonePaginator(buildFilter(d.KeyColumnQuals, getDNSZoneFilters, "azure", *cfg.AccountID), &limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			return v, nil
+		}
+	}
+
+	return nil, nil
+}
+
+// ==========================  END: DNSZone =============================
+
+// ==========================  START: FirewallPolicy =============================
+
+type FirewallPolicy struct {
+	Description   azure.FirewallPolicyDescription `json:"description"`
+	Metadata      azure.Metadata                  `json:"metadata"`
+	ResourceJobID int                             `json:"resource_job_id"`
+	SourceJobID   int                             `json:"source_job_id"`
+	ResourceType  string                          `json:"resource_type"`
+	SourceType    string                          `json:"source_type"`
+	ID            string                          `json:"id"`
+	SourceID      string                          `json:"source_id"`
+}
+
+type FirewallPolicyHit struct {
+	ID      string         `json:"_id"`
+	Score   float64        `json:"_score"`
+	Index   string         `json:"_index"`
+	Type    string         `json:"_type"`
+	Version int64          `json:"_version,omitempty"`
+	Source  FirewallPolicy `json:"_source"`
+	Sort    []interface{}  `json:"sort"`
+}
+
+type FirewallPolicyHits struct {
+	Total SearchTotal         `json:"total"`
+	Hits  []FirewallPolicyHit `json:"hits"`
+}
+
+type FirewallPolicySearchResponse struct {
+	PitID string             `json:"pit_id"`
+	Hits  FirewallPolicyHits `json:"hits"`
+}
+
+type FirewallPolicyPaginator struct {
+	paginator *baseESPaginator
+}
+
+func (k Client) NewFirewallPolicyPaginator(filters []BoolFilter, limit *int64) (FirewallPolicyPaginator, error) {
+	paginator, err := newPaginator(k.es, "microsoft_network_firewallpolicy", filters, limit)
+	if err != nil {
+		return FirewallPolicyPaginator{}, err
+	}
+
+	p := FirewallPolicyPaginator{
+		paginator: paginator,
+	}
+
+	return p, nil
+}
+
+func (p FirewallPolicyPaginator) HasNext() bool {
+	return !p.paginator.done
+}
+
+func (p FirewallPolicyPaginator) NextPage(ctx context.Context) ([]FirewallPolicy, error) {
+	var response FirewallPolicySearchResponse
+	err := p.paginator.search(ctx, &response)
+	if err != nil {
+		return nil, err
+	}
+
+	var values []FirewallPolicy
+	for _, hit := range response.Hits.Hits {
+		values = append(values, hit.Source)
+	}
+
+	hits := int64(len(response.Hits.Hits))
+	if hits > 0 {
+		p.paginator.updateState(hits, response.Hits.Hits[hits-1].Sort, response.PitID)
+	} else {
+		p.paginator.updateState(hits, nil, "")
+	}
+
+	return values, nil
+}
+
+var listFirewallPolicyFilters = map[string]string{}
+
+func ListFirewallPolicy(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("ListFirewallPolicy")
+
+	// create service
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	paginator, err := k.NewFirewallPolicyPaginator(buildFilter(d.KeyColumnQuals, listFirewallPolicyFilters, "azure", *cfg.AccountID), d.QueryContext.Limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			d.StreamListItem(ctx, v)
+		}
+	}
+
+	return nil, nil
+}
+
+var getFirewallPolicyFilters = map[string]string{
+	"name":           "description.FirewallPolicy.Name",
+	"resource_group": "description.ResourceGroup",
+}
+
+func GetFirewallPolicy(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("GetFirewallPolicy")
+
+	// create service
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	limit := int64(1)
+	paginator, err := k.NewFirewallPolicyPaginator(buildFilter(d.KeyColumnQuals, getFirewallPolicyFilters, "azure", *cfg.AccountID), &limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			return v, nil
+		}
+	}
+
+	return nil, nil
+}
+
+// ==========================  END: FirewallPolicy =============================
+
+// ==========================  START: FrontdoorWebApplicationFirewallPolicy =============================
+
+type FrontdoorWebApplicationFirewallPolicy struct {
+	Description   azure.FrontdoorWebApplicationFirewallPolicyDescription `json:"description"`
+	Metadata      azure.Metadata                                         `json:"metadata"`
+	ResourceJobID int                                                    `json:"resource_job_id"`
+	SourceJobID   int                                                    `json:"source_job_id"`
+	ResourceType  string                                                 `json:"resource_type"`
+	SourceType    string                                                 `json:"source_type"`
+	ID            string                                                 `json:"id"`
+	SourceID      string                                                 `json:"source_id"`
+}
+
+type FrontdoorWebApplicationFirewallPolicyHit struct {
+	ID      string                                `json:"_id"`
+	Score   float64                               `json:"_score"`
+	Index   string                                `json:"_index"`
+	Type    string                                `json:"_type"`
+	Version int64                                 `json:"_version,omitempty"`
+	Source  FrontdoorWebApplicationFirewallPolicy `json:"_source"`
+	Sort    []interface{}                         `json:"sort"`
+}
+
+type FrontdoorWebApplicationFirewallPolicyHits struct {
+	Total SearchTotal                                `json:"total"`
+	Hits  []FrontdoorWebApplicationFirewallPolicyHit `json:"hits"`
+}
+
+type FrontdoorWebApplicationFirewallPolicySearchResponse struct {
+	PitID string                                    `json:"pit_id"`
+	Hits  FrontdoorWebApplicationFirewallPolicyHits `json:"hits"`
+}
+
+type FrontdoorWebApplicationFirewallPolicyPaginator struct {
+	paginator *baseESPaginator
+}
+
+func (k Client) NewFrontdoorWebApplicationFirewallPolicyPaginator(filters []BoolFilter, limit *int64) (FrontdoorWebApplicationFirewallPolicyPaginator, error) {
+	paginator, err := newPaginator(k.es, "microsoft_network_frontdoorwebapplicationfirewallpolicy", filters, limit)
+	if err != nil {
+		return FrontdoorWebApplicationFirewallPolicyPaginator{}, err
+	}
+
+	p := FrontdoorWebApplicationFirewallPolicyPaginator{
+		paginator: paginator,
+	}
+
+	return p, nil
+}
+
+func (p FrontdoorWebApplicationFirewallPolicyPaginator) HasNext() bool {
+	return !p.paginator.done
+}
+
+func (p FrontdoorWebApplicationFirewallPolicyPaginator) NextPage(ctx context.Context) ([]FrontdoorWebApplicationFirewallPolicy, error) {
+	var response FrontdoorWebApplicationFirewallPolicySearchResponse
+	err := p.paginator.search(ctx, &response)
+	if err != nil {
+		return nil, err
+	}
+
+	var values []FrontdoorWebApplicationFirewallPolicy
+	for _, hit := range response.Hits.Hits {
+		values = append(values, hit.Source)
+	}
+
+	hits := int64(len(response.Hits.Hits))
+	if hits > 0 {
+		p.paginator.updateState(hits, response.Hits.Hits[hits-1].Sort, response.PitID)
+	} else {
+		p.paginator.updateState(hits, nil, "")
+	}
+
+	return values, nil
+}
+
+var listFrontdoorWebApplicationFirewallPolicyFilters = map[string]string{}
+
+func ListFrontdoorWebApplicationFirewallPolicy(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("ListFrontdoorWebApplicationFirewallPolicy")
+
+	// create service
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	paginator, err := k.NewFrontdoorWebApplicationFirewallPolicyPaginator(buildFilter(d.KeyColumnQuals, listFrontdoorWebApplicationFirewallPolicyFilters, "azure", *cfg.AccountID), d.QueryContext.Limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			d.StreamListItem(ctx, v)
+		}
+	}
+
+	return nil, nil
+}
+
+var getFrontdoorWebApplicationFirewallPolicyFilters = map[string]string{
+	"name":           "description.WebApplicationFirewallPolicy.Name",
+	"resource_group": "description.ResourceGroup",
+}
+
+func GetFrontdoorWebApplicationFirewallPolicy(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("GetFrontdoorWebApplicationFirewallPolicy")
+
+	// create service
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	limit := int64(1)
+	paginator, err := k.NewFrontdoorWebApplicationFirewallPolicyPaginator(buildFilter(d.KeyColumnQuals, getFrontdoorWebApplicationFirewallPolicyFilters, "azure", *cfg.AccountID), &limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			return v, nil
+		}
+	}
+
+	return nil, nil
+}
+
+// ==========================  END: FrontdoorWebApplicationFirewallPolicy =============================
+
+// ==========================  START: LocalNetworkGateway =============================
+
+type LocalNetworkGateway struct {
+	Description   azure.LocalNetworkGatewayDescription `json:"description"`
+	Metadata      azure.Metadata                       `json:"metadata"`
+	ResourceJobID int                                  `json:"resource_job_id"`
+	SourceJobID   int                                  `json:"source_job_id"`
+	ResourceType  string                               `json:"resource_type"`
+	SourceType    string                               `json:"source_type"`
+	ID            string                               `json:"id"`
+	SourceID      string                               `json:"source_id"`
+}
+
+type LocalNetworkGatewayHit struct {
+	ID      string              `json:"_id"`
+	Score   float64             `json:"_score"`
+	Index   string              `json:"_index"`
+	Type    string              `json:"_type"`
+	Version int64               `json:"_version,omitempty"`
+	Source  LocalNetworkGateway `json:"_source"`
+	Sort    []interface{}       `json:"sort"`
+}
+
+type LocalNetworkGatewayHits struct {
+	Total SearchTotal              `json:"total"`
+	Hits  []LocalNetworkGatewayHit `json:"hits"`
+}
+
+type LocalNetworkGatewaySearchResponse struct {
+	PitID string                  `json:"pit_id"`
+	Hits  LocalNetworkGatewayHits `json:"hits"`
+}
+
+type LocalNetworkGatewayPaginator struct {
+	paginator *baseESPaginator
+}
+
+func (k Client) NewLocalNetworkGatewayPaginator(filters []BoolFilter, limit *int64) (LocalNetworkGatewayPaginator, error) {
+	paginator, err := newPaginator(k.es, "microsoft_network_localnetworkgateway", filters, limit)
+	if err != nil {
+		return LocalNetworkGatewayPaginator{}, err
+	}
+
+	p := LocalNetworkGatewayPaginator{
+		paginator: paginator,
+	}
+
+	return p, nil
+}
+
+func (p LocalNetworkGatewayPaginator) HasNext() bool {
+	return !p.paginator.done
+}
+
+func (p LocalNetworkGatewayPaginator) NextPage(ctx context.Context) ([]LocalNetworkGateway, error) {
+	var response LocalNetworkGatewaySearchResponse
+	err := p.paginator.search(ctx, &response)
+	if err != nil {
+		return nil, err
+	}
+
+	var values []LocalNetworkGateway
+	for _, hit := range response.Hits.Hits {
+		values = append(values, hit.Source)
+	}
+
+	hits := int64(len(response.Hits.Hits))
+	if hits > 0 {
+		p.paginator.updateState(hits, response.Hits.Hits[hits-1].Sort, response.PitID)
+	} else {
+		p.paginator.updateState(hits, nil, "")
+	}
+
+	return values, nil
+}
+
+var listLocalNetworkGatewayFilters = map[string]string{}
+
+func ListLocalNetworkGateway(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("ListLocalNetworkGateway")
+
+	// create service
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	paginator, err := k.NewLocalNetworkGatewayPaginator(buildFilter(d.KeyColumnQuals, listLocalNetworkGatewayFilters, "azure", *cfg.AccountID), d.QueryContext.Limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			d.StreamListItem(ctx, v)
+		}
+	}
+
+	return nil, nil
+}
+
+var getLocalNetworkGatewayFilters = map[string]string{
+	"name":           "description.LocalNetworkGateway.Name",
+	"resource_group": "description.ResourceGroup",
+}
+
+func GetLocalNetworkGateway(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("GetLocalNetworkGateway")
+
+	// create service
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	limit := int64(1)
+	paginator, err := k.NewLocalNetworkGatewayPaginator(buildFilter(d.KeyColumnQuals, getLocalNetworkGatewayFilters, "azure", *cfg.AccountID), &limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			return v, nil
+		}
+	}
+
+	return nil, nil
+}
+
+// ==========================  END: LocalNetworkGateway =============================
+
+// ==========================  START: NatGateway =============================
+
+type NatGateway struct {
+	Description   azure.NatGatewayDescription `json:"description"`
+	Metadata      azure.Metadata              `json:"metadata"`
+	ResourceJobID int                         `json:"resource_job_id"`
+	SourceJobID   int                         `json:"source_job_id"`
+	ResourceType  string                      `json:"resource_type"`
+	SourceType    string                      `json:"source_type"`
+	ID            string                      `json:"id"`
+	SourceID      string                      `json:"source_id"`
+}
+
+type NatGatewayHit struct {
+	ID      string        `json:"_id"`
+	Score   float64       `json:"_score"`
+	Index   string        `json:"_index"`
+	Type    string        `json:"_type"`
+	Version int64         `json:"_version,omitempty"`
+	Source  NatGateway    `json:"_source"`
+	Sort    []interface{} `json:"sort"`
+}
+
+type NatGatewayHits struct {
+	Total SearchTotal     `json:"total"`
+	Hits  []NatGatewayHit `json:"hits"`
+}
+
+type NatGatewaySearchResponse struct {
+	PitID string         `json:"pit_id"`
+	Hits  NatGatewayHits `json:"hits"`
+}
+
+type NatGatewayPaginator struct {
+	paginator *baseESPaginator
+}
+
+func (k Client) NewNatGatewayPaginator(filters []BoolFilter, limit *int64) (NatGatewayPaginator, error) {
+	paginator, err := newPaginator(k.es, "microsoft_network_natgateway", filters, limit)
+	if err != nil {
+		return NatGatewayPaginator{}, err
+	}
+
+	p := NatGatewayPaginator{
+		paginator: paginator,
+	}
+
+	return p, nil
+}
+
+func (p NatGatewayPaginator) HasNext() bool {
+	return !p.paginator.done
+}
+
+func (p NatGatewayPaginator) NextPage(ctx context.Context) ([]NatGateway, error) {
+	var response NatGatewaySearchResponse
+	err := p.paginator.search(ctx, &response)
+	if err != nil {
+		return nil, err
+	}
+
+	var values []NatGateway
+	for _, hit := range response.Hits.Hits {
+		values = append(values, hit.Source)
+	}
+
+	hits := int64(len(response.Hits.Hits))
+	if hits > 0 {
+		p.paginator.updateState(hits, response.Hits.Hits[hits-1].Sort, response.PitID)
+	} else {
+		p.paginator.updateState(hits, nil, "")
+	}
+
+	return values, nil
+}
+
+var listNatGatewayFilters = map[string]string{}
+
+func ListNatGateway(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("ListNatGateway")
+
+	// create service
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	paginator, err := k.NewNatGatewayPaginator(buildFilter(d.KeyColumnQuals, listNatGatewayFilters, "azure", *cfg.AccountID), d.QueryContext.Limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			d.StreamListItem(ctx, v)
+		}
+	}
+
+	return nil, nil
+}
+
+var getNatGatewayFilters = map[string]string{
+	"name":           "description.NatGateway.Name",
+	"resource_group": "description.ResourceGroup",
+}
+
+func GetNatGateway(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("GetNatGateway")
+
+	// create service
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	limit := int64(1)
+	paginator, err := k.NewNatGatewayPaginator(buildFilter(d.KeyColumnQuals, getNatGatewayFilters, "azure", *cfg.AccountID), &limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			return v, nil
+		}
+	}
+
+	return nil, nil
+}
+
+// ==========================  END: NatGateway =============================
+
+// ==========================  START: PrivateLinkService =============================
+
+type PrivateLinkService struct {
+	Description   azure.PrivateLinkServiceDescription `json:"description"`
+	Metadata      azure.Metadata                      `json:"metadata"`
+	ResourceJobID int                                 `json:"resource_job_id"`
+	SourceJobID   int                                 `json:"source_job_id"`
+	ResourceType  string                              `json:"resource_type"`
+	SourceType    string                              `json:"source_type"`
+	ID            string                              `json:"id"`
+	SourceID      string                              `json:"source_id"`
+}
+
+type PrivateLinkServiceHit struct {
+	ID      string             `json:"_id"`
+	Score   float64            `json:"_score"`
+	Index   string             `json:"_index"`
+	Type    string             `json:"_type"`
+	Version int64              `json:"_version,omitempty"`
+	Source  PrivateLinkService `json:"_source"`
+	Sort    []interface{}      `json:"sort"`
+}
+
+type PrivateLinkServiceHits struct {
+	Total SearchTotal             `json:"total"`
+	Hits  []PrivateLinkServiceHit `json:"hits"`
+}
+
+type PrivateLinkServiceSearchResponse struct {
+	PitID string                 `json:"pit_id"`
+	Hits  PrivateLinkServiceHits `json:"hits"`
+}
+
+type PrivateLinkServicePaginator struct {
+	paginator *baseESPaginator
+}
+
+func (k Client) NewPrivateLinkServicePaginator(filters []BoolFilter, limit *int64) (PrivateLinkServicePaginator, error) {
+	paginator, err := newPaginator(k.es, "microsoft_network_privatelinkservice", filters, limit)
+	if err != nil {
+		return PrivateLinkServicePaginator{}, err
+	}
+
+	p := PrivateLinkServicePaginator{
+		paginator: paginator,
+	}
+
+	return p, nil
+}
+
+func (p PrivateLinkServicePaginator) HasNext() bool {
+	return !p.paginator.done
+}
+
+func (p PrivateLinkServicePaginator) NextPage(ctx context.Context) ([]PrivateLinkService, error) {
+	var response PrivateLinkServiceSearchResponse
+	err := p.paginator.search(ctx, &response)
+	if err != nil {
+		return nil, err
+	}
+
+	var values []PrivateLinkService
+	for _, hit := range response.Hits.Hits {
+		values = append(values, hit.Source)
+	}
+
+	hits := int64(len(response.Hits.Hits))
+	if hits > 0 {
+		p.paginator.updateState(hits, response.Hits.Hits[hits-1].Sort, response.PitID)
+	} else {
+		p.paginator.updateState(hits, nil, "")
+	}
+
+	return values, nil
+}
+
+var listPrivateLinkServiceFilters = map[string]string{}
+
+func ListPrivateLinkService(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("ListPrivateLinkService")
+
+	// create service
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	paginator, err := k.NewPrivateLinkServicePaginator(buildFilter(d.KeyColumnQuals, listPrivateLinkServiceFilters, "azure", *cfg.AccountID), d.QueryContext.Limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			d.StreamListItem(ctx, v)
+		}
+	}
+
+	return nil, nil
+}
+
+var getPrivateLinkServiceFilters = map[string]string{
+	"name":           "description.PrivateLinkService.Name",
+	"resource_group": "description.ResourceGroup",
+}
+
+func GetPrivateLinkService(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("GetPrivateLinkService")
+
+	// create service
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	limit := int64(1)
+	paginator, err := k.NewPrivateLinkServicePaginator(buildFilter(d.KeyColumnQuals, getPrivateLinkServiceFilters, "azure", *cfg.AccountID), &limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			return v, nil
+		}
+	}
+
+	return nil, nil
+}
+
+// ==========================  END: PrivateLinkService =============================
+
+// ==========================  START: RouteFilter =============================
+
+type RouteFilter struct {
+	Description   azure.RouteFilterDescription `json:"description"`
+	Metadata      azure.Metadata               `json:"metadata"`
+	ResourceJobID int                          `json:"resource_job_id"`
+	SourceJobID   int                          `json:"source_job_id"`
+	ResourceType  string                       `json:"resource_type"`
+	SourceType    string                       `json:"source_type"`
+	ID            string                       `json:"id"`
+	SourceID      string                       `json:"source_id"`
+}
+
+type RouteFilterHit struct {
+	ID      string        `json:"_id"`
+	Score   float64       `json:"_score"`
+	Index   string        `json:"_index"`
+	Type    string        `json:"_type"`
+	Version int64         `json:"_version,omitempty"`
+	Source  RouteFilter   `json:"_source"`
+	Sort    []interface{} `json:"sort"`
+}
+
+type RouteFilterHits struct {
+	Total SearchTotal      `json:"total"`
+	Hits  []RouteFilterHit `json:"hits"`
+}
+
+type RouteFilterSearchResponse struct {
+	PitID string          `json:"pit_id"`
+	Hits  RouteFilterHits `json:"hits"`
+}
+
+type RouteFilterPaginator struct {
+	paginator *baseESPaginator
+}
+
+func (k Client) NewRouteFilterPaginator(filters []BoolFilter, limit *int64) (RouteFilterPaginator, error) {
+	paginator, err := newPaginator(k.es, "microsoft_network_routefilter", filters, limit)
+	if err != nil {
+		return RouteFilterPaginator{}, err
+	}
+
+	p := RouteFilterPaginator{
+		paginator: paginator,
+	}
+
+	return p, nil
+}
+
+func (p RouteFilterPaginator) HasNext() bool {
+	return !p.paginator.done
+}
+
+func (p RouteFilterPaginator) NextPage(ctx context.Context) ([]RouteFilter, error) {
+	var response RouteFilterSearchResponse
+	err := p.paginator.search(ctx, &response)
+	if err != nil {
+		return nil, err
+	}
+
+	var values []RouteFilter
+	for _, hit := range response.Hits.Hits {
+		values = append(values, hit.Source)
+	}
+
+	hits := int64(len(response.Hits.Hits))
+	if hits > 0 {
+		p.paginator.updateState(hits, response.Hits.Hits[hits-1].Sort, response.PitID)
+	} else {
+		p.paginator.updateState(hits, nil, "")
+	}
+
+	return values, nil
+}
+
+var listRouteFilterFilters = map[string]string{}
+
+func ListRouteFilter(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("ListRouteFilter")
+
+	// create service
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	paginator, err := k.NewRouteFilterPaginator(buildFilter(d.KeyColumnQuals, listRouteFilterFilters, "azure", *cfg.AccountID), d.QueryContext.Limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			d.StreamListItem(ctx, v)
+		}
+	}
+
+	return nil, nil
+}
+
+var getRouteFilterFilters = map[string]string{
+	"name":           "description.RouteFilter.Name",
+	"resource_group": "description.ResourceGroup",
+}
+
+func GetRouteFilter(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("GetRouteFilter")
+
+	// create service
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	limit := int64(1)
+	paginator, err := k.NewRouteFilterPaginator(buildFilter(d.KeyColumnQuals, getRouteFilterFilters, "azure", *cfg.AccountID), &limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			return v, nil
+		}
+	}
+
+	return nil, nil
+}
+
+// ==========================  END: RouteFilter =============================
+
+// ==========================  START: VpnGateway =============================
+
+type VpnGateway struct {
+	Description   azure.VpnGatewayDescription `json:"description"`
+	Metadata      azure.Metadata              `json:"metadata"`
+	ResourceJobID int                         `json:"resource_job_id"`
+	SourceJobID   int                         `json:"source_job_id"`
+	ResourceType  string                      `json:"resource_type"`
+	SourceType    string                      `json:"source_type"`
+	ID            string                      `json:"id"`
+	SourceID      string                      `json:"source_id"`
+}
+
+type VpnGatewayHit struct {
+	ID      string        `json:"_id"`
+	Score   float64       `json:"_score"`
+	Index   string        `json:"_index"`
+	Type    string        `json:"_type"`
+	Version int64         `json:"_version,omitempty"`
+	Source  VpnGateway    `json:"_source"`
+	Sort    []interface{} `json:"sort"`
+}
+
+type VpnGatewayHits struct {
+	Total SearchTotal     `json:"total"`
+	Hits  []VpnGatewayHit `json:"hits"`
+}
+
+type VpnGatewaySearchResponse struct {
+	PitID string         `json:"pit_id"`
+	Hits  VpnGatewayHits `json:"hits"`
+}
+
+type VpnGatewayPaginator struct {
+	paginator *baseESPaginator
+}
+
+func (k Client) NewVpnGatewayPaginator(filters []BoolFilter, limit *int64) (VpnGatewayPaginator, error) {
+	paginator, err := newPaginator(k.es, "microsoft_network_vpngateway", filters, limit)
+	if err != nil {
+		return VpnGatewayPaginator{}, err
+	}
+
+	p := VpnGatewayPaginator{
+		paginator: paginator,
+	}
+
+	return p, nil
+}
+
+func (p VpnGatewayPaginator) HasNext() bool {
+	return !p.paginator.done
+}
+
+func (p VpnGatewayPaginator) NextPage(ctx context.Context) ([]VpnGateway, error) {
+	var response VpnGatewaySearchResponse
+	err := p.paginator.search(ctx, &response)
+	if err != nil {
+		return nil, err
+	}
+
+	var values []VpnGateway
+	for _, hit := range response.Hits.Hits {
+		values = append(values, hit.Source)
+	}
+
+	hits := int64(len(response.Hits.Hits))
+	if hits > 0 {
+		p.paginator.updateState(hits, response.Hits.Hits[hits-1].Sort, response.PitID)
+	} else {
+		p.paginator.updateState(hits, nil, "")
+	}
+
+	return values, nil
+}
+
+var listVpnGatewayFilters = map[string]string{}
+
+func ListVpnGateway(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("ListVpnGateway")
+
+	// create service
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	paginator, err := k.NewVpnGatewayPaginator(buildFilter(d.KeyColumnQuals, listVpnGatewayFilters, "azure", *cfg.AccountID), d.QueryContext.Limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			d.StreamListItem(ctx, v)
+		}
+	}
+
+	return nil, nil
+}
+
+var getVpnGatewayFilters = map[string]string{
+	"name":           "description.VpnGateway.Name",
+	"resource_group": "description.ResourceGroup",
+}
+
+func GetVpnGateway(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("GetVpnGateway")
+
+	// create service
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	limit := int64(1)
+	paginator, err := k.NewVpnGatewayPaginator(buildFilter(d.KeyColumnQuals, getVpnGatewayFilters, "azure", *cfg.AccountID), &limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			return v, nil
+		}
+	}
+
+	return nil, nil
+}
+
+// ==========================  END: VpnGateway =============================
 
 // ==========================  START: PolicyAssignment =============================
 

@@ -11,6 +11,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/profiles/latest/resources/mgmt/links"
 	"github.com/Azure/azure-sdk-for-go/profiles/latest/resources/mgmt/policy"
 	sub "github.com/Azure/azure-sdk-for-go/profiles/latest/subscription/mgmt/subscription"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/dns/armdns"
 	"github.com/Azure/azure-sdk-for-go/services/apimanagement/mgmt/2020-12-01/apimanagement"
 	"github.com/Azure/azure-sdk-for-go/services/appconfiguration/mgmt/2020-06-01/appconfiguration"
 	"github.com/Azure/azure-sdk-for-go/services/appplatform/mgmt/2020-07-01/appplatform"
@@ -177,6 +178,14 @@ type ComputeDiskEncryptionSetDescription struct {
 	ResourceGroup     string
 }
 
+//index:microsoft_compute_gallery
+//getfilter:name=description.Gallery.Name
+//getfilter:resource_group=description.ResourceGroup
+type ComputeGalleryDescription struct {
+	Gallery       compute.Gallery
+	ResourceGroup string
+}
+
 //  =================== databoxedge ==================
 
 //index:microsoft_databoxedge_databoxedgedevices
@@ -298,6 +307,70 @@ type VirtualNetworkGatewayDescription struct {
 	VirtualNetworkGateway           newnetwork.VirtualNetworkGateway
 	VirtualNetworkGatewayConnection newnetwork.VirtualNetworkGatewayConnection
 	ResourceGroup                   string
+}
+
+//index:microsoft_network_dnszone
+//getfilter:name=description.Zone.Name
+//getfilter:resource_group=description.ResourceGroup
+type DNSZoneDescription struct { // TODO: Implement describer func
+	Zone          armdns.Zone
+	ResourceGroup string
+}
+
+//index:microsoft_network_firewallpolicy
+//getfilter:name=description.FirewallPolicy.Name
+//getfilter:resource_group=description.ResourceGroup
+type FirewallPolicyDescription struct {
+	FirewallPolicy newnetwork.FirewallPolicy
+	ResourceGroup  string
+}
+
+//index:microsoft_network_frontdoorwebapplicationfirewallpolicy
+//getfilter:name=description.WebApplicationFirewallPolicy.Name
+//getfilter:resource_group=description.ResourceGroup
+type FrontdoorWebApplicationFirewallPolicyDescription struct { // TODO: Implement describer func
+	WebApplicationFirewallPolicy frontdoor.WebApplicationFirewallPolicy
+	ResourceGroup                string
+}
+
+//index:microsoft_network_localnetworkgateway
+//getfilter:name=description.LocalNetworkGateway.Name
+//getfilter:resource_group=description.ResourceGroup
+type LocalNetworkGatewayDescription struct {
+	LocalNetworkGateway newnetwork.LocalNetworkGateway
+	ResourceGroup       string
+}
+
+//index:microsoft_network_natgateway
+//getfilter:name=description.NatGateway.Name
+//getfilter:resource_group=description.ResourceGroup
+type NatGatewayDescription struct {
+	NatGateway    newnetwork.NatGateway
+	ResourceGroup string
+}
+
+//index:microsoft_network_privatelinkservice
+//getfilter:name=description.PrivateLinkService.Name
+//getfilter:resource_group=description.ResourceGroup
+type PrivateLinkServiceDescription struct {
+	PrivateLinkService newnetwork.PrivateLinkService
+	ResourceGroup      string
+}
+
+//index:microsoft_network_routefilter
+//getfilter:name=description.RouteFilter.Name
+//getfilter:resource_group=description.ResourceGroup
+type RouteFilterDescription struct {
+	RouteFilter   newnetwork.RouteFilter
+	ResourceGroup string
+}
+
+//index:microsoft_network_vpngateway
+//getfilter:name=description.VpnGateway.Name
+//getfilter:resource_group=description.ResourceGroup
+type VpnGatewayDescription struct {
+	VpnGateway    newnetwork.VpnGateway
+	ResourceGroup string
 }
 
 //  =================== policy ==================

@@ -557,3 +557,239 @@ func VirtualNetworkGateway(ctx context.Context, authorizer autorest.Authorizer, 
 
 	return values, nil
 }
+
+func FirewallPolicy(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
+	client := newnetwork.NewFirewallPoliciesClient(subscription)
+	client.Authorizer = authorizer
+
+	result, err := client.ListAll(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	var values []Resource
+	for {
+		for _, firewallPolicy := range result.Values() {
+			resourceGroup := strings.Split(*firewallPolicy.ID, "/")[4]
+
+			values = append(values, Resource{
+				ID:       *firewallPolicy.ID,
+				Name:     *firewallPolicy.Name,
+				Location: *firewallPolicy.Location,
+				Description: model.FirewallPolicyDescription{
+					ResourceGroup:  resourceGroup,
+					FirewallPolicy: firewallPolicy,
+				},
+			})
+		}
+		if !result.NotDone() {
+			break
+		}
+		err = result.NextWithContext(ctx)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return values, nil
+}
+
+func LocalNetworkGateway(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
+	client := newnetwork.NewLocalNetworkGatewaysClient(subscription)
+	client.Authorizer = authorizer
+
+	rgs, err := resourceGroup(ctx, authorizer, subscription)
+	if err != nil {
+		return nil, err
+	}
+
+	var values []Resource
+	for _, rg := range rgs {
+		result, err := client.List(ctx, *rg.Name)
+		if err != nil {
+			return nil, err
+		}
+
+		for {
+			for _, localNetworkGateway := range result.Values() {
+				resourceGroup := strings.Split(*localNetworkGateway.ID, "/")[4]
+
+				values = append(values, Resource{
+					ID:       *localNetworkGateway.ID,
+					Name:     *localNetworkGateway.Name,
+					Location: *localNetworkGateway.Location,
+					Description: model.LocalNetworkGatewayDescription{
+						ResourceGroup:       resourceGroup,
+						LocalNetworkGateway: localNetworkGateway,
+					},
+				})
+			}
+			if !result.NotDone() {
+				break
+			}
+			err = result.NextWithContext(ctx)
+			if err != nil {
+				return nil, err
+			}
+		}
+	}
+
+	return values, nil
+}
+
+func NatGateway(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
+	client := newnetwork.NewNatGatewaysClient(subscription)
+	client.Authorizer = authorizer
+
+	rgs, err := resourceGroup(ctx, authorizer, subscription)
+	if err != nil {
+		return nil, err
+	}
+
+	var values []Resource
+	for _, rg := range rgs {
+		result, err := client.List(ctx, *rg.Name)
+		if err != nil {
+			return nil, err
+		}
+
+		for {
+			for _, natGateway := range result.Values() {
+				resourceGroup := strings.Split(*natGateway.ID, "/")[4]
+
+				values = append(values, Resource{
+					ID:       *natGateway.ID,
+					Name:     *natGateway.Name,
+					Location: *natGateway.Location,
+					Description: model.NatGatewayDescription{
+						ResourceGroup: resourceGroup,
+						NatGateway:    natGateway,
+					},
+				})
+			}
+			if !result.NotDone() {
+				break
+			}
+			err = result.NextWithContext(ctx)
+			if err != nil {
+				return nil, err
+			}
+		}
+	}
+
+	return values, nil
+}
+
+func PrivateLinkService(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
+	client := newnetwork.NewPrivateLinkServicesClient(subscription)
+	client.Authorizer = authorizer
+
+	rgs, err := resourceGroup(ctx, authorizer, subscription)
+	if err != nil {
+		return nil, err
+	}
+
+	var values []Resource
+	for _, rg := range rgs {
+		result, err := client.List(ctx, *rg.Name)
+		if err != nil {
+			return nil, err
+		}
+
+		for {
+			for _, privateLinkService := range result.Values() {
+				resourceGroup := strings.Split(*privateLinkService.ID, "/")[4]
+
+				values = append(values, Resource{
+					ID:       *privateLinkService.ID,
+					Name:     *privateLinkService.Name,
+					Location: *privateLinkService.Location,
+					Description: model.PrivateLinkServiceDescription{
+						ResourceGroup:      resourceGroup,
+						PrivateLinkService: privateLinkService,
+					},
+				})
+			}
+			if !result.NotDone() {
+				break
+			}
+			err = result.NextWithContext(ctx)
+			if err != nil {
+				return nil, err
+			}
+		}
+	}
+
+	return values, nil
+}
+
+func RouteFilter(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
+	client := newnetwork.NewRouteFiltersClient(subscription)
+	client.Authorizer = authorizer
+
+	var values []Resource
+	result, err := client.List(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	for {
+		for _, routeFilter := range result.Values() {
+			resourceGroup := strings.Split(*routeFilter.ID, "/")[4]
+
+			values = append(values, Resource{
+				ID:       *routeFilter.ID,
+				Name:     *routeFilter.Name,
+				Location: *routeFilter.Location,
+				Description: model.RouteFilterDescription{
+					ResourceGroup: resourceGroup,
+					RouteFilter:   routeFilter,
+				},
+			})
+		}
+		if !result.NotDone() {
+			break
+		}
+		err = result.NextWithContext(ctx)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return values, nil
+}
+
+func VpnGateway(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
+	client := newnetwork.NewVpnGatewaysClient(subscription)
+	client.Authorizer = authorizer
+
+	var values []Resource
+	result, err := client.List(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	for {
+		for _, vpnGateway := range result.Values() {
+			resourceGroup := strings.Split(*vpnGateway.ID, "/")[4]
+
+			values = append(values, Resource{
+				ID:       *vpnGateway.ID,
+				Name:     *vpnGateway.Name,
+				Location: *vpnGateway.Location,
+				Description: model.VpnGatewayDescription{
+					ResourceGroup: resourceGroup,
+					VpnGateway:    vpnGateway,
+				},
+			})
+		}
+		if !result.NotDone() {
+			break
+		}
+		err = result.NextWithContext(ctx)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return values, nil
+}

@@ -345,3 +345,41 @@ func ComputeDiskEncryptionSet(ctx context.Context, authorizer autorest.Authorize
 
 	return values, nil
 }
+
+func ComputeGallery(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
+	client := compute.NewGalleriesClient(subscription)
+	client.Authorizer = authorizer
+
+	result, err := client.List(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	var values []Resource
+	for {
+		for _, gallery := range result.Values() {
+			resourceGroupName := strings.Split(*gallery.ID, "/")[4]
+
+			values = append(values, Resource{
+				ID:       *gallery.ID,
+				Name:     *gallery.Name,
+				Location: *gallery.Location,
+				Description: model.ComputeGalleryDescription{
+					ResourceGroup: resourceGroupName,
+					Gallery:       gallery,
+				},
+			})
+		}
+
+		if !result.NotDone() {
+			break
+		}
+
+		err = result.NextWithContext(ctx)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return values, nil
+}
