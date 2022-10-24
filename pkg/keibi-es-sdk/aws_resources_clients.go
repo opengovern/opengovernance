@@ -13791,3 +13791,289 @@ func GetCostExplorerByServiceMonthly(ctx context.Context, d *plugin.QueryData, _
 }
 
 // ==========================  END: CostExplorerByServiceMonthly =============================
+
+// ==========================  START: ECRRepository =============================
+
+type ECRRepository struct {
+	Description   aws.ECRRepositoryDescription `json:"description"`
+	Metadata      aws.Metadata                 `json:"metadata"`
+	ResourceJobID int                          `json:"resource_job_id"`
+	SourceJobID   int                          `json:"source_job_id"`
+	ResourceType  string                       `json:"resource_type"`
+	SourceType    string                       `json:"source_type"`
+	ID            string                       `json:"id"`
+	SourceID      string                       `json:"source_id"`
+}
+
+type ECRRepositoryHit struct {
+	ID      string        `json:"_id"`
+	Score   float64       `json:"_score"`
+	Index   string        `json:"_index"`
+	Type    string        `json:"_type"`
+	Version int64         `json:"_version,omitempty"`
+	Source  ECRRepository `json:"_source"`
+	Sort    []interface{} `json:"sort"`
+}
+
+type ECRRepositoryHits struct {
+	Total SearchTotal        `json:"total"`
+	Hits  []ECRRepositoryHit `json:"hits"`
+}
+
+type ECRRepositorySearchResponse struct {
+	PitID string            `json:"pit_id"`
+	Hits  ECRRepositoryHits `json:"hits"`
+}
+
+type ECRRepositoryPaginator struct {
+	paginator *baseESPaginator
+}
+
+func (k Client) NewECRRepositoryPaginator(filters []BoolFilter, limit *int64) (ECRRepositoryPaginator, error) {
+	paginator, err := newPaginator(k.es, "aws_ecr_repository", filters, limit)
+	if err != nil {
+		return ECRRepositoryPaginator{}, err
+	}
+
+	p := ECRRepositoryPaginator{
+		paginator: paginator,
+	}
+
+	return p, nil
+}
+
+func (p ECRRepositoryPaginator) HasNext() bool {
+	return !p.paginator.done
+}
+
+func (p ECRRepositoryPaginator) NextPage(ctx context.Context) ([]ECRRepository, error) {
+	var response ECRRepositorySearchResponse
+	err := p.paginator.search(ctx, &response)
+	if err != nil {
+		return nil, err
+	}
+
+	var values []ECRRepository
+	for _, hit := range response.Hits.Hits {
+		values = append(values, hit.Source)
+	}
+
+	hits := int64(len(response.Hits.Hits))
+	if hits > 0 {
+		p.paginator.updateState(hits, response.Hits.Hits[hits-1].Sort, response.PitID)
+	} else {
+		p.paginator.updateState(hits, nil, "")
+	}
+
+	return values, nil
+}
+
+var listECRRepositoryFilters = map[string]string{}
+
+func ListECRRepository(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("ListECRRepository")
+
+	// create service
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	paginator, err := k.NewECRRepositoryPaginator(buildFilter(d.KeyColumnQuals, listECRRepositoryFilters, "aws", *cfg.AccountID), d.QueryContext.Limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			d.StreamListItem(ctx, v)
+		}
+	}
+
+	return nil, nil
+}
+
+var getECRRepositoryFilters = map[string]string{
+	"repository_name": "description.Repository.RepositoryName",
+}
+
+func GetECRRepository(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("GetECRRepository")
+
+	// create service
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	limit := int64(1)
+	paginator, err := k.NewECRRepositoryPaginator(buildFilter(d.KeyColumnQuals, getECRRepositoryFilters, "aws", *cfg.AccountID), &limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			return v, nil
+		}
+	}
+
+	return nil, nil
+}
+
+// ==========================  END: ECRRepository =============================
+
+// ==========================  START: ECRPublicRepository =============================
+
+type ECRPublicRepository struct {
+	Description   aws.ECRPublicRepositoryDescription `json:"description"`
+	Metadata      aws.Metadata                       `json:"metadata"`
+	ResourceJobID int                                `json:"resource_job_id"`
+	SourceJobID   int                                `json:"source_job_id"`
+	ResourceType  string                             `json:"resource_type"`
+	SourceType    string                             `json:"source_type"`
+	ID            string                             `json:"id"`
+	SourceID      string                             `json:"source_id"`
+}
+
+type ECRPublicRepositoryHit struct {
+	ID      string              `json:"_id"`
+	Score   float64             `json:"_score"`
+	Index   string              `json:"_index"`
+	Type    string              `json:"_type"`
+	Version int64               `json:"_version,omitempty"`
+	Source  ECRPublicRepository `json:"_source"`
+	Sort    []interface{}       `json:"sort"`
+}
+
+type ECRPublicRepositoryHits struct {
+	Total SearchTotal              `json:"total"`
+	Hits  []ECRPublicRepositoryHit `json:"hits"`
+}
+
+type ECRPublicRepositorySearchResponse struct {
+	PitID string                  `json:"pit_id"`
+	Hits  ECRPublicRepositoryHits `json:"hits"`
+}
+
+type ECRPublicRepositoryPaginator struct {
+	paginator *baseESPaginator
+}
+
+func (k Client) NewECRPublicRepositoryPaginator(filters []BoolFilter, limit *int64) (ECRPublicRepositoryPaginator, error) {
+	paginator, err := newPaginator(k.es, "aws_ecrpublic_repository", filters, limit)
+	if err != nil {
+		return ECRPublicRepositoryPaginator{}, err
+	}
+
+	p := ECRPublicRepositoryPaginator{
+		paginator: paginator,
+	}
+
+	return p, nil
+}
+
+func (p ECRPublicRepositoryPaginator) HasNext() bool {
+	return !p.paginator.done
+}
+
+func (p ECRPublicRepositoryPaginator) NextPage(ctx context.Context) ([]ECRPublicRepository, error) {
+	var response ECRPublicRepositorySearchResponse
+	err := p.paginator.search(ctx, &response)
+	if err != nil {
+		return nil, err
+	}
+
+	var values []ECRPublicRepository
+	for _, hit := range response.Hits.Hits {
+		values = append(values, hit.Source)
+	}
+
+	hits := int64(len(response.Hits.Hits))
+	if hits > 0 {
+		p.paginator.updateState(hits, response.Hits.Hits[hits-1].Sort, response.PitID)
+	} else {
+		p.paginator.updateState(hits, nil, "")
+	}
+
+	return values, nil
+}
+
+var listECRPublicRepositoryFilters = map[string]string{}
+
+func ListECRPublicRepository(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("ListECRPublicRepository")
+
+	// create service
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	paginator, err := k.NewECRPublicRepositoryPaginator(buildFilter(d.KeyColumnQuals, listECRPublicRepositoryFilters, "aws", *cfg.AccountID), d.QueryContext.Limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			d.StreamListItem(ctx, v)
+		}
+	}
+
+	return nil, nil
+}
+
+var getECRPublicRepositoryFilters = map[string]string{
+	"repository_name": "description.PublicRepository.RepositoryName",
+}
+
+func GetECRPublicRepository(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("GetECRPublicRepository")
+
+	// create service
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	limit := int64(1)
+	paginator, err := k.NewECRPublicRepositoryPaginator(buildFilter(d.KeyColumnQuals, getECRPublicRepositoryFilters, "aws", *cfg.AccountID), &limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			return v, nil
+		}
+	}
+
+	return nil, nil
+}
+
+// ==========================  END: ECRPublicRepository =============================
