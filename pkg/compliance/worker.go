@@ -6,6 +6,8 @@ import (
 	"strings"
 	"time"
 
+	"gitlab.com/keibiengine/keibi-engine/pkg/keibi-es-sdk"
+
 	client2 "gitlab.com/keibiengine/keibi-engine/pkg/compliance/client"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/onboard/client"
@@ -31,6 +33,7 @@ type Worker struct {
 	pusher           *push.Pusher
 	onboardClient    client.OnboardServiceClient
 	complianceClient client2.ComplianceServiceClient
+	es               keibi.Client
 }
 
 func InitializeWorker(
@@ -114,6 +117,17 @@ func InitializeWorker(
 		Collector(DoComplianceReportJobsDuration).
 		Collector(DoComplianceReportCleanupJobsCount).
 		Collector(DoComplianceReportCleanupJobsDuration)
+
+	defaultAccountID := "default"
+	w.es, err = keibi.NewClient(keibi.ClientConfig{
+		Addresses: []string{config.ElasticSearch.Address},
+		Username:  &config.ElasticSearch.Username,
+		Password:  &config.ElasticSearch.Password,
+		AccountID: &defaultAccountID,
+	})
+	if err != nil {
+		return nil, err
+	}
 
 	return w, nil
 }

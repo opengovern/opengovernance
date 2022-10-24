@@ -10,6 +10,8 @@ import (
 	"path/filepath"
 	"time"
 
+	"gitlab.com/keibiengine/keibi-engine/pkg/keibi-es-sdk"
+
 	client2 "gitlab.com/keibiengine/keibi-engine/pkg/compliance/client"
 
 	api2 "gitlab.com/keibiengine/keibi-engine/pkg/auth/api"
@@ -179,7 +181,7 @@ func (j *Job) Do(w *Worker) JobResult {
 	}
 
 	evaluatedAt := time.Now().UnixMilli()
-	msgs, err := j.ParseResult(w.onboardClient, resultFileName, evaluatedAt)
+	msgs, err := j.ParseResult(w.es, w.onboardClient, resultFileName, evaluatedAt)
 	if err != nil {
 		DoComplianceReportJobsDuration.WithLabelValues(string(j.SourceType), "failure").Observe(float64(time.Now().Unix() - startTime))
 		DoComplianceReportJobsCount.WithLabelValues(string(j.SourceType), "failure").Inc()
@@ -282,7 +284,7 @@ func (j *Job) BuildMod(client client2.ComplianceServiceClient) (string, error) {
 	return mod.ID, err
 }
 
-func (j *Job) ParseResult(onboardClient client.OnboardServiceClient, resultFilename string, evaluatedAt int64) ([]kafka.Doc, error) {
+func (j *Job) ParseResult(es keibi.Client, onboardClient client.OnboardServiceClient, resultFilename string, evaluatedAt int64) ([]kafka.Doc, error) {
 	content, err := ioutil.ReadFile(resultFilename)
 	if err != nil {
 		return nil, err
@@ -294,7 +296,7 @@ func (j *Job) ParseResult(onboardClient client.OnboardServiceClient, resultFilen
 		return nil, err
 	}
 
-	findings := j.ExtractFindings(root, evaluatedAt)
+	findings := j.ExtractFindings(root, evaluatedAt, es)
 
 	var sourceIDs []string
 	for _, f := range findings {
@@ -320,7 +322,7 @@ func (j *Job) ParseResult(onboardClient client.OnboardServiceClient, resultFilen
 	return res, nil
 }
 
-func (j *Job) ExtractFindings(root api.Group, evaluatedAt int64) []es.Finding {
+func (j *Job) ExtractFindings(root api.Group, evaluatedAt int64, esClient keibi.Client) []es.Finding {
 	var findings []es.Finding
 	for _, c := range root.Controls {
 		for _, r := range c.Results {
@@ -332,6 +334,17 @@ func (j *Job) ExtractFindings(root api.Group, evaluatedAt int64) []es.Finding {
 					resourceLocation = d.Value
 				} else if d.Key == "resourceType" {
 					resourceType = d.Value
+				}
+			}
+
+			if resourceName == "" || resourceLocation == "" || resourceType == "" {
+				res, err := es.FetchLookupsByResourceID(esClient, r.Resource)
+				if err == nil {
+					if len(res.Hits.Hits) > 0 {
+						resourceType = res.Hits.Hits[0].Source.ResourceType
+						resourceName = res.Hits.Hits[0].Source.Name
+						resourceLocation = res.Hits.Hits[0].Source.Location
+					}
 				}
 			}
 
@@ -361,7 +374,7 @@ func (j *Job) ExtractFindings(root api.Group, evaluatedAt int64) []es.Finding {
 	}
 
 	for _, g := range root.Groups {
-		findings = append(findings, j.ExtractFindings(g, evaluatedAt)...)
+		findings = append(findings, j.ExtractFindings(g, evaluatedAt, esClient)...)
 	}
 	return findings
 }
