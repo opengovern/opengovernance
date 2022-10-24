@@ -58,6 +58,7 @@ var resourceTypeToDescriber = map[string]ResourceDescriber{
 	// "AWS::EC2::EnclaveCertificateIamRoleAssociation":              ParallelDescribeRegional(describer.EC2EnclaveCertificateIamRoleAssociation),
 	"AWS::EC2::FlowLog": ParallelDescribeRegional(describer.EC2FlowLog),
 	// "AWS::EC2::Host":                                              ParallelDescribeRegional(describer.EC2Host),
+	"AWS::EC2::Image":                     ParallelDescribeRegional(describer.EC2AMI),
 	"AWS::EC2::Instance":                  ParallelDescribeRegional(describer.EC2Instance),
 	"AWS::CostExplorer::ByAccountMonthly": SequentialDescribeGlobal(describer.CostByAccountLastMonth),
 	"AWS::CostExplorer::ByServiceMonthly": SequentialDescribeGlobal(describer.CostByServiceLastMonth),

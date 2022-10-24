@@ -23,6 +23,7 @@ import (
 	dms "github.com/aws/aws-sdk-go-v2/service/databasemigrationservice/types"
 	dax "github.com/aws/aws-sdk-go-v2/service/dax/types"
 	dynamodb "github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
+	ec2op "github.com/aws/aws-sdk-go-v2/service/ec2"
 	ec2 "github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	ecs "github.com/aws/aws-sdk-go-v2/service/ecs/types"
 	efs "github.com/aws/aws-sdk-go-v2/service/efs/types"
@@ -430,6 +431,13 @@ type EC2CapacityReservationDescription struct {
 //getfilter:key_name=description.KeyPair.KeyName
 type EC2KeyPairDescription struct {
 	KeyPair ec2.KeyPairInfo
+}
+
+//index:aws_ec2_ami
+//getfilter:image_id=description.AMI.ImageId
+type EC2AMIDescription struct {
+	AMI               ec2.Image
+	LaunchPermissions ec2op.DescribeImageAttributeOutput
 }
 
 //  ===================  Elastic Load Balancing  ===================

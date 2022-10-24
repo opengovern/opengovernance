@@ -6210,6 +6210,149 @@ func GetEC2KeyPair(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateDa
 
 // ==========================  END: EC2KeyPair =============================
 
+// ==========================  START: EC2AMI =============================
+
+type EC2AMI struct {
+	Description   aws.EC2AMIDescription `json:"description"`
+	Metadata      aws.Metadata          `json:"metadata"`
+	ResourceJobID int                   `json:"resource_job_id"`
+	SourceJobID   int                   `json:"source_job_id"`
+	ResourceType  string                `json:"resource_type"`
+	SourceType    string                `json:"source_type"`
+	ID            string                `json:"id"`
+	SourceID      string                `json:"source_id"`
+}
+
+type EC2AMIHit struct {
+	ID      string        `json:"_id"`
+	Score   float64       `json:"_score"`
+	Index   string        `json:"_index"`
+	Type    string        `json:"_type"`
+	Version int64         `json:"_version,omitempty"`
+	Source  EC2AMI        `json:"_source"`
+	Sort    []interface{} `json:"sort"`
+}
+
+type EC2AMIHits struct {
+	Total SearchTotal `json:"total"`
+	Hits  []EC2AMIHit `json:"hits"`
+}
+
+type EC2AMISearchResponse struct {
+	PitID string     `json:"pit_id"`
+	Hits  EC2AMIHits `json:"hits"`
+}
+
+type EC2AMIPaginator struct {
+	paginator *baseESPaginator
+}
+
+func (k Client) NewEC2AMIPaginator(filters []BoolFilter, limit *int64) (EC2AMIPaginator, error) {
+	paginator, err := newPaginator(k.es, "aws_ec2_ami", filters, limit)
+	if err != nil {
+		return EC2AMIPaginator{}, err
+	}
+
+	p := EC2AMIPaginator{
+		paginator: paginator,
+	}
+
+	return p, nil
+}
+
+func (p EC2AMIPaginator) HasNext() bool {
+	return !p.paginator.done
+}
+
+func (p EC2AMIPaginator) NextPage(ctx context.Context) ([]EC2AMI, error) {
+	var response EC2AMISearchResponse
+	err := p.paginator.search(ctx, &response)
+	if err != nil {
+		return nil, err
+	}
+
+	var values []EC2AMI
+	for _, hit := range response.Hits.Hits {
+		values = append(values, hit.Source)
+	}
+
+	hits := int64(len(response.Hits.Hits))
+	if hits > 0 {
+		p.paginator.updateState(hits, response.Hits.Hits[hits-1].Sort, response.PitID)
+	} else {
+		p.paginator.updateState(hits, nil, "")
+	}
+
+	return values, nil
+}
+
+var listEC2AMIFilters = map[string]string{}
+
+func ListEC2AMI(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("ListEC2AMI")
+
+	// create service
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	paginator, err := k.NewEC2AMIPaginator(buildFilter(d.KeyColumnQuals, listEC2AMIFilters, "aws", *cfg.AccountID), d.QueryContext.Limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			d.StreamListItem(ctx, v)
+		}
+	}
+
+	return nil, nil
+}
+
+var getEC2AMIFilters = map[string]string{
+	"image_id": "description.AMI.ImageId",
+}
+
+func GetEC2AMI(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("GetEC2AMI")
+
+	// create service
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	limit := int64(1)
+	paginator, err := k.NewEC2AMIPaginator(buildFilter(d.KeyColumnQuals, getEC2AMIFilters, "aws", *cfg.AccountID), &limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			return v, nil
+		}
+	}
+
+	return nil, nil
+}
+
+// ==========================  END: EC2AMI =============================
+
 // ==========================  START: ElasticLoadBalancingV2LoadBalancer =============================
 
 type ElasticLoadBalancingV2LoadBalancer struct {

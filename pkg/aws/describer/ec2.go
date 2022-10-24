@@ -1617,3 +1617,37 @@ func EC2KeyPair(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 
 	return values, nil
 }
+
+func EC2AMI(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+	describeCtx := GetDescribeContext(ctx)
+
+	client := ec2.NewFromConfig(cfg)
+	output, err := client.DescribeImages(ctx, &ec2.DescribeImagesInput{})
+	if err != nil {
+		return nil, err
+	}
+
+	var values []Resource
+
+	for _, v := range output.Images {
+		imageAttribute, err := client.DescribeImageAttribute(ctx, &ec2.DescribeImageAttributeInput{
+			Attribute: types.ImageAttributeNameLaunchPermission,
+			ImageId:   v.ImageId,
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		arn := "arn:" + describeCtx.Partition + ":ec2:" + describeCtx.Region + ":" + describeCtx.AccountID + ":image/" + *v.ImageId
+		values = append(values, Resource{
+			ARN:  arn,
+			Name: *v.ImageId,
+			Description: model.EC2AMIDescription{
+				AMI:               v,
+				LaunchPermissions: *imageAttribute,
+			},
+		})
+	}
+
+	return values, nil
+}
