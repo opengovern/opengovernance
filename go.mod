@@ -4,7 +4,7 @@ go 1.18
 
 require (
 	github.com/Azure/azure-sdk-for-go v61.4.0+incompatible
-	github.com/Azure/go-autorest/autorest v0.11.22
+	github.com/Azure/go-autorest/autorest v0.11.24
 	github.com/Azure/go-autorest/autorest/azure/auth v0.5.9
 	github.com/aws/aws-sdk-go v1.42.48
 	github.com/aws/aws-sdk-go-v2 v1.16.5
@@ -14,14 +14,14 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/acm v1.10.0
 	github.com/aws/aws-sdk-go-v2/service/apigateway v1.11.0
 	github.com/aws/aws-sdk-go-v2/service/apigatewayv2 v1.10.0
-	github.com/aws/aws-sdk-go-v2/service/applicationautoscaling v1.11.0
+	github.com/aws/aws-sdk-go-v2/service/applicationautoscaling v1.12.0
 	github.com/aws/aws-sdk-go-v2/service/applicationinsights v1.8.0
 	github.com/aws/aws-sdk-go-v2/service/autoscaling v1.17.0
-	github.com/aws/aws-sdk-go-v2/service/backup v1.9.1
-	github.com/aws/aws-sdk-go-v2/service/cloudfront v1.11.1
+	github.com/aws/aws-sdk-go-v2/service/backup v1.11.0
+	github.com/aws/aws-sdk-go-v2/service/cloudfront v1.12.0
 	github.com/aws/aws-sdk-go-v2/service/cloudtrail v1.11.0
-	github.com/aws/aws-sdk-go-v2/service/cloudwatch v1.12.0
-	github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs v1.10.1
+	github.com/aws/aws-sdk-go-v2/service/cloudwatch v1.13.0
+	github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs v1.11.0
 	github.com/aws/aws-sdk-go-v2/service/codebuild v1.15.0
 	github.com/aws/aws-sdk-go-v2/service/configservice v1.13.0
 	github.com/aws/aws-sdk-go-v2/service/databasemigrationservice v1.14.0
@@ -30,23 +30,23 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/ec2 v1.26.0
 	github.com/aws/aws-sdk-go-v2/service/ecr v1.10.1
 	github.com/aws/aws-sdk-go-v2/service/ecrpublic v1.8.1
-	github.com/aws/aws-sdk-go-v2/service/ecs v1.12.1
-	github.com/aws/aws-sdk-go-v2/service/efs v1.10.1
-	github.com/aws/aws-sdk-go-v2/service/eks v1.14.0
+	github.com/aws/aws-sdk-go-v2/service/ecs v1.14.0
+	github.com/aws/aws-sdk-go-v2/service/efs v1.11.0
+	github.com/aws/aws-sdk-go-v2/service/eks v1.16.0
 	github.com/aws/aws-sdk-go-v2/service/elasticache v1.16.0
 	github.com/aws/aws-sdk-go-v2/service/elasticbeanstalk v1.10.0
-	github.com/aws/aws-sdk-go-v2/service/elasticloadbalancing v1.9.1
-	github.com/aws/aws-sdk-go-v2/service/elasticloadbalancingv2 v1.12.1
+	github.com/aws/aws-sdk-go-v2/service/elasticloadbalancing v1.10.0
+	github.com/aws/aws-sdk-go-v2/service/elasticloadbalancingv2 v1.14.0
 	github.com/aws/aws-sdk-go-v2/service/elasticsearchservice v1.11.0
 	github.com/aws/aws-sdk-go-v2/service/emr v1.14.0
 	github.com/aws/aws-sdk-go-v2/service/fsx v1.17.0
 	github.com/aws/aws-sdk-go-v2/service/guardduty v1.9.0
 	github.com/aws/aws-sdk-go-v2/service/iam v1.15.0
-	github.com/aws/aws-sdk-go-v2/service/kms v1.11.0
-	github.com/aws/aws-sdk-go-v2/service/lambda v1.13.0
+	github.com/aws/aws-sdk-go-v2/service/kms v1.13.0
+	github.com/aws/aws-sdk-go-v2/service/lambda v1.16.0
 	github.com/aws/aws-sdk-go-v2/service/organizations v1.10.0
-	github.com/aws/aws-sdk-go-v2/service/rds v1.12.1
-	github.com/aws/aws-sdk-go-v2/service/redshift v1.15.0
+	github.com/aws/aws-sdk-go-v2/service/rds v1.15.0
+	github.com/aws/aws-sdk-go-v2/service/redshift v1.18.0
 	github.com/aws/aws-sdk-go-v2/service/route53 v1.14.1
 	github.com/aws/aws-sdk-go-v2/service/route53resolver v1.10.1
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.22.0
@@ -56,14 +56,14 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/securityhub v1.16.0
 	github.com/aws/aws-sdk-go-v2/service/ses v1.9.1
 	github.com/aws/aws-sdk-go-v2/service/sesv2 v1.8.1
-	github.com/aws/aws-sdk-go-v2/service/sns v1.12.0
+	github.com/aws/aws-sdk-go-v2/service/sns v1.13.0
 	github.com/aws/aws-sdk-go-v2/service/sqs v1.12.1
-	github.com/aws/aws-sdk-go-v2/service/ssm v1.16.0
+	github.com/aws/aws-sdk-go-v2/service/ssm v1.18.0
 	github.com/aws/aws-sdk-go-v2/service/sts v1.10.1
 	github.com/aws/aws-sdk-go-v2/service/support v1.11.0
 	github.com/aws/aws-sdk-go-v2/service/synthetics v1.9.1
 	github.com/aws/aws-sdk-go-v2/service/wafregional v1.8.1
-	github.com/aws/aws-sdk-go-v2/service/wafv2 v1.14.0
+	github.com/aws/aws-sdk-go-v2/service/wafv2 v1.14.1
 	github.com/aws/aws-sdk-go-v2/service/workspaces v1.10.1
 	github.com/aws/smithy-go v1.11.3
 	github.com/brpaz/echozap v1.1.2
@@ -75,7 +75,7 @@ require (
 	github.com/fluxcd/pkg/apis/meta v0.13.0
 	github.com/globocom/echo-prometheus v0.1.2
 	github.com/gocarina/gocsv v0.0.0-20211203214250-4735fba0c1d9
-	github.com/gofrs/uuid v4.0.0+incompatible
+	github.com/gofrs/uuid v4.2.0+incompatible
 	github.com/gogo/googleapis v1.4.1
 	github.com/golang/protobuf v1.5.2
 	github.com/google/uuid v1.3.0
@@ -137,7 +137,7 @@ require (
 	github.com/Azure/azure-storage-blob-go v0.14.0 // indirect
 	github.com/Azure/go-ansiterm v0.0.0-20210617225240-d185dfc1b5a1 // indirect
 	github.com/Azure/go-autorest v14.2.0+incompatible // indirect
-	github.com/Azure/go-autorest/autorest/adal v0.9.14 // indirect
+	github.com/Azure/go-autorest/autorest/adal v0.9.18 // indirect
 	github.com/Azure/go-autorest/autorest/azure/cli v0.4.2 // indirect
 	github.com/Azure/go-autorest/autorest/date v0.3.0 // indirect
 	github.com/Azure/go-autorest/autorest/to v0.4.0 // indirect
@@ -162,7 +162,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/internal/ini v1.3.1 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding v1.5.0 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/endpoint-discovery v1.3.3 // indirect
-	github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.5.2 // indirect
+	github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.6.0 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/s3shared v1.10.0 // indirect
 	github.com/aws/aws-sdk-go-v2/service/sso v1.6.1 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
@@ -189,7 +189,6 @@ require (
 	github.com/evanphx/json-patch v4.12.0+incompatible // indirect
 	github.com/fatih/color v1.13.0 // indirect
 	github.com/fluxcd/pkg/apis/kustomize v0.3.3 // indirect
-	github.com/form3tech-oss/jwt-go v3.2.3+incompatible // indirect
 	github.com/frankban/quicktest v1.14.0 // indirect
 	github.com/fsnotify/fsnotify v1.5.1 // indirect
 	github.com/gertd/go-pluralize v0.1.7 // indirect
@@ -204,6 +203,7 @@ require (
 	github.com/go-playground/universal-translator v0.18.0 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang-jwt/jwt v3.2.2+incompatible // indirect
+	github.com/golang-jwt/jwt/v4 v4.2.0 // indirect
 	github.com/golang/glog v1.0.0 // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/golang/snappy v0.0.4 // indirect

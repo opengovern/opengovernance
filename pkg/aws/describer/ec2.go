@@ -127,9 +127,11 @@ func EC2CapacityReservation(ctx context.Context, cfg aws.Config) ([]Resource, er
 
 		for _, v := range page.CapacityReservations {
 			values = append(values, Resource{
-				ARN:         *v.CapacityReservationArn,
-				Name:        *v.CapacityReservationArn,
-				Description: v,
+				ARN:  *v.CapacityReservationArn,
+				Name: *v.CapacityReservationId,
+				Description: model.EC2CapacityReservationDescription{
+					CapacityReservation: v,
+				},
 			})
 		}
 	}
