@@ -96,6 +96,8 @@ var awsMap = map[string]string{
 	"AWS::EC2::Region":                          "aws_region",
 	"AWS::FSX::FileSystem":                      "aws_fsx_file_system",
 	"AWS::RDS::DBClusterSnapshot":               "aws_rds_db_cluster_snapshot",
+	"AWS::EC2::CapacityReservation":             "aws_ec2_capacity_reservation",
+	"AWS::EC2::KeyPair":                         "aws_ec2_key_pair",
 	//"AWS::EFS::AccessPoint":                     "aws_efs_access_point",
 	//"AWS::EFS::MountTarget":                     "aws_efs_mount_target",
 }
@@ -282,6 +284,8 @@ var AWSDescriptionMap = map[string]interface{}{
 	"AWS::GuardDuty::Finding":                   &keibi.GuardDutyFinding{},
 	"AWS::Lambda::Function":                     &keibi.LambdaFunction{},
 	"AWS::SageMaker::NotebookInstance":          &keibi.SageMakerNotebookInstance{},
+	"AWS::EC2::CapacityReservation":             &keibi.EC2CapacityReservation{},
+	"AWS::EC2::KeyPair":                         &keibi.EC2KeyPair{},
 }
 var AzureDescriptionMap = map[string]interface{}{
 	"Microsoft.CognitiveServices/accounts":                  &keibi.CognitiveAccount{},

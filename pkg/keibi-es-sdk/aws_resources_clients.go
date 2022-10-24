@@ -3,7 +3,6 @@ package keibi
 
 import (
 	"context"
-
 	"github.com/turbot/steampipe-plugin-sdk/plugin"
 	aws "gitlab.com/keibiengine/keibi-engine/pkg/aws/model"
 )
@@ -5924,6 +5923,292 @@ func GetEC2FlowLog(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateDa
 }
 
 // ==========================  END: EC2FlowLog =============================
+
+// ==========================  START: EC2CapacityReservation =============================
+
+type EC2CapacityReservation struct {
+	Description   aws.EC2CapacityReservationDescription `json:"description"`
+	Metadata      aws.Metadata                          `json:"metadata"`
+	ResourceJobID int                                   `json:"resource_job_id"`
+	SourceJobID   int                                   `json:"source_job_id"`
+	ResourceType  string                                `json:"resource_type"`
+	SourceType    string                                `json:"source_type"`
+	ID            string                                `json:"id"`
+	SourceID      string                                `json:"source_id"`
+}
+
+type EC2CapacityReservationHit struct {
+	ID      string                 `json:"_id"`
+	Score   float64                `json:"_score"`
+	Index   string                 `json:"_index"`
+	Type    string                 `json:"_type"`
+	Version int64                  `json:"_version,omitempty"`
+	Source  EC2CapacityReservation `json:"_source"`
+	Sort    []interface{}          `json:"sort"`
+}
+
+type EC2CapacityReservationHits struct {
+	Total SearchTotal                 `json:"total"`
+	Hits  []EC2CapacityReservationHit `json:"hits"`
+}
+
+type EC2CapacityReservationSearchResponse struct {
+	PitID string                     `json:"pit_id"`
+	Hits  EC2CapacityReservationHits `json:"hits"`
+}
+
+type EC2CapacityReservationPaginator struct {
+	paginator *baseESPaginator
+}
+
+func (k Client) NewEC2CapacityReservationPaginator(filters []BoolFilter, limit *int64) (EC2CapacityReservationPaginator, error) {
+	paginator, err := newPaginator(k.es, "aws_ec2_capacityreservation", filters, limit)
+	if err != nil {
+		return EC2CapacityReservationPaginator{}, err
+	}
+
+	p := EC2CapacityReservationPaginator{
+		paginator: paginator,
+	}
+
+	return p, nil
+}
+
+func (p EC2CapacityReservationPaginator) HasNext() bool {
+	return !p.paginator.done
+}
+
+func (p EC2CapacityReservationPaginator) NextPage(ctx context.Context) ([]EC2CapacityReservation, error) {
+	var response EC2CapacityReservationSearchResponse
+	err := p.paginator.search(ctx, &response)
+	if err != nil {
+		return nil, err
+	}
+
+	var values []EC2CapacityReservation
+	for _, hit := range response.Hits.Hits {
+		values = append(values, hit.Source)
+	}
+
+	hits := int64(len(response.Hits.Hits))
+	if hits > 0 {
+		p.paginator.updateState(hits, response.Hits.Hits[hits-1].Sort, response.PitID)
+	} else {
+		p.paginator.updateState(hits, nil, "")
+	}
+
+	return values, nil
+}
+
+var listEC2CapacityReservationFilters = map[string]string{}
+
+func ListEC2CapacityReservation(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("ListEC2CapacityReservation")
+
+	// create service
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	paginator, err := k.NewEC2CapacityReservationPaginator(buildFilter(d.KeyColumnQuals, listEC2CapacityReservationFilters, "aws", *cfg.AccountID), d.QueryContext.Limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			d.StreamListItem(ctx, v)
+		}
+	}
+
+	return nil, nil
+}
+
+var getEC2CapacityReservationFilters = map[string]string{
+	"capacity_reservation_id": "description.CapacityReservation.CapacityReservationId",
+}
+
+func GetEC2CapacityReservation(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("GetEC2CapacityReservation")
+
+	// create service
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	limit := int64(1)
+	paginator, err := k.NewEC2CapacityReservationPaginator(buildFilter(d.KeyColumnQuals, getEC2CapacityReservationFilters, "aws", *cfg.AccountID), &limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			return v, nil
+		}
+	}
+
+	return nil, nil
+}
+
+// ==========================  END: EC2CapacityReservation =============================
+
+// ==========================  START: EC2KeyPair =============================
+
+type EC2KeyPair struct {
+	Description   aws.EC2KeyPairDescription `json:"description"`
+	Metadata      aws.Metadata              `json:"metadata"`
+	ResourceJobID int                       `json:"resource_job_id"`
+	SourceJobID   int                       `json:"source_job_id"`
+	ResourceType  string                    `json:"resource_type"`
+	SourceType    string                    `json:"source_type"`
+	ID            string                    `json:"id"`
+	SourceID      string                    `json:"source_id"`
+}
+
+type EC2KeyPairHit struct {
+	ID      string        `json:"_id"`
+	Score   float64       `json:"_score"`
+	Index   string        `json:"_index"`
+	Type    string        `json:"_type"`
+	Version int64         `json:"_version,omitempty"`
+	Source  EC2KeyPair    `json:"_source"`
+	Sort    []interface{} `json:"sort"`
+}
+
+type EC2KeyPairHits struct {
+	Total SearchTotal     `json:"total"`
+	Hits  []EC2KeyPairHit `json:"hits"`
+}
+
+type EC2KeyPairSearchResponse struct {
+	PitID string         `json:"pit_id"`
+	Hits  EC2KeyPairHits `json:"hits"`
+}
+
+type EC2KeyPairPaginator struct {
+	paginator *baseESPaginator
+}
+
+func (k Client) NewEC2KeyPairPaginator(filters []BoolFilter, limit *int64) (EC2KeyPairPaginator, error) {
+	paginator, err := newPaginator(k.es, "aws_ec2_keypair", filters, limit)
+	if err != nil {
+		return EC2KeyPairPaginator{}, err
+	}
+
+	p := EC2KeyPairPaginator{
+		paginator: paginator,
+	}
+
+	return p, nil
+}
+
+func (p EC2KeyPairPaginator) HasNext() bool {
+	return !p.paginator.done
+}
+
+func (p EC2KeyPairPaginator) NextPage(ctx context.Context) ([]EC2KeyPair, error) {
+	var response EC2KeyPairSearchResponse
+	err := p.paginator.search(ctx, &response)
+	if err != nil {
+		return nil, err
+	}
+
+	var values []EC2KeyPair
+	for _, hit := range response.Hits.Hits {
+		values = append(values, hit.Source)
+	}
+
+	hits := int64(len(response.Hits.Hits))
+	if hits > 0 {
+		p.paginator.updateState(hits, response.Hits.Hits[hits-1].Sort, response.PitID)
+	} else {
+		p.paginator.updateState(hits, nil, "")
+	}
+
+	return values, nil
+}
+
+var listEC2KeyPairFilters = map[string]string{}
+
+func ListEC2KeyPair(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("ListEC2KeyPair")
+
+	// create service
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	paginator, err := k.NewEC2KeyPairPaginator(buildFilter(d.KeyColumnQuals, listEC2KeyPairFilters, "aws", *cfg.AccountID), d.QueryContext.Limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			d.StreamListItem(ctx, v)
+		}
+	}
+
+	return nil, nil
+}
+
+var getEC2KeyPairFilters = map[string]string{
+	"key_name": "description.KeyPair.KeyName",
+}
+
+func GetEC2KeyPair(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("GetEC2KeyPair")
+
+	// create service
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	limit := int64(1)
+	paginator, err := k.NewEC2KeyPairPaginator(buildFilter(d.KeyColumnQuals, getEC2KeyPairFilters, "aws", *cfg.AccountID), &limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			return v, nil
+		}
+	}
+
+	return nil, nil
+}
+
+// ==========================  END: EC2KeyPair =============================
 
 // ==========================  START: ElasticLoadBalancingV2LoadBalancer =============================
 

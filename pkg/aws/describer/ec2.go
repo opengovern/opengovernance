@@ -127,9 +127,11 @@ func EC2CapacityReservation(ctx context.Context, cfg aws.Config) ([]Resource, er
 
 		for _, v := range page.CapacityReservations {
 			values = append(values, Resource{
-				ARN:         *v.CapacityReservationArn,
-				Name:        *v.CapacityReservationArn,
-				Description: v,
+				ARN:  *v.CapacityReservationArn,
+				Name: *v.CapacityReservationId,
+				Description: model.EC2CapacityReservationDescription{
+					CapacityReservation: v,
+				},
 			})
 		}
 	}
@@ -1585,6 +1587,30 @@ func EC2Region(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 			Name: *v.RegionName,
 			Description: model.EC2RegionDescription{
 				Region: v,
+			},
+		})
+	}
+
+	return values, nil
+}
+
+func EC2KeyPair(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+	describeCtx := GetDescribeContext(ctx)
+
+	client := ec2.NewFromConfig(cfg)
+	output, err := client.DescribeKeyPairs(ctx, &ec2.DescribeKeyPairsInput{})
+	if err != nil {
+		return nil, err
+	}
+
+	var values []Resource
+	for _, v := range output.KeyPairs {
+		arn := "arn:" + describeCtx.Partition + ":ec2:" + describeCtx.Region + ":" + describeCtx.AccountID + ":key-pair/" + *v.KeyName
+		values = append(values, Resource{
+			ARN:  arn,
+			Name: *v.KeyName,
+			Description: model.EC2KeyPairDescription{
+				KeyPair: v,
 			},
 		})
 	}

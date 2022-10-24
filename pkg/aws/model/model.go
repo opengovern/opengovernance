@@ -420,6 +420,18 @@ type EC2FlowLogDescription struct {
 	FlowLog ec2.FlowLog
 }
 
+//index:aws_ec2_capacityreservation
+//getfilter:capacity_reservation_id=description.CapacityReservation.CapacityReservationId
+type EC2CapacityReservationDescription struct {
+	CapacityReservation ec2.CapacityReservation
+}
+
+//index:aws_ec2_keypair
+//getfilter:key_name=description.KeyPair.KeyName
+type EC2KeyPairDescription struct {
+	KeyPair ec2.KeyPairInfo
+}
+
 //  ===================  Elastic Load Balancing  ===================
 
 //index:aws_elasticloadbalancingv2_loadbalancer
