@@ -10,7 +10,6 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/ecr/types"
 	"github.com/aws/aws-sdk-go-v2/service/ecrpublic"
 	public_types "github.com/aws/aws-sdk-go-v2/service/ecrpublic/types"
-	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/smithy-go"
 	"gitlab.com/keibiengine/keibi-engine/pkg/aws/model"
 )
@@ -27,6 +26,9 @@ func ECRPublicRepository(ctx context.Context, cfg aws.Config) ([]Resource, error
 	for paginator.HasMorePages() {
 		page, err := paginator.NextPage(ctx)
 		if err != nil {
+			if isErr(err, "RepositoryNotFoundException") || isErr(err, "RepositoryPolicyNotFoundException") || isErr(err, "LifecyclePolicyNotFoundException") {
+				continue
+			}
 			return nil, err
 		}
 
@@ -38,6 +40,9 @@ func ECRPublicRepository(ctx context.Context, cfg aws.Config) ([]Resource, error
 			for imagePaginator.HasMorePages() {
 				imagePage, err := imagePaginator.NextPage(ctx)
 				if err != nil {
+					if isErr(err, "RepositoryNotFoundException") || isErr(err, "RepositoryPolicyNotFoundException") || isErr(err, "LifecyclePolicyNotFoundException") {
+						continue
+					}
 					return nil, err
 				}
 				imageDetails = append(imageDetails, imagePage.ImageDetails...)
@@ -47,11 +52,7 @@ func ECRPublicRepository(ctx context.Context, cfg aws.Config) ([]Resource, error
 				RepositoryName: v.RepositoryName,
 			})
 			if err != nil {
-				if a, ok := err.(awserr.Error); ok {
-					if a.Code() != "RepositoryPolicyNotFoundException" {
-						return nil, err
-					}
-				} else {
+				if !isErr(err, "RepositoryNotFoundException") && !isErr(err, "RepositoryPolicyNotFoundException") && !isErr(err, "LifecyclePolicyNotFoundException") {
 					return nil, err
 				}
 			}
@@ -60,7 +61,11 @@ func ECRPublicRepository(ctx context.Context, cfg aws.Config) ([]Resource, error
 				ResourceArn: v.RepositoryArn,
 			})
 			if err != nil {
-				return nil, err
+				if !isErr(err, "RepositoryNotFoundException") && !isErr(err, "RepositoryPolicyNotFoundException") && !isErr(err, "LifecyclePolicyNotFoundException") {
+					return nil, err
+				} else {
+					tagsOutput = &ecrpublic.ListTagsForResourceOutput{}
+				}
 			}
 
 			values = append(values, Resource{
@@ -87,6 +92,9 @@ func ECRRepository(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	for paginator.HasMorePages() {
 		page, err := paginator.NextPage(ctx)
 		if err != nil {
+			if isErr(err, "RepositoryNotFoundException") || isErr(err, "RepositoryPolicyNotFoundException") || isErr(err, "LifecyclePolicyNotFoundException") {
+				continue
+			}
 			return nil, err
 		}
 
@@ -95,11 +103,7 @@ func ECRRepository(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 				RepositoryName: v.RepositoryName,
 			})
 			if err != nil {
-				if a, ok := err.(awserr.Error); ok {
-					if a.Code() != "LifecyclePolicyNotFoundException" {
-						return nil, err
-					}
-				} else {
+				if !isErr(err, "RepositoryNotFoundException") && !isErr(err, "RepositoryPolicyNotFoundException") && !isErr(err, "LifecyclePolicyNotFoundException") {
 					return nil, err
 				}
 			}
@@ -111,6 +115,9 @@ func ECRRepository(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 			for imagePaginator.HasMorePages() {
 				imagePage, err := imagePaginator.NextPage(ctx)
 				if err != nil {
+					if isErr(err, "RepositoryNotFoundException") || isErr(err, "RepositoryPolicyNotFoundException") || isErr(err, "LifecyclePolicyNotFoundException") {
+						continue
+					}
 					return nil, err
 				}
 				imageDetails = append(imageDetails, imagePage.ImageDetails...)
@@ -120,11 +127,7 @@ func ECRRepository(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 				RepositoryName: v.RepositoryName,
 			})
 			if err != nil {
-				if a, ok := err.(awserr.Error); ok {
-					if a.Code() != "RepositoryPolicyNotFoundException" {
-						return nil, err
-					}
-				} else {
+				if !isErr(err, "RepositoryNotFoundException") && !isErr(err, "RepositoryPolicyNotFoundException") && !isErr(err, "LifecyclePolicyNotFoundException") {
 					return nil, err
 				}
 			}
@@ -133,7 +136,11 @@ func ECRRepository(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 				ResourceArn: v.RepositoryArn,
 			})
 			if err != nil {
-				return nil, err
+				if !isErr(err, "RepositoryNotFoundException") && !isErr(err, "RepositoryPolicyNotFoundException") && !isErr(err, "LifecyclePolicyNotFoundException") {
+					return nil, err
+				} else {
+					tagsOutput = &ecr.ListTagsForResourceOutput{}
+				}
 			}
 
 			values = append(values, Resource{

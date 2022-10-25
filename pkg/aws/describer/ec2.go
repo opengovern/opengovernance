@@ -1622,8 +1622,13 @@ func EC2AMI(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	describeCtx := GetDescribeContext(ctx)
 
 	client := ec2.NewFromConfig(cfg)
-	output, err := client.DescribeImages(ctx, &ec2.DescribeImagesInput{})
+	output, err := client.DescribeImages(ctx, &ec2.DescribeImagesInput{
+		Owners: []string{"self"},
+	})
 	if err != nil {
+		if isErr(err, "InvalidAMIID.NotFound") || isErr(err, "InvalidAMIID.Unavailable") || isErr(err, "InvalidAMIID.Malformed") {
+			return nil, nil
+		}
 		return nil, err
 	}
 
@@ -1635,6 +1640,9 @@ func EC2AMI(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 			ImageId:   v.ImageId,
 		})
 		if err != nil {
+			if isErr(err, "InvalidAMIID.NotFound") || isErr(err, "InvalidAMIID.Unavailable") || isErr(err, "InvalidAMIID.Malformed") {
+				continue
+			}
 			return nil, err
 		}
 
@@ -1658,6 +1666,9 @@ func EC2ReservedInstances(ctx context.Context, cfg aws.Config) ([]Resource, erro
 	client := ec2.NewFromConfig(cfg)
 	output, err := client.DescribeReservedInstances(ctx, &ec2.DescribeReservedInstancesInput{})
 	if err != nil {
+		if isErr(err, "InvalidParameterValue") || isErr(err, "InvalidInstanceID.Unavailable") || isErr(err, "InvalidInstanceID.Malformed") {
+			return nil, nil
+		}
 		return nil, err
 	}
 
@@ -1677,6 +1688,9 @@ func EC2ReservedInstances(ctx context.Context, cfg aws.Config) ([]Resource, erro
 		for modificationPaginator.HasMorePages() {
 			page, err := modificationPaginator.NextPage(ctx)
 			if err != nil {
+				if isErr(err, "InvalidParameterValue") || isErr(err, "InvalidInstanceID.Unavailable") || isErr(err, "InvalidInstanceID.Malformed") {
+					continue
+				}
 				return nil, err
 			}
 

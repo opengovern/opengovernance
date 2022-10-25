@@ -17,6 +17,9 @@ func EventBridgeBus(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	for {
 		response, err := client.ListEventBuses(ctx, &input)
 		if err != nil {
+			if isErr(err, "InvalidParameter") || isErr(err, "ResourceNotFoundException") || isErr(err, "ValidationException") {
+				return nil, nil
+			}
 			return nil, err
 		}
 		for _, bus := range response.EventBuses {
@@ -24,7 +27,10 @@ func EventBridgeBus(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 				ResourceARN: bus.Arn,
 			})
 			if err != nil {
-				return nil, err
+				if !isErr(err, "InvalidParameter") && !isErr(err, "ResourceNotFoundException") && !isErr(err, "ValidationException") {
+					return nil, err
+				}
+				tagsOutput = &eventbridge.ListTagsForResourceOutput{}
 			}
 
 			values = append(values, Resource{
