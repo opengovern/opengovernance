@@ -173,7 +173,7 @@ func (s Server) Check(ctx context.Context, req *envoyauth.CheckRequest) (*envoya
 			}
 			limitsBytes, err := json.Marshal(limits)
 			if err == nil {
-				_ = s.rdb.SetNX(ctx, "limits-"+workspaceName, string(limitsBytes), time.Minute).Err()
+				_ = s.rdb.SetNX(ctx, "limits-"+workspaceName, string(limitsBytes), 6*time.Hour).Err()
 			}
 		}
 	}
