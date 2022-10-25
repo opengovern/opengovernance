@@ -131,6 +131,7 @@ var resourceTypeToDescriber = map[string]ResourceDescriber{
 	// "AWS::ElasticLoadBalancingV2::TargetGroup":                    ParallelDescribeRegional(describer.ElasticLoadBalancingV2TargetGroup),
 	"AWS::ElasticSearch::Domain":         ParallelDescribeRegional(describer.ESDomain),
 	"AWS::EMR::Cluster":                  ParallelDescribeRegional(describer.EMRCluster),
+	"AWS::EventBridge::EventBus":         ParallelDescribeRegional(describer.EventBridgeBus),
 	"AWS::FSX::FileSystem":               ParallelDescribeRegional(describer.FSXFileSystem),
 	"AWS::GuardDuty::Finding":            ParallelDescribeRegional(describer.GuardDutyFinding),
 	"AWS::GuardDuty::Detector":           ParallelDescribeRegional(describer.GuardDutyDetector),
