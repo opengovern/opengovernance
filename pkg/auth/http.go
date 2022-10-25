@@ -92,7 +92,7 @@ func (r httpRoutes) PutRoleBinding(ctx echo.Context) error {
 		return err
 	}
 
-	limits, err := r.workspaceClient.GetLimits(httpclient.FromEchoContext(ctx))
+	limits, err := r.workspaceClient.GetLimits(httpclient.FromEchoContext(ctx), true)
 	if err != nil {
 		return err
 	}
@@ -202,7 +202,7 @@ func (r *httpRoutes) Invite(ctx echo.Context) error {
 		return err
 	}
 
-	limits, err := r.workspaceClient.GetLimits(httpclient.FromEchoContext(ctx))
+	limits, err := r.workspaceClient.GetLimits(httpclient.FromEchoContext(ctx), true)
 	if err != nil {
 		return err
 	}

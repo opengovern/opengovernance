@@ -1053,39 +1053,45 @@ func (s *Server) ListRestore(c echo.Context) error {
 // @Accept  json
 // @Produce json
 // @Param   workspace_name path    string true "Workspace Name"
+// @Param   ignore_usage query    bool false "Ignore usage"
 // @Success 200            {array} api.WorkspaceLimitsUsage
 // @Router  /workspace/api/v1/workspaces/limits/{workspace_name} [get]
 func (s *Server) GetWorkspaceLimits(c echo.Context) error {
+	var response api.WorkspaceLimitsUsage
+
 	workspaceName := c.Param("workspace_name")
+	ignoreUsage := c.QueryParam("ignore_usage")
+
 	dbWorkspace, err := s.db.GetWorkspaceByName(workspaceName)
 	if err != nil {
 		return err
 	}
 
-	ectx := httpclient.FromEchoContext(c)
-	ectx.UserRole = authapi.AdminRole
-	resp, err := s.authClient.GetWorkspaceRoleBindings(ectx, workspaceName)
-	if err != nil {
-		return fmt.Errorf("GetWorkspaceRoleBindings: %v", err)
+	if ignoreUsage == "true" {
+		ectx := httpclient.FromEchoContext(c)
+		ectx.UserRole = authapi.AdminRole
+		resp, err := s.authClient.GetWorkspaceRoleBindings(ectx, workspaceName)
+		if err != nil {
+			return fmt.Errorf("GetWorkspaceRoleBindings: %v", err)
+		}
+		response.CurrentUsers = int64(len(resp))
+
+		inventoryURL := strings.ReplaceAll(InventoryTemplate, "%NAMESPACE%", dbWorkspace.ID.String())
+		inventoryClient := client2.NewInventoryServiceClient(inventoryURL)
+		resourceCount, err := inventoryClient.CountResources(httpclient.FromEchoContext(c))
+		response.CurrentResources = resourceCount
+
+		onboardURL := strings.ReplaceAll(OnboardTemplate, "%NAMESPACE%", dbWorkspace.ID.String())
+		onboardClient := client.NewOnboardServiceClient(onboardURL, s.cache)
+		count, err := onboardClient.CountSources(httpclient.FromEchoContext(c), source.Nil)
+		response.CurrentConnections = count
 	}
 
-	inventoryURL := strings.ReplaceAll(InventoryTemplate, "%NAMESPACE%", dbWorkspace.ID.String())
-	inventoryClient := client2.NewInventoryServiceClient(inventoryURL)
-	resourceCount, err := inventoryClient.CountResources(httpclient.FromEchoContext(c))
-
-	onboardURL := strings.ReplaceAll(OnboardTemplate, "%NAMESPACE%", dbWorkspace.ID.String())
-	onboardClient := client.NewOnboardServiceClient(onboardURL, s.cache)
-	count, err := onboardClient.CountSources(httpclient.FromEchoContext(c), source.Nil)
-
 	limits := GetLimitsByTier(dbWorkspace.Tier)
-	return c.JSON(http.StatusOK, api.WorkspaceLimitsUsage{
-		CurrentUsers:       int64(len(resp)),
-		CurrentConnections: count,
-		CurrentResources:   resourceCount,
-		MaxUsers:           limits.MaxUsers,
-		MaxConnections:     limits.MaxConnections,
-		MaxResources:       limits.MaxResources,
-	})
+	response.MaxUsers = limits.MaxUsers
+	response.MaxConnections = limits.MaxConnections
+	response.MaxResources = limits.MaxResources
+	return c.JSON(http.StatusOK, api.WorkspaceLimitsUsage{})
 }
 
 // GetWorkspaceLimitsByID godoc
