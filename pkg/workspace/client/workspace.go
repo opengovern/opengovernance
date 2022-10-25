@@ -9,7 +9,7 @@ import (
 )
 
 type WorkspaceServiceClient interface {
-	GetLimits(ctx *httpclient.Context) (api.WorkspaceLimits, error)
+	GetLimits(ctx *httpclient.Context, ignoreUsage bool) (api.WorkspaceLimits, error)
 	GetLimitsByID(ctx *httpclient.Context, workspaceID string) (api.WorkspaceLimits, error)
 	ListWorkspaces(ctx *httpclient.Context) ([]api.WorkspaceResponse, error)
 }
@@ -22,7 +22,7 @@ func NewWorkspaceClient(baseURL string) WorkspaceServiceClient {
 	return &workspaceClient{baseURL: baseURL}
 }
 
-func (s *workspaceClient) GetLimits(ctx *httpclient.Context) (api.WorkspaceLimits, error) {
+func (s *workspaceClient) GetLimits(ctx *httpclient.Context, ignoreUsage bool) (api.WorkspaceLimits, error) {
 	url := fmt.Sprintf("%s/api/v1/workspaces/limits/%s", s.baseURL, ctx.WorkspaceName)
 
 	var response api.WorkspaceLimits

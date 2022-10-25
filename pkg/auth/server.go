@@ -2,7 +2,6 @@ package auth
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
@@ -149,32 +148,17 @@ func (s Server) Check(ctx context.Context, req *envoyauth.CheckRequest) (*envoya
 
 	var limits api2.WorkspaceLimits
 	if workspaceName != "keibi" {
-		cached := false
-		r, err := s.rdb.Get(ctx, "limits-"+workspaceName).Result()
-		if err == nil && len(r) > 0 {
-			err = json.Unmarshal([]byte(r), &limits)
-			if err == nil {
-				cached = true
-			}
-		}
-
-		if !cached {
-			limits, err = s.workspaceClient.GetLimits(&httpclient.Context{
-				UserRole: rb.Role, UserID: rb.UserID.String(), WorkspaceName: workspaceName,
-			})
-			if err != nil {
-				s.logger.Warn("denied access due to failure in retrieving limits",
-					zap.String("reqId", httpRequest.Id),
-					zap.String("path", httpRequest.Path),
-					zap.String("method", httpRequest.Method),
-					zap.String("workspace", workspaceName),
-					zap.Error(err))
-				return nil, err
-			}
-			limitsBytes, err := json.Marshal(limits)
-			if err == nil {
-				_ = s.rdb.SetNX(ctx, "limits-"+workspaceName, string(limitsBytes), 6*time.Hour).Err()
-			}
+		limits, err = s.workspaceClient.GetLimits(&httpclient.Context{
+			UserRole: rb.Role, UserID: rb.UserID.String(), WorkspaceName: workspaceName,
+		}, true)
+		if err != nil {
+			s.logger.Warn("denied access due to failure in retrieving limits",
+				zap.String("reqId", httpRequest.Id),
+				zap.String("path", httpRequest.Path),
+				zap.String("method", httpRequest.Method),
+				zap.String("workspace", workspaceName),
+				zap.Error(err))
+			return nil, err
 		}
 	}
 
