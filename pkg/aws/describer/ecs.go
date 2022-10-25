@@ -208,6 +208,51 @@ func listEcsClusters(ctx context.Context, cfg aws.Config) ([]string, error) {
 	return clusters, nil
 }
 
+func ECSContainerInstance(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+	clusters, err := listEcsClusters(ctx, cfg)
+	if err != nil {
+		return nil, err
+	}
+
+	client := ecs.NewFromConfig(cfg)
+
+	var values []Resource
+	for _, cluster := range clusters {
+		paginator := ecs.NewListContainerInstancesPaginator(client, &ecs.ListContainerInstancesInput{
+			Cluster: &cluster,
+		})
+		for paginator.HasMorePages() {
+			page, err := paginator.NextPage(ctx)
+			if err != nil {
+				return nil, err
+			}
+
+			output, err := client.DescribeContainerInstances(ctx, &ecs.DescribeContainerInstancesInput{
+				Cluster:            &cluster,
+				ContainerInstances: page.ContainerInstanceArns,
+			})
+			if err != nil {
+				return nil, err
+			}
+			if len(output.Failures) != 0 {
+				return nil, failuresToError(output.Failures)
+			}
+
+			for _, v := range output.ContainerInstances {
+				values = append(values, Resource{
+					ARN:  *v.ContainerInstanceArn,
+					Name: *v.ContainerInstanceArn,
+					Description: model.ECSContainerInstanceDescription{
+						ContainerInstance: v,
+					},
+				})
+			}
+		}
+	}
+
+	return values, nil
+}
+
 func failuresToError(failures []types.Failure) error {
 	var errs []string
 	for _, f := range failures {
