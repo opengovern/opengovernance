@@ -726,6 +726,149 @@ func GetElastiCacheReplicationGroup(ctx context.Context, d *plugin.QueryData, _ 
 
 // ==========================  END: ElastiCacheReplicationGroup =============================
 
+// ==========================  START: ElastiCacheCluster =============================
+
+type ElastiCacheCluster struct {
+	Description   aws.ElastiCacheClusterDescription `json:"description"`
+	Metadata      aws.Metadata                      `json:"metadata"`
+	ResourceJobID int                               `json:"resource_job_id"`
+	SourceJobID   int                               `json:"source_job_id"`
+	ResourceType  string                            `json:"resource_type"`
+	SourceType    string                            `json:"source_type"`
+	ID            string                            `json:"id"`
+	SourceID      string                            `json:"source_id"`
+}
+
+type ElastiCacheClusterHit struct {
+	ID      string             `json:"_id"`
+	Score   float64            `json:"_score"`
+	Index   string             `json:"_index"`
+	Type    string             `json:"_type"`
+	Version int64              `json:"_version,omitempty"`
+	Source  ElastiCacheCluster `json:"_source"`
+	Sort    []interface{}      `json:"sort"`
+}
+
+type ElastiCacheClusterHits struct {
+	Total SearchTotal             `json:"total"`
+	Hits  []ElastiCacheClusterHit `json:"hits"`
+}
+
+type ElastiCacheClusterSearchResponse struct {
+	PitID string                 `json:"pit_id"`
+	Hits  ElastiCacheClusterHits `json:"hits"`
+}
+
+type ElastiCacheClusterPaginator struct {
+	paginator *baseESPaginator
+}
+
+func (k Client) NewElastiCacheClusterPaginator(filters []BoolFilter, limit *int64) (ElastiCacheClusterPaginator, error) {
+	paginator, err := newPaginator(k.es, "aws_elasticache_cluster", filters, limit)
+	if err != nil {
+		return ElastiCacheClusterPaginator{}, err
+	}
+
+	p := ElastiCacheClusterPaginator{
+		paginator: paginator,
+	}
+
+	return p, nil
+}
+
+func (p ElastiCacheClusterPaginator) HasNext() bool {
+	return !p.paginator.done
+}
+
+func (p ElastiCacheClusterPaginator) NextPage(ctx context.Context) ([]ElastiCacheCluster, error) {
+	var response ElastiCacheClusterSearchResponse
+	err := p.paginator.search(ctx, &response)
+	if err != nil {
+		return nil, err
+	}
+
+	var values []ElastiCacheCluster
+	for _, hit := range response.Hits.Hits {
+		values = append(values, hit.Source)
+	}
+
+	hits := int64(len(response.Hits.Hits))
+	if hits > 0 {
+		p.paginator.updateState(hits, response.Hits.Hits[hits-1].Sort, response.PitID)
+	} else {
+		p.paginator.updateState(hits, nil, "")
+	}
+
+	return values, nil
+}
+
+var listElastiCacheClusterFilters = map[string]string{}
+
+func ListElastiCacheCluster(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("ListElastiCacheCluster")
+
+	// create service
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	paginator, err := k.NewElastiCacheClusterPaginator(buildFilter(d.KeyColumnQuals, listElastiCacheClusterFilters, "aws", *cfg.AccountID), d.QueryContext.Limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			d.StreamListItem(ctx, v)
+		}
+	}
+
+	return nil, nil
+}
+
+var getElastiCacheClusterFilters = map[string]string{
+	"cache_cluster_id": "description.Cluster.CacheClusterId",
+}
+
+func GetElastiCacheCluster(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("GetElastiCacheCluster")
+
+	// create service
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	limit := int64(1)
+	paginator, err := k.NewElastiCacheClusterPaginator(buildFilter(d.KeyColumnQuals, getElastiCacheClusterFilters, "aws", *cfg.AccountID), &limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			return v, nil
+		}
+	}
+
+	return nil, nil
+}
+
+// ==========================  END: ElastiCacheCluster =============================
+
 // ==========================  START: ESDomain =============================
 
 type ESDomain struct {

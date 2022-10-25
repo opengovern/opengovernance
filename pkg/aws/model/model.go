@@ -114,6 +114,13 @@ type ElastiCacheReplicationGroupDescription struct {
 	ReplicationGroup elasticache.ReplicationGroup
 }
 
+//index:aws_elasticache_cluster
+//getfilter:cache_cluster_id=description.Cluster.CacheClusterId
+type ElastiCacheClusterDescription struct {
+	Cluster elasticache.CacheCluster
+	TagList []elasticache.Tag
+}
+
 //  ===================   ElasticSearch   ===================
 
 //index:aws_elasticsearch_domain

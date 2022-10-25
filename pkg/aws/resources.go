@@ -123,6 +123,7 @@ var resourceTypeToDescriber = map[string]ResourceDescriber{
 	// "AWS::EKS::IdentityProviderConfig":                            ParallelDescribeRegional(describer.EKSIdentityProviderConfig),
 	"AWS::ElasticBeanstalk::Environment":      ParallelDescribeRegional(describer.ElasticBeanstalkEnvironment),
 	"AWS::ElastiCache::ReplicationGroup":      ParallelDescribeRegional(describer.ElastiCacheReplicationGroup),
+	"AWS::ElastiCache::Cluster":               ParallelDescribeRegional(describer.ElastiCacheCluster),
 	"AWS::ElasticLoadBalancing::LoadBalancer": ParallelDescribeRegional(describer.ElasticLoadBalancingLoadBalancer), // IGNORE
 	"AWS::ElasticLoadBalancingV2::Listener":   ParallelDescribeRegional(describer.ElasticLoadBalancingV2Listener),
 	// "AWS::ElasticLoadBalancingV2::ListenerRule":                   ParallelDescribeRegional(describer.ElasticLoadBalancingV2ListenerRule),
