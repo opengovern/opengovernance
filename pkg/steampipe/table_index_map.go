@@ -102,6 +102,7 @@ var awsMap = map[string]string{
 	"AWS::EC2::ReservedInstances":               "aws_ec2_reserved_instance",
 	"AWS::ECR::Repository":                      "aws_ecr_repository",
 	"AWS::ECR::PublicRepository":                "aws_ecrpublic_repository",
+	"AWS::ECS::ContainerInstance":               "aws_ecs_container_instance",
 	//"AWS::EFS::AccessPoint":                     "aws_efs_access_point",
 	//"AWS::EFS::MountTarget":                     "aws_efs_mount_target",
 }
@@ -294,6 +295,7 @@ var AWSDescriptionMap = map[string]interface{}{
 	"AWS::EC2::ReservedInstances":               &keibi.EC2ReservedInstances{},
 	"AWS::ECR::Repository":                      &keibi.ECRRepository{},
 	"AWS::ECR::PublicRepository":                &keibi.ECRPublicRepository{},
+	"AWS::ECS::ContainerInstance":               &keibi.ECSContainerInstance{},
 }
 var AzureDescriptionMap = map[string]interface{}{
 	"Microsoft.CognitiveServices/accounts":                  &keibi.CognitiveAccount{},

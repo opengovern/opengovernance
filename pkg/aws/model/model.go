@@ -861,6 +861,11 @@ type ECSServiceDescription struct {
 	Service ecs.Service
 }
 
+//index:aws_ecs_containerinstance
+type ECSContainerInstanceDescription struct {
+	ContainerInstance ecs.ContainerInstance
+}
+
 //  ===================  EFS  ===================
 
 //index:aws_efs_filesystem

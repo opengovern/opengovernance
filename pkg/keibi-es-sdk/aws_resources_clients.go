@@ -12360,6 +12360,147 @@ func GetECSService(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateDa
 
 // ==========================  END: ECSService =============================
 
+// ==========================  START: ECSContainerInstance =============================
+
+type ECSContainerInstance struct {
+	Description   aws.ECSContainerInstanceDescription `json:"description"`
+	Metadata      aws.Metadata                        `json:"metadata"`
+	ResourceJobID int                                 `json:"resource_job_id"`
+	SourceJobID   int                                 `json:"source_job_id"`
+	ResourceType  string                              `json:"resource_type"`
+	SourceType    string                              `json:"source_type"`
+	ID            string                              `json:"id"`
+	SourceID      string                              `json:"source_id"`
+}
+
+type ECSContainerInstanceHit struct {
+	ID      string               `json:"_id"`
+	Score   float64              `json:"_score"`
+	Index   string               `json:"_index"`
+	Type    string               `json:"_type"`
+	Version int64                `json:"_version,omitempty"`
+	Source  ECSContainerInstance `json:"_source"`
+	Sort    []interface{}        `json:"sort"`
+}
+
+type ECSContainerInstanceHits struct {
+	Total SearchTotal               `json:"total"`
+	Hits  []ECSContainerInstanceHit `json:"hits"`
+}
+
+type ECSContainerInstanceSearchResponse struct {
+	PitID string                   `json:"pit_id"`
+	Hits  ECSContainerInstanceHits `json:"hits"`
+}
+
+type ECSContainerInstancePaginator struct {
+	paginator *baseESPaginator
+}
+
+func (k Client) NewECSContainerInstancePaginator(filters []BoolFilter, limit *int64) (ECSContainerInstancePaginator, error) {
+	paginator, err := newPaginator(k.es, "aws_ecs_containerinstance", filters, limit)
+	if err != nil {
+		return ECSContainerInstancePaginator{}, err
+	}
+
+	p := ECSContainerInstancePaginator{
+		paginator: paginator,
+	}
+
+	return p, nil
+}
+
+func (p ECSContainerInstancePaginator) HasNext() bool {
+	return !p.paginator.done
+}
+
+func (p ECSContainerInstancePaginator) NextPage(ctx context.Context) ([]ECSContainerInstance, error) {
+	var response ECSContainerInstanceSearchResponse
+	err := p.paginator.search(ctx, &response)
+	if err != nil {
+		return nil, err
+	}
+
+	var values []ECSContainerInstance
+	for _, hit := range response.Hits.Hits {
+		values = append(values, hit.Source)
+	}
+
+	hits := int64(len(response.Hits.Hits))
+	if hits > 0 {
+		p.paginator.updateState(hits, response.Hits.Hits[hits-1].Sort, response.PitID)
+	} else {
+		p.paginator.updateState(hits, nil, "")
+	}
+
+	return values, nil
+}
+
+var listECSContainerInstanceFilters = map[string]string{}
+
+func ListECSContainerInstance(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("ListECSContainerInstance")
+
+	// create service
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	paginator, err := k.NewECSContainerInstancePaginator(buildFilter(d.KeyColumnQuals, listECSContainerInstanceFilters, "aws", *cfg.AccountID), d.QueryContext.Limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			d.StreamListItem(ctx, v)
+		}
+	}
+
+	return nil, nil
+}
+
+var getECSContainerInstanceFilters = map[string]string{}
+
+func GetECSContainerInstance(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("GetECSContainerInstance")
+
+	// create service
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	limit := int64(1)
+	paginator, err := k.NewECSContainerInstancePaginator(buildFilter(d.KeyColumnQuals, getECSContainerInstanceFilters, "aws", *cfg.AccountID), &limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			return v, nil
+		}
+	}
+
+	return nil, nil
+}
+
+// ==========================  END: ECSContainerInstance =============================
+
 // ==========================  START: EFSFileSystem =============================
 
 type EFSFileSystem struct {
