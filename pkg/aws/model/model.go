@@ -38,6 +38,7 @@ import (
 	elasticloadbalancingv2 "github.com/aws/aws-sdk-go-v2/service/elasticloadbalancingv2/types"
 	es "github.com/aws/aws-sdk-go-v2/service/elasticsearchservice/types"
 	emr "github.com/aws/aws-sdk-go-v2/service/emr/types"
+	eventbridge "github.com/aws/aws-sdk-go-v2/service/eventbridge/types"
 	fsx "github.com/aws/aws-sdk-go-v2/service/fsx/types"
 	"github.com/aws/aws-sdk-go-v2/service/guardduty"
 	guarddutytypes "github.com/aws/aws-sdk-go-v2/service/guardduty/types"
@@ -1008,4 +1009,13 @@ type ECRPublicRepositoryDescription struct {
 	ImageDetails     []ecrpublic.ImageDetail
 	Policy           *ecrpublicop.GetRepositoryPolicyOutput
 	Tags             []ecrpublic.Tag
+}
+
+//  ===================  EventBridge  ===================
+
+//index:aws_eventbridge_bus
+//getfilter:arn=description.Bus.Arn
+type EventBridgeBusDescription struct {
+	Bus  eventbridge.EventBus
+	Tags []eventbridge.Tag
 }

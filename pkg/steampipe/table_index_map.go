@@ -104,6 +104,7 @@ var awsMap = map[string]string{
 	"AWS::ECR::PublicRepository":                "aws_ecrpublic_repository",
 	"AWS::ECS::ContainerInstance":               "aws_ecs_container_instance",
 	"AWS::ElastiCache::Cluster":                 "aws_elasticache_cluster",
+	"AWS::EventBridge::EventBus":                "aws_eventbridge_bus",
 	//"AWS::EFS::AccessPoint":                     "aws_efs_access_point",
 	//"AWS::EFS::MountTarget":                     "aws_efs_mount_target",
 }
@@ -298,6 +299,7 @@ var AWSDescriptionMap = map[string]interface{}{
 	"AWS::ECR::PublicRepository":                &keibi.ECRPublicRepository{},
 	"AWS::ECS::ContainerInstance":               &keibi.ECSContainerInstance{},
 	"AWS::ElastiCache::Cluster":                 &keibi.ElastiCacheCluster{},
+	"AWS::EventBridge::EventBus":                &keibi.EventBridgeBus{},
 }
 var AzureDescriptionMap = map[string]interface{}{
 	"Microsoft.CognitiveServices/accounts":                  &keibi.CognitiveAccount{},
