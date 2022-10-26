@@ -6639,6 +6639,578 @@ func GetEC2ReservedInstances(ctx context.Context, d *plugin.QueryData, _ *plugin
 
 // ==========================  END: EC2ReservedInstances =============================
 
+// ==========================  START: EC2CapacityReservationFleet =============================
+
+type EC2CapacityReservationFleet struct {
+	Description   aws.EC2CapacityReservationFleetDescription `json:"description"`
+	Metadata      aws.Metadata                               `json:"metadata"`
+	ResourceJobID int                                        `json:"resource_job_id"`
+	SourceJobID   int                                        `json:"source_job_id"`
+	ResourceType  string                                     `json:"resource_type"`
+	SourceType    string                                     `json:"source_type"`
+	ID            string                                     `json:"id"`
+	SourceID      string                                     `json:"source_id"`
+}
+
+type EC2CapacityReservationFleetHit struct {
+	ID      string                      `json:"_id"`
+	Score   float64                     `json:"_score"`
+	Index   string                      `json:"_index"`
+	Type    string                      `json:"_type"`
+	Version int64                       `json:"_version,omitempty"`
+	Source  EC2CapacityReservationFleet `json:"_source"`
+	Sort    []interface{}               `json:"sort"`
+}
+
+type EC2CapacityReservationFleetHits struct {
+	Total SearchTotal                      `json:"total"`
+	Hits  []EC2CapacityReservationFleetHit `json:"hits"`
+}
+
+type EC2CapacityReservationFleetSearchResponse struct {
+	PitID string                          `json:"pit_id"`
+	Hits  EC2CapacityReservationFleetHits `json:"hits"`
+}
+
+type EC2CapacityReservationFleetPaginator struct {
+	paginator *baseESPaginator
+}
+
+func (k Client) NewEC2CapacityReservationFleetPaginator(filters []BoolFilter, limit *int64) (EC2CapacityReservationFleetPaginator, error) {
+	paginator, err := newPaginator(k.es, "aws_ec2_capacityreservationfleet", filters, limit)
+	if err != nil {
+		return EC2CapacityReservationFleetPaginator{}, err
+	}
+
+	p := EC2CapacityReservationFleetPaginator{
+		paginator: paginator,
+	}
+
+	return p, nil
+}
+
+func (p EC2CapacityReservationFleetPaginator) HasNext() bool {
+	return !p.paginator.done
+}
+
+func (p EC2CapacityReservationFleetPaginator) NextPage(ctx context.Context) ([]EC2CapacityReservationFleet, error) {
+	var response EC2CapacityReservationFleetSearchResponse
+	err := p.paginator.search(ctx, &response)
+	if err != nil {
+		return nil, err
+	}
+
+	var values []EC2CapacityReservationFleet
+	for _, hit := range response.Hits.Hits {
+		values = append(values, hit.Source)
+	}
+
+	hits := int64(len(response.Hits.Hits))
+	if hits > 0 {
+		p.paginator.updateState(hits, response.Hits.Hits[hits-1].Sort, response.PitID)
+	} else {
+		p.paginator.updateState(hits, nil, "")
+	}
+
+	return values, nil
+}
+
+var listEC2CapacityReservationFleetFilters = map[string]string{}
+
+func ListEC2CapacityReservationFleet(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("ListEC2CapacityReservationFleet")
+
+	// create service
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	paginator, err := k.NewEC2CapacityReservationFleetPaginator(buildFilter(d.KeyColumnQuals, listEC2CapacityReservationFleetFilters, "aws", *cfg.AccountID), d.QueryContext.Limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			d.StreamListItem(ctx, v)
+		}
+	}
+
+	return nil, nil
+}
+
+var getEC2CapacityReservationFleetFilters = map[string]string{
+	"capacity_reservation_fleet_id": "description.CapacityReservationFleet.CapacityReservationFleetId",
+}
+
+func GetEC2CapacityReservationFleet(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("GetEC2CapacityReservationFleet")
+
+	// create service
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	limit := int64(1)
+	paginator, err := k.NewEC2CapacityReservationFleetPaginator(buildFilter(d.KeyColumnQuals, getEC2CapacityReservationFleetFilters, "aws", *cfg.AccountID), &limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			return v, nil
+		}
+	}
+
+	return nil, nil
+}
+
+// ==========================  END: EC2CapacityReservationFleet =============================
+
+// ==========================  START: EC2Fleet =============================
+
+type EC2Fleet struct {
+	Description   aws.EC2FleetDescription `json:"description"`
+	Metadata      aws.Metadata            `json:"metadata"`
+	ResourceJobID int                     `json:"resource_job_id"`
+	SourceJobID   int                     `json:"source_job_id"`
+	ResourceType  string                  `json:"resource_type"`
+	SourceType    string                  `json:"source_type"`
+	ID            string                  `json:"id"`
+	SourceID      string                  `json:"source_id"`
+}
+
+type EC2FleetHit struct {
+	ID      string        `json:"_id"`
+	Score   float64       `json:"_score"`
+	Index   string        `json:"_index"`
+	Type    string        `json:"_type"`
+	Version int64         `json:"_version,omitempty"`
+	Source  EC2Fleet      `json:"_source"`
+	Sort    []interface{} `json:"sort"`
+}
+
+type EC2FleetHits struct {
+	Total SearchTotal   `json:"total"`
+	Hits  []EC2FleetHit `json:"hits"`
+}
+
+type EC2FleetSearchResponse struct {
+	PitID string       `json:"pit_id"`
+	Hits  EC2FleetHits `json:"hits"`
+}
+
+type EC2FleetPaginator struct {
+	paginator *baseESPaginator
+}
+
+func (k Client) NewEC2FleetPaginator(filters []BoolFilter, limit *int64) (EC2FleetPaginator, error) {
+	paginator, err := newPaginator(k.es, "aws_ec2_fleet", filters, limit)
+	if err != nil {
+		return EC2FleetPaginator{}, err
+	}
+
+	p := EC2FleetPaginator{
+		paginator: paginator,
+	}
+
+	return p, nil
+}
+
+func (p EC2FleetPaginator) HasNext() bool {
+	return !p.paginator.done
+}
+
+func (p EC2FleetPaginator) NextPage(ctx context.Context) ([]EC2Fleet, error) {
+	var response EC2FleetSearchResponse
+	err := p.paginator.search(ctx, &response)
+	if err != nil {
+		return nil, err
+	}
+
+	var values []EC2Fleet
+	for _, hit := range response.Hits.Hits {
+		values = append(values, hit.Source)
+	}
+
+	hits := int64(len(response.Hits.Hits))
+	if hits > 0 {
+		p.paginator.updateState(hits, response.Hits.Hits[hits-1].Sort, response.PitID)
+	} else {
+		p.paginator.updateState(hits, nil, "")
+	}
+
+	return values, nil
+}
+
+var listEC2FleetFilters = map[string]string{}
+
+func ListEC2Fleet(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("ListEC2Fleet")
+
+	// create service
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	paginator, err := k.NewEC2FleetPaginator(buildFilter(d.KeyColumnQuals, listEC2FleetFilters, "aws", *cfg.AccountID), d.QueryContext.Limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			d.StreamListItem(ctx, v)
+		}
+	}
+
+	return nil, nil
+}
+
+var getEC2FleetFilters = map[string]string{
+	"fleet_id": "description.Fleet.FleetId",
+}
+
+func GetEC2Fleet(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("GetEC2Fleet")
+
+	// create service
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	limit := int64(1)
+	paginator, err := k.NewEC2FleetPaginator(buildFilter(d.KeyColumnQuals, getEC2FleetFilters, "aws", *cfg.AccountID), &limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			return v, nil
+		}
+	}
+
+	return nil, nil
+}
+
+// ==========================  END: EC2Fleet =============================
+
+// ==========================  START: EC2Host =============================
+
+type EC2Host struct {
+	Description   aws.EC2HostDescription `json:"description"`
+	Metadata      aws.Metadata           `json:"metadata"`
+	ResourceJobID int                    `json:"resource_job_id"`
+	SourceJobID   int                    `json:"source_job_id"`
+	ResourceType  string                 `json:"resource_type"`
+	SourceType    string                 `json:"source_type"`
+	ID            string                 `json:"id"`
+	SourceID      string                 `json:"source_id"`
+}
+
+type EC2HostHit struct {
+	ID      string        `json:"_id"`
+	Score   float64       `json:"_score"`
+	Index   string        `json:"_index"`
+	Type    string        `json:"_type"`
+	Version int64         `json:"_version,omitempty"`
+	Source  EC2Host       `json:"_source"`
+	Sort    []interface{} `json:"sort"`
+}
+
+type EC2HostHits struct {
+	Total SearchTotal  `json:"total"`
+	Hits  []EC2HostHit `json:"hits"`
+}
+
+type EC2HostSearchResponse struct {
+	PitID string      `json:"pit_id"`
+	Hits  EC2HostHits `json:"hits"`
+}
+
+type EC2HostPaginator struct {
+	paginator *baseESPaginator
+}
+
+func (k Client) NewEC2HostPaginator(filters []BoolFilter, limit *int64) (EC2HostPaginator, error) {
+	paginator, err := newPaginator(k.es, "aws_ec2_host", filters, limit)
+	if err != nil {
+		return EC2HostPaginator{}, err
+	}
+
+	p := EC2HostPaginator{
+		paginator: paginator,
+	}
+
+	return p, nil
+}
+
+func (p EC2HostPaginator) HasNext() bool {
+	return !p.paginator.done
+}
+
+func (p EC2HostPaginator) NextPage(ctx context.Context) ([]EC2Host, error) {
+	var response EC2HostSearchResponse
+	err := p.paginator.search(ctx, &response)
+	if err != nil {
+		return nil, err
+	}
+
+	var values []EC2Host
+	for _, hit := range response.Hits.Hits {
+		values = append(values, hit.Source)
+	}
+
+	hits := int64(len(response.Hits.Hits))
+	if hits > 0 {
+		p.paginator.updateState(hits, response.Hits.Hits[hits-1].Sort, response.PitID)
+	} else {
+		p.paginator.updateState(hits, nil, "")
+	}
+
+	return values, nil
+}
+
+var listEC2HostFilters = map[string]string{}
+
+func ListEC2Host(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("ListEC2Host")
+
+	// create service
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	paginator, err := k.NewEC2HostPaginator(buildFilter(d.KeyColumnQuals, listEC2HostFilters, "aws", *cfg.AccountID), d.QueryContext.Limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			d.StreamListItem(ctx, v)
+		}
+	}
+
+	return nil, nil
+}
+
+var getEC2HostFilters = map[string]string{
+	"host_id": "description.Host.HostId",
+}
+
+func GetEC2Host(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("GetEC2Host")
+
+	// create service
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	limit := int64(1)
+	paginator, err := k.NewEC2HostPaginator(buildFilter(d.KeyColumnQuals, getEC2HostFilters, "aws", *cfg.AccountID), &limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			return v, nil
+		}
+	}
+
+	return nil, nil
+}
+
+// ==========================  END: EC2Host =============================
+
+// ==========================  START: EC2PlacementGroup =============================
+
+type EC2PlacementGroup struct {
+	Description   aws.EC2PlacementGroupDescription `json:"description"`
+	Metadata      aws.Metadata                     `json:"metadata"`
+	ResourceJobID int                              `json:"resource_job_id"`
+	SourceJobID   int                              `json:"source_job_id"`
+	ResourceType  string                           `json:"resource_type"`
+	SourceType    string                           `json:"source_type"`
+	ID            string                           `json:"id"`
+	SourceID      string                           `json:"source_id"`
+}
+
+type EC2PlacementGroupHit struct {
+	ID      string            `json:"_id"`
+	Score   float64           `json:"_score"`
+	Index   string            `json:"_index"`
+	Type    string            `json:"_type"`
+	Version int64             `json:"_version,omitempty"`
+	Source  EC2PlacementGroup `json:"_source"`
+	Sort    []interface{}     `json:"sort"`
+}
+
+type EC2PlacementGroupHits struct {
+	Total SearchTotal            `json:"total"`
+	Hits  []EC2PlacementGroupHit `json:"hits"`
+}
+
+type EC2PlacementGroupSearchResponse struct {
+	PitID string                `json:"pit_id"`
+	Hits  EC2PlacementGroupHits `json:"hits"`
+}
+
+type EC2PlacementGroupPaginator struct {
+	paginator *baseESPaginator
+}
+
+func (k Client) NewEC2PlacementGroupPaginator(filters []BoolFilter, limit *int64) (EC2PlacementGroupPaginator, error) {
+	paginator, err := newPaginator(k.es, "aws_ec2_placementgroup", filters, limit)
+	if err != nil {
+		return EC2PlacementGroupPaginator{}, err
+	}
+
+	p := EC2PlacementGroupPaginator{
+		paginator: paginator,
+	}
+
+	return p, nil
+}
+
+func (p EC2PlacementGroupPaginator) HasNext() bool {
+	return !p.paginator.done
+}
+
+func (p EC2PlacementGroupPaginator) NextPage(ctx context.Context) ([]EC2PlacementGroup, error) {
+	var response EC2PlacementGroupSearchResponse
+	err := p.paginator.search(ctx, &response)
+	if err != nil {
+		return nil, err
+	}
+
+	var values []EC2PlacementGroup
+	for _, hit := range response.Hits.Hits {
+		values = append(values, hit.Source)
+	}
+
+	hits := int64(len(response.Hits.Hits))
+	if hits > 0 {
+		p.paginator.updateState(hits, response.Hits.Hits[hits-1].Sort, response.PitID)
+	} else {
+		p.paginator.updateState(hits, nil, "")
+	}
+
+	return values, nil
+}
+
+var listEC2PlacementGroupFilters = map[string]string{}
+
+func ListEC2PlacementGroup(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("ListEC2PlacementGroup")
+
+	// create service
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	paginator, err := k.NewEC2PlacementGroupPaginator(buildFilter(d.KeyColumnQuals, listEC2PlacementGroupFilters, "aws", *cfg.AccountID), d.QueryContext.Limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			d.StreamListItem(ctx, v)
+		}
+	}
+
+	return nil, nil
+}
+
+var getEC2PlacementGroupFilters = map[string]string{
+	"group_name": "description.PlacementGroup.GroupName",
+}
+
+func GetEC2PlacementGroup(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("GetEC2PlacementGroup")
+
+	// create service
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	limit := int64(1)
+	paginator, err := k.NewEC2PlacementGroupPaginator(buildFilter(d.KeyColumnQuals, getEC2PlacementGroupFilters, "aws", *cfg.AccountID), &limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			return v, nil
+		}
+	}
+
+	return nil, nil
+}
+
+// ==========================  END: EC2PlacementGroup =============================
+
 // ==========================  START: ElasticLoadBalancingV2LoadBalancer =============================
 
 type ElasticLoadBalancingV2LoadBalancer struct {

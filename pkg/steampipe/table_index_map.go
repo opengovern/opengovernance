@@ -105,6 +105,10 @@ var awsMap = map[string]string{
 	"AWS::ECS::ContainerInstance":               "aws_ecs_container_instance",
 	"AWS::ElastiCache::Cluster":                 "aws_elasticache_cluster",
 	"AWS::EventBridge::EventBus":                "aws_eventbridge_bus",
+	"AWS::EC2::CapacityReservationFleet":        "aws_ec2_capacity_reservation_fleet",
+	"AWS::EC2::Fleet":                           "aws_ec2_fleet",
+	"AWS::EC2::Host":                            "aws_ec2_host",
+	"AWS::EC2::PlacementGroup":                  "aws_ec2_placement_group",
 	//"AWS::EFS::AccessPoint":                     "aws_efs_access_point",
 	//"AWS::EFS::MountTarget":                     "aws_efs_mount_target",
 }
@@ -300,6 +304,10 @@ var AWSDescriptionMap = map[string]interface{}{
 	"AWS::ECS::ContainerInstance":               &keibi.ECSContainerInstance{},
 	"AWS::ElastiCache::Cluster":                 &keibi.ElastiCacheCluster{},
 	"AWS::EventBridge::EventBus":                &keibi.EventBridgeBus{},
+	"AWS::EC2::CapacityReservationFleet":        &keibi.EC2CapacityReservationFleet{},
+	"AWS::EC2::Fleet":                           &keibi.EC2Fleet{},
+	"AWS::EC2::Host":                            &keibi.EC2Host{},
+	"AWS::EC2::PlacementGroup":                  &keibi.EC2PlacementGroup{},
 }
 var AzureDescriptionMap = map[string]interface{}{
 	"Microsoft.CognitiveServices/accounts":                  &keibi.CognitiveAccount{},
