@@ -7786,6 +7786,578 @@ func GetFSXFileSystem(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydrat
 
 // ==========================  END: FSXFileSystem =============================
 
+// ==========================  START: FSXStorageVirtualMachine =============================
+
+type FSXStorageVirtualMachine struct {
+	Description   aws.FSXStorageVirtualMachineDescription `json:"description"`
+	Metadata      aws.Metadata                            `json:"metadata"`
+	ResourceJobID int                                     `json:"resource_job_id"`
+	SourceJobID   int                                     `json:"source_job_id"`
+	ResourceType  string                                  `json:"resource_type"`
+	SourceType    string                                  `json:"source_type"`
+	ID            string                                  `json:"id"`
+	SourceID      string                                  `json:"source_id"`
+}
+
+type FSXStorageVirtualMachineHit struct {
+	ID      string                   `json:"_id"`
+	Score   float64                  `json:"_score"`
+	Index   string                   `json:"_index"`
+	Type    string                   `json:"_type"`
+	Version int64                    `json:"_version,omitempty"`
+	Source  FSXStorageVirtualMachine `json:"_source"`
+	Sort    []interface{}            `json:"sort"`
+}
+
+type FSXStorageVirtualMachineHits struct {
+	Total SearchTotal                   `json:"total"`
+	Hits  []FSXStorageVirtualMachineHit `json:"hits"`
+}
+
+type FSXStorageVirtualMachineSearchResponse struct {
+	PitID string                       `json:"pit_id"`
+	Hits  FSXStorageVirtualMachineHits `json:"hits"`
+}
+
+type FSXStorageVirtualMachinePaginator struct {
+	paginator *baseESPaginator
+}
+
+func (k Client) NewFSXStorageVirtualMachinePaginator(filters []BoolFilter, limit *int64) (FSXStorageVirtualMachinePaginator, error) {
+	paginator, err := newPaginator(k.es, "aws_fsx_storagevirtualmachine", filters, limit)
+	if err != nil {
+		return FSXStorageVirtualMachinePaginator{}, err
+	}
+
+	p := FSXStorageVirtualMachinePaginator{
+		paginator: paginator,
+	}
+
+	return p, nil
+}
+
+func (p FSXStorageVirtualMachinePaginator) HasNext() bool {
+	return !p.paginator.done
+}
+
+func (p FSXStorageVirtualMachinePaginator) NextPage(ctx context.Context) ([]FSXStorageVirtualMachine, error) {
+	var response FSXStorageVirtualMachineSearchResponse
+	err := p.paginator.search(ctx, &response)
+	if err != nil {
+		return nil, err
+	}
+
+	var values []FSXStorageVirtualMachine
+	for _, hit := range response.Hits.Hits {
+		values = append(values, hit.Source)
+	}
+
+	hits := int64(len(response.Hits.Hits))
+	if hits > 0 {
+		p.paginator.updateState(hits, response.Hits.Hits[hits-1].Sort, response.PitID)
+	} else {
+		p.paginator.updateState(hits, nil, "")
+	}
+
+	return values, nil
+}
+
+var listFSXStorageVirtualMachineFilters = map[string]string{}
+
+func ListFSXStorageVirtualMachine(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("ListFSXStorageVirtualMachine")
+
+	// create service
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	paginator, err := k.NewFSXStorageVirtualMachinePaginator(buildFilter(d.KeyColumnQuals, listFSXStorageVirtualMachineFilters, "aws", *cfg.AccountID), d.QueryContext.Limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			d.StreamListItem(ctx, v)
+		}
+	}
+
+	return nil, nil
+}
+
+var getFSXStorageVirtualMachineFilters = map[string]string{
+	"storage_virtual_machine_id": "description.StorageVirtualMachine.StorageVirtualMachineId",
+}
+
+func GetFSXStorageVirtualMachine(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("GetFSXStorageVirtualMachine")
+
+	// create service
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	limit := int64(1)
+	paginator, err := k.NewFSXStorageVirtualMachinePaginator(buildFilter(d.KeyColumnQuals, getFSXStorageVirtualMachineFilters, "aws", *cfg.AccountID), &limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			return v, nil
+		}
+	}
+
+	return nil, nil
+}
+
+// ==========================  END: FSXStorageVirtualMachine =============================
+
+// ==========================  START: FSXTask =============================
+
+type FSXTask struct {
+	Description   aws.FSXTaskDescription `json:"description"`
+	Metadata      aws.Metadata           `json:"metadata"`
+	ResourceJobID int                    `json:"resource_job_id"`
+	SourceJobID   int                    `json:"source_job_id"`
+	ResourceType  string                 `json:"resource_type"`
+	SourceType    string                 `json:"source_type"`
+	ID            string                 `json:"id"`
+	SourceID      string                 `json:"source_id"`
+}
+
+type FSXTaskHit struct {
+	ID      string        `json:"_id"`
+	Score   float64       `json:"_score"`
+	Index   string        `json:"_index"`
+	Type    string        `json:"_type"`
+	Version int64         `json:"_version,omitempty"`
+	Source  FSXTask       `json:"_source"`
+	Sort    []interface{} `json:"sort"`
+}
+
+type FSXTaskHits struct {
+	Total SearchTotal  `json:"total"`
+	Hits  []FSXTaskHit `json:"hits"`
+}
+
+type FSXTaskSearchResponse struct {
+	PitID string      `json:"pit_id"`
+	Hits  FSXTaskHits `json:"hits"`
+}
+
+type FSXTaskPaginator struct {
+	paginator *baseESPaginator
+}
+
+func (k Client) NewFSXTaskPaginator(filters []BoolFilter, limit *int64) (FSXTaskPaginator, error) {
+	paginator, err := newPaginator(k.es, "aws_fsx_task", filters, limit)
+	if err != nil {
+		return FSXTaskPaginator{}, err
+	}
+
+	p := FSXTaskPaginator{
+		paginator: paginator,
+	}
+
+	return p, nil
+}
+
+func (p FSXTaskPaginator) HasNext() bool {
+	return !p.paginator.done
+}
+
+func (p FSXTaskPaginator) NextPage(ctx context.Context) ([]FSXTask, error) {
+	var response FSXTaskSearchResponse
+	err := p.paginator.search(ctx, &response)
+	if err != nil {
+		return nil, err
+	}
+
+	var values []FSXTask
+	for _, hit := range response.Hits.Hits {
+		values = append(values, hit.Source)
+	}
+
+	hits := int64(len(response.Hits.Hits))
+	if hits > 0 {
+		p.paginator.updateState(hits, response.Hits.Hits[hits-1].Sort, response.PitID)
+	} else {
+		p.paginator.updateState(hits, nil, "")
+	}
+
+	return values, nil
+}
+
+var listFSXTaskFilters = map[string]string{}
+
+func ListFSXTask(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("ListFSXTask")
+
+	// create service
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	paginator, err := k.NewFSXTaskPaginator(buildFilter(d.KeyColumnQuals, listFSXTaskFilters, "aws", *cfg.AccountID), d.QueryContext.Limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			d.StreamListItem(ctx, v)
+		}
+	}
+
+	return nil, nil
+}
+
+var getFSXTaskFilters = map[string]string{
+	"task_id": "description.Task.TaskId",
+}
+
+func GetFSXTask(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("GetFSXTask")
+
+	// create service
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	limit := int64(1)
+	paginator, err := k.NewFSXTaskPaginator(buildFilter(d.KeyColumnQuals, getFSXTaskFilters, "aws", *cfg.AccountID), &limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			return v, nil
+		}
+	}
+
+	return nil, nil
+}
+
+// ==========================  END: FSXTask =============================
+
+// ==========================  START: FSXVolume =============================
+
+type FSXVolume struct {
+	Description   aws.FSXVolumeDescription `json:"description"`
+	Metadata      aws.Metadata             `json:"metadata"`
+	ResourceJobID int                      `json:"resource_job_id"`
+	SourceJobID   int                      `json:"source_job_id"`
+	ResourceType  string                   `json:"resource_type"`
+	SourceType    string                   `json:"source_type"`
+	ID            string                   `json:"id"`
+	SourceID      string                   `json:"source_id"`
+}
+
+type FSXVolumeHit struct {
+	ID      string        `json:"_id"`
+	Score   float64       `json:"_score"`
+	Index   string        `json:"_index"`
+	Type    string        `json:"_type"`
+	Version int64         `json:"_version,omitempty"`
+	Source  FSXVolume     `json:"_source"`
+	Sort    []interface{} `json:"sort"`
+}
+
+type FSXVolumeHits struct {
+	Total SearchTotal    `json:"total"`
+	Hits  []FSXVolumeHit `json:"hits"`
+}
+
+type FSXVolumeSearchResponse struct {
+	PitID string        `json:"pit_id"`
+	Hits  FSXVolumeHits `json:"hits"`
+}
+
+type FSXVolumePaginator struct {
+	paginator *baseESPaginator
+}
+
+func (k Client) NewFSXVolumePaginator(filters []BoolFilter, limit *int64) (FSXVolumePaginator, error) {
+	paginator, err := newPaginator(k.es, "aws_fsx_volume", filters, limit)
+	if err != nil {
+		return FSXVolumePaginator{}, err
+	}
+
+	p := FSXVolumePaginator{
+		paginator: paginator,
+	}
+
+	return p, nil
+}
+
+func (p FSXVolumePaginator) HasNext() bool {
+	return !p.paginator.done
+}
+
+func (p FSXVolumePaginator) NextPage(ctx context.Context) ([]FSXVolume, error) {
+	var response FSXVolumeSearchResponse
+	err := p.paginator.search(ctx, &response)
+	if err != nil {
+		return nil, err
+	}
+
+	var values []FSXVolume
+	for _, hit := range response.Hits.Hits {
+		values = append(values, hit.Source)
+	}
+
+	hits := int64(len(response.Hits.Hits))
+	if hits > 0 {
+		p.paginator.updateState(hits, response.Hits.Hits[hits-1].Sort, response.PitID)
+	} else {
+		p.paginator.updateState(hits, nil, "")
+	}
+
+	return values, nil
+}
+
+var listFSXVolumeFilters = map[string]string{}
+
+func ListFSXVolume(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("ListFSXVolume")
+
+	// create service
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	paginator, err := k.NewFSXVolumePaginator(buildFilter(d.KeyColumnQuals, listFSXVolumeFilters, "aws", *cfg.AccountID), d.QueryContext.Limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			d.StreamListItem(ctx, v)
+		}
+	}
+
+	return nil, nil
+}
+
+var getFSXVolumeFilters = map[string]string{
+	"volume_id": "description.Volume.VolumeId",
+}
+
+func GetFSXVolume(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("GetFSXVolume")
+
+	// create service
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	limit := int64(1)
+	paginator, err := k.NewFSXVolumePaginator(buildFilter(d.KeyColumnQuals, getFSXVolumeFilters, "aws", *cfg.AccountID), &limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			return v, nil
+		}
+	}
+
+	return nil, nil
+}
+
+// ==========================  END: FSXVolume =============================
+
+// ==========================  START: FSXSnapshot =============================
+
+type FSXSnapshot struct {
+	Description   aws.FSXSnapshotDescription `json:"description"`
+	Metadata      aws.Metadata               `json:"metadata"`
+	ResourceJobID int                        `json:"resource_job_id"`
+	SourceJobID   int                        `json:"source_job_id"`
+	ResourceType  string                     `json:"resource_type"`
+	SourceType    string                     `json:"source_type"`
+	ID            string                     `json:"id"`
+	SourceID      string                     `json:"source_id"`
+}
+
+type FSXSnapshotHit struct {
+	ID      string        `json:"_id"`
+	Score   float64       `json:"_score"`
+	Index   string        `json:"_index"`
+	Type    string        `json:"_type"`
+	Version int64         `json:"_version,omitempty"`
+	Source  FSXSnapshot   `json:"_source"`
+	Sort    []interface{} `json:"sort"`
+}
+
+type FSXSnapshotHits struct {
+	Total SearchTotal      `json:"total"`
+	Hits  []FSXSnapshotHit `json:"hits"`
+}
+
+type FSXSnapshotSearchResponse struct {
+	PitID string          `json:"pit_id"`
+	Hits  FSXSnapshotHits `json:"hits"`
+}
+
+type FSXSnapshotPaginator struct {
+	paginator *baseESPaginator
+}
+
+func (k Client) NewFSXSnapshotPaginator(filters []BoolFilter, limit *int64) (FSXSnapshotPaginator, error) {
+	paginator, err := newPaginator(k.es, "aws_fsx_snapshot", filters, limit)
+	if err != nil {
+		return FSXSnapshotPaginator{}, err
+	}
+
+	p := FSXSnapshotPaginator{
+		paginator: paginator,
+	}
+
+	return p, nil
+}
+
+func (p FSXSnapshotPaginator) HasNext() bool {
+	return !p.paginator.done
+}
+
+func (p FSXSnapshotPaginator) NextPage(ctx context.Context) ([]FSXSnapshot, error) {
+	var response FSXSnapshotSearchResponse
+	err := p.paginator.search(ctx, &response)
+	if err != nil {
+		return nil, err
+	}
+
+	var values []FSXSnapshot
+	for _, hit := range response.Hits.Hits {
+		values = append(values, hit.Source)
+	}
+
+	hits := int64(len(response.Hits.Hits))
+	if hits > 0 {
+		p.paginator.updateState(hits, response.Hits.Hits[hits-1].Sort, response.PitID)
+	} else {
+		p.paginator.updateState(hits, nil, "")
+	}
+
+	return values, nil
+}
+
+var listFSXSnapshotFilters = map[string]string{}
+
+func ListFSXSnapshot(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("ListFSXSnapshot")
+
+	// create service
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	paginator, err := k.NewFSXSnapshotPaginator(buildFilter(d.KeyColumnQuals, listFSXSnapshotFilters, "aws", *cfg.AccountID), d.QueryContext.Limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			d.StreamListItem(ctx, v)
+		}
+	}
+
+	return nil, nil
+}
+
+var getFSXSnapshotFilters = map[string]string{
+	"snapshot_id": "description.Snapshot.SnapshotId",
+}
+
+func GetFSXSnapshot(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("GetFSXSnapshot")
+
+	// create service
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	limit := int64(1)
+	paginator, err := k.NewFSXSnapshotPaginator(buildFilter(d.KeyColumnQuals, getFSXSnapshotFilters, "aws", *cfg.AccountID), &limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			return v, nil
+		}
+	}
+
+	return nil, nil
+}
+
+// ==========================  END: FSXSnapshot =============================
+
 // ==========================  START: ApplicationAutoScalingTarget =============================
 
 type ApplicationAutoScalingTarget struct {

@@ -112,6 +112,10 @@ var awsMap = map[string]string{
 	"AWS::ECR::PublicRegistry":                  "aws_ecrpublic_registry",
 	"AWS::ECS::TaskSet":                         "aws_ecs_task_set",
 	"AWS::EKS::Nodegroup":                       "aws_eks_nodegroup",
+	"AWS::FSX::Snapshot":                        "aws_fsx_snapshot",
+	"AWS::FSX::StorageVirtualMachine":           "aws_fsx_storage_virtual_machine",
+	"AWS::FSX::Task":                            "aws_fsx_task",
+	"AWS::FSX::Volume":                          "aws_fsx_volume",
 	//"AWS::EFS::AccessPoint":                     "aws_efs_access_point",
 	//"AWS::EFS::MountTarget":                     "aws_efs_mount_target",
 }
@@ -314,6 +318,10 @@ var AWSDescriptionMap = map[string]interface{}{
 	"AWS::ECR::PublicRegistry":                  &keibi.ECRPublicRegistry{},
 	"AWS::ECS::TaskSet":                         &keibi.ECSTaskSet{},
 	"AWS::EKS::Nodegroup":                       &keibi.EKSNodegroup{},
+	"AWS::FSX::Snapshot":                        &keibi.FSXSnapshot{},
+	"AWS::FSX::StorageVirtualMachine":           &keibi.FSXStorageVirtualMachine{},
+	"AWS::FSX::Task":                            &keibi.FSXTask{},
+	"AWS::FSX::Volume":                          &keibi.FSXVolume{},
 }
 var AzureDescriptionMap = map[string]interface{}{
 	"Microsoft.CognitiveServices/accounts":                  &keibi.CognitiveAccount{},
