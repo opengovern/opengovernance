@@ -65,7 +65,7 @@ func (s Server) Check(ctx context.Context, req *envoyauth.CheckRequest) (*envoya
 		return unAuth, nil
 	}
 
-	internalUser, err := s.db.GetUserByExternalID(user.ExternalUserID)
+	internalUser, err := s.db.GetUserByEmail(user.Email)
 	if err != nil {
 		if !errors.Is(err, gorm.ErrRecordNotFound) {
 			s.logger.Warn("denied access due to failure in retrieving internal user",
@@ -113,7 +113,7 @@ func (s Server) Check(ctx context.Context, req *envoyauth.CheckRequest) (*envoya
 			Role:   api.EditorRole,
 		}
 	} else {
-		rb, err = s.db.GetRoleBindingForWorkspace(user.ExternalUserID, workspaceName)
+		rb, err = s.db.GetRoleBindingForWorkspace(user.Email, workspaceName)
 		if err != nil {
 			s.logger.Warn("denied access due to failure in retrieving auth user host",
 				zap.String("reqId", httpRequest.Id),
@@ -139,7 +139,7 @@ func (s Server) Check(ctx context.Context, req *envoyauth.CheckRequest) (*envoya
 
 	s.logger.Debug("granted access",
 		zap.String("userId", rb.UserID.String()),
-		zap.String("extUserId", rb.ExternalID),
+		zap.String("email", rb.Email),
 		zap.String("role", string(rb.Role)),
 		zap.String("reqId", httpRequest.Id),
 		zap.String("path", httpRequest.Path),

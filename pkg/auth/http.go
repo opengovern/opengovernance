@@ -100,7 +100,7 @@ func (r httpRoutes) PutRoleBinding(ctx echo.Context) error {
 	if count >= limits.MaxUsers {
 		err = r.db.UpdateRoleBinding(&RoleBinding{
 			UserID:        req.UserID,
-			ExternalID:    usr.ExternalID,
+			Email:         usr.Email,
 			WorkspaceName: workspaceName,
 			Role:          req.Role,
 			AssignedAt:    time.Now(),
@@ -108,7 +108,7 @@ func (r httpRoutes) PutRoleBinding(ctx echo.Context) error {
 	} else {
 		err = r.db.CreateOrUpdateRoleBinding(&RoleBinding{
 			UserID:        req.UserID,
-			ExternalID:    usr.ExternalID,
+			Email:         usr.Email,
 			WorkspaceName: workspaceName,
 			Role:          req.Role,
 			AssignedAt:    time.Now(),
@@ -314,7 +314,7 @@ func (r *httpRoutes) AcceptInvitation(ctx echo.Context) error {
 	// if binding exists do not change Role
 	err = r.db.CreateBindingIfNotExists(&RoleBinding{
 		UserID:        userID,
-		ExternalID:    usr.ExternalID,
+		Email:         usr.Email,
 		WorkspaceName: inv.WorkspaceName,
 		Role:          api.ViewerRole,
 		AssignedAt:    time.Now(),

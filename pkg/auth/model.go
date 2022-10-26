@@ -20,7 +20,7 @@ type User struct {
 type RoleBinding struct {
 	UserID        uuid.UUID `gorm:"uniqueIndex:userid_workspace"`
 	WorkspaceName string    `gorm:"uniqueIndex:userid_workspace"`
-	ExternalID    string
+	Email         string
 	Role          api.Role
 	AssignedAt    time.Time
 }

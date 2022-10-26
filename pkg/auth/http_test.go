@@ -92,21 +92,21 @@ func (s *HTTPRouteSuite) TestCreateAndGetRoleBindings() {
 	cases := []RoleBinding{
 		{
 			UserID:        uuid.New(),
-			ExternalID:    "user-1",
+			Email:         "user@keibi.io",
 			WorkspaceName: "workspace1",
 			Role:          api.AdminRole,
 			AssignedAt:    time.Now(),
 		},
 		{
 			UserID:        uuid.New(),
-			ExternalID:    "user-2",
+			Email:         "user2@keibi.io",
 			WorkspaceName: "workspace2",
 			Role:          api.EditorRole,
 			AssignedAt:    time.Now(),
 		},
 		{
 			UserID:        uuid.New(),
-			ExternalID:    "user-3",
+			Email:         "user3@keibi.io",
 			WorkspaceName: "workspace3",
 			Role:          api.ViewerRole,
 			AssignedAt:    time.Now(),
