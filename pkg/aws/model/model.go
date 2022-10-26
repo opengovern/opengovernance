@@ -459,6 +459,30 @@ type EC2ReservedInstancesDescription struct {
 	ModificationDetails []ec2.ReservedInstancesModification
 }
 
+//index:aws_ec2_capacityreservationfleet
+//getfilter:capacity_reservation_fleet_id=description.CapacityReservationFleet.CapacityReservationFleetId
+type EC2CapacityReservationFleetDescription struct {
+	CapacityReservationFleet ec2.CapacityReservationFleet
+}
+
+//index:aws_ec2_fleet
+//getfilter:fleet_id=description.Fleet.FleetId
+type EC2FleetDescription struct {
+	Fleet ec2.FleetData
+}
+
+//index:aws_ec2_host
+//getfilter:host_id=description.Host.HostId
+type EC2HostDescription struct {
+	Host ec2.Host
+}
+
+//index:aws_ec2_placementgroup
+//getfilter:group_name=description.PlacementGroup.GroupName
+type EC2PlacementGroupDescription struct {
+	PlacementGroup ec2.PlacementGroup
+}
+
 //  ===================  Elastic Load Balancing  ===================
 
 //index:aws_elasticloadbalancingv2_loadbalancer
