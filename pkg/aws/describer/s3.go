@@ -464,7 +464,10 @@ func S3AccessPoint(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 			}
 			app, err := client.GetAccessPointPolicy(ctx, params)
 			if err != nil {
-				return nil, err
+				if !isErr(err, "NoSuchAccessPointPolicy") {
+					return nil, err
+				}
+				app = &s3control.GetAccessPointPolicyOutput{}
 			}
 
 			appsParams := &s3control.GetAccessPointPolicyStatusInput{
@@ -473,6 +476,10 @@ func S3AccessPoint(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 			}
 			apps, err := client.GetAccessPointPolicyStatus(ctx, appsParams)
 			if err != nil {
+				if !isErr(err, "NoSuchAccessPointPolicy") {
+					return nil, err
+				}
+				apps = &s3control.GetAccessPointPolicyStatusOutput{}
 				return nil, err
 			}
 
