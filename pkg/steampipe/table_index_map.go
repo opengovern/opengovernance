@@ -109,6 +109,9 @@ var awsMap = map[string]string{
 	"AWS::EC2::Fleet":                           "aws_ec2_fleet",
 	"AWS::EC2::Host":                            "aws_ec2_host",
 	"AWS::EC2::PlacementGroup":                  "aws_ec2_placement_group",
+	"AWS::ECR::PublicRegistry":                  "aws_ecrpublic_registry",
+	"AWS::ECS::TaskSet":                         "aws_ecs_task_set",
+	"AWS::EKS::Nodegroup":                       "aws_eks_nodegroup",
 	//"AWS::EFS::AccessPoint":                     "aws_efs_access_point",
 	//"AWS::EFS::MountTarget":                     "aws_efs_mount_target",
 }
@@ -308,6 +311,9 @@ var AWSDescriptionMap = map[string]interface{}{
 	"AWS::EC2::Fleet":                           &keibi.EC2Fleet{},
 	"AWS::EC2::Host":                            &keibi.EC2Host{},
 	"AWS::EC2::PlacementGroup":                  &keibi.EC2PlacementGroup{},
+	"AWS::ECR::PublicRegistry":                  &keibi.ECRPublicRegistry{},
+	"AWS::ECS::TaskSet":                         &keibi.ECSTaskSet{},
+	"AWS::EKS::Nodegroup":                       &keibi.EKSNodegroup{},
 }
 var AzureDescriptionMap = map[string]interface{}{
 	"Microsoft.CognitiveServices/accounts":                  &keibi.CognitiveAccount{},
