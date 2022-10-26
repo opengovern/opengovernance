@@ -517,6 +517,30 @@ type FSXFileSystemDescription struct {
 	FileSystem fsx.FileSystem
 }
 
+//index:aws_fsx_storagevirtualmachine
+//getfilter:storage_virtual_machine_id=description.StorageVirtualMachine.StorageVirtualMachineId
+type FSXStorageVirtualMachineDescription struct {
+	StorageVirtualMachine fsx.StorageVirtualMachine
+}
+
+//index:aws_fsx_task
+//getfilter:task_id=description.Task.TaskId
+type FSXTaskDescription struct {
+	Task fsx.DataRepositoryTask
+}
+
+//index:aws_fsx_volume
+//getfilter:volume_id=description.Volume.VolumeId
+type FSXVolumeDescription struct {
+	Volume fsx.Volume
+}
+
+//index:aws_fsx_snapshot
+//getfilter:snapshot_id=description.Snapshot.SnapshotId
+type FSXSnapshotDescription struct {
+	Snapshot fsx.Snapshot
+}
+
 //  ===================  Application Auto Scaling  ===================
 
 //index:aws_applicationautoscaling_target
