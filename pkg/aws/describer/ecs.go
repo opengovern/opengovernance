@@ -172,6 +172,27 @@ func ECSTaskDefinition(ctx context.Context, cfg aws.Config) ([]Resource, error) 
 	return values, nil
 }
 
+func ECSTaskSet(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+	client := ecs.NewFromConfig(cfg)
+	output, err := client.DescribeTaskSets(ctx, &ecs.DescribeTaskSetsInput{})
+	if err != nil {
+		return nil, err
+	}
+	var values []Resource
+
+	for _, v := range output.TaskSets {
+		values = append(values, Resource{
+			ARN:  *v.TaskSetArn,
+			Name: *v.Id,
+			Description: model.ECSTaskSetDescription{
+				TaskSet: v,
+			},
+		})
+	}
+
+	return values, nil
+}
+
 func listECsServices(ctx context.Context, cfg aws.Config, cluster string) ([]string, error) {
 	client := ecs.NewFromConfig(cfg)
 	paginator := ecs.NewListServicesPaginator(client, &ecs.ListServicesInput{

@@ -898,6 +898,12 @@ type ECSContainerInstanceDescription struct {
 	ContainerInstance ecs.ContainerInstance
 }
 
+//index:aws_ecs_taskset
+//getfilter:id=description.TaskSet.Id
+type ECSTaskSetDescription struct {
+	TaskSet ecs.TaskSet
+}
+
 //  ===================  EFS  ===================
 
 //index:aws_efs_filesystem
@@ -930,6 +936,12 @@ type EKSIdentityProviderConfigDescription struct {
 	ConfigName             string
 	ConfigType             string
 	IdentityProviderConfig eks.OidcIdentityProviderConfig
+}
+
+//index:aws_eks_nodegroup
+//getfilter:nodegroup_name=description.Nodegroup.NodegroupName
+type EKSNodegroupDescription struct {
+	Nodegroup eks.Nodegroup
 }
 
 //  ===================  WAFv2  ===================
@@ -1033,6 +1045,13 @@ type ECRPublicRepositoryDescription struct {
 	ImageDetails     []ecrpublic.ImageDetail
 	Policy           *ecrpublicop.GetRepositoryPolicyOutput
 	Tags             []ecrpublic.Tag
+}
+
+//index:aws_ecrpublic_registry
+//getfilter:registry_id=description.PublicRegistry.RegistryId
+type ECRPublicRegistryDescription struct {
+	PublicRegistry ecrpublic.Registry
+	Tags           []ecrpublic.Tag
 }
 
 //  ===================  EventBridge  ===================

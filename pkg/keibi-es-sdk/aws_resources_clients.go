@@ -13216,6 +13216,149 @@ func GetECSContainerInstance(ctx context.Context, d *plugin.QueryData, _ *plugin
 
 // ==========================  END: ECSContainerInstance =============================
 
+// ==========================  START: ECSTaskSet =============================
+
+type ECSTaskSet struct {
+	Description   aws.ECSTaskSetDescription `json:"description"`
+	Metadata      aws.Metadata              `json:"metadata"`
+	ResourceJobID int                       `json:"resource_job_id"`
+	SourceJobID   int                       `json:"source_job_id"`
+	ResourceType  string                    `json:"resource_type"`
+	SourceType    string                    `json:"source_type"`
+	ID            string                    `json:"id"`
+	SourceID      string                    `json:"source_id"`
+}
+
+type ECSTaskSetHit struct {
+	ID      string        `json:"_id"`
+	Score   float64       `json:"_score"`
+	Index   string        `json:"_index"`
+	Type    string        `json:"_type"`
+	Version int64         `json:"_version,omitempty"`
+	Source  ECSTaskSet    `json:"_source"`
+	Sort    []interface{} `json:"sort"`
+}
+
+type ECSTaskSetHits struct {
+	Total SearchTotal     `json:"total"`
+	Hits  []ECSTaskSetHit `json:"hits"`
+}
+
+type ECSTaskSetSearchResponse struct {
+	PitID string         `json:"pit_id"`
+	Hits  ECSTaskSetHits `json:"hits"`
+}
+
+type ECSTaskSetPaginator struct {
+	paginator *baseESPaginator
+}
+
+func (k Client) NewECSTaskSetPaginator(filters []BoolFilter, limit *int64) (ECSTaskSetPaginator, error) {
+	paginator, err := newPaginator(k.es, "aws_ecs_taskset", filters, limit)
+	if err != nil {
+		return ECSTaskSetPaginator{}, err
+	}
+
+	p := ECSTaskSetPaginator{
+		paginator: paginator,
+	}
+
+	return p, nil
+}
+
+func (p ECSTaskSetPaginator) HasNext() bool {
+	return !p.paginator.done
+}
+
+func (p ECSTaskSetPaginator) NextPage(ctx context.Context) ([]ECSTaskSet, error) {
+	var response ECSTaskSetSearchResponse
+	err := p.paginator.search(ctx, &response)
+	if err != nil {
+		return nil, err
+	}
+
+	var values []ECSTaskSet
+	for _, hit := range response.Hits.Hits {
+		values = append(values, hit.Source)
+	}
+
+	hits := int64(len(response.Hits.Hits))
+	if hits > 0 {
+		p.paginator.updateState(hits, response.Hits.Hits[hits-1].Sort, response.PitID)
+	} else {
+		p.paginator.updateState(hits, nil, "")
+	}
+
+	return values, nil
+}
+
+var listECSTaskSetFilters = map[string]string{}
+
+func ListECSTaskSet(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("ListECSTaskSet")
+
+	// create service
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	paginator, err := k.NewECSTaskSetPaginator(buildFilter(d.KeyColumnQuals, listECSTaskSetFilters, "aws", *cfg.AccountID), d.QueryContext.Limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			d.StreamListItem(ctx, v)
+		}
+	}
+
+	return nil, nil
+}
+
+var getECSTaskSetFilters = map[string]string{
+	"id": "description.TaskSet.Id",
+}
+
+func GetECSTaskSet(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("GetECSTaskSet")
+
+	// create service
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	limit := int64(1)
+	paginator, err := k.NewECSTaskSetPaginator(buildFilter(d.KeyColumnQuals, getECSTaskSetFilters, "aws", *cfg.AccountID), &limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			return v, nil
+		}
+	}
+
+	return nil, nil
+}
+
+// ==========================  END: ECSTaskSet =============================
+
 // ==========================  START: EFSFileSystem =============================
 
 type EFSFileSystem struct {
@@ -13790,6 +13933,149 @@ func GetEKSIdentityProviderConfig(ctx context.Context, d *plugin.QueryData, _ *p
 }
 
 // ==========================  END: EKSIdentityProviderConfig =============================
+
+// ==========================  START: EKSNodegroup =============================
+
+type EKSNodegroup struct {
+	Description   aws.EKSNodegroupDescription `json:"description"`
+	Metadata      aws.Metadata                `json:"metadata"`
+	ResourceJobID int                         `json:"resource_job_id"`
+	SourceJobID   int                         `json:"source_job_id"`
+	ResourceType  string                      `json:"resource_type"`
+	SourceType    string                      `json:"source_type"`
+	ID            string                      `json:"id"`
+	SourceID      string                      `json:"source_id"`
+}
+
+type EKSNodegroupHit struct {
+	ID      string        `json:"_id"`
+	Score   float64       `json:"_score"`
+	Index   string        `json:"_index"`
+	Type    string        `json:"_type"`
+	Version int64         `json:"_version,omitempty"`
+	Source  EKSNodegroup  `json:"_source"`
+	Sort    []interface{} `json:"sort"`
+}
+
+type EKSNodegroupHits struct {
+	Total SearchTotal       `json:"total"`
+	Hits  []EKSNodegroupHit `json:"hits"`
+}
+
+type EKSNodegroupSearchResponse struct {
+	PitID string           `json:"pit_id"`
+	Hits  EKSNodegroupHits `json:"hits"`
+}
+
+type EKSNodegroupPaginator struct {
+	paginator *baseESPaginator
+}
+
+func (k Client) NewEKSNodegroupPaginator(filters []BoolFilter, limit *int64) (EKSNodegroupPaginator, error) {
+	paginator, err := newPaginator(k.es, "aws_eks_nodegroup", filters, limit)
+	if err != nil {
+		return EKSNodegroupPaginator{}, err
+	}
+
+	p := EKSNodegroupPaginator{
+		paginator: paginator,
+	}
+
+	return p, nil
+}
+
+func (p EKSNodegroupPaginator) HasNext() bool {
+	return !p.paginator.done
+}
+
+func (p EKSNodegroupPaginator) NextPage(ctx context.Context) ([]EKSNodegroup, error) {
+	var response EKSNodegroupSearchResponse
+	err := p.paginator.search(ctx, &response)
+	if err != nil {
+		return nil, err
+	}
+
+	var values []EKSNodegroup
+	for _, hit := range response.Hits.Hits {
+		values = append(values, hit.Source)
+	}
+
+	hits := int64(len(response.Hits.Hits))
+	if hits > 0 {
+		p.paginator.updateState(hits, response.Hits.Hits[hits-1].Sort, response.PitID)
+	} else {
+		p.paginator.updateState(hits, nil, "")
+	}
+
+	return values, nil
+}
+
+var listEKSNodegroupFilters = map[string]string{}
+
+func ListEKSNodegroup(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("ListEKSNodegroup")
+
+	// create service
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	paginator, err := k.NewEKSNodegroupPaginator(buildFilter(d.KeyColumnQuals, listEKSNodegroupFilters, "aws", *cfg.AccountID), d.QueryContext.Limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			d.StreamListItem(ctx, v)
+		}
+	}
+
+	return nil, nil
+}
+
+var getEKSNodegroupFilters = map[string]string{
+	"nodegroup_name": "description.Nodegroup.NodegroupName",
+}
+
+func GetEKSNodegroup(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("GetEKSNodegroup")
+
+	// create service
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	limit := int64(1)
+	paginator, err := k.NewEKSNodegroupPaginator(buildFilter(d.KeyColumnQuals, getEKSNodegroupFilters, "aws", *cfg.AccountID), &limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			return v, nil
+		}
+	}
+
+	return nil, nil
+}
+
+// ==========================  END: EKSNodegroup =============================
 
 // ==========================  START: WAFv2WebACL =============================
 
@@ -14933,6 +15219,149 @@ func GetECRPublicRepository(ctx context.Context, d *plugin.QueryData, _ *plugin.
 }
 
 // ==========================  END: ECRPublicRepository =============================
+
+// ==========================  START: ECRPublicRegistry =============================
+
+type ECRPublicRegistry struct {
+	Description   aws.ECRPublicRegistryDescription `json:"description"`
+	Metadata      aws.Metadata                     `json:"metadata"`
+	ResourceJobID int                              `json:"resource_job_id"`
+	SourceJobID   int                              `json:"source_job_id"`
+	ResourceType  string                           `json:"resource_type"`
+	SourceType    string                           `json:"source_type"`
+	ID            string                           `json:"id"`
+	SourceID      string                           `json:"source_id"`
+}
+
+type ECRPublicRegistryHit struct {
+	ID      string            `json:"_id"`
+	Score   float64           `json:"_score"`
+	Index   string            `json:"_index"`
+	Type    string            `json:"_type"`
+	Version int64             `json:"_version,omitempty"`
+	Source  ECRPublicRegistry `json:"_source"`
+	Sort    []interface{}     `json:"sort"`
+}
+
+type ECRPublicRegistryHits struct {
+	Total SearchTotal            `json:"total"`
+	Hits  []ECRPublicRegistryHit `json:"hits"`
+}
+
+type ECRPublicRegistrySearchResponse struct {
+	PitID string                `json:"pit_id"`
+	Hits  ECRPublicRegistryHits `json:"hits"`
+}
+
+type ECRPublicRegistryPaginator struct {
+	paginator *baseESPaginator
+}
+
+func (k Client) NewECRPublicRegistryPaginator(filters []BoolFilter, limit *int64) (ECRPublicRegistryPaginator, error) {
+	paginator, err := newPaginator(k.es, "aws_ecrpublic_registry", filters, limit)
+	if err != nil {
+		return ECRPublicRegistryPaginator{}, err
+	}
+
+	p := ECRPublicRegistryPaginator{
+		paginator: paginator,
+	}
+
+	return p, nil
+}
+
+func (p ECRPublicRegistryPaginator) HasNext() bool {
+	return !p.paginator.done
+}
+
+func (p ECRPublicRegistryPaginator) NextPage(ctx context.Context) ([]ECRPublicRegistry, error) {
+	var response ECRPublicRegistrySearchResponse
+	err := p.paginator.search(ctx, &response)
+	if err != nil {
+		return nil, err
+	}
+
+	var values []ECRPublicRegistry
+	for _, hit := range response.Hits.Hits {
+		values = append(values, hit.Source)
+	}
+
+	hits := int64(len(response.Hits.Hits))
+	if hits > 0 {
+		p.paginator.updateState(hits, response.Hits.Hits[hits-1].Sort, response.PitID)
+	} else {
+		p.paginator.updateState(hits, nil, "")
+	}
+
+	return values, nil
+}
+
+var listECRPublicRegistryFilters = map[string]string{}
+
+func ListECRPublicRegistry(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("ListECRPublicRegistry")
+
+	// create service
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	paginator, err := k.NewECRPublicRegistryPaginator(buildFilter(d.KeyColumnQuals, listECRPublicRegistryFilters, "aws", *cfg.AccountID), d.QueryContext.Limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			d.StreamListItem(ctx, v)
+		}
+	}
+
+	return nil, nil
+}
+
+var getECRPublicRegistryFilters = map[string]string{
+	"registry_id": "description.PublicRegistry.RegistryId",
+}
+
+func GetECRPublicRegistry(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("GetECRPublicRegistry")
+
+	// create service
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	limit := int64(1)
+	paginator, err := k.NewECRPublicRegistryPaginator(buildFilter(d.KeyColumnQuals, getECRPublicRegistryFilters, "aws", *cfg.AccountID), &limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			return v, nil
+		}
+	}
+
+	return nil, nil
+}
+
+// ==========================  END: ECRPublicRegistry =============================
 
 // ==========================  START: EventBridgeBus =============================
 
