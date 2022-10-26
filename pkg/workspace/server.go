@@ -1091,7 +1091,7 @@ func (s *Server) GetWorkspaceLimits(c echo.Context) error {
 	response.MaxUsers = limits.MaxUsers
 	response.MaxConnections = limits.MaxConnections
 	response.MaxResources = limits.MaxResources
-	return c.JSON(http.StatusOK, api.WorkspaceLimitsUsage{})
+	return c.JSON(http.StatusOK, response)
 }
 
 // GetWorkspaceLimitsByID godoc
