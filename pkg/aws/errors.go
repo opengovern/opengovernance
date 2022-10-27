@@ -50,6 +50,14 @@ func IsUnsupportedOrInvalidError(resource, region string, err error) bool {
 			"ap-southeast-1", "ap-northeast-1", "ap-southeast-2", "ap-south-1") {
 			return true
 		}
+	case "AWS::AppStream::Application",
+		"AWS::AppStream::Stack",
+		"AWS::AppStream::Fleet":
+		// Region whitelist https://docs.aws.amazon.com/general/latest/gr/aas2.html#aas2_region
+		if !isInRegion(region, "us-east-2", "us-east-1", "us-west-2", "ap-south-1", "ap-northeast-2", "ap-southeast-1",
+			"ap-southeast-2", "ap-northeast-1", "ca-central-1", "eu-central-1", "eu-west-1", "eu-west-2", "us-gov-west-1") {
+			return true
+		}
 	}
 
 	return false
