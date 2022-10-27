@@ -122,6 +122,8 @@ require (
 
 require (
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/dns/armdns v1.0.0
+	github.com/aws/aws-sdk-go-v2/service/appstream v1.17.13
+	github.com/aws/aws-sdk-go-v2/service/dynamodbstreams v1.13.22
 	github.com/aws/aws-sdk-go-v2/service/eventbridge v1.16.17
 	github.com/go-redis/cache/v8 v8.4.3
 	github.com/go-redis/redis/v8 v8.11.5

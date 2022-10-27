@@ -259,6 +259,8 @@ github.com/aws/aws-sdk-go-v2/service/applicationautoscaling v1.12.0 h1:SPEnhCEvW
 github.com/aws/aws-sdk-go-v2/service/applicationautoscaling v1.12.0/go.mod h1:PqWnn9FSQB9bWV2cJZDAVprTM5XeQxsXtMVmrXFuQrk=
 github.com/aws/aws-sdk-go-v2/service/applicationinsights v1.8.0 h1:MajgQOz7mL0dN0UVYU/8Yr4emYo8Hz7tiGv9DtpIg5g=
 github.com/aws/aws-sdk-go-v2/service/applicationinsights v1.8.0/go.mod h1:0W3g2pqFJ/1aHRNGrMIJ9vmnlTegPEYkzhtMdqyNBwM=
+github.com/aws/aws-sdk-go-v2/service/appstream v1.17.13 h1:taoM9f8+wIk74ETJvskH2FAkUTnjaouTzlNmGuQyBsI=
+github.com/aws/aws-sdk-go-v2/service/appstream v1.17.13/go.mod h1:2XZNUmmIyd+XvEOOmgFi3r7/n3g3Cs4qLWg3ov+KhKs=
 github.com/aws/aws-sdk-go-v2/service/autoscaling v1.17.0 h1:iz4eD08AcsaijfGyZpBSn62L2HcjAuC33cwtS0F8twk=
 github.com/aws/aws-sdk-go-v2/service/autoscaling v1.17.0/go.mod h1:Wu0SF1d/ibUOY3Nu3iHQaPufB4SM2XkgQP64sd7r888=
 github.com/aws/aws-sdk-go-v2/service/backup v1.11.0 h1:Ea5m4vBFqXo9+F5g5hB4E3//+szx8QSvJy7XE+yQhnI=
@@ -283,6 +285,8 @@ github.com/aws/aws-sdk-go-v2/service/dax v1.7.2 h1:18Nxds4KQoQGUrGREWImE+eTK3CGB
 github.com/aws/aws-sdk-go-v2/service/dax v1.7.2/go.mod h1:nfGaoXs2m4bnNbDF6sfTIaIBSa8o5XVqxbRI8BhFgtU=
 github.com/aws/aws-sdk-go-v2/service/dynamodb v1.11.0 h1:te+nIFwPf5Bi/cZvd9g/+EF0gkJT3c0J/5+NMx0NBZg=
 github.com/aws/aws-sdk-go-v2/service/dynamodb v1.11.0/go.mod h1:ELltfl9ri0n4sZ/VjPZBgemNMd9mYIpCAuZhc7NP7l4=
+github.com/aws/aws-sdk-go-v2/service/dynamodbstreams v1.13.22 h1:vSUuWw6gsDfLEqZr1qHKV2uKW3rc6tND2DoGUk34iHs=
+github.com/aws/aws-sdk-go-v2/service/dynamodbstreams v1.13.22/go.mod h1:5lIdkQbMmEblCTEAyFAsLduBtMPD9Bqt9fwPjBK1KWU=
 github.com/aws/aws-sdk-go-v2/service/ec2 v1.26.0 h1:Q++veaxis1Dg7is9yi+aEPsIBRAgdkUxoIvyud7jOyo=
 github.com/aws/aws-sdk-go-v2/service/ec2 v1.26.0/go.mod h1:cIbz+b70nxJafXf9lT07Xj03pef6CsVdYTCCR0DQEQc=
 github.com/aws/aws-sdk-go-v2/service/ecr v1.10.1 h1:onTF83DG9dsRv6UzuhYb7phiktjwQ++s/n+ZtNlTQnM=
