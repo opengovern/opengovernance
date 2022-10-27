@@ -45,7 +45,7 @@ var resourceTypeToDescriber = map[string]ResourceDescriber{
 	"AWS::DynamoDb::GlobalSecondaryIndex": ParallelDescribeRegional(describer.DynamoDbGlobalSecondaryIndex),
 	"AWS::DynamoDb::LocalSecondaryIndex":  ParallelDescribeRegional(describer.DynamoDbLocalSecondaryIndex),
 	"AWS::DynamoDb::GlobalTable":          ParallelDescribeRegional(describer.DynamoDbGlobalTable),
-	"AWS::DynamoDb::Stream":               ParallelDescribeRegional(describer.DynamoDbStream),
+	"AWS::DynamoDbStreams::Stream":        ParallelDescribeRegional(describer.DynamoDbStream),
 	"AWS::DynamoDb::Table":                ParallelDescribeRegional(describer.DynamoDbTable),
 	"AWS::EC2::VolumeSnapshot":            ParallelDescribeRegional(describer.EC2VolumeSnapshot),
 	"AWS::EC2::Volume":                    ParallelDescribeRegional(describer.EC2Volume),

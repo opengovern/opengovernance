@@ -157,6 +157,9 @@ func DynamoDbBackUp(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	client := dynamodb.NewFromConfig(cfg)
 	backups, err := client.ListBackups(ctx, &dynamodb.ListBackupsInput{})
 	if err != nil {
+		if isErr(err, "ValidationException") {
+			return nil, nil
+		}
 		return nil, err
 	}
 
@@ -178,6 +181,9 @@ func DynamoDbGlobalTable(ctx context.Context, cfg aws.Config) ([]Resource, error
 	client := dynamodb.NewFromConfig(cfg)
 	globalTables, err := client.ListGlobalTables(ctx, &dynamodb.ListGlobalTablesInput{})
 	if err != nil {
+		if isErr(err, "ResourceNotFoundException") {
+			return nil, nil
+		}
 		return nil, err
 	}
 
@@ -187,6 +193,9 @@ func DynamoDbGlobalTable(ctx context.Context, cfg aws.Config) ([]Resource, error
 			GlobalTableName: table.GlobalTableName,
 		})
 		if err != nil {
+			if isErr(err, "ResourceNotFoundException") {
+				continue
+			}
 			return nil, err
 		}
 		values = append(values, Resource{
