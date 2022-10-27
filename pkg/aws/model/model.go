@@ -10,6 +10,7 @@ import (
 	apigateway "github.com/aws/aws-sdk-go-v2/service/apigateway/types"
 	apigatewayv2 "github.com/aws/aws-sdk-go-v2/service/apigatewayv2/types"
 	applicationautoscaling "github.com/aws/aws-sdk-go-v2/service/applicationautoscaling/types"
+	appstream "github.com/aws/aws-sdk-go-v2/service/appstream/types"
 	autoscaling "github.com/aws/aws-sdk-go-v2/service/autoscaling/types"
 	backupservice "github.com/aws/aws-sdk-go-v2/service/backup"
 	backup "github.com/aws/aws-sdk-go-v2/service/backup/types"
@@ -23,6 +24,7 @@ import (
 	dms "github.com/aws/aws-sdk-go-v2/service/databasemigrationservice/types"
 	dax "github.com/aws/aws-sdk-go-v2/service/dax/types"
 	dynamodb "github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
+	dynamodbstream "github.com/aws/aws-sdk-go-v2/service/dynamodbstreams/types"
 	ec2op "github.com/aws/aws-sdk-go-v2/service/ec2"
 	ec2 "github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	ecrop "github.com/aws/aws-sdk-go-v2/service/ecr"
@@ -96,6 +98,18 @@ type ApiGatewayStageDescription struct {
 type ApiGatewayV2StageDescription struct {
 	ApiId *string
 	Stage apigatewayv2.Stage
+}
+
+//index:aws_apigateway_restapi
+//getfilter:api_id=description.RestAPI.Id
+type ApiGatewayRestAPIDescription struct {
+	RestAPI apigateway.RestApi
+}
+
+//index:aws_apigatewayv2_api
+//getfilter:api_id=description.API.ApiId
+type ApiGatewayV2APIDescription struct {
+	API apigatewayv2.Api
 }
 
 //  ===================   ElasticBeanstalk   ===================
@@ -291,6 +305,40 @@ type DynamoDbTableDescription struct {
 	Tags             []dynamodb.Tag
 }
 
+//index:aws_dynamodb_globalsecondaryindex
+//getfilter:index_arn=description.GlobalSecondaryIndex.IndexArn
+type DynamoDbGlobalSecondaryIndexDescription struct {
+	GlobalSecondaryIndex dynamodb.GlobalSecondaryIndexDescription
+}
+
+//index:aws_dynamodb_localsecondaryindex
+//getfilter:index_arn=description.LocalSecondaryIndex.IndexArn
+type DynamoDbLocalSecondaryIndexDescription struct {
+	LocalSecondaryIndex dynamodb.LocalSecondaryIndexDescription
+}
+
+//index:aws_dynamodbstreams_stream
+//getfilter:stream_arn=description.Stream.StreamArn
+type DynamoDbStreamDescription struct {
+	Stream dynamodbstream.Stream
+}
+
+//index:aws_dynamodb_backup
+//getfilter:arn=description.Backup.BackupArn
+//listfilter:backup_type=description.Backup.BackupType
+//listfilter:arn=description.Backup.BackupArn
+//listfilter:table_name=description.Backup.TableName
+type DynamoDbBackupDescription struct {
+	Backup dynamodb.BackupSummary
+}
+
+//index:aws_dynamodb_globaltable
+//getfilter:global_table_name=description.GlobalTable.GlobalTableName
+//listfilter:global_table_name=description.GlobalTable.GlobalTableName
+type DynamoDbGlobalTableDescription struct {
+	GlobalTable dynamodb.GlobalTableDescription
+}
+
 //  ===================   EC2   ===================
 
 //index:aws_ec2_snapshot
@@ -459,6 +507,30 @@ type EC2ReservedInstancesDescription struct {
 	ModificationDetails []ec2.ReservedInstancesModification
 }
 
+//index:aws_ec2_capacityreservationfleet
+//getfilter:capacity_reservation_fleet_id=description.CapacityReservationFleet.CapacityReservationFleetId
+type EC2CapacityReservationFleetDescription struct {
+	CapacityReservationFleet ec2.CapacityReservationFleet
+}
+
+//index:aws_ec2_fleet
+//getfilter:fleet_id=description.Fleet.FleetId
+type EC2FleetDescription struct {
+	Fleet ec2.FleetData
+}
+
+//index:aws_ec2_host
+//getfilter:host_id=description.Host.HostId
+type EC2HostDescription struct {
+	Host ec2.Host
+}
+
+//index:aws_ec2_placementgroup
+//getfilter:group_name=description.PlacementGroup.GroupName
+type EC2PlacementGroupDescription struct {
+	PlacementGroup ec2.PlacementGroup
+}
+
 //  ===================  Elastic Load Balancing  ===================
 
 //index:aws_elasticloadbalancingv2_loadbalancer
@@ -491,6 +563,30 @@ type ElasticLoadBalancingV2ListenerDescription struct {
 //getfilter:file_system_id=description.FileSystem.FileSystemId
 type FSXFileSystemDescription struct {
 	FileSystem fsx.FileSystem
+}
+
+//index:aws_fsx_storagevirtualmachine
+//getfilter:storage_virtual_machine_id=description.StorageVirtualMachine.StorageVirtualMachineId
+type FSXStorageVirtualMachineDescription struct {
+	StorageVirtualMachine fsx.StorageVirtualMachine
+}
+
+//index:aws_fsx_task
+//getfilter:task_id=description.Task.TaskId
+type FSXTaskDescription struct {
+	Task fsx.DataRepositoryTask
+}
+
+//index:aws_fsx_volume
+//getfilter:volume_id=description.Volume.VolumeId
+type FSXVolumeDescription struct {
+	Volume fsx.Volume
+}
+
+//index:aws_fsx_snapshot
+//getfilter:snapshot_id=description.Snapshot.SnapshotId
+type FSXSnapshotDescription struct {
+	Snapshot fsx.Snapshot
 }
 
 //  ===================  Application Auto Scaling  ===================
@@ -874,6 +970,12 @@ type ECSContainerInstanceDescription struct {
 	ContainerInstance ecs.ContainerInstance
 }
 
+//index:aws_ecs_taskset
+//getfilter:id=description.TaskSet.Id
+type ECSTaskSetDescription struct {
+	TaskSet ecs.TaskSet
+}
+
 //  ===================  EFS  ===================
 
 //index:aws_efs_filesystem
@@ -906,6 +1008,12 @@ type EKSIdentityProviderConfigDescription struct {
 	ConfigName             string
 	ConfigType             string
 	IdentityProviderConfig eks.OidcIdentityProviderConfig
+}
+
+//index:aws_eks_nodegroup
+//getfilter:nodegroup_name=description.Nodegroup.NodegroupName
+type EKSNodegroupDescription struct {
+	Nodegroup eks.Nodegroup
 }
 
 //  ===================  WAFv2  ===================
@@ -1011,6 +1119,13 @@ type ECRPublicRepositoryDescription struct {
 	Tags             []ecrpublic.Tag
 }
 
+//index:aws_ecrpublic_registry
+//getfilter:registry_id=description.PublicRegistry.RegistryId
+type ECRPublicRegistryDescription struct {
+	PublicRegistry ecrpublic.Registry
+	Tags           []ecrpublic.Tag
+}
+
 //  ===================  EventBridge  ===================
 
 //index:aws_eventbridge_bus
@@ -1018,4 +1133,27 @@ type ECRPublicRepositoryDescription struct {
 type EventBridgeBusDescription struct {
 	Bus  eventbridge.EventBus
 	Tags []eventbridge.Tag
+}
+
+//  ===================  AppStream  ===================
+
+//index:aws_appstream_application
+//getfilter:name=description.Application.Name
+type AppStreamApplicationDescription struct {
+	Application appstream.Application
+	Tags        map[string]string
+}
+
+//index:aws_appstream_stack
+//getfilter:name=description.Stack.Name
+type AppStreamStackDescription struct {
+	Stack appstream.Stack
+	Tags  map[string]string
+}
+
+//index:aws_appstream_fleet
+//getfilter:name=description.Fleet.Name
+type AppStreamFleetDescription struct {
+	Fleet appstream.Fleet
+	Tags  map[string]string
 }

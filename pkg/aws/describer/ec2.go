@@ -3,6 +3,7 @@ package describer
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
@@ -122,6 +123,9 @@ func EC2CapacityReservation(ctx context.Context, cfg aws.Config) ([]Resource, er
 	for paginator.HasMorePages() {
 		page, err := paginator.NextPage(ctx)
 		if err != nil {
+			if isErr(err, "InvalidCapacityReservationId.NotFound") || isErr(err, "InvalidCapacityReservationId.Unavailable") || isErr(err, "InvalidCapacityReservationId.Malformed") {
+				continue
+			}
 			return nil, err
 		}
 
@@ -131,6 +135,31 @@ func EC2CapacityReservation(ctx context.Context, cfg aws.Config) ([]Resource, er
 				Name: *v.CapacityReservationId,
 				Description: model.EC2CapacityReservationDescription{
 					CapacityReservation: v,
+				},
+			})
+		}
+	}
+
+	return values, nil
+}
+
+func EC2CapacityReservationFleet(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+	client := ec2.NewFromConfig(cfg)
+	paginator := ec2.NewDescribeCapacityReservationFleetsPaginator(client, &ec2.DescribeCapacityReservationFleetsInput{})
+
+	var values []Resource
+	for paginator.HasMorePages() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page.CapacityReservationFleets {
+			values = append(values, Resource{
+				ARN:  *v.CapacityReservationFleetArn,
+				Name: *v.CapacityReservationFleetId,
+				Description: model.EC2CapacityReservationFleetDescription{
+					CapacityReservationFleet: v,
 				},
 			})
 		}
@@ -330,6 +359,8 @@ func EC2DHCPOptions(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 }
 
 func EC2Fleet(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+	describeCtx := GetDescribeContext(ctx)
+
 	client := ec2.NewFromConfig(cfg)
 	paginator := ec2.NewDescribeFleetsPaginator(client, &ec2.DescribeFleetsInput{})
 
@@ -341,10 +372,13 @@ func EC2Fleet(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 		}
 
 		for _, v := range page.Fleets {
+			arn := fmt.Sprintf("arn:%s:ec2:%s:%s:fleet/%s", describeCtx.Partition, describeCtx.Region, describeCtx.AccountID, *v.FleetId)
 			values = append(values, Resource{
-				ID:          *v.FleetId,
-				Name:        *v.FleetId,
-				Description: v,
+				ID:   arn,
+				Name: *v.FleetId,
+				Description: model.EC2FleetDescription{
+					Fleet: v,
+				},
 			})
 		}
 	}
@@ -459,6 +493,8 @@ func EC2FlowLog(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 }
 
 func EC2Host(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+	describeCtx := GetDescribeContext(ctx)
+
 	client := ec2.NewFromConfig(cfg)
 	paginator := ec2.NewDescribeHostsPaginator(client, &ec2.DescribeHostsInput{})
 
@@ -470,10 +506,13 @@ func EC2Host(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 		}
 
 		for _, v := range page.Hosts {
+			arn := fmt.Sprintf("arn:%s:ec2:%s:%s:dedicated-host/%s", describeCtx.Partition, describeCtx.Region, describeCtx.AccountID, *v.HostId)
 			values = append(values, Resource{
-				ID:          *v.HostId,
-				Name:        *v.HostId,
-				Description: v,
+				ID:   arn,
+				Name: *v.HostId,
+				Description: model.EC2HostDescription{
+					Host: v,
+				},
 			})
 		}
 	}
@@ -754,6 +793,8 @@ func EC2NetworkInterfacePermission(ctx context.Context, cfg aws.Config) ([]Resou
 }
 
 func EC2PlacementGroup(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+	describeCtx := GetDescribeContext(ctx)
+
 	client := ec2.NewFromConfig(cfg)
 	output, err := client.DescribePlacementGroups(ctx, &ec2.DescribePlacementGroupsInput{})
 	if err != nil {
@@ -762,10 +803,13 @@ func EC2PlacementGroup(ctx context.Context, cfg aws.Config) ([]Resource, error) 
 
 	var values []Resource
 	for _, v := range output.PlacementGroups {
+		arn := fmt.Sprintf("arn:%s:ec2:%s:%s:placement-group/%s", describeCtx.Partition, describeCtx.Region, describeCtx.AccountID, *v.GroupName)
 		values = append(values, Resource{
-			ID:          *v.GroupId,
-			Name:        *v.GroupName,
-			Description: v,
+			ID:   arn,
+			Name: *v.GroupName,
+			Description: model.EC2PlacementGroupDescription{
+				PlacementGroup: v,
+			},
 		})
 	}
 

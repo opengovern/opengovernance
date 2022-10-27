@@ -157,9 +157,11 @@ func EKSNodegroup(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 			}
 
 			values = append(values, Resource{
-				ARN:         *output.Nodegroup.NodegroupArn,
-				Name:        *output.Nodegroup.NodegroupName,
-				Description: output.Nodegroup,
+				ARN:  *output.Nodegroup.NodegroupArn,
+				Name: *output.Nodegroup.NodegroupName,
+				Description: model.EKSNodegroupDescription{
+					Nodegroup: *output.Nodegroup,
+				},
 			})
 		}
 	}

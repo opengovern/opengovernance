@@ -84,6 +84,43 @@ func ECRPublicRepository(ctx context.Context, cfg aws.Config) ([]Resource, error
 	return values, nil
 }
 
+func ECRPublicRegistry(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+	// Only supported in US-EAST-1
+	if !strings.EqualFold(cfg.Region, "us-east-1") {
+		return []Resource{}, nil
+	}
+
+	client := ecrpublic.NewFromConfig(cfg)
+	paginator := ecrpublic.NewDescribeRegistriesPaginator(client, &ecrpublic.DescribeRegistriesInput{})
+	var values []Resource
+	for paginator.HasMorePages() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page.Registries {
+			tagsOutput, err := client.ListTagsForResource(ctx, &ecrpublic.ListTagsForResourceInput{
+				ResourceArn: v.RegistryArn,
+			})
+			if err != nil {
+				return nil, err
+			}
+
+			values = append(values, Resource{
+				ARN:  *v.RegistryArn,
+				Name: *v.RegistryId,
+				Description: model.ECRPublicRegistryDescription{
+					PublicRegistry: v,
+					Tags:           tagsOutput.Tags,
+				},
+			})
+		}
+	}
+
+	return values, nil
+}
+
 func ECRRepository(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	client := ecr.NewFromConfig(cfg)
 	paginator := ecr.NewDescribeRepositoriesPaginator(client, &ecr.DescribeRepositoriesInput{})
