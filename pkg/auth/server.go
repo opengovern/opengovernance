@@ -8,11 +8,13 @@ import (
 	"strings"
 	"time"
 
+	"github.com/go-redis/cache/v8"
+	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpclient"
+
 	"github.com/go-redis/redis/v8"
 
 	api2 "gitlab.com/keibiengine/keibi-engine/pkg/workspace/api"
 
-	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpclient"
 	"gitlab.com/keibiengine/keibi-engine/pkg/workspace/client"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/auth/api"
@@ -37,6 +39,7 @@ type Server struct {
 	logger          *zap.Logger
 	workspaceClient client.WorkspaceServiceClient
 	rdb             *redis.Client
+	cache           *cache.Cache
 }
 
 func (s Server) Check(ctx context.Context, req *envoyauth.CheckRequest) (*envoyauth.CheckResponse, error) {
@@ -65,7 +68,7 @@ func (s Server) Check(ctx context.Context, req *envoyauth.CheckRequest) (*envoya
 		return unAuth, nil
 	}
 
-	internalUser, err := s.db.GetUserByEmail(user.Email)
+	internalUser, err := s.GetUserByEmail(user.Email)
 	if err != nil {
 		if !errors.Is(err, gorm.ErrRecordNotFound) {
 			s.logger.Warn("denied access due to failure in retrieving internal user",
@@ -113,7 +116,7 @@ func (s Server) Check(ctx context.Context, req *envoyauth.CheckRequest) (*envoya
 			Role:   api.EditorRole,
 		}
 	} else {
-		rb, err = s.db.GetRoleBindingForWorkspace(user.Email, workspaceName)
+		rb, err = s.GetRoleBindingForWorkspace(user.Email, workspaceName)
 		if err != nil {
 			s.logger.Warn("denied access due to failure in retrieving auth user host",
 				zap.String("reqId", httpRequest.Id),
@@ -148,9 +151,7 @@ func (s Server) Check(ctx context.Context, req *envoyauth.CheckRequest) (*envoya
 
 	var limits api2.WorkspaceLimits
 	if workspaceName != "keibi" {
-		limits, err = s.workspaceClient.GetLimits(&httpclient.Context{
-			UserRole: rb.Role, UserID: rb.UserID.String(), WorkspaceName: workspaceName,
-		}, true)
+		limits, err = s.GetWorkspaceLimits(rb, workspaceName)
 		if err != nil {
 			s.logger.Warn("denied access due to failure in retrieving limits",
 				zap.String("reqId", httpRequest.Id),
@@ -210,6 +211,76 @@ func (s Server) Check(ctx context.Context, req *envoyauth.CheckRequest) (*envoya
 			},
 		},
 	}, nil
+}
+
+func (s Server) GetUserByEmail(email string) (User, error) {
+	key := "cache-user-" + email
+
+	var res User
+	if err := s.cache.Get(context.Background(), key, &res); err == nil {
+		return res, nil
+	}
+
+	user, err := s.db.GetUserByEmail(email)
+	if err != nil {
+		return User{}, err
+	}
+
+	s.cache.Set(&cache.Item{
+		Ctx:   context.Background(),
+		Key:   key,
+		Value: user,
+		TTL:   15 * time.Minute,
+	})
+
+	return user, nil
+}
+
+func (s Server) GetRoleBindingForWorkspace(email, workspaceName string) (RoleBinding, error) {
+	key := "cache-rb-" + email + "-" + workspaceName
+
+	var res RoleBinding
+	if err := s.cache.Get(context.Background(), key, &res); err == nil {
+		return res, nil
+	}
+
+	rb, err := s.db.GetRoleBindingForWorkspace(email, workspaceName)
+	if err != nil {
+		return RoleBinding{}, err
+	}
+
+	s.cache.Set(&cache.Item{
+		Ctx:   context.Background(),
+		Key:   key,
+		Value: rb,
+		TTL:   1 * time.Minute,
+	})
+
+	return rb, nil
+}
+
+func (s Server) GetWorkspaceLimits(rb RoleBinding, workspaceName string) (api2.WorkspaceLimits, error) {
+	key := "cache-limits-" + workspaceName
+
+	var res api2.WorkspaceLimits
+	if err := s.cache.Get(context.Background(), key, &res); err == nil {
+		return res, nil
+	}
+
+	limits, err := s.workspaceClient.GetLimits(&httpclient.Context{UserRole: rb.Role, UserID: rb.UserID.String(),
+		WorkspaceName: workspaceName}, true)
+	if err != nil {
+		return api2.WorkspaceLimits{}, err
+	}
+
+	s.cache.Set(&cache.Item{
+		Ctx:   context.Background(),
+		Key:   key,
+		Value: limits,
+		TTL:   1 * time.Minute,
+	})
+
+	return limits, nil
 }
 
 type userClaim struct {

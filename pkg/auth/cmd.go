@@ -8,6 +8,9 @@ import (
 	"io/ioutil"
 	"net"
 	"os"
+	"time"
+
+	"github.com/go-redis/cache/v8"
 
 	"github.com/go-redis/redis/v8"
 
@@ -123,6 +126,10 @@ func start(ctx context.Context) error {
 		workspaceClient: workspaceClient,
 		rdb:             rdb,
 	}
+	authServer.cache = cache.New(&cache.Options{
+		Redis:      authServer.rdb,
+		LocalCache: cache.NewTinyLFU(10000, 5*time.Minute),
+	})
 
 	grpcServer := grpc.NewServer(grpc.Creds(creds))
 	envoyauth.RegisterAuthorizationServer(grpcServer, authServer)
