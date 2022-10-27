@@ -10,6 +10,7 @@ import (
 	apigateway "github.com/aws/aws-sdk-go-v2/service/apigateway/types"
 	apigatewayv2 "github.com/aws/aws-sdk-go-v2/service/apigatewayv2/types"
 	applicationautoscaling "github.com/aws/aws-sdk-go-v2/service/applicationautoscaling/types"
+	appstream "github.com/aws/aws-sdk-go-v2/service/appstream/types"
 	autoscaling "github.com/aws/aws-sdk-go-v2/service/autoscaling/types"
 	backupservice "github.com/aws/aws-sdk-go-v2/service/backup"
 	backup "github.com/aws/aws-sdk-go-v2/service/backup/types"
@@ -23,6 +24,7 @@ import (
 	dms "github.com/aws/aws-sdk-go-v2/service/databasemigrationservice/types"
 	dax "github.com/aws/aws-sdk-go-v2/service/dax/types"
 	dynamodb "github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
+	dynamodbstream "github.com/aws/aws-sdk-go-v2/service/dynamodbstreams/types"
 	ec2op "github.com/aws/aws-sdk-go-v2/service/ec2"
 	ec2 "github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	ecrop "github.com/aws/aws-sdk-go-v2/service/ecr"
@@ -96,6 +98,18 @@ type ApiGatewayStageDescription struct {
 type ApiGatewayV2StageDescription struct {
 	ApiId *string
 	Stage apigatewayv2.Stage
+}
+
+//index:aws_apigateway_restapi
+//getfilter:api_id=description.RestAPI.Id
+type ApiGatewayRestAPIDescription struct {
+	RestAPI apigateway.RestApi
+}
+
+//index:aws_apigatewayv2_api
+//getfilter:api_id=description.API.ApiId
+type ApiGatewayV2APIDescription struct {
+	API apigatewayv2.Api
 }
 
 //  ===================   ElasticBeanstalk   ===================
@@ -289,6 +303,40 @@ type DynamoDbTableDescription struct {
 	Table            *dynamodb.TableDescription
 	ContinuousBackup *dynamodb.ContinuousBackupsDescription
 	Tags             []dynamodb.Tag
+}
+
+//index:aws_dynamodb_globalsecondaryindex
+//getfilter:index_arn=description.GlobalSecondaryIndex.IndexArn
+type DynamoDbGlobalSecondaryIndexDescription struct {
+	GlobalSecondaryIndex dynamodb.GlobalSecondaryIndexDescription
+}
+
+//index:aws_dynamodb_localsecondaryindex
+//getfilter:index_arn=description.LocalSecondaryIndex.IndexArn
+type DynamoDbLocalSecondaryIndexDescription struct {
+	LocalSecondaryIndex dynamodb.LocalSecondaryIndexDescription
+}
+
+//index:aws_dynamodbstreams_stream
+//getfilter:stream_arn=description.Stream.StreamArn
+type DynamoDbStreamDescription struct {
+	Stream dynamodbstream.Stream
+}
+
+//index:aws_dynamodb_backup
+//getfilter:arn=description.Backup.BackupArn
+//listfilter:backup_type=description.Backup.BackupType
+//listfilter:arn=description.Backup.BackupArn
+//listfilter:table_name=description.Backup.TableName
+type DynamoDbBackupDescription struct {
+	Backup dynamodb.BackupSummary
+}
+
+//index:aws_dynamodb_globaltable
+//getfilter:global_table_name=description.GlobalTable.GlobalTableName
+//listfilter:global_table_name=description.GlobalTable.GlobalTableName
+type DynamoDbGlobalTableDescription struct {
+	GlobalTable dynamodb.GlobalTableDescription
 }
 
 //  ===================   EC2   ===================
@@ -1085,4 +1133,27 @@ type ECRPublicRegistryDescription struct {
 type EventBridgeBusDescription struct {
 	Bus  eventbridge.EventBus
 	Tags []eventbridge.Tag
+}
+
+//  ===================  AppStream  ===================
+
+//index:aws_appstream_application
+//getfilter:name=description.Application.Name
+type AppStreamApplicationDescription struct {
+	Application appstream.Application
+	Tags        map[string]string
+}
+
+//index:aws_appstream_stack
+//getfilter:name=description.Stack.Name
+type AppStreamStackDescription struct {
+	Stack appstream.Stack
+	Tags  map[string]string
+}
+
+//index:aws_appstream_fleet
+//getfilter:name=description.Fleet.Name
+type AppStreamFleetDescription struct {
+	Fleet appstream.Fleet
+	Tags  map[string]string
 }
