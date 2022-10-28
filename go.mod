@@ -98,7 +98,7 @@ require (
 	github.com/tombuildsstuff/giovanni v0.18.0
 	github.com/turbot/go-kit v0.3.0
 	github.com/turbot/steampipe-plugin-sdk v1.8.3
-	gitlab.com/keibiengine/steampipe-plugin-aws v0.0.0-20221028095628-73b6e57fb416
+	gitlab.com/keibiengine/steampipe-plugin-aws v0.0.0-20221028150738-9b79f403181b
 	gitlab.com/keibiengine/steampipe-plugin-azure v0.23.2-0.20221021190445-3d874210a46e
 	gitlab.com/keibiengine/steampipe-plugin-azuread v0.1.1-0.20220518191201-bd20078e9eaf
 	go.uber.org/zap v1.21.0
@@ -139,7 +139,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/redshiftserverless v1.2.13
 	github.com/go-redis/cache/v8 v8.4.3
 	github.com/go-redis/redis/v8 v8.11.5
-	github.com/go-redis/redismock/v8 v8.0.6
+	github.com/golang-jwt/jwt v3.2.2+incompatible
 	github.com/jackc/pgtype v1.11.0
 	github.com/projectcontour/contour v1.22.0
 	github.com/vmware-tanzu/velero v1.9.1
@@ -222,7 +222,6 @@ require (
 	github.com/go-playground/locales v0.14.0 // indirect
 	github.com/go-playground/universal-translator v0.18.0 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
-	github.com/golang-jwt/jwt v3.2.2+incompatible // indirect
 	github.com/golang-jwt/jwt/v4 v4.2.0 // indirect
 	github.com/golang/glog v1.0.0 // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
