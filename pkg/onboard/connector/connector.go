@@ -20,6 +20,12 @@ type Connector struct {
 	Description string `json:"connector_description"`
 }
 
+type ConnectorCount struct {
+	Connector
+
+	ConnectionCount int64 `json:"connection_count"`
+}
+
 type ConnectorCategoryMapping struct {
 	CategoryID  string `json:"category_id"`
 	ConnectorID string `json:"conn_id"`

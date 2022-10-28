@@ -186,13 +186,13 @@ func (h HttpHandler) GetConnectorCategories(ctx echo.Context) error {
 // @Description Getting connectors
 // @Tags        onboard
 // @Produce     json
-// @Success     200      {object} []connector.Connector
+// @Success     200      {object} []connector.ConnectorCount
 // @Param       category query    string false "category"
 // @Router      /onboard/api/v1/connectors [get]
 func (h HttpHandler) GetConnector(ctx echo.Context) error {
 	categoryID := ctx.QueryParam("categoryID")
 
-	var res []connector.Connector
+	var res []connector.ConnectorCount
 	for _, c := range connector.Connectors {
 		ok := false
 		if len(categoryID) > 0 {
@@ -206,7 +206,15 @@ func (h HttpHandler) GetConnector(ctx echo.Context) error {
 		}
 
 		if ok {
-			res = append(res, c)
+			count, err := h.db.CountSourcesOfType(api.SourceType(c.Type))
+			if err != nil {
+				return err
+			}
+
+			res = append(res, connector.ConnectorCount{
+				Connector:       c,
+				ConnectionCount: count,
+			})
 		}
 	}
 	return ctx.JSON(http.StatusOK, res)
