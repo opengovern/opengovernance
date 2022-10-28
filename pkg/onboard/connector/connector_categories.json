@@ -60,6 +60,7 @@
     "connector_status": "Enabled",
     "connector_popular": "Yes",
     "connector_type": "Source",
+    "source_type": "aws",
     "connector_description": "Amazon Web Services, Inc. (AWS) is a subsidiary of Amazon that provides on-demand cloud computing platforms and APIs to individuals, companies, and governments, on a metered pay-as-you-go basis."
   },
   {
@@ -348,6 +349,7 @@
     "connector_status": "Enabled",
     "connector_popular": "Yes",
     "connector_type": "Source",
+    "source_type": "azure",
     "connector_description": "Microsoft Azure, often referred to as Azure, is a cloud computing service operated by Microsoft for application management via Microsoft-managed data centers."
   },
   {

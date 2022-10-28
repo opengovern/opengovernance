@@ -1184,8 +1184,10 @@ definitions:
       category_name:
         type: string
     type: object
-  connector.Connector:
+  connector.ConnectorCount:
     properties:
+      connection_count:
+        type: integer
       connector_description:
         type: string
       connector_icon:
@@ -1199,6 +1201,8 @@ definitions:
       connector_status:
         type: string
       connector_type:
+        type: string
+      source_type:
         type: string
     type: object
   es.Finding:
@@ -2534,7 +2538,7 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/connector.Connector'
+              $ref: '#/definitions/connector.ConnectorCount'
             type: array
       summary: Get connectors
       tags:
@@ -3377,6 +3381,10 @@ paths:
         name: workspace_name
         required: true
         type: string
+      - description: Ignore usage
+        in: query
+        name: ignore_usage
+        type: boolean
       produces:
       - application/json
       responses:

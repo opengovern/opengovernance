@@ -17,6 +17,7 @@ type Connector struct {
 	Status      string `json:"connector_status"`
 	Popular     string `json:"connector_popular"`
 	Type        string `json:"connector_type"`
+	SourceType  string `json:"source_type"`
 	Description string `json:"connector_description"`
 }
 

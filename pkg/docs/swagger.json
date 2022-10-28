@@ -1772,7 +1772,7 @@
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/connector.Connector"
+                                "$ref": "#/definitions/connector.ConnectorCount"
                             }
                         }
                     }
@@ -3087,6 +3087,12 @@
                         "name": "workspace_name",
                         "in": "path",
                         "required": true
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "Ignore usage",
+                        "name": "ignore_usage",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -4849,9 +4855,12 @@
                 }
             }
         },
-        "connector.Connector": {
+        "connector.ConnectorCount": {
             "type": "object",
             "properties": {
+                "connection_count": {
+                    "type": "integer"
+                },
                 "connector_description": {
                     "type": "string"
                 },
@@ -4871,6 +4880,9 @@
                     "type": "string"
                 },
                 "connector_type": {
+                    "type": "string"
+                },
+                "source_type": {
                     "type": "string"
                 }
             }

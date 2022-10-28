@@ -1052,8 +1052,8 @@ func (s *Server) ListRestore(c echo.Context) error {
 // @Tags    workspace
 // @Accept  json
 // @Produce json
-// @Param   workspace_name path    string true "Workspace Name"
-// @Param   ignore_usage query    bool false "Ignore usage"
+// @Param   workspace_name path    string true  "Workspace Name"
+// @Param   ignore_usage   query   bool   false "Ignore usage"
 // @Success 200            {array} api.WorkspaceLimitsUsage
 // @Router  /workspace/api/v1/workspaces/limits/{workspace_name} [get]
 func (s *Server) GetWorkspaceLimits(c echo.Context) error {

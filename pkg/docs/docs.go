@@ -1778,7 +1778,7 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/connector.Connector"
+                                "$ref": "#/definitions/connector.ConnectorCount"
                             }
                         }
                     }
@@ -3093,6 +3093,12 @@ const docTemplate = `{
                         "name": "workspace_name",
                         "in": "path",
                         "required": true
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "Ignore usage",
+                        "name": "ignore_usage",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -4855,9 +4861,12 @@ const docTemplate = `{
                 }
             }
         },
-        "connector.Connector": {
+        "connector.ConnectorCount": {
             "type": "object",
             "properties": {
+                "connection_count": {
+                    "type": "integer"
+                },
                 "connector_description": {
                     "type": "string"
                 },
@@ -4877,6 +4886,9 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "connector_type": {
+                    "type": "string"
+                },
+                "source_type": {
                     "type": "string"
                 }
             }

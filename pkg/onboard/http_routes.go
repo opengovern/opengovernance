@@ -7,6 +7,8 @@ import (
 	"net/http"
 	"strings"
 
+	"gitlab.com/keibiengine/keibi-engine/pkg/source"
+
 	api3 "gitlab.com/keibiengine/keibi-engine/pkg/auth/api"
 
 	keibiaws "gitlab.com/keibiengine/keibi-engine/pkg/aws"
@@ -206,7 +208,8 @@ func (h HttpHandler) GetConnector(ctx echo.Context) error {
 		}
 
 		if ok {
-			count, err := h.db.CountSourcesOfType(api.SourceType(c.Type))
+			typ, _ := source.ParseType(c.SourceType)
+			count, err := h.db.CountSourcesOfType(typ)
 			if err != nil {
 				return err
 			}
@@ -639,7 +642,7 @@ func (h HttpHandler) GetSourceCred(ctx echo.Context) error {
 	}
 
 	switch src.Type {
-	case api.SourceCloudAWS:
+	case source.CloudAWS:
 		awsCnf, err := describe.AWSAccountConfigFromMap(cnf)
 		if err != nil {
 			return err
@@ -647,7 +650,7 @@ func (h HttpHandler) GetSourceCred(ctx echo.Context) error {
 		return ctx.JSON(http.StatusOK, api.AWSCredential{
 			AccessKey: awsCnf.AccessKey,
 		})
-	case api.SourceCloudAzure:
+	case source.CloudAzure:
 		azureCnf, err := describe.AzureSubscriptionConfigFromMap(cnf)
 		if err != nil {
 			return err
@@ -684,7 +687,7 @@ func (h HttpHandler) PutSourceCred(ctx echo.Context) error {
 	}
 
 	switch src.Type {
-	case api.SourceCloudAWS:
+	case source.CloudAWS:
 		awsCnf, err := describe.AWSAccountConfigFromMap(cnf)
 		if err != nil {
 			return err
@@ -705,7 +708,7 @@ func (h HttpHandler) PutSourceCred(ctx echo.Context) error {
 			return err
 		}
 		return ctx.NoContent(http.StatusOK)
-	case api.SourceCloudAzure:
+	case source.CloudAzure:
 		azureCnf, err := describe.AzureSubscriptionConfigFromMap(cnf)
 		if err != nil {
 			return err
@@ -917,12 +920,11 @@ func (h HttpHandler) ListSources(ctx echo.Context) error {
 	sType := ctx.QueryParam("type")
 	var sources []Source
 	if sType != "" {
-		st, ok := api.AsSourceType(sType)
-		if !ok {
+		st, err := source.ParseType(sType)
+		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("invalid source type: %s", sType))
 		}
 
-		var err error
 		sources, err = h.db.GetSourcesOfType(st)
 		if err != nil {
 			return err
@@ -1012,12 +1014,11 @@ func (h HttpHandler) CountSources(ctx echo.Context) error {
 	sType := ctx.QueryParam("type")
 	var count int64
 	if sType != "" {
-		st, ok := api.AsSourceType(sType)
-		if !ok {
+		st, err := source.ParseType(sType)
+		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("invalid source type: %s", sType))
 		}
 
-		var err error
 		count, err = h.db.CountSourcesOfType(st)
 		if err != nil {
 			return err

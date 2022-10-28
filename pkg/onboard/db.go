@@ -3,6 +3,8 @@ package onboard
 import (
 	"fmt"
 
+	"gitlab.com/keibiengine/keibi-engine/pkg/source"
+
 	"github.com/google/uuid"
 	"gitlab.com/keibiengine/keibi-engine/pkg/onboard/api"
 	"gorm.io/gorm"
@@ -73,7 +75,7 @@ func (db Database) GetSourcesOfType(rType api.SourceType) ([]Source, error) {
 }
 
 // CountSources gets list of sources with matching type
-func (db Database) CountSourcesOfType(rType api.SourceType) (int64, error) {
+func (db Database) CountSourcesOfType(rType source.Type) (int64, error) {
 	var c int64
 	tx := db.orm.Model(&Source{}).Where("type = ?", rType).Count(&c)
 

@@ -2,33 +2,12 @@ package api
 
 import (
 	"encoding/json"
-	"strings"
 	"time"
+
+	"gitlab.com/keibiengine/keibi-engine/pkg/source"
 
 	"github.com/google/uuid"
 )
-
-type SourceType string
-
-const (
-	SourceCloudAWS   SourceType = "AWS"
-	SourceCloudAzure SourceType = "Azure"
-)
-
-var SourceTypeValues = []SourceType{
-	SourceCloudAWS,
-	SourceCloudAzure,
-}
-
-func AsSourceType(t string) (SourceType, bool) {
-	for _, st := range SourceTypeValues {
-		if strings.EqualFold(string(st), t) {
-			return st, true
-		}
-	}
-
-	return "", false
-}
 
 type SourceAction string
 
@@ -120,14 +99,14 @@ type CreateSourceResponse struct {
 }
 
 type Source struct {
-	ID             uuid.UUID  `json:"id"`
-	ConnectionID   string     `json:"providerConnectionID"`
-	ConnectionName string     `json:"providerConnectionName"`
-	Email          string     `json:"email"`
-	Type           SourceType `json:"type"`
-	Description    string     `json:"description"`
-	OnboardDate    time.Time  `json:"onboardDate"`
-	Enabled        bool       `json:"enabled"`
+	ID             uuid.UUID   `json:"id"`
+	ConnectionID   string      `json:"providerConnectionID"`
+	ConnectionName string      `json:"providerConnectionName"`
+	Email          string      `json:"email"`
+	Type           source.Type `json:"type"`
+	Description    string      `json:"description"`
+	OnboardDate    time.Time   `json:"onboardDate"`
+	Enabled        bool        `json:"enabled"`
 }
 
 type GetSourcesRequest struct {
@@ -170,7 +149,7 @@ type SourceEvent struct {
 	Action     SourceAction
 	SourceID   uuid.UUID
 	AccountID  string
-	SourceType SourceType
+	SourceType source.Type
 	ConfigRef  string
 }
 

@@ -6,6 +6,8 @@ import (
 	"strings"
 	"time"
 
+	"gitlab.com/keibiengine/keibi-engine/pkg/source"
+
 	"github.com/google/uuid"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/onboard/api"
@@ -50,7 +52,7 @@ type Source struct {
 	SourceId    string    `gorm:"index:idx_source_id,unique"`
 	Name        string    `gorm:"not null"`
 	Email       string
-	Type        api.SourceType `gorm:"not null"`
+	Type        source.Type `gorm:"not null"`
 	Description string
 	ConfigRef   string
 	Enabled     bool
@@ -61,7 +63,7 @@ type Source struct {
 
 func NewAWSSource(in api.SourceAwsRequest) Source {
 	id := uuid.New()
-	provider := api.SourceCloudAWS
+	provider := source.CloudAWS
 
 	s := Source{
 		ID:          id,
@@ -83,7 +85,7 @@ func NewAWSSource(in api.SourceAwsRequest) Source {
 
 func NewAzureSource(in api.SourceAzureRequest) Source {
 	id := uuid.New()
-	provider := api.SourceCloudAzure
+	provider := source.CloudAzure
 
 	// SPN -> PK: TenantID & ClientID
 	s := Source{
@@ -111,7 +113,7 @@ func (s Source) toSourceResponse() *api.CreateSourceResponse {
 
 func NewAzureSourceWithSPN(in api.SourceAzureSPNRequest) Source {
 	id := uuid.New()
-	provider := api.SourceCloudAzure
+	provider := source.CloudAzure
 
 	s := Source{
 		ID:          id,
