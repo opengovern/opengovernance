@@ -316,6 +316,8 @@ github.com/aws/aws-sdk-go-v2/service/eventbridge v1.16.17 h1:MSUSEjlL0+WOhFzYmDp
 github.com/aws/aws-sdk-go-v2/service/eventbridge v1.16.17/go.mod h1:8g5GmQrg6Q44ap2NIxBb6eCZojS70QhJiv0qsgHVSKo=
 github.com/aws/aws-sdk-go-v2/service/fsx v1.17.0 h1:e7qMix/4f/ck2w1o6V+NnHVoN8gTwmCLaOKgEQlqZEA=
 github.com/aws/aws-sdk-go-v2/service/fsx v1.17.0/go.mod h1:E/Fv4NmTVTdGWkGrLpy/3R6dC8pxSn2xFNgwHf9T77c=
+github.com/aws/aws-sdk-go-v2/service/glacier v1.13.19 h1:M86KFP3/fdzc6K086dQBXQt33b2MgJm0NrS1rpTiPTc=
+github.com/aws/aws-sdk-go-v2/service/glacier v1.13.19/go.mod h1:7MGK06cTuL6BJFSBxohZpSRmAMqwboOZeaV9ryxYU1k=
 github.com/aws/aws-sdk-go-v2/service/guardduty v1.9.0 h1:3rX5K9RDz9yZ/hg7U0AXGrIUcxZrZMXD/cwn0fsR2M4=
 github.com/aws/aws-sdk-go-v2/service/guardduty v1.9.0/go.mod h1:OxPzBFOD2bPYZKmL6SUqyVDz055hei3NDaYIJpQxg5E=
 github.com/aws/aws-sdk-go-v2/service/iam v1.15.0 h1:fhqcepXI/7P1MOKQHmscAR+B68zBfzTeJG28BP/zkaI=

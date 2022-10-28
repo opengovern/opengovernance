@@ -126,6 +126,10 @@ var awsMap = map[string]string{
 	"AWS::DynamoDbStreams::Stream":              "aws_dynamodbstreams_stream",
 	"AWS::DynamoDb::BackUp":                     "aws_dynamodb_backup",
 	"AWS::DynamoDb::GlobalTable":                "aws_dynamodb_global_table",
+	"AWS::Kinesis::Stream":                      "aws_kinesis_stream",
+	"AWS::Redshift::Snapshot":                   "aws_redshift_snapshot",
+	"AWS::Glacier::Vault":                       "aws_glacier_vault",
+	"AWS::Workspaces::Workspace":                "aws_workspaces_workspace",
 	//"AWS::EFS::AccessPoint":                     "aws_efs_access_point",
 	//"AWS::EFS::MountTarget":                     "aws_efs_mount_target",
 }
@@ -342,6 +346,10 @@ var AWSDescriptionMap = map[string]interface{}{
 	"AWS::DynamoDb::BackUp":                     &keibi.DynamoDbBackup{},
 	"AWS::DynamoDbStreams::Stream":              &keibi.DynamoDbStream{},
 	"AWS::DynamoDb::GlobalTable":                &keibi.DynamoDbGlobalTable{},
+	"AWS::Kinesis::Stream":                      &keibi.KinesisStream{},
+	"AWS::Redshift::Snapshot":                   &keibi.RedshiftSnapshot{},
+	"AWS::Glacier::Vault":                       &keibi.GlacierVault{},
+	"AWS::Workspaces::Workspace":                &keibi.WorkspacesWorkspace{},
 }
 var AzureDescriptionMap = map[string]interface{}{
 	"Microsoft.CognitiveServices/accounts":                  &keibi.CognitiveAccount{},
