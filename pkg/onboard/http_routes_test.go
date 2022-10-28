@@ -11,6 +11,8 @@ import (
 	"testing"
 	"time"
 
+	"gitlab.com/keibiengine/keibi-engine/pkg/source"
+
 	describeapi "gitlab.com/keibiengine/keibi-engine/pkg/describe/api"
 	inventoryapi "gitlab.com/keibiengine/keibi-engine/pkg/inventory/api"
 	"go.uber.org/zap"
@@ -118,7 +120,7 @@ func (s *HttpHandlerSuite) TestGetSource() {
 		SourceId:    "12312312312312321",
 		Name:        "123123",
 		Description: "123123123",
-		Type:        api.SourceCloudAWS,
+		Type:        source.CloudAWS,
 	})
 	require.NoError(err)
 
@@ -163,7 +165,7 @@ func (s *HttpHandlerSuite) TestCreateAWSSource_Success() {
 		Action:     api.SourceCreated,
 		SourceID:   response.ID,
 		AccountID:  "123456789012",
-		SourceType: api.SourceCloudAWS,
+		SourceType: source.CloudAWS,
 		ConfigRef:  pathRef,
 	})
 }
@@ -225,7 +227,7 @@ func (s *HttpHandlerSuite) TestCreateAzureSourceWithSPN_Success() {
 		Action:     api.SourceCreated,
 		SourceID:   response.ID,
 		AccountID:  "6948DF80-14BD-4E04-8842-7668D9C001F5",
-		SourceType: api.SourceCloudAzure,
+		SourceType: source.CloudAzure,
 		ConfigRef:  pathRef,
 	})
 }
@@ -381,7 +383,7 @@ func (s *HttpHandlerSuite) TestCreateAzureSource_Success() {
 		Action:     api.SourceCreated,
 		SourceID:   response.ID,
 		AccountID:  "6948DF80-14BD-4E04-8842-7668D9C001F5",
-		SourceType: api.SourceCloudAzure,
+		SourceType: source.CloudAzure,
 		ConfigRef:  pathRef,
 	})
 }
@@ -418,7 +420,7 @@ func (s *HttpHandlerSuite) TestDeleteAzureSource_Success() {
 	qmock.AssertCalled(s.T(), "Publish", api.SourceEvent{
 		Action:     api.SourceDeleted,
 		SourceID:   response.ID,
-		SourceType: api.SourceCloudAzure,
+		SourceType: source.CloudAzure,
 		ConfigRef:  pathRef,
 	})
 

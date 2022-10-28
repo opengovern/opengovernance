@@ -151,7 +151,7 @@ func (s SPN) toSPNResponse() *api.CreateSPNResponse {
 
 func NewSPN(in api.CreateSPNRequest) SPN {
 	id := uuid.New()
-	provider := api.SourceCloudAzure
+	provider := source.CloudAzure
 
 	return SPN{
 		ID:        id,
