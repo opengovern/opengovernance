@@ -188,25 +188,40 @@ func ECSTaskSet(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 			return nil, err
 		}
 
-		for _, service := range services {
-			service := service
-			output, err := client.DescribeTaskSets(ctx, &ecs.DescribeTaskSetsInput{
-				Cluster: &cluster,
-				Service: &service,
+		for i := 0; i < len(services); i = i + 10 {
+			j := i + 10
+			if j > len(services) {
+				j = len(services)
+			}
+
+			serviceOutput, err := client.DescribeServices(ctx, &ecs.DescribeServicesInput{
+				Cluster:  &cluster,
+				Services: services[i:j],
 			})
 			if err != nil {
 				return nil, err
 			}
-			for _, v := range output.TaskSets {
-				values = append(values, Resource{
-					ARN:  *v.TaskSetArn,
-					Name: *v.Id,
-					Description: model.ECSTaskSetDescription{
-						TaskSet: v,
-					},
-				})
+			if len(serviceOutput.Failures) != 0 {
+				return nil, failuresToError(serviceOutput.Failures)
+			}
+
+			for _, service := range serviceOutput.Services {
+				service := service
+				if err != nil {
+					return nil, err
+				}
+				for _, v := range service.TaskSets {
+					values = append(values, Resource{
+						ARN:  *v.TaskSetArn,
+						Name: *v.Id,
+						Description: model.ECSTaskSetDescription{
+							TaskSet: v,
+						},
+					})
+				}
 			}
 		}
+
 	}
 
 	return values, nil

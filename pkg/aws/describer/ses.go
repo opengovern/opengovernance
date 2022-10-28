@@ -2,13 +2,17 @@ package describer
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/ses"
 	"github.com/aws/aws-sdk-go-v2/service/sesv2"
+	"gitlab.com/keibiengine/keibi-engine/pkg/aws/model"
 )
 
 func SESConfigurationSet(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+	describeCtx := GetDescribeContext(ctx)
+
 	client := sesv2.NewFromConfig(cfg)
 	paginator := sesv2.NewListConfigurationSetsPaginator(client, &sesv2.ListConfigurationSetsInput{})
 
@@ -27,10 +31,51 @@ func SESConfigurationSet(ctx context.Context, cfg aws.Config) ([]Resource, error
 				return nil, err
 			}
 
+			arn := fmt.Sprintf("arn:%s:ses:%s:%s:configuration-set/%s", describeCtx.Partition, describeCtx.Region, describeCtx.AccountID, *output.ConfigurationSet.Name)
+
 			values = append(values, Resource{
-				ID:          *output.ConfigurationSet.Name,
-				Name:        *output.ConfigurationSet.Name,
-				Description: output,
+				ARN:  arn,
+				Name: *output.ConfigurationSet.Name,
+				Description: model.SESConfigurationSetDescription{
+					ConfigurationSet: *output.ConfigurationSet,
+				},
+			})
+		}
+	}
+
+	return values, nil
+}
+
+func SESIdentity(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+	describeCtx := GetDescribeContext(ctx)
+
+	client := sesv2.NewFromConfig(cfg)
+	paginator := sesv2.NewListEmailIdentitiesPaginator(client, &sesv2.ListEmailIdentitiesInput{})
+
+	var values []Resource
+	for paginator.HasMorePages() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page.EmailIdentities {
+			arn := fmt.Sprintf("arn:%s:ses:%s:%s:identity/%s", describeCtx.Partition, describeCtx.Region, describeCtx.AccountID, *v.IdentityName)
+
+			tags, err := client.ListTagsForResource(ctx, &sesv2.ListTagsForResourceInput{
+				ResourceArn: &arn,
+			})
+			if err != nil {
+				return nil, err
+			}
+
+			values = append(values, Resource{
+				ARN:  arn,
+				Name: *v.IdentityName,
+				Description: model.SESIdentityDescription{
+					Identity: v,
+					Tags:     tags.Tags,
+				},
 			})
 		}
 	}

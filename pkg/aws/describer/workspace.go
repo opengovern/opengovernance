@@ -79,3 +79,39 @@ func WorkspacesWorkspace(ctx context.Context, cfg aws.Config) ([]Resource, error
 
 	return values, nil
 }
+
+func WorkspacesBundle(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+	describeCtx := GetDescribeContext(ctx)
+
+	client := workspaces.NewFromConfig(cfg)
+	paginator := workspaces.NewDescribeWorkspaceBundlesPaginator(client, &workspaces.DescribeWorkspaceBundlesInput{})
+
+	var values []Resource
+	for paginator.HasMorePages() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page.Bundles {
+			tags, err := client.DescribeTags(ctx, &workspaces.DescribeTagsInput{
+				ResourceId: v.BundleId,
+			})
+			if err != nil {
+				return nil, err
+			}
+
+			arn := fmt.Sprintf("arn:%s:workspaces:%s:%s:workspacebundle/%s", describeCtx.Partition, describeCtx.Region, describeCtx.AccountID, *v.BundleId)
+			values = append(values, Resource{
+				ARN:  arn,
+				Name: *v.BundleId,
+				Description: model.WorkspacesBundleDescription{
+					Bundle: v,
+					Tags:   tags.TagList,
+				},
+			})
+		}
+	}
+
+	return values, nil
+}

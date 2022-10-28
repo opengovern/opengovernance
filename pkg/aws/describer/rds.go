@@ -301,10 +301,20 @@ func RDSGlobalCluster(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 		}
 
 		for _, v := range page.GlobalClusters {
+			tags, err := client.ListTagsForResource(ctx, &rds.ListTagsForResourceInput{
+				ResourceName: v.GlobalClusterArn,
+			})
+			if err != nil {
+				return nil, err
+			}
+
 			values = append(values, Resource{
-				ARN:         *v.GlobalClusterArn,
-				Name:        *v.GlobalClusterArn,
-				Description: v,
+				ARN:  *v.GlobalClusterArn,
+				Name: *v.GlobalClusterIdentifier,
+				Description: model.RDSGlobalClusterDescription{
+					GlobalCluster: v,
+					Tags:          tags.TagList,
+				},
 			})
 		}
 	}
