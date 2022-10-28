@@ -7,6 +7,7 @@ import (
 
 	accessanalyzer "github.com/aws/aws-sdk-go-v2/service/accessanalyzer/types"
 	acm "github.com/aws/aws-sdk-go-v2/service/acm/types"
+	amp "github.com/aws/aws-sdk-go-v2/service/amp/types"
 	apigateway "github.com/aws/aws-sdk-go-v2/service/apigateway/types"
 	apigatewayv2 "github.com/aws/aws-sdk-go-v2/service/apigatewayv2/types"
 	applicationautoscaling "github.com/aws/aws-sdk-go-v2/service/applicationautoscaling/types"
@@ -43,16 +44,25 @@ import (
 	eventbridge "github.com/aws/aws-sdk-go-v2/service/eventbridge/types"
 	fsx "github.com/aws/aws-sdk-go-v2/service/fsx/types"
 	glacier "github.com/aws/aws-sdk-go-v2/service/glacier/types"
+	grafana "github.com/aws/aws-sdk-go-v2/service/grafana/types"
 	"github.com/aws/aws-sdk-go-v2/service/guardduty"
 	guarddutytypes "github.com/aws/aws-sdk-go-v2/service/guardduty/types"
 	iam "github.com/aws/aws-sdk-go-v2/service/iam/types"
+	kafka "github.com/aws/aws-sdk-go-v2/service/kafka/types"
+	keyspaces "github.com/aws/aws-sdk-go-v2/service/keyspaces/types"
 	kinesis "github.com/aws/aws-sdk-go-v2/service/kinesis/types"
 	kms "github.com/aws/aws-sdk-go-v2/service/kms/types"
 	"github.com/aws/aws-sdk-go-v2/service/lambda"
+	memorydb "github.com/aws/aws-sdk-go-v2/service/memorydb/types"
+	mq "github.com/aws/aws-sdk-go-v2/service/mq/types"
+	mwaa "github.com/aws/aws-sdk-go-v2/service/mwaa/types"
+	neptune "github.com/aws/aws-sdk-go-v2/service/neptune/types"
+	opensearch "github.com/aws/aws-sdk-go-v2/service/opensearch/types"
 	organizations "github.com/aws/aws-sdk-go-v2/service/organizations/types"
 	rds "github.com/aws/aws-sdk-go-v2/service/rds/types"
 	"github.com/aws/aws-sdk-go-v2/service/redshift"
 	redshifttypes "github.com/aws/aws-sdk-go-v2/service/redshift/types"
+	redshiftserverlesstypes "github.com/aws/aws-sdk-go-v2/service/redshiftserverless/types"
 	s3 "github.com/aws/aws-sdk-go-v2/service/s3/types"
 	"github.com/aws/aws-sdk-go-v2/service/s3control"
 	s3controltypes "github.com/aws/aws-sdk-go-v2/service/s3control/types"
@@ -60,6 +70,8 @@ import (
 	sagemakertypes "github.com/aws/aws-sdk-go-v2/service/sagemaker/types"
 	"github.com/aws/aws-sdk-go-v2/service/secretsmanager"
 	"github.com/aws/aws-sdk-go-v2/service/securityhub"
+	ses "github.com/aws/aws-sdk-go-v2/service/ses/types"
+	sesv2 "github.com/aws/aws-sdk-go-v2/service/sesv2/types"
 	sns "github.com/aws/aws-sdk-go-v2/service/sns/types"
 	ssm "github.com/aws/aws-sdk-go-v2/service/ssm/types"
 	wafv2 "github.com/aws/aws-sdk-go-v2/service/wafv2/types"
@@ -829,6 +841,13 @@ type RDSDBSnapshotDescription struct {
 	DBSnapshotAttributes []rds.DBSnapshotAttribute
 }
 
+//index:aws_rds_globalcluster
+//getfilter:global_cluster_identifier=description.DBGlobalCluster.GlobalClusterIdentifier
+type RDSGlobalClusterDescription struct {
+	GlobalCluster rds.GlobalCluster
+	Tags          []rds.Tag
+}
+
 //  ===================  Redshift  ===================
 
 //index:aws_redshift_cluster
@@ -850,6 +869,20 @@ type RedshiftClusterParameterGroupDescription struct {
 //getfilter:snapshot_identifier=description.Snapshot.SnapshotIdentifier
 type RedshiftSnapshotDescription struct {
 	Snapshot redshifttypes.Snapshot
+}
+
+//index:aws_redshiftserverless_namespace
+//getfilter:namespace_name=description.Namespace.NamespaceName
+type RedshiftServerlessNamespaceDescription struct {
+	Namespace redshiftserverlesstypes.Namespace
+	Tags      []redshiftserverlesstypes.Tag
+}
+
+//index:aws_redshiftserverless_snapshot
+//getfilter:snapshot_name=description.Snapshot.SnapshotName
+type RedshiftServerlessSnapshotDescription struct {
+	Snapshot redshiftserverlesstypes.Snapshot
+	Tags     []redshiftserverlesstypes.Tag
 }
 
 //  ===================  SNS  ===================
@@ -1195,4 +1228,110 @@ type GlacierVaultDescription struct {
 type WorkspacesWorkspaceDescription struct {
 	Workspace workspaces.Workspace
 	Tags      []workspaces.Tag
+}
+
+//index:aws_workspaces_bundle
+//getfilter:bundle_id=description.Bundle.BundleId
+type WorkspacesBundleDescription struct {
+	Bundle workspaces.WorkspaceBundle
+	Tags   []workspaces.Tag
+}
+
+//  ===================  KeySpaces (For Apache Cassandra)  ===================
+
+//index:aws_keyspaces_keyspace
+//getfilter:keyspace_name=description.Keyspace.KeyspaceName
+type KeyspacesKeyspaceDescription struct {
+	Keyspace keyspaces.KeyspaceSummary
+	Tags     []keyspaces.Tag
+}
+
+//index:aws_keyspaces_table
+//getfilter:table_name=description.Table.TableName
+type KeyspacesTableDescription struct {
+	Table keyspaces.TableSummary
+	Tags  []keyspaces.Tag
+}
+
+//  ===================  Grafana  ===================
+
+//index:aws_grafana_workspace
+//getfilter:id=description.Workspace.Id
+type GrafanaWorkspaceDescription struct {
+	Workspace grafana.WorkspaceSummary
+}
+
+//  ===================  AMP (Amazon Managed Service for Prometheus)  ===================
+
+//index:aws_amp_workspace
+//getfilter:workspace_id=description.Workspace.WorkspaceId
+type AMPWorkspaceDescription struct {
+	Workspace amp.WorkspaceSummary
+}
+
+//  ===================  Kafka  ===================
+
+//index:aws_kafka_cluster
+//getfilter:cluster_name=description.Cluster.ClusterName
+type KafkaClusterDescription struct {
+	Cluster kafka.Cluster
+}
+
+//  ===================  MWAA (Managed Workflows for Apache Airflow) ===================
+
+//index:aws_mwaa_environment
+//getfilter:name=description.Environment.Name
+type MWAAEnvironmentDescription struct {
+	Environment mwaa.Environment
+}
+
+//  ===================  MemoryDb  ===================
+
+//index:aws_memorydb_cluster
+//getfilter:name=description.Cluster.Name
+type MemoryDbClusterDescription struct {
+	Cluster memorydb.Cluster
+	Tags    []memorydb.Tag
+}
+
+//  ===================  MQ  ===================
+
+//index:aws_mq_broker
+//getfilter:broker_name=description.Broker.BrokerName
+type MQBrokerDescription struct {
+	Broker mq.BrokerSummary
+	Tags   map[string]string
+}
+
+//  ===================  Neptune  ===================
+
+//index:aws_neptune_database
+//getfilter:db_name=description.Database.DBName
+type NeptuneDatabaseDescription struct {
+	Database neptune.DBInstance
+	Tags     []neptune.Tag
+}
+
+//  ===================  OpenSearch  ===================
+
+//index:aws_opensearch_domain
+//getfilter:domain_name=description.Domain.DomainName
+type OpenSearchDomainDescription struct {
+	Domain opensearch.DomainStatus
+	Tags   []opensearch.Tag
+}
+
+//  ===================  SES (Simple Email Service)  ===================
+
+//index:aws_ses_configurtionset
+//getfilter:name=description.ConfigurationSet.Name
+type SESConfigurationSetDescription struct {
+	ConfigurationSet ses.ConfigurationSet
+}
+
+//index:aws_ses_identity
+//getfilter:identity_name=description.Identity.IdentityName
+type SESIdentityDescription struct {
+	Identity sesv2.IdentityInfo
+	Tags     []sesv2.Tag
 }

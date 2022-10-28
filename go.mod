@@ -122,11 +122,21 @@ require (
 
 require (
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/dns/armdns v1.0.0
+	github.com/aws/aws-sdk-go-v2/service/amp v1.15.7
 	github.com/aws/aws-sdk-go-v2/service/appstream v1.17.13
 	github.com/aws/aws-sdk-go-v2/service/dynamodbstreams v1.13.22
 	github.com/aws/aws-sdk-go-v2/service/eventbridge v1.16.17
 	github.com/aws/aws-sdk-go-v2/service/glacier v1.13.19
+	github.com/aws/aws-sdk-go-v2/service/grafana v1.9.15
+	github.com/aws/aws-sdk-go-v2/service/kafka v1.18.0
+	github.com/aws/aws-sdk-go-v2/service/keyspaces v1.0.21
 	github.com/aws/aws-sdk-go-v2/service/kinesis v1.15.21
+	github.com/aws/aws-sdk-go-v2/service/memorydb v1.9.20
+	github.com/aws/aws-sdk-go-v2/service/mq v1.13.15
+	github.com/aws/aws-sdk-go-v2/service/mwaa v1.13.12
+	github.com/aws/aws-sdk-go-v2/service/neptune v1.18.0
+	github.com/aws/aws-sdk-go-v2/service/opensearch v1.10.12
+	github.com/aws/aws-sdk-go-v2/service/redshiftserverless v1.2.13
 	github.com/go-redis/cache/v8 v8.4.3
 	github.com/go-redis/redis/v8 v8.11.5
 	github.com/go-redis/redismock/v8 v8.0.6
@@ -172,7 +182,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/internal/v4a v1.0.16 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding v1.5.0 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/endpoint-discovery v1.3.3 // indirect
-	github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.6.0 // indirect
+	github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.9.19 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/s3shared v1.10.0 // indirect
 	github.com/aws/aws-sdk-go-v2/service/sso v1.6.1 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
