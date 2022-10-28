@@ -125,6 +125,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/appstream v1.17.13
 	github.com/aws/aws-sdk-go-v2/service/dynamodbstreams v1.13.22
 	github.com/aws/aws-sdk-go-v2/service/eventbridge v1.16.17
+	github.com/aws/aws-sdk-go-v2/service/glacier v1.13.19
 	github.com/aws/aws-sdk-go-v2/service/kinesis v1.15.21
 	github.com/go-redis/cache/v8 v8.4.3
 	github.com/go-redis/redis/v8 v8.11.5

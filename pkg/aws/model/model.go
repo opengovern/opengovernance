@@ -42,9 +42,11 @@ import (
 	emr "github.com/aws/aws-sdk-go-v2/service/emr/types"
 	eventbridge "github.com/aws/aws-sdk-go-v2/service/eventbridge/types"
 	fsx "github.com/aws/aws-sdk-go-v2/service/fsx/types"
+	glacier "github.com/aws/aws-sdk-go-v2/service/glacier/types"
 	"github.com/aws/aws-sdk-go-v2/service/guardduty"
 	guarddutytypes "github.com/aws/aws-sdk-go-v2/service/guardduty/types"
 	iam "github.com/aws/aws-sdk-go-v2/service/iam/types"
+	kinesis "github.com/aws/aws-sdk-go-v2/service/kinesis/types"
 	kms "github.com/aws/aws-sdk-go-v2/service/kms/types"
 	"github.com/aws/aws-sdk-go-v2/service/lambda"
 	organizations "github.com/aws/aws-sdk-go-v2/service/organizations/types"
@@ -61,6 +63,7 @@ import (
 	sns "github.com/aws/aws-sdk-go-v2/service/sns/types"
 	ssm "github.com/aws/aws-sdk-go-v2/service/ssm/types"
 	wafv2 "github.com/aws/aws-sdk-go-v2/service/wafv2/types"
+	workspaces "github.com/aws/aws-sdk-go-v2/service/workspaces/types"
 )
 
 type Metadata struct {
@@ -843,6 +846,12 @@ type RedshiftClusterParameterGroupDescription struct {
 	Parameters            []redshifttypes.Parameter
 }
 
+//index:aws_redshift_snapshot
+//getfilter:snapshot_identifier=description.Snapshot.SnapshotIdentifier
+type RedshiftSnapshotDescription struct {
+	Snapshot redshifttypes.Snapshot
+}
+
 //  ===================  SNS  ===================
 
 //index:aws_sns_topic
@@ -1156,4 +1165,34 @@ type AppStreamStackDescription struct {
 type AppStreamFleetDescription struct {
 	Fleet appstream.Fleet
 	Tags  map[string]string
+}
+
+//  ===================  Kinesis  ===================
+
+//index:aws_kinesis_stream
+//getfilter:stream_name=description.Stream.StreamName
+type KinesisStreamDescription struct {
+	Stream             kinesis.StreamDescription
+	DescriptionSummary kinesis.StreamDescriptionSummary
+	Tags               []kinesis.Tag
+}
+
+//  ===================  Glacier  ===================
+
+//index:aws_glacier_vault
+//getfilter:vault_name=description.Vault.VaultName
+type GlacierVaultDescription struct {
+	Vault        glacier.DescribeVaultOutput
+	AccessPolicy glacier.VaultAccessPolicy
+	LockPolicy   glacier.VaultLockPolicy
+	Tags         map[string]string
+}
+
+//  ===================  Workspace  ===================
+
+//index:aws_workspaces_workspace
+//getfilter:workspace_id=description.Workspace.WorkspaceId
+type WorkspacesWorkspaceDescription struct {
+	Workspace workspaces.Workspace
+	Tags      []workspaces.Tag
 }
