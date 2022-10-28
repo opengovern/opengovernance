@@ -129,6 +129,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/kinesis v1.15.21
 	github.com/go-redis/cache/v8 v8.4.3
 	github.com/go-redis/redis/v8 v8.11.5
+	github.com/go-redis/redismock/v8 v8.0.6
 	github.com/jackc/pgtype v1.11.0
 	github.com/projectcontour/contour v1.22.0
 	github.com/vmware-tanzu/velero v1.9.1

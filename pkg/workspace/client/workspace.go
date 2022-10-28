@@ -25,6 +25,7 @@ func NewWorkspaceClient(baseURL string) WorkspaceServiceClient {
 func (s *workspaceClient) GetLimits(ctx *httpclient.Context, ignoreUsage bool) (api.WorkspaceLimits, error) {
 	url := fmt.Sprintf("%s/api/v1/workspaces/limits/%s", s.baseURL, ctx.WorkspaceName)
 
+	fmt.Println(url)
 	var response api.WorkspaceLimits
 	if err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &response); err != nil {
 		return api.WorkspaceLimits{}, err

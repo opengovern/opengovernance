@@ -6,7 +6,6 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/source"
 
 	"github.com/google/uuid"
-	"gitlab.com/keibiengine/keibi-engine/pkg/onboard/api"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
@@ -63,7 +62,7 @@ func (db Database) CountSources() (int64, error) {
 }
 
 // GetSourcesOfType gets list of sources with matching type
-func (db Database) GetSourcesOfType(rType api.SourceType) ([]Source, error) {
+func (db Database) GetSourcesOfType(rType source.Type) ([]Source, error) {
 	var s []Source
 	tx := db.orm.Find(&s, "type = ?", rType)
 

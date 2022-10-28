@@ -4,9 +4,13 @@ import (
 	"context"
 	"encoding/base64"
 	"fmt"
+	"net/http"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/golang-jwt/jwt"
+	workspaceClient "gitlab.com/keibiengine/keibi-engine/pkg/workspace/client"
 
 	"github.com/coreos/go-oidc/v3/oidc"
 	envoyauth "github.com/envoyproxy/go-control-plane/envoy/service/auth/v3"
@@ -29,6 +33,17 @@ type ServerSuite struct {
 func (s *ServerSuite) SetupSuite() {
 	s.orm = dockertest.StartupPostgreSQL(s.T())
 	s.db = NewDatabase(s.orm)
+
+	http.HandleFunc("/api/v1/workspaces/limits/workspace1", func(writer http.ResponseWriter, request *http.Request) {
+		writer.Write([]byte("{}"))
+	})
+	http.HandleFunc("/api/v1/workspaces/limits/workspace2", func(writer http.ResponseWriter, request *http.Request) {
+		writer.Write([]byte("{}"))
+	})
+	http.HandleFunc("/api/v1/workspaces/limits/ThirdWorkspace", func(writer http.ResponseWriter, request *http.Request) {
+		writer.Write([]byte("{}"))
+	})
+	go http.ListenAndServe("localhost:8080", nil)
 }
 
 func (s *ServerSuite) BeforeTest(suiteName, testName string) {
@@ -76,15 +91,17 @@ func (s *ServerSuite) TestServer_Check() {
 	require.NoError(err)
 
 	server := Server{
-		logger: logger,
-		verifier: oidc.NewVerifier(testIssuer, &testKeySet{}, &oidc.Config{
-			SkipClientIDCheck: true,
-			SkipExpiryCheck:   true,
-			SkipIssuerCheck:   true,
-		}),
-		//extAuth: &mocks.Provider{},
-		db:   s.db,
 		host: "app.keibi.io",
+		//extAuth: &mocks.Provider{},
+		db: s.db,
+		verifier: oidc.NewVerifier(testIssuer, &testKeySet{}, &oidc.Config{
+			SupportedSigningAlgs: []string{"HS256"},
+			SkipClientIDCheck:    true,
+			SkipExpiryCheck:      true,
+			SkipIssuerCheck:      true,
+		}),
+		logger:          logger,
+		workspaceClient: workspaceClient.NewWorkspaceClient("http://localhost:8080"),
 	}
 
 	user1 := User{
@@ -138,7 +155,7 @@ func (s *ServerSuite) TestServer_Check() {
 	//server.extAuth.(*mocks.Provider).On("FetchUser", mock.Anything, "4").Return(extauth.AzureADUser{}, extauth.ErrUserNotExists)
 
 	type args struct {
-		token             string
+		email             string
 		workspace         string
 		auth              bool
 		expectedId        uuid.UUID
@@ -155,8 +172,8 @@ func (s *ServerSuite) TestServer_Check() {
 			//    "1@gmail.com"
 			//  ]
 			//}
-			token:             "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxIiwiZ2l2ZW5fbmFtZSI6InVzZXIxIiwiZW1haWxzIjpbIjFAZ21haWwuY29tIl19.SM3WDS8i_yBHKEigcd9bYE4N8dH4eJwiqo5Q5QtTsh9oYyOE2_kkfSpH5h5if6-z2pr6uPgJlY1a0VEE0MTVueeCsfyag3uDP941AKpchgYgJQCXxCpXL9fBf5I691hl4kZ9eVMraOrb39AK1wCn9anjrIEonKTmfdIxJMa6UpsvwUBjMLPubKSzv66UcqfMRbdSHh__cXWbH1lsj9MURMUpkd_HmJVLrhVGPCdd9jaQWQAUwWmGN9UOr7WJaEbpCN93b_6f508awN8F8ByEmmhXj1JG2zlHQctgjAt8sVeUh_LVBEq29hG1f3AyZvTxOMY_Xz14yrasDV79x1KWaA",
 			workspace:         "workspace1",
+			email:             "1@gmail.com",
 			auth:              true,
 			expectedId:        rb1.UserID,
 			expectedRole:      rb1.Role,
@@ -170,7 +187,7 @@ func (s *ServerSuite) TestServer_Check() {
 			//    "2@gmail.com"
 			//  ]
 			//}
-			token:             "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIyIiwiZ2l2ZW5fbmFtZSI6InVzZXIyIiwiZW1haWxzIjpbIjJAZ21haWwuY29tIl19.ei5Agr-hbKhaAAzgkaz_ou5IxpIsiVr0roo0FF46P-t4v2zGRyd63NaIp6mrCZkheA2_gK54N6t0v8SQuJr9nr0d2w0rWypMRXda2i2cltpNgvPJk3undh4-YcJZ8qfNI71zk_5NZK-iygNh6qC7N62SNu9kG_DAaIzvzq3hCyE6p7jzptKLP4ZVR6_lNqyukMdufPZATwJNWwtEGJRrpYOY73XwjP4dezRNe1dRFHrS6kCl8AGfLQcbVdnFZT27fuYAuT2z0LrmRs91msrWVdKz-GL4ro09L-mN9HUU2_lbgvnE7bMyBAdTpgqnrFbL3XSFdnQJtRFbdGl0SawEjg",
+			email:             "2@gmail.com",
 			workspace:         "workspace1",
 			auth:              true,
 			expectedId:        rb2.UserID,
@@ -185,8 +202,8 @@ func (s *ServerSuite) TestServer_Check() {
 			//    "1@gmail.com"
 			//  ]
 			//}
-			token:             "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxIiwiZ2l2ZW5fbmFtZSI6InVzZXIxIiwiZW1haWxzIjpbIjFAZ21haWwuY29tIl19.SM3WDS8i_yBHKEigcd9bYE4N8dH4eJwiqo5Q5QtTsh9oYyOE2_kkfSpH5h5if6-z2pr6uPgJlY1a0VEE0MTVueeCsfyag3uDP941AKpchgYgJQCXxCpXL9fBf5I691hl4kZ9eVMraOrb39AK1wCn9anjrIEonKTmfdIxJMa6UpsvwUBjMLPubKSzv66UcqfMRbdSHh__cXWbH1lsj9MURMUpkd_HmJVLrhVGPCdd9jaQWQAUwWmGN9UOr7WJaEbpCN93b_6f508awN8F8ByEmmhXj1JG2zlHQctgjAt8sVeUh_LVBEq29hG1f3AyZvTxOMY_Xz14yrasDV79x1KWaA",
 			workspace:         "workspace2",
+			email:             "1@gmail.com",
 			auth:              true,
 			expectedId:        rb3.UserID,
 			expectedRole:      rb3.Role,
@@ -200,7 +217,7 @@ func (s *ServerSuite) TestServer_Check() {
 			//    "2@gmail.com"
 			//  ]
 			//}
-			token:     "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIyIiwiZ2l2ZW5fbmFtZSI6InVzZXIyIiwiZW1haWxzIjpbIjJAZ21haWwuY29tIl19.ei5Agr-hbKhaAAzgkaz_ou5IxpIsiVr0roo0FF46P-t4v2zGRyd63NaIp6mrCZkheA2_gK54N6t0v8SQuJr9nr0d2w0rWypMRXda2i2cltpNgvPJk3undh4-YcJZ8qfNI71zk_5NZK-iygNh6qC7N62SNu9kG_DAaIzvzq3hCyE6p7jzptKLP4ZVR6_lNqyukMdufPZATwJNWwtEGJRrpYOY73XwjP4dezRNe1dRFHrS6kCl8AGfLQcbVdnFZT27fuYAuT2z0LrmRs91msrWVdKz-GL4ro09L-mN9HUU2_lbgvnE7bMyBAdTpgqnrFbL3XSFdnQJtRFbdGl0SawEjg",
+			email:     "2@gmail.com",
 			workspace: "workspace2",
 			auth:      false,
 		},
@@ -212,7 +229,7 @@ func (s *ServerSuite) TestServer_Check() {
 			//    "3@gmail.com"
 			//  ]
 			//}
-			token:     "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIzIiwiZ2l2ZW5fbmFtZSI6InVzZXIzIiwiZW1haWxzIjpbIjNAZ21haWwuY29tIl19.kKrCbMYjsZcvoc_LZ-z0mUgijMpGArFAPtRY_ETjgLJT4cz3a_VM6xU5HiKGR3BtVHRy9DSyjiaP4q_hARHJL2PivaxXp2LZvgIdz_pG1kA0b_6PiOqwtNlBKU8Nzrka1cn2sA5XkCHHagQ-mDPJBlx32MReVKnQePOg5CyREyVs2pgAzNBNC5YFzXIq5rKgaf0fpncvlebxBlermfuyXTCFxcLfnMIaAwTqw6Xo901Qq2GSG755O6G21TxMYDbwZARJC_-4on1BQA0BtKdcSuC15xRx29qAdl0Dkz4SkZZjVhqsYKDBjH01SHJfq6Rukmgt2aA1_B0JZdUrruEY-Q",
+			email:     "3@gmail.com",
 			workspace: "workspace1",
 			auth:      false,
 		},
@@ -224,34 +241,41 @@ func (s *ServerSuite) TestServer_Check() {
 			//    "4@gmail.com"
 			//  ]
 			//}
-			token:     "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI0IiwiZ2l2ZW5fbmFtZSI6InVzZXI0IiwiZW1haWxzIjpbIjRAZ21haWwuY29tIl19.bghMsGaEoRauL6QrV1T5yhL3ylECd7jjMWy-6XripZuKu1x1oToqJFW-id1ZgzqyeScM8qiA8DK2Nl8iPT4hY0BjeTpziq85FTBm8dKyKAWI4JrjVbzgicArD25fuvtL5zEG1zr0PCtvYiVxF6wpDmrBnDjxAFw_U3HcHyVZ6axKiR9LMifTiimdEt0elPUcsVpNj8TO0MTTMvX6l6jcwwhJAO_30LexV8-xfjtQ9dzxdCDN9f4YuY3F87bANgU8w2LxVLZgxclhDZ4oXbHBcRLnmekChY0UiXO7Q4XHU17BscBcLAy5X0lmmhZsmKNQrfbkpinylPATmSnZ41x2Gg",
+			email:     "4@gmail.com",
 			workspace: "ThirdWorkspace",
 			auth:      false,
 		},
 		// wrong token
 		{
-			token:     "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIzIiwiZ2l2ZW5fbmFtZSI6InVzZXIzIiwiZW1haWxzIjpbIjNAZ21haWwuY29tIl19.owxoniWrQ_jefJU3rxzQGtJPiz3-ww4V6AxD_-fbsD0",
+			email:     "5@gmail.com",
 			workspace: "ThirdWorkspace",
 			auth:      false,
 		},
 	}
-
+	key := []byte("SecretYouShouldHide")
 	for i, tc := range tests {
+		claims := userClaim{
+			Workspaces:     []string{tc.workspace},
+			Email:          tc.email,
+			ExternalUserID: strings.Split(tc.email, "@")[0],
+		}
+		token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+		tokenString, err := token.SignedString(key)
+		require.NoError(err)
+
 		req := &envoyauth.CheckRequest{
 			Attributes: &envoyauth.AttributeContext{
 				Request: &envoyauth.AttributeContext_Request{
 					Http: &envoyauth.AttributeContext_HttpRequest{
+						Path: tc.workspace + "/",
 						Headers: map[string]string{
-							"authorization": "Bearer " + tc.token,
+							"authorization": "Bearer " + tokenString,
 						},
-						Host: fmt.Sprintf("%s.%s", tc.workspace, server.host),
 					},
 				},
 			},
 		}
 		resp, err := server.Check(context.Background(), req)
-		require.NoError(err)
-
 		if tc.auth {
 			require.EqualValues(rpc.OK, resp.Status.Code, i)
 			headers := resp.GetOkResponse().GetHeaders()
@@ -274,5 +298,5 @@ func (s *ServerSuite) TestServer_Check() {
 	require.Equal(uuid.RFC4122, u.ID.Variant())
 
 	u, err = s.db.GetUserByExternalID("4")
-	require.ErrorIs(err, gorm.ErrRecordNotFound)
+	require.NoError(err)
 }

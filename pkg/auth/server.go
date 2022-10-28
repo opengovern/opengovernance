@@ -68,6 +68,14 @@ func (s Server) Check(ctx context.Context, req *envoyauth.CheckRequest) (*envoya
 		return unAuth, nil
 	}
 
+	if user.Email == "" {
+		s.logger.Warn("denied access due to failure to get email from token",
+			zap.String("reqId", httpRequest.Id),
+			zap.String("path", httpRequest.Path),
+			zap.String("method", httpRequest.Method),
+			zap.Error(err))
+		return unAuth, nil
+	}
 	internalUser, err := s.GetUserByEmail(user.Email)
 	if err != nil {
 		if !errors.Is(err, gorm.ErrRecordNotFound) {
@@ -127,16 +135,18 @@ func (s Server) Check(ctx context.Context, req *envoyauth.CheckRequest) (*envoya
 			return unAuth, nil
 		}
 
-		err = s.rdb.SetEX(context.Background(), "last_access_"+workspaceName, time.Now().UnixMilli(),
-			30*24*time.Hour).Err()
-		if err != nil {
-			s.logger.Warn("denied access due to failure in setting last access",
-				zap.String("reqId", httpRequest.Id),
-				zap.String("path", httpRequest.Path),
-				zap.String("method", httpRequest.Method),
-				zap.String("workspace", workspaceName),
-				zap.Error(err))
-			return unAuth, nil
+		if s.rdb != nil {
+			err = s.rdb.SetEX(context.Background(), "last_access_"+workspaceName, time.Now().UnixMilli(),
+				30*24*time.Hour).Err()
+			if err != nil {
+				s.logger.Warn("denied access due to failure in setting last access",
+					zap.String("reqId", httpRequest.Id),
+					zap.String("path", httpRequest.Path),
+					zap.String("method", httpRequest.Method),
+					zap.String("workspace", workspaceName),
+					zap.Error(err))
+				return unAuth, nil
+			}
 		}
 	}
 
@@ -217,8 +227,10 @@ func (s Server) GetUserByEmail(email string) (User, error) {
 	key := "cache-user-" + email
 
 	var res User
-	if err := s.cache.Get(context.Background(), key, &res); err == nil {
-		return res, nil
+	if s.cache != nil {
+		if err := s.cache.Get(context.Background(), key, &res); err == nil {
+			return res, nil
+		}
 	}
 
 	user, err := s.db.GetUserByEmail(email)
@@ -226,12 +238,14 @@ func (s Server) GetUserByEmail(email string) (User, error) {
 		return User{}, err
 	}
 
-	s.cache.Set(&cache.Item{
-		Ctx:   context.Background(),
-		Key:   key,
-		Value: user,
-		TTL:   15 * time.Minute,
-	})
+	if s.cache != nil {
+		s.cache.Set(&cache.Item{
+			Ctx:   context.Background(),
+			Key:   key,
+			Value: user,
+			TTL:   15 * time.Minute,
+		})
+	}
 
 	return user, nil
 }
@@ -240,8 +254,10 @@ func (s Server) GetRoleBindingForWorkspace(email, workspaceName string) (RoleBin
 	key := "cache-rb-" + email + "-" + workspaceName
 
 	var res RoleBinding
-	if err := s.cache.Get(context.Background(), key, &res); err == nil {
-		return res, nil
+	if s.cache != nil {
+		if err := s.cache.Get(context.Background(), key, &res); err == nil {
+			return res, nil
+		}
 	}
 
 	rb, err := s.db.GetRoleBindingForWorkspace(email, workspaceName)
@@ -249,12 +265,14 @@ func (s Server) GetRoleBindingForWorkspace(email, workspaceName string) (RoleBin
 		return RoleBinding{}, err
 	}
 
-	s.cache.Set(&cache.Item{
-		Ctx:   context.Background(),
-		Key:   key,
-		Value: rb,
-		TTL:   1 * time.Minute,
-	})
+	if s.cache != nil {
+		s.cache.Set(&cache.Item{
+			Ctx:   context.Background(),
+			Key:   key,
+			Value: rb,
+			TTL:   1 * time.Minute,
+		})
+	}
 
 	return rb, nil
 }
@@ -263,8 +281,10 @@ func (s Server) GetWorkspaceLimits(rb RoleBinding, workspaceName string) (api2.W
 	key := "cache-limits-" + workspaceName
 
 	var res api2.WorkspaceLimits
-	if err := s.cache.Get(context.Background(), key, &res); err == nil {
-		return res, nil
+	if s.cache != nil {
+		if err := s.cache.Get(context.Background(), key, &res); err == nil {
+			return res, nil
+		}
 	}
 
 	limits, err := s.workspaceClient.GetLimits(&httpclient.Context{UserRole: rb.Role, UserID: rb.UserID.String(),
@@ -273,12 +293,14 @@ func (s Server) GetWorkspaceLimits(rb RoleBinding, workspaceName string) (api2.W
 		return api2.WorkspaceLimits{}, err
 	}
 
-	s.cache.Set(&cache.Item{
-		Ctx:   context.Background(),
-		Key:   key,
-		Value: limits,
-		TTL:   1 * time.Minute,
-	})
+	if s.cache != nil {
+		s.cache.Set(&cache.Item{
+			Ctx:   context.Background(),
+			Key:   key,
+			Value: limits,
+			TTL:   1 * time.Minute,
+		})
+	}
 
 	return limits, nil
 }
@@ -287,6 +309,10 @@ type userClaim struct {
 	Workspaces     []string `json:"https://app.keibi.io/workspaces"`
 	Email          string   `json:"https://app.keibi.io/email"`
 	ExternalUserID string   `json:"sub"`
+}
+
+func (u userClaim) Valid() error {
+	return nil
 }
 
 func (s Server) Verify(ctx context.Context, authToken string) (*userClaim, error) {
