@@ -173,21 +173,40 @@ func ECSTaskDefinition(ctx context.Context, cfg aws.Config) ([]Resource, error) 
 }
 
 func ECSTaskSet(ctx context.Context, cfg aws.Config) ([]Resource, error) {
-	client := ecs.NewFromConfig(cfg)
-	output, err := client.DescribeTaskSets(ctx, &ecs.DescribeTaskSetsInput{})
+	clusters, err := listEcsClusters(ctx, cfg)
 	if err != nil {
 		return nil, err
 	}
+
+	client := ecs.NewFromConfig(cfg)
 	var values []Resource
 
-	for _, v := range output.TaskSets {
-		values = append(values, Resource{
-			ARN:  *v.TaskSetArn,
-			Name: *v.Id,
-			Description: model.ECSTaskSetDescription{
-				TaskSet: v,
-			},
-		})
+	for _, cluster := range clusters {
+		cluster := cluster
+		services, err := listECsServices(ctx, cfg, cluster)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, service := range services {
+			service := service
+			output, err := client.DescribeTaskSets(ctx, &ecs.DescribeTaskSetsInput{
+				Cluster: &cluster,
+				Service: &service,
+			})
+			if err != nil {
+				return nil, err
+			}
+			for _, v := range output.TaskSets {
+				values = append(values, Resource{
+					ARN:  *v.TaskSetArn,
+					Name: *v.Id,
+					Description: model.ECSTaskSetDescription{
+						TaskSet: v,
+					},
+				})
+			}
+		}
 	}
 
 	return values, nil
@@ -248,6 +267,9 @@ func ECSContainerInstance(ctx context.Context, cfg aws.Config) ([]Resource, erro
 				return nil, err
 			}
 
+			if page.ContainerInstanceArns == nil || len(page.ContainerInstanceArns) == 0 {
+				continue
+			}
 			output, err := client.DescribeContainerInstances(ctx, &ecs.DescribeContainerInstancesInput{
 				Cluster:            &cluster,
 				ContainerInstances: page.ContainerInstanceArns,

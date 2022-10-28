@@ -2,9 +2,11 @@ package describer
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/workspaces"
+	"gitlab.com/keibiengine/keibi-engine/pkg/aws/model"
 )
 
 func WorkSpacesConnectionAlias(ctx context.Context, cfg aws.Config) ([]Resource, error) {
@@ -36,7 +38,9 @@ func WorkSpacesConnectionAlias(ctx context.Context, cfg aws.Config) ([]Resource,
 	return values, nil
 }
 
-func WorkSpacesWorkspace(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func WorkspacesWorkspace(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+	describeCtx := GetDescribeContext(ctx)
+
 	client := workspaces.NewFromConfig(cfg)
 	paginator := workspaces.NewDescribeWorkspacesPaginator(client, &workspaces.DescribeWorkspacesInput{})
 
@@ -44,14 +48,31 @@ func WorkSpacesWorkspace(ctx context.Context, cfg aws.Config) ([]Resource, error
 	for paginator.HasMorePages() {
 		page, err := paginator.NextPage(ctx)
 		if err != nil {
-			return nil, err
+			if !isErr(err, "ValidationException") {
+				return nil, err
+			}
+			continue
 		}
 
 		for _, v := range page.Workspaces {
+			tags, err := client.DescribeTags(ctx, &workspaces.DescribeTagsInput{
+				ResourceId: v.WorkspaceId,
+			})
+			if err != nil {
+				if !isErr(err, "ValidationException") {
+					return nil, err
+				}
+				tags = &workspaces.DescribeTagsOutput{}
+			}
+
+			arn := fmt.Sprintf("arn:%s:workspaces:%s:%s:workspace/%s", describeCtx.Partition, describeCtx.Region, describeCtx.AccountID, *v.WorkspaceId)
 			values = append(values, Resource{
-				ID:          *v.WorkspaceId,
-				Name:        *v.WorkspaceId,
-				Description: v,
+				ARN:  arn,
+				Name: *v.WorkspaceId,
+				Description: model.WorkspacesWorkspaceDescription{
+					Workspace: v,
+					Tags:      tags.TagList,
+				},
 			})
 		}
 	}

@@ -3,6 +3,7 @@ package describer
 import (
 	"context"
 	"errors"
+	"fmt"
 	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -143,6 +144,37 @@ func RedshiftClusterSubnetGroup(ctx context.Context, cfg aws.Config) ([]Resource
 				ID:          *v.ClusterSubnetGroupName,
 				Name:        *v.ClusterSubnetGroupName,
 				Description: v,
+			})
+		}
+	}
+
+	return values, nil
+}
+
+func RedshiftSnapshot(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+	describeCtx := GetDescribeContext(ctx)
+
+	client := redshift.NewFromConfig(cfg)
+	paginator := redshift.NewDescribeClusterSnapshotsPaginator(client, &redshift.DescribeClusterSnapshotsInput{})
+
+	var values []Resource
+	for paginator.HasMorePages() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			if isErr(err, "ClusterSnapshotNotFound") {
+				continue
+			}
+			return nil, err
+		}
+
+		for _, v := range page.Snapshots {
+			arn := fmt.Sprintf("arn:%s:redshift:%s:%s:snapshot:%s/%s", describeCtx.Partition, describeCtx.Region, describeCtx.AccountID, *v.ClusterIdentifier, *v.SnapshotIdentifier)
+			values = append(values, Resource{
+				ARN:  arn,
+				Name: *v.SnapshotIdentifier,
+				Description: model.RedshiftSnapshotDescription{
+					Snapshot: v,
+				},
 			})
 		}
 	}

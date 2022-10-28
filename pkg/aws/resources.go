@@ -45,7 +45,7 @@ var resourceTypeToDescriber = map[string]ResourceDescriber{
 	"AWS::DynamoDb::GlobalSecondaryIndex": ParallelDescribeRegional(describer.DynamoDbGlobalSecondaryIndex),
 	"AWS::DynamoDb::LocalSecondaryIndex":  ParallelDescribeRegional(describer.DynamoDbLocalSecondaryIndex),
 	"AWS::DynamoDb::GlobalTable":          ParallelDescribeRegional(describer.DynamoDbGlobalTable),
-	"AWS::DynamoDb::Stream":               ParallelDescribeRegional(describer.DynamoDbStream),
+	"AWS::DynamoDbStreams::Stream":        ParallelDescribeRegional(describer.DynamoDbStream),
 	"AWS::DynamoDb::Table":                ParallelDescribeRegional(describer.DynamoDbTable),
 	"AWS::EC2::VolumeSnapshot":            ParallelDescribeRegional(describer.EC2VolumeSnapshot),
 	"AWS::EC2::Volume":                    ParallelDescribeRegional(describer.EC2Volume),
@@ -171,8 +171,10 @@ var resourceTypeToDescriber = map[string]ResourceDescriber{
 	"AWS::AppStream::Application": ParallelDescribeRegional(describer.AppStreamApplication),
 	"AWS::AppStream::Fleet":       ParallelDescribeRegional(describer.AppStreamFleet),
 	"AWS::AppStream::Stack":       ParallelDescribeRegional(describer.AppStreamStack),
+	"AWS::Glacier::Vault":         ParallelDescribeRegional(describer.GlacierVault),
 	// "AWS::KMS::Alias":                                             ParallelDescribeRegional(describer.KMSAlias),
-	"AWS::KMS::Key": ParallelDescribeRegional(describer.KMSKey),
+	"AWS::KMS::Key":        ParallelDescribeRegional(describer.KMSKey),
+	"AWS::Kinesis::Stream": ParallelDescribeRegional(describer.KinesisStream),
 	// "AWS::Lambda::Alias":                                          ParallelDescribeRegional(describer.LambdaAlias),
 	// "AWS::Lambda::CodeSigningConfig":                              ParallelDescribeRegional(describer.LambdaCodeSigningConfig),
 	// "AWS::Lambda::EventInvokeConfig":                              ParallelDescribeRegional(describer.LambdaEventInvokeConfig),
@@ -203,6 +205,7 @@ var resourceTypeToDescriber = map[string]ResourceDescriber{
 	// "AWS::RDS::OptionGroup":                                       ParallelDescribeRegional(describer.RDSOptionGroup),
 	"AWS::Redshift::Cluster":               ParallelDescribeRegional(describer.RedshiftCluster),
 	"AWS::Redshift::ClusterParameterGroup": ParallelDescribeRegional(describer.RedshiftClusterParameterGroup),
+	"AWS::Redshift::Snapshot":              ParallelDescribeRegional(describer.RedshiftSnapshot),
 	// "AWS::Redshift::ClusterSecurityGroup":                         ParallelDescribeRegional(describer.RedshiftClusterSecurityGroup),
 	// "AWS::Redshift::ClusterSubnetGroup":                           ParallelDescribeRegional(describer.RedshiftClusterSubnetGroup),
 	// "AWS::Route53::DNSSEC":                                        SequentialDescribeGlobal(describer.Route53DNSSEC),
@@ -263,7 +266,7 @@ var resourceTypeToDescriber = map[string]ResourceDescriber{
 	"AWS::WAFv2::WebACL": ParallelDescribeRegional(describer.WAFv2WebACL),
 	// "AWS::WAFv2::WebACLAssociation":                               ParallelDescribeRegional(describer.WAFv2WebACLAssociation),
 	// "AWS::WorkSpaces::ConnectionAlias":                            ParallelDescribeRegional(describer.WorkSpacesConnectionAlias),
-	// "AWS::WorkSpaces::Workspace":                                  ParallelDescribeRegional(describer.WorkSpacesWorkspace),
+	"AWS::Workspaces::Workspace": ParallelDescribeRegional(describer.WorkspacesWorkspace),
 }
 
 func ListResourceTypes() []string {
