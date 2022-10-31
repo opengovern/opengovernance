@@ -29,7 +29,7 @@ func NeptuneDatabase(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 
 			values = append(values, Resource{
 				ARN:  *v.DBInstanceArn,
-				Name: *v.DBName,
+				Name: *v.DBClusterIdentifier,
 				Description: model.NeptuneDatabaseDescription{
 					Database: v,
 					Tags:     tags.TagList,

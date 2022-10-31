@@ -42,32 +42,46 @@ func KeyspacesKeyspace(ctx context.Context, cfg aws.Config) ([]Resource, error) 
 }
 
 func KeyspacesTable(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+
 	client := keyspaces.NewFromConfig(cfg)
-	paginator := keyspaces.NewListTablesPaginator(client, &keyspaces.ListTablesInput{})
+	keyspacePaginator := keyspaces.NewListKeyspacesPaginator(client, &keyspaces.ListKeyspacesInput{})
 
 	var values []Resource
-	for paginator.HasMorePages() {
-		page, err := paginator.NextPage(ctx)
+	for keyspacePaginator.HasMorePages() {
+		keyspacePage, err := keyspacePaginator.NextPage(ctx)
 		if err != nil {
 			return nil, err
 		}
 
-		for _, v := range page.Tables {
-			tags, err := client.ListTagsForResource(ctx, &keyspaces.ListTagsForResourceInput{
-				ResourceArn: v.ResourceArn,
+		for _, keyspace := range keyspacePage.Keyspaces {
+			paginator := keyspaces.NewListTablesPaginator(client, &keyspaces.ListTablesInput{
+				KeyspaceName: keyspace.KeyspaceName,
 			})
-			if err != nil {
-				return nil, err
-			}
 
-			values = append(values, Resource{
-				ID:   *v.ResourceArn,
-				Name: *v.KeyspaceName,
-				Description: model.KeyspacesTableDescription{
-					Table: v,
-					Tags:  tags.Tags,
-				},
-			})
+			for paginator.HasMorePages() {
+				page, err := paginator.NextPage(ctx)
+				if err != nil {
+					return nil, err
+				}
+
+				for _, v := range page.Tables {
+					tags, err := client.ListTagsForResource(ctx, &keyspaces.ListTagsForResourceInput{
+						ResourceArn: v.ResourceArn,
+					})
+					if err != nil {
+						return nil, err
+					}
+
+					values = append(values, Resource{
+						ID:   *v.ResourceArn,
+						Name: *v.KeyspaceName,
+						Description: model.KeyspacesTableDescription{
+							Table: v,
+							Tags:  tags.Tags,
+						},
+					})
+				}
+			}
 		}
 	}
 

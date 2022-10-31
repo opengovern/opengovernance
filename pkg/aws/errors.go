@@ -40,8 +40,9 @@ func IsUnsupportedOrInvalidError(resource, region string, err error) bool {
 		if isInRegion(region, "ap-northeast-3", "eu-north-1", "eu-west-3", "sa-east-1") {
 			return true
 		}
-	case "AWS::WorkSpaces::ConnectionAlias",
-		"AWS::WorkSpaces::Workspace":
+	case "AWS::Workspaces::ConnectionAlias",
+		"AWS::Workspaces::Workspace",
+		"AWS::Workspaces::WorkspaceBundle":
 		if isInRegion(region, "ap-northeast-3", "eu-north-1", "eu-west-3", "us-east-2", "us-west-1") {
 			return true
 		}
@@ -56,6 +57,28 @@ func IsUnsupportedOrInvalidError(resource, region string, err error) bool {
 		// Region whitelist https://docs.aws.amazon.com/general/latest/gr/aas2.html#aas2_region
 		if !isInRegion(region, "us-east-2", "us-east-1", "us-west-2", "ap-south-1", "ap-northeast-2", "ap-southeast-1",
 			"ap-southeast-2", "ap-northeast-1", "ca-central-1", "eu-central-1", "eu-west-1", "eu-west-2", "us-gov-west-1") {
+			return true
+		}
+	case "AWS::Keyspaces::Keyspace", "AWS::Keyspaces::Table":
+		if isInRegion(region, "ap-northeast-3") {
+			return true
+		}
+	case "AWS::Grafana::Workspace":
+		// Region whitelist https://docs.aws.amazon.com/grafana/latest/userguide/what-is-Amazon-Managed-Service-Grafana.html
+		if !isInRegion(region, "us-east-2", "us-east-1", "us-west-2", "ap-northeast-2", "ap-southeast-1",
+			"ap-southeast-2", "ap-northeast-1", "eu-central-1", "eu-west-1", "eu-west-2") {
+			return true
+		}
+	case "AWS::AMP::Workspace":
+		// Region whitelist https://docs.aws.amazon.com/prometheus/latest/userguide/what-is-Amazon-Managed-Service-Prometheus.html
+		if !isInRegion(region, "us-east-2", "us-east-1", "us-west-2", "ap-southeast-1", "ap-southeast-2",
+			"ap-northeast-1", "eu-central-1", "eu-west-1", "eu-west-2", "eu-north-1") {
+			return true
+		}
+	case "AWS::MWAA::Environment":
+		// Region whitelist https://docs.aws.amazon.com/mwaa/latest/userguide/what-is-mwaa.html#regions-mwaa
+		if !isInRegion(region, "eu-central-1", "eu-west-1", "eu-west-2", "eu-west-3", "ap-south-1", "ap-southeast-1",
+			"ap-southeast-2", "ap-northeast-1", "ap-northeast-2", "us-east-1", "us-east-2", "us-west-2", "ca-central-1", "sa-east-1") {
 			return true
 		}
 	}
