@@ -211,6 +211,7 @@ var resourceTypeToDescriber = map[string]ResourceDescriber{
 	// "AWS::RDS::DBSecurityGroup":                                   ParallelDescribeRegional(describer.RDSDBSecurityGroup),
 	// "AWS::RDS::DBSubnetGroup":                                     ParallelDescribeRegional(describer.RDSDBSubnetGroup),
 	"AWS::RDS::DBEventSubscription": ParallelDescribeRegional(describer.RDSDBEventSubscription),
+	"AWS::RDS::DBSnapshot":          ParallelDescribeRegional(describer.RDSDBSnapshot),
 	"AWS::RDS::GlobalCluster":       ParallelDescribeRegional(describer.RDSGlobalCluster),
 	// "AWS::RDS::OptionGroup":                                       ParallelDescribeRegional(describer.RDSOptionGroup),
 	"AWS::Redshift::Cluster":               ParallelDescribeRegional(describer.RedshiftCluster),
