@@ -10,27 +10,36 @@ import (
 
 func AppStreamApplication(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	client := appstream.NewFromConfig(cfg)
-	output, err := client.DescribeApplications(ctx, &appstream.DescribeApplicationsInput{})
-	if err != nil {
-		return nil, err
-	}
 
 	var values []Resource
-	for _, item := range output.Applications {
-		tags, err := client.ListTagsForResource(ctx, &appstream.ListTagsForResourceInput{
-			ResourceArn: item.Arn,
+	err := PaginateRetrieveAll(func(prevToken *string) (nextToken *string, err error) {
+		output, err := client.DescribeApplications(ctx, &appstream.DescribeApplicationsInput{
+			NextToken: prevToken,
 		})
 		if err != nil {
 			return nil, err
 		}
-		values = append(values, Resource{
-			ARN:  *item.Arn,
-			Name: *item.Name,
-			Description: model.AppStreamApplicationDescription{
-				Application: item,
-				Tags:        tags.Tags,
-			},
-		})
+
+		for _, item := range output.Applications {
+			tags, err := client.ListTagsForResource(ctx, &appstream.ListTagsForResourceInput{
+				ResourceArn: item.Arn,
+			})
+			if err != nil {
+				return nil, err
+			}
+			values = append(values, Resource{
+				ARN:  *item.Arn,
+				Name: *item.Name,
+				Description: model.AppStreamApplicationDescription{
+					Application: item,
+					Tags:        tags.Tags,
+				},
+			})
+		}
+		return output.NextToken, nil
+	})
+	if err != nil {
+		return nil, err
 	}
 
 	return values, nil
@@ -38,27 +47,36 @@ func AppStreamApplication(ctx context.Context, cfg aws.Config) ([]Resource, erro
 
 func AppStreamStack(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	client := appstream.NewFromConfig(cfg)
-	output, err := client.DescribeStacks(ctx, &appstream.DescribeStacksInput{})
-	if err != nil {
-		return nil, err
-	}
 
 	var values []Resource
-	for _, item := range output.Stacks {
-		tags, err := client.ListTagsForResource(ctx, &appstream.ListTagsForResourceInput{
-			ResourceArn: item.Arn,
+	err := PaginateRetrieveAll(func(prevToken *string) (nextToken *string, err error) {
+		output, err := client.DescribeStacks(ctx, &appstream.DescribeStacksInput{
+			NextToken: prevToken,
 		})
 		if err != nil {
 			return nil, err
 		}
-		values = append(values, Resource{
-			ARN:  *item.Arn,
-			Name: *item.Name,
-			Description: model.AppStreamStackDescription{
-				Stack: item,
-				Tags:  tags.Tags,
-			},
-		})
+
+		for _, item := range output.Stacks {
+			tags, err := client.ListTagsForResource(ctx, &appstream.ListTagsForResourceInput{
+				ResourceArn: item.Arn,
+			})
+			if err != nil {
+				return nil, err
+			}
+			values = append(values, Resource{
+				ARN:  *item.Arn,
+				Name: *item.Name,
+				Description: model.AppStreamStackDescription{
+					Stack: item,
+					Tags:  tags.Tags,
+				},
+			})
+		}
+		return output.NextToken, nil
+	})
+	if err != nil {
+		return nil, err
 	}
 
 	return values, nil
@@ -66,27 +84,36 @@ func AppStreamStack(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 
 func AppStreamFleet(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	client := appstream.NewFromConfig(cfg)
-	output, err := client.DescribeFleets(ctx, &appstream.DescribeFleetsInput{})
-	if err != nil {
-		return nil, err
-	}
 
 	var values []Resource
-	for _, item := range output.Fleets {
-		tags, err := client.ListTagsForResource(ctx, &appstream.ListTagsForResourceInput{
-			ResourceArn: item.Arn,
+	err := PaginateRetrieveAll(func(prevToken *string) (nextToken *string, err error) {
+		output, err := client.DescribeFleets(ctx, &appstream.DescribeFleetsInput{
+			NextToken: prevToken,
 		})
 		if err != nil {
 			return nil, err
 		}
-		values = append(values, Resource{
-			ARN:  *item.Arn,
-			Name: *item.Name,
-			Description: model.AppStreamFleetDescription{
-				Fleet: item,
-				Tags:  tags.Tags,
-			},
-		})
+
+		for _, item := range output.Fleets {
+			tags, err := client.ListTagsForResource(ctx, &appstream.ListTagsForResourceInput{
+				ResourceArn: item.Arn,
+			})
+			if err != nil {
+				return nil, err
+			}
+			values = append(values, Resource{
+				ARN:  *item.Arn,
+				Name: *item.Name,
+				Description: model.AppStreamFleetDescription{
+					Fleet: item,
+					Tags:  tags.Tags,
+				},
+			})
+		}
+		return output.NextToken, nil
+	})
+	if err != nil {
+		return nil, err
 	}
 
 	return values, nil

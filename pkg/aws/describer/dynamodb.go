@@ -133,21 +133,34 @@ func DynamoDbLocalSecondaryIndex(ctx context.Context, cfg aws.Config) ([]Resourc
 
 func DynamoDbStream(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	client := dynamodbstreams.NewFromConfig(cfg)
-
-	streams, err := client.ListStreams(ctx, &dynamodbstreams.ListStreamsInput{})
-	if err != nil {
-		return nil, err
-	}
-
 	var values []Resource
-	for _, v := range streams.Streams {
-		values = append(values, Resource{
-			ARN:  *v.StreamArn,
-			Name: *v.StreamLabel,
-			Description: model.DynamoDbStreamDescription{
-				Stream: v,
-			},
+	var lastArn *string = nil
+	for {
+		streams, err := client.ListStreams(ctx, &dynamodbstreams.ListStreamsInput{
+			ExclusiveStartStreamArn: lastArn,
+			Limit:                   aws.Int32(100),
 		})
+		if len(streams.Streams) == 0 {
+			break
+		}
+
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range streams.Streams {
+			values = append(values, Resource{
+				ARN:  *v.StreamArn,
+				Name: *v.StreamLabel,
+				Description: model.DynamoDbStreamDescription{
+					Stream: v,
+				},
+			})
+		}
+		if streams.LastEvaluatedStreamArn == nil {
+			break
+		}
+		lastArn = streams.LastEvaluatedStreamArn
 	}
 
 	return values, nil
@@ -155,23 +168,37 @@ func DynamoDbStream(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 
 func DynamoDbBackUp(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	client := dynamodb.NewFromConfig(cfg)
-	backups, err := client.ListBackups(ctx, &dynamodb.ListBackupsInput{})
-	if err != nil {
-		if isErr(err, "ValidationException") {
-			return nil, nil
-		}
-		return nil, err
-	}
-
 	var values []Resource
-	for _, v := range backups.BackupSummaries {
-		values = append(values, Resource{
-			ARN:  *v.BackupArn,
-			Name: *v.BackupName,
-			Description: model.DynamoDbBackupDescription{
-				Backup: v,
-			},
+	var lastArn *string = nil
+	for {
+		backups, err := client.ListBackups(ctx, &dynamodb.ListBackupsInput{
+			ExclusiveStartBackupArn: lastArn,
+			Limit:                   aws.Int32(100),
 		})
+		if err != nil {
+			if isErr(err, "ValidationException") {
+				return nil, nil
+			}
+			return nil, err
+		}
+		if len(backups.BackupSummaries) == 0 {
+			break
+		}
+
+		for _, v := range backups.BackupSummaries {
+			values = append(values, Resource{
+				ARN:  *v.BackupArn,
+				Name: *v.BackupName,
+				Description: model.DynamoDbBackupDescription{
+					Backup: v,
+				},
+			})
+		}
+
+		if backups.LastEvaluatedBackupArn == nil {
+			break
+		}
+		lastArn = backups.LastEvaluatedBackupArn
 	}
 
 	return values, nil
@@ -179,32 +206,47 @@ func DynamoDbBackUp(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 
 func DynamoDbGlobalTable(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	client := dynamodb.NewFromConfig(cfg)
-	globalTables, err := client.ListGlobalTables(ctx, &dynamodb.ListGlobalTablesInput{})
-	if err != nil {
-		if isErr(err, "ResourceNotFoundException") {
-			return nil, nil
-		}
-		return nil, err
-	}
 
 	var values []Resource
-	for _, table := range globalTables.GlobalTables {
-		globalTable, err := client.DescribeGlobalTable(ctx, &dynamodb.DescribeGlobalTableInput{
-			GlobalTableName: table.GlobalTableName,
+	var last *string = nil
+	for {
+		globalTables, err := client.ListGlobalTables(ctx, &dynamodb.ListGlobalTablesInput{
+			ExclusiveStartGlobalTableName: last,
+			Limit:                         aws.Int32(100),
 		})
 		if err != nil {
 			if isErr(err, "ResourceNotFoundException") {
-				continue
+				return nil, nil
 			}
 			return nil, err
 		}
-		values = append(values, Resource{
-			ARN:  *globalTable.GlobalTableDescription.GlobalTableArn,
-			Name: *globalTable.GlobalTableDescription.GlobalTableName,
-			Description: model.DynamoDbGlobalTableDescription{
-				GlobalTable: *globalTable.GlobalTableDescription,
-			},
-		})
+		if len(globalTables.GlobalTables) == 0 {
+			break
+		}
+
+		for _, table := range globalTables.GlobalTables {
+			globalTable, err := client.DescribeGlobalTable(ctx, &dynamodb.DescribeGlobalTableInput{
+				GlobalTableName: table.GlobalTableName,
+			})
+			if err != nil {
+				if isErr(err, "ResourceNotFoundException") {
+					continue
+				}
+				return nil, err
+			}
+			values = append(values, Resource{
+				ARN:  *globalTable.GlobalTableDescription.GlobalTableArn,
+				Name: *globalTable.GlobalTableDescription.GlobalTableName,
+				Description: model.DynamoDbGlobalTableDescription{
+					GlobalTable: *globalTable.GlobalTableDescription,
+				},
+			})
+		}
+
+		if globalTables.LastEvaluatedGlobalTableName == nil {
+			break
+		}
+		last = globalTables.LastEvaluatedGlobalTableName
 	}
 
 	return values, nil
