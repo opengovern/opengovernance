@@ -30,6 +30,7 @@ type WorkspaceResponse struct {
 	Tier        string    `json:"tier"`
 	URI         string    `json:"uri"`
 	Status      string    `json:"status"`
+	Version     string    `json:"version"`
 	Description string    `json:"description"`
 	CreatedAt   time.Time `json:"createdAt"`
 }
