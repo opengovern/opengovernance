@@ -4830,6 +4830,9 @@ const docTemplate = `{
                 },
                 "uri": {
                     "type": "string"
+                },
+                "version": {
+                    "type": "string"
                 }
             }
         },

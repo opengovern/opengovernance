@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpclient"
@@ -188,6 +189,8 @@ func (r *httpRoutes) Invite(ctx echo.Context) error {
 	if err := bindValidate(ctx, &req); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err)
 	}
+
+	req.Email = strings.ToLower(strings.TrimSpace(req.Email))
 
 	workspaceName := httpserver.GetWorkspaceName(ctx)
 

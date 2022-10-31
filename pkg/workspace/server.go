@@ -741,12 +741,23 @@ func (s *Server) ListWorkspaces(c echo.Context) error {
 			continue
 		}
 
+		version := "unspecified"
+		var keibiVersionConfig corev1.ConfigMap
+		err = s.kubeClient.Get(context.Background(), k8sclient.ObjectKey{
+			Namespace: workspace.ID.String(),
+			Name:      "keibi-version",
+		}, &keibiVersionConfig)
+		if err == nil {
+			version = keibiVersionConfig.Data["version"]
+		}
+
 		workspaces = append(workspaces, &api.WorkspaceResponse{
 			ID:          workspace.ID.String(),
 			OwnerId:     workspace.OwnerId,
 			URI:         workspace.URI,
 			Name:        workspace.Name,
 			Tier:        string(workspace.Tier),
+			Version:     version,
 			Status:      workspace.Status,
 			Description: workspace.Description,
 			CreatedAt:   workspace.CreatedAt,

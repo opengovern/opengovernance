@@ -67,6 +67,7 @@ func (s Server) Check(ctx context.Context, req *envoyauth.CheckRequest) (*envoya
 			zap.Error(err))
 		return unAuth, nil
 	}
+	user.Email = strings.ToLower(strings.TrimSpace(user.Email))
 
 	if user.Email == "" {
 		s.logger.Warn("denied access due to failure to get email from token",

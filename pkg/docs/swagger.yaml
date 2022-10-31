@@ -1165,6 +1165,8 @@ definitions:
         type: string
       uri:
         type: string
+      version:
+        type: string
     type: object
   api.WorkspaceRoleBinding:
     properties:
