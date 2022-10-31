@@ -146,6 +146,7 @@ var awsMap = map[string]string{
 	"AWS::SES::ConfigurationSet":                "aws_ses_configuration_set",
 	"AWS::SES::Identity":                        "aws_ses_identity",
 	"AWS::Workspaces::Bundle":                   "aws_workspaces_bundle",
+	"AWS::RDS::DBSnapshot":                      "aws_rds_db_snapshot",
 	//"AWS::EFS::AccessPoint":                     "aws_efs_access_point",
 	//"AWS::EFS::MountTarget":                     "aws_efs_mount_target",
 }
@@ -382,6 +383,7 @@ var AWSDescriptionMap = map[string]interface{}{
 	"AWS::SES::ConfigurationSet":                &keibi.SESConfigurationSet{},
 	"AWS::SES::Identity":                        &keibi.SESIdentity{},
 	"AWS::Workspaces::Bundle":                   &keibi.WorkspacesBundle{},
+	"AWS::RDS::DBSnapshot":                      &keibi.RDSDBSnapshot{},
 }
 var AzureDescriptionMap = map[string]interface{}{
 	"Microsoft.CognitiveServices/accounts":                  &keibi.CognitiveAccount{},
