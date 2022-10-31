@@ -345,11 +345,6 @@ func RDSOptionGroup(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	return values, nil
 }
 
-type RDSDBSnapshotDescription struct {
-	DBSnapshot           types.DBSnapshot
-	DBSnapshotAttributes []types.DBSnapshotAttribute
-}
-
 func RDSDBSnapshot(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	client := rds.NewFromConfig(cfg)
 	paginator := rds.NewDescribeDBSnapshotsPaginator(client, &rds.DescribeDBSnapshotsInput{})
@@ -371,8 +366,8 @@ func RDSDBSnapshot(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 
 			values = append(values, Resource{
 				ARN:  *v.DBSnapshotArn,
-				Name: *v.DBSnapshotArn,
-				Description: RDSDBSnapshotDescription{
+				Name: *v.DBSnapshotIdentifier,
+				Description: model.RDSDBSnapshotDescription{
 					DBSnapshot:           v,
 					DBSnapshotAttributes: attrs.DBSnapshotAttributesResult.DBSnapshotAttributes,
 				},
