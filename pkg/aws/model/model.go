@@ -1306,7 +1306,7 @@ type MQBrokerDescription struct {
 //  ===================  Neptune  ===================
 
 //index:aws_neptune_database
-//getfilter:db_instance_identifier=description.Database.DBInstanceIdentifier
+//getfilter:db_name=description.Database.DBName
 type NeptuneDatabaseDescription struct {
 	Database neptune.DBInstance
 	Tags     []neptune.Tag
