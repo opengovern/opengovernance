@@ -162,7 +162,7 @@ func (db Database) GetCategories(category, subCategory string) ([]Category, erro
 func (db Database) CreateOrUpdateMetric(metric Metric) error {
 	return db.orm.Clauses(clause.OnConflict{
 		Columns:   []clause.Column{{Name: "source_id"}, {Name: "resource_type"}},
-		DoUpdates: clause.AssignmentColumns([]string{"schedule_job_id", "count"}),
+		DoUpdates: clause.AssignmentColumns([]string{"schedule_job_id", "count", "last_day_count", "last_week_count", "last_quarter_count", "last_year_count"}),
 	}).Create(metric).Error
 }
 
