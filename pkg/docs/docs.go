@@ -692,6 +692,29 @@ const docTemplate = `{
                 }
             }
         },
+        "/inventory/api/v1/connection/{connection_id}/summary": {
+            "post": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json",
+                    "text/csv"
+                ],
+                "tags": [
+                    "inventory"
+                ],
+                "summary": "Get connection summary",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                }
+            }
+        },
         "/inventory/api/v1/cost/top/accounts": {
             "get": {
                 "consumes": [

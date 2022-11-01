@@ -1805,6 +1805,21 @@ paths:
       summary: Return list of categories
       tags:
       - inventory
+  /inventory/api/v1/connection/{connection_id}/summary:
+    post:
+      consumes:
+      - application/json
+      produces:
+      - application/json
+      - text/csv
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: integer
+      summary: Get connection summary
+      tags:
+      - inventory
   /inventory/api/v1/cost/top/accounts:
     get:
       consumes:

@@ -398,3 +398,14 @@ type Category struct {
 	Name        string   `json:"name"`
 	SubCategory []string `json:"subCategory"`
 }
+
+type ConnectionSummaryCategory struct {
+	ResourceCount int            `json:"resourceCount"`
+	SubCategories map[string]int `json:"subCategories"`
+}
+
+type ConnectionSummaryResponse struct {
+	Categories    map[string]ConnectionSummaryCategory `json:"categories"`
+	CloudServices map[string]int                       `json:"cloudServices"`
+	ResourceTypes map[string]int                       `json:"resourceTypes"`
+}

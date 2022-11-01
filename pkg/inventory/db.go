@@ -175,6 +175,14 @@ func (db Database) FetchConnectionMetrics(sourceID string, resourceTypes []strin
 	return metrics, tx.Error
 }
 
+func (db Database) FetchConnectionAllMetrics(sourceID string) ([]Metric, error) {
+	var metrics []Metric
+	tx := db.orm.Model(Metric{}).
+		Where("source_id = ?", sourceID).
+		Find(&metrics)
+	return metrics, tx.Error
+}
+
 func (db Database) FetchProviderMetrics(provider source.Type, resourceTypes []string) ([]Metric, error) {
 	var metrics []Metric
 	tx := db.orm.Model(Metric{}).

@@ -84,6 +84,8 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 
 	v2.GET("/metrics/categorized", httpserver.AuthorizeHandler(h.GetCategorizedMetricsV2, api3.ViewerRole))
 	v2.GET("/categories", httpserver.AuthorizeHandler(h.ListCategoriesV2, api3.ViewerRole))
+
+	v1.GET("/connection/:connection_id/summary", httpserver.AuthorizeHandler(h.GetConnectionSummary, api3.ViewerRole))
 }
 
 func bindValidate(ctx echo.Context, i interface{}) error {
@@ -1637,6 +1639,56 @@ func (h *HttpHandler) CountResources(ctx echo.Context) error {
 	}
 
 	return ctx.JSON(http.StatusOK, value)
+}
+
+// GetConnectionSummary godoc
+// @Summary Get connection summary
+// @Tags    inventory
+// @Accept  json
+// @Produce json,text/csv
+// @Success 200 {object} int64
+// @Router  /inventory/api/v1/connection/{connection_id}/summary [post]
+func (h *HttpHandler) GetConnectionSummary(ctx echo.Context) error {
+	connectionID := ctx.Param("connection_id")
+
+	metrics, err := h.db.FetchConnectionAllMetrics(connectionID)
+	if err != nil {
+		return err
+	}
+
+	cats, err := h.db.ListCategories()
+	if err != nil {
+		return err
+	}
+
+	resp := api.ConnectionSummaryResponse{
+		Categories:    map[string]api.ConnectionSummaryCategory{},
+		CloudServices: map[string]int{},
+		ResourceTypes: map[string]int{},
+	}
+	for _, m := range metrics {
+		cloudService := cloudservice.ServiceNameByResourceType(m.ResourceType)
+		resp.ResourceTypes[m.ResourceType] += m.Count
+		resp.CloudServices[cloudService] += m.Count
+		for _, c := range cats {
+			if c.CloudService == cloudService {
+				v, ok := resp.Categories[c.Name]
+				if !ok {
+					v = api.ConnectionSummaryCategory{
+						ResourceCount: 0,
+						SubCategories: map[string]int{},
+					}
+				}
+
+				v.ResourceCount += m.Count
+				v.SubCategories[c.SubCategory] += m.Count
+
+				resp.Categories[c.Name] = v
+			}
+		}
+	}
+
+	return ctx.JSON(http.StatusOK, resp)
 }
 
 // GetResourcesFilters godoc
