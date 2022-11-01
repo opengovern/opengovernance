@@ -42,7 +42,7 @@ func IsUnsupportedOrInvalidError(resource, region string, err error) bool {
 		}
 	case "AWS::Workspaces::ConnectionAlias",
 		"AWS::Workspaces::Workspace",
-		"AWS::Workspaces::WorkspaceBundle":
+		"AWS::Workspaces::Bundle":
 		if isInRegion(region, "ap-northeast-3", "eu-north-1", "eu-west-3", "us-east-2", "us-west-1") {
 			return true
 		}
