@@ -433,9 +433,9 @@ func (s *Server) handleWorkspace(workspace *Workspace) error {
 		}
 		if backup == nil {
 			return s.CreateBackup(*workspace)
-		} else if backup.Status.Phase != velerov1api.BackupPhaseCompleted {
+		} /* else if backup.Status.Phase != velerov1api.BackupPhaseCompleted {
 			return nil
-		}
+		}*/
 
 		if helmRelease != nil {
 			s.e.Logger.Infof("delete helm release %s with status %s", workspace.ID.String(), workspace.Status)
