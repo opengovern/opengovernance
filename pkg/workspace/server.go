@@ -749,6 +749,8 @@ func (s *Server) ListWorkspaces(c echo.Context) error {
 		}, &keibiVersionConfig)
 		if err == nil {
 			version = keibiVersionConfig.Data["version"]
+		} else {
+			fmt.Printf("failed to load version due to %v\n", err)
 		}
 
 		workspaces = append(workspaces, &api.WorkspaceResponse{
