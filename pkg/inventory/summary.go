@@ -196,10 +196,27 @@ func GetResourcesFromPostgres(db Database, provider source.Type, sourceID *strin
 		}
 	}
 
+	padd := func(x, y *int) *int {
+		var v *int
+		if x != nil && y != nil {
+			t := *x + *y
+			v = &t
+		} else if x != nil {
+			v = x
+		} else if y != nil {
+			v = y
+		}
+		return v
+	}
+
 	resourceTypeResponse := map[string]api.ResourceTypeResponse{}
 	for _, hit := range m {
 		if v, ok := resourceTypeResponse[hit.ResourceType]; ok {
 			v.ResourceCount += hit.Count
+			v.LastDayCount = padd(v.LastDayCount, hit.LastDayCount)
+			v.LastWeekCount = padd(v.LastWeekCount, hit.LastWeekCount)
+			v.LastQuarterCount = padd(v.LastQuarterCount, hit.LastQuarterCount)
+			v.LastYearCount = padd(v.LastYearCount, hit.LastYearCount)
 			resourceTypeResponse[hit.ResourceType] = v
 		} else {
 			resourceTypeResponse[hit.ResourceType] = api.ResourceTypeResponse{
