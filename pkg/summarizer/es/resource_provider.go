@@ -15,11 +15,12 @@ const (
 type ProviderReportType string
 
 const (
-	ServiceProviderSummary      ProviderReportType = "ServicePerProvider"
-	CategoryProviderSummary     ProviderReportType = "CategoryPerProvider"
-	ResourceTypeProviderSummary ProviderReportType = "ResourceTypePerProvider"
-	LocationProviderSummary     ProviderReportType = "LocationPerProvider"
-	TrendProviderSummary        ProviderReportType = "TrendPerProviderHistory"
+	ServiceProviderSummary           ProviderReportType = "ServicePerProvider"
+	CategoryProviderSummary          ProviderReportType = "CategoryPerProvider"
+	ResourceTypeProviderSummary      ProviderReportType = "ResourceTypePerProvider"
+	LocationProviderSummary          ProviderReportType = "LocationPerProvider"
+	TrendProviderSummary             ProviderReportType = "TrendPerProviderHistory"
+	ResourceTypeTrendProviderSummary ProviderReportType = "ResourceTypeTrendPerProviderHistory"
 )
 
 type ProviderServiceSummary struct {
@@ -87,6 +88,28 @@ func (r ProviderTrendSummary) KeysAndIndex() ([]string, string) {
 		r.SourceType.String(),
 		strconv.FormatInt(r.DescribedAt, 10),
 		string(TrendProviderSummary),
+	}
+	if strings.HasSuffix(string(r.ReportType), "History") {
+		keys = append(keys, fmt.Sprintf("%d", r.ScheduleJobID))
+	}
+	return keys, ProviderSummaryIndex
+}
+
+type ProviderResourceTypeTrendSummary struct {
+	ScheduleJobID uint               `json:"schedule_job_id"`
+	SourceType    source.Type        `json:"source_type"`
+	DescribedAt   int64              `json:"described_at"`
+	ResourceType  string             `json:"resource_type"`
+	ResourceCount int                `json:"resource_count"`
+	ReportType    ProviderReportType `json:"report_type"`
+}
+
+func (r ProviderResourceTypeTrendSummary) KeysAndIndex() ([]string, string) {
+	keys := []string{
+		r.SourceType.String(),
+		r.ResourceType,
+		strconv.FormatInt(r.DescribedAt, 10),
+		string(ResourceTypeTrendProviderSummary),
 	}
 	if strings.HasSuffix(string(r.ReportType), "History") {
 		keys = append(keys, fmt.Sprintf("%d", r.ScheduleJobID))

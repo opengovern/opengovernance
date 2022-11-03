@@ -15,13 +15,14 @@ const (
 type ConnectionReportType string
 
 const (
-	ServiceSummary                   ConnectionReportType = "ServicePerSource"
-	CategorySummary                  ConnectionReportType = "CategoryPerSource"
-	ResourceSummary                  ConnectionReportType = "ResourcesPerSource"
-	ResourceTypeSummary              ConnectionReportType = "ResourceTypePerSource"
-	LocationConnectionSummary        ConnectionReportType = "LocationPerSource"
-	ServiceLocationConnectionSummary ConnectionReportType = "ServiceLocationPerSource"
-	TrendConnectionSummary           ConnectionReportType = "TrendPerSourceHistory"
+	ServiceSummary                     ConnectionReportType = "ServicePerSource"
+	CategorySummary                    ConnectionReportType = "CategoryPerSource"
+	ResourceSummary                    ConnectionReportType = "ResourcesPerSource"
+	ResourceTypeSummary                ConnectionReportType = "ResourceTypePerSource"
+	LocationConnectionSummary          ConnectionReportType = "LocationPerSource"
+	ServiceLocationConnectionSummary   ConnectionReportType = "ServiceLocationPerSource"
+	TrendConnectionSummary             ConnectionReportType = "TrendPerSourceHistory"
+	ResourceTypeTrendConnectionSummary ConnectionReportType = "ResourceTypeTrendPerSourceHistory"
 )
 
 type ConnectionResourcesSummary struct {
@@ -106,6 +107,30 @@ func (r ConnectionTrendSummary) KeysAndIndex() ([]string, string) {
 		strconv.FormatInt(r.DescribedAt, 10),
 		r.SourceID,
 		string(TrendConnectionSummary),
+	}
+	if strings.HasSuffix(string(r.ReportType), "History") {
+		keys = append(keys, fmt.Sprintf("%d", r.ScheduleJobID))
+	}
+	return keys, ConnectionSummaryIndex
+}
+
+type ConnectionResourceTypeTrendSummary struct {
+	ScheduleJobID uint                 `json:"schedule_job_id"`
+	SourceID      string               `json:"source_id"`
+	SourceType    source.Type          `json:"source_type"`
+	SourceJobID   uint                 `json:"source_job_id"`
+	DescribedAt   int64                `json:"described_at"`
+	ResourceType  string               `json:"resource_type"`
+	ResourceCount int                  `json:"resource_count"`
+	ReportType    ConnectionReportType `json:"report_type"`
+}
+
+func (r ConnectionResourceTypeTrendSummary) KeysAndIndex() ([]string, string) {
+	keys := []string{
+		strconv.FormatInt(r.DescribedAt, 10),
+		r.SourceID,
+		r.ResourceType,
+		string(ResourceTypeTrendConnectionSummary),
 	}
 	if strings.HasSuffix(string(r.ReportType), "History") {
 		keys = append(keys, fmt.Sprintf("%d", r.ScheduleJobID))

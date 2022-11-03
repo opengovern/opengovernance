@@ -9,18 +9,22 @@ import (
 )
 
 type trendSummaryBuilder struct {
-	client            keibi.Client
-	summarizerJobID   uint
-	connectionSummary map[string]es.ConnectionTrendSummary
-	providerSummary   map[source.Type]es.ProviderTrendSummary
+	client                        keibi.Client
+	summarizerJobID               uint
+	connectionSummary             map[string]es.ConnectionTrendSummary
+	providerSummary               map[source.Type]es.ProviderTrendSummary
+	connectionResourceTypeSummary map[string]es.ConnectionResourceTypeTrendSummary
+	providerResourceTypeSummary   map[string]es.ProviderResourceTypeTrendSummary
 }
 
 func NewTrendSummaryBuilder(client keibi.Client, summarizerJobID uint) *trendSummaryBuilder {
 	return &trendSummaryBuilder{
-		client:            client,
-		summarizerJobID:   summarizerJobID,
-		connectionSummary: make(map[string]es.ConnectionTrendSummary),
-		providerSummary:   make(map[source.Type]es.ProviderTrendSummary),
+		client:                        client,
+		summarizerJobID:               summarizerJobID,
+		connectionSummary:             make(map[string]es.ConnectionTrendSummary),
+		providerSummary:               make(map[source.Type]es.ProviderTrendSummary),
+		connectionResourceTypeSummary: make(map[string]es.ConnectionResourceTypeTrendSummary),
+		providerResourceTypeSummary:   make(map[string]es.ProviderResourceTypeTrendSummary),
 	}
 }
 
@@ -52,6 +56,38 @@ func (b *trendSummaryBuilder) Process(resource describe.LookupResource) {
 	v2 := b.providerSummary[resource.SourceType]
 	v2.ResourceCount++
 	b.providerSummary[resource.SourceType] = v2
+
+	key := resource.SourceID + "_" + resource.ResourceType
+	if _, ok := b.connectionResourceTypeSummary[key]; !ok {
+		b.connectionResourceTypeSummary[key] = es.ConnectionResourceTypeTrendSummary{
+			ScheduleJobID: resource.ScheduleJobID,
+			SourceID:      resource.SourceID,
+			SourceType:    resource.SourceType,
+			SourceJobID:   resource.SourceJobID,
+			DescribedAt:   resource.CreatedAt,
+			ResourceType:  resource.ResourceType,
+			ResourceCount: 0,
+			ReportType:    es.ResourceTypeTrendConnectionSummary,
+		}
+	}
+	v3 := b.connectionResourceTypeSummary[key]
+	v3.ResourceCount++
+	b.connectionResourceTypeSummary[key] = v3
+
+	key = resource.SourceType.String() + "_" + resource.ResourceType
+	if _, ok := b.providerResourceTypeSummary[key]; !ok {
+		b.providerResourceTypeSummary[key] = es.ProviderResourceTypeTrendSummary{
+			ScheduleJobID: resource.ScheduleJobID,
+			SourceType:    resource.SourceType,
+			DescribedAt:   resource.CreatedAt,
+			ResourceType:  resource.ResourceType,
+			ResourceCount: 0,
+			ReportType:    es.ResourceTypeProviderSummary,
+		}
+	}
+	v4 := b.providerResourceTypeSummary[key]
+	v4.ResourceCount++
+	b.providerResourceTypeSummary[key] = v4
 }
 
 func (b *trendSummaryBuilder) PopulateHistory(lastDayJobID, lastWeekJobID, lastQuarterJobID, lastYearJobID uint) error {
@@ -64,6 +100,12 @@ func (b *trendSummaryBuilder) Build() []kafka.Doc {
 		docs = append(docs, v)
 	}
 	for _, v := range b.providerSummary {
+		docs = append(docs, v)
+	}
+	for _, v := range b.connectionResourceTypeSummary {
+		docs = append(docs, v)
+	}
+	for _, v := range b.providerResourceTypeSummary {
 		docs = append(docs, v)
 	}
 	return docs

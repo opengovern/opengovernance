@@ -59,11 +59,13 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	v1.POST("/resource", httpserver.AuthorizeHandler(h.GetResource, api3.ViewerRole))
 
 	v1.GET("/resources/trend", httpserver.AuthorizeHandler(h.GetResourceGrowthTrend, api3.ViewerRole))
+	v2.GET("/resources/trend", httpserver.AuthorizeHandler(h.GetResourceGrowthTrendV2, api3.ViewerRole))
 	v1.GET("/resources/top/growing/accounts", httpserver.AuthorizeHandler(h.GetTopFastestGrowingAccountsByResourceCount, api3.ViewerRole))
 	v1.GET("/resources/top/accounts", httpserver.AuthorizeHandler(h.GetTopAccountsByResourceCount, api3.ViewerRole))
 	v1.GET("/resources/top/regions", httpserver.AuthorizeHandler(h.GetTopRegionsByResourceCount, api3.ViewerRole))
 	v1.GET("/resources/top/services", httpserver.AuthorizeHandler(h.GetTopServicesByResourceCount, api3.ViewerRole))
 	v1.GET("/resources/categories", httpserver.AuthorizeHandler(h.GetCategories, api3.ViewerRole))
+	v2.GET("/resources/categories", httpserver.AuthorizeHandler(h.GetCategoriesV2, api3.ViewerRole))
 	v1.GET("/accounts/resource/count", httpserver.AuthorizeHandler(h.GetAccountsResourceCount, api3.ViewerRole))
 
 	v1.GET("/resources/distribution", httpserver.AuthorizeHandler(h.GetResourceDistribution, api3.ViewerRole))
@@ -162,6 +164,105 @@ func (h *HttpHandler) GetResourceGrowthTrend(ctx echo.Context) error {
 	sort.SliceStable(resp, func(i, j int) bool {
 		return resp[i].Timestamp < resp[j].Timestamp
 	})
+	return ctx.JSON(http.StatusOK, resp)
+}
+
+// GetResourceGrowthTrendV2 godoc
+// @Summary Returns trend of resource growth for specific account
+// @Tags    benchmarks
+// @Accept  json
+// @Produce json
+// @Param   sourceId   query    string false "SourceID"
+// @Param   provider   query    string false "Provider"
+// @Param   timeWindow query    string false "Time Window" Enums(24h,1w,3m,1y,max)
+// @Param   category   query    string false "Category"
+// @Success 200        {object} []api.CategoryTrend
+// @Router  /inventory/api/v1/resources/trend [get]
+func (h *HttpHandler) GetResourceGrowthTrendV2(ctx echo.Context) error {
+	var err error
+	var fromTime, toTime int64
+
+	provider, _ := source.ParseType(ctx.QueryParam("provider"))
+	sourceID := ctx.QueryParam("sourceId")
+	timeWindow := ctx.QueryParam("timeWindow")
+	if timeWindow == "" {
+		timeWindow = "24h"
+	}
+	toTime = time.Now().UnixMilli()
+	tw, err := ParseTimeWindow(timeWindow)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid timeWindow")
+	}
+	fromTime = time.Now().Add(-1 * tw).UnixMilli()
+
+	category := ctx.QueryParam("category")
+	cats, err := h.db.GetSubCategories(category)
+	if err != nil {
+		return err
+	}
+	var resourceTypes []string
+	for _, cat := range cats {
+		resourceTypes = append(resourceTypes, cloudservice.ResourceListByServiceName(cat.CloudService)...)
+	}
+
+	sortMap := []map[string]interface{}{
+		{
+			"described_at": "asc",
+		},
+	}
+
+	trends := map[string]api.CategoryTrend{}
+	if sourceID != "" {
+		hits, err := es.FetchConnectionResourceTypeTrendSummaryPage(h.client, &sourceID, resourceTypes, fromTime, toTime, sortMap, EsFetchPageSize)
+		if err != nil {
+			return err
+		}
+		for _, hit := range hits {
+			hitService := cloudservice.ServiceNameByResourceType(hit.ResourceType)
+			for _, cat := range cats {
+				if hitService != cat.CloudService {
+					continue
+				}
+
+				v := trends[cat.SubCategory]
+				v.Trend = append(v.Trend, api.TrendDataPoint{
+					Timestamp: hit.DescribedAt,
+					Value:     int64(hit.ResourceCount),
+				})
+				v.Name = cat.SubCategory
+				trends[cat.SubCategory] = v
+			}
+		}
+	} else {
+		hits, err := es.FetchProviderResourceTypeTrendSummaryPage(h.client, provider, resourceTypes, fromTime, toTime, sortMap, EsFetchPageSize)
+		if err != nil {
+			return err
+		}
+		for _, hit := range hits {
+			hitService := cloudservice.ServiceNameByResourceType(hit.ResourceType)
+			for _, cat := range cats {
+				if hitService != cat.CloudService {
+					continue
+				}
+
+				v := trends[cat.SubCategory]
+				v.Trend = append(v.Trend, api.TrendDataPoint{
+					Timestamp: hit.DescribedAt,
+					Value:     int64(hit.ResourceCount),
+				})
+				v.Name = cat.SubCategory
+				trends[cat.SubCategory] = v
+			}
+		}
+	}
+
+	var resp []api.CategoryTrend
+	for _, v := range trends {
+		sort.SliceStable(v.Trend, func(i, j int) bool {
+			return v.Trend[i].Timestamp < v.Trend[j].Timestamp
+		})
+		resp = append(resp, v)
+	}
 	return ctx.JSON(http.StatusOK, resp)
 }
 
@@ -594,6 +695,82 @@ func (h *HttpHandler) GetCategories(ctx echo.Context) error {
 	res, err := GetCategories(h.client, provider, sourceID)
 	if err != nil {
 		return err
+	}
+	return ctx.JSON(http.StatusOK, res)
+}
+
+// GetCategoriesV2 godoc
+// @Summary Return resource categories and number of resources
+// @Tags    inventory
+// @Accept  json
+// @Produce json
+// @Param   provider query    string true  "Provider"
+// @Param   sourceId query    string false "SourceID"
+// @Param   category query    string false "Category"
+// @Success 200      {object} []api.CategoriesResponse
+// @Router  /inventory/api/v1/resources/categories [get]
+func (h *HttpHandler) GetCategoriesV2(ctx echo.Context) error {
+	var err error
+	var sourceID *string
+	provider, _ := source.ParseType(ctx.QueryParam("provider"))
+	category := ctx.QueryParam("category")
+
+	if sID := ctx.QueryParam("sourceId"); sID != "" {
+		sourceUUID, err := uuid.Parse(sID)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "invalid sourceID")
+		}
+		s := sourceUUID.String()
+		sourceID = &s
+	}
+
+	var metrics []Metric
+	if sourceID != nil {
+		metrics, err = h.db.FetchConnectionAllMetrics(*sourceID)
+		if err != nil {
+			return err
+		}
+	} else if !provider.IsNull() {
+		metrics, err = h.db.FetchProviderAllMetrics(provider)
+		if err != nil {
+			return err
+		}
+	} else {
+		return echo.NewHTTPError(http.StatusBadRequest, "specify either provider or sourceID")
+	}
+
+	var cats []Category
+	if category != "" {
+		cats, err = h.db.GetSubCategories(category)
+	} else {
+		cats, err = h.db.ListCategories()
+	}
+	if err != nil {
+		return err
+	}
+
+	catMap := map[string]int{}
+	for _, c := range cats {
+		for _, m := range metrics {
+			serviceName := cloudservice.ServiceNameByResourceType(m.ResourceType)
+			if serviceName != c.CloudService {
+				continue
+			}
+
+			if category == "" {
+				catMap[c.SubCategory] += m.Count
+			} else {
+				catMap[c.Name] += m.Count
+			}
+		}
+	}
+
+	var res []api.CategoriesResponse
+	for k, v := range catMap {
+		res = append(res, api.CategoriesResponse{
+			CategoryName:  k,
+			ResourceCount: v,
+		})
 	}
 	return ctx.JSON(http.StatusOK, res)
 }
