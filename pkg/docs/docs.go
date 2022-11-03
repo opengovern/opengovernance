@@ -709,7 +709,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "integer"
+                            "$ref": "#/definitions/api.ConnectionSummaryResponse"
                         }
                     }
                 }
@@ -1277,12 +1277,6 @@ const docTemplate = `{
                         "description": "SourceID",
                         "name": "sourceId",
                         "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Category",
-                        "name": "category",
-                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -1652,12 +1646,6 @@ const docTemplate = `{
                         "description": "Time Window",
                         "name": "timeWindow",
                         "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Category",
-                        "name": "category",
-                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -1666,7 +1654,7 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/api.CategoryTrend"
+                                "$ref": "#/definitions/api.TrendDataPoint"
                             }
                         }
                     }
@@ -1784,6 +1772,110 @@ const docTemplate = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/api.CategorizedMetricsResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/inventory/api/v2/resources/categories": {
+            "get": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "inventory"
+                ],
+                "summary": "Return resource categories and number of resources",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Provider",
+                        "name": "provider",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "SourceID",
+                        "name": "sourceId",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Category",
+                        "name": "category",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/api.CategoriesResponse"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/inventory/api/v2/resources/trend": {
+            "get": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "benchmarks"
+                ],
+                "summary": "Returns trend of resource growth for specific account",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "SourceID",
+                        "name": "sourceId",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Provider",
+                        "name": "provider",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "24h",
+                            "1w",
+                            "3m",
+                            "1y",
+                            "max"
+                        ],
+                        "type": "string",
+                        "description": "Time Window",
+                        "name": "timeWindow",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Category",
+                        "name": "category",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/api.CategoryTrend"
+                            }
                         }
                     }
                 }
@@ -3520,6 +3612,43 @@ const docTemplate = `{
                 },
                 "name": {
                     "type": "string"
+                }
+            }
+        },
+        "api.ConnectionSummaryCategory": {
+            "type": "object",
+            "properties": {
+                "resourceCount": {
+                    "type": "integer"
+                },
+                "subCategories": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "integer"
+                    }
+                }
+            }
+        },
+        "api.ConnectionSummaryResponse": {
+            "type": "object",
+            "properties": {
+                "categories": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "$ref": "#/definitions/api.ConnectionSummaryCategory"
+                    }
+                },
+                "cloudServices": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "integer"
+                    }
+                },
+                "resourceTypes": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "integer"
+                    }
                 }
             }
         },
