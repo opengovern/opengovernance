@@ -145,6 +145,17 @@ func (db Database) ListCategories() ([]Category, error) {
 	return s, nil
 }
 
+func (db Database) GetSubCategories(category string) ([]Category, error) {
+	var s []Category
+	tx := db.orm.Where("name = ?", category).Find(&s)
+
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+
+	return s, nil
+}
+
 func (db Database) GetCategories(category, subCategory string) ([]Category, error) {
 	var s []Category
 	tx := db.orm.
@@ -179,6 +190,14 @@ func (db Database) FetchConnectionAllMetrics(sourceID string) ([]Metric, error) 
 	var metrics []Metric
 	tx := db.orm.Model(Metric{}).
 		Where("source_id = ?", sourceID).
+		Find(&metrics)
+	return metrics, tx.Error
+}
+
+func (db Database) FetchProviderAllMetrics(provider source.Type) ([]Metric, error) {
+	var metrics []Metric
+	tx := db.orm.Model(Metric{}).
+		Where("provider = ?", string(provider)).
 		Find(&metrics)
 	return metrics, tx.Error
 }

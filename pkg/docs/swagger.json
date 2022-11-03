@@ -1271,6 +1271,12 @@
                         "description": "SourceID",
                         "name": "sourceId",
                         "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Category",
+                        "name": "category",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -1640,6 +1646,12 @@
                         "description": "Time Window",
                         "name": "timeWindow",
                         "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Category",
+                        "name": "category",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -1648,7 +1660,7 @@
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/api.TrendDataPoint"
+                                "$ref": "#/definitions/api.CategoryTrend"
                             }
                         }
                     }
@@ -3430,18 +3442,6 @@
         "api.CategoriesResponse": {
             "type": "object",
             "properties": {
-                "lastDayCount": {
-                    "type": "integer"
-                },
-                "lastQuarterCount": {
-                    "type": "integer"
-                },
-                "lastWeekCount": {
-                    "type": "integer"
-                },
-                "lastYearCount": {
-                    "type": "integer"
-                },
                 "resourceCount": {
                     "type": "integer"
                 },
@@ -3460,6 +3460,20 @@
                         "items": {
                             "$ref": "#/definitions/api.ResourceTypeResponse"
                         }
+                    }
+                }
+            }
+        },
+        "api.CategoryTrend": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string"
+                },
+                "trend": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/api.TrendDataPoint"
                     }
                 }
             }

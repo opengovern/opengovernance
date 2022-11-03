@@ -23,12 +23,8 @@ func GetCategories(client keibi.Client, provider source.Type, sourceID *string) 
 				categoryMap[hit.CategoryName] = v
 			} else {
 				categoryMap[hit.CategoryName] = api.CategoriesResponse{
-					CategoryName:     hit.CategoryName,
-					ResourceCount:    hit.ResourceCount,
-					LastDayCount:     hit.LastDayCount,
-					LastWeekCount:    hit.LastWeekCount,
-					LastQuarterCount: hit.LastQuarterCount,
-					LastYearCount:    hit.LastYearCount,
+					CategoryName:  hit.CategoryName,
+					ResourceCount: hit.ResourceCount,
 				}
 			}
 		}
@@ -43,12 +39,8 @@ func GetCategories(client keibi.Client, provider source.Type, sourceID *string) 
 				categoryMap[hit.CategoryName] = v
 			} else {
 				categoryMap[hit.CategoryName] = api.CategoriesResponse{
-					CategoryName:     hit.CategoryName,
-					ResourceCount:    hit.ResourceCount,
-					LastDayCount:     hit.LastDayCount,
-					LastWeekCount:    hit.LastWeekCount,
-					LastQuarterCount: hit.LastQuarterCount,
-					LastYearCount:    hit.LastYearCount,
+					CategoryName:  hit.CategoryName,
+					ResourceCount: hit.ResourceCount,
 				}
 			}
 		}

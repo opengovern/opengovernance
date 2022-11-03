@@ -311,6 +311,11 @@ type TrendDataPoint struct {
 	Value     int64 `json:"value"`
 }
 
+type CategoryTrend struct {
+	Name  string           `json:"name"`
+	Trend []TrendDataPoint `json:"trend"`
+}
+
 type ListQueryRequest struct {
 	TitleFilter    string      `json:"titleFilter"`
 	ProviderFilter *SourceType `json:"providerFilter"`
@@ -372,12 +377,8 @@ type CategorizedMetricsResponse struct {
 }
 
 type CategoriesResponse struct {
-	CategoryName     string `json:"serviceName"`
-	ResourceCount    int    `json:"resourceCount"`
-	LastDayCount     *int   `json:"lastDayCount"`
-	LastWeekCount    *int   `json:"lastWeekCount"`
-	LastQuarterCount *int   `json:"lastQuarterCount"`
-	LastYearCount    *int   `json:"lastYearCount"`
+	CategoryName  string `json:"serviceName"`
+	ResourceCount int    `json:"resourceCount"`
 }
 
 type MetricsResponse struct {

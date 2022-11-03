@@ -658,6 +658,82 @@ func FetchConnectionTrendSummaryPage(client keibi.Client, sourceID *string, crea
 	return hits, nil
 }
 
+type ConnectionResourceTypeTrendSummaryQueryResponse struct {
+	Hits ConnectionResourceTypeTrendSummaryQueryHits `json:"hits"`
+}
+type ConnectionResourceTypeTrendSummaryQueryHits struct {
+	Total keibi.SearchTotal                            `json:"total"`
+	Hits  []ConnectionResourceTypeTrendSummaryQueryHit `json:"hits"`
+}
+type ConnectionResourceTypeTrendSummaryQueryHit struct {
+	ID      string                                        `json:"_id"`
+	Score   float64                                       `json:"_score"`
+	Index   string                                        `json:"_index"`
+	Type    string                                        `json:"_type"`
+	Version int64                                         `json:"_version,omitempty"`
+	Source  summarizer.ConnectionResourceTypeTrendSummary `json:"_source"`
+	Sort    []interface{}                                 `json:"sort"`
+}
+
+func FetchConnectionResourceTypeTrendSummaryPage(client keibi.Client, sourceID *string, resourceTypes []string, createdAtFrom, createdAtTo int64,
+	sort []map[string]interface{}, size int) ([]summarizer.ConnectionResourceTypeTrendSummary, error) {
+	var hits []summarizer.ConnectionResourceTypeTrendSummary
+	res := make(map[string]interface{})
+	var filters []interface{}
+
+	filters = append(filters, map[string]interface{}{
+		"terms": map[string][]string{"report_type": {string(summarizer.ResourceTypeTrendConnectionSummary)}},
+	})
+
+	filters = append(filters, map[string]interface{}{
+		"terms": map[string][]string{"resource_type": resourceTypes},
+	})
+
+	if sourceID != nil {
+		filters = append(filters, map[string]interface{}{
+			"terms": map[string][]string{"source_id": {*sourceID}},
+		})
+	}
+	filters = append(filters, map[string]interface{}{
+		"range": map[string]interface{}{
+			"described_at": map[string]string{
+				"gte": strconv.FormatInt(createdAtFrom, 10),
+				"lte": strconv.FormatInt(createdAtTo, 10),
+			},
+		},
+	})
+
+	sort = append(sort,
+		map[string]interface{}{
+			"_id": "desc",
+		},
+	)
+	res["size"] = size
+	res["sort"] = sort
+	res["query"] = map[string]interface{}{
+		"bool": map[string]interface{}{
+			"filter": filters,
+		},
+	}
+	b, err := json.Marshal(res)
+	if err != nil {
+		return nil, err
+	}
+
+	query := string(b)
+
+	var response ConnectionResourceTypeTrendSummaryQueryResponse
+	err = client.Search(context.Background(), summarizer.ConnectionSummaryIndex, query, &response)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, hit := range response.Hits.Hits {
+		hits = append(hits, hit.Source)
+	}
+	return hits, nil
+}
+
 type ProviderTrendSummaryQueryResponse struct {
 	Hits ProviderTrendSummaryQueryHits `json:"hits"`
 }
@@ -719,6 +795,82 @@ func FetchProviderTrendSummaryPage(client keibi.Client, provider source.Type, cr
 	query := string(b)
 
 	var response ProviderTrendSummaryQueryResponse
+	err = client.Search(context.Background(), summarizer.ProviderSummaryIndex, query, &response)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, hit := range response.Hits.Hits {
+		hits = append(hits, hit.Source)
+	}
+	return hits, nil
+}
+
+type ProviderResourceTypeTrendSummaryQueryResponse struct {
+	Hits ProviderResourceTypeTrendSummaryQueryHits `json:"hits"`
+}
+type ProviderResourceTypeTrendSummaryQueryHits struct {
+	Total keibi.SearchTotal                          `json:"total"`
+	Hits  []ProviderResourceTypeTrendSummaryQueryHit `json:"hits"`
+}
+type ProviderResourceTypeTrendSummaryQueryHit struct {
+	ID      string                                      `json:"_id"`
+	Score   float64                                     `json:"_score"`
+	Index   string                                      `json:"_index"`
+	Type    string                                      `json:"_type"`
+	Version int64                                       `json:"_version,omitempty"`
+	Source  summarizer.ProviderResourceTypeTrendSummary `json:"_source"`
+	Sort    []interface{}                               `json:"sort"`
+}
+
+func FetchProviderResourceTypeTrendSummaryPage(client keibi.Client, provider source.Type, resourceTypes []string, createdAtFrom, createdAtTo int64,
+	sort []map[string]interface{}, size int) ([]summarizer.ProviderResourceTypeTrendSummary, error) {
+	var hits []summarizer.ProviderResourceTypeTrendSummary
+	res := make(map[string]interface{})
+	var filters []interface{}
+
+	filters = append(filters, map[string]interface{}{
+		"terms": map[string][]string{"report_type": {string(summarizer.ResourceTypeTrendProviderSummary)}},
+	})
+
+	filters = append(filters, map[string]interface{}{
+		"terms": map[string][]string{"resource_type": resourceTypes},
+	})
+
+	if !provider.IsNull() {
+		filters = append(filters, map[string]interface{}{
+			"terms": map[string][]string{"source_type": {provider.String()}},
+		})
+	}
+	filters = append(filters, map[string]interface{}{
+		"range": map[string]interface{}{
+			"described_at": map[string]string{
+				"gte": strconv.FormatInt(createdAtFrom, 10),
+				"lte": strconv.FormatInt(createdAtTo, 10),
+			},
+		},
+	})
+
+	sort = append(sort,
+		map[string]interface{}{
+			"_id": "desc",
+		},
+	)
+	res["size"] = size
+	res["sort"] = sort
+	res["query"] = map[string]interface{}{
+		"bool": map[string]interface{}{
+			"filter": filters,
+		},
+	}
+	b, err := json.Marshal(res)
+	if err != nil {
+		return nil, err
+	}
+
+	query := string(b)
+
+	var response ProviderResourceTypeTrendSummaryQueryResponse
 	err = client.Search(context.Background(), summarizer.ProviderSummaryIndex, query, &response)
 	if err != nil {
 		return nil, err
