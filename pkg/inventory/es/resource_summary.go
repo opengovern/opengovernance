@@ -869,6 +869,7 @@ func FetchProviderResourceTypeTrendSummaryPage(client keibi.Client, provider sou
 	}
 
 	query := string(b)
+	fmt.Println("query=", query)
 
 	var response ProviderResourceTypeTrendSummaryQueryResponse
 	err = client.Search(context.Background(), summarizer.ProviderSummaryIndex, query, &response)
