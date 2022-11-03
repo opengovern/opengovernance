@@ -22,34 +22,37 @@ var (
 	OnboardTemplate           = os.Getenv("ONBOARD_BASE_URL")
 	InventoryTemplate         = os.Getenv("INVENTORY_BASE_URL")
 	AutoSuspendDurationString = os.Getenv("AUTO_SUSPEND_DURATION_MINUTES")
+	KeibiHelmChartLocation    = os.Getenv("KEIBI_HELM_CHART_LOCATION")
 )
 
 type Config struct {
-	Host                string
-	Port                string
-	User                string
-	Password            string
-	DBName              string
-	ServerAddr          string
-	DomainSuffix        string
-	AuthBaseUrl         string
-	RedisAddress        string
-	AutoSuspendDuration time.Duration
+	Host                   string
+	Port                   string
+	User                   string
+	Password               string
+	DBName                 string
+	ServerAddr             string
+	DomainSuffix           string
+	AuthBaseUrl            string
+	RedisAddress           string
+	KeibiHelmChartLocation string
+	AutoSuspendDuration    time.Duration
 }
 
 func NewConfig() *Config {
 	d, _ := strconv.ParseInt(AutoSuspendDurationString, 10, 64)
 	return &Config{
-		Host:                PostgresHost,
-		Port:                PostgresPort,
-		User:                PostgresUser,
-		Password:            PostgresPassword,
-		DBName:              PostgresDBName,
-		ServerAddr:          ServerAddr,
-		DomainSuffix:        DomainSuffix,
-		RedisAddress:        RedisAddress,
-		AuthBaseUrl:         AuthBaseURL,
-		AutoSuspendDuration: time.Duration(d) * time.Minute,
+		Host:                   PostgresHost,
+		Port:                   PostgresPort,
+		User:                   PostgresUser,
+		Password:               PostgresPassword,
+		DBName:                 PostgresDBName,
+		ServerAddr:             ServerAddr,
+		DomainSuffix:           DomainSuffix,
+		RedisAddress:           RedisAddress,
+		AuthBaseUrl:            AuthBaseURL,
+		KeibiHelmChartLocation: KeibiHelmChartLocation,
+		AutoSuspendDuration:    time.Duration(d) * time.Minute,
 	}
 }
 
