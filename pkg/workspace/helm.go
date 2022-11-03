@@ -57,7 +57,7 @@ func (s *Server) createHelmRelease(ctx context.Context, workspace *Workspace) er
 			ReleaseName:     id,
 			Chart: helmv2.HelmChartTemplate{
 				Spec: helmv2.HelmChartTemplateSpec{
-					Chart: "./keibi",
+					Chart: s.cfg.KeibiHelmChartLocation,
 					SourceRef: helmv2.CrossNamespaceObjectReference{
 						Kind:      "GitRepository",
 						Name:      "flux-system",
