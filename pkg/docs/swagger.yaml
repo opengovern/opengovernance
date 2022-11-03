@@ -241,6 +241,30 @@ definitions:
       name:
         type: string
     type: object
+  api.ConnectionSummaryCategory:
+    properties:
+      resourceCount:
+        type: integer
+      subCategories:
+        additionalProperties:
+          type: integer
+        type: object
+    type: object
+  api.ConnectionSummaryResponse:
+    properties:
+      categories:
+        additionalProperties:
+          $ref: '#/definitions/api.ConnectionSummaryCategory'
+        type: object
+      cloudServices:
+        additionalProperties:
+          type: integer
+        type: object
+      resourceTypes:
+        additionalProperties:
+          type: integer
+        type: object
+    type: object
   api.CreateInsightRequest:
     properties:
       category:
@@ -1817,7 +1841,7 @@ paths:
         "200":
           description: OK
           schema:
-            type: integer
+            $ref: '#/definitions/api.ConnectionSummaryResponse'
       summary: Get connection summary
       tags:
       - inventory
@@ -2205,10 +2229,6 @@ paths:
         in: query
         name: sourceId
         type: string
-      - description: Category
-        in: query
-        name: category
-        type: string
       produces:
       - application/json
       responses:
@@ -2457,10 +2477,6 @@ paths:
         in: query
         name: timeWindow
         type: string
-      - description: Category
-        in: query
-        name: category
-        type: string
       produces:
       - application/json
       responses:
@@ -2468,7 +2484,7 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/api.CategoryTrend'
+              $ref: '#/definitions/api.TrendDataPoint'
             type: array
       summary: Returns trend of resource growth for specific account
       tags:
@@ -2549,6 +2565,75 @@ paths:
       summary: Return categorized metrics, their value and their history
       tags:
       - inventory
+  /inventory/api/v2/resources/categories:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: Provider
+        in: query
+        name: provider
+        required: true
+        type: string
+      - description: SourceID
+        in: query
+        name: sourceId
+        type: string
+      - description: Category
+        in: query
+        name: category
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/api.CategoriesResponse'
+            type: array
+      summary: Return resource categories and number of resources
+      tags:
+      - inventory
+  /inventory/api/v2/resources/trend:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: SourceID
+        in: query
+        name: sourceId
+        type: string
+      - description: Provider
+        in: query
+        name: provider
+        type: string
+      - description: Time Window
+        enum:
+        - 24h
+        - 1w
+        - 3m
+        - 1y
+        - max
+        in: query
+        name: timeWindow
+        type: string
+      - description: Category
+        in: query
+        name: category
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/api.CategoryTrend'
+            type: array
+      summary: Returns trend of resource growth for specific account
+      tags:
+      - benchmarks
   /onboard/api/v1/connectors:
     get:
       description: Getting connectors

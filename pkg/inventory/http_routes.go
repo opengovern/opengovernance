@@ -177,7 +177,7 @@ func (h *HttpHandler) GetResourceGrowthTrend(ctx echo.Context) error {
 // @Param   timeWindow query    string false "Time Window" Enums(24h,1w,3m,1y,max)
 // @Param   category   query    string false "Category"
 // @Success 200        {object} []api.CategoryTrend
-// @Router  /inventory/api/v1/resources/trend [get]
+// @Router  /inventory/api/v2/resources/trend [get]
 func (h *HttpHandler) GetResourceGrowthTrendV2(ctx echo.Context) error {
 	var err error
 	var fromTime, toTime int64
@@ -708,7 +708,7 @@ func (h *HttpHandler) GetCategories(ctx echo.Context) error {
 // @Param   sourceId query    string false "SourceID"
 // @Param   category query    string false "Category"
 // @Success 200      {object} []api.CategoriesResponse
-// @Router  /inventory/api/v1/resources/categories [get]
+// @Router  /inventory/api/v2/resources/categories [get]
 func (h *HttpHandler) GetCategoriesV2(ctx echo.Context) error {
 	var err error
 	var sourceID *string
@@ -1823,7 +1823,7 @@ func (h *HttpHandler) CountResources(ctx echo.Context) error {
 // @Tags    inventory
 // @Accept  json
 // @Produce json,text/csv
-// @Success 200 {object} int64
+// @Success 200 {object} api.ConnectionSummaryResponse
 // @Router  /inventory/api/v1/connection/{connection_id}/summary [post]
 func (h *HttpHandler) GetConnectionSummary(ctx echo.Context) error {
 	connectionID := ctx.Param("connection_id")
