@@ -10,6 +10,9 @@ import (
 var cloudServices []CloudService = nil
 var resourceList []ResourceList = nil
 
+var categories []Category = nil
+var cloudResources []CloudResource = nil
+
 func initCloudService() {
 	if cloudServices == nil {
 		parseCSV()
@@ -83,6 +86,65 @@ func parseCSV() error {
 		})
 	}
 
+	reader = csv.NewReader(strings.NewReader(categoriesCSV))
+	cells, err = reader.ReadAll()
+	if err != nil {
+		return err
+	}
+	// remove header
+	cells = cells[1:]
+	for _, row := range cells {
+		categories = append(categories, Category{
+			Category:     row[0],
+			SubCategory:  row[1],
+			Cloud:        row[2],
+			CloudService: row[3],
+		})
+	}
+
+	reader = csv.NewReader(strings.NewReader(cloudResourcesCSV))
+	cells, err = reader.ReadAll()
+	if err != nil {
+		return err
+	}
+	// remove header
+	cells = cells[1:]
+	for _, row := range cells {
+		t, err := source.ParseType(row[0])
+		if err != nil {
+			return err
+		}
+
+		cloudResources = append(cloudResources, CloudResource{
+			Cloud:                     t,
+			CloudService:              row[1],
+			ResourceTypeName:          row[2],
+			ResourceProviderNamespace: row[3],
+		})
+	}
+
+	return nil
+}
+
+func findCloudResourceRecord(resourceType string) *CloudResource {
+	initCloudService()
+	resourceType = strings.ToLower(resourceType)
+	provider := findProvider(resourceType)
+	for _, v := range cloudResources {
+		if v.Cloud != provider {
+			continue
+		}
+
+		var recordResourceType string
+		if provider == source.CloudAWS {
+			recordResourceType = ParseARN(v.ResourceProviderNamespace).Type()
+		} else {
+			recordResourceType = strings.ToLower(v.ResourceProviderNamespace)
+		}
+		if strings.HasPrefix(resourceType, recordResourceType) {
+			return &v
+		}
+	}
 	return nil
 }
 
@@ -149,13 +211,17 @@ func CategoryByResourceType(resourceType string) string {
 }
 
 func ServiceNameByResourceType(resourceType string) string {
-	if record := findCloudServiceRecord(resourceType); record != nil {
-		return record.FullServiceName
+	if record := findCloudResourceRecord(resourceType); record != nil {
+		return record.CloudService
 	}
 	return resourceType
 }
 
 func ResourceTypeName(resourceType string) string {
+	if record := findCloudResourceRecord(resourceType); record != nil {
+		return record.ResourceTypeName
+	}
+
 	if record := findResourceListRecord(resourceType); record != nil {
 		return record.ResourceTypeName
 	}
@@ -224,8 +290,8 @@ func ResourceListByServiceName(serviceName string) []string {
 	initCloudService()
 	var response []string
 	for _, v := range resourceList {
-		srv := findCloudServiceRecord(v.ServiceNamespace)
-		if srv != nil && srv.FullServiceName == serviceName {
+		srv := findCloudResourceRecord(v.ServiceNamespace)
+		if srv != nil && srv.CloudService == serviceName {
 			response = append(response, v.ServiceNamespace)
 		}
 	}
