@@ -750,17 +750,18 @@ func (h *HttpHandler) GetCategoriesV2(ctx echo.Context) error {
 	}
 
 	catMap := map[string]int{}
-	for _, c := range cats {
-		for _, m := range metrics {
-			serviceName := cloudservice.ServiceNameByResourceType(m.ResourceType)
+	for _, m := range metrics {
+		serviceName := cloudservice.ServiceNameByResourceType(m.ResourceType)
+
+		for _, c := range cats {
 			if serviceName != c.CloudService {
 				continue
 			}
 
 			if category == "" {
-				catMap[c.SubCategory] += m.Count
-			} else {
 				catMap[c.Name] += m.Count
+			} else {
+				catMap[c.SubCategory] += m.Count
 			}
 		}
 	}
