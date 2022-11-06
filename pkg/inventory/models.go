@@ -21,7 +21,6 @@ type Tag struct {
 }
 
 type Category struct {
-	gorm.Model
 	Name         string `gorm:"primaryKey"`
 	SubCategory  string `gorm:"primaryKey"`
 	Cloud        string

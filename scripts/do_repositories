@@ -1,0 +1,16 @@
+auth-service
+compliance-report-worker
+compliance-service
+describe-cleanup-worker
+describe-connection-worker
+describe-scheduler
+describe-worker
+frontend
+insight-worker
+inventory-service
+onboard-service
+steampipe-service
+summarizer-worker
+swagger-ui
+workspace-service
+
