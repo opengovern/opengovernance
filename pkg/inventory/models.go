@@ -22,10 +22,10 @@ type Tag struct {
 
 type Category struct {
 	gorm.Model
-	Name         string
-	SubCategory  string
+	Name         string `gorm:"primaryKey"`
+	SubCategory  string `gorm:"primaryKey"`
 	Cloud        string
-	CloudService string
+	CloudService string `gorm:"primaryKey"`
 }
 
 type Metric struct {
