@@ -239,7 +239,7 @@ func (s *Server) syncHTTPProxy(workspaces []*Workspace) error {
 
 	key := types.NamespacedName{
 		Name:      "http-proxy-route",
-		Namespace: OctopusNamespace,
+		Namespace: s.cfg.KeibiOctopusNamespace,
 	}
 	var httpProxy contourv1.HTTPProxy
 
@@ -260,7 +260,7 @@ func (s *Server) syncHTTPProxy(workspaces []*Workspace) error {
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "http-proxy-route",
-			Namespace: OctopusNamespace,
+			Namespace: s.cfg.KeibiOctopusNamespace,
 		},
 		Spec: contourv1.HTTPProxySpec{
 			Includes: includes,

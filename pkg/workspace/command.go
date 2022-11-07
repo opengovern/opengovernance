@@ -23,6 +23,8 @@ var (
 	InventoryTemplate         = os.Getenv("INVENTORY_BASE_URL")
 	AutoSuspendDurationString = os.Getenv("AUTO_SUSPEND_DURATION_MINUTES")
 	KeibiHelmChartLocation    = os.Getenv("KEIBI_HELM_CHART_LOCATION")
+	KeibiOctopusNamespace     = os.Getenv("KEIBI_OCTOPUS_NAMESPACE")
+	FluxSystemNamespace       = os.Getenv("FLUX_SYSTEM_NAMESPACE")
 )
 
 type Config struct {
@@ -36,6 +38,8 @@ type Config struct {
 	AuthBaseUrl            string
 	RedisAddress           string
 	KeibiHelmChartLocation string
+	KeibiOctopusNamespace  string
+	FluxSystemNamespace    string
 	AutoSuspendDuration    time.Duration
 }
 
@@ -52,6 +56,8 @@ func NewConfig() *Config {
 		RedisAddress:           RedisAddress,
 		AuthBaseUrl:            AuthBaseURL,
 		KeibiHelmChartLocation: KeibiHelmChartLocation,
+		KeibiOctopusNamespace:  KeibiOctopusNamespace,
+		FluxSystemNamespace:    FluxSystemNamespace,
 		AutoSuspendDuration:    time.Duration(d) * time.Minute,
 	}
 }
