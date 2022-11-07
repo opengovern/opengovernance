@@ -15,15 +15,20 @@ import (
 	autoscaling "github.com/aws/aws-sdk-go-v2/service/autoscaling/types"
 	backupservice "github.com/aws/aws-sdk-go-v2/service/backup"
 	backup "github.com/aws/aws-sdk-go-v2/service/backup/types"
+	cloudformationop "github.com/aws/aws-sdk-go-v2/service/cloudformation"
+	cloudformation "github.com/aws/aws-sdk-go-v2/service/cloudformation/types"
 	cloudfront "github.com/aws/aws-sdk-go-v2/service/cloudfront/types"
 	"github.com/aws/aws-sdk-go-v2/service/cloudtrail"
 	cloudtrailtypes "github.com/aws/aws-sdk-go-v2/service/cloudtrail/types"
 	cloudwatch "github.com/aws/aws-sdk-go-v2/service/cloudwatch/types"
 	cloudwatchlogs "github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs/types"
 	codebuild "github.com/aws/aws-sdk-go-v2/service/codebuild/types"
+	codecommit "github.com/aws/aws-sdk-go-v2/service/codecommit/types"
+	codepipeline "github.com/aws/aws-sdk-go-v2/service/codepipeline/types"
 	configservice "github.com/aws/aws-sdk-go-v2/service/configservice/types"
 	dms "github.com/aws/aws-sdk-go-v2/service/databasemigrationservice/types"
 	dax "github.com/aws/aws-sdk-go-v2/service/dax/types"
+	directoryservice "github.com/aws/aws-sdk-go-v2/service/directoryservice/types"
 	dynamodb "github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
 	dynamodbstream "github.com/aws/aws-sdk-go-v2/service/dynamodbstreams/types"
 	ec2op "github.com/aws/aws-sdk-go-v2/service/ec2"
@@ -63,6 +68,8 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/redshift"
 	redshifttypes "github.com/aws/aws-sdk-go-v2/service/redshift/types"
 	redshiftserverlesstypes "github.com/aws/aws-sdk-go-v2/service/redshiftserverless/types"
+	route53op "github.com/aws/aws-sdk-go-v2/service/route53"
+	route53 "github.com/aws/aws-sdk-go-v2/service/route53/types"
 	s3 "github.com/aws/aws-sdk-go-v2/service/s3/types"
 	"github.com/aws/aws-sdk-go-v2/service/s3control"
 	s3controltypes "github.com/aws/aws-sdk-go-v2/service/s3control/types"
@@ -74,6 +81,8 @@ import (
 	sesv2 "github.com/aws/aws-sdk-go-v2/service/sesv2/types"
 	sns "github.com/aws/aws-sdk-go-v2/service/sns/types"
 	ssm "github.com/aws/aws-sdk-go-v2/service/ssm/types"
+	ssoadmin "github.com/aws/aws-sdk-go-v2/service/ssoadmin/types"
+	waf "github.com/aws/aws-sdk-go-v2/service/waf/types"
 	wafv2 "github.com/aws/aws-sdk-go-v2/service/wafv2/types"
 	workspaces "github.com/aws/aws-sdk-go-v2/service/workspaces/types"
 )
@@ -134,6 +143,13 @@ type ApiGatewayV2APIDescription struct {
 type ElasticBeanstalkEnvironmentDescription struct {
 	EnvironmentDescription elasticbeanstalk.EnvironmentDescription
 	Tags                   []elasticbeanstalk.Tag
+}
+
+//index:aws_elasticbeanstalk_application
+//getfilter:name=description.Application.ApplicationName
+type ElasticBeanstalkApplicationDescription struct {
+	Application elasticbeanstalk.ApplicationDescription
+	Tags        []elasticbeanstalk.Tag
 }
 
 //  ===================   ElastiCache   ===================
@@ -544,6 +560,46 @@ type EC2HostDescription struct {
 //getfilter:group_name=description.PlacementGroup.GroupName
 type EC2PlacementGroupDescription struct {
 	PlacementGroup ec2.PlacementGroup
+}
+
+//index:aws_ec2_transitgateway
+//getfilter:transit_gateway_id=description.TransitGateway.TransitGatewayId
+type EC2TransitGatewayDescription struct {
+	TransitGateway ec2.TransitGateway
+}
+
+//index:aws_ec2_transitgatewayroutetable
+//getfilter:transit_gateway_route_table_id=description.TransitGatewayRouteTable.TransitGatewayRouteTableId
+type EC2TransitGatewayRouteTableDescription struct {
+	TransitGatewayRouteTable ec2.TransitGatewayRouteTable
+}
+
+//index:aws_ec2_dhcpoptions
+//getfilter:dhcp_options_id=description.DhcpOptions.DhcpOptionsId
+type EC2DhcpOptionsDescription struct {
+	DhcpOptions ec2.DhcpOptions
+}
+
+//index:aws_ec2_egressonlyinternetgateway
+//getfilter:id=description.EgressOnlyInternetGateway.EgressOnlyInternetGatewayId
+type EC2EgressOnlyInternetGatewayDescription struct {
+	EgressOnlyInternetGateway ec2.EgressOnlyInternetGateway
+}
+
+//index:aws_ec2_vpcpeeringconnection
+type EC2VpcPeeringConnectionDescription struct {
+	VpcPeeringConnection ec2.VpcPeeringConnection
+}
+
+//index:aws_ec2_securitygrouprule
+type EC2SecurityGroupRuleDescription struct {
+	Group           ec2.SecurityGroup
+	Permission      ec2.IpPermission
+	IPRange         *ec2.IpRange
+	Ipv6Range       *ec2.Ipv6Range
+	UserIDGroupPair *ec2.UserIdGroupPair
+	PrefixListId    *ec2.PrefixListId
+	Type            string
 }
 
 //  ===================  Elastic Load Balancing  ===================
@@ -1334,4 +1390,70 @@ type SESConfigurationSetDescription struct {
 type SESIdentityDescription struct {
 	Identity sesv2.IdentityInfo
 	Tags     []sesv2.Tag
+}
+
+//  ===================  CloudFormation  ===================
+
+//index:aws_cloudformation_stack
+//getfilter:name=description.Stack.StackName
+//listfilter:name=description.Stack.StackName
+type CloudFormationStackDescription struct {
+	Stack          cloudformation.Stack
+	StackTemplate  cloudformationop.GetTemplateOutput
+	StackResources []cloudformation.StackResource
+}
+
+//  ===================  CodeCommit  ===================
+
+//index:aws_codecommit_repository
+type CodeCommitRepositoryDescription struct {
+	Repository codecommit.RepositoryMetadata
+	Tags       map[string]string
+}
+
+//  ===================  CodePipeline  ===================
+
+//index:aws_codepipeline_pipeline
+//getfilter:name=description.Pipeline.Name
+type CodePipelinePipelineDescription struct {
+	Pipeline codepipeline.PipelineDeclaration
+	Metadata codepipeline.PipelineMetadata
+	Tags     []codepipeline.Tag
+}
+
+//  ===================  DirectoryService  ===================
+
+//index:aws_directoryservice_directory
+//getfilter:name=description.Directory.DirectoryId
+type DirectoryServiceDirectoryDescription struct {
+	Directory directoryservice.DirectoryDescription
+	Tags      []directoryservice.Tag
+}
+
+//  ===================  SSOAdmin  ===================
+
+//index:aws_ssoadmin_instance
+type SSOAdminInstanceDescription struct {
+	Instance ssoadmin.InstanceMetadata
+}
+
+//  ===================  WAF  ===================
+
+//index:aws_waf_rule
+//getfilter:rule_id=description.Rule.RuleId
+type WAFRuleDescription struct {
+	Rule waf.Rule
+	Tags []waf.Tag
+}
+
+//  ===================  Route53  ===================
+
+//index:aws_route53_hostedzone
+//getfilter:id=description.ID
+type Route53HostedZoneDescription struct {
+	ID                  string
+	HostedZone          route53.HostedZone
+	QueryLoggingConfigs []route53.QueryLoggingConfig
+	DNSSec              route53op.GetDNSSECOutput
+	Tags                []route53.Tag
 }

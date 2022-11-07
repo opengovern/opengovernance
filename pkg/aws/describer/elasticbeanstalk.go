@@ -36,3 +36,38 @@ func ElasticBeanstalkEnvironment(ctx context.Context, cfg aws.Config) ([]Resourc
 
 	return values, nil
 }
+
+func ElasticBeanstalkApplication(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+	client := elasticbeanstalk.NewFromConfig(cfg)
+	out, err := client.DescribeApplications(ctx, &elasticbeanstalk.DescribeApplicationsInput{})
+	if err != nil {
+		if !isErr(err, "ResourceNotFoundException") {
+			return nil, err
+		}
+		return nil, nil
+	}
+
+	var values []Resource
+	for _, item := range out.Applications {
+		tags, err := client.ListTagsForResource(ctx, &elasticbeanstalk.ListTagsForResourceInput{
+			ResourceArn: item.ApplicationArn,
+		})
+		if err != nil {
+			if !isErr(err, "ResourceNotFoundException") {
+				return nil, err
+			}
+			tags = &elasticbeanstalk.ListTagsForResourceOutput{}
+		}
+
+		values = append(values, Resource{
+			ARN:  *item.ApplicationArn,
+			Name: *item.ApplicationName,
+			Description: model.ElasticBeanstalkApplicationDescription{
+				Application: item,
+				Tags:        tags.ResourceTags,
+			},
+		})
+	}
+
+	return values, nil
+}

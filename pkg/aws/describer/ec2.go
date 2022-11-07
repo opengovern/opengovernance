@@ -336,6 +336,8 @@ func EC2CustomerGateway(ctx context.Context, cfg aws.Config) ([]Resource, error)
 }
 
 func EC2DHCPOptions(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+	describeCtx := GetDescribeContext(ctx)
+
 	client := ec2.NewFromConfig(cfg)
 	paginator := ec2.NewDescribeDhcpOptionsPaginator(client, &ec2.DescribeDhcpOptionsInput{})
 
@@ -343,14 +345,21 @@ func EC2DHCPOptions(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	for paginator.HasMorePages() {
 		page, err := paginator.NextPage(ctx)
 		if err != nil {
-			return nil, err
+			if !isErr(err, "InvalidDhcpOptionID.NotFound") {
+				return nil, err
+			}
+			continue
 		}
 
 		for _, v := range page.DhcpOptions {
+			arn := fmt.Sprintf("arn:%s:ec2:%s:%s:dhcp-options/%s", describeCtx.Partition, describeCtx.Region, describeCtx.AccountID, *v.DhcpOptionsId)
+
 			values = append(values, Resource{
-				ID:          *v.DhcpOptionsId,
-				Name:        *v.DhcpOptionsId,
-				Description: v,
+				ARN:  arn,
+				Name: *v.DhcpOptionsId,
+				Description: model.EC2DhcpOptionsDescription{
+					DhcpOptions: v,
+				},
 			})
 		}
 	}
@@ -387,6 +396,8 @@ func EC2Fleet(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 }
 
 func EC2EgressOnlyInternetGateway(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+	describeCtx := GetDescribeContext(ctx)
+
 	client := ec2.NewFromConfig(cfg)
 	paginator := ec2.NewDescribeEgressOnlyInternetGatewaysPaginator(client, &ec2.DescribeEgressOnlyInternetGatewaysInput{})
 
@@ -394,14 +405,20 @@ func EC2EgressOnlyInternetGateway(ctx context.Context, cfg aws.Config) ([]Resour
 	for paginator.HasMorePages() {
 		page, err := paginator.NextPage(ctx)
 		if err != nil {
-			return nil, err
+			if !isErr(err, "InvalidEgressOnlyInternetGatewayId.NotFound") && !isErr(err, "InvalidEgressOnlyInternetGatewayId.Malformed") {
+				return nil, err
+			}
+			continue
 		}
 
 		for _, v := range page.EgressOnlyInternetGateways {
+			arn := fmt.Sprintf("arn:%s:ec2:%s:%s:egress-only-internet-gateway/%s", describeCtx.Partition, describeCtx.Region, describeCtx.AccountID, *v.EgressOnlyInternetGatewayId)
 			values = append(values, Resource{
-				ID:          *v.EgressOnlyInternetGatewayId,
-				Name:        *v.EgressOnlyInternetGatewayId,
-				Description: v,
+				ID:   arn,
+				Name: *v.EgressOnlyInternetGatewayId,
+				Description: model.EC2EgressOnlyInternetGatewayDescription{
+					EgressOnlyInternetGateway: v,
+				},
 			})
 		}
 	}
@@ -415,7 +432,10 @@ func EC2EIP(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	client := ec2.NewFromConfig(cfg)
 	output, err := client.DescribeAddresses(ctx, &ec2.DescribeAddressesInput{})
 	if err != nil {
-		return nil, err
+		if !isErr(err, "InvalidAllocationID.NotFound") && !isErr(err, "InvalidAllocationID.Malformed") {
+			return nil, err
+		}
+		return nil, nil
 	}
 
 	var values []Resource
@@ -939,6 +959,8 @@ func EC2LocalGatewayRouteTableVPCAssociation(ctx context.Context, cfg aws.Config
 }
 
 func EC2TransitGatewayRouteTable(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+	describeCtx := GetDescribeContext(ctx)
+
 	client := ec2.NewFromConfig(cfg)
 	paginator := ec2.NewDescribeTransitGatewayRouteTablesPaginator(client, &ec2.DescribeTransitGatewayRouteTablesInput{})
 
@@ -946,14 +968,21 @@ func EC2TransitGatewayRouteTable(ctx context.Context, cfg aws.Config) ([]Resourc
 	for paginator.HasMorePages() {
 		page, err := paginator.NextPage(ctx)
 		if err != nil {
-			return nil, err
+			if !isErr(err, "InvalidRouteTableID.NotFound") && !isErr(err, "InvalidRouteTableId.Unavailable") && !isErr(err, "InvalidRouteTableId.Malformed") {
+				return nil, err
+			}
+			continue
 		}
 
 		for _, v := range page.TransitGatewayRouteTables {
+			arn := fmt.Sprintf("arn:%s:ec2:%s:%s:transit-gateway-route-table/%s", describeCtx.Partition, describeCtx.Region, describeCtx.AccountID, *v.TransitGatewayRouteTableId)
+
 			values = append(values, Resource{
-				ID:          *v.TransitGatewayRouteTableId,
-				Name:        *v.TransitGatewayRouteTableId,
-				Description: v,
+				ARN:  arn,
+				Name: *v.TransitGatewayRouteTableId,
+				Description: model.EC2TransitGatewayRouteTableDescription{
+					TransitGatewayRouteTable: v,
+				},
 			})
 		}
 	}
@@ -1051,6 +1080,122 @@ func EC2SecurityGroup(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 				},
 			})
 		}
+	}
+
+	return values, nil
+}
+
+func getEC2SecurityGroupRuleDescriptionFromIPPermission(group types.SecurityGroup, permission types.IpPermission, groupType string) []model.EC2SecurityGroupRuleDescription {
+	var descArr []model.EC2SecurityGroupRuleDescription
+
+	// create 1 row per ip-range
+	if permission.IpRanges != nil {
+		for _, r := range permission.IpRanges {
+			descArr = append(descArr, model.EC2SecurityGroupRuleDescription{
+				Group:           group,
+				Permission:      permission,
+				IPRange:         &r,
+				Ipv6Range:       nil,
+				UserIDGroupPair: nil,
+				PrefixListId:    nil,
+				Type:            groupType,
+			})
+		}
+	}
+
+	// create 1 row per prefix-list Id
+	if permission.PrefixListIds != nil {
+		for _, r := range permission.PrefixListIds {
+			descArr = append(descArr, model.EC2SecurityGroupRuleDescription{
+				Group:           group,
+				Permission:      permission,
+				IPRange:         nil,
+				Ipv6Range:       nil,
+				UserIDGroupPair: nil,
+				PrefixListId:    &r,
+				Type:            groupType,
+			})
+		}
+	}
+
+	// create 1 row per ipv6-range
+	if permission.Ipv6Ranges != nil {
+		for _, r := range permission.Ipv6Ranges {
+			descArr = append(descArr, model.EC2SecurityGroupRuleDescription{
+				Group:           group,
+				Permission:      permission,
+				IPRange:         nil,
+				Ipv6Range:       &r,
+				UserIDGroupPair: nil,
+				PrefixListId:    nil,
+				Type:            groupType,
+			})
+		}
+	}
+
+	// create 1 row per user id group pair
+	if permission.UserIdGroupPairs != nil {
+		for _, r := range permission.UserIdGroupPairs {
+			descArr = append(descArr, model.EC2SecurityGroupRuleDescription{
+				Group:           group,
+				Permission:      permission,
+				IPRange:         nil,
+				Ipv6Range:       nil,
+				UserIDGroupPair: &r,
+				PrefixListId:    nil,
+				Type:            groupType,
+			})
+		}
+	}
+
+	return descArr
+}
+
+func EC2SecurityGroupRule(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+	describeCtx := GetDescribeContext(ctx)
+
+	groups, err := EC2SecurityGroup(ctx, cfg)
+	if err != nil {
+		return nil, err
+	}
+
+	var values []Resource
+	descArr := make([]model.EC2SecurityGroupRuleDescription, 0, 128)
+	for _, groupWrapper := range groups {
+		group := groupWrapper.Description.(model.EC2SecurityGroupDescription).SecurityGroup
+		if group.IpPermissions != nil {
+			for _, permission := range group.IpPermissions {
+				descArr = append(descArr, getEC2SecurityGroupRuleDescriptionFromIPPermission(group, permission, "ingress")...)
+			}
+		}
+		if group.IpPermissionsEgress != nil {
+			for _, permission := range group.IpPermissionsEgress {
+				descArr = append(descArr, getEC2SecurityGroupRuleDescriptionFromIPPermission(group, permission, "egress")...)
+			}
+		}
+	}
+	for _, desc := range descArr {
+		hashCode := desc.Type + "_" + *desc.Permission.IpProtocol
+		if desc.Permission.FromPort != nil {
+			hashCode = hashCode + "_" + fmt.Sprint(desc.Permission.FromPort) + "_" + fmt.Sprint(desc.Permission.ToPort)
+		}
+
+		if desc.IPRange != nil && desc.IPRange.CidrIp != nil {
+			hashCode = hashCode + "_" + *desc.IPRange.CidrIp
+		} else if desc.Ipv6Range != nil && desc.Ipv6Range.CidrIpv6 != nil {
+			hashCode = hashCode + "_" + *desc.Ipv6Range.CidrIpv6
+		} else if desc.UserIDGroupPair != nil && *desc.UserIDGroupPair.GroupId == *desc.Group.GroupId {
+			hashCode = hashCode + "_" + *desc.Group.GroupId
+		} else if desc.PrefixListId != nil && desc.PrefixListId.PrefixListId != nil {
+			hashCode = hashCode + "_" + *desc.PrefixListId.PrefixListId
+		}
+
+		arn := fmt.Sprintf("arn:%s:ec2:%s:%s:security-group/%s:%s", describeCtx.Partition, describeCtx.Region, describeCtx.AccountID, *desc.Group.GroupId, hashCode)
+		values = append(values, Resource{
+			ARN:         arn,
+			Name:        fmt.Sprintf("%s_%s", *desc.Group.GroupId, hashCode),
+			Description: desc,
+		})
 	}
 
 	return values, nil
@@ -1181,14 +1326,19 @@ func EC2TransitGateway(ctx context.Context, cfg aws.Config) ([]Resource, error) 
 	for paginator.HasMorePages() {
 		page, err := paginator.NextPage(ctx)
 		if err != nil {
-			return nil, err
+			if !isErr(err, "InvalidTransitGatewayID.NotFound") && !isErr(err, "InvalidTransitGatewayID.Unavailable") && !isErr(err, "InvalidTransitGatewayID.Malformed") {
+				return nil, err
+			}
+			continue
 		}
 
 		for _, v := range page.TransitGateways {
 			values = append(values, Resource{
-				ARN:         *v.TransitGatewayArn,
-				Name:        *v.TransitGatewayArn,
-				Description: v,
+				ARN:  *v.TransitGatewayArn,
+				Name: *v.TransitGatewayId,
+				Description: model.EC2TransitGatewayDescription{
+					TransitGateway: v,
+				},
 			})
 		}
 	}
@@ -1547,6 +1697,8 @@ func EC2VPCEndpointServicePermissions(ctx context.Context, cfg aws.Config) ([]Re
 }
 
 func EC2VPCPeeringConnection(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+	describeCtx := GetDescribeContext(ctx)
+
 	client := ec2.NewFromConfig(cfg)
 	paginator := ec2.NewDescribeVpcPeeringConnectionsPaginator(client, &ec2.DescribeVpcPeeringConnectionsInput{})
 
@@ -1558,10 +1710,13 @@ func EC2VPCPeeringConnection(ctx context.Context, cfg aws.Config) ([]Resource, e
 		}
 
 		for _, v := range page.VpcPeeringConnections {
+			arn := fmt.Sprintf("arn:%s:ec2:%s:%s:vpc-peering-connection/%s", describeCtx.Partition, describeCtx.Region, describeCtx.AccountID, *v.VpcPeeringConnectionId)
 			values = append(values, Resource{
-				ID:          *v.VpcPeeringConnectionId,
-				Name:        *v.VpcPeeringConnectionId,
-				Description: v,
+				ARN:  arn,
+				Name: *v.VpcPeeringConnectionId,
+				Description: model.EC2VpcPeeringConnectionDescription{
+					VpcPeeringConnection: v,
+				},
 			})
 		}
 	}

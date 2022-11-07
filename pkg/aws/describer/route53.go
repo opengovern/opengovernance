@@ -2,6 +2,8 @@ package describer
 
 import (
 	"context"
+	"fmt"
+	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/route53"
@@ -38,20 +40,66 @@ func Route53HealthCheck(ctx context.Context, cfg aws.Config) ([]Resource, error)
 }
 
 func Route53HostedZone(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+	describeCtx := GetDescribeContext(ctx)
 	client := route53.NewFromConfig(cfg)
 
 	var values []Resource
 	err := PaginateRetrieveAll(func(prevToken *string) (nextToken *string, err error) {
 		output, err := client.ListHostedZones(ctx, &route53.ListHostedZonesInput{Marker: prevToken})
 		if err != nil {
-			return nil, err
+			if !isErr(err, "NoSuchHostedZone") {
+				return nil, err
+			}
+			return nil, nil
 		}
 
 		for _, v := range output.HostedZones {
+			id := strings.Split(*v.Id, "/")[2]
+			arn := fmt.Sprintf("arn:%s:route53:::hostedzone/%s", describeCtx.Partition, id)
+
+			queryLoggingConfigs, err := client.ListQueryLoggingConfigs(ctx, &route53.ListQueryLoggingConfigsInput{
+				HostedZoneId: &id,
+			})
+			if err != nil {
+				if !isErr(err, "NoSuchHostedZone") {
+					return nil, err
+				}
+				queryLoggingConfigs = &route53.ListQueryLoggingConfigsOutput{}
+			}
+
+			dnsSec, err := client.GetDNSSEC(ctx, &route53.GetDNSSECInput{
+				HostedZoneId: v.Id,
+			})
+			if err != nil {
+				if !isErr(err, "NoSuchHostedZone") {
+					return nil, err
+				}
+				dnsSec = &route53.GetDNSSECOutput{}
+			}
+
+			tags, err := client.ListTagsForResource(ctx, &route53.ListTagsForResourceInput{
+				ResourceId:   v.Id,
+				ResourceType: types.TagResourceType("hostedzone"),
+			})
+			if err != nil {
+				if !isErr(err, "NoSuchHostedZone") {
+					return nil, err
+				}
+				tags = &route53.ListTagsForResourceOutput{
+					ResourceTagSet: &types.ResourceTagSet{},
+				}
+			}
+
 			values = append(values, Resource{
-				ID:          *v.Id,
-				Name:        *v.Name,
-				Description: v,
+				ARN:  arn,
+				Name: *v.Name,
+				Description: model.Route53HostedZoneDescription{
+					ID:                  id,
+					HostedZone:          v,
+					QueryLoggingConfigs: queryLoggingConfigs.QueryLoggingConfigs,
+					DNSSec:              *dnsSec,
+					Tags:                tags.ResourceTagSet.Tags,
+				},
 			})
 		}
 

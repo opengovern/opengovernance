@@ -124,6 +124,10 @@ require (
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/dns/armdns v1.0.0
 	github.com/aws/aws-sdk-go-v2/service/amp v1.15.7
 	github.com/aws/aws-sdk-go-v2/service/appstream v1.17.13
+	github.com/aws/aws-sdk-go-v2/service/cloudformation v1.23.0
+	github.com/aws/aws-sdk-go-v2/service/codecommit v1.13.19
+	github.com/aws/aws-sdk-go-v2/service/codepipeline v1.13.19
+	github.com/aws/aws-sdk-go-v2/service/directoryservice v1.15.3
 	github.com/aws/aws-sdk-go-v2/service/dynamodbstreams v1.13.22
 	github.com/aws/aws-sdk-go-v2/service/eventbridge v1.16.17
 	github.com/aws/aws-sdk-go-v2/service/glacier v1.13.19
@@ -137,6 +141,8 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/neptune v1.18.0
 	github.com/aws/aws-sdk-go-v2/service/opensearch v1.10.12
 	github.com/aws/aws-sdk-go-v2/service/redshiftserverless v1.2.13
+	github.com/aws/aws-sdk-go-v2/service/ssoadmin v1.15.13
+	github.com/aws/aws-sdk-go-v2/service/waf v1.11.19
 	github.com/go-redis/cache/v8 v8.4.3
 	github.com/go-redis/redis/v8 v8.11.5
 	github.com/golang-jwt/jwt v3.2.2+incompatible

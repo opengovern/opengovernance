@@ -268,6 +268,8 @@ github.com/aws/aws-sdk-go-v2/service/autoscaling v1.17.0 h1:iz4eD08AcsaijfGyZpBS
 github.com/aws/aws-sdk-go-v2/service/autoscaling v1.17.0/go.mod h1:Wu0SF1d/ibUOY3Nu3iHQaPufB4SM2XkgQP64sd7r888=
 github.com/aws/aws-sdk-go-v2/service/backup v1.11.0 h1:Ea5m4vBFqXo9+F5g5hB4E3//+szx8QSvJy7XE+yQhnI=
 github.com/aws/aws-sdk-go-v2/service/backup v1.11.0/go.mod h1:gHs/G7yDx+pmDL+nRZSUUh1gMpJOW6je7j2JKB1/KAU=
+github.com/aws/aws-sdk-go-v2/service/cloudformation v1.23.0 h1:Y+CAg1iGb3Mz3/LVSDXw2yr93gDowLXG+DpFLTpqnpE=
+github.com/aws/aws-sdk-go-v2/service/cloudformation v1.23.0/go.mod h1:AyrrIfauUrYfHqLrnroijTBBegQow3QIZTaLbQsauNk=
 github.com/aws/aws-sdk-go-v2/service/cloudfront v1.12.0 h1:ihW78J2PF0Ra81uagUDaSAhQq64gcHTJtOx0Y53XHJ4=
 github.com/aws/aws-sdk-go-v2/service/cloudfront v1.12.0/go.mod h1:2FfeVsv2btY6OTqPHj+aY4Xyche40iiartlvJ25xAm4=
 github.com/aws/aws-sdk-go-v2/service/cloudtrail v1.11.0 h1:VSartnilv3/CTMjqB2sH183VVZlIpKzRnhjL6tnGS94=
@@ -278,6 +280,10 @@ github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs v1.11.0 h1:WJgEPPOCglLGyEagn
 github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs v1.11.0/go.mod h1:DEJOoM7yFVQJepQIHh+zsLCSgz5hl3F2APTUpxTTbUo=
 github.com/aws/aws-sdk-go-v2/service/codebuild v1.15.0 h1:MWmNK9Vzb9n+/SvRyJxZ8pN2EyjaInFzSLmq1Nq+7DY=
 github.com/aws/aws-sdk-go-v2/service/codebuild v1.15.0/go.mod h1:gxgeWH9WqzRqRtaSjGeJIEZfnVbhHyxi1J1HbM79wf0=
+github.com/aws/aws-sdk-go-v2/service/codecommit v1.13.19 h1:u3QWKvbwByHrc8OZ8SNb1kp9NK9obaABNbNSdKOrpZc=
+github.com/aws/aws-sdk-go-v2/service/codecommit v1.13.19/go.mod h1:1v2bYslyzD80TysR/0YRiAk/m+gNRhM2Zo39ldK/PNo=
+github.com/aws/aws-sdk-go-v2/service/codepipeline v1.13.19 h1:Gf2b9ow4Qw9LYlUp5JaEsDtY7D83L4N19sNuPKR1e1E=
+github.com/aws/aws-sdk-go-v2/service/codepipeline v1.13.19/go.mod h1:D1EL3fEHs8yvJqe0xBWHdtfxrT5he4F1u1UCQV/dvoU=
 github.com/aws/aws-sdk-go-v2/service/configservice v1.13.0 h1:tc6k0Z7zQTRrLvbRPqAWbSB8zK6Ox+abqFy4lv5oniU=
 github.com/aws/aws-sdk-go-v2/service/configservice v1.13.0/go.mod h1:N6u2MpZ+PfaCzW4F7EtR8BYt7UIz2hE3M/msH+qA1TY=
 github.com/aws/aws-sdk-go-v2/service/costexplorer v1.19.0 h1:UIdZIaA5nQRlX957+FwwuvJUEe1gQflBqe47C0a7ZV0=
@@ -286,6 +292,8 @@ github.com/aws/aws-sdk-go-v2/service/databasemigrationservice v1.14.0 h1:x1Tbys5
 github.com/aws/aws-sdk-go-v2/service/databasemigrationservice v1.14.0/go.mod h1:/df8pk/8VZfJmOEzfBMn9LyRwG6XjuZ10Yl8qH+p3yk=
 github.com/aws/aws-sdk-go-v2/service/dax v1.7.2 h1:18Nxds4KQoQGUrGREWImE+eTK3CGBz8jtXotk7COTKk=
 github.com/aws/aws-sdk-go-v2/service/dax v1.7.2/go.mod h1:nfGaoXs2m4bnNbDF6sfTIaIBSa8o5XVqxbRI8BhFgtU=
+github.com/aws/aws-sdk-go-v2/service/directoryservice v1.15.3 h1:4bLklTKdSZF6q9ZmAiwhxLgBujRmno/hKV26K+h7qO8=
+github.com/aws/aws-sdk-go-v2/service/directoryservice v1.15.3/go.mod h1:fZXZWfzclf3UMRI+jDcROV1vIS+156RXAufc0HfGMyk=
 github.com/aws/aws-sdk-go-v2/service/dynamodb v1.11.0 h1:te+nIFwPf5Bi/cZvd9g/+EF0gkJT3c0J/5+NMx0NBZg=
 github.com/aws/aws-sdk-go-v2/service/dynamodb v1.11.0/go.mod h1:ELltfl9ri0n4sZ/VjPZBgemNMd9mYIpCAuZhc7NP7l4=
 github.com/aws/aws-sdk-go-v2/service/dynamodbstreams v1.13.22 h1:vSUuWw6gsDfLEqZr1qHKV2uKW3rc6tND2DoGUk34iHs=
@@ -392,12 +400,16 @@ github.com/aws/aws-sdk-go-v2/service/ssm v1.18.0 h1:8hLwB8IUhxkm+Cr4gtVTSQd8TzpW
 github.com/aws/aws-sdk-go-v2/service/ssm v1.18.0/go.mod h1:jqRk4h1lv2pV4G1DTYRj71JIMEoU/gEGvLU5O6ZnpLM=
 github.com/aws/aws-sdk-go-v2/service/sso v1.6.1 h1:NF/qN6e8hdHO/Pt5jN+S65dxFom3b8+ciVdyv8Jr00U=
 github.com/aws/aws-sdk-go-v2/service/sso v1.6.1/go.mod h1:/73aFBwUl60wKBKhdth2pEOkut5ZNjVHGF9hjXz0bM0=
+github.com/aws/aws-sdk-go-v2/service/ssoadmin v1.15.13 h1:vP7nc0ACiN6QbJO7zpAxGfNuruR86BW4NQ8pDRKJxrw=
+github.com/aws/aws-sdk-go-v2/service/ssoadmin v1.15.13/go.mod h1:Y3o3ZADvfZhfW66mI3vrSCRyf3Zkz/tGOVz+7Vj2L3I=
 github.com/aws/aws-sdk-go-v2/service/sts v1.10.1 h1:2DKYFOmC7d3WOzdBTFJxfkcMXVVIgcitrpEoJDUKlN4=
 github.com/aws/aws-sdk-go-v2/service/sts v1.10.1/go.mod h1:+BmlPeQ1Y+PuIho93MMKDby12PoUnt1SZXQdEHCzSlw=
 github.com/aws/aws-sdk-go-v2/service/support v1.11.0 h1:WzIExMMIGoNrd0U/4CWb543eULOEVG8zOds7e2ulpOA=
 github.com/aws/aws-sdk-go-v2/service/support v1.11.0/go.mod h1:2/Jc1DNqZGSgTg9VuFil5U+Fz6vjth/nndHugOsfrCE=
 github.com/aws/aws-sdk-go-v2/service/synthetics v1.9.1 h1:SZ1SrpWzzMEfTP84X/zm9ZdB9nJIPaewVaXl0LRJ78Y=
 github.com/aws/aws-sdk-go-v2/service/synthetics v1.9.1/go.mod h1:RbISV34MpeaX5BOEVhlNiX5dJ0yFSwPl2WeNqNQ48aE=
+github.com/aws/aws-sdk-go-v2/service/waf v1.11.19 h1:ZvJJZauRxvRoliuin5NG8LGZBs3EQXcntjkPx8h7mi0=
+github.com/aws/aws-sdk-go-v2/service/waf v1.11.19/go.mod h1:Njlk6JmJxtDIX12y9lsV3nVRrE3J3Jo8rzGSlF2dc74=
 github.com/aws/aws-sdk-go-v2/service/wafregional v1.8.1 h1:k3eA26rnFN7RiBHii3OSQL1aAqE1I5/z7U9TbOY97rc=
 github.com/aws/aws-sdk-go-v2/service/wafregional v1.8.1/go.mod h1:y7TyxqpoyxVf0AQPqKH1O3XEH9gAMkV/1LVMXCQZXbU=
 github.com/aws/aws-sdk-go-v2/service/wafv2 v1.14.1 h1:FM5veotfULmVBBwix2jXH95pkylbEDNB3BpkRVRzIfY=
