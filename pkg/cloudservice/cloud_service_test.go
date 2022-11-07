@@ -17,8 +17,8 @@ func TestIsCommonByResourceType(t *testing.T) {
 }
 
 func TestServiceNameByResourceType_ResourceList(t *testing.T) {
-	assert.Equal(t, "EC2 Instance", ServiceNameByResourceType("AwS::Ec2::Instance"))
-	assert.Equal(t, "Application gateway", ServiceNameByResourceType("Microsoft.network/APPlicationGateways"))
+	assert.Equal(t, "Amazon EC2 Instance", ServiceNameByResourceType("AwS::Ec2::Instance"))
+	assert.Equal(t, "Application Gateway", ServiceNameByResourceType("Microsoft.network/APPlicationGateways"))
 }
 
 func TestServiceNameByResourceType_Namespace(t *testing.T) {
@@ -28,7 +28,7 @@ func TestServiceNameByResourceType_Namespace(t *testing.T) {
 
 func TestListCategories(t *testing.T) {
 	cats := ListCategories()
-	assert.Len(t, cats, 33)
+	assert.Len(t, cats, 32)
 	assert.Contains(t, cats, "Infrastructure")
 }
 
@@ -37,4 +37,10 @@ func TestResourceListByCategory(t *testing.T) {
 	assert.Len(t, resourceList, 16)
 	assert.Contains(t, resourceList, "aws::dynamodb::table")
 	assert.Contains(t, resourceList, "microsoft.sql/servers")
+}
+
+func TestResourceListByServiceName(t *testing.T) {
+	resourceList := ResourceListByServiceName("Amazon Simple Storage Service (S3)")
+	assert.Len(t, resourceList, 4)
+	assert.Contains(t, resourceList, "aws::s3::bucket")
 }
