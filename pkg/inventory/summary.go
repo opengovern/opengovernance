@@ -203,16 +203,17 @@ func GetResourcesFromPostgres(db Database, provider source.Type, sourceID *strin
 
 	resourceTypeResponse := map[string]api.ResourceTypeResponse{}
 	for _, hit := range m {
-		if v, ok := resourceTypeResponse[hit.ResourceType]; ok {
+		typeName := cloudservice.ResourceTypeName(hit.ResourceType)
+		if v, ok := resourceTypeResponse[typeName]; ok {
 			v.ResourceCount += hit.Count
 			v.LastDayCount = padd(v.LastDayCount, hit.LastDayCount)
 			v.LastWeekCount = padd(v.LastWeekCount, hit.LastWeekCount)
 			v.LastQuarterCount = padd(v.LastQuarterCount, hit.LastQuarterCount)
 			v.LastYearCount = padd(v.LastYearCount, hit.LastYearCount)
-			resourceTypeResponse[hit.ResourceType] = v
+			resourceTypeResponse[typeName] = v
 		} else {
-			resourceTypeResponse[hit.ResourceType] = api.ResourceTypeResponse{
-				ResourceType:     cloudservice.ResourceTypeName(hit.ResourceType),
+			resourceTypeResponse[typeName] = api.ResourceTypeResponse{
+				ResourceType:     typeName,
 				ResourceCount:    hit.Count,
 				LastDayCount:     hit.LastDayCount,
 				LastWeekCount:    hit.LastWeekCount,
