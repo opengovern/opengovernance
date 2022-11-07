@@ -14,7 +14,20 @@ type AWSARN struct {
 }
 
 func ParseARN(arn string) AWSARN {
+	arn = strings.ToLower(arn)
 	arr := strings.Split(arn, ":")
+	// aws::service::resourceType
+	if len(arr) == 5 && arr[0] == "aws" {
+		return AWSARN{
+			Partition:    "",
+			Service:      arr[2],
+			Region:       "",
+			AccountID:    "",
+			ResourceType: arr[4],
+			ResourceID:   "",
+		}
+	}
+
 	if len(arr) == 6 {
 		//arn:partition:service:region:account-id:resource-id
 		//arn:partition:service:region:account-id:resource-type/resource-id

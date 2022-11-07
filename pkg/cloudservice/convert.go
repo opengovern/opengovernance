@@ -4,6 +4,9 @@ import (
 	"encoding/csv"
 	"strings"
 
+	"gitlab.com/keibiengine/keibi-engine/pkg/aws"
+	"gitlab.com/keibiengine/keibi-engine/pkg/azure"
+
 	"gitlab.com/keibiengine/keibi-engine/pkg/source"
 )
 
@@ -289,10 +292,16 @@ func ResourceListByCategory(category string) []string {
 func ResourceListByServiceName(serviceName string) []string {
 	initCloudService()
 	var response []string
-	for _, v := range resourceList {
-		srv := findCloudResourceRecord(v.ServiceNamespace)
+	for _, v := range aws.ListResourceTypes() {
+		srv := findCloudResourceRecord(v)
 		if srv != nil && srv.CloudService == serviceName {
-			response = append(response, v.ServiceNamespace)
+			response = append(response, v)
+		}
+	}
+	for _, v := range azure.ListResourceTypes() {
+		srv := findCloudResourceRecord(v)
+		if srv != nil && srv.CloudService == serviceName {
+			response = append(response, v)
 		}
 	}
 	return response
