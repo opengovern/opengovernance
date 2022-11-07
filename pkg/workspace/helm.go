@@ -17,11 +17,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-const (
-	FluxSystemNamespace = "flux-system"
-	OctopusNamespace    = "keibi-octopus"
-)
-
 func (s *Server) newKubeClient() (client.Client, error) {
 	scheme := runtime.NewScheme()
 	if err := helmv2.AddToScheme(scheme); err != nil {
@@ -47,7 +42,7 @@ func (s *Server) createHelmRelease(ctx context.Context, workspace *Workspace) er
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      id,
-			Namespace: FluxSystemNamespace,
+			Namespace: s.cfg.FluxSystemNamespace,
 		},
 		Spec: helmv2.HelmReleaseSpec{
 			Interval: metav1.Duration{
@@ -61,7 +56,7 @@ func (s *Server) createHelmRelease(ctx context.Context, workspace *Workspace) er
 					SourceRef: helmv2.CrossNamespaceObjectReference{
 						Kind:      "GitRepository",
 						Name:      "flux-system",
-						Namespace: FluxSystemNamespace,
+						Namespace: s.cfg.FluxSystemNamespace,
 					},
 					Interval: &metav1.Duration{
 						Duration: time.Minute,
@@ -162,7 +157,7 @@ func (s *Server) findTargetNamespace(ctx context.Context, name string) (*corev1.
 func (s *Server) findHelmRelease(ctx context.Context, workspace *Workspace) (*helmv2.HelmRelease, error) {
 	key := types.NamespacedName{
 		Name:      workspace.ID.String(),
-		Namespace: FluxSystemNamespace,
+		Namespace: s.cfg.FluxSystemNamespace,
 	}
 	var helmRelease helmv2.HelmRelease
 	if err := s.kubeClient.Get(ctx, key, &helmRelease); err != nil {
@@ -178,7 +173,7 @@ func (s *Server) deleteHelmRelease(ctx context.Context, workspace *Workspace) er
 	helmRelease := helmv2.HelmRelease{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      workspace.ID.String(),
-			Namespace: FluxSystemNamespace,
+			Namespace: s.cfg.FluxSystemNamespace,
 		},
 	}
 	return s.kubeClient.Delete(ctx, &helmRelease)
