@@ -2548,12 +2548,10 @@ paths:
       - description: Category
         in: query
         name: category
-        required: true
         type: string
       - description: SubCategory
         in: query
         name: subCategory
-        required: true
         type: string
       produces:
       - application/json

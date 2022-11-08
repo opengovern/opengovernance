@@ -1084,20 +1084,13 @@ func (h *HttpHandler) GetCategorizedMetrics(ctx echo.Context) error {
 // @Produce json
 // @Param   provider    query    string false "Provider"
 // @Param   sourceId    query    string false "SourceID"
-// @Param   category    query    string true  "Category"
-// @Param   subCategory query    string true  "SubCategory"
+// @Param   category    query    string false "Category"
+// @Param   subCategory query    string false "SubCategory"
 // @Success 200         {object} api.CategorizedMetricsResponse
 // @Router  /inventory/api/v2/metrics/categorized [get]
 func (h *HttpHandler) GetCategorizedMetricsV2(ctx echo.Context) error {
 	category := ctx.QueryParam("category")
-	if len(strings.TrimSpace(category)) == 0 {
-		return echo.NewHTTPError(http.StatusBadRequest, "category is required")
-	}
-
 	subCategory := ctx.QueryParam("subCategory")
-	if len(strings.TrimSpace(subCategory)) == 0 {
-		return echo.NewHTTPError(http.StatusBadRequest, "subCategory is required")
-	}
 
 	provider, _ := source.ParseType(ctx.QueryParam("provider"))
 
@@ -1111,7 +1104,16 @@ func (h *HttpHandler) GetCategorizedMetricsV2(ctx echo.Context) error {
 		sourceID = &s
 	}
 
-	cats, err := h.db.GetCategories(category, subCategory)
+	var cats []Category
+	var err error
+
+	if len(category) > 0 && len(subCategory) > 0 {
+		cats, err = h.db.GetCategories(category, subCategory)
+	} else if len(category) > 0 {
+		cats, err = h.db.GetSubCategories(category)
+	} else {
+		cats, err = h.db.ListCategories()
+	}
 	if err != nil {
 		return err
 	}

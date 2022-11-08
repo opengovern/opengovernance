@@ -1756,15 +1756,13 @@ const docTemplate = `{
                         "type": "string",
                         "description": "Category",
                         "name": "category",
-                        "in": "query",
-                        "required": true
+                        "in": "query"
                     },
                     {
                         "type": "string",
                         "description": "SubCategory",
                         "name": "subCategory",
-                        "in": "query",
-                        "required": true
+                        "in": "query"
                     }
                 ],
                 "responses": {
