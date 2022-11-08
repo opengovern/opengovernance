@@ -72,6 +72,35 @@ func LambdaFunction(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	return values, nil
 }
 
+func LambdaFunctionVersion(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+	client := lambda.NewFromConfig(cfg)
+	paginator := lambda.NewListFunctionsPaginator(client, &lambda.ListFunctionsInput{
+		FunctionVersion: types.FunctionVersionAll,
+	})
+
+	var values []Resource
+	for paginator.HasMorePages() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page.Functions {
+			arn := fmt.Sprintf("%s:%s", *v.FunctionArn, *v.Version)
+			id := fmt.Sprintf("%s:%s", *v.FunctionName, *v.Version)
+			values = append(values, Resource{
+				ARN:  arn,
+				Name: id,
+				Description: model.LambdaFunctionVersionDescription{
+					ID:              id,
+					FunctionVersion: v,
+				},
+			})
+		}
+	}
+	return values, nil
+}
+
 func LambdaAlias(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	fns, err := LambdaFunction(ctx, cfg)
 	if err != nil {

@@ -57,3 +57,34 @@ func CloudFormationStack(ctx context.Context, cfg aws.Config) ([]Resource, error
 
 	return values, nil
 }
+
+func CloudFormationStackSet(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+	client := cloudformation.NewFromConfig(cfg)
+	paginator := cloudformation.NewListStackSetsPaginator(client, &cloudformation.ListStackSetsInput{})
+
+	var values []Resource
+	for paginator.HasMorePages() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page.Summaries {
+			stackSet, err := client.DescribeStackSet(ctx, &cloudformation.DescribeStackSetInput{
+				StackSetName: v.StackSetName,
+			})
+			if err != nil {
+				return nil, err
+			}
+			values = append(values, Resource{
+				ARN:  *stackSet.StackSet.StackSetARN,
+				Name: *stackSet.StackSet.StackSetName,
+				Description: model.CloudFormationStackSetDescription{
+					StackSet: *stackSet.StackSet,
+				},
+			})
+		}
+	}
+
+	return values, nil
+}

@@ -15,6 +15,7 @@ import (
 	autoscaling "github.com/aws/aws-sdk-go-v2/service/autoscaling/types"
 	backupservice "github.com/aws/aws-sdk-go-v2/service/backup"
 	backup "github.com/aws/aws-sdk-go-v2/service/backup/types"
+	batch "github.com/aws/aws-sdk-go-v2/service/batch/types"
 	cloudformationop "github.com/aws/aws-sdk-go-v2/service/cloudformation"
 	cloudformation "github.com/aws/aws-sdk-go-v2/service/cloudformation/types"
 	cloudfront "github.com/aws/aws-sdk-go-v2/service/cloudfront/types"
@@ -22,13 +23,18 @@ import (
 	cloudtrailtypes "github.com/aws/aws-sdk-go-v2/service/cloudtrail/types"
 	cloudwatch "github.com/aws/aws-sdk-go-v2/service/cloudwatch/types"
 	cloudwatchlogs "github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs/types"
+	codeartifact "github.com/aws/aws-sdk-go-v2/service/codeartifact/types"
 	codebuild "github.com/aws/aws-sdk-go-v2/service/codebuild/types"
 	codecommit "github.com/aws/aws-sdk-go-v2/service/codecommit/types"
+	codedeploy "github.com/aws/aws-sdk-go-v2/service/codedeploy/types"
 	codepipeline "github.com/aws/aws-sdk-go-v2/service/codepipeline/types"
+	codestarop "github.com/aws/aws-sdk-go-v2/service/codestar"
 	configservice "github.com/aws/aws-sdk-go-v2/service/configservice/types"
 	dms "github.com/aws/aws-sdk-go-v2/service/databasemigrationservice/types"
 	dax "github.com/aws/aws-sdk-go-v2/service/dax/types"
+	directconnect "github.com/aws/aws-sdk-go-v2/service/directconnect/types"
 	directoryservice "github.com/aws/aws-sdk-go-v2/service/directoryservice/types"
+	drs "github.com/aws/aws-sdk-go-v2/service/drs/types"
 	dynamodb "github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
 	dynamodbstream "github.com/aws/aws-sdk-go-v2/service/dynamodbstreams/types"
 	ec2op "github.com/aws/aws-sdk-go-v2/service/ec2"
@@ -47,6 +53,7 @@ import (
 	es "github.com/aws/aws-sdk-go-v2/service/elasticsearchservice/types"
 	emr "github.com/aws/aws-sdk-go-v2/service/emr/types"
 	eventbridge "github.com/aws/aws-sdk-go-v2/service/eventbridge/types"
+	fms "github.com/aws/aws-sdk-go-v2/service/fms/types"
 	fsx "github.com/aws/aws-sdk-go-v2/service/fsx/types"
 	glacier "github.com/aws/aws-sdk-go-v2/service/glacier/types"
 	grafana "github.com/aws/aws-sdk-go-v2/service/grafana/types"
@@ -58,11 +65,14 @@ import (
 	kinesis "github.com/aws/aws-sdk-go-v2/service/kinesis/types"
 	kms "github.com/aws/aws-sdk-go-v2/service/kms/types"
 	"github.com/aws/aws-sdk-go-v2/service/lambda"
+	lambdatypes "github.com/aws/aws-sdk-go-v2/service/lambda/types"
 	memorydb "github.com/aws/aws-sdk-go-v2/service/memorydb/types"
 	mq "github.com/aws/aws-sdk-go-v2/service/mq/types"
 	mwaa "github.com/aws/aws-sdk-go-v2/service/mwaa/types"
 	neptune "github.com/aws/aws-sdk-go-v2/service/neptune/types"
+	networkfirewall "github.com/aws/aws-sdk-go-v2/service/networkfirewall/types"
 	opensearch "github.com/aws/aws-sdk-go-v2/service/opensearch/types"
+	opsworkscm "github.com/aws/aws-sdk-go-v2/service/opsworkscm/types"
 	organizations "github.com/aws/aws-sdk-go-v2/service/organizations/types"
 	rds "github.com/aws/aws-sdk-go-v2/service/rds/types"
 	"github.com/aws/aws-sdk-go-v2/service/redshift"
@@ -150,6 +160,13 @@ type ElasticBeanstalkEnvironmentDescription struct {
 type ElasticBeanstalkApplicationDescription struct {
 	Application elasticbeanstalk.ApplicationDescription
 	Tags        []elasticbeanstalk.Tag
+}
+
+//index:aws_elasticbeanstalk_platform
+//getfilter:platform_name=description.Platform.PlatformName
+type ElasticBeanstalkPlatformDescription struct {
+	Platform elasticbeanstalk.PlatformDescription
+	Tags     []elasticbeanstalk.Tag
 }
 
 //  ===================   ElastiCache   ===================
@@ -1149,6 +1166,13 @@ type LambdaFunctionDescription struct {
 	Policy   *lambda.GetPolicyOutput
 }
 
+//index:aws_lambda_function
+//getfilter:name=description.Function.FunctionVersion.FunctionName
+type LambdaFunctionVersionDescription struct {
+	ID              string
+	FunctionVersion lambdatypes.FunctionConfiguration
+}
+
 //index:aws_s3_accesspoint
 //getfilter:name=description.AccessPoint.Name
 //getfilter:region=metadata.region
@@ -1403,6 +1427,12 @@ type CloudFormationStackDescription struct {
 	StackResources []cloudformation.StackResource
 }
 
+//index:aws_cloudformation_stackset
+//getfilter:stack_set_name=description.StackSet.StackSetName
+type CloudFormationStackSetDescription struct {
+	StackSet cloudformation.StackSet
+}
+
 //  ===================  CodeCommit  ===================
 
 //index:aws_codecommit_repository
@@ -1456,4 +1486,105 @@ type Route53HostedZoneDescription struct {
 	QueryLoggingConfigs []route53.QueryLoggingConfig
 	DNSSec              route53op.GetDNSSECOutput
 	Tags                []route53.Tag
+}
+
+//  ===================  Batch  ===================
+
+//index:aws_batch_computeenvironment
+//getfilter:compute_environment_name=description.ComputeEnvironment.ComputeEnvironmentName
+type BatchComputeEnvironmentDescription struct {
+	ComputeEnvironment batch.ComputeEnvironmentDetail
+}
+
+//index:aws_batch_job
+//getfilter:job_name=description.Job.JobName
+type BatchJobDescription struct {
+	Job batch.JobSummary
+}
+
+//  ===================  CodeArtifact  ===================
+
+//index:aws_codeartifact_repository
+//getfilter:name=description.Repository.Name
+type CodeArtifactRepositoryDescription struct {
+	Repository codeartifact.RepositorySummary
+	Tags       []codeartifact.Tag
+}
+
+//  ===================  CodeDeploy  ===================
+
+//index:aws_codedeploy_deploymentgroup
+//getfilter:deployment_group_name=description.DeploymentGroup.DeploymentGroupName
+type CodeDeployDeploymentGroupDescription struct {
+	DeploymentGroup codedeploy.DeploymentGroupInfo
+	Tags            []codedeploy.Tag
+}
+
+//index:aws_codedeploy_application
+//getfilter:application_name=description.Application.ApplicationName
+type CodeDeployApplicationDescription struct {
+	Application codedeploy.ApplicationInfo
+	Tags        []codedeploy.Tag
+}
+
+//  ===================  CodeStar  ===================
+
+//index:aws_codestar_project
+//getfilter:id=description.Project.Id
+type CodeStarProjectDescription struct {
+	Project codestarop.DescribeProjectOutput
+}
+
+//  ===================  DirectConnect  ===================
+
+//index:aws_directconnect_connection
+//getfilter:connection_id=description.Connection.ConnectionId
+type DirectConnectConnectionDescription struct {
+	Connection directconnect.Connection
+}
+
+//index:aws_directconnect_gateway
+//getfilter:direct_connect_gateway_id=description.Gateway.DirectConnectGatewayId
+type DirectConnectGatewayDescription struct {
+	Gateway directconnect.DirectConnectGateway
+	Tags    []directconnect.Tag
+}
+
+//  ===================  Elastic Disaster Recovery (DRS)  ===================
+
+//index:aws_drs_sourceserver
+//getfilter:source_server_id=description.SourceServer.SourceServerID
+type DRSSourceServerDescription struct {
+	SourceServer drs.SourceServer
+}
+
+//index:aws_drs_recoveryinstance
+//getfilter:recovery_instance_id=description.RecoveryInstance.RecoveryInstanceID
+type DRSRecoveryInstanceDescription struct {
+	RecoveryInstance drs.RecoveryInstance
+}
+
+//  ===================  Firewall Manager Policy (FMS)  ===================
+
+//index:aws_fms_policy
+//getfilter:policy_name=description.Policy.PolicyName
+type FMSPolicyDescription struct {
+	Policy fms.PolicySummary
+}
+
+//  ===================  Network Firewall ===================
+
+//index:aws_networkfirewall_firewall
+//getfilter:firewall_name=description.Firewall.FirewallName
+type NetworkFirewallFirewallDescription struct {
+	Firewall networkfirewall.Firewall
+}
+
+//  ===================  OpsWork ===================
+
+//index:aws_opsworkscm_server
+//getfilter:server_name=description.Server.ServerName
+type OpsWorksCMServerDescription struct {
+	Server opsworkscm.Server
+	Tags   []opsworkscm.Tag
 }
