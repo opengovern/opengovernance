@@ -158,6 +158,7 @@ sver-tags:
   before_script:
     - git status --short
   script:
+    - set -x
     - ./scripts/sver.sh >> sver.env
     - source ./sver.env
     - git tag $SVER_VERSION &> /dev/null
