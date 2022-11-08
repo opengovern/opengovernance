@@ -2,16 +2,18 @@ package describer
 
 import (
 	"context"
+	"fmt"
 	"strings"
-
-	"github.com/aws/aws-sdk-go/aws/awserr"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/cloudfront"
+	"github.com/aws/aws-sdk-go-v2/service/waf"
+	waftypes "github.com/aws/aws-sdk-go-v2/service/waf/types"
 	"github.com/aws/aws-sdk-go-v2/service/wafregional"
 	regionaltypes "github.com/aws/aws-sdk-go-v2/service/wafregional/types"
 	"github.com/aws/aws-sdk-go-v2/service/wafv2"
 	"github.com/aws/aws-sdk-go-v2/service/wafv2/types"
+	"github.com/aws/aws-sdk-go/aws/awserr"
 	"gitlab.com/keibiengine/keibi-engine/pkg/aws/model"
 )
 
@@ -626,6 +628,65 @@ func WAFRegionalXssMatchSet(ctx context.Context, cfg aws.Config) ([]Resource, er
 				ID:          *v.XssMatchSetId,
 				Name:        *v.Name,
 				Description: v,
+			})
+		}
+		return output.NextMarker, nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return values, nil
+}
+
+func WAFRule(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+	describeCtx := GetDescribeContext(ctx)
+	client := waf.NewFromConfig(cfg)
+
+	var values []Resource
+	err := PaginateRetrieveAll(func(prevToken *string) (nextToken *string, err error) {
+		output, err := client.ListRules(ctx, &waf.ListRulesInput{
+			NextMarker: prevToken,
+		})
+		if err != nil {
+			if !isErr(err, "WAFNonexistentItemException") {
+				return nil, err
+			}
+			return nil, nil
+		}
+
+		for _, v := range output.Rules {
+			rule, err := client.GetRule(ctx, &waf.GetRuleInput{
+				RuleId: v.RuleId,
+			})
+			if err != nil {
+				if !isErr(err, "WAFNonexistentItemException") {
+					return nil, err
+				}
+				continue
+			}
+
+			arn := fmt.Sprintf("arn:%s:waf::%s:rule/%s", describeCtx.Partition, describeCtx.AccountID, *v.RuleId)
+
+			tags, err := client.ListTagsForResource(ctx, &waf.ListTagsForResourceInput{
+				ResourceARN: &arn,
+			})
+			if err != nil {
+				if !isErr(err, "WAFNonexistentItemException") {
+					return nil, err
+				}
+				tags = &waf.ListTagsForResourceOutput{
+					TagInfoForResource: &waftypes.TagInfoForResource{},
+				}
+			}
+
+			values = append(values, Resource{
+				ARN:  arn,
+				Name: *rule.Rule.Name,
+				Description: model.WAFRuleDescription{
+					Rule: *rule.Rule,
+					Tags: tags.TagInfoForResource.TagList,
+				},
 			})
 		}
 		return output.NextMarker, nil
