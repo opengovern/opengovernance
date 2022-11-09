@@ -124,12 +124,19 @@ require (
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/dns/armdns v1.0.0
 	github.com/aws/aws-sdk-go-v2/service/amp v1.15.7
 	github.com/aws/aws-sdk-go-v2/service/appstream v1.17.13
+	github.com/aws/aws-sdk-go-v2/service/batch v1.19.0
 	github.com/aws/aws-sdk-go-v2/service/cloudformation v1.23.0
+	github.com/aws/aws-sdk-go-v2/service/codeartifact v1.13.11
 	github.com/aws/aws-sdk-go-v2/service/codecommit v1.13.19
+	github.com/aws/aws-sdk-go-v2/service/codedeploy v1.15.2
 	github.com/aws/aws-sdk-go-v2/service/codepipeline v1.13.19
+	github.com/aws/aws-sdk-go-v2/service/codestar v1.12.3
+	github.com/aws/aws-sdk-go-v2/service/directconnect v1.17.20
 	github.com/aws/aws-sdk-go-v2/service/directoryservice v1.15.3
+	github.com/aws/aws-sdk-go-v2/service/drs v1.8.4
 	github.com/aws/aws-sdk-go-v2/service/dynamodbstreams v1.13.22
 	github.com/aws/aws-sdk-go-v2/service/eventbridge v1.16.17
+	github.com/aws/aws-sdk-go-v2/service/fms v1.19.0
 	github.com/aws/aws-sdk-go-v2/service/glacier v1.13.19
 	github.com/aws/aws-sdk-go-v2/service/grafana v1.9.15
 	github.com/aws/aws-sdk-go-v2/service/kafka v1.18.0
@@ -139,7 +146,9 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/mq v1.13.15
 	github.com/aws/aws-sdk-go-v2/service/mwaa v1.13.12
 	github.com/aws/aws-sdk-go-v2/service/neptune v1.18.0
+	github.com/aws/aws-sdk-go-v2/service/networkfirewall v1.20.3
 	github.com/aws/aws-sdk-go-v2/service/opensearch v1.10.12
+	github.com/aws/aws-sdk-go-v2/service/opsworkscm v1.14.19
 	github.com/aws/aws-sdk-go-v2/service/redshiftserverless v1.2.13
 	github.com/aws/aws-sdk-go-v2/service/ssoadmin v1.15.13
 	github.com/aws/aws-sdk-go-v2/service/waf v1.11.19

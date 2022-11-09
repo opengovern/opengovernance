@@ -71,3 +71,46 @@ func ElasticBeanstalkApplication(ctx context.Context, cfg aws.Config) ([]Resourc
 
 	return values, nil
 }
+
+func ElasticBeanstalkPlatform(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+	client := elasticbeanstalk.NewFromConfig(cfg)
+	paginator := elasticbeanstalk.NewListPlatformVersionsPaginator(client, &elasticbeanstalk.ListPlatformVersionsInput{})
+
+	var values []Resource
+	for paginator.HasMorePages() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, item := range page.PlatformSummaryList {
+			platform, err := client.DescribePlatformVersion(ctx, &elasticbeanstalk.DescribePlatformVersionInput{
+				PlatformArn: item.PlatformArn,
+			})
+			if err != nil {
+				return nil, err
+			}
+
+			tags, err := client.ListTagsForResource(ctx, &elasticbeanstalk.ListTagsForResourceInput{
+				ResourceArn: item.PlatformArn,
+			})
+			if err != nil {
+				if !isErr(err, "ResourceNotFoundException") {
+					return nil, err
+				}
+				tags = &elasticbeanstalk.ListTagsForResourceOutput{}
+			}
+
+			values = append(values, Resource{
+				ARN:  *platform.PlatformDescription.PlatformArn,
+				Name: *platform.PlatformDescription.PlatformName,
+				Description: model.ElasticBeanstalkPlatformDescription{
+					Platform: *platform.PlatformDescription,
+					Tags:     tags.ResourceTags,
+				},
+			})
+		}
+	}
+
+	return values, nil
+}
