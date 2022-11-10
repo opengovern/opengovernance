@@ -112,9 +112,11 @@ func ElasticLoadBalancingV2ListenerRule(ctx context.Context, cfg aws.Config) ([]
 
 			for _, v := range output.Rules {
 				values = append(values, Resource{
-					ARN:         *v.RuleArn,
-					Name:        *v.RuleArn,
-					Description: v,
+					ARN:  *v.RuleArn,
+					Name: *v.RuleArn,
+					Description: model.ElasticLoadBalancingV2RuleDescription{
+						Rule: v,
+					},
 				})
 			}
 
@@ -141,9 +143,11 @@ func ElasticLoadBalancingV2TargetGroup(ctx context.Context, cfg aws.Config) ([]R
 
 		for _, v := range page.TargetGroups {
 			values = append(values, Resource{
-				ARN:         *v.TargetGroupArn,
-				Name:        *v.TargetGroupName,
-				Description: v,
+				ARN:  *v.TargetGroupArn,
+				Name: *v.TargetGroupName,
+				Description: model.ElasticLoadBalancingV2TargetGroupDescription{
+					TargetGroup: v,
+				},
 			})
 		}
 	}

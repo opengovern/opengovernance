@@ -7,6 +7,7 @@ import (
 
 	accessanalyzer "github.com/aws/aws-sdk-go-v2/service/accessanalyzer/types"
 	acm "github.com/aws/aws-sdk-go-v2/service/acm/types"
+	acmpca "github.com/aws/aws-sdk-go-v2/service/acmpca/types"
 	amp "github.com/aws/aws-sdk-go-v2/service/amp/types"
 	apigateway "github.com/aws/aws-sdk-go-v2/service/apigateway/types"
 	apigatewayv2 "github.com/aws/aws-sdk-go-v2/service/apigatewayv2/types"
@@ -60,6 +61,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/guardduty"
 	guarddutytypes "github.com/aws/aws-sdk-go-v2/service/guardduty/types"
 	iam "github.com/aws/aws-sdk-go-v2/service/iam/types"
+	imagebuilder "github.com/aws/aws-sdk-go-v2/service/imagebuilder/types"
 	kafka "github.com/aws/aws-sdk-go-v2/service/kafka/types"
 	keyspaces "github.com/aws/aws-sdk-go-v2/service/keyspaces/types"
 	kinesis "github.com/aws/aws-sdk-go-v2/service/kinesis/types"
@@ -89,10 +91,13 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/securityhub"
 	ses "github.com/aws/aws-sdk-go-v2/service/ses/types"
 	sesv2 "github.com/aws/aws-sdk-go-v2/service/sesv2/types"
+	shield "github.com/aws/aws-sdk-go-v2/service/shield/types"
 	sns "github.com/aws/aws-sdk-go-v2/service/sns/types"
 	ssm "github.com/aws/aws-sdk-go-v2/service/ssm/types"
 	ssoadmin "github.com/aws/aws-sdk-go-v2/service/ssoadmin/types"
+	storagegateway "github.com/aws/aws-sdk-go-v2/service/storagegateway/types"
 	waf "github.com/aws/aws-sdk-go-v2/service/waf/types"
+	wafregional "github.com/aws/aws-sdk-go-v2/service/wafregional/types"
 	wafv2 "github.com/aws/aws-sdk-go-v2/service/wafv2/types"
 	workspaces "github.com/aws/aws-sdk-go-v2/service/workspaces/types"
 )
@@ -265,6 +270,13 @@ type CloudFrontDistributionDescription struct {
 	Distribution *cloudfront.Distribution
 	ETag         *string
 	Tags         []cloudfront.Tag
+}
+
+//index:aws_cloudfront_originaccesscontrol
+//getfilter:id=description.OriginAccessControl.Id
+type CloudFrontOriginAccessControlDescription struct {
+	OriginAccessControl cloudfront.OriginAccessControlSummary
+	Tags                []cloudfront.Tag
 }
 
 //  ===================   CloudWatch   ===================
@@ -619,6 +631,24 @@ type EC2SecurityGroupRuleDescription struct {
 	Type            string
 }
 
+//index:aws_ec2_ipampool
+//getfilter:ipam_pool_id=description.IpamPool.IpamPoolId
+type EC2IpamPoolDescription struct {
+	IpamPool ec2.IpamPool
+}
+
+//index:aws_ec2_ipam
+//getfilter:ipam_id=description.Ipam.IpamId
+type EC2IpamDescription struct {
+	Ipam ec2.Ipam
+}
+
+//index:aws_ec2_vpcendpointservice
+//getfilter:service_name=description.VPCEndpoint.ServiceName
+type EC2VPCEndpointServiceDescription struct {
+	VpcEndpointService ec2.ServiceDetail
+}
+
 //  ===================  Elastic Load Balancing  ===================
 
 //index:aws_elasticloadbalancingv2_loadbalancer
@@ -643,6 +673,18 @@ type ElasticLoadBalancingLoadBalancerDescription struct {
 //getfilter:arn=description.Listener.ListenerArn
 type ElasticLoadBalancingV2ListenerDescription struct {
 	Listener elasticloadbalancingv2.Listener
+}
+
+//index:aws_elasticloadbalancingv2_rule
+//getfilter:arn=description.Rule.RuleArn
+type ElasticLoadBalancingV2RuleDescription struct {
+	Rule elasticloadbalancingv2.Rule
+}
+
+//index:aws_elasticloadbalancingv2_targetgroup
+//getfilter:target_group_name=description.TargetGroup.TargetGroupName
+type ElasticLoadBalancingV2TargetGroupDescription struct {
+	TargetGroup elasticloadbalancingv2.TargetGroup
 }
 
 //  ===================  FSX  ===================
@@ -1167,7 +1209,7 @@ type LambdaFunctionDescription struct {
 }
 
 //index:aws_lambda_function
-//getfilter:name=description.Function.FunctionVersion.FunctionName
+//getfilter:id=description.ID
 type LambdaFunctionVersionDescription struct {
 	ID              string
 	FunctionVersion lambdatypes.FunctionConfiguration
@@ -1476,6 +1518,13 @@ type WAFRuleDescription struct {
 	Tags []waf.Tag
 }
 
+//index:aws_wafregional_rule
+//getfilter:rule_id=description.Rule.RuleId
+type WAFRegionalRuleDescription struct {
+	Rule wafregional.RuleSummary
+	Tags []wafregional.Tag
+}
+
 //  ===================  Route53  ===================
 
 //index:aws_route53_hostedzone
@@ -1533,6 +1582,7 @@ type CodeDeployApplicationDescription struct {
 //getfilter:id=description.Project.Id
 type CodeStarProjectDescription struct {
 	Project codestarop.DescribeProjectOutput
+	Tags    map[string]string
 }
 
 //  ===================  DirectConnect  ===================
@@ -1570,6 +1620,7 @@ type DRSRecoveryInstanceDescription struct {
 //getfilter:policy_name=description.Policy.PolicyName
 type FMSPolicyDescription struct {
 	Policy fms.PolicySummary
+	Tags   []fms.Tag
 }
 
 //  ===================  Network Firewall ===================
@@ -1587,4 +1638,47 @@ type NetworkFirewallFirewallDescription struct {
 type OpsWorksCMServerDescription struct {
 	Server opsworkscm.Server
 	Tags   []opsworkscm.Tag
+}
+
+//  ===================  Organizations ===================
+
+//index:aws_organizations_organization
+//getfilter:id=description.Organization.Id
+type OrganizationsOrganizationDescription struct {
+	Organization organizations.Organization
+}
+
+//  ===================  ACM ===================
+
+//index:aws_acmpca_certificateauthority
+//getfilter:arn=description.CertificateAuthority.Arn
+type ACMPCACertificateAuthorityDescription struct {
+	CertificateAuthority acmpca.CertificateAuthority
+	Tags                 []acmpca.Tag
+}
+
+//  ===================  Shield ===================
+
+//index:aws_shield_protectiongroup
+//getfilter:protection_group_id=description.ProtectionGroup.ProtectionGroupId
+type ShieldProtectionGroupDescription struct {
+	ProtectionGroup shield.ProtectionGroup
+	Tags            []shield.Tag
+}
+
+//  ===================  Storage Gateway ===================
+
+//index:aws_storagegateway_storagegateway
+//getfilter:gateway_id=description.StorageGateway.GatewayId
+type StorageGatewayStorageGatewayDescription struct {
+	StorageGateway storagegateway.GatewayInfo
+	Tags           []storagegateway.Tag
+}
+
+//  ===================  Image Builder ===================
+
+//index:aws_imagebuilder_image
+//getfilter:name=description.Image.Name
+type ImageBuilderImageDescription struct {
+	Image imagebuilder.Image
 }

@@ -6,19 +6,40 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/organizations"
 	"github.com/aws/aws-sdk-go-v2/service/organizations/types"
+	"gitlab.com/keibiengine/keibi-engine/pkg/aws/model"
 )
 
 // OrganizationOrganization Retrieves information about the organization that the
 // user's account belongs to.
 func OrganizationOrganization(ctx context.Context, cfg aws.Config) (*types.Organization, error) {
-	svc := organizations.NewFromConfig(cfg)
+	client := organizations.NewFromConfig(cfg)
 
-	req, err := svc.DescribeOrganization(ctx, &organizations.DescribeOrganizationInput{})
+	req, err := client.DescribeOrganization(ctx, &organizations.DescribeOrganizationInput{})
 	if err != nil {
 		return nil, err
 	}
 
 	return req.Organization, nil
+}
+
+func OrganizationsOrganization(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+	client := organizations.NewFromConfig(cfg)
+
+	req, err := client.DescribeOrganization(ctx, &organizations.DescribeOrganizationInput{})
+	if err != nil {
+		return nil, err
+	}
+
+	var values []Resource
+	values = append(values, Resource{
+		ARN:  *req.Organization.Arn,
+		Name: *req.Organization.Id,
+		Description: model.OrganizationsOrganizationDescription{
+			Organization: *req.Organization,
+		},
+	})
+
+	return values, nil
 }
 
 // OrganizationAccount Retrieves AWS Organizations-related information about

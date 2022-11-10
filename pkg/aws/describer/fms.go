@@ -20,11 +20,18 @@ func FMSPolicy(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 		}
 
 		for _, v := range page.PolicyList {
+			tags, err := client.ListTagsForResource(ctx, &fms.ListTagsForResourceInput{
+				ResourceArn: v.PolicyArn,
+			})
+			if err != nil {
+				return nil, err
+			}
 			values = append(values, Resource{
 				ARN:  *v.PolicyArn,
 				Name: *v.PolicyName,
 				Description: model.FMSPolicyDescription{
 					Policy: v,
+					Tags:   tags.TagList,
 				},
 			})
 		}

@@ -469,6 +469,7 @@ func WAFRegionalRegexPatternSet(ctx context.Context, cfg aws.Config) ([]Resource
 }
 
 func WAFRegionalRule(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+	describeCtx := GetDescribeContext(ctx)
 	client := wafregional.NewFromConfig(cfg)
 
 	var values []Resource
@@ -481,10 +482,23 @@ func WAFRegionalRule(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 		}
 
 		for _, v := range output.Rules {
+			arn := fmt.Sprintf("arn:%s:waf-regional:%s:%s:rule/%s", describeCtx.Partition, describeCtx.Region, describeCtx.AccountID, *v.RuleId)
+
+			tags, err := client.ListTagsForResource(ctx, &wafregional.ListTagsForResourceInput{
+				ResourceARN: &arn,
+			})
+			if err != nil {
+				return nil, err
+			}
+
 			values = append(values, Resource{
-				ID:          *v.RuleId,
-				Name:        *v.Name,
-				Description: v,
+				ARN:  arn,
+				ID:   *v.RuleId,
+				Name: *v.Name,
+				Description: model.WAFRegionalRuleDescription{
+					Rule: v,
+					Tags: tags.TagInfoForResource.TagList,
+				},
 			})
 		}
 		return output.NextMarker, nil
