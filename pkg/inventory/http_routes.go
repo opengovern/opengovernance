@@ -1118,38 +1118,43 @@ func (h *HttpHandler) GetCategorizedMetricsV2(ctx echo.Context) error {
 		return err
 	}
 
-	var resourceList []string
+	catResourceList := map[string][]string{}
 	for _, v := range cats {
-		resourceList = append(resourceList, cloudservice.ResourceListByServiceName(v.CloudService)...)
+		resourceList := cloudservice.ResourceListByServiceName(v.CloudService)
+		if len(resourceList) > 0 {
+			m := catResourceList[v.Name+"___"+v.SubCategory]
+			m = append(m, resourceList...)
+			catResourceList[v.Name+"___"+v.SubCategory] = m
+		}
 	}
 
-	if len(resourceList) == 0 {
+	if len(catResourceList) == 0 {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid category/subcategory")
-	}
-
-	v, err := GetResourcesFromPostgres(h.db, provider, sourceID, resourceList)
-	if err != nil {
-		return err
 	}
 
 	resp := api.CategoriesMetrics{
 		Categories: map[string]api.CategoryMetric{},
 	}
-	for _, r := range v {
-		srv := cloudservice.ServiceNameByResourceType(r.ResourceType)
-		for _, cat := range cats {
-			if cat.CloudService == srv {
-				c := resp.Categories[cat.Name]
-				c.ResourceCount++
-				if c.SubCategories == nil {
-					c.SubCategories = map[string]int{}
-				}
-				c.SubCategories[cat.SubCategory]++
-				resp.Categories[cat.Name] = c
+
+	for cat, resourceList := range catResourceList {
+		v, err := GetResourcesFromPostgres(h.db, provider, sourceID, resourceList)
+		if err != nil {
+			return err
+		}
+
+		category := strings.Split(cat, "___")[0]
+		subCategory := strings.Split(cat, "___")[1]
+
+		for _, r := range v {
+			c := resp.Categories[category]
+			c.ResourceCount += r.ResourceCount
+			if c.SubCategories == nil {
+				c.SubCategories = map[string]int{}
 			}
+			c.SubCategories[subCategory] += r.ResourceCount
+			resp.Categories[category] = c
 		}
 	}
-
 	return ctx.JSON(http.StatusOK, resp)
 }
 
