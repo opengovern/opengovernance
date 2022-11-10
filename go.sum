@@ -252,6 +252,8 @@ github.com/aws/aws-sdk-go-v2/service/accessanalyzer v1.12.0 h1:/043E/bBsh9RqZVua
 github.com/aws/aws-sdk-go-v2/service/accessanalyzer v1.12.0/go.mod h1:AlM26E4J/wDuFw8Aw20vIWVzo105igTU0xsnADR8JHY=
 github.com/aws/aws-sdk-go-v2/service/acm v1.10.0 h1:h00NJuGEVi36k1BkVMpJQRRyye2SaPaCv2tQD0rm/uE=
 github.com/aws/aws-sdk-go-v2/service/acm v1.10.0/go.mod h1:I43heu2RNNVqzR8q069JCllVMVgGRlDfNHRThRD70Kc=
+github.com/aws/aws-sdk-go-v2/service/acmpca v1.19.0 h1:2f0kb+39miQPRp0b7Sqq06+TpxI0Nfcra41QxzJPME8=
+github.com/aws/aws-sdk-go-v2/service/acmpca v1.19.0/go.mod h1:AVLIBQ9V7mcHd5uZT1+wUbBt4QaI/XcOens85Ib0W1o=
 github.com/aws/aws-sdk-go-v2/service/amp v1.15.7 h1:eM1VVaP8616VQ9dxB675swL3jmgdOCWDPlZoql23MVM=
 github.com/aws/aws-sdk-go-v2/service/amp v1.15.7/go.mod h1:oY3PgDAE9hMQ3D/dLUqh1LSRag86jSNsdJO+KyiiQHA=
 github.com/aws/aws-sdk-go-v2/service/apigateway v1.11.0 h1:8g968yiQ2yinlg/1PvB1TsiP+li+1ph5JRo52lmZ6W4=
@@ -272,8 +274,8 @@ github.com/aws/aws-sdk-go-v2/service/batch v1.19.0 h1:NyWi7r+9kpnp4zO5g4QXJnYemm
 github.com/aws/aws-sdk-go-v2/service/batch v1.19.0/go.mod h1:Syo5fwYuIIX6iSQeSE3ZfOCEf1KunQajOYl4FUNiwKE=
 github.com/aws/aws-sdk-go-v2/service/cloudformation v1.23.0 h1:Y+CAg1iGb3Mz3/LVSDXw2yr93gDowLXG+DpFLTpqnpE=
 github.com/aws/aws-sdk-go-v2/service/cloudformation v1.23.0/go.mod h1:AyrrIfauUrYfHqLrnroijTBBegQow3QIZTaLbQsauNk=
-github.com/aws/aws-sdk-go-v2/service/cloudfront v1.12.0 h1:ihW78J2PF0Ra81uagUDaSAhQq64gcHTJtOx0Y53XHJ4=
-github.com/aws/aws-sdk-go-v2/service/cloudfront v1.12.0/go.mod h1:2FfeVsv2btY6OTqPHj+aY4Xyche40iiartlvJ25xAm4=
+github.com/aws/aws-sdk-go-v2/service/cloudfront v1.20.7 h1:RoinUS4OHD/GFpXV2Jvu27xqDFLMx4ZFclo2WDw7D8Q=
+github.com/aws/aws-sdk-go-v2/service/cloudfront v1.20.7/go.mod h1:fV9PzXIIT2xUvf5KXEGToDYxEXcqDyO33SRfv2rAs/8=
 github.com/aws/aws-sdk-go-v2/service/cloudtrail v1.11.0 h1:VSartnilv3/CTMjqB2sH183VVZlIpKzRnhjL6tnGS94=
 github.com/aws/aws-sdk-go-v2/service/cloudtrail v1.11.0/go.mod h1:u9jl7BDa0pHi8VB5yDzEnJ3skKCl/Ri/g6ybGoG6DH8=
 github.com/aws/aws-sdk-go-v2/service/cloudwatch v1.13.0 h1:BcSBoss+CeyRS4TgZKAcR6kcZ0Sb2P+DHs8r8aMlTpQ=
@@ -348,6 +350,8 @@ github.com/aws/aws-sdk-go-v2/service/guardduty v1.9.0 h1:3rX5K9RDz9yZ/hg7U0AXGrI
 github.com/aws/aws-sdk-go-v2/service/guardduty v1.9.0/go.mod h1:OxPzBFOD2bPYZKmL6SUqyVDz055hei3NDaYIJpQxg5E=
 github.com/aws/aws-sdk-go-v2/service/iam v1.15.0 h1:fhqcepXI/7P1MOKQHmscAR+B68zBfzTeJG28BP/zkaI=
 github.com/aws/aws-sdk-go-v2/service/iam v1.15.0/go.mod h1:nhA2HvgO/agunPz8tJLCHPMmpRU239dxALqhU4XI/70=
+github.com/aws/aws-sdk-go-v2/service/imagebuilder v1.20.3 h1:D+6riwL75CNKPirkL3OqjuI2sQQCCQ/Jbwzr/LiOWjs=
+github.com/aws/aws-sdk-go-v2/service/imagebuilder v1.20.3/go.mod h1:zHfGdwADssonzql/7EYBhqgvqELXIAWHt/eeGoj02JA=
 github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding v1.5.0 h1:lPLbw4Gn59uoKqvOfSnkJr54XWk5Ak1NK20ZEiSWb3U=
 github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding v1.5.0/go.mod h1:80NaCIH9YU3rzTTs/J/ECATjXuRqzo/wB6ukO6MZ0XY=
 github.com/aws/aws-sdk-go-v2/service/internal/endpoint-discovery v1.3.3 h1:ru9+IpkVIuDvIkm9Q0DEjtWHnh6ITDoZo8fH2dIjlqQ=
@@ -410,6 +414,8 @@ github.com/aws/aws-sdk-go-v2/service/ses v1.9.1 h1:mTQlJn+QsZrvf8O3aU848gVErHoMA
 github.com/aws/aws-sdk-go-v2/service/ses v1.9.1/go.mod h1:bCMnvAxsbxjYGdgXZXf0uZ1E0ru4yg7OhUB59vveL5s=
 github.com/aws/aws-sdk-go-v2/service/sesv2 v1.8.1 h1:b9xHxFDhGewq8yAsMkehTYy0DbqBUSNoIh+wGFZI9BE=
 github.com/aws/aws-sdk-go-v2/service/sesv2 v1.8.1/go.mod h1:As0i6OmzmrBqOsIcL5R8SSvJ2HwloKabX/o42rbWWrM=
+github.com/aws/aws-sdk-go-v2/service/shield v1.17.11 h1:asVClnJw6E3j+Eut6yDKKj8g2L7IxrumuuR9ljezDj0=
+github.com/aws/aws-sdk-go-v2/service/shield v1.17.11/go.mod h1:qloZkhN0+LCjpowloMbF6zPIAXf+PCaK+uVgKkjbCDs=
 github.com/aws/aws-sdk-go-v2/service/sns v1.13.0 h1:4nUAjFOrn3879YnSV8HJXcmK8BhBf9W9DUYG0OG3ROY=
 github.com/aws/aws-sdk-go-v2/service/sns v1.13.0/go.mod h1:ioTOCJnuDbEBqucork8ySl7X/PtPUKs2/b0pIKb1C3g=
 github.com/aws/aws-sdk-go-v2/service/sqs v1.12.1 h1:t76IPhbZRQdnPBMPIg1IWI/rZyNuWsXMrRdvHkOCx0s=
@@ -420,6 +426,8 @@ github.com/aws/aws-sdk-go-v2/service/sso v1.6.1 h1:NF/qN6e8hdHO/Pt5jN+S65dxFom3b
 github.com/aws/aws-sdk-go-v2/service/sso v1.6.1/go.mod h1:/73aFBwUl60wKBKhdth2pEOkut5ZNjVHGF9hjXz0bM0=
 github.com/aws/aws-sdk-go-v2/service/ssoadmin v1.15.13 h1:vP7nc0ACiN6QbJO7zpAxGfNuruR86BW4NQ8pDRKJxrw=
 github.com/aws/aws-sdk-go-v2/service/ssoadmin v1.15.13/go.mod h1:Y3o3ZADvfZhfW66mI3vrSCRyf3Zkz/tGOVz+7Vj2L3I=
+github.com/aws/aws-sdk-go-v2/service/storagegateway v1.17.16 h1:xfM3J9fZX06co1S8WgyVrtI0zhCFj/Sss4uJWv1WDTo=
+github.com/aws/aws-sdk-go-v2/service/storagegateway v1.17.16/go.mod h1:I23yoeGZZzInGfcjY2fxrFRJRKpSI0wR+Ea7n1u9soE=
 github.com/aws/aws-sdk-go-v2/service/sts v1.10.1 h1:2DKYFOmC7d3WOzdBTFJxfkcMXVVIgcitrpEoJDUKlN4=
 github.com/aws/aws-sdk-go-v2/service/sts v1.10.1/go.mod h1:+BmlPeQ1Y+PuIho93MMKDby12PoUnt1SZXQdEHCzSlw=
 github.com/aws/aws-sdk-go-v2/service/support v1.11.0 h1:WzIExMMIGoNrd0U/4CWb543eULOEVG8zOds7e2ulpOA=

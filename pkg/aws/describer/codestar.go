@@ -29,11 +29,19 @@ func CodeStarProject(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 				return nil, err
 			}
 
+			tags, err := client.ListTagsForProject(ctx, &codestar.ListTagsForProjectInput{
+				Id: projectSum.ProjectId,
+			})
+			if err != nil {
+				return nil, err
+			}
+
 			values = append(values, Resource{
 				ARN:  *project.Arn,
 				Name: *project.Id,
 				Description: model.CodeStarProjectDescription{
 					Project: *project,
+					Tags:    tags.Tags,
 				},
 			})
 		}
