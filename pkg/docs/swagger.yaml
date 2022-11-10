@@ -191,6 +191,13 @@ definitions:
       shortSummary:
         $ref: '#/definitions/types.ComplianceResultShortSummary'
     type: object
+  api.CategoriesMetrics:
+    properties:
+      categories:
+        additionalProperties:
+          $ref: '#/definitions/api.CategoryMetric'
+        type: object
+    type: object
   api.CategoriesResponse:
     properties:
       resourceCount:
@@ -205,6 +212,15 @@ definitions:
           items:
             $ref: '#/definitions/api.ResourceTypeResponse'
           type: array
+        type: object
+    type: object
+  api.CategoryMetric:
+    properties:
+      resourceCount:
+        type: integer
+      subCategories:
+        additionalProperties:
+          type: integer
         type: object
     type: object
   api.CategoryTrend:
@@ -2559,7 +2575,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/api.CategorizedMetricsResponse'
+            $ref: '#/definitions/api.CategoriesMetrics'
       summary: Return categorized metrics, their value and their history
       tags:
       - inventory

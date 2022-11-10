@@ -405,6 +405,15 @@ type ConnectionSummaryCategory struct {
 	SubCategories map[string]int `json:"subCategories"`
 }
 
+type CategoriesMetrics struct {
+	Categories map[string]CategoryMetric `json:"categories"`
+}
+
+type CategoryMetric struct {
+	ResourceCount int            `json:"resourceCount"`
+	SubCategories map[string]int `json:"subCategories"`
+}
+
 type ConnectionSummaryResponse struct {
 	Categories    map[string]ConnectionSummaryCategory `json:"categories"`
 	CloudServices map[string]int                       `json:"cloudServices"`

@@ -1769,7 +1769,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/api.CategorizedMetricsResponse"
+                            "$ref": "#/definitions/api.CategoriesMetrics"
                         }
                     }
                 }
@@ -3535,6 +3535,17 @@ const docTemplate = `{
                 }
             }
         },
+        "api.CategoriesMetrics": {
+            "type": "object",
+            "properties": {
+                "categories": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "$ref": "#/definitions/api.CategoryMetric"
+                    }
+                }
+            }
+        },
         "api.CategoriesResponse": {
             "type": "object",
             "properties": {
@@ -3556,6 +3567,20 @@ const docTemplate = `{
                         "items": {
                             "$ref": "#/definitions/api.ResourceTypeResponse"
                         }
+                    }
+                }
+            }
+        },
+        "api.CategoryMetric": {
+            "type": "object",
+            "properties": {
+                "resourceCount": {
+                    "type": "integer"
+                },
+                "subCategories": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "integer"
                     }
                 }
             }

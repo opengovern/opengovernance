@@ -1086,7 +1086,7 @@ func (h *HttpHandler) GetCategorizedMetrics(ctx echo.Context) error {
 // @Param   sourceId    query    string false "SourceID"
 // @Param   category    query    string false "Category"
 // @Param   subCategory query    string false "SubCategory"
-// @Success 200         {object} api.CategorizedMetricsResponse
+// @Success 200         {object} api.CategoriesMetrics
 // @Router  /inventory/api/v2/metrics/categorized [get]
 func (h *HttpHandler) GetCategorizedMetricsV2(ctx echo.Context) error {
 	category := ctx.QueryParam("category")
@@ -1132,7 +1132,25 @@ func (h *HttpHandler) GetCategorizedMetricsV2(ctx echo.Context) error {
 		return err
 	}
 
-	return ctx.JSON(http.StatusOK, v)
+	resp := api.CategoriesMetrics{
+		Categories: map[string]api.CategoryMetric{},
+	}
+	for _, r := range v {
+		srv := cloudservice.ServiceNameByResourceType(r.ResourceType)
+		for _, cat := range cats {
+			if cat.CloudService == srv {
+				c := resp.Categories[cat.Name]
+				c.ResourceCount++
+				if c.SubCategories == nil {
+					c.SubCategories = map[string]int{}
+				}
+				c.SubCategories[cat.SubCategory]++
+				resp.Categories[cat.Name] = c
+			}
+		}
+	}
+
+	return ctx.JSON(http.StatusOK, resp)
 }
 
 // ListCategories godoc
