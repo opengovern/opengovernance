@@ -2,6 +2,7 @@ package describer
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/cloudfront"
@@ -44,6 +45,47 @@ func CloudFrontDistribution(ctx context.Context, cfg aws.Config) ([]Resource, er
 				},
 			})
 		}
+	}
+
+	return values, nil
+}
+
+func CloudFrontOriginAccessControl(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+	describeCtx := GetDescribeContext(ctx)
+	client := cloudfront.NewFromConfig(cfg)
+
+	var values []Resource
+	err := PaginateRetrieveAll(func(prevToken *string) (nextToken *string, err error) {
+		output, err := client.ListOriginAccessControls(ctx, &cloudfront.ListOriginAccessControlsInput{
+			Marker:   prevToken,
+			MaxItems: aws.Int32(100),
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range output.OriginAccessControlList.Items {
+			arn := fmt.Sprintf("arn:%s:cloudfront::%s:origin-access-control/%s", describeCtx.Partition, describeCtx.AccountID, *v.Id) //TODO: this is fake ARN, find out the real one's format
+			tags, err := client.ListTagsForResource(ctx, &cloudfront.ListTagsForResourceInput{
+				Resource: &arn,
+			})
+			if err != nil {
+				return nil, err
+			}
+
+			values = append(values, Resource{
+				ARN:  arn,
+				Name: *v.Id,
+				Description: model.CloudFrontOriginAccessControlDescription{
+					OriginAccessControl: v,
+					Tags:                tags.Tags.Items,
+				},
+			})
+		}
+		return output.OriginAccessControlList.NextMarker, nil
+	})
+	if err != nil {
+		return nil, err
 	}
 
 	return values, nil

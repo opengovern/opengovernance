@@ -18,7 +18,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/applicationinsights v1.8.0
 	github.com/aws/aws-sdk-go-v2/service/autoscaling v1.17.0
 	github.com/aws/aws-sdk-go-v2/service/backup v1.11.0
-	github.com/aws/aws-sdk-go-v2/service/cloudfront v1.12.0
+	github.com/aws/aws-sdk-go-v2/service/cloudfront v1.20.7
 	github.com/aws/aws-sdk-go-v2/service/cloudtrail v1.11.0
 	github.com/aws/aws-sdk-go-v2/service/cloudwatch v1.13.0
 	github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs v1.11.0
@@ -122,6 +122,7 @@ require (
 
 require (
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/dns/armdns v1.0.0
+	github.com/aws/aws-sdk-go-v2/service/acmpca v1.19.0
 	github.com/aws/aws-sdk-go-v2/service/amp v1.15.7
 	github.com/aws/aws-sdk-go-v2/service/appstream v1.17.13
 	github.com/aws/aws-sdk-go-v2/service/batch v1.19.0
@@ -139,6 +140,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/fms v1.19.0
 	github.com/aws/aws-sdk-go-v2/service/glacier v1.13.19
 	github.com/aws/aws-sdk-go-v2/service/grafana v1.9.15
+	github.com/aws/aws-sdk-go-v2/service/imagebuilder v1.20.3
 	github.com/aws/aws-sdk-go-v2/service/kafka v1.18.0
 	github.com/aws/aws-sdk-go-v2/service/keyspaces v1.0.21
 	github.com/aws/aws-sdk-go-v2/service/kinesis v1.15.21
@@ -150,7 +152,9 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/opensearch v1.10.12
 	github.com/aws/aws-sdk-go-v2/service/opsworkscm v1.14.19
 	github.com/aws/aws-sdk-go-v2/service/redshiftserverless v1.2.13
+	github.com/aws/aws-sdk-go-v2/service/shield v1.17.11
 	github.com/aws/aws-sdk-go-v2/service/ssoadmin v1.15.13
+	github.com/aws/aws-sdk-go-v2/service/storagegateway v1.17.16
 	github.com/aws/aws-sdk-go-v2/service/waf v1.11.19
 	github.com/go-redis/cache/v8 v8.4.3
 	github.com/go-redis/redis/v8 v8.11.5

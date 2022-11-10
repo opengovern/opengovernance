@@ -5,6 +5,7 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/acm"
+	"github.com/aws/aws-sdk-go-v2/service/acmpca"
 	"gitlab.com/keibiengine/keibi-engine/pkg/aws/model"
 )
 
@@ -67,6 +68,38 @@ func CertificateManagerCertificate(ctx context.Context, cfg aws.Config) ([]Resou
 						CertificateChain: getOutput.CertificateChain,
 					},
 					Tags: tagsOutput.Tags,
+				},
+			})
+		}
+	}
+
+	return values, nil
+}
+
+func ACMPCACertificateAuthority(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+	client := acmpca.NewFromConfig(cfg)
+	paginator := acmpca.NewListCertificateAuthoritiesPaginator(client, &acmpca.ListCertificateAuthoritiesInput{})
+
+	var values []Resource
+	for paginator.HasMorePages() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page.CertificateAuthorities {
+			tags, err := client.ListTags(ctx, &acmpca.ListTagsInput{
+				CertificateAuthorityArn: v.Arn,
+			})
+			if err != nil {
+				return nil, err
+			}
+			values = append(values, Resource{
+				ARN:  *v.Arn,
+				Name: nameFromArn(*v.Arn),
+				Description: model.ACMPCACertificateAuthorityDescription{
+					CertificateAuthority: v,
+					Tags:                 tags.Tags,
 				},
 			})
 		}

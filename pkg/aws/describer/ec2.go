@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
@@ -1629,6 +1630,8 @@ func EC2VPCEndpointConnectionNotification(ctx context.Context, cfg aws.Config) (
 }
 
 func EC2VPCEndpointService(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+	describeCtx := GetDescribeContext(ctx)
+
 	client := ec2.NewFromConfig(cfg)
 
 	var values []Resource
@@ -1641,10 +1644,15 @@ func EC2VPCEndpointService(ctx context.Context, cfg aws.Config) ([]Resource, err
 		}
 
 		for _, v := range output.ServiceDetails {
+			splitServiceName := strings.Split(*v.ServiceName, ".")
+			arn := fmt.Sprintf("arn:%s:ec2:%s:%s:vpc-endpoint-service/%s", describeCtx.Partition, describeCtx.Region, describeCtx.AccountID, splitServiceName[len(splitServiceName)-1])
+
 			values = append(values, Resource{
-				ID:          *v.ServiceId,
-				Name:        *v.ServiceName,
-				Description: v,
+				ARN:  arn,
+				Name: *v.ServiceName,
+				Description: model.EC2VPCEndpointServiceDescription{
+					VpcEndpointService: v,
+				},
 			})
 		}
 
@@ -1667,7 +1675,7 @@ func EC2VPCEndpointServicePermissions(ctx context.Context, cfg aws.Config) ([]Re
 
 	var values []Resource
 	for _, s := range services {
-		service := s.Description.(types.ServiceDetail)
+		service := s.Description.(model.EC2VPCEndpointServiceDescription).VpcEndpointService
 
 		paginator := ec2.NewDescribeVpcEndpointServicePermissionsPaginator(client, &ec2.DescribeVpcEndpointServicePermissionsInput{
 			ServiceId: service.ServiceId,
@@ -1905,6 +1913,56 @@ func EC2ReservedInstances(ctx context.Context, cfg aws.Config) ([]Resource, erro
 				ModificationDetails: modifications,
 			},
 		})
+	}
+
+	return values, nil
+}
+
+func EC2IpamPool(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+	client := ec2.NewFromConfig(cfg)
+	paginator := ec2.NewDescribeIpamPoolsPaginator(client, &ec2.DescribeIpamPoolsInput{})
+
+	var values []Resource
+	for paginator.HasMorePages() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page.IpamPools {
+			values = append(values, Resource{
+				ARN:  *v.IpamPoolArn,
+				Name: *v.IpamPoolId,
+				Description: model.EC2IpamPoolDescription{
+					IpamPool: v,
+				},
+			})
+		}
+	}
+
+	return values, nil
+}
+
+func EC2Ipam(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+	client := ec2.NewFromConfig(cfg)
+	paginator := ec2.NewDescribeIpamsPaginator(client, &ec2.DescribeIpamsInput{})
+
+	var values []Resource
+	for paginator.HasMorePages() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page.Ipams {
+			values = append(values, Resource{
+				ARN:  *v.IpamArn,
+				Name: *v.IpamId,
+				Description: model.EC2IpamDescription{
+					Ipam: v,
+				},
+			})
+		}
 	}
 
 	return values, nil
