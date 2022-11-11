@@ -365,6 +365,7 @@ type TopServiceCostResponse struct {
 
 type ResourceTypeResponse struct {
 	ResourceType     string `json:"resourceType"`
+	ResourceTypeName string `json:"resourceTypeName"`
 	ResourceCount    int    `json:"resourceCount"`
 	LastDayCount     *int   `json:"lastDayCount"`
 	LastWeekCount    *int   `json:"lastWeekCount"`

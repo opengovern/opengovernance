@@ -1118,41 +1118,45 @@ func (h *HttpHandler) GetCategorizedMetricsV2(ctx echo.Context) error {
 		return err
 	}
 
-	catResourceList := map[string][]string{}
+	allResourceTypes := map[string]struct{}{}
 	for _, v := range cats {
 		resourceList := cloudservice.ResourceListByServiceName(v.CloudService)
-		if len(resourceList) > 0 {
-			m := catResourceList[v.Name+"___"+v.SubCategory]
-			m = append(m, resourceList...)
-			catResourceList[v.Name+"___"+v.SubCategory] = m
+		for _, r := range resourceList {
+			allResourceTypes[r] = struct{}{}
 		}
 	}
-
-	if len(catResourceList) == 0 {
+	if len(allResourceTypes) == 0 {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid category/subcategory")
+	}
+
+	var resourceTypeArr []string
+	for r := range allResourceTypes {
+		resourceTypeArr = append(resourceTypeArr, r)
+	}
+
+	metrics, err := GetResourcesFromPostgres(h.db, provider, sourceID, resourceTypeArr)
+	if err != nil {
+		return err
 	}
 
 	resp := api.CategoriesMetrics{
 		Categories: map[string]api.CategoryMetric{},
 	}
 
-	for cat, resourceList := range catResourceList {
-		v, err := GetResourcesFromPostgres(h.db, provider, sourceID, resourceList)
-		if err != nil {
-			return err
-		}
-
-		category := strings.Split(cat, "___")[0]
-		subCategory := strings.Split(cat, "___")[1]
-
-		for _, r := range v {
-			c := resp.Categories[category]
-			c.ResourceCount += r.ResourceCount
-			if c.SubCategories == nil {
-				c.SubCategories = map[string]int{}
+	for _, v := range cats {
+		resourceList := cloudservice.ResourceListByServiceName(v.CloudService)
+		for _, r := range resourceList {
+			for _, m := range metrics {
+				if m.ResourceType == r {
+					c := resp.Categories[v.Name]
+					c.ResourceCount += m.ResourceCount
+					if c.SubCategories == nil {
+						c.SubCategories = map[string]int{}
+					}
+					c.SubCategories[v.SubCategory] += m.ResourceCount
+					resp.Categories[v.Name] = c
+				}
 			}
-			c.SubCategories[subCategory] += r.ResourceCount
-			resp.Categories[category] = c
 		}
 	}
 	return ctx.JSON(http.StatusOK, resp)
