@@ -1089,6 +1089,8 @@ func (h *HttpHandler) GetCategorizedMetrics(ctx echo.Context) error {
 // @Success 200         {object} api.CategoriesMetrics
 // @Router  /inventory/api/v2/metrics/categorized [get]
 func (h *HttpHandler) GetCategorizedMetricsV2(ctx echo.Context) error {
+	startTime := time.Now().UnixMilli()
+
 	category := ctx.QueryParam("category")
 	subCategory := ctx.QueryParam("subCategory")
 
@@ -1107,6 +1109,7 @@ func (h *HttpHandler) GetCategorizedMetricsV2(ctx echo.Context) error {
 	var cats []Category
 	var err error
 
+	fmt.Println("getting categories", time.Now().UnixMilli()-startTime)
 	if len(category) > 0 && len(subCategory) > 0 {
 		cats, err = h.db.GetCategories(category, subCategory)
 	} else if len(category) > 0 {
@@ -1118,6 +1121,7 @@ func (h *HttpHandler) GetCategorizedMetricsV2(ctx echo.Context) error {
 		return err
 	}
 
+	fmt.Println("getting resource types", time.Now().UnixMilli()-startTime)
 	allResourceTypes := map[string]struct{}{}
 	for _, v := range cats {
 		resourceList := cloudservice.ResourceListByServiceName(v.CloudService)
@@ -1134,6 +1138,7 @@ func (h *HttpHandler) GetCategorizedMetricsV2(ctx echo.Context) error {
 		resourceTypeArr = append(resourceTypeArr, r)
 	}
 
+	fmt.Println("getting metrics", time.Now().UnixMilli()-startTime)
 	metrics, err := GetResourcesFromPostgres(h.db, provider, sourceID, resourceTypeArr)
 	if err != nil {
 		return err
@@ -1143,6 +1148,7 @@ func (h *HttpHandler) GetCategorizedMetricsV2(ctx echo.Context) error {
 		Categories: map[string]api.CategoryMetric{},
 	}
 
+	fmt.Println("getting result", time.Now().UnixMilli()-startTime)
 	for _, v := range cats {
 		resourceList := cloudservice.ResourceListByServiceName(v.CloudService)
 		for _, r := range resourceList {
