@@ -15,11 +15,12 @@ type Database struct {
 
 func NewDatabase(settings *Config, logger *zap.Logger) (*Database, error) {
 	cfg := postgres.Config{
-		Host:   settings.Host,
-		Port:   settings.Port,
-		User:   settings.User,
-		Passwd: settings.Password,
-		DB:     settings.DBName,
+		Host:    settings.Host,
+		Port:    settings.Port,
+		User:    settings.User,
+		Passwd:  settings.Password,
+		DB:      settings.DBName,
+		SSLMode: settings.SSLMode,
 	}
 	orm, err := postgres.NewClient(&cfg, logger)
 	if err != nil {

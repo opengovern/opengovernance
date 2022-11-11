@@ -16,6 +16,7 @@ type Postgres struct {
 	DB       string
 	Username string
 	Password string
+	SSLMode  string
 }
 
 type KeibiService struct {

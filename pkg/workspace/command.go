@@ -15,6 +15,7 @@ var (
 	PostgresDBName            = os.Getenv("POSTGRES_DB")
 	PostgresUser              = os.Getenv("POSTGRES_USERNAME")
 	PostgresPassword          = os.Getenv("POSTGRES_PASSWORD")
+	PostgresSSLMode           = os.Getenv("POSTGRES_SSLMODE")
 	ServerAddr                = os.Getenv("SERVER_ADDR")
 	DomainSuffix              = os.Getenv("DOMAIN_SUFFIX")
 	RedisAddress              = os.Getenv("REDIS_ADDRESS")
@@ -33,6 +34,7 @@ type Config struct {
 	User                   string
 	Password               string
 	DBName                 string
+	SSLMode                string
 	ServerAddr             string
 	DomainSuffix           string
 	AuthBaseUrl            string
@@ -51,6 +53,7 @@ func NewConfig() *Config {
 		User:                   PostgresUser,
 		Password:               PostgresPassword,
 		DBName:                 PostgresDBName,
+		SSLMode:                PostgresSSLMode,
 		ServerAddr:             ServerAddr,
 		DomainSuffix:           DomainSuffix,
 		RedisAddress:           RedisAddress,

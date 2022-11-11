@@ -20,6 +20,7 @@ var (
 	PostgreSQLDb       = os.Getenv("POSTGRESQL_DB")
 	PostgreSQLUser     = os.Getenv("POSTGRESQL_USERNAME")
 	PostgreSQLPassword = os.Getenv("POSTGRESQL_PASSWORD")
+	PostgreSQLSSLMode  = os.Getenv("POSTGRES_SSLMODE")
 
 	ElasticSearchAddress  = os.Getenv("ES_ADDRESS")
 	ElasticSearchUsername = os.Getenv("ES_USERNAME")
@@ -79,6 +80,7 @@ func WorkerCommand() *cobra.Command {
 				PostgreSQLDb,
 				PostgreSQLUser,
 				PostgreSQLPassword,
+				PostgreSQLSSLMode,
 			)
 			if err != nil {
 				return err
