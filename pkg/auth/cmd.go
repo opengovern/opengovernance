@@ -33,6 +33,7 @@ var (
 	postgreSQLDb       = os.Getenv("POSTGRESQL_DB")
 	postgreSQLUser     = os.Getenv("POSTGRESQL_USERNAME")
 	postgreSQLPassword = os.Getenv("POSTGRESQL_PASSWORD")
+	postgreSQLSSLMode  = os.Getenv("POSTGRESQL_SSLMODE")
 
 	mailApiKey     = os.Getenv("EMAIL_API_KEY")
 	mailSender     = os.Getenv("EMAIL_SENDER")
@@ -76,11 +77,12 @@ func start(ctx context.Context) error {
 	}
 
 	cfg := postgres.Config{
-		Host:   postgreSQLHost,
-		Port:   postgreSQLPort,
-		User:   postgreSQLUser,
-		Passwd: postgreSQLPassword,
-		DB:     postgreSQLDb,
+		Host:    postgreSQLHost,
+		Port:    postgreSQLPort,
+		User:    postgreSQLUser,
+		Passwd:  postgreSQLPassword,
+		DB:      postgreSQLDb,
+		SSLMode: postgreSQLSSLMode,
 	}
 	orm, err := postgres.NewClient(&cfg, logger)
 	if err != nil {

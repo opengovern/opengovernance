@@ -38,6 +38,7 @@ func InitializeHttpHandler(
 	postgresDb string,
 	postgresUsername string,
 	postgresPassword string,
+	postgresSSLMode string,
 	steampipeHost string,
 	steampipePort string,
 	steampipeDb string,
@@ -56,11 +57,12 @@ func InitializeHttpHandler(
 
 	// setup postgres connection
 	cfg := postgres.Config{
-		Host:   postgresHost,
-		Port:   postgresPort,
-		User:   postgresUsername,
-		Passwd: postgresPassword,
-		DB:     postgresDb,
+		Host:    postgresHost,
+		Port:    postgresPort,
+		User:    postgresUsername,
+		Passwd:  postgresPassword,
+		DB:      postgresDb,
+		SSLMode: postgresSSLMode,
 	}
 	orm, err := postgres.NewClient(&cfg, logger)
 	if err != nil {

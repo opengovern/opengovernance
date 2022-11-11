@@ -19,11 +19,12 @@ const (
 )
 
 type Config struct {
-	Host   string
-	Port   string
-	User   string
-	Passwd string
-	DB     string
+	Host    string
+	Port    string
+	User    string
+	Passwd  string
+	DB      string
+	SSLMode string
 
 	Connection struct {
 		MaxOpen     int
@@ -47,6 +48,10 @@ func validateConfig(cfg *Config) error {
 	}
 	if cfg.DB == "" {
 		return errors.New("postgres db is empty")
+	}
+
+	if cfg.SSLMode == "" {
+		cfg.SSLMode = "disable"
 	}
 
 	if cfg.Connection.MaxOpen == 0 {
@@ -83,12 +88,13 @@ func NewClient(cfg *Config, logger *zap.Logger) (*gorm.DB, error) {
 		return nil, err
 	}
 
-	dsn := fmt.Sprintf(`host=%s port=%s user=%s password=%s dbname=%s sslmode=disable TimeZone=GMT`,
+	dsn := fmt.Sprintf(`host=%s port=%s user=%s password=%s dbname=%s sslmode=%s TimeZone=GMT`,
 		cfg.Host,
 		cfg.Port,
 		cfg.User,
 		cfg.Passwd,
 		cfg.DB,
+		cfg.SSLMode,
 	)
 
 	//orm, err := gorm.Open(postgres.Open(dsn), &gorm.Config{

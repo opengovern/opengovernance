@@ -54,6 +54,7 @@ func InitializeWorker(
 	postgresDb string,
 	postgresUsername string,
 	postgresPassword string,
+	postgresSSLMode string,
 ) (w *Worker, err error) {
 	if id == "" {
 		return nil, fmt.Errorf("'id' must be set to a non empty string")
@@ -126,11 +127,12 @@ func InitializeWorker(
 
 	// setup postgres connection
 	cfg := postgres.Config{
-		Host:   postgresHost,
-		Port:   postgresPort,
-		User:   postgresUsername,
-		Passwd: postgresPassword,
-		DB:     postgresDb,
+		Host:    postgresHost,
+		Port:    postgresPort,
+		User:    postgresUsername,
+		Passwd:  postgresPassword,
+		DB:      postgresDb,
+		SSLMode: postgresSSLMode,
 	}
 	orm, err := postgres.NewClient(&cfg, logger)
 	if err != nil {
