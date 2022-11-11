@@ -1165,6 +1165,7 @@ func (h *HttpHandler) GetCategorizedMetricsV2(ctx echo.Context) error {
 			}
 		}
 	}
+	fmt.Println("getting response", time.Now().UnixMilli()-startTime)
 	return ctx.JSON(http.StatusOK, resp)
 }
 

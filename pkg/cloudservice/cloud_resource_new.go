@@ -7,6 +7,7 @@ type CloudResource struct {
 	CloudService              string
 	ResourceTypeName          string
 	ResourceProviderNamespace string
+	RecordResourceType        string
 }
 
 var cloudResourcesCSV = `

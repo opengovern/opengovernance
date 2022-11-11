@@ -118,11 +118,19 @@ func parseCSV() error {
 			return err
 		}
 
+		var recordResourceType string
+		if t == source.CloudAWS {
+			recordResourceType = ParseARN(row[3]).Type()
+		} else {
+			recordResourceType = strings.ToLower(row[3])
+		}
+
 		cloudResources = append(cloudResources, CloudResource{
 			Cloud:                     t,
 			CloudService:              row[1],
 			ResourceTypeName:          row[2],
 			ResourceProviderNamespace: row[3],
+			RecordResourceType:        recordResourceType,
 		})
 	}
 
@@ -138,13 +146,7 @@ func findCloudResourceRecord(resourceType string) *CloudResource {
 			continue
 		}
 
-		var recordResourceType string
-		if provider == source.CloudAWS {
-			recordResourceType = ParseARN(v.ResourceProviderNamespace).Type()
-		} else {
-			recordResourceType = strings.ToLower(v.ResourceProviderNamespace)
-		}
-		if strings.HasPrefix(resourceType, recordResourceType) {
+		if strings.HasPrefix(resourceType, v.RecordResourceType) {
 			return &v
 		}
 	}
