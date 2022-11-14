@@ -29,6 +29,7 @@ func InitializeHttpHandler(
 	postgresHost string,
 	postgresPort string,
 	postgresDb string,
+	postgresSSLMode string,
 	vaultAddress string,
 	vaultToken string,
 	vaultRoleName string,
@@ -57,11 +58,12 @@ func InitializeHttpHandler(
 	fmt.Println("Connected to the source queue: ", sourceEventsQueueName)
 
 	cfg := postgres.Config{
-		Host:   postgresHost,
-		Port:   postgresPort,
-		User:   postgresUsername,
-		Passwd: postgresPassword,
-		DB:     postgresDb,
+		Host:    postgresHost,
+		Port:    postgresPort,
+		User:    postgresUsername,
+		Passwd:  postgresPassword,
+		DB:      postgresDb,
+		SSLMode: postgresSSLMode,
 	}
 	orm, err := postgres.NewClient(&cfg, logger)
 	if err != nil {

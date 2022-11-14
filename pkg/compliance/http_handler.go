@@ -29,11 +29,12 @@ func InitializeHttpHandler(conf ServerConfig, logger *zap.Logger) (h *HttpHandle
 
 	// setup postgres connection
 	cfg := postgres.Config{
-		Host:   conf.PostgreSQL.Host,
-		Port:   conf.PostgreSQL.Port,
-		User:   conf.PostgreSQL.Username,
-		Passwd: conf.PostgreSQL.Password,
-		DB:     conf.PostgreSQL.DB,
+		Host:    conf.PostgreSQL.Host,
+		Port:    conf.PostgreSQL.Port,
+		User:    conf.PostgreSQL.Username,
+		Passwd:  conf.PostgreSQL.Password,
+		DB:      conf.PostgreSQL.DB,
+		SSLMode: conf.PostgreSQL.SSLMode,
 	}
 	orm, err := postgres.NewClient(&cfg, logger)
 	if err != nil {

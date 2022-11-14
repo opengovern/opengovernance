@@ -177,6 +177,7 @@ func InitializeScheduler(
 	postgresHost string,
 	postgresPort string,
 	postgresDb string,
+	postgresSSLMode string,
 	httpServerAddress string,
 	describeIntervalHours string,
 	complianceIntervalHours string,
@@ -412,11 +413,12 @@ func InitializeScheduler(
 	s.complianceReportJobResultQueue = complianceReportJobsResultQueue
 
 	cfg := postgres.Config{
-		Host:   postgresHost,
-		Port:   postgresPort,
-		User:   postgresUsername,
-		Passwd: postgresPassword,
-		DB:     postgresDb,
+		Host:    postgresHost,
+		Port:    postgresPort,
+		User:    postgresUsername,
+		Passwd:  postgresPassword,
+		DB:      postgresDb,
+		SSLMode: postgresSSLMode,
 	}
 	orm, err := postgres.NewClient(&cfg, s.logger)
 	if err != nil {

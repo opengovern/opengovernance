@@ -28,6 +28,7 @@ var (
 	PostgreSQLDb       = os.Getenv("POSTGRESQL_DB")
 	PostgreSQLUser     = os.Getenv("POSTGRESQL_USERNAME")
 	PostgreSQLPassword = os.Getenv("POSTGRESQL_PASSWORD")
+	PostgreSQLSSLMode  = os.Getenv("POSTGRESQL_SSLMODE")
 
 	VaultAddress  = os.Getenv("VAULT_ADDRESS")
 	VaultToken    = os.Getenv("VAULT_TOKEN")
@@ -70,6 +71,7 @@ func start(ctx context.Context) error {
 		PostgreSQLHost,
 		PostgreSQLPort,
 		PostgreSQLDb,
+		PostgreSQLSSLMode,
 		VaultAddress,
 		VaultToken,
 		VaultRoleName,

@@ -23,6 +23,7 @@ var (
 	PostgreSQLDb       = os.Getenv("POSTGRESQL_DB")
 	PostgreSQLUser     = os.Getenv("POSTGRESQL_USERNAME")
 	PostgreSQLPassword = os.Getenv("POSTGRESQL_PASSWORD")
+	PostgreSQLSSLMode  = os.Getenv("POSTGRESQL_SSLMODE")
 
 	SteampipeHost     = os.Getenv("STEAMPIPE_HOST")
 	SteampipePort     = os.Getenv("STEAMPIPE_PORT")
@@ -59,6 +60,7 @@ func start(ctx context.Context) error {
 		PostgreSQLDb,
 		PostgreSQLUser,
 		PostgreSQLPassword,
+		PostgreSQLSSLMode,
 		SteampipeHost,
 		SteampipePort,
 		SteampipeDb,
