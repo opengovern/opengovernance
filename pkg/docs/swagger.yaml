@@ -988,6 +988,8 @@ definitions:
         type: integer
       resourceType:
         type: string
+      resourceTypeName:
+        type: string
     type: object
   api.RoleBinding:
     properties:
@@ -2007,6 +2009,21 @@ paths:
               $ref: '#/definitions/api.MetricsResponse'
             type: array
       summary: Return metrics, their value and their history
+      tags:
+      - inventory
+  /inventory/api/v1/provider/{provider}/summary:
+    post:
+      consumes:
+      - application/json
+      produces:
+      - application/json
+      - text/csv
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/api.ConnectionSummaryResponse'
+      summary: Get provider summary
       tags:
       - inventory
   /inventory/api/v1/query:

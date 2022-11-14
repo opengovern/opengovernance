@@ -942,6 +942,29 @@ const docTemplate = `{
                 }
             }
         },
+        "/inventory/api/v1/provider/{provider}/summary": {
+            "post": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json",
+                    "text/csv"
+                ],
+                "tags": [
+                    "inventory"
+                ],
+                "summary": "Get provider summary",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/api.ConnectionSummaryResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/inventory/api/v1/query": {
             "get": {
                 "description": "Listing smart queries",
@@ -4691,6 +4714,9 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "resourceType": {
+                    "type": "string"
+                },
+                "resourceTypeName": {
                     "type": "string"
                 }
             }
