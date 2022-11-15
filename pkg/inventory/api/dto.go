@@ -411,8 +411,21 @@ type CategoriesMetrics struct {
 }
 
 type CategoryMetric struct {
-	ResourceCount int            `json:"resourceCount"`
-	SubCategories map[string]int `json:"subCategories"`
+	ResourceCount    int  `json:"resourceCount"`
+	LastDayValue     *int `json:"lastDayValue"`
+	LastWeekValue    *int `json:"lastWeekValue"`
+	LastQuarterValue *int `json:"lastQuarterValue"`
+	LastYearValue    *int `json:"lastYearValue"`
+
+	SubCategories map[string]HistoryCount `json:"subCategories"`
+}
+
+type HistoryCount struct {
+	Count            int  `json:"count"`
+	LastDayValue     *int `json:"lastDayValue"`
+	LastWeekValue    *int `json:"lastWeekValue"`
+	LastQuarterValue *int `json:"lastQuarterValue"`
+	LastYearValue    *int `json:"lastYearValue"`
 }
 
 type ConnectionSummaryResponse struct {

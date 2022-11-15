@@ -3597,13 +3597,25 @@ const docTemplate = `{
         "api.CategoryMetric": {
             "type": "object",
             "properties": {
+                "lastDayValue": {
+                    "type": "integer"
+                },
+                "lastQuarterValue": {
+                    "type": "integer"
+                },
+                "lastWeekValue": {
+                    "type": "integer"
+                },
+                "lastYearValue": {
+                    "type": "integer"
+                },
                 "resourceCount": {
                     "type": "integer"
                 },
                 "subCategories": {
                     "type": "object",
                     "additionalProperties": {
-                        "type": "integer"
+                        "$ref": "#/definitions/api.HistoryCount"
                     }
                 }
             }
@@ -4311,6 +4323,26 @@ const docTemplate = `{
                     "items": {
                         "$ref": "#/definitions/api.TopFieldRecord"
                     }
+                }
+            }
+        },
+        "api.HistoryCount": {
+            "type": "object",
+            "properties": {
+                "count": {
+                    "type": "integer"
+                },
+                "lastDayValue": {
+                    "type": "integer"
+                },
+                "lastQuarterValue": {
+                    "type": "integer"
+                },
+                "lastWeekValue": {
+                    "type": "integer"
+                },
+                "lastYearValue": {
+                    "type": "integer"
                 }
             }
         },

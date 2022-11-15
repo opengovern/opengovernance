@@ -15,6 +15,8 @@ import (
 	"strings"
 	"time"
 
+	"gitlab.com/keibiengine/keibi-engine/pkg/utils"
+
 	api3 "gitlab.com/keibiengine/keibi-engine/pkg/auth/api"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpserver"
 
@@ -1157,10 +1159,21 @@ func (h *HttpHandler) GetCategorizedMetricsV2(ctx echo.Context) error {
 				if m.ResourceType == r {
 					c := resp.Categories[v.Name]
 					c.ResourceCount += m.ResourceCount
+					c.LastDayValue = utils.PAdd(c.LastDayValue, m.LastDayCount)
+					c.LastWeekValue = utils.PAdd(c.LastWeekValue, m.LastWeekCount)
+					c.LastQuarterValue = utils.PAdd(c.LastQuarterValue, m.LastQuarterCount)
+					c.LastYearValue = utils.PAdd(c.LastYearValue, m.LastYearCount)
 					if c.SubCategories == nil {
-						c.SubCategories = map[string]int{}
+						c.SubCategories = map[string]api.HistoryCount{}
 					}
-					c.SubCategories[v.SubCategory] += m.ResourceCount
+					sub := c.SubCategories[v.SubCategory]
+					sub.Count += m.ResourceCount
+					sub.LastDayValue = utils.PAdd(sub.LastDayValue, m.LastDayCount)
+					sub.LastWeekValue = utils.PAdd(sub.LastWeekValue, m.LastWeekCount)
+					sub.LastQuarterValue = utils.PAdd(sub.LastQuarterValue, m.LastQuarterCount)
+					sub.LastYearValue = utils.PAdd(sub.LastYearValue, m.LastYearCount)
+
+					c.SubCategories[v.SubCategory] = sub
 					resp.Categories[v.Name] = c
 				}
 			}

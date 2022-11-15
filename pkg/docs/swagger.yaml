@@ -216,11 +216,19 @@ definitions:
     type: object
   api.CategoryMetric:
     properties:
+      lastDayValue:
+        type: integer
+      lastQuarterValue:
+        type: integer
+      lastWeekValue:
+        type: integer
+      lastYearValue:
+        type: integer
       resourceCount:
         type: integer
       subCategories:
         additionalProperties:
-          type: integer
+          $ref: '#/definitions/api.HistoryCount'
         type: object
     type: object
   api.CategoryTrend:
@@ -699,6 +707,19 @@ definitions:
         items:
           $ref: '#/definitions/api.TopFieldRecord'
         type: array
+    type: object
+  api.HistoryCount:
+    properties:
+      count:
+        type: integer
+      lastDayValue:
+        type: integer
+      lastQuarterValue:
+        type: integer
+      lastWeekValue:
+        type: integer
+      lastYearValue:
+        type: integer
     type: object
   api.Insight:
     properties:
