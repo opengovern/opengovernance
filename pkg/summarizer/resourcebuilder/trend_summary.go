@@ -82,7 +82,7 @@ func (b *trendSummaryBuilder) Process(resource describe.LookupResource) {
 			DescribedAt:   resource.CreatedAt,
 			ResourceType:  resource.ResourceType,
 			ResourceCount: 0,
-			ReportType:    es.ResourceTypeProviderSummary,
+			ReportType:    es.ResourceTypeTrendProviderSummary,
 		}
 	}
 	v4 := b.providerResourceTypeSummary[key]
