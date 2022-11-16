@@ -17,27 +17,27 @@ type Doc interface {
 	KeysAndIndex() ([]string, string)
 }
 
-func trimEmptyTimeMaps(input map[string]interface{}) {
+func trimEmptyMaps(input map[string]interface{}) {
 	for key, value := range input {
 		switch value.(type) {
 		case map[string]interface{}:
 			if len(value.(map[string]interface{})) != 0 {
-				trimEmptyTimeMaps(value.(map[string]interface{}))
+				trimEmptyMaps(value.(map[string]interface{}))
 			}
-			if len(value.(map[string]interface{})) == 0 && key == "Time" {
+			if len(value.(map[string]interface{})) == 0 {
 				delete(input, key)
 			}
 		}
 	}
 }
 
-func trimJsonFromEmptyTimeObjects(input []byte) ([]byte, error) {
+func trimJsonFromEmptyObjects(input []byte) ([]byte, error) {
 	unknownData := map[string]interface{}{}
 	err := json.Unmarshal(input, &unknownData)
 	if err != nil {
 		return nil, err
 	}
-	trimEmptyTimeMaps(unknownData)
+	trimEmptyMaps(unknownData)
 	return json.Marshal(unknownData)
 }
 
@@ -48,7 +48,7 @@ func asProducerMessage(r Doc) (*sarama.ProducerMessage, error) {
 		return nil, err
 	}
 
-	value, err = trimJsonFromEmptyTimeObjects(value)
+	value, err = trimJsonFromEmptyObjects(value)
 	if err != nil {
 		return nil, err
 	}

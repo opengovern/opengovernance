@@ -20,7 +20,7 @@ var (
 	PostgreSQLDb       = os.Getenv("POSTGRESQL_DB")
 	PostgreSQLUser     = os.Getenv("POSTGRESQL_USERNAME")
 	PostgreSQLPassword = os.Getenv("POSTGRESQL_PASSWORD")
-	PostgreSQLSSLMode  = os.Getenv("POSTGRES_SSLMODE")
+	PostgreSQLSSLMode  = os.Getenv("POSTGRESQL_SSLMODE")
 
 	ElasticSearchAddress  = os.Getenv("ES_ADDRESS")
 	ElasticSearchUsername = os.Getenv("ES_USERNAME")
