@@ -68,6 +68,8 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	v1.GET("/resources/top/services", httpserver.AuthorizeHandler(h.GetTopServicesByResourceCount, api3.ViewerRole))
 	v1.GET("/resources/categories", httpserver.AuthorizeHandler(h.GetCategories, api3.ViewerRole))
 	v2.GET("/resources/categories", httpserver.AuthorizeHandler(h.GetCategoriesV2, api3.ViewerRole))
+	v2.GET("/resources/category", httpserver.AuthorizeHandler(h.GetCategoryNode, api3.ViewerRole))
+	v2.GET("/resources/templates", httpserver.AuthorizeHandler(h.GetRootTemplates, api3.ViewerRole))
 	v1.GET("/accounts/resource/count", httpserver.AuthorizeHandler(h.GetAccountsResourceCount, api3.ViewerRole))
 
 	v1.GET("/resources/distribution", httpserver.AuthorizeHandler(h.GetResourceDistribution, api3.ViewerRole))
@@ -777,6 +779,113 @@ func (h *HttpHandler) GetCategoriesV2(ctx echo.Context) error {
 		})
 	}
 	return ctx.JSON(http.StatusOK, res)
+}
+
+// GetCategoryNode godoc
+// @Summary Return category info by provided category id, info includes category name, subcategories names and ids and number of resources
+// @Tags    inventory
+// @Accept  json
+// @Produce json
+// @Param   category query    string true  "Category"
+// @Param   depth    query    int    true  "Depth of rendering subcategories"
+// @Param   provider query    string false "Provider"
+// @Param   sourceId query    string false "SourceID"
+// @Success 200      {object} api.CategoryNode
+// @Router  /inventory/api/v2/resources/category [get]
+func (h *HttpHandler) GetCategoryNode(ctx echo.Context) error {
+	category := ctx.QueryParam("category")
+	if category == "" {
+		return echo.NewHTTPError(http.StatusBadRequest, "category is required")
+	}
+	depthStr := ctx.QueryParam("depth")
+	depth, err := strconv.Atoi(depthStr)
+	if err != nil || depth <= 0 {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid depth")
+	}
+	provider := ctx.QueryParam("provider")
+	sourceID := ctx.QueryParam("sourceId")
+
+	var metrics []Metric
+	if sourceID != "" {
+		sourceUUID, err := uuid.Parse(sourceID)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "invalid sourceID")
+		}
+		sourceID = sourceUUID.String()
+		metrics, err = h.db.FetchConnectionAllMetrics(sourceID)
+		if err != nil {
+			return err
+		}
+	} else if provider != "" {
+		providerType, _ := source.ParseType(provider)
+		metrics, err = h.db.FetchProviderAllMetrics(providerType)
+		if err != nil {
+			return err
+		}
+	} else {
+		metrics, err = h.db.ListMetrics()
+		if err != nil {
+			return err
+		}
+	}
+
+	result, err := RenderCategoryDFS(ctx.Request().Context(), h.graphDb, category, metrics, depth, map[string]api.CategoryNode{})
+
+	return ctx.JSON(http.StatusOK, result)
+}
+
+// GetRootTemplates godoc
+// @Summary Return root templates' info, info includes template name, template id, subcategories names and ids and number of resources
+// @Tags    inventory
+// @Accept  json
+// @Produce json
+// @Param   provider query    string false "Provider"
+// @Param   sourceId query    string false "SourceID"
+// @Success 200      {object} []api.CategoryNode
+// @Router  /inventory/api/v2/resources/templates [get]
+func (h *HttpHandler) GetRootTemplates(ctx echo.Context) error {
+	category := ctx.QueryParam("category")
+	if category == "" {
+		return echo.NewHTTPError(http.StatusBadRequest, "category is required")
+	}
+	provider := ctx.QueryParam("provider")
+	sourceID := ctx.QueryParam("sourceId")
+
+	templateRoots, err := h.graphDb.GetTemplateRoots(ctx.Request().Context())
+	if err != nil {
+		return err
+	}
+
+	var metrics []Metric
+	if sourceID != "" {
+		sourceUUID, err := uuid.Parse(sourceID)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "invalid sourceID")
+		}
+		sourceID = sourceUUID.String()
+		metrics, err = h.db.FetchConnectionAllMetrics(sourceID)
+		if err != nil {
+			return err
+		}
+	} else if provider != "" {
+		providerType, _ := source.ParseType(provider)
+		metrics, err = h.db.FetchProviderAllMetrics(providerType)
+		if err != nil {
+			return err
+		}
+	} else {
+		metrics, err = h.db.ListMetrics()
+		if err != nil {
+			return err
+		}
+	}
+
+	results := make([]api.CategoryNode, 0, len(templateRoots))
+	for _, templateRoot := range templateRoots {
+		results = append(results, GetCategoryNodeInfo(templateRoot, metrics))
+	}
+
+	return ctx.JSON(http.StatusOK, results)
 }
 
 // GetSummaryMetrics godoc

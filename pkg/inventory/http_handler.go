@@ -11,6 +11,7 @@ import (
 	"github.com/go-redis/redis/v8"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/describe/client"
+	"gitlab.com/keibiengine/keibi-engine/pkg/internal/neo4j"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/postgres"
 	"gitlab.com/keibiengine/keibi-engine/pkg/steampipe"
 
@@ -21,6 +22,7 @@ import (
 type HttpHandler struct {
 	client          keibi.Client
 	db              Database
+	graphDb         GraphDatabase
 	steampipeConn   *steampipe.Database
 	schedulerClient client.SchedulerServiceClient
 	onboardClient   client2.OnboardServiceClient
@@ -39,6 +41,10 @@ func InitializeHttpHandler(
 	postgresUsername string,
 	postgresPassword string,
 	postgresSSLMode string,
+	neo4jHost string,
+	neo4jPort string,
+	neo4jUsername string,
+	neo4jPassword string,
 	steampipeHost string,
 	steampipePort string,
 	steampipeDb string,
@@ -77,6 +83,22 @@ func InitializeHttpHandler(
 		return nil, err
 	}
 	fmt.Println("Initialized postgres database: ", postgresDb)
+
+	neo4jCfg := neo4j.Config{
+		Host:   neo4jHost,
+		Port:   neo4jPort,
+		User:   neo4jUsername,
+		Passwd: neo4jPassword,
+	}
+	driver, err := neo4j.NewDriver(&neo4jCfg, logger)
+	if err != nil {
+		return nil, fmt.Errorf("new neo4j driver: %w", err)
+	}
+	h.graphDb, err = NewGraphDatabase(driver)
+	if err != nil {
+		return nil, fmt.Errorf("new graph database: %w", err)
+	}
+	fmt.Println("Connected to the neo4j database")
 
 	// setup steampipe connection
 	steampipeConn, err := steampipe.NewSteampipeDatabase(steampipe.Option{

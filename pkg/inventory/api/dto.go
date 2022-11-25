@@ -382,6 +382,25 @@ type CategoriesResponse struct {
 	ResourceCount int    `json:"resourceCount"`
 }
 
+type Filter interface {
+}
+
+type FilterCloudResourceCount struct {
+	FilterID      string       `json:"filterID"`
+	SourceID      *string      `json:"source_id,omitempty"`
+	CloudProvider string       `json:"cloud_provider"`
+	CloudService  string       `json:"cloud_service"`
+	ResourceCount HistoryCount `json:"resource_count"`
+}
+
+type CategoryNode struct {
+	CategoryID    string         `json:"categoryID"`
+	CategoryName  string         `json:"categoryName"`
+	ResourceCount *HistoryCount  `json:"resourceCount,omitempty"`
+	Subcategories []CategoryNode `json:"subcategories,omitempty"`
+	Filters       []Filter       `json:"filters,omitempty"`
+}
+
 type MetricsResponse struct {
 	MetricsName      string `json:"metricsName"`
 	Value            int    `json:"value"`
