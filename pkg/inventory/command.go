@@ -25,6 +25,11 @@ var (
 	PostgreSQLPassword = os.Getenv("POSTGRESQL_PASSWORD")
 	PostgreSQLSSLMode  = os.Getenv("POSTGRESQL_SSLMODE")
 
+	Neo4jHost     = os.Getenv("NEO4J_HOST")
+	Neo4jPort     = os.Getenv("NEO4J_PORT")
+	Neo4jUser     = os.Getenv("NEO4J_USERNAME")
+	Neo4jPassword = os.Getenv("NEO4J_PASSWORD")
+
 	SteampipeHost     = os.Getenv("STEAMPIPE_HOST")
 	SteampipePort     = os.Getenv("STEAMPIPE_PORT")
 	SteampipeDb       = os.Getenv("STEAMPIPE_DB")
@@ -61,6 +66,10 @@ func start(ctx context.Context) error {
 		PostgreSQLUser,
 		PostgreSQLPassword,
 		PostgreSQLSSLMode,
+		Neo4jHost,
+		Neo4jPort,
+		Neo4jUser,
+		Neo4jPassword,
 		SteampipeHost,
 		SteampipePort,
 		SteampipeDb,

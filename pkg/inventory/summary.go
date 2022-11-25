@@ -1,6 +1,8 @@
 package inventory
 
 import (
+	"context"
+
 	"gitlab.com/keibiengine/keibi-engine/pkg/cloudservice"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/inventory/api"
@@ -8,6 +10,19 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/keibi-es-sdk"
 	"gitlab.com/keibiengine/keibi-engine/pkg/source"
 )
+
+func pointerAdd(x, y *int) *int {
+	var v *int
+	if x != nil && y != nil {
+		t := *x + *y
+		v = &t
+	} else if x != nil {
+		v = x
+	} else if y != nil {
+		v = y
+	}
+	return v
+}
 
 func GetCategories(client keibi.Client, provider source.Type, sourceID *string) ([]api.CategoriesResponse, error) {
 
@@ -188,27 +203,14 @@ func GetResourcesFromPostgres(db Database, provider source.Type, sourceID *strin
 		}
 	}
 
-	padd := func(x, y *int) *int {
-		var v *int
-		if x != nil && y != nil {
-			t := *x + *y
-			v = &t
-		} else if x != nil {
-			v = x
-		} else if y != nil {
-			v = y
-		}
-		return v
-	}
-
 	resourceTypeResponse := map[string]api.ResourceTypeResponse{}
 	for _, hit := range m {
 		if v, ok := resourceTypeResponse[hit.ResourceType]; ok {
 			v.ResourceCount += hit.Count
-			v.LastDayCount = padd(v.LastDayCount, hit.LastDayCount)
-			v.LastWeekCount = padd(v.LastWeekCount, hit.LastWeekCount)
-			v.LastQuarterCount = padd(v.LastQuarterCount, hit.LastQuarterCount)
-			v.LastYearCount = padd(v.LastYearCount, hit.LastYearCount)
+			v.LastDayCount = pointerAdd(v.LastDayCount, hit.LastDayCount)
+			v.LastWeekCount = pointerAdd(v.LastWeekCount, hit.LastWeekCount)
+			v.LastQuarterCount = pointerAdd(v.LastQuarterCount, hit.LastQuarterCount)
+			v.LastYearCount = pointerAdd(v.LastYearCount, hit.LastYearCount)
 			resourceTypeResponse[hit.ResourceType] = v
 		} else {
 			resourceTypeResponse[hit.ResourceType] = api.ResourceTypeResponse{
@@ -232,4 +234,98 @@ func GetResourcesFromPostgres(db Database, provider source.Type, sourceID *strin
 		res = append(res, v)
 	}
 	return res, nil
+}
+
+func GetCategoryNodeInfo(categoryNode *CategoryNode, metrics []Metric) api.CategoryNode {
+	resourceCount := api.HistoryCount{}
+	directFilters := map[string]api.Filter{}
+	for _, f := range categoryNode.Filters {
+		switch f.GetFilterType() {
+		case FilterTypeCloudServiceCount:
+			filter := f.(*FilterCloudServiceCountNode)
+			directFilters[filter.ElementID] = api.FilterCloudResourceCount{
+				FilterID:      filter.ElementID,
+				SourceID:      filter.SourceID,
+				CloudProvider: filter.CloudProvider,
+				CloudService:  filter.CloudService,
+				ResourceCount: api.HistoryCount{},
+			}
+		}
+	}
+	for _, f := range categoryNode.SubTreeFilters {
+		switch f.GetFilterType() {
+		case FilterTypeCloudServiceCount:
+			filter := f.(*FilterCloudServiceCountNode)
+			for _, m := range metrics {
+				serviceName := cloudservice.ServiceNameByResourceType(m.ResourceType)
+				if serviceName == filter.CloudService && (filter.SourceID == nil || *filter.SourceID == m.SourceID) {
+					resourceCount.Count += m.Count
+					resourceCount.LastDayValue = pointerAdd(resourceCount.LastDayValue, m.LastDayCount)
+					resourceCount.LastWeekValue = pointerAdd(resourceCount.LastWeekValue, m.LastWeekCount)
+					resourceCount.LastQuarterValue = pointerAdd(resourceCount.LastQuarterValue, m.LastQuarterCount)
+					resourceCount.LastYearValue = pointerAdd(resourceCount.LastYearValue, m.LastYearCount)
+
+					if directFilter, ok := directFilters[filter.ElementID].(api.FilterCloudResourceCount); ok {
+						directFilter.ResourceCount.Count += m.Count
+						directFilter.ResourceCount.LastDayValue = pointerAdd(directFilter.ResourceCount.LastDayValue, m.LastDayCount)
+						directFilter.ResourceCount.LastWeekValue = pointerAdd(directFilter.ResourceCount.LastWeekValue, m.LastWeekCount)
+						directFilter.ResourceCount.LastQuarterValue = pointerAdd(directFilter.ResourceCount.LastQuarterValue, m.LastQuarterCount)
+						directFilter.ResourceCount.LastYearValue = pointerAdd(directFilter.ResourceCount.LastYearValue, m.LastYearCount)
+						directFilters[filter.ElementID] = filter
+					}
+				}
+			}
+		}
+	}
+	result := api.CategoryNode{
+		CategoryID:    categoryNode.ElementID,
+		CategoryName:  categoryNode.Name,
+		ResourceCount: &resourceCount,
+		Subcategories: []api.CategoryNode{},
+		Filters:       []api.Filter{},
+	}
+	for _, c := range categoryNode.Subcategories {
+		result.Subcategories = append(result.Subcategories, api.CategoryNode{
+			CategoryID:   c.ElementID,
+			CategoryName: c.Name,
+		})
+	}
+	for _, f := range directFilters {
+		result.Filters = append(result.Filters, f)
+	}
+
+	return result
+}
+
+func RenderCategoryDFS(ctx context.Context, graphDb GraphDatabase, rootID string, metrics []Metric, depth int, cacheMap map[string]api.CategoryNode) (*api.CategoryNode, error) {
+	if depth <= 0 {
+		return nil, nil
+	}
+	categoryNode, err := graphDb.GetCategory(ctx, rootID)
+	if err != nil {
+		return nil, err
+	}
+
+	result := GetCategoryNodeInfo(categoryNode, metrics)
+	for _, c := range categoryNode.Subcategories {
+		if v, ok := cacheMap[c.ElementID]; ok {
+			result.Subcategories = append(result.Subcategories, v)
+		} else {
+			subResult, err := RenderCategoryDFS(ctx, graphDb, c.ElementID, metrics, depth-1, cacheMap)
+			if err != nil {
+				return nil, err
+			}
+			if subResult != nil {
+				cacheMap[c.ElementID] = *subResult
+				result.Subcategories = append(result.Subcategories, *subResult)
+			} else {
+				result.Subcategories = append(result.Subcategories, api.CategoryNode{
+					CategoryID:   c.ElementID,
+					CategoryName: c.Name,
+				})
+			}
+		}
+	}
+
+	return &result, nil
 }
