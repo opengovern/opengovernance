@@ -829,7 +829,13 @@ func (h *HttpHandler) GetCategoryNode(ctx echo.Context) error {
 		}
 	}
 
-	result, err := RenderCategoryDFS(ctx.Request().Context(), h.graphDb, category, metrics, depth, map[string]api.CategoryNode{})
+	result, err := RenderCategoryDFS(ctx.Request().Context(),
+		h.graphDb,
+		category,
+		metrics,
+		depth,
+		map[string]api.CategoryNode{},
+		map[string]api.Filter{})
 	if err != nil {
 		return err
 	}
@@ -879,9 +885,11 @@ func (h *HttpHandler) GetRootTemplates(ctx echo.Context) error {
 		}
 	}
 
+	metricsIndexed := GetMetricIndexByServiceName(metrics)
+
 	results := make([]api.CategoryNode, 0, len(templateRoots))
 	for _, templateRoot := range templateRoots {
-		results = append(results, GetCategoryNodeInfo(templateRoot, metrics))
+		results = append(results, GetCategoryNodeInfo(templateRoot, metricsIndexed, map[string]api.Filter{}))
 	}
 
 	return ctx.JSON(http.StatusOK, results)
