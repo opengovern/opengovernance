@@ -274,7 +274,6 @@ func GetCategoryNodeInfo(categoryNode *CategoryNode, metrics map[string][]Metric
 		case FilterTypeCloudServiceCount:
 			filter := f.(*FilterCloudServiceCountNode)
 			if v, ok := filterCacheMap[filter.ElementID]; ok {
-				directFilters[filter.ElementID] = v
 				m := v.(api.FilterCloudResourceCount)
 				resourceCount.Count += m.ResourceCount.Count
 				resourceCount.LastDayValue = pointerAdd(resourceCount.LastDayValue, m.ResourceCount.LastDayValue)
