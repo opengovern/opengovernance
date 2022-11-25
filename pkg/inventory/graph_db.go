@@ -376,7 +376,7 @@ func (gdb *GraphDatabase) GetCategory(ctx context.Context, elementID string) (*C
 	var category *CategoryNode
 
 	// Get the category
-	result, err := session.Run(ctx, "MATCH (c:Category) WHERE ID(c) = $element_id RETURN c", map[string]interface{}{
+	result, err := session.Run(ctx, "MATCH (c:Category) WHERE elementId(c) = $element_id RETURN c", map[string]interface{}{
 		"element_id": elementID,
 	})
 	if err != nil {
@@ -404,7 +404,7 @@ func (gdb *GraphDatabase) GetCategory(ctx context.Context, elementID string) (*C
 	}
 
 	// Get all the filters that are in the subtree of the category
-	result, err = session.Run(ctx, fmt.Sprintf(subTreeFiltersQuery, "", "ID(c) = $elementID"), map[string]interface{}{
+	result, err = session.Run(ctx, fmt.Sprintf(subTreeFiltersQuery, "", "elementId(c) = $elementID"), map[string]interface{}{
 		"elementID": elementID,
 	})
 	if err != nil {
@@ -440,7 +440,7 @@ func (gdb *GraphDatabase) GetCategory(ctx context.Context, elementID string) (*C
 	}
 
 	// Get all the subcategories of the category
-	result, err = session.Run(ctx, "MATCH (c:Category)-[:INCLUDES]->(sub:Category) WHERE ID(c) = $element_id RETURN DISTINCT c, sub", map[string]interface{}{
+	result, err = session.Run(ctx, "MATCH (c:Category)-[:INCLUDES]->(sub:Category) WHERE elementId(c) = $element_id RETURN DISTINCT c, sub", map[string]interface{}{
 		"element_id": elementID,
 	})
 	if err != nil {
