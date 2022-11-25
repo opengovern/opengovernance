@@ -307,22 +307,17 @@ func RenderCategoryDFS(ctx context.Context, graphDb GraphDatabase, rootID string
 	}
 
 	result := GetCategoryNodeInfo(categoryNode, metrics)
-	for _, c := range categoryNode.Subcategories {
-		if v, ok := cacheMap[c.ElementID]; ok {
-			result.Subcategories = append(result.Subcategories, v)
+	for i, c := range result.Subcategories {
+		if v, ok := cacheMap[c.CategoryID]; ok {
+			result.Subcategories[i] = v
 		} else {
-			subResult, err := RenderCategoryDFS(ctx, graphDb, c.ElementID, metrics, depth-1, cacheMap)
+			subResult, err := RenderCategoryDFS(ctx, graphDb, c.CategoryID, metrics, depth-1, cacheMap)
 			if err != nil {
 				return nil, err
 			}
 			if subResult != nil {
-				cacheMap[c.ElementID] = *subResult
-				result.Subcategories = append(result.Subcategories, *subResult)
-			} else {
-				result.Subcategories = append(result.Subcategories, api.CategoryNode{
-					CategoryID:   c.ElementID,
-					CategoryName: c.Name,
-				})
+				cacheMap[c.CategoryID] = *subResult
+				result.Subcategories[i] = *subResult
 			}
 		}
 	}
