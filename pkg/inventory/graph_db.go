@@ -121,7 +121,7 @@ func getFilterFromNode(node neo4j.Node) (Filter, error) {
 				sourceID = &sourceIDStr
 			}
 
-			return FilterCloudServiceCountNode{
+			return &FilterCloudServiceCountNode{
 				Node: Node{
 					ElementID: node.ElementId,
 				},
