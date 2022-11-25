@@ -830,6 +830,9 @@ func (h *HttpHandler) GetCategoryNode(ctx echo.Context) error {
 	}
 
 	result, err := RenderCategoryDFS(ctx.Request().Context(), h.graphDb, category, metrics, depth, map[string]api.CategoryNode{})
+	if err != nil {
+		return err
+	}
 
 	return ctx.JSON(http.StatusOK, result)
 }

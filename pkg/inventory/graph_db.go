@@ -156,7 +156,7 @@ func (gdb *GraphDatabase) GetTemplateRoots(ctx context.Context) (map[string]*Cat
 	session := gdb.Driver.NewSession(ctx, neo4j.SessionConfig{AccessMode: neo4j.AccessModeRead})
 	defer session.Close(ctx)
 
-	var categories map[string]*CategoryNode
+	var categories = make(map[string]*CategoryNode)
 
 	// Get all categories that have no parent
 	result, err := session.Run(ctx, "MATCH (c:Category:TemplateRoot) RETURN c", nil)
@@ -404,7 +404,7 @@ func (gdb *GraphDatabase) GetCategory(ctx context.Context, elementID string) (*C
 	}
 
 	// Get all the filters that are in the subtree of the category
-	result, err = session.Run(ctx, fmt.Sprintf(subTreeFiltersQuery, "", "WHERE ID(c) = $elementID"), map[string]interface{}{
+	result, err = session.Run(ctx, fmt.Sprintf(subTreeFiltersQuery, "", "ID(c) = $elementID"), map[string]interface{}{
 		"elementID": elementID,
 	})
 	if err != nil {
