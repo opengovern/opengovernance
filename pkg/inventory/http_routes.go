@@ -844,10 +844,6 @@ func (h *HttpHandler) GetCategoryNode(ctx echo.Context) error {
 // @Success 200      {object} []api.CategoryNode
 // @Router  /inventory/api/v2/resources/templates [get]
 func (h *HttpHandler) GetRootTemplates(ctx echo.Context) error {
-	category := ctx.QueryParam("category")
-	if category == "" {
-		return echo.NewHTTPError(http.StatusBadRequest, "category is required")
-	}
 	provider := ctx.QueryParam("provider")
 	sourceID := ctx.QueryParam("sourceId")
 
