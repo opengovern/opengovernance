@@ -25,6 +25,9 @@ func CodeCommitRepository(ctx context.Context, cfg aws.Config) ([]Resource, erro
 		for _, v := range page.Repositories {
 			repositoryNames = append(repositoryNames, *v.RepositoryName)
 		}
+		if len(repositoryNames) == 0 {
+			continue
+		}
 		repos, err := client.BatchGetRepositories(ctx, &codecommit.BatchGetRepositoriesInput{
 			RepositoryNames: repositoryNames,
 		})

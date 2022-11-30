@@ -67,18 +67,21 @@ func Route53HostedZone(ctx context.Context, cfg aws.Config) ([]Resource, error) 
 				queryLoggingConfigs = &route53.ListQueryLoggingConfigsOutput{}
 			}
 
-			dnsSec, err := client.GetDNSSEC(ctx, &route53.GetDNSSECInput{
-				HostedZoneId: v.Id,
-			})
-			if err != nil {
-				if !isErr(err, "NoSuchHostedZone") {
-					return nil, err
+			dnsSec := &route53.GetDNSSECOutput{}
+			if !v.Config.PrivateZone {
+				dnsSec, err = client.GetDNSSEC(ctx, &route53.GetDNSSECInput{
+					HostedZoneId: &id,
+				})
+				if err != nil {
+					if !isErr(err, "NoSuchHostedZone") {
+						return nil, err
+					}
+					dnsSec = &route53.GetDNSSECOutput{}
 				}
-				dnsSec = &route53.GetDNSSECOutput{}
 			}
 
 			tags, err := client.ListTagsForResource(ctx, &route53.ListTagsForResourceInput{
-				ResourceId:   v.Id,
+				ResourceId:   &id,
 				ResourceType: types.TagResourceType("hostedzone"),
 			})
 			if err != nil {

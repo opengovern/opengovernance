@@ -48,6 +48,7 @@ var resourceTypeToDescriber = map[string]ResourceDescriber{
 	"AWS::CodeCommit::Repository":         ParallelDescribeRegional(describer.CodeCommitRepository),
 	"AWS::CodeDeploy::Application":        ParallelDescribeRegional(describer.CodeDeployApplication),
 	"AWS::CodeDeploy::DeploymentGroup":    ParallelDescribeRegional(describer.CodeDeployDeploymentGroup),
+	"AWS::CodePipeline::Pipeline":         ParallelDescribeRegional(describer.CodePipelinePipeline),
 	"AWS::CodeStar::Project":              ParallelDescribeRegional(describer.CodeStarProject),
 	"AWS::Config::ConfigurationRecorder":  ParallelDescribeRegional(describer.ConfigConfigurationRecorder),
 	"AWS::DAX::Cluster":                   ParallelDescribeRegional(describer.DAXCluster),
