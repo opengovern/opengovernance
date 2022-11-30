@@ -35,7 +35,7 @@ func BatchComputeEnvironment(ctx context.Context, cfg aws.Config) ([]Resource, e
 
 func BatchJob(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	client := batch.NewFromConfig(cfg)
-	paginator := batch.NewListJobsPaginator(client, &batch.ListJobsInput{})
+	paginator := batch.NewDescribeJobQueuesPaginator(client, &batch.DescribeJobQueuesInput{})
 
 	var values []Resource
 	for paginator.HasMorePages() {
@@ -43,15 +43,26 @@ func BatchJob(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 		if err != nil {
 			return nil, err
 		}
-
-		for _, v := range page.JobSummaryList {
-			values = append(values, Resource{
-				ARN:  *v.JobArn,
-				Name: *v.JobName,
-				Description: model.BatchJobDescription{
-					Job: v,
-				},
+		for _, jq := range page.JobQueues {
+			jobsPaginator := batch.NewListJobsPaginator(client, &batch.ListJobsInput{
+				JobQueue: jq.JobQueueName,
 			})
+			for jobsPaginator.HasMorePages() {
+				page, err := jobsPaginator.NextPage(ctx)
+				if err != nil {
+					return nil, err
+				}
+
+				for _, v := range page.JobSummaryList {
+					values = append(values, Resource{
+						ARN:  *v.JobArn,
+						Name: *v.JobName,
+						Description: model.BatchJobDescription{
+							Job: v,
+						},
+					})
+				}
+			}
 		}
 	}
 

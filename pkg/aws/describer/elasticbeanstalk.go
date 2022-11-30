@@ -91,22 +91,11 @@ func ElasticBeanstalkPlatform(ctx context.Context, cfg aws.Config) ([]Resource, 
 				return nil, err
 			}
 
-			tags, err := client.ListTagsForResource(ctx, &elasticbeanstalk.ListTagsForResourceInput{
-				ResourceArn: item.PlatformArn,
-			})
-			if err != nil {
-				if !isErr(err, "ResourceNotFoundException") {
-					return nil, err
-				}
-				tags = &elasticbeanstalk.ListTagsForResourceOutput{}
-			}
-
 			values = append(values, Resource{
 				ARN:  *platform.PlatformDescription.PlatformArn,
 				Name: *platform.PlatformDescription.PlatformName,
 				Description: model.ElasticBeanstalkPlatformDescription{
 					Platform: *platform.PlatformDescription,
-					Tags:     tags.ResourceTags,
 				},
 			})
 		}

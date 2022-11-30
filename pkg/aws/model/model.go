@@ -171,7 +171,6 @@ type ElasticBeanstalkApplicationDescription struct {
 //getfilter:platform_name=description.Platform.PlatformName
 type ElasticBeanstalkPlatformDescription struct {
 	Platform elasticbeanstalk.PlatformDescription
-	Tags     []elasticbeanstalk.Tag
 }
 
 //  ===================   ElastiCache   ===================
@@ -1208,7 +1207,7 @@ type LambdaFunctionDescription struct {
 	Policy   *lambda.GetPolicyOutput
 }
 
-//index:aws_lambda_function
+//index:aws_lambda_function_version
 //getfilter:id=description.ID
 type LambdaFunctionVersionDescription struct {
 	ID              string
