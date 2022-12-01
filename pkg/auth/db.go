@@ -62,12 +62,12 @@ func (db Database) GetRoleBindingsOfWorkspace(workspaceName string) ([]RoleBindi
 }
 
 // GetRoleBindingForWorkspace returns the role binding in the workspace for the given user.
-func (db Database) GetRoleBindingForWorkspace(email, workspaceName string) (RoleBinding, error) {
+func (db Database) GetRoleBindingForWorkspace(userID uuid.UUID, workspaceName string) (RoleBinding, error) {
 	var rbs RoleBinding
 	tx := db.orm.
 		Model(&RoleBinding{}).
 		Where(RoleBinding{
-			Email:         email,
+			UserID:        userID,
 			WorkspaceName: workspaceName,
 		}).
 		First(&rbs)

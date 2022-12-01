@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/google/uuid"
 	"net/http"
 	"strings"
 	"time"
@@ -77,7 +78,7 @@ func (s Server) Check(ctx context.Context, req *envoyauth.CheckRequest) (*envoya
 			zap.Error(err))
 		return unAuth, nil
 	}
-	internalUser, err := s.GetUserByEmail(user.Email)
+	internalUser, err := s.GetUserByExternalID(user.ExternalUserID)
 	if err != nil {
 		if !errors.Is(err, gorm.ErrRecordNotFound) {
 			s.logger.Warn("denied access due to failure in retrieving internal user",
@@ -125,7 +126,7 @@ func (s Server) Check(ctx context.Context, req *envoyauth.CheckRequest) (*envoya
 			Role:   api.EditorRole,
 		}
 	} else {
-		rb, err = s.GetRoleBindingForWorkspace(user.Email, workspaceName)
+		rb, err = s.GetRoleBindingForWorkspace(internalUser.ID, workspaceName)
 		if err != nil {
 			s.logger.Warn("denied access due to failure in retrieving auth user host",
 				zap.String("reqId", httpRequest.Id),
@@ -153,7 +154,6 @@ func (s Server) Check(ctx context.Context, req *envoyauth.CheckRequest) (*envoya
 
 	s.logger.Debug("granted access",
 		zap.String("userId", rb.UserID.String()),
-		zap.String("email", rb.Email),
 		zap.String("role", string(rb.Role)),
 		zap.String("reqId", httpRequest.Id),
 		zap.String("path", httpRequest.Path),
@@ -225,7 +225,7 @@ func (s Server) Check(ctx context.Context, req *envoyauth.CheckRequest) (*envoya
 }
 
 func (s Server) GetUserByEmail(email string) (User, error) {
-	key := "cache-user-" + email
+	key := "cache-user-email-" + email
 
 	var res User
 	if s.cache != nil {
@@ -251,8 +251,35 @@ func (s Server) GetUserByEmail(email string) (User, error) {
 	return user, nil
 }
 
-func (s Server) GetRoleBindingForWorkspace(email, workspaceName string) (RoleBinding, error) {
-	key := "cache-rb-" + email + "-" + workspaceName
+func (s Server) GetUserByExternalID(externalID string) (User, error) {
+	key := "cache-user-externalID-" + externalID
+
+	var res User
+	if s.cache != nil {
+		if err := s.cache.Get(context.Background(), key, &res); err == nil {
+			return res, nil
+		}
+	}
+
+	user, err := s.db.GetUserByExternalID(externalID)
+	if err != nil {
+		return User{}, err
+	}
+
+	if s.cache != nil {
+		s.cache.Set(&cache.Item{
+			Ctx:   context.Background(),
+			Key:   key,
+			Value: user,
+			TTL:   15 * time.Minute,
+		})
+	}
+
+	return user, nil
+}
+
+func (s Server) GetRoleBindingForWorkspace(userId uuid.UUID, workspaceName string) (RoleBinding, error) {
+	key := "cache-rb-" + userId.String() + "-" + workspaceName
 
 	var res RoleBinding
 	if s.cache != nil {
@@ -261,7 +288,7 @@ func (s Server) GetRoleBindingForWorkspace(email, workspaceName string) (RoleBin
 		}
 	}
 
-	rb, err := s.db.GetRoleBindingForWorkspace(email, workspaceName)
+	rb, err := s.db.GetRoleBindingForWorkspace(userId, workspaceName)
 	if err != nil {
 		return RoleBinding{}, err
 	}
