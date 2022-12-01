@@ -4,10 +4,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/google/uuid"
 	"net/http"
 	"strings"
 	"time"
+
+	"github.com/google/uuid"
 
 	"github.com/go-redis/cache/v8"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpclient"

@@ -78,15 +78,6 @@ func (r httpRoutes) PutRoleBinding(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "admin user permission can't be modified by self")
 	}
 
-	usr, err := r.db.GetUserByID(req.UserID)
-	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return echo.NewHTTPError(http.StatusBadRequest, "user not found")
-		}
-
-		return err
-	}
-
 	workspaceName := httpserver.GetWorkspaceName(ctx)
 	count, err := r.db.CountRoleBindings(workspaceName)
 	if err != nil {
@@ -101,7 +92,6 @@ func (r httpRoutes) PutRoleBinding(ctx echo.Context) error {
 	if count >= limits.MaxUsers {
 		err = r.db.UpdateRoleBinding(&RoleBinding{
 			UserID:        req.UserID,
-			Email:         usr.Email,
 			WorkspaceName: workspaceName,
 			Role:          req.Role,
 			AssignedAt:    time.Now(),
@@ -109,7 +99,6 @@ func (r httpRoutes) PutRoleBinding(ctx echo.Context) error {
 	} else {
 		err = r.db.CreateOrUpdateRoleBinding(&RoleBinding{
 			UserID:        req.UserID,
-			Email:         usr.Email,
 			WorkspaceName: workspaceName,
 			Role:          req.Role,
 			AssignedAt:    time.Now(),
@@ -304,20 +293,9 @@ func (r *httpRoutes) AcceptInvitation(ctx echo.Context) error {
 
 	userID := httpserver.GetUserID(ctx)
 
-	// check that invited user exists
-	usr, err := r.db.GetUserByID(userID)
-	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return echo.NewHTTPError(http.StatusBadRequest, "user not found")
-		}
-
-		return err
-	}
-
 	// if binding exists do not change Role
 	err = r.db.CreateBindingIfNotExists(&RoleBinding{
 		UserID:        userID,
-		Email:         usr.Email,
 		WorkspaceName: inv.WorkspaceName,
 		Role:          api.ViewerRole,
 		AssignedAt:    time.Now(),
