@@ -177,6 +177,22 @@ func (db Database) CreateOrUpdateMetric(metric Metric) error {
 	}).Create(metric).Error
 }
 
+func (db Database) FetchConnectionMetricResourceTypeSummery(sourceID string, resourceTypes []string) ([]MetricResourceTypeSummary, error) {
+	var s []MetricResourceTypeSummary
+	tx := db.orm.
+		Select("resource_type, sum(count) as count, sum(last_day_count) as last_day_count, sum(last_week_count) as last_week_count, sum(last_quarter_count) as last_quarter_count, sum(last_year_count) as last_year_count").
+		Where("source_id = ?", sourceID).
+		Where("resource_type in ?", resourceTypes).
+		Group("resource_type").
+		Find(&s)
+
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+
+	return s, nil
+}
+
 func (db Database) FetchConnectionMetrics(sourceID string, resourceTypes []string) ([]Metric, error) {
 	var metrics []Metric
 	tx := db.orm.Model(Metric{}).
@@ -194,6 +210,22 @@ func (db Database) FetchConnectionAllMetrics(sourceID string) ([]Metric, error) 
 	return metrics, tx.Error
 }
 
+func (db Database) FetchProviderMetricResourceTypeSummery(provider source.Type, resourceTypes []string) ([]MetricResourceTypeSummary, error) {
+	var s []MetricResourceTypeSummary
+	tx := db.orm.
+		Select("resource_type, sum(count) as count, sum(last_day_count) as last_day_count, sum(last_week_count) as last_week_count, sum(last_quarter_count) as last_quarter_count, sum(last_year_count) as last_year_count").
+		Where("provider = ?", provider).
+		Where("resource_type in ?", resourceTypes).
+		Group("resource_type").
+		Find(&s)
+
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+
+	return s, nil
+}
+
 func (db Database) FetchProviderAllMetrics(provider source.Type) ([]Metric, error) {
 	var metrics []Metric
 	tx := db.orm.Model(Metric{}).
@@ -209,6 +241,21 @@ func (db Database) FetchProviderMetrics(provider source.Type, resourceTypes []st
 		Where("resource_type in ?", resourceTypes).
 		Find(&metrics)
 	return metrics, tx.Error
+}
+
+func (db Database) FetchMetricResourceTypeSummery(resourceTypes []string) ([]MetricResourceTypeSummary, error) {
+	var s []MetricResourceTypeSummary
+	tx := db.orm.
+		Select("resource_type, sum(count) as count, sum(last_day_count) as last_day_count, sum(last_week_count) as last_week_count, sum(last_quarter_count) as last_quarter_count, sum(last_year_count) as last_year_count").
+		Where("resource_type in ?", resourceTypes).
+		Group("resource_type").
+		Find(&s)
+
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+
+	return s, nil
 }
 
 func (db Database) FetchMetrics(resourceTypes []string) ([]Metric, error) {

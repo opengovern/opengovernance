@@ -117,10 +117,9 @@ func QueryResourcesWithSteampipeColumns(
 
 		result.TotalCount += response.Hits.Total.Value
 
+		pluginProvider := steampipe.ExtractPlugin(resourceType)
+		pluginTableName := steampipe.ExtractTableName(resourceType)
 		for _, hit := range response.Hits.Hits {
-			pluginProvider := steampipe.ExtractPlugin(resourceType)
-			pluginTableName := steampipe.ExtractTableName(resourceType)
-
 			if pluginProvider == steampipe.SteampipePluginAWS {
 				b, err := json.Marshal(hit.Source.Metadata)
 				if err != nil {

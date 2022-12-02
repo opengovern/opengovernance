@@ -38,3 +38,12 @@ type Metric struct {
 	LastYearCount    *int
 	Count            int
 }
+
+type MetricResourceTypeSummary struct {
+	ResourceType     string
+	Count            int
+	LastDayCount     *int
+	LastWeekCount    *int
+	LastQuarterCount *int
+	LastYearCount    *int
+}

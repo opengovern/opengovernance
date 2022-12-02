@@ -236,34 +236,45 @@ func GetResourcesFromPostgres(db Database, provider source.Type, sourceID *strin
 	return res, nil
 }
 
-func GetMetricIndexByServiceName(metrics []Metric) map[string][]Metric {
-	metricIndex := map[string][]Metric{}
-	for _, metric := range metrics {
-		serviceName := cloudservice.ServiceNameByResourceType(metric.ResourceType)
-		if _, ok := metricIndex[serviceName]; ok {
-			metricIndex[serviceName] = append(metricIndex[serviceName], metric)
-		} else {
-			metricIndex[serviceName] = []Metric{metric}
+func GetResourceTypeListFromFilters(filters []Filter) []string {
+	result := map[string]struct{}{}
+	for _, filter := range filters {
+		switch filter.GetFilterType() {
+		case FilterTypeCloudResourceType:
+			f := filter.(*FilterCloudResourceTypeNode)
+			result[f.ResourceType] = struct{}{}
 		}
+	}
+	res := make([]string, 0, len(result))
+	for k := range result {
+		res = append(res, k)
+	}
+	return res
+}
+
+func GetMetricResourceTypeSummaryIndexByResourceType(metrics []MetricResourceTypeSummary) map[string]MetricResourceTypeSummary {
+	metricIndex := map[string]MetricResourceTypeSummary{}
+	for _, metric := range metrics {
+		metricIndex[metric.ResourceType] = metric
 	}
 	return metricIndex
 }
 
-func GetCategoryNodeInfo(categoryNode *CategoryNode, metrics map[string][]Metric, filterCacheMap map[string]api.Filter) api.CategoryNode {
+func GetCategoryNodeInfo(categoryNode *CategoryNode, metrics map[string]MetricResourceTypeSummary, filterCacheMap map[string]api.Filter) api.CategoryNode {
 	resourceCount := api.HistoryCount{}
 	directFilters := map[string]api.Filter{}
 	for _, f := range categoryNode.Filters {
 		switch f.GetFilterType() {
-		case FilterTypeCloudServiceCount:
-			filter := f.(*FilterCloudServiceCountNode)
+		case FilterTypeCloudResourceType:
+			filter := f.(*FilterCloudResourceTypeNode)
 			if v, ok := filterCacheMap[filter.ElementID]; ok {
-				directFilters[filter.ElementID] = v
+				directFilters[filter.ElementID] = *v.(*api.FilterCloudResourceType)
 			} else {
-				directFilters[filter.ElementID] = api.FilterCloudResourceCount{
+				directFilters[filter.ElementID] = api.FilterCloudResourceType{
 					FilterID:      filter.ElementID,
-					SourceID:      filter.SourceID,
 					CloudProvider: filter.CloudProvider,
-					CloudService:  filter.CloudService,
+					ResourceName:  filter.ResourceName,
+					ResourceType:  filter.ResourceType,
 					ResourceCount: api.HistoryCount{},
 				}
 			}
@@ -271,43 +282,40 @@ func GetCategoryNodeInfo(categoryNode *CategoryNode, metrics map[string][]Metric
 	}
 	for _, f := range categoryNode.SubTreeFilters {
 		switch f.GetFilterType() {
-		case FilterTypeCloudServiceCount:
-			filter := f.(*FilterCloudServiceCountNode)
+		case FilterTypeCloudResourceType:
+			filter := f.(*FilterCloudResourceTypeNode)
 			if v, ok := filterCacheMap[filter.ElementID]; ok {
-				m := v.(api.FilterCloudResourceCount)
+				m := v.(*api.FilterCloudResourceType)
 				resourceCount.Count += m.ResourceCount.Count
 				resourceCount.LastDayValue = pointerAdd(resourceCount.LastDayValue, m.ResourceCount.LastDayValue)
 				resourceCount.LastWeekValue = pointerAdd(resourceCount.LastWeekValue, m.ResourceCount.LastWeekValue)
 				resourceCount.LastQuarterValue = pointerAdd(resourceCount.LastQuarterValue, m.ResourceCount.LastQuarterValue)
 				resourceCount.LastYearValue = pointerAdd(resourceCount.LastYearValue, m.ResourceCount.LastYearValue)
 			} else {
-				filterWithCount := api.FilterCloudResourceCount{
+				filterWithCount := api.FilterCloudResourceType{
 					FilterID:      filter.ElementID,
-					SourceID:      filter.SourceID,
 					CloudProvider: filter.CloudProvider,
-					CloudService:  filter.CloudService,
+					ResourceType:  filter.ResourceType,
+					ResourceName:  filter.ResourceName,
 					ResourceCount: api.HistoryCount{},
 				}
-				if relevantMetrics, ok := metrics[filter.CloudService]; ok {
-					for _, m := range relevantMetrics {
-						if filter.SourceID == nil || *filter.SourceID == m.SourceID {
-							resourceCount.Count += m.Count
-							resourceCount.LastDayValue = pointerAdd(resourceCount.LastDayValue, m.LastDayCount)
-							resourceCount.LastWeekValue = pointerAdd(resourceCount.LastWeekValue, m.LastWeekCount)
-							resourceCount.LastQuarterValue = pointerAdd(resourceCount.LastQuarterValue, m.LastQuarterCount)
-							resourceCount.LastYearValue = pointerAdd(resourceCount.LastYearValue, m.LastYearCount)
+				if m, ok := metrics[filter.ResourceType]; ok {
+					resourceCount.Count += m.Count
+					resourceCount.LastDayValue = pointerAdd(resourceCount.LastDayValue, m.LastDayCount)
+					resourceCount.LastWeekValue = pointerAdd(resourceCount.LastWeekValue, m.LastWeekCount)
+					resourceCount.LastQuarterValue = pointerAdd(resourceCount.LastQuarterValue, m.LastQuarterCount)
+					resourceCount.LastYearValue = pointerAdd(resourceCount.LastYearValue, m.LastYearCount)
 
-							filterWithCount.ResourceCount.Count += m.Count
-							filterWithCount.ResourceCount.LastDayValue = pointerAdd(filterWithCount.ResourceCount.LastDayValue, m.LastDayCount)
-							filterWithCount.ResourceCount.LastWeekValue = pointerAdd(filterWithCount.ResourceCount.LastWeekValue, m.LastWeekCount)
-							filterWithCount.ResourceCount.LastQuarterValue = pointerAdd(filterWithCount.ResourceCount.LastQuarterValue, m.LastQuarterCount)
-							filterWithCount.ResourceCount.LastYearValue = pointerAdd(filterWithCount.ResourceCount.LastYearValue, m.LastYearCount)
-						}
-					}
-					if _, ok := directFilters[filter.ElementID].(api.FilterCloudResourceCount); ok {
+					filterWithCount.ResourceCount.Count += m.Count
+					filterWithCount.ResourceCount.LastDayValue = pointerAdd(filterWithCount.ResourceCount.LastDayValue, m.LastDayCount)
+					filterWithCount.ResourceCount.LastWeekValue = pointerAdd(filterWithCount.ResourceCount.LastWeekValue, m.LastWeekCount)
+					filterWithCount.ResourceCount.LastQuarterValue = pointerAdd(filterWithCount.ResourceCount.LastQuarterValue, m.LastQuarterCount)
+					filterWithCount.ResourceCount.LastYearValue = pointerAdd(filterWithCount.ResourceCount.LastYearValue, m.LastYearCount)
+
+					if _, ok := directFilters[filter.ElementID].(api.FilterCloudResourceType); ok {
 						directFilters[filter.ElementID] = filterWithCount
 					}
-					filterCacheMap[filter.ElementID] = filterWithCount
+					filterCacheMap[filter.ElementID] = &filterWithCount
 				}
 			}
 		}
@@ -334,27 +342,26 @@ func GetCategoryNodeInfo(categoryNode *CategoryNode, metrics map[string][]Metric
 
 func RenderCategoryDFS(ctx context.Context,
 	graphDb GraphDatabase,
-	rootID string,
-	metrics []Metric,
+	rootNode *CategoryNode,
+	metrics map[string]MetricResourceTypeSummary,
 	depth int,
 	nodeCacheMap map[string]api.CategoryNode,
 	filterCacheMap map[string]api.Filter) (*api.CategoryNode, error) {
 	if depth <= 0 {
 		return nil, nil
 	}
-	categoryNode, err := graphDb.GetCategory(ctx, rootID)
-	if err != nil {
-		return nil, err
-	}
 
-	metricIndexed := GetMetricIndexByServiceName(metrics)
-
-	result := GetCategoryNodeInfo(categoryNode, metricIndexed, filterCacheMap)
+	result := GetCategoryNodeInfo(rootNode, metrics, filterCacheMap)
 	for i, c := range result.Subcategories {
 		if v, ok := nodeCacheMap[c.CategoryID]; ok {
 			result.Subcategories[i] = v
 		} else {
-			subResult, err := RenderCategoryDFS(ctx, graphDb, c.CategoryID, metrics, depth-1, nodeCacheMap, filterCacheMap)
+			subCategoryNode, err := graphDb.GetCategory(ctx, c.CategoryID)
+			if err != nil {
+				return nil, err
+			}
+
+			subResult, err := RenderCategoryDFS(ctx, graphDb, subCategoryNode, metrics, depth-1, nodeCacheMap, filterCacheMap)
 			if err != nil {
 				return nil, err
 			}
