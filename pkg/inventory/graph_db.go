@@ -4,8 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/neo4j/neo4j-go-driver/v5/neo4j"
+	"gitlab.com/keibiengine/keibi-engine/pkg/source"
 )
 
 type GraphDatabase struct {
@@ -36,9 +38,9 @@ CREATE (c1:Category:TemplateRoot{name:"cat1"}),
   (c1)-[:INCLUDES]->(c4),
   (c2)-[:INCLUDES]->(c3),
   (c1)-[:INCLUDES]->(c2),
-  (f1:Filter:FilterCloudServiceCount{name:"EC2 count", cloud_provider: "aws", cloud_service: "EC2"}),
-  (f2:Filter:FilterCloudServiceCount{name: "EKS count", cloud_provider: "aws", cloud_service: "EKS"}),
-  (f3:Filter:FilterCloudServiceCount{name: "S3 count", cloud_provider: "aws", cloud_service: "S3"}),
+  (f1:Filter:FilterCloudResourceType{name:"EC2 Instance", cloud_provider: "AWS", cloud_service: "AWS::EC2::Instance"}),
+  (f2:Filter:FilterCloudResourceType{name: "EKS Cluster", cloud_provider: "AWS", cloud_service: "AWS::EKS::Cluster"}),
+  (f3:Filter:FilterCloudResourceType{name: "S3 Bucket", cloud_provider: "AWS", cloud_service: "AWS::S3::Bucket"}),
   (c3)-[:USES]->(f1),
   (c4)-[:USES]->(f1),
   (c1)-[:USES]->(f2);
@@ -66,18 +68,18 @@ type Filter interface {
 type FilterType string
 
 const (
-	FilterTypeCloudServiceCount FilterType = "FilterCloudServiceCount"
+	FilterTypeCloudResourceType FilterType = "FilterCloudResourceType"
 )
 
-type FilterCloudServiceCountNode struct {
+type FilterCloudResourceTypeNode struct {
 	Node
-	SourceID      *string `json:"source_id,omitempty"`
-	CloudProvider string  `json:"cloud_provider"`
-	CloudService  string  `json:"cloud_service"`
+	CloudProvider source.Type `json:"cloud_provider"`
+	ResourceType  string      `json:"resource_type"`
+	ResourceName  string      `json:"resource_name"`
 }
 
-func (f FilterCloudServiceCountNode) GetFilterType() FilterType {
-	return FilterTypeCloudServiceCount
+func (f FilterCloudResourceTypeNode) GetFilterType() FilterType {
+	return FilterTypeCloudResourceType
 }
 
 var (
@@ -101,33 +103,27 @@ RETURN DISTINCT c, f, MAX(isDirectChild) AS isDirectChild
 func getFilterFromNode(node neo4j.Node) (Filter, error) {
 	for _, label := range node.Labels {
 		switch label {
-		case string(FilterTypeCloudServiceCount):
+		case string(FilterTypeCloudResourceType):
 			cloudProvider, ok := node.Props["cloud_provider"]
 			if !ok {
 				return nil, ErrPropertyNotFound
 			}
-			cloudService, ok := node.Props["cloud_service"]
+			resourceType, ok := node.Props["resource_type"]
+			if !ok {
+				return nil, ErrPropertyNotFound
+			}
+			resourceName, ok := node.Props["resource_name"]
 			if !ok {
 				return nil, ErrPropertyNotFound
 			}
 
-			// Optional field
-			var sourceID *string
-			sourceIDStr, ok := node.Props["source_id"]
-			if !ok {
-				sourceID = nil
-			} else {
-				sourceIDStr := sourceIDStr.(string)
-				sourceID = &sourceIDStr
-			}
-
-			return &FilterCloudServiceCountNode{
+			return &FilterCloudResourceTypeNode{
 				Node: Node{
 					ElementID: node.ElementId,
 				},
-				SourceID:      sourceID,
-				CloudProvider: cloudProvider.(string),
-				CloudService:  cloudService.(string),
+				CloudProvider: source.Type(cloudProvider.(string)),
+				ResourceType:  strings.ToLower(resourceType.(string)),
+				ResourceName:  resourceName.(string),
 			}, nil
 		}
 	}

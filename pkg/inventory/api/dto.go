@@ -385,11 +385,11 @@ type CategoriesResponse struct {
 type Filter interface {
 }
 
-type FilterCloudResourceCount struct {
+type FilterCloudResourceType struct {
 	FilterID      string       `json:"filterID"`
-	SourceID      *string      `json:"source_id,omitempty"`
-	CloudProvider string       `json:"cloud_provider"`
-	CloudService  string       `json:"cloud_service"`
+	CloudProvider source.Type  `json:"cloud_provider"`
+	ResourceType  string       `json:"resource_type"`
+	ResourceName  string       `json:"resource_name"`
 	ResourceCount HistoryCount `json:"resource_count"`
 }
 

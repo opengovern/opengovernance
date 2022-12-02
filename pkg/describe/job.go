@@ -233,8 +233,8 @@ func (j DescribeConnectionJob) Do(ictx context.Context, vlt vault.SourceConfig, 
 
 // Do will perform the job which includes the following tasks:
 //
-//    1. Describing resources from the cloud providee based on the job definition.
-//    2. Send the described resources to Kafka to be consumed by other systems.
+//  1. Describing resources from the cloud providee based on the job definition.
+//  2. Send the described resources to Kafka to be consumed by other systems.
 //
 // There are a variety of things that could go wrong in the process. This method will
 // do its best to complete the task even if some errors occur along the way. However,
@@ -394,7 +394,7 @@ func doDescribeAWS(ctx context.Context, rdb *redis.Client, job DescribeJob, conf
 				ID:            resource.UniqueID(),
 				Description:   resource.Description,
 				SourceType:    api.SourceCloudAWS,
-				ResourceType:  job.ResourceType,
+				ResourceType:  strings.ToLower(job.ResourceType),
 				ResourceJobID: job.JobID,
 				SourceJobID:   job.ParentJobID,
 				SourceID:      job.SourceID,
@@ -404,7 +404,7 @@ func doDescribeAWS(ctx context.Context, rdb *redis.Client, job DescribeJob, conf
 					"region":        resource.Region,
 					"account_id":    resource.Account,
 					"source_id":     job.SourceID,
-					"resource_type": resource.Type,
+					"resource_type": strings.ToLower(resource.Type),
 				},
 			}
 			pluginTableName := steampipe.ExtractTableName(job.ResourceType)
@@ -548,7 +548,7 @@ func doDescribeAzure(ctx context.Context, rdb *redis.Client, job DescribeJob, co
 			ID:            resource.UniqueID(),
 			Description:   resource.Description,
 			SourceType:    api.SourceCloudAzure,
-			ResourceType:  output.Metadata.ResourceType,
+			ResourceType:  strings.ToLower(output.Metadata.ResourceType),
 			ResourceJobID: job.JobID,
 			SourceJobID:   job.ParentJobID,
 			SourceID:      job.SourceID,
@@ -558,7 +558,7 @@ func doDescribeAzure(ctx context.Context, rdb *redis.Client, job DescribeJob, co
 				"subscription_id":   strings.Join(output.Metadata.SubscriptionIds, ","),
 				"location":          resource.Location,
 				"cloud_environment": output.Metadata.CloudEnvironment,
-				"resource_type":     resource.Type,
+				"resource_type":     strings.ToLower(resource.Type),
 				"source_id":         job.SourceID,
 			},
 		}

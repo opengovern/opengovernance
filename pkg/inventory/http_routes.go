@@ -805,34 +805,43 @@ func (h *HttpHandler) GetCategoryNode(ctx echo.Context) error {
 	provider := ctx.QueryParam("provider")
 	sourceID := ctx.QueryParam("sourceId")
 
-	var metrics []Metric
+	rootNode, err := h.graphDb.GetCategory(ctx.Request().Context(), category)
+	if err != nil {
+		return err
+	}
+
+	resourceTypes := GetResourceTypeListFromFilters(rootNode.SubTreeFilters)
+
+	var metricResourceTypeSummaries []MetricResourceTypeSummary
 	if sourceID != "" {
 		sourceUUID, err := uuid.Parse(sourceID)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "invalid sourceID")
 		}
 		sourceID = sourceUUID.String()
-		metrics, err = h.db.FetchConnectionAllMetrics(sourceID)
+		metricResourceTypeSummaries, err = h.db.FetchConnectionMetricResourceTypeSummery(sourceID, resourceTypes)
 		if err != nil {
 			return err
 		}
 	} else if provider != "" {
 		providerType, _ := source.ParseType(provider)
-		metrics, err = h.db.FetchProviderAllMetrics(providerType)
+		metricResourceTypeSummaries, err = h.db.FetchProviderMetricResourceTypeSummery(providerType, resourceTypes)
 		if err != nil {
 			return err
 		}
 	} else {
-		metrics, err = h.db.ListMetrics()
+		metricResourceTypeSummaries, err = h.db.FetchMetricResourceTypeSummery(resourceTypes)
 		if err != nil {
 			return err
 		}
 	}
 
+	metricIndexed := GetMetricResourceTypeSummaryIndexByResourceType(metricResourceTypeSummaries)
+
 	result, err := RenderCategoryDFS(ctx.Request().Context(),
 		h.graphDb,
-		category,
-		metrics,
+		rootNode,
+		metricIndexed,
 		depth,
 		map[string]api.CategoryNode{},
 		map[string]api.Filter{})
@@ -861,35 +870,42 @@ func (h *HttpHandler) GetRootTemplates(ctx echo.Context) error {
 		return err
 	}
 
-	var metrics []Metric
+	filters := make([]Filter, 0)
+	for _, templateRoot := range templateRoots {
+		filters = append(filters, templateRoot.SubTreeFilters...)
+	}
+	resourceTypes := GetResourceTypeListFromFilters(filters)
+
+	var metricResourceTypeSummaries []MetricResourceTypeSummary
 	if sourceID != "" {
 		sourceUUID, err := uuid.Parse(sourceID)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "invalid sourceID")
 		}
 		sourceID = sourceUUID.String()
-		metrics, err = h.db.FetchConnectionAllMetrics(sourceID)
+		metricResourceTypeSummaries, err = h.db.FetchConnectionMetricResourceTypeSummery(sourceID, resourceTypes)
 		if err != nil {
 			return err
 		}
 	} else if provider != "" {
 		providerType, _ := source.ParseType(provider)
-		metrics, err = h.db.FetchProviderAllMetrics(providerType)
+		metricResourceTypeSummaries, err = h.db.FetchProviderMetricResourceTypeSummery(providerType, resourceTypes)
 		if err != nil {
 			return err
 		}
 	} else {
-		metrics, err = h.db.ListMetrics()
+		metricResourceTypeSummaries, err = h.db.FetchMetricResourceTypeSummery(resourceTypes)
 		if err != nil {
 			return err
 		}
 	}
 
-	metricsIndexed := GetMetricIndexByServiceName(metrics)
+	metricsIndexed := GetMetricResourceTypeSummaryIndexByResourceType(metricResourceTypeSummaries)
 
 	results := make([]api.CategoryNode, 0, len(templateRoots))
+	cacheMap := map[string]api.Filter{}
 	for _, templateRoot := range templateRoots {
-		results = append(results, GetCategoryNodeInfo(templateRoot, metricsIndexed, map[string]api.Filter{}))
+		results = append(results, GetCategoryNodeInfo(templateRoot, metricsIndexed, cacheMap))
 	}
 
 	return ctx.JSON(http.StatusOK, results)
