@@ -24,6 +24,10 @@ func NewGraphDatabase(driver neo4j.DriverWithContext) (GraphDatabase, error) {
 	if err != nil {
 		return GraphDatabase{}, err
 	}
+	_, err = session.Run(ctx, "CREATE CONSTRAINT cloud_provider_root_unique_name_constraint IF NOT EXISTS FOR (c:CloudProviderRoot) REQUIRE c.name IS UNIQUE", nil)
+	if err != nil {
+		return GraphDatabase{}, err
+	}
 
 	return GraphDatabase{
 		Driver: driver,
@@ -38,9 +42,9 @@ CREATE (c1:Category:TemplateRoot{name:"cat1"}),
   (c1)-[:INCLUDES]->(c4),
   (c2)-[:INCLUDES]->(c3),
   (c1)-[:INCLUDES]->(c2),
-  (f1:Filter:FilterCloudResourceType{name:"EC2 Instance", cloud_provider: "AWS", cloud_service: "AWS::EC2::Instance"}),
-  (f2:Filter:FilterCloudResourceType{name: "EKS Cluster", cloud_provider: "AWS", cloud_service: "AWS::EKS::Cluster"}),
-  (f3:Filter:FilterCloudResourceType{name: "S3 Bucket", cloud_provider: "AWS", cloud_service: "AWS::S3::Bucket"}),
+  (f1:Filter:FilterCloudResourceType{resource_name:"EC2 Instance", cloud_provider: "AWS", resource_type: "AWS::EC2::Instance", service_code: "ec2"}),
+  (f2:Filter:FilterCloudResourceType{resource_name: "EKS Cluster", cloud_provider: "AWS", resource_type: "AWS::EKS::Cluster", service_code: "eks"}),
+  (f3:Filter:FilterCloudResourceType{resource_name: "S3 Bucket", cloud_provider: "AWS", resource_type: "AWS::S3::Bucket", "service_code: "s3"}),
   (c3)-[:USES]->(f1),
   (c4)-[:USES]->(f1),
   (c1)-[:USES]->(f2);
@@ -76,6 +80,7 @@ type FilterCloudResourceTypeNode struct {
 	CloudProvider source.Type `json:"cloud_provider"`
 	ResourceType  string      `json:"resource_type"`
 	ResourceName  string      `json:"resource_name"`
+	ServiceCode   string      `json:"service_code"`
 }
 
 func (f FilterCloudResourceTypeNode) GetFilterType() FilterType {
@@ -116,6 +121,10 @@ func getFilterFromNode(node neo4j.Node) (Filter, error) {
 			if !ok {
 				return nil, ErrPropertyNotFound
 			}
+			serviceCode, ok := node.Props["service_code"]
+			if !ok {
+				return nil, ErrPropertyNotFound
+			}
 
 			return &FilterCloudResourceTypeNode{
 				Node: Node{
@@ -124,6 +133,7 @@ func getFilterFromNode(node neo4j.Node) (Filter, error) {
 				CloudProvider: source.Type(cloudProvider.(string)),
 				ResourceType:  strings.ToLower(resourceType.(string)),
 				ResourceName:  resourceName.(string),
+				ServiceCode:   strings.ToLower(serviceCode.(string)),
 			}, nil
 		}
 	}
