@@ -10,6 +10,13 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/source"
 )
 
+type CategoryRootType string
+
+const (
+	RootTypeTemplateRoot      CategoryRootType = "TemplateRoot"
+	RootTypeCloudProviderRoot CategoryRootType = "CloudProviderRoot"
+)
+
 type GraphDatabase struct {
 	Driver neo4j.DriverWithContext
 }
@@ -158,14 +165,14 @@ func getCategoryFromNode(node neo4j.Node) (*CategoryNode, error) {
 	}, nil
 }
 
-func (gdb *GraphDatabase) GetTemplateRoots(ctx context.Context) (map[string]*CategoryNode, error) {
+func (gdb *GraphDatabase) GetCategoryRoots(ctx context.Context, rootType CategoryRootType) (map[string]*CategoryNode, error) {
 	session := gdb.Driver.NewSession(ctx, neo4j.SessionConfig{AccessMode: neo4j.AccessModeRead})
 	defer session.Close(ctx)
 
 	var categories = make(map[string]*CategoryNode)
 
 	// Get all categories that have no parent
-	result, err := session.Run(ctx, "MATCH (c:Category:TemplateRoot) RETURN c", nil)
+	result, err := session.Run(ctx, fmt.Sprintf("MATCH (c:Category:%s) RETURN c", rootType), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -187,7 +194,7 @@ func (gdb *GraphDatabase) GetTemplateRoots(ctx context.Context) (map[string]*Cat
 	}
 
 	// Get all the filters that are in the subtree of each category with no parent
-	result, err = session.Run(ctx, fmt.Sprintf(subTreeFiltersQuery, ":TemplateRoot", "true"), nil)
+	result, err = session.Run(ctx, fmt.Sprintf(subTreeFiltersQuery, fmt.Sprintf(":%s", rootType), "true"), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -237,7 +244,7 @@ func (gdb *GraphDatabase) GetTemplateRoots(ctx context.Context) (map[string]*Cat
 	}
 
 	// Get all the subcategories of each category with no parent
-	result, err = session.Run(ctx, "MATCH (c:Category)-[:INCLUDES]->(sub:Category) WHERE NOT (:Category)-[:INCLUDES]->(c) RETURN DISTINCT c, sub", nil)
+	result, err = session.Run(ctx, fmt.Sprintf("MATCH (c:Category:%s)-[:INCLUDES]->(sub:Category) RETURN DISTINCT c, sub", rootType), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -278,14 +285,14 @@ func (gdb *GraphDatabase) GetTemplateRoots(ctx context.Context) (map[string]*Cat
 	return categories, nil
 }
 
-func (gdb *GraphDatabase) GetTemplateRootByName(ctx context.Context, name string) (*CategoryNode, error) {
+func (gdb *GraphDatabase) GetCategoryRootByName(ctx context.Context, rootType CategoryRootType, name string) (*CategoryNode, error) {
 	session := gdb.Driver.NewSession(ctx, neo4j.SessionConfig{AccessMode: neo4j.AccessModeRead})
 	defer session.Close(ctx)
 
 	var category *CategoryNode
 
 	// Get the category
-	result, err := session.Run(ctx, "MATCH (c:Category:TemplateRoot{name: $name}) RETURN c", map[string]interface{}{
+	result, err := session.Run(ctx, fmt.Sprintf("MATCH (c:Category:%s{name: $name}) RETURN c", rootType), map[string]interface{}{
 		"name": name,
 	})
 	if err != nil {
@@ -313,7 +320,7 @@ func (gdb *GraphDatabase) GetTemplateRootByName(ctx context.Context, name string
 	}
 
 	// Get all the filters that are in the subtree of the category
-	result, err = session.Run(ctx, fmt.Sprintf(subTreeFiltersQuery, "TemplateRoot{name: $name}", "true"), map[string]interface{}{
+	result, err = session.Run(ctx, fmt.Sprintf(subTreeFiltersQuery, fmt.Sprintf(":%s{name: $name}", rootType), "true"), map[string]interface{}{
 		"name": name,
 	})
 	if err != nil {
@@ -349,7 +356,7 @@ func (gdb *GraphDatabase) GetTemplateRootByName(ctx context.Context, name string
 	}
 
 	// Get all the subcategories of the category
-	result, err = session.Run(ctx, "MATCH (c:Category:TemplateRoot{name: $name})-[:INCLUDES]->(sub:Category) RETURN DISTINCT c, sub", map[string]interface{}{
+	result, err = session.Run(ctx, fmt.Sprintf("MATCH (c:Category:%s{name: $name})-[:INCLUDES]->(sub:Category) RETURN DISTINCT c, sub", rootType), map[string]interface{}{
 		"name": name,
 	})
 	if err != nil {
