@@ -69,7 +69,8 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	v1.GET("/resources/categories", httpserver.AuthorizeHandler(h.GetCategories, api3.ViewerRole))
 	v2.GET("/resources/categories", httpserver.AuthorizeHandler(h.GetCategoriesV2, api3.ViewerRole))
 	v2.GET("/resources/category", httpserver.AuthorizeHandler(h.GetCategoryNode, api3.ViewerRole))
-	v2.GET("/resources/templates", httpserver.AuthorizeHandler(h.GetRootTemplates, api3.ViewerRole))
+	v2.GET("/resources/rootTemplates", httpserver.AuthorizeHandler(h.GetRootTemplates, api3.ViewerRole))
+	v2.GET("/resources/rootCloudProviders", httpserver.AuthorizeHandler(h.GetRootCloudProviders, api3.ViewerRole))
 	v1.GET("/accounts/resource/count", httpserver.AuthorizeHandler(h.GetAccountsResourceCount, api3.ViewerRole))
 
 	v1.GET("/resources/distribution", httpserver.AuthorizeHandler(h.GetResourceDistribution, api3.ViewerRole))
@@ -860,12 +861,29 @@ func (h *HttpHandler) GetCategoryNode(ctx echo.Context) error {
 // @Param   provider query    string false "Provider"
 // @Param   sourceId query    string false "SourceID"
 // @Success 200      {object} []api.CategoryNode
-// @Router  /inventory/api/v2/resources/templates [get]
+// @Router  /inventory/api/v2/resources/rootTemplates [get]
 func (h *HttpHandler) GetRootTemplates(ctx echo.Context) error {
+	return GetCategoryRoots(ctx, h, RootTypeTemplateRoot)
+}
+
+// GetRootCloudProviders godoc
+// @Summary Return root providers' info, info includes category name, category id, subcategories names and ids and number of resources
+// @Tags    inventory
+// @Accept  json
+// @Produce json
+// @Param   provider query    string false "Provider"
+// @Param   sourceId query    string false "SourceID"
+// @Success 200      {object} []api.CategoryNode
+// @Router  /inventory/api/v2/resources/rootCloudProviders [get]
+func (h *HttpHandler) GetRootCloudProviders(ctx echo.Context) error {
+	return GetCategoryRoots(ctx, h, RootTypeCloudProviderRoot)
+}
+
+func GetCategoryRoots(ctx echo.Context, h *HttpHandler, rootType CategoryRootType) error {
 	provider := ctx.QueryParam("provider")
 	sourceID := ctx.QueryParam("sourceId")
 
-	templateRoots, err := h.graphDb.GetTemplateRoots(ctx.Request().Context())
+	templateRoots, err := h.graphDb.GetCategoryRoots(ctx.Request().Context(), rootType)
 	if err != nil {
 		return err
 	}
