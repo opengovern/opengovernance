@@ -180,6 +180,7 @@ func (db Database) CreateOrUpdateMetric(metric Metric) error {
 func (db Database) FetchConnectionMetricResourceTypeSummery(sourceID string, resourceTypes []string) ([]MetricResourceTypeSummary, error) {
 	var s []MetricResourceTypeSummary
 	tx := db.orm.
+		Model(&Metric{}).
 		Select("resource_type, sum(count) as count, sum(last_day_count) as last_day_count, sum(last_week_count) as last_week_count, sum(last_quarter_count) as last_quarter_count, sum(last_year_count) as last_year_count").
 		Where("source_id = ?", sourceID).
 		Where("resource_type in ?", resourceTypes).
@@ -213,6 +214,7 @@ func (db Database) FetchConnectionAllMetrics(sourceID string) ([]Metric, error) 
 func (db Database) FetchProviderMetricResourceTypeSummery(provider source.Type, resourceTypes []string) ([]MetricResourceTypeSummary, error) {
 	var s []MetricResourceTypeSummary
 	tx := db.orm.
+		Model(&Metric{}).
 		Select("resource_type, sum(count) as count, sum(last_day_count) as last_day_count, sum(last_week_count) as last_week_count, sum(last_quarter_count) as last_quarter_count, sum(last_year_count) as last_year_count").
 		Where("provider = ?", provider).
 		Where("resource_type in ?", resourceTypes).
@@ -246,6 +248,7 @@ func (db Database) FetchProviderMetrics(provider source.Type, resourceTypes []st
 func (db Database) FetchMetricResourceTypeSummery(resourceTypes []string) ([]MetricResourceTypeSummary, error) {
 	var s []MetricResourceTypeSummary
 	tx := db.orm.
+		Model(&Metric{}).
 		Select("resource_type, sum(count) as count, sum(last_day_count) as last_day_count, sum(last_week_count) as last_week_count, sum(last_quarter_count) as last_quarter_count, sum(last_year_count) as last_year_count").
 		Where("resource_type in ?", resourceTypes).
 		Group("resource_type").
