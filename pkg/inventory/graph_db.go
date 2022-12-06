@@ -13,6 +13,8 @@ import (
 type CategoryRootType string
 
 const (
+	DefaultTemplateRootName = "default"
+
 	RootTypeTemplateRoot      CategoryRootType = "TemplateRoot"
 	RootTypeCloudProviderRoot CategoryRootType = "CloudProviderRoot"
 )
@@ -88,6 +90,7 @@ type FilterCloudResourceTypeNode struct {
 	ResourceType  string      `json:"resource_type"`
 	ResourceName  string      `json:"resource_name"`
 	ServiceCode   string      `json:"service_code"`
+	Importance    string      `json:"importance"`
 }
 
 func (f FilterCloudResourceTypeNode) GetFilterType() FilterType {
@@ -105,9 +108,13 @@ var (
 const (
 	subTreeFiltersQuery = `
 MATCH (c:Category%s) WHERE %s CALL {
-  WITH c MATCH (c)-[:INCLUDES*]->(:Category)-[:USES]->(f:Filter) RETURN DISTINCT f, false as isDirectChild
+  WITH c MATCH (c)-[:INCLUDES*]->(:Category)-[:USES]->(f:Filter)
+  WHERE (NOT HAS(c.importance) OR 'all' IN $importance OR c.importance IN $importance)
+  RETURN DISTINCT f, false as isDirectChild
   UNION 
-  WITH c MATCH (c)-[:USES]->(f:Filter) RETURN DISTINCT f, true as isDirectChild }
+  WITH c MATCH (c)-[:USES]->(f:Filter)
+  WHERE (NOT HAS(c.importance) OR 'all' IN $importance OR c.importance IN $importance)
+  RETURN DISTINCT f, true as isDirectChild }
 RETURN DISTINCT c, f, MAX(isDirectChild) AS isDirectChild
 `
 )
@@ -132,6 +139,10 @@ func getFilterFromNode(node neo4j.Node) (Filter, error) {
 			if !ok {
 				return nil, ErrPropertyNotFound
 			}
+			importance, ok := node.Props["importance"]
+			if !ok {
+				return nil, ErrPropertyNotFound
+			}
 
 			return &FilterCloudResourceTypeNode{
 				Node: Node{
@@ -141,6 +152,7 @@ func getFilterFromNode(node neo4j.Node) (Filter, error) {
 				ResourceType:  strings.ToLower(resourceType.(string)),
 				ResourceName:  resourceName.(string),
 				ServiceCode:   strings.ToLower(serviceCode.(string)),
+				Importance:    strings.ToLower(importance.(string)),
 			}, nil
 		}
 	}
@@ -165,7 +177,7 @@ func getCategoryFromNode(node neo4j.Node) (*CategoryNode, error) {
 	}, nil
 }
 
-func (gdb *GraphDatabase) GetCategoryRoots(ctx context.Context, rootType CategoryRootType) (map[string]*CategoryNode, error) {
+func (gdb *GraphDatabase) GetCategoryRoots(ctx context.Context, rootType CategoryRootType, importance []string) (map[string]*CategoryNode, error) {
 	session := gdb.Driver.NewSession(ctx, neo4j.SessionConfig{AccessMode: neo4j.AccessModeRead})
 	defer session.Close(ctx)
 
@@ -194,7 +206,9 @@ func (gdb *GraphDatabase) GetCategoryRoots(ctx context.Context, rootType Categor
 	}
 
 	// Get all the filters that are in the subtree of each category with no parent
-	result, err = session.Run(ctx, fmt.Sprintf(subTreeFiltersQuery, fmt.Sprintf(":%s", rootType), "true"), nil)
+	result, err = session.Run(ctx, fmt.Sprintf(subTreeFiltersQuery, fmt.Sprintf(":%s", rootType), "true"), map[string]any{
+		"importance": importance,
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -285,7 +299,7 @@ func (gdb *GraphDatabase) GetCategoryRoots(ctx context.Context, rootType Categor
 	return categories, nil
 }
 
-func (gdb *GraphDatabase) GetCategoryRootByName(ctx context.Context, rootType CategoryRootType, name string) (*CategoryNode, error) {
+func (gdb *GraphDatabase) GetCategoryRootByName(ctx context.Context, rootType CategoryRootType, name string, importance []string) (*CategoryNode, error) {
 	session := gdb.Driver.NewSession(ctx, neo4j.SessionConfig{AccessMode: neo4j.AccessModeRead})
 	defer session.Close(ctx)
 
@@ -321,7 +335,8 @@ func (gdb *GraphDatabase) GetCategoryRootByName(ctx context.Context, rootType Ca
 
 	// Get all the filters that are in the subtree of the category
 	result, err = session.Run(ctx, fmt.Sprintf(subTreeFiltersQuery, fmt.Sprintf(":%s{name: $name}", rootType), "true"), map[string]interface{}{
-		"name": name,
+		"name":       name,
+		"importance": importance,
 	})
 	if err != nil {
 		return nil, err
@@ -382,7 +397,7 @@ func (gdb *GraphDatabase) GetCategoryRootByName(ctx context.Context, rootType Ca
 	return category, nil
 }
 
-func (gdb *GraphDatabase) GetCategory(ctx context.Context, elementID string) (*CategoryNode, error) {
+func (gdb *GraphDatabase) GetCategory(ctx context.Context, elementID string, importance []string) (*CategoryNode, error) {
 	session := gdb.Driver.NewSession(ctx, neo4j.SessionConfig{AccessMode: neo4j.AccessModeRead})
 	defer session.Close(ctx)
 
@@ -418,7 +433,8 @@ func (gdb *GraphDatabase) GetCategory(ctx context.Context, elementID string) (*C
 
 	// Get all the filters that are in the subtree of the category
 	result, err = session.Run(ctx, fmt.Sprintf(subTreeFiltersQuery, "", "elementId(c) = $elementID"), map[string]interface{}{
-		"elementID": elementID,
+		"elementID":  elementID,
+		"importance": importance,
 	})
 	if err != nil {
 		return nil, err
