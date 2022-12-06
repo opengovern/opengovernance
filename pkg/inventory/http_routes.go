@@ -181,7 +181,8 @@ func (h *HttpHandler) GetResourceGrowthTrend(ctx echo.Context) error {
 // @Param   sourceId   query    string false "SourceID"
 // @Param   provider   query    string false "Provider"
 // @Param   timeWindow query    string false "Time Window" Enums(24h,1w,3m,1y,max)
-// @Param   category   query    string false "Category"
+// @Param   category   query    string true "Category"
+// @Param   importance query    string false "Filter filters by importance if they have it (array format is supported with , separator | 'all' is also supported)"
 // @Success 200        {object} []api.CategoryTrend
 // @Router  /inventory/api/v2/resources/trend [get]
 func (h *HttpHandler) GetResourceGrowthTrendV2(ctx echo.Context) error {
@@ -201,14 +202,41 @@ func (h *HttpHandler) GetResourceGrowthTrendV2(ctx echo.Context) error {
 	}
 	fromTime = time.Now().Add(-1 * tw).UnixMilli()
 
+	importance := strings.ToLower(ctx.QueryParam("importance"))
+	if importance == "" {
+		importance = "critical"
+	}
+	importanceArray := strings.Split(importance, ",")
+
 	category := ctx.QueryParam("category")
-	cats, err := h.db.GetSubCategories(category)
-	if err != nil {
-		return err
+	var root *CategoryNode
+	if category == "" {
+		root, err = h.graphDb.GetCategoryRootByName(ctx.Request().Context(), RootTypeTemplateRoot, DefaultTemplateRootName, importanceArray)
+		if err != nil {
+			return err
+		}
+		return echo.NewHTTPError(http.StatusBadRequest, "category is required")
+	} else {
+		root, err = h.graphDb.GetCategory(ctx.Request().Context(), category, importanceArray)
+		if err != nil {
+			return err
+		}
 	}
 	var resourceTypes []string
-	for _, cat := range cats {
-		resourceTypes = append(resourceTypes, cloudservice.ResourceListByServiceName(cat.CloudService)...)
+	for _, f := range root.SubTreeFilters {
+		switch f.GetFilterType() {
+		case FilterTypeCloudResourceType:
+			filter := f.(*FilterCloudResourceTypeNode)
+			resourceTypes = append(resourceTypes, filter.ResourceType)
+		}
+	}
+
+	for i, sc := range root.Subcategories {
+		cat, err := h.graphDb.GetCategory(ctx.Request().Context(), sc.ElementID, importanceArray)
+		if err != nil {
+			return err
+		}
+		root.Subcategories[i] = *cat
 	}
 
 	sortMap := []map[string]interface{}{
@@ -224,19 +252,24 @@ func (h *HttpHandler) GetResourceGrowthTrendV2(ctx echo.Context) error {
 			return err
 		}
 		for _, hit := range hits {
-			hitService := cloudservice.ServiceNameByResourceType(hit.ResourceType)
-			for _, cat := range cats {
-				if hitService != cat.CloudService {
-					continue
-				}
+			for _, cat := range root.Subcategories {
+				for _, f := range cat.SubTreeFilters {
+					switch f.GetFilterType() {
+					case FilterTypeCloudResourceType:
+						filter := f.(*FilterCloudResourceTypeNode)
+						if hit.ResourceType != filter.ResourceType {
+							continue
+						}
 
-				v := trends[cat.SubCategory]
-				v.Trend = append(v.Trend, api.TrendDataPoint{
-					Timestamp: hit.DescribedAt,
-					Value:     int64(hit.ResourceCount),
-				})
-				v.Name = cat.SubCategory
-				trends[cat.SubCategory] = v
+						v := trends[cat.ElementID]
+						v.Trend = append(v.Trend, api.TrendDataPoint{
+							Timestamp: hit.DescribedAt,
+							Value:     int64(hit.ResourceCount),
+						})
+						v.Name = cat.Name
+						trends[cat.ElementID] = v
+					}
+				}
 			}
 		}
 	} else {
@@ -245,19 +278,24 @@ func (h *HttpHandler) GetResourceGrowthTrendV2(ctx echo.Context) error {
 			return err
 		}
 		for _, hit := range hits {
-			hitService := cloudservice.ServiceNameByResourceType(hit.ResourceType)
-			for _, cat := range cats {
-				if hitService != cat.CloudService {
-					continue
-				}
+			for _, cat := range root.Subcategories {
+				for _, f := range cat.SubTreeFilters {
+					switch f.GetFilterType() {
+					case FilterTypeCloudResourceType:
+						filter := f.(*FilterCloudResourceTypeNode)
+						if hit.ResourceType != filter.ResourceType {
+							continue
+						}
 
-				v := trends[cat.SubCategory]
-				v.Trend = append(v.Trend, api.TrendDataPoint{
-					Timestamp: hit.DescribedAt,
-					Value:     int64(hit.ResourceCount),
-				})
-				v.Name = cat.SubCategory
-				trends[cat.SubCategory] = v
+						v := trends[cat.ElementID]
+						v.Trend = append(v.Trend, api.TrendDataPoint{
+							Timestamp: hit.DescribedAt,
+							Value:     int64(hit.ResourceCount),
+						})
+						v.Name = cat.Name
+						trends[cat.ElementID] = v
+					}
+				}
 			}
 		}
 	}
@@ -791,6 +829,7 @@ func (h *HttpHandler) GetCategoriesV2(ctx echo.Context) error {
 // @Param   depth    query    int    true  "Depth of rendering subcategories"
 // @Param   provider query    string false "Provider"
 // @Param   sourceId query    string false "SourceID"
+// @Param   importance query  string false "Filter filters by importance if they have it (array format is supported with , separator | 'all' is also supported)"
 // @Success 200      {object} api.CategoryNode
 // @Router  /inventory/api/v2/resources/category [get]
 func (h *HttpHandler) GetCategoryNode(ctx echo.Context) error {
@@ -805,8 +844,13 @@ func (h *HttpHandler) GetCategoryNode(ctx echo.Context) error {
 	}
 	provider := ctx.QueryParam("provider")
 	sourceID := ctx.QueryParam("sourceId")
+	importance := strings.ToLower(ctx.QueryParam("importance"))
+	if importance == "" {
+		importance = "critical"
+	}
+	importanceArray := strings.Split(importance, ",")
 
-	rootNode, err := h.graphDb.GetCategory(ctx.Request().Context(), category)
+	rootNode, err := h.graphDb.GetCategory(ctx.Request().Context(), category, importanceArray)
 	if err != nil {
 		return err
 	}
@@ -844,6 +888,7 @@ func (h *HttpHandler) GetCategoryNode(ctx echo.Context) error {
 		rootNode,
 		metricIndexed,
 		depth,
+		importanceArray,
 		map[string]api.CategoryNode{},
 		map[string]api.Filter{})
 	if err != nil {
@@ -860,6 +905,7 @@ func (h *HttpHandler) GetCategoryNode(ctx echo.Context) error {
 // @Produce json
 // @Param   provider query    string false "Provider"
 // @Param   sourceId query    string false "SourceID"
+// @Param   importance query  string false "Filter filters by importance if they have it (array format is supported with , separator | 'all' is also supported)"
 // @Success 200      {object} []api.CategoryNode
 // @Router  /inventory/api/v2/resources/rootTemplates [get]
 func (h *HttpHandler) GetRootTemplates(ctx echo.Context) error {
@@ -873,6 +919,7 @@ func (h *HttpHandler) GetRootTemplates(ctx echo.Context) error {
 // @Produce json
 // @Param   provider query    string false "Provider"
 // @Param   sourceId query    string false "SourceID"
+// @Param   importance query  string false "Filter filters by importance if they have it (array format is supported with , separator | 'all' is also supported)"
 // @Success 200      {object} []api.CategoryNode
 // @Router  /inventory/api/v2/resources/rootCloudProviders [get]
 func (h *HttpHandler) GetRootCloudProviders(ctx echo.Context) error {
@@ -882,8 +929,13 @@ func (h *HttpHandler) GetRootCloudProviders(ctx echo.Context) error {
 func GetCategoryRoots(ctx echo.Context, h *HttpHandler, rootType CategoryRootType) error {
 	provider := ctx.QueryParam("provider")
 	sourceID := ctx.QueryParam("sourceId")
+	importance := strings.ToLower(ctx.QueryParam("importance"))
+	if importance == "" {
+		importance = "critical"
+	}
+	importanceArray := strings.Split(importance, ",")
 
-	templateRoots, err := h.graphDb.GetCategoryRoots(ctx.Request().Context(), rootType)
+	templateRoots, err := h.graphDb.GetCategoryRoots(ctx.Request().Context(), rootType, importanceArray)
 	if err != nil {
 		return err
 	}

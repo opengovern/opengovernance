@@ -345,6 +345,7 @@ func RenderCategoryDFS(ctx context.Context,
 	rootNode *CategoryNode,
 	metrics map[string]MetricResourceTypeSummary,
 	depth int,
+	importanceArray []string,
 	nodeCacheMap map[string]api.CategoryNode,
 	filterCacheMap map[string]api.Filter) (*api.CategoryNode, error) {
 	if depth <= 0 {
@@ -356,12 +357,12 @@ func RenderCategoryDFS(ctx context.Context,
 		if v, ok := nodeCacheMap[c.CategoryID]; ok {
 			result.Subcategories[i] = v
 		} else {
-			subCategoryNode, err := graphDb.GetCategory(ctx, c.CategoryID)
+			subCategoryNode, err := graphDb.GetCategory(ctx, c.CategoryID, importanceArray)
 			if err != nil {
 				return nil, err
 			}
 
-			subResult, err := RenderCategoryDFS(ctx, graphDb, subCategoryNode, metrics, depth-1, nodeCacheMap, filterCacheMap)
+			subResult, err := RenderCategoryDFS(ctx, graphDb, subCategoryNode, metrics, depth-1, importanceArray, nodeCacheMap, filterCacheMap)
 			if err != nil {
 				return nil, err
 			}
