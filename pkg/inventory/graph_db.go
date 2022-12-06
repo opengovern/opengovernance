@@ -109,11 +109,11 @@ const (
 	subTreeFiltersQuery = `
 MATCH (c:Category%s) WHERE %s CALL {
   WITH c MATCH (c)-[:INCLUDES*]->(:Category)-[:USES]->(f:Filter)
-  WHERE (NOT HAS(c.importance) OR 'all' IN $importance OR c.importance IN $importance)
+  WHERE (NOT EXISTS(c.importance) OR 'all' IN $importance OR c.importance IN $importance)
   RETURN DISTINCT f, false as isDirectChild
   UNION 
   WITH c MATCH (c)-[:USES]->(f:Filter)
-  WHERE (NOT HAS(c.importance) OR 'all' IN $importance OR c.importance IN $importance)
+  WHERE (NOT EXISTS(c.importance) OR 'all' IN $importance OR c.importance IN $importance)
   RETURN DISTINCT f, true as isDirectChild }
 RETURN DISTINCT c, f, MAX(isDirectChild) AS isDirectChild
 `
