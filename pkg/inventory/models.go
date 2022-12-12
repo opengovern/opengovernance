@@ -39,15 +39,6 @@ type Metric struct {
 	Count            int
 }
 
-type MetricHistory struct {
-	SourceID      string `gorm:"primaryKey"`
-	Provider      string `gorm:"index;index:provider_resource_type_date_idx"`
-	ResourceType  string `gorm:"primaryKey;index:provider_resource_type_date_idx"`
-	Date          int64  `gorm:"primaryKey;index:,sort:desc;index:provider_resource_type_date_idx"`
-	ScheduleJobID uint
-	Count         int
-}
-
 type MetricResourceTypeSummary struct {
 	ResourceType     string
 	Count            int

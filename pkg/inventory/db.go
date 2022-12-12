@@ -21,7 +21,6 @@ func (db Database) Initialize() error {
 		&SmartQuery{},
 		&Category{},
 		&Metric{},
-		&MetricHistory{},
 	)
 	if err != nil {
 		return err
@@ -176,13 +175,6 @@ func (db Database) CreateOrUpdateMetric(metric Metric) error {
 		Columns:   []clause.Column{{Name: "source_id"}, {Name: "resource_type"}},
 		DoUpdates: clause.AssignmentColumns([]string{"schedule_job_id", "count", "last_day_count", "last_week_count", "last_quarter_count", "last_year_count"}),
 	}).Create(metric).Error
-}
-
-func (db Database) CreateOrIgnoreMetricHistory(metricHistory MetricHistory) error {
-	return db.orm.Clauses(clause.OnConflict{
-		Columns:   []clause.Column{{Name: "source_id"}, {Name: "resource_type"}, {Name: "date"}},
-		DoNothing: true,
-	}).Create(metricHistory).Error
 }
 
 func (db Database) FetchConnectionMetricResourceTypeSummery(sourceID string, resourceTypes []string) ([]MetricResourceTypeSummary, error) {
