@@ -215,7 +215,6 @@ func (h *HttpHandler) GetResourceGrowthTrendV2(ctx echo.Context) error {
 		if err != nil {
 			return err
 		}
-		return echo.NewHTTPError(http.StatusBadRequest, "category is required")
 	} else {
 		root, err = h.graphDb.GetCategory(ctx.Request().Context(), category, importanceArray)
 		if err != nil {
