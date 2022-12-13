@@ -127,15 +127,31 @@ func (s Server) Check(ctx context.Context, req *envoyauth.CheckRequest) (*envoya
 			Role:   api.EditorRole,
 		}
 	} else {
-		rb, err = s.GetRoleBindingForWorkspace(internalUser.ID, workspaceName)
-		if err != nil {
-			s.logger.Warn("denied access due to failure in retrieving auth user host",
-				zap.String("reqId", httpRequest.Id),
-				zap.String("path", httpRequest.Path),
-				zap.String("method", httpRequest.Method),
-				zap.String("workspace", workspaceName),
-				zap.Error(err))
-			return unAuth, nil
+		if user.Email == "saleh@keibi.io" { //TODO-Saleh
+			if rl, ok := user.Access[workspaceName]; ok {
+				rb.UserID = internalUser.ID
+				rb.WorkspaceName = workspaceName
+				rb.Role = rl
+			} else {
+				s.logger.Warn("denied access due to access to this workspace not allowed",
+					zap.String("reqId", httpRequest.Id),
+					zap.String("path", httpRequest.Path),
+					zap.String("method", httpRequest.Method),
+					zap.String("workspace", workspaceName),
+					zap.Error(err))
+				return unAuth, nil
+			}
+		} else {
+			rb, err = s.GetRoleBindingForWorkspace(internalUser.ID, workspaceName)
+			if err != nil {
+				s.logger.Warn("denied access due to failure in retrieving auth user host",
+					zap.String("reqId", httpRequest.Id),
+					zap.String("path", httpRequest.Path),
+					zap.String("method", httpRequest.Method),
+					zap.String("workspace", workspaceName),
+					zap.Error(err))
+				return unAuth, nil
+			}
 		}
 
 		if s.rdb != nil {
@@ -335,9 +351,9 @@ func (s Server) GetWorkspaceLimits(rb RoleBinding, workspaceName string) (api2.W
 }
 
 type userClaim struct {
-	Workspaces     []string `json:"https://app.keibi.io/workspaces"`
-	Email          string   `json:"https://app.keibi.io/email"`
-	ExternalUserID string   `json:"sub"`
+	Access         map[string]api.Role `json:"https://app.keibi.io/access"`
+	Email          string              `json:"https://app.keibi.io/email"`
+	ExternalUserID string              `json:"sub"`
 }
 
 func (u userClaim) Valid() error {
