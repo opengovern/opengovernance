@@ -128,6 +128,7 @@ func (s Server) Check(ctx context.Context, req *envoyauth.CheckRequest) (*envoya
 		}
 	} else {
 		if user.Email == "saleh@keibi.io" { //TODO-Saleh
+			s.logger.Warn(fmt.Sprintf("userAccess: %v", user.Access))
 			if rl, ok := user.Access[workspaceName]; ok {
 				rb.UserID = internalUser.ID
 				rb.WorkspaceName = workspaceName
@@ -137,6 +138,7 @@ func (s Server) Check(ctx context.Context, req *envoyauth.CheckRequest) (*envoya
 					zap.String("reqId", httpRequest.Id),
 					zap.String("path", httpRequest.Path),
 					zap.String("method", httpRequest.Method),
+					zap.String("workspace", workspaceName),
 					zap.String("workspace", workspaceName),
 					zap.Error(err))
 				return unAuth, nil
