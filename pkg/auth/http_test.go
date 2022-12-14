@@ -92,21 +92,18 @@ func (s *HTTPRouteSuite) TestCreateAndGetRoleBindings() {
 	cases := []RoleBinding{
 		{
 			UserID:        uuid.New(),
-			Email:         "user@keibi.io",
 			WorkspaceName: "workspace1",
 			Role:          api.AdminRole,
 			AssignedAt:    time.Now(),
 		},
 		{
 			UserID:        uuid.New(),
-			Email:         "user2@keibi.io",
 			WorkspaceName: "workspace2",
 			Role:          api.EditorRole,
 			AssignedAt:    time.Now(),
 		},
 		{
 			UserID:        uuid.New(),
-			Email:         "user3@keibi.io",
 			WorkspaceName: "workspace3",
 			Role:          api.ViewerRole,
 			AssignedAt:    time.Now(),
@@ -400,7 +397,7 @@ func (s *HTTPRouteSuite) TestInvite_AcceptInvitationExists() {
 	_, err = s.db.GetInvitationByID(inv.ID)
 	require.ErrorIs(err, gorm.ErrRecordNotFound)
 
-	rb, err := s.db.GetRoleBindingForWorkspace(user.ExternalID, inv.WorkspaceName)
+	rb, err := s.db.GetRoleBindingForWorkspace(user.ID, inv.WorkspaceName)
 	require.NoError(err, "get role binding")
 
 	assert.Equal(user.ID, rb.UserID)
@@ -430,7 +427,7 @@ func (s *HTTPRouteSuite) TestInvite_AcceptInvitationExpired() {
 	require.NoError(err, "invite user")
 	require.Equal(http.StatusBadRequest, recorder.Result().StatusCode, mustRead(recorder.Result().Body))
 
-	_, err = s.db.GetRoleBindingForWorkspace(user.ExternalID, inv.WorkspaceName)
+	_, err = s.db.GetRoleBindingForWorkspace(user.ID, inv.WorkspaceName)
 	require.ErrorIs(err, gorm.ErrRecordNotFound)
 }
 
