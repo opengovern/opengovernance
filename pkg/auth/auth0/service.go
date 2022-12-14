@@ -44,7 +44,7 @@ func (a *Service) fillToken() error {
 	}
 
 	if res.StatusCode != http.StatusOK {
-		return fmt.Errorf("invalid status code: %d", res.StatusCode)
+		return fmt.Errorf("[fillToken] invalid status code: %d", res.StatusCode)
 	}
 
 	r, err := ioutil.ReadAll(res.Body)
@@ -75,7 +75,7 @@ func (a *Service) GetUser(userId string) (*GetUserResponse, error) {
 	req.Header.Add("Authorization", "Bearer "+a.token)
 	res, err := http.DefaultClient.Do(req)
 	if res.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("invalid status code: %d", res.StatusCode)
+		return nil, fmt.Errorf("[GetUser] invalid status code: %d", res.StatusCode)
 	}
 
 	r, err := ioutil.ReadAll(res.Body)
