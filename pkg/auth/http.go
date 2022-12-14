@@ -128,9 +128,9 @@ func (r *httpRoutes) GetRoleBindings(ctx echo.Context) error {
 	}
 
 	usr, err := r.auth0Service.GetUser(user.ExternalID)
-	if err != nil {
-		return err
-	}
+	//if err != nil {
+	//	return err
+	//}
 
 	rbs, err := r.db.GetRoleBindingsOfUser(httpserver.GetUserID(ctx))
 	if err != nil {
@@ -146,11 +146,13 @@ func (r *httpRoutes) GetRoleBindings(ctx echo.Context) error {
 		})
 	}
 
-	for wsName, role := range usr.UserMetadata.Access {
-		resp = append(resp, api.RoleBinding{
-			WorkspaceName: wsName,
-			Role:          role,
-		})
+	if usr != nil {
+		for wsName, role := range usr.UserMetadata.Access {
+			resp = append(resp, api.RoleBinding{
+				WorkspaceName: wsName,
+				Role:          role,
+			})
+		}
 	}
 	return ctx.JSON(http.StatusOK, resp)
 }
