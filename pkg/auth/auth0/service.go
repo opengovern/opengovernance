@@ -26,11 +26,11 @@ func New(domain, clientID, clientSecret string) *Service {
 }
 
 func (a *Service) fillToken() error {
-	url := fmt.Sprintf("https://%s/oauth/token", a.domain)
+	url := fmt.Sprintf("%s/oauth/token", a.domain)
 	req := TokenRequest{
 		ClientId:     a.clientID,
 		ClientSecret: a.clientSecret,
-		Audience:     fmt.Sprintf("https://%s/api/v2/", a.domain),
+		Audience:     fmt.Sprintf("%s/api/v2/", a.domain),
 		GrantType:    "client_credentials",
 	}
 	b, err := json.Marshal(req)
@@ -67,7 +67,7 @@ func (a *Service) GetUser(userId string) (*GetUserResponse, error) {
 		return nil, err
 	}
 
-	url := fmt.Sprintf("https://%s/api/v2/users/%s", a.domain, userId)
+	url := fmt.Sprintf("%s/api/v2/users/%s", a.domain, userId)
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return nil, err
