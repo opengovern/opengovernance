@@ -118,7 +118,6 @@ func (s *ServerSuite) TestServer_Check() {
 
 	rb1 := RoleBinding{
 		UserID:        user1.ID,
-		Email:         user1.Email,
 		WorkspaceName: "workspace1",
 		Role:          api.AdminRole,
 		AssignedAt:    time.Now(),
@@ -126,7 +125,6 @@ func (s *ServerSuite) TestServer_Check() {
 
 	rb2 := RoleBinding{
 		UserID:        user2.ID,
-		Email:         user2.Email,
 		WorkspaceName: "workspace1",
 		Role:          api.ViewerRole,
 		AssignedAt:    time.Now(),
@@ -134,7 +132,6 @@ func (s *ServerSuite) TestServer_Check() {
 
 	rb3 := RoleBinding{
 		UserID:        user1.ID,
-		Email:         user1.Email,
 		WorkspaceName: "workspace2",
 		Role:          api.EditorRole,
 		AssignedAt:    time.Now(),
@@ -143,9 +140,9 @@ func (s *ServerSuite) TestServer_Check() {
 	require.NoError(server.db.CreateUser(&user1))
 	require.NoError(server.db.CreateUser(&user2))
 
-	require.NoError(server.db.CreateOrUpdateRoleBinding(&rb1), "create rolebinding 1", rb1.Email)
-	require.NoError(server.db.CreateOrUpdateRoleBinding(&rb2), "create rolebinding 2", rb2.Email)
-	require.NoError(server.db.CreateOrUpdateRoleBinding(&rb3), "create rolebinding 3", rb3.Email)
+	require.NoError(server.db.CreateOrUpdateRoleBinding(&rb1), "create rolebinding 1")
+	require.NoError(server.db.CreateOrUpdateRoleBinding(&rb2), "create rolebinding 2")
+	require.NoError(server.db.CreateOrUpdateRoleBinding(&rb3), "create rolebinding 3")
 	//
 	//server.extAuth.(*mocks.Provider).On("FetchUser", mock.Anything, "3").Return(extauth.AzureADUser{
 	//	ID:   "3",
@@ -255,7 +252,7 @@ func (s *ServerSuite) TestServer_Check() {
 	key := []byte("SecretYouShouldHide")
 	for i, tc := range tests {
 		claims := userClaim{
-			Workspaces:     []string{tc.workspace},
+			Access:         map[string]api.Role{tc.workspace: api.AdminRole},
 			Email:          tc.email,
 			ExternalUserID: strings.Split(tc.email, "@")[0],
 		}
