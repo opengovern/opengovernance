@@ -5,12 +5,13 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
-	"github.com/go-redis/cache/v8"
-	"github.com/go-redis/redis/v8"
 	"io/ioutil"
 	"net"
 	"os"
 	"time"
+
+	"github.com/go-redis/cache/v8"
+	"github.com/go-redis/redis/v8"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/auth/auth0"
 
