@@ -10,6 +10,8 @@ import (
 	"os"
 	"time"
 
+	"gitlab.com/keibiengine/keibi-engine/pkg/auth/auth0"
+
 	"github.com/go-redis/cache/v8"
 
 	"github.com/go-redis/redis/v8"
@@ -39,8 +41,9 @@ var (
 	mailSender     = os.Getenv("EMAIL_SENDER")
 	mailSenderName = os.Getenv("EMAIL_SENDER_NAME")
 
-	auth0Domain   = os.Getenv("AUTH0_DOMAIN")
-	auth0ClientID = os.Getenv("AUTH0_CLIENT_ID")
+	auth0Domain       = os.Getenv("AUTH0_DOMAIN")
+	auth0ClientID     = os.Getenv("AUTH0_CLIENT_ID")
+	auth0ClientSecret = os.Getenv("AUTH0_CLIENT_SECRET")
 
 	httpServerAddress  = os.Getenv("HTTP_ADDRESS")
 	inviteLinkTemplate = os.Getenv("INVITE_LINK_TEMPLATE")
@@ -133,6 +136,8 @@ func start(ctx context.Context) error {
 		LocalCache: cache.NewTinyLFU(10000, 5*time.Minute),
 	})
 
+	auth0Service := auth0.New(auth0Domain, auth0ClientID, auth0ClientSecret)
+
 	grpcServer := grpc.NewServer(grpc.Creds(creds))
 	envoyauth.RegisterAuthorizationServer(grpcServer, authServer)
 
@@ -153,6 +158,7 @@ func start(ctx context.Context) error {
 			emailService:       m,
 			inviteLinkTemplate: inviteLinkTemplate,
 			workspaceClient:    workspaceClient,
+			auth0Service:       auth0Service,
 		}
 		errors <- fmt.Errorf("http server: %w", httpserver.RegisterAndStart(logger, httpServerAddress, &routes))
 	}()

@@ -7,6 +7,8 @@ import (
 	"strings"
 	"time"
 
+	"gitlab.com/keibiengine/keibi-engine/pkg/auth/auth0"
+
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpclient"
 	"gitlab.com/keibiengine/keibi-engine/pkg/workspace/client"
 
@@ -29,6 +31,7 @@ type httpRoutes struct {
 	db                 Database
 	emailService       email.Service
 	workspaceClient    client.WorkspaceServiceClient
+	auth0Service       *auth0.Service
 	inviteLinkTemplate string
 }
 
@@ -119,6 +122,16 @@ func (r httpRoutes) PutRoleBinding(ctx echo.Context) error {
 // @Success     200 {object} api.GetRoleBindingsResponse
 // @Router      /auth/api/v1/user/role/bindings [get]
 func (r *httpRoutes) GetRoleBindings(ctx echo.Context) error {
+	user, err := r.db.GetUserByID(httpserver.GetUserID(ctx))
+	if err != nil {
+		return err
+	}
+
+	usr, err := r.auth0Service.GetUser(user.ExternalID)
+	if err != nil {
+		return err
+	}
+
 	rbs, err := r.db.GetRoleBindingsOfUser(httpserver.GetUserID(ctx))
 	if err != nil {
 		return err
@@ -133,6 +146,12 @@ func (r *httpRoutes) GetRoleBindings(ctx echo.Context) error {
 		})
 	}
 
+	for wsName, role := range usr.UserMetadata.Access {
+		resp = append(resp, api.RoleBinding{
+			WorkspaceName: wsName,
+			Role:          role,
+		})
+	}
 	return ctx.JSON(http.StatusOK, resp)
 }
 
