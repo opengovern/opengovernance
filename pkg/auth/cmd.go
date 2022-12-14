@@ -5,16 +5,14 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
+	"github.com/go-redis/cache/v8"
+	"github.com/go-redis/redis/v8"
 	"io/ioutil"
 	"net"
 	"os"
 	"time"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/auth/auth0"
-
-	"github.com/go-redis/cache/v8"
-
-	"github.com/go-redis/redis/v8"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/workspace/client"
 
@@ -44,6 +42,10 @@ var (
 	auth0Domain       = os.Getenv("AUTH0_DOMAIN")
 	auth0ClientID     = os.Getenv("AUTH0_CLIENT_ID")
 	auth0ClientSecret = os.Getenv("AUTH0_CLIENT_SECRET")
+
+	auth0ManageDomain       = os.Getenv("AUTH0_MANAGE_DOMAIN")
+	auth0ManageClientID     = os.Getenv("AUTH0_MANAGE_CLIENT_ID")
+	auth0ManageClientSecret = os.Getenv("AUTH0_MANAGE_CLIENT_SECRET")
 
 	httpServerAddress  = os.Getenv("HTTP_ADDRESS")
 	inviteLinkTemplate = os.Getenv("INVITE_LINK_TEMPLATE")
@@ -136,7 +138,7 @@ func start(ctx context.Context) error {
 		LocalCache: cache.NewTinyLFU(10000, 5*time.Minute),
 	})
 
-	auth0Service := auth0.New(auth0Domain, auth0ClientID, auth0ClientSecret)
+	auth0Service := auth0.New(auth0ManageDomain, auth0ManageClientID, auth0ManageClientSecret)
 
 	grpcServer := grpc.NewServer(grpc.Creds(creds))
 	envoyauth.RegisterAuthorizationServer(grpcServer, authServer)
