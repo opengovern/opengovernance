@@ -128,9 +128,10 @@ func (r *httpRoutes) GetRoleBindings(ctx echo.Context) error {
 	}
 
 	usr, err := r.auth0Service.GetUser(user.ExternalID)
-	//if err != nil {
-	//	return err
-	//}
+	if err != nil {
+		r.logger.Warn("failed to get user from auth0 due to", zap.Error(err))
+		//return err
+	}
 
 	rbs, err := r.db.GetRoleBindingsOfUser(httpserver.GetUserID(ctx))
 	if err != nil {
