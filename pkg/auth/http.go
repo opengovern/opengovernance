@@ -60,21 +60,21 @@ func bindValidate(ctx echo.Context, i interface{}) error {
 // @Param       role   body     string true "role"
 // @Router      /auth/api/v1/role/binding [put]
 func (r httpRoutes) PutRoleBinding(ctx echo.Context) error {
-	return echo.NewHTTPError(http.StatusNotImplemented)
-	//
-	//var req api.PutRoleBindingRequest
-	//if err := bindValidate(ctx, &req); err != nil {
-	//	return echo.NewHTTPError(http.StatusBadRequest, err)
-	//}
-	//
-	//// The WorkspaceManager service will call this API to set the AdminRole
-	//// for the admin user on behalf of him. Allow for the Admin to only set its
-	//// role to admin for that user case
-	//if httpserver.GetUserID(ctx) == req.UserID &&
-	//	req.Role != api.AdminRole {
-	//	return echo.NewHTTPError(http.StatusBadRequest, "admin user permission can't be modified by self")
-	//}
-	//
+
+	var req api.PutRoleBindingRequest
+	if err := bindValidate(ctx, &req); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err)
+	}
+
+	// The WorkspaceManager service will call this API to set the AdminRole
+	// for the admin user on behalf of him. Allow for the Admin to only set its
+	// role to admin for that user case
+	if httpserver.GetUserID(ctx) == req.UserID &&
+		req.Role != api.AdminRole {
+		return echo.NewHTTPError(http.StatusBadRequest, "admin user permission can't be modified by self")
+	}
+
+	//TODO-Saleh
 	//workspaceName := httpserver.GetWorkspaceName(ctx)
 	//count, err := r.db.CountRoleBindings(workspaceName)
 	//if err != nil {
@@ -104,8 +104,8 @@ func (r httpRoutes) PutRoleBinding(ctx echo.Context) error {
 	//if err != nil {
 	//	return err
 	//}
-	//
-	//return ctx.NoContent(http.StatusOK)
+
+	return ctx.NoContent(http.StatusOK)
 }
 
 // GetRoleBindings godoc
@@ -147,26 +147,25 @@ func (r *httpRoutes) GetRoleBindings(ctx echo.Context) error {
 // @Success     200 {object} api.GetWorkspaceRoleBindingResponse
 // @Router      /auth/api/v1/workspace/role/bindings [get]
 func (r *httpRoutes) GetWorkspaceRoleBindings(ctx echo.Context) error {
-	//rbs, err := r.db.GetRoleBindingsOfWorkspace(httpserver.GetWorkspaceName(ctx))
-	//if err != nil {
-	//	return err
-	//}
-	//
-	//resp := make(api.GetWorkspaceRoleBindingResponse, 0, len(rbs))
-	//for _, rb := range rbs {
-	//	u, err := r.db.GetUserByID(rb.UserID)
-	//	if err != nil {
-	//		return err
-	//	}
-	//
-	//	resp = append(resp, api.WorkspaceRoleBinding{
-	//		UserID:     rb.UserID,
-	//		Email:      u.Email,
-	//		Role:       rb.Role,
-	//		AssignedAt: rb.AssignedAt,
-	//	})
-	//}
+	workspaceName := httpserver.GetWorkspaceName(ctx)
+	users, err := r.auth0Service.SearchUsersByWorkspace(workspaceName)
+	if err != nil {
+		return err
+	}
+
 	var resp api.GetWorkspaceRoleBindingResponse
+	for _, u := range users {
+		usr, err := r.db.GetUserByExternalID(u.UserId)
+		if err != nil {
+			return err
+		}
+
+		resp = append(resp, api.WorkspaceRoleBinding{
+			UserID: usr.ID,
+			Email:  usr.Email,
+			Role:   u.AppMetadata.Access[workspaceName],
+		})
+	}
 	return ctx.JSON(http.StatusOK, resp)
 }
 

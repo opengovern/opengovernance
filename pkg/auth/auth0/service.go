@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	url2 "net/url"
 )
 
 type Service struct {
@@ -67,7 +68,7 @@ func (a *Service) fillToken() error {
 	return nil
 }
 
-func (a *Service) GetUser(userId string) (*GetUserResponse, error) {
+func (a *Service) GetUser(userId string) (*User, error) {
 	if err := a.fillToken(); err != nil {
 		return nil, err
 	}
@@ -88,11 +89,46 @@ func (a *Service) GetUser(userId string) (*GetUserResponse, error) {
 		return nil, err
 	}
 
-	var resp GetUserResponse
+	var resp User
 	err = json.Unmarshal(r, &resp)
 	if err != nil {
 		return nil, err
 	}
 
 	return &resp, nil
+}
+
+func (a *Service) SearchUsersByWorkspace(wsName string) ([]User, error) {
+	if err := a.fillToken(); err != nil {
+		return nil, err
+	}
+	url, err := url2.Parse(fmt.Sprintf("%s/api/v2/users", a.domain))
+	if err != nil {
+		return nil, err
+	}
+
+	url.Query().Add("search_engine", "v3")
+	url.Query().Add("q", "_exists_:app_metadata.access."+wsName)
+	req, err := http.NewRequest("GET", url.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Add("Authorization", "Bearer "+a.token)
+	res, err := http.DefaultClient.Do(req)
+	if res.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("[SearchUsersByWorkspace] invalid status code: %d", res.StatusCode)
+	}
+
+	r, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	var resp []User
+	err = json.Unmarshal(r, &resp)
+	if err != nil {
+		return nil, err
+	}
+
+	return resp, nil
 }
