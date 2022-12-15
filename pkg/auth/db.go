@@ -1,11 +1,8 @@
 package auth
 
 import (
-	"fmt"
-
 	"github.com/google/uuid"
 	"gorm.io/gorm"
-	"gorm.io/gorm/clause"
 )
 
 func NewDatabase(orm *gorm.DB) Database {
@@ -23,108 +20,10 @@ type Database struct {
 func (db Database) Initialize() error {
 	err := db.orm.AutoMigrate(
 		&User{},
-		&RoleBinding{},
 		&Invitation{},
 	)
 	if err != nil {
 		return err
-	}
-
-	return nil
-}
-
-// GetRoleBindingsOfUser returns the list of all role bindings for the user.
-func (db Database) GetRoleBindingsOfUser(userId uuid.UUID) ([]RoleBinding, error) {
-	var rbs []RoleBinding
-	tx := db.orm.
-		Model(&RoleBinding{}).
-		Where(RoleBinding{UserID: userId}).
-		Find(&rbs)
-	if tx.Error != nil {
-		return nil, tx.Error
-	}
-
-	return rbs, nil
-}
-
-// GetRoleBindingsOfWorkspace returns the list of all role bindings for the host.
-func (db Database) GetRoleBindingsOfWorkspace(workspaceName string) ([]RoleBinding, error) {
-	var rbs []RoleBinding
-	tx := db.orm.
-		Model(&RoleBinding{}).
-		Where(RoleBinding{WorkspaceName: workspaceName}).
-		Find(&rbs)
-	if tx.Error != nil {
-		return nil, tx.Error
-	}
-
-	return rbs, nil
-}
-
-// GetRoleBindingForWorkspace returns the role binding in the workspace for the given user.
-func (db Database) GetRoleBindingForWorkspace(userID uuid.UUID, workspaceName string) (RoleBinding, error) {
-	var rbs RoleBinding
-	tx := db.orm.
-		Model(&RoleBinding{}).
-		Where(RoleBinding{
-			UserID:        userID,
-			WorkspaceName: workspaceName,
-		}).
-		First(&rbs)
-	if tx.Error != nil {
-		return RoleBinding{}, tx.Error
-	}
-
-	return rbs, nil
-}
-
-// CreateOrUpdateRoleBinding updates the role binding for the specified userId.
-func (db Database) CreateOrUpdateRoleBinding(rb *RoleBinding) error {
-	tx := db.orm.
-		Model(&RoleBinding{}).
-		Where(RoleBinding{UserID: rb.UserID, WorkspaceName: rb.WorkspaceName}).
-		Clauses(clause.OnConflict{
-			Columns:   []clause.Column{{Name: "user_id"}, {Name: "workspace_name"}},
-			DoUpdates: clause.AssignmentColumns([]string{"role", "assigned_at"}),
-		}).
-		Create(rb)
-	if tx.Error != nil {
-		return tx.Error
-	} else if tx.RowsAffected != 1 {
-		return fmt.Errorf("update role binding: user with id %s doesn't exist", rb.UserID)
-	}
-
-	return nil
-}
-
-// UpdateRoleBinding updates the role binding for the specified userId.
-func (db Database) UpdateRoleBinding(rb *RoleBinding) error {
-	tx := db.orm.
-		Model(&RoleBinding{}).
-		Where(RoleBinding{UserID: rb.UserID, WorkspaceName: rb.WorkspaceName}).
-		Updates(map[string]interface{}{
-			"role":        rb.Role,
-			"assigned_at": rb.AssignedAt,
-		})
-	if tx.Error != nil {
-		return tx.Error
-	} else if tx.RowsAffected != 1 {
-		return fmt.Errorf("update role binding: user with id %s doesn't exist", rb.UserID)
-	}
-
-	return nil
-}
-
-func (db Database) CreateBindingIfNotExists(rb *RoleBinding) error {
-	tx := db.orm.
-		Model(&RoleBinding{}).
-		Where(RoleBinding{UserID: rb.UserID, WorkspaceName: rb.WorkspaceName}).
-		Clauses(clause.OnConflict{
-			DoNothing: true,
-		}).
-		Create(rb)
-	if tx.Error != nil {
-		return tx.Error
 	}
 
 	return nil
@@ -227,14 +126,4 @@ func (db Database) DeleteInvitation(invID uuid.UUID) error {
 	}
 
 	return nil
-}
-
-func (db Database) CountRoleBindings(workspaceName string) (int64, error) {
-	var count int64
-	tx := db.orm.Model(&RoleBinding{}).
-		Where(RoleBinding{WorkspaceName: workspaceName}).Count(&count)
-	if tx.Error != nil {
-		return 0, tx.Error
-	}
-	return count, nil
 }

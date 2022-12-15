@@ -10,8 +10,6 @@ import (
 
 	"github.com/labstack/echo/v4"
 
-	"github.com/google/uuid"
-
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpclient"
 
 	api2 "gitlab.com/keibiengine/keibi-engine/pkg/workspace/api"
@@ -127,32 +125,19 @@ func (s Server) Check(ctx context.Context, req *envoyauth.CheckRequest) (*envoya
 			Role:   api.EditorRole,
 		}
 	} else {
-		if user.Email == "saleh@keibi.io" { //TODO-Saleh
-			if rl, ok := user.Access[workspaceName]; ok {
-				rb.UserID = internalUser.ID
-				rb.WorkspaceName = workspaceName
-				rb.Role = rl
-			} else {
-				s.logger.Warn("denied access due to access to this workspace not allowed",
-					zap.String("reqId", httpRequest.Id),
-					zap.String("path", httpRequest.Path),
-					zap.String("method", httpRequest.Method),
-					zap.String("workspace", workspaceName),
-					zap.String("userAccess", fmt.Sprintf("%v", user.Access)),
-					zap.Error(err))
-				return unAuth, nil
-			}
+		if rl, ok := user.Access[workspaceName]; ok {
+			rb.UserID = internalUser.ID
+			rb.WorkspaceName = workspaceName
+			rb.Role = rl
 		} else {
-			rb, err = s.GetRoleBindingForWorkspace(internalUser.ID, workspaceName)
-			if err != nil {
-				s.logger.Warn("denied access due to failure in retrieving auth user host",
-					zap.String("reqId", httpRequest.Id),
-					zap.String("path", httpRequest.Path),
-					zap.String("method", httpRequest.Method),
-					zap.String("workspace", workspaceName),
-					zap.Error(err))
-				return unAuth, nil
-			}
+			s.logger.Warn("denied access due to access to this workspace not allowed",
+				zap.String("reqId", httpRequest.Id),
+				zap.String("path", httpRequest.Path),
+				zap.String("method", httpRequest.Method),
+				zap.String("workspace", workspaceName),
+				zap.String("userAccess", fmt.Sprintf("%v", user.Access)),
+				zap.Error(err))
+			return unAuth, nil
 		}
 
 		if s.rdb != nil {
@@ -294,33 +279,6 @@ func (s Server) GetUserByExternalID(externalID string) (User, error) {
 	}
 
 	return user, nil
-}
-
-func (s Server) GetRoleBindingForWorkspace(userId uuid.UUID, workspaceName string) (RoleBinding, error) {
-	key := "cache-rb-" + userId.String() + "-" + workspaceName
-
-	var res RoleBinding
-	if s.cache != nil {
-		if err := s.cache.Get(context.Background(), key, &res); err == nil {
-			return res, nil
-		}
-	}
-
-	rb, err := s.db.GetRoleBindingForWorkspace(userId, workspaceName)
-	if err != nil {
-		return RoleBinding{}, err
-	}
-
-	if s.cache != nil {
-		s.cache.Set(&cache.Item{
-			Ctx:   context.Background(),
-			Key:   key,
-			Value: rb,
-			TTL:   1 * time.Minute,
-		})
-	}
-
-	return rb, nil
 }
 
 func (s Server) GetWorkspaceLimits(rb RoleBinding, workspaceName string) (api2.WorkspaceLimits, error) {
