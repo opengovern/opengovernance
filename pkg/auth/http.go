@@ -155,7 +155,7 @@ func (r *httpRoutes) GetWorkspaceRoleBindings(ctx echo.Context) error {
 
 	var resp api.GetWorkspaceRoleBindingResponse
 	for _, u := range users {
-		usr, err := r.db.GetUserByExternalID(u.UserId)
+		usr, err := r.db.GetUserByEmail(u.Email)
 		if err != nil {
 			return err
 		}
