@@ -44,7 +44,12 @@ func (a *Service) fillToken() error {
 	}
 
 	if res.StatusCode != http.StatusOK {
-		return fmt.Errorf("[fillToken] invalid status code: %d", res.StatusCode)
+		r, _ := ioutil.ReadAll(res.Body)
+		str := ""
+		if r != nil {
+			str = string(r)
+		}
+		return fmt.Errorf("[fillToken] invalid status code: %d. res: %s", res.StatusCode, str)
 	}
 
 	r, err := ioutil.ReadAll(res.Body)
