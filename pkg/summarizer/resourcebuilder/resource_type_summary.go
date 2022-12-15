@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"time"
 
 	describe "gitlab.com/keibiengine/keibi-engine/pkg/describe/es"
 	"gitlab.com/keibiengine/keibi-engine/pkg/inventory"
@@ -132,7 +131,6 @@ func (b *resourceTypeSummaryBuilder) PopulateHistory(lastDayJobID, lastWeekJobID
 }
 
 func (b *resourceTypeSummaryBuilder) Build() []kafka.Doc {
-	unixNow := time.Now().Unix()
 	var docs []kafka.Doc
 	for _, v := range b.connectionSummary {
 		docs = append(docs, v)
@@ -148,18 +146,6 @@ func (b *resourceTypeSummaryBuilder) Build() []kafka.Doc {
 			Count:            v.ResourceCount,
 		}); err != nil {
 			b.logger.Error("failed to create metrics due to error", zap.Error(err))
-		}
-
-		// We are using create or ignore to make sure no error will be thrown if there is a duplicate
-		if err := b.db.CreateOrIgnoreMetricHistory(inventory.MetricHistory{
-			SourceID:      v.SourceID,
-			Provider:      v.SourceType.String(),
-			ResourceType:  v.ResourceType,
-			Date:          unixNow,
-			ScheduleJobID: v.ScheduleJobID,
-			Count:         v.ResourceCount,
-		}); err != nil {
-			b.logger.Error("failed to create metricHistories due to error", zap.Error(err))
 		}
 
 		h := v

@@ -181,7 +181,7 @@ func (h *HttpHandler) GetResourceGrowthTrend(ctx echo.Context) error {
 // @Param   sourceId   query    string false "SourceID"
 // @Param   provider   query    string false "Provider"
 // @Param   timeWindow query    string false "Time Window" Enums(24h,1w,3m,1y,max)
-// @Param   category   query    string true "Category"
+// @Param   category   query    string true  "Category"
 // @Param   importance query    string false "Filter filters by importance if they have it (array format is supported with , separator | 'all' is also supported)"
 // @Success 200        {object} []api.CategoryTrend
 // @Router  /inventory/api/v2/resources/trend [get]
@@ -301,9 +301,26 @@ func (h *HttpHandler) GetResourceGrowthTrendV2(ctx echo.Context) error {
 
 	var resp []api.CategoryTrend
 	for _, v := range trends {
-		sort.SliceStable(v.Trend, func(i, j int) bool {
+		// aggregate data points in the same category and same timestamp into one data point with the sum of the values
+		timeValMap := map[int64]api.TrendDataPoint{}
+		for _, trend := range v.Trend {
+			if v, ok := timeValMap[trend.Timestamp]; ok {
+				v.Value += trend.Value
+				timeValMap[trend.Timestamp] = v
+			} else {
+				timeValMap[trend.Timestamp] = trend
+			}
+		}
+		trendArr := make([]api.TrendDataPoint, 0, len(timeValMap))
+		for _, v := range timeValMap {
+			trendArr = append(trendArr, v)
+		}
+		// sort data points by timestamp
+		sort.SliceStable(trendArr, func(i, j int) bool {
 			return v.Trend[i].Timestamp < v.Trend[j].Timestamp
 		})
+		// overwrite the trend array with the aggregated and sorted data points
+		v.Trend = trendArr
 		resp = append(resp, v)
 	}
 	return ctx.JSON(http.StatusOK, resp)
@@ -824,12 +841,12 @@ func (h *HttpHandler) GetCategoriesV2(ctx echo.Context) error {
 // @Tags    inventory
 // @Accept  json
 // @Produce json
-// @Param   category query    string true  "Category"
-// @Param   depth    query    int    true  "Depth of rendering subcategories"
-// @Param   provider query    string false "Provider"
-// @Param   sourceId query    string false "SourceID"
-// @Param   importance query  string false "Filter filters by importance if they have it (array format is supported with , separator | 'all' is also supported)"
-// @Success 200      {object} api.CategoryNode
+// @Param   category   query    string true  "Category"
+// @Param   depth      query    int    true  "Depth of rendering subcategories"
+// @Param   provider   query    string false "Provider"
+// @Param   sourceId   query    string false "SourceID"
+// @Param   importance query    string false "Filter filters by importance if they have it (array format is supported with , separator | 'all' is also supported)"
+// @Success 200        {object} api.CategoryNode
 // @Router  /inventory/api/v2/resources/category [get]
 func (h *HttpHandler) GetCategoryNode(ctx echo.Context) error {
 	category := ctx.QueryParam("category")
@@ -902,10 +919,10 @@ func (h *HttpHandler) GetCategoryNode(ctx echo.Context) error {
 // @Tags    inventory
 // @Accept  json
 // @Produce json
-// @Param   provider query    string false "Provider"
-// @Param   sourceId query    string false "SourceID"
-// @Param   importance query  string false "Filter filters by importance if they have it (array format is supported with , separator | 'all' is also supported)"
-// @Success 200      {object} []api.CategoryNode
+// @Param   provider   query    string false "Provider"
+// @Param   sourceId   query    string false "SourceID"
+// @Param   importance query    string false "Filter filters by importance if they have it (array format is supported with , separator | 'all' is also supported)"
+// @Success 200        {object} []api.CategoryNode
 // @Router  /inventory/api/v2/resources/rootTemplates [get]
 func (h *HttpHandler) GetRootTemplates(ctx echo.Context) error {
 	return GetCategoryRoots(ctx, h, RootTypeTemplateRoot)
@@ -916,10 +933,10 @@ func (h *HttpHandler) GetRootTemplates(ctx echo.Context) error {
 // @Tags    inventory
 // @Accept  json
 // @Produce json
-// @Param   provider query    string false "Provider"
-// @Param   sourceId query    string false "SourceID"
-// @Param   importance query  string false "Filter filters by importance if they have it (array format is supported with , separator | 'all' is also supported)"
-// @Success 200      {object} []api.CategoryNode
+// @Param   provider   query    string false "Provider"
+// @Param   sourceId   query    string false "SourceID"
+// @Param   importance query    string false "Filter filters by importance if they have it (array format is supported with , separator | 'all' is also supported)"
+// @Success 200        {object} []api.CategoryNode
 // @Router  /inventory/api/v2/resources/rootCloudProviders [get]
 func (h *HttpHandler) GetRootCloudProviders(ctx echo.Context) error {
 	return GetCategoryRoots(ctx, h, RootTypeCloudProviderRoot)
