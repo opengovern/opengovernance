@@ -10,10 +10,7 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/go-redis/cache/v8"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpclient"
-
-	"github.com/go-redis/redis/v8"
 
 	api2 "gitlab.com/keibiengine/keibi-engine/pkg/workspace/api"
 
@@ -26,7 +23,6 @@ import (
 	envoyauth "github.com/envoyproxy/go-control-plane/envoy/service/auth/v3"
 	envoytype "github.com/envoyproxy/go-control-plane/envoy/type/v3"
 	"github.com/gogo/googleapis/google/rpc"
-	"github.com/labstack/echo/v4"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpserver"
 	"go.uber.org/zap"
 	"google.golang.org/genproto/googleapis/rpc/status"
@@ -352,7 +348,7 @@ func (s Server) GetWorkspaceLimits(rb RoleBinding, workspaceName string) (api2.W
 }
 
 type userClaim struct {
-	Access         map[string]api.Role `json:"access"`
+	Access         map[string]api.Role `json:"https://app.keibi.io/access"`
 	Email          string              `json:"https://app.keibi.io/email"`
 	ExternalUserID string              `json:"sub"`
 }
