@@ -157,13 +157,18 @@ func (r *httpRoutes) GetWorkspaceRoleBindings(ctx echo.Context) error {
 	var resp api.GetWorkspaceRoleBindingResponse
 	for _, u := range users {
 		usr, err := r.db.GetUserByEmail(strings.ToLower(u.Email))
+		//if err != nil {
+		//	return err
+		//}
 		if err != nil {
-			return err
+			r.logger.Warn("failed to fetch user by email",
+				zap.Error(err),
+				zap.String("email", strings.ToLower(u.Email)))
 		}
 
 		resp = append(resp, api.WorkspaceRoleBinding{
 			UserID: usr.ID,
-			Email:  usr.Email,
+			Email:  u.Email,
 			Role:   u.AppMetadata.Access[workspaceName],
 		})
 	}
