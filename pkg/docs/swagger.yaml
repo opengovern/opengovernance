@@ -231,6 +231,22 @@ definitions:
           $ref: '#/definitions/api.HistoryCount'
         type: object
     type: object
+  api.CategoryNode:
+    properties:
+      categoryID:
+        type: string
+      categoryName:
+        type: string
+      filters:
+        items: {}
+        type: array
+      resourceCount:
+        $ref: '#/definitions/api.HistoryCount'
+      subcategories:
+        items:
+          $ref: '#/definitions/api.CategoryNode'
+        type: array
+    type: object
   api.CategoryTrend:
     properties:
       name:
@@ -962,6 +978,19 @@ definitions:
         description: if you dont need to use this filter, leave them empty. (e.g.
           [])
         type: object
+    type: object
+  api.ResourceGrowthTrendResponse:
+    properties:
+      Subcategories:
+        items:
+          $ref: '#/definitions/api.CategoryTrend'
+        type: array
+      categoryName:
+        type: string
+      trend:
+        items:
+          $ref: '#/definitions/api.TrendDataPoint'
+        type: array
     type: object
   api.ResourceSortItem:
     properties:
@@ -2647,6 +2676,107 @@ paths:
       summary: Return resource categories and number of resources
       tags:
       - inventory
+  /inventory/api/v2/resources/category:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: Category
+        in: query
+        name: category
+        required: true
+        type: string
+      - description: Depth of rendering subcategories
+        in: query
+        name: depth
+        required: true
+        type: integer
+      - description: Provider
+        in: query
+        name: provider
+        type: string
+      - description: SourceID
+        in: query
+        name: sourceId
+        type: string
+      - description: Filter filters by importance if they have it (array format is
+          supported with , separator | 'all' is also supported)
+        in: query
+        name: importance
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/api.CategoryNode'
+      summary: Return category info by provided category id, info includes category
+        name, subcategories names and ids and number of resources
+      tags:
+      - inventory
+  /inventory/api/v2/resources/rootCloudProviders:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: Provider
+        in: query
+        name: provider
+        type: string
+      - description: SourceID
+        in: query
+        name: sourceId
+        type: string
+      - description: Filter filters by importance if they have it (array format is
+          supported with , separator | 'all' is also supported)
+        in: query
+        name: importance
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/api.CategoryNode'
+            type: array
+      summary: Return root providers' info, info includes category name, category
+        id, subcategories names and ids and number of resources
+      tags:
+      - inventory
+  /inventory/api/v2/resources/rootTemplates:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: Provider
+        in: query
+        name: provider
+        type: string
+      - description: SourceID
+        in: query
+        name: sourceId
+        type: string
+      - description: Filter filters by importance if they have it (array format is
+          supported with , separator | 'all' is also supported)
+        in: query
+        name: importance
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/api.CategoryNode'
+            type: array
+      summary: Return root templates' info, info includes template name, template
+        id, subcategories names and ids and number of resources
+      tags:
+      - inventory
   /inventory/api/v2/resources/trend:
     get:
       consumes:
@@ -2673,6 +2803,12 @@ paths:
       - description: Category
         in: query
         name: category
+        required: true
+        type: string
+      - description: Filter filters by importance if they have it (array format is
+          supported with , separator | 'all' is also supported)
+        in: query
+        name: importance
         type: string
       produces:
       - application/json
@@ -2681,7 +2817,7 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/api.CategoryTrend'
+              $ref: '#/definitions/api.ResourceGrowthTrendResponse'
             type: array
       summary: Returns trend of resource growth for specific account
       tags:
