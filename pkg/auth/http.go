@@ -2,6 +2,7 @@ package auth
 
 import (
 	"net/http"
+	"strings"
 	"time"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/auth/auth0"
@@ -155,7 +156,7 @@ func (r *httpRoutes) GetWorkspaceRoleBindings(ctx echo.Context) error {
 
 	var resp api.GetWorkspaceRoleBindingResponse
 	for _, u := range users {
-		usr, err := r.db.GetUserByEmail(u.Email)
+		usr, err := r.db.GetUserByEmail(strings.ToLower(u.Email))
 		if err != nil {
 			return err
 		}
