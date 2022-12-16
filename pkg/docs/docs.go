@@ -1844,6 +1844,152 @@ const docTemplate = `{
                 }
             }
         },
+        "/inventory/api/v2/resources/category": {
+            "get": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "inventory"
+                ],
+                "summary": "Return category info by provided category id, info includes category name, subcategories names and ids and number of resources",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Category",
+                        "name": "category",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Depth of rendering subcategories",
+                        "name": "depth",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Provider",
+                        "name": "provider",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "SourceID",
+                        "name": "sourceId",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter filters by importance if they have it (array format is supported with , separator | 'all' is also supported)",
+                        "name": "importance",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/api.CategoryNode"
+                        }
+                    }
+                }
+            }
+        },
+        "/inventory/api/v2/resources/rootCloudProviders": {
+            "get": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "inventory"
+                ],
+                "summary": "Return root providers' info, info includes category name, category id, subcategories names and ids and number of resources",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Provider",
+                        "name": "provider",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "SourceID",
+                        "name": "sourceId",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter filters by importance if they have it (array format is supported with , separator | 'all' is also supported)",
+                        "name": "importance",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/api.CategoryNode"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/inventory/api/v2/resources/rootTemplates": {
+            "get": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "inventory"
+                ],
+                "summary": "Return root templates' info, info includes template name, template id, subcategories names and ids and number of resources",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Provider",
+                        "name": "provider",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "SourceID",
+                        "name": "sourceId",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter filters by importance if they have it (array format is supported with , separator | 'all' is also supported)",
+                        "name": "importance",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/api.CategoryNode"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/inventory/api/v2/resources/trend": {
             "get": {
                 "consumes": [
@@ -1886,6 +2032,13 @@ const docTemplate = `{
                         "type": "string",
                         "description": "Category",
                         "name": "category",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter filters by importance if they have it (array format is supported with , separator | 'all' is also supported)",
+                        "name": "importance",
                         "in": "query"
                     }
                 ],
@@ -1895,7 +2048,7 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/api.CategoryTrend"
+                                "$ref": "#/definitions/api.ResourceGrowthTrendResponse"
                             }
                         }
                     }
@@ -3620,6 +3773,30 @@ const docTemplate = `{
                 }
             }
         },
+        "api.CategoryNode": {
+            "type": "object",
+            "properties": {
+                "categoryID": {
+                    "type": "string"
+                },
+                "categoryName": {
+                    "type": "string"
+                },
+                "filters": {
+                    "type": "array",
+                    "items": {}
+                },
+                "resourceCount": {
+                    "$ref": "#/definitions/api.HistoryCount"
+                },
+                "subcategories": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/api.CategoryNode"
+                    }
+                }
+            }
+        },
         "api.CategoryTrend": {
             "type": "object",
             "properties": {
@@ -4677,6 +4854,26 @@ const docTemplate = `{
                         "items": {
                             "type": "string"
                         }
+                    }
+                }
+            }
+        },
+        "api.ResourceGrowthTrendResponse": {
+            "type": "object",
+            "properties": {
+                "Subcategories": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/api.CategoryTrend"
+                    }
+                },
+                "categoryName": {
+                    "type": "string"
+                },
+                "trend": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/api.TrendDataPoint"
                     }
                 }
             }

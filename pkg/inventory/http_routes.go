@@ -183,7 +183,7 @@ func (h *HttpHandler) GetResourceGrowthTrend(ctx echo.Context) error {
 // @Param   timeWindow query    string false "Time Window" Enums(24h,1w,3m,1y,max)
 // @Param   category   query    string true  "Category"
 // @Param   importance query    string false "Filter filters by importance if they have it (array format is supported with , separator | 'all' is also supported)"
-// @Success 200        {object} []api.CategoryTrend
+// @Success 200        {object} []api.ResourceGrowthTrendResponse
 // @Router  /inventory/api/v2/resources/trend [get]
 func (h *HttpHandler) GetResourceGrowthTrendV2(ctx echo.Context) error {
 	var err error
@@ -245,6 +245,7 @@ func (h *HttpHandler) GetResourceGrowthTrendV2(ctx echo.Context) error {
 	}
 
 	trends := map[string]api.CategoryTrend{}
+	mainCategoryTrendsMap := map[int64]api.TrendDataPoint{}
 	if sourceID != "" {
 		hits, err := es.FetchConnectionResourceTypeTrendSummaryPage(h.client, &sourceID, resourceTypes, fromTime, toTime, sortMap, EsFetchPageSize)
 		if err != nil {
@@ -265,6 +266,15 @@ func (h *HttpHandler) GetResourceGrowthTrendV2(ctx echo.Context) error {
 							Timestamp: hit.DescribedAt,
 							Value:     int64(hit.ResourceCount),
 						})
+						if v, ok := mainCategoryTrendsMap[hit.DescribedAt]; ok {
+							v.Value += int64(hit.ResourceCount)
+							mainCategoryTrendsMap[hit.DescribedAt] = v
+						} else {
+							mainCategoryTrendsMap[hit.DescribedAt] = api.TrendDataPoint{
+								Timestamp: hit.DescribedAt,
+								Value:     int64(hit.ResourceCount),
+							}
+						}
 						v.Name = cat.Name
 						trends[cat.ElementID] = v
 					}
@@ -291,6 +301,15 @@ func (h *HttpHandler) GetResourceGrowthTrendV2(ctx echo.Context) error {
 							Timestamp: hit.DescribedAt,
 							Value:     int64(hit.ResourceCount),
 						})
+						if v, ok := mainCategoryTrendsMap[hit.DescribedAt]; ok {
+							v.Value += int64(hit.ResourceCount)
+							mainCategoryTrendsMap[hit.DescribedAt] = v
+						} else {
+							mainCategoryTrendsMap[hit.DescribedAt] = api.TrendDataPoint{
+								Timestamp: hit.DescribedAt,
+								Value:     int64(hit.ResourceCount),
+							}
+						}
 						v.Name = cat.Name
 						trends[cat.ElementID] = v
 					}
@@ -299,7 +318,7 @@ func (h *HttpHandler) GetResourceGrowthTrendV2(ctx echo.Context) error {
 		}
 	}
 
-	var resp []api.CategoryTrend
+	var subcategoriesTrends []api.CategoryTrend
 	for _, v := range trends {
 		// aggregate data points in the same category and same timestamp into one data point with the sum of the values
 		timeValMap := map[int64]api.TrendDataPoint{}
@@ -321,9 +340,21 @@ func (h *HttpHandler) GetResourceGrowthTrendV2(ctx echo.Context) error {
 		})
 		// overwrite the trend array with the aggregated and sorted data points
 		v.Trend = trendArr
-		resp = append(resp, v)
+		subcategoriesTrends = append(subcategoriesTrends, v)
 	}
-	return ctx.JSON(http.StatusOK, resp)
+
+	mainCategoryTrends := make([]api.TrendDataPoint, 0, len(mainCategoryTrendsMap))
+	for _, v := range mainCategoryTrendsMap {
+		mainCategoryTrends = append(mainCategoryTrends, v)
+	}
+	sort.SliceStable(mainCategoryTrends, func(i, j int) bool {
+		return mainCategoryTrends[i].Timestamp < mainCategoryTrends[j].Timestamp
+	})
+	return ctx.JSON(http.StatusOK, api.ResourceGrowthTrendResponse{
+		CategoryName:  root.Name,
+		Trend:         mainCategoryTrends,
+		Subcategories: subcategoriesTrends,
+	})
 }
 
 // GetTopAccountsByCost godoc

@@ -316,6 +316,12 @@ type CategoryTrend struct {
 	Trend []TrendDataPoint `json:"trend"`
 }
 
+type ResourceGrowthTrendResponse struct {
+	CategoryName  string           `json:"categoryName"`
+	Trend         []TrendDataPoint `json:"trend"`
+	Subcategories []CategoryTrend  `json:"Subcategories"`
+}
+
 type ListQueryRequest struct {
 	TitleFilter    string      `json:"titleFilter"`
 	ProviderFilter *SourceType `json:"providerFilter"`
