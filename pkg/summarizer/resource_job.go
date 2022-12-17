@@ -105,6 +105,7 @@ func (j ResourceJob) Do(client keibi.Client, db inventory.Database, producer sar
 		resourcebuilder.NewServiceSummaryBuilder(client, j.JobID),
 		resourcebuilder.NewCategorySummaryBuilder(client, j.JobID),
 		resourcebuilder.NewServiceLocationSummaryBuilder(client, j.JobID),
+		resourcebuilder.NewCostSummaryBuilder(client, j.JobID),
 	}
 	var searchAfter []interface{}
 	for {

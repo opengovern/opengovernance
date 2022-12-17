@@ -5,11 +5,13 @@ import (
 	"strconv"
 	"strings"
 
+	"gitlab.com/keibiengine/keibi-engine/pkg/aws/model"
 	"gitlab.com/keibiengine/keibi-engine/pkg/source"
 )
 
 const (
 	ConnectionSummaryIndex = "connection_summary"
+	CostSummeryIndex       = "cost_summary"
 )
 
 type ConnectionReportType string
@@ -23,6 +25,7 @@ const (
 	ServiceLocationConnectionSummary   ConnectionReportType = "ServiceLocationPerSource"
 	TrendConnectionSummary             ConnectionReportType = "TrendPerSourceHistory"
 	ResourceTypeTrendConnectionSummary ConnectionReportType = "ResourceTypeTrendPerSourceHistory"
+	CostConnectionSummary              ConnectionReportType = "CostPerSource"
 )
 
 type ConnectionResourcesSummary struct {
@@ -136,6 +139,30 @@ func (r ConnectionResourceTypeTrendSummary) KeysAndIndex() ([]string, string) {
 		keys = append(keys, fmt.Sprintf("%d", r.ScheduleJobID))
 	}
 	return keys, ConnectionSummaryIndex
+}
+
+type ConnectionCostSummary struct {
+	ScheduleJobID uint                                          `json:"schedule_job_id"`
+	SourceID      string                                        `json:"source_id"`
+	SourceType    source.Type                                   `json:"source_type"`
+	SourceJobID   uint                                          `json:"source_job_id"`
+	ResourceType  string                                        `json:"resource_type"`
+	Cost          model.CostExplorerByAccountMonthlyDescription `json:"cost"`
+	PeriodStart   int64                                         `json:"period_start"`
+	PeriodEnd     int64                                         `json:"period_end"`
+	ReportType    ConnectionReportType                          `json:"report_type"`
+}
+
+func (c ConnectionCostSummary) KeysAndIndex() ([]string, string) {
+	keys := []string{
+		c.SourceID,
+		c.ResourceType,
+		*c.Cost.PeriodStart,
+		*c.Cost.PeriodEnd,
+		string(CostConnectionSummary),
+	}
+
+	return keys, CostSummeryIndex
 }
 
 type ConnectionResourceTypeSummary struct {

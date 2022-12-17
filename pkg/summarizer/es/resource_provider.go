@@ -5,6 +5,7 @@ import (
 	"strconv"
 	"strings"
 
+	"gitlab.com/keibiengine/keibi-engine/pkg/aws/model"
 	"gitlab.com/keibiengine/keibi-engine/pkg/source"
 )
 
@@ -21,6 +22,7 @@ const (
 	LocationProviderSummary          ProviderReportType = "LocationPerProvider"
 	TrendProviderSummary             ProviderReportType = "TrendPerProviderHistory"
 	ResourceTypeTrendProviderSummary ProviderReportType = "ResourceTypeTrendPerProviderHistory"
+	CostProviderSummary              ProviderReportType = "CostPerService"
 )
 
 type ProviderServiceSummary struct {
@@ -115,6 +117,30 @@ func (r ProviderResourceTypeTrendSummary) KeysAndIndex() ([]string, string) {
 		keys = append(keys, fmt.Sprintf("%d", r.ScheduleJobID))
 	}
 	return keys, ProviderSummaryIndex
+}
+
+type ServiceCostSummary struct {
+	ScheduleJobID uint                                          `json:"schedule_job_id"`
+	SourceID      string                                        `json:"source_id"`
+	SourceType    source.Type                                   `json:"source_type"`
+	SourceJobID   uint                                          `json:"source_job_id"`
+	ResourceType  string                                        `json:"resource_type"`
+	Cost          model.CostExplorerByServiceMonthlyDescription `json:"cost"`
+	PeriodStart   int64                                         `json:"period_start"`
+	PeriodEnd     int64                                         `json:"period_end"`
+	ReportType    ProviderReportType                            `json:"report_type"`
+}
+
+func (c ServiceCostSummary) KeysAndIndex() ([]string, string) {
+	keys := []string{
+		c.SourceID,
+		c.ResourceType,
+		*c.Cost.PeriodStart,
+		*c.Cost.PeriodEnd,
+		string(CostProviderSummary),
+	}
+
+	return keys, CostSummeryIndex
 }
 
 type ProviderResourceTypeSummary struct {
