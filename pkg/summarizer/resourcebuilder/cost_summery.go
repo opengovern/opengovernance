@@ -42,6 +42,7 @@ func (b *costSummaryBuilder) Process(resource describe.LookupResource) {
 	case "aws::costexplorer::byservicemonthly":
 		fullResource, err = query.GetResourceFromResourceLookup(b.client, resource)
 		if err != nil {
+			fmt.Printf("(costSummaryBuilder) - Error getting resource from lookup: %v", err)
 			return
 		}
 		jsonDesc, err := json.Marshal(fullResource.Description)
@@ -72,6 +73,7 @@ func (b *costSummaryBuilder) Process(resource describe.LookupResource) {
 	case "aws::costexplorer::byaccountmonthly":
 		fullResource, err = query.GetResourceFromResourceLookup(b.client, resource)
 		if err != nil {
+			fmt.Printf("(costSummaryBuilder) - Error getting resource from lookup: %v", err)
 			return
 		}
 		jsonDesc, err := json.Marshal(fullResource.Description)

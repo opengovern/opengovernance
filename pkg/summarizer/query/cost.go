@@ -5,10 +5,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"strconv"
+	"strings"
 
 	describe "gitlab.com/keibiengine/keibi-engine/pkg/describe/es"
 	"gitlab.com/keibiengine/keibi-engine/pkg/keibi-es-sdk"
-	summarizer "gitlab.com/keibiengine/keibi-engine/pkg/summarizer/es"
+	"gitlab.com/keibiengine/keibi-engine/pkg/types"
 )
 
 type ResourceQueryResponse struct {
@@ -36,7 +37,7 @@ func GetResourceFromResourceLookup(client keibi.Client, resource describe.Lookup
 		"terms": map[string][]string{"source_job_id": {strconv.Itoa(int(resource.SourceJobID))}},
 	})
 	filters = append(filters, map[string]interface{}{
-		"terms": map[string][]string{"resource_type": {resource.ResourceType}},
+		"terms": map[string][]string{"resource_type": {strings.ToLower(resource.ResourceType)}},
 	})
 	filters = append(filters, map[string]interface{}{
 		"terms": map[string][]string{"resource_job_id": {strconv.Itoa(int(resource.ResourceJobID))}},
@@ -46,6 +47,9 @@ func GetResourceFromResourceLookup(client keibi.Client, resource describe.Lookup
 	})
 	filters = append(filters, map[string]interface{}{
 		"terms": map[string][]string{"source_id": {resource.SourceID}},
+	})
+	filters = append(filters, map[string]interface{}{
+		"terms": map[string][]string{"source_type": {resource.SourceType.String()}},
 	})
 
 	sort := []map[string]interface{}{{"_id": "desc"}}
@@ -64,7 +68,7 @@ func GetResourceFromResourceLookup(client keibi.Client, resource describe.Lookup
 	fmt.Println("query=", query)
 
 	var response ResourceQueryResponse
-	err = client.Search(context.Background(), summarizer.ProviderSummaryIndex, query, &response)
+	err = client.Search(context.Background(), types.ResourceTypeToESIndex(resource.ResourceType), query, &response)
 	if err != nil {
 		return nil, err
 	}
