@@ -5,7 +5,6 @@ import (
 	"strconv"
 	"strings"
 
-	"gitlab.com/keibiengine/keibi-engine/pkg/aws/model"
 	"gitlab.com/keibiengine/keibi-engine/pkg/source"
 )
 
@@ -142,23 +141,37 @@ func (r ConnectionResourceTypeTrendSummary) KeysAndIndex() ([]string, string) {
 }
 
 type ConnectionCostSummary struct {
-	ScheduleJobID uint                                          `json:"schedule_job_id"`
-	SourceID      string                                        `json:"source_id"`
-	SourceType    source.Type                                   `json:"source_type"`
-	SourceJobID   uint                                          `json:"source_job_id"`
-	ResourceType  string                                        `json:"resource_type"`
-	Cost          model.CostExplorerByAccountMonthlyDescription `json:"cost"`
-	PeriodStart   int64                                         `json:"period_start"`
-	PeriodEnd     int64                                         `json:"period_end"`
-	ReportType    ConnectionReportType                          `json:"report_type"`
+	ServiceName   string               `json:"service_name"`
+	ScheduleJobID uint                 `json:"schedule_job_id"`
+	SourceID      string               `json:"source_id"`
+	SourceType    source.Type          `json:"source_type"`
+	SourceJobID   uint                 `json:"source_job_id"`
+	ResourceType  string               `json:"resource_type"`
+	Cost          any                  `json:"cost"`
+	PeriodStart   int64                `json:"period_start"`
+	PeriodEnd     int64                `json:"period_end"`
+	ReportType    ConnectionReportType `json:"report_type"`
+}
+
+func (c ConnectionCostSummary) GetCost() float64 {
+	switch c.ResourceType {
+	case "aws::costexplorer::byaccountmonthly":
+		costFloat, err := strconv.ParseFloat(c.Cost.(map[string]interface{})["UnblendedCostAmount"].(string), 64)
+		if err != nil {
+			return 0
+		}
+		return costFloat
+	}
+	return 0
 }
 
 func (c ConnectionCostSummary) KeysAndIndex() ([]string, string) {
 	keys := []string{
+		c.ServiceName,
 		c.SourceID,
 		c.ResourceType,
-		*c.Cost.PeriodStart,
-		*c.Cost.PeriodEnd,
+		fmt.Sprint(c.PeriodStart),
+		fmt.Sprint(c.PeriodEnd),
 		string(CostConnectionSummary),
 	}
 

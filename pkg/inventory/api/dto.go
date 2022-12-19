@@ -399,10 +399,22 @@ type FilterCloudResourceType struct {
 	ResourceCount HistoryCount `json:"resource_count"`
 }
 
+type Cost struct {
+	CurrentCost float64 `json:"current_cost"`
+	HistoryCost float64 `json:"history_cost"`
+}
+
+type FilterCost struct {
+	FilterID      string      `json:"filterID"`
+	CloudProvider source.Type `json:"cloud_provider"`
+	Cost          Cost        `json:"cost"`
+}
+
 type CategoryNode struct {
 	CategoryID    string         `json:"categoryID"`
 	CategoryName  string         `json:"categoryName"`
 	ResourceCount *HistoryCount  `json:"resourceCount,omitempty"`
+	Cost          *Cost          `json:"cost,omitempty"`
 	Subcategories []CategoryNode `json:"subcategories,omitempty"`
 	Filters       []Filter       `json:"filters,omitempty"`
 }
