@@ -5,7 +5,6 @@ import (
 	"strconv"
 	"strings"
 
-	"gitlab.com/keibiengine/keibi-engine/pkg/aws/model"
 	"gitlab.com/keibiengine/keibi-engine/pkg/source"
 )
 
@@ -120,23 +119,37 @@ func (r ProviderResourceTypeTrendSummary) KeysAndIndex() ([]string, string) {
 }
 
 type ServiceCostSummary struct {
-	ScheduleJobID uint                                          `json:"schedule_job_id"`
-	SourceID      string                                        `json:"source_id"`
-	SourceType    source.Type                                   `json:"source_type"`
-	SourceJobID   uint                                          `json:"source_job_id"`
-	ResourceType  string                                        `json:"resource_type"`
-	Cost          model.CostExplorerByServiceMonthlyDescription `json:"cost"`
-	PeriodStart   int64                                         `json:"period_start"`
-	PeriodEnd     int64                                         `json:"period_end"`
-	ReportType    ProviderReportType                            `json:"report_type"`
+	ServiceName   string             `json:"service_name"`
+	ScheduleJobID uint               `json:"schedule_job_id"`
+	SourceID      string             `json:"source_id"`
+	SourceType    source.Type        `json:"source_type"`
+	SourceJobID   uint               `json:"source_job_id"`
+	ResourceType  string             `json:"resource_type"`
+	Cost          any                `json:"cost"`
+	PeriodStart   int64              `json:"period_start"`
+	PeriodEnd     int64              `json:"period_end"`
+	ReportType    ProviderReportType `json:"report_type"`
+}
+
+func (c ServiceCostSummary) GetCost() float64 {
+	switch c.ResourceType {
+	case "aws::costexplorer::byservicemonthly":
+		costFloat, err := strconv.ParseFloat(c.Cost.(map[string]interface{})["UnblendedCostAmount"].(string), 64)
+		if err != nil {
+			return 0
+		}
+		return costFloat
+	}
+	return 0
 }
 
 func (c ServiceCostSummary) KeysAndIndex() ([]string, string) {
 	keys := []string{
+		c.ServiceName,
 		c.SourceID,
 		c.ResourceType,
-		*c.Cost.PeriodStart,
-		*c.Cost.PeriodEnd,
+		fmt.Sprint(c.PeriodStart),
+		fmt.Sprint(c.PeriodEnd),
 		string(CostProviderSummary),
 	}
 

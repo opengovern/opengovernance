@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/cloudservice"
+	summarizer "gitlab.com/keibiengine/keibi-engine/pkg/summarizer/es"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/inventory/api"
 	"gitlab.com/keibiengine/keibi-engine/pkg/inventory/es"
@@ -243,6 +244,26 @@ func GetResourceTypeListFromFilters(filters []Filter) []string {
 		case FilterTypeCloudResourceType:
 			f := filter.(*FilterCloudResourceTypeNode)
 			result[f.ResourceType] = struct{}{}
+		default:
+			continue
+		}
+	}
+	res := make([]string, 0, len(result))
+	for k := range result {
+		res = append(res, k)
+	}
+	return res
+}
+
+func GetServiceNameListFromFilters(filters []Filter) []string {
+	result := map[string]struct{}{}
+	for _, filter := range filters {
+		switch filter.GetFilterType() {
+		case FilterTypeCost:
+			f := filter.(*FilterCostNode)
+			result[f.ServiceName] = struct{}{}
+		default:
+			continue
 		}
 	}
 	res := make([]string, 0, len(result))
@@ -260,7 +281,7 @@ func GetMetricResourceTypeSummaryIndexByResourceType(metrics []MetricResourceTyp
 	return metricIndex
 }
 
-func GetCategoryNodeInfo(categoryNode *CategoryNode, metrics map[string]MetricResourceTypeSummary, filterCacheMap map[string]api.Filter) api.CategoryNode {
+func GetCategoryNodeResourceCountInfo(categoryNode *CategoryNode, metrics map[string]MetricResourceTypeSummary, filterCacheMap map[string]api.Filter) api.CategoryNode {
 	resourceCount := api.HistoryCount{}
 	directFilters := map[string]api.Filter{}
 	for _, f := range categoryNode.Filters {
@@ -278,6 +299,8 @@ func GetCategoryNodeInfo(categoryNode *CategoryNode, metrics map[string]MetricRe
 					ResourceCount: api.HistoryCount{},
 				}
 			}
+		default:
+			continue
 		}
 	}
 	for _, f := range categoryNode.SubTreeFilters {
@@ -318,6 +341,8 @@ func GetCategoryNodeInfo(categoryNode *CategoryNode, metrics map[string]MetricRe
 					filterCacheMap[filter.ElementID] = &filterWithCount
 				}
 			}
+		default:
+			continue
 		}
 	}
 	result := api.CategoryNode{
@@ -340,7 +365,92 @@ func GetCategoryNodeInfo(categoryNode *CategoryNode, metrics map[string]MetricRe
 	return result
 }
 
-func RenderCategoryDFS(ctx context.Context,
+func GetCategoryNodeCostInfo(categoryNode *CategoryNode, currentCosts, pastCosts map[string]summarizer.ServiceCostSummary, filterCacheMap map[string]api.Filter) api.CategoryNode {
+	var (
+		currentCost, pastCost float64
+	)
+	directFilters := map[string]api.Filter{}
+	for _, f := range categoryNode.Filters {
+		switch f.GetFilterType() {
+		case FilterTypeCost:
+			filter := f.(*FilterCostNode)
+			if v, ok := filterCacheMap[filter.ElementID]; ok {
+				directFilters[filter.ElementID] = *v.(*api.FilterCost)
+			} else {
+				directFilters[filter.ElementID] = api.FilterCost{
+					FilterID:      filter.ElementID,
+					CloudProvider: filter.CloudProvider,
+					Cost: api.Cost{
+						CurrentCost: 0,
+						HistoryCost: 0,
+					},
+				}
+			}
+		default:
+			continue
+		}
+	}
+
+	for _, f := range categoryNode.SubTreeFilters {
+		switch f.GetFilterType() {
+		case FilterTypeCost:
+			filter := f.(*FilterCostNode)
+			if v, ok := filterCacheMap[filter.ElementID]; ok {
+				currentCost += v.(*api.FilterCost).Cost.CurrentCost
+				pastCost += v.(*api.FilterCost).Cost.HistoryCost
+				if _, ok := directFilters[filter.ElementID].(api.FilterCost); ok {
+					directFilters[filter.ElementID] = *v.(*api.FilterCost)
+				}
+			} else {
+				filterWithCost := api.FilterCost{
+					FilterID:      filter.ElementID,
+					CloudProvider: filter.CloudProvider,
+					Cost: api.Cost{
+						CurrentCost: 0,
+						HistoryCost: 0,
+					},
+				}
+				if m, ok := currentCosts[filter.ServiceName]; ok {
+					currentCost += m.GetCost()
+				}
+				if m, ok := pastCosts[filter.ServiceName]; ok {
+					pastCost += m.GetCost()
+				}
+				filterWithCost.Cost.CurrentCost = currentCost
+				filterWithCost.Cost.HistoryCost = pastCost
+				if _, ok := directFilters[filter.ElementID].(api.FilterCost); ok {
+					directFilters[filter.ElementID] = filterWithCost
+				}
+				filterCacheMap[filter.ElementID] = &filterWithCost
+			}
+		default:
+			continue
+		}
+	}
+
+	result := api.CategoryNode{
+		CategoryID:   categoryNode.ElementID,
+		CategoryName: categoryNode.Name,
+		Cost: &api.Cost{
+			CurrentCost: currentCost,
+			HistoryCost: pastCost,
+		},
+		Subcategories: []api.CategoryNode{},
+		Filters:       []api.Filter{},
+	}
+	for _, c := range categoryNode.Subcategories {
+		result.Subcategories = append(result.Subcategories, api.CategoryNode{
+			CategoryID:   c.ElementID,
+			CategoryName: c.Name,
+		})
+	}
+	for _, f := range directFilters {
+		result.Filters = append(result.Filters, f)
+	}
+	return result
+}
+
+func RenderCategoryResourceCountDFS(ctx context.Context,
 	graphDb GraphDatabase,
 	rootNode *CategoryNode,
 	metrics map[string]MetricResourceTypeSummary,
@@ -352,7 +462,7 @@ func RenderCategoryDFS(ctx context.Context,
 		return nil, nil
 	}
 
-	result := GetCategoryNodeInfo(rootNode, metrics, filterCacheMap)
+	result := GetCategoryNodeResourceCountInfo(rootNode, metrics, filterCacheMap)
 	for i, c := range result.Subcategories {
 		if v, ok := nodeCacheMap[c.CategoryID]; ok {
 			result.Subcategories[i] = v
@@ -362,7 +472,44 @@ func RenderCategoryDFS(ctx context.Context,
 				return nil, err
 			}
 
-			subResult, err := RenderCategoryDFS(ctx, graphDb, subCategoryNode, metrics, depth-1, importanceArray, nodeCacheMap, filterCacheMap)
+			subResult, err := RenderCategoryResourceCountDFS(ctx, graphDb, subCategoryNode, metrics, depth-1, importanceArray, nodeCacheMap, filterCacheMap)
+			if err != nil {
+				return nil, err
+			}
+			if subResult != nil {
+				nodeCacheMap[c.CategoryID] = *subResult
+				result.Subcategories[i] = *subResult
+			}
+		}
+	}
+
+	return &result, nil
+}
+
+func RenderCategoryCostDFS(ctx context.Context,
+	graphDb GraphDatabase,
+	rootNode *CategoryNode,
+	depth int,
+	currentCost map[string]summarizer.ServiceCostSummary,
+	pastCost map[string]summarizer.ServiceCostSummary,
+	nodeCacheMap map[string]api.CategoryNode,
+	filterCacheMap map[string]api.Filter) (*api.CategoryNode, error) {
+
+	if depth <= 0 {
+		return nil, nil
+	}
+
+	result := GetCategoryNodeCostInfo(rootNode, currentCost, pastCost, filterCacheMap)
+	for i, c := range result.Subcategories {
+		if v, ok := nodeCacheMap[c.CategoryID]; ok {
+			result.Subcategories[i] = v
+		} else {
+			subCategoryNode, err := graphDb.GetCategory(ctx, c.CategoryID, []string{"all"})
+			if err != nil {
+				return nil, err
+			}
+
+			subResult, err := RenderCategoryCostDFS(ctx, graphDb, subCategoryNode, depth, currentCost, pastCost, nodeCacheMap, filterCacheMap)
 			if err != nil {
 				return nil, err
 			}

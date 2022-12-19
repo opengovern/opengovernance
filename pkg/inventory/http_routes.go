@@ -68,7 +68,8 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	v1.GET("/resources/top/services", httpserver.AuthorizeHandler(h.GetTopServicesByResourceCount, api3.ViewerRole))
 	v1.GET("/resources/categories", httpserver.AuthorizeHandler(h.GetCategories, api3.ViewerRole))
 	v2.GET("/resources/categories", httpserver.AuthorizeHandler(h.GetCategoriesV2, api3.ViewerRole))
-	v2.GET("/resources/category", httpserver.AuthorizeHandler(h.GetCategoryNode, api3.ViewerRole))
+	v2.GET("/resources/category", httpserver.AuthorizeHandler(h.GetCategoryNodeResourceCount, api3.ViewerRole))
+	v2.GET("/cost/category", httpserver.AuthorizeHandler(h.GetCategoryNodeCost, api3.ViewerRole))
 	v2.GET("/resources/rootTemplates", httpserver.AuthorizeHandler(h.GetRootTemplates, api3.ViewerRole))
 	v2.GET("/resources/rootCloudProviders", httpserver.AuthorizeHandler(h.GetRootCloudProviders, api3.ViewerRole))
 	v1.GET("/accounts/resource/count", httpserver.AuthorizeHandler(h.GetAccountsResourceCount, api3.ViewerRole))
@@ -867,7 +868,7 @@ func (h *HttpHandler) GetCategoriesV2(ctx echo.Context) error {
 	return ctx.JSON(http.StatusOK, res)
 }
 
-// GetCategoryNode godoc
+// GetCategoryNodeResourceCount godoc
 // @Summary Return category info by provided category id, info includes category name, subcategories names and ids and number of resources
 // @Tags    inventory
 // @Accept  json
@@ -879,7 +880,7 @@ func (h *HttpHandler) GetCategoriesV2(ctx echo.Context) error {
 // @Param   importance query    string false "Filter filters by importance if they have it (array format is supported with , separator | 'all' is also supported)"
 // @Success 200        {object} api.CategoryNode
 // @Router  /inventory/api/v2/resources/category [get]
-func (h *HttpHandler) GetCategoryNode(ctx echo.Context) error {
+func (h *HttpHandler) GetCategoryNodeResourceCount(ctx echo.Context) error {
 	category := ctx.QueryParam("category")
 	if category == "" {
 		return echo.NewHTTPError(http.StatusBadRequest, "category is required")
@@ -930,12 +931,90 @@ func (h *HttpHandler) GetCategoryNode(ctx echo.Context) error {
 
 	metricIndexed := GetMetricResourceTypeSummaryIndexByResourceType(metricResourceTypeSummaries)
 
-	result, err := RenderCategoryDFS(ctx.Request().Context(),
+	result, err := RenderCategoryResourceCountDFS(ctx.Request().Context(),
 		h.graphDb,
 		rootNode,
 		metricIndexed,
 		depth,
 		importanceArray,
+		map[string]api.CategoryNode{},
+		map[string]api.Filter{})
+	if err != nil {
+		return err
+	}
+
+	return ctx.JSON(http.StatusOK, result)
+}
+
+// GetCategoryNodeCost godoc
+// @Summary Return category cost info by provided category id, info includes category name, subcategories names and ids and their accumulated cost
+// @Tags    inventory
+// @Accept  json
+// @Produce json
+// @Param   category   query    string true  "Category"
+// @Param   depth      query    int    true  "Depth of rendering subcategories"
+// @Param   provider   query    string false "Provider"
+// @Param   sourceId   query    string false "SourceID"
+// @Param   compareTo  query    int    true "Unix second of the time to compare to"
+// @Success 200        {object} api.CategoryNode
+// @Router  /inventory/api/v2/cost/category [get]
+func (h *HttpHandler) GetCategoryNodeCost(ctx echo.Context) error {
+	category := ctx.QueryParam("category")
+	if category == "" {
+		return echo.NewHTTPError(http.StatusBadRequest, "category is required")
+	}
+	depthStr := ctx.QueryParam("depth")
+	depth, err := strconv.Atoi(depthStr)
+	if err != nil || depth <= 0 {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid depth")
+	}
+	provider := ctx.QueryParam("provider")
+	var providerPtr *source.Type
+	if provider != "" {
+		providerType, err := source.ParseType(provider)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "invalid provider")
+		}
+		providerPtr = &providerType
+	}
+	sourceID := ctx.QueryParam("sourceId")
+	sourceIDPtr := &sourceID
+	if sourceID == "" {
+		sourceIDPtr = nil
+	}
+	compareToStr := ctx.QueryParam("compareTo")
+	compareTo, err := strconv.ParseInt(compareToStr, 10, 64)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid compareTo")
+	}
+
+	rootNode, err := h.graphDb.GetCategory(ctx.Request().Context(), category, []string{"all"})
+	if err != nil {
+		return err
+	}
+
+	var serviceNames []string
+	for _, filter := range rootNode.SubTreeFilters {
+		if filter.GetFilterType() == FilterTypeCost {
+			serviceNames = append(serviceNames, filter.(FilterCostNode).ServiceName)
+		}
+	}
+
+	currentCosts, err := es.FetchCostByServicesBetween(h.client, sourceIDPtr, providerPtr, serviceNames, time.Now(), time.Now().AddDate(0, 0, -7), EsFetchPageSize)
+	if err != nil {
+		return err
+	}
+	pastCosts, err := es.FetchCostByServicesBetween(h.client, sourceIDPtr, providerPtr, serviceNames, time.Unix(compareTo, 0), time.Unix(compareTo, 0).AddDate(0, 0, -7), EsFetchPageSize)
+	if err != nil {
+		return err
+	}
+
+	result, err := RenderCategoryCostDFS(ctx.Request().Context(),
+		h.graphDb,
+		rootNode,
+		depth,
+		currentCosts,
+		pastCosts,
 		map[string]api.CategoryNode{},
 		map[string]api.Filter{})
 	if err != nil {
@@ -1022,7 +1101,7 @@ func GetCategoryRoots(ctx echo.Context, h *HttpHandler, rootType CategoryRootTyp
 	results := make([]api.CategoryNode, 0, len(templateRoots))
 	cacheMap := map[string]api.Filter{}
 	for _, templateRoot := range templateRoots {
-		results = append(results, GetCategoryNodeInfo(templateRoot, metricsIndexed, cacheMap))
+		results = append(results, GetCategoryNodeResourceCountInfo(templateRoot, metricsIndexed, cacheMap))
 	}
 
 	return ctx.JSON(http.StatusOK, results)
