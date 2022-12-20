@@ -90,7 +90,7 @@ func (b *costSummaryBuilder) Process(resource describe.LookupResource) {
 		key := fmt.Sprintf("%s|%s|%s", resource.SourceID, *desc.PeriodStart, *desc.PeriodEnd)
 		if _, ok := b.costsByAccount[key]; !ok {
 			b.costsByAccount[key] = es.ConnectionCostSummary{
-				ServiceName:   *desc.Dimension1,
+				AccountID:     *desc.Dimension1,
 				ScheduleJobID: resource.ScheduleJobID,
 				SourceID:      resource.SourceID,
 				SourceType:    resource.SourceType,

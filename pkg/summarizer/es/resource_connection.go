@@ -141,7 +141,7 @@ func (r ConnectionResourceTypeTrendSummary) KeysAndIndex() ([]string, string) {
 }
 
 type ConnectionCostSummary struct {
-	ServiceName   string               `json:"service_name"`
+	AccountID     string               `json:"account_id"`
 	ScheduleJobID uint                 `json:"schedule_job_id"`
 	SourceID      string               `json:"source_id"`
 	SourceType    source.Type          `json:"source_type"`
@@ -167,7 +167,7 @@ func (c ConnectionCostSummary) GetCost() float64 {
 
 func (c ConnectionCostSummary) KeysAndIndex() ([]string, string) {
 	keys := []string{
-		c.ServiceName,
+		c.AccountID,
 		c.SourceID,
 		c.ResourceType,
 		fmt.Sprint(c.PeriodStart),
