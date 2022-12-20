@@ -57,12 +57,12 @@ func FetchCostByServicesBetween(client keibi.Client, sourceID *string, provider 
 		},
 	})
 
-	if sourceID != nil {
+	if sourceID != nil && *sourceID != "" {
 		filters = append(filters, map[string]interface{}{
 			"terms": map[string][]string{"source_id": {*sourceID}},
 		})
 	}
-	if provider != nil {
+	if provider != nil && !provider.IsNull() {
 		filters = append(filters, map[string]interface{}{
 			"terms": map[string][]string{"source_type": {(*provider).String()}},
 		})
@@ -128,6 +128,103 @@ func FetchCostByServicesBetween(client keibi.Client, sourceID *string, provider 
 				return nil, err
 			}
 			hit.Cost = hitCost
+		}
+	}
+
+	return hits, nil
+}
+
+type FetchCostHistoryByServicesQueryResponse struct {
+	Hits struct {
+		Total keibi.SearchTotal `json:"total"`
+		Hits  []struct {
+			ID      string                        `json:"_id"`
+			Score   float64                       `json:"_score"`
+			Index   string                        `json:"_index"`
+			Type    string                        `json:"_type"`
+			Version int64                         `json:"_version,omitempty"`
+			Source  summarizer.ServiceCostSummary `json:"_source"`
+		} `json:"hits"`
+	} `json:"hits"`
+}
+
+func FetchCostHistoryByServicesBetween(client keibi.Client, sourceID *string, provider *source.Type, services []string, before time.Time, after time.Time, size int) (map[string][]summarizer.ServiceCostSummary, error) {
+	hits := make(map[string][]summarizer.ServiceCostSummary)
+	res := make(map[string]interface{})
+	var filters []interface{}
+
+	filters = append(filters, map[string]interface{}{
+		"terms": map[string][]string{"report_type": {string(summarizer.CostProviderSummary)}},
+	})
+	filters = append(filters, map[string]interface{}{
+		"terms": map[string][]string{"service_name": services},
+	})
+	filters = append(filters, map[string]interface{}{
+		"range": map[string]interface{}{
+			"period_end": map[string]string{
+				"gte": strconv.FormatInt(after.Unix(), 10),
+				"lte": strconv.FormatInt(before.Unix(), 10),
+			},
+		},
+	})
+
+	if sourceID != nil {
+		filters = append(filters, map[string]interface{}{
+			"terms": map[string][]string{"source_id": {*sourceID}},
+		})
+	}
+	if provider != nil && !provider.IsNull() {
+		filters = append(filters, map[string]interface{}{
+			"terms": map[string][]string{"source_type": {(*provider).String()}},
+		})
+	}
+
+	res["size"] = size
+	res["query"] = map[string]interface{}{
+		"bool": map[string]interface{}{
+			"filter": filters,
+		},
+	}
+
+	b, err := json.Marshal(res)
+	if err != nil {
+		return nil, err
+	}
+
+	query := string(b)
+	fmt.Println("query=", query)
+
+	var response FetchCostHistoryByServicesQueryResponse
+	err = client.Search(context.Background(), summarizer.CostSummeryIndex, query, &response)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, hit := range response.Hits.Hits {
+		if v, ok := hits[hit.Source.ServiceName]; !ok {
+			hits[hit.Source.ServiceName] = []summarizer.ServiceCostSummary{
+				hit.Source,
+			}
+		} else {
+			hits[hit.Source.ServiceName] = append(v, hit.Source)
+		}
+	}
+
+	for _, hitArr := range hits {
+		for _, hit := range hitArr {
+			switch strings.ToLower(hit.ResourceType) {
+			case "aws::costexplorer::byservicemonthly":
+				hitCostStr, err := json.Marshal(hit.Cost)
+				if err != nil {
+					return nil, err
+				}
+				var hitCost model.CostExplorerByServiceMonthlyDescription
+				err = json.Unmarshal(hitCostStr, &hitCost)
+				if err != nil {
+					return nil, err
+				}
+				hit.Cost = hitCost
+			}
 		}
 	}
 

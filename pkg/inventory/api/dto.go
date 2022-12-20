@@ -311,15 +311,31 @@ type TrendDataPoint struct {
 	Value     int64 `json:"value"`
 }
 
-type CategoryTrend struct {
+type FloatTrendDataPoint struct {
+	Timestamp int64   `json:"timestamp"`
+	Value     float64 `json:"value"`
+}
+
+type CategoryResourceTrend struct {
 	Name  string           `json:"name"`
 	Trend []TrendDataPoint `json:"trend"`
 }
 
+type CategoryCostTrend struct {
+	Name  string                `json:"name"`
+	Trend []FloatTrendDataPoint `json:"trend"`
+}
+
 type ResourceGrowthTrendResponse struct {
-	CategoryName  string           `json:"categoryName"`
-	Trend         []TrendDataPoint `json:"trend"`
-	Subcategories []CategoryTrend  `json:"Subcategories"`
+	CategoryName  string                  `json:"categoryName"`
+	Trend         []TrendDataPoint        `json:"trend"`
+	Subcategories []CategoryResourceTrend `json:"Subcategories"`
+}
+
+type CostGrowthTrendResponse struct {
+	CategoryName  string                `json:"categoryName"`
+	Trend         []FloatTrendDataPoint `json:"trend"`
+	Subcategories []CategoryCostTrend   `json:"Subcategories"`
 }
 
 type ListQueryRequest struct {

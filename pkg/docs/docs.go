@@ -2090,12 +2090,6 @@ const docTemplate = `{
                         "description": "Category(Template) ID defaults to default template",
                         "name": "category",
                         "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Filter filters by importance if they have it (array format is supported with , separator | 'all' is also supported)",
-                        "name": "importance",
-                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -3845,7 +3839,7 @@ const docTemplate = `{
                 }
             }
         },
-        "api.CategoryTrend": {
+        "api.CategoryResourceTrend": {
             "type": "object",
             "properties": {
                 "name": {
@@ -4934,7 +4928,7 @@ const docTemplate = `{
                 "Subcategories": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/api.CategoryTrend"
+                        "$ref": "#/definitions/api.CategoryResourceTrend"
                     }
                 },
                 "categoryName": {
