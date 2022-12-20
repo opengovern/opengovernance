@@ -182,7 +182,7 @@ func (h *HttpHandler) GetResourceGrowthTrend(ctx echo.Context) error {
 // @Param   sourceId   query    string false "SourceID"
 // @Param   provider   query    string false "Provider"
 // @Param   timeWindow query    string false "Time Window" Enums(24h,1w,3m,1y,max)
-// @Param   category   query    string false  "Category(Template) ID defaults to default template"
+// @Param   category   query    string false "Category(Template) ID defaults to default template"
 // @Param   importance query    string false "Filter filters by importance if they have it (array format is supported with , separator | 'all' is also supported)"
 // @Success 200        {object} []api.ResourceGrowthTrendResponse
 // @Router  /inventory/api/v2/resources/trend [get]
@@ -867,7 +867,7 @@ func (h *HttpHandler) GetCategoryNodeResourceCountHelper(ctx context.Context, de
 // @Tags    inventory
 // @Accept  json
 // @Produce json
-// @Param   category   query    string false  "Category ID - defaults to default template category"
+// @Param   category   query    string false "Category ID - defaults to default template category"
 // @Param   depth      query    int    true  "Depth of rendering subcategories"
 // @Param   provider   query    string false "Provider"
 // @Param   sourceId   query    string false "SourceID"
@@ -901,7 +901,7 @@ func (h *HttpHandler) GetCategoryNodeResourceCount(ctx echo.Context) error {
 // @Tags    inventory
 // @Accept  json
 // @Produce json
-// @Param   category   query    string false  "Category ID - defaults to default template category"
+// @Param   category   query    string false "Category ID - defaults to default template category"
 // @Param   top        query    int    true  "How many top categories to return"
 // @Param   provider   query    string false "Provider"
 // @Param   sourceId   query    string false "SourceID"
@@ -960,12 +960,12 @@ func (h *HttpHandler) GetCategoryNodeResourceCountComposition(ctx echo.Context) 
 // @Tags    inventory
 // @Accept  json
 // @Produce json
-// @Param   category   query    string true  "Category"
-// @Param   depth      query    int    true  "Depth of rendering subcategories"
-// @Param   provider   query    string false "Provider"
-// @Param   sourceId   query    string false "SourceID"
-// @Param   compareTo  query    int    true "Unix second of the time to compare to"
-// @Success 200        {object} api.CategoryNode
+// @Param   category  query    string true  "Category"
+// @Param   depth     query    int    true  "Depth of rendering subcategories"
+// @Param   provider  query    string false "Provider"
+// @Param   sourceId  query    string false "SourceID"
+// @Param   compareTo query    int    true  "Unix second of the time to compare to"
+// @Success 200       {object} api.CategoryNode
 // @Router  /inventory/api/v2/cost/category [get]
 func (h *HttpHandler) GetCategoryNodeCost(ctx echo.Context) error {
 	category := ctx.QueryParam("category")

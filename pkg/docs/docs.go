@@ -1275,46 +1275,6 @@ const docTemplate = `{
                 }
             }
         },
-        "/inventory/api/v1/resources/categories": {
-            "get": {
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "inventory"
-                ],
-                "summary": "Return resource categories and number of resources",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Provider",
-                        "name": "provider",
-                        "in": "query",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "SourceID",
-                        "name": "sourceId",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/api.CategoriesResponse"
-                            }
-                        }
-                    }
-                }
-            }
-        },
         "/inventory/api/v1/resources/count": {
             "post": {
                 "consumes": [
@@ -1578,7 +1538,7 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/api.CategoriesResponse"
+                                "$ref": "#/definitions/api.LocationResponse"
                             }
                         }
                     }
@@ -1750,6 +1710,63 @@ const docTemplate = `{
                 }
             }
         },
+        "/inventory/api/v2/cost/category": {
+            "get": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "inventory"
+                ],
+                "summary": "Return category cost info by provided category id, info includes category name, subcategories names and ids and their accumulated cost",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Category",
+                        "name": "category",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Depth of rendering subcategories",
+                        "name": "depth",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Provider",
+                        "name": "provider",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "SourceID",
+                        "name": "sourceId",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Unix second of the time to compare to",
+                        "name": "compareTo",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/api.CategoryNode"
+                        }
+                    }
+                }
+            }
+        },
         "/inventory/api/v2/metrics/categorized": {
             "get": {
                 "consumes": [
@@ -1809,24 +1826,11 @@ const docTemplate = `{
                 "tags": [
                     "inventory"
                 ],
-                "summary": "Return resource categories and number of resources",
+                "summary": "Return list of the subcategories of the specified category",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Provider",
-                        "name": "provider",
-                        "in": "query",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "SourceID",
-                        "name": "sourceId",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Category",
+                        "description": "Category ID - defaults to default template category",
                         "name": "category",
                         "in": "query"
                     }
@@ -1837,7 +1841,7 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/api.CategoriesResponse"
+                                "$ref": "#/definitions/api.CategoryNode"
                             }
                         }
                     }
@@ -1859,15 +1863,69 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Category",
+                        "description": "Category ID - defaults to default template category",
                         "name": "category",
-                        "in": "query",
-                        "required": true
+                        "in": "query"
                     },
                     {
                         "type": "integer",
                         "description": "Depth of rendering subcategories",
                         "name": "depth",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Provider",
+                        "name": "provider",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "SourceID",
+                        "name": "sourceId",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter filters by importance if they have it (array format is supported with , separator | 'all' is also supported)",
+                        "name": "importance",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/api.CategoryNode"
+                        }
+                    }
+                }
+            }
+        },
+        "/inventory/api/v2/resources/composition": {
+            "get": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "inventory"
+                ],
+                "summary": "Return category info by provided category id, info includes category name, subcategories names and ids and number of resources",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Category ID - defaults to default template category",
+                        "name": "category",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "How many top categories to return",
+                        "name": "top",
                         "in": "query",
                         "required": true
                     },
@@ -2030,10 +2088,9 @@ const docTemplate = `{
                     },
                     {
                         "type": "string",
-                        "description": "Category",
+                        "description": "Category(Template) ID defaults to default template",
                         "name": "category",
-                        "in": "query",
-                        "required": true
+                        "in": "query"
                     },
                     {
                         "type": "string",
@@ -3722,17 +3779,6 @@ const docTemplate = `{
                 }
             }
         },
-        "api.CategoriesResponse": {
-            "type": "object",
-            "properties": {
-                "resourceCount": {
-                    "type": "integer"
-                },
-                "serviceName": {
-                    "type": "string"
-                }
-            }
-        },
         "api.CategorizedMetricsResponse": {
             "type": "object",
             "properties": {
@@ -3781,6 +3827,9 @@ const docTemplate = `{
                 },
                 "categoryName": {
                     "type": "string"
+                },
+                "cost": {
+                    "$ref": "#/definitions/api.Cost"
                 },
                 "filters": {
                     "type": "array",
@@ -3884,6 +3933,17 @@ const docTemplate = `{
                     "additionalProperties": {
                         "type": "integer"
                     }
+                }
+            }
+        },
+        "api.Cost": {
+            "type": "object",
+            "properties": {
+                "current_cost": {
+                    "type": "number"
+                },
+                "history_cost": {
+                    "type": "number"
                 }
             }
         },
@@ -4617,6 +4677,17 @@ const docTemplate = `{
             "properties": {
                 "name": {
                     "type": "string"
+                }
+            }
+        },
+        "api.LocationResponse": {
+            "type": "object",
+            "properties": {
+                "location": {
+                    "type": "string"
+                },
+                "resourceCount": {
+                    "type": "integer"
                 }
             }
         },

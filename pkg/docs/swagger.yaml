@@ -198,13 +198,6 @@ definitions:
           $ref: '#/definitions/api.CategoryMetric'
         type: object
     type: object
-  api.CategoriesResponse:
-    properties:
-      resourceCount:
-        type: integer
-      serviceName:
-        type: string
-    type: object
   api.CategorizedMetricsResponse:
     properties:
       category:
@@ -237,6 +230,8 @@ definitions:
         type: string
       categoryName:
         type: string
+      cost:
+        $ref: '#/definitions/api.Cost'
       filters:
         items: {}
         type: array
@@ -304,6 +299,13 @@ definitions:
         additionalProperties:
           type: integer
         type: object
+    type: object
+  api.Cost:
+    properties:
+      current_cost:
+        type: number
+      history_cost:
+        type: number
     type: object
   api.CreateInsightRequest:
     properties:
@@ -798,6 +800,13 @@ definitions:
     properties:
       name:
         type: string
+    type: object
+  api.LocationResponse:
+    properties:
+      location:
+        type: string
+      resourceCount:
+        type: integer
     type: object
   api.MetricsResponse:
     properties:
@@ -2298,32 +2307,6 @@ paths:
       summary: Get Azure resources
       tags:
       - inventory
-  /inventory/api/v1/resources/categories:
-    get:
-      consumes:
-      - application/json
-      parameters:
-      - description: Provider
-        in: query
-        name: provider
-        required: true
-        type: string
-      - description: SourceID
-        in: query
-        name: sourceId
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            items:
-              $ref: '#/definitions/api.CategoriesResponse'
-            type: array
-      summary: Return resource categories and number of resources
-      tags:
-      - inventory
   /inventory/api/v1/resources/count:
     post:
       consumes:
@@ -2501,7 +2484,7 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/api.CategoriesResponse'
+              $ref: '#/definitions/api.LocationResponse'
             type: array
       summary: Returns top n regions of specified provider by resource count
       tags:
@@ -2615,6 +2598,45 @@ paths:
       summary: Return list of categories
       tags:
       - inventory
+  /inventory/api/v2/cost/category:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: Category
+        in: query
+        name: category
+        required: true
+        type: string
+      - description: Depth of rendering subcategories
+        in: query
+        name: depth
+        required: true
+        type: integer
+      - description: Provider
+        in: query
+        name: provider
+        type: string
+      - description: SourceID
+        in: query
+        name: sourceId
+        type: string
+      - description: Unix second of the time to compare to
+        in: query
+        name: compareTo
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/api.CategoryNode'
+      summary: Return category cost info by provided category id, info includes category
+        name, subcategories names and ids and their accumulated cost
+      tags:
+      - inventory
   /inventory/api/v2/metrics/categorized:
     get:
       consumes:
@@ -2651,16 +2673,7 @@ paths:
       consumes:
       - application/json
       parameters:
-      - description: Provider
-        in: query
-        name: provider
-        required: true
-        type: string
-      - description: SourceID
-        in: query
-        name: sourceId
-        type: string
-      - description: Category
+      - description: Category ID - defaults to default template category
         in: query
         name: category
         type: string
@@ -2671,9 +2684,9 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/api.CategoriesResponse'
+              $ref: '#/definitions/api.CategoryNode'
             type: array
-      summary: Return resource categories and number of resources
+      summary: Return list of the subcategories of the specified category
       tags:
       - inventory
   /inventory/api/v2/resources/category:
@@ -2681,14 +2694,51 @@ paths:
       consumes:
       - application/json
       parameters:
-      - description: Category
+      - description: Category ID - defaults to default template category
         in: query
         name: category
-        required: true
         type: string
       - description: Depth of rendering subcategories
         in: query
         name: depth
+        required: true
+        type: integer
+      - description: Provider
+        in: query
+        name: provider
+        type: string
+      - description: SourceID
+        in: query
+        name: sourceId
+        type: string
+      - description: Filter filters by importance if they have it (array format is
+          supported with , separator | 'all' is also supported)
+        in: query
+        name: importance
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/api.CategoryNode'
+      summary: Return category info by provided category id, info includes category
+        name, subcategories names and ids and number of resources
+      tags:
+      - inventory
+  /inventory/api/v2/resources/composition:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: Category ID - defaults to default template category
+        in: query
+        name: category
+        type: string
+      - description: How many top categories to return
+        in: query
+        name: top
         required: true
         type: integer
       - description: Provider
@@ -2800,10 +2850,9 @@ paths:
         in: query
         name: timeWindow
         type: string
-      - description: Category
+      - description: Category(Template) ID defaults to default template
         in: query
         name: category
-        required: true
         type: string
       - description: Filter filters by importance if they have it (array format is
           supported with , separator | 'all' is also supported)
