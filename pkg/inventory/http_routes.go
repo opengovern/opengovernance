@@ -962,7 +962,7 @@ func (h *HttpHandler) GetCategoryNodeResourceCountComposition(ctx echo.Context) 
 // @Tags    inventory
 // @Accept  json
 // @Produce json
-// @Param   category  query    string true  "Category"
+// @Param   category  query    string false "Category id - defaults to default template category"
 // @Param   depth     query    int    true  "Depth of rendering subcategories"
 // @Param   provider  query    string false "Provider"
 // @Param   sourceId  query    string false "SourceID"
@@ -970,10 +970,6 @@ func (h *HttpHandler) GetCategoryNodeResourceCountComposition(ctx echo.Context) 
 // @Success 200       {object} api.CategoryNode
 // @Router  /inventory/api/v2/cost/category [get]
 func (h *HttpHandler) GetCategoryNodeCost(ctx echo.Context) error {
-	category := ctx.QueryParam("category")
-	if category == "" {
-		return echo.NewHTTPError(http.StatusBadRequest, "category is required")
-	}
 	depthStr := ctx.QueryParam("depth")
 	depth, err := strconv.Atoi(depthStr)
 	if err != nil || depth <= 0 {
@@ -999,9 +995,15 @@ func (h *HttpHandler) GetCategoryNodeCost(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid compareTo")
 	}
 
-	rootNode, err := h.graphDb.GetCategory(ctx.Request().Context(), category, []string{"all"})
-	if err != nil {
-		return err
+	category := ctx.QueryParam("category")
+	var rootNode *CategoryNode
+	if category == "" {
+		rootNode, err = h.graphDb.GetCategoryRootByName(ctx.Request().Context(), RootTypeTemplateRoot, DefaultTemplateRootName, []string{"all"})
+	} else {
+		rootNode, err = h.graphDb.GetCategory(ctx.Request().Context(), category, []string{"all"})
+		if err != nil {
+			return err
+		}
 	}
 
 	serviceNames := make([]string, 0)

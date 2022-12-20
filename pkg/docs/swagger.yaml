@@ -2603,10 +2603,9 @@ paths:
       consumes:
       - application/json
       parameters:
-      - description: Category
+      - description: Category id - defaults to default template category
         in: query
         name: category
-        required: true
         type: string
       - description: Depth of rendering subcategories
         in: query

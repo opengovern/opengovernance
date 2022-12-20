@@ -1725,10 +1725,9 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Category",
+                        "description": "Category id - defaults to default template category",
                         "name": "category",
-                        "in": "query",
-                        "required": true
+                        "in": "query"
                     },
                     {
                         "type": "integer",
