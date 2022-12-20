@@ -811,7 +811,9 @@ func (h *HttpHandler) GetCategoryNodeResourceCountHelper(ctx context.Context, de
 	)
 	if category == "" {
 		rootNode, err = h.graphDb.GetCategoryRootByName(ctx, RootTypeTemplateRoot, DefaultTemplateRootName, importanceArray)
-		return nil, echo.NewHTTPError(http.StatusBadRequest, "category is required")
+		if err != nil {
+			return nil, err
+		}
 	} else {
 		rootNode, err = h.graphDb.GetCategory(ctx, category, importanceArray)
 		if err != nil {
