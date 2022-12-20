@@ -2636,6 +2636,44 @@ paths:
         name, subcategories names and ids and their accumulated cost
       tags:
       - inventory
+  /inventory/api/v2/cost/composition:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: Category ID - defaults to default template category
+        in: query
+        name: category
+        type: string
+      - description: How many top categories to return
+        in: query
+        name: top
+        required: true
+        type: integer
+      - description: Provider
+        in: query
+        name: provider
+        type: string
+      - description: SourceID
+        in: query
+        name: sourceId
+        type: string
+      - description: Unix second of the time to compare to
+        in: query
+        name: compareTo
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/api.CategoryNode'
+      summary: Return category info by provided category id, info includes category
+        name, subcategories names and ids and number of resources
+      tags:
+      - inventory
   /inventory/api/v2/metrics/categorized:
     get:
       consumes:

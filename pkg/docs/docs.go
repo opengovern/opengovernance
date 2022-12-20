@@ -1766,6 +1766,62 @@ const docTemplate = `{
                 }
             }
         },
+        "/inventory/api/v2/cost/composition": {
+            "get": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "inventory"
+                ],
+                "summary": "Return category info by provided category id, info includes category name, subcategories names and ids and number of resources",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Category ID - defaults to default template category",
+                        "name": "category",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "How many top categories to return",
+                        "name": "top",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Provider",
+                        "name": "provider",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "SourceID",
+                        "name": "sourceId",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Unix second of the time to compare to",
+                        "name": "compareTo",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/api.CategoryNode"
+                        }
+                    }
+                }
+            }
+        },
         "/inventory/api/v2/metrics/categorized": {
             "get": {
                 "consumes": [
