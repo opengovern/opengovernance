@@ -1002,11 +1002,14 @@ func (h *HttpHandler) GetCategoryNodeCost(ctx echo.Context) error {
 		return err
 	}
 
-	var serviceNames []string
+	serviceNames := make([]string, 0)
 	for _, filter := range rootNode.SubTreeFilters {
 		if filter.GetFilterType() == FilterTypeCost {
-			serviceNames = append(serviceNames, filter.(FilterCostNode).ServiceName)
+			serviceNames = append(serviceNames, filter.(*FilterCostNode).ServiceName)
 		}
+	}
+	if len(serviceNames) == 0 {
+		return echo.NewHTTPError(http.StatusBadRequest, "category has no cost filters")
 	}
 
 	currentCosts, err := es.FetchCostByServicesBetween(h.client, sourceIDPtr, providerPtr, serviceNames, time.Now(), time.Now().AddDate(0, 0, -7), EsFetchPageSize)
