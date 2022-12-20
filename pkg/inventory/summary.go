@@ -25,51 +25,6 @@ func pointerAdd(x, y *int) *int {
 	return v
 }
 
-func GetCategories(client keibi.Client, provider source.Type, sourceID *string) ([]api.CategoriesResponse, error) {
-
-	categoryMap := map[string]api.CategoriesResponse{}
-	if sourceID == nil {
-		hits, err := es.FetchProviderCategoriesSummaryPage(client, provider, nil, EsFetchPageSize)
-		if err != nil {
-			return nil, err
-		}
-		for _, hit := range hits {
-			if v, ok := categoryMap[hit.CategoryName]; ok {
-				v.ResourceCount += hit.ResourceCount
-				categoryMap[hit.CategoryName] = v
-			} else {
-				categoryMap[hit.CategoryName] = api.CategoriesResponse{
-					CategoryName:  hit.CategoryName,
-					ResourceCount: hit.ResourceCount,
-				}
-			}
-		}
-	} else {
-		hits, err := es.FetchConnectionCategoriesSummaryPage(client, sourceID, nil, EsFetchPageSize)
-		if err != nil {
-			return nil, err
-		}
-		for _, hit := range hits {
-			if v, ok := categoryMap[hit.CategoryName]; ok {
-				v.ResourceCount += hit.ResourceCount
-				categoryMap[hit.CategoryName] = v
-			} else {
-				categoryMap[hit.CategoryName] = api.CategoriesResponse{
-					CategoryName:  hit.CategoryName,
-					ResourceCount: hit.ResourceCount,
-				}
-			}
-		}
-	}
-
-	var res []api.CategoriesResponse
-	for _, v := range categoryMap {
-		res = append(res, v)
-	}
-
-	return res, nil
-}
-
 func GetServices(client keibi.Client, provider source.Type, sourceID *string) ([]api.TopServicesResponse, error) {
 	serviceResponse := map[string]api.TopServicesResponse{}
 	if sourceID == nil {

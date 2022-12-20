@@ -66,9 +66,9 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	v1.GET("/resources/top/accounts", httpserver.AuthorizeHandler(h.GetTopAccountsByResourceCount, api3.ViewerRole))
 	v1.GET("/resources/top/regions", httpserver.AuthorizeHandler(h.GetTopRegionsByResourceCount, api3.ViewerRole))
 	v1.GET("/resources/top/services", httpserver.AuthorizeHandler(h.GetTopServicesByResourceCount, api3.ViewerRole))
-	v1.GET("/resources/categories", httpserver.AuthorizeHandler(h.GetCategories, api3.ViewerRole))
 	v2.GET("/resources/categories", httpserver.AuthorizeHandler(h.GetCategoriesV2, api3.ViewerRole))
 	v2.GET("/resources/category", httpserver.AuthorizeHandler(h.GetCategoryNodeResourceCount, api3.ViewerRole))
+	v2.GET("/resources/composition", httpserver.AuthorizeHandler(h.GetCategoryNodeResourceCountComposition, api3.ViewerRole))
 	v2.GET("/cost/category", httpserver.AuthorizeHandler(h.GetCategoryNodeCost, api3.ViewerRole))
 	v2.GET("/resources/rootTemplates", httpserver.AuthorizeHandler(h.GetRootTemplates, api3.ViewerRole))
 	v2.GET("/resources/rootCloudProviders", httpserver.AuthorizeHandler(h.GetRootCloudProviders, api3.ViewerRole))
@@ -182,7 +182,7 @@ func (h *HttpHandler) GetResourceGrowthTrend(ctx echo.Context) error {
 // @Param   sourceId   query    string false "SourceID"
 // @Param   provider   query    string false "Provider"
 // @Param   timeWindow query    string false "Time Window" Enums(24h,1w,3m,1y,max)
-// @Param   category   query    string true  "Category"
+// @Param   category   query    string false  "Category(Template) ID defaults to default template"
 // @Param   importance query    string false "Filter filters by importance if they have it (array format is supported with , separator | 'all' is also supported)"
 // @Success 200        {object} []api.ResourceGrowthTrendResponse
 // @Router  /inventory/api/v2/resources/trend [get]
@@ -672,7 +672,7 @@ func (h *HttpHandler) GetTopFastestGrowingAccountsByResourceCount(ctx echo.Conte
 // @Param   count    query    int    true  "count"
 // @Param   provider query    string false "Provider"
 // @Param   sourceId query    string false "SourceId"
-// @Success 200      {object} []api.CategoriesResponse
+// @Success 200      {object} []api.LocationResponse
 // @Router  /inventory/api/v1/resources/top/regions [get]
 func (h *HttpHandler) GetTopRegionsByResourceCount(ctx echo.Context) error {
 	provider, _ := source.ParseType(ctx.QueryParam("provider"))
@@ -699,15 +699,15 @@ func (h *HttpHandler) GetTopRegionsByResourceCount(ctx echo.Context) error {
 		}
 	}
 
-	var response []api.CategoriesResponse
+	var response []api.LocationResponse
 	for region, count := range locationDistribution {
-		response = append(response, api.CategoriesResponse{
-			CategoryName:  region,
-			ResourceCount: count,
+		response = append(response, api.LocationResponse{
+			Location:      region,
+			ResourceCount: &count,
 		})
 	}
 	sort.Slice(response, func(i, j int) bool {
-		return response[i].ResourceCount > response[j].ResourceCount
+		return *response[i].ResourceCount > *response[j].ResourceCount
 	})
 	if len(response) > count {
 		response = response[:count]
@@ -763,109 +763,103 @@ func (h *HttpHandler) GetTopServicesByResourceCount(ctx echo.Context) error {
 	return ctx.JSON(http.StatusOK, res)
 }
 
-// GetCategories godoc
-// @Summary Return resource categories and number of resources
+// GetCategoriesV2 godoc
+// @Summary Return list of the subcategories of the specified category
 // @Tags    inventory
 // @Accept  json
 // @Produce json
-// @Param   provider query    string true  "Provider"
-// @Param   sourceId query    string false "SourceID"
-// @Success 200      {object} []api.CategoriesResponse
-// @Router  /inventory/api/v1/resources/categories [get]
-func (h *HttpHandler) GetCategories(ctx echo.Context) error {
-	var sourceID *string
-	provider, _ := source.ParseType(ctx.QueryParam("provider"))
-	if sID := ctx.QueryParam("sourceId"); sID != "" {
-		sourceUUID, err := uuid.Parse(sID)
+// @Param   category query    string false "Category ID - defaults to default template category"
+// @Success 200      {object} []api.CategoryNode
+// @Router  /inventory/api/v2/resources/categories [get]
+func (h *HttpHandler) GetCategoriesV2(ctx echo.Context) error {
+	category := ctx.QueryParam("category")
+	var (
+		categoryNode *CategoryNode
+		err          error
+	)
+	if category == "" {
+		categoryNode, err = h.graphDb.GetCategoryRootSubcategoriesByName(ctx.Request().Context(), RootTypeTemplateRoot, DefaultTemplateRootName)
 		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, "invalid sourceID")
+			return err
 		}
-		s := sourceUUID.String()
-		sourceID = &s
+	} else {
+		categoryNode, err = h.graphDb.GetSubcategories(ctx.Request().Context(), category)
+		if err != nil {
+			return err
+		}
 	}
 
-	res, err := GetCategories(h.client, provider, sourceID)
-	if err != nil {
-		return err
+	res := api.CategoryNode{
+		CategoryID:    categoryNode.ElementID,
+		CategoryName:  categoryNode.Name,
+		Subcategories: make([]api.CategoryNode, 0, len(categoryNode.Subcategories)),
 	}
+	for _, subcategory := range categoryNode.Subcategories {
+		res.Subcategories = append(res.Subcategories, api.CategoryNode{
+			CategoryID:   subcategory.ElementID,
+			CategoryName: subcategory.Name,
+		})
+	}
+
 	return ctx.JSON(http.StatusOK, res)
 }
 
-// GetCategoriesV2 godoc
-// @Summary Return resource categories and number of resources
-// @Tags    inventory
-// @Accept  json
-// @Produce json
-// @Param   provider query    string true  "Provider"
-// @Param   sourceId query    string false "SourceID"
-// @Param   category query    string false "Category"
-// @Success 200      {object} []api.CategoriesResponse
-// @Router  /inventory/api/v2/resources/categories [get]
-func (h *HttpHandler) GetCategoriesV2(ctx echo.Context) error {
-	var err error
-	var sourceID *string
-	provider, _ := source.ParseType(ctx.QueryParam("provider"))
-	category := ctx.QueryParam("category")
-
-	if sID := ctx.QueryParam("sourceId"); sID != "" {
-		sourceUUID, err := uuid.Parse(sID)
+func (h *HttpHandler) GetCategoryNodeResourceCountHelper(ctx context.Context, depth int, category string, sourceID string, provider string, importanceArray []string) (*api.CategoryNode, error) {
+	var (
+		rootNode *CategoryNode
+		err      error
+	)
+	if category == "" {
+		rootNode, err = h.graphDb.GetCategoryRootByName(ctx, RootTypeTemplateRoot, DefaultTemplateRootName, importanceArray)
+		return nil, echo.NewHTTPError(http.StatusBadRequest, "category is required")
+	} else {
+		rootNode, err = h.graphDb.GetCategory(ctx, category, importanceArray)
 		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, "invalid sourceID")
+			return nil, err
 		}
-		s := sourceUUID.String()
-		sourceID = &s
 	}
 
-	var metrics []Metric
-	if sourceID != nil {
-		metrics, err = h.db.FetchConnectionAllMetrics(*sourceID)
+	resourceTypes := GetResourceTypeListFromFilters(rootNode.SubTreeFilters)
+
+	var metricResourceTypeSummaries []MetricResourceTypeSummary
+	if sourceID != "" {
+		sourceUUID, err := uuid.Parse(sourceID)
 		if err != nil {
-			return err
+			return nil, echo.NewHTTPError(http.StatusBadRequest, "invalid sourceID")
 		}
-	} else if !provider.IsNull() {
-		metrics, err = h.db.FetchProviderAllMetrics(provider)
+		sourceID = sourceUUID.String()
+		metricResourceTypeSummaries, err = h.db.FetchConnectionMetricResourceTypeSummery(sourceID, resourceTypes)
 		if err != nil {
-			return err
+			return nil, err
+		}
+	} else if provider != "" {
+		providerType, _ := source.ParseType(provider)
+		metricResourceTypeSummaries, err = h.db.FetchProviderMetricResourceTypeSummery(providerType, resourceTypes)
+		if err != nil {
+			return nil, err
 		}
 	} else {
-		return echo.NewHTTPError(http.StatusBadRequest, "specify either provider or sourceID")
+		metricResourceTypeSummaries, err = h.db.FetchMetricResourceTypeSummery(resourceTypes)
+		if err != nil {
+			return nil, err
+		}
 	}
 
-	var cats []Category
-	if category != "" {
-		cats, err = h.db.GetSubCategories(category)
-	} else {
-		cats, err = h.db.ListCategories()
-	}
+	metricIndexed := GetMetricResourceTypeSummaryIndexByResourceType(metricResourceTypeSummaries)
+
+	result, err := RenderCategoryResourceCountDFS(ctx,
+		h.graphDb,
+		rootNode,
+		metricIndexed,
+		depth,
+		importanceArray,
+		map[string]api.CategoryNode{},
+		map[string]api.Filter{})
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	catMap := map[string]int{}
-	for _, m := range metrics {
-		serviceName := cloudservice.ServiceNameByResourceType(m.ResourceType)
-
-		for _, c := range cats {
-			if serviceName != c.CloudService {
-				continue
-			}
-
-			if category == "" {
-				catMap[c.Name] += m.Count
-			} else {
-				catMap[c.SubCategory] += m.Count
-			}
-		}
-	}
-
-	var res []api.CategoriesResponse
-	for k, v := range catMap {
-		res = append(res, api.CategoriesResponse{
-			CategoryName:  k,
-			ResourceCount: v,
-		})
-	}
-	return ctx.JSON(http.StatusOK, res)
+	return result, err
 }
 
 // GetCategoryNodeResourceCount godoc
@@ -873,7 +867,7 @@ func (h *HttpHandler) GetCategoriesV2(ctx echo.Context) error {
 // @Tags    inventory
 // @Accept  json
 // @Produce json
-// @Param   category   query    string true  "Category"
+// @Param   category   query    string false  "Category ID - defaults to default template category"
 // @Param   depth      query    int    true  "Depth of rendering subcategories"
 // @Param   provider   query    string false "Provider"
 // @Param   sourceId   query    string false "SourceID"
@@ -881,10 +875,6 @@ func (h *HttpHandler) GetCategoriesV2(ctx echo.Context) error {
 // @Success 200        {object} api.CategoryNode
 // @Router  /inventory/api/v2/resources/category [get]
 func (h *HttpHandler) GetCategoryNodeResourceCount(ctx echo.Context) error {
-	category := ctx.QueryParam("category")
-	if category == "" {
-		return echo.NewHTTPError(http.StatusBadRequest, "category is required")
-	}
 	depthStr := ctx.QueryParam("depth")
 	depth, err := strconv.Atoi(depthStr)
 	if err != nil || depth <= 0 {
@@ -897,52 +887,71 @@ func (h *HttpHandler) GetCategoryNodeResourceCount(ctx echo.Context) error {
 		importance = "critical"
 	}
 	importanceArray := strings.Split(importance, ",")
+	category := ctx.QueryParam("category")
 
-	rootNode, err := h.graphDb.GetCategory(ctx.Request().Context(), category, importanceArray)
+	result, err := h.GetCategoryNodeResourceCountHelper(ctx.Request().Context(), depth, category, sourceID, provider, importanceArray)
 	if err != nil {
 		return err
 	}
+	return ctx.JSON(http.StatusOK, result)
+}
 
-	resourceTypes := GetResourceTypeListFromFilters(rootNode.SubTreeFilters)
-
-	var metricResourceTypeSummaries []MetricResourceTypeSummary
-	if sourceID != "" {
-		sourceUUID, err := uuid.Parse(sourceID)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, "invalid sourceID")
-		}
-		sourceID = sourceUUID.String()
-		metricResourceTypeSummaries, err = h.db.FetchConnectionMetricResourceTypeSummery(sourceID, resourceTypes)
-		if err != nil {
-			return err
-		}
-	} else if provider != "" {
-		providerType, _ := source.ParseType(provider)
-		metricResourceTypeSummaries, err = h.db.FetchProviderMetricResourceTypeSummery(providerType, resourceTypes)
-		if err != nil {
-			return err
-		}
-	} else {
-		metricResourceTypeSummaries, err = h.db.FetchMetricResourceTypeSummery(resourceTypes)
-		if err != nil {
-			return err
-		}
+// GetCategoryNodeResourceCountComposition godoc
+// @Summary Return category info by provided category id, info includes category name, subcategories names and ids and number of resources
+// @Tags    inventory
+// @Accept  json
+// @Produce json
+// @Param   category   query    string false  "Category ID - defaults to default template category"
+// @Param   top        query    int    true  "How many top categories to return"
+// @Param   provider   query    string false "Provider"
+// @Param   sourceId   query    string false "SourceID"
+// @Param   importance query    string false "Filter filters by importance if they have it (array format is supported with , separator | 'all' is also supported)"
+// @Success 200        {object} api.CategoryNode
+// @Router  /inventory/api/v2/resources/composition [get]
+func (h *HttpHandler) GetCategoryNodeResourceCountComposition(ctx echo.Context) error {
+	topStr := ctx.QueryParam("top")
+	top, err := strconv.Atoi(topStr)
+	if err != nil || top <= 1 {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid top")
 	}
+	provider := ctx.QueryParam("provider")
+	sourceID := ctx.QueryParam("sourceId")
+	importance := strings.ToLower(ctx.QueryParam("importance"))
+	if importance == "" {
+		importance = "critical"
+	}
+	importanceArray := strings.Split(importance, ",")
+	category := ctx.QueryParam("category")
 
-	metricIndexed := GetMetricResourceTypeSummaryIndexByResourceType(metricResourceTypeSummaries)
-
-	result, err := RenderCategoryResourceCountDFS(ctx.Request().Context(),
-		h.graphDb,
-		rootNode,
-		metricIndexed,
-		depth,
-		importanceArray,
-		map[string]api.CategoryNode{},
-		map[string]api.Filter{})
+	result, err := h.GetCategoryNodeResourceCountHelper(ctx.Request().Context(), 2, category, sourceID, provider, importanceArray)
 	if err != nil {
 		return err
 	}
-
+	// sort result.SubCategories by count desc
+	sort.Slice(result.Subcategories, func(i, j int) bool {
+		return result.Subcategories[i].ResourceCount.Count > result.Subcategories[j].ResourceCount.Count
+	})
+	// take top result and aggregate the rest into "other"
+	if len(result.Subcategories) > top {
+		other := api.CategoryNode{
+			CategoryName: "Others",
+			ResourceCount: &api.HistoryCount{
+				Count:            0,
+				LastDayValue:     nil,
+				LastWeekValue:    nil,
+				LastQuarterValue: nil,
+				LastYearValue:    nil,
+			},
+		}
+		for i := top; i < len(result.Subcategories); i++ {
+			other.ResourceCount.Count += result.Subcategories[i].ResourceCount.Count
+			other.ResourceCount.LastDayValue = pointerAdd(other.ResourceCount.LastDayValue, result.Subcategories[i].ResourceCount.LastDayValue)
+			other.ResourceCount.LastWeekValue = pointerAdd(other.ResourceCount.LastWeekValue, result.Subcategories[i].ResourceCount.LastWeekValue)
+			other.ResourceCount.LastQuarterValue = pointerAdd(other.ResourceCount.LastQuarterValue, result.Subcategories[i].ResourceCount.LastQuarterValue)
+			other.ResourceCount.LastYearValue = pointerAdd(other.ResourceCount.LastYearValue, result.Subcategories[i].ResourceCount.LastYearValue)
+		}
+		result.Subcategories = append(result.Subcategories[:top], other)
+	}
 	return ctx.JSON(http.StatusOK, result)
 }
 
