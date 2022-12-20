@@ -521,3 +521,100 @@ func (gdb *GraphDatabase) GetCategory(ctx context.Context, elementID string, imp
 
 	return category, nil
 }
+
+func (gdb *GraphDatabase) GetSubcategories(ctx context.Context, elementID string) (*CategoryNode, error) {
+	session := gdb.Driver.NewSession(ctx, neo4j.SessionConfig{AccessMode: neo4j.AccessModeRead})
+	defer session.Close(ctx)
+
+	var category *CategoryNode
+
+	// Get all the subcategories of the category
+	result, err := session.Run(ctx, "MATCH (c:Category)-[:INCLUDES]->(sub:Category) WHERE elementId(c) = $element_id RETURN DISTINCT c,sub", map[string]interface{}{
+		"element_id": elementID,
+	})
+	if err != nil {
+		return nil, err
+	}
+	for result.Next(ctx) {
+		if category == nil {
+			rawCategory, ok := result.Record().Get("c")
+			if !ok {
+				return nil, ErrKeyColumnNotFound
+			}
+			categoryNode, ok := rawCategory.(neo4j.Node)
+			if !ok {
+				return nil, ErrColumnConversion
+			}
+
+			category, err = getCategoryFromNode(categoryNode)
+			if err != nil {
+				return nil, err
+			}
+		}
+		rawSubcategory, ok := result.Record().Get("sub")
+		if !ok {
+			return nil, ErrKeyColumnNotFound
+		}
+		subcategoryNode, ok := rawSubcategory.(neo4j.Node)
+		if !ok {
+			return nil, ErrColumnConversion
+		}
+
+		subcategory, err := getCategoryFromNode(subcategoryNode)
+		if err != nil {
+			return nil, err
+		}
+		category.Subcategories = append(category.Subcategories, *subcategory)
+	}
+
+	return category, nil
+}
+
+func (gdb *GraphDatabase) GetCategoryRootSubcategoriesByName(ctx context.Context, rootType CategoryRootType, name string) (*CategoryNode, error) {
+	session := gdb.Driver.NewSession(ctx, neo4j.SessionConfig{AccessMode: neo4j.AccessModeRead})
+	defer session.Close(ctx)
+
+	var category *CategoryNode
+
+	result, err := session.Run(ctx, fmt.Sprintf("MATCH (c:Category:%s{name: $name})-[:INCLUDES]->(sub:Category) RETURN c, sub", rootType), map[string]interface{}{
+		"name": name,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	for result.Next(ctx) {
+		if category == nil {
+			rawCategory, ok := result.Record().Get("c")
+			if !ok {
+				return nil, ErrKeyColumnNotFound
+			}
+			categoryNode, ok := rawCategory.(neo4j.Node)
+			if !ok {
+				return nil, ErrColumnConversion
+			}
+
+			category, err = getCategoryFromNode(categoryNode)
+			if err != nil {
+				return nil, err
+			}
+		}
+
+		rawSubcategory, ok := result.Record().Get("sub")
+		if !ok {
+			return nil, ErrKeyColumnNotFound
+		}
+		subcategoryNode, ok := rawSubcategory.(neo4j.Node)
+		if !ok {
+			return nil, ErrColumnConversion
+		}
+
+		subcategory, err := getCategoryFromNode(subcategoryNode)
+		if err != nil {
+			return nil, err
+		}
+		category.Subcategories = append(category.Subcategories, *subcategory)
+	}
+
+	return category, nil
+}

@@ -383,20 +383,20 @@ type CategorizedMetricsResponse struct {
 	Category map[string][]ResourceTypeResponse `json:"category"`
 }
 
-type CategoriesResponse struct {
-	CategoryName  string `json:"serviceName"`
-	ResourceCount int    `json:"resourceCount"`
+type LocationResponse struct {
+	Location      string `json:"location"`
+	ResourceCount *int   `json:"resourceCount,omitempty"`
 }
 
 type Filter interface {
 }
 
 type FilterCloudResourceType struct {
-	FilterID      string       `json:"filterID"`
-	CloudProvider source.Type  `json:"cloud_provider"`
-	ResourceType  string       `json:"resource_type"`
-	ResourceName  string       `json:"resource_name"`
-	ResourceCount HistoryCount `json:"resource_count"`
+	FilterID      string       `json:"filterId"`
+	CloudProvider source.Type  `json:"cloudProvider"`
+	ResourceType  string       `json:"resourceType"`
+	ResourceName  string       `json:"resourceName"`
+	ResourceCount HistoryCount `json:"resourceCount"`
 }
 
 type Cost struct {
@@ -406,7 +406,7 @@ type Cost struct {
 
 type FilterCost struct {
 	FilterID      string      `json:"filterID"`
-	CloudProvider source.Type `json:"cloud_provider"`
+	CloudProvider source.Type `json:"cloudProvider"`
 	Cost          Cost        `json:"cost"`
 }
 
