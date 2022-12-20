@@ -69,8 +69,9 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	v1.GET("/resources/top/services", httpserver.AuthorizeHandler(h.GetTopServicesByResourceCount, api3.ViewerRole))
 	v2.GET("/resources/categories", httpserver.AuthorizeHandler(h.GetCategoriesV2, api3.ViewerRole))
 	v2.GET("/resources/category", httpserver.AuthorizeHandler(h.GetCategoryNodeResourceCount, api3.ViewerRole))
-	v2.GET("/resources/composition", httpserver.AuthorizeHandler(h.GetCategoryNodeResourceCountComposition, api3.ViewerRole))
 	v2.GET("/cost/category", httpserver.AuthorizeHandler(h.GetCategoryNodeCost, api3.ViewerRole))
+	v2.GET("/resources/composition", httpserver.AuthorizeHandler(h.GetCategoryNodeResourceCountComposition, api3.ViewerRole))
+	v2.GET("/cost/composition", httpserver.AuthorizeHandler(h.GetCategoryNodeCostComposition, api3.ViewerRole))
 	v2.GET("/resources/rootTemplates", httpserver.AuthorizeHandler(h.GetRootTemplates, api3.ViewerRole))
 	v2.GET("/resources/rootCloudProviders", httpserver.AuthorizeHandler(h.GetRootCloudProviders, api3.ViewerRole))
 	v1.GET("/accounts/resource/count", httpserver.AuthorizeHandler(h.GetAccountsResourceCount, api3.ViewerRole))
@@ -1096,6 +1097,56 @@ func (h *HttpHandler) GetCategoryNodeResourceCountComposition(ctx echo.Context) 
 	return ctx.JSON(http.StatusOK, result)
 }
 
+func (h *HttpHandler) GetCategoryNodeCostHelper(ctx context.Context, depth int, category string, sourceID *string, providerPtr *source.Type, compareTo int64) (*api.CategoryNode, error) {
+	var (
+		rootNode *CategoryNode
+		err      error
+	)
+	if category == "" {
+		rootNode, err = h.graphDb.GetCategoryRootByName(ctx, RootTypeTemplateRoot, DefaultTemplateRootName, []string{"all"})
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		rootNode, err = h.graphDb.GetCategory(ctx, category, []string{"all"})
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	serviceNames := make([]string, 0)
+	for _, filter := range rootNode.SubTreeFilters {
+		if filter.GetFilterType() == FilterTypeCost {
+			serviceNames = append(serviceNames, filter.(*FilterCostNode).ServiceName)
+		}
+	}
+	if len(serviceNames) == 0 {
+		return nil, echo.NewHTTPError(http.StatusBadRequest, "category has no cost filters")
+	}
+
+	currentCosts, err := es.FetchCostByServicesBetween(h.client, sourceID, providerPtr, serviceNames, time.Now(), time.Now().AddDate(0, 0, -7), EsFetchPageSize)
+	if err != nil {
+		return nil, err
+	}
+	pastCosts, err := es.FetchCostByServicesBetween(h.client, sourceID, providerPtr, serviceNames, time.Unix(compareTo, 0), time.Unix(compareTo, 0).AddDate(0, 0, -7), EsFetchPageSize)
+	if err != nil {
+		return nil, err
+	}
+
+	result, err := RenderCategoryCostDFS(ctx,
+		h.graphDb,
+		rootNode,
+		depth,
+		currentCosts,
+		pastCosts,
+		map[string]api.CategoryNode{},
+		map[string]api.Filter{})
+	if err != nil {
+		return nil, err
+	}
+	return result, nil
+}
+
 // GetCategoryNodeCost godoc
 // @Summary Return category cost info by provided category id, info includes category name, subcategories names and ids and their accumulated cost
 // @Tags    inventory
@@ -1135,47 +1186,83 @@ func (h *HttpHandler) GetCategoryNodeCost(ctx echo.Context) error {
 	}
 
 	category := ctx.QueryParam("category")
-	var rootNode *CategoryNode
-	if category == "" {
-		rootNode, err = h.graphDb.GetCategoryRootByName(ctx.Request().Context(), RootTypeTemplateRoot, DefaultTemplateRootName, []string{"all"})
-	} else {
-		rootNode, err = h.graphDb.GetCategory(ctx.Request().Context(), category, []string{"all"})
+
+	result, err := h.GetCategoryNodeCostHelper(ctx.Request().Context(), depth, category, sourceIDPtr, providerPtr, compareTo)
+	if err != nil {
+		return err
+	}
+
+	return ctx.JSON(http.StatusOK, result)
+}
+
+// GetCategoryNodeCostComposition godoc
+// @Summary Return category info by provided category id, info includes category name, subcategories names and ids and number of resources
+// @Tags    inventory
+// @Accept  json
+// @Produce json
+// @Param   category  query    string false "Category ID - defaults to default template category"
+// @Param   top       query    int    true  "How many top categories to return"
+// @Param   provider  query    string false "Provider"
+// @Param   sourceId  query    string false "SourceID"
+// @Param   compareTo query    int    true  "Unix second of the time to compare to"
+// @Success 200       {object} api.CategoryNode
+// @Router  /inventory/api/v2/cost/composition [get]
+func (h *HttpHandler) GetCategoryNodeCostComposition(ctx echo.Context) error {
+	topStr := ctx.QueryParam("top")
+	top, err := strconv.Atoi(topStr)
+	if err != nil || top <= 1 {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid top")
+	}
+	depthStr := ctx.QueryParam("depth")
+	depth, err := strconv.Atoi(depthStr)
+	if err != nil || depth <= 0 {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid depth")
+	}
+	provider := ctx.QueryParam("provider")
+	var providerPtr *source.Type
+	if provider != "" {
+		providerType, err := source.ParseType(provider)
 		if err != nil {
-			return err
+			return echo.NewHTTPError(http.StatusBadRequest, "invalid provider")
 		}
+		providerPtr = &providerType
+	}
+	sourceID := ctx.QueryParam("sourceId")
+	sourceIDPtr := &sourceID
+	if sourceID == "" {
+		sourceIDPtr = nil
+	}
+	compareToStr := ctx.QueryParam("compareTo")
+	compareTo, err := strconv.ParseInt(compareToStr, 10, 64)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid compareTo")
 	}
 
-	serviceNames := make([]string, 0)
-	for _, filter := range rootNode.SubTreeFilters {
-		if filter.GetFilterType() == FilterTypeCost {
-			serviceNames = append(serviceNames, filter.(*FilterCostNode).ServiceName)
+	category := ctx.QueryParam("category")
+
+	result, err := h.GetCategoryNodeCostHelper(ctx.Request().Context(), 2, category, sourceIDPtr, providerPtr, compareTo)
+	if err != nil {
+		return err
+	}
+	// sort result.SubCategories by count desc
+	sort.Slice(result.Subcategories, func(i, j int) bool {
+		return result.Subcategories[i].Cost.CurrentCost > result.Subcategories[j].Cost.CurrentCost
+	})
+	// take top result and aggregate the rest into "other"
+	if len(result.Subcategories) > top {
+		other := api.CategoryNode{
+			CategoryName: "Others",
+			Cost: &api.Cost{
+				CurrentCost: 0,
+				HistoryCost: 0,
+			},
 		}
+		for i := top; i < len(result.Subcategories); i++ {
+			other.Cost.CurrentCost += result.Cost.CurrentCost
+			other.Cost.HistoryCost += result.Cost.HistoryCost
+		}
+		result.Subcategories = append(result.Subcategories[:top], other)
 	}
-	if len(serviceNames) == 0 {
-		return echo.NewHTTPError(http.StatusBadRequest, "category has no cost filters")
-	}
-
-	currentCosts, err := es.FetchCostByServicesBetween(h.client, sourceIDPtr, providerPtr, serviceNames, time.Now(), time.Now().AddDate(0, 0, -7), EsFetchPageSize)
-	if err != nil {
-		return err
-	}
-	pastCosts, err := es.FetchCostByServicesBetween(h.client, sourceIDPtr, providerPtr, serviceNames, time.Unix(compareTo, 0), time.Unix(compareTo, 0).AddDate(0, 0, -7), EsFetchPageSize)
-	if err != nil {
-		return err
-	}
-
-	result, err := RenderCategoryCostDFS(ctx.Request().Context(),
-		h.graphDb,
-		rootNode,
-		depth,
-		currentCosts,
-		pastCosts,
-		map[string]api.CategoryNode{},
-		map[string]api.Filter{})
-	if err != nil {
-		return err
-	}
-
 	return ctx.JSON(http.StatusOK, result)
 }
 
