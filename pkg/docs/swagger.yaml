@@ -242,7 +242,7 @@ definitions:
           $ref: '#/definitions/api.CategoryNode'
         type: array
     type: object
-  api.CategoryTrend:
+  api.CategoryResourceTrend:
     properties:
       name:
         type: string
@@ -992,7 +992,7 @@ definitions:
     properties:
       Subcategories:
         items:
-          $ref: '#/definitions/api.CategoryTrend'
+          $ref: '#/definitions/api.CategoryResourceTrend'
         type: array
       categoryName:
         type: string
@@ -2852,11 +2852,6 @@ paths:
       - description: Category(Template) ID defaults to default template
         in: query
         name: category
-        type: string
-      - description: Filter filters by importance if they have it (array format is
-          supported with , separator | 'all' is also supported)
-        in: query
-        name: importance
         type: string
       produces:
       - application/json

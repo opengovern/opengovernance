@@ -62,6 +62,7 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 
 	v1.GET("/resources/trend", httpserver.AuthorizeHandler(h.GetResourceGrowthTrend, api3.ViewerRole))
 	v2.GET("/resources/trend", httpserver.AuthorizeHandler(h.GetResourceGrowthTrendV2, api3.ViewerRole))
+	v2.GET("/cost/trend", httpserver.AuthorizeHandler(h.GetCostGrowthTrendV2, api3.ViewerRole))
 	v1.GET("/resources/top/growing/accounts", httpserver.AuthorizeHandler(h.GetTopFastestGrowingAccountsByResourceCount, api3.ViewerRole))
 	v1.GET("/resources/top/accounts", httpserver.AuthorizeHandler(h.GetTopAccountsByResourceCount, api3.ViewerRole))
 	v1.GET("/resources/top/regions", httpserver.AuthorizeHandler(h.GetTopRegionsByResourceCount, api3.ViewerRole))
@@ -245,7 +246,7 @@ func (h *HttpHandler) GetResourceGrowthTrendV2(ctx echo.Context) error {
 		},
 	}
 
-	trends := map[string]api.CategoryTrend{}
+	trends := map[string]api.CategoryResourceTrend{}
 	mainCategoryTrendsMap := map[int64]api.TrendDataPoint{}
 	if sourceID != "" {
 		hits, err := es.FetchConnectionResourceTypeTrendSummaryPage(h.client, &sourceID, resourceTypes, fromTime, toTime, sortMap, EsFetchPageSize)
@@ -319,7 +320,7 @@ func (h *HttpHandler) GetResourceGrowthTrendV2(ctx echo.Context) error {
 		}
 	}
 
-	var subcategoriesTrends []api.CategoryTrend
+	var subcategoriesTrends []api.CategoryResourceTrend
 	for _, v := range trends {
 		// aggregate data points in the same category and same timestamp into one data point with the sum of the values
 		timeValMap := map[int64]api.TrendDataPoint{}
@@ -352,6 +353,144 @@ func (h *HttpHandler) GetResourceGrowthTrendV2(ctx echo.Context) error {
 		return mainCategoryTrends[i].Timestamp < mainCategoryTrends[j].Timestamp
 	})
 	return ctx.JSON(http.StatusOK, api.ResourceGrowthTrendResponse{
+		CategoryName:  root.Name,
+		Trend:         mainCategoryTrends,
+		Subcategories: subcategoriesTrends,
+	})
+}
+
+// GetCostGrowthTrendV2 godoc
+// @Summary Returns trend of resource growth for specific account
+// @Tags    benchmarks
+// @Accept  json
+// @Produce json
+// @Param   sourceId   query    string false "SourceID"
+// @Param   provider   query    string false "Provider"
+// @Param   timeWindow query    string false "Time Window" Enums(24h,1w,3m,1y,max)
+// @Param   category   query    string false "Category(Template) ID defaults to default template"
+// @Success 200        {object} []api.ResourceGrowthTrendResponse
+// @Router  /inventory/api/v2/resources/trend [get]
+func (h *HttpHandler) GetCostGrowthTrendV2(ctx echo.Context) error {
+	var err error
+	var fromTime, toTime int64
+
+	provider, _ := source.ParseType(ctx.QueryParam("provider"))
+	sourceID := ctx.QueryParam("sourceId")
+	timeWindow := ctx.QueryParam("timeWindow")
+	if timeWindow == "" {
+		timeWindow = "24h"
+	}
+	toTime = time.Now().Unix()
+	tw, err := ParseTimeWindow(timeWindow)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid timeWindow")
+	}
+	fromTime = time.Now().Add(-1 * tw).Unix()
+
+	category := ctx.QueryParam("category")
+	var root *CategoryNode
+	if category == "" {
+		root, err = h.graphDb.GetCategoryRootByName(ctx.Request().Context(), RootTypeTemplateRoot, DefaultTemplateRootName, []string{"all"})
+		if err != nil {
+			return err
+		}
+	} else {
+		root, err = h.graphDb.GetCategory(ctx.Request().Context(), category, []string{"all"})
+		if err != nil {
+			return err
+		}
+	}
+	var serviceNames []string
+	for _, f := range root.SubTreeFilters {
+		switch f.GetFilterType() {
+		case FilterTypeCost:
+			filter := f.(*FilterCostNode)
+			serviceNames = append(serviceNames, filter.ServiceName)
+		}
+	}
+	if len(serviceNames) == 0 {
+		return echo.NewHTTPError(http.StatusBadRequest, "no cost filters found")
+	}
+
+	for i, sc := range root.Subcategories {
+		cat, err := h.graphDb.GetCategory(ctx.Request().Context(), sc.ElementID, []string{"all"})
+		if err != nil {
+			return err
+		}
+		root.Subcategories[i] = *cat
+	}
+
+	trends := map[string]api.CategoryCostTrend{}
+	mainCategoryTrendsMap := map[int64]api.FloatTrendDataPoint{}
+	hits, err := es.FetchCostHistoryByServicesBetween(h.client, &sourceID, &provider, serviceNames, time.Unix(toTime, 0), time.Unix(fromTime, 0), EsFetchPageSize)
+	if err != nil {
+		return err
+	}
+	for serviceName, hit := range hits {
+		for _, cat := range root.Subcategories {
+			for _, f := range cat.SubTreeFilters {
+				switch f.GetFilterType() {
+				case FilterTypeCost:
+					filter := f.(*FilterCostNode)
+					if serviceName != filter.ServiceName {
+						continue
+					}
+					for _, vHit := range hit {
+						v := trends[cat.ElementID]
+						v.Trend = append(v.Trend, api.FloatTrendDataPoint{
+							Timestamp: vHit.PeriodEnd,
+							Value:     vHit.GetCost(),
+						})
+						if v, ok := mainCategoryTrendsMap[vHit.PeriodEnd]; ok {
+							v.Value += vHit.GetCost()
+							mainCategoryTrendsMap[vHit.PeriodEnd] = v
+						} else {
+							mainCategoryTrendsMap[vHit.PeriodEnd] = api.FloatTrendDataPoint{
+								Timestamp: vHit.PeriodEnd,
+								Value:     vHit.GetCost(),
+							}
+						}
+						v.Name = cat.Name
+						trends[cat.ElementID] = v
+					}
+				}
+			}
+		}
+	}
+
+	var subcategoriesTrends []api.CategoryCostTrend
+	for _, v := range trends {
+		// aggregate data points in the same category and same timestamp into one data point with the sum of the values
+		timeValMap := map[int64]api.FloatTrendDataPoint{}
+		for _, trend := range v.Trend {
+			if v, ok := timeValMap[trend.Timestamp]; ok {
+				v.Value += trend.Value
+				timeValMap[trend.Timestamp] = v
+			} else {
+				timeValMap[trend.Timestamp] = trend
+			}
+		}
+		trendArr := make([]api.FloatTrendDataPoint, 0, len(timeValMap))
+		for _, v := range timeValMap {
+			trendArr = append(trendArr, v)
+		}
+		// sort data points by timestamp
+		sort.SliceStable(trendArr, func(i, j int) bool {
+			return v.Trend[i].Timestamp < v.Trend[j].Timestamp
+		})
+		// overwrite the trend array with the aggregated and sorted data points
+		v.Trend = trendArr
+		subcategoriesTrends = append(subcategoriesTrends, v)
+	}
+
+	mainCategoryTrends := make([]api.FloatTrendDataPoint, 0, len(mainCategoryTrendsMap))
+	for _, v := range mainCategoryTrendsMap {
+		mainCategoryTrends = append(mainCategoryTrends, v)
+	}
+	sort.SliceStable(mainCategoryTrends, func(i, j int) bool {
+		return mainCategoryTrends[i].Timestamp < mainCategoryTrends[j].Timestamp
+	})
+	return ctx.JSON(http.StatusOK, api.CostGrowthTrendResponse{
 		CategoryName:  root.Name,
 		Trend:         mainCategoryTrends,
 		Subcategories: subcategoriesTrends,
