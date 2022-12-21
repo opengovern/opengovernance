@@ -43,7 +43,7 @@ func FetchCostByServicesBetween(client keibi.Client, sourceID *string, provider 
 	var filters []interface{}
 
 	filters = append(filters, map[string]interface{}{
-		"terms": map[string][]string{"report_type": {string(summarizer.CostProviderSummary)}},
+		"terms": map[string][]string{"report_type": {string(summarizer.CostProviderSummaryMonthly)}},
 	})
 	filters = append(filters, map[string]interface{}{
 		"terms": map[string][]string{"service_name": services},
@@ -154,7 +154,7 @@ func FetchCostHistoryByServicesBetween(client keibi.Client, sourceID *string, pr
 	var filters []interface{}
 
 	filters = append(filters, map[string]interface{}{
-		"terms": map[string][]string{"report_type": {string(summarizer.CostProviderSummary)}},
+		"terms": map[string][]string{"report_type": {string(summarizer.CostProviderSummaryMonthly)}},
 	})
 	filters = append(filters, map[string]interface{}{
 		"terms": map[string][]string{"service_name": services},
@@ -260,7 +260,7 @@ func FetchCostByAccountsBetween(client keibi.Client, sourceID *string, provider 
 	var filters []interface{}
 
 	filters = append(filters, map[string]interface{}{
-		"terms": map[string][]string{"report_type": {string(summarizer.CostConnectionSummary)}},
+		"terms": map[string][]string{"report_type": {string(summarizer.CostConnectionSummaryMonthly)}},
 	})
 	filters = append(filters, map[string]interface{}{
 		"range": map[string]interface{}{

@@ -24,7 +24,8 @@ const (
 	ServiceLocationConnectionSummary   ConnectionReportType = "ServiceLocationPerSource"
 	TrendConnectionSummary             ConnectionReportType = "TrendPerSourceHistory"
 	ResourceTypeTrendConnectionSummary ConnectionReportType = "ResourceTypeTrendPerSourceHistory"
-	CostConnectionSummary              ConnectionReportType = "CostPerSource"
+	CostConnectionSummaryMonthly       ConnectionReportType = "CostPerSource"
+	CostConnectionSummaryDaily         ConnectionReportType = "CostPerSourceDaily"
 )
 
 type ConnectionResourcesSummary struct {
@@ -156,6 +157,7 @@ type ConnectionCostSummary struct {
 func (c ConnectionCostSummary) GetCost() float64 {
 	switch c.ResourceType {
 	case "aws::costexplorer::byaccountmonthly":
+	case "aws::costexplorer::byaccountdaily":
 		costFloat, err := strconv.ParseFloat(c.Cost.(map[string]interface{})["UnblendedCostAmount"].(string), 64)
 		if err != nil {
 			return 0
@@ -172,7 +174,12 @@ func (c ConnectionCostSummary) KeysAndIndex() ([]string, string) {
 		c.ResourceType,
 		fmt.Sprint(c.PeriodStart),
 		fmt.Sprint(c.PeriodEnd),
-		string(CostConnectionSummary),
+	}
+	switch c.ResourceType {
+	case "aws::costexplorer::byaccountmonthly":
+		keys = append(keys, string(CostConnectionSummaryMonthly))
+	case "aws::costexplorer::byaccountdaily":
+		keys = append(keys, string(CostConnectionSummaryDaily))
 	}
 
 	return keys, CostSummeryIndex
