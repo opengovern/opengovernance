@@ -377,6 +377,10 @@ func (h *HttpHandler) GetCostGrowthTrendV2(ctx echo.Context) error {
 
 	provider, _ := source.ParseType(ctx.QueryParam("provider"))
 	sourceID := ctx.QueryParam("sourceId")
+	sourceIDPtr := &sourceID
+	if sourceID == "" {
+		sourceIDPtr = nil
+	}
 	timeWindow := ctx.QueryParam("timeWindow")
 	if timeWindow == "" {
 		timeWindow = "24h"
@@ -423,7 +427,7 @@ func (h *HttpHandler) GetCostGrowthTrendV2(ctx echo.Context) error {
 
 	trends := map[string]api.CategoryCostTrend{}
 	mainCategoryTrendsMap := map[int64]api.FloatTrendDataPoint{}
-	hits, err := es.FetchCostHistoryByServicesBetween(h.client, &sourceID, &provider, serviceNames, time.Unix(toTime, 0), time.Unix(fromTime, 0), EsFetchPageSize)
+	hits, err := es.FetchCostHistoryByServicesBetween(h.client, sourceIDPtr, &provider, serviceNames, time.Unix(toTime, 0), time.Unix(fromTime, 0), EsFetchPageSize)
 	if err != nil {
 		return err
 	}
@@ -1212,11 +1216,6 @@ func (h *HttpHandler) GetCategoryNodeCostComposition(ctx echo.Context) error {
 	top, err := strconv.Atoi(topStr)
 	if err != nil || top <= 1 {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid top")
-	}
-	depthStr := ctx.QueryParam("depth")
-	depth, err := strconv.Atoi(depthStr)
-	if err != nil || depth <= 0 {
-		return echo.NewHTTPError(http.StatusBadRequest, "invalid depth")
 	}
 	provider := ctx.QueryParam("provider")
 	var providerPtr *source.Type
