@@ -77,7 +77,7 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	v2.GET("/resources/rootCloudProviders", httpserver.AuthorizeHandler(h.GetRootCloudProviders, api3.ViewerRole))
 
 	v1.GET("/accounts/resource/count", httpserver.AuthorizeHandler(h.GetAccountsResourceCount, api3.ViewerRole))
-	v2.GET("/accounts/summery", httpserver.AuthorizeHandler(h.GetAccountSummery, api3.ViewerRole))
+	v2.GET("/accounts/summary", httpserver.AuthorizeHandler(h.GetAccountSummary, api3.ViewerRole))
 
 	v1.GET("/resources/distribution", httpserver.AuthorizeHandler(h.GetResourceDistribution, api3.ViewerRole))
 	v1.GET("/services/distribution", httpserver.AuthorizeHandler(h.GetServiceDistribution, api3.ViewerRole))
@@ -1867,7 +1867,7 @@ func (h *HttpHandler) GetAccountsResourceCount(ctx echo.Context) error {
 	return ctx.JSON(http.StatusOK, response)
 }
 
-// GetAccountSummery godoc
+// GetAccountSummary godoc
 // @Summary Returns resource count of accounts
 // @Tags    benchmarks
 // @Accept  json
@@ -1875,8 +1875,8 @@ func (h *HttpHandler) GetAccountsResourceCount(ctx echo.Context) error {
 // @Param   provider query    string true  "Provider"
 // @Param   sourceId query    string false "SourceID"
 // @Success 200      {object} []api.AccountSummaryResponse
-// @Router  /inventory/api/v2/accounts/summery [get]
-func (h *HttpHandler) GetAccountSummery(ctx echo.Context) error {
+// @Router  /inventory/api/v2/accounts/summary [get]
+func (h *HttpHandler) GetAccountSummary(ctx echo.Context) error {
 	provider, _ := source.ParseType(ctx.QueryParam("provider"))
 	sourceId := ctx.QueryParam("sourceId")
 	var sourceIdPtr *string
