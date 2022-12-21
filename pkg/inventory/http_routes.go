@@ -1917,7 +1917,7 @@ func (h *HttpHandler) GetAccountSummary(ctx echo.Context) error {
 		}
 	}
 
-	costs, err := es.FetchCostByAccountsBetween(h.client, sourceIdPtr, provider.AsPtr(), time.Now(), time.Now().Add(time.Duration(math.MaxInt64)), EsFetchPageSize)
+	costs, err := es.FetchCostByAccountsBetween(h.client, sourceIdPtr, provider.AsPtr(), time.Now(), time.Now().Add(-1*time.Duration(math.MaxInt64)), EsFetchPageSize)
 	if err != nil {
 		return err
 	}
