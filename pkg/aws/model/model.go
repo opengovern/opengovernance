@@ -1261,6 +1261,16 @@ type CostExplorerByServiceMonthlyDescription struct {
 	CostExplorerRow
 }
 
+//index:aws_costexplorer_byaccountdaily
+type CostExplorerByAccountDailyDescription struct {
+	CostExplorerRow
+}
+
+//index:aws_costexplorer_byservicedaily
+type CostExplorerByServiceDailyDescription struct {
+	CostExplorerRow
+}
+
 //  ===================  ECR  ===================
 
 //index:aws_ecr_repository

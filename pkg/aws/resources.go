@@ -87,6 +87,8 @@ var resourceTypeToDescriber = map[string]ResourceDescriber{
 	"AWS::EC2::IpamPool":                  ParallelDescribeRegional(describer.EC2IpamPool),
 	"AWS::CostExplorer::ByAccountMonthly": SequentialDescribeGlobal(describer.CostByAccountLastMonth),
 	"AWS::CostExplorer::ByServiceMonthly": SequentialDescribeGlobal(describer.CostByServiceLastMonth),
+	"AWS::CostExplorer::ByAccountDaily":   SequentialDescribeGlobal(describer.CostByAccountLastDay),
+	"AWS::CostExplorer::ByServiceDaily":   SequentialDescribeGlobal(describer.CostByServiceLastDay),
 	"AWS::EC2::InternetGateway":           ParallelDescribeRegional(describer.EC2InternetGateway),
 	"AWS::EC2::KeyPair":                   ParallelDescribeRegional(describer.EC2KeyPair),
 	// "AWS::EC2::LaunchTemplate":                                    ParallelDescribeRegional(describer.EC2LaunchTemplate),
