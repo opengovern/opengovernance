@@ -460,6 +460,30 @@ func (h *HttpHandler) GetCostGrowthTrendV2(ctx echo.Context) error {
 			}
 		}
 	}
+	for serviceName, costArr := range hits {
+		isCounted := map[int64]struct{}{}
+		for _, f := range root.SubTreeFilters {
+			switch f.GetFilterType() {
+			case FilterTypeCost:
+				filter := f.(*FilterCostNode)
+				if filter.ServiceName != serviceName {
+					continue
+				}
+				if _, ok := trendsMap[root.ElementID]; !ok {
+					trendsMap[root.ElementID] = []api.FloatTrendDataPoint{}
+				}
+				for _, cost := range costArr {
+					if _, ok := isCounted[cost.PeriodEnd]; !ok {
+						trendsMap[root.ElementID] = append(trendsMap[root.ElementID], api.FloatTrendDataPoint{
+							Timestamp: cost.PeriodEnd,
+							Value:     cost.GetCost(),
+						})
+						isCounted[cost.PeriodEnd] = struct{}{}
+					}
+				}
+			}
+		}
+	}
 
 	var subcategoriesTrends []api.CategoryCostTrend
 	for _, cat := range root.Subcategories {
