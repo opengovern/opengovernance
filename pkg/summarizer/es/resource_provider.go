@@ -21,7 +21,8 @@ const (
 	LocationProviderSummary          ProviderReportType = "LocationPerProvider"
 	TrendProviderSummary             ProviderReportType = "TrendPerProviderHistory"
 	ResourceTypeTrendProviderSummary ProviderReportType = "ResourceTypeTrendPerProviderHistory"
-	CostProviderSummary              ProviderReportType = "CostPerService"
+	CostProviderSummaryMonthly       ProviderReportType = "CostPerService"
+	CostProviderSummaryDaily         ProviderReportType = "CostPerServiceDaily"
 )
 
 type ProviderServiceSummary struct {
@@ -134,6 +135,7 @@ type ServiceCostSummary struct {
 func (c ServiceCostSummary) GetCost() float64 {
 	switch c.ResourceType {
 	case "aws::costexplorer::byservicemonthly":
+	case "aws::costexplorer::byservicedaily":
 		costFloat, err := strconv.ParseFloat(c.Cost.(map[string]interface{})["UnblendedCostAmount"].(string), 64)
 		if err != nil {
 			return 0
@@ -150,7 +152,12 @@ func (c ServiceCostSummary) KeysAndIndex() ([]string, string) {
 		c.ResourceType,
 		fmt.Sprint(c.PeriodStart),
 		fmt.Sprint(c.PeriodEnd),
-		string(CostProviderSummary),
+	}
+	switch c.ResourceType {
+	case "aws::costexplorer::byservicemonthly":
+		keys = append(keys, string(CostProviderSummaryMonthly))
+	case "aws::costexplorer::byservicedaily":
+		keys = append(keys, string(CostProviderSummaryDaily))
 	}
 
 	return keys, CostSummeryIndex
