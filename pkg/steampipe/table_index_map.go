@@ -8,7 +8,9 @@ import (
 
 var awsMap = map[string]string{
 	"AWS::CostExplorer::ByAccountMonthly":       "aws_cost_by_account_monthly",
+	"AWS::CostExplorer::ByAccountDaily":         "aws_cost_by_account_daily",
 	"AWS::CostExplorer::ByServiceMonthly":       "aws_cost_by_service_monthly",
+	"AWS::CostExplorer::ByServiceDaily":         "aws_cost_by_service_daily",
 	"AWS::SSM::ManagedInstanceCompliance":       "aws_ssm_managed_instance_compliance",
 	"AWS::ApplicationAutoScaling::Target":       "aws_appautoscaling_target",
 	"AWS::EKS::Cluster":                         "aws_eks_cluster",
@@ -285,7 +287,9 @@ var azureMap = map[string]string{
 }
 var AWSDescriptionMap = map[string]interface{}{
 	"AWS::CostExplorer::ByAccountMonthly": &keibi.CostExplorerByAccountMonthly{},
+	"AWS::CostExplorer::ByAccountDaily":   &keibi.CostExplorerByAccountDaily{},
 	"AWS::CostExplorer::ByServiceMonthly": &keibi.CostExplorerByServiceMonthly{},
+	"AWS::CostExplorer::ByServiceDaily":   &keibi.CostExplorerByServiceDaily{},
 	//"AWS::EFS::AccessPoint":                     &keibi.EFSAccesspoint{},
 	//"AWS::EFS::MountTarget":                     &keibi.Mount,
 	"AWS::Logs::MetricFilter":                   &keibi.CloudWatchLogsMetricFilter{},

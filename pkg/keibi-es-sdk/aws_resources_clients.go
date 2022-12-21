@@ -18695,7 +18695,7 @@ type LambdaFunctionVersionPaginator struct {
 }
 
 func (k Client) NewLambdaFunctionVersionPaginator(filters []BoolFilter, limit *int64) (LambdaFunctionVersionPaginator, error) {
-	paginator, err := newPaginator(k.es, "aws_lambda_function", filters, limit)
+	paginator, err := newPaginator(k.es, "aws_lambda_function_version", filters, limit)
 	if err != nil {
 		return LambdaFunctionVersionPaginator{}, err
 	}
@@ -19225,6 +19225,288 @@ func GetCostExplorerByServiceMonthly(ctx context.Context, d *plugin.QueryData, _
 }
 
 // ==========================  END: CostExplorerByServiceMonthly =============================
+
+// ==========================  START: CostExplorerByAccountDaily =============================
+
+type CostExplorerByAccountDaily struct {
+	Description   aws.CostExplorerByAccountDailyDescription `json:"description"`
+	Metadata      aws.Metadata                              `json:"metadata"`
+	ResourceJobID int                                       `json:"resource_job_id"`
+	SourceJobID   int                                       `json:"source_job_id"`
+	ResourceType  string                                    `json:"resource_type"`
+	SourceType    string                                    `json:"source_type"`
+	ID            string                                    `json:"id"`
+	SourceID      string                                    `json:"source_id"`
+}
+
+type CostExplorerByAccountDailyHit struct {
+	ID      string                     `json:"_id"`
+	Score   float64                    `json:"_score"`
+	Index   string                     `json:"_index"`
+	Type    string                     `json:"_type"`
+	Version int64                      `json:"_version,omitempty"`
+	Source  CostExplorerByAccountDaily `json:"_source"`
+	Sort    []interface{}              `json:"sort"`
+}
+
+type CostExplorerByAccountDailyHits struct {
+	Total SearchTotal                     `json:"total"`
+	Hits  []CostExplorerByAccountDailyHit `json:"hits"`
+}
+
+type CostExplorerByAccountDailySearchResponse struct {
+	PitID string                         `json:"pit_id"`
+	Hits  CostExplorerByAccountDailyHits `json:"hits"`
+}
+
+type CostExplorerByAccountDailyPaginator struct {
+	paginator *baseESPaginator
+}
+
+func (k Client) NewCostExplorerByAccountDailyPaginator(filters []BoolFilter, limit *int64) (CostExplorerByAccountDailyPaginator, error) {
+	paginator, err := newPaginator(k.es, "aws_costexplorer_byaccountdaily", filters, limit)
+	if err != nil {
+		return CostExplorerByAccountDailyPaginator{}, err
+	}
+
+	p := CostExplorerByAccountDailyPaginator{
+		paginator: paginator,
+	}
+
+	return p, nil
+}
+
+func (p CostExplorerByAccountDailyPaginator) HasNext() bool {
+	return !p.paginator.done
+}
+
+func (p CostExplorerByAccountDailyPaginator) NextPage(ctx context.Context) ([]CostExplorerByAccountDaily, error) {
+	var response CostExplorerByAccountDailySearchResponse
+	err := p.paginator.search(ctx, &response)
+	if err != nil {
+		return nil, err
+	}
+
+	var values []CostExplorerByAccountDaily
+	for _, hit := range response.Hits.Hits {
+		values = append(values, hit.Source)
+	}
+
+	hits := int64(len(response.Hits.Hits))
+	if hits > 0 {
+		p.paginator.updateState(hits, response.Hits.Hits[hits-1].Sort, response.PitID)
+	} else {
+		p.paginator.updateState(hits, nil, "")
+	}
+
+	return values, nil
+}
+
+var listCostExplorerByAccountDailyFilters = map[string]string{}
+
+func ListCostExplorerByAccountDaily(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("ListCostExplorerByAccountDaily")
+
+	// create service
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	paginator, err := k.NewCostExplorerByAccountDailyPaginator(buildFilter(d.KeyColumnQuals, listCostExplorerByAccountDailyFilters, "aws", *cfg.AccountID), d.QueryContext.Limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			d.StreamListItem(ctx, v)
+		}
+	}
+
+	return nil, nil
+}
+
+var getCostExplorerByAccountDailyFilters = map[string]string{}
+
+func GetCostExplorerByAccountDaily(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("GetCostExplorerByAccountDaily")
+
+	// create service
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	limit := int64(1)
+	paginator, err := k.NewCostExplorerByAccountDailyPaginator(buildFilter(d.KeyColumnQuals, getCostExplorerByAccountDailyFilters, "aws", *cfg.AccountID), &limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			return v, nil
+		}
+	}
+
+	return nil, nil
+}
+
+// ==========================  END: CostExplorerByAccountDaily =============================
+
+// ==========================  START: CostExplorerByServiceDaily =============================
+
+type CostExplorerByServiceDaily struct {
+	Description   aws.CostExplorerByServiceDailyDescription `json:"description"`
+	Metadata      aws.Metadata                              `json:"metadata"`
+	ResourceJobID int                                       `json:"resource_job_id"`
+	SourceJobID   int                                       `json:"source_job_id"`
+	ResourceType  string                                    `json:"resource_type"`
+	SourceType    string                                    `json:"source_type"`
+	ID            string                                    `json:"id"`
+	SourceID      string                                    `json:"source_id"`
+}
+
+type CostExplorerByServiceDailyHit struct {
+	ID      string                     `json:"_id"`
+	Score   float64                    `json:"_score"`
+	Index   string                     `json:"_index"`
+	Type    string                     `json:"_type"`
+	Version int64                      `json:"_version,omitempty"`
+	Source  CostExplorerByServiceDaily `json:"_source"`
+	Sort    []interface{}              `json:"sort"`
+}
+
+type CostExplorerByServiceDailyHits struct {
+	Total SearchTotal                     `json:"total"`
+	Hits  []CostExplorerByServiceDailyHit `json:"hits"`
+}
+
+type CostExplorerByServiceDailySearchResponse struct {
+	PitID string                         `json:"pit_id"`
+	Hits  CostExplorerByServiceDailyHits `json:"hits"`
+}
+
+type CostExplorerByServiceDailyPaginator struct {
+	paginator *baseESPaginator
+}
+
+func (k Client) NewCostExplorerByServiceDailyPaginator(filters []BoolFilter, limit *int64) (CostExplorerByServiceDailyPaginator, error) {
+	paginator, err := newPaginator(k.es, "aws_costexplorer_byservicedaily", filters, limit)
+	if err != nil {
+		return CostExplorerByServiceDailyPaginator{}, err
+	}
+
+	p := CostExplorerByServiceDailyPaginator{
+		paginator: paginator,
+	}
+
+	return p, nil
+}
+
+func (p CostExplorerByServiceDailyPaginator) HasNext() bool {
+	return !p.paginator.done
+}
+
+func (p CostExplorerByServiceDailyPaginator) NextPage(ctx context.Context) ([]CostExplorerByServiceDaily, error) {
+	var response CostExplorerByServiceDailySearchResponse
+	err := p.paginator.search(ctx, &response)
+	if err != nil {
+		return nil, err
+	}
+
+	var values []CostExplorerByServiceDaily
+	for _, hit := range response.Hits.Hits {
+		values = append(values, hit.Source)
+	}
+
+	hits := int64(len(response.Hits.Hits))
+	if hits > 0 {
+		p.paginator.updateState(hits, response.Hits.Hits[hits-1].Sort, response.PitID)
+	} else {
+		p.paginator.updateState(hits, nil, "")
+	}
+
+	return values, nil
+}
+
+var listCostExplorerByServiceDailyFilters = map[string]string{}
+
+func ListCostExplorerByServiceDaily(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("ListCostExplorerByServiceDaily")
+
+	// create service
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	paginator, err := k.NewCostExplorerByServiceDailyPaginator(buildFilter(d.KeyColumnQuals, listCostExplorerByServiceDailyFilters, "aws", *cfg.AccountID), d.QueryContext.Limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			d.StreamListItem(ctx, v)
+		}
+	}
+
+	return nil, nil
+}
+
+var getCostExplorerByServiceDailyFilters = map[string]string{}
+
+func GetCostExplorerByServiceDaily(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("GetCostExplorerByServiceDaily")
+
+	// create service
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	limit := int64(1)
+	paginator, err := k.NewCostExplorerByServiceDailyPaginator(buildFilter(d.KeyColumnQuals, getCostExplorerByServiceDailyFilters, "aws", *cfg.AccountID), &limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			return v, nil
+		}
+	}
+
+	return nil, nil
+}
+
+// ==========================  END: CostExplorerByServiceDaily =============================
 
 // ==========================  START: ECRRepository =============================
 
