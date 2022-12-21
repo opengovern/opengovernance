@@ -2605,7 +2605,7 @@ paths:
       summary: Returns distribution of services for specific account
       tags:
       - benchmarks
-  /inventory/api/v2/accounts/summery:
+  /inventory/api/v2/accounts/summary:
     get:
       consumes:
       - application/json

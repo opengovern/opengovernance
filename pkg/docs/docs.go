@@ -1685,7 +1685,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/inventory/api/v2/accounts/summery": {
+        "/inventory/api/v2/accounts/summary": {
             "get": {
                 "consumes": [
                     "application/json"
