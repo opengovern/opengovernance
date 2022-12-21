@@ -230,3 +230,119 @@ func FetchCostHistoryByServicesBetween(client keibi.Client, sourceID *string, pr
 
 	return hits, nil
 }
+
+type FetchCostByAccountsQueryResponse struct {
+	Aggregation struct {
+		SourceIDGroup struct {
+			Buckets []struct {
+				Key                string `json:"key"`
+				EndTimeAggregation struct {
+					Hits struct {
+						Total keibi.SearchTotal `json:"total"`
+						Hits  []struct {
+							ID      string                           `json:"_id"`
+							Score   float64                          `json:"_score"`
+							Index   string                           `json:"_index"`
+							Type    string                           `json:"_type"`
+							Version int64                            `json:"_version,omitempty"`
+							Source  summarizer.ConnectionCostSummary `json:"_source"`
+						} `json:"hits"`
+					} `json:"hits"`
+				} `json:"period_end_max"`
+			} `json:"buckets"`
+		} `json:"source_id_grouping"`
+	} `json:"aggregations"`
+}
+
+func FetchCostByAccountsBetween(client keibi.Client, sourceID *string, provider *source.Type, before time.Time, after time.Time, size int) (map[string]summarizer.ConnectionCostSummary, error) {
+	hits := make(map[string]summarizer.ConnectionCostSummary)
+	res := make(map[string]interface{})
+	var filters []interface{}
+
+	filters = append(filters, map[string]interface{}{
+		"terms": map[string][]string{"report_type": {string(summarizer.CostConnectionSummary)}},
+	})
+	filters = append(filters, map[string]interface{}{
+		"range": map[string]interface{}{
+			"period_end": map[string]string{
+				"gte": strconv.FormatInt(after.Unix(), 10),
+				"lte": strconv.FormatInt(before.Unix(), 10),
+			},
+		},
+	})
+
+	if sourceID != nil {
+		filters = append(filters, map[string]interface{}{
+			"terms": map[string][]string{"source_id": {*sourceID}},
+		})
+	}
+	if provider != nil && !provider.IsNull() {
+		filters = append(filters, map[string]interface{}{
+			"terms": map[string][]string{"source_type": {(*provider).String()}},
+		})
+	}
+
+	res["size"] = size
+	res["query"] = map[string]interface{}{
+		"bool": map[string]interface{}{
+			"filter": filters,
+		},
+	}
+	res["aggs"] = map[string]interface{}{
+		"source_id_grouping": map[string]interface{}{
+			"terms": map[string]string{
+				"field": "source_id",
+			},
+			"aggs": map[string]interface{}{
+				"period_end_max": map[string]interface{}{
+					"top_hits": map[string]interface{}{
+						"size": 1,
+						"sort": []map[string]string{
+							{
+								"period_end": "desc",
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	b, err := json.Marshal(res)
+	if err != nil {
+		return nil, err
+	}
+
+	query := string(b)
+	fmt.Println("query=", query)
+
+	var response FetchCostByAccountsQueryResponse
+	err = client.Search(context.Background(), summarizer.CostSummeryIndex, query, &response)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, bucket := range response.Aggregation.SourceIDGroup.Buckets {
+		for _, hit := range bucket.EndTimeAggregation.Hits.Hits {
+			hits[bucket.Key] = hit.Source
+		}
+	}
+
+	for _, hit := range hits {
+		switch strings.ToLower(hit.ResourceType) {
+		case "aws::costexplorer::byaccountmonthly":
+			hitCostStr, err := json.Marshal(hit.Cost)
+			if err != nil {
+				return nil, err
+			}
+			var hitCost model.CostExplorerByAccountMonthlyDescription
+			err = json.Unmarshal(hitCostStr, &hitCost)
+			if err != nil {
+				return nil, err
+			}
+			hit.Cost = hitCost
+		}
+	}
+
+	return hits, nil
+}

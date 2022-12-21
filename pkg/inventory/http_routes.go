@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"math"
 	"mime"
 	"net/http"
 	"sort"
@@ -74,7 +75,9 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	v2.GET("/cost/composition", httpserver.AuthorizeHandler(h.GetCategoryNodeCostComposition, api3.ViewerRole))
 	v2.GET("/resources/rootTemplates", httpserver.AuthorizeHandler(h.GetRootTemplates, api3.ViewerRole))
 	v2.GET("/resources/rootCloudProviders", httpserver.AuthorizeHandler(h.GetRootCloudProviders, api3.ViewerRole))
+
 	v1.GET("/accounts/resource/count", httpserver.AuthorizeHandler(h.GetAccountsResourceCount, api3.ViewerRole))
+	v2.GET("/accounts/summery", httpserver.AuthorizeHandler(h.GetAccountSummery, api3.ViewerRole))
 
 	v1.GET("/resources/distribution", httpserver.AuthorizeHandler(h.GetResourceDistribution, api3.ViewerRole))
 	v1.GET("/services/distribution", httpserver.AuthorizeHandler(h.GetServiceDistribution, api3.ViewerRole))
@@ -425,38 +428,33 @@ func (h *HttpHandler) GetCostGrowthTrendV2(ctx echo.Context) error {
 		root.Subcategories[i] = *cat
 	}
 
-	trends := map[string]api.CategoryCostTrend{}
-	mainCategoryTrendsMap := map[int64]api.FloatTrendDataPoint{}
 	hits, err := es.FetchCostHistoryByServicesBetween(h.client, sourceIDPtr, &provider, serviceNames, time.Unix(toTime, 0), time.Unix(fromTime, 0), EsFetchPageSize)
 	if err != nil {
 		return err
 	}
-	for serviceName, hit := range hits {
+
+	trendsMap := map[string][]api.FloatTrendDataPoint{}
+	for serviceName, costArr := range hits {
 		for _, cat := range root.Subcategories {
+			isCounted := map[int64]struct{}{}
 			for _, f := range cat.SubTreeFilters {
 				switch f.GetFilterType() {
 				case FilterTypeCost:
 					filter := f.(*FilterCostNode)
-					if serviceName != filter.ServiceName {
+					if filter.ServiceName != serviceName {
 						continue
 					}
-					for _, vHit := range hit {
-						v := trends[cat.ElementID]
-						v.Trend = append(v.Trend, api.FloatTrendDataPoint{
-							Timestamp: vHit.PeriodEnd,
-							Value:     vHit.GetCost(),
-						})
-						if v, ok := mainCategoryTrendsMap[vHit.PeriodEnd]; ok {
-							v.Value += vHit.GetCost()
-							mainCategoryTrendsMap[vHit.PeriodEnd] = v
-						} else {
-							mainCategoryTrendsMap[vHit.PeriodEnd] = api.FloatTrendDataPoint{
-								Timestamp: vHit.PeriodEnd,
-								Value:     vHit.GetCost(),
-							}
+					if _, ok := trendsMap[cat.ElementID]; !ok {
+						trendsMap[cat.ElementID] = []api.FloatTrendDataPoint{}
+					}
+					for _, cost := range costArr {
+						if _, ok := isCounted[cost.PeriodEnd]; !ok {
+							trendsMap[cat.ElementID] = append(trendsMap[cat.ElementID], api.FloatTrendDataPoint{
+								Timestamp: cost.PeriodEnd,
+								Value:     cost.GetCost(),
+							})
+							isCounted[cost.PeriodEnd] = struct{}{}
 						}
-						v.Name = cat.Name
-						trends[cat.ElementID] = v
 					}
 				}
 			}
@@ -464,37 +462,51 @@ func (h *HttpHandler) GetCostGrowthTrendV2(ctx echo.Context) error {
 	}
 
 	var subcategoriesTrends []api.CategoryCostTrend
-	for _, v := range trends {
+	for _, cat := range root.Subcategories {
+		trends := trendsMap[cat.ElementID]
 		// aggregate data points in the same category and same timestamp into one data point with the sum of the values
 		timeValMap := map[int64]api.FloatTrendDataPoint{}
-		for _, trend := range v.Trend {
-			if v, ok := timeValMap[trend.Timestamp]; ok {
+		for _, trend := range trends {
+			if v, ok := timeValMap[trend.Timestamp]; !ok {
+				timeValMap[trend.Timestamp] = trend
+			} else {
 				v.Value += trend.Value
 				timeValMap[trend.Timestamp] = v
-			} else {
-				timeValMap[trend.Timestamp] = trend
 			}
 		}
-		trendArr := make([]api.FloatTrendDataPoint, 0, len(timeValMap))
+		trends = make([]api.FloatTrendDataPoint, 0, len(timeValMap))
 		for _, v := range timeValMap {
-			trendArr = append(trendArr, v)
+			trends = append(trends, v)
 		}
-		// sort data points by timestamp
-		sort.SliceStable(trendArr, func(i, j int) bool {
-			return v.Trend[i].Timestamp < v.Trend[j].Timestamp
+		sort.SliceStable(trends, func(i, j int) bool {
+			return trends[i].Timestamp < trends[j].Timestamp
 		})
-		// overwrite the trend array with the aggregated and sorted data points
-		v.Trend = trendArr
-		subcategoriesTrends = append(subcategoriesTrends, v)
+
+		subcategoriesTrends = append(subcategoriesTrends, api.CategoryCostTrend{
+			Name:  cat.Name,
+			Trend: trends,
+		})
 	}
 
-	mainCategoryTrends := make([]api.FloatTrendDataPoint, 0, len(mainCategoryTrendsMap))
-	for _, v := range mainCategoryTrendsMap {
+	mainCategoryTrends := trendsMap[root.ElementID]
+	// aggregate data points in the same category and same timestamp into one data point with the sum of the values
+	timeValMap := map[int64]api.FloatTrendDataPoint{}
+	for _, trend := range mainCategoryTrends {
+		if v, ok := timeValMap[trend.Timestamp]; !ok {
+			timeValMap[trend.Timestamp] = trend
+		} else {
+			v.Value += trend.Value
+			timeValMap[trend.Timestamp] = v
+		}
+	}
+	mainCategoryTrends = make([]api.FloatTrendDataPoint, 0, len(timeValMap))
+	for _, v := range timeValMap {
 		mainCategoryTrends = append(mainCategoryTrends, v)
 	}
 	sort.SliceStable(mainCategoryTrends, func(i, j int) bool {
 		return mainCategoryTrends[i].Timestamp < mainCategoryTrends[j].Timestamp
 	})
+
 	return ctx.JSON(http.StatusOK, api.CostGrowthTrendResponse{
 		CategoryName:  root.Name,
 		Trend:         mainCategoryTrends,
@@ -1257,8 +1269,8 @@ func (h *HttpHandler) GetCategoryNodeCostComposition(ctx echo.Context) error {
 			},
 		}
 		for i := top; i < len(result.Subcategories); i++ {
-			other.Cost.CurrentCost += result.Cost.CurrentCost
-			other.Cost.HistoryCost += result.Cost.HistoryCost
+			other.Cost.CurrentCost += result.Subcategories[i].Cost.CurrentCost
+			other.Cost.HistoryCost += result.Subcategories[i].Cost.HistoryCost
 		}
 		result.Subcategories = append(result.Subcategories[:top], other)
 	}
@@ -1852,6 +1864,84 @@ func (h *HttpHandler) GetAccountsResourceCount(ctx echo.Context) error {
 	for _, v := range res {
 		response = append(response, v)
 	}
+	return ctx.JSON(http.StatusOK, response)
+}
+
+// GetAccountSummery godoc
+// @Summary Returns resource count of accounts
+// @Tags    benchmarks
+// @Accept  json
+// @Produce json
+// @Param   provider query    string true  "Provider"
+// @Param   sourceId query    string false "SourceID"
+// @Success 200      {object} []api.AccountSummaryResponse
+// @Router  /inventory/api/v2/accounts/summery [get]
+func (h *HttpHandler) GetAccountSummery(ctx echo.Context) error {
+	provider, _ := source.ParseType(ctx.QueryParam("provider"))
+	sourceId := ctx.QueryParam("sourceId")
+	var sourceIdPtr *string
+	if sourceId != "" {
+		sourceIdPtr = &sourceId
+	}
+
+	res := map[string]api.AccountSummaryResponse{}
+
+	var err error
+	var allSources []api2.Source
+	if sourceId == "" {
+		allSources, err = h.onboardClient.ListSources(httpclient.FromEchoContext(ctx), provider.AsPtr())
+	} else {
+		allSources, err = h.onboardClient.GetSources(httpclient.FromEchoContext(ctx), []string{sourceId})
+	}
+	if err != nil {
+		return err
+	}
+
+	for _, src := range allSources {
+		res[src.ID.String()] = api.AccountSummaryResponse{
+			SourceID:               src.ID.String(),
+			SourceType:             source.Type(src.Type),
+			ProviderConnectionName: src.ConnectionName,
+			ProviderConnectionID:   src.ConnectionID,
+			Enabled:                src.Enabled,
+			OnboardDate:            src.OnboardDate,
+		}
+	}
+
+	hits, err := es.FetchConnectionResourcesSummaryPage(h.client, provider, sourceIdPtr, nil, EsFetchPageSize)
+	for _, hit := range hits {
+		if v, ok := res[hit.SourceID]; ok {
+			v.ResourceCount += hit.ResourceCount
+			v.LastInventory = time.UnixMilli(hit.DescribedAt)
+			res[hit.SourceID] = v
+		}
+	}
+
+	costs, err := es.FetchCostByAccountsBetween(h.client, sourceIdPtr, provider.AsPtr(), time.Now(), time.Now().Add(time.Duration(math.MaxInt64)), EsFetchPageSize)
+	if err != nil {
+		return err
+	}
+	for _, cost := range costs {
+		if v, ok := res[cost.SourceID]; ok {
+			v.Cost = cost.GetCost()
+			v.LastCost = time.Unix(cost.PeriodEnd, 0)
+			res[cost.SourceID] = v
+		}
+	}
+
+	var response []api.AccountSummaryResponse
+	for _, v := range res {
+		response = append(response, v)
+	}
+
+	// sort by enabled then onboarding date
+	sort.Slice(response, func(i, j int) bool {
+		if response[i].Enabled == response[j].Enabled {
+			return response[i].OnboardDate.After(response[j].OnboardDate)
+		}
+		return response[i].Enabled
+	})
+
 	return ctx.JSON(http.StatusOK, response)
 }
 

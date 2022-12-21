@@ -41,6 +41,29 @@ definitions:
       sourceType:
         type: string
     type: object
+  api.AccountSummaryResponse:
+    properties:
+      cost:
+        type: number
+      enabled:
+        type: boolean
+      lastCost:
+        type: string
+      lastInventory:
+        type: string
+      onboardDate:
+        type: string
+      providerConnectionID:
+        type: string
+      providerConnectionName:
+        type: string
+      resourceCount:
+        type: integer
+      sourceID:
+        type: string
+      sourceType:
+        type: string
+    type: object
   api.Alarms:
     properties:
       created_at:
@@ -2580,6 +2603,32 @@ paths:
               $ref: '#/definitions/api.ServiceDistributionItem'
             type: array
       summary: Returns distribution of services for specific account
+      tags:
+      - benchmarks
+  /inventory/api/v2/accounts/summery:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: Provider
+        in: query
+        name: provider
+        required: true
+        type: string
+      - description: SourceID
+        in: query
+        name: sourceId
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/api.AccountSummaryResponse'
+            type: array
+      summary: Returns resource count of accounts
       tags:
       - benchmarks
   /inventory/api/v2/categories:
