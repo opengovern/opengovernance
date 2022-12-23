@@ -2118,7 +2118,7 @@ func (h *HttpHandler) GetServiceSummary(ctx echo.Context) error {
 			}
 		}
 	} else {
-		hits, err := es.FetchProviderResourceTypeTrendSummaryPage(h.client, provider, resourceTypeFilters, time.Unix(endTime, 0).AddDate(0, 0, -1).UnixMilli(), time.Unix(endTime, 0).UnixMilli(), sortMap, EsFetchPageSize)
+		hits, err := es.FetchProviderResourceTypeTrendSummaryPage(h.client, provider, resourceTypeFilters, time.Unix(endTime, 0).AddDate(0, 0, -7).UnixMilli(), time.Unix(endTime, 0).UnixMilli(), sortMap, EsFetchPageSize)
 		if err != nil {
 			return err
 		}
@@ -2131,7 +2131,7 @@ func (h *HttpHandler) GetServiceSummary(ctx echo.Context) error {
 
 	var res []api.ServiceSummaryResponse
 	for _, serviceNode := range serviceNodes {
-		serviceSummery := api.ServiceSummaryResponse{
+		serviceSummary := api.ServiceSummaryResponse{
 			CloudProvider: api.SourceType(serviceNode.CloudProvider.String()),
 			ServiceName:   serviceNode.Name,
 			ServiceCode:   serviceNode.ServiceCode,
@@ -2143,16 +2143,17 @@ func (h *HttpHandler) GetServiceSummary(ctx echo.Context) error {
 			case FilterTypeCost:
 				filter := f.(*FilterCostNode)
 				if provider.IsNull() || provider.String() == filter.CloudProvider.String() {
-					serviceSummery.Cost = costexplorer.MergeCostArrays(serviceSummery.Cost, costFilterMap[filter.ServiceName])
+					serviceSummary.Cost = costexplorer.MergeCostArrays(serviceSummary.Cost, costFilterMap[filter.ServiceName])
 				}
 			case FilterTypeCloudResourceType:
 				filter := f.(*FilterCloudResourceTypeNode)
 				if provider.IsNull() || provider.String() == filter.CloudProvider.String() {
 					count := int(resourceTypeFilterMap[filter.ResourceType])
-					serviceSummery.ResourceCount = pointerAdd(serviceSummery.ResourceCount, &count)
+					serviceSummary.ResourceCount = pointerAdd(serviceSummary.ResourceCount, &count)
 				}
 			}
 		}
+		res = append(res, serviceSummary)
 	}
 
 	return ctx.JSON(http.StatusOK, res)
