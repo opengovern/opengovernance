@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/neo4j/neo4j-go-driver/v5/neo4j"
@@ -243,12 +244,17 @@ func getCloudServiceFromNode(node neo4j.Node) (*ServiceNode, error) {
 		return nil, ErrPropertyNotFound
 	}
 
+	priorityInt, err := strconv.Atoi(priority.(string))
+	if err != nil {
+		return nil, ErrColumnConversion
+	}
+
 	return &ServiceNode{
 		CategoryNode:  *cat,
 		ServiceCode:   serviceCode.(string),
 		ShortName:     shortName.(string),
 		CloudProvider: source.Type(cloudProvider.(string)),
-		Priority:      int(priority.(int64)),
+		Priority:      priorityInt,
 	}, nil
 }
 
