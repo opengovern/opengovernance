@@ -132,17 +132,22 @@ type ServiceCostSummary struct {
 	ReportType    ProviderReportType `json:"report_type"`
 }
 
-func (c ServiceCostSummary) GetCost() float64 {
+func (c ServiceCostSummary) GetCostAndUnit() (float64, string) {
 	switch c.ResourceType {
 	case "aws::costexplorer::byservicemonthly":
 	case "aws::costexplorer::byservicedaily":
 		costFloat, err := strconv.ParseFloat(c.Cost.(map[string]interface{})["UnblendedCostAmount"].(string), 64)
 		if err != nil {
-			return 0
+			return 0, ""
 		}
-		return costFloat
+		costUnit, ok := c.Cost.(map[string]interface{})["UnblendedCostUnit"]
+		if !ok {
+			return 0, ""
+		}
+
+		return costFloat, costUnit.(string)
 	}
-	return 0
+	return 0, ""
 }
 
 func (c ServiceCostSummary) KeysAndIndex() ([]string, string) {

@@ -36,6 +36,11 @@ const (
 	SortFieldSourceID      SortFieldType = "connectionID"
 )
 
+type CostWithUnit struct {
+	Cost float64 `json:"cost"`
+	Unit string  `json:"unit"`
+}
+
 type GetResourceRequest struct {
 	ResourceType string `json:"resourceType" validate:"required"`
 	ID           string `json:"ID" validate:"required"` //	Resource ID
@@ -498,4 +503,12 @@ type ConnectionSummaryResponse struct {
 	Categories    map[string]ConnectionSummaryCategory `json:"categories"`
 	CloudServices map[string]int                       `json:"cloudServices"`
 	ResourceTypes map[string]int                       `json:"resourceTypes"`
+}
+
+type ServiceSummaryResponse struct {
+	CloudProvider SourceType     `json:"cloudProvider"`
+	ServiceName   string         `json:"serviceName"`
+	ServiceCode   string         `json:"serviceCode"`
+	ResourceCount *int           `json:"resourceCount,omitempty"`
+	Cost          []CostWithUnit `json:"cost,omitempty"`
 }

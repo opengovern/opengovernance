@@ -366,10 +366,12 @@ func GetCategoryNodeCostInfo(categoryNode *CategoryNode, currentCosts, pastCosts
 					},
 				}
 				if m, ok := currentCosts[filter.ServiceName]; ok {
-					currentCost += m.GetCost()
+					costValue, _ := m.GetCostAndUnit()
+					currentCost += costValue
 				}
 				if m, ok := pastCosts[filter.ServiceName]; ok {
-					pastCost += m.GetCost()
+					costValue, _ := m.GetCostAndUnit()
+					pastCost += costValue
 				}
 				filterWithCost.Cost.CurrentCost = currentCost
 				filterWithCost.Cost.HistoryCost = pastCost
