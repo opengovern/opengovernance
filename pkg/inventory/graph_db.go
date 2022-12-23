@@ -667,7 +667,7 @@ func (gdb *GraphDatabase) GetCategoryRootSubcategoriesByName(ctx context.Context
 	return category, nil
 }
 
-func (gdb *GraphDatabase) GetCloudServiceNodes(ctx context.Context, provider *source.Type, importance []string) ([]ServiceNode, error) {
+func (gdb *GraphDatabase) GetCloudServiceNodes(ctx context.Context, provider source.Type, importance []string) ([]ServiceNode, error) {
 	session := gdb.Driver.NewSession(ctx, neo4j.SessionConfig{AccessMode: neo4j.AccessModeRead})
 	defer session.Close(ctx)
 

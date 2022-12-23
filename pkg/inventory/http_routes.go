@@ -2061,7 +2061,7 @@ func (h *HttpHandler) GetServiceSummary(ctx echo.Context) error {
 		return ctx.JSON(http.StatusBadRequest, "endTime is not a valid epoch time")
 	}
 
-	serviceNodes, err := h.graphDb.GetCloudServiceNodes(ctx.Request().Context(), provider.AsPtr(), []string{"all"})
+	serviceNodes, err := h.graphDb.GetCloudServiceNodes(ctx.Request().Context(), provider, []string{"all"})
 	if err != nil {
 		return err
 	}
