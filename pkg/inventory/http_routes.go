@@ -16,6 +16,7 @@ import (
 	"strings"
 	"time"
 
+	"gitlab.com/keibiengine/keibi-engine/pkg/inventory/costexplorer"
 	"gitlab.com/keibiengine/keibi-engine/pkg/utils"
 
 	api3 "gitlab.com/keibiengine/keibi-engine/pkg/auth/api"
@@ -81,6 +82,7 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 
 	v1.GET("/resources/distribution", httpserver.AuthorizeHandler(h.GetResourceDistribution, api3.ViewerRole))
 	v1.GET("/services/distribution", httpserver.AuthorizeHandler(h.GetServiceDistribution, api3.ViewerRole))
+	v2.GET("/services/summary", httpserver.AuthorizeHandler(h.GetServiceSummary, api3.ViewerRole))
 
 	v1.GET("/cost/top/accounts", httpserver.AuthorizeHandler(h.GetTopAccountsByCost, api3.ViewerRole))
 	v1.GET("/cost/top/services", httpserver.AuthorizeHandler(h.GetTopServicesByCost, api3.ViewerRole))
@@ -449,9 +451,10 @@ func (h *HttpHandler) GetCostGrowthTrendV2(ctx echo.Context) error {
 					}
 					for _, cost := range costArr {
 						if _, ok := isCounted[cost.PeriodEnd]; !ok {
+							costValue, _ := cost.GetCostAndUnit()
 							trendsMap[cat.ElementID] = append(trendsMap[cat.ElementID], api.FloatTrendDataPoint{
 								Timestamp: cost.PeriodEnd,
-								Value:     cost.GetCost(),
+								Value:     costValue,
 							})
 							isCounted[cost.PeriodEnd] = struct{}{}
 						}
@@ -474,9 +477,10 @@ func (h *HttpHandler) GetCostGrowthTrendV2(ctx echo.Context) error {
 				}
 				for _, cost := range costArr {
 					if _, ok := isCounted[cost.PeriodEnd]; !ok {
+						costValue, _ := cost.GetCostAndUnit()
 						trendsMap[root.ElementID] = append(trendsMap[root.ElementID], api.FloatTrendDataPoint{
 							Timestamp: cost.PeriodEnd,
-							Value:     cost.GetCost(),
+							Value:     costValue,
 						})
 						isCounted[cost.PeriodEnd] = struct{}{}
 					}
@@ -1947,7 +1951,7 @@ func (h *HttpHandler) GetAccountSummary(ctx echo.Context) error {
 	}
 	for _, cost := range costs {
 		if v, ok := res[cost.SourceID]; ok {
-			v.Cost = cost.GetCost()
+			v.Cost, _ = cost.GetCostAndUnit()
 			v.LastCost = time.Unix(cost.PeriodEnd, 0)
 			res[cost.SourceID] = v
 		}
@@ -2026,6 +2030,131 @@ func (h *HttpHandler) GetServiceDistribution(ctx echo.Context) error {
 			Distribution: hit.LocationDistribution,
 		})
 	}
+	return ctx.JSON(http.StatusOK, res)
+}
+
+// GetServiceSummary godoc
+// @Summary Returns distribution of services for specific account
+// @Tags    benchmarks
+// @Accept  json
+// @Produce json
+// @Param   sourceId  query    string false "SourceID"
+// @Param   provider  query    string false "Provider"
+// @Param   startTime query    string true "start time for cost calculation in epoch seconds"
+// @Param   endTime   query    string true "end time for cost calculation and time resource count in epoch seconds"
+// @Success 200      {object} []api.ServiceSummaryResponse
+// @Router  /inventory/api/v2/services/summary [get]
+func (h *HttpHandler) GetServiceSummary(ctx echo.Context) error {
+	sourceID := ctx.QueryParam("sourceId")
+	var sourceIDPtr *string
+	if sourceID != "" {
+		sourceIDPtr = &sourceID
+	}
+	provider, _ := source.ParseType(ctx.QueryParam("provider"))
+
+	startTime, err := strconv.ParseInt(ctx.QueryParam("startTime"), 10, 64)
+	if err != nil {
+		return ctx.JSON(http.StatusBadRequest, "startTime is not a valid epoch time")
+	}
+	endTime, err := strconv.ParseInt(ctx.QueryParam("endTime"), 10, 64)
+	if err != nil {
+		return ctx.JSON(http.StatusBadRequest, "endTime is not a valid epoch time")
+	}
+
+	serviceNodes, err := h.graphDb.GetCloudServiceNodes(ctx.Request().Context(), provider.AsPtr(), []string{"all"})
+	if err != nil {
+		return err
+	}
+	costFilterMap := make(map[string][]api.CostWithUnit)
+	resourceTypeFilterMap := make(map[string]int64)
+	for _, serviceNode := range serviceNodes {
+		for _, f := range serviceNode.SubTreeFilters {
+			switch f.GetFilterType() {
+			case FilterTypeCost:
+				filter := f.(*FilterCostNode)
+				if provider.IsNull() || provider.String() == filter.CloudProvider.String() {
+					costFilterMap[filter.ServiceName] = []api.CostWithUnit{}
+				}
+			case FilterTypeCloudResourceType:
+				filter := f.(*FilterCloudResourceTypeNode)
+				if provider.IsNull() || provider.String() == filter.CloudProvider.String() {
+					resourceTypeFilterMap[filter.ResourceType] = 0
+				}
+			}
+		}
+	}
+
+	costFilters := make([]string, 0, len(costFilterMap))
+	for k := range costFilterMap {
+		costFilters = append(costFilters, k)
+	}
+	costHits, err := es.FetchDailyCostHistoryByServicesBetween(h.client, sourceIDPtr, provider.AsPtr(), costFilters, time.Unix(startTime, 0), time.Unix(endTime, 0), EsFetchPageSize)
+	if err != nil {
+		return err
+	}
+	aggregatedCostHits := costexplorer.AggregateServiceCosts(costHits)
+	for k, hit := range aggregatedCostHits {
+		costFilterMap[k] = hit
+	}
+
+	resourceTypeFilters := make([]string, 0, len(resourceTypeFilterMap))
+	for k := range resourceTypeFilterMap {
+		resourceTypeFilters = append(resourceTypeFilters, k)
+	}
+
+	sortMap := []map[string]interface{}{
+		{
+			"described_at": "desc",
+		},
+	}
+	if sourceID != "" {
+		hits, err := es.FetchConnectionResourceTypeTrendSummaryPage(h.client, &sourceID, resourceTypeFilters, time.Unix(endTime, 0).AddDate(0, 0, -1).UnixMilli(), time.Unix(endTime, 0).UnixMilli(), sortMap, EsFetchPageSize)
+		if err != nil {
+			return err
+		}
+		for _, hit := range hits {
+			if v, ok := resourceTypeFilterMap[hit.ResourceType]; ok && v == 0 {
+				resourceTypeFilterMap[hit.ResourceType] = int64(hit.ResourceCount)
+			}
+		}
+	} else {
+		hits, err := es.FetchProviderResourceTypeTrendSummaryPage(h.client, provider, resourceTypeFilters, time.Unix(endTime, 0).AddDate(0, 0, -1).UnixMilli(), time.Unix(endTime, 0).UnixMilli(), sortMap, EsFetchPageSize)
+		if err != nil {
+			return err
+		}
+		for _, hit := range hits {
+			if v, ok := resourceTypeFilterMap[hit.ResourceType]; ok && v == 0 {
+				resourceTypeFilterMap[hit.ResourceType] = int64(hit.ResourceCount)
+			}
+		}
+	}
+
+	var res []api.ServiceSummaryResponse
+	for _, serviceNode := range serviceNodes {
+		serviceSummery := api.ServiceSummaryResponse{
+			CloudProvider: api.SourceType(serviceNode.CloudProvider.String()),
+			ServiceName:   serviceNode.Name,
+			ServiceCode:   serviceNode.ServiceCode,
+			ResourceCount: nil,
+			Cost:          nil,
+		}
+		for _, f := range serviceNode.SubTreeFilters {
+			switch f.GetFilterType() {
+			case FilterTypeCost:
+				filter := f.(*FilterCostNode)
+				if provider.IsNull() || provider.String() == filter.CloudProvider.String() {
+					serviceSummery.Cost = costexplorer.MergeCostArrays(serviceSummery.Cost, costFilterMap[filter.ServiceName])
+				}
+			case FilterTypeCloudResourceType:
+				filter := f.(*FilterCloudResourceTypeNode)
+				if provider.IsNull() || provider.String() == filter.CloudProvider.String() {
+					count := int(resourceTypeFilterMap[filter.ResourceType])
+					serviceSummery.ResourceCount = pointerAdd(serviceSummery.ResourceCount, &count)
+				}
+			}
+		}
+	}
+
 	return ctx.JSON(http.StatusOK, res)
 }
 
