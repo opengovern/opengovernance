@@ -396,7 +396,7 @@ func FetchDailyCostHistoryByServicesBetween(client keibi.Client, sourceID *strin
 	}
 
 	query := string(b)
-	fmt.Println("query=", query)
+	fmt.Println("query=", query, "index=", summarizer.CostSummeryIndex)
 	var response FetchCostHistoryByServicesQueryResponse
 	err = client.Search(context.Background(), summarizer.CostSummeryIndex, query, &response)
 	if err != nil {
