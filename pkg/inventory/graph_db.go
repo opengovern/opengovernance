@@ -148,7 +148,7 @@ RETURN DISTINCT c, f, MAX(isDirectChild) AS isDirectChild
 	subTreePrimaryFiltersQuery = `
 MATCH (c:Category%s) WHERE %s CALL {
   WITH c MATCH (c)-[rel:INCLUDES*]->(child:Category)-[:USES]->(f:Filter)
-  WHERE ((f.importance IS NULL OR 'all' IN $importance OR f.importance IN $importance) AND ('CloudServiceCategory' NOT IN LABELS(child) OR rel.isPrimary is NULL OR rel.isPrimary = true))
+  WHERE ((f.importance IS NULL OR 'all' IN $importance OR f.importance IN $importance) AND (NOT 'CloudServiceCategory' IN LABELS(child) OR rel.isPrimary is NULL OR rel.isPrimary = true))
   RETURN DISTINCT f, false as isDirectChild
   UNION 
   WITH c MATCH (c)-[:USES]->(f:Filter)
@@ -659,7 +659,7 @@ func (gdb *GraphDatabase) GetPrimaryCategoryRootByName(ctx context.Context, root
 	}
 
 	// Get all the subcategories of the category
-	result, err = session.Run(ctx, fmt.Sprintf("MATCH (c:Category:%s{name: $name})-[rel:INCLUDES]->(sub:Category) WHERE (('CloudServiceCategory' NOT IN LABELS(sub)) OR (rel.isPrimary is NULL) OR (rel.isPrimary = true)) RETURN DISTINCT c, sub", rootType), map[string]interface{}{
+	result, err = session.Run(ctx, fmt.Sprintf("MATCH (c:Category:%s{name: $name})-[rel:INCLUDES]->(sub:Category) WHERE ((NOT 'CloudServiceCategory' IN LABELS(sub)) OR (rel.isPrimary is NULL) OR (rel.isPrimary = true)) RETURN DISTINCT c, sub", rootType), map[string]interface{}{
 		"name": name,
 	})
 	if err != nil {
@@ -757,7 +757,7 @@ func (gdb *GraphDatabase) GetPrimaryCategory(ctx context.Context, elementID stri
 	}
 
 	// Get all the subcategories of the category
-	result, err = session.Run(ctx, "MATCH (c:Category)-[rel:INCLUDES]->(sub:Category) WHERE (elementId(c) = $element_id AND ('CloudServiceCategory' NOT IN LABELS(sub) OR rel.isPrimary is NULL OR rel.isPrimary = true)) RETURN DISTINCT c, sub", map[string]interface{}{
+	result, err = session.Run(ctx, "MATCH (c:Category)-[rel:INCLUDES]->(sub:Category) WHERE (elementId(c) = $element_id AND (NOT 'CloudServiceCategory' IN LABELS(sub) OR rel.isPrimary is NULL OR rel.isPrimary = true)) RETURN DISTINCT c, sub", map[string]interface{}{
 		"element_id": elementID,
 	})
 	if err != nil {
