@@ -2088,7 +2088,7 @@ func (h *HttpHandler) GetServiceSummary(ctx echo.Context) error {
 	for k := range costFilterMap {
 		costFilters = append(costFilters, k)
 	}
-	costHits, err := es.FetchDailyCostHistoryByServicesBetween(h.client, sourceIDPtr, provider.AsPtr(), costFilters, time.Unix(startTime, 0), time.Unix(endTime, 0), EsFetchPageSize)
+	costHits, err := es.FetchDailyCostHistoryByServicesBetween(h.client, sourceIDPtr, provider.AsPtr(), costFilters, time.Unix(endTime, 0), time.Unix(startTime, 0), EsFetchPageSize)
 	if err != nil {
 		return err
 	}
