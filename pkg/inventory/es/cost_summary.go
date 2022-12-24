@@ -314,7 +314,7 @@ func FetchCostByAccountsBetween(client keibi.Client, sourceID *string, provider 
 	}
 
 	query := string(b)
-	fmt.Println("query=", query)
+	fmt.Println("query=", query, "index=", summarizer.CostSummeryIndex)
 
 	var response FetchCostByAccountsQueryResponse
 	err = client.Search(context.Background(), summarizer.CostSummeryIndex, query, &response)
