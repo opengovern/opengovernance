@@ -148,8 +148,9 @@ RETURN DISTINCT c, f, MAX(isDirectChild) AS isDirectChild
 	subTreePrimaryFiltersQuery = `
 MATCH (c:Category%s) WHERE %s CALL {
   WITH c MATCH (c)-[rel:INCLUDES*]->(child:Category)-[:USES]->(f:Filter)
-  WHERE ((f.importance IS NULL OR 'all' IN $importance OR f.importance IN $importance) AND (NOT 'CloudServiceCategory' IN LABELS(child) OR rel.isPrimary is NULL OR rel.isPrimary = true))
-  RETURN DISTINCT f, false as isDirectChild
+  UNWIND rel as relation
+  	WITH c,child,f,relation MATCH () WHERE ((f.importance IS NULL OR 'all' IN $importance OR f.importance IN $importance) AND (NOT 'CloudServiceCategory' IN LABELS(child) OR relation.isPrimary IS NULL OR relation.isPrimary = true))
+  	RETURN DISTINCT f, false as isDirectChild
   UNION 
   WITH c MATCH (c)-[:USES]->(f:Filter)
   WHERE (f.importance IS NULL OR 'all' IN $importance OR f.importance IN $importance)
