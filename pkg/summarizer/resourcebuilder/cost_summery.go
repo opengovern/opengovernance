@@ -39,8 +39,8 @@ func (b *costSummaryBuilder) Process(resource describe.LookupResource) {
 	var fullResource *describe.Resource
 	var err error
 	switch strings.ToLower(resource.ResourceType) {
-	case "aws::costexplorer::byservicemonthly":
-	case "aws::costexplorer::byservicedaily":
+	case "aws::internal::byservicemonthly":
+	case "aws::internal::byservicedaily":
 		fullResource, err = query.GetResourceFromResourceLookup(b.client, resource)
 		if err != nil {
 			fmt.Printf("(costSummaryBuilder) - Error getting resource from lookup: %v", err)
@@ -71,15 +71,15 @@ func (b *costSummaryBuilder) Process(resource describe.LookupResource) {
 				PeriodEnd:     getTimeFromTimestring(*desc.PeriodEnd).Unix(),
 			}
 			switch resource.ResourceType {
-			case "aws::costexplorer::byservicemonthly":
+			case "aws::internal::byservicemonthly":
 				v.ReportType = es.CostProviderSummaryMonthly
-			case "aws::costexplorer::byservicedaily":
+			case "aws::internal::byservicedaily":
 				v.ReportType = es.CostProviderSummaryDaily
 			}
 			b.costsByService[key] = v
 		}
-	case "aws::costexplorer::byaccountmonthly":
-	case "aws::costexplorer::byaccountdaily":
+	case "aws::internal::byaccountmonthly":
+	case "aws::internal::byaccountdaily":
 		fullResource, err = query.GetResourceFromResourceLookup(b.client, resource)
 		if err != nil {
 			fmt.Printf("(costSummaryBuilder) - Error getting resource from lookup: %v", err)
@@ -109,9 +109,9 @@ func (b *costSummaryBuilder) Process(resource describe.LookupResource) {
 				PeriodEnd:     getTimeFromTimestring(*desc.PeriodEnd).Unix(),
 			}
 			switch resource.ResourceType {
-			case "aws::costexplorer::byaccountmonthly":
+			case "aws::internal::byaccountmonthly":
 				v.ReportType = es.CostConnectionSummaryMonthly
-			case "aws::costexplorer::byaccountdaily":
+			case "aws::internal::byaccountdaily":
 				v.ReportType = es.CostConnectionSummaryDaily
 			}
 			b.costsByAccount[key] = v

@@ -117,7 +117,7 @@ func FetchCostByServicesBetween(client keibi.Client, sourceID *string, provider 
 
 	for _, hit := range hits {
 		switch strings.ToLower(hit.ResourceType) {
-		case "aws::costexplorer::byservicemonthly":
+		case "aws::internal::byservicemonthly":
 			hitCostStr, err := json.Marshal(hit.Cost)
 			if err != nil {
 				return nil, err
@@ -213,7 +213,7 @@ func FetchCostHistoryByServicesBetween(client keibi.Client, sourceID *string, pr
 	for _, hitArr := range hits {
 		for _, hit := range hitArr {
 			switch strings.ToLower(hit.ResourceType) {
-			case "aws::costexplorer::byservicemonthly":
+			case "aws::internal::byservicemonthly":
 				hitCostStr, err := json.Marshal(hit.Cost)
 				if err != nil {
 					return nil, err
@@ -330,7 +330,7 @@ func FetchCostByAccountsBetween(client keibi.Client, sourceID *string, provider 
 
 	for _, hit := range hits {
 		switch strings.ToLower(hit.ResourceType) {
-		case "aws::costexplorer::byaccountmonthly":
+		case "aws::internal::byaccountmonthly":
 			hitCostStr, err := json.Marshal(hit.Cost)
 			if err != nil {
 				return nil, err
@@ -416,7 +416,7 @@ func FetchDailyCostHistoryByServicesBetween(client keibi.Client, sourceID *strin
 	for _, hitArr := range hits {
 		for _, hit := range hitArr {
 			switch strings.ToLower(hit.ResourceType) {
-			case "aws::costexplorer::byservicedaily":
+			case "aws::internal::byservicedaily":
 				hitCostStr, err := json.Marshal(hit.Cost)
 				if err != nil {
 					return nil, err
