@@ -330,6 +330,13 @@ definitions:
       history_cost:
         type: number
     type: object
+  api.CostWithUnit:
+    properties:
+      cost:
+        type: number
+      unit:
+        type: string
+    type: object
   api.CreateInsightRequest:
     properties:
       category:
@@ -1120,6 +1127,21 @@ definitions:
         additionalProperties:
           type: integer
         type: object
+      serviceName:
+        type: string
+    type: object
+  api.ServiceSummaryResponse:
+    properties:
+      cloudProvider:
+        type: string
+      cost:
+        additionalProperties:
+          $ref: '#/definitions/api.CostWithUnit'
+        type: object
+      resourceCount:
+        type: integer
+      serviceCode:
+        type: string
       serviceName:
         type: string
     type: object
@@ -2926,20 +2948,24 @@ paths:
         in: query
         name: provider
         type: string
-      - description: Time Window
-        enum:
-        - 24h
-        - 1w
-        - 3m
-        - 1y
-        - max
+      - description: start time for chart in epoch seconds
         in: query
-        name: timeWindow
+        name: startTime
+        required: true
+        type: string
+      - description: end time for chart in epoch seconds
+        in: query
+        name: endTime
+        required: true
         type: string
       - description: Category(Template) ID defaults to default template
         in: query
         name: category
         type: string
+      - description: Number of data points to return
+        in: query
+        name: dataPointCount
+        type: integer
       produces:
       - application/json
       responses:
@@ -2950,6 +2976,42 @@ paths:
               $ref: '#/definitions/api.ResourceGrowthTrendResponse'
             type: array
       summary: Returns trend of resource growth for specific account
+      tags:
+      - benchmarks
+  /inventory/api/v2/services/summary:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: SourceID
+        in: query
+        name: sourceId
+        type: string
+      - description: Provider
+        in: query
+        name: provider
+        type: string
+      - description: start time for cost calculation in epoch seconds
+        in: query
+        name: startTime
+        required: true
+        type: string
+      - description: end time for cost calculation and time resource count in epoch
+          seconds
+        in: query
+        name: endTime
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/api.ServiceSummaryResponse'
+            type: array
+      summary: Returns distribution of services for specific account
       tags:
       - benchmarks
   /onboard/api/v1/connectors:

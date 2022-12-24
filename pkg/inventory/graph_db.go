@@ -145,6 +145,17 @@ MATCH (c:Category%s) WHERE %s CALL {
   RETURN DISTINCT f, true as isDirectChild }
 RETURN DISTINCT c, f, MAX(isDirectChild) AS isDirectChild
 `
+	subTreePrimaryFiltersQuery = `
+MATCH (c:Category%s) WHERE %s CALL {
+  WITH c MATCH (c)-[rel:INCLUDES*]->(child:Category)-[:USES]->(f:Filter)
+  WHERE (f.importance IS NULL OR 'all' IN $importance OR f.importance IN $importance) AND ('CloudServiceCategory' NOT IN LABELS(child) OR rel.isPrimary is NULL OR rel.isPrimary = true)
+  RETURN DISTINCT f, false as isDirectChild
+  UNION 
+  WITH c MATCH (c)-[:USES]->(f:Filter)
+  WHERE (f.importance IS NULL OR 'all' IN $importance OR f.importance IN $importance)
+  RETURN DISTINCT f, true as isDirectChild }
+RETURN DISTINCT c, f, MAX(isDirectChild) AS isDirectChild
+`
 )
 
 func getFilterFromNode(node neo4j.Node) (Filter, error) {
@@ -551,6 +562,202 @@ func (gdb *GraphDatabase) GetCategory(ctx context.Context, elementID string, imp
 
 	// Get all the subcategories of the category
 	result, err = session.Run(ctx, "MATCH (c:Category)-[:INCLUDES]->(sub:Category) WHERE elementId(c) = $element_id RETURN DISTINCT c, sub", map[string]interface{}{
+		"element_id": elementID,
+	})
+	if err != nil {
+		return nil, err
+	}
+	for result.Next(ctx) {
+		rawSubcategory, ok := result.Record().Get("sub")
+		if !ok {
+			return nil, ErrKeyColumnNotFound
+		}
+		subcategoryNode, ok := rawSubcategory.(neo4j.Node)
+		if !ok {
+			return nil, ErrColumnConversion
+		}
+
+		subcategory, err := getCategoryFromNode(subcategoryNode)
+		if err != nil {
+			return nil, err
+		}
+		category.Subcategories = append(category.Subcategories, *subcategory)
+	}
+
+	return category, nil
+}
+
+func (gdb *GraphDatabase) GetPrimaryCategoryRootByName(ctx context.Context, rootType CategoryRootType, name string, importance []string) (*CategoryNode, error) {
+	session := gdb.Driver.NewSession(ctx, neo4j.SessionConfig{AccessMode: neo4j.AccessModeRead})
+	defer session.Close(ctx)
+
+	var category *CategoryNode
+
+	// Get the category
+	result, err := session.Run(ctx, fmt.Sprintf("MATCH (c:Category:%s{name: $name}) RETURN c", rootType), map[string]interface{}{
+		"name": name,
+	})
+	if err != nil {
+		return nil, err
+	}
+	record, err := result.Single(ctx)
+	if err != nil {
+		return nil, err
+	}
+	rawCategory, ok := record.Get("c")
+	if !ok {
+		return nil, ErrKeyColumnNotFound
+	}
+	categoryNode, ok := rawCategory.(neo4j.Node)
+	if !ok {
+		return nil, ErrColumnConversion
+	}
+
+	category, err = getCategoryFromNode(categoryNode)
+	if err != nil {
+		return nil, err
+	}
+	if category == nil {
+		return nil, ErrNotFound
+	}
+
+	// Get all the filters that are in the subtree of the category
+	result, err = session.Run(ctx, fmt.Sprintf(subTreePrimaryFiltersQuery, fmt.Sprintf(":%s{name: $name}", rootType), "true"), map[string]interface{}{
+		"name":       name,
+		"importance": importance,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	for result.Next(ctx) {
+		rawFilter, ok := result.Record().Get("f")
+		if !ok {
+			return nil, ErrKeyColumnNotFound
+		}
+		filterNode, ok := rawFilter.(neo4j.Node)
+		if !ok {
+			return nil, ErrColumnConversion
+		}
+		isChildRaw, ok := result.Record().Get("isDirectChild")
+		if !ok {
+			return nil, ErrKeyColumnNotFound
+		}
+		isChild, ok := isChildRaw.(bool)
+		if !ok {
+			return nil, ErrColumnConversion
+		}
+
+		filter, err := getFilterFromNode(filterNode)
+		if err != nil {
+			return nil, err
+		}
+		category.SubTreeFilters = append(category.SubTreeFilters, filter)
+		if isChild {
+			category.Filters = append(category.Filters, filter)
+		}
+	}
+
+	// Get all the subcategories of the category
+	result, err = session.Run(ctx, fmt.Sprintf("MATCH (c:Category:%s{name: $name})-[rel:INCLUDES]->(sub:Category) WHERE ('CloudServiceCategory' NOT IN LABELS(sub) OR rel.isPrimary is NULL OR rel.isPrimary = true) RETURN DISTINCT c, sub", rootType), map[string]interface{}{
+		"name": name,
+	})
+	if err != nil {
+		return nil, err
+	}
+	for result.Next(ctx) {
+		rawSubcategory, ok := result.Record().Get("sub")
+		if !ok {
+			return nil, ErrKeyColumnNotFound
+		}
+		subcategoryNode, ok := rawSubcategory.(neo4j.Node)
+		if !ok {
+			return nil, ErrColumnConversion
+		}
+
+		subcategory, err := getCategoryFromNode(subcategoryNode)
+		if err != nil {
+			return nil, err
+		}
+		category.Subcategories = append(category.Subcategories, *subcategory)
+	}
+
+	return category, nil
+}
+
+func (gdb *GraphDatabase) GetPrimaryCategory(ctx context.Context, elementID string, importance []string) (*CategoryNode, error) {
+	session := gdb.Driver.NewSession(ctx, neo4j.SessionConfig{AccessMode: neo4j.AccessModeRead})
+	defer session.Close(ctx)
+
+	var category *CategoryNode
+
+	// Get the category
+	result, err := session.Run(ctx, "MATCH (c:Category) WHERE elementId(c) = $element_id RETURN c", map[string]interface{}{
+		"element_id": elementID,
+	})
+	if err != nil {
+		return nil, err
+	}
+	record, err := result.Single(ctx)
+	if err != nil {
+		return nil, err
+	}
+	rawCategory, ok := record.Get("c")
+	if !ok {
+		return nil, ErrKeyColumnNotFound
+	}
+	categoryNode, ok := rawCategory.(neo4j.Node)
+	if !ok {
+		return nil, ErrColumnConversion
+	}
+
+	category, err = getCategoryFromNode(categoryNode)
+	if err != nil {
+		return nil, err
+	}
+	if category == nil {
+		return nil, ErrNotFound
+	}
+
+	// Get all the filters that are in the subtree of the category
+	result, err = session.Run(ctx, fmt.Sprintf(subTreePrimaryFiltersQuery, "", "elementId(c) = $elementID"), map[string]interface{}{
+		"elementID":  elementID,
+		"importance": importance,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	for result.Next(ctx) {
+		rawFilter, ok := result.Record().Get("f")
+		if !ok {
+			return nil, ErrKeyColumnNotFound
+		}
+		filterNode, ok := rawFilter.(neo4j.Node)
+		if !ok {
+			return nil, ErrColumnConversion
+		}
+		isChildRaw, ok := result.Record().Get("isDirectChild")
+		if !ok {
+			return nil, ErrKeyColumnNotFound
+		}
+		isChild, ok := isChildRaw.(bool)
+		if !ok {
+			return nil, ErrColumnConversion
+		}
+
+		filter, err := getFilterFromNode(filterNode)
+		if err != nil {
+			return nil, err
+		}
+		category.SubTreeFilters = append(category.SubTreeFilters, filter)
+		if isChild {
+			category.Filters = append(category.Filters, filter)
+		}
+	}
+
+	// Get all the subcategories of the category
+	result, err = session.Run(ctx, "MATCH (c:Category)-[rel:INCLUDES]->(sub:Category) WHERE elementId(c) = $element_id AND ('CloudServiceCategory' NOT IN LABELS(sub) OR rel.isPrimary is NULL OR rel.isPrimary = true) RETURN DISTINCT c, sub", map[string]interface{}{
 		"element_id": elementID,
 	})
 	if err != nil {

@@ -16,7 +16,7 @@ import (
 	"strings"
 	"time"
 
-	"gitlab.com/keibiengine/keibi-engine/pkg/inventory/costexplorer"
+	"gitlab.com/keibiengine/keibi-engine/pkg/inventory/internal"
 	"gitlab.com/keibiengine/keibi-engine/pkg/utils"
 
 	api3 "gitlab.com/keibiengine/keibi-engine/pkg/auth/api"
@@ -186,29 +186,38 @@ func (h *HttpHandler) GetResourceGrowthTrend(ctx echo.Context) error {
 // @Tags    benchmarks
 // @Accept  json
 // @Produce json
-// @Param   sourceId   query    string false "SourceID"
-// @Param   provider   query    string false "Provider"
-// @Param   timeWindow query    string false "Time Window" Enums(24h,1w,3m,1y,max)
-// @Param   category   query    string false "Category(Template) ID defaults to default template"
-// @Param   importance query    string false "Filter filters by importance if they have it (array format is supported with , separator | 'all' is also supported)"
-// @Success 200        {object} []api.ResourceGrowthTrendResponse
+// @Param   sourceId       query    string false "SourceID"
+// @Param   provider       query    string false "Provider"
+// @Param   timeWindow     query    string false "Time Window" Enums(24h,1w,3m,1y,max)
+// @Param   startTime      query    string true  "start time for chart in epoch seconds"
+// @Param   endTime        query    string true  "end time for chart in epoch seconds"
+// @Param   category       query    string false "Category(Template) ID defaults to default template"
+// @Param   dataPointCount query    int    false "Number of data points to return"
+// @Param   importance     query    string false "Filter filters by importance if they have it (array format is supported with , separator | 'all' is also supported)"
+// @Success 200            {object} []api.ResourceGrowthTrendResponse
 // @Router  /inventory/api/v2/resources/trend [get]
 func (h *HttpHandler) GetResourceGrowthTrendV2(ctx echo.Context) error {
 	var err error
-	var fromTime, toTime int64
 
 	provider, _ := source.ParseType(ctx.QueryParam("provider"))
 	sourceID := ctx.QueryParam("sourceId")
-	timeWindow := ctx.QueryParam("timeWindow")
-	if timeWindow == "" {
-		timeWindow = "24h"
+
+	startTimeStr := ctx.QueryParam("startTime")
+	startTime := time.Now().AddDate(0, 0, -7).Unix()
+	if startTimeStr != "" {
+		startTime, err = strconv.ParseInt(startTimeStr, 10, 64)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "invalid startTime")
+		}
 	}
-	toTime = time.Now().UnixMilli()
-	tw, err := ParseTimeWindow(timeWindow)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, "invalid timeWindow")
+	endTimeStr := ctx.QueryParam("endTime")
+	endTime := time.Now().Unix()
+	if endTimeStr != "" {
+		endTime, err = strconv.ParseInt(endTimeStr, 10, 64)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "invalid endTime")
+		}
 	}
-	fromTime = time.Now().Add(-1 * tw).UnixMilli()
 
 	importance := strings.ToLower(ctx.QueryParam("importance"))
 	if importance == "" {
@@ -216,15 +225,24 @@ func (h *HttpHandler) GetResourceGrowthTrendV2(ctx echo.Context) error {
 	}
 	importanceArray := strings.Split(importance, ",")
 
+	dataPointCount := 10
+	dataPointCountStr := ctx.QueryParam("dataPointCount")
+	if dataPointCountStr != "" {
+		dataPointCount, err = strconv.Atoi(dataPointCountStr)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "invalid dataPointCount")
+		}
+	}
+
 	category := ctx.QueryParam("category")
 	var root *CategoryNode
 	if category == "" {
-		root, err = h.graphDb.GetCategoryRootByName(ctx.Request().Context(), RootTypeTemplateRoot, DefaultTemplateRootName, importanceArray)
+		root, err = h.graphDb.GetPrimaryCategoryRootByName(ctx.Request().Context(), RootTypeTemplateRoot, DefaultTemplateRootName, importanceArray)
 		if err != nil {
 			return err
 		}
 	} else {
-		root, err = h.graphDb.GetCategory(ctx.Request().Context(), category, importanceArray)
+		root, err = h.graphDb.GetPrimaryCategory(ctx.Request().Context(), category, importanceArray)
 		if err != nil {
 			return err
 		}
@@ -255,7 +273,7 @@ func (h *HttpHandler) GetResourceGrowthTrendV2(ctx echo.Context) error {
 	trends := map[string]api.CategoryResourceTrend{}
 	mainCategoryTrendsMap := map[int64]api.TrendDataPoint{}
 	if sourceID != "" {
-		hits, err := es.FetchConnectionResourceTypeTrendSummaryPage(h.client, &sourceID, resourceTypes, fromTime, toTime, sortMap, EsFetchPageSize)
+		hits, err := es.FetchConnectionResourceTypeTrendSummaryPage(h.client, &sourceID, resourceTypes, time.Unix(startTime, 0).UnixMilli(), time.Unix(endTime, 0).UnixMilli(), sortMap, EsFetchPageSize)
 		if err != nil {
 			return err
 		}
@@ -290,7 +308,7 @@ func (h *HttpHandler) GetResourceGrowthTrendV2(ctx echo.Context) error {
 			}
 		}
 	} else {
-		hits, err := es.FetchProviderResourceTypeTrendSummaryPage(h.client, provider, resourceTypes, fromTime, toTime, sortMap, EsFetchPageSize)
+		hits, err := es.FetchProviderResourceTypeTrendSummaryPage(h.client, provider, resourceTypes, time.Unix(startTime, 0).UnixMilli(), time.Unix(endTime, 0).UnixMilli(), sortMap, EsFetchPageSize)
 		if err != nil {
 			return err
 		}
@@ -347,7 +365,7 @@ func (h *HttpHandler) GetResourceGrowthTrendV2(ctx echo.Context) error {
 			return v.Trend[i].Timestamp < v.Trend[j].Timestamp
 		})
 		// overwrite the trend array with the aggregated and sorted data points
-		v.Trend = trendArr
+		v.Trend = internal.DownSampleResourceCounts(trendArr, dataPointCount)
 		subcategoriesTrends = append(subcategoriesTrends, v)
 	}
 
@@ -358,6 +376,7 @@ func (h *HttpHandler) GetResourceGrowthTrendV2(ctx echo.Context) error {
 	sort.SliceStable(mainCategoryTrends, func(i, j int) bool {
 		return mainCategoryTrends[i].Timestamp < mainCategoryTrends[j].Timestamp
 	})
+	mainCategoryTrends = internal.DownSampleResourceCounts(mainCategoryTrends, dataPointCount)
 	return ctx.JSON(http.StatusOK, api.ResourceGrowthTrendResponse{
 		CategoryName:  root.Name,
 		Trend:         mainCategoryTrends,
@@ -370,15 +389,16 @@ func (h *HttpHandler) GetResourceGrowthTrendV2(ctx echo.Context) error {
 // @Tags    benchmarks
 // @Accept  json
 // @Produce json
-// @Param   sourceId   query    string false "SourceID"
-// @Param   provider   query    string false "Provider"
-// @Param   timeWindow query    string false "Time Window" Enums(24h,1w,3m,1y,max)
-// @Param   category   query    string false "Category(Template) ID defaults to default template"
-// @Success 200        {object} []api.ResourceGrowthTrendResponse
+// @Param   sourceId       query    string false "SourceID"
+// @Param   provider       query    string false "Provider"
+// @Param   startTime      query    string true  "start time for chart in epoch seconds"
+// @Param   endTime        query    string true  "end time for chart in epoch seconds"
+// @Param   category       query    string false "Category(Template) ID defaults to default template"
+// @Param   dataPointCount query    int    false "Number of data points to return"
+// @Success 200            {object} []api.ResourceGrowthTrendResponse
 // @Router  /inventory/api/v2/resources/trend [get]
 func (h *HttpHandler) GetCostGrowthTrendV2(ctx echo.Context) error {
 	var err error
-	var fromTime, toTime int64
 
 	provider, _ := source.ParseType(ctx.QueryParam("provider"))
 	sourceID := ctx.QueryParam("sourceId")
@@ -386,26 +406,41 @@ func (h *HttpHandler) GetCostGrowthTrendV2(ctx echo.Context) error {
 	if sourceID == "" {
 		sourceIDPtr = nil
 	}
-	timeWindow := ctx.QueryParam("timeWindow")
-	if timeWindow == "" {
-		timeWindow = "24h"
+	startTimeStr := ctx.QueryParam("startTime")
+	startTime := time.Now().AddDate(0, 0, -7).Unix()
+	if startTimeStr != "" {
+		startTime, err = strconv.ParseInt(startTimeStr, 10, 64)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "invalid startTime")
+		}
 	}
-	toTime = time.Now().Unix()
-	tw, err := ParseTimeWindow(timeWindow)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, "invalid timeWindow")
+	endTimeStr := ctx.QueryParam("endTime")
+	endTime := time.Now().Unix()
+	if endTimeStr != "" {
+		endTime, err = strconv.ParseInt(endTimeStr, 10, 64)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "invalid endTime")
+		}
 	}
-	fromTime = time.Now().Add(-1 * tw).Unix()
+
+	dataPointCount := 10
+	dataPointCountStr := ctx.QueryParam("dataPointCount")
+	if dataPointCountStr != "" {
+		dataPointCount, err = strconv.Atoi(dataPointCountStr)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "invalid dataPointCount")
+		}
+	}
 
 	category := ctx.QueryParam("category")
 	var root *CategoryNode
 	if category == "" {
-		root, err = h.graphDb.GetCategoryRootByName(ctx.Request().Context(), RootTypeTemplateRoot, DefaultTemplateRootName, []string{"all"})
+		root, err = h.graphDb.GetPrimaryCategoryRootByName(ctx.Request().Context(), RootTypeTemplateRoot, DefaultTemplateRootName, []string{"all"})
 		if err != nil {
 			return err
 		}
 	} else {
-		root, err = h.graphDb.GetCategory(ctx.Request().Context(), category, []string{"all"})
+		root, err = h.graphDb.GetPrimaryCategory(ctx.Request().Context(), category, []string{"all"})
 		if err != nil {
 			return err
 		}
@@ -430,16 +465,19 @@ func (h *HttpHandler) GetCostGrowthTrendV2(ctx echo.Context) error {
 		root.Subcategories[i] = *cat
 	}
 
-	hits, err := es.FetchCostHistoryByServicesBetween(h.client, sourceIDPtr, &provider, serviceNames, time.Unix(toTime, 0), time.Unix(fromTime, 0), EsFetchPageSize)
+	hits, err := es.FetchDailyCostHistoryByServicesBetween(h.client, sourceIDPtr, &provider, serviceNames, time.Unix(endTime, 0), time.Unix(startTime, 0), EsFetchPageSize)
 	if err != nil {
 		return err
 	}
 
-	trendsMap := map[string][]api.FloatTrendDataPoint{}
-	for serviceName, costArr := range hits {
-		for _, cat := range root.Subcategories {
-			isCounted := map[int64]struct{}{}
+	categories := append(root.Subcategories, *root)
+
+	// Map of category ID to a trends mapped by their units
+	trendsMap := map[string]map[string][]api.CostTrendDataPoint{}
+	for serviceName, costArray := range hits {
+		for _, cat := range categories {
 			for _, f := range cat.SubTreeFilters {
+				isProcessed := make(map[string]bool)
 				switch f.GetFilterType() {
 				case FilterTypeCost:
 					filter := f.(*FilterCostNode)
@@ -447,42 +485,24 @@ func (h *HttpHandler) GetCostGrowthTrendV2(ctx echo.Context) error {
 						continue
 					}
 					if _, ok := trendsMap[cat.ElementID]; !ok {
-						trendsMap[cat.ElementID] = []api.FloatTrendDataPoint{}
+						trendsMap[cat.ElementID] = map[string][]api.CostTrendDataPoint{}
 					}
-					for _, cost := range costArr {
-						if _, ok := isCounted[cost.PeriodEnd]; !ok {
-							costValue, _ := cost.GetCostAndUnit()
-							trendsMap[cat.ElementID] = append(trendsMap[cat.ElementID], api.FloatTrendDataPoint{
-								Timestamp: cost.PeriodEnd,
-								Value:     costValue,
-							})
-							isCounted[cost.PeriodEnd] = struct{}{}
+					for _, cost := range costArray {
+						costVal, costUnit := cost.GetCostAndUnit()
+						if _, ok := trendsMap[cat.ElementID][costUnit]; !ok {
+							trendsMap[cat.ElementID][costUnit] = []api.CostTrendDataPoint{}
 						}
-					}
-				}
-			}
-		}
-	}
-	for serviceName, costArr := range hits {
-		isCounted := map[int64]struct{}{}
-		for _, f := range root.SubTreeFilters {
-			switch f.GetFilterType() {
-			case FilterTypeCost:
-				filter := f.(*FilterCostNode)
-				if filter.ServiceName != serviceName {
-					continue
-				}
-				if _, ok := trendsMap[root.ElementID]; !ok {
-					trendsMap[root.ElementID] = []api.FloatTrendDataPoint{}
-				}
-				for _, cost := range costArr {
-					if _, ok := isCounted[cost.PeriodEnd]; !ok {
-						costValue, _ := cost.GetCostAndUnit()
-						trendsMap[root.ElementID] = append(trendsMap[root.ElementID], api.FloatTrendDataPoint{
-							Timestamp: cost.PeriodEnd,
-							Value:     costValue,
-						})
-						isCounted[cost.PeriodEnd] = struct{}{}
+						processKey := fmt.Sprintf("%d---%s", cost.PeriodEnd, costUnit)
+						if _, ok := isProcessed[processKey]; !ok {
+							trendsMap[cat.ElementID][costUnit] = append(trendsMap[cat.ElementID][costUnit], api.CostTrendDataPoint{
+								Timestamp: cost.PeriodEnd,
+								Value: api.CostWithUnit{
+									Cost: costVal,
+									Unit: costUnit,
+								},
+							})
+							isProcessed[processKey] = true
+						}
 					}
 				}
 			}
@@ -490,50 +510,45 @@ func (h *HttpHandler) GetCostGrowthTrendV2(ctx echo.Context) error {
 	}
 
 	var subcategoriesTrends []api.CategoryCostTrend
-	for _, cat := range root.Subcategories {
-		trends := trendsMap[cat.ElementID]
+	var mainCategoryTrends map[string][]api.CostTrendDataPoint
+	for _, cat := range categories {
+		unitedTrendsMap := trendsMap[cat.ElementID]
 		// aggregate data points in the same category and same timestamp into one data point with the sum of the values
-		timeValMap := map[int64]api.FloatTrendDataPoint{}
-		for _, trend := range trends {
-			if v, ok := timeValMap[trend.Timestamp]; !ok {
-				timeValMap[trend.Timestamp] = trend
-			} else {
-				v.Value += trend.Value
-				timeValMap[trend.Timestamp] = v
+		timeValMap := map[string]map[int64]api.CostTrendDataPoint{}
+		for unit, unitedTrend := range unitedTrendsMap {
+			timeValMap[unit] = map[int64]api.CostTrendDataPoint{}
+			for _, trend := range unitedTrend {
+				if v, ok := timeValMap[unit][trend.Timestamp]; !ok {
+					timeValMap[unit][trend.Timestamp] = trend
+				} else {
+					v.Value.Cost += trend.Value.Cost
+					timeValMap[unit][trend.Timestamp] = v
+				}
 			}
 		}
-		trends = make([]api.FloatTrendDataPoint, 0, len(timeValMap))
-		for _, v := range timeValMap {
-			trends = append(trends, v)
+
+		unitedTrendsMap = map[string][]api.CostTrendDataPoint{}
+		for k, v := range timeValMap {
+			unitedTrendsMap[k] = []api.CostTrendDataPoint{}
+			for _, val := range v {
+				unitedTrendsMap[k] = append(unitedTrendsMap[k], val)
+			}
 		}
-		sort.SliceStable(trends, func(i, j int) bool {
-			return trends[i].Timestamp < trends[j].Timestamp
-		})
-
-		subcategoriesTrends = append(subcategoriesTrends, api.CategoryCostTrend{
-			Name:  cat.Name,
-			Trend: trends,
-		})
-	}
-
-	mainCategoryTrends := trendsMap[root.ElementID]
-	// aggregate data points in the same category and same timestamp into one data point with the sum of the values
-	timeValMap := map[int64]api.FloatTrendDataPoint{}
-	for _, trend := range mainCategoryTrends {
-		if v, ok := timeValMap[trend.Timestamp]; !ok {
-			timeValMap[trend.Timestamp] = trend
+		for unit, trends := range unitedTrendsMap {
+			sort.Slice(trends, func(i, j int) bool {
+				return trends[i].Timestamp < trends[j].Timestamp
+			})
+			unitedTrendsMap[unit] = trends
+		}
+		if cat.ElementID != root.ElementID {
+			subcategoriesTrends = append(subcategoriesTrends, api.CategoryCostTrend{
+				Name:  cat.Name,
+				Trend: internal.DownSampleCosts(unitedTrendsMap, dataPointCount),
+			})
 		} else {
-			v.Value += trend.Value
-			timeValMap[trend.Timestamp] = v
+			mainCategoryTrends = internal.DownSampleCosts(unitedTrendsMap, dataPointCount)
 		}
 	}
-	mainCategoryTrends = make([]api.FloatTrendDataPoint, 0, len(timeValMap))
-	for _, v := range timeValMap {
-		mainCategoryTrends = append(mainCategoryTrends, v)
-	}
-	sort.SliceStable(mainCategoryTrends, func(i, j int) bool {
-		return mainCategoryTrends[i].Timestamp < mainCategoryTrends[j].Timestamp
-	})
 
 	return ctx.JSON(http.StatusOK, api.CostGrowthTrendResponse{
 		CategoryName:  root.Name,
@@ -2040,9 +2055,9 @@ func (h *HttpHandler) GetServiceDistribution(ctx echo.Context) error {
 // @Produce json
 // @Param   sourceId  query    string false "SourceID"
 // @Param   provider  query    string false "Provider"
-// @Param   startTime query    string true "start time for cost calculation in epoch seconds"
-// @Param   endTime   query    string true "end time for cost calculation and time resource count in epoch seconds"
-// @Success 200      {object} []api.ServiceSummaryResponse
+// @Param   startTime query    string true  "start time for cost calculation in epoch seconds"
+// @Param   endTime   query    string true  "end time for cost calculation and time resource count in epoch seconds"
+// @Success 200       {object} []api.ServiceSummaryResponse
 // @Router  /inventory/api/v2/services/summary [get]
 func (h *HttpHandler) GetServiceSummary(ctx echo.Context) error {
 	sourceID := ctx.QueryParam("sourceId")
@@ -2065,7 +2080,7 @@ func (h *HttpHandler) GetServiceSummary(ctx echo.Context) error {
 	if err != nil {
 		return err
 	}
-	costFilterMap := make(map[string][]api.CostWithUnit)
+	costFilterMap := make(map[string]map[string]api.CostWithUnit)
 	resourceTypeFilterMap := make(map[string]int64)
 	for _, serviceNode := range serviceNodes {
 		for _, f := range serviceNode.SubTreeFilters {
@@ -2073,7 +2088,7 @@ func (h *HttpHandler) GetServiceSummary(ctx echo.Context) error {
 			case FilterTypeCost:
 				filter := f.(*FilterCostNode)
 				if provider.IsNull() || provider.String() == filter.CloudProvider.String() {
-					costFilterMap[filter.ServiceName] = []api.CostWithUnit{}
+					costFilterMap[filter.ServiceName] = map[string]api.CostWithUnit{}
 				}
 			case FilterTypeCloudResourceType:
 				filter := f.(*FilterCloudResourceTypeNode)
@@ -2092,7 +2107,7 @@ func (h *HttpHandler) GetServiceSummary(ctx echo.Context) error {
 	if err != nil {
 		return err
 	}
-	aggregatedCostHits := costexplorer.AggregateServiceCosts(costHits)
+	aggregatedCostHits := internal.AggregateServiceCosts(costHits)
 	for k, hit := range aggregatedCostHits {
 		costFilterMap[k] = hit
 	}
@@ -2143,7 +2158,7 @@ func (h *HttpHandler) GetServiceSummary(ctx echo.Context) error {
 			case FilterTypeCost:
 				filter := f.(*FilterCostNode)
 				if provider.IsNull() || provider.String() == filter.CloudProvider.String() {
-					serviceSummary.Cost = costexplorer.MergeCostArrays(serviceSummary.Cost, costFilterMap[filter.ServiceName])
+					serviceSummary.Cost = internal.MergeCostMaps(serviceSummary.Cost, costFilterMap[filter.ServiceName])
 				}
 			case FilterTypeCloudResourceType:
 				filter := f.(*FilterCloudResourceTypeNode)

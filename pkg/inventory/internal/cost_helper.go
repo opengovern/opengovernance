@@ -1,12 +1,12 @@
-package costexplorer
+package internal
 
 import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/inventory/api"
 	summarizer "gitlab.com/keibiengine/keibi-engine/pkg/summarizer/es"
 )
 
-func AggregateServiceCosts(costs map[string][]summarizer.ServiceCostSummary) map[string][]api.CostWithUnit {
-	aggregatedCosts := make(map[string][]api.CostWithUnit)
+func AggregateServiceCosts(costs map[string][]summarizer.ServiceCostSummary) map[string]map[string]api.CostWithUnit {
+	aggregatedCosts := make(map[string]map[string]api.CostWithUnit)
 	for service, cost := range costs {
 		dateFlagMap := make(map[int64]bool)
 		for _, value := range cost {
@@ -17,24 +17,24 @@ func AggregateServiceCosts(costs map[string][]summarizer.ServiceCostSummary) map
 			}
 			costValue, costUnit := value.GetCostAndUnit()
 			if aggCosts, ok := aggregatedCosts[service]; !ok {
-				aggregatedCosts[service] = []api.CostWithUnit{{
-					Cost: costValue,
-					Unit: costUnit,
-				}}
-				continue
-			} else {
-				doesUnitExist := false
-				for i, aggCost := range aggCosts {
-					if aggCost.Unit == costUnit {
-						aggCosts[i].Cost += costValue
-						doesUnitExist = true
-					}
-				}
-				if !doesUnitExist {
-					aggCosts = append(aggCosts, api.CostWithUnit{
+				aggregatedCosts[service] = map[string]api.CostWithUnit{
+					costUnit: {
 						Cost: costValue,
 						Unit: costUnit,
-					})
+					},
+				}
+				continue
+			} else {
+				for i, aggCost := range aggCosts {
+					if v, ok := aggCosts[aggCost.Unit]; ok {
+						v.Cost += costValue
+						aggCosts[i] = v
+					} else {
+						aggCosts[aggCost.Unit] = api.CostWithUnit{
+							Cost: costValue,
+							Unit: costUnit,
+						}
+					}
 				}
 			}
 
@@ -43,13 +43,13 @@ func AggregateServiceCosts(costs map[string][]summarizer.ServiceCostSummary) map
 	return aggregatedCosts
 }
 
-func MergeCostArrays(costs ...[]api.CostWithUnit) []api.CostWithUnit {
+func MergeCostMaps(costs ...map[string]api.CostWithUnit) map[string]api.CostWithUnit {
 	mergedCostsMap := make(map[string]api.CostWithUnit)
-	for _, costArr := range costs {
-		if costArr == nil {
+	for _, costMap := range costs {
+		if costMap == nil {
 			continue
 		}
-		for _, cost := range costArr {
+		for _, cost := range costMap {
 			if v, ok := mergedCostsMap[cost.Unit]; !ok {
 				mergedCostsMap[cost.Unit] = cost
 			} else {
@@ -63,10 +63,5 @@ func MergeCostArrays(costs ...[]api.CostWithUnit) []api.CostWithUnit {
 		return nil
 	}
 
-	mergedCosts := make([]api.CostWithUnit, 0, len(mergedCostsMap))
-	for _, v := range mergedCostsMap {
-		mergedCosts = append(mergedCosts, v)
-	}
-
-	return mergedCosts
+	return mergedCostsMap
 }

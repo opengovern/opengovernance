@@ -2169,22 +2169,29 @@ const docTemplate = `{
                         "in": "query"
                     },
                     {
-                        "enum": [
-                            "24h",
-                            "1w",
-                            "3m",
-                            "1y",
-                            "max"
-                        ],
                         "type": "string",
-                        "description": "Time Window",
-                        "name": "timeWindow",
-                        "in": "query"
+                        "description": "start time for chart in epoch seconds",
+                        "name": "startTime",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "end time for chart in epoch seconds",
+                        "name": "endTime",
+                        "in": "query",
+                        "required": true
                     },
                     {
                         "type": "string",
                         "description": "Category(Template) ID defaults to default template",
                         "name": "category",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Number of data points to return",
+                        "name": "dataPointCount",
                         "in": "query"
                     }
                 ],
@@ -2195,6 +2202,59 @@ const docTemplate = `{
                             "type": "array",
                             "items": {
                                 "$ref": "#/definitions/api.ResourceGrowthTrendResponse"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/inventory/api/v2/services/summary": {
+            "get": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "benchmarks"
+                ],
+                "summary": "Returns distribution of services for specific account",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "SourceID",
+                        "name": "sourceId",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Provider",
+                        "name": "provider",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "start time for cost calculation in epoch seconds",
+                        "name": "startTime",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "end time for cost calculation and time resource count in epoch seconds",
+                        "name": "endTime",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/api.ServiceSummaryResponse"
                             }
                         }
                     }
@@ -4071,6 +4131,17 @@ const docTemplate = `{
                 }
             }
         },
+        "api.CostWithUnit": {
+            "type": "object",
+            "properties": {
+                "cost": {
+                    "type": "number"
+                },
+                "unit": {
+                    "type": "string"
+                }
+            }
+        },
         "api.CreateInsightRequest": {
             "type": "object",
             "properties": {
@@ -5211,6 +5282,29 @@ const docTemplate = `{
                     "additionalProperties": {
                         "type": "integer"
                     }
+                },
+                "serviceName": {
+                    "type": "string"
+                }
+            }
+        },
+        "api.ServiceSummaryResponse": {
+            "type": "object",
+            "properties": {
+                "cloudProvider": {
+                    "type": "string"
+                },
+                "cost": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "$ref": "#/definitions/api.CostWithUnit"
+                    }
+                },
+                "resourceCount": {
+                    "type": "integer"
+                },
+                "serviceCode": {
+                    "type": "string"
                 },
                 "serviceName": {
                     "type": "string"

@@ -156,8 +156,8 @@ type ConnectionCostSummary struct {
 
 func (c ConnectionCostSummary) GetCostAndUnit() (float64, string) {
 	switch c.ResourceType {
-	case "aws::costexplorer::byaccountmonthly":
-	case "aws::costexplorer::byaccountdaily":
+	case "aws::internal::byaccountmonthly":
+	case "aws::internal::byaccountdaily":
 		costFloat, err := strconv.ParseFloat(c.Cost.(map[string]interface{})["UnblendedCostAmount"].(string), 64)
 		if err != nil {
 			return 0, ""
@@ -182,9 +182,9 @@ func (c ConnectionCostSummary) KeysAndIndex() ([]string, string) {
 		fmt.Sprint(c.PeriodEnd),
 	}
 	switch c.ResourceType {
-	case "aws::costexplorer::byaccountmonthly":
+	case "aws::internal::byaccountmonthly":
 		keys = append(keys, string(CostConnectionSummaryMonthly))
-	case "aws::costexplorer::byaccountdaily":
+	case "aws::internal::byaccountdaily":
 		keys = append(keys, string(CostConnectionSummaryDaily))
 	}
 

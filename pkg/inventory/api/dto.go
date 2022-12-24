@@ -316,9 +316,9 @@ type TrendDataPoint struct {
 	Value     int64 `json:"value"`
 }
 
-type FloatTrendDataPoint struct {
-	Timestamp int64   `json:"timestamp"`
-	Value     float64 `json:"value"`
+type CostTrendDataPoint struct {
+	Timestamp int64        `json:"timestamp"`
+	Value     CostWithUnit `json:"value"`
 }
 
 type CategoryResourceTrend struct {
@@ -326,9 +326,10 @@ type CategoryResourceTrend struct {
 	Trend []TrendDataPoint `json:"trend"`
 }
 
+// CategoryCostTrend is a struct for category resource cost trend. trend represents cost trend data in a map with currencies as keys.
 type CategoryCostTrend struct {
-	Name  string                `json:"name"`
-	Trend []FloatTrendDataPoint `json:"trend"`
+	Name  string                          `json:"name"`
+	Trend map[string][]CostTrendDataPoint `json:"trend"`
 }
 
 type ResourceGrowthTrendResponse struct {
@@ -338,9 +339,9 @@ type ResourceGrowthTrendResponse struct {
 }
 
 type CostGrowthTrendResponse struct {
-	CategoryName  string                `json:"categoryName"`
-	Trend         []FloatTrendDataPoint `json:"trend"`
-	Subcategories []CategoryCostTrend   `json:"Subcategories"`
+	CategoryName  string                          `json:"categoryName"`
+	Trend         map[string][]CostTrendDataPoint `json:"trend"`
+	Subcategories []CategoryCostTrend             `json:"Subcategories"`
 }
 
 type ListQueryRequest struct {
@@ -506,9 +507,9 @@ type ConnectionSummaryResponse struct {
 }
 
 type ServiceSummaryResponse struct {
-	CloudProvider SourceType     `json:"cloudProvider"`
-	ServiceName   string         `json:"serviceName"`
-	ServiceCode   string         `json:"serviceCode"`
-	ResourceCount *int           `json:"resourceCount,omitempty"`
-	Cost          []CostWithUnit `json:"cost,omitempty"`
+	CloudProvider SourceType              `json:"cloudProvider"`
+	ServiceName   string                  `json:"serviceName"`
+	ServiceCode   string                  `json:"serviceCode"`
+	ResourceCount *int                    `json:"resourceCount,omitempty"`
+	Cost          map[string]CostWithUnit `json:"cost,omitempty"`
 }

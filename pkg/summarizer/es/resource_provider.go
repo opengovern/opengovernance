@@ -134,8 +134,8 @@ type ServiceCostSummary struct {
 
 func (c ServiceCostSummary) GetCostAndUnit() (float64, string) {
 	switch c.ResourceType {
-	case "aws::costexplorer::byservicemonthly":
-	case "aws::costexplorer::byservicedaily":
+	case "aws::internal::byservicemonthly":
+	case "aws::internal::byservicedaily":
 		costFloat, err := strconv.ParseFloat(c.Cost.(map[string]interface{})["UnblendedCostAmount"].(string), 64)
 		if err != nil {
 			return 0, ""
@@ -159,9 +159,9 @@ func (c ServiceCostSummary) KeysAndIndex() ([]string, string) {
 		fmt.Sprint(c.PeriodEnd),
 	}
 	switch c.ResourceType {
-	case "aws::costexplorer::byservicemonthly":
+	case "aws::internal::byservicemonthly":
 		keys = append(keys, string(CostProviderSummaryMonthly))
-	case "aws::costexplorer::byservicedaily":
+	case "aws::internal::byservicedaily":
 		keys = append(keys, string(CostProviderSummaryDaily))
 	}
 
