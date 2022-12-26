@@ -1966,8 +1966,15 @@ func (h *HttpHandler) GetAccountSummary(ctx echo.Context) error {
 	}
 	for _, cost := range costs {
 		if v, ok := res[cost.SourceID]; ok {
-			v.Cost, _ = cost.GetCostAndUnit()
-			v.LastCost = time.Unix(cost.PeriodEnd, 0)
+			costValue, costUnit := cost.GetCostAndUnit()
+			if v.Cost == nil {
+				v.Cost = make(map[string]float64)
+			}
+			v.Cost[costUnit] = costValue
+			if v.LastCost == nil {
+				v.LastCost = make(map[string]time.Time)
+			}
+			v.LastCost[costUnit] = time.Unix(cost.PeriodEnd, 0)
 			res[cost.SourceID] = v
 		}
 	}
