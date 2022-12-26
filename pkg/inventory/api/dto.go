@@ -362,16 +362,16 @@ type AccountResourceCountResponse struct {
 }
 
 type AccountSummaryResponse struct {
-	SourceID               string      `json:"sourceID"`
-	SourceType             source.Type `json:"sourceType"`
-	ProviderConnectionName string      `json:"providerConnectionName"`
-	ProviderConnectionID   string      `json:"providerConnectionID"`
-	Enabled                bool        `json:"enabled"`
-	ResourceCount          int         `json:"resourceCount"`
-	Cost                   float64     `json:"cost"`
-	OnboardDate            time.Time   `json:"onboardDate"`
-	LastInventory          time.Time   `json:"lastInventory"`
-	LastCost               time.Time   `json:"lastCost"`
+	SourceID               string               `json:"sourceID"`
+	SourceType             source.Type          `json:"sourceType"`
+	ProviderConnectionName string               `json:"providerConnectionName"`
+	ProviderConnectionID   string               `json:"providerConnectionID"`
+	Enabled                bool                 `json:"enabled"`
+	ResourceCount          int                  `json:"resourceCount"`
+	Cost                   map[string]float64   `json:"cost,omitempty"`
+	OnboardDate            time.Time            `json:"onboardDate"`
+	LastInventory          time.Time            `json:"lastInventory"`
+	LastCost               map[string]time.Time `json:"lastCost,omitempty"`
 }
 
 type TopAccountResponse struct {
