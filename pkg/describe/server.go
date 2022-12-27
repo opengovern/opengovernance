@@ -7,10 +7,11 @@ import (
 	"time"
 
 	api3 "gitlab.com/keibiengine/keibi-engine/pkg/auth/api"
-	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpserver"
-
 	"gitlab.com/keibiengine/keibi-engine/pkg/cloudservice"
 	complianceapi "gitlab.com/keibiengine/keibi-engine/pkg/compliance/api"
+	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpserver"
+	summarizerapi "gitlab.com/keibiengine/keibi-engine/pkg/summarizer/api"
+	"gorm.io/gorm"
 
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
@@ -20,39 +21,46 @@ import (
 )
 
 type HttpServer struct {
-	Address string
-	DB      Database
+	Address   string
+	DB        Database
+	Scheduler *Scheduler
 }
 
 func NewHTTPServer(
 	address string,
 	db Database,
+	s *Scheduler,
 ) *HttpServer {
 
 	return &HttpServer{
-		Address: address,
-		DB:      db,
+		Address:   address,
+		DB:        db,
+		Scheduler: s,
 	}
 }
 
-func (s *HttpServer) Register(e *echo.Echo) {
+func (h HttpServer) Register(e *echo.Echo) {
+	v0 := e.Group("/api/v0") // experimental/debug apis
 	v1 := e.Group("/api/v1")
 
-	v1.GET("/sources", httpserver.AuthorizeHandler(s.HandleListSources, api3.ViewerRole))
-	v1.GET("/sources/:source_id", httpserver.AuthorizeHandler(s.HandleGetSource, api3.ViewerRole))
-	v1.GET("/sources/:source_id/jobs/describe", httpserver.AuthorizeHandler(s.HandleListSourceDescribeJobs, api3.ViewerRole))
-	v1.GET("/sources/:source_id/jobs/compliance", httpserver.AuthorizeHandler(s.HandleListSourceComplianceReports, api3.ViewerRole))
+	v0.GET("/describe/trigger", httpserver.AuthorizeHandler(h.TriggerDescribeJob, api3.AdminRole))
+	v0.GET("/summarize/trigger", httpserver.AuthorizeHandler(h.TriggerSummarizeJob, api3.AdminRole))
 
-	v1.POST("/sources/:source_id/jobs/describe/refresh", httpserver.AuthorizeHandler(s.RunDescribeJobs, api3.EditorRole))
-	v1.POST("/sources/:source_id/jobs/compliance/refresh", httpserver.AuthorizeHandler(s.RunComplianceReportJobs, api3.EditorRole))
+	v1.GET("/sources", httpserver.AuthorizeHandler(h.HandleListSources, api3.ViewerRole))
+	v1.GET("/sources/:source_id", httpserver.AuthorizeHandler(h.HandleGetSource, api3.ViewerRole))
+	v1.GET("/sources/:source_id/jobs/describe", httpserver.AuthorizeHandler(h.HandleListSourceDescribeJobs, api3.ViewerRole))
+	v1.GET("/sources/:source_id/jobs/compliance", httpserver.AuthorizeHandler(h.HandleListSourceComplianceReports, api3.ViewerRole))
 
-	v1.GET("/resource_type/:provider", httpserver.AuthorizeHandler(s.GetResourceTypesByProvider, api3.ViewerRole))
+	v1.POST("/sources/:source_id/jobs/describe/refresh", httpserver.AuthorizeHandler(h.RunDescribeJobs, api3.EditorRole))
+	v1.POST("/sources/:source_id/jobs/compliance/refresh", httpserver.AuthorizeHandler(h.RunComplianceReportJobs, api3.EditorRole))
 
-	v1.GET("/compliance/report/last/completed", httpserver.AuthorizeHandler(s.HandleGetLastCompletedComplianceReport, api3.ViewerRole))
+	v1.GET("/resource_type/:provider", httpserver.AuthorizeHandler(h.GetResourceTypesByProvider, api3.ViewerRole))
 
-	v1.GET("/insight", httpserver.AuthorizeHandler(s.ListInsights, api3.ViewerRole))
-	v1.PUT("/insight", httpserver.AuthorizeHandler(s.CreateInsight, api3.EditorRole))
-	v1.DELETE("/insight/:id", httpserver.AuthorizeHandler(s.DeleteInsight, api3.EditorRole))
+	v1.GET("/compliance/report/last/completed", httpserver.AuthorizeHandler(h.HandleGetLastCompletedComplianceReport, api3.ViewerRole))
+
+	v1.GET("/insight", httpserver.AuthorizeHandler(h.ListInsights, api3.ViewerRole))
+	v1.PUT("/insight", httpserver.AuthorizeHandler(h.CreateInsight, api3.EditorRole))
+	v1.DELETE("/insight/:id", httpserver.AuthorizeHandler(h.DeleteInsight, api3.EditorRole))
 }
 
 // HandleListSources godoc
@@ -62,8 +70,8 @@ func (s *HttpServer) Register(e *echo.Echo) {
 // @Produce     json
 // @Success     200 {object} []api.Source
 // @Router      /schedule/api/v1/sources [get]
-func (s HttpServer) HandleListSources(ctx echo.Context) error {
-	sources, err := s.DB.ListSources()
+func (h HttpServer) HandleListSources(ctx echo.Context) error {
+	sources, err := h.DB.ListSources()
 	if err != nil {
 		ctx.Logger().Errorf("fetching sources: %v", err)
 		return ctx.JSON(http.StatusInternalServerError, api.ErrorResponse{Message: "internal error"})
@@ -80,7 +88,7 @@ func (s HttpServer) HandleListSources(ctx echo.Context) error {
 			lastComplianceReportAt = source.LastComplianceReportAt.Time
 		}
 
-		job, err := s.DB.GetLastDescribeSourceJob(source.ID)
+		job, err := h.DB.GetLastDescribeSourceJob(source.ID)
 		if err != nil {
 			ctx.Logger().Errorf("fetching source last describe job %s: %v", source.ID, err)
 			return ctx.JSON(http.StatusInternalServerError, api.ErrorResponse{Message: "fetching source last describe job"})
@@ -110,20 +118,20 @@ func (s HttpServer) HandleListSources(ctx echo.Context) error {
 // @Param       source_id path     string true "SourceID"
 // @Success     200       {object} api.Source
 // @Router      /schedule/api/v1/sources/{source_id} [get]
-func (s HttpServer) HandleGetSource(ctx echo.Context) error {
+func (h HttpServer) HandleGetSource(ctx echo.Context) error {
 	sourceID := ctx.Param("source_id")
 	sourceUUID, err := uuid.Parse(sourceID)
 	if err != nil {
 		ctx.Logger().Errorf("parsing uuid: %v", err)
 		return ctx.JSON(http.StatusBadRequest, api.ErrorResponse{Message: "invalid source uuid"})
 	}
-	source, err := s.DB.GetSourceByUUID(sourceUUID)
+	source, err := h.DB.GetSourceByUUID(sourceUUID)
 	if err != nil {
 		ctx.Logger().Errorf("fetching source %s: %v", sourceID, err)
 		return ctx.JSON(http.StatusInternalServerError, api.ErrorResponse{Message: "fetching source"})
 	}
 
-	job, err := s.DB.GetLastDescribeSourceJob(sourceUUID)
+	job, err := h.DB.GetLastDescribeSourceJob(sourceUUID)
 	if err != nil {
 		ctx.Logger().Errorf("fetching source last describe job %s: %v", sourceID, err)
 		return ctx.JSON(http.StatusInternalServerError, api.ErrorResponse{Message: "fetching source last describe job"})
@@ -159,7 +167,7 @@ func (s HttpServer) HandleGetSource(ctx echo.Context) error {
 // @Param       source_id path     string true "SourceID"
 // @Success     200       {object} []api.DescribeSource
 // @Router      /schedule/api/v1/sources/{source_id}/jobs/describe [get]
-func (s HttpServer) HandleListSourceDescribeJobs(ctx echo.Context) error {
+func (h HttpServer) HandleListSourceDescribeJobs(ctx echo.Context) error {
 	sourceID := ctx.Param("source_id")
 	sourceUUID, err := uuid.Parse(sourceID)
 	if err != nil {
@@ -167,7 +175,7 @@ func (s HttpServer) HandleListSourceDescribeJobs(ctx echo.Context) error {
 		return ctx.JSON(http.StatusBadRequest, api.ErrorResponse{Message: "invalid source uuid"})
 	}
 
-	jobs, err := s.DB.ListDescribeSourceJobs(sourceUUID)
+	jobs, err := h.DB.ListDescribeSourceJobs(sourceUUID)
 	if err != nil {
 		ctx.Logger().Errorf("fetching describe source jobs: %v", err)
 		return ctx.JSON(http.StatusInternalServerError, api.ErrorResponse{Message: "internal error"})
@@ -203,7 +211,7 @@ func (s HttpServer) HandleListSourceDescribeJobs(ctx echo.Context) error {
 // @Param       to        query    int    false "To Time (TimeRange)"
 // @Success     200       {object} []complianceapi.ComplianceReport
 // @Router      /schedule/api/v1/sources/{source_id}/jobs/compliance [get]
-func (s HttpServer) HandleListSourceComplianceReports(ctx echo.Context) error {
+func (h HttpServer) HandleListSourceComplianceReports(ctx echo.Context) error {
 	sourceID := ctx.Param("source_id")
 	sourceUUID, err := uuid.Parse(sourceID)
 	if err != nil {
@@ -216,7 +224,7 @@ func (s HttpServer) HandleListSourceComplianceReports(ctx echo.Context) error {
 
 	var jobs []ComplianceReportJob
 	if from == "" && to == "" {
-		report, err := s.DB.GetLastCompletedSourceComplianceReport(sourceUUID)
+		report, err := h.DB.GetLastCompletedSourceComplianceReport(sourceUUID)
 		if err != nil {
 			return ctx.JSON(http.StatusInternalServerError, api.ErrorResponse{Message: err.Error()})
 		}
@@ -238,7 +246,7 @@ func (s HttpServer) HandleListSourceComplianceReports(ctx echo.Context) error {
 		}
 		toTime := time.UnixMilli(n)
 
-		jobs, err = s.DB.ListCompletedComplianceReportByDate(sourceUUID, fromTime, toTime)
+		jobs, err = h.DB.ListCompletedComplianceReportByDate(sourceUUID, fromTime, toTime)
 		if err != nil {
 			return ctx.JSON(http.StatusInternalServerError, api.ErrorResponse{Message: err.Error()})
 		}
@@ -265,7 +273,7 @@ func (s HttpServer) HandleListSourceComplianceReports(ctx echo.Context) error {
 // @Produce     json
 // @Param       source_id path string true "SourceID"
 // @Router      /schedule/api/v1/sources/{source_id}/jobs/compliance/refresh [post]
-func (s HttpServer) RunComplianceReportJobs(ctx echo.Context) error {
+func (h HttpServer) RunComplianceReportJobs(ctx echo.Context) error {
 	sourceID := ctx.Param("source_id")
 	sourceUUID, err := uuid.Parse(sourceID)
 	if err != nil {
@@ -273,7 +281,7 @@ func (s HttpServer) RunComplianceReportJobs(ctx echo.Context) error {
 		return ctx.JSON(http.StatusBadRequest, api.ErrorResponse{Message: "invalid source uuid"})
 	}
 
-	err = s.DB.UpdateSourceNextComplianceReportToNow(sourceUUID)
+	err = h.DB.UpdateSourceNextComplianceReportToNow(sourceUUID)
 	if err != nil {
 		ctx.Logger().Errorf("update source next compliance report run: %v", err)
 		return ctx.JSON(http.StatusInternalServerError, api.ErrorResponse{Message: "internal error"})
@@ -288,8 +296,8 @@ func (s HttpServer) RunComplianceReportJobs(ctx echo.Context) error {
 // @Produce json
 // @Success 200 {object} int
 // @Router  /schedule/api/v1/compliance/report/last/completed [get]
-func (s HttpServer) HandleGetLastCompletedComplianceReport(ctx echo.Context) error {
-	id, err := s.DB.GetLastCompletedComplianceReportID()
+func (h HttpServer) HandleGetLastCompletedComplianceReport(ctx echo.Context) error {
+	id, err := h.DB.GetLastCompletedComplianceReportID()
 	if err != nil {
 		return err
 	}
@@ -304,7 +312,7 @@ func (s HttpServer) HandleGetLastCompletedComplianceReport(ctx echo.Context) err
 // @Produce     json
 // @Param       source_id path string true "SourceID"
 // @Router      /schedule/api/v1/sources/{source_id}/jobs/describe/refresh [post]
-func (s HttpServer) RunDescribeJobs(ctx echo.Context) error {
+func (h HttpServer) RunDescribeJobs(ctx echo.Context) error {
 	sourceID := ctx.Param("source_id")
 	sourceUUID, err := uuid.Parse(sourceID)
 	if err != nil {
@@ -312,7 +320,7 @@ func (s HttpServer) RunDescribeJobs(ctx echo.Context) error {
 		return ctx.JSON(http.StatusBadRequest, api.ErrorResponse{Message: "invalid source uuid"})
 	}
 
-	err = s.DB.UpdateSourceNextDescribeAtToNow(sourceUUID)
+	err = h.DB.UpdateSourceNextDescribeAtToNow(sourceUUID)
 	if err != nil {
 		ctx.Logger().Errorf("update source next describe run: %v", err)
 		return ctx.JSON(http.StatusInternalServerError, api.ErrorResponse{Message: "internal error"})
@@ -329,7 +337,7 @@ func (s HttpServer) RunDescribeJobs(ctx echo.Context) error {
 // @Param       provider path     string true "Provider" Enums(aws,azure)
 // @Success     200      {object} []api.ResourceTypeDetail
 // @Router      /schedule/api/v1/resource_type/{provider} [get]
-func (s HttpServer) GetResourceTypesByProvider(ctx echo.Context) error {
+func (h HttpServer) GetResourceTypesByProvider(ctx echo.Context) error {
 	provider := ctx.Param("provider")
 
 	var resourceTypes []api.ResourceTypeDetail
@@ -361,7 +369,7 @@ func (s HttpServer) GetResourceTypesByProvider(ctx echo.Context) error {
 // @Param   request body     api.CreateInsightRequest true "Request Body"
 // @Success 200     {object} uint
 // @Router  /schedule/api/v1/insight [put]
-func (h *HttpServer) CreateInsight(ctx echo.Context) error {
+func (h HttpServer) CreateInsight(ctx echo.Context) error {
 	var req api.CreateInsightRequest
 	if err := bindValidate(ctx, &req); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
@@ -389,7 +397,7 @@ func (h *HttpServer) CreateInsight(ctx echo.Context) error {
 // @Param   request body uint true "Request Body"
 // @Success 200
 // @Router  /schedule/api/v1/insight/{id} [delete]
-func (h *HttpServer) DeleteInsight(ctx echo.Context) error {
+func (h HttpServer) DeleteInsight(ctx echo.Context) error {
 	id, err := strconv.Atoi(ctx.Param("id"))
 	if err != nil {
 		fmt.Println(err.Error())
@@ -411,7 +419,7 @@ func (h *HttpServer) DeleteInsight(ctx echo.Context) error {
 // @Param       request body     api.ListInsightsRequest true "Request Body"
 // @Success     200     {object} []api.Insight
 // @Router      /schedule/api/v1/insight [get]
-func (h *HttpServer) ListInsights(ctx echo.Context) error {
+func (h HttpServer) ListInsights(ctx echo.Context) error {
 	var req api.ListInsightsRequest
 	if err := bindValidate(ctx, &req); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
@@ -439,6 +447,60 @@ func (h *HttpServer) ListInsights(ctx echo.Context) error {
 		})
 	}
 	return ctx.JSON(200, result)
+}
+
+// TriggerDescribeJob godoc
+// @Summary     Triggers a describe job to run immediately
+// @Description Triggers a describe job to run immediately
+// @Tags        describe
+// @Produce     json
+// @Success     200
+// @Router      /schedule/api/v0/describe/trigger [get]
+func (h HttpServer) TriggerDescribeJob(ctx echo.Context) error {
+	scheduleJob, err := h.DB.FetchLastScheduleJob()
+	if err != nil {
+		errMsg := fmt.Sprintf("error fetching last schedule job: %v", err)
+		return ctx.JSON(http.StatusInternalServerError, api.ErrorResponse{Message: errMsg})
+	}
+	if scheduleJob.Status == summarizerapi.SummarizerJobInProgress {
+		return ctx.JSON(http.StatusConflict, api.ErrorResponse{Message: "schedule job in progress"})
+	}
+	job := ScheduleJob{
+		Model:          gorm.Model{},
+		Status:         summarizerapi.SummarizerJobInProgress,
+		FailureMessage: "",
+	}
+	err = h.DB.AddScheduleJob(&job)
+	if err != nil {
+		errMsg := fmt.Sprintf("error adding schedule job: %v", err)
+		DescribeJobsCount.WithLabelValues("failure").Inc()
+		return ctx.JSON(http.StatusInternalServerError, api.ErrorResponse{Message: errMsg})
+	}
+	return ctx.JSON(http.StatusOK, "")
+}
+
+// TriggerSummarizeJob godoc
+// @Summary     Triggers a summarize job to run immediately
+// @Description Triggers a summarize job to run immediately
+// @Tags        describe
+// @Produce     json
+// @Success     200
+// @Router      /schedule/api/v0/summarize/trigger [get]
+func (h HttpServer) TriggerSummarizeJob(ctx echo.Context) error {
+	scheduleJob, err := h.DB.FetchLastScheduleJob()
+	if err != nil {
+		fmt.Printf("error fetching last schedule job: %v", err)
+		return ctx.JSON(http.StatusInternalServerError, api.ErrorResponse{Message: "internal error"})
+	}
+	if scheduleJob.Status == summarizerapi.SummarizerJobInProgress {
+		return ctx.JSON(http.StatusConflict, api.ErrorResponse{Message: "schedule job in progress"})
+	}
+	err = h.Scheduler.scheduleSummarizerJob(scheduleJob.ID)
+	if err != nil {
+		errMsg := fmt.Sprintf("error scheduling summarize job: %v", err)
+		return ctx.JSON(http.StatusInternalServerError, api.ErrorResponse{Message: errMsg})
+	}
+	return ctx.JSON(http.StatusOK, "")
 }
 
 func bindValidate(ctx echo.Context, i interface{}) error {

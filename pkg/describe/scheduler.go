@@ -428,7 +428,7 @@ func InitializeScheduler(
 	s.logger.Info("Connected to the postgres database: ", zap.String("db", postgresDb))
 	s.db = Database{orm: orm}
 
-	s.httpServer = NewHTTPServer(httpServerAddress, s.db)
+	s.httpServer = NewHTTPServer(httpServerAddress, s.db, s)
 	s.describeIntervalHours, err = strconv.ParseInt(describeIntervalHours, 10, 64)
 	if err != nil {
 		return nil, err
