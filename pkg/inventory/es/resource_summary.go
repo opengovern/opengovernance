@@ -1135,7 +1135,6 @@ type FetchResourceTypeCountAtTimeResponse struct {
 	Aggregations struct {
 		ScheduleJobIDGroup struct {
 			Buckets []struct {
-				Key               string `json:"key"`
 				ResourceTypeGroup struct {
 					Buckets []struct {
 						Key               string `json:"key"`
