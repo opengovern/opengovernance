@@ -1710,6 +1710,29 @@ const docTemplate = `{
                         "description": "SourceID",
                         "name": "sourceId",
                         "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "page size - default is 20",
+                        "name": "pageSize",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "page number - default is 1",
+                        "name": "pageNumber",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "sourceid",
+                            "resourcecount",
+                            "cost"
+                        ],
+                        "type": "string",
+                        "description": "column to sort by - default is sourceid",
+                        "name": "sortBy",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -2287,6 +2310,29 @@ const docTemplate = `{
                         "name": "endTime",
                         "in": "query",
                         "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "page size - default is 20",
+                        "name": "pageSize",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "page number - default is 1",
+                        "name": "pageNumber",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "servicecode",
+                            "resourcecount",
+                            "cost"
+                        ],
+                        "type": "string",
+                        "description": "column to sort by - default is servicecode",
+                        "name": "sortBy",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -3762,7 +3808,7 @@ const docTemplate = `{
                 }
             }
         },
-        "api.AccountSummaryResponse": {
+        "api.AccountSummary": {
             "type": "object",
             "properties": {
                 "cost": {
@@ -3800,6 +3846,20 @@ const docTemplate = `{
                 },
                 "sourceType": {
                     "type": "string"
+                }
+            }
+        },
+        "api.AccountSummaryResponse": {
+            "type": "object",
+            "properties": {
+                "accounts": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/api.AccountSummary"
+                    }
+                },
+                "totalResourceCount": {
+                    "type": "integer"
                 }
             }
         },
@@ -5361,7 +5421,7 @@ const docTemplate = `{
                 }
             }
         },
-        "api.ServiceSummaryResponse": {
+        "api.ServiceSummary": {
             "type": "object",
             "properties": {
                 "cloudProvider": {
@@ -5381,6 +5441,20 @@ const docTemplate = `{
                 },
                 "serviceName": {
                     "type": "string"
+                }
+            }
+        },
+        "api.ServiceSummaryResponse": {
+            "type": "object",
+            "properties": {
+                "services": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/api.ServiceSummary"
+                    }
+                },
+                "totalServiceCount": {
+                    "type": "integer"
                 }
             }
         },

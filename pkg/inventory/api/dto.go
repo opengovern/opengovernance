@@ -362,6 +362,11 @@ type AccountResourceCountResponse struct {
 }
 
 type AccountSummaryResponse struct {
+	TotalResourceCount int              `json:"totalResourceCount"`
+	Accounts           []AccountSummary `json:"accounts"`
+}
+
+type AccountSummary struct {
 	SourceID               string               `json:"sourceID"`
 	SourceType             source.Type          `json:"sourceType"`
 	ProviderConnectionName string               `json:"providerConnectionName"`
@@ -507,6 +512,11 @@ type ConnectionSummaryResponse struct {
 }
 
 type ServiceSummaryResponse struct {
+	TotalServiceCount int              `json:"totalServiceCount"`
+	Services          []ServiceSummary `json:"services"`
+}
+
+type ServiceSummary struct {
 	CloudProvider SourceType              `json:"cloudProvider"`
 	ServiceName   string                  `json:"serviceName"`
 	ServiceCode   string                  `json:"serviceCode"`
