@@ -29,7 +29,7 @@ type HttpServerSuite struct {
 func (s *HttpServerSuite) SetupSuite() {
 	require := s.Require()
 	orm := idocker.StartupPostgreSQL(s.T())
-	s.handler = NewHTTPServer(":8080", Database{orm: orm})
+	s.handler = NewHTTPServer(":8080", Database{orm: orm}, nil)
 	err := s.handler.DB.Initialize()
 	require.NoError(err, "db initialize")
 
