@@ -4,8 +4,6 @@ import (
 	"context"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/cloudservice"
-	summarizer "gitlab.com/keibiengine/keibi-engine/pkg/summarizer/es"
-
 	"gitlab.com/keibiengine/keibi-engine/pkg/inventory/api"
 	"gitlab.com/keibiengine/keibi-engine/pkg/inventory/es"
 	"gitlab.com/keibiengine/keibi-engine/pkg/keibi-es-sdk"
@@ -236,8 +234,8 @@ func GetMetricResourceTypeSummaryIndexByResourceType(metrics []MetricResourceTyp
 	return metricIndex
 }
 
-func GetCategoryNodeResourceCountInfo(categoryNode *CategoryNode, metrics map[string]MetricResourceTypeSummary, filterCacheMap map[string]api.Filter) api.CategoryNode {
-	resourceCount := api.HistoryCount{}
+func GetCategoryNodeResourceCountInfo(categoryNode *CategoryNode, metrics map[string]int, filterCacheMap map[string]api.Filter) api.CategoryNode {
+	resourceCount := 0
 	directFilters := map[string]api.Filter{}
 	for _, f := range categoryNode.Filters {
 		switch f.GetFilterType() {
@@ -251,7 +249,7 @@ func GetCategoryNodeResourceCountInfo(categoryNode *CategoryNode, metrics map[st
 					CloudProvider: filter.CloudProvider,
 					ResourceName:  filter.ResourceName,
 					ResourceType:  filter.ResourceType,
-					ResourceCount: api.HistoryCount{},
+					ResourceCount: 0,
 				}
 			}
 		default:
@@ -264,32 +262,18 @@ func GetCategoryNodeResourceCountInfo(categoryNode *CategoryNode, metrics map[st
 			filter := f.(*FilterCloudResourceTypeNode)
 			if v, ok := filterCacheMap[filter.ElementID]; ok {
 				m := v.(*api.FilterCloudResourceType)
-				resourceCount.Count += m.ResourceCount.Count
-				resourceCount.LastDayValue = pointerAdd(resourceCount.LastDayValue, m.ResourceCount.LastDayValue)
-				resourceCount.LastWeekValue = pointerAdd(resourceCount.LastWeekValue, m.ResourceCount.LastWeekValue)
-				resourceCount.LastQuarterValue = pointerAdd(resourceCount.LastQuarterValue, m.ResourceCount.LastQuarterValue)
-				resourceCount.LastYearValue = pointerAdd(resourceCount.LastYearValue, m.ResourceCount.LastYearValue)
+				resourceCount += m.ResourceCount
 			} else {
 				filterWithCount := api.FilterCloudResourceType{
 					FilterID:      filter.ElementID,
 					CloudProvider: filter.CloudProvider,
 					ResourceType:  filter.ResourceType,
 					ResourceName:  filter.ResourceName,
-					ResourceCount: api.HistoryCount{},
+					ResourceCount: 0,
 				}
 				if m, ok := metrics[filter.ResourceType]; ok {
-					resourceCount.Count += m.Count
-					resourceCount.LastDayValue = pointerAdd(resourceCount.LastDayValue, m.LastDayCount)
-					resourceCount.LastWeekValue = pointerAdd(resourceCount.LastWeekValue, m.LastWeekCount)
-					resourceCount.LastQuarterValue = pointerAdd(resourceCount.LastQuarterValue, m.LastQuarterCount)
-					resourceCount.LastYearValue = pointerAdd(resourceCount.LastYearValue, m.LastYearCount)
-
-					filterWithCount.ResourceCount.Count += m.Count
-					filterWithCount.ResourceCount.LastDayValue = pointerAdd(filterWithCount.ResourceCount.LastDayValue, m.LastDayCount)
-					filterWithCount.ResourceCount.LastWeekValue = pointerAdd(filterWithCount.ResourceCount.LastWeekValue, m.LastWeekCount)
-					filterWithCount.ResourceCount.LastQuarterValue = pointerAdd(filterWithCount.ResourceCount.LastQuarterValue, m.LastQuarterCount)
-					filterWithCount.ResourceCount.LastYearValue = pointerAdd(filterWithCount.ResourceCount.LastYearValue, m.LastYearCount)
-
+					resourceCount += m
+					filterWithCount.ResourceCount += m
 					if _, ok := directFilters[filter.ElementID].(api.FilterCloudResourceType); ok {
 						directFilters[filter.ElementID] = filterWithCount
 					}
@@ -320,9 +304,9 @@ func GetCategoryNodeResourceCountInfo(categoryNode *CategoryNode, metrics map[st
 	return result
 }
 
-func GetCategoryNodeCostInfo(categoryNode *CategoryNode, currentCosts, pastCosts map[string]summarizer.ServiceCostSummary, filterCacheMap map[string]api.Filter) api.CategoryNode {
+func GetCategoryNodeCostInfo(categoryNode *CategoryNode, costs map[string]map[string]api.CostWithUnit, filterCacheMap map[string]api.Filter) api.CategoryNode {
 	var (
-		currentCost, pastCost float64
+		apiCosts map[string]api.CostWithUnit
 	)
 	directFilters := map[string]api.Filter{}
 	for _, f := range categoryNode.Filters {
@@ -335,10 +319,7 @@ func GetCategoryNodeCostInfo(categoryNode *CategoryNode, currentCosts, pastCosts
 				directFilters[filter.ElementID] = api.FilterCost{
 					FilterID:      filter.ElementID,
 					CloudProvider: filter.CloudProvider,
-					Cost: api.Cost{
-						CurrentCost: 0,
-						HistoryCost: 0,
-					},
+					Cost:          map[string]api.CostWithUnit{},
 				}
 			}
 		default:
@@ -351,8 +332,18 @@ func GetCategoryNodeCostInfo(categoryNode *CategoryNode, currentCosts, pastCosts
 		case FilterTypeCost:
 			filter := f.(*FilterCostNode)
 			if v, ok := filterCacheMap[filter.ElementID]; ok {
-				currentCost += v.(*api.FilterCost).Cost.CurrentCost
-				pastCost += v.(*api.FilterCost).Cost.HistoryCost
+				filterCost := v.(*api.FilterCost)
+				for key, costValue := range filterCost.Cost {
+					if currentCostValue, ok := apiCosts[key]; ok {
+						currentCostValue.Cost += costValue.Cost
+						apiCosts[key] = currentCostValue
+					} else {
+						apiCosts[key] = api.CostWithUnit{
+							Cost: costValue.Cost,
+							Unit: costValue.Unit,
+						}
+					}
+				}
 				if _, ok := directFilters[filter.ElementID].(api.FilterCost); ok {
 					directFilters[filter.ElementID] = *v.(*api.FilterCost)
 				}
@@ -360,21 +351,31 @@ func GetCategoryNodeCostInfo(categoryNode *CategoryNode, currentCosts, pastCosts
 				filterWithCost := api.FilterCost{
 					FilterID:      filter.ElementID,
 					CloudProvider: filter.CloudProvider,
-					Cost: api.Cost{
-						CurrentCost: 0,
-						HistoryCost: 0,
-					},
+					Cost:          map[string]api.CostWithUnit{},
 				}
-				if m, ok := currentCosts[filter.ServiceName]; ok {
-					costValue, _ := m.GetCostAndUnit()
-					currentCost += costValue
+				if m, ok := costs[filter.ServiceName]; ok {
+					for costUnit, costValue := range m {
+						if currentCostValue, ok := apiCosts[costUnit]; ok {
+							currentCostValue.Cost += costValue.Cost
+							apiCosts[costUnit] = currentCostValue
+						} else {
+							apiCosts[costUnit] = costValue
+						}
+					}
 				}
-				if m, ok := pastCosts[filter.ServiceName]; ok {
-					costValue, _ := m.GetCostAndUnit()
-					pastCost += costValue
+
+				for unit, costValue := range apiCosts {
+					if v, ok := filterWithCost.Cost[unit]; ok {
+						v.Cost += costValue.Cost
+						filterWithCost.Cost[unit] = v
+					} else {
+						filterWithCost.Cost[unit] = api.CostWithUnit{
+							Cost: costValue.Cost,
+							Unit: unit,
+						}
+					}
 				}
-				filterWithCost.Cost.CurrentCost = currentCost
-				filterWithCost.Cost.HistoryCost = pastCost
+
 				if _, ok := directFilters[filter.ElementID].(api.FilterCost); ok {
 					directFilters[filter.ElementID] = filterWithCost
 				}
@@ -386,12 +387,9 @@ func GetCategoryNodeCostInfo(categoryNode *CategoryNode, currentCosts, pastCosts
 	}
 
 	result := api.CategoryNode{
-		CategoryID:   categoryNode.ElementID,
-		CategoryName: categoryNode.Name,
-		Cost: &api.Cost{
-			CurrentCost: currentCost,
-			HistoryCost: pastCost,
-		},
+		CategoryID:    categoryNode.ElementID,
+		CategoryName:  categoryNode.Name,
+		Cost:          apiCosts,
 		Subcategories: []api.CategoryNode{},
 		Filters:       []api.Filter{},
 	}
@@ -410,7 +408,7 @@ func GetCategoryNodeCostInfo(categoryNode *CategoryNode, currentCosts, pastCosts
 func RenderCategoryResourceCountDFS(ctx context.Context,
 	graphDb GraphDatabase,
 	rootNode *CategoryNode,
-	metrics map[string]MetricResourceTypeSummary,
+	metrics map[string]int,
 	depth int,
 	importanceArray []string,
 	nodeCacheMap map[string]api.CategoryNode,
@@ -447,8 +445,7 @@ func RenderCategoryCostDFS(ctx context.Context,
 	graphDb GraphDatabase,
 	rootNode *CategoryNode,
 	depth int,
-	currentCost map[string]summarizer.ServiceCostSummary,
-	pastCost map[string]summarizer.ServiceCostSummary,
+	costs map[string]map[string]api.CostWithUnit,
 	nodeCacheMap map[string]api.CategoryNode,
 	filterCacheMap map[string]api.Filter) (*api.CategoryNode, error) {
 
@@ -456,7 +453,7 @@ func RenderCategoryCostDFS(ctx context.Context,
 		return nil, nil
 	}
 
-	result := GetCategoryNodeCostInfo(rootNode, currentCost, pastCost, filterCacheMap)
+	result := GetCategoryNodeCostInfo(rootNode, costs, filterCacheMap)
 	for i, c := range result.Subcategories {
 		if v, ok := nodeCacheMap[c.CategoryID]; ok {
 			result.Subcategories[i] = v
@@ -466,7 +463,7 @@ func RenderCategoryCostDFS(ctx context.Context,
 				return nil, err
 			}
 
-			subResult, err := RenderCategoryCostDFS(ctx, graphDb, subCategoryNode, depth, currentCost, pastCost, nodeCacheMap, filterCacheMap)
+			subResult, err := RenderCategoryCostDFS(ctx, graphDb, subCategoryNode, depth, costs, nodeCacheMap, filterCacheMap)
 			if err != nil {
 				return nil, err
 			}
