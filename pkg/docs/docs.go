@@ -1789,11 +1789,16 @@ const docTemplate = `{
                         "in": "query"
                     },
                     {
-                        "type": "integer",
-                        "description": "Unix second of the time to compare to",
-                        "name": "compareTo",
-                        "in": "query",
-                        "required": true
+                        "type": "string",
+                        "description": "timestamp for start of cost window in epoch seconds",
+                        "name": "startTime",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "timestamp for end of cost window in epoch seconds",
+                        "name": "endTime",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -1845,9 +1850,21 @@ const docTemplate = `{
                         "in": "query"
                     },
                     {
-                        "type": "integer",
-                        "description": "Unix second of the time to compare to",
-                        "name": "compareTo",
+                        "type": "string",
+                        "description": "timestamp for start of cost window in epoch seconds",
+                        "name": "startTime",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "timestamp for end of cost window in epoch seconds",
+                        "name": "endTime",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Unit of cost to filter by",
+                        "name": "costUnit",
                         "in": "query",
                         "required": true
                     }
@@ -1986,6 +2003,12 @@ const docTemplate = `{
                         "description": "Filter filters by importance if they have it (array format is supported with , separator | 'all' is also supported)",
                         "name": "importance",
                         "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "timestamp for resource count in epoch seconds",
+                        "name": "time",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -2041,6 +2064,12 @@ const docTemplate = `{
                         "description": "Filter filters by importance if they have it (array format is supported with , separator | 'all' is also supported)",
                         "name": "importance",
                         "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "timestamp for resource count in epoch seconds",
+                        "name": "time",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -2082,6 +2111,12 @@ const docTemplate = `{
                         "type": "string",
                         "description": "Filter filters by importance if they have it (array format is supported with , separator | 'all' is also supported)",
                         "name": "importance",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "timestamp for resource count in epoch seconds",
+                        "name": "time",
                         "in": "query"
                     }
                 ],
@@ -2127,6 +2162,12 @@ const docTemplate = `{
                         "type": "string",
                         "description": "Filter filters by importance if they have it (array format is supported with , separator | 'all' is also supported)",
                         "name": "importance",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "timestamp for resource count in epoch seconds",
+                        "name": "time",
                         "in": "query"
                     }
                 ],
@@ -2999,6 +3040,40 @@ const docTemplate = `{
                 "responses": {}
             }
         },
+        "/schedule/api/v0/describe/trigger": {
+            "get": {
+                "description": "Triggers a describe job to run immediately",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "describe"
+                ],
+                "summary": "Triggers a describe job to run immediately",
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    }
+                }
+            }
+        },
+        "/schedule/api/v0/summarize/trigger": {
+            "get": {
+                "description": "Triggers a summarize job to run immediately",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "describe"
+                ],
+                "summary": "Triggers a summarize job to run immediately",
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    }
+                }
+            }
+        },
         "/schedule/api/v1/compliance/report/last/completed": {
             "get": {
                 "produces": [
@@ -3691,13 +3766,19 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "cost": {
-                    "type": "number"
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "number"
+                    }
                 },
                 "enabled": {
                     "type": "boolean"
                 },
                 "lastCost": {
-                    "type": "string"
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
                 },
                 "lastInventory": {
                     "type": "string"
@@ -4013,14 +4094,17 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "cost": {
-                    "$ref": "#/definitions/api.Cost"
+                    "type": "object",
+                    "additionalProperties": {
+                        "$ref": "#/definitions/api.CostWithUnit"
+                    }
                 },
                 "filters": {
                     "type": "array",
                     "items": {}
                 },
                 "resourceCount": {
-                    "$ref": "#/definitions/api.HistoryCount"
+                    "type": "integer"
                 },
                 "subcategories": {
                     "type": "array",
@@ -4117,17 +4201,6 @@ const docTemplate = `{
                     "additionalProperties": {
                         "type": "integer"
                     }
-                }
-            }
-        },
-        "api.Cost": {
-            "type": "object",
-            "properties": {
-                "current_cost": {
-                    "type": "number"
-                },
-                "history_cost": {
-                    "type": "number"
                 }
             }
         },

@@ -427,11 +427,11 @@ type Filter interface {
 }
 
 type FilterCloudResourceType struct {
-	FilterID      string       `json:"filterId"`
-	CloudProvider source.Type  `json:"cloudProvider"`
-	ResourceType  string       `json:"resourceType"`
-	ResourceName  string       `json:"resourceName"`
-	ResourceCount HistoryCount `json:"resourceCount"`
+	FilterID      string      `json:"filterId"`
+	CloudProvider source.Type `json:"cloudProvider"`
+	ResourceType  string      `json:"resourceType"`
+	ResourceName  string      `json:"resourceName"`
+	ResourceCount int         `json:"resourceCount"`
 }
 
 type Cost struct {
@@ -440,18 +440,18 @@ type Cost struct {
 }
 
 type FilterCost struct {
-	FilterID      string      `json:"filterID"`
-	CloudProvider source.Type `json:"cloudProvider"`
-	Cost          Cost        `json:"cost"`
+	FilterID      string                  `json:"filterID"`
+	CloudProvider source.Type             `json:"cloudProvider"`
+	Cost          map[string]CostWithUnit `json:"cost"`
 }
 
 type CategoryNode struct {
-	CategoryID    string         `json:"categoryID"`
-	CategoryName  string         `json:"categoryName"`
-	ResourceCount *HistoryCount  `json:"resourceCount,omitempty"`
-	Cost          *Cost          `json:"cost,omitempty"`
-	Subcategories []CategoryNode `json:"subcategories,omitempty"`
-	Filters       []Filter       `json:"filters,omitempty"`
+	CategoryID    string                  `json:"categoryID"`
+	CategoryName  string                  `json:"categoryName"`
+	ResourceCount *int                    `json:"resourceCount,omitempty"`
+	Cost          map[string]CostWithUnit `json:"cost,omitempty"`
+	Subcategories []CategoryNode          `json:"subcategories,omitempty"`
+	Filters       []Filter                `json:"filters,omitempty"`
 }
 
 type MetricsResponse struct {

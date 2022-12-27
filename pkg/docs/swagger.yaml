@@ -44,11 +44,15 @@ definitions:
   api.AccountSummaryResponse:
     properties:
       cost:
-        type: number
+        additionalProperties:
+          type: number
+        type: object
       enabled:
         type: boolean
       lastCost:
-        type: string
+        additionalProperties:
+          type: string
+        type: object
       lastInventory:
         type: string
       onboardDate:
@@ -254,12 +258,14 @@ definitions:
       categoryName:
         type: string
       cost:
-        $ref: '#/definitions/api.Cost'
+        additionalProperties:
+          $ref: '#/definitions/api.CostWithUnit'
+        type: object
       filters:
         items: {}
         type: array
       resourceCount:
-        $ref: '#/definitions/api.HistoryCount'
+        type: integer
       subcategories:
         items:
           $ref: '#/definitions/api.CategoryNode'
@@ -322,13 +328,6 @@ definitions:
         additionalProperties:
           type: integer
         type: object
-    type: object
-  api.Cost:
-    properties:
-      current_cost:
-        type: number
-      history_cost:
-        type: number
     type: object
   api.CostWithUnit:
     properties:
@@ -2691,11 +2690,14 @@ paths:
         in: query
         name: sourceId
         type: string
-      - description: Unix second of the time to compare to
+      - description: timestamp for start of cost window in epoch seconds
         in: query
-        name: compareTo
-        required: true
-        type: integer
+        name: startTime
+        type: string
+      - description: timestamp for end of cost window in epoch seconds
+        in: query
+        name: endTime
+        type: string
       produces:
       - application/json
       responses:
@@ -2729,11 +2731,19 @@ paths:
         in: query
         name: sourceId
         type: string
-      - description: Unix second of the time to compare to
+      - description: timestamp for start of cost window in epoch seconds
         in: query
-        name: compareTo
+        name: startTime
+        type: string
+      - description: timestamp for end of cost window in epoch seconds
+        in: query
+        name: endTime
+        type: string
+      - description: Unit of cost to filter by
+        in: query
+        name: costUnit
         required: true
-        type: integer
+        type: string
       produces:
       - application/json
       responses:
@@ -2824,6 +2834,10 @@ paths:
         in: query
         name: importance
         type: string
+      - description: timestamp for resource count in epoch seconds
+        in: query
+        name: time
+        type: string
       produces:
       - application/json
       responses:
@@ -2862,6 +2876,10 @@ paths:
         in: query
         name: importance
         type: string
+      - description: timestamp for resource count in epoch seconds
+        in: query
+        name: time
+        type: string
       produces:
       - application/json
       responses:
@@ -2890,6 +2908,10 @@ paths:
           supported with , separator | 'all' is also supported)
         in: query
         name: importance
+        type: string
+      - description: timestamp for resource count in epoch seconds
+        in: query
+        name: time
         type: string
       produces:
       - application/json
@@ -2921,6 +2943,10 @@ paths:
           supported with , separator | 'all' is also supported)
         in: query
         name: importance
+        type: string
+      - description: timestamp for resource count in epoch seconds
+        in: query
+        name: time
         type: string
       produces:
       - application/json
@@ -3503,6 +3529,28 @@ paths:
       summary: List SPN credentials
       tags:
       - onboard
+  /schedule/api/v0/describe/trigger:
+    get:
+      description: Triggers a describe job to run immediately
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+      summary: Triggers a describe job to run immediately
+      tags:
+      - describe
+  /schedule/api/v0/summarize/trigger:
+    get:
+      description: Triggers a summarize job to run immediately
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+      summary: Triggers a summarize job to run immediately
+      tags:
+      - describe
   /schedule/api/v1/compliance/report/last/completed:
     get:
       produces:

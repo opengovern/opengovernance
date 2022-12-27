@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strconv"
+	"time"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/source"
 
@@ -1090,4 +1091,152 @@ func FetchConnectionServiceLocationsSummaryPage(client keibi.Client, provider so
 		hits = append(hits, hit.Source)
 	}
 	return hits, nil
+}
+
+//{
+//  "took": 234,
+//  "timed_out": false,
+//  "_shards": {
+//    "total": 1,
+//    "successful": 1,
+//    "skipped": 0,
+//    "failed": 0
+//  },
+//  "hits": {
+//    "total": {
+//      "value": 10000,
+//      "relation": "gte"
+//    },
+//    "max_score": null,
+//    "hits": []
+//  },
+//  "aggregations": {
+//    "schedule_job_id_group": {
+//      "doc_count_error_upper_bound": 0,
+//      "sum_other_doc_count": 994296,
+//      "buckets": [
+//        {
+//          "key": 183,
+//          "doc_count": 11010,
+//          "resource_type_group": {
+//            "doc_count_error_upper_bound": 0,
+//            "sum_other_doc_count": 0,
+//            "buckets": [
+//              {
+//                "key": "microsoft.authorization/elevateaccessroleassignment",
+//                "doc_count": 201,
+//                "resource_type_count": {
+//                  "value": 26497
+//                }
+//              }
+//			  ]}}]}}}
+
+type FetchResourceTypeCountAtTimeResponse struct {
+	Aggregations struct {
+		ScheduleJobIDGroup struct {
+			Buckets []struct {
+				Key               string `json:"key"`
+				ResourceTypeGroup struct {
+					Buckets []struct {
+						Key               string `json:"key"`
+						ResourceTypeCount struct {
+							Value int `json:"value"`
+						} `json:"resource_type_count"`
+					} `json:"buckets"`
+				} `json:"resource_type_group"`
+			} `json:"buckets"`
+		} `json:"schedule_job_id_group"`
+	} `json:"aggregations"`
+}
+
+func FetchResourceTypeCountAtTime(client keibi.Client, provider source.Type, sourceID *string, t time.Time, resourceTypes []string, size int) (map[string]int, error) {
+	res := make(map[string]interface{})
+	var filters []interface{}
+
+	filters = append(filters, map[string]interface{}{
+		"terms": map[string][]string{"report_type": {string(summarizer.ResourceTypeTrendConnectionSummary)}},
+	})
+
+	filters = append(filters, map[string]interface{}{
+		"terms": map[string][]string{"resource_type": resourceTypes},
+	})
+
+	if sourceID != nil {
+		filters = append(filters, map[string]interface{}{
+			"terms": map[string][]string{"source_id": {*sourceID}},
+		})
+	}
+
+	if !provider.IsNull() {
+		filters = append(filters, map[string]interface{}{
+			"terms": map[string][]string{"source_type": {provider.String()}},
+		})
+	}
+
+	filters = append(filters, map[string]interface{}{
+		"range": map[string]interface{}{
+			"described_at": map[string]string{
+				"lte": strconv.FormatInt(t.UnixMilli(), 10),
+			},
+		},
+	})
+
+	sort := []map[string]any{
+		{"_id": "desc"},
+	}
+
+	res["size"] = 0
+	res["sort"] = sort
+	res["query"] = map[string]any{
+		"bool": map[string]any{
+			"filter": filters,
+		},
+	}
+	res["aggs"] = map[string]any{
+		"schedule_job_id_group": map[string]any{
+			"terms": map[string]any{
+				"field": "schedule_job_id",
+				"size":  1,
+				"order": map[string]string{
+					"_term": "desc",
+				},
+			},
+			"aggs": map[string]any{
+				"resource_type_group": map[string]any{
+					"terms": map[string]any{
+						"field": "resource_type",
+						"size":  size,
+					},
+					"aggs": map[string]any{
+						"resource_type_count": map[string]any{
+							"sum": map[string]any{
+								"field": "resource_count",
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	b, err := json.Marshal(res)
+	if err != nil {
+		return nil, err
+	}
+
+	query := string(b)
+	var response FetchResourceTypeCountAtTimeResponse
+	err = client.Search(context.Background(), summarizer.ConnectionSummaryIndex, query, &response)
+	if err != nil {
+		return nil, err
+	}
+
+	result := make(map[string]int)
+	if len(response.Aggregations.ScheduleJobIDGroup.Buckets) == 0 {
+		return result, nil
+	}
+	for _, bucket := range response.Aggregations.ScheduleJobIDGroup.Buckets[0].ResourceTypeGroup.Buckets {
+		result[bucket.Key] = bucket.ResourceTypeCount.Value
+	}
+	return result, nil
 }

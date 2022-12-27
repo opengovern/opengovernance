@@ -170,7 +170,6 @@ func (c ConnectionCostSummary) GetCostAndUnit() (float64, string) {
 		return costFloat, costUnit.(string)
 	}
 	return 0, ""
-	return 0, ""
 }
 
 func (c ConnectionCostSummary) KeysAndIndex() ([]string, string) {
