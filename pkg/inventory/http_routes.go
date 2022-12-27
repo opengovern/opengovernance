@@ -45,6 +45,8 @@ import (
 )
 
 const EsFetchPageSize = 10000
+const ApiDefaultPageSize = 20
+const DefaultCurrency = "USD"
 const InventorySummaryIndex = "inventory_summary"
 
 func (h *HttpHandler) Register(e *echo.Echo) {
@@ -1309,7 +1311,7 @@ func (h *HttpHandler) GetCategoryNodeCostComposition(ctx echo.Context) error {
 
 	costUnit := ctx.QueryParam("costUnit")
 	if costUnit == "" {
-		costUnit = "USD"
+		costUnit = DefaultCurrency
 	}
 
 	category := ctx.QueryParam("category")
@@ -1941,11 +1943,16 @@ func (h *HttpHandler) GetAccountsResourceCount(ctx echo.Context) error {
 // @Tags    benchmarks
 // @Accept  json
 // @Produce json
-// @Param   provider query    string true  "Provider"
-// @Param   sourceId query    string false "SourceID"
-// @Success 200      {object} []api.AccountSummaryResponse
+// @Param   provider   query    string true  "Provider"
+// @Param   sourceId   query    string false "SourceID"
+// @Param   pageSize   query    int    false "page size - default is 20"
+// @Param   pageNumber query    int    false "page number - default is 1"
+// @Param   sortBy     query    string false "column to sort by - default is sourceid" Enums(sourceid,resourcecount,cost)
+// @Success 200        {object} []api.AccountSummaryResponse
 // @Router  /inventory/api/v2/accounts/summary [get]
 func (h *HttpHandler) GetAccountSummary(ctx echo.Context) error {
+	var err error
+
 	provider, _ := source.ParseType(ctx.QueryParam("provider"))
 	sourceId := ctx.QueryParam("sourceId")
 	var sourceIdPtr *string
@@ -1953,9 +1960,29 @@ func (h *HttpHandler) GetAccountSummary(ctx echo.Context) error {
 		sourceIdPtr = &sourceId
 	}
 
-	res := map[string]api.AccountSummaryResponse{}
+	pageSizeStr := ctx.QueryParam("pageSize")
+	pageSize := ApiDefaultPageSize
+	if pageSizeStr != "" {
+		pageSize, err = strconv.Atoi(pageSizeStr)
+		if err != nil {
+			return ctx.JSON(http.StatusBadRequest, "pageSize is not a valid integer")
+		}
+	}
+	pageNumberStr := ctx.QueryParam("pageNumber")
+	pageNumber := 1
+	if pageNumberStr != "" {
+		pageNumber, err = strconv.Atoi(pageNumberStr)
+		if err != nil {
+			return ctx.JSON(http.StatusBadRequest, "pageNumber is not a valid integer")
+		}
+	}
+	sortBy := ctx.QueryParam("sortBy")
+	if sortBy == "" {
+		sortBy = "sourceid"
+	}
 
-	var err error
+	res := map[string]api.AccountSummary{}
+
 	var allSources []api2.Source
 	if sourceId == "" {
 		allSources, err = h.onboardClient.ListSources(httpclient.FromEchoContext(ctx), provider.AsPtr())
@@ -1967,7 +1994,7 @@ func (h *HttpHandler) GetAccountSummary(ctx echo.Context) error {
 	}
 
 	for _, src := range allSources {
-		res[src.ID.String()] = api.AccountSummaryResponse{
+		res[src.ID.String()] = api.AccountSummary{
 			SourceID:               src.ID.String(),
 			SourceType:             source.Type(src.Type),
 			ProviderConnectionName: src.ConnectionName,
@@ -2005,18 +2032,34 @@ func (h *HttpHandler) GetAccountSummary(ctx echo.Context) error {
 		}
 	}
 
-	var response []api.AccountSummaryResponse
+	var accountSummaries []api.AccountSummary
 	for _, v := range res {
-		response = append(response, v)
+		accountSummaries = append(accountSummaries, v)
 	}
 
-	// sort by enabled then onboarding date
-	sort.Slice(response, func(i, j int) bool {
-		if response[i].Enabled == response[j].Enabled {
-			return response[i].OnboardDate.After(response[j].OnboardDate)
-		}
-		return response[i].Enabled
-	})
+	switch sortBy {
+	case "sourceid":
+		sort.Slice(accountSummaries, func(i, j int) bool {
+			return accountSummaries[i].SourceID < accountSummaries[j].SourceID
+		})
+	case "resourcecount":
+		sort.Slice(accountSummaries, func(i, j int) bool {
+			return accountSummaries[i].ResourceCount > accountSummaries[j].ResourceCount
+		})
+	case "cost":
+		sort.Slice(accountSummaries, func(i, j int) bool {
+			return accountSummaries[i].Cost[DefaultCurrency] > accountSummaries[j].Cost[DefaultCurrency]
+		})
+	default:
+		sort.Slice(accountSummaries, func(i, j int) bool {
+			return accountSummaries[i].SourceID < accountSummaries[j].SourceID
+		})
+	}
+
+	response := api.AccountSummaryResponse{
+		TotalResourceCount: len(accountSummaries),
+		Accounts:           internal.Paginate(pageNumber, pageSize, accountSummaries),
+	}
 
 	return ctx.JSON(http.StatusOK, response)
 }
@@ -2086,11 +2129,14 @@ func (h *HttpHandler) GetServiceDistribution(ctx echo.Context) error {
 // @Tags    benchmarks
 // @Accept  json
 // @Produce json
-// @Param   sourceId  query    string false "SourceID"
-// @Param   provider  query    string false "Provider"
-// @Param   startTime query    string true  "start time for cost calculation in epoch seconds"
-// @Param   endTime   query    string true  "end time for cost calculation and time resource count in epoch seconds"
-// @Success 200       {object} []api.ServiceSummaryResponse
+// @Param   sourceId   query    string false "SourceID"
+// @Param   provider   query    string false "Provider"
+// @Param   startTime  query    string true  "start time for cost calculation in epoch seconds"
+// @Param   endTime    query    string true  "end time for cost calculation and time resource count in epoch seconds"
+// @Param   pageSize   query    int    false "page size - default is 20"
+// @Param   pageNumber query    int    false "page number - default is 1"
+// @Param   sortBy     query    string false "column to sort by - default is servicecode" Enums(servicecode,resourcecount,cost)
+// @Success 200        {object} []api.ServiceSummaryResponse
 // @Router  /inventory/api/v2/services/summary [get]
 func (h *HttpHandler) GetServiceSummary(ctx echo.Context) error {
 	sourceID := ctx.QueryParam("sourceId")
@@ -2107,6 +2153,27 @@ func (h *HttpHandler) GetServiceSummary(ctx echo.Context) error {
 	endTime, err := strconv.ParseInt(ctx.QueryParam("endTime"), 10, 64)
 	if err != nil {
 		return ctx.JSON(http.StatusBadRequest, "endTime is not a valid epoch time")
+	}
+
+	pageSizeStr := ctx.QueryParam("pageSize")
+	pageSize := ApiDefaultPageSize
+	if pageSizeStr != "" {
+		pageSize, err = strconv.Atoi(pageSizeStr)
+		if err != nil {
+			return ctx.JSON(http.StatusBadRequest, "pageSize is not a valid integer")
+		}
+	}
+	pageNumberStr := ctx.QueryParam("pageNumber")
+	pageNumber := 1
+	if pageNumberStr != "" {
+		pageNumber, err = strconv.Atoi(pageNumberStr)
+		if err != nil {
+			return ctx.JSON(http.StatusBadRequest, "pageNumber is not a valid integer")
+		}
+	}
+	sortBy := ctx.QueryParam("sortBy")
+	if sortBy == "" {
+		sortBy = "servicecode"
 	}
 
 	serviceNodes, err := h.graphDb.GetCloudServiceNodes(ctx.Request().Context(), provider, []string{"all"})
@@ -2177,9 +2244,9 @@ func (h *HttpHandler) GetServiceSummary(ctx echo.Context) error {
 		}
 	}
 
-	var res []api.ServiceSummaryResponse
+	var serviceSummaries []api.ServiceSummary
 	for _, serviceNode := range serviceNodes {
-		serviceSummary := api.ServiceSummaryResponse{
+		serviceSummary := api.ServiceSummary{
 			CloudProvider: api.SourceType(serviceNode.CloudProvider.String()),
 			ServiceName:   serviceNode.Name,
 			ServiceCode:   serviceNode.ServiceCode,
@@ -2201,7 +2268,50 @@ func (h *HttpHandler) GetServiceSummary(ctx echo.Context) error {
 				}
 			}
 		}
-		res = append(res, serviceSummary)
+		serviceSummaries = append(serviceSummaries, serviceSummary)
+	}
+
+	switch sortBy {
+	case "servicecode":
+		sort.Slice(serviceSummaries, func(i, j int) bool {
+			return serviceSummaries[i].ServiceCode < serviceSummaries[j].ServiceCode
+		})
+	case "resourcecount":
+		sort.Slice(serviceSummaries, func(i, j int) bool {
+			if serviceSummaries[i].ResourceCount == nil {
+				return false
+			}
+			if serviceSummaries[j].ResourceCount == nil {
+				return true
+			}
+			return *serviceSummaries[i].ResourceCount > *serviceSummaries[j].ResourceCount
+		})
+	case "cost":
+		sort.Slice(serviceSummaries, func(i, j int) bool {
+			if serviceSummaries[i].Cost == nil {
+				return false
+			}
+			if serviceSummaries[j].Cost == nil {
+				return true
+			}
+			if _, ok := serviceSummaries[i].Cost[DefaultCurrency]; !ok {
+				return false
+			}
+			if _, ok := serviceSummaries[j].Cost[DefaultCurrency]; !ok {
+				return true
+			}
+
+			return serviceSummaries[i].Cost[DefaultCurrency].Cost > serviceSummaries[j].Cost[DefaultCurrency].Cost
+		})
+	default:
+		sort.Slice(serviceSummaries, func(i, j int) bool {
+			return serviceSummaries[i].ServiceCode < serviceSummaries[j].ServiceCode
+		})
+	}
+
+	res := api.ServiceSummaryResponse{
+		TotalServiceCount: len(serviceSummaries),
+		Services:          internal.Paginate(pageNumber, pageSize, serviceSummaries),
 	}
 
 	return ctx.JSON(http.StatusOK, res)

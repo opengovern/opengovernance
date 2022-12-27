@@ -41,7 +41,7 @@ definitions:
       sourceType:
         type: string
     type: object
-  api.AccountSummaryResponse:
+  api.AccountSummary:
     properties:
       cost:
         additionalProperties:
@@ -67,6 +67,15 @@ definitions:
         type: string
       sourceType:
         type: string
+    type: object
+  api.AccountSummaryResponse:
+    properties:
+      accounts:
+        items:
+          $ref: '#/definitions/api.AccountSummary'
+        type: array
+      totalResourceCount:
+        type: integer
     type: object
   api.Alarms:
     properties:
@@ -1129,7 +1138,7 @@ definitions:
       serviceName:
         type: string
     type: object
-  api.ServiceSummaryResponse:
+  api.ServiceSummary:
     properties:
       cloudProvider:
         type: string
@@ -1143,6 +1152,15 @@ definitions:
         type: string
       serviceName:
         type: string
+    type: object
+  api.ServiceSummaryResponse:
+    properties:
+      services:
+        items:
+          $ref: '#/definitions/api.ServiceSummary'
+        type: array
+      totalServiceCount:
+        type: integer
     type: object
   api.SmartQueryItem:
     properties:
@@ -2640,6 +2658,22 @@ paths:
         in: query
         name: sourceId
         type: string
+      - description: page size - default is 20
+        in: query
+        name: pageSize
+        type: integer
+      - description: page number - default is 1
+        in: query
+        name: pageNumber
+        type: integer
+      - description: column to sort by - default is sourceid
+        enum:
+        - sourceid
+        - resourcecount
+        - cost
+        in: query
+        name: sortBy
+        type: string
       produces:
       - application/json
       responses:
@@ -3027,6 +3061,22 @@ paths:
         in: query
         name: endTime
         required: true
+        type: string
+      - description: page size - default is 20
+        in: query
+        name: pageSize
+        type: integer
+      - description: page number - default is 1
+        in: query
+        name: pageNumber
+        type: integer
+      - description: column to sort by - default is servicecode
+        enum:
+        - servicecode
+        - resourcecount
+        - cost
+        in: query
+        name: sortBy
         type: string
       produces:
       - application/json
