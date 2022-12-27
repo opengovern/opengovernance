@@ -1139,7 +1139,7 @@ type FetchResourceTypeCountAtTimeResponse struct {
 					Buckets []struct {
 						Key               string `json:"key"`
 						ResourceTypeCount struct {
-							Value int `json:"value"`
+							Value float64 `json:"value"`
 						} `json:"resource_type_count"`
 					} `json:"buckets"`
 				} `json:"resource_type_group"`
@@ -1235,7 +1235,7 @@ func FetchResourceTypeCountAtTime(client keibi.Client, provider source.Type, sou
 		return result, nil
 	}
 	for _, bucket := range response.Aggregations.ScheduleJobIDGroup.Buckets[0].ResourceTypeGroup.Buckets {
-		result[bucket.Key] = bucket.ResourceTypeCount.Value
+		result[bucket.Key] = int(bucket.ResourceTypeCount.Value)
 	}
 	return result, nil
 }
