@@ -2054,22 +2054,26 @@ func (h *HttpHandler) GetAccountSummary(ctx echo.Context) error {
 		}
 	}
 
-	costs, err := es.FetchCostByAccountsBetween(h.client, sourceIdPtr, provider.AsPtr(), time.Now(), time.Now().Add(-1*time.Duration(math.MaxInt64)), EsFetchPageSize)
+	costs, err := es.FetchDailyCostHistoryByAccountsBetween(h.client, sourceIdPtr, provider.AsPtr(), time.Now(), time.Now().Add(-1*time.Duration(math.MaxInt64)), EsFetchPageSize)
 	if err != nil {
 		return err
 	}
-	for _, cost := range costs {
-		if v, ok := res[cost.SourceID]; ok {
-			costValue, costUnit := cost.GetCostAndUnit()
+	for sourceID, costArr := range costs {
+		if v, ok := res[sourceID]; ok {
 			if v.Cost == nil {
 				v.Cost = make(map[string]float64)
 			}
-			v.Cost[costUnit] = costValue
 			if v.LastCost == nil {
 				v.LastCost = make(map[string]time.Time)
 			}
-			v.LastCost[costUnit] = time.Unix(cost.PeriodEnd, 0)
-			res[cost.SourceID] = v
+			for _, cost := range costArr {
+				costValue, costUnit := cost.GetCostAndUnit()
+				if lastCostDate, ok := v.LastCost[costUnit]; !ok || lastCostDate.Before(time.Unix(cost.PeriodEnd, 0)) {
+					v.Cost[costUnit] = costValue
+					v.LastCost[costUnit] = time.Unix(cost.PeriodEnd, 0)
+				}
+			}
+			res[sourceID] = v
 		}
 	}
 
