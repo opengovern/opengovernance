@@ -74,7 +74,7 @@ definitions:
         items:
           $ref: '#/definitions/api.AccountSummary'
         type: array
-      totalResourceCount:
+      totalCount:
         type: integer
     type: object
   api.Alarms:
@@ -270,11 +270,17 @@ definitions:
         additionalProperties:
           $ref: '#/definitions/api.CostWithUnit'
         type: object
+      costChange:
+        additionalProperties:
+          type: number
+        type: object
       filters:
         items: {}
         type: array
       resourceCount:
         type: integer
+      resourceCountChange:
+        type: number
       subcategories:
         items:
           $ref: '#/definitions/api.CategoryNode'
@@ -1159,7 +1165,7 @@ definitions:
         items:
           $ref: '#/definitions/api.ServiceSummary'
         type: array
-      totalServiceCount:
+      totalCount:
         type: integer
     type: object
   api.SmartQueryItem:
@@ -2732,6 +2738,16 @@ paths:
         in: query
         name: endTime
         type: string
+      - description: time window either this or start & end time must be provided
+        enum:
+        - 1d
+        - 1w
+        - 1m
+        - 3m
+        - 1y
+        in: query
+        name: timeWindow
+        type: string
       produces:
       - application/json
       responses:
@@ -2868,9 +2884,20 @@ paths:
         in: query
         name: importance
         type: string
-      - description: timestamp for resource count in epoch seconds
+      - description: timestamp for resource count in epoch seconds either timeWindow
+          or time must be provided
         in: query
         name: time
+        type: string
+      - description: time window either this or time must be provided
+        enum:
+        - 1d
+        - 1w
+        - 1m
+        - 3m
+        - 1y
+        in: query
+        name: timeWindow
         type: string
       produces:
       - application/json

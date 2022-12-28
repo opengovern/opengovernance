@@ -362,8 +362,8 @@ type AccountResourceCountResponse struct {
 }
 
 type AccountSummaryResponse struct {
-	TotalResourceCount int              `json:"totalResourceCount"`
-	Accounts           []AccountSummary `json:"accounts"`
+	TotalCount int              `json:"totalCount"`
+	Accounts   []AccountSummary `json:"accounts"`
 }
 
 type AccountSummary struct {
@@ -451,12 +451,14 @@ type FilterCost struct {
 }
 
 type CategoryNode struct {
-	CategoryID    string                  `json:"categoryID"`
-	CategoryName  string                  `json:"categoryName"`
-	ResourceCount *int                    `json:"resourceCount,omitempty"`
-	Cost          map[string]CostWithUnit `json:"cost,omitempty"`
-	Subcategories []CategoryNode          `json:"subcategories,omitempty"`
-	Filters       []Filter                `json:"filters,omitempty"`
+	CategoryID          string                  `json:"categoryID"`
+	CategoryName        string                  `json:"categoryName"`
+	ResourceCount       *int                    `json:"resourceCount,omitempty"`
+	ResourceCountChange *float64                `json:"resourceCountChange,omitempty"`
+	Cost                map[string]CostWithUnit `json:"cost,omitempty"`
+	CostChange          map[string]float64      `json:"costChange,omitempty"`
+	Subcategories       []CategoryNode          `json:"subcategories,omitempty"`
+	Filters             []Filter                `json:"filters,omitempty"`
 }
 
 type MetricsResponse struct {
@@ -512,8 +514,8 @@ type ConnectionSummaryResponse struct {
 }
 
 type ServiceSummaryResponse struct {
-	TotalServiceCount int              `json:"totalServiceCount"`
-	Services          []ServiceSummary `json:"services"`
+	TotalCount int              `json:"totalCount"`
+	Services   []ServiceSummary `json:"services"`
 }
 
 type ServiceSummary struct {
