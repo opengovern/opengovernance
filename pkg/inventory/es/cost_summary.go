@@ -433,3 +433,101 @@ func FetchDailyCostHistoryByServicesBetween(client keibi.Client, sourceID *strin
 
 	return hits, nil
 }
+
+type FetchCostHistoryByAccountsQueryResponse struct {
+	Hits struct {
+		Total keibi.SearchTotal `json:"total"`
+		Hits  []struct {
+			ID      string                           `json:"_id"`
+			Score   float64                          `json:"_score"`
+			Index   string                           `json:"_index"`
+			Type    string                           `json:"_type"`
+			Version int64                            `json:"_version,omitempty"`
+			Source  summarizer.ConnectionCostSummary `json:"_source"`
+		} `json:"hits"`
+	} `json:"hits"`
+}
+
+func FetchDailyCostHistoryByAccountsBetween(client keibi.Client, sourceID *string, provider *source.Type, before time.Time, after time.Time, size int) (map[string][]summarizer.ConnectionCostSummary, error) {
+	hits := make(map[string][]summarizer.ConnectionCostSummary)
+	res := make(map[string]interface{})
+	var filters []interface{}
+
+	filters = append(filters, map[string]interface{}{
+		"terms": map[string][]string{"report_type": {string(summarizer.CostConnectionSummaryDaily)}},
+	})
+	filters = append(filters, map[string]interface{}{
+		"range": map[string]interface{}{
+			"period_end": map[string]string{
+				"lte": strconv.FormatInt(before.Unix(), 10),
+			},
+		},
+	})
+	filters = append(filters, map[string]interface{}{
+		"range": map[string]interface{}{
+			"period_start": map[string]string{
+				"gte": strconv.FormatInt(after.Unix(), 10),
+			},
+		},
+	})
+
+	if sourceID != nil && *sourceID != "" {
+		filters = append(filters, map[string]interface{}{
+			"terms": map[string][]string{"source_id": {*sourceID}},
+		})
+	}
+	if provider != nil && !provider.IsNull() {
+		filters = append(filters, map[string]interface{}{
+			"terms": map[string][]string{"source_type": {(*provider).String()}},
+		})
+	}
+
+	res["size"] = size
+	res["query"] = map[string]interface{}{
+		"bool": map[string]interface{}{
+			"filter": filters,
+		},
+	}
+	b, err := json.Marshal(res)
+	if err != nil {
+		return nil, err
+	}
+
+	query := string(b)
+	fmt.Println("query=", query, "index=", summarizer.CostSummeryIndex)
+	var response FetchCostHistoryByAccountsQueryResponse
+	err = client.Search(context.Background(), summarizer.CostSummeryIndex, query, &response)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, hit := range response.Hits.Hits {
+		if v, ok := hits[hit.Source.SourceID]; !ok {
+			hits[hit.Source.SourceID] = []summarizer.ConnectionCostSummary{
+				hit.Source,
+			}
+		} else {
+			hits[hit.Source.SourceID] = append(v, hit.Source)
+		}
+	}
+
+	for _, hitArr := range hits {
+		for _, hit := range hitArr {
+			switch strings.ToLower(hit.ResourceType) {
+			case "aws::costexplorer::byaccountdaily":
+				hitCostStr, err := json.Marshal(hit.Cost)
+				if err != nil {
+					return nil, err
+				}
+				var hitCost model.CostExplorerByServiceDailyDescription
+				err = json.Unmarshal(hitCostStr, &hitCost)
+				if err != nil {
+					return nil, err
+				}
+				hit.Cost = hitCost
+			}
+		}
+	}
+
+	return hits, nil
+}
