@@ -1822,6 +1822,19 @@ const docTemplate = `{
                         "description": "timestamp for end of cost window in epoch seconds",
                         "name": "endTime",
                         "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "1d",
+                            "1w",
+                            "1m",
+                            "3m",
+                            "1y"
+                        ],
+                        "type": "string",
+                        "description": "time window either this or start \u0026 end time must be provided",
+                        "name": "timeWindow",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -2029,8 +2042,21 @@ const docTemplate = `{
                     },
                     {
                         "type": "string",
-                        "description": "timestamp for resource count in epoch seconds",
+                        "description": "timestamp for resource count in epoch seconds either timeWindow or time must be provided",
                         "name": "time",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "1d",
+                            "1w",
+                            "1m",
+                            "3m",
+                            "1y"
+                        ],
+                        "type": "string",
+                        "description": "time window either this or time must be provided",
+                        "name": "timeWindow",
                         "in": "query"
                     }
                 ],
@@ -3858,7 +3884,7 @@ const docTemplate = `{
                         "$ref": "#/definitions/api.AccountSummary"
                     }
                 },
-                "totalResourceCount": {
+                "totalCount": {
                     "type": "integer"
                 }
             }
@@ -4159,12 +4185,21 @@ const docTemplate = `{
                         "$ref": "#/definitions/api.CostWithUnit"
                     }
                 },
+                "costChange": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "number"
+                    }
+                },
                 "filters": {
                     "type": "array",
                     "items": {}
                 },
                 "resourceCount": {
                     "type": "integer"
+                },
+                "resourceCountChange": {
+                    "type": "number"
                 },
                 "subcategories": {
                     "type": "array",
@@ -5453,7 +5488,7 @@ const docTemplate = `{
                         "$ref": "#/definitions/api.ServiceSummary"
                     }
                 },
-                "totalServiceCount": {
+                "totalCount": {
                     "type": "integer"
                 }
             }

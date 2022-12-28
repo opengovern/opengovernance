@@ -100,7 +100,7 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	v1.GET("/categories", httpserver.AuthorizeHandler(h.ListCategories, api3.ViewerRole))
 
 	v2.GET("/metrics/categorized", httpserver.AuthorizeHandler(h.GetCategorizedMetricsV2, api3.ViewerRole))
-	v2.GET("/categories", httpserver.AuthorizeHandler(h.ListCategoriesV2, api3.ViewerRole))
+	v2.GET("/categories", httpserver.AuthorizeHandler(h.GetCategoriesV2, api3.ViewerRole))
 
 	v1.GET("/connection/:connection_id/summary", httpserver.AuthorizeHandler(h.GetConnectionSummary, api3.ViewerRole))
 	v1.GET("/provider/:provider/summary", httpserver.AuthorizeHandler(h.GetProviderSummary, api3.ViewerRole))
@@ -1005,7 +1005,7 @@ func (h *HttpHandler) GetCategoriesV2(ctx echo.Context) error {
 	return ctx.JSON(http.StatusOK, res)
 }
 
-func (h *HttpHandler) GetCategoryNodeResourceCountHelper(ctx context.Context, depth int, category string, sourceID string, provider source.Type, t int64, importanceArray []string) (*api.CategoryNode, error) {
+func (h *HttpHandler) GetCategoryNodeResourceCountHelper(ctx context.Context, depth int, category string, sourceID string, provider source.Type, t int64, importanceArray []string, nodeCacheMap map[string]api.CategoryNode) (*api.CategoryNode, error) {
 	var (
 		rootNode *CategoryNode
 		err      error
@@ -1039,7 +1039,7 @@ func (h *HttpHandler) GetCategoryNodeResourceCountHelper(ctx context.Context, de
 		metricIndexed,
 		depth,
 		importanceArray,
-		map[string]api.CategoryNode{},
+		nodeCacheMap,
 		map[string]api.Filter{})
 	if err != nil {
 		return nil, err
@@ -1058,7 +1058,8 @@ func (h *HttpHandler) GetCategoryNodeResourceCountHelper(ctx context.Context, de
 // @Param   provider   query    string false "Provider"
 // @Param   sourceId   query    string false "SourceID"
 // @Param   importance query    string false "Filter filters by importance if they have it (array format is supported with , separator | 'all' is also supported)"
-// @Param   time       query    string false "timestamp for resource count in epoch seconds"
+// @Param   time       query    string false "timestamp for resource count in epoch seconds either timeWindow or time must be provided"
+// @Param   timeWindow query    string false "time window either this or time must be provided" Enums(1d,1w,1m,3m,1y)
 // @Success 200        {object} api.CategoryNode
 // @Router  /inventory/api/v2/resources/category [get]
 func (h *HttpHandler) GetCategoryNodeResourceCount(ctx echo.Context) error {
@@ -1077,7 +1078,12 @@ func (h *HttpHandler) GetCategoryNodeResourceCount(ctx echo.Context) error {
 	category := ctx.QueryParam("category")
 
 	timeStr := ctx.QueryParam("time")
+	timeWindowStr := ctx.QueryParam("timeWindow")
 	timeVal := time.Now().Unix()
+
+	if timeStr != "" && timeWindowStr != "" {
+		return echo.NewHTTPError(http.StatusBadRequest, "only one of time or timeWindow should be provided")
+	}
 	if timeStr != "" {
 		timeVal, err = strconv.ParseInt(timeStr, 10, 64)
 		if err != nil {
@@ -1085,7 +1091,21 @@ func (h *HttpHandler) GetCategoryNodeResourceCount(ctx echo.Context) error {
 		}
 	}
 
-	result, err := h.GetCategoryNodeResourceCountHelper(ctx.Request().Context(), depth, category, sourceID, provider, timeVal, importanceArray)
+	var timeWindow time.Duration
+	if timeWindowStr != "" {
+		timeWindow, err = ParseTimeWindow(timeWindowStr)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "invalid timeWindow")
+		}
+		timeVal = time.Now().Unix()
+	}
+
+	result, err := h.GetCategoryNodeResourceCountHelper(ctx.Request().Context(), depth, category, sourceID, provider, timeVal, importanceArray, make(map[string]api.CategoryNode))
+	if timeWindowStr != "" {
+		nodeCacheMap := make(map[string]api.CategoryNode)
+		_, err = h.GetCategoryNodeResourceCountHelper(ctx.Request().Context(), depth, category, sourceID, provider, time.Unix(timeVal, 0).Add(-1*timeWindow).Unix(), importanceArray, nodeCacheMap)
+		result = internal.CalculateResourceTypeCountPercentChanges(result, nodeCacheMap)
+	}
 	if err != nil {
 		return err
 	}
@@ -1129,7 +1149,7 @@ func (h *HttpHandler) GetCategoryNodeResourceCountComposition(ctx echo.Context) 
 		}
 	}
 
-	result, err := h.GetCategoryNodeResourceCountHelper(ctx.Request().Context(), 2, category, sourceID, provider, timeVal, importanceArray)
+	result, err := h.GetCategoryNodeResourceCountHelper(ctx.Request().Context(), 2, category, sourceID, provider, timeVal, importanceArray, make(map[string]api.CategoryNode))
 	if err != nil {
 		return err
 	}
@@ -1151,7 +1171,7 @@ func (h *HttpHandler) GetCategoryNodeResourceCountComposition(ctx echo.Context) 
 	return ctx.JSON(http.StatusOK, result)
 }
 
-func (h *HttpHandler) GetCategoryNodeCostHelper(ctx context.Context, depth int, category string, sourceID *string, providerPtr *source.Type, startTime, endTime int64) (*api.CategoryNode, error) {
+func (h *HttpHandler) GetCategoryNodeCostHelper(ctx context.Context, depth int, category string, sourceID *string, providerPtr *source.Type, startTime, endTime int64, nodeCacheMap map[string]api.CategoryNode) (*api.CategoryNode, error) {
 	var (
 		rootNode *CategoryNode
 		err      error
@@ -1189,7 +1209,7 @@ func (h *HttpHandler) GetCategoryNodeCostHelper(ctx context.Context, depth int, 
 		rootNode,
 		depth,
 		aggregatedCostHits,
-		map[string]api.CategoryNode{},
+		nodeCacheMap,
 		map[string]api.Filter{})
 	if err != nil {
 		return nil, err
@@ -1202,13 +1222,14 @@ func (h *HttpHandler) GetCategoryNodeCostHelper(ctx context.Context, depth int, 
 // @Tags    inventory
 // @Accept  json
 // @Produce json
-// @Param   category  query    string false "Category id - defaults to default template category"
-// @Param   depth     query    int    true  "Depth of rendering subcategories"
-// @Param   provider  query    string false "Provider"
-// @Param   sourceId  query    string false "SourceID"
-// @Param   startTime query    string false "timestamp for start of cost window in epoch seconds"
-// @Param   endTime   query    string false "timestamp for end of cost window in epoch seconds"
-// @Success 200       {object} api.CategoryNode
+// @Param   category   query    string false "Category id - defaults to default template category"
+// @Param   depth      query    int    true  "Depth of rendering subcategories"
+// @Param   provider   query    string false "Provider"
+// @Param   sourceId   query    string false "SourceID"
+// @Param   startTime  query    string false "timestamp for start of cost window in epoch seconds"
+// @Param   endTime    query    string false "timestamp for end of cost window in epoch seconds"
+// @Param   timeWindow query    string false "time window either this or start & end time must be provided" Enums(1d,1w,1m,3m,1y)
+// @Success 200        {object} api.CategoryNode
 // @Router  /inventory/api/v2/cost/category [get]
 func (h *HttpHandler) GetCategoryNodeCost(ctx echo.Context) error {
 	depthStr := ctx.QueryParam("depth")
@@ -1247,11 +1268,31 @@ func (h *HttpHandler) GetCategoryNodeCost(ctx echo.Context) error {
 		}
 	}
 
+	timeWindowStr := ctx.QueryParam("timeWindow")
+	if startTimeStr != "" && endTimeStr != "" && timeWindowStr != "" {
+		return echo.NewHTTPError(http.StatusBadRequest, "timeWindow cannot be used with startTime and endTime")
+	}
+	var timeWindow time.Duration
+	if timeWindowStr != "" {
+		timeWindow, err = ParseTimeWindow(timeWindowStr)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "invalid timeWindow")
+		}
+		now := time.Now()
+		endTime = now.Unix()
+		startTime = now.Add(-1 * timeWindow).Unix()
+	}
+
 	category := ctx.QueryParam("category")
 
-	result, err := h.GetCategoryNodeCostHelper(ctx.Request().Context(), depth, category, sourceIDPtr, providerPtr, startTime, endTime)
+	result, err := h.GetCategoryNodeCostHelper(ctx.Request().Context(), depth, category, sourceIDPtr, providerPtr, startTime, endTime, make(map[string]api.CategoryNode))
 	if err != nil {
 		return err
+	}
+	if timeWindowStr != "" {
+		nodeCacheMap := make(map[string]api.CategoryNode)
+		_, err = h.GetCategoryNodeCostHelper(ctx.Request().Context(), depth, category, sourceIDPtr, providerPtr, time.Unix(startTime, 0).Add(-1*timeWindow).Unix(), startTime, nodeCacheMap)
+		result = internal.CalculateCostPercentChanges(result, nodeCacheMap)
 	}
 
 	return ctx.JSON(http.StatusOK, result)
@@ -1316,7 +1357,7 @@ func (h *HttpHandler) GetCategoryNodeCostComposition(ctx echo.Context) error {
 
 	category := ctx.QueryParam("category")
 
-	result, err := h.GetCategoryNodeCostHelper(ctx.Request().Context(), 2, category, sourceIDPtr, providerPtr, startTime, endTime)
+	result, err := h.GetCategoryNodeCostHelper(ctx.Request().Context(), 2, category, sourceIDPtr, providerPtr, startTime, endTime, make(map[string]api.CategoryNode))
 	if err != nil {
 		return err
 	}
@@ -2057,8 +2098,8 @@ func (h *HttpHandler) GetAccountSummary(ctx echo.Context) error {
 	}
 
 	response := api.AccountSummaryResponse{
-		TotalResourceCount: len(accountSummaries),
-		Accounts:           internal.Paginate(pageNumber, pageSize, accountSummaries),
+		TotalCount: len(accountSummaries),
+		Accounts:   internal.Paginate(pageNumber, pageSize, accountSummaries),
 	}
 
 	return ctx.JSON(http.StatusOK, response)
@@ -2310,8 +2351,8 @@ func (h *HttpHandler) GetServiceSummary(ctx echo.Context) error {
 	}
 
 	res := api.ServiceSummaryResponse{
-		TotalServiceCount: len(serviceSummaries),
-		Services:          internal.Paginate(pageNumber, pageSize, serviceSummaries),
+		TotalCount: len(serviceSummaries),
+		Services:   internal.Paginate(pageNumber, pageSize, serviceSummaries),
 	}
 
 	return ctx.JSON(http.StatusOK, res)
