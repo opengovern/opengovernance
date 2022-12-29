@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"strconv"
 	"strings"
 
 	"github.com/neo4j/neo4j-go-driver/v5/neo4j"
@@ -86,9 +85,8 @@ type CategoryNode struct {
 type ServiceNode struct {
 	CategoryNode
 	ServiceCode   string      `json:"service_code"`
-	ShortName     string      `json:"short_name"`
 	CloudProvider source.Type `json:"provider"`
-	Priority      int         `json:"priority"`
+	ServiceID     string      `json:"service_id"`
 }
 
 type Filter interface {
@@ -243,30 +241,20 @@ func getCloudServiceFromNode(node neo4j.Node) (*ServiceNode, error) {
 	if !ok {
 		return nil, ErrPropertyNotFound
 	}
-	shortName, ok := node.Props["short_name"]
-	if !ok {
-		return nil, ErrPropertyNotFound
-	}
 	cloudProvider, ok := node.Props["provider"]
 	if !ok {
 		return nil, ErrPropertyNotFound
 	}
-	priority, ok := node.Props["priority"]
+	serviceId, ok := node.Props["service_id"]
 	if !ok {
 		return nil, ErrPropertyNotFound
-	}
-
-	priorityInt, err := strconv.Atoi(priority.(string))
-	if err != nil {
-		return nil, ErrColumnConversion
 	}
 
 	return &ServiceNode{
 		CategoryNode:  *cat,
 		ServiceCode:   serviceCode.(string),
-		ShortName:     shortName.(string),
+		ServiceID:     serviceId.(string),
 		CloudProvider: source.Type(cloudProvider.(string)),
-		Priority:      priorityInt,
 	}, nil
 }
 
