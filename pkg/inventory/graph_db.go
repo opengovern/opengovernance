@@ -38,11 +38,11 @@ func NewGraphDatabase(driver neo4j.DriverWithContext) (GraphDatabase, error) {
 	if err != nil {
 		return GraphDatabase{}, err
 	}
-	_, err = session.Run(ctx, "CREATE CONSTRAINT cloud_service_category_unique_service_code IF NOT EXISTS FOR (c:CloudServiceCategory) REQUIRE c.service_code IS UNIQUE", nil)
+	_, err = session.Run(ctx, "CREATE CONSTRAINT cloud_service_category_unique_service_id IF NOT EXISTS FOR (c:CloudServiceCategory) REQUIRE c.service_id IS UNIQUE", nil)
 	if err != nil {
 		return GraphDatabase{}, err
 	}
-	_, err = session.Run(ctx, "CREATE CONSTRAINT cloud_resource_type_unique_resource_type IF NOT EXISTS FOR (c:FilterCloudResourceType) REQUIRE c.resource_type IS UNIQUE", nil)
+	_, err = session.Run(ctx, "CREATE CONSTRAINT cloud_resource_type_unique_resource_id IF NOT EXISTS FOR (c:FilterCloudResourceType) REQUIRE c.resource_id IS UNIQUE", nil)
 	if err != nil {
 		return GraphDatabase{}, err
 	}

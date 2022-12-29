@@ -1101,13 +1101,16 @@ func (h *HttpHandler) GetCategoryNodeResourceCount(ctx echo.Context) error {
 	}
 
 	result, err := h.GetCategoryNodeResourceCountHelper(ctx.Request().Context(), depth, category, sourceID, provider, timeVal, importanceArray, make(map[string]api.CategoryNode))
+	if err != nil {
+		return err
+	}
 	if timeWindowStr != "" {
 		nodeCacheMap := make(map[string]api.CategoryNode)
 		_, err = h.GetCategoryNodeResourceCountHelper(ctx.Request().Context(), depth, category, sourceID, provider, time.Unix(timeVal, 0).Add(-1*timeWindow).Unix(), importanceArray, nodeCacheMap)
+		if err != nil {
+			return err
+		}
 		result = internal.CalculateResourceTypeCountPercentChanges(result, nodeCacheMap)
-	}
-	if err != nil {
-		return err
 	}
 	return ctx.JSON(http.StatusOK, result)
 }
@@ -1292,6 +1295,9 @@ func (h *HttpHandler) GetCategoryNodeCost(ctx echo.Context) error {
 	if timeWindowStr != "" {
 		nodeCacheMap := make(map[string]api.CategoryNode)
 		_, err = h.GetCategoryNodeCostHelper(ctx.Request().Context(), depth, category, sourceIDPtr, providerPtr, time.Unix(startTime, 0).Add(-1*timeWindow).Unix(), startTime, nodeCacheMap)
+		if err != nil {
+			return err
+		}
 		result = internal.CalculateCostPercentChanges(result, nodeCacheMap)
 	}
 
