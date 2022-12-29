@@ -305,9 +305,7 @@ func GetCategoryNodeResourceCountInfo(categoryNode *CategoryNode, metrics map[st
 }
 
 func GetCategoryNodeCostInfo(categoryNode *CategoryNode, costs map[string]map[string]api.CostWithUnit, filterCacheMap map[string]api.Filter) api.CategoryNode {
-	var (
-		apiCosts map[string]api.CostWithUnit
-	)
+	apiCosts := make(map[string]api.CostWithUnit)
 	directFilters := map[string]api.Filter{}
 	for _, f := range categoryNode.Filters {
 		switch f.GetFilterType() {
