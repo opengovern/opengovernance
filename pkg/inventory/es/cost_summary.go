@@ -38,6 +38,9 @@ type FetchCostByServicesQueryResponse struct {
 }
 
 func FetchCostByServicesBetween(client keibi.Client, sourceID *string, provider *source.Type, services []string, before time.Time, after time.Time, size int) (map[string]summarizer.ServiceCostSummary, error) {
+	before = before.Truncate(24 * time.Hour)
+	after = after.Truncate(24 * time.Hour)
+
 	hits := make(map[string]summarizer.ServiceCostSummary)
 	res := make(map[string]interface{})
 	var filters []interface{}
@@ -149,6 +152,9 @@ type FetchCostHistoryByServicesQueryResponse struct {
 }
 
 func FetchCostHistoryByServicesBetween(client keibi.Client, sourceID *string, provider *source.Type, services []string, before time.Time, after time.Time, size int) (map[string][]summarizer.ServiceCostSummary, error) {
+	before = before.Truncate(24 * time.Hour)
+	after = after.Truncate(24 * time.Hour)
+
 	hits := make(map[string][]summarizer.ServiceCostSummary)
 	res := make(map[string]interface{})
 	var filters []interface{}
@@ -255,6 +261,9 @@ type FetchCostByAccountsQueryResponse struct {
 }
 
 func FetchCostByAccountsBetween(client keibi.Client, sourceID *string, provider *source.Type, before time.Time, after time.Time, size int) (map[string]summarizer.ConnectionCostSummary, error) {
+	before = before.Truncate(24 * time.Hour)
+	after = after.Truncate(24 * time.Hour)
+
 	hits := make(map[string]summarizer.ConnectionCostSummary)
 	res := make(map[string]interface{})
 	var filters []interface{}
@@ -348,6 +357,9 @@ func FetchCostByAccountsBetween(client keibi.Client, sourceID *string, provider 
 }
 
 func FetchDailyCostHistoryByServicesBetween(client keibi.Client, sourceID *string, provider *source.Type, services []string, before time.Time, after time.Time, size int) (map[string][]summarizer.ServiceCostSummary, error) {
+	before = before.Truncate(24 * time.Hour)
+	after = after.Truncate(24 * time.Hour)
+
 	hits := make(map[string][]summarizer.ServiceCostSummary)
 	res := make(map[string]interface{})
 	var filters []interface{}
@@ -449,6 +461,9 @@ type FetchCostHistoryByAccountsQueryResponse struct {
 }
 
 func FetchDailyCostHistoryByAccountsBetween(client keibi.Client, sourceID *string, provider *source.Type, before time.Time, after time.Time, size int) (map[string][]summarizer.ConnectionCostSummary, error) {
+	before = before.Truncate(24 * time.Hour)
+	after = after.Truncate(24 * time.Hour)
+
 	hits := make(map[string][]summarizer.ConnectionCostSummary)
 	res := make(map[string]interface{})
 	var filters []interface{}

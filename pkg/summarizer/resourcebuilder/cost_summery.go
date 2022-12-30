@@ -40,7 +40,6 @@ func (b *costSummaryBuilder) Process(resource describe.LookupResource) {
 	var err error
 	switch strings.ToLower(resource.ResourceType) {
 	case "aws::costexplorer::byservicemonthly":
-	case "aws::costexplorer::byservicedaily":
 		fullResource, err = query.GetResourceFromResourceLookup(b.client, resource)
 		if err != nil {
 			fmt.Printf("(costSummaryBuilder) - Error getting resource from lookup: %v", err)
@@ -57,7 +56,7 @@ func (b *costSummaryBuilder) Process(resource describe.LookupResource) {
 		}
 		fullResource.Description = desc
 
-		key := fmt.Sprintf("%s|%s|%s", resource.SourceID, *desc.PeriodStart, *desc.PeriodEnd)
+		key := fmt.Sprintf("%s|%s|%s|%s", resource.SourceID, *desc.Dimension1, *desc.PeriodStart, *desc.PeriodEnd)
 		if _, ok := b.costsByService[key]; !ok {
 			v := es.ServiceCostSummary{
 				ServiceName:   *desc.Dimension1,
@@ -70,16 +69,43 @@ func (b *costSummaryBuilder) Process(resource describe.LookupResource) {
 				PeriodStart:   getTimeFromTimestring(*desc.PeriodStart).Unix(),
 				PeriodEnd:     getTimeFromTimestring(*desc.PeriodEnd).Unix(),
 			}
-			switch resource.ResourceType {
-			case "aws::costexplorer::byservicemonthly":
-				v.ReportType = es.CostProviderSummaryMonthly
-			case "aws::costexplorer::byservicedaily":
-				v.ReportType = es.CostProviderSummaryDaily
+			v.ReportType = es.CostProviderSummaryMonthly
+			b.costsByService[key] = v
+		}
+	case "aws::costexplorer::byservicedaily":
+		fullResource, err = query.GetResourceFromResourceLookup(b.client, resource)
+		if err != nil {
+			fmt.Printf("(costSummaryBuilder) - Error getting resource from lookup: %v", err)
+			return
+		}
+		jsonDesc, err := json.Marshal(fullResource.Description)
+		if err != nil {
+			return
+		}
+		desc := model.CostExplorerByServiceDailyDescription{}
+		err = json.Unmarshal(jsonDesc, &desc)
+		if err != nil {
+			return
+		}
+		fullResource.Description = desc
+
+		key := fmt.Sprintf("%s|%s|%s|%s", resource.SourceID, *desc.Dimension1, *desc.PeriodStart, *desc.PeriodEnd)
+		if _, ok := b.costsByService[key]; !ok {
+			v := es.ServiceCostSummary{
+				ServiceName:   *desc.Dimension1,
+				ScheduleJobID: resource.ScheduleJobID,
+				SourceID:      resource.SourceID,
+				SourceType:    resource.SourceType,
+				SourceJobID:   resource.SourceJobID,
+				ResourceType:  resource.ResourceType,
+				Cost:          desc,
+				PeriodStart:   getTimeFromTimestring(*desc.PeriodStart).Unix(),
+				PeriodEnd:     getTimeFromTimestring(*desc.PeriodEnd).Unix(),
 			}
+			v.ReportType = es.CostProviderSummaryDaily
 			b.costsByService[key] = v
 		}
 	case "aws::costexplorer::byaccountmonthly":
-	case "aws::costexplorer::byaccountdaily":
 		fullResource, err = query.GetResourceFromResourceLookup(b.client, resource)
 		if err != nil {
 			fmt.Printf("(costSummaryBuilder) - Error getting resource from lookup: %v", err)
@@ -108,12 +134,39 @@ func (b *costSummaryBuilder) Process(resource describe.LookupResource) {
 				PeriodStart:   getTimeFromTimestring(*desc.PeriodStart).Unix(),
 				PeriodEnd:     getTimeFromTimestring(*desc.PeriodEnd).Unix(),
 			}
-			switch resource.ResourceType {
-			case "aws::costexplorer::byaccountmonthly":
-				v.ReportType = es.CostConnectionSummaryMonthly
-			case "aws::costexplorer::byaccountdaily":
-				v.ReportType = es.CostConnectionSummaryDaily
+			v.ReportType = es.CostConnectionSummaryMonthly
+			b.costsByAccount[key] = v
+		}
+	case "aws::costexplorer::byaccountdaily":
+		fullResource, err = query.GetResourceFromResourceLookup(b.client, resource)
+		if err != nil {
+			fmt.Printf("(costSummaryBuilder) - Error getting resource from lookup: %v", err)
+			return
+		}
+		jsonDesc, err := json.Marshal(fullResource.Description)
+		if err != nil {
+			return
+		}
+		desc := model.CostExplorerByAccountDailyDescription{}
+		err = json.Unmarshal(jsonDesc, &desc)
+		if err != nil {
+			return
+		}
+		fullResource.Description = desc
+		key := fmt.Sprintf("%s|%s|%s", resource.SourceID, *desc.PeriodStart, *desc.PeriodEnd)
+		if _, ok := b.costsByAccount[key]; !ok {
+			v := es.ConnectionCostSummary{
+				AccountID:     *desc.Dimension1,
+				ScheduleJobID: resource.ScheduleJobID,
+				SourceID:      resource.SourceID,
+				SourceType:    resource.SourceType,
+				SourceJobID:   resource.SourceJobID,
+				ResourceType:  resource.ResourceType,
+				Cost:          desc,
+				PeriodStart:   getTimeFromTimestring(*desc.PeriodStart).Unix(),
+				PeriodEnd:     getTimeFromTimestring(*desc.PeriodEnd).Unix(),
 			}
+			v.ReportType = es.CostConnectionSummaryDaily
 			b.costsByAccount[key] = v
 		}
 	default:
