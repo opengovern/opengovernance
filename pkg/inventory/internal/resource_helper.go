@@ -31,7 +31,7 @@ func CalculateMetricResourceTypeCountPercentChanges(source map[string]api.Filter
 		return source
 	}
 	for filterID, filterVal := range source {
-		if v, ok := compareTo[filterID]; !ok {
+		if v, ok := compareTo[filterID]; ok {
 			switch filterVal.GetFilterType() {
 			case api.FilterTypeCloudResourceType:
 				fv := filterVal.(*api.FilterCloudResourceType)
@@ -76,7 +76,7 @@ func CalculateMetricCostPercentChanges(source map[string]api.Filter, compareTo m
 		return source
 	}
 	for filterID, filterVal := range source {
-		if v, ok := compareTo[filterID]; !ok {
+		if v, ok := compareTo[filterID]; ok {
 			switch filterVal.GetFilterType() {
 			case api.FilterTypeCost:
 				fv := filterVal.(*api.FilterCost)
