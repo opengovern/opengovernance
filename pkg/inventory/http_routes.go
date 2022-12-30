@@ -1373,7 +1373,7 @@ func (h *HttpHandler) GetMetricsResourceCountComposition(ctx echo.Context) error
 		}
 		resultAsArr = append(resultAsArr[:top], other)
 	}
-	return ctx.JSON(http.StatusOK, result)
+	return ctx.JSON(http.StatusOK, resultAsArr)
 }
 
 func (h *HttpHandler) GetCategoryNodeCostHelper(ctx context.Context, depth int, category string, sourceID *string, providerPtr *source.Type, startTime, endTime int64, nodeCacheMap map[string]api.CategoryNode) (*api.CategoryNode, error) {
@@ -1463,7 +1463,7 @@ func (h *HttpHandler) GetMetricsCostHelper(ctx context.Context, category string,
 			costFilter := filter.(*FilterCostNode)
 
 			if cost, ok := aggregatedCostHits[costFilter.ServiceName]; ok {
-				result[costFilter.ServiceName] = api.FilterCost{
+				result[costFilter.ServiceName] = &api.FilterCost{
 					FilterType:    api.FilterTypeCost,
 					FilterID:      costFilter.ElementID,
 					ServiceName:   costFilter.ServiceName,
@@ -1811,7 +1811,7 @@ func (h *HttpHandler) GetMetricsCostComposition(ctx echo.Context) error {
 	})
 	// take top result and aggregate the rest into "other"
 	if len(resultAsArr) > top {
-		other := api.FilterCost{
+		other := &api.FilterCost{
 			FilterType:    api.FilterTypeCost,
 			FilterID:      "-other-",
 			ServiceName:   "Others",
