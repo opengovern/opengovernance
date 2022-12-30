@@ -65,19 +65,20 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	v1.POST("/resource", httpserver.AuthorizeHandler(h.GetResource, api3.ViewerRole))
 
 	v1.GET("/resources/trend", httpserver.AuthorizeHandler(h.GetResourceGrowthTrend, api3.ViewerRole))
-	v2.GET("/resources/trend", httpserver.AuthorizeHandler(h.GetResourceGrowthTrendV2, api3.ViewerRole))
-	v2.GET("/cost/trend", httpserver.AuthorizeHandler(h.GetCostGrowthTrendV2, api3.ViewerRole))
 	v1.GET("/resources/top/growing/accounts", httpserver.AuthorizeHandler(h.GetTopFastestGrowingAccountsByResourceCount, api3.ViewerRole))
 	v1.GET("/resources/top/accounts", httpserver.AuthorizeHandler(h.GetTopAccountsByResourceCount, api3.ViewerRole))
 	v1.GET("/resources/top/regions", httpserver.AuthorizeHandler(h.GetTopRegionsByResourceCount, api3.ViewerRole))
 	v1.GET("/resources/top/services", httpserver.AuthorizeHandler(h.GetTopServicesByResourceCount, api3.ViewerRole))
 	v2.GET("/resources/categories", httpserver.AuthorizeHandler(h.GetCategoriesV2, api3.ViewerRole))
+	v2.GET("/resources/rootTemplates", httpserver.AuthorizeHandler(h.GetRootTemplates, api3.ViewerRole))
+	v2.GET("/resources/rootCloudProviders", httpserver.AuthorizeHandler(h.GetRootCloudProviders, api3.ViewerRole))
+
 	v2.GET("/resources/category", httpserver.AuthorizeHandler(h.GetCategoryNodeResourceCount, api3.ViewerRole))
 	v2.GET("/cost/category", httpserver.AuthorizeHandler(h.GetCategoryNodeCost, api3.ViewerRole))
 	v2.GET("/resources/composition", httpserver.AuthorizeHandler(h.GetCategoryNodeResourceCountComposition, api3.ViewerRole))
 	v2.GET("/cost/composition", httpserver.AuthorizeHandler(h.GetCategoryNodeCostComposition, api3.ViewerRole))
-	v2.GET("/resources/rootTemplates", httpserver.AuthorizeHandler(h.GetRootTemplates, api3.ViewerRole))
-	v2.GET("/resources/rootCloudProviders", httpserver.AuthorizeHandler(h.GetRootCloudProviders, api3.ViewerRole))
+	v2.GET("/resources/trend", httpserver.AuthorizeHandler(h.GetResourceGrowthTrendV2, api3.ViewerRole))
+	v2.GET("/cost/trend", httpserver.AuthorizeHandler(h.GetCostGrowthTrendV2, api3.ViewerRole))
 
 	v1.GET("/accounts/resource/count", httpserver.AuthorizeHandler(h.GetAccountsResourceCount, api3.ViewerRole))
 	v2.GET("/accounts/summary", httpserver.AuthorizeHandler(h.GetAccountSummary, api3.ViewerRole))
@@ -101,6 +102,11 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 
 	v2.GET("/metrics/categorized", httpserver.AuthorizeHandler(h.GetCategorizedMetricsV2, api3.ViewerRole))
 	v2.GET("/categories", httpserver.AuthorizeHandler(h.GetCategoriesV2, api3.ViewerRole))
+
+	v2.GET("/metrics/resources/metric", httpserver.AuthorizeHandler(h.GetMetricsResourceCount, api3.ViewerRole))
+	v2.GET("/metrics/cost/metric", httpserver.AuthorizeHandler(h.GetMetricsCost, api3.ViewerRole))
+	v2.GET("/metrics/resources/composition", httpserver.AuthorizeHandler(h.GetMetricsResourceCountComposition, api3.ViewerRole))
+	v2.GET("/metrics/cost/composition", httpserver.AuthorizeHandler(h.GetMetricsCostComposition, api3.ViewerRole))
 
 	v1.GET("/connection/:connection_id/summary", httpserver.AuthorizeHandler(h.GetConnectionSummary, api3.ViewerRole))
 	v1.GET("/provider/:provider/summary", httpserver.AuthorizeHandler(h.GetProviderSummary, api3.ViewerRole))
@@ -1048,6 +1054,57 @@ func (h *HttpHandler) GetCategoryNodeResourceCountHelper(ctx context.Context, de
 	return result, err
 }
 
+func (h *HttpHandler) GetMetricsResourceCountHelper(ctx context.Context, category string, sourceID string, provider source.Type, t int64, importanceArray []string) (map[string]api.Filter, error) {
+	var (
+		filters []Filter
+		err     error
+	)
+	if category == "" {
+		filterType := FilterTypeCloudResourceType
+		filters, err = h.graphDb.GetFilters(ctx, provider, importanceArray, &filterType)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		rootNode, err := h.graphDb.GetCategory(ctx, category, importanceArray)
+		if err != nil {
+			return nil, err
+		}
+		filters = rootNode.SubTreeFilters
+	}
+	sourceIDPtr := &sourceID
+	if sourceID == "" {
+		sourceIDPtr = nil
+	}
+
+	resourceTypes := GetResourceTypeListFromFilters(filters)
+
+	metricIndexed, err := es.FetchResourceTypeCountAtTime(h.client, provider, sourceIDPtr, time.Unix(t, 0), resourceTypes, EsFetchPageSize)
+	if err != nil {
+		return nil, err
+	}
+
+	result := make(map[string]api.Filter)
+	for _, filter := range filters {
+		switch filter.GetFilterType() {
+		case FilterTypeCloudResourceType:
+			f := filter.(*FilterCloudResourceTypeNode)
+			if _, ok := metricIndexed[f.ResourceType]; !ok {
+				continue
+			}
+			result[f.ElementID] = &api.FilterCloudResourceType{
+				FilterType:    api.FilterTypeCloudResourceType,
+				FilterID:      f.ElementID,
+				CloudProvider: f.CloudProvider,
+				ResourceType:  f.ResourceType,
+				ResourceName:  f.ResourceName,
+				ResourceCount: metricIndexed[f.ResourceType],
+			}
+		}
+	}
+	return result, err
+}
+
 // GetCategoryNodeResourceCount godoc
 // @Summary Return category info by provided category id, info includes category name, subcategories names and ids and number of resources
 // @Tags    inventory
@@ -1115,6 +1172,69 @@ func (h *HttpHandler) GetCategoryNodeResourceCount(ctx echo.Context) error {
 	return ctx.JSON(http.StatusOK, result)
 }
 
+// GetMetricsResourceCount godoc
+// @Summary Return category info by provided category id, info includes category name, subcategories names and ids and number of resources
+// @Tags    inventory
+// @Accept  json
+// @Produce json
+// @Param   category   query    string false "Category ID - defaults to default template category"
+// @Param   provider   query    string false "Provider"
+// @Param   sourceId   query    string false "SourceID"
+// @Param   importance query    string false "Filter filters by importance if they have it (array format is supported with , separator | 'all' is also supported)"
+// @Param   time       query    string false "timestamp for resource count in epoch seconds either timeWindow or time must be provided"
+// @Param   timeWindow query    string false "time window either this or time must be provided" Enums(1d,1w,1m,3m,1y)
+// @Success 200        {object} []api.Filter
+// @Router  /inventory/api/v2/metrics/resources/metric [get]
+func (h *HttpHandler) GetMetricsResourceCount(ctx echo.Context) error {
+	var err error
+	provider, _ := source.ParseType(ctx.QueryParam("provider"))
+	sourceID := ctx.QueryParam("sourceId")
+	importance := strings.ToLower(ctx.QueryParam("importance"))
+	if importance == "" {
+		importance = "critical"
+	}
+	importanceArray := strings.Split(importance, ",")
+	category := ctx.QueryParam("category")
+
+	timeStr := ctx.QueryParam("time")
+	timeWindowStr := ctx.QueryParam("timeWindow")
+	timeVal := time.Now().Unix()
+
+	if timeStr != "" {
+		timeVal, err = strconv.ParseInt(timeStr, 10, 64)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "invalid time")
+		}
+	}
+
+	var timeWindow time.Duration
+	if timeWindowStr != "" {
+		timeWindow, err = ParseTimeWindow(timeWindowStr)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "invalid timeWindow")
+		}
+	}
+
+	result, err := h.GetMetricsResourceCountHelper(ctx.Request().Context(), category, sourceID, provider, timeVal, importanceArray)
+	if err != nil {
+		return err
+	}
+	if timeWindowStr != "" {
+		historyResult, err := h.GetMetricsResourceCountHelper(ctx.Request().Context(), category, sourceID, provider, time.Unix(timeVal, 0).Add(-1*timeWindow).Unix(), importanceArray)
+		if err != nil {
+			return err
+		}
+		result = internal.CalculateMetricResourceTypeCountPercentChanges(result, historyResult)
+	}
+
+	resultAsArr := make([]api.Filter, 0)
+	for _, v := range result {
+		resultAsArr = append(resultAsArr, v)
+	}
+
+	return ctx.JSON(http.StatusOK, resultAsArr)
+}
+
 // GetCategoryNodeResourceCountComposition godoc
 // @Summary Return category info by provided category id, info includes category name, subcategories names and ids and number of resources
 // @Tags    inventory
@@ -1174,6 +1294,88 @@ func (h *HttpHandler) GetCategoryNodeResourceCountComposition(ctx echo.Context) 
 	return ctx.JSON(http.StatusOK, result)
 }
 
+// GetMetricsResourceCountComposition godoc
+// @Summary Return category info by provided category id, info includes category name, subcategories names and ids and number of resources
+// @Tags    inventory
+// @Accept  json
+// @Produce json
+// @Param   category   query    string false "Category ID - defaults to default template category"
+// @Param   top        query    int    true  "How many top categories to return"
+// @Param   provider   query    string false "Provider"
+// @Param   sourceId   query    string false "SourceID"
+// @Param   importance query    string false "Filter filters by importance if they have it (array format is supported with , separator | 'all' is also supported)"
+// @Param   time       query    string false "timestamp for resource count in epoch seconds"
+// @Success 200        {object} []api.Filter
+// @Router  /inventory/api/v2/metrics/resources/composition [get]
+func (h *HttpHandler) GetMetricsResourceCountComposition(ctx echo.Context) error {
+	topStr := ctx.QueryParam("top")
+	top, err := strconv.Atoi(topStr)
+	if err != nil || top <= 1 {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid top")
+	}
+	provider, _ := source.ParseType(ctx.QueryParam("provider"))
+	sourceID := ctx.QueryParam("sourceId")
+	importance := strings.ToLower(ctx.QueryParam("importance"))
+	if importance == "" {
+		importance = "critical"
+	}
+	importanceArray := strings.Split(importance, ",")
+	category := ctx.QueryParam("category")
+
+	timeStr := ctx.QueryParam("time")
+	timeVal := time.Now().Unix()
+	if timeStr != "" {
+		timeVal, err = strconv.ParseInt(timeStr, 10, 64)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "invalid time")
+		}
+	}
+
+	result, err := h.GetMetricsResourceCountHelper(ctx.Request().Context(), category, sourceID, provider, timeVal, importanceArray)
+	if err != nil {
+		return err
+	}
+	resultAsArr := make([]api.Filter, 0, len(result))
+	for _, v := range result {
+		resultAsArr = append(resultAsArr, v)
+	}
+	// sort result.SubCategories by count desc
+	sort.Slice(resultAsArr, func(i, j int) bool {
+		if resultAsArr[i].GetFilterType() == resultAsArr[j].GetFilterType() {
+			switch resultAsArr[i].GetFilterType() {
+			case api.FilterTypeCloudResourceType:
+				return resultAsArr[i].(*api.FilterCloudResourceType).ResourceCount > resultAsArr[i].(*api.FilterCloudResourceType).ResourceCount
+			}
+		}
+		if resultAsArr[i].GetFilterType() == api.FilterTypeCloudResourceType {
+			return true
+		}
+		if resultAsArr[j].GetFilterType() == api.FilterTypeCloudResourceType {
+			return false
+		}
+		return resultAsArr[i].GetFilterType() < resultAsArr[j].GetFilterType()
+	})
+	// take top result and aggregate the rest into "other"
+	if len(resultAsArr) > top {
+		other := &api.FilterCloudResourceType{
+			FilterType:    api.FilterTypeCloudResourceType,
+			FilterID:      "-others-",
+			CloudProvider: provider,
+			ResourceType:  "Others",
+			ResourceName:  "Others",
+			ResourceCount: 0,
+		}
+		for i := top; i < len(resultAsArr); i++ {
+			switch resultAsArr[i].GetFilterType() {
+			case api.FilterTypeCloudResourceType:
+				other.ResourceCount += resultAsArr[i].(*api.FilterCloudResourceType).ResourceCount
+			}
+		}
+		resultAsArr = append(resultAsArr[:top], other)
+	}
+	return ctx.JSON(http.StatusOK, result)
+}
+
 func (h *HttpHandler) GetCategoryNodeCostHelper(ctx context.Context, depth int, category string, sourceID *string, providerPtr *source.Type, startTime, endTime int64, nodeCacheMap map[string]api.CategoryNode) (*api.CategoryNode, error) {
 	var (
 		rootNode *CategoryNode
@@ -1217,6 +1419,61 @@ func (h *HttpHandler) GetCategoryNodeCostHelper(ctx context.Context, depth int, 
 	if err != nil {
 		return nil, err
 	}
+	return result, nil
+}
+
+func (h *HttpHandler) GetMetricsCostHelper(ctx context.Context, category string, sourceID *string, provider source.Type, startTime, endTime int64) (map[string]api.Filter, error) {
+	var (
+		filters []Filter
+		err     error
+	)
+	if category == "" {
+		filterType := FilterTypeCost
+		filters, err = h.graphDb.GetFilters(ctx, provider, []string{"all"}, &filterType)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		rootNode, err := h.graphDb.GetCategory(ctx, category, []string{"all"})
+		if err != nil {
+			return nil, err
+		}
+		filters = rootNode.SubTreeFilters
+	}
+
+	serviceNames := make([]string, 0)
+	for _, filter := range filters {
+		if filter.GetFilterType() == FilterTypeCost {
+			serviceNames = append(serviceNames, filter.(*FilterCostNode).ServiceName)
+		}
+	}
+	if len(serviceNames) == 0 {
+		return nil, echo.NewHTTPError(http.StatusBadRequest, "category has no cost filters")
+	}
+
+	costHits, err := es.FetchDailyCostHistoryByServicesBetween(h.client, sourceID, provider.AsPtr(), serviceNames, time.Unix(endTime, 0), time.Unix(startTime, 0), EsFetchPageSize)
+	aggregatedCostHits := internal.AggregateServiceCosts(costHits)
+	if err != nil {
+		return nil, err
+	}
+
+	result := make(map[string]api.Filter)
+	for _, filter := range filters {
+		if filter.GetFilterType() == FilterTypeCost {
+			costFilter := filter.(*FilterCostNode)
+
+			if cost, ok := aggregatedCostHits[costFilter.ServiceName]; ok {
+				result[costFilter.ServiceName] = api.FilterCost{
+					FilterType:    api.FilterTypeCost,
+					FilterID:      costFilter.ElementID,
+					ServiceName:   costFilter.ServiceName,
+					CloudProvider: costFilter.CloudProvider,
+					Cost:          cost,
+				}
+			}
+		}
+	}
+
 	return result, nil
 }
 
@@ -1272,18 +1529,15 @@ func (h *HttpHandler) GetCategoryNodeCost(ctx echo.Context) error {
 	}
 
 	timeWindowStr := ctx.QueryParam("timeWindow")
-	if startTimeStr != "" && endTimeStr != "" && timeWindowStr != "" {
-		return echo.NewHTTPError(http.StatusBadRequest, "timeWindow cannot be used with startTime and endTime")
-	}
 	var timeWindow time.Duration
 	if timeWindowStr != "" {
 		timeWindow, err = ParseTimeWindow(timeWindowStr)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "invalid timeWindow")
 		}
-		now := time.Now()
-		endTime = now.Unix()
-		startTime = now.Add(-1 * timeWindow).Unix()
+		if startTimeStr == "" {
+			startTime = time.Unix(endTime, 0).Add(-1 * timeWindow).Unix()
+		}
 	}
 
 	category := ctx.QueryParam("category")
@@ -1302,6 +1556,78 @@ func (h *HttpHandler) GetCategoryNodeCost(ctx echo.Context) error {
 	}
 
 	return ctx.JSON(http.StatusOK, result)
+}
+
+// GetMetricsCost godoc
+// @Summary Return category cost info by provided category id, info includes category name, subcategories names and ids and their accumulated cost
+// @Tags    inventory
+// @Accept  json
+// @Produce json
+// @Param   category   query    string false "Category id - defaults to default template category"
+// @Param   provider   query    string false "Provider"
+// @Param   sourceId   query    string false "SourceID"
+// @Param   startTime  query    string false "timestamp for start of cost window in epoch seconds"
+// @Param   endTime    query    string false "timestamp for end of cost window in epoch seconds"
+// @Param   timeWindow query    string false "time window either this or start & end time must be provided" Enums(1d,1w,1m,3m,1y)
+// @Success 200        {object} []api.Filter
+// @Router  /inventory/api/v2/metrics/cost/metric [get]
+func (h *HttpHandler) GetMetricsCost(ctx echo.Context) error {
+	var err error
+	provider, _ := source.ParseType(ctx.QueryParam("provider"))
+	sourceID := ctx.QueryParam("sourceId")
+	sourceIDPtr := &sourceID
+	if sourceID == "" {
+		sourceIDPtr = nil
+	}
+	startTimeStr := ctx.QueryParam("startTime")
+	startTime := time.Now().AddDate(0, 0, -7).Unix()
+	if startTimeStr != "" {
+		startTime, err = strconv.ParseInt(startTimeStr, 10, 64)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "invalid startTime")
+		}
+	}
+	endTimeStr := ctx.QueryParam("endTime")
+	endTime := time.Now().Unix()
+	if endTimeStr != "" {
+		endTime, err = strconv.ParseInt(endTimeStr, 10, 64)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "invalid endTime")
+		}
+	}
+
+	timeWindowStr := ctx.QueryParam("timeWindow")
+	var timeWindow time.Duration
+	if timeWindowStr != "" {
+		timeWindow, err = ParseTimeWindow(timeWindowStr)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "invalid timeWindow")
+		}
+		if startTimeStr == "" {
+			startTime = time.Unix(endTime, 0).Add(-1 * timeWindow).Unix()
+		}
+	}
+
+	category := ctx.QueryParam("category")
+
+	result, err := h.GetMetricsCostHelper(ctx.Request().Context(), category, sourceIDPtr, provider, startTime, endTime)
+	if err != nil {
+		return err
+	}
+	if timeWindowStr != "" {
+		historyResult, err := h.GetMetricsCostHelper(ctx.Request().Context(), category, sourceIDPtr, provider, time.Unix(startTime, 0).Add(-1*timeWindow).Unix(), time.Unix(endTime, 0).Add(-1*timeWindow).Unix())
+		if err != nil {
+			return err
+		}
+		result = internal.CalculateMetricCostPercentChanges(result, historyResult)
+	}
+
+	resultAsArray := make([]api.Filter, 0, len(result))
+	for _, v := range result {
+		resultAsArray = append(resultAsArray, v)
+	}
+
+	return ctx.JSON(http.StatusOK, resultAsArray)
 }
 
 // GetCategoryNodeCostComposition godoc
@@ -1399,6 +1725,120 @@ func (h *HttpHandler) GetCategoryNodeCostComposition(ctx echo.Context) error {
 	}
 
 	return ctx.JSON(http.StatusOK, result)
+}
+
+// GetMetricsCostComposition godoc
+// @Summary Return category info by provided category id, info includes category name, subcategories names and ids and number of resources
+// @Tags    inventory
+// @Accept  json
+// @Produce json
+// @Param   category  query    string false "Category ID - defaults to default template category"
+// @Param   top       query    int    true  "How many top categories to return"
+// @Param   provider  query    string false "Provider"
+// @Param   sourceId  query    string false "SourceID"
+// @Param   startTime query    string false "timestamp for start of cost window in epoch seconds"
+// @Param   endTime   query    string false "timestamp for end of cost window in epoch seconds"
+// @Param   costUnit  query    string false "Unit of cost to filter by"
+// @Success 200       {object} []api.Filter
+// @Router  /inventory/api/v2/metrics/cost/composition [get]
+func (h *HttpHandler) GetMetricsCostComposition(ctx echo.Context) error {
+	topStr := ctx.QueryParam("top")
+	top, err := strconv.Atoi(topStr)
+	if err != nil || top <= 1 {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid top")
+	}
+	provider, _ := source.ParseType(ctx.QueryParam("provider"))
+	sourceID := ctx.QueryParam("sourceId")
+	sourceIDPtr := &sourceID
+	if sourceID == "" {
+		sourceIDPtr = nil
+	}
+
+	startTimeStr := ctx.QueryParam("startTime")
+	startTime := time.Now().AddDate(0, 0, -7).Unix()
+	if startTimeStr != "" {
+		startTime, err = strconv.ParseInt(startTimeStr, 10, 64)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "invalid startTime")
+		}
+	}
+	endTimeStr := ctx.QueryParam("endTime")
+	endTime := time.Now().Unix()
+	if endTimeStr != "" {
+		endTime, err = strconv.ParseInt(endTimeStr, 10, 64)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "invalid endTime")
+		}
+	}
+
+	costUnit := ctx.QueryParam("costUnit")
+	if costUnit == "" {
+		costUnit = DefaultCurrency
+	}
+
+	category := ctx.QueryParam("category")
+
+	result, err := h.GetMetricsCostHelper(ctx.Request().Context(), category, sourceIDPtr, provider, startTime, endTime)
+	if err != nil {
+		return err
+	}
+	resultAsArr := make([]api.Filter, 0, len(result))
+	for _, v := range result {
+		resultAsArr = append(resultAsArr, v)
+	}
+
+	// sort result.SubCategories by count desc
+	sort.Slice(resultAsArr, func(i, j int) bool {
+		if resultAsArr[i].GetFilterType() == resultAsArr[j].GetFilterType() {
+			switch resultAsArr[i].GetFilterType() {
+			case api.FilterTypeCost:
+				if _, ok := resultAsArr[i].(*api.FilterCost).Cost[costUnit]; !ok {
+					return false
+				}
+				if _, ok := resultAsArr[j].(*api.FilterCost).Cost[costUnit]; !ok {
+					return true
+				}
+				return resultAsArr[i].(*api.FilterCost).Cost[costUnit].Cost > resultAsArr[j].(*api.FilterCost).Cost[costUnit].Cost
+			}
+		}
+		if resultAsArr[i].GetFilterType() == api.FilterTypeCost {
+			return true
+		}
+		if resultAsArr[j].GetFilterType() == api.FilterTypeCost {
+			return false
+		}
+		return resultAsArr[i].GetFilterType() < resultAsArr[j].GetFilterType()
+	})
+	// take top result and aggregate the rest into "other"
+	if len(resultAsArr) > top {
+		other := api.FilterCost{
+			FilterType:    api.FilterTypeCost,
+			FilterID:      "-other-",
+			ServiceName:   "Others",
+			CloudProvider: provider,
+			Cost: map[string]api.CostWithUnit{
+				costUnit: {
+					Cost: 0,
+					Unit: costUnit,
+				},
+			},
+		}
+		for i := top; i < len(resultAsArr); i++ {
+			switch resultAsArr[i].GetFilterType() {
+			case api.FilterTypeCost:
+				f := resultAsArr[i].(*api.FilterCost)
+				if _, ok := f.Cost[costUnit]; ok {
+					v := other.Cost[costUnit]
+					v.Cost += f.Cost[costUnit].Cost
+					other.Cost[costUnit] = v
+				}
+			}
+
+		}
+		resultAsArr = append(resultAsArr, other)
+	}
+
+	return ctx.JSON(http.StatusOK, resultAsArr)
 }
 
 // GetRootTemplates godoc

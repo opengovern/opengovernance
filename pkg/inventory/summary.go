@@ -245,6 +245,7 @@ func GetCategoryNodeResourceCountInfo(categoryNode *CategoryNode, metrics map[st
 				directFilters[filter.ElementID] = *v.(*api.FilterCloudResourceType)
 			} else {
 				directFilters[filter.ElementID] = api.FilterCloudResourceType{
+					FilterType:    api.FilterTypeCloudResourceType,
 					FilterID:      filter.ElementID,
 					CloudProvider: filter.CloudProvider,
 					ResourceName:  filter.ResourceName,
@@ -265,6 +266,7 @@ func GetCategoryNodeResourceCountInfo(categoryNode *CategoryNode, metrics map[st
 				resourceCount += m.ResourceCount
 			} else {
 				filterWithCount := api.FilterCloudResourceType{
+					FilterType:    api.FilterTypeCloudResourceType,
 					FilterID:      filter.ElementID,
 					CloudProvider: filter.CloudProvider,
 					ResourceType:  filter.ResourceType,
@@ -315,7 +317,9 @@ func GetCategoryNodeCostInfo(categoryNode *CategoryNode, costs map[string]map[st
 				directFilters[filter.ElementID] = *v.(*api.FilterCost)
 			} else {
 				directFilters[filter.ElementID] = api.FilterCost{
+					FilterType:    api.FilterTypeCost,
 					FilterID:      filter.ElementID,
+					ServiceName:   filter.ServiceName,
 					CloudProvider: filter.CloudProvider,
 					Cost:          map[string]api.CostWithUnit{},
 				}
@@ -347,7 +351,9 @@ func GetCategoryNodeCostInfo(categoryNode *CategoryNode, costs map[string]map[st
 				}
 			} else {
 				filterWithCost := api.FilterCost{
+					FilterType:    api.FilterTypeCost,
 					FilterID:      filter.ElementID,
+					ServiceName:   filter.ServiceName,
 					CloudProvider: filter.CloudProvider,
 					Cost:          map[string]api.CostWithUnit{},
 				}

@@ -428,26 +428,51 @@ type LocationResponse struct {
 	ResourceCount *int   `json:"resourceCount,omitempty"`
 }
 
+type FilterType string
+
+const (
+	FilterTypeCloudResourceType FilterType = "cloudResourceType"
+	FilterTypeCost              FilterType = "cost"
+)
+
 type Filter interface {
+	GetFilterID() string
+	GetFilterType() FilterType
 }
 
 type FilterCloudResourceType struct {
-	FilterID      string      `json:"filterId"`
-	CloudProvider source.Type `json:"cloudProvider"`
-	ResourceType  string      `json:"resourceType"`
-	ResourceName  string      `json:"resourceName"`
-	ResourceCount int         `json:"resourceCount"`
+	FilterType          FilterType  `json:"filterType"`
+	FilterID            string      `json:"filterId"`
+	CloudProvider       source.Type `json:"cloudProvider"`
+	ResourceType        string      `json:"resourceType"`
+	ResourceName        string      `json:"resourceName"`
+	ResourceCount       int         `json:"resourceCount"`
+	ResourceCountChange *float64    `json:"resourceCountChange,omitempty"`
 }
 
-type Cost struct {
-	CurrentCost float64 `json:"current_cost"`
-	HistoryCost float64 `json:"history_cost"`
+func (f FilterCloudResourceType) GetFilterID() string {
+	return f.FilterID
+}
+
+func (f FilterCloudResourceType) GetFilterType() FilterType {
+	return FilterTypeCloudResourceType
 }
 
 type FilterCost struct {
+	FilterType    FilterType              `json:"filterType"`
 	FilterID      string                  `json:"filterID"`
 	CloudProvider source.Type             `json:"cloudProvider"`
+	ServiceName   string                  `json:"serviceName"`
 	Cost          map[string]CostWithUnit `json:"cost"`
+	CostChange    map[string]float64      `json:"costChange,omitempty"`
+}
+
+func (f FilterCost) GetFilterID() string {
+	return f.FilterID
+}
+
+func (f FilterCost) GetFilterType() FilterType {
+	return FilterTypeCost
 }
 
 type CategoryNode struct {

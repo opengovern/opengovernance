@@ -26,6 +26,27 @@ func CalculateResourceTypeCountPercentChanges(root *api.CategoryNode, compareTo 
 	return root
 }
 
+func CalculateMetricResourceTypeCountPercentChanges(source map[string]api.Filter, compareTo map[string]api.Filter) map[string]api.Filter {
+	if compareTo == nil || source == nil {
+		return source
+	}
+	for filterID, filterVal := range source {
+		if v, ok := compareTo[filterID]; !ok {
+			switch filterVal.GetFilterType() {
+			case api.FilterTypeCloudResourceType:
+				fv := filterVal.(*api.FilterCloudResourceType)
+				vv := v.(*api.FilterCloudResourceType)
+				if vv.ResourceCount != 0 {
+					change := calculatePercentageGrowth(fv.ResourceCount, vv.ResourceCount)
+					fv.ResourceCountChange = &change
+					source[filterID] = filterVal
+				}
+			}
+		}
+	}
+	return source
+}
+
 func CalculateCostPercentChanges(root *api.CategoryNode, compareTo map[string]api.CategoryNode) *api.CategoryNode {
 	if compareTo == nil || root.Cost == nil {
 		return root
@@ -48,4 +69,29 @@ func CalculateCostPercentChanges(root *api.CategoryNode, compareTo map[string]ap
 		root.Subcategories[i] = *subcat
 	}
 	return root
+}
+
+func CalculateMetricCostPercentChanges(source map[string]api.Filter, compareTo map[string]api.Filter) map[string]api.Filter {
+	if compareTo == nil || source == nil {
+		return source
+	}
+	for filterID, filterVal := range source {
+		if v, ok := compareTo[filterID]; !ok {
+			switch filterVal.GetFilterType() {
+			case api.FilterTypeCost:
+				fv := filterVal.(*api.FilterCost)
+				vv := v.(*api.FilterCost)
+				for currency, cost := range fv.Cost {
+					if vvCost, ok := vv.Cost[currency]; ok {
+						change := calculatePercentageGrowth(cost.Cost, vvCost.Cost)
+						if fv.CostChange == nil {
+							fv.CostChange = make(map[string]float64)
+						}
+						fv.CostChange[currency] = change
+					}
+				}
+			}
+		}
+	}
+	return source
 }

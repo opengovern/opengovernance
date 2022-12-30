@@ -1957,6 +1957,272 @@
                 }
             }
         },
+        "/inventory/api/v2/metrics/cost/composition": {
+            "get": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "inventory"
+                ],
+                "summary": "Return category info by provided category id, info includes category name, subcategories names and ids and number of resources",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Category ID - defaults to default template category",
+                        "name": "category",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "How many top categories to return",
+                        "name": "top",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Provider",
+                        "name": "provider",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "SourceID",
+                        "name": "sourceId",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "timestamp for start of cost window in epoch seconds",
+                        "name": "startTime",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "timestamp for end of cost window in epoch seconds",
+                        "name": "endTime",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Unit of cost to filter by",
+                        "name": "costUnit",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {}
+                        }
+                    }
+                }
+            }
+        },
+        "/inventory/api/v2/metrics/cost/metric": {
+            "get": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "inventory"
+                ],
+                "summary": "Return category cost info by provided category id, info includes category name, subcategories names and ids and their accumulated cost",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Category id - defaults to default template category",
+                        "name": "category",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Provider",
+                        "name": "provider",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "SourceID",
+                        "name": "sourceId",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "timestamp for start of cost window in epoch seconds",
+                        "name": "startTime",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "timestamp for end of cost window in epoch seconds",
+                        "name": "endTime",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "1d",
+                            "1w",
+                            "1m",
+                            "3m",
+                            "1y"
+                        ],
+                        "type": "string",
+                        "description": "time window either this or start \u0026 end time must be provided",
+                        "name": "timeWindow",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {}
+                        }
+                    }
+                }
+            }
+        },
+        "/inventory/api/v2/metrics/resources/composition": {
+            "get": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "inventory"
+                ],
+                "summary": "Return category info by provided category id, info includes category name, subcategories names and ids and number of resources",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Category ID - defaults to default template category",
+                        "name": "category",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "How many top categories to return",
+                        "name": "top",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Provider",
+                        "name": "provider",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "SourceID",
+                        "name": "sourceId",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter filters by importance if they have it (array format is supported with , separator | 'all' is also supported)",
+                        "name": "importance",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "timestamp for resource count in epoch seconds",
+                        "name": "time",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {}
+                        }
+                    }
+                }
+            }
+        },
+        "/inventory/api/v2/metrics/resources/metric": {
+            "get": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "inventory"
+                ],
+                "summary": "Return category info by provided category id, info includes category name, subcategories names and ids and number of resources",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Category ID - defaults to default template category",
+                        "name": "category",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Provider",
+                        "name": "provider",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "SourceID",
+                        "name": "sourceId",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter filters by importance if they have it (array format is supported with , separator | 'all' is also supported)",
+                        "name": "importance",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "timestamp for resource count in epoch seconds either timeWindow or time must be provided",
+                        "name": "time",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "1d",
+                            "1w",
+                            "1m",
+                            "3m",
+                            "1y"
+                        ],
+                        "type": "string",
+                        "description": "time window either this or time must be provided",
+                        "name": "timeWindow",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {}
+                        }
+                    }
+                }
+            }
+        },
         "/inventory/api/v2/resources/categories": {
             "get": {
                 "consumes": [

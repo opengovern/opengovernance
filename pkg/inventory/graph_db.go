@@ -998,3 +998,44 @@ func (gdb *GraphDatabase) GetCloudServiceNodes(ctx context.Context, provider sou
 
 	return servicesArr, nil
 }
+
+func (gdb *GraphDatabase) GetFilters(ctx context.Context, provider source.Type, importance []string, filterType *FilterType) ([]Filter, error) {
+	session := gdb.Driver.NewSession(ctx, neo4j.SessionConfig{AccessMode: neo4j.AccessModeRead})
+	defer session.Close(ctx)
+
+	filterTypeStr := ""
+	if filterType != nil {
+		filterTypeStr = string(*filterType)
+	}
+
+	result, err := session.Run(ctx,
+		fmt.Sprintf("MATCH (f:Filter:%s) WHERE (f.importance IS NULL OR 'all' IN $importance OR f.importance IN $importance) AND (f.cloud_provider IS NULL OR $provider = '' OR f.cloud_provider = $provider) RETURN f;", filterTypeStr),
+		map[string]any{
+			"provider":   provider.String(),
+			"importance": importance,
+		},
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	var filters []Filter
+	for result.Next(ctx) {
+		rawFilter, ok := result.Record().Get("f")
+		if !ok {
+			return nil, ErrKeyColumnNotFound
+		}
+		filterNode, ok := rawFilter.(neo4j.Node)
+		if !ok {
+			return nil, ErrColumnConversion
+		}
+
+		filter, err := getFilterFromNode(filterNode)
+		if err != nil {
+			return nil, err
+		}
+		filters = append(filters, filter)
+	}
+
+	return filters, nil
+}
