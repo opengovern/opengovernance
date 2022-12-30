@@ -158,11 +158,11 @@ func (c ConnectionCostSummary) GetCostAndUnit() (float64, string) {
 	switch c.ResourceType {
 	case "aws::costexplorer::byaccountmonthly":
 	case "aws::costexplorer::byaccountdaily":
-		costFloat, err := strconv.ParseFloat(c.Cost.(map[string]interface{})["UnblendedCostAmount"].(string), 64)
+		costFloat, err := strconv.ParseFloat(c.Cost.(map[string]interface{})["AmortizedCostAmount"].(string), 64)
 		if err != nil {
 			return 0, ""
 		}
-		costUnit, ok := c.Cost.(map[string]interface{})["UnblendedCostUnit"]
+		costUnit, ok := c.Cost.(map[string]interface{})["AmortizedCostUnit"]
 		if !ok {
 			return 0, ""
 		}
