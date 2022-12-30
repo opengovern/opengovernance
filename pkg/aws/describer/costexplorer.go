@@ -243,7 +243,7 @@ func costDaily(ctx context.Context, cfg aws.Config, by string, startDate, endDat
 }
 
 func CostByServiceLastDay(ctx context.Context, cfg aws.Config) ([]Resource, error) {
-	costs, err := costDaily(ctx, cfg, "SERVICE", time.Now().AddDate(0, 0, -7), time.Now())
+	costs, err := costDaily(ctx, cfg, "SERVICE", time.Now().AddDate(0, -3, -7), time.Now())
 	if err != nil {
 		return nil, err
 	}
@@ -263,7 +263,7 @@ func CostByServiceLastDay(ctx context.Context, cfg aws.Config) ([]Resource, erro
 }
 
 func CostByAccountLastDay(ctx context.Context, cfg aws.Config) ([]Resource, error) {
-	costs, err := costDaily(ctx, cfg, "LINKED_ACCOUNT", time.Now().AddDate(0, 0, -7), time.Now())
+	costs, err := costDaily(ctx, cfg, "LINKED_ACCOUNT", time.Now().AddDate(0, -3, -7), time.Now())
 	if err != nil {
 		return nil, err
 	}
