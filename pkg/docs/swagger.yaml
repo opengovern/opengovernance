@@ -2836,6 +2836,191 @@ paths:
       summary: Return categorized metrics, their value and their history
       tags:
       - inventory
+  /inventory/api/v2/metrics/cost/composition:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: Category ID - defaults to default template category
+        in: query
+        name: category
+        type: string
+      - description: How many top categories to return
+        in: query
+        name: top
+        required: true
+        type: integer
+      - description: Provider
+        in: query
+        name: provider
+        type: string
+      - description: SourceID
+        in: query
+        name: sourceId
+        type: string
+      - description: timestamp for start of cost window in epoch seconds
+        in: query
+        name: startTime
+        type: string
+      - description: timestamp for end of cost window in epoch seconds
+        in: query
+        name: endTime
+        type: string
+      - description: Unit of cost to filter by
+        in: query
+        name: costUnit
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items: {}
+            type: array
+      summary: Return category info by provided category id, info includes category
+        name, subcategories names and ids and number of resources
+      tags:
+      - inventory
+  /inventory/api/v2/metrics/cost/metric:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: Category id - defaults to default template category
+        in: query
+        name: category
+        type: string
+      - description: Provider
+        in: query
+        name: provider
+        type: string
+      - description: SourceID
+        in: query
+        name: sourceId
+        type: string
+      - description: timestamp for start of cost window in epoch seconds
+        in: query
+        name: startTime
+        type: string
+      - description: timestamp for end of cost window in epoch seconds
+        in: query
+        name: endTime
+        type: string
+      - description: time window either this or start & end time must be provided
+        enum:
+        - 1d
+        - 1w
+        - 1m
+        - 3m
+        - 1y
+        in: query
+        name: timeWindow
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items: {}
+            type: array
+      summary: Return category cost info by provided category id, info includes category
+        name, subcategories names and ids and their accumulated cost
+      tags:
+      - inventory
+  /inventory/api/v2/metrics/resources/composition:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: Category ID - defaults to default template category
+        in: query
+        name: category
+        type: string
+      - description: How many top categories to return
+        in: query
+        name: top
+        required: true
+        type: integer
+      - description: Provider
+        in: query
+        name: provider
+        type: string
+      - description: SourceID
+        in: query
+        name: sourceId
+        type: string
+      - description: Filter filters by importance if they have it (array format is
+          supported with , separator | 'all' is also supported)
+        in: query
+        name: importance
+        type: string
+      - description: timestamp for resource count in epoch seconds
+        in: query
+        name: time
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items: {}
+            type: array
+      summary: Return category info by provided category id, info includes category
+        name, subcategories names and ids and number of resources
+      tags:
+      - inventory
+  /inventory/api/v2/metrics/resources/metric:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: Category ID - defaults to default template category
+        in: query
+        name: category
+        type: string
+      - description: Provider
+        in: query
+        name: provider
+        type: string
+      - description: SourceID
+        in: query
+        name: sourceId
+        type: string
+      - description: Filter filters by importance if they have it (array format is
+          supported with , separator | 'all' is also supported)
+        in: query
+        name: importance
+        type: string
+      - description: timestamp for resource count in epoch seconds either timeWindow
+          or time must be provided
+        in: query
+        name: time
+        type: string
+      - description: time window either this or time must be provided
+        enum:
+        - 1d
+        - 1w
+        - 1m
+        - 3m
+        - 1y
+        in: query
+        name: timeWindow
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items: {}
+            type: array
+      summary: Return category info by provided category id, info includes category
+        name, subcategories names and ids and number of resources
+      tags:
+      - inventory
   /inventory/api/v2/resources/categories:
     get:
       consumes:
