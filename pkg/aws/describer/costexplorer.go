@@ -254,7 +254,7 @@ func CostByServiceLastDay(ctx context.Context, cfg aws.Config) ([]Resource, erro
 			continue
 		}
 		values = append(values, Resource{
-			ID:          "service-" + *cost.Dimension1 + "-cost",
+			ID:          "service-" + *cost.Dimension1 + "-cost-" + *cost.PeriodEnd,
 			Description: cost,
 		})
 	}
@@ -274,7 +274,7 @@ func CostByAccountLastDay(ctx context.Context, cfg aws.Config) ([]Resource, erro
 			continue
 		}
 		values = append(values, Resource{
-			ID:          "account-" + *cost.Dimension1 + "-cost",
+			ID:          "account-" + *cost.Dimension1 + "-cost-" + *cost.PeriodEnd,
 			Description: cost,
 		})
 	}
