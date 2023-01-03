@@ -1247,7 +1247,7 @@ type FetchInsightValueAtTimeResponse struct {
 			Buckets []struct {
 				ResourceTypeGroup struct {
 					Buckets []struct {
-						Key               string `json:"key"`
+						Key               int64 `json:"key"`
 						ResourceTypeCount struct {
 							Value float64 `json:"value"`
 						} `json:"insight_values"`
@@ -1333,7 +1333,7 @@ func FetchInsightValueAtTime(client keibi.Client, t time.Time, insightIds []stri
 		return result, nil
 	}
 	for _, bucket := range response.Aggregations.ScheduleJobIDGroup.Buckets[0].ResourceTypeGroup.Buckets {
-		result[bucket.Key] = bucket.ResourceTypeCount.Value
+		result[fmt.Sprintf("%d", bucket.Key)] = bucket.ResourceTypeCount.Value
 	}
 	return result, nil
 }
