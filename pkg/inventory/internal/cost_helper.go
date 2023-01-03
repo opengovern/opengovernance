@@ -1,6 +1,8 @@
 package internal
 
 import (
+	"fmt"
+
 	"gitlab.com/keibiengine/keibi-engine/pkg/inventory/api"
 	summarizer "gitlab.com/keibiengine/keibi-engine/pkg/summarizer/es"
 )
@@ -8,12 +10,12 @@ import (
 func AggregateServiceCosts(costs map[string][]summarizer.ServiceCostSummary) map[string]map[string]api.CostWithUnit {
 	aggregatedCosts := make(map[string]map[string]api.CostWithUnit)
 	for service, cost := range costs {
-		dateFlagMap := make(map[int64]bool)
+		dateFlagMap := make(map[string]bool)
 		for _, value := range cost {
-			if _, ok := dateFlagMap[value.PeriodEnd]; ok {
+			if _, ok := dateFlagMap[fmt.Sprintf("%d:--:%s", value.PeriodEnd, value.SourceID)]; ok {
 				continue
 			} else {
-				dateFlagMap[value.PeriodEnd] = true
+				dateFlagMap[fmt.Sprintf("%d:--:%s", value.PeriodEnd, value.SourceID)] = true
 			}
 			costValue, costUnit := value.GetCostAndUnit()
 			if aggCosts, ok := aggregatedCosts[service]; !ok {
