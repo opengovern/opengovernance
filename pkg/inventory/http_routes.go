@@ -2546,9 +2546,13 @@ func (h *HttpHandler) GetAccountSummary(ctx echo.Context) error {
 			}
 			for _, cost := range costArr {
 				costValue, costUnit := cost.GetCostAndUnit()
-				if lastCostDate, ok := v.LastCost[costUnit]; !ok || lastCostDate.Before(time.Unix(cost.PeriodEnd, 0)) {
-					v.Cost[costUnit] = costValue
+				lastCostDate, ok := v.LastCost[costUnit]
+				if !ok || lastCostDate.Before(time.Unix(cost.PeriodEnd, 0)) {
+					v.Cost[costUnit] = 0
 					v.LastCost[costUnit] = time.Unix(cost.PeriodEnd, 0)
+				}
+				if lastCostDate.Equal(time.Unix(cost.PeriodEnd, 0)) {
+					v.Cost[costUnit] += costValue
 				}
 			}
 			res[sourceID] = v
