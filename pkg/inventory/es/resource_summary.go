@@ -1259,7 +1259,7 @@ type FetchInsightValueAtTimeResponse struct {
 	} `json:"aggregations"`
 }
 
-func FetchInsightValueAtTime(client keibi.Client, t time.Time, insightIds []string, size int) (map[string]int64, error) {
+func FetchInsightValueAtTime(client keibi.Client, t time.Time, insightIds []string) (map[string]int, error) {
 	res := make(map[string]interface{})
 	var filters []interface{}
 
@@ -1325,7 +1325,7 @@ func FetchInsightValueAtTime(client keibi.Client, t time.Time, insightIds []stri
 		return nil, err
 	}
 
-	result := make(map[string]int64)
+	result := make(map[string]int)
 	if len(response.Aggregations.ScheduleJobIDGroup.Buckets) == 0 {
 		return result, nil
 	}
@@ -1333,7 +1333,7 @@ func FetchInsightValueAtTime(client keibi.Client, t time.Time, insightIds []stri
 		if len(bucket.ExecutedAtAggregation.Hits.Hits) == 0 {
 			continue
 		}
-		result[fmt.Sprintf("%d", bucket.Key)] = bucket.ExecutedAtAggregation.Hits.Hits[0].Source.Result
+		result[fmt.Sprintf("%d", bucket.Key)] = int(bucket.ExecutedAtAggregation.Hits.Hits[0].Source.Result)
 	}
 	return result, nil
 }
