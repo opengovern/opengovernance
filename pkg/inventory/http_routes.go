@@ -1032,7 +1032,7 @@ func (h *HttpHandler) GetCategoryNodeResourceCountHelper(ctx context.Context, de
 		sourceIDPtr = nil
 	}
 
-	resourceTypes := GetResourceTypeListFromFilters(rootNode.SubTreeFilters)
+	resourceTypes := GetResourceTypeListFromFilters(rootNode.SubTreeFilters, provider)
 
 	metricIndexed, err := es.FetchResourceTypeCountAtTime(h.client, provider, sourceIDPtr, time.Unix(t, 0), resourceTypes, EsFetchPageSize)
 	if err != nil {
@@ -1059,12 +1059,25 @@ func (h *HttpHandler) GetMetricsResourceCountHelper(ctx context.Context, categor
 		filters []Filter
 		err     error
 	)
+	sourceIDPtr := &sourceID
+	if sourceID == "" {
+		sourceIDPtr = nil
+	}
 	if category == "" {
 		filterType := FilterTypeCloudResourceType
-		filters, err = h.graphDb.GetFilters(ctx, provider, importanceArray, &filterType)
+		filtersResourceTypes, err := h.graphDb.GetFilters(ctx, provider, importanceArray, &filterType)
 		if err != nil {
 			return nil, err
 		}
+		if sourceIDPtr == nil {
+			filterType = FilterTypeInsight
+			filtersInsight, err := h.graphDb.GetFilters(ctx, provider, importanceArray, &filterType)
+			if err != nil {
+				return nil, err
+			}
+			filters = append(filters, filtersInsight...)
+		}
+		filters = append(filters, filtersResourceTypes...)
 	} else {
 		rootNode, err := h.graphDb.GetCategory(ctx, category, importanceArray)
 		if err != nil {
@@ -1072,16 +1085,20 @@ func (h *HttpHandler) GetMetricsResourceCountHelper(ctx context.Context, categor
 		}
 		filters = rootNode.SubTreeFilters
 	}
-	sourceIDPtr := &sourceID
-	if sourceID == "" {
-		sourceIDPtr = nil
-	}
 
-	resourceTypes := GetResourceTypeListFromFilters(filters)
-
+	resourceTypes := GetResourceTypeListFromFilters(filters, provider)
 	metricIndexed, err := es.FetchResourceTypeCountAtTime(h.client, provider, sourceIDPtr, time.Unix(t, 0), resourceTypes, EsFetchPageSize)
 	if err != nil {
 		return nil, err
+	}
+
+	insightIndexed := make(map[string]float64)
+	if sourceIDPtr == nil {
+		insightIDs := GetInsightIDListFromFilters(filters, provider)
+		insightIndexed, err = es.FetchInsightValueAtTime(h.client, time.Unix(t, 0), insightIDs, EsFetchPageSize)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	result := make(map[string]api.Filter)
@@ -1099,6 +1116,21 @@ func (h *HttpHandler) GetMetricsResourceCountHelper(ctx context.Context, categor
 				ResourceType:  f.ResourceType,
 				ResourceName:  f.ResourceName,
 				ResourceCount: metricIndexed[f.ResourceType],
+			}
+		case FilterTypeInsight:
+			if sourceIDPtr != nil {
+				continue
+			}
+			f := filter.(*FilterInsightNode)
+			if _, ok := insightIndexed[f.InsightID]; !ok {
+				continue
+			}
+			result[f.ElementID] = &api.FilterInsight{
+				FilterType:    api.FilterTypeInsight,
+				FilterID:      f.ElementID,
+				CloudProvider: f.CloudProvider,
+				Name:          f.Name,
+				Value:         insightIndexed[f.InsightID],
 			}
 		}
 	}
@@ -1905,7 +1937,7 @@ func GetCategoryRoots(ctx echo.Context, h *HttpHandler, rootType CategoryRootTyp
 	for _, templateRoot := range templateRoots {
 		filters = append(filters, templateRoot.SubTreeFilters...)
 	}
-	resourceTypes := GetResourceTypeListFromFilters(filters)
+	resourceTypes := GetResourceTypeListFromFilters(filters, provider)
 
 	metricIndexed, err := es.FetchResourceTypeCountAtTime(h.client, provider, sourceIDPtr, time.Unix(timeVal, 0), resourceTypes, EsFetchPageSize)
 

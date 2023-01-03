@@ -190,13 +190,37 @@ func GetResourcesFromPostgres(db Database, provider source.Type, sourceID *strin
 	return res, nil
 }
 
-func GetResourceTypeListFromFilters(filters []Filter) []string {
+func GetResourceTypeListFromFilters(filters []Filter, provider source.Type) []string {
 	result := map[string]struct{}{}
 	for _, filter := range filters {
 		switch filter.GetFilterType() {
 		case FilterTypeCloudResourceType:
 			f := filter.(*FilterCloudResourceTypeNode)
+			if !provider.IsNull() && f.CloudProvider.String() != provider.String() {
+				continue
+			}
 			result[f.ResourceType] = struct{}{}
+		default:
+			continue
+		}
+	}
+	res := make([]string, 0, len(result))
+	for k := range result {
+		res = append(res, k)
+	}
+	return res
+}
+
+func GetInsightIDListFromFilters(filters []Filter, provider source.Type) []string {
+	result := map[string]struct{}{}
+	for _, filter := range filters {
+		switch filter.GetFilterType() {
+		case FilterTypeInsight:
+			f := filter.(*FilterInsightNode)
+			if !provider.IsNull() && f.CloudProvider.String() != provider.String() {
+				continue
+			}
+			result[f.InsightID] = struct{}{}
 		default:
 			continue
 		}

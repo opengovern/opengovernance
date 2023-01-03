@@ -41,6 +41,14 @@ func CalculateMetricResourceTypeCountPercentChanges(source map[string]api.Filter
 					fv.ResourceCountChange = &change
 					source[filterID] = filterVal
 				}
+			case api.FilterTypeInsight:
+				fv := filterVal.(*api.FilterInsight)
+				vv := v.(*api.FilterInsight)
+				if vv.Value != 0 {
+					change := calculatePercentageGrowth(fv.Value, vv.Value)
+					fv.ValueChange = &change
+					source[filterID] = filterVal
+				}
 			}
 		}
 	}
