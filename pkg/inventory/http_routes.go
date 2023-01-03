@@ -1092,7 +1092,7 @@ func (h *HttpHandler) GetMetricsResourceCountHelper(ctx context.Context, categor
 		return nil, err
 	}
 
-	insightIndexed := make(map[string]float64)
+	insightIndexed := make(map[string]int64)
 	if sourceIDPtr == nil {
 		insightIDs := GetInsightIDListFromFilters(filters, provider)
 		insightIndexed, err = es.FetchInsightValueAtTime(h.client, time.Unix(t, 0), insightIDs, EsFetchPageSize)
