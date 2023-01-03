@@ -481,7 +481,7 @@ type FilterInsight struct {
 	FilterID      string      `json:"filterID"`
 	CloudProvider source.Type `json:"cloudProvider"`
 	Name          string      `json:"name"`
-	Value         float64     `json:"value"`
+	Value         int64       `json:"value"`
 	ValueChange   *float64    `json:"valueChange,omitempty"`
 }
 

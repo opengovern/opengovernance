@@ -1246,20 +1246,20 @@ type FetchInsightValueAtTimeResponse struct {
 	Aggregations struct {
 		ScheduleJobIDGroup struct {
 			Buckets []struct {
-				ResourceTypeGroup struct {
-					Buckets []struct {
-						Key               int64 `json:"key"`
-						ResourceTypeCount struct {
-							Value float64 `json:"value"`
-						} `json:"insight_values"`
-					} `json:"buckets"`
-				} `json:"insight_id_group"`
+				Key                   int64 `json:"key"`
+				ExecutedAtAggregation struct {
+					Hits struct {
+						Hits []struct {
+							Source es.InsightResource `json:"_source"`
+						} `json:"hits"`
+					} `json:"hits"`
+				} `json:"executed_at_max"`
 			} `json:"buckets"`
-		} `json:"job_id_group"`
+		} `json:"insight_id_grouping"`
 	} `json:"aggregations"`
 }
 
-func FetchInsightValueAtTime(client keibi.Client, t time.Time, insightIds []string, size int) (map[string]float64, error) {
+func FetchInsightValueAtTime(client keibi.Client, t time.Time, insightIds []string, size int) (map[string]int64, error) {
 	res := make(map[string]interface{})
 	var filters []interface{}
 
@@ -1291,24 +1291,19 @@ func FetchInsightValueAtTime(client keibi.Client, t time.Time, insightIds []stri
 		},
 	}
 	res["aggs"] = map[string]any{
-		"job_id_group": map[string]any{
-			"terms": map[string]any{
-				"field": "job_id",
-				"size":  1,
-				"order": map[string]string{
-					"_term": "desc",
-				},
+		"insight_id_grouping": map[string]interface{}{
+			"terms": map[string]interface{}{
+				"field": "query_id",
 			},
-			"aggs": map[string]any{
-				"insight_id_group": map[string]any{
-					"terms": map[string]any{
-						"field": "query_id",
-						"size":  size,
-					},
-					"aggs": map[string]any{
-						"insight_values": map[string]any{
-							"sum": map[string]any{
-								"field": "result",
+			"aggs": map[string]interface{}{
+				"executed_at_max": map[string]interface{}{
+					"top_hits": map[string]interface{}{
+						"size": 1,
+						"sort": []map[string]interface{}{
+							{
+								"executed_at": map[string]interface{}{
+									"order": "desc",
+								},
 							},
 						},
 					},
@@ -1330,12 +1325,15 @@ func FetchInsightValueAtTime(client keibi.Client, t time.Time, insightIds []stri
 		return nil, err
 	}
 
-	result := make(map[string]float64)
+	result := make(map[string]int64)
 	if len(response.Aggregations.ScheduleJobIDGroup.Buckets) == 0 {
 		return result, nil
 	}
-	for _, bucket := range response.Aggregations.ScheduleJobIDGroup.Buckets[0].ResourceTypeGroup.Buckets {
-		result[fmt.Sprintf("%d", bucket.Key)] = bucket.ResourceTypeCount.Value
+	for _, bucket := range response.Aggregations.ScheduleJobIDGroup.Buckets {
+		if len(bucket.ExecutedAtAggregation.Hits.Hits) == 0 {
+			continue
+		}
+		result[fmt.Sprintf("%d", bucket.Key)] = bucket.ExecutedAtAggregation.Hits.Hits[0].Source.Result
 	}
 	return result, nil
 }
