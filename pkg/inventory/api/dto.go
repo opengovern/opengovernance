@@ -433,6 +433,7 @@ type FilterType string
 const (
 	FilterTypeCloudResourceType FilterType = "cloudResourceType"
 	FilterTypeCost              FilterType = "cost"
+	FilterTypeInsight           FilterType = "insight"
 )
 
 type Filter interface {
@@ -473,6 +474,23 @@ func (f FilterCost) GetFilterID() string {
 
 func (f FilterCost) GetFilterType() FilterType {
 	return FilterTypeCost
+}
+
+type FilterInsight struct {
+	FilterType    FilterType  `json:"filterType"`
+	FilterID      string      `json:"filterID"`
+	CloudProvider source.Type `json:"cloudProvider"`
+	Name          string      `json:"name"`
+	Value         float64     `json:"value"`
+	ValueChange   *float64    `json:"valueChange,omitempty"`
+}
+
+func (f FilterInsight) GetFilterID() string {
+	return f.FilterID
+}
+
+func (f FilterInsight) GetFilterType() FilterType {
+	return FilterTypeInsight
 }
 
 type CategoryNode struct {

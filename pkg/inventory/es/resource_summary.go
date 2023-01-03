@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"time"
 
+	"gitlab.com/keibiengine/keibi-engine/pkg/insight/es"
 	"gitlab.com/keibiengine/keibi-engine/pkg/source"
 
 	summarizer "gitlab.com/keibiengine/keibi-engine/pkg/summarizer/es"
@@ -1236,6 +1237,103 @@ func FetchResourceTypeCountAtTime(client keibi.Client, provider source.Type, sou
 	}
 	for _, bucket := range response.Aggregations.ScheduleJobIDGroup.Buckets[0].ResourceTypeGroup.Buckets {
 		result[bucket.Key] = int(bucket.ResourceTypeCount.Value)
+	}
+	return result, nil
+}
+
+type FetchInsightValueAtTimeResponse struct {
+	Aggregations struct {
+		ScheduleJobIDGroup struct {
+			Buckets []struct {
+				ResourceTypeGroup struct {
+					Buckets []struct {
+						Key               string `json:"key"`
+						ResourceTypeCount struct {
+							Value float64 `json:"value"`
+						} `json:"insight_values"`
+					} `json:"buckets"`
+				} `json:"insight_id_group"`
+			} `json:"buckets"`
+		} `json:"job_id_group"`
+	} `json:"aggregations"`
+}
+
+func FetchInsightValueAtTime(client keibi.Client, t time.Time, insightIds []string, size int) (map[string]float64, error) {
+	res := make(map[string]interface{})
+	var filters []interface{}
+
+	filters = append(filters, map[string]interface{}{
+		"terms": map[string][]string{"resource_type": {"history"}},
+	})
+
+	filters = append(filters, map[string]interface{}{
+		"terms": map[string][]string{"query_id": insightIds},
+	})
+
+	filters = append(filters, map[string]interface{}{
+		"range": map[string]interface{}{
+			"executed_at": map[string]string{
+				"lte": strconv.FormatInt(t.UnixMilli(), 10),
+			},
+		},
+	})
+
+	sort := []map[string]any{
+		{"_id": "desc"},
+	}
+
+	res["size"] = 0
+	res["sort"] = sort
+	res["query"] = map[string]any{
+		"bool": map[string]any{
+			"filter": filters,
+		},
+	}
+	res["aggs"] = map[string]any{
+		"job_id_group": map[string]any{
+			"terms": map[string]any{
+				"field": "job_id",
+				"size":  1,
+				"order": map[string]string{
+					"_term": "desc",
+				},
+			},
+			"aggs": map[string]any{
+				"insight_id_group": map[string]any{
+					"terms": map[string]any{
+						"field": "query_id",
+						"size":  size,
+					},
+					"aggs": map[string]any{
+						"insight_values": map[string]any{
+							"sum": map[string]any{
+								"field": "result",
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	b, err := json.Marshal(res)
+	if err != nil {
+		return nil, err
+	}
+
+	query := string(b)
+	var response FetchInsightValueAtTimeResponse
+	err = client.Search(context.Background(), es.InsightsIndex, query, &response)
+	if err != nil {
+		return nil, err
+	}
+
+	result := make(map[string]float64)
+	if len(response.Aggregations.ScheduleJobIDGroup.Buckets) == 0 {
+		return result, nil
+	}
+	for _, bucket := range response.Aggregations.ScheduleJobIDGroup.Buckets[0].ResourceTypeGroup.Buckets {
+		result[bucket.Key] = bucket.ResourceTypeCount.Value
 	}
 	return result, nil
 }
