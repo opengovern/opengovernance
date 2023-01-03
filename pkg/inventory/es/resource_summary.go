@@ -723,7 +723,7 @@ func FetchConnectionResourceTypeTrendSummaryPage(client keibi.Client, sourceID *
 	}
 
 	query := string(b)
-
+	fmt.Println("query=", query, "index=", summarizer.ConnectionSummaryIndex)
 	var response ConnectionResourceTypeTrendSummaryQueryResponse
 	err = client.Search(context.Background(), summarizer.ConnectionSummaryIndex, query, &response)
 	if err != nil {
@@ -795,7 +795,7 @@ func FetchProviderTrendSummaryPage(client keibi.Client, provider source.Type, cr
 	}
 
 	query := string(b)
-
+	fmt.Println("query=", query, "index=", summarizer.ProviderSummaryIndex)
 	var response ProviderTrendSummaryQueryResponse
 	err = client.Search(context.Background(), summarizer.ProviderSummaryIndex, query, &response)
 	if err != nil {
@@ -871,8 +871,7 @@ func FetchProviderResourceTypeTrendSummaryPage(client keibi.Client, provider sou
 	}
 
 	query := string(b)
-	fmt.Println("query=", query)
-
+	fmt.Println("query=", query, "index=", summarizer.ProviderSummaryIndex)
 	var response ProviderResourceTypeTrendSummaryQueryResponse
 	err = client.Search(context.Background(), summarizer.ProviderSummaryIndex, query, &response)
 	if err != nil {
@@ -942,7 +941,7 @@ func FetchProviderResourceTypeSummaryPage(client keibi.Client, provider source.T
 	}
 
 	query := string(b)
-
+	fmt.Println("query=", query, "index=", summarizer.ProviderSummaryIndex)
 	var response ProviderResourceTypeSummaryQueryResponse
 	err = client.Search(context.Background(), summarizer.ProviderSummaryIndex, query, &response)
 	if err != nil {
@@ -1012,7 +1011,7 @@ func FetchConnectionResourceTypeSummaryPage(client keibi.Client, sourceID *strin
 	}
 
 	query := string(b)
-
+	fmt.Println("query=", query, "index=", summarizer.ConnectionSummaryIndex)
 	var response ConnectionResourceTypeSummaryQueryResponse
 	err = client.Search(context.Background(), summarizer.ConnectionSummaryIndex, query, &response)
 	if err != nil {
@@ -1082,6 +1081,7 @@ func FetchConnectionServiceLocationsSummaryPage(client keibi.Client, provider so
 
 	query := string(b)
 
+	fmt.Println("query=", query, "index=", summarizer.ConnectionSummaryIndex)
 	var response ConnectionServiceLocationsSummaryQueryResponse
 	err = client.Search(context.Background(), summarizer.ConnectionSummaryIndex, query, &response)
 	if err != nil {
@@ -1225,6 +1225,7 @@ func FetchResourceTypeCountAtTime(client keibi.Client, provider source.Type, sou
 	}
 
 	query := string(b)
+	fmt.Println("query=", query, "index=", summarizer.ConnectionSummaryIndex)
 	var response FetchResourceTypeCountAtTimeResponse
 	err = client.Search(context.Background(), summarizer.ConnectionSummaryIndex, query, &response)
 	if err != nil {
@@ -1322,6 +1323,7 @@ func FetchInsightValueAtTime(client keibi.Client, t time.Time, insightIds []stri
 	}
 
 	query := string(b)
+	fmt.Println("query=", query, "index=", es.InsightsIndex)
 	var response FetchInsightValueAtTimeResponse
 	err = client.Search(context.Background(), es.InsightsIndex, query, &response)
 	if err != nil {
