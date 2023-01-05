@@ -8,7 +8,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"math"
 	"mime"
 	"net/http"
 	"sort"
@@ -2532,7 +2531,7 @@ func (h *HttpHandler) GetAccountSummary(ctx echo.Context) error {
 		}
 	}
 
-	costs, err := es.FetchDailyCostHistoryByAccountsBetween(h.client, sourceIdPtr, provider.AsPtr(), time.Now(), time.Now().Add(-1*time.Duration(math.MaxInt64)), EsFetchPageSize)
+	costs, err := es.FetchDailyCostHistoryByAccountsBetween(h.client, sourceIdPtr, provider.AsPtr(), time.Now(), time.Now().AddDate(0, 0, -7), EsFetchPageSize)
 	if err != nil {
 		return err
 	}
