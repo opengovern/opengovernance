@@ -2549,7 +2549,8 @@ func (h *HttpHandler) GetAccountSummary(ctx echo.Context) error {
 				lastCostDate, ok := v.LastCost[costUnit]
 				if !ok || lastCostDate.Before(time.Unix(cost.PeriodEnd, 0)) {
 					v.Cost[costUnit] = 0
-					v.LastCost[costUnit] = time.Unix(cost.PeriodEnd, 0)
+					lastCostDate = time.Unix(cost.PeriodEnd, 0)
+					v.LastCost[costUnit] = lastCostDate
 				}
 				if lastCostDate.Equal(time.Unix(cost.PeriodEnd, 0)) {
 					v.Cost[costUnit] += costValue
