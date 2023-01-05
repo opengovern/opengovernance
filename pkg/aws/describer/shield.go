@@ -16,7 +16,10 @@ func ShieldProtectionGroup(ctx context.Context, cfg aws.Config) ([]Resource, err
 	for paginator.HasMorePages() {
 		page, err := paginator.NextPage(ctx)
 		if err != nil {
-			return nil, err
+			if !isErr(err, "ResourceNotFoundException") {
+				return nil, err
+			}
+			continue
 		}
 
 		for _, v := range page.ProtectionGroups {
