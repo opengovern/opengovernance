@@ -16,7 +16,10 @@ func DRSSourceServer(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	for paginator.HasMorePages() {
 		page, err := paginator.NextPage(ctx)
 		if err != nil {
-			return nil, err
+			if !isErr(err, "UninitializedAccountException") {
+				return nil, err
+			}
+			continue
 		}
 
 		for _, v := range page.Items {
@@ -41,7 +44,10 @@ func DRSRecoveryInstance(ctx context.Context, cfg aws.Config) ([]Resource, error
 	for paginator.HasMorePages() {
 		page, err := paginator.NextPage(ctx)
 		if err != nil {
-			return nil, err
+			if !isErr(err, "UninitializedAccountException") {
+				return nil, err
+			}
+			continue
 		}
 
 		for _, v := range page.Items {

@@ -54,7 +54,9 @@ func DirectConnectGateway(ctx context.Context, cfg aws.Config) ([]Resource, erro
 		if err != nil {
 			return nil, err
 		}
-
+		if len(connections.DirectConnectGateways) == 0 {
+			return nil, nil
+		}
 		arns := make([]string, 0, len(connections.DirectConnectGateways))
 		for _, v := range connections.DirectConnectGateways {
 			arns = append(arns, getDirectConnectGatewayArn(describeCtx, *v.DirectConnectGatewayId))
