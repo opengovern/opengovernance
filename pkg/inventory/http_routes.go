@@ -244,12 +244,12 @@ func (h *HttpHandler) GetResourceGrowthTrendV2(ctx echo.Context) error {
 	category := ctx.QueryParam("category")
 	var root *CategoryNode
 	if category == "" {
-		root, err = h.graphDb.GetPrimaryCategoryRootByName(ctx.Request().Context(), RootTypeTemplateRoot, DefaultTemplateRootName, importanceArray)
+		root, err = h.graphDb.GetCategoryRootByName(ctx.Request().Context(), RootTypeTemplateRoot, DefaultTemplateRootName, importanceArray)
 		if err != nil {
 			return err
 		}
 	} else {
-		root, err = h.graphDb.GetPrimaryCategory(ctx.Request().Context(), category, importanceArray)
+		root, err = h.graphDb.GetCategory(ctx.Request().Context(), category, importanceArray)
 		if err != nil {
 			return err
 		}
@@ -442,12 +442,12 @@ func (h *HttpHandler) GetCostGrowthTrendV2(ctx echo.Context) error {
 	category := ctx.QueryParam("category")
 	var root *CategoryNode
 	if category == "" {
-		root, err = h.graphDb.GetPrimaryCategoryRootByName(ctx.Request().Context(), RootTypeTemplateRoot, DefaultTemplateRootName, []string{"all"})
+		root, err = h.graphDb.GetCategoryRootByName(ctx.Request().Context(), RootTypeTemplateRoot, DefaultTemplateRootName, []string{"all"})
 		if err != nil {
 			return err
 		}
 	} else {
-		root, err = h.graphDb.GetPrimaryCategory(ctx.Request().Context(), category, []string{"all"})
+		root, err = h.graphDb.GetCategory(ctx.Request().Context(), category, []string{"all"})
 		if err != nil {
 			return err
 		}
@@ -1010,22 +1010,31 @@ func (h *HttpHandler) GetCategoriesV2(ctx echo.Context) error {
 	return ctx.JSON(http.StatusOK, res)
 }
 
-func (h *HttpHandler) GetCategoryNodeResourceCountHelper(ctx context.Context, depth int, category string, sourceID string, provider source.Type, t int64, importanceArray []string, nodeCacheMap map[string]api.CategoryNode) (*api.CategoryNode, error) {
+func (h *HttpHandler) GetCategoryNodeResourceCountHelper(ctx context.Context, depth int, category string, sourceID string, provider source.Type, t int64, importanceArray []string, nodeCacheMap map[string]api.CategoryNode, usePrimary bool) (*api.CategoryNode, error) {
 	var (
 		rootNode *CategoryNode
 		err      error
 	)
 	if category == "" {
-		rootNode, err = h.graphDb.GetCategoryRootByName(ctx, RootTypeTemplateRoot, DefaultTemplateRootName, importanceArray)
+		if usePrimary {
+			rootNode, err = h.graphDb.GetPrimaryCategoryRootByName(ctx, RootTypeTemplateRoot, DefaultTemplateRootName, importanceArray)
+		} else {
+			rootNode, err = h.graphDb.GetCategoryRootByName(ctx, RootTypeTemplateRoot, DefaultTemplateRootName, importanceArray)
+		}
 		if err != nil {
 			return nil, err
 		}
 	} else {
-		rootNode, err = h.graphDb.GetCategory(ctx, category, importanceArray)
+		if usePrimary {
+			rootNode, err = h.graphDb.GetPrimaryCategory(ctx, category, importanceArray)
+		} else {
+			rootNode, err = h.graphDb.GetCategory(ctx, category, importanceArray)
+		}
 		if err != nil {
 			return nil, err
 		}
 	}
+
 	sourceIDPtr := &sourceID
 	if sourceID == "" {
 		sourceIDPtr = nil
@@ -1190,13 +1199,13 @@ func (h *HttpHandler) GetCategoryNodeResourceCount(ctx echo.Context) error {
 		timeVal = time.Now().Unix()
 	}
 
-	result, err := h.GetCategoryNodeResourceCountHelper(ctx.Request().Context(), depth, category, sourceID, provider, timeVal, importanceArray, make(map[string]api.CategoryNode))
+	result, err := h.GetCategoryNodeResourceCountHelper(ctx.Request().Context(), depth, category, sourceID, provider, timeVal, importanceArray, make(map[string]api.CategoryNode), false)
 	if err != nil {
 		return err
 	}
 	if timeWindowStr != "" {
 		nodeCacheMap := make(map[string]api.CategoryNode)
-		_, err = h.GetCategoryNodeResourceCountHelper(ctx.Request().Context(), depth, category, sourceID, provider, time.Unix(timeVal, 0).Add(-1*timeWindow).Unix(), importanceArray, nodeCacheMap)
+		_, err = h.GetCategoryNodeResourceCountHelper(ctx.Request().Context(), depth, category, sourceID, provider, time.Unix(timeVal, 0).Add(-1*timeWindow).Unix(), importanceArray, nodeCacheMap, false)
 		if err != nil {
 			return err
 		}
@@ -1305,7 +1314,7 @@ func (h *HttpHandler) GetCategoryNodeResourceCountComposition(ctx echo.Context) 
 		}
 	}
 
-	result, err := h.GetCategoryNodeResourceCountHelper(ctx.Request().Context(), 2, category, sourceID, provider, timeVal, importanceArray, make(map[string]api.CategoryNode))
+	result, err := h.GetCategoryNodeResourceCountHelper(ctx.Request().Context(), 2, category, sourceID, provider, timeVal, importanceArray, make(map[string]api.CategoryNode), true)
 	if err != nil {
 		return err
 	}
@@ -1410,18 +1419,26 @@ func (h *HttpHandler) GetMetricsResourceCountComposition(ctx echo.Context) error
 	return ctx.JSON(http.StatusOK, resultAsArr)
 }
 
-func (h *HttpHandler) GetCategoryNodeCostHelper(ctx context.Context, depth int, category string, sourceID *string, providerPtr *source.Type, startTime, endTime int64, nodeCacheMap map[string]api.CategoryNode) (*api.CategoryNode, error) {
+func (h *HttpHandler) GetCategoryNodeCostHelper(ctx context.Context, depth int, category string, sourceID *string, providerPtr *source.Type, startTime, endTime int64, nodeCacheMap map[string]api.CategoryNode, usePrimary bool) (*api.CategoryNode, error) {
 	var (
 		rootNode *CategoryNode
 		err      error
 	)
 	if category == "" {
-		rootNode, err = h.graphDb.GetCategoryRootByName(ctx, RootTypeTemplateRoot, DefaultTemplateRootName, []string{"all"})
+		if usePrimary {
+			rootNode, err = h.graphDb.GetPrimaryCategoryRootByName(ctx, RootTypeTemplateRoot, DefaultTemplateRootName, []string{"all"})
+		} else {
+			rootNode, err = h.graphDb.GetCategoryRootByName(ctx, RootTypeTemplateRoot, DefaultTemplateRootName, []string{"all"})
+		}
 		if err != nil {
 			return nil, err
 		}
 	} else {
-		rootNode, err = h.graphDb.GetCategory(ctx, category, []string{"all"})
+		if usePrimary {
+			rootNode, err = h.graphDb.GetPrimaryCategory(ctx, category, []string{"all"})
+		} else {
+			rootNode, err = h.graphDb.GetCategory(ctx, category, []string{"all"})
+		}
 		if err != nil {
 			return nil, err
 		}
@@ -1576,13 +1593,13 @@ func (h *HttpHandler) GetCategoryNodeCost(ctx echo.Context) error {
 
 	category := ctx.QueryParam("category")
 
-	result, err := h.GetCategoryNodeCostHelper(ctx.Request().Context(), depth, category, sourceIDPtr, providerPtr, startTime, endTime, make(map[string]api.CategoryNode))
+	result, err := h.GetCategoryNodeCostHelper(ctx.Request().Context(), depth, category, sourceIDPtr, providerPtr, startTime, endTime, make(map[string]api.CategoryNode), false)
 	if err != nil {
 		return err
 	}
 	if timeWindowStr != "" {
 		nodeCacheMap := make(map[string]api.CategoryNode)
-		_, err = h.GetCategoryNodeCostHelper(ctx.Request().Context(), depth, category, sourceIDPtr, providerPtr, time.Unix(startTime, 0).Add(-1*timeWindow).Unix(), startTime, nodeCacheMap)
+		_, err = h.GetCategoryNodeCostHelper(ctx.Request().Context(), depth, category, sourceIDPtr, providerPtr, time.Unix(startTime, 0).Add(-1*timeWindow).Unix(), startTime, nodeCacheMap, false)
 		if err != nil {
 			return err
 		}
@@ -1723,7 +1740,7 @@ func (h *HttpHandler) GetCategoryNodeCostComposition(ctx echo.Context) error {
 
 	category := ctx.QueryParam("category")
 
-	result, err := h.GetCategoryNodeCostHelper(ctx.Request().Context(), 2, category, sourceIDPtr, providerPtr, startTime, endTime, make(map[string]api.CategoryNode))
+	result, err := h.GetCategoryNodeCostHelper(ctx.Request().Context(), 2, category, sourceIDPtr, providerPtr, startTime, endTime, make(map[string]api.CategoryNode), true)
 	if err != nil {
 		return err
 	}
