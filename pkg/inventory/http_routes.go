@@ -1047,14 +1047,7 @@ func (h *HttpHandler) GetCategoryNodeResourceCountHelper(ctx context.Context, de
 		return nil, err
 	}
 
-	result, err := RenderCategoryResourceCountDFS(ctx,
-		h.graphDb,
-		rootNode,
-		metricIndexed,
-		depth,
-		importanceArray,
-		nodeCacheMap,
-		map[string]api.Filter{})
+	result, err := RenderCategoryResourceCountDFS(ctx, h.graphDb, rootNode, metricIndexed, depth, importanceArray, nodeCacheMap, map[string]api.Filter{}, usePrimary)
 	if err != nil {
 		return nil, err
 	}
@@ -1460,13 +1453,7 @@ func (h *HttpHandler) GetCategoryNodeCostHelper(ctx context.Context, depth int, 
 		return nil, err
 	}
 
-	result, err := RenderCategoryCostDFS(ctx,
-		h.graphDb,
-		rootNode,
-		depth,
-		aggregatedCostHits,
-		nodeCacheMap,
-		map[string]api.Filter{})
+	result, err := RenderCategoryCostDFS(ctx, h.graphDb, rootNode, depth, aggregatedCostHits, nodeCacheMap, map[string]api.Filter{}, usePrimary)
 	if err != nil {
 		return nil, err
 	}
