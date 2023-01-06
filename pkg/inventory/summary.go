@@ -493,7 +493,7 @@ func RenderCategoryCostDFS(ctx context.Context,
 				return nil, err
 			}
 
-			subResult, err := RenderCategoryCostDFS(ctx, graphDb, subCategoryNode, depth, costs, nodeCacheMap, filterCacheMap)
+			subResult, err := RenderCategoryCostDFS(ctx, graphDb, subCategoryNode, depth-1, costs, nodeCacheMap, filterCacheMap)
 			if err != nil {
 				return nil, err
 			}
