@@ -164,7 +164,7 @@ RETURN DISTINCT c, f, MAX(isDirectChild) AS isDirectChild
 MATCH (c:Category%s) WHERE %s CALL {
   WITH c MATCH (c)-[rel:INCLUDES*]->(child:Category)-[:USES]->(f:Filter)
   UNWIND rel as relation
-  	WITH c,child,f,relation MATCH () WHERE ((f.importance IS NULL OR 'all' IN $importance OR f.importance IN $importance) AND (NOT 'CloudServiceCategory' IN LABELS(child) OR relation.isPrimary IS NULL OR relation.isPrimary = true))
+  	WITH c,child,f,relation MATCH () WHERE ((f.importance IS NULL OR 'all' IN $importance OR f.importance IN $importance) AND (NOT 'CloudServiceCategory' IN LABELS(child) OR (NOT relation.isPrimary IS NULL AND relation.isPrimary = true)))
   	RETURN DISTINCT f, false as isDirectChild
   UNION 
   WITH c MATCH (c)-[:USES]->(f:Filter)
