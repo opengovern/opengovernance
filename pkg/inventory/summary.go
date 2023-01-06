@@ -362,15 +362,10 @@ func GetCategoryNodeCostInfo(categoryNode *CategoryNode, costs map[string]map[st
 			if v, ok := filterCacheMap[filter.ElementID]; ok {
 				filterCost := v.(*api.FilterCost)
 				for key, costValue := range filterCost.Cost {
-					if currentCostValue, ok := apiCosts[key]; ok {
-						currentCostValue.Cost += costValue.Cost
-						apiCosts[key] = currentCostValue
-					} else {
-						apiCosts[key] = api.CostWithUnit{
-							Cost: costValue.Cost,
-							Unit: costValue.Unit,
-						}
-					}
+					currentCostValue, _ := apiCosts[key]
+					currentCostValue.Cost += costValue.Cost
+					currentCostValue.Unit = key
+					apiCosts[key] = currentCostValue
 				}
 				if _, ok := directFilters[filter.ElementID].(api.FilterCost); ok {
 					directFilters[filter.ElementID] = *v.(*api.FilterCost)
@@ -385,24 +380,15 @@ func GetCategoryNodeCostInfo(categoryNode *CategoryNode, costs map[string]map[st
 				}
 				if m, ok := costs[filter.ServiceName]; ok {
 					for costUnit, costValue := range m {
-						if currentCostValue, ok := apiCosts[costUnit]; ok {
-							currentCostValue.Cost += costValue.Cost
-							apiCosts[costUnit] = currentCostValue
-						} else {
-							apiCosts[costUnit] = costValue
-						}
-					}
-				}
+						currentCostValue, _ := apiCosts[costUnit]
+						currentCostValue.Cost += costValue.Cost
+						currentCostValue.Unit = costUnit
+						apiCosts[costUnit] = currentCostValue
 
-				for unit, costValue := range apiCosts {
-					if v, ok := filterWithCost.Cost[unit]; ok {
-						v.Cost += costValue.Cost
-						filterWithCost.Cost[unit] = v
-					} else {
-						filterWithCost.Cost[unit] = api.CostWithUnit{
-							Cost: costValue.Cost,
-							Unit: unit,
-						}
+						v2, _ := filterWithCost.Cost[costUnit]
+						v2.Cost += costValue.Cost
+						v2.Unit = costUnit
+						filterWithCost.Cost[costUnit] = v2
 					}
 				}
 
