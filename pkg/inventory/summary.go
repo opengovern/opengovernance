@@ -435,14 +435,7 @@ func GetCategoryNodeCostInfo(categoryNode *CategoryNode, costs map[string]map[st
 	return result
 }
 
-func RenderCategoryResourceCountDFS(ctx context.Context,
-	graphDb GraphDatabase,
-	rootNode *CategoryNode,
-	metrics map[string]int,
-	depth int,
-	importanceArray []string,
-	nodeCacheMap map[string]api.CategoryNode,
-	filterCacheMap map[string]api.Filter) (*api.CategoryNode, error) {
+func RenderCategoryResourceCountDFS(ctx context.Context, graphDb GraphDatabase, rootNode *CategoryNode, metrics map[string]int, depth int, importanceArray []string, nodeCacheMap map[string]api.CategoryNode, filterCacheMap map[string]api.Filter, usePrimary bool) (*api.CategoryNode, error) {
 	if depth <= 0 {
 		return nil, nil
 	}
@@ -457,7 +450,7 @@ func RenderCategoryResourceCountDFS(ctx context.Context,
 				return nil, err
 			}
 
-			subResult, err := RenderCategoryResourceCountDFS(ctx, graphDb, subCategoryNode, metrics, depth-1, importanceArray, nodeCacheMap, filterCacheMap)
+			subResult, err := RenderCategoryResourceCountDFS(ctx, graphDb, subCategoryNode, metrics, depth-1, importanceArray, nodeCacheMap, filterCacheMap, usePrimary)
 			if err != nil {
 				return nil, err
 			}
@@ -471,13 +464,7 @@ func RenderCategoryResourceCountDFS(ctx context.Context,
 	return &result, nil
 }
 
-func RenderCategoryCostDFS(ctx context.Context,
-	graphDb GraphDatabase,
-	rootNode *CategoryNode,
-	depth int,
-	costs map[string]map[string]api.CostWithUnit,
-	nodeCacheMap map[string]api.CategoryNode,
-	filterCacheMap map[string]api.Filter) (*api.CategoryNode, error) {
+func RenderCategoryCostDFS(ctx context.Context, graphDb GraphDatabase, rootNode *CategoryNode, depth int, costs map[string]map[string]api.CostWithUnit, nodeCacheMap map[string]api.CategoryNode, filterCacheMap map[string]api.Filter, usePrimary bool) (*api.CategoryNode, error) {
 
 	if depth <= 0 {
 		return nil, nil
@@ -493,7 +480,7 @@ func RenderCategoryCostDFS(ctx context.Context,
 				return nil, err
 			}
 
-			subResult, err := RenderCategoryCostDFS(ctx, graphDb, subCategoryNode, depth-1, costs, nodeCacheMap, filterCacheMap)
+			subResult, err := RenderCategoryCostDFS(ctx, graphDb, subCategoryNode, depth-1, costs, nodeCacheMap, filterCacheMap, usePrimary)
 			if err != nil {
 				return nil, err
 			}
