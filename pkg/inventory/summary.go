@@ -445,7 +445,13 @@ func RenderCategoryResourceCountDFS(ctx context.Context, graphDb GraphDatabase, 
 		if v, ok := nodeCacheMap[c.CategoryID]; ok {
 			result.Subcategories[i] = v
 		} else {
-			subCategoryNode, err := graphDb.GetCategory(ctx, c.CategoryID, importanceArray)
+			var subCategoryNode *CategoryNode
+			var err error
+			if usePrimary {
+				subCategoryNode, err = graphDb.GetPrimaryCategory(ctx, c.CategoryID, importanceArray)
+			} else {
+				subCategoryNode, err = graphDb.GetCategory(ctx, c.CategoryID, importanceArray)
+			}
 			if err != nil {
 				return nil, err
 			}
@@ -475,7 +481,13 @@ func RenderCategoryCostDFS(ctx context.Context, graphDb GraphDatabase, rootNode 
 		if v, ok := nodeCacheMap[c.CategoryID]; ok {
 			result.Subcategories[i] = v
 		} else {
-			subCategoryNode, err := graphDb.GetCategory(ctx, c.CategoryID, []string{"all"})
+			var subCategoryNode *CategoryNode
+			var err error
+			if usePrimary {
+				subCategoryNode, err = graphDb.GetPrimaryCategory(ctx, c.CategoryID, []string{"all"})
+			} else {
+				subCategoryNode, err = graphDb.GetCategory(ctx, c.CategoryID, []string{"all"})
+			}
 			if err != nil {
 				return nil, err
 			}
