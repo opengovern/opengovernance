@@ -345,7 +345,7 @@ func GetCategoryNodeCostInfo(categoryNode *CategoryNode, costs map[string]map[st
 				directFilters[filter.ElementID] = api.FilterCost{
 					FilterType:    api.FilterTypeCost,
 					FilterID:      filter.ElementID,
-					ServiceName:   filter.ServiceName,
+					ServiceName:   filter.Name,
 					CloudProvider: filter.CloudProvider,
 					Cost:          map[string]api.CostWithUnit{},
 				}
@@ -379,7 +379,7 @@ func GetCategoryNodeCostInfo(categoryNode *CategoryNode, costs map[string]map[st
 				filterWithCost := api.FilterCost{
 					FilterType:    api.FilterTypeCost,
 					FilterID:      filter.ElementID,
-					ServiceName:   filter.ServiceName,
+					ServiceName:   filter.Name,
 					CloudProvider: filter.CloudProvider,
 					Cost:          map[string]api.CostWithUnit{},
 				}

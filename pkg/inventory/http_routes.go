@@ -1500,7 +1500,7 @@ func (h *HttpHandler) GetMetricsCostHelper(ctx context.Context, category string,
 				result[costFilter.ServiceName] = &api.FilterCost{
 					FilterType:    api.FilterTypeCost,
 					FilterID:      costFilter.ElementID,
-					ServiceName:   costFilter.ServiceName,
+					ServiceName:   costFilter.Name,
 					CloudProvider: costFilter.CloudProvider,
 					Cost:          cost,
 				}
