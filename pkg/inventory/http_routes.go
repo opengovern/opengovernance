@@ -1114,6 +1114,7 @@ func (h *HttpHandler) GetMetricsResourceCountHelper(ctx context.Context, categor
 				CloudProvider: f.CloudProvider,
 				ResourceType:  f.ResourceType,
 				ResourceName:  f.ResourceName,
+				PluralName:    f.PluralName,
 				ResourceCount: metricIndexed[f.ResourceType],
 			}
 		case FilterTypeInsight:
@@ -1129,6 +1130,7 @@ func (h *HttpHandler) GetMetricsResourceCountHelper(ctx context.Context, categor
 				FilterID:      f.ElementID,
 				CloudProvider: f.CloudProvider,
 				Name:          f.Name,
+				PluralName:    f.PluralName,
 				Value:         insightIndexed[f.InsightID],
 			}
 		}
@@ -1393,7 +1395,8 @@ func (h *HttpHandler) GetMetricsResourceCountComposition(ctx echo.Context) error
 			FilterID:      "-others-",
 			CloudProvider: provider,
 			ResourceType:  "Others",
-			ResourceName:  "Others",
+			ResourceName:  "Other",
+			PluralName:    "Others",
 			ResourceCount: 0,
 		}
 		for i := top; i < len(resultAsArr); i++ {
