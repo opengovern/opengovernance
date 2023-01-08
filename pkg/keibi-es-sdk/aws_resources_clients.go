@@ -5083,7 +5083,7 @@ type EC2VolumeSnapshotPaginator struct {
 }
 
 func (k Client) NewEC2VolumeSnapshotPaginator(filters []BoolFilter, limit *int64) (EC2VolumeSnapshotPaginator, error) {
-	paginator, err := newPaginator(k.es, "aws_ec2_snapshot", filters, limit)
+	paginator, err := newPaginator(k.es, "aws_ec2_volumesnapshot", filters, limit)
 	if err != nil {
 		return EC2VolumeSnapshotPaginator{}, err
 	}
