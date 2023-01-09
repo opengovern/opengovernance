@@ -400,7 +400,7 @@ type DynamoDbGlobalTableDescription struct {
 
 //  ===================   EC2   ===================
 
-//index:aws_ec2_snapshot
+//index:aws_ec2_volumesnapshot
 //getfilter:snapshot_id=description.Snapshot.SnapshotId
 //listfilter:description=description.Snapshot.Description
 //listfilter:encrypted=description.Snapshot.Encrypted
