@@ -12,7 +12,7 @@ func TestDiscoverAwsAccounts(t *testing.T) {
 	accounts, err := discoverAwsAccounts(context.Background(), api.DiscoverAWSAccountsRequest{
 		AccessKey: "",
 		SecretKey: "",
-	}, "test") //TODO-Saleh mock aws permission check url
+	})
 
 	require.NoError(t, err)
 	require.NotEmpty(t, accounts)
