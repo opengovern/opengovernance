@@ -44,7 +44,7 @@ type Source struct {
 	Enabled     bool
 
 	AssetDiscoveryMethod    AssetDiscoveryMethodType `gorm:"not null;default:'scheduled'"`
-	AssetDiscoveryFrequency int64                    `gorm:"not null;default:'21600'"` // in seconds
+	AssetDiscoveryFrequency int64                    `gorm:"not null;default:21600"` // in seconds
 
 	HealthState SourceHealthState `gorm:"not null;default:'unhealthy'"`
 
