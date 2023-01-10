@@ -16,6 +16,7 @@ type Database struct {
 
 func (db Database) Initialize() error {
 	err := db.orm.AutoMigrate(
+		&Connector{},
 		&Source{},
 		&SPN{},
 	)

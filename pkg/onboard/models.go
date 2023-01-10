@@ -2,78 +2,99 @@ package onboard
 
 import (
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
 
-	"gitlab.com/keibiengine/keibi-engine/pkg/source"
-
 	"github.com/google/uuid"
-
 	"gitlab.com/keibiengine/keibi-engine/pkg/onboard/api"
+	"gitlab.com/keibiengine/keibi-engine/pkg/source"
+	"gorm.io/datatypes"
 )
 
-func InitializeDb(db *Database) (err error) {
-	err = db.orm.AutoMigrate(
-		&Source{},
-		&AWSMetadata{},
-	)
-	return
-}
+type AssetDiscoveryMethodType string
 
-type AWSMetadata struct {
-	ID             uuid.UUID `gorm:"primaryKey;type:uuid;default:uuid_generate_v4()"`
-	SourceID       string
-	AccountID      string
-	OrganizationID *string // null of not part of an aws organization
-	Email          string
-	Name           string
-	SupportTier    string
+const (
+	AssetDiscoveryMethodTypeScheduled AssetDiscoveryMethodType = "scheduled"
+)
 
-	CreatedAt time.Time
-	UpdatedAt time.Time
-	DeletedAt sql.NullTime `gorm:"index"`
-}
+type SourceHealthState string
 
-func (a AWSMetadata) toAWSMetadataResponse() *api.AWSMetadataResponse {
-	return &api.AWSMetadataResponse{
-		ID:             a.ID.String(),
-		SourceID:       a.SourceID,
-		AccountID:      a.AccountID,
-		OrganizationID: a.OrganizationID,
-		Email:          a.Email,
-		Name:           a.Name,
-		SupportTier:    a.SupportTier,
-	}
-}
+const (
+	SourceHealthStateHealthy          SourceHealthState = "healthy"
+	SourceHealthStateUnhealthy        SourceHealthState = "unhealthy"
+	SourceHealthStateInitialDiscovery SourceHealthState = "initial_discovery"
+)
+
+type SourceCreationMethod string
+
+const (
+	SourceCreationMethodManual SourceCreationMethod = "manual"
+)
 
 type Source struct {
-	ID          uuid.UUID `gorm:"primaryKey;type:uuid;default:uuid_generate_v4()"`
-	SourceId    string    `gorm:"index:idx_source_id,unique"`
+	ID          uuid.UUID `gorm:"primaryKey;type:uuid;default:uuid_generate_v4()"` // Auto-generated UUID
+	SourceId    string    `gorm:"index:idx_source_id,unique"`                      // AWS Account ID, Azure Subscription ID, ...
 	Name        string    `gorm:"not null"`
 	Email       string
 	Type        source.Type `gorm:"not null"`
 	Description string
 	ConfigRef   string
 	Enabled     bool
-	CreatedAt   time.Time
-	UpdatedAt   time.Time
-	DeletedAt   sql.NullTime `gorm:"index"`
+
+	AssetDiscoveryMethod    AssetDiscoveryMethodType `gorm:"not null;default:'scheduled'"`
+	AssetDiscoveryFrequency int64                    `gorm:"not null;default:'21600'"` // in seconds
+
+	HealthState SourceHealthState `gorm:"not null;default:'unhealthy'"`
+
+	//Connector Connector `gorm:"foreignKey:Type;references:Code"`
+
+	CreationMethod SourceCreationMethod `gorm:"not null;default:'manual'"`
+
+	Metadata datatypes.JSON
+
+	CreatedAt time.Time
+	UpdatedAt time.Time
+	DeletedAt sql.NullTime `gorm:"index"`
 }
 
-func NewAWSSource(in api.SourceAwsRequest) Source {
+func NewAWSSource(accountID, accountName, accountDescription, accountEmail, accountOrganization string) Source {
 	id := uuid.New()
 	provider := source.CloudAWS
 
+	metadata := map[string]interface{}{
+		"account_id": accountID,
+	}
+	if accountID != accountName {
+		metadata["account_name"] = accountName
+	}
+	if accountOrganization != "" {
+		metadata["account_organization"] = accountOrganization
+		metadata["is_organization_member"] = true
+	}
+	if accountDescription != "" {
+		metadata["account_description"] = accountDescription
+	}
+	if accountEmail != "" {
+		metadata["account_email"] = accountEmail
+	}
+
+	marshalMetadata, err := json.Marshal(metadata)
+	if err != nil {
+		marshalMetadata = []byte("{}")
+	}
+
 	s := Source{
 		ID:          id,
-		SourceId:    in.Config.AccountId,
-		Name:        in.Name,
-		Email:       in.Email,
-		Description: in.Description,
+		SourceId:    accountID,
+		Name:        accountName,
+		Email:       accountEmail,
+		Description: accountDescription,
 		Type:        provider,
 		ConfigRef:   fmt.Sprintf("sources/%s/%s", strings.ToLower(string(provider)), id),
 		Enabled:     true,
+		Metadata:    datatypes.JSON(marshalMetadata),
 	}
 
 	if len(strings.TrimSpace(s.Name)) == 0 {
@@ -159,4 +180,25 @@ func NewSPN(in api.CreateSPNRequest) SPN {
 		TenantId:  in.Config.TenantId,
 		ConfigRef: fmt.Sprintf("sources/%s/spn/%s", strings.ToLower(string(provider)), id),
 	}
+}
+
+type ConnectorDirectionType string
+
+const (
+	ConnectorDirectionTypeIngress ConnectorDirectionType = "ingress"
+	ConnectorDirectionTypeEgress  ConnectorDirectionType = "egress"
+	ConnectorDirectionTypeBoth    ConnectorDirectionType = "both"
+)
+
+type Connector struct {
+	Code             source.Type `gorm:"primaryKey"`
+	Name             string
+	Description      string
+	Direction        ConnectorDirectionType `gorm:"default:'ingress'"`
+	Enabled          bool
+	StartSupportDate time.Time
+
+	CreatedAt time.Time
+	UpdatedAt time.Time
+	DeletedAt sql.NullTime `gorm:"index"`
 }

@@ -269,16 +269,18 @@ func (h HttpHandler) PostSourceAws(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
 	}
 
+	// Check creds section
 	err := keibiaws.CheckDescribeRegionsPermission(req.Config.AccessKey, req.Config.SecretKey)
 	if err != nil {
 		return PermissionError
 	}
 
-	err = keibiaws.CheckEnoughPermission(h.awsPermissionCheckURL, req.Config.AccessKey, req.Config.SecretKey)
+	err = keibiaws.CheckSecurityAuditPermission(req.Config.AccessKey, req.Config.SecretKey)
 	if err != nil {
 		return PermissionError
 	}
 
+	// Create source section
 	cfg, err := keibiaws.GetConfig(context.Background(), req.Config.AccessKey, req.Config.SecretKey, "", "")
 	if err != nil {
 		return err
@@ -308,7 +310,7 @@ func (h HttpHandler) PostSourceAws(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "maximum number of connections reached")
 	}
 
-	src := NewAWSSource(req)
+	src := NewAWSSource(req.Config.AccountId, req.Name, req.Description, req.Email, acc.OrganizationID)
 	err = h.db.orm.Transaction(func(tx *gorm.DB) error {
 		err := h.db.CreateSource(&src)
 		if err != nil {
@@ -1057,7 +1059,7 @@ func (h HttpHandler) DiscoverAwsAccounts(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
 	}
 
-	accounts, err := discoverAwsAccounts(ctx.Request().Context(), req, h.awsPermissionCheckURL)
+	accounts, err := discoverAwsAccounts(ctx.Request().Context(), req)
 	if err != nil {
 		if err == PermissionError {
 			return ctx.JSON(http.StatusForbidden, "Key doesn't have enough permission")
