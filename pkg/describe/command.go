@@ -65,6 +65,7 @@ var (
 	CurrentWorkspaceID      = os.Getenv("CURRENT_NAMESPACE")
 	WorkspaceBaseURL        = os.Getenv("WORKSPACE_BASE_URL")
 	ComplianceBaseURL       = os.Getenv("COMPLIANCE_BASE_URL")
+	OnboardBaseURL          = os.Getenv("ONBOARD_BASE_URL")
 
 	AccountConcurrentDescribe = os.Getenv("ACCOUNT_CONCURRENT_DESCRIBE")
 )

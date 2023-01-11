@@ -22,6 +22,7 @@ type OnboardServiceClient interface {
 	GetSources(ctx *httpclient.Context, sourceID []string) ([]api.Source, error)
 	ListSources(ctx *httpclient.Context, t *source.Type) ([]api.Source, error)
 	CountSources(ctx *httpclient.Context, provider source.Type) (int64, error)
+	GetSourceHealthcheck(ctx *httpclient.Context, sourceID string) (*api.Source, error)
 }
 
 type onboardClient struct {
@@ -139,4 +140,27 @@ func (s *onboardClient) CountSources(ctx *httpclient.Context, provider source.Ty
 		return 0, err
 	}
 	return count, nil
+}
+
+func (s *onboardClient) GetSourceHealthcheck(ctx *httpclient.Context, sourceID string) (*api.Source, error) {
+	url := fmt.Sprintf("%s/api/v1/source/%s/healthcheck", s.baseURL, sourceID)
+
+	var source api.Source
+	if s.cache != nil {
+		if err := s.cache.Get(context.Background(), "get-source-healthcheck-"+sourceID, &source); err == nil {
+			return &source, nil
+		}
+	}
+	if err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &source); err != nil {
+		return nil, err
+	}
+	if s.cache != nil {
+		_ = s.cache.Set(&cache.Item{
+			Ctx:   context.Background(),
+			Key:   "get-source-healthcheck-" + sourceID,
+			Value: source,
+			TTL:   5 * time.Minute, // dont increase it! for enabled or disabled!
+		})
+	}
+	return &source, nil
 }

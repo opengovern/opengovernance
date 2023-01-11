@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/compliance/client"
+	"gitlab.com/keibiengine/keibi-engine/pkg/onboard/enums"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/summarizer"
 	summarizerapi "gitlab.com/keibiengine/keibi-engine/pkg/summarizer/api"
@@ -21,6 +22,7 @@ import (
 	api2 "gitlab.com/keibiengine/keibi-engine/pkg/auth/api"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpclient"
 	"gitlab.com/keibiengine/keibi-engine/pkg/keibi-es-sdk"
+	onboardClient "gitlab.com/keibiengine/keibi-engine/pkg/onboard/client"
 	workspaceClient "gitlab.com/keibiengine/keibi-engine/pkg/workspace/client"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/insight"
@@ -149,6 +151,7 @@ type Scheduler struct {
 	logger           *zap.Logger
 	workspaceClient  workspaceClient.WorkspaceServiceClient
 	complianceClient client.ComplianceServiceClient
+	onboardClient    onboardClient.OnboardServiceClient
 	es               keibi.Client
 	rdb              *redis.Client
 }
@@ -444,6 +447,7 @@ func InitializeScheduler(
 
 	s.workspaceClient = workspaceClient.NewWorkspaceClient(WorkspaceBaseURL)
 	s.complianceClient = client.NewComplianceClient(ComplianceBaseURL)
+	s.onboardClient = onboardClient.NewOnboardServiceClient(OnboardBaseURL, nil)
 	defaultAccountID := "default"
 	s.es, err = keibi.NewClient(keibi.ClientConfig{
 		Addresses: []string{ElasticSearchAddress},
@@ -840,6 +844,45 @@ func (s Scheduler) scheduleDescribeJob() {
 		)
 		return
 	}
+
+	sourceIDs := make([]string, 0, len(sources))
+	for _, src := range sources {
+		sourceIDs = append(sourceIDs, src.ID.String())
+	}
+	onboardSources, err := s.onboardClient.GetSources(&httpclient.Context{
+		UserRole: api2.ViewerRole,
+	}, sourceIDs)
+	if err != nil {
+		DescribeSourceJobsCount.WithLabelValues("failure").Inc()
+		s.logger.Error("Failed to get onboard sources",
+			zap.Strings("sourceIDs", sourceIDs),
+			zap.Error(err),
+		)
+		return
+	}
+	filteredSources := make([]Source, 0, len(sources))
+	for _, src := range sources {
+		for _, onboardSrc := range onboardSources {
+			if src.ID.String() == onboardSrc.ID.String() {
+				healthCheckedSrc, err := s.onboardClient.GetSourceHealthcheck(&httpclient.Context{
+					UserRole: api2.EditorRole,
+				}, onboardSrc.ID.String())
+				if err != nil {
+					s.logger.Error("Failed to get source healthcheck",
+						zap.String("sourceID", onboardSrc.ID.String()),
+						zap.Error(err),
+					)
+					continue
+				}
+				if healthCheckedSrc.AssetDiscoveryMethod == enums.AssetDiscoveryMethodTypeScheduled &&
+					healthCheckedSrc.HealthState != enums.SourceHealthStateUnhealthy {
+					filteredSources = append(filteredSources, src)
+				}
+				break
+			}
+		}
+	}
+	sources = filteredSources
 
 	rand.Shuffle(len(sources), func(i, j int) { sources[i], sources[j] = sources[j], sources[i] })
 	for _, source := range sources {

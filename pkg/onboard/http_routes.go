@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"strings"
 
+	"gitlab.com/keibiengine/keibi-engine/pkg/onboard/enums"
 	"gitlab.com/keibiengine/keibi-engine/pkg/source"
 
 	api3 "gitlab.com/keibiengine/keibi-engine/pkg/auth/api"
@@ -31,12 +32,23 @@ const (
 func (h HttpHandler) Register(r *echo.Echo) {
 	v1 := r.Group("/api/v1")
 
+	v1.GET("/sources", httpserver.AuthorizeHandler(h.ListSources, api3.ViewerRole))
+	v1.POST("/sources", httpserver.AuthorizeHandler(h.GetSources, api3.ViewerRole))
+	v1.GET("/sources/count", httpserver.AuthorizeHandler(h.CountSources, api3.ViewerRole))
+
+	v1.GET("/providers", httpserver.AuthorizeHandler(h.GetProviders, api3.ViewerRole))
+	v1.GET("/providers/types", httpserver.AuthorizeHandler(h.GetProviderTypes, api3.ViewerRole))
+
+	v1.GET("/connectors/categories", httpserver.AuthorizeHandler(h.GetConnectorCategories, api3.ViewerRole))
+	v1.GET("/connectors", httpserver.AuthorizeHandler(h.GetConnector, api3.ViewerRole))
+
 	source := v1.Group("/source")
 
 	source.POST("/aws", httpserver.AuthorizeHandler(h.PostSourceAws, api3.EditorRole))
 	source.POST("/azure", httpserver.AuthorizeHandler(h.PostSourceAzure, api3.EditorRole))
 	source.POST("/azure/spn", httpserver.AuthorizeHandler(h.PostSourceAzureSPN, api3.EditorRole))
 	source.GET("/:sourceId", httpserver.AuthorizeHandler(h.GetSource, api3.ViewerRole))
+	source.GET("/:sourceId/healthcheck", httpserver.AuthorizeHandler(h.GetSourceHealth, api3.EditorRole))
 	source.GET("/:sourceId/credentials", httpserver.AuthorizeHandler(h.GetSourceCred, api3.ViewerRole))
 	source.PUT("/:sourceId/credentials", httpserver.AuthorizeHandler(h.PutSourceCred, api3.EditorRole))
 	source.PUT("/:sourceId", httpserver.AuthorizeHandler(h.PutSource, api3.EditorRole))
@@ -44,11 +56,8 @@ func (h HttpHandler) Register(r *echo.Echo) {
 	source.POST("/:sourceId/enable", httpserver.AuthorizeHandler(h.EnableSource, api3.EditorRole))
 	source.DELETE("/:sourceId", httpserver.AuthorizeHandler(h.DeleteSource, api3.EditorRole))
 
-	v1.GET("/sources", httpserver.AuthorizeHandler(h.ListSources, api3.ViewerRole))
-	v1.POST("/sources", httpserver.AuthorizeHandler(h.GetSources, api3.ViewerRole))
-	v1.GET("/sources/count", httpserver.AuthorizeHandler(h.CountSources, api3.ViewerRole))
-
 	spn := v1.Group("/spn")
+
 	spn.POST("/azure", httpserver.AuthorizeHandler(h.PostSPN, api3.EditorRole))
 	spn.DELETE("/:spnId", httpserver.AuthorizeHandler(h.DeleteSPN, api3.EditorRole))
 	spn.GET("/:spnId", httpserver.AuthorizeHandler(h.GetSPNCred, api3.ViewerRole))
@@ -60,12 +69,6 @@ func (h HttpHandler) Register(r *echo.Echo) {
 	disc.POST("/aws/accounts", httpserver.AuthorizeHandler(h.DiscoverAwsAccounts, api3.EditorRole))
 	disc.POST("/azure/subscriptions", httpserver.AuthorizeHandler(h.DiscoverAzureSubscriptions, api3.EditorRole))
 	disc.POST("/azure/subscriptions/spn", httpserver.AuthorizeHandler(h.DiscoverAzureSubscriptionsWithSPN, api3.EditorRole))
-
-	v1.GET("/providers", httpserver.AuthorizeHandler(h.GetProviders, api3.ViewerRole))
-	v1.GET("/providers/types", httpserver.AuthorizeHandler(h.GetProviderTypes, api3.ViewerRole))
-
-	v1.GET("/connectors/categories", httpserver.AuthorizeHandler(h.GetConnectorCategories, api3.ViewerRole))
-	v1.GET("/connectors", httpserver.AuthorizeHandler(h.GetConnector, api3.ViewerRole))
 }
 
 func bindValidate(ctx echo.Context, i interface{}) error {
@@ -338,7 +341,7 @@ func (h HttpHandler) PostSourceAws(ctx echo.Context) error {
 		return err
 	}
 
-	return ctx.JSON(http.StatusOK, src.toSourceResponse())
+	return ctx.JSON(http.StatusOK, src.ToSourceResponse())
 }
 
 // PostSourceAzure godoc
@@ -394,7 +397,7 @@ func (h HttpHandler) PostSourceAzure(ctx echo.Context) error {
 		return err
 	}
 
-	return ctx.JSON(http.StatusOK, src.toSourceResponse())
+	return ctx.JSON(http.StatusOK, src.ToSourceResponse())
 }
 
 // PostSourceAzureSPN godoc
@@ -450,7 +453,7 @@ func (h HttpHandler) PostSourceAzureSPN(ctx echo.Context) error {
 		return err
 	}
 
-	return ctx.JSON(http.StatusOK, src.toSourceResponse())
+	return ctx.JSON(http.StatusOK, src.ToSourceResponse())
 }
 
 // PostSPN godoc
@@ -495,7 +498,7 @@ func (h HttpHandler) PostSPN(ctx echo.Context) error {
 		return err
 	}
 
-	return ctx.JSON(http.StatusOK, src.toSPNResponse())
+	return ctx.JSON(http.StatusOK, src.ToSPNResponse())
 }
 
 // GetSPNCred godoc
@@ -666,6 +669,71 @@ func (h HttpHandler) GetSourceCred(ctx echo.Context) error {
 	}
 }
 
+// GetSourceHealth godoc
+// @Summary Get live source health status
+// @Tags    onboard
+// @Produce json
+// @Param   sourceId query string true "Source ID"
+// @Router  /onboard/api/v1/source/{sourceId}/healthcheck [post]
+func (h HttpHandler) GetSourceHealth(ctx echo.Context) error {
+	sourceUUID, err := uuid.Parse(ctx.Param("sourceId"))
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid source uuid")
+	}
+
+	src, err := h.db.GetSource(sourceUUID)
+	if err != nil {
+		return err
+	}
+
+	cnf, err := h.vault.Read(src.ConfigRef)
+	if err != nil {
+		return err
+	}
+
+	switch src.Type {
+	case source.CloudAWS:
+		awsCnf, err := describe.AWSAccountConfigFromMap(cnf)
+		if err != nil {
+			return err
+		}
+		err = keibiaws.CheckSecurityAuditPermission(awsCnf.AccessKey, awsCnf.SecretKey)
+		if err != nil {
+			if src.HealthState != enums.SourceHealthStateUnhealthy {
+				src.HealthState = enums.SourceHealthStateUnhealthy
+				_, err = h.db.UpdateSource(&src)
+				if err != nil {
+					return err
+				}
+				//TODO Mahan: record state change in elastic search
+			}
+		} else {
+			if src.HealthState != enums.SourceHealthStateHealthy {
+				src.HealthState = enums.SourceHealthStateHealthy
+				_, err = h.db.UpdateSource(&src)
+				if err != nil {
+					return err
+				}
+				//TODO Mahan: record state change in elastic search
+			}
+		}
+	}
+
+	return ctx.JSON(http.StatusOK, &api.Source{
+		ID:                      src.ID,
+		ConnectionID:            src.SourceId,
+		ConnectionName:          src.Name,
+		Email:                   src.Email,
+		Type:                    src.Type,
+		Description:             src.Description,
+		OnboardDate:             src.CreatedAt,
+		Enabled:                 src.Enabled,
+		AssetDiscoveryMethod:    src.AssetDiscoveryMethod,
+		AssetDiscoveryFrequency: src.AssetDiscoveryFrequency,
+		HealthState:             src.HealthState,
+	})
+}
+
 // PutSourceCred godoc
 // @Summary Put source credential
 // @Tags    onboard
@@ -759,14 +827,17 @@ func (h HttpHandler) GetSource(ctx echo.Context) error {
 	}
 
 	return ctx.JSON(http.StatusOK, &api.Source{
-		ID:             src.ID,
-		ConnectionID:   src.SourceId,
-		ConnectionName: src.Name,
-		Email:          src.Email,
-		Type:           src.Type,
-		Description:    src.Description,
-		OnboardDate:    src.CreatedAt,
-		Enabled:        src.Enabled,
+		ID:                      src.ID,
+		ConnectionID:            src.SourceId,
+		ConnectionName:          src.Name,
+		Email:                   src.Email,
+		Type:                    src.Type,
+		Description:             src.Description,
+		OnboardDate:             src.CreatedAt,
+		Enabled:                 src.Enabled,
+		AssetDiscoveryMethod:    src.AssetDiscoveryMethod,
+		AssetDiscoveryFrequency: src.AssetDiscoveryFrequency,
+		HealthState:             src.HealthState,
 	})
 }
 
@@ -942,14 +1013,17 @@ func (h HttpHandler) ListSources(ctx echo.Context) error {
 	resp := api.GetSourcesResponse{}
 	for _, s := range sources {
 		source := api.Source{
-			ID:             s.ID,
-			ConnectionName: s.Name,
-			ConnectionID:   s.SourceId,
-			Email:          s.Email,
-			Type:           s.Type,
-			Description:    s.Description,
-			OnboardDate:    s.CreatedAt,
-			Enabled:        s.Enabled,
+			ID:                      s.ID,
+			ConnectionID:            s.SourceId,
+			ConnectionName:          s.Name,
+			Email:                   s.Email,
+			Type:                    s.Type,
+			Description:             s.Description,
+			OnboardDate:             s.CreatedAt,
+			Enabled:                 s.Enabled,
+			AssetDiscoveryMethod:    s.AssetDiscoveryMethod,
+			AssetDiscoveryFrequency: s.AssetDiscoveryFrequency,
+			HealthState:             s.HealthState,
 		}
 		resp = append(resp, source)
 	}
@@ -991,14 +1065,17 @@ func (h HttpHandler) GetSources(ctx echo.Context) error {
 	var res []api.Source
 	for _, src := range srcs {
 		res = append(res, api.Source{
-			ID:             src.ID,
-			ConnectionID:   src.SourceId,
-			ConnectionName: src.Name,
-			Email:          src.Email,
-			Type:           src.Type,
-			Description:    src.Description,
-			OnboardDate:    src.CreatedAt,
-			Enabled:        src.Enabled,
+			ID:                      src.ID,
+			ConnectionID:            src.SourceId,
+			ConnectionName:          src.Name,
+			Email:                   src.Email,
+			Type:                    src.Type,
+			Description:             src.Description,
+			OnboardDate:             src.CreatedAt,
+			Enabled:                 src.Enabled,
+			AssetDiscoveryMethod:    src.AssetDiscoveryMethod,
+			AssetDiscoveryFrequency: src.AssetDiscoveryFrequency,
+			HealthState:             src.HealthState,
 		})
 	}
 	return ctx.JSON(http.StatusOK, res)
