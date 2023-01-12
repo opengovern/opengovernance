@@ -27,3 +27,11 @@ const (
 	ConnectorDirectionTypeEgress  ConnectorDirectionType = "egress"
 	ConnectorDirectionTypeBoth    ConnectorDirectionType = "both"
 )
+
+type ConnectorStatus string
+
+const (
+	ConnectorStatusEnabled    ConnectorStatus = "enabled"
+	ConnectorStatusDisabled   ConnectorStatus = "disabled"
+	ConnectorStatusComingSoon ConnectorStatus = "coming_soon"
+)

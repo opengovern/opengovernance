@@ -180,7 +180,7 @@ type Connector struct {
 	Name             string
 	Description      string
 	Direction        source.ConnectorDirectionType `gorm:"default:'ingress'"`
-	Enabled          bool
+	Status           source.ConnectorStatus        `gorm:"default:'disabled'"`
 	Category         string
 	StartSupportDate time.Time
 

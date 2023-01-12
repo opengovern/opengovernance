@@ -16,8 +16,6 @@ import (
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpserver"
 
-	"gitlab.com/keibiengine/keibi-engine/pkg/onboard/connector"
-
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
 	"gitlab.com/keibiengine/keibi-engine/pkg/describe"
@@ -39,7 +37,6 @@ func (h HttpHandler) Register(r *echo.Echo) {
 	v1.GET("/providers", httpserver.AuthorizeHandler(h.GetProviders, api3.ViewerRole))
 	v1.GET("/providers/types", httpserver.AuthorizeHandler(h.GetProviderTypes, api3.ViewerRole))
 
-	v1.GET("/connectors/categories", httpserver.AuthorizeHandler(h.GetConnectorCategories, api3.ViewerRole))
 	v1.GET("/connectors", httpserver.AuthorizeHandler(h.GetConnector, api3.ViewerRole))
 
 	source := v1.Group("/source")
@@ -175,53 +172,45 @@ func (h HttpHandler) GetProviders(ctx echo.Context) error {
 	})
 }
 
-// GetConnectorCategories godoc
-// @Summary     Get connector categories
-// @Description Getting connector categories
-// @Tags        onboard
-// @Produce     json
-// @Success     200 {object} []connector.Category
-// @Router      /onboard/api/v1/connectors/categories [get]
-func (h HttpHandler) GetConnectorCategories(ctx echo.Context) error {
-	return ctx.JSON(http.StatusOK, connector.CategoryList)
-}
-
 // GetConnector godoc
 // @Summary     Get connectors
 // @Description Getting connectors
 // @Tags        onboard
 // @Produce     json
-// @Success     200      {object} []connector.ConnectorCount
+// @Success     200      {object} []api.ConnectorCount
 // @Param       category query    string false "category"
 // @Router      /onboard/api/v1/connectors [get]
 func (h HttpHandler) GetConnector(ctx echo.Context) error {
-	categoryID := ctx.QueryParam("categoryID")
+	category := ctx.QueryParam("category")
 
-	var res []connector.ConnectorCount
-	for _, c := range connector.Connectors {
-		ok := false
-		if len(categoryID) > 0 {
-			for _, m := range connector.CategoryConnectorMapping {
-				if m.CategoryID == categoryID && m.ConnectorID == c.ID {
-					ok = true
-				}
-			}
-		} else {
-			ok = true
+	connectors, err := h.db.ListConnectors()
+	if err != nil {
+		return err
+	}
+
+	var res []api.ConnectorCount
+	for _, c := range connectors {
+		if len(category) != 0 && c.Category != category {
+			continue
+		}
+		count, err := h.db.CountSourcesOfType(c.Code)
+		if err != nil {
+			return err
 		}
 
-		if ok {
-			typ, _ := source.ParseType(c.SourceType)
-			count, err := h.db.CountSourcesOfType(typ)
-			if err != nil {
-				return err
-			}
+		res = append(res, api.ConnectorCount{
+			Connector: api.Connector{
+				Code:             c.Code,
+				Name:             c.Name,
+				Description:      c.Description,
+				Direction:        c.Direction,
+				Status:           c.Status,
+				Category:         c.Category,
+				StartSupportDate: c.StartSupportDate,
+			},
+			ConnectionCount: count,
+		})
 
-			res = append(res, connector.ConnectorCount{
-				Connector:       c,
-				ConnectionCount: count,
-			})
-		}
 	}
 	return ctx.JSON(http.StatusOK, res)
 }
