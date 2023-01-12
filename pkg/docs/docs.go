@@ -1724,6 +1724,18 @@ const docTemplate = `{
                         "in": "query"
                     },
                     {
+                        "type": "integer",
+                        "description": "start time in unix seconds",
+                        "name": "startTime",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "end time in unix seconds",
+                        "name": "endTime",
+                        "in": "query"
+                    },
+                    {
                         "enum": [
                             "sourceid",
                             "resourcecount",
@@ -2664,30 +2676,7 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/connector.ConnectorCount"
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/onboard/api/v1/connectors/categories": {
-            "get": {
-                "description": "Getting connector categories",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "onboard"
-                ],
-                "summary": "Get connector categories",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/connector.Category"
+                                "$ref": "#/definitions/api.ConnectorCount"
                             }
                         }
                     }
@@ -3157,6 +3146,27 @@ const docTemplate = `{
                         "description": "OK"
                     }
                 }
+            }
+        },
+        "/onboard/api/v1/source/{sourceId}/healthcheck": {
+            "post": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "onboard"
+                ],
+                "summary": "Get live source health status",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Source ID",
+                        "name": "sourceId",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {}
             }
         },
         "/onboard/api/v1/sources": {
@@ -4112,11 +4122,14 @@ const docTemplate = `{
                 "enabled": {
                     "type": "boolean"
                 },
-                "lastCost": {
-                    "type": "object",
-                    "additionalProperties": {
-                        "type": "string"
-                    }
+                "healthReason": {
+                    "type": "string"
+                },
+                "healthState": {
+                    "type": "string"
+                },
+                "lastHealthCheckTime": {
+                    "type": "string"
                 },
                 "lastInventory": {
                     "type": "string"
@@ -4562,6 +4575,35 @@ const docTemplate = `{
                     "additionalProperties": {
                         "type": "integer"
                     }
+                }
+            }
+        },
+        "api.ConnectorCount": {
+            "type": "object",
+            "properties": {
+                "category": {
+                    "type": "string"
+                },
+                "code": {
+                    "type": "string"
+                },
+                "connection_count": {
+                    "type": "integer"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "direction": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "startSupportDate": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
                 }
             }
         },
@@ -6034,49 +6076,6 @@ const docTemplate = `{
                 }
             }
         },
-        "connector.Category": {
-            "type": "object",
-            "properties": {
-                "category_id": {
-                    "type": "string"
-                },
-                "category_name": {
-                    "type": "string"
-                }
-            }
-        },
-        "connector.ConnectorCount": {
-            "type": "object",
-            "properties": {
-                "connection_count": {
-                    "type": "integer"
-                },
-                "connector_description": {
-                    "type": "string"
-                },
-                "connector_icon": {
-                    "type": "string"
-                },
-                "connector_id": {
-                    "type": "string"
-                },
-                "connector_name": {
-                    "type": "string"
-                },
-                "connector_popular": {
-                    "type": "string"
-                },
-                "connector_status": {
-                    "type": "string"
-                },
-                "connector_type": {
-                    "type": "string"
-                },
-                "source_type": {
-                    "type": "string"
-                }
-            }
-        },
         "es.Finding": {
             "type": "object",
             "properties": {
@@ -6187,6 +6186,9 @@ const docTemplate = `{
         "gitlab.com_keibiengine_keibi-engine_pkg_onboard_api.Source": {
             "type": "object",
             "properties": {
+                "assetDiscoveryMethod": {
+                    "type": "string"
+                },
                 "description": {
                     "type": "string"
                 },
@@ -6196,7 +6198,16 @@ const docTemplate = `{
                 "enabled": {
                     "type": "boolean"
                 },
+                "healthReason": {
+                    "type": "string"
+                },
+                "healthState": {
+                    "type": "string"
+                },
                 "id": {
+                    "type": "string"
+                },
+                "lastHealthCheckTime": {
                     "type": "string"
                 },
                 "onboardDate": {

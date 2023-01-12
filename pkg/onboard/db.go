@@ -27,6 +27,18 @@ func (db Database) Initialize() error {
 	return nil
 }
 
+// ListConnectors gets list of all source
+func (db Database) ListConnectors() ([]Connector, error) {
+	var s []Connector
+	tx := db.orm.Find(&s)
+
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+
+	return s, nil
+}
+
 // ListSources gets list of all source
 func (db Database) ListSources() ([]Source, error) {
 	var s []Source

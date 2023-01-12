@@ -49,10 +49,12 @@ definitions:
         type: object
       enabled:
         type: boolean
-      lastCost:
-        additionalProperties:
-          type: string
-        type: object
+      healthReason:
+        type: string
+      healthState:
+        type: string
+      lastHealthCheckTime:
+        type: string
       lastInventory:
         type: string
       onboardDate:
@@ -343,6 +345,25 @@ definitions:
         additionalProperties:
           type: integer
         type: object
+    type: object
+  api.ConnectorCount:
+    properties:
+      category:
+        type: string
+      code:
+        type: string
+      connection_count:
+        type: integer
+      description:
+        type: string
+      direction:
+        type: string
+      name:
+        type: string
+      startSupportDate:
+        type: string
+      status:
+        type: string
     type: object
   api.CostWithUnit:
     properties:
@@ -1349,34 +1370,6 @@ definitions:
       userId:
         type: string
     type: object
-  connector.Category:
-    properties:
-      category_id:
-        type: string
-      category_name:
-        type: string
-    type: object
-  connector.ConnectorCount:
-    properties:
-      connection_count:
-        type: integer
-      connector_description:
-        type: string
-      connector_icon:
-        type: string
-      connector_id:
-        type: string
-      connector_name:
-        type: string
-      connector_popular:
-        type: string
-      connector_status:
-        type: string
-      connector_type:
-        type: string
-      source_type:
-        type: string
-    type: object
   es.Finding:
     properties:
       ID:
@@ -1449,13 +1442,21 @@ definitions:
     type: object
   gitlab.com_keibiengine_keibi-engine_pkg_onboard_api.Source:
     properties:
+      assetDiscoveryMethod:
+        type: string
       description:
         type: string
       email:
         type: string
       enabled:
         type: boolean
+      healthReason:
+        type: string
+      healthState:
+        type: string
       id:
+        type: string
+      lastHealthCheckTime:
         type: string
       onboardDate:
         type: string
@@ -2672,6 +2673,14 @@ paths:
         in: query
         name: pageNumber
         type: integer
+      - description: start time in unix seconds
+        in: query
+        name: startTime
+        type: integer
+      - description: end time in unix seconds
+        in: query
+        name: endTime
+        type: integer
       - description: column to sort by - default is sourceid
         enum:
         - sourceid
@@ -3317,24 +3326,9 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/connector.ConnectorCount'
+              $ref: '#/definitions/api.ConnectorCount'
             type: array
       summary: Get connectors
-      tags:
-      - onboard
-  /onboard/api/v1/connectors/categories:
-    get:
-      description: Getting connector categories
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            items:
-              $ref: '#/definitions/connector.Category'
-            type: array
-      summary: Get connector categories
       tags:
       - onboard
   /onboard/api/v1/discover/aws/accounts:
@@ -3545,6 +3539,20 @@ paths:
         "200":
           description: OK
       summary: Enable a single source
+      tags:
+      - onboard
+  /onboard/api/v1/source/{sourceId}/healthcheck:
+    post:
+      parameters:
+      - description: Source ID
+        in: query
+        name: sourceId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses: {}
+      summary: Get live source health status
       tags:
       - onboard
   /onboard/api/v1/source/aws:
