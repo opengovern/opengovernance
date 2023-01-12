@@ -10,8 +10,6 @@ import (
 	"time"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/compliance/client"
-	"gitlab.com/keibiengine/keibi-engine/pkg/onboard/enums"
-
 	"gitlab.com/keibiengine/keibi-engine/pkg/summarizer"
 	summarizerapi "gitlab.com/keibiengine/keibi-engine/pkg/summarizer/api"
 	"gorm.io/gorm"
@@ -874,8 +872,8 @@ func (s Scheduler) scheduleDescribeJob() {
 					)
 					continue
 				}
-				if healthCheckedSrc.AssetDiscoveryMethod == enums.AssetDiscoveryMethodTypeScheduled &&
-					healthCheckedSrc.HealthState != enums.SourceHealthStateUnhealthy {
+				if healthCheckedSrc.AssetDiscoveryMethod == source.AssetDiscoveryMethodTypeScheduled &&
+					healthCheckedSrc.HealthState != source.SourceHealthStateUnhealthy {
 					filteredSources = append(filteredSources, src)
 				}
 				break
