@@ -135,10 +135,12 @@ func (db Database) UpdateSource(s *Source) (*Source, error) {
 		Model(&Source{}).
 		Where("id = ?", s.ID.String()).
 		Updates(map[string]interface{}{
-			"name":         s.Name,
-			"config_ref":   s.ConfigRef,
-			"health_state": s.HealthState,
-			"updated_at":   gorm.Expr("NOW()"),
+			"name":                   s.Name,
+			"config_ref":             s.ConfigRef,
+			"last_health_check_time": s.LastHeathCheckTime,
+			"health_state":           s.HealthState,
+			"health_reason":          s.HealthReason,
+			"updated_at":             gorm.Expr("NOW()"),
 		})
 
 	if tx.Error != nil {

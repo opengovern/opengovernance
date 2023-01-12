@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
+	"time"
 
-	"gitlab.com/keibiengine/keibi-engine/pkg/onboard/enums"
 	"gitlab.com/keibiengine/keibi-engine/pkg/source"
 
 	api3 "gitlab.com/keibiengine/keibi-engine/pkg/auth/api"
@@ -699,38 +699,41 @@ func (h HttpHandler) GetSourceHealth(ctx echo.Context) error {
 		}
 		err = keibiaws.CheckSecurityAuditPermission(awsCnf.AccessKey, awsCnf.SecretKey)
 		if err != nil {
-			if src.HealthState != enums.SourceHealthStateUnhealthy {
-				src.HealthState = enums.SourceHealthStateUnhealthy
-				_, err = h.db.UpdateSource(&src)
-				if err != nil {
-					return err
-				}
-				//TODO Mahan: record state change in elastic search
+			src.HealthState = source.SourceHealthStateUnhealthy
+			healthMessage := err.Error()
+			src.HealthReason = &healthMessage
+			src.LastHeathCheckTime = time.Now()
+			_, err = h.db.UpdateSource(&src)
+			if err != nil {
+				return err
 			}
+			//TODO Mahan: record state change in elastic search
 		} else {
-			if src.HealthState != enums.SourceHealthStateHealthy {
-				src.HealthState = enums.SourceHealthStateHealthy
-				_, err = h.db.UpdateSource(&src)
-				if err != nil {
-					return err
-				}
-				//TODO Mahan: record state change in elastic search
+			src.HealthState = source.SourceHealthStateHealthy
+			src.HealthReason = nil
+			src.LastHeathCheckTime = time.Now()
+			_, err = h.db.UpdateSource(&src)
+			if err != nil {
+				return err
 			}
+			//TODO Mahan: record state change in elastic search
 		}
+
 	}
 
 	return ctx.JSON(http.StatusOK, &api.Source{
-		ID:                      src.ID,
-		ConnectionID:            src.SourceId,
-		ConnectionName:          src.Name,
-		Email:                   src.Email,
-		Type:                    src.Type,
-		Description:             src.Description,
-		OnboardDate:             src.CreatedAt,
-		Enabled:                 src.Enabled,
-		AssetDiscoveryMethod:    src.AssetDiscoveryMethod,
-		AssetDiscoveryFrequency: src.AssetDiscoveryFrequency,
-		HealthState:             src.HealthState,
+		ID:                   src.ID,
+		ConnectionID:         src.SourceId,
+		ConnectionName:       src.Name,
+		Email:                src.Email,
+		Type:                 src.Type,
+		Description:          src.Description,
+		OnboardDate:          src.CreatedAt,
+		Enabled:              src.Enabled,
+		AssetDiscoveryMethod: src.AssetDiscoveryMethod,
+		HealthState:          src.HealthState,
+		LastHealthCheckTime:  src.LastHeathCheckTime,
+		HealthReason:         src.HealthReason,
 	})
 }
 
@@ -827,17 +830,18 @@ func (h HttpHandler) GetSource(ctx echo.Context) error {
 	}
 
 	return ctx.JSON(http.StatusOK, &api.Source{
-		ID:                      src.ID,
-		ConnectionID:            src.SourceId,
-		ConnectionName:          src.Name,
-		Email:                   src.Email,
-		Type:                    src.Type,
-		Description:             src.Description,
-		OnboardDate:             src.CreatedAt,
-		Enabled:                 src.Enabled,
-		AssetDiscoveryMethod:    src.AssetDiscoveryMethod,
-		AssetDiscoveryFrequency: src.AssetDiscoveryFrequency,
-		HealthState:             src.HealthState,
+		ID:                   src.ID,
+		ConnectionID:         src.SourceId,
+		ConnectionName:       src.Name,
+		Email:                src.Email,
+		Type:                 src.Type,
+		Description:          src.Description,
+		OnboardDate:          src.CreatedAt,
+		Enabled:              src.Enabled,
+		AssetDiscoveryMethod: src.AssetDiscoveryMethod,
+		HealthState:          src.HealthState,
+		LastHealthCheckTime:  src.LastHeathCheckTime,
+		HealthReason:         src.HealthReason,
 	})
 }
 
@@ -1013,17 +1017,18 @@ func (h HttpHandler) ListSources(ctx echo.Context) error {
 	resp := api.GetSourcesResponse{}
 	for _, s := range sources {
 		source := api.Source{
-			ID:                      s.ID,
-			ConnectionID:            s.SourceId,
-			ConnectionName:          s.Name,
-			Email:                   s.Email,
-			Type:                    s.Type,
-			Description:             s.Description,
-			OnboardDate:             s.CreatedAt,
-			Enabled:                 s.Enabled,
-			AssetDiscoveryMethod:    s.AssetDiscoveryMethod,
-			AssetDiscoveryFrequency: s.AssetDiscoveryFrequency,
-			HealthState:             s.HealthState,
+			ID:                   s.ID,
+			ConnectionID:         s.SourceId,
+			ConnectionName:       s.Name,
+			Email:                s.Email,
+			Type:                 s.Type,
+			Description:          s.Description,
+			OnboardDate:          s.CreatedAt,
+			Enabled:              s.Enabled,
+			AssetDiscoveryMethod: s.AssetDiscoveryMethod,
+			HealthState:          s.HealthState,
+			LastHealthCheckTime:  s.LastHeathCheckTime,
+			HealthReason:         s.HealthReason,
 		}
 		resp = append(resp, source)
 	}
@@ -1065,17 +1070,18 @@ func (h HttpHandler) GetSources(ctx echo.Context) error {
 	var res []api.Source
 	for _, src := range srcs {
 		res = append(res, api.Source{
-			ID:                      src.ID,
-			ConnectionID:            src.SourceId,
-			ConnectionName:          src.Name,
-			Email:                   src.Email,
-			Type:                    src.Type,
-			Description:             src.Description,
-			OnboardDate:             src.CreatedAt,
-			Enabled:                 src.Enabled,
-			AssetDiscoveryMethod:    src.AssetDiscoveryMethod,
-			AssetDiscoveryFrequency: src.AssetDiscoveryFrequency,
-			HealthState:             src.HealthState,
+			ID:                   src.ID,
+			ConnectionID:         src.SourceId,
+			ConnectionName:       src.Name,
+			Email:                src.Email,
+			Type:                 src.Type,
+			Description:          src.Description,
+			OnboardDate:          src.CreatedAt,
+			Enabled:              src.Enabled,
+			AssetDiscoveryMethod: src.AssetDiscoveryMethod,
+			HealthState:          src.HealthState,
+			LastHealthCheckTime:  src.LastHeathCheckTime,
+			HealthReason:         src.HealthReason,
 		})
 	}
 	return ctx.JSON(http.StatusOK, res)

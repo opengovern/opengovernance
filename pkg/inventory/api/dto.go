@@ -4,7 +4,6 @@ import (
 	"time"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/describe/es"
-
 	"gitlab.com/keibiengine/keibi-engine/pkg/source"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/keibi-es-sdk"
@@ -367,16 +366,18 @@ type AccountSummaryResponse struct {
 }
 
 type AccountSummary struct {
-	SourceID               string               `json:"sourceID"`
-	SourceType             source.Type          `json:"sourceType"`
-	ProviderConnectionName string               `json:"providerConnectionName"`
-	ProviderConnectionID   string               `json:"providerConnectionID"`
-	Enabled                bool                 `json:"enabled"`
-	ResourceCount          int                  `json:"resourceCount"`
-	Cost                   map[string]float64   `json:"cost,omitempty"`
-	OnboardDate            time.Time            `json:"onboardDate"`
-	LastInventory          time.Time            `json:"lastInventory"`
-	LastCost               map[string]time.Time `json:"lastCost,omitempty"`
+	SourceID               string                   `json:"sourceID"`
+	SourceType             source.Type              `json:"sourceType"`
+	ProviderConnectionName string                   `json:"providerConnectionName"`
+	ProviderConnectionID   string                   `json:"providerConnectionID"`
+	Enabled                bool                     `json:"enabled"`
+	ResourceCount          int                      `json:"resourceCount"`
+	Cost                   map[string]float64       `json:"cost,omitempty"`
+	OnboardDate            time.Time                `json:"onboardDate"`
+	LastInventory          time.Time                `json:"lastInventory"`
+	HealthState            source.SourceHealthState `json:"healthState"`
+	LastHealthCheckTime    time.Time                `json:"lastHealthCheckTime"`
+	HealthReason           *string                  `json:"healthReason,omitempty"`
 }
 
 type TopAccountResponse struct {

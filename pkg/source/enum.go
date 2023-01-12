@@ -1,4 +1,4 @@
-package enums
+package source
 
 type AssetDiscoveryMethodType string
 
@@ -18,4 +18,12 @@ type SourceCreationMethod string
 
 const (
 	SourceCreationMethodManual SourceCreationMethod = "manual"
+)
+
+type ConnectorDirectionType string
+
+const (
+	ConnectorDirectionTypeIngress ConnectorDirectionType = "ingress"
+	ConnectorDirectionTypeEgress  ConnectorDirectionType = "egress"
+	ConnectorDirectionTypeBoth    ConnectorDirectionType = "both"
 )

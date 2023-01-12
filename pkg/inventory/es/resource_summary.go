@@ -267,6 +267,104 @@ func FetchConnectionResourcesSummaryPage(client keibi.Client, provider source.Ty
 	return hits, nil
 }
 
+type FetchConnectionResourcesCountAtResponse struct {
+	Aggregations struct {
+		ScheduleJobIDGroup struct {
+			Buckets []struct {
+				SourceIDGroup struct {
+					Hits ConnectionResourcesSummaryQueryHits `json:"hits"`
+				} `json:"source_id_group"`
+			} `json:"buckets"`
+		} `json:"schedule_job_id_group"`
+	} `json:"aggregations"`
+}
+
+func FetchConnectionResourcesCountAtTime(client keibi.Client, provider source.Type, sourceID *string, t time.Time, sort []map[string]interface{}, size int) ([]summarizer.ConnectionResourcesSummary, error) {
+	var hits []summarizer.ConnectionResourcesSummary
+	res := make(map[string]interface{})
+	var filters []interface{}
+
+	t = t.Truncate(24 * time.Hour)
+
+	filters = append(filters, map[string]interface{}{
+		"terms": map[string][]string{"report_type": {string(summarizer.ResourceSummary) + "History"}},
+	})
+
+	filters = append(filters, map[string]interface{}{
+		"range": map[string]interface{}{
+			"described_at": map[string]string{
+				"lte": strconv.FormatInt(t.UnixMilli(), 10),
+			},
+		},
+	})
+
+	if !provider.IsNull() {
+		filters = append(filters, map[string]interface{}{
+			"terms": map[string][]string{"source_type": {provider.String()}},
+		})
+	}
+
+	if sourceID != nil {
+		filters = append(filters, map[string]interface{}{
+			"terms": map[string][]string{"source_id": {*sourceID}},
+		})
+	}
+
+	sort = append(sort,
+		map[string]interface{}{
+			"_id": "desc",
+		},
+	)
+	res["size"] = 0
+	res["sort"] = sort
+	res["query"] = map[string]interface{}{
+		"bool": map[string]interface{}{
+			"filter": filters,
+		},
+	}
+
+	res["aggs"] = map[string]any{
+		"schedule_job_id_group": map[string]any{
+			"terms": map[string]any{
+				"field": "schedule_job_id",
+				"size":  1,
+				"order": map[string]string{
+					"_term": "desc",
+				},
+			},
+			"aggs": map[string]any{
+				"source_id_group": map[string]any{
+					"top_hits": map[string]any{
+						"size": size,
+						"sort": sort,
+					},
+				},
+			},
+		},
+	}
+
+	b, err := json.Marshal(res)
+	if err != nil {
+		return nil, err
+	}
+
+	query := string(b)
+
+	var response FetchConnectionResourcesCountAtResponse
+	err = client.Search(context.Background(), summarizer.ConnectionSummaryIndex, query, &response)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(response.Aggregations.ScheduleJobIDGroup.Buckets) == 0 {
+		return hits, nil
+	}
+	for _, hit := range response.Aggregations.ScheduleJobIDGroup.Buckets[0].SourceIDGroup.Hits.Hits {
+		hits = append(hits, hit.Source)
+	}
+	return hits, nil
+}
+
 type ProviderServicesSummaryQueryResponse struct {
 	Hits ProviderServicesSummaryQueryHits `json:"hits"`
 }

@@ -9,7 +9,6 @@ import (
 
 	"github.com/google/uuid"
 	"gitlab.com/keibiengine/keibi-engine/pkg/onboard/api"
-	"gitlab.com/keibiengine/keibi-engine/pkg/onboard/enums"
 	"gitlab.com/keibiengine/keibi-engine/pkg/source"
 	"gorm.io/datatypes"
 )
@@ -24,14 +23,15 @@ type Source struct {
 	ConfigRef   string
 	Enabled     bool
 
-	AssetDiscoveryMethod    enums.AssetDiscoveryMethodType `gorm:"not null;default:'scheduled'"`
-	AssetDiscoveryFrequency int64                          `gorm:"not null;default:21600"` // in seconds
+	AssetDiscoveryMethod source.AssetDiscoveryMethodType `gorm:"not null;default:'scheduled'"`
 
-	HealthState enums.SourceHealthState `gorm:"not null;default:'unhealthy'"`
+	LastHeathCheckTime time.Time                `gorm:"not null;default:now()"`
+	HealthState        source.SourceHealthState `gorm:"not null;default:'unhealthy'"`
+	HealthReason       *string
 
 	//Connector Connector `gorm:"foreignKey:Type;references:Code"`
 
-	CreationMethod enums.SourceCreationMethod `gorm:"not null;default:'manual'"`
+	CreationMethod source.SourceCreationMethod `gorm:"not null;default:'manual'"`
 
 	Metadata datatypes.JSON
 
@@ -67,19 +67,19 @@ func NewAWSSource(accountID, accountName, accountDescription, accountEmail, acco
 	}
 
 	s := Source{
-		ID:                      id,
-		SourceId:                accountID,
-		Name:                    accountName,
-		Email:                   accountEmail,
-		Type:                    provider,
-		Description:             accountDescription,
-		ConfigRef:               fmt.Sprintf("sources/%s/%s", strings.ToLower(string(provider)), id),
-		Enabled:                 true,
-		AssetDiscoveryMethod:    enums.AssetDiscoveryMethodTypeScheduled,
-		AssetDiscoveryFrequency: 21600,
-		HealthState:             enums.SourceHealthStateInitialDiscovery,
-		CreationMethod:          enums.SourceCreationMethodManual,
-		Metadata:                datatypes.JSON(marshalMetadata),
+		ID:                   id,
+		SourceId:             accountID,
+		Name:                 accountName,
+		Email:                accountEmail,
+		Type:                 provider,
+		Description:          accountDescription,
+		ConfigRef:            fmt.Sprintf("sources/%s/%s", strings.ToLower(string(provider)), id),
+		Enabled:              true,
+		AssetDiscoveryMethod: source.AssetDiscoveryMethodTypeScheduled,
+		HealthState:          source.SourceHealthStateInitialDiscovery,
+		LastHeathCheckTime:   time.Now(),
+		CreationMethod:       source.SourceCreationMethodManual,
+		Metadata:             datatypes.JSON(marshalMetadata),
 	}
 
 	if len(strings.TrimSpace(s.Name)) == 0 {
@@ -95,17 +95,17 @@ func NewAzureSource(in api.SourceAzureRequest) Source {
 
 	// SPN -> PK: TenantID & ClientID
 	s := Source{
-		ID:                      id,
-		SourceId:                in.Config.SubscriptionId,
-		Name:                    in.Name,
-		Description:             in.Description,
-		Type:                    provider,
-		ConfigRef:               fmt.Sprintf("sources/%s/%s", strings.ToLower(string(provider)), id),
-		Enabled:                 true,
-		AssetDiscoveryMethod:    enums.AssetDiscoveryMethodTypeScheduled,
-		AssetDiscoveryFrequency: 21600,
-		HealthState:             enums.SourceHealthStateInitialDiscovery,
-		CreationMethod:          enums.SourceCreationMethodManual,
+		ID:                   id,
+		SourceId:             in.Config.SubscriptionId,
+		Name:                 in.Name,
+		Description:          in.Description,
+		Type:                 provider,
+		ConfigRef:            fmt.Sprintf("sources/%s/%s", strings.ToLower(string(provider)), id),
+		Enabled:              true,
+		AssetDiscoveryMethod: source.AssetDiscoveryMethodTypeScheduled,
+		HealthState:          source.SourceHealthStateInitialDiscovery,
+		LastHeathCheckTime:   time.Now(),
+		CreationMethod:       source.SourceCreationMethodManual,
 	}
 
 	if len(strings.TrimSpace(s.Name)) == 0 {
@@ -126,17 +126,17 @@ func NewAzureSourceWithSPN(in api.SourceAzureSPNRequest) Source {
 	provider := source.CloudAzure
 
 	s := Source{
-		ID:                      id,
-		SourceId:                in.SubscriptionId,
-		Name:                    in.Name,
-		Description:             in.Description,
-		Type:                    provider,
-		Enabled:                 true,
-		ConfigRef:               fmt.Sprintf("sources/%s/spn/%s", strings.ToLower(string(provider)), in.SPNId),
-		AssetDiscoveryMethod:    enums.AssetDiscoveryMethodTypeScheduled,
-		AssetDiscoveryFrequency: 21600,
-		HealthState:             enums.SourceHealthStateInitialDiscovery,
-		CreationMethod:          enums.SourceCreationMethodManual,
+		ID:                   id,
+		SourceId:             in.SubscriptionId,
+		Name:                 in.Name,
+		Description:          in.Description,
+		Type:                 provider,
+		Enabled:              true,
+		ConfigRef:            fmt.Sprintf("sources/%s/spn/%s", strings.ToLower(string(provider)), in.SPNId),
+		AssetDiscoveryMethod: source.AssetDiscoveryMethodTypeScheduled,
+		HealthState:          source.SourceHealthStateInitialDiscovery,
+		LastHeathCheckTime:   time.Now(),
+		CreationMethod:       source.SourceCreationMethodManual,
 	}
 
 	if len(strings.TrimSpace(s.Name)) == 0 {
@@ -175,20 +175,13 @@ func NewSPN(in api.CreateSPNRequest) SPN {
 	}
 }
 
-type ConnectorDirectionType string
-
-const (
-	ConnectorDirectionTypeIngress ConnectorDirectionType = "ingress"
-	ConnectorDirectionTypeEgress  ConnectorDirectionType = "egress"
-	ConnectorDirectionTypeBoth    ConnectorDirectionType = "both"
-)
-
 type Connector struct {
 	Code             source.Type `gorm:"primaryKey"`
 	Name             string
 	Description      string
-	Direction        ConnectorDirectionType `gorm:"default:'ingress'"`
+	Direction        source.ConnectorDirectionType `gorm:"default:'ingress'"`
 	Enabled          bool
+	Category         string
 	StartSupportDate time.Time
 
 	CreatedAt time.Time

@@ -2472,6 +2472,8 @@ func (h *HttpHandler) GetAccountsResourceCount(ctx echo.Context) error {
 // @Param   sourceId   query    string false "SourceID"
 // @Param   pageSize   query    int    false "page size - default is 20"
 // @Param   pageNumber query    int    false "page number - default is 1"
+// @Param   startTime  query    int    false "start time in unix seconds"
+// @Param   endTime    query    int    false "end time in unix seconds"
 // @Param   sortBy     query    string false "column to sort by - default is sourceid" Enums(sourceid,resourcecount,cost)
 // @Success 200        {object} []api.AccountSummaryResponse
 // @Router  /inventory/api/v2/accounts/summary [get]
@@ -2505,6 +2507,24 @@ func (h *HttpHandler) GetAccountSummary(ctx echo.Context) error {
 	if sortBy == "" {
 		sortBy = "sourceid"
 	}
+	endTimeStr := ctx.QueryParam("endTime")
+	endTime := time.Now()
+	if endTimeStr != "" {
+		endTimeUnix, err := strconv.ParseInt(endTimeStr, 10, 64)
+		if err != nil {
+			return ctx.JSON(http.StatusBadRequest, "endTime is not a valid integer")
+		}
+		endTime = time.Unix(endTimeUnix, 0)
+	}
+	startTimeStr := ctx.QueryParam("startTime")
+	startTime := endTime.AddDate(0, 0, -7)
+	if startTimeStr != "" {
+		startTimeUnix, err := strconv.ParseInt(startTimeStr, 10, 64)
+		if err != nil {
+			return ctx.JSON(http.StatusBadRequest, "startTime is not a valid integer")
+		}
+		startTime = time.Unix(startTimeUnix, 0)
+	}
 
 	res := map[string]api.AccountSummary{}
 
@@ -2526,41 +2546,37 @@ func (h *HttpHandler) GetAccountSummary(ctx echo.Context) error {
 			ProviderConnectionID:   src.ConnectionID,
 			Enabled:                src.Enabled,
 			OnboardDate:            src.OnboardDate,
+			HealthState:            src.HealthState,
+			LastHealthCheckTime:    src.LastHealthCheckTime,
+			HealthReason:           src.HealthReason,
 		}
 	}
 
-	hits, err := es.FetchConnectionResourcesSummaryPage(h.client, provider, sourceIdPtr, nil, EsFetchPageSize)
+	hits, err := es.FetchConnectionResourcesCountAtTime(h.client, provider, sourceIdPtr, endTime, []map[string]any{{"described_at": "asc"}}, EsFetchPageSize)
 	for _, hit := range hits {
 		if v, ok := res[hit.SourceID]; ok {
 			v.ResourceCount += hit.ResourceCount
-			v.LastInventory = time.UnixMilli(hit.DescribedAt)
+			if v.LastInventory.IsZero() || v.LastInventory.Before(time.UnixMilli(hit.DescribedAt)) {
+				v.LastInventory = time.UnixMilli(hit.DescribedAt)
+			}
 			res[hit.SourceID] = v
 		}
 	}
 
-	costs, err := es.FetchDailyCostHistoryByAccountsBetween(h.client, sourceIdPtr, provider.AsPtr(), time.Now(), time.Now().AddDate(0, 0, -7), EsFetchPageSize)
+	costs, err := es.FetchDailyCostHistoryByAccountsBetween(h.client, sourceIdPtr, provider.AsPtr(), endTime, startTime, EsFetchPageSize)
+	aggregatedCostHits := internal.AggregateConnectionCosts(costs)
 	if err != nil {
 		return err
 	}
-	for sourceID, costArr := range costs {
+	for sourceID, costArr := range aggregatedCostHits {
 		if v, ok := res[sourceID]; ok {
 			if v.Cost == nil {
 				v.Cost = make(map[string]float64)
 			}
-			if v.LastCost == nil {
-				v.LastCost = make(map[string]time.Time)
-			}
 			for _, cost := range costArr {
-				costValue, costUnit := cost.GetCostAndUnit()
-				lastCostDate, ok := v.LastCost[costUnit]
-				if !ok || lastCostDate.Before(time.Unix(cost.PeriodEnd, 0)) {
-					v.Cost[costUnit] = 0
-					lastCostDate = time.Unix(cost.PeriodEnd, 0)
-					v.LastCost[costUnit] = lastCostDate
-				}
-				if lastCostDate.Equal(time.Unix(cost.PeriodEnd, 0)) {
-					v.Cost[costUnit] += costValue
-				}
+				val, _ := v.Cost[cost.Unit]
+				val += cost.Cost
+				v.Cost[cost.Unit] = val
 			}
 			res[sourceID] = v
 		}

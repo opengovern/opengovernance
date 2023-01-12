@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"time"
 
-	"gitlab.com/keibiengine/keibi-engine/pkg/onboard/enums"
 	"gitlab.com/keibiengine/keibi-engine/pkg/source"
 
 	"github.com/google/uuid"
@@ -100,17 +99,18 @@ type CreateSourceResponse struct {
 }
 
 type Source struct {
-	ID                      uuid.UUID                      `json:"id"`
-	ConnectionID            string                         `json:"providerConnectionID"`
-	ConnectionName          string                         `json:"providerConnectionName"`
-	Email                   string                         `json:"email"`
-	Type                    source.Type                    `json:"type"`
-	Description             string                         `json:"description"`
-	OnboardDate             time.Time                      `json:"onboardDate"`
-	Enabled                 bool                           `json:"enabled"`
-	AssetDiscoveryMethod    enums.AssetDiscoveryMethodType `json:"assetDiscoveryMethod"`
-	AssetDiscoveryFrequency int64                          `json:"assetDiscoveryFrequency"`
-	HealthState             enums.SourceHealthState        `json:"healthState"`
+	ID                   uuid.UUID                       `json:"id"`
+	ConnectionID         string                          `json:"providerConnectionID"`
+	ConnectionName       string                          `json:"providerConnectionName"`
+	Email                string                          `json:"email"`
+	Type                 source.Type                     `json:"type"`
+	Description          string                          `json:"description"`
+	OnboardDate          time.Time                       `json:"onboardDate"`
+	Enabled              bool                            `json:"enabled"`
+	AssetDiscoveryMethod source.AssetDiscoveryMethodType `json:"assetDiscoveryMethod"`
+	HealthState          source.SourceHealthState        `json:"healthState"`
+	LastHealthCheckTime  time.Time                       `json:"lastHealthCheckTime"`
+	HealthReason         *string                         `json:"healthReason,omitempty"`
 }
 
 type GetSourcesRequest struct {
