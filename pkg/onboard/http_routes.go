@@ -264,11 +264,13 @@ func (h HttpHandler) PostSourceAws(ctx echo.Context) error {
 	// Check creds section
 	err := keibiaws.CheckDescribeRegionsPermission(req.Config.AccessKey, req.Config.SecretKey)
 	if err != nil {
+		fmt.Printf("error in checking describe regions permission: %v", err)
 		return PermissionError
 	}
 
 	err = keibiaws.CheckSecurityAuditPermission(req.Config.AccessKey, req.Config.SecretKey)
 	if err != nil {
+		fmt.Printf("error in checking security audit permission: %v", err)
 		return PermissionError
 	}
 
@@ -691,7 +693,7 @@ func (h HttpHandler) GetSourceHealth(ctx echo.Context) error {
 			src.HealthState = source.SourceHealthStateUnhealthy
 			healthMessage := err.Error()
 			src.HealthReason = &healthMessage
-			src.LastHeathCheckTime = time.Now()
+			src.LastHealthCheckTime = time.Now()
 			_, err = h.db.UpdateSource(&src)
 			if err != nil {
 				return err
@@ -700,7 +702,7 @@ func (h HttpHandler) GetSourceHealth(ctx echo.Context) error {
 		} else {
 			src.HealthState = source.SourceHealthStateHealthy
 			src.HealthReason = nil
-			src.LastHeathCheckTime = time.Now()
+			src.LastHealthCheckTime = time.Now()
 			_, err = h.db.UpdateSource(&src)
 			if err != nil {
 				return err
@@ -721,7 +723,7 @@ func (h HttpHandler) GetSourceHealth(ctx echo.Context) error {
 		Enabled:              src.Enabled,
 		AssetDiscoveryMethod: src.AssetDiscoveryMethod,
 		HealthState:          src.HealthState,
-		LastHealthCheckTime:  src.LastHeathCheckTime,
+		LastHealthCheckTime:  src.LastHealthCheckTime,
 		HealthReason:         src.HealthReason,
 	})
 }
@@ -829,7 +831,7 @@ func (h HttpHandler) GetSource(ctx echo.Context) error {
 		Enabled:              src.Enabled,
 		AssetDiscoveryMethod: src.AssetDiscoveryMethod,
 		HealthState:          src.HealthState,
-		LastHealthCheckTime:  src.LastHeathCheckTime,
+		LastHealthCheckTime:  src.LastHealthCheckTime,
 		HealthReason:         src.HealthReason,
 	})
 }
@@ -1016,7 +1018,7 @@ func (h HttpHandler) ListSources(ctx echo.Context) error {
 			Enabled:              s.Enabled,
 			AssetDiscoveryMethod: s.AssetDiscoveryMethod,
 			HealthState:          s.HealthState,
-			LastHealthCheckTime:  s.LastHeathCheckTime,
+			LastHealthCheckTime:  s.LastHealthCheckTime,
 			HealthReason:         s.HealthReason,
 		}
 		resp = append(resp, source)
@@ -1069,7 +1071,7 @@ func (h HttpHandler) GetSources(ctx echo.Context) error {
 			Enabled:              src.Enabled,
 			AssetDiscoveryMethod: src.AssetDiscoveryMethod,
 			HealthState:          src.HealthState,
-			LastHealthCheckTime:  src.LastHeathCheckTime,
+			LastHealthCheckTime:  src.LastHealthCheckTime,
 			HealthReason:         src.HealthReason,
 		})
 	}
