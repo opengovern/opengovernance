@@ -31,7 +31,7 @@ func CheckSecurityAuditPermission(accessKey, secretKey string) error {
 		cfgClone.Region = "us-east-1"
 	}
 
-	iamClient := iam.NewFromConfig(cfg)
+	iamClient := iam.NewFromConfig(cfgClone)
 	user, err := iamClient.GetUser(ctx, &iam.GetUserInput{})
 	if err != nil {
 		fmt.Printf("failed to get user: %v", err)
