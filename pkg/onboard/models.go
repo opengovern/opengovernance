@@ -25,9 +25,9 @@ type Source struct {
 
 	AssetDiscoveryMethod source.AssetDiscoveryMethodType `gorm:"not null;default:'scheduled'"`
 
-	LastHeathCheckTime time.Time                `gorm:"not null;default:now()"`
-	HealthState        source.SourceHealthState `gorm:"not null;default:'unhealthy'"`
-	HealthReason       *string
+	LastHealthCheckTime time.Time                `gorm:"not null;default:now()"`
+	HealthState         source.SourceHealthState `gorm:"not null;default:'unhealthy'"`
+	HealthReason        *string
 
 	//Connector Connector `gorm:"foreignKey:Type;references:Code"`
 
@@ -77,7 +77,7 @@ func NewAWSSource(accountID, accountName, accountDescription, accountEmail, acco
 		Enabled:              true,
 		AssetDiscoveryMethod: source.AssetDiscoveryMethodTypeScheduled,
 		HealthState:          source.SourceHealthStateInitialDiscovery,
-		LastHeathCheckTime:   time.Now(),
+		LastHealthCheckTime:  time.Now(),
 		CreationMethod:       source.SourceCreationMethodManual,
 		Metadata:             datatypes.JSON(marshalMetadata),
 	}
@@ -104,7 +104,7 @@ func NewAzureSource(in api.SourceAzureRequest) Source {
 		Enabled:              true,
 		AssetDiscoveryMethod: source.AssetDiscoveryMethodTypeScheduled,
 		HealthState:          source.SourceHealthStateInitialDiscovery,
-		LastHeathCheckTime:   time.Now(),
+		LastHealthCheckTime:  time.Now(),
 		CreationMethod:       source.SourceCreationMethodManual,
 	}
 
@@ -135,7 +135,7 @@ func NewAzureSourceWithSPN(in api.SourceAzureSPNRequest) Source {
 		ConfigRef:            fmt.Sprintf("sources/%s/spn/%s", strings.ToLower(string(provider)), in.SPNId),
 		AssetDiscoveryMethod: source.AssetDiscoveryMethodTypeScheduled,
 		HealthState:          source.SourceHealthStateInitialDiscovery,
-		LastHeathCheckTime:   time.Now(),
+		LastHealthCheckTime:  time.Now(),
 		CreationMethod:       source.SourceCreationMethodManual,
 	}
 

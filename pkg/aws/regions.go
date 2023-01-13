@@ -22,6 +22,7 @@ func CheckSecurityAuditPermission(accessKey, secretKey string) error {
 
 	cfg, err := GetConfig(ctx, accessKey, secretKey, "", "")
 	if err != nil {
+		fmt.Printf("failed to get config: %v", err)
 		return err
 	}
 
@@ -33,6 +34,7 @@ func CheckSecurityAuditPermission(accessKey, secretKey string) error {
 	iamClient := iam.NewFromConfig(cfg)
 	user, err := iamClient.GetUser(ctx, &iam.GetUserInput{})
 	if err != nil {
+		fmt.Printf("failed to get user: %v", err)
 		return err
 	}
 	paginator := iam.NewListAttachedUserPoliciesPaginator(iamClient, &iam.ListAttachedUserPoliciesInput{
@@ -43,6 +45,7 @@ func CheckSecurityAuditPermission(accessKey, secretKey string) error {
 	for paginator.HasMorePages() {
 		page, err := paginator.NextPage(ctx)
 		if err != nil {
+			fmt.Printf("failed to get policy page: %v", err)
 			return err
 		}
 		for _, policy := range page.AttachedPolicies {
