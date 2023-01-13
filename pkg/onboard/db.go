@@ -149,7 +149,7 @@ func (db Database) UpdateSource(s *Source) (*Source, error) {
 		Updates(map[string]interface{}{
 			"name":                   s.Name,
 			"config_ref":             s.ConfigRef,
-			"last_health_check_time": s.LastHeathCheckTime,
+			"last_health_check_time": s.LastHealthCheckTime,
 			"health_state":           s.HealthState,
 			"health_reason":          s.HealthReason,
 			"updated_at":             gorm.Expr("NOW()"),
