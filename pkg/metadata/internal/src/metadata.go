@@ -50,22 +50,20 @@ func GetConfigMetadata(db database.Database, rdb *cache.MetadataRedisCache, key 
 	return typedCm, nil
 }
 
-func SetConfigMetadata(db database.Database, rdb *cache.MetadataRedisCache, key string, value any) error {
-	cmType := models.GetConfigMetadataTypeFromKey(key)
-	valueStr := ""
-	switch cmType {
-	case models.ConfigMetadataTypeString:
-		valueStr = value.(string)
+func SetConfigMetadata(db database.Database, rdb *cache.MetadataRedisCache, key models.MetadataKey, value any) error {
+	valueStr, err := key.GetConfigMetadataType().SerializeValue(value)
+	if err != nil {
+		return err
 	}
-	err := db.SetConfigMetadata(models.ConfigMetadata{
+	err = db.SetConfigMetadata(models.ConfigMetadata{
 		Key:   key,
-		Type:  cmType,
+		Type:  key.GetConfigMetadataType(),
 		Value: valueStr,
 	})
 	if err != nil {
 		return err
 	}
-	err = rdb.Delete(ConfigMetadataKeyPrefix + key)
+	err = rdb.Delete(ConfigMetadataKeyPrefix + key.String())
 	if err != nil && err != redis.Nil {
 		fmt.Printf("error deleting config metadata from redis: %v\n", err)
 	}

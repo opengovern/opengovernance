@@ -1,31 +1,14 @@
 package models
 
-type ConfigMetadataType string
-
-const (
-	ConfigMetadataTypeString ConfigMetadataType = "string"
-)
-
-var (
-	ConfigMetadataKeyToTypeMapping = map[string]ConfigMetadataType{}
-)
-
-func GetConfigMetadataTypeFromKey(key string) ConfigMetadataType {
-	if cmType, ok := ConfigMetadataKeyToTypeMapping[key]; ok {
-		return cmType
-	}
-	return ConfigMetadataTypeString
-}
-
 type IConfigMetadata interface {
-	GetKey() string
+	GetKey() MetadataKey
 	GetType() ConfigMetadataType
 	GetValue() any
 	GetCore() ConfigMetadata
 }
 
 type ConfigMetadata struct {
-	Key   string             `json:"key" gorm:"primary_key"`
+	Key   MetadataKey        `json:"key" gorm:"primary_key"`
 	Type  ConfigMetadataType `json:"type" gorm:"default:'string'"`
 	Value string             `json:"value" gorm:"type:text;not null"`
 }
@@ -34,7 +17,7 @@ type StringConfigMetadata struct {
 	ConfigMetadata
 }
 
-func (c *StringConfigMetadata) GetKey() string {
+func (c *StringConfigMetadata) GetKey() MetadataKey {
 	return c.Key
 }
 
@@ -47,5 +30,68 @@ func (c *StringConfigMetadata) GetValue() any {
 }
 
 func (c *StringConfigMetadata) GetCore() ConfigMetadata {
+	return c.ConfigMetadata
+}
+
+type IntConfigMetadata struct {
+	ConfigMetadata
+	Value int64
+}
+
+func (c *IntConfigMetadata) GetKey() MetadataKey {
+	return c.Key
+}
+
+func (c *IntConfigMetadata) GetType() ConfigMetadataType {
+	return ConfigMetadataTypeInt
+}
+
+func (c *IntConfigMetadata) GetValue() any {
+	return c.Value
+}
+
+func (c *IntConfigMetadata) GetCore() ConfigMetadata {
+	return c.ConfigMetadata
+}
+
+type BoolConfigMetadata struct {
+	ConfigMetadata
+	Value bool
+}
+
+func (c *BoolConfigMetadata) GetKey() MetadataKey {
+	return c.Key
+}
+
+func (c *BoolConfigMetadata) GetType() ConfigMetadataType {
+	return ConfigMetadataTypeBool
+}
+
+func (c *BoolConfigMetadata) GetValue() any {
+	return c.Value
+}
+
+func (c *BoolConfigMetadata) GetCore() ConfigMetadata {
+	return c.ConfigMetadata
+}
+
+type JSONConfigMetadata struct {
+	ConfigMetadata
+	Value any
+}
+
+func (c *JSONConfigMetadata) GetKey() MetadataKey {
+	return c.Key
+}
+
+func (c *JSONConfigMetadata) GetType() ConfigMetadataType {
+	return ConfigMetadataTypeJSON
+}
+
+func (c *JSONConfigMetadata) GetValue() any {
+	return c.Value
+}
+
+func (c *JSONConfigMetadata) GetCore() ConfigMetadata {
 	return c.ConfigMetadata
 }

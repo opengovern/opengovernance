@@ -9,9 +9,10 @@ import (
 type Role string
 
 const (
-	AdminRole  Role = "ADMIN"
-	EditorRole Role = "EDITOR"
-	ViewerRole Role = "VIEWER"
+	KeibiAdminRole Role = "KEIBI-ADMIN"
+	AdminRole      Role = "ADMIN"
+	EditorRole     Role = "EDITOR"
+	ViewerRole     Role = "VIEWER"
 )
 
 type PutRoleBindingRequest struct {

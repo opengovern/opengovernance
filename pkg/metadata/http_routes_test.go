@@ -16,6 +16,7 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/metadata/api"
 	"gitlab.com/keibiengine/keibi-engine/pkg/metadata/internal/cache"
 	"gitlab.com/keibiengine/keibi-engine/pkg/metadata/internal/database"
+	"gitlab.com/keibiengine/keibi-engine/pkg/metadata/models"
 	"go.uber.org/zap"
 
 	"github.com/labstack/echo/v4"
@@ -166,18 +167,30 @@ func doSimpleJSONRequest(router *echo.Echo, method string, path string, request,
 func (s *HttpHandlerSuite) TestConfigMetadata() {
 	require := s.Require()
 
-	key := "test-str"
+	key := models.MetadataKeyWorkspaceName
 	value := "test-value"
 	response := map[string]any{}
 	rec, err := doSimpleJSONRequest(s.router, echo.POST, "/api/v1/metadata", api.SetConfigMetadataRequest{
-		Key:   key,
+		Key:   key.String(),
 		Value: value,
 	}, &response)
 	require.NoError(err, "request")
 	require.Equal(http.StatusOK, rec.Code)
 
-	rec, err = doSimpleJSONRequest(s.router, echo.GET, "/api/v1/metadata/"+key, nil, &response)
+	rec, err = doSimpleJSONRequest(s.router, echo.GET, "/api/v1/metadata/"+key.String(), nil, &response)
 	require.NoError(err, "request")
 	require.Equal(http.StatusOK, rec.Code)
 	require.Equal(value, response["value"])
+}
+
+func (s *HttpHandlerSuite) TestMetadataKeys() {
+	require := s.Require()
+
+	for _, key := range models.MetadataKeys {
+		kType := key.GetConfigMetadataType()
+		require.NotEmpty(kType)
+		role := key.GetMinAuthRole()
+		require.NotEmpty(role)
+		fmt.Println(key.String() + "," + string(kType))
+	}
 }
