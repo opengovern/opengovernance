@@ -9,6 +9,8 @@ import (
 	"strings"
 	"time"
 
+	"gitlab.com/keibiengine/keibi-engine/pkg/checkup"
+	checkupapi "gitlab.com/keibiengine/keibi-engine/pkg/checkup/api"
 	"gitlab.com/keibiengine/keibi-engine/pkg/compliance/client"
 	"gitlab.com/keibiengine/keibi-engine/pkg/summarizer"
 	summarizerapi "gitlab.com/keibiengine/keibi-engine/pkg/summarizer/api"
@@ -64,6 +66,13 @@ var InsightJobsCount = promauto.NewCounterVec(prometheus.CounterOpts{
 	Subsystem: "scheduler",
 	Name:      "schedule_insight_jobs_total",
 	Help:      "Count of insight jobs in scheduler service",
+}, []string{"status"})
+
+var CheckupJobsCount = promauto.NewCounterVec(prometheus.CounterOpts{
+	Namespace: "keibi",
+	Subsystem: "scheduler",
+	Name:      "schedule_checkup_jobs_total",
+	Help:      "Count of checkup jobs in scheduler service",
 }, []string{"status"})
 
 var SummarizerJobsCount = promauto.NewCounterVec(prometheus.CounterOpts{
@@ -133,6 +142,11 @@ type Scheduler struct {
 	// insightJobResultQueue is used to consume the insight job results returned by the workers.
 	insightJobResultQueue queue.Interface
 
+	// checkupJobQueue is used to publish checkup jobs to be performed by the workers.
+	checkupJobQueue queue.Interface
+	// checkupJobResultQueue is used to consume the checkup job results returned by the workers.
+	checkupJobResultQueue queue.Interface
+
 	// summarizerJobQueue is used to publish summarizer jobs to be performed by the workers.
 	summarizerJobQueue queue.Interface
 	// summarizerJobResultQueue is used to consume the summarizer job results returned by the workers.
@@ -144,6 +158,7 @@ type Scheduler struct {
 	describeIntervalHours   int64
 	complianceIntervalHours int64
 	insightIntervalHours    int64
+	checkupIntervalHours    int64
 	summarizerIntervalHours int64
 
 	logger           *zap.Logger
@@ -170,6 +185,8 @@ func InitializeScheduler(
 	complianceReportCleanupJobQueueName string,
 	insightJobQueueName string,
 	insightJobResultQueueName string,
+	checkupJobQueueName string,
+	checkupJobResultQueueName string,
 	summarizerJobQueueName string,
 	summarizerJobResultQueueName string,
 	sourceQueueName string,
@@ -183,6 +200,7 @@ func InitializeScheduler(
 	describeIntervalHours string,
 	complianceIntervalHours string,
 	insightIntervalHours string,
+	checkupIntervalHours string,
 ) (s *Scheduler, err error) {
 	if id == "" {
 		return nil, fmt.Errorf("'id' must be set to a non empty string")
@@ -300,6 +318,38 @@ func InitializeScheduler(
 
 	s.logger.Info("Connected to the insight job results queue", zap.String("queue", insightJobResultQueueName))
 	s.insightJobResultQueue = insightResultsQueue
+
+	qCfg = queue.Config{}
+	qCfg.Server.Username = rabbitMQUsername
+	qCfg.Server.Password = rabbitMQPassword
+	qCfg.Server.Host = rabbitMQHost
+	qCfg.Server.Port = rabbitMQPort
+	qCfg.Queue.Name = checkupJobQueueName
+	qCfg.Queue.Durable = true
+	qCfg.Producer.ID = s.id
+	checkupQueue, err := queue.New(qCfg)
+	if err != nil {
+		return nil, err
+	}
+
+	s.logger.Info("Connected to the checkup jobs queue", zap.String("queue", checkupJobQueueName))
+	s.checkupJobQueue = checkupQueue
+
+	qCfg = queue.Config{}
+	qCfg.Server.Username = rabbitMQUsername
+	qCfg.Server.Password = rabbitMQPassword
+	qCfg.Server.Host = rabbitMQHost
+	qCfg.Server.Port = rabbitMQPort
+	qCfg.Queue.Name = checkupJobResultQueueName
+	qCfg.Queue.Durable = true
+	qCfg.Consumer.ID = s.id
+	checkupResultsQueue, err := queue.New(qCfg)
+	if err != nil {
+		return nil, err
+	}
+
+	s.logger.Info("Connected to the checkup job results queue", zap.String("queue", checkupJobResultQueueName))
+	s.checkupJobResultQueue = checkupResultsQueue
 
 	qCfg = queue.Config{}
 	qCfg.Server.Username = rabbitMQUsername
@@ -442,6 +492,10 @@ func InitializeScheduler(
 	if err != nil {
 		return nil, err
 	}
+	s.checkupIntervalHours, err = strconv.ParseInt(checkupIntervalHours, 10, 64)
+	if err != nil {
+		return nil, err
+	}
 
 	s.workspaceClient = workspaceClient.NewWorkspaceClient(WorkspaceBaseURL)
 	s.complianceClient = client.NewComplianceClient(ComplianceBaseURL)
@@ -471,6 +525,7 @@ func (s *Scheduler) Run() error {
 	go s.RunScheduleJobCompletionUpdater()
 	go s.RunDescribeJobScheduler()
 	go s.RunInsightJobScheduler()
+	go s.RunCheckupJobScheduler()
 	go s.RunDescribeCleanupJobScheduler()
 	//go s.RunComplianceReportScheduler()
 	go s.RunDeletedSourceCleanup()
@@ -496,6 +551,10 @@ func (s *Scheduler) Run() error {
 
 	go func() {
 		s.logger.Fatal("InsightJobResult consumer exited", zap.Error(s.RunInsightJobResultsConsumer()))
+	}()
+
+	go func() {
+		s.logger.Fatal("InsightJobResult consumer exited", zap.Error(s.RunCheckupJobResultsConsumer()))
 	}()
 
 	go func() {
@@ -1657,6 +1716,17 @@ func (s Scheduler) RunInsightJobScheduler() {
 	}
 }
 
+func (s Scheduler) RunCheckupJobScheduler() {
+	s.logger.Info("Scheduling insight jobs on a timer")
+
+	t := time.NewTicker(JobSchedulingInterval)
+	defer t.Stop()
+
+	for ; ; <-t.C {
+		s.scheduleCheckupJob()
+	}
+}
+
 func (s Scheduler) scheduleInsightJob() {
 	insightJob, err := s.db.FetchLastInsightJob()
 	if err != nil {
@@ -1713,6 +1783,51 @@ func (s Scheduler) scheduleInsightJob() {
 		}
 	}
 	InsightJobsCount.WithLabelValues("successful").Inc()
+}
+
+func (s Scheduler) scheduleCheckupJob() {
+	checkupJob, err := s.db.FetchLastCheckupJob()
+	if err != nil {
+		s.logger.Error("Failed to find the last job to check for CheckupJob", zap.Error(err))
+		CheckupJobsCount.WithLabelValues("failure").Inc()
+		return
+	}
+
+	if checkupJob == nil ||
+		checkupJob.CreatedAt.Add(time.Duration(s.checkupIntervalHours)*time.Hour).Before(time.Now()) {
+		if isPublishingBlocked(s.logger, s.checkupJobQueue) {
+			s.logger.Warn("The jobs in queue is over the threshold", zap.Error(err))
+			CheckupJobsCount.WithLabelValues("failure").Inc()
+			return
+		}
+
+		job := newCheckupJob()
+		err = s.db.AddCheckupJob(&job)
+		if err != nil {
+			CheckupJobsCount.WithLabelValues("failure").Inc()
+			s.logger.Error("Failed to create CheckupJob",
+				zap.Uint("jobId", job.ID),
+				zap.Error(err),
+			)
+		}
+		err = enqueueCheckupJobs(s.db, s.checkupJobQueue, job)
+		if err != nil {
+			CheckupJobsCount.WithLabelValues("failure").Inc()
+			s.logger.Error("Failed to enqueue CheckupJob",
+				zap.Uint("jobId", job.ID),
+				zap.Error(err),
+			)
+			job.Status = checkupapi.CheckupJobFailed
+			err = s.db.UpdateCheckupJobStatus(job)
+			if err != nil {
+				s.logger.Error("Failed to update CheckupJob status",
+					zap.Uint("jobId", job.ID),
+					zap.Error(err),
+				)
+			}
+		}
+		CheckupJobsCount.WithLabelValues("successful").Inc()
+	}
 }
 
 func (s Scheduler) scheduleSummarizerJob(scheduleJobID uint) error {
@@ -1935,6 +2050,16 @@ func enqueueInsightJobs(db Database, q queue.Interface, job InsightJob) error {
 	return nil
 }
 
+func enqueueCheckupJobs(_ Database, q queue.Interface, job CheckupJob) error {
+	if err := q.Publish(checkup.Job{
+		JobID:      job.ID,
+		ExecutedAt: job.CreatedAt.UnixMilli(),
+	}); err != nil {
+		return err
+	}
+	return nil
+}
+
 // RunInsightJobResultsConsumer consumes messages from the insightJobResultQueue queue.
 // It will update the status of the jobs in the database based on the message.
 // It will also update the jobs status that are not completed in certain time to FAILED
@@ -1989,6 +2114,65 @@ func (s *Scheduler) RunInsightJobResultsConsumer() error {
 			err := s.db.UpdateInsightJobsTimedOut(s.insightIntervalHours)
 			if err != nil {
 				s.logger.Error("Failed to update timed out InsightJob", zap.Error(err))
+			}
+		}
+	}
+}
+
+// RunCheckupJobResultsConsumer consumes messages from the checkupJobResultQueue queue.
+// It will update the status of the jobs in the database based on the message.
+// It will also update the jobs status that are not completed in certain time to FAILED
+func (s *Scheduler) RunCheckupJobResultsConsumer() error {
+	s.logger.Info("Consuming messages from the CheckupJobResultQueue queue")
+
+	msgs, err := s.checkupJobResultQueue.Consume()
+	if err != nil {
+		return err
+	}
+
+	t := time.NewTicker(JobTimeoutCheckInterval)
+	defer t.Stop()
+
+	for {
+		select {
+		case msg, ok := <-msgs:
+			if !ok {
+				return fmt.Errorf("tasks channel is closed")
+			}
+
+			var result checkup.JobResult
+			if err := json.Unmarshal(msg.Body, &result); err != nil {
+				s.logger.Error("Failed to unmarshal CheckupJobResult results", zap.Error(err))
+				err = msg.Nack(false, false)
+				if err != nil {
+					s.logger.Error("Failed nacking message", zap.Error(err))
+				}
+				continue
+			}
+
+			s.logger.Info("Processing CheckupJobResult for Job",
+				zap.Uint("jobId", result.JobID),
+				zap.String("status", string(result.Status)),
+			)
+			err := s.db.UpdateCheckupJob(result.JobID, result.Status, result.Error)
+			if err != nil {
+				s.logger.Error("Failed to update the status of CheckupJob",
+					zap.Uint("jobId", result.JobID),
+					zap.Error(err))
+				err = msg.Nack(false, true)
+				if err != nil {
+					s.logger.Error("Failed nacking message", zap.Error(err))
+				}
+				continue
+			}
+
+			if err := msg.Ack(false); err != nil {
+				s.logger.Error("Failed acking message", zap.Error(err))
+			}
+		case <-t.C:
+			err := s.db.UpdateCheckupJobsTimedOut(s.checkupIntervalHours)
+			if err != nil {
+				s.logger.Error("Failed to update timed out CheckupJob", zap.Error(err))
 			}
 		}
 	}
@@ -2085,6 +2269,12 @@ func newInsightJob(insight Insight) InsightJob {
 	return InsightJob{
 		InsightID: insight.ID,
 		Status:    insightapi.InsightJobInProgress,
+	}
+}
+
+func newCheckupJob() CheckupJob {
+	return CheckupJob{
+		Status: checkupapi.CheckupJobInProgress,
 	}
 }
 

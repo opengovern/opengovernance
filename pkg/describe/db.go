@@ -9,6 +9,7 @@ import (
 
 	summarizerapi "gitlab.com/keibiengine/keibi-engine/pkg/summarizer/api"
 
+	checkupapi "gitlab.com/keibiengine/keibi-engine/pkg/checkup/api"
 	insightapi "gitlab.com/keibiengine/keibi-engine/pkg/insight/api"
 
 	api2 "gitlab.com/keibiengine/keibi-engine/pkg/compliance/api"
@@ -26,7 +27,7 @@ type Database struct {
 
 func (db Database) Initialize() error {
 	return db.orm.AutoMigrate(&Source{}, &DescribeSourceJob{}, &DescribeResourceJob{},
-		&ComplianceReportJob{}, &Insight{}, &InsightJob{}, &SummarizerJob{}, &ScheduleJob{},
+		&ComplianceReportJob{}, &Insight{}, &InsightJob{}, &CheckupJob{}, &SummarizerJob{}, &ScheduleJob{},
 	)
 }
 
@@ -753,6 +754,76 @@ func (db Database) UpdateInsightJobsTimedOut(insightIntervalHours int64) error {
 		Where(fmt.Sprintf("created_at < NOW() - INTERVAL '%d HOURS'", insightIntervalHours*2)).
 		Where("status IN ?", []string{string(insightapi.InsightJobInProgress)}).
 		Updates(InsightJob{Status: insightapi.InsightJobFailed, FailureMessage: "Job timed out"})
+	if tx.Error != nil {
+		return tx.Error
+	}
+
+	return nil
+}
+
+func (db Database) AddCheckupJob(job *CheckupJob) error {
+	tx := db.orm.Model(&CheckupJob{}).
+		Create(job)
+	if tx.Error != nil {
+		return tx.Error
+	}
+	return nil
+}
+
+func (db Database) UpdateCheckupJobStatus(job CheckupJob) error {
+	tx := db.orm.Model(&CheckupJob{}).
+		Where("id = ?", job.ID).
+		Update("status", job.Status)
+	if tx.Error != nil {
+		return tx.Error
+	}
+	return nil
+}
+
+func (db Database) UpdateCheckupJob(jobID uint, status checkupapi.CheckupJobStatus, failedMessage string) error {
+	tx := db.orm.Model(&CheckupJob{}).
+		Where("id = ?", jobID).
+		Updates(CheckupJob{
+			Status:         status,
+			FailureMessage: failedMessage,
+		})
+	if tx.Error != nil {
+		return tx.Error
+	}
+	return nil
+}
+
+func (db Database) FetchLastCheckupJob() (*CheckupJob, error) {
+	var job CheckupJob
+	tx := db.orm.Model(&CheckupJob{}).
+		Order("created_at DESC").First(&job)
+	if tx.Error != nil {
+		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
+		return nil, tx.Error
+	}
+	return &job, nil
+}
+
+func (db Database) ListCheckupJobs() ([]CheckupJob, error) {
+	var job []CheckupJob
+	tx := db.orm.Model(&CheckupJob{}).Find(&job)
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+	return job, nil
+}
+
+// UpdateCheckupJobsTimedOut updates the status of CheckupJobs
+// that have timed out while in the status of 'IN_PROGRESS' for longer
+// than checkupIntervalHours hours.
+func (db Database) UpdateCheckupJobsTimedOut(checkupIntervalHours int64) error {
+	tx := db.orm.
+		Model(&CheckupJob{}).
+		Where(fmt.Sprintf("created_at < NOW() - INTERVAL '%d HOURS'", checkupIntervalHours*2)).
+		Where("status IN ?", []string{string(checkupapi.CheckupJobInProgress)}).
+		Updates(CheckupJob{Status: checkupapi.CheckupJobFailed, FailureMessage: "Job timed out"})
 	if tx.Error != nil {
 		return tx.Error
 	}

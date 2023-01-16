@@ -19,6 +19,8 @@ const (
 	ComplianceReportCleanupJobsQueueName = "compliance-report-cleanup-jobs-queue"
 	InsightJobsQueueName                 = "insight-jobs-queue"
 	InsightResultsQueueName              = "insight-results-queue"
+	CheckupJobsQueueName                 = "checkup-jobs-queue"
+	CheckupResultsQueueName              = "checkup-results-queue"
 	SummarizerJobsQueueName              = "summarizer-jobs-queue"
 	SummarizerResultsQueueName           = "summarizer-results-queue"
 	SourceEventsQueueName                = "source-events-queue"
@@ -62,6 +64,7 @@ var (
 	DescribeIntervalHours   = os.Getenv("DESCRIBE_INTERVAL_HOURS")
 	ComplianceIntervalHours = os.Getenv("COMPLIANCE_INTERVAL_HOURS")
 	InsightIntervalHours    = os.Getenv("INSIGHT_INTERVAL_HOURS")
+	CheckupIntervalHours    = os.Getenv("CHECKUP_INTERVAL_HOURS")
 	CurrentWorkspaceID      = os.Getenv("CURRENT_NAMESPACE")
 	WorkspaceBaseURL        = os.Getenv("WORKSPACE_BASE_URL")
 	ComplianceBaseURL       = os.Getenv("COMPLIANCE_BASE_URL")
@@ -100,6 +103,8 @@ func SchedulerCommand() *cobra.Command {
 				ComplianceReportCleanupJobsQueueName,
 				InsightJobsQueueName,
 				InsightResultsQueueName,
+				CheckupJobsQueueName,
+				CheckupResultsQueueName,
 				SummarizerJobsQueueName,
 				SummarizerResultsQueueName,
 				SourceEventsQueueName,
@@ -113,6 +118,7 @@ func SchedulerCommand() *cobra.Command {
 				DescribeIntervalHours,
 				ComplianceIntervalHours,
 				InsightIntervalHours,
+				CheckupIntervalHours,
 			)
 			if err != nil {
 				return err
