@@ -118,6 +118,8 @@ func roleToPriority(role api.Role) int {
 		return 1
 	case api.AdminRole:
 		return 2
+	case api.KeibiAdminRole:
+		return 99
 	default:
 		panic("unsupported role: " + role)
 	}

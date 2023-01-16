@@ -8,6 +8,7 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpserver"
 	"gitlab.com/keibiengine/keibi-engine/pkg/metadata/api"
 	"gitlab.com/keibiengine/keibi-engine/pkg/metadata/internal/src"
+	"gitlab.com/keibiengine/keibi-engine/pkg/metadata/models"
 )
 
 func (h HttpHandler) Register(r *echo.Echo) {
@@ -59,7 +60,17 @@ func (h HttpHandler) SetConfigMetadata(ctx echo.Context) error {
 		return err
 	}
 
-	err := src.SetConfigMetadata(h.db, h.redis, req.Key, req.Value)
+	key, err := models.ParseMetadataKey(req.Key)
+	if err != nil {
+		return err
+	}
+
+	err = httpserver.RequireMinRole(ctx, key.GetMinAuthRole())
+	if err != nil {
+		return err
+	}
+
+	err = src.SetConfigMetadata(h.db, h.redis, key, req.Value)
 	if err != nil {
 		return err
 	}
