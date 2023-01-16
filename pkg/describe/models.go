@@ -6,6 +6,7 @@ import (
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/summarizer"
 
+	checkupapi "gitlab.com/keibiengine/keibi-engine/pkg/checkup/api"
 	summarizerapi "gitlab.com/keibiengine/keibi-engine/pkg/summarizer/api"
 
 	insightapi "gitlab.com/keibiengine/keibi-engine/pkg/insight/api"
@@ -91,5 +92,11 @@ type SummarizerJob struct {
 	ScheduleJobID  uint
 	Status         summarizerapi.SummarizerJobStatus
 	JobType        summarizer.JobType
+	FailureMessage string
+}
+
+type CheckupJob struct {
+	gorm.Model
+	Status         checkupapi.CheckupJobStatus
 	FailureMessage string
 }
