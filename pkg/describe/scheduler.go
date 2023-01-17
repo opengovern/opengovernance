@@ -12,6 +12,7 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/checkup"
 	checkupapi "gitlab.com/keibiengine/keibi-engine/pkg/checkup/api"
 	"gitlab.com/keibiengine/keibi-engine/pkg/compliance/client"
+	"gitlab.com/keibiengine/keibi-engine/pkg/describe/enums"
 	"gitlab.com/keibiengine/keibi-engine/pkg/summarizer"
 	summarizerapi "gitlab.com/keibiengine/keibi-engine/pkg/summarizer/api"
 	"gorm.io/gorm"
@@ -808,7 +809,6 @@ func (s Scheduler) scheduleDescribeJob() {
 
 	if scheduleJob == nil ||
 		(scheduleJob.CreatedAt.Before(time.Now().Add(time.Duration(-s.describeIntervalHours)*time.Hour)) && scheduleJob.Status != summarizerapi.SummarizerJobInProgress) {
-
 		job := ScheduleJob{
 			Model:          gorm.Model{},
 			Status:         summarizerapi.SummarizerJobInProgress,
@@ -947,10 +947,24 @@ func (s Scheduler) scheduleDescribeJob() {
 			s.logger.Warn("The jobs in queue is over the threshold", zap.Error(err))
 			return
 		}
+		src, err := s.db.GetLastDescribeSourceJob(source.ID)
+		if err != nil {
+			DescribeSourceJobsCount.WithLabelValues("failure").Inc()
+			s.logger.Error("Failed to get last describe source job",
+				zap.Uint("jobID", scheduleJob.ID),
+				zap.String("sourceID", source.ID.String()),
+				zap.Error(err))
+			continue
+		}
+
+		triggerType := enums.DescribeTriggerTypeScheduled
+		if src == nil {
+			triggerType = enums.DescribeTriggerTypeInitialDiscovery
+		}
 
 		s.logger.Info("Source is due for a describe. Creating a job now", zap.String("sourceId", source.ID.String()))
 		daj := newDescribeSourceJob(source, *scheduleJob)
-		err := s.db.CreateDescribeSourceJob(&daj)
+		err = s.db.CreateDescribeSourceJob(&daj)
 		if err != nil {
 			DescribeSourceJobsCount.WithLabelValues("failure").Inc()
 			s.logger.Error("Failed to create DescribeSourceJob",
@@ -961,7 +975,7 @@ func (s Scheduler) scheduleDescribeJob() {
 			continue
 		}
 
-		enqueueDescribeConnectionJob(s.logger, s.db, s.describeConnectionJobQueue, source, daj, scheduleJob.ID, scheduleJob.CreatedAt)
+		enqueueDescribeConnectionJob(s.logger, s.db, s.describeConnectionJobQueue, source, daj, scheduleJob.ID, scheduleJob.CreatedAt, triggerType)
 
 		isSuccessful := true
 
@@ -1619,7 +1633,7 @@ func enqueueDescribeResourceJobs(logger *zap.Logger, db Database, q queue.Interf
 	}
 }
 
-func enqueueDescribeConnectionJob(logger *zap.Logger, db Database, q queue.Interface, a Source, daj DescribeSourceJob, scheduleJobID uint, describedAt time.Time) {
+func enqueueDescribeConnectionJob(logger *zap.Logger, db Database, q queue.Interface, a Source, daj DescribeSourceJob, scheduleJobID uint, describedAt time.Time, triggerType enums.DescribeTriggerType) {
 	nextStatus := api.DescribeResourceJobQueued
 	errMsg := ""
 
@@ -1636,6 +1650,7 @@ func enqueueDescribeConnectionJob(logger *zap.Logger, db Database, q queue.Inter
 		DescribedAt:   describedAt.UnixMilli(),
 		SourceType:    a.Type,
 		ConfigReg:     a.ConfigRef,
+		TriggerType:   triggerType,
 	}); err != nil {
 		logger.Error("Failed to queue DescribeConnectionJob",
 			zap.Uint("jobId", daj.ID),

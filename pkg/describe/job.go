@@ -10,6 +10,7 @@ import (
 	"sync"
 	"time"
 
+	"gitlab.com/keibiengine/keibi-engine/pkg/describe/enums"
 	"gitlab.com/keibiengine/keibi-engine/pkg/describe/es"
 	"gitlab.com/keibiengine/keibi-engine/pkg/source"
 
@@ -138,6 +139,7 @@ type DescribeJob struct {
 	DescribedAt   int64
 	SourceType    api.SourceType
 	ConfigReg     string
+	TriggerType   enums.DescribeTriggerType
 }
 
 type DescribeJobResult struct {
@@ -157,6 +159,7 @@ type DescribeConnectionJob struct {
 	DescribedAt   int64
 	SourceType    api.SourceType
 	ConfigReg     string
+	TriggerType   enums.DescribeTriggerType
 }
 
 type DescribeConnectionJobResult struct {
@@ -165,6 +168,9 @@ type DescribeConnectionJobResult struct {
 }
 
 func (j DescribeConnectionJob) Do(ictx context.Context, vlt vault.SourceConfig, rdb *redis.Client, producer sarama.SyncProducer, topic string, logger *zap.Logger) (r DescribeConnectionJobResult) {
+	if j.TriggerType == "" {
+		j.TriggerType = enums.DescribeTriggerTypeScheduled
+	}
 	workerCount, err := strconv.Atoi(AccountConcurrentDescribe)
 	if err != nil {
 		fmt.Println("Invalid worker count:", AccountConcurrentDescribe, err)
@@ -211,6 +217,7 @@ func (j DescribeConnectionJob) Do(ictx context.Context, vlt vault.SourceConfig, 
 			DescribedAt:   j.DescribedAt,
 			SourceType:    j.SourceType,
 			ConfigReg:     j.ConfigReg,
+			TriggerType:   j.TriggerType,
 		}
 	}
 
@@ -341,6 +348,7 @@ func doDescribeAWS(ctx context.Context, rdb *redis.Client, job DescribeJob, conf
 	output, err := aws.GetResources(
 		ctx,
 		job.ResourceType,
+		job.TriggerType,
 		creds.AccountID,
 		creds.Regions,
 		creds.AccessKey,
@@ -498,6 +506,7 @@ func doDescribeAzure(ctx context.Context, rdb *redis.Client, job DescribeJob, co
 	output, err := azure.GetResources(
 		ctx,
 		job.ResourceType,
+		job.TriggerType,
 		[]string{subscriptionId},
 		azure.AuthConfig{
 			TenantID:            creds.TenantID,

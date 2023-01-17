@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/spf13/cobra"
+	describe2 "gitlab.com/keibiengine/keibi-engine/pkg/describe/enums"
 )
 
 func Command() *cobra.Command {
@@ -65,6 +66,7 @@ func Command() *cobra.Command {
 			output, err := GetResources(
 				ctx,
 				resourceType,
+				describe2.DescribeTriggerTypeManual,
 				awsAccount,
 				regions,
 				awsAccessKey,

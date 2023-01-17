@@ -12,16 +12,17 @@ import (
 	"github.com/Azure/go-autorest/autorest/azure/auth"
 	hamiltonAuth "github.com/manicminer/hamilton/auth"
 	"gitlab.com/keibiengine/keibi-engine/pkg/azure/describer"
+	"gitlab.com/keibiengine/keibi-engine/pkg/describe/enums"
 )
 
 type ResourceDescriber interface {
-	DescribeResources(context.Context, autorest.Authorizer, hamiltonAuth.Authorizer, []string, string) ([]describer.Resource, error)
+	DescribeResources(context.Context, autorest.Authorizer, hamiltonAuth.Authorizer, []string, string, enums.DescribeTriggerType) ([]describer.Resource, error)
 }
 
-type ResourceDescribeFunc func(context.Context, autorest.Authorizer, hamiltonAuth.Authorizer, []string, string) ([]describer.Resource, error)
+type ResourceDescribeFunc func(context.Context, autorest.Authorizer, hamiltonAuth.Authorizer, []string, string, enums.DescribeTriggerType) ([]describer.Resource, error)
 
-func (fn ResourceDescribeFunc) DescribeResources(c context.Context, a autorest.Authorizer, ah hamiltonAuth.Authorizer, s []string, t string) ([]describer.Resource, error) {
-	return fn(c, a, ah, s, t)
+func (fn ResourceDescribeFunc) DescribeResources(c context.Context, a autorest.Authorizer, ah hamiltonAuth.Authorizer, s []string, t string, triggerType enums.DescribeTriggerType) ([]describer.Resource, error) {
+	return fn(c, a, ah, s, t, triggerType)
 }
 
 var resourceTypeToDescriber = map[string]ResourceDescriber{
@@ -189,6 +190,7 @@ type Resources struct {
 func GetResources(
 	ctx context.Context,
 	resourceType string,
+	triggerType enums.DescribeTriggerType,
 	subscriptions []string,
 	cfg AuthConfig,
 	azureAuth string,
@@ -223,7 +225,7 @@ func GetResources(
 		return nil, err
 	}
 
-	resources, err := describe(ctx, authorizer, hamiltonAuthorizer, resourceType, subscriptions, cfg.TenantID)
+	resources, err := describe(ctx, authorizer, hamiltonAuthorizer, resourceType, subscriptions, cfg.TenantID, triggerType)
 	if err != nil {
 		return nil, err
 	}
@@ -259,7 +261,7 @@ func setEnvIfNotEmpty(env, s string) {
 	}
 }
 
-func describe(ctx context.Context, authorizer autorest.Authorizer, hamiltonAuth hamiltonAuth.Authorizer, resourceType string, subscriptions []string, tenantId string) ([]describer.Resource, error) {
+func describe(ctx context.Context, authorizer autorest.Authorizer, hamiltonAuth hamiltonAuth.Authorizer, resourceType string, subscriptions []string, tenantId string, triggerType enums.DescribeTriggerType) ([]describer.Resource, error) {
 	rd, ok := resourceTypeToDescriber[resourceType]
 	if !ok {
 		return nil, fmt.Errorf("unsupported resource type: %s", resourceType)
@@ -269,11 +271,12 @@ func describe(ctx context.Context, authorizer autorest.Authorizer, hamiltonAuth 
 		rd = describer.GenericResourceGraph{Table: "Resources", Type: resourceType}
 	}
 
-	return rd.DescribeResources(ctx, authorizer, hamiltonAuth, subscriptions, tenantId)
+	return rd.DescribeResources(ctx, authorizer, hamiltonAuth, subscriptions, tenantId, triggerType)
 }
 
 func DescribeBySubscription(describe func(context.Context, autorest.Authorizer, string) ([]describer.Resource, error)) ResourceDescriber {
-	return ResourceDescribeFunc(func(ctx context.Context, authorizer autorest.Authorizer, hamiltonAuth hamiltonAuth.Authorizer, subscriptions []string, tenantId string) ([]describer.Resource, error) {
+	return ResourceDescribeFunc(func(ctx context.Context, authorizer autorest.Authorizer, hamiltonAuth hamiltonAuth.Authorizer, subscriptions []string, tenantId string, triggerType enums.DescribeTriggerType) ([]describer.Resource, error) {
+		ctx = describer.WithTriggerType(ctx, triggerType)
 		values := []describer.Resource{}
 		for _, subscription := range subscriptions {
 			result, err := describe(ctx, authorizer, subscription)
@@ -292,7 +295,8 @@ func DescribeBySubscription(describe func(context.Context, autorest.Authorizer, 
 }
 
 func DescribeADByTenantID(describe func(context.Context, hamiltonAuth.Authorizer, string) ([]describer.Resource, error)) ResourceDescriber {
-	return ResourceDescribeFunc(func(ctx context.Context, authorizer autorest.Authorizer, hamiltonAuth hamiltonAuth.Authorizer, subscription []string, tenantId string) ([]describer.Resource, error) {
+	return ResourceDescribeFunc(func(ctx context.Context, authorizer autorest.Authorizer, hamiltonAuth hamiltonAuth.Authorizer, subscription []string, tenantId string, triggerType enums.DescribeTriggerType) ([]describer.Resource, error) {
+		ctx = describer.WithTriggerType(ctx, triggerType)
 		var values []describer.Resource
 		result, err := describe(ctx, hamiltonAuth, tenantId)
 		if err != nil {
