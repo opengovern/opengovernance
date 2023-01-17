@@ -10,6 +10,7 @@ import (
 	"time"
 
 	hamiltonAuth "github.com/manicminer/hamilton/auth"
+	"gitlab.com/keibiengine/keibi-engine/pkg/describe/enums"
 
 	"github.com/Azure/azure-sdk-for-go/profiles/latest/resourcegraph/mgmt/resourcegraph"
 	"github.com/Azure/go-autorest/autorest"
@@ -22,7 +23,8 @@ type GenericResourceGraph struct {
 	Type  string
 }
 
-func (d GenericResourceGraph) DescribeResources(ctx context.Context, authorizer autorest.Authorizer, _ hamiltonAuth.Authorizer, subscriptions []string, tenantId string) ([]Resource, error) {
+func (d GenericResourceGraph) DescribeResources(ctx context.Context, authorizer autorest.Authorizer, _ hamiltonAuth.Authorizer, subscriptions []string, tenantId string, triggerType enums.DescribeTriggerType) ([]Resource, error) {
+	ctx = WithTriggerType(ctx, triggerType)
 	query := fmt.Sprintf("%s | where type == \"%s\"", d.Table, strings.ToLower(d.Type))
 
 	client := resourcegraph.New()

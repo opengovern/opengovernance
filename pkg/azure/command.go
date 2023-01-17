@@ -7,6 +7,7 @@ import (
 
 	"github.com/Azure/go-autorest/autorest/azure/auth"
 	"github.com/spf13/cobra"
+	"gitlab.com/keibiengine/keibi-engine/pkg/describe/enums"
 )
 
 const AzureAuthLocation = "AZURE_AUTH_LOCATION"
@@ -94,6 +95,7 @@ or --auth-location flag.
 			output, err := GetResources(
 				ctx,
 				resourceType,
+				enums.DescribeTriggerTypeManual,
 				subscriptions,
 				AuthConfig{
 					TenantID:            tenantId,

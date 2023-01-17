@@ -8,6 +8,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/costexplorer"
 	"github.com/aws/aws-sdk-go-v2/service/costexplorer/types"
 	"gitlab.com/keibiengine/keibi-engine/pkg/aws/model"
+	"gitlab.com/keibiengine/keibi-engine/pkg/describe/enums"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 )
@@ -124,7 +125,12 @@ func costMonthly(ctx context.Context, cfg aws.Config, by string, startDate, endD
 }
 
 func CostByServiceLastMonth(ctx context.Context, cfg aws.Config) ([]Resource, error) {
-	costs, err := costMonthly(ctx, cfg, "SERVICE", time.Now().AddDate(0, -1, 0), time.Now())
+	triggerType := GetTriggerTypeFromContext(ctx)
+	startDate := time.Now().AddDate(0, -1, 0)
+	if triggerType == enums.DescribeTriggerTypeInitialDiscovery {
+		startDate = time.Now().AddDate(0, -3, -7)
+	}
+	costs, err := costMonthly(ctx, cfg, "SERVICE", startDate, time.Now())
 	if err != nil {
 		return nil, err
 	}
@@ -144,7 +150,13 @@ func CostByServiceLastMonth(ctx context.Context, cfg aws.Config) ([]Resource, er
 }
 
 func CostByAccountLastMonth(ctx context.Context, cfg aws.Config) ([]Resource, error) {
-	costs, err := costMonthly(ctx, cfg, "LINKED_ACCOUNT", time.Now().AddDate(0, -1, 0), time.Now())
+	triggerType := GetTriggerTypeFromContext(ctx)
+	startDate := time.Now().AddDate(0, -1, 0)
+	if triggerType == enums.DescribeTriggerTypeInitialDiscovery {
+		startDate = time.Now().AddDate(0, -3, -7)
+	}
+
+	costs, err := costMonthly(ctx, cfg, "LINKED_ACCOUNT", startDate, time.Now())
 	if err != nil {
 		return nil, err
 	}
@@ -243,7 +255,13 @@ func costDaily(ctx context.Context, cfg aws.Config, by string, startDate, endDat
 }
 
 func CostByServiceLastDay(ctx context.Context, cfg aws.Config) ([]Resource, error) {
-	costs, err := costDaily(ctx, cfg, "SERVICE", time.Now().AddDate(0, 0, -7), time.Now())
+	triggerType := GetTriggerTypeFromContext(ctx)
+	startDate := time.Now().AddDate(0, 0, -7)
+	if triggerType == enums.DescribeTriggerTypeInitialDiscovery {
+		startDate = time.Now().AddDate(0, -3, -7)
+	}
+
+	costs, err := costDaily(ctx, cfg, "SERVICE", startDate, time.Now())
 	if err != nil {
 		return nil, err
 	}
@@ -263,7 +281,13 @@ func CostByServiceLastDay(ctx context.Context, cfg aws.Config) ([]Resource, erro
 }
 
 func CostByAccountLastDay(ctx context.Context, cfg aws.Config) ([]Resource, error) {
-	costs, err := costDaily(ctx, cfg, "LINKED_ACCOUNT", time.Now().AddDate(0, 0, -7), time.Now())
+	triggerType := GetTriggerTypeFromContext(ctx)
+	startDate := time.Now().AddDate(0, 0, -7)
+	if triggerType == enums.DescribeTriggerTypeInitialDiscovery {
+		startDate = time.Now().AddDate(0, -3, -7)
+	}
+
+	costs, err := costDaily(ctx, cfg, "LINKED_ACCOUNT", startDate, time.Now())
 	if err != nil {
 		return nil, err
 	}
