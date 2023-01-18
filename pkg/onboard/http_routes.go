@@ -265,13 +265,13 @@ func (h HttpHandler) PostSourceAws(ctx echo.Context) error {
 	err := keibiaws.CheckDescribeRegionsPermission(req.Config.AccessKey, req.Config.SecretKey)
 	if err != nil {
 		fmt.Printf("error in checking describe regions permission: %v", err)
-		return PermissionError
+		return echo.NewHTTPError(http.StatusUnauthorized, PermissionError.Error())
 	}
 
 	err = keibiaws.CheckSecurityAuditPermission(req.Config.AccessKey, req.Config.SecretKey)
 	if err != nil {
 		fmt.Printf("error in checking security audit permission: %v", err)
-		return PermissionError
+		return echo.NewHTTPError(http.StatusUnauthorized, PermissionError.Error())
 	}
 
 	// Create source section
@@ -768,6 +768,12 @@ func (h HttpHandler) PutSourceCred(ctx echo.Context) error {
 			AccessKey: req.AccessKey,
 			SecretKey: req.SecretKey,
 		}
+
+		err = keibiaws.CheckSecurityAuditPermission(newCnf.AccessKey, newCnf.SecretKey)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		}
+
 		if err := h.vault.Write(src.ConfigRef, newCnf.AsMap()); err != nil {
 			return err
 		}
