@@ -106,7 +106,7 @@ type FilterCloudResourceTypeNode struct {
 	CloudProvider source.Type `json:"cloud_provider"`
 	ResourceType  string      `json:"resource_type"`
 	ResourceName  string      `json:"resource_name"`
-	Weight        int         `json:"weight"`
+	Weight        int64       `json:"weight"`
 	ServiceCode   string      `json:"service_code"`
 	Importance    string      `json:"importance"`
 }
@@ -132,7 +132,7 @@ type FilterInsightNode struct {
 	MetricID      string      `json:"metric_id"`
 	InsightID     string      `json:"insight_id"`
 	Name          string      `json:"name"`
-	Weight        int         `json:"weight"`
+	Weight        int64       `json:"weight"`
 	Importance    string      `json:"importance"`
 }
 
@@ -210,7 +210,7 @@ func getFilterFromNode(node neo4j.Node) (Filter, error) {
 				CloudProvider: source.Type(cloudProvider.(string)),
 				ResourceType:  strings.ToLower(resourceType.(string)),
 				ResourceName:  resourceName.(string),
-				Weight:        weight.(int),
+				Weight:        weight.(int64),
 				ServiceCode:   strings.ToLower(serviceCode.(string)),
 				Importance:    strings.ToLower(importance.(string)),
 			}, nil
@@ -268,7 +268,7 @@ func getFilterFromNode(node neo4j.Node) (Filter, error) {
 				MetricID:      metricID.(string),
 				InsightID:     insightID.(string),
 				Name:          name.(string),
-				Weight:        weight.(int),
+				Weight:        weight.(int64),
 				Importance:    importance.(string),
 			}, nil
 		}
