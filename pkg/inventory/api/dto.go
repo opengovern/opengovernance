@@ -449,7 +449,8 @@ type FilterCloudResourceType struct {
 	CloudProvider       source.Type `json:"cloudProvider"`
 	ResourceType        string      `json:"resourceType"`
 	ResourceName        string      `json:"resourceName"`
-	Weight              int         `json:"weight"`
+	Weight              int64       `json:"weight"`
+	Importance          string      `json:"importance"`
 	ResourceCount       int         `json:"resourceCount"`
 	ResourceCountChange *float64    `json:"resourceCountChange,omitempty"`
 }
@@ -492,7 +493,8 @@ type FilterInsight struct {
 	FilterID      string      `json:"filterID"`
 	CloudProvider source.Type `json:"cloudProvider"`
 	Name          string      `json:"name"`
-	Weight        int         `json:"weight"`
+	Weight        int64       `json:"weight"`
+	Importance    string      `json:"importance"`
 	Value         int         `json:"value"`
 	ValueChange   *float64    `json:"valueChange,omitempty"`
 }

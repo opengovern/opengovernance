@@ -1117,6 +1117,7 @@ func (h *HttpHandler) GetMetricsResourceCountHelper(ctx context.Context, categor
 				ResourceType:  f.ResourceType,
 				ResourceName:  f.ResourceName,
 				Weight:        f.Weight,
+				Importance:    f.Importance,
 				ResourceCount: metricIndexed[f.ResourceType],
 			}
 		case FilterTypeInsight:
@@ -1133,6 +1134,7 @@ func (h *HttpHandler) GetMetricsResourceCountHelper(ctx context.Context, categor
 				CloudProvider: f.CloudProvider,
 				Name:          f.Name,
 				Weight:        f.Weight,
+				Importance:    f.Importance,
 				Value:         insightIndexed[f.InsightID],
 			}
 		}

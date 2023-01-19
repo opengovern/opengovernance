@@ -275,6 +275,7 @@ func GetCategoryNodeResourceCountInfo(categoryNode *CategoryNode, metrics map[st
 					ResourceName:  filter.ResourceName,
 					ResourceType:  filter.ResourceType,
 					Weight:        filter.Weight,
+					Importance:    filter.Importance,
 					ResourceCount: 0,
 				}
 			}
@@ -297,6 +298,7 @@ func GetCategoryNodeResourceCountInfo(categoryNode *CategoryNode, metrics map[st
 					ResourceType:  filter.ResourceType,
 					ResourceName:  filter.ResourceName,
 					Weight:        filter.Weight,
+					Importance:    filter.Importance,
 					ResourceCount: 0,
 				}
 				if m, ok := metrics[filter.ResourceType]; ok {
