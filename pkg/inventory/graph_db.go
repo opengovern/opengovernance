@@ -106,7 +106,7 @@ type FilterCloudResourceTypeNode struct {
 	CloudProvider source.Type `json:"cloud_provider"`
 	ResourceType  string      `json:"resource_type"`
 	ResourceName  string      `json:"resource_name"`
-	PluralName    string      `json:"plural_name"`
+	Weight        int         `json:"weight"`
 	ServiceCode   string      `json:"service_code"`
 	Importance    string      `json:"importance"`
 }
@@ -132,7 +132,7 @@ type FilterInsightNode struct {
 	MetricID      string      `json:"metric_id"`
 	InsightID     string      `json:"insight_id"`
 	Name          string      `json:"name"`
-	PluralName    string      `json:"plural_name"`
+	Weight        int         `json:"weight"`
 	Importance    string      `json:"importance"`
 }
 
@@ -190,7 +190,7 @@ func getFilterFromNode(node neo4j.Node) (Filter, error) {
 			if !ok {
 				return nil, ErrPropertyNotFound
 			}
-			pluralName, ok := node.Props["plural_name"]
+			weight, ok := node.Props["weight"]
 			if !ok {
 				return nil, ErrPropertyNotFound
 			}
@@ -210,7 +210,7 @@ func getFilterFromNode(node neo4j.Node) (Filter, error) {
 				CloudProvider: source.Type(cloudProvider.(string)),
 				ResourceType:  strings.ToLower(resourceType.(string)),
 				ResourceName:  resourceName.(string),
-				PluralName:    pluralName.(string),
+				Weight:        weight.(int),
 				ServiceCode:   strings.ToLower(serviceCode.(string)),
 				Importance:    strings.ToLower(importance.(string)),
 			}, nil
@@ -252,7 +252,7 @@ func getFilterFromNode(node neo4j.Node) (Filter, error) {
 			if !ok {
 				return nil, ErrPropertyNotFound
 			}
-			pluralName, ok := node.Props["plural_name"]
+			weight, ok := node.Props["weight"]
 			if !ok {
 				return nil, ErrPropertyNotFound
 			}
@@ -268,7 +268,7 @@ func getFilterFromNode(node neo4j.Node) (Filter, error) {
 				MetricID:      metricID.(string),
 				InsightID:     insightID.(string),
 				Name:          name.(string),
-				PluralName:    pluralName.(string),
+				Weight:        weight.(int),
 				Importance:    importance.(string),
 			}, nil
 		}

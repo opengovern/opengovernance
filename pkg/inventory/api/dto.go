@@ -440,6 +440,7 @@ const (
 type Filter interface {
 	GetFilterID() string
 	GetFilterType() FilterType
+	GetFilterName() string
 }
 
 type FilterCloudResourceType struct {
@@ -448,7 +449,7 @@ type FilterCloudResourceType struct {
 	CloudProvider       source.Type `json:"cloudProvider"`
 	ResourceType        string      `json:"resourceType"`
 	ResourceName        string      `json:"resourceName"`
-	PluralName          string      `json:"pluralName"`
+	Weight              int         `json:"weight"`
 	ResourceCount       int         `json:"resourceCount"`
 	ResourceCountChange *float64    `json:"resourceCountChange,omitempty"`
 }
@@ -459,6 +460,10 @@ func (f FilterCloudResourceType) GetFilterID() string {
 
 func (f FilterCloudResourceType) GetFilterType() FilterType {
 	return FilterTypeCloudResourceType
+}
+
+func (f FilterCloudResourceType) GetFilterName() string {
+	return f.ResourceName
 }
 
 type FilterCost struct {
@@ -478,12 +483,16 @@ func (f FilterCost) GetFilterType() FilterType {
 	return FilterTypeCost
 }
 
+func (f FilterCost) GetFilterName() string {
+	return f.ServiceName
+}
+
 type FilterInsight struct {
 	FilterType    FilterType  `json:"filterType"`
 	FilterID      string      `json:"filterID"`
 	CloudProvider source.Type `json:"cloudProvider"`
 	Name          string      `json:"name"`
-	PluralName    string      `json:"pluralName"`
+	Weight        int         `json:"weight"`
 	Value         int         `json:"value"`
 	ValueChange   *float64    `json:"valueChange,omitempty"`
 }
@@ -494,6 +503,10 @@ func (f FilterInsight) GetFilterID() string {
 
 func (f FilterInsight) GetFilterType() FilterType {
 	return FilterTypeInsight
+}
+
+func (f FilterInsight) GetFilterName() string {
+	return f.Name
 }
 
 type CategoryNode struct {
