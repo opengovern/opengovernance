@@ -37,7 +37,7 @@ func SortFilters(filters []api.Filter) []api.Filter {
 				}
 			case api.FilterTypeInsight:
 				fj := filters[j].(*api.FilterInsight)
-				if fi.Weight == fj.Weight {
+				if fi.Weight != fj.Weight {
 					return fi.Weight < fj.Weight
 				}
 			}
@@ -46,12 +46,12 @@ func SortFilters(filters []api.Filter) []api.Filter {
 			switch filters[j].GetFilterType() {
 			case api.FilterTypeCloudResourceType:
 				fj := filters[j].(*api.FilterCloudResourceType)
-				if fi.Weight == fj.Weight {
+				if fi.Weight != fj.Weight {
 					return fi.Weight < fj.Weight
 				}
 			case api.FilterTypeInsight:
 				fj := filters[j].(*api.FilterInsight)
-				if fi.Weight == fj.Weight {
+				if fi.Weight != fj.Weight {
 					return fi.Weight < fj.Weight
 				}
 			}
