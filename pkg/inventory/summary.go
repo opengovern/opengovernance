@@ -274,7 +274,7 @@ func GetCategoryNodeResourceCountInfo(categoryNode *CategoryNode, metrics map[st
 					CloudProvider: filter.CloudProvider,
 					ResourceName:  filter.ResourceName,
 					ResourceType:  filter.ResourceType,
-					PluralName:    filter.PluralName,
+					Weight:        filter.Weight,
 					ResourceCount: 0,
 				}
 			}
@@ -296,7 +296,7 @@ func GetCategoryNodeResourceCountInfo(categoryNode *CategoryNode, metrics map[st
 					CloudProvider: filter.CloudProvider,
 					ResourceType:  filter.ResourceType,
 					ResourceName:  filter.ResourceName,
-					PluralName:    filter.PluralName,
+					Weight:        filter.Weight,
 					ResourceCount: 0,
 				}
 				if m, ok := metrics[filter.ResourceType]; ok {
