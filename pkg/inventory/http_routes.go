@@ -1269,7 +1269,7 @@ func (h *HttpHandler) GetMetricsResourceCount(ctx echo.Context) error {
 		resultAsArr = append(resultAsArr, v)
 	}
 
-	internal.SortFilters(resultAsArr)
+	resultAsArr = internal.SortFilters(resultAsArr)
 
 	return ctx.JSON(http.StatusOK, resultAsArr)
 }
