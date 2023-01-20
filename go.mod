@@ -97,7 +97,6 @@ require (
 	github.com/swaggo/swag v1.8.0
 	github.com/tombuildsstuff/giovanni v0.18.0
 	github.com/turbot/go-kit v0.4.0
-	github.com/turbot/steampipe-plugin-sdk v1.8.3
 	gitlab.com/keibiengine/steampipe-plugin-aws v0.0.0-20230120132753-94e2fa861042
 	gitlab.com/keibiengine/steampipe-plugin-azure v0.23.2-0.20230120132753-00fa18062309
 	gitlab.com/keibiengine/steampipe-plugin-azuread v0.1.1-0.20230120133122-1e5b3fe4a69e
@@ -271,7 +270,6 @@ require (
 	github.com/eko/gocache/v3 v3.1.1 // indirect
 	github.com/emicklei/go-restful v2.9.5+incompatible // indirect
 	github.com/envoyproxy/protoc-gen-validate v0.6.7 // indirect
-	github.com/ettle/strcase v0.1.1 // indirect
 	github.com/evanphx/json-patch v4.12.0+incompatible // indirect
 	github.com/fatih/color v1.13.0 // indirect
 	github.com/fluxcd/pkg/apis/kustomize v0.3.3 // indirect
