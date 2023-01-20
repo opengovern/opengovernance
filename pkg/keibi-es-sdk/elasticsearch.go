@@ -12,7 +12,7 @@ import (
 	elasticsearchv7 "github.com/elastic/go-elasticsearch/v7"
 	"github.com/elastic/go-elasticsearch/v7/esapi"
 	"github.com/elastic/go-elasticsearch/v7/esutil"
-	"github.com/turbot/steampipe-plugin-sdk/plugin"
+	"github.com/turbot/steampipe-plugin-sdk/v4/plugin"
 )
 
 func closeSafe(resp *esapi.Response) {

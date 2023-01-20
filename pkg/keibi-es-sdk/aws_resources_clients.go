@@ -3,7 +3,7 @@ package keibi
 
 import (
 	"context"
-	"github.com/turbot/steampipe-plugin-sdk/plugin"
+	"github.com/turbot/steampipe-plugin-sdk/v4/plugin"
 	aws "gitlab.com/keibiengine/keibi-engine/pkg/aws/model"
 )
 

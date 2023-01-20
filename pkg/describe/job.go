@@ -17,7 +17,7 @@ import (
 	trace2 "gitlab.com/keibiengine/keibi-engine/pkg/trace"
 	"go.opentelemetry.io/otel"
 
-	"github.com/turbot/steampipe-plugin-sdk/grpc/proto"
+	"github.com/turbot/steampipe-plugin-sdk/v4/grpc/proto"
 
 	"github.com/go-redis/redis/v8"
 
