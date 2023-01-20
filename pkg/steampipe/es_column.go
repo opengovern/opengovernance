@@ -14,10 +14,10 @@ import (
 	"github.com/hashicorp/go-hclog"
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/go-kit/types"
-	"github.com/turbot/steampipe-plugin-sdk/grpc/proto"
-	"github.com/turbot/steampipe-plugin-sdk/plugin"
-	"github.com/turbot/steampipe-plugin-sdk/plugin/context_key"
-	"github.com/turbot/steampipe-plugin-sdk/plugin/transform"
+	"github.com/turbot/steampipe-plugin-sdk/v4/grpc/proto"
+	"github.com/turbot/steampipe-plugin-sdk/v4/plugin"
+	"github.com/turbot/steampipe-plugin-sdk/v4/plugin/context_key"
+	"github.com/turbot/steampipe-plugin-sdk/v4/plugin/transform"
 	"gitlab.com/keibiengine/steampipe-plugin-aws/aws"
 	"gitlab.com/keibiengine/steampipe-plugin-azure/azure"
 	"gitlab.com/keibiengine/steampipe-plugin-azuread/azuread"
@@ -58,7 +58,8 @@ func DescriptionToRecord(plg *plugin.Plugin, resource interface{}, indexName str
 		}
 
 		if column != nil && column.Transform != nil {
-			value, err := column.Transform.Execute(ctx, &transformData, getDefaultColumnTransform(table, column))
+			//value, err := column.Transform.Execute(ctx, &transformData, getDefaultColumnTransform(table, column))
+			value, err := column.Transform.Execute(ctx, &transformData)
 			if err != nil {
 				return nil, err
 			}

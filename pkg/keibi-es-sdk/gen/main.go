@@ -265,7 +265,7 @@ func Get{{ .Name }}(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateD
 		fmt.Fprintln(&buf, `
 		import (
 			"context"
-			"github.com/turbot/steampipe-plugin-sdk/plugin"
+			"github.com/turbot/steampipe-plugin-sdk/v4/plugin"
 			`+*sourceType+` "gitlab.com/keibiengine/keibi-engine/pkg/`+*sourceType+`/model"
 		)
 		`)
