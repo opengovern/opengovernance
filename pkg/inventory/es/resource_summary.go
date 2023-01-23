@@ -52,8 +52,6 @@ type LookupResourceAggregationResponse struct {
 type LookupResourceAggregations struct {
 	ResourceTypeFilter AggregationResult `json:"resource_type_filter"`
 	SourceTypeFilter   AggregationResult `json:"source_type_filter"`
-	CategoryFilter     AggregationResult `json:"category_filter"`
-	ServiceFilter      AggregationResult `json:"service_filter"`
 	LocationFilter     AggregationResult `json:"location_filter"`
 	ConnectionFilter   AggregationResult `json:"connection_id_filter"`
 }
@@ -79,14 +77,6 @@ func BuildFilterQuery(
 
 	if !api.FilterIsEmpty(filters.ResourceType) {
 		terms["resource_type"] = filters.ResourceType
-	}
-
-	if !api.FilterIsEmpty(filters.Category) {
-		terms["category"] = filters.Category
-	}
-
-	if !api.FilterIsEmpty(filters.Service) {
-		terms["service_name"] = filters.Service
 	}
 
 	if !api.FilterIsEmpty(filters.Provider) {
@@ -125,12 +115,6 @@ func BuildFilterQuery(
 	sourceTypeFilter := map[string]interface{}{
 		"terms": map[string]interface{}{"field": "source_type", "size": 1000},
 	}
-	categoryFilter := map[string]interface{}{
-		"terms": map[string]interface{}{"field": "category", "size": 1000},
-	}
-	serviceFilter := map[string]interface{}{
-		"terms": map[string]interface{}{"field": "service_name", "size": 1000},
-	}
 	resourceTypeFilter := map[string]interface{}{
 		"terms": map[string]interface{}{"field": "resource_type", "size": 1000},
 	}
@@ -142,8 +126,6 @@ func BuildFilterQuery(
 	}
 	aggs := map[string]interface{}{
 		"source_type_filter":   sourceTypeFilter,
-		"category_filter":      categoryFilter,
-		"service_filter":       serviceFilter,
 		"resource_type_filter": resourceTypeFilter,
 		"location_filter":      locationFilter,
 		"connection_id_filter": connectionIDFilter,

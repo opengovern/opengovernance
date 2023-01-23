@@ -1404,6 +1404,57 @@ const docTemplate = `{
                 }
             }
         },
+        "/inventory/api/v1/resources/regions": {
+            "get": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "inventory"
+                ],
+                "summary": "Returns top n regions of specified provider by resource count",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Provider",
+                        "name": "provider",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "SourceId",
+                        "name": "sourceId",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "page size - default is 20",
+                        "name": "pageSize",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "page number - default is 1",
+                        "name": "pageNumber",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/api.LocationResponse"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/inventory/api/v1/resources/top/accounts": {
             "get": {
                 "consumes": [
@@ -1712,6 +1763,22 @@ const docTemplate = `{
                         "in": "query"
                     },
                     {
+                        "enum": [
+                            "healthy",
+                            "unhealthy"
+                        ],
+                        "type": "string",
+                        "description": "Source Healthstate",
+                        "name": "healthState",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "is enabled",
+                        "name": "isEnabled",
+                        "in": "query"
+                    },
+                    {
                         "type": "integer",
                         "description": "page size - default is 20",
                         "name": "pageSize",
@@ -1737,12 +1804,12 @@ const docTemplate = `{
                     },
                     {
                         "enum": [
-                            "sourceid",
-                            "resourcecount",
+                            "onboard_date",
+                            "resource_count",
                             "cost"
                         ],
                         "type": "string",
-                        "description": "column to sort by - default is sourceid",
+                        "description": "column to sort by - default is cost",
                         "name": "sortBy",
                         "in": "query"
                     }
@@ -2188,8 +2255,14 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Category ID - defaults to default template category",
+                        "description": "Category ID",
                         "name": "category",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Service code for metrics",
+                        "name": "servicecode",
                         "in": "query"
                     },
                     {
@@ -2227,6 +2300,17 @@ const docTemplate = `{
                         "type": "string",
                         "description": "time window either this or time must be provided",
                         "name": "timeWindow",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "weight",
+                            "name",
+                            "count"
+                        ],
+                        "type": "string",
+                        "description": "Sort by field - default is weight",
+                        "name": "sortBy",
                         "in": "query"
                     }
                 ],
@@ -2603,6 +2687,12 @@ const docTemplate = `{
                     },
                     {
                         "type": "string",
+                        "description": "Category for the services",
+                        "name": "category",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
                         "description": "start time for cost calculation in epoch seconds",
                         "name": "startTime",
                         "in": "query",
@@ -2634,7 +2724,7 @@ const docTemplate = `{
                             "cost"
                         ],
                         "type": "string",
-                        "description": "column to sort by - default is servicecode",
+                        "description": "column to sort by - default is cost",
                         "name": "sortBy",
                         "in": "query"
                     }
@@ -2643,11 +2733,43 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/api.ServiceSummaryResponse"
-                            }
+                            "$ref": "#/definitions/api.ServiceSummaryResponse"
                         }
+                    }
+                }
+            }
+        },
+        "/metadata/api/v1/metadata": {
+            "post": {
+                "description": "Sets the config metadata for the given key",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "metadata"
+                ],
+                "summary": "Sets the config metadata for the given key",
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    }
+                }
+            }
+        },
+        "/metadata/api/v1/metadata/{key}": {
+            "get": {
+                "description": "Returns the config metadata for the given key",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "metadata"
+                ],
+                "summary": "Returns the config metadata for the given key",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {}
                     }
                 }
             }
@@ -4163,7 +4285,23 @@ const docTemplate = `{
                         "$ref": "#/definitions/api.AccountSummary"
                     }
                 },
+                "apiFilters": {
+                    "type": "object",
+                    "additionalProperties": {}
+                },
+                "totalCost": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "number"
+                    }
+                },
                 "totalCount": {
+                    "type": "integer"
+                },
+                "totalDisabledCount": {
+                    "type": "integer"
+                },
+                "totalUnhealthyCount": {
                     "type": "integer"
                 }
             }
@@ -5541,8 +5679,8 @@ const docTemplate = `{
             "properties": {
                 "category": {
                     "description": "if you dont need to use this filter, leave them empty. (e.g. [])",
-                    "type": "array",
-                    "items": {
+                    "type": "object",
+                    "additionalProperties": {
                         "type": "string"
                     }
                 },
@@ -5576,8 +5714,8 @@ const docTemplate = `{
                 },
                 "service": {
                     "description": "if you dont need to use this filter, leave them empty. (e.g. [])",
-                    "type": "array",
-                    "items": {
+                    "type": "object",
+                    "additionalProperties": {
                         "type": "string"
                     }
                 },
@@ -5790,6 +5928,10 @@ const docTemplate = `{
         "api.ServiceSummaryResponse": {
             "type": "object",
             "properties": {
+                "apiFilters": {
+                    "type": "object",
+                    "additionalProperties": {}
+                },
                 "services": {
                     "type": "array",
                     "items": {

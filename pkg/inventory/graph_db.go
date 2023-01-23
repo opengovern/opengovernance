@@ -932,6 +932,136 @@ func (gdb *GraphDatabase) GetCategoryRootSubcategoriesByName(ctx context.Context
 	return category, nil
 }
 
+func (gdb *GraphDatabase) GetNormalCategoryNodes(ctx context.Context, provider source.Type, importance []string) ([]CategoryNode, error) {
+	session := gdb.Driver.NewSession(ctx, neo4j.SessionConfig{AccessMode: neo4j.AccessModeRead})
+	defer session.Close(ctx)
+
+	var nodes = make(map[string]*CategoryNode)
+
+	// Get all services of the selected provider
+	result, err := session.Run(ctx, "MATCH (c:Category:NormalCategory) WHERE $provider = '' OR c.provider = $provider RETURN DISTINCT c", map[string]interface{}{
+		"provider": provider.String(),
+	})
+	if err != nil {
+		return nil, err
+	}
+	for result.Next(ctx) {
+		rawCategory, ok := result.Record().Get("c")
+		if !ok {
+			return nil, ErrKeyColumnNotFound
+		}
+		categoryNode, ok := rawCategory.(neo4j.Node)
+		if !ok {
+			return nil, ErrColumnConversion
+		}
+
+		node, err := getCategoryFromNode(categoryNode)
+		if err != nil {
+			return nil, err
+		}
+		nodes[node.ElementID] = node
+	}
+
+	result, err = session.Run(ctx, fmt.Sprintf(subTreeFiltersQuery, fmt.Sprintf(":NormalCategory"), "$provider = '' OR c.provider = $provider"), map[string]any{
+		"provider":   provider.String(),
+		"importance": importance,
+	})
+	if err != nil {
+		return nil, err
+	}
+	for result.Next(ctx) {
+		rawCategory, ok := result.Record().Get("c")
+		if !ok {
+			return nil, ErrKeyColumnNotFound
+		}
+		rawFilter, ok := result.Record().Get("f")
+		if !ok {
+			return nil, ErrKeyColumnNotFound
+		}
+		isChildRaw, ok := result.Record().Get("isDirectChild")
+		if !ok {
+			return nil, ErrKeyColumnNotFound
+		}
+		categoryNode, ok := rawCategory.(neo4j.Node)
+		if !ok {
+			return nil, ErrColumnConversion
+		}
+		filterNode, ok := rawFilter.(neo4j.Node)
+		if !ok {
+			return nil, ErrColumnConversion
+		}
+		isChild, ok := isChildRaw.(bool)
+		if !ok {
+			return nil, ErrColumnConversion
+		}
+
+		node, ok := nodes[categoryNode.ElementId]
+		if !ok {
+			node, err = getCategoryFromNode(categoryNode)
+			if err != nil {
+				return nil, err
+			}
+			nodes[categoryNode.ElementId] = node
+		}
+
+		filter, err := getFilterFromNode(filterNode)
+		if err != nil {
+			return nil, err
+		}
+		node.SubTreeFilters = append(node.SubTreeFilters, filter)
+		if isChild {
+			node.Filters = append(node.Filters, filter)
+		}
+	}
+
+	result, err = session.Run(ctx, fmt.Sprintf("MATCH (c:Category:getCategoryFromNode)-[:INCLUDES]->(sub:Category) WHERE $provider = '' OR c.provider = $provider RETURN DISTINCT c, sub"), map[string]any{
+		"provider": provider.String(),
+	})
+	if err != nil {
+		return nil, err
+	}
+	for result.Next(ctx) {
+		rawCategory, ok := result.Record().Get("c")
+		if !ok {
+			return nil, ErrKeyColumnNotFound
+		}
+		rawSubcategory, ok := result.Record().Get("sub")
+		if !ok {
+			return nil, ErrKeyColumnNotFound
+		}
+		categoryNode, ok := rawCategory.(neo4j.Node)
+		if !ok {
+			return nil, ErrColumnConversion
+		}
+		subcategoryNode, ok := rawSubcategory.(neo4j.Node)
+		if !ok {
+			return nil, ErrColumnConversion
+		}
+
+		node, ok := nodes[categoryNode.ElementId]
+		if !ok {
+			node, err = getCategoryFromNode(categoryNode)
+			if err != nil {
+				return nil, err
+			}
+			nodes[categoryNode.ElementId] = node
+		}
+
+		subcategory, err := getCategoryFromNode(subcategoryNode)
+		if err != nil {
+			return nil, err
+		}
+		node.Subcategories = append(node.Subcategories, *subcategory)
+	}
+
+	nodesArr := make([]CategoryNode, 0, len(nodes))
+	for _, node := range nodes {
+		nodesArr = append(nodesArr, *node)
+	}
+
+	return nodesArr, nil
+}
+
 func (gdb *GraphDatabase) GetCloudServiceNodes(ctx context.Context, provider source.Type, importance []string) ([]ServiceNode, error) {
 	session := gdb.Driver.NewSession(ctx, neo4j.SessionConfig{AccessMode: neo4j.AccessModeRead})
 	defer session.Close(ctx)
@@ -1062,7 +1192,130 @@ func (gdb *GraphDatabase) GetCloudServiceNodes(ctx context.Context, provider sou
 	return servicesArr, nil
 }
 
-func (gdb *GraphDatabase) GetFilters(ctx context.Context, provider source.Type, importance []string, filterType *FilterType) ([]Filter, error) {
+func (gdb *GraphDatabase) GetCloudServiceNodesByCategory(ctx context.Context, provider source.Type, categoryID string, importance []string) ([]ServiceNode, error) {
+	session := gdb.Driver.NewSession(ctx, neo4j.SessionConfig{AccessMode: neo4j.AccessModeRead})
+	defer session.Close(ctx)
+
+	var services = make(map[string]*ServiceNode)
+
+	// Get all services of the selected provider and category
+	result, err := session.Run(ctx, "MATCH (par)-[:INCLUDES*]->(c:Category:CloudServiceCategory) WHERE $provider = '' OR c.provider = $provider AND elementId(par) = $category_id RETURN DISTINCT c", map[string]interface{}{
+		"provider":    provider.String(),
+		"category_id": categoryID,
+	})
+	if err != nil {
+		return nil, err
+	}
+	for result.Next(ctx) {
+		rawCategory, ok := result.Record().Get("c")
+		if !ok {
+			return nil, ErrKeyColumnNotFound
+		}
+		categoryNode, ok := rawCategory.(neo4j.Node)
+		if !ok {
+			return nil, ErrColumnConversion
+		}
+
+		service, err := getCloudServiceFromNode(categoryNode)
+		if err != nil {
+			return nil, err
+		}
+		services[service.ElementID] = service
+	}
+
+	result, err = session.Run(ctx, fmt.Sprintf(subTreeFiltersQuery, fmt.Sprintf(":CloudServiceCategory"), "$provider = '' OR c.provider = $provider"), map[string]any{
+		"provider":   provider.String(),
+		"importance": importance,
+	})
+	if err != nil {
+		return nil, err
+	}
+	for result.Next(ctx) {
+		rawCategory, ok := result.Record().Get("c")
+		if !ok {
+			return nil, ErrKeyColumnNotFound
+		}
+		rawFilter, ok := result.Record().Get("f")
+		if !ok {
+			return nil, ErrKeyColumnNotFound
+		}
+		isChildRaw, ok := result.Record().Get("isDirectChild")
+		if !ok {
+			return nil, ErrKeyColumnNotFound
+		}
+		categoryNode, ok := rawCategory.(neo4j.Node)
+		if !ok {
+			return nil, ErrColumnConversion
+		}
+		filterNode, ok := rawFilter.(neo4j.Node)
+		if !ok {
+			return nil, ErrColumnConversion
+		}
+		isChild, ok := isChildRaw.(bool)
+		if !ok {
+			return nil, ErrColumnConversion
+		}
+
+		service, ok := services[categoryNode.ElementId]
+		if !ok {
+			continue
+		}
+
+		filter, err := getFilterFromNode(filterNode)
+		if err != nil {
+			return nil, err
+		}
+		service.SubTreeFilters = append(service.SubTreeFilters, filter)
+		if isChild {
+			service.Filters = append(service.Filters, filter)
+		}
+	}
+
+	result, err = session.Run(ctx, fmt.Sprintf("MATCH (c:Category:CloudServiceCategory)-[:INCLUDES]->(sub:Category) WHERE $provider = '' OR c.provider = $provider RETURN DISTINCT c, sub"), map[string]any{
+		"provider": provider.String(),
+	})
+	if err != nil {
+		return nil, err
+	}
+	for result.Next(ctx) {
+		rawCategory, ok := result.Record().Get("c")
+		if !ok {
+			return nil, ErrKeyColumnNotFound
+		}
+		rawSubcategory, ok := result.Record().Get("sub")
+		if !ok {
+			return nil, ErrKeyColumnNotFound
+		}
+		categoryNode, ok := rawCategory.(neo4j.Node)
+		if !ok {
+			return nil, ErrColumnConversion
+		}
+		subcategoryNode, ok := rawSubcategory.(neo4j.Node)
+		if !ok {
+			return nil, ErrColumnConversion
+		}
+
+		service, ok := services[categoryNode.ElementId]
+		if !ok {
+			continue
+		}
+
+		subcategory, err := getCategoryFromNode(subcategoryNode)
+		if err != nil {
+			return nil, err
+		}
+		service.Subcategories = append(service.Subcategories, *subcategory)
+	}
+
+	servicesArr := make([]ServiceNode, 0, len(services))
+	for _, service := range services {
+		servicesArr = append(servicesArr, *service)
+	}
+
+	return servicesArr, nil
+}
+
+func (gdb *GraphDatabase) GetFilters(ctx context.Context, provider source.Type, serviceCodes []string, importance []string, filterType *FilterType) ([]Filter, error) {
 	session := gdb.Driver.NewSession(ctx, neo4j.SessionConfig{AccessMode: neo4j.AccessModeRead})
 	defer session.Close(ctx)
 
@@ -1070,12 +1323,16 @@ func (gdb *GraphDatabase) GetFilters(ctx context.Context, provider source.Type, 
 	if filterType != nil {
 		filterTypeStr = string(*filterType)
 	}
+	if serviceCodes == nil {
+		serviceCodes = []string{}
+	}
 
 	result, err := session.Run(ctx,
-		fmt.Sprintf("MATCH (f:Filter:%s) WHERE (f.importance IS NULL OR 'all' IN $importance OR f.importance IN $importance) AND (f.cloud_provider IS NULL OR $provider = '' OR f.cloud_provider = $provider) RETURN f;", filterTypeStr),
+		fmt.Sprintf("MATCH (f:Filter:%s) WHERE (f.importance IS NULL OR 'all' IN $importance OR f.importance IN $importance) AND (f.cloud_provider IS NULL OR $provider = '' OR f.cloud_provider = $provider) AND ($service_codes = [] OR (NOT f.service_code IS NULL AND f.service_code IN $service_codes)) RETURN f;", filterTypeStr),
 		map[string]any{
-			"provider":   provider.String(),
-			"importance": importance,
+			"provider":      provider.String(),
+			"importance":    importance,
+			"service_codes": serviceCodes,
 		},
 	)
 	if err != nil {

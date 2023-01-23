@@ -6,7 +6,7 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/inventory/api"
 )
 
-func Paginate[T api.ServiceSummary | api.AccountSummary](page, size int, arr []T) []T {
+func Paginate[T api.ServiceSummary | api.AccountSummary | api.LocationResponse](page, size int, arr []T) []T {
 	if page < 1 {
 		page = 1
 	}
@@ -24,37 +24,75 @@ func Paginate[T api.ServiceSummary | api.AccountSummary](page, size int, arr []T
 	return arr[start:end]
 }
 
-func SortFilters(filters []api.Filter) []api.Filter {
+func SortFilters(filters []api.Filter, by string) []api.Filter {
 	sort.Slice(filters, func(i, j int) bool {
-		switch filters[i].GetFilterType() {
-		case api.FilterTypeCloudResourceType:
-			fi := filters[i].(*api.FilterCloudResourceType)
-			switch filters[j].GetFilterType() {
+		switch by {
+		case "weight":
+			switch filters[i].GetFilterType() {
 			case api.FilterTypeCloudResourceType:
-				fj := filters[j].(*api.FilterCloudResourceType)
-				if fi.Weight != fj.Weight {
-					return fi.Weight < fj.Weight
+				fi := filters[i].(*api.FilterCloudResourceType)
+				switch filters[j].GetFilterType() {
+				case api.FilterTypeCloudResourceType:
+					fj := filters[j].(*api.FilterCloudResourceType)
+					if fi.Weight != fj.Weight {
+						return fi.Weight < fj.Weight
+					}
+				case api.FilterTypeInsight:
+					fj := filters[j].(*api.FilterInsight)
+					if fi.Weight != fj.Weight {
+						return fi.Weight < fj.Weight
+					}
 				}
 			case api.FilterTypeInsight:
-				fj := filters[j].(*api.FilterInsight)
-				if fi.Weight != fj.Weight {
-					return fi.Weight < fj.Weight
+				fi := filters[i].(*api.FilterInsight)
+				switch filters[j].GetFilterType() {
+				case api.FilterTypeCloudResourceType:
+					fj := filters[j].(*api.FilterCloudResourceType)
+					if fi.Weight != fj.Weight {
+						return fi.Weight < fj.Weight
+					}
+				case api.FilterTypeInsight:
+					fj := filters[j].(*api.FilterInsight)
+					if fi.Weight != fj.Weight {
+						return fi.Weight < fj.Weight
+					}
 				}
 			}
-		case api.FilterTypeInsight:
-			fi := filters[i].(*api.FilterInsight)
-			switch filters[j].GetFilterType() {
+		case "name":
+			return filters[i].GetFilterName() < filters[j].GetFilterName()
+		case "count":
+			switch filters[i].GetFilterType() {
 			case api.FilterTypeCloudResourceType:
-				fj := filters[j].(*api.FilterCloudResourceType)
-				if fi.Weight != fj.Weight {
-					return fi.Weight < fj.Weight
+				fi := filters[i].(*api.FilterCloudResourceType)
+				switch filters[j].GetFilterType() {
+				case api.FilterTypeCloudResourceType:
+					fj := filters[j].(*api.FilterCloudResourceType)
+					if fi.ResourceCount != fj.ResourceCount {
+						return fi.ResourceCount < fj.ResourceCount
+					}
+				case api.FilterTypeInsight:
+					fj := filters[j].(*api.FilterInsight)
+					if fi.ResourceCount != fj.Value {
+						return fi.ResourceCount < fj.Value
+					}
 				}
 			case api.FilterTypeInsight:
-				fj := filters[j].(*api.FilterInsight)
-				if fi.Weight != fj.Weight {
-					return fi.Weight < fj.Weight
+				fi := filters[i].(*api.FilterInsight)
+				switch filters[j].GetFilterType() {
+				case api.FilterTypeCloudResourceType:
+					fj := filters[j].(*api.FilterCloudResourceType)
+					if fi.Value != fj.ResourceCount {
+						return fi.Value < fj.ResourceCount
+					}
+				case api.FilterTypeInsight:
+					fj := filters[j].(*api.FilterInsight)
+					if fi.Value != fj.Value {
+						return fi.Value < fj.Value
+					}
 				}
 			}
+		default:
+			return filters[i].GetFilterName() < filters[j].GetFilterName()
 		}
 		return filters[i].GetFilterName() < filters[j].GetFilterName()
 	})
