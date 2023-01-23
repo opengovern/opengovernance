@@ -3861,7 +3861,7 @@ func (h *HttpHandler) GetResources(ctx echo.Context, provider *api.SourceType, c
 	if !api.FilterIsEmpty(req.Filters.Service) && api.FilterIsEmpty(req.Filters.ResourceType) {
 		pvd := source.Nil
 		if provider != nil {
-			pvd = *provider
+			pvd, _ = source.ParseType(string(*provider))
 		}
 		filterType := FilterTypeCloudResourceType
 		resourceFilters, err := h.graphDb.GetFilters(ctx.Request().Context(), pvd, req.Filters.Service, []string{"all"}, &filterType)
