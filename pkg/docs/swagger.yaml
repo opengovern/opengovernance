@@ -76,7 +76,18 @@ definitions:
         items:
           $ref: '#/definitions/api.AccountSummary'
         type: array
+      apiFilters:
+        additionalProperties: {}
+        type: object
+      totalCost:
+        additionalProperties:
+          type: number
+        type: object
       totalCount:
+        type: integer
+      totalDisabledCount:
+        type: integer
+      totalUnhealthyCount:
         type: integer
     type: object
   api.Alarms:
@@ -1003,11 +1014,11 @@ definitions:
   api.ResourceFiltersResponse:
     properties:
       category:
+        additionalProperties:
+          type: string
         description: if you dont need to use this filter, leave them empty. (e.g.
           [])
-        items:
-          type: string
-        type: array
+        type: object
       connections:
         description: if you dont need to use this filter, leave them empty. (e.g.
           [])
@@ -1033,11 +1044,11 @@ definitions:
           $ref: '#/definitions/api.ResourceTypeFull'
         type: array
       service:
+        additionalProperties:
+          type: string
         description: if you dont need to use this filter, leave them empty. (e.g.
           [])
-        items:
-          type: string
-        type: array
+        type: object
       tagKeys:
         description: if you dont need to use this filter, leave them empty. (e.g.
           [])
@@ -1182,6 +1193,9 @@ definitions:
     type: object
   api.ServiceSummaryResponse:
     properties:
+      apiFilters:
+        additionalProperties: {}
+        type: object
       services:
         items:
           $ref: '#/definitions/api.ServiceSummary'
@@ -2464,6 +2478,39 @@ paths:
       summary: Get resource filters
       tags:
       - inventory
+  /inventory/api/v1/resources/regions:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: Provider
+        in: query
+        name: provider
+        type: string
+      - description: SourceId
+        in: query
+        name: sourceId
+        type: string
+      - description: page size - default is 20
+        in: query
+        name: pageSize
+        type: integer
+      - description: page number - default is 1
+        in: query
+        name: pageNumber
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/api.LocationResponse'
+            type: array
+      summary: Returns top n regions of specified provider by resource count
+      tags:
+      - inventory
   /inventory/api/v1/resources/top/accounts:
     get:
       consumes:
@@ -2665,6 +2712,17 @@ paths:
         in: query
         name: sourceId
         type: string
+      - description: Source Healthstate
+        enum:
+        - healthy
+        - unhealthy
+        in: query
+        name: healthState
+        type: string
+      - description: is enabled
+        in: query
+        name: isEnabled
+        type: boolean
       - description: page size - default is 20
         in: query
         name: pageSize
@@ -2681,10 +2739,10 @@ paths:
         in: query
         name: endTime
         type: integer
-      - description: column to sort by - default is sourceid
+      - description: column to sort by - default is cost
         enum:
-        - sourceid
-        - resourcecount
+        - onboard_date
+        - resource_count
         - cost
         in: query
         name: sortBy
@@ -2986,9 +3044,13 @@ paths:
       consumes:
       - application/json
       parameters:
-      - description: Category ID - defaults to default template category
+      - description: Category ID
         in: query
         name: category
+        type: string
+      - description: Service code for metrics
+        in: query
+        name: servicecode
         type: string
       - description: Provider
         in: query
@@ -3017,6 +3079,14 @@ paths:
         - 1y
         in: query
         name: timeWindow
+        type: string
+      - description: Sort by field - default is weight
+        enum:
+        - weight
+        - name
+        - count
+        in: query
+        name: sortBy
         type: string
       produces:
       - application/json
@@ -3272,6 +3342,10 @@ paths:
         in: query
         name: provider
         type: string
+      - description: Category for the services
+        in: query
+        name: category
+        type: string
       - description: start time for cost calculation in epoch seconds
         in: query
         name: startTime
@@ -3291,7 +3365,7 @@ paths:
         in: query
         name: pageNumber
         type: integer
-      - description: column to sort by - default is servicecode
+      - description: column to sort by - default is cost
         enum:
         - servicecode
         - resourcecount
@@ -3305,12 +3379,33 @@ paths:
         "200":
           description: OK
           schema:
-            items:
-              $ref: '#/definitions/api.ServiceSummaryResponse'
-            type: array
+            $ref: '#/definitions/api.ServiceSummaryResponse'
       summary: Returns distribution of services for specific account
       tags:
       - benchmarks
+  /metadata/api/v1/metadata:
+    post:
+      description: Sets the config metadata for the given key
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+      summary: Sets the config metadata for the given key
+      tags:
+      - metadata
+  /metadata/api/v1/metadata/{key}:
+    get:
+      description: Returns the config metadata for the given key
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema: {}
+      summary: Returns the config metadata for the given key
+      tags:
+      - metadata
   /onboard/api/v1/connectors:
     get:
       description: Getting connectors

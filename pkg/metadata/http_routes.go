@@ -35,7 +35,7 @@ func bindValidate(ctx echo.Context, i interface{}) error {
 // @Description Returns the config metadata for the given key
 // @Tags        metadata
 // @Produce     json
-// @Success     200  {object} models.IConfigMetadata
+// @Success     200 {object} models.IConfigMetadata
 // @Router      /metadata/api/v1/metadata/{key} [get]
 func (h HttpHandler) GetConfigMetadata(ctx echo.Context) error {
 	key := ctx.Param("key")

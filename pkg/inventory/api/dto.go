@@ -128,9 +128,9 @@ type ResourceFiltersResponse struct {
 	// if you dont need to use this filter, leave them empty. (e.g. [])
 	ResourceType []ResourceTypeFull `json:"resourceType"`
 	// if you dont need to use this filter, leave them empty. (e.g. [])
-	Category []string `json:"category"`
+	Category map[string]string `json:"category"`
 	// if you dont need to use this filter, leave them empty. (e.g. [])
-	Service []string `json:"service"`
+	Service map[string]string `json:"service"`
 	// if you dont need to use this filter, leave them empty. (e.g. [])
 	Location []string `json:"location"`
 	// if you dont need to use this filter, leave them empty. (e.g. [])
@@ -361,8 +361,12 @@ type AccountResourceCountResponse struct {
 }
 
 type AccountSummaryResponse struct {
-	TotalCount int              `json:"totalCount"`
-	Accounts   []AccountSummary `json:"accounts"`
+	TotalCost           map[string]float64 `json:"totalCost"`
+	TotalCount          int                `json:"totalCount"`
+	TotalUnhealthyCount int                `json:"totalUnhealthyCount"`
+	TotalDisabledCount  int                `json:"totalDisabledCount"`
+	APIFilters          map[string]any     `json:"apiFilters"`
+	Accounts            []AccountSummary   `json:"accounts"`
 }
 
 type AccountSummary struct {
@@ -429,6 +433,12 @@ type LocationResponse struct {
 	ResourceCount *int   `json:"resourceCount,omitempty"`
 }
 
+type RegionsByResourceCountResponse struct {
+	TotalCount int                `json:"totalCount"`
+	APIFilters map[string]any     `json:"apiFilters"`
+	Regions    []LocationResponse `json:"regions"`
+}
+
 type FilterType string
 
 const (
@@ -449,6 +459,7 @@ type FilterCloudResourceType struct {
 	CloudProvider       source.Type `json:"cloudProvider"`
 	ResourceType        string      `json:"resourceType"`
 	ResourceName        string      `json:"resourceName"`
+	ServiceCode         string      `json:"serviceCode"`
 	Weight              int64       `json:"weight"`
 	Importance          string      `json:"importance"`
 	ResourceCount       int         `json:"resourceCount"`
@@ -576,6 +587,7 @@ type ConnectionSummaryResponse struct {
 
 type ServiceSummaryResponse struct {
 	TotalCount int              `json:"totalCount"`
+	APIFilters map[string]any   `json:"apiFilters"`
 	Services   []ServiceSummary `json:"services"`
 }
 
