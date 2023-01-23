@@ -1,4 +1,4 @@
-image: golang:1.18.6
+image: golang:1.19
 
 variables:
   GOPRIVATE: gitlab.com/keibiengine
