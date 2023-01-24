@@ -78,9 +78,6 @@ build-mr:
     paths:
       - build/
     expire_in: 1 hour
-  image: golang:1.19-alpine
-  before_script:
-    - apk add --no-cache bash make
   script:
     - make
 
@@ -93,9 +90,6 @@ build-main:
     paths:
       - build/
     expire_in: 1 hour
-  image: golang:1.19-alpine
-  before_script:
-    - apk add --no-cache bash make
   script:
     - make
 
