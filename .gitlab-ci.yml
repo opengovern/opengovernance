@@ -1,4 +1,4 @@
-image: golang:1.19-alpine
+image: golang:1.19
 
 variables:
   GOPRIVATE: gitlab.com/keibiengine
@@ -15,7 +15,6 @@ stages:
 
 .go-cache:
   before_script:
-    - apk add --no-cache bash
     - mkdir -p .go
     - mkdir -p .cache
     - echo -e "machine gitlab.com login gitlab-ci-token password ${CI_JOB_TOKEN}" > ~/.netrc
@@ -79,6 +78,9 @@ build-mr:
     paths:
       - build/
     expire_in: 1 hour
+  image: golang:1.19-alpine
+  before_script:
+    - apk add --no-cache bash make
   script:
     - make
 
@@ -91,6 +93,9 @@ build-main:
     paths:
       - build/
     expire_in: 1 hour
+  image: golang:1.19-alpine
+  before_script:
+    - apk add --no-cache bash make
   script:
     - make
 
