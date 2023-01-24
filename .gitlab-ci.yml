@@ -15,6 +15,7 @@ stages:
 
 .go-cache:
   before_script:
+    - apk add --no-cache bash
     - mkdir -p .go
     - mkdir -p .cache
     - echo -e "machine gitlab.com login gitlab-ci-token password ${CI_JOB_TOKEN}" > ~/.netrc
