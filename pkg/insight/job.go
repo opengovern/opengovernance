@@ -2,35 +2,27 @@ package insight
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
-	"reflect"
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/service/managedgrafana"
+	"github.com/aws/aws-sdk-go/service/s3/s3manager"
+	"github.com/go-errors/errors"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
+	"gitlab.com/keibiengine/keibi-engine/pkg/insight/api"
+	"gitlab.com/keibiengine/keibi-engine/pkg/insight/es"
+	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpclient"
+	"gitlab.com/keibiengine/keibi-engine/pkg/kafka"
+	"gitlab.com/keibiengine/keibi-engine/pkg/keibi-es-sdk"
+	"gitlab.com/keibiengine/keibi-engine/pkg/onboard/client"
+	"gitlab.com/keibiengine/keibi-engine/pkg/source"
+	"gitlab.com/keibiengine/keibi-engine/pkg/steampipe"
+	"go.uber.org/zap"
+	"gopkg.in/Shopify/sarama.v1"
 	"strconv"
 	"strings"
 	"time"
-
-	"gitlab.com/keibiengine/keibi-engine/pkg/insight/es"
-	"gitlab.com/keibiengine/keibi-engine/pkg/kafka"
-
-	"gitlab.com/keibiengine/keibi-engine/pkg/source"
-
-	"github.com/aws/aws-sdk-go/service/managedgrafana"
-	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpclient"
-	"gitlab.com/keibiengine/keibi-engine/pkg/onboard/client"
-
-	"github.com/jackc/pgtype"
-
-	"gitlab.com/keibiengine/keibi-engine/pkg/keibi-es-sdk"
-
-	"gitlab.com/keibiengine/keibi-engine/pkg/steampipe"
-
-	"gitlab.com/keibiengine/keibi-engine/pkg/insight/api"
-
-	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/client_golang/prometheus/promauto"
-
-	"github.com/go-errors/errors"
-	"go.uber.org/zap"
-	"gopkg.in/Shopify/sarama.v1"
 )
 
 var DoInsightJobsCount = promauto.NewCounterVec(prometheus.CounterOpts{
@@ -52,10 +44,12 @@ type Job struct {
 	JobID            uint
 	QueryID          uint
 	SmartQueryID     uint
+	SourceID         string
+	AccountID        string
+	SourceType       source.Type
 	Internal         bool
 	Query            string
 	Description      string
-	Provider         string
 	Category         string
 	ExecutedAt       int64
 	LastDayJobID     uint
@@ -70,7 +64,7 @@ type JobResult struct {
 	Error  string
 }
 
-func (j Job) Do(client keibi.Client, steampipeConn *steampipe.Database, onboardClient client.OnboardServiceClient, producer sarama.SyncProducer, topic string, logger *zap.Logger) (r JobResult) {
+func (j Job) Do(client keibi.Client, steampipeConn *steampipe.Database, onboardClient client.OnboardServiceClient, producer sarama.SyncProducer, uploader *s3manager.Uploader, bucket, topic string, logger *zap.Logger) (r JobResult) {
 	startTime := time.Now().Unix()
 	defer func() {
 		if err := recover(); err != nil {
@@ -101,78 +95,95 @@ func (j Job) Do(client keibi.Client, steampipeConn *steampipe.Database, onboardC
 			firstErr = err
 		}
 	}
+	var count int64
 	var res *steampipe.Result
 	var err error
 	if strings.TrimSpace(j.Query) == "accounts_count" {
-		pr, _ := source.ParseType(j.Provider)
 		var totalAccounts int64
 		totalAccounts, err = onboardClient.CountSources(&httpclient.Context{
 			UserRole: managedgrafana.RoleAdmin,
-		}, pr)
-		res.Data = [][]interface{}{{totalAccounts}}
+		}, j.SourceType)
+		count = totalAccounts
+		res = &steampipe.Result{
+			Headers: []string{"count"},
+			Data:    [][]interface{}{{count}},
+		}
 	} else {
-		res, err = steampipeConn.Count(j.Query)
+		res, err = steampipeConn.QueryAll(strings.ReplaceAll(j.Query, "$SOURCEID", j.SourceID))
+		if res != nil {
+			count = int64(len(res.Data))
+		}
 	}
 	if err == nil {
-		result := res.Data[0][0]
-		if v, ok := result.(pgtype.Numeric); ok {
-			result = v.Int.Int64()
-		}
+		objectName := fmt.Sprintf("%d-%d.out", j.QueryID, j.JobID)
+		content, err := json.Marshal(res)
+		if err == nil {
+			result, err := uploader.Upload(&s3manager.UploadInput{
+				Bucket: aws.String(bucket),
+				Key:    aws.String(objectName),
+				Body:   strings.NewReader(string(content)),
+			})
+			if err == nil {
+				var lastDayValue, lastWeekValue, lastQuarterValue, lastYearValue *int64
+				for idx, jobID := range []uint{j.LastDayJobID, j.LastWeekJobID, j.LastQuarterJobID, j.LastYearJobID} {
+					var response ResultQueryResponse
+					query, err := FindOldInsightValue(jobID, j.QueryID)
+					if err != nil {
+						fail(fmt.Errorf("failed to build query: %w", err))
+					}
+					err = client.Search(context.Background(), es.InsightsIndex, query, &response)
+					if err != nil {
+						fail(fmt.Errorf("failed to run query: %w", err))
+					}
 
-		if v, ok := result.(int64); ok {
-			var lastDayValue, lastWeekValue, lastQuarterValue, lastYearValue *int64
-			for idx, jobID := range []uint{j.LastDayJobID, j.LastWeekJobID, j.LastQuarterJobID, j.LastYearJobID} {
-				var response ResultQueryResponse
-				query, err := FindOldInsightValue(jobID, j.QueryID)
-				if err != nil {
-					fail(fmt.Errorf("failed to build query: %w", err))
-				}
-				err = client.Search(context.Background(), es.InsightsIndex, query, &response)
-				if err != nil {
-					fail(fmt.Errorf("failed to run query: %w", err))
-				}
-
-				if len(response.Hits.Hits) > 0 {
-					// there will be only one result anyway
-					switch idx {
-					case 0:
-						lastDayValue = &response.Hits.Hits[0].Source.Result
-					case 1:
-						lastWeekValue = &response.Hits.Hits[0].Source.Result
-					case 2:
-						lastQuarterValue = &response.Hits.Hits[0].Source.Result
-					case 3:
-						lastYearValue = &response.Hits.Hits[0].Source.Result
+					if len(response.Hits.Hits) > 0 {
+						// there will be only one result anyway
+						switch idx {
+						case 0:
+							lastDayValue = &response.Hits.Hits[0].Source.Result
+						case 1:
+							lastWeekValue = &response.Hits.Hits[0].Source.Result
+						case 2:
+							lastQuarterValue = &response.Hits.Hits[0].Source.Result
+						case 3:
+							lastYearValue = &response.Hits.Hits[0].Source.Result
+						}
 					}
 				}
-			}
 
-			var resources []kafka.Doc
-			for _, resourceType := range []es.InsightResourceType{es.InsightResourceHistory, es.InsightResourceLast} {
-				resources = append(resources, es.InsightResource{
-					JobID:            j.JobID,
-					QueryID:          j.QueryID,
-					SmartQueryID:     j.SmartQueryID,
-					Query:            j.Query,
-					Internal:         j.Internal,
-					Description:      j.Description,
-					Provider:         j.Provider,
-					Category:         j.Category,
-					ExecutedAt:       time.Now().UnixMilli(),
-					Result:           v,
-					LastDayValue:     lastDayValue,
-					LastWeekValue:    lastWeekValue,
-					LastQuarterValue: lastQuarterValue,
-					LastYearValue:    lastYearValue,
-					ResourceType:     resourceType,
-				})
-			}
-			if err := kafka.DoSend(producer, topic, resources, logger); err != nil {
-				fail(fmt.Errorf("send to kafka: %w", err))
+				var resources []kafka.Doc
+				for _, resourceType := range []es.InsightResourceType{es.InsightResourceHistory, es.InsightResourceLast} {
+					resources = append(resources, es.InsightResource{
+						JobID:            j.JobID,
+						QueryID:          j.QueryID,
+						SmartQueryID:     j.SmartQueryID,
+						Query:            j.Query,
+						Internal:         j.Internal,
+						Description:      j.Description,
+						SourceID:         j.SourceID,
+						AccountID:        j.AccountID,
+						Provider:         j.SourceType,
+						Category:         j.Category,
+						ExecutedAt:       time.Now().UnixMilli(),
+						Result:           count,
+						LastDayValue:     lastDayValue,
+						LastWeekValue:    lastWeekValue,
+						LastQuarterValue: lastQuarterValue,
+						LastYearValue:    lastYearValue,
+						ResourceType:     resourceType,
+						S3Location:       result.Location,
+					})
+				}
+				if err := kafka.DoSend(producer, topic, resources, logger); err != nil {
+					fail(fmt.Errorf("send to kafka: %w", err))
+				}
+			} else {
+				fail(fmt.Errorf("uploading to s3: %w", err))
 			}
 		} else {
-			fail(fmt.Errorf("result is not int: %v [%s]", result, reflect.TypeOf(result)))
+			fail(fmt.Errorf("building content: %w", err))
 		}
+
 	} else {
 		fail(fmt.Errorf("describe resources: %w", err))
 	}
