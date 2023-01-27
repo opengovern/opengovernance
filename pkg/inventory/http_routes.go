@@ -2148,7 +2148,7 @@ func (h *HttpHandler) GetSummaryMetrics(ctx echo.Context) error {
 		return nil
 	}
 
-	query, err := es.FindInsightResults(nil, nil)
+	query, err := es.FindInsightResults(nil, nil, nil)
 	if err != nil {
 		return err
 	}
@@ -3243,7 +3243,7 @@ func (h *HttpHandler) ListInsightsResults(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	query, err := es.FindInsightResults(req.DescriptionFilter, req.Labels)
+	query, err := es.FindInsightResults(req.DescriptionFilter, req.Labels, req.SourceIDs)
 	if err != nil {
 		return err
 	}
@@ -3264,7 +3264,7 @@ func (h *HttpHandler) ListInsightsResults(ctx echo.Context) error {
 		resp.Results = append(resp.Results, api.InsightResult{
 			SmartQueryID:     item.Source.SmartQueryID,
 			Description:      item.Source.Description,
-			Provider:         item.Source.Provider,
+			Provider:         item.Source.Provider.String(),
 			Category:         item.Source.Category,
 			Query:            item.Source.Query,
 			ExecutedAt:       item.Source.ExecutedAt,

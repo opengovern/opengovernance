@@ -27,7 +27,7 @@ type InsightResultQueryHit struct {
 	Sort    []interface{}      `json:"sort"`
 }
 
-func FindInsightResults(descriptionFilter *string, labelFilter []string) (string, error) {
+func FindInsightResults(descriptionFilter *string, labelFilter []string, sourceIDFilter []string) (string, error) {
 	boolQuery := map[string]interface{}{}
 	var filters []interface{}
 	filters = append(filters, map[string]interface{}{
@@ -37,6 +37,12 @@ func FindInsightResults(descriptionFilter *string, labelFilter []string) (string
 	if labelFilter != nil && len(labelFilter) > 0 {
 		filters = append(filters, map[string]interface{}{
 			"terms": map[string][]string{"labels": labelFilter},
+		})
+	}
+
+	if sourceIDFilter != nil && len(sourceIDFilter) > 0 {
+		filters = append(filters, map[string]interface{}{
+			"terms": map[string][]string{"source_id": sourceIDFilter},
 		})
 	}
 
