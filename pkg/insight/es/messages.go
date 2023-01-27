@@ -2,6 +2,7 @@ package es
 
 import (
 	"fmt"
+	"gitlab.com/keibiengine/keibi-engine/pkg/source"
 )
 
 const (
@@ -28,8 +29,12 @@ type InsightResource struct {
 	Internal bool `json:"internal"`
 	// Description
 	Description string `json:"description"`
+	// SourceID
+	SourceID string `json:"source_id"`
+	// AccountID
+	AccountID string `json:"account_id"`
 	// Provider
-	Provider string `json:"provider"`
+	Provider source.Type `json:"provider"`
 	// Category
 	Category string `json:"category"`
 	// ExecutedAt is when the query is executed
@@ -46,6 +51,8 @@ type InsightResource struct {
 	LastYearValue *int64 `json:"last_year_value"`
 	// ResourceType shows which collection of docs this resource belongs to
 	ResourceType InsightResourceType `json:"resource_type"`
+
+	S3Location string `json:"s3_location"`
 }
 
 func (r InsightResource) KeysAndIndex() ([]string, string) {
@@ -58,6 +65,7 @@ func (r InsightResource) KeysAndIndex() ([]string, string) {
 			string(r.ResourceType),
 			fmt.Sprintf("%d", r.QueryID),
 			fmt.Sprintf("%d", r.JobID),
+			fmt.Sprintf("%d", r.SourceID),
 		}
 	}
 

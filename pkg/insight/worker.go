@@ -3,15 +3,15 @@ package insight
 import (
 	"encoding/json"
 	"fmt"
-
-	"gitlab.com/keibiengine/keibi-engine/pkg/onboard/client"
-
-	"gitlab.com/keibiengine/keibi-engine/pkg/keibi-es-sdk"
-
-	"gitlab.com/keibiengine/keibi-engine/pkg/steampipe"
-
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/credentials"
+	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 	"github.com/prometheus/client_golang/prometheus/push"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/queue"
+	"gitlab.com/keibiengine/keibi-engine/pkg/keibi-es-sdk"
+	"gitlab.com/keibiengine/keibi-engine/pkg/onboard/client"
+	"gitlab.com/keibiengine/keibi-engine/pkg/steampipe"
 	"go.uber.org/zap"
 	"gopkg.in/Shopify/sarama.v1"
 )
@@ -22,11 +22,13 @@ type Worker struct {
 	jobResultQueue queue.Interface
 	kfkProducer    sarama.SyncProducer
 	kfkTopic       string
+	s3Bucket       string
 	logger         *zap.Logger
 	steampipeConn  *steampipe.Database
 	es             keibi.Client
 	pusher         *push.Pusher
 	onboardClient  client.OnboardServiceClient
+	uploader       *s3manager.Uploader
 }
 
 func InitializeWorker(
@@ -50,6 +52,7 @@ func InitializeWorker(
 	elasticSearchUsername string,
 	elasticSearchPassword string,
 	onboardBaseURL string,
+	s3Endpoint, s3AccessKey, s3AccessSecret, s3Region, s3Bucket string,
 ) (w *Worker, err error) {
 	if id == "" {
 		return nil, fmt.Errorf("'id' must be set to a non empty string")
@@ -133,6 +136,29 @@ func InitializeWorker(
 	}
 
 	w.onboardClient = client.NewOnboardServiceClient(onboardBaseURL, nil)
+
+	if s3Region == "" {
+		s3Region = "us-west-2"
+	}
+
+	var awsConfig *aws.Config
+	if s3AccessKey == "" || s3AccessSecret == "" {
+		//load default credentials
+		awsConfig = &aws.Config{
+			Region: aws.String(s3Region),
+		}
+	} else {
+		awsConfig = &aws.Config{
+			Endpoint:    aws.String(s3Endpoint),
+			Region:      aws.String(s3Region),
+			Credentials: credentials.NewStaticCredentials(s3AccessKey, s3AccessSecret, ""),
+		}
+	}
+
+	sess := session.Must(session.NewSession(awsConfig))
+	w.uploader = s3manager.NewUploader(sess)
+	w.s3Bucket = s3Bucket
+
 	return w, nil
 }
 
@@ -154,7 +180,7 @@ func (w *Worker) Run() error {
 			continue
 		}
 		w.logger.Info("Processing job", zap.Int("jobID", int(job.JobID)))
-		result := job.Do(w.es, w.steampipeConn, w.onboardClient, w.kfkProducer, w.kfkTopic, w.logger)
+		result := job.Do(w.es, w.steampipeConn, w.onboardClient, w.kfkProducer, w.uploader, w.s3Bucket, w.kfkTopic, w.logger)
 		w.logger.Info("Publishing job result", zap.Int("jobID", int(job.JobID)))
 		err := w.jobResultQueue.Publish(result)
 		if err != nil {

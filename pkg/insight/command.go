@@ -35,6 +35,12 @@ var (
 	PrometheusPushAddress = os.Getenv("PROMETHEUS_PUSH_ADDRESS")
 
 	OnboardBaseURL = os.Getenv("ONBOARD_BASE_URL")
+
+	S3Endpoint     = os.Getenv("S3_ENDPOINT")
+	S3AccessKey    = os.Getenv("S3_ACCESS_KEY")
+	S3AccessSecret = os.Getenv("S3_ACCESS_SECRET")
+	S3Region       = os.Getenv("S3_REGION")
+	S3Bucket       = os.Getenv("S3_BUCKET")
 )
 
 func WorkerCommand() *cobra.Command {
@@ -82,6 +88,9 @@ func WorkerCommand() *cobra.Command {
 				ElasticSearchUsername,
 				ElasticSearchPassword,
 				OnboardBaseURL,
+				S3Endpoint, S3AccessKey,
+				S3AccessSecret, S3Region,
+				S3Bucket,
 			)
 			if err != nil {
 				return err

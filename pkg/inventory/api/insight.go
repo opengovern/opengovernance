@@ -3,6 +3,7 @@ package api
 type ListInsightResultsRequest struct {
 	DescriptionFilter *string  `json:"descriptionFilter"`
 	Labels            []string `json:"labels"`
+	SourceIDs         []string `json:"sourceIDs"`
 }
 
 type ListInsightResultsResponse struct {

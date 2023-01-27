@@ -1766,34 +1766,43 @@ func (s Scheduler) scheduleInsightJob() {
 			return
 		}
 
-		for _, ins := range insights {
-			job := newInsightJob(ins)
-			err = s.db.AddInsightJob(&job)
-			if err != nil {
-				InsightJobsCount.WithLabelValues("failure").Inc()
-				s.logger.Error("Failed to create InsightJob",
-					zap.Uint("jobId", job.ID),
-					zap.Error(err),
-				)
-				continue
-			}
+		srcs, err := s.db.ListSources()
+		if err != nil {
+			s.logger.Error("Failed to fetch list of sources", zap.Error(err))
+			InsightJobsCount.WithLabelValues("failure").Inc()
+			return
+		}
 
-			err = enqueueInsightJobs(s.db, s.insightJobQueue, job)
-			if err != nil {
-				InsightJobsCount.WithLabelValues("failure").Inc()
-				s.logger.Error("Failed to enqueue InsightJob",
-					zap.Uint("jobId", job.ID),
-					zap.Error(err),
-				)
-				job.Status = insightapi.InsightJobFailed
-				err = s.db.UpdateInsightJobStatus(job)
+		for _, src := range srcs {
+			for _, ins := range insights {
+				job := newInsightJob(ins, src)
+				err = s.db.AddInsightJob(&job)
 				if err != nil {
-					s.logger.Error("Failed to update InsightJob status",
+					InsightJobsCount.WithLabelValues("failure").Inc()
+					s.logger.Error("Failed to create InsightJob",
 						zap.Uint("jobId", job.ID),
 						zap.Error(err),
 					)
+					continue
 				}
-				continue
+
+				err = enqueueInsightJobs(s.db, s.insightJobQueue, job)
+				if err != nil {
+					InsightJobsCount.WithLabelValues("failure").Inc()
+					s.logger.Error("Failed to enqueue InsightJob",
+						zap.Uint("jobId", job.ID),
+						zap.Error(err),
+					)
+					job.Status = insightapi.InsightJobFailed
+					err = s.db.UpdateInsightJobStatus(job)
+					if err != nil {
+						s.logger.Error("Failed to update InsightJob status",
+							zap.Uint("jobId", job.ID),
+							zap.Error(err),
+						)
+					}
+					continue
+				}
 			}
 		}
 	}
@@ -2045,14 +2054,21 @@ func enqueueInsightJobs(db Database, q queue.Interface, job InsightJob) error {
 		lastYearJobID = lastYear.ID
 	}
 
+	sourceType, err := source.ParseType(ins.Provider)
+	if err != nil {
+		return err
+	}
+
 	if err := q.Publish(insight.Job{
 		JobID:            job.ID,
 		QueryID:          job.InsightID,
 		SmartQueryID:     ins.SmartQueryID,
+		SourceID:         job.SourceID,
+		AccountID:        job.AccountID,
+		SourceType:       sourceType,
 		Internal:         ins.Internal,
 		Query:            ins.Query,
 		Description:      ins.Description,
-		Provider:         ins.Provider,
 		Category:         ins.Category,
 		ExecutedAt:       job.CreatedAt.UnixMilli(),
 		LastDayJobID:     lastDayJobID,
@@ -2280,10 +2296,14 @@ func (s *Scheduler) RunSummarizerJobResultsConsumer() error {
 	}
 }
 
-func newInsightJob(insight Insight) InsightJob {
+func newInsightJob(insight Insight, src Source) InsightJob {
+	srcType, _ := source.ParseType(string(src.Type))
 	return InsightJob{
-		InsightID: insight.ID,
-		Status:    insightapi.InsightJobInProgress,
+		InsightID:  insight.ID,
+		SourceID:   src.ID.String(),
+		AccountID:  src.AccountID,
+		SourceType: srcType,
+		Status:     insightapi.InsightJobInProgress,
 	}
 }
 

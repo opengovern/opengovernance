@@ -2,6 +2,7 @@ package describe
 
 import (
 	"database/sql"
+	"gitlab.com/keibiengine/keibi-engine/pkg/source"
 	"time"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/summarizer"
@@ -83,6 +84,9 @@ type Insight struct {
 type InsightJob struct {
 	gorm.Model
 	InsightID      uint
+	SourceID       string
+	AccountID      string
+	SourceType     source.Type
 	Status         insightapi.InsightJobStatus
 	FailureMessage string
 }
