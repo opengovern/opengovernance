@@ -45,6 +45,8 @@ type InsightResource struct {
 	LastDayValue *int64 `json:"last_day_value"`
 	// LastWeekValue result of the same query last week
 	LastWeekValue *int64 `json:"last_week_value"`
+	// LastMonthValue result of the same query last week
+	LastMonthValue *int64 `json:"last_month_value"`
 	// LastQuarterValue result of the same query last quarter
 	LastQuarterValue *int64 `json:"last_quarter_value"`
 	// LastYearValue result of the same query last year

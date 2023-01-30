@@ -2020,7 +2020,7 @@ func enqueueInsightJobs(db Database, q queue.Interface, job InsightJob) error {
 		return err
 	}
 
-	var lastDayJobID, lastWeekJobID, lastQuarterJobID, lastYearJobID uint
+	var lastDayJobID, lastWeekJobID, lastMonthJobID, lastQuarterJobID, lastYearJobID uint
 
 	lastDay, err := db.GetOldCompletedInsightJob(job.InsightID, 1)
 	if err != nil {
@@ -2036,6 +2036,14 @@ func enqueueInsightJobs(db Database, q queue.Interface, job InsightJob) error {
 	}
 	if lastWeek != nil {
 		lastWeekJobID = lastWeek.ID
+	}
+
+	lastMonth, err := db.GetOldCompletedInsightJob(job.InsightID, 30)
+	if err != nil {
+		return err
+	}
+	if lastMonth != nil {
+		lastMonthJobID = lastMonth.ID
 	}
 
 	lastQuarter, err := db.GetOldCompletedInsightJob(job.InsightID, 93)
@@ -2073,6 +2081,7 @@ func enqueueInsightJobs(db Database, q queue.Interface, job InsightJob) error {
 		ExecutedAt:       job.CreatedAt.UnixMilli(),
 		LastDayJobID:     lastDayJobID,
 		LastWeekJobID:    lastWeekJobID,
+		LastMonthJobID:   lastMonthJobID,
 		LastQuarterJobID: lastQuarterJobID,
 		LastYearJobID:    lastYearJobID,
 	}); err != nil {

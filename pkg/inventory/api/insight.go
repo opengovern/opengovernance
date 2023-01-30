@@ -20,6 +20,7 @@ type InsightResult struct {
 	Result           int64  `json:"result"`
 	LastDayValue     *int64 `json:"lastDayValue"`
 	LastWeekValue    *int64 `json:"lastWeekValue"`
+	LastMonthValue   *int64 `json:"lastMonthValue"`
 	LastQuarterValue *int64 `json:"lastQuarterValue"`
 	LastYearValue    *int64 `json:"lastYearValue"`
 }
