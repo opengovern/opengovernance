@@ -54,6 +54,7 @@ type Job struct {
 	ExecutedAt       int64
 	LastDayJobID     uint
 	LastWeekJobID    uint
+	LastMonthJobID   uint
 	LastQuarterJobID uint
 	LastYearJobID    uint
 }
@@ -124,8 +125,8 @@ func (j Job) Do(client keibi.Client, steampipeConn *steampipe.Database, onboardC
 				Body:   strings.NewReader(string(content)),
 			})
 			if err == nil {
-				var lastDayValue, lastWeekValue, lastQuarterValue, lastYearValue *int64
-				for idx, jobID := range []uint{j.LastDayJobID, j.LastWeekJobID, j.LastQuarterJobID, j.LastYearJobID} {
+				var lastDayValue, lastWeekValue, lastMonthValue, lastQuarterValue, lastYearValue *int64
+				for idx, jobID := range []uint{j.LastDayJobID, j.LastWeekJobID, j.LastMonthJobID, j.LastQuarterJobID, j.LastYearJobID} {
 					var response ResultQueryResponse
 					query, err := FindOldInsightValue(jobID, j.QueryID)
 					if err != nil {
@@ -144,8 +145,10 @@ func (j Job) Do(client keibi.Client, steampipeConn *steampipe.Database, onboardC
 						case 1:
 							lastWeekValue = &response.Hits.Hits[0].Source.Result
 						case 2:
-							lastQuarterValue = &response.Hits.Hits[0].Source.Result
+							lastMonthValue = &response.Hits.Hits[0].Source.Result
 						case 3:
+							lastQuarterValue = &response.Hits.Hits[0].Source.Result
+						case 4:
 							lastYearValue = &response.Hits.Hits[0].Source.Result
 						}
 					}
@@ -168,6 +171,7 @@ func (j Job) Do(client keibi.Client, steampipeConn *steampipe.Database, onboardC
 						Result:           count,
 						LastDayValue:     lastDayValue,
 						LastWeekValue:    lastWeekValue,
+						LastMonthValue:   lastMonthValue,
 						LastQuarterValue: lastQuarterValue,
 						LastYearValue:    lastYearValue,
 						ResourceType:     resourceType,

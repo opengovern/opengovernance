@@ -3271,6 +3271,7 @@ func (h *HttpHandler) ListInsightsResults(ctx echo.Context) error {
 			Result:           item.Source.Result,
 			LastDayValue:     item.Source.LastDayValue,
 			LastWeekValue:    item.Source.LastWeekValue,
+			LastMonthValue:   item.Source.LastMonthValue,
 			LastQuarterValue: item.Source.LastQuarterValue,
 			LastYearValue:    item.Source.LastYearValue,
 		})
