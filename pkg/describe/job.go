@@ -41,6 +41,8 @@ import (
 	"gopkg.in/Shopify/sarama.v1"
 )
 
+const MAX_INT64 = 9223372036854775807
+
 var DoDescribeJobsCount = promauto.NewCounterVec(prometheus.CounterOpts{
 	Namespace: "keibi",
 	Subsystem: "describe_worker",
@@ -248,6 +250,7 @@ func (j DescribeConnectionJob) Do(ictx context.Context, vlt vault.SourceConfig, 
 // if any error occurs, The JobResult will indicate that through the Status and Error
 // will be set to the first error that occured.
 func (j DescribeJob) Do(ictx context.Context, vlt vault.SourceConfig, rdb *redis.Client, producer sarama.SyncProducer, topic string, logger *zap.Logger) (r DescribeJobResult) {
+	logger.Info("Starting DescribeJob", zap.Uint("jobID", j.JobID), zap.Uint("scheduleJobID", j.ScheduleJobID), zap.Uint("parentJobID", j.ParentJobID), zap.String("resourceType", j.ResourceType), zap.String("sourceID", j.SourceID), zap.String("accountID", j.AccountID), zap.Int64("describedAt", j.DescribedAt), zap.String("sourceType", string(j.SourceType)), zap.String("configReg", j.ConfigReg), zap.String("triggerType", string(j.TriggerType)))
 	ctx, span := otel.Tracer(trace2.DescribeWorkerTrace).Start(ictx, "Do")
 	defer span.End()
 
@@ -371,32 +374,35 @@ func doDescribeAWS(ctx context.Context, rdb *redis.Client, job DescribeJob, conf
 	var msgs []kafka.Doc
 
 	for _, resources := range output.Resources {
-		currentResourceLimitRemaining, err := rdb.Get(ctx, RedisKeyWorkspaceResourceRemaining).Result()
-		if err != nil {
-			errs = append(errs, fmt.Sprintf("redisGet: %v", err.Error()))
-			continue
+		var remaining int64 = MAX_INT64
+		if rdb != nil {
+			currentResourceLimitRemaining, err := rdb.Get(ctx, RedisKeyWorkspaceResourceRemaining).Result()
+			if err != nil {
+				errs = append(errs, fmt.Sprintf("redisGet: %v", err.Error()))
+				continue
+			}
+			remaining, err = strconv.ParseInt(currentResourceLimitRemaining, 10, 64)
+			if remaining <= 0 {
+				errs = append(errs, fmt.Sprintf("workspace has reached its max resources limit"))
+				continue
+			}
+			_, err = rdb.DecrBy(ctx, RedisKeyWorkspaceResourceRemaining, int64(len(resources))).Result()
+			if err != nil {
+				errs = append(errs, fmt.Sprintf("redisDecr: %v", err.Error()))
+				continue
+			}
 		}
-		remaining, err := strconv.ParseInt(currentResourceLimitRemaining, 10, 64)
-		if remaining <= 0 {
-			errs = append(errs, fmt.Sprintf("workspace has reached its max resources limit"))
-			continue
-		}
-		_, err = rdb.DecrBy(ctx, RedisKeyWorkspaceResourceRemaining, int64(len(resources))).Result()
-		if err != nil {
-			errs = append(errs, fmt.Sprintf("redisDecr: %v", err.Error()))
-			continue
-		}
-
 		for _, resource := range resources {
 			if resource.Description == nil {
 				continue
 			}
-
-			if remaining <= 0 {
-				errs = append(errs, fmt.Sprintf("workspace has reached its max resources limit"))
-				break
+			if rdb != nil {
+				if remaining <= 0 {
+					errs = append(errs, fmt.Sprintf("workspace has reached its max resources limit"))
+					break
+				}
+				remaining--
 			}
-			remaining--
 
 			kafkaResource := es.Resource{
 				ID:            resource.UniqueID(),
@@ -440,18 +446,20 @@ func doDescribeAWS(ctx context.Context, rdb *redis.Client, job DescribeJob, conf
 				continue
 			}
 
-			for key, value := range tags {
-				key = strings.TrimSpace(key)
-				_, err = rdb.SAdd(context.Background(), "tag-"+key, value).Result()
-				if err != nil {
-					errs = append(errs, fmt.Sprintf("failed to push tag into redis: %v", err.Error()))
-					continue
-				}
+			if rdb != nil {
+				for key, value := range tags {
+					key = strings.TrimSpace(key)
+					_, err = rdb.SAdd(context.Background(), "tag-"+key, value).Result()
+					if err != nil {
+						errs = append(errs, fmt.Sprintf("failed to push tag into redis: %v", err.Error()))
+						continue
+					}
 
-				_, err = rdb.Expire(context.Background(), "tag-"+key, 12*time.Hour).Result() //TODO-Saleh set time based on describe interval
-				if err != nil {
-					errs = append(errs, fmt.Sprintf("failed to set tag expire into redis: %v", err.Error()))
-					continue
+					_, err = rdb.Expire(context.Background(), "tag-"+key, 12*time.Hour).Result() //TODO-Saleh set time based on describe interval
+					if err != nil {
+						errs = append(errs, fmt.Sprintf("failed to set tag expire into redis: %v", err.Error()))
+						continue
+					}
 				}
 			}
 			lookupResource := es.LookupResource{
@@ -526,26 +534,30 @@ func doDescribeAzure(ctx context.Context, rdb *redis.Client, job DescribeJob, co
 	logger.Warn("got the resources, finding summaries", zap.String("resourceType", job.ResourceType), zap.Uint("jobID", job.JobID))
 
 	var msgs []kafka.Doc
+	var remaining int64 = MAX_INT64
 
-	currentResourceLimitRemaining, err := rdb.Get(ctx, RedisKeyWorkspaceResourceRemaining).Result()
-	if err != nil {
-		return nil, fmt.Errorf("redisGet: %v", err.Error())
-	}
-	remaining, err := strconv.ParseInt(currentResourceLimitRemaining, 10, 64)
-	if remaining <= 0 {
-		return nil, fmt.Errorf("workspace has reached its max resources limit")
-	}
-
-	_, err = rdb.DecrBy(ctx, RedisKeyWorkspaceResourceRemaining, int64(len(output.Resources))).Result()
-	if err != nil {
-		return nil, fmt.Errorf("redisDecr: %v", err.Error())
-	}
-
-	for idx, resource := range output.Resources {
-		if remaining <= 0 {
-			break
+	if rdb != nil {
+		currentResourceLimitRemaining, err := rdb.Get(ctx, RedisKeyWorkspaceResourceRemaining).Result()
+		if err != nil {
+			return nil, fmt.Errorf("redisGet: %v", err.Error())
 		}
-		remaining--
+		remaining, err = strconv.ParseInt(currentResourceLimitRemaining, 10, 64)
+		if remaining <= 0 {
+			return nil, fmt.Errorf("workspace has reached its max resources limit")
+		}
+
+		_, err = rdb.DecrBy(ctx, RedisKeyWorkspaceResourceRemaining, int64(len(output.Resources))).Result()
+		if err != nil {
+			return nil, fmt.Errorf("redisDecr: %v", err.Error())
+		}
+	}
+	for idx, resource := range output.Resources {
+		if rdb != nil {
+			if remaining <= 0 {
+				break
+			}
+			remaining--
+		}
 
 		if resource.Description == nil {
 			continue
@@ -602,16 +614,18 @@ func doDescribeAzure(ctx context.Context, rdb *redis.Client, job DescribeJob, co
 			return nil, fmt.Errorf("failed to build tags: %v", err.Error())
 		}
 
-		for key, value := range tags {
-			key = strings.TrimSpace(key)
-			_, err = rdb.SAdd(context.Background(), "tag-"+key, value).Result()
-			if err != nil {
-				return nil, fmt.Errorf("failed to push tag into redis: %v", err.Error())
-			}
+		if rdb != nil {
+			for key, value := range tags {
+				key = strings.TrimSpace(key)
+				_, err = rdb.SAdd(context.Background(), "tag-"+key, value).Result()
+				if err != nil {
+					return nil, fmt.Errorf("failed to push tag into redis: %v", err.Error())
+				}
 
-			_, err = rdb.Expire(context.Background(), "tag-"+key, 12*time.Hour).Result() //TODO-Saleh set time based on describe interval
-			if err != nil {
-				return nil, fmt.Errorf("failed to set tag expire into redis: %v", err.Error())
+				_, err = rdb.Expire(context.Background(), "tag-"+key, 12*time.Hour).Result() //TODO-Saleh set time based on describe interval
+				if err != nil {
+					return nil, fmt.Errorf("failed to set tag expire into redis: %v", err.Error())
+				}
 			}
 		}
 

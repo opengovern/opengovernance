@@ -6,9 +6,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"os"
 	"strconv"
 	"time"
 
+	"gitlab.com/keibiengine/keibi-engine/pkg/internal/producer"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/exporters/jaeger"
 	"go.opentelemetry.io/otel/sdk/resource"
@@ -606,4 +608,94 @@ func (w *ConnectionWorker) Stop() {
 	}
 
 	w.tp.Shutdown(context.Background())
+}
+
+type CloudNativeConnectionWorker struct {
+	id          string
+	job         DescribeConnectionJob
+	kfkProducer *producer.InMemorySaramaProducer
+	kfkTopic    string
+	vault       vault.SourceConfig
+	logger      *zap.Logger
+}
+
+func InitializeCloudNativeConnectionWorker(
+	id string,
+	job DescribeConnectionJob,
+	kfkTopic string,
+	secretMap map[string]any,
+	logger *zap.Logger,
+) (w *CloudNativeConnectionWorker, err error) {
+	if id == "" {
+		return nil, fmt.Errorf("'id' must be set to a non empty string")
+	}
+	if kfkTopic == "" {
+		return nil, fmt.Errorf("'kfkTopic' must be set to a non empty string")
+	}
+
+	w = &CloudNativeConnectionWorker{
+		id:       id,
+		job:      job,
+		kfkTopic: kfkTopic,
+	}
+	defer func() {
+		if err != nil && w != nil {
+			w.Stop()
+		}
+	}()
+
+	w.kfkProducer = producer.NewInMemorySaramaProducer()
+
+	// setup vault
+	v := vault.NewInMemoryVaultSourceConfig()
+	err = v.Write(job.ConfigReg, secretMap)
+	if err != nil {
+		return nil, err
+	}
+
+	w.logger = logger
+
+	w.vault = v
+
+	return w, nil
+}
+
+type CloudNativeConnectionWorkerResult struct {
+	JobResult DescribeConnectionJobResult `json:"jobResult"`
+	Resources []*sarama.ProducerMessage   `json:"resources"`
+}
+
+func (w *CloudNativeConnectionWorker) Run(ctx context.Context) error {
+	originalStdout := os.Stdout
+	defer func() {
+		os.Stdout = originalStdout
+	}()
+
+	// disabling stdout so unwanted output is not printed
+	os.Stdout, _ = os.Open(os.DevNull)
+	jobResult := w.job.Do(ctx, w.vault, nil, w.kfkProducer, w.kfkTopic, w.logger)
+	os.Stdout = originalStdout
+
+	messages := w.kfkProducer.GetMessages(w.kfkTopic)
+
+	output := CloudNativeConnectionWorkerResult{
+		JobResult: jobResult,
+		Resources: messages,
+	}
+
+	jsonOutput, err := json.Marshal(output)
+	if err != nil {
+		w.logger.Error("Failed to marshal messages", zap.Error(err))
+		return err
+	}
+	_, err = os.Stdout.Write(jsonOutput)
+	if err != nil {
+		w.logger.Error("Failed to write messages", zap.Error(err))
+		return err
+	}
+	return nil
+}
+
+func (w *CloudNativeConnectionWorker) Stop() {
+	return
 }

@@ -2,6 +2,7 @@ package describe
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"os"
 	"strings"
@@ -70,7 +71,8 @@ var (
 	ComplianceBaseURL       = os.Getenv("COMPLIANCE_BASE_URL")
 	OnboardBaseURL          = os.Getenv("ONBOARD_BASE_URL")
 
-	AccountConcurrentDescribe = os.Getenv("ACCOUNT_CONCURRENT_DESCRIBE")
+	AccountConcurrentDescribe  = os.Getenv("ACCOUNT_CONCURRENT_DESCRIBE")
+	CloudNativeCredentialsJson = os.Getenv("CLOUDNATIVE_CREDENTIALS")
 )
 
 func SchedulerCommand() *cobra.Command {
@@ -304,6 +306,62 @@ func ConnectionWorkerCommand() *cobra.Command {
 
 	cmd.Flags().StringVar(&id, "id", "", "The worker id")
 	cmd.Flags().StringVarP(&resourcesTopic, "resources-topic", "t", "", "The kafka topic where the resources are published.")
+
+	return cmd
+}
+
+func CloudNativeConnectionWorkerCommand() *cobra.Command {
+	var (
+		id             string
+		resourcesTopic string
+		jobJson        string
+		job            DescribeConnectionJob
+		secrets        map[string]any
+	)
+	cmd := &cobra.Command{
+		PreRunE: func(cmd *cobra.Command, args []string) error {
+			switch {
+			case id == "":
+				return errors.New("missing required flag 'id'")
+			case resourcesTopic == "":
+				return errors.New("missing required flag 'resources-topic'")
+			case jobJson == "":
+				return errors.New("missing required flag 'job-json'")
+			}
+			err := json.Unmarshal([]byte(jobJson), &job)
+			if err != nil {
+				return errors.New("invalid json for job")
+			}
+			err = json.Unmarshal([]byte(CloudNativeCredentialsJson), &secrets)
+			if err != nil {
+				return errors.New("invalid json for secrets")
+			}
+			return nil
+		},
+		RunE: func(cmd *cobra.Command, args []string) error {
+			logger := zap.NewNop()
+			//logger, _ = zap.NewDevelopment() // uncomment for debug
+			cmd.SilenceUsage = true
+			w, err := InitializeCloudNativeConnectionWorker(
+				id,
+				job,
+				resourcesTopic,
+				secrets,
+				logger,
+			)
+			if err != nil {
+				return err
+			}
+
+			defer w.Stop()
+
+			return w.Run(context.Background())
+		},
+	}
+
+	cmd.Flags().StringVar(&id, "id", "", "The worker id")
+	cmd.Flags().StringVarP(&resourcesTopic, "resources-topic", "t", "", "The kafka topic where the resources are published.")
+	cmd.Flags().StringVarP(&jobJson, "job-json", "j", "", "The job json.")
 
 	return cmd
 }
