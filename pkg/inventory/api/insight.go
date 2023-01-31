@@ -15,6 +15,7 @@ type InsightResult struct {
 	Query            string `json:"query"`
 	Category         string `json:"category"`
 	Provider         string `json:"provider"`
+	SourceID         string `json:"sourceID"`
 	Description      string `json:"description"`
 	ExecutedAt       int64  `json:"executedAt"`
 	Result           int64  `json:"result"`

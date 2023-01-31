@@ -72,12 +72,12 @@ func (h HttpServer) Register(e *echo.Echo) {
 }
 
 // HandleListSources godoc
-// @Summary     List Sources
-// @Description Getting all of Keibi sources
-// @Tags        schedule
-// @Produce     json
-// @Success     200 {object} []api.Source
-// @Router      /schedule/api/v1/sources [get]
+//	@Summary		List Sources
+//	@Description	Getting all of Keibi sources
+//	@Tags			schedule
+//	@Produce		json
+//	@Success		200	{object}	[]api.Source
+//	@Router			/schedule/api/v1/sources [get]
 func (h HttpServer) HandleListSources(ctx echo.Context) error {
 	sources, err := h.DB.ListSources()
 	if err != nil {
@@ -119,13 +119,13 @@ func (h HttpServer) HandleListSources(ctx echo.Context) error {
 }
 
 // HandleGetSource godoc
-// @Summary     Get Source by id
-// @Description Getting Keibi source by id
-// @Tags        schedule
-// @Produce     json
-// @Param       source_id path     string true "SourceID"
-// @Success     200       {object} api.Source
-// @Router      /schedule/api/v1/sources/{source_id} [get]
+//	@Summary		Get Source by id
+//	@Description	Getting Keibi source by id
+//	@Tags			schedule
+//	@Produce		json
+//	@Param			source_id	path		string	true	"SourceID"
+//	@Success		200			{object}	api.Source
+//	@Router			/schedule/api/v1/sources/{source_id} [get]
 func (h HttpServer) HandleGetSource(ctx echo.Context) error {
 	sourceID := ctx.Param("source_id")
 	sourceUUID, err := uuid.Parse(sourceID)
@@ -168,13 +168,13 @@ func (h HttpServer) HandleGetSource(ctx echo.Context) error {
 }
 
 // HandleListSourceDescribeJobs godoc
-// @Summary     List source describe jobs
-// @Description List source describe jobs
-// @Tags        schedule
-// @Produce     json
-// @Param       source_id path     string true "SourceID"
-// @Success     200       {object} []api.DescribeSource
-// @Router      /schedule/api/v1/sources/{source_id}/jobs/describe [get]
+//	@Summary		List source describe jobs
+//	@Description	List source describe jobs
+//	@Tags			schedule
+//	@Produce		json
+//	@Param			source_id	path		string	true	"SourceID"
+//	@Success		200			{object}	[]api.DescribeSource
+//	@Router			/schedule/api/v1/sources/{source_id}/jobs/describe [get]
 func (h HttpServer) HandleListSourceDescribeJobs(ctx echo.Context) error {
 	sourceID := ctx.Param("source_id")
 	sourceUUID, err := uuid.Parse(sourceID)
@@ -210,15 +210,15 @@ func (h HttpServer) HandleListSourceDescribeJobs(ctx echo.Context) error {
 }
 
 // HandleListSourceComplianceReports godoc
-// @Summary     List source compliance reports
-// @Description List source compliance reports
-// @Tags        schedule
-// @Produce     json
-// @Param       source_id path     string true  "SourceID"
-// @Param       from      query    int    false "From Time (TimeRange)"
-// @Param       to        query    int    false "To Time (TimeRange)"
-// @Success     200       {object} []complianceapi.ComplianceReport
-// @Router      /schedule/api/v1/sources/{source_id}/jobs/compliance [get]
+//	@Summary		List source compliance reports
+//	@Description	List source compliance reports
+//	@Tags			schedule
+//	@Produce		json
+//	@Param			source_id	path		string	true	"SourceID"
+//	@Param			from		query		int		false	"From Time (TimeRange)"
+//	@Param			to			query		int		false	"To Time (TimeRange)"
+//	@Success		200			{object}	[]complianceapi.ComplianceReport
+//	@Router			/schedule/api/v1/sources/{source_id}/jobs/compliance [get]
 func (h HttpServer) HandleListSourceComplianceReports(ctx echo.Context) error {
 	sourceID := ctx.Param("source_id")
 	sourceUUID, err := uuid.Parse(sourceID)
@@ -275,12 +275,12 @@ func (h HttpServer) HandleListSourceComplianceReports(ctx echo.Context) error {
 }
 
 // RunComplianceReportJobs godoc
-// @Summary     Run compliance report jobs
-// @Description Run compliance report jobs
-// @Tags        schedule
-// @Produce     json
-// @Param       source_id path string true "SourceID"
-// @Router      /schedule/api/v1/sources/{source_id}/jobs/compliance/refresh [post]
+//	@Summary		Run compliance report jobs
+//	@Description	Run compliance report jobs
+//	@Tags			schedule
+//	@Produce		json
+//	@Param			source_id	path	string	true	"SourceID"
+//	@Router			/schedule/api/v1/sources/{source_id}/jobs/compliance/refresh [post]
 func (h HttpServer) RunComplianceReportJobs(ctx echo.Context) error {
 	sourceID := ctx.Param("source_id")
 	sourceUUID, err := uuid.Parse(sourceID)
@@ -299,11 +299,11 @@ func (h HttpServer) RunComplianceReportJobs(ctx echo.Context) error {
 }
 
 // HandleGetLastCompletedComplianceReport godoc
-// @Summary Get last completed compliance report
-// @Tags    schedule
-// @Produce json
-// @Success 200 {object} int
-// @Router  /schedule/api/v1/compliance/report/last/completed [get]
+//	@Summary	Get last completed compliance report
+//	@Tags		schedule
+//	@Produce	json
+//	@Success	200	{object}	int
+//	@Router		/schedule/api/v1/compliance/report/last/completed [get]
 func (h HttpServer) HandleGetLastCompletedComplianceReport(ctx echo.Context) error {
 	id, err := h.DB.GetLastCompletedComplianceReportID()
 	if err != nil {
@@ -314,12 +314,12 @@ func (h HttpServer) HandleGetLastCompletedComplianceReport(ctx echo.Context) err
 }
 
 // RunDescribeJobs godoc
-// @Summary     Run describe jobs
-// @Description Run describe jobs
-// @Tags        schedule
-// @Produce     json
-// @Param       source_id path string true "SourceID"
-// @Router      /schedule/api/v1/sources/{source_id}/jobs/describe/refresh [post]
+//	@Summary		Run describe jobs
+//	@Description	Run describe jobs
+//	@Tags			schedule
+//	@Produce		json
+//	@Param			source_id	path	string	true	"SourceID"
+//	@Router			/schedule/api/v1/sources/{source_id}/jobs/describe/refresh [post]
 func (h HttpServer) RunDescribeJobs(ctx echo.Context) error {
 	sourceID := ctx.Param("source_id")
 	sourceUUID, err := uuid.Parse(sourceID)
@@ -338,13 +338,13 @@ func (h HttpServer) RunDescribeJobs(ctx echo.Context) error {
 }
 
 // GetResourceTypesByProvider godoc
-// @Summary     get resource type by provider
-// @Description get resource type by provider
-// @Tags        schedule
-// @Produce     json
-// @Param       provider path     string true "Provider" Enums(aws,azure)
-// @Success     200      {object} []api.ResourceTypeDetail
-// @Router      /schedule/api/v1/resource_type/{provider} [get]
+//	@Summary		get resource type by provider
+//	@Description	get resource type by provider
+//	@Tags			schedule
+//	@Produce		json
+//	@Param			provider	path		string	true	"Provider"	Enums(aws,azure)
+//	@Success		200			{object}	[]api.ResourceTypeDetail
+//	@Router			/schedule/api/v1/resource_type/{provider} [get]
 func (h HttpServer) GetResourceTypesByProvider(ctx echo.Context) error {
 	provider := ctx.Param("provider")
 
@@ -371,12 +371,12 @@ func (h HttpServer) GetResourceTypesByProvider(ctx echo.Context) error {
 }
 
 // CreateInsight godoc
-// @Summary Create a new insight
-// @Tags    insights
-// @Produce json
-// @Param   request body     api.CreateInsightRequest true "Request Body"
-// @Success 200     {object} uint
-// @Router  /schedule/api/v1/insight [put]
+//	@Summary	Create a new insight
+//	@Tags		insights
+//	@Produce	json
+//	@Param		request	body		api.CreateInsightRequest	true	"Request Body"
+//	@Success	200		{object}	uint
+//	@Router		/schedule/api/v1/insight [put]
 func (h HttpServer) CreateInsight(ctx echo.Context) error {
 	var req api.CreateInsightRequest
 	if err := bindValidate(ctx, &req); err != nil {
@@ -399,12 +399,12 @@ func (h HttpServer) CreateInsight(ctx echo.Context) error {
 }
 
 // DeleteInsight godoc
-// @Summary Delete an insight
-// @Tags    insights
-// @Produce json
-// @Param   request body uint true "Request Body"
-// @Success 200
-// @Router  /schedule/api/v1/insight/{id} [delete]
+//	@Summary	Delete an insight
+//	@Tags		insights
+//	@Produce	json
+//	@Param		request	body	uint	true	"Request Body"
+//	@Success	200
+//	@Router		/schedule/api/v1/insight/{id} [delete]
 func (h HttpServer) DeleteInsight(ctx echo.Context) error {
 	id, err := strconv.Atoi(ctx.Param("id"))
 	if err != nil {
@@ -420,13 +420,13 @@ func (h HttpServer) DeleteInsight(ctx echo.Context) error {
 }
 
 // ListInsights godoc
-// @Summary     List insights
-// @Description Listing insights
-// @Tags        insights
-// @Produce     json
-// @Param       request body     api.ListInsightsRequest true "Request Body"
-// @Success     200     {object} []api.Insight
-// @Router      /schedule/api/v1/insight [get]
+//	@Summary		List insights
+//	@Description	Listing insights
+//	@Tags			insights
+//	@Produce		json
+//	@Param			request	body		api.ListInsightsRequest	true	"Request Body"
+//	@Success		200		{object}	[]api.Insight
+//	@Router			/schedule/api/v1/insight [get]
 func (h HttpServer) ListInsights(ctx echo.Context) error {
 	var req api.ListInsightsRequest
 	if err := bindValidate(ctx, &req); err != nil {
@@ -458,12 +458,12 @@ func (h HttpServer) ListInsights(ctx echo.Context) error {
 }
 
 // TriggerDescribeJob godoc
-// @Summary     Triggers a describe job to run immediately
-// @Description Triggers a describe job to run immediately
-// @Tags        describe
-// @Produce     json
-// @Success     200
-// @Router      /schedule/api/v0/describe/trigger [get]
+//	@Summary		Triggers a describe job to run immediately
+//	@Description	Triggers a describe job to run immediately
+//	@Tags			describe
+//	@Produce		json
+//	@Success		200
+//	@Router			/schedule/api/v0/describe/trigger [get]
 func (h HttpServer) TriggerDescribeJob(ctx echo.Context) error {
 	scheduleJob, err := h.DB.FetchLastScheduleJob()
 	if err != nil {
@@ -488,12 +488,12 @@ func (h HttpServer) TriggerDescribeJob(ctx echo.Context) error {
 }
 
 // TriggerSummarizeJob godoc
-// @Summary     Triggers a summarize job to run immediately
-// @Description Triggers a summarize job to run immediately
-// @Tags        describe
-// @Produce     json
-// @Success     200
-// @Router      /schedule/api/v0/summarize/trigger [get]
+//	@Summary		Triggers a summarize job to run immediately
+//	@Description	Triggers a summarize job to run immediately
+//	@Tags			describe
+//	@Produce		json
+//	@Success		200
+//	@Router			/schedule/api/v0/summarize/trigger [get]
 func (h HttpServer) TriggerSummarizeJob(ctx echo.Context) error {
 	scheduleJob, err := h.DB.FetchLastScheduleJob()
 	if err != nil {
