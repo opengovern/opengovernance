@@ -1,20 +1,28 @@
 package describe
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"math/rand"
+	"net/http"
 	"strconv"
 	"strings"
 	"time"
 
+	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob"
+	"github.com/ProtonMail/gopenpgp/v2/crypto"
+	"github.com/hashicorp/vault/api/auth/kubernetes"
 	"gitlab.com/keibiengine/keibi-engine/pkg/checkup"
 	checkupapi "gitlab.com/keibiengine/keibi-engine/pkg/checkup/api"
 	"gitlab.com/keibiengine/keibi-engine/pkg/compliance/client"
 	"gitlab.com/keibiengine/keibi-engine/pkg/describe/enums"
+	"gitlab.com/keibiengine/keibi-engine/pkg/internal/vault"
 	"gitlab.com/keibiengine/keibi-engine/pkg/summarizer"
 	summarizerapi "gitlab.com/keibiengine/keibi-engine/pkg/summarizer/api"
+	"gopkg.in/Shopify/sarama.v1"
 	"gorm.io/gorm"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/azure"
@@ -168,6 +176,9 @@ type Scheduler struct {
 	onboardClient    onboardClient.OnboardServiceClient
 	es               keibi.Client
 	rdb              *redis.Client
+	vault            vault.SourceConfig
+	azblobClient     *azblob.Client
+	kfkProducer      sarama.SyncProducer
 }
 
 func InitializeScheduler(
@@ -197,6 +208,11 @@ func InitializeScheduler(
 	postgresPort string,
 	postgresDb string,
 	postgresSSLMode string,
+	vaultAddress string,
+	vaultRoleName string,
+	vaultToken string,
+	vaultCaPath string,
+	vaultUseTLS bool,
 	httpServerAddress string,
 	describeIntervalHours string,
 	complianceIntervalHours string,
@@ -480,6 +496,18 @@ func InitializeScheduler(
 	s.logger.Info("Connected to the postgres database: ", zap.String("db", postgresDb))
 	s.db = Database{orm: orm}
 
+	azblobClient, err := azblob.NewClientFromConnectionString(CloudNativeConnectionJobBlobStorageConnectionString, nil)
+	if err != nil {
+		return nil, fmt.Errorf("new azblob client: %w", err)
+	}
+	s.azblobClient = azblobClient
+
+	producer, err := newKafkaProducer(strings.Split(KafkaService, ","))
+	if err != nil {
+		return nil, err
+	}
+	s.kfkProducer = producer
+
 	s.httpServer = NewHTTPServer(httpServerAddress, s.db, s)
 	s.describeIntervalHours, err = strconv.ParseInt(describeIntervalHours, 10, 64)
 	if err != nil {
@@ -513,6 +541,21 @@ func InitializeScheduler(
 		Password: "", // no password set
 		DB:       0,  // use default DB
 	})
+
+	k8sAuth, err := kubernetes.NewKubernetesAuth(
+		vaultRoleName,
+		kubernetes.WithServiceAccountToken(vaultToken),
+	)
+	if err != nil {
+		return nil, err
+	}
+	// setup vault
+	v, err := vault.NewSourceConfig(vaultAddress, vaultCaPath, k8sAuth, vaultUseTLS)
+	if err != nil {
+		return nil, err
+	}
+	s.vault = v
+
 	return s, nil
 }
 
@@ -799,6 +842,149 @@ func (s Scheduler) RunDescribeJobScheduler() {
 	}
 }
 
+func (s Scheduler) createLocalDescribeSource(scheduleJob *ScheduleJob, source *Source) {
+	if isPublishingBlocked(s.logger, s.describeConnectionJobQueue) {
+		s.logger.Warn("The jobs in queue is over the threshold")
+		return
+	}
+	src, err := s.db.GetLastDescribeSourceJob(source.ID)
+	if err != nil {
+		DescribeSourceJobsCount.WithLabelValues("failure").Inc()
+		s.logger.Error("Failed to get last describe source job",
+			zap.Uint("jobID", scheduleJob.ID),
+			zap.String("sourceID", source.ID.String()),
+			zap.Error(err))
+		return
+	}
+
+	triggerType := enums.DescribeTriggerTypeScheduled
+	if src == nil {
+		triggerType = enums.DescribeTriggerTypeInitialDiscovery
+	}
+
+	s.logger.Info("Source is due for a describe. Creating a job now", zap.String("sourceId", source.ID.String()))
+	daj := newDescribeSourceJob(*source, *scheduleJob)
+	err = s.db.CreateDescribeSourceJob(&daj)
+	if err != nil {
+		DescribeSourceJobsCount.WithLabelValues("failure").Inc()
+		s.logger.Error("Failed to create DescribeSourceJob",
+			zap.Uint("jobId", daj.ID),
+			zap.String("sourceId", source.ID.String()),
+			zap.Error(err),
+		)
+		return
+	}
+
+	enqueueDescribeConnectionJob(s.logger, s.db, s.describeConnectionJobQueue, *source, daj, scheduleJob.ID, scheduleJob.CreatedAt, triggerType)
+
+	isSuccessful := true
+
+	err = s.db.UpdateDescribeSourceJob(daj.ID, api.DescribeSourceJobInProgress)
+	if err != nil {
+		DescribeSourceJobsCount.WithLabelValues("failure").Inc()
+		s.logger.Error("Failed to update DescribeSourceJob",
+			zap.Uint("jobId", daj.ID),
+			zap.String("sourceId", source.ID.String()),
+			zap.Error(err),
+		)
+		isSuccessful = false
+	}
+	daj.Status = api.DescribeSourceJobInProgress
+
+	err = s.db.UpdateSourceDescribed(source.ID, scheduleJob.CreatedAt, time.Duration(s.describeIntervalHours)*time.Hour)
+	if err != nil {
+		DescribeSourceJobsCount.WithLabelValues("failure").Inc()
+		s.logger.Error("Failed to update Source",
+			zap.String("sourceId", source.ID.String()),
+			zap.Error(err),
+		)
+		isSuccessful = false
+	}
+
+	if isSuccessful {
+		DescribeSourceJobsCount.WithLabelValues("successful").Inc()
+	}
+
+	return
+}
+
+func (s Scheduler) createCloudNativeDescribeSource(scheduleJob *ScheduleJob, source *Source) {
+	if isPublishingBlocked(s.logger, s.describeConnectionJobQueue) {
+		s.logger.Warn("The jobs in queue is over the threshold")
+		return
+	}
+	src, err := s.db.GetLastDescribeSourceJob(source.ID)
+	if err != nil {
+		DescribeSourceJobsCount.WithLabelValues("failure").Inc()
+		s.logger.Error("Failed to get last describe source job",
+			zap.Uint("jobID", scheduleJob.ID),
+			zap.String("sourceID", source.ID.String()),
+			zap.Error(err))
+		return
+	}
+
+	triggerType := enums.DescribeTriggerTypeScheduled
+	if src == nil {
+		triggerType = enums.DescribeTriggerTypeInitialDiscovery
+	}
+
+	s.logger.Info("Source is due for a describe. Creating a job now", zap.String("sourceId", source.ID.String()))
+	daj := newDescribeSourceJob(*source, *scheduleJob)
+	err = s.db.CreateDescribeSourceJob(&daj)
+	if err != nil {
+		DescribeSourceJobsCount.WithLabelValues("failure").Inc()
+		s.logger.Error("Failed to create DescribeSourceJob",
+			zap.Uint("jobId", daj.ID),
+			zap.String("sourceId", source.ID.String()),
+			zap.Error(err),
+		)
+		return
+	}
+	cloudDaj, err := newCloudNativeDescribeSourceJob(daj)
+	if err != nil {
+		DescribeSourceJobsCount.WithLabelValues("failure").Inc()
+		s.logger.Error("Failed to create CloudNativeDescribeSourceJob",
+			zap.Uint("jobId", daj.ID),
+			zap.String("sourceId", source.ID.String()),
+			zap.Error(err),
+		)
+		return
+	}
+	err = s.db.CreateCloudNativeDescribeSourceJob(&cloudDaj)
+
+	enqueueCloudNativeDescribeConnectionJob(s.logger, s.db, *source, cloudDaj, scheduleJob.ID, scheduleJob.CreatedAt, triggerType)
+
+	isSuccessful := true
+
+	err = s.db.UpdateDescribeSourceJob(daj.ID, api.DescribeSourceJobInProgress)
+	if err != nil {
+		DescribeSourceJobsCount.WithLabelValues("failure").Inc()
+		s.logger.Error("Failed to update DescribeSourceJob",
+			zap.Uint("jobId", daj.ID),
+			zap.String("sourceId", source.ID.String()),
+			zap.Error(err),
+		)
+		isSuccessful = false
+	}
+	daj.Status = api.DescribeSourceJobInProgress
+
+	err = s.db.UpdateSourceDescribed(source.ID, scheduleJob.CreatedAt, time.Duration(s.describeIntervalHours)*time.Hour)
+	if err != nil {
+		DescribeSourceJobsCount.WithLabelValues("failure").Inc()
+		s.logger.Error("Failed to update Source",
+			zap.String("sourceId", source.ID.String()),
+			zap.Error(err),
+		)
+		isSuccessful = false
+	}
+
+	if isSuccessful {
+		DescribeSourceJobsCount.WithLabelValues("successful").Inc()
+	}
+
+	return
+}
+
 func (s Scheduler) scheduleDescribeJob() {
 	scheduleJob, err := s.db.FetchLastScheduleJob()
 	if err != nil {
@@ -943,67 +1129,8 @@ func (s Scheduler) scheduleDescribeJob() {
 
 	rand.Shuffle(len(sources), func(i, j int) { sources[i], sources[j] = sources[j], sources[i] })
 	for _, source := range sources {
-		if isPublishingBlocked(s.logger, s.describeConnectionJobQueue) {
-			s.logger.Warn("The jobs in queue is over the threshold", zap.Error(err))
-			return
-		}
-		src, err := s.db.GetLastDescribeSourceJob(source.ID)
-		if err != nil {
-			DescribeSourceJobsCount.WithLabelValues("failure").Inc()
-			s.logger.Error("Failed to get last describe source job",
-				zap.Uint("jobID", scheduleJob.ID),
-				zap.String("sourceID", source.ID.String()),
-				zap.Error(err))
-			continue
-		}
-
-		triggerType := enums.DescribeTriggerTypeScheduled
-		if src == nil {
-			triggerType = enums.DescribeTriggerTypeInitialDiscovery
-		}
-
-		s.logger.Info("Source is due for a describe. Creating a job now", zap.String("sourceId", source.ID.String()))
-		daj := newDescribeSourceJob(source, *scheduleJob)
-		err = s.db.CreateDescribeSourceJob(&daj)
-		if err != nil {
-			DescribeSourceJobsCount.WithLabelValues("failure").Inc()
-			s.logger.Error("Failed to create DescribeSourceJob",
-				zap.Uint("jobId", daj.ID),
-				zap.String("sourceId", source.ID.String()),
-				zap.Error(err),
-			)
-			continue
-		}
-
-		enqueueDescribeConnectionJob(s.logger, s.db, s.describeConnectionJobQueue, source, daj, scheduleJob.ID, scheduleJob.CreatedAt, triggerType)
-
-		isSuccessful := true
-
-		err = s.db.UpdateDescribeSourceJob(daj.ID, api.DescribeSourceJobInProgress)
-		if err != nil {
-			DescribeSourceJobsCount.WithLabelValues("failure").Inc()
-			s.logger.Error("Failed to update DescribeSourceJob",
-				zap.Uint("jobId", daj.ID),
-				zap.String("sourceId", source.ID.String()),
-				zap.Error(err),
-			)
-			isSuccessful = false
-		}
-		daj.Status = api.DescribeSourceJobInProgress
-
-		err = s.db.UpdateSourceDescribed(source.ID, scheduleJob.CreatedAt, time.Duration(s.describeIntervalHours)*time.Hour)
-		if err != nil {
-			DescribeSourceJobsCount.WithLabelValues("failure").Inc()
-			s.logger.Error("Failed to update Source",
-				zap.String("sourceId", source.ID.String()),
-				zap.Error(err),
-			)
-			isSuccessful = false
-		}
-
-		if isSuccessful {
-			DescribeSourceJobsCount.WithLabelValues("successful").Inc()
-		}
+		//s.createLocalDescribeSource(scheduleJob, &source) // Uncomment this line to enable local describe
+		s.createCloudNativeDescribeSource(scheduleJob, &source) // Comment this line to enable local describe
 	}
 	DescribeJobsCount.WithLabelValues("successful").Inc()
 }
@@ -1542,6 +1669,8 @@ func (s *Scheduler) Stop() {
 	for _, queue := range queues {
 		queue.Close()
 	}
+
+	s.kfkProducer.Close()
 }
 
 func newDescribeSourceJob(a Source, s ScheduleJob) DescribeSourceJob {
@@ -1577,6 +1706,44 @@ func newDescribeSourceJob(a Source, s ScheduleJob) DescribeSourceJob {
 	}
 
 	return daj
+}
+
+func newCloudNativeDescribeSourceJob(j DescribeSourceJob) (CloudNativeDescribeSourceJob, error) {
+	credentialsKeypair, err := crypto.GenerateKey(j.AccountID, j.SourceID.String(), "x25519", 0)
+	if err != nil {
+		return CloudNativeDescribeSourceJob{}, err
+	}
+	credentialsPrivateKey, err := credentialsKeypair.Armor()
+	if err != nil {
+		return CloudNativeDescribeSourceJob{}, err
+	}
+	credentialsPublicKey, err := credentialsKeypair.GetArmoredPublicKey()
+	if err != nil {
+		return CloudNativeDescribeSourceJob{}, err
+	}
+
+	resultEncryptionKeyPair, err := crypto.GenerateKey(j.AccountID, j.SourceID.String(), "x25519", 0)
+	if err != nil {
+		return CloudNativeDescribeSourceJob{}, err
+	}
+	resultEncryptionPrivateKey, err := resultEncryptionKeyPair.Armor()
+	if err != nil {
+		return CloudNativeDescribeSourceJob{}, err
+	}
+	resultEncryptionPublicKey, err := resultEncryptionKeyPair.GetArmoredPublicKey()
+	if err != nil {
+		return CloudNativeDescribeSourceJob{}, err
+	}
+
+	job := CloudNativeDescribeSourceJob{
+		SourceJob:                      j,
+		CredentialEncryptionPrivateKey: credentialsPrivateKey,
+		CredentialEncryptionPublicKey:  credentialsPublicKey,
+		ResultEncryptionPrivateKey:     resultEncryptionPrivateKey,
+		ResultEncryptionPublicKey:      resultEncryptionPublicKey,
+	}
+
+	return job, nil
 }
 
 func newComplianceReportJob(a Source, benchmarkID string, scheduleJobID uint) ComplianceReportJob {
@@ -1669,6 +1836,124 @@ func enqueueDescribeConnectionJob(logger *zap.Logger, db Database, q queue.Inter
 			)
 		}
 		daj.DescribeResourceJobs[i].Status = nextStatus
+	}
+}
+
+func enqueueCloudNativeDescribeConnectionJob(logger *zap.Logger, db Database, a Source, daj CloudNativeDescribeSourceJob, scheduleJobID uint, describedAt time.Time, triggerType enums.DescribeTriggerType) {
+	nextStatus := api.DescribeResourceJobQueued
+	errMsg := ""
+
+	resourceJobs := map[uint]string{}
+	for _, drj := range daj.SourceJob.DescribeResourceJobs {
+		resourceJobs[drj.ID] = drj.ResourceType
+	}
+	dcj := DescribeConnectionJob{
+		JobID:         daj.ID,
+		ScheduleJobID: scheduleJobID,
+		ResourceJobs:  resourceJobs,
+		SourceID:      daj.SourceJob.SourceID.String(),
+		AccountID:     daj.SourceJob.AccountID,
+		DescribedAt:   describedAt.UnixMilli(),
+		SourceType:    a.Type,
+		TriggerType:   triggerType,
+	}
+	dcjJson, err := json.Marshal(dcj)
+	if err != nil {
+		logger.Error("Failed to marshal DescribeConnectionJob",
+			zap.Uint("jobId", daj.ID),
+			zap.Error(err),
+		)
+
+		nextStatus = api.DescribeResourceJobFailed
+		errMsg = fmt.Sprintf("marshal: %s", err.Error())
+	}
+
+	cloudTriggerInput := api.CloudNativeConnectionWorkerTriggerInput{
+		JobID:                   daj.JobID.String(),
+		JobJson:                 string(dcjJson),
+		CredentialsCallbackURL:  fmt.Sprintf("%s/schedule/api/v1/jobs/%s/creds", IngressBaseURL, daj.JobID.String()),
+		EndOfJobCallbackURL:     fmt.Sprintf("%s/schedule/api/v1/jobs/%s/callback", IngressBaseURL, daj.JobID.String()),
+		CredentialDecryptionKey: daj.CredentialEncryptionPrivateKey,
+		OutputEncryptionKey:     daj.ResultEncryptionPublicKey,
+	}
+
+	//call azure function to trigger describe connection job
+	cloudTriggerInputJson, err := json.Marshal(cloudTriggerInput)
+	if err != nil {
+		logger.Error("Failed to marshal DescribeConnectionJob",
+			zap.Uint("jobId", daj.ID),
+			zap.Error(err),
+		)
+
+		nextStatus = api.DescribeResourceJobFailed
+		errMsg = fmt.Sprintf("marshal: %s", err.Error())
+	}
+	//send post request to CloudNativeConnectionJobTriggerURL
+	httpClient := http.Client{Timeout: 10 * time.Second}
+	resp, err := httpClient.Post(CloudNativeConnectionJobTriggerURL, "application/json", bytes.NewBuffer(cloudTriggerInputJson))
+	if err != nil {
+		logger.Error("Failed to post DescribeConnectionJob",
+			zap.Uint("jobId", daj.ID),
+			zap.Error(err),
+		)
+
+		nextStatus = api.DescribeResourceJobFailed
+		errMsg = fmt.Sprintf("post: %s", err.Error())
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		logger.Error("Failed to post DescribeConnectionJob",
+			zap.Uint("jobId", daj.ID),
+			zap.Int("statusCode", resp.StatusCode),
+		)
+
+		nextStatus = api.DescribeResourceJobFailed
+		errMsg = fmt.Sprintf("post: %s", resp.Status)
+	}
+
+	// read response body into CloudNativeConnectionWorkerTriggerOutput
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		logger.Error("Failed to read DescribeConnectionJob response",
+			zap.Uint("jobId", daj.ID),
+			zap.Error(err),
+		)
+
+		nextStatus = api.DescribeResourceJobFailed
+		errMsg = fmt.Sprintf("read: %s", err.Error())
+	}
+	var cloudTriggerOutput api.CloudNativeConnectionWorkerTriggerOutput
+	err = json.Unmarshal(body, &cloudTriggerOutput)
+	if err != nil {
+		logger.Error("Failed to unmarshal DescribeConnectionJob response",
+			zap.Uint("jobId", daj.ID),
+			zap.Error(err),
+		)
+
+		nextStatus = api.DescribeResourceJobFailed
+		errMsg = fmt.Sprintf("unmarshal: %s", err.Error())
+	}
+	daj.StatusURI = &cloudTriggerOutput.StatusQueryGetURI
+	daj.TerminateURI = &cloudTriggerOutput.TerminatePostURI
+	err = db.UpdateCloudNativeDescribeSourceJobURIs(&daj)
+	if err != nil {
+		logger.Error("Failed to update DescribeConnectionJob URIs",
+			zap.Uint("jobId", daj.ID),
+			zap.Error(err),
+		)
+
+		nextStatus = api.DescribeResourceJobFailed
+		errMsg = fmt.Sprintf("update: %s", err.Error())
+	}
+
+	for i, drj := range daj.SourceJob.DescribeResourceJobs {
+		if err := db.UpdateDescribeResourceJobStatus(drj.ID, nextStatus, errMsg); err != nil {
+			logger.Error("Failed to update DescribeResourceJob",
+				zap.Uint("jobId", drj.ID),
+				zap.Error(err),
+			)
+		}
+		daj.SourceJob.DescribeResourceJobs[i].Status = nextStatus
 	}
 }
 

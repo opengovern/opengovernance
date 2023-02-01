@@ -70,7 +70,12 @@ var (
 	WorkspaceBaseURL        = os.Getenv("WORKSPACE_BASE_URL")
 	ComplianceBaseURL       = os.Getenv("COMPLIANCE_BASE_URL")
 	OnboardBaseURL          = os.Getenv("ONBOARD_BASE_URL")
+	IngressBaseURL          = os.Getenv("BASE_URL")
 
+	CloudNativeConnectionJobTriggerURL                  = os.Getenv("CLOUD_NATIVE_CONNECTION_JOB_URL")
+	CloudNativeConnectionJobBlobStorageConnectionString = os.Getenv("CLOUD_NATIVE_CONNECTION_JOB_BLOB_STORAGE_CONNECTION_STRING")
+
+	// For cloud native connection job command
 	AccountConcurrentDescribe  = os.Getenv("ACCOUNT_CONCURRENT_DESCRIBE")
 	CloudNativeCredentialsJson = os.Getenv("CLOUDNATIVE_CREDENTIALS")
 )
@@ -116,6 +121,11 @@ func SchedulerCommand() *cobra.Command {
 				PostgreSQLPort,
 				PostgreSQLDb,
 				PostgreSQLSSLMode,
+				VaultAddress,
+				VaultRoleName,
+				VaultToken,
+				VaultCaPath,
+				VaultUseTLS,
 				HttpServerAddress,
 				DescribeIntervalHours,
 				ComplianceIntervalHours,

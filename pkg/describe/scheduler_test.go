@@ -76,7 +76,7 @@ func (s *SchedulerTestSuite) BeforeTest(suiteName, testName string) {
 		deletedSources:                  make(chan string, ConcurrentDeletedSources),
 	}
 	s.Scheduler.httpServer = NewHTTPServer("localhost:2345", db, &s.Scheduler)
-	
+
 	err = s.Scheduler.db.Initialize()
 	require.NoError(err, "initialize db")
 }
