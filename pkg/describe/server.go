@@ -1,16 +1,21 @@
 package describe
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
+	"github.com/ProtonMail/gopenpgp/v2/helper"
 	api3 "gitlab.com/keibiengine/keibi-engine/pkg/auth/api"
 	"gitlab.com/keibiengine/keibi-engine/pkg/cloudservice"
 	complianceapi "gitlab.com/keibiengine/keibi-engine/pkg/compliance/api"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpserver"
 	summarizerapi "gitlab.com/keibiengine/keibi-engine/pkg/summarizer/api"
+	"go.uber.org/zap"
+	"gopkg.in/Shopify/sarama.v1"
 	"gorm.io/gorm"
 
 	"github.com/google/uuid"
@@ -61,6 +66,9 @@ func (h HttpServer) Register(e *echo.Echo) {
 	v1.GET("/insight", httpserver.AuthorizeHandler(h.ListInsights, api3.ViewerRole))
 	v1.PUT("/insight", httpserver.AuthorizeHandler(h.CreateInsight, api3.EditorRole))
 	v1.DELETE("/insight/:id", httpserver.AuthorizeHandler(h.DeleteInsight, api3.EditorRole))
+
+	v1.POST("/jobs/:job_id/creds", h.HandleGetCredsForJob)
+	v1.POST("/jobs/:job_id/callback", h.HandleJobCallback)
 }
 
 // HandleListSources godoc
@@ -501,6 +509,132 @@ func (h HttpServer) TriggerSummarizeJob(ctx echo.Context) error {
 		return ctx.JSON(http.StatusInternalServerError, api.ErrorResponse{Message: errMsg})
 	}
 	return ctx.JSON(http.StatusOK, "")
+}
+
+// HandleGetCredsForJob godoc
+// @Summary Get credentials for a cloud native job by providing job info
+// @Tags    jobs
+// @Produce json
+// @Param   request body     api.GetCredsForJobRequest true "Request Body"
+// @Success 200     {object} api.GetCredsForJobResponse
+// @Router  /schedule/api/v1/jobs/{job_id}/creds [post]
+func (h HttpServer) HandleGetCredsForJob(ctx echo.Context) error {
+	var req api.GetCredsForJobRequest
+	if err := bindValidate(ctx, &req); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+	jobId := ctx.Param("job_id")
+
+	job, err := h.DB.GetCloudNativeDescribeSourceJob(jobId)
+	if err != nil {
+		return err
+	}
+	if job == nil || job.SourceJob.SourceID.String() != req.SourceID {
+		return echo.NewHTTPError(http.StatusNotFound, "job not found")
+	}
+	if job.SourceJob.Status != api.DescribeSourceJobInProgress {
+		return echo.NewHTTPError(http.StatusBadRequest, "job not in progress")
+	}
+	describeIntervalHours, err := strconv.ParseInt(DescribeIntervalHours, 10, 64)
+	if err != nil {
+		describeIntervalHours = 6
+	}
+	if job.CreatedAt.Add(time.Hour * time.Duration(describeIntervalHours)).Before(time.Now()) {
+		return echo.NewHTTPError(http.StatusBadRequest, "job expired")
+	}
+
+	// TODO: check if any other job is in progress for this source and return error if so
+
+	src, err := h.DB.GetSourceByUUID(job.SourceJob.SourceID)
+	if err != nil {
+		return err
+	}
+	if src == nil {
+		return echo.NewHTTPError(http.StatusNotFound, "source not found")
+	}
+
+	creds, err := h.Scheduler.vault.Read(src.ConfigRef)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to read creds")
+	}
+	jsonCreds, err := json.Marshal(creds)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to marshal creds")
+	}
+	encryptedCreds, err := helper.EncryptMessageArmored(job.CredentialEncryptionPublicKey, string(jsonCreds))
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to encrypt creds")
+	}
+	return ctx.JSON(http.StatusOK, api.GetCredsForJobResponse{
+		Credentials: encryptedCreds,
+	})
+}
+
+// HandleJobCallback godoc
+// @Summary Get credentials for a cloud native job by providing job info
+// @Tags    jobs
+// @Produce json
+// @Param   request body     api.JobCallbackRequest true "Request Body"
+// @Success 200     {object}
+// @Router  /schedule/api/v1/jobs/{job_id}/callback [post]
+func (h HttpServer) HandleJobCallback(ctx echo.Context) error {
+	var req api.JobCallbackRequest
+	if err := bindValidate(ctx, &req); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+	jobId := ctx.Param("job_id")
+
+	job, err := h.DB.GetCloudNativeDescribeSourceJob(jobId)
+	if err != nil {
+		return err
+	}
+	if job == nil || job.SourceJob.SourceID.String() != req.SourceID {
+		return echo.NewHTTPError(http.StatusNotFound, "job not found")
+	}
+	if job.SourceJob.Status != api.DescribeSourceJobInProgress {
+		return echo.NewHTTPError(http.StatusBadRequest, "job not in progress")
+	}
+	describeIntervalHours, err := strconv.ParseInt(DescribeIntervalHours, 10, 64)
+	if err != nil {
+		describeIntervalHours = 6
+	}
+	if job.CreatedAt.Add(time.Hour * time.Duration(describeIntervalHours)).Before(time.Now()) {
+		return echo.NewHTTPError(http.StatusBadRequest, "job expired")
+	}
+
+	containerName := strings.ToLower(fmt.Sprintf("connection-worker-%s", jobId))
+	buffer := make([]byte, 0)
+	_, err = h.Scheduler.azblobClient.DownloadBuffer(ctx.Request().Context(), containerName, req.BlobName, buffer, nil)
+	if err != nil {
+		h.Scheduler.logger.Error("Failed to download blob", zap.Error(err))
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to download blob")
+	}
+	decrypted, err := helper.DecryptMessageArmored(job.ResultEncryptionPrivateKey, nil, string(buffer))
+	if err != nil {
+		h.Scheduler.logger.Error("Failed to decrypt blob", zap.Error(err))
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to decrypt blob")
+	}
+	messages := make([]*sarama.ProducerMessage, 0)
+	err = json.Unmarshal([]byte(decrypted), &messages)
+	if err != nil {
+		h.Scheduler.logger.Error("Failed to unmarshal blob", zap.Error(err))
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to unmarshal blob")
+	}
+	if err := h.Scheduler.kfkProducer.SendMessages(messages); err != nil {
+		if errs, ok := err.(sarama.ProducerErrors); ok {
+			for _, e := range errs {
+				h.Scheduler.logger.Error("Failed calling SendMessages", zap.Error(fmt.Errorf("Failed to persist resource[%s] in kafka topic[%s]: %s\nMessage: %v\n", e.Msg.Key, e.Msg.Topic, e.Error(), e.Msg)))
+			}
+		}
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to send messages to kafka")
+	}
+	err = h.Scheduler.describeConnectionJobResultQueue.Publish(req.JobResult)
+	if err != nil {
+		h.Scheduler.logger.Error("Failed calling describeConnectionJobResultQueue.Publish", zap.Error(err))
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to publish job result")
+	}
+
+	return ctx.NoContent(http.StatusOK)
 }
 
 func bindValidate(ctx echo.Context, i interface{}) error {

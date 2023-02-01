@@ -2,8 +2,9 @@ package describe
 
 import (
 	"database/sql"
-	"gitlab.com/keibiengine/keibi-engine/pkg/source"
 	"time"
+
+	"gitlab.com/keibiengine/keibi-engine/pkg/source"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/summarizer"
 
@@ -61,6 +62,19 @@ type DescribeSourceJob struct {
 	AccountID            string
 	DescribeResourceJobs []DescribeResourceJob `gorm:"foreignKey:ParentJobID;constraint:OnDelete:CASCADE;"`
 	Status               api.DescribeSourceJobStatus
+}
+
+type CloudNativeDescribeSourceJob struct {
+	gorm.Model
+	JobID                          uuid.UUID         `gorm:"type:uuid;default:uuid_generate_v4();uniqueIndex"`
+	SourceJob                      DescribeSourceJob `gorm:"foreignKey:ID;constraint:OnDelete:CASCADE;"`
+	CredentialEncryptionPrivateKey string
+	CredentialEncryptionPublicKey  string
+	ResultEncryptionPrivateKey     string
+	ResultEncryptionPublicKey      string
+
+	StatusURI    *string
+	TerminateURI *string
 }
 
 type DescribeResourceJob struct {

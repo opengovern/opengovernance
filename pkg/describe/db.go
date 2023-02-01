@@ -386,6 +386,50 @@ func (db Database) DeleteDescribeSourceJob(id uint) error {
 	return nil
 }
 
+// =============================== CloudNativeDescribeSourceJob ===============================
+
+// CreateCloudNativeDescribeSourceJob creates a new CloudNativeDescribeSourceJob.
+// If there is no error, the job is updated with the assigned ID
+func (db Database) CreateCloudNativeDescribeSourceJob(job *CloudNativeDescribeSourceJob) error {
+	tx := db.orm.
+		Model(&CloudNativeDescribeSourceJob{}).
+		Create(job)
+	if tx.Error != nil {
+		return tx.Error
+	}
+
+	return nil
+}
+
+func (db Database) UpdateCloudNativeDescribeSourceJobURIs(job *CloudNativeDescribeSourceJob) error {
+	tx := db.orm.
+		Model(&CloudNativeDescribeSourceJob{}).
+		Where("id = ?", job.ID).
+		Updates(CloudNativeDescribeSourceJob{
+			StatusURI:    job.StatusURI,
+			TerminateURI: job.TerminateURI,
+		})
+	if tx.Error != nil {
+		return tx.Error
+	} else if tx.RowsAffected != 1 {
+		return fmt.Errorf("update cloud native describe source job: didn't find the cloud native describe source job to update")
+	}
+	return nil
+}
+
+func (db Database) GetCloudNativeDescribeSourceJob(jobID string) (*CloudNativeDescribeSourceJob, error) {
+	var job CloudNativeDescribeSourceJob
+	tx := db.orm.Preload(clause.Associations).Where("job_id = ?", jobID).First(&job)
+	if tx.Error != nil {
+		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
+		return nil, tx.Error
+	}
+
+	return &job, nil
+}
+
 // =============================== DescribeResourceJob ===============================
 
 func (db Database) GetDescribeResourceJob(id uint) (DescribeResourceJob, error) {
