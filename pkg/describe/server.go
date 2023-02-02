@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/ProtonMail/gopenpgp/v2/helper"
@@ -602,9 +601,9 @@ func (h HttpServer) HandleJobCallback(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "job expired")
 	}
 
-	containerName := strings.ToLower(fmt.Sprintf("connection-worker-%s", jobId))
-	buffer := make([]byte, 0)
-	_, err = h.Scheduler.azblobClient.DownloadBuffer(ctx.Request().Context(), containerName, req.BlobName, buffer, nil)
+	// make buffer of 128 megabytes
+	buffer := make([]byte, 128*1024*1024)
+	_, err = h.Scheduler.azblobClient.DownloadBuffer(ctx.Request().Context(), req.ContainerName, req.BlobName, buffer, nil)
 	if err != nil {
 		h.Scheduler.logger.Error("Failed to download blob", zap.Error(err))
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to download blob")

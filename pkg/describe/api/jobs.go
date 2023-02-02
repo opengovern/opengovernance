@@ -40,7 +40,8 @@ type DescribeConnectionJobResult struct {
 }
 
 type JobCallbackRequest struct {
-	SourceID  string                      `json:"sourceId" validate:"required"`
-	BlobName  string                      `json:"blobName" validate:"required"`
-	JobResult DescribeConnectionJobResult `json:"jobResult" validate:"required"`
+	SourceID      string                      `json:"sourceId" validate:"required"`
+	BlobName      string                      `json:"blobName" validate:"required"`
+	ContainerName string                      `json:"containerName" validate:"required"`
+	JobResult     DescribeConnectionJobResult `json:"jobResult" validate:"required"`
 }
