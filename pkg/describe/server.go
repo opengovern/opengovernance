@@ -617,20 +617,23 @@ func (h HttpServer) HandleJobCallback(ctx echo.Context) error {
 		h.Scheduler.logger.Error("Failed to decrypt blob", zap.Error(err))
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to decrypt blob")
 	}
-	messages := make([]*sarama.ProducerMessage, 0)
-	err = json.Unmarshal([]byte(decrypted), &messages)
-	if err != nil {
-		h.Scheduler.logger.Error("Failed to unmarshal blob", zap.Error(err))
-		return echo.NewHTTPError(http.StatusInternalServerError, "failed to unmarshal blob")
-	}
-	if err := h.Scheduler.kfkProducer.SendMessages(messages); err != nil {
-		if errs, ok := err.(sarama.ProducerErrors); ok {
-			for _, e := range errs {
-				h.Scheduler.logger.Error("Failed calling SendMessages", zap.Error(fmt.Errorf("Failed to persist resource[%s] in kafka topic[%s]: %s\nMessage: %v\n", e.Msg.Key, e.Msg.Topic, e.Error(), e.Msg)))
-			}
+	if decrypted != "" && decrypted != "null" && decrypted != "[]" {
+		messages := make([]*sarama.ProducerMessage, 0)
+		err = json.Unmarshal([]byte(decrypted), &messages)
+		if err != nil {
+			h.Scheduler.logger.Error("Failed to unmarshal blob", zap.Error(err))
+			return echo.NewHTTPError(http.StatusInternalServerError, "failed to unmarshal blob")
 		}
-		return echo.NewHTTPError(http.StatusInternalServerError, "failed to send messages to kafka")
+		if err := h.Scheduler.kfkProducer.SendMessages(messages); err != nil {
+			if errs, ok := err.(sarama.ProducerErrors); ok {
+				for _, e := range errs {
+					h.Scheduler.logger.Error("Failed calling SendMessages", zap.Error(fmt.Errorf("Failed to persist resource[%s] in kafka topic[%s]: %s\nMessage: %v\n", e.Msg.Key, e.Msg.Topic, e.Error(), e.Msg)))
+				}
+			}
+			return echo.NewHTTPError(http.StatusInternalServerError, "failed to send messages to kafka")
+		}
 	}
+
 	err = h.Scheduler.describeConnectionJobResultQueue.Publish(req.JobResult)
 	if err != nil {
 		h.Scheduler.logger.Error("Failed calling describeConnectionJobResultQueue.Publish", zap.Error(err))
