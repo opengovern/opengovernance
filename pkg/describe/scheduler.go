@@ -1901,7 +1901,7 @@ func enqueueCloudNativeDescribeConnectionJob(logger *zap.Logger, db Database, a 
 		errMsg = fmt.Sprintf("post: %s", err.Error())
 	}
 	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusOK {
+	if resp.StatusCode != http.StatusAccepted {
 		logger.Error("Failed to post DescribeConnectionJob",
 			zap.Uint("jobId", daj.ID),
 			zap.Int("statusCode", resp.StatusCode),
@@ -1909,43 +1909,44 @@ func enqueueCloudNativeDescribeConnectionJob(logger *zap.Logger, db Database, a 
 
 		nextStatus = api.DescribeResourceJobFailed
 		errMsg = fmt.Sprintf("post: %s", resp.Status)
+	} else {
+		// read response body into CloudNativeConnectionWorkerTriggerOutput
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			logger.Error("Failed to read DescribeConnectionJob response",
+				zap.Uint("jobId", daj.ID),
+				zap.Error(err),
+			)
+
+			nextStatus = api.DescribeResourceJobFailed
+			errMsg = fmt.Sprintf("read: %s", err.Error())
+		} else {
+			var cloudTriggerOutput api.CloudNativeConnectionWorkerTriggerOutput
+			err = json.Unmarshal(body, &cloudTriggerOutput)
+			if err != nil {
+				logger.Error("Failed to unmarshal DescribeConnectionJob response",
+					zap.Uint("jobId", daj.ID),
+					zap.Error(err),
+				)
+
+				nextStatus = api.DescribeResourceJobFailed
+				errMsg = fmt.Sprintf("unmarshal: %s", err.Error())
+			} else {
+				daj.StatusURI = &cloudTriggerOutput.StatusQueryGetURI
+				daj.TerminateURI = &cloudTriggerOutput.TerminatePostURI
+				err = db.UpdateCloudNativeDescribeSourceJobURIs(&daj)
+				if err != nil {
+					logger.Error("Failed to update DescribeConnectionJob URIs",
+						zap.Uint("jobId", daj.ID),
+						zap.Error(err),
+					)
+
+					nextStatus = api.DescribeResourceJobFailed
+					errMsg = fmt.Sprintf("update: %s", err.Error())
+				}
+			}
+		}
 	}
-
-	// read response body into CloudNativeConnectionWorkerTriggerOutput
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		logger.Error("Failed to read DescribeConnectionJob response",
-			zap.Uint("jobId", daj.ID),
-			zap.Error(err),
-		)
-
-		nextStatus = api.DescribeResourceJobFailed
-		errMsg = fmt.Sprintf("read: %s", err.Error())
-	}
-	var cloudTriggerOutput api.CloudNativeConnectionWorkerTriggerOutput
-	err = json.Unmarshal(body, &cloudTriggerOutput)
-	if err != nil {
-		logger.Error("Failed to unmarshal DescribeConnectionJob response",
-			zap.Uint("jobId", daj.ID),
-			zap.Error(err),
-		)
-
-		nextStatus = api.DescribeResourceJobFailed
-		errMsg = fmt.Sprintf("unmarshal: %s", err.Error())
-	}
-	daj.StatusURI = &cloudTriggerOutput.StatusQueryGetURI
-	daj.TerminateURI = &cloudTriggerOutput.TerminatePostURI
-	err = db.UpdateCloudNativeDescribeSourceJobURIs(&daj)
-	if err != nil {
-		logger.Error("Failed to update DescribeConnectionJob URIs",
-			zap.Uint("jobId", daj.ID),
-			zap.Error(err),
-		)
-
-		nextStatus = api.DescribeResourceJobFailed
-		errMsg = fmt.Sprintf("update: %s", err.Error())
-	}
-
 	for i, drj := range daj.SourceJob.DescribeResourceJobs {
 		if err := db.UpdateDescribeResourceJobStatus(drj.ID, nextStatus, errMsg); err != nil {
 			logger.Error("Failed to update DescribeResourceJob",
