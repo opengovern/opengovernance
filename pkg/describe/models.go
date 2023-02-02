@@ -67,7 +67,7 @@ type DescribeSourceJob struct {
 type CloudNativeDescribeSourceJob struct {
 	gorm.Model
 	JobID                          uuid.UUID         `gorm:"type:uuid;default:uuid_generate_v4();uniqueIndex"`
-	SourceJob                      DescribeSourceJob `gorm:"foreignKey:SourceJobID;references:ID;constraint:OnDelete:CASCADE;"`
+	SourceJob                      DescribeSourceJob `gorm:"foreignKey:SourceJobID;references:ID;"`
 	SourceJobID                    uint
 	CredentialEncryptionPrivateKey string
 	CredentialEncryptionPublicKey  string
