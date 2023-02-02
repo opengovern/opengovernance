@@ -3,6 +3,7 @@ package describe
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"strconv"
 	"time"
@@ -601,12 +602,15 @@ func (h HttpServer) HandleJobCallback(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "job expired")
 	}
 
-	// make buffer of 16 megabytes
-	buffer := make([]byte, 16*1024*1024)
-	_, err = h.Scheduler.azblobClient.DownloadBuffer(ctx.Request().Context(), req.ContainerName, req.BlobName, buffer, nil)
+	stream, err := h.Scheduler.azblobClient.DownloadStream(ctx.Request().Context(), req.ContainerName, req.BlobName, nil)
 	if err != nil {
-		h.Scheduler.logger.Error("Failed to download blob", zap.Error(err))
-		return echo.NewHTTPError(http.StatusInternalServerError, "failed to download blob")
+		h.Scheduler.logger.Error("Failed to get blob stream", zap.Error(err))
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to get blob stream")
+	}
+	buffer, err := io.ReadAll(stream.Body)
+	if err != nil {
+		h.Scheduler.logger.Error("Failed to read blob stream", zap.Error(err))
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to read blob stream")
 	}
 	decrypted, err := helper.DecryptMessageArmored(job.ResultEncryptionPrivateKey, nil, string(buffer))
 	if err != nil {
