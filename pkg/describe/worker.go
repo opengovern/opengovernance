@@ -660,15 +660,31 @@ func InitializeCloudNativeConnectionWorker(
 	return w, nil
 }
 
+type CloudNativeConnectionWorkerMessage struct {
+	Topic   string
+	Key     sarama.StringEncoder
+	Headers []sarama.RecordHeader
+	Value   sarama.ByteEncoder
+}
+
 type CloudNativeConnectionWorkerResult struct {
-	JobResult DescribeConnectionJobResult `json:"jobResult"`
-	Resources []*sarama.ProducerMessage   `json:"resources"`
+	JobResult DescribeConnectionJobResult           `json:"jobResult"`
+	Resources []*CloudNativeConnectionWorkerMessage `json:"resources"`
 }
 
 func (w *CloudNativeConnectionWorker) Run(ctx context.Context) error {
 	jobResult := w.job.Do(ctx, w.vault, nil, w.kfkProducer, w.kfkTopic, w.logger)
 
-	messages := w.kfkProducer.GetMessages()
+	saramaMessages := w.kfkProducer.GetMessages()
+	messages := make([]*CloudNativeConnectionWorkerMessage, 0, len(saramaMessages))
+	for _, saramaMessage := range saramaMessages {
+		messages = append(messages, &CloudNativeConnectionWorkerMessage{
+			Topic:   saramaMessage.Topic,
+			Key:     saramaMessage.Key.(sarama.StringEncoder),
+			Headers: saramaMessage.Headers,
+			Value:   saramaMessage.Value.(sarama.ByteEncoder),
+		})
+	}
 
 	output := CloudNativeConnectionWorkerResult{
 		JobResult: jobResult,
