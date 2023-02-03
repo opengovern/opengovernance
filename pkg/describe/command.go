@@ -326,6 +326,7 @@ func CloudNativeConnectionWorkerCommand() *cobra.Command {
 		resourcesTopic string
 		jobJson        string
 		job            DescribeConnectionJob
+		outputFileName string
 		secrets        map[string]any
 	)
 	cmd := &cobra.Command{
@@ -337,6 +338,8 @@ func CloudNativeConnectionWorkerCommand() *cobra.Command {
 				return errors.New("missing required flag 'resources-topic'")
 			case jobJson == "":
 				return errors.New("missing required flag 'job-json'")
+			case outputFileName == "":
+				return errors.New("missing required flag 'output'")
 			}
 			err := json.Unmarshal([]byte(jobJson), &job)
 			if err != nil {
@@ -349,14 +352,17 @@ func CloudNativeConnectionWorkerCommand() *cobra.Command {
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			logger := zap.NewNop()
-			//logger, _ = zap.NewDevelopment() // uncomment for debug
+			logger, err := zap.NewProduction()
+			if err != nil {
+				return err
+			}
 			cmd.SilenceUsage = true
 			w, err := InitializeCloudNativeConnectionWorker(
 				id,
 				job,
 				resourcesTopic,
 				secrets,
+				outputFileName,
 				logger,
 			)
 			if err != nil {
@@ -372,6 +378,7 @@ func CloudNativeConnectionWorkerCommand() *cobra.Command {
 	cmd.Flags().StringVar(&id, "id", "", "The worker id")
 	cmd.Flags().StringVarP(&resourcesTopic, "resources-topic", "t", "", "The kafka topic where the resources are published.")
 	cmd.Flags().StringVarP(&jobJson, "job-json", "j", "", "The job json.")
+	cmd.Flags().StringVarP(&jobJson, "output", "o", "", "The name of the file to write the output to")
 
 	return cmd
 }

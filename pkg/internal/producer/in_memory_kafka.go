@@ -3,12 +3,12 @@ package producer
 import "gopkg.in/Shopify/sarama.v1"
 
 type InMemorySaramaProducer struct {
-	Messages map[string][]*sarama.ProducerMessage
+	Messages []*sarama.ProducerMessage
 }
 
 func NewInMemorySaramaProducer() *InMemorySaramaProducer {
 	return &InMemorySaramaProducer{
-		Messages: make(map[string][]*sarama.ProducerMessage),
+		Messages: make([]*sarama.ProducerMessage, 0),
 	}
 }
 
@@ -16,10 +16,7 @@ func (k *InMemorySaramaProducer) SendMessage(msg *sarama.ProducerMessage) (parti
 	if msg == nil {
 		return 0, 0, nil
 	}
-	if k.Messages[msg.Topic] == nil {
-		k.Messages[msg.Topic] = make([]*sarama.ProducerMessage, 0)
-	}
-	k.Messages[msg.Topic] = append(k.Messages[msg.Topic], msg)
+	k.Messages = append(k.Messages, msg)
 	return 0, 0, nil
 }
 
@@ -34,9 +31,6 @@ func (k *InMemorySaramaProducer) Close() error {
 	return nil
 }
 
-func (k *InMemorySaramaProducer) GetMessages(topic string) []*sarama.ProducerMessage {
-	if k.Messages[topic] == nil {
-		k.Messages[topic] = make([]*sarama.ProducerMessage, 0)
-	}
-	return k.Messages[topic]
+func (k *InMemorySaramaProducer) GetMessages() []*sarama.ProducerMessage {
+	return k.Messages
 }

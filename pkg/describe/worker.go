@@ -611,12 +611,13 @@ func (w *ConnectionWorker) Stop() {
 }
 
 type CloudNativeConnectionWorker struct {
-	id          string
-	job         DescribeConnectionJob
-	kfkProducer *producer.InMemorySaramaProducer
-	kfkTopic    string
-	vault       vault.SourceConfig
-	logger      *zap.Logger
+	id             string
+	job            DescribeConnectionJob
+	kfkProducer    *producer.InMemorySaramaProducer
+	kfkTopic       string
+	vault          vault.SourceConfig
+	outputFileName string
+	logger         *zap.Logger
 }
 
 func InitializeCloudNativeConnectionWorker(
@@ -624,6 +625,7 @@ func InitializeCloudNativeConnectionWorker(
 	job DescribeConnectionJob,
 	kfkTopic string,
 	secretMap map[string]any,
+	outputFileName string,
 	logger *zap.Logger,
 ) (w *CloudNativeConnectionWorker, err error) {
 	if id == "" {
@@ -634,9 +636,10 @@ func InitializeCloudNativeConnectionWorker(
 	}
 
 	w = &CloudNativeConnectionWorker{
-		id:       id,
-		job:      job,
-		kfkTopic: kfkTopic,
+		id:             id,
+		job:            job,
+		kfkTopic:       kfkTopic,
+		outputFileName: outputFileName,
 	}
 	defer func() {
 		if err != nil && w != nil {
@@ -666,17 +669,9 @@ type CloudNativeConnectionWorkerResult struct {
 }
 
 func (w *CloudNativeConnectionWorker) Run(ctx context.Context) error {
-	originalStdout := os.Stdout
-	defer func() {
-		os.Stdout = originalStdout
-	}()
-
-	// disabling stdout so unwanted output is not printed
-	os.Stdout, _ = os.Open(os.DevNull)
 	jobResult := w.job.Do(ctx, w.vault, nil, w.kfkProducer, w.kfkTopic, w.logger)
-	os.Stdout = originalStdout
 
-	messages := w.kfkProducer.GetMessages(w.kfkTopic)
+	messages := w.kfkProducer.GetMessages()
 
 	output := CloudNativeConnectionWorkerResult{
 		JobResult: jobResult,
@@ -688,7 +683,8 @@ func (w *CloudNativeConnectionWorker) Run(ctx context.Context) error {
 		w.logger.Error("Failed to marshal messages", zap.Error(err))
 		return err
 	}
-	_, err = os.Stdout.Write(jsonOutput)
+
+	err = os.WriteFile(w.outputFileName, jsonOutput, 0644)
 	if err != nil {
 		w.logger.Error("Failed to write messages", zap.Error(err))
 		return err
