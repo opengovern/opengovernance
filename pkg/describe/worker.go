@@ -279,6 +279,21 @@ func newKafkaProducer(brokers []string) (sarama.SyncProducer, error) {
 	return producer, nil
 }
 
+func newKafkaClient(brokers []string) (sarama.Client, error) {
+	cfg := sarama.NewConfig()
+	cfg.Producer.Retry.Max = 3
+	cfg.Producer.RequiredAcks = sarama.WaitForAll
+	cfg.Producer.Return.Successes = true
+	cfg.Version = sarama.V2_1_0_0
+
+	client, err := sarama.NewClient(brokers, cfg)
+	if err != nil {
+		return nil, err
+	}
+
+	return client, nil
+}
+
 type CleanupWorker struct {
 	id              string
 	cleanupJobQueue queue.Interface

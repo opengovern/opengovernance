@@ -178,7 +178,7 @@ type Scheduler struct {
 	rdb              *redis.Client
 	vault            vault.SourceConfig
 	azblobClient     *azblob.Client
-	kfkProducer      sarama.SyncProducer
+	kafkaClient      sarama.Client
 }
 
 func InitializeScheduler(
@@ -502,11 +502,11 @@ func InitializeScheduler(
 	}
 	s.azblobClient = azblobClient
 
-	producer, err := newKafkaProducer(strings.Split(KafkaService, ","))
+	kafkaClient, err := newKafkaClient(strings.Split(KafkaService, ","))
 	if err != nil {
 		return nil, err
 	}
-	s.kfkProducer = producer
+	s.kafkaClient = kafkaClient
 
 	s.httpServer = NewHTTPServer(httpServerAddress, s.db, s)
 	s.describeIntervalHours, err = strconv.ParseInt(describeIntervalHours, 10, 64)
@@ -1670,7 +1670,7 @@ func (s *Scheduler) Stop() {
 		queue.Close()
 	}
 
-	s.kfkProducer.Close()
+	s.kafkaClient.Close()
 }
 
 func newDescribeSourceJob(a Source, s ScheduleJob) DescribeSourceJob {

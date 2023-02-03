@@ -633,13 +633,29 @@ func (h HttpServer) HandleJobCallback(ctx echo.Context) error {
 			Headers: message.Headers,
 		})
 	}
-	if err := h.Scheduler.kfkProducer.SendMessages(saramaMessages); err != nil {
+
+	producer, err := sarama.NewSyncProducerFromClient(h.Scheduler.kafkaClient)
+	if err != nil {
+		h.Scheduler.logger.Error("Failed to create producer", zap.Error(err))
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to create producer")
+	}
+
+	if err := producer.SendMessages(saramaMessages); err != nil {
 		if errs, ok := err.(sarama.ProducerErrors); ok {
 			for _, e := range errs {
 				h.Scheduler.logger.Error("Failed calling SendMessages", zap.Error(fmt.Errorf("Failed to persist resource[%s] in kafka topic[%s]: %s\nMessage: %v\n", e.Msg.Key, e.Msg.Topic, e.Error(), e.Msg)))
 			}
 		}
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to send messages to kafka")
+	}
+	err = producer.Close()
+	if err != nil {
+		h.Scheduler.logger.Error("Failed calling producer.Close", zap.Error(err))
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to close producer")
+	}
+
+	if len(saramaMessages) != 0 {
+		h.Scheduler.logger.Info("Successfully sent messages to kafka", zap.Int("count", len(saramaMessages)))
 	}
 
 	err = h.Scheduler.describeConnectionJobResultQueue.Publish(req.JobResult)
