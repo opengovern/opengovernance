@@ -170,15 +170,16 @@ type Scheduler struct {
 	checkupIntervalHours    int64
 	summarizerIntervalHours int64
 
-	logger           *zap.Logger
-	workspaceClient  workspaceClient.WorkspaceServiceClient
-	complianceClient client.ComplianceServiceClient
-	onboardClient    onboardClient.OnboardServiceClient
-	es               keibi.Client
-	rdb              *redis.Client
-	vault            vault.SourceConfig
-	azblobClient     *azblob.Client
-	kafkaClient      sarama.Client
+	logger              *zap.Logger
+	workspaceClient     workspaceClient.WorkspaceServiceClient
+	complianceClient    client.ComplianceServiceClient
+	onboardClient       onboardClient.OnboardServiceClient
+	es                  keibi.Client
+	rdb                 *redis.Client
+	vault               vault.SourceConfig
+	azblobClient        *azblob.Client
+	kafkaClient         sarama.Client
+	kafkaResourcesTopic string
 }
 
 func InitializeScheduler(
@@ -507,6 +508,7 @@ func InitializeScheduler(
 		return nil, err
 	}
 	s.kafkaClient = kafkaClient
+	s.kafkaResourcesTopic = KafkaResourcesTopic
 
 	s.httpServer = NewHTTPServer(httpServerAddress, s.db, s)
 	s.describeIntervalHours, err = strconv.ParseInt(describeIntervalHours, 10, 64)
@@ -952,7 +954,7 @@ func (s Scheduler) createCloudNativeDescribeSource(scheduleJob *ScheduleJob, sou
 	}
 	err = s.db.CreateCloudNativeDescribeSourceJob(&cloudDaj)
 
-	enqueueCloudNativeDescribeConnectionJob(s.logger, s.db, *source, cloudDaj, scheduleJob.ID, scheduleJob.CreatedAt, triggerType)
+	enqueueCloudNativeDescribeConnectionJob(s.logger, s.db, *source, cloudDaj, s.kafkaResourcesTopic, scheduleJob.ID, scheduleJob.CreatedAt, triggerType)
 
 	isSuccessful := true
 
@@ -1839,7 +1841,7 @@ func enqueueDescribeConnectionJob(logger *zap.Logger, db Database, q queue.Inter
 	}
 }
 
-func enqueueCloudNativeDescribeConnectionJob(logger *zap.Logger, db Database, a Source, daj CloudNativeDescribeSourceJob, scheduleJobID uint, describedAt time.Time, triggerType enums.DescribeTriggerType) {
+func enqueueCloudNativeDescribeConnectionJob(logger *zap.Logger, db Database, a Source, daj CloudNativeDescribeSourceJob, kafkaResourcesTopic string, scheduleJobID uint, describedAt time.Time, triggerType enums.DescribeTriggerType) {
 	nextStatus := api.DescribeResourceJobQueued
 	errMsg := ""
 
@@ -1875,6 +1877,7 @@ func enqueueCloudNativeDescribeConnectionJob(logger *zap.Logger, db Database, a 
 		EndOfJobCallbackURL:     fmt.Sprintf("%s/schedule/api/v1/jobs/%s/callback", IngressBaseURL, daj.JobID.String()),
 		CredentialDecryptionKey: daj.CredentialEncryptionPrivateKey,
 		OutputEncryptionKey:     daj.ResultEncryptionPublicKey,
+		ResourcesTopic:          kafkaResourcesTopic,
 	}
 
 	//call azure function to trigger describe connection job
