@@ -378,7 +378,7 @@ func CloudNativeConnectionWorkerCommand() *cobra.Command {
 	cmd.Flags().StringVar(&id, "id", "", "The worker id")
 	cmd.Flags().StringVarP(&resourcesTopic, "resources-topic", "t", "", "The kafka topic where the resources are published.")
 	cmd.Flags().StringVarP(&jobJson, "job-json", "j", "", "The job json.")
-	cmd.Flags().StringVarP(&jobJson, "output", "o", "", "The name of the file to write the output to")
+	cmd.Flags().StringVarP(&outputFileName, "output", "o", "", "The name of the file to write the output to")
 
 	return cmd
 }
