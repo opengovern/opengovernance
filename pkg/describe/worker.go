@@ -611,13 +611,12 @@ func (w *ConnectionWorker) Stop() {
 }
 
 type CloudNativeConnectionWorker struct {
-	id             string
-	job            DescribeConnectionJob
-	kfkProducer    *producer.InMemorySaramaProducer
-	kfkTopic       string
-	vault          vault.SourceConfig
-	outputFileName string
-	logger         *zap.Logger
+	id          string
+	job         DescribeConnectionJob
+	kfkProducer *producer.InMemorySaramaProducer
+	kfkTopic    string
+	vault       vault.SourceConfig
+	logger      *zap.Logger
 }
 
 func InitializeCloudNativeConnectionWorker(
@@ -625,7 +624,6 @@ func InitializeCloudNativeConnectionWorker(
 	job DescribeConnectionJob,
 	kfkTopic string,
 	secretMap map[string]any,
-	outputFileName string,
 	logger *zap.Logger,
 ) (w *CloudNativeConnectionWorker, err error) {
 	if id == "" {
@@ -636,10 +634,9 @@ func InitializeCloudNativeConnectionWorker(
 	}
 
 	w = &CloudNativeConnectionWorker{
-		id:             id,
-		job:            job,
-		kfkTopic:       kfkTopic,
-		outputFileName: outputFileName,
+		id:       id,
+		job:      job,
+		kfkTopic: kfkTopic,
 	}
 	defer func() {
 		if err != nil && w != nil {
