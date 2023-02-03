@@ -618,13 +618,22 @@ func (h HttpServer) HandleJobCallback(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to decrypt blob")
 	}
 
-	messages := make([]*sarama.ProducerMessage, 0)
+	messages := make([]*CloudNativeConnectionWorkerMessage, 0)
 	err = json.Unmarshal([]byte(decrypted), &messages)
 	if err != nil {
 		h.Scheduler.logger.Error("Failed to unmarshal blob", zap.Error(err))
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to unmarshal blob")
 	}
-	if err := h.Scheduler.kfkProducer.SendMessages(messages); err != nil {
+	saramaMessages := make([]*sarama.ProducerMessage, 0, len(messages))
+	for _, message := range messages {
+		saramaMessages = append(saramaMessages, &sarama.ProducerMessage{
+			Topic:   message.Topic,
+			Key:     message.Key,
+			Value:   message.Value,
+			Headers: message.Headers,
+		})
+	}
+	if err := h.Scheduler.kfkProducer.SendMessages(saramaMessages); err != nil {
 		if errs, ok := err.(sarama.ProducerErrors); ok {
 			for _, e := range errs {
 				h.Scheduler.logger.Error("Failed calling SendMessages", zap.Error(fmt.Errorf("Failed to persist resource[%s] in kafka topic[%s]: %s\nMessage: %v\n", e.Msg.Key, e.Msg.Topic, e.Error(), e.Msg)))
