@@ -35,7 +35,8 @@ var (
 	RabbitMQUsername = os.Getenv("RABBITMQ_USERNAME")
 	RabbitMQPassword = os.Getenv("RABBITMQ_PASSWORD")
 
-	KafkaService = os.Getenv("KAFKA_SERVICE")
+	KafkaService        = os.Getenv("KAFKA_SERVICE")
+	KafkaResourcesTopic = os.Getenv("KAFKA_RESOURCE_TOPIC")
 
 	PostgreSQLHost     = os.Getenv("POSTGRESQL_HOST")
 	PostgreSQLPort     = os.Getenv("POSTGRESQL_PORT")

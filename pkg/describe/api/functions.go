@@ -7,6 +7,7 @@ type CloudNativeConnectionWorkerTriggerInput struct {
 	CredentialsCallbackURL  string `json:"credentialsCallbackUrl,omitempty"`
 	CredentialDecryptionKey string `json:"credentialDecryptionKey,omitempty"`
 	OutputEncryptionKey     string `json:"outputEncryptionKey,omitempty"`
+	ResourcesTopic          string `json:"resourcesTopic,omitempty"`
 }
 
 type CloudNativeConnectionWorkerTriggerOutput struct {
