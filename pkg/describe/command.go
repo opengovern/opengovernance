@@ -320,6 +320,10 @@ func ConnectionWorkerCommand() *cobra.Command {
 	return cmd
 }
 
+const (
+	StartOfJsonOutputIndicator = "\n~~~---START_OF_JSON_OUTPUT---~~~\n"
+)
+
 func CloudNativeConnectionWorkerCommand() *cobra.Command {
 	var (
 		id             string
