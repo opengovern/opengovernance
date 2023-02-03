@@ -684,7 +684,12 @@ func (w *CloudNativeConnectionWorker) Run(ctx context.Context) error {
 		return err
 	}
 
-	err = os.WriteFile(w.outputFileName, jsonOutput, 0644)
+	_, err = os.Stdout.Write([]byte(StartOfJsonOutputIndicator))
+	if err != nil {
+		w.logger.Error("Failed to write messages", zap.Error(err))
+		return err
+	}
+	_, err = os.Stdout.Write(jsonOutput)
 	if err != nil {
 		w.logger.Error("Failed to write messages", zap.Error(err))
 		return err
