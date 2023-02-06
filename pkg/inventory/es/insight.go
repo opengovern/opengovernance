@@ -1,7 +1,9 @@
 package es
 
 import (
+	"context"
 	"encoding/json"
+	"errors"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/insight/es"
 
@@ -27,12 +29,18 @@ type InsightResultQueryHit struct {
 	Sort    []interface{}      `json:"sort"`
 }
 
-func FindInsightResults(descriptionFilter *string, labelFilter []string, sourceIDFilter []string) (string, error) {
+func FindInsightResults(descriptionFilter *string, labelFilter []string, sourceIDFilter []string, uuidFilter *string) (string, error) {
 	boolQuery := map[string]interface{}{}
 	var filters []interface{}
 	filters = append(filters, map[string]interface{}{
-		"terms": map[string][]string{"resource_type": {es.InsightResourceLast}},
+		"terms": map[string][]string{"resource_type": {es.InsightResourceHistory}},
 	})
+
+	if uuidFilter != nil {
+		filters = append(filters, map[string]interface{}{
+			"terms": map[string][]string{"schedule_uuid": {*uuidFilter}},
+		})
+	}
 
 	if labelFilter != nil && len(labelFilter) > 0 {
 		filters = append(filters, map[string]interface{}{
@@ -73,4 +81,46 @@ func FindInsightResults(descriptionFilter *string, labelFilter []string, sourceI
 	}
 	b, err := json.Marshal(res)
 	return string(b), err
+}
+
+func FindInsightResultUUID(client keibi.Client, executedAt int64) (string, error) {
+	boolQuery := map[string]interface{}{}
+	var filters []interface{}
+	filters = append(filters, map[string]interface{}{
+		"terms": map[string][]string{"resource_type": {es.InsightResourceHistory}},
+	})
+
+	filters = append(filters, map[string]interface{}{
+		"range": map[string]interface{}{"executed_at": map[string]int64{"lte": executedAt}},
+	})
+
+	boolQuery["filter"] = filters
+
+	res := make(map[string]interface{})
+	res["size"] = 1
+	res["sort"] = []map[string]interface{}{
+		{
+			"executed_at": "desc",
+			"_id":         "asc",
+		},
+	}
+
+	if len(boolQuery) > 0 {
+		res["query"] = map[string]interface{}{
+			"bool": boolQuery,
+		}
+	}
+	b, err := json.Marshal(res)
+
+	var response InsightResultQueryResponse
+	err = client.Search(context.Background(), es.InsightsIndex,
+		string(b), &response)
+	if err != nil {
+		return "", err
+	}
+
+	for _, hit := range response.Hits.Hits {
+		return hit.Source.ScheduleUUID, nil
+	}
+	return "", errors.New("insight not found")
 }

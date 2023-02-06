@@ -5689,6 +5689,9 @@ const docTemplate = `{
                 "descriptionFilter": {
                     "type": "string"
                 },
+                "executedAt": {
+                    "type": "integer"
+                },
                 "labels": {
                     "type": "array",
                     "items": {

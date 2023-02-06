@@ -101,6 +101,7 @@ type InsightJob struct {
 	InsightID      uint
 	SourceID       string
 	AccountID      string
+	ScheduleUUID   string
 	SourceType     source.Type
 	Status         insightapi.InsightJobStatus
 	FailureMessage string

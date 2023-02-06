@@ -4,6 +4,7 @@ type ListInsightResultsRequest struct {
 	DescriptionFilter *string  `json:"descriptionFilter"`
 	Labels            []string `json:"labels"`
 	SourceIDs         []string `json:"sourceIDs"`
+	ExecutedAt        *int64   `json:"executedAt"`
 }
 
 type ListInsightResultsResponse struct {

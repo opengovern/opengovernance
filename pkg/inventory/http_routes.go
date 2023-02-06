@@ -125,6 +125,7 @@ func bindValidate(ctx echo.Context, i interface{}) error {
 }
 
 // GetResourceGrowthTrend godoc
+//
 //	@Summary	Returns trend of resource growth for specific account
 //	@Tags		benchmarks
 //	@Accept		json
@@ -190,6 +191,7 @@ func (h *HttpHandler) GetResourceGrowthTrend(ctx echo.Context) error {
 }
 
 // GetResourceGrowthTrendV2 godoc
+//
 //	@Summary	Returns trend of resource growth for specific account
 //	@Tags		benchmarks
 //	@Accept		json
@@ -393,6 +395,7 @@ func (h *HttpHandler) GetResourceGrowthTrendV2(ctx echo.Context) error {
 }
 
 // GetCostGrowthTrendV2 godoc
+//
 //	@Summary	Returns trend of resource growth for specific account
 //	@Tags		benchmarks
 //	@Accept		json
@@ -566,6 +569,7 @@ func (h *HttpHandler) GetCostGrowthTrendV2(ctx echo.Context) error {
 }
 
 // GetTopAccountsByCost godoc
+//
 //	@Summary	Returns top n accounts of specified provider by cost
 //	@Tags		cost
 //	@Accept		json
@@ -643,6 +647,7 @@ func (h *HttpHandler) GetTopAccountsByCost(ctx echo.Context) error {
 }
 
 // GetTopServicesByCost godoc
+//
 //	@Summary	Returns top n services of specified provider by cost
 //	@Tags		cost
 //	@Accept		json
@@ -721,6 +726,7 @@ func (h *HttpHandler) GetTopServicesByCost(ctx echo.Context) error {
 }
 
 // GetTopAccountsByResourceCount godoc
+//
 //	@Summary	Returns top n accounts of specified provider by resource count
 //	@Tags		benchmarks
 //	@Accept		json
@@ -776,6 +782,7 @@ func (h *HttpHandler) GetTopAccountsByResourceCount(ctx echo.Context) error {
 }
 
 // GetTopFastestGrowingAccountsByResourceCount godoc
+//
 //	@Summary	Returns top n accounts of specified provider by resource count
 //	@Tags		benchmarks
 //	@Accept		json
@@ -872,6 +879,7 @@ func (h *HttpHandler) GetTopFastestGrowingAccountsByResourceCount(ctx echo.Conte
 }
 
 // GetTopRegionsByResourceCount godoc
+//
 //	@Summary	Returns top n regions of specified provider by resource count
 //	@Tags		inventory
 //	@Accept		json
@@ -923,6 +931,7 @@ func (h *HttpHandler) GetTopRegionsByResourceCount(ctx echo.Context) error {
 }
 
 // GetRegionsByResourceCount godoc
+//
 //	@Summary	Returns top n regions of specified provider by resource count
 //	@Tags		inventory
 //	@Accept		json
@@ -1001,6 +1010,7 @@ func (h *HttpHandler) GetRegionsByResourceCount(ctx echo.Context) error {
 }
 
 // GetTopServicesByResourceCount godoc
+//
 //	@Summary	Returns top n services of specified provider by resource count
 //	@Tags		benchmarks
 //	@Accept		json
@@ -1049,6 +1059,7 @@ func (h *HttpHandler) GetTopServicesByResourceCount(ctx echo.Context) error {
 }
 
 // GetCategoriesV2 godoc
+//
 //	@Summary	Return list of the subcategories of the specified category
 //	@Tags		inventory
 //	@Accept		json
@@ -1223,6 +1234,7 @@ func (h *HttpHandler) GetMetricsResourceCountHelper(ctx context.Context, categor
 }
 
 // GetCategoryNodeResourceCount godoc
+//
 //	@Summary	Return category info by provided category id, info includes category name, subcategories names and ids and number of resources
 //	@Tags		inventory
 //	@Accept		json
@@ -1290,6 +1302,7 @@ func (h *HttpHandler) GetCategoryNodeResourceCount(ctx echo.Context) error {
 }
 
 // GetMetricsResourceCount godoc
+//
 //	@Summary	Return category info by provided category id, info includes category name, subcategories names and ids and number of resources
 //	@Tags		inventory
 //	@Accept		json
@@ -1362,6 +1375,7 @@ func (h *HttpHandler) GetMetricsResourceCount(ctx echo.Context) error {
 }
 
 // GetCategoryNodeResourceCountComposition godoc
+//
 //	@Summary	Return category info by provided category id, info includes category name, subcategories names and ids and number of resources
 //	@Tags		inventory
 //	@Accept		json
@@ -1421,6 +1435,7 @@ func (h *HttpHandler) GetCategoryNodeResourceCountComposition(ctx echo.Context) 
 }
 
 // GetMetricsResourceCountComposition godoc
+//
 //	@Summary	Return category info by provided category id, info includes category name, subcategories names and ids and number of resources
 //	@Tags		inventory
 //	@Accept		json
@@ -1607,6 +1622,7 @@ func (h *HttpHandler) GetMetricsCostHelper(ctx context.Context, category string,
 }
 
 // GetCategoryNodeCost godoc
+//
 //	@Summary	Return category cost info by provided category id, info includes category name, subcategories names and ids and their accumulated cost
 //	@Tags		inventory
 //	@Accept		json
@@ -1688,6 +1704,7 @@ func (h *HttpHandler) GetCategoryNodeCost(ctx echo.Context) error {
 }
 
 // GetMetricsCost godoc
+//
 //	@Summary	Return category cost info by provided category id, info includes category name, subcategories names and ids and their accumulated cost
 //	@Tags		inventory
 //	@Accept		json
@@ -1760,6 +1777,7 @@ func (h *HttpHandler) GetMetricsCost(ctx echo.Context) error {
 }
 
 // GetCategoryNodeCostComposition godoc
+//
 //	@Summary	Return category info by provided category id, info includes category name, subcategories names and ids and number of resources
 //	@Tags		inventory
 //	@Accept		json
@@ -1857,6 +1875,7 @@ func (h *HttpHandler) GetCategoryNodeCostComposition(ctx echo.Context) error {
 }
 
 // GetMetricsCostComposition godoc
+//
 //	@Summary	Return category info by provided category id, info includes category name, subcategories names and ids and number of resources
 //	@Tags		inventory
 //	@Accept		json
@@ -1971,6 +1990,7 @@ func (h *HttpHandler) GetMetricsCostComposition(ctx echo.Context) error {
 }
 
 // GetRootTemplates godoc
+//
 //	@Summary	Return root templates' info, info includes template name, template id, subcategories names and ids and number of resources
 //	@Tags		inventory
 //	@Accept		json
@@ -1986,6 +2006,7 @@ func (h *HttpHandler) GetRootTemplates(ctx echo.Context) error {
 }
 
 // GetRootCloudProviders godoc
+//
 //	@Summary	Return root providers' info, info includes category name, category id, subcategories names and ids and number of resources
 //	@Tags		inventory
 //	@Accept		json
@@ -2048,6 +2069,7 @@ func GetCategoryRoots(ctx echo.Context, h *HttpHandler, rootType CategoryRootTyp
 }
 
 // GetSummaryMetrics godoc
+//
 //	@Summary	Return metrics, their value and their history
 //	@Tags		inventory
 //	@Accept		json
@@ -2148,7 +2170,7 @@ func (h *HttpHandler) GetSummaryMetrics(ctx echo.Context) error {
 		return nil
 	}
 
-	query, err := es.FindInsightResults(nil, nil, nil)
+	query, err := es.FindInsightResults(nil, nil, nil, nil)
 	if err != nil {
 		return err
 	}
@@ -2305,6 +2327,7 @@ func (h *HttpHandler) GetSummaryMetrics(ctx echo.Context) error {
 }
 
 // GetCategorizedMetrics godoc
+//
 //	@Summary	Return categorized metrics, their value and their history
 //	@Tags		inventory
 //	@Accept		json
@@ -2349,6 +2372,7 @@ func (h *HttpHandler) GetCategorizedMetrics(ctx echo.Context) error {
 }
 
 // GetCategorizedMetricsV2 godoc
+//
 //	@Summary	Return categorized metrics, their value and their history
 //	@Tags		inventory
 //	@Accept		json
@@ -2452,6 +2476,7 @@ func (h *HttpHandler) GetCategorizedMetricsV2(ctx echo.Context) error {
 }
 
 // ListCategories godoc
+//
 //	@Summary	Return list of categories
 //	@Tags		inventory
 //	@Accept		json
@@ -2463,6 +2488,7 @@ func (h *HttpHandler) ListCategories(ctx echo.Context) error {
 }
 
 // ListCategoriesV2 godoc
+//
 //	@Summary	Return list of categories
 //	@Tags		inventory
 //	@Accept		json
@@ -2499,6 +2525,7 @@ func (h *HttpHandler) ListCategoriesV2(ctx echo.Context) error {
 }
 
 // GetAccountsResourceCount godoc
+//
 //	@Summary	Returns resource count of accounts
 //	@Tags		benchmarks
 //	@Accept		json
@@ -2555,6 +2582,7 @@ func (h *HttpHandler) GetAccountsResourceCount(ctx echo.Context) error {
 }
 
 // GetAccountSummary godoc
+//
 //	@Summary	Returns resource count of accounts
 //	@Tags		benchmarks
 //	@Accept		json
@@ -2763,6 +2791,7 @@ func (h *HttpHandler) GetAccountSummary(ctx echo.Context) error {
 }
 
 // GetResourceDistribution godoc
+//
 //	@Summary	Returns distribution of resource for specific account
 //	@Tags		benchmarks
 //	@Accept		json
@@ -2796,6 +2825,7 @@ func (h *HttpHandler) GetResourceDistribution(ctx echo.Context) error {
 }
 
 // GetServiceDistribution godoc
+//
 //	@Summary	Returns distribution of services for specific account
 //	@Tags		benchmarks
 //	@Accept		json
@@ -2823,6 +2853,7 @@ func (h *HttpHandler) GetServiceDistribution(ctx echo.Context) error {
 }
 
 // GetServiceSummary godoc
+//
 //	@Summary	Returns distribution of services for specific account
 //	@Tags		benchmarks
 //	@Accept		json
@@ -3053,6 +3084,7 @@ func (h *HttpHandler) GetServiceSummary(ctx echo.Context) error {
 }
 
 // GetResource godoc
+//
 //	@Summary		Get details of a Resource
 //	@Description	Getting resource details by id and resource type
 //	@Tags			resource
@@ -3183,6 +3215,7 @@ func (h *HttpHandler) GetResource(ctx echo.Context) error {
 }
 
 // ListQueries godoc
+//
 //	@Summary		List smart queries
 //	@Description	Listing smart queries
 //	@Tags			smart_query
@@ -3231,6 +3264,7 @@ func (h *HttpHandler) ListQueries(ctx echo.Context) error {
 }
 
 // ListInsightsResults godoc
+//
 //	@Summary	List insight results for specified account
 //	@Tags		insights
 //	@Produce	json
@@ -3243,7 +3277,16 @@ func (h *HttpHandler) ListInsightsResults(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	query, err := es.FindInsightResults(req.DescriptionFilter, req.Labels, req.SourceIDs)
+	var insUUID *string
+	if req.ExecutedAt != nil {
+		insightUUID, err := es.FindInsightResultUUID(h.client, *req.ExecutedAt)
+		if err != nil {
+			return err
+		}
+		insUUID = &insightUUID
+	}
+
+	query, err := es.FindInsightResults(req.DescriptionFilter, req.Labels, req.SourceIDs, insUUID)
 	if err != nil {
 		return err
 	}
@@ -3281,6 +3324,7 @@ func (h *HttpHandler) ListInsightsResults(ctx echo.Context) error {
 }
 
 // CountQueries godoc
+//
 //	@Summary		Count smart queries
 //	@Description	Counting smart queries
 //	@Tags			smart_query
@@ -3307,6 +3351,7 @@ func (h *HttpHandler) CountQueries(ctx echo.Context) error {
 }
 
 // RunQuery godoc
+//
 //	@Summary		Run a specific smart query
 //	@Description	Run a specific smart query.
 //	@Description	In order to get the results in CSV format, Accepts header must be filled with `text/csv` value.
@@ -3387,6 +3432,7 @@ func (h *HttpHandler) RunQuery(ctx echo.Context) error {
 }
 
 // GetLocations godoc
+//
 //	@Summary		Get locations
 //	@Description	Getting locations by provider
 //	@Tags			location
@@ -3451,6 +3497,7 @@ func (h *HttpHandler) GetLocations(ctx echo.Context) error {
 }
 
 // GetAzureResources godoc
+//
 //	@Summary		Get Azure resources
 //	@Description	Getting Azure resources by filters.
 //	@Description	In order to get the results in CSV format, Accepts header must be filled with `text/csv` value.
@@ -3485,6 +3532,7 @@ func (h *HttpHandler) GetAzureResources(ctx echo.Context) error {
 }
 
 // GetAWSResources godoc
+//
 //	@Summary		Get AWS resources
 //	@Description	Getting AWS resources by filters.
 //	@Description	In order to get the results in CSV format, Accepts header must be filled with `text/csv` value.
@@ -3519,6 +3567,7 @@ func (h *HttpHandler) GetAWSResources(ctx echo.Context) error {
 }
 
 // GetAllResources godoc
+//
 //	@Summary		Get resources
 //	@Description	Getting all cloud providers resources by filters.
 //	@Description	In order to get the results in CSV format, Accepts header must be filled with `text/csv` value.
@@ -3553,6 +3602,7 @@ func (h *HttpHandler) GetAllResources(ctx echo.Context) error {
 }
 
 // CountResources godoc
+//
 //	@Summary	Count resources
 //	@Tags		inventory
 //	@Accept		json
@@ -3580,6 +3630,7 @@ func (h *HttpHandler) CountResources(ctx echo.Context) error {
 }
 
 // GetConnectionSummary godoc
+//
 //	@Summary	Get connection summary
 //	@Tags		inventory
 //	@Accept		json
@@ -3630,6 +3681,7 @@ func (h *HttpHandler) GetConnectionSummary(ctx echo.Context) error {
 }
 
 // GetProviderSummary godoc
+//
 //	@Summary	Get provider summary
 //	@Tags		inventory
 //	@Accept		json
@@ -3680,6 +3732,7 @@ func (h *HttpHandler) GetProviderSummary(ctx echo.Context) error {
 }
 
 // GetResourcesFilters godoc
+//
 //	@Summary		Get resource filters
 //	@Description	Getting resource filters by filters.
 //	@Tags			inventory

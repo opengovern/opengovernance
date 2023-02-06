@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"github.com/google/uuid"
 	"math/rand"
 	"net/http"
 	"strconv"
@@ -2062,9 +2063,16 @@ func (s Scheduler) scheduleInsightJob() {
 			return
 		}
 
+		scheduleUUID, err := uuid.NewUUID()
+		if err != nil {
+			s.logger.Error("Failed to fetch list of sources", zap.Error(err))
+			InsightJobsCount.WithLabelValues("failure").Inc()
+			return
+		}
+
 		for _, src := range srcs {
 			for _, ins := range insights {
-				job := newInsightJob(ins, src)
+				job := newInsightJob(ins, src, scheduleUUID.String())
 				err = s.db.AddInsightJob(&job)
 				if err != nil {
 					InsightJobsCount.WithLabelValues("failure").Inc()
@@ -2361,6 +2369,7 @@ func enqueueInsightJobs(db Database, q queue.Interface, job InsightJob) error {
 		QueryID:          job.InsightID,
 		SmartQueryID:     ins.SmartQueryID,
 		SourceID:         job.SourceID,
+		ScheduleJobUUID:  job.ScheduleUUID,
 		AccountID:        job.AccountID,
 		SourceType:       sourceType,
 		Internal:         ins.Internal,
@@ -2594,14 +2603,16 @@ func (s *Scheduler) RunSummarizerJobResultsConsumer() error {
 	}
 }
 
-func newInsightJob(insight Insight, src Source) InsightJob {
+func newInsightJob(insight Insight, src Source, scheduleUUID string) InsightJob {
 	srcType, _ := source.ParseType(string(src.Type))
 	return InsightJob{
-		InsightID:  insight.ID,
-		SourceID:   src.ID.String(),
-		AccountID:  src.AccountID,
-		SourceType: srcType,
-		Status:     insightapi.InsightJobInProgress,
+		InsightID:      insight.ID,
+		SourceID:       src.ID.String(),
+		AccountID:      src.AccountID,
+		ScheduleUUID:   scheduleUUID,
+		SourceType:     srcType,
+		Status:         insightapi.InsightJobInProgress,
+		FailureMessage: "",
 	}
 }
 

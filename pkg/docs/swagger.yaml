@@ -1026,6 +1026,8 @@ definitions:
     properties:
       descriptionFilter:
         type: string
+      executedAt:
+        type: integer
       labels:
         items:
           type: string
