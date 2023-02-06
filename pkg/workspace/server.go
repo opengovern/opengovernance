@@ -522,14 +522,14 @@ func (s *Server) handleWorkspace(workspace *Workspace) error {
 }
 
 // CreateWorkspace godoc
-// @Summary     Create workspace for workspace service
-// @Description Returns workspace created
-// @Tags        workspace
-// @Accept      json
-// @Produce     json
-// @Param       request body     api.CreateWorkspaceRequest true "Create workspace request"
-// @Success     200     {object} api.CreateWorkspaceResponse
-// @Router      /workspace/api/v1/workspace [post]
+//	@Summary		Create workspace for workspace service
+//	@Description	Returns workspace created
+//	@Tags			workspace
+//	@Accept			json
+//	@Produce		json
+//	@Param			request	body		api.CreateWorkspaceRequest	true	"Create workspace request"
+//	@Success		200		{object}	api.CreateWorkspaceResponse
+//	@Router			/workspace/api/v1/workspace [post]
 func (s *Server) CreateWorkspace(c echo.Context) error {
 	userID := httpserver.GetUserID(c)
 
@@ -579,14 +579,14 @@ func (s *Server) CreateWorkspace(c echo.Context) error {
 }
 
 // DeleteWorkspace godoc
-// @Summary     Delete workspace for workspace service
-// @Description Delete workspace with workspace id
-// @Tags        workspace
-// @Accept      json
-// @Produce     json
-// @Param       workspace_id path string true "Workspace ID"
-// @Success     200
-// @Router      /workspace/api/v1/workspace/:workspace_id [delete]
+//	@Summary		Delete workspace for workspace service
+//	@Description	Delete workspace with workspace id
+//	@Tags			workspace
+//	@Accept			json
+//	@Produce		json
+//	@Param			workspace_id	path	string	true	"Workspace ID"
+//	@Success		200
+//	@Router			/workspace/api/v1/workspace/:workspace_id [delete]
 func (s *Server) DeleteWorkspace(c echo.Context) error {
 	userID := httpserver.GetUserID(c)
 
@@ -619,13 +619,13 @@ func (s *Server) DeleteWorkspace(c echo.Context) error {
 }
 
 // ResumeWorkspace godoc
-// @Summary Resume workspace
-// @Tags    workspace
-// @Accept  json
-// @Produce json
-// @Param   workspace_id path string true "Workspace ID"
-// @Success 200
-// @Router  /workspace/api/v1/workspace/:workspace_id/resume [post]
+//	@Summary	Resume workspace
+//	@Tags		workspace
+//	@Accept		json
+//	@Produce	json
+//	@Param		workspace_id	path	string	true	"Workspace ID"
+//	@Success	200
+//	@Router		/workspace/api/v1/workspace/:workspace_id/resume [post]
 func (s *Server) ResumeWorkspace(c echo.Context) error {
 	value := c.Param("workspace_id")
 	if value == "" {
@@ -663,13 +663,13 @@ func (s *Server) ResumeWorkspace(c echo.Context) error {
 }
 
 // SuspendWorkspace godoc
-// @Summary Suspend workspace
-// @Tags    workspace
-// @Accept  json
-// @Produce json
-// @Param   workspace_id path string true "Workspace ID"
-// @Success 200
-// @Router  /workspace/api/v1/workspace/:workspace_id/suspend [post]
+//	@Summary	Suspend workspace
+//	@Tags		workspace
+//	@Accept		json
+//	@Produce	json
+//	@Param		workspace_id	path	string	true	"Workspace ID"
+//	@Success	200
+//	@Router		/workspace/api/v1/workspace/:workspace_id/suspend [post]
 func (s *Server) SuspendWorkspace(c echo.Context) error {
 	value := c.Param("workspace_id")
 	if value == "" {
@@ -705,13 +705,13 @@ func (s *Server) SuspendWorkspace(c echo.Context) error {
 }
 
 // ListWorkspaces godoc
-// @Summary     List all workspaces with owner id
-// @Description Returns all workspaces with owner id
-// @Tags        workspace
-// @Accept      json
-// @Produce     json
-// @Success     200 {array} []api.WorkspaceResponse
-// @Router      /workspace/api/v1/workspaces [get]
+//	@Summary		List all workspaces with owner id
+//	@Description	Returns all workspaces with owner id
+//	@Tags			workspace
+//	@Accept			json
+//	@Produce		json
+//	@Success		200	{array}	[]api.WorkspaceResponse
+//	@Router			/workspace/api/v1/workspaces [get]
 func (s *Server) ListWorkspaces(c echo.Context) error {
 	userId := httpserver.GetUserID(c)
 	resp, err := s.authClient.GetUserRoleBindings(httpclient.FromEchoContext(c))
@@ -769,12 +769,12 @@ func (s *Server) ListWorkspaces(c echo.Context) error {
 }
 
 // ChangeOwnership godoc
-// @Summary Change ownership of workspace
-// @Tags    workspace
-// @Accept  json
-// @Produce json
-// @Param   request body api.ChangeWorkspaceOwnershipRequest true "Change ownership request"
-// @Router  /workspace/api/v1/workspace/{workspace_id}/owner [post]
+//	@Summary	Change ownership of workspace
+//	@Tags		workspace
+//	@Accept		json
+//	@Produce	json
+//	@Param		request	body	api.ChangeWorkspaceOwnershipRequest	true	"Change ownership request"
+//	@Router		/workspace/api/v1/workspace/{workspace_id}/owner [post]
 func (s *Server) ChangeOwnership(c echo.Context) error {
 	userID := httpserver.GetUserID(c)
 	workspaceID := c.Param("workspace_id")
@@ -814,11 +814,11 @@ func (s *Server) ChangeOwnership(c echo.Context) error {
 }
 
 // PerformBackup godoc
-// @Summary perform backup of workspace
-// @Tags    workspace
-// @Accept  json
-// @Produce json
-// @Router  /workspace/api/v1/workspace/{workspace_id}/backup [post]
+//	@Summary	perform backup of workspace
+//	@Tags		workspace
+//	@Accept		json
+//	@Produce	json
+//	@Router		/workspace/api/v1/workspace/{workspace_id}/backup [post]
 func (s *Server) PerformBackup(c echo.Context) error {
 	userID := httpserver.GetUserID(c)
 	workspaceID := c.Param("workspace_id")
@@ -888,11 +888,11 @@ func (s *Server) CreateBackup(w Workspace) error {
 }
 
 // ListBackups godoc
-// @Summary lists backup of workspace
-// @Tags    workspace
-// @Accept  json
-// @Produce json
-// @Router  /workspace/api/v1/workspace/{workspace_id}/backup [get]
+//	@Summary	lists backup of workspace
+//	@Tags		workspace
+//	@Accept		json
+//	@Produce	json
+//	@Router		/workspace/api/v1/workspace/{workspace_id}/backup [get]
 func (s *Server) ListBackups(c echo.Context) error {
 	userID := httpserver.GetUserID(c)
 	workspaceID := c.Param("workspace_id")
@@ -950,11 +950,11 @@ func (s *Server) ListBackups(c echo.Context) error {
 }
 
 // PerformRestore godoc
-// @Summary perform restore of backup of workspace
-// @Tags    workspace
-// @Accept  json
-// @Produce json
-// @Router  /workspace/api/v1/workspace/{workspace_id}/backup/{backup_name}/restore [post]
+//	@Summary	perform restore of backup of workspace
+//	@Tags		workspace
+//	@Accept		json
+//	@Produce	json
+//	@Router		/workspace/api/v1/workspace/{workspace_id}/backup/{backup_name}/restore [post]
 func (s *Server) PerformRestore(c echo.Context) error {
 	userID := httpserver.GetUserID(c)
 	workspaceID := c.Param("workspace_id")
@@ -1010,11 +1010,11 @@ func (s *Server) PerformRestore(c echo.Context) error {
 }
 
 // ListRestore godoc
-// @Summary lists restore of workspace
-// @Tags    workspace
-// @Accept  json
-// @Produce json
-// @Router  /workspace/api/v1/workspace/{workspace_id}/backup/restores [get]
+//	@Summary	lists restore of workspace
+//	@Tags		workspace
+//	@Accept		json
+//	@Produce	json
+//	@Router		/workspace/api/v1/workspace/{workspace_id}/backup/restores [get]
 func (s *Server) ListRestore(c echo.Context) error {
 	userID := httpserver.GetUserID(c)
 	workspaceID := c.Param("workspace_id")
@@ -1061,14 +1061,14 @@ func (s *Server) ListRestore(c echo.Context) error {
 }
 
 // GetWorkspaceLimits godoc
-// @Summary Get workspace limits
-// @Tags    workspace
-// @Accept  json
-// @Produce json
-// @Param   workspace_name path    string true  "Workspace Name"
-// @Param   ignore_usage   query   bool   false "Ignore usage"
-// @Success 200            {array} api.WorkspaceLimitsUsage
-// @Router  /workspace/api/v1/workspaces/limits/{workspace_name} [get]
+//	@Summary	Get workspace limits
+//	@Tags		workspace
+//	@Accept		json
+//	@Produce	json
+//	@Param		workspace_name	path	string	true	"Workspace Name"
+//	@Param		ignore_usage	query	bool	false	"Ignore usage"
+//	@Success	200				{array}	api.WorkspaceLimitsUsage
+//	@Router		/workspace/api/v1/workspaces/limits/{workspace_name} [get]
 func (s *Server) GetWorkspaceLimits(c echo.Context) error {
 	var response api.WorkspaceLimitsUsage
 
@@ -1108,13 +1108,13 @@ func (s *Server) GetWorkspaceLimits(c echo.Context) error {
 }
 
 // GetWorkspaceLimitsByID godoc
-// @Summary Get workspace limits
-// @Tags    workspace
-// @Accept  json
-// @Produce json
-// @Param   workspace_id path    string true "Workspace Name"
-// @Success 200          {array} api.WorkspaceLimits
-// @Router  /workspace/api/v1/workspaces/limits/byid/{workspace_id} [get]
+//	@Summary	Get workspace limits
+//	@Tags		workspace
+//	@Accept		json
+//	@Produce	json
+//	@Param		workspace_id	path	string	true	"Workspace Name"
+//	@Success	200				{array}	api.WorkspaceLimits
+//	@Router		/workspace/api/v1/workspaces/limits/byid/{workspace_id} [get]
 func (s *Server) GetWorkspaceLimitsByID(c echo.Context) error {
 	workspaceID := c.Param("workspace_id")
 	workspaceUUID, err := uuid.Parse(workspaceID)

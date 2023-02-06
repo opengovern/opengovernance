@@ -39,6 +39,8 @@ type InsightResource struct {
 	Category string `json:"category"`
 	// ExecutedAt is when the query is executed
 	ExecutedAt int64 `json:"executed_at"`
+	// ScheduleUUID
+	ScheduleUUID string `json:"schedule_uuid"`
 	// Result of query
 	Result int64 `json:"result"`
 	// LastDayValue result of the same query last day

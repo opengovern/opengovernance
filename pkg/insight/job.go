@@ -45,6 +45,7 @@ type Job struct {
 	QueryID          uint
 	SmartQueryID     uint
 	SourceID         string
+	ScheduleJobUUID  string
 	AccountID        string
 	SourceType       source.Type
 	Internal         bool
@@ -168,6 +169,7 @@ func (j Job) Do(client keibi.Client, steampipeConn *steampipe.Database, onboardC
 						Provider:         j.SourceType,
 						Category:         j.Category,
 						ExecutedAt:       time.Now().UnixMilli(),
+						ScheduleUUID:     j.ScheduleJobUUID,
 						Result:           count,
 						LastDayValue:     lastDayValue,
 						LastWeekValue:    lastWeekValue,
