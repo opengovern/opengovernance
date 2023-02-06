@@ -1850,7 +1850,7 @@ func enqueueCloudNativeDescribeConnectionJob(logger *zap.Logger, db Database, a 
 		resourceJobs[drj.ID] = drj.ResourceType
 	}
 	dcj := DescribeConnectionJob{
-		JobID:         daj.ID,
+		JobID:         daj.SourceJob.ID,
 		ScheduleJobID: scheduleJobID,
 		ResourceJobs:  resourceJobs,
 		SourceID:      daj.SourceJob.SourceID.String(),
