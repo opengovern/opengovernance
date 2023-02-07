@@ -33,7 +33,7 @@ func (s *Server) newKubeClient() (client.Client, error) {
 }
 
 func (s *Server) createHelmRelease(ctx context.Context, workspace *Workspace) error {
-	id := workspace.ID.String()
+	id := workspace.ID
 
 	helmRelease := helmv2.HelmRelease{
 		TypeMeta: metav1.TypeMeta{
@@ -156,7 +156,7 @@ func (s *Server) findTargetNamespace(ctx context.Context, name string) (*corev1.
 
 func (s *Server) findHelmRelease(ctx context.Context, workspace *Workspace) (*helmv2.HelmRelease, error) {
 	key := types.NamespacedName{
-		Name:      workspace.ID.String(),
+		Name:      workspace.ID,
 		Namespace: s.cfg.FluxSystemNamespace,
 	}
 	var helmRelease helmv2.HelmRelease
@@ -172,7 +172,7 @@ func (s *Server) findHelmRelease(ctx context.Context, workspace *Workspace) (*he
 func (s *Server) deleteHelmRelease(ctx context.Context, workspace *Workspace) error {
 	helmRelease := helmv2.HelmRelease{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      workspace.ID.String(),
+			Name:      workspace.ID,
 			Namespace: s.cfg.FluxSystemNamespace,
 		},
 	}

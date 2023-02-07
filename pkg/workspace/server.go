@@ -32,7 +32,6 @@ import (
 
 	apimeta "github.com/fluxcd/pkg/apis/meta"
 	"github.com/go-redis/redis/v8"
-	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
 	velerov1api "github.com/vmware-tanzu/velero/pkg/apis/velero/v1"
 	authapi "gitlab.com/keibiengine/keibi-engine/pkg/auth/api"
@@ -44,6 +43,8 @@ import (
 	"gorm.io/gorm"
 	"k8s.io/apimachinery/pkg/api/meta"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
+
+	"github.com/sony/sonyflake"
 )
 
 const (
@@ -128,6 +129,7 @@ func (s *Server) Register(e *echo.Echo) {
 	v1.GET("/workspaces/limits/byid/:workspace_id", httpserver.AuthorizeHandler(s.GetWorkspaceLimitsByID, authapi.ViewerRole))
 	v1.GET("/workspaces", httpserver.AuthorizeHandler(s.ListWorkspaces, authapi.ViewerRole))
 	v1.POST("/workspace/:workspace_id/owner", httpserver.AuthorizeHandler(s.ChangeOwnership, authapi.EditorRole))
+	v1.POST("/workspace/:workspace_id/name", httpserver.AuthorizeHandler(s.ChangeName, authapi.EditorRole))
 	v1.GET("/workspace/:workspace_id/backup", httpserver.AuthorizeHandler(s.ListBackups, authapi.ViewerRole))
 	v1.POST("/workspace/:workspace_id/backup", httpserver.AuthorizeHandler(s.PerformBackup, authapi.EditorRole))
 	v1.GET("/workspace/:workspace_id/backup/restores", httpserver.AuthorizeHandler(s.ListRestore, authapi.ViewerRole))
@@ -162,7 +164,7 @@ func (s *Server) startReconciler() {
 		} else {
 			for _, workspace := range workspaces {
 				if err := s.handleWorkspace(workspace); err != nil {
-					s.e.Logger.Errorf("handle workspace %s: %v", workspace.ID.String(), err)
+					s.e.Logger.Errorf("handle workspace %s: %v", workspace.ID, err)
 				}
 
 				if err := s.handleAutoSuspend(workspace); err != nil {
@@ -228,7 +230,7 @@ func (s *Server) syncHTTPProxy(workspaces []*Workspace) error {
 		}
 		includes = append(includes, contourv1.Include{
 			Name:      "http-proxy-route",
-			Namespace: w.ID.String(),
+			Namespace: w.ID,
 			Conditions: []contourv1.MatchCondition{
 				{
 					Prefix: "/" + w.Name,
@@ -296,7 +298,7 @@ func (s *Server) handleWorkspace(workspace *Workspace) error {
 			return fmt.Errorf("find helm release: %w", err)
 		}
 		if helmRelease == nil {
-			s.e.Logger.Infof("create helm release %s with status %s", workspace.ID.String(), workspace.Status)
+			s.e.Logger.Infof("create helm release %s with status %s", workspace.ID, workspace.Status)
 			if err := s.createHelmRelease(ctx, workspace); err != nil {
 				return fmt.Errorf("create helm release: %w", err)
 			}
@@ -438,7 +440,7 @@ func (s *Server) handleWorkspace(workspace *Workspace) error {
 		}*/
 
 		if helmRelease != nil {
-			s.e.Logger.Infof("delete helm release %s with status %s", workspace.ID.String(), workspace.Status)
+			s.e.Logger.Infof("delete helm release %s with status %s", workspace.ID, workspace.Status)
 			if err := s.deleteHelmRelease(ctx, workspace); err != nil {
 				return fmt.Errorf("delete helm release: %w", err)
 			}
@@ -446,13 +448,13 @@ func (s *Server) handleWorkspace(workspace *Workspace) error {
 			return nil
 		}
 
-		namespace, err := s.findTargetNamespace(ctx, workspace.ID.String())
+		namespace, err := s.findTargetNamespace(ctx, workspace.ID)
 		if err != nil {
 			return fmt.Errorf("find target namespace: %w", err)
 		}
 		if namespace != nil {
-			s.e.Logger.Infof("delete target namespace %s with status %s", workspace.ID.String(), workspace.Status)
-			if err := s.deleteTargetNamespace(ctx, workspace.ID.String()); err != nil {
+			s.e.Logger.Infof("delete target namespace %s with status %s", workspace.ID, workspace.Status)
+			if err := s.deleteTargetNamespace(ctx, workspace.ID); err != nil {
 				return fmt.Errorf("delete target namespace: %w", err)
 			}
 			// update the workspace status next loop
@@ -472,7 +474,7 @@ func (s *Server) handleWorkspace(workspace *Workspace) error {
 		}
 
 		var pods corev1.PodList
-		err = s.kubeClient.List(ctx, &pods, k8sclient.InNamespace(workspace.ID.String()))
+		err = s.kubeClient.List(ctx, &pods, k8sclient.InNamespace(workspace.ID))
 		if err != nil {
 			return fmt.Errorf("fetching list of pods: %w", err)
 		}
@@ -522,6 +524,7 @@ func (s *Server) handleWorkspace(workspace *Workspace) error {
 }
 
 // CreateWorkspace godoc
+//
 //	@Summary		Create workspace for workspace service
 //	@Description	Returns workspace created
 //	@Tags			workspace
@@ -557,8 +560,14 @@ func (s *Server) CreateWorkspace(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "Invalid Tier")
 	}
 	uri := strings.ToLower("https://" + s.cfg.DomainSuffix + "/" + request.Name)
+	sf := sonyflake.NewSonyflake(sonyflake.Settings{})
+	id, err := sf.NextID()
+	if err != nil {
+		return err
+	}
+
 	workspace := &Workspace{
-		ID:          uuid.New(),
+		ID:          fmt.Sprintf("ws-%d", id),
 		Name:        strings.ToLower(request.Name),
 		OwnerId:     userID,
 		URI:         uri,
@@ -574,11 +583,12 @@ func (s *Server) CreateWorkspace(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, ErrInternalServer)
 	}
 	return c.JSON(http.StatusOK, api.CreateWorkspaceResponse{
-		ID: workspace.ID.String(),
+		ID: workspace.ID,
 	})
 }
 
 // DeleteWorkspace godoc
+//
 //	@Summary		Delete workspace for workspace service
 //	@Description	Delete workspace with workspace id
 //	@Tags			workspace
@@ -590,13 +600,9 @@ func (s *Server) CreateWorkspace(c echo.Context) error {
 func (s *Server) DeleteWorkspace(c echo.Context) error {
 	userID := httpserver.GetUserID(c)
 
-	value := c.Param("workspace_id")
-	if value == "" {
+	id := c.Param("workspace_id")
+	if id == "" {
 		return echo.NewHTTPError(http.StatusBadRequest, "workspace id is empty")
-	}
-	id, err := uuid.Parse(value)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, "invalid workspace id")
 	}
 
 	workspace, err := s.db.GetWorkspace(id)
@@ -619,6 +625,7 @@ func (s *Server) DeleteWorkspace(c echo.Context) error {
 }
 
 // ResumeWorkspace godoc
+//
 //	@Summary	Resume workspace
 //	@Tags		workspace
 //	@Accept		json
@@ -627,13 +634,9 @@ func (s *Server) DeleteWorkspace(c echo.Context) error {
 //	@Success	200
 //	@Router		/workspace/api/v1/workspace/:workspace_id/resume [post]
 func (s *Server) ResumeWorkspace(c echo.Context) error {
-	value := c.Param("workspace_id")
-	if value == "" {
+	id := c.Param("workspace_id")
+	if id == "" {
 		return echo.NewHTTPError(http.StatusBadRequest, "workspace id is empty")
-	}
-	id, err := uuid.Parse(value)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, "invalid workspace id")
 	}
 
 	workspace, err := s.db.GetWorkspace(id)
@@ -663,6 +666,7 @@ func (s *Server) ResumeWorkspace(c echo.Context) error {
 }
 
 // SuspendWorkspace godoc
+//
 //	@Summary	Suspend workspace
 //	@Tags		workspace
 //	@Accept		json
@@ -671,13 +675,9 @@ func (s *Server) ResumeWorkspace(c echo.Context) error {
 //	@Success	200
 //	@Router		/workspace/api/v1/workspace/:workspace_id/suspend [post]
 func (s *Server) SuspendWorkspace(c echo.Context) error {
-	value := c.Param("workspace_id")
-	if value == "" {
+	id := c.Param("workspace_id")
+	if id == "" {
 		return echo.NewHTTPError(http.StatusBadRequest, "workspace id is empty")
-	}
-	id, err := uuid.Parse(value)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, "invalid workspace id")
 	}
 
 	workspace, err := s.db.GetWorkspace(id)
@@ -705,6 +705,7 @@ func (s *Server) SuspendWorkspace(c echo.Context) error {
 }
 
 // ListWorkspaces godoc
+//
 //	@Summary		List all workspaces with owner id
 //	@Description	Returns all workspaces with owner id
 //	@Tags			workspace
@@ -744,7 +745,7 @@ func (s *Server) ListWorkspaces(c echo.Context) error {
 		version := "unspecified"
 		var keibiVersionConfig corev1.ConfigMap
 		err = s.kubeClient.Get(context.Background(), k8sclient.ObjectKey{
-			Namespace: workspace.ID.String(),
+			Namespace: workspace.ID,
 			Name:      "keibi-version",
 		}, &keibiVersionConfig)
 		if err == nil {
@@ -754,7 +755,7 @@ func (s *Server) ListWorkspaces(c echo.Context) error {
 		}
 
 		workspaces = append(workspaces, &api.WorkspaceResponse{
-			ID:          workspace.ID.String(),
+			ID:          workspace.ID,
 			OwnerId:     workspace.OwnerId,
 			URI:         workspace.URI,
 			Name:        workspace.Name,
@@ -769,6 +770,7 @@ func (s *Server) ListWorkspaces(c echo.Context) error {
 }
 
 // ChangeOwnership godoc
+//
 //	@Summary	Change ownership of workspace
 //	@Tags		workspace
 //	@Accept		json
@@ -788,12 +790,7 @@ func (s *Server) ChangeOwnership(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "workspace id is empty")
 	}
 
-	workspaceUUID, err := uuid.Parse(workspaceID)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, "invalid workspace id")
-	}
-
-	w, err := s.db.GetWorkspace(workspaceUUID)
+	w, err := s.db.GetWorkspace(workspaceID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return echo.NewHTTPError(http.StatusNotFound, "workspace not found")
@@ -805,7 +802,48 @@ func (s *Server) ChangeOwnership(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusForbidden, "operation is forbidden")
 	}
 
-	err = s.db.UpdateWorkspaceOwner(workspaceUUID, request.NewOwnerUserID)
+	err = s.db.UpdateWorkspaceOwner(workspaceID, request.NewOwnerUserID)
+	if err != nil {
+		return err
+	}
+
+	return c.NoContent(http.StatusOK)
+}
+
+// ChangeName godoc
+//
+//	@Summary	Change name of workspace
+//	@Tags		workspace
+//	@Accept		json
+//	@Produce	json
+//	@Param		request	body	api.ChangeWorkspaceNameRequest	true	"Change name request"
+//	@Router		/workspace/api/v1/workspace/{workspace_id}/name [post]
+func (s *Server) ChangeName(c echo.Context) error {
+	userID := httpserver.GetUserID(c)
+	workspaceID := c.Param("workspace_id")
+
+	var request api.ChangeWorkspaceNameRequest
+	if err := c.Bind(&request); err != nil {
+		c.Logger().Errorf("bind the request: %v", err)
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
+	}
+	if workspaceID == "" {
+		return echo.NewHTTPError(http.StatusBadRequest, "workspace id is empty")
+	}
+
+	w, err := s.db.GetWorkspace(workspaceID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return echo.NewHTTPError(http.StatusNotFound, "workspace not found")
+		}
+		return err
+	}
+
+	if w.OwnerId != userID {
+		return echo.NewHTTPError(http.StatusForbidden, "operation is forbidden")
+	}
+
+	err = s.db.UpdateWorkspaceName(workspaceID, request.NewName)
 	if err != nil {
 		return err
 	}
@@ -814,6 +852,7 @@ func (s *Server) ChangeOwnership(c echo.Context) error {
 }
 
 // PerformBackup godoc
+//
 //	@Summary	perform backup of workspace
 //	@Tags		workspace
 //	@Accept		json
@@ -827,12 +866,7 @@ func (s *Server) PerformBackup(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "workspace id is empty")
 	}
 
-	workspaceUUID, err := uuid.Parse(workspaceID)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, "invalid workspace id")
-	}
-
-	w, err := s.db.GetWorkspace(workspaceUUID)
+	w, err := s.db.GetWorkspace(workspaceID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return echo.NewHTTPError(http.StatusNotFound, "workspace not found")
@@ -864,7 +898,7 @@ func (s *Server) CreateBackup(w Workspace) error {
 			Namespace: "velero",
 		},
 		Spec: velerov1api.BackupSpec{
-			IncludedNamespaces: []string{w.ID.String()},
+			IncludedNamespaces: []string{w.ID},
 			OrLabelSelectors: []*metav1.LabelSelector{
 				{
 					MatchLabels: map[string]string{
@@ -888,6 +922,7 @@ func (s *Server) CreateBackup(w Workspace) error {
 }
 
 // ListBackups godoc
+//
 //	@Summary	lists backup of workspace
 //	@Tags		workspace
 //	@Accept		json
@@ -901,12 +936,7 @@ func (s *Server) ListBackups(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "workspace id is empty")
 	}
 
-	workspaceUUID, err := uuid.Parse(workspaceID)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, "invalid workspace id")
-	}
-
-	w, err := s.db.GetWorkspace(workspaceUUID)
+	w, err := s.db.GetWorkspace(workspaceID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return echo.NewHTTPError(http.StatusNotFound, "workspace not found")
@@ -950,6 +980,7 @@ func (s *Server) ListBackups(c echo.Context) error {
 }
 
 // PerformRestore godoc
+//
 //	@Summary	perform restore of backup of workspace
 //	@Tags		workspace
 //	@Accept		json
@@ -967,12 +998,7 @@ func (s *Server) PerformRestore(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "backup name is empty")
 	}
 
-	workspaceUUID, err := uuid.Parse(workspaceID)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, "invalid workspace id")
-	}
-
-	w, err := s.db.GetWorkspace(workspaceUUID)
+	w, err := s.db.GetWorkspace(workspaceID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return echo.NewHTTPError(http.StatusNotFound, "workspace not found")
@@ -1010,6 +1036,7 @@ func (s *Server) PerformRestore(c echo.Context) error {
 }
 
 // ListRestore godoc
+//
 //	@Summary	lists restore of workspace
 //	@Tags		workspace
 //	@Accept		json
@@ -1023,12 +1050,7 @@ func (s *Server) ListRestore(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "workspace id is empty")
 	}
 
-	workspaceUUID, err := uuid.Parse(workspaceID)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, "invalid workspace id")
-	}
-
-	w, err := s.db.GetWorkspace(workspaceUUID)
+	w, err := s.db.GetWorkspace(workspaceID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return echo.NewHTTPError(http.StatusNotFound, "workspace not found")
@@ -1061,6 +1083,7 @@ func (s *Server) ListRestore(c echo.Context) error {
 }
 
 // GetWorkspaceLimits godoc
+//
 //	@Summary	Get workspace limits
 //	@Tags		workspace
 //	@Accept		json
@@ -1089,12 +1112,12 @@ func (s *Server) GetWorkspaceLimits(c echo.Context) error {
 		}
 		response.CurrentUsers = int64(len(resp))
 
-		inventoryURL := strings.ReplaceAll(InventoryTemplate, "%NAMESPACE%", dbWorkspace.ID.String())
+		inventoryURL := strings.ReplaceAll(InventoryTemplate, "%NAMESPACE%", dbWorkspace.ID)
 		inventoryClient := client2.NewInventoryServiceClient(inventoryURL)
 		resourceCount, err := inventoryClient.CountResources(httpclient.FromEchoContext(c))
 		response.CurrentResources = resourceCount
 
-		onboardURL := strings.ReplaceAll(OnboardTemplate, "%NAMESPACE%", dbWorkspace.ID.String())
+		onboardURL := strings.ReplaceAll(OnboardTemplate, "%NAMESPACE%", dbWorkspace.ID)
 		onboardClient := client.NewOnboardServiceClient(onboardURL, s.cache)
 		count, err := onboardClient.CountSources(httpclient.FromEchoContext(c), source.Nil)
 		response.CurrentConnections = count
@@ -1104,10 +1127,13 @@ func (s *Server) GetWorkspaceLimits(c echo.Context) error {
 	response.MaxUsers = limits.MaxUsers
 	response.MaxConnections = limits.MaxConnections
 	response.MaxResources = limits.MaxResources
+	response.ID = dbWorkspace.ID
+	response.Name = dbWorkspace.Name
 	return c.JSON(http.StatusOK, response)
 }
 
 // GetWorkspaceLimitsByID godoc
+//
 //	@Summary	Get workspace limits
 //	@Tags		workspace
 //	@Accept		json
@@ -1117,12 +1143,8 @@ func (s *Server) GetWorkspaceLimits(c echo.Context) error {
 //	@Router		/workspace/api/v1/workspaces/limits/byid/{workspace_id} [get]
 func (s *Server) GetWorkspaceLimitsByID(c echo.Context) error {
 	workspaceID := c.Param("workspace_id")
-	workspaceUUID, err := uuid.Parse(workspaceID)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, "invalid workspace id")
-	}
 
-	dbWorkspace, err := s.db.GetWorkspace(workspaceUUID)
+	dbWorkspace, err := s.db.GetWorkspace(workspaceID)
 	if err != nil {
 		return err
 	}

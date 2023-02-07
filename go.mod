@@ -163,6 +163,7 @@ require (
 	github.com/haoel/downsampling v0.0.0-20221012062717-1132fe8afe24
 	github.com/neo4j/neo4j-go-driver/v5 v5.2.0
 	github.com/projectcontour/contour v1.22.0
+	github.com/sony/sonyflake v1.1.0
 	github.com/turbot/steampipe-plugin-sdk/v4 v4.1.9
 	github.com/vmware-tanzu/velero v1.9.1
 	go.opentelemetry.io/otel v1.8.0
