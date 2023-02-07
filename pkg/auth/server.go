@@ -297,12 +297,12 @@ func (s Server) GetWorkspaceByName(workspaceName string, user *userClaim, intern
 	var limits api2.WorkspaceLimitsUsage
 	var err error
 
-	if workspaceName == "keibi" {
-		rb = RoleBinding{
-			UserID: internalUser.ID,
-			Role:   api.EditorRole,
-		}
-	} else {
+	rb = RoleBinding{
+		UserID: internalUser.ID,
+		Role:   api.EditorRole,
+	}
+
+	if workspaceName != "keibi" {
 		limits, err = s.GetWorkspaceLimits(rb, workspaceName)
 		if err != nil {
 			return rb, limits, err
