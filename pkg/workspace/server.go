@@ -733,7 +733,7 @@ func (s *Server) ListWorkspaces(c echo.Context) error {
 
 		hasRoleInWorkspace := false
 		for _, rb := range resp {
-			if rb.WorkspaceName == workspace.Name {
+			if rb.WorkspaceID == workspace.ID {
 				hasRoleInWorkspace = true
 			}
 		}

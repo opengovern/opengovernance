@@ -52,6 +52,7 @@ func bindValidate(ctx echo.Context, i interface{}) error {
 }
 
 // PutRoleBinding godoc
+//
 //	@Summary		Update RoleBinding for a user.
 //	@Description	RoleBinding defines the roles and actions a user can perform. There are currently three roles (ADMIN, EDITOR, VIEWER). User must exist before you can update its RoleBinding. If you want to add a role binding for a user given the email address, call invite first to get a user id. Then call this endpoint.
 //	@Tags			auth
@@ -110,6 +111,7 @@ func (r httpRoutes) PutRoleBinding(ctx echo.Context) error {
 }
 
 // GetRoleBindings godoc
+//
 //	@Summary		Get RoleBindings for the calling user
 //	@Description	RoleBinding defines the roles and actions a user can perform. There are currently three roles (ADMIN, EDITOR, VIEWER).
 //	@Tags			auth
@@ -130,10 +132,10 @@ func (r *httpRoutes) GetRoleBindings(ctx echo.Context) error {
 		return err
 	}
 	if usr != nil {
-		for wsName, role := range usr.UserMetadata.Access {
+		for wsID, role := range usr.UserMetadata.Access {
 			resp = append(resp, api.RoleBinding{
-				WorkspaceName: wsName,
-				Role:          role,
+				WorkspaceID: wsID,
+				Role:        role,
 			})
 		}
 	}
@@ -141,6 +143,7 @@ func (r *httpRoutes) GetRoleBindings(ctx echo.Context) error {
 }
 
 // GetWorkspaceRoleBindings godoc
+//
 //	@Summary		Get all the user RoleBindings for the given workspace.
 //	@Description	RoleBinding defines the roles and actions a user can perform. There are currently three roles (ADMIN, EDITOR, VIEWER). The workspace path is based on the DNS such as (workspace1.app.keibi.io)
 //	@Tags			auth
@@ -176,6 +179,7 @@ func (r *httpRoutes) GetWorkspaceRoleBindings(ctx echo.Context) error {
 }
 
 // Invite godoc
+//
 //	@Summary	Invites a user by sending them an email and registering invitation.
 //	@Tags		auth
 //	@Produce	json
@@ -235,6 +239,7 @@ func (r *httpRoutes) Invite(ctx echo.Context) error {
 }
 
 // ListInvites godoc
+//
 //	@Summary	lists all invites
 //	@Tags		auth
 //	@Produce	json
@@ -262,6 +267,7 @@ func (r *httpRoutes) ListInvites(ctx echo.Context) error {
 }
 
 // AcceptInvitation godoc
+//
 //	@Summary	Accepts users invitation and creates default (VIEW) role in invited workspace.
 //	@Tags		auth
 //	@Produce	json

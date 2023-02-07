@@ -21,9 +21,9 @@ type PutRoleBindingRequest struct {
 }
 
 type RoleBinding struct {
-	WorkspaceName string    `json:"workspaceName"`
-	Role          Role      `json:"role"`
-	AssignedAt    time.Time `json:"assignedAt"`
+	WorkspaceID string    `json:"workspaceID"`
+	Role        Role      `json:"role"`
+	AssignedAt  time.Time `json:"assignedAt"`
 }
 
 type GetRoleBindingResponse RoleBinding
