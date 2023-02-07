@@ -3651,6 +3651,59 @@ const docTemplate = `{
                 }
             }
         },
+        "/schedule/api/v1/jobs/{job_id}/callback": {
+            "post": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "jobs"
+                ],
+                "summary": "Get credentials for a cloud native job by providing job info",
+                "parameters": [
+                    {
+                        "description": "Request Body",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_describe_api.JobCallbackRequest"
+                        }
+                    }
+                ],
+                "responses": {}
+            }
+        },
+        "/schedule/api/v1/jobs/{job_id}/creds": {
+            "post": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "jobs"
+                ],
+                "summary": "Get credentials for a cloud native job by providing job info",
+                "parameters": [
+                    {
+                        "description": "Request Body",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_describe_api.GetCredsForJobRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_describe_api.GetCredsForJobResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/schedule/api/v1/resource_type/{provider}": {
             "get": {
                 "description": "get resource type by provider",
@@ -4033,6 +4086,32 @@ const docTemplate = `{
                     "workspace"
                 ],
                 "summary": "perform restore of backup of workspace",
+                "responses": {}
+            }
+        },
+        "/workspace/api/v1/workspace/{workspace_id}/name": {
+            "post": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "workspace"
+                ],
+                "summary": "Change name of workspace",
+                "parameters": [
+                    {
+                        "description": "Change name request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_workspace_api.ChangeWorkspaceNameRequest"
+                        }
+                    }
+                ],
                 "responses": {}
             }
         },
@@ -4974,6 +5053,78 @@ const docTemplate = `{
                 }
             }
         },
+        "gitlab_com_keibiengine_keibi-engine_pkg_describe_api.DescribeConnectionJobResult": {
+            "type": "object",
+            "properties": {
+                "jobID": {
+                    "type": "integer"
+                },
+                "result": {
+                    "description": "DescribeResourceJob ID -\u003e DescribeJobResult",
+                    "type": "object",
+                    "additionalProperties": {
+                        "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_describe_api.DescribeJobResult"
+                    }
+                }
+            }
+        },
+        "gitlab_com_keibiengine_keibi-engine_pkg_describe_api.DescribeJob": {
+            "type": "object",
+            "properties": {
+                "accountID": {
+                    "type": "string"
+                },
+                "configReg": {
+                    "type": "string"
+                },
+                "describedAt": {
+                    "type": "integer"
+                },
+                "jobID": {
+                    "description": "DescribeResourceJob ID",
+                    "type": "integer"
+                },
+                "parentJobID": {
+                    "description": "DescribeSourceJob ID",
+                    "type": "integer"
+                },
+                "resourceType": {
+                    "type": "string"
+                },
+                "scheduleJobID": {
+                    "type": "integer"
+                },
+                "sourceID": {
+                    "type": "string"
+                },
+                "sourceType": {
+                    "$ref": "#/definitions/source.Type"
+                },
+                "triggerType": {
+                    "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_describe_enums.DescribeTriggerType"
+                }
+            }
+        },
+        "gitlab_com_keibiengine_keibi-engine_pkg_describe_api.DescribeJobResult": {
+            "type": "object",
+            "properties": {
+                "describeJob": {
+                    "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_describe_api.DescribeJob"
+                },
+                "error": {
+                    "type": "string"
+                },
+                "jobID": {
+                    "type": "integer"
+                },
+                "parentJobID": {
+                    "type": "integer"
+                },
+                "status": {
+                    "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_describe_api.DescribeResourceJobStatus"
+                }
+            }
+        },
         "gitlab_com_keibiengine_keibi-engine_pkg_describe_api.DescribeResource": {
             "type": "object",
             "properties": {
@@ -5032,6 +5183,22 @@ const docTemplate = `{
                 "DescribeSourceJobCompleted"
             ]
         },
+        "gitlab_com_keibiengine_keibi-engine_pkg_describe_api.GetCredsForJobRequest": {
+            "type": "object",
+            "properties": {
+                "sourceId": {
+                    "type": "string"
+                }
+            }
+        },
+        "gitlab_com_keibiengine_keibi-engine_pkg_describe_api.GetCredsForJobResponse": {
+            "type": "object",
+            "properties": {
+                "creds": {
+                    "type": "string"
+                }
+            }
+        },
         "gitlab_com_keibiengine_keibi-engine_pkg_describe_api.Insight": {
             "type": "object",
             "properties": {
@@ -5052,6 +5219,29 @@ const docTemplate = `{
                 },
                 "smartQueryID": {
                     "type": "integer"
+                }
+            }
+        },
+        "gitlab_com_keibiengine_keibi-engine_pkg_describe_api.JobCallbackRequest": {
+            "type": "object",
+            "required": [
+                "blobName",
+                "containerName",
+                "jobResult",
+                "sourceId"
+            ],
+            "properties": {
+                "blobName": {
+                    "type": "string"
+                },
+                "containerName": {
+                    "type": "string"
+                },
+                "jobResult": {
+                    "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_describe_api.DescribeConnectionJobResult"
+                },
+                "sourceId": {
+                    "type": "string"
                 }
             }
         },
@@ -5103,6 +5293,22 @@ const docTemplate = `{
             "x-enum-varnames": [
                 "SourceCloudAWS",
                 "SourceCloudAzure"
+            ]
+        },
+        "gitlab_com_keibiengine_keibi-engine_pkg_describe_enums.DescribeTriggerType": {
+            "type": "string",
+            "enum": [
+                "initial_discovery",
+                "scheduled",
+                "manual"
+            ],
+            "x-enum-comments": {
+                "DescribeTriggerTypeScheduled": "default"
+            },
+            "x-enum-varnames": [
+                "DescribeTriggerTypeInitialDiscovery",
+                "DescribeTriggerTypeScheduled",
+                "DescribeTriggerTypeManual"
             ]
         },
         "gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.AWSResource": {
@@ -6486,6 +6692,14 @@ const docTemplate = `{
                 }
             }
         },
+        "gitlab_com_keibiengine_keibi-engine_pkg_workspace_api.ChangeWorkspaceNameRequest": {
+            "type": "object",
+            "properties": {
+                "newName": {
+                    "type": "string"
+                }
+            }
+        },
         "gitlab_com_keibiengine_keibi-engine_pkg_workspace_api.ChangeWorkspaceOwnershipRequest": {
             "type": "object",
             "properties": {
@@ -6542,6 +6756,9 @@ const docTemplate = `{
                 "currentUsers": {
                     "type": "integer"
                 },
+                "id": {
+                    "type": "string"
+                },
                 "maxConnections": {
                     "type": "integer"
                 },
@@ -6550,6 +6767,9 @@ const docTemplate = `{
                 },
                 "maxUsers": {
                     "type": "integer"
+                },
+                "name": {
+                    "type": "string"
                 }
             }
         },

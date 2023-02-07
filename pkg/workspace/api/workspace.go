@@ -23,6 +23,10 @@ type ChangeWorkspaceOwnershipRequest struct {
 	NewOwnerUserID string `json:"newOwnerUserID"`
 }
 
+type ChangeWorkspaceNameRequest struct {
+	NewName string `json:"newName"`
+}
+
 type WorkspaceResponse struct {
 	ID          string    `json:"id"`
 	Name        string    `json:"name"`
@@ -42,6 +46,9 @@ type WorkspaceLimits struct {
 }
 
 type WorkspaceLimitsUsage struct {
+	ID   string `json:"id"`
+	Name string `json:"name"`
+
 	CurrentUsers       int64 `json:"currentUsers"`
 	CurrentConnections int64 `json:"currentConnections"`
 	CurrentResources   int64 `json:"currentResources"`

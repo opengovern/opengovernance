@@ -24,7 +24,7 @@ const (
 type Workspace struct {
 	gorm.Model
 
-	ID          uuid.UUID `json:"id"`
+	ID          string    `json:"id"`
 	Name        string    `gorm:"uniqueIndex" json:"name"`
 	OwnerId     uuid.UUID `json:"owner_id"`
 	URI         string    `json:"uri"`

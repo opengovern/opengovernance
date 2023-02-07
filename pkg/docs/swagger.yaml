@@ -545,6 +545,54 @@ definitions:
       smartQueryID:
         type: integer
     type: object
+  gitlab_com_keibiengine_keibi-engine_pkg_describe_api.DescribeConnectionJobResult:
+    properties:
+      jobID:
+        type: integer
+      result:
+        additionalProperties:
+          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_describe_api.DescribeJobResult'
+        description: DescribeResourceJob ID -> DescribeJobResult
+        type: object
+    type: object
+  gitlab_com_keibiengine_keibi-engine_pkg_describe_api.DescribeJob:
+    properties:
+      accountID:
+        type: string
+      configReg:
+        type: string
+      describedAt:
+        type: integer
+      jobID:
+        description: DescribeResourceJob ID
+        type: integer
+      parentJobID:
+        description: DescribeSourceJob ID
+        type: integer
+      resourceType:
+        type: string
+      scheduleJobID:
+        type: integer
+      sourceID:
+        type: string
+      sourceType:
+        $ref: '#/definitions/source.Type'
+      triggerType:
+        $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_describe_enums.DescribeTriggerType'
+    type: object
+  gitlab_com_keibiengine_keibi-engine_pkg_describe_api.DescribeJobResult:
+    properties:
+      describeJob:
+        $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_describe_api.DescribeJob'
+      error:
+        type: string
+      jobID:
+        type: integer
+      parentJobID:
+        type: integer
+      status:
+        $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_describe_api.DescribeResourceJobStatus'
+    type: object
   gitlab_com_keibiengine_keibi-engine_pkg_describe_api.DescribeResource:
     properties:
       failureMessage:
@@ -587,6 +635,16 @@ definitions:
     - DescribeSourceJobInProgress
     - DescribeSourceJobCompletedWithFailure
     - DescribeSourceJobCompleted
+  gitlab_com_keibiengine_keibi-engine_pkg_describe_api.GetCredsForJobRequest:
+    properties:
+      sourceId:
+        type: string
+    type: object
+  gitlab_com_keibiengine_keibi-engine_pkg_describe_api.GetCredsForJobResponse:
+    properties:
+      creds:
+        type: string
+    type: object
   gitlab_com_keibiengine_keibi-engine_pkg_describe_api.Insight:
     properties:
       category:
@@ -601,6 +659,22 @@ definitions:
         type: string
       smartQueryID:
         type: integer
+    type: object
+  gitlab_com_keibiengine_keibi-engine_pkg_describe_api.JobCallbackRequest:
+    properties:
+      blobName:
+        type: string
+      containerName:
+        type: string
+      jobResult:
+        $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_describe_api.DescribeConnectionJobResult'
+      sourceId:
+        type: string
+    required:
+    - blobName
+    - containerName
+    - jobResult
+    - sourceId
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_describe_api.ListInsightsRequest:
     properties:
@@ -635,6 +709,18 @@ definitions:
     x-enum-varnames:
     - SourceCloudAWS
     - SourceCloudAzure
+  gitlab_com_keibiengine_keibi-engine_pkg_describe_enums.DescribeTriggerType:
+    enum:
+    - initial_discovery
+    - scheduled
+    - manual
+    type: string
+    x-enum-comments:
+      DescribeTriggerTypeScheduled: default
+    x-enum-varnames:
+    - DescribeTriggerTypeInitialDiscovery
+    - DescribeTriggerTypeScheduled
+    - DescribeTriggerTypeManual
   gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.AWSResource:
     properties:
       attributes:
@@ -1577,6 +1663,11 @@ definitions:
     - subscriptionId
     - tenantId
     type: object
+  gitlab_com_keibiengine_keibi-engine_pkg_workspace_api.ChangeWorkspaceNameRequest:
+    properties:
+      newName:
+        type: string
+    type: object
   gitlab_com_keibiengine_keibi-engine_pkg_workspace_api.ChangeWorkspaceOwnershipRequest:
     properties:
       newOwnerUserID:
@@ -1613,12 +1704,16 @@ definitions:
         type: integer
       currentUsers:
         type: integer
+      id:
+        type: string
       maxConnections:
         type: integer
       maxResources:
         type: integer
       maxUsers:
         type: integer
+      name:
+        type: string
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_workspace_api.WorkspaceResponse:
     properties:
@@ -4205,6 +4300,40 @@ paths:
       summary: Delete an insight
       tags:
       - insights
+  /schedule/api/v1/jobs/{job_id}/callback:
+    post:
+      parameters:
+      - description: Request Body
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_describe_api.JobCallbackRequest'
+      produces:
+      - application/json
+      responses: {}
+      summary: Get credentials for a cloud native job by providing job info
+      tags:
+      - jobs
+  /schedule/api/v1/jobs/{job_id}/creds:
+    post:
+      parameters:
+      - description: Request Body
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_describe_api.GetCredsForJobRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_describe_api.GetCredsForJobResponse'
+      summary: Get credentials for a cloud native job by providing job info
+      tags:
+      - jobs
   /schedule/api/v1/resource_type/{provider}:
     get:
       description: get resource type by provider
@@ -4457,6 +4586,23 @@ paths:
       - application/json
       responses: {}
       summary: lists restore of workspace
+      tags:
+      - workspace
+  /workspace/api/v1/workspace/{workspace_id}/name:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Change name request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_workspace_api.ChangeWorkspaceNameRequest'
+      produces:
+      - application/json
+      responses: {}
+      summary: Change name of workspace
       tags:
       - workspace
   /workspace/api/v1/workspace/{workspace_id}/owner:

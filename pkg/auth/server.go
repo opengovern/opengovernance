@@ -67,8 +67,8 @@ func (s Server) Check(ctx context.Context, req *envoyauth.CheckRequest) (*envoya
 			zap.Error(err))
 		return unAuth, nil
 	}
-	user.Email = strings.ToLower(strings.TrimSpace(user.Email))
 
+	user.Email = strings.ToLower(strings.TrimSpace(user.Email))
 	if user.Email == "" {
 		s.logger.Warn("denied access due to failure to get email from token",
 			zap.String("reqId", httpRequest.Id),
@@ -77,6 +77,7 @@ func (s Server) Check(ctx context.Context, req *envoyauth.CheckRequest) (*envoya
 			zap.Error(err))
 		return unAuth, nil
 	}
+
 	internalUser, err := s.GetUserByExternalID(user.ExternalUserID)
 	if err != nil {
 		if !errors.Is(err, gorm.ErrRecordNotFound) {
@@ -91,17 +92,8 @@ func (s Server) Check(ctx context.Context, req *envoyauth.CheckRequest) (*envoya
 		// user does not exists
 		internalUser = User{
 			ExternalID: user.ExternalUserID,
+			Email:      user.Email,
 		}
-
-		if len(user.Email) == 0 {
-			s.logger.Warn("denied access due to failure in retrieving auth user email",
-				zap.String("reqId", httpRequest.Id),
-				zap.String("path", httpRequest.Path),
-				zap.String("method", httpRequest.Method),
-				zap.Error(err))
-			return unAuth, nil
-		}
-		internalUser.Email = user.Email
 
 		if err := s.db.CreateUser(&internalUser); err != nil {
 			s.logger.Warn("denied access due to failure in creating the user",
@@ -118,62 +110,21 @@ func (s Server) Check(ctx context.Context, req *envoyauth.CheckRequest) (*envoya
 		workspaceName = workspaceName[:idx]
 	}
 
-	var rb RoleBinding
-	if workspaceName == "keibi" {
-		rb = RoleBinding{
-			UserID: internalUser.ID,
-			Role:   api.EditorRole,
-		}
-	} else {
-		if rl, ok := user.Access[workspaceName]; ok {
-			rb.UserID = internalUser.ID
-			rb.WorkspaceName = workspaceName
-			rb.Role = rl
-		} else {
-			s.logger.Warn("denied access due to access to this workspace not allowed",
-				zap.String("reqId", httpRequest.Id),
-				zap.String("path", httpRequest.Path),
-				zap.String("method", httpRequest.Method),
-				zap.String("workspace", workspaceName),
-				zap.String("userAccess", fmt.Sprintf("%v", user.Access)),
-				zap.Error(err))
-			return unAuth, nil
-		}
-
-		if s.rdb != nil {
-			err = s.rdb.SetEX(context.Background(), "last_access_"+workspaceName, time.Now().UnixMilli(),
-				30*24*time.Hour).Err()
-			if err != nil {
-				s.logger.Warn("denied access due to failure in setting last access",
-					zap.String("reqId", httpRequest.Id),
-					zap.String("path", httpRequest.Path),
-					zap.String("method", httpRequest.Method),
-					zap.String("workspace", workspaceName),
-					zap.Error(err))
-				return unAuth, nil
-			}
-		}
+	rb, limits, err := s.GetWorkspaceByName(workspaceName, user, internalUser)
+	if err != nil {
+		s.logger.Warn("denied access due to failure in getting workspace",
+			zap.String("reqId", httpRequest.Id),
+			zap.String("path", httpRequest.Path),
+			zap.String("method", httpRequest.Method),
+			zap.String("workspace", workspaceName),
+			zap.Error(err))
+		return unAuth, nil
 	}
 
-	s.logger.Debug("granted access",
-		zap.String("userId", rb.UserID.String()),
-		zap.String("role", string(rb.Role)),
-		zap.String("reqId", httpRequest.Id),
-		zap.String("path", httpRequest.Path),
-		zap.String("method", httpRequest.Method),
-	)
-
-	var limits api2.WorkspaceLimits
 	if workspaceName != "keibi" {
-		limits, err = s.GetWorkspaceLimits(rb, workspaceName)
-		if err != nil {
-			s.logger.Warn("denied access due to failure in retrieving limits",
-				zap.String("reqId", httpRequest.Id),
-				zap.String("path", httpRequest.Path),
-				zap.String("method", httpRequest.Method),
-				zap.String("workspace", workspaceName),
-				zap.Error(err))
-			return nil, err
+		if s.rdb != nil {
+			s.rdb.SetEX(context.Background(), "last_access_"+workspaceName, time.Now().UnixMilli(),
+				30*24*time.Hour).Err()
 		}
 	}
 
@@ -281,10 +232,10 @@ func (s Server) GetUserByExternalID(externalID string) (User, error) {
 	return user, nil
 }
 
-func (s Server) GetWorkspaceLimits(rb RoleBinding, workspaceName string) (api2.WorkspaceLimits, error) {
+func (s Server) GetWorkspaceLimits(rb RoleBinding, workspaceName string) (api2.WorkspaceLimitsUsage, error) {
 	key := "cache-limits-" + workspaceName
 
-	var res api2.WorkspaceLimits
+	var res api2.WorkspaceLimitsUsage
 	if s.cache != nil {
 		if err := s.cache.Get(context.Background(), key, &res); err == nil {
 			return res, nil
@@ -294,7 +245,7 @@ func (s Server) GetWorkspaceLimits(rb RoleBinding, workspaceName string) (api2.W
 	limits, err := s.workspaceClient.GetLimits(&httpclient.Context{UserRole: rb.Role, UserID: rb.UserID.String(),
 		WorkspaceName: workspaceName}, true)
 	if err != nil {
-		return api2.WorkspaceLimits{}, err
+		return api2.WorkspaceLimitsUsage{}, err
 	}
 
 	if s.cache != nil {
@@ -339,6 +290,34 @@ func (s Server) Verify(ctx context.Context, authToken string) (*userClaim, error
 	}
 
 	return &u, nil
+}
+
+func (s Server) GetWorkspaceByName(workspaceName string, user *userClaim, internalUser User) (RoleBinding, api2.WorkspaceLimitsUsage, error) {
+	var rb RoleBinding
+	var limits api2.WorkspaceLimitsUsage
+	var err error
+
+	if workspaceName == "keibi" {
+		rb = RoleBinding{
+			UserID: internalUser.ID,
+			Role:   api.EditorRole,
+		}
+	} else {
+		limits, err = s.GetWorkspaceLimits(rb, workspaceName)
+		if err != nil {
+			return rb, limits, err
+		}
+
+		if rl, ok := user.Access[limits.ID]; ok {
+			rb.UserID = internalUser.ID
+			rb.WorkspaceName = workspaceName
+			rb.Role = rl
+		} else {
+			return rb, limits, errors.New("access denied")
+		}
+	}
+
+	return rb, limits, nil
 }
 
 func newAuth0OidcVerifier(ctx context.Context, auth0Domain, clientId string) (*oidc.IDTokenVerifier, error) {

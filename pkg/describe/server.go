@@ -72,6 +72,7 @@ func (h HttpServer) Register(e *echo.Echo) {
 }
 
 // HandleListSources godoc
+//
 //	@Summary		List Sources
 //	@Description	Getting all of Keibi sources
 //	@Tags			schedule
@@ -119,6 +120,7 @@ func (h HttpServer) HandleListSources(ctx echo.Context) error {
 }
 
 // HandleGetSource godoc
+//
 //	@Summary		Get Source by id
 //	@Description	Getting Keibi source by id
 //	@Tags			schedule
@@ -168,6 +170,7 @@ func (h HttpServer) HandleGetSource(ctx echo.Context) error {
 }
 
 // HandleListSourceDescribeJobs godoc
+//
 //	@Summary		List source describe jobs
 //	@Description	List source describe jobs
 //	@Tags			schedule
@@ -210,6 +213,7 @@ func (h HttpServer) HandleListSourceDescribeJobs(ctx echo.Context) error {
 }
 
 // HandleListSourceComplianceReports godoc
+//
 //	@Summary		List source compliance reports
 //	@Description	List source compliance reports
 //	@Tags			schedule
@@ -275,6 +279,7 @@ func (h HttpServer) HandleListSourceComplianceReports(ctx echo.Context) error {
 }
 
 // RunComplianceReportJobs godoc
+//
 //	@Summary		Run compliance report jobs
 //	@Description	Run compliance report jobs
 //	@Tags			schedule
@@ -299,6 +304,7 @@ func (h HttpServer) RunComplianceReportJobs(ctx echo.Context) error {
 }
 
 // HandleGetLastCompletedComplianceReport godoc
+//
 //	@Summary	Get last completed compliance report
 //	@Tags		schedule
 //	@Produce	json
@@ -314,6 +320,7 @@ func (h HttpServer) HandleGetLastCompletedComplianceReport(ctx echo.Context) err
 }
 
 // RunDescribeJobs godoc
+//
 //	@Summary		Run describe jobs
 //	@Description	Run describe jobs
 //	@Tags			schedule
@@ -338,6 +345,7 @@ func (h HttpServer) RunDescribeJobs(ctx echo.Context) error {
 }
 
 // GetResourceTypesByProvider godoc
+//
 //	@Summary		get resource type by provider
 //	@Description	get resource type by provider
 //	@Tags			schedule
@@ -371,6 +379,7 @@ func (h HttpServer) GetResourceTypesByProvider(ctx echo.Context) error {
 }
 
 // CreateInsight godoc
+//
 //	@Summary	Create a new insight
 //	@Tags		insights
 //	@Produce	json
@@ -399,6 +408,7 @@ func (h HttpServer) CreateInsight(ctx echo.Context) error {
 }
 
 // DeleteInsight godoc
+//
 //	@Summary	Delete an insight
 //	@Tags		insights
 //	@Produce	json
@@ -420,6 +430,7 @@ func (h HttpServer) DeleteInsight(ctx echo.Context) error {
 }
 
 // ListInsights godoc
+//
 //	@Summary		List insights
 //	@Description	Listing insights
 //	@Tags			insights
@@ -458,6 +469,7 @@ func (h HttpServer) ListInsights(ctx echo.Context) error {
 }
 
 // TriggerDescribeJob godoc
+//
 //	@Summary		Triggers a describe job to run immediately
 //	@Description	Triggers a describe job to run immediately
 //	@Tags			describe
@@ -488,6 +500,7 @@ func (h HttpServer) TriggerDescribeJob(ctx echo.Context) error {
 }
 
 // TriggerSummarizeJob godoc
+//
 //	@Summary		Triggers a summarize job to run immediately
 //	@Description	Triggers a summarize job to run immediately
 //	@Tags			describe
@@ -512,12 +525,13 @@ func (h HttpServer) TriggerSummarizeJob(ctx echo.Context) error {
 }
 
 // HandleGetCredsForJob godoc
-// @Summary Get credentials for a cloud native job by providing job info
-// @Tags    jobs
-// @Produce json
-// @Param   request body     api.GetCredsForJobRequest true "Request Body"
-// @Success 200     {object} api.GetCredsForJobResponse
-// @Router  /schedule/api/v1/jobs/{job_id}/creds [post]
+//
+//	@Summary	Get credentials for a cloud native job by providing job info
+//	@Tags		jobs
+//	@Produce	json
+//	@Param		request	body		api.GetCredsForJobRequest	true	"Request Body"
+//	@Success	200		{object}	api.GetCredsForJobResponse
+//	@Router		/schedule/api/v1/jobs/{job_id}/creds [post]
 func (h HttpServer) HandleGetCredsForJob(ctx echo.Context) error {
 	var req api.GetCredsForJobRequest
 	if err := bindValidate(ctx, &req); err != nil {
@@ -571,12 +585,12 @@ func (h HttpServer) HandleGetCredsForJob(ctx echo.Context) error {
 }
 
 // HandleJobCallback godoc
-// @Summary Get credentials for a cloud native job by providing job info
-// @Tags    jobs
-// @Produce json
-// @Param   request body     api.JobCallbackRequest true "Request Body"
-// @Success 200     {object}
-// @Router  /schedule/api/v1/jobs/{job_id}/callback [post]
+//
+//	@Summary	Get credentials for a cloud native job by providing job info
+//	@Tags		jobs
+//	@Produce	json
+//	@Param		request	body	api.JobCallbackRequest	true	"Request Body"
+//	@Router		/schedule/api/v1/jobs/{job_id}/callback [post]
 func (h HttpServer) HandleJobCallback(ctx echo.Context) error {
 	var req api.JobCallbackRequest
 	if err := bindValidate(ctx, &req); err != nil {

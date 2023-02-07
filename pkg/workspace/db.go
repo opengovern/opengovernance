@@ -36,15 +36,15 @@ func (s *Database) CreateWorkspace(m *Workspace) error {
 	return s.orm.Model(&Workspace{}).Create(m).Error
 }
 
-func (s *Database) UpdateWorkspaceStatus(id uuid.UUID, status WorkspaceStatus) error {
+func (s *Database) UpdateWorkspaceStatus(id string, status WorkspaceStatus) error {
 	return s.orm.Model(&Workspace{}).Where("id = ?", id).Update("status", status.String()).Error
 }
 
-func (s *Database) DeleteWorkspace(id uuid.UUID) error {
+func (s *Database) DeleteWorkspace(id string) error {
 	return s.orm.Where("id = ?", id).Unscoped().Delete(&Workspace{}).Error
 }
 
-func (s *Database) GetWorkspace(id uuid.UUID) (*Workspace, error) {
+func (s *Database) GetWorkspace(id string) (*Workspace, error) {
 	var workspace Workspace
 	if err := s.orm.Model(&Workspace{}).Where(Workspace{ID: id}).First(&workspace).Error; err != nil {
 		return nil, err
@@ -84,6 +84,10 @@ func (s *Database) ListWorkspacesByStatus(status string) ([]*Workspace, error) {
 	return workspaces, nil
 }
 
-func (s *Database) UpdateWorkspaceOwner(workspaceUUID uuid.UUID, newOwnerID string) error {
+func (s *Database) UpdateWorkspaceOwner(workspaceUUID string, newOwnerID string) error {
 	return s.orm.Model(&Workspace{}).Where("id = ?", workspaceUUID).Update("owner_id", newOwnerID).Error
+}
+
+func (s *Database) UpdateWorkspaceName(workspaceUUID string, newName string) error {
+	return s.orm.Model(&Workspace{}).Where("id = ?", workspaceUUID).Update("name", newName).Error
 }
