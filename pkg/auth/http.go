@@ -134,7 +134,7 @@ func (r *httpRoutes) GetRoleBindings(ctx echo.Context) error {
 	}
 
 	if usr != nil {
-		userStr := fmt.Sprintf("%v", *usr)
+		userStr := fmt.Sprintf("%v", usr.UserMetadata)
 		r.logger.Warn("user found", zap.String("user", userStr))
 		for wsID, role := range usr.UserMetadata.Access {
 			resp = append(resp, api.RoleBinding{
