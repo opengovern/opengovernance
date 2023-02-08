@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"fmt"
 	"net/http"
 	"strings"
 	"time"
@@ -131,13 +132,18 @@ func (r *httpRoutes) GetRoleBindings(ctx echo.Context) error {
 		r.logger.Warn("failed to get user from auth0 due to", zap.Error(err))
 		return err
 	}
+
 	if usr != nil {
+		userStr := fmt.Sprintf("%v", *usr)
+		r.logger.Warn("user found", zap.String("user", userStr))
 		for wsID, role := range usr.UserMetadata.Access {
 			resp = append(resp, api.RoleBinding{
 				WorkspaceID: wsID,
 				Role:        role,
 			})
 		}
+	} else {
+		r.logger.Warn("user not found in auth0", zap.String("externalID", user.ExternalID))
 	}
 	return ctx.JSON(http.StatusOK, resp)
 }
