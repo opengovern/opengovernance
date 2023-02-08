@@ -661,6 +661,9 @@ func (s *Scheduler) processCloudNativeDescribeConnectionJobResultEvents(partitio
 		if err != nil && !errors.Is(err, context.DeadlineExceeded) {
 			return err
 		}
+		if len(events) == 0 {
+			continue
+		}
 
 		s.logger.Info("Received events from cloud native describe connection job result queue", zap.Int("eventCount", len(events)))
 		for _, event := range events {
@@ -720,7 +723,6 @@ func (s *Scheduler) processCloudNativeDescribeConnectionJobResultEvents(partitio
 			}
 		}
 		s.logger.Info("Processed events from cloud native describe connection job result queue", zap.Int("eventCount", len(events)))
-		return nil
 	}
 }
 
