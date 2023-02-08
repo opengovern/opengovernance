@@ -404,7 +404,7 @@ func (db Database) CreateCloudNativeDescribeSourceJob(job *CloudNativeDescribeSo
 func (db Database) UpdateCloudNativeDescribeSourceJobURIs(job *CloudNativeDescribeSourceJob) error {
 	tx := db.orm.
 		Model(&CloudNativeDescribeSourceJob{}).
-		Where("id = ?", job.ID).
+		Where("job_id = ?", job.JobID).
 		Updates(CloudNativeDescribeSourceJob{
 			StatusURI:    job.StatusURI,
 			TerminateURI: job.TerminateURI,

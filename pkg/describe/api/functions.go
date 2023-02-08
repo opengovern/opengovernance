@@ -10,6 +10,12 @@ type CloudNativeConnectionWorkerTriggerInput struct {
 	ResourcesTopic          string `json:"resourcesTopic,omitempty"`
 }
 
+type CloudNativeConnectionWorkerTriggerQueueMessage struct {
+	JobId  string `json:"jobId,omitempty"`
+	Status int    `json:"status,omitempty"`
+	Body   string `json:"body,omitempty"`
+}
+
 type CloudNativeConnectionWorkerTriggerOutput struct {
 	ID                    string `json:"id,omitempty"`
 	StatusQueryGetURI     string `json:"statusQueryGetUri,omitempty"`
