@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"math/rand"
 	"net/http"
 	"strconv"
@@ -16,6 +17,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/bloberror"
 	"github.com/ProtonMail/gopenpgp/v2/crypto"
+	"github.com/ProtonMail/gopenpgp/v2/helper"
 	"github.com/google/uuid"
 	"github.com/hashicorp/vault/api/auth/kubernetes"
 	"gitlab.com/keibiengine/keibi-engine/pkg/checkup"
@@ -798,8 +800,36 @@ func (s *Scheduler) processCloudNativeDescribeConnectionJobResourcesEvents(parti
 				continue
 			}
 
-			saramaMessages := make([]*sarama.ProducerMessage, 0, len(connectionWorkerResourcesResult.Resources))
-			for _, message := range connectionWorkerResourcesResult.Resources {
+			job, err := s.db.GetCloudNativeDescribeSourceJob(connectionWorkerResourcesResult.JobID)
+			if err != nil {
+				s.logger.Error("Error getting cloud native describe source job", zap.Error(err))
+				continue
+			}
+
+			stream, err := s.azblobClient.DownloadStream(context.TODO(), connectionWorkerResourcesResult.ContainerName, connectionWorkerResourcesResult.BlobName, nil)
+			if err != nil {
+				s.logger.Error("Failed to get blob stream", zap.Error(err))
+				continue
+			}
+			buffer, err := io.ReadAll(stream.Body)
+			if err != nil {
+				s.logger.Error("Failed to read blob stream", zap.Error(err))
+				continue
+			}
+			decrypted, err := helper.DecryptMessageArmored(job.ResultEncryptionPrivateKey, nil, string(buffer))
+			if err != nil {
+				s.logger.Error("Failed to decrypt blob", zap.Error(err))
+				continue
+			}
+			messages := make([]*CloudNativeConnectionWorkerMessage, 0)
+			err = json.Unmarshal([]byte(decrypted), &messages)
+			if err != nil {
+				s.logger.Error("Failed to unmarshal blob", zap.Error(err))
+				continue
+			}
+
+			saramaMessages := make([]*sarama.ProducerMessage, 0, len(messages))
+			for _, message := range messages {
 				saramaMessages = append(saramaMessages, &sarama.ProducerMessage{
 					Topic:   message.Topic,
 					Key:     message.Key,

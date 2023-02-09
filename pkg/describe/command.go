@@ -83,10 +83,12 @@ var (
 	CloudNativeConnectionJobBlobStorageConnectionString      = os.Getenv("CLOUD_NATIVE_CONNECTION_JOB_BLOB_STORAGE_CONNECTION_STRING")
 
 	// For cloud native connection job command
-	AccountConcurrentDescribe         = os.Getenv("ACCOUNT_CONCURRENT_DESCRIBE")
-	CloudNativeCredentialsJson        = os.Getenv("CLOUDNATIVE_CREDENTIALS")
-	CloudNativeOutputQueueName        = os.Getenv("CLOUDNATIVE_WORKER_OUTPUT_QUEUE_NAME")
-	CloudNativeOutputConnectionString = os.Getenv("CLOUDNATIVE_WORKER_OUTPUT_QUEUE_CONNECTION_STRING")
+	AccountConcurrentDescribe              = os.Getenv("ACCOUNT_CONCURRENT_DESCRIBE")
+	CloudNativeCredentialsJson             = os.Getenv("CLOUDNATIVE_CREDENTIALS")
+	CloudNativeOutputQueueName             = os.Getenv("CLOUDNATIVE_WORKER_OUTPUT_QUEUE_NAME")
+	CloudNativeOutputConnectionString      = os.Getenv("CLOUDNATIVE_WORKER_OUTPUT_QUEUE_CONNECTION_STRING")
+	CloudNativeBlobStorageConnectionString = os.Getenv("CLOUDNATIVE_WORKER_BLOB_STORAGE_CONNECTION_STRING")
+	CloudNativeBlobStorageEncryptionKey    = os.Getenv("CLOUDNATIVE_WORKER_BLOB_STORAGE_ENC_KEY")
 )
 
 func SchedulerCommand() *cobra.Command {
@@ -339,6 +341,7 @@ func ConnectionWorkerCommand() *cobra.Command {
 
 func CloudNativeConnectionWorkerCommand() *cobra.Command {
 	var (
+		instanceId     string
 		id             string
 		resourcesTopic string
 		jobJson        string
@@ -348,6 +351,8 @@ func CloudNativeConnectionWorkerCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			switch {
+			case instanceId == "":
+				return errors.New("missing required flag 'instance-id'")
 			case id == "":
 				return errors.New("missing required flag 'id'")
 			case resourcesTopic == "":
@@ -372,11 +377,14 @@ func CloudNativeConnectionWorkerCommand() *cobra.Command {
 			}
 			cmd.SilenceUsage = true
 			w, err := InitializeCloudNativeConnectionWorker(
+				instanceId,
 				id,
 				job,
 				resourcesTopic,
 				CloudNativeOutputQueueName,
 				CloudNativeOutputConnectionString,
+				CloudNativeBlobStorageConnectionString,
+				CloudNativeBlobStorageEncryptionKey,
 				secrets,
 				logger,
 			)
@@ -390,6 +398,7 @@ func CloudNativeConnectionWorkerCommand() *cobra.Command {
 		},
 	}
 
+	cmd.Flags().StringVar(&instanceId, "instance-id", "", "The instance id")
 	cmd.Flags().StringVar(&id, "id", "", "The worker id")
 	cmd.Flags().StringVarP(&resourcesTopic, "resources-topic", "t", "", "The kafka topic where the resources are published.")
 	cmd.Flags().StringVarP(&jobJson, "job-json", "j", "", "The job json.")

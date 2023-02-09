@@ -2,7 +2,9 @@ package describe
 
 import (
 	"context"
+	"crypto/sha256"
 	"crypto/tls"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -10,6 +12,9 @@ import (
 	"time"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/messaging/azeventhubs"
+	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob"
+	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/bloberror"
+	"github.com/ProtonMail/gopenpgp/v2/helper"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/producer"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/exporters/jaeger"
@@ -626,21 +631,27 @@ func (w *ConnectionWorker) Stop() {
 }
 
 type CloudNativeConnectionWorker struct {
-	id                     string
-	job                    DescribeConnectionJob
-	kfkProducer            *producer.InMemorySaramaProducer
-	kfkTopic               string
-	cloudNativeOutputQueue *azeventhubs.ProducerClient
-	vault                  vault.SourceConfig
-	logger                 *zap.Logger
+	instanceId                         string
+	id                                 string
+	job                                DescribeConnectionJob
+	kfkProducer                        *producer.InMemorySaramaProducer
+	kfkTopic                           string
+	cloudNativeOutputQueue             *azeventhubs.ProducerClient
+	cloudNativeBlobStorageClient       *azblob.Client
+	cloudNativeBlobOutputEncryptionKey string
+	vault                              vault.SourceConfig
+	logger                             *zap.Logger
 }
 
 func InitializeCloudNativeConnectionWorker(
+	instanceId string,
 	id string,
 	job DescribeConnectionJob,
 	kfkTopic string,
 	cloudNativeOutputQueueName string,
 	cloudNativeOutputConnectionString string,
+	cloudNativeBlobStorageConnectionString string,
+	cloudNativeBlobOutputEncryptionKey string,
 	secretMap map[string]any,
 	logger *zap.Logger,
 ) (w *CloudNativeConnectionWorker, err error) {
@@ -652,9 +663,11 @@ func InitializeCloudNativeConnectionWorker(
 	}
 
 	w = &CloudNativeConnectionWorker{
-		id:       id,
-		job:      job,
-		kfkTopic: kfkTopic,
+		instanceId:                         instanceId,
+		id:                                 id,
+		job:                                job,
+		kfkTopic:                           kfkTopic,
+		cloudNativeBlobOutputEncryptionKey: cloudNativeBlobOutputEncryptionKey,
 	}
 	defer func() {
 		if err != nil && w != nil {
@@ -681,6 +694,12 @@ func InitializeCloudNativeConnectionWorker(
 	}
 	w.cloudNativeOutputQueue = producerClient
 
+	blobClient, err := azblob.NewClientFromConnectionString(cloudNativeBlobStorageConnectionString, nil)
+	if err != nil {
+		return nil, err
+	}
+	w.cloudNativeBlobStorageClient = blobClient
+
 	return w, nil
 }
 
@@ -692,8 +711,10 @@ type CloudNativeConnectionWorkerMessage struct {
 }
 
 type CloudNativeConnectionWorkerResult struct {
-	JobResult DescribeConnectionJobResult           `json:"jobResult"`
-	Resources []*CloudNativeConnectionWorkerMessage `json:"resources"`
+	JobID         string                      `json:"jobId" validate:"required"`
+	BlobName      string                      `json:"blobName" validate:"required"`
+	ContainerName string                      `json:"containerName" validate:"required"`
+	JobResult     DescribeConnectionJobResult `json:"jobResult" validate:"required"`
 }
 
 func (w *CloudNativeConnectionWorker) Run(ctx context.Context) error {
@@ -710,14 +731,50 @@ func (w *CloudNativeConnectionWorker) Run(ctx context.Context) error {
 		})
 	}
 
+	messagesJson, err := json.Marshal(messages)
+	if err != nil {
+		w.logger.Error("Failed to marshal messages", zap.Error(err))
+		return err
+	}
+
+	encMessage, err := helper.EncryptMessageArmored(w.cloudNativeBlobOutputEncryptionKey, string(messagesJson))
+	if err != nil {
+		w.logger.Error("Failed to encrypt messages", zap.Error(err))
+		return err
+	}
+
+	containerName := fmt.Sprintf("connection-worker-%s", w.instanceId)
+	_, err = w.cloudNativeBlobStorageClient.CreateContainer(ctx, containerName, nil)
+	if err != nil && !bloberror.HasCode(err, bloberror.ContainerAlreadyExists) {
+		w.logger.Error("Failed to create container", zap.Error(err))
+		return err
+	}
+
+	// get hash of resource types
+	hash := sha256.New()
+	for _, v := range w.job.ResourceJobs {
+		hash.Write([]byte(v))
+	}
+	hashString := hex.EncodeToString(hash.Sum(nil))
+
+	blobName := fmt.Sprintf("%s---%s.json", w.job.SourceID, hashString)
+
+	_, err = w.cloudNativeBlobStorageClient.UploadBuffer(ctx, containerName, blobName, []byte(encMessage), nil)
+	if err != nil {
+		w.logger.Error("Failed to upload blob", zap.Error(err))
+		return err
+	}
+
 	output := CloudNativeConnectionWorkerResult{
-		JobResult: jobResult,
-		Resources: messages,
+		JobID:         w.instanceId,
+		ContainerName: containerName,
+		BlobName:      blobName,
+		JobResult:     jobResult,
 	}
 
 	jsonOutput, err := json.Marshal(output)
 	if err != nil {
-		w.logger.Error("Failed to marshal messages", zap.Error(err))
+		w.logger.Error("Failed to marshal output", zap.Error(err))
 		return err
 	}
 
