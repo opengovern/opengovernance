@@ -863,7 +863,7 @@ func (s *Scheduler) RunCloudNativeDescribeConnectionJobResourcesConsumer() {
 	processorCtx, processorCancel := context.WithCancel(context.TODO())
 	defer processorCancel()
 
-	if err := s.cloudNativeDescribeConnectionJobResultQueue.Run(processorCtx); err != nil {
+	if err := s.cloudNativeDescribeConnectionJobResourcesQueue.Run(processorCtx); err != nil {
 		s.logger.Error("Error running cloud native describe connection job resources queue", zap.Error(err))
 		return
 	}
