@@ -6,10 +6,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"os"
 	"strconv"
 	"time"
 
+	"github.com/Azure/azure-sdk-for-go/sdk/messaging/azeventhubs"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/producer"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/exporters/jaeger"
@@ -626,18 +626,21 @@ func (w *ConnectionWorker) Stop() {
 }
 
 type CloudNativeConnectionWorker struct {
-	id          string
-	job         DescribeConnectionJob
-	kfkProducer *producer.InMemorySaramaProducer
-	kfkTopic    string
-	vault       vault.SourceConfig
-	logger      *zap.Logger
+	id                     string
+	job                    DescribeConnectionJob
+	kfkProducer            *producer.InMemorySaramaProducer
+	kfkTopic               string
+	cloudNativeOutputQueue *azeventhubs.ProducerClient
+	vault                  vault.SourceConfig
+	logger                 *zap.Logger
 }
 
 func InitializeCloudNativeConnectionWorker(
 	id string,
 	job DescribeConnectionJob,
 	kfkTopic string,
+	cloudNativeOutputQueueName string,
+	cloudNativeOutputConnectionString string,
 	secretMap map[string]any,
 	logger *zap.Logger,
 ) (w *CloudNativeConnectionWorker, err error) {
@@ -671,6 +674,12 @@ func InitializeCloudNativeConnectionWorker(
 	w.logger = logger
 
 	w.vault = v
+
+	producerClient, err := azeventhubs.NewProducerClientFromConnectionString(cloudNativeOutputConnectionString, cloudNativeOutputQueueName, nil)
+	if err != nil {
+		return nil, err
+	}
+	w.cloudNativeOutputQueue = producerClient
 
 	return w, nil
 }
@@ -712,16 +721,24 @@ func (w *CloudNativeConnectionWorker) Run(ctx context.Context) error {
 		return err
 	}
 
-	_, err = os.Stdout.Write([]byte(StartOfJsonOutputIndicator))
+	batch, err := w.cloudNativeOutputQueue.NewEventDataBatch(context.TODO(), nil)
 	if err != nil {
-		w.logger.Error("Failed to write messages", zap.Error(err))
+		w.logger.Error("Failed to create event data batch", zap.Error(err))
 		return err
 	}
-	_, err = os.Stdout.Write(jsonOutput)
+	err = batch.AddEventData(&azeventhubs.EventData{
+		Body: jsonOutput,
+	}, nil)
 	if err != nil {
-		w.logger.Error("Failed to write messages", zap.Error(err))
+		w.logger.Error("Failed to add event data", zap.Error(err))
 		return err
 	}
+	err = w.cloudNativeOutputQueue.SendEventDataBatch(context.TODO(), batch, nil)
+	if err != nil {
+		w.logger.Error("Failed to send event data batch", zap.Error(err))
+		return err
+	}
+
 	return nil
 }
 
