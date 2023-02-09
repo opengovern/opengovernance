@@ -8,12 +8,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math/rand"
 	"strconv"
 	"time"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/messaging/azeventhubs"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob"
-	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/bloberror"
 	"github.com/ProtonMail/gopenpgp/v2/helper"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/producer"
 	"go.opentelemetry.io/otel/attribute"
@@ -743,12 +743,7 @@ func (w *CloudNativeConnectionWorker) Run(ctx context.Context) error {
 		return err
 	}
 
-	containerName := fmt.Sprintf("connection-worker-%s", w.instanceId)
-	_, err = w.cloudNativeBlobStorageClient.CreateContainer(ctx, containerName, nil)
-	if err != nil && !bloberror.HasCode(err, bloberror.ContainerAlreadyExists) {
-		w.logger.Error("Failed to create container", zap.Error(err))
-		return err
-	}
+	containerName := fmt.Sprintf("connection-worker-%s", strings.ToLower(fmt.Sprint(w.job.ScheduleJobID)))
 
 	// get hash of resource types
 	hash := sha256.New()
@@ -759,10 +754,17 @@ func (w *CloudNativeConnectionWorker) Run(ctx context.Context) error {
 
 	blobName := fmt.Sprintf("%s---%s.json", w.job.SourceID, hashString)
 
-	_, err = w.cloudNativeBlobStorageClient.UploadBuffer(ctx, containerName, blobName, []byte(encMessage), nil)
-	if err != nil {
-		w.logger.Error("Failed to upload blob", zap.Error(err))
-		return err
+	for i := 0; i < 3; i++ {
+		_, err = w.cloudNativeBlobStorageClient.UploadBuffer(ctx, containerName, blobName, []byte(encMessage), nil)
+		if err != nil {
+			w.logger.Error("Failed to upload blob", zap.Error(err))
+			if i == 2 {
+				return err
+			}
+			time.Sleep(time.Duration(rand.Intn(10)+1) * time.Second)
+		} else {
+			break
+		}
 	}
 
 	output := CloudNativeConnectionWorkerResult{
@@ -790,10 +792,17 @@ func (w *CloudNativeConnectionWorker) Run(ctx context.Context) error {
 		w.logger.Error("Failed to add event data", zap.Error(err))
 		return err
 	}
-	err = w.cloudNativeOutputQueue.SendEventDataBatch(context.TODO(), batch, nil)
-	if err != nil {
-		w.logger.Error("Failed to send event data batch", zap.Error(err))
-		return err
+	for i := 0; i < 3; i++ {
+		err = w.cloudNativeOutputQueue.SendEventDataBatch(context.TODO(), batch, nil)
+		if err != nil {
+			w.logger.Error("Failed to send event data batch", zap.Error(err))
+			if i == 2 {
+				return err
+			}
+			time.Sleep(time.Duration(rand.Intn(10)+1) * time.Second)
+		} else {
+			break
+		}
 	}
 
 	return nil
