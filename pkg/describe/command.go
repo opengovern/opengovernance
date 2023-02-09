@@ -77,12 +77,15 @@ var (
 	CloudNativeConnectionJobTriggerEventHubName             = os.Getenv("CLOUD_NATIVE_CONNECTION_JOB_EVENT_HUB_NAME")
 	CloudNativeConnectionJobOutputEventHubConnectionString  = os.Getenv("CLOUD_NATIVE_CONNECTION_JOB_OUTPUT_EVENT_HUB_CONNECTION_STRING")
 	CloudNativeConnectionJobOutputEventHubName              = os.Getenv("CLOUD_NATIVE_CONNECTION_JOB_OUTPUT_EVENT_HUB_NAME")
+	CloudNativeConnectionJobResourcesEventHubName           = os.Getenv("CLOUD_NATIVE_CONNECTION_JOB_RESOURCES_EVENT_HUB_NAME")
 	CloudNativeConnectionJobOutputCheckpointContainerName   = os.Getenv("CLOUD_NATIVE_CONNECTION_JOB_CHECKPOINT_CONTAINER_NAME")
 	CloudNativeConnectionJobBlobStorageConnectionString     = os.Getenv("CLOUD_NATIVE_CONNECTION_JOB_BLOB_STORAGE_CONNECTION_STRING")
 
 	// For cloud native connection job command
-	AccountConcurrentDescribe  = os.Getenv("ACCOUNT_CONCURRENT_DESCRIBE")
-	CloudNativeCredentialsJson = os.Getenv("CLOUDNATIVE_CREDENTIALS")
+	AccountConcurrentDescribe         = os.Getenv("ACCOUNT_CONCURRENT_DESCRIBE")
+	CloudNativeCredentialsJson        = os.Getenv("CLOUDNATIVE_CREDENTIALS")
+	CloudNativeOutputQueueName        = os.Getenv("CLOUDNATIVE_WORKER_OUTPUT_QUEUE_NAME")
+	CloudNativeOutputConnectionString = os.Getenv("CLOUDNATIVE_WORKER_OUTPUT_QUEUE_CONNECTION_STRING")
 )
 
 func SchedulerCommand() *cobra.Command {
@@ -113,6 +116,7 @@ func SchedulerCommand() *cobra.Command {
 				CloudNativeConnectionJobTriggerEventHubName,
 				CloudNativeConnectionJobOutputEventHubConnectionString,
 				CloudNativeConnectionJobOutputEventHubName,
+				CloudNativeConnectionJobResourcesEventHubName,
 				CloudNativeConnectionJobOutputCheckpointContainerName,
 				CloudNativeConnectionJobBlobStorageConnectionString,
 				DescribeCleanupJobsQueueName,
@@ -331,10 +335,6 @@ func ConnectionWorkerCommand() *cobra.Command {
 	return cmd
 }
 
-const (
-	StartOfJsonOutputIndicator = "\n~~~---START_OF_JSON_OUTPUT---~~~\n"
-)
-
 func CloudNativeConnectionWorkerCommand() *cobra.Command {
 	var (
 		id             string
@@ -373,6 +373,8 @@ func CloudNativeConnectionWorkerCommand() *cobra.Command {
 				id,
 				job,
 				resourcesTopic,
+				CloudNativeOutputQueueName,
+				CloudNativeOutputConnectionString,
 				secrets,
 				logger,
 			)

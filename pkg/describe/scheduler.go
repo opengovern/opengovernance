@@ -142,8 +142,9 @@ type Scheduler struct {
 	// describeConnectionJobResultQueue is used to consume the describe job results returned by the workers.
 	describeConnectionJobResultQueue queue.Interface
 
-	cloudNativeDescribeConnectionJobQueue       *azeventhubs.ProducerClient
-	cloudNativeDescribeConnectionJobResultQueue *azeventhubs.Processor
+	cloudNativeDescribeConnectionJobQueue          *azeventhubs.ProducerClient
+	cloudNativeDescribeConnectionJobResultQueue    *azeventhubs.Processor
+	cloudNativeDescribeConnectionJobResourcesQueue *azeventhubs.Processor
 
 	// sourceQueue is used to consume source updates by the onboarding service.
 	sourceQueue queue.Interface
@@ -202,6 +203,7 @@ func InitializeScheduler(
 	cloudNativeConnectionJobTriggerEventHubName string,
 	cloudNativeConnectionJobOutputEventHubConnectionString string,
 	cloudNativeConnectionJobOutputEventHubName string,
+	cloudNativeConnectionJobResourcesEventHubName string,
 	cloudNativeConnectionJobOutputCheckpointContainerName string,
 	cloudNativeConnectionJobBlobStorageConnectionString string,
 	describeCleanupJobQueueName string,
@@ -532,16 +534,26 @@ func InitializeScheduler(
 	if err != nil {
 		return nil, err
 	}
-	consumerClient, err := azeventhubs.NewConsumerClientFromConnectionString(cloudNativeConnectionJobOutputEventHubConnectionString, cloudNativeConnectionJobOutputEventHubName, azeventhubs.DefaultConsumerGroup, nil)
+	triggerOutputConsumerClient, err := azeventhubs.NewConsumerClientFromConnectionString(cloudNativeConnectionJobOutputEventHubConnectionString, cloudNativeConnectionJobOutputEventHubName, azeventhubs.DefaultConsumerGroup, nil)
 	if err != nil {
 		return nil, err
 	}
-	processor, err := azeventhubs.NewProcessor(consumerClient, checkpointStore, nil)
+	triggerOutputProcessor, err := azeventhubs.NewProcessor(triggerOutputConsumerClient, checkpointStore, nil)
 	if err != nil {
 		return nil, err
 	}
-	s.cloudNativeDescribeConnectionJobResultQueue = processor
+	s.cloudNativeDescribeConnectionJobResultQueue = triggerOutputProcessor
 	s.logger.Info("Connected to the cloud native describe connection job result queue", zap.String("queue", cloudNativeConnectionJobOutputEventHubName))
+
+	resourcesConsumerClient, err := azeventhubs.NewConsumerClientFromConnectionString(cloudNativeConnectionJobOutputEventHubConnectionString, cloudNativeConnectionJobResourcesEventHubName, azeventhubs.DefaultConsumerGroup, nil)
+	if err != nil {
+		return nil, err
+	}
+	resourcesProcessor, err := azeventhubs.NewProcessor(resourcesConsumerClient, checkpointStore, nil)
+	if err != nil {
+		return nil, err
+	}
+	s.cloudNativeDescribeConnectionJobResourcesQueue = resourcesProcessor
 
 	kafkaClient, err := newKafkaClient(strings.Split(KafkaService, ","))
 	if err != nil {
@@ -616,6 +628,7 @@ func (s *Scheduler) Run() error {
 	//go s.RunComplianceReportScheduler()
 	go s.RunDeletedSourceCleanup()
 	go s.RunCloudNativeDescribeConnectionJobResultConsumer()
+	go s.RunCloudNativeDescribeConnectionJobResourcesConsumer()
 
 	// In order to have history of reports, we won't clean up compliance reports for now.
 	//go s.RunComplianceReportCleanupJobScheduler()
@@ -748,6 +761,100 @@ func (s *Scheduler) RunCloudNativeDescribeConnectionJobResultConsumer() {
 
 	if err := s.cloudNativeDescribeConnectionJobResultQueue.Run(processorCtx); err != nil {
 		s.logger.Error("Error running cloud native describe connection job result queue", zap.Error(err))
+		return
+	}
+}
+
+func (s *Scheduler) processCloudNativeDescribeConnectionJobResourcesEvents(partitionClient *azeventhubs.ProcessorPartitionClient) error {
+	defer partitionClient.Close(context.Background())
+	for {
+		receiveCtx, receiveCtxCancel := context.WithTimeout(context.TODO(), time.Minute)
+		events, err := partitionClient.ReceiveEvents(receiveCtx, 100, nil)
+		receiveCtxCancel()
+
+		if err != nil && !errors.Is(err, context.DeadlineExceeded) {
+			return err
+		}
+		if len(events) == 0 {
+			continue
+		}
+
+		s.logger.Info("Received events from cloud native describe connection job resources queue", zap.Int("eventCount", len(events)))
+		for _, event := range events {
+			var connectionWorkerResourcesResult CloudNativeConnectionWorkerResult
+			err := json.Unmarshal(event.Body, &connectionWorkerResourcesResult)
+			if err != nil {
+				s.logger.Error("Error unmarshalling event", zap.Error(err))
+				continue
+			}
+
+			saramaMessages := make([]*sarama.ProducerMessage, 0, len(connectionWorkerResourcesResult.Resources))
+			for _, message := range connectionWorkerResourcesResult.Resources {
+				saramaMessages = append(saramaMessages, &sarama.ProducerMessage{
+					Topic:   message.Topic,
+					Key:     message.Key,
+					Value:   message.Value,
+					Headers: message.Headers,
+				})
+			}
+			producer, err := sarama.NewSyncProducerFromClient(s.kafkaClient)
+			if err != nil {
+				s.logger.Error("Failed to create producer", zap.Error(err))
+				continue
+			}
+			if err := producer.SendMessages(saramaMessages); err != nil {
+				if errs, ok := err.(sarama.ProducerErrors); ok {
+					for _, e := range errs {
+						s.logger.Error("Failed calling SendMessages", zap.Error(fmt.Errorf("Failed to persist resource[%s] in kafka topic[%s]: %s\nMessage: %v\n", e.Msg.Key, e.Msg.Topic, e.Error(), e.Msg)))
+					}
+				}
+				continue
+			}
+			if err := producer.Close(); err != nil {
+				s.logger.Error("Failed to close producer", zap.Error(err))
+				continue
+			}
+			if len(saramaMessages) != 0 {
+				s.logger.Info("Successfully sent messages to kafka", zap.Int("count", len(saramaMessages)))
+			}
+
+			err = s.describeConnectionJobResultQueue.Publish(connectionWorkerResourcesResult.JobResult)
+			if err != nil {
+				s.logger.Error("Failed calling describeConnectionJobResultQueue.Publish", zap.Error(err))
+				continue
+			}
+		}
+
+		if err := partitionClient.UpdateCheckpoint(context.TODO(), events[len(events)-1]); err != nil {
+			return err
+		}
+
+		s.logger.Info("Processed events from cloud native describe connection job resources queue", zap.Int("eventCount", len(events)))
+	}
+}
+
+func (s *Scheduler) RunCloudNativeDescribeConnectionJobResourcesConsumer() {
+	dispatchPartitionClients := func() {
+		for {
+			partitionClient := s.cloudNativeDescribeConnectionJobResourcesQueue.NextPartitionClient(context.TODO())
+			if partitionClient == nil {
+				break
+			}
+			go func() {
+				if err := s.processCloudNativeDescribeConnectionJobResourcesEvents(partitionClient); err != nil {
+					s.logger.Error("Error processing events for ConnectionJobResourcesEvents", zap.Error(err))
+				}
+			}()
+		}
+	}
+
+	go dispatchPartitionClients()
+
+	processorCtx, processorCancel := context.WithCancel(context.TODO())
+	defer processorCancel()
+
+	if err := s.cloudNativeDescribeConnectionJobResultQueue.Run(processorCtx); err != nil {
+		s.logger.Error("Error running cloud native describe connection job resources queue", zap.Error(err))
 		return
 	}
 }
