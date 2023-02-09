@@ -73,13 +73,14 @@ var (
 	OnboardBaseURL          = os.Getenv("ONBOARD_BASE_URL")
 	IngressBaseURL          = os.Getenv("BASE_URL")
 
-	CloudNativeConnectionJobTriggerEventHubConnectionString = os.Getenv("CLOUD_NATIVE_CONNECTION_JOB_EVENT_HUB_CONNECTION_STRING")
-	CloudNativeConnectionJobTriggerEventHubName             = os.Getenv("CLOUD_NATIVE_CONNECTION_JOB_EVENT_HUB_NAME")
-	CloudNativeConnectionJobOutputEventHubConnectionString  = os.Getenv("CLOUD_NATIVE_CONNECTION_JOB_OUTPUT_EVENT_HUB_CONNECTION_STRING")
-	CloudNativeConnectionJobOutputEventHubName              = os.Getenv("CLOUD_NATIVE_CONNECTION_JOB_OUTPUT_EVENT_HUB_NAME")
-	CloudNativeConnectionJobResourcesEventHubName           = os.Getenv("CLOUD_NATIVE_CONNECTION_JOB_RESOURCES_EVENT_HUB_NAME")
-	CloudNativeConnectionJobOutputCheckpointContainerName   = os.Getenv("CLOUD_NATIVE_CONNECTION_JOB_CHECKPOINT_CONTAINER_NAME")
-	CloudNativeConnectionJobBlobStorageConnectionString     = os.Getenv("CLOUD_NATIVE_CONNECTION_JOB_BLOB_STORAGE_CONNECTION_STRING")
+	CloudNativeConnectionJobTriggerEventHubConnectionString  = os.Getenv("CLOUD_NATIVE_CONNECTION_JOB_EVENT_HUB_CONNECTION_STRING")
+	CloudNativeConnectionJobTriggerEventHubName              = os.Getenv("CLOUD_NATIVE_CONNECTION_JOB_EVENT_HUB_NAME")
+	CloudNativeConnectionJobOutputEventHubConnectionString   = os.Getenv("CLOUD_NATIVE_CONNECTION_JOB_OUTPUT_EVENT_HUB_CONNECTION_STRING")
+	CloudNativeConnectionJobOutputEventHubName               = os.Getenv("CLOUD_NATIVE_CONNECTION_JOB_OUTPUT_EVENT_HUB_NAME")
+	CloudNativeConnectionJobResourcesEventHubName            = os.Getenv("CLOUD_NATIVE_CONNECTION_JOB_RESOURCES_EVENT_HUB_NAME")
+	CloudNativeConnectionJobOutputCheckpointContainerName    = os.Getenv("CLOUD_NATIVE_CONNECTION_JOB_CHECKPOINT_CONTAINER_NAME")
+	CloudNativeConnectionJobResourcesCheckpointContainerName = os.Getenv("CLOUD_NATIVE_CONNECTION_JOB_RESOURCES_CHECKPOINT_CONTAINER_NAME")
+	CloudNativeConnectionJobBlobStorageConnectionString      = os.Getenv("CLOUD_NATIVE_CONNECTION_JOB_BLOB_STORAGE_CONNECTION_STRING")
 
 	// For cloud native connection job command
 	AccountConcurrentDescribe         = os.Getenv("ACCOUNT_CONCURRENT_DESCRIBE")
@@ -118,6 +119,7 @@ func SchedulerCommand() *cobra.Command {
 				CloudNativeConnectionJobOutputEventHubName,
 				CloudNativeConnectionJobResourcesEventHubName,
 				CloudNativeConnectionJobOutputCheckpointContainerName,
+				CloudNativeConnectionJobResourcesCheckpointContainerName,
 				CloudNativeConnectionJobBlobStorageConnectionString,
 				DescribeCleanupJobsQueueName,
 				ComplianceReportJobsQueueName,

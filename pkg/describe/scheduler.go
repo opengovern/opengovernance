@@ -205,6 +205,7 @@ func InitializeScheduler(
 	cloudNativeConnectionJobOutputEventHubName string,
 	cloudNativeConnectionJobResourcesEventHubName string,
 	cloudNativeConnectionJobOutputCheckpointContainerName string,
+	cloudNativeConnectionJobResourcesCheckpointContainerName string,
 	cloudNativeConnectionJobBlobStorageConnectionString string,
 	describeCleanupJobQueueName string,
 	complianceReportJobQueueName string,
@@ -529,8 +530,8 @@ func InitializeScheduler(
 	if err != nil && !bloberror.HasCode(err, bloberror.ContainerAlreadyExists) {
 		return nil, err
 	}
-	checkpointContainerClient := azblobClient.ServiceClient().NewContainerClient(cloudNativeConnectionJobOutputCheckpointContainerName)
-	checkpointStore, err := checkpoints.NewBlobStore(checkpointContainerClient, nil)
+	triggerOutputCheckpointContainerClient := azblobClient.ServiceClient().NewContainerClient(cloudNativeConnectionJobOutputCheckpointContainerName)
+	triggerOutputCheckpointStore, err := checkpoints.NewBlobStore(triggerOutputCheckpointContainerClient, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -538,18 +539,27 @@ func InitializeScheduler(
 	if err != nil {
 		return nil, err
 	}
-	triggerOutputProcessor, err := azeventhubs.NewProcessor(triggerOutputConsumerClient, checkpointStore, nil)
+	triggerOutputProcessor, err := azeventhubs.NewProcessor(triggerOutputConsumerClient, triggerOutputCheckpointStore, nil)
 	if err != nil {
 		return nil, err
 	}
 	s.cloudNativeDescribeConnectionJobResultQueue = triggerOutputProcessor
 	s.logger.Info("Connected to the cloud native describe connection job result queue", zap.String("queue", cloudNativeConnectionJobOutputEventHubName))
 
+	_, err = azblobClient.CreateContainer(context.Background(), cloudNativeConnectionJobResourcesCheckpointContainerName, nil)
+	if err != nil && !bloberror.HasCode(err, bloberror.ContainerAlreadyExists) {
+		return nil, err
+	}
+	resourcesOutputCheckpointContainerClient := azblobClient.ServiceClient().NewContainerClient(cloudNativeConnectionJobResourcesCheckpointContainerName)
+	resourcesOutputCheckpointStore, err := checkpoints.NewBlobStore(resourcesOutputCheckpointContainerClient, nil)
+	if err != nil {
+		return nil, err
+	}
 	resourcesConsumerClient, err := azeventhubs.NewConsumerClientFromConnectionString(cloudNativeConnectionJobOutputEventHubConnectionString, cloudNativeConnectionJobResourcesEventHubName, azeventhubs.DefaultConsumerGroup, nil)
 	if err != nil {
 		return nil, err
 	}
-	resourcesProcessor, err := azeventhubs.NewProcessor(resourcesConsumerClient, checkpointStore, nil)
+	resourcesProcessor, err := azeventhubs.NewProcessor(resourcesConsumerClient, resourcesOutputCheckpointStore, nil)
 	if err != nil {
 		return nil, err
 	}
