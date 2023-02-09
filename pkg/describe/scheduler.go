@@ -1331,6 +1331,45 @@ func (s Scheduler) scheduleDescribeJob() {
 		sources = append(sources, src)
 	}
 
+	sourceIDs := make([]string, 0, len(sources))
+	for _, src := range sources {
+		sourceIDs = append(sourceIDs, src.ID.String())
+	}
+	onboardSources, err := s.onboardClient.GetSources(&httpclient.Context{
+		UserRole: api2.ViewerRole,
+	}, sourceIDs)
+	if err != nil {
+		DescribeSourceJobsCount.WithLabelValues("failure").Inc()
+		s.logger.Error("Failed to get onboard sources",
+			zap.Strings("sourceIDs", sourceIDs),
+			zap.Error(err),
+		)
+		return
+	}
+	filteredSources := make([]Source, 0, len(sources))
+	for _, src := range sources {
+		for _, onboardSrc := range onboardSources {
+			if src.ID.String() == onboardSrc.ID.String() {
+				healthCheckedSrc, err := s.onboardClient.GetSourceHealthcheck(&httpclient.Context{
+					UserRole: api2.EditorRole,
+				}, onboardSrc.ID.String())
+				if err != nil {
+					s.logger.Error("Failed to get source healthcheck",
+						zap.String("sourceID", onboardSrc.ID.String()),
+						zap.Error(err),
+					)
+					continue
+				}
+				if healthCheckedSrc.AssetDiscoveryMethod == source.AssetDiscoveryMethodTypeScheduled &&
+					healthCheckedSrc.HealthState != source.SourceHealthStateUnhealthy {
+					filteredSources = append(filteredSources, src)
+				}
+				break
+			}
+		}
+	}
+	sources = filteredSources
+
 	if len(sources) > 0 {
 		s.logger.Info("There are some sources that need to be described", zap.Int("count", len(sources)))
 	} else {
