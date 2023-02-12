@@ -57,8 +57,9 @@ const (
 type DescribeResourceJobStatus string
 
 const (
-	DescribeResourceJobCreated   DescribeResourceJobStatus = "CREATED"
-	DescribeResourceJobQueued    DescribeResourceJobStatus = "QUEUED"
-	DescribeResourceJobFailed    DescribeResourceJobStatus = "FAILED"
-	DescribeResourceJobSucceeded DescribeResourceJobStatus = "SUCCEEDED"
+	DescribeResourceJobCreated      DescribeResourceJobStatus = "CREATED"
+	DescribeResourceJobQueued       DescribeResourceJobStatus = "QUEUED"
+	DescribeResourceJobCloudTimeout DescribeResourceJobStatus = "CLOUD_TIMEOUT"
+	DescribeResourceJobFailed       DescribeResourceJobStatus = "FAILED"
+	DescribeResourceJobSucceeded    DescribeResourceJobStatus = "SUCCEEDED"
 )

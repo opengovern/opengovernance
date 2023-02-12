@@ -240,6 +240,35 @@ func (j DescribeConnectionJob) Do(ictx context.Context, vlt vault.SourceConfig, 
 	}
 }
 
+func (j DescribeConnectionJob) CloudTimeout() (r DescribeConnectionJobResult) {
+	describeConnectionJobResult := DescribeConnectionJobResult{
+		JobID:  j.JobID,
+		Result: map[uint]DescribeJobResult{},
+	}
+	for id, resourceType := range j.ResourceJobs {
+		dj := DescribeJob{
+			JobID:         id,
+			ScheduleJobID: j.ScheduleJobID,
+			ParentJobID:   j.JobID,
+			ResourceType:  resourceType,
+			SourceID:      j.SourceID,
+			AccountID:     j.AccountID,
+			DescribedAt:   j.DescribedAt,
+			SourceType:    j.SourceType,
+			ConfigReg:     j.ConfigReg,
+			TriggerType:   j.TriggerType,
+		}
+		describeConnectionJobResult.Result[id] = DescribeJobResult{
+			JobID:       dj.JobID,
+			ParentJobID: dj.ParentJobID,
+			Status:      api.DescribeResourceJobCloudTimeout,
+			Error:       "Cloud job timed out",
+			DescribeJob: dj,
+		}
+	}
+	return describeConnectionJobResult
+}
+
 // Do will perform the job which includes the following tasks:
 //
 //  1. Describing resources from the cloud providee based on the job definition.

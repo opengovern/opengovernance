@@ -401,22 +401,6 @@ func (db Database) CreateCloudNativeDescribeSourceJob(job *CloudNativeDescribeSo
 	return nil
 }
 
-func (db Database) UpdateCloudNativeDescribeSourceJobURIs(job *CloudNativeDescribeSourceJob) error {
-	tx := db.orm.
-		Model(&CloudNativeDescribeSourceJob{}).
-		Where("job_id = ?", job.JobID).
-		Updates(CloudNativeDescribeSourceJob{
-			StatusURI:    job.StatusURI,
-			TerminateURI: job.TerminateURI,
-		})
-	if tx.Error != nil {
-		return tx.Error
-	} else if tx.RowsAffected != 1 {
-		return fmt.Errorf("update cloud native describe source job: didn't find the cloud native describe source job to update")
-	}
-	return nil
-}
-
 func (db Database) GetCloudNativeDescribeSourceJob(jobID string) (*CloudNativeDescribeSourceJob, error) {
 	var job CloudNativeDescribeSourceJob
 	tx := db.orm.Preload(clause.Associations).Where("job_id = ?", jobID).First(&job)

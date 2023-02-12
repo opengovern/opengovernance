@@ -17,13 +17,4 @@ type CloudNativeConnectionWorkerTriggerQueueMessage struct {
 }
 
 type CloudNativeConnectionWorkerTriggerOutput struct {
-	ID                    string `json:"id,omitempty"`
-	StatusQueryGetURI     string `json:"statusQueryGetUri,omitempty"`
-	SendEventPostURI      string `json:"sendEventPostUri,omitempty"`
-	TerminatePostURI      string `json:"terminatePostUri,omitempty"`
-	RewindPostURI         string `json:"rewindPostUri,omitempty"`
-	PurgeHistoryDeleteURI string `json:"purgeHistoryDeleteUri,omitempty"`
-	RestartPostURI        string `json:"restartPostUri,omitempty"`
-	SuspendPostURI        string `json:"suspendPostUri,omitempty"`
-	ResumePostURI         string `json:"resumePostUri,omitempty"`
 }

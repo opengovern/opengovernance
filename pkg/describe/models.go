@@ -73,9 +73,6 @@ type CloudNativeDescribeSourceJob struct {
 	CredentialEncryptionPublicKey  string
 	ResultEncryptionPrivateKey     string
 	ResultEncryptionPublicKey      string
-
-	StatusURI    *string
-	TerminateURI *string
 }
 
 type DescribeResourceJob struct {

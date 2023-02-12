@@ -710,16 +710,6 @@ func (s *Scheduler) processCloudNativeDescribeConnectionJobResultEvents(partitio
 					s.logger.Error("Error unmarshalling trigger response", zap.Error(err))
 					continue
 				}
-				job := CloudNativeDescribeSourceJob{
-					JobID:        jobId,
-					StatusURI:    &triggerResponse.StatusQueryGetURI,
-					TerminateURI: &triggerResponse.TerminatePostURI,
-				}
-				err = s.db.UpdateCloudNativeDescribeSourceJobURIs(&job)
-				if err != nil {
-					s.logger.Error("Error updating cloud native describe source job URIs", zap.Error(err))
-					continue
-				}
 			} else {
 				cnSourceJob, err := s.db.GetCloudNativeDescribeSourceJob(jobId.String())
 				if err != nil {
@@ -1100,10 +1090,11 @@ func (s *Scheduler) RunDescribeJobCompletionUpdater() {
 		for _, v := range results {
 			if _, ok := jobIDToStatus[v.DescribeSourceJobID]; !ok {
 				jobIDToStatus[v.DescribeSourceJobID] = map[api.DescribeResourceJobStatus]int{
-					api.DescribeResourceJobCreated:   0,
-					api.DescribeResourceJobQueued:    0,
-					api.DescribeResourceJobFailed:    0,
-					api.DescribeResourceJobSucceeded: 0,
+					api.DescribeResourceJobCreated:      0,
+					api.DescribeResourceJobQueued:       0,
+					api.DescribeResourceJobCloudTimeout: 0,
+					api.DescribeResourceJobFailed:       0,
+					api.DescribeResourceJobSucceeded:    0,
 				}
 			}
 
@@ -1113,7 +1104,8 @@ func (s *Scheduler) RunDescribeJobCompletionUpdater() {
 		for id, status := range jobIDToStatus {
 			// If any CREATED or QUEUED, job is still in progress
 			if status[api.DescribeResourceJobCreated] > 0 ||
-				status[api.DescribeResourceJobQueued] > 0 {
+				status[api.DescribeResourceJobQueued] > 0 ||
+				status[api.DescribeResourceJobCloudTimeout] > 0 {
 				continue
 			}
 
@@ -1723,7 +1715,8 @@ func (s *Scheduler) RunDescribeConnectionJobResultsConsumer() error {
 
 				if strings.Contains(res.Error, "ThrottlingException") ||
 					strings.Contains(res.Error, "Rate exceeded") ||
-					strings.Contains(res.Error, "RateExceeded") {
+					strings.Contains(res.Error, "RateExceeded") ||
+					res.Status == api.DescribeResourceJobCloudTimeout {
 					// sent it to describe jobs
 					s.logger.Info("Needs to be retried",
 						zap.Uint("jobId", jobID),
@@ -2186,6 +2179,7 @@ func enqueueCloudNativeDescribeConnectionJob(logger *zap.Logger, db Database, pr
 		AccountID:     daj.SourceJob.AccountID,
 		DescribedAt:   describedAt.UnixMilli(),
 		SourceType:    a.Type,
+		ConfigReg:     a.ConfigRef,
 		TriggerType:   triggerType,
 	}
 	dcjJson, err := json.Marshal(dcj)
