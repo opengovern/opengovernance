@@ -717,8 +717,13 @@ type CloudNativeConnectionWorkerResult struct {
 	JobResult     DescribeConnectionJobResult `json:"jobResult" validate:"required"`
 }
 
-func (w *CloudNativeConnectionWorker) Run(ctx context.Context) error {
-	jobResult := w.job.Do(ctx, w.vault, nil, w.kfkProducer, w.kfkTopic, w.logger)
+func (w *CloudNativeConnectionWorker) Run(ctx context.Context, sendTimeout bool) error {
+	var jobResult DescribeConnectionJobResult
+	if sendTimeout {
+		jobResult = w.job.CloudTimeout()
+	} else {
+		jobResult = w.job.Do(ctx, w.vault, nil, w.kfkProducer, w.kfkTopic, w.logger)
+	}
 
 	saramaMessages := w.kfkProducer.GetMessages()
 	messages := make([]*CloudNativeConnectionWorkerMessage, 0, len(saramaMessages))

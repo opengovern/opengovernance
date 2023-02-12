@@ -347,6 +347,7 @@ func CloudNativeConnectionWorkerCommand() *cobra.Command {
 		jobJson        string
 		job            DescribeConnectionJob
 		secrets        map[string]any
+		sendTimeout    bool
 	)
 	cmd := &cobra.Command{
 		PreRunE: func(cmd *cobra.Command, args []string) error {
@@ -394,7 +395,7 @@ func CloudNativeConnectionWorkerCommand() *cobra.Command {
 
 			defer w.Stop()
 
-			return w.Run(context.Background())
+			return w.Run(context.Background(), sendTimeout)
 		},
 	}
 
@@ -402,6 +403,7 @@ func CloudNativeConnectionWorkerCommand() *cobra.Command {
 	cmd.Flags().StringVar(&id, "id", "", "The worker id")
 	cmd.Flags().StringVarP(&resourcesTopic, "resources-topic", "t", "", "The kafka topic where the resources are published.")
 	cmd.Flags().StringVarP(&jobJson, "job-json", "j", "", "The job json.")
+	cmd.Flags().BoolVar(&sendTimeout, "send-timeout", false, "If true the worker will only send a timeout message to the output queue and exit.")
 
 	return cmd
 }
