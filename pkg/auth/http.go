@@ -134,15 +134,15 @@ func (r *httpRoutes) GetRoleBindings(ctx echo.Context) error {
 	}
 
 	if usr != nil {
-		userStr := fmt.Sprintf("%v", usr.UserMetadata)
+		userStr := fmt.Sprintf("%v", usr.AppMetadata)
 		r.logger.Warn("user found", zap.String("user", userStr))
-		for wsID, role := range usr.UserMetadata.WorkspaceAccess {
+		for wsID, role := range usr.AppMetadata.WorkspaceAccess {
 			resp.RoleBindings = append(resp.RoleBindings, api.RoleBinding{
 				WorkspaceID: wsID,
 				Role:        role,
 			})
 		}
-		resp.GlobalRoles = usr.UserMetadata.GlobalAccess
+		resp.GlobalRoles = usr.AppMetadata.GlobalAccess
 	} else {
 		r.logger.Warn("user not found in auth0", zap.String("externalID", user.ExternalID))
 	}
