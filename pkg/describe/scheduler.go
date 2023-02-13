@@ -796,28 +796,29 @@ func (s *Scheduler) processCloudNativeDescribeConnectionJobResourcesEvents(parti
 				continue
 			}
 
+			messages := make([]*CloudNativeConnectionWorkerMessage, 0)
 			stream, err := s.azblobClient.DownloadStream(context.TODO(), connectionWorkerResourcesResult.ContainerName, connectionWorkerResourcesResult.BlobName, nil)
-			if err != nil {
+			if err != nil && !bloberror.HasCode(err, bloberror.BlobNotFound) {
 				s.logger.Error("Failed to get blob stream", zap.Error(err))
 				continue
-			}
-			buffer, err := io.ReadAll(stream.Body)
-			if err != nil {
-				s.logger.Error("Failed to read blob stream", zap.Error(err))
-				continue
-			}
-			decrypted, err := helper.DecryptMessageArmored(job.ResultEncryptionPrivateKey, nil, string(buffer))
-			if err != nil {
-				s.logger.Error("Failed to decrypt blob", zap.Error(err))
-				continue
-			}
-			messages := make([]*CloudNativeConnectionWorkerMessage, 0)
-			err = json.Unmarshal([]byte(decrypted), &messages)
-			if err != nil {
-				s.logger.Error("Failed to unmarshal blob", zap.Error(err))
-				continue
-			}
+			} else {
+				buffer, err := io.ReadAll(stream.Body)
+				if err != nil {
+					s.logger.Error("Failed to read blob stream", zap.Error(err))
+					continue
+				}
+				decrypted, err := helper.DecryptMessageArmored(job.ResultEncryptionPrivateKey, nil, string(buffer))
+				if err != nil {
+					s.logger.Error("Failed to decrypt blob", zap.Error(err))
+					continue
+				}
 
+				err = json.Unmarshal([]byte(decrypted), &messages)
+				if err != nil {
+					s.logger.Error("Failed to unmarshal blob", zap.Error(err))
+					continue
+				}
+			}
 			saramaMessages := make([]*sarama.ProducerMessage, 0, len(messages))
 			for _, message := range messages {
 				saramaMessages = append(saramaMessages, &sarama.ProducerMessage{

@@ -15,6 +15,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/messaging/azeventhubs"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob"
 	"github.com/ProtonMail/gopenpgp/v2/helper"
+	"gitlab.com/keibiengine/keibi-engine/pkg/describe/api"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/producer"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/exporters/jaeger"
@@ -759,14 +760,20 @@ func (w *CloudNativeConnectionWorker) Run(ctx context.Context, sendTimeout bool)
 
 	blobName := fmt.Sprintf("%s---%s.json", w.job.SourceID, hashString)
 
-	for i := 0; i < 3; i++ {
+	retryCount := 30
+	for i := 0; i < retryCount; i++ {
 		_, err = w.cloudNativeBlobStorageClient.UploadBuffer(ctx, containerName, blobName, []byte(encMessage), nil)
 		if err != nil {
 			w.logger.Error("Failed to upload blob", zap.Error(err))
-			if i == 2 {
-				return err
+			if i == retryCount-1 {
+				for k, v := range jobResult.Result {
+					v.Error = fmt.Sprintf("%s\nFailed to upload blob: %s", v.Error, err.Error())
+					v.Status = api.DescribeResourceJobFailed
+					jobResult.Result[k] = v
+				}
+				break
 			}
-			time.Sleep(time.Duration(rand.Intn(10)+1) * time.Second)
+			time.Sleep(time.Duration(rand.Intn(15)+1) * time.Second)
 		} else {
 			break
 		}
