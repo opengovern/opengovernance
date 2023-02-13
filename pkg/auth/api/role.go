@@ -28,7 +28,10 @@ type RoleBinding struct {
 
 type GetRoleBindingResponse RoleBinding
 
-type GetRoleBindingsResponse []RoleBinding
+type GetRoleBindingsResponse struct {
+	RoleBindings []RoleBinding `json:"roleBindings"`
+	GlobalRoles  *Role         `json:"globalRoles"`
+}
 
 type WorkspaceRoleBinding struct {
 	UserID     uuid.UUID `json:"userId"`

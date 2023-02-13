@@ -27,6 +27,10 @@ type ChangeWorkspaceNameRequest struct {
 	NewName string `json:"newName"`
 }
 
+type ChangeWorkspaceTierRequest struct {
+	NewTier Tier `json:"newName"`
+}
+
 type WorkspaceResponse struct {
 	ID          string    `json:"id"`
 	Name        string    `json:"name"`

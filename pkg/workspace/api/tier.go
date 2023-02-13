@@ -1,6 +1,4 @@
-package workspace
-
-import "gitlab.com/keibiengine/keibi-engine/pkg/workspace/api"
+package api
 
 type Tier string
 
@@ -10,26 +8,26 @@ const (
 	Tier_Enterprise Tier = "ENTERPRISE"
 )
 
-func GetLimitsByTier(tier Tier) api.WorkspaceLimits {
+func GetLimitsByTier(tier Tier) WorkspaceLimits {
 	switch tier {
 	case Tier_Free:
-		return api.WorkspaceLimits{
+		return WorkspaceLimits{
 			MaxUsers:       25,
 			MaxConnections: 25,
 			MaxResources:   2500,
 		}
 	case Tier_Teams:
-		return api.WorkspaceLimits{
+		return WorkspaceLimits{
 			MaxUsers:       250,
 			MaxConnections: 2500,
 			MaxResources:   1000000,
 		}
 	case Tier_Enterprise:
-		return api.WorkspaceLimits{
+		return WorkspaceLimits{
 			MaxUsers:       250,
 			MaxConnections: 25000,
 			MaxResources:   100000000,
 		}
 	}
-	return api.WorkspaceLimits{}
+	return WorkspaceLimits{}
 }
