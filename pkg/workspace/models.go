@@ -2,6 +2,7 @@ package workspace
 
 import (
 	"github.com/google/uuid"
+	"gitlab.com/keibiengine/keibi-engine/pkg/workspace/api"
 	"gorm.io/gorm"
 )
 
@@ -30,5 +31,5 @@ type Workspace struct {
 	URI         string    `json:"uri"`
 	Status      string    `json:"status"`
 	Description string    `json:"description"`
-	Tier        Tier      `json:"tier"`
+	Tier        api.Tier  `json:"tier"`
 }

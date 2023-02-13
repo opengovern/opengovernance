@@ -261,9 +261,10 @@ func (s Server) GetWorkspaceLimits(rb RoleBinding, workspaceName string) (api2.W
 }
 
 type userClaim struct {
-	Access         map[string]api.Role `json:"https://app.keibi.io/access"`
-	Email          string              `json:"https://app.keibi.io/email"`
-	ExternalUserID string              `json:"sub"`
+	WorkspaceAccess map[string]api.Role `json:"https://app.keibi.io/workspaceAccess"`
+	GlobalAccess    *api.Role           `json:"https://app.keibi.io/globalAccess"`
+	Email           string              `json:"https://app.keibi.io/email"`
+	ExternalUserID  string              `json:"sub"`
 }
 
 func (u userClaim) Valid() error {
@@ -308,10 +309,14 @@ func (s Server) GetWorkspaceByName(workspaceName string, user *userClaim, intern
 			return rb, limits, err
 		}
 
-		if rl, ok := user.Access[limits.ID]; ok {
+		if rl, ok := user.WorkspaceAccess[limits.ID]; ok {
 			rb.UserID = internalUser.ID
 			rb.WorkspaceName = workspaceName
 			rb.Role = rl
+		} else if user.GlobalAccess != nil {
+			rb.UserID = internalUser.ID
+			rb.WorkspaceName = workspaceName
+			rb.Role = *user.GlobalAccess
 		} else {
 			return rb, limits, errors.New("access denied")
 		}

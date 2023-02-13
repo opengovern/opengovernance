@@ -129,7 +129,8 @@ func (s *Server) Register(e *echo.Echo) {
 	v1.GET("/workspaces/limits/byid/:workspace_id", httpserver.AuthorizeHandler(s.GetWorkspaceLimitsByID, authapi.ViewerRole))
 	v1.GET("/workspaces", httpserver.AuthorizeHandler(s.ListWorkspaces, authapi.ViewerRole))
 	v1.POST("/workspace/:workspace_id/owner", httpserver.AuthorizeHandler(s.ChangeOwnership, authapi.EditorRole))
-	v1.POST("/workspace/:workspace_id/name", httpserver.AuthorizeHandler(s.ChangeName, authapi.EditorRole))
+	v1.POST("/workspace/:workspace_id/name", httpserver.AuthorizeHandler(s.ChangeName, authapi.KeibiAdminRole))
+	v1.POST("/workspace/:workspace_id/tier", httpserver.AuthorizeHandler(s.ChangeTier, authapi.KeibiAdminRole))
 	v1.GET("/workspace/:workspace_id/backup", httpserver.AuthorizeHandler(s.ListBackups, authapi.ViewerRole))
 	v1.POST("/workspace/:workspace_id/backup", httpserver.AuthorizeHandler(s.PerformBackup, authapi.EditorRole))
 	v1.GET("/workspace/:workspace_id/backup/restores", httpserver.AuthorizeHandler(s.ListRestore, authapi.ViewerRole))
@@ -182,7 +183,7 @@ func (s *Server) startReconciler() {
 }
 
 func (s *Server) handleAutoSuspend(workspace *Workspace) error {
-	if workspace.Tier != Tier_Free {
+	if workspace.Tier != api.Tier_Free {
 		return nil
 	}
 	switch WorkspaceStatus(workspace.Status) {
@@ -335,7 +336,7 @@ func (s *Server) handleWorkspace(workspace *Workspace) error {
 		// check the status of helm release
 		if meta.IsStatusConditionTrue(helmRelease.Status.Conditions, apimeta.ReadyCondition) {
 			// when the helm release installed successfully, set the rolebinding
-			limits := GetLimitsByTier(workspace.Tier)
+			limits := api.GetLimitsByTier(workspace.Tier)
 			authCtx := &httpclient.Context{
 				UserID:         workspace.OwnerId.String(),
 				UserRole:       authapi.AdminRole,
@@ -555,7 +556,7 @@ func (s *Server) CreateWorkspace(c echo.Context) error {
 	}
 
 	switch request.Tier {
-	case string(Tier_Free), string(Tier_Teams):
+	case string(api.Tier_Free), string(api.Tier_Teams):
 	default:
 		return echo.NewHTTPError(http.StatusBadRequest, "Invalid Tier")
 	}
@@ -573,7 +574,7 @@ func (s *Server) CreateWorkspace(c echo.Context) error {
 		URI:         uri,
 		Status:      StatusProvisioning.String(),
 		Description: request.Description,
-		Tier:        Tier(request.Tier),
+		Tier:        api.Tier(request.Tier),
 	}
 	if err := s.db.CreateWorkspace(workspace); err != nil {
 		if strings.Contains(err.Error(), "duplicate key value") {
@@ -732,10 +733,13 @@ func (s *Server) ListWorkspaces(c echo.Context) error {
 		}
 
 		hasRoleInWorkspace := false
-		for _, rb := range resp {
+		for _, rb := range resp.RoleBindings {
 			if rb.WorkspaceID == workspace.ID {
 				hasRoleInWorkspace = true
 			}
+		}
+		if resp.GlobalRoles != nil {
+			hasRoleInWorkspace = true
 		}
 
 		if workspace.OwnerId != userId && !hasRoleInWorkspace {
@@ -819,7 +823,6 @@ func (s *Server) ChangeOwnership(c echo.Context) error {
 //	@Param		request	body	api.ChangeWorkspaceNameRequest	true	"Change name request"
 //	@Router		/workspace/api/v1/workspace/{workspace_id}/name [post]
 func (s *Server) ChangeName(c echo.Context) error {
-	userID := httpserver.GetUserID(c)
 	workspaceID := c.Param("workspace_id")
 
 	var request api.ChangeWorkspaceNameRequest
@@ -831,7 +834,7 @@ func (s *Server) ChangeName(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "workspace id is empty")
 	}
 
-	w, err := s.db.GetWorkspace(workspaceID)
+	_, err := s.db.GetWorkspace(workspaceID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return echo.NewHTTPError(http.StatusNotFound, "workspace not found")
@@ -839,11 +842,43 @@ func (s *Server) ChangeName(c echo.Context) error {
 		return err
 	}
 
-	if w.OwnerId != userID {
-		return echo.NewHTTPError(http.StatusForbidden, "operation is forbidden")
+	err = s.db.UpdateWorkspaceName(workspaceID, request.NewName)
+	if err != nil {
+		return err
 	}
 
-	err = s.db.UpdateWorkspaceName(workspaceID, request.NewName)
+	return c.NoContent(http.StatusOK)
+}
+
+// ChangeTier godoc
+//
+//	@Summary	Change Tier of workspace
+//	@Tags		workspace
+//	@Accept		json
+//	@Produce	json
+//	@Param		request	body	api.ChangeWorkspaceTierRequest	true	"Change tier request"
+//	@Router		/workspace/api/v1/workspace/{workspace_id}/tier [post]
+func (s *Server) ChangeTier(c echo.Context) error {
+	workspaceID := c.Param("workspace_id")
+
+	var request api.ChangeWorkspaceTierRequest
+	if err := c.Bind(&request); err != nil {
+		c.Logger().Errorf("bind the request: %v", err)
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
+	}
+	if workspaceID == "" {
+		return echo.NewHTTPError(http.StatusBadRequest, "workspace id is empty")
+	}
+
+	_, err := s.db.GetWorkspace(workspaceID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return echo.NewHTTPError(http.StatusNotFound, "workspace not found")
+		}
+		return err
+	}
+
+	err = s.db.UpdateWorkspaceTier(workspaceID, request.NewTier)
 	if err != nil {
 		return err
 	}
@@ -1123,7 +1158,7 @@ func (s *Server) GetWorkspaceLimits(c echo.Context) error {
 		response.CurrentConnections = count
 	}
 
-	limits := GetLimitsByTier(dbWorkspace.Tier)
+	limits := api.GetLimitsByTier(dbWorkspace.Tier)
 	response.MaxUsers = limits.MaxUsers
 	response.MaxConnections = limits.MaxConnections
 	response.MaxResources = limits.MaxResources
@@ -1148,5 +1183,5 @@ func (s *Server) GetWorkspaceLimitsByID(c echo.Context) error {
 	if err != nil {
 		return err
 	}
-	return c.JSON(http.StatusOK, GetLimitsByTier(dbWorkspace.Tier))
+	return c.JSON(http.StatusOK, api.GetLimitsByTier(dbWorkspace.Tier))
 }
