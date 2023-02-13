@@ -63,7 +63,6 @@ func bindValidate(ctx echo.Context, i interface{}) error {
 //	@Param			role	body		string	true	"role"
 //	@Router			/auth/api/v1/role/binding [put]
 func (r httpRoutes) PutRoleBinding(ctx echo.Context) error {
-
 	var req api.PutRoleBindingRequest
 	if err := bindValidate(ctx, &req); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err)
@@ -77,37 +76,21 @@ func (r httpRoutes) PutRoleBinding(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "admin user permission can't be modified by self")
 	}
 
-	//TODO-Saleh
-	//workspaceName := httpserver.GetWorkspaceName(ctx)
-	//count, err := r.db.CountRoleBindings(workspaceName)
-	//if err != nil {
-	//	return err
-	//}
-	//
-	//limits, err := r.workspaceClient.GetLimits(httpclient.FromEchoContext(ctx), true)
-	//if err != nil {
-	//	return err
-	//}
-	//
-	//if count >= limits.MaxUsers {
-	//	err = r.db.UpdateRoleBinding(&RoleBinding{
-	//		UserID:        req.UserID,
-	//		WorkspaceName: workspaceName,
-	//		Role:          req.Role,
-	//		AssignedAt:    time.Now(),
-	//	})
-	//} else {
-	//	err = r.db.CreateOrUpdateRoleBinding(&RoleBinding{
-	//		UserID:        req.UserID,
-	//		WorkspaceName: workspaceName,
-	//		Role:          req.Role,
-	//		AssignedAt:    time.Now(),
-	//	})
-	//}
-	//if err != nil {
-	//	return err
-	//}
+	workspaceName := httpserver.GetWorkspaceName(ctx)
+	user, err := r.db.GetUserByID(req.UserID)
+	if err != nil {
+		return err
+	}
+	auth0User, err := r.auth0Service.GetUser(user.ExternalID)
+	if err != nil {
+		return err
+	}
 
+	auth0User.AppMetadata.WorkspaceAccess[workspaceName] = req.Role
+	err = r.auth0Service.PatchUserAppMetadata(user.ExternalID, auth0User.AppMetadata)
+	if err != nil {
+		return err
+	}
 	return ctx.NoContent(http.StatusOK)
 }
 
