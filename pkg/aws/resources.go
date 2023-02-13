@@ -217,7 +217,7 @@ var resourceTypeToDescriber = map[string]ResourceDescriber{
 	// "AWS::Lambda::LayerVersionPermission":                         ParallelDescribeRegional(describer.LambdaLayerVersionPermission),
 	// "AWS::Lambda::Permission":                                     ParallelDescribeRegional(describer.LambdaPermission),
 	// "AWS::Logs::Destination":                                      ParallelDescribeRegional(describer.CloudWatchLogsDestination),
-	"AWS::Logs::LogGroup": ParallelDescribeRegional(describer.CloudWatchLogsLogGroup),
+	// "AWS::Logs::LogGroup": ParallelDescribeRegional(describer.CloudWatchLogsLogGroup), // Limit reached
 	// "AWS::Logs::LogStream":                                        ParallelDescribeRegional(describer.CloudWatchLogsLogStream),
 	"AWS::Logs::MetricFilter": ParallelDescribeRegional(describer.CloudWatchLogsMetricFilter),
 	// "AWS::Logs::QueryDefinition":                                  ParallelDescribeRegional(describer.CloudWatchLogsQueryDefinition),
