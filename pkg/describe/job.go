@@ -142,6 +142,7 @@ type DescribeJob struct {
 	SourceType    api.SourceType
 	ConfigReg     string
 	TriggerType   enums.DescribeTriggerType
+	RetryCounter  uint
 }
 
 type DescribeJobResult struct {
@@ -220,6 +221,7 @@ func (j DescribeConnectionJob) Do(ictx context.Context, vlt vault.SourceConfig, 
 			SourceType:    j.SourceType,
 			ConfigReg:     j.ConfigReg,
 			TriggerType:   j.TriggerType,
+			RetryCounter:  0,
 		}
 	}
 
@@ -257,6 +259,7 @@ func (j DescribeConnectionJob) CloudTimeout() (r DescribeConnectionJobResult) {
 			SourceType:    j.SourceType,
 			ConfigReg:     j.ConfigReg,
 			TriggerType:   j.TriggerType,
+			RetryCounter:  0,
 		}
 		describeConnectionJobResult.Result[id] = DescribeJobResult{
 			JobID:       dj.JobID,
