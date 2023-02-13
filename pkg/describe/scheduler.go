@@ -801,7 +801,7 @@ func (s *Scheduler) processCloudNativeDescribeConnectionJobResourcesEvents(parti
 			if err != nil && !bloberror.HasCode(err, bloberror.BlobNotFound) {
 				s.logger.Error("Failed to get blob stream", zap.Error(err))
 				continue
-			} else {
+			} else if err == nil {
 				buffer, err := io.ReadAll(stream.Body)
 				if err != nil {
 					s.logger.Error("Failed to read blob stream", zap.Error(err))
