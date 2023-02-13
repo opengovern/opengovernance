@@ -98,6 +98,30 @@ func (a *Service) GetUser(userId string) (*User, error) {
 	return &resp, nil
 }
 
+func (a *Service) PatchUserAppMetadata(userId string, appMetadata Metadata) error {
+	if err := a.fillToken(); err != nil {
+		return err
+	}
+
+	js, err := json.Marshal(appMetadata)
+	if err != nil {
+		return err
+	}
+
+	url := fmt.Sprintf("%s/api/v2/users/%s", a.domain, userId)
+	req, err := http.NewRequest("PATCH", url, bytes.NewReader(js))
+	if err != nil {
+		return err
+	}
+	req.Header.Add("Authorization", "Bearer "+a.token)
+	req.Header.Add("Content-type", "application/json")
+	res, err := http.DefaultClient.Do(req)
+	if res.StatusCode != http.StatusOK {
+		return fmt.Errorf("[GetUser] invalid status code: %d", res.StatusCode)
+	}
+	return nil
+}
+
 func (a *Service) SearchUsersByWorkspace(wsName string) ([]User, error) {
 	if err := a.fillToken(); err != nil {
 		return nil, err
