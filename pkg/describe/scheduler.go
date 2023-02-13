@@ -1722,13 +1722,19 @@ func (s *Scheduler) RunDescribeConnectionJobResultsConsumer() error {
 						zap.Uint("jobId", jobID),
 						zap.String("status", string(res.Status)),
 					)
-					if err := s.describeJobQueue.Publish(res.DescribeJob); err != nil {
-						s.logger.Error("Failed to queue DescribeConnectionJob",
-							zap.Uint("jobId", res.JobID),
-							zap.Error(err),
-						)
+					res.DescribeJob.RetryCounter++
+					if res.DescribeJob.RetryCounter > 5 {
+						res.Status = api.DescribeResourceJobFailed
+						res.Error = fmt.Sprintf("Retries exhuasted - original error: %s", res.Error)
 					} else {
-						continue
+						if err := s.describeJobQueue.Publish(res.DescribeJob); err != nil {
+							s.logger.Error("Failed to queue DescribeConnectionJob",
+								zap.Uint("jobId", res.JobID),
+								zap.Error(err),
+							)
+						} else {
+							continue
+						}
 					}
 				}
 
