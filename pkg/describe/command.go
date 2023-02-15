@@ -69,6 +69,7 @@ var (
 	CheckupIntervalHours    = os.Getenv("CHECKUP_INTERVAL_HOURS")
 	CurrentWorkspaceID      = os.Getenv("CURRENT_NAMESPACE")
 	WorkspaceBaseURL        = os.Getenv("WORKSPACE_BASE_URL")
+	MetadataBaseURL         = os.Getenv("METADATA_BASE_URL")
 	ComplianceBaseURL       = os.Getenv("COMPLIANCE_BASE_URL")
 	OnboardBaseURL          = os.Getenv("ONBOARD_BASE_URL")
 	IngressBaseURL          = os.Getenv("BASE_URL")

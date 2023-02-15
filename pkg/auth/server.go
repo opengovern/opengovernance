@@ -2,8 +2,10 @@ package auth
 
 import (
 	"context"
+	"crypto/rsa"
 	"errors"
 	"fmt"
+	"github.com/golang-jwt/jwt"
 	"net/http"
 	"strings"
 	"time"
@@ -28,13 +30,12 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpserver"
 	"go.uber.org/zap"
 	"google.golang.org/genproto/googleapis/rpc/status"
-	"gorm.io/gorm"
 )
 
 type Server struct {
 	host string
 
-	db              Database
+	keibiPublicKey  *rsa.PublicKey
 	verifier        *oidc.IDTokenVerifier
 	logger          *zap.Logger
 	workspaceClient client.WorkspaceServiceClient
@@ -78,39 +79,12 @@ func (s Server) Check(ctx context.Context, req *envoyauth.CheckRequest) (*envoya
 		return unAuth, nil
 	}
 
-	internalUser, err := s.GetUserByExternalID(user.ExternalUserID)
-	if err != nil {
-		if !errors.Is(err, gorm.ErrRecordNotFound) {
-			s.logger.Warn("denied access due to failure in retrieving internal user",
-				zap.String("reqId", httpRequest.Id),
-				zap.String("path", httpRequest.Path),
-				zap.String("method", httpRequest.Method),
-				zap.Error(err))
-			return unAuth, nil
-		}
-
-		// user does not exists
-		internalUser = User{
-			ExternalID: user.ExternalUserID,
-			Email:      user.Email,
-		}
-
-		if err := s.db.CreateUser(&internalUser); err != nil {
-			s.logger.Warn("denied access due to failure in creating the user",
-				zap.String("reqId", httpRequest.Id),
-				zap.String("path", httpRequest.Path),
-				zap.String("method", httpRequest.Method),
-				zap.Error(err))
-			return unAuth, nil
-		}
-	}
-
 	workspaceName := strings.TrimPrefix(httpRequest.Path, "/")
 	if idx := strings.Index(workspaceName, "/"); idx > 0 {
 		workspaceName = workspaceName[:idx]
 	}
 
-	rb, limits, err := s.GetWorkspaceByName(workspaceName, user, internalUser)
+	rb, limits, err := s.GetWorkspaceByName(workspaceName, user)
 	if err != nil {
 		s.logger.Warn("denied access due to failure in getting workspace",
 			zap.String("reqId", httpRequest.Id),
@@ -145,7 +119,7 @@ func (s Server) Check(ctx context.Context, req *envoyauth.CheckRequest) (*envoya
 					{
 						Header: &envoycore.HeaderValue{
 							Key:   httpserver.XKeibiUserIDHeader,
-							Value: rb.UserID.String(),
+							Value: rb.UserID,
 						},
 					},
 					{
@@ -178,60 +152,6 @@ func (s Server) Check(ctx context.Context, req *envoyauth.CheckRequest) (*envoya
 	}, nil
 }
 
-func (s Server) GetUserByEmail(email string) (User, error) {
-	key := "cache-user-email-" + email
-
-	var res User
-	if s.cache != nil {
-		if err := s.cache.Get(context.Background(), key, &res); err == nil {
-			return res, nil
-		}
-	}
-
-	user, err := s.db.GetUserByEmail(email)
-	if err != nil {
-		return User{}, err
-	}
-
-	if s.cache != nil {
-		s.cache.Set(&cache.Item{
-			Ctx:   context.Background(),
-			Key:   key,
-			Value: user,
-			TTL:   15 * time.Minute,
-		})
-	}
-
-	return user, nil
-}
-
-func (s Server) GetUserByExternalID(externalID string) (User, error) {
-	key := "cache-user-externalID-" + externalID
-
-	var res User
-	if s.cache != nil {
-		if err := s.cache.Get(context.Background(), key, &res); err == nil {
-			return res, nil
-		}
-	}
-
-	user, err := s.db.GetUserByExternalID(externalID)
-	if err != nil {
-		return User{}, err
-	}
-
-	if s.cache != nil {
-		s.cache.Set(&cache.Item{
-			Ctx:   context.Background(),
-			Key:   key,
-			Value: user,
-			TTL:   15 * time.Minute,
-		})
-	}
-
-	return user, nil
-}
-
 func (s Server) GetWorkspaceLimits(rb RoleBinding, workspaceName string) (api2.WorkspaceLimitsUsage, error) {
 	key := "cache-limits-" + workspaceName
 
@@ -242,7 +162,7 @@ func (s Server) GetWorkspaceLimits(rb RoleBinding, workspaceName string) (api2.W
 		}
 	}
 
-	limits, err := s.workspaceClient.GetLimits(&httpclient.Context{UserRole: rb.Role, UserID: rb.UserID.String(),
+	limits, err := s.workspaceClient.GetLimits(&httpclient.Context{UserRole: rb.Role, UserID: rb.UserID,
 		WorkspaceName: workspaceName}, true)
 	if err != nil {
 		return api2.WorkspaceLimitsUsage{}, err
@@ -280,12 +200,18 @@ func (s Server) Verify(ctx context.Context, authToken string) (*userClaim, error
 		return nil, errors.New("missing authorization token")
 	}
 
+	var u userClaim
 	t, err := s.verifier.Verify(context.Background(), token)
 	if err != nil {
+		_, errk := jwt.ParseWithClaims(token, &u, func(token *jwt.Token) (interface{}, error) {
+			return s.keibiPublicKey, nil
+		})
+		if errk == nil {
+			return &u, nil
+		}
 		return nil, err
 	}
 
-	var u userClaim
 	if err := t.Claims(&u); err != nil {
 		return nil, err
 	}
@@ -293,13 +219,13 @@ func (s Server) Verify(ctx context.Context, authToken string) (*userClaim, error
 	return &u, nil
 }
 
-func (s Server) GetWorkspaceByName(workspaceName string, user *userClaim, internalUser User) (RoleBinding, api2.WorkspaceLimitsUsage, error) {
+func (s Server) GetWorkspaceByName(workspaceName string, user *userClaim) (RoleBinding, api2.WorkspaceLimitsUsage, error) {
 	var rb RoleBinding
 	var limits api2.WorkspaceLimitsUsage
 	var err error
 
 	rb = RoleBinding{
-		UserID: internalUser.ID,
+		UserID: user.ExternalUserID,
 		Role:   api.EditorRole,
 	}
 
@@ -310,11 +236,11 @@ func (s Server) GetWorkspaceByName(workspaceName string, user *userClaim, intern
 		}
 
 		if rl, ok := user.WorkspaceAccess[limits.ID]; ok {
-			rb.UserID = internalUser.ID
+			rb.UserID = user.ExternalUserID
 			rb.WorkspaceName = workspaceName
 			rb.Role = rl
 		} else if user.GlobalAccess != nil {
-			rb.UserID = internalUser.ID
+			rb.UserID = user.ExternalUserID
 			rb.WorkspaceName = workspaceName
 			rb.Role = *user.GlobalAccess
 		} else {

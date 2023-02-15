@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/google/uuid"
+	"gitlab.com/keibiengine/keibi-engine/pkg/metadata/models"
 	"io"
 	"math/rand"
 	"net/http"
@@ -36,6 +38,7 @@ import (
 	api2 "gitlab.com/keibiengine/keibi-engine/pkg/auth/api"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpclient"
 	"gitlab.com/keibiengine/keibi-engine/pkg/keibi-es-sdk"
+	metadataClient "gitlab.com/keibiengine/keibi-engine/pkg/metadata/client"
 	onboardClient "gitlab.com/keibiengine/keibi-engine/pkg/onboard/client"
 	workspaceClient "gitlab.com/keibiengine/keibi-engine/pkg/workspace/client"
 
@@ -181,6 +184,7 @@ type Scheduler struct {
 
 	logger              *zap.Logger
 	workspaceClient     workspaceClient.WorkspaceServiceClient
+	metadataClient      metadataClient.MetadataServiceClient
 	complianceClient    client.ComplianceServiceClient
 	onboardClient       onboardClient.OnboardServiceClient
 	es                  keibi.Client
@@ -592,6 +596,7 @@ func InitializeScheduler(
 		return nil, err
 	}
 
+	s.metadataClient = metadataClient.NewMetadataServiceClient(MetadataBaseURL)
 	s.workspaceClient = workspaceClient.NewWorkspaceClient(WorkspaceBaseURL)
 	s.complianceClient = client.NewComplianceClient(ComplianceBaseURL)
 	s.onboardClient = onboardClient.NewOnboardServiceClient(OnboardBaseURL, nil)
@@ -629,6 +634,42 @@ func (s *Scheduler) Run() error {
 	err := s.db.Initialize()
 	if err != nil {
 		return err
+	}
+
+	httpctx := &httpclient.Context{
+		UserRole: api2.ViewerRole,
+	}
+	describeJobIntM, err := s.metadataClient.GetConfigMetadata(httpctx, models.MetadataKeyDescribeJobInterval)
+	if err != nil {
+		s.logger.Error("failed to set describe interval due to error", zap.Error(err))
+	} else {
+		if v, ok := describeJobIntM.GetValue().(int64); ok {
+			s.describeIntervalHours = v
+		} else {
+			s.logger.Error("failed to set describe interval due to invalid type", zap.String("type", string(describeJobIntM.GetType())))
+		}
+	}
+
+	insightJobIntM, err := s.metadataClient.GetConfigMetadata(httpctx, models.MetadataKeyInsightJobInterval)
+	if err != nil {
+		s.logger.Error("failed to set describe interval due to error", zap.Error(err))
+	} else {
+		if v, ok := insightJobIntM.GetValue().(int64); ok {
+			s.insightIntervalHours = v
+		} else {
+			s.logger.Error("failed to set insight interval due to invalid type", zap.String("type", string(insightJobIntM.GetType())))
+		}
+	}
+
+	summarizerJobIntM, err := s.metadataClient.GetConfigMetadata(httpctx, models.MetadataKeyMetricsJobInterval)
+	if err != nil {
+		s.logger.Error("failed to set describe interval due to error", zap.Error(err))
+	} else {
+		if v, ok := summarizerJobIntM.GetValue().(int64); ok {
+			s.summarizerIntervalHours = v
+		} else {
+			s.logger.Error("failed to set summarizer interval due to invalid type", zap.String("type", string(summarizerJobIntM.GetType())))
+		}
 	}
 
 	go s.RunDescribeJobCompletionUpdater()
@@ -2319,7 +2360,7 @@ func (s Scheduler) RunInsightJobScheduler() {
 	defer t.Stop()
 
 	for ; ; <-t.C {
-		s.scheduleInsightJob()
+		s.scheduleInsightJob(false)
 	}
 }
 
@@ -2334,7 +2375,7 @@ func (s Scheduler) RunCheckupJobScheduler() {
 	}
 }
 
-func (s Scheduler) scheduleInsightJob() {
+func (s Scheduler) scheduleInsightJob(forceCreate bool) {
 	insightJob, err := s.db.FetchLastInsightJob()
 	if err != nil {
 		s.logger.Error("Failed to find the last job to check for InsightJob", zap.Error(err))
@@ -2342,7 +2383,7 @@ func (s Scheduler) scheduleInsightJob() {
 		return
 	}
 
-	if insightJob == nil ||
+	if forceCreate || insightJob == nil ||
 		insightJob.CreatedAt.Add(time.Duration(s.insightIntervalHours)*time.Hour).Before(time.Now()) {
 		if isPublishingBlocked(s.logger, s.insightJobQueue) {
 			s.logger.Warn("The jobs in queue is over the threshold", zap.Error(err))

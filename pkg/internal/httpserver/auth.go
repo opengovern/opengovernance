@@ -6,7 +6,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
 	"gitlab.com/keibiengine/keibi-engine/pkg/auth/api"
 )
@@ -57,18 +56,13 @@ func GetUserRole(ctx echo.Context) api.Role {
 	return api.Role(role)
 }
 
-func GetUserID(ctx echo.Context) uuid.UUID {
+func GetUserID(ctx echo.Context) string {
 	id := ctx.Request().Header.Get(XKeibiUserIDHeader)
 	if strings.TrimSpace(id) == "" {
 		panic(fmt.Errorf("header %s is missing", XKeibiUserIDHeader))
 	}
 
-	u, err := uuid.Parse(id)
-	if err != nil {
-		panic(err)
-	}
-
-	return u
+	return id
 }
 
 func GetMaxUsers(ctx echo.Context) int64 {

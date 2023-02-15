@@ -5,8 +5,6 @@ import (
 
 	v1 "github.com/vmware-tanzu/velero/pkg/apis/velero/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
-	"github.com/google/uuid"
 )
 
 type CreateWorkspaceRequest struct {
@@ -34,7 +32,7 @@ type ChangeWorkspaceTierRequest struct {
 type WorkspaceResponse struct {
 	ID          string    `json:"id"`
 	Name        string    `json:"name"`
-	OwnerId     uuid.UUID `json:"ownerId"`
+	OwnerId     string    `json:"ownerId"`
 	Tier        string    `json:"tier"`
 	URI         string    `json:"uri"`
 	Status      string    `json:"status"`

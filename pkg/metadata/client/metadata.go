@@ -2,15 +2,14 @@ package client
 
 import (
 	"fmt"
+	"gitlab.com/keibiengine/keibi-engine/pkg/metadata/models"
 	"net/http"
-
-	"gitlab.com/keibiengine/keibi-engine/pkg/onboard/api"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpclient"
 )
 
 type MetadataServiceClient interface {
-	GetSource(ctx *httpclient.Context, sourceID string) (*api.Source, error)
+	GetConfigMetadata(ctx *httpclient.Context, key models.MetadataKey) (models.IConfigMetadata, error)
 }
 
 type onboardClient struct {
@@ -23,12 +22,12 @@ func NewMetadataServiceClient(baseURL string) MetadataServiceClient {
 	}
 }
 
-func (s *onboardClient) GetSource(ctx *httpclient.Context, sourceID string) (*api.Source, error) {
-	url := fmt.Sprintf("%s/api/v1/source/%s", s.baseURL, sourceID)
-	var source api.Source
-	if err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &source); err != nil {
+func (s *onboardClient) GetConfigMetadata(ctx *httpclient.Context, key models.MetadataKey) (models.IConfigMetadata, error) {
+	url := fmt.Sprintf("%s/metadata/api/v1/metadata/%s", s.baseURL, string(key))
+	var cnf models.IConfigMetadata
+	if err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &cnf); err != nil {
 		return nil, err
 	}
 
-	return &source, nil
+	return cnf, nil
 }

@@ -1,7 +1,6 @@
 package workspace
 
 import (
-	"github.com/google/uuid"
 	"gitlab.com/keibiengine/keibi-engine/pkg/workspace/api"
 	"gorm.io/gorm"
 )
@@ -25,11 +24,11 @@ const (
 type Workspace struct {
 	gorm.Model
 
-	ID          string    `json:"id"`
-	Name        string    `gorm:"uniqueIndex" json:"name"`
-	OwnerId     uuid.UUID `json:"owner_id"`
-	URI         string    `json:"uri"`
-	Status      string    `json:"status"`
-	Description string    `json:"description"`
-	Tier        api.Tier  `json:"tier"`
+	ID          string   `json:"id"`
+	Name        string   `gorm:"uniqueIndex" json:"name"`
+	OwnerId     string   `json:"owner_id"`
+	URI         string   `json:"uri"`
+	Status      string   `json:"status"`
+	Description string   `json:"description"`
+	Tier        api.Tier `json:"tier"`
 }

@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"gitlab.com/keibiengine/keibi-engine/pkg/workspace/api"
 
-	"github.com/google/uuid"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/postgres"
 	"go.uber.org/zap"
 	"gorm.io/gorm"
@@ -61,7 +60,7 @@ func (s *Database) GetWorkspaceByName(name string) (*Workspace, error) {
 	return &workspace, nil
 }
 
-func (s *Database) ListWorkspacesByOwner(ownerId uuid.UUID) ([]*Workspace, error) {
+func (s *Database) ListWorkspacesByOwner(ownerId string) ([]*Workspace, error) {
 	var workspaces []*Workspace
 	if err := s.orm.Model(&Workspace{}).Where(Workspace{OwnerId: ownerId}).Find(&workspaces).Error; err != nil {
 		return nil, err
