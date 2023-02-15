@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/google/uuid"
 	"gitlab.com/keibiengine/keibi-engine/pkg/metadata/models"
 	"io"
 	"math/rand"
