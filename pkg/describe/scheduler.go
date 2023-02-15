@@ -1,11 +1,10 @@
 package describe
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
-	"gitlab.com/keibiengine/keibi-engine/pkg/metadata/models"
 	"io"
 	"math/rand"
 	"net/http"
@@ -13,10 +12,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Azure/azure-sdk-for-go/sdk/messaging/azeventhubs"
-	"github.com/Azure/azure-sdk-for-go/sdk/messaging/azeventhubs/checkpoints"
-	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob"
-	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/bloberror"
+	"gitlab.com/keibiengine/keibi-engine/pkg/metadata/models"
+
 	"github.com/ProtonMail/gopenpgp/v2/crypto"
 	"github.com/ProtonMail/gopenpgp/v2/helper"
 	"github.com/google/uuid"
@@ -146,10 +143,6 @@ type Scheduler struct {
 	// describeConnectionJobResultQueue is used to consume the describe job results returned by the workers.
 	describeConnectionJobResultQueue queue.Interface
 
-	cloudNativeDescribeConnectionJobQueue          *azeventhubs.ProducerClient
-	cloudNativeDescribeConnectionJobResultQueue    *azeventhubs.Processor
-	cloudNativeDescribeConnectionJobResourcesQueue *azeventhubs.Processor
-
 	// sourceQueue is used to consume source updates by the onboarding service.
 	sourceQueue queue.Interface
 
@@ -189,9 +182,11 @@ type Scheduler struct {
 	es                  keibi.Client
 	rdb                 *redis.Client
 	vault               vault.SourceConfig
-	azblobClient        *azblob.Client
 	kafkaClient         sarama.Client
 	kafkaResourcesTopic string
+
+	cloudNativeAPIBaseURL string
+	cloudNativeAPIAuthKey string
 }
 
 func InitializeScheduler(
@@ -204,14 +199,8 @@ func InitializeScheduler(
 	describeJobResultQueueName string,
 	describeConnectionJobQueueName string,
 	describeConnectionJobResultQueueName string,
-	cloudNativeConnectionJobTriggerEventHubConnectionString string,
-	cloudNativeConnectionJobTriggerEventHubName string,
-	cloudNativeConnectionJobOutputEventHubConnectionString string,
-	cloudNativeConnectionJobOutputEventHubName string,
-	cloudNativeConnectionJobResourcesEventHubName string,
-	cloudNativeConnectionJobOutputCheckpointContainerName string,
-	cloudNativeConnectionJobResourcesCheckpointContainerName string,
-	cloudNativeConnectionJobBlobStorageConnectionString string,
+	cloudNativeAPIBaseURL string,
+	cloudNativeAPIAuthKey string,
 	describeCleanupJobQueueName string,
 	complianceReportJobQueueName string,
 	complianceReportJobResultQueueName string,
@@ -245,8 +234,10 @@ func InitializeScheduler(
 	}
 
 	s = &Scheduler{
-		id:             id,
-		deletedSources: make(chan string, ConcurrentDeletedSources),
+		id:                    id,
+		deletedSources:        make(chan string, ConcurrentDeletedSources),
+		cloudNativeAPIBaseURL: cloudNativeAPIBaseURL,
+		cloudNativeAPIAuthKey: cloudNativeAPIAuthKey,
 	}
 	defer func() {
 		if err != nil && s != nil {
@@ -517,58 +508,7 @@ func InitializeScheduler(
 	s.logger.Info("Connected to the postgres database: ", zap.String("db", postgresDb))
 	s.db = Database{orm: orm}
 
-	azblobClient, err := azblob.NewClientFromConnectionString(cloudNativeConnectionJobBlobStorageConnectionString, nil)
-	if err != nil {
-		return nil, fmt.Errorf("new azblob client: %w", err)
-	}
-	s.azblobClient = azblobClient
-	s.logger.Info("Connected to the cloud native connection job blob storage")
-
-	producerClient, err := azeventhubs.NewProducerClientFromConnectionString(cloudNativeConnectionJobTriggerEventHubConnectionString, cloudNativeConnectionJobTriggerEventHubName, nil)
-	if err != nil {
-		return nil, err
-	}
-	s.cloudNativeDescribeConnectionJobQueue = producerClient
-	s.logger.Info("Connected to the cloud native describe connection job queue", zap.String("queue", cloudNativeConnectionJobTriggerEventHubName))
-
-	_, err = azblobClient.CreateContainer(context.Background(), cloudNativeConnectionJobOutputCheckpointContainerName, nil)
-	if err != nil && !bloberror.HasCode(err, bloberror.ContainerAlreadyExists) {
-		return nil, err
-	}
-	triggerOutputCheckpointContainerClient := azblobClient.ServiceClient().NewContainerClient(cloudNativeConnectionJobOutputCheckpointContainerName)
-	triggerOutputCheckpointStore, err := checkpoints.NewBlobStore(triggerOutputCheckpointContainerClient, nil)
-	if err != nil {
-		return nil, err
-	}
-	triggerOutputConsumerClient, err := azeventhubs.NewConsumerClientFromConnectionString(cloudNativeConnectionJobOutputEventHubConnectionString, cloudNativeConnectionJobOutputEventHubName, azeventhubs.DefaultConsumerGroup, nil)
-	if err != nil {
-		return nil, err
-	}
-	triggerOutputProcessor, err := azeventhubs.NewProcessor(triggerOutputConsumerClient, triggerOutputCheckpointStore, nil)
-	if err != nil {
-		return nil, err
-	}
-	s.cloudNativeDescribeConnectionJobResultQueue = triggerOutputProcessor
-	s.logger.Info("Connected to the cloud native describe connection job result queue", zap.String("queue", cloudNativeConnectionJobOutputEventHubName))
-
-	_, err = azblobClient.CreateContainer(context.Background(), cloudNativeConnectionJobResourcesCheckpointContainerName, nil)
-	if err != nil && !bloberror.HasCode(err, bloberror.ContainerAlreadyExists) {
-		return nil, err
-	}
-	resourcesOutputCheckpointContainerClient := azblobClient.ServiceClient().NewContainerClient(cloudNativeConnectionJobResourcesCheckpointContainerName)
-	resourcesOutputCheckpointStore, err := checkpoints.NewBlobStore(resourcesOutputCheckpointContainerClient, nil)
-	if err != nil {
-		return nil, err
-	}
-	resourcesConsumerClient, err := azeventhubs.NewConsumerClientFromConnectionString(cloudNativeConnectionJobOutputEventHubConnectionString, cloudNativeConnectionJobResourcesEventHubName, azeventhubs.DefaultConsumerGroup, nil)
-	if err != nil {
-		return nil, err
-	}
-	resourcesProcessor, err := azeventhubs.NewProcessor(resourcesConsumerClient, resourcesOutputCheckpointStore, nil)
-	if err != nil {
-		return nil, err
-	}
-	s.cloudNativeDescribeConnectionJobResourcesQueue = resourcesProcessor
+	//
 
 	kafkaClient, err := newKafkaClient(strings.Split(KafkaService, ","))
 	if err != nil {
@@ -679,7 +619,6 @@ func (s *Scheduler) Run() error {
 	go s.RunDescribeCleanupJobScheduler()
 	//go s.RunComplianceReportScheduler()
 	go s.RunDeletedSourceCleanup()
-	go s.RunCloudNativeDescribeConnectionJobResultConsumer()
 	go s.RunCloudNativeDescribeConnectionJobResourcesConsumer()
 
 	// In order to have history of reports, we won't clean up compliance reports for now.
@@ -716,217 +655,201 @@ func (s *Scheduler) Run() error {
 	return httpserver.RegisterAndStart(s.logger, s.httpServer.Address, s.httpServer)
 }
 
-func (s *Scheduler) processCloudNativeDescribeConnectionJobResultEvents(partitionClient *azeventhubs.ProcessorPartitionClient) error {
-	defer partitionClient.Close(context.Background())
-	for {
-		receiveCtx, receiveCtxCancel := context.WithTimeout(context.TODO(), 10*time.Second)
-		events, err := partitionClient.ReceiveEvents(receiveCtx, 100, nil)
-		receiveCtxCancel()
-
-		if err != nil && !errors.Is(err, context.DeadlineExceeded) {
-			return err
-		}
-		if len(events) == 0 {
+func (s *Scheduler) processCloudNativeDescribeConnectionJobResourcesEvents(events []cloudNativeDescribeConnectionJobResourceOutput) ([]int, error) {
+	s.logger.Info("Received events from cloud native describe connection job resources queue", zap.Int("eventCount", len(events)))
+	successfulIDs := make([]int, 0)
+	for _, event := range events {
+		var connectionWorkerResourcesResult CloudNativeConnectionWorkerResult
+		err := json.Unmarshal([]byte(event.Payload), &connectionWorkerResourcesResult)
+		if err != nil {
+			s.logger.Error("Error unmarshalling event", zap.Error(err))
 			continue
 		}
 
-		s.logger.Info("Received events from cloud native describe connection job result queue", zap.Int("eventCount", len(events)))
-		for _, event := range events {
-			var message api.CloudNativeConnectionWorkerTriggerQueueMessage
-			err := json.Unmarshal(event.Body, &message)
-			if err != nil {
-				s.logger.Error("Error unmarshalling event", zap.Error(err))
-				continue
-			}
-			jobId, err := uuid.Parse(message.JobId)
-			if err != nil {
-				s.logger.Error("Error parsing job id", zap.Error(err))
-				continue
-			}
-			if message.Status == http.StatusAccepted {
-				var triggerResponse api.CloudNativeConnectionWorkerTriggerOutput
-				err = json.Unmarshal([]byte(message.Body), &triggerResponse)
-				if err != nil {
-					s.logger.Error("Error unmarshalling trigger response", zap.Error(err))
-					continue
-				}
-			} else {
-				cnSourceJob, err := s.db.GetCloudNativeDescribeSourceJob(jobId.String())
-				if err != nil {
-					s.logger.Error("Error getting cloud native describe source job", zap.Error(err))
-					continue
-				}
-				sourceJob, err := s.db.GetDescribeSourceJob(cnSourceJob.SourceJobID)
-				if err != nil {
-					s.logger.Error("Error getting describe source job", zap.Error(err))
-					continue
-				}
-				for _, drj := range sourceJob.DescribeResourceJobs {
-					if err := s.db.UpdateDescribeResourceJobStatus(drj.ID, api.DescribeResourceJobFailed, message.Body); err != nil {
-						s.logger.Error("Failed to update DescribeResourceJob",
-							zap.Uint("jobId", drj.ID),
-							zap.Error(err),
-						)
-					}
-				}
-			}
-		}
-
-		if len(events) != 0 {
-			if err := partitionClient.UpdateCheckpoint(context.TODO(), events[len(events)-1]); err != nil {
-				return err
-			}
-		}
-		s.logger.Info("Processed events from cloud native describe connection job result queue", zap.Int("eventCount", len(events)))
-	}
-}
-
-func (s *Scheduler) RunCloudNativeDescribeConnectionJobResultConsumer() {
-	dispatchPartitionClients := func() {
-		for {
-			partitionClient := s.cloudNativeDescribeConnectionJobResultQueue.NextPartitionClient(context.TODO())
-			if partitionClient == nil {
-				break
-			}
-			go func() {
-				if err := s.processCloudNativeDescribeConnectionJobResultEvents(partitionClient); err != nil {
-					s.logger.Error("Error processing events", zap.Error(err))
-				}
-			}()
-		}
-	}
-
-	go dispatchPartitionClients()
-
-	processorCtx, processorCancel := context.WithCancel(context.TODO())
-	defer processorCancel()
-
-	if err := s.cloudNativeDescribeConnectionJobResultQueue.Run(processorCtx); err != nil {
-		s.logger.Error("Error running cloud native describe connection job result queue", zap.Error(err))
-		return
-	}
-}
-
-func (s *Scheduler) processCloudNativeDescribeConnectionJobResourcesEvents(partitionClient *azeventhubs.ProcessorPartitionClient) error {
-	defer partitionClient.Close(context.Background())
-	for {
-		receiveCtx, receiveCtxCancel := context.WithTimeout(context.TODO(), time.Minute)
-		events, err := partitionClient.ReceiveEvents(receiveCtx, 100, nil)
-		receiveCtxCancel()
-
-		if err != nil && !errors.Is(err, context.DeadlineExceeded) {
-			return err
-		}
-		if len(events) == 0 {
+		job, err := s.db.GetCloudNativeDescribeSourceJob(connectionWorkerResourcesResult.JobID)
+		if err != nil {
+			s.logger.Error("Error getting cloud native describe source job", zap.Error(err))
 			continue
 		}
 
-		s.logger.Info("Received events from cloud native describe connection job resources queue", zap.Int("eventCount", len(events)))
-		for _, event := range events {
-			var connectionWorkerResourcesResult CloudNativeConnectionWorkerResult
-			err := json.Unmarshal(event.Body, &connectionWorkerResourcesResult)
+		messages := make([]*CloudNativeConnectionWorkerMessage, 0)
+		req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("%s/OutputReadBlob?containerName=%s&blobName=%s", s.cloudNativeAPIBaseURL, connectionWorkerResourcesResult.ContainerName, connectionWorkerResourcesResult.BlobName), nil)
+		if err != nil {
+			s.logger.Error("Failed to create OutputReadBlob http request", zap.Error(err))
+			continue
+		}
+		httpClient := &http.Client{
+			Timeout: 60 * time.Second,
+		}
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("Accept", "application/json")
+		req.Header.Set("x-kaytu-cloud-auth-key", s.cloudNativeAPIAuthKey)
+		resp, err := httpClient.Do(req)
+		if err != nil {
+			s.logger.Error("Failed to get blob stream", zap.Error(err))
+			continue
+		}
+		respBody, err := io.ReadAll(resp.Body)
+		if err != nil {
+			s.logger.Error("Failed to read OutputReadBlob http response", zap.Error(err))
+			continue
+		}
+		resp.Body.Close()
+		if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusNotFound {
+			s.logger.Error("Failed to get blob stream", zap.Error(err), zap.String("response", string(respBody)))
+			continue
+		} else if resp.StatusCode == http.StatusOK {
+			var data api.GetDataResponse
+			err = json.Unmarshal(respBody, &data)
 			if err != nil {
-				s.logger.Error("Error unmarshalling event", zap.Error(err))
+				s.logger.Error("Failed to unmarshal OutputReadBlob response", zap.Error(err))
+				continue
+			}
+			decrypted, err := helper.DecryptMessageArmored(job.ResultEncryptionPrivateKey, nil, data.Data)
+			if err != nil {
+				s.logger.Error("Failed to decrypt blob", zap.Error(err))
 				continue
 			}
 
-			job, err := s.db.GetCloudNativeDescribeSourceJob(connectionWorkerResourcesResult.JobID)
+			err = json.Unmarshal([]byte(decrypted), &messages)
 			if err != nil {
-				s.logger.Error("Error getting cloud native describe source job", zap.Error(err))
-				continue
-			}
-
-			messages := make([]*CloudNativeConnectionWorkerMessage, 0)
-			stream, err := s.azblobClient.DownloadStream(context.TODO(), connectionWorkerResourcesResult.ContainerName, connectionWorkerResourcesResult.BlobName, nil)
-			if err != nil && !bloberror.HasCode(err, bloberror.BlobNotFound) {
-				s.logger.Error("Failed to get blob stream", zap.Error(err))
-				continue
-			} else if err == nil {
-				buffer, err := io.ReadAll(stream.Body)
-				if err != nil {
-					s.logger.Error("Failed to read blob stream", zap.Error(err))
-					continue
-				}
-				decrypted, err := helper.DecryptMessageArmored(job.ResultEncryptionPrivateKey, nil, string(buffer))
-				if err != nil {
-					s.logger.Error("Failed to decrypt blob", zap.Error(err))
-					continue
-				}
-
-				err = json.Unmarshal([]byte(decrypted), &messages)
-				if err != nil {
-					s.logger.Error("Failed to unmarshal blob", zap.Error(err))
-					continue
-				}
-			}
-			saramaMessages := make([]*sarama.ProducerMessage, 0, len(messages))
-			for _, message := range messages {
-				saramaMessages = append(saramaMessages, &sarama.ProducerMessage{
-					Topic:   message.Topic,
-					Key:     message.Key,
-					Value:   message.Value,
-					Headers: message.Headers,
-				})
-			}
-			producer, err := sarama.NewSyncProducerFromClient(s.kafkaClient)
-			if err != nil {
-				s.logger.Error("Failed to create producer", zap.Error(err))
-				continue
-			}
-			if err := producer.SendMessages(saramaMessages); err != nil {
-				if errs, ok := err.(sarama.ProducerErrors); ok {
-					for _, e := range errs {
-						s.logger.Error("Failed calling SendMessages", zap.Error(fmt.Errorf("Failed to persist resource[%s] in kafka topic[%s]: %s\nMessage: %v\n", e.Msg.Key, e.Msg.Topic, e.Error(), e.Msg)))
-					}
-				}
-				continue
-			}
-			if err := producer.Close(); err != nil {
-				s.logger.Error("Failed to close producer", zap.Error(err))
-				continue
-			}
-			if len(saramaMessages) != 0 {
-				s.logger.Info("Successfully sent messages to kafka", zap.Int("count", len(saramaMessages)))
-			}
-
-			err = s.describeConnectionJobResultQueue.Publish(connectionWorkerResourcesResult.JobResult)
-			if err != nil {
-				s.logger.Error("Failed calling describeConnectionJobResultQueue.Publish", zap.Error(err))
+				s.logger.Error("Failed to unmarshal data into messages", zap.Error(err))
 				continue
 			}
 		}
-
-		if err := partitionClient.UpdateCheckpoint(context.TODO(), events[len(events)-1]); err != nil {
-			return err
+		saramaMessages := make([]*sarama.ProducerMessage, 0, len(messages))
+		for _, message := range messages {
+			saramaMessages = append(saramaMessages, &sarama.ProducerMessage{
+				Topic:   message.Topic,
+				Key:     message.Key,
+				Value:   message.Value,
+				Headers: message.Headers,
+			})
+		}
+		producer, err := sarama.NewSyncProducerFromClient(s.kafkaClient)
+		if err != nil {
+			s.logger.Error("Failed to create producer", zap.Error(err))
+			continue
+		}
+		if err := producer.SendMessages(saramaMessages); err != nil {
+			if errs, ok := err.(sarama.ProducerErrors); ok {
+				for _, e := range errs {
+					s.logger.Error("Failed calling SendMessages", zap.Error(fmt.Errorf("Failed to persist resource[%s] in kafka topic[%s]: %s\nMessage: %v\n", e.Msg.Key, e.Msg.Topic, e.Error(), e.Msg)))
+				}
+			}
+			continue
+		}
+		if err := producer.Close(); err != nil {
+			s.logger.Error("Failed to close producer", zap.Error(err))
+			continue
+		}
+		if len(saramaMessages) != 0 {
+			s.logger.Info("Successfully sent messages to kafka", zap.Int("count", len(saramaMessages)))
 		}
 
-		s.logger.Info("Processed events from cloud native describe connection job resources queue", zap.Int("eventCount", len(events)))
+		err = s.describeConnectionJobResultQueue.Publish(connectionWorkerResourcesResult.JobResult)
+		if err != nil {
+			s.logger.Error("Failed calling describeConnectionJobResultQueue.Publish", zap.Error(err))
+			continue
+		}
+
+		successfulIDs = append(successfulIDs, event.ID)
 	}
+
+	s.logger.Info("Processed events from cloud native describe connection job resources queue", zap.Int("eventCount", len(events)))
+	return successfulIDs, nil
+}
+
+type cloudNativeDescribeConnectionJobResourceOutput struct {
+	ID      int    `json:"id"`
+	Payload string `json:"payload"`
 }
 
 func (s *Scheduler) RunCloudNativeDescribeConnectionJobResourcesConsumer() {
-	dispatchPartitionClients := func() {
-		for {
-			partitionClient := s.cloudNativeDescribeConnectionJobResourcesQueue.NextPartitionClient(context.TODO())
-			if partitionClient == nil {
-				break
-			}
-			go func() {
-				if err := s.processCloudNativeDescribeConnectionJobResourcesEvents(partitionClient); err != nil {
-					s.logger.Error("Error processing events for ConnectionJobResourcesEvents", zap.Error(err))
-				}
-			}()
+	defer func() {
+		if r := recover(); r != nil {
+			err := fmt.Errorf("paniced during RunCloudNativeDescribeConnectionJobResourcesConsumer: %v", r)
+			s.logger.Error("Paniced, retry", zap.Error(err))
+			go s.RunCloudNativeDescribeConnectionJobResourcesConsumer()
 		}
-	}
+	}()
 
-	go dispatchPartitionClients()
+	t := time.NewTicker(JobCompletionInterval)
+	defer t.Stop()
 
-	processorCtx, processorCancel := context.WithCancel(context.TODO())
-	defer processorCancel()
+	for ; ; <-t.C {
+		// send get request to OutputSQLReader
+		// if there are no jobs, continue
+		// if there are jobs, check if they are done
+		// if they are done, send the job to the describe connection job resources queue
+		// if they are not done, continue
+		httpClient := &http.Client{
+			Timeout: 60 * time.Second,
+		}
+		req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("%s/OutputSQLReader", s.cloudNativeAPIBaseURL), nil)
+		if err != nil {
+			s.logger.Error("Failed to create http request", zap.Error(err))
+			continue
+		}
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("Accept", "application/json")
+		req.Header.Set("x-kaytu-cloud-auth-key", s.cloudNativeAPIAuthKey)
+		resp, err := httpClient.Do(req)
+		if err != nil {
+			s.logger.Error("Failed to send OutputSQLReader http request", zap.Error(err))
+			continue
+		}
+		defer resp.Body.Close()
+		resBody, err := io.ReadAll(resp.Body)
+		if err != nil {
+			s.logger.Error("Failed to read OutputSQLReader response body", zap.Error(err))
+			continue
+		}
+		if resp.StatusCode != http.StatusOK {
+			s.logger.Error("Http request OutputSQLReader status not ok", zap.Int("status", resp.StatusCode), zap.String("body", string(resBody)))
+			continue
+		}
 
-	if err := s.cloudNativeDescribeConnectionJobResourcesQueue.Run(processorCtx); err != nil {
-		s.logger.Error("Error running cloud native describe connection job resources queue", zap.Error(err))
-		return
+		res := make([]cloudNativeDescribeConnectionJobResourceOutput, 0)
+		if err := json.Unmarshal(resBody, &res); err != nil {
+			s.logger.Error("Failed to unmarshal OutputSQLReader response body", zap.Error(err))
+			continue
+		}
+
+		successfulIds, err := s.processCloudNativeDescribeConnectionJobResourcesEvents(res)
+		if err != nil {
+			s.logger.Error("Failed to process events", zap.Error(err))
+			continue
+		}
+		jsonIds, err := json.Marshal(successfulIds)
+		if err != nil {
+			s.logger.Error("Failed to marshal successful ids", zap.Error(err))
+			continue
+		}
+
+		req, err = http.NewRequest(http.MethodPost, fmt.Sprintf("%s/OutputSQLAck", s.cloudNativeAPIBaseURL), bytes.NewBuffer(jsonIds))
+		if err != nil {
+			s.logger.Error("Failed to create http request", zap.Error(err))
+			continue
+		}
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("Accept", "application/json")
+		req.Header.Set("x-kaytu-cloud-auth-key", s.cloudNativeAPIAuthKey)
+		resp, err = httpClient.Do(req)
+		if err != nil {
+			s.logger.Error("Failed to send OutputSQLAck http request", zap.Error(err))
+			continue
+		}
+		defer resp.Body.Close()
+		resBody, err = io.ReadAll(resp.Body)
+		if err != nil {
+			s.logger.Error("Failed to read OutputSQLAck response body", zap.Error(err))
+			continue
+		}
+		if resp.StatusCode != http.StatusOK {
+			s.logger.Error("Http request OutputSQLAck status not ok", zap.Int("status", resp.StatusCode), zap.String("body", string(resBody)))
+			continue
+		}
 	}
 }
 
@@ -1315,7 +1238,7 @@ func (s Scheduler) createCloudNativeDescribeSource(scheduleJob *ScheduleJob, sou
 	}
 	err = s.db.CreateCloudNativeDescribeSourceJob(&cloudDaj)
 
-	enqueueCloudNativeDescribeConnectionJob(s.logger, s.db, s.cloudNativeDescribeConnectionJobQueue, *source, cloudDaj, s.kafkaResourcesTopic, scheduleJob.ID, scheduleJob.CreatedAt, triggerType)
+	enqueueCloudNativeDescribeConnectionJob(s.logger, s.db, s.cloudNativeAPIBaseURL, s.cloudNativeAPIAuthKey, *source, cloudDaj, s.kafkaResourcesTopic, scheduleJob.ID, scheduleJob.CreatedAt, triggerType)
 
 	isSuccessful := true
 
@@ -2041,7 +1964,6 @@ func (s *Scheduler) Stop() {
 	}
 
 	s.kafkaClient.Close()
-	s.cloudNativeDescribeConnectionJobQueue.Close(context.Background())
 }
 
 func newDescribeSourceJob(a Source, s ScheduleJob) DescribeSourceJob {
@@ -2210,7 +2132,7 @@ func enqueueDescribeConnectionJob(logger *zap.Logger, db Database, q queue.Inter
 	}
 }
 
-func enqueueCloudNativeDescribeConnectionJob(logger *zap.Logger, db Database, producer *azeventhubs.ProducerClient, a Source, daj CloudNativeDescribeSourceJob, kafkaResourcesTopic string, scheduleJobID uint, describedAt time.Time, triggerType enums.DescribeTriggerType) {
+func enqueueCloudNativeDescribeConnectionJob(logger *zap.Logger, db Database, cloudNativeAPIBaseURL string, cloudNativeAPIAuthKey string, a Source, daj CloudNativeDescribeSourceJob, kafkaResourcesTopic string, scheduleJobID uint, describedAt time.Time, triggerType enums.DescribeTriggerType) {
 	nextStatus := api.DescribeResourceJobQueued
 	errMsg := ""
 
@@ -2262,35 +2184,37 @@ func enqueueCloudNativeDescribeConnectionJob(logger *zap.Logger, db Database, pr
 		errMsg = fmt.Sprintf("marshal: %s", err.Error())
 	}
 	//enqueue job to cloud native connection worker
-	batch, err := producer.NewEventDataBatch(context.TODO(), nil)
-	if err != nil {
-		logger.Error("Failed to create event data batch",
-			zap.Uint("jobId", daj.ID),
-			zap.Error(err),
-		)
-
-		nextStatus = api.DescribeResourceJobFailed
-		errMsg = fmt.Sprintf("create event data batch: %s", err.Error())
+	httpClient := &http.Client{
+		Timeout: 60 * time.Second,
 	}
-	err = batch.AddEventData(&azeventhubs.EventData{Body: cloudTriggerInputJson}, nil)
+	req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("%s/orchestrators/ConnectionWorkerOrchestrator", cloudNativeAPIBaseURL), bytes.NewBuffer(cloudTriggerInputJson))
 	if err != nil {
-		logger.Error("Failed to add event data",
-			zap.Uint("jobId", daj.ID),
-			zap.Error(err),
-		)
-
+		logger.Error("Failed to create http request", zap.Error(err))
 		nextStatus = api.DescribeResourceJobFailed
-		errMsg = fmt.Sprintf("add event data: %s", err.Error())
-	}
-	err = producer.SendEventDataBatch(context.TODO(), batch, nil)
-	if err != nil {
-		logger.Error("Failed to send event data batch",
-			zap.Uint("jobId", daj.ID),
-			zap.Error(err),
-		)
-
-		nextStatus = api.DescribeResourceJobFailed
-		errMsg = fmt.Sprintf("send event data batch: %s", err.Error())
+		errMsg = fmt.Sprintf("create http request: %s", err.Error())
+	} else {
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("Accept", "application/json")
+		req.Header.Set("x-kaytu-cloud-auth-key", cloudNativeAPIAuthKey)
+		resp, err := httpClient.Do(req)
+		if err != nil {
+			logger.Error("Failed to send orchestrators http request", zap.Error(err))
+			nextStatus = api.DescribeResourceJobFailed
+			errMsg = fmt.Sprintf("send orchestrators http request: %s", err.Error())
+		}
+		defer resp.Body.Close()
+		resBody, err := io.ReadAll(resp.Body)
+		if err != nil {
+			logger.Error("Failed to read orchestrators http response", zap.Error(err))
+			nextStatus = api.DescribeResourceJobFailed
+			errMsg = fmt.Sprintf("read orchestrators http response: %s", err.Error())
+		} else {
+			if resp.StatusCode != http.StatusOK {
+				logger.Error("Failed to trigger cloud native connection worker", zap.Error(err))
+				nextStatus = api.DescribeResourceJobFailed
+				errMsg = fmt.Sprintf("trigger cloud native connection worker: %s", resBody)
+			}
+		}
 	}
 
 	for i, drj := range daj.SourceJob.DescribeResourceJobs {
