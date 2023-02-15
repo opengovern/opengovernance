@@ -250,6 +250,46 @@ func (db Database) ListAllDescribeSourceJobs() ([]DescribeSourceJob, error) {
 	return jobs, nil
 }
 
+func (db Database) ListPendingDescribeSourceJobs() ([]DescribeSourceJob, error) {
+	var jobs []DescribeSourceJob
+	tx := db.orm.Where("status in (?, ?)", api.DescribeSourceJobInProgress, api.DescribeSourceJobCreated).Find(&jobs)
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+
+	return jobs, nil
+}
+
+func (db Database) ListPendingDescribeResourceJobs() ([]DescribeResourceJob, error) {
+	var jobs []DescribeResourceJob
+	tx := db.orm.Where("status in (?, ?)", api.DescribeResourceJobQueued, api.DescribeResourceJobCreated).Find(&jobs)
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+
+	return jobs, nil
+}
+
+func (db Database) ListPendingSummarizeJobs() ([]SummarizerJob, error) {
+	var jobs []SummarizerJob
+	tx := db.orm.Where("status = ?", summarizerapi.SummarizerJobInProgress).Find(&jobs)
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+
+	return jobs, nil
+}
+
+func (db Database) ListPendingInsightJobs() ([]InsightJob, error) {
+	var jobs []InsightJob
+	tx := db.orm.Where("status = ?", insightapi.InsightJobInProgress).Find(&jobs)
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+
+	return jobs, nil
+}
+
 // ListDescribeSourceJobs lists the DescribeSourceJobs for the given sourcel.
 func (db Database) ListDescribeSourceJobs(sourceID uuid.UUID) ([]DescribeSourceJob, error) {
 	var jobs []DescribeSourceJob

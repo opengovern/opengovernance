@@ -2,8 +2,11 @@ package auth
 
 import (
 	"context"
+	"crypto/rsa"
 	"crypto/tls"
 	"crypto/x509"
+	"encoding/base64"
+	"encoding/pem"
 	"fmt"
 	"io/ioutil"
 	"net"
@@ -22,20 +25,12 @@ import (
 	envoyauth "github.com/envoyproxy/go-control-plane/envoy/service/auth/v3"
 	"github.com/spf13/cobra"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpserver"
-	"gitlab.com/keibiengine/keibi-engine/pkg/internal/postgres"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 )
 
 var (
-	postgreSQLHost     = os.Getenv("POSTGRESQL_HOST")
-	postgreSQLPort     = os.Getenv("POSTGRESQL_PORT")
-	postgreSQLDb       = os.Getenv("POSTGRESQL_DB")
-	postgreSQLUser     = os.Getenv("POSTGRESQL_USERNAME")
-	postgreSQLPassword = os.Getenv("POSTGRESQL_PASSWORD")
-	postgreSQLSSLMode  = os.Getenv("POSTGRESQL_SSLMODE")
-
 	mailApiKey     = os.Getenv("EMAIL_API_KEY")
 	mailSender     = os.Getenv("EMAIL_SENDER")
 	mailSenderName = os.Getenv("EMAIL_SENDER_NAME")
@@ -51,7 +46,8 @@ var (
 	httpServerAddress  = os.Getenv("HTTP_ADDRESS")
 	inviteLinkTemplate = os.Getenv("INVITE_LINK_TEMPLATE")
 
-	keibiHost = os.Getenv("KEIBI_HOST")
+	keibiHost      = os.Getenv("KEIBI_HOST")
+	keibiPublicKey = os.Getenv("KEIBI_PUBLIC_KEY")
 
 	workspaceBaseUrl = os.Getenv("WORKSPACE_BASE_URL")
 
@@ -82,32 +78,12 @@ func start(ctx context.Context) error {
 		return err
 	}
 
-	cfg := postgres.Config{
-		Host:    postgreSQLHost,
-		Port:    postgreSQLPort,
-		User:    postgreSQLUser,
-		Passwd:  postgreSQLPassword,
-		DB:      postgreSQLDb,
-		SSLMode: postgreSQLSSLMode,
-	}
-	orm, err := postgres.NewClient(&cfg, logger)
-	if err != nil {
-		return fmt.Errorf("new postgres client: %w", err)
-	}
-	logger.Info("Connected to the postgres database: ", zap.String("orm", "postgresDb"))
-
 	verifier, err := newAuth0OidcVerifier(ctx, auth0Domain, auth0ClientID)
 	if err != nil {
 		return fmt.Errorf("open id connect verifier: %w", err)
 	}
 	logger.Info("Instantiated a new Open ID Connect verifier")
 	m := email.NewSendGridClient(mailApiKey, mailSender, mailSenderName, logger)
-
-	db := NewDatabase(orm)
-	err = db.Initialize()
-	if err != nil {
-		return fmt.Errorf("initialize database: %w", err)
-	}
 
 	creds, err := newServerCredentials(
 		grpcTlsCertPath,
@@ -126,9 +102,23 @@ func start(ctx context.Context) error {
 		DB:       0,  // use default DB
 	})
 
+	b, err := base64.StdEncoding.DecodeString(keibiPublicKey)
+	if err != nil {
+		return fmt.Errorf("private key decode: %w", err)
+	}
+
+	block, _ := pem.Decode(b)
+	if block == nil {
+		return fmt.Errorf("failed to decode my private key")
+	}
+	pub, err := x509.ParsePKIXPublicKey(block.Bytes)
+	if err != nil {
+		return err
+	}
+
 	authServer := Server{
 		host:            keibiHost,
-		db:              db,
+		keibiPublicKey:  pub.(*rsa.PublicKey),
 		verifier:        verifier,
 		logger:          logger,
 		workspaceClient: workspaceClient,
@@ -157,7 +147,6 @@ func start(ctx context.Context) error {
 	go func() {
 		routes := httpRoutes{
 			logger:             logger,
-			db:                 db,
 			emailService:       m,
 			inviteLinkTemplate: inviteLinkTemplate,
 			workspaceClient:    workspaceClient,

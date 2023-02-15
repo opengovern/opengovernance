@@ -3,6 +3,7 @@ package describe
 import (
 	"encoding/json"
 	"fmt"
+	insightapi "gitlab.com/keibiengine/keibi-engine/pkg/insight/api"
 	"net/http"
 	"strconv"
 	"time"
@@ -47,6 +48,12 @@ func (h HttpServer) Register(e *echo.Echo) {
 
 	v0.GET("/describe/trigger", httpserver.AuthorizeHandler(h.TriggerDescribeJob, api3.AdminRole))
 	v0.GET("/summarize/trigger", httpserver.AuthorizeHandler(h.TriggerSummarizeJob, api3.AdminRole))
+	v0.GET("/insight/trigger", httpserver.AuthorizeHandler(h.TriggerInsightJob, api3.AdminRole))
+
+	v1.GET("/describe/source/jobs/pending", httpserver.AuthorizeHandler(h.HandleListPendingDescribeSourceJobs, api3.ViewerRole))
+	v1.GET("/describe/resource/jobs/pending", httpserver.AuthorizeHandler(h.HandleListPendingDescribeResourceJobs, api3.ViewerRole))
+	v1.GET("/summarize/jobs/pending", httpserver.AuthorizeHandler(h.HandleListPendingSummarizeJobs, api3.ViewerRole))
+	v1.GET("/insight/jobs/pending", httpserver.AuthorizeHandler(h.HandleListPendingInsightJobs, api3.ViewerRole))
 
 	v1.GET("/sources", httpserver.AuthorizeHandler(h.HandleListSources, api3.ViewerRole))
 	v1.GET("/sources/:source_id", httpserver.AuthorizeHandler(h.HandleGetSource, api3.ViewerRole))
@@ -163,6 +170,70 @@ func (h HttpServer) HandleGetSource(ctx echo.Context) error {
 		LastComplianceReportAt: lastComplianceReportAt,
 		LastDescribeJobStatus:  lastJobStatus,
 	})
+}
+
+// HandleListPendingDescribeSourceJobs godoc
+//
+//	@Summary		Listing describe source jobs
+//	@Tags			schedule
+//	@Produce		json
+//	@Success		200			{object}	api.Source
+//	@Router			/schedule/api/v1/describe/source/jobs/pending [get]
+func (h HttpServer) HandleListPendingDescribeSourceJobs(ctx echo.Context) error {
+	jobs, err := h.DB.ListPendingDescribeSourceJobs()
+	if err != nil {
+		return err
+	}
+
+	return ctx.JSON(http.StatusOK, jobs)
+}
+
+// HandleListPendingDescribeResourceJobs godoc
+//
+//	@Summary		Listing describe resource jobs
+//	@Tags			schedule
+//	@Produce		json
+//	@Success		200			{object}	api.Source
+//	@Router			/schedule/api/v1/describe/resource/jobs/pending [get]
+func (h HttpServer) HandleListPendingDescribeResourceJobs(ctx echo.Context) error {
+	jobs, err := h.DB.ListPendingDescribeResourceJobs()
+	if err != nil {
+		return err
+	}
+
+	return ctx.JSON(http.StatusOK, jobs)
+}
+
+// HandleListPendingSummarizeJobs godoc
+//
+//	@Summary		Listing summarize jobs
+//	@Tags			schedule
+//	@Produce		json
+//	@Success		200			{object}	api.Source
+//	@Router			/schedule/api/v1/summarize/jobs/pending [get]
+func (h HttpServer) HandleListPendingSummarizeJobs(ctx echo.Context) error {
+	jobs, err := h.DB.ListPendingSummarizeJobs()
+	if err != nil {
+		return err
+	}
+
+	return ctx.JSON(http.StatusOK, jobs)
+}
+
+// HandleListPendingInsightJobs godoc
+//
+//	@Summary		Listing insight jobs
+//	@Tags			schedule
+//	@Produce		json
+//	@Success		200			{object}	api.Source
+//	@Router			/schedule/api/v1/insight/jobs/pending [get]
+func (h HttpServer) HandleListPendingInsightJobs(ctx echo.Context) error {
+	jobs, err := h.DB.ListPendingInsightJobs()
+	if err != nil {
+		return err
+	}
+
+	return ctx.JSON(http.StatusOK, jobs)
 }
 
 // HandleListSourceDescribeJobs godoc
@@ -517,6 +588,26 @@ func (h HttpServer) TriggerSummarizeJob(ctx echo.Context) error {
 		errMsg := fmt.Sprintf("error scheduling summarize job: %v", err)
 		return ctx.JSON(http.StatusInternalServerError, api.ErrorResponse{Message: errMsg})
 	}
+	return ctx.JSON(http.StatusOK, "")
+}
+
+// TriggerInsightJob godoc
+//
+//	@Summary		Triggers an insight job to run immediately
+//	@Description	Triggers an insight job to run immediately
+//	@Tags			describe
+//	@Produce		json
+//	@Success		200
+//	@Router			/schedule/api/v0/insight/trigger [get]
+func (h HttpServer) TriggerInsightJob(ctx echo.Context) error {
+	insightJob, err := h.DB.FetchLastInsightJob()
+	if err != nil {
+		return err
+	}
+	if insightJob.Status == insightapi.InsightJobInProgress {
+		return ctx.JSON(http.StatusConflict, api.ErrorResponse{Message: "insight job in progress"})
+	}
+	h.Scheduler.scheduleInsightJob(true)
 	return ctx.JSON(http.StatusOK, "")
 }
 

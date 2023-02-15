@@ -338,7 +338,7 @@ func (s *Server) handleWorkspace(workspace *Workspace) error {
 			// when the helm release installed successfully, set the rolebinding
 			limits := api.GetLimitsByTier(workspace.Tier)
 			authCtx := &httpclient.Context{
-				UserID:         workspace.OwnerId.String(),
+				UserID:         workspace.OwnerId,
 				UserRole:       authapi.AdminRole,
 				WorkspaceName:  workspace.Name,
 				MaxUsers:       limits.MaxUsers,

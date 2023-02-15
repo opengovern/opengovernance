@@ -16,8 +16,8 @@ const (
 )
 
 type PutRoleBindingRequest struct {
-	UserID uuid.UUID `json:"userId" validate:"required"`
-	Role   Role      `json:"role" validate:"required"`
+	UserID string `json:"userId" validate:"required"`
+	Role   Role   `json:"role" validate:"required"`
 }
 
 type RoleBinding struct {
@@ -34,7 +34,7 @@ type GetRoleBindingsResponse struct {
 }
 
 type WorkspaceRoleBinding struct {
-	UserID     uuid.UUID `json:"userId"`
+	UserID     string    `json:"userId"`
 	Email      string    `json:"email"`
 	Role       Role      `json:"role"`
 	AssignedAt time.Time `json:"assignedAt"`

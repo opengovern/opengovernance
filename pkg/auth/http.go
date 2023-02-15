@@ -3,7 +3,6 @@ package auth
 import (
 	"fmt"
 	"net/http"
-	"strings"
 	"time"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/auth/auth0"
@@ -22,7 +21,6 @@ const inviteDuration = time.Hour * 24 * 7
 
 type httpRoutes struct {
 	logger             *zap.Logger
-	db                 Database
 	emailService       email.Service
 	workspaceClient    client.WorkspaceServiceClient
 	auth0Service       *auth0.Service
@@ -33,6 +31,7 @@ func (r *httpRoutes) Register(e *echo.Echo) {
 	v1 := e.Group("/api/v1")
 
 	v1.PUT("/user/role/binding", httpserver.AuthorizeHandler(r.PutRoleBinding, api.AdminRole))
+	v1.DELETE("/user/role/binding", httpserver.AuthorizeHandler(r.DeleteRoleBinding, api.AdminRole))
 	v1.GET("/user/role/bindings", httpserver.AuthorizeHandler(r.GetRoleBindings, api.ViewerRole))
 	v1.GET("/workspace/role/bindings", httpserver.AuthorizeHandler(r.GetWorkspaceRoleBindings, api.AdminRole))
 	v1.GET("/invites", httpserver.AuthorizeHandler(r.ListInvites, api.AdminRole))
@@ -77,17 +76,49 @@ func (r httpRoutes) PutRoleBinding(ctx echo.Context) error {
 	}
 
 	workspaceName := httpserver.GetWorkspaceName(ctx)
-	user, err := r.db.GetUserByID(req.UserID)
-	if err != nil {
-		return err
-	}
-	auth0User, err := r.auth0Service.GetUser(user.ExternalID)
+	auth0User, err := r.auth0Service.GetUser(req.UserID)
 	if err != nil {
 		return err
 	}
 
 	auth0User.AppMetadata.WorkspaceAccess[workspaceName] = req.Role
-	err = r.auth0Service.PatchUserAppMetadata(user.ExternalID, auth0User.AppMetadata)
+	err = r.auth0Service.PatchUserAppMetadata(req.UserID, auth0User.AppMetadata)
+	if err != nil {
+		return err
+	}
+	return ctx.NoContent(http.StatusOK)
+}
+
+// DeleteRoleBinding godoc
+//
+//	@Summary		Delete RoleBinding for a user.
+//	@Tags			auth
+//	@Produce		json
+//	@Success		200		{object}	nil
+//	@Param			userId	body		string	true	"userId"
+//	@Param			role	body		string	true	"role"
+//	@Router			/auth/api/v1/user/role/binding [delete]
+func (r httpRoutes) DeleteRoleBinding(ctx echo.Context) error {
+	var req api.DeleteRoleBindingRequest
+	if err := bindValidate(ctx, &req); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err)
+	}
+
+	// The WorkspaceManager service will call this API to set the AdminRole
+	// for the admin user on behalf of him. Allow for the Admin to only set its
+	// role to admin for that user case
+	if httpserver.GetUserID(ctx) == req.UserID {
+		return echo.NewHTTPError(http.StatusBadRequest, "admin user permission can't be modified by self")
+	}
+
+	workspaceName := httpserver.GetWorkspaceName(ctx)
+	auth0User, err := r.auth0Service.GetUser(req.UserID)
+	if err != nil {
+		return err
+	}
+
+	delete(auth0User.AppMetadata.WorkspaceAccess, workspaceName)
+	err = r.auth0Service.PatchUserAppMetadata(req.UserID, auth0User.AppMetadata)
 	if err != nil {
 		return err
 	}
@@ -103,14 +134,11 @@ func (r httpRoutes) PutRoleBinding(ctx echo.Context) error {
 //	@Success		200	{object}	api.GetRoleBindingsResponse
 //	@Router			/auth/api/v1/user/role/bindings [get]
 func (r *httpRoutes) GetRoleBindings(ctx echo.Context) error {
-	user, err := r.db.GetUserByID(httpserver.GetUserID(ctx))
-	if err != nil {
-		return err
-	}
+	userID := httpserver.GetUserID(ctx)
 
 	var resp api.GetRoleBindingsResponse
 
-	usr, err := r.auth0Service.GetUser(user.ExternalID)
+	usr, err := r.auth0Service.GetUser(userID)
 	if err != nil {
 		r.logger.Warn("failed to get user from auth0 due to", zap.Error(err))
 		return err
@@ -127,7 +155,7 @@ func (r *httpRoutes) GetRoleBindings(ctx echo.Context) error {
 		}
 		resp.GlobalRoles = usr.AppMetadata.GlobalAccess
 	} else {
-		r.logger.Warn("user not found in auth0", zap.String("externalID", user.ExternalID))
+		r.logger.Warn("user not found in auth0", zap.String("externalID", userID))
 	}
 	return ctx.JSON(http.StatusOK, resp)
 }
@@ -149,18 +177,8 @@ func (r *httpRoutes) GetWorkspaceRoleBindings(ctx echo.Context) error {
 
 	var resp api.GetWorkspaceRoleBindingResponse
 	for _, u := range users {
-		usr, err := r.db.GetUserByEmail(strings.ToLower(u.Email))
-		//if err != nil {
-		//	return err
-		//}
-		if err != nil {
-			r.logger.Warn("failed to fetch user by email",
-				zap.Error(err),
-				zap.String("email", strings.ToLower(u.Email)))
-		}
-
 		resp = append(resp, api.WorkspaceRoleBinding{
-			UserID: usr.ID,
+			UserID: u.UserId,
 			Email:  u.Email,
 			Role:   u.AppMetadata.WorkspaceAccess[workspaceName],
 		})
