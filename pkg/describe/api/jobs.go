@@ -7,3 +7,7 @@ type GetCredsForJobRequest struct {
 type GetCredsForJobResponse struct {
 	Credentials string `json:"creds"`
 }
+
+type GetDataResponse struct {
+	Data string `json:"data"`
+}
