@@ -25,7 +25,6 @@ import (
 	envoyauth "github.com/envoyproxy/go-control-plane/envoy/service/auth/v3"
 	envoytype "github.com/envoyproxy/go-control-plane/envoy/type/v3"
 	"github.com/go-redis/cache/v8"
-	"github.com/go-redis/redis/v8"
 	"github.com/gogo/googleapis/google/rpc"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpserver"
 	"go.uber.org/zap"
@@ -39,7 +38,6 @@ type Server struct {
 	verifier        *oidc.IDTokenVerifier
 	logger          *zap.Logger
 	workspaceClient client.WorkspaceServiceClient
-	rdb             *redis.Client
 	cache           *cache.Cache
 }
 
@@ -93,13 +91,6 @@ func (s Server) Check(ctx context.Context, req *envoyauth.CheckRequest) (*envoya
 			zap.String("workspace", workspaceName),
 			zap.Error(err))
 		return unAuth, nil
-	}
-
-	if workspaceName != "keibi" {
-		if s.rdb != nil {
-			s.rdb.SetEX(context.Background(), "last_access_"+workspaceName, time.Now().UnixMilli(),
-				30*24*time.Hour).Err()
-		}
 	}
 
 	return &envoyauth.CheckResponse{
@@ -208,6 +199,8 @@ func (s Server) Verify(ctx context.Context, authToken string) (*userClaim, error
 		})
 		if errk == nil {
 			return &u, nil
+		} else {
+			fmt.Println("failed to auth with keibi cred due to", errk)
 		}
 		return nil, err
 	}

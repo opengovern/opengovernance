@@ -11,6 +11,7 @@ import (
 	"io/ioutil"
 	"net"
 	"os"
+	"strconv"
 	"time"
 
 	"github.com/go-redis/cache/v8"
@@ -42,6 +43,10 @@ var (
 	auth0ManageDomain       = os.Getenv("AUTH0_MANAGE_DOMAIN")
 	auth0ManageClientID     = os.Getenv("AUTH0_MANAGE_CLIENT_ID")
 	auth0ManageClientSecret = os.Getenv("AUTH0_MANAGE_CLIENT_SECRET")
+	auth0ConnectionID       = os.Getenv("AUTH0_CONNECTION_ID")
+	auth0OrganizationID     = os.Getenv("AUTH0_ORGANIZATION_ID")
+	auth0RedirectURL        = os.Getenv("AUTH0_REDIRECT_URL")
+	auth0InviteTTL          = os.Getenv("AUTH0_INVITE_TTL")
 
 	httpServerAddress  = os.Getenv("HTTP_ADDRESS")
 	inviteLinkTemplate = os.Getenv("INVITE_LINK_TEMPLATE")
@@ -122,14 +127,19 @@ func start(ctx context.Context) error {
 		verifier:        verifier,
 		logger:          logger,
 		workspaceClient: workspaceClient,
-		rdb:             rdb,
 	}
 	authServer.cache = cache.New(&cache.Options{
-		Redis:      authServer.rdb,
+		Redis:      rdb,
 		LocalCache: cache.NewTinyLFU(10000, 5*time.Minute),
 	})
 
-	auth0Service := auth0.New(auth0ManageDomain, auth0ManageClientID, auth0ManageClientSecret)
+	inviteTTL, err := strconv.ParseInt(auth0InviteTTL, 10, 64)
+	if err != nil {
+		return err
+	}
+
+	auth0Service := auth0.New(auth0ManageDomain, auth0ManageClientID, auth0ManageClientSecret,
+		auth0ConnectionID, auth0OrganizationID, auth0RedirectURL, int(inviteTTL))
 
 	grpcServer := grpc.NewServer(grpc.Creds(creds))
 	envoyauth.RegisterAuthorizationServer(grpcServer, authServer)

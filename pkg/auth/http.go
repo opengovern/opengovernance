@@ -194,13 +194,40 @@ func (r *httpRoutes) GetWorkspaceRoleBindings(ctx echo.Context) error {
 //	@Success	200	{object}	api.InviteResponse
 //	@Router		/auth/api/v1/invite [post]
 func (r *httpRoutes) Invite(ctx echo.Context) error {
-	return echo.NewHTTPError(http.StatusNotImplemented)
+	var req api.InviteRequest
+	if err := bindValidate(ctx, &req); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err)
+	}
+	workspaceName := httpserver.GetWorkspaceName(ctx)
 
-	//var req api.InviteRequest
-	//if err := bindValidate(ctx, &req); err != nil {
-	//	return echo.NewHTTPError(http.StatusBadRequest, err)
-	//}
-	//
+	us, err := r.auth0Service.SearchByEmail(req.Email)
+	if err != nil {
+		return err
+	}
+
+	if len(us) > 0 {
+		auth0User := us[0]
+		auth0User.AppMetadata.WorkspaceAccess[workspaceName] = req.Role
+		err = r.auth0Service.PatchUserAppMetadata(auth0User.UserId, auth0User.AppMetadata)
+		if err != nil {
+			return err
+		}
+	} else {
+		err = r.auth0Service.CreateUser(req.Email, workspaceName, req.Role)
+		if err != nil {
+			return err
+		}
+
+		resp, err := r.auth0Service.CreatePasswordChangeTicket(req.Email)
+		if err != nil {
+			return err
+		}
+
+		fmt.Println("Ticket:", resp.Ticket)
+	}
+
+	return echo.NewHTTPError(http.StatusOK)
+
 	//req.Email = strings.ToLower(strings.TrimSpace(req.Email))
 	//
 	//workspaceName := httpserver.GetWorkspaceName(ctx)
