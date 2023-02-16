@@ -480,6 +480,20 @@ func (db Database) UpdateDescribeResourceJobStatus(id uint, status api.DescribeR
 	return nil
 }
 
+// UpdateDescribeResourceJobStatusByParentId updates the status of the DescribeResourceJob s to the provided status.
+// If the status if 'FAILED', msg could be used to indicate the failure reason
+func (db Database) UpdateDescribeResourceJobStatusByParentId(id uint, status api.DescribeResourceJobStatus, msg string) error {
+	tx := db.orm.
+		Model(&DescribeResourceJob{}).
+		Where("parent_job_id = ?", id).
+		Updates(DescribeResourceJob{Status: status, FailureMessage: msg})
+	if tx.Error != nil {
+		return tx.Error
+	}
+
+	return nil
+}
+
 // UpdateDescribeResourceJobsTimedOut updates the status of DescribeResourceJobs
 // that have timed out while in the status of 'CREATED' or 'QUEUED' for longer
 // than 4 hours.

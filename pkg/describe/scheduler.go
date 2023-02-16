@@ -2233,13 +2233,13 @@ func enqueueCloudNativeDescribeConnectionJob(logger *zap.Logger, db Database, wo
 		}
 	}
 
-	for i, drj := range daj.SourceJob.DescribeResourceJobs {
-		if err := db.UpdateDescribeResourceJobStatus(drj.ID, nextStatus, errMsg); err != nil {
-			logger.Error("Failed to update DescribeResourceJob",
-				zap.Uint("jobId", drj.ID),
-				zap.Error(err),
-			)
-		}
+	if err := db.UpdateDescribeResourceJobStatusByParentId(daj.SourceJob.ID, nextStatus, errMsg); err != nil {
+		logger.Error("Failed to update DescribeResourceJob",
+			zap.Uint("parentJobId", daj.ID),
+			zap.Error(err),
+		)
+	}
+	for i, _ := range daj.SourceJob.DescribeResourceJobs {
 		daj.SourceJob.DescribeResourceJobs[i].Status = nextStatus
 	}
 }
