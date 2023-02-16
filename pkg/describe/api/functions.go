@@ -1,6 +1,7 @@
 package api
 
 type CloudNativeConnectionWorkerTriggerInput struct {
+	WorkspaceID             string `json:"workspaceId,omitempty"`
 	JobID                   string `json:"jobId,omitempty"`
 	JobJson                 string `json:"jobJson,omitempty"`
 	EndOfJobCallbackURL     string `json:"endOfJobCallbackUrl,omitempty"`
