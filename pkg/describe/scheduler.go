@@ -2209,7 +2209,7 @@ func enqueueCloudNativeDescribeConnectionJob(logger *zap.Logger, db Database, cl
 			nextStatus = api.DescribeResourceJobFailed
 			errMsg = fmt.Sprintf("read orchestrators http response: %s", err.Error())
 		} else {
-			if resp.StatusCode != http.StatusOK {
+			if resp.StatusCode != http.StatusAccepted {
 				logger.Error("Failed to trigger cloud native connection worker", zap.Error(err))
 				nextStatus = api.DescribeResourceJobFailed
 				errMsg = fmt.Sprintf("trigger cloud native connection worker: %s", resBody)
