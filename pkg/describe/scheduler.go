@@ -679,7 +679,7 @@ func (s *Scheduler) processCloudNativeDescribeConnectionJobResourcesEvents(event
 			continue
 		}
 		httpClient := &http.Client{
-			Timeout: 60 * time.Second,
+			Timeout: 5 * time.Minute,
 		}
 		req.Header.Set("Content-Type", "application/json")
 		req.Header.Set("Accept", "application/json")
@@ -772,7 +772,7 @@ func (s *Scheduler) cloudNativeDescribeConnectionJobResourcesConsume(manualChan 
 	// if they are done, send the job to the describe connection job resources queue
 	// if they are not done, continue
 	httpClient := &http.Client{
-		Timeout: 60 * time.Second,
+		Timeout: 5 * time.Minute,
 	}
 	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("%s/OutputSQLReader", s.cloudNativeAPIBaseURL), nil)
 	if err != nil {
@@ -2201,7 +2201,7 @@ func enqueueCloudNativeDescribeConnectionJob(logger *zap.Logger, db Database, wo
 	}
 	//enqueue job to cloud native connection worker
 	httpClient := &http.Client{
-		Timeout: 60 * time.Second,
+		Timeout: 5 * time.Minute,
 	}
 	req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("%s/orchestrators/ConnectionWorkerOrchestrator", cloudNativeAPIBaseURL), bytes.NewBuffer(cloudTriggerInputJson))
 	if err != nil {
