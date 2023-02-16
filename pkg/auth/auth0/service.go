@@ -4,25 +4,34 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"gitlab.com/keibiengine/keibi-engine/pkg/auth/api"
 	"io/ioutil"
 	"net/http"
 	url2 "net/url"
 )
 
 type Service struct {
-	domain       string
-	clientID     string
-	clientSecret string
+	domain         string
+	clientID       string
+	clientSecret   string
+	ConnectionID   string
+	RedirectURL    string
+	OrganizationID string
+	InviteTTL      int
 
 	token string
 }
 
-func New(domain, clientID, clientSecret string) *Service {
+func New(domain, clientID, clientSecret, connectionID, orgID, redirectURL string, inviteTTL int) *Service {
 	return &Service{
-		domain:       domain,
-		clientID:     clientID,
-		clientSecret: clientSecret,
-		token:        "",
+		domain:         domain,
+		clientID:       clientID,
+		clientSecret:   clientSecret,
+		ConnectionID:   connectionID,
+		RedirectURL:    redirectURL,
+		OrganizationID: orgID,
+		InviteTTL:      inviteTTL,
+		token:          "",
 	}
 }
 
@@ -90,6 +99,118 @@ func (a *Service) GetUser(userId string) (*User, error) {
 	}
 
 	var resp User
+	err = json.Unmarshal(r, &resp)
+	if err != nil {
+		return nil, err
+	}
+
+	return &resp, nil
+}
+
+func (a *Service) SearchByEmail(email string) ([]User, error) {
+	if err := a.fillToken(); err != nil {
+		return nil, err
+	}
+
+	url := fmt.Sprintf("%s/api/v2/users-by-email?email=%s", a.domain, email)
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Add("Authorization", "Bearer "+a.token)
+	res, err := http.DefaultClient.Do(req)
+	if res.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("[SearchByEmail] invalid status code: %d", res.StatusCode)
+	}
+
+	r, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	var resp []User
+	err = json.Unmarshal(r, &resp)
+	if err != nil {
+		return nil, err
+	}
+
+	return resp, nil
+}
+
+func (a *Service) CreateUser(email, wsName string, role api.Role) error {
+	usr := CreateUserRequest{
+		Email:         email,
+		EmailVerified: false,
+		AppMetadata: Metadata{
+			WorkspaceAccess: map[string]api.Role{
+				wsName: role,
+			},
+			GlobalAccess: nil,
+		},
+		Connection: a.ConnectionID,
+	}
+
+	if err := a.fillToken(); err != nil {
+		return err
+	}
+
+	body, err := json.Marshal(usr)
+	if err != nil {
+		return err
+	}
+
+	url := fmt.Sprintf("%s/api/v2/users", a.domain)
+	req, err := http.NewRequest("POST", url, bytes.NewReader(body))
+	if err != nil {
+		return err
+	}
+	req.Header.Add("Authorization", "Bearer "+a.token)
+	res, err := http.DefaultClient.Do(req)
+	if res.StatusCode != http.StatusCreated {
+		return fmt.Errorf("[CreateUser] invalid status code: %d", res.StatusCode)
+	}
+	return nil
+}
+
+func (a *Service) CreatePasswordChangeTicket(email string) (*CreatePasswordChangeTicketResponse, error) {
+	request := CreatePasswordChangeTicketRequest{
+		ResultUrl:              a.RedirectURL,
+		UserId:                 "",
+		ClientId:               a.clientID,
+		OrganizationId:         a.OrganizationID,
+		ConnectionId:           a.ConnectionID,
+		Email:                  email,
+		TtlSec:                 a.InviteTTL,
+		MarkEmailAsVerified:    false,
+		IncludeEmailInRedirect: false,
+	}
+
+	if err := a.fillToken(); err != nil {
+		return nil, err
+	}
+
+	body, err := json.Marshal(request)
+	if err != nil {
+		return nil, err
+	}
+
+	url := fmt.Sprintf("%s/api/v2/tickets/password-change", a.domain)
+	req, err := http.NewRequest("POST", url, bytes.NewReader(body))
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Add("Authorization", "Bearer "+a.token)
+	res, err := http.DefaultClient.Do(req)
+	if res.StatusCode != http.StatusCreated {
+		return nil, fmt.Errorf("[CreatePasswordChangeTicket] invalid status code: %d", res.StatusCode)
+	}
+
+	r, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	var resp CreatePasswordChangeTicketResponse
 	err = json.Unmarshal(r, &resp)
 	if err != nil {
 		return nil, err
