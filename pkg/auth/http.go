@@ -207,6 +207,9 @@ func (r *httpRoutes) Invite(ctx echo.Context) error {
 
 	if len(us) > 0 {
 		auth0User := us[0]
+		if auth0User.AppMetadata.WorkspaceAccess == nil {
+			auth0User.AppMetadata.WorkspaceAccess = map[string]api.Role{}
+		}
 		auth0User.AppMetadata.WorkspaceAccess[workspaceName] = req.Role
 		err = r.auth0Service.PatchUserAppMetadata(auth0User.UserId, auth0User.AppMetadata)
 		if err != nil {
