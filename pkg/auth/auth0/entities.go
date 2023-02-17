@@ -56,23 +56,23 @@ type User struct {
 }
 
 type CreateUserRequest struct {
-	Email         string   `json:"email"`
-	PhoneNumber   string   `json:"phone_number"`
-	UserMetadata  Metadata `json:"user_metadata"`
-	Blocked       bool     `json:"blocked"`
-	EmailVerified bool     `json:"email_verified"`
-	PhoneVerified bool     `json:"phone_verified"`
-	AppMetadata   Metadata `json:"app_metadata"`
-	GivenName     string   `json:"given_name"`
-	FamilyName    string   `json:"family_name"`
-	Name          string   `json:"name"`
-	Nickname      string   `json:"nickname"`
-	Picture       string   `json:"picture"`
-	UserId        string   `json:"user_id"`
-	Connection    string   `json:"connection"`
-	Password      string   `json:"password"`
-	VerifyEmail   bool     `json:"verify_email"`
-	Username      string   `json:"username"`
+	Email         string   `json:"email,omitempty"`
+	PhoneNumber   string   `json:"phone_number,omitempty"`
+	UserMetadata  Metadata `json:"user_metadata,omitempty"`
+	Blocked       bool     `json:"blocked,omitempty"`
+	EmailVerified bool     `json:"email_verified,omitempty"`
+	PhoneVerified bool     `json:"phone_verified,omitempty"`
+	AppMetadata   Metadata `json:"app_metadata,omitempty"`
+	GivenName     string   `json:"given_name,omitempty"`
+	FamilyName    string   `json:"family_name,omitempty"`
+	Name          string   `json:"name,omitempty"`
+	Nickname      string   `json:"nickname,omitempty"`
+	Picture       string   `json:"picture,omitempty"`
+	UserId        string   `json:"user_id,omitempty"`
+	Connection    string   `json:"connection,omitempty"`
+	Password      string   `json:"password,omitempty"`
+	VerifyEmail   bool     `json:"verify_email,omitempty"`
+	Username      string   `json:"username,omitempty"`
 }
 
 type CreatePasswordChangeTicketRequest struct {
