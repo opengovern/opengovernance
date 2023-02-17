@@ -186,11 +186,11 @@ func (r *httpRoutes) GetWorkspaceRoleBindings(ctx echo.Context) error {
 
 // Invite godoc
 //
-// @Summary Invites a user by sending them an email and registering invitation.
-// @Tags    auth
-// @Produce json
-// @Success 200 {object} api.InviteResponse
-// @Router  /auth/api/v1/invite [post]
+//	@Summary	Invites a user to a workspace.
+//	@Tags		auth
+//	@Produce	json
+//	@Success	200	{object}	api.InviteResponse
+//	@Router		/auth/api/v1/invite [post]
 func (r *httpRoutes) Invite(ctx echo.Context) error {
 	var req api.InviteRequest
 	if err := bindValidate(ctx, &req); err != nil {

@@ -144,24 +144,13 @@ func (a *Service) SearchByEmail(email string) ([]User, error) {
 }
 
 func (a *Service) CreateUser(email, wsName string, role api.Role) error {
-	var letterRunes = []rune("abcdefghijklmnopqrstuvwxyz")
-	password := make([]rune, 27)
-	i := 0
-	for ; i < 10; i++ {
-		password[i] = letterRunes[rand.Intn(len(letterRunes))]
+	var defaultPass = "keibi23@"
+	var letterRunes = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789")
+	randPass := make([]rune, 10)
+	for i := 0; i < 10; i++ {
+		randPass[i] = letterRunes[rand.Intn(len(letterRunes))]
 	}
-	letterRunes = []rune("ABCDEFGHIJKLMNOPQRSTUVWXYZ")
-	for ; i < 20; i++ {
-		password[i] = letterRunes[rand.Intn(len(letterRunes))]
-	}
-	letterRunes = []rune("0123456789")
-	for ; i < 25; i++ {
-		password[i] = letterRunes[rand.Intn(len(letterRunes))]
-	}
-	letterRunes = []rune("~!|")
-	for ; i < 27; i++ {
-		password[i] = letterRunes[rand.Intn(len(letterRunes))]
-	}
+	password := fmt.Sprintf("%s%s", defaultPass, string(randPass))
 
 	usr := CreateUserRequest{
 		Email:         email,
@@ -172,7 +161,7 @@ func (a *Service) CreateUser(email, wsName string, role api.Role) error {
 			},
 			GlobalAccess: nil,
 		},
-		Password:   string(password),
+		Password:   password,
 		Connection: a.ConnectionID,
 	}
 
