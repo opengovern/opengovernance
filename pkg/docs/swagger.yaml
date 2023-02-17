@@ -1,8 +1,12 @@
 definitions:
-  gitlab_com_keibiengine_keibi-engine_pkg_auth_api.InviteItem:
+  gitlab_com_keibiengine_keibi-engine_pkg_auth_api.GetRoleBindingsResponse:
     properties:
-      email:
-        type: string
+      globalRoles:
+        $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.Role'
+      roleBindings:
+        items:
+          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.RoleBinding'
+        type: array
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_auth_api.InviteResponse:
     properties:
@@ -27,7 +31,7 @@ definitions:
         type: string
       role:
         $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.Role'
-      workspaceName:
+      workspaceID:
         type: string
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_auth_api.WorkspaceRoleBinding:
@@ -545,54 +549,6 @@ definitions:
       smartQueryID:
         type: integer
     type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_describe_api.DescribeConnectionJobResult:
-    properties:
-      jobID:
-        type: integer
-      result:
-        additionalProperties:
-          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_describe_api.DescribeJobResult'
-        description: DescribeResourceJob ID -> DescribeJobResult
-        type: object
-    type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_describe_api.DescribeJob:
-    properties:
-      accountID:
-        type: string
-      configReg:
-        type: string
-      describedAt:
-        type: integer
-      jobID:
-        description: DescribeResourceJob ID
-        type: integer
-      parentJobID:
-        description: DescribeSourceJob ID
-        type: integer
-      resourceType:
-        type: string
-      scheduleJobID:
-        type: integer
-      sourceID:
-        type: string
-      sourceType:
-        $ref: '#/definitions/source.Type'
-      triggerType:
-        $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_describe_enums.DescribeTriggerType'
-    type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_describe_api.DescribeJobResult:
-    properties:
-      describeJob:
-        $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_describe_api.DescribeJob'
-      error:
-        type: string
-      jobID:
-        type: integer
-      parentJobID:
-        type: integer
-      status:
-        $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_describe_api.DescribeResourceJobStatus'
-    type: object
   gitlab_com_keibiengine_keibi-engine_pkg_describe_api.DescribeResource:
     properties:
       failureMessage:
@@ -606,12 +562,14 @@ definitions:
     enum:
     - CREATED
     - QUEUED
+    - CLOUD_TIMEOUT
     - FAILED
     - SUCCEEDED
     type: string
     x-enum-varnames:
     - DescribeResourceJobCreated
     - DescribeResourceJobQueued
+    - DescribeResourceJobCloudTimeout
     - DescribeResourceJobFailed
     - DescribeResourceJobSucceeded
   gitlab_com_keibiengine_keibi-engine_pkg_describe_api.DescribeSource:
@@ -660,22 +618,6 @@ definitions:
       smartQueryID:
         type: integer
     type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_describe_api.JobCallbackRequest:
-    properties:
-      blobName:
-        type: string
-      containerName:
-        type: string
-      jobResult:
-        $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_describe_api.DescribeConnectionJobResult'
-      sourceId:
-        type: string
-    required:
-    - blobName
-    - containerName
-    - jobResult
-    - sourceId
-    type: object
   gitlab_com_keibiengine_keibi-engine_pkg_describe_api.ListInsightsRequest:
     properties:
       descriptionFilter:
@@ -709,18 +651,6 @@ definitions:
     x-enum-varnames:
     - SourceCloudAWS
     - SourceCloudAzure
-  gitlab_com_keibiengine_keibi-engine_pkg_describe_enums.DescribeTriggerType:
-    enum:
-    - initial_discovery
-    - scheduled
-    - manual
-    type: string
-    x-enum-comments:
-      DescribeTriggerTypeScheduled: default
-    x-enum-varnames:
-    - DescribeTriggerTypeInitialDiscovery
-    - DescribeTriggerTypeScheduled
-    - DescribeTriggerTypeManual
   gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.AWSResource:
     properties:
       attributes:
@@ -1673,6 +1603,11 @@ definitions:
       newOwnerUserID:
         type: string
     type: object
+  gitlab_com_keibiengine_keibi-engine_pkg_workspace_api.ChangeWorkspaceTierRequest:
+    properties:
+      newName:
+        $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_workspace_api.Tier'
+    type: object
   gitlab_com_keibiengine_keibi-engine_pkg_workspace_api.CreateWorkspaceRequest:
     properties:
       description:
@@ -1687,6 +1622,16 @@ definitions:
       id:
         type: string
     type: object
+  gitlab_com_keibiengine_keibi-engine_pkg_workspace_api.Tier:
+    enum:
+    - FREE
+    - TEAMS
+    - ENTERPRISE
+    type: string
+    x-enum-varnames:
+    - Tier_Free
+    - Tier_Teams
+    - Tier_Enterprise
   gitlab_com_keibiengine_keibi-engine_pkg_workspace_api.WorkspaceLimits:
     properties:
       maxConnections:
@@ -1871,31 +1816,6 @@ paths:
       summary: Invites a user by sending them an email and registering invitation.
       tags:
       - auth
-  /auth/api/v1/invite/invite_id:
-    get:
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-      summary: Accepts users invitation and creates default (VIEW) role in invited
-        workspace.
-      tags:
-      - auth
-  /auth/api/v1/invites:
-    get:
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            items:
-              $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.InviteItem'
-            type: array
-      summary: lists all invites
-      tags:
-      - auth
   /auth/api/v1/role/binding:
     put:
       description: RoleBinding defines the roles and actions a user can perform. There
@@ -1924,6 +1844,29 @@ paths:
       summary: Update RoleBinding for a user.
       tags:
       - auth
+  /auth/api/v1/user/role/binding:
+    delete:
+      parameters:
+      - description: userId
+        in: body
+        name: userId
+        required: true
+        schema:
+          type: string
+      - description: role
+        in: body
+        name: role
+        required: true
+        schema:
+          type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+      summary: Delete RoleBinding for a user.
+      tags:
+      - auth
   /auth/api/v1/user/role/bindings:
     get:
       description: RoleBinding defines the roles and actions a user can perform. There
@@ -1934,9 +1877,7 @@ paths:
         "200":
           description: OK
           schema:
-            items:
-              $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.RoleBinding'
-            type: array
+            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.GetRoleBindingsResponse'
       summary: Get RoleBindings for the calling user
       tags:
       - auth
@@ -4220,6 +4161,17 @@ paths:
       summary: Triggers a describe job to run immediately
       tags:
       - describe
+  /schedule/api/v0/insight/trigger:
+    get:
+      description: Triggers an insight job to run immediately
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+      summary: Triggers an insight job to run immediately
+      tags:
+      - describe
   /schedule/api/v0/summarize/trigger:
     get:
       description: Triggers a summarize job to run immediately
@@ -4241,6 +4193,30 @@ paths:
           schema:
             type: integer
       summary: Get last completed compliance report
+      tags:
+      - schedule
+  /schedule/api/v1/describe/resource/jobs/pending:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_describe_api.Source'
+      summary: Listing describe resource jobs
+      tags:
+      - schedule
+  /schedule/api/v1/describe/source/jobs/pending:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_describe_api.Source'
+      summary: Listing describe source jobs
       tags:
       - schedule
   /schedule/api/v1/insight:
@@ -4300,21 +4276,18 @@ paths:
       summary: Delete an insight
       tags:
       - insights
-  /schedule/api/v1/jobs/{job_id}/callback:
-    post:
-      parameters:
-      - description: Request Body
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_describe_api.JobCallbackRequest'
+  /schedule/api/v1/insight/jobs/pending:
+    get:
       produces:
       - application/json
-      responses: {}
-      summary: Get credentials for a cloud native job by providing job info
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_describe_api.Source'
+      summary: Listing insight jobs
       tags:
-      - jobs
+      - schedule
   /schedule/api/v1/jobs/{job_id}/creds:
     post:
       parameters:
@@ -4472,6 +4445,18 @@ paths:
       summary: Run describe jobs
       tags:
       - schedule
+  /schedule/api/v1/summarize/jobs/pending:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_describe_api.Source'
+      summary: Listing summarize jobs
+      tags:
+      - schedule
   /workspace/api/v1/workspace:
     post:
       consumes:
@@ -4620,6 +4605,23 @@ paths:
       - application/json
       responses: {}
       summary: Change ownership of workspace
+      tags:
+      - workspace
+  /workspace/api/v1/workspace/{workspace_id}/tier:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Change tier request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_workspace_api.ChangeWorkspaceTierRequest'
+      produces:
+      - application/json
+      responses: {}
+      summary: Change Tier of workspace
       tags:
       - workspace
   /workspace/api/v1/workspaces:

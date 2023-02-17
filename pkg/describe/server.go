@@ -174,11 +174,11 @@ func (h HttpServer) HandleGetSource(ctx echo.Context) error {
 
 // HandleListPendingDescribeSourceJobs godoc
 //
-//	@Summary		Listing describe source jobs
-//	@Tags			schedule
-//	@Produce		json
-//	@Success		200			{object}	api.Source
-//	@Router			/schedule/api/v1/describe/source/jobs/pending [get]
+//	@Summary	Listing describe source jobs
+//	@Tags		schedule
+//	@Produce	json
+//	@Success	200	{object}	api.Source
+//	@Router		/schedule/api/v1/describe/source/jobs/pending [get]
 func (h HttpServer) HandleListPendingDescribeSourceJobs(ctx echo.Context) error {
 	jobs, err := h.DB.ListPendingDescribeSourceJobs()
 	if err != nil {
@@ -190,11 +190,11 @@ func (h HttpServer) HandleListPendingDescribeSourceJobs(ctx echo.Context) error 
 
 // HandleListPendingDescribeResourceJobs godoc
 //
-//	@Summary		Listing describe resource jobs
-//	@Tags			schedule
-//	@Produce		json
-//	@Success		200			{object}	api.Source
-//	@Router			/schedule/api/v1/describe/resource/jobs/pending [get]
+//	@Summary	Listing describe resource jobs
+//	@Tags		schedule
+//	@Produce	json
+//	@Success	200	{object}	api.Source
+//	@Router		/schedule/api/v1/describe/resource/jobs/pending [get]
 func (h HttpServer) HandleListPendingDescribeResourceJobs(ctx echo.Context) error {
 	jobs, err := h.DB.ListPendingDescribeResourceJobs()
 	if err != nil {
@@ -206,11 +206,11 @@ func (h HttpServer) HandleListPendingDescribeResourceJobs(ctx echo.Context) erro
 
 // HandleListPendingSummarizeJobs godoc
 //
-//	@Summary		Listing summarize jobs
-//	@Tags			schedule
-//	@Produce		json
-//	@Success		200			{object}	api.Source
-//	@Router			/schedule/api/v1/summarize/jobs/pending [get]
+//	@Summary	Listing summarize jobs
+//	@Tags		schedule
+//	@Produce	json
+//	@Success	200	{object}	api.Source
+//	@Router		/schedule/api/v1/summarize/jobs/pending [get]
 func (h HttpServer) HandleListPendingSummarizeJobs(ctx echo.Context) error {
 	jobs, err := h.DB.ListPendingSummarizeJobs()
 	if err != nil {
@@ -222,11 +222,11 @@ func (h HttpServer) HandleListPendingSummarizeJobs(ctx echo.Context) error {
 
 // HandleListPendingInsightJobs godoc
 //
-//	@Summary		Listing insight jobs
-//	@Tags			schedule
-//	@Produce		json
-//	@Success		200			{object}	api.Source
-//	@Router			/schedule/api/v1/insight/jobs/pending [get]
+//	@Summary	Listing insight jobs
+//	@Tags		schedule
+//	@Produce	json
+//	@Success	200	{object}	api.Source
+//	@Router		/schedule/api/v1/insight/jobs/pending [get]
 func (h HttpServer) HandleListPendingInsightJobs(ctx echo.Context) error {
 	jobs, err := h.DB.ListPendingInsightJobs()
 	if err != nil {
