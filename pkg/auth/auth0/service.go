@@ -145,21 +145,21 @@ func (a *Service) SearchByEmail(email string) ([]User, error) {
 
 func (a *Service) CreateUser(email, wsName string, role api.Role) error {
 	var letterRunes = []rune("abcdefghijklmnopqrstuvwxyz")
-	password := make([]rune, 32)
+	password := make([]rune, 27)
 	i := 0
 	for ; i < 10; i++ {
 		password[i] = letterRunes[rand.Intn(len(letterRunes))]
 	}
 	letterRunes = []rune("ABCDEFGHIJKLMNOPQRSTUVWXYZ")
-	for ; i < 10; i++ {
+	for ; i < 20; i++ {
 		password[i] = letterRunes[rand.Intn(len(letterRunes))]
 	}
 	letterRunes = []rune("0123456789")
-	for ; i < 5; i++ {
+	for ; i < 25; i++ {
 		password[i] = letterRunes[rand.Intn(len(letterRunes))]
 	}
 	letterRunes = []rune("~!|")
-	for ; i < 2; i++ {
+	for ; i < 27; i++ {
 		password[i] = letterRunes[rand.Intn(len(letterRunes))]
 	}
 
@@ -188,7 +188,7 @@ func (a *Service) CreateUser(email, wsName string, role api.Role) error {
 	url := fmt.Sprintf("%s/api/v2/users", a.domain)
 	req, err := http.NewRequest("POST", url, bytes.NewReader(body))
 	fmt.Println("POST", url)
-	fmt.Println(body)
+	fmt.Println(string(body))
 	if err != nil {
 		return err
 	}

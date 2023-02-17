@@ -21,8 +21,8 @@ type TokenResponse struct {
 }
 
 type Metadata struct {
-	WorkspaceAccess map[string]api.Role `json:"workspaceAccess"`
-	GlobalAccess    *api.Role           `json:"globalAccess"`
+	WorkspaceAccess map[string]api.Role `json:"workspaceAccess,omitempty"`
+	GlobalAccess    *api.Role           `json:"globalAccess,omitempty"`
 }
 
 type User struct {
