@@ -77,8 +77,8 @@ type GetResourcesRequest struct {
 }
 
 // Filters model
-//	@Description	if you provide two values for same filter OR operation would be used
-//	@Description	if you provide value for two filters AND operation would be used
+// @Description if you provide two values for same filter OR operation would be used
+// @Description if you provide value for two filters AND operation would be used
 type Filters struct {
 	// if you dont need to use this filter, leave them empty. (e.g. [])
 	ResourceType []string `json:"resourceType"`
@@ -95,8 +95,8 @@ type Filters struct {
 }
 
 // ResourceFilters model
-//	@Description	if you provide two values for same filter OR operation would be used
-//	@Description	if you provide value for two filters AND operation would be used
+// @Description if you provide two values for same filter OR operation would be used
+// @Description if you provide value for two filters AND operation would be used
 type ResourceFilters struct {
 	// if you dont need to use this filter, leave them empty. (e.g. [])
 	ResourceType []string `json:"resourceType"`

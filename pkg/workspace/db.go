@@ -2,6 +2,7 @@ package workspace
 
 import (
 	"fmt"
+
 	"gitlab.com/keibiengine/keibi-engine/pkg/workspace/api"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/postgres"
@@ -91,6 +92,11 @@ func (s *Database) UpdateWorkspaceOwner(workspaceUUID string, newOwnerID string)
 func (s *Database) UpdateWorkspaceName(workspaceUUID string, newName string) error {
 	return s.orm.Model(&Workspace{}).Where("id = ?", workspaceUUID).Update("name", newName).Error
 }
+
 func (s *Database) UpdateWorkspaceTier(workspaceUUID string, newTier api.Tier) error {
 	return s.orm.Model(&Workspace{}).Where("id = ?", workspaceUUID).Update("tier", newTier).Error
+}
+
+func (s *Database) UpdateWorkspaceOrganization(workspaceUUID string, newOrganizationID int) error {
+	return s.orm.Model(&Workspace{}).Where("id = ?", workspaceUUID).Update("organization_id", newOrganizationID).Error
 }

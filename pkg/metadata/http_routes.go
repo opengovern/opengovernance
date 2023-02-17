@@ -31,12 +31,12 @@ func bindValidate(ctx echo.Context, i interface{}) error {
 }
 
 // GetConfigMetadata godoc
-//	@Summary		Returns the config metadata for the given key
-//	@Description	Returns the config metadata for the given key
-//	@Tags			metadata
-//	@Produce		json
-//	@Success		200	{object}	models.IConfigMetadata
-//	@Router			/metadata/api/v1/metadata/{key} [get]
+// @Summary     Returns the config metadata for the given key
+// @Description Returns the config metadata for the given key
+// @Tags        metadata
+// @Produce     json
+// @Success     200 {object} models.IConfigMetadata
+// @Router      /metadata/api/v1/metadata/{key} [get]
 func (h HttpHandler) GetConfigMetadata(ctx echo.Context) error {
 	key := ctx.Param("key")
 
@@ -48,12 +48,12 @@ func (h HttpHandler) GetConfigMetadata(ctx echo.Context) error {
 }
 
 // SetConfigMetadata godoc
-//	@Summary		Sets the config metadata for the given key
-//	@Description	Sets the config metadata for the given key
-//	@Tags			metadata
-//	@Produce		json
-//	@Success		200
-//	@Router			/metadata/api/v1/metadata [post]
+// @Summary     Sets the config metadata for the given key
+// @Description Sets the config metadata for the given key
+// @Tags        metadata
+// @Produce     json
+// @Success     200
+// @Router      /metadata/api/v1/metadata [post]
 func (h HttpHandler) SetConfigMetadata(ctx echo.Context) error {
 	var req api.SetConfigMetadataRequest
 	if err := bindValidate(ctx, &req); err != nil {
