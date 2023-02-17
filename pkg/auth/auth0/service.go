@@ -90,7 +90,8 @@ func (a *Service) GetUser(userId string) (*User, error) {
 	req.Header.Add("Authorization", "Bearer "+a.token)
 	res, err := http.DefaultClient.Do(req)
 	if res.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("[GetUser] invalid status code: %d", res.StatusCode)
+		r, _ := ioutil.ReadAll(res.Body)
+		return nil, fmt.Errorf("[GetUser] invalid status code: %d, body=%s", res.StatusCode, string(r))
 	}
 
 	r, err := ioutil.ReadAll(res.Body)
@@ -112,7 +113,10 @@ func (a *Service) SearchByEmail(email string) ([]User, error) {
 		return nil, err
 	}
 
-	url := fmt.Sprintf("%s/api/v2/users-by-email?email=%s", a.domain, email)
+	encoded := url2.Values{}
+	encoded.Set("email", email)
+
+	url := fmt.Sprintf("%s/api/v2/users-by-email?%s", a.domain, encoded.Encode())
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return nil, err
@@ -120,7 +124,8 @@ func (a *Service) SearchByEmail(email string) ([]User, error) {
 	req.Header.Add("Authorization", "Bearer "+a.token)
 	res, err := http.DefaultClient.Do(req)
 	if res.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("[SearchByEmail] invalid status code: %d", res.StatusCode)
+		r, _ := ioutil.ReadAll(res.Body)
+		return nil, fmt.Errorf("[SearchByEmail] invalid status code: %d, body=%s", res.StatusCode, string(r))
 	}
 
 	r, err := ioutil.ReadAll(res.Body)
@@ -167,7 +172,8 @@ func (a *Service) CreateUser(email, wsName string, role api.Role) error {
 	req.Header.Add("Authorization", "Bearer "+a.token)
 	res, err := http.DefaultClient.Do(req)
 	if res.StatusCode != http.StatusCreated {
-		return fmt.Errorf("[CreateUser] invalid status code: %d", res.StatusCode)
+		r, _ := ioutil.ReadAll(res.Body)
+		return fmt.Errorf("[CreateUser] invalid status code: %d, body=%s", res.StatusCode, string(r))
 	}
 	return nil
 }
@@ -202,7 +208,8 @@ func (a *Service) CreatePasswordChangeTicket(email string) (*CreatePasswordChang
 	req.Header.Add("Authorization", "Bearer "+a.token)
 	res, err := http.DefaultClient.Do(req)
 	if res.StatusCode != http.StatusCreated {
-		return nil, fmt.Errorf("[CreatePasswordChangeTicket] invalid status code: %d", res.StatusCode)
+		r, _ := ioutil.ReadAll(res.Body)
+		return nil, fmt.Errorf("[CreatePasswordChangeTicket] invalid status code: %d, body=%s", res.StatusCode, string(r))
 	}
 
 	r, err := ioutil.ReadAll(res.Body)
@@ -240,7 +247,8 @@ func (a *Service) PatchUserAppMetadata(userId string, appMetadata Metadata) erro
 	req.Header.Add("Content-type", "application/json")
 	res, err := http.DefaultClient.Do(req)
 	if res.StatusCode != http.StatusOK {
-		return fmt.Errorf("[PatchUserAppMetadata] invalid status code: %d", res.StatusCode)
+		r, _ := ioutil.ReadAll(res.Body)
+		return fmt.Errorf("[PatchUserAppMetadata] invalid status code: %d, body=%s", res.StatusCode, string(r))
 	}
 	return nil
 }
@@ -263,7 +271,8 @@ func (a *Service) SearchUsersByWorkspace(wsName string) ([]User, error) {
 	req.Header.Add("Authorization", "Bearer "+a.token)
 	res, err := http.DefaultClient.Do(req)
 	if res.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("[SearchUsersByWorkspace] invalid status code: %d", res.StatusCode)
+		r, _ := ioutil.ReadAll(res.Body)
+		return nil, fmt.Errorf("[SearchUsersByWorkspace] invalid status code: %d, body=%s", res.StatusCode, string(r))
 	}
 
 	r, err := ioutil.ReadAll(res.Body)
