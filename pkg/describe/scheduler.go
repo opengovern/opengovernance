@@ -656,7 +656,7 @@ func (s *Scheduler) Run() error {
 }
 
 func (s *Scheduler) processCloudNativeDescribeConnectionJobResourcesEvents(events []cloudNativeDescribeConnectionJobResourceOutput) ([]int, error) {
-	s.logger.Info("Received events from cloud native describe connection job resources queue", zap.Int("eventCount", len(events)))
+	s.logger.Info("Received events from cloud native describe connection job resources sql", zap.Int("eventCount", len(events)))
 	successfulIDs := make([]int, 0)
 	for _, event := range events {
 		var connectionWorkerResourcesResult CloudNativeConnectionWorkerResult
@@ -679,7 +679,7 @@ func (s *Scheduler) processCloudNativeDescribeConnectionJobResourcesEvents(event
 			continue
 		}
 		httpClient := &http.Client{
-			Timeout: 5 * time.Minute,
+			Timeout: 1 * time.Minute,
 		}
 		req.Header.Set("Content-Type", "application/json")
 		req.Header.Set("Accept", "application/json")
@@ -765,83 +765,80 @@ type cloudNativeDescribeConnectionJobResourceOutput struct {
 	Payload string `json:"payload"`
 }
 
-func (s *Scheduler) cloudNativeDescribeConnectionJobResourcesConsume(manualChan chan<- struct{}) {
-	// send get request to OutputSQLReader
-	// if there are no jobs, continue
-	// if there are jobs, check if they are done
-	// if they are done, send the job to the describe connection job resources queue
-	// if they are not done, continue
-	httpClient := &http.Client{
-		Timeout: 5 * time.Minute,
-	}
-	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("%s/OutputSQLReader", s.cloudNativeAPIBaseURL), nil)
-	if err != nil {
-		s.logger.Error("Failed to create http request", zap.Error(err))
-		return
-	}
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Accept", "application/json")
-	req.Header.Set("x-kaytu-cloud-auth-key", s.cloudNativeAPIAuthKey)
-	resp, err := httpClient.Do(req)
-	if err != nil {
-		s.logger.Error("Failed to send OutputSQLReader http request", zap.Error(err))
-		return
-	}
-	defer resp.Body.Close()
-	resBody, err := io.ReadAll(resp.Body)
-	if err != nil {
-		s.logger.Error("Failed to read OutputSQLReader response body", zap.Error(err))
-		return
-	}
-	if resp.StatusCode != http.StatusOK {
-		s.logger.Error("Http request OutputSQLReader status not ok", zap.Int("status", resp.StatusCode), zap.String("body", string(resBody)))
-		return
-	}
+func (s *Scheduler) cloudNativeDescribeConnectionJobResourcesConsume() {
+	for {
+		s.logger.Info("Checking for cloud native describe connection job resources")
+		httpClient := &http.Client{
+			Timeout: 1 * time.Minute,
+		}
+		req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("%s/OutputSQLReader", s.cloudNativeAPIBaseURL), nil)
+		if err != nil {
+			s.logger.Error("Failed to create http request", zap.Error(err))
+			return
+		}
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("Accept", "application/json")
+		req.Header.Set("x-kaytu-cloud-auth-key", s.cloudNativeAPIAuthKey)
+		resp, err := httpClient.Do(req)
+		if err != nil {
+			s.logger.Error("Failed to send OutputSQLReader http request", zap.Error(err))
+			return
+		}
+		defer resp.Body.Close()
+		resBody, err := io.ReadAll(resp.Body)
+		if err != nil {
+			s.logger.Error("Failed to read OutputSQLReader response body", zap.Error(err))
+			return
+		}
+		if resp.StatusCode != http.StatusOK {
+			s.logger.Error("Http request OutputSQLReader status not ok", zap.Int("status", resp.StatusCode), zap.String("body", string(resBody)))
+			return
+		}
 
-	res := make([]cloudNativeDescribeConnectionJobResourceOutput, 0)
-	if err := json.Unmarshal(resBody, &res); err != nil {
-		s.logger.Error("Failed to unmarshal OutputSQLReader response body", zap.Error(err))
-		return
-	}
-	if len(res) == 0 {
-		return
-	}
+		res := make([]cloudNativeDescribeConnectionJobResourceOutput, 0)
+		if err := json.Unmarshal(resBody, &res); err != nil {
+			s.logger.Error("Failed to unmarshal OutputSQLReader response body", zap.Error(err))
+			return
+		}
+		if len(res) == 0 {
+			return
+		}
 
-	successfulIds, err := s.processCloudNativeDescribeConnectionJobResourcesEvents(res)
-	if err != nil {
-		s.logger.Error("Failed to process events", zap.Error(err))
-		return
-	}
-	jsonIds, err := json.Marshal(successfulIds)
-	if err != nil {
-		s.logger.Error("Failed to marshal successful ids", zap.Error(err))
-		return
-	}
+		successfulIds, err := s.processCloudNativeDescribeConnectionJobResourcesEvents(res)
+		if err != nil {
+			s.logger.Error("Failed to process events", zap.Error(err))
+			return
+		}
+		jsonIds, err := json.Marshal(successfulIds)
+		if err != nil {
+			s.logger.Error("Failed to marshal successful ids", zap.Error(err))
+			return
+		}
 
-	req, err = http.NewRequest(http.MethodPost, fmt.Sprintf("%s/OutputSQLAck", s.cloudNativeAPIBaseURL), bytes.NewBuffer(jsonIds))
-	if err != nil {
-		s.logger.Error("Failed to create http request", zap.Error(err))
-		return
+		req, err = http.NewRequest(http.MethodPost, fmt.Sprintf("%s/OutputSQLAck", s.cloudNativeAPIBaseURL), bytes.NewBuffer(jsonIds))
+		if err != nil {
+			s.logger.Error("Failed to create http request", zap.Error(err))
+			return
+		}
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("Accept", "application/json")
+		req.Header.Set("x-kaytu-cloud-auth-key", s.cloudNativeAPIAuthKey)
+		resp, err = httpClient.Do(req)
+		if err != nil {
+			s.logger.Error("Failed to send OutputSQLAck http request", zap.Error(err))
+			return
+		}
+		defer resp.Body.Close()
+		resBody, err = io.ReadAll(resp.Body)
+		if err != nil {
+			s.logger.Error("Failed to read OutputSQLAck response body", zap.Error(err))
+			return
+		}
+		if resp.StatusCode != http.StatusOK {
+			s.logger.Error("Http request OutputSQLAck status not ok", zap.Int("status", resp.StatusCode), zap.String("body", string(resBody)))
+			return
+		}
 	}
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Accept", "application/json")
-	req.Header.Set("x-kaytu-cloud-auth-key", s.cloudNativeAPIAuthKey)
-	resp, err = httpClient.Do(req)
-	if err != nil {
-		s.logger.Error("Failed to send OutputSQLAck http request", zap.Error(err))
-		return
-	}
-	defer resp.Body.Close()
-	resBody, err = io.ReadAll(resp.Body)
-	if err != nil {
-		s.logger.Error("Failed to read OutputSQLAck response body", zap.Error(err))
-		return
-	}
-	if resp.StatusCode != http.StatusOK {
-		s.logger.Error("Http request OutputSQLAck status not ok", zap.Int("status", resp.StatusCode), zap.String("body", string(resBody)))
-		return
-	}
-	manualChan <- struct{}{}
 }
 
 func (s *Scheduler) RunCloudNativeDescribeConnectionJobResourcesConsumer() {
@@ -856,15 +853,8 @@ func (s *Scheduler) RunCloudNativeDescribeConnectionJobResourcesConsumer() {
 	t := time.NewTicker(JobCompletionInterval)
 	defer t.Stop()
 
-	manualChan := make(chan struct{})
-
-	for {
-		select {
-		case <-t.C:
-			s.cloudNativeDescribeConnectionJobResourcesConsume(manualChan)
-		case <-manualChan:
-			s.cloudNativeDescribeConnectionJobResourcesConsume(manualChan)
-		}
+	for ; ; <-t.C {
+		s.cloudNativeDescribeConnectionJobResourcesConsume()
 	}
 }
 
