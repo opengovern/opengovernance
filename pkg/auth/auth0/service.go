@@ -183,6 +183,7 @@ func (a *Service) CreateUser(email, wsName string, role api.Role) error {
 		return err
 	}
 	req.Header.Add("Authorization", "Bearer "+a.token)
+	req.Header.Add("Content-type", "application/json")
 	res, err := http.DefaultClient.Do(req)
 	if res.StatusCode != http.StatusCreated {
 		r, _ := ioutil.ReadAll(res.Body)
@@ -219,6 +220,7 @@ func (a *Service) CreatePasswordChangeTicket(email string) (*CreatePasswordChang
 		return nil, err
 	}
 	req.Header.Add("Authorization", "Bearer "+a.token)
+	req.Header.Add("Content-type", "application/json")
 	res, err := http.DefaultClient.Do(req)
 	if res.StatusCode != http.StatusCreated {
 		r, _ := ioutil.ReadAll(res.Body)

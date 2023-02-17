@@ -51,14 +51,14 @@ func bindValidate(ctx echo.Context, i interface{}) error {
 
 // PutRoleBinding godoc
 //
-// @Summary     Update RoleBinding for a user.
-// @Description RoleBinding defines the roles and actions a user can perform. There are currently three roles (ADMIN, EDITOR, VIEWER). User must exist before you can update its RoleBinding. If you want to add a role binding for a user given the email address, call invite first to get a user id. Then call this endpoint.
-// @Tags        auth
-// @Produce     json
-// @Success     200    {object} nil
-// @Param       userId body     string true "userId"
-// @Param       role   body     string true "role"
-// @Router      /auth/api/v1/role/binding [put]
+//	@Summary		Update RoleBinding for a user.
+//	@Description	RoleBinding defines the roles and actions a user can perform. There are currently three roles (ADMIN, EDITOR, VIEWER). User must exist before you can update its RoleBinding. If you want to add a role binding for a user given the email address, call invite first to get a user id. Then call this endpoint.
+//	@Tags			auth
+//	@Produce		json
+//	@Success		200		{object}	nil
+//	@Param			userId	body		string	true	"userId"
+//	@Param			role	body		string	true	"role"
+//	@Router			/auth/api/v1/role/binding [put]
 func (r httpRoutes) PutRoleBinding(ctx echo.Context) error {
 	var req api.PutRoleBindingRequest
 	if err := bindValidate(ctx, &req); err != nil {
@@ -89,13 +89,13 @@ func (r httpRoutes) PutRoleBinding(ctx echo.Context) error {
 
 // DeleteRoleBinding godoc
 //
-// @Summary Delete RoleBinding for a user.
-// @Tags    auth
-// @Produce json
-// @Success 200    {object} nil
-// @Param   userId body     string true "userId"
-// @Param   role   body     string true "role"
-// @Router  /auth/api/v1/user/role/binding [delete]
+//	@Summary	Delete RoleBinding for a user.
+//	@Tags		auth
+//	@Produce	json
+//	@Success	200		{object}	nil
+//	@Param		userId	body		string	true	"userId"
+//	@Param		role	body		string	true	"role"
+//	@Router		/auth/api/v1/user/role/binding [delete]
 func (r httpRoutes) DeleteRoleBinding(ctx echo.Context) error {
 	var req api.DeleteRoleBindingRequest
 	if err := bindValidate(ctx, &req); err != nil {
@@ -125,12 +125,12 @@ func (r httpRoutes) DeleteRoleBinding(ctx echo.Context) error {
 
 // GetRoleBindings godoc
 //
-// @Summary     Get RoleBindings for the calling user
-// @Description RoleBinding defines the roles and actions a user can perform. There are currently three roles (ADMIN, EDITOR, VIEWER).
-// @Tags        auth
-// @Produce     json
-// @Success     200 {object} api.GetRoleBindingsResponse
-// @Router      /auth/api/v1/user/role/bindings [get]
+//	@Summary		Get RoleBindings for the calling user
+//	@Description	RoleBinding defines the roles and actions a user can perform. There are currently three roles (ADMIN, EDITOR, VIEWER).
+//	@Tags			auth
+//	@Produce		json
+//	@Success		200	{object}	api.GetRoleBindingsResponse
+//	@Router			/auth/api/v1/user/role/bindings [get]
 func (r *httpRoutes) GetRoleBindings(ctx echo.Context) error {
 	userID := httpserver.GetUserID(ctx)
 
@@ -160,12 +160,12 @@ func (r *httpRoutes) GetRoleBindings(ctx echo.Context) error {
 
 // GetWorkspaceRoleBindings godoc
 //
-// @Summary     Get all the user RoleBindings for the given workspace.
-// @Description RoleBinding defines the roles and actions a user can perform. There are currently three roles (ADMIN, EDITOR, VIEWER). The workspace path is based on the DNS such as (workspace1.app.keibi.io)
-// @Tags        auth
-// @Produce     json
-// @Success     200 {object} api.GetWorkspaceRoleBindingResponse
-// @Router      /auth/api/v1/workspace/role/bindings [get]
+//	@Summary		Get all the user RoleBindings for the given workspace.
+//	@Description	RoleBinding defines the roles and actions a user can perform. There are currently three roles (ADMIN, EDITOR, VIEWER). The workspace path is based on the DNS such as (workspace1.app.keibi.io)
+//	@Tags			auth
+//	@Produce		json
+//	@Success		200	{object}	api.GetWorkspaceRoleBindingResponse
+//	@Router			/auth/api/v1/workspace/role/bindings [get]
 func (r *httpRoutes) GetWorkspaceRoleBindings(ctx echo.Context) error {
 	workspaceName := httpserver.GetWorkspaceName(ctx)
 	users, err := r.auth0Service.SearchUsersByWorkspace(workspaceName)
@@ -175,10 +175,18 @@ func (r *httpRoutes) GetWorkspaceRoleBindings(ctx echo.Context) error {
 
 	var resp api.GetWorkspaceRoleBindingResponse
 	for _, u := range users {
+		status := api.InviteStatus_PENDING
+		if u.EmailVerified {
+			status = api.InviteStatus_ACCEPTED
+		}
+
 		resp = append(resp, api.WorkspaceRoleBinding{
-			UserID: u.UserId,
-			Email:  u.Email,
-			Role:   u.AppMetadata.WorkspaceAccess[workspaceName],
+			UserID:       u.UserId,
+			UserName:     u.Name,
+			Email:        u.Email,
+			Role:         u.AppMetadata.WorkspaceAccess[workspaceName],
+			Status:       status,
+			LastActivity: u.LastLogin,
 		})
 	}
 	return ctx.JSON(http.StatusOK, resp)
@@ -276,11 +284,11 @@ func (r *httpRoutes) Invite(ctx echo.Context) error {
 
 // ListInvites godoc
 //
-// @Summary lists all invites
-// @Tags    auth
-// @Produce json
-// @Success 200 {object} []api.InviteItem
-// @Router  /auth/api/v1/invites [get]
+//	@Summary	lists all invites
+//	@Tags		auth
+//	@Produce	json
+//	@Success	200	{object}	[]api.InviteItem
+//	@Router		/auth/api/v1/invites [get]
 func (r *httpRoutes) ListInvites(ctx echo.Context) error {
 	//workspaceName := httpserver.GetWorkspaceName(ctx)
 	//invs, err := r.db.ListInvitesByWorkspaceName(workspaceName)
@@ -304,11 +312,11 @@ func (r *httpRoutes) ListInvites(ctx echo.Context) error {
 
 // AcceptInvitation godoc
 //
-// @Summary Accepts users invitation and creates default (VIEW) role in invited workspace.
-// @Tags    auth
-// @Produce json
-// @Success 200 {object} nil
-// @Router  /auth/api/v1/invite/invite_id [get]
+//	@Summary	Accepts users invitation and creates default (VIEW) role in invited workspace.
+//	@Tags		auth
+//	@Produce	json
+//	@Success	200	{object}	nil
+//	@Router		/auth/api/v1/invite/invite_id [get]
 func (r *httpRoutes) AcceptInvitation(ctx echo.Context) error {
 	return echo.NewHTTPError(http.StatusNotImplemented)
 	//

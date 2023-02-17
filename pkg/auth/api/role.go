@@ -33,11 +33,20 @@ type GetRoleBindingsResponse struct {
 	GlobalRoles  *Role         `json:"globalRoles"`
 }
 
+type InviteStatus string
+
+const (
+	InviteStatus_ACCEPTED InviteStatus = "ACCEPTED"
+	InviteStatus_PENDING  InviteStatus = "PENDING"
+)
+
 type WorkspaceRoleBinding struct {
-	UserID     string    `json:"userId"`
-	Email      string    `json:"email"`
-	Role       Role      `json:"role"`
-	AssignedAt time.Time `json:"assignedAt"`
+	UserID       string       `json:"userId"`
+	UserName     string       `json:"userName"`
+	Email        string       `json:"email"`
+	Role         Role         `json:"role"`
+	Status       InviteStatus `json:"status"`
+	LastActivity time.Time    `json:"lastActivity"`
 }
 
 type GetWorkspaceRoleBindingResponse []WorkspaceRoleBinding
