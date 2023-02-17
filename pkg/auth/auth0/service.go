@@ -178,6 +178,7 @@ func (a *Service) CreateUser(email, wsName string, role api.Role) error {
 	req, err := http.NewRequest("POST", url, bytes.NewReader(body))
 	fmt.Println("POST", url)
 	fmt.Println(string(body))
+	fmt.Println(body)
 	if err != nil {
 		return err
 	}
