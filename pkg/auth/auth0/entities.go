@@ -82,7 +82,7 @@ type CreatePasswordChangeTicketRequest struct {
 	OrganizationId         string `json:"organization_id"`
 	ConnectionId           string `json:"connection_id"`
 	Email                  string `json:"email"`
-	TtlSec                 int    `json:"ttl_sec"`
+	TTLSec                 int    `json:"ttl_sec"`
 	MarkEmailAsVerified    bool   `json:"mark_email_as_verified"`
 	IncludeEmailInRedirect bool   `json:"includeEmailInRedirect"`
 }

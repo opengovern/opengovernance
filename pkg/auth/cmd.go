@@ -43,9 +43,7 @@ var (
 	auth0ManageDomain       = os.Getenv("AUTH0_MANAGE_DOMAIN")
 	auth0ManageClientID     = os.Getenv("AUTH0_MANAGE_CLIENT_ID")
 	auth0ManageClientSecret = os.Getenv("AUTH0_MANAGE_CLIENT_SECRET")
-	auth0ConnectionID       = os.Getenv("AUTH0_CONNECTION_ID")
-	auth0OrganizationID     = os.Getenv("AUTH0_ORGANIZATION_ID")
-	auth0RedirectURL        = os.Getenv("AUTH0_REDIRECT_URL")
+	auth0Connection         = os.Getenv("AUTH0_CONNECTION")
 	auth0InviteTTL          = os.Getenv("AUTH0_INVITE_TTL")
 
 	httpServerAddress  = os.Getenv("HTTP_ADDRESS")
@@ -138,8 +136,8 @@ func start(ctx context.Context) error {
 		return err
 	}
 
-	auth0Service := auth0.New(auth0ManageDomain, auth0ManageClientID, auth0ManageClientSecret,
-		auth0ConnectionID, auth0OrganizationID, auth0RedirectURL, int(inviteTTL))
+	auth0Service := auth0.New(auth0ManageDomain, auth0ClientID, auth0ManageClientID, auth0ManageClientSecret,
+		auth0Connection, int(inviteTTL))
 
 	grpcServer := grpc.NewServer(grpc.Creds(creds))
 	envoyauth.RegisterAuthorizationServer(grpcServer, authServer)

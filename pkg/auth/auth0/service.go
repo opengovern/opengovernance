@@ -12,27 +12,25 @@ import (
 )
 
 type Service struct {
-	domain         string
-	clientID       string
-	clientSecret   string
-	ConnectionID   string
-	RedirectURL    string
-	OrganizationID string
-	InviteTTL      int
+	domain       string
+	clientID     string
+	clientSecret string
+	appClientID  string
+	Connection   string
+	InviteTTL    int
 
 	token string
 }
 
-func New(domain, clientID, clientSecret, connectionID, orgID, redirectURL string, inviteTTL int) *Service {
+func New(domain, appClientID, clientID, clientSecret, connection string, inviteTTL int) *Service {
 	return &Service{
-		domain:         domain,
-		clientID:       clientID,
-		clientSecret:   clientSecret,
-		ConnectionID:   connectionID,
-		RedirectURL:    redirectURL,
-		OrganizationID: orgID,
-		InviteTTL:      inviteTTL,
-		token:          "",
+		domain:       domain,
+		appClientID:  appClientID,
+		clientID:     clientID,
+		clientSecret: clientSecret,
+		Connection:   connection,
+		InviteTTL:    inviteTTL,
+		token:        "",
 	}
 }
 
@@ -143,7 +141,7 @@ func (a *Service) SearchByEmail(email string) ([]User, error) {
 	return resp, nil
 }
 
-func (a *Service) CreateUser(email, wsName string, role api.Role) error {
+func (a *Service) CreateUser(email, wsName string, role api.Role) (*User, error) {
 	var defaultPass = "keibi23@"
 	var letterRunes = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789")
 	randPass := make([]rune, 10)
@@ -162,16 +160,16 @@ func (a *Service) CreateUser(email, wsName string, role api.Role) error {
 			GlobalAccess: nil,
 		},
 		Password:   password,
-		Connection: a.ConnectionID,
+		Connection: a.Connection,
 	}
 
 	if err := a.fillToken(); err != nil {
-		return err
+		return nil, err
 	}
 
 	body, err := json.Marshal(usr)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	url := fmt.Sprintf("%s/api/v2/users", a.domain)
@@ -180,29 +178,35 @@ func (a *Service) CreateUser(email, wsName string, role api.Role) error {
 	fmt.Println(string(body))
 	fmt.Println(body)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	req.Header.Add("Authorization", "Bearer "+a.token)
 	req.Header.Add("Content-type", "application/json")
 	res, err := http.DefaultClient.Do(req)
 	if res.StatusCode != http.StatusCreated {
 		r, _ := ioutil.ReadAll(res.Body)
-		return fmt.Errorf("[CreateUser] invalid status code: %d, body=%s", res.StatusCode, string(r))
+		return nil, fmt.Errorf("[CreateUser] invalid status code: %d, body=%s", res.StatusCode, string(r))
 	}
-	return nil
+
+	r, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	var resp User
+	err = json.Unmarshal(r, &resp)
+	if err != nil {
+		return nil, err
+	}
+
+	return &resp, nil
 }
 
-func (a *Service) CreatePasswordChangeTicket(email string) (*CreatePasswordChangeTicketResponse, error) {
+func (a *Service) CreatePasswordChangeTicket(userId string) (*CreatePasswordChangeTicketResponse, error) {
 	request := CreatePasswordChangeTicketRequest{
-		ResultUrl:              a.RedirectURL,
-		UserId:                 "",
-		ClientId:               a.clientID,
-		OrganizationId:         a.OrganizationID,
-		ConnectionId:           a.ConnectionID,
-		Email:                  email,
-		TtlSec:                 a.InviteTTL,
-		MarkEmailAsVerified:    false,
-		IncludeEmailInRedirect: false,
+		UserId:   userId,
+		ClientId: a.clientID,
+		TTLSec:   a.InviteTTL,
 	}
 
 	if err := a.fillToken(); err != nil {
