@@ -197,6 +197,7 @@ func (r *httpRoutes) GetWorkspaceRoleBindings(ctx echo.Context) error {
 //	@Summary	Invites a user to a workspace.
 //	@Tags		auth
 //	@Produce	json
+//	@Param			role	body		string	true	"role"
 //	@Success	200	{object}	api.InviteResponse
 //	@Router		/auth/api/v1/invite [post]
 func (r *httpRoutes) Invite(ctx echo.Context) error {
@@ -222,12 +223,12 @@ func (r *httpRoutes) Invite(ctx echo.Context) error {
 			return err
 		}
 	} else {
-		err = r.auth0Service.CreateUser(req.Email, workspaceName, req.Role)
+		user, err := r.auth0Service.CreateUser(req.Email, workspaceName, req.Role)
 		if err != nil {
 			return err
 		}
 
-		resp, err := r.auth0Service.CreatePasswordChangeTicket(req.Email)
+		resp, err := r.auth0Service.CreatePasswordChangeTicket(user.UserId)
 		if err != nil {
 			return err
 		}
