@@ -2170,7 +2170,7 @@ func (h *HttpHandler) GetSummaryMetrics(ctx echo.Context) error {
 		return nil
 	}
 
-	query, err := es.FindInsightResults(nil, nil, nil, nil)
+	query, err := es.FindInsightResults(nil, nil, nil)
 	if err != nil {
 		return err
 	}
@@ -3286,7 +3286,7 @@ func (h *HttpHandler) ListInsightsResults(ctx echo.Context) error {
 		insUUID = &insightUUID
 	}
 
-	query, err := es.FindInsightResults(req.DescriptionFilter, req.Labels, req.SourceIDs, insUUID)
+	query, err := es.FindInsightResults(req.Provider, req.SourceID, insUUID)
 	if err != nil {
 		return err
 	}
@@ -3299,12 +3299,29 @@ func (h *HttpHandler) ListInsightsResults(ctx echo.Context) error {
 	}
 
 	resp := api.ListInsightResultsResponse{}
+	padd64 := func(x, y *int64) *int64 {
+		var v *int64
+		if x != nil && y != nil {
+			t := *x + *y
+			v = &t
+		} else if x != nil {
+			t := *x
+			v = &t
+		} else if y != nil {
+			t := *y
+			v = &t
+		}
+		return v
+	}
+
+	aggr := map[uint]api.InsightResult{}
 	for _, item := range response.Hits.Hits {
 		if item.Source.Internal {
 			continue
 		}
 
-		resp.Results = append(resp.Results, api.InsightResult{
+		ins := api.InsightResult{
+			QueryID:          item.Source.QueryID,
 			SmartQueryID:     item.Source.SmartQueryID,
 			Description:      item.Source.Description,
 			Provider:         item.Source.Provider.String(),
@@ -3318,8 +3335,24 @@ func (h *HttpHandler) ListInsightsResults(ctx echo.Context) error {
 			LastMonthValue:   item.Source.LastMonthValue,
 			LastQuarterValue: item.Source.LastQuarterValue,
 			LastYearValue:    item.Source.LastYearValue,
-		})
+		}
+
+		if v, ok := aggr[item.Source.QueryID]; ok {
+			v.Result += ins.Result
+			v.LastDayValue = padd64(v.LastDayValue, ins.LastDayValue)
+			v.LastWeekValue = padd64(v.LastWeekValue, ins.LastWeekValue)
+			v.LastMonthValue = padd64(v.LastMonthValue, ins.LastMonthValue)
+			v.LastQuarterValue = padd64(v.LastQuarterValue, ins.LastQuarterValue)
+			v.LastYearValue = padd64(v.LastYearValue, ins.LastYearValue)
+		} else {
+			aggr[item.Source.QueryID] = ins
+		}
 	}
+
+	for _, v := range aggr {
+		resp.Results = append(resp.Results, v)
+	}
+
 	return ctx.JSON(200, resp)
 }
 
