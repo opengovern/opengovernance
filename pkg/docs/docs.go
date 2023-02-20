@@ -24,6 +24,17 @@ const docTemplate = `{
                     "auth"
                 ],
                 "summary": "Invites a user to a workspace.",
+                "parameters": [
+                    {
+                        "description": "role",
+                        "name": "role",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -155,6 +166,25 @@ const docTemplate = `{
                     "auth"
                 ],
                 "summary": "Get RoleBindings for the calling user",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.GetRoleBindingsResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/api/v1/user/workspace/membership": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "List of workspaces which the user is member of",
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -4352,6 +4382,40 @@ const docTemplate = `{
                 }
             }
         },
+        "/workspace/api/v1/workspaces/byid/{workspace_id}": {
+            "get": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "workspace"
+                ],
+                "summary": "Get workspace",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Workspace Name",
+                        "name": "workspace_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_workspace_api.WorkspaceLimits"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/workspace/api/v1/workspaces/limits/byid/{workspace_id}": {
             "get": {
                 "consumes": [
@@ -4487,9 +4551,6 @@ const docTemplate = `{
         "gitlab_com_keibiengine_keibi-engine_pkg_auth_api.RoleBinding": {
             "type": "object",
             "properties": {
-                "assignedAt": {
-                    "type": "string"
-                },
                 "role": {
                     "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.Role"
                 },

@@ -40,8 +40,6 @@ definitions:
     - ViewerRole
   gitlab_com_keibiengine_keibi-engine_pkg_auth_api.RoleBinding:
     properties:
-      assignedAt:
-        type: string
       role:
         $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.Role'
       workspaceID:
@@ -1857,6 +1855,13 @@ info:
 paths:
   /auth/api/v1/invite:
     post:
+      parameters:
+      - description: role
+        in: body
+        name: role
+        required: true
+        schema:
+          type: string
       produces:
       - application/json
       responses:
@@ -1955,6 +1960,18 @@ paths:
           schema:
             $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.GetRoleBindingsResponse'
       summary: Get RoleBindings for the calling user
+      tags:
+      - auth
+  /auth/api/v1/user/workspace/membership:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.GetRoleBindingsResponse'
+      summary: List of workspaces which the user is member of
       tags:
       - auth
   /auth/api/v1/workspace/role/bindings:
@@ -4752,6 +4769,28 @@ paths:
               type: array
             type: array
       summary: List all workspaces with owner id
+      tags:
+      - workspace
+  /workspace/api/v1/workspaces/byid/{workspace_id}:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: Workspace Name
+        in: path
+        name: workspace_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_workspace_api.WorkspaceLimits'
+            type: array
+      summary: Get workspace
       tags:
       - workspace
   /workspace/api/v1/workspaces/limits/{workspace_name}:

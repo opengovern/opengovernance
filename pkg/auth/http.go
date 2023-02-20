@@ -159,11 +159,11 @@ func (r *httpRoutes) GetRoleBindings(ctx echo.Context) error {
 
 // GetWorkspaceMembership godoc
 //
-//	@Summary		List of workspaces which the user is member of
-//	@Tags			auth
-//	@Produce		json
-//	@Success		200	{object}	api.GetRoleBindingsResponse
-//	@Router			/auth/api/v1/user/workspace/membership [get]
+//	@Summary	List of workspaces which the user is member of
+//	@Tags		auth
+//	@Produce	json
+//	@Success	200	{object}	api.GetRoleBindingsResponse
+//	@Router		/auth/api/v1/user/workspace/membership [get]
 func (r *httpRoutes) GetWorkspaceMembership(ctx echo.Context) error {
 	hctx := httpclient.FromEchoContext(ctx)
 	userID := httpserver.GetUserID(ctx)
@@ -236,8 +236,8 @@ func (r *httpRoutes) GetWorkspaceRoleBindings(ctx echo.Context) error {
 //	@Summary	Invites a user to a workspace.
 //	@Tags		auth
 //	@Produce	json
-//	@Param			role	body		string	true	"role"
-//	@Success	200	{object}	api.InviteResponse
+//	@Param		role	body		string	true	"role"
+//	@Success	200		{object}	api.InviteResponse
 //	@Router		/auth/api/v1/invite [post]
 func (r *httpRoutes) Invite(ctx echo.Context) error {
 	var req api.InviteRequest
