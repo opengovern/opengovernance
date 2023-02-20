@@ -1,10 +1,11 @@
 package api
 
+import "gitlab.com/keibiengine/keibi-engine/pkg/source"
+
 type ListInsightResultsRequest struct {
-	DescriptionFilter *string  `json:"descriptionFilter"`
-	Labels            []string `json:"labels"`
-	SourceIDs         []string `json:"sourceIDs"`
-	ExecutedAt        *int64   `json:"executedAt"`
+	Provider   *source.Type `json:"provider"`
+	SourceID   *string      `json:"sourceID"`
+	ExecutedAt *int64       `json:"executedAt"`
 }
 
 type ListInsightResultsResponse struct {
@@ -12,6 +13,7 @@ type ListInsightResultsResponse struct {
 }
 
 type InsightResult struct {
+	QueryID          uint   `json:"queryID"`
 	SmartQueryID     uint   `json:"smartQueryID"`
 	Query            string `json:"query"`
 	Category         string `json:"category"`

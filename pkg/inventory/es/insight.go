@@ -4,13 +4,14 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"gitlab.com/keibiengine/keibi-engine/pkg/source"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/insight/es"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/keibi-es-sdk"
 )
 
-var MAX_INSIGHTS = 1000
+var MAX_INSIGHTS = 10000
 
 type InsightResultQueryResponse struct {
 	Hits InsightResultQueryHits `json:"hits"`
@@ -29,7 +30,7 @@ type InsightResultQueryHit struct {
 	Sort    []interface{}      `json:"sort"`
 }
 
-func FindInsightResults(descriptionFilter *string, labelFilter []string, sourceIDFilter []string, uuidFilter *string) (string, error) {
+func FindInsightResults(providerFilter *source.Type, sourceIDFilter *string, uuidFilter *string) (string, error) {
 	boolQuery := map[string]interface{}{}
 	var filters []interface{}
 	filters = append(filters, map[string]interface{}{
@@ -42,29 +43,19 @@ func FindInsightResults(descriptionFilter *string, labelFilter []string, sourceI
 		})
 	}
 
-	if labelFilter != nil && len(labelFilter) > 0 {
+	if providerFilter != nil {
 		filters = append(filters, map[string]interface{}{
-			"terms": map[string][]string{"labels": labelFilter},
+			"terms": map[string][]string{"provider": {providerFilter.String()}},
 		})
 	}
 
-	if sourceIDFilter != nil && len(sourceIDFilter) > 0 {
+	if sourceIDFilter != nil {
 		filters = append(filters, map[string]interface{}{
-			"terms": map[string][]string{"source_id": sourceIDFilter},
+			"terms": map[string][]string{"source_id": {*sourceIDFilter}},
 		})
 	}
 
 	boolQuery["filter"] = filters
-
-	if descriptionFilter != nil && len(*descriptionFilter) > 0 {
-		boolQuery["must"] = map[string]interface{}{
-			"multi_match": map[string]interface{}{
-				"fields":    []string{"query", "result"},
-				"query":     *descriptionFilter,
-				"fuzziness": "AUTO",
-			},
-		}
-	}
 
 	res := make(map[string]interface{})
 	res["size"] = MAX_INSIGHTS
