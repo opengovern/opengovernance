@@ -21,9 +21,8 @@ type PutRoleBindingRequest struct {
 }
 
 type RoleBinding struct {
-	WorkspaceID string    `json:"workspaceID"`
-	Role        Role      `json:"role"`
-	AssignedAt  time.Time `json:"assignedAt"`
+	WorkspaceID string `json:"workspaceID"`
+	Role        Role   `json:"role"`
 }
 
 type GetRoleBindingResponse RoleBinding
@@ -31,6 +30,14 @@ type GetRoleBindingResponse RoleBinding
 type GetRoleBindingsResponse struct {
 	RoleBindings []RoleBinding `json:"roleBindings"`
 	GlobalRoles  *Role         `json:"globalRoles"`
+}
+
+type Membership struct {
+	WorkspaceID   string    `json:"workspaceID"`
+	WorkspaceName string    `json:"workspaceName"`
+	Role          Role      `json:"role"`
+	AssignedAt    time.Time `json:"assignedAt"`
+	LastActivity  time.Time `json:"lastActivity"`
 }
 
 type InviteStatus string

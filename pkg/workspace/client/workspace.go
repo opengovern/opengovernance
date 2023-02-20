@@ -11,6 +11,7 @@ import (
 type WorkspaceServiceClient interface {
 	GetLimits(ctx *httpclient.Context, ignoreUsage bool) (api.WorkspaceLimitsUsage, error)
 	GetLimitsByID(ctx *httpclient.Context, workspaceID string) (api.WorkspaceLimits, error)
+	GetByID(ctx *httpclient.Context, workspaceID string) (api.Workspace, error)
 	ListWorkspaces(ctx *httpclient.Context) ([]api.WorkspaceResponse, error)
 }
 
@@ -39,6 +40,16 @@ func (s *workspaceClient) GetLimitsByID(ctx *httpclient.Context, workspaceID str
 	var response api.WorkspaceLimits
 	if err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &response); err != nil {
 		return api.WorkspaceLimits{}, err
+	}
+	return response, nil
+}
+
+func (s *workspaceClient) GetByID(ctx *httpclient.Context, workspaceID string) (api.Workspace, error) {
+	url := fmt.Sprintf("%s/api/v1/workspaces/byid/%s", s.baseURL, workspaceID)
+
+	var response api.Workspace
+	if err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &response); err != nil {
+		return api.Workspace{}, err
 	}
 	return response, nil
 }
