@@ -176,7 +176,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/auth/api/v1/user/workspace/membership": {
+        "/auth/api/v1/user/{user_id}/workspace/membership": {
             "get": {
                 "produces": [
                     "application/json"
@@ -185,6 +185,15 @@ const docTemplate = `{
                     "auth"
                 ],
                 "summary": "List of workspaces which the user is member of",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "userId",
+                        "name": "userId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
