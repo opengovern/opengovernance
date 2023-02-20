@@ -2,8 +2,6 @@ package api
 
 import (
 	"time"
-
-	"github.com/google/uuid"
 )
 
 type Role string
@@ -20,16 +18,16 @@ type PutRoleBindingRequest struct {
 	Role   Role   `json:"role" validate:"required"`
 }
 
-type RoleBinding struct {
+type UserRoleBinding struct {
 	WorkspaceID string `json:"workspaceID"`
 	Role        Role   `json:"role"`
 }
 
-type GetRoleBindingResponse RoleBinding
+type GetRoleBindingResponse UserRoleBinding
 
 type GetRoleBindingsResponse struct {
-	RoleBindings []RoleBinding `json:"roleBindings"`
-	GlobalRoles  *Role         `json:"globalRoles"`
+	RoleBindings []UserRoleBinding `json:"roleBindings"`
+	GlobalRoles  *Role             `json:"globalRoles"`
 }
 
 type Membership struct {
@@ -62,23 +60,13 @@ type DeleteRoleBindingRequest struct {
 	UserID string `json:"userId" validate:"required"`
 }
 
-type InviteUserRequest struct {
-	Email string `json:"email" validate:"required,email"`
-}
-
-type InviteUserResponse struct {
-	UserID uuid.UUID `json:"userId"`
-}
-
 type InviteRequest struct {
 	Email string `json:"email" validate:"required,email"`
 	Role  Role   `json:"role"`
 }
 
-type InviteResponse struct {
-	InviteID uuid.UUID `json:"inviteId"`
-}
-
-type InviteItem struct {
-	Email string `json:"email"`
+type RoleBinding struct {
+	UserID        string `json:"userId"`
+	WorkspaceName string `json:"workspaceName"`
+	Role          Role   `json:"role"`
 }

@@ -18,8 +18,6 @@ import (
 	"go.uber.org/zap"
 )
 
-const inviteDuration = time.Hour * 24 * 7
-
 type httpRoutes struct {
 	logger             *zap.Logger
 	emailService       email.Service
@@ -145,7 +143,7 @@ func (r *httpRoutes) GetRoleBindings(ctx echo.Context) error {
 
 	if usr != nil {
 		for wsID, role := range usr.AppMetadata.WorkspaceAccess {
-			resp.RoleBindings = append(resp.RoleBindings, api.RoleBinding{
+			resp.RoleBindings = append(resp.RoleBindings, api.UserRoleBinding{
 				WorkspaceID: wsID,
 				Role:        role,
 			})
@@ -277,140 +275,4 @@ func (r *httpRoutes) Invite(ctx echo.Context) error {
 	}
 
 	return echo.NewHTTPError(http.StatusOK)
-
-	//req.Email = strings.ToLower(strings.TrimSpace(req.Email))
-	//
-	//workspaceName := httpserver.GetWorkspaceName(ctx)
-	//
-	//inv := Invitation{
-	//	Email:         req.Email,
-	//	ExpiredAt:     time.Now().UTC().Add(inviteDuration),
-	//	WorkspaceName: workspaceName,
-	//}
-	//
-	//count, err := r.db.CountRoleBindings(workspaceName)
-	//if err != nil {
-	//	return err
-	//}
-	//
-	//limits, err := r.workspaceClient.GetLimits(httpclient.FromEchoContext(ctx), true)
-	//if err != nil {
-	//	return err
-	//}
-	//
-	//if count >= limits.MaxUsers {
-	//	return echo.NewHTTPError(http.StatusBadRequest, "user limit reached")
-	//}
-	//
-	//err = r.db.CreateInvitation(&inv)
-	//if err != nil {
-	//	return err
-	//}
-	//
-	//invLink := fmt.Sprintf(r.inviteLinkTemplate, inv.ID.String())
-	//mBody, err := emails.GetInviteMailBody(invLink, workspaceName)
-	//if err != nil {
-	//	return err
-	//}
-	//
-	//err = r.emailService.SendEmail(ctx.Request().Context(), req.Email, mBody)
-	//if err != nil {
-	//	return err
-	//}
-	//
-	//return ctx.JSON(http.StatusOK, api.InviteResponse{
-	//	InviteID: inv.ID,
-	//})
-}
-
-// ListInvites godoc
-//
-//	@Summary	lists all invites
-//	@Tags		auth
-//	@Produce	json
-//	@Success	200	{object}	[]api.InviteItem
-//	@Router		/auth/api/v1/invites [get]
-func (r *httpRoutes) ListInvites(ctx echo.Context) error {
-	//workspaceName := httpserver.GetWorkspaceName(ctx)
-	//invs, err := r.db.ListInvitesByWorkspaceName(workspaceName)
-	//if err != nil {
-	//	return err
-	//}
-
-	var resp []api.InviteItem
-	//for _, inv := range invs {
-	//	if inv.ExpiredAt.Before(time.Now()) {
-	//		continue
-	//	}
-	//
-	//	resp = append(resp, api.InviteItem{
-	//		Email: inv.Email,
-	//	})
-	//}
-	//
-	return ctx.JSON(http.StatusOK, resp)
-}
-
-// AcceptInvitation godoc
-//
-//	@Summary	Accepts users invitation and creates default (VIEW) role in invited workspace.
-//	@Tags		auth
-//	@Produce	json
-//	@Success	200	{object}	nil
-//	@Router		/auth/api/v1/invite/invite_id [get]
-func (r *httpRoutes) AcceptInvitation(ctx echo.Context) error {
-	return echo.NewHTTPError(http.StatusNotImplemented)
-	//
-	//invIDPrm := ctx.Param("invite_id")
-	//if invIDPrm == "" {
-	//	return echo.NewHTTPError(http.StatusBadRequest, errors.New("empty invitation id"))
-	//}
-	//
-	//invID, err := uuid.Parse(invIDPrm)
-	//if err != nil {
-	//	return echo.NewHTTPError(http.StatusBadRequest, fmt.Errorf("bad invitation id: %w", err))
-	//}
-	//
-	//// check that invitation exists
-	//inv, err := r.db.GetInvitationByID(invID)
-	//if err != nil {
-	//	r.logger.Error("invitation not found",
-	//		zap.String("path", ctx.Path()),
-	//		zap.String("method", ctx.Request().Method),
-	//		zap.Error(err))
-	//
-	//	if errors.Is(err, gorm.ErrRecordNotFound) {
-	//		return echo.NewHTTPError(http.StatusBadRequest, "invitation not found")
-	//	}
-	//
-	//	return err
-	//}
-	//
-	//if inv.ExpiredAt.Before(time.Now()) {
-	//	r.logger.Error("invitation expired",
-	//		zap.String("path", ctx.Path()),
-	//		zap.String("method", ctx.Request().Method),
-	//		zap.String("invitationID", invIDPrm))
-	//	return echo.NewHTTPError(http.StatusBadRequest, "invitation expired")
-	//}
-	//
-	//userID := httpserver.GetUserID(ctx)
-	//
-	//// if binding exists do not change Role
-	//err = r.db.CreateBindingIfNotExists(&RoleBinding{
-	//	UserID:        userID,
-	//	WorkspaceName: inv.WorkspaceName,
-	//	Role:          api.ViewerRole,
-	//	AssignedAt:    time.Now(),
-	//})
-	//if err != nil {
-	//	return err
-	//}
-	//
-	//err = r.db.DeleteInvitation(inv.ID)
-	//if err != nil {
-	//	return err
-	//}
-	//
-	//return nil
 }
