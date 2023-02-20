@@ -1,9 +1,11 @@
 package auth
 
 import (
-	"fmt"
+	"context"
+	_ "embed"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpclient"
 	"net/http"
+	"strings"
 	"time"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/auth/auth0"
@@ -18,12 +20,16 @@ import (
 	"go.uber.org/zap"
 )
 
+var (
+	//go:embed email/invite.html
+	inviteEmailTemplate string
+)
+
 type httpRoutes struct {
-	logger             *zap.Logger
-	emailService       email.Service
-	workspaceClient    client.WorkspaceServiceClient
-	auth0Service       *auth0.Service
-	inviteLinkTemplate string
+	logger          *zap.Logger
+	emailService    email.Service
+	workspaceClient client.WorkspaceServiceClient
+	auth0Service    *auth0.Service
 }
 
 func (r *httpRoutes) Register(e *echo.Echo) {
@@ -271,7 +277,12 @@ func (r *httpRoutes) Invite(ctx echo.Context) error {
 			return err
 		}
 
-		fmt.Println("Ticket:", resp.Ticket)
+		emailContent := inviteEmailTemplate
+		emailContent = strings.ReplaceAll(emailContent, "{{ url }}", resp.Ticket)
+		err = r.emailService.SendEmail(context.Background(), req.Email, emailContent)
+		if err != nil {
+			return err
+		}
 	}
 
 	return echo.NewHTTPError(http.StatusOK)

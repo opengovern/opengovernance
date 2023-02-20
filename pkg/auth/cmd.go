@@ -46,8 +46,7 @@ var (
 	auth0Connection         = os.Getenv("AUTH0_CONNECTION")
 	auth0InviteTTL          = os.Getenv("AUTH0_INVITE_TTL")
 
-	httpServerAddress  = os.Getenv("HTTP_ADDRESS")
-	inviteLinkTemplate = os.Getenv("INVITE_LINK_TEMPLATE")
+	httpServerAddress = os.Getenv("HTTP_ADDRESS")
 
 	keibiHost      = os.Getenv("KEIBI_HOST")
 	keibiPublicKey = os.Getenv("KEIBI_PUBLIC_KEY")
@@ -154,11 +153,10 @@ func start(ctx context.Context) error {
 
 	go func() {
 		routes := httpRoutes{
-			logger:             logger,
-			emailService:       m,
-			inviteLinkTemplate: inviteLinkTemplate,
-			workspaceClient:    workspaceClient,
-			auth0Service:       auth0Service,
+			logger:          logger,
+			emailService:    m,
+			workspaceClient: workspaceClient,
+			auth0Service:    auth0Service,
 		}
 		errors <- fmt.Errorf("http server: %w", httpserver.RegisterAndStart(logger, httpServerAddress, &routes))
 	}()
