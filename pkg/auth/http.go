@@ -34,7 +34,7 @@ func (r *httpRoutes) Register(e *echo.Echo) {
 	v1.PUT("/user/role/binding", httpserver.AuthorizeHandler(r.PutRoleBinding, api.AdminRole))
 	v1.DELETE("/user/role/binding", httpserver.AuthorizeHandler(r.DeleteRoleBinding, api.AdminRole))
 	v1.GET("/user/role/bindings", httpserver.AuthorizeHandler(r.GetRoleBindings, api.ViewerRole))
-	v1.GET("/user/workspace/membership", httpserver.AuthorizeHandler(r.GetWorkspaceMembership, api.ViewerRole))
+	v1.GET("/user/:user_id/workspace/membership", httpserver.AuthorizeHandler(r.GetWorkspaceMembership, api.AdminRole))
 	v1.GET("/workspace/role/bindings", httpserver.AuthorizeHandler(r.GetWorkspaceRoleBindings, api.AdminRole))
 	v1.POST("/invite", httpserver.AuthorizeHandler(r.Invite, api.AdminRole))
 }
@@ -162,11 +162,12 @@ func (r *httpRoutes) GetRoleBindings(ctx echo.Context) error {
 //	@Summary	List of workspaces which the user is member of
 //	@Tags		auth
 //	@Produce	json
-//	@Success	200	{object}	api.GetRoleBindingsResponse
-//	@Router		/auth/api/v1/user/workspace/membership [get]
+//	@Param		userId	path		string	true	"userId"
+//	@Success	200		{object}	api.GetRoleBindingsResponse
+//	@Router		/auth/api/v1/user/{user_id}/workspace/membership [get]
 func (r *httpRoutes) GetWorkspaceMembership(ctx echo.Context) error {
 	hctx := httpclient.FromEchoContext(ctx)
-	userID := httpserver.GetUserID(ctx)
+	userID := ctx.Param("user_id")
 
 	var resp []api.Membership
 	usr, err := r.auth0Service.GetUser(userID)
