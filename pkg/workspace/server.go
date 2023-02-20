@@ -130,6 +130,7 @@ func (s *Server) Register(e *echo.Echo) {
 	v1.POST("/workspace/:workspace_id/resume", httpserver.AuthorizeHandler(s.ResumeWorkspace, authapi.EditorRole))
 	v1.GET("/workspaces/limits/:workspace_name", httpserver.AuthorizeHandler(s.GetWorkspaceLimits, authapi.ViewerRole))
 	v1.GET("/workspaces/limits/byid/:workspace_id", httpserver.AuthorizeHandler(s.GetWorkspaceLimitsByID, authapi.ViewerRole))
+	v1.GET("/workspaces/byid/:workspace_id", httpserver.AuthorizeHandler(s.GetWorkspaceByID, authapi.ViewerRole))
 	v1.GET("/workspaces", httpserver.AuthorizeHandler(s.ListWorkspaces, authapi.ViewerRole))
 	v1.GET("/workspaces/:workspace_id", httpserver.AuthorizeHandler(s.GetWorkspace, authapi.ViewerRole))
 	v1.POST("/workspace/:workspace_id/owner", httpserver.AuthorizeHandler(s.ChangeOwnership, authapi.EditorRole))
@@ -1316,4 +1317,23 @@ func (s *Server) GetWorkspaceLimitsByID(c echo.Context) error {
 		return err
 	}
 	return c.JSON(http.StatusOK, api.GetLimitsByTier(dbWorkspace.Tier))
+}
+
+// GetWorkspaceByID godoc
+//
+//	@Summary	Get workspace
+//	@Tags		workspace
+//	@Accept		json
+//	@Produce	json
+//	@Param		workspace_id	path	string	true	"Workspace Name"
+//	@Success	200				{array}	api.WorkspaceLimits
+//	@Router		/workspace/api/v1/workspaces/byid/{workspace_id} [get]
+func (s *Server) GetWorkspaceByID(c echo.Context) error {
+	workspaceID := c.Param("workspace_id")
+
+	dbWorkspace, err := s.db.GetWorkspace(workspaceID)
+	if err != nil {
+		return err
+	}
+	return c.JSON(http.StatusOK, dbWorkspace)
 }

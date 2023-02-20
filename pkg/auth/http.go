@@ -2,6 +2,7 @@ package auth
 
 import (
 	"fmt"
+	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpclient"
 	"net/http"
 	"time"
 
@@ -33,6 +34,7 @@ func (r *httpRoutes) Register(e *echo.Echo) {
 	v1.PUT("/user/role/binding", httpserver.AuthorizeHandler(r.PutRoleBinding, api.AdminRole))
 	v1.DELETE("/user/role/binding", httpserver.AuthorizeHandler(r.DeleteRoleBinding, api.AdminRole))
 	v1.GET("/user/role/bindings", httpserver.AuthorizeHandler(r.GetRoleBindings, api.ViewerRole))
+	v1.GET("/user/workspace/membership", httpserver.AuthorizeHandler(r.GetWorkspaceMembership, api.ViewerRole))
 	v1.GET("/workspace/role/bindings", httpserver.AuthorizeHandler(r.GetWorkspaceRoleBindings, api.AdminRole))
 	v1.POST("/invite", httpserver.AuthorizeHandler(r.Invite, api.AdminRole))
 }
@@ -135,7 +137,6 @@ func (r *httpRoutes) GetRoleBindings(ctx echo.Context) error {
 	userID := httpserver.GetUserID(ctx)
 
 	var resp api.GetRoleBindingsResponse
-
 	usr, err := r.auth0Service.GetUser(userID)
 	if err != nil {
 		r.logger.Warn("failed to get user from auth0 due to", zap.Error(err))
@@ -143,8 +144,6 @@ func (r *httpRoutes) GetRoleBindings(ctx echo.Context) error {
 	}
 
 	if usr != nil {
-		userStr := fmt.Sprintf("%v", usr.AppMetadata)
-		r.logger.Warn("user found", zap.String("user", userStr))
 		for wsID, role := range usr.AppMetadata.WorkspaceAccess {
 			resp.RoleBindings = append(resp.RoleBindings, api.RoleBinding{
 				WorkspaceID: wsID,
@@ -152,6 +151,46 @@ func (r *httpRoutes) GetRoleBindings(ctx echo.Context) error {
 			})
 		}
 		resp.GlobalRoles = usr.AppMetadata.GlobalAccess
+	} else {
+		r.logger.Warn("user not found in auth0", zap.String("externalID", userID))
+	}
+	return ctx.JSON(http.StatusOK, resp)
+}
+
+// GetWorkspaceMembership godoc
+//
+//	@Summary		List of workspaces which the user is member of
+//	@Tags			auth
+//	@Produce		json
+//	@Success		200	{object}	api.GetRoleBindingsResponse
+//	@Router			/auth/api/v1/user/workspace/membership [get]
+func (r *httpRoutes) GetWorkspaceMembership(ctx echo.Context) error {
+	hctx := httpclient.FromEchoContext(ctx)
+	userID := httpserver.GetUserID(ctx)
+
+	var resp []api.Membership
+	usr, err := r.auth0Service.GetUser(userID)
+	if err != nil {
+		r.logger.Warn("failed to get user from auth0 due to", zap.Error(err))
+		return err
+	}
+
+	if usr != nil {
+		for wsID, role := range usr.AppMetadata.WorkspaceAccess {
+			ws, err := r.workspaceClient.GetByID(hctx, wsID)
+			if err != nil {
+				r.logger.Warn("failed to get workspace due to", zap.Error(err))
+				return err
+			}
+
+			resp = append(resp, api.Membership{
+				WorkspaceID:   wsID,
+				WorkspaceName: ws.Name,
+				Role:          role,
+				AssignedAt:    time.Time{}, //TODO- add assigned at
+				LastActivity:  time.Time{}, //TODO- add assigned at
+			})
+		}
 	} else {
 		r.logger.Warn("user not found in auth0", zap.String("externalID", userID))
 	}

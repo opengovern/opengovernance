@@ -67,6 +67,17 @@ type WorkspaceLimits struct {
 	MaxResources   int64 `json:"maxResources"`
 }
 
+type Workspace struct {
+	ID             string `json:"id"`
+	Name           string `gorm:"uniqueIndex" json:"name"`
+	OwnerId        string `json:"owner_id"`
+	URI            string `json:"uri"`
+	Status         string `json:"status"`
+	Description    string `json:"description"`
+	Tier           Tier   `json:"tier"`
+	OrganizationID *int   `json:"organization_id"`
+}
+
 type WorkspaceLimitsUsage struct {
 	ID   string `json:"id"`
 	Name string `json:"name"`
