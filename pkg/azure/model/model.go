@@ -1028,3 +1028,23 @@ type HybridKubernetesConnectedClusterDescription struct {
 	ConnectedCluster hybridkubernetes.ConnectedCluster
 	ResourceGroup    string
 }
+
+//  =================== Cost ==================
+
+type CostManagementQueryRow struct {
+	UsageDate      int     `json:"UsageDate"`
+	Cost           float64 `json:"Cost"`
+	Currency       string  `json:"currency"`
+	ResourceType   *string `json:"resourceType,omitempty"`
+	SubscriptionID *string `json:"SubscriptionId,omitempty"`
+}
+
+//index:microsoft_costmanagement_costbyresourcetype
+type CostManagementCostByResourceTypeDescription struct {
+	CostManagementQueryRow
+}
+
+//index:microsoft_costmanagement_costbysubscription
+type CostManagementCostBySubscriptionDescription struct {
+	CostManagementQueryRow
+}

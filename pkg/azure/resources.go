@@ -30,6 +30,8 @@ var resourceTypeToDescriber = map[string]ResourceDescriber{
 	"Microsoft.AppConfiguration/configurationStores":        DescribeBySubscription(describer.AppConfiguration),
 	"Microsoft.Web/hostingEnvironments":                     DescribeBySubscription(describer.AppServiceEnvironment),
 	"Microsoft.Authorization/elevateAccessRoleAssignment":   DescribeBySubscription(describer.RoleAssignment),
+	"Microsoft.CostManagement/CostByResourceType":           DescribeBySubscription(describer.DailyCostByResourceType),
+	"Microsoft.CostManagement/CostBySubscription":           DescribeBySubscription(describer.DailyCostBySubscription),
 	"Microsoft.Cache/redis":                                 DescribeBySubscription(describer.RedisCache),
 	"Microsoft.CognitiveServices/accounts":                  DescribeBySubscription(describer.CognitiveAccount),
 	"Microsoft.Compute/disks":                               DescribeBySubscription(describer.ComputeDisk),
