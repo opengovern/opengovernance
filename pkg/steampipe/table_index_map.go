@@ -284,6 +284,8 @@ var azureMap = map[string]string{
 	"Microsoft.Compute/diskEncryptionSets":                  "azure_compute_diskencryptionset",
 	"Microsoft.Kubernetes/connectedClusters":                "azure_hybridkubernetes_connectedcluster",
 	"Microsoft.Authorization/policyDefinitions":             "azure_authorization_policydefinition",
+	"Microsoft.CostManagement/CostByResourceType":           "azure_costmanagement_costbyresourcetype",
+	"Microsoft.CostManagement/CostBySubscription":           "azure_costmanagement_costbysubscription",
 }
 var AWSDescriptionMap = map[string]interface{}{
 	"AWS::CostExplorer::ByAccountMonthly": &keibi.CostExplorerByAccountMonthly{},
@@ -561,6 +563,8 @@ var AzureDescriptionMap = map[string]interface{}{
 	"Microsoft.Compute/diskEncryptionSets":                  &keibi.ComputeDiskEncryptionSet{},
 	"Microsoft.Kubernetes/connectedClusters":                &keibi.HybridKubernetesConnectedCluster{},
 	"Microsoft.Authorization/policyDefinitions":             &keibi.PolicyDefinition{},
+	"Microsoft.CostManagement/CostByResourceType":           &keibi.CostManagementCostByResourceType{},
+	"Microsoft.CostManagement/CostBySubscription":           &keibi.CostManagementCostBySubscription{},
 }
 
 type SteampipePlugin string

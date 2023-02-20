@@ -13966,3 +13966,293 @@ func GetHybridKubernetesConnectedCluster(ctx context.Context, d *plugin.QueryDat
 }
 
 // ==========================  END: HybridKubernetesConnectedCluster =============================
+
+// ==========================  START: CostManagementCostByResourceType =============================
+
+type CostManagementCostByResourceType struct {
+	Description   azure.CostManagementCostByResourceTypeDescription `json:"description"`
+	Metadata      azure.Metadata                                    `json:"metadata"`
+	ResourceJobID int                                               `json:"resource_job_id"`
+	SourceJobID   int                                               `json:"source_job_id"`
+	ResourceType  string                                            `json:"resource_type"`
+	SourceType    string                                            `json:"source_type"`
+	ID            string                                            `json:"id"`
+	SourceID      string                                            `json:"source_id"`
+}
+
+type CostManagementCostByResourceTypeHit struct {
+	ID      string                           `json:"_id"`
+	Score   float64                          `json:"_score"`
+	Index   string                           `json:"_index"`
+	Type    string                           `json:"_type"`
+	Version int64                            `json:"_version,omitempty"`
+	Source  CostManagementCostByResourceType `json:"_source"`
+	Sort    []interface{}                    `json:"sort"`
+}
+
+type CostManagementCostByResourceTypeHits struct {
+	Total SearchTotal                           `json:"total"`
+	Hits  []CostManagementCostByResourceTypeHit `json:"hits"`
+}
+
+type CostManagementCostByResourceTypeSearchResponse struct {
+	PitID string                               `json:"pit_id"`
+	Hits  CostManagementCostByResourceTypeHits `json:"hits"`
+}
+
+type CostManagementCostByResourceTypePaginator struct {
+	paginator *baseESPaginator
+}
+
+func (k Client) NewCostManagementCostByResourceTypePaginator(filters []BoolFilter, limit *int64) (CostManagementCostByResourceTypePaginator, error) {
+	paginator, err := newPaginator(k.es, "microsoft_costmanagement_costbyresourcetype", filters, limit)
+	if err != nil {
+		return CostManagementCostByResourceTypePaginator{}, err
+	}
+
+	p := CostManagementCostByResourceTypePaginator{
+		paginator: paginator,
+	}
+
+	return p, nil
+}
+
+func (p CostManagementCostByResourceTypePaginator) HasNext() bool {
+	return !p.paginator.done
+}
+
+func (p CostManagementCostByResourceTypePaginator) NextPage(ctx context.Context) ([]CostManagementCostByResourceType, error) {
+	var response CostManagementCostByResourceTypeSearchResponse
+	err := p.paginator.search(ctx, &response)
+	if err != nil {
+		return nil, err
+	}
+
+	var values []CostManagementCostByResourceType
+	for _, hit := range response.Hits.Hits {
+		values = append(values, hit.Source)
+	}
+
+	hits := int64(len(response.Hits.Hits))
+	if hits > 0 {
+		p.paginator.updateState(hits, response.Hits.Hits[hits-1].Sort, response.PitID)
+	} else {
+		p.paginator.updateState(hits, nil, "")
+	}
+
+	return values, nil
+}
+
+var listCostManagementCostByResourceTypeFilters = map[string]string{
+	"keibi_account_id": "metadata.SourceID",
+}
+
+func ListCostManagementCostByResourceType(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("ListCostManagementCostByResourceType")
+
+	// create service
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	paginator, err := k.NewCostManagementCostByResourceTypePaginator(buildFilter(d.KeyColumnQuals, listCostManagementCostByResourceTypeFilters, "azure", *cfg.AccountID), d.QueryContext.Limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			d.StreamListItem(ctx, v)
+		}
+	}
+
+	return nil, nil
+}
+
+var getCostManagementCostByResourceTypeFilters = map[string]string{
+	"keibi_account_id": "metadata.SourceID",
+}
+
+func GetCostManagementCostByResourceType(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("GetCostManagementCostByResourceType")
+
+	// create service
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	limit := int64(1)
+	paginator, err := k.NewCostManagementCostByResourceTypePaginator(buildFilter(d.KeyColumnQuals, getCostManagementCostByResourceTypeFilters, "azure", *cfg.AccountID), &limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			return v, nil
+		}
+	}
+
+	return nil, nil
+}
+
+// ==========================  END: CostManagementCostByResourceType =============================
+
+// ==========================  START: CostManagementCostBySubscription =============================
+
+type CostManagementCostBySubscription struct {
+	Description   azure.CostManagementCostBySubscriptionDescription `json:"description"`
+	Metadata      azure.Metadata                                    `json:"metadata"`
+	ResourceJobID int                                               `json:"resource_job_id"`
+	SourceJobID   int                                               `json:"source_job_id"`
+	ResourceType  string                                            `json:"resource_type"`
+	SourceType    string                                            `json:"source_type"`
+	ID            string                                            `json:"id"`
+	SourceID      string                                            `json:"source_id"`
+}
+
+type CostManagementCostBySubscriptionHit struct {
+	ID      string                           `json:"_id"`
+	Score   float64                          `json:"_score"`
+	Index   string                           `json:"_index"`
+	Type    string                           `json:"_type"`
+	Version int64                            `json:"_version,omitempty"`
+	Source  CostManagementCostBySubscription `json:"_source"`
+	Sort    []interface{}                    `json:"sort"`
+}
+
+type CostManagementCostBySubscriptionHits struct {
+	Total SearchTotal                           `json:"total"`
+	Hits  []CostManagementCostBySubscriptionHit `json:"hits"`
+}
+
+type CostManagementCostBySubscriptionSearchResponse struct {
+	PitID string                               `json:"pit_id"`
+	Hits  CostManagementCostBySubscriptionHits `json:"hits"`
+}
+
+type CostManagementCostBySubscriptionPaginator struct {
+	paginator *baseESPaginator
+}
+
+func (k Client) NewCostManagementCostBySubscriptionPaginator(filters []BoolFilter, limit *int64) (CostManagementCostBySubscriptionPaginator, error) {
+	paginator, err := newPaginator(k.es, "microsoft_costmanagement_costbysubscription", filters, limit)
+	if err != nil {
+		return CostManagementCostBySubscriptionPaginator{}, err
+	}
+
+	p := CostManagementCostBySubscriptionPaginator{
+		paginator: paginator,
+	}
+
+	return p, nil
+}
+
+func (p CostManagementCostBySubscriptionPaginator) HasNext() bool {
+	return !p.paginator.done
+}
+
+func (p CostManagementCostBySubscriptionPaginator) NextPage(ctx context.Context) ([]CostManagementCostBySubscription, error) {
+	var response CostManagementCostBySubscriptionSearchResponse
+	err := p.paginator.search(ctx, &response)
+	if err != nil {
+		return nil, err
+	}
+
+	var values []CostManagementCostBySubscription
+	for _, hit := range response.Hits.Hits {
+		values = append(values, hit.Source)
+	}
+
+	hits := int64(len(response.Hits.Hits))
+	if hits > 0 {
+		p.paginator.updateState(hits, response.Hits.Hits[hits-1].Sort, response.PitID)
+	} else {
+		p.paginator.updateState(hits, nil, "")
+	}
+
+	return values, nil
+}
+
+var listCostManagementCostBySubscriptionFilters = map[string]string{
+	"keibi_account_id": "metadata.SourceID",
+}
+
+func ListCostManagementCostBySubscription(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("ListCostManagementCostBySubscription")
+
+	// create service
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	paginator, err := k.NewCostManagementCostBySubscriptionPaginator(buildFilter(d.KeyColumnQuals, listCostManagementCostBySubscriptionFilters, "azure", *cfg.AccountID), d.QueryContext.Limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			d.StreamListItem(ctx, v)
+		}
+	}
+
+	return nil, nil
+}
+
+var getCostManagementCostBySubscriptionFilters = map[string]string{
+	"keibi_account_id": "metadata.SourceID",
+}
+
+func GetCostManagementCostBySubscription(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("GetCostManagementCostBySubscription")
+
+	// create service
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	limit := int64(1)
+	paginator, err := k.NewCostManagementCostBySubscriptionPaginator(buildFilter(d.KeyColumnQuals, getCostManagementCostBySubscriptionFilters, "azure", *cfg.AccountID), &limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			return v, nil
+		}
+	}
+
+	return nil, nil
+}
+
+// ==========================  END: CostManagementCostBySubscription =============================
