@@ -94,7 +94,7 @@ func DailyCostByResourceType(ctx context.Context, authorizer autorest.Authorizer
 		values = append(values, Resource{
 			ID: fmt.Sprintf("resource-cost-%s/%s-%d", subscription, *row.ResourceType, row.UsageDate),
 			Description: model.CostManagementCostByResourceTypeDescription{
-				CostManagementQueryRow: row,
+				CostManagementCostByResourceType: row,
 			},
 		})
 	}
@@ -121,7 +121,7 @@ func DailyCostBySubscription(ctx context.Context, authorizer autorest.Authorizer
 		values = append(values, Resource{
 			ID: fmt.Sprintf("resource-cost-%s/%d", subscription, row.UsageDate),
 			Description: model.CostManagementCostBySubscriptionDescription{
-				CostManagementQueryRow: row,
+				CostManagementCostBySubscription: row,
 			},
 		})
 	}

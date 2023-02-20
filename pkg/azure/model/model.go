@@ -1041,10 +1041,10 @@ type CostManagementQueryRow struct {
 
 //index:microsoft_costmanagement_costbyresourcetype
 type CostManagementCostByResourceTypeDescription struct {
-	CostManagementQueryRow
+	CostManagementCostByResourceType CostManagementQueryRow
 }
 
 //index:microsoft_costmanagement_costbysubscription
 type CostManagementCostBySubscriptionDescription struct {
-	CostManagementQueryRow
+	CostManagementCostBySubscription CostManagementQueryRow
 }
