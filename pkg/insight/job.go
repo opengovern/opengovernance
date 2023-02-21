@@ -111,7 +111,7 @@ func (j Job) Do(client keibi.Client, steampipeConn *steampipe.Database, onboardC
 			Data:    [][]interface{}{{count}},
 		}
 	} else {
-		res, err = steampipeConn.QueryAll(strings.ReplaceAll(j.Query, "$SOURCEID", j.SourceID))
+		res, err = steampipeConn.QueryAll(strings.ReplaceAll(j.Query, "$SOURCEID", "'"+j.SourceID+"'"))
 		if res != nil {
 			count = int64(len(res.Data))
 		}

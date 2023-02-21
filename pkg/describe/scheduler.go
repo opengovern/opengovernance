@@ -2363,6 +2363,7 @@ func (s Scheduler) scheduleInsightJob(forceCreate bool) {
 						zap.Error(err),
 					)
 					job.Status = insightapi.InsightJobFailed
+					job.FailureMessage = "Failed to enqueue InsightJob"
 					err = s.db.UpdateInsightJobStatus(job)
 					if err != nil {
 						s.logger.Error("Failed to update InsightJob status",
