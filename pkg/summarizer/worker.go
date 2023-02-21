@@ -18,8 +18,9 @@ import (
 type JobType string
 
 const (
-	JobType_ResourceSummarizer   JobType = "resourceSummarizer"
-	JobType_ComplianceSummarizer JobType = "complianceSummarizer"
+	JobType_ResourceSummarizer     JobType = "resourceSummarizer"
+	JobType_ResourceMustSummarizer JobType = "resourceMustSummarizer"
+	JobType_ComplianceSummarizer   JobType = "complianceSummarizer"
 )
 
 type Worker struct {
@@ -174,7 +175,15 @@ func (w *Worker) Run() error {
 
 	if resourceJob.JobType == "" || resourceJob.JobType == JobType_ResourceSummarizer {
 		w.logger.Info("Processing job", zap.Int("jobID", int(resourceJob.JobID)))
-		result := resourceJob.Do(w.es, w.db, w.kfkProducer, w.kfkTopic, w.logger)
+		result := resourceJob.DoSummarizer(w.es, w.db, w.kfkProducer, w.kfkTopic, w.logger)
+		w.logger.Info("Publishing job result", zap.Int("jobID", int(resourceJob.JobID)), zap.String("status", string(result.Status)))
+		err = w.jobResultQueue.Publish(result)
+		if err != nil {
+			w.logger.Error("Failed to send results to queue: %s", zap.Error(err))
+		}
+	} else if resourceJob.JobType == JobType_ResourceMustSummarizer {
+		w.logger.Info("Processing job", zap.Int("jobID", int(resourceJob.JobID)))
+		result := resourceJob.DoMustSummarizer(w.es, w.db, w.kfkProducer, w.kfkTopic, w.logger)
 		w.logger.Info("Publishing job result", zap.Int("jobID", int(resourceJob.JobID)), zap.String("status", string(result.Status)))
 		err = w.jobResultQueue.Publish(result)
 		if err != nil {

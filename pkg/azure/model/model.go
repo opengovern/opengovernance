@@ -1034,7 +1034,7 @@ type HybridKubernetesConnectedClusterDescription struct {
 type CostManagementQueryRow struct {
 	UsageDate      int     `json:"UsageDate"`
 	Cost           float64 `json:"Cost"`
-	Currency       string  `json:"currency"`
+	Currency       string  `json:"Currency"`
 	ResourceType   *string `json:"resourceType,omitempty"`
 	SubscriptionID *string `json:"SubscriptionId,omitempty"`
 }

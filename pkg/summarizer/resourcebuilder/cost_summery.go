@@ -6,7 +6,8 @@ import (
 	"strings"
 	"time"
 
-	"gitlab.com/keibiengine/keibi-engine/pkg/aws/model"
+	awsModel "gitlab.com/keibiengine/keibi-engine/pkg/aws/model"
+	azureModel "gitlab.com/keibiengine/keibi-engine/pkg/azure/model"
 	describe "gitlab.com/keibiengine/keibi-engine/pkg/describe/es"
 	"gitlab.com/keibiengine/keibi-engine/pkg/kafka"
 	"gitlab.com/keibiengine/keibi-engine/pkg/keibi-es-sdk"
@@ -35,6 +36,12 @@ func getTimeFromTimestring(timestring string) time.Time {
 	return t
 }
 
+func getTimeFromTimeInt(timeint int) time.Time {
+	timestring := fmt.Sprintf("%d", timeint)
+	t, _ := time.Parse("20060102", timestring)
+	return t
+}
+
 func (b *costSummaryBuilder) Process(resource describe.LookupResource) {
 	var fullResource *describe.Resource
 	var err error
@@ -49,7 +56,7 @@ func (b *costSummaryBuilder) Process(resource describe.LookupResource) {
 		if err != nil {
 			return
 		}
-		desc := model.CostExplorerByServiceMonthlyDescription{}
+		desc := awsModel.CostExplorerByServiceMonthlyDescription{}
 		err = json.Unmarshal(jsonDesc, &desc)
 		if err != nil {
 			return
@@ -82,7 +89,7 @@ func (b *costSummaryBuilder) Process(resource describe.LookupResource) {
 		if err != nil {
 			return
 		}
-		desc := model.CostExplorerByServiceDailyDescription{}
+		desc := awsModel.CostExplorerByServiceDailyDescription{}
 		err = json.Unmarshal(jsonDesc, &desc)
 		if err != nil {
 			return
@@ -115,7 +122,7 @@ func (b *costSummaryBuilder) Process(resource describe.LookupResource) {
 		if err != nil {
 			return
 		}
-		desc := model.CostExplorerByAccountMonthlyDescription{}
+		desc := awsModel.CostExplorerByAccountMonthlyDescription{}
 		err = json.Unmarshal(jsonDesc, &desc)
 		if err != nil {
 			return
@@ -147,7 +154,7 @@ func (b *costSummaryBuilder) Process(resource describe.LookupResource) {
 		if err != nil {
 			return
 		}
-		desc := model.CostExplorerByAccountDailyDescription{}
+		desc := awsModel.CostExplorerByAccountDailyDescription{}
 		err = json.Unmarshal(jsonDesc, &desc)
 		if err != nil {
 			return
@@ -165,6 +172,71 @@ func (b *costSummaryBuilder) Process(resource describe.LookupResource) {
 				Cost:          desc,
 				PeriodStart:   getTimeFromTimestring(*desc.PeriodStart).Unix(),
 				PeriodEnd:     getTimeFromTimestring(*desc.PeriodEnd).Unix(),
+			}
+			v.ReportType = es.CostConnectionSummaryDaily
+			b.costsByAccount[key] = v
+		}
+	case "microsoft.costmanagement/costbyresourcetype":
+		fullResource, err = query.GetResourceFromResourceLookup(b.client, resource)
+		if err != nil {
+			fmt.Printf("(costSummaryBuilder) - Error getting resource from lookup: %v", err)
+			return
+		}
+		jsonDesc, err := json.Marshal(fullResource.Description)
+		if err != nil {
+			return
+		}
+		desc := azureModel.CostManagementCostByResourceTypeDescription{}
+		err = json.Unmarshal(jsonDesc, &desc)
+		if err != nil {
+			return
+		}
+		fullResource.Description = desc
+
+		key := fmt.Sprintf("%s|%s|%s|%d", resource.SourceID, *desc.CostManagementCostByResourceType.ResourceType, desc.CostManagementCostByResourceType.Currency, desc.CostManagementCostByResourceType.UsageDate)
+		if _, ok := b.costsByService[key]; !ok {
+			v := es.ServiceCostSummary{
+				ServiceName:   *desc.CostManagementCostByResourceType.ResourceType,
+				ScheduleJobID: resource.ScheduleJobID,
+				SourceID:      resource.SourceID,
+				SourceType:    resource.SourceType,
+				SourceJobID:   resource.SourceJobID,
+				ResourceType:  resource.ResourceType,
+				Cost:          desc.CostManagementCostByResourceType,
+				PeriodStart:   getTimeFromTimeInt(desc.CostManagementCostByResourceType.UsageDate).Unix(),
+				PeriodEnd:     getTimeFromTimeInt(desc.CostManagementCostByResourceType.UsageDate).Unix(),
+			}
+			v.ReportType = es.CostProviderSummaryDaily
+			b.costsByService[key] = v
+		}
+	case "microsoft.costmanagement/costbysubscription":
+		fullResource, err = query.GetResourceFromResourceLookup(b.client, resource)
+		if err != nil {
+			fmt.Printf("(costSummaryBuilder) - Error getting resource from lookup: %v", err)
+			return
+		}
+		jsonDesc, err := json.Marshal(fullResource.Description)
+		if err != nil {
+			return
+		}
+		desc := azureModel.CostManagementCostBySubscriptionDescription{}
+		err = json.Unmarshal(jsonDesc, &desc)
+		if err != nil {
+			return
+		}
+		fullResource.Description = desc
+		key := fmt.Sprintf("%s|%s|%d", resource.SourceID, desc.CostManagementCostBySubscription.Currency, desc.CostManagementCostBySubscription.UsageDate)
+		if _, ok := b.costsByAccount[key]; !ok {
+			v := es.ConnectionCostSummary{
+				AccountID:     resource.SourceID,
+				ScheduleJobID: resource.ScheduleJobID,
+				SourceID:      resource.SourceID,
+				SourceType:    resource.SourceType,
+				SourceJobID:   resource.SourceJobID,
+				ResourceType:  resource.ResourceType,
+				Cost:          desc.CostManagementCostBySubscription,
+				PeriodStart:   getTimeFromTimeInt(desc.CostManagementCostBySubscription.UsageDate).Unix(),
+				PeriodEnd:     getTimeFromTimeInt(desc.CostManagementCostBySubscription.UsageDate).Unix(),
 			}
 			v.ReportType = es.CostConnectionSummaryDaily
 			b.costsByAccount[key] = v
