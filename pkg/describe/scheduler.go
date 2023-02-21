@@ -734,7 +734,7 @@ func (s *Scheduler) processCloudNativeDescribeConnectionJobResourcesEvents(event
 		if err := producer.SendMessages(saramaMessages); err != nil {
 			if errs, ok := err.(sarama.ProducerErrors); ok {
 				for _, e := range errs {
-					s.logger.Error("Failed calling SendMessages", zap.Error(fmt.Errorf("Failed to persist resource[%s] in kafka topic[%s]: %s\nMessage: %v\n", e.Msg.Key, e.Msg.Topic, e.Error(), e.Msg)))
+					s.logger.Error("Failed calling SendMessages", zap.Error(fmt.Errorf("Failed to persist resource[%s] in kafka topic[%s]: %s\n", e.Msg.Key, e.Msg.Topic, e.Error())))
 				}
 			}
 			continue
