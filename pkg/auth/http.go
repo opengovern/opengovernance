@@ -266,6 +266,12 @@ func (r *httpRoutes) Invite(ctx echo.Context) error {
 		if err != nil {
 			return err
 		}
+
+		emailContent := inviteEmailTemplate
+		err = r.emailService.SendEmail(context.Background(), req.Email, emailContent)
+		if err != nil {
+			return err
+		}
 	} else {
 		user, err := r.auth0Service.CreateUser(req.Email, workspaceName, req.Role)
 		if err != nil {
