@@ -727,6 +727,7 @@ func (s *Scheduler) processCloudNativeDescribeConnectionJobResourcesEvents(event
 			})
 		}
 		producer, err := sarama.NewSyncProducerFromClient(s.kafkaClient)
+
 		if err != nil {
 			s.logger.Error("Failed to create producer", zap.Error(err))
 			continue
