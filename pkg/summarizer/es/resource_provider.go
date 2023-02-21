@@ -146,6 +146,16 @@ func (c ServiceCostSummary) GetCostAndUnit() (float64, string) {
 		}
 
 		return costFloat, costUnit.(string)
+	case "microsoft.costmanagement/costbyresourcetype":
+		costFloat, err := strconv.ParseFloat(c.Cost.(map[string]interface{})["Cost"].(string), 64)
+		if err != nil {
+			return 0, ""
+		}
+		costUnit, ok := c.Cost.(map[string]interface{})["Currency"]
+		if !ok {
+			return costFloat, "USD"
+		}
+		return costFloat, costUnit.(string)
 	}
 	return 0, ""
 }
@@ -162,6 +172,8 @@ func (c ServiceCostSummary) KeysAndIndex() ([]string, string) {
 	case "aws::costexplorer::byservicemonthly":
 		keys = append(keys, string(CostProviderSummaryMonthly))
 	case "aws::costexplorer::byservicedaily":
+		keys = append(keys, string(CostProviderSummaryDaily))
+	case "microsoft.costmanagement/costbyresourcetype":
 		keys = append(keys, string(CostProviderSummaryDaily))
 	}
 

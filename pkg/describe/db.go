@@ -976,6 +976,31 @@ func (db Database) GetSummarizerJobByScheduleID(scheduleJobID uint, jobType summ
 	return &job, nil
 }
 
+func (db Database) GetOngoingSummarizerJobsByType(jobType summarizer.JobType) ([]SummarizerJob, error) {
+	var jobs []SummarizerJob
+	tx := db.orm.Model(&SummarizerJob{}).
+		Where("job_type = ?", jobType).
+		Where("status = ?", summarizerapi.SummarizerJobInProgress).
+		Find(&jobs)
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+	return jobs, nil
+}
+
+func (db Database) FetchLastSummarizerJob() (*SummarizerJob, error) {
+	var job SummarizerJob
+	tx := db.orm.Model(&SummarizerJob{}).
+		Order("created_at DESC").First(&job)
+	if tx.Error != nil {
+		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
+		return nil, tx.Error
+	}
+	return &job, nil
+}
+
 func (db Database) AddScheduleJob(job *ScheduleJob) error {
 	tx := db.orm.Model(&ScheduleJob{}).
 		Create(&job)
@@ -1048,4 +1073,14 @@ func (db Database) GetOldCompletedScheduleJob(nDaysBefore int) (*ScheduleJob, er
 		return nil, nil
 	}
 	return job, nil
+}
+
+func (db Database) GetLatestSuccessfulDescribeJobIDsPerResourcePerAccount() ([]uint, error) {
+	var res []uint
+	tx := db.orm.Raw("SELECT MAX(drj.id) AS resource_job_ids FROM describe_resource_jobs AS drj JOIN describe_source_jobs AS dsj ON drj.parent_job_id = dsj.id WHERE (drj.status = $1) GROUP BY drj.resource_type, dsj.source_id",
+		api.DescribeResourceJobSucceeded).Scan(&res)
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+	return res, nil
 }

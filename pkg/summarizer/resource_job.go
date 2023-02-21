@@ -41,8 +41,9 @@ var DoResourceSummarizerJobsDuration = promauto.NewHistogramVec(prometheus.Histo
 }, []string{"queryid", "status"})
 
 type ResourceJob struct {
-	JobID         uint
-	ScheduleJobID uint
+	JobID                  uint
+	ScheduleJobID          *uint
+	ResourceDescribeJobIDs []uint
 
 	LastDayScheduleJobID     uint
 	LastWeekScheduleJobID    uint
@@ -60,7 +61,7 @@ type ResourceJobResult struct {
 	JobType JobType
 }
 
-func (j ResourceJob) Do(client keibi.Client, db inventory.Database, producer sarama.SyncProducer, topic string, logger *zap.Logger) (r ResourceJobResult) {
+func (j ResourceJob) DoSummarizer(client keibi.Client, db inventory.Database, producer sarama.SyncProducer, topic string, logger *zap.Logger) (r ResourceJobResult) {
 	logger.Info("Starting summarizing", zap.Int("jobID", int(j.JobID)))
 	startTime := time.Now().Unix()
 	defer func() {
@@ -75,7 +76,7 @@ func (j ResourceJob) Do(client keibi.Client, db inventory.Database, producer sar
 				JobID:   j.JobID,
 				Status:  api.SummarizerJobFailed,
 				Error:   fmt.Sprintf("paniced: %s", err),
-				JobType: JobType_ResourceSummarizer,
+				JobType: j.JobType,
 			}
 		}
 	}()
@@ -109,7 +110,7 @@ func (j ResourceJob) Do(client keibi.Client, db inventory.Database, producer sar
 	}
 	var searchAfter []interface{}
 	for {
-		lookups, err := es.FetchLookupsByScheduleJobID(client, j.ScheduleJobID, searchAfter, es.EsFetchPageSize)
+		lookups, err := es.FetchLookupsByScheduleJobID(client, *j.ScheduleJobID, searchAfter, es.EsFetchPageSize)
 		if err != nil {
 			fail(fmt.Errorf("Failed to fetch lookups: %v ", err))
 			break
@@ -140,7 +141,7 @@ func (j ResourceJob) Do(client keibi.Client, db inventory.Database, producer sar
 	}
 	logger.Info("built messages", zap.Int("count", len(msgs)))
 	for _, b := range builders {
-		err := b.Cleanup(j.ScheduleJobID)
+		err := b.Cleanup(*j.ScheduleJobID)
 		if err != nil {
 			fail(fmt.Errorf("Failed to cleanup: %v ", err))
 		}
@@ -168,6 +169,125 @@ func (j ResourceJob) Do(client keibi.Client, db inventory.Database, producer sar
 		JobID:   j.JobID,
 		Status:  status,
 		Error:   errMsg,
-		JobType: JobType_ResourceSummarizer,
+		JobType: j.JobType,
+	}
+}
+
+func (j ResourceJob) DoMustSummarizer(client keibi.Client, db inventory.Database, producer sarama.SyncProducer, topic string, logger *zap.Logger) (r ResourceJobResult) {
+	logger.Info("Starting must summarizing", zap.Int("jobID", int(j.JobID)))
+	startTime := time.Now().Unix()
+	defer func() {
+		if err := recover(); err != nil {
+			logger.Error(fmt.Sprintf("paniced with error: %v", err), zap.Int("jobID", int(j.JobID)))
+			fmt.Println("paniced with error:", err)
+			fmt.Println(errors.Wrap(err, 2).ErrorStack())
+
+			DoResourceSummarizerJobsDuration.WithLabelValues(strconv.Itoa(int(j.JobID)), "failure").Observe(float64(time.Now().Unix() - startTime))
+			DoResourceSummarizerJobsCount.WithLabelValues(strconv.Itoa(int(j.JobID)), "failure").Inc()
+			r = ResourceJobResult{
+				JobID:   j.JobID,
+				Status:  api.SummarizerJobFailed,
+				Error:   fmt.Sprintf("paniced: %s", err),
+				JobType: j.JobType,
+			}
+		}
+	}()
+
+	// Assume it succeeded unless it fails somewhere
+	var (
+		status         = api.SummarizerJobSucceeded
+		firstErr error = nil
+	)
+
+	fail := func(err error) {
+		logger.Info("failed due to", zap.Error(err))
+		DoResourceSummarizerJobsDuration.WithLabelValues(strconv.Itoa(int(j.JobID)), "failure").Observe(float64(time.Now().Unix() - startTime))
+		DoResourceSummarizerJobsCount.WithLabelValues(strconv.Itoa(int(j.JobID)), "failure").Inc()
+		status = api.SummarizerJobFailed
+		if firstErr == nil {
+			firstErr = err
+		}
+	}
+
+	var msgs []kafka.Doc
+	builders := []resourcebuilder.Builder{
+		resourcebuilder.NewResourceSummaryBuilder(client, j.JobID),
+		resourcebuilder.NewTrendSummaryBuilder(client, j.JobID),
+		resourcebuilder.NewLocationSummaryBuilder(client, j.JobID),
+		resourcebuilder.NewResourceTypeSummaryBuilder(client, logger, db, j.JobID),
+		resourcebuilder.NewServiceSummaryBuilder(client, j.JobID),
+		resourcebuilder.NewCategorySummaryBuilder(client, j.JobID),
+		resourcebuilder.NewServiceLocationSummaryBuilder(client, j.JobID),
+		resourcebuilder.NewCostSummaryBuilder(client, j.JobID),
+	}
+
+	pageCount := len(j.ResourceDescribeJobIDs) / es.EsTermSize
+	if len(j.ResourceDescribeJobIDs)%es.EsTermSize != 0 {
+		pageCount++
+	}
+	for termPage := 0; termPage < pageCount; termPage++ {
+		end := (termPage + 1) * es.EsTermSize
+		if end > len(j.ResourceDescribeJobIDs) {
+			end = len(j.ResourceDescribeJobIDs)
+		}
+		currentPage := j.ResourceDescribeJobIDs[termPage*es.EsTermSize : end]
+
+		var searchAfter []interface{}
+		for {
+			lookups, err := es.FetchLookupsByDescribeResourceJobIdList(client, currentPage, searchAfter, es.EsFetchPageSize)
+			if err != nil {
+				fail(fmt.Errorf("Failed to fetch lookups: %v ", err))
+				break
+			}
+
+			if len(lookups.Hits.Hits) == 0 {
+				break
+			}
+
+			logger.Info("got a batch of lookup resources", zap.Int("count", len(lookups.Hits.Hits)))
+			for _, lookup := range lookups.Hits.Hits {
+				for _, b := range builders {
+					b.Process(lookup.Source)
+				}
+				searchAfter = lookup.Sort
+			}
+		}
+		logger.Info("processed lookup resources")
+	}
+
+	for _, b := range builders {
+		err := b.PopulateHistory(j.LastDayScheduleJobID, j.LastWeekScheduleJobID, j.LastQuarterScheduleJobID, j.LastYearScheduleJobID)
+		if err != nil {
+			fail(fmt.Errorf("Failed to populate history: %v ", err))
+		}
+	}
+	logger.Info("history populated")
+	for _, b := range builders {
+		msgs = append(msgs, b.Build()...)
+	}
+	logger.Info("built messages", zap.Int("count", len(msgs)))
+
+	if len(msgs) > 0 {
+		err := kafka.DoSend(producer, topic, msgs, logger)
+		if err != nil {
+			fail(fmt.Errorf("Failed to send to kafka: %v ", err))
+		}
+		logger.Info("sent to kafka")
+	}
+
+	errMsg := ""
+	if firstErr != nil {
+		errMsg = firstErr.Error()
+	}
+	if status == api.SummarizerJobSucceeded {
+		DoResourceSummarizerJobsDuration.WithLabelValues(strconv.Itoa(int(j.JobID)), "successful").Observe(float64(time.Now().Unix() - startTime))
+		DoResourceSummarizerJobsCount.WithLabelValues(strconv.Itoa(int(j.JobID)), "successful").Inc()
+	}
+
+	return ResourceJobResult{
+		JobID:   j.JobID,
+		Status:  status,
+		Error:   errMsg,
+		JobType: j.JobType,
 	}
 }

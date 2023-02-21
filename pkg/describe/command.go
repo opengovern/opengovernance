@@ -63,16 +63,17 @@ var (
 	CacheAddress  = os.Getenv("CACHE_ADDRESS")
 	JaegerAddress = os.Getenv("JAEGER_ADDRESS")
 
-	DescribeIntervalHours   = os.Getenv("DESCRIBE_INTERVAL_HOURS")
-	ComplianceIntervalHours = os.Getenv("COMPLIANCE_INTERVAL_HOURS")
-	InsightIntervalHours    = os.Getenv("INSIGHT_INTERVAL_HOURS")
-	CheckupIntervalHours    = os.Getenv("CHECKUP_INTERVAL_HOURS")
-	CurrentWorkspaceID      = os.Getenv("CURRENT_NAMESPACE")
-	WorkspaceBaseURL        = os.Getenv("WORKSPACE_BASE_URL")
-	MetadataBaseURL         = os.Getenv("METADATA_BASE_URL")
-	ComplianceBaseURL       = os.Getenv("COMPLIANCE_BASE_URL")
-	OnboardBaseURL          = os.Getenv("ONBOARD_BASE_URL")
-	IngressBaseURL          = os.Getenv("BASE_URL")
+	DescribeIntervalHours      = os.Getenv("DESCRIBE_INTERVAL_HOURS")
+	ComplianceIntervalHours    = os.Getenv("COMPLIANCE_INTERVAL_HOURS")
+	InsightIntervalHours       = os.Getenv("INSIGHT_INTERVAL_HOURS")
+	CheckupIntervalHours       = os.Getenv("CHECKUP_INTERVAL_HOURS")
+	MustSummarizeIntervalHours = os.Getenv("MUST_SUMMARIZE_INTERVAL_HOURS")
+	CurrentWorkspaceID         = os.Getenv("CURRENT_NAMESPACE")
+	WorkspaceBaseURL           = os.Getenv("WORKSPACE_BASE_URL")
+	MetadataBaseURL            = os.Getenv("METADATA_BASE_URL")
+	ComplianceBaseURL          = os.Getenv("COMPLIANCE_BASE_URL")
+	OnboardBaseURL             = os.Getenv("ONBOARD_BASE_URL")
+	IngressBaseURL             = os.Getenv("BASE_URL")
 
 	CloudNativeAPIBaseURL = os.Getenv("CLOUD_NATIVE_API_BASE_URL")
 	CloudNativeAPIAuthKey = os.Getenv("CLOUD_NATIVE_API_AUTH_KEY")
@@ -139,6 +140,7 @@ func SchedulerCommand() *cobra.Command {
 				ComplianceIntervalHours,
 				InsightIntervalHours,
 				CheckupIntervalHours,
+				MustSummarizeIntervalHours,
 			)
 			if err != nil {
 				return err

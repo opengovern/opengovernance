@@ -106,7 +106,7 @@ type InsightJob struct {
 
 type SummarizerJob struct {
 	gorm.Model
-	ScheduleJobID  uint
+	ScheduleJobID  *uint
 	Status         summarizerapi.SummarizerJobStatus
 	JobType        summarizer.JobType
 	FailureMessage string

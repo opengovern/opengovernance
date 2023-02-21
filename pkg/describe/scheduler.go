@@ -168,11 +168,12 @@ type Scheduler struct {
 	// watch the deleted source
 	deletedSources chan string
 
-	describeIntervalHours   int64
-	complianceIntervalHours int64
-	insightIntervalHours    int64
-	checkupIntervalHours    int64
-	summarizerIntervalHours int64
+	describeIntervalHours      int64
+	complianceIntervalHours    int64
+	insightIntervalHours       int64
+	checkupIntervalHours       int64
+	summarizerIntervalHours    int64
+	mustSummarizeIntervalHours int64
 
 	logger              *zap.Logger
 	workspaceClient     workspaceClient.WorkspaceServiceClient
@@ -228,6 +229,7 @@ func InitializeScheduler(
 	complianceIntervalHours string,
 	insightIntervalHours string,
 	checkupIntervalHours string,
+	mustSummarizeIntervalHours string,
 ) (s *Scheduler, err error) {
 	if id == "" {
 		return nil, fmt.Errorf("'id' must be set to a non empty string")
@@ -534,6 +536,10 @@ func InitializeScheduler(
 	if err != nil {
 		return nil, err
 	}
+	s.mustSummarizeIntervalHours, err = strconv.ParseInt(mustSummarizeIntervalHours, 10, 64)
+	if err != nil {
+		return nil, err
+	}
 
 	s.metadataClient = metadataClient.NewMetadataServiceClient(MetadataBaseURL)
 	s.workspaceClient = workspaceClient.NewWorkspaceClient(WorkspaceBaseURL)
@@ -617,6 +623,7 @@ func (s *Scheduler) Run() error {
 	go s.RunInsightJobScheduler()
 	go s.RunCheckupJobScheduler()
 	go s.RunDescribeCleanupJobScheduler()
+	go s.RunMustSummerizeJobScheduler()
 	//go s.RunComplianceReportScheduler()
 	go s.RunDeletedSourceCleanup()
 	go s.RunCloudNativeDescribeConnectionJobResourcesConsumer()
@@ -757,7 +764,7 @@ func (s *Scheduler) processCloudNativeDescribeConnectionJobResourcesEvents(event
 		successfulIDs = append(successfulIDs, event.ID)
 	}
 
-	s.logger.Info("Processed events from cloud native describe connection job resources queue", zap.Int("eventCount", len(events)))
+	s.logger.Info("Processed events from cloud native describe connection job resources sql", zap.Int("eventCount", len(successfulIDs)))
 	return successfulIDs, nil
 }
 
@@ -2305,6 +2312,24 @@ func (s Scheduler) RunCheckupJobScheduler() {
 	}
 }
 
+func (s Scheduler) RunMustSummerizeJobScheduler() {
+	s.logger.Info("Scheduling must summerize jobs on a timer")
+
+	t := time.NewTicker(JobSchedulingInterval)
+	defer t.Stop()
+
+	for ; ; <-t.C {
+		lastJob, err := s.db.FetchLastSummarizerJob()
+		if err != nil {
+			s.logger.Error("Failed to find the last job to check for MustSummerizeJob", zap.Error(err))
+			continue
+		}
+		if lastJob == nil || lastJob.CreatedAt.Add(time.Duration(s.mustSummarizeIntervalHours)*time.Hour).Before(time.Now()) {
+			s.scheduleMustSummarizerJob()
+		}
+	}
+}
+
 func (s Scheduler) scheduleInsightJob(forceCreate bool) {
 	insightJob, err := s.db.FetchLastInsightJob()
 	if err != nil {
@@ -2458,6 +2483,61 @@ func (s Scheduler) scheduleSummarizerJob(scheduleJobID uint) error {
 	return nil
 }
 
+func (s Scheduler) scheduleMustSummarizerJob() error {
+	ongoingJobs, err := s.db.GetOngoingSummarizerJobsByType(summarizer.JobType_ResourceMustSummarizer)
+	if err != nil {
+		SummarizerJobsCount.WithLabelValues("failure").Inc()
+		s.logger.Error("Failed to get ongoing SummarizerJobs",
+			zap.Error(err),
+		)
+		return err
+	}
+	if len(ongoingJobs) > 0 {
+		s.logger.Info("There is ongoing MustSummarizerJob skipping this schedule")
+		return nil
+	}
+
+	job := newMustSummarizerJob()
+	err = s.db.AddSummarizerJob(&job)
+	if err != nil {
+		SummarizerJobsCount.WithLabelValues("failure").Inc()
+		s.logger.Error("Failed to create SummarizerJob",
+			zap.Uint("jobId", job.ID),
+			zap.Error(err),
+		)
+		return err
+	}
+
+	describeJobIds, err := s.db.GetLatestSuccessfulDescribeJobIDsPerResourcePerAccount()
+	if err != nil {
+		SummarizerJobsCount.WithLabelValues("failure").Inc()
+		s.logger.Error("Failed to get latest successful DescribeJobIDs",
+			zap.Error(err),
+		)
+		return err
+	}
+
+	err = enqueueMustSummarizerJobs(s.db, s.summarizerJobQueue, job, describeJobIds)
+	if err != nil {
+		SummarizerJobsCount.WithLabelValues("failure").Inc()
+		s.logger.Error("Failed to enqueue SummarizerJob",
+			zap.Uint("jobId", job.ID),
+			zap.Error(err),
+		)
+		job.Status = summarizerapi.SummarizerJobFailed
+		err = s.db.UpdateSummarizerJobStatus(job)
+		if err != nil {
+			s.logger.Error("Failed to update SummarizerJob status",
+				zap.Uint("jobId", job.ID),
+				zap.Error(err),
+			)
+		}
+		return err
+	}
+
+	return nil
+}
+
 func enqueueSummarizerJobs(db Database, q queue.Interface, job SummarizerJob, scheduleJobID uint) error {
 	var lastDayJobID, lastWeekJobID, lastQuarterJobID, lastYearJobID uint
 
@@ -2492,12 +2572,59 @@ func enqueueSummarizerJobs(db Database, q queue.Interface, job SummarizerJob, sc
 
 	if err := q.Publish(summarizer.ResourceJob{
 		JobID:                    job.ID,
-		ScheduleJobID:            scheduleJobID,
+		ScheduleJobID:            &scheduleJobID,
 		LastDayScheduleJobID:     lastDayJobID,
 		LastWeekScheduleJobID:    lastWeekJobID,
 		LastQuarterScheduleJobID: lastQuarterJobID,
 		LastYearScheduleJobID:    lastYearJobID,
 		JobType:                  summarizer.JobType_ResourceSummarizer,
+	}); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func enqueueMustSummarizerJobs(db Database, q queue.Interface, job SummarizerJob, describeJobIds []uint) error {
+	var lastDayJobID, lastWeekJobID, lastQuarterJobID, lastYearJobID uint
+
+	lastDay, err := db.GetOldCompletedScheduleJob(1)
+	if err != nil {
+		return err
+	}
+	if lastDay != nil {
+		lastDayJobID = lastDay.ID
+	}
+	lastWeek, err := db.GetOldCompletedScheduleJob(7)
+	if err != nil {
+		return err
+	}
+	if lastWeek != nil {
+		lastWeekJobID = lastWeek.ID
+	}
+	lastQuarter, err := db.GetOldCompletedScheduleJob(93)
+	if err != nil {
+		return err
+	}
+	if lastQuarter != nil {
+		lastQuarterJobID = lastQuarter.ID
+	}
+	lastYear, err := db.GetOldCompletedScheduleJob(428)
+	if err != nil {
+		return err
+	}
+	if lastYear != nil {
+		lastYearJobID = lastYear.ID
+	}
+
+	if err := q.Publish(summarizer.ResourceJob{
+		JobID:                    job.ID,
+		ResourceDescribeJobIDs:   describeJobIds,
+		LastDayScheduleJobID:     lastDayJobID,
+		LastWeekScheduleJobID:    lastWeekJobID,
+		LastQuarterScheduleJobID: lastQuarterJobID,
+		LastYearScheduleJobID:    lastYearJobID,
+		JobType:                  summarizer.JobType_ResourceMustSummarizer,
 	}); err != nil {
 		return err
 	}
@@ -2821,7 +2948,7 @@ func (s *Scheduler) RunSummarizerJobResultsConsumer() error {
 				continue
 			}
 
-			if result.JobType == "" || result.JobType == summarizer.JobType_ResourceSummarizer {
+			if result.JobType == "" || result.JobType == summarizer.JobType_ResourceSummarizer || result.JobType == summarizer.JobType_ResourceMustSummarizer {
 				s.logger.Info("Processing SummarizerJobResult for Job",
 					zap.Uint("jobId", result.JobID),
 					zap.String("status", string(result.Status)),
@@ -2899,9 +3026,18 @@ func newCheckupJob() CheckupJob {
 func newSummarizerJob(jobType summarizer.JobType, scheduleJobID uint) SummarizerJob {
 	return SummarizerJob{
 		Model:          gorm.Model{},
-		ScheduleJobID:  scheduleJobID,
+		ScheduleJobID:  &scheduleJobID,
 		Status:         summarizerapi.SummarizerJobInProgress,
 		JobType:        jobType,
+		FailureMessage: "",
+	}
+}
+
+func newMustSummarizerJob() SummarizerJob {
+	return SummarizerJob{
+		Model:          gorm.Model{},
+		Status:         summarizerapi.SummarizerJobInProgress,
+		JobType:        summarizer.JobType_ResourceMustSummarizer,
 		FailureMessage: "",
 	}
 }
