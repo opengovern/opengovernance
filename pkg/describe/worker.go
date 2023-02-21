@@ -291,7 +291,7 @@ func newKafkaClient(brokers []string) (sarama.Client, error) {
 	cfg.Producer.RequiredAcks = sarama.WaitForAll
 	cfg.Producer.Return.Successes = true
 	cfg.Version = sarama.V2_1_0_0
-	cfg.Producer.MaxMessageBytes = 1024 * 1024 * 10 // 10MiB
+	cfg.Producer.MaxMessageBytes = 1024 * 1024 * 100 // 10MiB
 
 	client, err := sarama.NewClient(brokers, cfg)
 	if err != nil {
