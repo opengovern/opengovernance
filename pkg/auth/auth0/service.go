@@ -205,7 +205,7 @@ func (a *Service) CreateUser(email, wsName string, role api.Role) (*User, error)
 func (a *Service) CreatePasswordChangeTicket(userId string) (*CreatePasswordChangeTicketResponse, error) {
 	request := CreatePasswordChangeTicketRequest{
 		UserId:   userId,
-		ClientId: a.clientID,
+		ClientId: a.appClientID,
 		TTLSec:   a.InviteTTL,
 	}
 
