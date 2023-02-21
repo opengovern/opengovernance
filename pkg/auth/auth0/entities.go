@@ -76,15 +76,15 @@ type CreateUserRequest struct {
 }
 
 type CreatePasswordChangeTicketRequest struct {
-	ResultUrl              string `json:"result_url"`
-	UserId                 string `json:"user_id"`
-	ClientId               string `json:"client_id"`
-	OrganizationId         string `json:"organization_id"`
-	ConnectionId           string `json:"connection_id"`
-	Email                  string `json:"email"`
-	TTLSec                 int    `json:"ttl_sec"`
-	MarkEmailAsVerified    bool   `json:"mark_email_as_verified"`
-	IncludeEmailInRedirect bool   `json:"includeEmailInRedirect"`
+	ResultUrl              string `json:"result_url,omitempty"`
+	UserId                 string `json:"user_id,omitempty"`
+	ClientId               string `json:"client_id,omitempty"`
+	OrganizationId         string `json:"organization_id,omitempty"`
+	ConnectionId           string `json:"connection_id,omitempty"`
+	Email                  string `json:"email,omitempty"`
+	TTLSec                 int    `json:"ttl_sec,omitempty"`
+	MarkEmailAsVerified    bool   `json:"mark_email_as_verified,omitempty"`
+	IncludeEmailInRedirect bool   `json:"includeEmailInRedirect,omitempty"`
 }
 
 type CreatePasswordChangeTicketResponse struct {
