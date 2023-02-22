@@ -864,7 +864,6 @@ func InitializeOldCleanerWorker(
 }
 
 func (w *OldCleanerWorker) Run() error {
-
 	startTime := time.Now().Unix()
 	ctx, cancel := context.WithTimeout(context.Background(), 10*cleanupJobTimeout)
 	defer cancel()
@@ -891,7 +890,6 @@ func (w *OldCleanerWorker) Run() error {
 		// Delete the resources from both inventory_summary and resource specific index
 		indices := []string{
 			rIndex,
-			InventorySummaryIndex,
 		}
 
 		resp, err := keibi.DeleteByQuery(ctx, w.esClient, indices, query,
