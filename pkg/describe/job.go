@@ -338,6 +338,8 @@ func (j DescribeJob) Do(ictx context.Context, vlt vault.SourceConfig, rdb *redis
 		if len(msgs) > 0 {
 			if err := kafka.DoSend(producer, topic, msgs, logger); err != nil {
 				fail(fmt.Errorf("send to kafka: %w", err))
+			} else {
+				status = api.DescribeResourceJobSucceeded
 			}
 		}
 	}
