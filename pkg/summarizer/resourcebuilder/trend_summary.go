@@ -31,13 +31,14 @@ func NewTrendSummaryBuilder(client keibi.Client, summarizerJobID uint) *trendSum
 func (b *trendSummaryBuilder) Process(resource describe.LookupResource) {
 	if _, ok := b.connectionSummary[resource.SourceID]; !ok {
 		b.connectionSummary[resource.SourceID] = es.ConnectionTrendSummary{
-			ScheduleJobID: resource.ScheduleJobID,
-			SourceID:      resource.SourceID,
-			SourceType:    resource.SourceType,
-			SourceJobID:   resource.SourceJobID,
-			DescribedAt:   resource.CreatedAt,
-			ReportType:    es.TrendConnectionSummary,
-			ResourceCount: 0,
+			SummarizeJobID: b.summarizerJobID,
+			ScheduleJobID:  resource.ScheduleJobID,
+			SourceID:       resource.SourceID,
+			SourceType:     resource.SourceType,
+			SourceJobID:    resource.SourceJobID,
+			DescribedAt:    resource.CreatedAt,
+			ReportType:     es.TrendConnectionSummary,
+			ResourceCount:  0,
 		}
 	}
 	v := b.connectionSummary[resource.SourceID]
@@ -46,11 +47,12 @@ func (b *trendSummaryBuilder) Process(resource describe.LookupResource) {
 
 	if _, ok := b.providerSummary[resource.SourceType]; !ok {
 		b.providerSummary[resource.SourceType] = es.ProviderTrendSummary{
-			ScheduleJobID: resource.ScheduleJobID,
-			SourceType:    resource.SourceType,
-			DescribedAt:   resource.CreatedAt,
-			ReportType:    es.TrendProviderSummary,
-			ResourceCount: 0,
+			SummarizeJobID: b.summarizerJobID,
+			ScheduleJobID:  resource.ScheduleJobID,
+			SourceType:     resource.SourceType,
+			DescribedAt:    resource.CreatedAt,
+			ReportType:     es.TrendProviderSummary,
+			ResourceCount:  0,
 		}
 	}
 	v2 := b.providerSummary[resource.SourceType]
@@ -60,14 +62,15 @@ func (b *trendSummaryBuilder) Process(resource describe.LookupResource) {
 	key := resource.SourceID + "_" + resource.ResourceType
 	if _, ok := b.connectionResourceTypeSummary[key]; !ok {
 		b.connectionResourceTypeSummary[key] = es.ConnectionResourceTypeTrendSummary{
-			ScheduleJobID: resource.ScheduleJobID,
-			SourceID:      resource.SourceID,
-			SourceType:    resource.SourceType,
-			SourceJobID:   resource.SourceJobID,
-			DescribedAt:   resource.CreatedAt,
-			ResourceType:  resource.ResourceType,
-			ResourceCount: 0,
-			ReportType:    es.ResourceTypeTrendConnectionSummary,
+			SummarizeJobID: b.summarizerJobID,
+			ScheduleJobID:  resource.ScheduleJobID,
+			SourceID:       resource.SourceID,
+			SourceType:     resource.SourceType,
+			SourceJobID:    resource.SourceJobID,
+			DescribedAt:    resource.CreatedAt,
+			ResourceType:   resource.ResourceType,
+			ResourceCount:  0,
+			ReportType:     es.ResourceTypeTrendConnectionSummary,
 		}
 	}
 	v3 := b.connectionResourceTypeSummary[key]
@@ -77,12 +80,13 @@ func (b *trendSummaryBuilder) Process(resource describe.LookupResource) {
 	key = resource.SourceType.String() + "_" + resource.ResourceType
 	if _, ok := b.providerResourceTypeSummary[key]; !ok {
 		b.providerResourceTypeSummary[key] = es.ProviderResourceTypeTrendSummary{
-			ScheduleJobID: resource.ScheduleJobID,
-			SourceType:    resource.SourceType,
-			DescribedAt:   resource.CreatedAt,
-			ResourceType:  resource.ResourceType,
-			ResourceCount: 0,
-			ReportType:    es.ResourceTypeTrendProviderSummary,
+			SummarizeJobID: b.summarizerJobID,
+			ScheduleJobID:  resource.ScheduleJobID,
+			SourceType:     resource.SourceType,
+			DescribedAt:    resource.CreatedAt,
+			ResourceType:   resource.ResourceType,
+			ResourceCount:  0,
+			ReportType:     es.ResourceTypeTrendProviderSummary,
 		}
 	}
 	v4 := b.providerResourceTypeSummary[key]
@@ -111,6 +115,6 @@ func (b *trendSummaryBuilder) Build() []kafka.Doc {
 	return docs
 }
 
-func (b *trendSummaryBuilder) Cleanup(scheduleJobID uint) error {
+func (b *trendSummaryBuilder) Cleanup(summarizeJobID uint) error {
 	return nil
 }

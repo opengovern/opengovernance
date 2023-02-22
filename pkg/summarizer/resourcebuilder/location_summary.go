@@ -31,6 +31,7 @@ func NewLocationSummaryBuilder(client keibi.Client, summarizerJobID uint) *locat
 func (b *locationSummaryBuilder) Process(resource describe.LookupResource) {
 	if _, ok := b.connectionSummary[resource.SourceID]; !ok {
 		b.connectionSummary[resource.SourceID] = es.ConnectionLocationSummary{
+			SummarizeJobID:       b.summarizerJobID,
 			ScheduleJobID:        resource.ScheduleJobID,
 			SourceID:             resource.SourceID,
 			SourceType:           resource.SourceType,
@@ -46,6 +47,7 @@ func (b *locationSummaryBuilder) Process(resource describe.LookupResource) {
 
 	if _, ok := b.providerSummary[resource.SourceType]; !ok {
 		b.providerSummary[resource.SourceType] = es.ProviderLocationSummary{
+			SummarizeJobID:       b.summarizerJobID,
 			ScheduleJobID:        resource.ScheduleJobID,
 			SourceType:           resource.SourceType,
 			LocationDistribution: map[string]int{},
@@ -73,14 +75,14 @@ func (b *locationSummaryBuilder) Build() []kafka.Doc {
 	return docs
 }
 
-func (b *locationSummaryBuilder) Cleanup(scheduleJobID uint) error {
+func (b *locationSummaryBuilder) Cleanup(summarizeJobID uint) error {
 	query := map[string]interface{}{
 		"query": map[string]interface{}{
 			"bool": map[string]interface{}{
 				"must_not": []map[string]interface{}{
 					{
 						"term": map[string]interface{}{
-							"schedule_job_id": scheduleJobID,
+							"summarize_job_id": summarizeJobID,
 						},
 					},
 				},

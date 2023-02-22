@@ -29,6 +29,7 @@ const (
 )
 
 type ConnectionResourcesSummary struct {
+	SummarizeJobID   uint                 `json:"summarize_job_id"`
 	ScheduleJobID    uint                 `json:"schedule_job_id"`
 	SourceID         string               `json:"source_id"`
 	SourceType       source.Type          `json:"source_type"`
@@ -48,12 +49,13 @@ func (r ConnectionResourcesSummary) KeysAndIndex() ([]string, string) {
 		string(ResourceSummary),
 	}
 	if strings.HasSuffix(string(r.ReportType), "History") {
-		keys = append(keys, fmt.Sprintf("%d", r.ScheduleJobID))
+		keys = append(keys, fmt.Sprintf("%d", r.SummarizeJobID))
 	}
 	return keys, ConnectionSummaryIndex
 }
 
 type ConnectionLocationSummary struct {
+	SummarizeJobID       uint                 `json:"summarize_job_id"`
 	ScheduleJobID        uint                 `json:"schedule_job_id"`
 	SourceID             string               `json:"source_id"`
 	SourceType           source.Type          `json:"source_type"`
@@ -68,12 +70,13 @@ func (r ConnectionLocationSummary) KeysAndIndex() ([]string, string) {
 		string(LocationConnectionSummary),
 	}
 	if strings.HasSuffix(string(r.ReportType), "History") {
-		keys = append(keys, fmt.Sprintf("%d", r.ScheduleJobID))
+		keys = append(keys, fmt.Sprintf("%d", r.SummarizeJobID))
 	}
 	return keys, ConnectionSummaryIndex
 }
 
 type ConnectionServiceLocationSummary struct {
+	SummarizeJobID       uint                 `json:"summarize_job_id"`
 	ScheduleJobID        uint                 `json:"schedule_job_id"`
 	SourceID             string               `json:"source_id"`
 	SourceType           source.Type          `json:"source_type"`
@@ -90,19 +93,20 @@ func (r ConnectionServiceLocationSummary) KeysAndIndex() ([]string, string) {
 		string(ServiceLocationConnectionSummary),
 	}
 	if strings.HasSuffix(string(r.ReportType), "History") {
-		keys = append(keys, fmt.Sprintf("%d", r.ScheduleJobID))
+		keys = append(keys, fmt.Sprintf("%d", r.SummarizeJobID))
 	}
 	return keys, ConnectionSummaryIndex
 }
 
 type ConnectionTrendSummary struct {
-	ScheduleJobID uint                 `json:"schedule_job_id"`
-	SourceID      string               `json:"source_id"`
-	SourceType    source.Type          `json:"source_type"`
-	SourceJobID   uint                 `json:"source_job_id"`
-	DescribedAt   int64                `json:"described_at"`
-	ResourceCount int                  `json:"resource_count"`
-	ReportType    ConnectionReportType `json:"report_type"`
+	SummarizeJobID uint                 `json:"summarize_job_id"`
+	ScheduleJobID  uint                 `json:"schedule_job_id"`
+	SourceID       string               `json:"source_id"`
+	SourceType     source.Type          `json:"source_type"`
+	SourceJobID    uint                 `json:"source_job_id"`
+	DescribedAt    int64                `json:"described_at"`
+	ResourceCount  int                  `json:"resource_count"`
+	ReportType     ConnectionReportType `json:"report_type"`
 }
 
 func (r ConnectionTrendSummary) KeysAndIndex() ([]string, string) {
@@ -112,20 +116,21 @@ func (r ConnectionTrendSummary) KeysAndIndex() ([]string, string) {
 		string(TrendConnectionSummary),
 	}
 	if strings.HasSuffix(string(r.ReportType), "History") {
-		keys = append(keys, fmt.Sprintf("%d", r.ScheduleJobID))
+		keys = append(keys, fmt.Sprintf("%d", r.SummarizeJobID))
 	}
 	return keys, ConnectionSummaryIndex
 }
 
 type ConnectionResourceTypeTrendSummary struct {
-	ScheduleJobID uint                 `json:"schedule_job_id"`
-	SourceID      string               `json:"source_id"`
-	SourceType    source.Type          `json:"source_type"`
-	SourceJobID   uint                 `json:"source_job_id"`
-	DescribedAt   int64                `json:"described_at"`
-	ResourceType  string               `json:"resource_type"`
-	ResourceCount int                  `json:"resource_count"`
-	ReportType    ConnectionReportType `json:"report_type"`
+	SummarizeJobID uint                 `json:"summarize_job_id"`
+	ScheduleJobID  uint                 `json:"schedule_job_id"`
+	SourceID       string               `json:"source_id"`
+	SourceType     source.Type          `json:"source_type"`
+	SourceJobID    uint                 `json:"source_job_id"`
+	DescribedAt    int64                `json:"described_at"`
+	ResourceType   string               `json:"resource_type"`
+	ResourceCount  int                  `json:"resource_count"`
+	ReportType     ConnectionReportType `json:"report_type"`
 }
 
 func (r ConnectionResourceTypeTrendSummary) KeysAndIndex() ([]string, string) {
@@ -136,22 +141,23 @@ func (r ConnectionResourceTypeTrendSummary) KeysAndIndex() ([]string, string) {
 		string(ResourceTypeTrendConnectionSummary),
 	}
 	if strings.HasSuffix(string(r.ReportType), "History") {
-		keys = append(keys, fmt.Sprintf("%d", r.ScheduleJobID))
+		keys = append(keys, fmt.Sprintf("%d", r.SummarizeJobID))
 	}
 	return keys, ConnectionSummaryIndex
 }
 
 type ConnectionCostSummary struct {
-	AccountID     string               `json:"account_id"`
-	ScheduleJobID uint                 `json:"schedule_job_id"`
-	SourceID      string               `json:"source_id"`
-	SourceType    source.Type          `json:"source_type"`
-	SourceJobID   uint                 `json:"source_job_id"`
-	ResourceType  string               `json:"resource_type"`
-	Cost          any                  `json:"cost"`
-	PeriodStart   int64                `json:"period_start"`
-	PeriodEnd     int64                `json:"period_end"`
-	ReportType    ConnectionReportType `json:"report_type"`
+	SummarizeJobID uint                 `json:"summarize_job_id"`
+	AccountID      string               `json:"account_id"`
+	ScheduleJobID  uint                 `json:"schedule_job_id"`
+	SourceID       string               `json:"source_id"`
+	SourceType     source.Type          `json:"source_type"`
+	SourceJobID    uint                 `json:"source_job_id"`
+	ResourceType   string               `json:"resource_type"`
+	Cost           any                  `json:"cost"`
+	PeriodStart    int64                `json:"period_start"`
+	PeriodEnd      int64                `json:"period_end"`
+	ReportType     ConnectionReportType `json:"report_type"`
 }
 
 func (c ConnectionCostSummary) GetCostAndUnit() (float64, string) {
@@ -203,6 +209,7 @@ func (c ConnectionCostSummary) KeysAndIndex() ([]string, string) {
 }
 
 type ConnectionResourceTypeSummary struct {
+	SummarizeJobID   uint                 `json:"summarize_job_id"`
 	ScheduleJobID    uint                 `json:"schedule_job_id"`
 	SourceID         string               `json:"source_id"`
 	SourceJobID      uint                 `json:"source_job_id"`
@@ -223,12 +230,13 @@ func (r ConnectionResourceTypeSummary) KeysAndIndex() ([]string, string) {
 		string(ResourceTypeSummary),
 	}
 	if strings.HasSuffix(string(r.ReportType), "History") {
-		keys = append(keys, fmt.Sprintf("%d", r.ScheduleJobID))
+		keys = append(keys, fmt.Sprintf("%d", r.SummarizeJobID))
 	}
 	return keys, ConnectionSummaryIndex
 }
 
 type ConnectionServiceSummary struct {
+	SummarizeJobID   uint                 `json:"summarize_job_id"`
 	ScheduleJobID    uint                 `json:"schedule_job_id"`
 	SourceID         string               `json:"source_id"`
 	SourceJobID      uint                 `json:"source_job_id"`
@@ -251,12 +259,13 @@ func (r ConnectionServiceSummary) KeysAndIndex() ([]string, string) {
 		string(ServiceSummary),
 	}
 	if strings.HasSuffix(string(r.ReportType), "History") {
-		keys = append(keys, fmt.Sprintf("%d", r.ScheduleJobID))
+		keys = append(keys, fmt.Sprintf("%d", r.SummarizeJobID))
 	}
 	return keys, ConnectionSummaryIndex
 }
 
 type ConnectionCategorySummary struct {
+	SummarizeJobID   uint                 `json:"summarize_job_id"`
 	ScheduleJobID    uint                 `json:"schedule_job_id"`
 	SourceID         string               `json:"source_id"`
 	SourceJobID      uint                 `json:"source_job_id"`
@@ -279,7 +288,7 @@ func (r ConnectionCategorySummary) KeysAndIndex() ([]string, string) {
 		string(CategorySummary),
 	}
 	if strings.HasSuffix(string(r.ReportType), "History") {
-		keys = append(keys, fmt.Sprintf("%d", r.ScheduleJobID))
+		keys = append(keys, fmt.Sprintf("%d", r.SummarizeJobID))
 	}
 	return keys, ConnectionSummaryIndex
 }
