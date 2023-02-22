@@ -896,9 +896,11 @@ func (s *Scheduler) RunScheduleJobCompletionUpdater() {
 		}
 
 		inProgress := false
-		for _, j := range djs {
-			if j.Status == api.DescribeSourceJobCreated || j.Status == api.DescribeSourceJobInProgress {
-				inProgress = true
+		if djs != nil {
+			for _, j := range djs {
+				if j.Status == api.DescribeSourceJobCreated || j.Status == api.DescribeSourceJobInProgress {
+					inProgress = true
+				}
 			}
 		}
 
