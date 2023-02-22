@@ -66,15 +66,16 @@ func (b *costSummaryBuilder) Process(resource describe.LookupResource) {
 		key := fmt.Sprintf("%s|%s|%s|%s", resource.SourceID, *desc.Dimension1, *desc.PeriodStart, *desc.PeriodEnd)
 		if _, ok := b.costsByService[key]; !ok {
 			v := es.ServiceCostSummary{
-				ServiceName:   *desc.Dimension1,
-				ScheduleJobID: resource.ScheduleJobID,
-				SourceID:      resource.SourceID,
-				SourceType:    resource.SourceType,
-				SourceJobID:   resource.SourceJobID,
-				ResourceType:  resource.ResourceType,
-				Cost:          desc,
-				PeriodStart:   getTimeFromTimestring(*desc.PeriodStart).Unix(),
-				PeriodEnd:     getTimeFromTimestring(*desc.PeriodEnd).Unix(),
+				SummarizeJobID: b.summarizerJobID,
+				ServiceName:    *desc.Dimension1,
+				ScheduleJobID:  resource.ScheduleJobID,
+				SourceID:       resource.SourceID,
+				SourceType:     resource.SourceType,
+				SourceJobID:    resource.SourceJobID,
+				ResourceType:   resource.ResourceType,
+				Cost:           desc,
+				PeriodStart:    getTimeFromTimestring(*desc.PeriodStart).Unix(),
+				PeriodEnd:      getTimeFromTimestring(*desc.PeriodEnd).Unix(),
 			}
 			v.ReportType = es.CostProviderSummaryMonthly
 			b.costsByService[key] = v
@@ -99,15 +100,16 @@ func (b *costSummaryBuilder) Process(resource describe.LookupResource) {
 		key := fmt.Sprintf("%s|%s|%s|%s", resource.SourceID, *desc.Dimension1, *desc.PeriodStart, *desc.PeriodEnd)
 		if _, ok := b.costsByService[key]; !ok {
 			v := es.ServiceCostSummary{
-				ServiceName:   *desc.Dimension1,
-				ScheduleJobID: resource.ScheduleJobID,
-				SourceID:      resource.SourceID,
-				SourceType:    resource.SourceType,
-				SourceJobID:   resource.SourceJobID,
-				ResourceType:  resource.ResourceType,
-				Cost:          desc,
-				PeriodStart:   getTimeFromTimestring(*desc.PeriodStart).Unix(),
-				PeriodEnd:     getTimeFromTimestring(*desc.PeriodEnd).Unix(),
+				SummarizeJobID: b.summarizerJobID,
+				ServiceName:    *desc.Dimension1,
+				ScheduleJobID:  resource.ScheduleJobID,
+				SourceID:       resource.SourceID,
+				SourceType:     resource.SourceType,
+				SourceJobID:    resource.SourceJobID,
+				ResourceType:   resource.ResourceType,
+				Cost:           desc,
+				PeriodStart:    getTimeFromTimestring(*desc.PeriodStart).Unix(),
+				PeriodEnd:      getTimeFromTimestring(*desc.PeriodEnd).Unix(),
 			}
 			v.ReportType = es.CostProviderSummaryDaily
 			b.costsByService[key] = v
@@ -131,15 +133,16 @@ func (b *costSummaryBuilder) Process(resource describe.LookupResource) {
 		key := fmt.Sprintf("%s|%s|%s", resource.SourceID, *desc.PeriodStart, *desc.PeriodEnd)
 		if _, ok := b.costsByAccount[key]; !ok {
 			v := es.ConnectionCostSummary{
-				AccountID:     *desc.Dimension1,
-				ScheduleJobID: resource.ScheduleJobID,
-				SourceID:      resource.SourceID,
-				SourceType:    resource.SourceType,
-				SourceJobID:   resource.SourceJobID,
-				ResourceType:  resource.ResourceType,
-				Cost:          desc,
-				PeriodStart:   getTimeFromTimestring(*desc.PeriodStart).Unix(),
-				PeriodEnd:     getTimeFromTimestring(*desc.PeriodEnd).Unix(),
+				SummarizeJobID: b.summarizerJobID,
+				AccountID:      *desc.Dimension1,
+				ScheduleJobID:  resource.ScheduleJobID,
+				SourceID:       resource.SourceID,
+				SourceType:     resource.SourceType,
+				SourceJobID:    resource.SourceJobID,
+				ResourceType:   resource.ResourceType,
+				Cost:           desc,
+				PeriodStart:    getTimeFromTimestring(*desc.PeriodStart).Unix(),
+				PeriodEnd:      getTimeFromTimestring(*desc.PeriodEnd).Unix(),
 			}
 			v.ReportType = es.CostConnectionSummaryMonthly
 			b.costsByAccount[key] = v
@@ -163,15 +166,16 @@ func (b *costSummaryBuilder) Process(resource describe.LookupResource) {
 		key := fmt.Sprintf("%s|%s|%s", resource.SourceID, *desc.PeriodStart, *desc.PeriodEnd)
 		if _, ok := b.costsByAccount[key]; !ok {
 			v := es.ConnectionCostSummary{
-				AccountID:     *desc.Dimension1,
-				ScheduleJobID: resource.ScheduleJobID,
-				SourceID:      resource.SourceID,
-				SourceType:    resource.SourceType,
-				SourceJobID:   resource.SourceJobID,
-				ResourceType:  resource.ResourceType,
-				Cost:          desc,
-				PeriodStart:   getTimeFromTimestring(*desc.PeriodStart).Unix(),
-				PeriodEnd:     getTimeFromTimestring(*desc.PeriodEnd).Unix(),
+				SummarizeJobID: b.summarizerJobID,
+				AccountID:      *desc.Dimension1,
+				ScheduleJobID:  resource.ScheduleJobID,
+				SourceID:       resource.SourceID,
+				SourceType:     resource.SourceType,
+				SourceJobID:    resource.SourceJobID,
+				ResourceType:   resource.ResourceType,
+				Cost:           desc,
+				PeriodStart:    getTimeFromTimestring(*desc.PeriodStart).Unix(),
+				PeriodEnd:      getTimeFromTimestring(*desc.PeriodEnd).Unix(),
 			}
 			v.ReportType = es.CostConnectionSummaryDaily
 			b.costsByAccount[key] = v
@@ -196,15 +200,16 @@ func (b *costSummaryBuilder) Process(resource describe.LookupResource) {
 		key := fmt.Sprintf("%s|%s|%s|%d", resource.SourceID, *desc.CostManagementCostByResourceType.ResourceType, desc.CostManagementCostByResourceType.Currency, desc.CostManagementCostByResourceType.UsageDate)
 		if _, ok := b.costsByService[key]; !ok {
 			v := es.ServiceCostSummary{
-				ServiceName:   *desc.CostManagementCostByResourceType.ResourceType,
-				ScheduleJobID: resource.ScheduleJobID,
-				SourceID:      resource.SourceID,
-				SourceType:    resource.SourceType,
-				SourceJobID:   resource.SourceJobID,
-				ResourceType:  resource.ResourceType,
-				Cost:          desc.CostManagementCostByResourceType,
-				PeriodStart:   getTimeFromTimeInt(desc.CostManagementCostByResourceType.UsageDate).Unix(),
-				PeriodEnd:     getTimeFromTimeInt(desc.CostManagementCostByResourceType.UsageDate).Unix(),
+				SummarizeJobID: b.summarizerJobID,
+				ServiceName:    *desc.CostManagementCostByResourceType.ResourceType,
+				ScheduleJobID:  resource.ScheduleJobID,
+				SourceID:       resource.SourceID,
+				SourceType:     resource.SourceType,
+				SourceJobID:    resource.SourceJobID,
+				ResourceType:   resource.ResourceType,
+				Cost:           desc.CostManagementCostByResourceType,
+				PeriodStart:    getTimeFromTimeInt(desc.CostManagementCostByResourceType.UsageDate).Unix(),
+				PeriodEnd:      getTimeFromTimeInt(desc.CostManagementCostByResourceType.UsageDate).Unix(),
 			}
 			v.ReportType = es.CostProviderSummaryDaily
 			b.costsByService[key] = v
@@ -228,15 +233,16 @@ func (b *costSummaryBuilder) Process(resource describe.LookupResource) {
 		key := fmt.Sprintf("%s|%s|%d", resource.SourceID, desc.CostManagementCostBySubscription.Currency, desc.CostManagementCostBySubscription.UsageDate)
 		if _, ok := b.costsByAccount[key]; !ok {
 			v := es.ConnectionCostSummary{
-				AccountID:     resource.SourceID,
-				ScheduleJobID: resource.ScheduleJobID,
-				SourceID:      resource.SourceID,
-				SourceType:    resource.SourceType,
-				SourceJobID:   resource.SourceJobID,
-				ResourceType:  resource.ResourceType,
-				Cost:          desc.CostManagementCostBySubscription,
-				PeriodStart:   getTimeFromTimeInt(desc.CostManagementCostBySubscription.UsageDate).Unix(),
-				PeriodEnd:     getTimeFromTimeInt(desc.CostManagementCostBySubscription.UsageDate).Unix(),
+				SummarizeJobID: b.summarizerJobID,
+				AccountID:      resource.SourceID,
+				ScheduleJobID:  resource.ScheduleJobID,
+				SourceID:       resource.SourceID,
+				SourceType:     resource.SourceType,
+				SourceJobID:    resource.SourceJobID,
+				ResourceType:   resource.ResourceType,
+				Cost:           desc.CostManagementCostBySubscription,
+				PeriodStart:    getTimeFromTimeInt(desc.CostManagementCostBySubscription.UsageDate).Unix(),
+				PeriodEnd:      getTimeFromTimeInt(desc.CostManagementCostBySubscription.UsageDate).Unix(),
 			}
 			v.ReportType = es.CostConnectionSummaryDaily
 			b.costsByAccount[key] = v
@@ -261,6 +267,6 @@ func (b *costSummaryBuilder) Build() []kafka.Doc {
 	return docs
 }
 
-func (b *costSummaryBuilder) Cleanup(scheduleJobID uint) error {
+func (b *costSummaryBuilder) Cleanup(summarizeJobID uint) error {
 	return nil
 }

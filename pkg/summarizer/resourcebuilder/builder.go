@@ -9,5 +9,5 @@ type Builder interface {
 	Process(resource describe.LookupResource)
 	PopulateHistory(lastDayJobID, lastWeekJobID, lastQuarterJobID, lastYearJobID uint) error
 	Build() []kafka.Doc
-	Cleanup(scheduleJobID uint) error
+	Cleanup(summarizeJobID uint) error
 }

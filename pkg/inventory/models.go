@@ -32,6 +32,7 @@ type Metric struct {
 	Provider         string `gorm:"index"`
 	ResourceType     string `gorm:"primaryKey"`
 	ScheduleJobID    uint
+	SummarizeJobID   *uint
 	LastDayCount     *int
 	LastWeekCount    *int
 	LastQuarterCount *int

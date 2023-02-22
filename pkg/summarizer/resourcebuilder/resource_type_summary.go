@@ -38,6 +38,7 @@ func (b *resourceTypeSummaryBuilder) Process(resource describe.LookupResource) {
 	key := string(resource.SourceID) + "---" + resource.ResourceType
 	if _, ok := b.connectionSummary[key]; !ok {
 		b.connectionSummary[key] = es.ConnectionResourceTypeSummary{
+			SummarizeJobID:   b.summarizerJobID,
 			ScheduleJobID:    resource.ScheduleJobID,
 			SourceID:         resource.SourceID,
 			SourceJobID:      resource.SourceJobID,
@@ -59,6 +60,7 @@ func (b *resourceTypeSummaryBuilder) Process(resource describe.LookupResource) {
 	key = string(resource.SourceType) + "---" + resource.ResourceType
 	if _, ok := b.providerSummary[key]; !ok {
 		b.providerSummary[key] = es.ProviderResourceTypeSummary{
+			SummarizeJobID:   b.summarizerJobID,
 			ScheduleJobID:    resource.ScheduleJobID,
 			ResourceType:     resource.ResourceType,
 			SourceType:       resource.SourceType,
@@ -139,6 +141,7 @@ func (b *resourceTypeSummaryBuilder) Build() []kafka.Doc {
 			Provider:         v.SourceType.String(),
 			ResourceType:     v.ResourceType,
 			ScheduleJobID:    v.ScheduleJobID,
+			SummarizeJobID:   &v.SummarizeJobID,
 			LastDayCount:     v.LastDayCount,
 			LastWeekCount:    v.LastWeekCount,
 			LastQuarterCount: v.LastQuarterCount,
@@ -271,14 +274,14 @@ func (b *resourceTypeSummaryBuilder) queryResourceTypeProviderResourceCount(sche
 	return response.Hits.Hits[0].Source.ResourceCount, nil
 }
 
-func (b *resourceTypeSummaryBuilder) Cleanup(scheduleJobID uint) error {
+func (b *resourceTypeSummaryBuilder) Cleanup(summarizeJobID uint) error {
 	query := map[string]interface{}{
 		"query": map[string]interface{}{
 			"bool": map[string]interface{}{
 				"must_not": []map[string]interface{}{
 					{
 						"term": map[string]interface{}{
-							"schedule_job_id": scheduleJobID,
+							"summarize_job_id": summarizeJobID,
 						},
 					},
 				},

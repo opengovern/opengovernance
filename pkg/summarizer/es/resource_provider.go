@@ -26,6 +26,7 @@ const (
 )
 
 type ProviderServiceSummary struct {
+	SummarizeJobID   uint               `json:"summarize_job_id"`
 	ScheduleJobID    uint               `json:"schedule_job_id"`
 	ServiceName      string             `json:"service_name"`
 	ResourceType     string             `json:"resource_type"`
@@ -46,12 +47,13 @@ func (r ProviderServiceSummary) KeysAndIndex() ([]string, string) {
 		string(ServiceProviderSummary),
 	}
 	if strings.HasSuffix(string(r.ReportType), "History") {
-		keys = append(keys, fmt.Sprintf("%d", r.ScheduleJobID))
+		keys = append(keys, fmt.Sprintf("%d", r.SummarizeJobID))
 	}
 	return keys, ProviderSummaryIndex
 }
 
 type ProviderCategorySummary struct {
+	SummarizeJobID   uint               `json:"summarize_job_id"`
 	ScheduleJobID    uint               `json:"schedule_job_id"`
 	CategoryName     string             `json:"category_name"`
 	ResourceType     string             `json:"resource_type"`
@@ -72,17 +74,18 @@ func (r ProviderCategorySummary) KeysAndIndex() ([]string, string) {
 		string(CategoryProviderSummary),
 	}
 	if strings.HasSuffix(string(r.ReportType), "History") {
-		keys = append(keys, fmt.Sprintf("%d", r.ScheduleJobID))
+		keys = append(keys, fmt.Sprintf("%d", r.SummarizeJobID))
 	}
 	return keys, ProviderSummaryIndex
 }
 
 type ProviderTrendSummary struct {
-	ScheduleJobID uint               `json:"schedule_job_id"`
-	SourceType    source.Type        `json:"source_type"`
-	DescribedAt   int64              `json:"described_at"`
-	ResourceCount int                `json:"resource_count"`
-	ReportType    ProviderReportType `json:"report_type"`
+	SummarizeJobID uint               `json:"summarize_job_id"`
+	ScheduleJobID  uint               `json:"schedule_job_id"`
+	SourceType     source.Type        `json:"source_type"`
+	DescribedAt    int64              `json:"described_at"`
+	ResourceCount  int                `json:"resource_count"`
+	ReportType     ProviderReportType `json:"report_type"`
 }
 
 func (r ProviderTrendSummary) KeysAndIndex() ([]string, string) {
@@ -92,18 +95,19 @@ func (r ProviderTrendSummary) KeysAndIndex() ([]string, string) {
 		string(TrendProviderSummary),
 	}
 	if strings.HasSuffix(string(r.ReportType), "History") {
-		keys = append(keys, fmt.Sprintf("%d", r.ScheduleJobID))
+		keys = append(keys, fmt.Sprintf("%d", r.SummarizeJobID))
 	}
 	return keys, ProviderSummaryIndex
 }
 
 type ProviderResourceTypeTrendSummary struct {
-	ScheduleJobID uint               `json:"schedule_job_id"`
-	SourceType    source.Type        `json:"source_type"`
-	DescribedAt   int64              `json:"described_at"`
-	ResourceType  string             `json:"resource_type"`
-	ResourceCount int                `json:"resource_count"`
-	ReportType    ProviderReportType `json:"report_type"`
+	SummarizeJobID uint               `json:"summarize_job_id"`
+	ScheduleJobID  uint               `json:"schedule_job_id"`
+	SourceType     source.Type        `json:"source_type"`
+	DescribedAt    int64              `json:"described_at"`
+	ResourceType   string             `json:"resource_type"`
+	ResourceCount  int                `json:"resource_count"`
+	ReportType     ProviderReportType `json:"report_type"`
 }
 
 func (r ProviderResourceTypeTrendSummary) KeysAndIndex() ([]string, string) {
@@ -114,22 +118,23 @@ func (r ProviderResourceTypeTrendSummary) KeysAndIndex() ([]string, string) {
 		string(ResourceTypeTrendProviderSummary),
 	}
 	if strings.HasSuffix(string(r.ReportType), "History") {
-		keys = append(keys, fmt.Sprintf("%d", r.ScheduleJobID))
+		keys = append(keys, fmt.Sprintf("%d", r.SummarizeJobID))
 	}
 	return keys, ProviderSummaryIndex
 }
 
 type ServiceCostSummary struct {
-	ServiceName   string             `json:"service_name"`
-	ScheduleJobID uint               `json:"schedule_job_id"`
-	SourceID      string             `json:"source_id"`
-	SourceType    source.Type        `json:"source_type"`
-	SourceJobID   uint               `json:"source_job_id"`
-	ResourceType  string             `json:"resource_type"`
-	Cost          any                `json:"cost"`
-	PeriodStart   int64              `json:"period_start"`
-	PeriodEnd     int64              `json:"period_end"`
-	ReportType    ProviderReportType `json:"report_type"`
+	SummarizeJobID uint               `json:"summarize_job_id"`
+	ServiceName    string             `json:"service_name"`
+	ScheduleJobID  uint               `json:"schedule_job_id"`
+	SourceID       string             `json:"source_id"`
+	SourceType     source.Type        `json:"source_type"`
+	SourceJobID    uint               `json:"source_job_id"`
+	ResourceType   string             `json:"resource_type"`
+	Cost           any                `json:"cost"`
+	PeriodStart    int64              `json:"period_start"`
+	PeriodEnd      int64              `json:"period_end"`
+	ReportType     ProviderReportType `json:"report_type"`
 }
 
 func (c ServiceCostSummary) GetCostAndUnit() (float64, string) {
@@ -181,6 +186,7 @@ func (c ServiceCostSummary) KeysAndIndex() ([]string, string) {
 }
 
 type ProviderResourceTypeSummary struct {
+	SummarizeJobID   uint               `json:"summarize_job_id"`
 	ScheduleJobID    uint               `json:"schedule_job_id"`
 	ResourceType     string             `json:"resource_type"`
 	SourceType       source.Type        `json:"source_type"`
@@ -199,12 +205,13 @@ func (r ProviderResourceTypeSummary) KeysAndIndex() ([]string, string) {
 		string(ResourceTypeProviderSummary),
 	}
 	if strings.HasSuffix(string(r.ReportType), "History") {
-		keys = append(keys, fmt.Sprintf("%d", r.ScheduleJobID))
+		keys = append(keys, fmt.Sprintf("%d", r.SummarizeJobID))
 	}
 	return keys, ProviderSummaryIndex
 }
 
 type ProviderLocationSummary struct {
+	SummarizeJobID       uint               `json:"summarize_job_id"`
 	ScheduleJobID        uint               `json:"schedule_job_id"`
 	SourceType           source.Type        `json:"source_type"`
 	LocationDistribution map[string]int     `json:"location_distribution"`
@@ -217,7 +224,7 @@ func (r ProviderLocationSummary) KeysAndIndex() ([]string, string) {
 		string(LocationProviderSummary),
 	}
 	if strings.HasSuffix(string(r.ReportType), "History") {
-		keys = append(keys, fmt.Sprintf("%d", r.ScheduleJobID))
+		keys = append(keys, fmt.Sprintf("%d", r.SummarizeJobID))
 	}
 	return keys, ProviderSummaryIndex
 }

@@ -141,7 +141,7 @@ func (j ResourceJob) DoSummarizer(client keibi.Client, db inventory.Database, pr
 	}
 	logger.Info("built messages", zap.Int("count", len(msgs)))
 	for _, b := range builders {
-		err := b.Cleanup(*j.ScheduleJobID)
+		err := b.Cleanup(j.JobID)
 		if err != nil {
 			fail(fmt.Errorf("Failed to cleanup: %v ", err))
 		}
@@ -266,6 +266,13 @@ func (j ResourceJob) DoMustSummarizer(client keibi.Client, db inventory.Database
 		msgs = append(msgs, b.Build()...)
 	}
 	logger.Info("built messages", zap.Int("count", len(msgs)))
+	for _, b := range builders {
+		err := b.Cleanup(j.JobID)
+		if err != nil {
+			fail(fmt.Errorf("Failed to cleanup: %v ", err))
+		}
+	}
+	logger.Info("cleanup done")
 
 	if len(msgs) > 0 {
 		err := kafka.DoSend(producer, topic, msgs, logger)

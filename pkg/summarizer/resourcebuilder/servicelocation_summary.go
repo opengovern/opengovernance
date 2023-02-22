@@ -30,6 +30,7 @@ func (b *serviceLocationSummaryBuilder) Process(resource describe.LookupResource
 	key := resource.SourceID + "-" + cloudservice.ServiceNameByResourceType(resource.ResourceType)
 	if _, ok := b.connectionSummary[key]; !ok {
 		b.connectionSummary[key] = es.ConnectionServiceLocationSummary{
+			SummarizeJobID:       b.summarizerJobID,
 			ScheduleJobID:        resource.ScheduleJobID,
 			SourceID:             resource.SourceID,
 			SourceType:           resource.SourceType,
@@ -57,14 +58,14 @@ func (b *serviceLocationSummaryBuilder) Build() []kafka.Doc {
 	return docs
 }
 
-func (b *serviceLocationSummaryBuilder) Cleanup(scheduleJobID uint) error {
+func (b *serviceLocationSummaryBuilder) Cleanup(summarizeJobID uint) error {
 	query := map[string]interface{}{
 		"query": map[string]interface{}{
 			"bool": map[string]interface{}{
 				"must_not": []map[string]interface{}{
 					{
 						"term": map[string]interface{}{
-							"schedule_job_id": scheduleJobID,
+							"summarize_job_id": summarizeJobID,
 						},
 					},
 				},

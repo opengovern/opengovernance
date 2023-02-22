@@ -3,10 +3,11 @@ package describe
 import (
 	"encoding/json"
 	"fmt"
-	insightapi "gitlab.com/keibiengine/keibi-engine/pkg/insight/api"
 	"net/http"
 	"strconv"
 	"time"
+
+	insightapi "gitlab.com/keibiengine/keibi-engine/pkg/insight/api"
 
 	"github.com/ProtonMail/gopenpgp/v2/helper"
 	api3 "gitlab.com/keibiengine/keibi-engine/pkg/auth/api"
@@ -575,15 +576,7 @@ func (h HttpServer) TriggerDescribeJob(ctx echo.Context) error {
 //	@Success		200
 //	@Router			/schedule/api/v0/summarize/trigger [get]
 func (h HttpServer) TriggerSummarizeJob(ctx echo.Context) error {
-	scheduleJob, err := h.DB.FetchLastScheduleJob()
-	if err != nil {
-		fmt.Printf("error fetching last schedule job: %v", err)
-		return ctx.JSON(http.StatusInternalServerError, api.ErrorResponse{Message: "internal error"})
-	}
-	if scheduleJob.Status == summarizerapi.SummarizerJobInProgress {
-		return ctx.JSON(http.StatusConflict, api.ErrorResponse{Message: "schedule job in progress"})
-	}
-	err = h.Scheduler.scheduleSummarizerJob(scheduleJob.ID)
+	err := h.Scheduler.scheduleMustSummarizerJob(nil)
 	if err != nil {
 		errMsg := fmt.Sprintf("error scheduling summarize job: %v", err)
 		return ctx.JSON(http.StatusInternalServerError, api.ErrorResponse{Message: errMsg})

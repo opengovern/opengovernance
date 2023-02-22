@@ -33,6 +33,7 @@ func (b *categorySummaryBuilder) Process(resource describe.LookupResource) {
 	key := resource.SourceID + "-" + cloudservice.CategoryByResourceType(resource.ResourceType)
 	if _, ok := b.connectionSummary[key]; !ok {
 		b.connectionSummary[key] = es.ConnectionCategorySummary{
+			SummarizeJobID:   b.summarizerJobID,
 			ScheduleJobID:    resource.ScheduleJobID,
 			SourceID:         resource.SourceID,
 			SourceJobID:      resource.SourceJobID,
@@ -56,6 +57,7 @@ func (b *categorySummaryBuilder) Process(resource describe.LookupResource) {
 	key = string(resource.SourceType) + "-" + cloudservice.CategoryByResourceType(resource.ResourceType)
 	if _, ok := b.providerSummary[key]; !ok {
 		b.providerSummary[key] = es.ProviderCategorySummary{
+			SummarizeJobID:   b.summarizerJobID,
 			ScheduleJobID:    resource.ScheduleJobID,
 			CategoryName:     cloudservice.CategoryByResourceType(resource.ResourceType),
 			ResourceType:     resource.ResourceType,
@@ -256,14 +258,14 @@ func (b *categorySummaryBuilder) queryCategoryProviderResourceCount(scheduleJobI
 	return response.Hits.Hits[0].Source.ResourceCount, nil
 }
 
-func (b *categorySummaryBuilder) Cleanup(scheduleJobID uint) error {
+func (b *categorySummaryBuilder) Cleanup(summarizeJobID uint) error {
 	query := map[string]interface{}{
 		"query": map[string]interface{}{
 			"bool": map[string]interface{}{
 				"must_not": []map[string]interface{}{
 					{
 						"term": map[string]interface{}{
-							"schedule_job_id": scheduleJobID,
+							"summarize_job_id": summarizeJobID,
 						},
 					},
 				},

@@ -186,7 +186,6 @@ deploy: # This job runs in the deploy stage.
     - podman build -f  docker/DescribeWorkerDockerfile . -t registry.digitalocean.com/keibi/describe-worker:$SVER_VERSION
     - podman build -f  docker/DescribeConnectionWorkerDockerfile . -t registry.digitalocean.com/keibi/describe-connection-worker:$SVER_VERSION
     - podman build -f  docker/DescribeCleanupWorkerDockerfile . -t registry.digitalocean.com/keibi/describe-cleanup-worker:$SVER_VERSION
-    - podman build -f  docker/DescribeOldCleanerWorkerDockerfile . -t registry.digitalocean.com/keibi/describe-old-cleaner-worker:$SVER_VERSION
     - podman build -f  docker/ComplianceReportWorkerDockerfile . -t registry.digitalocean.com/keibi/compliance-report-worker:$SVER_VERSION
     - podman build -f  docker/OnboardServiceDockerfile . -t registry.digitalocean.com/keibi/onboard-service:$SVER_VERSION
     - podman build -f  docker/InventoryServiceDockerfile . -t registry.digitalocean.com/keibi/inventory-service:$SVER_VERSION
@@ -203,7 +202,6 @@ deploy: # This job runs in the deploy stage.
     - podman push registry.digitalocean.com/keibi/describe-worker:$SVER_VERSION
     - podman push registry.digitalocean.com/keibi/describe-connection-worker:$SVER_VERSION
     - podman push registry.digitalocean.com/keibi/describe-cleanup-worker:$SVER_VERSION
-    - podman push registry.digitalocean.com/keibi/describe-old-cleaner-worker:$SVER_VERSION
     - podman push registry.digitalocean.com/keibi/onboard-service:$SVER_VERSION
     - podman push registry.digitalocean.com/keibi/inventory-service:$SVER_VERSION
     - podman push registry.digitalocean.com/keibi/compliance-service:$SVER_VERSION

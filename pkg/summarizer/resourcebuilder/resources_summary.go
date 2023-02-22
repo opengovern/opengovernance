@@ -28,6 +28,7 @@ func NewResourceSummaryBuilder(client keibi.Client, summarizerJobID uint) *resou
 func (b *resourceSummaryBuilder) Process(resource describe.LookupResource) {
 	if _, ok := b.connectionSummary[resource.SourceID]; !ok {
 		b.connectionSummary[resource.SourceID] = es.ConnectionResourcesSummary{
+			SummarizeJobID:   b.summarizerJobID,
 			ScheduleJobID:    resource.ScheduleJobID,
 			SourceID:         resource.SourceID,
 			SourceType:       resource.SourceType,
@@ -138,14 +139,14 @@ func (b *resourceSummaryBuilder) queryConnectionResourceCount(scheduleJobID uint
 	return response.Hits.Hits[0].Source.ResourceCount, nil
 }
 
-func (b *resourceSummaryBuilder) Cleanup(scheduleJobID uint) error {
+func (b *resourceSummaryBuilder) Cleanup(summarizeJobID uint) error {
 	query := map[string]interface{}{
 		"query": map[string]interface{}{
 			"bool": map[string]interface{}{
 				"must_not": []map[string]interface{}{
 					{
 						"term": map[string]interface{}{
-							"schedule_job_id": scheduleJobID,
+							"summarize_job_id": summarizeJobID,
 						},
 					},
 				},
