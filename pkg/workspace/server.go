@@ -1335,5 +1335,15 @@ func (s *Server) GetWorkspaceByID(c echo.Context) error {
 	if err != nil {
 		return err
 	}
-	return c.JSON(http.StatusOK, dbWorkspace)
+
+	return c.JSON(http.StatusOK, api.Workspace{
+		ID:             dbWorkspace.ID,
+		Name:           dbWorkspace.Name,
+		OwnerId:        dbWorkspace.OwnerId,
+		URI:            dbWorkspace.URI,
+		Status:         dbWorkspace.Status,
+		Description:    dbWorkspace.Description,
+		Tier:           dbWorkspace.Tier,
+		OrganizationID: dbWorkspace.OrganizationID,
+	})
 }
