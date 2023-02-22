@@ -15,8 +15,11 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/messaging/azeventhubs"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob"
 	"github.com/ProtonMail/gopenpgp/v2/helper"
+	"gitlab.com/keibiengine/keibi-engine/pkg/aws"
+	"gitlab.com/keibiengine/keibi-engine/pkg/azure"
 	"gitlab.com/keibiengine/keibi-engine/pkg/describe/api"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/producer"
+	"gitlab.com/keibiengine/keibi-engine/pkg/keibi-es-sdk"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/exporters/jaeger"
 	"go.opentelemetry.io/otel/sdk/resource"
@@ -823,4 +826,99 @@ func (w *CloudNativeConnectionWorker) Run(ctx context.Context, sendTimeout bool)
 
 func (w *CloudNativeConnectionWorker) Stop() {
 	return
+}
+
+type OldCleanerWorker struct {
+	lowerThan uint
+	esClient  *elasticsearch.Client
+	logger    *zap.Logger
+}
+
+func InitializeOldCleanerWorker(
+	lowerThan uint,
+	elasticAddress string,
+	elasticUsername string,
+	elasticPassword string,
+	logger *zap.Logger,
+) (w *OldCleanerWorker, err error) {
+	w = &OldCleanerWorker{lowerThan: lowerThan}
+
+	esClient, err := elasticsearch.NewClient(elasticsearch.Config{
+		Addresses: []string{elasticAddress},
+		Username:  elasticUsername,
+		Password:  elasticPassword,
+		Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{
+				InsecureSkipVerify: true, //nolint,gosec
+			},
+		},
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	w.esClient = esClient
+	w.logger = logger
+
+	return w, nil
+}
+
+func (w *OldCleanerWorker) Run() error {
+
+	startTime := time.Now().Unix()
+	ctx, cancel := context.WithTimeout(context.Background(), 10*cleanupJobTimeout)
+	defer cancel()
+
+	awsResourceTypes := aws.ListResourceTypes()
+	azureResourceTypes := azure.ListResourceTypes()
+
+	resourceTypes := append(awsResourceTypes, azureResourceTypes...)
+
+	for _, resourceType := range resourceTypes {
+		rIndex := ResourceTypeToESIndex(resourceType)
+		fmt.Printf("Cleaning resources with resource_job_id lower than %d from index %s\n", w.lowerThan, rIndex)
+
+		query := map[string]any{
+			"query": map[string]any{
+				"range": map[string]any{
+					"resource_job_id": map[string]any{
+						"lt": w.lowerThan,
+					},
+				},
+			},
+		}
+
+		// Delete the resources from both inventory_summary and resource specific index
+		indices := []string{
+			rIndex,
+			InventorySummaryIndex,
+		}
+
+		resp, err := keibi.DeleteByQuery(ctx, w.esClient, indices, query,
+			w.esClient.DeleteByQuery.WithRefresh(true),
+			w.esClient.DeleteByQuery.WithConflicts("proceed"),
+		)
+		if err != nil {
+			DoDescribeCleanupJobsDuration.WithLabelValues(resourceType, "failure").Observe(float64(time.Now().Unix() - startTime))
+			DoDescribeCleanupJobsCount.WithLabelValues(resourceType, "failure").Inc()
+			return err
+		}
+
+		if len(resp.Failures) != 0 {
+			body, err := json.Marshal(resp)
+			if err != nil {
+				return err
+			}
+
+			DoDescribeCleanupJobsDuration.WithLabelValues(resourceType, "failure").Observe(float64(time.Now().Unix() - startTime))
+			DoDescribeCleanupJobsCount.WithLabelValues(resourceType, "failure").Inc()
+			return fmt.Errorf("elasticsearch: delete by query: %s", string(body))
+		}
+
+		fmt.Printf("Successfully delete %d resources of type %s\n", resp.Deleted, resourceType)
+		DoDescribeCleanupJobsDuration.WithLabelValues(resourceType, "successful").Observe(float64(time.Now().Unix() - startTime))
+		DoDescribeCleanupJobsCount.WithLabelValues(resourceType, "successful").Inc()
+	}
+
+	return nil
 }

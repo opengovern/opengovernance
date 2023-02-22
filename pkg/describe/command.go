@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"os"
+	"strconv"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -395,6 +396,52 @@ func CloudNativeConnectionWorkerCommand() *cobra.Command {
 	cmd.Flags().StringVarP(&resourcesTopic, "resources-topic", "t", "", "The kafka topic where the resources are published.")
 	cmd.Flags().StringVarP(&jobJson, "job-json", "j", "", "The job json.")
 	cmd.Flags().BoolVar(&sendTimeout, "send-timeout", false, "If true the worker will only send a timeout message to the output queue and exit.")
+
+	return cmd
+}
+
+func OldCleanerWorkerCommand() *cobra.Command {
+	var (
+		lowerThan string
+	)
+	cmd := &cobra.Command{
+		PreRunE: func(cmd *cobra.Command, args []string) error {
+			switch {
+			case lowerThan == "":
+				return errors.New("missing required flag 'id'")
+			default:
+				return nil
+			}
+		},
+		RunE: func(cmd *cobra.Command, args []string) error {
+			logger, err := zap.NewProduction()
+			if err != nil {
+				return err
+			}
+
+			cmd.SilenceUsage = true
+
+			lowerThanInt, err := strconv.Atoi(lowerThan)
+			if err != nil {
+				return err
+			}
+
+			w, err := InitializeOldCleanerWorker(
+				uint(lowerThanInt),
+				ElasticSearchAddress,
+				ElasticSearchUsername,
+				ElasticSearchPassword,
+				logger,
+			)
+			if err != nil {
+				return err
+			}
+
+			return w.Run()
+		},
+	}
+
+	cmd.Flags().StringVar(&lowerThan, "lower-than", "", "The clean resource job ids lower than this")
 
 	return cmd
 }
