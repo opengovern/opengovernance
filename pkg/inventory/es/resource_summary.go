@@ -251,13 +251,13 @@ func FetchConnectionResourcesSummaryPage(client keibi.Client, provider source.Ty
 
 type FetchConnectionResourcesCountAtResponse struct {
 	Aggregations struct {
-		ScheduleJobIDGroup struct {
+		SummarizeJobIDGroup struct {
 			Buckets []struct {
 				SourceIDGroup struct {
 					Hits ConnectionResourcesSummaryQueryHits `json:"hits"`
 				} `json:"source_id_group"`
 			} `json:"buckets"`
-		} `json:"schedule_job_id_group"`
+		} `json:"summarize_job_id_group"`
 	} `json:"aggregations"`
 }
 
@@ -306,9 +306,9 @@ func FetchConnectionResourcesCountAtTime(client keibi.Client, provider source.Ty
 	}
 
 	res["aggs"] = map[string]any{
-		"schedule_job_id_group": map[string]any{
+		"summarize_job_id_group": map[string]any{
 			"terms": map[string]any{
-				"field": "schedule_job_id",
+				"field": "summarize_job_id",
 				"size":  1,
 				"order": map[string]string{
 					"_term": "desc",
@@ -338,10 +338,10 @@ func FetchConnectionResourcesCountAtTime(client keibi.Client, provider source.Ty
 		return nil, err
 	}
 
-	if len(response.Aggregations.ScheduleJobIDGroup.Buckets) == 0 {
+	if len(response.Aggregations.SummarizeJobIDGroup.Buckets) == 0 {
 		return hits, nil
 	}
-	for _, hit := range response.Aggregations.ScheduleJobIDGroup.Buckets[0].SourceIDGroup.Hits.Hits {
+	for _, hit := range response.Aggregations.SummarizeJobIDGroup.Buckets[0].SourceIDGroup.Hits.Hits {
 		hits = append(hits, hit.Source)
 	}
 	return hits, nil
@@ -1192,7 +1192,7 @@ func FetchConnectionServiceLocationsSummaryPage(client keibi.Client, provider so
 //    "hits": []
 //  },
 //  "aggregations": {
-//    "schedule_job_id_group": {
+//    "summarize_job_id_group": {
 //      "doc_count_error_upper_bound": 0,
 //      "sum_other_doc_count": 994296,
 //      "buckets": [
@@ -1214,7 +1214,7 @@ func FetchConnectionServiceLocationsSummaryPage(client keibi.Client, provider so
 
 type FetchResourceTypeCountAtTimeResponse struct {
 	Aggregations struct {
-		ScheduleJobIDGroup struct {
+		SummarizeJobIDGroup struct {
 			Buckets []struct {
 				ResourceTypeGroup struct {
 					Buckets []struct {
@@ -1225,7 +1225,7 @@ type FetchResourceTypeCountAtTimeResponse struct {
 					} `json:"buckets"`
 				} `json:"resource_type_group"`
 			} `json:"buckets"`
-		} `json:"schedule_job_id_group"`
+		} `json:"summarize_job_id_group"`
 	} `json:"aggregations"`
 }
 
@@ -1273,9 +1273,9 @@ func FetchResourceTypeCountAtTime(client keibi.Client, provider source.Type, sou
 		},
 	}
 	res["aggs"] = map[string]any{
-		"schedule_job_id_group": map[string]any{
+		"summarize_job_id_group": map[string]any{
 			"terms": map[string]any{
-				"field": "schedule_job_id",
+				"field": "summarize_job_id",
 				"size":  1,
 				"order": map[string]string{
 					"_term": "desc",
@@ -1313,10 +1313,10 @@ func FetchResourceTypeCountAtTime(client keibi.Client, provider source.Type, sou
 	}
 
 	result := make(map[string]int)
-	if len(response.Aggregations.ScheduleJobIDGroup.Buckets) == 0 {
+	if len(response.Aggregations.SummarizeJobIDGroup.Buckets) == 0 {
 		return result, nil
 	}
-	for _, bucket := range response.Aggregations.ScheduleJobIDGroup.Buckets[0].ResourceTypeGroup.Buckets {
+	for _, bucket := range response.Aggregations.SummarizeJobIDGroup.Buckets[0].ResourceTypeGroup.Buckets {
 		result[bucket.Key] = int(bucket.ResourceTypeCount.Value)
 	}
 	return result, nil
@@ -1324,7 +1324,7 @@ func FetchResourceTypeCountAtTime(client keibi.Client, provider source.Type, sou
 
 type FetchInsightValueAtTimeResponse struct {
 	Aggregations struct {
-		ScheduleJobIDGroup struct {
+		SummarizeJobIDGroup struct {
 			Buckets []struct {
 				Key                   int64 `json:"key"`
 				ExecutedAtAggregation struct {
@@ -1406,10 +1406,10 @@ func FetchInsightValueAtTime(client keibi.Client, t time.Time, insightIds []stri
 	}
 
 	result := make(map[string]int)
-	if len(response.Aggregations.ScheduleJobIDGroup.Buckets) == 0 {
+	if len(response.Aggregations.SummarizeJobIDGroup.Buckets) == 0 {
 		return result, nil
 	}
-	for _, bucket := range response.Aggregations.ScheduleJobIDGroup.Buckets {
+	for _, bucket := range response.Aggregations.SummarizeJobIDGroup.Buckets {
 		if len(bucket.ExecutedAtAggregation.Hits.Hits) == 0 {
 			continue
 		}
