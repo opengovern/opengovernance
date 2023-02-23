@@ -218,7 +218,7 @@ func (w *Worker) Run(ctx context.Context) error {
 		w.logger.Error(fmt.Sprintf("Rate error happened, retrying in a bit, %s", result.Error))
 		time.Sleep(5 * time.Second)
 
-		if err := msg.Nack(false, true); err != nil {
+		if err := msg.Nack(false, false); err != nil {
 			w.logger.Error("Failed requeueing message", zap.Error(err))
 		}
 		span.RecordError(errors.New(result.Error))
