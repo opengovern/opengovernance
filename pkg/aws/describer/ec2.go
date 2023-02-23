@@ -17,20 +17,10 @@ func EC2VolumeSnapshot(ctx context.Context, cfg aws.Config) ([]Resource, error) 
 	var values []Resource
 	client := ec2.NewFromConfig(cfg)
 
-	var ownerId = "owner-id"
-	ownerFilter := types.Filter{
-		Name: &ownerId,
-		Values: []string{
-			"self",
-		},
-	}
-
 	describeCtx := GetDescribeContext(ctx)
 
 	paginator := ec2.NewDescribeSnapshotsPaginator(client, &ec2.DescribeSnapshotsInput{
-		Filters: []types.Filter{
-			ownerFilter,
-		},
+		OwnerIds: []string{"self"},
 	})
 	for paginator.HasMorePages() {
 		page, err := paginator.NextPage(ctx)
