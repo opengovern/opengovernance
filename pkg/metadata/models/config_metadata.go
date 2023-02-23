@@ -35,7 +35,7 @@ func (c *StringConfigMetadata) GetCore() ConfigMetadata {
 
 type IntConfigMetadata struct {
 	ConfigMetadata
-	Value int64
+	Value int
 }
 
 func (c *IntConfigMetadata) GetKey() MetadataKey {

@@ -75,7 +75,7 @@ func (c *ConfigMetadata) ParseToType() (IConfigMetadata, error) {
 	case ConfigMetadataTypeString:
 		return &StringConfigMetadata{ConfigMetadata: *c}, nil
 	case ConfigMetadataTypeInt:
-		return &IntConfigMetadata{ConfigMetadata: *c, Value: value.(int64)}, nil
+		return &IntConfigMetadata{ConfigMetadata: *c, Value: value.(int)}, nil
 	case ConfigMetadataTypeBool:
 		return &BoolConfigMetadata{ConfigMetadata: *c, Value: value.(bool)}, nil
 	case ConfigMetadataTypeJSON:
