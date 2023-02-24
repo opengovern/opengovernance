@@ -103,6 +103,12 @@ func (s Server) Check(ctx context.Context, req *envoyauth.CheckRequest) (*envoya
 				Headers: []*envoycore.HeaderValueOption{
 					{
 						Header: &envoycore.HeaderValue{
+							Key:   httpserver.XKeibiWorkspaceIDHeader,
+							Value: rb.WorkspaceID,
+						},
+					},
+					{
+						Header: &envoycore.HeaderValue{
 							Key:   httpserver.XKeibiWorkspaceNameHeader,
 							Value: rb.WorkspaceName,
 						},
@@ -154,7 +160,7 @@ func (s Server) GetWorkspaceLimits(rb api.RoleBinding, workspaceName string) (ap
 	}
 
 	limits, err := s.workspaceClient.GetLimits(&httpclient.Context{UserRole: rb.Role, UserID: rb.UserID,
-		WorkspaceName: workspaceName}, true)
+		WorkspaceName: workspaceName}, workspaceName)
 	if err != nil {
 		return api2.WorkspaceLimitsUsage{}, err
 	}
@@ -218,8 +224,9 @@ func (s Server) GetWorkspaceByName(workspaceName string, user *userClaim) (api.R
 	var err error
 
 	rb = api.RoleBinding{
-		UserID: user.ExternalUserID,
-		Role:   api.EditorRole,
+		WorkspaceID: "",
+		UserID:      user.ExternalUserID,
+		Role:        api.EditorRole,
 	}
 
 	if workspaceName != "keibi" {
@@ -228,13 +235,13 @@ func (s Server) GetWorkspaceByName(workspaceName string, user *userClaim) (api.R
 			return rb, limits, err
 		}
 
+		rb.UserID = user.ExternalUserID
+		rb.WorkspaceName = workspaceName
+		rb.WorkspaceID = limits.ID
+
 		if rl, ok := user.WorkspaceAccess[limits.ID]; ok {
-			rb.UserID = user.ExternalUserID
-			rb.WorkspaceName = workspaceName
 			rb.Role = rl
 		} else if user.GlobalAccess != nil {
-			rb.UserID = user.ExternalUserID
-			rb.WorkspaceName = workspaceName
 			rb.Role = *user.GlobalAccess
 		} else {
 			return rb, limits, errors.New("access denied")

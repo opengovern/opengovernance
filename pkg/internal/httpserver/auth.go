@@ -11,6 +11,7 @@ import (
 )
 
 const (
+	XKeibiWorkspaceIDHeader   = "X-Keibi-WorkspaceID"
 	XKeibiWorkspaceNameHeader = "X-Keibi-WorkspaceName"
 	XKeibiUserIDHeader        = "X-Keibi-UserId"
 	XKeibiUserRoleHeader      = "X-Keibi-UserRole"
@@ -45,6 +46,15 @@ func GetWorkspaceName(ctx echo.Context) string {
 	}
 
 	return name
+}
+
+func GetWorkspaceID(ctx echo.Context) string {
+	id := ctx.Request().Header.Get(XKeibiWorkspaceIDHeader)
+	if strings.TrimSpace(id) == "" {
+		panic(fmt.Errorf("header %s is missing", XKeibiWorkspaceIDHeader))
+	}
+
+	return id
 }
 
 func GetUserRole(ctx echo.Context) api.Role {

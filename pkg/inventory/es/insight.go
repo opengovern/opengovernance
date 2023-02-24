@@ -30,16 +30,28 @@ type InsightResultQueryHit struct {
 	Sort    []interface{}      `json:"sort"`
 }
 
-func FindInsightResults(providerFilter *source.Type, sourceIDFilter *string, uuidFilter *string) (string, error) {
+func FindInsightResults(providerFilter *source.Type, sourceIDFilter *string, uuidFilter *string, queryIDFilter *uint, useHistoricalData bool) (string, error) {
 	boolQuery := map[string]interface{}{}
 	var filters []interface{}
+
+	resourceType := es.InsightResourceLast
+	if useHistoricalData {
+		resourceType = es.InsightResourceHistory
+	}
+
 	filters = append(filters, map[string]interface{}{
-		"terms": map[string][]string{"resource_type": {es.InsightResourceHistory}},
+		"terms": map[string][]string{"resource_type": {resourceType}},
 	})
 
 	if uuidFilter != nil {
 		filters = append(filters, map[string]interface{}{
 			"terms": map[string][]string{"schedule_uuid": {*uuidFilter}},
+		})
+	}
+
+	if queryIDFilter != nil {
+		filters = append(filters, map[string]interface{}{
+			"terms": map[string][]uint{"query_id": {*queryIDFilter}},
 		})
 	}
 

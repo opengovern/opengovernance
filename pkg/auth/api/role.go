@@ -52,6 +52,7 @@ type WorkspaceRoleBinding struct {
 	Role         Role         `json:"role"`
 	Status       InviteStatus `json:"status"`
 	LastActivity time.Time    `json:"lastActivity"`
+	CreatedAt    time.Time    `json:"createdAt"`
 }
 
 type GetWorkspaceRoleBindingResponse []WorkspaceRoleBinding
@@ -67,6 +68,7 @@ type InviteRequest struct {
 
 type RoleBinding struct {
 	UserID        string `json:"userId"`
+	WorkspaceID   string `json:"workspaceID"`
 	WorkspaceName string `json:"workspaceName"`
 	Role          Role   `json:"role"`
 }

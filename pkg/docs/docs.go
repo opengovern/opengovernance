@@ -35,52 +35,7 @@ const docTemplate = `{
                         }
                     }
                 ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.InviteResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/auth/api/v1/invite/invite_id": {
-            "get": {
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "auth"
-                ],
-                "summary": "Accepts users invitation and creates default (VIEW) role in invited workspace.",
-                "responses": {
-                    "200": {
-                        "description": "OK"
-                    }
-                }
-            }
-        },
-        "/auth/api/v1/invites": {
-            "get": {
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "auth"
-                ],
-                "summary": "lists all invites",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.InviteItem"
-                            }
-                        }
-                    }
-                }
+                "responses": {}
             }
         },
         "/auth/api/v1/role/binding": {
@@ -892,6 +847,33 @@ const docTemplate = `{
                         "required": true,
                         "schema": {
                             "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ListInsightResultsRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    }
+                }
+            }
+        },
+        "/inventory/api/v1/insight/results/trend": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "insights"
+                ],
+                "summary": "Get insight trend for specific result",
+                "parameters": [
+                    {
+                        "description": "Request Body",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.GetInsightResultTrendRequest"
                         }
                     }
                 ],
@@ -4510,24 +4492,8 @@ const docTemplate = `{
                 "roleBindings": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.RoleBinding"
+                        "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.UserRoleBinding"
                     }
-                }
-            }
-        },
-        "gitlab_com_keibiengine_keibi-engine_pkg_auth_api.InviteItem": {
-            "type": "object",
-            "properties": {
-                "email": {
-                    "type": "string"
-                }
-            }
-        },
-        "gitlab_com_keibiengine_keibi-engine_pkg_auth_api.InviteResponse": {
-            "type": "object",
-            "properties": {
-                "inviteId": {
-                    "type": "string"
                 }
             }
         },
@@ -4557,7 +4523,7 @@ const docTemplate = `{
                 "ViewerRole"
             ]
         },
-        "gitlab_com_keibiengine_keibi-engine_pkg_auth_api.RoleBinding": {
+        "gitlab_com_keibiengine_keibi-engine_pkg_auth_api.UserRoleBinding": {
             "type": "object",
             "properties": {
                 "role": {
@@ -4571,6 +4537,9 @@ const docTemplate = `{
         "gitlab_com_keibiengine_keibi-engine_pkg_auth_api.WorkspaceRoleBinding": {
             "type": "object",
             "properties": {
+                "createdAt": {
+                    "type": "string"
+                },
                 "email": {
                     "type": "string"
                 },
@@ -5982,6 +5951,20 @@ const docTemplate = `{
                 }
             }
         },
+        "gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.GetInsightResultTrendRequest": {
+            "type": "object",
+            "properties": {
+                "provider": {
+                    "$ref": "#/definitions/source.Type"
+                },
+                "queryID": {
+                    "type": "integer"
+                },
+                "sourceID": {
+                    "type": "string"
+                }
+            }
+        },
         "gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.GetResourceRequest": {
             "type": "object",
             "required": [
@@ -6066,23 +6049,14 @@ const docTemplate = `{
         "gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ListInsightResultsRequest": {
             "type": "object",
             "properties": {
-                "descriptionFilter": {
-                    "type": "string"
-                },
                 "executedAt": {
                     "type": "integer"
                 },
-                "labels": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
+                "provider": {
+                    "$ref": "#/definitions/source.Type"
                 },
-                "sourceIDs": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
+                "sourceID": {
+                    "type": "string"
                 }
             }
         },

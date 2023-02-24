@@ -28,3 +28,13 @@ type InsightResult struct {
 	LastQuarterValue *int64 `json:"lastQuarterValue"`
 	LastYearValue    *int64 `json:"lastYearValue"`
 }
+
+type GetInsightResultTrendRequest struct {
+	QueryID  uint         `json:"queryID"`
+	Provider *source.Type `json:"provider"`
+	SourceID *string      `json:"sourceID"`
+}
+
+type GetInsightResultTrendResponse struct {
+	Trend []TrendDataPoint `json:"trend"`
+}
