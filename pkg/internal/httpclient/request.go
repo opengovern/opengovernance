@@ -21,6 +21,7 @@ type Context struct {
 	UserRole      api.Role
 	UserID        string
 	WorkspaceName string
+	WorkspaceID   string
 
 	MaxUsers       int64
 	MaxConnections int64
@@ -31,6 +32,7 @@ func (ctx *Context) ToHeaders() map[string]string {
 	return map[string]string{
 		httpserver.XKeibiUserIDHeader:         ctx.UserID,
 		httpserver.XKeibiUserRoleHeader:       string(ctx.UserRole),
+		httpserver.XKeibiWorkspaceIDHeader:    ctx.WorkspaceID,
 		httpserver.XKeibiWorkspaceNameHeader:  ctx.WorkspaceName,
 		httpserver.XKeibiMaxUsersHeader:       fmt.Sprintf("%d", ctx.MaxUsers),
 		httpserver.XKeibiMaxConnectionsHeader: fmt.Sprintf("%d", ctx.MaxConnections),
@@ -42,7 +44,12 @@ func (ctx *Context) GetWorkspaceName() string {
 	return ctx.WorkspaceName
 }
 
+func (ctx *Context) GetWorkspaceID() string {
+	return ctx.WorkspaceID
+}
+
 func FromEchoContext(c echo.Context) *Context {
+	wsID := c.Request().Header.Get(httpserver.XKeibiWorkspaceIDHeader)
 	name := c.Request().Header.Get(httpserver.XKeibiWorkspaceNameHeader)
 	role := c.Request().Header.Get(httpserver.XKeibiUserRoleHeader)
 	id := c.Request().Header.Get(httpserver.XKeibiUserIDHeader)
@@ -51,6 +58,7 @@ func FromEchoContext(c echo.Context) *Context {
 	maxResources, _ := strconv.ParseInt(c.Request().Header.Get(httpserver.XKeibiMaxResourcesHeader), 10, 64)
 	return &Context{
 		WorkspaceName:  name,
+		WorkspaceID:    wsID,
 		UserRole:       api.Role(role),
 		UserID:         id,
 		MaxUsers:       maxUsers,

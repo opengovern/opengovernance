@@ -12,7 +12,7 @@ import (
 
 type AuthServiceClient interface {
 	PutRoleBinding(ctx *httpclient.Context, request *api.PutRoleBindingRequest) error
-	GetWorkspaceRoleBindings(ctx *httpclient.Context, workspaceName string) (api.GetWorkspaceRoleBindingResponse, error)
+	GetWorkspaceRoleBindings(ctx *httpclient.Context, workspaceName, workspaceID string) (api.GetWorkspaceRoleBindingResponse, error)
 	GetUserRoleBindings(ctx *httpclient.Context) (api.GetRoleBindingsResponse, error)
 }
 
@@ -39,6 +39,7 @@ func (c *authClient) PutRoleBinding(ctx *httpclient.Context, request *api.PutRol
 		httpserver.XKeibiUserIDHeader:        ctx.UserID,
 		httpserver.XKeibiUserRoleHeader:      string(ctx.UserRole),
 		httpserver.XKeibiWorkspaceNameHeader: ctx.WorkspaceName,
+		httpserver.XKeibiWorkspaceIDHeader:   ctx.WorkspaceID,
 
 		httpserver.XKeibiMaxUsersHeader:       fmt.Sprintf("%d", ctx.MaxUsers),
 		httpserver.XKeibiMaxConnectionsHeader: fmt.Sprintf("%d", ctx.MaxConnections),
@@ -47,13 +48,14 @@ func (c *authClient) PutRoleBinding(ctx *httpclient.Context, request *api.PutRol
 	return httpclient.DoRequest(http.MethodPut, url, headers, payload, nil)
 }
 
-func (c *authClient) GetWorkspaceRoleBindings(ctx *httpclient.Context, workspaceName string) (api.GetWorkspaceRoleBindingResponse, error) {
+func (c *authClient) GetWorkspaceRoleBindings(ctx *httpclient.Context, workspaceName, workspaceID string) (api.GetWorkspaceRoleBindingResponse, error) {
 	url := fmt.Sprintf("%s/api/v1/workspace/role/bindings", c.baseURL)
 
 	headers := map[string]string{
 		httpserver.XKeibiUserIDHeader:        ctx.UserID,
 		httpserver.XKeibiUserRoleHeader:      string(ctx.UserRole),
 		httpserver.XKeibiWorkspaceNameHeader: workspaceName,
+		httpserver.XKeibiWorkspaceIDHeader:   workspaceID,
 
 		httpserver.XKeibiMaxUsersHeader:       fmt.Sprintf("%d", ctx.MaxUsers),
 		httpserver.XKeibiMaxConnectionsHeader: fmt.Sprintf("%d", ctx.MaxConnections),
@@ -71,6 +73,7 @@ func (c *authClient) GetUserRoleBindings(ctx *httpclient.Context) (api.GetRoleBi
 		httpserver.XKeibiUserIDHeader:        ctx.UserID,
 		httpserver.XKeibiUserRoleHeader:      string(ctx.UserRole),
 		httpserver.XKeibiWorkspaceNameHeader: ctx.WorkspaceName,
+		httpserver.XKeibiWorkspaceIDHeader:   ctx.WorkspaceID,
 
 		httpserver.XKeibiMaxUsersHeader:       fmt.Sprintf("%d", ctx.MaxUsers),
 		httpserver.XKeibiMaxConnectionsHeader: fmt.Sprintf("%d", ctx.MaxConnections),

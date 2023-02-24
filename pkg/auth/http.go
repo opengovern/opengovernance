@@ -79,13 +79,13 @@ func (r httpRoutes) PutRoleBinding(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "admin user permission can't be modified by self")
 	}
 
-	workspaceName := httpserver.GetWorkspaceName(ctx)
+	workspaceID := httpserver.GetWorkspaceID(ctx)
 	auth0User, err := r.auth0Service.GetUser(req.UserID)
 	if err != nil {
 		return err
 	}
 
-	auth0User.AppMetadata.WorkspaceAccess[workspaceName] = req.Role
+	auth0User.AppMetadata.WorkspaceAccess[workspaceID] = req.Role
 	err = r.auth0Service.PatchUserAppMetadata(req.UserID, auth0User.AppMetadata)
 	if err != nil {
 		return err
@@ -115,13 +115,13 @@ func (r httpRoutes) DeleteRoleBinding(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "admin user permission can't be modified by self")
 	}
 
-	workspaceName := httpserver.GetWorkspaceName(ctx)
+	workspaceID := httpserver.GetWorkspaceID(ctx)
 	auth0User, err := r.auth0Service.GetUser(req.UserID)
 	if err != nil {
 		return err
 	}
 
-	delete(auth0User.AppMetadata.WorkspaceAccess, workspaceName)
+	delete(auth0User.AppMetadata.WorkspaceAccess, workspaceID)
 	err = r.auth0Service.PatchUserAppMetadata(req.UserID, auth0User.AppMetadata)
 	if err != nil {
 		return err
@@ -211,8 +211,8 @@ func (r *httpRoutes) GetWorkspaceMembership(ctx echo.Context) error {
 //	@Success		200	{object}	api.GetWorkspaceRoleBindingResponse
 //	@Router			/auth/api/v1/workspace/role/bindings [get]
 func (r *httpRoutes) GetWorkspaceRoleBindings(ctx echo.Context) error {
-	workspaceName := httpserver.GetWorkspaceName(ctx)
-	users, err := r.auth0Service.SearchUsersByWorkspace(workspaceName)
+	workspaceID := httpserver.GetWorkspaceID(ctx)
+	users, err := r.auth0Service.SearchUsersByWorkspace(workspaceID)
 	if err != nil {
 		return err
 	}
@@ -228,9 +228,10 @@ func (r *httpRoutes) GetWorkspaceRoleBindings(ctx echo.Context) error {
 			UserID:       u.UserId,
 			UserName:     u.Name,
 			Email:        u.Email,
-			Role:         u.AppMetadata.WorkspaceAccess[workspaceName],
+			Role:         u.AppMetadata.WorkspaceAccess[workspaceID],
 			Status:       status,
 			LastActivity: u.LastLogin,
+			CreatedAt:    u.CreatedAt,
 		})
 	}
 	return ctx.JSON(http.StatusOK, resp)
@@ -241,15 +242,14 @@ func (r *httpRoutes) GetWorkspaceRoleBindings(ctx echo.Context) error {
 //	@Summary	Invites a user to a workspace.
 //	@Tags		auth
 //	@Produce	json
-//	@Param		role	body		string	true	"role"
-//	@Success	200		{object}	api.InviteResponse
+//	@Param		role	body	string	true	"role"
 //	@Router		/auth/api/v1/invite [post]
 func (r *httpRoutes) Invite(ctx echo.Context) error {
 	var req api.InviteRequest
 	if err := bindValidate(ctx, &req); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err)
 	}
-	workspaceName := httpserver.GetWorkspaceName(ctx)
+	workspaceID := httpserver.GetWorkspaceID(ctx)
 
 	us, err := r.auth0Service.SearchByEmail(req.Email)
 	if err != nil {
@@ -261,7 +261,7 @@ func (r *httpRoutes) Invite(ctx echo.Context) error {
 		if auth0User.AppMetadata.WorkspaceAccess == nil {
 			auth0User.AppMetadata.WorkspaceAccess = map[string]api.Role{}
 		}
-		auth0User.AppMetadata.WorkspaceAccess[workspaceName] = req.Role
+		auth0User.AppMetadata.WorkspaceAccess[workspaceID] = req.Role
 		err = r.auth0Service.PatchUserAppMetadata(auth0User.UserId, auth0User.AppMetadata)
 		if err != nil {
 			return err
@@ -273,7 +273,7 @@ func (r *httpRoutes) Invite(ctx echo.Context) error {
 			return err
 		}
 	} else {
-		user, err := r.auth0Service.CreateUser(req.Email, workspaceName, req.Role)
+		user, err := r.auth0Service.CreateUser(req.Email, workspaceID, req.Role)
 		if err != nil {
 			return err
 		}

@@ -2170,7 +2170,7 @@ func (h *HttpHandler) GetSummaryMetrics(ctx echo.Context) error {
 		return nil
 	}
 
-	query, err := es.FindInsightResults(nil, nil, nil)
+	query, err := es.FindInsightResults(nil, nil, nil, nil, false)
 	if err != nil {
 		return err
 	}
@@ -3286,7 +3286,7 @@ func (h *HttpHandler) ListInsightsResults(ctx echo.Context) error {
 		insUUID = &insightUUID
 	}
 
-	query, err := es.FindInsightResults(req.Provider, req.SourceID, insUUID)
+	query, err := es.FindInsightResults(req.Provider, req.SourceID, insUUID, nil, insUUID != nil)
 	if err != nil {
 		return err
 	}
@@ -3352,6 +3352,57 @@ func (h *HttpHandler) ListInsightsResults(ctx echo.Context) error {
 	for _, v := range aggr {
 		resp.Results = append(resp.Results, v)
 	}
+
+	return ctx.JSON(200, resp)
+}
+
+// GetInsightResultTrend godoc
+//
+//	@Summary	Get insight trend for specific result
+//	@Tags		insights
+//	@Produce	json
+//	@Param		request	body	api.GetInsightResultTrendRequest	true	"Request Body"
+//	@Success	200
+//	@Router		/inventory/api/v1/insight/results/trend [get]
+func (h *HttpHandler) GetInsightResultTrend(ctx echo.Context) error {
+	var req api.GetInsightResultTrendRequest
+	if err := bindValidate(ctx, &req); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	query, err := es.FindInsightResults(req.Provider, req.SourceID, nil, &req.QueryID, true)
+	if err != nil {
+		return err
+	}
+
+	var response es.InsightResultQueryResponse
+	err = h.client.Search(context.Background(), insight.InsightsIndex,
+		query, &response)
+	if err != nil {
+		return err
+	}
+
+	resp := api.GetInsightResultTrendResponse{}
+
+	aggr := map[string]api.TrendDataPoint{}
+	for _, item := range response.Hits.Hits {
+		if v, ok := aggr[item.Source.ScheduleUUID]; ok {
+			v.Value += item.Source.Result
+			aggr[item.Source.ScheduleUUID] = v
+		} else {
+			aggr[item.Source.ScheduleUUID] = api.TrendDataPoint{
+				Timestamp: item.Source.ExecutedAt,
+				Value:     item.Source.Result,
+			}
+		}
+	}
+
+	for _, v := range aggr {
+		resp.Trend = append(resp.Trend, v)
+	}
+	sort.Slice(resp.Trend, func(i, j int) bool {
+		return resp.Trend[i].Timestamp < resp.Trend[j].Timestamp
+	})
 
 	return ctx.JSON(200, resp)
 }

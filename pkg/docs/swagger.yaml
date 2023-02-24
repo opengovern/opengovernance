@@ -5,18 +5,8 @@ definitions:
         $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.Role'
       roleBindings:
         items:
-          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.RoleBinding'
+          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.UserRoleBinding'
         type: array
-    type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_auth_api.InviteItem:
-    properties:
-      email:
-        type: string
-    type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_auth_api.InviteResponse:
-    properties:
-      inviteId:
-        type: string
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_auth_api.InviteStatus:
     enum:
@@ -38,7 +28,7 @@ definitions:
     - AdminRole
     - EditorRole
     - ViewerRole
-  gitlab_com_keibiengine_keibi-engine_pkg_auth_api.RoleBinding:
+  gitlab_com_keibiengine_keibi-engine_pkg_auth_api.UserRoleBinding:
     properties:
       role:
         $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.Role'
@@ -47,6 +37,8 @@ definitions:
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_auth_api.WorkspaceRoleBinding:
     properties:
+      createdAt:
+        type: string
       email:
         type: string
       lastActivity:
@@ -999,6 +991,15 @@ definitions:
         - $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ResourceFiltersResponse'
         description: search filters
     type: object
+  gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.GetInsightResultTrendRequest:
+    properties:
+      provider:
+        $ref: '#/definitions/source.Type'
+      queryID:
+        type: integer
+      sourceID:
+        type: string
+    type: object
   gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.GetResourceRequest:
     properties:
       ID:
@@ -1055,18 +1056,12 @@ definitions:
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ListInsightResultsRequest:
     properties:
-      descriptionFilter:
-        type: string
       executedAt:
         type: integer
-      labels:
-        items:
-          type: string
-        type: array
-      sourceIDs:
-        items:
-          type: string
-        type: array
+      provider:
+        $ref: '#/definitions/source.Type'
+      sourceID:
+        type: string
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ListQueryRequest:
     properties:
@@ -1864,37 +1859,8 @@ paths:
           type: string
       produces:
       - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.InviteResponse'
+      responses: {}
       summary: Invites a user to a workspace.
-      tags:
-      - auth
-  /auth/api/v1/invite/invite_id:
-    get:
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-      summary: Accepts users invitation and creates default (VIEW) role in invited
-        workspace.
-      tags:
-      - auth
-  /auth/api/v1/invites:
-    get:
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            items:
-              $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.InviteItem'
-            type: array
-      summary: lists all invites
       tags:
       - auth
   /auth/api/v1/role/binding:
@@ -2434,6 +2400,23 @@ paths:
         "200":
           description: OK
       summary: List insight results for specified account
+      tags:
+      - insights
+  /inventory/api/v1/insight/results/trend:
+    get:
+      parameters:
+      - description: Request Body
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.GetInsightResultTrendRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+      summary: Get insight trend for specific result
       tags:
       - insights
   /inventory/api/v1/locations/{provider}:

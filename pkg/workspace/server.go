@@ -1274,7 +1274,7 @@ func (s *Server) GetWorkspaceLimits(c echo.Context) error {
 	if ignoreUsage != "true" {
 		ectx := httpclient.FromEchoContext(c)
 		ectx.UserRole = authapi.AdminRole
-		resp, err := s.authClient.GetWorkspaceRoleBindings(ectx, workspaceName)
+		resp, err := s.authClient.GetWorkspaceRoleBindings(ectx, workspaceName, dbWorkspace.ID)
 		if err != nil {
 			return fmt.Errorf("GetWorkspaceRoleBindings: %v", err)
 		}
