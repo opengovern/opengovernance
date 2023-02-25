@@ -1863,7 +1863,40 @@ paths:
       summary: Invites a user to a workspace.
       tags:
       - auth
-  /auth/api/v1/role/binding:
+  /auth/api/v1/user/{user_id}/workspace/membership:
+    get:
+      parameters:
+      - description: userId
+        in: path
+        name: userId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.GetRoleBindingsResponse'
+      summary: List of workspaces which the user is member of
+      tags:
+      - auth
+  /auth/api/v1/user/role/binding:
+    delete:
+      parameters:
+      - description: userId
+        in: query
+        name: userId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+      summary: Delete RoleBinding for a user.
+      tags:
+      - auth
     put:
       description: RoleBinding defines the roles and actions a user can perform. There
         are currently three roles (ADMIN, EDITOR, VIEWER). User must exist before
@@ -1889,47 +1922,6 @@ paths:
         "200":
           description: OK
       summary: Update RoleBinding for a user.
-      tags:
-      - auth
-  /auth/api/v1/user/{user_id}/workspace/membership:
-    get:
-      parameters:
-      - description: userId
-        in: path
-        name: userId
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.GetRoleBindingsResponse'
-      summary: List of workspaces which the user is member of
-      tags:
-      - auth
-  /auth/api/v1/user/role/binding:
-    delete:
-      parameters:
-      - description: userId
-        in: body
-        name: userId
-        required: true
-        schema:
-          type: string
-      - description: role
-        in: body
-        name: role
-        required: true
-        schema:
-          type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-      summary: Delete RoleBinding for a user.
       tags:
       - auth
   /auth/api/v1/user/role/bindings:

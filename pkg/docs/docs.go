@@ -38,7 +38,7 @@ const docTemplate = `{
                 "responses": {}
             }
         },
-        "/auth/api/v1/role/binding": {
+        "/auth/api/v1/user/role/binding": {
             "put": {
                 "description": "RoleBinding defines the roles and actions a user can perform. There are currently three roles (ADMIN, EDITOR, VIEWER). User must exist before you can update its RoleBinding. If you want to add a role binding for a user given the email address, call invite first to get a user id. Then call this endpoint.",
                 "produces": [
@@ -73,9 +73,7 @@ const docTemplate = `{
                         "description": "OK"
                     }
                 }
-            }
-        },
-        "/auth/api/v1/user/role/binding": {
+            },
             "delete": {
                 "produces": [
                     "application/json"
@@ -86,22 +84,11 @@ const docTemplate = `{
                 "summary": "Delete RoleBinding for a user.",
                 "parameters": [
                     {
+                        "type": "string",
                         "description": "userId",
                         "name": "userId",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "type": "string"
-                        }
-                    },
-                    {
-                        "description": "role",
-                        "name": "role",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "type": "string"
-                        }
+                        "in": "query",
+                        "required": true
                     }
                 ],
                 "responses": {
