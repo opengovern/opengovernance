@@ -286,5 +286,5 @@ func (r *httpRoutes) Invite(ctx echo.Context) error {
 		}
 	}
 
-	return echo.NewHTTPError(http.StatusOK)
+	return ctx.NoContent(http.StatusOK)
 }

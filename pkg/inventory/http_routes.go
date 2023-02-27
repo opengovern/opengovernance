@@ -95,6 +95,7 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	v1.POST("/query/:queryId", httpserver.AuthorizeHandler(h.RunQuery, api3.EditorRole))
 
 	v1.GET("/insight/results", httpserver.AuthorizeHandler(h.ListInsightsResults, api3.ViewerRole))
+	v1.GET("/insight/results/trend", httpserver.AuthorizeHandler(h.GetInsightResultTrend, api3.ViewerRole))
 
 	v1.GET("/metrics/summary", httpserver.AuthorizeHandler(h.GetSummaryMetrics, api3.ViewerRole))
 	v1.GET("/metrics/categorized", httpserver.AuthorizeHandler(h.GetCategorizedMetrics, api3.ViewerRole))
