@@ -272,7 +272,7 @@ func (a *Service) PatchUserAppMetadata(userId string, appMetadata Metadata) erro
 	return nil
 }
 
-func (a *Service) SearchUsersByWorkspace(wsName string) ([]User, error) {
+func (a *Service) SearchUsersByWorkspace(wsID string) ([]User, error) {
 	if err := a.fillToken(); err != nil {
 		return nil, err
 	}
@@ -282,7 +282,10 @@ func (a *Service) SearchUsersByWorkspace(wsName string) ([]User, error) {
 	}
 
 	url.Query().Add("search_engine", "v3")
-	url.Query().Add("q", "_exists_:app_metadata.access."+wsName)
+	url.Query().Add("q", "_exists_:app_metadata.workspaceAccess."+wsID)
+
+	fmt.Println(url.String())
+
 	req, err := http.NewRequest("GET", url.String(), nil)
 	if err != nil {
 		return nil, err
