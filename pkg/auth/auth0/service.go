@@ -281,10 +281,10 @@ func (a *Service) SearchUsersByWorkspace(wsID string) ([]User, error) {
 		return nil, err
 	}
 
-	url.Query().Add("search_engine", "v3")
-	url.Query().Add("q", "_exists_:app_metadata.workspaceAccess."+wsID)
-
-	fmt.Println(url.String())
+	queryString := url.Query()
+	queryString.Set("search_engine", "v3")
+	queryString.Set("q", "_exists_:app_metadata.workspaceAccess."+wsID)
+	url.RawQuery = queryString.Encode()
 
 	req, err := http.NewRequest("GET", url.String(), nil)
 	if err != nil {
