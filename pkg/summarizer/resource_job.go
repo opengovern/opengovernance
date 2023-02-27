@@ -221,16 +221,12 @@ func (j ResourceJob) DoMustSummarizer(client keibi.Client, db inventory.Database
 		resourcebuilder.NewCostSummaryBuilder(client, j.JobID),
 	}
 
-	pageCount := len(j.ResourceDescribeJobIDs) / es.EsTermSize
-	if len(j.ResourceDescribeJobIDs)%es.EsTermSize != 0 {
-		pageCount++
-	}
-	for termPage := 0; termPage < pageCount; termPage++ {
-		end := (termPage + 1) * es.EsTermSize
+	for start := 0; start < len(j.ResourceDescribeJobIDs); start += es.EsTermSize {
+		end := start + es.EsTermSize
 		if end > len(j.ResourceDescribeJobIDs) {
 			end = len(j.ResourceDescribeJobIDs)
 		}
-		currentPage := j.ResourceDescribeJobIDs[termPage*es.EsTermSize : end]
+		currentPage := j.ResourceDescribeJobIDs[start:end]
 
 		var searchAfter []interface{}
 		for {

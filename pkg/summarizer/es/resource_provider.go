@@ -123,68 +123,6 @@ func (r ProviderResourceTypeTrendSummary) KeysAndIndex() ([]string, string) {
 	return keys, ProviderSummaryIndex
 }
 
-type ServiceCostSummary struct {
-	SummarizeJobID uint               `json:"summarize_job_id"`
-	ServiceName    string             `json:"service_name"`
-	ScheduleJobID  uint               `json:"schedule_job_id"`
-	SourceID       string             `json:"source_id"`
-	SourceType     source.Type        `json:"source_type"`
-	SourceJobID    uint               `json:"source_job_id"`
-	ResourceType   string             `json:"resource_type"`
-	Cost           any                `json:"cost"`
-	PeriodStart    int64              `json:"period_start"`
-	PeriodEnd      int64              `json:"period_end"`
-	ReportType     ProviderReportType `json:"report_type"`
-}
-
-func (c ServiceCostSummary) GetCostAndUnit() (float64, string) {
-	switch c.ResourceType {
-	case "aws::costexplorer::byservicemonthly":
-	case "aws::costexplorer::byservicedaily":
-		costFloat, err := strconv.ParseFloat(c.Cost.(map[string]interface{})["AmortizedCostAmount"].(string), 64)
-		if err != nil {
-			return 0, ""
-		}
-		costUnit, ok := c.Cost.(map[string]interface{})["AmortizedCostUnit"]
-		if !ok {
-			return 0, ""
-		}
-
-		return costFloat, costUnit.(string)
-	case "microsoft.costmanagement/costbyresourcetype":
-		costFloat, err := strconv.ParseFloat(c.Cost.(map[string]interface{})["Cost"].(string), 64)
-		if err != nil {
-			return 0, ""
-		}
-		costUnit, ok := c.Cost.(map[string]interface{})["Currency"]
-		if !ok {
-			return costFloat, "USD"
-		}
-		return costFloat, costUnit.(string)
-	}
-	return 0, ""
-}
-
-func (c ServiceCostSummary) KeysAndIndex() ([]string, string) {
-	keys := []string{
-		c.ServiceName,
-		c.SourceID,
-		c.ResourceType,
-		fmt.Sprint(c.PeriodStart),
-		fmt.Sprint(c.PeriodEnd),
-	}
-	switch c.ResourceType {
-	case "aws::costexplorer::byservicemonthly":
-		keys = append(keys, string(CostProviderSummaryMonthly))
-	case "aws::costexplorer::byservicedaily":
-		keys = append(keys, string(CostProviderSummaryDaily))
-	case "microsoft.costmanagement/costbyresourcetype":
-		keys = append(keys, string(CostProviderSummaryDaily))
-	}
-
-	return keys, CostSummeryIndex
-}
-
 type ProviderResourceTypeSummary struct {
 	SummarizeJobID   uint               `json:"summarize_job_id"`
 	ScheduleJobID    uint               `json:"schedule_job_id"`

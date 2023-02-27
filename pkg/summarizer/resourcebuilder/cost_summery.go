@@ -1,17 +1,16 @@
 package resourcebuilder
 
 import (
-	"encoding/json"
 	"fmt"
-	"strings"
 	"time"
 
+	ec2 "github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	awsModel "gitlab.com/keibiengine/keibi-engine/pkg/aws/model"
-	azureModel "gitlab.com/keibiengine/keibi-engine/pkg/azure/model"
 	describe "gitlab.com/keibiengine/keibi-engine/pkg/describe/es"
 	"gitlab.com/keibiengine/keibi-engine/pkg/kafka"
 	"gitlab.com/keibiengine/keibi-engine/pkg/keibi-es-sdk"
 	"gitlab.com/keibiengine/keibi-engine/pkg/summarizer/es"
+	"gitlab.com/keibiengine/keibi-engine/pkg/summarizer/helpers"
 	"gitlab.com/keibiengine/keibi-engine/pkg/summarizer/query"
 )
 
@@ -20,6 +19,11 @@ type costSummaryBuilder struct {
 	summarizerJobID uint
 	costsByService  map[string]es.ServiceCostSummary
 	costsByAccount  map[string]es.ConnectionCostSummary
+}
+
+type EBSCostDoc struct {
+	Base es.ServiceCostSummary
+	Desc helpers.EBSCostDescription
 }
 
 func NewCostSummaryBuilder(client keibi.Client, summarizerJobID uint) *costSummaryBuilder {
@@ -31,224 +35,46 @@ func NewCostSummaryBuilder(client keibi.Client, summarizerJobID uint) *costSumma
 	}
 }
 
-func getTimeFromTimestring(timestring string) time.Time {
-	t, _ := time.Parse("2006-01-02", timestring)
-	return t
-}
-
-func getTimeFromTimeInt(timeint int) time.Time {
-	timestring := fmt.Sprintf("%d", timeint)
-	t, _ := time.Parse("20060102", timestring)
-	return t
-}
-
 func (b *costSummaryBuilder) Process(resource describe.LookupResource) {
 	var fullResource *describe.Resource
 	var err error
-	switch strings.ToLower(resource.ResourceType) {
-	case "aws::costexplorer::byservicemonthly":
-		fullResource, err = query.GetResourceFromResourceLookup(b.client, resource)
-		if err != nil {
-			fmt.Printf("(costSummaryBuilder) - Error getting resource from lookup: %v", err)
-			return
-		}
-		jsonDesc, err := json.Marshal(fullResource.Description)
-		if err != nil {
-			return
-		}
-		desc := awsModel.CostExplorerByServiceMonthlyDescription{}
-		err = json.Unmarshal(jsonDesc, &desc)
-		if err != nil {
-			return
-		}
-		fullResource.Description = desc
-
-		key := fmt.Sprintf("%s|%s|%s|%s", resource.SourceID, *desc.Dimension1, *desc.PeriodStart, *desc.PeriodEnd)
-		if _, ok := b.costsByService[key]; !ok {
-			v := es.ServiceCostSummary{
-				SummarizeJobID: b.summarizerJobID,
-				ServiceName:    *desc.Dimension1,
-				ScheduleJobID:  resource.ScheduleJobID,
-				SourceID:       resource.SourceID,
-				SourceType:     resource.SourceType,
-				SourceJobID:    resource.SourceJobID,
-				ResourceType:   resource.ResourceType,
-				Cost:           desc,
-				PeriodStart:    getTimeFromTimestring(*desc.PeriodStart).Unix(),
-				PeriodEnd:      getTimeFromTimestring(*desc.PeriodEnd).Unix(),
-			}
-			v.ReportType = es.CostProviderSummaryMonthly
-			b.costsByService[key] = v
-		}
-	case "aws::costexplorer::byservicedaily":
-		fullResource, err = query.GetResourceFromResourceLookup(b.client, resource)
-		if err != nil {
-			fmt.Printf("(costSummaryBuilder) - Error getting resource from lookup: %v", err)
-			return
-		}
-		jsonDesc, err := json.Marshal(fullResource.Description)
-		if err != nil {
-			return
-		}
-		desc := awsModel.CostExplorerByServiceDailyDescription{}
-		err = json.Unmarshal(jsonDesc, &desc)
-		if err != nil {
-			return
-		}
-		fullResource.Description = desc
-
-		key := fmt.Sprintf("%s|%s|%s|%s", resource.SourceID, *desc.Dimension1, *desc.PeriodStart, *desc.PeriodEnd)
-		if _, ok := b.costsByService[key]; !ok {
-			v := es.ServiceCostSummary{
-				SummarizeJobID: b.summarizerJobID,
-				ServiceName:    *desc.Dimension1,
-				ScheduleJobID:  resource.ScheduleJobID,
-				SourceID:       resource.SourceID,
-				SourceType:     resource.SourceType,
-				SourceJobID:    resource.SourceJobID,
-				ResourceType:   resource.ResourceType,
-				Cost:           desc,
-				PeriodStart:    getTimeFromTimestring(*desc.PeriodStart).Unix(),
-				PeriodEnd:      getTimeFromTimestring(*desc.PeriodEnd).Unix(),
-			}
-			v.ReportType = es.CostProviderSummaryDaily
-			b.costsByService[key] = v
-		}
-	case "aws::costexplorer::byaccountmonthly":
-		fullResource, err = query.GetResourceFromResourceLookup(b.client, resource)
-		if err != nil {
-			fmt.Printf("(costSummaryBuilder) - Error getting resource from lookup: %v", err)
-			return
-		}
-		jsonDesc, err := json.Marshal(fullResource.Description)
-		if err != nil {
-			return
-		}
-		desc := awsModel.CostExplorerByAccountMonthlyDescription{}
-		err = json.Unmarshal(jsonDesc, &desc)
-		if err != nil {
-			return
-		}
-		fullResource.Description = desc
-		key := fmt.Sprintf("%s|%s|%s", resource.SourceID, *desc.PeriodStart, *desc.PeriodEnd)
-		if _, ok := b.costsByAccount[key]; !ok {
-			v := es.ConnectionCostSummary{
-				SummarizeJobID: b.summarizerJobID,
-				AccountID:      *desc.Dimension1,
-				ScheduleJobID:  resource.ScheduleJobID,
-				SourceID:       resource.SourceID,
-				SourceType:     resource.SourceType,
-				SourceJobID:    resource.SourceJobID,
-				ResourceType:   resource.ResourceType,
-				Cost:           desc,
-				PeriodStart:    getTimeFromTimestring(*desc.PeriodStart).Unix(),
-				PeriodEnd:      getTimeFromTimestring(*desc.PeriodEnd).Unix(),
-			}
-			v.ReportType = es.CostConnectionSummaryMonthly
-			b.costsByAccount[key] = v
-		}
-	case "aws::costexplorer::byaccountdaily":
-		fullResource, err = query.GetResourceFromResourceLookup(b.client, resource)
-		if err != nil {
-			fmt.Printf("(costSummaryBuilder) - Error getting resource from lookup: %v", err)
-			return
-		}
-		jsonDesc, err := json.Marshal(fullResource.Description)
-		if err != nil {
-			return
-		}
-		desc := awsModel.CostExplorerByAccountDailyDescription{}
-		err = json.Unmarshal(jsonDesc, &desc)
-		if err != nil {
-			return
-		}
-		fullResource.Description = desc
-		key := fmt.Sprintf("%s|%s|%s", resource.SourceID, *desc.PeriodStart, *desc.PeriodEnd)
-		if _, ok := b.costsByAccount[key]; !ok {
-			v := es.ConnectionCostSummary{
-				SummarizeJobID: b.summarizerJobID,
-				AccountID:      *desc.Dimension1,
-				ScheduleJobID:  resource.ScheduleJobID,
-				SourceID:       resource.SourceID,
-				SourceType:     resource.SourceType,
-				SourceJobID:    resource.SourceJobID,
-				ResourceType:   resource.ResourceType,
-				Cost:           desc,
-				PeriodStart:    getTimeFromTimestring(*desc.PeriodStart).Unix(),
-				PeriodEnd:      getTimeFromTimestring(*desc.PeriodEnd).Unix(),
-			}
-			v.ReportType = es.CostConnectionSummaryDaily
-			b.costsByAccount[key] = v
-		}
-	case "microsoft.costmanagement/costbyresourcetype":
-		fullResource, err = query.GetResourceFromResourceLookup(b.client, resource)
-		if err != nil {
-			fmt.Printf("(costSummaryBuilder) - Error getting resource from lookup: %v", err)
-			return
-		}
-		jsonDesc, err := json.Marshal(fullResource.Description)
-		if err != nil {
-			return
-		}
-		desc := azureModel.CostManagementCostByResourceTypeDescription{}
-		err = json.Unmarshal(jsonDesc, &desc)
-		if err != nil {
-			return
-		}
-		fullResource.Description = desc
-
-		key := fmt.Sprintf("%s|%s|%s|%d", resource.SourceID, *desc.CostManagementCostByResourceType.ResourceType, desc.CostManagementCostByResourceType.Currency, desc.CostManagementCostByResourceType.UsageDate)
-		if _, ok := b.costsByService[key]; !ok {
-			v := es.ServiceCostSummary{
-				SummarizeJobID: b.summarizerJobID,
-				ServiceName:    *desc.CostManagementCostByResourceType.ResourceType,
-				ScheduleJobID:  resource.ScheduleJobID,
-				SourceID:       resource.SourceID,
-				SourceType:     resource.SourceType,
-				SourceJobID:    resource.SourceJobID,
-				ResourceType:   resource.ResourceType,
-				Cost:           desc.CostManagementCostByResourceType,
-				PeriodStart:    getTimeFromTimeInt(desc.CostManagementCostByResourceType.UsageDate).Unix(),
-				PeriodEnd:      getTimeFromTimeInt(desc.CostManagementCostByResourceType.UsageDate).Unix(),
-			}
-			v.ReportType = es.CostProviderSummaryDaily
-			b.costsByService[key] = v
-		}
-	case "microsoft.costmanagement/costbysubscription":
-		fullResource, err = query.GetResourceFromResourceLookup(b.client, resource)
-		if err != nil {
-			fmt.Printf("(costSummaryBuilder) - Error getting resource from lookup: %v", err)
-			return
-		}
-		jsonDesc, err := json.Marshal(fullResource.Description)
-		if err != nil {
-			return
-		}
-		desc := azureModel.CostManagementCostBySubscriptionDescription{}
-		err = json.Unmarshal(jsonDesc, &desc)
-		if err != nil {
-			return
-		}
-		fullResource.Description = desc
-		key := fmt.Sprintf("%s|%s|%d", resource.SourceID, desc.CostManagementCostBySubscription.Currency, desc.CostManagementCostBySubscription.UsageDate)
-		if _, ok := b.costsByAccount[key]; !ok {
-			v := es.ConnectionCostSummary{
-				SummarizeJobID: b.summarizerJobID,
-				AccountID:      resource.SourceID,
-				ScheduleJobID:  resource.ScheduleJobID,
-				SourceID:       resource.SourceID,
-				SourceType:     resource.SourceType,
-				SourceJobID:    resource.SourceJobID,
-				ResourceType:   resource.ResourceType,
-				Cost:           desc.CostManagementCostBySubscription,
-				PeriodStart:    getTimeFromTimeInt(desc.CostManagementCostBySubscription.UsageDate).Unix(),
-				PeriodEnd:      getTimeFromTimeInt(desc.CostManagementCostBySubscription.UsageDate).Unix(),
-			}
-			v.ReportType = es.CostConnectionSummaryDaily
-			b.costsByAccount[key] = v
-		}
-	default:
+	costResourceType := es.GetCostResourceTypeFromString(resource.ResourceType)
+	if costResourceType == es.CostResourceTypeNull {
 		return
+	}
+	fullResource, err = query.GetResourceFromResourceLookup(b.client, resource)
+	if err != nil {
+		fmt.Printf("(costSummaryBuilder) - Error getting resource from lookup: %v", err)
+		return
+	}
+	costSummary, key, err := costResourceType.GetCostSummaryAndKey(*fullResource, resource)
+	if err != nil {
+		fmt.Printf("(costSummaryBuilder) - Error getting service cost summary: %v", err)
+		return
+	}
+	switch costSummary.(type) {
+	case *es.ServiceCostSummary:
+		serviceCostSummary := costSummary.(*es.ServiceCostSummary)
+		serviceCostSummary.SummarizeJobID = b.summarizerJobID
+		serviceCostSummary.ScheduleJobID = resource.ScheduleJobID
+		serviceCostSummary.SourceType = resource.SourceType
+		serviceCostSummary.SourceID = resource.SourceID
+		serviceCostSummary.SourceJobID = resource.SourceJobID
+		serviceCostSummary.ResourceType = resource.ResourceType
+		if _, ok := b.costsByService[key]; !ok {
+			b.costsByService[key] = *serviceCostSummary
+		}
+	case *es.ConnectionCostSummary:
+		connectionCostSummary := costSummary.(*es.ConnectionCostSummary)
+		connectionCostSummary.SummarizeJobID = b.summarizerJobID
+		connectionCostSummary.ScheduleJobID = resource.ScheduleJobID
+		connectionCostSummary.SourceType = resource.SourceType
+		connectionCostSummary.SourceID = resource.SourceID
+		connectionCostSummary.SourceJobID = resource.SourceJobID
+		connectionCostSummary.ResourceType = resource.ResourceType
+		if _, ok := b.costsByAccount[key]; !ok {
+			b.costsByAccount[key] = *connectionCostSummary
+		}
 	}
 }
 
@@ -258,11 +84,80 @@ func (b *costSummaryBuilder) PopulateHistory(lastDayJobID, lastWeekJobID, lastQu
 
 func (b *costSummaryBuilder) Build() []kafka.Doc {
 	var docs []kafka.Doc
+	ebsCosts := make([]es.ServiceCostSummary, 0)
+	ebsCostsRegionMap := make(map[string]EBSCostDoc)
 	for _, v := range b.costsByService {
-		docs = append(docs, v)
+		switch v.ServiceName {
+		case string(es.CostResourceTypeAWSEBSVolume):
+			ebsCosts = append(ebsCosts, v)
+		default:
+			docs = append(docs, v)
+		}
 	}
-	for _, v := range b.costsByAccount {
-		docs = append(docs, v)
+	for _, v := range ebsCosts {
+		volDesc := v.Cost.(awsModel.EC2VolumeDescription)
+		key := fmt.Sprintf("%s-%s", *v.Region, v.SourceID)
+		if _, ok := ebsCostsRegionMap[key]; !ok {
+			ebsCostsRegionMap[key] = EBSCostDoc{
+				Base: v,
+				Desc: helpers.EBSCostDescription{Region: *v.Region},
+			}
+		}
+		ebsCost := ebsCostsRegionMap[key]
+		size := 0
+		if volDesc.Volume.Size != nil {
+			size = int(*volDesc.Volume.Size)
+		}
+		Iops := 0
+		if volDesc.Volume.Iops != nil {
+			Iops = int(*volDesc.Volume.Iops)
+		}
+		throughput := 0
+		if volDesc.Volume.Throughput != nil {
+			throughput = int(*volDesc.Volume.Throughput)
+		}
+		switch volDesc.Volume.VolumeType {
+		case ec2.VolumeTypeStandard:
+			ebsCost.Desc.StandardSize += size
+			ebsCost.Desc.StandardIOPS += Iops
+		case ec2.VolumeTypeIo1:
+			ebsCost.Desc.Io1Size += size
+			ebsCost.Desc.Io1IOPS += Iops
+		case ec2.VolumeTypeIo2:
+			ebsCost.Desc.Io2Size += size
+			ebsCost.Desc.Io2IOPS += Iops
+		case ec2.VolumeTypeGp2:
+			ebsCost.Desc.Gp2Size += size
+		case ec2.VolumeTypeGp3:
+			ebsCost.Desc.Gp3Size += size
+			ebsCost.Desc.Gp3IOPS += Iops
+			ebsCost.Desc.Gp3Throughput += throughput
+		case ec2.VolumeTypeSc1:
+			ebsCost.Desc.Sc1Size += size
+		case ec2.VolumeTypeSt1:
+			ebsCost.Desc.St1Size += size
+		}
+		ebsCostsRegionMap[*v.Region] = ebsCost
+	}
+
+	nowTime := time.Now().Unix()
+
+	for _, v := range ebsCostsRegionMap {
+		docs = append(docs, es.ServiceCostSummary{
+			SummarizeJobID: v.Base.SummarizeJobID,
+			ServiceName:    v.Base.ServiceName,
+			ScheduleJobID:  v.Base.ScheduleJobID,
+			SourceID:       v.Base.SourceID,
+			SourceType:     v.Base.SourceType,
+			SourceJobID:    v.Base.SourceJobID,
+			ResourceType:   v.Base.ResourceType,
+			ReportType:     v.Base.ReportType,
+			Region:         v.Base.Region,
+
+			Cost:        v.Desc,
+			PeriodStart: nowTime,
+			PeriodEnd:   nowTime,
+		})
 	}
 	return docs
 }
