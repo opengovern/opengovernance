@@ -137,7 +137,7 @@ func (b *costSummaryBuilder) Build() []kafka.Doc {
 		case ec2.VolumeTypeSt1:
 			ebsCost.Desc.St1Size += size
 		}
-		ebsCostsRegionMap[*v.Region] = ebsCost
+		ebsCostsRegionMap[key] = ebsCost
 	}
 
 	nowTime := time.Now().Unix()
