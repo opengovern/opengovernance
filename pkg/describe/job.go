@@ -472,12 +472,10 @@ func doDescribeAWS(ctx context.Context, rdb *redis.Client, job DescribeJob, conf
 				}
 			}
 
-			msgs = append(msgs, kafkaResource)
-
 			tags, err := steampipe.ExtractTags(job.ResourceType, kafkaResource)
 			if err != nil {
 				errs = append(errs, fmt.Sprintf("failed to build tags for service: %v", err.Error()))
-				continue
+				tags = map[string]string{}
 			}
 
 			if rdb != nil {
@@ -513,6 +511,8 @@ func doDescribeAWS(ctx context.Context, rdb *redis.Client, job DescribeJob, conf
 				IsCommon:      cloudservice.IsCommonByResourceType(job.ResourceType),
 				Tags:          tags,
 			}
+
+			msgs = append(msgs, kafkaResource)
 			msgs = append(msgs, lookupResource)
 		}
 	}
