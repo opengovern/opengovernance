@@ -140,7 +140,7 @@ func (b *costSummaryBuilder) Build() []kafka.Doc {
 		ebsCostsRegionMap[key] = ebsCost
 	}
 
-	nowTime := time.Now().Unix()
+	nowTime := time.Now().Truncate(24 * time.Hour).Unix()
 
 	for _, v := range ebsCostsRegionMap {
 		docs = append(docs, es.ServiceCostSummary{
