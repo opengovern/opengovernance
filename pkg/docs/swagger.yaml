@@ -1453,6 +1453,32 @@ definitions:
       value:
         type: integer
     type: object
+  gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.CatalogConnector:
+    properties:
+      category:
+        type: string
+      connectionCount:
+        type: integer
+      description:
+        type: string
+      logo:
+        type: string
+      name:
+        type: string
+      state:
+        $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.ConnectorState'
+    type: object
+  gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.CatalogMetrics:
+    properties:
+      connectionsEnabled:
+        type: integer
+      healthyConnections:
+        type: integer
+      resourcesDiscovered:
+        type: integer
+      unhealthyConnections:
+        type: integer
+    type: object
   gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.ConnectorCount:
     properties:
       category:
@@ -1472,6 +1498,14 @@ definitions:
       status:
         $ref: '#/definitions/source.ConnectorStatus'
     type: object
+  gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.ConnectorState:
+    enum:
+    - ACTIVE
+    - NOT_SETUP
+    type: string
+    x-enum-varnames:
+    - ConnectorState_Active
+    - ConnectorState_NotSetup
   gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.CreateSPNResponse:
     properties:
       id:
@@ -3736,6 +3770,32 @@ paths:
       summary: Returns the config metadata for the given key
       tags:
       - metadata
+  /onboard/api/v1/catalog/connectors:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.CatalogConnector'
+            type: array
+      summary: Returns the list of connectors for catalog page.
+      tags:
+      - onboard
+  /onboard/api/v1/catalog/metrics:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.CatalogMetrics'
+      summary: Returns the list of metrics for catalog page.
+      tags:
+      - onboard
   /onboard/api/v1/connectors:
     get:
       description: Getting connectors
