@@ -66,6 +66,10 @@ func (h HttpHandler) Register(r *echo.Echo) {
 	disc.POST("/aws/accounts", httpserver.AuthorizeHandler(h.DiscoverAwsAccounts, api3.EditorRole))
 	disc.POST("/azure/subscriptions", httpserver.AuthorizeHandler(h.DiscoverAzureSubscriptions, api3.EditorRole))
 	disc.POST("/azure/subscriptions/spn", httpserver.AuthorizeHandler(h.DiscoverAzureSubscriptionsWithSPN, api3.EditorRole))
+
+	catalog := v1.Group("/catalog")
+	catalog.GET("/metrics", httpserver.AuthorizeHandler(h.CatalogMetrics, api3.ViewerRole))
+	catalog.GET("/connectors", httpserver.AuthorizeHandler(h.CatalogConnectors, api3.ViewerRole))
 }
 
 func bindValidate(ctx echo.Context, i interface{}) error {
@@ -81,6 +85,7 @@ func bindValidate(ctx echo.Context, i interface{}) error {
 }
 
 // GetProviders godoc
+//
 //	@Summary		Get providers
 //	@Description	Getting cloud providers
 //	@Tags			onboard
@@ -173,6 +178,7 @@ func (h HttpHandler) GetProviders(ctx echo.Context) error {
 }
 
 // GetConnector godoc
+//
 //	@Summary		Get connectors
 //	@Description	Getting connectors
 //	@Tags			onboard
@@ -216,6 +222,7 @@ func (h HttpHandler) GetConnector(ctx echo.Context) error {
 }
 
 // GetProviderTypes godoc
+//
 //	@Summary		Get provider types
 //	@Description	Getting provider types
 //	@Tags			onboard
@@ -246,6 +253,7 @@ func (h HttpHandler) GetProviderTypes(ctx echo.Context) error {
 }
 
 // PostSourceAws godoc
+//
 //	@Summary		Create AWS source
 //	@Description	Creating AWS source
 //	@Tags			onboard
@@ -336,6 +344,7 @@ func (h HttpHandler) PostSourceAws(ctx echo.Context) error {
 }
 
 // PostSourceAzure godoc
+//
 //	@Summary		Create Azure source
 //	@Description	Creating Azure source
 //	@Tags			onboard
@@ -392,6 +401,7 @@ func (h HttpHandler) PostSourceAzure(ctx echo.Context) error {
 }
 
 // PostSourceAzureSPN godoc
+//
 //	@Summary		Create Azure source with SPN
 //	@Description	Creating Azure source with SPN
 //	@Tags			onboard
@@ -448,6 +458,7 @@ func (h HttpHandler) PostSourceAzureSPN(ctx echo.Context) error {
 }
 
 // PostSPN godoc
+//
 //	@Summary		Create Azure SPN
 //	@Description	Creating Azure SPN
 //	@Tags			onboard
@@ -493,6 +504,7 @@ func (h HttpHandler) PostSPN(ctx echo.Context) error {
 }
 
 // GetSPNCred godoc
+//
 //	@Summary	Get SPN credential
 //	@Tags		onboard
 //	@Produce	json
@@ -527,6 +539,7 @@ func (h HttpHandler) GetSPNCred(ctx echo.Context) error {
 }
 
 // ListSPNs godoc
+//
 //	@Summary	List SPN credentials
 //	@Tags		onboard
 //	@Produce	json
@@ -550,6 +563,7 @@ func (h HttpHandler) ListSPNs(ctx echo.Context) error {
 }
 
 // PutSPNCred godoc
+//
 //	@Summary	Put SPN credential
 //	@Tags		onboard
 //	@Produce	json
@@ -592,6 +606,7 @@ func (h HttpHandler) PutSPNCred(ctx echo.Context) error {
 }
 
 // DeleteSPN godoc
+//
 //	@Summary	Delete SPN credential
 //	@Tags		onboard
 //	@Produce	json
@@ -616,6 +631,7 @@ func (h HttpHandler) DeleteSPN(ctx echo.Context) error {
 }
 
 // GetSourceCred godoc
+//
 //	@Summary	Get source credential
 //	@Tags		onboard
 //	@Produce	json
@@ -661,6 +677,7 @@ func (h HttpHandler) GetSourceCred(ctx echo.Context) error {
 }
 
 // GetSourceHealth godoc
+//
 //	@Summary	Get live source health status
 //	@Tags		onboard
 //	@Produce	json
@@ -729,6 +746,7 @@ func (h HttpHandler) GetSourceHealth(ctx echo.Context) error {
 }
 
 // PutSourceCred godoc
+//
 //	@Summary	Put source credential
 //	@Tags		onboard
 //	@Produce	json
@@ -805,6 +823,7 @@ func (h HttpHandler) PutSourceCred(ctx echo.Context) error {
 }
 
 // GetSource godoc
+//
 //	@Summary		Returns a single source
 //	@Description	Returning single source either AWS / Azure.
 //	@Tags			onboard
@@ -843,6 +862,7 @@ func (h HttpHandler) GetSource(ctx echo.Context) error {
 }
 
 // DeleteSource godoc
+//
 //	@Summary		Delete a single source
 //	@Description	Deleting a single source either AWS / Azure.
 //	@Tags			onboard
@@ -896,6 +916,7 @@ func (h HttpHandler) DeleteSource(ctx echo.Context) error {
 }
 
 // DisableSource godoc
+//
 //	@Summary	Disable a single source
 //	@Tags		onboard
 //	@Produce	json
@@ -939,6 +960,7 @@ func (h HttpHandler) DisableSource(ctx echo.Context) error {
 }
 
 // EnableSource godoc
+//
 //	@Summary	Enable a single source
 //	@Tags		onboard
 //	@Produce	json
@@ -983,6 +1005,7 @@ func (h HttpHandler) EnableSource(ctx echo.Context) error {
 }
 
 // ListSources godoc
+//
 //	@Summary		Returns a list of sources
 //	@Description	Returning a list of sources including both AWS and Azure unless filtered by Type.
 //	@Tags			onboard
@@ -1034,6 +1057,7 @@ func (h HttpHandler) ListSources(ctx echo.Context) error {
 }
 
 // GetSources godoc
+//
 //	@Summary		Returns a list of sources
 //	@Description	Returning a list of sources including both AWS and Azure unless filtered by Type.
 //	@Tags			onboard
@@ -1085,6 +1109,7 @@ func (h HttpHandler) GetSources(ctx echo.Context) error {
 }
 
 // CountSources godoc
+//
 //	@Summary		Returns a count of sources
 //	@Description	Returning a count of sources including both AWS and Azure unless filtered by Type.
 //	@Tags			onboard
@@ -1121,6 +1146,7 @@ func (h HttpHandler) PutSource(ctx echo.Context) error {
 }
 
 // DiscoverAwsAccounts godoc
+//
 //	@Summary		Returns the list of available AWS accounts given the credentials.
 //	@Description	If the account is part of an organization and the account has premission to list the accounts, it will return all the accounts in that organization. Otherwise, it will return the single account these credentials belong to.
 //	@Tags			onboard
@@ -1161,6 +1187,7 @@ func (h HttpHandler) DiscoverAwsAccounts(ctx echo.Context) error {
 }
 
 // DiscoverAzureSubscriptions godoc
+//
 //	@Summary		Returns the list of available Azure subscriptions.
 //	@Description	Returning the list of available Azure subscriptions.
 //	@Tags			onboard
@@ -1195,6 +1222,7 @@ func (h *HttpHandler) DiscoverAzureSubscriptions(ctx echo.Context) error {
 }
 
 // DiscoverAzureSubscriptionsWithSPN godoc
+//
 //	@Summary		Returns the list of available Azure subscriptions.
 //	@Description	Returning the list of available Azure subscriptions.
 //	@Tags			onboard
@@ -1243,4 +1271,48 @@ func (h *HttpHandler) DiscoverAzureSubscriptionsWithSPN(ctx echo.Context) error 
 		sub.Status = "DUPLICATE"
 	}
 	return ctx.JSON(http.StatusOK, subs)
+}
+
+// CatalogMetrics godoc
+//
+//	@Summary	Returns the list of metrics for catalog page.
+//	@Tags		onboard
+//	@Produce	json
+//	@Success	200	{object}	api.CatalogMetrics
+//	@Router		/onboard/api/v1/catalog/metrics [get]
+func (h *HttpHandler) CatalogMetrics(ctx echo.Context) error {
+	var metrics api.CatalogMetrics
+
+	srcs, err := h.db.ListSources()
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError)
+	}
+
+	for _, src := range srcs {
+		if src.Enabled {
+			metrics.ConnectionsEnabled++
+		}
+
+		if src.HealthState == source.SourceHealthStateUnhealthy {
+			metrics.UnhealthyConnections++
+		} else {
+			metrics.HealthyConnections++
+		}
+	}
+
+	//TODO-saleh resources discovered
+	return ctx.JSON(http.StatusOK, metrics)
+}
+
+// CatalogConnectors godoc
+//
+//	@Summary	Returns the list of connectors for catalog page.
+//	@Tags		onboard
+//	@Produce	json
+//	@Success	200	{object}	[]api.CatalogConnector
+//	@Router		/onboard/api/v1/catalog/connectors [get]
+func (h *HttpHandler) CatalogConnectors(ctx echo.Context) error {
+	var connectors []api.CatalogConnector
+
+	return ctx.JSON(http.StatusOK, connectors)
 }

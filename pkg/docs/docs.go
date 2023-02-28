@@ -2814,6 +2814,47 @@ const docTemplate = `{
                 }
             }
         },
+        "/onboard/api/v1/catalog/connectors": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "onboard"
+                ],
+                "summary": "Returns the list of connectors for catalog page.",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.CatalogConnector"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/onboard/api/v1/catalog/metrics": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "onboard"
+                ],
+                "summary": "Returns the list of metrics for catalog page.",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.CatalogMetrics"
+                        }
+                    }
+                }
+            }
+        },
         "/onboard/api/v1/connectors": {
             "get": {
                 "description": "Getting connectors",
@@ -6600,6 +6641,46 @@ const docTemplate = `{
                 }
             }
         },
+        "gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.CatalogConnector": {
+            "type": "object",
+            "properties": {
+                "category": {
+                    "type": "string"
+                },
+                "connectionCount": {
+                    "type": "integer"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "logo": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "state": {
+                    "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.ConnectorState"
+                }
+            }
+        },
+        "gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.CatalogMetrics": {
+            "type": "object",
+            "properties": {
+                "connectionsEnabled": {
+                    "type": "integer"
+                },
+                "healthyConnections": {
+                    "type": "integer"
+                },
+                "resourcesDiscovered": {
+                    "type": "integer"
+                },
+                "unhealthyConnections": {
+                    "type": "integer"
+                }
+            }
+        },
         "gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.ConnectorCount": {
             "type": "object",
             "properties": {
@@ -6628,6 +6709,17 @@ const docTemplate = `{
                     "$ref": "#/definitions/source.ConnectorStatus"
                 }
             }
+        },
+        "gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.ConnectorState": {
+            "type": "string",
+            "enum": [
+                "ACTIVE",
+                "NOT_SETUP"
+            ],
+            "x-enum-varnames": [
+                "ConnectorState_Active",
+                "ConnectorState_NotSetup"
+            ]
         },
         "gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.CreateSPNResponse": {
             "type": "object",
