@@ -568,6 +568,7 @@ func doDescribeAzure(ctx context.Context, rdb *redis.Client, job DescribeJob, co
 	logger.Warn("got the resources, finding summaries", zap.String("resourceType", job.ResourceType), zap.Uint("jobID", job.JobID))
 
 	var msgs []kafka.Doc
+	var errs []string
 	var remaining int64 = MAX_INT64
 
 	if rdb != nil {
@@ -582,12 +583,13 @@ func doDescribeAzure(ctx context.Context, rdb *redis.Client, job DescribeJob, co
 
 		_, err = rdb.DecrBy(ctx, RedisKeyWorkspaceResourceRemaining, int64(len(output.Resources))).Result()
 		if err != nil {
-			return nil, fmt.Errorf("redisDecr: %v", err.Error())
+			errs = append(errs, fmt.Sprintf("failed to decrement workspace resource limit: %v", err.Error()))
 		}
 	}
 	for idx, resource := range output.Resources {
 		if rdb != nil {
 			if remaining <= 0 {
+				errs = append(errs, fmt.Sprintf("workspace has reached its max resources limit"))
 				break
 			}
 			remaining--
@@ -620,19 +622,22 @@ func doDescribeAzure(ctx context.Context, rdb *redis.Client, job DescribeJob, co
 		pluginTableName := steampipe.ExtractTableName(job.ResourceType)
 		desc, err := steampipe.ConvertToDescription(job.ResourceType, kafkaResource)
 		if err != nil {
-			return nil, fmt.Errorf("convertToDescription: %v", err)
+			errs = append(errs, fmt.Sprintf("convertToDescription: %v", err.Error()))
+			continue
 		}
 		pluginProvider := steampipe.ExtractPlugin(job.ResourceType)
 		var cells map[string]*proto.Column
 		if pluginProvider == steampipe.SteampipePluginAzure {
 			cells, err = steampipe.AzureDescriptionToRecord(desc, pluginTableName)
 			if err != nil {
-				return nil, fmt.Errorf("azureDescriptionToRecord: %v", err)
+				errs = append(errs, fmt.Sprintf("azureDescriptionToRecord: %v", err.Error()))
+				continue
 			}
 		} else {
 			cells, err = steampipe.AzureADDescriptionToRecord(desc, pluginTableName)
 			if err != nil {
-				return nil, fmt.Errorf("azureADDescriptionToRecord: %v", err)
+				errs = append(errs, fmt.Sprintf("azureADDescriptionToRecord: %v", err.Error()))
+				continue
 			}
 		}
 		for name, v := range cells {
@@ -641,11 +646,10 @@ func doDescribeAzure(ctx context.Context, rdb *redis.Client, job DescribeJob, co
 			}
 		}
 
-		msgs = append(msgs, kafkaResource)
-
 		tags, err := steampipe.ExtractTags(job.ResourceType, kafkaResource)
 		if err != nil {
-			return nil, fmt.Errorf("failed to build tags: %v", err.Error())
+			tags = map[string]string{}
+			errs = append(errs, fmt.Sprintf("failed to build tags for service: %v", err.Error()))
 		}
 
 		if rdb != nil {
@@ -653,12 +657,13 @@ func doDescribeAzure(ctx context.Context, rdb *redis.Client, job DescribeJob, co
 				key = strings.TrimSpace(key)
 				_, err = rdb.SAdd(context.Background(), "tag-"+key, value).Result()
 				if err != nil {
-					return nil, fmt.Errorf("failed to push tag into redis: %v", err.Error())
+					errs = append(errs, fmt.Sprintf("failed to push tag into redis: %v", err.Error()))
+					continue
 				}
-
 				_, err = rdb.Expire(context.Background(), "tag-"+key, 12*time.Hour).Result() //TODO-Saleh set time based on describe interval
 				if err != nil {
-					return nil, fmt.Errorf("failed to set tag expire into redis: %v", err.Error())
+					errs = append(errs, fmt.Sprintf("failed to set tag expire into redis: %v", err.Error()))
+					continue
 				}
 			}
 		}
@@ -680,10 +685,17 @@ func doDescribeAzure(ctx context.Context, rdb *redis.Client, job DescribeJob, co
 			IsCommon:      cloudservice.IsCommonByResourceType(job.ResourceType),
 			Tags:          tags,
 		}
+		msgs = append(msgs, kafkaResource)
 		msgs = append(msgs, lookupResource)
 	}
 	logger.Warn("finished describing azure", zap.String("resourceType", job.ResourceType), zap.Uint("jobID", job.JobID))
-	return msgs, nil
+
+	if len(errs) > 0 {
+		err = fmt.Errorf("AWS: [%s]", strings.Join(errs, ","))
+	} else {
+		err = nil
+	}
+	return msgs, err
 }
 
 func ResourceTypeToESIndex(t string) string {
