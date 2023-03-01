@@ -21,7 +21,7 @@ type CatalogConnector struct {
 	Name            string         `json:"name"`
 	Category        string         `json:"category"`
 	Description     string         `json:"description"`
-	ConnectionCount int            `json:"connectionCount"`
+	ConnectionCount int64          `json:"connectionCount"`
 	State           ConnectorState `json:"state"`
 	SourceType      source.Type    `json:"sourceType"`
 }
