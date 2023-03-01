@@ -1325,5 +1325,16 @@ func (h *HttpHandler) CatalogConnectors(ctx echo.Context) error {
 		return err
 	}
 
+	for idx, connector := range connectors {
+		if !connector.SourceType.IsNull() {
+			c, err := h.db.CountSourcesOfType(connector.SourceType)
+			if err != nil {
+				return err
+			}
+
+			connectors[idx].ConnectionCount = c
+		}
+	}
+
 	return ctx.JSON(http.StatusOK, connectors)
 }
