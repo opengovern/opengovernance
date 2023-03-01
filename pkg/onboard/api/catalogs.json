@@ -1,10 +1,60 @@
 [
   {
     "logo": "",
-    "name": "",
-    "category": "",
-    "description": "",
-    "connectionCount": "",
-    "state": ""
+    "name": "AWS Accounts",
+    "category": "PaaS & App Int",
+    "description": "Onboard AWS Accounts to Keibi",
+    "state": "ACTIVE",
+    "sourceType": "AWS"
   },
+  {
+    "logo": "",
+    "name": "AWS Organizations",
+    "category": "PaaS & App Int",
+    "description": "Gain visibility to our AWS Organization",
+    "state": "NOT_SETUP"
+  },
+  {
+    "logo": "",
+    "name": "AWS CloudTrail",
+    "category": "Ops Management",
+    "description": "Integrate Cloudtrail with Keibi to gain insights",
+    "state": "NOT_SETUP"
+  },
+  {
+    "logo": "",
+    "name": "Azure Active Directory",
+    "category": "PaaS & App Int",
+    "description": "Connect your Azure Active Directory to Keibi",
+    "state": "NOT_SETUP"
+  },
+  {
+    "logo": "",
+    "name": "Azure Subscription",
+    "category": "PaaS & App Int",
+    "description": "Onboard Azure Subscription to Keibi",
+    "state": "ACTIVE",
+    "sourceType": "Azure"
+  },
+  {
+    "logo": "",
+    "name": "Azure Activity Logs",
+    "category": "Ops Management",
+    "description": "Ingest Activity Logs to Keibi to gain insights",
+    "state": "NOT_SETUP"
+  },
+  {
+    "logo": "",
+    "name": "ServiceNow",
+    "category": "Access Management",
+    "description": "Connect ServiceNow to ingest data",
+    "state": "NOT_SETUP"
+  },
+  {
+    "logo": "",
+    "name": "Jira",
+    "category": "PaaS & App Int",
+    "description": "Jira Integration allows you to respond to changes",
+    "state": "NOT_SETUP"
+  }
 ]
