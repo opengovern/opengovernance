@@ -1,5 +1,7 @@
 package api
 
+import "gitlab.com/keibiengine/keibi-engine/pkg/source"
+
 type ConnectorState = string
 
 const (
@@ -21,4 +23,5 @@ type CatalogConnector struct {
 	Description     string         `json:"description"`
 	ConnectionCount int            `json:"connectionCount"`
 	State           ConnectorState `json:"state"`
+	SourceType      source.Type    `json:"sourceType"`
 }
