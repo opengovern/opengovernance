@@ -2,8 +2,11 @@ package onboard
 
 import (
 	"context"
+	_ "embed"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpclient"
 	"net/http"
 	"strings"
 	"time"
@@ -1300,9 +1303,14 @@ func (h *HttpHandler) CatalogMetrics(ctx echo.Context) error {
 		}
 	}
 
-	//TODO-saleh resources discovered
+	resourceCount, err := h.inventoryClient.CountResources(httpclient.FromEchoContext(ctx))
+	metrics.ResourcesDiscovered = resourceCount
+
 	return ctx.JSON(http.StatusOK, metrics)
 }
+
+//go:embed api/catalogs.json
+var catalogsJSON string
 
 // CatalogConnectors godoc
 //
@@ -1313,6 +1321,9 @@ func (h *HttpHandler) CatalogMetrics(ctx echo.Context) error {
 //	@Router		/onboard/api/v1/catalog/connectors [get]
 func (h *HttpHandler) CatalogConnectors(ctx echo.Context) error {
 	var connectors []api.CatalogConnector
+	if err := json.Unmarshal([]byte(catalogsJSON), &connectors); err != nil {
+		return err
+	}
 
 	return ctx.JSON(http.StatusOK, connectors)
 }

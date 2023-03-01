@@ -37,6 +37,7 @@ var (
 	VaultUseTLS   = strings.ToLower(strings.TrimSpace(os.Getenv("VAULT_USE_TLS"))) == "true"
 
 	AWSPermissionCheckURL = os.Getenv("AWS_PERMISSION_CHECK_URL")
+	InventoryBaseURL      = os.Getenv("INVENTORY_BASE_URL")
 
 	HttpAddress = os.Getenv("HTTP_ADDRESS")
 )
@@ -79,6 +80,7 @@ func start(ctx context.Context) error {
 		VaultUseTLS,
 		logger,
 		AWSPermissionCheckURL,
+		InventoryBaseURL,
 	)
 	if err != nil {
 		return fmt.Errorf("init http handler: %w", err)

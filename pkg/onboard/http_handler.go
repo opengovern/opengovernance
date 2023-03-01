@@ -9,6 +9,7 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/postgres"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/queue"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/vault"
+	inventory "gitlab.com/keibiengine/keibi-engine/pkg/inventory/client"
 )
 
 type HttpHandler struct {
@@ -16,6 +17,7 @@ type HttpHandler struct {
 	sourceEventsQueue     queue.Interface
 	vault                 vault.SourceConfig
 	awsPermissionCheckURL string
+	inventoryClient       inventory.InventoryServiceClient
 }
 
 func InitializeHttpHandler(
@@ -37,6 +39,7 @@ func InitializeHttpHandler(
 	vaultUseTLS bool,
 	logger *zap.Logger,
 	awsPermissionCheckURL string,
+	inventoryBaseURL string,
 ) (*HttpHandler, error) {
 
 	fmt.Println("Initializing http handler")
@@ -94,10 +97,13 @@ func InitializeHttpHandler(
 	}
 	fmt.Println("Initialized postgres database: ", postgresDb)
 
+	inventoryClient := inventory.NewInventoryServiceClient(inventoryBaseURL)
+
 	return &HttpHandler{
 		vault:                 v,
 		db:                    db,
 		sourceEventsQueue:     sourceEventsQueue,
 		awsPermissionCheckURL: awsPermissionCheckURL,
+		inventoryClient:       inventoryClient,
 	}, nil
 }
