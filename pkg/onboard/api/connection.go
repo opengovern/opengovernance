@@ -12,7 +12,7 @@ const (
 )
 
 type ConnectionCountRequest struct {
-	ConnectorsNames []string                  `json:"connectors"`
-	State           *ConnectionState          `json:"state"`
-	Health          *source.SourceHealthState `json:"health"`
+	ConnectorsNames []string             `json:"connectors"`
+	State           *ConnectionState     `json:"state"`
+	Health          *source.HealthStatus `json:"health"`
 }
