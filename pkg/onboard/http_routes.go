@@ -1470,8 +1470,15 @@ func (h *HttpHandler) CatalogConnectors(ctx echo.Context) error {
 		if len(stateFilter) > 0 && connector.State != stateFilter {
 			continue
 		}
-		if len(idFilter) > 0 && connector.ID != idFilter {
-			continue
+		if len(idFilter) > 0 {
+			id, err := strconv.Atoi(idFilter)
+			if err != nil {
+				return err
+			}
+
+			if connector.ID != id {
+				continue
+			}
 		}
 		if len(minConnectionFilter) > 0 {
 			minConnection, err := strconv.ParseInt(minConnectionFilter, 10, 64)
