@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
@@ -551,8 +552,8 @@ func (h HttpHandler) postAWSCredentials(ctx echo.Context, req api.CreateCredenti
 //	@Description	Creating connection credentials
 //	@Tags			onboard
 //	@Produce		json
+//	@Param			config	body		api.CreateCredentialRequest	true	"Request"
 //	@Success		200		{object}	api.CreateCredentialResponse
-//	@Param			config	body		api.CreateCredentialRequest	true
 //	@Router			/onboard/api/v1/credential [post]
 func (h HttpHandler) PostCredentials(ctx echo.Context) error {
 	var req api.CreateCredentialRequest
@@ -1433,9 +1434,18 @@ var catalogsJSON string
 //	@Summary	Returns the list of connectors for catalog page.
 //	@Tags		onboard
 //	@Produce	json
-//	@Success	200	{object}	[]api.CatalogConnector
+//	@Param		category		query		string	false	"Category filter"
+//	@Param		state			query		string	false	"State filter"
+//	@Param		minConnection	query		string	false	"Minimum connection filter"
+//	@Param		id				query		string	false	"ID filter"
+//	@Success	200				{object}	[]api.CatalogConnector
 //	@Router		/onboard/api/v1/catalog/connectors [get]
 func (h *HttpHandler) CatalogConnectors(ctx echo.Context) error {
+	categoryFilter := ctx.QueryParam("category")
+	stateFilter := ctx.QueryParam("state")
+	minConnectionFilter := ctx.QueryParam("minConnection")
+	idFilter := ctx.QueryParam("id")
+
 	var connectors []api.CatalogConnector
 	if err := json.Unmarshal([]byte(catalogsJSON), &connectors); err != nil {
 		return err
@@ -1452,7 +1462,31 @@ func (h *HttpHandler) CatalogConnectors(ctx echo.Context) error {
 		}
 	}
 
-	return ctx.JSON(http.StatusOK, connectors)
+	var response []api.CatalogConnector
+	for _, connector := range connectors {
+		if len(categoryFilter) > 0 && connector.Category != categoryFilter {
+			continue
+		}
+		if len(stateFilter) > 0 && connector.State != stateFilter {
+			continue
+		}
+		if len(idFilter) > 0 && connector.ID != idFilter {
+			continue
+		}
+		if len(minConnectionFilter) > 0 {
+			minConnection, err := strconv.ParseInt(minConnectionFilter, 10, 64)
+			if err != nil {
+				return err
+			}
+
+			if connector.ConnectionCount < minConnection {
+				continue
+			}
+		}
+		response = append(response, connector)
+	}
+
+	return ctx.JSON(http.StatusOK, response)
 }
 
 // CountConnections godoc

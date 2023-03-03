@@ -711,7 +711,7 @@ definitions:
       healthReason:
         type: string
       healthState:
-        $ref: '#/definitions/source.SourceHealthState'
+        $ref: '#/definitions/source.HealthStatus'
       lastHealthCheckTime:
         type: string
       lastInventory:
@@ -1455,14 +1455,24 @@ definitions:
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.CatalogConnector:
     properties:
+      ID:
+        type: string
+      allowNewConnections:
+        type: boolean
       category:
         type: string
       connectionCount:
         type: integer
+      connectionFederator:
+        type: string
       description:
+        type: string
+      displayName:
         type: string
       logo:
         type: string
+      maxConnectionsLimit:
+        type: integer
       name:
         type: string
       sourceType:
@@ -1482,15 +1492,6 @@ definitions:
         type: integer
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.ConnectionCountRequest:
-    properties:
-      connectors:
-        items:
-          type: string
-        type: array
-      health:
-        $ref: '#/definitions/source.SourceHealthState'
-      state:
-        $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.ConnectionState'
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.ConnectionState:
     enum:
@@ -1527,6 +1528,19 @@ definitions:
     x-enum-varnames:
     - ConnectorState_Active
     - ConnectorState_NotSetup
+  gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.CreateCredentialRequest:
+    properties:
+      config: {}
+      name:
+        type: string
+      source_type:
+        $ref: '#/definitions/source.Type'
+    type: object
+  gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.CreateCredentialResponse:
+    properties:
+      id:
+        type: string
+    type: object
   gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.CreateSPNResponse:
     properties:
       id:
@@ -1611,7 +1625,7 @@ definitions:
       healthReason:
         type: string
       healthState:
-        $ref: '#/definitions/source.SourceHealthState'
+        $ref: '#/definitions/source.HealthStatus'
       id:
         type: string
       lastHealthCheckTime:
@@ -1806,16 +1820,16 @@ definitions:
     - ConnectorStatusEnabled
     - ConnectorStatusDisabled
     - ConnectorStatusComingSoon
-  source.SourceHealthState:
+  source.HealthStatus:
     enum:
     - healthy
     - unhealthy
     - initial_discovery
     type: string
     x-enum-varnames:
-    - SourceHealthStateHealthy
-    - SourceHealthStateUnhealthy
-    - SourceHealthStateInitialDiscovery
+    - HealthStatusHealthy
+    - HealthStatusUnhealthy
+    - HealthStatusInitialDiscovery
   source.Type:
     enum:
     - ""
@@ -3793,6 +3807,23 @@ paths:
       - metadata
   /onboard/api/v1/catalog/connectors:
     get:
+      parameters:
+      - description: Category filter
+        in: query
+        name: category
+        type: string
+      - description: State filter
+        in: query
+        name: state
+        type: string
+      - description: Minimum connection filter
+        in: query
+        name: minConnection
+        type: string
+      - description: ID filter
+        in: query
+        name: id
+        type: string
       produces:
       - application/json
       responses:
@@ -3854,6 +3885,26 @@ paths:
               $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.ConnectorCount'
             type: array
       summary: Get connectors
+      tags:
+      - onboard
+  /onboard/api/v1/credential:
+    post:
+      description: Creating connection credentials
+      parameters:
+      - description: Request
+        in: body
+        name: config
+        required: true
+        schema:
+          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.CreateCredentialRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.CreateCredentialResponse'
+      summary: Create connection credentials
       tags:
       - onboard
   /onboard/api/v1/discover/aws/accounts:
