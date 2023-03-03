@@ -17,6 +17,7 @@ type Database struct {
 func (db Database) Initialize() error {
 	err := db.orm.AutoMigrate(
 		&Connector{},
+		&Credential{},
 		&Source{},
 		&SPN{},
 	)
@@ -27,7 +28,7 @@ func (db Database) Initialize() error {
 	return nil
 }
 
-// ListConnectors gets list of all source
+// ListConnectors gets list of all connectors
 func (db Database) ListConnectors() ([]Connector, error) {
 	var s []Connector
 	tx := db.orm.Find(&s)
@@ -42,7 +43,7 @@ func (db Database) ListConnectors() ([]Connector, error) {
 // ListSources gets list of all source
 func (db Database) ListSources() ([]Source, error) {
 	var s []Source
-	tx := db.orm.Find(&s)
+	tx := db.orm.Model(Source{}).Preload("Credential").Find(&s)
 
 	if tx.Error != nil {
 		return nil, tx.Error
@@ -51,7 +52,7 @@ func (db Database) ListSources() ([]Source, error) {
 	return s, nil
 }
 
-// GetSources gets list of all source
+// GetSources gets sources by id
 func (db Database) GetSources(ids []uuid.UUID) ([]Source, error) {
 	var s []Source
 	tx := db.orm.Find(&s, "id in ?", ids)
@@ -62,7 +63,7 @@ func (db Database) GetSources(ids []uuid.UUID) ([]Source, error) {
 	return s, nil
 }
 
-// CountSources gets list of all source
+// CountSources gets count of all source
 func (db Database) CountSources() (int64, error) {
 	var c int64
 	tx := db.orm.Model(&Source{}).Count(&c)
@@ -86,7 +87,7 @@ func (db Database) GetSourcesOfType(rType source.Type) ([]Source, error) {
 	return s, nil
 }
 
-// CountSources gets list of sources with matching type
+// CountSourcesOfType gets count of sources with matching type
 func (db Database) CountSourcesOfType(rType source.Type) (int64, error) {
 	var c int64
 	tx := db.orm.Model(&Source{}).Where("type = ?", rType).Count(&c)
@@ -101,7 +102,7 @@ func (db Database) CountSourcesOfType(rType source.Type) (int64, error) {
 // GetSource gets a source with matching id
 func (db Database) GetSource(id uuid.UUID) (Source, error) {
 	var s Source
-	tx := db.orm.First(&s, "id = ?", id.String())
+	tx := db.orm.Preload("Credential").First(&s, "id = ?", id.String())
 
 	if tx.Error != nil {
 		return Source{}, tx.Error
@@ -145,15 +146,7 @@ func (db Database) CreateSource(s *Source) error {
 func (db Database) UpdateSource(s *Source) (*Source, error) {
 	tx := db.orm.
 		Model(&Source{}).
-		Where("id = ?", s.ID.String()).
-		Updates(map[string]interface{}{
-			"name":                   s.Name,
-			"config_ref":             s.ConfigRef,
-			"last_health_check_time": s.LastHealthCheckTime,
-			"health_state":           s.HealthState,
-			"health_reason":          s.HealthReason,
-			"updated_at":             gorm.Expr("NOW()"),
-		})
+		Where("id = ?", s.ID.String()).Updates(s)
 
 	if tx.Error != nil {
 		return nil, tx.Error
@@ -264,4 +257,33 @@ func (db Database) GetAllSPNs() ([]SPN, error) {
 		return nil, tx.Error
 	}
 	return s, nil
+}
+
+// CreateCredential creates a new credential
+func (db Database) CreateCredential(s *Credential) error {
+	tx := db.orm.
+		Model(&Credential{}).
+		Clauses(clause.OnConflict{DoNothing: true}).
+		Create(s)
+
+	if tx.Error != nil {
+		return tx.Error
+	} else if tx.RowsAffected == 0 {
+		return fmt.Errorf("create spn: didn't create spn due to id conflict")
+	}
+
+	return nil
+}
+
+// DeleteCredential deletes a credential
+func (db Database) DeleteCredential(id uuid.UUID) error {
+	tx := db.orm.
+		Where("id = ?", id.String()).
+		Unscoped().
+		Delete(&Credential{})
+	if tx.Error != nil {
+		return tx.Error
+	}
+
+	return nil
 }

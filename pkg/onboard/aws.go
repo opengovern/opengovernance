@@ -3,13 +3,16 @@ package onboard
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/service/iam"
 	"github.com/aws/aws-sdk-go-v2/service/organizations/types"
 	"github.com/aws/smithy-go"
 	keibiaws "gitlab.com/keibiengine/keibi-engine/pkg/aws"
 	"gitlab.com/keibiengine/keibi-engine/pkg/aws/describer"
 	"gitlab.com/keibiengine/keibi-engine/pkg/onboard/api"
+	"gitlab.com/keibiengine/keibi-engine/pkg/source"
 )
 
 var PermissionError = errors.New("PermissionError")
@@ -108,6 +111,47 @@ func currentAwsAccount(ctx context.Context, cfg aws.Config) (api.DiscoverAWSAcco
 		Name:           accName,
 		Email:          accEmail,
 	}, nil
+}
+
+func getAWSCredentialsMetadata(ctx context.Context, config api.SourceConfigAWS) (*source.AWSCredentialMetadata, error) {
+	creds, err := keibiaws.GetConfig(ctx, config.AccessKey, config.SecretKey, "", "")
+	if err != nil {
+		return nil, err
+	}
+	if creds.Region == "" {
+		creds.Region = "us-east-1"
+	}
+
+	iamClient := iam.NewFromConfig(creds)
+	user, err := iamClient.GetUser(ctx, &iam.GetUserInput{})
+	if err != nil {
+		fmt.Printf("failed to get user: %v", err)
+		return nil, err
+	}
+	paginator := iam.NewListAttachedUserPoliciesPaginator(iamClient, &iam.ListAttachedUserPoliciesInput{
+		UserName: user.User.UserName,
+	})
+
+	policyARNs := make([]string, 0)
+	for paginator.HasMorePages() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			fmt.Printf("failed to get policy page: %v", err)
+			return nil, err
+		}
+		for _, policy := range page.AttachedPolicies {
+			policyARNs = append(policyARNs, *policy.PolicyArn)
+		}
+	}
+
+	//TODO get metadata from aws
+
+	return &source.AWSCredentialMetadata{
+		AccountID:        config.AccountId,
+		AttachedPolicies: policyARNs,
+		IamUserName:      user.User.UserName,
+	}, nil
+
 }
 
 func ignoreAwsOrgError(err error) bool {

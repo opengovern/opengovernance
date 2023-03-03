@@ -944,7 +944,7 @@ func (s *Scheduler) RunScheduleJobCompletionUpdater() {
 						continue
 					}
 					if healthCheckedSrc.AssetDiscoveryMethod == source.AssetDiscoveryMethodTypeScheduled &&
-						healthCheckedSrc.HealthState != source.SourceHealthStateUnhealthy {
+						healthCheckedSrc.HealthState != source.HealthStatusUnhealthy {
 						filteredSources = append(filteredSources, src)
 					}
 					break
@@ -1371,7 +1371,7 @@ func (s Scheduler) scheduleDescribeJob() {
 					continue
 				}
 				if healthCheckedSrc.AssetDiscoveryMethod == source.AssetDiscoveryMethodTypeScheduled &&
-					healthCheckedSrc.HealthState != source.SourceHealthStateUnhealthy {
+					healthCheckedSrc.HealthState != source.HealthStatusUnhealthy {
 					filteredSources = append(filteredSources, src)
 				}
 				break

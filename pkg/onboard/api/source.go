@@ -108,7 +108,7 @@ type Source struct {
 	OnboardDate          time.Time                       `json:"onboardDate"`
 	Enabled              bool                            `json:"enabled"`
 	AssetDiscoveryMethod source.AssetDiscoveryMethodType `json:"assetDiscoveryMethod"`
-	HealthState          source.SourceHealthState        `json:"healthState"`
+	HealthState          source.HealthStatus             `json:"healthState"`
 	LastHealthCheckTime  time.Time                       `json:"lastHealthCheckTime"`
 	HealthReason         *string                         `json:"healthReason,omitempty"`
 }

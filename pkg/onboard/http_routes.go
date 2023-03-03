@@ -6,11 +6,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpclient"
 	"net/http"
 	"strings"
 	"time"
 
+	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpclient"
 	"gitlab.com/keibiengine/keibi-engine/pkg/source"
 
 	api3 "gitlab.com/keibiengine/keibi-engine/pkg/auth/api"
@@ -323,7 +323,7 @@ func (h HttpHandler) PostSourceAws(ctx echo.Context) error {
 		}
 
 		// TODO: Handle edge case where writing to Vault succeeds and writing to event queue fails.
-		if err := h.vault.Write(src.ConfigRef, req.Config.AsMap()); err != nil {
+		if err := h.vault.Write(src.Credential.VaultReference, req.Config.AsMap()); err != nil {
 			return err
 		}
 
@@ -332,7 +332,7 @@ func (h HttpHandler) PostSourceAws(ctx echo.Context) error {
 			SourceID:   src.ID,
 			AccountID:  src.SourceId,
 			SourceType: src.Type,
-			ConfigRef:  src.ConfigRef,
+			ConfigRef:  src.Credential.VaultReference,
 		}); err != nil {
 			return err
 		}
@@ -380,7 +380,7 @@ func (h HttpHandler) PostSourceAzure(ctx echo.Context) error {
 		}
 
 		// TODO: Handle edge case where writing to Vault succeeds and writing to event queue fails.
-		if err := h.vault.Write(src.ConfigRef, req.Config.AsMap()); err != nil {
+		if err := h.vault.Write(src.Credential.VaultReference, req.Config.AsMap()); err != nil {
 			return err
 		}
 
@@ -389,7 +389,7 @@ func (h HttpHandler) PostSourceAzure(ctx echo.Context) error {
 			SourceID:   src.ID,
 			AccountID:  src.SourceId,
 			SourceType: src.Type,
-			ConfigRef:  src.ConfigRef,
+			ConfigRef:  src.Credential.VaultReference,
 		}); err != nil {
 			return err
 		}
@@ -446,7 +446,7 @@ func (h HttpHandler) PostSourceAzureSPN(ctx echo.Context) error {
 			SourceID:   src.ID,
 			AccountID:  src.SourceId,
 			SourceType: src.Type,
-			ConfigRef:  src.ConfigRef,
+			ConfigRef:  src.Credential.VaultReference,
 		}); err != nil {
 			return err
 		}
@@ -458,6 +458,114 @@ func (h HttpHandler) PostSourceAzureSPN(ctx echo.Context) error {
 	}
 
 	return ctx.JSON(http.StatusOK, src.ToSourceResponse())
+}
+
+func (h HttpHandler) postAzureCredentials(ctx echo.Context, req api.CreateCredentialRequest) error {
+	configStr, err := json.Marshal(req.Config)
+	if err != nil {
+		return err
+	}
+	config := api.SourceConfigAzure{}
+	err = json.Unmarshal(configStr, &config)
+	if err != nil {
+		return ctx.JSON(http.StatusBadRequest, "invalid config")
+	}
+
+	cred := NewAzureCredential(req.Name)
+	metadata, err := getAzureCredentialsMetadata(ctx.Request().Context(), config)
+	if err != nil {
+		return err
+	}
+	jsonMetadata, err := json.Marshal(metadata)
+	if err != nil {
+		return err
+	}
+	cred.Metadata = jsonMetadata
+
+	err = h.db.orm.Transaction(func(tx *gorm.DB) error {
+		if err := h.db.CreateCredential(&cred); err != nil {
+			return err
+		}
+
+		// TODO: Handle edge case where writing to Vault succeeds and writing to event queue fails.
+		if err := h.vault.Write(cred.VaultReference, config.AsMap()); err != nil {
+			return err
+		}
+
+		return nil
+	})
+	if err != nil {
+		return err
+	}
+
+	return ctx.JSON(http.StatusOK, api.CreateCredentialResponse{ID: cred.ID.String()})
+}
+
+func (h HttpHandler) postAWSCredentials(ctx echo.Context, req api.CreateCredentialRequest) error {
+	configStr, err := json.Marshal(req.Config)
+	if err != nil {
+		return err
+	}
+	config := api.SourceConfigAWS{}
+	err = json.Unmarshal(configStr, &config)
+	if err != nil {
+		return ctx.JSON(http.StatusBadRequest, "invalid config")
+	}
+
+	cred := NewAWSCredential(req.Name)
+	metadata, err := getAWSCredentialsMetadata(ctx.Request().Context(), config)
+	if err != nil {
+		return err
+	}
+	jsonMetadata, err := json.Marshal(metadata)
+	if err != nil {
+		return err
+	}
+	cred.Metadata = jsonMetadata
+
+	err = h.db.orm.Transaction(func(tx *gorm.DB) error {
+		if err := h.db.CreateCredential(&cred); err != nil {
+			return err
+		}
+
+		// TODO: Handle edge case where writing to Vault succeeds and writing to event queue fails.
+		if err := h.vault.Write(cred.VaultReference, config.AsMap()); err != nil {
+			return err
+		}
+
+		return nil
+	})
+	if err != nil {
+		return err
+	}
+
+	return ctx.JSON(http.StatusOK, api.CreateCredentialResponse{ID: cred.ID.String()})
+}
+
+// PostCredentials godoc
+//
+//	@Summary		Create connection credentials
+//	@Description	Creating connection credentials
+//	@Tags			onboard
+//	@Produce		json
+//	@Success		200		{object}	api.CreateCredentialResponse
+//	@Param			config	body		api.CreateCredentialRequest	true
+//	@Router			/onboard/api/v1/credential [post]
+func (h HttpHandler) PostCredentials(ctx echo.Context) error {
+	var req api.CreateCredentialRequest
+
+	if err := bindValidate(ctx, &req); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
+	}
+
+	switch req.SourceType {
+	case source.CloudAzure:
+		return h.postAzureCredentials(ctx, req)
+	case source.CloudAWS:
+		return h.postAWSCredentials(ctx, req)
+	}
+
+	return echo.NewHTTPError(http.StatusBadRequest, "invalid source type")
 }
 
 // PostSPN godoc
@@ -651,7 +759,7 @@ func (h HttpHandler) GetSourceCred(ctx echo.Context) error {
 		return err
 	}
 
-	cnf, err := h.vault.Read(src.ConfigRef)
+	cnf, err := h.vault.Read(src.Credential.VaultReference)
 	if err != nil {
 		return err
 	}
@@ -697,7 +805,7 @@ func (h HttpHandler) GetSourceHealth(ctx echo.Context) error {
 		return err
 	}
 
-	cnf, err := h.vault.Read(src.ConfigRef)
+	cnf, err := h.vault.Read(src.Credential.VaultReference)
 	if err != nil {
 		return err
 	}
@@ -710,17 +818,18 @@ func (h HttpHandler) GetSourceHealth(ctx echo.Context) error {
 		}
 		err = keibiaws.CheckSecurityAuditPermission(awsCnf.AccessKey, awsCnf.SecretKey)
 		if err != nil {
-			src.HealthState = source.SourceHealthStateUnhealthy
+			src.HealthState = source.HealthStatusUnhealthy
 			healthMessage := err.Error()
 			src.HealthReason = &healthMessage
 			src.LastHealthCheckTime = time.Now()
+			src.UpdatedAt = time.Now()
 			_, err = h.db.UpdateSource(&src)
 			if err != nil {
 				return err
 			}
 			//TODO Mahan: record state change in elastic search
 		} else {
-			src.HealthState = source.SourceHealthStateHealthy
+			src.HealthState = source.HealthStatusHealthy
 			src.HealthReason = nil
 			src.LastHealthCheckTime = time.Now()
 			_, err = h.db.UpdateSource(&src)
@@ -766,7 +875,7 @@ func (h HttpHandler) PutSourceCred(ctx echo.Context) error {
 		return err
 	}
 
-	cnf, err := h.vault.Read(src.ConfigRef)
+	cnf, err := h.vault.Read(src.Credential.VaultReference)
 	if err != nil {
 		return err
 	}
@@ -795,7 +904,7 @@ func (h HttpHandler) PutSourceCred(ctx echo.Context) error {
 			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 		}
 
-		if err := h.vault.Write(src.ConfigRef, newCnf.AsMap()); err != nil {
+		if err := h.vault.Write(src.Credential.VaultReference, newCnf.AsMap()); err != nil {
 			return err
 		}
 		return ctx.NoContent(http.StatusOK)
@@ -816,7 +925,7 @@ func (h HttpHandler) PutSourceCred(ctx echo.Context) error {
 			ClientId:       req.ClientID,
 			ClientSecret:   req.ClientSecret,
 		}
-		if err := h.vault.Write(src.ConfigRef, newCnf.AsMap()); err != nil {
+		if err := h.vault.Write(src.Credential.VaultReference, newCnf.AsMap()); err != nil {
 			return err
 		}
 		return ctx.NoContent(http.StatusOK)
@@ -892,9 +1001,13 @@ func (h HttpHandler) DeleteSource(ctx echo.Context) error {
 			return err
 		}
 
-		if !strings.HasPrefix(src.ConfigRef, "sources/azure/spn") {
+		if src.Credential.CredentialType == source.CredentialTypeAutoGenerated {
+			err = h.db.DeleteCredential(src.Credential.ID)
+			if err != nil {
+				return err
+			}
 			// TODO: Handle edge case where deleting from Vault succeeds and writing to event queue fails.
-			err = h.vault.Delete(src.ConfigRef)
+			err = h.vault.Delete(src.Credential.VaultReference)
 			if err != nil {
 				return err
 			}
@@ -904,7 +1017,7 @@ func (h HttpHandler) DeleteSource(ctx echo.Context) error {
 			Action:     api.SourceDeleted,
 			SourceID:   src.ID,
 			SourceType: src.Type,
-			ConfigRef:  src.ConfigRef,
+			ConfigRef:  src.Credential.VaultReference,
 		}); err != nil {
 			return err
 		}
@@ -949,7 +1062,7 @@ func (h HttpHandler) DisableSource(ctx echo.Context) error {
 			Action:     api.SourceDeleted,
 			SourceID:   src.ID,
 			SourceType: src.Type,
-			ConfigRef:  src.ConfigRef,
+			ConfigRef:  src.Credential.VaultReference,
 		}); err != nil {
 			return err
 		}
@@ -994,7 +1107,7 @@ func (h HttpHandler) EnableSource(ctx echo.Context) error {
 			SourceID:   src.ID,
 			AccountID:  src.SourceId,
 			SourceType: src.Type,
-			ConfigRef:  src.ConfigRef,
+			ConfigRef:  src.Credential.VaultReference,
 		}); err != nil {
 			return err
 		}
@@ -1296,7 +1409,7 @@ func (h *HttpHandler) CatalogMetrics(ctx echo.Context) error {
 			metrics.ConnectionsEnabled++
 		}
 
-		if src.HealthState == source.SourceHealthStateUnhealthy {
+		if src.HealthState == source.HealthStatusUnhealthy {
 			metrics.UnhealthyConnections++
 		} else {
 			metrics.HealthyConnections++
