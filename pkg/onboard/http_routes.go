@@ -73,6 +73,9 @@ func (h HttpHandler) Register(r *echo.Echo) {
 	catalog := v1.Group("/catalog")
 	catalog.GET("/metrics", httpserver.AuthorizeHandler(h.CatalogMetrics, api3.ViewerRole))
 	catalog.GET("/connectors", httpserver.AuthorizeHandler(h.CatalogConnectors, api3.ViewerRole))
+
+	connections := v1.Group("/connections")
+	connections.POST("/count", httpserver.AuthorizeHandler(h.CountConnections, api3.ViewerRole))
 }
 
 func bindValidate(ctx echo.Context, i interface{}) error {
@@ -1450,4 +1453,69 @@ func (h *HttpHandler) CatalogConnectors(ctx echo.Context) error {
 	}
 
 	return ctx.JSON(http.StatusOK, connectors)
+}
+
+// CountConnections godoc
+//
+//	@Summary	Returns a count of connections
+//	@Tags		onboard
+//	@Produce	json
+//	@Param		type	body		api.ConnectionCountRequest	true	"Request"
+//	@Success	200		{object}	int64
+//	@Router		/onboard/api/v1/connections/count [get]
+func (h HttpHandler) CountConnections(ctx echo.Context) error {
+	var request api.ConnectionCountRequest
+	if err := ctx.Bind(&request); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("failed to parse request due to: %v", err))
+	}
+
+	var connectors []api.CatalogConnector
+	if err := json.Unmarshal([]byte(catalogsJSON), &connectors); err != nil {
+		return err
+	}
+
+	var condQuery []string
+	var params []interface{}
+	if request.ConnectorsNames != nil && len(request.ConnectorsNames) > 0 {
+		var q []string
+		for _, c := range request.ConnectorsNames {
+			if len(strings.TrimSpace(c)) == 0 {
+				continue
+			}
+
+			for _, connector := range connectors {
+				if connector.SourceType.IsNull() {
+					continue
+				}
+
+				if connector.Name == c {
+					q = append(q, "?")
+					params = append(params, connector.SourceType.String())
+				}
+			}
+		}
+		condQuery = append(condQuery, "type IN ("+strings.Join(q, ",")+")")
+	}
+
+	if request.Health != nil {
+		condQuery = append(condQuery, "health_state = ?")
+		params = append(params, *request.Health)
+	}
+
+	if request.State != nil {
+		condQuery = append(condQuery, "enabled = ?")
+		if *request.State == api.ConnectionState_ENABLED {
+			params = append(params, true)
+		} else {
+			params = append(params, false)
+		}
+	}
+
+	query := strings.Join(condQuery, " AND ")
+	count, err := h.db.CountSourcesWithFilters(query, params...)
+	if err != nil {
+		return err
+	}
+
+	return ctx.JSON(http.StatusOK, count)
 }

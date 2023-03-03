@@ -2850,6 +2850,36 @@
                 }
             }
         },
+        "/onboard/api/v1/connections/count": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "onboard"
+                ],
+                "summary": "Returns a count of connections",
+                "parameters": [
+                    {
+                        "description": "Request",
+                        "name": "type",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.ConnectionCountRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                }
+            }
+        },
         "/onboard/api/v1/connectors": {
             "get": {
                 "description": "Getting connectors",
@@ -6654,6 +6684,9 @@
                 "name": {
                     "type": "string"
                 },
+                "sourceType": {
+                    "$ref": "#/definitions/source.Type"
+                },
                 "state": {
                     "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.ConnectorState"
                 }
@@ -6675,6 +6708,34 @@
                     "type": "integer"
                 }
             }
+        },
+        "gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.ConnectionCountRequest": {
+            "type": "object",
+            "properties": {
+                "connectors": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "health": {
+                    "$ref": "#/definitions/source.SourceHealthState"
+                },
+                "state": {
+                    "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.ConnectionState"
+                }
+            }
+        },
+        "gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.ConnectionState": {
+            "type": "string",
+            "enum": [
+                "ENABLED",
+                "DISABLED"
+            ],
+            "x-enum-varnames": [
+                "ConnectionState_ENABLED",
+                "ConnectionState_DISABLED"
+            ]
         },
         "gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.ConnectorCount": {
             "type": "object",

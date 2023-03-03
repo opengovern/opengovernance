@@ -1465,6 +1465,8 @@ definitions:
         type: string
       name:
         type: string
+      sourceType:
+        $ref: '#/definitions/source.Type'
       state:
         $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.ConnectorState'
     type: object
@@ -1479,6 +1481,25 @@ definitions:
       unhealthyConnections:
         type: integer
     type: object
+  gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.ConnectionCountRequest:
+    properties:
+      connectors:
+        items:
+          type: string
+        type: array
+      health:
+        $ref: '#/definitions/source.SourceHealthState'
+      state:
+        $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.ConnectionState'
+    type: object
+  gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.ConnectionState:
+    enum:
+    - ENABLED
+    - DISABLED
+    type: string
+    x-enum-varnames:
+    - ConnectionState_ENABLED
+    - ConnectionState_DISABLED
   gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.ConnectorCount:
     properties:
       category:
@@ -3794,6 +3815,25 @@ paths:
           schema:
             $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.CatalogMetrics'
       summary: Returns the list of metrics for catalog page.
+      tags:
+      - onboard
+  /onboard/api/v1/connections/count:
+    get:
+      parameters:
+      - description: Request
+        in: body
+        name: type
+        required: true
+        schema:
+          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.ConnectionCountRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: integer
+      summary: Returns a count of connections
       tags:
       - onboard
   /onboard/api/v1/connectors:
