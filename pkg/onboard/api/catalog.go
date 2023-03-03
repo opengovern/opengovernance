@@ -17,7 +17,7 @@ type CatalogMetrics struct {
 }
 
 type CatalogConnector struct {
-	ID                  string         `json:"ID"`
+	ID                  int            `json:"ID"`
 	Logo                string         `json:"logo"`
 	DisplayName         string         `json:"displayName"`
 	Name                string         `json:"name"`
