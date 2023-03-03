@@ -287,3 +287,14 @@ func (db Database) DeleteCredential(id uuid.UUID) error {
 
 	return nil
 }
+
+func (db Database) CountSourcesWithFilters(query interface{}, args ...interface{}) (int64, error) {
+	var count int64
+	tx := db.orm.Where(query, args).Count(&count)
+
+	if tx.Error != nil {
+		return 0, tx.Error
+	}
+
+	return count, nil
+}

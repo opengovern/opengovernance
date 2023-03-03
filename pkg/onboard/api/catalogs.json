@@ -1,60 +1,100 @@
 [
   {
+    "ID": 1,
     "logo": "",
     "name": "AWS Accounts",
+    "displayName": "AWS Accounts",
     "category": "PaaS & App Int",
     "description": "Onboard AWS Accounts to Keibi",
     "state": "ACTIVE",
-    "sourceType": "AWS"
+    "sourceType": "AWS",
+    "allowNewConnections": true,
+    "maxConnectionsLimit": 1000000,
+    "connectionFederator": ""
   },
   {
+    "ID": 2,
     "logo": "",
     "name": "AWS Organizations",
+    "displayName": "AWS Organizations",
     "category": "PaaS & App Int",
     "description": "Gain visibility to our AWS Organization",
-    "state": "NOT_SETUP"
+    "state": "NOT_SETUP",
+    "allowNewConnections": false,
+    "maxConnectionsLimit": 1000000,
+    "connectionFederator": ""
   },
   {
+    "ID": 3,
     "logo": "",
     "name": "AWS CloudTrail",
+    "displayName": "AWS CloudTrail",
     "category": "Ops Management",
     "description": "Integrate Cloudtrail with Keibi to gain insights",
-    "state": "NOT_SETUP"
+    "state": "NOT_SETUP",
+    "allowNewConnections": false,
+    "maxConnectionsLimit": 1000000,
+    "connectionFederator": ""
   },
   {
+    "ID": 4,
     "logo": "",
     "name": "Azure Active Directory",
+    "displayName": "Azure Active Directory",
     "category": "PaaS & App Int",
     "description": "Connect your Azure Active Directory to Keibi",
-    "state": "NOT_SETUP"
+    "state": "NOT_SETUP",
+    "allowNewConnections": false,
+    "maxConnectionsLimit": 1000000,
+    "connectionFederator": ""
   },
   {
+    "ID": 5,
     "logo": "",
     "name": "Azure Subscription",
+    "displayName": "Azure Subscription",
     "category": "PaaS & App Int",
     "description": "Onboard Azure Subscription to Keibi",
     "state": "ACTIVE",
-    "sourceType": "Azure"
+    "sourceType": "Azure",
+    "allowNewConnections": true,
+    "maxConnectionsLimit": 1000000,
+    "connectionFederator": ""
   },
   {
+    "ID": 6,
     "logo": "",
     "name": "Azure Activity Logs",
+    "displayName": "Azure Activity Logs",
     "category": "Ops Management",
     "description": "Ingest Activity Logs to Keibi to gain insights",
-    "state": "NOT_SETUP"
+    "state": "NOT_SETUP",
+    "allowNewConnections": false,
+    "maxConnectionsLimit": 1000000,
+    "connectionFederator": ""
   },
   {
+    "ID": 7,
     "logo": "",
     "name": "ServiceNow",
+    "displayName": "ServiceNow",
     "category": "Access Management",
     "description": "Connect ServiceNow to ingest data",
-    "state": "NOT_SETUP"
+    "state": "NOT_SETUP",
+    "allowNewConnections": false,
+    "maxConnectionsLimit": 1000000,
+    "connectionFederator": ""
   },
   {
+    "ID": 8,
     "logo": "",
     "name": "Jira",
+    "displayName": "Jira",
     "category": "PaaS & App Int",
     "description": "Jira Integration allows you to respond to changes",
-    "state": "NOT_SETUP"
+    "state": "NOT_SETUP",
+    "allowNewConnections": false,
+    "maxConnectionsLimit": 1000000,
+    "connectionFederator": ""
   }
 ]

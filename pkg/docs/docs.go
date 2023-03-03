@@ -2823,6 +2823,32 @@ const docTemplate = `{
                     "onboard"
                 ],
                 "summary": "Returns the list of connectors for catalog page.",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Category filter",
+                        "name": "category",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "State filter",
+                        "name": "state",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Minimum connection filter",
+                        "name": "minConnection",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "ID filter",
+                        "name": "id",
+                        "in": "query"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -2855,6 +2881,36 @@ const docTemplate = `{
                 }
             }
         },
+        "/onboard/api/v1/connections/count": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "onboard"
+                ],
+                "summary": "Returns a count of connections",
+                "parameters": [
+                    {
+                        "description": "Request",
+                        "name": "type",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.ConnectionCountRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                }
+            }
+        },
         "/onboard/api/v1/connectors": {
             "get": {
                 "description": "Getting connectors",
@@ -2881,6 +2937,37 @@ const docTemplate = `{
                             "items": {
                                 "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.ConnectorCount"
                             }
+                        }
+                    }
+                }
+            }
+        },
+        "/onboard/api/v1/credential": {
+            "post": {
+                "description": "Creating connection credentials",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "onboard"
+                ],
+                "summary": "Create connection credentials",
+                "parameters": [
+                    {
+                        "description": "Request",
+                        "name": "config",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.CreateCredentialRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.CreateCredentialResponse"
                         }
                     }
                 }
@@ -5562,7 +5649,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "healthState": {
-                    "$ref": "#/definitions/source.SourceHealthState"
+                    "$ref": "#/definitions/source.HealthStatus"
                 },
                 "lastHealthCheckTime": {
                     "type": "string"
@@ -6644,20 +6731,38 @@ const docTemplate = `{
         "gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.CatalogConnector": {
             "type": "object",
             "properties": {
+                "ID": {
+                    "type": "string"
+                },
+                "allowNewConnections": {
+                    "type": "boolean"
+                },
                 "category": {
                     "type": "string"
                 },
                 "connectionCount": {
                     "type": "integer"
                 },
+                "connectionFederator": {
+                    "type": "string"
+                },
                 "description": {
+                    "type": "string"
+                },
+                "displayName": {
                     "type": "string"
                 },
                 "logo": {
                     "type": "string"
                 },
+                "maxConnectionsLimit": {
+                    "type": "integer"
+                },
                 "name": {
                     "type": "string"
+                },
+                "sourceType": {
+                    "$ref": "#/definitions/source.Type"
                 },
                 "state": {
                     "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.ConnectorState"
@@ -6680,6 +6785,20 @@ const docTemplate = `{
                     "type": "integer"
                 }
             }
+        },
+        "gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.ConnectionCountRequest": {
+            "type": "object"
+        },
+        "gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.ConnectionState": {
+            "type": "string",
+            "enum": [
+                "ENABLED",
+                "DISABLED"
+            ],
+            "x-enum-varnames": [
+                "ConnectionState_ENABLED",
+                "ConnectionState_DISABLED"
+            ]
         },
         "gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.ConnectorCount": {
             "type": "object",
@@ -6720,6 +6839,26 @@ const docTemplate = `{
                 "ConnectorState_Active",
                 "ConnectorState_NotSetup"
             ]
+        },
+        "gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.CreateCredentialRequest": {
+            "type": "object",
+            "properties": {
+                "config": {},
+                "name": {
+                    "type": "string"
+                },
+                "source_type": {
+                    "$ref": "#/definitions/source.Type"
+                }
+            }
+        },
+        "gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.CreateCredentialResponse": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string"
+                }
+            }
         },
         "gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.CreateSPNResponse": {
             "type": "object",
@@ -6849,7 +6988,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "healthState": {
-                    "$ref": "#/definitions/source.SourceHealthState"
+                    "$ref": "#/definitions/source.HealthStatus"
                 },
                 "id": {
                     "type": "string"
@@ -7140,7 +7279,7 @@ const docTemplate = `{
                 "ConnectorStatusComingSoon"
             ]
         },
-        "source.SourceHealthState": {
+        "source.HealthStatus": {
             "type": "string",
             "enum": [
                 "healthy",
@@ -7148,9 +7287,9 @@ const docTemplate = `{
                 "initial_discovery"
             ],
             "x-enum-varnames": [
-                "SourceHealthStateHealthy",
-                "SourceHealthStateUnhealthy",
-                "SourceHealthStateInitialDiscovery"
+                "HealthStatusHealthy",
+                "HealthStatusUnhealthy",
+                "HealthStatusInitialDiscovery"
             ]
         },
         "source.Type": {

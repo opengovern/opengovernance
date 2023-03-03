@@ -495,6 +495,96 @@ func (s *HttpHandlerSuite) TestGetSources_Success() {
 	require.Equal(int64(1), response6)
 }
 
+func (s *HttpHandlerSuite) TestCountConnections() {
+	require := s.Require()
+
+	var response1 api.CreateSourceResponse
+	rec, err := doSimpleJSONRequest(s.router, echo.POST, "/api/v1/source/azure", api.SourceAzureRequest{
+		Name:        "Account1",
+		Description: "Account1 Description",
+		Config: api.SourceConfigAzure{
+			SubscriptionId: "6948DF80-14BD-4E04-8842-7668D9C001F5", // RANDOM UUID
+			TenantId:       "4B8302DA-21AD-401F-AF45-1DFD956B80B5", // RANDOM UUID
+			ClientId:       "8628FE7C-A4E9-4056-91BD-FD6AA7817E39", // RANDOM UUID
+			ClientSecret:   "SECRET",
+		},
+	}, &response1)
+	require.NoError(err, "request")
+	require.Equal(http.StatusOK, rec.Code)
+	require.NotEmpty(response1.ID)
+
+	var response2 api.CreateSourceResponse
+	rec, err = doSimpleJSONRequest(s.router, echo.POST, "/api/v1/source/aws", api.SourceAwsRequest{
+		Name:        "Account1",
+		Description: "Account1 Description",
+		Config: api.SourceConfigAWS{
+			AccountId: "123456789012",
+			AccessKey: "ACCESS_KEY",
+			SecretKey: "SECRET_KEY",
+		},
+	}, &response2)
+	require.NoError(err, "request")
+	require.Equal(http.StatusOK, rec.Code)
+	require.NotEmpty(response2.ID)
+
+	var response6 int64
+	rec, err = doSimpleJSONRequest(s.router, echo.POST, "/api/v1/connections/count", api.ConnectionCountRequest{
+		ConnectorsNames: nil,
+		State:           nil,
+		Health:          nil,
+	}, &response6)
+	require.NoError(err, "request")
+	require.Equal(http.StatusOK, rec.Code)
+	require.Equal(int64(2), response6)
+
+	rec, err = doSimpleJSONRequest(s.router, echo.POST, "/api/v1/connections/count", api.ConnectionCountRequest{
+		ConnectorsNames: []string{"AWS Accounts"},
+		State:           nil,
+		Health:          nil,
+	}, &response6)
+	require.NoError(err, "request")
+	require.Equal(http.StatusOK, rec.Code)
+	require.Equal(int64(1), response6)
+
+	rec, err = doSimpleJSONRequest(s.router, echo.POST, "/api/v1/connections/count", api.ConnectionCountRequest{
+		ConnectorsNames: []string{"Azure Subscription"},
+		State:           nil,
+		Health:          nil,
+	}, &response6)
+	require.NoError(err, "request")
+	require.Equal(http.StatusOK, rec.Code)
+	require.Equal(int64(1), response6)
+
+	rec, err = doSimpleJSONRequest(s.router, echo.POST, "/api/v1/connections/count", api.ConnectionCountRequest{
+		ConnectorsNames: []string{"ServiceNow"},
+		State:           nil,
+		Health:          nil,
+	}, &response6)
+	require.NoError(err, "request")
+	require.Equal(http.StatusOK, rec.Code)
+	require.Equal(int64(0), response6)
+
+	state := api.ConnectionState_ENABLED
+	rec, err = doSimpleJSONRequest(s.router, echo.POST, "/api/v1/connections/count", api.ConnectionCountRequest{
+		ConnectorsNames: []string{"Azure Subscription"},
+		State:           &state,
+		Health:          nil,
+	}, &response6)
+	require.NoError(err, "request")
+	require.Equal(http.StatusOK, rec.Code)
+	require.Equal(int64(1), response6)
+
+	health := source.SourceHealthStateHealthy
+	rec, err = doSimpleJSONRequest(s.router, echo.POST, "/api/v1/connections/count", api.ConnectionCountRequest{
+		ConnectorsNames: []string{"Azure Subscription"},
+		State:           nil,
+		Health:          &health,
+	}, &response6)
+	require.NoError(err, "request")
+	require.Equal(http.StatusOK, rec.Code)
+	require.Equal(int64(1), response6)
+}
+
 func (s *HttpHandlerSuite) TestGetProviders() {
 	require := s.Require()
 

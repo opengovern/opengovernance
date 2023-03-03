@@ -711,7 +711,7 @@ definitions:
       healthReason:
         type: string
       healthState:
-        $ref: '#/definitions/source.SourceHealthState'
+        $ref: '#/definitions/source.HealthStatus'
       lastHealthCheckTime:
         type: string
       lastInventory:
@@ -1455,16 +1455,28 @@ definitions:
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.CatalogConnector:
     properties:
+      ID:
+        type: string
+      allowNewConnections:
+        type: boolean
       category:
         type: string
       connectionCount:
         type: integer
+      connectionFederator:
+        type: string
       description:
+        type: string
+      displayName:
         type: string
       logo:
         type: string
+      maxConnectionsLimit:
+        type: integer
       name:
         type: string
+      sourceType:
+        $ref: '#/definitions/source.Type'
       state:
         $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.ConnectorState'
     type: object
@@ -1479,6 +1491,16 @@ definitions:
       unhealthyConnections:
         type: integer
     type: object
+  gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.ConnectionCountRequest:
+    type: object
+  gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.ConnectionState:
+    enum:
+    - ENABLED
+    - DISABLED
+    type: string
+    x-enum-varnames:
+    - ConnectionState_ENABLED
+    - ConnectionState_DISABLED
   gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.ConnectorCount:
     properties:
       category:
@@ -1506,6 +1528,19 @@ definitions:
     x-enum-varnames:
     - ConnectorState_Active
     - ConnectorState_NotSetup
+  gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.CreateCredentialRequest:
+    properties:
+      config: {}
+      name:
+        type: string
+      source_type:
+        $ref: '#/definitions/source.Type'
+    type: object
+  gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.CreateCredentialResponse:
+    properties:
+      id:
+        type: string
+    type: object
   gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.CreateSPNResponse:
     properties:
       id:
@@ -1590,7 +1625,7 @@ definitions:
       healthReason:
         type: string
       healthState:
-        $ref: '#/definitions/source.SourceHealthState'
+        $ref: '#/definitions/source.HealthStatus'
       id:
         type: string
       lastHealthCheckTime:
@@ -1785,16 +1820,16 @@ definitions:
     - ConnectorStatusEnabled
     - ConnectorStatusDisabled
     - ConnectorStatusComingSoon
-  source.SourceHealthState:
+  source.HealthStatus:
     enum:
     - healthy
     - unhealthy
     - initial_discovery
     type: string
     x-enum-varnames:
-    - SourceHealthStateHealthy
-    - SourceHealthStateUnhealthy
-    - SourceHealthStateInitialDiscovery
+    - HealthStatusHealthy
+    - HealthStatusUnhealthy
+    - HealthStatusInitialDiscovery
   source.Type:
     enum:
     - ""
@@ -3772,6 +3807,23 @@ paths:
       - metadata
   /onboard/api/v1/catalog/connectors:
     get:
+      parameters:
+      - description: Category filter
+        in: query
+        name: category
+        type: string
+      - description: State filter
+        in: query
+        name: state
+        type: string
+      - description: Minimum connection filter
+        in: query
+        name: minConnection
+        type: string
+      - description: ID filter
+        in: query
+        name: id
+        type: string
       produces:
       - application/json
       responses:
@@ -3796,6 +3848,25 @@ paths:
       summary: Returns the list of metrics for catalog page.
       tags:
       - onboard
+  /onboard/api/v1/connections/count:
+    get:
+      parameters:
+      - description: Request
+        in: body
+        name: type
+        required: true
+        schema:
+          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.ConnectionCountRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: integer
+      summary: Returns a count of connections
+      tags:
+      - onboard
   /onboard/api/v1/connectors:
     get:
       description: Getting connectors
@@ -3814,6 +3885,26 @@ paths:
               $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.ConnectorCount'
             type: array
       summary: Get connectors
+      tags:
+      - onboard
+  /onboard/api/v1/credential:
+    post:
+      description: Creating connection credentials
+      parameters:
+      - description: Request
+        in: body
+        name: config
+        required: true
+        schema:
+          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.CreateCredentialRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.CreateCredentialResponse'
+      summary: Create connection credentials
       tags:
       - onboard
   /onboard/api/v1/discover/aws/accounts:
