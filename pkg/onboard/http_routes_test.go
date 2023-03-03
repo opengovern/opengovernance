@@ -574,7 +574,7 @@ func (s *HttpHandlerSuite) TestCountConnections() {
 	require.Equal(http.StatusOK, rec.Code)
 	require.Equal(int64(1), response6)
 
-	health := source.SourceHealthStateHealthy
+	health := source.HealthStatusHealthy
 	rec, err = doSimpleJSONRequest(s.router, echo.POST, "/api/v1/connections/count", api.ConnectionCountRequest{
 		ConnectorsNames: []string{"Azure Subscription"},
 		State:           nil,
