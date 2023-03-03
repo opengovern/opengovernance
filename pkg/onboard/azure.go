@@ -6,6 +6,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/profiles/latest/subscription/mgmt/subscription"
 	"gitlab.com/keibiengine/keibi-engine/pkg/azure"
 	"gitlab.com/keibiengine/keibi-engine/pkg/onboard/api"
+	"gitlab.com/keibiengine/keibi-engine/pkg/source"
 )
 
 func discoverAzureSubscriptions(ctx context.Context, req api.DiscoverAzureSubscriptionsRequest) ([]api.DiscoverAzureSubscriptionsResponse, error) {
@@ -49,4 +50,10 @@ func discoverAzureSubscriptions(ctx context.Context, req api.DiscoverAzureSubscr
 	}
 
 	return subs, nil
+}
+
+func getAzureCredentialsMetadata(ctx context.Context, config api.SourceConfigAzure) (*source.AzureCredentialMetadata, error) {
+	//TODO get metadata
+
+	return &source.AzureCredentialMetadata{}, nil
 }

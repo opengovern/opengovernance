@@ -77,6 +77,7 @@ type GetResourcesRequest struct {
 }
 
 // Filters model
+//
 //	@Description	if you provide two values for same filter OR operation would be used
 //	@Description	if you provide value for two filters AND operation would be used
 type Filters struct {
@@ -95,6 +96,7 @@ type Filters struct {
 }
 
 // ResourceFilters model
+//
 //	@Description	if you provide two values for same filter OR operation would be used
 //	@Description	if you provide value for two filters AND operation would be used
 type ResourceFilters struct {
@@ -370,18 +372,18 @@ type AccountSummaryResponse struct {
 }
 
 type AccountSummary struct {
-	SourceID               string                   `json:"sourceID"`
-	SourceType             source.Type              `json:"sourceType"`
-	ProviderConnectionName string                   `json:"providerConnectionName"`
-	ProviderConnectionID   string                   `json:"providerConnectionID"`
-	Enabled                bool                     `json:"enabled"`
-	ResourceCount          int                      `json:"resourceCount"`
-	Cost                   map[string]float64       `json:"cost,omitempty"`
-	OnboardDate            time.Time                `json:"onboardDate"`
-	LastInventory          time.Time                `json:"lastInventory"`
-	HealthState            source.SourceHealthState `json:"healthState"`
-	LastHealthCheckTime    time.Time                `json:"lastHealthCheckTime"`
-	HealthReason           *string                  `json:"healthReason,omitempty"`
+	SourceID               string              `json:"sourceID"`
+	SourceType             source.Type         `json:"sourceType"`
+	ProviderConnectionName string              `json:"providerConnectionName"`
+	ProviderConnectionID   string              `json:"providerConnectionID"`
+	Enabled                bool                `json:"enabled"`
+	ResourceCount          int                 `json:"resourceCount"`
+	Cost                   map[string]float64  `json:"cost,omitempty"`
+	OnboardDate            time.Time           `json:"onboardDate"`
+	LastInventory          time.Time           `json:"lastInventory"`
+	HealthState            source.HealthStatus `json:"healthState"`
+	LastHealthCheckTime    time.Time           `json:"lastHealthCheckTime"`
+	HealthReason           *string             `json:"healthReason,omitempty"`
 }
 
 type TopAccountResponse struct {

@@ -2684,7 +2684,7 @@ func (h *HttpHandler) GetAccountSummary(ctx echo.Context) error {
 			HealthReason:           src.HealthReason,
 		}
 
-		if src.HealthState == source.SourceHealthStateUnhealthy {
+		if src.HealthState == source.HealthStatusUnhealthy {
 			unhealthyCount++
 		}
 		if !src.Enabled {

@@ -6,10 +6,9 @@ import (
 	"os"
 	"strings"
 
-	"gitlab.com/keibiengine/keibi-engine/pkg/onboard/connector"
-
 	"github.com/spf13/cobra"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpserver"
+	"gitlab.com/keibiengine/keibi-engine/pkg/onboard/connector"
 	"go.uber.org/zap"
 )
 
