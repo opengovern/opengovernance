@@ -2,6 +2,7 @@ package onboard
 
 import (
 	"fmt"
+	"strings"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/source"
 
@@ -288,9 +289,15 @@ func (db Database) DeleteCredential(id uuid.UUID) error {
 	return nil
 }
 
-func (db Database) CountSourcesWithFilters(query interface{}, args ...interface{}) (int64, error) {
+func (db Database) CountSourcesWithFilters(query string, args ...interface{}) (int64, error) {
 	var count int64
-	tx := db.orm.Model(&Source{}).Where(query, args).Count(&count)
+	tx := db.orm.Model(&Source{})
+	if len(args) > 0 {
+		tx = tx.Where(query, args)
+	} else if len(strings.TrimSpace(query)) > 0 {
+		tx = tx.Where(query)
+	}
+	tx = tx.Count(&count)
 
 	if tx.Error != nil {
 		return 0, tx.Error

@@ -1537,7 +1537,7 @@ func (h HttpHandler) CountConnections(ctx echo.Context) error {
 		}
 
 		if len(q) > 0 {
-			condQuery = append(condQuery, fmt.Sprintf("type IN (%s)", strings.Join(q, ",")))
+			condQuery = append(condQuery, fmt.Sprintf("_type IN (%s)", strings.Join(q, ",")))
 		}
 	}
 
