@@ -62,6 +62,31 @@ func CheckSecurityAuditPermission(accessKey, secretKey string) error {
 	return fmt.Errorf("SecurityAudit policy is not attached to the user")
 }
 
+func CheckGetUserPermission(accessKey, secretKey string) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	cfg, err := GetConfig(ctx, accessKey, secretKey, "", "")
+	if err != nil {
+		fmt.Printf("failed to get config: %v", err)
+		return err
+	}
+
+	cfgClone := cfg.Copy()
+	if cfgClone.Region == "" {
+		cfgClone.Region = "us-east-1"
+	}
+
+	iamClient := iam.NewFromConfig(cfgClone)
+	_, err = iamClient.GetUser(ctx, &iam.GetUserInput{})
+	if err != nil {
+		fmt.Printf("failed to get user: %v", err)
+		return err
+	}
+
+	return nil
+}
+
 func CheckDescribeRegionsPermission(accessKey, secretKey string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
