@@ -1453,7 +1453,7 @@ func (h *HttpHandler) CatalogConnectors(ctx echo.Context) error {
 
 	for idx, connector := range connectors {
 		if !connector.SourceType.IsNull() {
-			c, err := h.db.CountSourcesOfType(connector.SourceType.String())
+			c, err := h.db.CountSourcesOfType(connector.SourceType)
 			if err != nil {
 				return err
 			}

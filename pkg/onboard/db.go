@@ -90,7 +90,7 @@ func (db Database) GetSourcesOfType(rType source.Type) ([]Source, error) {
 // CountSourcesOfType gets count of sources with matching type
 func (db Database) CountSourcesOfType(rType source.Type) (int64, error) {
 	var c int64
-	tx := db.orm.Model(&Source{}).Where("type = ?", rType).Count(&c)
+	tx := db.orm.Model(&Source{}).Where("type = ?", rType.String()).Count(&c)
 
 	if tx.Error != nil {
 		return 0, tx.Error
