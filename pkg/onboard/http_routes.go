@@ -1535,12 +1535,15 @@ func (h HttpHandler) CountConnections(ctx echo.Context) error {
 				}
 			}
 		}
-		condQuery = append(condQuery, "type IN ("+strings.Join(q, ",")+")")
+
+		if len(q) > 0 {
+			condQuery = append(condQuery, fmt.Sprintf("type IN (%s)", strings.Join(q, ",")))
+		}
 	}
 
 	if request.Health != nil {
 		condQuery = append(condQuery, "health_state = ?")
-		params = append(params, *request.Health)
+		params = append(params, string(*request.Health))
 	}
 
 	if request.State != nil {
