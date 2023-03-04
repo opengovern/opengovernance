@@ -57,6 +57,10 @@ func (h HttpHandler) Register(r *echo.Echo) {
 	source.POST("/:sourceId/enable", httpserver.AuthorizeHandler(h.EnableSource, api3.EditorRole))
 	source.DELETE("/:sourceId", httpserver.AuthorizeHandler(h.DeleteSource, api3.EditorRole))
 
+	v1.POST("/credential", httpserver.AuthorizeHandler(h.PostCredentials, api3.EditorRole))
+	v1.GET("/credential", httpserver.AuthorizeHandler(h.GetCredentials, api3.ViewerRole))
+	v1.PUT("/credential", httpserver.AuthorizeHandler(h.PutCredentials, api3.EditorRole))
+
 	spn := v1.Group("/spn")
 
 	spn.POST("/azure", httpserver.AuthorizeHandler(h.PostSPN, api3.EditorRole))
@@ -464,6 +468,50 @@ func (h HttpHandler) PostSourceAzureSPN(ctx echo.Context) error {
 	return ctx.JSON(http.StatusOK, src.ToSourceResponse())
 }
 
+func (h HttpHandler) checkCredentialHealth(cred Credential) (bool, error) {
+	config, err := h.vault.Read(cred.VaultReference)
+	if err != nil {
+		return false, echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+	switch cred.ConnectorType {
+	case source.CloudAWS:
+		var awsConfig describe.AWSAccountConfig
+		awsConfig, err = describe.AWSAccountConfigFromMap(config)
+		if err != nil {
+			return false, echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		}
+		err = keibiaws.CheckGetUserPermission(awsConfig.AccessKey, awsConfig.SecretKey)
+
+	case source.CloudAzure:
+		_, err = describe.AzureSubscriptionConfigFromMap(config)
+		if err != nil {
+			return false, echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		}
+		// TODO add azure healthcheck
+	}
+
+	if err != nil {
+		errStr := err.Error()
+		cred.HealthReason = &errStr
+		cred.HealthStatus = source.HealthStatusUnhealthy
+	} else {
+		cred.HealthStatus = source.HealthStatusHealthy
+		cred.HealthReason = nil
+	}
+	cred.LastHealthCheckTime = time.Now()
+
+	_, dbErr := h.db.UpdateCredential(&cred)
+	if dbErr != nil {
+		return false, echo.NewHTTPError(http.StatusInternalServerError, dbErr.Error())
+	}
+
+	if err != nil {
+		return false, echo.NewHTTPError(http.StatusOK, err.Error())
+	}
+
+	return true, nil
+}
+
 func (h HttpHandler) postAzureCredentials(ctx echo.Context, req api.CreateCredentialRequest) error {
 	configStr, err := json.Marshal(req.Config)
 	if err != nil {
@@ -498,6 +546,11 @@ func (h HttpHandler) postAzureCredentials(ctx echo.Context, req api.CreateCreden
 
 		return nil
 	})
+	if err != nil {
+		return err
+	}
+
+	_, err = h.checkCredentialHealth(cred)
 	if err != nil {
 		return err
 	}
@@ -543,6 +596,11 @@ func (h HttpHandler) postAWSCredentials(ctx echo.Context, req api.CreateCredenti
 		return err
 	}
 
+	_, err = h.checkCredentialHealth(cred)
+	if err != nil {
+		return err
+	}
+
 	return ctx.JSON(http.StatusOK, api.CreateCredentialResponse{ID: cred.ID.String()})
 }
 
@@ -552,8 +610,8 @@ func (h HttpHandler) postAWSCredentials(ctx echo.Context, req api.CreateCredenti
 //	@Description	Creating connection credentials
 //	@Tags			onboard
 //	@Produce		json
-//	@Param			config	body		api.CreateCredentialRequest	true	"Request"
 //	@Success		200		{object}	api.CreateCredentialResponse
+//	@Param			config	body		api.CreateCredentialRequest	true	"config"
 //	@Router			/onboard/api/v1/credential [post]
 func (h HttpHandler) PostCredentials(ctx echo.Context) error {
 	var req api.CreateCredentialRequest
@@ -570,6 +628,181 @@ func (h HttpHandler) PostCredentials(ctx echo.Context) error {
 	}
 
 	return echo.NewHTTPError(http.StatusBadRequest, "invalid source type")
+}
+
+// GetCredentials godoc
+//
+//	@Summary		List credentials
+//	@Description	List credentials
+//	@Tags			onboard
+//	@Produce		json
+//	@Success		200			{object}	[]Credential
+//	@Param			connector	query		string	false	"filter by connector type"
+//	@Router			/onboard/api/v1/credential [get]
+func (h HttpHandler) GetCredentials(ctx echo.Context) error {
+	connector, _ := source.ParseType(ctx.QueryParam("provider"))
+
+	credentials, err := h.db.GetCredentialsByConnector(connector)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+
+	return ctx.JSON(http.StatusOK, credentials)
+}
+
+func (h HttpHandler) putAzureCredentials(ctx echo.Context, req api.UpdateCredentialRequest) error {
+	id, err := uuid.Parse(req.ID)
+	if err != nil {
+		return ctx.JSON(http.StatusBadRequest, "invalid id")
+	}
+
+	cred, err := h.db.GetCredentialByID(id)
+	if err != nil {
+		if err != gorm.ErrRecordNotFound {
+			return err
+		}
+		return ctx.JSON(http.StatusNotFound, "credential not found")
+	}
+
+	if req.Name != nil {
+		cred.Name = req.Name
+	}
+
+	config := api.SourceConfigAzure{}
+
+	if req.Config != nil {
+		configStr, err := json.Marshal(req.Config)
+		if err != nil {
+			return err
+		}
+		err = json.Unmarshal(configStr, &config)
+		if err != nil {
+			return ctx.JSON(http.StatusBadRequest, "invalid config")
+		}
+		metadata, err := getAzureCredentialsMetadata(ctx.Request().Context(), config)
+		if err != nil {
+			return err
+		}
+		jsonMetadata, err := json.Marshal(metadata)
+		if err != nil {
+			return err
+		}
+		cred.Metadata = jsonMetadata
+	}
+
+	err = h.db.orm.Transaction(func(tx *gorm.DB) error {
+		if _, err := h.db.UpdateCredential(cred); err != nil {
+			return err
+		}
+
+		// TODO: Handle edge case where writing to Vault succeeds and writing to event queue fails.
+		if req.Config != nil {
+			if err := h.vault.Write(cred.VaultReference, config.AsMap()); err != nil {
+				return err
+			}
+		}
+
+		return nil
+	})
+	if err != nil {
+		return err
+	}
+
+	_, err = h.checkCredentialHealth(*cred)
+	if err != nil {
+		return err
+	}
+
+	return ctx.JSON(http.StatusOK, struct{}{})
+}
+
+func (h HttpHandler) putAWSCredentials(ctx echo.Context, req api.UpdateCredentialRequest) error {
+	id, err := uuid.Parse(req.ID)
+	if err != nil {
+		return ctx.JSON(http.StatusBadRequest, "invalid id")
+	}
+
+	cred, err := h.db.GetCredentialByID(id)
+	if err != nil {
+		if err != gorm.ErrRecordNotFound {
+			return err
+		}
+		return ctx.JSON(http.StatusNotFound, "credential not found")
+	}
+
+	if req.Name != nil {
+		cred.Name = req.Name
+	}
+
+	config := api.SourceConfigAWS{}
+	if req.Config != nil {
+		configStr, err := json.Marshal(req.Config)
+		if err != nil {
+			return err
+		}
+
+		err = json.Unmarshal(configStr, &config)
+		if err != nil {
+			return ctx.JSON(http.StatusBadRequest, "invalid config")
+		}
+
+		metadata, err := getAWSCredentialsMetadata(ctx.Request().Context(), config)
+		if err != nil {
+			return err
+		}
+		jsonMetadata, err := json.Marshal(metadata)
+		if err != nil {
+			return err
+		}
+		cred.Metadata = jsonMetadata
+	}
+	err = h.db.orm.Transaction(func(tx *gorm.DB) error {
+		if err := h.db.CreateCredential(cred); err != nil {
+			return err
+		}
+
+		// TODO: Handle edge case where writing to Vault succeeds and writing to event queue fails.
+		if err := h.vault.Write(cred.VaultReference, config.AsMap()); err != nil {
+			return err
+		}
+
+		return nil
+	})
+	if err != nil {
+		return err
+	}
+
+	_, err = h.checkCredentialHealth(*cred)
+	if err != nil {
+		return err
+	}
+
+	return ctx.JSON(http.StatusOK, struct{}{})
+}
+
+// PutCredentials godoc
+//
+//	@Summary		Edit a credential by Id
+//	@Description	Edit a credential by Id
+//	@Tags			onboard
+//	@Produce		json
+//	@Success		200
+//	@Param			config	body	api.UpdateCredentialRequest	true	"config"
+//	@Router			/onboard/api/v1/credential [put]
+func (h HttpHandler) PutCredentials(ctx echo.Context) error {
+	var req api.UpdateCredentialRequest
+	if err := bindValidate(ctx, &req); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
+	}
+
+	switch req.SourceType {
+	case source.CloudAzure:
+		return h.putAzureCredentials(ctx, req)
+	case source.CloudAWS:
+		return h.putAWSCredentials(ctx, req)
+	}
+
+	return ctx.JSON(http.StatusBadRequest, "invalid source type")
 }
 
 // PostSPN godoc

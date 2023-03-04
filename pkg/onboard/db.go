@@ -298,3 +298,45 @@ func (db Database) CountSourcesWithFilters(query interface{}, args ...interface{
 
 	return count, nil
 }
+
+func (db Database) GetCredentialsByConnector(connector source.Type) ([]Credential, error) {
+	var creds []Credential
+	if connector == source.Nil {
+		tx := db.orm.Find(&creds)
+		if tx.Error != nil {
+			return nil, tx.Error
+		}
+	} else {
+		tx := db.orm.Where("connector = ?", connector).Find(&creds)
+		if tx.Error != nil {
+			return nil, tx.Error
+		}
+	}
+	return creds, nil
+}
+
+func (db Database) GetCredentialByID(id uuid.UUID) (*Credential, error) {
+	var cred Credential
+	tx := db.orm.First(&cred, "id = ?", id)
+	if tx.Error != nil {
+		return nil, tx.Error
+	} else if tx.RowsAffected != 1 {
+		return nil, gorm.ErrRecordNotFound
+	}
+	return &cred, nil
+}
+
+func (db Database) UpdateCredential(creds *Credential) (*Credential, error) {
+	tx := db.orm.
+		Model(&Credential{}).
+		Where("id = ?", creds.ID.String()).Updates(creds)
+
+	if tx.Error != nil {
+		return nil, tx.Error
+	} else if tx.RowsAffected != 1 {
+		return nil, fmt.Errorf("update credential: didn't find credential to update")
+	}
+
+	return creds, nil
+
+}

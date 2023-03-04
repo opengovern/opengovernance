@@ -2943,6 +2943,61 @@ const docTemplate = `{
             }
         },
         "/onboard/api/v1/credential": {
+            "get": {
+                "description": "List credentials",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "onboard"
+                ],
+                "summary": "List credentials",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "filter by connector type",
+                        "name": "connector",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/onboard.Credential"
+                            }
+                        }
+                    }
+                }
+            },
+            "put": {
+                "description": "Edit a credential by Id",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "onboard"
+                ],
+                "summary": "Edit a credential by Id",
+                "parameters": [
+                    {
+                        "description": "config",
+                        "name": "config",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.UpdateCredentialRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    }
+                }
+            },
             "post": {
                 "description": "Creating connection credentials",
                 "produces": [
@@ -2954,7 +3009,7 @@ const docTemplate = `{
                 "summary": "Create connection credentials",
                 "parameters": [
                     {
-                        "description": "Request",
+                        "description": "config",
                         "name": "config",
                         "in": "body",
                         "required": true,
@@ -6732,7 +6787,7 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "ID": {
-                    "type": "string"
+                    "type": "integer"
                 },
                 "allowNewConnections": {
                     "type": "boolean"
@@ -6787,7 +6842,21 @@ const docTemplate = `{
             }
         },
         "gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.ConnectionCountRequest": {
-            "type": "object"
+            "type": "object",
+            "properties": {
+                "connectors": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "health": {
+                    "$ref": "#/definitions/source.HealthStatus"
+                },
+                "state": {
+                    "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.ConnectionState"
+                }
+            }
         },
         "gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.ConnectionState": {
             "type": "string",
@@ -7058,6 +7127,21 @@ const docTemplate = `{
                 }
             }
         },
+        "gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.UpdateCredentialRequest": {
+            "type": "object",
+            "properties": {
+                "config": {},
+                "id": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "source_type": {
+                    "$ref": "#/definitions/source.Type"
+                }
+            }
+        },
         "gitlab_com_keibiengine_keibi-engine_pkg_workspace_api.ChangeWorkspaceNameRequest": {
             "type": "object",
             "properties": {
@@ -7244,6 +7328,41 @@ const docTemplate = `{
                 }
             }
         },
+        "onboard.Credential": {
+            "type": "object",
+            "properties": {
+                "connectorType": {
+                    "$ref": "#/definitions/source.Type"
+                },
+                "credentialType": {
+                    "$ref": "#/definitions/source.CredentialType"
+                },
+                "healthReason": {
+                    "type": "string"
+                },
+                "healthStatus": {
+                    "$ref": "#/definitions/source.HealthStatus"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "lastHealthCheckTime": {
+                    "type": "string"
+                },
+                "metadata": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                },
+                "name": {
+                    "type": "string"
+                },
+                "status": {
+                    "$ref": "#/definitions/source.CredentialStatus"
+                }
+            }
+        },
         "source.AssetDiscoveryMethodType": {
             "type": "string",
             "enum": [
@@ -7277,6 +7396,28 @@ const docTemplate = `{
                 "ConnectorStatusEnabled",
                 "ConnectorStatusDisabled",
                 "ConnectorStatusComingSoon"
+            ]
+        },
+        "source.CredentialStatus": {
+            "type": "string",
+            "enum": [
+                "enabled",
+                "disabled"
+            ],
+            "x-enum-varnames": [
+                "CredentialStatusEnabled",
+                "CredentialStatusDisabled"
+            ]
+        },
+        "source.CredentialType": {
+            "type": "string",
+            "enum": [
+                "auto-generated",
+                "manual"
+            ],
+            "x-enum-varnames": [
+                "CredentialTypeAutoGenerated",
+                "CredentialTypeManual"
             ]
         },
         "source.HealthStatus": {
