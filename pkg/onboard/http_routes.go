@@ -13,6 +13,7 @@ import (
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpclient"
 	"gitlab.com/keibiengine/keibi-engine/pkg/source"
+	"gitlab.com/keibiengine/keibi-engine/pkg/utils"
 
 	api3 "gitlab.com/keibiengine/keibi-engine/pkg/auth/api"
 
@@ -61,6 +62,10 @@ func (h HttpHandler) Register(r *echo.Echo) {
 	v1.POST("/credential", httpserver.AuthorizeHandler(h.PostCredentials, api3.EditorRole))
 	v1.PUT("/credential", httpserver.AuthorizeHandler(h.PutCredentials, api3.EditorRole))
 	v1.GET("/credential", httpserver.AuthorizeHandler(h.GetCredentials, api3.ViewerRole))
+	v1.GET("/credential/sources/list", httpserver.AuthorizeHandler(h.ListSourcesByCredentials, api3.ViewerRole))
+	v1.DELETE("/credential/:credentialId", httpserver.AuthorizeHandler(h.DeleteCredential, api3.EditorRole))
+	v1.POST("/credential/:credentialId/disable", httpserver.AuthorizeHandler(h.DisableCredential, api3.EditorRole))
+	v1.POST("/credential/:credentialId/enable", httpserver.AuthorizeHandler(h.EnableCredential, api3.EditorRole))
 	v1.GET("/credential/:credentialId", httpserver.AuthorizeHandler(h.GetCredential, api3.ViewerRole))
 
 	spn := v1.Group("/spn")
@@ -659,6 +664,7 @@ func (h HttpHandler) GetCredentials(ctx echo.Context) error {
 			ConnectorType:       cred.ConnectorType,
 			Status:              cred.Status,
 			CredentialType:      cred.CredentialType,
+			Enabled:             cred.Enabled,
 			LastHealthCheckTime: cred.LastHealthCheckTime.Unix(),
 			HealthStatus:        cred.HealthStatus,
 			HealthReason:        cred.HealthReason,
@@ -702,6 +708,7 @@ func (h HttpHandler) GetCredential(ctx echo.Context) error {
 		ConnectorType:       credential.ConnectorType,
 		Status:              credential.Status,
 		CredentialType:      credential.CredentialType,
+		Enabled:             credential.Enabled,
 		LastHealthCheckTime: credential.LastHealthCheckTime.Unix(),
 		HealthStatus:        credential.HealthStatus,
 		HealthReason:        credential.HealthReason,
@@ -728,6 +735,97 @@ func (h HttpHandler) GetCredential(ctx echo.Context) error {
 	}
 
 	return ctx.JSON(http.StatusOK, apiCredential)
+}
+
+// ListSourcesByCredentials godoc
+//
+//	@Summary		Returns a list of sources
+//	@Description	Returning a list of sources including both AWS and Azure unless filtered by Type.
+//	@Tags			onboard
+//	@Produce		json
+//	@Param			type	query		string	false	"Type"	Enums(aws,azure)
+//	@Success		200		{object}	[]api.Credential
+//	@Router			/onboard/api/v1/credential/sources/list [get]
+func (h HttpHandler) ListSourcesByCredentials(ctx echo.Context) error {
+	sType, _ := source.ParseType(ctx.QueryParam("type"))
+	var sources []Source
+	var err error
+	if sType != "" {
+		sources, err = h.db.GetSourcesOfType(sType)
+		if err != nil {
+			return err
+		}
+	} else {
+		sources, err = h.db.ListSources()
+		if err != nil {
+			return err
+		}
+	}
+
+	credentials, err := h.db.GetCredentialsByFilters(sType, source.HealthStatusNil)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+
+	apiCredentials := make(map[string]api.Credential)
+	for _, cred := range credentials {
+		apiCredentials[cred.ID.String()] = api.Credential{
+			ID:                  cred.ID.String(),
+			Name:                cred.Name,
+			ConnectorType:       cred.ConnectorType,
+			Status:              cred.Status,
+			CredentialType:      cred.CredentialType,
+			Enabled:             cred.Enabled,
+			LastHealthCheckTime: cred.LastHealthCheckTime.Unix(),
+			HealthStatus:        cred.HealthStatus,
+			HealthReason:        cred.HealthReason,
+			Metadata:            cred.Metadata.String(),
+			Connections:         nil,
+		}
+	}
+
+	one := 1
+	for _, src := range sources {
+		if v, ok := apiCredentials[src.CredentialID.String()]; !ok {
+			if v.Connections == nil {
+				v.Connections = make([]api.Source, 0)
+			}
+			v.Connections = append(v.Connections, api.Source{
+				ID:                   src.ID,
+				ConnectionID:         src.SourceId,
+				ConnectionName:       src.Name,
+				Email:                src.Email,
+				Type:                 src.Type,
+				Description:          src.Description,
+				CredentialID:         src.CredentialID.String(),
+				CredentialName:       src.Credential.Name,
+				OnboardDate:          src.CreatedAt,
+				Enabled:              src.Enabled,
+				AssetDiscoveryMethod: src.AssetDiscoveryMethod,
+				HealthState:          src.HealthState,
+				LastHealthCheckTime:  src.LastHealthCheckTime,
+				HealthReason:         src.HealthReason,
+			})
+			apiCredentials[src.CredentialID.String()] = v
+			v.TotalConnections = utils.PAdd(v.TotalConnections, &one)
+			if src.Enabled {
+				v.EnabledConnections = utils.PAdd(v.EnabledConnections, &one)
+			}
+			if src.HealthState == source.HealthStatusUnhealthy {
+				v.UnhealthyConnections = utils.PAdd(v.UnhealthyConnections, &one)
+			}
+		}
+	}
+
+	apiCredentialsList := make([]api.Credential, 0, len(apiCredentials))
+	for _, v := range apiCredentials {
+		if v.Connections == nil {
+			continue
+		}
+		apiCredentialsList = append(apiCredentialsList, v)
+	}
+
+	return ctx.JSON(http.StatusOK, apiCredentialsList)
 }
 
 func (h HttpHandler) putAzureCredentials(ctx echo.Context, req api.UpdateCredentialRequest) error {
@@ -883,6 +981,156 @@ func (h HttpHandler) PutCredentials(ctx echo.Context) error {
 	}
 
 	return ctx.JSON(http.StatusBadRequest, "invalid source type")
+}
+
+// DeleteCredential godoc
+//
+//	@Summary		Delete credential
+//	@Description	Delete credential
+//	@Tags			onboard
+//	@Produce		json
+//	@Success		200
+//	@Router			/onboard/api/v1/credential/{credentialId} [delete]
+func (h HttpHandler) DeleteCredential(ctx echo.Context) error {
+	credId, err := uuid.Parse(ctx.Param(paramCredentialId))
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
+	}
+
+	credential, err := h.db.GetCredentialByID(credId)
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return echo.NewHTTPError(http.StatusNotFound, "credential not found")
+		}
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+
+	sources, err := h.db.GetSourcesByCredentialID(credential.ID.String())
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+
+	err = h.db.orm.Transaction(func(tx *gorm.DB) error {
+		if err := h.db.DeleteCredential(credential.ID); err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		}
+
+		for _, src := range sources {
+			if err := h.db.UpdateSourceEnabled(src.ID, false); err != nil {
+				return err
+			}
+
+			if err := h.sourceEventsQueue.Publish(api.SourceEvent{
+				Action:     api.SourceDeleted,
+				SourceID:   src.ID,
+				SourceType: src.Type,
+				ConfigRef:  src.Credential.VaultReference,
+			}); err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+	if err != nil {
+		return err
+	}
+
+	return ctx.JSON(http.StatusOK, struct{}{})
+}
+
+// DisableCredential godoc
+//
+//	@Summary		Disable credential
+//	@Description	Disable credential
+//	@Tags			onboard
+//	@Produce		json
+//	@Success		200
+//	@Router			/onboard/api/v1/credential/{credentialId}/disable [post]
+func (h HttpHandler) DisableCredential(ctx echo.Context) error {
+	credId, err := uuid.Parse(ctx.Param(paramCredentialId))
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
+	}
+
+	credential, err := h.db.GetCredentialByID(credId)
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return echo.NewHTTPError(http.StatusNotFound, "credential not found")
+		}
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+
+	if !credential.Enabled {
+		return echo.NewHTTPError(http.StatusBadRequest, "credential already disabled")
+	}
+
+	sources, err := h.db.GetSourcesByCredentialID(credential.ID.String())
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+
+	credential.Enabled = false
+	err = h.db.orm.Transaction(func(tx *gorm.DB) error {
+		if _, err := h.db.UpdateCredential(credential); err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		}
+
+		for _, src := range sources {
+			if err := h.db.UpdateSourceEnabled(src.ID, false); err != nil {
+				return err
+			}
+
+			if err := h.sourceEventsQueue.Publish(api.SourceEvent{
+				Action:     api.SourceDeleted,
+				SourceID:   src.ID,
+				SourceType: src.Type,
+				ConfigRef:  src.Credential.VaultReference,
+			}); err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+
+	if err != nil {
+		return err
+	}
+
+	return ctx.JSON(http.StatusOK, struct{}{})
+}
+
+// EnableCredential godoc
+//
+//	@Summary		Enable credential
+//	@Description	Enable credential
+//	@Tags			onboard
+//	@Produce		json
+//	@Success		200
+//	@Router			/onboard/api/v1/credential/{credentialId}/enable [post]
+func (h HttpHandler) EnableCredential(ctx echo.Context) error {
+	credId, err := uuid.Parse(ctx.Param(paramCredentialId))
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
+	}
+
+	credential, err := h.db.GetCredentialByID(credId)
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return echo.NewHTTPError(http.StatusNotFound, "credential not found")
+		}
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+
+	if credential.Enabled {
+		return echo.NewHTTPError(http.StatusBadRequest, "credential already enabled")
+	}
+
+	credential.Enabled = true
+	if _, err := h.db.UpdateCredential(credential); err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+
+	return ctx.JSON(http.StatusOK, struct{}{})
 }
 
 // PostSPN godoc
@@ -1638,7 +1886,7 @@ func (h HttpHandler) DiscoverAwsAccounts(ctx echo.Context) error {
 //	@Param			clientId		body		string	true	"ClientId"
 //	@Param			clientSecret	body		string	true	"ClientSecret"
 //	@Router			/onboard/api/v1/discover/azure/subscriptions [post]
-func (h *HttpHandler) DiscoverAzureSubscriptions(ctx echo.Context) error {
+func (h HttpHandler) DiscoverAzureSubscriptions(ctx echo.Context) error {
 	var req api.DiscoverAzureSubscriptionsRequest
 	if err := bindValidate(ctx, &req); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
@@ -1671,7 +1919,7 @@ func (h *HttpHandler) DiscoverAzureSubscriptions(ctx echo.Context) error {
 //	@Success		200		{object}	[]api.DiscoverAzureSubscriptionsResponse
 //	@Param			request	body		api.DiscoverAzureSubscriptionsSPNRequest	true	"Request Body"
 //	@Router			/onboard/api/v1/discover/azure/subscriptions/spn [post]
-func (h *HttpHandler) DiscoverAzureSubscriptionsWithSPN(ctx echo.Context) error {
+func (h HttpHandler) DiscoverAzureSubscriptionsWithSPN(ctx echo.Context) error {
 	var req api.DiscoverAzureSubscriptionsSPNRequest
 	if err := bindValidate(ctx, &req); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
@@ -1721,7 +1969,7 @@ func (h *HttpHandler) DiscoverAzureSubscriptionsWithSPN(ctx echo.Context) error 
 //	@Produce	json
 //	@Success	200	{object}	api.CatalogMetrics
 //	@Router		/onboard/api/v1/catalog/metrics [get]
-func (h *HttpHandler) CatalogMetrics(ctx echo.Context) error {
+func (h HttpHandler) CatalogMetrics(ctx echo.Context) error {
 	var metrics api.CatalogMetrics
 
 	srcs, err := h.db.ListSources()
@@ -1761,7 +2009,7 @@ var catalogsJSON string
 //	@Param		id				query		string	false	"ID filter"
 //	@Success	200				{object}	[]api.CatalogConnector
 //	@Router		/onboard/api/v1/catalog/connectors [get]
-func (h *HttpHandler) CatalogConnectors(ctx echo.Context) error {
+func (h HttpHandler) CatalogConnectors(ctx echo.Context) error {
 	categoryFilter := ctx.QueryParam("category")
 	stateFilter := ctx.QueryParam("state")
 	minConnectionFilter := ctx.QueryParam("minConnection")

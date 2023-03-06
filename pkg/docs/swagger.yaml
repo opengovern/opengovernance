@@ -1570,6 +1570,10 @@ definitions:
         $ref: '#/definitions/source.Type'
       credentialType:
         $ref: '#/definitions/source.CredentialType'
+      enabled:
+        type: boolean
+      enabled_connections:
+        type: integer
       healthReason:
         type: string
       healthStatus:
@@ -1584,6 +1588,10 @@ definitions:
         type: string
       status:
         $ref: '#/definitions/source.CredentialStatus'
+      total_connections:
+        type: integer
+      unhealthy_connections:
+        type: integer
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.DiscoverAWSAccountsResponse:
     properties:
@@ -1651,6 +1659,8 @@ definitions:
       assetDiscoveryMethod:
         $ref: '#/definitions/source.AssetDiscoveryMethodType'
       credentialID:
+        type: string
+      credentialName:
         type: string
       description:
         type: string
@@ -4016,6 +4026,16 @@ paths:
       tags:
       - onboard
   /onboard/api/v1/credential/{credentialId}:
+    delete:
+      description: Delete credential
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+      summary: Delete credential
+      tags:
+      - onboard
     get:
       description: List credentials
       produces:
@@ -4026,6 +4046,52 @@ paths:
           schema:
             $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.Credential'
       summary: List credentials
+      tags:
+      - onboard
+  /onboard/api/v1/credential/{credentialId}/disable:
+    post:
+      description: Disable credential
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+      summary: Disable credential
+      tags:
+      - onboard
+  /onboard/api/v1/credential/{credentialId}/enable:
+    post:
+      description: Enable credential
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+      summary: Enable credential
+      tags:
+      - onboard
+  /onboard/api/v1/credential/sources/list:
+    get:
+      description: Returning a list of sources including both AWS and Azure unless
+        filtered by Type.
+      parameters:
+      - description: Type
+        enum:
+        - aws
+        - azure
+        in: query
+        name: type
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.Credential'
+            type: array
+      summary: Returns a list of sources
       tags:
       - onboard
   /onboard/api/v1/discover/aws/accounts:

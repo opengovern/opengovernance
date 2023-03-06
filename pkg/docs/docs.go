@@ -3039,6 +3039,41 @@ const docTemplate = `{
                 }
             }
         },
+        "/onboard/api/v1/credential/sources/list": {
+            "get": {
+                "description": "Returning a list of sources including both AWS and Azure unless filtered by Type.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "onboard"
+                ],
+                "summary": "Returns a list of sources",
+                "parameters": [
+                    {
+                        "enum": [
+                            "aws",
+                            "azure"
+                        ],
+                        "type": "string",
+                        "description": "Type",
+                        "name": "type",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.Credential"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/onboard/api/v1/credential/{credentialId}": {
             "get": {
                 "description": "List credentials",
@@ -3055,6 +3090,55 @@ const docTemplate = `{
                         "schema": {
                             "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.Credential"
                         }
+                    }
+                }
+            },
+            "delete": {
+                "description": "Delete credential",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "onboard"
+                ],
+                "summary": "Delete credential",
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    }
+                }
+            }
+        },
+        "/onboard/api/v1/credential/{credentialId}/disable": {
+            "post": {
+                "description": "Disable credential",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "onboard"
+                ],
+                "summary": "Disable credential",
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    }
+                }
+            }
+        },
+        "/onboard/api/v1/credential/{credentialId}/enable": {
+            "post": {
+                "description": "Enable credential",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "onboard"
+                ],
+                "summary": "Enable credential",
+                "responses": {
+                    "200": {
+                        "description": "OK"
                     }
                 }
             }
@@ -6991,6 +7075,12 @@ const docTemplate = `{
                 "credentialType": {
                     "$ref": "#/definitions/source.CredentialType"
                 },
+                "enabled": {
+                    "type": "boolean"
+                },
+                "enabled_connections": {
+                    "type": "integer"
+                },
                 "healthReason": {
                     "type": "string"
                 },
@@ -7011,6 +7101,12 @@ const docTemplate = `{
                 },
                 "status": {
                     "$ref": "#/definitions/source.CredentialStatus"
+                },
+                "total_connections": {
+                    "type": "integer"
+                },
+                "unhealthy_connections": {
+                    "type": "integer"
                 }
             }
         },
@@ -7114,6 +7210,9 @@ const docTemplate = `{
                     "$ref": "#/definitions/source.AssetDiscoveryMethodType"
                 },
                 "credentialID": {
+                    "type": "string"
+                },
+                "credentialName": {
                     "type": "string"
                 },
                 "description": {

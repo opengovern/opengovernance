@@ -27,6 +27,7 @@ type Credential struct {
 	ConnectorType  source.Type             `json:"connectorType"`
 	Status         source.CredentialStatus `json:"status"`
 	CredentialType source.CredentialType   `json:"credentialType"`
+	Enabled        bool                    `json:"enabled"`
 
 	LastHealthCheckTime int64               `json:"lastHealthCheckTime"`
 	HealthStatus        source.HealthStatus `json:"healthStatus"`
@@ -35,4 +36,8 @@ type Credential struct {
 	Metadata string `json:"metadata,omitempty"`
 
 	Connections []Source `json:"connections,omitempty"`
+
+	TotalConnections     *int `json:"total_connections,omitempty"`
+	EnabledConnections   *int `json:"enabled_connections,omitempty"`
+	UnhealthyConnections *int `json:"unhealthy_connections,omitempty"`
 }

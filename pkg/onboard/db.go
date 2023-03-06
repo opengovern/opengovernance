@@ -357,3 +357,15 @@ func (db Database) UpdateCredential(creds *Credential) (*Credential, error) {
 	return creds, nil
 
 }
+
+func (db Database) DeleteCredentialByID(id uuid.UUID) error {
+	tx := db.orm.
+		Where("id = ?", id.String()).
+		Unscoped().
+		Delete(&Credential{})
+	if tx.Error != nil {
+		return tx.Error
+	}
+
+	return nil
+}
