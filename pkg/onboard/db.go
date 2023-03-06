@@ -127,6 +127,16 @@ func (db Database) GetSourceBySourceID(id string) (Source, error) {
 	return s, nil
 }
 
+// GetSourcesByCredentialID list sources with matching credential id
+func (db Database) GetSourcesByCredentialID(id string) ([]Source, error) {
+	var s []Source
+	tx := db.orm.Find(&s, "credential_id = ?", id)
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+	return s, nil
+}
+
 // CreateSource creates a new source and returns it
 func (db Database) CreateSource(s *Source) error {
 	tx := db.orm.
@@ -306,18 +316,18 @@ func (db Database) CountSourcesWithFilters(query string, args ...interface{}) (i
 	return count, nil
 }
 
-func (db Database) GetCredentialsByConnector(connector source.Type) ([]Credential, error) {
+func (db Database) GetCredentialsByFilters(connector source.Type, health source.HealthStatus) ([]Credential, error) {
 	var creds []Credential
-	if connector == source.Nil {
-		tx := db.orm.Find(&creds)
-		if tx.Error != nil {
-			return nil, tx.Error
-		}
-	} else {
-		tx := db.orm.Where("connector = ?", connector).Find(&creds)
-		if tx.Error != nil {
-			return nil, tx.Error
-		}
+	tx := db.orm.Model(&Credential{})
+	if connector != source.Nil {
+		tx = tx.Where("connector = ?", connector)
+	}
+	if health != source.HealthStatusNil {
+		tx = tx.Where("health_status = ?", health)
+	}
+	tx = tx.Find(&creds)
+	if tx.Error != nil {
+		return nil, tx.Error
 	}
 	return creds, nil
 }

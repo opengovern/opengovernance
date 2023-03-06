@@ -1,5 +1,10 @@
 package source
 
+import (
+	"fmt"
+	"strings"
+)
+
 type AssetDiscoveryMethodType string
 
 const (
@@ -9,10 +14,24 @@ const (
 type HealthStatus string
 
 const (
+	HealthStatusNil              HealthStatus = ""
 	HealthStatusHealthy          HealthStatus = "healthy"
 	HealthStatusUnhealthy        HealthStatus = "unhealthy"
 	HealthStatusInitialDiscovery HealthStatus = "initial_discovery"
 )
+
+func ParseHealthStatus(str string) (HealthStatus, error) {
+	switch strings.ToLower(str) {
+	case "healthy":
+		return HealthStatusHealthy, nil
+	case "unhealthy":
+		return HealthStatusUnhealthy, nil
+	case "initial_discovery":
+		return HealthStatusInitialDiscovery, nil
+	default:
+		return HealthStatusNil, fmt.Errorf("invalid health status: %s", str)
+	}
+}
 
 type SourceCreationMethod string
 

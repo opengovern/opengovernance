@@ -2958,6 +2958,17 @@ const docTemplate = `{
                         "description": "filter by connector type",
                         "name": "connector",
                         "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "healthy",
+                            "unhealthy",
+                            "initial_discovery"
+                        ],
+                        "type": "string",
+                        "description": "filter by health status",
+                        "name": "health",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -2966,7 +2977,7 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/onboard.Credential"
+                                "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.Credential"
                             }
                         }
                     }
@@ -3023,6 +3034,26 @@ const docTemplate = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.CreateCredentialResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/onboard/api/v1/credential/{credentialId}": {
+            "get": {
+                "description": "List credentials",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "onboard"
+                ],
+                "summary": "List credentials",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.Credential"
                         }
                     }
                 }
@@ -6945,6 +6976,44 @@ const docTemplate = `{
                 }
             }
         },
+        "gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.Credential": {
+            "type": "object",
+            "properties": {
+                "connections": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.Source"
+                    }
+                },
+                "connectorType": {
+                    "$ref": "#/definitions/source.Type"
+                },
+                "credentialType": {
+                    "$ref": "#/definitions/source.CredentialType"
+                },
+                "healthReason": {
+                    "type": "string"
+                },
+                "healthStatus": {
+                    "$ref": "#/definitions/source.HealthStatus"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "lastHealthCheckTime": {
+                    "type": "integer"
+                },
+                "metadata": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "status": {
+                    "$ref": "#/definitions/source.CredentialStatus"
+                }
+            }
+        },
         "gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.DiscoverAWSAccountsResponse": {
             "type": "object",
             "properties": {
@@ -7043,6 +7112,9 @@ const docTemplate = `{
             "properties": {
                 "assetDiscoveryMethod": {
                     "$ref": "#/definitions/source.AssetDiscoveryMethodType"
+                },
+                "credentialID": {
+                    "type": "string"
                 },
                 "description": {
                     "type": "string"
@@ -7328,41 +7400,6 @@ const docTemplate = `{
                 }
             }
         },
-        "onboard.Credential": {
-            "type": "object",
-            "properties": {
-                "connectorType": {
-                    "$ref": "#/definitions/source.Type"
-                },
-                "credentialType": {
-                    "$ref": "#/definitions/source.CredentialType"
-                },
-                "healthReason": {
-                    "type": "string"
-                },
-                "healthStatus": {
-                    "$ref": "#/definitions/source.HealthStatus"
-                },
-                "id": {
-                    "type": "string"
-                },
-                "lastHealthCheckTime": {
-                    "type": "string"
-                },
-                "metadata": {
-                    "type": "array",
-                    "items": {
-                        "type": "integer"
-                    }
-                },
-                "name": {
-                    "type": "string"
-                },
-                "status": {
-                    "$ref": "#/definitions/source.CredentialStatus"
-                }
-            }
-        },
         "source.AssetDiscoveryMethodType": {
             "type": "string",
             "enum": [
@@ -7423,11 +7460,13 @@ const docTemplate = `{
         "source.HealthStatus": {
             "type": "string",
             "enum": [
+                "",
                 "healthy",
                 "unhealthy",
                 "initial_discovery"
             ],
             "x-enum-varnames": [
+                "HealthStatusNil",
                 "HealthStatusHealthy",
                 "HealthStatusUnhealthy",
                 "HealthStatusInitialDiscovery"

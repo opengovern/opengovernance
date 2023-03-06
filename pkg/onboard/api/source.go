@@ -105,6 +105,7 @@ type Source struct {
 	Email                string                          `json:"email"`
 	Type                 source.Type                     `json:"type"`
 	Description          string                          `json:"description"`
+	CredentialID         string                          `json:"credentialID"`
 	OnboardDate          time.Time                       `json:"onboardDate"`
 	Enabled              bool                            `json:"enabled"`
 	AssetDiscoveryMethod source.AssetDiscoveryMethodType `json:"assetDiscoveryMethod"`
