@@ -230,6 +230,7 @@ type Credential struct {
 	VaultReference string                  `gorm:"not null" json:"-"`
 	Status         source.CredentialStatus `gorm:"default:'enabled'" json:"status"`
 	CredentialType source.CredentialType   `gorm:"default:'auto-generated'" json:"credentialType"`
+	Enabled        bool                    `gorm:"default:true" json:"enabled"`
 
 	LastHealthCheckTime time.Time           `gorm:"not null;default:now()" json:"lastHealthCheckTime"`
 	HealthStatus        source.HealthStatus `gorm:"not null;default:'healthy'" json:"healthStatus"`
