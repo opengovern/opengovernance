@@ -672,7 +672,7 @@ func (h HttpHandler) GetCredentials(ctx echo.Context) error {
 		})
 	}
 
-	return ctx.JSON(http.StatusOK, credentials)
+	return ctx.JSON(http.StatusOK, apiCredentials)
 }
 
 // GetCredential godoc
