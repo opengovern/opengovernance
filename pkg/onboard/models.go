@@ -225,7 +225,7 @@ type Connector struct {
 
 type Credential struct {
 	ID             uuid.UUID               `gorm:"primaryKey;type:uuid;default:uuid_generate_v4()" json:"id"`
-	Name           *string                 `json:"name"`
+	Name           *string                 `json:"name,omitempty"`
 	ConnectorType  source.Type             `gorm:"not null" json:"connectorType"`
 	VaultReference string                  `gorm:"not null" json:"-"`
 	Status         source.CredentialStatus `gorm:"default:'enabled'" json:"status"`
@@ -233,9 +233,9 @@ type Credential struct {
 
 	LastHealthCheckTime time.Time           `gorm:"not null;default:now()" json:"lastHealthCheckTime"`
 	HealthStatus        source.HealthStatus `gorm:"not null;default:'healthy'" json:"healthStatus"`
-	HealthReason        *string             `json:"healthReason"`
+	HealthReason        *string             `json:"healthReason,omitempty"`
 
-	Metadata datatypes.JSON `json:"metadata"`
+	Metadata datatypes.JSON `json:"metadata,omitempty"`
 }
 
 func NewAzureCredential(name string) Credential {

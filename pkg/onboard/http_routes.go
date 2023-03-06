@@ -28,7 +28,8 @@ import (
 )
 
 const (
-	paramSourceId = "sourceId"
+	paramSourceId     = "sourceId"
+	paramCredentialId = "credentialId"
 )
 
 func (h HttpHandler) Register(r *echo.Echo) {
@@ -58,8 +59,9 @@ func (h HttpHandler) Register(r *echo.Echo) {
 	source.DELETE("/:sourceId", httpserver.AuthorizeHandler(h.DeleteSource, api3.EditorRole))
 
 	v1.POST("/credential", httpserver.AuthorizeHandler(h.PostCredentials, api3.EditorRole))
-	v1.GET("/credential", httpserver.AuthorizeHandler(h.GetCredentials, api3.ViewerRole))
 	v1.PUT("/credential", httpserver.AuthorizeHandler(h.PutCredentials, api3.EditorRole))
+	v1.GET("/credential", httpserver.AuthorizeHandler(h.GetCredentials, api3.ViewerRole))
+	v1.GET("/credential/:credentialId", httpserver.AuthorizeHandler(h.GetCredential, api3.ViewerRole))
 
 	spn := v1.Group("/spn")
 
@@ -636,18 +638,95 @@ func (h HttpHandler) PostCredentials(ctx echo.Context) error {
 //	@Description	List credentials
 //	@Tags			onboard
 //	@Produce		json
-//	@Success		200			{object}	[]Credential
+//	@Success		200			{object}	[]api.Credential
 //	@Param			connector	query		string	false	"filter by connector type"
+//	@Param			health		query		string	false	"filter by health status"	Enums(healthy, unhealthy, initial_discovery)
 //	@Router			/onboard/api/v1/credential [get]
 func (h HttpHandler) GetCredentials(ctx echo.Context) error {
 	connector, _ := source.ParseType(ctx.QueryParam("provider"))
+	health, _ := source.ParseHealthStatus(ctx.QueryParam("health"))
 
-	credentials, err := h.db.GetCredentialsByConnector(connector)
+	credentials, err := h.db.GetCredentialsByFilters(connector, health)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
+	apiCredentials := make([]api.Credential, 0, len(credentials))
+	for _, cred := range credentials {
+		apiCredentials = append(apiCredentials, api.Credential{
+			ID:                  cred.ID.String(),
+			Name:                cred.Name,
+			ConnectorType:       cred.ConnectorType,
+			Status:              cred.Status,
+			CredentialType:      cred.CredentialType,
+			LastHealthCheckTime: cred.LastHealthCheckTime.Unix(),
+			HealthStatus:        cred.HealthStatus,
+			HealthReason:        cred.HealthReason,
+			Metadata:            cred.Metadata.String(),
+		})
+	}
+
 	return ctx.JSON(http.StatusOK, credentials)
+}
+
+// GetCredential godoc
+//
+//	@Summary		List credentials
+//	@Description	List credentials
+//	@Tags			onboard
+//	@Produce		json
+//	@Success		200	{object}	api.Credential
+//	@Router			/onboard/api/v1/credential/{credentialId} [get]
+func (h HttpHandler) GetCredential(ctx echo.Context) error {
+	credId, err := uuid.Parse(ctx.Param(paramCredentialId))
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
+	}
+
+	credential, err := h.db.GetCredentialByID(credId)
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return echo.NewHTTPError(http.StatusNotFound, "credential not found")
+		}
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+
+	connections, err := h.db.GetSourcesByCredentialID(credId.String())
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+
+	apiCredential := api.Credential{
+		ID:                  credential.ID.String(),
+		Name:                credential.Name,
+		ConnectorType:       credential.ConnectorType,
+		Status:              credential.Status,
+		CredentialType:      credential.CredentialType,
+		LastHealthCheckTime: credential.LastHealthCheckTime.Unix(),
+		HealthStatus:        credential.HealthStatus,
+		HealthReason:        credential.HealthReason,
+		Metadata:            credential.Metadata.String(),
+		Connections:         make([]api.Source, 0, len(connections)),
+	}
+	for _, conn := range connections {
+		apiCredential.Connections = append(apiCredential.Connections, api.Source{
+			ID:                   conn.ID,
+			ConnectionID:         conn.SourceId,
+			ConnectionName:       conn.Name,
+			Email:                conn.Email,
+			Type:                 conn.Type,
+			Description:          conn.Description,
+			CredentialID:         conn.CredentialID.String(),
+			OnboardDate:          conn.CreatedAt,
+			Enabled:              conn.Enabled,
+			AssetDiscoveryMethod: conn.AssetDiscoveryMethod,
+			HealthState:          conn.HealthState,
+			LastHealthCheckTime:  conn.LastHealthCheckTime,
+			HealthReason:         conn.HealthReason,
+		})
+	}
+
+	return ctx.JSON(http.StatusOK, apiCredential)
 }
 
 func (h HttpHandler) putAzureCredentials(ctx echo.Context, req api.UpdateCredentialRequest) error {
@@ -1085,6 +1164,7 @@ func (h HttpHandler) GetSourceHealth(ctx echo.Context) error {
 		Email:                src.Email,
 		Type:                 src.Type,
 		Description:          src.Description,
+		CredentialID:         src.CredentialID.String(),
 		OnboardDate:          src.CreatedAt,
 		Enabled:              src.Enabled,
 		AssetDiscoveryMethod: src.AssetDiscoveryMethod,
@@ -1201,6 +1281,7 @@ func (h HttpHandler) GetSource(ctx echo.Context) error {
 		Email:                src.Email,
 		Type:                 src.Type,
 		Description:          src.Description,
+		CredentialID:         src.CredentialID.String(),
 		OnboardDate:          src.CreatedAt,
 		Enabled:              src.Enabled,
 		AssetDiscoveryMethod: src.AssetDiscoveryMethod,
@@ -1396,6 +1477,7 @@ func (h HttpHandler) ListSources(ctx echo.Context) error {
 			Email:                s.Email,
 			Type:                 s.Type,
 			Description:          s.Description,
+			CredentialID:         s.CredentialID.String(),
 			OnboardDate:          s.CreatedAt,
 			Enabled:              s.Enabled,
 			AssetDiscoveryMethod: s.AssetDiscoveryMethod,
@@ -1450,6 +1532,7 @@ func (h HttpHandler) GetSources(ctx echo.Context) error {
 			Email:                src.Email,
 			Type:                 src.Type,
 			Description:          src.Description,
+			CredentialID:         src.CredentialID.String(),
 			OnboardDate:          src.CreatedAt,
 			Enabled:              src.Enabled,
 			AssetDiscoveryMethod: src.AssetDiscoveryMethod,

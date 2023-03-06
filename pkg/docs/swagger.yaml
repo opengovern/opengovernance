@@ -1560,6 +1560,31 @@ definitions:
       id:
         type: string
     type: object
+  gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.Credential:
+    properties:
+      connections:
+        items:
+          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.Source'
+        type: array
+      connectorType:
+        $ref: '#/definitions/source.Type'
+      credentialType:
+        $ref: '#/definitions/source.CredentialType'
+      healthReason:
+        type: string
+      healthStatus:
+        $ref: '#/definitions/source.HealthStatus'
+      id:
+        type: string
+      lastHealthCheckTime:
+        type: integer
+      metadata:
+        type: string
+      name:
+        type: string
+      status:
+        $ref: '#/definitions/source.CredentialStatus'
+    type: object
   gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.DiscoverAWSAccountsResponse:
     properties:
       accountId:
@@ -1625,6 +1650,8 @@ definitions:
     properties:
       assetDiscoveryMethod:
         $ref: '#/definitions/source.AssetDiscoveryMethodType'
+      credentialID:
+        type: string
       description:
         type: string
       email:
@@ -1813,29 +1840,6 @@ definitions:
       version:
         type: string
     type: object
-  onboard.Credential:
-    properties:
-      connectorType:
-        $ref: '#/definitions/source.Type'
-      credentialType:
-        $ref: '#/definitions/source.CredentialType'
-      healthReason:
-        type: string
-      healthStatus:
-        $ref: '#/definitions/source.HealthStatus'
-      id:
-        type: string
-      lastHealthCheckTime:
-        type: string
-      metadata:
-        items:
-          type: integer
-        type: array
-      name:
-        type: string
-      status:
-        $ref: '#/definitions/source.CredentialStatus'
-    type: object
   source.AssetDiscoveryMethodType:
     enum:
     - scheduled
@@ -1880,11 +1884,13 @@ definitions:
     - CredentialTypeManual
   source.HealthStatus:
     enum:
+    - ""
     - healthy
     - unhealthy
     - initial_discovery
     type: string
     x-enum-varnames:
+    - HealthStatusNil
     - HealthStatusHealthy
     - HealthStatusUnhealthy
     - HealthStatusInitialDiscovery
@@ -3953,6 +3959,14 @@ paths:
         in: query
         name: connector
         type: string
+      - description: filter by health status
+        enum:
+        - healthy
+        - unhealthy
+        - initial_discovery
+        in: query
+        name: health
+        type: string
       produces:
       - application/json
       responses:
@@ -3960,7 +3974,7 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/onboard.Credential'
+              $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.Credential'
             type: array
       summary: List credentials
       tags:
@@ -3999,6 +4013,19 @@ paths:
         "200":
           description: OK
       summary: Edit a credential by Id
+      tags:
+      - onboard
+  /onboard/api/v1/credential/{credentialId}:
+    get:
+      description: List credentials
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.Credential'
+      summary: List credentials
       tags:
       - onboard
   /onboard/api/v1/discover/aws/accounts:
