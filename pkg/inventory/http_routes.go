@@ -1191,9 +1191,16 @@ func (h *HttpHandler) GetMetricsResourceCountHelper(ctx context.Context, categor
 	insightIndexed := make(map[string]int)
 	if sourceIDPtr == nil {
 		insightIDs := GetInsightIDListFromFilters(filters, provider)
-		insightIndexed, err = es.FetchInsightValueAtTime(h.client, time.Unix(t, 0), provider, sourceIDPtr, insightIDs)
+		insightsAtTime, err := es.FetchInsightValuesAtTime(h.client, time.Unix(t, 0), provider, sourceIDPtr, insightIDs)
 		if err != nil {
 			return nil, err
+		}
+		for _, insightAtTime := range insightsAtTime {
+			key := fmt.Sprintf("%d", insightAtTime.QueryID)
+			if _, ok := insightIndexed[key]; !ok {
+				insightIndexed[key] = 0
+			}
+			insightIndexed[key] += int(insightAtTime.Result)
 		}
 	}
 

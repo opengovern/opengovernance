@@ -131,7 +131,7 @@ func FindInsightResultUUID(client keibi.Client, executedAt int64) (string, error
 	return "", errors.New("insight not found")
 }
 
-func FetchInsightValueAtTime(client keibi.Client, t time.Time, provider source.Type, sourceID *string, insightIds []uint) (map[string]int, error) {
+func FetchInsightValuesAtTime(client keibi.Client, t time.Time, provider source.Type, sourceID *string, insightIds []uint) ([]es.InsightResource, error) {
 	lastId, err := FindInsightResultUUID(client, t.UnixMilli())
 	if err != nil {
 		return nil, err
@@ -145,10 +145,10 @@ func FetchInsightValueAtTime(client keibi.Client, t time.Time, provider source.T
 		return nil, err
 	}
 
-	result := make(map[string]int)
+	result := make([]es.InsightResource, 0, len(response.Hits.Hits))
 
 	for _, hit := range response.Hits.Hits {
-		result[fmt.Sprintf("%d", hit.Source.QueryID)] = int(hit.Source.Result)
+		result = append(result, hit.Source)
 	}
 	return result, nil
 }
