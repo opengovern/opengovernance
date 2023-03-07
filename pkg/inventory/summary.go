@@ -2,6 +2,7 @@ package inventory
 
 import (
 	"context"
+	"strconv"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/cloudservice"
 	"gitlab.com/keibiengine/keibi-engine/pkg/inventory/api"
@@ -211,7 +212,7 @@ func GetResourceTypeListFromFilters(filters []Filter, provider source.Type) []st
 	return res
 }
 
-func GetInsightIDListFromFilters(filters []Filter, provider source.Type) []string {
+func GetInsightIDListFromFilters(filters []Filter, provider source.Type) []uint {
 	result := map[string]struct{}{}
 	for _, filter := range filters {
 		switch filter.GetFilterType() {
@@ -225,9 +226,10 @@ func GetInsightIDListFromFilters(filters []Filter, provider source.Type) []strin
 			continue
 		}
 	}
-	res := make([]string, 0, len(result))
+	res := make([]uint, 0, len(result))
 	for k := range result {
-		res = append(res, k)
+		kInt, _ := strconv.ParseUint(k, 10, 64)
+		res = append(res, uint(kInt))
 	}
 	return res
 }

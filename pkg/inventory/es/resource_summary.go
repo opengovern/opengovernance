@@ -7,7 +7,6 @@ import (
 	"strconv"
 	"time"
 
-	"gitlab.com/keibiengine/keibi-engine/pkg/insight/es"
 	"gitlab.com/keibiengine/keibi-engine/pkg/source"
 
 	summarizer "gitlab.com/keibiengine/keibi-engine/pkg/summarizer/es"
@@ -1318,102 +1317,6 @@ func FetchResourceTypeCountAtTime(client keibi.Client, provider source.Type, sou
 	}
 	for _, bucket := range response.Aggregations.SummarizeJobIDGroup.Buckets[0].ResourceTypeGroup.Buckets {
 		result[bucket.Key] = int(bucket.ResourceTypeCount.Value)
-	}
-	return result, nil
-}
-
-type FetchInsightValueAtTimeResponse struct {
-	Aggregations struct {
-		SummarizeJobIDGroup struct {
-			Buckets []struct {
-				Key                   int64 `json:"key"`
-				ExecutedAtAggregation struct {
-					Hits struct {
-						Hits []struct {
-							Source es.InsightResource `json:"_source"`
-						} `json:"hits"`
-					} `json:"hits"`
-				} `json:"executed_at_max"`
-			} `json:"buckets"`
-		} `json:"insight_id_grouping"`
-	} `json:"aggregations"`
-}
-
-func FetchInsightValueAtTime(client keibi.Client, t time.Time, insightIds []string) (map[string]int, error) {
-	res := make(map[string]interface{})
-	var filters []interface{}
-
-	filters = append(filters, map[string]interface{}{
-		"terms": map[string][]string{"resource_type": {"history"}},
-	})
-
-	filters = append(filters, map[string]interface{}{
-		"terms": map[string][]string{"query_id": insightIds},
-	})
-
-	filters = append(filters, map[string]interface{}{
-		"range": map[string]interface{}{
-			"executed_at": map[string]string{
-				"lte": strconv.FormatInt(t.UnixMilli(), 10),
-			},
-		},
-	})
-
-	sort := []map[string]any{
-		{"_id": "desc"},
-	}
-
-	res["size"] = 0
-	res["sort"] = sort
-	res["query"] = map[string]any{
-		"bool": map[string]any{
-			"filter": filters,
-		},
-	}
-	res["aggs"] = map[string]any{
-		"insight_id_grouping": map[string]interface{}{
-			"terms": map[string]interface{}{
-				"field": "query_id",
-			},
-			"aggs": map[string]interface{}{
-				"executed_at_max": map[string]interface{}{
-					"top_hits": map[string]interface{}{
-						"size": 1,
-						"sort": []map[string]interface{}{
-							{
-								"executed_at": map[string]interface{}{
-									"order": "desc",
-								},
-							},
-						},
-					},
-				},
-			},
-		},
-	}
-
-	b, err := json.Marshal(res)
-	if err != nil {
-		return nil, err
-	}
-
-	query := string(b)
-	fmt.Println("query=", query, "index=", es.InsightsIndex)
-	var response FetchInsightValueAtTimeResponse
-	err = client.Search(context.Background(), es.InsightsIndex, query, &response)
-	if err != nil {
-		return nil, err
-	}
-
-	result := make(map[string]int)
-	if len(response.Aggregations.SummarizeJobIDGroup.Buckets) == 0 {
-		return result, nil
-	}
-	for _, bucket := range response.Aggregations.SummarizeJobIDGroup.Buckets {
-		if len(bucket.ExecutedAtAggregation.Hits.Hits) == 0 {
-			continue
-		}
-		result[fmt.Sprintf("%d", bucket.Key)] = int(bucket.ExecutedAtAggregation.Hits.Hits[0].Source.Result)
 	}
 	return result, nil
 }

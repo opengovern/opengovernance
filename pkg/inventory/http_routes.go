@@ -1156,20 +1156,24 @@ func (h *HttpHandler) GetMetricsResourceCountHelper(ctx context.Context, categor
 		sourceIDPtr = nil
 	}
 	if category == "" {
+		serviceCodeArr := []string{serviceCode}
+		if serviceCode == "" {
+			serviceCodeArr = nil
+		}
+
 		filterType := FilterTypeCloudResourceType
-		filtersResourceTypes, err := h.graphDb.GetFilters(ctx, provider, []string{serviceCode}, importanceArray, &filterType)
+		filtersResourceTypes, err := h.graphDb.GetFilters(ctx, provider, serviceCodeArr, importanceArray, &filterType)
 		if err != nil {
 			return nil, err
 		}
-		if sourceIDPtr == nil {
-			filterType = FilterTypeInsight
-			filtersInsight, err := h.graphDb.GetFilters(ctx, provider, []string{serviceCode}, importanceArray, &filterType)
-			if err != nil {
-				return nil, err
-			}
-			filters = append(filters, filtersInsight...)
-		}
 		filters = append(filters, filtersResourceTypes...)
+
+		filterType = FilterTypeInsight
+		filtersInsight, err := h.graphDb.GetFilters(ctx, provider, serviceCodeArr, importanceArray, &filterType)
+		if err != nil {
+			return nil, err
+		}
+		filters = append(filters, filtersInsight...)
 	} else {
 		rootNode, err := h.graphDb.GetCategory(ctx, category, importanceArray)
 		if err != nil {
@@ -1187,7 +1191,7 @@ func (h *HttpHandler) GetMetricsResourceCountHelper(ctx context.Context, categor
 	insightIndexed := make(map[string]int)
 	if sourceIDPtr == nil {
 		insightIDs := GetInsightIDListFromFilters(filters, provider)
-		insightIndexed, err = es.FetchInsightValueAtTime(h.client, time.Unix(t, 0), insightIDs)
+		insightIndexed, err = es.FetchInsightValueAtTime(h.client, time.Unix(t, 0), provider, sourceIDPtr, insightIDs)
 		if err != nil {
 			return nil, err
 		}
@@ -2171,7 +2175,7 @@ func (h *HttpHandler) GetSummaryMetrics(ctx echo.Context) error {
 		return nil
 	}
 
-	query, err := es.FindInsightResults(nil, nil, nil, nil, false)
+	query, err := es.FindInsightResults(source.Nil, nil, nil, nil, false)
 	if err != nil {
 		return err
 	}
@@ -3287,7 +3291,11 @@ func (h *HttpHandler) ListInsightsResults(ctx echo.Context) error {
 		insUUID = &insightUUID
 	}
 
-	query, err := es.FindInsightResults(req.Provider, req.SourceID, insUUID, nil, insUUID != nil)
+	sourceType := source.Nil
+	if req.Provider != nil {
+		sourceType = *req.Provider
+	}
+	query, err := es.FindInsightResults(sourceType, req.SourceID, insUUID, nil, insUUID != nil)
 	if err != nil {
 		return err
 	}
@@ -3371,7 +3379,11 @@ func (h *HttpHandler) GetInsightResultTrend(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	query, err := es.FindInsightResults(req.Provider, req.SourceID, nil, &req.QueryID, true)
+	sourceType := source.Nil
+	if req.Provider != nil {
+		sourceType = *req.Provider
+	}
+	query, err := es.FindInsightResults(sourceType, req.SourceID, nil, []uint{req.QueryID}, true)
 	if err != nil {
 		return err
 	}

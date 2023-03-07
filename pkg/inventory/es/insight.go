@@ -4,6 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
+	"time"
+
 	"gitlab.com/keibiengine/keibi-engine/pkg/source"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/insight/es"
@@ -30,7 +33,7 @@ type InsightResultQueryHit struct {
 	Sort    []interface{}      `json:"sort"`
 }
 
-func FindInsightResults(providerFilter *source.Type, sourceIDFilter *string, uuidFilter *string, queryIDFilter *uint, useHistoricalData bool) (string, error) {
+func FindInsightResults(providerFilter source.Type, sourceIDFilter *string, uuidFilter *string, queryIDFilter []uint, useHistoricalData bool) (string, error) {
 	boolQuery := map[string]interface{}{}
 	var filters []interface{}
 
@@ -51,11 +54,11 @@ func FindInsightResults(providerFilter *source.Type, sourceIDFilter *string, uui
 
 	if queryIDFilter != nil {
 		filters = append(filters, map[string]interface{}{
-			"terms": map[string][]uint{"query_id": {*queryIDFilter}},
+			"terms": map[string][]uint{"query_id": queryIDFilter},
 		})
 	}
 
-	if providerFilter != nil {
+	if providerFilter != source.Nil {
 		filters = append(filters, map[string]interface{}{
 			"terms": map[string][]string{"provider": {providerFilter.String()}},
 		})
@@ -126,4 +129,26 @@ func FindInsightResultUUID(client keibi.Client, executedAt int64) (string, error
 		return hit.Source.ScheduleUUID, nil
 	}
 	return "", errors.New("insight not found")
+}
+
+func FetchInsightValueAtTime(client keibi.Client, t time.Time, provider source.Type, sourceID *string, insightIds []uint) (map[string]int, error) {
+	lastId, err := FindInsightResultUUID(client, t.UnixMilli())
+	if err != nil {
+		return nil, err
+	}
+
+	query, err := FindInsightResults(provider, sourceID, &lastId, insightIds, true)
+	fmt.Println("query=", query, "index=", es.InsightsIndex)
+	var response InsightResultQueryResponse
+	err = client.Search(context.Background(), es.InsightsIndex, query, &response)
+	if err != nil {
+		return nil, err
+	}
+
+	result := make(map[string]int)
+
+	for _, hit := range response.Hits.Hits {
+		result[fmt.Sprintf("%d", hit.Source.QueryID)] = int(hit.Source.Result)
+	}
+	return result, nil
 }
