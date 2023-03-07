@@ -786,7 +786,7 @@ func (h HttpHandler) ListSourcesByCredentials(ctx echo.Context) error {
 
 	one := 1
 	for _, src := range sources {
-		if v, ok := apiCredentials[src.CredentialID.String()]; !ok {
+		if v, ok := apiCredentials[src.CredentialID.String()]; ok {
 			if v.Connections == nil {
 				v.Connections = make([]api.Source, 0)
 			}

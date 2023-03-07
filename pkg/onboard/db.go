@@ -320,7 +320,7 @@ func (db Database) GetCredentialsByFilters(connector source.Type, health source.
 	var creds []Credential
 	tx := db.orm.Model(&Credential{})
 	if connector != source.Nil {
-		tx = tx.Where("connector = ?", connector)
+		tx = tx.Where("connector_type = ?", connector)
 	}
 	if health != source.HealthStatusNil {
 		tx = tx.Where("health_status = ?", health)
