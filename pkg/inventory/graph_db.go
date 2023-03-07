@@ -98,7 +98,7 @@ type FilterType string
 const (
 	FilterTypeCloudResourceType FilterType = "FilterCloudResourceType"
 	FilterTypeCost              FilterType = "FilterCost"
-	FilterTypeInsight           FilterType = "FilterInsight"
+	FilterTypeInsightMetric     FilterType = "FilterInsightMetric"
 )
 
 type FilterCloudResourceTypeNode struct {
@@ -126,7 +126,7 @@ func (f FilterCostNode) GetFilterType() FilterType {
 	return FilterTypeCost
 }
 
-type FilterInsightNode struct {
+type FilterInsightMetricNode struct {
 	Node
 	CloudProvider source.Type `json:"cloud_provider"`
 	MetricID      string      `json:"metric_id"`
@@ -136,8 +136,8 @@ type FilterInsightNode struct {
 	Importance    string      `json:"importance"`
 }
 
-func (f FilterInsightNode) GetFilterType() FilterType {
-	return FilterTypeInsight
+func (f FilterInsightMetricNode) GetFilterType() FilterType {
+	return FilterTypeInsightMetric
 }
 
 var (
@@ -235,7 +235,7 @@ func getFilterFromNode(node neo4j.Node) (Filter, error) {
 				ServiceName:   serviceName.(string),
 				Name:          name.(string),
 			}, nil
-		case string(FilterTypeInsight):
+		case string(FilterTypeInsightMetric):
 			cloudProvider, ok := node.Props["cloud_provider"]
 			if !ok {
 				return nil, ErrPropertyNotFound
@@ -260,7 +260,7 @@ func getFilterFromNode(node neo4j.Node) (Filter, error) {
 			if !ok {
 				return nil, ErrPropertyNotFound
 			}
-			return &FilterInsightNode{
+			return &FilterInsightMetricNode{
 				Node: Node{
 					ElementID: node.ElementId,
 				},

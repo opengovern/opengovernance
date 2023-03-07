@@ -446,7 +446,7 @@ type FilterType string
 const (
 	FilterTypeCloudResourceType FilterType = "cloudResourceType"
 	FilterTypeCost              FilterType = "cost"
-	FilterTypeInsight           FilterType = "insight"
+	FilterTypeInsightMetric     FilterType = "insight-metric"
 )
 
 type Filter interface {
@@ -501,9 +501,10 @@ func (f FilterCost) GetFilterName() string {
 	return f.ServiceName
 }
 
-type FilterInsight struct {
+type FilterInsightMetric struct {
 	FilterType    FilterType  `json:"filterType"`
 	FilterID      string      `json:"filterID"`
+	InsightID     string      `json:"insightID"`
 	CloudProvider source.Type `json:"cloudProvider"`
 	Name          string      `json:"name"`
 	Weight        int64       `json:"weight"`
@@ -512,15 +513,15 @@ type FilterInsight struct {
 	ValueChange   *float64    `json:"valueChange,omitempty"`
 }
 
-func (f FilterInsight) GetFilterID() string {
+func (f FilterInsightMetric) GetFilterID() string {
 	return f.FilterID
 }
 
-func (f FilterInsight) GetFilterType() FilterType {
-	return FilterTypeInsight
+func (f FilterInsightMetric) GetFilterType() FilterType {
+	return FilterTypeInsightMetric
 }
 
-func (f FilterInsight) GetFilterName() string {
+func (f FilterInsightMetric) GetFilterName() string {
 	return f.Name
 }
 

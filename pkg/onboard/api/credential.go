@@ -1,6 +1,8 @@
 package api
 
 import (
+	"time"
+
 	"gitlab.com/keibiengine/keibi-engine/pkg/source"
 )
 
@@ -29,7 +31,7 @@ type Credential struct {
 	CredentialType source.CredentialType   `json:"credentialType"`
 	Enabled        bool                    `json:"enabled"`
 
-	LastHealthCheckTime int64               `json:"lastHealthCheckTime"`
+	LastHealthCheckTime time.Time           `json:"lastHealthCheckTime"`
 	HealthStatus        source.HealthStatus `json:"healthStatus"`
 	HealthReason        *string             `json:"healthReason,omitempty"`
 
