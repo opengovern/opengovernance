@@ -109,6 +109,8 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	v2.GET("/metrics/resources/composition", httpserver.AuthorizeHandler(h.GetMetricsResourceCountComposition, api3.ViewerRole))
 	v2.GET("/metrics/cost/composition", httpserver.AuthorizeHandler(h.GetMetricsCostComposition, api3.ViewerRole))
 
+	//v2.GET("/insights", httpserver.AuthorizeHandler(h.ListInsights, api3.ViewerRole))
+
 	v1.GET("/connection/:connection_id/summary", httpserver.AuthorizeHandler(h.GetConnectionSummary, api3.ViewerRole))
 	v1.GET("/provider/:provider/summary", httpserver.AuthorizeHandler(h.GetProviderSummary, api3.ViewerRole))
 }
@@ -1168,7 +1170,7 @@ func (h *HttpHandler) GetMetricsResourceCountHelper(ctx context.Context, categor
 		}
 		filters = append(filters, filtersResourceTypes...)
 
-		filterType = FilterTypeInsight
+		filterType = FilterTypeInsightMetric
 		filtersInsight, err := h.graphDb.GetFilters(ctx, provider, serviceCodeArr, importanceArray, &filterType)
 		if err != nil {
 			return nil, err
@@ -1191,16 +1193,9 @@ func (h *HttpHandler) GetMetricsResourceCountHelper(ctx context.Context, categor
 	insightIndexed := make(map[string]int)
 	if sourceIDPtr == nil {
 		insightIDs := GetInsightIDListFromFilters(filters, provider)
-		insightsAtTime, err := es.FetchInsightValuesAtTime(h.client, time.Unix(t, 0), provider, sourceIDPtr, insightIDs)
+		insightIndexed, err = es.FetchInsightAggregatedPerQueryValuesAtTime(h.client, time.Unix(t, 0), provider, sourceIDPtr, insightIDs)
 		if err != nil {
 			return nil, err
-		}
-		for _, insightAtTime := range insightsAtTime {
-			key := fmt.Sprintf("%d", insightAtTime.QueryID)
-			if _, ok := insightIndexed[key]; !ok {
-				insightIndexed[key] = 0
-			}
-			insightIndexed[key] += int(insightAtTime.Result)
 		}
 	}
 
@@ -1223,17 +1218,18 @@ func (h *HttpHandler) GetMetricsResourceCountHelper(ctx context.Context, categor
 				Importance:    f.Importance,
 				ResourceCount: metricIndexed[f.ResourceType],
 			}
-		case FilterTypeInsight:
+		case FilterTypeInsightMetric:
 			if sourceIDPtr != nil {
 				continue
 			}
-			f := filter.(*FilterInsightNode)
+			f := filter.(*FilterInsightMetricNode)
 			if _, ok := insightIndexed[f.InsightID]; !ok {
 				continue
 			}
-			result[f.ElementID] = &api.FilterInsight{
-				FilterType:    api.FilterTypeInsight,
+			result[f.ElementID] = &api.FilterInsightMetric{
+				FilterType:    api.FilterTypeInsightMetric,
 				FilterID:      f.ElementID,
+				InsightID:     f.InsightID,
 				CloudProvider: f.CloudProvider,
 				Name:          f.Name,
 				Weight:        f.Weight,
@@ -2182,14 +2178,15 @@ func (h *HttpHandler) GetSummaryMetrics(ctx echo.Context) error {
 		return nil
 	}
 
-	query, err := es.FindInsightResults(source.Nil, nil, nil, nil, false)
+	query := es.BuildFindInsightResultsQuery(source.Nil, nil, nil, nil, false)
+	queryJson, err := json.Marshal(query)
 	if err != nil {
 		return err
 	}
 
 	var response es.InsightResultQueryResponse
 	err = h.client.Search(context.Background(), insight.InsightsIndex,
-		query, &response)
+		string(queryJson), &response)
 	if err != nil {
 		return err
 	}
@@ -3302,14 +3299,15 @@ func (h *HttpHandler) ListInsightsResults(ctx echo.Context) error {
 	if req.Provider != nil {
 		sourceType = *req.Provider
 	}
-	query, err := es.FindInsightResults(sourceType, req.SourceID, insUUID, nil, insUUID != nil)
+	query := es.BuildFindInsightResultsQuery(sourceType, req.SourceID, insUUID, nil, insUUID != nil)
+	queryJson, err := json.Marshal(query)
 	if err != nil {
 		return err
 	}
 
 	var response es.InsightResultQueryResponse
 	err = h.client.Search(context.Background(), insight.InsightsIndex,
-		query, &response)
+		string(queryJson), &response)
 	if err != nil {
 		return err
 	}
@@ -3390,14 +3388,15 @@ func (h *HttpHandler) GetInsightResultTrend(ctx echo.Context) error {
 	if req.Provider != nil {
 		sourceType = *req.Provider
 	}
-	query, err := es.FindInsightResults(sourceType, req.SourceID, nil, []uint{req.QueryID}, true)
+	query := es.BuildFindInsightResultsQuery(sourceType, req.SourceID, nil, []uint{req.QueryID}, true)
+	queryJson, err := json.Marshal(query)
 	if err != nil {
 		return err
 	}
 
 	var response es.InsightResultQueryResponse
 	err = h.client.Search(context.Background(), insight.InsightsIndex,
-		query, &response)
+		string(queryJson), &response)
 	if err != nil {
 		return err
 	}

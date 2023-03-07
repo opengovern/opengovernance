@@ -37,22 +37,22 @@ func SortFilters(filters []api.Filter, by string) []api.Filter {
 					if fi.Weight != fj.Weight {
 						return fi.Weight < fj.Weight
 					}
-				case api.FilterTypeInsight:
-					fj := filters[j].(*api.FilterInsight)
+				case api.FilterTypeInsightMetric:
+					fj := filters[j].(*api.FilterInsightMetric)
 					if fi.Weight != fj.Weight {
 						return fi.Weight < fj.Weight
 					}
 				}
-			case api.FilterTypeInsight:
-				fi := filters[i].(*api.FilterInsight)
+			case api.FilterTypeInsightMetric:
+				fi := filters[i].(*api.FilterInsightMetric)
 				switch filters[j].GetFilterType() {
 				case api.FilterTypeCloudResourceType:
 					fj := filters[j].(*api.FilterCloudResourceType)
 					if fi.Weight != fj.Weight {
 						return fi.Weight < fj.Weight
 					}
-				case api.FilterTypeInsight:
-					fj := filters[j].(*api.FilterInsight)
+				case api.FilterTypeInsightMetric:
+					fj := filters[j].(*api.FilterInsightMetric)
 					if fi.Weight != fj.Weight {
 						return fi.Weight < fj.Weight
 					}
@@ -70,22 +70,22 @@ func SortFilters(filters []api.Filter, by string) []api.Filter {
 					if fi.ResourceCount != fj.ResourceCount {
 						return fi.ResourceCount < fj.ResourceCount
 					}
-				case api.FilterTypeInsight:
-					fj := filters[j].(*api.FilterInsight)
+				case api.FilterTypeInsightMetric:
+					fj := filters[j].(*api.FilterInsightMetric)
 					if fi.ResourceCount != fj.Value {
 						return fi.ResourceCount < fj.Value
 					}
 				}
-			case api.FilterTypeInsight:
-				fi := filters[i].(*api.FilterInsight)
+			case api.FilterTypeInsightMetric:
+				fi := filters[i].(*api.FilterInsightMetric)
 				switch filters[j].GetFilterType() {
 				case api.FilterTypeCloudResourceType:
 					fj := filters[j].(*api.FilterCloudResourceType)
 					if fi.Value != fj.ResourceCount {
 						return fi.Value < fj.ResourceCount
 					}
-				case api.FilterTypeInsight:
-					fj := filters[j].(*api.FilterInsight)
+				case api.FilterTypeInsightMetric:
+					fj := filters[j].(*api.FilterInsightMetric)
 					if fi.Value != fj.Value {
 						return fi.Value < fj.Value
 					}

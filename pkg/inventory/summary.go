@@ -216,8 +216,8 @@ func GetInsightIDListFromFilters(filters []Filter, provider source.Type) []uint 
 	result := map[string]struct{}{}
 	for _, filter := range filters {
 		switch filter.GetFilterType() {
-		case FilterTypeInsight:
-			f := filter.(*FilterInsightNode)
+		case FilterTypeInsightMetric:
+			f := filter.(*FilterInsightMetricNode)
 			if !provider.IsNull() && f.CloudProvider.String() != provider.String() {
 				continue
 			}
