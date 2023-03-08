@@ -1581,7 +1581,7 @@ definitions:
       id:
         type: string
       lastHealthCheckTime:
-        type: integer
+        type: string
       metadata:
         type: string
       name:
@@ -3966,6 +3966,10 @@ paths:
       description: List credentials
       parameters:
       - description: filter by connector type
+        enum:
+        - ""
+        - AWS
+        - Azure
         in: query
         name: connector
         type: string
@@ -4075,12 +4079,13 @@ paths:
       description: Returning a list of sources including both AWS and Azure unless
         filtered by Type.
       parameters:
-      - description: Type
+      - description: filter by connector type
         enum:
-        - aws
-        - azure
+        - ""
+        - AWS
+        - Azure
         in: query
-        name: type
+        name: connector
         type: string
       produces:
       - application/json
