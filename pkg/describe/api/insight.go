@@ -1,12 +1,14 @@
 package api
 
+import "gitlab.com/keibiengine/keibi-engine/pkg/source"
+
 type Insight struct {
-	ID           uint   `json:"id"`
-	Description  string `json:"description"`
-	Query        string `json:"query"`
-	Provider     string `json:"provider"`
-	Category     string `json:"category"`
-	SmartQueryID uint   `json:"smartQueryID"`
+	ID           uint        `json:"id"`
+	Description  string      `json:"description"`
+	Query        string      `json:"query"`
+	Provider     source.Type `json:"provider"`
+	Category     string      `json:"category"`
+	SmartQueryID uint        `json:"smartQueryID"`
 }
 
 type ListInsightsRequest struct {
@@ -14,10 +16,10 @@ type ListInsightsRequest struct {
 }
 
 type CreateInsightRequest struct {
-	Description  string `json:"description"`
-	Query        string `json:"query"`
-	Provider     string `json:"provider"`
-	Category     string `json:"category"`
-	SmartQueryID uint   `json:"smartQueryID"`
-	Internal     bool   `json:"internal"`
+	Description  string      `json:"description"`
+	Query        string      `json:"query"`
+	Provider     source.Type `json:"provider"`
+	Category     string      `json:"category"`
+	SmartQueryID uint        `json:"smartQueryID"`
+	Internal     bool        `json:"internal"`
 }

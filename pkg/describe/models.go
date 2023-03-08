@@ -92,9 +92,16 @@ type Insight struct {
 	LongTitle    string
 	Description  string
 	LogoURL      *string
-	Enabled      bool `gorm:"default:true"`
+	Labels       []InsightLabel `gorm:"foreignKey:InsightID;constraint:OnDelete:CASCADE;"`
+	Enabled      bool           `gorm:"default:true"`
 	SmartQueryID uint
 	Internal     bool
+}
+
+type InsightLabel struct {
+	gorm.Model
+	InsightID uint
+	Label     string
 }
 
 type InsightJob struct {
