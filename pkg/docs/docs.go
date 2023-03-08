@@ -4072,6 +4072,26 @@ const docTemplate = `{
                 }
             }
         },
+        "/schedule/api/v1/insight/{insightId}": {
+            "get": {
+                "description": "Get insight by id",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "insights"
+                ],
+                "summary": "Get insight by id",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_describe_api.Insight"
+                        }
+                    }
+                }
+            }
+        },
         "/schedule/api/v1/jobs/{job_id}/creds": {
             "post": {
                 "produces": [
@@ -5588,13 +5608,10 @@ const docTemplate = `{
                     "type": "boolean"
                 },
                 "provider": {
-                    "type": "string"
+                    "$ref": "#/definitions/source.Type"
                 },
                 "query": {
                     "type": "string"
-                },
-                "smartQueryID": {
-                    "type": "integer"
                 }
             }
         },
@@ -5683,17 +5700,43 @@ const docTemplate = `{
                 "description": {
                     "type": "string"
                 },
+                "enabled": {
+                    "type": "boolean"
+                },
                 "id": {
                     "type": "integer"
                 },
-                "provider": {
+                "labels": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_describe_api.InsightLabel"
+                    }
+                },
+                "logoURL": {
                     "type": "string"
+                },
+                "longTitle": {
+                    "type": "string"
+                },
+                "provider": {
+                    "$ref": "#/definitions/source.Type"
                 },
                 "query": {
                     "type": "string"
                 },
-                "smartQueryID": {
+                "shortTitle": {
+                    "type": "string"
+                }
+            }
+        },
+        "gitlab_com_keibiengine_keibi-engine_pkg_describe_api.InsightLabel": {
+            "type": "object",
+            "properties": {
+                "id": {
                     "type": "integer"
+                },
+                "label": {
+                    "type": "string"
                 }
             }
         },

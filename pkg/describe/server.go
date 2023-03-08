@@ -71,6 +71,7 @@ func (h HttpServer) Register(e *echo.Echo) {
 	v1.GET("/insight", httpserver.AuthorizeHandler(h.ListInsights, api3.ViewerRole))
 	v1.PUT("/insight", httpserver.AuthorizeHandler(h.CreateInsight, api3.EditorRole))
 	v1.DELETE("/insight/:id", httpserver.AuthorizeHandler(h.DeleteInsight, api3.EditorRole))
+	v1.GET("/insight/:insightId", httpserver.AuthorizeHandler(h.GetInsight, api3.ViewerRole))
 
 	v1.POST("/jobs/:job_id/creds", h.HandleGetCredsForJob)
 }
@@ -461,12 +462,11 @@ func (h HttpServer) CreateInsight(ctx echo.Context) error {
 	}
 
 	ins := Insight{
-		Description:  req.Description,
-		Query:        req.Query,
-		SmartQueryID: req.SmartQueryID,
-		Provider:     req.Provider,
-		Category:     req.Category,
-		Internal:     req.Internal,
+		Description: req.Description,
+		Query:       req.Query,
+		Provider:    req.Provider,
+		Category:    req.Category,
+		Internal:    req.Internal,
 	}
 	err := h.DB.AddInsight(&ins)
 	if err != nil {
@@ -524,16 +524,69 @@ func (h HttpServer) ListInsights(ctx echo.Context) error {
 
 	var result []api.Insight
 	for _, item := range queries {
+		labels := make([]api.InsightLabel, 0, len(item.Labels))
+		for _, label := range item.Labels {
+			labels = append(labels, api.InsightLabel{
+				ID:    label.ID,
+				Label: label.Label,
+			})
+		}
 		result = append(result, api.Insight{
-			ID:           item.Model.ID,
-			Description:  item.Description,
-			Query:        item.Query,
-			Provider:     item.Provider,
-			Category:     item.Category,
-			SmartQueryID: item.SmartQueryID,
+			ID:          item.Model.ID,
+			Query:       item.Query,
+			Category:    item.Category,
+			Provider:    item.Provider,
+			ShortTitle:  item.ShortTitle,
+			LongTitle:   item.LongTitle,
+			Description: item.Description,
+			LogoURL:     item.LogoURL,
+			Labels:      labels,
+			Enabled:     item.Enabled,
 		})
 	}
 	return ctx.JSON(200, result)
+}
+
+// GetInsight godoc
+//
+//	@Summary		Get insight by id
+//	@Description	Get insight by id
+//	@Tags			insights
+//	@Produce		json
+//	@Success		200	{object}	api.Insight
+//	@Router			/schedule/api/v1/insight/{insightId} [get]
+func (h HttpServer) GetInsight(ctx echo.Context) error {
+	id, err := strconv.Atoi(ctx.Param("insightId"))
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid id")
+	}
+	insight, err := h.DB.GetInsight(uint(id))
+	if err != nil {
+		return err
+	}
+
+	labels := make([]api.InsightLabel, 0, len(insight.Labels))
+	for _, label := range insight.Labels {
+		labels = append(labels, api.InsightLabel{
+			ID:    label.ID,
+			Label: label.Label,
+		})
+	}
+
+	res := api.Insight{
+		ID:          insight.Model.ID,
+		Query:       insight.Query,
+		Category:    insight.Category,
+		Provider:    insight.Provider,
+		ShortTitle:  insight.ShortTitle,
+		LongTitle:   insight.LongTitle,
+		Description: insight.Description,
+		LogoURL:     insight.LogoURL,
+		Labels:      labels,
+		Enabled:     insight.Enabled,
+	}
+
+	return ctx.JSON(200, res)
 }
 
 // TriggerDescribeJob godoc

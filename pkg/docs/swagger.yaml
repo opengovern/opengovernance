@@ -550,11 +550,9 @@ definitions:
       internal:
         type: boolean
       provider:
-        type: string
+        $ref: '#/definitions/source.Type'
       query:
         type: string
-      smartQueryID:
-        type: integer
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_describe_api.DescribeResource:
     properties:
@@ -616,14 +614,31 @@ definitions:
         type: string
       description:
         type: string
+      enabled:
+        type: boolean
       id:
         type: integer
-      provider:
+      labels:
+        items:
+          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_describe_api.InsightLabel'
+        type: array
+      logoURL:
         type: string
+      longTitle:
+        type: string
+      provider:
+        $ref: '#/definitions/source.Type'
       query:
         type: string
-      smartQueryID:
+      shortTitle:
+        type: string
+    type: object
+  gitlab_com_keibiengine_keibi-engine_pkg_describe_api.InsightLabel:
+    properties:
+      id:
         type: integer
+      label:
+        type: string
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_describe_api.ListInsightsRequest:
     properties:
@@ -4693,6 +4708,19 @@ paths:
         "200":
           description: OK
       summary: Delete an insight
+      tags:
+      - insights
+  /schedule/api/v1/insight/{insightId}:
+    get:
+      description: Get insight by id
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_describe_api.Insight'
+      summary: Get insight by id
       tags:
       - insights
   /schedule/api/v1/insight/jobs/pending:
