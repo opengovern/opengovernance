@@ -9,6 +9,7 @@ import (
 
 	insightapi "gitlab.com/keibiengine/keibi-engine/pkg/insight/api"
 	"gitlab.com/keibiengine/keibi-engine/pkg/source"
+	"go.uber.org/zap"
 
 	"github.com/ProtonMail/gopenpgp/v2/helper"
 	api3 "gitlab.com/keibiengine/keibi-engine/pkg/auth/api"
@@ -71,7 +72,7 @@ func (h HttpServer) Register(e *echo.Echo) {
 
 	v1.GET("/insight", httpserver.AuthorizeHandler(h.ListInsights, api3.ViewerRole))
 	v1.PUT("/insight", httpserver.AuthorizeHandler(h.CreateInsight, api3.EditorRole))
-	v1.DELETE("/insight/:id", httpserver.AuthorizeHandler(h.DeleteInsight, api3.EditorRole))
+	v1.DELETE("/insight/:insightId", httpserver.AuthorizeHandler(h.DeleteInsight, api3.EditorRole))
 	v1.GET("/insight/:insightId", httpserver.AuthorizeHandler(h.GetInsight, api3.ViewerRole))
 
 	v1.POST("/jobs/:job_id/creds", h.HandleGetCredsForJob)
@@ -485,7 +486,7 @@ func (h HttpServer) CreateInsight(ctx echo.Context) error {
 //	@Success	200
 //	@Router		/schedule/api/v1/insight/{id} [delete]
 func (h HttpServer) DeleteInsight(ctx echo.Context) error {
-	id, err := strconv.Atoi(ctx.Param("id"))
+	id, err := strconv.Atoi(ctx.Param("insightId"))
 	if err != nil {
 		fmt.Println(err.Error())
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid id")
@@ -560,12 +561,16 @@ func (h HttpServer) ListInsights(ctx echo.Context) error {
 //	@Success		200	{object}	api.Insight
 //	@Router			/schedule/api/v1/insight/{insightId} [get]
 func (h HttpServer) GetInsight(ctx echo.Context) error {
-	id, err := strconv.Atoi(ctx.Param("insightId"))
+	id, err := strconv.ParseUint(ctx.Param("insightId"), 10, 64)
 	if err != nil {
+		h.Scheduler.logger.Error("invalid id", zap.Error(err))
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid id")
 	}
 	insight, err := h.DB.GetInsight(uint(id))
 	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return echo.NewHTTPError(http.StatusNotFound, "insight not found")
+		}
 		return err
 	}
 

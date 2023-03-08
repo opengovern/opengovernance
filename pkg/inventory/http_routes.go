@@ -4288,6 +4288,9 @@ func (h *HttpHandler) GetInsight(ctx echo.Context) error {
 
 	insightRow, err := h.schedulerClient.GetInsightById(httpclient.FromEchoContext(ctx), uint(insightId))
 	if err != nil {
+		if strings.Contains(strings.ToLower(err.Error()), "not found") {
+			return echo.NewHTTPError(http.StatusNotFound, "insight not found")
+		}
 		return err
 	}
 
