@@ -2765,7 +2765,6 @@ func enqueueInsightJobs(db Database, q queue.Interface, job InsightJob) error {
 	if err := q.Publish(insight.Job{
 		JobID:            job.ID,
 		QueryID:          job.InsightID,
-		SmartQueryID:     ins.SmartQueryID,
 		SourceID:         job.SourceID,
 		ScheduleJobUUID:  job.ScheduleUUID,
 		AccountID:        job.AccountID,

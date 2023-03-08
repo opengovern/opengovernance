@@ -719,7 +719,7 @@ func (db Database) AddInsight(insight *Insight) error {
 
 func (db Database) GetInsight(id uint) (*Insight, error) {
 	var res Insight
-	tx := db.orm.Model(&Insight{}).
+	tx := db.orm.Model(&Insight{}).Preload("Labels").
 		Where("id = ?", id).
 		First(&res)
 	if tx.Error != nil {
@@ -730,7 +730,7 @@ func (db Database) GetInsight(id uint) (*Insight, error) {
 
 func (db Database) ListInsightsWithFilters(search *string) ([]Insight, error) {
 	var s []Insight
-	m := db.orm.Model(&Insight{})
+	m := db.orm.Model(&Insight{}).Preload("Labels")
 	if search != nil {
 		m = m.Where("description like ?", "%"+*search+"%")
 	}
