@@ -85,17 +85,16 @@ type DescribeResourceJob struct {
 
 type Insight struct {
 	gorm.Model
-	Query        string
-	Category     string
-	Provider     source.Type
-	ShortTitle   string
-	LongTitle    string
-	Description  string
-	LogoURL      *string
-	Labels       []InsightLabel `gorm:"foreignKey:InsightID;constraint:OnDelete:CASCADE;"`
-	Enabled      bool           `gorm:"default:true"`
-	SmartQueryID uint
-	Internal     bool
+	Query       string
+	Category    string
+	Provider    source.Type
+	ShortTitle  string
+	LongTitle   string
+	Description string
+	LogoURL     *string
+	Labels      []InsightLabel `gorm:"foreignKey:InsightID;constraint:OnDelete:CASCADE;"`
+	Enabled     bool           `gorm:"default:true"`
+	Internal    bool
 }
 
 type InsightLabel struct {
