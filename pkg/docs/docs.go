@@ -817,33 +817,6 @@ const docTemplate = `{
                 }
             }
         },
-        "/inventory/api/v1/insight/results": {
-            "get": {
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "insights"
-                ],
-                "summary": "List insight results for specified account",
-                "parameters": [
-                    {
-                        "description": "Request Body",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ListInsightResultsRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK"
-                    }
-                }
-            }
-        },
         "/inventory/api/v1/insight/results/trend": {
             "get": {
                 "produces": [
@@ -2029,6 +2002,108 @@ const docTemplate = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.CategoryNode"
+                        }
+                    }
+                }
+            }
+        },
+        "/inventory/api/v2/insights": {
+            "get": {
+                "description": "Getting locations by provider",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "location"
+                ],
+                "summary": "Get locations",
+                "parameters": [
+                    {
+                        "enum": [
+                            "",
+                            "AWS",
+                            "Azure"
+                        ],
+                        "type": "string",
+                        "description": "filter insights by connector",
+                        "name": "connector",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "filter the result by source id",
+                        "name": "sourceId",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "unix seconds for the time to get the insight result for",
+                        "name": "time",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.Insight"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/inventory/api/v2/insights/{insightId}": {
+            "get": {
+                "description": "Getting locations by provider",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "location"
+                ],
+                "summary": "Get locations",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "filter the result by source id",
+                        "name": "sourceId",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "unix seconds for the time to get the insight result for",
+                        "name": "time",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.Insight"
+                        }
+                    }
+                }
+            }
+        },
+        "/inventory/api/v2/insights/{insightId}/details/{jobId}": {
+            "get": {
+                "description": "Getting locations by provider",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "location"
+                ],
+                "summary": "Get locations",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.InsightDetail"
                         }
                     }
                 }
@@ -3983,6 +4058,17 @@ const docTemplate = `{
                         "schema": {
                             "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_describe_api.ListInsightsRequest"
                         }
+                    },
+                    {
+                        "enum": [
+                            "",
+                            "AWS",
+                            "Azure"
+                        ],
+                        "type": "string",
+                        "description": "filter by connector",
+                        "name": "connector",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -6382,14 +6468,96 @@ const docTemplate = `{
                 }
             }
         },
-        "gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ListInsightResultsRequest": {
+        "gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.Insight": {
             "type": "object",
             "properties": {
-                "executedAt": {
+                "category": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "enabled": {
+                    "type": "boolean"
+                },
+                "id": {
                     "type": "integer"
+                },
+                "labels": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.InsightLabel"
+                    }
+                },
+                "logoURL": {
+                    "type": "string"
+                },
+                "longTitle": {
+                    "type": "string"
                 },
                 "provider": {
                     "$ref": "#/definitions/source.Type"
+                },
+                "query": {
+                    "type": "string"
+                },
+                "results": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.InsightResult"
+                    }
+                },
+                "shortTitle": {
+                    "type": "string"
+                },
+                "totalResults": {
+                    "type": "integer"
+                }
+            }
+        },
+        "gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.InsightDetail": {
+            "type": "object",
+            "properties": {
+                "headers": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "rows": {
+                    "type": "array",
+                    "items": {
+                        "type": "array",
+                        "items": {}
+                    }
+                }
+            }
+        },
+        "gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.InsightLabel": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "integer"
+                },
+                "label": {
+                    "type": "string"
+                }
+            }
+        },
+        "gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.InsightResult": {
+            "type": "object",
+            "properties": {
+                "executedAt": {
+                    "type": "string"
+                },
+                "insightID": {
+                    "type": "integer"
+                },
+                "jobID": {
+                    "type": "integer"
+                },
+                "result": {
+                    "type": "integer"
                 },
                 "sourceID": {
                     "type": "string"

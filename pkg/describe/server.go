@@ -8,6 +8,7 @@ import (
 	"time"
 
 	insightapi "gitlab.com/keibiengine/keibi-engine/pkg/insight/api"
+	"gitlab.com/keibiengine/keibi-engine/pkg/source"
 
 	"github.com/ProtonMail/gopenpgp/v2/helper"
 	api3 "gitlab.com/keibiengine/keibi-engine/pkg/auth/api"
@@ -503,8 +504,9 @@ func (h HttpServer) DeleteInsight(ctx echo.Context) error {
 //	@Description	Listing insights
 //	@Tags			insights
 //	@Produce		json
-//	@Param			request	body		api.ListInsightsRequest	true	"Request Body"
-//	@Success		200		{object}	[]api.Insight
+//	@Param			request		body		api.ListInsightsRequest	true	"Request Body"
+//	@Param			connector	query		source.Type				false	"filter by connector"
+//	@Success		200			{object}	[]api.Insight
 //	@Router			/schedule/api/v1/insight [get]
 func (h HttpServer) ListInsights(ctx echo.Context) error {
 	var req api.ListInsightsRequest
@@ -512,12 +514,14 @@ func (h HttpServer) ListInsights(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
+	connector, _ := source.ParseType(ctx.QueryParam("connector"))
+
 	var search *string
 	if len(req.DescriptionFilter) > 0 {
 		search = &req.DescriptionFilter
 	}
 
-	queries, err := h.DB.ListInsightsWithFilters(search)
+	queries, err := h.DB.ListInsightsWithFilters(search, connector)
 	if err != nil {
 		return err
 	}

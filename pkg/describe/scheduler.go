@@ -2349,7 +2349,7 @@ func (s Scheduler) scheduleInsightJob(forceCreate bool) {
 		}
 
 		s.logger.Info("Workspace is due for a insight. Creating a job now")
-		insights, err := s.db.ListInsightsWithFilters(nil)
+		insights, err := s.db.ListInsightsWithFilters(nil, source.Nil)
 		if err != nil {
 			s.logger.Error("Failed to fetch list of insights", zap.Error(err))
 			InsightJobsCount.WithLabelValues("failure").Inc()

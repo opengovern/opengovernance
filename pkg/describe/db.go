@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	"gitlab.com/keibiengine/keibi-engine/pkg/source"
 	"gitlab.com/keibiengine/keibi-engine/pkg/summarizer"
 
 	summarizerapi "gitlab.com/keibiengine/keibi-engine/pkg/summarizer/api"
@@ -728,9 +729,12 @@ func (db Database) GetInsight(id uint) (*Insight, error) {
 	return &res, nil
 }
 
-func (db Database) ListInsightsWithFilters(search *string) ([]Insight, error) {
+func (db Database) ListInsightsWithFilters(search *string, connector source.Type) ([]Insight, error) {
 	var s []Insight
 	m := db.orm.Model(&Insight{}).Preload("Labels")
+	if connector != source.Nil {
+		m = m.Where("provider = ?", connector)
+	}
 	if search != nil {
 		m = m.Where("description like ?", "%"+*search+"%")
 	}

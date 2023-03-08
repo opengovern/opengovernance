@@ -167,6 +167,27 @@ func FetchInsightValuesAtTime(client keibi.Client, t time.Time, provider source.
 	return result, nil
 }
 
+func FetchLatestInsightValues(client keibi.Client, provider source.Type, sourceID *string, insightIds []uint) ([]es.InsightResource, error) {
+	query := BuildFindInsightResultsQuery(provider, sourceID, nil, insightIds, false)
+	queryJson, err := json.Marshal(query)
+	if err != nil {
+		return nil, err
+	}
+	fmt.Println("query=", queryJson, "index=", es.InsightsIndex)
+	var response InsightResultQueryResponse
+	err = client.Search(context.Background(), es.InsightsIndex, string(queryJson), &response)
+	if err != nil {
+		return nil, err
+	}
+
+	result := make([]es.InsightResource, 0, len(response.Hits.Hits))
+
+	for _, hit := range response.Hits.Hits {
+		result = append(result, hit.Source)
+	}
+	return result, nil
+}
+
 func FetchInsightAggregatedPerQueryValuesAtTime(client keibi.Client, t time.Time, provider source.Type, sourceID *string, insightIds []uint) (map[string]int, error) {
 	lastId, err := FindInsightResultUUID(client, t.UnixMilli())
 	if err != nil {
@@ -174,6 +195,7 @@ func FetchInsightAggregatedPerQueryValuesAtTime(client keibi.Client, t time.Time
 	}
 
 	query := BuildFindInsightResultsQuery(provider, sourceID, &lastId, insightIds, true)
+	query["size"] = 0
 	query["aggs"] = map[string]any{
 		"query_id_group": map[string]any{
 			"terms": map[string]any{
