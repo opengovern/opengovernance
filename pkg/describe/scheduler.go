@@ -2762,11 +2762,6 @@ func enqueueInsightJobs(db Database, q queue.Interface, job InsightJob) error {
 		lastYearJobID = lastYear.ID
 	}
 
-	sourceType, err := source.ParseType(ins.Provider)
-	if err != nil {
-		return err
-	}
-
 	if err := q.Publish(insight.Job{
 		JobID:            job.ID,
 		QueryID:          job.InsightID,
@@ -2774,7 +2769,7 @@ func enqueueInsightJobs(db Database, q queue.Interface, job InsightJob) error {
 		SourceID:         job.SourceID,
 		ScheduleJobUUID:  job.ScheduleUUID,
 		AccountID:        job.AccountID,
-		SourceType:       sourceType,
+		SourceType:       ins.Provider,
 		Internal:         ins.Internal,
 		Query:            ins.Query,
 		Description:      ins.Description,
