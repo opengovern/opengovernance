@@ -3648,12 +3648,13 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "enum": [
-                            "aws",
-                            "azure"
+                            "",
+                            "AWS",
+                            "Azure"
                         ],
                         "type": "string",
-                        "description": "Type",
-                        "name": "type",
+                        "description": "filter by source type",
+                        "name": "connector",
                         "in": "query"
                     }
                 ],
@@ -3724,12 +3725,13 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "enum": [
-                            "aws",
-                            "azure"
+                            "",
+                            "AWS",
+                            "Azure"
                         ],
                         "type": "string",
-                        "description": "Type",
-                        "name": "type",
+                        "description": "filter by source type",
+                        "name": "connector",
                         "in": "query"
                     }
                 ],

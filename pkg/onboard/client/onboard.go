@@ -107,7 +107,7 @@ func (s *onboardClient) GetSources(ctx *httpclient.Context, sourceIDs []string) 
 func (s *onboardClient) ListSources(ctx *httpclient.Context, t *source.Type) ([]api.Source, error) {
 	url := fmt.Sprintf("%s/api/v1/sources", s.baseURL)
 	if t != nil {
-		url += "?type=" + string(*t)
+		url += "?connector=" + string(*t)
 	}
 
 	var response []api.Source
@@ -130,7 +130,7 @@ func (s *onboardClient) ListSources(ctx *httpclient.Context, t *source.Type) ([]
 func (s *onboardClient) CountSources(ctx *httpclient.Context, provider source.Type) (int64, error) {
 	var url string
 	if !provider.IsNull() {
-		url = fmt.Sprintf("%s/api/v1/sources/count?type=%s", s.baseURL, provider.String())
+		url = fmt.Sprintf("%s/api/v1/sources/count?connector=%s", s.baseURL, provider.String())
 	} else {
 		url = fmt.Sprintf("%s/api/v1/sources/count", s.baseURL)
 	}

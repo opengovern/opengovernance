@@ -1695,11 +1695,11 @@ func (h HttpHandler) EnableSource(ctx echo.Context) error {
 //	@Description	Returning a list of sources including both AWS and Azure unless filtered by Type.
 //	@Tags			onboard
 //	@Produce		json
-//	@Param			type	query		string	false	"Type"	Enums(aws,azure)
-//	@Success		200		{object}	api.GetSourcesResponse
+//	@Param			connector	query		source.Type	false	"filter by source type"
+//	@Success		200			{object}	api.GetSourcesResponse
 //	@Router			/onboard/api/v1/sources [get]
 func (h HttpHandler) ListSources(ctx echo.Context) error {
-	sType := ctx.QueryParam("type")
+	sType := ctx.QueryParam("connector")
 	var sources []Source
 	if sType != "" {
 		st, err := source.ParseType(sType)
@@ -1803,11 +1803,11 @@ func (h HttpHandler) GetSources(ctx echo.Context) error {
 //	@Description	Returning a count of sources including both AWS and Azure unless filtered by Type.
 //	@Tags			onboard
 //	@Produce		json
-//	@Param			type	query		string	false	"Type"	Enums(aws,azure)
-//	@Success		200		{object}	int64
+//	@Param			connector	query		source.Type	false	"filter by source type"
+//	@Success		200			{object}	int64
 //	@Router			/onboard/api/v1/sources/count [get]
 func (h HttpHandler) CountSources(ctx echo.Context) error {
-	sType := ctx.QueryParam("type")
+	sType := ctx.QueryParam("connector")
 	var count int64
 	if sType != "" {
 		st, err := source.ParseType(sType)

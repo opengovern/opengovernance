@@ -85,12 +85,16 @@ type DescribeResourceJob struct {
 
 type Insight struct {
 	gorm.Model
-	Description  string
 	Query        string
+	Category     string
+	Provider     source.Type
+	ShortTitle   string
+	LongTitle    string
+	Description  string
+	LogoURL      *string
+	Enabled      bool `gorm:"default:true"`
 	SmartQueryID uint
 	Internal     bool
-	Provider     string
-	Category     string
 }
 
 type InsightJob struct {
