@@ -4424,12 +4424,13 @@ paths:
       description: Returning a list of sources including both AWS and Azure unless
         filtered by Type.
       parameters:
-      - description: Type
+      - description: filter by source type
         enum:
-        - aws
-        - azure
+        - ""
+        - AWS
+        - Azure
         in: query
-        name: type
+        name: connector
         type: string
       produces:
       - application/json
@@ -4476,12 +4477,13 @@ paths:
       description: Returning a count of sources including both AWS and Azure unless
         filtered by Type.
       parameters:
-      - description: Type
+      - description: filter by source type
         enum:
-        - aws
-        - azure
+        - ""
+        - AWS
+        - Azure
         in: query
-        name: type
+        name: connector
         type: string
       produces:
       - application/json
