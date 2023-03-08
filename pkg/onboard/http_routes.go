@@ -644,11 +644,11 @@ func (h HttpHandler) PostCredentials(ctx echo.Context) error {
 //	@Tags			onboard
 //	@Produce		json
 //	@Success		200			{object}	[]api.Credential
-//	@Param			connector	query		string	false	"filter by connector type"
-//	@Param			health		query		string	false	"filter by health status"	Enums(healthy, unhealthy, initial_discovery)
+//	@Param			connector	query		source.Type	false	"filter by connector type"
+//	@Param			health		query		string		false	"filter by health status"	Enums(healthy, unhealthy, initial_discovery)
 //	@Router			/onboard/api/v1/credential [get]
 func (h HttpHandler) GetCredentials(ctx echo.Context) error {
-	connector, _ := source.ParseType(ctx.QueryParam("provider"))
+	connector, _ := source.ParseType(ctx.QueryParam("connector"))
 	health, _ := source.ParseHealthStatus(ctx.QueryParam("health"))
 
 	credentials, err := h.db.GetCredentialsByFilters(connector, health)
@@ -743,8 +743,8 @@ func (h HttpHandler) GetCredential(ctx echo.Context) error {
 //	@Description	Returning a list of sources including both AWS and Azure unless filtered by Type.
 //	@Tags			onboard
 //	@Produce		json
-//	@Param			type	query		string	false	"Type"	Enums(aws,azure)
-//	@Success		200		{object}	[]api.Credential
+//	@Param			connector	query		source.Type	false	"filter by connector type"
+//	@Success		200			{object}	[]api.Credential
 //	@Router			/onboard/api/v1/credential/sources/list [get]
 func (h HttpHandler) ListSourcesByCredentials(ctx echo.Context) error {
 	sType, _ := source.ParseType(ctx.QueryParam("type"))

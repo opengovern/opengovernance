@@ -2954,6 +2954,11 @@ const docTemplate = `{
                 "summary": "List credentials",
                 "parameters": [
                     {
+                        "enum": [
+                            "",
+                            "AWS",
+                            "Azure"
+                        ],
                         "type": "string",
                         "description": "filter by connector type",
                         "name": "connector",
@@ -3052,12 +3057,13 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "enum": [
-                            "aws",
-                            "azure"
+                            "",
+                            "AWS",
+                            "Azure"
                         ],
                         "type": "string",
-                        "description": "Type",
-                        "name": "type",
+                        "description": "filter by connector type",
+                        "name": "connector",
                         "in": "query"
                     }
                 ],
@@ -7091,7 +7097,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "lastHealthCheckTime": {
-                    "type": "integer"
+                    "type": "string"
                 },
                 "metadata": {
                     "type": "string"
