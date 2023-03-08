@@ -2,6 +2,7 @@ package es
 
 import (
 	"fmt"
+
 	"gitlab.com/keibiengine/keibi-engine/pkg/source"
 )
 
@@ -63,13 +64,14 @@ func (r InsightResource) KeysAndIndex() ([]string, string) {
 	keys := []string{
 		string(r.ResourceType),
 		fmt.Sprintf("%d", r.QueryID),
+		fmt.Sprintf("%s", r.SourceID),
 	}
 	if r.ResourceType == InsightResourceHistory {
 		keys = []string{
 			string(r.ResourceType),
 			fmt.Sprintf("%d", r.QueryID),
-			fmt.Sprintf("%d", r.JobID),
-			fmt.Sprintf("%d", r.SourceID),
+			fmt.Sprintf("%s", r.SourceID),
+			fmt.Sprintf("%s", r.ScheduleUUID),
 		}
 	}
 

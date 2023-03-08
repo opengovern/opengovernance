@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/describe/api"
+	"gitlab.com/keibiengine/keibi-engine/pkg/source"
 
 	compliance "gitlab.com/keibiengine/keibi-engine/pkg/compliance/api"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpclient"
@@ -18,7 +19,7 @@ type SchedulerServiceClient interface {
 	GetSource(ctx *httpclient.Context, sourceID string) (*api.Source, error)
 	ListComplianceReportJobs(ctx *httpclient.Context, sourceID string, filter *TimeRangeFilter) ([]*compliance.ComplianceReport, error)
 	GetLastComplianceReportID(ctx *httpclient.Context) (uint, error)
-	GetInsights(ctx *httpclient.Context) ([]api.Insight, error)
+	GetInsights(ctx *httpclient.Context, connector source.Type) ([]api.Insight, error)
 	GetInsightById(ctx *httpclient.Context, id uint) (*api.Insight, error)
 }
 
@@ -63,8 +64,11 @@ func (s *schedulerClient) GetLastComplianceReportID(ctx *httpclient.Context) (ui
 	return id, nil
 }
 
-func (s *schedulerClient) GetInsights(ctx *httpclient.Context) ([]api.Insight, error) {
+func (s *schedulerClient) GetInsights(ctx *httpclient.Context, connector source.Type) ([]api.Insight, error) {
 	url := fmt.Sprintf("%s/api/v1/insight", s.baseURL)
+	if connector != source.Nil {
+		url = fmt.Sprintf("%s?connector=%s", url, connector)
+	}
 
 	var insights []api.Insight
 	if err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &insights); err != nil {

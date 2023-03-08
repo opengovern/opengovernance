@@ -15,6 +15,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/service/s3"
 	"gitlab.com/keibiengine/keibi-engine/pkg/inventory/internal"
 	"gitlab.com/keibiengine/keibi-engine/pkg/utils"
 
@@ -94,8 +96,8 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	v1.GET("/query/count", httpserver.AuthorizeHandler(h.CountQueries, api3.ViewerRole))
 	v1.POST("/query/:queryId", httpserver.AuthorizeHandler(h.RunQuery, api3.EditorRole))
 
-	v1.GET("/insight/results", httpserver.AuthorizeHandler(h.ListInsightsResults, api3.ViewerRole))
-	v1.GET("/insight/results/trend", httpserver.AuthorizeHandler(h.GetInsightResultTrend, api3.ViewerRole))
+	//v1.GET("/insight/results", httpserver.AuthorizeHandler(h.ListInsightsResults, api3.ViewerRole))
+	//v1.GET("/insight/results/trend", httpserver.AuthorizeHandler(h.GetInsightResultTrend, api3.ViewerRole))
 
 	v1.GET("/metrics/summary", httpserver.AuthorizeHandler(h.GetSummaryMetrics, api3.ViewerRole))
 	v1.GET("/metrics/categorized", httpserver.AuthorizeHandler(h.GetCategorizedMetrics, api3.ViewerRole))
@@ -109,7 +111,9 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	v2.GET("/metrics/resources/composition", httpserver.AuthorizeHandler(h.GetMetricsResourceCountComposition, api3.ViewerRole))
 	v2.GET("/metrics/cost/composition", httpserver.AuthorizeHandler(h.GetMetricsCostComposition, api3.ViewerRole))
 
-	//v2.GET("/insights", httpserver.AuthorizeHandler(h.ListInsights, api3.ViewerRole))
+	v2.GET("/insights", httpserver.AuthorizeHandler(h.ListInsights, api3.ViewerRole))
+	v2.GET("/insights/:insightId/details/:jobId", httpserver.AuthorizeHandler(h.GetInsightDetails, api3.ViewerRole))
+	v2.GET("/insights/:insightId", httpserver.AuthorizeHandler(h.GetInsight, api3.ViewerRole))
 
 	v1.GET("/connection/:connection_id/summary", httpserver.AuthorizeHandler(h.GetConnectionSummary, api3.ViewerRole))
 	v1.GET("/provider/:provider/summary", httpserver.AuthorizeHandler(h.GetProviderSummary, api3.ViewerRole))
@@ -3280,95 +3284,95 @@ func (h *HttpHandler) ListQueries(ctx echo.Context) error {
 //	@Param		request	body	api.ListInsightResultsRequest	true	"Request Body"
 //	@Success	200
 //	@Router		/inventory/api/v1/insight/results [get]
-func (h *HttpHandler) ListInsightsResults(ctx echo.Context) error {
-	var req api.ListInsightResultsRequest
-	if err := bindValidate(ctx, &req); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
-	}
-
-	var insUUID *string
-	if req.ExecutedAt != nil {
-		insightUUID, err := es.FindInsightResultUUID(h.client, *req.ExecutedAt)
-		if err != nil {
-			return err
-		}
-		insUUID = &insightUUID
-	}
-
-	sourceType := source.Nil
-	if req.Provider != nil {
-		sourceType = *req.Provider
-	}
-	query := es.BuildFindInsightResultsQuery(sourceType, req.SourceID, insUUID, nil, insUUID != nil)
-	queryJson, err := json.Marshal(query)
-	if err != nil {
-		return err
-	}
-
-	var response es.InsightResultQueryResponse
-	err = h.client.Search(context.Background(), insight.InsightsIndex,
-		string(queryJson), &response)
-	if err != nil {
-		return err
-	}
-
-	resp := api.ListInsightResultsResponse{}
-	padd64 := func(x, y *int64) *int64 {
-		var v *int64
-		if x != nil && y != nil {
-			t := *x + *y
-			v = &t
-		} else if x != nil {
-			t := *x
-			v = &t
-		} else if y != nil {
-			t := *y
-			v = &t
-		}
-		return v
-	}
-
-	aggr := map[uint]api.InsightResult{}
-	for _, item := range response.Hits.Hits {
-		if item.Source.Internal {
-			continue
-		}
-
-		ins := api.InsightResult{
-			QueryID:          item.Source.QueryID,
-			SmartQueryID:     item.Source.SmartQueryID,
-			Description:      item.Source.Description,
-			Provider:         item.Source.Provider.String(),
-			SourceID:         item.Source.SourceID,
-			Category:         item.Source.Category,
-			Query:            item.Source.Query,
-			ExecutedAt:       item.Source.ExecutedAt,
-			Result:           item.Source.Result,
-			LastDayValue:     item.Source.LastDayValue,
-			LastWeekValue:    item.Source.LastWeekValue,
-			LastMonthValue:   item.Source.LastMonthValue,
-			LastQuarterValue: item.Source.LastQuarterValue,
-			LastYearValue:    item.Source.LastYearValue,
-		}
-
-		if v, ok := aggr[item.Source.QueryID]; ok {
-			v.Result += ins.Result
-			v.LastDayValue = padd64(v.LastDayValue, ins.LastDayValue)
-			v.LastWeekValue = padd64(v.LastWeekValue, ins.LastWeekValue)
-			v.LastMonthValue = padd64(v.LastMonthValue, ins.LastMonthValue)
-			v.LastQuarterValue = padd64(v.LastQuarterValue, ins.LastQuarterValue)
-			v.LastYearValue = padd64(v.LastYearValue, ins.LastYearValue)
-		} else {
-			aggr[item.Source.QueryID] = ins
-		}
-	}
-
-	for _, v := range aggr {
-		resp.Results = append(resp.Results, v)
-	}
-
-	return ctx.JSON(200, resp)
-}
+//func (h *HttpHandler) ListInsightsResults(ctx echo.Context) error {
+//	var req api.ListInsightResultsRequest
+//	if err := bindValidate(ctx, &req); err != nil {
+//		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+//	}
+//
+//	var insUUID *string
+//	if req.ExecutedAt != nil {
+//		insightUUID, err := es.FindInsightResultUUID(h.client, *req.ExecutedAt)
+//		if err != nil {
+//			return err
+//		}
+//		insUUID = &insightUUID
+//	}
+//
+//	sourceType := source.Nil
+//	if req.Provider != nil {
+//		sourceType = *req.Provider
+//	}
+//	query := es.BuildFindInsightResultsQuery(sourceType, req.SourceID, insUUID, nil, insUUID != nil)
+//	queryJson, err := json.Marshal(query)
+//	if err != nil {
+//		return err
+//	}
+//
+//	var response es.InsightResultQueryResponse
+//	err = h.client.Search(context.Background(), insight.InsightsIndex,
+//		string(queryJson), &response)
+//	if err != nil {
+//		return err
+//	}
+//
+//	resp := api.ListInsightResultsResponse{}
+//	padd64 := func(x, y *int64) *int64 {
+//		var v *int64
+//		if x != nil && y != nil {
+//			t := *x + *y
+//			v = &t
+//		} else if x != nil {
+//			t := *x
+//			v = &t
+//		} else if y != nil {
+//			t := *y
+//			v = &t
+//		}
+//		return v
+//	}
+//
+//	aggr := map[uint]api.InsightResult{}
+//	for _, item := range response.Hits.Hits {
+//		if item.Source.Internal {
+//			continue
+//		}
+//
+//		ins := api.InsightResult{
+//			QueryID:          item.Source.QueryID,
+//			SmartQueryID:     item.Source.SmartQueryID,
+//			Description:      item.Source.Description,
+//			Provider:         item.Source.Provider.String(),
+//			SourceID:         item.Source.SourceID,
+//			Category:         item.Source.Category,
+//			Query:            item.Source.Query,
+//			ExecutedAt:       item.Source.ExecutedAt,
+//			Result:           item.Source.Result,
+//			LastDayValue:     item.Source.LastDayValue,
+//			LastWeekValue:    item.Source.LastWeekValue,
+//			LastMonthValue:   item.Source.LastMonthValue,
+//			LastQuarterValue: item.Source.LastQuarterValue,
+//			LastYearValue:    item.Source.LastYearValue,
+//		}
+//
+//		if v, ok := aggr[item.Source.QueryID]; ok {
+//			v.Result += ins.Result
+//			v.LastDayValue = padd64(v.LastDayValue, ins.LastDayValue)
+//			v.LastWeekValue = padd64(v.LastWeekValue, ins.LastWeekValue)
+//			v.LastMonthValue = padd64(v.LastMonthValue, ins.LastMonthValue)
+//			v.LastQuarterValue = padd64(v.LastQuarterValue, ins.LastQuarterValue)
+//			v.LastYearValue = padd64(v.LastYearValue, ins.LastYearValue)
+//		} else {
+//			aggr[item.Source.QueryID] = ins
+//		}
+//	}
+//
+//	for _, v := range aggr {
+//		resp.Results = append(resp.Results, v)
+//	}
+//
+//	return ctx.JSON(200, resp)
+//}
 
 // GetInsightResultTrend godoc
 //
@@ -4155,6 +4159,226 @@ func (h *HttpHandler) GetResources(ctx echo.Context, provider *api.SourceType, c
 	} else {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid provider")
 	}
+}
+
+// ListInsights godoc
+//
+//	@Summary		Get locations
+//	@Description	Getting locations by provider
+//	@Tags			location
+//	@Produce		json
+//	@Param			connector	query		source.Type	false	"filter insights by connector"
+//	@Param			sourceId	query		string		false	"filter the result by source id"
+//	@Param			time		query		int			false	"unix seconds for the time to get the insight result for"
+//	@Success		200			{object}	[]api.Insight
+//	@Router			/inventory/api/v2/insights [get]
+func (h *HttpHandler) ListInsights(ctx echo.Context) error {
+	connector, _ := source.ParseType(ctx.QueryParam("connector"))
+	insightList, err := h.schedulerClient.GetInsights(httpclient.FromEchoContext(ctx), connector)
+	if err != nil {
+		return err
+	}
+	var resultTime *time.Time
+	if timeStr := ctx.QueryParam("time"); timeStr != "" {
+		timeInt, err := strconv.ParseInt(timeStr, 10, 64)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "invalid time")
+		}
+		t := time.Unix(timeInt, 0)
+		resultTime = &t
+	}
+	sourceId := ctx.QueryParam("sourceId")
+	sourceIdPtr := &sourceId
+	if sourceId == "" {
+		sourceIdPtr = nil
+	}
+
+	insightIdList := make([]uint, len(insightList))
+	resultMap := make(map[uint]api.Insight)
+	for _, insight := range insightList {
+		insightIdList = append(insightIdList, insight.ID)
+		labels := make([]api.InsightLabel, 0, len(insight.Labels))
+		for _, label := range insight.Labels {
+			labels = append(labels, api.InsightLabel{
+				ID:    label.ID,
+				Label: label.Label,
+			})
+		}
+		resultMap[insight.ID] = api.Insight{
+			ID:           insight.ID,
+			Query:        insight.Query,
+			Category:     insight.Category,
+			Provider:     insight.Provider,
+			ShortTitle:   insight.ShortTitle,
+			LongTitle:    insight.LongTitle,
+			Description:  insight.Description,
+			LogoURL:      insight.LogoURL,
+			Labels:       labels,
+			Enabled:      insight.Enabled,
+			TotalResults: 0,
+			Results:      nil,
+		}
+	}
+
+	var insightResults []insight.InsightResource
+	if resultTime != nil {
+		insightResults, err = es.FetchInsightValuesAtTime(h.client, *resultTime, connector, sourceIdPtr, insightIdList)
+	} else {
+		insightResults, err = es.FetchLatestInsightValues(h.client, connector, sourceIdPtr, insightIdList)
+	}
+	if err != nil {
+		return err
+	}
+
+	for _, insightResult := range insightResults {
+		if v, ok := resultMap[insightResult.QueryID]; ok {
+			if v.Results == nil {
+				v.Results = make([]api.InsightResult, 0)
+			}
+			v.Results = append(v.Results, api.InsightResult{
+				JobID:      insightResult.JobID,
+				InsightID:  insightResult.QueryID,
+				SourceID:   insightResult.SourceID,
+				ExecutedAt: time.UnixMilli(insightResult.ExecutedAt),
+				Result:     insightResult.Result,
+			})
+			v.TotalResults += insightResult.Result
+
+			resultMap[insightResult.QueryID] = v
+		}
+	}
+
+	result := make([]api.Insight, 0, len(resultMap))
+	for _, v := range resultMap {
+		result = append(result, v)
+	}
+
+	return ctx.JSON(http.StatusOK, result)
+}
+
+// GetInsight godoc
+//
+//	@Summary		Get locations
+//	@Description	Getting locations by provider
+//	@Tags			location
+//	@Produce		json
+//	@Param			sourceId	query		string	false	"filter the result by source id"
+//	@Param			time		query		int		false	"unix seconds for the time to get the insight result for"
+//	@Success		200			{object}	api.Insight
+//	@Router			/inventory/api/v2/insights/{insightId} [get]
+func (h *HttpHandler) GetInsight(ctx echo.Context) error {
+	insightId, err := strconv.ParseUint(ctx.Param("insightId"), 10, 64)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid insight id")
+	}
+	var resultTime *time.Time
+	if timeStr := ctx.QueryParam("time"); timeStr != "" {
+		timeInt, err := strconv.ParseInt(timeStr, 10, 64)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "invalid time")
+		}
+		t := time.Unix(timeInt, 0)
+		resultTime = &t
+	}
+	sourceId := ctx.QueryParam("sourceId")
+	sourceIdPtr := &sourceId
+	if sourceId == "" {
+		sourceIdPtr = nil
+	}
+
+	insightRow, err := h.schedulerClient.GetInsightById(httpclient.FromEchoContext(ctx), uint(insightId))
+	if err != nil {
+		return err
+	}
+
+	labels := make([]api.InsightLabel, 0, len(insightRow.Labels))
+	for _, label := range insightRow.Labels {
+		labels = append(labels, api.InsightLabel{
+			ID:    label.ID,
+			Label: label.Label,
+		})
+	}
+	result := api.Insight{
+		ID:           insightRow.ID,
+		Query:        insightRow.Query,
+		Category:     insightRow.Category,
+		Provider:     insightRow.Provider,
+		ShortTitle:   insightRow.ShortTitle,
+		LongTitle:    insightRow.LongTitle,
+		Description:  insightRow.Description,
+		LogoURL:      insightRow.LogoURL,
+		Labels:       labels,
+		Enabled:      insightRow.Enabled,
+		TotalResults: 0,
+		Results:      nil,
+	}
+
+	var insightResults []insight.InsightResource
+	if resultTime != nil {
+		insightResults, err = es.FetchInsightValuesAtTime(h.client, *resultTime, source.Nil, sourceIdPtr, []uint{uint(insightId)})
+	} else {
+		insightResults, err = es.FetchLatestInsightValues(h.client, source.Nil, sourceIdPtr, []uint{uint(insightId)})
+	}
+	if err != nil {
+		return err
+	}
+
+	for _, insightResult := range insightResults {
+		if result.Results == nil {
+			result.Results = make([]api.InsightResult, 0)
+		}
+		result.Results = append(result.Results, api.InsightResult{
+			JobID:      insightResult.JobID,
+			InsightID:  insightResult.QueryID,
+			SourceID:   insightResult.SourceID,
+			ExecutedAt: time.UnixMilli(insightResult.ExecutedAt),
+			Result:     insightResult.Result,
+		})
+		result.TotalResults += insightResult.Result
+	}
+
+	return ctx.JSON(http.StatusOK, result)
+}
+
+// GetInsightDetails godoc
+//
+//	@Summary		Get locations
+//	@Description	Getting locations by provider
+//	@Tags			location
+//	@Produce		json
+//	@Success		200	{object}	api.InsightDetail
+//	@Router			/inventory/api/v2/insights/{insightId}/details/{jobId} [get]
+func (h *HttpHandler) GetInsightDetails(ctx echo.Context) error {
+	insightId, err := strconv.ParseUint(ctx.Param("insightId"), 10, 64)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid insight id")
+	}
+	jobId, err := strconv.ParseUint(ctx.Param("jobId"), 10, 64)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid job id")
+	}
+	s3ObjectName := fmt.Sprintf("%d-%d.out", insightId, jobId)
+	objectBuffer := aws.NewWriteAtBuffer(make([]byte, 0, 1024*1024))
+	_, err = h.s3Downloader.Download(objectBuffer, &s3.GetObjectInput{
+		Bucket: aws.String(h.s3Bucket),
+		Key:    aws.String(s3ObjectName),
+	})
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+
+	var results steampipe.Result
+	err = json.Unmarshal(objectBuffer.Bytes(), &results)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+
+	result := api.InsightDetail{
+		Headers: results.Headers,
+		Rows:    results.Data,
+	}
+
+	return ctx.JSON(http.StatusOK, result)
 }
 
 func Csv(record []string, w io.Writer) error {

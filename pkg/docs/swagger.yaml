@@ -1069,12 +1069,66 @@ definitions:
       lastYearValue:
         type: integer
     type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ListInsightResultsRequest:
+  gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.Insight:
     properties:
-      executedAt:
+      category:
+        type: string
+      description:
+        type: string
+      enabled:
+        type: boolean
+      id:
         type: integer
+      labels:
+        items:
+          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.InsightLabel'
+        type: array
+      logoURL:
+        type: string
+      longTitle:
+        type: string
       provider:
         $ref: '#/definitions/source.Type'
+      query:
+        type: string
+      results:
+        items:
+          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.InsightResult'
+        type: array
+      shortTitle:
+        type: string
+      totalResults:
+        type: integer
+    type: object
+  gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.InsightDetail:
+    properties:
+      headers:
+        items:
+          type: string
+        type: array
+      rows:
+        items:
+          items: {}
+          type: array
+        type: array
+    type: object
+  gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.InsightLabel:
+    properties:
+      id:
+        type: integer
+      label:
+        type: string
+    type: object
+  gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.InsightResult:
+    properties:
+      executedAt:
+        type: string
+      insightID:
+        type: integer
+      jobID:
+        type: integer
+      result:
+        type: integer
       sourceID:
         type: string
     type: object
@@ -2535,23 +2589,6 @@ paths:
       summary: Returns top n services of specified provider by cost
       tags:
       - cost
-  /inventory/api/v1/insight/results:
-    get:
-      parameters:
-      - description: Request Body
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ListInsightResultsRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-      summary: List insight results for specified account
-      tags:
-      - insights
   /inventory/api/v1/insight/results/trend:
     get:
       parameters:
@@ -3360,6 +3397,73 @@ paths:
         name, subcategories names and ids and number of resources
       tags:
       - inventory
+  /inventory/api/v2/insights:
+    get:
+      description: Getting locations by provider
+      parameters:
+      - description: filter insights by connector
+        enum:
+        - ""
+        - AWS
+        - Azure
+        in: query
+        name: connector
+        type: string
+      - description: filter the result by source id
+        in: query
+        name: sourceId
+        type: string
+      - description: unix seconds for the time to get the insight result for
+        in: query
+        name: time
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.Insight'
+            type: array
+      summary: Get locations
+      tags:
+      - location
+  /inventory/api/v2/insights/{insightId}:
+    get:
+      description: Getting locations by provider
+      parameters:
+      - description: filter the result by source id
+        in: query
+        name: sourceId
+        type: string
+      - description: unix seconds for the time to get the insight result for
+        in: query
+        name: time
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.Insight'
+      summary: Get locations
+      tags:
+      - location
+  /inventory/api/v2/insights/{insightId}/details/{jobId}:
+    get:
+      description: Getting locations by provider
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.InsightDetail'
+      summary: Get locations
+      tags:
+      - location
   /inventory/api/v2/metrics/categorized:
     get:
       consumes:
@@ -4663,6 +4767,14 @@ paths:
         required: true
         schema:
           $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_describe_api.ListInsightsRequest'
+      - description: filter by connector
+        enum:
+        - ""
+        - AWS
+        - Azure
+        in: query
+        name: connector
+        type: string
       produces:
       - application/json
       responses:
