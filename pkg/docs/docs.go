@@ -2109,6 +2109,52 @@ const docTemplate = `{
                 }
             }
         },
+        "/inventory/api/v2/insights/{insightId}/trend": {
+            "get": {
+                "description": "Get an insight by id",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "insight"
+                ],
+                "summary": "Get an insight by id",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "filter the result by source id",
+                        "name": "sourceId",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "unix seconds for the start of the time window to get the insight trend for",
+                        "name": "startTime",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "unix seconds for the end of the time window to get the insight trend for",
+                        "name": "endTime",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Number of data points to return",
+                        "name": "dataPointCount",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.InsightResultTrendResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/inventory/api/v2/metrics/categorized": {
             "get": {
                 "consumes": [
@@ -5798,6 +5844,12 @@ const docTemplate = `{
                         "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_describe_api.InsightLabel"
                     }
                 },
+                "links": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_describe_api.InsightLink"
+                    }
+                },
                 "logoURL": {
                     "type": "string"
                 },
@@ -5822,6 +5874,20 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "label": {
+                    "type": "string"
+                }
+            }
+        },
+        "gitlab_com_keibiengine_keibi-engine_pkg_describe_api.InsightLink": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "integer"
+                },
+                "linkText": {
+                    "type": "string"
+                },
+                "linkURI": {
                     "type": "string"
                 }
             }
@@ -6492,6 +6558,12 @@ const docTemplate = `{
                         "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.InsightLabel"
                     }
                 },
+                "links": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.InsightLink"
+                    }
+                },
                 "logoURL": {
                     "type": "string"
                 },
@@ -6547,6 +6619,20 @@ const docTemplate = `{
                 }
             }
         },
+        "gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.InsightLink": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "integer"
+                },
+                "text": {
+                    "type": "string"
+                },
+                "uri": {
+                    "type": "string"
+                }
+            }
+        },
         "gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.InsightResult": {
             "type": "object",
             "properties": {
@@ -6567,6 +6653,17 @@ const docTemplate = `{
                 },
                 "sourceID": {
                     "type": "string"
+                }
+            }
+        },
+        "gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.InsightResultTrendResponse": {
+            "type": "object",
+            "properties": {
+                "datapoints": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.TrendDataPoint"
+                    }
                 }
             }
         },
@@ -7322,6 +7419,9 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "name": {
+                    "type": "string"
+                },
+                "onboardDate": {
                     "type": "string"
                 },
                 "status": {

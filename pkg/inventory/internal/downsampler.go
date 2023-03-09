@@ -42,32 +42,32 @@ func DownSampleCosts(costs map[string][]api.CostTrendDataPoint, maxDataPoints in
 	return costs
 }
 
-func resourceCountsToPoints(resourceCounts []api.TrendDataPoint) []core.Point {
-	points := make([]core.Point, len(resourceCounts))
-	for i, resourceCount := range resourceCounts {
+func trendDataPointsToPoints(trendDataPoints []api.TrendDataPoint) []core.Point {
+	points := make([]core.Point, len(trendDataPoints))
+	for i, trendDataPoint := range trendDataPoints {
 		points[i] = core.Point{
-			X: float64(resourceCount.Timestamp),
-			Y: float64(resourceCount.Value),
+			X: float64(trendDataPoint.Timestamp),
+			Y: float64(trendDataPoint.Value),
 		}
 	}
 	return points
 }
 
-func pointsToResourceCounts(points []core.Point) []api.TrendDataPoint {
-	resourceCounts := make([]api.TrendDataPoint, len(points))
+func pointsToTrendDataPoints(points []core.Point) []api.TrendDataPoint {
+	trendDataPoints := make([]api.TrendDataPoint, len(points))
 	for i, point := range points {
-		resourceCounts[i] = api.TrendDataPoint{
+		trendDataPoints[i] = api.TrendDataPoint{
 			Timestamp: int64(point.X),
 			Value:     int64(point.Y),
 		}
 	}
-	return resourceCounts
+	return trendDataPoints
 }
 
-func DownSampleResourceCounts(resourceCounts []api.TrendDataPoint, maxDataPoints int) []api.TrendDataPoint {
-	if len(resourceCounts) <= maxDataPoints {
-		return resourceCounts
+func DownSampleTrendDataPoints(trendDataPoints []api.TrendDataPoint, maxDataPoints int) []api.TrendDataPoint {
+	if len(trendDataPoints) <= maxDataPoints {
+		return trendDataPoints
 	}
-	downSampledResourceCounts := core.LTTB(resourceCountsToPoints(resourceCounts), maxDataPoints)
-	return pointsToResourceCounts(downSampledResourceCounts)
+	downSampledResourceCounts := core.LTTB(trendDataPointsToPoints(trendDataPoints), maxDataPoints)
+	return pointsToTrendDataPoints(downSampledResourceCounts)
 }

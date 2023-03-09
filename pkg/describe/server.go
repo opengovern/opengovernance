@@ -536,6 +536,14 @@ func (h HttpServer) ListInsights(ctx echo.Context) error {
 				Label: label.Label,
 			})
 		}
+		links := make([]api.InsightLink, 0, len(item.Links))
+		for _, link := range item.Links {
+			links = append(links, api.InsightLink{
+				ID:   link.ID,
+				Text: link.Text,
+				URI:  link.URI,
+			})
+		}
 		result = append(result, api.Insight{
 			ID:          item.Model.ID,
 			Query:       item.Query,
@@ -546,6 +554,7 @@ func (h HttpServer) ListInsights(ctx echo.Context) error {
 			Description: item.Description,
 			LogoURL:     item.LogoURL,
 			Labels:      labels,
+			Links:       links,
 			Enabled:     item.Enabled,
 		})
 	}
@@ -582,6 +591,15 @@ func (h HttpServer) GetInsight(ctx echo.Context) error {
 		})
 	}
 
+	links := make([]api.InsightLink, 0, len(insight.Links))
+	for _, link := range insight.Links {
+		links = append(links, api.InsightLink{
+			ID:   link.ID,
+			Text: link.Text,
+			URI:  link.URI,
+		})
+	}
+
 	res := api.Insight{
 		ID:          insight.Model.ID,
 		Query:       insight.Query,
@@ -592,6 +610,7 @@ func (h HttpServer) GetInsight(ctx echo.Context) error {
 		Description: insight.Description,
 		LogoURL:     insight.LogoURL,
 		Labels:      labels,
+		Links:       links,
 		Enabled:     insight.Enabled,
 	}
 

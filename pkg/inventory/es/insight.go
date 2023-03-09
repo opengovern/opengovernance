@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"sort"
 	"time"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/source"
@@ -43,7 +44,7 @@ type InsightResultQueryHit struct {
 	Type    string             `json:"_type"`
 	Version int64              `json:"_version,omitempty"`
 	Source  es.InsightResource `json:"_source"`
-	Sort    []interface{}      `json:"sort"`
+	Sort    []any              `json:"sort"`
 }
 
 type AggregateInsightResult struct {
@@ -52,55 +53,70 @@ type AggregateInsightResult struct {
 	ExecutedAt int
 }
 
-func BuildFindInsightResultsQuery(providerFilter source.Type, sourceIDFilter *string, uuidFilter *string, queryIDFilter []uint, useHistoricalData bool) map[string]any {
+func BuildFindInsightResultsQuery(providerFilter source.Type, sourceIDFilter, uuidFilter *string, startTimeFilter, endTimeFilter *time.Time, queryIDFilter []uint, useHistoricalData bool) map[string]any {
 	boolQuery := map[string]any{}
-	var filters []interface{}
+	var filters []any
 
 	resourceType := es.InsightResourceLast
 	if useHistoricalData {
 		resourceType = es.InsightResourceHistory
 	}
 
-	filters = append(filters, map[string]interface{}{
+	filters = append(filters, map[string]any{
 		"terms": map[string][]string{"resource_type": {resourceType}},
 	})
 
 	if uuidFilter != nil {
-		filters = append(filters, map[string]interface{}{
+		filters = append(filters, map[string]any{
 			"terms": map[string][]string{"schedule_uuid": {*uuidFilter}},
 		})
 	}
 
 	if queryIDFilter != nil {
-		filters = append(filters, map[string]interface{}{
+		filters = append(filters, map[string]any{
 			"terms": map[string][]uint{"query_id": queryIDFilter},
 		})
 	}
 
 	if providerFilter != source.Nil {
-		filters = append(filters, map[string]interface{}{
+		filters = append(filters, map[string]any{
 			"terms": map[string][]string{"provider": {providerFilter.String()}},
 		})
 	}
 
 	if sourceIDFilter != nil {
-		filters = append(filters, map[string]interface{}{
+		filters = append(filters, map[string]any{
 			"terms": map[string][]string{"source_id": {*sourceIDFilter}},
+		})
+	}
+
+	if startTimeFilter != nil || endTimeFilter != nil {
+		rangeFilter := map[string]any{
+			"executed_at": map[string]any{},
+		}
+		if startTimeFilter != nil {
+			rangeFilter["executed_at"].(map[string]any)["gte"] = startTimeFilter.UnixMilli()
+		}
+		if endTimeFilter != nil {
+			rangeFilter["executed_at"].(map[string]any)["lte"] = endTimeFilter.UnixMilli()
+		}
+		filters = append(filters, map[string]any{
+			"range": rangeFilter,
 		})
 	}
 
 	boolQuery["filter"] = filters
 
-	res := make(map[string]interface{})
+	res := make(map[string]any)
 	res["size"] = MAX_INSIGHTS
-	res["sort"] = []map[string]interface{}{
+	res["sort"] = []map[string]any{
 		{
 			"_id": "asc",
 		},
 	}
 
 	if len(boolQuery) > 0 {
-		res["query"] = map[string]interface{}{
+		res["query"] = map[string]any{
 			"bool": boolQuery,
 		}
 	}
@@ -109,21 +125,21 @@ func BuildFindInsightResultsQuery(providerFilter source.Type, sourceIDFilter *st
 }
 
 func FindInsightResultUUID(client keibi.Client, executedAt int64) (string, error) {
-	boolQuery := map[string]interface{}{}
-	var filters []interface{}
-	filters = append(filters, map[string]interface{}{
+	boolQuery := map[string]any{}
+	var filters []any
+	filters = append(filters, map[string]any{
 		"terms": map[string][]string{"resource_type": {es.InsightResourceHistory}},
 	})
 
-	filters = append(filters, map[string]interface{}{
-		"range": map[string]interface{}{"executed_at": map[string]int64{"lte": executedAt}},
+	filters = append(filters, map[string]any{
+		"range": map[string]any{"executed_at": map[string]int64{"lte": executedAt}},
 	})
 
 	boolQuery["filter"] = filters
 
-	res := make(map[string]interface{})
+	res := make(map[string]any)
 	res["size"] = 1
-	res["sort"] = []map[string]interface{}{
+	res["sort"] = []map[string]any{
 		{
 			"executed_at": "desc",
 			"_id":         "asc",
@@ -131,7 +147,7 @@ func FindInsightResultUUID(client keibi.Client, executedAt int64) (string, error
 	}
 
 	if len(boolQuery) > 0 {
-		res["query"] = map[string]interface{}{
+		res["query"] = map[string]any{
 			"bool": boolQuery,
 		}
 	}
@@ -156,7 +172,7 @@ func FetchInsightValuesAtTime(client keibi.Client, t time.Time, provider source.
 		return nil, err
 	}
 
-	query := BuildFindInsightResultsQuery(provider, sourceID, &lastId, insightIds, useHistoricalData)
+	query := BuildFindInsightResultsQuery(provider, sourceID, &lastId, nil, nil, insightIds, useHistoricalData)
 	queryJson, err := json.Marshal(query)
 	if err != nil {
 		return nil, err
@@ -176,13 +192,13 @@ func FetchInsightValuesAtTime(client keibi.Client, t time.Time, provider source.
 	return result, nil
 }
 
-func FetchInsightAggregatedPerQueryValuesAtTime(client keibi.Client, t time.Time, provider source.Type, sourceID *string, insightIds []uint, useHistoricalData bool) (map[uint]AggregateInsightResult, error) {
+func FetchInsightAggregatedPerQueryValueAtTime(client keibi.Client, t time.Time, provider source.Type, sourceID *string, insightIds []uint, useHistoricalData bool) (map[uint]AggregateInsightResult, error) {
 	lastId, err := FindInsightResultUUID(client, t.UnixMilli())
 	if err != nil {
 		return nil, err
 	}
 
-	query := BuildFindInsightResultsQuery(provider, sourceID, &lastId, insightIds, useHistoricalData)
+	query := BuildFindInsightResultsQuery(provider, sourceID, &lastId, nil, nil, insightIds, useHistoricalData)
 	query["size"] = 0
 	query["aggs"] = map[string]any{
 		"query_id_group": map[string]any{
@@ -223,6 +239,91 @@ func FetchInsightAggregatedPerQueryValuesAtTime(client keibi.Client, t time.Time
 			Value:      int(bucket.ValueTotal.Value),
 			ExecutedAt: int(bucket.MinExecutedAt.Value),
 		}
+	}
+	return result, nil
+}
+
+type InsightHistoryResultQueryResponse struct {
+	Aggregations struct {
+		ScheduleUUIDGroup struct {
+			Buckets []struct {
+				Key          string `json:"key"`
+				QueryIDGroup struct {
+					Buckets []struct {
+						Key        int64 `json:"key"`
+						ValueTotal struct {
+							Value float64 `json:"value"`
+						} `json:"value_total"`
+						MinExecutedAt struct {
+							Value float64 `json:"value"`
+						} `json:"min_executed_at"`
+					} `json:"buckets"`
+				} `json:"query_id_group"`
+			}
+		} `json:"schedule_uuid_group"`
+	} `json:"aggregations"`
+}
+
+func FetchInsightAggregatedPerQueryValuesBetweenTimes(client keibi.Client, startTime time.Time, endTime time.Time, provider source.Type, sourceID *string, insightIds []uint) (map[uint][]AggregateInsightResult, error) {
+	query := BuildFindInsightResultsQuery(provider, sourceID, nil, &startTime, &endTime, insightIds, true)
+	query["size"] = 0
+	query["aggs"] = map[string]any{
+		"schdeule_uuid_group": map[string]any{
+			"terms": map[string]any{
+				"field": "schedule_uuid",
+				"size":  MAX_INSIGHTS,
+			},
+			"aggs": map[string]any{
+				"query_id_group": map[string]any{
+					"terms": map[string]any{
+						"field": "query_id",
+						"size":  MAX_INSIGHTS,
+					},
+					"aggs": map[string]any{
+						"value_total": map[string]any{
+							"sum": map[string]any{
+								"field": "result",
+							},
+						},
+						"min_executed_at": map[string]any{
+							"min": map[string]any{
+								"field": "executed_at",
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	queryJson, err := json.Marshal(query)
+	if err != nil {
+		return nil, err
+	}
+	fmt.Println("query=", string(queryJson), "index=", es.InsightsIndex)
+	var response InsightHistoryResultQueryResponse
+	err = client.Search(context.Background(), es.InsightsIndex, string(queryJson), &response)
+	if err != nil {
+		return nil, err
+	}
+
+	result := make(map[uint][]AggregateInsightResult)
+	for _, uuidBucket := range response.Aggregations.ScheduleUUIDGroup.Buckets {
+		for _, bucket := range uuidBucket.QueryIDGroup.Buckets {
+			if _, ok := result[uint(bucket.Key)]; !ok {
+				result[uint(bucket.Key)] = []AggregateInsightResult{}
+			}
+			result[uint(bucket.Key)] = append(result[uint(bucket.Key)], AggregateInsightResult{
+				InsightID:  uint(bucket.Key),
+				Value:      int(bucket.ValueTotal.Value),
+				ExecutedAt: int(bucket.MinExecutedAt.Value),
+			})
+		}
+	}
+	for _, res := range result {
+		sort.Slice(res, func(i, j int) bool {
+			return res[i].ExecutedAt < res[j].ExecutedAt
+		})
 	}
 	return result, nil
 }

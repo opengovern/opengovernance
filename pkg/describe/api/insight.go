@@ -7,6 +7,12 @@ type InsightLabel struct {
 	Label string `json:"label"`
 }
 
+type InsightLink struct {
+	ID   uint   `json:"id"`
+	Text string `json:"linkText"`
+	URI  string `json:"linkURI"`
+}
+
 type Insight struct {
 	ID          uint           `json:"id"`
 	Query       string         `json:"query"`
@@ -17,6 +23,7 @@ type Insight struct {
 	Description string         `json:"description"`
 	LogoURL     *string        `json:"logoURL"`
 	Labels      []InsightLabel `json:"labels"`
+	Links       []InsightLink  `json:"links"`
 	Enabled     bool           `json:"enabled"`
 }
 

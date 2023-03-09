@@ -28,7 +28,7 @@ type Database struct {
 
 func (db Database) Initialize() error {
 	return db.orm.AutoMigrate(&Source{}, &DescribeSourceJob{}, &CloudNativeDescribeSourceJob{}, &DescribeResourceJob{},
-		&ComplianceReportJob{}, &InsightLabel{}, &Insight{}, &InsightJob{}, &CheckupJob{}, &SummarizerJob{}, &ScheduleJob{},
+		&ComplianceReportJob{}, &InsightLabel{}, &InsightLink{}, &Insight{}, &InsightJob{}, &CheckupJob{}, &SummarizerJob{}, &ScheduleJob{},
 	)
 }
 
@@ -720,7 +720,7 @@ func (db Database) AddInsight(insight *Insight) error {
 
 func (db Database) GetInsight(id uint) (*Insight, error) {
 	var res Insight
-	tx := db.orm.Model(&Insight{}).Preload("Labels").
+	tx := db.orm.Model(&Insight{}).Preload(clause.Associations).
 		Where("id = ?", id).
 		First(&res)
 	if tx.Error != nil {
@@ -731,7 +731,7 @@ func (db Database) GetInsight(id uint) (*Insight, error) {
 
 func (db Database) ListInsightsWithFilters(search *string, connector source.Type) ([]Insight, error) {
 	var s []Insight
-	m := db.orm.Model(&Insight{}).Preload("Labels")
+	m := db.orm.Model(&Insight{}).Preload(clause.Associations)
 	if connector != source.Nil {
 		m = m.Where("provider = ?", connector)
 	}
