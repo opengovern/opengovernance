@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"math"
 	"mime"
 	"net/http"
 	"sort"
@@ -113,6 +114,7 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 
 	v2.GET("/insights", httpserver.AuthorizeHandler(h.ListInsights, api3.ViewerRole))
 	v2.GET("/insights/:insightId/details/:jobId", httpserver.AuthorizeHandler(h.GetInsightDetails, api3.ViewerRole))
+	v2.GET("/insights/:insightId/trend", httpserver.AuthorizeHandler(h.GetInsightTrend, api3.ViewerRole))
 	v2.GET("/insights/:insightId", httpserver.AuthorizeHandler(h.GetInsight, api3.ViewerRole))
 
 	v1.GET("/connection/:connection_id/summary", httpserver.AuthorizeHandler(h.GetConnectionSummary, api3.ViewerRole))
@@ -382,7 +384,7 @@ func (h *HttpHandler) GetResourceGrowthTrendV2(ctx echo.Context) error {
 			return v.Trend[i].Timestamp < v.Trend[j].Timestamp
 		})
 		// overwrite the trend array with the aggregated and sorted data points
-		v.Trend = internal.DownSampleResourceCounts(trendArr, dataPointCount)
+		v.Trend = internal.DownSampleTrendDataPoints(trendArr, dataPointCount)
 		subcategoriesTrends = append(subcategoriesTrends, v)
 	}
 
@@ -393,7 +395,7 @@ func (h *HttpHandler) GetResourceGrowthTrendV2(ctx echo.Context) error {
 	sort.SliceStable(mainCategoryTrends, func(i, j int) bool {
 		return mainCategoryTrends[i].Timestamp < mainCategoryTrends[j].Timestamp
 	})
-	mainCategoryTrends = internal.DownSampleResourceCounts(mainCategoryTrends, dataPointCount)
+	mainCategoryTrends = internal.DownSampleTrendDataPoints(mainCategoryTrends, dataPointCount)
 	return ctx.JSON(http.StatusOK, api.ResourceGrowthTrendResponse{
 		CategoryName:  root.Name,
 		Trend:         mainCategoryTrends,
@@ -1197,7 +1199,7 @@ func (h *HttpHandler) GetMetricsResourceCountHelper(ctx context.Context, categor
 	insightIndexed := make(map[uint]es.AggregateInsightResult)
 	if sourceIDPtr == nil {
 		insightIDs := GetInsightIDListFromFilters(filters, provider)
-		insightIndexed, err = es.FetchInsightAggregatedPerQueryValuesAtTime(h.client, time.Unix(t, 0), provider, sourceIDPtr, insightIDs, true)
+		insightIndexed, err = es.FetchInsightAggregatedPerQueryValueAtTime(h.client, time.Unix(t, 0), provider, sourceIDPtr, insightIDs, true)
 		if err != nil {
 			return nil, err
 		}
@@ -2182,7 +2184,7 @@ func (h *HttpHandler) GetSummaryMetrics(ctx echo.Context) error {
 		return nil
 	}
 
-	query := es.BuildFindInsightResultsQuery(source.Nil, nil, nil, nil, false)
+	query := es.BuildFindInsightResultsQuery(source.Nil, nil, nil, nil, nil, nil, false)
 	queryJson, err := json.Marshal(query)
 	if err != nil {
 		return err
@@ -3392,7 +3394,7 @@ func (h *HttpHandler) GetInsightResultTrend(ctx echo.Context) error {
 	if req.Provider != nil {
 		sourceType = *req.Provider
 	}
-	query := es.BuildFindInsightResultsQuery(sourceType, req.SourceID, nil, []uint{req.QueryID}, true)
+	query := es.BuildFindInsightResultsQuery(sourceType, req.SourceID, nil, nil, nil, []uint{req.QueryID}, true)
 	queryJson, err := json.Marshal(query)
 	if err != nil {
 		return err
@@ -4204,6 +4206,14 @@ func (h *HttpHandler) ListInsights(ctx echo.Context) error {
 				Label: label.Label,
 			})
 		}
+		links := make([]api.InsightLink, 0, len(insight.Links))
+		for _, link := range insight.Links {
+			links = append(links, api.InsightLink{
+				ID:   link.ID,
+				Text: link.Text,
+				URI:  link.URI,
+			})
+		}
 		resultMap[insight.ID] = api.Insight{
 			ID:           insight.ID,
 			Query:        insight.Query,
@@ -4214,6 +4224,7 @@ func (h *HttpHandler) ListInsights(ctx echo.Context) error {
 			Description:  insight.Description,
 			LogoURL:      insight.LogoURL,
 			Labels:       labels,
+			Links:        links,
 			Enabled:      insight.Enabled,
 			TotalResults: 0,
 		}
@@ -4221,9 +4232,9 @@ func (h *HttpHandler) ListInsights(ctx echo.Context) error {
 
 	var insightValues map[uint]es.AggregateInsightResult
 	if resultTime != nil {
-		insightValues, err = es.FetchInsightAggregatedPerQueryValuesAtTime(h.client, *resultTime, connector, sourceIdPtr, insightIdList, true)
+		insightValues, err = es.FetchInsightAggregatedPerQueryValueAtTime(h.client, *resultTime, connector, sourceIdPtr, insightIdList, true)
 	} else {
-		insightValues, err = es.FetchInsightAggregatedPerQueryValuesAtTime(h.client, time.Now(), connector, sourceIdPtr, insightIdList, false)
+		insightValues, err = es.FetchInsightAggregatedPerQueryValueAtTime(h.client, time.Now(), connector, sourceIdPtr, insightIdList, false)
 	}
 	if err != nil {
 		return err
@@ -4244,6 +4255,10 @@ func (h *HttpHandler) ListInsights(ctx echo.Context) error {
 	for _, v := range resultMap {
 		result = append(result, v)
 	}
+
+	sort.SliceStable(result, func(i, j int) bool {
+		return result[i].ID < result[j].ID
+	})
 
 	return ctx.JSON(http.StatusOK, result)
 }
@@ -4280,6 +4295,9 @@ func (h *HttpHandler) GetInsight(ctx echo.Context) error {
 
 	insightRow, err := h.schedulerClient.GetInsightById(httpclient.FromEchoContext(ctx), uint(insightId))
 	if err != nil {
+		if strings.Contains(strings.ToLower(err.Error()), "not found") {
+			return echo.NewHTTPError(http.StatusNotFound, "insight not found")
+		}
 		return err
 	}
 
@@ -4288,6 +4306,14 @@ func (h *HttpHandler) GetInsight(ctx echo.Context) error {
 		labels = append(labels, api.InsightLabel{
 			ID:    label.ID,
 			Label: label.Label,
+		})
+	}
+	links := make([]api.InsightLink, 0, len(insightRow.Links))
+	for _, link := range insightRow.Links {
+		links = append(links, api.InsightLink{
+			ID:   link.ID,
+			Text: link.Text,
+			URI:  link.URI,
 		})
 	}
 	result := api.Insight{
@@ -4300,6 +4326,7 @@ func (h *HttpHandler) GetInsight(ctx echo.Context) error {
 		Description:  insightRow.Description,
 		LogoURL:      insightRow.LogoURL,
 		Labels:       labels,
+		Links:        links,
 		Enabled:      insightRow.Enabled,
 		TotalResults: 0,
 		Results:      nil,
@@ -4328,6 +4355,95 @@ func (h *HttpHandler) GetInsight(ctx echo.Context) error {
 		})
 		result.TotalResults += insightResult.Result
 	}
+
+	sort.SliceStable(result.Results, func(i, j int) bool {
+		return result.Results[i].JobID < result.Results[j].JobID
+	})
+
+	return ctx.JSON(http.StatusOK, result)
+}
+
+// GetInsightTrend godoc
+//
+//	@Summary		Get an insight by id
+//	@Description	Get an insight by id
+//	@Tags			insight
+//	@Produce		json
+//	@Param			sourceId		query		string	false	"filter the result by source id"
+//	@Param			startTime		query		int		false	"unix seconds for the start of the time window to get the insight trend for"
+//	@Param			endTime			query		int		false	"unix seconds for the end of the time window to get the insight trend for"
+//	@Param			dataPointCount	query		int		false	"Number of data points to return"
+//	@Success		200				{object}	api.InsightResultTrendResponse
+//	@Router			/inventory/api/v2/insights/{insightId}/trend [get]
+func (h *HttpHandler) GetInsightTrend(ctx echo.Context) error {
+	insightId, err := strconv.ParseUint(ctx.Param("insightId"), 10, 64)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid insight id")
+	}
+	var startTime, endTime time.Time
+	endTime = time.Now()
+	if timeStr := ctx.QueryParam("endTime"); timeStr != "" {
+		timeInt, err := strconv.ParseInt(timeStr, 10, 64)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "invalid time")
+		}
+		endTime = time.Unix(timeInt, 0)
+	}
+	if timeStr := ctx.QueryParam("startTime"); timeStr != "" {
+		timeInt, err := strconv.ParseInt(timeStr, 10, 64)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "invalid time")
+		}
+		startTime = time.Unix(timeInt, 0)
+	} else {
+		startTime = endTime.Add(-time.Hour * 24 * 30)
+	}
+	// default to distance between start and end time in days or 30, whichever is smaller
+	dataPointCount := int(math.Min(math.Ceil(endTime.Sub(startTime).Hours()/24), 30))
+	if dataPointCountStr := ctx.QueryParam("dataPointCount"); dataPointCountStr != "" {
+		dataPointCountInt, err := strconv.ParseInt(dataPointCountStr, 10, 64)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "invalid dataPointCount")
+		}
+		dataPointCount = int(dataPointCountInt)
+	}
+
+	sourceId := ctx.QueryParam("sourceId")
+	sourceIdPtr := &sourceId
+	if sourceId == "" {
+		sourceIdPtr = nil
+	}
+
+	_, err = h.schedulerClient.GetInsightById(httpclient.FromEchoContext(ctx), uint(insightId))
+	if err != nil {
+		if strings.Contains(strings.ToLower(err.Error()), "not found") {
+			return echo.NewHTTPError(http.StatusNotFound, "insight not found")
+		}
+		return err
+	}
+
+	insightResults, err := es.FetchInsightAggregatedPerQueryValuesBetweenTimes(h.client, startTime, endTime, source.Nil, sourceIdPtr, []uint{uint(insightId)})
+	if err != nil {
+		return err
+	}
+
+	result := api.InsightResultTrendResponse{
+		Datapoints: make([]api.TrendDataPoint, 0),
+	}
+
+	if values, ok := insightResults[uint(insightId)]; ok {
+		for _, value := range values {
+			result.Datapoints = append(result.Datapoints, api.TrendDataPoint{
+				Timestamp: int64(value.ExecutedAt),
+				Value:     int64(value.Value),
+			})
+		}
+	}
+
+	result.Datapoints = internal.DownSampleTrendDataPoints(result.Datapoints, dataPointCount)
+	sort.SliceStable(result.Datapoints, func(i, j int) bool {
+		return result.Datapoints[i].Timestamp < result.Datapoints[j].Timestamp
+	})
 
 	return ctx.JSON(http.StatusOK, result)
 }

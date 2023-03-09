@@ -622,6 +622,10 @@ definitions:
         items:
           $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_describe_api.InsightLabel'
         type: array
+      links:
+        items:
+          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_describe_api.InsightLink'
+        type: array
       logoURL:
         type: string
       longTitle:
@@ -638,6 +642,15 @@ definitions:
       id:
         type: integer
       label:
+        type: string
+    type: object
+  gitlab_com_keibiengine_keibi-engine_pkg_describe_api.InsightLink:
+    properties:
+      id:
+        type: integer
+      linkText:
+        type: string
+      linkURI:
         type: string
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_describe_api.ListInsightsRequest:
@@ -1085,6 +1098,10 @@ definitions:
         items:
           $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.InsightLabel'
         type: array
+      links:
+        items:
+          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.InsightLink'
+        type: array
       logoURL:
         type: string
       longTitle:
@@ -1121,6 +1138,15 @@ definitions:
       label:
         type: string
     type: object
+  gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.InsightLink:
+    properties:
+      id:
+        type: integer
+      text:
+        type: string
+      uri:
+        type: string
+    type: object
   gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.InsightResult:
     properties:
       details:
@@ -1135,6 +1161,13 @@ definitions:
         type: integer
       sourceID:
         type: string
+    type: object
+  gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.InsightResultTrendResponse:
+    properties:
+      datapoints:
+        items:
+          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.TrendDataPoint'
+        type: array
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ListQueryRequest:
     properties:
@@ -1658,6 +1691,8 @@ definitions:
       metadata:
         type: string
       name:
+        type: string
+      onboardDate:
         type: string
       status:
         $ref: '#/definitions/source.CredentialStatus'
@@ -3466,6 +3501,38 @@ paths:
           schema:
             $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.InsightResult'
       summary: Get insight result details
+      tags:
+      - insight
+  /inventory/api/v2/insights/{insightId}/trend:
+    get:
+      description: Get an insight by id
+      parameters:
+      - description: filter the result by source id
+        in: query
+        name: sourceId
+        type: string
+      - description: unix seconds for the start of the time window to get the insight
+          trend for
+        in: query
+        name: startTime
+        type: integer
+      - description: unix seconds for the end of the time window to get the insight
+          trend for
+        in: query
+        name: endTime
+        type: integer
+      - description: Number of data points to return
+        in: query
+        name: dataPointCount
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.InsightResultTrendResponse'
+      summary: Get an insight by id
       tags:
       - insight
   /inventory/api/v2/metrics/categorized:
