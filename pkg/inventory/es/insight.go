@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"strconv"
 	"time"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/source"
@@ -22,7 +21,7 @@ type InsightResultQueryResponse struct {
 	Aggregations *struct {
 		QueryIDGroup struct {
 			Buckets []struct {
-				Key        string `json:"key"`
+				Key        int64 `json:"key"`
 				ValueTotal struct {
 					Value float64 `json:"value"`
 				} `json:"value_total"`
@@ -219,12 +218,8 @@ func FetchInsightAggregatedPerQueryValuesAtTime(client keibi.Client, t time.Time
 
 	result := make(map[uint]AggregateInsightResult)
 	for _, bucket := range response.Aggregations.QueryIDGroup.Buckets {
-		key, err := strconv.ParseUint(bucket.Key, 10, 64)
-		if err != nil {
-			return nil, err
-		}
-		result[uint(key)] = AggregateInsightResult{
-			InsightID:  uint(key),
+		result[uint(bucket.Key)] = AggregateInsightResult{
+			InsightID:  uint(bucket.Key),
 			Value:      int(bucket.ValueTotal.Value),
 			ExecutedAt: int(bucket.MinExecutedAt.Value),
 		}
