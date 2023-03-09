@@ -268,7 +268,7 @@ func FetchInsightAggregatedPerQueryValuesBetweenTimes(client keibi.Client, start
 	query := BuildFindInsightResultsQuery(provider, sourceID, nil, &startTime, &endTime, insightIds, true)
 	query["size"] = 0
 	query["aggs"] = map[string]any{
-		"schdeule_uuid_group": map[string]any{
+		"schedule_uuid_group": map[string]any{
 			"terms": map[string]any{
 				"field": "schedule_uuid",
 				"size":  MAX_INSIGHTS,
