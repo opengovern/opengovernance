@@ -4193,7 +4193,7 @@ func (h *HttpHandler) ListInsights(ctx echo.Context) error {
 		sourceIdPtr = nil
 	}
 
-	insightIdList := make([]uint, len(insightList))
+	insightIdList := make([]uint, 0, len(insightList))
 	resultMap := make(map[uint]api.Insight)
 	for _, insight := range insightList {
 		insightIdList = append(insightIdList, insight.ID)
