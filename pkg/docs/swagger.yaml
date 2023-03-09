@@ -1077,6 +1077,8 @@ definitions:
         type: string
       enabled:
         type: boolean
+      executedAt:
+        type: string
       id:
         type: integer
       labels:
@@ -1121,6 +1123,8 @@ definitions:
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.InsightResult:
     properties:
+      details:
+        $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.InsightDetail'
       executedAt:
         type: string
       insightID:
@@ -3399,7 +3403,7 @@ paths:
       - inventory
   /inventory/api/v2/insights:
     get:
-      description: Getting locations by provider
+      description: List all insights
       parameters:
       - description: filter insights by connector
         enum:
@@ -3426,12 +3430,12 @@ paths:
             items:
               $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.Insight'
             type: array
-      summary: Get locations
+      summary: List all insights
       tags:
-      - location
+      - insight
   /inventory/api/v2/insights/{insightId}:
     get:
-      description: Getting locations by provider
+      description: Get an insight by id
       parameters:
       - description: filter the result by source id
         in: query
@@ -3448,22 +3452,22 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.Insight'
-      summary: Get locations
+      summary: Get an insight by id
       tags:
-      - location
+      - insight
   /inventory/api/v2/insights/{insightId}/details/{jobId}:
     get:
-      description: Getting locations by provider
+      description: Get insight result details
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.InsightDetail'
-      summary: Get locations
+            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.InsightResult'
+      summary: Get insight result details
       tags:
-      - location
+      - insight
   /inventory/api/v2/metrics/categorized:
     get:
       consumes:

@@ -504,7 +504,7 @@ func (f FilterCost) GetFilterName() string {
 type FilterInsightMetric struct {
 	FilterType    FilterType  `json:"filterType"`
 	FilterID      string      `json:"filterID"`
-	InsightID     string      `json:"insightID"`
+	InsightID     uint        `json:"insightID"`
 	CloudProvider source.Type `json:"cloudProvider"`
 	Name          string      `json:"name"`
 	Weight        int64       `json:"weight"`

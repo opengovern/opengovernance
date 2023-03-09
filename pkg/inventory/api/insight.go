@@ -17,11 +17,12 @@ type ListInsightResultsResponse struct {
 }
 
 type InsightResult struct {
-	JobID      uint      `json:"jobID"`
-	InsightID  uint      `json:"insightID"`
-	SourceID   string    `json:"sourceID"`
-	ExecutedAt time.Time `json:"executedAt"`
-	Result     int64     `json:"result"`
+	JobID      uint           `json:"jobID"`
+	InsightID  uint           `json:"insightID"`
+	SourceID   string         `json:"sourceID"`
+	ExecutedAt time.Time      `json:"executedAt"`
+	Result     int64          `json:"result"`
+	Details    *InsightDetail `json:"details,omitempty"`
 }
 
 type InsightDetail struct {
@@ -55,6 +56,7 @@ type Insight struct {
 	LogoURL     *string        `json:"logoURL"`
 	Labels      []InsightLabel `json:"labels"`
 	Enabled     bool           `json:"enabled"`
+	ExecutedAt  *time.Time     `json:"executedAt,omitempty"`
 
 	TotalResults int64           `json:"totalResults"`
 	Results      []InsightResult `json:"results,omitempty"`
