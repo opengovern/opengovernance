@@ -2009,14 +2009,14 @@ const docTemplate = `{
         },
         "/inventory/api/v2/insights": {
             "get": {
-                "description": "Getting locations by provider",
+                "description": "List all insights",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
-                    "location"
+                    "insight"
                 ],
-                "summary": "Get locations",
+                "summary": "List all insights",
                 "parameters": [
                     {
                         "enum": [
@@ -2057,14 +2057,14 @@ const docTemplate = `{
         },
         "/inventory/api/v2/insights/{insightId}": {
             "get": {
-                "description": "Getting locations by provider",
+                "description": "Get an insight by id",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
-                    "location"
+                    "insight"
                 ],
-                "summary": "Get locations",
+                "summary": "Get an insight by id",
                 "parameters": [
                     {
                         "type": "string",
@@ -2091,19 +2091,19 @@ const docTemplate = `{
         },
         "/inventory/api/v2/insights/{insightId}/details/{jobId}": {
             "get": {
-                "description": "Getting locations by provider",
+                "description": "Get insight result details",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
-                    "location"
+                    "insight"
                 ],
-                "summary": "Get locations",
+                "summary": "Get insight result details",
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.InsightDetail"
+                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.InsightResult"
                         }
                     }
                 }
@@ -6480,6 +6480,9 @@ const docTemplate = `{
                 "enabled": {
                     "type": "boolean"
                 },
+                "executedAt": {
+                    "type": "string"
+                },
                 "id": {
                     "type": "integer"
                 },
@@ -6547,6 +6550,9 @@ const docTemplate = `{
         "gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.InsightResult": {
             "type": "object",
             "properties": {
+                "details": {
+                    "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.InsightDetail"
+                },
                 "executedAt": {
                     "type": "string"
                 },

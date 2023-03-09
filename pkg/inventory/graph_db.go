@@ -130,7 +130,7 @@ type FilterInsightMetricNode struct {
 	Node
 	CloudProvider source.Type `json:"cloud_provider"`
 	MetricID      string      `json:"metric_id"`
-	InsightID     string      `json:"insight_id"`
+	InsightID     int64       `json:"insight_id"`
 	Name          string      `json:"name"`
 	Weight        int64       `json:"weight"`
 	Importance    string      `json:"importance"`
@@ -266,7 +266,7 @@ func getFilterFromNode(node neo4j.Node) (Filter, error) {
 				},
 				CloudProvider: source.Type(cloudProvider.(string)),
 				MetricID:      metricID.(string),
-				InsightID:     insightID.(string),
+				InsightID:     insightID.(int64),
 				Name:          name.(string),
 				Weight:        weight.(int64),
 				Importance:    importance.(string),

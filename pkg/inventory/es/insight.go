@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strconv"
 	"time"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/source"
@@ -25,6 +26,9 @@ type InsightResultQueryResponse struct {
 				ValueTotal struct {
 					Value float64 `json:"value"`
 				} `json:"value_total"`
+				MinExecutedAt struct {
+					Value float64 `json:"value"`
+				} `json:"min_executed_at"`
 			} `json:"buckets"`
 		} `json:"query_id_group"`
 	} `json:"aggregations,omitempty"`
@@ -41,6 +45,12 @@ type InsightResultQueryHit struct {
 	Version int64              `json:"_version,omitempty"`
 	Source  es.InsightResource `json:"_source"`
 	Sort    []interface{}      `json:"sort"`
+}
+
+type AggregateInsightResult struct {
+	InsightID  uint
+	Value      int
+	ExecutedAt int
 }
 
 func BuildFindInsightResultsQuery(providerFilter source.Type, sourceIDFilter *string, uuidFilter *string, queryIDFilter []uint, useHistoricalData bool) map[string]any {
@@ -141,18 +151,18 @@ func FindInsightResultUUID(client keibi.Client, executedAt int64) (string, error
 	return "", errors.New("insight not found")
 }
 
-func FetchInsightValuesAtTime(client keibi.Client, t time.Time, provider source.Type, sourceID *string, insightIds []uint) ([]es.InsightResource, error) {
+func FetchInsightValuesAtTime(client keibi.Client, t time.Time, provider source.Type, sourceID *string, insightIds []uint, useHistoricalData bool) ([]es.InsightResource, error) {
 	lastId, err := FindInsightResultUUID(client, t.UnixMilli())
 	if err != nil {
 		return nil, err
 	}
 
-	query := BuildFindInsightResultsQuery(provider, sourceID, &lastId, insightIds, true)
+	query := BuildFindInsightResultsQuery(provider, sourceID, &lastId, insightIds, useHistoricalData)
 	queryJson, err := json.Marshal(query)
 	if err != nil {
 		return nil, err
 	}
-	fmt.Println("query=", queryJson, "index=", es.InsightsIndex)
+	fmt.Println("query=", string(queryJson), "index=", es.InsightsIndex)
 	var response InsightResultQueryResponse
 	err = client.Search(context.Background(), es.InsightsIndex, string(queryJson), &response)
 	if err != nil {
@@ -167,34 +177,13 @@ func FetchInsightValuesAtTime(client keibi.Client, t time.Time, provider source.
 	return result, nil
 }
 
-func FetchLatestInsightValues(client keibi.Client, provider source.Type, sourceID *string, insightIds []uint) ([]es.InsightResource, error) {
-	query := BuildFindInsightResultsQuery(provider, sourceID, nil, insightIds, false)
-	queryJson, err := json.Marshal(query)
-	if err != nil {
-		return nil, err
-	}
-	fmt.Println("query=", queryJson, "index=", es.InsightsIndex)
-	var response InsightResultQueryResponse
-	err = client.Search(context.Background(), es.InsightsIndex, string(queryJson), &response)
-	if err != nil {
-		return nil, err
-	}
-
-	result := make([]es.InsightResource, 0, len(response.Hits.Hits))
-
-	for _, hit := range response.Hits.Hits {
-		result = append(result, hit.Source)
-	}
-	return result, nil
-}
-
-func FetchInsightAggregatedPerQueryValuesAtTime(client keibi.Client, t time.Time, provider source.Type, sourceID *string, insightIds []uint) (map[string]int, error) {
+func FetchInsightAggregatedPerQueryValuesAtTime(client keibi.Client, t time.Time, provider source.Type, sourceID *string, insightIds []uint, useHistoricalData bool) (map[uint]AggregateInsightResult, error) {
 	lastId, err := FindInsightResultUUID(client, t.UnixMilli())
 	if err != nil {
 		return nil, err
 	}
 
-	query := BuildFindInsightResultsQuery(provider, sourceID, &lastId, insightIds, true)
+	query := BuildFindInsightResultsQuery(provider, sourceID, &lastId, insightIds, useHistoricalData)
 	query["size"] = 0
 	query["aggs"] = map[string]any{
 		"query_id_group": map[string]any{
@@ -206,6 +195,11 @@ func FetchInsightAggregatedPerQueryValuesAtTime(client keibi.Client, t time.Time
 				"value_total": map[string]any{
 					"sum": map[string]any{
 						"field": "result",
+					},
+				},
+				"min_executed_at": map[string]any{
+					"min": map[string]any{
+						"field": "executed_at",
 					},
 				},
 			},
@@ -223,9 +217,54 @@ func FetchInsightAggregatedPerQueryValuesAtTime(client keibi.Client, t time.Time
 		return nil, err
 	}
 
-	result := make(map[string]int)
+	result := make(map[uint]AggregateInsightResult)
 	for _, bucket := range response.Aggregations.QueryIDGroup.Buckets {
-		result[bucket.Key] = int(bucket.ValueTotal.Value)
+		key, err := strconv.ParseUint(bucket.Key, 10, 64)
+		if err != nil {
+			return nil, err
+		}
+		result[uint(key)] = AggregateInsightResult{
+			InsightID:  uint(key),
+			Value:      int(bucket.ValueTotal.Value),
+			ExecutedAt: int(bucket.MinExecutedAt.Value),
+		}
 	}
 	return result, nil
+}
+
+func FetchInsightRecordByQueryAndJobId(client keibi.Client, queryId uint, jobId uint) (*es.InsightResource, error) {
+	boolQuery := map[string]any{}
+	var filters []any
+	filters = append(filters, map[string]any{
+		"terms": map[string][]string{"resource_type": {es.InsightResourceHistory}},
+	})
+	filters = append(filters, map[string]any{
+		"terms": map[string][]uint{"query_id": {queryId}},
+	})
+	filters = append(filters, map[string]any{
+		"terms": map[string][]uint{"job_id": {jobId}},
+	})
+	boolQuery["filter"] = filters
+
+	res := make(map[string]any)
+	res["size"] = 1
+	res["query"] = map[string]any{
+		"bool": boolQuery,
+	}
+
+	queryJson, err := json.Marshal(res)
+	if err != nil {
+		return nil, err
+	}
+	fmt.Println("query=", string(queryJson), "index=", es.InsightsIndex)
+	var response InsightResultQueryResponse
+	err = client.Search(context.Background(), es.InsightsIndex, string(queryJson), &response)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, hit := range response.Hits.Hits {
+		return &hit.Source, nil
+	}
+	return nil, nil
 }

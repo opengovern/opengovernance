@@ -1194,10 +1194,10 @@ func (h *HttpHandler) GetMetricsResourceCountHelper(ctx context.Context, categor
 		return nil, err
 	}
 
-	insightIndexed := make(map[string]int)
+	insightIndexed := make(map[uint]es.AggregateInsightResult)
 	if sourceIDPtr == nil {
 		insightIDs := GetInsightIDListFromFilters(filters, provider)
-		insightIndexed, err = es.FetchInsightAggregatedPerQueryValuesAtTime(h.client, time.Unix(t, 0), provider, sourceIDPtr, insightIDs)
+		insightIndexed, err = es.FetchInsightAggregatedPerQueryValuesAtTime(h.client, time.Unix(t, 0), provider, sourceIDPtr, insightIDs, true)
 		if err != nil {
 			return nil, err
 		}
@@ -1227,18 +1227,18 @@ func (h *HttpHandler) GetMetricsResourceCountHelper(ctx context.Context, categor
 				continue
 			}
 			f := filter.(*FilterInsightMetricNode)
-			if _, ok := insightIndexed[f.InsightID]; !ok {
+			if _, ok := insightIndexed[uint(f.InsightID)]; !ok {
 				continue
 			}
 			result[f.ElementID] = &api.FilterInsightMetric{
 				FilterType:    api.FilterTypeInsightMetric,
 				FilterID:      f.ElementID,
-				InsightID:     f.InsightID,
+				InsightID:     uint(f.InsightID),
 				CloudProvider: f.CloudProvider,
 				Name:          f.Name,
 				Weight:        f.Weight,
 				Importance:    f.Importance,
-				Value:         insightIndexed[f.InsightID],
+				Value:         insightIndexed[uint(f.InsightID)].Value,
 			}
 		}
 	}
@@ -4163,9 +4163,9 @@ func (h *HttpHandler) GetResources(ctx echo.Context, provider *api.SourceType, c
 
 // ListInsights godoc
 //
-//	@Summary		Get locations
-//	@Description	Getting locations by provider
-//	@Tags			location
+//	@Summary		List all insights
+//	@Description	List all insights
+//	@Tags			insight
 //	@Produce		json
 //	@Param			connector	query		source.Type	false	"filter insights by connector"
 //	@Param			sourceId	query		string		false	"filter the result by source id"
@@ -4216,35 +4216,27 @@ func (h *HttpHandler) ListInsights(ctx echo.Context) error {
 			Labels:       labels,
 			Enabled:      insight.Enabled,
 			TotalResults: 0,
-			Results:      nil,
 		}
 	}
 
-	var insightResults []insight.InsightResource
+	var insightValues map[uint]es.AggregateInsightResult
 	if resultTime != nil {
-		insightResults, err = es.FetchInsightValuesAtTime(h.client, *resultTime, connector, sourceIdPtr, insightIdList)
+		insightValues, err = es.FetchInsightAggregatedPerQueryValuesAtTime(h.client, *resultTime, connector, sourceIdPtr, insightIdList, true)
 	} else {
-		insightResults, err = es.FetchLatestInsightValues(h.client, connector, sourceIdPtr, insightIdList)
+		insightValues, err = es.FetchInsightAggregatedPerQueryValuesAtTime(h.client, time.Now(), connector, sourceIdPtr, insightIdList, false)
 	}
 	if err != nil {
 		return err
 	}
 
-	for _, insightResult := range insightResults {
-		if v, ok := resultMap[insightResult.QueryID]; ok {
-			if v.Results == nil {
-				v.Results = make([]api.InsightResult, 0)
+	for insightId, insightResult := range insightValues {
+		if v, ok := resultMap[insightId]; ok {
+			v.TotalResults += int64(insightResult.Value)
+			if insightResult.ExecutedAt != 0 {
+				exAt := time.UnixMilli(int64(insightResult.ExecutedAt))
+				v.ExecutedAt = &exAt
 			}
-			v.Results = append(v.Results, api.InsightResult{
-				JobID:      insightResult.JobID,
-				InsightID:  insightResult.QueryID,
-				SourceID:   insightResult.SourceID,
-				ExecutedAt: time.UnixMilli(insightResult.ExecutedAt),
-				Result:     insightResult.Result,
-			})
-			v.TotalResults += insightResult.Result
-
-			resultMap[insightResult.QueryID] = v
+			resultMap[insightId] = v
 		}
 	}
 
@@ -4258,9 +4250,9 @@ func (h *HttpHandler) ListInsights(ctx echo.Context) error {
 
 // GetInsight godoc
 //
-//	@Summary		Get locations
-//	@Description	Getting locations by provider
-//	@Tags			location
+//	@Summary		Get an insight by id
+//	@Description	Get an insight by id
+//	@Tags			insight
 //	@Produce		json
 //	@Param			sourceId	query		string	false	"filter the result by source id"
 //	@Param			time		query		int		false	"unix seconds for the time to get the insight result for"
@@ -4288,9 +4280,6 @@ func (h *HttpHandler) GetInsight(ctx echo.Context) error {
 
 	insightRow, err := h.schedulerClient.GetInsightById(httpclient.FromEchoContext(ctx), uint(insightId))
 	if err != nil {
-		if strings.Contains(strings.ToLower(err.Error()), "not found") {
-			return echo.NewHTTPError(http.StatusNotFound, "insight not found")
-		}
 		return err
 	}
 
@@ -4318,9 +4307,9 @@ func (h *HttpHandler) GetInsight(ctx echo.Context) error {
 
 	var insightResults []insight.InsightResource
 	if resultTime != nil {
-		insightResults, err = es.FetchInsightValuesAtTime(h.client, *resultTime, source.Nil, sourceIdPtr, []uint{uint(insightId)})
+		insightResults, err = es.FetchInsightValuesAtTime(h.client, *resultTime, source.Nil, sourceIdPtr, []uint{uint(insightId)}, true)
 	} else {
-		insightResults, err = es.FetchLatestInsightValues(h.client, source.Nil, sourceIdPtr, []uint{uint(insightId)})
+		insightResults, err = es.FetchInsightValuesAtTime(h.client, time.Now(), source.Nil, sourceIdPtr, []uint{uint(insightId)}, false)
 	}
 	if err != nil {
 		return err
@@ -4345,11 +4334,11 @@ func (h *HttpHandler) GetInsight(ctx echo.Context) error {
 
 // GetInsightDetails godoc
 //
-//	@Summary		Get locations
-//	@Description	Getting locations by provider
-//	@Tags			location
+//	@Summary		Get insight result details
+//	@Description	Get insight result details
+//	@Tags			insight
 //	@Produce		json
-//	@Success		200	{object}	api.InsightDetail
+//	@Success		200	{object}	api.InsightResult
 //	@Router			/inventory/api/v2/insights/{insightId}/details/{jobId} [get]
 func (h *HttpHandler) GetInsightDetails(ctx echo.Context) error {
 	insightId, err := strconv.ParseUint(ctx.Param("insightId"), 10, 64)
@@ -4360,11 +4349,20 @@ func (h *HttpHandler) GetInsightDetails(ctx echo.Context) error {
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid job id")
 	}
-	s3ObjectName := fmt.Sprintf("%d-%d.out", insightId, jobId)
+
+	insightRow, err := es.FetchInsightRecordByQueryAndJobId(h.client, uint(insightId), uint(jobId))
+	if err != nil {
+		return err
+	}
+	if insightRow == nil {
+		return echo.NewHTTPError(http.StatusNotFound, "insight not found")
+	}
+
+	bucket, key, err := utils.ParseHTTPSubpathS3URIToBucketAndKey(insightRow.S3Location)
 	objectBuffer := aws.NewWriteAtBuffer(make([]byte, 0, 1024*1024))
 	_, err = h.s3Downloader.Download(objectBuffer, &s3.GetObjectInput{
-		Bucket: aws.String(h.s3Bucket),
-		Key:    aws.String(s3ObjectName),
+		Bucket: aws.String(bucket),
+		Key:    aws.String(key),
 	})
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
@@ -4376,9 +4374,16 @@ func (h *HttpHandler) GetInsightDetails(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
-	result := api.InsightDetail{
-		Headers: results.Headers,
-		Rows:    results.Data,
+	result := api.InsightResult{
+		JobID:      insightRow.JobID,
+		InsightID:  insightRow.QueryID,
+		SourceID:   insightRow.SourceID,
+		ExecutedAt: time.UnixMilli(insightRow.ExecutedAt),
+		Result:     insightRow.Result,
+		Details: &api.InsightDetail{
+			Headers: results.Headers,
+			Rows:    results.Data,
+		},
 	}
 
 	return ctx.JSON(http.StatusOK, result)
