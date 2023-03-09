@@ -237,6 +237,10 @@ type Credential struct {
 	HealthReason        *string             `json:"healthReason,omitempty"`
 
 	Metadata datatypes.JSON `json:"metadata,omitempty"`
+
+	CreatedAt time.Time
+	UpdatedAt time.Time
+	DeletedAt sql.NullTime `gorm:"index"`
 }
 
 func NewAzureCredential(name string) Credential {

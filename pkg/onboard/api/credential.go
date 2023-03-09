@@ -30,6 +30,7 @@ type Credential struct {
 	Status         source.CredentialStatus `json:"status"`
 	CredentialType source.CredentialType   `json:"credentialType"`
 	Enabled        bool                    `json:"enabled"`
+	OnboardDate    time.Time               `json:"onboardDate"`
 
 	LastHealthCheckTime time.Time           `json:"lastHealthCheckTime"`
 	HealthStatus        source.HealthStatus `json:"healthStatus"`
