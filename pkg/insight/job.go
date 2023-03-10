@@ -120,7 +120,7 @@ func (j Job) Do(client keibi.Client, steampipeConn *steampipe.Database, onboardC
 		}
 	} else {
 		sourceIdFilterWhereClause := fmt.Sprintf("keibi_account_id = '%s'", j.SourceID)
-		if strings.HasPrefix(strings.ToLower(j.SourceID), "all") {
+		if strings.HasPrefix(strings.ToLower(j.SourceID), "all:") {
 			sourceIdFilterWhereClause = "1=1"
 		}
 		res, err = steampipeConn.QueryAll(strings.ReplaceAll(j.Query, "$SOURCEID_WHERE_CLAUSE", sourceIdFilterWhereClause))
