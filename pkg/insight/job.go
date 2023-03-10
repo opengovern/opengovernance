@@ -4,12 +4,19 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strconv"
+	"strings"
+	"time"
+
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/managedgrafana"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 	"github.com/go-errors/errors"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
+	azuremodel "gitlab.com/keibiengine/keibi-engine/pkg/azure/model"
+
+	awsmodel "gitlab.com/keibiengine/keibi-engine/pkg/aws/model"
 	"gitlab.com/keibiengine/keibi-engine/pkg/insight/api"
 	"gitlab.com/keibiengine/keibi-engine/pkg/insight/es"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpclient"
@@ -20,9 +27,6 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/steampipe"
 	"go.uber.org/zap"
 	"gopkg.in/Shopify/sarama.v1"
-	"strconv"
-	"strings"
-	"time"
 )
 
 var DoInsightJobsCount = promauto.NewCounterVec(prometheus.CounterOpts{
@@ -98,6 +102,10 @@ func (j Job) Do(client keibi.Client, steampipeConn *steampipe.Database, onboardC
 		}
 	}
 	var count int64
+	var (
+		locationsMap   map[string]struct{}
+		connectionsMap map[string]struct{}
+	)
 	var res *steampipe.Result
 	var err error
 	if strings.TrimSpace(j.Query) == "accounts_count" {
@@ -108,12 +116,63 @@ func (j Job) Do(client keibi.Client, steampipeConn *steampipe.Database, onboardC
 		count = totalAccounts
 		res = &steampipe.Result{
 			Headers: []string{"count"},
-			Data:    [][]interface{}{{count}},
+			Data:    [][]any{{count}},
 		}
 	} else {
-		res, err = steampipeConn.QueryAll(strings.ReplaceAll(j.Query, "$SOURCEID", "'"+j.SourceID+"'"))
+		sourceIdFilterWhereClause := fmt.Sprintf("keibi_account_id = %s", j.SourceID)
+		if strings.HasPrefix(strings.ToLower(j.SourceID), "all") {
+			sourceIdFilterWhereClause = "1=1"
+		}
+		res, err = steampipeConn.QueryAll(strings.ReplaceAll(j.Query, "$SOURCEID_WHERE_CLAUSE", sourceIdFilterWhereClause))
 		if res != nil {
 			count = int64(len(res.Data))
+			for colNo, col := range res.Headers {
+				if strings.ToLower(col) != "keibi_metadata" {
+					continue
+				}
+				for _, row := range res.Data {
+					for cellColNo, cell := range row {
+						if cellColNo != colNo {
+							continue
+						}
+						if cell == nil {
+							continue
+						}
+						switch j.SourceType {
+						case source.CloudAWS:
+							var metadata awsmodel.Metadata
+							err = json.Unmarshal([]byte(cell.(string)), &metadata)
+							if err != nil {
+								break
+							}
+							if locationsMap == nil {
+								locationsMap = make(map[string]struct{})
+							}
+							locationsMap[metadata.Region] = struct{}{}
+							if connectionsMap == nil {
+								connectionsMap = make(map[string]struct{})
+							}
+							connectionsMap[metadata.AccountID] = struct{}{}
+						case source.CloudAzure:
+							var metadata azuremodel.Metadata
+							err = json.Unmarshal([]byte(cell.(string)), &metadata)
+							if err != nil {
+								break
+							}
+							if locationsMap == nil {
+								locationsMap = make(map[string]struct{})
+							}
+							locationsMap[metadata.Location] = struct{}{}
+							if connectionsMap == nil {
+								connectionsMap = make(map[string]struct{})
+							}
+							connectionsMap[metadata.SubscriptionID] = struct{}{}
+						}
+						break
+					}
+				}
+				break
+			}
 		}
 	}
 	if err == nil {
@@ -155,8 +214,27 @@ func (j Job) Do(client keibi.Client, steampipeConn *steampipe.Database, onboardC
 					}
 				}
 
+				var locations []string = nil
+				if locationsMap != nil {
+					locations = make([]string, 0, len(locationsMap))
+					for location := range locationsMap {
+						locations = append(locations, location)
+					}
+				}
+				var connections []string = nil
+				if connectionsMap != nil {
+					connections = make([]string, 0, len(connectionsMap))
+					for connection := range connectionsMap {
+						connections = append(connections, connection)
+					}
+				}
+
 				var resources []kafka.Doc
-				for _, resourceType := range []es.InsightResourceType{es.InsightResourceHistory, es.InsightResourceLast} {
+				resourceTypeList := []es.InsightResourceType{es.InsightResourceHistory, es.InsightResourceLast}
+				if strings.HasPrefix(strings.ToLower(j.SourceID), "all") {
+					resourceTypeList = []es.InsightResourceType{es.InsightResourceProviderHistory, es.InsightResourceProviderLast}
+				}
+				for _, resourceType := range resourceTypeList {
 					resources = append(resources, es.InsightResource{
 						JobID:            j.JobID,
 						QueryID:          j.QueryID,
@@ -177,6 +255,8 @@ func (j Job) Do(client keibi.Client, steampipeConn *steampipe.Database, onboardC
 						LastQuarterValue: lastQuarterValue,
 						LastYearValue:    lastYearValue,
 						ResourceType:     resourceType,
+						Locations:        locations,
+						Connections:      connections,
 						S3Location:       result.Location,
 					})
 				}
