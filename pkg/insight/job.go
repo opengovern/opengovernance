@@ -119,7 +119,7 @@ func (j Job) Do(client keibi.Client, steampipeConn *steampipe.Database, onboardC
 			Data:    [][]any{{count}},
 		}
 	} else {
-		sourceIdFilterWhereClause := fmt.Sprintf("keibi_account_id = %s", j.SourceID)
+		sourceIdFilterWhereClause := fmt.Sprintf("keibi_account_id = '%s'", j.SourceID)
 		if strings.HasPrefix(strings.ToLower(j.SourceID), "all") {
 			sourceIdFilterWhereClause = "1=1"
 		}
