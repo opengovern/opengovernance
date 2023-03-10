@@ -3,6 +3,7 @@ package insight
 import (
 	"encoding/json"
 	"fmt"
+
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
@@ -33,24 +34,13 @@ type Worker struct {
 
 func InitializeWorker(
 	id string,
-	rabbitMQUsername string,
-	rabbitMQPassword string,
-	rabbitMQHost string,
-	rabbitMQPort int,
-	insightJobQueue string,
-	insightJobResultQueue string,
-	kafkaBrokers []string,
-	kafkaTopic string,
+	rabbitMQUsername string, rabbitMQPassword string, rabbitMQHost string, rabbitMQPort int,
+	insightJobQueue string, insightJobResultQueue string,
+	kafkaBrokers []string, kafkaTopic string,
 	logger *zap.Logger,
 	prometheusPushAddress string,
-	steampipeHost string,
-	steampipePort string,
-	steampipeDb string,
-	steampipeUsername string,
-	steampipePassword string,
-	elasticSearchAddress string,
-	elasticSearchUsername string,
-	elasticSearchPassword string,
+	steampipeHost string, steampipePort string, steampipeDb string, steampipeUsername string, steampipePassword string,
+	elasticSearchAddress string, elasticSearchUsername string, elasticSearchPassword string,
 	onboardBaseURL string,
 	s3Endpoint, s3AccessKey, s3AccessSecret, s3Region, s3Bucket string,
 ) (w *Worker, err error) {

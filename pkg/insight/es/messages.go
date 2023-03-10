@@ -13,8 +13,10 @@ const (
 type InsightResourceType string
 
 const (
-	InsightResourceHistory = "history"
-	InsightResourceLast    = "last"
+	InsightResourceHistory         = "history"
+	InsightResourceLast            = "last"
+	InsightResourceProviderHistory = "provider_history"
+	InsightResourceProviderLast    = "provider_last"
 )
 
 type InsightResource struct {
@@ -56,6 +58,10 @@ type InsightResource struct {
 	LastYearValue *int64 `json:"last_year_value"`
 	// ResourceType shows which collection of docs this resource belongs to
 	ResourceType InsightResourceType `json:"resource_type"`
+	// Locations list of the locations of the resources included in this insight
+	Locations []string `json:"locations,omitempty"`
+	// Connections list of the connections ids of the resources included in this insight
+	Connections []string `json:"connections,omitempty"`
 
 	S3Location string `json:"s3_location"`
 }

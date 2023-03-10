@@ -2370,9 +2370,13 @@ func (s Scheduler) scheduleInsightJob(forceCreate bool) {
 			return
 		}
 
-		for _, src := range srcs {
-			for _, ins := range insights {
-				job := newInsightJob(ins, src, scheduleUUID.String())
+		for _, ins := range insights {
+			for _, src := range srcs {
+				srcType, _ := source.ParseType(string(src.Type))
+				if ins.Provider != source.Nil && srcType != ins.Provider {
+					continue
+				}
+				job := newInsightJob(ins, string(src.Type), src.ID.String(), src.AccountID, scheduleUUID.String())
 				err = s.db.AddInsightJob(&job)
 				if err != nil {
 					InsightJobsCount.WithLabelValues("failure").Inc()
@@ -2402,6 +2406,39 @@ func (s Scheduler) scheduleInsightJob(forceCreate bool) {
 					continue
 				}
 			}
+
+			// add a job for all sources
+			id := fmt.Sprintf("all:%s", strings.ToLower(string(ins.Provider)))
+			job := newInsightJob(ins, string(ins.Provider), id, id, scheduleUUID.String())
+			err = s.db.AddInsightJob(&job)
+			if err != nil {
+				InsightJobsCount.WithLabelValues("failure").Inc()
+				s.logger.Error("Failed to create InsightJob",
+					zap.Uint("jobId", job.ID),
+					zap.Error(err),
+				)
+				continue
+			}
+
+			err = enqueueInsightJobs(s.db, s.insightJobQueue, job)
+			if err != nil {
+				InsightJobsCount.WithLabelValues("failure").Inc()
+				s.logger.Error("Failed to enqueue InsightJob",
+					zap.Uint("jobId", job.ID),
+					zap.Error(err),
+				)
+				job.Status = insightapi.InsightJobFailed
+				job.FailureMessage = "Failed to enqueue InsightJob"
+				err = s.db.UpdateInsightJobStatus(job)
+				if err != nil {
+					s.logger.Error("Failed to update InsightJob status",
+						zap.Uint("jobId", job.ID),
+						zap.Error(err),
+					)
+				}
+				continue
+			}
+
 		}
 	}
 	InsightJobsCount.WithLabelValues("successful").Inc()
@@ -3000,12 +3037,12 @@ func (s *Scheduler) RunSummarizerJobResultsConsumer() error {
 	}
 }
 
-func newInsightJob(insight Insight, src Source, scheduleUUID string) InsightJob {
-	srcType, _ := source.ParseType(string(src.Type))
+func newInsightJob(insight Insight, sourceType, sourceId, accountId string, scheduleUUID string) InsightJob {
+	srcType, _ := source.ParseType(sourceType)
 	return InsightJob{
 		InsightID:      insight.ID,
-		SourceID:       src.ID.String(),
-		AccountID:      src.AccountID,
+		SourceID:       sourceId,
+		AccountID:      accountId,
 		ScheduleUUID:   scheduleUUID,
 		SourceType:     srcType,
 		Status:         insightapi.InsightJobInProgress,
