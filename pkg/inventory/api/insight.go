@@ -12,14 +12,20 @@ type ListInsightResultsRequest struct {
 	ExecutedAt *int64       `json:"executedAt"`
 }
 
+type InsightConnection struct {
+	ConnectionID string `json:"connection_id"`
+	OriginalID   string `json:"original_id"`
+}
+
 type InsightResult struct {
-	JobID      uint           `json:"jobID"`
-	InsightID  uint           `json:"insightID"`
-	SourceID   string         `json:"sourceID"`
-	ExecutedAt time.Time      `json:"executedAt"`
-	Result     int64          `json:"result"`
-	Locations  []string       `json:"locations"`
-	Details    *InsightDetail `json:"details,omitempty"`
+	JobID       uint                `json:"jobID"`
+	InsightID   uint                `json:"insightID"`
+	SourceID    string              `json:"sourceID"`
+	ExecutedAt  time.Time           `json:"executedAt"`
+	Result      int64               `json:"result"`
+	Locations   []string            `json:"locations"`
+	Connections []InsightConnection `json:"connections"`
+	Details     *InsightDetail      `json:"details,omitempty"`
 }
 
 type InsightDetail struct {

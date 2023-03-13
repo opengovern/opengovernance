@@ -827,39 +827,6 @@ definitions:
       resourceTypeName:
         type: string
     type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.CategoriesMetrics:
-    properties:
-      categories:
-        additionalProperties:
-          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.CategoryMetric'
-        type: object
-    type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.CategorizedMetricsResponse:
-    properties:
-      category:
-        additionalProperties:
-          items:
-            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ResourceTypeResponse'
-          type: array
-        type: object
-    type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.CategoryMetric:
-    properties:
-      lastDayValue:
-        type: integer
-      lastQuarterValue:
-        type: integer
-      lastWeekValue:
-        type: integer
-      lastYearValue:
-        type: integer
-      resourceCount:
-        type: integer
-      subCategories:
-        additionalProperties:
-          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.HistoryCount'
-        type: object
-    type: object
   gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.CategoryNode:
     properties:
       categoryID:
@@ -1019,15 +986,6 @@ definitions:
         - $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ResourceFiltersResponse'
         description: search filters
     type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.GetInsightResultTrendRequest:
-    properties:
-      provider:
-        $ref: '#/definitions/source.Type'
-      queryID:
-        type: integer
-      sourceID:
-        type: string
-    type: object
   gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.GetResourceRequest:
     properties:
       ID:
@@ -1069,19 +1027,6 @@ definitions:
       totalCount:
         type: integer
     type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.HistoryCount:
-    properties:
-      count:
-        type: integer
-      lastDayValue:
-        type: integer
-      lastQuarterValue:
-        type: integer
-      lastWeekValue:
-        type: integer
-      lastYearValue:
-        type: integer
-    type: object
   gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.Insight:
     properties:
       category:
@@ -1111,13 +1056,18 @@ definitions:
       query:
         type: string
       results:
-        items:
-          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.InsightResult'
-        type: array
+        $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.InsightResult'
       shortTitle:
         type: string
       totalResults:
         type: integer
+    type: object
+  gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.InsightConnection:
+    properties:
+      connection_id:
+        type: string
+      original_id:
+        type: string
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.InsightDetail:
     properties:
@@ -1149,6 +1099,10 @@ definitions:
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.InsightResult:
     properties:
+      connections:
+        items:
+          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.InsightConnection'
+        type: array
       details:
         $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.InsightDetail'
       executedAt:
@@ -1157,6 +1111,10 @@ definitions:
         type: integer
       jobID:
         type: integer
+      locations:
+        items:
+          type: string
+        type: array
       result:
         type: integer
       sourceID:
@@ -1190,21 +1148,6 @@ definitions:
       location:
         type: string
       resourceCount:
-        type: integer
-    type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.MetricsResponse:
-    properties:
-      lastDayValue:
-        type: integer
-      lastQuarterValue:
-        type: integer
-      lastWeekValue:
-        type: integer
-      lastYearValue:
-        type: integer
-      metricsName:
-        type: string
-      value:
         type: integer
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.Page:
@@ -1360,23 +1303,6 @@ definitions:
       resource_type_arn:
         type: string
       resource_type_name:
-        type: string
-    type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ResourceTypeResponse:
-    properties:
-      lastDayCount:
-        type: integer
-      lastQuarterCount:
-        type: integer
-      lastWeekCount:
-        type: integer
-      lastYearCount:
-        type: integer
-      resourceCount:
-        type: integer
-      resourceType:
-        type: string
-      resourceTypeName:
         type: string
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.RunQueryRequest:
@@ -2628,23 +2554,6 @@ paths:
       summary: Returns top n services of specified provider by cost
       tags:
       - cost
-  /inventory/api/v1/insight/results/trend:
-    get:
-      parameters:
-      - description: Request Body
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.GetInsightResultTrendRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-      summary: Get insight trend for specific result
-      tags:
-      - insights
   /inventory/api/v1/locations/{provider}:
     get:
       description: Getting locations by provider
@@ -2669,54 +2578,6 @@ paths:
       summary: Get locations
       tags:
       - location
-  /inventory/api/v1/metrics/categorized:
-    get:
-      consumes:
-      - application/json
-      parameters:
-      - description: Provider
-        in: query
-        name: provider
-        type: string
-      - description: SourceID
-        in: query
-        name: sourceId
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.CategorizedMetricsResponse'
-      summary: Return categorized metrics, their value and their history
-      tags:
-      - inventory
-  /inventory/api/v1/metrics/summary:
-    get:
-      consumes:
-      - application/json
-      parameters:
-      - description: Provider
-        in: query
-        name: provider
-        type: string
-      - description: SourceID
-        in: query
-        name: sourceId
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            items:
-              $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.MetricsResponse'
-            type: array
-      summary: Return metrics, their value and their history
-      tags:
-      - inventory
   /inventory/api/v1/provider/{provider}/summary:
     post:
       consumes:
@@ -3490,19 +3351,6 @@ paths:
       summary: Get an insight by id
       tags:
       - insight
-  /inventory/api/v2/insights/{insightId}/details/{jobId}:
-    get:
-      description: Get insight result details
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.InsightResult'
-      summary: Get insight result details
-      tags:
-      - insight
   /inventory/api/v2/insights/{insightId}/trend:
     get:
       description: Get an insight by id
@@ -3535,37 +3383,6 @@ paths:
       summary: Get an insight by id
       tags:
       - insight
-  /inventory/api/v2/metrics/categorized:
-    get:
-      consumes:
-      - application/json
-      parameters:
-      - description: Provider
-        in: query
-        name: provider
-        type: string
-      - description: SourceID
-        in: query
-        name: sourceId
-        type: string
-      - description: Category
-        in: query
-        name: category
-        type: string
-      - description: SubCategory
-        in: query
-        name: subCategory
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.CategoriesMetrics'
-      summary: Return categorized metrics, their value and their history
-      tags:
-      - inventory
   /inventory/api/v2/metrics/cost/composition:
     get:
       consumes:

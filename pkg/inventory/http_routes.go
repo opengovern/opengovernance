@@ -106,7 +106,6 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	v2.GET("/metrics/cost/composition", httpserver.AuthorizeHandler(h.GetMetricsCostComposition, api3.ViewerRole))
 
 	v2.GET("/insights", httpserver.AuthorizeHandler(h.ListInsights, api3.ViewerRole))
-	v2.GET("/insights/:insightId/details/:jobId", httpserver.AuthorizeHandler(h.GetInsightDetails, api3.ViewerRole))
 	v2.GET("/insights/:insightId/trend", httpserver.AuthorizeHandler(h.GetInsightTrend, api3.ViewerRole))
 	v2.GET("/insights/:insightId", httpserver.AuthorizeHandler(h.GetInsight, api3.ViewerRole))
 
@@ -3775,17 +3774,45 @@ func (h *HttpHandler) GetInsight(ctx echo.Context) error {
 
 	if insightResult, ok := insightResults[uint(insightId)]; ok {
 		result.TotalResults = insightResult.Result
-		if insightResult.ExecutedAt != 0 {
-			exAt := time.UnixMilli(insightResult.ExecutedAt)
-			result.ExecutedAt = &exAt
-			result.Results = &api.InsightResult{
-				JobID:      insightResult.JobID,
-				InsightID:  insightResult.QueryID,
-				SourceID:   insightResult.SourceID,
-				ExecutedAt: time.UnixMilli(insightResult.ExecutedAt),
-				Locations:  insightResult.Locations,
-				Result:     insightResult.Result,
-			}
+		exAt := time.UnixMilli(insightResult.ExecutedAt)
+		result.ExecutedAt = &exAt
+
+		bucket, key, err := utils.ParseHTTPSubpathS3URIToBucketAndKey(insightResult.S3Location)
+		objectBuffer := aws.NewWriteAtBuffer(make([]byte, 0, 1024*1024))
+		_, err = h.s3Downloader.Download(objectBuffer, &s3.GetObjectInput{
+			Bucket: aws.String(bucket),
+			Key:    aws.String(key),
+		})
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		}
+
+		var results steampipe.Result
+		err = json.Unmarshal(objectBuffer.Bytes(), &results)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		}
+
+		connections := make([]api.InsightConnection, 0, len(insightResult.IncludedConnections))
+		for _, connection := range insightResult.IncludedConnections {
+			connections = append(connections, api.InsightConnection{
+				ConnectionID: connection.ConnectionID,
+				OriginalID:   connection.OriginalID,
+			})
+		}
+
+		result.Results = &api.InsightResult{
+			JobID:       insightResult.JobID,
+			InsightID:   insightResult.QueryID,
+			SourceID:    insightResult.SourceID,
+			ExecutedAt:  time.UnixMilli(insightResult.ExecutedAt),
+			Locations:   insightResult.Locations,
+			Connections: connections,
+			Result:      insightResult.Result,
+			Details: &api.InsightDetail{
+				Headers: results.Headers,
+				Rows:    results.Data,
+			},
 		}
 	}
 
@@ -3873,64 +3900,6 @@ func (h *HttpHandler) GetInsightTrend(ctx echo.Context) error {
 	sort.SliceStable(result.Datapoints, func(i, j int) bool {
 		return result.Datapoints[i].Timestamp < result.Datapoints[j].Timestamp
 	})
-
-	return ctx.JSON(http.StatusOK, result)
-}
-
-// GetInsightDetails godoc
-//
-//	@Summary		Get insight result details
-//	@Description	Get insight result details
-//	@Tags			insight
-//	@Produce		json
-//	@Success		200	{object}	api.InsightResult
-//	@Router			/inventory/api/v2/insights/{insightId}/details/{jobId} [get]
-func (h *HttpHandler) GetInsightDetails(ctx echo.Context) error {
-	insightId, err := strconv.ParseUint(ctx.Param("insightId"), 10, 64)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, "invalid insight id")
-	}
-	jobId, err := strconv.ParseUint(ctx.Param("jobId"), 10, 64)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, "invalid job id")
-	}
-
-	insightRow, err := es.FetchInsightRecordByQueryAndJobId(h.client, uint(insightId), uint(jobId))
-	if err != nil {
-		return err
-	}
-	if insightRow == nil {
-		return echo.NewHTTPError(http.StatusNotFound, "insight not found")
-	}
-
-	bucket, key, err := utils.ParseHTTPSubpathS3URIToBucketAndKey(insightRow.S3Location)
-	objectBuffer := aws.NewWriteAtBuffer(make([]byte, 0, 1024*1024))
-	_, err = h.s3Downloader.Download(objectBuffer, &s3.GetObjectInput{
-		Bucket: aws.String(bucket),
-		Key:    aws.String(key),
-	})
-	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
-	}
-
-	var results steampipe.Result
-	err = json.Unmarshal(objectBuffer.Bytes(), &results)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
-	}
-
-	result := api.InsightResult{
-		JobID:      insightRow.JobID,
-		InsightID:  insightRow.QueryID,
-		SourceID:   insightRow.SourceID,
-		ExecutedAt: time.UnixMilli(insightRow.ExecutedAt),
-		Result:     insightRow.Result,
-		Locations:  insightRow.Locations,
-		Details: &api.InsightDetail{
-			Headers: results.Headers,
-			Rows:    results.Data,
-		},
-	}
 
 	return ctx.JSON(http.StatusOK, result)
 }

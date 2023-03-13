@@ -817,33 +817,6 @@ const docTemplate = `{
                 }
             }
         },
-        "/inventory/api/v1/insight/results/trend": {
-            "get": {
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "insights"
-                ],
-                "summary": "Get insight trend for specific result",
-                "parameters": [
-                    {
-                        "description": "Request Body",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.GetInsightResultTrendRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK"
-                    }
-                }
-            }
-        },
         "/inventory/api/v1/locations/{provider}": {
             "get": {
                 "description": "Getting locations by provider",
@@ -874,81 +847,6 @@ const docTemplate = `{
                             "type": "array",
                             "items": {
                                 "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.LocationByProviderResponse"
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/inventory/api/v1/metrics/categorized": {
-            "get": {
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "inventory"
-                ],
-                "summary": "Return categorized metrics, their value and their history",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Provider",
-                        "name": "provider",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "SourceID",
-                        "name": "sourceId",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.CategorizedMetricsResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/inventory/api/v1/metrics/summary": {
-            "get": {
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "inventory"
-                ],
-                "summary": "Return metrics, their value and their history",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Provider",
-                        "name": "provider",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "SourceID",
-                        "name": "sourceId",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.MetricsResponse"
                             }
                         }
                     }
@@ -2089,26 +1987,6 @@ const docTemplate = `{
                 }
             }
         },
-        "/inventory/api/v2/insights/{insightId}/details/{jobId}": {
-            "get": {
-                "description": "Get insight result details",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "insight"
-                ],
-                "summary": "Get insight result details",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.InsightResult"
-                        }
-                    }
-                }
-            }
-        },
         "/inventory/api/v2/insights/{insightId}/trend": {
             "get": {
                 "description": "Get an insight by id",
@@ -2150,54 +2028,6 @@ const docTemplate = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.InsightResultTrendResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/inventory/api/v2/metrics/categorized": {
-            "get": {
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "inventory"
-                ],
-                "summary": "Return categorized metrics, their value and their history",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Provider",
-                        "name": "provider",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "SourceID",
-                        "name": "sourceId",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Category",
-                        "name": "category",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "SubCategory",
-                        "name": "subCategory",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.CategoriesMetrics"
                         }
                     }
                 }
@@ -6156,57 +5986,6 @@ const docTemplate = `{
                 }
             }
         },
-        "gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.CategoriesMetrics": {
-            "type": "object",
-            "properties": {
-                "categories": {
-                    "type": "object",
-                    "additionalProperties": {
-                        "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.CategoryMetric"
-                    }
-                }
-            }
-        },
-        "gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.CategorizedMetricsResponse": {
-            "type": "object",
-            "properties": {
-                "category": {
-                    "type": "object",
-                    "additionalProperties": {
-                        "type": "array",
-                        "items": {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ResourceTypeResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.CategoryMetric": {
-            "type": "object",
-            "properties": {
-                "lastDayValue": {
-                    "type": "integer"
-                },
-                "lastQuarterValue": {
-                    "type": "integer"
-                },
-                "lastWeekValue": {
-                    "type": "integer"
-                },
-                "lastYearValue": {
-                    "type": "integer"
-                },
-                "resourceCount": {
-                    "type": "integer"
-                },
-                "subCategories": {
-                    "type": "object",
-                    "additionalProperties": {
-                        "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.HistoryCount"
-                    }
-                }
-            }
-        },
         "gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.CategoryNode": {
             "type": "object",
             "properties": {
@@ -6439,20 +6218,6 @@ const docTemplate = `{
                 }
             }
         },
-        "gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.GetInsightResultTrendRequest": {
-            "type": "object",
-            "properties": {
-                "provider": {
-                    "$ref": "#/definitions/source.Type"
-                },
-                "queryID": {
-                    "type": "integer"
-                },
-                "sourceID": {
-                    "type": "string"
-                }
-            }
-        },
         "gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.GetResourceRequest": {
             "type": "object",
             "required": [
@@ -6514,26 +6279,6 @@ const docTemplate = `{
                 }
             }
         },
-        "gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.HistoryCount": {
-            "type": "object",
-            "properties": {
-                "count": {
-                    "type": "integer"
-                },
-                "lastDayValue": {
-                    "type": "integer"
-                },
-                "lastQuarterValue": {
-                    "type": "integer"
-                },
-                "lastWeekValue": {
-                    "type": "integer"
-                },
-                "lastYearValue": {
-                    "type": "integer"
-                }
-            }
-        },
         "gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.Insight": {
             "type": "object",
             "properties": {
@@ -6577,16 +6322,24 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "results": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.InsightResult"
-                    }
+                    "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.InsightResult"
                 },
                 "shortTitle": {
                     "type": "string"
                 },
                 "totalResults": {
                     "type": "integer"
+                }
+            }
+        },
+        "gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.InsightConnection": {
+            "type": "object",
+            "properties": {
+                "connection_id": {
+                    "type": "string"
+                },
+                "original_id": {
+                    "type": "string"
                 }
             }
         },
@@ -6636,6 +6389,12 @@ const docTemplate = `{
         "gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.InsightResult": {
             "type": "object",
             "properties": {
+                "connections": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.InsightConnection"
+                    }
+                },
                 "details": {
                     "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.InsightDetail"
                 },
@@ -6647,6 +6406,12 @@ const docTemplate = `{
                 },
                 "jobID": {
                     "type": "integer"
+                },
+                "locations": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
                 },
                 "result": {
                     "type": "integer"
@@ -6699,29 +6464,6 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "resourceCount": {
-                    "type": "integer"
-                }
-            }
-        },
-        "gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.MetricsResponse": {
-            "type": "object",
-            "properties": {
-                "lastDayValue": {
-                    "type": "integer"
-                },
-                "lastQuarterValue": {
-                    "type": "integer"
-                },
-                "lastWeekValue": {
-                    "type": "integer"
-                },
-                "lastYearValue": {
-                    "type": "integer"
-                },
-                "metricsName": {
-                    "type": "string"
-                },
-                "value": {
                     "type": "integer"
                 }
             }
@@ -6925,32 +6667,6 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "resource_type_name": {
-                    "type": "string"
-                }
-            }
-        },
-        "gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ResourceTypeResponse": {
-            "type": "object",
-            "properties": {
-                "lastDayCount": {
-                    "type": "integer"
-                },
-                "lastQuarterCount": {
-                    "type": "integer"
-                },
-                "lastWeekCount": {
-                    "type": "integer"
-                },
-                "lastYearCount": {
-                    "type": "integer"
-                },
-                "resourceCount": {
-                    "type": "integer"
-                },
-                "resourceType": {
-                    "type": "string"
-                },
-                "resourceTypeName": {
                     "type": "string"
                 }
             }
