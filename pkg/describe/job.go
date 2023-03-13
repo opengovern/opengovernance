@@ -10,6 +10,8 @@ import (
 	"sync"
 	"time"
 
+	awsmodel "gitlab.com/keibiengine/keibi-engine/pkg/aws/model"
+	azuremodel "gitlab.com/keibiengine/keibi-engine/pkg/azure/model"
 	"gitlab.com/keibiengine/keibi-engine/pkg/describe/enums"
 	"gitlab.com/keibiengine/keibi-engine/pkg/describe/es"
 	"gitlab.com/keibiengine/keibi-engine/pkg/source"
@@ -438,6 +440,26 @@ func doDescribeAWS(ctx context.Context, rdb *redis.Client, job DescribeJob, conf
 				remaining--
 			}
 
+			awsMetadata := awsmodel.Metadata{
+				Name:         resource.Name,
+				AccountID:    resource.Account,
+				SourceID:     job.SourceID,
+				Region:       resource.Region,
+				Partition:    resource.Name,
+				ResourceType: strings.ToLower(resource.Type),
+			}
+			awsMetadataBytes, err := json.Marshal(awsMetadata)
+			if err != nil {
+				errs = append(errs, fmt.Sprintf("marshal metadata: %v", err.Error()))
+				continue
+			}
+			metadata := make(map[string]string)
+			err = json.Unmarshal(awsMetadataBytes, &metadata)
+			if err != nil {
+				errs = append(errs, fmt.Sprintf("unmarshal metadata: %v", err.Error()))
+				continue
+			}
+
 			kafkaResource := es.Resource{
 				ID:            resource.UniqueID(),
 				Description:   resource.Description,
@@ -446,14 +468,7 @@ func doDescribeAWS(ctx context.Context, rdb *redis.Client, job DescribeJob, conf
 				ResourceJobID: job.JobID,
 				SourceJobID:   job.ParentJobID,
 				SourceID:      job.SourceID,
-				Metadata: map[string]string{
-					"name":          resource.Name,
-					"partition":     resource.Partition,
-					"region":        resource.Region,
-					"account_id":    resource.Account,
-					"source_id":     job.SourceID,
-					"resource_type": strings.ToLower(resource.Type),
-				},
+				Metadata:      metadata,
 			}
 			pluginTableName := steampipe.ExtractTableName(job.ResourceType)
 			desc, err := steampipe.ConvertToDescription(job.ResourceType, kafkaResource)
@@ -601,6 +616,27 @@ func doDescribeAzure(ctx context.Context, rdb *redis.Client, job DescribeJob, co
 
 		output.Resources[idx].Location = fixAzureLocation(resource.Location)
 
+		azureMetadata := azuremodel.Metadata{
+			ID:               resource.ID,
+			Name:             resource.Name,
+			SubscriptionID:   strings.Join(output.Metadata.SubscriptionIds, ","),
+			Location:         resource.Location,
+			CloudEnvironment: output.Metadata.CloudEnvironment,
+			ResourceType:     strings.ToLower(resource.Type),
+			SourceID:         job.SourceID,
+		}
+		azureMetadataBytes, err := json.Marshal(azureMetadata)
+		if err != nil {
+			errs = append(errs, fmt.Sprintf("marshal metadata: %v", err.Error()))
+			continue
+		}
+		metadata := make(map[string]string)
+		err = json.Unmarshal(azureMetadataBytes, &metadata)
+		if err != nil {
+			errs = append(errs, fmt.Sprintf("unmarshal metadata: %v", err.Error()))
+			continue
+		}
+
 		kafkaResource := es.Resource{
 			ID:            resource.UniqueID(),
 			Description:   resource.Description,
@@ -609,15 +645,7 @@ func doDescribeAzure(ctx context.Context, rdb *redis.Client, job DescribeJob, co
 			ResourceJobID: job.JobID,
 			SourceJobID:   job.ParentJobID,
 			SourceID:      job.SourceID,
-			Metadata: map[string]string{
-				"id":                resource.ID,
-				"name":              resource.Name,
-				"subscription_id":   strings.Join(output.Metadata.SubscriptionIds, ","),
-				"location":          resource.Location,
-				"cloud_environment": output.Metadata.CloudEnvironment,
-				"resource_type":     strings.ToLower(resource.Type),
-				"source_id":         job.SourceID,
-			},
+			Metadata:      metadata,
 		}
 		pluginTableName := steampipe.ExtractTableName(job.ResourceType)
 		desc, err := steampipe.ConvertToDescription(job.ResourceType, kafkaResource)
