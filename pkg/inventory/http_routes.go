@@ -1189,10 +1189,10 @@ func (h *HttpHandler) GetMetricsResourceCountHelper(ctx context.Context, categor
 		return nil, err
 	}
 
-	insightIndexed := make(map[uint]es.AggregateInsightResult)
+	insightIndexed := make(map[uint]insight.InsightResource)
 	if sourceIDPtr == nil {
 		insightIDs := GetInsightIDListFromFilters(filters, provider)
-		insightIndexed, err = es.FetchInsightAggregatedPerQueryValueAtTime(h.client, time.Unix(t, 0), provider, sourceIDPtr, insightIDs, true)
+		insightIndexed, err = es.FetchInsightValueAtTime(h.client, time.Unix(t, 0), provider, sourceIDPtr, insightIDs, true)
 		if err != nil {
 			return nil, err
 		}
@@ -1233,7 +1233,7 @@ func (h *HttpHandler) GetMetricsResourceCountHelper(ctx context.Context, categor
 				Name:          f.Name,
 				Weight:        f.Weight,
 				Importance:    f.Importance,
-				Value:         insightIndexed[uint(f.InsightID)].Value,
+				Value:         int(insightIndexed[uint(f.InsightID)].Result),
 			}
 		}
 	}
@@ -3661,11 +3661,11 @@ func (h *HttpHandler) ListInsights(ctx echo.Context) error {
 		}
 	}
 
-	var insightValues map[uint]es.AggregateInsightResult
+	var insightValues map[uint]insight.InsightResource
 	if resultTime != nil {
-		insightValues, err = es.FetchInsightAggregatedPerQueryValueAtTime(h.client, *resultTime, connector, sourceIdPtr, insightIdList, true)
+		insightValues, err = es.FetchInsightValueAtTime(h.client, *resultTime, connector, sourceIdPtr, insightIdList, true)
 	} else {
-		insightValues, err = es.FetchInsightAggregatedPerQueryValueAtTime(h.client, time.Now(), connector, sourceIdPtr, insightIdList, false)
+		insightValues, err = es.FetchInsightValueAtTime(h.client, time.Now(), connector, sourceIdPtr, insightIdList, false)
 	}
 	if err != nil {
 		return err
@@ -3673,9 +3673,9 @@ func (h *HttpHandler) ListInsights(ctx echo.Context) error {
 
 	for insightId, insightResult := range insightValues {
 		if v, ok := resultMap[insightId]; ok {
-			v.TotalResults += int64(insightResult.Value)
+			v.TotalResults += insightResult.Result
 			if insightResult.ExecutedAt != 0 {
-				exAt := time.UnixMilli(int64(insightResult.ExecutedAt))
+				exAt := time.UnixMilli(insightResult.ExecutedAt)
 				v.ExecutedAt = &exAt
 			}
 			resultMap[insightId] = v
@@ -3763,33 +3763,31 @@ func (h *HttpHandler) GetInsight(ctx echo.Context) error {
 		Results:      nil,
 	}
 
-	var insightResults []insight.InsightResource
+	var insightResults map[uint]insight.InsightResource
 	if resultTime != nil {
-		insightResults, err = es.FetchInsightValuesAtTime(h.client, *resultTime, source.Nil, sourceIdPtr, []uint{uint(insightId)}, true)
+		insightResults, err = es.FetchInsightValueAtTime(h.client, *resultTime, source.Nil, sourceIdPtr, []uint{uint(insightId)}, true)
 	} else {
-		insightResults, err = es.FetchInsightValuesAtTime(h.client, time.Now(), source.Nil, sourceIdPtr, []uint{uint(insightId)}, false)
+		insightResults, err = es.FetchInsightValueAtTime(h.client, time.Now(), source.Nil, sourceIdPtr, []uint{uint(insightId)}, false)
 	}
 	if err != nil {
 		return err
 	}
 
-	for _, insightResult := range insightResults {
-		if result.Results == nil {
-			result.Results = make([]api.InsightResult, 0)
+	if insightResult, ok := insightResults[uint(insightId)]; ok {
+		result.TotalResults = insightResult.Result
+		if insightResult.ExecutedAt != 0 {
+			exAt := time.UnixMilli(insightResult.ExecutedAt)
+			result.ExecutedAt = &exAt
+			result.Results = &api.InsightResult{
+				JobID:      insightResult.JobID,
+				InsightID:  insightResult.QueryID,
+				SourceID:   insightResult.SourceID,
+				ExecutedAt: time.UnixMilli(insightResult.ExecutedAt),
+				Locations:  insightResult.Locations,
+				Result:     insightResult.Result,
+			}
 		}
-		result.Results = append(result.Results, api.InsightResult{
-			JobID:      insightResult.JobID,
-			InsightID:  insightResult.QueryID,
-			SourceID:   insightResult.SourceID,
-			ExecutedAt: time.UnixMilli(insightResult.ExecutedAt),
-			Result:     insightResult.Result,
-		})
-		result.TotalResults += insightResult.Result
 	}
-
-	sort.SliceStable(result.Results, func(i, j int) bool {
-		return result.Results[i].JobID < result.Results[j].JobID
-	})
 
 	return ctx.JSON(http.StatusOK, result)
 }
@@ -3865,8 +3863,8 @@ func (h *HttpHandler) GetInsightTrend(ctx echo.Context) error {
 	if values, ok := insightResults[uint(insightId)]; ok {
 		for _, value := range values {
 			result.Datapoints = append(result.Datapoints, api.TrendDataPoint{
-				Timestamp: int64(value.ExecutedAt),
-				Value:     int64(value.Value),
+				Timestamp: value.ExecutedAt / 1000, /* convert to seconds */
+				Value:     value.Result,
 			})
 		}
 	}
@@ -3927,6 +3925,7 @@ func (h *HttpHandler) GetInsightDetails(ctx echo.Context) error {
 		SourceID:   insightRow.SourceID,
 		ExecutedAt: time.UnixMilli(insightRow.ExecutedAt),
 		Result:     insightRow.Result,
+		Locations:  insightRow.Locations,
 		Details: &api.InsightDetail{
 			Headers: results.Headers,
 			Rows:    results.Data,

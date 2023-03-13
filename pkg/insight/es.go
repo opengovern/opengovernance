@@ -29,7 +29,7 @@ func FindOldInsightValue(jobID, queryID uint) (string, error) {
 	boolQuery := map[string]interface{}{}
 	var filters []interface{}
 	filters = append(filters, map[string]interface{}{
-		"terms": map[string][]string{"resource_type": {es.InsightResourceHistory}},
+		"terms": map[string][]string{"resource_type": {string(es.InsightResourceHistory)}},
 	})
 	filters = append(filters, map[string]interface{}{
 		"terms": map[string][]interface{}{"job_id": {jobID}},

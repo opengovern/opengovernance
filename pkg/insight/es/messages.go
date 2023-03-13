@@ -13,10 +13,10 @@ const (
 type InsightResourceType string
 
 const (
-	InsightResourceHistory         = "history"
-	InsightResourceLast            = "last"
-	InsightResourceProviderHistory = "provider_history"
-	InsightResourceProviderLast    = "provider_last"
+	InsightResourceHistory         InsightResourceType = "history"
+	InsightResourceLast            InsightResourceType = "last"
+	InsightResourceProviderHistory InsightResourceType = "provider_history"
+	InsightResourceProviderLast    InsightResourceType = "provider_last"
 )
 
 type InsightConnection struct {
