@@ -19,6 +19,11 @@ const (
 	InsightResourceProviderLast    = "provider_last"
 )
 
+type InsightConnection struct {
+	PlatformID  string `json:"platform_id"`
+	ConnectorID string `json:"connector_id"`
+}
+
 type InsightResource struct {
 	// JobID is the ID of the job which produced this resource
 	JobID uint `json:"job_id"`
@@ -60,8 +65,8 @@ type InsightResource struct {
 	ResourceType InsightResourceType `json:"resource_type"`
 	// Locations list of the locations of the resources included in this insight
 	Locations []string `json:"locations,omitempty"`
-	// Connections list of the connections ids of the resources included in this insight
-	Connections []string `json:"connections,omitempty"`
+	// IncludedConnections list of the connections ids of the resources included in this insight
+	IncludedConnections []InsightConnection `json:"included_connections,omitempty"`
 
 	S3Location string `json:"s3_location"`
 }

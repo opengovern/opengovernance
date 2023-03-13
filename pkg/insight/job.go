@@ -104,7 +104,7 @@ func (j Job) Do(client keibi.Client, steampipeConn *steampipe.Database, onboardC
 	var count int64
 	var (
 		locationsMap   map[string]struct{}
-		connectionsMap map[string]struct{}
+		connectionsMap map[string]string
 	)
 	var res *steampipe.Result
 	var err error
@@ -150,9 +150,9 @@ func (j Job) Do(client keibi.Client, steampipeConn *steampipe.Database, onboardC
 							}
 							locationsMap[metadata.Region] = struct{}{}
 							if connectionsMap == nil {
-								connectionsMap = make(map[string]struct{})
+								connectionsMap = make(map[string]string)
 							}
-							connectionsMap[metadata.AccountID] = struct{}{}
+							connectionsMap[metadata.SourceID] = metadata.AccountID
 						case source.CloudAzure:
 							var metadata azuremodel.Metadata
 							err = json.Unmarshal([]byte(cell.(string)), &metadata)
@@ -164,9 +164,9 @@ func (j Job) Do(client keibi.Client, steampipeConn *steampipe.Database, onboardC
 							}
 							locationsMap[metadata.Location] = struct{}{}
 							if connectionsMap == nil {
-								connectionsMap = make(map[string]struct{})
+								connectionsMap = make(map[string]string)
 							}
-							connectionsMap[metadata.SubscriptionID] = struct{}{}
+							connectionsMap[metadata.SourceID] = metadata.SubscriptionID
 						}
 						break
 					}
@@ -221,43 +221,46 @@ func (j Job) Do(client keibi.Client, steampipeConn *steampipe.Database, onboardC
 						locations = append(locations, location)
 					}
 				}
-				var connections []string = nil
+				var connections []es.InsightConnection = nil
 				if connectionsMap != nil {
-					connections = make([]string, 0, len(connectionsMap))
-					for connection := range connectionsMap {
-						connections = append(connections, connection)
+					connections = make([]es.InsightConnection, 0, len(connectionsMap))
+					for platformId, connectorId := range connectionsMap {
+						connections = append(connections, es.InsightConnection{
+							PlatformID:  platformId,
+							ConnectorID: connectorId,
+						})
 					}
 				}
 
 				var resources []kafka.Doc
 				resourceTypeList := []es.InsightResourceType{es.InsightResourceHistory, es.InsightResourceLast}
-				if strings.HasPrefix(strings.ToLower(j.SourceID), "all") {
+				if strings.HasPrefix(strings.ToLower(j.SourceID), "all:") {
 					resourceTypeList = []es.InsightResourceType{es.InsightResourceProviderHistory, es.InsightResourceProviderLast}
 				}
 				for _, resourceType := range resourceTypeList {
 					resources = append(resources, es.InsightResource{
-						JobID:            j.JobID,
-						QueryID:          j.QueryID,
-						SmartQueryID:     j.SmartQueryID,
-						Query:            j.Query,
-						Internal:         j.Internal,
-						Description:      j.Description,
-						SourceID:         j.SourceID,
-						AccountID:        j.AccountID,
-						Provider:         j.SourceType,
-						Category:         j.Category,
-						ExecutedAt:       time.Now().UnixMilli(),
-						ScheduleUUID:     j.ScheduleJobUUID,
-						Result:           count,
-						LastDayValue:     lastDayValue,
-						LastWeekValue:    lastWeekValue,
-						LastMonthValue:   lastMonthValue,
-						LastQuarterValue: lastQuarterValue,
-						LastYearValue:    lastYearValue,
-						ResourceType:     resourceType,
-						Locations:        locations,
-						Connections:      connections,
-						S3Location:       result.Location,
+						JobID:               j.JobID,
+						QueryID:             j.QueryID,
+						SmartQueryID:        j.SmartQueryID,
+						Query:               j.Query,
+						Internal:            j.Internal,
+						Description:         j.Description,
+						SourceID:            j.SourceID,
+						AccountID:           j.AccountID,
+						Provider:            j.SourceType,
+						Category:            j.Category,
+						ExecutedAt:          time.Now().UnixMilli(),
+						ScheduleUUID:        j.ScheduleJobUUID,
+						Result:              count,
+						LastDayValue:        lastDayValue,
+						LastWeekValue:       lastWeekValue,
+						LastMonthValue:      lastMonthValue,
+						LastQuarterValue:    lastQuarterValue,
+						LastYearValue:       lastYearValue,
+						ResourceType:        resourceType,
+						Locations:           locations,
+						IncludedConnections: connections,
+						S3Location:          result.Location,
 					})
 				}
 				if err := kafka.DoSend(producer, topic, resources, logger); err != nil {
