@@ -224,10 +224,10 @@ func (j Job) Do(client keibi.Client, steampipeConn *steampipe.Database, onboardC
 				var connections []es.InsightConnection = nil
 				if connectionsMap != nil {
 					connections = make([]es.InsightConnection, 0, len(connectionsMap))
-					for platformId, connectorId := range connectionsMap {
+					for connectionID, originalID := range connectionsMap {
 						connections = append(connections, es.InsightConnection{
-							PlatformID:  platformId,
-							ConnectorID: connectorId,
+							ConnectionID: connectionID,
+							OriginalID:   originalID,
 						})
 					}
 				}

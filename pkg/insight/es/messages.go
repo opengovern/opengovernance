@@ -20,8 +20,8 @@ const (
 )
 
 type InsightConnection struct {
-	PlatformID  string `json:"platform_id"`
-	ConnectorID string `json:"connector_id"`
+	ConnectionID string `json:"connection_id"`
+	OriginalID   string `json:"original_id"`
 }
 
 type InsightResource struct {
