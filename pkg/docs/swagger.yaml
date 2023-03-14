@@ -1122,7 +1122,7 @@ definitions:
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.InsightResultTrendResponse:
     properties:
-      datapoints:
+      trend:
         items:
           $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.TrendDataPoint'
         type: array
