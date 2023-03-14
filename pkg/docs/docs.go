@@ -6424,7 +6424,7 @@ const docTemplate = `{
         "gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.InsightResultTrendResponse": {
             "type": "object",
             "properties": {
-                "datapoints": {
+                "trend": {
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.TrendDataPoint"

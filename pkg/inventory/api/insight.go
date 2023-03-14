@@ -72,5 +72,5 @@ type Insight struct {
 }
 
 type InsightResultTrendResponse struct {
-	Datapoints []TrendDataPoint `json:"datapoints"`
+	Trend []TrendDataPoint `json:"trend"`
 }

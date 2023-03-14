@@ -3884,21 +3884,21 @@ func (h *HttpHandler) GetInsightTrend(ctx echo.Context) error {
 	}
 
 	result := api.InsightResultTrendResponse{
-		Datapoints: make([]api.TrendDataPoint, 0),
+		Trend: make([]api.TrendDataPoint, 0),
 	}
 
 	if values, ok := insightResults[uint(insightId)]; ok {
 		for _, value := range values {
-			result.Datapoints = append(result.Datapoints, api.TrendDataPoint{
+			result.Trend = append(result.Trend, api.TrendDataPoint{
 				Timestamp: value.ExecutedAt / 1000, /* convert to seconds */
 				Value:     value.Result,
 			})
 		}
 	}
 
-	result.Datapoints = internal.DownSampleTrendDataPoints(result.Datapoints, dataPointCount)
-	sort.SliceStable(result.Datapoints, func(i, j int) bool {
-		return result.Datapoints[i].Timestamp < result.Datapoints[j].Timestamp
+	result.Trend = internal.DownSampleTrendDataPoints(result.Trend, dataPointCount)
+	sort.SliceStable(result.Trend, func(i, j int) bool {
+		return result.Trend[i].Timestamp < result.Trend[j].Timestamp
 	})
 
 	return ctx.JSON(http.StatusOK, result)
