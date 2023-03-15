@@ -120,9 +120,10 @@ type InsightLabel struct {
 
 type InsightLink struct {
 	gorm.Model
-	InsightID uint
-	Text      string
-	URI       string
+	InsightID          *uint
+	InsightPeerGroupID *uint
+	Text               string
+	URI                string
 }
 
 type InsightJob struct {
