@@ -91,8 +91,8 @@ type InsightPeerGroup struct {
 	LongTitle   string
 	Description string
 	LogoURL     *string
-	Labels      []InsightLabel `gorm:"foreignKey:InsightID;constraint:OnDelete:CASCADE;"`
-	Links       []InsightLink  `gorm:"foreignKey:InsightID;constraint:OnDelete:CASCADE;"`
+	Labels      []InsightLabel `gorm:"foreignKey:InsightPeerGroupID;constraint:OnDelete:SET NULL;"`
+	Links       []InsightLink  `gorm:"foreignKey:InsightPeerGroupID;constraint:OnDelete:SET NULL;"`
 }
 
 type Insight struct {
@@ -105,16 +105,17 @@ type Insight struct {
 	LongTitle   string
 	Description string
 	LogoURL     *string
-	Labels      []InsightLabel `gorm:"foreignKey:InsightID;constraint:OnDelete:CASCADE;"`
-	Links       []InsightLink  `gorm:"foreignKey:InsightID;constraint:OnDelete:CASCADE;"`
+	Labels      []InsightLabel `gorm:"foreignKey:InsightID;constraint:OnDelete:SET NULL;"`
+	Links       []InsightLink  `gorm:"foreignKey:InsightID;constraint:OnDelete:SET NULL;"`
 	Enabled     bool           `gorm:"default:true"`
 	Internal    bool
 }
 
 type InsightLabel struct {
 	gorm.Model
-	InsightID uint
-	Label     string
+	InsightID          *uint
+	InsightPeerGroupID *uint
+	Label              string
 }
 
 type InsightLink struct {
