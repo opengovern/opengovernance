@@ -28,7 +28,7 @@ type Database struct {
 
 func (db Database) Initialize() error {
 	return db.orm.AutoMigrate(&Source{}, &DescribeSourceJob{}, &CloudNativeDescribeSourceJob{}, &DescribeResourceJob{},
-		&ComplianceReportJob{}, &InsightLabel{}, &InsightLink{}, &InsightPeerGroup{}, &Insight{}, &InsightJob{}, &CheckupJob{}, &SummarizerJob{}, &ScheduleJob{},
+		&ComplianceReportJob{}, &InsightLabel{}, &InsightLink{}, &Insight{}, &InsightPeerGroup{}, &InsightJob{}, &CheckupJob{}, &SummarizerJob{}, &ScheduleJob{},
 	)
 }
 
