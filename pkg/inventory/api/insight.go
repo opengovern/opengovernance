@@ -1,6 +1,7 @@
 package api
 
 import (
+	"encoding/json"
 	"time"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/source"
@@ -54,21 +55,74 @@ type InsightLink struct {
 	URI  string `json:"uri"`
 }
 
+type ListInsightResultType string
+
+const (
+	ListInsightResultTypePeerGroup ListInsightResultType = "peerGroup"
+	ListInsightResultTypeInsight   ListInsightResultType = "insight"
+)
+
+type ListInsightResult interface {
+	GetType() ListInsightResultType
+	GetID() uint
+}
+
 type Insight struct {
-	ID           uint           `json:"id"`
-	Query        string         `json:"query"`
-	Category     string         `json:"category"`
-	Provider     source.Type    `json:"provider"`
-	ShortTitle   string         `json:"shortTitle"`
-	LongTitle    string         `json:"longTitle"`
-	Description  string         `json:"description"`
-	LogoURL      *string        `json:"logoURL"`
-	Labels       []InsightLabel `json:"labels"`
-	Links        []InsightLink  `json:"links"`
-	Enabled      bool           `json:"enabled"`
-	ExecutedAt   *time.Time     `json:"executedAt,omitempty"`
-	TotalResults int64          `json:"totalResults"`
-	Results      *InsightResult `json:"results,omitempty"`
+	ID                    uint                  `json:"id"`
+	Query                 string                `json:"query"`
+	Category              string                `json:"category"`
+	Provider              source.Type           `json:"provider"`
+	ShortTitle            string                `json:"shortTitle"`
+	LongTitle             string                `json:"longTitle"`
+	Description           string                `json:"description"`
+	LogoURL               *string               `json:"logoURL"`
+	Labels                []InsightLabel        `json:"labels"`
+	Links                 []InsightLink         `json:"links"`
+	Enabled               bool                  `json:"enabled"`
+	ExecutedAt            *time.Time            `json:"executedAt,omitempty"`
+	TotalResults          int64                 `json:"totalResults"`
+	Results               *InsightResult        `json:"results,omitempty"`
+	ListInsightResultType ListInsightResultType `json:"listInsightResultType"`
+}
+
+func (i Insight) GetType() ListInsightResultType {
+	return ListInsightResultTypeInsight
+}
+
+func (i Insight) GetID() uint {
+	return i.ID
+}
+
+func (i Insight) MarshalJSON() ([]byte, error) {
+	i.ListInsightResultType = i.GetType()
+	return json.Marshal(i)
+}
+
+type InsightPeerGroup struct {
+	ID                    uint                  `json:"id"`
+	Category              string                `json:"category"`
+	Insights              []Insight             `json:"insights,omitempty"`
+	ShortTitle            string                `json:"shortTitle"`
+	LongTitle             string                `json:"longTitle"`
+	Description           string                `json:"description"`
+	LogoURL               *string               `json:"logoURL"`
+	Labels                []InsightLabel        `json:"labels"`
+	Links                 []InsightLink         `json:"links"`
+	TotalResults          int64                 `json:"totalResults"`
+	ListInsightResultType ListInsightResultType `json:"listInsightResultType"`
+}
+
+func (i InsightPeerGroup) GetType() ListInsightResultType {
+	return ListInsightResultTypePeerGroup
+}
+
+func (i InsightPeerGroup) GetID() uint {
+	return i.ID
+}
+
+func (i InsightPeerGroup) MarshalJSON() ([]byte, error) {
+	i.ListInsightResultType = i.GetType()
+	return json.Marshal(i)
 }
 
 type InsightResultTrendResponse struct {

@@ -2373,7 +2373,7 @@ func (s Scheduler) scheduleInsightJob(forceCreate bool) {
 		for _, ins := range insights {
 			for _, src := range srcs {
 				srcType, _ := source.ParseType(string(src.Type))
-				if ins.Provider != source.Nil && srcType != ins.Provider {
+				if ins.Connector != source.Nil && srcType != ins.Connector {
 					continue
 				}
 				job := newInsightJob(ins, string(src.Type), src.ID.String(), src.AccountID, scheduleUUID.String())
@@ -2408,8 +2408,8 @@ func (s Scheduler) scheduleInsightJob(forceCreate bool) {
 			}
 
 			// add a job for all sources
-			id := fmt.Sprintf("all:%s", strings.ToLower(string(ins.Provider)))
-			job := newInsightJob(ins, string(ins.Provider), id, id, scheduleUUID.String())
+			id := fmt.Sprintf("all:%s", strings.ToLower(string(ins.Connector)))
+			job := newInsightJob(ins, string(ins.Connector), id, id, scheduleUUID.String())
 			err = s.db.AddInsightJob(&job)
 			if err != nil {
 				InsightJobsCount.WithLabelValues("failure").Inc()
@@ -2805,7 +2805,7 @@ func enqueueInsightJobs(db Database, q queue.Interface, job InsightJob) error {
 		SourceID:         job.SourceID,
 		ScheduleJobUUID:  job.ScheduleUUID,
 		AccountID:        job.AccountID,
-		SourceType:       ins.Provider,
+		SourceType:       ins.Connector,
 		Internal:         ins.Internal,
 		Query:            ins.Query,
 		Description:      ins.Description,
