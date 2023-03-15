@@ -83,11 +83,24 @@ type DescribeResourceJob struct {
 	FailureMessage string // Should be NULLSTRING
 }
 
+type InsightPeerGroup struct {
+	gorm.Model
+	Category    string
+	Insights    []Insight `gorm:"foreignKey:PeerGroupId;constraint:OnDelete:SET NULL;"`
+	ShortTitle  string
+	LongTitle   string
+	Description string
+	LogoURL     *string
+	Labels      []InsightLabel `gorm:"foreignKey:InsightID;constraint:OnDelete:CASCADE;"`
+	Links       []InsightLink  `gorm:"foreignKey:InsightID;constraint:OnDelete:CASCADE;"`
+}
+
 type Insight struct {
 	gorm.Model
+	PeerGroupId *uint
 	Query       string
 	Category    string
-	Provider    source.Type
+	Connector   source.Type
 	ShortTitle  string
 	LongTitle   string
 	Description string

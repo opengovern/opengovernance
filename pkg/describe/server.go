@@ -71,8 +71,10 @@ func (h HttpServer) Register(e *echo.Echo) {
 	v1.GET("/compliance/report/last/completed", httpserver.AuthorizeHandler(h.HandleGetLastCompletedComplianceReport, api3.ViewerRole))
 
 	v1.GET("/insight", httpserver.AuthorizeHandler(h.ListInsights, api3.ViewerRole))
+	v1.GET("/insight/peer", httpserver.AuthorizeHandler(h.ListPeerInsightGroups, api3.ViewerRole))
 	v1.PUT("/insight", httpserver.AuthorizeHandler(h.CreateInsight, api3.EditorRole))
 	v1.DELETE("/insight/:insightId", httpserver.AuthorizeHandler(h.DeleteInsight, api3.EditorRole))
+	v1.GET("/insight/peer/:peerGroupId", httpserver.AuthorizeHandler(h.GetInsightPeerGroup, api3.ViewerRole))
 	v1.GET("/insight/:insightId", httpserver.AuthorizeHandler(h.GetInsight, api3.ViewerRole))
 
 	v1.POST("/jobs/:job_id/creds", h.HandleGetCredsForJob)
@@ -466,7 +468,7 @@ func (h HttpServer) CreateInsight(ctx echo.Context) error {
 	ins := Insight{
 		Description: req.Description,
 		Query:       req.Query,
-		Provider:    req.Provider,
+		Connector:   req.Provider,
 		Category:    req.Category,
 		Internal:    req.Internal,
 	}
@@ -522,22 +524,25 @@ func (h HttpServer) ListInsights(ctx echo.Context) error {
 		search = &req.DescriptionFilter
 	}
 
-	queries, err := h.DB.ListInsightsWithFilters(search, connector)
+	insightRows, err := h.DB.ListInsightsWithFilters(search, connector)
 	if err != nil {
 		return err
 	}
 
 	var result []api.Insight
-	for _, item := range queries {
-		labels := make([]api.InsightLabel, 0, len(item.Labels))
-		for _, label := range item.Labels {
+	for _, insightRow := range insightRows {
+		if !insightRow.Enabled {
+			continue
+		}
+		labels := make([]api.InsightLabel, 0, len(insightRow.Labels))
+		for _, label := range insightRow.Labels {
 			labels = append(labels, api.InsightLabel{
 				ID:    label.ID,
 				Label: label.Label,
 			})
 		}
-		links := make([]api.InsightLink, 0, len(item.Links))
-		for _, link := range item.Links {
+		links := make([]api.InsightLink, 0, len(insightRow.Links))
+		for _, link := range insightRow.Links {
 			links = append(links, api.InsightLink{
 				ID:   link.ID,
 				Text: link.Text,
@@ -545,17 +550,84 @@ func (h HttpServer) ListInsights(ctx echo.Context) error {
 			})
 		}
 		result = append(result, api.Insight{
-			ID:          item.Model.ID,
-			Query:       item.Query,
-			Category:    item.Category,
-			Provider:    item.Provider,
-			ShortTitle:  item.ShortTitle,
-			LongTitle:   item.LongTitle,
-			Description: item.Description,
-			LogoURL:     item.LogoURL,
+			ID:          insightRow.Model.ID,
+			PeerGroupId: insightRow.PeerGroupId,
+			Query:       insightRow.Query,
+			Category:    insightRow.Category,
+			Provider:    insightRow.Connector,
+			ShortTitle:  insightRow.ShortTitle,
+			LongTitle:   insightRow.LongTitle,
+			Description: insightRow.Description,
+			LogoURL:     insightRow.LogoURL,
 			Labels:      labels,
 			Links:       links,
-			Enabled:     item.Enabled,
+			Enabled:     insightRow.Enabled,
+		})
+	}
+	return ctx.JSON(200, result)
+}
+
+// ListPeerInsightGroups godoc
+//
+//	@Summary		List insights
+//	@Description	Listing insights
+//	@Tags			insights
+//	@Produce		json
+//	@Success		200			{object}	[]api.InsightPeerGroup
+//	@Param			connector	query		source.Type	false	"filter by connector"
+//	@Router			/schedule/api/v1/insight/peer [get]
+func (h HttpServer) ListPeerInsightGroups(ctx echo.Context) error {
+	connector, _ := source.ParseType(ctx.QueryParam("connector"))
+
+	queries, err := h.DB.ListInsightsPeerGroups()
+	if err != nil {
+		return err
+	}
+
+	var result []api.InsightPeerGroup
+	for _, insightPeerGroup := range queries {
+		labels := make([]api.InsightLabel, 0, len(insightPeerGroup.Labels))
+		for _, label := range insightPeerGroup.Labels {
+			labels = append(labels, api.InsightLabel{
+				ID:    label.ID,
+				Label: label.Label,
+			})
+		}
+		links := make([]api.InsightLink, 0, len(insightPeerGroup.Links))
+		for _, link := range insightPeerGroup.Links {
+			links = append(links, api.InsightLink{
+				ID:   link.ID,
+				Text: link.Text,
+				URI:  link.URI,
+			})
+		}
+		insightList := make([]api.Insight, 0, len(insightPeerGroup.Insights))
+		for _, insight := range insightPeerGroup.Insights {
+			if !insight.Enabled || (connector != source.Nil && insight.Connector != connector) {
+				continue
+			}
+			insightList = append(insightList, api.Insight{
+				ID:          insight.Model.ID,
+				Query:       insight.Query,
+				Category:    insight.Category,
+				Provider:    insight.Connector,
+				ShortTitle:  insight.ShortTitle,
+				LongTitle:   insight.LongTitle,
+				Description: insight.Description,
+				LogoURL:     insight.LogoURL,
+				Enabled:     insight.Enabled,
+			})
+		}
+		result = append(result, api.InsightPeerGroup{
+			ID:          insightPeerGroup.Model.ID,
+			Category:    insightPeerGroup.Category,
+			Insights:    insightList,
+			ShortTitle:  insightPeerGroup.ShortTitle,
+			LongTitle:   insightPeerGroup.LongTitle,
+			Description: insightPeerGroup.Description,
+			LogoURL:     insightPeerGroup.LogoURL,
+			Labels:      labels,
+			Links:       links,
 		})
 	}
 	return ctx.JSON(200, result)
@@ -602,9 +674,10 @@ func (h HttpServer) GetInsight(ctx echo.Context) error {
 
 	res := api.Insight{
 		ID:          insight.Model.ID,
+		PeerGroupId: insight.PeerGroupId,
 		Query:       insight.Query,
 		Category:    insight.Category,
-		Provider:    insight.Provider,
+		Provider:    insight.Connector,
 		ShortTitle:  insight.ShortTitle,
 		LongTitle:   insight.LongTitle,
 		Description: insight.Description,
@@ -612,6 +685,97 @@ func (h HttpServer) GetInsight(ctx echo.Context) error {
 		Labels:      labels,
 		Links:       links,
 		Enabled:     insight.Enabled,
+	}
+
+	return ctx.JSON(200, res)
+}
+
+// GetInsightPeerGroup godoc
+//
+//	@Summary		Get insight by id
+//	@Description	Get insight by id
+//	@Tags			insights
+//	@Produce		json
+//	@Success		200	{object}	api.InsightPeerGroup
+//	@Router			/schedule/api/v1/insight/peer/{peerGroupId} [get]
+func (h HttpServer) GetInsightPeerGroup(ctx echo.Context) error {
+	id, err := strconv.ParseUint(ctx.Param("peerGroupId"), 10, 64)
+	if err != nil {
+		h.Scheduler.logger.Error("invalid id", zap.Error(err))
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid id")
+	}
+	insightPeerGroup, err := h.DB.GetInsightsPeerGroup(uint(id))
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return echo.NewHTTPError(http.StatusNotFound, "insightPeerGroup not found")
+		}
+		return err
+	}
+
+	labels := make([]api.InsightLabel, 0, len(insightPeerGroup.Labels))
+	for _, label := range insightPeerGroup.Labels {
+		labels = append(labels, api.InsightLabel{
+			ID:    label.ID,
+			Label: label.Label,
+		})
+	}
+
+	links := make([]api.InsightLink, 0, len(insightPeerGroup.Links))
+	for _, link := range insightPeerGroup.Links {
+		links = append(links, api.InsightLink{
+			ID:   link.ID,
+			Text: link.Text,
+			URI:  link.URI,
+		})
+	}
+
+	insightList := make([]api.Insight, 0, len(insightPeerGroup.Insights))
+	for _, insight := range insightPeerGroup.Insights {
+		if insight.Enabled == false {
+			continue
+		}
+		labels := make([]api.InsightLabel, 0, len(insight.Labels))
+		for _, label := range insight.Labels {
+			labels = append(labels, api.InsightLabel{
+				ID:    label.ID,
+				Label: label.Label,
+			})
+		}
+
+		links := make([]api.InsightLink, 0, len(insight.Links))
+		for _, link := range insight.Links {
+			links = append(links, api.InsightLink{
+				ID:   link.ID,
+				Text: link.Text,
+				URI:  link.URI,
+			})
+		}
+
+		insightList = append(insightList, api.Insight{
+			ID:          insight.Model.ID,
+			Query:       insight.Query,
+			Category:    insight.Category,
+			Provider:    insight.Connector,
+			ShortTitle:  insight.ShortTitle,
+			LongTitle:   insight.LongTitle,
+			Description: insight.Description,
+			LogoURL:     insight.LogoURL,
+			Labels:      labels,
+			Links:       links,
+			Enabled:     insight.Enabled,
+		})
+	}
+
+	res := api.InsightPeerGroup{
+		ID:          insightPeerGroup.Model.ID,
+		Category:    insightPeerGroup.Category,
+		Insights:    insightList,
+		ShortTitle:  insightPeerGroup.ShortTitle,
+		LongTitle:   insightPeerGroup.LongTitle,
+		Description: insightPeerGroup.Description,
+		LogoURL:     insightPeerGroup.LogoURL,
+		Labels:      labels,
+		Links:       links,
 	}
 
 	return ctx.JSON(200, res)

@@ -1,6 +1,8 @@
 package api
 
-import "gitlab.com/keibiengine/keibi-engine/pkg/source"
+import (
+	"gitlab.com/keibiengine/keibi-engine/pkg/source"
+)
 
 type InsightLabel struct {
 	ID    uint   `json:"id"`
@@ -15,6 +17,7 @@ type InsightLink struct {
 
 type Insight struct {
 	ID          uint           `json:"id"`
+	PeerGroupId *uint          `json:"peerGroupId"`
 	Query       string         `json:"query"`
 	Category    string         `json:"category"`
 	Provider    source.Type    `json:"provider"`
@@ -25,6 +28,18 @@ type Insight struct {
 	Labels      []InsightLabel `json:"labels"`
 	Links       []InsightLink  `json:"links"`
 	Enabled     bool           `json:"enabled"`
+}
+
+type InsightPeerGroup struct {
+	ID          uint           `json:"id"`
+	Category    string         `json:"category"`
+	Insights    []Insight      `json:"insights,omitempty"`
+	ShortTitle  string         `json:"shortTitle"`
+	LongTitle   string         `json:"longTitle"`
+	Description string         `json:"description"`
+	LogoURL     *string        `json:"logoURL"`
+	Labels      []InsightLabel `json:"labels"`
+	Links       []InsightLink  `json:"links"`
 }
 
 type ListInsightsRequest struct {

@@ -1945,9 +1945,41 @@ const docTemplate = `{
                         "description": "OK",
                         "schema": {
                             "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.Insight"
-                            }
+                            "items": {}
+                        }
+                    }
+                }
+            }
+        },
+        "/inventory/api/v2/insights/peer/{insightPeerGroupId}": {
+            "get": {
+                "description": "Get an insight by id",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "insight"
+                ],
+                "summary": "Get an insight by id",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "filter the result by source id",
+                        "name": "sourceId",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "unix seconds for the time to get the insight result for",
+                        "name": "time",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.InsightPeerGroup"
                         }
                     }
                 }
@@ -4007,6 +4039,62 @@ const docTemplate = `{
                 }
             }
         },
+        "/schedule/api/v1/insight/peer": {
+            "get": {
+                "description": "Listing insights",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "insights"
+                ],
+                "summary": "List insights",
+                "parameters": [
+                    {
+                        "enum": [
+                            "",
+                            "AWS",
+                            "Azure"
+                        ],
+                        "type": "string",
+                        "description": "filter by connector",
+                        "name": "connector",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_describe_api.InsightPeerGroup"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/schedule/api/v1/insight/peer/{peerGroupId}": {
+            "get": {
+                "description": "Get insight by id",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "insights"
+                ],
+                "summary": "Get insight by id",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_describe_api.InsightPeerGroup"
+                        }
+                    }
+                }
+            }
+        },
         "/schedule/api/v1/insight/{id}": {
             "delete": {
                 "produces": [
@@ -5686,6 +5774,9 @@ const docTemplate = `{
                 "longTitle": {
                     "type": "string"
                 },
+                "peerGroupId": {
+                    "type": "integer"
+                },
                 "provider": {
                     "$ref": "#/definitions/source.Type"
                 },
@@ -5718,6 +5809,47 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "linkURI": {
+                    "type": "string"
+                }
+            }
+        },
+        "gitlab_com_keibiengine_keibi-engine_pkg_describe_api.InsightPeerGroup": {
+            "type": "object",
+            "properties": {
+                "category": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "insights": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_describe_api.Insight"
+                    }
+                },
+                "labels": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_describe_api.InsightLabel"
+                    }
+                },
+                "links": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_describe_api.InsightLink"
+                    }
+                },
+                "logoURL": {
+                    "type": "string"
+                },
+                "longTitle": {
+                    "type": "string"
+                },
+                "shortTitle": {
                     "type": "string"
                 }
             }
@@ -6309,6 +6441,9 @@ const docTemplate = `{
                         "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.InsightLink"
                     }
                 },
+                "listInsightResultType": {
+                    "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ListInsightResultType"
+                },
                 "logoURL": {
                     "type": "string"
                 },
@@ -6386,6 +6521,53 @@ const docTemplate = `{
                 }
             }
         },
+        "gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.InsightPeerGroup": {
+            "type": "object",
+            "properties": {
+                "category": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "insights": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.Insight"
+                    }
+                },
+                "labels": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.InsightLabel"
+                    }
+                },
+                "links": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.InsightLink"
+                    }
+                },
+                "listInsightResultType": {
+                    "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ListInsightResultType"
+                },
+                "logoURL": {
+                    "type": "string"
+                },
+                "longTitle": {
+                    "type": "string"
+                },
+                "shortTitle": {
+                    "type": "string"
+                },
+                "totalResults": {
+                    "type": "integer"
+                }
+            }
+        },
         "gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.InsightResult": {
             "type": "object",
             "properties": {
@@ -6431,6 +6613,17 @@ const docTemplate = `{
                     }
                 }
             }
+        },
+        "gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ListInsightResultType": {
+            "type": "string",
+            "enum": [
+                "peerGroup",
+                "insight"
+            ],
+            "x-enum-varnames": [
+                "ListInsightResultTypePeerGroup",
+                "ListInsightResultTypeInsight"
+            ]
         },
         "gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ListQueryRequest": {
             "type": "object",

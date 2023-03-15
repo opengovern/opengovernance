@@ -28,7 +28,7 @@ type Database struct {
 
 func (db Database) Initialize() error {
 	return db.orm.AutoMigrate(&Source{}, &DescribeSourceJob{}, &CloudNativeDescribeSourceJob{}, &DescribeResourceJob{},
-		&ComplianceReportJob{}, &InsightLabel{}, &InsightLink{}, &Insight{}, &InsightJob{}, &CheckupJob{}, &SummarizerJob{}, &ScheduleJob{},
+		&ComplianceReportJob{}, &InsightLabel{}, &InsightLink{}, &InsightPeerGroup{}, &Insight{}, &InsightJob{}, &CheckupJob{}, &SummarizerJob{}, &ScheduleJob{},
 	)
 }
 
@@ -758,6 +758,26 @@ func (db Database) DeleteInsight(id uint) error {
 	return nil
 }
 
+func (db Database) ListInsightsPeerGroups() ([]InsightPeerGroup, error) {
+	var s []InsightPeerGroup
+	tx := db.orm.Model(&InsightPeerGroup{}).Preload(clause.Associations).Find(&s)
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+	return s, nil
+}
+
+func (db Database) GetInsightsPeerGroup(id uint) (*InsightPeerGroup, error) {
+	var res InsightPeerGroup
+	tx := db.orm.Model(&InsightPeerGroup{}).Preload(clause.Associations).
+		Where("id = ?", id).
+		First(&res)
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+	return &res, nil
+}
+
 func (db Database) AddInsightJob(job *InsightJob) error {
 	tx := db.orm.Model(&InsightJob{}).
 		Create(job)
@@ -1028,11 +1048,6 @@ func (db Database) FetchLastScheduleJob() (*ScheduleJob, error) {
 		return nil, nil
 	}
 	return job, nil
-}
-
-type result struct {
-	Source            Source
-	DescribeSourceJob DescribeSourceJob
 }
 
 func (db Database) QueryDescribeSourceJobsForScheduleJob(job *ScheduleJob) ([]DescribeSourceJob, error) {

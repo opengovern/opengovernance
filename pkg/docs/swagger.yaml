@@ -630,6 +630,8 @@ definitions:
         type: string
       longTitle:
         type: string
+      peerGroupId:
+        type: integer
       provider:
         $ref: '#/definitions/source.Type'
       query:
@@ -651,6 +653,33 @@ definitions:
       linkText:
         type: string
       linkURI:
+        type: string
+    type: object
+  gitlab_com_keibiengine_keibi-engine_pkg_describe_api.InsightPeerGroup:
+    properties:
+      category:
+        type: string
+      description:
+        type: string
+      id:
+        type: integer
+      insights:
+        items:
+          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_describe_api.Insight'
+        type: array
+      labels:
+        items:
+          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_describe_api.InsightLabel'
+        type: array
+      links:
+        items:
+          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_describe_api.InsightLink'
+        type: array
+      logoURL:
+        type: string
+      longTitle:
+        type: string
+      shortTitle:
         type: string
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_describe_api.ListInsightsRequest:
@@ -1047,6 +1076,8 @@ definitions:
         items:
           $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.InsightLink'
         type: array
+      listInsightResultType:
+        $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ListInsightResultType'
       logoURL:
         type: string
       longTitle:
@@ -1097,6 +1128,37 @@ definitions:
       uri:
         type: string
     type: object
+  gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.InsightPeerGroup:
+    properties:
+      category:
+        type: string
+      description:
+        type: string
+      id:
+        type: integer
+      insights:
+        items:
+          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.Insight'
+        type: array
+      labels:
+        items:
+          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.InsightLabel'
+        type: array
+      links:
+        items:
+          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.InsightLink'
+        type: array
+      listInsightResultType:
+        $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ListInsightResultType'
+      logoURL:
+        type: string
+      longTitle:
+        type: string
+      shortTitle:
+        type: string
+      totalResults:
+        type: integer
+    type: object
   gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.InsightResult:
     properties:
       connections:
@@ -1127,6 +1189,14 @@ definitions:
           $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.TrendDataPoint'
         type: array
     type: object
+  gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ListInsightResultType:
+    enum:
+    - peerGroup
+    - insight
+    type: string
+    x-enum-varnames:
+    - ListInsightResultTypePeerGroup
+    - ListInsightResultTypeInsight
   gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ListQueryRequest:
     properties:
       labels:
@@ -3323,8 +3393,7 @@ paths:
         "200":
           description: OK
           schema:
-            items:
-              $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.Insight'
+            items: {}
             type: array
       summary: List all insights
       tags:
@@ -3380,6 +3449,28 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.InsightResultTrendResponse'
+      summary: Get an insight by id
+      tags:
+      - insight
+  /inventory/api/v2/insights/peer/{insightPeerGroupId}:
+    get:
+      description: Get an insight by id
+      parameters:
+      - description: filter the result by source id
+        in: query
+        name: sourceId
+        type: string
+      - description: unix seconds for the time to get the insight result for
+        in: query
+        name: time
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.InsightPeerGroup'
       summary: Get an insight by id
       tags:
       - insight
@@ -4735,6 +4826,43 @@ paths:
       summary: Listing insight jobs
       tags:
       - schedule
+  /schedule/api/v1/insight/peer:
+    get:
+      description: Listing insights
+      parameters:
+      - description: filter by connector
+        enum:
+        - ""
+        - AWS
+        - Azure
+        in: query
+        name: connector
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_describe_api.InsightPeerGroup'
+            type: array
+      summary: List insights
+      tags:
+      - insights
+  /schedule/api/v1/insight/peer/{peerGroupId}:
+    get:
+      description: Get insight by id
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_describe_api.InsightPeerGroup'
+      summary: Get insight by id
+      tags:
+      - insights
   /schedule/api/v1/jobs/{job_id}/creds:
     post:
       parameters:

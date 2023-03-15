@@ -21,6 +21,8 @@ type SchedulerServiceClient interface {
 	GetLastComplianceReportID(ctx *httpclient.Context) (uint, error)
 	GetInsights(ctx *httpclient.Context, connector source.Type) ([]api.Insight, error)
 	GetInsightById(ctx *httpclient.Context, id uint) (*api.Insight, error)
+	GetInsightPeerGroups(ctx *httpclient.Context, connector source.Type) ([]api.InsightPeerGroup, error)
+	GetInsightPeerGroupById(ctx *httpclient.Context, id uint) (*api.InsightPeerGroup, error)
 }
 
 type schedulerClient struct {
@@ -85,4 +87,27 @@ func (s *schedulerClient) GetInsightById(ctx *httpclient.Context, id uint) (*api
 		return nil, err
 	}
 	return &insight, nil
+}
+
+func (s *schedulerClient) GetInsightPeerGroups(ctx *httpclient.Context, connector source.Type) ([]api.InsightPeerGroup, error) {
+	url := fmt.Sprintf("%s/api/v1/insight/peer", s.baseURL)
+	if connector != source.Nil {
+		url = fmt.Sprintf("%s?connector=%s", url, connector)
+	}
+
+	var insightPeerGroups []api.InsightPeerGroup
+	if err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &insightPeerGroups); err != nil {
+		return nil, err
+	}
+	return insightPeerGroups, nil
+}
+
+func (s *schedulerClient) GetInsightPeerGroupById(ctx *httpclient.Context, id uint) (*api.InsightPeerGroup, error) {
+	url := fmt.Sprintf("%s/api/v1/insight/peer/%d", s.baseURL, id)
+
+	var insightPeerGroup api.InsightPeerGroup
+	if err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &insightPeerGroup); err != nil {
+		return nil, err
+	}
+	return &insightPeerGroup, nil
 }

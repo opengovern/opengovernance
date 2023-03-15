@@ -837,7 +837,7 @@ func (s *SchedulerTestSuite) TestRunInsightJob() {
 	ins := Insight{
 		Description: "this is a test insight",
 		Query:       "select count(*) from aws_ec2_instance",
-		Provider:    "AWS",
+		Connector:   "AWS",
 		Category:    "IAM",
 	}
 

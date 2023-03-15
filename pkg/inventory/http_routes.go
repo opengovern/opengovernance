@@ -107,6 +107,7 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 
 	v2.GET("/insights", httpserver.AuthorizeHandler(h.ListInsights, api3.ViewerRole))
 	v2.GET("/insights/:insightId/trend", httpserver.AuthorizeHandler(h.GetInsightTrend, api3.ViewerRole))
+	v2.GET("/insights/peer/:insightPeerGroupId", httpserver.AuthorizeHandler(h.GetInsightPeerGroup, api3.ViewerRole))
 	v2.GET("/insights/:insightId", httpserver.AuthorizeHandler(h.GetInsight, api3.ViewerRole))
 
 	v1.GET("/connection/:connection_id/summary", httpserver.AuthorizeHandler(h.GetConnectionSummary, api3.ViewerRole))
@@ -3602,14 +3603,10 @@ func (h *HttpHandler) GetResources(ctx echo.Context, provider *api.SourceType, c
 //	@Param			connector	query		source.Type	false	"filter insights by connector"
 //	@Param			sourceId	query		string		false	"filter the result by source id"
 //	@Param			time		query		int			false	"unix seconds for the time to get the insight result for"
-//	@Success		200			{object}	[]api.Insight
+//	@Success		200			{object}	[]api.ListInsightResult
 //	@Router			/inventory/api/v2/insights [get]
 func (h *HttpHandler) ListInsights(ctx echo.Context) error {
 	connector, _ := source.ParseType(ctx.QueryParam("connector"))
-	insightList, err := h.schedulerClient.GetInsights(httpclient.FromEchoContext(ctx), connector)
-	if err != nil {
-		return err
-	}
 	var resultTime *time.Time
 	if timeStr := ctx.QueryParam("time"); timeStr != "" {
 		timeInt, err := strconv.ParseInt(timeStr, 10, 64)
@@ -3625,37 +3622,47 @@ func (h *HttpHandler) ListInsights(ctx echo.Context) error {
 		sourceIdPtr = nil
 	}
 
+	insightList, err := h.schedulerClient.GetInsights(httpclient.FromEchoContext(ctx), connector)
+	if err != nil {
+		return err
+	}
+
+	insightPeerGroupList, err := h.schedulerClient.GetInsightPeerGroups(httpclient.FromEchoContext(ctx), connector)
+	if err != nil {
+		return err
+	}
+
 	insightIdList := make([]uint, 0, len(insightList))
-	resultMap := make(map[uint]api.Insight)
-	for _, insight := range insightList {
-		insightIdList = append(insightIdList, insight.ID)
-		labels := make([]api.InsightLabel, 0, len(insight.Labels))
-		for _, label := range insight.Labels {
+	insightResultMap := make(map[uint]*api.Insight)
+	for _, insightRow := range insightList {
+		insightIdList = append(insightIdList, insightRow.ID)
+		labels := make([]api.InsightLabel, 0, len(insightRow.Labels))
+		for _, label := range insightRow.Labels {
 			labels = append(labels, api.InsightLabel{
 				ID:    label.ID,
 				Label: label.Label,
 			})
 		}
-		links := make([]api.InsightLink, 0, len(insight.Links))
-		for _, link := range insight.Links {
+		links := make([]api.InsightLink, 0, len(insightRow.Links))
+		for _, link := range insightRow.Links {
 			links = append(links, api.InsightLink{
 				ID:   link.ID,
 				Text: link.Text,
 				URI:  link.URI,
 			})
 		}
-		resultMap[insight.ID] = api.Insight{
-			ID:           insight.ID,
-			Query:        insight.Query,
-			Category:     insight.Category,
-			Provider:     insight.Provider,
-			ShortTitle:   insight.ShortTitle,
-			LongTitle:    insight.LongTitle,
-			Description:  insight.Description,
-			LogoURL:      insight.LogoURL,
+		insightResultMap[insightRow.ID] = &api.Insight{
+			ID:           insightRow.ID,
+			Query:        insightRow.Query,
+			Category:     insightRow.Category,
+			Provider:     insightRow.Provider,
+			ShortTitle:   insightRow.ShortTitle,
+			LongTitle:    insightRow.LongTitle,
+			Description:  insightRow.Description,
+			LogoURL:      insightRow.LogoURL,
 			Labels:       labels,
 			Links:        links,
-			Enabled:      insight.Enabled,
+			Enabled:      insightRow.Enabled,
 			TotalResults: 0,
 		}
 	}
@@ -3671,23 +3678,72 @@ func (h *HttpHandler) ListInsights(ctx echo.Context) error {
 	}
 
 	for insightId, insightResult := range insightValues {
-		if v, ok := resultMap[insightId]; ok {
+		if v, ok := insightResultMap[insightId]; ok {
 			v.TotalResults += insightResult.Result
 			if insightResult.ExecutedAt != 0 {
 				exAt := time.UnixMilli(insightResult.ExecutedAt)
 				v.ExecutedAt = &exAt
 			}
-			resultMap[insightId] = v
 		}
 	}
 
-	result := make([]api.Insight, 0, len(resultMap))
-	for _, v := range resultMap {
+	result := make([]api.ListInsightResult, 0)
+	usedInPeerGroup := make(map[uint]bool)
+	for _, insightPeerGroup := range insightPeerGroupList {
+		labels := make([]api.InsightLabel, 0, len(insightPeerGroup.Labels))
+		for _, label := range insightPeerGroup.Labels {
+			labels = append(labels, api.InsightLabel{
+				ID:    label.ID,
+				Label: label.Label,
+			})
+		}
+		links := make([]api.InsightLink, 0, len(insightPeerGroup.Links))
+		for _, link := range insightPeerGroup.Links {
+			links = append(links, api.InsightLink{
+				ID:   link.ID,
+				Text: link.Text,
+				URI:  link.URI,
+			})
+		}
+		peerGroup := &api.InsightPeerGroup{
+			ID:           insightPeerGroup.ID,
+			Category:     insightPeerGroup.Category,
+			Insights:     make([]api.Insight, 0, len(insightPeerGroup.Insights)),
+			ShortTitle:   insightPeerGroup.ShortTitle,
+			LongTitle:    insightPeerGroup.LongTitle,
+			Description:  insightPeerGroup.Description,
+			LogoURL:      insightPeerGroup.LogoURL,
+			Labels:       labels,
+			Links:        links,
+			TotalResults: 0,
+		}
+		for _, apiInsight := range insightPeerGroup.Insights {
+			if v, ok := insightResultMap[apiInsight.ID]; ok {
+				peerGroup.Insights = append(peerGroup.Insights, *v)
+				peerGroup.TotalResults += v.TotalResults
+				usedInPeerGroup[apiInsight.ID] = true
+			}
+		}
+		result = append(result, peerGroup)
+	}
+
+	for _, v := range insightResultMap {
+		if _, ok := usedInPeerGroup[v.ID]; ok {
+			continue
+		}
 		result = append(result, v)
 	}
 
-	sort.SliceStable(result, func(i, j int) bool {
-		return result[i].ID < result[j].ID
+	sort.Slice(result, func(i, j int) bool {
+		if result[i].GetType() == result[j].GetType() {
+			return result[i].GetID() < result[j].GetID()
+		} else if result[i].GetType() == api.ListInsightResultTypePeerGroup {
+			return true
+		} else if result[j].GetType() == api.ListInsightResultTypePeerGroup {
+			return false
+		} else {
+			return result[i].GetID() < result[j].GetID()
+		}
 	})
 
 	return ctx.JSON(http.StatusOK, result)
@@ -3815,6 +3871,170 @@ func (h *HttpHandler) GetInsight(ctx echo.Context) error {
 			},
 		}
 	}
+
+	return ctx.JSON(http.StatusOK, result)
+}
+
+// GetInsightPeerGroup godoc
+//
+//	@Summary		Get an insight by id
+//	@Description	Get an insight by id
+//	@Tags			insight
+//	@Produce		json
+//	@Param			sourceId	query		string	false	"filter the result by source id"
+//	@Param			time		query		int		false	"unix seconds for the time to get the insight result for"
+//	@Success		200			{object}	api.InsightPeerGroup
+//	@Router			/inventory/api/v2/insights/peer/{insightPeerGroupId} [get]
+func (h *HttpHandler) GetInsightPeerGroup(ctx echo.Context) error {
+	insightPeerGroupId, err := strconv.ParseUint(ctx.Param("insightPeerGroupId"), 10, 64)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid insight peer group id")
+	}
+	var resultTime *time.Time
+	if timeStr := ctx.QueryParam("time"); timeStr != "" {
+		timeInt, err := strconv.ParseInt(timeStr, 10, 64)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "invalid time")
+		}
+		t := time.Unix(timeInt, 0)
+		resultTime = &t
+	}
+	sourceId := ctx.QueryParam("sourceId")
+	sourceIdPtr := &sourceId
+	if sourceId == "" {
+		sourceIdPtr = nil
+	}
+
+	insightPeerGroup, err := h.schedulerClient.GetInsightPeerGroupById(httpclient.FromEchoContext(ctx), uint(insightPeerGroupId))
+	if err != nil {
+		if strings.Contains(strings.ToLower(err.Error()), "not found") {
+			return echo.NewHTTPError(http.StatusNotFound, "insight peer group not found")
+		}
+		return err
+	}
+
+	labels := make([]api.InsightLabel, 0, len(insightPeerGroup.Labels))
+	for _, label := range insightPeerGroup.Labels {
+		labels = append(labels, api.InsightLabel{
+			ID:    label.ID,
+			Label: label.Label,
+		})
+	}
+	links := make([]api.InsightLink, 0, len(insightPeerGroup.Links))
+	for _, link := range insightPeerGroup.Links {
+		links = append(links, api.InsightLink{
+			ID:   link.ID,
+			Text: link.Text,
+			URI:  link.URI,
+		})
+	}
+	insights := make([]api.Insight, 0, len(insightPeerGroup.Insights))
+	insightIds := make([]uint, 0, len(insightPeerGroup.Insights))
+	for _, insightRow := range insightPeerGroup.Insights {
+		labels := make([]api.InsightLabel, 0, len(insightRow.Labels))
+		for _, label := range insightRow.Labels {
+			labels = append(labels, api.InsightLabel{
+				ID:    label.ID,
+				Label: label.Label,
+			})
+		}
+		links := make([]api.InsightLink, 0, len(insightRow.Links))
+		for _, link := range insightRow.Links {
+			links = append(links, api.InsightLink{
+				ID:   link.ID,
+				Text: link.Text,
+				URI:  link.URI,
+			})
+		}
+		insightIds = append(insightIds, insightRow.ID)
+		insights = append(insights, api.Insight{
+			ID:           insightRow.ID,
+			Query:        insightRow.Query,
+			Category:     insightRow.Category,
+			Provider:     insightRow.Provider,
+			ShortTitle:   insightRow.ShortTitle,
+			LongTitle:    insightRow.LongTitle,
+			Description:  insightRow.Description,
+			LogoURL:      insightRow.LogoURL,
+			Labels:       labels,
+			Links:        links,
+			Enabled:      insightRow.Enabled,
+			ExecutedAt:   nil,
+			TotalResults: 0,
+			Results:      nil,
+		})
+	}
+
+	result := api.InsightPeerGroup{
+		ID:           insightPeerGroup.ID,
+		Category:     insightPeerGroup.Category,
+		Insights:     nil,
+		ShortTitle:   insightPeerGroup.ShortTitle,
+		LongTitle:    insightPeerGroup.LongTitle,
+		Description:  insightPeerGroup.Description,
+		LogoURL:      insightPeerGroup.LogoURL,
+		Labels:       labels,
+		Links:        links,
+		TotalResults: 0,
+	}
+
+	var insightResults map[uint]insight.InsightResource
+	if resultTime != nil {
+		insightResults, err = es.FetchInsightValueAtTime(h.client, *resultTime, source.Nil, sourceIdPtr, insightIds, true)
+	} else {
+		insightResults, err = es.FetchInsightValueAtTime(h.client, time.Now(), source.Nil, sourceIdPtr, insightIds, false)
+	}
+	if err != nil {
+		return err
+	}
+
+	for i, insightRow := range insights {
+		if insightResult, ok := insightResults[insightRow.ID]; ok {
+			result.TotalResults = insightResult.Result
+			exAt := time.UnixMilli(insightResult.ExecutedAt)
+			insights[i].ExecutedAt = &exAt
+
+			bucket, key, err := utils.ParseHTTPSubpathS3URIToBucketAndKey(insightResult.S3Location)
+			objectBuffer := aws.NewWriteAtBuffer(make([]byte, 0, 1024*1024))
+			_, err = h.s3Downloader.Download(objectBuffer, &s3.GetObjectInput{
+				Bucket: aws.String(bucket),
+				Key:    aws.String(key),
+			})
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+			}
+
+			var results steampipe.Result
+			err = json.Unmarshal(objectBuffer.Bytes(), &results)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+			}
+
+			connections := make([]api.InsightConnection, 0, len(insightResult.IncludedConnections))
+			for _, connection := range insightResult.IncludedConnections {
+				connections = append(connections, api.InsightConnection{
+					ConnectionID: connection.ConnectionID,
+					OriginalID:   connection.OriginalID,
+				})
+			}
+
+			insights[i].Results = &api.InsightResult{
+				JobID:       insightResult.JobID,
+				InsightID:   insightResult.QueryID,
+				SourceID:    insightResult.SourceID,
+				ExecutedAt:  time.UnixMilli(insightResult.ExecutedAt),
+				Locations:   insightResult.Locations,
+				Connections: connections,
+				Result:      insightResult.Result,
+				Details: &api.InsightDetail{
+					Headers: results.Headers,
+					Rows:    results.Data,
+				},
+			}
+			result.TotalResults += insightResult.Result
+		}
+	}
+	result.Insights = insights
 
 	return ctx.JSON(http.StatusOK, result)
 }
