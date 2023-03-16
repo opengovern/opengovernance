@@ -3652,18 +3652,19 @@ func (h *HttpHandler) ListInsights(ctx echo.Context) error {
 			})
 		}
 		insightResultMap[insightRow.ID] = &api.Insight{
-			ID:           insightRow.ID,
-			Query:        insightRow.Query,
-			Category:     insightRow.Category,
-			Provider:     insightRow.Provider,
-			ShortTitle:   insightRow.ShortTitle,
-			LongTitle:    insightRow.LongTitle,
-			Description:  insightRow.Description,
-			LogoURL:      insightRow.LogoURL,
-			Labels:       labels,
-			Links:        links,
-			Enabled:      insightRow.Enabled,
-			TotalResults: 0,
+			ID:                    insightRow.ID,
+			Query:                 insightRow.Query,
+			Category:              insightRow.Category,
+			Provider:              insightRow.Provider,
+			ShortTitle:            insightRow.ShortTitle,
+			LongTitle:             insightRow.LongTitle,
+			Description:           insightRow.Description,
+			LogoURL:               insightRow.LogoURL,
+			Labels:                labels,
+			Links:                 links,
+			Enabled:               insightRow.Enabled,
+			TotalResults:          0,
+			ListInsightResultType: api.ListInsightResultTypeInsight,
 		}
 	}
 
@@ -3706,16 +3707,17 @@ func (h *HttpHandler) ListInsights(ctx echo.Context) error {
 			})
 		}
 		peerGroup := &api.InsightPeerGroup{
-			ID:           insightPeerGroup.ID,
-			Category:     insightPeerGroup.Category,
-			Insights:     make([]api.Insight, 0, len(insightPeerGroup.Insights)),
-			ShortTitle:   insightPeerGroup.ShortTitle,
-			LongTitle:    insightPeerGroup.LongTitle,
-			Description:  insightPeerGroup.Description,
-			LogoURL:      insightPeerGroup.LogoURL,
-			Labels:       labels,
-			Links:        links,
-			TotalResults: 0,
+			ID:                    insightPeerGroup.ID,
+			Category:              insightPeerGroup.Category,
+			Insights:              make([]api.Insight, 0, len(insightPeerGroup.Insights)),
+			ShortTitle:            insightPeerGroup.ShortTitle,
+			LongTitle:             insightPeerGroup.LongTitle,
+			Description:           insightPeerGroup.Description,
+			LogoURL:               insightPeerGroup.LogoURL,
+			Labels:                labels,
+			Links:                 links,
+			TotalResults:          0,
+			ListInsightResultType: api.ListInsightResultTypePeerGroup,
 		}
 		for _, apiInsight := range insightPeerGroup.Insights {
 			if v, ok := insightResultMap[apiInsight.ID]; ok {
@@ -3803,19 +3805,20 @@ func (h *HttpHandler) GetInsight(ctx echo.Context) error {
 		})
 	}
 	result := api.Insight{
-		ID:           insightRow.ID,
-		Query:        insightRow.Query,
-		Category:     insightRow.Category,
-		Provider:     insightRow.Provider,
-		ShortTitle:   insightRow.ShortTitle,
-		LongTitle:    insightRow.LongTitle,
-		Description:  insightRow.Description,
-		LogoURL:      insightRow.LogoURL,
-		Labels:       labels,
-		Links:        links,
-		Enabled:      insightRow.Enabled,
-		TotalResults: 0,
-		Results:      nil,
+		ID:                    insightRow.ID,
+		Query:                 insightRow.Query,
+		Category:              insightRow.Category,
+		Provider:              insightRow.Provider,
+		ShortTitle:            insightRow.ShortTitle,
+		LongTitle:             insightRow.LongTitle,
+		Description:           insightRow.Description,
+		LogoURL:               insightRow.LogoURL,
+		Labels:                labels,
+		Links:                 links,
+		Enabled:               insightRow.Enabled,
+		TotalResults:          0,
+		Results:               nil,
+		ListInsightResultType: api.ListInsightResultTypeInsight,
 	}
 
 	var insightResults map[uint]insight.InsightResource
@@ -3948,34 +3951,36 @@ func (h *HttpHandler) GetInsightPeerGroup(ctx echo.Context) error {
 		}
 		insightIds = append(insightIds, insightRow.ID)
 		insights = append(insights, api.Insight{
-			ID:           insightRow.ID,
-			Query:        insightRow.Query,
-			Category:     insightRow.Category,
-			Provider:     insightRow.Provider,
-			ShortTitle:   insightRow.ShortTitle,
-			LongTitle:    insightRow.LongTitle,
-			Description:  insightRow.Description,
-			LogoURL:      insightRow.LogoURL,
-			Labels:       labels,
-			Links:        links,
-			Enabled:      insightRow.Enabled,
-			ExecutedAt:   nil,
-			TotalResults: 0,
-			Results:      nil,
+			ID:                    insightRow.ID,
+			Query:                 insightRow.Query,
+			Category:              insightRow.Category,
+			Provider:              insightRow.Provider,
+			ShortTitle:            insightRow.ShortTitle,
+			LongTitle:             insightRow.LongTitle,
+			Description:           insightRow.Description,
+			LogoURL:               insightRow.LogoURL,
+			Labels:                labels,
+			Links:                 links,
+			Enabled:               insightRow.Enabled,
+			ExecutedAt:            nil,
+			TotalResults:          0,
+			Results:               nil,
+			ListInsightResultType: api.ListInsightResultTypeInsight,
 		})
 	}
 
 	result := api.InsightPeerGroup{
-		ID:           insightPeerGroup.ID,
-		Category:     insightPeerGroup.Category,
-		Insights:     nil,
-		ShortTitle:   insightPeerGroup.ShortTitle,
-		LongTitle:    insightPeerGroup.LongTitle,
-		Description:  insightPeerGroup.Description,
-		LogoURL:      insightPeerGroup.LogoURL,
-		Labels:       labels,
-		Links:        links,
-		TotalResults: 0,
+		ID:                    insightPeerGroup.ID,
+		Category:              insightPeerGroup.Category,
+		Insights:              nil,
+		ShortTitle:            insightPeerGroup.ShortTitle,
+		LongTitle:             insightPeerGroup.LongTitle,
+		Description:           insightPeerGroup.Description,
+		LogoURL:               insightPeerGroup.LogoURL,
+		Labels:                labels,
+		Links:                 links,
+		TotalResults:          0,
+		ListInsightResultType: api.ListInsightResultTypePeerGroup,
 	}
 
 	var insightResults map[uint]insight.InsightResource

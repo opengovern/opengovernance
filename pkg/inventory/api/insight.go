@@ -1,7 +1,6 @@
 package api
 
 import (
-	"encoding/json"
 	"time"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/source"
@@ -93,11 +92,6 @@ func (i Insight) GetID() uint {
 	return i.ID
 }
 
-func (i Insight) MarshalJSON() ([]byte, error) {
-	i.ListInsightResultType = i.GetType()
-	return json.Marshal(i)
-}
-
 type InsightPeerGroup struct {
 	ID                    uint                  `json:"id"`
 	Category              string                `json:"category"`
@@ -118,11 +112,6 @@ func (i InsightPeerGroup) GetType() ListInsightResultType {
 
 func (i InsightPeerGroup) GetID() uint {
 	return i.ID
-}
-
-func (i InsightPeerGroup) MarshalJSON() ([]byte, error) {
-	i.ListInsightResultType = i.GetType()
-	return json.Marshal(i)
 }
 
 type InsightResultTrendResponse struct {
