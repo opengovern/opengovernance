@@ -678,6 +678,10 @@ func (s *Scheduler) processCloudNativeDescribeConnectionJobResourcesEvents(event
 			s.logger.Error("Error getting cloud native describe source job", zap.Error(err))
 			continue
 		}
+		if job == nil {
+			successfulIDs = append(successfulIDs, event.ID)
+			continue
+		}
 
 		messages := make([]*CloudNativeConnectionWorkerMessage, 0)
 		req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("%s/OutputReadBlob?containerName=%s&blobName=%s", s.cloudNativeAPIBaseURL, connectionWorkerResourcesResult.ContainerName, connectionWorkerResourcesResult.BlobName), nil)
