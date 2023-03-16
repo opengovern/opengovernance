@@ -129,6 +129,8 @@ func FetchInsightValueAtTime(client keibi.Client, t time.Time, provider source.T
 	} else {
 		query = BuildFindInsightResultsQuery(provider, sourceID, nil, nil, &t, insightIds, useHistoricalData, false)
 	}
+	query["size"] = 0
+	delete(query, "sort")
 	query["aggs"] = map[string]any{
 		"query_id_group": map[string]any{
 			"terms": map[string]any{
@@ -198,6 +200,7 @@ func FetchInsightAggregatedPerQueryValuesBetweenTimes(client keibi.Client, start
 		query = BuildFindInsightResultsQuery(provider, sourceID, nil, &startTime, &endTime, insightIds, true, false)
 	}
 	query["size"] = 0
+	delete(query, "sort")
 	query["aggs"] = map[string]any{
 		"schedule_uuid_group": map[string]any{
 			"terms": map[string]any{
