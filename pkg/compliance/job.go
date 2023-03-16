@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"gitlab.com/keibiengine/keibi-engine/pkg/compliance/worker"
 	"io/ioutil"
 	"os"
 	"os/exec"
@@ -124,7 +125,7 @@ func (j *Job) Do(w *Worker) JobResult {
 	var accountID string
 	switch j.SourceType {
 	case source.CloudAWS:
-		creds, err := AWSAccountConfigFromMap(cfg)
+		creds, err := worker.AWSAccountConfigFromMap(cfg)
 		if err != nil {
 			DoComplianceReportJobsDuration.WithLabelValues(string(j.SourceType), "failure").Observe(float64(time.Now().Unix() - startTime))
 			DoComplianceReportJobsCount.WithLabelValues(string(j.SourceType), "failure").Inc()
@@ -139,7 +140,7 @@ func (j *Job) Do(w *Worker) JobResult {
 			return j.failed("error: BuildSpecFile: " + err.Error())
 		}
 	case source.CloudAzure:
-		creds, err := AzureSubscriptionConfigFromMap(cfg)
+		creds, err := worker.AzureSubscriptionConfigFromMap(cfg)
 		if err != nil {
 			DoComplianceReportJobsDuration.WithLabelValues(string(j.SourceType), "failure").Observe(float64(time.Now().Unix() - startTime))
 			DoComplianceReportJobsCount.WithLabelValues(string(j.SourceType), "failure").Inc()

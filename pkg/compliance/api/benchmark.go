@@ -1,10 +1,12 @@
 package api
 
+import "gitlab.com/keibiengine/keibi-engine/pkg/source"
+
 type Benchmark struct {
 	ID          string
 	Title       string
 	Description string
-	Provider    string
+	Connectors  []source.Type
 	Enabled     bool
 	Tags        map[string]string
 	Policies    []Policy
@@ -15,7 +17,7 @@ type Policy struct {
 	Title                 string
 	Description           string
 	Tags                  map[string]string
-	Provider              string
+	Provider              source.Type
 	Category              string
 	SubCategory           string
 	Section               string

@@ -2,11 +2,12 @@ package compliance
 
 import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/compliance/api"
+	"gitlab.com/keibiengine/keibi-engine/pkg/compliance/db"
 	"gitlab.com/keibiengine/keibi-engine/pkg/summarizer/es"
 	"gitlab.com/keibiengine/keibi-engine/pkg/types"
 )
 
-func BuildBenchmarkSummary(esb es.BenchmarkSummary, b Benchmark) api.BenchmarkSummary {
+func BuildBenchmarkSummary(esb es.BenchmarkSummary, b db.Benchmark) api.BenchmarkSummary {
 	bs := api.BenchmarkSummary{
 		ID:                       b.ID,
 		Title:                    b.Title,
