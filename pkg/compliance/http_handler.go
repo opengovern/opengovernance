@@ -2,6 +2,7 @@ package compliance
 
 import (
 	"fmt"
+	db2 "gitlab.com/keibiengine/keibi-engine/pkg/compliance/db"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/postgres"
 
@@ -16,7 +17,7 @@ import (
 
 type HttpHandler struct {
 	client          keibi.Client
-	db              Database
+	db              db2.Database
 	schedulerClient client.SchedulerServiceClient
 	onboardClient   client2.OnboardServiceClient
 	inventoryClient client3.InventoryServiceClient
@@ -41,7 +42,7 @@ func InitializeHttpHandler(conf ServerConfig, logger *zap.Logger) (h *HttpHandle
 		return nil, fmt.Errorf("new postgres client: %w", err)
 	}
 
-	h.db = Database{orm: orm}
+	h.db = db2.Database{Orm: orm}
 	fmt.Println("Connected to the postgres database: ", conf.PostgreSQL.DB)
 
 	err = h.db.Initialize()

@@ -3,6 +3,7 @@ package compliance
 import (
 	"errors"
 	"fmt"
+	"gitlab.com/keibiengine/keibi-engine/pkg/compliance/db"
 	"net/http"
 	"time"
 
@@ -67,6 +68,7 @@ func bindValidate(ctx echo.Context, i interface{}) error {
 }
 
 // GetFindingFilters godoc
+//
 //	@Summary	Returns all findings with respect to filters
 //	@Tags		compliance
 //	@Accept		json
@@ -165,6 +167,7 @@ func (h *HttpHandler) GetFindingFilters(ctx echo.Context) error {
 }
 
 // GetTopFieldByFindingCount godoc
+//
 //	@Summary	Returns all findings with respect to filters
 //	@Tags		compliance
 //	@Accept		json
@@ -196,6 +199,7 @@ func (h *HttpHandler) GetTopFieldByFindingCount(ctx echo.Context) error {
 }
 
 // GetTopFieldByAlarmCount godoc
+//
 //	@Summary	Returns all findings with respect to filters
 //	@Tags		compliance
 //	@Accept		json
@@ -227,6 +231,7 @@ func (h *HttpHandler) GetTopFieldByAlarmCount(ctx echo.Context) error {
 }
 
 // GetFindings godoc
+//
 //	@Summary	Returns all findings with respect to filters
 //	@Tags		compliance
 //	@Accept		json
@@ -263,6 +268,7 @@ func (h *HttpHandler) GetFindings(ctx echo.Context) error {
 }
 
 // GetFindingsMetrics godoc
+//
 //	@Summary	Returns findings metrics
 //	@Tags		compliance
 //	@Accept		json
@@ -297,6 +303,7 @@ func (h *HttpHandler) GetFindingsMetrics(ctx echo.Context) error {
 }
 
 // GetFindingDetails godoc
+//
 //	@Summary	Returns details of a single finding
 //	@Tags		compliance
 //	@Accept		json
@@ -370,6 +377,7 @@ func (h *HttpHandler) GetFindingDetails(ctx echo.Context) error {
 }
 
 // GetBenchmarkInsight godoc
+//
 //	@Summary	Returns insight of a specific benchmark
 //	@Tags		compliance
 //	@Accept		json
@@ -436,6 +444,7 @@ func (h *HttpHandler) GetBenchmarkInsight(ctx echo.Context) error {
 }
 
 // GetBenchmarksSummary godoc
+//
 //	@Summary	Get benchmark summary
 //	@Tags		compliance
 //	@Accept		json
@@ -487,6 +496,7 @@ func (h *HttpHandler) GetBenchmarksSummary(ctx echo.Context) error {
 }
 
 // GetBenchmark godoc
+//
 //	@Summary	Get benchmark summary
 //	@Tags		compliance
 //	@Accept		json
@@ -500,14 +510,15 @@ func (h *HttpHandler) GetBenchmark(ctx echo.Context) error {
 		return err
 	}
 
+	//TODO
 	response := api.Benchmark{
 		ID:          benchmark.ID,
 		Title:       benchmark.Title,
 		Description: benchmark.Description,
-		Provider:    benchmark.Provider,
-		Enabled:     benchmark.Enabled,
-		Tags:        make(map[string]string),
-		Policies:    nil,
+		//Connectors:  benchmark.Connectors,
+		Enabled:  benchmark.Enabled,
+		Tags:     make(map[string]string),
+		Policies: nil,
 	}
 	for _, tag := range benchmark.Tags {
 		response.Tags[tag.Key] = tag.Value
@@ -515,20 +526,20 @@ func (h *HttpHandler) GetBenchmark(ctx echo.Context) error {
 
 	for _, p := range benchmark.Policies {
 		policy := api.Policy{
-			ID:                    p.ID,
-			Title:                 p.Title,
-			Description:           p.Description,
-			Tags:                  make(map[string]string),
-			Provider:              p.Provider,
-			Category:              p.Category,
-			SubCategory:           p.SubCategory,
-			Section:               p.Section,
-			Severity:              p.Severity,
-			ManualVerification:    p.ManualVerification,
-			ManualRemedation:      p.ManualRemedation,
-			CommandLineRemedation: p.CommandLineRemedation,
-			QueryToRun:            p.QueryToRun,
-			KeibiManaged:          p.KeibiManaged,
+			ID:          p.ID,
+			Title:       p.Title,
+			Description: p.Description,
+			Tags:        make(map[string]string),
+			//Provider:              p.Query.Connector,
+			//Category:              p.Category,
+			//SubCategory:           p.SubCategory,
+			//Section:               p.Section,
+			Severity: p.Severity,
+			//ManualVerification:    p.ManualVerification,
+			//ManualRemedation:      p.ManualRemedation,
+			//CommandLineRemedation: p.CommandLineRemedation,
+			//QueryToRun:            p.Query.QueryToExecute,
+			KeibiManaged: p.Managed,
 		}
 		for _, tag := range p.Tags {
 			policy.Tags[tag.Key] = tag.Value
@@ -539,6 +550,7 @@ func (h *HttpHandler) GetBenchmark(ctx echo.Context) error {
 }
 
 // GetBenchmarkSummary godoc
+//
 //	@Summary	Get benchmark summary
 //	@Tags		compliance
 //	@Accept		json
@@ -577,6 +589,7 @@ func (h *HttpHandler) GetBenchmarkSummary(ctx echo.Context) error {
 }
 
 // GetPolicySummary godoc
+//
 //	@Summary	Get benchmark summary
 //	@Tags		compliance
 //	@Accept		json
@@ -646,13 +659,14 @@ func (h *HttpHandler) GetPolicySummary(ctx echo.Context) error {
 			}
 		}
 
+		//TODO
 		ps := api.PolicySummary{
-			Title:       p.Title,
-			Category:    p.Category,
-			Subcategory: p.SubCategory,
-			Severity:    p.Severity,
-			Status:      policyStatus,
-			CreatedAt:   p.CreatedAt.UnixMilli(),
+			Title: p.Title,
+			//Category:    p.Category,
+			//Subcategory: p.SubCategory,
+			Severity:  p.Severity,
+			Status:    policyStatus,
+			CreatedAt: p.CreatedAt.UnixMilli(),
 		}
 		response.PolicySummary = append(response.PolicySummary, ps)
 	}
@@ -660,6 +674,7 @@ func (h *HttpHandler) GetPolicySummary(ctx echo.Context) error {
 }
 
 // CreateBenchmarkAssignment godoc
+//
 //	@Summary		Create benchmark assignment for inventory service
 //	@Description	Returns benchmark assignment which insert
 //	@Tags			benchmarks_assignment
@@ -683,25 +698,33 @@ func (h *HttpHandler) CreateBenchmarkAssignment(ctx echo.Context) error {
 	if benchmarkId == "" {
 		return echo.NewHTTPError(http.StatusBadRequest, "benchmark id is empty")
 	}
-	benchmark, err := h.db.GetBenchmark(benchmarkId)
-	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("benchmark %s not found", benchmarkId))
-		}
-		ctx.Logger().Errorf("find benchmark assignment: %v", err)
-		return err
-	}
+	//benchmark, err := h.db.GetBenchmark(benchmarkId)
+	//if err != nil {
+	//	if errors.Is(err, gorm.ErrRecordNotFound) {
+	//		return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("benchmark %s not found", benchmarkId))
+	//	}
+	//	ctx.Logger().Errorf("find benchmark assignment: %v", err)
+	//	return err
+	//}
+	//
+	//src, err := h.schedulerClient.GetSource(httpclient.FromEchoContext(ctx), sourceUUID.String())
+	//if err != nil {
+	//	ctx.Logger().Errorf(fmt.Sprintf("request source: %v", err))
+	//	return err
+	//}
+	//
+	//match := false
+	//for _, connector := range benchmark.Connectors {
+	//	if connector.String() == string(src.Type) {
+	//		match = true
+	//	}
+	//}
+	//if !match {
+	//	return echo.NewHTTPError(http.StatusBadRequest, "source type not match")
+	//}
+	//TODO
 
-	src, err := h.schedulerClient.GetSource(httpclient.FromEchoContext(ctx), sourceUUID.String())
-	if err != nil {
-		ctx.Logger().Errorf(fmt.Sprintf("request source: %v", err))
-		return err
-	}
-	if benchmark.Provider != string(src.Type) {
-		return echo.NewHTTPError(http.StatusBadRequest, "source type not match")
-	}
-
-	assignment := &BenchmarkAssignment{
+	assignment := &db.BenchmarkAssignment{
 		BenchmarkId: benchmarkId,
 		SourceId:    sourceUUID,
 		AssignedAt:  time.Now(),
@@ -719,6 +742,7 @@ func (h *HttpHandler) CreateBenchmarkAssignment(ctx echo.Context) error {
 }
 
 // GetAllBenchmarkAssignmentsBySourceId godoc
+//
 //	@Summary		Get all benchmark assignments with source id
 //	@Description	Returns all benchmark assignments with source id
 //	@Tags			benchmarks_assignment
@@ -759,6 +783,7 @@ func (h *HttpHandler) GetAllBenchmarkAssignmentsBySourceId(ctx echo.Context) err
 }
 
 // GetAllBenchmarkAssignedSourcesByBenchmarkId godoc
+//
 //	@Summary		Get all benchmark assigned sources with benchmark id
 //	@Description	Returns all benchmark assigned sources with benchmark id
 //	@Tags			benchmarks_assignment
@@ -809,6 +834,7 @@ func (h *HttpHandler) GetAllBenchmarkAssignedSourcesByBenchmarkId(ctx echo.Conte
 }
 
 // DeleteBenchmarkAssignment godoc
+//
 //	@Summary		Delete benchmark assignment for inventory service
 //	@Description	Delete benchmark assignment with source id and benchmark id
 //	@Tags			benchmarks_assignment

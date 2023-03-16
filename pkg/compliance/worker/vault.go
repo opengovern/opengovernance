@@ -1,4 +1,4 @@
-package compliance
+package worker
 
 import "encoding/json"
 
