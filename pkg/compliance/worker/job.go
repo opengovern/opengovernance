@@ -48,27 +48,27 @@ func (j *Job) Do(
 }
 
 func (j *Job) Run(db *db.Database, steampipeConn *steampipe.Database, vault vault.SourceConfig, elasticSearchConfig config.ElasticSearch) error {
-	err := j.PopulateSteampipeConfig(vault, elasticSearchConfig)
-	if err != nil {
-		return err
-	}
-
-	benchmark, err := db.GetBenchmark(j.BenchmarkID)
-	if err != nil {
-		return err
-	}
-
-	for _, policy := range benchmark.Policies {
-		res, err := steampipeConn.QueryAll(policy.Query.QueryToExecute)
-		if err != nil {
-			return err
-		}
-
-		err = j.PopulateFindings(db, res)
-		if err != nil {
-			return err
-		}
-	}
+	//err := j.PopulateSteampipeConfig(vault, elasticSearchConfig)
+	//if err != nil {
+	//	return err
+	//}
+	//
+	//benchmark, err := db.GetBenchmark(j.BenchmarkID)
+	//if err != nil {
+	//	return err
+	//}
+	//
+	//for _, policy := range benchmark.Policies {
+	//	res, err := steampipeConn.QueryAll(policy.QueryID.QueryToExecute)
+	//	if err != nil {
+	//		return err
+	//	}
+	//
+	//	err = j.PopulateFindings(db, res)
+	//	if err != nil {
+	//		return err
+	//	}
+	//}
 	return nil
 }
 
