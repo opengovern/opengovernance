@@ -636,11 +636,6 @@ func FetchConnectionLocationsSummaryPage(client keibi.Client, provider source.Ty
 		})
 	}
 
-	sort = append(sort,
-		map[string]interface{}{
-			"_id": "desc",
-		},
-	)
 	res["size"] = size
 	res["sort"] = sort
 	res["query"] = map[string]interface{}{
@@ -654,6 +649,8 @@ func FetchConnectionLocationsSummaryPage(client keibi.Client, provider source.Ty
 	}
 
 	query := string(b)
+
+	fmt.Printf("query= %s, index= %s", query, summarizer.ConnectionSummaryIndex)
 
 	var response ConnectionLocationsSummaryQueryResponse
 	err = client.Search(context.Background(), summarizer.ConnectionSummaryIndex, query, &response)
