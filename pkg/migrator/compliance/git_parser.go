@@ -135,7 +135,7 @@ func (g *GitParser) ExtractPolicies(compliancePath string) error {
 					}
 				}
 				if len(o.Tags) != len(p.Tags) {
-					return fmt.Errorf("could not find some policy tags, %d != %d", len(o.Tags), len(p.Tags))
+					fmt.Printf("could not find some policy tags, %d != %d", len(o.Tags), len(p.Tags))
 				}
 
 				if p.QueryID != nil {
@@ -148,7 +148,7 @@ func (g *GitParser) ExtractPolicies(compliancePath string) error {
 						}
 					}
 					if !found {
-						return fmt.Errorf("could not find query with id %s", *p.QueryID)
+						fmt.Printf("could not find query with id %s", *p.QueryID)
 					}
 				}
 				g.policies = append(g.policies, p)
@@ -217,7 +217,7 @@ func (g *GitParser) ExtractBenchmarks(compliancePath string) error {
 			}
 		}
 		if len(o.Tags) != len(b.Tags) {
-			return fmt.Errorf("could not find some benchmark tags, %d != %d", len(o.Tags), len(b.Tags))
+			fmt.Printf("could not find some benchmark tags, %d != %d", len(o.Tags), len(b.Tags))
 		}
 		for _, policy := range g.policies {
 			if contains(o.Policies, policy.ID) {
@@ -225,7 +225,7 @@ func (g *GitParser) ExtractBenchmarks(compliancePath string) error {
 			}
 		}
 		if len(o.Policies) != len(b.Policies) {
-			return fmt.Errorf("could not find some policies, %d != %d", len(o.Policies), len(b.Policies))
+			fmt.Printf("could not find some policies, %d != %d", len(o.Policies), len(b.Policies))
 		}
 		g.benchmarks = append(g.benchmarks, b)
 		children[o.ID] = o.Children
@@ -241,7 +241,7 @@ func (g *GitParser) ExtractBenchmarks(compliancePath string) error {
 		}
 
 		if len(children[benchmark.ID]) != len(benchmark.Children) {
-			return fmt.Errorf("could not find some benchmark children, %d != %d", len(children[benchmark.ID]), len(benchmark.Children))
+			fmt.Printf("could not find some benchmark children, %d != %d", len(children[benchmark.ID]), len(benchmark.Children))
 		}
 		g.benchmarks[idx] = benchmark
 	}
