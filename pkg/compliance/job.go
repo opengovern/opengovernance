@@ -254,33 +254,33 @@ func (j *Job) BuildMod(client client2.ComplianceServiceClient) (string, error) {
 		return "", errors.New("benchmark not found")
 	}
 
-	var controls []steampipe.Control
-	for _, p := range b.Policies {
-		controls = append(controls, steampipe.Control{
-			ID:          p.ID,
-			Title:       p.Title,
-			Description: p.Description,
-			Severity:    p.Severity,
-			Tags:        p.Tags,
-			SQL:         p.QueryToRun,
-		})
-	}
-	benchmark := steampipe.Benchmark{
-		ID:          b.ID,
-		Title:       b.Title,
-		Description: b.Description,
-		Children:    controls,
-	}
-
-	content := mod.String() + "\n\n" + benchmark.String()
-
-	err = os.Mkdir(mod.ID, os.ModePerm)
-	if err != nil {
-		return "", err
-	}
-
-	filename := mod.ID + "/mod.sp"
-	err = ioutil.WriteFile(filename, []byte(content), os.ModePerm)
+	//var controls []steampipe.Control
+	//for _, p := range b.Policies {
+	//	controls = append(controls, steampipe.Control{
+	//		ID:          p.ID,
+	//		Title:       p.Title,
+	//		Description: p.Description,
+	//		Severity:    p.Severity,
+	//		Tags:        p.Tags,
+	//		SQL:         p.QueryToRun,
+	//	})
+	//}
+	//benchmark := steampipe.Benchmark{
+	//	ID:          b.ID,
+	//	Title:       b.Title,
+	//	Description: b.Description,
+	//	Children:    controls,
+	//}
+	//
+	//content := mod.String() + "\n\n" + benchmark.String()
+	//
+	//err = os.Mkdir(mod.ID, os.ModePerm)
+	//if err != nil {
+	//	return "", err
+	//}
+	//
+	//filename := mod.ID + "/mod.sp"
+	//err = ioutil.WriteFile(filename, []byte(content), os.ModePerm)
 
 	return mod.ID, err
 }
