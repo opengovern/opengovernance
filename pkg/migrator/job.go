@@ -17,6 +17,7 @@ type Job struct {
 	AWSComplianceGitURL   string
 	AzureComplianceGitURL string
 	QueryGitURL           string
+	githubToken           string
 }
 
 func InitializeJob(
@@ -54,6 +55,7 @@ func InitializeJob(
 	w.AWSComplianceGitURL = conf.AWSComplianceGitURL
 	w.AzureComplianceGitURL = conf.AzureComplianceGitURL
 	w.QueryGitURL = conf.QueryGitURL
+	w.githubToken = conf.GithubToken
 
 	return w, nil
 }
@@ -66,11 +68,11 @@ func (w *Job) Run() error {
 	}()
 
 	w.logger.Info("Starting migrator job")
-	if err := compliance.Run(w.db, w.AWSComplianceGitURL, w.QueryGitURL); err != nil {
+	if err := compliance.Run(w.db, w.AWSComplianceGitURL, w.QueryGitURL, w.githubToken); err != nil {
 		w.logger.Error(fmt.Sprintf("Failure while running aws compliance migration: %v", err))
 	}
 
-	if err := compliance.Run(w.db, w.AzureComplianceGitURL, w.QueryGitURL); err != nil {
+	if err := compliance.Run(w.db, w.AzureComplianceGitURL, w.QueryGitURL, w.githubToken); err != nil {
 		w.logger.Error(fmt.Sprintf("Failure while running azure compliance migration: %v", err))
 	}
 
