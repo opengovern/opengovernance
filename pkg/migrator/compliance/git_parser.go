@@ -267,7 +267,7 @@ func (g *GitParser) ExtractCompliance(compliancePath, queryPath string) error {
 	return nil
 }
 
-func contains[T](arr []T, ob T) bool {
+func contains[T string | int](arr []T, ob T) bool {
 	for _, o := range arr {
 		if o == ob {
 			return true
