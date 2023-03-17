@@ -11,12 +11,12 @@ type Database struct {
 
 func (db Database) Initialize() error {
 	err := db.Orm.AutoMigrate(
-		&Policy{},
-		&PolicyTag{},
-		&Benchmark{},
-		&BenchmarkTag{},
-		&BenchmarkAssignment{},
 		&Query{},
+		&PolicyTag{},
+		&BenchmarkTag{},
+		&Policy{},
+		&Benchmark{},
+		&BenchmarkAssignment{},
 	)
 	if err != nil {
 		return err
