@@ -9,7 +9,8 @@ import (
 type JobConfig struct {
 	PostgreSQL            config.Postgres
 	QueryGitURL           string `yaml:"query_git_url"`
-	ComplianceGitURL      string `yaml:"compliance_git_url"`
+	AWSComplianceGitURL   string `yaml:"aws_compliance_git_url"`
+	AzureComplianceGitURL string `yaml:"azure_compliance_git_url"`
 	PrometheusPushAddress string `yaml:"prometheus_push_address"`
 }
 
