@@ -11,11 +11,12 @@ import (
 )
 
 type Job struct {
-	db               db.Database
-	logger           *zap.Logger
-	pusher           *push.Pusher
-	ComplianceGitURL string
-	QueryGitURL      string
+	db                    db.Database
+	logger                *zap.Logger
+	pusher                *push.Pusher
+	AWSComplianceGitURL   string
+	AzureComplianceGitURL string
+	QueryGitURL           string
 }
 
 func InitializeJob(
@@ -50,7 +51,8 @@ func InitializeJob(
 	fmt.Println("Connected to the postgres database: ", conf.PostgreSQL.DB)
 
 	w.pusher = push.New(prometheusPushAddress, "migrator")
-	w.ComplianceGitURL = conf.ComplianceGitURL
+	w.AWSComplianceGitURL = conf.AWSComplianceGitURL
+	w.AzureComplianceGitURL = conf.AzureComplianceGitURL
 	w.QueryGitURL = conf.QueryGitURL
 
 	return w, nil
@@ -64,8 +66,12 @@ func (w *Job) Run() error {
 	}()
 
 	w.logger.Info("Starting migrator job")
-	if err := compliance.Run(w.db, w.ComplianceGitURL, w.QueryGitURL); err != nil {
-		w.logger.Error(fmt.Sprintf("Failure while running compliance migration: %v", err))
+	if err := compliance.Run(w.db, w.AWSComplianceGitURL, w.QueryGitURL); err != nil {
+		w.logger.Error(fmt.Sprintf("Failure while running aws compliance migration: %v", err))
+	}
+
+	if err := compliance.Run(w.db, w.AzureComplianceGitURL, w.QueryGitURL); err != nil {
+		w.logger.Error(fmt.Sprintf("Failure while running azure compliance migration: %v", err))
 	}
 
 	return nil
