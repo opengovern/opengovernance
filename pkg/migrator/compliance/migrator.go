@@ -6,9 +6,12 @@ import (
 	"os"
 )
 
-func Run(db db.Database, complianceInputGitURL string) error {
-	os.RemoveAll("/tmp/loader-input-git")
-	_, err := git.PlainClone("/tmp/loader-input-git", false, &git.CloneOptions{
+func Run(db db.Database, complianceInputGitURL, queryInputGitURL string) error {
+	compliancePath := "/tmp/loader-compliance-git"
+	queryPath := "/tmp/loader-query-git"
+
+	os.RemoveAll(compliancePath)
+	_, err := git.PlainClone(compliancePath, false, &git.CloneOptions{
 		URL:      complianceInputGitURL,
 		Progress: os.Stdout,
 	})
@@ -16,7 +19,16 @@ func Run(db db.Database, complianceInputGitURL string) error {
 		return err
 	}
 
-	err = PopulateDatabase(db.ORM)
+	os.RemoveAll(queryPath)
+	_, err = git.PlainClone(queryPath, false, &git.CloneOptions{
+		URL:      queryInputGitURL,
+		Progress: os.Stdout,
+	})
+	if err != nil {
+		return err
+	}
+
+	err = PopulateDatabase(db.ORM, compliancePath, queryPath)
 	if err != nil {
 		return err
 	}
