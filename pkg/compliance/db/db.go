@@ -103,6 +103,15 @@ func (db Database) GetPolicy(id string) (*Policy, error) {
 	return &s, nil
 }
 
+func (db Database) ListPoliciesByBenchmarkID(benchmarkID string) ([]Policy, error) {
+	var s []Policy
+	tx := db.Orm.Model(&Policy{}).Where(Policy{Benchmarks: []Benchmark{{ID: benchmarkID}}}).Find(&s)
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+	return s, nil
+}
+
 // =========== BenchmarkAssignment ===========
 
 func (db Database) AddBenchmarkAssignment(assignment *BenchmarkAssignment) error {
@@ -132,6 +141,17 @@ func (db Database) GetBenchmarkAssignmentsBySourceId(sourceId uuid.UUID) ([]Benc
 func (db Database) GetBenchmarkAssignmentsByBenchmarkId(benchmarkId string) ([]BenchmarkAssignment, error) {
 	var s []BenchmarkAssignment
 	tx := db.Orm.Model(&BenchmarkAssignment{}).Where(BenchmarkAssignment{BenchmarkId: benchmarkId}).Scan(&s)
+
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+
+	return s, nil
+}
+
+func (db Database) ListBenchmarkAssignments() ([]BenchmarkAssignment, error) {
+	var s []BenchmarkAssignment
+	tx := db.Orm.Model(&BenchmarkAssignment{}).Scan(&s)
 
 	if tx.Error != nil {
 		return nil, tx.Error
