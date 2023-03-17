@@ -33,26 +33,35 @@ import (
 func (h *HttpHandler) Register(e *echo.Echo) {
 	v1 := e.Group("/api/v1")
 
-	// finding dashboard
-	v1.POST("/findings", httpserver.AuthorizeHandler(h.GetFindings, api3.ViewerRole))
-	v1.POST("/findings/filters", httpserver.AuthorizeHandler(h.GetFindingFilters, api3.ViewerRole))
-	v1.POST("/findings/top", httpserver.AuthorizeHandler(h.GetTopFieldByFindingCount, api3.ViewerRole))
-	v1.GET("/findings/metrics", httpserver.AuthorizeHandler(h.GetFindingsMetrics, api3.ViewerRole))
-	v1.GET("/findings/:finding_id", httpserver.AuthorizeHandler(h.GetFindingDetails, api3.ViewerRole))
+	v1.GET("/benchmarks", httpserver.AuthorizeHandler(h.ListBenchmarks, api3.ViewerRole))
+	v1.GET("/benchmarks/:benchmark_id", httpserver.AuthorizeHandler(h.GetBenchmark, api3.ViewerRole))
+	v1.GET("/benchmarks/:benchmark_id/policies", httpserver.AuthorizeHandler(h.ListPolicies, api3.ViewerRole))
+	v1.GET("/benchmarks/policies/:policy_id", httpserver.AuthorizeHandler(h.GetPolicy, api3.ViewerRole))
 
-	v1.POST("/alarms/top", httpserver.AuthorizeHandler(h.GetTopFieldByAlarmCount, api3.ViewerRole))
+	v1.GET("/assignments", httpserver.AuthorizeHandler(h.ListAssignments, api3.ViewerRole))
+	v1.GET("/assignments/benchmark/:benchmark_id", httpserver.AuthorizeHandler(h.ListAssignmentsByBenchmark, api3.ViewerRole))
+	v1.GET("/assignments/connection/:connection_id", httpserver.AuthorizeHandler(h.ListAssignmentsByConnection, api3.ViewerRole))
+	v1.POST("/assignments/:benchmark_id/connection/:connection_id", httpserver.AuthorizeHandler(h.CreateBenchmarkAssignment, api3.EditorRole))
+	v1.DELETE("/assignments/:benchmark_id/connection/:connection_id", httpserver.AuthorizeHandler(h.DeleteBenchmarkAssignment, api3.EditorRole))
+
+	// finding dashboard
+	//v1.POST("/findings", httpserver.AuthorizeHandler(h.GetFindings, api3.ViewerRole))
+	//v1.POST("/findings/filters", httpserver.AuthorizeHandler(h.GetFindingFilters, api3.ViewerRole))
+	//v1.POST("/findings/top", httpserver.AuthorizeHandler(h.GetTopFieldByFindingCount, api3.ViewerRole))
+	//v1.GET("/findings/metrics", httpserver.AuthorizeHandler(h.GetFindingsMetrics, api3.ViewerRole))
+	//v1.GET("/findings/:finding_id", httpserver.AuthorizeHandler(h.GetFindingDetails, api3.ViewerRole))
+	//
+	//v1.POST("/alarms/top", httpserver.AuthorizeHandler(h.GetTopFieldByAlarmCount, api3.ViewerRole))
 	// benchmark dashboard
-	v1.GET("/benchmark/:benchmark_id", httpserver.AuthorizeHandler(h.GetBenchmark, api3.ViewerRole))
-	v1.GET("/benchmark/:benchmark_id/summary", httpserver.AuthorizeHandler(h.GetBenchmarkSummary, api3.ViewerRole))
-	v1.GET("/benchmarks/summary", httpserver.AuthorizeHandler(h.GetBenchmarksSummary, api3.ViewerRole))
-	v1.GET("/benchmarks/:benchmark_id/insight", httpserver.AuthorizeHandler(h.GetBenchmarkInsight, api3.ViewerRole))
-	v1.GET("/policy/summary/:benchmark_id", httpserver.AuthorizeHandler(h.GetPolicySummary, api3.ViewerRole))
+	//v1.GET("/benchmark/:benchmark_id", httpserver.AuthorizeHandler(h.GetBenchmark, api3.ViewerRole))
+	//v1.GET("/benchmark/:benchmark_id/summary", httpserver.AuthorizeHandler(h.GetBenchmarkSummary, api3.ViewerRole))
+	//v1.GET("/benchmarks/summary", httpserver.AuthorizeHandler(h.GetBenchmarksSummary, api3.ViewerRole))
+	//v1.GET("/benchmarks/:benchmark_id/insight", httpserver.AuthorizeHandler(h.GetBenchmarkInsight, api3.ViewerRole))
+	//v1.GET("/policy/summary/:benchmark_id", httpserver.AuthorizeHandler(h.GetPolicySummary, api3.ViewerRole))
 
 	// benchmark assignment
-	v1.POST("/benchmarks/:benchmark_id/source/:source_id", httpserver.AuthorizeHandler(h.CreateBenchmarkAssignment, api3.EditorRole))
-	v1.GET("/benchmarks/source/:source_id", httpserver.AuthorizeHandler(h.GetAllBenchmarkAssignmentsBySourceId, api3.ViewerRole))
-	v1.GET("/benchmarks/:benchmark_id/sources", httpserver.AuthorizeHandler(h.GetAllBenchmarkAssignedSourcesByBenchmarkId, api3.ViewerRole))
-	v1.DELETE("/benchmarks/:benchmark_id/source/:source_id", httpserver.AuthorizeHandler(h.DeleteBenchmarkAssignment, api3.EditorRole))
+	//v1.GET("/benchmarks/source/:source_id", httpserver.AuthorizeHandler(h.ListAssignmentsByConnection, api3.ViewerRole))
+	//v1.GET("/benchmarks/:benchmark_id/sources", httpserver.AuthorizeHandler(h.ListAssignmentsByBenchmark, api3.ViewerRole))
 }
 
 func bindValidate(ctx echo.Context, i interface{}) error {
@@ -495,59 +504,60 @@ func (h *HttpHandler) GetBenchmarksSummary(ctx echo.Context) error {
 	return ctx.JSON(http.StatusOK, response)
 }
 
-// GetBenchmark godoc
 //
-//	@Summary	Get benchmark summary
-//	@Tags		compliance
-//	@Accept		json
-//	@Produce	json
-//	@Success	200	{object}	api.Benchmark
-//	@Router		/compliance/api/v1/benchmark/:benchmark_id [get]
-func (h *HttpHandler) GetBenchmark(ctx echo.Context) error {
-	benchmarkID := ctx.Param("benchmark_id")
-	benchmark, err := h.db.GetBenchmark(benchmarkID)
-	if err != nil {
-		return err
-	}
-
-	//TODO
-	response := api.Benchmark{
-		ID:          benchmark.ID,
-		Title:       benchmark.Title,
-		Description: benchmark.Description,
-		//Connectors:  benchmark.Connectors,
-		Enabled:  benchmark.Enabled,
-		Tags:     make(map[string]string),
-		Policies: nil,
-	}
-	for _, tag := range benchmark.Tags {
-		response.Tags[tag.Key] = tag.Value
-	}
-
-	for _, p := range benchmark.Policies {
-		policy := api.Policy{
-			ID:          p.ID,
-			Title:       p.Title,
-			Description: p.Description,
-			Tags:        make(map[string]string),
-			//Provider:              p.Query.Connector,
-			//Category:              p.Category,
-			//SubCategory:           p.SubCategory,
-			//Section:               p.Section,
-			Severity: p.Severity,
-			//ManualVerification:    p.ManualVerification,
-			//ManualRemedation:      p.ManualRemedation,
-			//CommandLineRemedation: p.CommandLineRemedation,
-			//QueryToRun:            p.Query.QueryToExecute,
-			KeibiManaged: p.Managed,
-		}
-		for _, tag := range p.Tags {
-			policy.Tags[tag.Key] = tag.Value
-		}
-		response.Policies = append(response.Policies, policy)
-	}
-	return ctx.JSON(http.StatusOK, response)
-}
+//// GetBenchmark godoc
+////
+////	@Summary	Get benchmark summary
+////	@Tags		compliance
+////	@Accept		json
+////	@Produce	json
+////	@Success	200	{object}	api.Benchmark
+////	@Router		/compliance/api/v1/benchmark/:benchmark_id [get]
+//func (h *HttpHandler) GetBenchmark(ctx echo.Context) error {
+//	benchmarkID := ctx.Param("benchmark_id")
+//	benchmark, err := h.db.GetBenchmark(benchmarkID)
+//	if err != nil {
+//		return err
+//	}
+//
+//	//TODO
+//	response := api.Benchmark{
+//		ID:          benchmark.ID,
+//		Title:       benchmark.Title,
+//		Description: benchmark.Description,
+//		//Connectors:  benchmark.Connectors,
+//		Enabled:  benchmark.Enabled,
+//		Tags:     make(map[string]string),
+//		Policies: nil,
+//	}
+//	for _, tag := range benchmark.Tags {
+//		response.Tags[tag.Key] = tag.Value
+//	}
+//
+//	for _, p := range benchmark.Policies {
+//		policy := api.Policy{
+//			ID:          p.ID,
+//			Title:       p.Title,
+//			Description: p.Description,
+//			Tags:        make(map[string]string),
+//			//Provider:              p.Query.Connector,
+//			//Category:              p.Category,
+//			//SubCategory:           p.SubCategory,
+//			//Section:               p.Section,
+//			Severity: p.Severity,
+//			//ManualVerification:    p.ManualVerification,
+//			//ManualRemedation:      p.ManualRemedation,
+//			//CommandLineRemedation: p.CommandLineRemedation,
+//			//QueryToRun:            p.Query.QueryToExecute,
+//			KeibiManaged: p.Managed,
+//		}
+//		for _, tag := range p.Tags {
+//			policy.Tags[tag.Key] = tag.Value
+//		}
+//		response.Policies = append(response.Policies, policy)
+//	}
+//	return ctx.JSON(http.StatusOK, response)
+//}
 
 // GetBenchmarkSummary godoc
 //
@@ -741,7 +751,7 @@ func (h *HttpHandler) CreateBenchmarkAssignment(ctx echo.Context) error {
 	})
 }
 
-// GetAllBenchmarkAssignmentsBySourceId godoc
+// ListAssignmentsByConnection godoc
 //
 //	@Summary		Get all benchmark assignments with source id
 //	@Description	Returns all benchmark assignments with source id
@@ -750,11 +760,11 @@ func (h *HttpHandler) CreateBenchmarkAssignment(ctx echo.Context) error {
 //	@Produce		json
 //	@Param			source_id	path		string	true	"Source ID"
 //	@Success		200			{object}	[]api.BenchmarkAssignment
-//	@Router			/compliance/api/v1/benchmarks/source/{source_id} [get]
-func (h *HttpHandler) GetAllBenchmarkAssignmentsBySourceId(ctx echo.Context) error {
-	sourceId := ctx.Param("source_id")
+//	@Router			/compliance/api/v1/assignments/connection/{connection_id} [get]
+func (h *HttpHandler) ListAssignmentsByConnection(ctx echo.Context) error {
+	sourceId := ctx.Param("connection_id")
 	if sourceId == "" {
-		return echo.NewHTTPError(http.StatusBadRequest, "source id is empty")
+		return echo.NewHTTPError(http.StatusBadRequest, "connection id is empty")
 	}
 	sourceUUID, err := uuid.Parse(sourceId)
 	if err != nil {
@@ -782,7 +792,7 @@ func (h *HttpHandler) GetAllBenchmarkAssignmentsBySourceId(ctx echo.Context) err
 	return ctx.JSON(http.StatusOK, assignments)
 }
 
-// GetAllBenchmarkAssignedSourcesByBenchmarkId godoc
+// ListAssignmentsByBenchmark godoc
 //
 //	@Summary		Get all benchmark assigned sources with benchmark id
 //	@Description	Returns all benchmark assigned sources with benchmark id
@@ -791,8 +801,8 @@ func (h *HttpHandler) GetAllBenchmarkAssignmentsBySourceId(ctx echo.Context) err
 //	@Produce		json
 //	@Param			benchmark_id	path		string	true	"Benchmark ID"
 //	@Success		200				{object}	[]api.BenchmarkAssignedSource
-//	@Router			/compliance/api/v1/benchmarks/{benchmark_id}/sources [get]
-func (h *HttpHandler) GetAllBenchmarkAssignedSourcesByBenchmarkId(ctx echo.Context) error {
+//	@Router			/compliance/api/v1/assignments/benchmark/{benchmark_id} [get]
+func (h *HttpHandler) ListAssignmentsByBenchmark(ctx echo.Context) error {
 	benchmarkId := ctx.Param("benchmark_id")
 	if benchmarkId == "" {
 		return echo.NewHTTPError(http.StatusBadRequest, "benchmark id is empty")
@@ -826,6 +836,34 @@ func (h *HttpHandler) GetAllBenchmarkAssignedSourcesByBenchmarkId(ctx echo.Conte
 				ba.Connection.ProviderID = src.ConnectionID
 				ba.Connection.ProviderName = src.ConnectionName
 			}
+		}
+		sources = append(sources, ba)
+	}
+
+	return ctx.JSON(http.StatusOK, sources)
+}
+
+// ListAssignments godoc
+//
+//	@Summary		Get all assignments
+//	@Description	Returns all assignments
+//	@Tags			benchmarks_assignment
+//	@Accept			json
+//	@Produce		json
+//	@Success		200				{object}	[]api.BenchmarkAssignment
+//	@Router			/compliance/api/v1/assignments/benchmark/{benchmark_id} [get]
+func (h *HttpHandler) ListAssignments(ctx echo.Context) error {
+	dbAssignments, err := h.db.ListBenchmarkAssignments()
+	if err != nil {
+		return err
+	}
+
+	var sources []api.BenchmarkAssignment
+	for _, assignment := range dbAssignments {
+		ba := api.BenchmarkAssignment{
+			BenchmarkId: assignment.BenchmarkId,
+			SourceId:    assignment.SourceId.String(),
+			AssignedAt:  assignment.AssignedAt.Unix(),
 		}
 		sources = append(sources, ba)
 	}
@@ -872,4 +910,83 @@ func (h *HttpHandler) DeleteBenchmarkAssignment(ctx echo.Context) error {
 	}
 
 	return ctx.JSON(http.StatusOK, nil)
+}
+
+// ListBenchmarks godoc
+//
+//	@Summary	List benchmarks
+//	@Tags		compliance
+//	@Accept		json
+//	@Produce	json
+//	@Success	200	{object}	[]api.Benchmark
+//	@Router		/compliance/api/v1/benchmarks [get]
+func (h *HttpHandler) ListBenchmarks(ctx echo.Context) error {
+	var response []api.Benchmark
+
+	benchmarks, err := h.db.ListBenchmarks()
+	if err != nil {
+		return err
+	}
+
+	for _, b := range benchmarks {
+		response = append(response, b.ToApi())
+	}
+	return ctx.JSON(http.StatusOK, response)
+}
+
+// GetBenchmark godoc
+//
+//	@Summary	Get benchmark
+//	@Tags		compliance
+//	@Accept		json
+//	@Produce	json
+//	@Success	200	{object}	api.Benchmark
+//	@Router		/compliance/api/v1/benchmarks/{benchmark_id} [get]
+func (h *HttpHandler) GetBenchmark(ctx echo.Context) error {
+	benchmarkId := ctx.Param("benchmark_id")
+	benchmark, err := h.db.GetBenchmark(benchmarkId)
+	if err != nil {
+		return err
+	}
+	return ctx.JSON(http.StatusOK, benchmark.ToApi())
+}
+
+// ListPolicies godoc
+//
+//	@Summary	List policies
+//	@Tags		compliance
+//	@Accept		json
+//	@Produce	json
+//	@Success	200	{object}	[]api.Policy
+//	@Router		/compliance/api/v1/benchmarks/{benchmark_id}/policies [get]
+func (h *HttpHandler) ListPolicies(ctx echo.Context) error {
+	var response []api.Policy
+
+	benchmarkId := ctx.Param("benchmark_id")
+	policies, err := h.db.ListPoliciesByBenchmarkID(benchmarkId)
+	if err != nil {
+		return err
+	}
+
+	for _, b := range policies {
+		response = append(response, b.ToApi())
+	}
+	return ctx.JSON(http.StatusOK, response)
+}
+
+// GetPolicy godoc
+//
+//	@Summary	Get policy
+//	@Tags		compliance
+//	@Accept		json
+//	@Produce	json
+//	@Success	200	{object}	api.Policy
+//	@Router		/compliance/api/v1/benchmarks/policies/{policy_id} [get]
+func (h *HttpHandler) GetPolicy(ctx echo.Context) error {
+	policyId := ctx.Param("policy_id")
+	policy, err := h.db.GetPolicy(policyId)
+	if err != nil {
+		return err
+	}
+	return ctx.JSON(http.StatusOK, policy.ToApi())
 }
