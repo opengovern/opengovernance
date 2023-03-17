@@ -66,8 +66,9 @@ type Policy struct {
 
 type PolicyTag struct {
 	gorm.Model
-	Key   string
-	Value string
+	Key      string
+	Value    string
+	Policies []Policy `gorm:"many2many:policy_tag_rel;"`
 }
 
 type PolicyTagRel struct {
@@ -86,7 +87,6 @@ type Query struct {
 	Connector      string
 	ListOfTables   string
 	Engine         string
-	EngineVersion  string
 	Policies       []Policy `gorm:"foreignKey:QueryID"`
 	CreatedAt      time.Time
 	UpdatedAt      time.Time

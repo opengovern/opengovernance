@@ -8,7 +8,9 @@ import (
 
 type JobConfig struct {
 	PostgreSQL            config.Postgres
-	PrometheusPushAddress string
+	QueryGitURL           string `yaml:"query_git_url"`
+	ComplianceGitURL      string `yaml:"compliance_git_url"`
+	PrometheusPushAddress string `yaml:"prometheus_push_address"`
 }
 
 func JobCommand() *cobra.Command {
