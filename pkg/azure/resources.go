@@ -36,6 +36,7 @@ var resourceTypeToDescriber = map[string]ResourceDescriber{
 	"Microsoft.CognitiveServices/accounts":                  DescribeBySubscription(describer.CognitiveAccount),
 	"Microsoft.Compute/disks":                               DescribeBySubscription(describer.ComputeDisk),
 	"Microsoft.Compute/diskAccesses":                        DescribeBySubscription(describer.ComputeDiskAccess),
+	"Microsoft.Compute/image":                               DescribeBySubscription(describer.ComputeImage),
 	"Microsoft.Compute/virtualMachineScaleSets":             DescribeBySubscription(describer.ComputeVirtualMachineScaleSet),
 	"Microsoft.Compute/virtualMachines":                     DescribeBySubscription(describer.ComputeVirtualMachine),
 	"Microsoft.ContainerRegistry/registries":                DescribeBySubscription(describer.ContainerRegistry),

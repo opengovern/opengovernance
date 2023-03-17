@@ -1771,6 +1771,153 @@ func GetComputeGallery(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydra
 
 // ==========================  END: ComputeGallery =============================
 
+// ==========================  START: ComputeImage =============================
+
+type ComputeImage struct {
+	Description   azure.ComputeImageDescription `json:"description"`
+	Metadata      azure.Metadata                `json:"metadata"`
+	ResourceJobID int                           `json:"resource_job_id"`
+	SourceJobID   int                           `json:"source_job_id"`
+	ResourceType  string                        `json:"resource_type"`
+	SourceType    string                        `json:"source_type"`
+	ID            string                        `json:"id"`
+	SourceID      string                        `json:"source_id"`
+}
+
+type ComputeImageHit struct {
+	ID      string        `json:"_id"`
+	Score   float64       `json:"_score"`
+	Index   string        `json:"_index"`
+	Type    string        `json:"_type"`
+	Version int64         `json:"_version,omitempty"`
+	Source  ComputeImage  `json:"_source"`
+	Sort    []interface{} `json:"sort"`
+}
+
+type ComputeImageHits struct {
+	Total SearchTotal       `json:"total"`
+	Hits  []ComputeImageHit `json:"hits"`
+}
+
+type ComputeImageSearchResponse struct {
+	PitID string           `json:"pit_id"`
+	Hits  ComputeImageHits `json:"hits"`
+}
+
+type ComputeImagePaginator struct {
+	paginator *baseESPaginator
+}
+
+func (k Client) NewComputeImagePaginator(filters []BoolFilter, limit *int64) (ComputeImagePaginator, error) {
+	paginator, err := newPaginator(k.es, "microsoft_compute_image", filters, limit)
+	if err != nil {
+		return ComputeImagePaginator{}, err
+	}
+
+	p := ComputeImagePaginator{
+		paginator: paginator,
+	}
+
+	return p, nil
+}
+
+func (p ComputeImagePaginator) HasNext() bool {
+	return !p.paginator.done
+}
+
+func (p ComputeImagePaginator) NextPage(ctx context.Context) ([]ComputeImage, error) {
+	var response ComputeImageSearchResponse
+	err := p.paginator.search(ctx, &response)
+	if err != nil {
+		return nil, err
+	}
+
+	var values []ComputeImage
+	for _, hit := range response.Hits.Hits {
+		values = append(values, hit.Source)
+	}
+
+	hits := int64(len(response.Hits.Hits))
+	if hits > 0 {
+		p.paginator.updateState(hits, response.Hits.Hits[hits-1].Sort, response.PitID)
+	} else {
+		p.paginator.updateState(hits, nil, "")
+	}
+
+	return values, nil
+}
+
+var listComputeImageFilters = map[string]string{
+	"keibi_account_id": "metadata.SourceID",
+}
+
+func ListComputeImage(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("ListComputeImage")
+
+	// create service
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	paginator, err := k.NewComputeImagePaginator(buildFilter(d.KeyColumnQuals, listComputeImageFilters, "azure", *cfg.AccountID), d.QueryContext.Limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			d.StreamListItem(ctx, v)
+		}
+	}
+
+	return nil, nil
+}
+
+var getComputeImageFilters = map[string]string{
+	"keibi_account_id": "metadata.SourceID",
+	"name":             "Description.Image.Name",
+	"resource_group":   "Description.Image.ResourceGroup",
+}
+
+func GetComputeImage(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("GetComputeImage")
+
+	// create service
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	limit := int64(1)
+	paginator, err := k.NewComputeImagePaginator(buildFilter(d.KeyColumnQuals, getComputeImageFilters, "azure", *cfg.AccountID), &limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			return v, nil
+		}
+	}
+
+	return nil, nil
+}
+
+// ==========================  END: ComputeImage =============================
+
 // ==========================  START: DataboxEdgeDevice =============================
 
 type DataboxEdgeDevice struct {

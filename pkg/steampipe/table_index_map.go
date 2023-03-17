@@ -286,6 +286,7 @@ var azureMap = map[string]string{
 	"Microsoft.Authorization/policyDefinitions":             "azure_authorization_policydefinition",
 	"Microsoft.CostManagement/CostByResourceType":           "azure_costmanagement_costbyresourcetype",
 	"Microsoft.CostManagement/CostBySubscription":           "azure_costmanagement_costbysubscription",
+	"Microsoft.Compute/image":                               "azure_compute_image",
 }
 var AWSDescriptionMap = map[string]interface{}{
 	"AWS::CostExplorer::ByAccountMonthly": &keibi.CostExplorerByAccountMonthly{},
@@ -565,6 +566,7 @@ var AzureDescriptionMap = map[string]interface{}{
 	"Microsoft.Authorization/policyDefinitions":             &keibi.PolicyDefinition{},
 	"Microsoft.CostManagement/CostByResourceType":           &keibi.CostManagementCostByResourceType{},
 	"Microsoft.CostManagement/CostBySubscription":           &keibi.CostManagementCostBySubscription{},
+	"Microsoft.Compute/image":                               &keibi.ComputeImage{},
 }
 
 type SteampipePlugin string

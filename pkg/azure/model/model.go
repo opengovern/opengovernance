@@ -186,6 +186,14 @@ type ComputeGalleryDescription struct {
 	ResourceGroup string
 }
 
+//index:microsoft_compute_image
+//getfilter:name=Description.Image.Name
+//getfilter:resource_group=Description.Image.ResourceGroup
+type ComputeImageDescription struct {
+	Image         compute.Image
+	ResourceGroup string
+}
+
 //  =================== databoxedge ==================
 
 //index:microsoft_databoxedge_databoxedgedevices

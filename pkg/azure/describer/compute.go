@@ -383,3 +383,40 @@ func ComputeGallery(ctx context.Context, authorizer autorest.Authorizer, subscri
 
 	return values, nil
 }
+
+func ComputeImage(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
+	client := compute.NewImagesClient(subscription)
+	client.Authorizer = authorizer
+
+	result, err := client.List(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	var values []Resource
+	for {
+		for _, v := range result.Values() {
+			resourceGroup := strings.ToLower(strings.Split(*v.ID, "/")[4])
+			values = append(values, Resource{
+				ID:       *v.ID,
+				Name:     *v.Name,
+				Location: *v.Location,
+				Description: model.ComputeImageDescription{
+					Image:         v,
+					ResourceGroup: resourceGroup,
+				},
+			})
+		}
+
+		if !result.NotDone() {
+			break
+		}
+
+		err = result.NextWithContext(ctx)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return values, nil
+}
