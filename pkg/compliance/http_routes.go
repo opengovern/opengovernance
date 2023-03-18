@@ -850,7 +850,7 @@ func (h *HttpHandler) ListAssignmentsByBenchmark(ctx echo.Context) error {
 //	@Tags			benchmarks_assignment
 //	@Accept			json
 //	@Produce		json
-//	@Success		200				{object}	[]api.BenchmarkAssignment
+//	@Success		200	{object}	[]api.BenchmarkAssignment
 //	@Router			/compliance/api/v1/assignments/benchmark/{benchmark_id} [get]
 func (h *HttpHandler) ListAssignments(ctx echo.Context) error {
 	dbAssignments, err := h.db.ListBenchmarkAssignments()
