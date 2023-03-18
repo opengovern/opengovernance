@@ -13,6 +13,7 @@ func PopulateDatabase(dbc *gorm.DB, compliancePath, queryPath string) error {
 	}
 
 	for _, obj := range p.queries {
+		obj.Policies = nil
 		err := dbc.Clauses(clause.OnConflict{
 			Columns:   []clause.Column{{Name: "id"}},                                                                                                   // key colume
 			DoUpdates: clause.AssignmentColumns([]string{"query_to_execute", "connector", "list_of_tables", "engine", "engine_version", "updated_at"}), // column needed to be updated
@@ -23,6 +24,7 @@ func PopulateDatabase(dbc *gorm.DB, compliancePath, queryPath string) error {
 	}
 
 	for _, obj := range p.policyTags {
+		obj.Policies = nil
 		err := dbc.Clauses(clause.OnConflict{
 			Columns:   []clause.Column{{Name: "id"}},                                    // key colume
 			DoUpdates: clause.AssignmentColumns([]string{"key", "value", "updated_at"}), // column needed to be updated
@@ -33,6 +35,7 @@ func PopulateDatabase(dbc *gorm.DB, compliancePath, queryPath string) error {
 	}
 
 	for _, obj := range p.benchmarkTags {
+		obj.Benchmarks = nil
 		err := dbc.Clauses(clause.OnConflict{
 			Columns:   []clause.Column{{Name: "id"}},                                    // key colume
 			DoUpdates: clause.AssignmentColumns([]string{"key", "value", "updated_at"}), // column needed to be updated
@@ -62,7 +65,20 @@ func PopulateDatabase(dbc *gorm.DB, compliancePath, queryPath string) error {
 				return err
 			}
 		}
+	}
 
+	for _, obj := range p.benchmarks {
+		obj.Children = nil
+		err := dbc.Clauses(clause.OnConflict{
+			Columns:   []clause.Column{{Name: "id"}},                                                                                                                                     // key colume
+			DoUpdates: clause.AssignmentColumns([]string{"title", "description", "logo_uri", "category", "document_uri", "enabled", "managed", "auto_assign", "baseline", "updated_at"}), // column needed to be updated
+		}).Create(&obj).Error
+		if err != nil {
+			return err
+		}
+	}
+
+	for _, obj := range p.policies {
 		for _, benchmark := range obj.Benchmarks {
 			err := dbc.Clauses(clause.OnConflict{
 				DoNothing: true,
@@ -73,16 +89,6 @@ func PopulateDatabase(dbc *gorm.DB, compliancePath, queryPath string) error {
 			if err != nil {
 				return err
 			}
-		}
-	}
-
-	for _, obj := range p.benchmarks {
-		err := dbc.Clauses(clause.OnConflict{
-			Columns:   []clause.Column{{Name: "id"}},                                                                                                                                     // key colume
-			DoUpdates: clause.AssignmentColumns([]string{"title", "description", "logo_uri", "category", "document_uri", "enabled", "managed", "auto_assign", "baseline", "updated_at"}), // column needed to be updated
-		}).Create(&obj).Error
-		if err != nil {
-			return err
 		}
 	}
 
