@@ -26,7 +26,7 @@ type Benchmark struct {
 	Managed     bool
 	AutoAssign  bool
 	Baseline    bool
-	Tags        []BenchmarkTag `gorm:"many2many:benchmark_tag_rel;"`
+	Tags        []BenchmarkTag `gorm:"many2many:benchmark_tag_rels;"`
 	Children    []Benchmark    `gorm:"many2many:benchmark_children;"`
 	Policies    []Policy       `gorm:"many2many:benchmark_policies;"`
 	CreatedAt   time.Time
@@ -66,7 +66,7 @@ type BenchmarkTag struct {
 	gorm.Model
 	Key        string
 	Value      string
-	Benchmarks []Benchmark `gorm:"many2many:benchmark_tag_rel;"`
+	Benchmarks []Benchmark `gorm:"many2many:benchmark_tag_rels;"`
 }
 
 type BenchmarkTagRel struct {
@@ -78,7 +78,7 @@ type Policy struct {
 	ID                 string `gorm:"primarykey"`
 	Title              string
 	Description        string
-	Tags               []PolicyTag `gorm:"many2many:policy_tag_rel;"`
+	Tags               []PolicyTag `gorm:"many2many:policy_tag_rels;"`
 	DocumentURI        string
 	QueryID            *string
 	Benchmarks         []Benchmark `gorm:"many2many:benchmark_policies;"`
@@ -112,7 +112,7 @@ type PolicyTag struct {
 	gorm.Model
 	Key      string
 	Value    string
-	Policies []Policy `gorm:"many2many:policy_tag_rel;"`
+	Policies []Policy `gorm:"many2many:policy_tag_rels;"`
 }
 
 type PolicyTagRel struct {
