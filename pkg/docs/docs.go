@@ -202,7 +202,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/compliance/api/v1/assignments/benchmark/{benchmark_id}": {
+        "/compliance/api/v1/assignments": {
             "get": {
                 "description": "Returns all assignments",
                 "consumes": [
@@ -222,6 +222,41 @@ const docTemplate = `{
                             "type": "array",
                             "items": {
                                 "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.BenchmarkAssignment"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/compliance/api/v1/assignments/benchmark/{benchmark_id}": {
+            "get": {
+                "description": "Returns all benchmark assigned sources with benchmark id",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "benchmarks_assignment"
+                ],
+                "summary": "Get all benchmark assigned sources with benchmark id",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Benchmark ID",
+                        "name": "benchmark_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.BenchmarkAssignedSource"
                             }
                         }
                     }
@@ -259,6 +294,79 @@ const docTemplate = `{
                                 "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.BenchmarkAssignment"
                             }
                         }
+                    }
+                }
+            }
+        },
+        "/compliance/api/v1/assignments/{benchmark_id}/connection/{connection_id}": {
+            "post": {
+                "description": "Returns benchmark assignment which insert",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "benchmarks_assignment"
+                ],
+                "summary": "Create benchmark assignment for inventory service",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Benchmark ID",
+                        "name": "benchmark_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Source ID",
+                        "name": "source_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.BenchmarkAssignment"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "description": "Delete benchmark assignment with source id and benchmark id",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "benchmarks_assignment"
+                ],
+                "summary": "Delete benchmark assignment for inventory service",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Benchmark ID",
+                        "name": "benchmark_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Source ID",
+                        "name": "source_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
                     }
                 }
             }
@@ -397,79 +505,6 @@ const docTemplate = `{
                                 "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.Policy"
                             }
                         }
-                    }
-                }
-            }
-        },
-        "/compliance/api/v1/benchmarks/{benchmark_id}/source/{source_id}": {
-            "post": {
-                "description": "Returns benchmark assignment which insert",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "benchmarks_assignment"
-                ],
-                "summary": "Create benchmark assignment for inventory service",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Benchmark ID",
-                        "name": "benchmark_id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "Source ID",
-                        "name": "source_id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.BenchmarkAssignment"
-                        }
-                    }
-                }
-            },
-            "delete": {
-                "description": "Delete benchmark assignment with source id and benchmark id",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "benchmarks_assignment"
-                ],
-                "summary": "Delete benchmark assignment for inventory service",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Benchmark ID",
-                        "name": "benchmark_id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "Source ID",
-                        "name": "source_id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK"
                     }
                 }
             }

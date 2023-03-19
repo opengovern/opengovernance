@@ -486,7 +486,7 @@ func (h *HttpHandler) GetBenchmarksSummary(ctx echo.Context) error {
 			return err
 		}
 		for _, conn := range assignments {
-			srcId := conn.SourceId.String()
+			srcId := conn.ConnectionId
 			count, err := h.inventoryClient.GetAccountsResourceCount(httpclient.FromEchoContext(ctx), source.Nil, &srcId)
 			if err != nil {
 				return err
@@ -696,13 +696,9 @@ func (h *HttpHandler) GetPolicySummary(ctx echo.Context) error {
 //	@Success		200				{object}	api.BenchmarkAssignment
 //	@Router			/compliance/api/v1/assignments/{benchmark_id}/connection/{connection_id} [post]
 func (h *HttpHandler) CreateBenchmarkAssignment(ctx echo.Context) error {
-	sourceId := ctx.Param("connection_id")
-	if sourceId == "" {
-		return echo.NewHTTPError(http.StatusBadRequest, "source id is empty")
-	}
-	sourceUUID, err := uuid.Parse(sourceId)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, "invalid source uuid")
+	connectionID := ctx.Param("connection_id")
+	if connectionID == "" {
+		return echo.NewHTTPError(http.StatusBadRequest, "connection id is empty")
 	}
 
 	benchmarkId := ctx.Param("benchmark_id")
@@ -736,9 +732,9 @@ func (h *HttpHandler) CreateBenchmarkAssignment(ctx echo.Context) error {
 	//TODO
 
 	assignment := &db.BenchmarkAssignment{
-		BenchmarkId: benchmarkId,
-		SourceId:    sourceUUID,
-		AssignedAt:  time.Now(),
+		BenchmarkId:  benchmarkId,
+		ConnectionId: connectionID,
+		AssignedAt:   time.Now(),
 	}
 	if err := h.db.AddBenchmarkAssignment(assignment); err != nil {
 		ctx.Logger().Errorf("add benchmark assignment: %v", err)
@@ -746,9 +742,9 @@ func (h *HttpHandler) CreateBenchmarkAssignment(ctx echo.Context) error {
 	}
 
 	return ctx.JSON(http.StatusOK, api.BenchmarkAssignment{
-		BenchmarkId: benchmarkId,
-		SourceId:    sourceUUID.String(),
-		AssignedAt:  assignment.AssignedAt.Unix(),
+		BenchmarkId:  benchmarkId,
+		ConnectionId: connectionID,
+		AssignedAt:   assignment.AssignedAt.Unix(),
 	})
 }
 
@@ -763,30 +759,26 @@ func (h *HttpHandler) CreateBenchmarkAssignment(ctx echo.Context) error {
 //	@Success		200			{object}	[]api.BenchmarkAssignment
 //	@Router			/compliance/api/v1/assignments/connection/{connection_id} [get]
 func (h *HttpHandler) ListAssignmentsByConnection(ctx echo.Context) error {
-	sourceId := ctx.Param("connection_id")
-	if sourceId == "" {
+	connectionId := ctx.Param("connection_id")
+	if connectionId == "" {
 		return echo.NewHTTPError(http.StatusBadRequest, "connection id is empty")
 	}
-	sourceUUID, err := uuid.Parse(sourceId)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, "invalid source uuid")
-	}
 
-	dbAssignments, err := h.db.GetBenchmarkAssignmentsBySourceId(sourceUUID)
+	dbAssignments, err := h.db.GetBenchmarkAssignmentsBySourceId(connectionId)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("benchmark assignments for %s not found", sourceId))
+			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("benchmark assignments for %s not found", connectionId))
 		}
-		ctx.Logger().Errorf("find benchmark assignments by source %s: %v", sourceId, err)
+		ctx.Logger().Errorf("find benchmark assignments by source %s: %v", connectionId, err)
 		return err
 	}
 
 	var assignments []api.BenchmarkAssignment
 	for _, assignment := range dbAssignments {
 		assignments = append(assignments, api.BenchmarkAssignment{
-			BenchmarkId: assignment.BenchmarkId,
-			SourceId:    assignment.SourceId.String(),
-			AssignedAt:  assignment.AssignedAt.Unix(),
+			BenchmarkId:  assignment.BenchmarkId,
+			ConnectionId: assignment.ConnectionId,
+			AssignedAt:   assignment.AssignedAt.Unix(),
 		})
 	}
 
@@ -820,20 +812,25 @@ func (h *HttpHandler) ListAssignmentsByBenchmark(ctx echo.Context) error {
 
 	var sourceIds []string
 	for _, assignment := range dbAssignments {
-		sourceIds = append(sourceIds, assignment.SourceId.String())
+		sourceIds = append(sourceIds, assignment.ConnectionId)
 	}
 	srcs, err := h.onboardClient.GetSources(httpclient.FromEchoContext(ctx), sourceIds)
 
 	var sources []api.BenchmarkAssignedSource
 	for _, assignment := range dbAssignments {
+		srcUUID, err := uuid.Parse(assignment.ConnectionId)
+		if err != nil {
+			return err
+		}
+
 		ba := api.BenchmarkAssignedSource{
 			Connection: types.FullConnection{
-				ID: assignment.SourceId,
+				ID: srcUUID,
 			},
 			AssignedAt: assignment.AssignedAt.Unix(),
 		}
 		for _, src := range srcs {
-			if src.ID == assignment.SourceId {
+			if src.ID.String() == assignment.ConnectionId {
 				ba.Connection.ProviderID = src.ConnectionID
 				ba.Connection.ProviderName = src.ConnectionName
 			}
@@ -852,7 +849,7 @@ func (h *HttpHandler) ListAssignmentsByBenchmark(ctx echo.Context) error {
 //	@Accept			json
 //	@Produce		json
 //	@Success		200	{object}	[]api.BenchmarkAssignment
-//	@Router			/compliance/api/v1/assignments/benchmark/{benchmark_id} [get]
+//	@Router			/compliance/api/v1/assignments [get]
 func (h *HttpHandler) ListAssignments(ctx echo.Context) error {
 	dbAssignments, err := h.db.ListBenchmarkAssignments()
 	if err != nil {
@@ -862,9 +859,9 @@ func (h *HttpHandler) ListAssignments(ctx echo.Context) error {
 	var sources []api.BenchmarkAssignment
 	for _, assignment := range dbAssignments {
 		ba := api.BenchmarkAssignment{
-			BenchmarkId: assignment.BenchmarkId,
-			SourceId:    assignment.SourceId.String(),
-			AssignedAt:  assignment.AssignedAt.Unix(),
+			BenchmarkId:  assignment.BenchmarkId,
+			ConnectionId: assignment.ConnectionId,
+			AssignedAt:   assignment.AssignedAt.Unix(),
 		}
 		sources = append(sources, ba)
 	}
@@ -884,20 +881,16 @@ func (h *HttpHandler) ListAssignments(ctx echo.Context) error {
 //	@Success		200
 //	@Router			/compliance/api/v1/assignments/{benchmark_id}/connection/{connection_id} [delete]
 func (h *HttpHandler) DeleteBenchmarkAssignment(ctx echo.Context) error {
-	sourceId := ctx.Param("connection_id")
-	if sourceId == "" {
-		return echo.NewHTTPError(http.StatusBadRequest, "source id is empty")
-	}
-	sourceUUID, err := uuid.Parse(sourceId)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, "invalid source uuid")
+	connectionId := ctx.Param("connection_id")
+	if connectionId == "" {
+		return echo.NewHTTPError(http.StatusBadRequest, "connection id is empty")
 	}
 	benchmarkId := ctx.Param("benchmark_id")
 	if benchmarkId == "" {
 		return echo.NewHTTPError(http.StatusBadRequest, "benchmark id is empty")
 	}
 
-	if _, err := h.db.GetBenchmarkAssignmentByIds(sourceUUID, benchmarkId); err != nil {
+	if _, err := h.db.GetBenchmarkAssignmentByIds(connectionId, benchmarkId); err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return echo.NewHTTPError(http.StatusFound, "benchmark assignment not found")
 		}
@@ -905,7 +898,7 @@ func (h *HttpHandler) DeleteBenchmarkAssignment(ctx echo.Context) error {
 		return err
 	}
 
-	if err := h.db.DeleteBenchmarkAssignmentById(sourceUUID, benchmarkId); err != nil {
+	if err := h.db.DeleteBenchmarkAssignmentById(connectionId, benchmarkId); err != nil {
 		ctx.Logger().Errorf("delete benchmark assignment: %v", err)
 		return err
 	}
