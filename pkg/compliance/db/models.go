@@ -1,7 +1,6 @@
 package db
 
 import (
-	"github.com/google/uuid"
 	"gitlab.com/keibiengine/keibi-engine/pkg/compliance/api"
 	"time"
 
@@ -10,9 +9,9 @@ import (
 
 type BenchmarkAssignment struct {
 	gorm.Model
-	BenchmarkId string    `gorm:"index:idx_benchmark_source"`
-	SourceId    uuid.UUID `gorm:"index:idx_benchmark_source"`
-	AssignedAt  time.Time
+	BenchmarkId  string `gorm:"index:idx_benchmark_source"`
+	ConnectionId string `gorm:"index:idx_benchmark_source"`
+	AssignedAt   time.Time
 }
 
 type Benchmark struct {

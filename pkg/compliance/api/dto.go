@@ -8,9 +8,9 @@ import (
 )
 
 type BenchmarkAssignment struct {
-	BenchmarkId string `json:"benchmarkId"`
-	SourceId    string `json:"sourceId"`
-	AssignedAt  int64  `json:"assignedAt"`
+	BenchmarkId  string `json:"benchmarkId"`
+	ConnectionId string `json:"sourceId"`
+	AssignedAt   int64  `json:"assignedAt"`
 }
 
 type BenchmarkAssignedSource struct {

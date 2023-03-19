@@ -1,7 +1,6 @@
 package db
 
 import (
-	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
@@ -149,8 +148,8 @@ func (db Database) GetPolicies(policyIDs []string) ([]Policy, error) {
 
 func (db Database) AddBenchmarkAssignment(assignment *BenchmarkAssignment) error {
 	tx := db.Orm.Where(BenchmarkAssignment{
-		BenchmarkId: assignment.BenchmarkId,
-		SourceId:    assignment.SourceId,
+		BenchmarkId:  assignment.BenchmarkId,
+		ConnectionId: assignment.ConnectionId,
 	}).FirstOrCreate(assignment)
 
 	if tx.Error != nil {
@@ -160,9 +159,9 @@ func (db Database) AddBenchmarkAssignment(assignment *BenchmarkAssignment) error
 	return nil
 }
 
-func (db Database) GetBenchmarkAssignmentsBySourceId(sourceId uuid.UUID) ([]BenchmarkAssignment, error) {
+func (db Database) GetBenchmarkAssignmentsBySourceId(connectionId string) ([]BenchmarkAssignment, error) {
 	var s []BenchmarkAssignment
-	tx := db.Orm.Model(&BenchmarkAssignment{}).Where(BenchmarkAssignment{SourceId: sourceId}).Scan(&s)
+	tx := db.Orm.Model(&BenchmarkAssignment{}).Where(BenchmarkAssignment{ConnectionId: connectionId}).Scan(&s)
 
 	if tx.Error != nil {
 		return nil, tx.Error
@@ -193,9 +192,9 @@ func (db Database) ListBenchmarkAssignments() ([]BenchmarkAssignment, error) {
 	return s, nil
 }
 
-func (db Database) GetBenchmarkAssignmentByIds(sourceId uuid.UUID, benchmarkId string) (*BenchmarkAssignment, error) {
+func (db Database) GetBenchmarkAssignmentByIds(connectionId string, benchmarkId string) (*BenchmarkAssignment, error) {
 	var s BenchmarkAssignment
-	tx := db.Orm.Model(&BenchmarkAssignment{}).Where(BenchmarkAssignment{BenchmarkId: benchmarkId, SourceId: sourceId}).Scan(&s)
+	tx := db.Orm.Model(&BenchmarkAssignment{}).Where(BenchmarkAssignment{BenchmarkId: benchmarkId, ConnectionId: connectionId}).Scan(&s)
 
 	if tx.Error != nil {
 		return nil, tx.Error
@@ -204,8 +203,8 @@ func (db Database) GetBenchmarkAssignmentByIds(sourceId uuid.UUID, benchmarkId s
 	return &s, nil
 }
 
-func (db Database) DeleteBenchmarkAssignmentById(sourceId uuid.UUID, benchmarkId string) error {
-	tx := db.Orm.Unscoped().Where(BenchmarkAssignment{BenchmarkId: benchmarkId, SourceId: sourceId}).Delete(&BenchmarkAssignment{})
+func (db Database) DeleteBenchmarkAssignmentById(connectionId string, benchmarkId string) error {
+	tx := db.Orm.Unscoped().Where(BenchmarkAssignment{BenchmarkId: benchmarkId, ConnectionId: connectionId}).Delete(&BenchmarkAssignment{})
 
 	if tx.Error != nil {
 		return tx.Error
