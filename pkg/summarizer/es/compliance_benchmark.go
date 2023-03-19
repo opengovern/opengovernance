@@ -5,8 +5,6 @@ import (
 	"strings"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/types"
-
-	"github.com/google/uuid"
 )
 
 const (
@@ -22,7 +20,7 @@ const (
 type ResourceResult struct {
 	ResourceID   string                 `json:"resource_id"`
 	ResourceName string                 `json:"resource_name"`
-	SourceID     uuid.UUID              `json:"source_id"`
+	SourceID     string                 `json:"source_id"`
 	Result       types.ComplianceResult `json:"result"`
 }
 
