@@ -41,7 +41,7 @@ func (b *benchmarkSummaryBuilder) Process(resource es2.Finding) error {
 	resourceResult := es.ResourceResult{
 		ResourceID:   resource.ResourceID,
 		ResourceName: resource.ResourceName,
-		SourceID:     resource.SourceID,
+		SourceID:     resource.ConnectionID,
 		Result:       resource.Status,
 	}
 

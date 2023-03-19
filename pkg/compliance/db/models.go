@@ -140,3 +140,15 @@ type Query struct {
 	CreatedAt      time.Time
 	UpdatedAt      time.Time
 }
+
+func (q Query) ToApi() api.Query {
+	return api.Query{
+		ID:             q.ID,
+		QueryToExecute: q.QueryToExecute,
+		Connector:      q.Connector,
+		ListOfTables:   q.ListOfTables,
+		Engine:         q.Engine,
+		CreatedAt:      q.CreatedAt,
+		UpdatedAt:      q.UpdatedAt,
+	}
+}

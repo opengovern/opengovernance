@@ -35,3 +35,13 @@ type Policy struct {
 	CreatedAt          time.Time         `json:"createdAt"`
 	UpdatedAt          time.Time         `json:"updatedAt"`
 }
+
+type Query struct {
+	ID             string    `json:"id"`
+	QueryToExecute string    `json:"queryToExecute"`
+	Connector      string    `json:"connector"`
+	ListOfTables   string    `json:"listOfTables"`
+	Engine         string    `json:"engine"`
+	CreatedAt      time.Time `json:"createdAt"`
+	UpdatedAt      time.Time `json:"updatedAt"`
+}

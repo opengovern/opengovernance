@@ -18,32 +18,30 @@ const (
 )
 
 type Finding struct {
-	ID                     string                 `json:"ID"`
-	ComplianceJobID        uint                   `json:"complianceJobID"`
-	ScheduleJobID          uint                   `json:"scheduleJobID"`
-	ResourceID             string                 `json:"resourceID"`
-	ResourceName           string                 `json:"resourceName"`
-	ResourceType           string                 `json:"resourceType"`
-	ServiceName            string                 `json:"serviceName"`
-	Category               string                 `json:"category"`
-	ResourceLocation       string                 `json:"resourceLocation"`
-	Reason                 string                 `json:"reason"`
-	Status                 types.ComplianceResult `json:"status"`
-	DescribedAt            int64                  `json:"describedAt"`
-	EvaluatedAt            int64                  `json:"evaluatedAt"`
-	SourceID               uuid.UUID              `json:"sourceID"`
-	ConnectionProviderID   string                 `json:"connectionProviderID"`
-	ConnectionProviderName string                 `json:"connectionProviderName"`
-	SourceType             source.Type            `json:"sourceType"`
-	BenchmarkID            string                 `json:"benchmarkID"`
-	PolicyID               string                 `json:"policyID"`
-	PolicySeverity         string                 `json:"policySeverity"`
+	ID               string                 `json:"ID"`
+	ComplianceJobID  uint                   `json:"complianceJobID"`
+	ScheduleJobID    uint                   `json:"scheduleJobID"`
+	ResourceID       string                 `json:"resourceID"`
+	ResourceName     string                 `json:"resourceName"`
+	ResourceType     string                 `json:"resourceType"`
+	ServiceName      string                 `json:"serviceName"`
+	Category         string                 `json:"category"`
+	ResourceLocation string                 `json:"resourceLocation"`
+	Reason           string                 `json:"reason"`
+	Status           types.ComplianceResult `json:"status"`
+	DescribedAt      int64                  `json:"describedAt"`
+	EvaluatedAt      int64                  `json:"evaluatedAt"`
+	ConnectionID     string                 `json:"connectionID"`
+	Connector        source.Type            `json:"connector"`
+	BenchmarkID      string                 `json:"benchmarkID"`
+	PolicyID         string                 `json:"policyID"`
+	PolicySeverity   string                 `json:"policySeverity"`
 }
 
 func (r Finding) KeysAndIndex() ([]string, string) {
 	return []string{
 		r.ResourceID,
-		r.SourceID.String(),
+		r.ConnectionID,
 		r.PolicyID,
 		strconv.FormatInt(r.DescribedAt, 10),
 	}, FindingsIndex

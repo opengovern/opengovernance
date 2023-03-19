@@ -46,7 +46,7 @@ import (
 	complianceapi "gitlab.com/keibiengine/keibi-engine/pkg/compliance/api"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/aws"
-	compliancereport "gitlab.com/keibiengine/keibi-engine/pkg/compliance"
+	complianceworker "gitlab.com/keibiengine/keibi-engine/pkg/compliance/worker"
 	"gitlab.com/keibiengine/keibi-engine/pkg/describe/api"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpserver"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/postgres"
@@ -1581,7 +1581,7 @@ func (s Scheduler) cleanupComplianceReportJobForDeletedSource(sourceId string) {
 
 func (s Scheduler) handleComplianceReportJobs(jobs []ComplianceReportJob) {
 	for _, job := range jobs {
-		if err := s.complianceReportCleanupJobQueue.Publish(compliancereport.ComplianceReportCleanupJob{
+		if err := s.complianceReportCleanupJobQueue.Publish(complianceworker.ComplianceReportCleanupJob{
 			JobID: job.ID,
 		}); err != nil {
 			s.logger.Error("Failed to publish compliance report clean up job to queue for ComplianceReportJob",
@@ -1924,7 +1924,7 @@ func (s *Scheduler) RunComplianceReportJobResultsConsumer() error {
 				return fmt.Errorf("tasks channel is closed")
 			}
 
-			var result compliancereport.JobResult
+			var result complianceworker.JobResult
 			if err := json.Unmarshal(msg.Body, &result); err != nil {
 				s.logger.Error("Failed to unmarshal ComplianceReportJob results", zap.Error(err))
 				err = msg.Nack(false, false)
@@ -2253,14 +2253,15 @@ func enqueueComplianceReportJobs(logger *zap.Logger, db Database, q queue.Interf
 	nextStatus := complianceapi.ComplianceReportJobInProgress
 	errMsg := ""
 
-	if err := q.Publish(compliancereport.Job{
+	if err := q.Publish(complianceworker.Job{
 		JobID:         crj.ID,
 		ScheduleJobID: scheduleJob.ID,
-		SourceID:      crj.SourceID,
-		BenchmarkID:   crj.BenchmarkID,
-		SourceType:    source.Type(a.Type),
-		ConfigReg:     a.ConfigRef,
 		DescribedAt:   scheduleJob.CreatedAt.UnixMilli(),
+		EvaluatedAt:   0,
+		ConnectionID:  crj.SourceID.String(),
+		BenchmarkID:   crj.BenchmarkID,
+		ConfigReg:     a.ConfigRef,
+		Connector:     source.Type(a.Type),
 	}); err != nil {
 		logger.Error("Failed to queue ComplianceReportJob",
 			zap.Uint("jobId", crj.ID),
