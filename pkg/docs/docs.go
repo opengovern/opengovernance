@@ -3897,6 +3897,23 @@ const docTemplate = `{
                 "responses": {}
             }
         },
+        "/schedule/api/v0/compliance/trigger": {
+            "get": {
+                "description": "Triggers a compliance job to run immediately",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "describe"
+                ],
+                "summary": "Triggers a compliance job to run immediately",
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    }
+                }
+            }
+        },
         "/schedule/api/v0/describe/trigger": {
             "get": {
                 "description": "Triggers a describe job to run immediately",

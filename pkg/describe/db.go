@@ -501,7 +501,7 @@ func (db Database) UpdateDescribeResourceJobStatusByParentId(id uint, status api
 func (db Database) UpdateDescribeResourceJobsTimedOut(describeIntervalHours int64) error {
 	tx := db.orm.
 		Model(&DescribeResourceJob{}).
-		Where(fmt.Sprintf("created_at < NOW() - INTERVAL '%d HOURS'", describeIntervalHours*2)).
+		Where(fmt.Sprintf("created_at < NOW() - INTERVAL '%d HOURS'", describeIntervalHours)).
 		Where("status IN ?", []string{string(api.DescribeResourceJobCreated), string(api.DescribeResourceJobQueued)}).
 		Updates(DescribeResourceJob{Status: api.DescribeResourceJobFailed, FailureMessage: "Job timed out"})
 	if tx.Error != nil {
@@ -586,7 +586,7 @@ func (db Database) UpdateComplianceReportJob(
 func (db Database) UpdateComplianceReportJobsTimedOut(complianceIntervalHours int64) error {
 	tx := db.orm.
 		Model(&ComplianceReportJob{}).
-		Where(fmt.Sprintf("created_at < NOW() - INTERVAL '%d HOURS'", complianceIntervalHours*2)).
+		Where(fmt.Sprintf("created_at < NOW() - INTERVAL '%d HOURS'", complianceIntervalHours)).
 		Where("status IN ?", []string{string(api2.ComplianceReportJobCreated), string(api2.ComplianceReportJobInProgress)}).
 		Updates(ComplianceReportJob{Status: api2.ComplianceReportJobCompletedWithFailure, FailureMessage: "Job timed out"})
 	if tx.Error != nil {
@@ -1037,6 +1037,23 @@ func (db Database) AddScheduleJob(job *ScheduleJob) error {
 func (db Database) FetchLastScheduleJob() (*ScheduleJob, error) {
 	var job *ScheduleJob
 	tx := db.orm.Model(&ScheduleJob{}).
+		Order("updated_at DESC").
+		First(&job)
+	if tx.Error != nil {
+		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
+		return nil, tx.Error
+	} else if tx.RowsAffected != 1 {
+		return nil, nil
+	}
+	return job, nil
+}
+
+func (db Database) FetchLastCompletedScheduleJob() (*ScheduleJob, error) {
+	var job *ScheduleJob
+	tx := db.orm.Model(&ScheduleJob{}).
+		Where("status = ?", summarizerapi.SummarizerJobSucceeded).
 		Order("updated_at DESC").
 		First(&job)
 	if tx.Error != nil {

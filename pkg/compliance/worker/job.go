@@ -2,6 +2,7 @@ package worker
 
 import (
 	"fmt"
+	api2 "gitlab.com/keibiengine/keibi-engine/pkg/auth/api"
 	"gitlab.com/keibiengine/keibi-engine/pkg/cloudservice"
 	"gitlab.com/keibiengine/keibi-engine/pkg/compliance/api"
 	"gitlab.com/keibiengine/keibi-engine/pkg/compliance/client"
@@ -80,13 +81,7 @@ func (j *Job) Run(complianceClient client.ComplianceServiceClient, vault vault.S
 	}
 
 	ctx := &httpclient.Context{
-		UserRole:       "",
-		UserID:         "",
-		WorkspaceName:  "",
-		WorkspaceID:    "",
-		MaxUsers:       0,
-		MaxConnections: 0,
-		MaxResources:   0,
+		UserRole: api2.ViewerRole,
 	}
 	benchmark, err := complianceClient.GetBenchmark(ctx, j.BenchmarkID)
 	if err != nil {

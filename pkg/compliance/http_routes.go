@@ -903,7 +903,7 @@ func (h *HttpHandler) DeleteBenchmarkAssignment(ctx echo.Context) error {
 		return err
 	}
 
-	return ctx.JSON(http.StatusOK, nil)
+	return ctx.NoContent(http.StatusOK)
 }
 
 // ListBenchmarks godoc

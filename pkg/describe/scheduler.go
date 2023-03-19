@@ -169,7 +169,9 @@ type Scheduler struct {
 	deletedSources chan string
 
 	describeIntervalHours      int64
+	describeTimeoutHours       int64
 	complianceIntervalHours    int64
+	complianceTimeoutHours     int64
 	insightIntervalHours       int64
 	checkupIntervalHours       int64
 	summarizerIntervalHours    int64
@@ -226,7 +228,9 @@ func InitializeScheduler(
 	vaultUseTLS bool,
 	httpServerAddress string,
 	describeIntervalHours string,
+	describeTimeoutHours string,
 	complianceIntervalHours string,
+	complianceTimeoutHours string,
 	insightIntervalHours string,
 	checkupIntervalHours string,
 	mustSummarizeIntervalHours string,
@@ -524,7 +528,15 @@ func InitializeScheduler(
 	if err != nil {
 		return nil, err
 	}
+	s.describeTimeoutHours, err = strconv.ParseInt(describeTimeoutHours, 10, 64)
+	if err != nil {
+		return nil, err
+	}
 	s.complianceIntervalHours, err = strconv.ParseInt(complianceIntervalHours, 10, 64)
+	if err != nil {
+		return nil, err
+	}
+	s.complianceTimeoutHours, err = strconv.ParseInt(complianceTimeoutHours, 10, 64)
 	if err != nil {
 		return nil, err
 	}
@@ -933,7 +945,7 @@ func (s *Scheduler) RunScheduleJobCompletionUpdater() {
 			)
 			return
 		}
-		filteredSources := make([]Source, 0, len(srcs))
+		var filteredSources []Source
 		for _, src := range srcs {
 			for _, onboardSrc := range onboardSources {
 				if src.ID.String() == onboardSrc.ID.String() {
@@ -1744,7 +1756,7 @@ func (s *Scheduler) RunDescribeConnectionJobResultsConsumer() error {
 				s.logger.Error("Failed acking message", zap.Error(err))
 			}
 		case <-t.C:
-			err := s.db.UpdateDescribeResourceJobsTimedOut(s.describeIntervalHours)
+			err := s.db.UpdateDescribeResourceJobsTimedOut(s.describeTimeoutHours)
 			if err != nil {
 				s.logger.Error("Failed to update timed out DescribeResourceJobs", zap.Error(err))
 			}
@@ -1804,7 +1816,7 @@ func (s *Scheduler) RunDescribeJobResultsConsumer() error {
 				s.logger.Error("Failed acking message", zap.Error(err))
 			}
 		case <-t.C:
-			err := s.db.UpdateDescribeResourceJobsTimedOut(s.describeIntervalHours)
+			err := s.db.UpdateDescribeResourceJobsTimedOut(s.describeTimeoutHours)
 			if err != nil {
 				s.logger.Error("Failed to update timed out DescribeResourceJobs", zap.Error(err))
 			}
@@ -1954,7 +1966,7 @@ func (s *Scheduler) RunComplianceReportJobResultsConsumer() error {
 				s.logger.Error("Failed acking message", zap.Error(err))
 			}
 		case <-t.C:
-			err := s.db.UpdateComplianceReportJobsTimedOut(s.complianceIntervalHours)
+			err := s.db.UpdateComplianceReportJobsTimedOut(s.complianceTimeoutHours)
 			if err != nil {
 				s.logger.Error("Failed to update timed out ComplianceReportJob", zap.Error(err))
 			}
