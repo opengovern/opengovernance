@@ -37,6 +37,7 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	v1.GET("/benchmarks/:benchmark_id", httpserver.AuthorizeHandler(h.GetBenchmark, api3.ViewerRole))
 	v1.GET("/benchmarks/:benchmark_id/policies", httpserver.AuthorizeHandler(h.ListPolicies, api3.ViewerRole))
 	v1.GET("/benchmarks/policies/:policy_id", httpserver.AuthorizeHandler(h.GetPolicy, api3.ViewerRole))
+	v1.GET("/queries/:query_id", httpserver.AuthorizeHandler(h.GetQuery, api3.ViewerRole))
 
 	v1.GET("/assignments", httpserver.AuthorizeHandler(h.ListAssignments, api3.ViewerRole))
 	v1.GET("/assignments/benchmark/:benchmark_id", httpserver.AuthorizeHandler(h.ListAssignmentsByBenchmark, api3.ViewerRole))
@@ -320,70 +321,70 @@ func (h *HttpHandler) GetFindingsMetrics(ctx echo.Context) error {
 //	@Param		finding_id	path		string	true	"FindingID"
 //	@Success	200			{object}	api.GetFindingDetailsResponse
 //	@Router		/compliance/api/v1/findings/{finding_id} [get]
-func (h *HttpHandler) GetFindingDetails(ctx echo.Context) error {
-	findingID := ctx.Param("finding_id")
-	findings, err := es.FindingsQuery(h.client, []string{findingID}, nil, nil, nil, nil,
-		nil, nil, nil, nil, 0, es2.EsFetchPageSize)
-	if err != nil {
-		return err
-	}
-
-	if len(findings.Hits.Hits) == 0 {
-		return echo.NewHTTPError(http.StatusBadRequest, "invalid id")
-	}
-
-	finding := findings.Hits.Hits[0].Source
-	p, err := h.db.GetPolicy(finding.PolicyID)
-	if err != nil {
-		return err
-	}
-
-	tags := map[string]string{}
-	for _, t := range p.Tags {
-		tags[t.Key] = t.Value
-	}
-
-	var alarms []api.Alarms
-
-	als, err := query.GetAlarms(h.client, finding.ResourceID, finding.PolicyID)
-	if err != nil {
-		return err
-	}
-
-	for _, a := range als {
-		alarms = append(alarms, api.Alarms{
-			Policy: types.FullPolicy{
-				ID:    p.ID,
-				Title: p.Title,
-			},
-			CreatedAt: a.CreatedAt,
-			Status:    a.Status,
-		})
-	}
-
-	response := api.GetFindingDetailsResponse{
-		Connection: types.FullConnection{
-			ID:           finding.SourceID,
-			ProviderID:   finding.ConnectionProviderID,
-			ProviderName: finding.ConnectionProviderName,
-		},
-		Resource: types.FullResource{
-			ID:   finding.ResourceID,
-			Name: finding.ResourceName,
-		},
-		ResourceType: types.FullResourceType{
-			ID:   finding.ResourceType,
-			Name: cloudservice.ResourceTypeName(finding.ResourceType),
-		},
-		State:             finding.Status,
-		CreatedAt:         finding.EvaluatedAt,
-		PolicyTags:        tags,
-		PolicyDescription: p.Description,
-		Reason:            finding.Reason,
-		Alarms:            alarms,
-	}
-	return ctx.JSON(http.StatusOK, response)
-}
+//func (h *HttpHandler) GetFindingDetails(ctx echo.Context) error {
+//	findingID := ctx.Param("finding_id")
+//	findings, err := es.FindingsQuery(h.client, []string{findingID}, nil, nil, nil, nil,
+//		nil, nil, nil, nil, 0, es2.EsFetchPageSize)
+//	if err != nil {
+//		return err
+//	}
+//
+//	if len(findings.Hits.Hits) == 0 {
+//		return echo.NewHTTPError(http.StatusBadRequest, "invalid id")
+//	}
+//
+//	finding := findings.Hits.Hits[0].Source
+//	p, err := h.db.GetPolicy(finding.PolicyID)
+//	if err != nil {
+//		return err
+//	}
+//
+//	tags := map[string]string{}
+//	for _, t := range p.Tags {
+//		tags[t.Key] = t.Value
+//	}
+//
+//	var alarms []api.Alarms
+//
+//	als, err := query.GetAlarms(h.client, finding.ResourceID, finding.PolicyID)
+//	if err != nil {
+//		return err
+//	}
+//
+//	for _, a := range als {
+//		alarms = append(alarms, api.Alarms{
+//			Policy: types.FullPolicy{
+//				ID:    p.ID,
+//				Title: p.Title,
+//			},
+//			CreatedAt: a.CreatedAt,
+//			Status:    a.Status,
+//		})
+//	}
+//
+//	response := api.GetFindingDetailsResponse{
+//		Connection: types.FullConnection{
+//			ID:           finding.ConnectionID,
+//			ProviderID:   finding.ConnectionProviderID,
+//			ProviderName: finding.ConnectionProviderName,
+//		},
+//		Resource: types.FullResource{
+//			ID:   finding.ResourceID,
+//			Name: finding.ResourceName,
+//		},
+//		ResourceType: types.FullResourceType{
+//			ID:   finding.ResourceType,
+//			Name: cloudservice.ResourceTypeName(finding.ResourceType),
+//		},
+//		State:             finding.Status,
+//		CreatedAt:         finding.EvaluatedAt,
+//		PolicyTags:        tags,
+//		PolicyDescription: p.Description,
+//		Reason:            finding.Reason,
+//		Alarms:            alarms,
+//	}
+//	return ctx.JSON(http.StatusOK, response)
+//}
 
 // GetBenchmarkInsight godoc
 //
@@ -394,63 +395,63 @@ func (h *HttpHandler) GetFindingDetails(ctx echo.Context) error {
 //	@Param		benchmark_id	path		string	true	"BenchmarkID"
 //	@Success	200				{object}	api.GetBenchmarkInsightResponse
 //	@Router		/benchmarks/{benchmark_id}/insight [get]
-func (h *HttpHandler) GetBenchmarkInsight(ctx echo.Context) error {
-	benchmarkID := ctx.Param("benchmark_id")
-	findings, err := es.FindingsQuery(h.client, nil, nil, nil, nil, nil, []string{benchmarkID},
-		nil, nil, nil, 0, es2.EsFetchPageSize)
-	if err != nil {
-		return err
-	}
-	var response api.GetBenchmarkInsightResponse
-
-	categoryMap := map[string]int64{}
-	resourceTypeMap := map[string]int64{}
-	accountMap := map[string]int64{}
-	severityMap := map[string]int64{}
-	for _, f := range findings.Hits.Hits {
-		categoryMap[f.Source.Category]++
-		resourceTypeMap[f.Source.ResourceType]++
-		accountMap[f.Source.SourceID.String()]++
-		severityMap[f.Source.PolicySeverity]++
-	}
-
-	for k, v := range categoryMap {
-		response.TopCategory = append(response.TopCategory, api.InsightRecord{
-			Name:  k,
-			Value: v,
-		})
-	}
-
-	for k, v := range resourceTypeMap {
-		response.TopCategory = append(response.TopCategory, api.InsightRecord{
-			Name:  k,
-			Value: v,
-		})
-	}
-
-	for k, v := range accountMap {
-		name := ""
-		for _, f := range findings.Hits.Hits {
-			if f.Source.SourceID.String() == k {
-				name = f.Source.ConnectionProviderName
-				break
-			}
-		}
-		response.TopCategory = append(response.TopCategory, api.InsightRecord{
-			Name:  name,
-			Value: v,
-		})
-	}
-
-	for k, v := range severityMap {
-		response.TopCategory = append(response.TopCategory, api.InsightRecord{
-			Name:  k,
-			Value: v,
-		})
-	}
-
-	return ctx.JSON(http.StatusOK, response)
-}
+//func (h *HttpHandler) GetBenchmarkInsight(ctx echo.Context) error {
+//	benchmarkID := ctx.Param("benchmark_id")
+//	findings, err := es.FindingsQuery(h.client, nil, nil, nil, nil, nil, []string{benchmarkID},
+//		nil, nil, nil, 0, es2.EsFetchPageSize)
+//	if err != nil {
+//		return err
+//	}
+//	var response api.GetBenchmarkInsightResponse
+//
+//	categoryMap := map[string]int64{}
+//	resourceTypeMap := map[string]int64{}
+//	accountMap := map[string]int64{}
+//	severityMap := map[string]int64{}
+//	for _, f := range findings.Hits.Hits {
+//		categoryMap[f.Source.Category]++
+//		resourceTypeMap[f.Source.ResourceType]++
+//		accountMap[f.Source.SourceID.String()]++
+//		severityMap[f.Source.PolicySeverity]++
+//	}
+//
+//	for k, v := range categoryMap {
+//		response.TopCategory = append(response.TopCategory, api.InsightRecord{
+//			Name:  k,
+//			Value: v,
+//		})
+//	}
+//
+//	for k, v := range resourceTypeMap {
+//		response.TopCategory = append(response.TopCategory, api.InsightRecord{
+//			Name:  k,
+//			Value: v,
+//		})
+//	}
+//
+//	for k, v := range accountMap {
+//		name := ""
+//		for _, f := range findings.Hits.Hits {
+//			if f.Source.SourceID.String() == k {
+//				name = f.Source.ConnectionProviderName
+//				break
+//			}
+//		}
+//		response.TopCategory = append(response.TopCategory, api.InsightRecord{
+//			Name:  name,
+//			Value: v,
+//		})
+//	}
+//
+//	for k, v := range severityMap {
+//		response.TopCategory = append(response.TopCategory, api.InsightRecord{
+//			Name:  k,
+//			Value: v,
+//		})
+//	}
+//
+//	return ctx.JSON(http.StatusOK, response)
+//}
 
 // GetBenchmarksSummary godoc
 //
@@ -968,7 +969,17 @@ func (h *HttpHandler) ListPolicies(ctx echo.Context) error {
 		return err
 	}
 
+	var policyIDs []string
 	for _, p := range b.Policies {
+		policyIDs = append(policyIDs, p.ID)
+	}
+
+	policies, err := h.db.GetPolicies(policyIDs)
+	if err != nil {
+		return err
+	}
+
+	for _, p := range policies {
 		response = append(response, p.ToApi())
 	}
 	return ctx.JSON(http.StatusOK, response)
@@ -989,4 +1000,21 @@ func (h *HttpHandler) GetPolicy(ctx echo.Context) error {
 		return err
 	}
 	return ctx.JSON(http.StatusOK, policy.ToApi())
+}
+
+// GetQuery godoc
+//
+//	@Summary	Get query
+//	@Tags		compliance
+//	@Accept		json
+//	@Produce	json
+//	@Success	200	{object}	api.Query
+//	@Router		/compliance/api/v1/queries/{query_id} [get]
+func (h *HttpHandler) GetQuery(ctx echo.Context) error {
+	queryID := ctx.Param("query_id")
+	q, err := h.db.GetQuery(queryID)
+	if err != nil {
+		return err
+	}
+	return ctx.JSON(http.StatusOK, q.ToApi())
 }

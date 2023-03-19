@@ -56,6 +56,19 @@ func (db Database) GetBenchmark(benchmarkId string) (*Benchmark, error) {
 	return &s, nil
 }
 
+func (db Database) GetQuery(queryID string) (*Query, error) {
+	var s Query
+	tx := db.Orm.Model(&Query{}).
+		Where("id = ?", queryID).
+		First(&s)
+
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+
+	return &s, nil
+}
+
 func (db Database) GetBenchmarksTitle(ds []string) (map[string]string, error) {
 	var bs []Benchmark
 	tx := db.Orm.Model(&Benchmark{}).

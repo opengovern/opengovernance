@@ -3,6 +3,7 @@ package compliance
 import (
 	"encoding/json"
 	"fmt"
+	"gitlab.com/keibiengine/keibi-engine/pkg/compliance/worker"
 	"strings"
 	"time"
 
@@ -113,10 +114,6 @@ func InitializeWorker(
 	w.complianceClient = client2.NewComplianceClient(config.Compliance.BaseURL)
 
 	w.pusher = push.New(prometheusPushAddress, "compliance-report")
-	w.pusher.Collector(DoComplianceReportJobsCount).
-		Collector(DoComplianceReportJobsDuration).
-		Collector(DoComplianceReportCleanupJobsCount).
-		Collector(DoComplianceReportCleanupJobsDuration)
 
 	defaultAccountID := "default"
 	w.es, err = keibi.NewClient(keibi.ClientConfig{
@@ -152,7 +149,7 @@ func (w *Worker) Run() error {
 
 	w.logger.Info("Parsing job")
 
-	var job Job
+	var job worker.Job
 	if err := json.Unmarshal(msg.Body, &job); err != nil {
 		w.logger.Error("Failed to unmarshal task", zap.Error(err))
 
@@ -161,10 +158,9 @@ func (w *Worker) Run() error {
 		}
 		return err
 	}
-	job.logger = w.logger
 
 	w.logger.Info("Running the job", zap.Uint("jobID", job.JobID))
-	result := job.Do(w)
+	result := job.Do(w.complianceClient, w.vault, w.config.ElasticSearch, w.kfkProducer, w.kfkTopic, w.logger)
 	w.logger.Info("Job finished", zap.Uint("jobID", job.JobID))
 
 	if err := w.jobResultQueue.Publish(result); err != nil {
