@@ -16,6 +16,7 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/types"
 	"go.uber.org/zap"
 	"gopkg.in/Shopify/sarama.v1"
+	"os/exec"
 	"time"
 )
 
@@ -65,6 +66,16 @@ func (j *Job) Do(
 func (j *Job) Run(complianceClient client.ComplianceServiceClient, vault vault.SourceConfig,
 	elasticSearchConfig config.ElasticSearch, kfkProducer sarama.SyncProducer, kfkTopic string, logger *zap.Logger) error {
 	err := j.PopulateSteampipeConfig(vault, elasticSearchConfig)
+	if err != nil {
+		return err
+	}
+
+	cmd := exec.Command("steampipe", "service", "stop")
+	_ = cmd.Run()
+
+	cmd = exec.Command("steampipe", "service", "start", "--database-listen", "network", "--database-port",
+		"9193", "--database-password", "abcd")
+	err = cmd.Run()
 	if err != nil {
 		return err
 	}
