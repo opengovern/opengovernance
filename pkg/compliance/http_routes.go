@@ -963,13 +963,13 @@ func (h *HttpHandler) ListPolicies(ctx echo.Context) error {
 	var response []api.Policy
 
 	benchmarkId := ctx.Param("benchmark_id")
-	policies, err := h.db.ListPoliciesByBenchmarkID(benchmarkId)
+	b, err := h.db.GetBenchmark(benchmarkId)
 	if err != nil {
 		return err
 	}
 
-	for _, b := range policies {
-		response = append(response, b.ToApi())
+	for _, p := range b.Policies {
+		response = append(response, p.ToApi())
 	}
 	return ctx.JSON(http.StatusOK, response)
 }
