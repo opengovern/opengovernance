@@ -29,7 +29,11 @@ func (db Database) Initialize() error {
 
 func (db Database) ListBenchmarks() ([]Benchmark, error) {
 	var s []Benchmark
-	tx := db.Orm.Model(&Benchmark{}).Find(&s)
+	tx := db.Orm.Model(&Benchmark{}).
+		Preload("Tags").
+		Preload("Children").
+		Preload("Policies").
+		Find(&s)
 	if tx.Error != nil {
 		return nil, tx.Error
 	}
@@ -40,6 +44,7 @@ func (db Database) GetBenchmark(benchmarkId string) (*Benchmark, error) {
 	var s Benchmark
 	tx := db.Orm.Model(&Benchmark{}).
 		Preload("Tags").
+		Preload("Children").
 		Preload("Policies").
 		Where("id = ?", benchmarkId).
 		First(&s)
@@ -105,7 +110,9 @@ func (db Database) GetPolicy(id string) (*Policy, error) {
 
 func (db Database) ListPoliciesByBenchmarkID(benchmarkID string) ([]Policy, error) {
 	var s []Policy
-	tx := db.Orm.Model(&Policy{}).Where(Policy{Benchmarks: []Benchmark{{ID: benchmarkID}}}).Find(&s)
+	tx := db.Orm.Model(&Policy{}).
+		Preload("Tags").
+		Where(Policy{Benchmarks: []Benchmark{{ID: benchmarkID}}}).Find(&s)
 	if tx.Error != nil {
 		return nil, tx.Error
 	}

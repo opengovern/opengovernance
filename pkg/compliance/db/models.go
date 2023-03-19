@@ -48,6 +48,7 @@ func (b Benchmark) ToApi() api.Benchmark {
 		CreatedAt:   b.CreatedAt,
 		UpdatedAt:   b.UpdatedAt,
 	}
+	ba.Tags = map[string]string{}
 	for _, tag := range b.Tags {
 		ba.Tags[tag.Key] = tag.Value
 	}
@@ -102,6 +103,7 @@ func (p Policy) ToApi() api.Policy {
 		CreatedAt:          p.CreatedAt,
 		UpdatedAt:          p.UpdatedAt,
 	}
+	pa.Tags = map[string]string{}
 	for _, tag := range p.Tags {
 		pa.Tags[tag.Key] = tag.Value
 	}
