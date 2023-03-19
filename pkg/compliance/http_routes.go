@@ -694,9 +694,9 @@ func (h *HttpHandler) GetPolicySummary(ctx echo.Context) error {
 //	@Param			benchmark_id	path		string	true	"Benchmark ID"
 //	@Param			source_id		path		string	true	"Source ID"
 //	@Success		200				{object}	api.BenchmarkAssignment
-//	@Router			/compliance/api/v1/benchmarks/{benchmark_id}/source/{source_id} [post]
+//	@Router			/compliance/api/v1/assignments/{benchmark_id}/connection/{connection_id} [post]
 func (h *HttpHandler) CreateBenchmarkAssignment(ctx echo.Context) error {
-	sourceId := ctx.Param("source_id")
+	sourceId := ctx.Param("connection_id")
 	if sourceId == "" {
 		return echo.NewHTTPError(http.StatusBadRequest, "source id is empty")
 	}
@@ -882,9 +882,9 @@ func (h *HttpHandler) ListAssignments(ctx echo.Context) error {
 //	@Param			benchmark_id	path	string	true	"Benchmark ID"
 //	@Param			source_id		path	string	true	"Source ID"
 //	@Success		200
-//	@Router			/compliance/api/v1/benchmarks/{benchmark_id}/source/{source_id} [delete]
+//	@Router			/compliance/api/v1/assignments/{benchmark_id}/connection/{connection_id} [delete]
 func (h *HttpHandler) DeleteBenchmarkAssignment(ctx echo.Context) error {
-	sourceId := ctx.Param("source_id")
+	sourceId := ctx.Param("connection_id")
 	if sourceId == "" {
 		return echo.NewHTTPError(http.StatusBadRequest, "source id is empty")
 	}
