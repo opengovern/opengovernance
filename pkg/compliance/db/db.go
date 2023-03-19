@@ -120,6 +120,18 @@ func (db Database) ListPoliciesByBenchmarkID(benchmarkID string) ([]Policy, erro
 	return s, nil
 }
 
+func (db Database) GetPolicies(policyIDs []string) ([]Policy, error) {
+	var s []Policy
+	tx := db.Orm.Model(&Policy{}).
+		Preload("Tags").
+		Where("id IN ?", policyIDs).
+		Find(&s)
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+	return s, nil
+}
+
 // =========== BenchmarkAssignment ===========
 
 func (db Database) AddBenchmarkAssignment(assignment *BenchmarkAssignment) error {
