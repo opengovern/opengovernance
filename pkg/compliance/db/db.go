@@ -112,6 +112,7 @@ func (db Database) ListPoliciesByBenchmarkID(benchmarkID string) ([]Policy, erro
 	var s []Policy
 	tx := db.Orm.Model(&Policy{}).
 		Preload("Tags").
+		Preload("Benchmarks").
 		Where(Policy{Benchmarks: []Benchmark{{ID: benchmarkID}}}).Find(&s)
 	if tx.Error != nil {
 		return nil, tx.Error
