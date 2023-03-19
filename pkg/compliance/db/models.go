@@ -55,6 +55,9 @@ func (b Benchmark) ToApi() api.Benchmark {
 	for _, child := range b.Children {
 		ba.Children = append(ba.Children, child.ID)
 	}
+	for _, policy := range b.Policies {
+		ba.Policies = append(ba.Policies, policy.ID)
+	}
 	return ba
 }
 

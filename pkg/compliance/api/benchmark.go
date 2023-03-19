@@ -17,6 +17,7 @@ type Benchmark struct {
 	Baseline    bool              `json:"baseline"`
 	Tags        map[string]string `json:"tags"`
 	Children    []string          `json:"children"`
+	Policies    []string          `json:"policies"`
 	CreatedAt   time.Time         `json:"createdAt"`
 	UpdatedAt   time.Time         `json:"updatedAt"`
 }
