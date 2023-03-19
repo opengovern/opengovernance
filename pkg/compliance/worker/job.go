@@ -75,8 +75,9 @@ func (j *Job) Run(complianceClient client.ComplianceServiceClient, vault vault.S
 
 	cmd = exec.Command("steampipe", "service", "start", "--database-listen", "network", "--database-port",
 		"9193", "--database-password", "abcd")
-	err = cmd.Run()
+	output, err := cmd.Output()
 	if err != nil {
+		fmt.Println(string(output))
 		return err
 	}
 
