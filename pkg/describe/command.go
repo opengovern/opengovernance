@@ -65,7 +65,9 @@ var (
 	JaegerAddress = os.Getenv("JAEGER_ADDRESS")
 
 	DescribeIntervalHours      = os.Getenv("DESCRIBE_INTERVAL_HOURS")
+	DescribeTimeoutHours       = os.Getenv("DESCRIBE_TIMEOUT_HOURS")
 	ComplianceIntervalHours    = os.Getenv("COMPLIANCE_INTERVAL_HOURS")
+	ComplianceTimeoutHours     = os.Getenv("COMPLIANCE_TIMEOUT_HOURS")
 	InsightIntervalHours       = os.Getenv("INSIGHT_INTERVAL_HOURS")
 	CheckupIntervalHours       = os.Getenv("CHECKUP_INTERVAL_HOURS")
 	MustSummarizeIntervalHours = os.Getenv("MUST_SUMMARIZE_INTERVAL_HOURS")
@@ -138,7 +140,9 @@ func SchedulerCommand() *cobra.Command {
 				VaultUseTLS,
 				HttpServerAddress,
 				DescribeIntervalHours,
+				DescribeTimeoutHours,
 				ComplianceIntervalHours,
+				ComplianceTimeoutHours,
 				InsightIntervalHours,
 				CheckupIntervalHours,
 				MustSummarizeIntervalHours,
