@@ -82,18 +82,6 @@ func PopulateDatabase(dbc *gorm.DB, compliancePath, queryPath string) error {
 				return err
 			}
 		}
-
-		for _, benchmark := range obj.Benchmarks {
-			err := dbc.Clauses(clause.OnConflict{
-				DoNothing: true,
-			}).Create(&db.BenchmarkPolicies{
-				BenchmarkID: benchmark.ID,
-				PolicyID:    obj.ID,
-			}).Error
-			if err != nil {
-				return err
-			}
-		}
 	}
 
 	for _, obj := range p.benchmarks {
@@ -115,6 +103,18 @@ func PopulateDatabase(dbc *gorm.DB, compliancePath, queryPath string) error {
 			}).Create(&db.BenchmarkTagRel{
 				BenchmarkID:    obj.ID,
 				BenchmarkTagID: tag.ID,
+			}).Error
+			if err != nil {
+				return err
+			}
+		}
+
+		for _, policy := range obj.Policies {
+			err := dbc.Clauses(clause.OnConflict{
+				DoNothing: true,
+			}).Create(&db.BenchmarkPolicies{
+				BenchmarkID: obj.ID,
+				PolicyID:    policy.ID,
 			}).Error
 			if err != nil {
 				return err
