@@ -93,6 +93,21 @@ build-main:
   script:
     - make
 
+build-compliance-main:
+  stage: build
+  extends: .go-cache-pullpush
+  only:
+    refs:
+      - main
+    changes:
+      - "pkg/compliance/**/*"
+  artifacts:
+    paths:
+      - build/
+    expire_in: 1 hour
+  script:
+    - make
+
 golangci-lint-mr:
   stage: lint
   extends: .lint-cache
@@ -215,4 +230,26 @@ deploy: # This job runs in the deploy stage.
     - podman push registry.digitalocean.com/keibi/checkup-worker:$SVER_VERSION
     - podman push registry.digitalocean.com/keibi/summarizer-worker:$SVER_VERSION
     - podman push registry.digitalocean.com/keibi/steampipe-service:$SVER_VERSION
+    - podman push registry.digitalocean.com/keibi/compliance-report-worker:$SVER_VERSION
+
+deploy-compliance: # This job runs in the deploy stage.
+  stage: deploy # It only runs when *both* jobs in the test stage complete successfully.
+  needs:
+    - sver-tags
+    - build-compliance-main
+  dependencies:
+    - sver-tags
+    - build-compliance-main
+  only:
+    refs:
+      - main
+    changes:
+      - "pkg/compliance/**/*"
+  image:
+    name: quay.io/podman/stable
+  script:
+    - podman login -u "${DO_API_TOKEN}" -p "${DO_API_TOKEN}" "registry.digitalocean.com/keibi"
+    - podman build -f  docker/ComplianceReportWorkerDockerfile . -t registry.digitalocean.com/keibi/compliance-report-worker:$SVER_VERSION
+    - podman build -f  docker/ComplianceServiceDockerfile . -t registry.digitalocean.com/keibi/compliance-service:$SVER_VERSION
+    - podman push registry.digitalocean.com/keibi/compliance-service:$SVER_VERSION
     - podman push registry.digitalocean.com/keibi/compliance-report-worker:$SVER_VERSION
