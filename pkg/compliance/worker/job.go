@@ -125,6 +125,7 @@ func (j *Job) Run(complianceClient client.ComplianceServiceClient, vault vault.S
 		}
 
 		var docs []kafka.Doc
+
 		for _, finding := range findings {
 			docs = append(docs, finding)
 		}
