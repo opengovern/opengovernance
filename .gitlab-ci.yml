@@ -97,7 +97,8 @@ build-compliance-main:
   stage: build
   extends: .go-cache-pullpush
   only:
-    - main
+    refs:
+      - main
     changes:
       - "pkg/compliance/**/*"
   artifacts:
@@ -240,7 +241,8 @@ deploy-compliance: # This job runs in the deploy stage.
     - sver-tags
     - build-compliance-main
   only:
-    - main
+    refs:
+      - main
     changes:
       - "pkg/compliance/**/*"
   image:
