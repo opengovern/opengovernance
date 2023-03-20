@@ -14,6 +14,7 @@ func ParseHTTPSubpathS3URIToBucketAndKey(uri string) (string, string, error) {
 	hostParts := strings.Split(u.Hostname(), ".")
 
 	bucket := hostParts[0]
+
 	key := strings.TrimPrefix(u.Path, "/")
 
 	return bucket, key, nil
