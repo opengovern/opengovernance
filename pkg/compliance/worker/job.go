@@ -93,6 +93,7 @@ func (j *Job) Run(complianceClient client.ComplianceServiceClient, vault vault.S
 	ctx := &httpclient.Context{
 		UserRole: api2.ViewerRole,
 	}
+
 	benchmark, err := complianceClient.GetBenchmark(ctx, j.BenchmarkID)
 	if err != nil {
 		return err
