@@ -75,11 +75,9 @@ func (j *Job) Run(complianceClient client.ComplianceServiceClient, vault vault.S
 
 	cmd = exec.Command("steampipe", "service", "start", "--database-listen", "network", "--database-port",
 		"9193", "--database-password", "abcd")
-	output, err := cmd.Output()
-	if err != nil {
-		fmt.Println(string(output))
-		return err
-	}
+	_ = cmd.Run()
+
+	time.Sleep(5 * time.Second)
 
 	steampipeConn, err := steampipe.NewSteampipeDatabase(steampipe.Option{
 		Host: "localhost",
