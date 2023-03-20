@@ -2,12 +2,14 @@ package migrator
 
 import (
 	"fmt"
+	"os"
+
 	"github.com/prometheus/client_golang/prometheus/push"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/postgres"
 	"gitlab.com/keibiengine/keibi-engine/pkg/migrator/compliance"
 	"gitlab.com/keibiengine/keibi-engine/pkg/migrator/db"
+	"gitlab.com/keibiengine/keibi-engine/pkg/migrator/internal"
 	"go.uber.org/zap"
-	"os"
 )
 
 type Job struct {
@@ -80,6 +82,6 @@ func (w *Job) Run() error {
 }
 
 func (w *Job) Stop() {
-	os.RemoveAll("/tmp/loader-compliance-git")
-	os.RemoveAll("/tmp/loader-query-git")
+	os.RemoveAll(internal.ComplianceGitPath)
+	os.RemoveAll(internal.QueriesGitPath)
 }

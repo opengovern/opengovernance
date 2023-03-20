@@ -8,7 +8,11 @@ import (
 
 func PopulateDatabase(dbc *gorm.DB, compliancePath, queryPath string) error {
 	p := GitParser{}
-	if err := p.ExtractCompliance(compliancePath, queryPath); err != nil {
+	if err := p.ExtractQueries(queryPath); err != nil {
+		return err
+	}
+
+	if err := p.ExtractCompliance(compliancePath); err != nil {
 		return err
 	}
 

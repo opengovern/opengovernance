@@ -2,25 +2,24 @@ package compliance
 
 import (
 	"fmt"
-	db2 "gitlab.com/keibiengine/keibi-engine/pkg/compliance/db"
 
+	describeClient "gitlab.com/keibiengine/keibi-engine/pkg/describe/client"
+	inventoryClient "gitlab.com/keibiengine/keibi-engine/pkg/inventory/client"
+	onboardClient "gitlab.com/keibiengine/keibi-engine/pkg/onboard/client"
+
+	"gitlab.com/keibiengine/keibi-engine/pkg/compliance/db"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/postgres"
-
-	client3 "gitlab.com/keibiengine/keibi-engine/pkg/inventory/client"
-
-	client2 "gitlab.com/keibiengine/keibi-engine/pkg/onboard/client"
-	"go.uber.org/zap"
-
-	"gitlab.com/keibiengine/keibi-engine/pkg/describe/client"
 	"gitlab.com/keibiengine/keibi-engine/pkg/keibi-es-sdk"
+
+	"go.uber.org/zap"
 )
 
 type HttpHandler struct {
 	client          keibi.Client
-	db              db2.Database
-	schedulerClient client.SchedulerServiceClient
-	onboardClient   client2.OnboardServiceClient
-	inventoryClient client3.InventoryServiceClient
+	db              db.Database
+	schedulerClient describeClient.SchedulerServiceClient
+	onboardClient   onboardClient.OnboardServiceClient
+	inventoryClient inventoryClient.InventoryServiceClient
 }
 
 func InitializeHttpHandler(conf ServerConfig, logger *zap.Logger) (h *HttpHandler, err error) {
@@ -42,7 +41,7 @@ func InitializeHttpHandler(conf ServerConfig, logger *zap.Logger) (h *HttpHandle
 		return nil, fmt.Errorf("new postgres client: %w", err)
 	}
 
-	h.db = db2.Database{Orm: orm}
+	h.db = db.Database{Orm: orm}
 	fmt.Println("Connected to the postgres database: ", conf.PostgreSQL.DB)
 
 	err = h.db.Initialize()
@@ -61,9 +60,9 @@ func InitializeHttpHandler(conf ServerConfig, logger *zap.Logger) (h *HttpHandle
 	if err != nil {
 		return nil, err
 	}
-	h.schedulerClient = client.NewSchedulerServiceClient(conf.Scheduler.BaseURL)
-	h.onboardClient = client2.NewOnboardServiceClient(conf.Onboard.BaseURL, nil)
-	h.inventoryClient = client3.NewInventoryServiceClient(conf.Inventory.BaseURL)
+	h.schedulerClient = describeClient.NewSchedulerServiceClient(conf.Scheduler.BaseURL)
+	h.onboardClient = onboardClient.NewOnboardServiceClient(conf.Onboard.BaseURL, nil)
+	h.inventoryClient = inventoryClient.NewInventoryServiceClient(conf.Inventory.BaseURL)
 
 	return h, nil
 }

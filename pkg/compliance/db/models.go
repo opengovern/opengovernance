@@ -1,8 +1,10 @@
 package db
 
 import (
-	"gitlab.com/keibiengine/keibi-engine/pkg/compliance/api"
 	"time"
+
+	"gitlab.com/keibiengine/keibi-engine/pkg/compliance/api"
+	"gitlab.com/keibiengine/keibi-engine/pkg/source"
 
 	"gorm.io/gorm"
 )
@@ -129,13 +131,149 @@ type BenchmarkPolicies struct {
 	PolicyID    string
 }
 
+type InsightPeerGroup struct {
+	gorm.Model
+	Category    string
+	Insights    []Insight `gorm:"foreignKey:PeerGroupId;constraint:OnDelete:SET NULL;"`
+	ShortTitle  string
+	LongTitle   string
+	Description string
+	LogoURL     *string
+	Tags        []InsightTag  `gorm:"many2many:insight_peer_group_tag_rels;"`
+	Links       []InsightLink `gorm:"many2many:insight_peer_group_link_rels;"`
+}
+
+func (i InsightPeerGroup) ToApi() api.InsightPeerGroup {
+	ipg := api.InsightPeerGroup{
+		ID:          i.ID,
+		Category:    i.Category,
+		ShortTitle:  i.ShortTitle,
+		LongTitle:   i.LongTitle,
+		Description: i.Description,
+		LogoURL:     i.LogoURL,
+	}
+
+	ipg.Insights = make([]api.Insight, 0, len(i.Insights))
+	for _, insight := range i.Insights {
+		ipg.Insights = append(ipg.Insights, insight.ToApi())
+	}
+
+	ipg.Tags = make([]api.InsightTag, 0, len(i.Tags))
+	for _, tag := range i.Tags {
+		ipg.Tags = append(ipg.Tags, api.InsightTag{
+			ID:    tag.ID,
+			Key:   tag.Key,
+			Value: tag.Value,
+		})
+	}
+	ipg.Links = make([]api.InsightLink, 0, len(i.Links))
+	for _, link := range i.Links {
+		ipg.Links = append(ipg.Links, api.InsightLink{
+			ID:   link.ID,
+			Text: link.Text,
+			URI:  link.URI,
+		})
+	}
+	return ipg
+}
+
+type InsightPeerGroupTagRel struct {
+	InsightPeerGroupID uint
+	InsightTagID       uint
+}
+
+type InsightPeerGroupLinkRel struct {
+	InsightPeerGroupID uint
+	InsightLinkID      uint
+}
+
+type Insight struct {
+	gorm.Model
+	PeerGroupId *uint
+	QueryID     string
+	Query       Query `gorm:"foreignKey:QueryID;references:ID;constraint:OnDelete:CASCADE;"`
+	Category    string
+	Connector   source.Type
+	ShortTitle  string
+	LongTitle   string
+	Description string
+	LogoURL     *string
+	Tags        []InsightTag  `gorm:"many2many:insight_tag_rels;"`
+	Links       []InsightLink `gorm:"many2many:insight_link_rels;"`
+	Enabled     bool          `gorm:"default:true"`
+	Internal    bool
+}
+
+func (i Insight) ToApi() api.Insight {
+	ia := api.Insight{
+		ID:          i.ID,
+		PeerGroupId: i.PeerGroupId,
+		Query:       i.Query.ToApi(),
+		Category:    i.Category,
+		Connector:   i.Connector,
+		ShortTitle:  i.ShortTitle,
+		LongTitle:   i.LongTitle,
+		Description: i.Description,
+		LogoURL:     i.LogoURL,
+		Tags:        nil,
+		Links:       nil,
+		Enabled:     i.Enabled,
+		Internal:    i.Internal,
+	}
+
+	ia.Tags = make([]api.InsightTag, 0, len(i.Tags))
+	for _, tag := range i.Tags {
+		ia.Tags = append(ia.Tags, api.InsightTag{
+			ID:    tag.ID,
+			Key:   tag.Key,
+			Value: tag.Value,
+		})
+	}
+	ia.Links = make([]api.InsightLink, 0, len(i.Links))
+	for _, link := range i.Links {
+		ia.Links = append(ia.Links, api.InsightLink{
+			ID:   link.ID,
+			Text: link.Text,
+			URI:  link.URI,
+		})
+	}
+	return ia
+}
+
+type InsightTagRel struct {
+	InsightID    uint
+	InsightTagID uint
+}
+
+type InsightLinkRel struct {
+	InsightID     uint
+	InsightLinkID uint
+}
+
+type InsightTag struct {
+	gorm.Model
+	Key               string
+	Value             string
+	Insights          []Insight          `gorm:"many2many:insight_tag_rels;"`
+	InsightPeerGroups []InsightPeerGroup `gorm:"many2many:insight_peer_group_tag_rels;"`
+}
+
+type InsightLink struct {
+	gorm.Model
+	Insights          []Insight          `gorm:"many2many:insight_link_rels;"`
+	InsightPeerGroups []InsightPeerGroup `gorm:"many2many:insight_peer_group_link_rels;"`
+	Text              string
+	URI               string
+}
+
 type Query struct {
 	ID             string `gorm:"primarykey"`
 	QueryToExecute string
 	Connector      string
 	ListOfTables   string
 	Engine         string
-	Policies       []Policy `gorm:"foreignKey:QueryID"`
+	Policies       []Policy  `gorm:"foreignKey:QueryID"`
+	Insights       []Insight `gorm:"foreignKey:QueryID"`
 	CreatedAt      time.Time
 	UpdatedAt      time.Time
 }

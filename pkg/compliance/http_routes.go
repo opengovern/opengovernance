@@ -3,11 +3,12 @@ package compliance
 import (
 	"errors"
 	"fmt"
-	"gitlab.com/keibiengine/keibi-engine/pkg/compliance/db"
 	"net/http"
+	"strconv"
 	"time"
 
 	api3 "gitlab.com/keibiengine/keibi-engine/pkg/auth/api"
+	"gitlab.com/keibiengine/keibi-engine/pkg/compliance/db"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpserver"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/timewindow"
@@ -44,6 +45,11 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	v1.GET("/assignments/connection/:connection_id", httpserver.AuthorizeHandler(h.ListAssignmentsByConnection, api3.ViewerRole))
 	v1.POST("/assignments/:benchmark_id/connection/:connection_id", httpserver.AuthorizeHandler(h.CreateBenchmarkAssignment, api3.EditorRole))
 	v1.DELETE("/assignments/:benchmark_id/connection/:connection_id", httpserver.AuthorizeHandler(h.DeleteBenchmarkAssignment, api3.EditorRole))
+
+	v1.GET("/insight/peer", httpserver.AuthorizeHandler(h.ListPeerInsightGroups, api3.ViewerRole))
+	v1.GET("/insight/peer/:peerGroupId", httpserver.AuthorizeHandler(h.GetInsightPeerGroup, api3.ViewerRole))
+	v1.GET("/insight", httpserver.AuthorizeHandler(h.ListInsights, api3.ViewerRole))
+	v1.GET("/insight/:insightId", httpserver.AuthorizeHandler(h.GetInsight, api3.ViewerRole))
 
 	// finding dashboard
 	//v1.POST("/findings", httpserver.AuthorizeHandler(h.GetFindings, api3.ViewerRole))
@@ -1010,4 +1016,127 @@ func (h *HttpHandler) GetQuery(ctx echo.Context) error {
 		return err
 	}
 	return ctx.JSON(http.StatusOK, q.ToApi())
+}
+
+// ListInsights godoc
+//
+//	@Summary		List insights
+//	@Description	Listing insights
+//	@Tags			insights
+//	@Produce		json
+//	@Param			connector	query		source.Type				false	"filter by connector"
+//	@Success		200			{object}	[]api.Insight
+//	@Router			/compliance/api/v1/insight [get]
+func (h *HttpHandler) ListInsights(ctx echo.Context) error {
+	connector, _ := source.ParseType(ctx.QueryParam("connector"))
+
+	enabled := true
+	insightRows, err := h.db.ListInsightsWithFilters(connector, &enabled)
+	if err != nil {
+		return err
+	}
+
+	var result []api.Insight
+	for _, insightRow := range insightRows {
+		result = append(result, insightRow.ToApi())
+	}
+	return ctx.JSON(200, result)
+}
+
+// ListPeerInsightGroups godoc
+//
+//	@Summary		List insights
+//	@Description	Listing insights
+//	@Tags			insights
+//	@Produce		json
+//	@Success		200			{object}	[]api.InsightPeerGroup
+//	@Param			connector	query		source.Type	false	"filter by connector"
+//	@Router			/compliance/api/v1/insight/peer [get]
+func (h *HttpHandler) ListPeerInsightGroups(ctx echo.Context) error {
+	connector, _ := source.ParseType(ctx.QueryParam("connector"))
+
+	queries, err := h.db.ListInsightsPeerGroups()
+	if err != nil {
+		return err
+	}
+
+	var result []api.InsightPeerGroup
+	for _, insightPeerGroup := range queries {
+		result = append(result, insightPeerGroup.ToApi())
+	}
+
+	if connector != source.Nil {
+		for _, insightPeerGroup := range result {
+			var filtered []api.Insight
+			for _, insight := range insightPeerGroup.Insights {
+				if insight.Connector == connector {
+					filtered = append(filtered, insight)
+				}
+			}
+			insightPeerGroup.Insights = filtered
+		}
+	}
+
+	return ctx.JSON(200, result)
+}
+
+// GetInsight godoc
+//
+//	@Summary		Get insight by id
+//	@Description	Get insight by id
+//	@Tags			insights
+//	@Produce		json
+//	@Success		200	{object}	api.Insight
+//	@Router			/compliance/api/v1/insight/{insightId} [get]
+func (h *HttpHandler) GetInsight(ctx echo.Context) error {
+	id, err := strconv.ParseUint(ctx.Param("insightId"), 10, 64)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid id")
+	}
+	insight, err := h.db.GetInsight(uint(id))
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return echo.NewHTTPError(http.StatusNotFound, "insight not found")
+		}
+		return err
+	}
+
+	result := insight.ToApi()
+
+	return ctx.JSON(200, result)
+}
+
+// GetInsightPeerGroup godoc
+//
+//	@Summary		Get insight by id
+//	@Description	Get insight by id
+//	@Tags			insights
+//	@Produce		json
+//	@Success		200	{object}	api.InsightPeerGroup
+//	@Router			/compliance/api/v1/insight/peer/{peerGroupId} [get]
+func (h *HttpHandler) GetInsightPeerGroup(ctx echo.Context) error {
+	id, err := strconv.ParseUint(ctx.Param("peerGroupId"), 10, 64)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid id")
+	}
+	insightPeerGroup, err := h.db.GetInsightsPeerGroup(uint(id))
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return echo.NewHTTPError(http.StatusNotFound, "insightPeerGroup not found")
+		}
+		return err
+	}
+
+	res := insightPeerGroup.ToApi()
+
+	// filter out disabled insights
+	var filtered []api.Insight
+	for _, insight := range res.Insights {
+		if insight.Enabled {
+			filtered = append(filtered, insight)
+		}
+	}
+	res.Insights = filtered
+
+	return ctx.JSON(200, res)
 }

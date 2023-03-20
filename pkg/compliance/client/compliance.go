@@ -6,6 +6,7 @@ import (
 
 	"github.com/google/uuid"
 	compliance "gitlab.com/keibiengine/keibi-engine/pkg/compliance/api"
+	"gitlab.com/keibiengine/keibi-engine/pkg/source"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpclient"
 )
@@ -15,6 +16,10 @@ type ComplianceServiceClient interface {
 	GetBenchmark(ctx *httpclient.Context, benchmarkID string) (*compliance.Benchmark, error)
 	GetPolicy(ctx *httpclient.Context, policyID string) (*compliance.Policy, error)
 	GetQuery(ctx *httpclient.Context, queryID string) (*compliance.Query, error)
+	GetInsights(ctx *httpclient.Context, connector source.Type) ([]compliance.Insight, error)
+	GetInsightById(ctx *httpclient.Context, id uint) (*compliance.Insight, error)
+	GetInsightPeerGroups(ctx *httpclient.Context, connector source.Type) ([]compliance.InsightPeerGroup, error)
+	GetInsightPeerGroupById(ctx *httpclient.Context, id uint) (*compliance.InsightPeerGroup, error)
 }
 
 type complianceClient struct {
@@ -63,4 +68,50 @@ func (s *complianceClient) GetQuery(ctx *httpclient.Context, queryID string) (*c
 		return nil, err
 	}
 	return &response, nil
+}
+
+func (s *complianceClient) GetInsights(ctx *httpclient.Context, connector source.Type) ([]compliance.Insight, error) {
+	url := fmt.Sprintf("%s/api/v1/insight", s.baseURL)
+	if connector != source.Nil {
+		url = fmt.Sprintf("%s?connector=%s", url, connector)
+	}
+
+	var insights []compliance.Insight
+	if err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &insights); err != nil {
+		return nil, err
+	}
+	return insights, nil
+}
+
+func (s *complianceClient) GetInsightById(ctx *httpclient.Context, id uint) (*compliance.Insight, error) {
+	url := fmt.Sprintf("%s/api/v1/insight/%d", s.baseURL, id)
+
+	var insight compliance.Insight
+	if err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &insight); err != nil {
+		return nil, err
+	}
+	return &insight, nil
+}
+
+func (s *complianceClient) GetInsightPeerGroups(ctx *httpclient.Context, connector source.Type) ([]compliance.InsightPeerGroup, error) {
+	url := fmt.Sprintf("%s/api/v1/insight/peer", s.baseURL)
+	if connector != source.Nil {
+		url = fmt.Sprintf("%s?connector=%s", url, connector)
+	}
+
+	var insightPeerGroups []compliance.InsightPeerGroup
+	if err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &insightPeerGroups); err != nil {
+		return nil, err
+	}
+	return insightPeerGroups, nil
+}
+
+func (s *complianceClient) GetInsightPeerGroupById(ctx *httpclient.Context, id uint) (*compliance.InsightPeerGroup, error) {
+	url := fmt.Sprintf("%s/api/v1/insight/peer/%d", s.baseURL, id)
+
+	var insightPeerGroup compliance.InsightPeerGroup
+	if err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &insightPeerGroup); err != nil {
+		return nil, err
+	}
+	return &insightPeerGroup, nil
 }

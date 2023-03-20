@@ -3,17 +3,11 @@ package describe
 import (
 	"database/sql"
 	"encoding/json"
-	"errors"
 	"testing"
 	"time"
 
-	"gitlab.com/keibiengine/keibi-engine/pkg/insight"
-	insightapi "gitlab.com/keibiengine/keibi-engine/pkg/insight/api"
-
 	api2 "gitlab.com/keibiengine/keibi-engine/pkg/compliance/api"
 
-	"github.com/cenkalti/backoff/v3"
-	compliance_report "gitlab.com/keibiengine/keibi-engine/pkg/compliance"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/queue"
 
 	"github.com/google/uuid"
@@ -754,137 +748,6 @@ func (s *SchedulerTestSuite) TestDescribeCleanup() {
 	for _, dsj := range sources {
 		require.NotEqual(1, dsj.ID, "job 1 should've been deleted")
 	}
-}
-
-func (s *SchedulerTestSuite) TestRunComplianceReport() {
-	source := Source{
-		ID:   uuid.New(),
-		Type: api.SourceCloudAWS,
-		NextComplianceReportAt: sql.NullTime{
-			Time:  time.Now().Add(-60 * time.Second),
-			Valid: true,
-		},
-	}
-	err := s.Scheduler.db.CreateSource(&source)
-	s.Require().NoError(err)
-
-	s.Require().NotNil(s.Scheduler)
-	s.Require().NotNil(s.Scheduler.complianceReportJobQueue)
-
-	delivery, err := s.Scheduler.complianceReportJobQueue.Consume()
-	s.Require().NoError(err)
-
-	//go s.Scheduler.RunComplianceReportScheduler()
-
-	err = backoff.Retry(func() error {
-		jobs, err := s.Scheduler.db.ListComplianceReportJobs(source.ID)
-		if err != nil {
-			return err
-		}
-
-		if jobs == nil || len(jobs) < 1 {
-			return errors.New("job not found")
-		}
-
-		for _, job := range jobs {
-			if job.SourceID == source.ID {
-				if job.Status != api2.ComplianceReportJobInProgress {
-					return errors.New("job not in progress")
-				}
-			}
-		}
-
-		sources, err := s.Scheduler.db.ListSources()
-		if err != nil {
-			return err
-		}
-
-		for _, src := range sources {
-			if src.ID == source.ID {
-				v, err := src.NextComplianceReportAt.Value()
-				if err != nil {
-					return err
-				}
-
-				t := v.(time.Time)
-				if t.Before(time.Now()) {
-					return errors.New("time hasn't updated")
-				}
-			}
-		}
-
-		select {
-		case msg := <-delivery:
-			var job compliance_report.Job
-			err := json.Unmarshal(msg.Body, &job)
-			if err != nil {
-				return err
-			}
-
-			return nil
-		default:
-			return errors.New("msg not received")
-		}
-	}, backoff.WithMaxRetries(backoff.NewConstantBackOff(time.Second), 30))
-	s.Require().NoError(err)
-}
-
-func (s *SchedulerTestSuite) TestRunInsightJob() {
-	s.Scheduler.insightJobQueue.(*mocksqueue.Interface).On("Len", mock.Anything).Return(0, nil)
-	s.Scheduler.insightJobQueue.(*mocksqueue.Interface).On("Name", mock.Anything).Return("temp")
-	s.Scheduler.insightJobQueue.(*mocksqueue.Interface).On("Publish", mock.Anything).Return(error(nil))
-
-	ins := Insight{
-		Description: "this is a test insight",
-		Query:       "select count(*) from aws_ec2_instance",
-		Connector:   "AWS",
-		Category:    "IAM",
-	}
-
-	err := s.Scheduler.db.AddInsight(&ins)
-	s.Require().NoError(err)
-
-	go s.Scheduler.RunInsightJobScheduler()
-
-	err = backoff.Retry(func() error {
-		jobs, err := s.Scheduler.db.ListInsightJobs()
-		if err != nil {
-			return err
-		}
-
-		if jobs == nil || len(jobs) < 1 {
-			return errors.New("job not found")
-		}
-
-		for _, job := range jobs {
-			if job.InsightID == ins.ID {
-				if job.Status != insightapi.InsightJobInProgress {
-					return errors.New("job not in progress")
-				}
-			}
-		}
-
-		insJob, err := s.Scheduler.db.FetchLastInsightJob()
-		if err != nil {
-			return err
-		}
-		s.Require().True(insJob.CreatedAt.Add(5 * time.Minute).After(time.Now()))
-
-		return nil
-	}, backoff.WithMaxRetries(backoff.NewConstantBackOff(time.Second), 30))
-	s.Require().NoError(err)
-
-	isOK := false
-	for _, call := range s.Scheduler.insightJobQueue.(*mocksqueue.Interface).Calls {
-		if call.Method == "Publish" {
-			if v, ok := call.Arguments.Get(0).(insight.Job); ok {
-				if v.QueryID == ins.ID {
-					isOK = true
-				}
-			}
-		}
-	}
-	s.Require().True(isOK)
 }
 
 func TestScheduler(t *testing.T) {

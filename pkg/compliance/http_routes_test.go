@@ -1,4 +1,4 @@
-package describe
+package compliance
 
 import (
 	"bytes"
@@ -6,12 +6,13 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/labstack/echo/v4"
 	"github.com/stretchr/testify/suite"
+	"gitlab.com/keibiengine/keibi-engine/pkg/compliance/db"
 	idocker "gitlab.com/keibiengine/keibi-engine/pkg/internal/dockertest"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpserver"
 	"go.uber.org/zap"
@@ -20,20 +21,25 @@ import (
 type HttpServerSuite struct {
 	suite.Suite
 
-	handler *HttpServer
+	handler *HttpHandler
 	router  *echo.Echo
 }
 
 func (s *HttpServerSuite) SetupSuite() {
 	require := s.Require()
+
 	orm := idocker.StartupPostgreSQL(s.T())
-	s.handler = NewHTTPServer(":8080", Database{orm: orm}, nil)
-	err := s.handler.DB.Initialize()
+	s.handler = &HttpHandler{
+		db: db.Database{Orm: orm},
+	}
+
+	err := s.handler.db.Initialize()
 	require.NoError(err, "db initialize")
 
 	logger, err := zap.NewProduction()
 	require.NoError(err, "new logger")
 	s.router = httpserver.Register(logger, s.handler)
+
 }
 
 func (s *HttpServerSuite) BeforeTest(suiteName, testName string) {
@@ -87,7 +93,7 @@ func sendRequest(router *echo.Echo, method string, path string, request []byte, 
 	router.ServeHTTP(rec, req)
 
 	// Wrap in NopCloser in case the calling method wants to also read the body
-	b, err := ioutil.ReadAll(io.NopCloser(rec.Body))
+	b, err := io.ReadAll(io.NopCloser(rec.Body))
 	if err != nil {
 		return nil, nil, err
 	}
@@ -96,4 +102,8 @@ func sendRequest(router *echo.Echo, method string, path string, request []byte, 
 
 func TestHttpServer(t *testing.T) {
 	suite.Run(t, &HttpServerSuite{})
+}
+
+func (s *HttpServerSuite) TestDatabaseTableStructure() {
+	time.Sleep(5 * time.Minute)
 }

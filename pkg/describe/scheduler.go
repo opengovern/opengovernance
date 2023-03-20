@@ -2366,7 +2366,10 @@ func (s Scheduler) scheduleInsightJob(forceCreate bool) {
 		}
 
 		s.logger.Info("Workspace is due for a insight. Creating a job now")
-		insights, err := s.db.ListInsightsWithFilters(nil, source.Nil)
+		ctx := &httpclient.Context{
+			UserRole: api2.ViewerRole,
+		}
+		insights, err := s.complianceClient.GetInsights(ctx, source.Nil)
 		if err != nil {
 			s.logger.Error("Failed to fetch list of insights", zap.Error(err))
 			InsightJobsCount.WithLabelValues("failure").Inc()
@@ -2404,7 +2407,7 @@ func (s Scheduler) scheduleInsightJob(forceCreate bool) {
 					continue
 				}
 
-				err = enqueueInsightJobs(s.db, s.insightJobQueue, job)
+				err = enqueueInsightJobs(s.db, s.insightJobQueue, job, ins)
 				if err != nil {
 					InsightJobsCount.WithLabelValues("failure").Inc()
 					s.logger.Error("Failed to enqueue InsightJob",
@@ -2437,7 +2440,7 @@ func (s Scheduler) scheduleInsightJob(forceCreate bool) {
 				continue
 			}
 
-			err = enqueueInsightJobs(s.db, s.insightJobQueue, job)
+			err = enqueueInsightJobs(s.db, s.insightJobQueue, job, ins)
 			if err != nil {
 				InsightJobsCount.WithLabelValues("failure").Inc()
 				s.logger.Error("Failed to enqueue InsightJob",
@@ -2768,12 +2771,7 @@ func enqueueComplianceSummarizerJobs(db Database, q queue.Interface, job Summari
 	return nil
 }
 
-func enqueueInsightJobs(db Database, q queue.Interface, job InsightJob) error {
-	ins, err := db.GetInsight(job.InsightID)
-	if err != nil {
-		return err
-	}
-
+func enqueueInsightJobs(db Database, q queue.Interface, job InsightJob, ins complianceapi.Insight) error {
 	var lastDayJobID, lastWeekJobID, lastMonthJobID, lastQuarterJobID, lastYearJobID uint
 
 	lastDay, err := db.GetOldCompletedInsightJob(job.InsightID, 1)
@@ -2824,7 +2822,7 @@ func enqueueInsightJobs(db Database, q queue.Interface, job InsightJob) error {
 		AccountID:        job.AccountID,
 		SourceType:       ins.Connector,
 		Internal:         ins.Internal,
-		Query:            ins.Query,
+		Query:            ins.Query.QueryToExecute,
 		Description:      ins.Description,
 		Category:         ins.Category,
 		ExecutedAt:       job.CreatedAt.UnixMilli(),
@@ -3054,7 +3052,7 @@ func (s *Scheduler) RunSummarizerJobResultsConsumer() error {
 	}
 }
 
-func newInsightJob(insight Insight, sourceType, sourceId, accountId string, scheduleUUID string) InsightJob {
+func newInsightJob(insight complianceapi.Insight, sourceType, sourceId, accountId string, scheduleUUID string) InsightJob {
 	srcType, _ := source.ParseType(sourceType)
 	return InsightJob{
 		InsightID:      insight.ID,

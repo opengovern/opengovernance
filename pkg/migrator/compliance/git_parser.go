@@ -3,12 +3,13 @@ package compliance
 import (
 	"encoding/json"
 	"fmt"
-	"gitlab.com/keibiengine/keibi-engine/pkg/compliance/db"
-	"gorm.io/gorm"
 	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
+
+	"gitlab.com/keibiengine/keibi-engine/pkg/compliance/db"
+	"gorm.io/gorm"
 )
 
 type GitParser struct {
@@ -248,10 +249,7 @@ func (g *GitParser) ExtractBenchmarks(compliancePath string) error {
 	return nil
 }
 
-func (g *GitParser) ExtractCompliance(compliancePath, queryPath string) error {
-	if err := g.ExtractQueries(queryPath); err != nil {
-		return err
-	}
+func (g *GitParser) ExtractCompliance(compliancePath string) error {
 	if err := g.ExtractPolicyTags(compliancePath); err != nil {
 		return err
 	}

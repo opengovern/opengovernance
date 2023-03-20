@@ -42,8 +42,9 @@ var (
 	S3Region       = os.Getenv("S3_REGION")
 	S3Bucket       = os.Getenv("S3_BUCKET")
 
-	SchedulerBaseUrl = os.Getenv("SCHEDULER_BASE_URL")
-	OnboardBaseUrl   = os.Getenv("ONBOARD_BASE_URL")
+	SchedulerBaseUrl  = os.Getenv("SCHEDULER_BASE_URL")
+	OnboardBaseUrl    = os.Getenv("ONBOARD_BASE_URL")
+	ComplianceBaseUrl = os.Getenv("COMPLIANCE_BASE_URL")
 
 	HttpAddress = os.Getenv("HTTP_ADDRESS")
 )
@@ -67,8 +68,7 @@ func start(ctx context.Context) error {
 		PostgreSQLHost, PostgreSQLPort, PostgreSQLDb, PostgreSQLUser, PostgreSQLPassword, PostgreSQLSSLMode,
 		Neo4jHost, Neo4jPort, Neo4jUser, Neo4jPassword,
 		SteampipeHost, SteampipePort, SteampipeDb, SteampipeUser, SteampipePassword,
-		SchedulerBaseUrl,
-		OnboardBaseUrl,
+		SchedulerBaseUrl, OnboardBaseUrl, ComplianceBaseUrl,
 		logger,
 		RedisAddress,
 		CacheAddress,

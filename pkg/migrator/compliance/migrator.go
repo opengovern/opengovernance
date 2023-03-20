@@ -4,15 +4,14 @@ import (
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing/transport/http"
 	"gitlab.com/keibiengine/keibi-engine/pkg/migrator/db"
+	"gitlab.com/keibiengine/keibi-engine/pkg/migrator/internal"
+
 	"os"
 )
 
 func Run(db db.Database, complianceInputGitURL, queryInputGitURL, githubToken string) error {
-	compliancePath := "/tmp/loader-compliance-git"
-	queryPath := "/tmp/loader-query-git"
-
-	os.RemoveAll(compliancePath)
-	_, err := git.PlainClone(compliancePath, false, &git.CloneOptions{
+	os.RemoveAll(internal.ComplianceGitPath)
+	_, err := git.PlainClone(internal.ComplianceGitPath, false, &git.CloneOptions{
 		Auth: &http.BasicAuth{
 			Username: "abc123",
 			Password: githubToken,
@@ -24,8 +23,8 @@ func Run(db db.Database, complianceInputGitURL, queryInputGitURL, githubToken st
 		return err
 	}
 
-	os.RemoveAll(queryPath)
-	_, err = git.PlainClone(queryPath, false, &git.CloneOptions{
+	os.RemoveAll(internal.QueriesGitPath)
+	_, err = git.PlainClone(internal.QueriesGitPath, false, &git.CloneOptions{
 		Auth: &http.BasicAuth{
 			Username: "abc123",
 			Password: githubToken,
@@ -37,7 +36,7 @@ func Run(db db.Database, complianceInputGitURL, queryInputGitURL, githubToken st
 		return err
 	}
 
-	err = PopulateDatabase(db.ORM, compliancePath, queryPath)
+	err = PopulateDatabase(db.ORM, internal.ComplianceGitPath, internal.QueriesGitPath)
 	if err != nil {
 		return err
 	}
