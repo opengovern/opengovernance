@@ -86,6 +86,9 @@ build-main:
   extends: .go-cache-pullpush
   only:
     - main
+  except:
+    changes:
+      - "pkg/compliance/**/*"
   artifacts:
     paths:
       - build/
@@ -193,6 +196,9 @@ deploy: # This job runs in the deploy stage.
     - build-main
   only:
     - main
+  except:
+    changes:
+      - "pkg/compliance/**/*"
   image:
     name: quay.io/podman/stable
   script:
