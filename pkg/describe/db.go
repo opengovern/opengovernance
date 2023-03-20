@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"time"
 
-	"gitlab.com/keibiengine/keibi-engine/pkg/source"
 	"gitlab.com/keibiengine/keibi-engine/pkg/summarizer"
 
 	summarizerapi "gitlab.com/keibiengine/keibi-engine/pkg/summarizer/api"
@@ -28,7 +27,7 @@ type Database struct {
 
 func (db Database) Initialize() error {
 	return db.orm.AutoMigrate(&Source{}, &DescribeSourceJob{}, &CloudNativeDescribeSourceJob{}, &DescribeResourceJob{},
-		&ComplianceReportJob{}, &InsightPeerGroup{}, &Insight{}, &InsightLabel{}, &InsightLink{}, &InsightJob{}, &CheckupJob{}, &SummarizerJob{}, &ScheduleJob{},
+		&ComplianceReportJob{}, &InsightJob{}, &CheckupJob{}, &SummarizerJob{}, &ScheduleJob{},
 	)
 }
 
@@ -707,75 +706,6 @@ func (db Database) QueryComplianceReportJobs(id string) ([]ComplianceReportJob, 
 		return nil, tx.Error
 	}
 	return jobs, nil
-}
-
-func (db Database) AddInsight(insight *Insight) error {
-	tx := db.orm.Model(&Insight{}).
-		Create(&insight)
-	if tx.Error != nil {
-		return tx.Error
-	}
-	return nil
-}
-
-func (db Database) GetInsight(id uint) (*Insight, error) {
-	var res Insight
-	tx := db.orm.Model(&Insight{}).Preload(clause.Associations).
-		Where("id = ?", id).
-		First(&res)
-	if tx.Error != nil {
-		return nil, tx.Error
-	}
-	return &res, nil
-}
-
-func (db Database) ListInsightsWithFilters(search *string, connector source.Type) ([]Insight, error) {
-	var s []Insight
-	m := db.orm.Model(&Insight{}).Preload(clause.Associations)
-	if connector != source.Nil {
-		m = m.Where("provider = ?", connector)
-	}
-	if search != nil {
-		m = m.Where("description like ?", "%"+*search+"%")
-	}
-	tx := m.Find(&s)
-	if tx.Error != nil {
-		return nil, tx.Error
-	}
-	return s, nil
-}
-
-func (db Database) DeleteInsight(id uint) error {
-	tx := db.orm.Model(&Insight{}).
-		Where("id = ?", id).
-		Delete(&Insight{})
-	if tx.Error != nil {
-		return tx.Error
-	}
-	if tx.RowsAffected == 0 {
-		return errors.New("record not found")
-	}
-	return nil
-}
-
-func (db Database) ListInsightsPeerGroups() ([]InsightPeerGroup, error) {
-	var s []InsightPeerGroup
-	tx := db.orm.Model(&InsightPeerGroup{}).Preload(clause.Associations).Find(&s)
-	if tx.Error != nil {
-		return nil, tx.Error
-	}
-	return s, nil
-}
-
-func (db Database) GetInsightsPeerGroup(id uint) (*InsightPeerGroup, error) {
-	var res InsightPeerGroup
-	tx := db.orm.Model(&InsightPeerGroup{}).Preload(clause.Associations).
-		Where("id = ?", id).
-		First(&res)
-	if tx.Error != nil {
-		return nil, tx.Error
-	}
-	return &res, nil
 }
 
 func (db Database) AddInsightJob(job *InsightJob) error {

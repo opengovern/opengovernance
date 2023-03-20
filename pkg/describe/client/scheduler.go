@@ -4,10 +4,8 @@ import (
 	"fmt"
 	"net/http"
 
-	"gitlab.com/keibiengine/keibi-engine/pkg/describe/api"
-	"gitlab.com/keibiengine/keibi-engine/pkg/source"
-
 	compliance "gitlab.com/keibiengine/keibi-engine/pkg/compliance/api"
+	"gitlab.com/keibiengine/keibi-engine/pkg/describe/api"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpclient"
 )
 
@@ -19,10 +17,6 @@ type SchedulerServiceClient interface {
 	GetSource(ctx *httpclient.Context, sourceID string) (*api.Source, error)
 	ListComplianceReportJobs(ctx *httpclient.Context, sourceID string, filter *TimeRangeFilter) ([]*compliance.ComplianceReport, error)
 	GetLastComplianceReportID(ctx *httpclient.Context) (uint, error)
-	GetInsights(ctx *httpclient.Context, connector source.Type) ([]api.Insight, error)
-	GetInsightById(ctx *httpclient.Context, id uint) (*api.Insight, error)
-	GetInsightPeerGroups(ctx *httpclient.Context, connector source.Type) ([]api.InsightPeerGroup, error)
-	GetInsightPeerGroupById(ctx *httpclient.Context, id uint) (*api.InsightPeerGroup, error)
 }
 
 type schedulerClient struct {
@@ -64,50 +58,4 @@ func (s *schedulerClient) GetLastComplianceReportID(ctx *httpclient.Context) (ui
 		return 0, err
 	}
 	return id, nil
-}
-
-func (s *schedulerClient) GetInsights(ctx *httpclient.Context, connector source.Type) ([]api.Insight, error) {
-	url := fmt.Sprintf("%s/api/v1/insight", s.baseURL)
-	if connector != source.Nil {
-		url = fmt.Sprintf("%s?connector=%s", url, connector)
-	}
-
-	var insights []api.Insight
-	if err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &insights); err != nil {
-		return nil, err
-	}
-	return insights, nil
-}
-
-func (s *schedulerClient) GetInsightById(ctx *httpclient.Context, id uint) (*api.Insight, error) {
-	url := fmt.Sprintf("%s/api/v1/insight/%d", s.baseURL, id)
-
-	var insight api.Insight
-	if err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &insight); err != nil {
-		return nil, err
-	}
-	return &insight, nil
-}
-
-func (s *schedulerClient) GetInsightPeerGroups(ctx *httpclient.Context, connector source.Type) ([]api.InsightPeerGroup, error) {
-	url := fmt.Sprintf("%s/api/v1/insight/peer", s.baseURL)
-	if connector != source.Nil {
-		url = fmt.Sprintf("%s?connector=%s", url, connector)
-	}
-
-	var insightPeerGroups []api.InsightPeerGroup
-	if err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &insightPeerGroups); err != nil {
-		return nil, err
-	}
-	return insightPeerGroups, nil
-}
-
-func (s *schedulerClient) GetInsightPeerGroupById(ctx *httpclient.Context, id uint) (*api.InsightPeerGroup, error) {
-	url := fmt.Sprintf("%s/api/v1/insight/peer/%d", s.baseURL, id)
-
-	var insightPeerGroup api.InsightPeerGroup
-	if err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &insightPeerGroup); err != nil {
-		return nil, err
-	}
-	return &insightPeerGroup, nil
 }

@@ -3622,12 +3622,12 @@ func (h *HttpHandler) ListInsights(ctx echo.Context) error {
 		sourceIdPtr = nil
 	}
 
-	insightList, err := h.schedulerClient.GetInsights(httpclient.FromEchoContext(ctx), connector)
+	insightList, err := h.complianceClient.GetInsights(httpclient.FromEchoContext(ctx), connector)
 	if err != nil {
 		return err
 	}
 
-	insightPeerGroupList, err := h.schedulerClient.GetInsightPeerGroups(httpclient.FromEchoContext(ctx), connector)
+	insightPeerGroupList, err := h.complianceClient.GetInsightPeerGroups(httpclient.FromEchoContext(ctx), connector)
 	if err != nil {
 		return err
 	}
@@ -3636,11 +3636,12 @@ func (h *HttpHandler) ListInsights(ctx echo.Context) error {
 	insightResultMap := make(map[uint]*api.Insight)
 	for _, insightRow := range insightList {
 		insightIdList = append(insightIdList, insightRow.ID)
-		labels := make([]api.InsightLabel, 0, len(insightRow.Labels))
-		for _, label := range insightRow.Labels {
-			labels = append(labels, api.InsightLabel{
-				ID:    label.ID,
-				Label: label.Label,
+		tags := make([]api.InsightTag, 0, len(insightRow.Tags))
+		for _, tag := range insightRow.Tags {
+			tags = append(tags, api.InsightTag{
+				ID:    tag.ID,
+				Key:   tag.Key,
+				Value: tag.Value,
 			})
 		}
 		links := make([]api.InsightLink, 0, len(insightRow.Links))
@@ -3652,15 +3653,23 @@ func (h *HttpHandler) ListInsights(ctx echo.Context) error {
 			})
 		}
 		insightResultMap[insightRow.ID] = &api.Insight{
-			ID:                    insightRow.ID,
-			Query:                 insightRow.Query,
+			ID: insightRow.ID,
+			Query: api.Query{
+				ID:             insightRow.Query.ID,
+				QueryToExecute: insightRow.Query.QueryToExecute,
+				Connector:      insightRow.Query.Connector,
+				ListOfTables:   insightRow.Query.ListOfTables,
+				Engine:         insightRow.Query.Engine,
+				CreatedAt:      insightRow.Query.CreatedAt,
+				UpdatedAt:      insightRow.Query.UpdatedAt,
+			},
 			Category:              insightRow.Category,
-			Provider:              insightRow.Provider,
+			Provider:              insightRow.Connector,
 			ShortTitle:            insightRow.ShortTitle,
 			LongTitle:             insightRow.LongTitle,
 			Description:           insightRow.Description,
 			LogoURL:               insightRow.LogoURL,
-			Labels:                labels,
+			Labels:                tags,
 			Links:                 links,
 			Enabled:               insightRow.Enabled,
 			TotalResults:          0,
@@ -3691,11 +3700,12 @@ func (h *HttpHandler) ListInsights(ctx echo.Context) error {
 	result := make([]api.ListInsightResult, 0)
 	usedInPeerGroup := make(map[uint]bool)
 	for _, insightPeerGroup := range insightPeerGroupList {
-		labels := make([]api.InsightLabel, 0, len(insightPeerGroup.Labels))
-		for _, label := range insightPeerGroup.Labels {
-			labels = append(labels, api.InsightLabel{
-				ID:    label.ID,
-				Label: label.Label,
+		tags := make([]api.InsightTag, 0, len(insightPeerGroup.Tags))
+		for _, tag := range insightPeerGroup.Tags {
+			tags = append(tags, api.InsightTag{
+				ID:    tag.ID,
+				Key:   tag.Key,
+				Value: tag.Value,
 			})
 		}
 		links := make([]api.InsightLink, 0, len(insightPeerGroup.Links))
@@ -3714,7 +3724,7 @@ func (h *HttpHandler) ListInsights(ctx echo.Context) error {
 			LongTitle:             insightPeerGroup.LongTitle,
 			Description:           insightPeerGroup.Description,
 			LogoURL:               insightPeerGroup.LogoURL,
-			Labels:                labels,
+			Labels:                tags,
 			Links:                 links,
 			TotalResults:          0,
 			ListInsightResultType: api.ListInsightResultTypePeerGroup,
@@ -3781,7 +3791,7 @@ func (h *HttpHandler) GetInsight(ctx echo.Context) error {
 		sourceIdPtr = nil
 	}
 
-	insightRow, err := h.schedulerClient.GetInsightById(httpclient.FromEchoContext(ctx), uint(insightId))
+	insightRow, err := h.complianceClient.GetInsightById(httpclient.FromEchoContext(ctx), uint(insightId))
 	if err != nil {
 		if strings.Contains(strings.ToLower(err.Error()), "not found") {
 			return echo.NewHTTPError(http.StatusNotFound, "insight not found")
@@ -3789,11 +3799,12 @@ func (h *HttpHandler) GetInsight(ctx echo.Context) error {
 		return err
 	}
 
-	labels := make([]api.InsightLabel, 0, len(insightRow.Labels))
-	for _, label := range insightRow.Labels {
-		labels = append(labels, api.InsightLabel{
-			ID:    label.ID,
-			Label: label.Label,
+	tags := make([]api.InsightTag, 0, len(insightRow.Tags))
+	for _, tag := range insightRow.Tags {
+		tags = append(tags, api.InsightTag{
+			ID:    tag.ID,
+			Key:   tag.Key,
+			Value: tag.Value,
 		})
 	}
 	links := make([]api.InsightLink, 0, len(insightRow.Links))
@@ -3805,15 +3816,23 @@ func (h *HttpHandler) GetInsight(ctx echo.Context) error {
 		})
 	}
 	result := api.Insight{
-		ID:                    insightRow.ID,
-		Query:                 insightRow.Query,
+		ID: insightRow.ID,
+		Query: api.Query{
+			ID:             insightRow.Query.ID,
+			QueryToExecute: insightRow.Query.QueryToExecute,
+			Connector:      insightRow.Query.Connector,
+			ListOfTables:   insightRow.Query.ListOfTables,
+			Engine:         insightRow.Query.Engine,
+			CreatedAt:      insightRow.Query.CreatedAt,
+			UpdatedAt:      insightRow.Query.UpdatedAt,
+		},
 		Category:              insightRow.Category,
-		Provider:              insightRow.Provider,
+		Provider:              insightRow.Connector,
 		ShortTitle:            insightRow.ShortTitle,
 		LongTitle:             insightRow.LongTitle,
 		Description:           insightRow.Description,
 		LogoURL:               insightRow.LogoURL,
-		Labels:                labels,
+		Labels:                tags,
 		Links:                 links,
 		Enabled:               insightRow.Enabled,
 		TotalResults:          0,
@@ -3908,7 +3927,7 @@ func (h *HttpHandler) GetInsightPeerGroup(ctx echo.Context) error {
 		sourceIdPtr = nil
 	}
 
-	insightPeerGroup, err := h.schedulerClient.GetInsightPeerGroupById(httpclient.FromEchoContext(ctx), uint(insightPeerGroupId))
+	insightPeerGroup, err := h.complianceClient.GetInsightPeerGroupById(httpclient.FromEchoContext(ctx), uint(insightPeerGroupId))
 	if err != nil {
 		if strings.Contains(strings.ToLower(err.Error()), "not found") {
 			return echo.NewHTTPError(http.StatusNotFound, "insight peer group not found")
@@ -3916,11 +3935,12 @@ func (h *HttpHandler) GetInsightPeerGroup(ctx echo.Context) error {
 		return err
 	}
 
-	labels := make([]api.InsightLabel, 0, len(insightPeerGroup.Labels))
-	for _, label := range insightPeerGroup.Labels {
-		labels = append(labels, api.InsightLabel{
-			ID:    label.ID,
-			Label: label.Label,
+	tags := make([]api.InsightTag, 0, len(insightPeerGroup.Tags))
+	for _, tag := range insightPeerGroup.Tags {
+		tags = append(tags, api.InsightTag{
+			ID:    tag.ID,
+			Key:   tag.Key,
+			Value: tag.Value,
 		})
 	}
 	links := make([]api.InsightLink, 0, len(insightPeerGroup.Links))
@@ -3934,11 +3954,12 @@ func (h *HttpHandler) GetInsightPeerGroup(ctx echo.Context) error {
 	insights := make([]api.Insight, 0, len(insightPeerGroup.Insights))
 	insightIds := make([]uint, 0, len(insightPeerGroup.Insights))
 	for _, insightRow := range insightPeerGroup.Insights {
-		labels := make([]api.InsightLabel, 0, len(insightRow.Labels))
-		for _, label := range insightRow.Labels {
-			labels = append(labels, api.InsightLabel{
-				ID:    label.ID,
-				Label: label.Label,
+		tags := make([]api.InsightTag, 0, len(insightRow.Tags))
+		for _, tag := range insightRow.Tags {
+			tags = append(tags, api.InsightTag{
+				ID:    tag.ID,
+				Key:   tag.Key,
+				Value: tag.Value,
 			})
 		}
 		links := make([]api.InsightLink, 0, len(insightRow.Links))
@@ -3951,15 +3972,23 @@ func (h *HttpHandler) GetInsightPeerGroup(ctx echo.Context) error {
 		}
 		insightIds = append(insightIds, insightRow.ID)
 		insights = append(insights, api.Insight{
-			ID:                    insightRow.ID,
-			Query:                 insightRow.Query,
+			ID: insightRow.ID,
+			Query: api.Query{
+				ID:             insightRow.Query.ID,
+				QueryToExecute: insightRow.Query.QueryToExecute,
+				Connector:      insightRow.Query.Connector,
+				ListOfTables:   insightRow.Query.ListOfTables,
+				Engine:         insightRow.Query.Engine,
+				CreatedAt:      insightRow.Query.CreatedAt,
+				UpdatedAt:      insightRow.Query.UpdatedAt,
+			},
 			Category:              insightRow.Category,
-			Provider:              insightRow.Provider,
+			Provider:              insightRow.Connector,
 			ShortTitle:            insightRow.ShortTitle,
 			LongTitle:             insightRow.LongTitle,
 			Description:           insightRow.Description,
 			LogoURL:               insightRow.LogoURL,
-			Labels:                labels,
+			Labels:                tags,
 			Links:                 links,
 			Enabled:               insightRow.Enabled,
 			ExecutedAt:            nil,
@@ -3977,7 +4006,7 @@ func (h *HttpHandler) GetInsightPeerGroup(ctx echo.Context) error {
 		LongTitle:             insightPeerGroup.LongTitle,
 		Description:           insightPeerGroup.Description,
 		LogoURL:               insightPeerGroup.LogoURL,
-		Labels:                labels,
+		Labels:                tags,
 		Links:                 links,
 		TotalResults:          0,
 		ListInsightResultType: api.ListInsightResultTypePeerGroup,
@@ -4095,7 +4124,7 @@ func (h *HttpHandler) GetInsightTrend(ctx echo.Context) error {
 		sourceIdPtr = nil
 	}
 
-	_, err = h.schedulerClient.GetInsightById(httpclient.FromEchoContext(ctx), uint(insightId))
+	_, err = h.complianceClient.GetInsightById(httpclient.FromEchoContext(ctx), uint(insightId))
 	if err != nil {
 		if strings.Contains(strings.ToLower(err.Error()), "not found") {
 			return echo.NewHTTPError(http.StatusNotFound, "insight not found")

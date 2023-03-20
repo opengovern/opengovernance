@@ -1,7 +1,9 @@
 package db
 
 import (
+	"gitlab.com/keibiengine/keibi-engine/pkg/source"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 type Database struct {
@@ -13,6 +15,10 @@ func (db Database) Initialize() error {
 		&Query{},
 		&PolicyTag{},
 		&BenchmarkTag{},
+		&InsightTag{},
+		&InsightLink{},
+		&InsightPeerGroup{},
+		&Insight{},
 		&Policy{},
 		&Benchmark{},
 		&BenchmarkAssignment{},
@@ -211,4 +217,51 @@ func (db Database) DeleteBenchmarkAssignmentById(connectionId string, benchmarkI
 	}
 
 	return nil
+}
+
+func (db Database) GetInsight(id uint) (*Insight, error) {
+	var res Insight
+	tx := db.Orm.Model(&Insight{}).Preload(clause.Associations).
+		Where("id = ?", id).
+		First(&res)
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+	return &res, nil
+}
+
+func (db Database) ListInsightsWithFilters(connector source.Type, enabled *bool) ([]Insight, error) {
+	var s []Insight
+	m := db.Orm.Model(&Insight{}).Preload(clause.Associations)
+	if connector != source.Nil {
+		m = m.Where("provider = ?", connector)
+	}
+	if enabled != nil {
+		m = m.Where("enabled = ?", *enabled)
+	}
+	tx := m.Find(&s)
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+	return s, nil
+}
+
+func (db Database) ListInsightsPeerGroups() ([]InsightPeerGroup, error) {
+	var s []InsightPeerGroup
+	tx := db.Orm.Model(&InsightPeerGroup{}).Preload(clause.Associations).Find(&s)
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+	return s, nil
+}
+
+func (db Database) GetInsightsPeerGroup(id uint) (*InsightPeerGroup, error) {
+	var res InsightPeerGroup
+	tx := db.Orm.Model(&InsightPeerGroup{}).Preload(clause.Associations).
+		Where("id = ?", id).
+		First(&res)
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+	return &res, nil
 }

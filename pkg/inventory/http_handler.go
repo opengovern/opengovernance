@@ -10,11 +10,12 @@ import (
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 	"github.com/go-redis/cache/v8"
 
-	client2 "gitlab.com/keibiengine/keibi-engine/pkg/onboard/client"
+	complianceClient "gitlab.com/keibiengine/keibi-engine/pkg/compliance/client"
+	onboardClient "gitlab.com/keibiengine/keibi-engine/pkg/onboard/client"
 
 	"github.com/go-redis/redis/v8"
 
-	"gitlab.com/keibiengine/keibi-engine/pkg/describe/client"
+	describeClient "gitlab.com/keibiengine/keibi-engine/pkg/describe/client"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/neo4j"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/postgres"
 	"gitlab.com/keibiengine/keibi-engine/pkg/steampipe"
@@ -24,17 +25,18 @@ import (
 )
 
 type HttpHandler struct {
-	client          keibi.Client
-	db              Database
-	graphDb         GraphDatabase
-	steampipeConn   *steampipe.Database
-	schedulerClient client.SchedulerServiceClient
-	onboardClient   client2.OnboardServiceClient
-	rdb             *redis.Client
-	rcache          *redis.Client
-	cache           *cache.Cache
-	s3Downloader    *s3manager.Downloader
-	s3Bucket        string
+	client           keibi.Client
+	db               Database
+	graphDb          GraphDatabase
+	steampipeConn    *steampipe.Database
+	schedulerClient  describeClient.SchedulerServiceClient
+	onboardClient    onboardClient.OnboardServiceClient
+	complianceClient complianceClient.ComplianceServiceClient
+	rdb              *redis.Client
+	rcache           *redis.Client
+	cache            *cache.Cache
+	s3Downloader     *s3manager.Downloader
+	s3Bucket         string
 }
 
 func InitializeHttpHandler(
@@ -42,8 +44,7 @@ func InitializeHttpHandler(
 	postgresHost string, postgresPort string, postgresDb string, postgresUsername string, postgresPassword string, postgresSSLMode string,
 	neo4jHost string, neo4jPort string, neo4jUsername string, neo4jPassword string,
 	steampipeHost string, steampipePort string, steampipeDb string, steampipeUsername string, steampipePassword string,
-	schedulerBaseUrl string,
-	onboardBaseUrl string,
+	schedulerBaseUrl string, onboardBaseUrl string, complianceBaseUrl string,
 	logger *zap.Logger,
 	redisAddress string,
 	cacheAddress string,
@@ -117,7 +118,8 @@ func InitializeHttpHandler(
 	if err != nil {
 		return nil, err
 	}
-	h.schedulerClient = client.NewSchedulerServiceClient(schedulerBaseUrl)
+	h.schedulerClient = describeClient.NewSchedulerServiceClient(schedulerBaseUrl)
+
 	h.rdb = redis.NewClient(&redis.Options{
 		Addr:     redisAddress,
 		Password: "", // no password set
@@ -132,7 +134,8 @@ func InitializeHttpHandler(
 		Redis:      h.rcache,
 		LocalCache: cache.NewTinyLFU(100000, 5*time.Minute),
 	})
-	h.onboardClient = client2.NewOnboardServiceClient(onboardBaseUrl, h.cache)
+	h.onboardClient = onboardClient.NewOnboardServiceClient(onboardBaseUrl, h.cache)
+	h.complianceClient = complianceClient.NewComplianceClient(complianceBaseUrl)
 
 	if s3Region == "" {
 		s3Region = "us-west-2"

@@ -4,14 +4,12 @@ import (
 	"database/sql"
 	"time"
 
+	insightapi "gitlab.com/keibiengine/keibi-engine/pkg/insight/api"
 	"gitlab.com/keibiengine/keibi-engine/pkg/source"
-
 	"gitlab.com/keibiengine/keibi-engine/pkg/summarizer"
 
 	checkupapi "gitlab.com/keibiengine/keibi-engine/pkg/checkup/api"
 	summarizerapi "gitlab.com/keibiengine/keibi-engine/pkg/summarizer/api"
-
-	insightapi "gitlab.com/keibiengine/keibi-engine/pkg/insight/api"
 
 	api2 "gitlab.com/keibiengine/keibi-engine/pkg/compliance/api"
 
@@ -81,49 +79,6 @@ type DescribeResourceJob struct {
 	ResourceType   string
 	Status         api.DescribeResourceJobStatus
 	FailureMessage string // Should be NULLSTRING
-}
-
-type InsightPeerGroup struct {
-	gorm.Model
-	Category    string
-	Insights    []Insight `gorm:"foreignKey:PeerGroupId;constraint:OnDelete:SET NULL;"`
-	ShortTitle  string
-	LongTitle   string
-	Description string
-	LogoURL     *string
-	Labels      []InsightLabel `gorm:"foreignKey:InsightPeerGroupID;constraint:OnDelete:SET NULL;"`
-	Links       []InsightLink  `gorm:"foreignKey:InsightPeerGroupID;constraint:OnDelete:SET NULL;"`
-}
-
-type Insight struct {
-	gorm.Model
-	PeerGroupId *uint
-	Query       string
-	Category    string
-	Connector   source.Type
-	ShortTitle  string
-	LongTitle   string
-	Description string
-	LogoURL     *string
-	Labels      []InsightLabel `gorm:"foreignKey:InsightID;constraint:OnDelete:SET NULL;"`
-	Links       []InsightLink  `gorm:"foreignKey:InsightID;constraint:OnDelete:SET NULL;"`
-	Enabled     bool           `gorm:"default:true"`
-	Internal    bool
-}
-
-type InsightLabel struct {
-	gorm.Model
-	InsightID          *uint
-	InsightPeerGroupID *uint
-	Label              string
-}
-
-type InsightLink struct {
-	gorm.Model
-	InsightID          *uint
-	InsightPeerGroupID *uint
-	Text               string
-	URI                string
 }
 
 type InsightJob struct {

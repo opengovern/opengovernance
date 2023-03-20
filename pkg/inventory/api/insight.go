@@ -43,9 +43,10 @@ type GetInsightResultTrendResponse struct {
 	Trend []TrendDataPoint `json:"trend"`
 }
 
-type InsightLabel struct {
+type InsightTag struct {
 	ID    uint   `json:"id"`
-	Label string `json:"label"`
+	Key   string `json:"key"`
+	Value string `json:"value"`
 }
 
 type InsightLink struct {
@@ -66,16 +67,26 @@ type ListInsightResult interface {
 	GetID() uint
 }
 
+type Query struct {
+	ID             string    `json:"id"`
+	QueryToExecute string    `json:"queryToExecute"`
+	Connector      string    `json:"connector"`
+	ListOfTables   string    `json:"listOfTables"`
+	Engine         string    `json:"engine"`
+	CreatedAt      time.Time `json:"createdAt"`
+	UpdatedAt      time.Time `json:"updatedAt"`
+}
+
 type Insight struct {
 	ID                    uint                  `json:"id"`
-	Query                 string                `json:"query"`
+	Query                 Query                 `json:"query"`
 	Category              string                `json:"category"`
 	Provider              source.Type           `json:"provider"`
 	ShortTitle            string                `json:"shortTitle"`
 	LongTitle             string                `json:"longTitle"`
 	Description           string                `json:"description"`
 	LogoURL               *string               `json:"logoURL"`
-	Labels                []InsightLabel        `json:"labels"`
+	Labels                []InsightTag          `json:"labels"`
 	Links                 []InsightLink         `json:"links"`
 	Enabled               bool                  `json:"enabled"`
 	ExecutedAt            *time.Time            `json:"executedAt,omitempty"`
@@ -100,7 +111,7 @@ type InsightPeerGroup struct {
 	LongTitle             string                `json:"longTitle"`
 	Description           string                `json:"description"`
 	LogoURL               *string               `json:"logoURL"`
-	Labels                []InsightLabel        `json:"labels"`
+	Labels                []InsightTag          `json:"labels"`
 	Links                 []InsightLink         `json:"links"`
 	TotalResults          int64                 `json:"totalResults"`
 	ListInsightResultType ListInsightResultType `json:"listInsightResultType"`
