@@ -7,7 +7,6 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/source"
 
 	"github.com/google/uuid"
-	"gitlab.com/keibiengine/keibi-engine/pkg/describe/api"
 )
 
 const (
@@ -50,7 +49,7 @@ type Resource struct {
 	// Description is the description of the resource based on the describe call.
 	Description interface{} `json:"description"`
 	// SourceType is the type of the source of the resource, i.e. AWS Cloud, Azure Cloud.
-	SourceType api.SourceType `json:"source_type"`
+	SourceType source.Type `json:"source_type"`
 	// ResourceType is the type of the resource.
 	ResourceType string `json:"resource_type"`
 	// ResourceJobID is the DescribeResourceJob ID that described this resource
@@ -61,6 +60,16 @@ type Resource struct {
 	SourceJobID uint `json:"source_job_id"`
 	// Metadata is arbitrary data associated with each resource
 	Metadata map[string]string `json:"metadata"`
+	// Name is the name of the resource.
+	Name string `json:"name"`
+	// ResourceGroup is the group of resource (Azure only)
+	ResourceGroup string `json:"resource_group"`
+	// Location is location/region of the resource
+	Location string `json:"location"`
+	// ScheduleJobID
+	ScheduleJobID uint `json:"schedule_job_id"`
+	// CreatedAt is when the DescribeSourceJob is created
+	CreatedAt int64 `json:"created_at"`
 }
 
 func (r Resource) KeysAndIndex() ([]string, string) {

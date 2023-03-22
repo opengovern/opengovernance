@@ -43,7 +43,7 @@ var DoResourceSummarizerJobsDuration = promauto.NewHistogramVec(prometheus.Histo
 type ResourceJob struct {
 	JobID                  uint
 	ScheduleJobID          *uint
-	ResourceDescribeJobIDs []uint
+	ResourceDescribeJobIDs map[string][]uint
 
 	LastDayScheduleJobID     uint
 	LastWeekScheduleJobID    uint
@@ -221,36 +221,37 @@ func (j ResourceJob) DoMustSummarizer(client keibi.Client, db inventory.Database
 		resourcebuilder.NewCostSummaryBuilder(client, j.JobID),
 	}
 
-	for start := 0; start < len(j.ResourceDescribeJobIDs); start += es.EsTermSize {
-		end := start + es.EsTermSize
-		if end > len(j.ResourceDescribeJobIDs) {
-			end = len(j.ResourceDescribeJobIDs)
-		}
-		currentPage := j.ResourceDescribeJobIDs[start:end]
-
-		var searchAfter []interface{}
-		for {
-			lookups, err := es.FetchLookupsByDescribeResourceJobIdList(client, currentPage, searchAfter, es.EsFetchPageSize)
-			if err != nil {
-				fail(fmt.Errorf("Failed to fetch lookups: %v ", err))
-				break
+	for resourceType, jobIdArray := range j.ResourceDescribeJobIDs {
+		for start := 0; start < len(jobIdArray); start += es.EsTermSize {
+			end := start + es.EsTermSize
+			if end > len(jobIdArray) {
+				end = len(jobIdArray)
 			}
+			currentPage := jobIdArray[start:end]
 
-			if len(lookups.Hits.Hits) == 0 {
-				break
-			}
-
-			logger.Info("got a batch of lookup resources", zap.Int("count", len(lookups.Hits.Hits)))
-			for _, lookup := range lookups.Hits.Hits {
-				for _, b := range builders {
-					b.Process(lookup.Source)
+			var searchAfter []interface{}
+			for {
+				lookups, err := es.FetchLookupsByDescribeResourceJobIdList(client, resourceType, currentPage, searchAfter, es.EsFetchPageSize)
+				if err != nil {
+					fail(fmt.Errorf("Failed to fetch lookups: %v ", err))
+					break
 				}
-				searchAfter = lookup.Sort
-			}
-		}
-		logger.Info("processed lookup resources")
-	}
 
+				if len(lookups.Hits.Hits) == 0 {
+					break
+				}
+
+				logger.Info("got a batch of lookup resources", zap.Int("count", len(lookups.Hits.Hits)))
+				for _, lookup := range lookups.Hits.Hits {
+					for _, b := range builders {
+						b.Process(lookup.Source)
+					}
+					searchAfter = lookup.Sort
+				}
+			}
+			logger.Info("processed lookup resources")
+		}
+	}
 	for _, b := range builders {
 		err := b.PopulateHistory(j.LastDayScheduleJobID, j.LastWeekScheduleJobID, j.LastQuarterScheduleJobID, j.LastYearScheduleJobID)
 		if err != nil {

@@ -1041,12 +1041,28 @@ func (db Database) GetOldCompletedScheduleJob(nDaysBefore int) (*ScheduleJob, er
 	return job, nil
 }
 
-func (db Database) GetLatestSuccessfulDescribeJobIDsPerResourcePerAccount() ([]uint, error) {
-	var res []uint
-	tx := db.orm.Raw("SELECT MAX(drj.id) AS resource_job_ids FROM describe_resource_jobs AS drj JOIN describe_source_jobs AS dsj ON drj.parent_job_id = dsj.id WHERE (drj.status = $1) GROUP BY drj.resource_type, dsj.source_id",
+type GetLatestSuccessfulDescribeJobIDsPerResourcePerAccountResult struct {
+	ResourceType  string
+	ResourceJobID uint
+}
+
+func (db Database) GetLatestSuccessfulDescribeJobIDsPerResourcePerAccount() (map[string][]uint, error) {
+	var res []GetLatestSuccessfulDescribeJobIDsPerResourcePerAccountResult
+	tx := db.orm.Raw("SELECT drj.resource_type, MAX(drj.id) AS resource_job_ids FROM describe_resource_jobs AS drj JOIN describe_source_jobs AS dsj ON drj.parent_job_id = dsj.id WHERE (drj.status = $1) GROUP BY drj.resource_type, dsj.source_id",
 		api.DescribeResourceJobSucceeded).Scan(&res)
 	if tx.Error != nil {
 		return nil, tx.Error
 	}
-	return res, nil
+
+	resMap := make(map[string][]uint)
+	for _, r := range res {
+		if _, ok := resMap[r.ResourceType]; !ok {
+			resMap[r.ResourceType] = []uint{}
+		}
+		v := resMap[r.ResourceType]
+		resMap[r.ResourceType] = append(v, r.ResourceJobID)
+		resMap[r.ResourceType] = v
+	}
+	
+	return resMap, nil
 }

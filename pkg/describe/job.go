@@ -462,12 +462,17 @@ func doDescribeAWS(ctx context.Context, rdb *redis.Client, job DescribeJob, conf
 
 			kafkaResource := es.Resource{
 				ID:            resource.UniqueID(),
-				Description:   resource.Description,
-				SourceType:    api.SourceCloudAWS,
+				Name:          resource.Name,
+				SourceType:    source.CloudAWS,
 				ResourceType:  strings.ToLower(job.ResourceType),
+				ResourceGroup: "",
+				Location:      resource.Region,
+				SourceID:      job.SourceID,
 				ResourceJobID: job.JobID,
 				SourceJobID:   job.ParentJobID,
-				SourceID:      job.SourceID,
+				ScheduleJobID: job.ScheduleJobID,
+				CreatedAt:     job.DescribedAt,
+				Description:   resource.Description,
 				Metadata:      metadata,
 			}
 			lookupResource := es.LookupResource{
@@ -638,12 +643,17 @@ func doDescribeAzure(ctx context.Context, rdb *redis.Client, job DescribeJob, co
 
 		kafkaResource := es.Resource{
 			ID:            resource.UniqueID(),
-			Description:   resource.Description,
-			SourceType:    api.SourceCloudAzure,
+			Name:          resource.Name,
+			ResourceGroup: resource.ResourceGroup,
+			Location:      resource.Location,
+			SourceType:    source.CloudAzure,
 			ResourceType:  strings.ToLower(output.Metadata.ResourceType),
 			ResourceJobID: job.JobID,
 			SourceJobID:   job.ParentJobID,
 			SourceID:      job.SourceID,
+			ScheduleJobID: job.ScheduleJobID,
+			CreatedAt:     job.DescribedAt,
+			Description:   resource.Description,
 			Metadata:      metadata,
 		}
 		lookupResource := es.LookupResource{
