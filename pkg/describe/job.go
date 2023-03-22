@@ -470,6 +470,22 @@ func doDescribeAWS(ctx context.Context, rdb *redis.Client, job DescribeJob, conf
 				SourceID:      job.SourceID,
 				Metadata:      metadata,
 			}
+			lookupResource := es.LookupResource{
+				ResourceID:    resource.UniqueID(),
+				Name:          resource.Name,
+				SourceType:    source.CloudAWS,
+				ResourceType:  strings.ToLower(job.ResourceType),
+				ServiceName:   cloudservice.ServiceNameByResourceType(job.ResourceType),
+				Category:      cloudservice.CategoryByResourceType(job.ResourceType),
+				ResourceGroup: "",
+				Location:      resource.Region,
+				SourceID:      job.SourceID,
+				ResourceJobID: job.JobID,
+				SourceJobID:   job.ParentJobID,
+				ScheduleJobID: job.ScheduleJobID,
+				CreatedAt:     job.DescribedAt,
+				IsCommon:      cloudservice.IsCommonByResourceType(job.ResourceType),
+			}
 			pluginTableName := steampipe.ExtractTableName(job.ResourceType)
 			desc, err := steampipe.ConvertToDescription(job.ResourceType, kafkaResource)
 			if err != nil {
@@ -492,7 +508,7 @@ func doDescribeAWS(ctx context.Context, rdb *redis.Client, job DescribeJob, conf
 				errs = append(errs, fmt.Sprintf("failed to build tags for service: %v", err.Error()))
 				tags = map[string]string{}
 			}
-
+			lookupResource.Tags = tags
 			if rdb != nil {
 				for key, value := range tags {
 					key = strings.TrimSpace(key)
@@ -508,23 +524,6 @@ func doDescribeAWS(ctx context.Context, rdb *redis.Client, job DescribeJob, conf
 						continue
 					}
 				}
-			}
-			lookupResource := es.LookupResource{
-				ResourceID:    resource.UniqueID(),
-				Name:          resource.Name,
-				SourceType:    source.CloudAWS,
-				ResourceType:  strings.ToLower(job.ResourceType),
-				ServiceName:   cloudservice.ServiceNameByResourceType(job.ResourceType),
-				Category:      cloudservice.CategoryByResourceType(job.ResourceType),
-				ResourceGroup: "",
-				Location:      resource.Region,
-				SourceID:      job.SourceID,
-				ResourceJobID: job.JobID,
-				SourceJobID:   job.ParentJobID,
-				ScheduleJobID: job.ScheduleJobID,
-				CreatedAt:     job.DescribedAt,
-				IsCommon:      cloudservice.IsCommonByResourceType(job.ResourceType),
-				Tags:          tags,
 			}
 
 			msgs = append(msgs, kafkaResource)
@@ -647,6 +646,22 @@ func doDescribeAzure(ctx context.Context, rdb *redis.Client, job DescribeJob, co
 			SourceID:      job.SourceID,
 			Metadata:      metadata,
 		}
+		lookupResource := es.LookupResource{
+			ResourceID:    resource.UniqueID(),
+			Name:          resource.Name,
+			SourceType:    source.CloudAzure,
+			ResourceType:  strings.ToLower(job.ResourceType),
+			ResourceGroup: resource.ResourceGroup,
+			ServiceName:   cloudservice.ServiceNameByResourceType(job.ResourceType),
+			Category:      cloudservice.CategoryByResourceType(job.ResourceType),
+			Location:      resource.Location,
+			SourceID:      job.SourceID,
+			ScheduleJobID: job.ScheduleJobID,
+			ResourceJobID: job.JobID,
+			SourceJobID:   job.ParentJobID,
+			CreatedAt:     job.DescribedAt,
+			IsCommon:      cloudservice.IsCommonByResourceType(job.ResourceType),
+		}
 		pluginTableName := steampipe.ExtractTableName(job.ResourceType)
 		desc, err := steampipe.ConvertToDescription(job.ResourceType, kafkaResource)
 		if err != nil {
@@ -679,6 +694,7 @@ func doDescribeAzure(ctx context.Context, rdb *redis.Client, job DescribeJob, co
 			tags = map[string]string{}
 			errs = append(errs, fmt.Sprintf("failed to build tags for service: %v", err.Error()))
 		}
+		lookupResource.Tags = tags
 
 		if rdb != nil {
 			for key, value := range tags {
@@ -696,23 +712,6 @@ func doDescribeAzure(ctx context.Context, rdb *redis.Client, job DescribeJob, co
 			}
 		}
 
-		lookupResource := es.LookupResource{
-			ResourceID:    resource.UniqueID(),
-			Name:          resource.Name,
-			SourceType:    source.CloudAzure,
-			ResourceType:  strings.ToLower(job.ResourceType),
-			ResourceGroup: resource.ResourceGroup,
-			ServiceName:   cloudservice.ServiceNameByResourceType(job.ResourceType),
-			Category:      cloudservice.CategoryByResourceType(job.ResourceType),
-			Location:      resource.Location,
-			SourceID:      job.SourceID,
-			ScheduleJobID: job.ScheduleJobID,
-			ResourceJobID: job.JobID,
-			SourceJobID:   job.ParentJobID,
-			CreatedAt:     job.DescribedAt,
-			IsCommon:      cloudservice.IsCommonByResourceType(job.ResourceType),
-			Tags:          tags,
-		}
 		msgs = append(msgs, kafkaResource)
 		msgs = append(msgs, lookupResource)
 	}
