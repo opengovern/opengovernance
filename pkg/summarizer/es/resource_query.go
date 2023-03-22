@@ -67,7 +67,7 @@ func FetchLookupsByScheduleJobID(client keibi.Client, scheduleJobID uint, search
 	return response, nil
 }
 
-func FetchLookupsByDescribeResourceJobIdList(client keibi.Client, describeResourceJobIdList []uint, searchAfter []interface{}, size int) (LookupQueryResponse, error) {
+func FetchLookupsByDescribeResourceJobIdList(client keibi.Client, resourceType string, describeResourceJobIdList []uint, searchAfter []interface{}, size int) (LookupQueryResponse, error) {
 	res := make(map[string]interface{})
 	var filters []interface{}
 	filters = append(filters, map[string]any{
@@ -95,7 +95,7 @@ func FetchLookupsByDescribeResourceJobIdList(client keibi.Client, describeResour
 	}
 
 	var response LookupQueryResponse
-	err = client.Search(context.Background(), InventorySummaryIndex, string(b), &response)
+	err = client.Search(context.Background(), es.ResourceTypeToESIndex(resourceType), string(b), &response)
 	if err != nil {
 		return LookupQueryResponse{}, err
 	}

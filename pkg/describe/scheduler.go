@@ -2567,7 +2567,7 @@ func (s Scheduler) scheduleMustSummarizerJob(scheduleJobID *uint) error {
 		return err
 	}
 
-	describeJobIds, err := s.db.GetLatestSuccessfulDescribeJobIDsPerResourcePerAccount()
+	describeJobIdsMap, err := s.db.GetLatestSuccessfulDescribeJobIDsPerResourcePerAccount()
 	if err != nil {
 		SummarizerJobsCount.WithLabelValues("failure").Inc()
 		s.logger.Error("Failed to get latest successful DescribeJobIDs",
@@ -2576,7 +2576,7 @@ func (s Scheduler) scheduleMustSummarizerJob(scheduleJobID *uint) error {
 		return err
 	}
 
-	err = enqueueMustSummarizerJobs(s.db, s.summarizerJobQueue, job, describeJobIds)
+	err = enqueueMustSummarizerJobs(s.db, s.summarizerJobQueue, job, describeJobIdsMap)
 	if err != nil {
 		SummarizerJobsCount.WithLabelValues("failure").Inc()
 		s.logger.Error("Failed to enqueue SummarizerJob",
@@ -2644,7 +2644,7 @@ func enqueueSummarizerJobs(db Database, q queue.Interface, job SummarizerJob, sc
 	return nil
 }
 
-func enqueueMustSummarizerJobs(db Database, q queue.Interface, job SummarizerJob, describeJobIds []uint) error {
+func enqueueMustSummarizerJobs(db Database, q queue.Interface, job SummarizerJob, describeJobIds map[string][]uint) error {
 	var lastDayJobID, lastWeekJobID, lastQuarterJobID, lastYearJobID uint
 
 	lastDay, err := db.GetOldCompletedScheduleJob(1)
