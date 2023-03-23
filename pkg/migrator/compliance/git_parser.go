@@ -249,6 +249,55 @@ func (g *GitParser) ExtractBenchmarks(compliancePath string) error {
 	return nil
 }
 
+func (g *GitParser) CheckForDuplicate() error {
+	visited := map[string]bool{}
+	for _, b := range g.benchmarks {
+		if _, ok := visited[b.ID]; !ok {
+			visited[b.ID] = true
+		} else {
+			return fmt.Errorf("duplicate benchmark id: %s", b.ID)
+		}
+	}
+
+	ivisited := map[uint]bool{}
+	for _, b := range g.benchmarkTags {
+		if _, ok := ivisited[b.ID]; !ok {
+			ivisited[b.ID] = true
+		} else {
+			return fmt.Errorf("duplicate benchmark tag id: %d", b.ID)
+		}
+	}
+
+	visited = map[string]bool{}
+	for _, b := range g.policies {
+		if _, ok := visited[b.ID]; !ok {
+			visited[b.ID] = true
+		} else {
+			return fmt.Errorf("duplicate policy id: %s", b.ID)
+		}
+	}
+
+	ivisited = map[uint]bool{}
+	for _, b := range g.policyTags {
+		if _, ok := ivisited[b.ID]; !ok {
+			ivisited[b.ID] = true
+		} else {
+			return fmt.Errorf("duplicate policy tag id: %s", b.ID)
+		}
+	}
+
+	visited = map[string]bool{}
+	for _, b := range g.queries {
+		if _, ok := visited[b.ID]; !ok {
+			visited[b.ID] = true
+		} else {
+			return fmt.Errorf("duplicate query id: %s", b.ID)
+		}
+	}
+
+	return nil
+}
+
 func (g *GitParser) ExtractCompliance(compliancePath string) error {
 	if err := g.ExtractPolicyTags(compliancePath); err != nil {
 		return err
@@ -260,6 +309,9 @@ func (g *GitParser) ExtractCompliance(compliancePath string) error {
 		return err
 	}
 	if err := g.ExtractBenchmarks(compliancePath); err != nil {
+		return err
+	}
+	if err := g.CheckForDuplicate(); err != nil {
 		return err
 	}
 	return nil
