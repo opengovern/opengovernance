@@ -1,0 +1,36 @@
+#!/bin/bash
+
+#set -x 
+
+GIT_CHANGE=$(git status -s | awk '{print $2}')
+
+while read -r SVC; do
+	cd cmd/$SVC
+	while read -r PKG; do
+		if [[ $PKG == *"keibi"* ]]; then
+			PKGN=$(echo "$PKG" | sed 's/gitlab.com\/keibiengine\/keibi-engine\///g')
+
+			SEARCH="0"
+			while read -r CHANGE; do
+				if [[ $CHANGE == *"$PKGN"* ]]; then
+					SEARCH="1"
+				fi
+			done <<< "$GIT_CHANGE"
+
+
+			if [[ $SEARCH == "1" ]]; then
+				while read -r FILE; do
+					while read -r CHANGE; do
+						FILENAME=$(echo "$PKGN/$FILE")
+						CHANGENAME=$(echo "$CHANGE" | sed 's/..\/..\///g')
+						if [[ $FILENAME == $CHANGENAME ]]; then
+							echo "$SVC"
+						fi
+					done <<< "$GIT_CHANGE"
+				done <<< "$(go list -f '{{ join .GoFiles "\n" }}' $PKG)"
+			fi 
+		fi
+	done <<< "$(go list -f '{{ join .Deps "\n" }}')"
+	cd ../..
+done <<< "$(ls cmd)"
+
