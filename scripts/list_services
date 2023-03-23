@@ -8,8 +8,7 @@ while read -r SVC; do
 	cd cmd/$SVC
 	while read -r PKG; do
 		if [[ $PKG == *"keibi"* ]]; then
-			PKGN=$(echo "$PKG" | sed 's/gitlab.com\/keibiengine\/keibi-engine\///g')
-
+			PKGN=$(echo "$PKG" | sed 's;gitlab.com/keibiengine/keibi-engine/;;g')
 			SEARCH="0"
 			while read -r CHANGE; do
 				if [[ $CHANGE == *"$PKGN"* ]]; then
@@ -21,9 +20,9 @@ while read -r SVC; do
 			if [[ $SEARCH == "1" ]]; then
 				while read -r FILE; do
 					while read -r CHANGE; do
-						FILENAME=$(echo "$PKGN/$FILE")
-						CHANGENAME=$(echo "$CHANGE" | sed 's/..\/..\///g')
-						if [[ $FILENAME == $CHANGENAME ]]; then
+						FILENAME="$PKGN/$FILE"
+						CHANGENAME=$(echo "$CHANGE" | sed 's;\<../../\>;;g')
+						if [[ $FILENAME == "$CHANGENAME" ]]; then
 							echo "$SVC"
 						fi
 					done <<< "$GIT_CHANGE"
