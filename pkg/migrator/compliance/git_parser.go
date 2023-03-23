@@ -268,14 +268,14 @@ func (g *GitParser) CheckForDuplicate() error {
 	//	}
 	//}
 
-	visited = map[string]bool{}
-	for _, b := range g.policies {
-		if _, ok := visited[b.ID]; !ok {
-			visited[b.ID] = true
-		} else {
-			return fmt.Errorf("duplicate policy id: %s", b.ID)
-		}
-	}
+	//visited = map[string]bool{}
+	//for _, b := range g.policies {
+	//	if _, ok := visited[b.ID]; !ok {
+	//		visited[b.ID] = true
+	//	} else {
+	//		return fmt.Errorf("duplicate policy id: %s", b.ID)
+	//	}
+	//}
 
 	//ivisited = map[uint]bool{}
 	//for _, b := range g.policyTags {
@@ -286,14 +286,14 @@ func (g *GitParser) CheckForDuplicate() error {
 	//	}
 	//}
 
-	visited = map[string]bool{}
-	for _, b := range g.queries {
-		if _, ok := visited[b.ID]; !ok {
-			visited[b.ID] = true
-		} else {
-			return fmt.Errorf("duplicate query id: %s", b.ID)
-		}
-	}
+	//visited = map[string]bool{}
+	//for _, b := range g.queries {
+	//	if _, ok := visited[b.ID]; !ok {
+	//		visited[b.ID] = true
+	//	} else {
+	//		return fmt.Errorf("duplicate query id: %s", b.ID)
+	//	}
+	//}
 
 	return nil
 }
