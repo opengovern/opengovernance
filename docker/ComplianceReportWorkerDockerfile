@@ -2,22 +2,14 @@ FROM registry.digitalocean.com/keibi/steampipe-plugin-aws:0.0.1 as aws
 FROM registry.digitalocean.com/keibi/steampipe-plugin-azure:0.0.1 as azure
 FROM registry.digitalocean.com/keibi/steampipe-plugin-azuread:0.0.1 as azuread
 
-FROM docker.io/turbot/steampipe:0.12.2
-
-USER root
-RUN apt-get update --fix-missing && \
-    apt-get install -y git
-USER steampipe
+FROM docker.io/turbot/steampipe:latest
 
 COPY --from=aws /steampipe-plugin-aws.plugin /home/steampipe/.steampipe/plugins/hub.steampipe.io/plugins/turbot/aws@latest/steampipe-plugin-aws.plugin
 COPY --from=azure /steampipe-plugin-azure.plugin /home/steampipe/.steampipe/plugins/hub.steampipe.io/plugins/turbot/azure@latest/steampipe-plugin-azure.plugin
 COPY --from=azuread /steampipe-plugin-azuread.plugin /home/steampipe/.steampipe/plugins/hub.steampipe.io/plugins/turbot/azuread@latest/steampipe-plugin-azuread.plugin
 
 USER root
-RUN git clone https://github.com/turbot/steampipe-mod-azure-compliance.git /steampipe-mod-azure-compliance && cd /steampipe-mod-azure-compliance && git checkout v0.9
-RUN git clone https://github.com/turbot/steampipe-mod-aws-compliance.git /steampipe-mod-aws-compliance && cd /steampipe-mod-aws-compliance && git checkout v0.22
-RUN chown -R steampipe. /steampipe*
-RUN chown -R steampipe. /home/steampipe/.steampipe
+RUN chown -R steampipe. /home/steampipe/.steampipe/plugins/*
 USER steampipe
 
 COPY ./build/compliance-report-worker /
