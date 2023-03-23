@@ -637,7 +637,9 @@ func FetchConnectionLocationsSummaryPage(client keibi.Client, provider source.Ty
 	}
 
 	res["size"] = size
-	res["sort"] = sort
+	if sort != nil {
+		res["sort"] = sort
+	}
 	res["query"] = map[string]interface{}{
 		"bool": map[string]interface{}{
 			"filter": filters,
