@@ -69,6 +69,7 @@ func (w *Job) Run() error {
 		}
 	}()
 
+	// compliance=# truncate benchmark_assignments, benchmark_children, benchmark_policies, benchmark_tag_rels, benchmark_tags, benchmarks, policies, policy_tags, policy_tag_rels, queries cascade;
 	w.logger.Info("Starting migrator job")
 	if err := compliance.Run(w.db, w.AWSComplianceGitURL, w.QueryGitURL, w.githubToken); err != nil {
 		w.logger.Error(fmt.Sprintf("Failure while running aws compliance migration: %v", err))
