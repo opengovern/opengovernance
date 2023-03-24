@@ -1060,9 +1060,9 @@ func (db Database) GetLatestSuccessfulDescribeJobIDsPerResourcePerAccount() (map
 			resMap[r.ResourceType] = []uint{}
 		}
 		v := resMap[r.ResourceType]
-		resMap[r.ResourceType] = append(v, r.ResourceJobID)
+		v = append(v, r.ResourceJobID)
 		resMap[r.ResourceType] = v
 	}
-	
+
 	return resMap, nil
 }
