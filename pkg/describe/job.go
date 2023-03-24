@@ -759,7 +759,6 @@ func (j DescribeCleanupJob) Do(esClient *elasticsearch.Client) error {
 	defer cancel()
 
 	rIndex := ResourceTypeToESIndex(j.ResourceType)
-	fmt.Printf("Cleaning resources with resource_job_id of %v from index %s\n", j.JobIDs, rIndex)
 
 	if j.JobIDs == nil || len(j.JobIDs) == 0 {
 		return nil
@@ -768,6 +767,7 @@ func (j DescribeCleanupJob) Do(esClient *elasticsearch.Client) error {
 	var query map[string]any
 	switch j.JobType {
 	case DescribeCleanupJobTypeInclusiveDelete:
+		fmt.Printf("Cleaning resources with resource_job_id of %v from index %s inclusivly\n", j.JobIDs, rIndex)
 		query = map[string]any{
 			"query": map[string]any{
 				"bool": map[string]any{
@@ -787,6 +787,7 @@ func (j DescribeCleanupJob) Do(esClient *elasticsearch.Client) error {
 			},
 		}
 	case DescribeCleanupJobTypeExclusiveDelete:
+		fmt.Printf("Cleaning resources with resource_job_id of %v from index %s exclusivly\n", j.JobIDs, rIndex)
 		query = map[string]any{
 			"query": map[string]any{
 				"bool": map[string]any{
