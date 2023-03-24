@@ -1042,13 +1042,13 @@ func (db Database) GetOldCompletedScheduleJob(nDaysBefore int) (*ScheduleJob, er
 }
 
 type GetLatestSuccessfulDescribeJobIDsPerResourcePerAccountResult struct {
-	ResourceType  string
-	ResourceJobID uint
+	ResourceType  string `gorm:"column:resource_type"`
+	ResourceJobID uint   `gorm:"column:resource_job_id"`
 }
 
 func (db Database) GetLatestSuccessfulDescribeJobIDsPerResourcePerAccount() (map[string][]uint, error) {
 	var res []GetLatestSuccessfulDescribeJobIDsPerResourcePerAccountResult
-	tx := db.orm.Raw("SELECT drj.resource_type, MAX(drj.id) AS resource_job_ids FROM describe_resource_jobs AS drj JOIN describe_source_jobs AS dsj ON drj.parent_job_id = dsj.id WHERE (drj.status = $1) GROUP BY drj.resource_type, dsj.source_id",
+	tx := db.orm.Raw("SELECT drj.resource_type AS resource_type, MAX(drj.id) AS resource_job_id FROM describe_resource_jobs AS drj JOIN describe_source_jobs AS dsj ON drj.parent_job_id = dsj.id WHERE (drj.status = $1) GROUP BY drj.resource_type, dsj.source_id",
 		api.DescribeResourceJobSucceeded).Scan(&res)
 	if tx.Error != nil {
 		return nil, tx.Error
