@@ -761,6 +761,10 @@ func (j DescribeCleanupJob) Do(esClient *elasticsearch.Client) error {
 	rIndex := ResourceTypeToESIndex(j.ResourceType)
 	fmt.Printf("Cleaning resources with resource_job_id of %d from index %s\n", j.JobIDs, rIndex)
 
+	if j.JobIDs == nil || len(j.JobIDs) == 0 {
+		return nil
+	}
+
 	var query map[string]any
 	switch j.JobType {
 	case DescribeCleanupJobTypeInclusiveDelete:
