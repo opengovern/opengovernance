@@ -732,12 +732,14 @@ func (s *SchedulerTestSuite) TestDescribeCleanup() {
 	// Cleanup should be called
 	s.Scheduler.describeCleanupJobQueue.(*mocksqueue.Interface).
 		AssertCalled(s.T(), "Publish", DescribeCleanupJob{
-			JobID:        1,
+			JobType:      DescribeCleanupJobTypeInclusiveDelete,
+			JobIDs:       []uint{1},
 			ResourceType: "resource-type-1",
 		})
 	s.Scheduler.describeCleanupJobQueue.(*mocksqueue.Interface).
 		AssertCalled(s.T(), "Publish", DescribeCleanupJob{
-			JobID:        2,
+			JobType:      DescribeCleanupJobTypeInclusiveDelete,
+			JobIDs:       []uint{2},
 			ResourceType: "resource-type-2",
 		})
 

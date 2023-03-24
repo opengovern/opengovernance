@@ -1493,12 +1493,12 @@ func (s Scheduler) cleanupDescribeJobForDeletedSource(sourceId string) {
 		return
 	}
 
-	s.handleDescribeJobs(jobs)
+	s.handleConnectionDescribeJobsCleanup(jobs)
 
 	DescribeCleanupJobsCount.WithLabelValues("successful").Inc()
 }
 
-func (s Scheduler) handleDescribeJobs(jobs []DescribeSourceJob) {
+func (s Scheduler) handleConnectionDescribeJobsCleanup(jobs []DescribeSourceJob) {
 	for _, sj := range jobs {
 		// I purposefully didn't embbed this query in the previous query to keep returned results count low.
 		drj, err := s.db.ListDescribeResourceJobs(sj.ID)
@@ -1519,7 +1519,8 @@ func (s Scheduler) handleDescribeJobs(jobs []DescribeSourceJob) {
 			}
 
 			if err := s.describeCleanupJobQueue.Publish(DescribeCleanupJob{
-				JobID:        rj.ID,
+				JobType:      DescribeCleanupJobTypeInclusiveDelete,
+				JobIDs:       []uint{rj.ID},
 				ResourceType: rj.ResourceType,
 			}); err != nil {
 				s.logger.Error("Failed to publish describe clean up job to queue for DescribeResourceJob",
@@ -1564,17 +1565,40 @@ func (s Scheduler) handleDescribeJobs(jobs []DescribeSourceJob) {
 	}
 }
 
-func (s Scheduler) cleanupDescribeJob() {
-	jobs, err := s.db.QueryOlderThanNRecentCompletedDescribeSourceJobs(50)
-	if err != nil {
-		s.logger.Error("Failed to find older than 5 recent completed DescribeSourceJob for each source",
+func (s Scheduler) enqueueExclusiveCleanupJob(resourceType string, jobIDs []uint) {
+	if isPublishingBlocked(s.logger, s.describeCleanupJobQueue) {
+		s.logger.Warn("The jobs in queue is over the threshold")
+		return
+	}
+
+	if err := s.describeCleanupJobQueue.Publish(DescribeCleanupJob{
+		JobType:      DescribeCleanupJobTypeExclusiveDelete,
+		JobIDs:       jobIDs,
+		ResourceType: strings.ToLower(resourceType),
+	}); err != nil {
+		s.logger.Error("Failed to publish describe clean up job to queue",
 			zap.Error(err),
 		)
 		DescribeCleanupJobsCount.WithLabelValues("failure").Inc()
 		return
 	}
 
-	s.handleDescribeJobs(jobs)
+	DescribeCleanupJobsCount.WithLabelValues("successful").Inc()
+}
+
+func (s Scheduler) cleanupDescribeJob() {
+	latestSuccessfulJobsMap, err := s.db.GetLatestSuccessfulDescribeJobIDsPerResourcePerAccount()
+	if err != nil {
+		s.logger.Error("Failed to get latest successful DescribeResourceJobs per resource per account",
+			zap.Error(err),
+		)
+		DescribeCleanupJobsCount.WithLabelValues("failure").Inc()
+		return
+	}
+
+	for resourceType, jobIDs := range latestSuccessfulJobsMap {
+		s.enqueueExclusiveCleanupJob(resourceType, jobIDs)
+	}
 
 	DescribeCleanupJobsCount.WithLabelValues("successful").Inc()
 }
