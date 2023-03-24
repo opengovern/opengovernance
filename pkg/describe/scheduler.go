@@ -1571,6 +1571,7 @@ func (s Scheduler) enqueueExclusiveCleanupJob(resourceType string, jobIDs []uint
 		return
 	}
 
+	s.logger.Info("Enqueuing exclusive cleanup job", zap.String("resourceType", resourceType), zap.Any("jobIDs", jobIDs))
 	if err := s.describeCleanupJobQueue.Publish(DescribeCleanupJob{
 		JobType:      DescribeCleanupJobTypeExclusiveDelete,
 		JobIDs:       jobIDs,
