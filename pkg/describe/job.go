@@ -769,16 +769,18 @@ func (j DescribeCleanupJob) Do(esClient *elasticsearch.Client) error {
 	switch j.JobType {
 	case DescribeCleanupJobTypeInclusiveDelete:
 		query = map[string]any{
-			"bool": map[string]any{
-				"filter": []any{
-					map[string]any{
-						"terms": map[string]any{
-							"resource_job_id": j.JobIDs,
+			"query": map[string]any{
+				"bool": map[string]any{
+					"filter": []any{
+						map[string]any{
+							"terms": map[string]any{
+								"resource_job_id": j.JobIDs,
+							},
 						},
-					},
-					map[string]any{
-						"term": map[string]any{
-							"resource_type": strings.ToLower(j.ResourceType),
+						map[string]any{
+							"term": map[string]any{
+								"resource_type": strings.ToLower(j.ResourceType),
+							},
 						},
 					},
 				},
@@ -786,18 +788,20 @@ func (j DescribeCleanupJob) Do(esClient *elasticsearch.Client) error {
 		}
 	case DescribeCleanupJobTypeExclusiveDelete:
 		query = map[string]any{
-			"bool": map[string]any{
-				"must_not": []any{
-					map[string]any{
-						"terms": map[string]any{
-							"resource_job_id": j.JobIDs,
+			"query": map[string]any{
+				"bool": map[string]any{
+					"must_not": []any{
+						map[string]any{
+							"terms": map[string]any{
+								"resource_job_id": j.JobIDs,
+							},
 						},
 					},
-				},
-				"filter": []any{
-					map[string]any{
-						"term": map[string]any{
-							"resource_type": strings.ToLower(j.ResourceType),
+					"filter": []any{
+						map[string]any{
+							"term": map[string]any{
+								"resource_type": strings.ToLower(j.ResourceType),
+							},
 						},
 					},
 				},
