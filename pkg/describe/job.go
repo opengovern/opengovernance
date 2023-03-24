@@ -834,6 +834,7 @@ func (j DescribeCleanupJob) Do(esClient *elasticsearch.Client) error {
 
 		DoDescribeCleanupJobsDuration.WithLabelValues(j.ResourceType, "failure").Observe(float64(time.Now().Unix() - startTime))
 		DoDescribeCleanupJobsCount.WithLabelValues(j.ResourceType, "failure").Inc()
+		fmt.Printf("Failed to delete %d resources of type %s with error: %s\n", resp.Deleted, j.ResourceType, string(body))
 		return fmt.Errorf("elasticsearch: delete by query: %s", string(body))
 	}
 
