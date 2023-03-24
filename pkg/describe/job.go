@@ -740,9 +740,17 @@ func ResourceTypeToESIndex(t string) string {
 	return strings.ToLower(t)
 }
 
+type DescribeCleanupJobType string
+
+const (
+	DescribeCleanupJobTypeInclusiveDelete DescribeCleanupJobType = "inclusive_delete"
+	DescribeCleanupJobTypeExclusiveDelete DescribeCleanupJobType = "exclusive_delete"
+)
+
 type DescribeCleanupJob struct {
-	JobID        uint // DescribeResourceJob ID
-	ResourceType string
+	JobType      DescribeCleanupJobType `json:"job_type"`
+	ResourceType string                 `json:"resource_type"`
+	JobIDs       []uint                 `json:"job_id"` // DescribeResourceJob ID
 }
 
 func (j DescribeCleanupJob) Do(esClient *elasticsearch.Client) error {
@@ -751,14 +759,46 @@ func (j DescribeCleanupJob) Do(esClient *elasticsearch.Client) error {
 	defer cancel()
 
 	rIndex := ResourceTypeToESIndex(j.ResourceType)
-	fmt.Printf("Cleaning resources with resource_job_id of %d from index %s\n", j.JobID, rIndex)
+	fmt.Printf("Cleaning resources with resource_job_id of %d from index %s\n", j.JobIDs, rIndex)
 
-	query := map[string]interface{}{
-		"query": map[string]interface{}{
-			"match": map[string]interface{}{
-				"resource_job_id": j.JobID,
+	var query map[string]any
+	switch j.JobType {
+	case DescribeCleanupJobTypeInclusiveDelete:
+		query = map[string]any{
+			"bool": map[string]any{
+				"filter": []any{
+					map[string]any{
+						"terms": map[string]any{
+							"resource_job_id": j.JobIDs,
+						},
+					},
+					map[string]any{
+						"term": map[string]any{
+							"resource_type": strings.ToLower(j.ResourceType),
+						},
+					},
+				},
 			},
-		},
+		}
+	case DescribeCleanupJobTypeExclusiveDelete:
+		query = map[string]any{
+			"bool": map[string]any{
+				"must_not": []any{
+					map[string]any{
+						"terms": map[string]any{
+							"resource_job_id": j.JobIDs,
+						},
+					},
+				},
+				"filter": []any{
+					map[string]any{
+						"term": map[string]any{
+							"resource_type": strings.ToLower(j.ResourceType),
+						},
+					},
+				},
+			},
+		}
 	}
 
 	// Delete the resources from both inventory_summary and resource specific index
