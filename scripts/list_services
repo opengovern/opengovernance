@@ -2,7 +2,8 @@
 
 #set -x 
 
-GIT_CHANGE=$(git status -s | awk '{print $2}')
+#GIT_CHANGE=$(git status -s | awk '{print $2}')
+GIT_CHANGE=$(git  diff --name-only HEAD~1 HEAD)
 
 while read -r SVC; do
 	cd cmd/$SVC
