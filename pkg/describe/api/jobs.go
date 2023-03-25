@@ -1,5 +1,7 @@
 package api
 
+import "gitlab.com/keibiengine/keibi-engine/pkg/source"
+
 type GetCredsForJobRequest struct {
 	SourceID string `json:"sourceId"`
 }
@@ -10,4 +12,18 @@ type GetCredsForJobResponse struct {
 
 type GetDataResponse struct {
 	Data string `json:"data"`
+}
+
+type TriggerBenchmarkEvaluationRequest struct {
+	BenchmarkID  string   `json:"benchmarkID"`
+	ConnectionID *string  `json:"connectionID"`
+	ResourceIDs  []string `json:"resourceIDs"`
+}
+
+type ListBenchmarkEvaluationsRequest struct {
+	EvaluatedAtAfter  *int64       `json:"evaluatedAtAfter"`
+	EvaluatedAtBefore *int64       `json:"evaluatedAtBefore"`
+	ConnectionID      *string      `json:"connectionID"`
+	Connector         *source.Type `json:"connector"`
+	BenchmarkID       *string      `json:"benchmarkID"`
 }

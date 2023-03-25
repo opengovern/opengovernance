@@ -1905,18 +1905,18 @@ func (s *Scheduler) RunComplianceReport(scheduleJob *ScheduleJob) (int, error) {
 		return createdJobCount, fmt.Errorf("error while listing sources: %v", err)
 	}
 
-	for _, source := range sources {
+	for _, src := range sources {
 		ctx := &httpclient.Context{
 			UserRole: api2.ViewerRole,
 		}
-		benchmarks, err := s.complianceClient.GetAllBenchmarkAssignmentsBySourceId(ctx, source.ID)
+		benchmarks, err := s.complianceClient.GetAllBenchmarkAssignmentsBySourceId(ctx, src.ID)
 		if err != nil {
 			ComplianceJobsCount.WithLabelValues("failure").Inc()
 			return createdJobCount, fmt.Errorf("error while getting benchmark assignments: %v", err)
 		}
 
 		for _, b := range benchmarks {
-			crj := newComplianceReportJob(source, b.BenchmarkId, scheduleJob.ID)
+			crj := newComplianceReportJob(src.ID.String(), source.Type(src.Type), b.BenchmarkId, scheduleJob.ID)
 			err := s.db.CreateComplianceReportJob(&crj)
 			if err != nil {
 				ComplianceJobsCount.WithLabelValues("failure").Inc()
@@ -1924,9 +1924,9 @@ func (s *Scheduler) RunComplianceReport(scheduleJob *ScheduleJob) (int, error) {
 				return createdJobCount, fmt.Errorf("error while creating compliance job: %v", err)
 			}
 
-			enqueueComplianceReportJobs(s.logger, s.db, s.complianceReportJobQueue, source, &crj, scheduleJob)
+			enqueueComplianceReportJobs(s.logger, s.db, s.complianceReportJobQueue, src, &crj, scheduleJob)
 
-			err = s.db.UpdateSourceReportGenerated(source.ID, s.complianceIntervalHours)
+			err = s.db.UpdateSourceReportGenerated(src.ID.String(), s.complianceIntervalHours)
 			if err != nil {
 				ComplianceJobsCount.WithLabelValues("failure").Inc()
 				ComplianceSourceJobsCount.WithLabelValues("failure").Inc()
@@ -2095,11 +2095,12 @@ func newCloudNativeDescribeSourceJob(j DescribeSourceJob) (CloudNativeDescribeSo
 	return job, nil
 }
 
-func newComplianceReportJob(a Source, benchmarkID string, scheduleJobID uint) ComplianceReportJob {
+func newComplianceReportJob(connectionID string, connector source.Type, benchmarkID string, scheduleJobID uint) ComplianceReportJob {
 	return ComplianceReportJob{
 		Model:           gorm.Model{},
 		ScheduleJobID:   scheduleJobID,
-		SourceID:        a.ID,
+		SourceID:        connectionID,
+		SourceType:      connector,
 		BenchmarkID:     benchmarkID,
 		ReportCreatedAt: 0,
 		Status:          complianceapi.ComplianceReportJobCreated,
@@ -2295,7 +2296,7 @@ func enqueueComplianceReportJobs(logger *zap.Logger, db Database, q queue.Interf
 		ScheduleJobID: scheduleJob.ID,
 		DescribedAt:   scheduleJob.CreatedAt.UnixMilli(),
 		EvaluatedAt:   0,
-		ConnectionID:  crj.SourceID.String(),
+		ConnectionID:  crj.SourceID,
 		BenchmarkID:   crj.BenchmarkID,
 		ConfigReg:     a.ConfigRef,
 		Connector:     source.Type(a.Type),

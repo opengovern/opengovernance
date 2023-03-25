@@ -67,9 +67,8 @@ type FindingsQueryHit struct {
 func FindingsQuery(client keibi.Client,
 	id []string,
 	provider []source.Type,
-	resourceTypeID []string,
-	sourceID []uuid.UUID,
-	status []types.ComplianceResult,
+	resourceID []string,
+	sourceID []string,
 	benchmarkID []string,
 	policyID []string,
 	severity []string,
@@ -97,12 +96,6 @@ func FindingsQuery(client keibi.Client,
 		})
 	}
 
-	if len(status) > 0 {
-		filters = append(filters, map[string]interface{}{
-			"terms": map[string]interface{}{"status": status},
-		})
-	}
-
 	if len(severity) > 0 {
 		filters = append(filters, map[string]interface{}{
 			"terms": map[string]interface{}{"policySeverity": severity},
@@ -115,9 +108,9 @@ func FindingsQuery(client keibi.Client,
 		})
 	}
 
-	if len(resourceTypeID) > 0 {
+	if len(resourceID) > 0 {
 		filters = append(filters, map[string]interface{}{
-			"terms": map[string]interface{}{"resourceType": resourceTypeID},
+			"terms": map[string]interface{}{"resourceID": resourceID},
 		})
 	}
 

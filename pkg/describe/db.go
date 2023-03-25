@@ -3,6 +3,7 @@ package describe
 import (
 	"errors"
 	"fmt"
+	"gitlab.com/keibiengine/keibi-engine/pkg/source"
 	"time"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/summarizer"
@@ -102,6 +103,18 @@ func (db Database) GetSourceByUUID(id uuid.UUID) (*Source, error) {
 	return &source, nil
 }
 
+func (db Database) GetSourceByID(id string) (*Source, error) {
+	var source Source
+	tx := db.orm.
+		Where("id = ?", id).
+		Find(&source)
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+
+	return &source, nil
+}
+
 // CreateSources creates multiple source in batches.
 func (db Database) CreateSources(a []Source) error {
 	tx := db.orm.
@@ -150,10 +163,10 @@ func (db Database) UpdateSourceNextDescribeAtToNow(id uuid.UUID) error {
 
 // UpdateSourceReportGenerated updates the source last_compliance_report_at to
 // **NOW()** and next_compliance_report_at to **NOW() + 2 Hours**.
-func (db Database) UpdateSourceReportGenerated(id uuid.UUID, complianceIntervalHours int64) error {
+func (db Database) UpdateSourceReportGenerated(connectionID string, complianceIntervalHours int64) error {
 	tx := db.orm.
 		Model(&Source{}).
-		Where("id = ?", id.String()).
+		Where("id = ?", connectionID).
 		Updates(map[string]interface{}{
 			"last_compliance_report_at": gorm.Expr("NOW()"),
 			"next_compliance_report_at": gorm.Expr(fmt.Sprintf("NOW() + INTERVAL '%d HOURS'", complianceIntervalHours)),
@@ -657,6 +670,32 @@ func (db Database) ListCompletedComplianceReportByDate(sourceID uuid.UUID, fromD
 		return nil, tx.Error
 	}
 
+	return jobs, nil
+}
+
+func (db Database) ListComplianceReportsWithFilter(timeAfter, timeBefore *int64, connectionID *string, connector *source.Type, benchmarkID *string) ([]ComplianceReportJob, error) {
+
+	var jobs []ComplianceReportJob
+	tx := db.orm
+	if timeAfter != nil {
+		tx = tx.Where("created_at >= ?", *timeAfter)
+	}
+	if timeBefore != nil {
+		tx = tx.Where("created_at <= ?", *timeBefore)
+	}
+	if connectionID != nil {
+		tx = tx.Where("source_id = ?", *connectionID)
+	}
+	if connector != nil {
+		tx = tx.Where("source_type = ?", connector.String())
+	}
+	if benchmarkID != nil {
+		tx = tx.Where("benchmark_id = ?", benchmarkID)
+	}
+	tx = tx.Find(&jobs)
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
 	return jobs, nil
 }
 

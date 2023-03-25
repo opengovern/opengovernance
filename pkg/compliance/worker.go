@@ -160,7 +160,7 @@ func (w *Worker) Run() error {
 	}
 
 	w.logger.Info("Running the job", zap.Uint("jobID", job.JobID))
-	result := job.Do(w.complianceClient, w.vault, w.config.ElasticSearch, w.kfkProducer, w.kfkTopic, w.logger)
+	result := job.Do(w.complianceClient, w.onboardClient, w.vault, w.config.ElasticSearch, w.kfkProducer, w.kfkTopic, w.logger)
 	w.logger.Info("Job finished", zap.Uint("jobID", job.JobID))
 
 	if err := w.jobResultQueue.Publish(result); err != nil {
