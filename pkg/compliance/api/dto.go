@@ -1,7 +1,6 @@
 package api
 
 import (
-	"github.com/google/uuid"
 	"gitlab.com/keibiengine/keibi-engine/pkg/compliance/es"
 	"gitlab.com/keibiengine/keibi-engine/pkg/source"
 	"gitlab.com/keibiengine/keibi-engine/pkg/types"
@@ -19,13 +18,12 @@ type BenchmarkAssignedSource struct {
 }
 
 type FindingFilters struct {
-	Provider       []source.Type            `json:"provider"`
-	ResourceTypeID []string                 `json:"resourceTypeID"`
-	ConnectionID   []uuid.UUID              `json:"connectionID"`
-	FindingStatus  []types.ComplianceResult `json:"findingStatus"`
-	BenchmarkID    []string                 `json:"benchmarkID"`
-	PolicyID       []string                 `json:"policyID"`
-	Severity       []string                 `json:"severity"`
+	Connector    []source.Type `json:"connector"`
+	ResourceID   []string      `json:"resourceID"`
+	ConnectionID []string      `json:"connectionID"`
+	BenchmarkID  []string      `json:"benchmarkID"`
+	PolicyID     []string      `json:"policyID"`
+	Severity     []string      `json:"severity"`
 }
 
 type FindingResponseFilters struct {

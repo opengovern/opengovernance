@@ -1,6 +1,7 @@
 package worker
 
 import (
+	"errors"
 	"fmt"
 	api2 "gitlab.com/keibiengine/keibi-engine/pkg/auth/api"
 	"gitlab.com/keibiengine/keibi-engine/pkg/cloudservice"
@@ -11,6 +12,7 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpclient"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/vault"
 	"gitlab.com/keibiengine/keibi-engine/pkg/kafka"
+	client2 "gitlab.com/keibiengine/keibi-engine/pkg/onboard/client"
 	"gitlab.com/keibiengine/keibi-engine/pkg/source"
 	"gitlab.com/keibiengine/keibi-engine/pkg/steampipe"
 	"gitlab.com/keibiengine/keibi-engine/pkg/types"
@@ -42,6 +44,7 @@ type JobResult struct {
 
 func (j *Job) Do(
 	complianceClient client.ComplianceServiceClient,
+	onboardClient client2.OnboardServiceClient,
 	vault vault.SourceConfig,
 	elasticSearchConfig config.ElasticSearch,
 	kfkProducer sarama.SyncProducer,
@@ -55,7 +58,7 @@ func (j *Job) Do(
 		Error:           "",
 	}
 
-	if err := j.Run(complianceClient, vault, elasticSearchConfig, kfkProducer, kfkTopic, logger); err != nil {
+	if err := j.Run(complianceClient, onboardClient, vault, elasticSearchConfig, kfkProducer, kfkTopic, logger); err != nil {
 		result.Error = err.Error()
 		result.Status = api.ComplianceReportJobCompletedWithFailure
 	}
@@ -63,9 +66,22 @@ func (j *Job) Do(
 	return result
 }
 
-func (j *Job) Run(complianceClient client.ComplianceServiceClient, vault vault.SourceConfig,
+func (j *Job) Run(complianceClient client.ComplianceServiceClient, onboardClient client2.OnboardServiceClient, vault vault.SourceConfig,
 	elasticSearchConfig config.ElasticSearch, kfkProducer sarama.SyncProducer, kfkTopic string, logger *zap.Logger) error {
-	err := j.PopulateSteampipeConfig(vault, elasticSearchConfig)
+	ctx := &httpclient.Context{
+		UserRole: api2.AdminRole,
+	}
+
+	src, err := onboardClient.GetSource(ctx, j.ConnectionID)
+	if err != nil {
+		return err
+	}
+
+	if src.HealthState != source.HealthStatusHealthy {
+		return errors.New("connection not healthy")
+	}
+
+	err = j.PopulateSteampipeConfig(vault, elasticSearchConfig)
 	if err != nil {
 		return err
 	}
@@ -90,10 +106,6 @@ func (j *Job) Run(complianceClient client.ComplianceServiceClient, vault vault.S
 		return err
 	}
 
-	ctx := &httpclient.Context{
-		UserRole: api2.ViewerRole,
-	}
-
 	benchmark, err := complianceClient.GetBenchmark(ctx, j.BenchmarkID)
 	if err != nil {
 		return err
@@ -112,6 +124,10 @@ func (j *Job) Run(complianceClient client.ComplianceServiceClient, vault vault.S
 		query, err := complianceClient.GetQuery(ctx, *policy.QueryID)
 		if err != nil {
 			return err
+		}
+
+		if query.Connector != string(src.Type) {
+			return errors.New("connector doesn't match")
 		}
 
 		res, err := steampipeConn.QueryAll(query.QueryToExecute)

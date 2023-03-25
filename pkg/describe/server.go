@@ -2,7 +2,9 @@ package describe
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
+	"gitlab.com/keibiengine/keibi-engine/pkg/source"
 	"net/http"
 	"strconv"
 	"time"
@@ -50,6 +52,7 @@ func (h HttpServer) Register(e *echo.Echo) {
 	v0.GET("/summarize/trigger", httpserver.AuthorizeHandler(h.TriggerSummarizeJob, api3.AdminRole))
 	v0.GET("/insight/trigger", httpserver.AuthorizeHandler(h.TriggerInsightJob, api3.AdminRole))
 	v0.GET("/compliance/trigger", httpserver.AuthorizeHandler(h.TriggerComplianceJob, api3.AdminRole))
+	v1.PUT("/benchmark/evaluation/trigger", httpserver.AuthorizeHandler(h.TriggerBenchmarkEvaluation, api3.AdminRole))
 
 	v1.GET("/describe/source/jobs/pending", httpserver.AuthorizeHandler(h.HandleListPendingDescribeSourceJobs, api3.ViewerRole))
 	v1.GET("/describe/resource/jobs/pending", httpserver.AuthorizeHandler(h.HandleListPendingDescribeResourceJobs, api3.ViewerRole))
@@ -68,7 +71,9 @@ func (h HttpServer) Register(e *echo.Echo) {
 
 	v1.GET("/compliance/report/last/completed", httpserver.AuthorizeHandler(h.HandleGetLastCompletedComplianceReport, api3.ViewerRole))
 
-	v1.POST("/jobs/:job_id/creds", h.HandleGetCredsForJob)
+	v1.GET("/benchmark/evaluations", httpserver.AuthorizeHandler(h.HandleListBenchmarkEvaluations, api3.ViewerRole))
+
+	v1.POST("/jobs/:job_id/creds", httpserver.AuthorizeHandler(h.HandleGetCredsForJob, api3.AdminRole))
 }
 
 // HandleListSources godoc
@@ -530,6 +535,87 @@ func (h HttpServer) TriggerComplianceJob(ctx echo.Context) error {
 	}
 
 	return ctx.NoContent(http.StatusOK)
+}
+
+// TriggerBenchmarkEvaluation godoc
+//
+//	@Summary		Triggers a benchmark evaluation job to run immediately
+//	@Tags			describe
+//	@Produce		json
+//	@Success		200
+//	@Param		request	body		api.TriggerBenchmarkEvaluationRequest	true	"Request Body"
+//	@Router			/schedule/api/v1/compliance/trigger [put]
+func (h HttpServer) TriggerBenchmarkEvaluation(ctx echo.Context) error {
+	var req api.TriggerBenchmarkEvaluationRequest
+	if err := bindValidate(ctx, &req); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	var connectionIDs []string
+	if req.ConnectionID != nil {
+		connectionIDs = append(connectionIDs, *req.ConnectionID)
+	}
+	if len(req.ResourceIDs) > 0 {
+		//TODO
+		// figure out connection ids and add them
+	}
+
+	//TODO
+	// which schedule job best fits for this ?
+	scheduleJob, err := h.DB.FetchLastScheduleJob()
+	if err != nil {
+		return err
+	}
+
+	for _, connectionID := range connectionIDs {
+		src, err := h.DB.GetSourceByID(connectionID)
+		if err != nil {
+			return err
+		}
+
+		crj := newComplianceReportJob(connectionID, source.Type(src.Type), req.BenchmarkID, scheduleJob.ID)
+
+		err = h.DB.CreateComplianceReportJob(&crj)
+		if err != nil {
+			return err
+		}
+
+		if src == nil {
+			return errors.New("failed to find connection")
+		}
+
+		enqueueComplianceReportJobs(h.Scheduler.logger, h.DB, h.Scheduler.complianceReportJobQueue, *src, &crj, scheduleJob)
+
+		err = h.DB.UpdateSourceReportGenerated(connectionID, h.Scheduler.complianceIntervalHours)
+		if err != nil {
+			return err
+		}
+	}
+
+	return ctx.NoContent(http.StatusOK)
+}
+
+// HandleListBenchmarkEvaluations godoc
+//
+//	@Summary		Lists all benchmark evaluations
+//	@Tags			compliance
+//	@Produce		json
+//	@Success		200
+//	@Param		request	body		api.ListBenchmarkEvaluationsRequest	true	"Request Body"
+//	@Success	200		{object}	[]describe.ComplianceReportJob
+//	@Router			/schedule/api/v1/benchmark/evaluations [get]
+func (h HttpServer) HandleListBenchmarkEvaluations(ctx echo.Context) error {
+	var req api.ListBenchmarkEvaluationsRequest
+	if err := bindValidate(ctx, &req); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	cp, err := h.DB.ListComplianceReportsWithFilter(req.EvaluatedAtAfter, req.EvaluatedAtBefore, req.ConnectionID, req.Connector, req.BenchmarkID)
+	if err != nil {
+		return err
+	}
+
+	return ctx.JSON(http.StatusOK, cp)
 }
 
 // HandleGetCredsForJob godoc
