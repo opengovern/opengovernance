@@ -68,6 +68,7 @@ func (j *Job) Do(
 
 func (j *Job) Run(complianceClient client.ComplianceServiceClient, onboardClient client2.OnboardServiceClient, vault vault.SourceConfig,
 	elasticSearchConfig config.ElasticSearch, kfkProducer sarama.SyncProducer, kfkTopic string, logger *zap.Logger) error {
+
 	ctx := &httpclient.Context{
 		UserRole: api2.AdminRole,
 	}
