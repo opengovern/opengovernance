@@ -194,7 +194,7 @@ deploy: # This job runs in the deploy stage.
   image:
     name: quay.io/podman/stable
   script:
-    - make docker
+    - ./scripts/dockerbuild
 
 deploy-all: # This job runs in the deploy stage.
   stage: deploy # It only runs when *both* jobs in the test stage complete successfully.
@@ -209,5 +209,39 @@ deploy-all: # This job runs in the deploy stage.
   image:
     name: quay.io/podman/stable
   script:
-    - make docker-all
+    - podman login -u "${DO_API_TOKEN}" -p "${DO_API_TOKEN}" "registry.digitalocean.com/keibi"
+    - podman build -f  docker/SteampipeServiceDockerfile . -t registry.digitalocean.com/keibi/steampipe-service:$SVER_VERSION
+    - podman build -f  docker/AuthServiceDockerfile . -t registry.digitalocean.com/keibi/auth-service:$SVER_VERSION
+    - podman build -f  docker/CheckupWorkerDockerfile . -t registry.digitalocean.com/keibi/checkup-worker:$SVER_VERSION
+    - podman build -f  docker/ComplianceReportWorkerDockerfile . -t registry.digitalocean.com/keibi/compliance-report-worker:$SVER_VERSION
+    - podman build -f  docker/ComplianceServiceDockerfile . -t registry.digitalocean.com/keibi/compliance-service:$SVER_VERSION
+    - podman build -f  docker/DescribeCleanupWorkerDockerfile . -t registry.digitalocean.com/keibi/describe-cleanup-worker:$SVER_VERSION
+    - podman build -f  docker/DescribeConnectionWorkerDockerfile . -t registry.digitalocean.com/keibi/describe-connection-worker:$SVER_VERSION
+    - podman build -f  docker/DescribeSchedulerDockerfile . -t registry.digitalocean.com/keibi/describe-scheduler:$SVER_VERSION
+    - podman build -f  docker/DescribeWorkerDockerfile . -t registry.digitalocean.com/keibi/describe-worker:$SVER_VERSION
+    - podman build -f  docker/InsightWorkerDockerfile . -t registry.digitalocean.com/keibi/insight-worker:$SVER_VERSION
+    - podman build -f  docker/InventoryServiceDockerfile . -t registry.digitalocean.com/keibi/inventory-service:$SVER_VERSION
+    - podman build -f  docker/MetadataServiceDockerfile . -t registry.digitalocean.com/keibi/metadata-service:$SVER_VERSION
+    - podman build -f  docker/MigratorDockerfile . -t registry.digitalocean.com/keibi/migrator:$SVER_VERSION
+    - podman build -f  docker/OnboardServiceDockerfile . -t registry.digitalocean.com/keibi/onboard-service:$SVER_VERSION
+    - podman build -f  docker/SummarizerWorkerDockerfile . -t registry.digitalocean.com/keibi/summarizer-worker:$SVER_VERSION
+    - podman build -f  docker/SwaggerUIDockerfile . -t registry.digitalocean.com/keibi/swagger-ui:$SVER_VERSION
+    - podman build -f  docker/WorkspaceServiceDockerfile . -t registry.digitalocean.com/keibi/workspace-service:$SVER_VERSION
+    - podman push registry.digitalocean.com/keibi/steampipe-service:$SVER_VERSION
+    - podman push registry.digitalocean.com/keibi/auth-service:$SVER_VERSION
+    - podman push registry.digitalocean.com/keibi/checkup-worker:$SVER_VERSION
+    - podman push registry.digitalocean.com/keibi/compliance-report-worker:$SVER_VERSION
+    - podman push registry.digitalocean.com/keibi/compliance-service:$SVER_VERSION
+    - podman push registry.digitalocean.com/keibi/describe-cleanup-worker:$SVER_VERSION
+    - podman push registry.digitalocean.com/keibi/describe-connection-worker:$SVER_VERSION
+    - podman push registry.digitalocean.com/keibi/describe-scheduler:$SVER_VERSION
+    - podman push registry.digitalocean.com/keibi/describe-worker:$SVER_VERSION
+    - podman push registry.digitalocean.com/keibi/insight-worker:$SVER_VERSION
+    - podman push registry.digitalocean.com/keibi/inventory-service:$SVER_VERSION
+    - podman push registry.digitalocean.com/keibi/metadata-service:$SVER_VERSION
+    - podman push registry.digitalocean.com/keibi/migrator:$SVER_VERSION
+    - podman push registry.digitalocean.com/keibi/onboard-service:$SVER_VERSION
+    - podman push registry.digitalocean.com/keibi/summarizer-worker:$SVER_VERSION
+    - podman push registry.digitalocean.com/keibi/swagger-ui:$SVER_VERSION
+    - podman push registry.digitalocean.com/keibi/workspace-service:$SVER_VERSION
   when: manual
