@@ -71,6 +71,7 @@ func (h *HttpHandler) GetFindings(ctx echo.Context) error {
 	if err := bindValidate(ctx, &req); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
+
 	lastIdx := (req.Page.No - 1) * req.Page.Size
 
 	var response api.GetFindingsResponse
@@ -86,6 +87,7 @@ func (h *HttpHandler) GetFindings(ctx echo.Context) error {
 	if err != nil {
 		return err
 	}
+
 	for _, h := range res.Hits.Hits {
 		response.Findings = append(response.Findings, h.Source)
 	}
