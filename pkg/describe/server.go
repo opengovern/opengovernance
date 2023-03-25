@@ -563,7 +563,7 @@ func (h HttpServer) TriggerBenchmarkEvaluation(ctx echo.Context) error {
 
 	//TODO
 	// which schedule job best fits for this ?
-	
+
 	scheduleJob, err := h.DB.FetchLastScheduleJob()
 	if err != nil {
 		return err
