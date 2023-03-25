@@ -558,9 +558,7 @@ func (h HttpServer) TriggerBenchmarkEvaluation(ctx echo.Context) error {
 	if len(req.ResourceIDs) > 0 {
 		//TODO
 		// figure out connection ids and add them
-
 	}
-
 	//TODO
 	// which schedule job best fits for this ?
 
