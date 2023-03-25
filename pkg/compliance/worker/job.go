@@ -72,7 +72,6 @@ func (j *Job) Run(complianceClient client.ComplianceServiceClient, onboardClient
 	ctx := &httpclient.Context{
 		UserRole: api2.AdminRole,
 	}
-
 	src, err := onboardClient.GetSource(ctx, j.ConnectionID)
 	if err != nil {
 		return err
