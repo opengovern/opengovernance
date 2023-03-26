@@ -1,7 +1,7 @@
 #!/bin/bash
 
 podman login -u "${DO_API_TOKEN}" -p "${DO_API_TOKEN}" "registry.digitalocean.com/keibi"
-SERVICES=$(./scripts/list_services)
+SERVICES=$(cat ./services)
 if [[ $SERVICES == *"auth-service"* ]]; then
     podman build -f  docker/AuthServiceDockerfile . -t registry.digitalocean.com/keibi/auth-service:$SVER_VERSION
     podman push registry.digitalocean.com/keibi/auth-service:$SVER_VERSION
