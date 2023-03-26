@@ -156,13 +156,14 @@ func (w *Worker) Run() error {
 		if err2 := msg.Nack(false, false); err2 != nil {
 			w.logger.Error("Failed nacking message", zap.Error(err2))
 		}
+
 		return err
 	}
 
 	w.logger.Info("Running the job", zap.Uint("jobID", job.JobID))
 
 	result := job.Do(w.complianceClient, w.onboardClient, w.vault, w.config.ElasticSearch, w.kfkProducer, w.kfkTopic, w.logger)
-	
+
 	w.logger.Info("Job finished", zap.Uint("jobID", job.JobID))
 
 	if err := w.jobResultQueue.Publish(result); err != nil {
