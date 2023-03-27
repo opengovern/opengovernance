@@ -31,11 +31,12 @@ func bindValidate(ctx echo.Context, i interface{}) error {
 }
 
 // GetConfigMetadata godoc
+//
 //	@Summary		Returns the config metadata for the given key
 //	@Description	Returns the config metadata for the given key
 //	@Tags			metadata
 //	@Produce		json
-//	@Success		200	{object}	models.IConfigMetadata
+//	@Success		200	{object}	models.ConfigMetadata
 //	@Router			/metadata/api/v1/metadata/{key} [get]
 func (h HttpHandler) GetConfigMetadata(ctx echo.Context) error {
 	key := ctx.Param("key")
@@ -44,10 +45,11 @@ func (h HttpHandler) GetConfigMetadata(ctx echo.Context) error {
 	if err != nil {
 		return err
 	}
-	return ctx.JSON(http.StatusOK, metadata)
+	return ctx.JSON(http.StatusOK, metadata.GetCore())
 }
 
 // SetConfigMetadata godoc
+//
 //	@Summary		Sets the config metadata for the given key
 //	@Description	Sets the config metadata for the given key
 //	@Tags			metadata
