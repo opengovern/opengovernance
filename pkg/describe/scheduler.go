@@ -603,8 +603,8 @@ func (s *Scheduler) Run() error {
 	if err != nil {
 		s.logger.Error("failed to set describe interval due to error", zap.Error(err))
 	} else {
-		if v, ok := describeJobIntM.GetValue().(int64); ok {
-			s.describeIntervalHours = v
+		if v, ok := describeJobIntM.GetValue().(int); ok {
+			s.describeIntervalHours = int64(v)
 		} else {
 			s.logger.Error("failed to set describe interval due to invalid type", zap.String("type", string(describeJobIntM.GetType())))
 		}
@@ -614,8 +614,8 @@ func (s *Scheduler) Run() error {
 	if err != nil {
 		s.logger.Error("failed to set describe interval due to error", zap.Error(err))
 	} else {
-		if v, ok := insightJobIntM.GetValue().(int64); ok {
-			s.insightIntervalHours = v
+		if v, ok := insightJobIntM.GetValue().(int); ok {
+			s.insightIntervalHours = int64(v)
 		} else {
 			s.logger.Error("failed to set insight interval due to invalid type", zap.String("type", string(insightJobIntM.GetType())))
 		}
@@ -625,8 +625,8 @@ func (s *Scheduler) Run() error {
 	if err != nil {
 		s.logger.Error("failed to set describe interval due to error", zap.Error(err))
 	} else {
-		if v, ok := summarizerJobIntM.GetValue().(int64); ok {
-			s.summarizerIntervalHours = v
+		if v, ok := summarizerJobIntM.GetValue().(int); ok {
+			s.summarizerIntervalHours = int64(v)
 		} else {
 			s.logger.Error("failed to set summarizer interval due to invalid type", zap.String("type", string(summarizerJobIntM.GetType())))
 		}
