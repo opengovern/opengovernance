@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"math"
 	"strings"
@@ -353,6 +354,33 @@ func (c Client) SearchWithTrackTotalHits(ctx context.Context, index string, quer
 	}
 
 	b, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		return fmt.Errorf("read response: %w", err)
+	}
+
+	if err := json.Unmarshal(b, response); err != nil {
+		return fmt.Errorf("unmarshal response: %w", err)
+	}
+	return nil
+}
+
+func (c Client) GetByID(ctx context.Context, index string, id string, response interface{}) error {
+	opts := []func(request *esapi.GetRequest){
+		c.es.Get.WithContext(ctx),
+	}
+
+	res, err := c.es.Get(index, id, opts...)
+	defer closeSafe(res)
+	if err != nil {
+		return err
+	} else if err := checkError(res); err != nil {
+		if isIndexNotFoundErr(err) {
+			return nil
+		}
+		return err
+	}
+
+	b, err := io.ReadAll(res.Body)
 	if err != nil {
 		return fmt.Errorf("read response: %w", err)
 	}

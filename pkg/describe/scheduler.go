@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"math/rand"
@@ -12,6 +13,8 @@ import (
 	"strings"
 	"time"
 
+	"gitlab.com/keibiengine/keibi-engine/pkg/describe/es"
+	"gitlab.com/keibiengine/keibi-engine/pkg/kafka"
 	"gitlab.com/keibiengine/keibi-engine/pkg/metadata/models"
 
 	"github.com/ProtonMail/gopenpgp/v2/crypto"
@@ -674,6 +677,67 @@ func (s *Scheduler) Run() error {
 	return httpserver.RegisterAndStart(s.logger, s.httpServer.Address, s.httpServer)
 }
 
+func (s *Scheduler) compareMessageToCurrentState(message sarama.ProducerMessage) (bool, error) {
+	index := ""
+	for _, header := range message.Headers {
+		if string(header.Key) == kafka.EsIndexHeader {
+			index = string(header.Value)
+		}
+	}
+	if index == "" {
+		return false, errors.New("no index header found to compare")
+	}
+
+	id := string(message.Key.(sarama.StringEncoder))
+
+	switch index {
+	case InventorySummaryIndex:
+		currentResource, err := es.FetchLookupResourceByID(s.es, index, id)
+		if err != nil {
+			return false, err
+		}
+		newResource := es.LookupResource{}
+		err = json.Unmarshal(message.Value.(sarama.ByteEncoder), &newResource)
+
+		currentResourceBytes, err := json.Marshal(currentResource)
+		if err != nil {
+			return false, err
+		}
+		newResourceBytes, err := json.Marshal(newResource)
+		if err != nil {
+			return false, err
+		}
+
+		if string(currentResourceBytes) == string(newResourceBytes) {
+			return true, nil
+		}
+		return false, nil
+	default:
+		currentResource, err := es.FetchResourceByID(s.es, index, id)
+		if err != nil {
+			return false, err
+		}
+		newResource := es.Resource{}
+		err = json.Unmarshal(message.Value.(sarama.ByteEncoder), &newResource)
+
+		currentResourceBytes, err := json.Marshal(currentResource.Description)
+		if err != nil {
+			return false, err
+		}
+		newResourceBytes, err := json.Marshal(newResource.Description)
+		if err != nil {
+			return false, err
+		}
+
+		if string(currentResourceBytes) == string(newResourceBytes) {
+			return true, nil
+		}
+		return false, nil
+	}
+
+	return false, nil
+}
+
 func (s *Scheduler) processCloudNativeDescribeConnectionJobResourcesEvents(events []cloudNativeDescribeConnectionJobResourceOutput) ([]int, error) {
 	s.logger.Info("Received events from cloud native describe connection job resources sql", zap.Int("eventCount", len(events)))
 	successfulIDs := make([]int, 0)
@@ -742,12 +806,23 @@ func (s *Scheduler) processCloudNativeDescribeConnectionJobResourcesEvents(event
 		}
 		saramaMessages := make([]*sarama.ProducerMessage, 0, len(messages))
 		for _, message := range messages {
-			saramaMessages = append(saramaMessages, &sarama.ProducerMessage{
+			saramaMessage := sarama.ProducerMessage{
 				Topic:   message.Topic,
 				Key:     message.Key,
 				Value:   message.Value,
 				Headers: message.Headers,
-			})
+			}
+			isIdentical, err := s.compareMessageToCurrentState(saramaMessage)
+			if err != nil {
+				s.logger.Error("Failed to compare message to current state", zap.Error(err))
+			} else {
+				if isIdentical {
+					s.logger.Info("New message is identical to current state, overwriting to update timestamp")
+				} else {
+					s.logger.Info("New message is not identical to current state, overwriting")
+				}
+			}
+			saramaMessages = append(saramaMessages, &saramaMessage)
 		}
 		producer, err := sarama.NewSyncProducerFromClient(s.kafkaClient)
 
