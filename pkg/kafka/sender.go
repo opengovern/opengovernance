@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	esIndexHeader = "elasticsearch_index"
+	EsIndexHeader = "elasticsearch_index"
 )
 
 type Doc interface {
@@ -74,7 +74,7 @@ func Msg(key string, value []byte, index string) *sarama.ProducerMessage {
 		Key: sarama.StringEncoder(key),
 		Headers: []sarama.RecordHeader{
 			{
-				Key:   []byte(esIndexHeader),
+				Key:   []byte(EsIndexHeader),
 				Value: []byte(index),
 			},
 		},
