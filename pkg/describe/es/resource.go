@@ -16,6 +16,11 @@ func FetchResourceByID(client keibi.Client, index string, resourceID string) (*R
 	if err != nil {
 		return nil, err
 	}
+
+	if resource.Resource.ID == "" {
+		return nil, nil
+	}
+
 	return &resource.Resource, nil
 }
 
@@ -29,5 +34,10 @@ func FetchLookupResourceByID(client keibi.Client, index string, resourceID strin
 	if err != nil {
 		return nil, err
 	}
+
+	if lookupResource.LookupResource.ResourceID == "" {
+		return nil, nil
+	}
+
 	return &lookupResource.LookupResource, nil
 }

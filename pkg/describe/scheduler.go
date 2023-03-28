@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"math/rand"
@@ -685,7 +684,7 @@ func (s *Scheduler) compareMessageToCurrentState(message sarama.ProducerMessage)
 		}
 	}
 	if index == "" {
-		return false, errors.New("no index header found to compare")
+		return false, fmt.Errorf("no index header found to compare")
 	}
 
 	id := string(message.Key.(sarama.StringEncoder))
@@ -694,17 +693,23 @@ func (s *Scheduler) compareMessageToCurrentState(message sarama.ProducerMessage)
 	case InventorySummaryIndex:
 		currentResource, err := es.FetchLookupResourceByID(s.es, index, id)
 		if err != nil {
+			s.logger.Error("failed to fetch current resource", zap.String("error", err.Error()), zap.String("index", index), zap.String("id", id))
 			return false, err
+		}
+		if currentResource == nil {
+			return false, nil
 		}
 		newResource := es.LookupResource{}
 		err = json.Unmarshal(message.Value.(sarama.ByteEncoder), &newResource)
 
 		currentResourceBytes, err := json.Marshal(currentResource)
 		if err != nil {
+			s.logger.Error("failed to marshal current resource", zap.String("error", err.Error()), zap.String("index", index), zap.String("id", id))
 			return false, err
 		}
 		newResourceBytes, err := json.Marshal(newResource)
 		if err != nil {
+			s.logger.Error("failed to marshal new resource", zap.String("error", err.Error()), zap.String("index", index), zap.String("id", id))
 			return false, err
 		}
 
@@ -715,17 +720,23 @@ func (s *Scheduler) compareMessageToCurrentState(message sarama.ProducerMessage)
 	default:
 		currentResource, err := es.FetchResourceByID(s.es, index, id)
 		if err != nil {
+			s.logger.Error("failed to fetch current resource", zap.String("error", err.Error()), zap.String("index", index), zap.String("id", id))
 			return false, err
+		}
+		if currentResource == nil {
+			return false, nil
 		}
 		newResource := es.Resource{}
 		err = json.Unmarshal(message.Value.(sarama.ByteEncoder), &newResource)
 
 		currentResourceBytes, err := json.Marshal(currentResource.Description)
 		if err != nil {
+			s.logger.Error("failed to marshal current resource", zap.String("error", err.Error()), zap.String("index", index), zap.String("id", id))
 			return false, err
 		}
 		newResourceBytes, err := json.Marshal(newResource.Description)
 		if err != nil {
+			s.logger.Error("failed to marshal new resource", zap.String("error", err.Error()), zap.String("index", index), zap.String("id", id))
 			return false, err
 		}
 
@@ -734,8 +745,6 @@ func (s *Scheduler) compareMessageToCurrentState(message sarama.ProducerMessage)
 		}
 		return false, nil
 	}
-
-	return false, nil
 }
 
 func (s *Scheduler) processCloudNativeDescribeConnectionJobResourcesEvents(events []cloudNativeDescribeConnectionJobResourceOutput) ([]int, error) {
