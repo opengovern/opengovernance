@@ -67,7 +67,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/workspaces v1.23.0
 	github.com/aws/smithy-go v1.13.5
 	github.com/brpaz/echozap v1.1.2
-	github.com/cenkalti/backoff/v3 v3.2.2
+	github.com/cenkalti/backoff/v3 v3.2.2 // indirect
 	github.com/coreos/go-oidc/v3 v3.1.0
 	github.com/elastic/go-elasticsearch/v7 v7.16.0
 	github.com/envoyproxy/go-control-plane v0.10.3-0.20220715065308-8bcd7ee0191a
@@ -99,7 +99,7 @@ require (
 	github.com/turbot/go-kit v0.4.0
 	gitlab.com/keibiengine/steampipe-plugin-aws v0.0.0-20230120132753-94e2fa861042
 	gitlab.com/keibiengine/steampipe-plugin-azure v0.23.2-0.20230317091437-672da179e017
-	gitlab.com/keibiengine/steampipe-plugin-azuread v0.1.1-0.20230120133122-1e5b3fe4a69e
+	gitlab.com/keibiengine/steampipe-plugin-azuread v0.1.1-0.20230330133010-4edcf1226e17
 	go.uber.org/zap v1.21.0
 	golang.org/x/text v0.7.0 // indirect
 	google.golang.org/genproto v0.0.0-20220407144326-9054f6ed7bac
