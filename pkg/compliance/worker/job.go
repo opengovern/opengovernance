@@ -72,7 +72,7 @@ func (j *Job) Run(complianceClient client.ComplianceServiceClient, onboardClient
 	ctx := &httpclient.Context{
 		UserRole: api2.AdminRole,
 	}
-	
+
 	src, err := onboardClient.GetSource(ctx, j.ConnectionID)
 	if err != nil {
 		return err
@@ -134,6 +134,13 @@ func (j *Job) Run(complianceClient client.ComplianceServiceClient, onboardClient
 		res, err := steampipeConn.QueryAll(query.QueryToExecute)
 		if err != nil {
 			return err
+		}
+
+		if res != nil {
+			fmt.Println("===============")
+			fmt.Println(res.Headers)
+			fmt.Println(res.Data)
+			fmt.Println("===============")
 		}
 
 		findings, err := j.ExtractFindings(benchmark, policy, query, res)
