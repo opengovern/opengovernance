@@ -138,6 +138,7 @@ func (j *Job) Run(complianceClient client.ComplianceServiceClient, onboardClient
 
 		if res != nil {
 			fmt.Println("===============")
+			fmt.Println(query.QueryToExecute)
 			fmt.Println(res.Headers)
 			fmt.Println(res.Data)
 			fmt.Println("===============")

@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -x
+
 podman login -u "${DO_API_TOKEN}" -p "${DO_API_TOKEN}" "registry.digitalocean.com/keibi"
 SERVICES=$(cat ./services)
 if [[ $SERVICES == *"auth-service"* ]]; then
