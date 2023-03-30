@@ -931,6 +931,28 @@ type AdUsersDescription struct {
 	AdUsers  msgraph.User
 }
 
+//index:microsoft_resources_groups
+//getfilter:id=description.AdGroup.DirectoryObject.ID
+//listfilter:display_name=description.AdGroup.DisplayName
+//listfilter:mail=description.AdGroup.Mail
+//listfilter:mail_enabled=description.AdGroup.MailEnabled
+//listfilter:on_premises_sync_enabled=description.AdGroup.OnPremisesSyncEnabled
+//listfilter:security_enabled=description.AdGroup.SecurityEnabled
+type AdGroupDescription struct {
+	TenantID string
+	AdGroup  msgraph.Group
+}
+
+//index:microsoft_resources_serviceprincipals
+//getfilter:id=description.AdServicePrincipal.DirectoryObject.ID
+//listfilter:display_name=description.AdServicePrincipal.DisplayName
+//listfilter:account_enabled=description.AdServicePrincipal.AccountEnabled
+//listfilter:service_principal_type=description.AdServicePrincipal.ServicePrincipalType
+type AdServicePrincipalDescription struct {
+	TenantID           string
+	AdServicePrincipal msgraph.ServicePrincipal
+}
+
 //  =================== postgresql ==================
 
 //index:microsoft_dbforpostgresql_servers

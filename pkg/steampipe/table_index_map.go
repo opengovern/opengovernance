@@ -287,6 +287,8 @@ var azureMap = map[string]string{
 	"Microsoft.CostManagement/CostByResourceType":           "azure_costmanagement_costbyresourcetype",
 	"Microsoft.CostManagement/CostBySubscription":           "azure_costmanagement_costbysubscription",
 	"Microsoft.Compute/image":                               "azure_compute_image",
+	"Microsoft.Resources/groups":                            "azuread_group",
+	"Microsoft.Resources/serviceprincipals":                 "azuread_service_principal",
 }
 var AWSDescriptionMap = map[string]interface{}{
 	"AWS::CostExplorer::ByAccountMonthly": &keibi.CostExplorerByAccountMonthly{},
@@ -567,6 +569,14 @@ var AzureDescriptionMap = map[string]interface{}{
 	"Microsoft.CostManagement/CostByResourceType":           &keibi.CostManagementCostByResourceType{},
 	"Microsoft.CostManagement/CostBySubscription":           &keibi.CostManagementCostBySubscription{},
 	"Microsoft.Compute/image":                               &keibi.ComputeImage{},
+	"Microsoft.Resources/groups":                            &keibi.AdGroup{},
+	"Microsoft.Resources/serviceprincipals":                 &keibi.AdServicePrincipal{},
+}
+
+var AzureADKeys = map[string]struct{}{
+	strings.ToLower("Microsoft.Resources/users"):             {},
+	strings.ToLower("Microsoft.Resources/groups"):            {},
+	strings.ToLower("Microsoft.Resources/serviceprincipals"): {},
 }
 
 type SteampipePlugin string
@@ -583,7 +593,7 @@ func ExtractPlugin(resourceType string) SteampipePlugin {
 	if strings.HasPrefix(resourceType, "aws::") {
 		return SteampipePluginAWS
 	} else if strings.HasPrefix(resourceType, "microsoft") {
-		if resourceType == "microsoft.resources/users" {
+		if _, ok := AzureADKeys[strings.ToLower(resourceType)]; ok {
 			return SteampipePluginAzureAD
 		}
 		return SteampipePluginAzure
