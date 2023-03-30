@@ -12938,6 +12938,306 @@ func GetAdUsers(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData)
 
 // ==========================  END: AdUsers =============================
 
+// ==========================  START: AdGroup =============================
+
+type AdGroup struct {
+	Description   azure.AdGroupDescription `json:"description"`
+	Metadata      azure.Metadata           `json:"metadata"`
+	ResourceJobID int                      `json:"resource_job_id"`
+	SourceJobID   int                      `json:"source_job_id"`
+	ResourceType  string                   `json:"resource_type"`
+	SourceType    string                   `json:"source_type"`
+	ID            string                   `json:"id"`
+	SourceID      string                   `json:"source_id"`
+}
+
+type AdGroupHit struct {
+	ID      string        `json:"_id"`
+	Score   float64       `json:"_score"`
+	Index   string        `json:"_index"`
+	Type    string        `json:"_type"`
+	Version int64         `json:"_version,omitempty"`
+	Source  AdGroup       `json:"_source"`
+	Sort    []interface{} `json:"sort"`
+}
+
+type AdGroupHits struct {
+	Total SearchTotal  `json:"total"`
+	Hits  []AdGroupHit `json:"hits"`
+}
+
+type AdGroupSearchResponse struct {
+	PitID string      `json:"pit_id"`
+	Hits  AdGroupHits `json:"hits"`
+}
+
+type AdGroupPaginator struct {
+	paginator *baseESPaginator
+}
+
+func (k Client) NewAdGroupPaginator(filters []BoolFilter, limit *int64) (AdGroupPaginator, error) {
+	paginator, err := newPaginator(k.es, "microsoft_resources_groups", filters, limit)
+	if err != nil {
+		return AdGroupPaginator{}, err
+	}
+
+	p := AdGroupPaginator{
+		paginator: paginator,
+	}
+
+	return p, nil
+}
+
+func (p AdGroupPaginator) HasNext() bool {
+	return !p.paginator.done
+}
+
+func (p AdGroupPaginator) NextPage(ctx context.Context) ([]AdGroup, error) {
+	var response AdGroupSearchResponse
+	err := p.paginator.search(ctx, &response)
+	if err != nil {
+		return nil, err
+	}
+
+	var values []AdGroup
+	for _, hit := range response.Hits.Hits {
+		values = append(values, hit.Source)
+	}
+
+	hits := int64(len(response.Hits.Hits))
+	if hits > 0 {
+		p.paginator.updateState(hits, response.Hits.Hits[hits-1].Sort, response.PitID)
+	} else {
+		p.paginator.updateState(hits, nil, "")
+	}
+
+	return values, nil
+}
+
+var listAdGroupFilters = map[string]string{
+	"display_name":             "description.AdGroup.DisplayName",
+	"keibi_account_id":         "metadata.SourceID",
+	"mail":                     "description.AdGroup.Mail",
+	"mail_enabled":             "description.AdGroup.MailEnabled",
+	"on_premises_sync_enabled": "description.AdGroup.OnPremisesSyncEnabled",
+	"security_enabled":         "description.AdGroup.SecurityEnabled",
+}
+
+func ListAdGroup(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("ListAdGroup")
+
+	// create service
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	paginator, err := k.NewAdGroupPaginator(buildFilter(d.KeyColumnQuals, listAdGroupFilters, "azure", *cfg.AccountID), d.QueryContext.Limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			d.StreamListItem(ctx, v)
+		}
+	}
+
+	return nil, nil
+}
+
+var getAdGroupFilters = map[string]string{
+	"id":               "description.AdGroup.DirectoryObject.ID",
+	"keibi_account_id": "metadata.SourceID",
+}
+
+func GetAdGroup(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("GetAdGroup")
+
+	// create service
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	limit := int64(1)
+	paginator, err := k.NewAdGroupPaginator(buildFilter(d.KeyColumnQuals, getAdGroupFilters, "azure", *cfg.AccountID), &limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			return v, nil
+		}
+	}
+
+	return nil, nil
+}
+
+// ==========================  END: AdGroup =============================
+
+// ==========================  START: AdServicePrincipal =============================
+
+type AdServicePrincipal struct {
+	Description   azure.AdServicePrincipalDescription `json:"description"`
+	Metadata      azure.Metadata                      `json:"metadata"`
+	ResourceJobID int                                 `json:"resource_job_id"`
+	SourceJobID   int                                 `json:"source_job_id"`
+	ResourceType  string                              `json:"resource_type"`
+	SourceType    string                              `json:"source_type"`
+	ID            string                              `json:"id"`
+	SourceID      string                              `json:"source_id"`
+}
+
+type AdServicePrincipalHit struct {
+	ID      string             `json:"_id"`
+	Score   float64            `json:"_score"`
+	Index   string             `json:"_index"`
+	Type    string             `json:"_type"`
+	Version int64              `json:"_version,omitempty"`
+	Source  AdServicePrincipal `json:"_source"`
+	Sort    []interface{}      `json:"sort"`
+}
+
+type AdServicePrincipalHits struct {
+	Total SearchTotal             `json:"total"`
+	Hits  []AdServicePrincipalHit `json:"hits"`
+}
+
+type AdServicePrincipalSearchResponse struct {
+	PitID string                 `json:"pit_id"`
+	Hits  AdServicePrincipalHits `json:"hits"`
+}
+
+type AdServicePrincipalPaginator struct {
+	paginator *baseESPaginator
+}
+
+func (k Client) NewAdServicePrincipalPaginator(filters []BoolFilter, limit *int64) (AdServicePrincipalPaginator, error) {
+	paginator, err := newPaginator(k.es, "microsoft_resources_serviceprincipals", filters, limit)
+	if err != nil {
+		return AdServicePrincipalPaginator{}, err
+	}
+
+	p := AdServicePrincipalPaginator{
+		paginator: paginator,
+	}
+
+	return p, nil
+}
+
+func (p AdServicePrincipalPaginator) HasNext() bool {
+	return !p.paginator.done
+}
+
+func (p AdServicePrincipalPaginator) NextPage(ctx context.Context) ([]AdServicePrincipal, error) {
+	var response AdServicePrincipalSearchResponse
+	err := p.paginator.search(ctx, &response)
+	if err != nil {
+		return nil, err
+	}
+
+	var values []AdServicePrincipal
+	for _, hit := range response.Hits.Hits {
+		values = append(values, hit.Source)
+	}
+
+	hits := int64(len(response.Hits.Hits))
+	if hits > 0 {
+		p.paginator.updateState(hits, response.Hits.Hits[hits-1].Sort, response.PitID)
+	} else {
+		p.paginator.updateState(hits, nil, "")
+	}
+
+	return values, nil
+}
+
+var listAdServicePrincipalFilters = map[string]string{
+	"account_enabled":        "description.AdServicePrincipal.AccountEnabled",
+	"display_name":           "description.AdServicePrincipal.DisplayName",
+	"keibi_account_id":       "metadata.SourceID",
+	"service_principal_type": "description.AdServicePrincipal.ServicePrincipalType",
+}
+
+func ListAdServicePrincipal(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("ListAdServicePrincipal")
+
+	// create service
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	paginator, err := k.NewAdServicePrincipalPaginator(buildFilter(d.KeyColumnQuals, listAdServicePrincipalFilters, "azure", *cfg.AccountID), d.QueryContext.Limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			d.StreamListItem(ctx, v)
+		}
+	}
+
+	return nil, nil
+}
+
+var getAdServicePrincipalFilters = map[string]string{
+	"id":               "description.AdServicePrincipal.DirectoryObject.ID",
+	"keibi_account_id": "metadata.SourceID",
+}
+
+func GetAdServicePrincipal(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("GetAdServicePrincipal")
+
+	// create service
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	limit := int64(1)
+	paginator, err := k.NewAdServicePrincipalPaginator(buildFilter(d.KeyColumnQuals, getAdServicePrincipalFilters, "azure", *cfg.AccountID), &limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			return v, nil
+		}
+	}
+
+	return nil, nil
+}
+
+// ==========================  END: AdServicePrincipal =============================
+
 // ==========================  START: PostgresqlServer =============================
 
 type PostgresqlServer struct {

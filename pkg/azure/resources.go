@@ -106,6 +106,8 @@ var resourceTypeToDescriber = map[string]ResourceDescriber{
 	"Microsoft.Insights/logProfiles":              DescribeBySubscription(describer.LogProfile),
 	"Microsoft.Resources/subscriptions/locations": DescribeBySubscription(describer.Location),
 	"Microsoft.Resources/users":                   DescribeADByTenantID(describer.AdUsers),
+	"Microsoft.Resources/groups":                  DescribeADByTenantID(describer.AdGroup),
+	"Microsoft.Resources/serviceprincipals":       DescribeADByTenantID(describer.AdServicePrinciple),
 	//"Microsoft.Devices/provisioningServices/certificates":   DescribeBySubscription(describer.DevicesProvisioningServicesCertificates),
 	//"Microsoft.ServiceBus/namespaces/queues":                DescribeBySubscription(describer.ServiceBusQueue),
 	//"Microsoft.ServiceBus/namespaces/topics":                DescribeBySubscription(describer.ServiceBusTopic),
