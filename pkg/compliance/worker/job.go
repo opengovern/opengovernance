@@ -66,6 +66,69 @@ func (j *Job) Do(
 	return result
 }
 
+func (j *Job) RunBenchmark(benchmarkID string, complianceClient client.ComplianceServiceClient, steampipeConn *steampipe.Database, connector source.Type) ([]es.Finding, error) {
+	ctx := &httpclient.Context{
+		UserRole: api2.AdminRole,
+	}
+
+	benchmark, err := complianceClient.GetBenchmark(ctx, benchmarkID)
+	if err != nil {
+		return nil, err
+	}
+
+	var findings []es.Finding
+	for _, childBenchmarkID := range benchmark.Children {
+		f, err := j.RunBenchmark(childBenchmarkID, complianceClient, steampipeConn, connector)
+		if err != nil {
+			return nil, err
+		}
+
+		findings = append(findings, f...)
+	}
+
+	for _, policyID := range benchmark.Policies {
+		policy, err := complianceClient.GetPolicy(ctx, policyID)
+		if err != nil {
+			return nil, err
+		}
+
+		if policy.QueryID == nil {
+			continue
+		}
+
+		query, err := complianceClient.GetQuery(ctx, *policy.QueryID)
+		if err != nil {
+			return nil, err
+		}
+
+		if query.Connector != string(connector) {
+			return nil, errors.New("connector doesn't match")
+		}
+
+		res, err := steampipeConn.QueryAll(query.QueryToExecute)
+		if err != nil {
+			return nil, err
+		}
+
+		if res != nil {
+			fmt.Println("===============")
+			fmt.Println(j.BenchmarkID, policyID, *policy.QueryID)
+			fmt.Println(query.QueryToExecute)
+			fmt.Println(res.Headers)
+			fmt.Println(res.Data)
+			fmt.Println("===============")
+		}
+
+		f, err := j.ExtractFindings(benchmark, policy, query, res)
+		if err != nil {
+			return nil, err
+		}
+
+		findings = append(findings, f...)
+	}
+	return findings, nil
+}
+
 func (j *Job) Run(complianceClient client.ComplianceServiceClient, onboardClient client2.OnboardServiceClient, vault vault.SourceConfig,
 	elasticSearchConfig config.ElasticSearch, kfkProducer sarama.SyncProducer, kfkTopic string, logger *zap.Logger) error {
 
@@ -107,61 +170,13 @@ func (j *Job) Run(complianceClient client.ComplianceServiceClient, onboardClient
 		return err
 	}
 
-	benchmark, err := complianceClient.GetBenchmark(ctx, j.BenchmarkID)
-	if err != nil {
-		return err
+	findings, err := j.RunBenchmark(j.BenchmarkID, complianceClient, steampipeConn, src.Type)
+
+	var docs []kafka.Doc
+	for _, finding := range findings {
+		docs = append(docs, finding)
 	}
-
-	for _, policyID := range benchmark.Policies {
-		policy, err := complianceClient.GetPolicy(ctx, policyID)
-		if err != nil {
-			return err
-		}
-
-		if policy.QueryID == nil {
-			continue
-		}
-
-		query, err := complianceClient.GetQuery(ctx, *policy.QueryID)
-		if err != nil {
-			return err
-		}
-
-		if query.Connector != string(src.Type) {
-			return errors.New("connector doesn't match")
-		}
-
-		res, err := steampipeConn.QueryAll(query.QueryToExecute)
-		if err != nil {
-			return err
-		}
-
-		if res != nil {
-			fmt.Println("===============")
-			fmt.Println(j.BenchmarkID, policyID, *policy.QueryID)
-			fmt.Println(query.QueryToExecute)
-			fmt.Println(res.Headers)
-			fmt.Println(res.Data)
-			fmt.Println("===============")
-		}
-
-		findings, err := j.ExtractFindings(benchmark, policy, query, res)
-		if err != nil {
-			return err
-		}
-
-		var docs []kafka.Doc
-
-		for _, finding := range findings {
-			docs = append(docs, finding)
-		}
-
-		err = kafka.DoSend(kfkProducer, kfkTopic, docs, logger)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
+	return kafka.DoSend(kfkProducer, kfkTopic, docs, logger)
 }
 
 func (j *Job) ExtractFindings(benchmark *api.Benchmark, policy *api.Policy, query *api.Query, res *steampipe.Result) ([]es.Finding, error) {
