@@ -171,6 +171,9 @@ func (j *Job) Run(complianceClient client.ComplianceServiceClient, onboardClient
 	}
 
 	findings, err := j.RunBenchmark(j.BenchmarkID, complianceClient, steampipeConn, src.Type)
+	if err != nil {
+		return err
+	}
 
 	var docs []kafka.Doc
 	for _, finding := range findings {
