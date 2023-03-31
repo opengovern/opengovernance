@@ -432,7 +432,7 @@ func (h *HttpHandler) GetQuery(ctx echo.Context) error {
 //	@Description	Listing insights
 //	@Tags			insights
 //	@Produce		json
-//	@Param			connector	query		source.Type				false	"filter by connector"
+//	@Param			connector	query		source.Type	false	"filter by connector"
 //	@Success		200			{object}	[]api.Insight
 //	@Router			/compliance/api/v1/insight [get]
 func (h *HttpHandler) ListInsights(ctx echo.Context) error {

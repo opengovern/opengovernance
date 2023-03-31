@@ -539,12 +539,12 @@ func (h HttpServer) TriggerComplianceJob(ctx echo.Context) error {
 
 // TriggerBenchmarkEvaluation godoc
 //
-//	@Summary		Triggers a benchmark evaluation job to run immediately
-//	@Tags			describe
-//	@Produce		json
-//	@Success		200
-//	@Param		request	body		api.TriggerBenchmarkEvaluationRequest	true	"Request Body"
-//	@Router			/schedule/api/v1/compliance/trigger [put]
+//	@Summary	Triggers a benchmark evaluation job to run immediately
+//	@Tags		describe
+//	@Produce	json
+//	@Success	200
+//	@Param		request	body	api.TriggerBenchmarkEvaluationRequest	true	"Request Body"
+//	@Router		/schedule/api/v1/compliance/trigger [put]
 func (h HttpServer) TriggerBenchmarkEvaluation(ctx echo.Context) error {
 	var req api.TriggerBenchmarkEvaluationRequest
 	if err := bindValidate(ctx, &req); err != nil {
@@ -597,13 +597,13 @@ func (h HttpServer) TriggerBenchmarkEvaluation(ctx echo.Context) error {
 
 // HandleListBenchmarkEvaluations godoc
 //
-//	@Summary		Lists all benchmark evaluations
-//	@Tags			compliance
-//	@Produce		json
-//	@Success		200
+//	@Summary	Lists all benchmark evaluations
+//	@Tags		compliance
+//	@Produce	json
+//	@Success	200
 //	@Param		request	body		api.ListBenchmarkEvaluationsRequest	true	"Request Body"
 //	@Success	200		{object}	[]describe.ComplianceReportJob
-//	@Router			/schedule/api/v1/benchmark/evaluations [get]
+//	@Router		/schedule/api/v1/benchmark/evaluations [get]
 func (h HttpServer) HandleListBenchmarkEvaluations(ctx echo.Context) error {
 	var req api.ListBenchmarkEvaluationsRequest
 	if err := bindValidate(ctx, &req); err != nil {
