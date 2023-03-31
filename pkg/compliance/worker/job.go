@@ -179,7 +179,7 @@ func (j *Job) Run(complianceClient client.ComplianceServiceClient, onboardClient
 	for _, finding := range findings {
 		docs = append(docs, finding)
 	}
-	fmt.Println("docs len=", len(docs))
+	fmt.Println("+++++++++++++++++ docs len=", len(docs))
 	return kafka.DoSend(kfkProducer, kfkTopic, docs, logger)
 }
 
