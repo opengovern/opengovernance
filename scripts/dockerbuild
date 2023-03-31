@@ -1,6 +1,7 @@
 #!/bin/bash
 
 set -x
+set -e
 
 podman login -u "${DO_API_TOKEN}" -p "${DO_API_TOKEN}" "registry.digitalocean.com/keibi"
 SERVICES=$(cat ./services)
