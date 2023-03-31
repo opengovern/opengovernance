@@ -112,7 +112,7 @@ func (j *Job) RunBenchmark(benchmarkID string, complianceClient client.Complianc
 
 		if res != nil {
 			fmt.Println("===============")
-			fmt.Println(j.BenchmarkID, policyID, *policy.QueryID)
+			fmt.Println(benchmarkID, policyID, *policy.QueryID)
 			fmt.Println(query.QueryToExecute)
 			fmt.Println(res.Headers)
 			fmt.Println(res.Data)
@@ -191,12 +191,25 @@ func (j *Job) ExtractFindings(benchmark *api.Benchmark, policy *api.Policy, quer
 			recordValue[header] = value
 		}
 
-		resourceID := recordValue["resource"].(string)
-		resourceName := recordValue["name"].(string)
-		resourceType := recordValue["resourceType"].(string)
-		resourceLocation := recordValue["location"].(string)
-		reason := recordValue["reason"].(string)
-		status := recordValue["status"].(string)
+		var resourceID, resourceName, resourceType, resourceLocation, reason, status string
+		if v, ok := recordValue["resource"].(string); ok {
+			resourceID = v
+		}
+		if v, ok := recordValue["name"].(string); ok {
+			resourceName = v
+		}
+		if v, ok := recordValue["resourceType"].(string); ok {
+			resourceType = v
+		}
+		if v, ok := recordValue["location"].(string); ok {
+			resourceLocation = v
+		}
+		if v, ok := recordValue["reason"].(string); ok {
+			reason = v
+		}
+		if v, ok := recordValue["status"].(string); ok {
+			status = v
+		}
 
 		findings = append(findings, es.Finding{
 			ID:               fmt.Sprintf("%s-%s-%d", resourceID, policy.ID, j.ScheduleJobID),
