@@ -18,12 +18,14 @@ type BenchmarkAssignedSource struct {
 }
 
 type FindingFilters struct {
-	Connector    []source.Type `json:"connector"`
-	ResourceID   []string      `json:"resourceID"`
-	ConnectionID []string      `json:"connectionID"`
-	BenchmarkID  []string      `json:"benchmarkID"`
-	PolicyID     []string      `json:"policyID"`
-	Severity     []string      `json:"severity"`
+	Connector      []source.Type            `json:"connector"`
+	ResourceID     []string                 `json:"resourceID"`
+	ResourceTypeID []string                 `json:"resourceTypeID"`
+	ConnectionID   []string                 `json:"connectionID"`
+	BenchmarkID    []string                 `json:"benchmarkID"`
+	PolicyID       []string                 `json:"policyID"`
+	Severity       []string                 `json:"severity"`
+	Status         []types.ComplianceResult `json:"status"`
 }
 
 type FindingResponseFilters struct {
