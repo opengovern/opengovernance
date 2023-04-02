@@ -135,6 +135,7 @@ func (h *HttpHandler) GetTopFieldByFindingCount(ctx echo.Context) error {
 			Count: item.DocCount,
 		})
 	}
+	
 	return ctx.JSON(http.StatusOK, response)
 }
 
