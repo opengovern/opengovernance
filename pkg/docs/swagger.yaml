@@ -153,6 +153,10 @@ definitions:
         items:
           $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.BenchmarkSummaryResourceSummary'
         type: array
+      result:
+        additionalProperties:
+          type: integer
+        type: object
       shortSummary:
         $ref: '#/definitions/types.ComplianceResultShortSummary'
       tags:

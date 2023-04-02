@@ -12,6 +12,7 @@ func BuildBenchmarkSummary(esb es.BenchmarkSummary, b db.Benchmark) api.Benchmar
 		ID:                       b.ID,
 		Title:                    b.Title,
 		Description:              b.Description,
+		Result:                   map[types.ComplianceResult]int{},
 		ShortSummary:             types.ComplianceResultShortSummary{},
 		Policies:                 nil,
 		Resources:                nil,
@@ -36,6 +37,7 @@ func BuildBenchmarkSummary(esb es.BenchmarkSummary, b db.Benchmark) api.Benchmar
 		for _, pe := range esb.Policies {
 			if pe.PolicyID == p.ID {
 				for _, r := range pe.Resources {
+					bs.Result[r.Result]++
 					if r.Result.IsPassed() {
 						ps.ShortSummary.Passed++
 					} else {
