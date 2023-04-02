@@ -11,7 +11,7 @@ import (
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
-	Use:   "keibi-engine",
+	Use:   "kctl",
 	Short: "test 2 ",
 	Long:  `test 2 `,
 	// Uncomment the following line if your bare application
