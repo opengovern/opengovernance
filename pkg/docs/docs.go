@@ -5115,6 +5115,12 @@ const docTemplate = `{
                         "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.BenchmarkSummaryResourceSummary"
                     }
                 },
+                "result": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "integer"
+                    }
+                },
                 "shortSummary": {
                     "$ref": "#/definitions/types.ComplianceResultShortSummary"
                 },

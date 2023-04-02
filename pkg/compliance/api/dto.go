@@ -139,6 +139,7 @@ type BenchmarkSummary struct {
 	ID                       string                             `json:"id"`
 	Title                    string                             `json:"title"`
 	Description              string                             `json:"description"`
+	Result                   map[types.ComplianceResult]int     `json:"result"`
 	ShortSummary             types.ComplianceResultShortSummary `json:"shortSummary"`
 	Policies                 []BenchmarkSummaryPolicySummary    `json:"policies"`
 	Resources                []BenchmarkSummaryResourceSummary  `json:"resources"`
