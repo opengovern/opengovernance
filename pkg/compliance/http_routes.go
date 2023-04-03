@@ -780,7 +780,12 @@ func (h *HttpHandler) ListBenchmarks(ctx echo.Context) error {
 		}
 
 		if !hasParent {
-			response = append(response, b.ToApi())
+			be := b.ToApi()
+			err = be.PopulateConnectors(h.db)
+			if err != nil {
+				return err
+			}
+			response = append(response, be)
 		}
 	}
 
@@ -805,7 +810,13 @@ func (h *HttpHandler) GetBenchmark(ctx echo.Context) error {
 	if benchmark == nil {
 		return echo.NewHTTPError(http.StatusNotFound, "benchmark not found")
 	}
-	return ctx.JSON(http.StatusOK, benchmark.ToApi())
+	resp := benchmark.ToApi()
+	err = resp.PopulateConnectors(h.db)
+	if err != nil {
+		return err
+	}
+
+	return ctx.JSON(http.StatusOK, resp)
 }
 
 // ListPolicies godoc

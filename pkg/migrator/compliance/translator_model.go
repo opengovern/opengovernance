@@ -46,5 +46,4 @@ type Query struct {
 	QueryToExecute string
 	Connector      string
 	ListOfTables   string
-	ResourceName   string
 }
