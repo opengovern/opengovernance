@@ -765,8 +765,20 @@ func (h *HttpHandler) ListBenchmarks(ctx echo.Context) error {
 	}
 
 	for _, b := range benchmarks {
-		response = append(response, b.ToApi())
+		hasParent := false
+		for _, parent := range benchmarks {
+			for _, child := range parent.Children {
+				if child.ID == b.ID {
+					hasParent = true
+				}
+			}
+		}
+
+		if !hasParent {
+			response = append(response, b.ToApi())
+		}
 	}
+
 	return ctx.JSON(http.StatusOK, response)
 }
 
