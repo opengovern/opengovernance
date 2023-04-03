@@ -2367,7 +2367,7 @@ func enqueueCloudNativeDescribeConnectionJob(logger *zap.Logger, db Database, wo
 			zap.Error(err),
 		)
 	}
-	for i, _ := range daj.SourceJob.DescribeResourceJobs {
+	for i := range daj.SourceJob.DescribeResourceJobs {
 		daj.SourceJob.DescribeResourceJobs[i].Status = nextStatus
 	}
 }

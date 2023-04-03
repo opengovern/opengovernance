@@ -3,6 +3,9 @@ package worker
 import (
 	"errors"
 	"fmt"
+	"os/exec"
+	"time"
+
 	api2 "gitlab.com/keibiengine/keibi-engine/pkg/auth/api"
 	"gitlab.com/keibiengine/keibi-engine/pkg/cloudservice"
 	"gitlab.com/keibiengine/keibi-engine/pkg/compliance/api"
@@ -18,8 +21,6 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/types"
 	"go.uber.org/zap"
 	"gopkg.in/Shopify/sarama.v1"
-	"os/exec"
-	"time"
 )
 
 type Job struct {
@@ -215,8 +216,8 @@ func (j *Job) ExtractFindings(benchmark *api.Benchmark, policy *api.Policy, quer
 			BenchmarkID:      j.BenchmarkID,
 			PolicyID:         policy.ID,
 			ConnectionID:     j.ConnectionID,
-			DescribedAt:      time.UnixMilli(j.DescribedAt),
-			EvaluatedAt:      time.UnixMilli(j.EvaluatedAt),
+			DescribedAt:      j.DescribedAt,
+			EvaluatedAt:      j.EvaluatedAt,
 			StateActive:      false, //TODO-Saleh
 			Result:           status,
 			Severity:         severity,

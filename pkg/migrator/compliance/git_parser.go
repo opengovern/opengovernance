@@ -3,12 +3,13 @@ package compliance
 import (
 	"encoding/json"
 	"fmt"
-	"gitlab.com/keibiengine/keibi-engine/pkg/compliance/db"
-	"gorm.io/gorm"
 	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
+
+	"gitlab.com/keibiengine/keibi-engine/pkg/compliance/db"
+	"gorm.io/gorm"
 )
 
 type GitParser struct {

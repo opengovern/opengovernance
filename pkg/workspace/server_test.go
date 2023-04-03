@@ -18,9 +18,9 @@ import (
 
 func (ts *testSuite) initWorkspace() (*Workspace, error) {
 	workspace := &Workspace{
-		ID:          uuid.New(),
+		ID:          uuid.New().String(),
 		Name:        ts.name,
-		OwnerId:     ts.owner,
+		OwnerId:     ts.owner.String(),
 		URI:         ts.name + ts.domainSuffix,
 		Status:      StatusProvisioning.String(),
 		Description: "workspace",
@@ -104,7 +104,7 @@ func (ts *testSuite) TestDeleteWorkspace() {
 	ts.NoError(err)
 
 	deleteWorkspaceTestCases := []struct {
-		ID    uuid.UUID
+		ID    string
 		Owner uuid.UUID
 		Code  int
 		Error string
@@ -115,7 +115,7 @@ func (ts *testSuite) TestDeleteWorkspace() {
 			Code:  http.StatusOK,
 		},
 		{
-			ID:    uuid.New(),
+			ID:    uuid.New().String(),
 			Owner: ts.owner,
 			Code:  http.StatusNotFound,
 			Error: "workspace not found",
@@ -139,7 +139,7 @@ func (ts *testSuite) TestDeleteWorkspace() {
 			c := echo.New().NewContext(r, w)
 			c.SetPath("/api/v1/workspace/:workspace_id")
 			c.SetParamNames("workspace_id")
-			c.SetParamValues(tc.ID.String())
+			c.SetParamValues(tc.ID)
 
 			err := ts.server.DeleteWorkspace(c)
 			if err != nil {

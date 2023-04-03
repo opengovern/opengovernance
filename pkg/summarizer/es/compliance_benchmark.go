@@ -2,10 +2,8 @@ package es
 
 import (
 	"fmt"
-	"strings"
-	"time"
-
 	"gitlab.com/keibiengine/keibi-engine/pkg/types"
+	"strings"
 )
 
 const (
@@ -33,8 +31,8 @@ type PolicySummary struct {
 type BenchmarkSummary struct {
 	BenchmarkID   string          `json:"benchmark_id"`
 	ScheduleJobID uint            `json:"schedule_job_id"`
-	DescribedAt   time.Time       `json:"described_at"`
-	EvaluatedAt   time.Time       `json:"evaluated_at"`
+	DescribedAt   int64           `json:"described_at"`
+	EvaluatedAt   int64           `json:"evaluated_at"`
 	Policies      []PolicySummary `json:"policies"`
 
 	ReportType BenchmarkReportType `json:"report_type"`

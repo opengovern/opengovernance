@@ -3,10 +3,8 @@ package es
 import (
 	"context"
 	"encoding/json"
-	"strconv"
-	"time"
-
 	"gitlab.com/keibiengine/keibi-engine/pkg/types"
+	"strconv"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/source"
 
@@ -23,8 +21,8 @@ type Finding struct {
 	BenchmarkID      string                 `json:"benchmarkID"`
 	PolicyID         string                 `json:"policyID"`
 	ConnectionID     string                 `json:"connectionID"`
-	DescribedAt      time.Time              `json:"describedAt"`
-	EvaluatedAt      time.Time              `json:"evaluatedAt"`
+	DescribedAt      int64                  `json:"describedAt"`
+	EvaluatedAt      int64                  `json:"evaluatedAt"`
 	StateActive      bool                   `json:"stateActive"`
 	Result           types.ComplianceResult `json:"result"`
 	Severity         types.Severity         `json:"severity"`
@@ -46,7 +44,7 @@ func (r Finding) KeysAndIndex() ([]string, string) {
 		r.ResourceID,
 		r.ConnectionID,
 		r.PolicyID,
-		strconv.FormatInt(r.DescribedAt.UnixMilli(), 10),
+		strconv.FormatInt(r.DescribedAt, 10),
 	}, FindingsIndex
 }
 

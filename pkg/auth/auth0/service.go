@@ -4,11 +4,12 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"gitlab.com/keibiengine/keibi-engine/pkg/auth/api"
 	"io/ioutil"
 	"math/rand"
 	"net/http"
 	url2 "net/url"
+
+	"gitlab.com/keibiengine/keibi-engine/pkg/auth/api"
 )
 
 type Service struct {

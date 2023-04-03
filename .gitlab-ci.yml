@@ -113,7 +113,7 @@ golangci-lint-mr:
   only:
     - merge_requests
   image:
-    name: golangci/golangci-lint:v1.50
+    name: golangci/golangci-lint:v1.52
     entrypoint: [""]
   script:
     - golangci-lint run -v
