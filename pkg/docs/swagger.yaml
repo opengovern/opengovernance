@@ -92,6 +92,10 @@ definitions:
         items:
           type: string
         type: array
+      connectors:
+        items:
+          $ref: '#/definitions/source.Type'
+        type: array
       createdAt:
         type: string
       description:
@@ -569,9 +573,9 @@ definitions:
         type: integer
       evaluatedAt:
         type: integer
-      policyID:
+      evaluator:
         type: string
-      policySeverity:
+      policyID:
         type: string
       reason:
         type: string
@@ -583,12 +587,16 @@ definitions:
         type: string
       resourceType:
         type: string
+      result:
+        $ref: '#/definitions/types.ComplianceResult'
       scheduleJobID:
         type: integer
       serviceName:
         type: string
-      status:
-        $ref: '#/definitions/types.ComplianceResult'
+      severity:
+        type: string
+      stateActive:
+        type: boolean
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_describe_api.DescribeResource:
     properties:
@@ -2505,6 +2513,20 @@ paths:
       summary: Returns all findings with respect to filters
       tags:
       - compliance
+  /compliance/api/v1/findings/{field}/top/{count}:
+    post:
+      consumes:
+      - application/json
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.GetTopFieldResponse'
+      summary: Returns all findings with respect to filters
+      tags:
+      - compliance
   /compliance/api/v1/findings/metrics:
     get:
       consumes:
@@ -2528,27 +2550,6 @@ paths:
           schema:
             $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.GetFindingsMetricsResponse'
       summary: Returns findings metrics
-      tags:
-      - compliance
-  /compliance/api/v1/findings/top:
-    post:
-      consumes:
-      - application/json
-      parameters:
-      - description: Request Body
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.GetTopFieldRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.GetTopFieldResponse'
-      summary: Returns all findings with respect to filters
       tags:
       - compliance
   /compliance/api/v1/insight:
