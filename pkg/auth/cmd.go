@@ -36,9 +36,10 @@ var (
 	mailSender     = os.Getenv("EMAIL_SENDER")
 	mailSenderName = os.Getenv("EMAIL_SENDER_NAME")
 
-	auth0Domain       = os.Getenv("AUTH0_DOMAIN")
-	auth0ClientID     = os.Getenv("AUTH0_CLIENT_ID")
-	auth0ClientSecret = os.Getenv("AUTH0_CLIENT_SECRET")
+	auth0Domain         = os.Getenv("AUTH0_DOMAIN")
+	auth0ClientID       = os.Getenv("AUTH0_CLIENT_ID")
+	auth0ClientIDNative = os.Getenv("AUTH0_CLIENT_ID_NATIVE")
+	auth0ClientSecret   = os.Getenv("AUTH0_CLIENT_SECRET")
 
 	auth0ManageDomain       = os.Getenv("AUTH0_MANAGE_DOMAIN")
 	auth0ManageClientID     = os.Getenv("AUTH0_MANAGE_CLIENT_ID")
@@ -84,6 +85,12 @@ func start(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("open id connect verifier: %w", err)
 	}
+
+	verifierNative, err := newAuth0OidcVerifier(ctx, auth0Domain, auth0ClientIDNative)
+	if err != nil {
+		return fmt.Errorf("open id connect verifier: %w", err)
+	}
+
 	logger.Info("Instantiated a new Open ID Connect verifier")
 	m := email.NewSendGridClient(mailApiKey, mailSender, mailSenderName, logger)
 
@@ -122,6 +129,7 @@ func start(ctx context.Context) error {
 		host:            keibiHost,
 		keibiPublicKey:  pub.(*rsa.PublicKey),
 		verifier:        verifier,
+		verifierNative:  verifierNative,
 		logger:          logger,
 		workspaceClient: workspaceClient,
 	}
@@ -135,7 +143,7 @@ func start(ctx context.Context) error {
 		return err
 	}
 
-	auth0Service := auth0.New(auth0ManageDomain, auth0ClientID, auth0ManageClientID, auth0ManageClientSecret,
+	auth0Service := auth0.New(auth0ManageDomain, auth0ClientIDNative, auth0ClientID, auth0ManageClientID, auth0ManageClientSecret,
 		auth0Connection, int(inviteTTL))
 
 	grpcServer := grpc.NewServer(grpc.Creds(creds))

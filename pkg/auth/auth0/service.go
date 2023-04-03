@@ -13,25 +13,27 @@ import (
 )
 
 type Service struct {
-	domain       string
-	clientID     string
-	clientSecret string
-	appClientID  string
-	Connection   string
-	InviteTTL    int
+	domain         string
+	clientID       string
+	clientSecret   string
+	appClientID    string
+	nativeClientID string
+	Connection     string
+	InviteTTL      int
 
 	token string
 }
 
-func New(domain, appClientID, clientID, clientSecret, connection string, inviteTTL int) *Service {
+func New(domain, appClientID, nativeClientID, clientID, clientSecret, connection string, inviteTTL int) *Service {
 	return &Service{
-		domain:       domain,
-		appClientID:  appClientID,
-		clientID:     clientID,
-		clientSecret: clientSecret,
-		Connection:   connection,
-		InviteTTL:    inviteTTL,
-		token:        "",
+		domain:         domain,
+		appClientID:    appClientID,
+		nativeClientID: nativeClientID,
+		clientID:       clientID,
+		clientSecret:   clientSecret,
+		Connection:     connection,
+		InviteTTL:      inviteTTL,
+		token:          "",
 	}
 }
 
