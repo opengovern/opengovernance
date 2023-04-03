@@ -37,6 +37,7 @@ type Server struct {
 
 	keibiPublicKey  *rsa.PublicKey
 	verifier        *oidc.IDTokenVerifier
+	verifierNative  *oidc.IDTokenVerifier
 	logger          *zap.Logger
 	workspaceClient client.WorkspaceServiceClient
 	cache           *cache.Cache
@@ -200,23 +201,32 @@ func (s Server) Verify(ctx context.Context, authToken string) (*userClaim, error
 
 	var u userClaim
 	t, err := s.verifier.Verify(context.Background(), token)
-	if err != nil {
-		_, errk := jwt.ParseWithClaims(token, &u, func(token *jwt.Token) (interface{}, error) {
-			return s.keibiPublicKey, nil
-		})
-		if errk == nil {
-			return &u, nil
-		} else {
-			fmt.Println("failed to auth with keibi cred due to", errk)
+	if err == nil {
+		if err := t.Claims(&u); err != nil {
+			return nil, err
 		}
-		return nil, err
+
+		return &u, nil
 	}
 
-	if err := t.Claims(&u); err != nil {
-		return nil, err
+	t, err = s.verifierNative.Verify(context.Background(), token)
+	if err == nil {
+		if err := t.Claims(&u); err != nil {
+			return nil, err
+		}
+
+		return &u, nil
 	}
 
-	return &u, nil
+	_, errk := jwt.ParseWithClaims(token, &u, func(token *jwt.Token) (interface{}, error) {
+		return s.keibiPublicKey, nil
+	})
+	if errk == nil {
+		return &u, nil
+	} else {
+		fmt.Println("failed to auth with keibi cred due to", errk)
+	}
+	return nil, err
 }
 
 func (s Server) GetWorkspaceByName(workspaceName string, user *userClaim) (api.RoleBinding, api2.WorkspaceLimitsUsage, error) {
