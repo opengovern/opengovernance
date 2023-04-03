@@ -47,7 +47,7 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 
 	v1.POST("/findings", httpserver.AuthorizeHandler(h.GetFindings, api3.ViewerRole))
 	// finding dashboard
-	v1.POST("/findings/top", httpserver.AuthorizeHandler(h.GetTopFieldByFindingCount, api3.ViewerRole))
+	v1.GET("/findings/top", httpserver.AuthorizeHandler(h.GetTopFieldByFindingCount, api3.ViewerRole))
 	v1.GET("/findings/metrics", httpserver.AuthorizeHandler(h.GetFindingsMetrics, api3.ViewerRole))
 
 	v1.POST("/alarms/top", httpserver.AuthorizeHandler(h.GetTopFieldByAlarmCount, api3.ViewerRole))

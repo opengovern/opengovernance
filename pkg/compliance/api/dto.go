@@ -92,7 +92,7 @@ const (
 )
 
 type GetTopFieldRequest struct {
-	Field   TopField       `json:"field"`
+	Field   TopField       `json:"field" enums:"resourceType,serviceName,sourceID,resourceID"`
 	Filters FindingFilters `json:"filters"`
 	Count   int            `json:"count"`
 }

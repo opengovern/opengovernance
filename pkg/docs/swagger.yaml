@@ -350,7 +350,13 @@ definitions:
       count:
         type: integer
       field:
-        $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.TopField'
+        allOf:
+        - $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.TopField'
+        enum:
+        - resourceType
+        - serviceName
+        - sourceID
+        - resourceID
       filters:
         $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.FindingFilters'
     type: object

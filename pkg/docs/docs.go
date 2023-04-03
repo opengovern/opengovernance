@@ -5409,7 +5409,17 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "field": {
-                    "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.TopField"
+                    "enum": [
+                        "resourceType",
+                        "serviceName",
+                        "sourceID",
+                        "resourceID"
+                    ],
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.TopField"
+                        }
+                    ]
                 },
                 "filters": {
                     "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.FindingFilters"
