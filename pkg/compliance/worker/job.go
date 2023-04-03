@@ -110,15 +110,6 @@ func (j *Job) RunBenchmark(benchmarkID string, complianceClient client.Complianc
 			return nil, err
 		}
 
-		if res != nil {
-			fmt.Println("===============")
-			fmt.Println(benchmarkID, policyID, *policy.QueryID)
-			fmt.Println(query.QueryToExecute)
-			fmt.Println(res.Headers)
-			fmt.Println(res.Data)
-			fmt.Println("===============")
-		}
-
 		f, err := j.ExtractFindings(benchmark, policy, query, res)
 		if err != nil {
 			return nil, err
@@ -179,7 +170,6 @@ func (j *Job) Run(complianceClient client.ComplianceServiceClient, onboardClient
 	for _, finding := range findings {
 		docs = append(docs, finding)
 	}
-	fmt.Println("+++++++++++++++++ docs len=", len(docs))
 	return kafka.DoSend(kfkProducer, kfkTopic, docs, logger)
 }
 
