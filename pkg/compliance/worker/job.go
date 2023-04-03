@@ -206,6 +206,7 @@ func (j *Job) ExtractFindings(benchmark *api.Benchmark, policy *api.Policy, quer
 		if v, ok := recordValue["status"].(string); ok {
 			status = types.ComplianceResult(v)
 		}
+		fmt.Println("======", recordValue)
 
 		severity := types.SeverityNone
 		if status == types.ComplianceResultALARM {
