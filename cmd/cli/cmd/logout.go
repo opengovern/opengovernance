@@ -12,8 +12,7 @@ import (
 // logoutCmd represents the logout command
 var logoutCmd = &cobra.Command{
 	Use:   "logout",
-	Short: "logout ",
-	Long:  `this codd do logout from account that was login `,
+	Short: "Logging out from kaytu",
 	Run: func(cmd *cobra.Command, args []string) {
 		deleteFile()
 	},
