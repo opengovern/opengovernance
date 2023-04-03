@@ -547,10 +547,11 @@ func (h *HttpHandler) CreateBenchmarkAssignment(ctx echo.Context) error {
 
 	benchmark, err := h.db.GetBenchmark(benchmarkId)
 	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("benchmark %s not found", benchmarkId))
-		}
 		return err
+	}
+
+	if benchmark == nil {
+		return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("benchmark %s not found", benchmarkId))
 	}
 
 	src, err := h.schedulerClient.GetSource(httpclient.FromEchoContext(ctx), connectionID)
@@ -566,6 +567,10 @@ func (h *HttpHandler) CreateBenchmarkAssignment(ctx echo.Context) error {
 		q, err := h.db.GetQuery(*policy.QueryID)
 		if err != nil {
 			return err
+		}
+
+		if q == nil {
+			return fmt.Errorf("query %s not found", *policy.QueryID)
 		}
 
 		if q.Connector != string(src.Type) {
@@ -796,6 +801,10 @@ func (h *HttpHandler) GetBenchmark(ctx echo.Context) error {
 	if err != nil {
 		return err
 	}
+
+	if benchmark == nil {
+		return echo.NewHTTPError(http.StatusNotFound, "benchmark not found")
+	}
 	return ctx.JSON(http.StatusOK, benchmark.ToApi())
 }
 
@@ -814,6 +823,10 @@ func (h *HttpHandler) ListPolicies(ctx echo.Context) error {
 	b, err := h.db.GetBenchmark(benchmarkId)
 	if err != nil {
 		return err
+	}
+
+	if b == nil {
+		return echo.NewHTTPError(http.StatusNotFound, "benchmark not found")
 	}
 
 	var policyIDs []string
@@ -846,6 +859,11 @@ func (h *HttpHandler) GetPolicy(ctx echo.Context) error {
 	if err != nil {
 		return err
 	}
+
+	if policy == nil {
+		return echo.NewHTTPError(http.StatusNotFound, "policy not found")
+	}
+
 	return ctx.JSON(http.StatusOK, policy.ToApi())
 }
 
@@ -863,6 +881,11 @@ func (h *HttpHandler) GetQuery(ctx echo.Context) error {
 	if err != nil {
 		return err
 	}
+
+	if q == nil {
+		return echo.NewHTTPError(http.StatusNotFound, "query not found")
+	}
+
 	return ctx.JSON(http.StatusOK, q.ToApi())
 }
 
