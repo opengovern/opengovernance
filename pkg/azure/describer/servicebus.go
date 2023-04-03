@@ -4,15 +4,15 @@ import (
 	"context"
 	"strings"
 
-	"github.com/Azure/azure-sdk-for-go/profiles/2020-09-01/monitor/mgmt/insights"
 	"github.com/Azure/azure-sdk-for-go/profiles/latest/servicebus/mgmt/servicebus"
+	"github.com/Azure/azure-sdk-for-go/services/preview/monitor/mgmt/2021-04-01-preview/insights"
 	previewservicebus "github.com/Azure/azure-sdk-for-go/services/preview/servicebus/mgmt/2021-06-01-preview/servicebus"
 	"github.com/Azure/go-autorest/autorest"
 	"gitlab.com/keibiengine/keibi-engine/pkg/azure/model"
 )
 
 func ServiceBusQueue(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
-	rgs, err := resourceGroup(ctx, authorizer, subscription)
+	rgs, err := listResourceGroups(ctx, authorizer, subscription)
 	if err != nil {
 		return nil, err
 	}
@@ -53,7 +53,7 @@ func ServiceBusQueue(ctx context.Context, authorizer autorest.Authorizer, subscr
 }
 
 func ServiceBusTopic(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
-	rgs, err := resourceGroup(ctx, authorizer, subscription)
+	rgs, err := listResourceGroups(ctx, authorizer, subscription)
 	if err != nil {
 		return nil, err
 	}

@@ -2,11 +2,14 @@ package describer
 
 import (
 	"context"
+	"fmt"
 	"strings"
 
+	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2017-09-01/skus"
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2020-06-01/compute"
 	"github.com/Azure/azure-sdk-for-go/services/guestconfiguration/mgmt/2020-06-25/guestconfiguration"
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2020-05-01/network"
+	"github.com/Azure/azure-sdk-for-go/services/preview/monitor/mgmt/2021-04-01-preview/insights"
 	"github.com/Azure/go-autorest/autorest"
 	"gitlab.com/keibiengine/keibi-engine/pkg/azure/model"
 )
@@ -133,6 +136,123 @@ func ComputeVirtualMachineScaleSet(ctx context.Context, authorizer autorest.Auth
 
 	return values, nil
 }
+
+func ComputeVirtualMachineScaleSetNetworkInterface(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
+	client := compute.NewVirtualMachineScaleSetsClient(subscription)
+	client.Authorizer = authorizer
+
+	networkClient := network.NewInterfacesClient(subscription)
+	networkClient.Authorizer = authorizer
+
+	vmList, err := client.ListAll(context.Background())
+	if err != nil {
+		return nil, err
+	}
+
+	var values []Resource
+	for {
+		for _, vm := range vmList.Values() {
+			vmResourceGroupName := strings.Split(*vm.ID, "/")[4]
+
+			result, err := networkClient.ListVirtualMachineScaleSetNetworkInterfaces(ctx, vmResourceGroupName, *vm.Name)
+			if err != nil {
+				return nil, err
+			}
+			for {
+				for _, v := range result.Values() {
+					resourceGroupName := strings.Split(*v.ID, "/")[4]
+					values = append(values, Resource{
+						ID:       *v.ID,
+						Name:     *v.Name,
+						Location: *v.Location,
+						Description: model.ComputeVirtualMachineScaleSetNetworkInterfaceDescription{
+							VirtualMachineScaleSet: vm,
+							NetworkInterface:       v,
+							ResourceGroup:          resourceGroupName,
+						},
+					})
+				}
+				if !result.NotDone() {
+					break
+				}
+
+				err = result.NextWithContext(ctx)
+				if err != nil {
+					return nil, err
+				}
+			}
+		}
+		if !vmList.NotDone() {
+			break
+		}
+
+		err = vmList.NextWithContext(ctx)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return values, nil
+}
+
+func ComputeVirtualMachineScaleSetVm(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
+	client := compute.NewVirtualMachineScaleSetsClient(subscription)
+	client.Authorizer = authorizer
+
+	ssVmClient := compute.NewVirtualMachineScaleSetVMsClient(subscription)
+	ssVmClient.Authorizer = authorizer
+
+	vmList, err := client.ListAll(context.Background())
+	if err != nil {
+		return nil, err
+	}
+
+	var values []Resource
+	for {
+		for _, vm := range vmList.Values() {
+			vmResourceGroupName := strings.Split(*vm.ID, "/")[4]
+
+			result, err := ssVmClient.List(ctx, vmResourceGroupName, *vm.Name, "", "", "")
+			if err != nil {
+				return nil, err
+			}
+			for {
+				for _, v := range result.Values() {
+					resourceGroupName := strings.Split(*v.ID, "/")[4]
+					values = append(values, Resource{
+						ID:       *v.ID,
+						Name:     *v.Name,
+						Location: *v.Location,
+						Description: model.ComputeVirtualMachineScaleSetVmDescription{
+							VirtualMachineScaleSet: vm,
+							ScaleSetVM:             v,
+							ResourceGroup:          resourceGroupName,
+						},
+					})
+				}
+				if !result.NotDone() {
+					break
+				}
+
+				err = result.NextWithContext(ctx)
+				if err != nil {
+					return nil, err
+				}
+			}
+		}
+		if !vmList.NotDone() {
+			break
+		}
+
+		err = vmList.NextWithContext(ctx)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return values, nil
+}
+
 func ComputeVirtualMachine(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
 	guestConfigurationClient := guestconfiguration.NewAssignmentsClient(subscription)
 	guestConfigurationClient.Authorizer = authorizer
@@ -418,5 +538,430 @@ func ComputeImage(ctx context.Context, authorizer autorest.Authorizer, subscript
 		}
 	}
 
+	return values, nil
+}
+
+func ComputeDiskReadOps(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
+	client := compute.NewDisksClient(subscription)
+	client.Authorizer = authorizer
+
+	clientInsight := insights.NewMetricsClient(subscription)
+	clientInsight.Authorizer = authorizer
+
+	result, err := client.List(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	var values []Resource
+	for {
+		for _, disk := range result.Values() {
+			if disk.ID == nil {
+				continue
+			}
+			metrics, err := listAzureMonitorMetricStatistics(ctx, authorizer, subscription, "FIVE_MINUTES", "Microsoft.Compute/disks", "Composite Disk Read Operations/sec", *disk.ID)
+			if err != nil {
+				return nil, err
+			}
+			for _, metric := range metrics {
+				values = append(values, Resource{
+					ID:       fmt.Sprintf("%s_readops", *disk.ID),
+					Name:     fmt.Sprintf("%s readops", *disk.Name),
+					Location: *disk.Location,
+					Description: model.ComputeDiskReadOpsDescription{
+						MonitoringMetric: metric,
+					},
+				})
+			}
+		}
+		if !result.NotDone() {
+			break
+		}
+
+		err = result.NextWithContext(ctx)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return values, nil
+}
+
+func ComputeDiskReadOpsDaily(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
+	client := compute.NewDisksClient(subscription)
+	client.Authorizer = authorizer
+
+	clientInsight := insights.NewMetricsClient(subscription)
+	clientInsight.Authorizer = authorizer
+
+	result, err := client.List(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	var values []Resource
+	for {
+		for _, disk := range result.Values() {
+			if disk.ID == nil {
+				continue
+			}
+			metrics, err := listAzureMonitorMetricStatistics(ctx, authorizer, subscription, "DAILY", "Microsoft.Compute/disks", "Composite Disk Read Operations/sec", *disk.ID)
+			if err != nil {
+				return nil, err
+			}
+			for _, metric := range metrics {
+				values = append(values, Resource{
+					ID:       fmt.Sprintf("%s_readops_daily", *disk.ID),
+					Name:     fmt.Sprintf("%s readops-daily", *disk.Name),
+					Location: *disk.Location,
+					Description: model.ComputeDiskReadOpsDailyDescription{
+						MonitoringMetric: metric,
+					},
+				})
+			}
+		}
+		if !result.NotDone() {
+			break
+		}
+
+		err = result.NextWithContext(ctx)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return values, nil
+}
+
+func ComputeDiskReadOpsHourly(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
+	client := compute.NewDisksClient(subscription)
+	client.Authorizer = authorizer
+
+	result, err := client.List(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	var values []Resource
+	for {
+		for _, disk := range result.Values() {
+			if disk.ID == nil {
+				continue
+			}
+			metrics, err := listAzureMonitorMetricStatistics(ctx, authorizer, subscription, "HOURLY", "Microsoft.Compute/disks", "Composite Disk Read Operations/sec", *disk.ID)
+			if err != nil {
+				return nil, err
+			}
+			for _, metric := range metrics {
+				values = append(values, Resource{
+					ID:       fmt.Sprintf("%s_readops_hourly", *disk.ID),
+					Name:     fmt.Sprintf("%s readops-hourly", *disk.Name),
+					Location: *disk.Location,
+					Description: model.ComputeDiskReadOpsHourlyDescription{
+						MonitoringMetric: metric,
+					},
+				})
+			}
+		}
+		if !result.NotDone() {
+			break
+		}
+
+		err = result.NextWithContext(ctx)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return values, nil
+}
+
+func ComputeDiskWriteOps(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
+	client := compute.NewDisksClient(subscription)
+	client.Authorizer = authorizer
+
+	clientInsight := insights.NewMetricsClient(subscription)
+	clientInsight.Authorizer = authorizer
+
+	result, err := client.List(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	var values []Resource
+	for {
+		for _, disk := range result.Values() {
+			if disk.ID == nil {
+				continue
+			}
+			metrics, err := listAzureMonitorMetricStatistics(ctx, authorizer, subscription, "FIVE_MINUTES", "Microsoft.Compute/disks", "Composite Disk Write Operations/sec", *disk.ID)
+			if err != nil {
+				return nil, err
+			}
+			for _, metric := range metrics {
+				values = append(values, Resource{
+					ID:       fmt.Sprintf("%s_writeops", *disk.ID),
+					Name:     fmt.Sprintf("%s writeops", *disk.Name),
+					Location: *disk.Location,
+					Description: model.ComputeDiskWriteOpsDescription{
+						MonitoringMetric: metric,
+					},
+				})
+			}
+		}
+		if !result.NotDone() {
+			break
+		}
+
+		err = result.NextWithContext(ctx)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return values, nil
+}
+
+func ComputeDiskWriteOpsDaily(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
+	client := compute.NewDisksClient(subscription)
+	client.Authorizer = authorizer
+
+	clientInsight := insights.NewMetricsClient(subscription)
+	clientInsight.Authorizer = authorizer
+
+	result, err := client.List(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	var values []Resource
+	for {
+		for _, disk := range result.Values() {
+			if disk.ID == nil {
+				continue
+			}
+			metrics, err := listAzureMonitorMetricStatistics(ctx, authorizer, subscription, "DAILY", "Microsoft.Compute/disks", "Composite Disk Write Operations/sec", *disk.ID)
+			if err != nil {
+				return nil, err
+			}
+			for _, metric := range metrics {
+				values = append(values, Resource{
+					ID:       fmt.Sprintf("%s_writeops_daily", *disk.ID),
+					Name:     fmt.Sprintf("%s writeops-daily", *disk.Name),
+					Location: *disk.Location,
+					Description: model.ComputeDiskWriteOpsDailyDescription{
+						MonitoringMetric: metric,
+					},
+				})
+			}
+		}
+		if !result.NotDone() {
+			break
+		}
+
+		err = result.NextWithContext(ctx)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return values, nil
+}
+
+func ComputeDiskWriteOpsHourly(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
+	client := compute.NewDisksClient(subscription)
+	client.Authorizer = authorizer
+
+	result, err := client.List(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	var values []Resource
+	for {
+		for _, disk := range result.Values() {
+			if disk.ID == nil {
+				continue
+			}
+			metrics, err := listAzureMonitorMetricStatistics(ctx, authorizer, subscription, "HOURLY", "Microsoft.Compute/disks", "Composite Disk Write Operations/sec", *disk.ID)
+			if err != nil {
+				return nil, err
+			}
+			for _, metric := range metrics {
+				values = append(values, Resource{
+					ID:       fmt.Sprintf("%s_writeops_hourly", *disk.ID),
+					Name:     fmt.Sprintf("%s writeops-hourly", *disk.Name),
+					Location: *disk.Location,
+					Description: model.ComputeDiskWriteOpsHourlyDescription{
+						MonitoringMetric: metric,
+					},
+				})
+			}
+		}
+		if !result.NotDone() {
+			break
+		}
+
+		err = result.NextWithContext(ctx)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return values, nil
+}
+
+func ComputeResourceSKU(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
+	client := skus.NewResourceSkusClient(subscription)
+	client.Authorizer = authorizer
+
+	result, err := client.List(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	var values []Resource
+	for {
+		for _, resourceSku := range result.Values() {
+			values = append(values, Resource{
+				ID:       "azure:///subscriptions/" + subscription + "/locations/" + (*resourceSku.Locations)[0] + "/resourcetypes" + *resourceSku.ResourceType + "name/" + *resourceSku.Name,
+				Name:     *resourceSku.Name,
+				Location: (*resourceSku.Locations)[0],
+				Description: model.ComputeResourceSKUDescription{
+					ResourceSKU: resourceSku,
+				},
+			})
+		}
+		if !result.NotDone() {
+			break
+		}
+		err = result.NextWithContext(ctx)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return values, nil
+}
+
+func ComputeVirtualMachineCpuUtilization(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
+	client := compute.NewVirtualMachinesClient(subscription)
+	client.Authorizer = authorizer
+
+	result, err := client.ListAll(ctx, "")
+	if err != nil {
+		return nil, err
+	}
+
+	var values []Resource
+	for {
+		for _, virtualMachine := range result.Values() {
+			if virtualMachine.ID == nil {
+				continue
+			}
+
+			metrics, err := listAzureMonitorMetricStatistics(ctx, authorizer, subscription, "FIVE_MINUTES", "Microsoft.Compute/virtualMachines", "Percentage CPU", *virtualMachine.ID)
+			if err != nil {
+				return nil, err
+			}
+
+			for _, metric := range metrics {
+				values = append(values, Resource{
+					ID:       fmt.Sprintf("%s_cpu_utilization", *virtualMachine.ID),
+					Name:     fmt.Sprintf("%s cpu-utilization", *virtualMachine.Name),
+					Location: *virtualMachine.Location,
+					Description: model.ComputeVirtualMachineCpuUtilizationDescription{
+						MonitoringMetric: metric,
+					},
+				})
+			}
+		}
+		if !result.NotDone() {
+			break
+		}
+		err = result.NextWithContext(ctx)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return values, nil
+}
+
+func ComputeVirtualMachineCpuUtilizationDaily(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
+	client := compute.NewVirtualMachinesClient(subscription)
+	client.Authorizer = authorizer
+
+	result, err := client.ListAll(ctx, "")
+	if err != nil {
+		return nil, err
+	}
+
+	var values []Resource
+	for {
+		for _, virtualMachine := range result.Values() {
+			if virtualMachine.ID == nil {
+				continue
+			}
+
+			metrics, err := listAzureMonitorMetricStatistics(ctx, authorizer, subscription, "DAILY", "Microsoft.Compute/virtualMachines", "Percentage CPU", *virtualMachine.ID)
+			if err != nil {
+				return nil, err
+			}
+
+			for _, metric := range metrics {
+				values = append(values, Resource{
+					ID:       fmt.Sprintf("%s_cpu_utilization_daily", *virtualMachine.ID),
+					Name:     fmt.Sprintf("%s cpu-utilization-daily", *virtualMachine.Name),
+					Location: *virtualMachine.Location,
+					Description: model.ComputeVirtualMachineCpuUtilizationDailyDescription{
+						MonitoringMetric: metric,
+					},
+				})
+			}
+		}
+		if !result.NotDone() {
+			break
+		}
+		err = result.NextWithContext(ctx)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return values, nil
+}
+
+func ComputeVirtualMachineCpuUtilizationHourly(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
+	client := compute.NewVirtualMachinesClient(subscription)
+	client.Authorizer = authorizer
+
+	result, err := client.ListAll(ctx, "")
+	if err != nil {
+		return nil, err
+	}
+
+	var values []Resource
+	for {
+		for _, virtualMachine := range result.Values() {
+			if virtualMachine.ID == nil {
+				continue
+			}
+
+			metrics, err := listAzureMonitorMetricStatistics(ctx, authorizer, subscription, "HOURLY", "Microsoft.Compute/virtualMachines", "Percentage CPU", *virtualMachine.ID)
+			if err != nil {
+				return nil, err
+			}
+
+			for _, metric := range metrics {
+				values = append(values, Resource{
+					ID:       fmt.Sprintf("%s_cpu_utilization_hourly", *virtualMachine.ID),
+					Name:     fmt.Sprintf("%s cpu-utilization-hourly", *virtualMachine.Name),
+					Location: *virtualMachine.Location,
+					Description: model.ComputeVirtualMachineCpuUtilizationHourlyDescription{
+						MonitoringMetric: metric,
+					},
+				})
+			}
+		}
+		if !result.NotDone() {
+			break
+		}
+		err = result.NextWithContext(ctx)
+		if err != nil {
+			return nil, err
+		}
+	}
 	return values, nil
 }

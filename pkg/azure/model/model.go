@@ -3,13 +3,16 @@
 package model
 
 import (
-	"github.com/Azure/azure-sdk-for-go/profiles/2020-09-01/monitor/mgmt/insights"
 	"github.com/Azure/azure-sdk-for-go/profiles/latest/healthcareapis/mgmt/healthcareapis"
 	"github.com/Azure/azure-sdk-for-go/profiles/latest/hybridcompute/mgmt/hybridcompute"
 	"github.com/Azure/azure-sdk-for-go/profiles/latest/hybridkubernetes/mgmt/hybridkubernetes"
+	"github.com/Azure/azure-sdk-for-go/profiles/latest/provisioningservices/mgmt/iothub"
 	"github.com/Azure/azure-sdk-for-go/profiles/latest/recoveryservices/mgmt/recoveryservices"
 	"github.com/Azure/azure-sdk-for-go/profiles/latest/resources/mgmt/links"
+	"github.com/Azure/azure-sdk-for-go/profiles/latest/resources/mgmt/locks"
+	"github.com/Azure/azure-sdk-for-go/profiles/latest/resources/mgmt/managementgroups"
 	"github.com/Azure/azure-sdk-for-go/profiles/latest/resources/mgmt/policy"
+	"github.com/Azure/azure-sdk-for-go/profiles/latest/resources/mgmt/resources"
 	sub "github.com/Azure/azure-sdk-for-go/profiles/latest/subscription/mgmt/subscription"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/dns/armdns"
 	"github.com/Azure/azure-sdk-for-go/services/apimanagement/mgmt/2020-12-01/apimanagement"
@@ -17,6 +20,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/services/appplatform/mgmt/2020-07-01/appplatform"
 	"github.com/Azure/azure-sdk-for-go/services/batch/mgmt/2020-09-01/batch"
 	"github.com/Azure/azure-sdk-for-go/services/cognitiveservices/mgmt/2021-04-30/cognitiveservices"
+	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2017-09-01/skus"
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2020-06-01/compute"
 	"github.com/Azure/azure-sdk-for-go/services/containerservice/mgmt/2021-02-01/containerservice"
 	"github.com/Azure/azure-sdk-for-go/services/databoxedge/mgmt/2019-07-01/databoxedge"
@@ -33,6 +37,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/services/logic/mgmt/2019-05-01/logic"
 	"github.com/Azure/azure-sdk-for-go/services/mariadb/mgmt/2020-01-01/mariadb"
 	"github.com/Azure/azure-sdk-for-go/services/mysql/mgmt/2020-01-01/mysql"
+	"github.com/Azure/azure-sdk-for-go/services/mysql/mgmt/2021-05-01/mysqlflexibleservers"
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2020-05-01/network"
 	newnetwork "github.com/Azure/azure-sdk-for-go/services/network/mgmt/2021-02-01/network"
 	"github.com/Azure/azure-sdk-for-go/services/postgresql/mgmt/2020-01-01/postgresql"
@@ -43,11 +48,13 @@ import (
 	"github.com/Azure/azure-sdk-for-go/services/preview/eventhub/mgmt/2018-01-01-preview/eventhub"
 	previewKeyvault "github.com/Azure/azure-sdk-for-go/services/preview/keyvault/mgmt/2020-04-01-preview/keyvault"
 	"github.com/Azure/azure-sdk-for-go/services/preview/machinelearningservices/mgmt/2020-02-18-preview/machinelearningservices"
+	"github.com/Azure/azure-sdk-for-go/services/preview/monitor/mgmt/2021-04-01-preview/insights"
 	"github.com/Azure/azure-sdk-for-go/services/preview/security/mgmt/v1.0/security"
 	"github.com/Azure/azure-sdk-for-go/services/preview/servicebus/mgmt/2021-06-01-preview/servicebus"
 	"github.com/Azure/azure-sdk-for-go/services/preview/sql/mgmt/2017-03-01-preview/sql"
 	sqlv3 "github.com/Azure/azure-sdk-for-go/services/preview/sql/mgmt/v3.0/sql"
 	sqlv5 "github.com/Azure/azure-sdk-for-go/services/preview/sql/mgmt/v5.0/sql"
+	"github.com/Azure/azure-sdk-for-go/services/preview/sqlvirtualmachine/mgmt/2017-03-01-preview/sqlvirtualmachine"
 	"github.com/Azure/azure-sdk-for-go/services/redis/mgmt/2020-06-01/redis"
 	"github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2019-06-01/subscriptions"
 	"github.com/Azure/azure-sdk-for-go/services/search/mgmt/2020-08-01/search"
@@ -59,6 +66,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/services/streamanalytics/mgmt/2016-03-01/streamanalytics"
 	"github.com/Azure/azure-sdk-for-go/services/synapse/mgmt/2021-03-01/synapse"
 	"github.com/Azure/azure-sdk-for-go/services/web/mgmt/2020-06-01/web"
+	azblobOld "github.com/Azure/azure-storage-blob-go/azblob"
 	"github.com/manicminer/hamilton/msgraph"
 	"github.com/tombuildsstuff/giovanni/storage/2018-11-09/queue/queues"
 	"github.com/tombuildsstuff/giovanni/storage/2019-12-12/blob/accounts"
@@ -127,6 +135,15 @@ type AppServiceWebAppDescription struct {
 	ResourceGroup      string
 }
 
+//index:microsoft_web_plan
+//getfilter:name=description.Site.name
+//getfilter:resource_group=description.ResourceGroup
+type AppServicePlanDescription struct {
+	Plan          web.AppServicePlan
+	Apps          []web.Site
+	ResourceGroup string
+}
+
 //  =================== compute ==================
 
 //index:microsoft_compute_disks
@@ -135,6 +152,36 @@ type AppServiceWebAppDescription struct {
 type ComputeDiskDescription struct {
 	Disk          compute.Disk
 	ResourceGroup string
+}
+
+//index:microsoft_compute_disksreadops
+type ComputeDiskReadOpsDescription struct {
+	MonitoringMetric
+}
+
+//index:microsoft_compute_disksreadopsdaily
+type ComputeDiskReadOpsDailyDescription struct {
+	MonitoringMetric
+}
+
+//index:microsoft_compute_disksreadopshourly
+type ComputeDiskReadOpsHourlyDescription struct {
+	MonitoringMetric
+}
+
+//index:microsoft_compute_diskswriteops
+type ComputeDiskWriteOpsDescription struct {
+	MonitoringMetric
+}
+
+//index:microsoft_compute_diskswriteopsdaily
+type ComputeDiskWriteOpsDailyDescription struct {
+	MonitoringMetric
+}
+
+//index:microsoft_compute_diskswriteopshourly
+type ComputeDiskWriteOpsHourlyDescription struct {
+	MonitoringMetric
 }
 
 //index:microsoft_compute_diskaccesses
@@ -152,6 +199,23 @@ type ComputeVirtualMachineScaleSetDescription struct {
 	VirtualMachineScaleSet           compute.VirtualMachineScaleSet
 	VirtualMachineScaleSetExtensions []compute.VirtualMachineScaleSetExtension
 	ResourceGroup                    string
+}
+
+//index:microsoft_compute_virtualmachinescalesetnetworkinterface
+type ComputeVirtualMachineScaleSetNetworkInterfaceDescription struct {
+	VirtualMachineScaleSet compute.VirtualMachineScaleSet
+	NetworkInterface       network.Interface
+	ResourceGroup          string
+}
+
+//index:microsoft_compute_virtualmachinescalesetvm
+//getfilter:scale_set_name=description.VirtualMachineScaleSet.name
+//getfilter:instance_id=description.ScaleSetVM.InstanceID
+//getfilter:resource_group=description.ResourceGroup
+type ComputeVirtualMachineScaleSetVmDescription struct {
+	VirtualMachineScaleSet compute.VirtualMachineScaleSet
+	ScaleSetVM             compute.VirtualMachineScaleSetVM
+	ResourceGroup          string
 }
 
 //index:microsoft_compute_snapshots
@@ -300,14 +364,6 @@ type ExpressRouteCircuitDescription struct {
 	ResourceGroup       string
 }
 
-//index:microsoft_network_loadbalancers
-//getfilter:name=description.LoadBalancer.Name
-//getfilter:resource_group=description.ResourceGroup
-type LoadBalancersDescription struct {
-	LoadBalancer  newnetwork.LoadBalancer
-	ResourceGroup string
-}
-
 //index:microsoft_network_virtualnetworkgateway
 //getfilter:name=description.VirtualNetworkGateway.Name
 //getfilter:resource_group=description.ResourceGroup
@@ -349,7 +405,7 @@ type LocalNetworkGatewayDescription struct {
 	ResourceGroup       string
 }
 
-//index:microsoft_network_natgateway
+//index:microsoft_network_natgateways
 //getfilter:name=description.NatGateway.Name
 //getfilter:resource_group=description.ResourceGroup
 type NatGatewayDescription struct {
@@ -379,6 +435,14 @@ type RouteFilterDescription struct {
 type VpnGatewayDescription struct {
 	VpnGateway    newnetwork.VpnGateway
 	ResourceGroup string
+}
+
+//index:microsoft_network_publicipaddresses
+//getfilter:name=description.PublicIPAddress.Name
+//getfilter:resource_group=description.ResourceGroup
+type PublicIPAddressDescription struct {
+	PublicIPAddress newnetwork.PublicIPAddress
+	ResourceGroup   string
 }
 
 //  =================== policy ==================
@@ -459,6 +523,20 @@ type SecurityCenterSubscriptionPricingDescription struct {
 	Pricing security.Pricing
 }
 
+//index:microsoft_security_automations
+//getfilter:name=description.Automation.name
+//getfilter:resource_group=description.ResourceGroup
+type SecurityCenterAutomationDescription struct {
+	Automation    security.Automation
+	ResourceGroup string
+}
+
+//index:microsoft_security_subassessments
+type SecurityCenterSubAssessmentDescription struct {
+	SubAssessment security.SubAssessment
+	ResourceGroup string
+}
+
 //  =================== storage ==================
 
 //index:microsoft_storage_storageaccounts_containers
@@ -470,6 +548,71 @@ type StorageContainerDescription struct {
 	ListContainerItem  storage.ListContainerItem
 	ImmutabilityPolicy storage.ImmutabilityPolicy
 	ResourceGroup      string
+}
+
+//index:microsoft_storage_blobs
+//listfilter:storage_account_name=description.AccountName
+//listfilter:resource_group=description.ResourceGroup
+type StorageBlobDescription struct {
+	Blob          azblobOld.BlobItemInternal
+	AccountName   string
+	IsSnapshot    bool
+	ContainerName string
+	ResourceGroup string
+}
+
+//index:microsoft_storage_blobservices
+//listfilter:storage_account_name=description.AccountName
+//listfilter:resource_group=description.ResourceGroup
+type StorageBlobServiceDescription struct {
+	BlobService   storage.BlobServiceProperties
+	AccountName   string
+	Location      string
+	ResourceGroup string
+}
+
+//index:microsoft_storage_queues
+//listfilter:name=description.Queue.Name
+//listfilter:storage_account_name=description.AccountName
+//listfilter:resource_group=description.ResourceGroup
+type StorageQueueDescription struct {
+	Queue         storage.ListQueue
+	AccountName   string
+	Location      string
+	ResourceGroup string
+}
+
+//index:microsoft_storage_fileshares
+//listfilter:name=description.FileShare.Name
+//listfilter:storage_account_name=description.AccountName
+//listfilter:resource_group=description.ResourceGroup
+type StorageFileShareDescription struct {
+	FileShare     storage.FileShareItem
+	AccountName   string
+	Location      string
+	ResourceGroup string
+}
+
+//index:microsoft_storage_tables
+//listfilter:name=description.Table.Name
+//listfilter:storage_account_name=description.AccountName
+//listfilter:resource_group=description.ResourceGroup
+type StorageTableDescription struct {
+	Table         storage.Table
+	AccountName   string
+	Location      string
+	ResourceGroup string
+}
+
+//index:microsoft_storage_tableservices
+//listfilter:name=description.TableService.Name
+//listfilter:storage_account_name=description.AccountName
+//listfilter:resource_group=description.ResourceGroup
+type StorageTableServiceDescription struct {
+	TableService  storage.TableServiceProperties
+	AccountName   string
+	Location      string
+	ResourceGroup string
 }
 
 //  =================== network ==================
@@ -552,6 +695,26 @@ type ComputeVirtualMachineDescription struct {
 	ResourceGroup              string
 }
 
+//index:microsoft_compute_resourcesku
+type ComputeResourceSKUDescription struct {
+	ResourceSKU skus.ResourceSku
+}
+
+//index:microsoft_compute_virtualmachinecpuutilization
+type ComputeVirtualMachineCpuUtilizationDescription struct {
+	MonitoringMetric
+}
+
+//index:microsoft_compute_virtualmachinecpuutilizationdaily
+type ComputeVirtualMachineCpuUtilizationDailyDescription struct {
+	MonitoringMetric
+}
+
+//index:microsoft_compute_virtualmachinecpuutilizationhourly
+type ComputeVirtualMachineCpuUtilizationHourlyDescription struct {
+	MonitoringMetric
+}
+
 //  =================== containerregistry ==================
 
 //index:microsoft_containerregistry_registries
@@ -574,6 +737,26 @@ type CosmosdbAccountDescription struct {
 	ResourceGroup             string
 }
 
+//index:microsoft_documentdb_mongodatabases
+//getfilter:account_name=description.Account.name
+//getfilter:name=description.MongoDatabase.name
+//getfilter:resource_group=description.ResourceGroup
+type CosmosdbMongoDatabaseDescription struct {
+	Account       documentdb.DatabaseAccountGetResults
+	MongoDatabase documentdb.MongoDBDatabaseGetResults
+	ResourceGroup string
+}
+
+//index:microsoft_documentdb_sqldatabases
+//getfilter:account_name=description.Account.name
+//getfilter:name=description.SqlDatabase.name
+//getfilter:resource_group=description.ResourceGroup
+type CosmosdbSqlDatabaseDescription struct {
+	Account       documentdb.DatabaseAccountGetResults
+	SqlDatabase   documentdb.SQLDatabaseGetResults
+	ResourceGroup string
+}
+
 //  =================== datafactory ==================
 
 //index:microsoft_datafactory_datafactories
@@ -583,6 +766,26 @@ type DataFactoryDescription struct {
 	Factory                    datafactory.Factory
 	PrivateEndPointConnections []datafactory.PrivateEndpointConnectionResource
 	ResourceGroup              string
+}
+
+//index:microsoft_datafactory_datafactorydatasets
+//getfilter:factory_name=description.Factory.name
+//getfilter:name=description.Dataset.name
+//getfilter:resource_group=description.ResourceGroup
+type DataFactoryDatasetDescription struct {
+	Factory       datafactory.Factory
+	Dataset       datafactory.DatasetResource
+	ResourceGroup string
+}
+
+//index:microsoft_datafactory_datafactorypipelines
+//getfilter:factory_name=description.Factory.name
+//getfilter:name=description.Pipeline.name
+//getfilter:resource_group=description.ResourceGroup
+type DataFactoryPipelineDescription struct {
+	Factory       datafactory.Factory
+	Pipeline      datafactory.PipelineResource
+	ResourceGroup string
 }
 
 //  =================== account ==================
@@ -608,6 +811,29 @@ type DataLakeStoreDescription struct {
 }
 
 //  =================== insights ==================
+
+type MonitoringMetric struct {
+	// Resource Name
+	DimensionValue string
+	// MetadataValue represents a metric metadata value.
+	MetaData *insights.MetadataValue
+	// Metric the result data of a query.
+	Metric *insights.Metric
+	// The maximum metric value for the data point.
+	Maximum *float64
+	// The minimum metric value for the data point.
+	Minimum *float64
+	// The average of the metric values that correspond to the data point.
+	Average *float64
+	// The number of metric values that contributed to the aggregate value of this data point.
+	SampleCount *float64
+	// The sum of the metric values for the data point.
+	Sum *float64
+	// The time stamp used for the data point.
+	TimeStamp string
+	// The units in which the metric value is reported.
+	Unit string
+}
 
 //index:microsoft_insights_guestdiagnosticsettings
 //getfilter:name=description.DiagnosticSettingsResource.name
@@ -696,6 +922,15 @@ type IOTHubDescription struct {
 	ResourceGroup               string
 }
 
+//index:microsoft_devices_iothubdpses
+//getfilter:name=description.IotHubDps.name
+//getfilter:resource_group=description.ResourceGroup
+type IOTHubDpsDescription struct {
+	IotHubDps                   iothub.ProvisioningServiceDescription
+	DiagnosticSettingsResources *[]insights.DiagnosticSettingsResource
+	ResourceGroup               string
+}
+
 //  =================== keyvault ==================
 
 //index:microsoft_keyvault_vaults
@@ -706,6 +941,14 @@ type KeyVaultDescription struct {
 	Vault                       keyvault.Vault
 	DiagnosticSettingsResources *[]insights.DiagnosticSettingsResource
 	ResourceGroup               string
+}
+
+//index:microsoft_keyvault_deletedvaults
+//getfilter:name=description.Vault.name
+//getfilter:region=description.Vault.Properties.Location
+type KeyVaultDeletedVaultDescription struct {
+	Vault         keyvault.DeletedVault
+	ResourceGroup string
 }
 
 //  =================== keyvault ==================
@@ -815,8 +1058,6 @@ type NetworkSecurityGroupDescription struct {
 	DiagnosticSettingsResources *[]insights.DiagnosticSettingsResource
 	ResourceGroup               string
 }
-
-//  =================== network ==================
 
 //index:microsoft_network_networkwatchers
 //getfilter:name=description.Watcher.name
@@ -990,8 +1231,6 @@ type MssqlManagedInstanceDescription struct {
 	ResourceGroup                           string
 }
 
-//  =================== sql ==================
-
 //index:microsoft_sql_servers_databases
 //getfilter:name=description.Database.name
 //getfilter:resource_group=description.ResourceGroup
@@ -1020,6 +1259,32 @@ type SqlServerDescription struct {
 	PrivateEndpointConnections     []sqlv3.PrivateEndpointConnection
 	VirtualNetworkRules            []sql.VirtualNetworkRule
 	ResourceGroup                  string
+}
+
+//index:microsoft_sql_elasticpools
+//getfilter:name=description.Pool.Name
+//getfilter:server_name=description.ServerName
+//getfilter:resource_group=description.ResourceGroup
+type SqlServerElasticPoolDescription struct {
+	Pool          sql.ElasticPool
+	ServerName    string
+	ResourceGroup string
+}
+
+//index:microsoft_sql_virtualmachines
+//getfilter:name=description.VirtualMachine.Name
+//getfilter:resource_group=description.ResourceGroup
+type SqlServerVirtualMachineDescription struct {
+	VirtualMachine sqlvirtualmachine.SQLVirtualMachine
+	ResourceGroup  string
+}
+
+//index:microsoft_sql_flexibleservers
+//getfilter:name=description.FlexibleServer.Name
+//getfilter:resource_group=description.ResourceGroup
+type SqlServerFlexibleServerDescription struct {
+	FlexibleServer mysqlflexibleservers.Server
+	ResourceGroup  string
 }
 
 //  =================== storage ==================
@@ -1077,4 +1342,95 @@ type CostManagementCostByResourceTypeDescription struct {
 //index:microsoft_costmanagement_costbysubscription
 type CostManagementCostBySubscriptionDescription struct {
 	CostManagementCostBySubscription CostManagementQueryRow
+}
+
+// =================== LB (loadbalancer) ==================
+
+//index:microsoft_network_loadbalancers
+//getfilter:name=description.LoadBalancer.Name
+//getfilter:resource_group=description.ResourceGroup
+type LoadBalancerDescription struct {
+	LoadBalancer      newnetwork.LoadBalancer
+	DiagnosticSetting *[]insights.DiagnosticSettingsResource
+	ResourceGroup     string
+}
+
+//index:microsoft_lb_backendaddresspools
+//getfilter:load_balancer_name=description.LoadBalancer.Name
+//getfilter:name=description.Pool.Name
+//getfilter:resource_group=description.ResourceGroup
+type LoadBalancerBackendAddressPoolDescription struct {
+	LoadBalancer  newnetwork.LoadBalancer
+	Pool          newnetwork.BackendAddressPool
+	ResourceGroup string
+}
+
+//index:microsoft_lb_natrules
+//getfilter:load_balancer_name=description.LoadBalancerName
+//getfilter:name=description.Rule.Name
+//getfilter:resource_group=description.ResourceGroup
+type LoadBalancerNatRuleDescription struct {
+	Rule             newnetwork.InboundNatRule
+	LoadBalancerName string
+	ResourceGroup    string
+}
+
+//index:microsoft_lb_outboundrules
+//getfilter:load_balancer_name=description.LoadBalancerName
+//getfilter:name=description.Rule.Name
+//getfilter:resource_group=description.ResourceGroup
+type LoadBalancerOutboundRuleDescription struct {
+	Rule             newnetwork.OutboundRule
+	LoadBalancerName string
+	ResourceGroup    string
+}
+
+//index:microsoft_lb_probes
+//getfilter:load_balancer_name=description.LoadBalancerName
+//getfilter:name=description.Probe.Name
+//getfilter:resource_group=description.ResourceGroup
+type LoadBalancerProbeDescription struct {
+	Probe            newnetwork.Probe
+	LoadBalancerName string
+	ResourceGroup    string
+}
+
+//index:microsoft_lb_rules
+//getfilter:load_balancer_name=description.LoadBalancerName
+//getfilter:name=description.Rule.Name
+//getfilter:resource_group=description.ResourceGroup
+type LoadBalancerRuleDescription struct {
+	Rule             newnetwork.LoadBalancingRule
+	LoadBalancerName string
+	ResourceGroup    string
+}
+
+// =================== Management ==================
+
+//index:microsoft_management_groups
+//getfilter:name=description.Group.Name
+type ManagementGroupDescription struct {
+	Group managementgroups.ManagementGroup
+}
+
+//index:microsoft_management_locks
+//getfilter:name=description.Lock.Name
+//getfilter:resource_group=description.ResourceGroup
+type ManagementLockDescription struct {
+	Lock          locks.ManagementLockObject
+	ResourceGroup string
+}
+
+// =================== Resources ==================
+
+//index:microsoft_resources_providers
+//getfilter:namespace=description.Provider.Namespace
+type ResourceProviderDescription struct {
+	Provider resources.Provider
+}
+
+//index:microsoft_resources_resourcegroups
+//getfilter:name=description.Group.Name
+type ResourceGroupDescription struct {
+	Group resources.Group
 }

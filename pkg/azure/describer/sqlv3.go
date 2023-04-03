@@ -4,8 +4,10 @@ import (
 	"context"
 	"strings"
 
+	"github.com/Azure/azure-sdk-for-go/profiles/latest/mysql/mgmt/mysqlflexibleservers"
 	"github.com/Azure/azure-sdk-for-go/services/preview/sql/mgmt/2017-03-01-preview/sql"
 	sqlv3 "github.com/Azure/azure-sdk-for-go/services/preview/sql/mgmt/v3.0/sql"
+	"github.com/Azure/azure-sdk-for-go/services/preview/sqlvirtualmachine/mgmt/2017-03-01-preview/sqlvirtualmachine"
 	"github.com/Azure/go-autorest/autorest"
 	"gitlab.com/keibiengine/keibi-engine/pkg/azure/model"
 )
@@ -161,6 +163,125 @@ func SqlServer(ctx context.Context, authorizer autorest.Authorizer, subscription
 					ResourceGroup:                  resourceGroupName,
 				},
 			})
+		}
+		if !result.NotDone() {
+			break
+		}
+		err = result.NextWithContext(ctx)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return values, nil
+}
+
+func SqlServerElasticPool(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
+	client := sqlv3.NewServersClient(subscription)
+	client.Authorizer = authorizer
+
+	elasticPoolClient := sql.NewElasticPoolsClient(subscription)
+	elasticPoolClient.Authorizer = authorizer
+
+	result, err := client.List(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	var values []Resource
+	for {
+		for _, server := range result.Values() {
+			serverResourceGroup := strings.Split(string(*server.ID), "/")[4]
+
+			elasticPoolResult, err := elasticPoolClient.ListByServer(ctx, serverResourceGroup, *server.Name)
+			if err != nil {
+				return nil, err
+			}
+
+			for {
+				for _, elasticPool := range *elasticPoolResult.Value {
+					resourceGroup := strings.Split(string(*elasticPool.ID), "/")[4]
+					values = append(values, Resource{
+						ID:       *elasticPool.ID,
+						Name:     *elasticPool.Name,
+						Location: *elasticPool.Location,
+						Description: model.SqlServerElasticPoolDescription{
+							Pool:          elasticPool,
+							ServerName:    *server.Name,
+							ResourceGroup: resourceGroup,
+						},
+					})
+				}
+			}
+		}
+		if !result.NotDone() {
+			break
+		}
+		err = result.NextWithContext(ctx)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return values, nil
+}
+
+func SqlServerVirtualMachine(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
+	client := sqlvirtualmachine.NewSQLVirtualMachinesClient(subscription)
+	client.Authorizer = authorizer
+
+	result, err := client.List(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	var values []Resource
+	for {
+		for _, vm := range result.Values() {
+			resourceGroup := strings.Split(string(*vm.ID), "/")[4]
+			values = append(values, Resource{
+				ID:       *vm.ID,
+				Name:     *vm.Name,
+				Location: *vm.Location,
+				Description: model.SqlServerVirtualMachineDescription{
+					VirtualMachine: vm,
+					ResourceGroup:  resourceGroup,
+				},
+			})
+
+		}
+		if !result.NotDone() {
+			break
+		}
+		err = result.NextWithContext(ctx)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return values, nil
+}
+
+func SqlServerFlexibleServer(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
+	client := mysqlflexibleservers.NewServersClient(subscription)
+	client.Authorizer = authorizer
+
+	result, err := client.List(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	var values []Resource
+	for {
+		for _, fs := range result.Values() {
+			resourceGroup := strings.Split(string(*fs.ID), "/")[4]
+			values = append(values, Resource{
+				ID:       *fs.ID,
+				Name:     *fs.Name,
+				Location: *fs.Location,
+				Description: model.SqlServerFlexibleServerDescription{
+					FlexibleServer: fs,
+					ResourceGroup:  resourceGroup,
+				},
+			})
+
 		}
 		if !result.NotDone() {
 			break
