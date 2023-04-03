@@ -2381,7 +2381,7 @@ func enqueueComplianceReportJobs(logger *zap.Logger, db Database, q queue.Interf
 		JobID:         crj.ID,
 		ScheduleJobID: scheduleJob.ID,
 		DescribedAt:   scheduleJob.CreatedAt.UnixMilli(),
-		EvaluatedAt:   0,
+		EvaluatedAt:   time.Now().UnixMilli(),
 		ConnectionID:  crj.SourceID,
 		BenchmarkID:   crj.BenchmarkID,
 		ConfigReg:     a.ConfigRef,
