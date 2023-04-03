@@ -781,7 +781,7 @@ func (h *HttpHandler) ListBenchmarks(ctx echo.Context) error {
 
 		if !hasParent {
 			be := b.ToApi()
-			err = be.PopulateConnectors(h.db)
+			err = b.PopulateConnectors(h.db, &be)
 			if err != nil {
 				return err
 			}
@@ -811,7 +811,7 @@ func (h *HttpHandler) GetBenchmark(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusNotFound, "benchmark not found")
 	}
 	resp := benchmark.ToApi()
-	err = resp.PopulateConnectors(h.db)
+	err = benchmark.PopulateConnectors(h.db, &resp)
 	if err != nil {
 		return err
 	}

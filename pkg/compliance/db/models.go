@@ -1,6 +1,7 @@
 package db
 
 import (
+	"fmt"
 	"gitlab.com/keibiengine/keibi-engine/pkg/types"
 	"time"
 
@@ -61,6 +62,49 @@ func (b Benchmark) ToApi() api.Benchmark {
 		ba.Policies = append(ba.Policies, policy.ID)
 	}
 	return ba
+}
+
+func (b *Benchmark) PopulateConnectors(db Database, api *api.Benchmark) error {
+	if len(api.Connectors) > 0 {
+		return nil
+	}
+
+	for _, childObj := range b.Children {
+		child, err := db.GetBenchmark(childObj.ID)
+		if err != nil {
+			return err
+		}
+		if child == nil {
+			return fmt.Errorf("child %s not found", childObj.ID)
+		}
+
+		ca := child.ToApi()
+		err = child.PopulateConnectors(db, &ca)
+		if err != nil {
+			return err
+		}
+
+		api.Connectors = append(api.Connectors, ca.Connectors...)
+	}
+
+	for _, policy := range b.Policies {
+		query, err := db.GetQuery(*policy.QueryID)
+		if err != nil {
+			return err
+		}
+		if query == nil {
+			return fmt.Errorf("query %s not found", *policy.QueryID)
+		}
+
+		ty, err := source.ParseType(query.Connector)
+		if err != nil {
+			return err
+		}
+
+		api.Connectors = append(api.Connectors, ty)
+	}
+
+	return nil
 }
 
 type BenchmarkChild struct {

@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"strconv"
+	"time"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/types"
 
@@ -19,23 +20,25 @@ const (
 
 type Finding struct {
 	ID               string                 `json:"ID"`
-	ComplianceJobID  uint                   `json:"complianceJobID"`
-	ScheduleJobID    uint                   `json:"scheduleJobID"`
+	BenchmarkID      string                 `json:"benchmarkID"`
+	PolicyID         string                 `json:"policyID"`
+	ConnectionID     string                 `json:"connectionID"`
+	DescribedAt      time.Time              `json:"describedAt"`
+	EvaluatedAt      time.Time              `json:"evaluatedAt"`
+	StateActive      bool                   `json:"stateActive"`
+	Result           types.ComplianceResult `json:"result"`
+	Severity         types.Severity         `json:"severity"`
+	Evaluator        string                 `json:"evaluator"`
+	Connector        source.Type            `json:"connector"`
 	ResourceID       string                 `json:"resourceID"`
 	ResourceName     string                 `json:"resourceName"`
+	ResourceLocation string                 `json:"resourceLocation"`
 	ResourceType     string                 `json:"resourceType"`
 	ServiceName      string                 `json:"serviceName"`
 	Category         string                 `json:"category"`
-	ResourceLocation string                 `json:"resourceLocation"`
 	Reason           string                 `json:"reason"`
-	Status           types.ComplianceResult `json:"status"`
-	DescribedAt      int64                  `json:"describedAt"`
-	EvaluatedAt      int64                  `json:"evaluatedAt"`
-	ConnectionID     string                 `json:"connectionID"`
-	Connector        source.Type            `json:"connector"`
-	BenchmarkID      string                 `json:"benchmarkID"`
-	PolicyID         string                 `json:"policyID"`
-	PolicySeverity   string                 `json:"policySeverity"`
+	ComplianceJobID  uint                   `json:"complianceJobID"`
+	ScheduleJobID    uint                   `json:"scheduleJobID"`
 }
 
 func (r Finding) KeysAndIndex() ([]string, string) {
@@ -43,7 +46,7 @@ func (r Finding) KeysAndIndex() ([]string, string) {
 		r.ResourceID,
 		r.ConnectionID,
 		r.PolicyID,
-		strconv.FormatInt(r.DescribedAt, 10),
+		strconv.FormatInt(r.DescribedAt.UnixMilli(), 10),
 	}, FindingsIndex
 }
 
