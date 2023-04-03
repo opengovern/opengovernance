@@ -48,7 +48,7 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 
 	v1.POST("/findings", httpserver.AuthorizeHandler(h.GetFindings, api3.ViewerRole))
 	// finding dashboard
-	v1.GET("/findings/top", httpserver.AuthorizeHandler(h.GetTopFieldByFindingCount, api3.ViewerRole))
+	v1.GET("/findings/:field/top/:count", httpserver.AuthorizeHandler(h.GetTopFieldByFindingCount, api3.ViewerRole))
 	v1.GET("/findings/metrics", httpserver.AuthorizeHandler(h.GetFindingsMetrics, api3.ViewerRole))
 
 	v1.POST("/alarms/top", httpserver.AuthorizeHandler(h.GetTopFieldByAlarmCount, api3.ViewerRole))
@@ -113,19 +113,23 @@ func (h *HttpHandler) GetFindings(ctx echo.Context) error {
 //	@Tags		compliance
 //	@Accept		json
 //	@Produce	json
-//	@Param		request	body		api.GetTopFieldRequest	true	"Request Body"
-//	@Success	200		{object}	api.GetTopFieldResponse
-//	@Router		/compliance/api/v1/findings/top [post]
+//	@Success	200	{object}	api.GetTopFieldResponse
+//	@Router		/compliance/api/v1/findings/{field}/top/{count} [post]
 func (h *HttpHandler) GetTopFieldByFindingCount(ctx echo.Context) error {
-	var req api.GetTopFieldRequest
-	if err := bindValidate(ctx, &req); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	field := ctx.QueryParam("field")
+	countStr := ctx.QueryParam("count")
+	count, err := strconv.Atoi(countStr)
+	if err != nil {
+		return err
 	}
 
+	//var req api.GetTopFieldRequest
+	//if err := bindValidate(ctx, &req); err != nil {
+	//	return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	//}
+
 	var response api.GetTopFieldResponse
-	res, err := es.FindingsTopFieldQuery(h.client, req.Field, req.Filters.Connector, req.Filters.ResourceTypeID,
-		req.Filters.ConnectionID, req.Filters.Status, req.Filters.BenchmarkID, req.Filters.PolicyID,
-		req.Filters.Severity, req.Count)
+	res, err := es.FindingsTopFieldQuery(h.client, field, nil, nil, nil, nil, nil, nil, nil, count)
 	if err != nil {
 		return err
 	}

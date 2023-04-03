@@ -579,7 +579,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/compliance/api/v1/findings/top": {
+        "/compliance/api/v1/findings/{field}/top/{count}": {
             "post": {
                 "consumes": [
                     "application/json"
@@ -591,17 +591,6 @@ const docTemplate = `{
                     "compliance"
                 ],
                 "summary": "Returns all findings with respect to filters",
-                "parameters": [
-                    {
-                        "description": "Request Body",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.GetTopFieldRequest"
-                        }
-                    }
-                ],
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -5022,6 +5011,12 @@ const docTemplate = `{
                         "type": "string"
                     }
                 },
+                "connectors": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/source.Type"
+                    }
+                },
                 "createdAt": {
                     "type": "string"
                 },
@@ -5726,10 +5721,10 @@ const docTemplate = `{
                 "evaluatedAt": {
                     "type": "integer"
                 },
-                "policyID": {
+                "evaluator": {
                     "type": "string"
                 },
-                "policySeverity": {
+                "policyID": {
                     "type": "string"
                 },
                 "reason": {
@@ -5747,14 +5742,20 @@ const docTemplate = `{
                 "resourceType": {
                     "type": "string"
                 },
+                "result": {
+                    "$ref": "#/definitions/types.ComplianceResult"
+                },
                 "scheduleJobID": {
                     "type": "integer"
                 },
                 "serviceName": {
                     "type": "string"
                 },
-                "status": {
-                    "$ref": "#/definitions/types.ComplianceResult"
+                "severity": {
+                    "type": "string"
+                },
+                "stateActive": {
+                    "type": "boolean"
                 }
             }
         },
