@@ -1,6 +1,7 @@
 package db
 
 import (
+	"gitlab.com/keibiengine/keibi-engine/pkg/types"
 	"time"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/compliance/api"
@@ -87,7 +88,7 @@ type Policy struct {
 	DocumentURI        string
 	QueryID            *string
 	Benchmarks         []Benchmark `gorm:"many2many:benchmark_policies;"`
-	Severity           string
+	Severity           types.Severity
 	ManualVerification bool
 	Managed            bool
 	CreatedAt          time.Time
