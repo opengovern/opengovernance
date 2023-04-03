@@ -32,7 +32,7 @@ func (b *findingMetricsBuilder) Process(resource es2.Finding) error {
 	b.metrics.ScheduleJobID = b.summarizerJobID
 	b.metrics.EvaluatedAt = resource.EvaluatedAt
 	b.metrics.DescribedAt = resource.DescribedAt
-	switch resource.Status {
+	switch resource.Result {
 	case types.ComplianceResultOK:
 		b.metrics.PassedFindingsCount++
 	case types.ComplianceResultALARM, types.ComplianceResultERROR:

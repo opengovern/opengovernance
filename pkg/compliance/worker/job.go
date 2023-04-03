@@ -185,7 +185,8 @@ func (j *Job) ExtractFindings(benchmark *api.Benchmark, policy *api.Policy, quer
 			recordValue[header] = value
 		}
 
-		var resourceID, resourceName, resourceType, resourceLocation, reason, status string
+		var resourceID, resourceName, resourceType, resourceLocation, reason string
+		var status types.ComplianceResult
 		if v, ok := recordValue["resource"].(string); ok {
 			resourceID = v
 		}
@@ -202,28 +203,34 @@ func (j *Job) ExtractFindings(benchmark *api.Benchmark, policy *api.Policy, quer
 			reason = v
 		}
 		if v, ok := recordValue["status"].(string); ok {
-			status = v
+			status = types.ComplianceResult(v)
 		}
 
+		severity := types.SeverityNone
+		if status == types.ComplianceResultALARM {
+			severity = policy.Severity
+		}
 		findings = append(findings, es.Finding{
 			ID:               fmt.Sprintf("%s-%s-%d", resourceID, policy.ID, j.ScheduleJobID),
-			ComplianceJobID:  j.JobID,
-			ScheduleJobID:    j.ScheduleJobID,
+			BenchmarkID:      j.BenchmarkID,
+			PolicyID:         policy.ID,
+			ConnectionID:     j.ConnectionID,
+			DescribedAt:      time.UnixMilli(j.DescribedAt),
+			EvaluatedAt:      time.UnixMilli(j.EvaluatedAt),
+			StateActive:      false, //TODO-Saleh
+			Result:           status,
+			Severity:         severity,
+			Evaluator:        query.Engine,
+			Connector:        j.Connector,
 			ResourceID:       resourceID,
 			ResourceName:     resourceName,
+			ResourceLocation: resourceLocation,
 			ResourceType:     resourceType,
 			ServiceName:      cloudservice.ServiceNameByResourceType(resourceType),
 			Category:         cloudservice.CategoryByResourceType(resourceType),
-			ResourceLocation: resourceLocation,
 			Reason:           reason,
-			Status:           types.ComplianceResult(status),
-			DescribedAt:      j.DescribedAt,
-			EvaluatedAt:      j.EvaluatedAt,
-			ConnectionID:     j.ConnectionID,
-			Connector:        j.Connector,
-			BenchmarkID:      j.BenchmarkID,
-			PolicyID:         policy.ID,
-			PolicySeverity:   policy.Severity,
+			ComplianceJobID:  j.JobID,
+			ScheduleJobID:    j.ScheduleJobID,
 		})
 	}
 	return findings, nil

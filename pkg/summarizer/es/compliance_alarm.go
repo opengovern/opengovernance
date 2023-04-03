@@ -2,6 +2,7 @@ package es
 
 import (
 	"fmt"
+	"time"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/source"
 
@@ -15,25 +16,25 @@ const (
 type Event struct {
 	ResourceID    string                 `json:"resource_id"`
 	ControlID     string                 `json:"control_id"`
-	CreatedAt     int64                  `json:"created_at"`
+	CreatedAt     time.Time              `json:"created_at"`
 	ScheduleJobID uint                   `json:"schedule_job_id"`
 	Status        types.ComplianceResult `json:"status"`
 }
 
 type FindingAlarm struct {
-	ResourceID     string                 `json:"resource_id"`
-	BenchmarkID    string                 `json:"benchmarkID"`
-	ControlID      string                 `json:"control_id"`
-	ResourceType   string                 `json:"resourceType"`
-	ServiceName    string                 `json:"serviceName"`
-	SourceID       string                 `json:"sourceID"`
-	SourceType     source.Type            `json:"sourceType"`
-	PolicySeverity string                 `json:"policySeverity"`
-	CreatedAt      int64                  `json:"created_at"`
-	ScheduleJobID  uint                   `json:"schedule_job_id"`
-	LastEvaluated  int64                  `json:"last_evaluated"`
-	Status         types.ComplianceResult `json:"status"`
-	Events         []Event                `json:"events"`
+	ResourceID    string                 `json:"resource_id"`
+	BenchmarkID   string                 `json:"benchmarkID"`
+	ControlID     string                 `json:"control_id"`
+	ResourceType  string                 `json:"resourceType"`
+	ServiceName   string                 `json:"serviceName"`
+	SourceID      string                 `json:"sourceID"`
+	SourceType    source.Type            `json:"sourceType"`
+	Severity      types.Severity         `json:"policySeverity"`
+	CreatedAt     time.Time              `json:"created_at"`
+	ScheduleJobID uint                   `json:"schedule_job_id"`
+	LastEvaluated time.Time              `json:"last_evaluated"`
+	Status        types.ComplianceResult `json:"status"`
+	Events        []Event                `json:"events"`
 }
 
 func (r FindingAlarm) KeysAndIndex() ([]string, string) {

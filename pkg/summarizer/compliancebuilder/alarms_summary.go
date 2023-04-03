@@ -31,28 +31,28 @@ func (b *alarmsBuilder) Process(resource es2.Finding) error {
 	}
 
 	if activeAlarm == nil { // there's no alarm
-		if resource.Status != types.ComplianceResultOK {
+		if resource.Result != types.ComplianceResultOK {
 			// create a new one
 			b.alarms = append(b.alarms, es.FindingAlarm{
-				ResourceID:     resource.ResourceID,
-				BenchmarkID:    resource.BenchmarkID,
-				ControlID:      resource.PolicyID,
-				ResourceType:   resource.ResourceType,
-				ServiceName:    resource.ServiceName,
-				SourceID:       resource.ConnectionID,
-				SourceType:     resource.Connector,
-				PolicySeverity: resource.PolicySeverity,
-				CreatedAt:      resource.DescribedAt,
-				ScheduleJobID:  resource.ScheduleJobID,
-				LastEvaluated:  resource.DescribedAt,
-				Status:         resource.Status,
+				ResourceID:    resource.ResourceID,
+				BenchmarkID:   resource.BenchmarkID,
+				ControlID:     resource.PolicyID,
+				ResourceType:  resource.ResourceType,
+				ServiceName:   resource.ServiceName,
+				SourceID:      resource.ConnectionID,
+				SourceType:    resource.Connector,
+				Severity:      resource.Severity,
+				CreatedAt:     resource.DescribedAt,
+				ScheduleJobID: resource.ScheduleJobID,
+				LastEvaluated: resource.DescribedAt,
+				Status:        resource.Result,
 				Events: []es.Event{
 					{
 						ResourceID:    resource.ResourceID,
 						ControlID:     resource.PolicyID,
 						CreatedAt:     resource.DescribedAt,
 						ScheduleJobID: resource.ScheduleJobID,
-						Status:        resource.Status,
+						Status:        resource.Result,
 					},
 				},
 			})
@@ -62,14 +62,14 @@ func (b *alarmsBuilder) Process(resource es2.Finding) error {
 		}
 	} else {
 		// add finding to events, update the alarm
-		activeAlarm.Status = resource.Status
+		activeAlarm.Status = resource.Result
 		activeAlarm.LastEvaluated = resource.DescribedAt
 		activeAlarm.Events = append(activeAlarm.Events, es.Event{
 			ResourceID:    resource.ResourceID,
 			ControlID:     resource.PolicyID,
 			CreatedAt:     resource.DescribedAt,
 			ScheduleJobID: resource.ScheduleJobID,
-			Status:        resource.Status,
+			Status:        resource.Result,
 		})
 		b.alarms = append(b.alarms, *activeAlarm)
 	}
