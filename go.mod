@@ -98,7 +98,7 @@ require (
 	github.com/tombuildsstuff/giovanni v0.18.0
 	github.com/turbot/go-kit v0.4.0
 	gitlab.com/keibiengine/steampipe-plugin-aws v0.0.0-20230120132753-94e2fa861042
-	gitlab.com/keibiengine/steampipe-plugin-azure v0.23.2-0.20230317091437-672da179e017
+	gitlab.com/keibiengine/steampipe-plugin-azure v0.23.2-0.20230403104025-7450a19481dd
 	gitlab.com/keibiengine/steampipe-plugin-azuread v0.1.1-0.20230330133010-4edcf1226e17
 	go.uber.org/zap v1.21.0
 	golang.org/x/text v0.7.0 // indirect
@@ -123,6 +123,7 @@ require (
 	github.com/Azure/azure-sdk-for-go/sdk/messaging/azeventhubs v0.5.0
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/dns/armdns v1.0.0
 	github.com/Azure/azure-sdk-for-go/sdk/storage/azblob v1.0.0
+	github.com/Azure/azure-storage-blob-go v0.14.0
 	github.com/Azure/go-autorest/autorest/date v0.3.0
 	github.com/ProtonMail/gopenpgp/v2 v2.5.2
 	github.com/aws/aws-sdk-go-v2/service/acmpca v1.21.0
@@ -181,7 +182,6 @@ require (
 	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.3.0 // indirect
 	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.1.0 // indirect
 	github.com/Azure/azure-sdk-for-go/sdk/internal v1.1.2 // indirect
-	github.com/Azure/azure-storage-blob-go v0.14.0 // indirect
 	github.com/Azure/go-ansiterm v0.0.0-20210617225240-d185dfc1b5a1 // indirect
 	github.com/Azure/go-autorest v14.2.0+incompatible // indirect
 	github.com/Azure/go-autorest/autorest/adal v0.9.18 // indirect
