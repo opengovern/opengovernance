@@ -660,7 +660,7 @@
             }
         },
         "/inventory/api/v1/connection/{connection_id}/summary": {
-            "post": {
+            "get": {
                 "consumes": [
                     "application/json"
                 ],
@@ -697,7 +697,7 @@
                 "parameters": [
                     {
                         "type": "integer",
-                        "description": "count",
+                        "description": "Number of top accounts returning.",
                         "name": "count",
                         "in": "query",
                         "required": true
@@ -738,7 +738,7 @@
                 "parameters": [
                     {
                         "type": "integer",
-                        "description": "count",
+                        "description": "Number of top services returning.",
                         "name": "count",
                         "in": "query",
                         "required": true
@@ -785,7 +785,8 @@
                     {
                         "enum": [
                             "aws",
-                            "azure"
+                            "azure",
+                            "all"
                         ],
                         "type": "string",
                         "description": "Provider",
@@ -808,7 +809,7 @@
             }
         },
         "/inventory/api/v1/provider/{provider}/summary": {
-            "post": {
+            "get": {
                 "consumes": [
                     "application/json"
                 ],
@@ -1028,7 +1029,7 @@
         },
         "/inventory/api/v1/resources/aws": {
             "post": {
-                "description": "Getting AWS resources by filters.\nIn order to get the results in CSV format, Accepts header must be filled with `text/csv` value.\nNote that csv output doesn't process pagination and returns first 5000 records.",
+                "description": "Getting AWS resources by filters.\nIn order to get the results in CSV format, Accepts header must be filled with `text/csv` value.\nNote that csv output doesn't process pagination and returns first 5000 records.\nIf sort by is empty, result will be sorted by the first column in ascending order.",
                 "consumes": [
                     "application/json"
                 ],
@@ -1085,7 +1086,7 @@
         },
         "/inventory/api/v1/resources/azure": {
             "post": {
-                "description": "Getting Azure resources by filters.\nIn order to get the results in CSV format, Accepts header must be filled with `text/csv` value.\nNote that csv output doesn't process pagination and returns first 5000 records.",
+                "description": "Getting Azure resources by filters.\nIn order to get the results in CSV format, Accepts header must be filled with `text/csv` value.\nNote that csv output doesn't process pagination and returns first 5000 records.\nIf sort by is empty, result will be sorted by the first column in ascending order.",
                 "consumes": [
                     "application/json"
                 ],
@@ -1141,7 +1142,8 @@
             }
         },
         "/inventory/api/v1/resources/count": {
-            "post": {
+            "get": {
+                "description": "Number of all resources",
                 "consumes": [
                     "application/json"
                 ],
@@ -1335,7 +1337,7 @@
                 "parameters": [
                     {
                         "type": "integer",
-                        "description": "count",
+                        "description": "Number of top accounts returning.",
                         "name": "count",
                         "in": "query",
                         "required": true
@@ -1372,11 +1374,11 @@
                 "tags": [
                     "benchmarks"
                 ],
-                "summary": "Returns top n accounts of specified provider by resource count",
+                "summary": "Returns top n fastest growing accounts of specified provider in the specified time window by resource count",
                 "parameters": [
                     {
                         "type": "integer",
-                        "description": "count",
+                        "description": "Number of top accounts returning.",
                         "name": "count",
                         "in": "query",
                         "required": true
@@ -1476,7 +1478,7 @@
                 "parameters": [
                     {
                         "type": "integer",
-                        "description": "count",
+                        "description": "Number of top ser",
                         "name": "count",
                         "in": "query",
                         "required": true
@@ -1510,6 +1512,7 @@
         },
         "/inventory/api/v1/resources/trend": {
             "get": {
+                "description": "Returns trend of resource count in the specified time window\nIn case of not specifying SourceID, Provider is used for filtering",
                 "consumes": [
                     "application/json"
                 ],
@@ -1519,7 +1522,7 @@
                 "tags": [
                     "benchmarks"
                 ],
-                "summary": "Returns trend of resource growth for specific account",
+                "summary": "Returns trend of resource count growth for specific account",
                 "parameters": [
                     {
                         "type": "string",
@@ -2430,7 +2433,7 @@
                     },
                     {
                         "type": "integer",
-                        "description": "How many top categories to return",
+                        "description": "How many top categories to return. The rest will be aggregated into Others.",
                         "name": "top",
                         "in": "query",
                         "required": true
@@ -5738,9 +5741,11 @@
                     "type": "string"
                 },
                 "categoryName": {
+                    "description": "Name of the Category",
                     "type": "string"
                 },
                 "cost": {
+                    "description": "The aggregation of all the services costs",
                     "type": "object",
                     "additionalProperties": {
                         "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.CostWithUnit"
@@ -5753,16 +5758,19 @@
                     }
                 },
                 "filters": {
+                    "description": "List of Filters associated with this Category",
                     "type": "array",
                     "items": {}
                 },
                 "resourceCount": {
+                    "description": "Number of Resources of the category",
                     "type": "integer"
                 },
                 "resourceCountChange": {
                     "type": "number"
                 },
                 "subcategories": {
+                    "description": "Subcategories sorted by ResourceCount [resources/category, ]",
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.CategoryNode"
@@ -5906,12 +5914,14 @@
             "type": "object",
             "properties": {
                 "resources": {
+                    "description": "A list of AWS resources with details",
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.AWSResource"
                     }
                 },
                 "totalCount": {
+                    "description": "Number of returned resources",
                     "type": "integer"
                 }
             }
@@ -5920,12 +5930,14 @@
             "type": "object",
             "properties": {
                 "resources": {
+                    "description": "A list of Azure resources with details",
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.AzureResource"
                     }
                 },
                 "totalCount": {
+                    "description": "Number of returned resources",
                     "type": "integer"
                 }
             }
@@ -6014,12 +6026,14 @@
             "type": "object",
             "properties": {
                 "resources": {
+                    "description": "A list of AWS resources with details",
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.AllResource"
                     }
                 },
                 "totalCount": {
+                    "description": "Number of returned resources",
                     "type": "integer"
                 }
             }
@@ -6262,6 +6276,7 @@
             "type": "object",
             "properties": {
                 "name": {
+                    "description": "Name of the region",
                     "type": "string"
                 }
             }
@@ -6707,6 +6722,7 @@
             "type": "object",
             "properties": {
                 "provider": {
+                    "description": "Account Provider",
                     "type": "string"
                 },
                 "providerConnectionID": {
@@ -6716,6 +6732,7 @@
                     "type": "string"
                 },
                 "resourceCount": {
+                    "description": "Last number of Resources of the account",
                     "type": "integer"
                 },
                 "sourceID": {
@@ -6764,9 +6781,11 @@
             "type": "object",
             "properties": {
                 "timestamp": {
+                    "description": "Time",
                     "type": "integer"
                 },
                 "value": {
+                    "description": "Value (Resource Count or Costs)",
                     "type": "integer"
                 }
             }

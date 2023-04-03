@@ -46,7 +46,7 @@ type GetResourceRequest struct {
 }
 
 type LocationByProviderResponse struct {
-	Name string `json:"name"`
+	Name string `json:"name"` // Name of the region
 }
 
 type RunQueryRequest struct {
@@ -166,8 +166,8 @@ type SmartQuerySortItem struct {
 }
 
 type GetResourcesResponse struct {
-	Resources  []AllResource `json:"resources"`
-	TotalCount int64         `json:"totalCount,omitempty"`
+	Resources  []AllResource `json:"resources"`            // A list of AWS resources with details
+	TotalCount int64         `json:"totalCount,omitempty"` // Number of returned resources
 }
 
 type AllResource struct {
@@ -202,8 +202,8 @@ func (r AllResource) ToCSVHeaders() []string {
 }
 
 type GetAzureResourceResponse struct {
-	Resources  []AzureResource `json:"resources"`
-	TotalCount int64           `json:"totalCount,omitempty"`
+	Resources  []AzureResource `json:"resources"`            // A list of Azure resources with details
+	TotalCount int64           `json:"totalCount,omitempty"` // Number of returned resources
 }
 
 type AzureResource struct {
@@ -236,8 +236,8 @@ func (r AzureResource) ToCSVHeaders() []string {
 }
 
 type GetAWSResourceResponse struct {
-	Resources  []AWSResource `json:"resources"`
-	TotalCount int64         `json:"totalCount,omitempty"`
+	Resources  []AWSResource `json:"resources"`            // A list of AWS resources with details
+	TotalCount int64         `json:"totalCount,omitempty"` // Number of returned resources
 }
 
 type AWSResource struct {
@@ -313,8 +313,8 @@ type SmartQueryItem struct {
 }
 
 type TrendDataPoint struct {
-	Timestamp int64 `json:"timestamp"`
-	Value     int64 `json:"value"`
+	Timestamp int64 `json:"timestamp"` // Time
+	Value     int64 `json:"value"`     // Value (Resource Count or Costs)
 }
 
 type CostTrendDataPoint struct {
@@ -388,10 +388,10 @@ type AccountSummary struct {
 
 type TopAccountResponse struct {
 	SourceID               string `json:"sourceID"`
-	Provider               string `json:"provider"`
+	Provider               string `json:"provider"` // Account Provider
 	ProviderConnectionName string `json:"providerConnectionName"`
 	ProviderConnectionID   string `json:"providerConnectionID"`
-	ResourceCount          int    `json:"resourceCount"`
+	ResourceCount          int    `json:"resourceCount"` // Last number of Resources of the account
 }
 
 type TopAccountCostResponse struct {
@@ -527,13 +527,13 @@ func (f FilterInsightMetric) GetFilterName() string {
 
 type CategoryNode struct {
 	CategoryID          string                  `json:"categoryID"`
-	CategoryName        string                  `json:"categoryName"`
-	ResourceCount       *int                    `json:"resourceCount,omitempty"`
+	CategoryName        string                  `json:"categoryName"`            // Name of the Category
+	ResourceCount       *int                    `json:"resourceCount,omitempty"` // Number of Resources of the category
 	ResourceCountChange *float64                `json:"resourceCountChange,omitempty"`
-	Cost                map[string]CostWithUnit `json:"cost,omitempty"`
+	Cost                map[string]CostWithUnit `json:"cost,omitempty"` // The aggregation of all the services costs
 	CostChange          map[string]float64      `json:"costChange,omitempty"`
-	Subcategories       []CategoryNode          `json:"subcategories,omitempty"`
-	Filters             []Filter                `json:"filters,omitempty"`
+	Subcategories       []CategoryNode          `json:"subcategories,omitempty"` // Subcategories sorted by ResourceCount [resources/category, ]
+	Filters             []Filter                `json:"filters,omitempty"`       // List of Filters associated with this Category
 }
 
 type MetricsResponse struct {
