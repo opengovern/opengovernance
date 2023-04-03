@@ -168,3 +168,67 @@ func AppServiceWebApp(ctx context.Context, authorizer autorest.Authorizer, subsc
 
 	return values, nil
 }
+
+func AppServicePlan(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
+	client := web.NewAppServicePlansClient(subscription)
+	client.Authorizer = authorizer
+
+	detailed := true
+
+	result, err := client.List(ctx, &detailed)
+	if err != nil {
+		return nil, err
+	}
+
+	var values []Resource
+	for {
+		for _, v := range result.Values() {
+			resourceGroup := strings.Split(*v.ID, "/")[4]
+
+			location := ""
+			if v.Location != nil {
+				location = *v.Location
+			}
+
+			var webApps []web.Site
+			webAppsPaginator, err := client.ListWebApps(ctx, resourceGroup, *v.Name, "", "", "")
+			if err != nil {
+				return nil, err
+			}
+			for {
+				for _, webAppPaginator := range webAppsPaginator.Values() {
+					webApps = append(webApps, webAppPaginator)
+				}
+				if !webAppsPaginator.NotDone() {
+					break
+				}
+				err = webAppsPaginator.NextWithContext(ctx)
+				if err != nil {
+					return nil, err
+				}
+			}
+
+			values = append(values, Resource{
+				ID:       *v.ID,
+				Name:     *v.Name,
+				Location: location,
+				Description: model.AppServicePlanDescription{
+					Plan:          v,
+					Apps:          webApps,
+					ResourceGroup: resourceGroup,
+				},
+			})
+		}
+
+		if !result.NotDone() {
+			break
+		}
+
+		err = result.NextWithContext(ctx)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return values, nil
+}

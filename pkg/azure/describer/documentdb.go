@@ -10,7 +10,7 @@ import (
 )
 
 func DocumentDBDatabaseAccountsSQLDatabase(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
-	rgs, err := resourceGroup(ctx, authorizer, subscription)
+	rgs, err := listResourceGroups(ctx, authorizer, subscription)
 	if err != nil {
 		return nil, err
 	}
@@ -40,17 +40,67 @@ func DocumentDBDatabaseAccountsSQLDatabase(ctx context.Context, authorizer autor
 				}
 
 				values = append(values, Resource{
-					ID:          *v.ID,
-					Name:        *v.Name,
-					Location:    location,
-					Description: JSONAllFieldsMarshaller{Value: v},
+					ID:       *v.ID,
+					Name:     *v.Name,
+					Location: location,
+					Description: model.CosmosdbSqlDatabaseDescription{
+						Account:       account,
+						SqlDatabase:   v,
+						ResourceGroup: *rg.Name,
+					},
 				})
 			}
 		}
 	}
 
 	return values, nil
+}
 
+func DocumentDBDatabaseAccountsMongoDatabase(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
+	rgs, err := listResourceGroups(ctx, authorizer, subscription)
+	if err != nil {
+		return nil, err
+	}
+
+	client := documentdb.NewMongoDBResourcesClient(subscription)
+	client.Authorizer = authorizer
+
+	var values []Resource
+	for _, rg := range rgs {
+		accounts, err := documentDBDatabaseAccounts(ctx, authorizer, subscription, *rg.Name)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, account := range accounts {
+			it, err := client.ListMongoDBDatabases(ctx, *rg.Name, *account.Name)
+			if err != nil {
+				return nil, err
+			} else if it.Value == nil {
+				continue
+			}
+
+			for _, v := range *it.Value {
+				location := ""
+				if v.Location != nil {
+					location = *v.Location
+				}
+
+				values = append(values, Resource{
+					ID:       *v.ID,
+					Name:     *v.Name,
+					Location: location,
+					Description: model.CosmosdbMongoDatabaseDescription{
+						Account:       account,
+						MongoDatabase: v,
+						ResourceGroup: *rg.Name,
+					},
+				})
+			}
+		}
+	}
+
+	return values, nil
 }
 
 func documentDBDatabaseAccounts(ctx context.Context, authorizer autorest.Authorizer, subscription string, resourceGroup string) ([]documentdb.DatabaseAccountGetResults, error) {
