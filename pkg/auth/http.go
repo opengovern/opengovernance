@@ -3,10 +3,11 @@ package auth
 import (
 	"context"
 	_ "embed"
-	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpclient"
 	"net/http"
 	"strings"
 	"time"
+
+	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpclient"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/auth/auth0"
 

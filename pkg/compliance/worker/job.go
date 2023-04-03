@@ -3,6 +3,9 @@ package worker
 import (
 	"errors"
 	"fmt"
+	"os/exec"
+	"time"
+
 	api2 "gitlab.com/keibiengine/keibi-engine/pkg/auth/api"
 	"gitlab.com/keibiengine/keibi-engine/pkg/cloudservice"
 	"gitlab.com/keibiengine/keibi-engine/pkg/compliance/api"
@@ -18,8 +21,6 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/types"
 	"go.uber.org/zap"
 	"gopkg.in/Shopify/sarama.v1"
-	"os/exec"
-	"time"
 )
 
 type Job struct {

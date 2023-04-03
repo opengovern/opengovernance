@@ -3,9 +3,10 @@ package compliance
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
+
 	"gitlab.com/keibiengine/keibi-engine/pkg/compliance/worker"
 	"gitlab.com/keibiengine/keibi-engine/pkg/keibi-es-sdk"
-	"strings"
 
 	client2 "gitlab.com/keibiengine/keibi-engine/pkg/compliance/client"
 

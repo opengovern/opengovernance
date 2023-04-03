@@ -40,7 +40,7 @@ func (ts *testSuite) TestCreateAndDeleteTargetNamespace() {
 	workspace, err := ts.initWorkspace()
 	ts.NoError(err)
 
-	name := workspace.ID.String()
+	name := workspace.ID
 	err = ts.server.createTargetNamespace(context.Background(), name)
 	ts.NoError(err)
 

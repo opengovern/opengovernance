@@ -2,6 +2,7 @@ package compliance
 
 import (
 	"fmt"
+
 	describeClient "gitlab.com/keibiengine/keibi-engine/pkg/describe/client"
 	inventoryClient "gitlab.com/keibiengine/keibi-engine/pkg/inventory/client"
 	onboardClient "gitlab.com/keibiengine/keibi-engine/pkg/onboard/client"

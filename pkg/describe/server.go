@@ -4,10 +4,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"gitlab.com/keibiengine/keibi-engine/pkg/source"
 	"net/http"
 	"strconv"
 	"time"
+
+	"gitlab.com/keibiengine/keibi-engine/pkg/source"
 
 	"github.com/ProtonMail/gopenpgp/v2/helper"
 	api3 "gitlab.com/keibiengine/keibi-engine/pkg/auth/api"

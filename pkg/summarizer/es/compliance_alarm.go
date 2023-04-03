@@ -41,7 +41,7 @@ func (r FindingAlarm) KeysAndIndex() ([]string, string) {
 	keys := []string{
 		r.ResourceID,
 		r.ControlID,
-		fmt.Sprintf("%d", r.CreatedAt),
+		fmt.Sprintf("%d", r.CreatedAt.UnixMilli()),
 	}
 	return keys, AlarmIndex
 }

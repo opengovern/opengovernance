@@ -2,8 +2,9 @@ package db
 
 import (
 	"fmt"
-	"gitlab.com/keibiengine/keibi-engine/pkg/types"
 	"time"
+
+	"gitlab.com/keibiengine/keibi-engine/pkg/types"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/compliance/api"
 	"gitlab.com/keibiengine/keibi-engine/pkg/source"

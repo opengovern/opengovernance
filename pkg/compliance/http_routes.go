@@ -3,12 +3,13 @@ package compliance
 import (
 	"errors"
 	"fmt"
-	es2 "gitlab.com/keibiengine/keibi-engine/pkg/summarizer/es"
-	"gitlab.com/keibiengine/keibi-engine/pkg/summarizer/query"
-	"gitlab.com/keibiengine/keibi-engine/pkg/timewindow"
 	"net/http"
 	"strconv"
 	"time"
+
+	es2 "gitlab.com/keibiengine/keibi-engine/pkg/summarizer/es"
+	"gitlab.com/keibiengine/keibi-engine/pkg/summarizer/query"
+	"gitlab.com/keibiengine/keibi-engine/pkg/timewindow"
 
 	api3 "gitlab.com/keibiengine/keibi-engine/pkg/auth/api"
 	"gitlab.com/keibiengine/keibi-engine/pkg/compliance/db"

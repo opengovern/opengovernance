@@ -1,9 +1,10 @@
 package api
 
 import (
+	"time"
+
 	"gitlab.com/keibiengine/keibi-engine/pkg/source"
 	"gitlab.com/keibiengine/keibi-engine/pkg/types"
-	"time"
 )
 
 type Benchmark struct {

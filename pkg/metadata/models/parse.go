@@ -7,8 +7,6 @@ import (
 	metadataErrors "gitlab.com/keibiengine/keibi-engine/pkg/metadata/errors"
 )
 
-var ()
-
 func (t ConfigMetadataType) SerializeValue(value any) (string, error) {
 	switch t {
 	case ConfigMetadataTypeString:
