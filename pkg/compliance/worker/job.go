@@ -216,8 +216,8 @@ func (j *Job) ExtractFindings(benchmark *api.Benchmark, policy *api.Policy, quer
 			BenchmarkID:      j.BenchmarkID,
 			PolicyID:         policy.ID,
 			ConnectionID:     j.ConnectionID,
-			DescribedAt:      time.UnixMilli(j.DescribedAt),
-			EvaluatedAt:      time.UnixMilli(j.EvaluatedAt),
+			DescribedAt:      j.DescribedAt,
+			EvaluatedAt:      j.EvaluatedAt,
 			StateActive:      false, //TODO-Saleh
 			Result:           status,
 			Severity:         severity,

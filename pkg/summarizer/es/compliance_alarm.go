@@ -2,8 +2,6 @@ package es
 
 import (
 	"fmt"
-	"time"
-
 	"gitlab.com/keibiengine/keibi-engine/pkg/source"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/types"
@@ -16,7 +14,7 @@ const (
 type Event struct {
 	ResourceID    string                 `json:"resource_id"`
 	ControlID     string                 `json:"control_id"`
-	CreatedAt     time.Time              `json:"created_at"`
+	CreatedAt     int64                  `json:"created_at"`
 	ScheduleJobID uint                   `json:"schedule_job_id"`
 	Status        types.ComplianceResult `json:"status"`
 }
@@ -30,9 +28,9 @@ type FindingAlarm struct {
 	SourceID      string                 `json:"sourceID"`
 	SourceType    source.Type            `json:"sourceType"`
 	Severity      types.Severity         `json:"policySeverity"`
-	CreatedAt     time.Time              `json:"created_at"`
+	CreatedAt     int64                  `json:"created_at"`
 	ScheduleJobID uint                   `json:"schedule_job_id"`
-	LastEvaluated time.Time              `json:"last_evaluated"`
+	LastEvaluated int64                  `json:"last_evaluated"`
 	Status        types.ComplianceResult `json:"status"`
 	Events        []Event                `json:"events"`
 }
@@ -41,7 +39,7 @@ func (r FindingAlarm) KeysAndIndex() ([]string, string) {
 	keys := []string{
 		r.ResourceID,
 		r.ControlID,
-		fmt.Sprintf("%d", r.CreatedAt.UnixMilli()),
+		fmt.Sprintf("%d", r.CreatedAt),
 	}
 	return keys, AlarmIndex
 }
