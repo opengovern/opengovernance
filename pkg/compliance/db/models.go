@@ -85,7 +85,18 @@ func (b *Benchmark) PopulateConnectors(db Database, api *api.Benchmark) error {
 			return err
 		}
 
-		api.Connectors = append(api.Connectors, ca.Connectors...)
+		for _, conn := range ca.Connectors {
+
+			exists := false
+			for _, c := range api.Connectors {
+				if c == conn {
+					exists = true
+				}
+			}
+			if !exists {
+				api.Connectors = append(api.Connectors, conn)
+			}
+		}
 	}
 
 	for _, policy := range b.Policies {
@@ -102,7 +113,15 @@ func (b *Benchmark) PopulateConnectors(db Database, api *api.Benchmark) error {
 			return err
 		}
 
-		api.Connectors = append(api.Connectors, ty)
+		exists := false
+		for _, c := range api.Connectors {
+			if c == ty {
+				exists = true
+			}
+		}
+		if !exists {
+			api.Connectors = append(api.Connectors, ty)
+		}
 	}
 
 	return nil
