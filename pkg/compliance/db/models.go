@@ -1,7 +1,10 @@
 package db
 
 import (
+	"fmt"
 	"time"
+
+	"gitlab.com/keibiengine/keibi-engine/pkg/types"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/compliance/api"
 	"gitlab.com/keibiengine/keibi-engine/pkg/source"
@@ -62,6 +65,68 @@ func (b Benchmark) ToApi() api.Benchmark {
 	return ba
 }
 
+func (b *Benchmark) PopulateConnectors(db Database, api *api.Benchmark) error {
+	if len(api.Connectors) > 0 {
+		return nil
+	}
+
+	for _, childObj := range b.Children {
+		child, err := db.GetBenchmark(childObj.ID)
+		if err != nil {
+			return err
+		}
+		if child == nil {
+			return fmt.Errorf("child %s not found", childObj.ID)
+		}
+
+		ca := child.ToApi()
+		err = child.PopulateConnectors(db, &ca)
+		if err != nil {
+			return err
+		}
+
+		for _, conn := range ca.Connectors {
+
+			exists := false
+			for _, c := range api.Connectors {
+				if c == conn {
+					exists = true
+				}
+			}
+			if !exists {
+				api.Connectors = append(api.Connectors, conn)
+			}
+		}
+	}
+
+	for _, policy := range b.Policies {
+		query, err := db.GetQuery(*policy.QueryID)
+		if err != nil {
+			return err
+		}
+		if query == nil {
+			return fmt.Errorf("query %s not found", *policy.QueryID)
+		}
+
+		ty, err := source.ParseType(query.Connector)
+		if err != nil {
+			return err
+		}
+
+		exists := false
+		for _, c := range api.Connectors {
+			if c == ty {
+				exists = true
+			}
+		}
+		if !exists {
+			api.Connectors = append(api.Connectors, ty)
+		}
+	}
+
+	return nil
+}
+
 type BenchmarkChild struct {
 	BenchmarkID string
 	ChildID     string
@@ -87,7 +152,7 @@ type Policy struct {
 	DocumentURI        string
 	QueryID            *string
 	Benchmarks         []Benchmark `gorm:"many2many:benchmark_policies;"`
-	Severity           string
+	Severity           types.Severity
 	ManualVerification bool
 	Managed            bool
 	CreatedAt          time.Time

@@ -3,6 +3,9 @@ package worker
 import (
 	"errors"
 	"fmt"
+	"os/exec"
+	"time"
+
 	api2 "gitlab.com/keibiengine/keibi-engine/pkg/auth/api"
 	"gitlab.com/keibiengine/keibi-engine/pkg/cloudservice"
 	"gitlab.com/keibiengine/keibi-engine/pkg/compliance/api"
@@ -18,8 +21,6 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/types"
 	"go.uber.org/zap"
 	"gopkg.in/Shopify/sarama.v1"
-	"os/exec"
-	"time"
 )
 
 type Job struct {
@@ -110,15 +111,6 @@ func (j *Job) RunBenchmark(benchmarkID string, complianceClient client.Complianc
 			return nil, err
 		}
 
-		if res != nil {
-			fmt.Println("===============")
-			fmt.Println(benchmarkID, policyID, *policy.QueryID)
-			fmt.Println(query.QueryToExecute)
-			fmt.Println(res.Headers)
-			fmt.Println(res.Data)
-			fmt.Println("===============")
-		}
-
 		f, err := j.ExtractFindings(benchmark, policy, query, res)
 		if err != nil {
 			return nil, err
@@ -179,7 +171,6 @@ func (j *Job) Run(complianceClient client.ComplianceServiceClient, onboardClient
 	for _, finding := range findings {
 		docs = append(docs, finding)
 	}
-	fmt.Println("+++++++++++++++++ docs len=", len(docs))
 	return kafka.DoSend(kfkProducer, kfkTopic, docs, logger)
 }
 
@@ -195,7 +186,8 @@ func (j *Job) ExtractFindings(benchmark *api.Benchmark, policy *api.Policy, quer
 			recordValue[header] = value
 		}
 
-		var resourceID, resourceName, resourceType, resourceLocation, reason, status string
+		var resourceID, resourceName, resourceType, resourceLocation, reason string
+		var status types.ComplianceResult
 		if v, ok := recordValue["resource"].(string); ok {
 			resourceID = v
 		}
@@ -212,28 +204,35 @@ func (j *Job) ExtractFindings(benchmark *api.Benchmark, policy *api.Policy, quer
 			reason = v
 		}
 		if v, ok := recordValue["status"].(string); ok {
-			status = v
+			status = types.ComplianceResult(v)
 		}
+		fmt.Println("======", recordValue)
 
+		severity := types.SeverityNone
+		if status == types.ComplianceResultALARM {
+			severity = policy.Severity
+		}
 		findings = append(findings, es.Finding{
 			ID:               fmt.Sprintf("%s-%s-%d", resourceID, policy.ID, j.ScheduleJobID),
-			ComplianceJobID:  j.JobID,
-			ScheduleJobID:    j.ScheduleJobID,
+			BenchmarkID:      j.BenchmarkID,
+			PolicyID:         policy.ID,
+			ConnectionID:     j.ConnectionID,
+			DescribedAt:      j.DescribedAt,
+			EvaluatedAt:      j.EvaluatedAt,
+			StateActive:      false, //TODO-Saleh
+			Result:           status,
+			Severity:         severity,
+			Evaluator:        query.Engine,
+			Connector:        j.Connector,
 			ResourceID:       resourceID,
 			ResourceName:     resourceName,
+			ResourceLocation: resourceLocation,
 			ResourceType:     resourceType,
 			ServiceName:      cloudservice.ServiceNameByResourceType(resourceType),
 			Category:         cloudservice.CategoryByResourceType(resourceType),
-			ResourceLocation: resourceLocation,
 			Reason:           reason,
-			Status:           types.ComplianceResult(status),
-			DescribedAt:      j.DescribedAt,
-			EvaluatedAt:      j.EvaluatedAt,
-			ConnectionID:     j.ConnectionID,
-			Connector:        j.Connector,
-			BenchmarkID:      j.BenchmarkID,
-			PolicyID:         policy.ID,
-			PolicySeverity:   policy.Severity,
+			ComplianceJobID:  j.JobID,
+			ScheduleJobID:    j.ScheduleJobID,
 		})
 	}
 	return findings, nil

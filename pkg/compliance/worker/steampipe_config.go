@@ -2,12 +2,13 @@ package worker
 
 import (
 	"errors"
-	"gitlab.com/keibiengine/keibi-engine/pkg/config"
-	"gitlab.com/keibiengine/keibi-engine/pkg/internal/vault"
-	"gitlab.com/keibiengine/keibi-engine/pkg/source"
 	"io/ioutil"
 	"os"
 	"path/filepath"
+
+	"gitlab.com/keibiengine/keibi-engine/pkg/config"
+	"gitlab.com/keibiengine/keibi-engine/pkg/internal/vault"
+	"gitlab.com/keibiengine/keibi-engine/pkg/source"
 )
 
 func (j *Job) PopulateSteampipeConfig(vault vault.SourceConfig, elasticSearchConfig config.ElasticSearch) error {

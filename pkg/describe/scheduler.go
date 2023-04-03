@@ -2367,7 +2367,7 @@ func enqueueCloudNativeDescribeConnectionJob(logger *zap.Logger, db Database, wo
 			zap.Error(err),
 		)
 	}
-	for i, _ := range daj.SourceJob.DescribeResourceJobs {
+	for i := range daj.SourceJob.DescribeResourceJobs {
 		daj.SourceJob.DescribeResourceJobs[i].Status = nextStatus
 	}
 }
@@ -2381,7 +2381,7 @@ func enqueueComplianceReportJobs(logger *zap.Logger, db Database, q queue.Interf
 		JobID:         crj.ID,
 		ScheduleJobID: scheduleJob.ID,
 		DescribedAt:   scheduleJob.CreatedAt.UnixMilli(),
-		EvaluatedAt:   0,
+		EvaluatedAt:   time.Now().UnixMilli(),
 		ConnectionID:  crj.SourceID,
 		BenchmarkID:   crj.BenchmarkID,
 		ConfigReg:     a.ConfigRef,

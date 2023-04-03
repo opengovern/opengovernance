@@ -40,7 +40,6 @@ func (g *GitParser) ExtractQueries(queryPath string) error {
 				Connector:      query.Connector,
 				ListOfTables:   query.ListOfTables,
 				Engine:         query.Engine,
-				Policies:       nil,
 			})
 		}
 

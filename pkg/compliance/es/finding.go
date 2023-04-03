@@ -3,9 +3,8 @@ package es
 import (
 	"context"
 	"encoding/json"
-	"strconv"
-
 	"gitlab.com/keibiengine/keibi-engine/pkg/types"
+	"strconv"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/source"
 
@@ -19,23 +18,25 @@ const (
 
 type Finding struct {
 	ID               string                 `json:"ID"`
-	ComplianceJobID  uint                   `json:"complianceJobID"`
-	ScheduleJobID    uint                   `json:"scheduleJobID"`
+	BenchmarkID      string                 `json:"benchmarkID"`
+	PolicyID         string                 `json:"policyID"`
+	ConnectionID     string                 `json:"connectionID"`
+	DescribedAt      int64                  `json:"describedAt"`
+	EvaluatedAt      int64                  `json:"evaluatedAt"`
+	StateActive      bool                   `json:"stateActive"`
+	Result           types.ComplianceResult `json:"result"`
+	Severity         types.Severity         `json:"severity"`
+	Evaluator        string                 `json:"evaluator"`
+	Connector        source.Type            `json:"connector"`
 	ResourceID       string                 `json:"resourceID"`
 	ResourceName     string                 `json:"resourceName"`
+	ResourceLocation string                 `json:"resourceLocation"`
 	ResourceType     string                 `json:"resourceType"`
 	ServiceName      string                 `json:"serviceName"`
 	Category         string                 `json:"category"`
-	ResourceLocation string                 `json:"resourceLocation"`
 	Reason           string                 `json:"reason"`
-	Status           types.ComplianceResult `json:"status"`
-	DescribedAt      int64                  `json:"describedAt"`
-	EvaluatedAt      int64                  `json:"evaluatedAt"`
-	ConnectionID     string                 `json:"connectionID"`
-	Connector        source.Type            `json:"connector"`
-	BenchmarkID      string                 `json:"benchmarkID"`
-	PolicyID         string                 `json:"policyID"`
-	PolicySeverity   string                 `json:"policySeverity"`
+	ComplianceJobID  uint                   `json:"complianceJobID"`
+	ScheduleJobID    uint                   `json:"scheduleJobID"`
 }
 
 func (r Finding) KeysAndIndex() ([]string, string) {
@@ -277,7 +278,7 @@ func FindingsTopFieldQuery(client keibi.Client,
 	field string,
 	provider []source.Type,
 	resourceTypeID []string,
-	sourceID []uuid.UUID,
+	sourceID []string,
 	status []types.ComplianceResult,
 	benchmarkID []string,
 	policyID []string,

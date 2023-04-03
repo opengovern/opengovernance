@@ -16,6 +16,8 @@ import (
 	"strings"
 	"time"
 
+	"gorm.io/gorm"
+
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"gitlab.com/keibiengine/keibi-engine/pkg/inventory/internal"
@@ -40,7 +42,6 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/steampipe"
 
 	"github.com/google/uuid"
-	"github.com/jackc/pgx/v4"
 	"github.com/labstack/echo/v4"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpclient"
 	"gitlab.com/keibiengine/keibi-engine/pkg/inventory/api"
@@ -2928,7 +2929,7 @@ func (h *HttpHandler) RunQuery(ctx echo.Context) error {
 
 			query, err := h.db.GetQuery(queryId)
 			if err != nil {
-				if err == pgx.ErrNoRows {
+				if err == gorm.ErrRecordNotFound {
 					return echo.NewHTTPError(http.StatusNotFound, "Query not found")
 				}
 				return err
@@ -2962,7 +2963,7 @@ func (h *HttpHandler) RunQuery(ctx echo.Context) error {
 
 	query, err := h.db.GetQuery(queryId)
 	if err != nil {
-		if err == pgx.ErrNoRows {
+		if err == gorm.ErrRecordNotFound {
 			return echo.NewHTTPError(http.StatusNotFound, "Query not found")
 		}
 		return err

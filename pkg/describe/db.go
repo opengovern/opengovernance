@@ -3,8 +3,9 @@ package describe
 import (
 	"errors"
 	"fmt"
-	"gitlab.com/keibiengine/keibi-engine/pkg/source"
 	"time"
+
+	"gitlab.com/keibiengine/keibi-engine/pkg/source"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/summarizer"
 

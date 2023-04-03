@@ -1,6 +1,8 @@
 package db
 
 import (
+	"errors"
+
 	"gitlab.com/keibiengine/keibi-engine/pkg/source"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
@@ -55,6 +57,9 @@ func (db Database) GetBenchmark(benchmarkId string) (*Benchmark, error) {
 		First(&s)
 
 	if tx.Error != nil {
+		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
 		return nil, tx.Error
 	}
 
@@ -68,6 +73,9 @@ func (db Database) GetQuery(queryID string) (*Query, error) {
 		First(&s)
 
 	if tx.Error != nil {
+		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
 		return nil, tx.Error
 	}
 
@@ -120,6 +128,9 @@ func (db Database) GetPolicy(id string) (*Policy, error) {
 		First(&s)
 
 	if tx.Error != nil {
+		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
 		return nil, tx.Error
 	}
 

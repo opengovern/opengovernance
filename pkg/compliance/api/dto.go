@@ -18,12 +18,14 @@ type BenchmarkAssignedSource struct {
 }
 
 type FindingFilters struct {
-	Connector    []source.Type `json:"connector"`
-	ResourceID   []string      `json:"resourceID"`
-	ConnectionID []string      `json:"connectionID"`
-	BenchmarkID  []string      `json:"benchmarkID"`
-	PolicyID     []string      `json:"policyID"`
-	Severity     []string      `json:"severity"`
+	Connector      []source.Type            `json:"connector"`
+	ResourceID     []string                 `json:"resourceID"`
+	ResourceTypeID []string                 `json:"resourceTypeID"`
+	ConnectionID   []string                 `json:"connectionID"`
+	BenchmarkID    []string                 `json:"benchmarkID"`
+	PolicyID       []string                 `json:"policyID"`
+	Severity       []string                 `json:"severity"`
+	Status         []types.ComplianceResult `json:"status"`
 }
 
 type FindingResponseFilters struct {
@@ -90,7 +92,7 @@ const (
 )
 
 type GetTopFieldRequest struct {
-	Field   TopField       `json:"field"`
+	Field   TopField       `json:"field" enums:"resourceType,serviceName,sourceID,resourceID"`
 	Filters FindingFilters `json:"filters"`
 	Count   int            `json:"count"`
 }
@@ -137,6 +139,7 @@ type BenchmarkSummary struct {
 	ID                       string                             `json:"id"`
 	Title                    string                             `json:"title"`
 	Description              string                             `json:"description"`
+	Result                   map[types.ComplianceResult]int     `json:"result"`
 	ShortSummary             types.ComplianceResultShortSummary `json:"shortSummary"`
 	Policies                 []BenchmarkSummaryPolicySummary    `json:"policies"`
 	Resources                []BenchmarkSummaryResourceSummary  `json:"resources"`

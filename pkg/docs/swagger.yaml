@@ -92,6 +92,10 @@ definitions:
         items:
           type: string
         type: array
+      connectors:
+        items:
+          $ref: '#/definitions/source.Type'
+        type: array
       createdAt:
         type: string
       description:
@@ -135,6 +139,64 @@ definitions:
       sourceId:
         type: string
     type: object
+  gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.BenchmarkSummary:
+    properties:
+      assignedConnectionsCount:
+        type: integer
+      description:
+        type: string
+      enabled:
+        type: boolean
+      id:
+        type: string
+      policies:
+        items:
+          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.BenchmarkSummaryPolicySummary'
+        type: array
+      resources:
+        items:
+          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.BenchmarkSummaryResourceSummary'
+        type: array
+      result:
+        additionalProperties:
+          type: integer
+        type: object
+      shortSummary:
+        $ref: '#/definitions/types.ComplianceResultShortSummary'
+      tags:
+        additionalProperties:
+          type: string
+        type: object
+      title:
+        type: string
+      totalConnectionResources:
+        type: integer
+      trend:
+        items:
+          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.Datapoint'
+        type: array
+    type: object
+  gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.BenchmarkSummaryConnectionSummary:
+    properties:
+      connection:
+        $ref: '#/definitions/types.FullConnection'
+      shortSummary:
+        $ref: '#/definitions/types.ComplianceResultShortSummary'
+    type: object
+  gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.BenchmarkSummaryPolicySummary:
+    properties:
+      policy:
+        $ref: '#/definitions/types.FullPolicy'
+      shortSummary:
+        $ref: '#/definitions/types.ComplianceResultShortSummary'
+    type: object
+  gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.BenchmarkSummaryResourceSummary:
+    properties:
+      resource:
+        $ref: '#/definitions/types.FullResource'
+      shortSummary:
+        $ref: '#/definitions/types.ComplianceResultShortSummary'
+    type: object
   gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.ComplianceReport:
     properties:
       failureMessage:
@@ -160,6 +222,13 @@ definitions:
     - ComplianceReportJobInProgress
     - ComplianceReportJobCompletedWithFailure
     - ComplianceReportJobCompleted
+  gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.Datapoint:
+    properties:
+      time:
+        type: integer
+      value:
+        type: integer
+    type: object
   gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.DirectionType:
     enum:
     - asc
@@ -190,9 +259,17 @@ definitions:
         items:
           type: string
         type: array
+      resourceTypeID:
+        items:
+          type: string
+        type: array
       severity:
         items:
           type: string
+        type: array
+      status:
+        items:
+          $ref: '#/definitions/types.ComplianceResult'
         type: array
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.FindingSortItem:
@@ -224,6 +301,32 @@ definitions:
         - policyID
         - policySeverity
     type: object
+  gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.GetBenchmarksSummaryResponse:
+    properties:
+      benchmarks:
+        items:
+          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.BenchmarkSummary'
+        type: array
+      connections:
+        items:
+          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.BenchmarkSummaryConnectionSummary'
+        type: array
+      shortSummary:
+        $ref: '#/definitions/types.ComplianceResultShortSummary'
+      totalAssets:
+        type: integer
+    type: object
+  gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.GetFindingsMetricsResponse:
+    properties:
+      failedFindings:
+        type: integer
+      passedFindings:
+        type: integer
+      totalFindings:
+        type: integer
+      unknownFindings:
+        type: integer
+    type: object
   gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.GetFindingsRequest:
     properties:
       filters:
@@ -245,6 +348,28 @@ definitions:
         type: array
       totalCount:
         type: integer
+    type: object
+  gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.GetTopFieldRequest:
+    properties:
+      count:
+        type: integer
+      field:
+        allOf:
+        - $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.TopField'
+        enum:
+        - resourceType
+        - serviceName
+        - sourceID
+        - resourceID
+      filters:
+        $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.FindingFilters'
+    type: object
+  gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.GetTopFieldResponse:
+    properties:
+      records:
+        items:
+          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.TopFieldRecord'
+        type: array
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.Insight:
     properties:
@@ -411,6 +536,25 @@ definitions:
     - FieldBenchmarkID
     - FieldPolicyID
     - FieldPolicySeverity
+  gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.TopField:
+    enum:
+    - resourceType
+    - serviceName
+    - sourceID
+    - resourceID
+    type: string
+    x-enum-varnames:
+    - TopField_ResourceType
+    - TopField_CloudService
+    - TopField_CloudAccount
+    - TopField_Resources
+  gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.TopFieldRecord:
+    properties:
+      count:
+        type: integer
+      value:
+        type: string
+    type: object
   gitlab_com_keibiengine_keibi-engine_pkg_compliance_es.Finding:
     properties:
       ID:
@@ -429,9 +573,9 @@ definitions:
         type: integer
       evaluatedAt:
         type: integer
-      policyID:
+      evaluator:
         type: string
-      policySeverity:
+      policyID:
         type: string
       reason:
         type: string
@@ -443,12 +587,16 @@ definitions:
         type: string
       resourceType:
         type: string
+      result:
+        $ref: '#/definitions/types.ComplianceResult'
       scheduleJobID:
         type: integer
       serviceName:
         type: string
-      status:
-        $ref: '#/definitions/types.ComplianceResult'
+      severity:
+        type: string
+      stateActive:
+        type: boolean
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_describe_api.DescribeResource:
     properties:
@@ -1983,6 +2131,26 @@ definitions:
     - ComplianceResultINFO
     - ComplianceResultSKIP
     - ComplianceResultERROR
+  types.ComplianceResultShortSummary:
+    properties:
+      failed:
+        type: integer
+      passed:
+        type: integer
+    type: object
+  types.ComplianceResultSummary:
+    properties:
+      alarmCount:
+        type: integer
+      errorCount:
+        type: integer
+      infoCount:
+        type: integer
+      okCount:
+        type: integer
+      skipCount:
+        type: integer
+    type: object
   types.FullConnection:
     properties:
       id:
@@ -1990,6 +2158,20 @@ definitions:
       providerID:
         type: string
       providerName:
+        type: string
+    type: object
+  types.FullPolicy:
+    properties:
+      id:
+        type: string
+      title:
+        type: string
+    type: object
+  types.FullResource:
+    properties:
+      id:
+        type: string
+      name:
         type: string
     type: object
 host: dev-cluster.keibi.io
@@ -2105,6 +2287,27 @@ paths:
       summary: Get all the user RoleBindings for the given workspace.
       tags:
       - auth
+  /compliance/api/v1/alarms/top:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Request Body
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.GetTopFieldRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.GetTopFieldResponse'
+      summary: Returns all findings with respect to filters
+      tags:
+      - compliance
   /compliance/api/v1/assignments:
     get:
       consumes:
@@ -2217,6 +2420,20 @@ paths:
       summary: Get all benchmark assignments with source id
       tags:
       - benchmarks_assignment
+  /compliance/api/v1/benchmark/:benchmark_id/summary:
+    get:
+      consumes:
+      - application/json
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/types.ComplianceResultSummary'
+      summary: Get benchmark summary
+      tags:
+      - compliance
   /compliance/api/v1/benchmarks:
     get:
       consumes:
@@ -2277,6 +2494,20 @@ paths:
       summary: Get policy
       tags:
       - compliance
+  /compliance/api/v1/benchmarks/summary:
+    get:
+      consumes:
+      - application/json
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.GetBenchmarksSummaryResponse'
+      summary: Get benchmark summary
+      tags:
+      - compliance
   /compliance/api/v1/findings:
     post:
       consumes:
@@ -2296,6 +2527,45 @@ paths:
           schema:
             $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.GetFindingsResponse'
       summary: Returns all findings with respect to filters
+      tags:
+      - compliance
+  /compliance/api/v1/findings/{field}/top/{count}:
+    post:
+      consumes:
+      - application/json
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.GetTopFieldResponse'
+      summary: Returns all findings with respect to filters
+      tags:
+      - compliance
+  /compliance/api/v1/findings/metrics:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: Time Window
+        enum:
+        - 24h
+        - 1w
+        - 3m
+        - 1y
+        - max
+        in: query
+        name: timeWindow
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.GetFindingsMetricsResponse'
+      summary: Returns findings metrics
       tags:
       - compliance
   /compliance/api/v1/insight:
@@ -2372,6 +2642,26 @@ paths:
       summary: Get insight by id
       tags:
       - insights
+  /compliance/api/v1/policy/summary/{benchmark_id}:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: BenchmarkID
+        in: path
+        name: benchmarkID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.GetFindingsResponse'
+      summary: Get benchmark summary
+      tags:
+      - compliance
   /compliance/api/v1/queries/{query_id}:
     get:
       consumes:

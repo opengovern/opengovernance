@@ -5,10 +5,11 @@ import (
 	"crypto/rsa"
 	"errors"
 	"fmt"
-	"github.com/golang-jwt/jwt"
 	"net/http"
 	"strings"
 	"time"
+
+	"github.com/golang-jwt/jwt"
 
 	"github.com/labstack/echo/v4"
 
