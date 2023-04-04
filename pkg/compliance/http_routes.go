@@ -7,13 +7,11 @@ import (
 	"strconv"
 	"time"
 
-	es2 "gitlab.com/keibiengine/keibi-engine/pkg/summarizer/es"
-	"gitlab.com/keibiengine/keibi-engine/pkg/summarizer/query"
-	"gitlab.com/keibiengine/keibi-engine/pkg/timewindow"
-
 	api3 "gitlab.com/keibiengine/keibi-engine/pkg/auth/api"
 	"gitlab.com/keibiengine/keibi-engine/pkg/compliance/db"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpserver"
+	es2 "gitlab.com/keibiengine/keibi-engine/pkg/summarizer/es"
+	"gitlab.com/keibiengine/keibi-engine/pkg/summarizer/query"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/compliance/api"
 	"gitlab.com/keibiengine/keibi-engine/pkg/compliance/es"
@@ -182,17 +180,26 @@ func (h *HttpHandler) GetTopFieldByAlarmCount(ctx echo.Context) error {
 //	@Tags		compliance
 //	@Accept		json
 //	@Produce	json
-//	@Param		timeWindow	query		string	false	"Time Window"	Enums(24h,1w,3m,1y,max)
-//	@Success	200			{object}	api.GetFindingsMetricsResponse
+//	@Param		start	query		string	false	"Start"
+//	@Param		end		query		string	false	"End"	
+//	@Success	200		{object}	api.GetFindingsMetricsResponse
 //	@Router		/compliance/api/v1/findings/metrics [get]
 func (h *HttpHandler) GetFindingsMetrics(ctx echo.Context) error {
-	tw, err := timewindow.ParseTimeWindow(ctx.QueryParam("timeWindow"))
+	startDateStr := ctx.QueryParam("start")
+	endDateStr := ctx.QueryParam("end")
+
+	startDate, err := strconv.ParseInt(startDateStr, 10, 64)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, "invalid time window")
+		return err
 	}
 
-	after := time.Now().Add(-1 * tw)
-	before := after.Add(24 * time.Hour)
+	endDate, err := strconv.ParseInt(endDateStr, 10, 64)
+	if err != nil {
+		return err
+	}
+
+	after := time.UnixMilli(startDate)
+	before := time.UnixMilli(endDate)
 
 	metric, err := query.GetFindingMetrics(h.client, before, after)
 	if err != nil {

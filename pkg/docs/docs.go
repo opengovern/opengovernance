@@ -556,16 +556,15 @@ const docTemplate = `{
                 "summary": "Returns findings metrics",
                 "parameters": [
                     {
-                        "enum": [
-                            "24h",
-                            "1w",
-                            "3m",
-                            "1y",
-                            "max"
-                        ],
                         "type": "string",
-                        "description": "Time Window",
-                        "name": "timeWindow",
+                        "description": "Start",
+                        "name": "start",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "End",
+                        "name": "end",
                         "in": "query"
                     }
                 ],

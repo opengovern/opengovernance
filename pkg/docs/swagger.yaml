@@ -2532,15 +2532,13 @@ paths:
       consumes:
       - application/json
       parameters:
-      - description: Time Window
-        enum:
-        - 24h
-        - 1w
-        - 3m
-        - 1y
-        - max
+      - description: Start
         in: query
-        name: timeWindow
+        name: start
+        type: string
+      - description: End
+        in: query
+        name: end
         type: string
       produces:
       - application/json
