@@ -83,14 +83,15 @@ type DeviceCodeRequest struct {
 }
 
 func RequestDeviceCode() (string, error) {
+
 	payload := DeviceCodeRequest{
 		ClientId: clientID,
 		Scope:    "openid profil email api:read",
-		Audience: "https://dev-ywhyatwt.us.auth0.com/userinfo",
+		Audience: "https://app.keibi.io",
 	}
 	payloadEncode, err := json.Marshal(payload)
 	if err != nil {
-		fmt.Println("error belong to jsonMarshal : ")
+		fmt.Println("error belong to jsonMarshal in deviceCode request : ")
 		return "", err
 	}
 	req, err := http.NewRequest("POST", domain+"/oauth/device/code", bytes.NewBuffer(payloadEncode))
@@ -104,8 +105,8 @@ func RequestDeviceCode() (string, error) {
 		fmt.Printf("error into first requesting  : ")
 		return "", err
 	}
-	defer res.Body.Close()
 	body, err := ioutil.ReadAll(res.Body)
+	defer res.Body.Close()
 	if err != nil {
 		fmt.Println("error into reading first request :")
 		return "", err
@@ -145,6 +146,7 @@ func accessToken(deviceCode string) (string, error) {
 	for {
 		requestEncoded, errJM := json.Marshal(payload)
 		if errJM != nil {
+			fmt.Printf("error into jsonMarshal in request accessToken : %v", requestEncoded)
 			time.Sleep(5)
 			continue
 		}

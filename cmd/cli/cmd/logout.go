@@ -25,7 +25,7 @@ func deleteFile() {
 	home := os.Getenv("HOME")
 	errRemove := os.Remove(home + "/.kaytu/auth/accessToken.txt")
 	if errRemove != nil {
-		errorsRemove := fmt.Sprintf("err belong to remove file : %v ", errRemove)
+		errorsRemove := fmt.Sprintf("err belong to remove file in logout : %v ", errRemove)
 		panic(errorsRemove)
 	}
 }
