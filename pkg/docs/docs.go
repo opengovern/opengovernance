@@ -1140,7 +1140,17 @@ const docTemplate = `{
                         }
                     }
                 ],
-                "responses": {}
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
             }
         },
         "/inventory/api/v1/resources": {
@@ -2824,7 +2834,7 @@ const docTemplate = `{
                 "tags": [
                     "benchmarks"
                 ],
-                "summary": "Returns distribution of services for specific account",
+                "summary": "Returns Service Summary",
                 "parameters": [
                     {
                         "type": "string",
@@ -5966,19 +5976,28 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "providerConnectionID": {
+                    "description": "Provider Connection Id",
                     "type": "string"
                 },
                 "providerConnectionName": {
+                    "description": "Provider Connection Name",
                     "type": "string"
                 },
                 "resourceCount": {
+                    "description": "Number of resources",
                     "type": "integer"
                 },
                 "sourceID": {
+                    "description": "Source Id",
                     "type": "string"
                 },
                 "sourceType": {
-                    "$ref": "#/definitions/source.Type"
+                    "description": "Source Type",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/source.Type"
+                        }
+                    ]
                 }
             }
         },
@@ -6066,30 +6085,43 @@ const docTemplate = `{
                     }
                 },
                 "location": {
+                    "description": "The Region of the resource",
                     "type": "string"
                 },
                 "provider": {
-                    "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.SourceType"
+                    "description": "Resource Provider",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.SourceType"
+                        }
+                    ]
                 },
                 "providerConnectionID": {
+                    "description": "Provider Connection Id",
                     "type": "string"
                 },
                 "providerConnectionName": {
+                    "description": "Provider Connection Name",
                     "type": "string"
                 },
                 "resourceCategory": {
+                    "description": "Resource Category",
                     "type": "string"
                 },
                 "resourceID": {
+                    "description": "Resource Id",
                     "type": "string"
                 },
                 "resourceName": {
+                    "description": "Resource Name",
                     "type": "string"
                 },
                 "resourceType": {
+                    "description": "Resource Type",
                     "type": "string"
                 },
                 "resourceTypeName": {
+                    "description": "Resource Type Name",
                     "type": "string"
                 }
             }
@@ -6104,30 +6136,39 @@ const docTemplate = `{
                     }
                 },
                 "location": {
+                    "description": "The Region of the resource",
                     "type": "string"
                 },
                 "providerConnectionID": {
+                    "description": "Provider Connection Id",
                     "type": "string"
                 },
                 "providerConnectionName": {
+                    "description": "Provider Connection Name",
                     "type": "string"
                 },
                 "resourceCategory": {
+                    "description": "Resource Category",
                     "type": "string"
                 },
                 "resourceGroup": {
+                    "description": "Resource Group",
                     "type": "string"
                 },
                 "resourceID": {
+                    "description": "Resource Id",
                     "type": "string"
                 },
                 "resourceName": {
+                    "description": "Resource Name",
                     "type": "string"
                 },
                 "resourceType": {
+                    "description": "Resource Type",
                     "type": "string"
                 },
                 "resourceTypeName": {
+                    "description": "Resource Type Name",
                     "type": "string"
                 }
             }
@@ -6180,9 +6221,11 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "name": {
+                    "description": "Category Name",
                     "type": "string"
                 },
                 "trend": {
+                    "description": "Trends (Time Series)",
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.TrendDataPoint"
@@ -6219,18 +6262,21 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "categories": {
+                    "description": "Categories available in the connection",
                     "type": "object",
                     "additionalProperties": {
                         "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ConnectionSummaryCategory"
                     }
                 },
                 "cloudServices": {
+                    "description": "Services as Key, Number of them as Value",
                     "type": "object",
                     "additionalProperties": {
                         "type": "integer"
                     }
                 },
                 "resourceTypes": {
+                    "description": "Resource types as Key, Number of them as Value",
                     "type": "object",
                     "additionalProperties": {
                         "type": "integer"
@@ -6242,9 +6288,11 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "cost": {
+                    "description": "Value",
                     "type": "number"
                 },
                 "unit": {
+                    "description": "Currency",
                     "type": "string"
                 }
             }
@@ -6385,6 +6433,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "resourceType": {
+                    "description": "Resource ID",
                     "type": "string"
                 }
             }
@@ -6440,54 +6489,85 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "category": {
+                    "description": "Category",
                     "type": "string"
                 },
                 "description": {
+                    "description": "Description",
                     "type": "string"
                 },
                 "enabled": {
+                    "description": "Enabled",
                     "type": "boolean"
                 },
                 "executedAt": {
+                    "description": "Time of Execution",
                     "type": "string"
                 },
                 "id": {
+                    "description": "Insight Id",
                     "type": "integer"
                 },
                 "labels": {
+                    "description": "List of insight tags",
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.InsightTag"
                     }
                 },
                 "links": {
+                    "description": "List of links",
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.InsightLink"
                     }
                 },
                 "listInsightResultType": {
-                    "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ListInsightResultType"
+                    "description": "PeerGroup or Insight",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ListInsightResultType"
+                        }
+                    ]
                 },
                 "logoURL": {
+                    "description": "Logo URL",
                     "type": "string"
                 },
                 "longTitle": {
+                    "description": "Long Title",
                     "type": "string"
                 },
                 "provider": {
-                    "$ref": "#/definitions/source.Type"
+                    "description": "Provider",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/source.Type"
+                        }
+                    ]
                 },
                 "query": {
-                    "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.Query"
+                    "description": "Query",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.Query"
+                        }
+                    ]
                 },
                 "results": {
-                    "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.InsightResult"
+                    "description": "Insight Results and Details",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.InsightResult"
+                        }
+                    ]
                 },
                 "shortTitle": {
+                    "description": "Short Title",
                     "type": "string"
                 },
                 "totalResults": {
+                    "description": "Total Results",
                     "type": "integer"
                 }
             }
@@ -6657,15 +6737,22 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "labels": {
+                    "description": "Labels",
                     "type": "array",
                     "items": {
                         "type": "string"
                     }
                 },
                 "providerFilter": {
-                    "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.SourceType"
+                    "description": "Specifies the Provider",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.SourceType"
+                        }
+                    ]
                 },
                 "titleFilter": {
+                    "description": "Specifies the Title",
                     "type": "string"
                 }
             }
@@ -6683,9 +6770,11 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "location": {
+                    "description": "Region",
                     "type": "string"
                 },
                 "resourceCount": {
+                    "description": "Number of resources in the region",
                     "type": "integer"
                 }
             }
@@ -6860,15 +6949,18 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "Subcategories": {
+                    "description": "List of sub-categories Cost Trends (Time Series)",
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.CategoryResourceTrend"
                     }
                 },
                 "categoryName": {
+                    "description": "Category Name",
                     "type": "string"
                 },
                 "trend": {
+                    "description": "Main Category Cost Trend (Time Series)",
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.TrendDataPoint"
@@ -6941,17 +7033,18 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "headers": {
-                    "description": "column names",
+                    "description": "Column names",
                     "type": "array",
                     "items": {
                         "type": "string"
                     }
                 },
                 "query": {
+                    "description": "Query",
                     "type": "string"
                 },
                 "result": {
-                    "description": "result of query. in order to access a specific cell please use Result[Row][Column]",
+                    "description": "Result of query. in order to access a specific cell please use Result[Row][Column]",
                     "type": "array",
                     "items": {
                         "type": "array",
@@ -6959,6 +7052,7 @@ const docTemplate = `{
                     }
                 },
                 "title": {
+                    "description": "Query Title",
                     "type": "string"
                 }
             }
@@ -6967,12 +7061,14 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "distribution": {
+                    "description": "Distribution name",
                     "type": "object",
                     "additionalProperties": {
                         "type": "integer"
                     }
                 },
                 "serviceName": {
+                    "description": "Service name",
                     "type": "string"
                 }
             }
@@ -6981,21 +7077,30 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "cloudProvider": {
-                    "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.SourceType"
+                    "description": "Cloud provider",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.SourceType"
+                        }
+                    ]
                 },
                 "cost": {
+                    "description": "Costs (Unit as Key, CostWithUnit as Value)",
                     "type": "object",
                     "additionalProperties": {
                         "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.CostWithUnit"
                     }
                 },
                 "resourceCount": {
+                    "description": "Number of Resources",
                     "type": "integer"
                 },
                 "serviceCode": {
+                    "description": "Service Code",
                     "type": "string"
                 },
                 "serviceName": {
+                    "description": "Service Name",
                     "type": "string"
                 }
             }
@@ -7004,16 +7109,19 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "apiFilters": {
+                    "description": "API Filters",
                     "type": "object",
                     "additionalProperties": {}
                 },
                 "services": {
+                    "description": "A list of service summeries",
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ServiceSummary"
                     }
                 },
                 "totalCount": {
+                    "description": "Number of services",
                     "type": "integer"
                 }
             }
@@ -7022,27 +7130,34 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "category": {
+                    "description": "Category (Tags[category])",
                     "type": "string"
                 },
                 "description": {
+                    "description": "Description",
                     "type": "string"
                 },
                 "id": {
+                    "description": "Query Id",
                     "type": "integer"
                 },
                 "provider": {
+                    "description": "Provider",
                     "type": "string"
                 },
                 "query": {
+                    "description": "Query",
                     "type": "string"
                 },
                 "tags": {
+                    "description": "Tags",
                     "type": "object",
                     "additionalProperties": {
                         "type": "string"
                     }
                 },
                 "title": {
+                    "description": "Title",
                     "type": "string"
                 }
             }
@@ -7103,15 +7218,19 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "cost": {
+                    "description": "Account costs",
                     "type": "number"
                 },
                 "providerConnectionID": {
+                    "description": "Account Provider Connection ID",
                     "type": "string"
                 },
                 "providerConnectionName": {
+                    "description": "Account Provider Connection Name",
                     "type": "string"
                 },
                 "sourceID": {
+                    "description": "Source Id",
                     "type": "string"
                 }
             }
@@ -7124,9 +7243,11 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "providerConnectionID": {
+                    "description": "Account Provider Connection ID",
                     "type": "string"
                 },
                 "providerConnectionName": {
+                    "description": "Account Provider Connection Name",
                     "type": "string"
                 },
                 "resourceCount": {
@@ -7134,6 +7255,7 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "sourceID": {
+                    "description": "Source Id",
                     "type": "string"
                 }
             }
@@ -7142,9 +7264,11 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "cost": {
+                    "description": "Service Cost",
                     "type": "number"
                 },
                 "serviceName": {
+                    "description": "Service Name",
                     "type": "string"
                 }
             }
@@ -7153,24 +7277,31 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "lastDayCount": {
+                    "description": "Number of resources on last day",
                     "type": "integer"
                 },
                 "lastQuarterCount": {
+                    "description": "Number of resources on last quarter",
                     "type": "integer"
                 },
                 "lastWeekCount": {
+                    "description": "Number of resources on last week",
                     "type": "integer"
                 },
                 "lastYearCount": {
+                    "description": "Number of resources on last year",
                     "type": "integer"
                 },
                 "provider": {
+                    "description": "Service Provider Name",
                     "type": "string"
                 },
                 "resourceCount": {
+                    "description": "Number of resources",
                     "type": "integer"
                 },
                 "serviceName": {
+                    "description": "Service Name",
                     "type": "string"
                 }
             }
@@ -7183,7 +7314,7 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "value": {
-                    "description": "Value (Resource Count or Costs)",
+                    "description": "Resource Count",
                     "type": "integer"
                 }
             }

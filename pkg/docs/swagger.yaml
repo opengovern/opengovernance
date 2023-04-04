@@ -736,15 +736,21 @@ definitions:
       onboardDate:
         type: string
       providerConnectionID:
+        description: Provider Connection Id
         type: string
       providerConnectionName:
+        description: Provider Connection Name
         type: string
       resourceCount:
+        description: Number of resources
         type: integer
       sourceID:
+        description: Source Id
         type: string
       sourceType:
-        $ref: '#/definitions/source.Type'
+        allOf:
+        - $ref: '#/definitions/source.Type'
+        description: Source Type
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.AccountSummary:
     properties:
@@ -802,22 +808,32 @@ definitions:
           type: string
         type: object
       location:
+        description: The Region of the resource
         type: string
       provider:
-        $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.SourceType'
+        allOf:
+        - $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.SourceType'
+        description: Resource Provider
       providerConnectionID:
+        description: Provider Connection Id
         type: string
       providerConnectionName:
+        description: Provider Connection Name
         type: string
       resourceCategory:
+        description: Resource Category
         type: string
       resourceID:
+        description: Resource Id
         type: string
       resourceName:
+        description: Resource Name
         type: string
       resourceType:
+        description: Resource Type
         type: string
       resourceTypeName:
+        description: Resource Type Name
         type: string
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.AzureResource:
@@ -827,22 +843,31 @@ definitions:
           type: string
         type: object
       location:
+        description: The Region of the resource
         type: string
       providerConnectionID:
+        description: Provider Connection Id
         type: string
       providerConnectionName:
+        description: Provider Connection Name
         type: string
       resourceCategory:
+        description: Resource Category
         type: string
       resourceGroup:
+        description: Resource Group
         type: string
       resourceID:
+        description: Resource Id
         type: string
       resourceName:
+        description: Resource Name
         type: string
       resourceType:
+        description: Resource Type
         type: string
       resourceTypeName:
+        description: Resource Type Name
         type: string
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.CategoryNode:
@@ -879,8 +904,10 @@ definitions:
   gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.CategoryResourceTrend:
     properties:
       name:
+        description: Category Name
         type: string
       trend:
+        description: Trends (Time Series)
         items:
           $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.TrendDataPoint'
         type: array
@@ -906,21 +933,26 @@ definitions:
       categories:
         additionalProperties:
           $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ConnectionSummaryCategory'
+        description: Categories available in the connection
         type: object
       cloudServices:
         additionalProperties:
           type: integer
+        description: Services as Key, Number of them as Value
         type: object
       resourceTypes:
         additionalProperties:
           type: integer
+        description: Resource types as Key, Number of them as Value
         type: object
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.CostWithUnit:
     properties:
       cost:
+        description: Value
         type: number
       unit:
+        description: Currency
         type: string
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.DirectionType:
@@ -1019,6 +1051,7 @@ definitions:
         description: Resource ID
         type: string
       resourceType:
+        description: Resource ID
         type: string
     required:
     - ID
@@ -1059,38 +1092,57 @@ definitions:
   gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.Insight:
     properties:
       category:
+        description: Category
         type: string
       description:
+        description: Description
         type: string
       enabled:
+        description: Enabled
         type: boolean
       executedAt:
+        description: Time of Execution
         type: string
       id:
+        description: Insight Id
         type: integer
       labels:
+        description: List of insight tags
         items:
           $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.InsightTag'
         type: array
       links:
+        description: List of links
         items:
           $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.InsightLink'
         type: array
       listInsightResultType:
-        $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ListInsightResultType'
+        allOf:
+        - $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ListInsightResultType'
+        description: PeerGroup or Insight
       logoURL:
+        description: Logo URL
         type: string
       longTitle:
+        description: Long Title
         type: string
       provider:
-        $ref: '#/definitions/source.Type'
+        allOf:
+        - $ref: '#/definitions/source.Type'
+        description: Provider
       query:
-        $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.Query'
+        allOf:
+        - $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.Query'
+        description: Query
       results:
-        $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.InsightResult'
+        allOf:
+        - $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.InsightResult'
+        description: Insight Results and Details
       shortTitle:
+        description: Short Title
         type: string
       totalResults:
+        description: Total Results
         type: integer
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.InsightConnection:
@@ -1202,12 +1254,16 @@ definitions:
   gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ListQueryRequest:
     properties:
       labels:
+        description: Labels
         items:
           type: string
         type: array
       providerFilter:
-        $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.SourceType'
+        allOf:
+        - $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.SourceType'
+        description: Specifies the Provider
       titleFilter:
+        description: Specifies the Title
         type: string
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.LocationByProviderResponse:
@@ -1219,8 +1275,10 @@ definitions:
   gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.LocationResponse:
     properties:
       location:
+        description: Region
         type: string
       resourceCount:
+        description: Number of resources in the region
         type: integer
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.Page:
@@ -1358,12 +1416,15 @@ definitions:
   gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ResourceGrowthTrendResponse:
     properties:
       Subcategories:
+        description: List of sub-categories Cost Trends (Time Series)
         items:
           $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.CategoryResourceTrend'
         type: array
       categoryName:
+        description: Category Name
         type: string
       trend:
+        description: Main Category Cost Trend (Time Series)
         items:
           $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.TrendDataPoint'
         type: array
@@ -1411,20 +1472,22 @@ definitions:
   gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.RunQueryResponse:
     properties:
       headers:
-        description: column names
+        description: Column names
         items:
           type: string
         type: array
       query:
+        description: Query
         type: string
       result:
-        description: result of query. in order to access a specific cell please use
+        description: Result of query. in order to access a specific cell please use
           Result[Row][Column]
         items:
           items: {}
           type: array
         type: array
       title:
+        description: Query Title
         type: string
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ServiceDistributionItem:
@@ -1432,54 +1495,72 @@ definitions:
       distribution:
         additionalProperties:
           type: integer
+        description: Distribution name
         type: object
       serviceName:
+        description: Service name
         type: string
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ServiceSummary:
     properties:
       cloudProvider:
-        $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.SourceType'
+        allOf:
+        - $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.SourceType'
+        description: Cloud provider
       cost:
         additionalProperties:
           $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.CostWithUnit'
+        description: Costs (Unit as Key, CostWithUnit as Value)
         type: object
       resourceCount:
+        description: Number of Resources
         type: integer
       serviceCode:
+        description: Service Code
         type: string
       serviceName:
+        description: Service Name
         type: string
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ServiceSummaryResponse:
     properties:
       apiFilters:
         additionalProperties: {}
+        description: API Filters
         type: object
       services:
+        description: A list of service summeries
         items:
           $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ServiceSummary'
         type: array
       totalCount:
+        description: Number of services
         type: integer
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.SmartQueryItem:
     properties:
       category:
+        description: Category (Tags[category])
         type: string
       description:
+        description: Description
         type: string
       id:
+        description: Query Id
         type: integer
       provider:
+        description: Provider
         type: string
       query:
+        description: Query
         type: string
       tags:
         additionalProperties:
           type: string
+        description: Tags
         type: object
       title:
+        description: Title
         type: string
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.SmartQuerySortItem:
@@ -1523,12 +1604,16 @@ definitions:
   gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.TopAccountCostResponse:
     properties:
       cost:
+        description: Account costs
         type: number
       providerConnectionID:
+        description: Account Provider Connection ID
         type: string
       providerConnectionName:
+        description: Account Provider Connection Name
         type: string
       sourceID:
+        description: Source Id
         type: string
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.TopAccountResponse:
@@ -1537,37 +1622,49 @@ definitions:
         description: Account Provider
         type: string
       providerConnectionID:
+        description: Account Provider Connection ID
         type: string
       providerConnectionName:
+        description: Account Provider Connection Name
         type: string
       resourceCount:
         description: Last number of Resources of the account
         type: integer
       sourceID:
+        description: Source Id
         type: string
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.TopServiceCostResponse:
     properties:
       cost:
+        description: Service Cost
         type: number
       serviceName:
+        description: Service Name
         type: string
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.TopServicesResponse:
     properties:
       lastDayCount:
+        description: Number of resources on last day
         type: integer
       lastQuarterCount:
+        description: Number of resources on last quarter
         type: integer
       lastWeekCount:
+        description: Number of resources on last week
         type: integer
       lastYearCount:
+        description: Number of resources on last year
         type: integer
       provider:
+        description: Service Provider Name
         type: string
       resourceCount:
+        description: Number of resources
         type: integer
       serviceName:
+        description: Service Name
         type: string
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.TrendDataPoint:
@@ -1576,7 +1673,7 @@ definitions:
         description: Time
         type: integer
       value:
-        description: Value (Resource Count or Costs)
+        description: Resource Count
         type: integer
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_metadata_models.ConfigMetadata:
@@ -2923,7 +3020,13 @@ paths:
           $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.GetResourceRequest'
       produces:
       - application/json
-      responses: {}
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
       summary: Get details of a Resource
       tags:
       - resource
@@ -4128,7 +4231,7 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ServiceSummaryResponse'
-      summary: Returns distribution of services for specific account
+      summary: Returns Service Summary
       tags:
       - benchmarks
   /metadata/api/v1/metadata:

@@ -2458,7 +2458,7 @@ func (h *HttpHandler) GetServiceDistribution(ctx echo.Context) error {
 
 // GetServiceSummary godoc
 //
-//	@Summary	Returns distribution of services for specific account
+//	@Summary	Returns Service Summary
 //	@Tags		benchmarks
 //	@Accept		json
 //	@Produce	json
@@ -2695,6 +2695,7 @@ func (h *HttpHandler) GetServiceSummary(ctx echo.Context) error {
 //	@Accepts		json
 //	@Produce		json
 //	@Param			request	body	api.GetResourceRequest	true	"Request Body"
+//	@Success		200			{object}	map[string]string
 //	@Router			/inventory/api/v1/resource [post]
 func (h *HttpHandler) GetResource(ctx echo.Context) error {
 	var req api.GetResourceRequest
@@ -2821,7 +2822,7 @@ func (h *HttpHandler) GetResource(ctx echo.Context) error {
 // ListQueries godoc
 //
 //	@Summary		List smart queries
-//	@Description	Listing smart queries
+//	@Description	Listing smart queries by specified filters
 //	@Tags			smart_query
 //	@Produce		json
 //	@Param			request	body		api.ListQueryRequest	true	"Request Body"
