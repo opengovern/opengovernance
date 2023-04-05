@@ -47,6 +47,31 @@ func (db Database) ListBenchmarks() ([]Benchmark, error) {
 	return s, nil
 }
 
+func (db Database) ListRootBenchmarks() ([]Benchmark, error) {
+	benchmarks, err := db.ListBenchmarks()
+	if err != nil {
+		return nil, err
+	}
+
+	var response []Benchmark
+	for _, b := range benchmarks {
+		hasParent := false
+		for _, parent := range benchmarks {
+			for _, child := range parent.Children {
+				if child.ID == b.ID {
+					hasParent = true
+				}
+			}
+		}
+
+		if !hasParent {
+			response = append(response, b)
+		}
+	}
+
+	return response, nil
+}
+
 func (db Database) GetBenchmark(benchmarkId string) (*Benchmark, error) {
 	var s Benchmark
 	tx := db.Orm.Model(&Benchmark{}).

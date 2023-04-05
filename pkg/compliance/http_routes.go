@@ -217,6 +217,9 @@ func (h *HttpHandler) GetFindingsMetrics(ctx echo.Context) error {
 	if metricEnd == nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "metrics not found")
 	}
+	if metricStart == nil {
+		metricStart = &es2.FindingMetrics{}
+	}
 
 	var response api.GetFindingsMetricsResponse
 	response.TotalFindings = metricEnd.PassedFindingsCount + metricEnd.FailedFindingsCount + metricEnd.UnknownFindingsCount
@@ -387,7 +390,7 @@ func (h *HttpHandler) GetBenchmarksSummary(ctx echo.Context) error {
 		return err
 	}
 
-	benchmarks, err := h.db.ListBenchmarks()
+	benchmarks, err := h.db.ListRootBenchmarks()
 	if err != nil {
 		return err
 	}
@@ -797,29 +800,18 @@ func (h *HttpHandler) DeleteBenchmarkAssignment(ctx echo.Context) error {
 func (h *HttpHandler) ListBenchmarks(ctx echo.Context) error {
 	var response []api.Benchmark
 
-	benchmarks, err := h.db.ListBenchmarks()
+	benchmarks, err := h.db.ListRootBenchmarks()
 	if err != nil {
 		return err
 	}
 
 	for _, b := range benchmarks {
-		hasParent := false
-		for _, parent := range benchmarks {
-			for _, child := range parent.Children {
-				if child.ID == b.ID {
-					hasParent = true
-				}
-			}
+		be := b.ToApi()
+		err = b.PopulateConnectors(h.db, &be)
+		if err != nil {
+			return err
 		}
-
-		if !hasParent {
-			be := b.ToApi()
-			err = b.PopulateConnectors(h.db, &be)
-			if err != nil {
-				return err
-			}
-			response = append(response, be)
-		}
+		response = append(response, be)
 	}
 
 	return ctx.JSON(http.StatusOK, response)
