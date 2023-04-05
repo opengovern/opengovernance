@@ -49,8 +49,9 @@ var (
 
 	httpServerAddress = os.Getenv("HTTP_ADDRESS")
 
-	keibiHost      = os.Getenv("KEIBI_HOST")
-	keibiPublicKey = os.Getenv("KEIBI_PUBLIC_KEY")
+	keibiHost       = os.Getenv("KEIBI_HOST")
+	keibiPublicKey  = os.Getenv("KEIBI_PUBLIC_KEY")
+	keibiPrivateKey = os.Getenv("KEIBI_PRIVATE_KEY")
 
 	workspaceBaseUrl = os.Getenv("WORKSPACE_BASE_URL")
 
@@ -113,9 +114,8 @@ func start(ctx context.Context) error {
 
 	b, err := base64.StdEncoding.DecodeString(keibiPublicKey)
 	if err != nil {
-		return fmt.Errorf("private key decode: %w", err)
+		return fmt.Errorf("public key decode: %w", err)
 	}
-
 	block, _ := pem.Decode(b)
 	if block == nil {
 		return fmt.Errorf("failed to decode my private key")
@@ -123,6 +123,19 @@ func start(ctx context.Context) error {
 	pub, err := x509.ParsePKIXPublicKey(block.Bytes)
 	if err != nil {
 		return err
+	}
+
+	b, err = base64.StdEncoding.DecodeString(keibiPrivateKey)
+	if err != nil {
+		return fmt.Errorf("public key decode: %w", err)
+	}
+	block, _ = pem.Decode(b)
+	if block == nil {
+		panic("failed to decode private key")
+	}
+	pri, err := x509.ParsePKCS1PrivateKey(block.Bytes)
+	if err != nil {
+		panic(err)
 	}
 
 	authServer := Server{
@@ -165,6 +178,7 @@ func start(ctx context.Context) error {
 			emailService:    m,
 			workspaceClient: workspaceClient,
 			auth0Service:    auth0Service,
+			keibiPrivateKey: pri,
 		}
 		errors <- fmt.Errorf("http server: %w", httpserver.RegisterAndStart(logger, httpServerAddress, &routes))
 	}()
