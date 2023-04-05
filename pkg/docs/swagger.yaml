@@ -320,6 +320,14 @@ definitions:
     properties:
       failedFindings:
         type: integer
+      lastFailedFindings:
+        type: integer
+      lastPassedFindings:
+        type: integer
+      lastTotalFindings:
+        type: integer
+      lastUnknownFindings:
+        type: integer
       passedFindings:
         type: integer
       totalFindings:
@@ -2645,16 +2653,14 @@ paths:
       consumes:
       - application/json
       parameters:
-      - description: Time Window
-        enum:
-        - 24h
-        - 1w
-        - 3m
-        - 1y
-        - max
+      - description: Start
         in: query
-        name: timeWindow
-        type: string
+        name: start
+        type: integer
+      - description: End
+        in: query
+        name: end
+        type: integer
       produces:
       - application/json
       responses:

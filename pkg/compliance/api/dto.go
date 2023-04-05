@@ -185,6 +185,11 @@ type GetFindingsMetricsResponse struct {
 	FailedFindings  int64 `json:"failedFindings"`
 	PassedFindings  int64 `json:"passedFindings"`
 	UnknownFindings int64 `json:"unknownFindings"`
+
+	LastTotalFindings   int64 `json:"lastTotalFindings"`
+	LastFailedFindings  int64 `json:"lastFailedFindings"`
+	LastPassedFindings  int64 `json:"lastPassedFindings"`
+	LastUnknownFindings int64 `json:"lastUnknownFindings"`
 }
 
 type Alarms struct {

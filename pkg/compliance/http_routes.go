@@ -7,13 +7,11 @@ import (
 	"strconv"
 	"time"
 
-	es2 "gitlab.com/keibiengine/keibi-engine/pkg/summarizer/es"
-	"gitlab.com/keibiengine/keibi-engine/pkg/summarizer/query"
-	"gitlab.com/keibiengine/keibi-engine/pkg/timewindow"
-
 	api3 "gitlab.com/keibiengine/keibi-engine/pkg/auth/api"
 	"gitlab.com/keibiengine/keibi-engine/pkg/compliance/db"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpserver"
+	es2 "gitlab.com/keibiengine/keibi-engine/pkg/summarizer/es"
+	"gitlab.com/keibiengine/keibi-engine/pkg/summarizer/query"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/compliance/api"
 	"gitlab.com/keibiengine/keibi-engine/pkg/compliance/es"
@@ -182,32 +180,52 @@ func (h *HttpHandler) GetTopFieldByAlarmCount(ctx echo.Context) error {
 //	@Tags		compliance
 //	@Accept		json
 //	@Produce	json
-//	@Param		timeWindow	query		string	false	"Time Window"	Enums(24h,1w,3m,1y,max)
-//	@Success	200			{object}	api.GetFindingsMetricsResponse
+//	@Param		start	query		int64	false	"Start"
+//	@Param		end		query		int64	false	"End"
+//	@Success	200		{object}	api.GetFindingsMetricsResponse
 //	@Router		/compliance/api/v1/findings/metrics [get]
 func (h *HttpHandler) GetFindingsMetrics(ctx echo.Context) error {
-	tw, err := timewindow.ParseTimeWindow(ctx.QueryParam("timeWindow"))
-	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, "invalid time window")
-	}
+	startDateStr := ctx.QueryParam("start")
+	endDateStr := ctx.QueryParam("end")
 
-	after := time.Now().Add(-1 * tw)
-	before := after.Add(24 * time.Hour)
-
-	metric, err := query.GetFindingMetrics(h.client, before, after)
+	startDate, err := strconv.ParseInt(startDateStr, 10, 64)
 	if err != nil {
 		return err
 	}
 
-	if metric == nil {
+	endDate, err := strconv.ParseInt(endDateStr, 10, 64)
+	if err != nil {
+		return err
+	}
+
+	startDateTo := time.UnixMilli(startDate)
+	startDateFrom := startDateTo.Add(-24 * time.Hour)
+	metricStart, err := query.GetFindingMetrics(h.client, startDateTo, startDateFrom)
+	if err != nil {
+		return err
+	}
+
+	endDateTo := time.UnixMilli(endDate)
+	endDateFrom := startDateTo.Add(-24 * time.Hour)
+	metricEnd, err := query.GetFindingMetrics(h.client, endDateTo, endDateFrom)
+	if err != nil {
+		return err
+	}
+
+	if metricEnd == nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "metrics not found")
 	}
 
 	var response api.GetFindingsMetricsResponse
-	response.TotalFindings = metric.PassedFindingsCount + metric.FailedFindingsCount + metric.UnknownFindingsCount
-	response.PassedFindings = metric.PassedFindingsCount
-	response.FailedFindings = metric.FailedFindingsCount
-	response.UnknownFindings = metric.UnknownFindingsCount
+	response.TotalFindings = metricEnd.PassedFindingsCount + metricEnd.FailedFindingsCount + metricEnd.UnknownFindingsCount
+	response.PassedFindings = metricEnd.PassedFindingsCount
+	response.FailedFindings = metricEnd.FailedFindingsCount
+	response.UnknownFindings = metricEnd.UnknownFindingsCount
+
+	response.LastTotalFindings = metricStart.PassedFindingsCount + metricStart.FailedFindingsCount + metricStart.UnknownFindingsCount
+	response.LastPassedFindings = metricStart.PassedFindingsCount
+	response.LastFailedFindings = metricStart.FailedFindingsCount
+	response.LastUnknownFindings = metricStart.UnknownFindingsCount
 	return ctx.JSON(http.StatusOK, response)
 }
 
@@ -414,29 +432,37 @@ func (h *HttpHandler) GetBenchmarksSummary(ctx echo.Context) error {
 //	@Router		/compliance/api/v1/benchmark/:benchmark_id/summary [get]
 func (h *HttpHandler) GetBenchmarkSummary(ctx echo.Context) error {
 	benchmarkID := ctx.Param("benchmark_id")
-	row, err := query.ListBenchmarkSummaries(h.client, &benchmarkID)
+
+	benchmark, err := h.db.GetBenchmark(benchmarkID)
 	if err != nil {
 		return err
 	}
 
-	if len(row) < 1 {
+	if benchmark == nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid benchmarkID")
 	}
 
+	rows, err := query.ListBenchmarkSummaries(h.client, &benchmarkID)
+	if err != nil {
+		return err
+	}
+
 	response := types.ComplianceResultSummary{}
-	for _, policy := range row[0].Policies {
-		for _, resource := range policy.Resources {
-			switch resource.Result {
-			case types.ComplianceResultOK:
-				response.OkCount++
-			case types.ComplianceResultSKIP:
-				response.SkipCount++
-			case types.ComplianceResultINFO:
-				response.InfoCount++
-			case types.ComplianceResultERROR:
-				response.ErrorCount++
-			case types.ComplianceResultALARM:
-				response.AlarmCount++
+	for _, row := range rows {
+		for _, policy := range row.Policies {
+			for _, resource := range policy.Resources {
+				switch resource.Result {
+				case types.ComplianceResultOK:
+					response.OkCount++
+				case types.ComplianceResultSKIP:
+					response.SkipCount++
+				case types.ComplianceResultINFO:
+					response.InfoCount++
+				case types.ComplianceResultERROR:
+					response.ErrorCount++
+				case types.ComplianceResultALARM:
+					response.AlarmCount++
+				}
 			}
 		}
 	}
