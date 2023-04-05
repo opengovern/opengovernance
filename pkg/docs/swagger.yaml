@@ -941,7 +941,7 @@ definitions:
       categories:
         additionalProperties:
           $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ConnectionSummaryCategory'
-        description: Categories available in the connection
+        description: Categories with their Summary
         type: object
       cloudServices:
         additionalProperties:
@@ -1215,24 +1215,33 @@ definitions:
   gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.InsightResult:
     properties:
       connections:
+        description: Connections
         items:
           $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.InsightConnection'
         type: array
       details:
-        $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.InsightDetail'
+        allOf:
+        - $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.InsightDetail'
+        description: Insight Details
       executedAt:
+        description: Time of Execution
         type: string
       insightID:
+        description: Insight ID
         type: integer
       jobID:
+        description: Job ID
         type: integer
       locations:
+        description: Locations
         items:
           type: string
         type: array
       result:
+        description: Result
         type: integer
       sourceID:
+        description: Source ID
         type: string
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.InsightResultTrendResponse:
@@ -2285,6 +2294,21 @@ info:
   title: Keibi Service API
   version: "1.0"
 paths:
+  /auth/api/v1/apikey/generate:
+    post:
+      parameters:
+      - description: role
+        in: body
+        name: role
+        required: true
+        schema:
+          type: string
+      produces:
+      - application/json
+      responses: {}
+      summary: Generates an API Key
+      tags:
+      - auth
   /auth/api/v1/invite:
     post:
       parameters:
@@ -2638,6 +2662,22 @@ paths:
     post:
       consumes:
       - application/json
+      parameters:
+      - description: Field
+        enum:
+        - resourceType
+        - serviceName
+        - sourceID
+        - resourceID
+        in: path
+        name: field
+        required: true
+        type: string
+      - description: Count
+        in: path
+        name: count
+        required: true
+        type: integer
       produces:
       - application/json
       responses:
@@ -2937,7 +2977,7 @@ paths:
       - inventory
   /inventory/api/v1/query:
     get:
-      description: Listing smart queries
+      description: Listing smart queries by specified filters
       parameters:
       - description: Request Body
         in: body
