@@ -217,6 +217,9 @@ func (h *HttpHandler) GetFindingsMetrics(ctx echo.Context) error {
 	if metricEnd == nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "metrics not found")
 	}
+	if metricStart == nil {
+		metricStart = &es2.FindingMetrics{}
+	}
 
 	var response api.GetFindingsMetricsResponse
 	response.TotalFindings = metricEnd.PassedFindingsCount + metricEnd.FailedFindingsCount + metricEnd.UnknownFindingsCount
