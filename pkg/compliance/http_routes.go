@@ -432,29 +432,37 @@ func (h *HttpHandler) GetBenchmarksSummary(ctx echo.Context) error {
 //	@Router		/compliance/api/v1/benchmark/:benchmark_id/summary [get]
 func (h *HttpHandler) GetBenchmarkSummary(ctx echo.Context) error {
 	benchmarkID := ctx.Param("benchmark_id")
-	row, err := query.ListBenchmarkSummaries(h.client, &benchmarkID)
+
+	benchmark, err := h.db.GetBenchmark(benchmarkID)
 	if err != nil {
 		return err
 	}
 
-	if len(row) < 1 {
+	if benchmark == nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid benchmarkID")
 	}
 
+	rows, err := query.ListBenchmarkSummaries(h.client, &benchmarkID)
+	if err != nil {
+		return err
+	}
+
 	response := types.ComplianceResultSummary{}
-	for _, policy := range row[0].Policies {
-		for _, resource := range policy.Resources {
-			switch resource.Result {
-			case types.ComplianceResultOK:
-				response.OkCount++
-			case types.ComplianceResultSKIP:
-				response.SkipCount++
-			case types.ComplianceResultINFO:
-				response.InfoCount++
-			case types.ComplianceResultERROR:
-				response.ErrorCount++
-			case types.ComplianceResultALARM:
-				response.AlarmCount++
+	for _, row := range rows {
+		for _, policy := range row.Policies {
+			for _, resource := range policy.Resources {
+				switch resource.Result {
+				case types.ComplianceResultOK:
+					response.OkCount++
+				case types.ComplianceResultSKIP:
+					response.SkipCount++
+				case types.ComplianceResultINFO:
+					response.InfoCount++
+				case types.ComplianceResultERROR:
+					response.ErrorCount++
+				case types.ComplianceResultALARM:
+					response.AlarmCount++
+				}
 			}
 		}
 	}
