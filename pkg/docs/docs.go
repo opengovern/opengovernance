@@ -556,13 +556,13 @@ const docTemplate = `{
                 "summary": "Returns findings metrics",
                 "parameters": [
                     {
-                        "type": "string",
+                        "type": "integer",
                         "description": "Start",
                         "name": "start",
                         "in": "query"
                     },
                     {
-                        "type": "string",
+                        "type": "integer",
                         "description": "End",
                         "name": "end",
                         "in": "query"
@@ -5349,6 +5349,18 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "failedFindings": {
+                    "type": "integer"
+                },
+                "lastFailedFindings": {
+                    "type": "integer"
+                },
+                "lastPassedFindings": {
+                    "type": "integer"
+                },
+                "lastTotalFindings": {
+                    "type": "integer"
+                },
+                "lastUnknownFindings": {
                     "type": "integer"
                 },
                 "passedFindings": {

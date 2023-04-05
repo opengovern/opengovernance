@@ -180,8 +180,8 @@ func (h *HttpHandler) GetTopFieldByAlarmCount(ctx echo.Context) error {
 //	@Tags		compliance
 //	@Accept		json
 //	@Produce	json
-//	@Param		start	query		string	false	"Start"
-//	@Param		end		query		string	false	"End"	
+//	@Param		start	query		int64	false	"Start"
+//	@Param		end		query		int64	false	"End"
 //	@Success	200		{object}	api.GetFindingsMetricsResponse
 //	@Router		/compliance/api/v1/findings/metrics [get]
 func (h *HttpHandler) GetFindingsMetrics(ctx echo.Context) error {
@@ -198,23 +198,34 @@ func (h *HttpHandler) GetFindingsMetrics(ctx echo.Context) error {
 		return err
 	}
 
-	after := time.UnixMilli(startDate)
-	before := time.UnixMilli(endDate)
-
-	metric, err := query.GetFindingMetrics(h.client, before, after)
+	startDateTo := time.UnixMilli(startDate)
+	startDateFrom := startDateTo.Add(-24 * time.Hour)
+	metricStart, err := query.GetFindingMetrics(h.client, startDateTo, startDateFrom)
 	if err != nil {
 		return err
 	}
 
-	if metric == nil {
+	endDateTo := time.UnixMilli(endDate)
+	endDateFrom := startDateTo.Add(-24 * time.Hour)
+	metricEnd, err := query.GetFindingMetrics(h.client, endDateTo, endDateFrom)
+	if err != nil {
+		return err
+	}
+
+	if metricEnd == nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "metrics not found")
 	}
 
 	var response api.GetFindingsMetricsResponse
-	response.TotalFindings = metric.PassedFindingsCount + metric.FailedFindingsCount + metric.UnknownFindingsCount
-	response.PassedFindings = metric.PassedFindingsCount
-	response.FailedFindings = metric.FailedFindingsCount
-	response.UnknownFindings = metric.UnknownFindingsCount
+	response.TotalFindings = metricEnd.PassedFindingsCount + metricEnd.FailedFindingsCount + metricEnd.UnknownFindingsCount
+	response.PassedFindings = metricEnd.PassedFindingsCount
+	response.FailedFindings = metricEnd.FailedFindingsCount
+	response.UnknownFindings = metricEnd.UnknownFindingsCount
+
+	response.LastTotalFindings = metricStart.PassedFindingsCount + metricStart.FailedFindingsCount + metricStart.UnknownFindingsCount
+	response.LastPassedFindings = metricStart.PassedFindingsCount
+	response.LastFailedFindings = metricStart.FailedFindingsCount
+	response.LastUnknownFindings = metricStart.UnknownFindingsCount
 	return ctx.JSON(http.StatusOK, response)
 }
 

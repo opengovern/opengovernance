@@ -320,6 +320,14 @@ definitions:
     properties:
       failedFindings:
         type: integer
+      lastFailedFindings:
+        type: integer
+      lastPassedFindings:
+        type: integer
+      lastTotalFindings:
+        type: integer
+      lastUnknownFindings:
+        type: integer
       passedFindings:
         type: integer
       totalFindings:
@@ -2535,11 +2543,11 @@ paths:
       - description: Start
         in: query
         name: start
-        type: string
+        type: integer
       - description: End
         in: query
         name: end
-        type: string
+        type: integer
       produces:
       - application/json
       responses:
