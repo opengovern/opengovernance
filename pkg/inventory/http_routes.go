@@ -2694,8 +2694,8 @@ func (h *HttpHandler) GetServiceSummary(ctx echo.Context) error {
 //	@Tags			resource
 //	@Accepts		json
 //	@Produce		json
-//	@Param			request	body	api.GetResourceRequest	true	"Request Body"
-//	@Success		200			{object}	map[string]string
+//	@Param			request	body		api.GetResourceRequest	true	"Request Body"
+//	@Success		200		{object}	map[string]string
 //	@Router			/inventory/api/v1/resource [post]
 func (h *HttpHandler) GetResource(ctx echo.Context) error {
 	var req api.GetResourceRequest

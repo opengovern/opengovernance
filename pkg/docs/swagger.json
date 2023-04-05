@@ -10,6 +10,29 @@
     },
     "host": "dev-cluster.keibi.io",
     "paths": {
+        "/auth/api/v1/apikey/generate": {
+            "post": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Generates an API Key",
+                "parameters": [
+                    {
+                        "description": "role",
+                        "name": "role",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {}
+            }
+        },
         "/auth/api/v1/invite": {
             "post": {
                 "produces": [
@@ -585,6 +608,28 @@
                     "compliance"
                 ],
                 "summary": "Returns all findings with respect to filters",
+                "parameters": [
+                    {
+                        "enum": [
+                            "resourceType",
+                            "serviceName",
+                            "sourceID",
+                            "resourceID"
+                        ],
+                        "type": "string",
+                        "description": "Field",
+                        "name": "field",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Count",
+                        "name": "count",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -999,7 +1044,7 @@
         },
         "/inventory/api/v1/query": {
             "get": {
-                "description": "Listing smart queries",
+                "description": "Listing smart queries by specified filters",
                 "produces": [
                     "application/json"
                 ],
@@ -6267,7 +6312,7 @@
             "type": "object",
             "properties": {
                 "categories": {
-                    "description": "Categories available in the connection",
+                    "description": "Categories with their Summary",
                     "type": "object",
                     "additionalProperties": {
                         "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ConnectionSummaryCategory"
@@ -6671,33 +6716,45 @@
             "type": "object",
             "properties": {
                 "connections": {
+                    "description": "Connections",
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.InsightConnection"
                     }
                 },
                 "details": {
-                    "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.InsightDetail"
+                    "description": "Insight Details",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.InsightDetail"
+                        }
+                    ]
                 },
                 "executedAt": {
+                    "description": "Time of Execution",
                     "type": "string"
                 },
                 "insightID": {
+                    "description": "Insight ID",
                     "type": "integer"
                 },
                 "jobID": {
+                    "description": "Job ID",
                     "type": "integer"
                 },
                 "locations": {
+                    "description": "Locations",
                     "type": "array",
                     "items": {
                         "type": "string"
                     }
                 },
                 "result": {
+                    "description": "Result",
                     "type": "integer"
                 },
                 "sourceID": {
+                    "description": "Source ID",
                     "type": "string"
                 }
             }

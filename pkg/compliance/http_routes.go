@@ -111,11 +111,13 @@ func (h *HttpHandler) GetFindings(ctx echo.Context) error {
 //	@Tags		compliance
 //	@Accept		json
 //	@Produce	json
-//	@Success	200	{object}	api.GetTopFieldResponse
+//	@Param		field	path		string	true	"Field"	Enums(resourceType,serviceName,sourceID,resourceID)
+//	@Param		count	path		int		true	"Count"
+//	@Success	200		{object}	api.GetTopFieldResponse
 //	@Router		/compliance/api/v1/findings/{field}/top/{count} [post]
 func (h *HttpHandler) GetTopFieldByFindingCount(ctx echo.Context) error {
-	field := ctx.QueryParam("field")
-	countStr := ctx.QueryParam("count")
+	field := ctx.Param("field")
+	countStr := ctx.Param("count")
 	count, err := strconv.Atoi(countStr)
 	if err != nil {
 		return err
