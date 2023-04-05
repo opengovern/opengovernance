@@ -18,30 +18,42 @@ const docTemplate = `{
     "paths": {
         "/auth/api/v1/invite": {
             "post": {
+                "description": "Invites a user to a workspace with defined role\nby sending an email to the specified email address.\nThe user will be found by the email address.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "auth"
                 ],
-                "summary": "Invites a user to a workspace.",
+                "summary": "Invites a user to a workspace with defined role.",
                 "parameters": [
                     {
-                        "description": "role",
-                        "name": "role",
+                        "description": "Request Body",
+                        "name": "request",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "type": "string"
+                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.InviteRequest"
                         }
+                    },
+                    {
+                        "type": "string",
+                        "description": "workspaceId",
+                        "name": "workspaceId",
+                        "in": "query",
+                        "required": true
                     }
                 ],
-                "responses": {}
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    }
+                }
             }
         },
         "/auth/api/v1/user/role/binding": {
             "put": {
-                "description": "RoleBinding defines the roles and actions a user can perform. There are currently three roles (ADMIN, EDITOR, VIEWER). User must exist before you can update its RoleBinding. If you want to add a role binding for a user given the email address, call invite first to get a user id. Then call this endpoint.",
+                "description": "RoleBinding defines the roles and actions a user can perform.\nThere are currently three roles (ADMIN, EDITOR, VIEWER).\nUser must exist before you can update its RoleBinding.\nIf you want to add a role binding for a user given the email address, call invite first to get a user id. Then call this endpoint.",
                 "produces": [
                     "application/json"
                 ],
@@ -51,22 +63,20 @@ const docTemplate = `{
                 "summary": "Update RoleBinding for a user.",
                 "parameters": [
                     {
-                        "description": "userId",
-                        "name": "userId",
+                        "description": "Request Body",
+                        "name": "request",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "type": "string"
+                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.PutRoleBindingRequest"
                         }
                     },
                     {
-                        "description": "role",
-                        "name": "role",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "type": "string"
-                        }
+                        "type": "string",
+                        "description": "workspaceId",
+                        "name": "workspaceId",
+                        "in": "query",
+                        "required": true
                     }
                 ],
                 "responses": {
@@ -82,12 +92,19 @@ const docTemplate = `{
                 "tags": [
                     "auth"
                 ],
-                "summary": "Delete RoleBinding for a user.",
+                "summary": "Delete RoleBinding for the defined user in the defined workspace.",
                 "parameters": [
                     {
                         "type": "string",
                         "description": "userId",
                         "name": "userId",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "workspaceId",
+                        "name": "workspaceId",
                         "in": "query",
                         "required": true
                     }
@@ -109,6 +126,15 @@ const docTemplate = `{
                     "auth"
                 ],
                 "summary": "Get RoleBindings for the calling user",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "userId",
+                        "name": "userId",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -121,6 +147,7 @@ const docTemplate = `{
         },
         "/auth/api/v1/user/{user_id}/workspace/membership": {
             "get": {
+                "description": "Returns a list of workspaces and the user role in it for the specified user",
                 "produces": [
                     "application/json"
                 ],
@@ -157,6 +184,15 @@ const docTemplate = `{
                     "auth"
                 ],
                 "summary": "Get all the user RoleBindings for the given workspace.",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "workspaceId",
+                        "name": "workspaceId",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -1006,7 +1042,7 @@ const docTemplate = `{
         },
         "/inventory/api/v1/query": {
             "get": {
-                "description": "Listing smart queries",
+                "description": "Listing smart queries by specified filters",
                 "produces": [
                     "application/json"
                 ],
@@ -4934,13 +4970,39 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "globalRoles": {
-                    "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.Role"
+                    "description": "Global Access",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.Role"
+                        }
+                    ]
                 },
                 "roleBindings": {
+                    "description": "List of user roles in each workspace",
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.UserRoleBinding"
                     }
+                }
+            }
+        },
+        "gitlab_com_keibiengine_keibi-engine_pkg_auth_api.InviteRequest": {
+            "type": "object",
+            "required": [
+                "email"
+            ],
+            "properties": {
+                "email": {
+                    "description": "User email address",
+                    "type": "string"
+                },
+                "role": {
+                    "description": "Name of the role",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.Role"
+                        }
+                    ]
                 }
             }
         },
@@ -4954,6 +5016,27 @@ const docTemplate = `{
                 "InviteStatus_ACCEPTED",
                 "InviteStatus_PENDING"
             ]
+        },
+        "gitlab_com_keibiengine_keibi-engine_pkg_auth_api.PutRoleBindingRequest": {
+            "type": "object",
+            "required": [
+                "role",
+                "userId"
+            ],
+            "properties": {
+                "role": {
+                    "description": "Name of the role",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.Role"
+                        }
+                    ]
+                },
+                "userId": {
+                    "description": "Unique identifier for the User",
+                    "type": "string"
+                }
+            }
         },
         "gitlab_com_keibiengine_keibi-engine_pkg_auth_api.Role": {
             "type": "string",
@@ -4974,9 +5057,15 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "role": {
-                    "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.Role"
+                    "description": "Name of the binding Role",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.Role"
+                        }
+                    ]
                 },
                 "workspaceID": {
+                    "description": "Unique identifier for the Workspace",
                     "type": "string"
                 }
             }
@@ -4985,24 +5074,39 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "createdAt": {
+                    "description": "Creation timestamp in UTC",
                     "type": "string"
                 },
                 "email": {
+                    "description": "Email address of the user",
                     "type": "string"
                 },
                 "lastActivity": {
+                    "description": "Last activity timestamp in UTC",
                     "type": "string"
                 },
                 "role": {
-                    "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.Role"
+                    "description": "Name of the role",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.Role"
+                        }
+                    ]
                 },
                 "status": {
-                    "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.InviteStatus"
+                    "description": "Invite status",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.InviteStatus"
+                        }
+                    ]
                 },
                 "userId": {
+                    "description": "Unique identifier for the user",
                     "type": "string"
                 },
                 "userName": {
+                    "description": "Username",
                     "type": "string"
                 }
             }
@@ -6262,7 +6366,7 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "categories": {
-                    "description": "Categories available in the connection",
+                    "description": "Categories with their Summary",
                     "type": "object",
                     "additionalProperties": {
                         "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ConnectionSummaryCategory"
@@ -6666,33 +6770,45 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "connections": {
+                    "description": "Connections",
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.InsightConnection"
                     }
                 },
                 "details": {
-                    "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.InsightDetail"
+                    "description": "Insight Details",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.InsightDetail"
+                        }
+                    ]
                 },
                 "executedAt": {
+                    "description": "Time of Execution",
                     "type": "string"
                 },
                 "insightID": {
+                    "description": "Insight ID",
                     "type": "integer"
                 },
                 "jobID": {
+                    "description": "Job ID",
                     "type": "integer"
                 },
                 "locations": {
+                    "description": "Locations",
                     "type": "array",
                     "items": {
                         "type": "string"
                     }
                 },
                 "result": {
+                    "description": "Result",
                     "type": "integer"
                 },
                 "sourceID": {
+                    "description": "Source ID",
                     "type": "string"
                 }
             }

@@ -59,12 +59,15 @@ func bindValidate(ctx echo.Context, i interface{}) error {
 // PutRoleBinding godoc
 //
 //	@Summary		Update RoleBinding for a user.
-//	@Description	RoleBinding defines the roles and actions a user can perform. There are currently three roles (ADMIN, EDITOR, VIEWER). User must exist before you can update its RoleBinding. If you want to add a role binding for a user given the email address, call invite first to get a user id. Then call this endpoint.
+//	@Description	RoleBinding defines the roles and actions a user can perform.
+//	@Description	There are currently three roles (ADMIN, EDITOR, VIEWER).
+//	@Description	User must exist before you can update its RoleBinding.
+//	@Description	If you want to add a role binding for a user given the email address, call invite first to get a user id. Then call this endpoint.
 //	@Tags			auth
 //	@Produce		json
-//	@Success		200		{object}	nil
-//	@Param			userId	body		string	true	"userId"
-//	@Param			role	body		string	true	"role"
+//	@Param			request		body		api.PutRoleBindingRequest	true	"Request Body"
+//	@Param			workspaceId	query		string						true	"workspaceId"
+//	@Success		200			{object}	nil
 //	@Router			/auth/api/v1/user/role/binding [put]
 func (r httpRoutes) PutRoleBinding(ctx echo.Context) error {
 	var req api.PutRoleBindingRequest
@@ -96,11 +99,12 @@ func (r httpRoutes) PutRoleBinding(ctx echo.Context) error {
 
 // DeleteRoleBinding godoc
 //
-//	@Summary	Delete RoleBinding for a user.
+//	@Summary	Delete RoleBinding for the defined user in the defined workspace.
 //	@Tags		auth
 //	@Produce	json
-//	@Success	200		{object}	nil
-//	@Param		userId	query		string	true	"userId"
+//	@Param		userId		query		string	true	"userId"
+//	@Param		workspaceId	query		string	true	"workspaceId"
+//	@Success	200			{object}	nil
 //	@Router		/auth/api/v1/user/role/binding [delete]
 func (r httpRoutes) DeleteRoleBinding(ctx echo.Context) error {
 	userId := ctx.QueryParam("userId")
@@ -131,7 +135,8 @@ func (r httpRoutes) DeleteRoleBinding(ctx echo.Context) error {
 //	@Description	RoleBinding defines the roles and actions a user can perform. There are currently three roles (ADMIN, EDITOR, VIEWER).
 //	@Tags			auth
 //	@Produce		json
-//	@Success		200	{object}	api.GetRoleBindingsResponse
+//	@Param			userId	query		string	true	"userId"
+//	@Success		200		{object}	api.GetRoleBindingsResponse
 //	@Router			/auth/api/v1/user/role/bindings [get]
 func (r *httpRoutes) GetRoleBindings(ctx echo.Context) error {
 	userID := httpserver.GetUserID(ctx)
@@ -159,12 +164,13 @@ func (r *httpRoutes) GetRoleBindings(ctx echo.Context) error {
 
 // GetWorkspaceMembership godoc
 //
-//	@Summary	List of workspaces which the user is member of
-//	@Tags		auth
-//	@Produce	json
-//	@Param		userId	path		string	true	"userId"
-//	@Success	200		{object}	api.GetRoleBindingsResponse
-//	@Router		/auth/api/v1/user/{user_id}/workspace/membership [get]
+//	@Summary		List of workspaces which the user is member of
+//	@Description	Returns a list of workspaces and the user role in it for the specified user
+//	@Tags			auth
+//	@Produce		json
+//	@Param			userId	path		string	true	"userId"
+//	@Success		200		{object}	api.GetRoleBindingsResponse
+//	@Router			/auth/api/v1/user/{user_id}/workspace/membership [get]
 func (r *httpRoutes) GetWorkspaceMembership(ctx echo.Context) error {
 	hctx := httpclient.FromEchoContext(ctx)
 	userID := ctx.Param("user_id")
@@ -204,7 +210,8 @@ func (r *httpRoutes) GetWorkspaceMembership(ctx echo.Context) error {
 //	@Description	RoleBinding defines the roles and actions a user can perform. There are currently three roles (ADMIN, EDITOR, VIEWER). The workspace path is based on the DNS such as (workspace1.app.keibi.io)
 //	@Tags			auth
 //	@Produce		json
-//	@Success		200	{object}	api.GetWorkspaceRoleBindingResponse
+//	@Param			workspaceId	query		string	true	"workspaceId"
+//	@Success		200			{object}	api.GetWorkspaceRoleBindingResponse
 //	@Router			/auth/api/v1/workspace/role/bindings [get]
 func (r *httpRoutes) GetWorkspaceRoleBindings(ctx echo.Context) error {
 	workspaceID := httpserver.GetWorkspaceID(ctx)
@@ -235,11 +242,16 @@ func (r *httpRoutes) GetWorkspaceRoleBindings(ctx echo.Context) error {
 
 // Invite godoc
 //
-//	@Summary	Invites a user to a workspace.
-//	@Tags		auth
-//	@Produce	json
-//	@Param		role	body	string	true	"role"
-//	@Router		/auth/api/v1/invite [post]
+//	@Summary		Invites a user to a workspace with defined role.
+//	@Description	Invites a user to a workspace with defined role
+//	@Description	by sending an email to the specified email address.
+//	@Description	The user will be found by the email address.
+//	@Tags			auth
+//	@Produce		json
+//	@Param			request		body		api.InviteRequest	true	"Request Body"
+//	@Param			workspaceId	query		string				true	"workspaceId"
+//	@Success		200			{object}	nil
+//	@Router			/auth/api/v1/invite [post]
 func (r *httpRoutes) Invite(ctx echo.Context) error {
 	var req api.InviteRequest
 	if err := bindValidate(ctx, &req); err != nil {
