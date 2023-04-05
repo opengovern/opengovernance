@@ -2,7 +2,9 @@ package auth
 
 import (
 	"context"
+	"crypto/rsa"
 	_ "embed"
+	"github.com/golang-jwt/jwt"
 	"net/http"
 	"strings"
 	"time"
@@ -31,6 +33,7 @@ type httpRoutes struct {
 	emailService    email.Service
 	workspaceClient client.WorkspaceServiceClient
 	auth0Service    *auth0.Service
+	keibiPrivateKey *rsa.PrivateKey
 }
 
 func (r *httpRoutes) Register(e *echo.Echo) {
@@ -38,10 +41,11 @@ func (r *httpRoutes) Register(e *echo.Echo) {
 
 	v1.PUT("/user/role/binding", httpserver.AuthorizeHandler(r.PutRoleBinding, api.AdminRole))
 	v1.DELETE("/user/role/binding", httpserver.AuthorizeHandler(r.DeleteRoleBinding, api.AdminRole))
-	v1.GET("/user/role/bindings", httpserver.AuthorizeHandler(r.GetRoleBindings, api.ViewerRole))
+	v1.GET("/user/role/bindings", httpserver.AuthorizeHandler(r.GetRoleBindings, api.EditorRole))
 	v1.GET("/user/:user_id/workspace/membership", httpserver.AuthorizeHandler(r.GetWorkspaceMembership, api.AdminRole))
 	v1.GET("/workspace/role/bindings", httpserver.AuthorizeHandler(r.GetWorkspaceRoleBindings, api.AdminRole))
 	v1.POST("/invite", httpserver.AuthorizeHandler(r.Invite, api.AdminRole))
+	v1.POST("/apikey/generate", httpserver.AuthorizeHandler(r.GenerateAPIKey, api.AdminRole))
 }
 
 func bindValidate(ctx echo.Context, i interface{}) error {
@@ -300,4 +304,24 @@ func (r *httpRoutes) Invite(ctx echo.Context) error {
 	}
 
 	return ctx.NoContent(http.StatusOK)
+}
+
+// GenerateAPIKey godoc
+//
+//	@Summary	Generates an API Key
+//	@Tags		auth
+//	@Produce	json
+//	@Param		role	body	string	true	"role"
+//	@Router		/auth/api/v1/apikey/generate [post]
+func (r *httpRoutes) GenerateAPIKey(ctx echo.Context) error {
+	var u userClaim
+	token, err := jwt.NewWithClaims(jwt.SigningMethodRS256, &u).SignedString(r.keibiPrivateKey)
+	if err != nil {
+		return err
+	}
+
+	resp := api.APIKeyResponse{
+		Token: token,
+	}
+	return ctx.JSON(http.StatusOK, resp)
 }
