@@ -52,6 +52,7 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	v1.POST("/alarms/top", httpserver.AuthorizeHandler(h.GetTopFieldByAlarmCount, api3.ViewerRole))
 	v1.GET("/benchmark/:benchmark_id/summary", httpserver.AuthorizeHandler(h.GetBenchmarkSummary, api3.ViewerRole))
 	v1.GET("/benchmarks/summary", httpserver.AuthorizeHandler(h.GetBenchmarksSummary, api3.ViewerRole))
+	v1.GET("/benchmarks/summary/short", httpserver.AuthorizeHandler(h.GetShortSummary, api3.ViewerRole))
 	v1.GET("/policy/summary/:benchmark_id", httpserver.AuthorizeHandler(h.GetPolicySummary, api3.ViewerRole))
 }
 
@@ -423,6 +424,53 @@ func (h *HttpHandler) GetBenchmarksSummary(ctx echo.Context) error {
 		response.ShortSummary.Failed += bs.ShortSummary.Failed
 		response.TotalAssets += bs.TotalConnectionResources
 		response.Benchmarks = append(response.Benchmarks, bs)
+	}
+	return ctx.JSON(http.StatusOK, response)
+}
+
+// GetShortSummary godoc
+//
+//	@Summary	Get short summary
+//	@Tags		compliance
+//	@Accept		json
+//	@Produce	json
+//	@Success	200	{object}	api.GetShortSummaryResponse
+//	@Router		/compliance/api/v1/benchmarks/summary/short [get]
+func (h *HttpHandler) GetShortSummary(ctx echo.Context) error {
+	var response api.GetShortSummaryResponse
+	benchmarks, err := h.db.ListRootBenchmarks()
+	if err != nil {
+		return err
+	}
+
+	summ := ShortSummary{}
+	for _, b := range benchmarks {
+		s, err := GetShortSummary(h.client, h.db, b)
+		if err != nil {
+			return err
+		}
+		summ.PassedResourceIDs = append(summ.PassedResourceIDs, s.PassedResourceIDs...)
+		summ.FailedResourceIDs = append(summ.FailedResourceIDs, s.FailedResourceIDs...)
+		summ.ConnectionIDs = append(summ.ConnectionIDs, s.ConnectionIDs...)
+	}
+	summ.PassedResourceIDs = UniqueArray(summ.PassedResourceIDs, func(t, t2 string) bool {
+		return t == t2
+	})
+	summ.FailedResourceIDs = UniqueArray(summ.FailedResourceIDs, func(t, t2 string) bool {
+		return t == t2
+	})
+	summ.ConnectionIDs = UniqueArray(summ.ConnectionIDs, func(t, t2 string) bool {
+		return t == t2
+	})
+
+	response.PassedResources = int64(len(summ.PassedResourceIDs))
+	response.FailedResources = int64(len(summ.FailedResourceIDs))
+	for _, conn := range summ.ConnectionIDs {
+		count, err := h.inventoryClient.GetAccountsResourceCount(httpclient.FromEchoContext(ctx), source.Nil, &conn)
+		if err != nil {
+			return err
+		}
+		response.TotalAssets += int64(count[0].ResourceCount)
 	}
 	return ctx.JSON(http.StatusOK, response)
 }
