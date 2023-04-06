@@ -178,7 +178,7 @@ func start(ctx context.Context) error {
 			emailService:    m,
 			workspaceClient: workspaceClient,
 			auth0Service:    auth0Service,
-			keibiPrivateKey: pri,
+			keibiPrivateKey: pri.(*rsa.PrivateKey),
 		}
 		errors <- fmt.Errorf("http server: %w", httpserver.RegisterAndStart(logger, httpServerAddress, &routes))
 	}()
