@@ -445,15 +445,26 @@ func (h *HttpHandler) GetShortSummary(ctx echo.Context) error {
 
 	summ := ShortSummary{}
 	for _, b := range benchmarks {
+		be := b.ToApi()
+		err = b.PopulateConnectors(h.db, &be)
+		if err != nil {
+			return err
+		}
+
 		s, err := GetShortSummary(h.client, h.db, b)
 		if err != nil {
 			return err
 		}
+
 		response.BenchmarkShortSummary = append(response.BenchmarkShortSummary, api.BenchmarkShortSummary{
-			ID:              b.ID,
-			Title:           b.Title,
-			PassedResources: int64(len(summ.PassedResourceIDs)),
-			FailedResources: int64(len(summ.FailedResourceIDs)),
+			ID:         b.ID,
+			Title:      b.Title,
+			Connectors: be.Connectors,
+			Tags:       be.Tags,
+			Enabled:    b.Enabled,
+
+			PassedResources: int64(len(s.PassedResourceIDs)),
+			FailedResources: int64(len(s.FailedResourceIDs)),
 		})
 		summ.PassedResourceIDs = append(summ.PassedResourceIDs, s.PassedResourceIDs...)
 		summ.FailedResourceIDs = append(summ.FailedResourceIDs, s.FailedResourceIDs...)
