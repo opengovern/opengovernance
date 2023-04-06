@@ -449,6 +449,12 @@ func (h *HttpHandler) GetShortSummary(ctx echo.Context) error {
 		if err != nil {
 			return err
 		}
+		response.BenchmarkShortSummary = append(response.BenchmarkShortSummary, api.BenchmarkShortSummary{
+			ID:              b.ID,
+			Title:           b.Title,
+			PassedResources: int64(len(summ.PassedResourceIDs)),
+			FailedResources: int64(len(summ.FailedResourceIDs)),
+		})
 		summ.PassedResourceIDs = append(summ.PassedResourceIDs, s.PassedResourceIDs...)
 		summ.FailedResourceIDs = append(summ.FailedResourceIDs, s.FailedResourceIDs...)
 		summ.ConnectionIDs = append(summ.ConnectionIDs, s.ConnectionIDs...)

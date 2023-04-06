@@ -139,6 +139,17 @@ definitions:
       sourceId:
         type: string
     type: object
+  gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.BenchmarkShortSummary:
+    properties:
+      failedResources:
+        type: integer
+      id:
+        type: string
+      passedResources:
+        type: integer
+      title:
+        type: string
+    type: object
   gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.BenchmarkSummary:
     properties:
       assignedConnectionsCount:
@@ -359,6 +370,10 @@ definitions:
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.GetShortSummaryResponse:
     properties:
+      benchmarkShortSummary:
+        items:
+          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.BenchmarkShortSummary'
+        type: array
       failedResources:
         type: integer
       passedResources:

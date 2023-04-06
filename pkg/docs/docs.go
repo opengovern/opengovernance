@@ -5162,6 +5162,23 @@ const docTemplate = `{
                 }
             }
         },
+        "gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.BenchmarkShortSummary": {
+            "type": "object",
+            "properties": {
+                "failedResources": {
+                    "type": "integer"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "passedResources": {
+                    "type": "integer"
+                },
+                "title": {
+                    "type": "string"
+                }
+            }
+        },
         "gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.BenchmarkSummary": {
             "type": "object",
             "properties": {
@@ -5491,6 +5508,12 @@ const docTemplate = `{
         "gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.GetShortSummaryResponse": {
             "type": "object",
             "properties": {
+                "benchmarkShortSummary": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.BenchmarkShortSummary"
+                    }
+                },
                 "failedResources": {
                     "type": "integer"
                 },
