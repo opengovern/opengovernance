@@ -5269,6 +5269,18 @@ const docTemplate = `{
         "gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.BenchmarkShortSummary": {
             "type": "object",
             "properties": {
+                "connectors": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/source.Type"
+                    }
+                },
+                "coverage": {
+                    "type": "number"
+                },
+                "enabled": {
+                    "type": "boolean"
+                },
                 "failedResources": {
                     "type": "integer"
                 },
@@ -5277,6 +5289,15 @@ const docTemplate = `{
                 },
                 "passedResources": {
                     "type": "integer"
+                },
+                "result": {
+                    "$ref": "#/definitions/types.ComplianceResultSummary"
+                },
+                "tags": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
                 },
                 "title": {
                     "type": "string"

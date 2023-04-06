@@ -85,6 +85,7 @@ type ShortSummary struct {
 	PassedResourceIDs []string
 	FailedResourceIDs []string
 	ConnectionIDs     []string
+	Result            types.ComplianceResultSummary
 }
 
 func GetShortSummary(client keibi.Client, db db.Database, benchmark db.Benchmark) (ShortSummary, error) {
@@ -100,6 +101,11 @@ func GetShortSummary(client keibi.Client, db db.Database, benchmark db.Benchmark
 			return resp, err
 		}
 
+		resp.Result.OkCount += s.Result.OkCount
+		resp.Result.AlarmCount += s.Result.AlarmCount
+		resp.Result.InfoCount += s.Result.InfoCount
+		resp.Result.SkipCount += s.Result.SkipCount
+		resp.Result.ErrorCount += s.Result.ErrorCount
 		resp.FailedResourceIDs = append(resp.FailedResourceIDs, s.FailedResourceIDs...)
 		resp.PassedResourceIDs = append(resp.PassedResourceIDs, s.PassedResourceIDs...)
 		resp.ConnectionIDs = append(resp.ConnectionIDs, s.ConnectionIDs...)
@@ -113,6 +119,19 @@ func GetShortSummary(client keibi.Client, db db.Database, benchmark db.Benchmark
 	for _, summ := range res {
 		for _, policy := range summ.Policies {
 			for _, resource := range policy.Resources {
+				switch resource.Result {
+				case types.ComplianceResultOK:
+					resp.Result.OkCount++
+				case types.ComplianceResultALARM:
+					resp.Result.AlarmCount++
+				case types.ComplianceResultINFO:
+					resp.Result.InfoCount++
+				case types.ComplianceResultSKIP:
+					resp.Result.SkipCount++
+				case types.ComplianceResultERROR:
+					resp.Result.ErrorCount++
+				}
+
 				if resource.Result.IsPassed() {
 					resp.PassedResourceIDs = append(resp.PassedResourceIDs, resource.ResourceID)
 				} else {

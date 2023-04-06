@@ -443,6 +443,11 @@ func (h *HttpHandler) GetShortSummary(ctx echo.Context) error {
 		return err
 	}
 
+	totalWorkspaceAssets, err := h.inventoryClient.CountResources(httpclient.FromEchoContext(ctx))
+	if err != nil {
+		return err
+	}
+
 	summ := ShortSummary{}
 	for _, b := range benchmarks {
 		be := b.ToApi()
@@ -456,13 +461,23 @@ func (h *HttpHandler) GetShortSummary(ctx echo.Context) error {
 			return err
 		}
 
-		response.BenchmarkShortSummary = append(response.BenchmarkShortSummary, api.BenchmarkShortSummary{
-			ID:         b.ID,
-			Title:      b.Title,
-			Connectors: be.Connectors,
-			Tags:       be.Tags,
-			Enabled:    b.Enabled,
+		var totalBenchmarkCoveredAssets int64
+		for _, conn := range s.ConnectionIDs {
+			count, err := h.inventoryClient.GetAccountsResourceCount(httpclient.FromEchoContext(ctx), source.Nil, &conn)
+			if err != nil {
+				return err
+			}
+			totalBenchmarkCoveredAssets += int64(count[0].ResourceCount)
+		}
 
+		response.BenchmarkShortSummary = append(response.BenchmarkShortSummary, api.BenchmarkShortSummary{
+			ID:              b.ID,
+			Title:           b.Title,
+			Connectors:      be.Connectors,
+			Tags:            be.Tags,
+			Enabled:         b.Enabled,
+			Result:          s.Result,
+			Coverage:        float64(totalBenchmarkCoveredAssets) / float64(totalWorkspaceAssets) * 100.0,
 			PassedResources: int64(len(s.PassedResourceIDs)),
 			FailedResources: int64(len(s.FailedResourceIDs)),
 		})

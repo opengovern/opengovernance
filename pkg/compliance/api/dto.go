@@ -177,11 +177,13 @@ type GetBenchmarksSummaryResponse struct {
 }
 
 type BenchmarkShortSummary struct {
-	ID         string            `json:"id"`
-	Title      string            `json:"title"`
-	Connectors []source.Type     `json:"connectors"`
-	Tags       map[string]string `json:"tags"`
-	Enabled    bool              `json:"enabled"`
+	ID         string                        `json:"id"`
+	Title      string                        `json:"title"`
+	Connectors []source.Type                 `json:"connectors"`
+	Tags       map[string]string             `json:"tags"`
+	Enabled    bool                          `json:"enabled"`
+	Result     types.ComplianceResultSummary `json:"result"`
+	Coverage   float64                       `json:"coverage"`
 
 	PassedResources int64 `json:"passedResources"`
 	FailedResources int64 `json:"failedResources"`
