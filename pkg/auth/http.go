@@ -4,10 +4,11 @@ import (
 	"context"
 	"crypto/rsa"
 	_ "embed"
-	"github.com/golang-jwt/jwt"
 	"net/http"
 	"strings"
 	"time"
+
+	"github.com/golang-jwt/jwt"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpclient"
 

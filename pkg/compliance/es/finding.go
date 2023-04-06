@@ -3,8 +3,9 @@ package es
 import (
 	"context"
 	"encoding/json"
-	"gitlab.com/keibiengine/keibi-engine/pkg/types"
 	"strconv"
+
+	"gitlab.com/keibiengine/keibi-engine/pkg/types"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/source"
 
