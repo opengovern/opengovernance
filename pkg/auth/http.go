@@ -4,10 +4,11 @@ import (
 	"context"
 	"crypto/rsa"
 	_ "embed"
-	"github.com/golang-jwt/jwt"
 	"net/http"
 	"strings"
 	"time"
+
+	"github.com/golang-jwt/jwt"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpclient"
 
@@ -45,6 +46,7 @@ func (r *httpRoutes) Register(e *echo.Echo) {
 	v1.GET("/user/:user_id/workspace/membership", httpserver.AuthorizeHandler(r.GetWorkspaceMembership, api.AdminRole))
 	v1.GET("/workspace/role/bindings", httpserver.AuthorizeHandler(r.GetWorkspaceRoleBindings, api.AdminRole))
 	v1.POST("/invite", httpserver.AuthorizeHandler(r.Invite, api.AdminRole))
+	v1.DELETE("/invite", httpserver.AuthorizeHandler(r.DeleteInvitation, api.AdminRole))
 	v1.POST("/apikey/generate", httpserver.AuthorizeHandler(r.GenerateAPIKey, api.AdminRole))
 }
 
@@ -303,6 +305,23 @@ func (r *httpRoutes) Invite(ctx echo.Context) error {
 		}
 	}
 
+	return ctx.NoContent(http.StatusOK)
+}
+
+// DeleteInvitation godoc
+//
+//		@Summary
+//		@Tags		auth
+//	 	@Produce 	json
+//		@Param		userId	query		string	true	"userId"
+//		@Success	200			{object}	nil
+//		@Router		/auth/api/v1/invite [delete]
+func (r *httpRoutes) DeleteInvitation(ctx echo.Context) error {
+	userID := httpserver.GetUserID(ctx)
+	err := r.auth0Service.DeleteUser(userID)
+	if err != nil {
+		return err
+	}
 	return ctx.NoContent(http.StatusOK)
 }
 

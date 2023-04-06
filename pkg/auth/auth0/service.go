@@ -205,6 +205,26 @@ func (a *Service) CreateUser(email, wsName string, role api.Role) (*User, error)
 	return &resp, nil
 }
 
+func (a *Service) DeleteUser(userId string) error {
+	if err := a.fillToken(); err != nil {
+		return err
+	}
+
+	url := fmt.Sprintf("%s/api/v2/users/%s", a.domain, userId)
+	req, err := http.NewRequest("DELETE", url, nil)
+	if err != nil {
+		return err
+	}
+	res, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return err
+	}
+	if res.StatusCode != http.StatusOK {
+		return fmt.Errorf("[DeleteUser] could not delete user: %d", res.StatusCode)
+	}
+	return nil
+}
+
 func (a *Service) CreatePasswordChangeTicket(userId string) (*CreatePasswordChangeTicketResponse, error) {
 	request := CreatePasswordChangeTicketRequest{
 		UserId:   userId,
