@@ -357,6 +357,15 @@ definitions:
       totalCount:
         type: integer
     type: object
+  gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.GetShortSummaryResponse:
+    properties:
+      failedResources:
+        type: integer
+      passedResources:
+        type: integer
+      totalAssets:
+        type: integer
+    type: object
   gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.GetTopFieldRequest:
     properties:
       count:
@@ -2635,6 +2644,20 @@ paths:
           schema:
             $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.GetBenchmarksSummaryResponse'
       summary: Get benchmark summary
+      tags:
+      - compliance
+  /compliance/api/v1/benchmarks/summary/short:
+    get:
+      consumes:
+      - application/json
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.GetShortSummaryResponse'
+      summary: Get short summary
       tags:
       - compliance
   /compliance/api/v1/findings:

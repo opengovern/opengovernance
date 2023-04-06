@@ -485,6 +485,28 @@ const docTemplate = `{
                 }
             }
         },
+        "/compliance/api/v1/benchmarks/summary/short": {
+            "get": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "compliance"
+                ],
+                "summary": "Get short summary",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.GetShortSummaryResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/compliance/api/v1/benchmarks/{benchmark_id}": {
             "get": {
                 "consumes": [
@@ -5462,6 +5484,20 @@ const docTemplate = `{
                     }
                 },
                 "totalCount": {
+                    "type": "integer"
+                }
+            }
+        },
+        "gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.GetShortSummaryResponse": {
+            "type": "object",
+            "properties": {
+                "failedResources": {
+                    "type": "integer"
+                },
+                "passedResources": {
+                    "type": "integer"
+                },
+                "totalAssets": {
                     "type": "integer"
                 }
             }

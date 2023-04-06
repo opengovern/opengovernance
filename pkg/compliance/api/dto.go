@@ -155,11 +155,31 @@ type BenchmarkSummaryConnectionSummary struct {
 	ShortSummary types.ComplianceResultShortSummary `json:"shortSummary"`
 }
 
+type NewBenchmarkSummary struct {
+	ID         string            `json:"benchmark_id"`
+	Title      string            `json:"title"`
+	Connectors []source.Type     `json:"connectors"`
+	Tags       map[string]string `json:"tags"`
+	Enabled    bool              `json:"enabled"`
+
+	PassedResourceIDs []string                       `json:"passed_resource_ids"`
+	FailedResourceIDs []string                       `json:"failed_resource_ids"`
+	Result            map[types.ComplianceResult]int `json:"result"`
+
+	CompliancyTrend []Datapoint `json:"trend"`
+}
+
 type GetBenchmarksSummaryResponse struct {
 	ShortSummary types.ComplianceResultShortSummary  `json:"shortSummary"`
 	TotalAssets  int64                               `json:"totalAssets"`
 	Connections  []BenchmarkSummaryConnectionSummary `json:"connections"`
 	Benchmarks   []BenchmarkSummary                  `json:"benchmarks"`
+}
+
+type GetShortSummaryResponse struct {
+	PassedResources int64 `json:"passedResources"`
+	FailedResources int64 `json:"failedResources"`
+	TotalAssets     int64 `json:"totalAssets"`
 }
 
 type PolicySummary struct {
