@@ -45,6 +45,7 @@ func (r *httpRoutes) Register(e *echo.Echo) {
 	v1.GET("/user/role/bindings", httpserver.AuthorizeHandler(r.GetRoleBindings, api.EditorRole))
 	v1.GET("/user/:user_id/workspace/membership", httpserver.AuthorizeHandler(r.GetWorkspaceMembership, api.AdminRole))
 	v1.GET("/workspace/role/bindings", httpserver.AuthorizeHandler(r.GetWorkspaceRoleBindings, api.AdminRole))
+	v1.GET("/user/:user_id", httpserver.AuthorizeHandler(r.GetUserDetails, api.AdminRole))
 	v1.POST("/invite", httpserver.AuthorizeHandler(r.Invite, api.AdminRole))
 	v1.DELETE("/invite", httpserver.AuthorizeHandler(r.DeleteInvitation, api.AdminRole))
 	v1.POST("/apikey/generate", httpserver.AuthorizeHandler(r.GenerateAPIKey, api.AdminRole))
@@ -250,6 +251,44 @@ func (r *httpRoutes) GetWorkspaceRoleBindings(ctx echo.Context) error {
 		})
 	}
 	return ctx.JSON(http.StatusOK, resp)
+}
+
+// GetUserDetails godoc
+//
+//	@Summary		Get user details by user id
+//	@Description	Get user details by user id
+//	@Tags			auth
+//	@Produce		json
+//	@Param			userId	path		string	true	"userId"
+//	@Success		200			{object}	api.WorkspaceRoleBinding
+func (r *httpRoutes) GetUserDetails(ctx echo.Context) error {
+	userID := ctx.Param("user_id")
+	user, err := r.auth0Service.GetUser(userID)
+	if err != nil {
+		return err
+	}
+	tenant, err := r.auth0Service.GetClientTenant()
+	if err != nil {
+		return err
+	}
+	status := api.InviteStatus_PENDING
+	if user.EmailVerified {
+		status = api.InviteStatus_ACCEPTED
+	}
+	resp := api.WorkspaceRoleBinding{
+		UserID:        user.UserId,
+		UserName:      user.Name,
+		TenantId:      tenant,
+		Email:         user.Email,
+		EmailVerified: user.EmailVerified,
+		Status:        status,
+		LastActivity:  user.LastLogin,
+		CreatedAt:     user.CreatedAt,
+		Blocked:       user.Blocked,
+	}
+
+	return ctx.JSON(http.StatusOK, resp)
+
 }
 
 // Invite godoc
