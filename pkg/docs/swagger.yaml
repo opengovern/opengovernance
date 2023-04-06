@@ -181,12 +181,26 @@ definitions:
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.BenchmarkShortSummary:
     properties:
+      connectors:
+        items:
+          $ref: '#/definitions/source.Type'
+        type: array
+      coverage:
+        type: number
+      enabled:
+        type: boolean
       failedResources:
         type: integer
       id:
         type: string
       passedResources:
         type: integer
+      result:
+        $ref: '#/definitions/types.ComplianceResultSummary'
+      tags:
+        additionalProperties:
+          type: string
+        type: object
       title:
         type: string
     type: object
