@@ -44,15 +44,16 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	v1.GET("/insight", httpserver.AuthorizeHandler(h.ListInsights, api3.ViewerRole))
 	v1.GET("/insight/:insightId", httpserver.AuthorizeHandler(h.GetInsight, api3.ViewerRole))
 
+	v1.GET("/benchmarks/summary", httpserver.AuthorizeHandler(h.GetBenchmarksSummary, api3.ViewerRole))
+	v1.GET("/benchmark/:benchmark_id/summary", httpserver.AuthorizeHandler(h.GetBenchmarkSummary, api3.ViewerRole))
+	v1.GET("/benchmark/:benchmark_id/summary/result/trend", httpserver.AuthorizeHandler(h.GetBenchmarkResultTrend, api3.ViewerRole))
+	v1.GET("/benchmark/:benchmark_id/tree", httpserver.AuthorizeHandler(h.GetBenchmarkTree, api3.ViewerRole))
+
 	v1.POST("/findings", httpserver.AuthorizeHandler(h.GetFindings, api3.ViewerRole))
-	// finding dashboard
 	v1.GET("/findings/:benchmarkId/:field/top/:count", httpserver.AuthorizeHandler(h.GetTopFieldByFindingCount, api3.ViewerRole))
 	v1.GET("/findings/metrics", httpserver.AuthorizeHandler(h.GetFindingsMetrics, api3.ViewerRole))
 
 	v1.POST("/alarms/top", httpserver.AuthorizeHandler(h.GetTopFieldByAlarmCount, api3.ViewerRole))
-	v1.GET("/benchmark/:benchmark_id/summary", httpserver.AuthorizeHandler(h.GetBenchmarkSummary, api3.ViewerRole))
-	v1.GET("/benchmarks/summary", httpserver.AuthorizeHandler(h.GetBenchmarksSummary, api3.ViewerRole))
-	v1.GET("/policy/summary/:benchmark_id", httpserver.AuthorizeHandler(h.GetPolicySummary, api3.ViewerRole))
 }
 
 func bindValidate(ctx echo.Context, i interface{}) error {
@@ -469,7 +470,7 @@ func (h *HttpHandler) GetBenchmarksSummary(ctx echo.Context) error {
 //	@Tags		compliance
 //	@Accept		json
 //	@Produce	json
-//	@Success	200	{object}	types.ComplianceResultSummary
+//	@Success	200	{object}	api.BenchmarkSummary
 //	@Router		/compliance/api/v1/benchmark/:benchmark_id/summary [get]
 func (h *HttpHandler) GetBenchmarkSummary(ctx echo.Context) error {
 	benchmarkID := ctx.Param("benchmark_id")
@@ -524,20 +525,20 @@ func (h *HttpHandler) GetBenchmarkSummary(ctx echo.Context) error {
 	return ctx.JSON(http.StatusOK, response)
 }
 
-// GetPolicySummary godoc
+// GetBenchmarkResultTrend godoc
 //
-//	@Summary	Get benchmark summary
+//	@Summary	Get result trend
 //	@Tags		compliance
 //	@Accept		json
 //	@Produce	json
-//	@Param		benchmarkID	path		string	true	"BenchmarkID"
-//	@Success	200			{object}	api.GetFindingsResponse
-//	@Router		/compliance/api/v1/policy/summary/{benchmark_id} [get]
-func (h *HttpHandler) GetPolicySummary(ctx echo.Context) error {
+//	@Param		start	query		int64	false	"Start"
+//	@Param		end		query		int64	false	"End"
+//	@Success	200		{object}	api.BenchmarkResultTrend
+//	@Router		/compliance/api/v1/benchmark/{benchmark_id}/summary/result/trend [get]
+func (h *HttpHandler) GetBenchmarkResultTrend(ctx echo.Context) error {
+	//startDateStr := ctx.QueryParam("start")
+	//endDateStr := ctx.QueryParam("end")
 	benchmarkID := ctx.Param("benchmark_id")
-	if len(benchmarkID) == 0 {
-		return echo.NewHTTPError(http.StatusBadRequest, "BenchmarkID is required")
-	}
 
 	benchmark, err := h.db.GetBenchmark(benchmarkID)
 	if err != nil {
@@ -545,69 +546,130 @@ func (h *HttpHandler) GetPolicySummary(ctx echo.Context) error {
 	}
 
 	if benchmark == nil {
-		return echo.NewHTTPError(http.StatusBadRequest, "Invalid benchmarkID")
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid benchmarkID")
 	}
 
-	var response api.GetPoliciesSummaryResponse
-	res, err := query.ListBenchmarkSummaries(h.client, &benchmarkID)
+	response := api.BenchmarkResultTrend{
+		ResultDatapoint: nil, //TODO-Saleh
+	}
+	return ctx.JSON(http.StatusOK, response)
+}
+
+// GetBenchmarkTree godoc
+//
+//	@Summary	Get benchmark tree
+//	@Tags		compliance
+//	@Accept		json
+//	@Produce	json
+//	@Success	200	{object}	api.BenchmarkTree
+//	@Router		/compliance/api/v1/benchmark/{benchmark_id}/tree [get]
+func (h *HttpHandler) GetBenchmarkTree(ctx echo.Context) error {
+	benchmarkID := ctx.Param("benchmark_id")
+
+	benchmark, err := h.db.GetBenchmark(benchmarkID)
 	if err != nil {
 		return err
 	}
 
-	response.BenchmarkTitle = benchmark.Title
-	response.BenchmarkDescription = benchmark.Description
-	response.Enabled = benchmark.Enabled
-	response.Tags = make(map[string]string)
-	for _, tag := range benchmark.Tags {
-		response.Tags[tag.Key] = tag.Value
+	if benchmark == nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid benchmarkID")
 	}
 
-	for _, p := range benchmark.Policies {
-		policyStatus := types.PolicyStatusPASSED
-		for _, r := range res {
-			for _, pr := range r.Policies {
-				if pr.PolicyID != p.ID {
-					continue
-				}
-
-				for _, resource := range pr.Resources {
-					switch resource.Result {
-					case types.ComplianceResultOK:
-						response.ComplianceSummary.OkCount++
-					case types.ComplianceResultALARM:
-						policyStatus = types.PolicyStatusFAILED
-						response.ComplianceSummary.AlarmCount++
-					case types.ComplianceResultERROR:
-						policyStatus = types.PolicyStatusFAILED
-						response.ComplianceSummary.ErrorCount++
-					case types.ComplianceResultINFO:
-						if policyStatus == types.PolicyStatusPASSED {
-							policyStatus = types.PolicyStatusUNKNOWN
-						}
-						response.ComplianceSummary.InfoCount++
-					case types.ComplianceResultSKIP:
-						if policyStatus == types.PolicyStatusPASSED {
-							policyStatus = types.PolicyStatusUNKNOWN
-						}
-						response.ComplianceSummary.SkipCount++
-					}
-				}
-			}
-		}
-
-		//TODO
-		ps := api.PolicySummary{
-			Title: p.Title,
-			//Category:    p.Category,
-			//Subcategory: p.SubCategory,
-			Severity:  p.Severity,
-			Status:    policyStatus,
-			CreatedAt: p.CreatedAt.UnixMilli(),
-		}
-		response.PolicySummary = append(response.PolicySummary, ps)
+	//TODO-Saleh
+	response := api.BenchmarkTree{
+		ID:       "",
+		Title:    "",
+		Children: nil,
+		Policies: nil,
 	}
 	return ctx.JSON(http.StatusOK, response)
 }
+
+//
+//// GetPolicySummary godoc
+////
+////	@Summary	Get benchmark summary
+////	@Tags		compliance
+////	@Accept		json
+////	@Produce	json
+////	@Param		benchmarkID	path		string	true	"BenchmarkID"
+////	@Success	200			{object}	api.GetFindingsResponse
+////	@Router		/compliance/api/v1/policy/summary/{benchmark_id} [get]
+//func (h *HttpHandler) GetPolicySummary(ctx echo.Context) error {
+//	benchmarkID := ctx.Param("benchmark_id")
+//	if len(benchmarkID) == 0 {
+//		return echo.NewHTTPError(http.StatusBadRequest, "BenchmarkID is required")
+//	}
+//
+//	benchmark, err := h.db.GetBenchmark(benchmarkID)
+//	if err != nil {
+//		return err
+//	}
+//
+//	if benchmark == nil {
+//		return echo.NewHTTPError(http.StatusBadRequest, "Invalid benchmarkID")
+//	}
+//
+//	var response api.GetPoliciesSummaryResponse
+//	res, err := query.ListBenchmarkSummaries(h.client, &benchmarkID)
+//	if err != nil {
+//		return err
+//	}
+//
+//	response.BenchmarkTitle = benchmark.Title
+//	response.BenchmarkDescription = benchmark.Description
+//	response.Enabled = benchmark.Enabled
+//	response.Tags = make(map[string]string)
+//	for _, tag := range benchmark.Tags {
+//		response.Tags[tag.Key] = tag.Value
+//	}
+//
+//	for _, p := range benchmark.Policies {
+//		policyStatus := types.PolicyStatusPASSED
+//		for _, r := range res {
+//			for _, pr := range r.Policies {
+//				if pr.PolicyID != p.ID {
+//					continue
+//				}
+//
+//				for _, resource := range pr.Resources {
+//					switch resource.Result {
+//					case types.ComplianceResultOK:
+//						response.ComplianceSummary.OkCount++
+//					case types.ComplianceResultALARM:
+//						policyStatus = types.PolicyStatusFAILED
+//						response.ComplianceSummary.AlarmCount++
+//					case types.ComplianceResultERROR:
+//						policyStatus = types.PolicyStatusFAILED
+//						response.ComplianceSummary.ErrorCount++
+//					case types.ComplianceResultINFO:
+//						if policyStatus == types.PolicyStatusPASSED {
+//							policyStatus = types.PolicyStatusUNKNOWN
+//						}
+//						response.ComplianceSummary.InfoCount++
+//					case types.ComplianceResultSKIP:
+//						if policyStatus == types.PolicyStatusPASSED {
+//							policyStatus = types.PolicyStatusUNKNOWN
+//						}
+//						response.ComplianceSummary.SkipCount++
+//					}
+//				}
+//			}
+//		}
+//
+//		//TODO
+//		ps := api.PolicySummary{
+//			Title: p.Title,
+//			//Category:    p.Category,
+//			//Subcategory: p.SubCategory,
+//			Severity:  p.Severity,
+//			Status:    policyStatus,
+//			CreatedAt: p.CreatedAt.UnixMilli(),
+//		}
+//		response.PolicySummary = append(response.PolicySummary, ps)
+//	}
+//	return ctx.JSON(http.StatusOK, response)
+//}
 
 // CreateBenchmarkAssignment godoc
 //
@@ -950,7 +1012,13 @@ func (h *HttpHandler) GetPolicy(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusNotFound, "policy not found")
 	}
 
-	return ctx.JSON(http.StatusOK, policy.ToApi())
+	pa := policy.ToApi()
+	err = policy.PopulateConnector(h.db, &pa)
+	if err != nil {
+		return err
+	}
+
+	return ctx.JSON(http.StatusOK, pa)
 }
 
 // GetQuery godoc

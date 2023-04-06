@@ -150,6 +150,7 @@ type Policy struct {
 	Description        string
 	Tags               []PolicyTag `gorm:"many2many:policy_tag_rels;"`
 	DocumentURI        string
+	Enabled            bool
 	QueryID            *string
 	Benchmarks         []Benchmark `gorm:"many2many:benchmark_policies;"`
 	Severity           types.Severity
@@ -164,6 +165,9 @@ func (p Policy) ToApi() api.Policy {
 		ID:                 p.ID,
 		Title:              p.Title,
 		Description:        p.Description,
+		Tags:               nil,
+		Connector:          "",
+		Enabled:            p.Enabled,
 		DocumentURI:        p.DocumentURI,
 		QueryID:            p.QueryID,
 		Severity:           p.Severity,
@@ -177,6 +181,28 @@ func (p Policy) ToApi() api.Policy {
 		pa.Tags[tag.Key] = tag.Value
 	}
 	return pa
+}
+
+func (p *Policy) PopulateConnector(db Database, api *api.Policy) error {
+	if !api.Connector.IsNull() {
+		return nil
+	}
+
+	query, err := db.GetQuery(*p.QueryID)
+	if err != nil {
+		return err
+	}
+	if query == nil {
+		return fmt.Errorf("query %s not found", *p.QueryID)
+	}
+
+	ty, err := source.ParseType(query.Connector)
+	if err != nil {
+		return err
+	}
+
+	api.Connector = ty
+	return nil
 }
 
 type PolicyTag struct {
