@@ -177,10 +177,14 @@ type GetBenchmarksSummaryResponse struct {
 }
 
 type BenchmarkShortSummary struct {
-	ID              string `json:"id"`
-	Title           string `json:"title"`
-	PassedResources int64  `json:"passedResources"`
-	FailedResources int64  `json:"failedResources"`
+	ID         string            `json:"id"`
+	Title      string            `json:"title"`
+	Connectors []source.Type     `json:"connectors"`
+	Tags       map[string]string `json:"tags"`
+	Enabled    bool              `json:"enabled"`
+
+	PassedResources int64 `json:"passedResources"`
+	FailedResources int64 `json:"failedResources"`
 }
 
 type GetShortSummaryResponse struct {
