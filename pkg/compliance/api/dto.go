@@ -131,6 +131,7 @@ type GetBenchmarksSummaryResponse struct {
 type BenchmarkSummary struct {
 	ID              string                        `json:"id"`
 	Title           string                        `json:"title"`
+	Description     string                        `json:"description"`
 	Connectors      []source.Type                 `json:"connectors"`
 	Tags            map[string]string             `json:"tags"`
 	Enabled         bool                          `json:"enabled"`

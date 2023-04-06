@@ -651,7 +651,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/compliance/api/v1/findings/{field}/top/{count}": {
+        "/compliance/api/v1/findings/{benchmarkId}/{field}/top/{count}": {
             "post": {
                 "consumes": [
                     "application/json"
@@ -664,6 +664,13 @@ const docTemplate = `{
                 ],
                 "summary": "Returns all findings with respect to filters",
                 "parameters": [
+                    {
+                        "type": "string",
+                        "description": "BenchmarkID",
+                        "name": "benchmarkId",
+                        "in": "path",
+                        "required": true
+                    },
                     {
                         "enum": [
                             "resourceType",
@@ -5275,6 +5282,9 @@ const docTemplate = `{
                 },
                 "coverage": {
                     "type": "number"
+                },
+                "description": {
+                    "type": "string"
                 },
                 "enabled": {
                     "type": "boolean"

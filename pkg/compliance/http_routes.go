@@ -46,7 +46,7 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 
 	v1.POST("/findings", httpserver.AuthorizeHandler(h.GetFindings, api3.ViewerRole))
 	// finding dashboard
-	v1.GET("/findings/:field/top/:count", httpserver.AuthorizeHandler(h.GetTopFieldByFindingCount, api3.ViewerRole))
+	v1.GET("/findings/:benchmarkId/:field/top/:count", httpserver.AuthorizeHandler(h.GetTopFieldByFindingCount, api3.ViewerRole))
 	v1.GET("/findings/metrics", httpserver.AuthorizeHandler(h.GetFindingsMetrics, api3.ViewerRole))
 
 	v1.POST("/alarms/top", httpserver.AuthorizeHandler(h.GetTopFieldByAlarmCount, api3.ViewerRole))
@@ -111,11 +111,13 @@ func (h *HttpHandler) GetFindings(ctx echo.Context) error {
 //	@Tags		compliance
 //	@Accept		json
 //	@Produce	json
-//	@Param		field	path		string	true	"Field"	Enums(resourceType,serviceName,sourceID,resourceID)
-//	@Param		count	path		int		true	"Count"
-//	@Success	200		{object}	api.GetTopFieldResponse
-//	@Router		/compliance/api/v1/findings/{field}/top/{count} [post]
+//	@Param		benchmarkId	path		string	true	"BenchmarkID"
+//	@Param		field		path		string	true	"Field"	Enums(resourceType,serviceName,sourceID,resourceID)
+//	@Param		count		path		int		true	"Count"
+//	@Success	200			{object}	api.GetTopFieldResponse
+//	@Router		/compliance/api/v1/findings/{benchmarkId}/{field}/top/{count} [post]
 func (h *HttpHandler) GetTopFieldByFindingCount(ctx echo.Context) error {
+	benchmarkID := ctx.Param("benchmarkId")
 	field := ctx.Param("field")
 	countStr := ctx.Param("count")
 	count, err := strconv.Atoi(countStr)
@@ -129,7 +131,7 @@ func (h *HttpHandler) GetTopFieldByFindingCount(ctx echo.Context) error {
 	//}
 
 	var response api.GetTopFieldResponse
-	res, err := es.FindingsTopFieldQuery(h.client, field, nil, nil, nil, nil, nil, nil, nil, count)
+	res, err := es.FindingsTopFieldQuery(h.client, field, nil, nil, nil, nil, []string{benchmarkID}, nil, nil, count)
 	if err != nil {
 		return err
 	}
@@ -425,6 +427,7 @@ func (h *HttpHandler) GetBenchmarksSummary(ctx echo.Context) error {
 		response.BenchmarkSummary = append(response.BenchmarkSummary, api.BenchmarkSummary{
 			ID:              b.ID,
 			Title:           b.Title,
+			Description:     b.Description,
 			Connectors:      be.Connectors,
 			Tags:            be.Tags,
 			Enabled:         b.Enabled,
@@ -480,29 +483,43 @@ func (h *HttpHandler) GetBenchmarkSummary(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid benchmarkID")
 	}
 
-	rows, err := query.ListBenchmarkSummaries(h.client, &benchmarkID)
+	totalWorkspaceAssets, err := h.inventoryClient.CountResources(httpclient.FromEchoContext(ctx))
 	if err != nil {
 		return err
 	}
 
-	response := types.ComplianceResultSummary{}
-	for _, row := range rows {
-		for _, policy := range row.Policies {
-			for _, resource := range policy.Resources {
-				switch resource.Result {
-				case types.ComplianceResultOK:
-					response.OkCount++
-				case types.ComplianceResultSKIP:
-					response.SkipCount++
-				case types.ComplianceResultINFO:
-					response.InfoCount++
-				case types.ComplianceResultERROR:
-					response.ErrorCount++
-				case types.ComplianceResultALARM:
-					response.AlarmCount++
-				}
-			}
+	be := benchmark.ToApi()
+	err = benchmark.PopulateConnectors(h.db, &be)
+	if err != nil {
+		return err
+	}
+
+	s, err := GetShortSummary(h.client, h.db, *benchmark)
+	if err != nil {
+		return err
+	}
+
+	var totalBenchmarkCoveredAssets int64
+	for _, conn := range s.ConnectionIDs {
+		count, err := h.inventoryClient.GetAccountsResourceCount(httpclient.FromEchoContext(ctx), source.Nil, &conn)
+		if err != nil {
+			return err
 		}
+		totalBenchmarkCoveredAssets += int64(count[0].ResourceCount)
+	}
+
+	response := api.BenchmarkSummary{
+		ID:              benchmark.ID,
+		Title:           benchmark.Title,
+		Description:     benchmark.Description,
+		Connectors:      be.Connectors,
+		Tags:            be.Tags,
+		Enabled:         benchmark.Enabled,
+		Result:          s.Result,
+		Coverage:        float64(totalBenchmarkCoveredAssets) / float64(totalWorkspaceAssets) * 100.0,
+		CompliancyTrend: nil, //TODO-Saleh
+		PassedResources: int64(len(s.PassedResourceIDs)),
+		FailedResources: int64(len(s.FailedResourceIDs)),
 	}
 	return ctx.JSON(http.StatusOK, response)
 }
