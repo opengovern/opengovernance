@@ -2624,10 +2624,16 @@ paths:
       summary: Get all benchmark assignments with source id
       tags:
       - benchmarks_assignment
-  /compliance/api/v1/benchmark/:benchmark_id/summary:
+  /compliance/api/v1/benchmark/{benchmark_id}/summary:
     get:
       consumes:
       - application/json
+      parameters:
+      - description: BenchmarkID
+        in: path
+        name: benchmark_id
+        required: true
+        type: string
       produces:
       - application/json
       responses:
@@ -2646,11 +2652,18 @@ paths:
       - description: Start
         in: query
         name: start
+        required: true
         type: integer
       - description: End
         in: query
         name: end
+        required: true
         type: integer
+      - description: BenchmarkID
+        in: path
+        name: benchmark_id
+        required: true
+        type: string
       produces:
       - application/json
       responses:
@@ -2665,6 +2678,12 @@ paths:
     get:
       consumes:
       - application/json
+      parameters:
+      - description: BenchmarkID
+        in: path
+        name: benchmark_id
+        required: true
+        type: string
       produces:
       - application/json
       responses:
@@ -2743,10 +2762,12 @@ paths:
       - description: Start
         in: query
         name: start
+        required: true
         type: integer
       - description: End
         in: query
         name: end
+        required: true
         type: integer
       produces:
       - application/json

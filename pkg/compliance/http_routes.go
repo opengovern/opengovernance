@@ -384,13 +384,25 @@ func (h *HttpHandler) GetFindingsMetrics(ctx echo.Context) error {
 //	@Tags		compliance
 //	@Accept		json
 //	@Produce	json
-//	@Param		start	query		int64	false	"Start"
-//	@Param		end		query		int64	false	"End"
+//	@Param		start	query		int64	true	"Start"
+//	@Param		end		query		int64	true	"End"
 //	@Success	200		{object}	api.GetBenchmarksSummaryResponse
 //	@Router		/compliance/api/v1/benchmarks/summary [get]
 func (h *HttpHandler) GetBenchmarksSummary(ctx echo.Context) error {
-	//startDateStr := ctx.QueryParam("start")
-	//endDateStr := ctx.QueryParam("end")
+	startDateStr := ctx.QueryParam("start")
+	endDateStr := ctx.QueryParam("end")
+	if startDateStr == "" || endDateStr == "" {
+		return echo.NewHTTPError(http.StatusBadRequest, "start & end query params are required")
+	}
+	startDate, err := strconv.ParseInt(startDateStr, 10, 64)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+	endDate, err := strconv.ParseInt(endDateStr, 10, 64)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+	_, _ = startDate, endDate
 
 	var response api.GetBenchmarksSummaryResponse
 	benchmarks, err := h.db.ListRootBenchmarks()
@@ -474,7 +486,8 @@ func (h *HttpHandler) GetBenchmarksSummary(ctx echo.Context) error {
 //	@Tags		compliance
 //	@Accept		json
 //	@Produce	json
-//	@Success	200	{object}	api.BenchmarkSummary
+//	@Param		benchmark_id	path		string	true	"BenchmarkID"
+//	@Success	200				{object}	api.BenchmarkSummary
 //	@Router		/compliance/api/v1/benchmark/{benchmark_id}/summary [get]
 func (h *HttpHandler) GetBenchmarkSummary(ctx echo.Context) error {
 	benchmarkID := ctx.Param("benchmark_id")
@@ -526,7 +539,6 @@ func (h *HttpHandler) GetBenchmarkSummary(ctx echo.Context) error {
 		Enabled:         benchmark.Enabled,
 		Result:          s.Result,
 		Coverage:        coverage,
-		CompliancyTrend: nil, //TODO-Saleh
 		PassedResources: int64(len(s.PassedResourceIDs)),
 		FailedResources: int64(len(s.FailedResourceIDs)),
 	}
@@ -539,13 +551,27 @@ func (h *HttpHandler) GetBenchmarkSummary(ctx echo.Context) error {
 //	@Tags		compliance
 //	@Accept		json
 //	@Produce	json
-//	@Param		start	query		int64	false	"Start"
-//	@Param		end		query		int64	false	"End"
-//	@Success	200		{object}	api.BenchmarkResultTrend
+//	@Param		start			query		int64	true	"Start"
+//	@Param		end				query		int64	true	"End"
+//	@Param		benchmark_id	path		string	true	"BenchmarkID"
+//	@Success	200				{object}	api.BenchmarkResultTrend
 //	@Router		/compliance/api/v1/benchmark/{benchmark_id}/summary/result/trend [get]
 func (h *HttpHandler) GetBenchmarkResultTrend(ctx echo.Context) error {
-	//startDateStr := ctx.QueryParam("start")
-	//endDateStr := ctx.QueryParam("end")
+	startDateStr := ctx.QueryParam("start")
+	endDateStr := ctx.QueryParam("end")
+	if startDateStr == "" || endDateStr == "" {
+		return echo.NewHTTPError(http.StatusBadRequest, "start & end query params are required")
+	}
+	startDate, err := strconv.ParseInt(startDateStr, 10, 64)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+	endDate, err := strconv.ParseInt(endDateStr, 10, 64)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+	_, _ = startDate, endDate
+
 	benchmarkID := ctx.Param("benchmark_id")
 
 	benchmark, err := h.db.GetBenchmark(benchmarkID)
@@ -569,7 +595,8 @@ func (h *HttpHandler) GetBenchmarkResultTrend(ctx echo.Context) error {
 //	@Tags		compliance
 //	@Accept		json
 //	@Produce	json
-//	@Success	200	{object}	api.BenchmarkTree
+//	@Param		benchmark_id	path		string	true	"BenchmarkID"
+//	@Success	200				{object}	api.BenchmarkTree
 //	@Router		/compliance/api/v1/benchmark/{benchmark_id}/tree [get]
 func (h *HttpHandler) GetBenchmarkTree(ctx echo.Context) error {
 	benchmarkID := ctx.Param("benchmark_id")
