@@ -52,7 +52,6 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	v1.POST("/alarms/top", httpserver.AuthorizeHandler(h.GetTopFieldByAlarmCount, api3.ViewerRole))
 	v1.GET("/benchmark/:benchmark_id/summary", httpserver.AuthorizeHandler(h.GetBenchmarkSummary, api3.ViewerRole))
 	v1.GET("/benchmarks/summary", httpserver.AuthorizeHandler(h.GetBenchmarksSummary, api3.ViewerRole))
-	v1.GET("/benchmarks/summary/short", httpserver.AuthorizeHandler(h.GetShortSummary, api3.ViewerRole))
 	v1.GET("/policy/summary/:benchmark_id", httpserver.AuthorizeHandler(h.GetPolicySummary, api3.ViewerRole))
 }
 
@@ -382,62 +381,15 @@ func (h *HttpHandler) GetFindingsMetrics(ctx echo.Context) error {
 //	@Tags		compliance
 //	@Accept		json
 //	@Produce	json
-//	@Success	200	{object}	api.GetBenchmarksSummaryResponse
+//	@Param		start	query		int64	false	"Start"
+//	@Param		end		query		int64	false	"End"
+//	@Success	200		{object}	api.GetBenchmarksSummaryResponse
 //	@Router		/compliance/api/v1/benchmarks/summary [get]
 func (h *HttpHandler) GetBenchmarksSummary(ctx echo.Context) error {
+	//startDateStr := ctx.QueryParam("start")
+	//endDateStr := ctx.QueryParam("end")
+
 	var response api.GetBenchmarksSummaryResponse
-	res, err := query.ListBenchmarkSummaries(h.client, nil)
-	if err != nil {
-		return err
-	}
-
-	benchmarks, err := h.db.ListRootBenchmarks()
-	if err != nil {
-		return err
-	}
-
-	for _, b := range benchmarks {
-		var e es2.BenchmarkSummary
-		for _, esb := range res {
-			if b.ID == esb.BenchmarkID {
-				e = esb
-			}
-		}
-		bs := BuildBenchmarkSummary(e, b)
-		assignments, err := h.db.GetBenchmarkAssignmentsByBenchmarkId(b.ID)
-		if err != nil {
-			return err
-		}
-		for _, conn := range assignments {
-			srcId := conn.ConnectionId
-			count, err := h.inventoryClient.GetAccountsResourceCount(httpclient.FromEchoContext(ctx), source.Nil, &srcId)
-			if err != nil {
-				return err
-			}
-			if len(count) == 0 {
-				return errors.New("invalid assignment sourceId")
-			}
-			bs.TotalConnectionResources += int64(count[0].ResourceCount)
-		}
-		bs.AssignedConnectionsCount = int64(len(assignments))
-		response.ShortSummary.Passed += bs.ShortSummary.Passed
-		response.ShortSummary.Failed += bs.ShortSummary.Failed
-		response.TotalAssets += bs.TotalConnectionResources
-		response.Benchmarks = append(response.Benchmarks, bs)
-	}
-	return ctx.JSON(http.StatusOK, response)
-}
-
-// GetShortSummary godoc
-//
-//	@Summary	Get short summary
-//	@Tags		compliance
-//	@Accept		json
-//	@Produce	json
-//	@Success	200	{object}	api.GetShortSummaryResponse
-//	@Router		/compliance/api/v1/benchmarks/summary/short [get]
-func (h *HttpHandler) GetShortSummary(ctx echo.Context) error {
-	var response api.GetShortSummaryResponse
 	benchmarks, err := h.db.ListRootBenchmarks()
 	if err != nil {
 		return err
@@ -470,7 +422,7 @@ func (h *HttpHandler) GetShortSummary(ctx echo.Context) error {
 			totalBenchmarkCoveredAssets += int64(count[0].ResourceCount)
 		}
 
-		response.BenchmarkShortSummary = append(response.BenchmarkShortSummary, api.BenchmarkShortSummary{
+		response.BenchmarkSummary = append(response.BenchmarkSummary, api.BenchmarkSummary{
 			ID:              b.ID,
 			Title:           b.Title,
 			Connectors:      be.Connectors,
@@ -478,6 +430,7 @@ func (h *HttpHandler) GetShortSummary(ctx echo.Context) error {
 			Enabled:         b.Enabled,
 			Result:          s.Result,
 			Coverage:        float64(totalBenchmarkCoveredAssets) / float64(totalWorkspaceAssets) * 100.0,
+			CompliancyTrend: nil, //TODO-Saleh
 			PassedResources: int64(len(s.PassedResourceIDs)),
 			FailedResources: int64(len(s.FailedResourceIDs)),
 		})
