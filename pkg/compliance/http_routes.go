@@ -610,13 +610,11 @@ func (h *HttpHandler) GetBenchmarkTree(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid benchmarkID")
 	}
 
-	//TODO-Saleh
-	response := api.BenchmarkTree{
-		ID:       "",
-		Title:    "",
-		Children: nil,
-		Policies: nil,
+	response, err := GetBenchmarkTree(h.db, h.client, *benchmark)
+	if err != nil {
+		return err
 	}
+
 	return ctx.JSON(http.StatusOK, response)
 }
 

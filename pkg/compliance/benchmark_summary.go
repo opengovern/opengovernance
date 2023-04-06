@@ -1,6 +1,7 @@
 package compliance
 
 import (
+	"gitlab.com/keibiengine/keibi-engine/pkg/compliance/api"
 	"gitlab.com/keibiengine/keibi-engine/pkg/compliance/db"
 	"gitlab.com/keibiengine/keibi-engine/pkg/keibi-es-sdk"
 	"gitlab.com/keibiengine/keibi-engine/pkg/summarizer/query"
@@ -110,4 +111,69 @@ func UniqueArray[T any](input []T, equals func(T, T) bool) []T {
 		}
 	}
 	return out
+}
+
+func GetBenchmarkTree(db db.Database, client keibi.Client, b db.Benchmark) (api.BenchmarkTree, error) {
+	tree := api.BenchmarkTree{
+		ID:       b.ID,
+		Title:    b.Title,
+		Children: nil,
+		Policies: nil,
+	}
+	for _, child := range b.Children {
+		childObj, err := db.GetBenchmark(child.ID)
+		if err != nil {
+			return tree, err
+		}
+
+		childTree, err := GetBenchmarkTree(db, client, *childObj)
+		if err != nil {
+			return tree, err
+		}
+
+		tree.Children = append(tree.Children, childTree)
+	}
+
+	res, err := query.ListBenchmarkSummaries(client, &b.ID)
+	if err != nil {
+		return tree, err
+	}
+
+	for _, policy := range b.Policies {
+		pt := api.PolicyTree{
+			ID:          policy.ID,
+			Title:       policy.Title,
+			Severity:    policy.Severity,
+			Status:      types.PolicyStatusPASSED,
+			LastChecked: 0,
+		}
+
+		for _, bs := range res {
+			for _, ps := range bs.Policies {
+				if ps.PolicyID == policy.ID {
+					pt.LastChecked = bs.EvaluatedAt
+					for _, resource := range ps.Resources {
+						switch resource.Result {
+						case types.ComplianceResultOK:
+						case types.ComplianceResultALARM:
+							pt.Status = types.PolicyStatusFAILED
+						case types.ComplianceResultERROR:
+							pt.Status = types.PolicyStatusFAILED
+						case types.ComplianceResultINFO:
+							if pt.Status == types.PolicyStatusPASSED {
+								pt.Status = types.PolicyStatusUNKNOWN
+							}
+						case types.ComplianceResultSKIP:
+							if pt.Status == types.PolicyStatusPASSED {
+								pt.Status = types.PolicyStatusUNKNOWN
+							}
+						}
+					}
+				}
+			}
+		}
+		tree.Policies = append(tree.Policies, pt)
+	}
+
+	return tree, nil
 }
