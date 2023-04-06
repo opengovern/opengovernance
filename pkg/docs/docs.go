@@ -739,7 +739,7 @@ const docTemplate = `{
             }
         },
         "/compliance/api/v1/findings/{benchmarkId}/{field}/top/{count}": {
-            "post": {
+            "get": {
                 "consumes": [
                     "application/json"
                 ],

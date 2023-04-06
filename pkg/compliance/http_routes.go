@@ -116,7 +116,7 @@ func (h *HttpHandler) GetFindings(ctx echo.Context) error {
 //	@Param		field		path		string	true	"Field"	Enums(resourceType,serviceName,sourceID,resourceID)
 //	@Param		count		path		int		true	"Count"
 //	@Success	200			{object}	api.GetTopFieldResponse
-//	@Router		/compliance/api/v1/findings/{benchmarkId}/{field}/top/{count} [post]
+//	@Router		/compliance/api/v1/findings/{benchmarkId}/{field}/top/{count} [get]
 func (h *HttpHandler) GetTopFieldByFindingCount(ctx echo.Context) error {
 	benchmarkID := ctx.Param("benchmarkId")
 	field := ctx.Param("field")
