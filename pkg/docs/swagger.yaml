@@ -179,6 +179,13 @@ definitions:
       sourceId:
         type: string
     type: object
+  gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.BenchmarkResultTrend:
+    properties:
+      resultTrend:
+        items:
+          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.ResultDatapoint'
+        type: array
+    type: object
   gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.BenchmarkSummary:
     properties:
       compliancyTrend:
@@ -207,6 +214,21 @@ definitions:
         additionalProperties:
           type: string
         type: object
+      title:
+        type: string
+    type: object
+  gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.BenchmarkTree:
+    properties:
+      children:
+        items:
+          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.BenchmarkTree'
+        type: array
+      id:
+        type: string
+      policies:
+        items:
+          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.PolicyTree'
+        type: array
       title:
         type: string
     type: object
@@ -477,12 +499,16 @@ definitions:
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.Policy:
     properties:
+      connector:
+        $ref: '#/definitions/source.Type'
       createdAt:
         type: string
       description:
         type: string
       documentURI:
         type: string
+      enabled:
+        type: boolean
       id:
         type: string
       managed:
@@ -502,6 +528,19 @@ definitions:
       updatedAt:
         type: string
     type: object
+  gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.PolicyTree:
+    properties:
+      id:
+        type: string
+      lastChecked:
+        type: integer
+      severity:
+        type: string
+      status:
+        $ref: '#/definitions/types.PolicyStatus'
+      title:
+        type: string
+    type: object
   gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.Query:
     properties:
       connector:
@@ -518,6 +557,13 @@ definitions:
         type: string
       updatedAt:
         type: string
+    type: object
+  gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.ResultDatapoint:
+    properties:
+      result:
+        $ref: '#/definitions/types.ComplianceResultSummary'
+      time:
+        type: integer
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.SortFieldType:
     enum:
@@ -2278,6 +2324,16 @@ definitions:
       providerName:
         type: string
     type: object
+  types.PolicyStatus:
+    enum:
+    - passed
+    - failed
+    - unknown
+    type: string
+    x-enum-varnames:
+    - PolicyStatusPASSED
+    - PolicyStatusFAILED
+    - PolicyStatusUNKNOWN
 host: dev-cluster.keibi.io
 info:
   contact: {}
@@ -2578,8 +2634,45 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/types.ComplianceResultSummary'
+            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.BenchmarkSummary'
       summary: Get benchmark summary
+      tags:
+      - compliance
+  /compliance/api/v1/benchmark/{benchmark_id}/summary/result/trend:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: Start
+        in: query
+        name: start
+        type: integer
+      - description: End
+        in: query
+        name: end
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.BenchmarkResultTrend'
+      summary: Get result trend
+      tags:
+      - compliance
+  /compliance/api/v1/benchmark/{benchmark_id}/tree:
+    get:
+      consumes:
+      - application/json
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.BenchmarkTree'
+      summary: Get benchmark tree
       tags:
       - compliance
   /compliance/api/v1/benchmarks:
@@ -2818,26 +2911,6 @@ paths:
       summary: Get insight by id
       tags:
       - insights
-  /compliance/api/v1/policy/summary/{benchmark_id}:
-    get:
-      consumes:
-      - application/json
-      parameters:
-      - description: BenchmarkID
-        in: path
-        name: benchmarkID
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.GetFindingsResponse'
-      summary: Get benchmark summary
-      tags:
-      - compliance
   /compliance/api/v1/queries/{query_id}:
     get:
       consumes:

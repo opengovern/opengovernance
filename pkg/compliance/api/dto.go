@@ -143,22 +143,29 @@ type BenchmarkSummary struct {
 	FailedResources int64 `json:"failedResources"`
 }
 
-type PolicySummary struct {
-	Title       string             `json:"title"`
-	Category    string             `json:"category"`
-	Subcategory string             `json:"subcategory"`
-	Severity    types.Severity     `json:"severity"`
-	Status      types.PolicyStatus `json:"status"`
-	CreatedAt   int64              `json:"createdAt"`
+type ResultDatapoint struct {
+	Time   int64                         `json:"time"`
+	Result types.ComplianceResultSummary `json:"result"`
 }
 
-type GetPoliciesSummaryResponse struct {
-	BenchmarkTitle       string                        `json:"title"`
-	BenchmarkDescription string                        `json:"description"`
-	ComplianceSummary    types.ComplianceResultSummary `json:"complianceSummary"`
-	PolicySummary        []PolicySummary               `json:"policySummary"`
-	Tags                 map[string]string             `json:"tags"`
-	Enabled              bool                          `json:"enabled"`
+type BenchmarkResultTrend struct {
+	ResultDatapoint []ResultDatapoint `json:"resultTrend"`
+}
+
+type PolicyTree struct {
+	ID          string             `json:"id"`
+	Title       string             `json:"title"`
+	Severity    types.Severity     `json:"severity"`
+	Status      types.PolicyStatus `json:"status"`
+	LastChecked int64              `json:"lastChecked"`
+}
+
+type BenchmarkTree struct {
+	ID    string `json:"id"`
+	Title string `json:"title"`
+
+	Children []BenchmarkTree `json:"children"`
+	Policies []PolicyTree    `json:"policies"`
 }
 
 type GetFindingsMetricsResponse struct {

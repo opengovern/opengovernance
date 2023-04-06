@@ -441,7 +441,65 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/types.ComplianceResultSummary"
+                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.BenchmarkSummary"
+                        }
+                    }
+                }
+            }
+        },
+        "/compliance/api/v1/benchmark/{benchmark_id}/summary/result/trend": {
+            "get": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "compliance"
+                ],
+                "summary": "Get result trend",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Start",
+                        "name": "start",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "End",
+                        "name": "end",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.BenchmarkResultTrend"
+                        }
+                    }
+                }
+            }
+        },
+        "/compliance/api/v1/benchmark/{benchmark_id}/tree": {
+            "get": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "compliance"
+                ],
+                "summary": "Get benchmark tree",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.BenchmarkTree"
                         }
                     }
                 }
@@ -804,37 +862,6 @@
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.Insight"
-                        }
-                    }
-                }
-            }
-        },
-        "/compliance/api/v1/policy/summary/{benchmark_id}": {
-            "get": {
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "compliance"
-                ],
-                "summary": "Get benchmark summary",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "BenchmarkID",
-                        "name": "benchmarkID",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.GetFindingsResponse"
                         }
                     }
                 }
@@ -5260,6 +5287,17 @@
                 }
             }
         },
+        "gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.BenchmarkResultTrend": {
+            "type": "object",
+            "properties": {
+                "resultTrend": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.ResultDatapoint"
+                    }
+                }
+            }
+        },
         "gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.BenchmarkSummary": {
             "type": "object",
             "properties": {
@@ -5300,6 +5338,29 @@
                     "type": "object",
                     "additionalProperties": {
                         "type": "string"
+                    }
+                },
+                "title": {
+                    "type": "string"
+                }
+            }
+        },
+        "gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.BenchmarkTree": {
+            "type": "object",
+            "properties": {
+                "children": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.BenchmarkTree"
+                    }
+                },
+                "id": {
+                    "type": "string"
+                },
+                "policies": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.PolicyTree"
                     }
                 },
                 "title": {
@@ -5709,6 +5770,9 @@
         "gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.Policy": {
             "type": "object",
             "properties": {
+                "connector": {
+                    "$ref": "#/definitions/source.Type"
+                },
                 "createdAt": {
                     "type": "string"
                 },
@@ -5717,6 +5781,9 @@
                 },
                 "documentURI": {
                     "type": "string"
+                },
+                "enabled": {
+                    "type": "boolean"
                 },
                 "id": {
                     "type": "string"
@@ -5747,6 +5814,26 @@
                 }
             }
         },
+        "gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.PolicyTree": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string"
+                },
+                "lastChecked": {
+                    "type": "integer"
+                },
+                "severity": {
+                    "type": "string"
+                },
+                "status": {
+                    "$ref": "#/definitions/types.PolicyStatus"
+                },
+                "title": {
+                    "type": "string"
+                }
+            }
+        },
         "gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.Query": {
             "type": "object",
             "properties": {
@@ -5770,6 +5857,17 @@
                 },
                 "updatedAt": {
                     "type": "string"
+                }
+            }
+        },
+        "gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.ResultDatapoint": {
+            "type": "object",
+            "properties": {
+                "result": {
+                    "$ref": "#/definitions/types.ComplianceResultSummary"
+                },
+                "time": {
+                    "type": "integer"
                 }
             }
         },
@@ -8290,6 +8388,19 @@
                     "type": "string"
                 }
             }
+        },
+        "types.PolicyStatus": {
+            "type": "string",
+            "enum": [
+                "passed",
+                "failed",
+                "unknown"
+            ],
+            "x-enum-varnames": [
+                "PolicyStatusPASSED",
+                "PolicyStatusFAILED",
+                "PolicyStatusUNKNOWN"
+            ]
         }
     }
 }
