@@ -133,7 +133,7 @@ func start(ctx context.Context) error {
 	if block == nil {
 		panic("failed to decode private key")
 	}
-	pri, err := x509.ParsePKCS1PrivateKey(block.Bytes)
+	pri, err := x509.ParsePKCS8PrivateKey(block.Bytes)
 	if err != nil {
 		panic(err)
 	}

@@ -2,8 +2,9 @@ package es
 
 import (
 	"fmt"
-	"gitlab.com/keibiengine/keibi-engine/pkg/types"
 	"strings"
+
+	"gitlab.com/keibiengine/keibi-engine/pkg/types"
 )
 
 const (
