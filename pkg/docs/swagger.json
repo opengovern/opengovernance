@@ -646,7 +646,7 @@
                 }
             }
         },
-        "/compliance/api/v1/findings/{field}/top/{count}": {
+        "/compliance/api/v1/findings/{benchmarkId}/{field}/top/{count}": {
             "post": {
                 "consumes": [
                     "application/json"
@@ -659,6 +659,13 @@
                 ],
                 "summary": "Returns all findings with respect to filters",
                 "parameters": [
+                    {
+                        "type": "string",
+                        "description": "BenchmarkID",
+                        "name": "benchmarkId",
+                        "in": "path",
+                        "required": true
+                    },
                     {
                         "enum": [
                             "resourceType",
@@ -5270,6 +5277,9 @@
                 },
                 "coverage": {
                     "type": "number"
+                },
+                "description": {
+                    "type": "string"
                 },
                 "enabled": {
                     "type": "boolean"

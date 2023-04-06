@@ -191,6 +191,8 @@ definitions:
         type: array
       coverage:
         type: number
+      description:
+        type: string
       enabled:
         type: boolean
       failedResources:
@@ -2684,11 +2686,16 @@ paths:
       summary: Returns all findings with respect to filters
       tags:
       - compliance
-  /compliance/api/v1/findings/{field}/top/{count}:
+  /compliance/api/v1/findings/{benchmarkId}/{field}/top/{count}:
     post:
       consumes:
       - application/json
       parameters:
+      - description: BenchmarkID
+        in: path
+        name: benchmarkId
+        required: true
+        type: string
       - description: Field
         enum:
         - resourceType
