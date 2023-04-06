@@ -509,6 +509,10 @@ func (h *HttpHandler) GetBenchmarkSummary(ctx echo.Context) error {
 		totalBenchmarkCoveredAssets += int64(count[0].ResourceCount)
 	}
 
+	coverage := 100.0
+	if totalWorkspaceAssets > 0 {
+		coverage = float64(totalBenchmarkCoveredAssets) / float64(totalWorkspaceAssets) * 100.0
+	}
 	response := api.BenchmarkSummary{
 		ID:              benchmark.ID,
 		Title:           benchmark.Title,
@@ -517,7 +521,7 @@ func (h *HttpHandler) GetBenchmarkSummary(ctx echo.Context) error {
 		Tags:            be.Tags,
 		Enabled:         benchmark.Enabled,
 		Result:          s.Result,
-		Coverage:        float64(totalBenchmarkCoveredAssets) / float64(totalWorkspaceAssets) * 100.0,
+		Coverage:        coverage,
 		CompliancyTrend: nil, //TODO-Saleh
 		PassedResources: int64(len(s.PassedResourceIDs)),
 		FailedResources: int64(len(s.FailedResourceIDs)),
