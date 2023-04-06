@@ -430,7 +430,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/compliance/api/v1/benchmark/:benchmark_id/summary": {
+        "/compliance/api/v1/benchmark/{benchmark_id}/summary": {
             "get": {
                 "consumes": [
                     "application/json"
@@ -442,6 +442,15 @@ const docTemplate = `{
                     "compliance"
                 ],
                 "summary": "Get benchmark summary",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "BenchmarkID",
+                        "name": "benchmark_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -469,13 +478,22 @@ const docTemplate = `{
                         "type": "integer",
                         "description": "Start",
                         "name": "start",
-                        "in": "query"
+                        "in": "query",
+                        "required": true
                     },
                     {
                         "type": "integer",
                         "description": "End",
                         "name": "end",
-                        "in": "query"
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "BenchmarkID",
+                        "name": "benchmark_id",
+                        "in": "path",
+                        "required": true
                     }
                 ],
                 "responses": {
@@ -500,6 +518,15 @@ const docTemplate = `{
                     "compliance"
                 ],
                 "summary": "Get benchmark tree",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "BenchmarkID",
+                        "name": "benchmark_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -574,13 +601,15 @@ const docTemplate = `{
                         "type": "integer",
                         "description": "Start",
                         "name": "start",
-                        "in": "query"
+                        "in": "query",
+                        "required": true
                     },
                     {
                         "type": "integer",
                         "description": "End",
                         "name": "end",
-                        "in": "query"
+                        "in": "query",
+                        "required": true
                     }
                 ],
                 "responses": {
