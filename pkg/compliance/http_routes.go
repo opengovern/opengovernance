@@ -425,6 +425,10 @@ func (h *HttpHandler) GetBenchmarksSummary(ctx echo.Context) error {
 			totalBenchmarkCoveredAssets += int64(count[0].ResourceCount)
 		}
 
+		coverage := 100.0
+		if totalWorkspaceAssets > 0 {
+			coverage = float64(totalBenchmarkCoveredAssets) / float64(totalWorkspaceAssets) * 100.0
+		}
 		response.BenchmarkSummary = append(response.BenchmarkSummary, api.BenchmarkSummary{
 			ID:              b.ID,
 			Title:           b.Title,
@@ -433,7 +437,7 @@ func (h *HttpHandler) GetBenchmarksSummary(ctx echo.Context) error {
 			Tags:            be.Tags,
 			Enabled:         b.Enabled,
 			Result:          s.Result,
-			Coverage:        float64(totalBenchmarkCoveredAssets) / float64(totalWorkspaceAssets) * 100.0,
+			Coverage:        coverage,
 			CompliancyTrend: nil, //TODO-Saleh
 			PassedResources: int64(len(s.PassedResourceIDs)),
 			FailedResources: int64(len(s.FailedResourceIDs)),
@@ -471,7 +475,7 @@ func (h *HttpHandler) GetBenchmarksSummary(ctx echo.Context) error {
 //	@Accept		json
 //	@Produce	json
 //	@Success	200	{object}	api.BenchmarkSummary
-//	@Router		/compliance/api/v1/benchmark/:benchmark_id/summary [get]
+//	@Router		/compliance/api/v1/benchmark/{benchmark_id}/summary [get]
 func (h *HttpHandler) GetBenchmarkSummary(ctx echo.Context) error {
 	benchmarkID := ctx.Param("benchmark_id")
 
