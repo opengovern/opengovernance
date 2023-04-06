@@ -176,7 +176,16 @@ type GetBenchmarksSummaryResponse struct {
 	Benchmarks   []BenchmarkSummary                  `json:"benchmarks"`
 }
 
+type BenchmarkShortSummary struct {
+	ID              string `json:"id"`
+	Title           string `json:"title"`
+	PassedResources int64  `json:"passedResources"`
+	FailedResources int64  `json:"failedResources"`
+}
+
 type GetShortSummaryResponse struct {
+	BenchmarkShortSummary []BenchmarkShortSummary `json:"benchmarkShortSummary"`
+
 	PassedResources int64 `json:"passedResources"`
 	FailedResources int64 `json:"failedResources"`
 	TotalAssets     int64 `json:"totalAssets"`
