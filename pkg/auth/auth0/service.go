@@ -333,3 +333,29 @@ func (a *Service) SearchUsersByWorkspace(wsID string) ([]User, error) {
 
 	return resp, nil
 }
+
+func (a *Service) GetClientTenant() (string, error) {
+	if err := a.fillToken(); err != nil {
+		return "", err
+	}
+	url := fmt.Sprintf("%s/api/v2/users/%s", a.domain, a.clientID)
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return "", err
+	}
+	res, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return "", err
+	}
+	r, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		return "", err
+	}
+	var resp map[string]interface{}
+	err = json.Unmarshal(r, &resp)
+	if str, err := resp["tenant"].(string); err {
+		return "", fmt.Errorf("[getClientTenant] invalid tenant value: %d, body=%s", resp["tenant"], string(r))
+	} else {
+		return str, nil
+	}
+}

@@ -225,7 +225,10 @@ func (r *httpRoutes) GetWorkspaceRoleBindings(ctx echo.Context) error {
 	if err != nil {
 		return err
 	}
-
+	tenant, err := r.auth0Service.GetClientTenant()
+	if err != nil {
+		return err
+	}
 	var resp api.GetWorkspaceRoleBindingResponse
 	for _, u := range users {
 		status := api.InviteStatus_PENDING
@@ -234,13 +237,16 @@ func (r *httpRoutes) GetWorkspaceRoleBindings(ctx echo.Context) error {
 		}
 
 		resp = append(resp, api.WorkspaceRoleBinding{
-			UserID:       u.UserId,
-			UserName:     u.Name,
-			Email:        u.Email,
-			Role:         u.AppMetadata.WorkspaceAccess[workspaceID],
-			Status:       status,
-			LastActivity: u.LastLogin,
-			CreatedAt:    u.CreatedAt,
+			UserID:        u.UserId,
+			UserName:      u.Name,
+			TenantId:      tenant,
+			Email:         u.Email,
+			EmailVerified: u.EmailVerified,
+			Role:          u.AppMetadata.WorkspaceAccess[workspaceID],
+			Status:        status,
+			LastActivity:  u.LastLogin,
+			CreatedAt:     u.CreatedAt,
+			Blocked:       u.Blocked,
 		})
 	}
 	return ctx.JSON(http.StatusOK, resp)
