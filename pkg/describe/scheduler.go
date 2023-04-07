@@ -641,7 +641,6 @@ func (s *Scheduler) Run() error {
 	go s.RunCheckupJobScheduler()
 	go s.RunDescribeCleanupJobScheduler()
 	go s.RunMustSummerizeJobScheduler()
-	//go s.RunComplianceReportScheduler()
 	go s.RunDeletedSourceCleanup()
 	go s.RunCloudNativeDescribeConnectionJobResourcesConsumer()
 
