@@ -214,7 +214,7 @@ func (j *Job) ExtractFindings(benchmark *api.Benchmark, policy *api.Policy, quer
 		}
 		findings = append(findings, es.Finding{
 			ID:               fmt.Sprintf("%s-%s-%d", resourceID, policy.ID, j.ScheduleJobID),
-			BenchmarkID:      j.BenchmarkID,
+			BenchmarkID:      benchmark.ID,
 			PolicyID:         policy.ID,
 			ConnectionID:     j.ConnectionID,
 			DescribedAt:      j.DescribedAt,

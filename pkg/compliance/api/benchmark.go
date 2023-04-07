@@ -31,6 +31,8 @@ type Policy struct {
 	Title              string            `json:"title"`
 	Description        string            `json:"description"`
 	Tags               map[string]string `json:"tags"`
+	Connector          source.Type       `json:"connector"`
+	Enabled            bool              `json:"enabled"`
 	DocumentURI        string            `json:"documentURI"`
 	QueryID            *string           `json:"queryID"`
 	Severity           types.Severity    `json:"severity"`

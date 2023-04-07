@@ -235,9 +235,10 @@ func (s Server) GetWorkspaceByName(workspaceName string, user *userClaim) (api.R
 	var err error
 
 	rb = api.RoleBinding{
-		WorkspaceID: "",
-		UserID:      user.ExternalUserID,
-		Role:        api.EditorRole,
+		UserID:        user.ExternalUserID,
+		WorkspaceID:   "",
+		WorkspaceName: "",
+		Role:          api.EditorRole,
 	}
 
 	if workspaceName != "keibi" {

@@ -2,8 +2,9 @@ package es
 
 import (
 	"fmt"
-	"gitlab.com/keibiengine/keibi-engine/pkg/types"
 	"strings"
+
+	"gitlab.com/keibiengine/keibi-engine/pkg/types"
 )
 
 const (
@@ -13,7 +14,8 @@ const (
 type BenchmarkReportType string
 
 const (
-	BenchmarksSummary BenchmarkReportType = "TrendPerSourceHistory"
+	BenchmarksSummary        BenchmarkReportType = "BenchmarksSummary"
+	BenchmarksSummaryHistory BenchmarkReportType = "BenchmarksSummaryHistory"
 )
 
 type ResourceResult struct {

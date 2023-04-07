@@ -3,13 +3,19 @@ package auth
 import (
 	"context"
 	"crypto/rsa"
+	"crypto/sha512"
 	_ "embed"
+	"encoding/hex"
+	"errors"
+	"fmt"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
-	"github.com/golang-jwt/jwt"
+	"gitlab.com/keibiengine/keibi-engine/pkg/auth/db"
 
+	"github.com/golang-jwt/jwt"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpclient"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/auth/auth0"
@@ -35,6 +41,7 @@ type httpRoutes struct {
 	workspaceClient client.WorkspaceServiceClient
 	auth0Service    *auth0.Service
 	keibiPrivateKey *rsa.PrivateKey
+	db              db.Database
 }
 
 func (r *httpRoutes) Register(e *echo.Echo) {
@@ -48,7 +55,13 @@ func (r *httpRoutes) Register(e *echo.Echo) {
 	v1.GET("/user/:user_id", httpserver.AuthorizeHandler(r.GetUserDetails, api.AdminRole))
 	v1.POST("/invite", httpserver.AuthorizeHandler(r.Invite, api.AdminRole))
 	v1.DELETE("/invite", httpserver.AuthorizeHandler(r.DeleteInvitation, api.AdminRole))
-	v1.POST("/apikey/generate", httpserver.AuthorizeHandler(r.GenerateAPIKey, api.AdminRole))
+
+	v1.POST("/apikey/create", httpserver.AuthorizeHandler(r.CreateAPIKey, api.AdminRole))
+	v1.GET("/apikey", httpserver.AuthorizeHandler(r.ListAPIKeys, api.AdminRole))
+	v1.POST("/apikey/:id/suspend", httpserver.AuthorizeHandler(r.SuspendAPIKey, api.AdminRole))
+	v1.POST("/apikey/:id/activate", httpserver.AuthorizeHandler(r.ActivateAPIKey, api.AdminRole))
+	v1.DELETE("/apikey/:id/delete", httpserver.AuthorizeHandler(r.DeleteAPIKey, api.AdminRole))
+	v1.GET("/apikey/:id", httpserver.AuthorizeHandler(r.GetAPIKey, api.AdminRole))
 }
 
 func bindValidate(ctx echo.Context, i interface{}) error {
@@ -371,22 +384,209 @@ func (r *httpRoutes) DeleteInvitation(ctx echo.Context) error {
 	return ctx.NoContent(http.StatusOK)
 }
 
-// GenerateAPIKey godoc
+// CreateAPIKey godoc
 //
-//	@Summary	Generates an API Key
+//	@Summary	Creates an API Key
 //	@Tags		auth
 //	@Produce	json
-//	@Param		role	body	string	true	"role"
-//	@Router		/auth/api/v1/apikey/generate [post]
-func (r *httpRoutes) GenerateAPIKey(ctx echo.Context) error {
-	var u userClaim
+//	@Param		request	body	api.CreateAPIKeyRequest	true	"Request Body"
+//	@Router		/auth/api/v1/apikey/create [post]
+func (r *httpRoutes) CreateAPIKey(ctx echo.Context) error {
+	userID := httpserver.GetUserID(ctx)
+	workspaceID := httpserver.GetWorkspaceID(ctx)
+
+	var req api.CreateAPIKeyRequest
+	if err := bindValidate(ctx, &req); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err)
+	}
+
+	usr, err := r.auth0Service.GetUser(userID)
+	if err != nil {
+		return err
+	}
+
+	if usr == nil {
+		return errors.New("failed to find user in auth0")
+	}
+
+	u := userClaim{
+		WorkspaceAccess: map[string]api.Role{
+			workspaceID: req.Role,
+		},
+		GlobalAccess:   nil,
+		Email:          usr.Email,
+		ExternalUserID: usr.UserId,
+	}
+
 	token, err := jwt.NewWithClaims(jwt.SigningMethodRS256, &u).SignedString(r.keibiPrivateKey)
 	if err != nil {
 		return err
 	}
 
-	resp := api.APIKeyResponse{
-		Token: token,
+	masked := fmt.Sprintf("%s...%s", token[:3], token[len(token)-2:])
+
+	hash := sha512.New()
+	_, err = hash.Write([]byte(token))
+	if err != nil {
+		return err
 	}
+	keyHash := hex.EncodeToString(hash.Sum(nil))
+
+	apikey := db.ApiKey{
+		Name:          req.Name,
+		Role:          req.Role,
+		CreatorUserID: userID,
+		WorkspaceID:   workspaceID,
+		Active:        true,
+		Revoked:       false,
+		MaskedKey:     masked,
+		KeyHash:       keyHash,
+	}
+	err = r.db.AddApiKey(&apikey)
+	if err != nil {
+		return err
+	}
+
+	return ctx.JSON(http.StatusOK, api.CreateAPIKeyResponse{
+		ID:    apikey.ID,
+		Token: token,
+	})
+}
+
+// DeleteAPIKey godoc
+//
+//	@Summary	Deletes an API Key
+//	@Tags		auth
+//	@Produce	json
+//	@Param		id	path	string	true	"ID"
+//	@Router		/auth/api/v1/apikey/{id}/delete [delete]
+func (r *httpRoutes) DeleteAPIKey(ctx echo.Context) error {
+	workspaceID := httpserver.GetWorkspaceID(ctx)
+	idStr := ctx.Param("id")
+	id, err := strconv.ParseUint(idStr, 10, 64)
+	if err != nil {
+		return err
+	}
+
+	err = r.db.RevokeAPIKey(workspaceID, uint(id))
+	if err != nil {
+		return err
+	}
+
+	return ctx.NoContent(http.StatusOK)
+}
+
+// ListAPIKeys godoc
+//
+//	@Summary	Lists all API Keys
+//	@Tags		auth
+//	@Produce	json
+//	@Success	200	{object}	[]api.WorkspaceApiKey
+//	@Router		/auth/api/v1/apikey [get]
+func (r *httpRoutes) ListAPIKeys(ctx echo.Context) error {
+	workspaceID := httpserver.GetWorkspaceID(ctx)
+	keys, err := r.db.ListApiKeys(workspaceID)
+	if err != nil {
+		return err
+	}
+
+	var resp []api.WorkspaceApiKey
+	for _, key := range keys {
+		resp = append(resp, api.WorkspaceApiKey{
+			ID:            key.ID,
+			CreatedAt:     key.CreatedAt,
+			UpdatedAt:     key.UpdatedAt,
+			Name:          key.Name,
+			Role:          key.Role,
+			CreatorUserID: key.CreatorUserID,
+			Active:        key.Active,
+			MaskedKey:     key.MaskedKey,
+		})
+	}
+
 	return ctx.JSON(http.StatusOK, resp)
+}
+
+// GetAPIKey godoc
+//
+//	@Summary	Fetches an API Key
+//	@Tags		auth
+//	@Produce	json
+//	@Param		id	path		string	true	"ID"
+//	@Success	200	{object}	api.WorkspaceApiKey
+//	@Router		/auth/api/v1/apikey/{id} [get]
+func (r *httpRoutes) GetAPIKey(ctx echo.Context) error {
+	idStr := ctx.Param("id")
+	id, err := strconv.ParseUint(idStr, 10, 64)
+	if err != nil {
+		return err
+	}
+
+	workspaceID := httpserver.GetWorkspaceID(ctx)
+	key, err := r.db.GetApiKeys(workspaceID, uint(id))
+	if err != nil {
+		return err
+	}
+	if key.ID == 0 {
+		return echo.NewHTTPError(http.StatusNotFound, "api key not found")
+	}
+
+	resp := api.WorkspaceApiKey{
+		ID:            key.ID,
+		CreatedAt:     key.CreatedAt,
+		UpdatedAt:     key.UpdatedAt,
+		Name:          key.Name,
+		Role:          key.Role,
+		CreatorUserID: key.CreatorUserID,
+		Active:        key.Active,
+		MaskedKey:     key.MaskedKey,
+	}
+
+	return ctx.JSON(http.StatusOK, resp)
+}
+
+// SuspendAPIKey godoc
+//
+//	@Summary	Suspend an API Key
+//	@Tags		auth
+//	@Produce	json
+//	@Param		id	path	string	true	"ID"
+//	@Router		/auth/api/v1/apikey/{id}/suspend [post]
+func (r *httpRoutes) SuspendAPIKey(ctx echo.Context) error {
+	workspaceID := httpserver.GetWorkspaceID(ctx)
+	idStr := ctx.Param("id")
+	id, err := strconv.ParseUint(idStr, 10, 64)
+	if err != nil {
+		return err
+	}
+
+	err = r.db.UpdateActiveAPIKey(workspaceID, uint(id), false)
+	if err != nil {
+		return err
+	}
+
+	return ctx.NoContent(http.StatusOK)
+}
+
+// ActivateAPIKey godoc
+//
+//	@Summary	Suspend an API Key
+//	@Tags		auth
+//	@Produce	json
+//	@Param		id	path	string	true	"ID"
+//	@Router		/auth/api/v1/apikey/{id}/activate [post]
+func (r *httpRoutes) ActivateAPIKey(ctx echo.Context) error {
+	workspaceID := httpserver.GetWorkspaceID(ctx)
+	idStr := ctx.Param("id")
+	id, err := strconv.ParseUint(idStr, 10, 64)
+	if err != nil {
+		return err
+	}
+
+	err = r.db.UpdateActiveAPIKey(workspaceID, uint(id), true)
+	if err != nil {
+		return err
+	}
+
+	return ctx.NoContent(http.StatusOK)
 }

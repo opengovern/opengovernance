@@ -53,6 +53,7 @@ func (h HttpServer) Register(e *echo.Echo) {
 	v0.GET("/summarize/trigger", httpserver.AuthorizeHandler(h.TriggerSummarizeJob, api3.AdminRole))
 	v0.GET("/insight/trigger", httpserver.AuthorizeHandler(h.TriggerInsightJob, api3.AdminRole))
 	v0.GET("/compliance/trigger", httpserver.AuthorizeHandler(h.TriggerComplianceJob, api3.AdminRole))
+	v0.GET("/compliance/summarizer/trigger", httpserver.AuthorizeHandler(h.TriggerComplianceSummarizerJob, api3.AdminRole))
 	v1.PUT("/benchmark/evaluation/trigger", httpserver.AuthorizeHandler(h.TriggerBenchmarkEvaluation, api3.AdminRole))
 
 	v1.GET("/describe/source/jobs/pending", httpserver.AuthorizeHandler(h.HandleListPendingDescribeSourceJobs, api3.ViewerRole))
@@ -531,6 +532,27 @@ func (h HttpServer) TriggerComplianceJob(ctx echo.Context) error {
 	}
 
 	_, err = h.Scheduler.RunComplianceReport(scheduleJob)
+	if err != nil {
+		return err
+	}
+
+	return ctx.NoContent(http.StatusOK)
+}
+
+// TriggerComplianceSummarizerJob godoc
+//
+//	@Summary	Triggers a compliance summarizer job to run immediately
+//	@Tags		describe
+//	@Produce	json
+//	@Success	200
+//	@Router		/schedule/api/v0/compliance/summarizer/trigger [get]
+func (h HttpServer) TriggerComplianceSummarizerJob(ctx echo.Context) error {
+	scheduleJob, err := h.DB.FetchLastScheduleJob()
+	if err != nil {
+		return err
+	}
+
+	err = h.Scheduler.scheduleComplianceSummarizerJob(scheduleJob.ID)
 	if err != nil {
 		return err
 	}
