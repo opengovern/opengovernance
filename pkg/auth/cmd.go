@@ -184,6 +184,11 @@ func start(ctx context.Context) error {
 	adb := db.Database{Orm: orm}
 	fmt.Println("Connected to the postgres database: ", conf.PostgreSQL.DB)
 
+	err = adb.Initialize()
+	if err != nil {
+		return fmt.Errorf("new postgres client: %w", err)
+	}
+
 	auth0Service := auth0.New(auth0ManageDomain, auth0ClientIDNative, auth0ClientID, auth0ManageClientID, auth0ManageClientSecret,
 		auth0Connection, int(inviteTTL))
 
