@@ -284,7 +284,7 @@ func (r *httpRoutes) GetUserDetails(ctx echo.Context) error {
 		EmailVerified: user.EmailVerified,
 		Status:        status,
 		LastActivity:  user.LastLogin,
-		CreatedAt:     user.CreatedAt,New Folder
+		CreatedAt:     user.CreatedAt,
 		Blocked:       user.Blocked,
 	}
 
