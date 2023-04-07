@@ -260,7 +260,7 @@ func (r *httpRoutes) GetWorkspaceRoleBindings(ctx echo.Context) error {
 //	@Tags			auth
 //	@Produce		json
 //	@Param			userId	path		string	true	"userId"
-//	@Success		200		{object}	api.WorkspaceRoleBinding
+//	@Success		200			{object}	api.WorkspaceRoleBinding
 //	@Router			/auth/api/v1/user/{user_id} [get]
 func (r *httpRoutes) GetUserDetails(ctx echo.Context) error {
 	userID := ctx.Param("user_id")
@@ -284,7 +284,7 @@ func (r *httpRoutes) GetUserDetails(ctx echo.Context) error {
 		EmailVerified: user.EmailVerified,
 		Status:        status,
 		LastActivity:  user.LastLogin,
-		CreatedAt:     user.CreatedAt,
+		CreatedAt:     user.CreatedAt,New Folder
 		Blocked:       user.Blocked,
 	}
 
