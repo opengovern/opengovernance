@@ -27,6 +27,13 @@ definitions:
       updatedAt:
         type: string
     type: object
+  gitlab_com_keibiengine_keibi-engine_pkg_auth_api.CreateAPIKeyRequest:
+    properties:
+      name:
+        type: string
+      role:
+        $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.Role'
+    type: object
   gitlab_com_keibiengine_keibi-engine_pkg_auth_api.GetRoleBindingsResponse:
     properties:
       globalRoles:
@@ -92,6 +99,25 @@ definitions:
         description: Name of the binding Role
       workspaceID:
         description: Unique identifier for the Workspace
+        type: string
+    type: object
+  gitlab_com_keibiengine_keibi-engine_pkg_auth_api.WorkspaceApiKey:
+    properties:
+      active:
+        type: boolean
+      createdAt:
+        type: string
+      creatorUserID:
+        type: string
+      id:
+        type: integer
+      maskedKey:
+        type: string
+      name:
+        type: string
+      role:
+        $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.Role'
+      updatedAt:
         type: string
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_auth_api.WorkspaceRoleBinding:
@@ -2340,19 +2366,93 @@ info:
   title: Keibi Service API
   version: "1.0"
 paths:
-  /auth/api/v1/apikey/generate:
+  /auth/api/v1/apikey:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.WorkspaceApiKey'
+            type: array
+      summary: Lists all API Keys
+      tags:
+      - auth
+  /auth/api/v1/apikey/{id}:
+    get:
+      parameters:
+      - description: ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.WorkspaceApiKey'
+      summary: Fetches an API Key
+      tags:
+      - auth
+  /auth/api/v1/apikey/{id}/activate:
     post:
       parameters:
-      - description: role
-        in: body
-        name: role
+      - description: ID
+        in: path
+        name: id
         required: true
-        schema:
-          type: string
+        type: string
       produces:
       - application/json
       responses: {}
-      summary: Generates an API Key
+      summary: Suspend an API Key
+      tags:
+      - auth
+  /auth/api/v1/apikey/{id}/delete:
+    delete:
+      parameters:
+      - description: ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses: {}
+      summary: Deletes an API Key
+      tags:
+      - auth
+  /auth/api/v1/apikey/{id}/suspend:
+    post:
+      parameters:
+      - description: ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses: {}
+      summary: Suspend an API Key
+      tags:
+      - auth
+  /auth/api/v1/apikey/create:
+    post:
+      parameters:
+      - description: Request Body
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.CreateAPIKeyRequest'
+      produces:
+      - application/json
+      responses: {}
+      summary: Creates an API Key
       tags:
       - auth
   /auth/api/v1/invite:
@@ -5121,6 +5221,16 @@ paths:
       summary: List SPN credentials
       tags:
       - onboard
+  /schedule/api/v0/compliance/summarizer/trigger:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+      summary: Triggers a compliance summarizer job to run immediately
+      tags:
+      - describe
   /schedule/api/v0/compliance/trigger:
     get:
       description: Triggers a compliance job to run immediately

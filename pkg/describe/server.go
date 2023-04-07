@@ -541,11 +541,11 @@ func (h HttpServer) TriggerComplianceJob(ctx echo.Context) error {
 
 // TriggerComplianceSummarizerJob godoc
 //
-//	@Summary		Triggers a compliance summarizer job to run immediately
-//	@Tags			describe
-//	@Produce		json
-//	@Success		200
-//	@Router			/schedule/api/v0/compliance/summarizer/trigger [get]
+//	@Summary	Triggers a compliance summarizer job to run immediately
+//	@Tags		describe
+//	@Produce	json
+//	@Success	200
+//	@Router		/schedule/api/v0/compliance/summarizer/trigger [get]
 func (h HttpServer) TriggerComplianceSummarizerJob(ctx echo.Context) error {
 	scheduleJob, err := h.DB.FetchLastScheduleJob()
 	if err != nil {
