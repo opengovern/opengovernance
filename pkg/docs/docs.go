@@ -15,7 +15,29 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
-        "/auth/api/v1/apikey/generate": {
+        "/auth/api/v1/apikey": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Lists all API Keys",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.WorkspaceApiKey"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/api/v1/apikey/create": {
             "post": {
                 "produces": [
                     "application/json"
@@ -23,16 +45,107 @@ const docTemplate = `{
                 "tags": [
                     "auth"
                 ],
-                "summary": "Generates an API Key",
+                "summary": "Creates an API Key",
                 "parameters": [
                     {
-                        "description": "role",
-                        "name": "role",
+                        "description": "Request Body",
+                        "name": "request",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "type": "string"
+                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.CreateAPIKeyRequest"
                         }
+                    }
+                ],
+                "responses": {}
+            }
+        },
+        "/auth/api/v1/apikey/{id}": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Fetches an API Key",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.WorkspaceApiKey"
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/api/v1/apikey/{id}/activate": {
+            "post": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Suspend an API Key",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {}
+            }
+        },
+        "/auth/api/v1/apikey/{id}/delete": {
+            "delete": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Deletes an API Key",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {}
+            }
+        },
+        "/auth/api/v1/apikey/{id}/suspend": {
+            "post": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Suspend an API Key",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
                     }
                 ],
                 "responses": {}
@@ -4137,6 +4250,22 @@ const docTemplate = `{
                 "responses": {}
             }
         },
+        "/schedule/api/v0/compliance/summarizer/trigger": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "describe"
+                ],
+                "summary": "Triggers a compliance summarizer job to run immediately",
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    }
+                }
+            }
+        },
         "/schedule/api/v0/compliance/trigger": {
             "get": {
                 "description": "Triggers a compliance job to run immediately",
@@ -5086,6 +5215,17 @@ const docTemplate = `{
                 }
             }
         },
+        "gitlab_com_keibiengine_keibi-engine_pkg_auth_api.CreateAPIKeyRequest": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string"
+                },
+                "role": {
+                    "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.Role"
+                }
+            }
+        },
         "gitlab_com_keibiengine_keibi-engine_pkg_auth_api.GetRoleBindingsResponse": {
             "type": "object",
             "properties": {
@@ -5186,6 +5326,35 @@ const docTemplate = `{
                 },
                 "workspaceID": {
                     "description": "Unique identifier for the Workspace",
+                    "type": "string"
+                }
+            }
+        },
+        "gitlab_com_keibiengine_keibi-engine_pkg_auth_api.WorkspaceApiKey": {
+            "type": "object",
+            "properties": {
+                "active": {
+                    "type": "boolean"
+                },
+                "createdAt": {
+                    "type": "string"
+                },
+                "creatorUserID": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "maskedKey": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "role": {
+                    "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.Role"
+                },
+                "updatedAt": {
                     "type": "string"
                 }
             }
