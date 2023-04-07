@@ -14,7 +14,8 @@ const (
 type BenchmarkReportType string
 
 const (
-	BenchmarksSummary BenchmarkReportType = "TrendPerSourceHistory"
+	BenchmarksSummary        BenchmarkReportType = "BenchmarksSummary"
+	BenchmarksSummaryHistory BenchmarkReportType = "BenchmarksSummaryHistory"
 )
 
 type ResourceResult struct {

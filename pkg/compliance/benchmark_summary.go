@@ -96,6 +96,52 @@ func GetShortSummary(client keibi.Client, db db.Database, benchmark db.Benchmark
 	return resp, nil
 }
 
+func GetResultHistory(client keibi.Client, db db.Database, benchmark db.Benchmark, evaluatedAt int64) (types.ComplianceResultSummary, error) {
+	resp := types.ComplianceResultSummary{}
+	for _, child := range benchmark.Children {
+		childBenchmark, err := db.GetBenchmark(child.ID)
+		if err != nil {
+			return resp, err
+		}
+
+		s, err := GetResultHistory(client, db, *childBenchmark, evaluatedAt)
+		if err != nil {
+			return resp, err
+		}
+
+		resp.OkCount += s.OkCount
+		resp.AlarmCount += s.AlarmCount
+		resp.InfoCount += s.InfoCount
+		resp.SkipCount += s.SkipCount
+		resp.ErrorCount += s.ErrorCount
+	}
+
+	res, err := query.FetchBenchmarkSummaryHistory(client, &benchmark.ID, evaluatedAt, evaluatedAt)
+	if err != nil {
+		return resp, err
+	}
+
+	for _, summ := range res {
+		for _, policy := range summ.Policies {
+			for _, resource := range policy.Resources {
+				switch resource.Result {
+				case types.ComplianceResultOK:
+					resp.OkCount++
+				case types.ComplianceResultALARM:
+					resp.AlarmCount++
+				case types.ComplianceResultINFO:
+					resp.InfoCount++
+				case types.ComplianceResultSKIP:
+					resp.SkipCount++
+				case types.ComplianceResultERROR:
+					resp.ErrorCount++
+				}
+			}
+		}
+	}
+	return resp, nil
+}
+
 func UniqueArray[T any](input []T, equals func(T, T) bool) []T {
 	var out []T
 	for _, i := range input {
