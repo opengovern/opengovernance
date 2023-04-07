@@ -66,6 +66,28 @@
                         "description": "OK"
                     }
                 }
+            },
+            "delete": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "userId",
+                        "name": "userId",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    }
+                }
             }
         },
         "/auth/api/v1/user/role/binding": {
@@ -157,6 +179,35 @@
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.GetRoleBindingsResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/api/v1/user/{user_id}": {
+            "get": {
+                "description": "Get user details by user id",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Get user details by user id",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "userId",
+                        "name": "userId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.WorkspaceRoleBinding"
                         }
                     }
                 }
@@ -5111,6 +5162,10 @@
         "gitlab_com_keibiengine_keibi-engine_pkg_auth_api.WorkspaceRoleBinding": {
             "type": "object",
             "properties": {
+                "blocked": {
+                    "description": "Is the user blocked or not",
+                    "type": "boolean"
+                },
                 "createdAt": {
                     "description": "Creation timestamp in UTC",
                     "type": "string"
@@ -5118,6 +5173,10 @@
                 "email": {
                     "description": "Email address of the user",
                     "type": "string"
+                },
+                "emailVerified": {
+                    "description": "Is email verified or not",
+                    "type": "boolean"
                 },
                 "lastActivity": {
                     "description": "Last activity timestamp in UTC",
@@ -5138,6 +5197,10 @@
                             "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.InviteStatus"
                         }
                     ]
+                },
+                "tenantId": {
+                    "description": "Tenant Id",
+                    "type": "string"
                 },
                 "userId": {
                     "description": "Unique identifier for the user",

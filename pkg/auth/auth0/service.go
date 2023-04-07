@@ -338,7 +338,7 @@ func (a *Service) GetClientTenant() (string, error) {
 	if err := a.fillToken(); err != nil {
 		return "", err
 	}
-	url := fmt.Sprintf("%s/api/v2/users/%s", a.domain, a.clientID)
+	url := fmt.Sprintf("%s/api/v2/clients/%s", a.domain, a.clientID)
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return "", err

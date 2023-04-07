@@ -260,7 +260,8 @@ func (r *httpRoutes) GetWorkspaceRoleBindings(ctx echo.Context) error {
 //	@Tags			auth
 //	@Produce		json
 //	@Param			userId	path		string	true	"userId"
-//	@Success		200			{object}	api.WorkspaceRoleBinding
+//	@Success		200		{object}	api.WorkspaceRoleBinding
+//	@Router			/auth/api/v1/user/{user_id} [get]
 func (r *httpRoutes) GetUserDetails(ctx echo.Context) error {
 	userID := ctx.Param("user_id")
 	user, err := r.auth0Service.GetUser(userID)
@@ -355,12 +356,12 @@ func (r *httpRoutes) Invite(ctx echo.Context) error {
 
 // DeleteInvitation godoc
 //
-//		@Summary
-//		@Tags		auth
-//	 	@Produce 	json
-//		@Param		userId	query		string	true	"userId"
-//		@Success	200			{object}	nil
-//		@Router		/auth/api/v1/invite [delete]
+//	@Summary
+//	@Tags		auth
+//	@Produce	json
+//	@Param		userId	query		string	true	"userId"
+//	@Success	200		{object}	nil
+//	@Router		/auth/api/v1/invite [delete]
 func (r *httpRoutes) DeleteInvitation(ctx echo.Context) error {
 	userID := httpserver.GetUserID(ctx)
 	err := r.auth0Service.DeleteUser(userID)
