@@ -69,7 +69,7 @@ func (db Database) UpdateActiveAPIKey(workspaceID string, id uint, value bool) e
 	tx := db.Orm.Model(&ApiKey{}).
 		Where("workspace_id", workspaceID).
 		Where("id", id).
-		Updates(ApiKey{Active: value})
+		Update("active", value)
 	if tx.Error != nil {
 		return tx.Error
 	}

@@ -463,6 +463,9 @@ func (r *httpRoutes) GetAPIKey(ctx echo.Context) error {
 	if err != nil {
 		return err
 	}
+	if key.ID == 0 {
+		return echo.NewHTTPError(http.StatusNotFound, "api key not found")
+	}
 
 	resp := api.WorkspaceApiKey{
 		ID:            key.ID,
