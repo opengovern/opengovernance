@@ -1,6 +1,8 @@
 package compliance
 
 import (
+	"sort"
+
 	"gitlab.com/keibiengine/keibi-engine/pkg/compliance/api"
 	"gitlab.com/keibiengine/keibi-engine/pkg/compliance/db"
 	"gitlab.com/keibiengine/keibi-engine/pkg/keibi-es-sdk"
@@ -96,52 +98,6 @@ func GetShortSummary(client keibi.Client, db db.Database, benchmark db.Benchmark
 	return resp, nil
 }
 
-func GetResultHistory(client keibi.Client, db db.Database, benchmark db.Benchmark, evaluatedAt int64) (types.ComplianceResultSummary, error) {
-	resp := types.ComplianceResultSummary{}
-	for _, child := range benchmark.Children {
-		childBenchmark, err := db.GetBenchmark(child.ID)
-		if err != nil {
-			return resp, err
-		}
-
-		s, err := GetResultHistory(client, db, *childBenchmark, evaluatedAt)
-		if err != nil {
-			return resp, err
-		}
-
-		resp.OkCount += s.OkCount
-		resp.AlarmCount += s.AlarmCount
-		resp.InfoCount += s.InfoCount
-		resp.SkipCount += s.SkipCount
-		resp.ErrorCount += s.ErrorCount
-	}
-
-	res, err := query.FetchBenchmarkSummaryHistory(client, &benchmark.ID, evaluatedAt, evaluatedAt)
-	if err != nil {
-		return resp, err
-	}
-
-	for _, summ := range res {
-		for _, policy := range summ.Policies {
-			for _, resource := range policy.Resources {
-				switch resource.Result {
-				case types.ComplianceResultOK:
-					resp.OkCount++
-				case types.ComplianceResultALARM:
-					resp.AlarmCount++
-				case types.ComplianceResultINFO:
-					resp.InfoCount++
-				case types.ComplianceResultSKIP:
-					resp.SkipCount++
-				case types.ComplianceResultERROR:
-					resp.ErrorCount++
-				}
-			}
-		}
-	}
-	return resp, nil
-}
-
 func UniqueArray[T any](input []T, equals func(T, T) bool) []T {
 	var out []T
 	for _, i := range input {
@@ -222,4 +178,70 @@ func GetBenchmarkTree(db db.Database, client keibi.Client, b db.Benchmark) (api.
 	}
 
 	return tree, nil
+}
+
+func (h *HttpHandler) BuildBenchmarkResultTrend(b db.Benchmark, startDate, endDate int64) ([]api.ResultDatapoint, error) {
+	trendPoints := map[int64]types.ComplianceResultSummary{}
+
+	for _, child := range b.Children {
+		childObj, err := h.db.GetBenchmark(child.ID)
+		if err != nil {
+			return nil, err
+		}
+
+		childTrend, err := h.BuildBenchmarkResultTrend(*childObj, startDate, endDate)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, t := range childTrend {
+			v := trendPoints[t.Time]
+			v.OkCount += t.Result.OkCount
+			v.AlarmCount += t.Result.AlarmCount
+			v.ErrorCount += t.Result.ErrorCount
+			v.InfoCount += t.Result.InfoCount
+			v.SkipCount += t.Result.SkipCount
+			trendPoints[t.Time] = v
+		}
+	}
+
+	res, err := query.FetchBenchmarkSummaryHistory(h.client, &b.ID, startDate, endDate)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, bs := range res {
+		for _, ps := range bs.Policies {
+			for _, resource := range ps.Resources {
+				v := trendPoints[bs.EvaluatedAt]
+
+				switch resource.Result {
+				case types.ComplianceResultOK:
+					v.OkCount++
+				case types.ComplianceResultALARM:
+					v.AlarmCount++
+				case types.ComplianceResultERROR:
+					v.ErrorCount++
+				case types.ComplianceResultINFO:
+					v.InfoCount++
+				case types.ComplianceResultSKIP:
+					v.SkipCount++
+				}
+
+				trendPoints[bs.EvaluatedAt] = v
+			}
+		}
+	}
+
+	var datapoints []api.ResultDatapoint
+	for time, result := range trendPoints {
+		datapoints = append(datapoints, api.ResultDatapoint{
+			Time:   time,
+			Result: result,
+		})
+	}
+	sort.Slice(datapoints, func(i, j int) bool {
+		return datapoints[i].Time < datapoints[j].Time
+	})
+	return datapoints, nil
 }
