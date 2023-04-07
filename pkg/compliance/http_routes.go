@@ -296,23 +296,19 @@ func (h *HttpHandler) GetBenchmarksSummary(ctx echo.Context) error {
 			coverage = float64(totalBenchmarkCoveredAssets) / float64(totalWorkspaceAssets) * 100.0
 		}
 
-		history, err := query.FetchBenchmarkSummaryHistory(h.client, &b.ID, startDate, endDate)
+		trend, err := h.BuildBenchmarkResultTrend(b, startDate, endDate)
 		if err != nil {
 			return err
 		}
 
-		var trend []api.Datapoint
-		for _, bs := range history {
-			result, err := GetResultHistory(h.client, h.db, b, bs.EvaluatedAt)
-			if err != nil {
-				return err
-			}
-
-			trend = append(trend, api.Datapoint{
-				Time:  bs.EvaluatedAt,
-				Value: int64(result.OkCount),
+		var ctrend []api.Datapoint
+		for _, v := range trend {
+			ctrend = append(ctrend, api.Datapoint{
+				Time:  v.Time,
+				Value: int64(v.Result.OkCount),
 			})
 		}
+
 		response.BenchmarkSummary = append(response.BenchmarkSummary, api.BenchmarkSummary{
 			ID:              b.ID,
 			Title:           b.Title,
@@ -322,7 +318,7 @@ func (h *HttpHandler) GetBenchmarksSummary(ctx echo.Context) error {
 			Enabled:         b.Enabled,
 			Result:          s.Result,
 			Coverage:        coverage,
-			CompliancyTrend: trend,
+			CompliancyTrend: ctrend,
 			PassedResources: int64(len(s.PassedResourceIDs)),
 			FailedResources: int64(len(s.FailedResourceIDs)),
 		})
@@ -453,27 +449,14 @@ func (h *HttpHandler) GetBenchmarkResultTrend(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid benchmarkID")
 	}
 
-	history, err := query.FetchBenchmarkSummaryHistory(h.client, &benchmarkID, startDate, endDate)
+	trend, err := h.BuildBenchmarkResultTrend(*benchmark, startDate, endDate)
 	if err != nil {
 		return err
 	}
 
-	response := api.BenchmarkResultTrend{
-		ResultDatapoint: nil,
-	}
-
-	for _, bs := range history {
-		result, err := GetResultHistory(h.client, h.db, *benchmark, bs.EvaluatedAt)
-		if err != nil {
-			return err
-		}
-
-		response.ResultDatapoint = append(response.ResultDatapoint, api.ResultDatapoint{
-			Time:   bs.EvaluatedAt,
-			Result: result,
-		})
-	}
-	return ctx.JSON(http.StatusOK, response)
+	return ctx.JSON(http.StatusOK, api.BenchmarkResultTrend{
+		ResultDatapoint: trend,
+	})
 }
 
 // GetBenchmarkTree godoc
