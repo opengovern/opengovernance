@@ -41,6 +41,68 @@ func (r *httpRoutes) Register(e *echo.Echo) {
 	v1.GET("/user/:user_id/workspace/membership", httpserver.AuthorizeHandler(r.GetWorkspaceMembership, api.AdminRole))
 	v1.GET("/workspace/role/bindings", httpserver.AuthorizeHandler(r.GetWorkspaceRoleBindings, api.AdminRole))
 	v1.POST("/invite", httpserver.AuthorizeHandler(r.Invite, api.AdminRole))
+	v1.GET("/roles", httpserver.AuthorizeHandler(r.ListRoles, api.ViewerRole))
+	v1.GET("/roles/details", httpserver.AuthorizeHandler(r.GetRoleDetails, api.ViewerRole))
+}
+
+// ListRoles godoc
+//
+//	@Summary		show lists of roles.
+//	@Tags			auth
+//	@Produce		json
+//	@Success		200	{object}	api.ListRoles
+//	@Router			/auth/api/v1/roles [get]
+func (r *httpRoutes) ListRoles(ctx echo.Context) error {
+	roles := []api.Role{api.AdminRole, api.ViewerRole, api.EditorRole}
+	return ctx.JSON(http.StatusOK, roles)
+}
+
+// GetRoleDetails godoc
+//
+//	@Summary		show the description roles and members that use from each role
+//	@Tags			auth
+//	@Produce		json
+//	@Success		200	{object}	api.GetRoleDetails
+//	@Router			/auth/api/v1/roles/details [get]
+func (r *httpRoutes) GetRoleDetails(ctx echo.Context) error {
+	workspaceID := httpserver.GetWorkspaceID(ctx)
+	users, err := r.auth0Service.SearchUsersByWorkspace(workspaceID)
+	if err != nil {
+		return err
+	}
+
+	var AdminCount int
+	var ViewerCount int
+	var EditorCount int
+
+	for _, u := range users {
+		role := u.AppMetadata.WorkspaceAccess[workspaceID]
+		if role == api.AdminRole {
+			AdminCount++
+		} else if role == api.ViewerRole {
+			ViewerCount++
+		} else if role == api.EditorRole {
+			EditorCount++
+		}
+	}
+
+	var description = []api.RolesDescription{{
+		Role:        api.AdminRole,
+		Description: "",
+		UserCount:   AdminCount,
+	},
+		{
+			Role:        api.ViewerRole,
+			Description: "",
+			UserCount:   ViewerCount,
+		},
+		{
+			Role:        api.EditorRole,
+			Description: "",
+			UserCount:   EditorCount,
+		},
+	}
+	return ctx.JSON(http.StatusOK, description)
 }
 
 func bindValidate(ctx echo.Context, i interface{}) error {
@@ -213,6 +275,7 @@ func (r *httpRoutes) GetWorkspaceRoleBindings(ctx echo.Context) error {
 	}
 
 	var resp api.GetWorkspaceRoleBindingResponse
+
 	for _, u := range users {
 		status := api.InviteStatus_PENDING
 		if u.EmailVerified {

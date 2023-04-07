@@ -6,11 +6,12 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/jedib0t/go-pretty/v6/table"
+	"github.com/spf13/cobra"
+	urls "gitlab.com/keibiengine/keibi-engine/pkg/cli/consts"
 	"io"
 	"net/http"
 	"os"
-
-	"github.com/spf13/cobra"
 )
 
 // aboutCmd represents the about command
@@ -24,27 +25,24 @@ var aboutCmd = &cobra.Command{
 			fmt.Println("error relate to reading file accessToken: ")
 			panic(errRead)
 		}
-		err := RequestAbout(string(accessToken))
+		var dataAccessToken DataStoredInFile
+		errJm := json.Unmarshal(accessToken, &dataAccessToken)
+		if errJm != nil {
+			panic(errJm)
+		}
+		err := RequestAbout(dataAccessToken.AccessToken)
 		if err != nil {
 			panic(err)
 		}
 	},
 }
 
-const urlAbout string = "https://dev-ywhyatwt.us.auth0.com/userinfo"
-
 func init() {
 	rootCmd.AddCommand(aboutCmd)
 }
 
-type resposeAbout struct {
-	Sub           string `json:"sub"`
-	Email         string `json:"email"`
-	emailVerified bool   `json:"email_verified"`
-}
-
 func RequestAbout(accessToken string) error {
-	req, errReq := http.NewRequest("GET", urlAbout, nil)
+	req, errReq := http.NewRequest("GET", urls.UrlAbout, nil)
 	if errReq != nil {
 		fmt.Println("error relate to request for about :")
 		return errReq
@@ -60,16 +58,21 @@ func RequestAbout(accessToken string) error {
 		fmt.Println("error relate to reading response in about : ")
 		return err
 	}
-	response := resposeAbout{}
+	fmt.Println(string(body))
+	response := ResponseAbout{}
 	errJson := json.Unmarshal(body, &response)
 	if errJson != nil {
 		fmt.Println("error belong to unmarshal response about : ")
 		return errJson
 	}
 
-	fmt.Printf("sub : %v\n", response.Sub)
-	fmt.Printf("email: %v \n", response.Email)
-	fmt.Printf("email verified: %v \n", response.emailVerified)
-
+	tableAbout := table.NewWriter()
+	tableAbout.SetOutputMirror(os.Stdout)
+	tableAbout.AppendHeader(table.Row{"", "email", "email_verified", "sub"})
+	tableAbout.AppendRows([]table.Row{
+		{"", response.Email, response.EmailVerified, response.Sub},
+	})
+	tableAbout.AppendSeparator()
+	tableAbout.Render()
 	return nil
 }

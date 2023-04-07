@@ -6,7 +6,10 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/jedib0t/go-pretty/v6/table"
 	"github.com/spf13/cobra"
+	urls "gitlab.com/keibiengine/keibi-engine/pkg/cli/consts"
+	"gitlab.com/keibiengine/keibi-engine/pkg/workspace/api"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -17,7 +20,7 @@ var workspacesCmd = &cobra.Command{
 	Use:   "workspaces",
 	Short: "A brief description of your command",
 	Run: func(cmd *cobra.Command, args []string) {
-		err := request()
+		err := RequestWorkspaces()
 		if err != nil {
 			panic(err)
 		}
@@ -28,55 +31,50 @@ func init() {
 	rootCmd.AddCommand(workspacesCmd)
 }
 
-type responseWorkSpaces struct {
-	WorkspaceID           string `json:"id"`
-	WorkspaceOwnerID      string `json:"ownerId"`
-	WorkspaceTier         string `json:"tier"`
-	WorkspaceDescription  string `json:"description"`
-	WorkspaceUri          string `json:"uri"`
-	WorkspaceName         string `json:"name"`
-	WorkspaceState        string `json:"status"`
-	WorkspaceCreationTime string `json:"createdAt"`
-	WorkspaceVersion      string `json:"version"`
-}
-
-const urlWorkspace string = "https://app.dev.keibi.io/keibi/workspace/api/v1/workspaces"
-
-func request() error {
-	req, err := http.NewRequest("GET", urlWorkspace, nil)
+func RequestWorkspaces() error {
+	req, err := http.NewRequest("GET", urls.UrlWorkspace, nil)
 	if err != nil {
 		fmt.Println("error related to request in workspaces: ")
 		return err
 	}
 	home := os.Getenv("HOME")
-	accessTokenFile, errFile := os.ReadFile(home + "/.kaytu/auth/accessToken.txt")
+	AT, errFile := os.ReadFile(home + "/.kaytu/auth/accessToken.txt")
 	if errFile != nil {
-		fmt.Println("error relate to reading accessToken file in workspaces: ")
+		fmt.Println("error relate to reading	 accessToken file in workspaces: ")
 		return errFile
 	}
-	req.Header.Set("Authorization", "Bearer "+string(accessTokenFile))
+	var dataAccessToken DataStoredInFile
+	errJm := json.Unmarshal(AT, &dataAccessToken)
+	if err != nil {
+		return errJm
+	}
+	req.Header.Set("Authorization", "Bearer "+dataAccessToken.AccessToken)
 	res, errRead := http.DefaultClient.Do(req)
 	if errRead != nil {
 		fmt.Println("error relate to response in workspaces:")
 		return errRead
 	}
 	body, errBody := ioutil.ReadAll(res.Body)
-	defer res.Body.Close()
 	if errBody != nil {
 		fmt.Println("error relate to reading response in workspaces:")
 		return errBody
 	}
-	response := responseWorkSpaces{}
-	//fmt.Println(string(body))
+	defer res.Body.Close()
+	var response []api.WorkspaceResponse
 	errJson := json.Unmarshal(body, &response)
 	if errJson != nil {
 		fmt.Println("error relate to jsonUnmarshal in workspace: ")
 		return errJson
 	}
-	fmt.Println(response.WorkspaceName)
-	fmt.Printf("\n%v", response.WorkspaceID)
-	fmt.Printf("\n%v", response.WorkspaceState)
-	fmt.Printf("\n%v", response.WorkspaceCreationTime)
-	fmt.Printf("\n%v", response.WorkspaceVersion)
+	for _, value := range response {
+		tableWorkspaces := table.NewWriter()
+		tableWorkspaces.SetOutputMirror(os.Stdout)
+		tableWorkspaces.AppendHeader(table.Row{"", "Workspaces Name", "ID", "Workspaces State", "Workspaces creation time", "workspaces Version"})
+		tableWorkspaces.AppendRows([]table.Row{
+			{"", value.Name, value.ID, value.Status, value.CreatedAt, value.Version},
+		})
+		tableWorkspaces.AppendSeparator()
+		tableWorkspaces.Render()
+	}
 	return nil
 }

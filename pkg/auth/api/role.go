@@ -17,7 +17,16 @@ type PutRoleBindingRequest struct {
 	UserID string `json:"userId" validate:"required"`
 	Role   Role   `json:"role" validate:"required"`
 }
-
+type RolesDescription struct {
+	Role        Role
+	Description string
+	UserCount   int
+}
+type InformationRoles struct {
+	role                  Role
+	numberOfUserUsingRole int
+	description           string
+}
 type UserRoleBinding struct {
 	WorkspaceID string `json:"workspaceID"`
 	Role        Role   `json:"role"`
@@ -65,7 +74,6 @@ type InviteRequest struct {
 	Email string `json:"email" validate:"required,email"`
 	Role  Role   `json:"role"`
 }
-
 type RoleBinding struct {
 	UserID        string `json:"userId"`
 	WorkspaceID   string `json:"workspaceID"`

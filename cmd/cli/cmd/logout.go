@@ -28,4 +28,5 @@ func deleteFile() {
 		errorsRemove := fmt.Sprintf("err belong to remove file in logout : %v ", errRemove)
 		panic(errorsRemove)
 	}
+	fmt.Println("successfully logout from your account. ")
 }

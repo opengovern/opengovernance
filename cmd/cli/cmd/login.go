@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/fatih/color"
+	urls "gitlab.com/keibiengine/keibi-engine/pkg/cli/consts"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -23,35 +24,47 @@ var loginCmd = &cobra.Command{
 		if err != nil {
 			panic(err)
 		}
-		accessToken, errAccessToken := accessToken(deviceCode)
+
+		AT, errAccessToken := AccessToken(deviceCode)
 		if errAccessToken != nil {
 			panic(errAccessToken)
 		}
 		//save accessToken to the file :
+		var data DataStoredInFile
+		data.AccessToken = AT
+		accessToken, errJm := json.Marshal(data)
+		if errJm != nil {
+			panic(errJm)
+		}
 		home := os.Getenv("HOME")
 		if _, errStat := os.Stat(home + "/.kaytu/auth/accessToken.txt"); errStat != nil {
+
 			file, errFil := os.Create(home + "/.kaytu/auth/accessToken.txt")
 			if errFil != nil {
 				errorsFile := fmt.Sprintf("error belong to created file :%v", errFil)
 				panic(errorsFile)
 			}
-			_, errWrite := file.WriteString(accessToken)
+
+			_, errWrite := file.WriteString(string(accessToken))
 			if errWrite != nil {
 				fmt.Println("error belong to writing accessToken into file : ")
 				panic(errWrite)
 			}
+
 		} else {
 			errRemove := os.Remove(home + "/.kaytu/auth/accessToken.txt")
 			if errRemove != nil {
 				fmt.Println("error relate to removing file accessToken: ")
 				panic(errRemove)
 			}
+
 			file, errFil := os.Create(home + "/.kaytu/auth/accessToken.txt")
 			if errFil != nil {
 				errorsFile := fmt.Sprintf("error belong to created file :%v", errFil)
 				panic(errorsFile)
 			}
-			_, errWrite := file.WriteString(accessToken)
+
+			_, errWrite := file.WriteString(string(accessToken))
 			if errWrite != nil {
 				fmt.Println("error belong to writing accessToken into file : ")
 				panic(errWrite)
@@ -60,26 +73,10 @@ var loginCmd = &cobra.Command{
 	},
 }
 
-const domain string = "https://dev-ywhyatwt.us.auth0.com"
 const clientID string = "6P7NtO3D9bQaw9DbdJ2pICBY82nLGmBg"
 
 func init() {
 	rootCmd.AddCommand(loginCmd)
-}
-
-type DeviceCodeResponse struct {
-	DeviceCode              string `json:"device_code"`
-	UserCode                string `json:"user_code"`
-	VerificationUrl         string `json:"verification_uri"`
-	VerificationUrlComplete string `json:"verification_uri_complete"`
-	ExpiresIn               int    `json:"expires_in"`
-	Interval                int    `json:"interval"`
-}
-
-type DeviceCodeRequest struct {
-	ClientId string `json:"client_id"`
-	Scope    string `json:"scope"`
-	Audience string `json:"audience"`
 }
 
 func RequestDeviceCode() (string, error) {
@@ -94,7 +91,7 @@ func RequestDeviceCode() (string, error) {
 		fmt.Println("error belong to jsonMarshal in deviceCode request : ")
 		return "", err
 	}
-	req, err := http.NewRequest("POST", domain+"/oauth/device/code", bytes.NewBuffer(payloadEncode))
+	req, err := http.NewRequest("POST", urls.UrlLogin+"/oauth/device/code", bytes.NewBuffer(payloadEncode))
 	if err != nil {
 		fmt.Println("error belong to handle first request : ")
 		return "", err
@@ -122,21 +119,8 @@ func RequestDeviceCode() (string, error) {
 	return response.DeviceCode, nil
 }
 
-type responseAccessToken struct {
-	AccessToken string `json:"access_token"`
-	scope       string `json:"scope"`
-	IdToken     string `json:"id_token"`
-	TokenType   string `json:"token_type"`
-	ExpireIn    string `json:"expire_in"`
-}
-type requestAccessToken struct {
-	GrantType  string `json:"grant_type"`
-	DeviceCode string `json:"device_code"`
-	ClientId   string `json:"client_id"`
-}
-
-func accessToken(deviceCode string) (string, error) {
-	payload := requestAccessToken{
+func AccessToken(deviceCode string) (string, error) {
+	payload := RequestAccessToken{
 		GrantType:  "urn:ietf:params:oauth:grant-type:device_code",
 		DeviceCode: deviceCode,
 		ClientId:   clientID,
@@ -146,11 +130,12 @@ func accessToken(deviceCode string) (string, error) {
 	for {
 		requestEncoded, errJM := json.Marshal(payload)
 		if errJM != nil {
+
 			fmt.Printf("error into jsonMarshal in request accessToken : %v", requestEncoded)
 			time.Sleep(5)
 			continue
 		}
-		req, err := http.NewRequest("POST", domain+"/oauth/token", bytes.NewBuffer(requestEncoded))
+		req, err := http.NewRequest("POST", urls.UrlLogin+"/oauth/token", bytes.NewBuffer(requestEncoded))
 		if err != nil {
 			fmt.Printf("error into information request : %v ", err)
 			time.Sleep(5)
@@ -162,7 +147,7 @@ func accessToken(deviceCode string) (string, error) {
 			time.Sleep(5)
 			continue
 		}
-		response := responseAccessToken{}
+		response := ResponseAccessToken{}
 		body, errRead := ioutil.ReadAll(res.Body)
 		if errRead != nil {
 			fmt.Printf("error relate to reading body response : %v ", errRead)
@@ -184,7 +169,8 @@ func accessToken(deviceCode string) (string, error) {
 		if response.AccessToken != "" {
 			color.Red("\naccessToken equal to :")
 			fmt.Println(response.AccessToken)
-			return response.AccessToken, nil
+			responseAccessToken := response.AccessToken
+			return responseAccessToken, nil
 		} else {
 			time.Sleep(5)
 			continue
