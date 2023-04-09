@@ -66,7 +66,6 @@ func (r *httpRoutes) Register(e *echo.Echo) {
 	v1.GET("/role/users", httpserver.AuthorizeHandler(r.GetRoleUsers, api.AdminRole))
 	v1.GET("/role/apikeys", httpserver.AuthorizeHandler(r.GetRoleKeys, api.AdminRole))
 	v1.POST("/apikey/role", httpserver.AuthorizeHandler(r.UpdateKeyRole, api.AdminRole))
-	v1.DELETE("apikey/:id/role", httpserver.AuthorizeHandler(r.DeleteKeyRole, api.AdminRole))
 }
 
 func bindValidate(ctx echo.Context, i interface{}) error {
@@ -695,29 +694,6 @@ func (r *httpRoutes) UpdateKeyRole(ctx echo.Context) error {
 	}
 
 	err := r.db.UpdateRoleAPIKey(workspaceID, uint(req.ID), req.Role)
-	if err != nil {
-		return err
-	}
-
-	return ctx.NoContent(http.StatusOK)
-}
-
-// DeleteKeyRole godoc
-//
-//	@Summary	Fetches an API Key
-//	@Tags		auth
-//	@Produce	json
-//	@Success	200	{object}	api.WorkspaceApiKey
-//	@Router		/auth/api/v1/apikey/{id}/role [delete]
-func (r *httpRoutes) DeleteKeyRole(ctx echo.Context) error {
-	workspaceID := httpserver.GetWorkspaceID(ctx)
-	idStr := ctx.Param("id")
-	id, err := strconv.ParseUint(idStr, 10, 64)
-	if err != nil {
-		return err
-	}
-
-	err = r.db.UpdateRoleAPIKey(workspaceID, uint(id), api.Role(""))
 	if err != nil {
 		return err
 	}
