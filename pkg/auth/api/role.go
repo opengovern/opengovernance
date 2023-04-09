@@ -60,6 +60,22 @@ type WorkspaceRoleBinding struct {
 
 type GetWorkspaceRoleBindingResponse []WorkspaceRoleBinding // List of Workspace Role Binding objects
 
+type RoleUser struct {
+	UserID        string       `json:"userId"`        // Unique identifier for the user
+	UserName      string       `json:"userName"`      // Username
+	TenantId      string       `json:"tenantId"`      // Tenant Id
+	Email         string       `json:"email"`         // Email address of the user
+	EmailVerified bool         `json:"emailVerified"` // Is email verified or not
+	Role          Role         `json:"role"`          // Name of the role
+	Workspaces    []string     `json:"workspaces"`    // A list of workspace ids which the user has the specified role in them
+	Status        InviteStatus `json:"status"`        // Invite status
+	LastActivity  time.Time    `json:"lastActivity"`  // Last activity timestamp in UTC
+	CreatedAt     time.Time    `json:"createdAt"`     // Creation timestamp in UTC
+	Blocked       bool         `json:"blocked"`       // Is the user blocked or not
+}
+
+type GetRoleUsersResponse []RoleUser // List of Role User objects
+
 type DeleteRoleBindingRequest struct {
 	UserID string `json:"userId" validate:"required"` // Unique identifier for the user
 }

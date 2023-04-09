@@ -24,3 +24,8 @@ type WorkspaceApiKey struct {
 	Active        bool      `json:"active"`
 	MaskedKey     string    `json:"maskedKey"`
 }
+
+type UpdateKeyRoleRequest struct {
+	ID   uint `json:"id"`
+	Role Role `json:"role"`
+}

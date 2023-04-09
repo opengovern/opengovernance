@@ -359,3 +359,51 @@ func (a *Service) GetClientTenant() (string, error) {
 		return str, nil
 	}
 }
+
+// The method should be changed. Better to be done with a query.
+func (a *Service) SearchUsersByRole(role api.Role) ([]User, error) {
+	if err := a.fillToken(); err != nil {
+		return nil, err
+	}
+	url, err := url2.Parse(fmt.Sprintf("%s/api/v2/users", a.domain))
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", url.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Add("Authorization", "Bearer "+a.token)
+	res, err := http.DefaultClient.Do(req)
+	if res.StatusCode != http.StatusOK {
+		r, _ := ioutil.ReadAll(res.Body)
+		return nil, fmt.Errorf("[SearchUsersByRole] invalid status code: %d, body=%s", res.StatusCode, string(r))
+	}
+
+	r, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	var users []User
+	err = json.Unmarshal(r, &users)
+	if err != nil {
+		return nil, err
+	}
+
+	var resp []User
+	for _, user := range users {
+		if func() bool {
+			for _, r := range user.AppMetadata.WorkspaceAccess {
+				if r == role {
+					return true
+				}
+			}
+			return false
+		}() {
+			resp = append(resp, user)
+		}
+	}
+	return resp, nil
+}
