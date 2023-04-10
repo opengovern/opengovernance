@@ -47,7 +47,7 @@ var workspacesCmd = &cobra.Command{
 		}
 		if typeOutput == "json" {
 			fmt.Println(string(bodyResponse))
-		} else if typeOutput == "table" {
+		} else {
 			for _, value := range responseUnmarshal {
 				tableWorkspaces := table.NewWriter()
 				tableWorkspaces.SetOutputMirror(os.Stdout)
@@ -57,10 +57,6 @@ var workspacesCmd = &cobra.Command{
 				})
 				tableWorkspaces.AppendSeparator()
 				tableWorkspaces.Render()
-			}
-		} else {
-			for _, value := range responseUnmarshal {
-				fmt.Printf("workspaces name : %v , ID : %v , workspaces state : %v , workspaces creation time : %v ,workspaces vertion :%v", value.Name, value.ID, value.Status, value.CreatedAt, value.Version)
 			}
 		}
 	},

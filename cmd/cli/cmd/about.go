@@ -25,6 +25,7 @@ var aboutCmd = &cobra.Command{
 			fmt.Println("error relate to reading file accessToken: ")
 			panic(errRead)
 		}
+
 		var dataAccessToken DataStoredInFile
 		errJm := json.Unmarshal(accessToken, &dataAccessToken)
 		if errJm != nil {
@@ -45,7 +46,7 @@ var aboutCmd = &cobra.Command{
 		}
 		if typeOutput == "json" {
 			fmt.Println(string(bodyResponse))
-		} else if typeOutput == "table" {
+		} else {
 			tableAbout := table.NewWriter()
 			tableAbout.SetOutputMirror(os.Stdout)
 			tableAbout.AppendHeader(table.Row{"", "email", "email_verified", "sub"})
@@ -54,8 +55,6 @@ var aboutCmd = &cobra.Command{
 			})
 			tableAbout.AppendSeparator()
 			tableAbout.Render()
-		} else {
-			fmt.Printf("email : %v , email_verified : %v,sub : %v", response.Email, response.EmailVerified, response.Sub)
 		}
 	},
 }
