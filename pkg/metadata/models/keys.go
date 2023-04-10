@@ -34,6 +34,10 @@ const (
 	MetadataKeyResourceLimit            MetadataKey = "resource_limit"
 	MetadataKeyConnectionLimit          MetadataKey = "connection_limit"
 	MetadataKeyUserLimit                MetadataKey = "user_limit"
+	MetadataKeyAllowInvite              MetadataKey = "allow_invite"
+	MetadataKeyWorkspaceKeySupport      MetadataKey = "workspace_key_support"
+	MetadataKeyWorkspaceMaxKeys         MetadataKey = "workspace_max_keys"
+	MetadataKeyAllowedEmailDomains      MetadataKey = "allowed_email_domains"
 	MetadataKeyAutoDiscoveryMethod      MetadataKey = "auto_discovery_method"
 	// MetadataKeyDescribeJobInterval is the interval in minutes for describe job
 	MetadataKeyDescribeJobInterval MetadataKey = "describe_job_interval"
@@ -63,6 +67,10 @@ var MetadataKeys = []MetadataKey{
 	MetadataKeyResourceLimit,
 	MetadataKeyConnectionLimit,
 	MetadataKeyUserLimit,
+	MetadataKeyAllowInvite,
+	MetadataKeyWorkspaceKeySupport,
+	MetadataKeyWorkspaceMaxKeys,
+	MetadataKeyAllowedEmailDomains,
 	MetadataKeyAutoDiscoveryMethod,
 	MetadataKeyDescribeJobInterval,
 	MetadataKeyHealthCheckJobInterval,
@@ -107,6 +115,14 @@ func (k MetadataKey) GetConfigMetadataType() ConfigMetadataType {
 		return ConfigMetadataTypeInt
 	case MetadataKeyUserLimit:
 		return ConfigMetadataTypeInt
+	case MetadataKeyAllowInvite:
+		return ConfigMetadataTypeBool
+	case MetadataKeyWorkspaceKeySupport:
+		return ConfigMetadataTypeBool
+	case MetadataKeyWorkspaceMaxKeys:
+		return ConfigMetadataTypeInt
+	case MetadataKeyAllowedEmailDomains:
+		return ConfigMetadataTypeJSON
 	case MetadataKeyAutoDiscoveryMethod:
 		return ConfigMetadataTypeString
 	case MetadataKeyDescribeJobInterval:
@@ -154,6 +170,14 @@ func (k MetadataKey) GetMinAuthRole() api.Role {
 	case MetadataKeyConnectionLimit:
 		return api.KeibiAdminRole
 	case MetadataKeyUserLimit:
+		return api.KeibiAdminRole
+	case MetadataKeyAllowInvite:
+		return api.KeibiAdminRole
+	case MetadataKeyWorkspaceKeySupport:
+		return api.KeibiAdminRole
+	case MetadataKeyWorkspaceMaxKeys:
+		return api.KeibiAdminRole
+	case MetadataKeyAllowedEmailDomains:
 		return api.KeibiAdminRole
 	case MetadataKeyAutoDiscoveryMethod:
 		return api.KeibiAdminRole

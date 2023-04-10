@@ -5732,6 +5732,9 @@ const docTemplate = `{
         "gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.BenchmarkSummary": {
             "type": "object",
             "properties": {
+                "checks": {
+                    "$ref": "#/definitions/types.SeverityResult"
+                },
                 "compliancyTrend": {
                     "type": "array",
                     "items": {
@@ -6295,7 +6298,7 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "result": {
-                    "$ref": "#/definitions/types.ComplianceResultSummary"
+                    "$ref": "#/definitions/types.SeverityResult"
                 },
                 "time": {
                     "type": "integer"
@@ -8037,6 +8040,10 @@ const docTemplate = `{
                 "resource_limit",
                 "connection_limit",
                 "user_limit",
+                "allow_invite",
+                "workspace_key_support",
+                "workspace_max_keys",
+                "allowed_email_domains",
                 "auto_discovery_method",
                 "describe_job_interval",
                 "health_check_job_interval",
@@ -8060,6 +8067,10 @@ const docTemplate = `{
                 "MetadataKeyResourceLimit",
                 "MetadataKeyConnectionLimit",
                 "MetadataKeyUserLimit",
+                "MetadataKeyAllowInvite",
+                "MetadataKeyWorkspaceKeySupport",
+                "MetadataKeyWorkspaceMaxKeys",
+                "MetadataKeyAllowedEmailDomains",
                 "MetadataKeyAutoDiscoveryMethod",
                 "MetadataKeyDescribeJobInterval",
                 "MetadataKeyHealthCheckJobInterval",
@@ -8832,6 +8843,29 @@ const docTemplate = `{
                 "PolicyStatusFAILED",
                 "PolicyStatusUNKNOWN"
             ]
+        },
+        "types.SeverityResult": {
+            "type": "object",
+            "properties": {
+                "criticalCount": {
+                    "type": "integer"
+                },
+                "highCount": {
+                    "type": "integer"
+                },
+                "lowCount": {
+                    "type": "integer"
+                },
+                "mediumCount": {
+                    "type": "integer"
+                },
+                "passedCount": {
+                    "type": "integer"
+                },
+                "unknownCount": {
+                    "type": "integer"
+                }
+            }
         }
     }
 }`

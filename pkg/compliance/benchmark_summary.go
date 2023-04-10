@@ -15,6 +15,7 @@ type ShortSummary struct {
 	FailedResourceIDs []string
 	ConnectionIDs     []string
 	Result            types.ComplianceResultSummary
+	Checks            types.SeverityResult
 }
 
 func GetShortSummary(client keibi.Client, db db.Database, benchmark db.Benchmark) (ShortSummary, error) {
@@ -35,6 +36,14 @@ func GetShortSummary(client keibi.Client, db db.Database, benchmark db.Benchmark
 		resp.Result.InfoCount += s.Result.InfoCount
 		resp.Result.SkipCount += s.Result.SkipCount
 		resp.Result.ErrorCount += s.Result.ErrorCount
+
+		resp.Checks.PassedCount += s.Checks.PassedCount
+		resp.Checks.UnknownCount += s.Checks.UnknownCount
+		resp.Checks.CriticalCount += s.Checks.CriticalCount
+		resp.Checks.HighCount += s.Checks.HighCount
+		resp.Checks.MediumCount += s.Checks.MediumCount
+		resp.Checks.LowCount += s.Checks.LowCount
+
 		resp.FailedResourceIDs = append(resp.FailedResourceIDs, s.FailedResourceIDs...)
 		resp.PassedResourceIDs = append(resp.PassedResourceIDs, s.PassedResourceIDs...)
 		resp.ConnectionIDs = append(resp.ConnectionIDs, s.ConnectionIDs...)
@@ -47,17 +56,27 @@ func GetShortSummary(client keibi.Client, db db.Database, benchmark db.Benchmark
 
 	for _, summ := range res {
 		for _, policy := range summ.Policies {
+			p, err := db.GetPolicy(policy.PolicyID)
+			if err != nil {
+				return resp, err
+			}
+
 			for _, resource := range policy.Resources {
 				switch resource.Result {
 				case types.ComplianceResultOK:
+					resp.Checks.PassedCount++
 					resp.Result.OkCount++
 				case types.ComplianceResultALARM:
+					resp.Checks.IncreaseBySeverity(p.Severity)
 					resp.Result.AlarmCount++
 				case types.ComplianceResultINFO:
+					resp.Checks.UnknownCount++
 					resp.Result.InfoCount++
 				case types.ComplianceResultSKIP:
+					resp.Checks.UnknownCount++
 					resp.Result.SkipCount++
 				case types.ComplianceResultERROR:
+					resp.Checks.IncreaseBySeverity(p.Severity)
 					resp.Result.ErrorCount++
 				}
 
@@ -181,7 +200,7 @@ func GetBenchmarkTree(db db.Database, client keibi.Client, b db.Benchmark) (api.
 }
 
 func (h *HttpHandler) BuildBenchmarkResultTrend(b db.Benchmark, startDate, endDate int64) ([]api.ResultDatapoint, error) {
-	trendPoints := map[int64]types.ComplianceResultSummary{}
+	trendPoints := map[int64]types.SeverityResult{}
 
 	for _, child := range b.Children {
 		childObj, err := h.db.GetBenchmark(child.ID)
@@ -196,11 +215,12 @@ func (h *HttpHandler) BuildBenchmarkResultTrend(b db.Benchmark, startDate, endDa
 
 		for _, t := range childTrend {
 			v := trendPoints[t.Time]
-			v.OkCount += t.Result.OkCount
-			v.AlarmCount += t.Result.AlarmCount
-			v.ErrorCount += t.Result.ErrorCount
-			v.InfoCount += t.Result.InfoCount
-			v.SkipCount += t.Result.SkipCount
+			v.PassedCount += t.Result.PassedCount
+			v.UnknownCount += t.Result.UnknownCount
+			v.CriticalCount += t.Result.CriticalCount
+			v.HighCount += t.Result.HighCount
+			v.MediumCount += t.Result.MediumCount
+			v.LowCount += t.Result.LowCount
 			trendPoints[t.Time] = v
 		}
 	}
@@ -212,20 +232,25 @@ func (h *HttpHandler) BuildBenchmarkResultTrend(b db.Benchmark, startDate, endDa
 
 	for _, bs := range res {
 		for _, ps := range bs.Policies {
+			p, err := h.db.GetPolicy(ps.PolicyID)
+			if err != nil {
+				return nil, err
+			}
+
 			for _, resource := range ps.Resources {
 				v := trendPoints[bs.EvaluatedAt]
 
 				switch resource.Result {
 				case types.ComplianceResultOK:
-					v.OkCount++
+					v.PassedCount++
 				case types.ComplianceResultALARM:
-					v.AlarmCount++
-				case types.ComplianceResultERROR:
-					v.ErrorCount++
+					v.IncreaseBySeverity(p.Severity)
 				case types.ComplianceResultINFO:
-					v.InfoCount++
+					v.UnknownCount++
 				case types.ComplianceResultSKIP:
-					v.SkipCount++
+					v.UnknownCount++
+				case types.ComplianceResultERROR:
+					v.IncreaseBySeverity(p.Severity)
 				}
 
 				trendPoints[bs.EvaluatedAt] = v

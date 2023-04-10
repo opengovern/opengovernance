@@ -9,7 +9,6 @@ import (
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/source"
 
-	"github.com/google/uuid"
 	"gitlab.com/keibiengine/keibi-engine/pkg/keibi-es-sdk"
 )
 
@@ -64,6 +63,37 @@ type FindingsQueryHit struct {
 	Version int64         `json:"_version,omitempty"`
 	Source  Finding       `json:"_source"`
 	Sort    []interface{} `json:"sort"`
+}
+
+func GetActiveFindings(client keibi.Client, from, size int) (*FindingsQueryResponse, error) {
+	res := make(map[string]interface{})
+	var filters []interface{}
+
+	filters = append(filters, map[string]interface{}{
+		"term": map[string]interface{}{"stateActive": true},
+	})
+	res["size"] = size
+	res["from"] = from
+
+	res["sort"] = []map[string]interface{}{
+		{
+			"_id": "desc",
+		},
+	}
+
+	res["query"] = map[string]interface{}{
+		"bool": map[string]interface{}{
+			"filter": filters,
+		},
+	}
+	b, err := json.Marshal(res)
+	if err != nil {
+		return nil, err
+	}
+
+	var resp FindingsQueryResponse
+	err = client.SearchWithTrackTotalHits(context.Background(), FindingsIndex, string(b), &resp, false)
+	return &resp, err
 }
 
 func FindingsQuery(client keibi.Client,
@@ -165,109 +195,6 @@ type Bucket struct {
 	DocCount int    `json:"doc_count"`
 }
 
-func FindingsFiltersQuery(client keibi.Client,
-	provider []source.Type,
-	resourceTypeID []string,
-	sourceID []uuid.UUID,
-	status []types.ComplianceResult,
-	benchmarkID []string,
-	policyID []string,
-	severity []string,
-) (*FindingFiltersAggregationResponse, error) {
-	terms := make(map[string]interface{})
-
-	if len(benchmarkID) > 0 {
-		terms["benchmarkID"] = benchmarkID
-	}
-
-	if len(policyID) > 0 {
-		terms["policyID"] = policyID
-	}
-
-	if len(status) > 0 {
-		terms["status"] = status
-	}
-
-	if len(severity) > 0 {
-		terms["policySeverity"] = severity
-	}
-
-	if len(sourceID) > 0 {
-		terms["sourceID"] = sourceID
-	}
-
-	if len(resourceTypeID) > 0 {
-		terms["resourceType"] = resourceTypeID
-	}
-
-	if len(provider) > 0 {
-		terms["sourceType"] = provider
-	}
-
-	root := map[string]interface{}{}
-	root["size"] = 0
-
-	benchmarkIDFilter := map[string]interface{}{
-		"terms": map[string]interface{}{"field": "benchmarkID", "size": 1000},
-	}
-	policyIDFilter := map[string]interface{}{
-		"terms": map[string]interface{}{"field": "policyID", "size": 1000},
-	}
-	statusFilter := map[string]interface{}{
-		"terms": map[string]interface{}{"field": "status", "size": 1000},
-	}
-	severityFilter := map[string]interface{}{
-		"terms": map[string]interface{}{"field": "policySeverity", "size": 1000},
-	}
-	sourceIDFilter := map[string]interface{}{
-		"terms": map[string]interface{}{"field": "sourceID", "size": 1000},
-	}
-	resourceTypeFilter := map[string]interface{}{
-		"terms": map[string]interface{}{"field": "resourceType", "size": 1000},
-	}
-	sourceTypeFilter := map[string]interface{}{
-		"terms": map[string]interface{}{"field": "sourceType", "size": 1000},
-	}
-	aggs := map[string]interface{}{
-		"benchmark_id_filter":  benchmarkIDFilter,
-		"policy_id_filter":     policyIDFilter,
-		"status_filter":        statusFilter,
-		"severity_filter":      severityFilter,
-		"source_id_filter":     sourceIDFilter,
-		"resource_type_filter": resourceTypeFilter,
-		"source_type_filter":   sourceTypeFilter,
-	}
-	root["aggs"] = aggs
-
-	boolQuery := make(map[string]interface{})
-	if terms != nil && len(terms) > 0 {
-		var filters []map[string]interface{}
-		for k, vs := range terms {
-			filters = append(filters, map[string]interface{}{
-				"terms": map[string]interface{}{
-					k: vs,
-				},
-			})
-		}
-
-		boolQuery["filter"] = filters
-	}
-	if len(boolQuery) > 0 {
-		root["query"] = map[string]interface{}{
-			"bool": boolQuery,
-		}
-	}
-
-	queryBytes, err := json.Marshal(root)
-	if err != nil {
-		return nil, err
-	}
-
-	var resp FindingFiltersAggregationResponse
-	err = client.Search(context.Background(), FindingsIndex, string(queryBytes), &resp)
-	return &resp, err
-}
-
 type FindingsTopFieldResponse struct {
 	Aggregations FindingsTopFieldAggregations `json:"aggregations"`
 }
@@ -315,6 +242,8 @@ func FindingsTopFieldQuery(client keibi.Client,
 	if len(provider) > 0 {
 		terms["sourceType"] = provider
 	}
+
+	terms["stateActive"] = true
 
 	root := map[string]interface{}{}
 	root["size"] = 0
