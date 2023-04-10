@@ -5504,6 +5504,9 @@ const docTemplate = `{
         "gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.BenchmarkSummary": {
             "type": "object",
             "properties": {
+                "checks": {
+                    "$ref": "#/definitions/types.SeverityResult"
+                },
                 "compliancyTrend": {
                     "type": "array",
                     "items": {
@@ -6067,7 +6070,7 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "result": {
-                    "$ref": "#/definitions/types.ComplianceResultSummary"
+                    "$ref": "#/definitions/types.SeverityResult"
                 },
                 "time": {
                     "type": "integer"
@@ -8604,6 +8607,29 @@ const docTemplate = `{
                 "PolicyStatusFAILED",
                 "PolicyStatusUNKNOWN"
             ]
+        },
+        "types.SeverityResult": {
+            "type": "object",
+            "properties": {
+                "criticalCount": {
+                    "type": "integer"
+                },
+                "highCount": {
+                    "type": "integer"
+                },
+                "lowCount": {
+                    "type": "integer"
+                },
+                "mediumCount": {
+                    "type": "integer"
+                },
+                "passedCount": {
+                    "type": "integer"
+                },
+                "unknownCount": {
+                    "type": "integer"
+                }
+            }
         }
     }
 }`

@@ -305,7 +305,7 @@ func (h *HttpHandler) GetBenchmarksSummary(ctx echo.Context) error {
 		for _, v := range trend {
 			ctrend = append(ctrend, api.Datapoint{
 				Time:  v.Time,
-				Value: int64(v.Result.OkCount),
+				Value: int64(v.Result.PassedCount),
 			})
 		}
 
@@ -317,6 +317,7 @@ func (h *HttpHandler) GetBenchmarksSummary(ctx echo.Context) error {
 			Tags:            be.Tags,
 			Enabled:         b.Enabled,
 			Result:          s.Result,
+			Checks:          s.Checks,
 			Coverage:        coverage,
 			CompliancyTrend: ctrend,
 			PassedResources: int64(len(s.PassedResourceIDs)),
@@ -406,6 +407,7 @@ func (h *HttpHandler) GetBenchmarkSummary(ctx echo.Context) error {
 		Tags:            be.Tags,
 		Enabled:         benchmark.Enabled,
 		Result:          s.Result,
+		Checks:          s.Checks,
 		Coverage:        coverage,
 		PassedResources: int64(len(s.PassedResourceIDs)),
 		FailedResources: int64(len(s.FailedResourceIDs)),

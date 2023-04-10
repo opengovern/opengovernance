@@ -136,6 +136,7 @@ type BenchmarkSummary struct {
 	Tags            map[string]string             `json:"tags"`
 	Enabled         bool                          `json:"enabled"`
 	Result          types.ComplianceResultSummary `json:"result"`
+	Checks          types.SeverityResult          `json:"checks"`
 	Coverage        float64                       `json:"coverage"`
 	CompliancyTrend []Datapoint                   `json:"compliancyTrend"`
 
@@ -144,8 +145,8 @@ type BenchmarkSummary struct {
 }
 
 type ResultDatapoint struct {
-	Time   int64                         `json:"time"`
-	Result types.ComplianceResultSummary `json:"result"`
+	Time   int64                `json:"time"`
+	Result types.SeverityResult `json:"result"`
 }
 
 type BenchmarkResultTrend struct {
