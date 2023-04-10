@@ -2,6 +2,7 @@ package describer
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/iam"
@@ -773,6 +774,114 @@ func IAMUser(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 					MFADevices:         devices,
 				},
 			})
+		}
+	}
+
+	return values, nil
+}
+
+func IAMPolicyAttachment(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+	client := iam.NewFromConfig(cfg)
+	paginator := iam.NewListPoliciesPaginator(client, &iam.ListPoliciesInput{
+		OnlyAttached: false,
+		Scope:        types.PolicyScopeTypeAll,
+	})
+
+	var values []Resource
+	for paginator.HasMorePages() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, policy := range page.Policies {
+			attachmentPaginator := iam.NewListEntitiesForPolicyPaginator(client, &iam.ListEntitiesForPolicyInput{
+				PolicyArn: policy.Arn,
+			})
+
+			var policyGroups []types.PolicyGroup
+			var policyRoles []types.PolicyRole
+			var policyUsers []types.PolicyUser
+			for attachmentPaginator.HasMorePages() {
+				attachmentPage, err := attachmentPaginator.NextPage(ctx)
+				if err != nil {
+					return nil, err
+				}
+
+				policyGroups = append(policyGroups, attachmentPage.PolicyGroups...)
+				policyRoles = append(policyRoles, attachmentPage.PolicyRoles...)
+				policyUsers = append(policyUsers, attachmentPage.PolicyUsers...)
+			}
+			values = append(values, Resource{
+				Name: fmt.Sprintf("%s - Attachments", *policy.Arn),
+				Description: model.IAMPolicyAttachmentDescription{
+					PolicyArn:             *policy.Arn,
+					PolicyAttachmentCount: *policy.AttachmentCount,
+					IsAttached:            *policy.AttachmentCount > 0,
+					PolicyGroups:          policyGroups,
+					PolicyRoles:           policyRoles,
+					PolicyUsers:           policyUsers,
+				},
+			})
+		}
+	}
+
+	return values, nil
+}
+
+func IAMSamlProvider(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+	client := iam.NewFromConfig(cfg)
+	output, err := client.ListSAMLProviders(ctx, &iam.ListSAMLProvidersInput{})
+	if err != nil {
+		return nil, err
+	}
+
+	var values []Resource
+	for _, v := range output.SAMLProviderList {
+		samlProvider, err := client.GetSAMLProvider(ctx, &iam.GetSAMLProviderInput{
+			SAMLProviderArn: v.Arn,
+		})
+		if err != nil {
+			return nil, err
+		}
+		values = append(values, Resource{
+			ARN: *v.Arn,
+			Description: model.IAMSamlProviderDescription{
+				SamlProvider: *samlProvider,
+			},
+		})
+	}
+
+	return values, nil
+}
+
+func IAMServiceSpecificCredential(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+	client := iam.NewFromConfig(cfg)
+	paginator := iam.NewListUsersPaginator(client, &iam.ListUsersInput{})
+
+	var values []Resource
+	for paginator.HasMorePages() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, user := range page.Users {
+			serviceSpecificCredentials, err := client.ListServiceSpecificCredentials(ctx, &iam.ListServiceSpecificCredentialsInput{
+				UserName: user.UserName,
+			})
+			if err != nil {
+				return nil, err
+			}
+
+			for _, credential := range serviceSpecificCredentials.ServiceSpecificCredentials {
+				values = append(values, Resource{
+					ID: *credential.ServiceSpecificCredentialId,
+					Description: model.IAMServiceSpecificCredentialDescription{
+						ServiceSpecificCredential: credential,
+					},
+				})
+			}
 		}
 	}
 

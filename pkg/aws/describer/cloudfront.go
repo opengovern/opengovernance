@@ -90,3 +90,198 @@ func CloudFrontOriginAccessControl(ctx context.Context, cfg aws.Config) ([]Resou
 
 	return values, nil
 }
+
+func CloudFrontCachePolicy(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+	describeCtx := GetDescribeContext(ctx)
+	client := cloudfront.NewFromConfig(cfg)
+
+	var values []Resource
+	err := PaginateRetrieveAll(func(prevToken *string) (nextToken *string, err error) {
+		output, err := client.ListCachePolicies(ctx, &cloudfront.ListCachePoliciesInput{
+			Marker:   prevToken,
+			MaxItems: aws.Int32(1000),
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range output.CachePolicyList.Items {
+			arn := fmt.Sprintf("arn:%s:cloudfront::%s:cache-policy/%s", describeCtx.Partition, describeCtx.AccountID, *v.CachePolicy.Id)
+
+			cachePolicy, err := client.GetCachePolicy(ctx, &cloudfront.GetCachePolicyInput{
+				Id: v.CachePolicy.Id,
+			})
+			if err != nil {
+				return nil, err
+			}
+
+			values = append(values, Resource{
+				ARN: arn,
+				ID:  *v.CachePolicy.Id,
+				Description: model.CloudFrontCachePolicyDescription{
+					CachePolicy: *cachePolicy,
+				},
+			})
+		}
+		return output.CachePolicyList.NextMarker, nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return values, nil
+}
+
+func CloudFrontFunction(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+	//describeCtx := GetDescribeContext(ctx)
+	client := cloudfront.NewFromConfig(cfg)
+
+	var values []Resource
+	err := PaginateRetrieveAll(func(prevToken *string) (nextToken *string, err error) {
+		output, err := client.ListFunctions(ctx, &cloudfront.ListFunctionsInput{
+			Marker:   prevToken,
+			MaxItems: aws.Int32(1000),
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range output.FunctionList.Items {
+			function, err := client.DescribeFunction(ctx, &cloudfront.DescribeFunctionInput{
+				Name:  v.Name,
+				Stage: v.FunctionMetadata.Stage,
+			})
+			if err != nil {
+				return nil, err
+			}
+
+			values = append(values, Resource{
+				ARN:  *function.FunctionSummary.FunctionMetadata.FunctionARN,
+				Name: *function.FunctionSummary.Name,
+				Description: model.CloudFrontFunctionDescription{
+					Function: *function,
+				},
+			})
+		}
+		return output.FunctionList.NextMarker, nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return values, nil
+}
+
+func CloudFrontOriginAccessIdentity(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+	describeCtx := GetDescribeContext(ctx)
+	client := cloudfront.NewFromConfig(cfg)
+	var values []Resource
+	paginator := cloudfront.NewListCloudFrontOriginAccessIdentitiesPaginator(client, &cloudfront.ListCloudFrontOriginAccessIdentitiesInput{})
+	for paginator.HasMorePages() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, item := range page.CloudFrontOriginAccessIdentityList.Items {
+			arn := fmt.Sprintf("arn:%s:cloudfront::%s:origin-access-identity/%s", describeCtx.Partition, describeCtx.AccountID, *item.Id)
+
+			originAccessIdentity, err := client.GetCloudFrontOriginAccessIdentity(ctx, &cloudfront.GetCloudFrontOriginAccessIdentityInput{
+				Id: item.Id,
+			})
+			if err != nil {
+				return nil, err
+			}
+
+			values = append(values, Resource{
+				ARN:  arn,
+				Name: *item.Id,
+				Description: model.CloudFrontOriginAccessIdentityDescription{
+					OriginAccessIdentity: *originAccessIdentity,
+				},
+			})
+		}
+	}
+
+	return values, nil
+}
+
+func CloudFrontOriginRequestPolicy(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+	describeCtx := GetDescribeContext(ctx)
+	client := cloudfront.NewFromConfig(cfg)
+	var values []Resource
+	err := PaginateRetrieveAll(func(prevToken *string) (nextToken *string, err error) {
+		output, err := client.ListOriginRequestPolicies(ctx, &cloudfront.ListOriginRequestPoliciesInput{
+			Marker:   prevToken,
+			MaxItems: aws.Int32(1000),
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range output.OriginRequestPolicyList.Items {
+			arn := fmt.Sprintf("arn:%s:cloudfront::%s:origin-request-policy/%s", describeCtx.Partition, describeCtx.AccountID, *v.OriginRequestPolicy.Id)
+
+			policy, err := client.GetOriginRequestPolicy(ctx, &cloudfront.GetOriginRequestPolicyInput{
+				Id: v.OriginRequestPolicy.Id,
+			})
+			if err != nil {
+				return nil, err
+			}
+
+			values = append(values, Resource{
+				ARN: arn,
+				ID:  *policy.OriginRequestPolicy.Id,
+				Description: model.CloudFrontOriginRequestPolicyDescription{
+					OriginRequestPolicy: *policy,
+				},
+			})
+		}
+		return output.OriginRequestPolicyList.NextMarker, nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return values, nil
+}
+
+func CloudFrontResponseHeadersPolicy(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+	describeCtx := GetDescribeContext(ctx)
+	client := cloudfront.NewFromConfig(cfg)
+	var values []Resource
+	err := PaginateRetrieveAll(func(prevToken *string) (nextToken *string, err error) {
+		output, err := client.ListResponseHeadersPolicies(ctx, &cloudfront.ListResponseHeadersPoliciesInput{
+			Marker:   prevToken,
+			MaxItems: aws.Int32(1000),
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range output.ResponseHeadersPolicyList.Items {
+			arn := fmt.Sprintf("arn:%s:cloudfront::%s:response-headers-policy/%s", describeCtx.Partition, describeCtx.AccountID, *v.ResponseHeadersPolicy.Id)
+
+			policy, err := client.GetResponseHeadersPolicy(ctx, &cloudfront.GetResponseHeadersPolicyInput{
+				Id: v.ResponseHeadersPolicy.Id,
+			})
+			if err != nil {
+				return nil, err
+			}
+
+			values = append(values, Resource{
+				ARN: arn,
+				ID:  *policy.ResponseHeadersPolicy.Id,
+				Description: model.CloudFrontResponseHeadersPolicyDescription{
+					ResponseHeadersPolicy: *policy,
+				},
+			})
+		}
+		return output.ResponseHeadersPolicyList.NextMarker, nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return values, nil
+}

@@ -2,6 +2,8 @@ package describer
 
 import (
 	"context"
+	"fmt"
+	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
@@ -247,6 +249,75 @@ func DynamoDbGlobalTable(ctx context.Context, cfg aws.Config) ([]Resource, error
 			break
 		}
 		last = globalTables.LastEvaluatedGlobalTableName
+	}
+
+	return values, nil
+}
+
+func DynamoDbTableExport(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+	client := dynamodb.NewFromConfig(cfg)
+	paginator := dynamodb.NewListExportsPaginator(client, &dynamodb.ListExportsInput{})
+
+	var values []Resource
+	for paginator.HasMorePages() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, exportSummary := range page.ExportSummaries {
+			export, err := client.DescribeExport(ctx, &dynamodb.DescribeExportInput{
+				ExportArn: exportSummary.ExportArn,
+			})
+			if err != nil {
+				return nil, err
+			}
+
+			values = append(values, Resource{
+				ARN: *export.ExportDescription.ExportArn,
+				Description: model.DynamoDbTableExportDescription{
+					Export: *export.ExportDescription,
+				},
+			})
+		}
+	}
+
+	return values, nil
+}
+
+func DynamoDBMetricAccountProvisionedReadCapacityUtilization(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+	metrics, err := listCloudWatchMetricStatistics(ctx, cfg, "5_MIN", "AWS/DynamoDB", "AccountProvisionedWriteCapacityUtilization", "", "")
+	if err != nil {
+		return nil, err
+	}
+
+	var values []Resource
+	for _, metric := range metrics {
+		values = append(values, Resource{
+			ID: fmt.Sprintf("dynamodb-metric-account-provisioned-read-capacity-utilization-%s-%s-%s", *metric.DimensionName, *metric.DimensionValue, metric.Timestamp.Format(time.RFC3339)),
+			Description: model.DynamoDBMetricAccountProvisionedReadCapacityUtilizationDescription{
+				CloudWatchMetricRow: metric,
+			},
+		})
+	}
+
+	return values, nil
+}
+
+func DynamoDBMetricAccountProvisionedWriteCapacityUtilization(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+	metrics, err := listCloudWatchMetricStatistics(ctx, cfg, "5_MIN", "AWS/DynamoDB", "AccountProvisionedWriteCapacityUtilization", "", "")
+	if err != nil {
+		return nil, err
+	}
+
+	var values []Resource
+	for _, metric := range metrics {
+		values = append(values, Resource{
+			ID: fmt.Sprintf("dynamodb-metric-account-provisioned-write-capacity-utilization-%s-%s-%s", *metric.DimensionName, *metric.DimensionValue, metric.Timestamp.Format(time.RFC3339)),
+			Description: model.DynamoDBMetricAccountProvisionedWriteCapacityUtilizationDescription{
+				CloudWatchMetricRow: metric,
+			},
+		})
 	}
 
 	return values, nil

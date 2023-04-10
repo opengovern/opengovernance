@@ -311,6 +311,85 @@ func ECSContainerInstance(ctx context.Context, cfg aws.Config) ([]Resource, erro
 	return values, nil
 }
 
+func ECSTask(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+	clusters, err := listEcsClusters(ctx, cfg)
+	if err != nil {
+		return nil, err
+	}
+
+	client := ecs.NewFromConfig(cfg)
+	var values []Resource
+
+	for _, cluster := range clusters {
+		cluster := cluster
+		services, err := listECsServices(ctx, cfg, cluster)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, service := range services {
+			service := service
+			paginator := ecs.NewListTasksPaginator(client, &ecs.ListTasksInput{
+				Cluster:     &cluster,
+				ServiceName: &service,
+			})
+			for paginator.HasMorePages() {
+				page, err := paginator.NextPage(ctx)
+				if err != nil {
+					return nil, err
+				}
+
+				if page.TaskArns == nil || len(page.TaskArns) == 0 {
+					continue
+				}
+				output, err := client.DescribeTasks(ctx, &ecs.DescribeTasksInput{
+					Cluster: &cluster,
+					Tasks:   page.TaskArns,
+				})
+				if err != nil {
+					return nil, err
+				}
+				if len(output.Failures) != 0 {
+					return nil, failuresToError(output.Failures)
+				}
+				taskProtections, err := client.GetTaskProtection(ctx, &ecs.GetTaskProtectionInput{
+					Cluster: &cluster,
+					Tasks:   page.TaskArns,
+				})
+				if err != nil {
+					return nil, err
+				}
+				if len(taskProtections.Failures) != 0 {
+					return nil, failuresToError(output.Failures)
+				}
+
+				taskProtectionMap := make(map[string]types.ProtectedTask)
+				for _, taskProtection := range taskProtections.ProtectedTasks {
+					taskProtectionMap[*taskProtection.TaskArn] = taskProtection
+				}
+
+				for _, v := range output.Tasks {
+					description := model.ECSTaskDescription{
+						Task:           v,
+						ServiceName:    service,
+						TaskProtection: nil,
+					}
+					if taskProtection, ok := taskProtectionMap[*v.TaskArn]; ok {
+						description.TaskProtection = &taskProtection
+					}
+					values = append(values, Resource{
+						ARN:         *v.TaskArn,
+						Name:        *v.TaskArn,
+						Description: description,
+					})
+				}
+			}
+		}
+	}
+
+	return values, nil
+}
+
 func failuresToError(failures []types.Failure) error {
 	var errs []string
 	for _, f := range failures {
