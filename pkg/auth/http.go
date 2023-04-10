@@ -88,17 +88,17 @@ func (r *httpRoutes) GetRoleDetails(ctx echo.Context) error {
 
 	var description = []api.RolesDescription{{
 		Role:        api.AdminRole,
-		Description: "",
+		Description: "The Administrator role is a super user role with all of the capabilities that can be assigned to a role, and its enables access to all data & configuration on a Kaytu Workspace. You cannot edit or delete the Administrator role",
 		UserCount:   AdminCount,
 	},
 		{
 			Role:        api.ViewerRole,
-			Description: "",
+			Description: "View all resources, but does not allow you to make any changes or trigger any action (running asset discovery) ",
 			UserCount:   ViewerCount,
 		},
 		{
 			Role:        api.EditorRole,
-			Description: "",
+			Description: "Provide full access to manage all capabilities in a workspace, with three exceptions: Changing Workspace Settings, Modifying Integrations, and making changes to user access controls.",
 			UserCount:   EditorCount,
 		},
 	}

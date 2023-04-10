@@ -30,49 +30,58 @@ var aboutCmd = &cobra.Command{
 		if errJm != nil {
 			panic(errJm)
 		}
-		err := RequestAbout(dataAccessToken.AccessToken)
+		errFunc, bodyResponse := RequestAbout(dataAccessToken.AccessToken)
+		if errFunc != nil {
+			panic(errFunc)
+		}
+		response := ResponseAbout{}
+		errJson := json.Unmarshal(bodyResponse, &response)
+		if errJson != nil {
+			panic(errJson)
+		}
+		typeOutput, err := cmd.Flags().GetString("output")
 		if err != nil {
 			panic(err)
+		}
+		if typeOutput == "json" {
+			fmt.Println(string(bodyResponse))
+		} else if typeOutput == "table" {
+			tableAbout := table.NewWriter()
+			tableAbout.SetOutputMirror(os.Stdout)
+			tableAbout.AppendHeader(table.Row{"", "email", "email_verified", "sub"})
+			tableAbout.AppendRows([]table.Row{
+				{"", response.Email, response.EmailVerified, response.Sub},
+			})
+			tableAbout.AppendSeparator()
+			tableAbout.Render()
+		} else {
+			fmt.Printf("email : %v , email_verified : %v,sub : %v", response.Email, response.EmailVerified, response.Sub)
 		}
 	},
 }
 
 func init() {
 	rootCmd.AddCommand(aboutCmd)
+	aboutCmd.PersistentFlags().String("output", "", "can use this flag for specify the output type .")
+
 }
 
-func RequestAbout(accessToken string) error {
+func RequestAbout(accessToken string) (error, []byte) {
 	req, errReq := http.NewRequest("GET", urls.UrlAbout, nil)
 	if errReq != nil {
 		fmt.Println("error relate to request for about :")
-		return errReq
+		return errReq, nil
 	}
 	req.Header.Set("Authorization", "Bearer "+accessToken)
 	res, errRes := http.DefaultClient.Do(req)
 	if errRes != nil {
 		fmt.Println("error relate to response in about : ")
-		return errRes
+		return errRes, nil
 	}
 	body, err := io.ReadAll(res.Body)
 	if err != nil {
 		fmt.Println("error relate to reading response in about : ")
-		return err
+		return err, nil
 	}
-	fmt.Println(string(body))
-	response := ResponseAbout{}
-	errJson := json.Unmarshal(body, &response)
-	if errJson != nil {
-		fmt.Println("error belong to unmarshal response about : ")
-		return errJson
-	}
-
-	tableAbout := table.NewWriter()
-	tableAbout.SetOutputMirror(os.Stdout)
-	tableAbout.AppendHeader(table.Row{"", "email", "email_verified", "sub"})
-	tableAbout.AppendRows([]table.Row{
-		{"", response.Email, response.EmailVerified, response.Sub},
-	})
-	tableAbout.AppendSeparator()
-	tableAbout.Render()
-	return nil
+	return nil, body
 }
