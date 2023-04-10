@@ -9,9 +9,13 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"reflect"
 	"strconv"
 	"strings"
 	"time"
+
+	metadataClient "gitlab.com/keibiengine/keibi-engine/pkg/metadata/client"
+	"gitlab.com/keibiengine/keibi-engine/pkg/metadata/models"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/auth/db"
 
@@ -41,6 +45,7 @@ type httpRoutes struct {
 	emailService    email.Service
 	workspaceClient client.WorkspaceServiceClient
 	auth0Service    *auth0.Service
+	metadataService metadataClient.MetadataServiceClient
 	keibiPrivateKey *rsa.PrivateKey
 	db              db.Database
 }
@@ -105,6 +110,24 @@ func (r httpRoutes) PutRoleBinding(ctx echo.Context) error {
 	auth0User, err := r.auth0Service.GetUser(req.UserID)
 	if err != nil {
 		return err
+	}
+
+	if _, ok := auth0User.AppMetadata.WorkspaceAccess[workspaceID]; !ok {
+		hctx := httpclient.FromEchoContext(ctx)
+		cnf, err := r.metadataService.GetConfigMetadata(hctx, models.MetadataKeyUserLimit)
+		if err != nil {
+			return err
+		}
+		maxUsers := cnf.GetValue().(int)
+
+		users, err := r.auth0Service.SearchUsersByWorkspace(workspaceID)
+		if err != nil {
+			return err
+		}
+
+		if len(users)+1 > maxUsers {
+			return echo.NewHTTPError(http.StatusNotAcceptable, "cannot invite new user, max users reached")
+		}
 	}
 
 	auth0User.AppMetadata.WorkspaceAccess[workspaceID] = req.Role
@@ -277,6 +300,54 @@ func (r *httpRoutes) Invite(ctx echo.Context) error {
 	}
 	workspaceID := httpserver.GetWorkspaceID(ctx)
 
+	hctx := httpclient.FromEchoContext(ctx)
+	cnf, err := r.metadataService.GetConfigMetadata(hctx, models.MetadataKeyAllowInvite)
+	if err != nil {
+		return err
+	}
+	allowInvite := cnf.GetValue().(bool)
+	if !allowInvite {
+		return echo.NewHTTPError(http.StatusNotAcceptable, "invite not allowed")
+	}
+
+	cnf, err = r.metadataService.GetConfigMetadata(hctx, models.MetadataKeyUserLimit)
+	if err != nil {
+		return err
+	}
+	maxUsers := cnf.GetValue().(int)
+
+	users, err := r.auth0Service.SearchUsersByWorkspace(workspaceID)
+	if err != nil {
+		return err
+	}
+	if len(users)+1 > maxUsers {
+		return echo.NewHTTPError(http.StatusNotAcceptable, "cannot invite new user, max users reached")
+	}
+
+	cnf, err = r.metadataService.GetConfigMetadata(hctx, models.MetadataKeyAllowedEmailDomains)
+	if err != nil {
+		return err
+	}
+
+	if allowedEmailDomains, ok := cnf.GetValue().([]string); ok {
+		passed := false
+		if len(allowedEmailDomains) > 0 {
+			for _, domain := range allowedEmailDomains {
+				if strings.HasSuffix(req.Email, domain) {
+					passed = true
+				}
+			}
+		} else {
+			passed = true
+		}
+
+		if !passed {
+			return echo.NewHTTPError(http.StatusNotAcceptable, "email domain not allowed")
+		}
+	} else {
+		fmt.Printf("failed to parse allowed domains, type: %s, value: %v", reflect.TypeOf(cnf.GetValue()).Name(), cnf.GetValue())
+	}
+
 	us, err := r.auth0Service.SearchByEmail(req.Email)
 	if err != nil {
 		return err
@@ -331,6 +402,16 @@ func (r *httpRoutes) CreateAPIKey(ctx echo.Context) error {
 	userID := httpserver.GetUserID(ctx)
 	workspaceID := httpserver.GetWorkspaceID(ctx)
 
+	hctx := httpclient.FromEchoContext(ctx)
+	cnf, err := r.metadataService.GetConfigMetadata(hctx, models.MetadataKeyWorkspaceKeySupport)
+	if err != nil {
+		return err
+	}
+	keySupport := cnf.GetValue().(bool)
+	if !keySupport {
+		return echo.NewHTTPError(http.StatusNotAcceptable, "keys are not supported in this workspace")
+	}
+
 	var req api.CreateAPIKeyRequest
 	if err := bindValidate(ctx, &req); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err)
@@ -367,6 +448,20 @@ func (r *httpRoutes) CreateAPIKey(ctx echo.Context) error {
 		return err
 	}
 	keyHash := hex.EncodeToString(hash.Sum(nil))
+
+	currentKeyCount, err := r.db.CountApiKeys(workspaceID)
+	if err != nil {
+		return err
+	}
+
+	cnf, err = r.metadataService.GetConfigMetadata(hctx, models.MetadataKeyWorkspaceMaxKeys)
+	if err != nil {
+		return err
+	}
+	maxKeys := cnf.GetValue().(int)
+	if currentKeyCount+1 > int64(maxKeys) {
+		return echo.NewHTTPError(http.StatusNotAcceptable, "maximum number of keys in workspace reached")
+	}
 
 	apikey := db.ApiKey{
 		Name:          req.Name,
