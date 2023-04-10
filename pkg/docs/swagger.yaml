@@ -214,6 +214,8 @@ definitions:
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.BenchmarkSummary:
     properties:
+      checks:
+        $ref: '#/definitions/types.SeverityResult'
       compliancyTrend:
         items:
           $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.Datapoint'
@@ -587,7 +589,7 @@ definitions:
   gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.ResultDatapoint:
     properties:
       result:
-        $ref: '#/definitions/types.ComplianceResultSummary'
+        $ref: '#/definitions/types.SeverityResult'
       time:
         type: integer
     type: object
@@ -2360,6 +2362,21 @@ definitions:
     - PolicyStatusPASSED
     - PolicyStatusFAILED
     - PolicyStatusUNKNOWN
+  types.SeverityResult:
+    properties:
+      criticalCount:
+        type: integer
+      highCount:
+        type: integer
+      lowCount:
+        type: integer
+      mediumCount:
+        type: integer
+      passedCount:
+        type: integer
+      unknownCount:
+        type: integer
+    type: object
 host: dev-cluster.keibi.io
 info:
   contact: {}
