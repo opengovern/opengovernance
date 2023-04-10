@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
@@ -1337,29 +1338,6 @@ func EC2TransitGateway(ctx context.Context, cfg aws.Config) ([]Resource, error) 
 	return values, nil
 }
 
-func EC2TransitGatewayAttachment(ctx context.Context, cfg aws.Config) ([]Resource, error) {
-	client := ec2.NewFromConfig(cfg)
-	paginator := ec2.NewDescribeTransitGatewayAttachmentsPaginator(client, &ec2.DescribeTransitGatewayAttachmentsInput{})
-
-	var values []Resource
-	for paginator.HasMorePages() {
-		page, err := paginator.NextPage(ctx)
-		if err != nil {
-			return nil, err
-		}
-
-		for _, v := range page.TransitGatewayAttachments {
-			values = append(values, Resource{
-				ID:          *v.TransitGatewayAttachmentId,
-				Name:        *v.TransitGatewayAttachmentId,
-				Description: v,
-			})
-		}
-	}
-
-	return values, nil
-}
-
 func EC2TransitGatewayConnect(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	client := ec2.NewFromConfig(cfg)
 	paginator := ec2.NewDescribeTransitGatewayConnectsPaginator(client, &ec2.DescribeTransitGatewayConnectsInput{})
@@ -1791,6 +1769,49 @@ func EC2Region(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	return values, nil
 }
 
+func EC2AvailabilityZone(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+	client := ec2.NewFromConfig(cfg)
+	describeCtx := GetDescribeContext(ctx)
+
+	regionsOutput, err := client.DescribeRegions(ctx, &ec2.DescribeRegionsInput{
+		AllRegions: aws.Bool(true),
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	var values []Resource
+	for _, region := range regionsOutput.Regions {
+		if region.OptInStatus != nil && *region.OptInStatus != "not-opted-in" {
+			continue
+		}
+		output, err := client.DescribeAvailabilityZones(ctx, &ec2.DescribeAvailabilityZonesInput{
+			AllAvailabilityZones: aws.Bool(true),
+			Filters: []types.Filter{
+				{
+					Name:   aws.String("region-name"),
+					Values: []string{*region.RegionName},
+				},
+			},
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range output.AvailabilityZones {
+			arn := fmt.Sprintf("arn:%s::%s::availability-zone/%s", describeCtx.Partition, *region.RegionName, *v.ZoneName)
+			values = append(values, Resource{
+				ARN:  arn,
+				Name: *v.RegionName,
+				Description: model.EC2AvailabilityZoneDescription{
+					AvailabilityZone: v,
+				},
+			})
+		}
+	}
+	return values, nil
+}
+
 func EC2KeyPair(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	describeCtx := GetDescribeContext(ctx)
 
@@ -1952,6 +1973,370 @@ func EC2Ipam(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 					Ipam: v,
 				},
 			})
+		}
+	}
+
+	return values, nil
+}
+
+func EC2InstanceAvailability(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+	describeCtx := GetDescribeContext(ctx)
+	client := ec2.NewFromConfig(cfg)
+	paginator := ec2.NewDescribeInstanceTypeOfferingsPaginator(client, &ec2.DescribeInstanceTypeOfferingsInput{})
+
+	var values []Resource
+	for paginator.HasMorePages() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page.InstanceTypeOfferings {
+			arn := fmt.Sprintf("arn:%s:ec2:%s::instance-type/%s", describeCtx.Partition, *v.Location, v.InstanceType)
+			values = append(values, Resource{
+				ARN:  arn,
+				Name: fmt.Sprintf("%s (%s)", v.InstanceType, *v.Location),
+				Description: model.EC2InstanceAvailabilityDescription{
+					InstanceAvailability: v,
+				},
+			})
+		}
+	}
+
+	return values, nil
+}
+
+func EC2InstanceType(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+	describeCtx := GetDescribeContext(ctx)
+	client := ec2.NewFromConfig(cfg)
+	paginator := ec2.NewDescribeInstanceTypesPaginator(client, &ec2.DescribeInstanceTypesInput{})
+
+	var values []Resource
+	for paginator.HasMorePages() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page.InstanceTypes {
+			arn := fmt.Sprintf("arn:%s:ec2:::instance-type/%s", describeCtx.Partition, v.InstanceType)
+			values = append(values, Resource{
+				ARN:  arn,
+				Name: string(v.InstanceType),
+				Description: model.EC2InstanceTypeDescription{
+					InstanceType: v,
+				},
+			})
+		}
+	}
+
+	return values, nil
+}
+
+func EC2ManagedPrefixList(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+	client := ec2.NewFromConfig(cfg)
+	paginator := ec2.NewDescribeManagedPrefixListsPaginator(client, &ec2.DescribeManagedPrefixListsInput{})
+
+	var values []Resource
+	for paginator.HasMorePages() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page.PrefixLists {
+			values = append(values, Resource{
+				ARN:  *v.PrefixListArn,
+				Name: *v.PrefixListName,
+				Description: model.EC2ManagedPrefixListDescription{
+					ManagedPrefixList: v,
+				},
+			})
+		}
+	}
+
+	return values, nil
+}
+
+func EC2SpotPrice(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+	client := ec2.NewFromConfig(cfg)
+	paginator := ec2.NewDescribeSpotPriceHistoryPaginator(client, &ec2.DescribeSpotPriceHistoryInput{})
+
+	var values []Resource
+	for paginator.HasMorePages() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page.SpotPriceHistory {
+			values = append(values, Resource{
+				Name: fmt.Sprintf("%s-%s (%s)", v.InstanceType, *v.SpotPrice, *v.AvailabilityZone),
+				Description: model.EC2SpotPriceDescription{
+					SpotPrice: v,
+				},
+			})
+		}
+	}
+
+	return values, nil
+}
+
+func EC2TransitGatewayRoute(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+	describeCtx := GetDescribeContext(ctx)
+	client := ec2.NewFromConfig(cfg)
+	paginator := ec2.NewDescribeTransitGatewayRouteTablesPaginator(client, &ec2.DescribeTransitGatewayRouteTablesInput{})
+
+	var values []Resource
+	for paginator.HasMorePages() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, transitGatewayRouteTable := range page.TransitGatewayRouteTables {
+			routes, err := client.SearchTransitGatewayRoutes(ctx, &ec2.SearchTransitGatewayRoutesInput{
+				Filters: []types.Filter{
+					{
+						Name:   aws.String("state"),
+						Values: []string{"active", "blackhole", "pending"},
+					},
+				},
+				TransitGatewayRouteTableId: transitGatewayRouteTable.TransitGatewayRouteTableId,
+			})
+			if err != nil {
+				return nil, err
+			}
+			for _, route := range routes.Routes {
+				arn := fmt.Sprintf("arn:%s:ec2:%s:%s:transit-gateway-route-table/%s:%s", describeCtx.Partition, describeCtx.Region, describeCtx.AccountID, *transitGatewayRouteTable.TransitGatewayRouteTableId, *route.DestinationCidrBlock)
+				values = append(values, Resource{
+					ARN:  arn,
+					Name: *route.DestinationCidrBlock,
+					Description: model.EC2TransitGatewayRouteDescription{
+						TransitGatewayRoute:        route,
+						TransitGatewayRouteTableId: *transitGatewayRouteTable.TransitGatewayRouteTableId,
+					},
+				})
+			}
+		}
+	}
+
+	return values, nil
+}
+
+func EC2TransitGatewayAttachment(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+	describeCtx := GetDescribeContext(ctx)
+	client := ec2.NewFromConfig(cfg)
+	paginator := ec2.NewDescribeTransitGatewayAttachmentsPaginator(client, &ec2.DescribeTransitGatewayAttachmentsInput{})
+
+	var values []Resource
+	for paginator.HasMorePages() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page.TransitGatewayAttachments {
+			arn := fmt.Sprintf("arn:%s:ec2:%s:%s:transit-gateway-attachment/%s", describeCtx.Partition, describeCtx.Region, describeCtx.AccountID, *v.TransitGatewayAttachmentId)
+			values = append(values, Resource{
+				ID:  *v.TransitGatewayAttachmentId,
+				ARN: arn,
+				Description: model.EC2TransitGatewayAttachmentDescription{
+					TransitGatewayAttachment: v,
+				},
+			})
+		}
+	}
+
+	return values, nil
+}
+
+func EbsVolumeMetricReadOps(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+	client := ec2.NewFromConfig(cfg)
+	paginator := ec2.NewDescribeVolumesPaginator(client, &ec2.DescribeVolumesInput{
+		MaxResults: aws.Int32(500),
+	})
+
+	var values []Resource
+	for paginator.HasMorePages() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page.Volumes {
+			metrics, err := listCloudWatchMetricStatistics(ctx, cfg, "5_MIN", "AWS/EBS", "VolumeReadOps", "VolumeId", *v.VolumeId)
+			if err != nil {
+				return nil, err
+			}
+			for _, metric := range metrics {
+				values = append(values, Resource{
+					ID: fmt.Sprintf("%s:%s:%s:%s", *v.VolumeId, metric.Timestamp.Format(time.RFC3339), *metric.DimensionName, *metric.DimensionValue),
+					Description: model.EbsVolumeMetricReadOpsDescription{
+						CloudWatchMetricRow: metric,
+					},
+				})
+			}
+		}
+	}
+
+	return values, nil
+}
+
+func EbsVolumeMetricReadOpsDaily(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+	client := ec2.NewFromConfig(cfg)
+	paginator := ec2.NewDescribeVolumesPaginator(client, &ec2.DescribeVolumesInput{
+		MaxResults: aws.Int32(500),
+	})
+
+	var values []Resource
+	for paginator.HasMorePages() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page.Volumes {
+			metrics, err := listCloudWatchMetricStatistics(ctx, cfg, "DAILY", "AWS/EBS", "VolumeReadOps", "VolumeId", *v.VolumeId)
+			if err != nil {
+				return nil, err
+			}
+			for _, metric := range metrics {
+				values = append(values, Resource{
+					ID: fmt.Sprintf("%s:%s:%s:%s-daily", *v.VolumeId, metric.Timestamp.Format(time.RFC3339), *metric.DimensionName, *metric.DimensionValue),
+					Description: model.EbsVolumeMetricReadOpsDailyDescription{
+						CloudWatchMetricRow: metric,
+					},
+				})
+			}
+		}
+	}
+
+	return values, nil
+}
+
+func EbsVolumeMetricReadOpsHourly(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+	client := ec2.NewFromConfig(cfg)
+	paginator := ec2.NewDescribeVolumesPaginator(client, &ec2.DescribeVolumesInput{
+		MaxResults: aws.Int32(500),
+	})
+
+	var values []Resource
+	for paginator.HasMorePages() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page.Volumes {
+			metrics, err := listCloudWatchMetricStatistics(ctx, cfg, "HOURLY", "AWS/EBS", "VolumeReadOps", "VolumeId", *v.VolumeId)
+			if err != nil {
+				return nil, err
+			}
+			for _, metric := range metrics {
+				values = append(values, Resource{
+					ID: fmt.Sprintf("%s:%s:%s:%s-hourly", *v.VolumeId, metric.Timestamp.Format(time.RFC3339), *metric.DimensionName, *metric.DimensionValue),
+					Description: model.EbsVolumeMetricReadOpsHourlyDescription{
+						CloudWatchMetricRow: metric,
+					},
+				})
+			}
+		}
+	}
+
+	return values, nil
+}
+
+func EbsVolumeMetricWriteOps(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+	client := ec2.NewFromConfig(cfg)
+	paginator := ec2.NewDescribeVolumesPaginator(client, &ec2.DescribeVolumesInput{
+		MaxResults: aws.Int32(500),
+	})
+
+	var values []Resource
+	for paginator.HasMorePages() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page.Volumes {
+			metrics, err := listCloudWatchMetricStatistics(ctx, cfg, "5_MIN", "AWS/EBS", "VolumeWriteOps", "VolumeId", *v.VolumeId)
+			if err != nil {
+				return nil, err
+			}
+			for _, metric := range metrics {
+				values = append(values, Resource{
+					ID: fmt.Sprintf("%s:%s:%s:%s", *v.VolumeId, metric.Timestamp.Format(time.RFC3339), *metric.DimensionName, *metric.DimensionValue),
+					Description: model.EbsVolumeMetricWriteOpsDescription{
+						CloudWatchMetricRow: metric,
+					},
+				})
+			}
+		}
+	}
+
+	return values, nil
+}
+
+func EbsVolumeMetricWriteOpsDaily(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+	client := ec2.NewFromConfig(cfg)
+	paginator := ec2.NewDescribeVolumesPaginator(client, &ec2.DescribeVolumesInput{
+		MaxResults: aws.Int32(500),
+	})
+
+	var values []Resource
+	for paginator.HasMorePages() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page.Volumes {
+			metrics, err := listCloudWatchMetricStatistics(ctx, cfg, "DAILY", "AWS/EBS", "VolumeWriteOps", "VolumeId", *v.VolumeId)
+			if err != nil {
+				return nil, err
+			}
+			for _, metric := range metrics {
+				values = append(values, Resource{
+					ID: fmt.Sprintf("%s:%s:%s:%s-daily", *v.VolumeId, metric.Timestamp.Format(time.RFC3339), *metric.DimensionName, *metric.DimensionValue),
+					Description: model.EbsVolumeMetricWriteOpsDailyDescription{
+						CloudWatchMetricRow: metric,
+					},
+				})
+			}
+		}
+	}
+
+	return values, nil
+}
+
+func EbsVolumeMetricWriteOpsHourly(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+	client := ec2.NewFromConfig(cfg)
+	paginator := ec2.NewDescribeVolumesPaginator(client, &ec2.DescribeVolumesInput{
+		MaxResults: aws.Int32(500),
+	})
+
+	var values []Resource
+	for paginator.HasMorePages() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page.Volumes {
+			metrics, err := listCloudWatchMetricStatistics(ctx, cfg, "HOURLY", "AWS/EBS", "VolumeWriteOps", "VolumeId", *v.VolumeId)
+			if err != nil {
+				return nil, err
+			}
+			for _, metric := range metrics {
+				values = append(values, Resource{
+					ID: fmt.Sprintf("%s:%s:%s:%s-hourly", *v.VolumeId, metric.Timestamp.Format(time.RFC3339), *metric.DimensionName, *metric.DimensionValue),
+					Description: model.EbsVolumeMetricWriteOpsHourlyDescription{
+						CloudWatchMetricRow: metric,
+					},
+				})
+			}
 		}
 	}
 

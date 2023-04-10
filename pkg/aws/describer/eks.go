@@ -2,12 +2,36 @@ package describer
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/eks"
 	"github.com/aws/aws-sdk-go-v2/service/eks/types"
 	"gitlab.com/keibiengine/keibi-engine/pkg/aws/model"
 )
+
+func listEksClusters(ctx context.Context, cfg aws.Config) ([]string, error) {
+	client := eks.NewFromConfig(cfg)
+	paginator := eks.NewListClustersPaginator(client, &eks.ListClustersInput{})
+
+	var values []string
+	for paginator.HasMorePages() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		values = append(values, page.Clusters...)
+	}
+
+	return values, nil
+}
+
+type EKSIdentityProviderConfigDescription struct {
+	ConfigName             string
+	ConfigType             string
+	IdentityProviderConfig types.OidcIdentityProviderConfig
+}
 
 func EKSCluster(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	clusters, err := listEksClusters(ctx, cfg)
@@ -114,9 +138,11 @@ func EKSFargateProfile(ctx context.Context, cfg aws.Config) ([]Resource, error) 
 			}
 
 			values = append(values, Resource{
-				ARN:         *output.FargateProfile.FargateProfileArn,
-				Name:        *output.FargateProfile.FargateProfileName,
-				Description: output.FargateProfile,
+				ARN:  *output.FargateProfile.FargateProfileArn,
+				Name: *output.FargateProfile.FargateProfileName,
+				Description: model.EKSFargateProfileDescription{
+					FargateProfile: *output.FargateProfile,
+				},
 			})
 		}
 	}
@@ -169,29 +195,6 @@ func EKSNodegroup(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	return values, nil
 }
 
-func listEksClusters(ctx context.Context, cfg aws.Config) ([]string, error) {
-	client := eks.NewFromConfig(cfg)
-	paginator := eks.NewListClustersPaginator(client, &eks.ListClustersInput{})
-
-	var values []string
-	for paginator.HasMorePages() {
-		page, err := paginator.NextPage(ctx)
-		if err != nil {
-			return nil, err
-		}
-
-		values = append(values, page.Clusters...)
-	}
-
-	return values, nil
-}
-
-type EKSIdentityProviderConfigDescription struct {
-	ConfigName             string
-	ConfigType             string
-	IdentityProviderConfig types.OidcIdentityProviderConfig
-}
-
 func EKSIdentityProviderConfig(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	clusters, err := listEksClusters(ctx, cfg)
 	if err != nil {
@@ -232,6 +235,47 @@ func EKSIdentityProviderConfig(ctx context.Context, cfg aws.Config) ([]Resource,
 					},
 				})
 
+			}
+		}
+	}
+
+	return values, nil
+}
+
+func EKSAddonVersion(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+	describeCtx := GetDescribeContext(ctx)
+	client := eks.NewFromConfig(cfg)
+	paginator := eks.NewDescribeAddonVersionsPaginator(client, &eks.DescribeAddonVersionsInput{})
+
+	var values []Resource
+	for paginator.HasMorePages() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, addon := range page.Addons {
+			for _, version := range addon.AddonVersions {
+				arn := fmt.Sprintf("arn:%s:eks:%s:%s:addonversion/%s/%s", describeCtx.Partition, describeCtx.Region, describeCtx.AccountID, *addon.AddonName, *version.AddonVersion)
+
+				configuration, err := client.DescribeAddonConfiguration(ctx, &eks.DescribeAddonConfigurationInput{
+					AddonName:    addon.AddonName,
+					AddonVersion: version.AddonVersion,
+				})
+				if err != nil {
+					return nil, err
+				}
+
+				values = append(values, Resource{
+					ARN:  arn,
+					Name: *version.AddonVersion,
+					Description: model.EKSAddonVersionDescription{
+						AddonVersion:       version,
+						AddonConfiguration: *configuration.ConfigurationSchema,
+						AddonName:          *addon.AddonName,
+						AddonType:          *addon.Type,
+					},
+				})
 			}
 		}
 	}

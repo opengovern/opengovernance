@@ -2,10 +2,14 @@ package describer
 
 import (
 	"context"
+	"fmt"
+	"strings"
+	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/elasticloadbalancing"
 	"github.com/aws/aws-sdk-go-v2/service/elasticloadbalancingv2"
+	"github.com/aws/aws-sdk-go-v2/service/elasticloadbalancingv2/types"
 	"gitlab.com/keibiengine/keibi-engine/pkg/aws/model"
 )
 
@@ -130,31 +134,6 @@ func ElasticLoadBalancingV2ListenerRule(ctx context.Context, cfg aws.Config) ([]
 	return values, nil
 }
 
-func ElasticLoadBalancingV2TargetGroup(ctx context.Context, cfg aws.Config) ([]Resource, error) {
-	client := elasticloadbalancingv2.NewFromConfig(cfg)
-	paginator := elasticloadbalancingv2.NewDescribeTargetGroupsPaginator(client, &elasticloadbalancingv2.DescribeTargetGroupsInput{})
-
-	var values []Resource
-	for paginator.HasMorePages() {
-		page, err := paginator.NextPage(ctx)
-		if err != nil {
-			return nil, err
-		}
-
-		for _, v := range page.TargetGroups {
-			values = append(values, Resource{
-				ARN:  *v.TargetGroupArn,
-				Name: *v.TargetGroupName,
-				Description: model.ElasticLoadBalancingV2TargetGroupDescription{
-					TargetGroup: v,
-				},
-			})
-		}
-	}
-
-	return values, nil
-}
-
 func ElasticLoadBalancingLoadBalancer(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	client := elasticloadbalancing.NewFromConfig(cfg)
 	paginator := elasticloadbalancing.NewDescribeLoadBalancersPaginator(client, &elasticloadbalancing.DescribeLoadBalancersInput{})
@@ -198,6 +177,221 @@ func ElasticLoadBalancingLoadBalancer(ctx context.Context, cfg aws.Config) ([]Re
 				Name:        *v.LoadBalancerName,
 				Description: description,
 			})
+		}
+	}
+
+	return values, nil
+}
+
+func ElasticLoadBalancingV2SslPolicy(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+	describeCtx := GetDescribeContext(ctx)
+	client := elasticloadbalancingv2.NewFromConfig(cfg)
+
+	var values []Resource
+	err := PaginateRetrieveAll(func(prevToken *string) (nextToken *string, err error) {
+		output, err := client.DescribeSSLPolicies(ctx, &elasticloadbalancingv2.DescribeSSLPoliciesInput{
+			Marker: prevToken,
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range output.SslPolicies {
+			arn := fmt.Sprintf("arn:%s:elbv2:%s:%s:ssl-policy/%s", describeCtx.Partition, describeCtx.Region, describeCtx.AccountID, *v.Name)
+			values = append(values, Resource{
+				Name: *v.Name,
+				ARN:  arn,
+				Description: model.ElasticLoadBalancingV2SslPolicyDescription{
+					SslPolicy: v,
+				},
+			})
+		}
+
+		return output.NextMarker, nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return values, nil
+}
+
+func ElasticLoadBalancingV2TargetGroup(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+	client := elasticloadbalancingv2.NewFromConfig(cfg)
+	paginator := elasticloadbalancingv2.NewDescribeTargetGroupsPaginator(client, &elasticloadbalancingv2.DescribeTargetGroupsInput{})
+
+	var values []Resource
+	for paginator.HasMorePages() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page.TargetGroups {
+			healthDescriptions, err := client.DescribeTargetHealth(ctx, &elasticloadbalancingv2.DescribeTargetHealthInput{
+				TargetGroupArn: v.TargetGroupArn,
+			})
+			if err != nil {
+				return nil, err
+			}
+
+			tags, err := client.DescribeTags(ctx, &elasticloadbalancingv2.DescribeTagsInput{
+				ResourceArns: []string{*v.TargetGroupArn},
+			})
+			if err != nil {
+				return nil, err
+			}
+
+			var tagsA []types.Tag
+			if tags.TagDescriptions != nil && len(tags.TagDescriptions) > 0 {
+				tagsA = tags.TagDescriptions[0].Tags
+			}
+
+			values = append(values, Resource{
+				ARN:  *v.TargetGroupArn,
+				Name: *v.TargetGroupName,
+				Description: model.ElasticLoadBalancingV2TargetGroupDescription{
+					TargetGroup: v,
+					Health:      healthDescriptions.TargetHealthDescriptions,
+					Tags:        tagsA,
+				},
+			})
+		}
+	}
+
+	return values, nil
+}
+
+func ApplicationLoadBalancerMetricRequestCount(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+	client := elasticloadbalancingv2.NewFromConfig(cfg)
+	paginator := elasticloadbalancingv2.NewDescribeLoadBalancersPaginator(client, &elasticloadbalancingv2.DescribeLoadBalancersInput{})
+
+	var values []Resource
+	for paginator.HasMorePages() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, loadBalancer := range page.LoadBalancers {
+			if loadBalancer.Type != types.LoadBalancerTypeEnumApplication {
+				continue
+			}
+			arn := strings.SplitN(*loadBalancer.LoadBalancerArn, "/", 2)[1]
+			metrics, err := listCloudWatchMetricStatistics(ctx, cfg, "5_MIN", "AWS/ApplicationELB", "RequestCount", "LoadBalancer", arn)
+			if err != nil {
+				return nil, err
+			}
+			for _, metric := range metrics {
+				values = append(values, Resource{
+					ID: fmt.Sprintf("%s:%s:%s:%s", arn, metric.Timestamp.Format(time.RFC3339), *metric.DimensionName, *metric.DimensionValue),
+					Description: model.ApplicationLoadBalancerMetricRequestCountDescription{
+						CloudWatchMetricRow: metric,
+					},
+				})
+			}
+		}
+	}
+
+	return values, nil
+}
+
+func ApplicationLoadBalancerMetricRequestCountDaily(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+	client := elasticloadbalancingv2.NewFromConfig(cfg)
+	paginator := elasticloadbalancingv2.NewDescribeLoadBalancersPaginator(client, &elasticloadbalancingv2.DescribeLoadBalancersInput{})
+
+	var values []Resource
+	for paginator.HasMorePages() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, loadBalancer := range page.LoadBalancers {
+			if loadBalancer.Type != types.LoadBalancerTypeEnumApplication {
+				continue
+			}
+			arn := strings.SplitN(*loadBalancer.LoadBalancerArn, "/", 2)[1]
+			metrics, err := listCloudWatchMetricStatistics(ctx, cfg, "DAILY", "AWS/ApplicationELB", "RequestCount", "LoadBalancer", arn)
+			if err != nil {
+				return nil, err
+			}
+			for _, metric := range metrics {
+				values = append(values, Resource{
+					ID: fmt.Sprintf("%s:%s:%s:%s", arn, metric.Timestamp.Format(time.RFC3339), *metric.DimensionName, *metric.DimensionValue),
+					Description: model.ApplicationLoadBalancerMetricRequestCountDailyDescription{
+						CloudWatchMetricRow: metric,
+					},
+				})
+			}
+		}
+	}
+
+	return values, nil
+}
+
+func NetworkLoadBalancerMetricNetFlowCount(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+	client := elasticloadbalancingv2.NewFromConfig(cfg)
+	paginator := elasticloadbalancingv2.NewDescribeLoadBalancersPaginator(client, &elasticloadbalancingv2.DescribeLoadBalancersInput{})
+
+	var values []Resource
+	for paginator.HasMorePages() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, loadBalancer := range page.LoadBalancers {
+			if loadBalancer.Type != types.LoadBalancerTypeEnumNetwork {
+				continue
+			}
+			arn := strings.SplitN(*loadBalancer.LoadBalancerArn, "/", 2)[1]
+			metrics, err := listCloudWatchMetricStatistics(ctx, cfg, "5_MIN", "AWS/NetworkELB", "NewFlowCount", "LoadBalancer", arn)
+			if err != nil {
+				return nil, err
+			}
+			for _, metric := range metrics {
+				values = append(values, Resource{
+					ID: fmt.Sprintf("%s:%s:%s:%s", arn, metric.Timestamp.Format(time.RFC3339), *metric.DimensionName, *metric.DimensionValue),
+					Description: model.NetworkLoadBalancerMetricNetFlowCountDescription{
+						CloudWatchMetricRow: metric,
+					},
+				})
+			}
+		}
+	}
+
+	return values, nil
+}
+
+func NetworkLoadBalancerMetricNetFlowCountDaily(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+	client := elasticloadbalancingv2.NewFromConfig(cfg)
+	paginator := elasticloadbalancingv2.NewDescribeLoadBalancersPaginator(client, &elasticloadbalancingv2.DescribeLoadBalancersInput{})
+
+	var values []Resource
+	for paginator.HasMorePages() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, loadBalancer := range page.LoadBalancers {
+			if loadBalancer.Type != types.LoadBalancerTypeEnumNetwork {
+				continue
+			}
+			arn := strings.SplitN(*loadBalancer.LoadBalancerArn, "/", 2)[1]
+			metrics, err := listCloudWatchMetricStatistics(ctx, cfg, "DAILY", "AWS/NetworkELB", "NewFlowCount", "LoadBalancer", arn)
+			if err != nil {
+				return nil, err
+			}
+			for _, metric := range metrics {
+				values = append(values, Resource{
+					ID: fmt.Sprintf("%s:%s:%s:%s", arn, metric.Timestamp.Format(time.RFC3339), *metric.DimensionName, *metric.DimensionValue),
+					Description: model.NetworkLoadBalancerMetricNetFlowCountDailyDescription{
+						CloudWatchMetricRow: metric,
+					},
+				})
+			}
 		}
 	}
 
