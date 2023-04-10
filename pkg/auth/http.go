@@ -54,7 +54,7 @@ func (r *httpRoutes) Register(e *echo.Echo) {
 	v1.GET("/workspace/role/bindings", httpserver.AuthorizeHandler(r.GetWorkspaceRoleBindings, api.AdminRole))
 	v1.GET("/user/:user_id", httpserver.AuthorizeHandler(r.GetUserDetails, api.AdminRole))
 	v1.POST("/invite", httpserver.AuthorizeHandler(r.Invite, api.AdminRole))
-	v1.DELETE("/invite/:user_id", httpserver.AuthorizeHandler(r.DeleteInvitation, api.AdminRole))
+	v1.DELETE("/invite", httpserver.AuthorizeHandler(r.DeleteInvitation, api.AdminRole))
 
 	v1.POST("/apikey/create", httpserver.AuthorizeHandler(r.CreateAPIKey, api.AdminRole))
 	v1.GET("/apikey", httpserver.AuthorizeHandler(r.ListAPIKeys, api.AdminRole))
@@ -127,7 +127,6 @@ func (r httpRoutes) PutRoleBinding(ctx echo.Context) error {
 //	@Tags		auth
 //	@Produce	json
 //	@Param		userId		query		string	true	"userId"
-//	@Param		workspaceId	query		string	true	"workspaceId"
 //	@Success	200			{object}	nil
 //	@Router		/auth/api/v1/user/role/binding [delete]
 func (r httpRoutes) DeleteRoleBinding(ctx echo.Context) error {
@@ -374,11 +373,23 @@ func (r *httpRoutes) Invite(ctx echo.Context) error {
 //	@Summary	Deletes an Invitation
 //	@Tags		auth
 //	@Produce	json
+//	@Param		userId		query		string	true	"userId"
 //	@Success	200	{object}	nil
-//	@Router		/auth/api/v1/invite/{user_id} [delete]
+//	@Router		/auth/api/v1/invite/ [delete]
 func (r *httpRoutes) DeleteInvitation(ctx echo.Context) error {
-	userID := ctx.Param("user_id")
-	err := r.auth0Service.DeleteUser(userID)
+	userId := ctx.QueryParam("userId")
+	if httpserver.GetUserID(ctx) == userId {
+		return echo.NewHTTPError(http.StatusBadRequest, "admin user permission can't be modified by self")
+	}
+
+	workspaceID := httpserver.GetWorkspaceID(ctx)
+	auth0User, err := r.auth0Service.GetUser(userId)
+	if err != nil {
+		return err
+	}
+
+	delete(auth0User.AppMetadata.WorkspaceAccess, workspaceID)
+	err = r.auth0Service.PatchUserAppMetadata(userId, auth0User.AppMetadata)
 	if err != nil {
 		return err
 	}
