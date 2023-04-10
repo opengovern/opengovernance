@@ -6,6 +6,8 @@ import (
 	"os/exec"
 	"time"
 
+	"gitlab.com/keibiengine/keibi-engine/pkg/keibi-es-sdk"
+
 	api2 "gitlab.com/keibiengine/keibi-engine/pkg/auth/api"
 	"gitlab.com/keibiengine/keibi-engine/pkg/cloudservice"
 	"gitlab.com/keibiengine/keibi-engine/pkg/compliance/api"
@@ -137,6 +139,17 @@ func (j *Job) Run(complianceClient client.ComplianceServiceClient, onboardClient
 		return errors.New("connection not healthy")
 	}
 
+	defaultAccountID := "default"
+	esk, err := keibi.NewClient(keibi.ClientConfig{
+		Addresses: []string{elasticSearchConfig.Address},
+		Username:  &elasticSearchConfig.Username,
+		Password:  &elasticSearchConfig.Password,
+		AccountID: &defaultAccountID,
+	})
+	if err != nil {
+		return err
+	}
+
 	err = j.PopulateSteampipeConfig(vault, elasticSearchConfig)
 	if err != nil {
 		return err
@@ -167,11 +180,53 @@ func (j *Job) Run(complianceClient client.ComplianceServiceClient, onboardClient
 		return err
 	}
 
+	findingsFiltered, err := j.FilterFindings(esk, findings)
+	if err != nil {
+		return err
+	}
+
 	var docs []kafka.Doc
-	for _, finding := range findings {
+	for _, finding := range findingsFiltered {
 		docs = append(docs, finding)
 	}
 	return kafka.DoSend(kfkProducer, kfkTopic, docs, logger)
+}
+
+func (j *Job) FilterFindings(esClient keibi.Client, findings []es.Finding) ([]es.Finding, error) {
+	// get all active findings from ES page by page
+	// go through the ones extracted and remove duplicates
+	// if a finding fetched from es is not duplicated disable it
+	from := 0
+	for {
+		resp, err := es.GetActiveFindings(esClient, from, 1000)
+		if err != nil {
+			return nil, err
+		}
+		from += 1000
+
+		if len(resp.Hits.Hits) == 0 {
+			break
+		}
+
+		for _, hit := range resp.Hits.Hits {
+			dup := false
+
+			for idx, finding := range findings {
+				if finding.ResourceID == hit.Source.ResourceID && finding.PolicyID == hit.Source.PolicyID {
+					dup = true
+					findings = append(findings[:idx], findings[idx+1:]...)
+					break
+				}
+			}
+
+			if !dup {
+				f := hit.Source
+				f.StateActive = false
+				findings = append(findings, f)
+			}
+		}
+	}
+	return findings, nil
 }
 
 func (j *Job) ExtractFindings(benchmark *api.Benchmark, policy *api.Policy, query *api.Query, res *steampipe.Result) ([]es.Finding, error) {
@@ -219,7 +274,7 @@ func (j *Job) ExtractFindings(benchmark *api.Benchmark, policy *api.Policy, quer
 			ConnectionID:     j.ConnectionID,
 			DescribedAt:      j.DescribedAt,
 			EvaluatedAt:      j.EvaluatedAt,
-			StateActive:      false, //TODO-Saleh
+			StateActive:      true,
 			Result:           status,
 			Severity:         severity,
 			Evaluator:        query.Engine,
