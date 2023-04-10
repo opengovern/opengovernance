@@ -3,6 +3,7 @@ package es
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"strconv"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/types"
@@ -280,6 +281,7 @@ func FindingsTopFieldQuery(client keibi.Client,
 		return nil, err
 	}
 
+	fmt.Println("===========", string(queryBytes))
 	var resp FindingsTopFieldResponse
 	err = client.Search(context.Background(), FindingsIndex, string(queryBytes), &resp)
 	return &resp, err
