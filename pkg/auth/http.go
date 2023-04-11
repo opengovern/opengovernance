@@ -63,7 +63,7 @@ func (r *httpRoutes) Register(e *echo.Echo) {
 	v1.DELETE("/apikey/:id/delete", httpserver.AuthorizeHandler(r.DeleteAPIKey, api.AdminRole))
 	v1.GET("/apikey/:id", httpserver.AuthorizeHandler(r.GetAPIKey, api.AdminRole))
 
-	v1.GET("/role/users", httpserver.AuthorizeHandler(r.GetRoleUsers, api.AdminRole))
+	v1.GET("/role/:role/users", httpserver.AuthorizeHandler(r.GetRoleUsers, api.AdminRole))
 	v1.GET("/role/apikeys", httpserver.AuthorizeHandler(r.GetRoleKeys, api.AdminRole))
 	v1.POST("/apikey/role", httpserver.AuthorizeHandler(r.UpdateKeyRole, api.AdminRole))
 }
@@ -608,14 +608,11 @@ func (r *httpRoutes) ActivateAPIKey(ctx echo.Context) error {
 //	@Summary	Get the list of users having the specefic role
 //	@Tags		auth
 //	@Produce	json
-//	@Param		request	body		api.Role	true	"Request Body"
+//	@Param		role	path		string	true	"role"
 //	@Success	200		{object}	api.GetRoleUsersResponse
-//	@Router		/auth/api/v1/role/users [get]
+//	@Router		/auth/api/v1/role/{role}/users [get]
 func (r *httpRoutes) GetRoleUsers(ctx echo.Context) error {
-	var role api.Role
-	if err := bindValidate(ctx, &role); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err)
-	}
+	role := api.Role(ctx.Param("role"))
 	users, err := r.auth0Service.SearchUsersByRole(role)
 	if err != nil {
 		return err
