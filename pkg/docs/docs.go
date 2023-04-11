@@ -638,6 +638,18 @@ const docTemplate = `{
                         "name": "benchmark_id",
                         "in": "path",
                         "required": true
+                    },
+                    {
+                        "enum": [
+                            "passed",
+                            "failed",
+                            "unknown"
+                        ],
+                        "type": "string",
+                        "description": "Status",
+                        "name": "status",
+                        "in": "query",
+                        "required": true
                     }
                 ],
                 "responses": {
@@ -5468,11 +5480,17 @@ const docTemplate = `{
         "gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.BenchmarkAssignedSource": {
             "type": "object",
             "properties": {
-                "assignedAt": {
-                    "type": "integer"
+                "connectionID": {
+                    "type": "string"
                 },
-                "connection": {
-                    "$ref": "#/definitions/types.FullConnection"
+                "connectionName": {
+                    "type": "string"
+                },
+                "connector": {
+                    "$ref": "#/definitions/source.Type"
+                },
+                "status": {
+                    "type": "boolean"
                 }
             }
         },
@@ -8586,20 +8604,6 @@ const docTemplate = `{
                 },
                 "skipCount": {
                     "type": "integer"
-                }
-            }
-        },
-        "types.FullConnection": {
-            "type": "object",
-            "properties": {
-                "id": {
-                    "type": "string"
-                },
-                "providerID": {
-                    "type": "string"
-                },
-                "providerName": {
-                    "type": "string"
                 }
             }
         },
