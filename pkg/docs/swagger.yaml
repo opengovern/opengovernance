@@ -191,10 +191,14 @@ definitions:
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.BenchmarkAssignedSource:
     properties:
-      assignedAt:
-        type: integer
-      connection:
-        $ref: '#/definitions/types.FullConnection'
+      connectionID:
+        type: string
+      connectionName:
+        type: string
+      connector:
+        $ref: '#/definitions/source.Type'
+      status:
+        type: boolean
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.BenchmarkAssignment:
     properties:
@@ -2351,15 +2355,6 @@ definitions:
       skipCount:
         type: integer
     type: object
-  types.FullConnection:
-    properties:
-      id:
-        type: string
-      providerID:
-        type: string
-      providerName:
-        type: string
-    type: object
   types.PolicyStatus:
     enum:
     - passed
@@ -2807,6 +2802,15 @@ paths:
       - description: BenchmarkID
         in: path
         name: benchmark_id
+        required: true
+        type: string
+      - description: Status
+        enum:
+        - passed
+        - failed
+        - unknown
+        in: query
+        name: status
         required: true
         type: string
       produces:
