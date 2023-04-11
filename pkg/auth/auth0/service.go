@@ -353,8 +353,8 @@ func (a *Service) GetClientTenant() (string, error) {
 	}
 	var resp map[string]interface{}
 	err = json.Unmarshal(r, &resp)
-	if str, err := resp["tenant"].(string); err {
-		return "", fmt.Errorf("[getClientTenant] invalid tenant value: %d, body=%s", resp["tenant"], string(r))
+	if str, isString := resp["tenant"].(string); !isString {
+		return "", fmt.Errorf("[getClientTenant] invalid tenant value: %s, body=%s", resp["tenant"], string(r))
 	} else {
 		return str, nil
 	}
@@ -391,7 +391,6 @@ func (a *Service) SearchUsersByRole(role api.Role) ([]User, error) {
 	if err != nil {
 		return nil, err
 	}
-
 	var resp []User
 	for _, user := range users {
 		if func() bool {
