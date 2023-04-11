@@ -52,17 +52,29 @@ func (ts *testSuite) FetchData() (error, string) {
 }
 
 func (ts *testSuite) SetupSuite() {
-	ts.testServer = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.Method == http.MethodDelete {
+	// ts.testServer = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	// 	if r.Method == http.MethodDelete {
+	// 		mockDeleteUser(w, r)
+	// 	}
+	// 	if r.Method == http.MethodGet {
+	// 		mockGetUsers(w, r)
+	// 	}
+	// }))
+
+	mux := http.NewServeMux()
+
+	mux.HandleFunc("/oauth/token", mockFillTocken)
+	mux.HandleFunc("/api/v2/users/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodGet {
+			mockGetUser(w, r)
+		} else if r.Method == http.MethodDelete {
 			mockDeleteUser(w, r)
 		}
-		if r.Method == http.MethodPost {
-			mockFillTocken(w, r)
-		}
-		if r.Method == http.MethodGet {
-			mockGetUsers(w, r)
-		}
 	}))
+	mux.HandleFunc("/api/v2/users", mockGetUsers)
+	mux.HandleFunc("/api/v2/clients/", mockGetClient)
+
+	ts.testServer = httptest.NewServer(mux)
 
 	ts.service = auth0.New(ts.testServer.URL, "test_auth0ClientIDNative", "test_auth0ClientID", "test_auth0ManageClientID",
 		"test_auth0ManageClientSecret", "test_auth0Connection", int(1))
@@ -176,8 +188,15 @@ func (ts *testSuite) TestGetRoleUsers() {
 			if err := json.NewDecoder(w.Body).Decode(&response); err != nil {
 				ts.T().Fatalf("json decode: %v", err)
 			}
-			fmt.Println("the response is: ", response)
-			ts.Equal(tc.Role, response[0].Role)
+			if tc.Role == api.KeibiAdminRole {
+				ts.Equal(len(response), 0)
+			} else {
+				ts.Equal(tc.Role, response[0].Role)
+				ts.Equal("testTenant", response[0].TenantId)
+				ts.Equal("user1@test.com", response[0].Email)
+				ts.True(response[0].EmailVerified)
+			}
+
 		})
 	}
 }

@@ -28,13 +28,13 @@ var testUsers = []auth0.User{
 		Nickname:      "testNick",
 		Picture:       "testURL",
 		UserId:        "test1",
-		UserMetadata: auth0.Metadata{
-			WorkspaceAccess: map[string]api.Role{"ws1": api.AdminRole, "ws2": api.EditorRole, "ws3": api.EditorRole, "ws4": api.ViewerRole},
-		},
+		UserMetadata:  auth0.Metadata{},
 		LastLogin:     time.Now(),
 		LastIp:        "testIP",
 		LoginsCount:   1,
-		AppMetadata:   auth0.Metadata{},
+		AppMetadata: auth0.Metadata{
+			WorkspaceAccess: map[string]api.Role{"ws1": api.AdminRole, "ws2": api.EditorRole, "ws3": api.EditorRole, "ws4": api.ViewerRole},
+		},
 		Username:      "testUserName",
 		PhoneNumber:   "testPhone",
 		PhoneVerified: true,
@@ -53,13 +53,13 @@ var testUsers = []auth0.User{
 		Nickname:      "testNick",
 		Picture:       "testURL",
 		UserId:        "test2",
-		UserMetadata: auth0.Metadata{
-			WorkspaceAccess: map[string]api.Role{"ws1": api.EditorRole, "ws2": api.EditorRole},
-		},
+		UserMetadata:  auth0.Metadata{},
 		LastLogin:     time.Now(),
 		LastIp:        "testIP",
 		LoginsCount:   1,
-		AppMetadata:   auth0.Metadata{},
+		AppMetadata: auth0.Metadata{
+			WorkspaceAccess: map[string]api.Role{"ws1": api.EditorRole, "ws2": api.EditorRole},
+		},
 		Username:      "testUserName",
 		PhoneNumber:   "testPhone",
 		PhoneVerified: true,
@@ -78,13 +78,13 @@ var testUsers = []auth0.User{
 		Nickname:      "testNick",
 		Picture:       "testURL",
 		UserId:        "test3",
-		UserMetadata: auth0.Metadata{
-			WorkspaceAccess: map[string]api.Role{"ws1": api.ViewerRole, "ws2": api.EditorRole, "ws4": api.ViewerRole},
-		},
+		UserMetadata:  auth0.Metadata{},
 		LastLogin:     time.Now(),
 		LastIp:        "testIP",
 		LoginsCount:   1,
-		AppMetadata:   auth0.Metadata{},
+		AppMetadata: auth0.Metadata{
+			WorkspaceAccess: map[string]api.Role{"ws1": api.ViewerRole, "ws2": api.EditorRole, "ws4": api.ViewerRole},
+		},
 		Username:      "testUserName",
 		PhoneNumber:   "testPhone",
 		PhoneVerified: true,
@@ -103,13 +103,13 @@ var testUsers = []auth0.User{
 		Nickname:      "testNick",
 		Picture:       "testURL",
 		UserId:        "test4",
-		UserMetadata: auth0.Metadata{
-			WorkspaceAccess: map[string]api.Role{"ws4": api.AdminRole},
-		},
+		UserMetadata:  auth0.Metadata{},
 		LastLogin:     time.Now(),
 		LastIp:        "testIP",
 		LoginsCount:   1,
-		AppMetadata:   auth0.Metadata{},
+		AppMetadata: auth0.Metadata{
+			WorkspaceAccess: map[string]api.Role{"ws4": api.AdminRole},
+		},
 		Username:      "testUserName",
 		PhoneNumber:   "testPhone",
 		PhoneVerified: true,
@@ -128,13 +128,13 @@ var testUsers = []auth0.User{
 		Nickname:      "testNick",
 		Picture:       "testURL",
 		UserId:        "test5",
-		UserMetadata: auth0.Metadata{
-			WorkspaceAccess: map[string]api.Role{"ws2": api.AdminRole, "ws3": api.EditorRole, "ws4": api.ViewerRole},
-		},
+		UserMetadata:  auth0.Metadata{},
 		LastLogin:     time.Now(),
 		LastIp:        "testIP",
 		LoginsCount:   1,
-		AppMetadata:   auth0.Metadata{},
+		AppMetadata: auth0.Metadata{
+			WorkspaceAccess: map[string]api.Role{"ws2": api.AdminRole, "ws3": api.EditorRole, "ws4": api.ViewerRole},
+		},
 		Username:      "testUserName",
 		PhoneNumber:   "testPhone",
 		PhoneVerified: true,
@@ -153,13 +153,13 @@ var testUsers = []auth0.User{
 		Nickname:      "testNick",
 		Picture:       "testURL",
 		UserId:        "test6",
-		UserMetadata: auth0.Metadata{
-			WorkspaceAccess: map[string]api.Role{"ws1": api.ViewerRole, "ws2": api.ViewerRole, "ws3": api.ViewerRole, "ws4": api.ViewerRole},
-		},
+		UserMetadata:  auth0.Metadata{},
 		LastLogin:     time.Now(),
 		LastIp:        "testIP",
 		LoginsCount:   1,
-		AppMetadata:   auth0.Metadata{},
+		AppMetadata: auth0.Metadata{
+			WorkspaceAccess: map[string]api.Role{"ws1": api.ViewerRole, "ws2": api.ViewerRole, "ws3": api.ViewerRole, "ws4": api.ViewerRole},
+		},
 		Username:      "testUserName",
 		PhoneNumber:   "testPhone",
 		PhoneVerified: true,
@@ -205,4 +205,15 @@ func mockGetUser(w http.ResponseWriter, r *http.Request) {
 func mockGetUsers(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(testUsers)
+}
+
+func mockGetClient(w http.ResponseWriter, r *http.Request) {
+	client := strings.TrimPrefix(r.URL.Path, "/api/v2/clients/")
+	w.Header().Set("Content-Type", "application/json")
+	tenant := map[string]string{
+		"client": client,
+		"tenant": "testTenant",
+		"random": "123",
+	}
+	json.NewEncoder(w).Encode(tenant)
 }
