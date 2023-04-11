@@ -12,6 +12,7 @@ import (
 	"github.com/stretchr/testify/suite"
 	"gitlab.com/keibiengine/keibi-engine/pkg/auth/api"
 	"gitlab.com/keibiengine/keibi-engine/pkg/auth/auth0"
+	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpserver"
 )
 
 func TestSuite(t *testing.T) {
@@ -69,6 +70,8 @@ func (ts *testSuite) SetupSuite() {
 			mockGetUser(w, r)
 		} else if r.Method == http.MethodDelete {
 			mockDeleteUser(w, r)
+		} else if r.Method == http.MethodPatch {
+			mockPatchUser(w, r)
 		}
 	}))
 	mux.HandleFunc("/api/v2/users", mockGetUsers)
@@ -92,12 +95,62 @@ func (ts *testSuite) TearDownSuite() {
 func (ts *testSuite) TearDownTest() {
 }
 
-func (ts *testSuite) TestDeleteUser() {
-	//err, result := ts.FetchData()
-	//ts.NoError(err)
-	//ts.Equal("Welcome to the homepage!", result)
-	ts.Equal(nil, ts.service.DeleteUser("asdasd"))
-	fmt.Println(ts.service)
+func (ts *testSuite) TestDeleteInvitation() {
+	getUserTestCases := []struct {
+		UserId    string
+		UserRole  api.Role
+		DelUserId string
+		Response  int
+		Error     int
+	}{
+		{
+			UserId:    "test1",
+			UserRole:  api.AdminRole,
+			DelUserId: "test3",
+			Response:  http.StatusOK,
+		},
+		{
+			UserId:    "test4",
+			UserRole:  api.ViewerRole,
+			DelUserId: "test2",
+			Response:  http.StatusOK,
+		},
+		{
+			UserId:    "test1",
+			UserRole:  api.AdminRole,
+			DelUserId: "test14",
+			Error:     http.StatusNoContent,
+		},
+		{
+			UserId:    "test5",
+			UserRole:  api.AdminRole,
+			DelUserId: "test5",
+			Error:     http.StatusBadRequest,
+		},
+	}
+	for i, tc := range getUserTestCases {
+		ts.T().Run(fmt.Sprintf("deleteInvitationTestCases-%d", i), func(t *testing.T) {
+			r := httptest.NewRequest(http.MethodGet, "/", nil)
+			r.Header.Set("Content-Type", "application/json; charset=utf8")
+			r.Header.Set(httpserver.XKeibiUserIDHeader, tc.UserId)
+			r.Header.Set(httpserver.XKeibiWorkspaceIDHeader, "ws1")
+			w := httptest.NewRecorder()
+
+			c := echo.New().NewContext(r, w)
+			c.SetPath("/auth/api/v1/invite")
+			c.QueryParams().Add("userId", tc.DelUserId)
+
+			err := ts.httpRoutes.DeleteInvitation(c)
+			if tc.Error == http.StatusNoContent {
+				ts.Equal("[GetUser] invalid status code: 204, body=", err.Error())
+				return
+			} else if tc.Error == http.StatusBadRequest {
+				ts.Equal("code=400, message=admin user permission can't be modified by self", err.Error())
+			} else {
+				ts.Nil(err)
+			}
+		})
+	}
 }
 
 func (ts *testSuite) TestGetUser() {

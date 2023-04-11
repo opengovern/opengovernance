@@ -174,8 +174,6 @@ func handlerFunc(w http.ResponseWriter, r *http.Request) {
 }
 
 func mockDeleteUser(w http.ResponseWriter, r *http.Request) {
-	id := strings.TrimPrefix(r.URL.Path, "/api/v2/users/")
-	fmt.Println("the ID is : ", id)
 	w.WriteHeader(http.StatusOK)
 }
 
@@ -191,7 +189,7 @@ func mockFillTocken(w http.ResponseWriter, r *http.Request) {
 func mockGetUser(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	id := strings.TrimPrefix(r.URL.Path, "/api/v2/users/")
-
+	fmt.Println("getuser: ", id)
 	for _, user := range testUsers {
 		if user.UserId == id {
 			w.WriteHeader(http.StatusOK)
@@ -204,6 +202,7 @@ func mockGetUser(w http.ResponseWriter, r *http.Request) {
 
 func mockGetUsers(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(testUsers)
 }
 
@@ -215,5 +214,10 @@ func mockGetClient(w http.ResponseWriter, r *http.Request) {
 		"tenant": "testTenant",
 		"random": "123",
 	}
+	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(tenant)
+}
+
+func mockPatchUser(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusOK)
 }
