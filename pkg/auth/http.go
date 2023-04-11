@@ -41,30 +41,30 @@ func (r *httpRoutes) Register(e *echo.Echo) {
 	v1.GET("/user/:user_id/workspace/membership", httpserver.AuthorizeHandler(r.GetWorkspaceMembership, api.AdminRole))
 	v1.GET("/workspace/role/bindings", httpserver.AuthorizeHandler(r.GetWorkspaceRoleBindings, api.AdminRole))
 	v1.POST("/invite", httpserver.AuthorizeHandler(r.Invite, api.AdminRole))
-	v1.GET("/roles", httpserver.AuthorizeHandler(r.ListRoles, api.ViewerRole))
-	v1.GET("/roles/details", httpserver.AuthorizeHandler(r.GetRoleDetails, api.ViewerRole))
+	v1.GET("/roles", httpserver.AuthorizeHandler(r.listRoles, api.ViewerRole))
+	v1.GET("/roles/details", httpserver.AuthorizeHandler(r.rolesDescription, api.ViewerRole))
 }
 
-// ListRoles godoc
+// listRoles godoc
 //
 //	@Summary		show lists of roles.
 //	@Tags			auth
 //	@Produce		json
-//	@Success		200	{object}	api.ListRoles
+//	@Success		200	{object}	[]api.Role
 //	@Router			/auth/api/v1/roles [get]
-func (r *httpRoutes) ListRoles(ctx echo.Context) error {
+func (r *httpRoutes) listRoles(ctx echo.Context) error {
 	roles := []api.Role{api.AdminRole, api.ViewerRole, api.EditorRole}
 	return ctx.JSON(http.StatusOK, roles)
 }
 
-// GetRoleDetails godoc
+// rolesDescription godoc
 //
 //	@Summary		show the description roles and members that use from each role
 //	@Tags			auth
 //	@Produce		json
-//	@Success		200	{object}	api.GetRoleDetails
+//	@Success		200	{object}	[]api.RolesDescription
 //	@Router			/auth/api/v1/roles/details [get]
-func (r *httpRoutes) GetRoleDetails(ctx echo.Context) error {
+func (r *httpRoutes) rolesDescription(ctx echo.Context) error {
 	workspaceID := httpserver.GetWorkspaceID(ctx)
 	users, err := r.auth0Service.SearchUsersByWorkspace(workspaceID)
 	if err != nil {

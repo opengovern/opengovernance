@@ -22,11 +22,6 @@ type RolesDescription struct {
 	Description string
 	UserCount   int
 }
-type InformationRoles struct {
-	role                  Role
-	numberOfUserUsingRole int
-	description           string
-}
 type UserRoleBinding struct {
 	WorkspaceID string `json:"workspaceID"`
 	Role        Role   `json:"role"`

@@ -1,32 +1,23 @@
-/*
-Copyright © 2023 NAME HERE <EMAIL ADDRESS>
-*/
 package cmd
 
 import (
-	"fmt"
 	"github.com/spf13/cobra"
-	"os"
+	"gitlab.com/keibiengine/keibi-engine/pkg/cli"
 )
 
 // logoutCmd represents the logout command
 var logoutCmd = &cobra.Command{
 	Use:   "logout",
 	Short: "Logging out from kaytu",
-	Run: func(cmd *cobra.Command, args []string) {
-		deleteFile()
+	RunE: func(cmd *cobra.Command, args []string) error {
+		err := cli.RemoveConfigFile()
+		if err != nil {
+			return err
+		}
+		return nil
 	},
 }
 
 func init() {
 	rootCmd.AddCommand(logoutCmd)
-}
-func deleteFile() {
-	home := os.Getenv("HOME")
-	errRemove := os.Remove(home + "/.kaytu/auth/accessToken.txt")
-	if errRemove != nil {
-		errorsRemove := fmt.Sprintf("err belong to remove file in logout : %v ", errRemove)
-		panic(errorsRemove)
-	}
-	fmt.Println("successfully logout from your account. ")
 }

@@ -1,4 +1,4 @@
-package cmd
+package cli
 
 type DeviceCodeResponse struct {
 	DeviceCode              string `json:"device_code"`

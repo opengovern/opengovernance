@@ -8,10 +8,8 @@ import (
 	"fmt"
 	"github.com/jedib0t/go-pretty/v6/table"
 	"github.com/spf13/cobra"
-	urls "gitlab.com/keibiengine/keibi-engine/pkg/cli/consts"
+	"gitlab.com/keibiengine/keibi-engine/pkg/cli"
 	"gitlab.com/keibiengine/keibi-engine/pkg/workspace/api"
-	"io/ioutil"
-	"net/http"
 	"os"
 )
 
@@ -19,28 +17,30 @@ import (
 var workspacesCmd = &cobra.Command{
 	Use:   "workspaces",
 	Short: "A brief description of your command",
-	Run: func(cmd *cobra.Command, args []string) {
-		home := os.Getenv("HOME")
-		AT, errFile := os.ReadFile(home + "/.kaytu/auth/accessToken.txt")
-		if errFile != nil {
-			fmt.Println("error relate to reading	 accessToken file in workspaces: ")
-			panic(errFile)
+	RunE: func(cmd *cobra.Command, args []string) error {
+		accessToken, errAC := cli.GetConfig()
+		if errAC != nil {
+			return errAC
 		}
-		var dataAccessToken DataStoredInFile
-		errJm := json.Unmarshal(AT, &dataAccessToken)
+
+		var dataAccessToken cli.DataStoredInFile
+		errJm := json.Unmarshal(accessToken, &dataAccessToken)
 		if errJm != nil {
-			panic(errJm)
+			return errJm
 		}
-		err, bodyResponse := RequestWorkspaces(dataAccessToken.AccessToken)
+
+		err, bodyResponse := cli.RequestWorkspaces(dataAccessToken.AccessToken)
 		if err != nil {
 			panic(err)
 		}
+
 		var responseUnmarshal []api.WorkspaceResponse
 		errJson := json.Unmarshal(bodyResponse, &responseUnmarshal)
 		if errJson != nil {
 			fmt.Println("error relate to jsonUnmarshal in workspace: ")
-			panic(errJson)
+			return errJson
 		}
+
 		typeOutput, errFlag := cmd.Flags().GetString("output")
 		if errFlag != nil {
 			panic(errFlag)
@@ -59,32 +59,11 @@ var workspacesCmd = &cobra.Command{
 				tableWorkspaces.Render()
 			}
 		}
+		return nil
 	},
 }
 
 func init() {
 	rootCmd.AddCommand(workspacesCmd)
 	workspacesCmd.PersistentFlags().String("output", "", "this flag use for specify the output type .")
-}
-
-func RequestWorkspaces(accessToken string) (error, []byte) {
-	req, err := http.NewRequest("GET", urls.UrlWorkspace, nil)
-	if err != nil {
-		fmt.Println("error related to request in workspaces: ")
-		return err, nil
-	}
-	req.Header.Set("Authorization", "Bearer "+accessToken)
-	res, errRead := http.DefaultClient.Do(req)
-	if errRead != nil {
-		fmt.Println("error relate to response in workspaces:")
-		return errRead, nil
-	}
-	body, errBody := ioutil.ReadAll(res.Body)
-	if errBody != nil {
-		fmt.Println("error relate to reading response in workspaces:")
-		return errBody, nil
-	}
-	defer res.Body.Close()
-
-	return nil, body
 }
