@@ -97,7 +97,7 @@ require (
 	github.com/swaggo/swag v1.8.0
 	github.com/tombuildsstuff/giovanni v0.18.0
 	github.com/turbot/go-kit v0.4.0
-	gitlab.com/keibiengine/steampipe-plugin-aws v0.0.0-20230410150913-74f188c1d370
+	gitlab.com/keibiengine/steampipe-plugin-aws v0.0.0-20230411084710-ce82c412f86e
 	gitlab.com/keibiengine/steampipe-plugin-azure v0.23.2-0.20230403104025-7450a19481dd
 	gitlab.com/keibiengine/steampipe-plugin-azuread v0.1.1-0.20230330133010-4edcf1226e17
 	go.uber.org/zap v1.21.0
