@@ -486,8 +486,15 @@ func (h *HttpHandler) GetBenchmarkResultTrend(ctx echo.Context) error {
 //	@Success	200				{object}	api.BenchmarkTree
 //	@Router		/compliance/api/v1/benchmark/{benchmark_id}/tree [get]
 func (h *HttpHandler) GetBenchmarkTree(ctx echo.Context) error {
+	var status []types.PolicyStatus
 	benchmarkID := ctx.Param("benchmark_id")
-	statusFilter := ctx.QueryParam("status")
+	for k, va := range ctx.QueryParams() {
+		if k == "status" {
+			for _, v := range va {
+				status = append(status, types.PolicyStatus(v))
+			}
+		}
+	}
 
 	benchmark, err := h.db.GetBenchmark(benchmarkID)
 	if err != nil {
@@ -496,12 +503,6 @@ func (h *HttpHandler) GetBenchmarkTree(ctx echo.Context) error {
 
 	if benchmark == nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid benchmarkID")
-	}
-
-	var status *types.PolicyStatus
-	if len(statusFilter) > 0 {
-		s := types.PolicyStatus(statusFilter)
-		status = &s
 	}
 
 	response, err := GetBenchmarkTree(h.db, h.client, *benchmark, status)

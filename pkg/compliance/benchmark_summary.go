@@ -134,7 +134,7 @@ func UniqueArray[T any](input []T, equals func(T, T) bool) []T {
 	return out
 }
 
-func GetBenchmarkTree(db db.Database, client keibi.Client, b db.Benchmark, status *types.PolicyStatus) (api.BenchmarkTree, error) {
+func GetBenchmarkTree(db db.Database, client keibi.Client, b db.Benchmark, status []types.PolicyStatus) (api.BenchmarkTree, error) {
 	tree := api.BenchmarkTree{
 		ID:       b.ID,
 		Title:    b.Title,
@@ -193,8 +193,17 @@ func GetBenchmarkTree(db db.Database, client keibi.Client, b db.Benchmark, statu
 				}
 			}
 		}
-		if status != nil && pt.Status != *status {
-			continue
+		if len(status) > 0 {
+			contains := false
+			for _, s := range status {
+				if s == pt.Status {
+					contains = true
+				}
+			}
+
+			if !contains {
+				continue
+			}
 		}
 		tree.Policies = append(tree.Policies, pt)
 	}
