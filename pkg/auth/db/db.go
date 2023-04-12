@@ -44,6 +44,18 @@ func (db Database) GetAPIKeysByRole(role api.Role) ([]ApiKey, error) {
 	return s, nil
 }
 
+func (db Database) CountApiKeys(workspaceID string) (int64, error) {
+	var s int64
+	tx := db.Orm.Model(&ApiKey{}).
+		Where("workspace_id", workspaceID).
+		Where("revoked", "false").
+		Count(&s)
+	if tx.Error != nil {
+		return 0, tx.Error
+	}
+	return s, nil
+}
+
 func (db Database) GetApiKeys(workspaceID string, id uint) (*ApiKey, error) {
 	var s ApiKey
 	tx := db.Orm.Model(&ApiKey{}).
