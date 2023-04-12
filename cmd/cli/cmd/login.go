@@ -1,11 +1,9 @@
 package cmd
 
 import (
-	"encoding/json"
 	"fmt"
 	"github.com/spf13/cobra"
 	"gitlab.com/keibiengine/keibi-engine/pkg/cli"
-	"os"
 )
 
 // loginCmd represents the login command
@@ -16,52 +14,19 @@ var loginCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		deviceCode, err := cli.RequestDeviceCode()
 		if err != nil {
-			return err
+			return fmt.Errorf("[login] : %v", err)
 		}
 
-		AT, errAccessToken := cli.AccessToken(deviceCode)
-		if errAccessToken != nil {
-			return errAccessToken
+		accessToken, err := cli.AccessToken(deviceCode)
+		if err != nil {
+			return fmt.Errorf("[login] : %v", err)
 		}
 
-		//save accessToken to the file :
-		var data cli.DataStoredInFile
-		data.AccessToken = AT
-		accessToken, errJm := json.Marshal(data)
-		if errJm != nil {
-			return errJm
+		err = cli.AddConfig(accessToken)
+		if err != nil {
+			return fmt.Errorf("[login] : %v", err)
 		}
-		home := os.Getenv("HOME")
-		if _, errStat := os.Stat(home + "/.kaytu/config.json"); errStat != nil {
 
-			file, errFil := os.Create(home + "/.kaytu/config.json")
-			if errFil != nil {
-				return errFil
-			}
-
-			_, errWrite := file.WriteString(string(accessToken))
-			if errWrite != nil {
-				fmt.Println("error belong to writing accessToken into file : ")
-				return errWrite
-			}
-		} else {
-			errRemove := os.Remove(home + "/.kaytu/config.json")
-			if errRemove != nil {
-				fmt.Println("error relate to removing file accessToken: ")
-				return errRemove
-			}
-
-			file, errFil := os.Create(home + "/.kaytu/config.json")
-			if errFil != nil {
-				return errFil
-			}
-
-			_, errWrite := file.WriteString(string(accessToken))
-			if errWrite != nil {
-				fmt.Println("error belong to writing accessToken into file : ")
-				return errWrite
-			}
-		}
 		return nil
 	},
 }

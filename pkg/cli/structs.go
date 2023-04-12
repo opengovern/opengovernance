@@ -26,7 +26,7 @@ type RequestAccessToken struct {
 	DeviceCode string `json:"device_code"`
 	ClientId   string `json:"client_id"`
 }
-type DataStoredInFile struct {
+type Config struct {
 	AccessToken string `json:"access_token"`
 }
 type ResponseAbout struct {
