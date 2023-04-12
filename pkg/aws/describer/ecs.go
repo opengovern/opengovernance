@@ -82,6 +82,33 @@ func ECSCluster(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	return values, nil
 }
 
+func GetECSCluster(ctx context.Context, cfg aws.Config, cluster string) ([]Resource, error) {
+	client := ecs.NewFromConfig(cfg)
+
+	var values []Resource
+	output, err := client.DescribeClusters(ctx, &ecs.DescribeClustersInput{
+		Clusters: []string{cluster},
+	})
+	if err != nil {
+		return nil, err
+	}
+	if len(output.Failures) != 0 {
+		return nil, failuresToError(output.Failures)
+	}
+
+	for _, v := range output.Clusters {
+		values = append(values, Resource{
+			ARN:  *v.ClusterArn,
+			Name: *v.ClusterName,
+			Description: model.ECSClusterDescription{
+				Cluster: v,
+			},
+		})
+	}
+
+	return values, nil
+}
+
 func ECSService(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	clusters, err := listEcsClusters(ctx, cfg)
 	if err != nil {
@@ -132,6 +159,34 @@ func ECSService(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	return values, nil
 }
 
+func GetECSService(ctx context.Context, cfg aws.Config, cluster, service string) ([]Resource, error) {
+	client := ecs.NewFromConfig(cfg)
+
+	var values []Resource
+	output, err := client.DescribeServices(ctx, &ecs.DescribeServicesInput{
+		Cluster:  &cluster,
+		Services: []string{service},
+	})
+	if err != nil {
+		return nil, err
+	}
+	if len(output.Failures) != 0 {
+		return nil, failuresToError(output.Failures)
+	}
+
+	for _, v := range output.Services {
+		values = append(values, Resource{
+			ARN:  *v.ServiceArn,
+			Name: *v.ServiceName,
+			Description: model.ECSServiceDescription{
+				Service: v,
+			},
+		})
+	}
+
+	return values, nil
+}
+
 func ECSTaskDefinition(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	client := ecs.NewFromConfig(cfg)
 	paginator := ecs.NewListTaskDefinitionsPaginator(client, &ecs.ListTaskDefinitionsInput{})
@@ -168,6 +223,36 @@ func ECSTaskDefinition(ctx context.Context, cfg aws.Config) ([]Resource, error) 
 			})
 		}
 	}
+
+	return values, nil
+}
+
+func GetECSTaskDefinition(ctx context.Context, cfg aws.Config, taskDefinitionARN string) ([]Resource, error) {
+	client := ecs.NewFromConfig(cfg)
+
+	var values []Resource
+	output, err := client.DescribeTaskDefinition(ctx, &ecs.DescribeTaskDefinitionInput{
+		TaskDefinition: &taskDefinitionARN,
+		Include: []types.TaskDefinitionField{
+			types.TaskDefinitionFieldTags,
+		},
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	// From Steampipe
+	splitArn := strings.Split(taskDefinitionARN, ":")
+	name := splitArn[len(splitArn)-1]
+
+	values = append(values, Resource{
+		ARN:  taskDefinitionARN,
+		Name: name,
+		Description: model.ECSTaskDefinitionDescription{
+			TaskDefinition: output.TaskDefinition,
+			Tags:           output.Tags,
+		},
+	})
 
 	return values, nil
 }

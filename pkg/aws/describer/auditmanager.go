@@ -80,6 +80,28 @@ func AuditManagerControl(ctx context.Context, cfg aws.Config) ([]Resource, error
 	return values, nil
 }
 
+func GetAuditManagerControl(ctx context.Context, cfg aws.Config, controlID string) ([]Resource, error) {
+	client := auditmanager.NewFromConfig(cfg)
+	control, err := client.GetControl(ctx, &auditmanager.GetControlInput{
+		ControlId: &controlID,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	var values []Resource
+	values = append(values, Resource{
+		ARN:  *control.Control.Arn,
+		Name: *control.Control.Name,
+		ID:   *control.Control.Id,
+		Description: model.AuditManagerControlDescription{
+			Control: *control.Control,
+		},
+	})
+
+	return values, nil
+}
+
 func AuditManagerEvidence(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	client := auditmanager.NewFromConfig(cfg)
 	paginator := auditmanager.NewListAssessmentsPaginator(client, &auditmanager.ListAssessmentsInput{})

@@ -97,6 +97,30 @@ func DynamoDbGlobalSecondaryIndex(ctx context.Context, cfg aws.Config) ([]Resour
 	return values, nil
 }
 
+func GetDynamoDbGlobalSecondaryIndex(ctx context.Context, cfg aws.Config, tableName string) ([]Resource, error) {
+	client := dynamodb.NewFromConfig(cfg)
+
+	var values []Resource
+	tableOutput, err := client.DescribeTable(ctx, &dynamodb.DescribeTableInput{
+		TableName: &tableName,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	for _, v := range tableOutput.Table.GlobalSecondaryIndexes {
+		values = append(values, Resource{
+			ARN:  *v.IndexArn,
+			Name: *v.IndexName,
+			Description: model.DynamoDbGlobalSecondaryIndexDescription{
+				GlobalSecondaryIndex: v,
+			},
+		})
+	}
+
+	return values, nil
+}
+
 func DynamoDbLocalSecondaryIndex(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	client := dynamodb.NewFromConfig(cfg)
 	paginator := dynamodb.NewListTablesPaginator(client, &dynamodb.ListTablesInput{})

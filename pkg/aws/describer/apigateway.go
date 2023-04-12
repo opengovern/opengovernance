@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/aws/aws-sdk-go-v2/service/apigateway/types"
+
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/apigateway"
 	"github.com/aws/aws-sdk-go-v2/service/apigatewayv2"
@@ -44,6 +46,32 @@ func ApiGatewayStage(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 				})
 			}
 		}
+	}
+	return values, nil
+}
+
+func GetApiGatewayStage(ctx context.Context, cfg aws.Config, restAPIID string) ([]Resource, error) {
+	client := apigateway.NewFromConfig(cfg)
+
+	describeCtx := GetDescribeContext(ctx)
+	out, err := client.GetStages(ctx, &apigateway.GetStagesInput{
+		RestApiId: &restAPIID,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	var values []Resource
+	for _, stageItem := range out.Item {
+		arn := "arn:" + describeCtx.Partition + ":apigateway:" + describeCtx.Region + "::/restapis/" + restAPIID + "/stages/" + *stageItem.StageName
+		values = append(values, Resource{
+			ARN:  arn,
+			Name: *stageItem.StageName,
+			Description: model.ApiGatewayStageDescription{
+				RestApiId: &restAPIID,
+				Stage:     stageItem,
+			},
+		})
 	}
 	return values, nil
 }
@@ -128,6 +156,46 @@ func ApiGatewayRestAPI(ctx context.Context, cfg aws.Config) ([]Resource, error) 
 			})
 		}
 	}
+	return values, nil
+}
+
+func GetApiGatewayRestAPI(ctx context.Context, cfg aws.Config, id string) ([]Resource, error) {
+	client := apigateway.NewFromConfig(cfg)
+	describeCtx := GetDescribeContext(ctx)
+
+	out, err := client.GetRestApi(ctx, &apigateway.GetRestApiInput{
+		RestApiId: &id,
+	})
+	if err != nil {
+		if isErr(err, "NotFoundException") {
+			return nil, nil
+		}
+		return nil, err
+	}
+
+	var values []Resource
+	arn := fmt.Sprintf("arn:%s:apigateway:%s::/restapis/%s", describeCtx.Partition, describeCtx.Region, *out.Id)
+	values = append(values, Resource{
+		ARN:  arn,
+		Name: *out.Name,
+		Description: model.ApiGatewayRestAPIDescription{
+			RestAPI: types.RestApi{
+				ApiKeySource:              out.ApiKeySource,
+				BinaryMediaTypes:          out.BinaryMediaTypes,
+				CreatedDate:               out.CreatedDate,
+				Description:               out.Description,
+				DisableExecuteApiEndpoint: out.DisableExecuteApiEndpoint,
+				EndpointConfiguration:     out.EndpointConfiguration,
+				Id:                        out.Id,
+				MinimumCompressionSize:    out.MinimumCompressionSize,
+				Name:                      out.Name,
+				Policy:                    out.Policy,
+				Tags:                      out.Tags,
+				Version:                   out.Version,
+				Warnings:                  out.Warnings,
+			},
+		},
+	})
 	return values, nil
 }
 
@@ -271,6 +339,50 @@ func ApiGatewayV2API(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	return values, nil
 }
 
+func GetApiGatewayV2API(ctx context.Context, cfg aws.Config, apiID string) ([]Resource, error) {
+	describeCtx := GetDescribeContext(ctx)
+	client := apigatewayv2.NewFromConfig(cfg)
+
+	var values []Resource
+	out, err := client.GetApi(ctx, &apigatewayv2.GetApiInput{
+		ApiId: &apiID,
+	})
+	if err != nil {
+		if isErr(err, "NotFoundException") {
+			return nil, nil
+		}
+		return nil, err
+	}
+
+	arn := fmt.Sprintf("arn:%s:apigateway:%s::/apis/%s", describeCtx.Partition, describeCtx.Region, apiID)
+	values = append(values, Resource{
+		ARN:  arn,
+		Name: *out.Name,
+		Description: model.ApiGatewayV2APIDescription{
+			API: typesv2.Api{
+				Name:                      out.Name,
+				ProtocolType:              out.ProtocolType,
+				RouteSelectionExpression:  out.RouteSelectionExpression,
+				ApiEndpoint:               out.ApiEndpoint,
+				ApiGatewayManaged:         out.ApiGatewayManaged,
+				ApiId:                     out.ApiId,
+				ApiKeySelectionExpression: out.ApiKeySelectionExpression,
+				CorsConfiguration:         out.CorsConfiguration,
+				CreatedDate:               out.CreatedDate,
+				Description:               out.Description,
+				DisableExecuteApiEndpoint: out.DisableExecuteApiEndpoint,
+				DisableSchemaValidation:   out.DisableSchemaValidation,
+				ImportInfo:                out.ImportInfo,
+				Tags:                      out.Tags,
+				Version:                   out.Version,
+				Warnings:                  out.Warnings,
+			},
+		},
+	})
+
+	return values, nil
+}
+
 func ApiGatewayV2DomainName(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	describeCtx := GetDescribeContext(ctx)
 	client := apigatewayv2.NewFromConfig(cfg)
@@ -305,6 +417,36 @@ func ApiGatewayV2DomainName(ctx context.Context, cfg aws.Config) ([]Resource, er
 		return nil, err
 	}
 
+	return values, nil
+}
+
+func GetApiGatewayV2DomainName(ctx context.Context, cfg aws.Config, domainName string) ([]Resource, error) {
+	describeCtx := GetDescribeContext(ctx)
+	client := apigatewayv2.NewFromConfig(cfg)
+	var values []Resource
+	out, err := client.GetDomainName(ctx, &apigatewayv2.GetDomainNameInput{
+		DomainName: &domainName,
+	})
+	if err != nil {
+		if isErr(err, "NotFoundException") {
+			return nil, nil
+		}
+		return nil, err
+	}
+	arn := fmt.Sprintf("arn:%s:apigateway:%s::/domainnames/%s", describeCtx.Partition, describeCtx.Region, domainName)
+	values = append(values, Resource{
+		ARN:  arn,
+		Name: *out.DomainName,
+		Description: model.ApiGatewayV2DomainNameDescription{
+			DomainName: typesv2.DomainName{
+				DomainName:                    out.DomainName,
+				ApiMappingSelectionExpression: out.ApiMappingSelectionExpression,
+				DomainNameConfigurations:      out.DomainNameConfigurations,
+				MutualTlsAuthentication:       out.MutualTlsAuthentication,
+				Tags:                          out.Tags,
+			},
+		},
+	})
 	return values, nil
 }
 
@@ -368,6 +510,64 @@ func ApiGatewayV2Integration(ctx context.Context, cfg aws.Config) ([]Resource, e
 		}
 		return nil, err
 	}
+
+	return values, nil
+}
+
+func GetApiGatewayV2Integration(ctx context.Context, cfg aws.Config, apiId, integrationID string) ([]Resource, error) {
+	describeCtx := GetDescribeContext(ctx)
+	client := apigatewayv2.NewFromConfig(cfg)
+
+	var values []Resource
+	api, err := client.GetApi(ctx, &apigatewayv2.GetApiInput{
+		ApiId: &apiId,
+	})
+	if err != nil {
+		if isErr(err, "NotFoundException") {
+			return nil, nil
+		}
+		return nil, err
+	}
+
+	integration, err := client.GetIntegration(ctx, &apigatewayv2.GetIntegrationInput{
+		ApiId:         aws.String(*api.ApiId),
+		IntegrationId: &integrationID,
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	arn := fmt.Sprintf("arn:%s:apigateway:%s::/apis/%s/integrations/%s", describeCtx.Partition, describeCtx.Region, *api.ApiId, *integration.IntegrationId)
+	values = append(values, Resource{
+		ARN: arn,
+		ID:  *integration.IntegrationId,
+		Description: model.ApiGatewayV2IntegrationDescription{
+			Integration: typesv2.Integration{
+				ApiGatewayManaged:                      integration.ApiGatewayManaged,
+				ConnectionId:                           integration.ConnectionId,
+				ConnectionType:                         integration.ConnectionType,
+				ContentHandlingStrategy:                integration.ContentHandlingStrategy,
+				CredentialsArn:                         integration.CredentialsArn,
+				Description:                            integration.Description,
+				IntegrationId:                          integration.IntegrationId,
+				IntegrationMethod:                      integration.IntegrationMethod,
+				IntegrationResponseSelectionExpression: integration.IntegrationResponseSelectionExpression,
+				IntegrationSubtype:                     integration.IntegrationSubtype,
+				IntegrationType:                        integration.IntegrationType,
+				IntegrationUri:                         integration.IntegrationUri,
+				PassthroughBehavior:                    integration.PassthroughBehavior,
+				PayloadFormatVersion:                   integration.PayloadFormatVersion,
+				RequestParameters:                      integration.RequestParameters,
+				RequestTemplates:                       integration.RequestTemplates,
+				ResponseParameters:                     integration.ResponseParameters,
+				TemplateSelectionExpression:            integration.TemplateSelectionExpression,
+				TimeoutInMillis:                        integration.TimeoutInMillis,
+				TlsConfig:                              integration.TlsConfig,
+			},
+			ApiId: *api.ApiId,
+		},
+	})
 
 	return values, nil
 }

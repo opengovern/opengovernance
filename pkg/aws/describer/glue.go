@@ -125,6 +125,31 @@ func GlueCrawler(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	return values, nil
 }
 
+func GetGlueCrawler(ctx context.Context, cfg aws.Config, name string) ([]Resource, error) {
+	describeCtx := GetDescribeContext(ctx)
+	client := glue.NewFromConfig(cfg)
+
+	out, err := client.GetCrawler(ctx, &glue.GetCrawlerInput{
+		Name: &name,
+	})
+	if err != nil {
+		return nil, err
+	}
+	crawler := out.Crawler
+
+	var values []Resource
+	arn := fmt.Sprintf("arn:aws:glue:%s:%s:crawler/%s", describeCtx.Region, describeCtx.AccountID, *crawler.Name)
+	values = append(values, Resource{
+		Name: *crawler.Name,
+		ARN:  arn,
+		Description: model.GlueCrawlerDescription{
+			Crawler: *crawler,
+		},
+	})
+
+	return values, nil
+}
+
 func GlueDataCatalogEncryptionSettings(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	client := glue.NewFromConfig(cfg)
 
@@ -231,6 +256,40 @@ func GlueJob(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 			})
 		}
 	}
+
+	return values, nil
+}
+
+func GetGlueJob(ctx context.Context, cfg aws.Config, jobName string) ([]Resource, error) {
+	describeCtx := GetDescribeContext(ctx)
+	client := glue.NewFromConfig(cfg)
+
+	var values []Resource
+	out, err := client.GetJob(ctx, &glue.GetJobInput{
+		JobName: &jobName,
+	})
+	if err != nil {
+		return nil, err
+	}
+	job := out.Job
+
+	arn := fmt.Sprintf("arn:aws:glue:%s:%s:job/%s", describeCtx.Region, describeCtx.AccountID, *job.Name)
+
+	bookmark, err := client.GetJobBookmark(ctx, &glue.GetJobBookmarkInput{
+		JobName: job.Name,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	values = append(values, Resource{
+		Name: *job.Name,
+		ARN:  arn,
+		Description: model.GlueJobDescription{
+			Job:      *job,
+			Bookmark: *bookmark.JobBookmarkEntry,
+		},
+	})
 
 	return values, nil
 }
