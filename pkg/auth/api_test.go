@@ -6,13 +6,21 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"testing"
+	"time"
 
 	"github.com/labstack/echo/v4"
+	"github.com/ory/dockertest/v3"
 	"github.com/stretchr/testify/suite"
 	"gitlab.com/keibiengine/keibi-engine/pkg/auth/api"
 	"gitlab.com/keibiengine/keibi-engine/pkg/auth/auth0"
+	"gitlab.com/keibiengine/keibi-engine/pkg/auth/db"
+	idocker "gitlab.com/keibiengine/keibi-engine/pkg/internal/dockertest"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpserver"
+	"gitlab.com/keibiengine/keibi-engine/pkg/internal/postgres"
+	"go.uber.org/zap"
+	"gorm.io/gorm"
 )
 
 func TestSuite(t *testing.T) {
@@ -53,14 +61,45 @@ func (ts *testSuite) FetchData() (error, string) {
 }
 
 func (ts *testSuite) SetupSuite() {
-	// ts.testServer = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-	// 	if r.Method == http.MethodDelete {
-	// 		mockDeleteUser(w, r)
-	// 	}
-	// 	if r.Method == http.MethodGet {
-	// 		mockGetUsers(w, r)
-	// 	}
-	// }))
+	t := ts.T()
+	os.Setenv("DOCKER_HOST", "tcp://localhost:5432")
+	pool, err := dockertest.NewPool("")
+
+	user, pass := "postgres", "123456"
+	resource, err := pool.Run(user, "14.2-alpine", []string{fmt.Sprintf("POSTGRES_PASSWORD=%s", pass)})
+	ts.NoError(err, "status postgres")
+
+	t.Cleanup(func() {
+		err := pool.Purge(resource)
+		ts.NoError(err, "purge resource %s", resource)
+	})
+	time.Sleep(5 * time.Second)
+
+	var adb *gorm.DB
+	// exponential backoff-retry, because the application in the container might not be ready to accept connections yet
+	err = pool.Retry(func() error {
+		cfg := &postgres.Config{
+			Host:   idocker.GetDockerHost(),
+			Port:   resource.GetPort("5432/tcp"),
+			User:   user,
+			Passwd: pass,
+			DB:     "postgres",
+		}
+
+		logger, err := zap.NewProduction()
+		ts.NoError(err, "new zap logger")
+
+		adb, err = postgres.NewClient(cfg, logger)
+		ts.NoError(err, "new postgres client")
+
+		d, err := adb.DB()
+		if err != nil {
+			return err
+		}
+
+		return d.Ping()
+	})
+	ts.NoError(err, "wait for postgres connection")
 
 	mux := http.NewServeMux()
 
@@ -83,6 +122,7 @@ func (ts *testSuite) SetupSuite() {
 		"test_auth0ManageClientSecret", "test_auth0Connection", int(1))
 	ts.httpRoutes = httpRoutes{
 		auth0Service: ts.service,
+		db:           db.Database{Orm: adb},
 	}
 	e := echo.New()
 	ts.httpRoutes.Register(e)
