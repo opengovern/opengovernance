@@ -445,6 +445,35 @@ func EC2EIP(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	return values, nil
 }
 
+func GetEC2EIP(ctx context.Context, cfg aws.Config, allocationId string) ([]Resource, error) {
+	describeCtx := GetDescribeContext(ctx)
+
+	client := ec2.NewFromConfig(cfg)
+	output, err := client.DescribeAddresses(ctx, &ec2.DescribeAddressesInput{
+		AllocationIds: []string{allocationId},
+	})
+	if err != nil {
+		if !isErr(err, "InvalidAllocationID.NotFound") && !isErr(err, "InvalidAllocationID.Malformed") {
+			return nil, err
+		}
+		return nil, nil
+	}
+
+	var values []Resource
+	for _, v := range output.Addresses {
+		arn := "arn:" + describeCtx.Partition + ":ec2:" + describeCtx.Region + ":" + describeCtx.AccountID + ":eip/" + *v.AllocationId
+		values = append(values, Resource{
+			ARN:  arn,
+			Name: *v.AllocationId,
+			Description: model.EC2EIPDescription{
+				Address: v,
+			},
+		})
+	}
+
+	return values, nil
+}
+
 func EC2EnclaveCertificateIamRoleAssociation(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	certs, err := CertificateManagerCertificate(ctx, cfg)
 	if err != nil {
@@ -594,6 +623,73 @@ func EC2Instance(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 					Description: desc,
 				})
 			}
+		}
+	}
+
+	return values, nil
+}
+
+func GetEC2Instance(ctx context.Context, cfg aws.Config, instanceID string) ([]Resource, error) {
+	client := ec2.NewFromConfig(cfg)
+
+	describeCtx := GetDescribeContext(ctx)
+	out, err := client.DescribeInstances(ctx, &ec2.DescribeInstancesInput{
+		InstanceIds: []string{instanceID},
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	var values []Resource
+
+	for _, r := range out.Reservations {
+		for _, v := range r.Instances {
+			var desc model.EC2InstanceDescription
+
+			in := v // Do this to avoid the pointer being replaced by the for loop
+			desc.Instance = &in
+
+			statusOutput, err := client.DescribeInstanceStatus(ctx, &ec2.DescribeInstanceStatusInput{
+				InstanceIds:         []string{*v.InstanceId},
+				IncludeAllInstances: aws.Bool(true),
+			})
+			if err != nil {
+				return nil, err
+			}
+			if len(statusOutput.InstanceStatuses) > 0 {
+				desc.InstanceStatus = &statusOutput.InstanceStatuses[0]
+			}
+
+			attrs := []types.InstanceAttributeName{
+				types.InstanceAttributeNameUserData,
+				types.InstanceAttributeNameInstanceInitiatedShutdownBehavior,
+				types.InstanceAttributeNameDisableApiTermination,
+			}
+
+			for _, attr := range attrs {
+				output, err := client.DescribeInstanceAttribute(ctx, &ec2.DescribeInstanceAttributeInput{
+					InstanceId: v.InstanceId,
+					Attribute:  attr,
+				})
+				if err != nil {
+					return nil, err
+				}
+
+				switch attr {
+				case types.InstanceAttributeNameUserData:
+					desc.Attributes.UserData = aws.ToString(output.UserData.Value)
+				case types.InstanceAttributeNameInstanceInitiatedShutdownBehavior:
+					desc.Attributes.InstanceInitiatedShutdownBehavior = aws.ToString(output.InstanceInitiatedShutdownBehavior.Value)
+				case types.InstanceAttributeNameDisableApiTermination:
+					desc.Attributes.DisableApiTermination = aws.ToBool(output.DisableApiTermination.Value)
+				}
+			}
+			arn := "arn:" + describeCtx.Partition + ":ec2:" + describeCtx.Region + ":" + describeCtx.AccountID + ":instance/" + *v.InstanceId
+			values = append(values, Resource{
+				ARN:         arn,
+				Name:        *v.InstanceId,
+				Description: desc,
+			})
 		}
 	}
 
@@ -781,6 +877,33 @@ func EC2NetworkInterface(ctx context.Context, cfg aws.Config) ([]Resource, error
 	return values, nil
 }
 
+func GetEC2NetworkInterface(ctx context.Context, cfg aws.Config, networkInterfaceID string) ([]Resource, error) {
+	client := ec2.NewFromConfig(cfg)
+
+	describeCtx := GetDescribeContext(ctx)
+	out, err := client.DescribeNetworkInterfaces(ctx, &ec2.DescribeNetworkInterfacesInput{
+		NetworkInterfaceIds: []string{networkInterfaceID},
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	var values []Resource
+
+	for _, v := range out.NetworkInterfaces {
+		arn := "arn:" + describeCtx.Partition + ":ec2:" + describeCtx.Region + ":" + describeCtx.AccountID + ":network-interface/" + *v.NetworkInterfaceId
+		values = append(values, Resource{
+			ARN:  arn,
+			Name: *v.NetworkInterfaceId,
+			Description: model.EC2NetworkInterfaceDescription{
+				NetworkInterface: v,
+			},
+		})
+	}
+
+	return values, nil
+}
+
 func EC2NetworkInterfacePermission(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	client := ec2.NewFromConfig(cfg)
 	paginator := ec2.NewDescribeNetworkInterfacePermissionsPaginator(client, &ec2.DescribeNetworkInterfacePermissionsInput{})
@@ -899,6 +1022,31 @@ func EC2RouteTable(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 				},
 			})
 		}
+	}
+
+	return values, nil
+}
+
+func GetEC2RouteTable(ctx context.Context, cfg aws.Config, routeTableID string) ([]Resource, error) {
+	client := ec2.NewFromConfig(cfg)
+
+	describeCtx := GetDescribeContext(ctx)
+	out, err := client.DescribeRouteTables(ctx, &ec2.DescribeRouteTablesInput{RouteTableIds: []string{routeTableID}})
+	if err != nil {
+		return nil, err
+	}
+
+	var values []Resource
+	for _, v := range out.RouteTables {
+		arn := "arn:" + describeCtx.Partition + ":ec2:" + describeCtx.Region + ":" + describeCtx.AccountID + ":route-table/" + *v.RouteTableId
+
+		values = append(values, Resource{
+			ARN:  arn,
+			Name: *v.RouteTableId,
+			Description: model.EC2RouteTableDescription{
+				RouteTable: v,
+			},
+		})
 	}
 
 	return values, nil
@@ -1077,6 +1225,33 @@ func EC2SecurityGroup(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	return values, nil
 }
 
+func GetEC2SecurityGroup(ctx context.Context, cfg aws.Config, groupID string) ([]Resource, error) {
+	client := ec2.NewFromConfig(cfg)
+
+	describeCtx := GetDescribeContext(ctx)
+
+	out, err := client.DescribeSecurityGroups(ctx, &ec2.DescribeSecurityGroupsInput{
+		GroupIds: []string{groupID},
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	var values []Resource
+	for _, v := range out.SecurityGroups {
+		arn := "arn:" + describeCtx.Partition + ":ec2:" + describeCtx.Region + ":" + describeCtx.AccountID + ":security-group/" + *v.GroupId
+		values = append(values, Resource{
+			ARN:  arn,
+			Name: *v.GroupName,
+			Description: model.EC2SecurityGroupDescription{
+				SecurityGroup: v,
+			},
+		})
+	}
+
+	return values, nil
+}
+
 func getEC2SecurityGroupRuleDescriptionFromIPPermission(group types.SecurityGroup, permission types.IpPermission, groupType string) []model.EC2SecurityGroupRuleDescription {
 	var descArr []model.EC2SecurityGroupRuleDescription
 
@@ -1236,6 +1411,30 @@ func EC2Subnet(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 				},
 			})
 		}
+	}
+
+	return values, nil
+}
+
+func GetEC2Subnet(ctx context.Context, cfg aws.Config, subnetId string) ([]Resource, error) {
+	client := ec2.NewFromConfig(cfg)
+	out, err := client.DescribeSubnets(ctx, &ec2.DescribeSubnetsInput{
+		SubnetIds: []string{subnetId},
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	var values []Resource
+
+	for _, v := range out.Subnets {
+		values = append(values, Resource{
+			ARN:  *v.SubnetArn,
+			Name: *v.SubnetId,
+			Description: model.EC2SubnetDescription{
+				Subnet: v,
+			},
+		})
 	}
 
 	return values, nil
@@ -1545,6 +1744,32 @@ func EC2VPC(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	return values, nil
 }
 
+func GetEC2VPC(ctx context.Context, cfg aws.Config, vpcID string) ([]Resource, error) {
+	client := ec2.NewFromConfig(cfg)
+
+	describeCtx := GetDescribeContext(ctx)
+	out, err := client.DescribeVpcs(ctx, &ec2.DescribeVpcsInput{
+		VpcIds: []string{vpcID},
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	var values []Resource
+	for _, v := range out.Vpcs {
+		arn := "arn:" + describeCtx.Partition + ":ec2:" + describeCtx.Region + ":" + describeCtx.AccountID + ":vpc/" + *v.VpcId
+		values = append(values, Resource{
+			ARN:  arn,
+			Name: *v.VpcId,
+			Description: model.EC2VpcDescription{
+				Vpc: v,
+			},
+		})
+	}
+
+	return values, nil
+}
+
 func EC2VPCEndpoint(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	client := ec2.NewFromConfig(cfg)
 	paginator := ec2.NewDescribeVpcEndpointsPaginator(client, &ec2.DescribeVpcEndpointsInput{})
@@ -1817,6 +2042,32 @@ func EC2KeyPair(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 
 	client := ec2.NewFromConfig(cfg)
 	output, err := client.DescribeKeyPairs(ctx, &ec2.DescribeKeyPairsInput{})
+	if err != nil {
+		return nil, err
+	}
+
+	var values []Resource
+	for _, v := range output.KeyPairs {
+		arn := "arn:" + describeCtx.Partition + ":ec2:" + describeCtx.Region + ":" + describeCtx.AccountID + ":key-pair/" + *v.KeyName
+		values = append(values, Resource{
+			ARN:  arn,
+			Name: *v.KeyName,
+			Description: model.EC2KeyPairDescription{
+				KeyPair: v,
+			},
+		})
+	}
+
+	return values, nil
+}
+
+func GetEC2KeyPair(ctx context.Context, cfg aws.Config, keyPairID string) ([]Resource, error) {
+	describeCtx := GetDescribeContext(ctx)
+
+	client := ec2.NewFromConfig(cfg)
+	output, err := client.DescribeKeyPairs(ctx, &ec2.DescribeKeyPairsInput{
+		KeyPairIds: []string{keyPairID},
+	})
 	if err != nil {
 		return nil, err
 	}

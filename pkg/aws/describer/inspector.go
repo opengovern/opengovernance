@@ -120,6 +120,46 @@ func InspectorAssessmentTemplate(ctx context.Context, cfg aws.Config) ([]Resourc
 	return values, nil
 }
 
+func GetInspectorAssessmentTemplate(ctx context.Context, cfg aws.Config, arn string) ([]Resource, error) {
+	client := inspector.NewFromConfig(cfg)
+
+	var values []Resource
+	assessmentTemplates, err := client.DescribeAssessmentTemplates(ctx, &inspector.DescribeAssessmentTemplatesInput{
+		AssessmentTemplateArns: []string{arn},
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	for _, assessmentTemplate := range assessmentTemplates.AssessmentTemplates {
+		tags, err := client.ListTagsForResource(ctx, &inspector.ListTagsForResourceInput{
+			ResourceArn: assessmentTemplate.Arn,
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		eventSubscriptions, err := client.ListEventSubscriptions(ctx, &inspector.ListEventSubscriptionsInput{
+			ResourceArn: assessmentTemplate.Arn,
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		values = append(values, Resource{
+			Name: *assessmentTemplate.Name,
+			ARN:  *assessmentTemplate.Arn,
+			Description: model.InspectorAssessmentTemplateDescription{
+				AssessmentTemplate: assessmentTemplate,
+				EventSubscriptions: eventSubscriptions.Subscriptions,
+				Tags:               tags.Tags,
+			},
+		})
+	}
+
+	return values, nil
+}
+
 func InspectorExclusion(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	client := inspector.NewFromConfig(cfg)
 	paginator := inspector.NewListAssessmentRunsPaginator(client, &inspector.ListAssessmentRunsInput{})

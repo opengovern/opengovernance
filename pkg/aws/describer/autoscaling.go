@@ -42,6 +42,39 @@ func AutoScalingAutoScalingGroup(ctx context.Context, cfg aws.Config) ([]Resourc
 	return values, nil
 }
 
+func GetAutoScalingAutoScalingGroup(ctx context.Context, cfg aws.Config, autoScalingGroupName string) ([]Resource, error) {
+	client := autoscaling.NewFromConfig(cfg)
+
+	out, err := client.DescribeAutoScalingGroups(ctx, &autoscaling.DescribeAutoScalingGroupsInput{
+		AutoScalingGroupNames: []string{autoScalingGroupName},
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	var values []Resource
+
+	for _, v := range out.AutoScalingGroups {
+		var desc model.AutoScalingGroupDescription
+
+		sg := v // Do this to avoid the pointer being replaces by the for loop
+
+		desc.AutoScalingGroup = &sg
+		desc.Policies, err = getAutoScalingPolicies(ctx, cfg, v.AutoScalingGroupName)
+		if err != nil {
+			return nil, err
+		}
+
+		values = append(values, Resource{
+			ARN:         *v.AutoScalingGroupARN,
+			Name:        *v.AutoScalingGroupName,
+			Description: desc,
+		})
+	}
+
+	return values, nil
+}
+
 func getAutoScalingPolicies(ctx context.Context, cfg aws.Config, asgName *string) ([]types.ScalingPolicy, error) {
 	client := autoscaling.NewFromConfig(cfg)
 	paginator := autoscaling.NewDescribePoliciesPaginator(client, &autoscaling.DescribePoliciesInput{
@@ -81,6 +114,29 @@ func AutoScalingLaunchConfiguration(ctx context.Context, cfg aws.Config) ([]Reso
 				},
 			})
 		}
+	}
+
+	return values, nil
+}
+
+func GetAutoScalingLaunchConfiguration(ctx context.Context, cfg aws.Config, launchConfigurationName string) ([]Resource, error) {
+	client := autoscaling.NewFromConfig(cfg)
+	out, err := client.DescribeLaunchConfigurations(ctx, &autoscaling.DescribeLaunchConfigurationsInput{
+		LaunchConfigurationNames: []string{launchConfigurationName},
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	var values []Resource
+	for _, v := range out.LaunchConfigurations {
+		values = append(values, Resource{
+			ARN:  *v.LaunchConfigurationARN,
+			Name: *v.LaunchConfigurationName,
+			Description: model.AutoScalingLaunchConfigurationDescription{
+				LaunchConfiguration: v,
+			},
+		})
 	}
 
 	return values, nil

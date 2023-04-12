@@ -71,6 +71,43 @@ func ElastiCacheCluster(ctx context.Context, cfg aws.Config) ([]Resource, error)
 	return values, nil
 }
 
+func GetElastiCacheCluster(ctx context.Context, cfg aws.Config, clusterID string) ([]Resource, error) {
+	client := elasticache.NewFromConfig(cfg)
+	out, err := client.DescribeCacheClusters(ctx, &elasticache.DescribeCacheClustersInput{
+		CacheClusterId: &clusterID,
+	})
+	if err != nil {
+		if isErr(err, "CacheClusterNotFound") || isErr(err, "InvalidParameterValue") {
+			return nil, nil
+		}
+		return nil, err
+	}
+
+	var values []Resource
+	for _, cluster := range out.CacheClusters {
+		tagsOutput, err := client.ListTagsForResource(ctx, &elasticache.ListTagsForResourceInput{
+			ResourceName: cluster.ARN,
+		})
+		if err != nil {
+			if !isErr(err, "CacheClusterNotFound") && !isErr(err, "InvalidParameterValue") {
+				return nil, err
+			} else {
+				tagsOutput = &elasticache.ListTagsForResourceOutput{}
+			}
+		}
+
+		values = append(values, Resource{
+			ARN:  *cluster.ARN,
+			Name: *cluster.ARN,
+			Description: model.ElastiCacheClusterDescription{
+				Cluster: cluster,
+				TagList: tagsOutput.TagList,
+			},
+		})
+	}
+	return values, nil
+}
+
 func ElastiCacheParameterGroup(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	client := elasticache.NewFromConfig(cfg)
 	paginator := elasticache.NewDescribeCacheParameterGroupsPaginator(client, &elasticache.DescribeCacheParameterGroupsInput{})

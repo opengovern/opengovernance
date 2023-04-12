@@ -50,6 +50,43 @@ func CloudFrontDistribution(ctx context.Context, cfg aws.Config) ([]Resource, er
 	return values, nil
 }
 
+func GetCloudFrontDistribution(ctx context.Context, cfg aws.Config, id string) ([]Resource, error) {
+	client := cloudfront.NewFromConfig(cfg)
+
+	out, err := client.GetDistribution(ctx, &cloudfront.GetDistributionInput{Id: &id})
+	if err != nil {
+		return nil, err
+	}
+	item := out.Distribution
+
+	var values []Resource
+	tags, err := client.ListTagsForResource(ctx, &cloudfront.ListTagsForResourceInput{
+		Resource: item.ARN,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	distribution, err := client.GetDistribution(ctx, &cloudfront.GetDistributionInput{
+		Id: item.Id,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	values = append(values, Resource{
+		ARN:  *item.ARN,
+		Name: *item.Id,
+		Description: model.CloudFrontDistributionDescription{
+			Distribution: distribution.Distribution,
+			ETag:         distribution.ETag,
+			Tags:         tags.Tags.Items,
+		},
+	})
+
+	return values, nil
+}
+
 func CloudFrontOriginAccessControl(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	describeCtx := GetDescribeContext(ctx)
 	client := cloudfront.NewFromConfig(cfg)
@@ -202,6 +239,39 @@ func CloudFrontOriginAccessIdentity(ctx context.Context, cfg aws.Config) ([]Reso
 			})
 		}
 	}
+
+	return values, nil
+}
+
+func GetCloudFrontOriginAccessIdentity(ctx context.Context, cfg aws.Config, id string) ([]Resource, error) {
+	describeCtx := GetDescribeContext(ctx)
+	client := cloudfront.NewFromConfig(cfg)
+	var values []Resource
+
+	out, err := client.GetCloudFrontOriginAccessIdentity(ctx, &cloudfront.GetCloudFrontOriginAccessIdentityInput{
+		Id: &id,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	item := out.CloudFrontOriginAccessIdentity
+	arn := fmt.Sprintf("arn:%s:cloudfront::%s:origin-access-identity/%s", describeCtx.Partition, describeCtx.AccountID, *item.Id)
+
+	originAccessIdentity, err := client.GetCloudFrontOriginAccessIdentity(ctx, &cloudfront.GetCloudFrontOriginAccessIdentityInput{
+		Id: item.Id,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	values = append(values, Resource{
+		ARN:  arn,
+		Name: *item.Id,
+		Description: model.CloudFrontOriginAccessIdentityDescription{
+			OriginAccessIdentity: *originAccessIdentity,
+		},
+	})
 
 	return values, nil
 }

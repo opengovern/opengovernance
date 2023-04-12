@@ -49,6 +49,37 @@ func CloudWatchAlarm(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	return values, nil
 }
 
+func GetCloudWatchAlarm(ctx context.Context, cfg aws.Config, alarmName string) ([]Resource, error) {
+	client := cloudwatch.NewFromConfig(cfg)
+	out, err := client.DescribeAlarms(ctx, &cloudwatch.DescribeAlarmsInput{
+		AlarmNames: []string{alarmName},
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	var values []Resource
+	for _, v := range out.MetricAlarms {
+		tags, err := client.ListTagsForResource(ctx, &cloudwatch.ListTagsForResourceInput{
+			ResourceARN: v.AlarmArn,
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		values = append(values, Resource{
+			ARN:  *v.AlarmArn,
+			Name: *v.AlarmName,
+			Description: model.CloudWatchAlarmDescription{
+				MetricAlarm: v,
+				Tags:        tags.Tags,
+			},
+		})
+	}
+
+	return values, nil
+}
+
 func CloudWatchAnomalyDetector(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	client := cloudwatch.NewFromConfig(cfg)
 	output, err := client.DescribeAnomalyDetectors(ctx, &cloudwatch.DescribeAnomalyDetectorsInput{})

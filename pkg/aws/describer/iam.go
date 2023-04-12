@@ -245,6 +245,35 @@ func IAMPolicy(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	return values, nil
 }
 
+func GetIAMPolicy(ctx context.Context, cfg aws.Config, arn string) ([]Resource, error) {
+	client := iam.NewFromConfig(cfg)
+	out, err := client.GetPolicy(ctx, &iam.GetPolicyInput{PolicyArn: &arn})
+	if err != nil {
+		return nil, err
+	}
+	v := out.Policy
+
+	var values []Resource
+	version, err := client.GetPolicyVersion(ctx, &iam.GetPolicyVersionInput{
+		PolicyArn: v.Arn,
+		VersionId: v.DefaultVersionId,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	values = append(values, Resource{
+		ARN:  *v.Arn,
+		Name: *v.PolicyName,
+		Description: model.IAMPolicyDescription{
+			Policy:        *v,
+			PolicyVersion: *version.PolicyVersion,
+		},
+	})
+
+	return values, nil
+}
+
 func IAMGroup(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	client := iam.NewFromConfig(cfg)
 	paginator := iam.NewListGroupsPaginator(client, &iam.ListGroupsInput{})
@@ -607,6 +636,50 @@ func IAMRole(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	return values, nil
 }
 
+func GetIAMRole(ctx context.Context, cfg aws.Config, pathPrefix string) ([]Resource, error) {
+	client := iam.NewFromConfig(cfg)
+
+	out, err := client.ListRoles(ctx, &iam.ListRolesInput{
+		Marker:     nil,
+		MaxItems:   nil,
+		PathPrefix: &pathPrefix,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	var values []Resource
+	for _, v := range out.Roles {
+		profiles, err := getRoleInstanceProfileArns(ctx, client, v.RoleName)
+		if err != nil {
+			return nil, err
+		}
+
+		policies, err := getRolePolicies(ctx, client, v.RoleName)
+		if err != nil {
+			return nil, err
+		}
+
+		aPolicies, err := getRoleAttachedPolicyArns(ctx, client, v.RoleName)
+		if err != nil {
+			return nil, err
+		}
+
+		values = append(values, Resource{
+			ARN:  *v.Arn,
+			Name: *v.RoleName,
+			Description: model.IAMRoleDescription{
+				Role:                v,
+				InstanceProfileArns: profiles,
+				InlinePolicies:      policies,
+				AttachedPolicyArns:  aPolicies,
+			},
+		})
+	}
+
+	return values, nil
+}
+
 func getRoleInstanceProfileArns(ctx context.Context, client *iam.Client, rolename *string) ([]string, error) {
 	paginator := iam.NewListInstanceProfilesForRolePaginator(client, &iam.ListInstanceProfilesForRoleInput{
 		RoleName: rolename,
@@ -780,6 +853,52 @@ func IAMUser(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	return values, nil
 }
 
+func GetIAMUser(ctx context.Context, cfg aws.Config, userName string) ([]Resource, error) {
+	client := iam.NewFromConfig(cfg)
+	out, err := client.GetUser(ctx, &iam.GetUserInput{
+		UserName: &userName,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	v := out.User
+	var values []Resource
+	policies, err := getUserPolicies(ctx, client, v.UserName)
+	if err != nil {
+		return nil, err
+	}
+
+	aPolicies, err := getUserAttachedPolicyArns(ctx, client, v.UserName)
+	if err != nil {
+		return nil, err
+	}
+
+	groups, err := getUserGroups(ctx, client, v.UserName)
+	if err != nil {
+		return nil, err
+	}
+
+	devices, err := getUserMFADevices(ctx, client, v.UserName)
+	if err != nil {
+		return nil, err
+	}
+
+	values = append(values, Resource{
+		ARN:  *v.Arn,
+		Name: *v.UserName,
+		Description: model.IAMUserDescription{
+			User:               *v,
+			Groups:             groups,
+			InlinePolicies:     policies,
+			AttachedPolicyArns: aPolicies,
+			MFADevices:         devices,
+		},
+	})
+
+	return values, nil
+}
+
 func IAMPolicyAttachment(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	client := iam.NewFromConfig(cfg)
 	paginator := iam.NewListPoliciesPaginator(client, &iam.ListPoliciesInput{
@@ -825,6 +944,46 @@ func IAMPolicyAttachment(ctx context.Context, cfg aws.Config) ([]Resource, error
 			})
 		}
 	}
+
+	return values, nil
+}
+
+func GetIAMPolicyAttachment(ctx context.Context, cfg aws.Config, policyARN string) ([]Resource, error) {
+	client := iam.NewFromConfig(cfg)
+	policy, err := client.GetPolicy(ctx, &iam.GetPolicyInput{PolicyArn: &policyARN})
+	if err != nil {
+		return nil, err
+	}
+
+	var values []Resource
+	attachmentPaginator := iam.NewListEntitiesForPolicyPaginator(client, &iam.ListEntitiesForPolicyInput{
+		PolicyArn: &policyARN,
+	})
+
+	var policyGroups []types.PolicyGroup
+	var policyRoles []types.PolicyRole
+	var policyUsers []types.PolicyUser
+	for attachmentPaginator.HasMorePages() {
+		attachmentPage, err := attachmentPaginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		policyGroups = append(policyGroups, attachmentPage.PolicyGroups...)
+		policyRoles = append(policyRoles, attachmentPage.PolicyRoles...)
+		policyUsers = append(policyUsers, attachmentPage.PolicyUsers...)
+	}
+	values = append(values, Resource{
+		Name: fmt.Sprintf("%s - Attachments", policyARN),
+		Description: model.IAMPolicyAttachmentDescription{
+			PolicyArn:             policyARN,
+			PolicyAttachmentCount: *policy.Policy.AttachmentCount,
+			IsAttached:            *policy.Policy.AttachmentCount > 0,
+			PolicyGroups:          policyGroups,
+			PolicyRoles:           policyRoles,
+			PolicyUsers:           policyUsers,
+		},
+	})
 
 	return values, nil
 }

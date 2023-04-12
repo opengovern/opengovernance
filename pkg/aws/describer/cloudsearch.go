@@ -26,6 +26,33 @@ func CloudSearchDomain(ctx context.Context, cfg aws.Config) ([]Resource, error) 
 	domains, err := client.DescribeDomains(ctx, &cloudsearch.DescribeDomainsInput{
 		DomainNames: domainList,
 	})
+	if err != nil {
+		return nil, err
+	}
+
+	for _, domain := range domains.DomainStatusList {
+		values = append(values, Resource{
+			ARN:  *domain.ARN,
+			Name: *domain.DomainName,
+			ID:   *domain.DomainId,
+			Description: model.CloudSearchDomainDescription{
+				DomainStatus: domain,
+			},
+		})
+	}
+	return values, nil
+}
+
+func GetCloudSearchDomain(ctx context.Context, cfg aws.Config, domainList []string) ([]Resource, error) {
+	client := cloudsearch.NewFromConfig(cfg)
+
+	var values []Resource
+	domains, err := client.DescribeDomains(ctx, &cloudsearch.DescribeDomainsInput{
+		DomainNames: domainList,
+	})
+	if err != nil {
+		return nil, err
+	}
 
 	for _, domain := range domains.DomainStatusList {
 		values = append(values, Resource{
