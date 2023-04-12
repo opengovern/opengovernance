@@ -11,12 +11,13 @@ import (
 )
 
 type ResourceDescriber func(context.Context, aws.Config, string, []string, string, enums.DescribeTriggerType) (*Resources, error)
+type SingleResourceDescriber func(context.Context, aws.Config, string, []string, string, map[string]string, enums.DescribeTriggerType) (*Resources, error)
 
 type ResourceType struct {
 	Name          string
 	ServiceName   string
 	ListDescriber ResourceDescriber
-	GetDescriber  ResourceDescriber // TODO: Change the type?
+	GetDescriber  SingleResourceDescriber
 
 	TerraformName        string
 	TerraformServiceName string
@@ -99,7 +100,7 @@ var resourceTypes = map[string]ResourceType{
 		Name:                 "AWS::EC2::RouteTable",
 		ServiceName:          "EC2",
 		ListDescriber:        ParallelDescribeRegional(describer.EC2RouteTable),
-		GetDescriber:         nil,
+		GetDescriber:         ParallelDescribeRegionalSingleResource(describer.GetEC2RouteTable),
 		TerraformName:        "aws_route_table",
 		TerraformServiceName: "ec2",
 	},
@@ -2391,6 +2392,62 @@ func GetResources(
 	return resources, nil
 }
 
+func GetSingleResource(
+	ctx context.Context,
+	resourceType string,
+	triggerType enums.DescribeTriggerType,
+	accountId string,
+	regions []string,
+	accessKey,
+	secretKey,
+	sessionToken,
+	assumeRoleArn string,
+	includeDisabledRegions bool,
+	fields map[string]string,
+) (*Resources, error) {
+	cfg, err := GetConfig(ctx, accessKey, secretKey, sessionToken, assumeRoleArn)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(regions) == 0 {
+		cfgClone := cfg.Copy()
+		cfgClone.Region = "us-east-1"
+
+		rs, err := getAllRegions(ctx, cfgClone, includeDisabledRegions)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, r := range rs {
+			regions = append(regions, *r.RegionName)
+		}
+	}
+
+	resources, err := describeSingle(ctx, cfg, accountId, regions, resourceType, fields, triggerType)
+	if err != nil {
+		return nil, err
+	}
+
+	return resources, nil
+}
+
+func describeSingle(
+	ctx context.Context,
+	cfg aws.Config,
+	account string,
+	regions []string,
+	resourceType string,
+	fields map[string]string,
+	triggerType enums.DescribeTriggerType) (*Resources, error) {
+	resourceTypeObject, ok := resourceTypes[resourceType]
+	if !ok {
+		return nil, fmt.Errorf("unsupported resource type: %s", resourceType)
+	}
+
+	return resourceTypeObject.GetDescriber(ctx, cfg, account, regions, resourceType, fields, triggerType)
+}
+
 func describe(
 	ctx context.Context,
 	cfg aws.Config,
@@ -2404,6 +2461,69 @@ func describe(
 	}
 
 	return resourceTypeObject.ListDescriber(ctx, cfg, account, regions, resourceType, triggerType)
+}
+
+func ParallelDescribeRegionalSingleResource(describe func(context.Context, aws.Config, map[string]string) ([]describer.Resource, error)) SingleResourceDescriber {
+	type result struct {
+		region    string
+		resources []describer.Resource
+		err       error
+	}
+	return func(ctx context.Context, cfg aws.Config, account string, regions []string, rType string, fields map[string]string, triggerType enums.DescribeTriggerType) (*Resources, error) {
+		input := make(chan result, len(regions))
+		for _, region := range regions {
+			go func(r string) {
+				defer func() {
+					if err := recover(); err != nil {
+						input <- result{region: r, resources: nil, err: fmt.Errorf("paniced: %v", err)}
+					}
+				}()
+				// Make a shallow copy and override the default region
+				rCfg := cfg.Copy()
+				rCfg.Region = r
+
+				partition, _ := partitionOf(r)
+				ctx = describer.WithDescribeContext(ctx, describer.DescribeContext{
+					AccountID: account,
+					Region:    r,
+					Partition: partition,
+				})
+				ctx = describer.WithTriggerType(ctx, triggerType)
+				resources, err := describe(ctx, rCfg, fields)
+				input <- result{region: r, resources: resources, err: err}
+			}(region)
+		}
+
+		output := Resources{
+			Resources: make(map[string][]describer.Resource, len(regions)),
+			Errors:    make(map[string]string, len(regions)),
+		}
+		for range regions {
+			resp := <-input
+			if resp.err != nil {
+				if !IsUnsupportedOrInvalidError(rType, resp.region, resp.err) {
+					output.Errors[resp.region] = resp.err.Error()
+					continue
+				}
+			}
+
+			if resp.resources == nil {
+				resp.resources = []describer.Resource{}
+			}
+
+			partition, _ := partitionOf(resp.region)
+			for i := range resp.resources {
+				resp.resources[i].Account = account
+				resp.resources[i].Region = resp.region
+				resp.resources[i].Partition = partition
+				resp.resources[i].Type = rType
+			}
+
+			output.Resources[resp.region] = resp.resources
+		}
+
+		return &output, nil
+	}
 }
 
 // Parallel describe the resources across the reigons. Failure in one regions won't affect

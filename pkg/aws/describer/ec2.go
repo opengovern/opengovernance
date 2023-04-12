@@ -1027,8 +1027,10 @@ func EC2RouteTable(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	return values, nil
 }
 
-func GetEC2RouteTable(ctx context.Context, cfg aws.Config, routeTableID string) ([]Resource, error) {
+func GetEC2RouteTable(ctx context.Context, cfg aws.Config, fields map[string]string) ([]Resource, error) {
 	client := ec2.NewFromConfig(cfg)
+
+	routeTableID := fields["id"]
 
 	describeCtx := GetDescribeContext(ctx)
 	out, err := client.DescribeRouteTables(ctx, &ec2.DescribeRouteTablesInput{RouteTableIds: []string{routeTableID}})
