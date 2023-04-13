@@ -600,3 +600,55 @@ func (ts *testSuite) TestGetAPIKey() {
 		})
 	}
 }
+
+func (ts *testSuite) TestGetRoleKeys() {
+	mockKeysInDb(&ts.httpRoutes.db)
+	getRoleKeysTestCases := []struct {
+		WorkspaceID string
+		Role        api.Role
+		Error       error
+	}{
+		{
+			WorkspaceID: "ws1",
+			Role:        api.AdminRole,
+		},
+		{
+			WorkspaceID: "ws2",
+			Role:        api.EditorRole,
+		},
+		{
+			WorkspaceID: "ws3",
+			Role:        api.ViewerRole,
+		},
+		{
+			WorkspaceID: "ws1",
+			Role:        api.ViewerRole,
+		},
+	}
+	for i, tc := range getRoleKeysTestCases {
+		ts.T().Run(fmt.Sprintf("getRoleKeysTestCases-%d", i), func(t *testing.T) {
+			r := httptest.NewRequest(http.MethodGet, "/", nil)
+			r.Header.Set("Content-Type", "application/json; charset=utf8")
+			r.Header.Set(httpserver.XKeibiWorkspaceIDHeader, tc.WorkspaceID)
+			w := httptest.NewRecorder()
+
+			c := echo.New().NewContext(r, w)
+
+			c.SetPath("/auth/api/v1/role/:role/keys")
+			c.SetParamNames("role")
+			c.SetParamValues(string(tc.Role))
+			err := ts.httpRoutes.GetRoleKeys(c)
+			ts.NoError(err, "error while running the API")
+			var response []api.WorkspaceApiKey
+			if err := json.NewDecoder(w.Body).Decode(&response); err != nil {
+				ts.T().Fatalf("json decode: %v", err)
+			}
+			if (tc.WorkspaceID == "ws3") || (tc.WorkspaceID == "ws1" && tc.Role == api.ViewerRole) {
+				ts.Empty(response)
+			} else {
+				ts.NotEmpty(response)
+			}
+			fmt.Println("RES: ", response)
+		})
+	}
+}

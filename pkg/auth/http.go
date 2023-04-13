@@ -752,13 +752,11 @@ func (r *httpRoutes) GetRoleUsers(ctx echo.Context) error {
 //	@Produce	json
 //	@Param		request	body		api.Role	true	"Request Body"
 //	@Success	200		{object}	[]api.WorkspaceApiKey
-//	@Router		/auth/api/v1/role/keys [get]
+//	@Router		/auth/api/v1/role/:role/keys [get]
 func (r *httpRoutes) GetRoleKeys(ctx echo.Context) error {
-	var role api.Role
-	if err := bindValidate(ctx, &role); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err)
-	}
-	keys, err := r.db.GetAPIKeysByRole(role)
+	role := api.Role(ctx.Param("role"))
+	workspaceID := httpserver.GetWorkspaceID(ctx)
+	keys, err := r.db.GetAPIKeysByRole(role, workspaceID)
 	if err != nil {
 		return err
 	}

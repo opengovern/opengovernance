@@ -32,9 +32,10 @@ func (db Database) ListApiKeys(workspaceID string) ([]ApiKey, error) {
 	return s, nil
 }
 
-func (db Database) GetAPIKeysByRole(role api.Role) ([]ApiKey, error) {
+func (db Database) GetAPIKeysByRole(role api.Role, workspaceID string) ([]ApiKey, error) {
 	var s []ApiKey
 	tx := db.Orm.Model(&ApiKey{}).
+		Where("workspace_id", workspaceID).
 		Where("role", role).
 		Where("revoked", "false").
 		Find(&s)
