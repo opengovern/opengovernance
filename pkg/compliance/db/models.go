@@ -1,7 +1,10 @@
 package db
 
 import (
+	"fmt"
 	"time"
+
+	"gitlab.com/keibiengine/keibi-engine/pkg/types"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/compliance/api"
 	"gitlab.com/keibiengine/keibi-engine/pkg/source"
@@ -62,6 +65,68 @@ func (b Benchmark) ToApi() api.Benchmark {
 	return ba
 }
 
+func (b *Benchmark) PopulateConnectors(db Database, api *api.Benchmark) error {
+	if len(api.Connectors) > 0 {
+		return nil
+	}
+
+	for _, childObj := range b.Children {
+		child, err := db.GetBenchmark(childObj.ID)
+		if err != nil {
+			return err
+		}
+		if child == nil {
+			return fmt.Errorf("child %s not found", childObj.ID)
+		}
+
+		ca := child.ToApi()
+		err = child.PopulateConnectors(db, &ca)
+		if err != nil {
+			return err
+		}
+
+		for _, conn := range ca.Connectors {
+
+			exists := false
+			for _, c := range api.Connectors {
+				if c == conn {
+					exists = true
+				}
+			}
+			if !exists {
+				api.Connectors = append(api.Connectors, conn)
+			}
+		}
+	}
+
+	for _, policy := range b.Policies {
+		query, err := db.GetQuery(*policy.QueryID)
+		if err != nil {
+			return err
+		}
+		if query == nil {
+			return fmt.Errorf("query %s not found", *policy.QueryID)
+		}
+
+		ty, err := source.ParseType(query.Connector)
+		if err != nil {
+			return err
+		}
+
+		exists := false
+		for _, c := range api.Connectors {
+			if c == ty {
+				exists = true
+			}
+		}
+		if !exists {
+			api.Connectors = append(api.Connectors, ty)
+		}
+	}
+
+	return nil
+}
+
 type BenchmarkChild struct {
 	BenchmarkID string
 	ChildID     string
@@ -85,9 +150,10 @@ type Policy struct {
 	Description        string
 	Tags               []PolicyTag `gorm:"many2many:policy_tag_rels;"`
 	DocumentURI        string
+	Enabled            bool
 	QueryID            *string
 	Benchmarks         []Benchmark `gorm:"many2many:benchmark_policies;"`
-	Severity           string
+	Severity           types.Severity
 	ManualVerification bool
 	Managed            bool
 	CreatedAt          time.Time
@@ -99,6 +165,9 @@ func (p Policy) ToApi() api.Policy {
 		ID:                 p.ID,
 		Title:              p.Title,
 		Description:        p.Description,
+		Tags:               nil,
+		Connector:          "",
+		Enabled:            p.Enabled,
 		DocumentURI:        p.DocumentURI,
 		QueryID:            p.QueryID,
 		Severity:           p.Severity,
@@ -112,6 +181,28 @@ func (p Policy) ToApi() api.Policy {
 		pa.Tags[tag.Key] = tag.Value
 	}
 	return pa
+}
+
+func (p *Policy) PopulateConnector(db Database, api *api.Policy) error {
+	if !api.Connector.IsNull() {
+		return nil
+	}
+
+	query, err := db.GetQuery(*p.QueryID)
+	if err != nil {
+		return err
+	}
+	if query == nil {
+		return fmt.Errorf("query %s not found", *p.QueryID)
+	}
+
+	ty, err := source.ParseType(query.Connector)
+	if err != nil {
+		return err
+	}
+
+	api.Connector = ty
+	return nil
 }
 
 type PolicyTag struct {

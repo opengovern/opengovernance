@@ -2,6 +2,9 @@ package api
 
 import (
 	"time"
+
+	"gitlab.com/keibiengine/keibi-engine/pkg/source"
+	"gitlab.com/keibiengine/keibi-engine/pkg/types"
 )
 
 type Benchmark struct {
@@ -16,6 +19,7 @@ type Benchmark struct {
 	AutoAssign  bool              `json:"autoAssign"`
 	Baseline    bool              `json:"baseline"`
 	Tags        map[string]string `json:"tags"`
+	Connectors  []source.Type     `json:"connectors"`
 	Children    []string          `json:"children"`
 	Policies    []string          `json:"policies"`
 	CreatedAt   time.Time         `json:"createdAt"`
@@ -27,9 +31,11 @@ type Policy struct {
 	Title              string            `json:"title"`
 	Description        string            `json:"description"`
 	Tags               map[string]string `json:"tags"`
+	Connector          source.Type       `json:"connector"`
+	Enabled            bool              `json:"enabled"`
 	DocumentURI        string            `json:"documentURI"`
 	QueryID            *string           `json:"queryID"`
-	Severity           string            `json:"severity"`
+	Severity           types.Severity    `json:"severity"`
 	ManualVerification bool              `json:"manualVerification"`
 	Managed            bool              `json:"managed"`
 	CreatedAt          time.Time         `json:"createdAt"`

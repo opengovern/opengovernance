@@ -4,9 +4,9 @@ import (
 	"context"
 	"strings"
 
-	"github.com/Azure/azure-sdk-for-go/profiles/2020-09-01/monitor/mgmt/insights"
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2020-05-01/network"
 	newnetwork "github.com/Azure/azure-sdk-for-go/services/network/mgmt/2021-02-01/network"
+	"github.com/Azure/azure-sdk-for-go/services/preview/monitor/mgmt/2021-04-01-preview/insights"
 	"github.com/Azure/go-autorest/autorest"
 	"gitlab.com/keibiengine/keibi-engine/pkg/azure/model"
 )
@@ -361,26 +361,7 @@ func NetworkApplicationSecurityGroups(ctx context.Context, authorizer autorest.A
 	}
 
 	var values []Resource
-	for _, applicationSecurityGroup := range result.Values() {
-		resourceGroup := strings.Split(*applicationSecurityGroup.ID, "/")[4]
-
-		values = append(values, Resource{
-			ID:       *applicationSecurityGroup.ID,
-			Name:     *applicationSecurityGroup.Name,
-			Location: *applicationSecurityGroup.Location,
-			Description: model.NetworkApplicationSecurityGroupsDescription{
-				ApplicationSecurityGroup: applicationSecurityGroup,
-				ResourceGroup:            resourceGroup,
-			},
-		})
-	}
-
-	for result.NotDone() {
-		err = result.NextWithContext(ctx)
-		if err != nil {
-			return nil, err
-		}
-
+	for {
 		for _, applicationSecurityGroup := range result.Values() {
 			resourceGroup := strings.Split(*applicationSecurityGroup.ID, "/")[4]
 
@@ -393,6 +374,13 @@ func NetworkApplicationSecurityGroups(ctx context.Context, authorizer autorest.A
 					ResourceGroup:            resourceGroup,
 				},
 			})
+		}
+		if !result.NotDone() {
+			break
+		}
+		err = result.NextWithContext(ctx)
+		if err != nil {
+			return nil, err
 		}
 	}
 
@@ -471,41 +459,6 @@ func ExpressRouteCircuit(ctx context.Context, authorizer autorest.Authorizer, su
 	return values, nil
 }
 
-func LoadBalancers(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
-	client := newnetwork.NewLoadBalancersClient(subscription)
-	client.Authorizer = authorizer
-
-	result, err := client.ListAll(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	var values []Resource
-	for {
-		for _, loadBalancer := range result.Values() {
-			resourceGroup := strings.Split(*loadBalancer.ID, "/")[4]
-
-			values = append(values, Resource{
-				ID:       *loadBalancer.ID,
-				Name:     *loadBalancer.Name,
-				Location: *loadBalancer.Location,
-				Description: model.LoadBalancersDescription{
-					ResourceGroup: resourceGroup,
-					LoadBalancer:  loadBalancer,
-				},
-			})
-		}
-		if !result.NotDone() {
-			break
-		}
-		err = result.NextWithContext(ctx)
-		if err != nil {
-			return nil, err
-		}
-	}
-	return values, nil
-}
-
 func VirtualNetworkGateway(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
 	client := newnetwork.NewVirtualNetworkGatewaysClient(subscription)
 	client.Authorizer = authorizer
@@ -513,7 +466,7 @@ func VirtualNetworkGateway(ctx context.Context, authorizer autorest.Authorizer, 
 	conClient := newnetwork.NewVirtualNetworkGatewayConnectionsClient(subscription)
 	conClient.Authorizer = authorizer
 
-	rgs, err := resourceGroup(ctx, authorizer, subscription)
+	rgs, err := listResourceGroups(ctx, authorizer, subscription)
 	if err != nil {
 		return nil, err
 	}
@@ -597,7 +550,7 @@ func LocalNetworkGateway(ctx context.Context, authorizer autorest.Authorizer, su
 	client := newnetwork.NewLocalNetworkGatewaysClient(subscription)
 	client.Authorizer = authorizer
 
-	rgs, err := resourceGroup(ctx, authorizer, subscription)
+	rgs, err := listResourceGroups(ctx, authorizer, subscription)
 	if err != nil {
 		return nil, err
 	}
@@ -640,7 +593,7 @@ func NatGateway(ctx context.Context, authorizer autorest.Authorizer, subscriptio
 	client := newnetwork.NewNatGatewaysClient(subscription)
 	client.Authorizer = authorizer
 
-	rgs, err := resourceGroup(ctx, authorizer, subscription)
+	rgs, err := listResourceGroups(ctx, authorizer, subscription)
 	if err != nil {
 		return nil, err
 	}
@@ -683,7 +636,7 @@ func PrivateLinkService(ctx context.Context, authorizer autorest.Authorizer, sub
 	client := newnetwork.NewPrivateLinkServicesClient(subscription)
 	client.Authorizer = authorizer
 
-	rgs, err := resourceGroup(ctx, authorizer, subscription)
+	rgs, err := listResourceGroups(ctx, authorizer, subscription)
 	if err != nil {
 		return nil, err
 	}
@@ -791,5 +744,45 @@ func VpnGateway(ctx context.Context, authorizer autorest.Authorizer, subscriptio
 		}
 	}
 
+	return values, nil
+}
+
+func PublicIPAddress(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
+	client := newnetwork.NewPublicIPAddressesClient(subscription)
+	client.Authorizer = authorizer
+
+	resourceGroups, err := listResourceGroups(ctx, authorizer, subscription)
+	if err != nil {
+		return nil, err
+	}
+
+	var values []Resource
+	for _, resourceGroup := range resourceGroups {
+		result, err := client.List(ctx, *resourceGroup.Name)
+		if err != nil {
+			return nil, err
+		}
+
+		for {
+			for _, publicIPAddress := range result.Values() {
+				values = append(values, Resource{
+					ID:       *publicIPAddress.ID,
+					Name:     *publicIPAddress.Name,
+					Location: *publicIPAddress.Location,
+					Description: model.PublicIPAddressDescription{
+						ResourceGroup:   *resourceGroup.Name,
+						PublicIPAddress: publicIPAddress,
+					},
+				})
+			}
+			if !result.NotDone() {
+				break
+			}
+			err = result.NextWithContext(ctx)
+			if err != nil {
+				return nil, err
+			}
+		}
+	}
 	return values, nil
 }

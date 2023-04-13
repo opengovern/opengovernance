@@ -2,11 +2,26 @@ package auth
 
 import (
 	"context"
+	"crypto/rsa"
+	"crypto/sha512"
 	_ "embed"
-	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpclient"
+	"encoding/hex"
+	"errors"
+	"fmt"
 	"net/http"
+	"reflect"
+	"strconv"
 	"strings"
 	"time"
+
+	metadataClient "gitlab.com/keibiengine/keibi-engine/pkg/metadata/client"
+	"gitlab.com/keibiengine/keibi-engine/pkg/metadata/models"
+
+	"gitlab.com/keibiengine/keibi-engine/pkg/auth/db"
+
+	"github.com/golang-jwt/jwt"
+
+	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpclient"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/auth/auth0"
 
@@ -30,6 +45,9 @@ type httpRoutes struct {
 	emailService    email.Service
 	workspaceClient client.WorkspaceServiceClient
 	auth0Service    *auth0.Service
+	metadataService metadataClient.MetadataServiceClient
+	keibiPrivateKey *rsa.PrivateKey
+	db              db.Database
 }
 
 func (r *httpRoutes) Register(e *echo.Echo) {
@@ -37,10 +55,16 @@ func (r *httpRoutes) Register(e *echo.Echo) {
 
 	v1.PUT("/user/role/binding", httpserver.AuthorizeHandler(r.PutRoleBinding, api.AdminRole))
 	v1.DELETE("/user/role/binding", httpserver.AuthorizeHandler(r.DeleteRoleBinding, api.AdminRole))
-	v1.GET("/user/role/bindings", httpserver.AuthorizeHandler(r.GetRoleBindings, api.ViewerRole))
+	v1.GET("/user/role/bindings", httpserver.AuthorizeHandler(r.GetRoleBindings, api.EditorRole))
 	v1.GET("/user/:user_id/workspace/membership", httpserver.AuthorizeHandler(r.GetWorkspaceMembership, api.AdminRole))
 	v1.GET("/workspace/role/bindings", httpserver.AuthorizeHandler(r.GetWorkspaceRoleBindings, api.AdminRole))
 	v1.POST("/invite", httpserver.AuthorizeHandler(r.Invite, api.AdminRole))
+	v1.POST("/apikey/create", httpserver.AuthorizeHandler(r.CreateAPIKey, api.AdminRole))
+	v1.GET("/apikey", httpserver.AuthorizeHandler(r.ListAPIKeys, api.AdminRole))
+	v1.POST("/apikey/:id/suspend", httpserver.AuthorizeHandler(r.SuspendAPIKey, api.AdminRole))
+	v1.POST("/apikey/:id/activate", httpserver.AuthorizeHandler(r.ActivateAPIKey, api.AdminRole))
+	v1.DELETE("/apikey/:id/delete", httpserver.AuthorizeHandler(r.DeleteAPIKey, api.AdminRole))
+	v1.GET("/apikey/:id", httpserver.AuthorizeHandler(r.GetAPIKey, api.AdminRole))
 	v1.GET("/roles", httpserver.AuthorizeHandler(r.listRoles, api.ViewerRole))
 	v1.GET("/roles/details", httpserver.AuthorizeHandler(r.rolesDescription, api.ViewerRole))
 }
@@ -120,12 +144,15 @@ func bindValidate(ctx echo.Context, i interface{}) error {
 // PutRoleBinding godoc
 //
 //	@Summary		Update RoleBinding for a user.
-//	@Description	RoleBinding defines the roles and actions a user can perform. There are currently three roles (ADMIN, EDITOR, VIEWER). User must exist before you can update its RoleBinding. If you want to add a role binding for a user given the email address, call invite first to get a user id. Then call this endpoint.
+//	@Description	RoleBinding defines the roles and actions a user can perform.
+//	@Description	There are currently three roles (ADMIN, EDITOR, VIEWER).
+//	@Description	User must exist before you can update its RoleBinding.
+//	@Description	If you want to add a role binding for a user given the email address, call invite first to get a user id. Then call this endpoint.
 //	@Tags			auth
 //	@Produce		json
-//	@Success		200		{object}	nil
-//	@Param			userId	body		string	true	"userId"
-//	@Param			role	body		string	true	"role"
+//	@Param			request		body		api.PutRoleBindingRequest	true	"Request Body"
+//	@Param			workspaceId	query		string						true	"workspaceId"
+//	@Success		200			{object}	nil
 //	@Router			/auth/api/v1/user/role/binding [put]
 func (r httpRoutes) PutRoleBinding(ctx echo.Context) error {
 	var req api.PutRoleBindingRequest
@@ -147,6 +174,24 @@ func (r httpRoutes) PutRoleBinding(ctx echo.Context) error {
 		return err
 	}
 
+	if _, ok := auth0User.AppMetadata.WorkspaceAccess[workspaceID]; !ok {
+		hctx := httpclient.FromEchoContext(ctx)
+		cnf, err := r.metadataService.GetConfigMetadata(hctx, models.MetadataKeyUserLimit)
+		if err != nil {
+			return err
+		}
+		maxUsers := cnf.GetValue().(int)
+
+		users, err := r.auth0Service.SearchUsersByWorkspace(workspaceID)
+		if err != nil {
+			return err
+		}
+
+		if len(users)+1 > maxUsers {
+			return echo.NewHTTPError(http.StatusNotAcceptable, "cannot invite new user, max users reached")
+		}
+	}
+
 	auth0User.AppMetadata.WorkspaceAccess[workspaceID] = req.Role
 	err = r.auth0Service.PatchUserAppMetadata(req.UserID, auth0User.AppMetadata)
 	if err != nil {
@@ -157,11 +202,12 @@ func (r httpRoutes) PutRoleBinding(ctx echo.Context) error {
 
 // DeleteRoleBinding godoc
 //
-//	@Summary	Delete RoleBinding for a user.
+//	@Summary	Delete RoleBinding for the defined user in the defined workspace.
 //	@Tags		auth
 //	@Produce	json
-//	@Success	200		{object}	nil
-//	@Param		userId	query		string	true	"userId"
+//	@Param		userId		query		string	true	"userId"
+//	@Param		workspaceId	query		string	true	"workspaceId"
+//	@Success	200			{object}	nil
 //	@Router		/auth/api/v1/user/role/binding [delete]
 func (r httpRoutes) DeleteRoleBinding(ctx echo.Context) error {
 	userId := ctx.QueryParam("userId")
@@ -192,7 +238,8 @@ func (r httpRoutes) DeleteRoleBinding(ctx echo.Context) error {
 //	@Description	RoleBinding defines the roles and actions a user can perform. There are currently three roles (ADMIN, EDITOR, VIEWER).
 //	@Tags			auth
 //	@Produce		json
-//	@Success		200	{object}	api.GetRoleBindingsResponse
+//	@Param			userId	query		string	true	"userId"
+//	@Success		200		{object}	api.GetRoleBindingsResponse
 //	@Router			/auth/api/v1/user/role/bindings [get]
 func (r *httpRoutes) GetRoleBindings(ctx echo.Context) error {
 	userID := httpserver.GetUserID(ctx)
@@ -220,12 +267,13 @@ func (r *httpRoutes) GetRoleBindings(ctx echo.Context) error {
 
 // GetWorkspaceMembership godoc
 //
-//	@Summary	List of workspaces which the user is member of
-//	@Tags		auth
-//	@Produce	json
-//	@Param		userId	path		string	true	"userId"
-//	@Success	200		{object}	api.GetRoleBindingsResponse
-//	@Router		/auth/api/v1/user/{user_id}/workspace/membership [get]
+//	@Summary		List of workspaces which the user is member of
+//	@Description	Returns a list of workspaces and the user role in it for the specified user
+//	@Tags			auth
+//	@Produce		json
+//	@Param			userId	path		string	true	"userId"
+//	@Success		200		{object}	api.GetRoleBindingsResponse
+//	@Router			/auth/api/v1/user/{user_id}/workspace/membership [get]
 func (r *httpRoutes) GetWorkspaceMembership(ctx echo.Context) error {
 	hctx := httpclient.FromEchoContext(ctx)
 	userID := ctx.Param("user_id")
@@ -265,7 +313,8 @@ func (r *httpRoutes) GetWorkspaceMembership(ctx echo.Context) error {
 //	@Description	RoleBinding defines the roles and actions a user can perform. There are currently three roles (ADMIN, EDITOR, VIEWER). The workspace path is based on the DNS such as (workspace1.app.keibi.io)
 //	@Tags			auth
 //	@Produce		json
-//	@Success		200	{object}	api.GetWorkspaceRoleBindingResponse
+//	@Param			workspaceId	query		string	true	"workspaceId"
+//	@Success		200			{object}	api.GetWorkspaceRoleBindingResponse
 //	@Router			/auth/api/v1/workspace/role/bindings [get]
 func (r *httpRoutes) GetWorkspaceRoleBindings(ctx echo.Context) error {
 	workspaceID := httpserver.GetWorkspaceID(ctx)
@@ -275,7 +324,6 @@ func (r *httpRoutes) GetWorkspaceRoleBindings(ctx echo.Context) error {
 	}
 
 	var resp api.GetWorkspaceRoleBindingResponse
-
 	for _, u := range users {
 		status := api.InviteStatus_PENDING
 		if u.EmailVerified {
@@ -297,17 +345,70 @@ func (r *httpRoutes) GetWorkspaceRoleBindings(ctx echo.Context) error {
 
 // Invite godoc
 //
-//	@Summary	Invites a user to a workspace.
-//	@Tags		auth
-//	@Produce	json
-//	@Param		role	body	string	true	"role"
-//	@Router		/auth/api/v1/invite [post]
+//	@Summary		Invites a user to a workspace with defined role.
+//	@Description	Invites a user to a workspace with defined role
+//	@Description	by sending an email to the specified email address.
+//	@Description	The user will be found by the email address.
+//	@Tags			auth
+//	@Produce		json
+//	@Param			request		body		api.InviteRequest	true	"Request Body"
+//	@Param			workspaceId	query		string				true	"workspaceId"
+//	@Success		200			{object}	nil
+//	@Router			/auth/api/v1/invite [post]
 func (r *httpRoutes) Invite(ctx echo.Context) error {
 	var req api.InviteRequest
 	if err := bindValidate(ctx, &req); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err)
 	}
 	workspaceID := httpserver.GetWorkspaceID(ctx)
+
+	hctx := httpclient.FromEchoContext(ctx)
+	cnf, err := r.metadataService.GetConfigMetadata(hctx, models.MetadataKeyAllowInvite)
+	if err != nil {
+		return err
+	}
+	allowInvite := cnf.GetValue().(bool)
+	if !allowInvite {
+		return echo.NewHTTPError(http.StatusNotAcceptable, "invite not allowed")
+	}
+
+	cnf, err = r.metadataService.GetConfigMetadata(hctx, models.MetadataKeyUserLimit)
+	if err != nil {
+		return err
+	}
+	maxUsers := cnf.GetValue().(int)
+
+	users, err := r.auth0Service.SearchUsersByWorkspace(workspaceID)
+	if err != nil {
+		return err
+	}
+	if len(users)+1 > maxUsers {
+		return echo.NewHTTPError(http.StatusNotAcceptable, "cannot invite new user, max users reached")
+	}
+
+	cnf, err = r.metadataService.GetConfigMetadata(hctx, models.MetadataKeyAllowedEmailDomains)
+	if err != nil {
+		return err
+	}
+
+	if allowedEmailDomains, ok := cnf.GetValue().([]string); ok {
+		passed := false
+		if len(allowedEmailDomains) > 0 {
+			for _, domain := range allowedEmailDomains {
+				if strings.HasSuffix(req.Email, domain) {
+					passed = true
+				}
+			}
+		} else {
+			passed = true
+		}
+
+		if !passed {
+			return echo.NewHTTPError(http.StatusNotAcceptable, "email domain not allowed")
+		}
+	} else {
+		fmt.Printf("failed to parse allowed domains, type: %s, value: %v", reflect.TypeOf(cnf.GetValue()).Name(), cnf.GetValue())
+	}
 
 	us, err := r.auth0Service.SearchByEmail(req.Email)
 	if err != nil {
@@ -347,6 +448,237 @@ func (r *httpRoutes) Invite(ctx echo.Context) error {
 		if err != nil {
 			return err
 		}
+	}
+
+	return ctx.NoContent(http.StatusOK)
+}
+
+// CreateAPIKey godoc
+//
+//	@Summary	Creates an API Key
+//	@Tags		auth
+//	@Produce	json
+//	@Param		request	body	api.CreateAPIKeyRequest	true	"Request Body"
+//	@Router		/auth/api/v1/apikey/create [post]
+func (r *httpRoutes) CreateAPIKey(ctx echo.Context) error {
+	userID := httpserver.GetUserID(ctx)
+	workspaceID := httpserver.GetWorkspaceID(ctx)
+
+	hctx := httpclient.FromEchoContext(ctx)
+	cnf, err := r.metadataService.GetConfigMetadata(hctx, models.MetadataKeyWorkspaceKeySupport)
+	if err != nil {
+		return err
+	}
+	keySupport := cnf.GetValue().(bool)
+	if !keySupport {
+		return echo.NewHTTPError(http.StatusNotAcceptable, "keys are not supported in this workspace")
+	}
+
+	var req api.CreateAPIKeyRequest
+	if err := bindValidate(ctx, &req); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err)
+	}
+
+	usr, err := r.auth0Service.GetUser(userID)
+	if err != nil {
+		return err
+	}
+
+	if usr == nil {
+		return errors.New("failed to find user in auth0")
+	}
+
+	u := userClaim{
+		WorkspaceAccess: map[string]api.Role{
+			workspaceID: req.Role,
+		},
+		GlobalAccess:   nil,
+		Email:          usr.Email,
+		ExternalUserID: usr.UserId,
+	}
+
+	token, err := jwt.NewWithClaims(jwt.SigningMethodRS256, &u).SignedString(r.keibiPrivateKey)
+	if err != nil {
+		return err
+	}
+
+	masked := fmt.Sprintf("%s...%s", token[:3], token[len(token)-2:])
+
+	hash := sha512.New()
+	_, err = hash.Write([]byte(token))
+	if err != nil {
+		return err
+	}
+	keyHash := hex.EncodeToString(hash.Sum(nil))
+
+	currentKeyCount, err := r.db.CountApiKeys(workspaceID)
+	if err != nil {
+		return err
+	}
+
+	cnf, err = r.metadataService.GetConfigMetadata(hctx, models.MetadataKeyWorkspaceMaxKeys)
+	if err != nil {
+		return err
+	}
+	maxKeys := cnf.GetValue().(int)
+	if currentKeyCount+1 > int64(maxKeys) {
+		return echo.NewHTTPError(http.StatusNotAcceptable, "maximum number of keys in workspace reached")
+	}
+
+	apikey := db.ApiKey{
+		Name:          req.Name,
+		Role:          req.Role,
+		CreatorUserID: userID,
+		WorkspaceID:   workspaceID,
+		Active:        true,
+		Revoked:       false,
+		MaskedKey:     masked,
+		KeyHash:       keyHash,
+	}
+	err = r.db.AddApiKey(&apikey)
+	if err != nil {
+		return err
+	}
+
+	return ctx.JSON(http.StatusOK, api.CreateAPIKeyResponse{
+		ID:    apikey.ID,
+		Token: token,
+	})
+}
+
+// DeleteAPIKey godoc
+//
+//	@Summary	Deletes an API Key
+//	@Tags		auth
+//	@Produce	json
+//	@Param		id	path	string	true	"ID"
+//	@Router		/auth/api/v1/apikey/{id}/delete [delete]
+func (r *httpRoutes) DeleteAPIKey(ctx echo.Context) error {
+	workspaceID := httpserver.GetWorkspaceID(ctx)
+	idStr := ctx.Param("id")
+	id, err := strconv.ParseUint(idStr, 10, 64)
+	if err != nil {
+		return err
+	}
+
+	err = r.db.RevokeAPIKey(workspaceID, uint(id))
+	if err != nil {
+		return err
+	}
+
+	return ctx.NoContent(http.StatusOK)
+}
+
+// ListAPIKeys godoc
+//
+//	@Summary	Lists all API Keys
+//	@Tags		auth
+//	@Produce	json
+//	@Success	200	{object}	[]api.WorkspaceApiKey
+//	@Router		/auth/api/v1/apikey [get]
+func (r *httpRoutes) ListAPIKeys(ctx echo.Context) error {
+	workspaceID := httpserver.GetWorkspaceID(ctx)
+	keys, err := r.db.ListApiKeys(workspaceID)
+	if err != nil {
+		return err
+	}
+
+	var resp []api.WorkspaceApiKey
+	for _, key := range keys {
+		resp = append(resp, api.WorkspaceApiKey{
+			ID:            key.ID,
+			CreatedAt:     key.CreatedAt,
+			UpdatedAt:     key.UpdatedAt,
+			Name:          key.Name,
+			Role:          key.Role,
+			CreatorUserID: key.CreatorUserID,
+			Active:        key.Active,
+			MaskedKey:     key.MaskedKey,
+		})
+	}
+
+	return ctx.JSON(http.StatusOK, resp)
+}
+
+// GetAPIKey godoc
+//
+//	@Summary	Fetches an API Key
+//	@Tags		auth
+//	@Produce	json
+//	@Param		id	path		string	true	"ID"
+//	@Success	200	{object}	api.WorkspaceApiKey
+//	@Router		/auth/api/v1/apikey/{id} [get]
+func (r *httpRoutes) GetAPIKey(ctx echo.Context) error {
+	idStr := ctx.Param("id")
+	id, err := strconv.ParseUint(idStr, 10, 64)
+	if err != nil {
+		return err
+	}
+
+	workspaceID := httpserver.GetWorkspaceID(ctx)
+	key, err := r.db.GetApiKeys(workspaceID, uint(id))
+	if err != nil {
+		return err
+	}
+	if key.ID == 0 {
+		return echo.NewHTTPError(http.StatusNotFound, "api key not found")
+	}
+
+	resp := api.WorkspaceApiKey{
+		ID:            key.ID,
+		CreatedAt:     key.CreatedAt,
+		UpdatedAt:     key.UpdatedAt,
+		Name:          key.Name,
+		Role:          key.Role,
+		CreatorUserID: key.CreatorUserID,
+		Active:        key.Active,
+		MaskedKey:     key.MaskedKey,
+	}
+
+	return ctx.JSON(http.StatusOK, resp)
+}
+
+// SuspendAPIKey godoc
+//
+//	@Summary	Suspend an API Key
+//	@Tags		auth
+//	@Produce	json
+//	@Param		id	path	string	true	"ID"
+//	@Router		/auth/api/v1/apikey/{id}/suspend [post]
+func (r *httpRoutes) SuspendAPIKey(ctx echo.Context) error {
+	workspaceID := httpserver.GetWorkspaceID(ctx)
+	idStr := ctx.Param("id")
+	id, err := strconv.ParseUint(idStr, 10, 64)
+	if err != nil {
+		return err
+	}
+
+	err = r.db.UpdateActiveAPIKey(workspaceID, uint(id), false)
+	if err != nil {
+		return err
+	}
+
+	return ctx.NoContent(http.StatusOK)
+}
+
+// ActivateAPIKey godoc
+//
+//	@Summary	Suspend an API Key
+//	@Tags		auth
+//	@Produce	json
+//	@Param		id	path	string	true	"ID"
+//	@Router		/auth/api/v1/apikey/{id}/activate [post]
+func (r *httpRoutes) ActivateAPIKey(ctx echo.Context) error {
+	workspaceID := httpserver.GetWorkspaceID(ctx)
+	idStr := ctx.Param("id")
+	id, err := strconv.ParseUint(idStr, 10, 64)
+	if err != nil {
+		return err
+	}
+
+	err = r.db.UpdateActiveAPIKey(workspaceID, uint(id), true)
+	if err != nil {
+		return err
 	}
 
 	return ctx.NoContent(http.StatusOK)

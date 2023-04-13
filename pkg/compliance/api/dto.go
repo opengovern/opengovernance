@@ -13,17 +13,21 @@ type BenchmarkAssignment struct {
 }
 
 type BenchmarkAssignedSource struct {
-	Connection types.FullConnection `json:"connection"`
-	AssignedAt int64                `json:"assignedAt"`
+	ConnectionID   string      `json:"connectionID"`
+	ConnectionName string      `json:"connectionName"`
+	Connector      source.Type `json:"connector"`
+	Status         bool        `json:"status"`
 }
 
 type FindingFilters struct {
-	Connector    []source.Type `json:"connector"`
-	ResourceID   []string      `json:"resourceID"`
-	ConnectionID []string      `json:"connectionID"`
-	BenchmarkID  []string      `json:"benchmarkID"`
-	PolicyID     []string      `json:"policyID"`
-	Severity     []string      `json:"severity"`
+	Connector      []source.Type            `json:"connector"`
+	ResourceID     []string                 `json:"resourceID"`
+	ResourceTypeID []string                 `json:"resourceTypeID"`
+	ConnectionID   []string                 `json:"connectionID"`
+	BenchmarkID    []string                 `json:"benchmarkID"`
+	PolicyID       []string                 `json:"policyID"`
+	Severity       []string                 `json:"severity"`
+	Status         []types.ComplianceResult `json:"status"`
 }
 
 type FindingResponseFilters struct {
@@ -90,7 +94,7 @@ const (
 )
 
 type GetTopFieldRequest struct {
-	Field   TopField       `json:"field"`
+	Field   TopField       `json:"field" enums:"resourceType,serviceName,sourceID,resourceID"`
 	Filters FindingFilters `json:"filters"`
 	Count   int            `json:"count"`
 }
@@ -118,63 +122,53 @@ type Datapoint struct {
 	Value int64 `json:"value"`
 }
 
-type StatusCount struct {
-	Passed int64 `json:"passed"`
-	Failed int64 `json:"failed"`
-}
+type GetBenchmarksSummaryResponse struct {
+	BenchmarkSummary []BenchmarkSummary `json:"benchmarkSummary"`
 
-type BenchmarkSummaryPolicySummary struct {
-	Policy       types.FullPolicy                   `json:"policy"`
-	ShortSummary types.ComplianceResultShortSummary `json:"shortSummary"`
-}
-
-type BenchmarkSummaryResourceSummary struct {
-	Resource     types.FullResource                 `json:"resource"`
-	ShortSummary types.ComplianceResultShortSummary `json:"shortSummary"`
+	PassedResources int64 `json:"passedResources"`
+	FailedResources int64 `json:"failedResources"`
+	TotalAssets     int64 `json:"totalAssets"`
 }
 
 type BenchmarkSummary struct {
-	ID                       string                             `json:"id"`
-	Title                    string                             `json:"title"`
-	Description              string                             `json:"description"`
-	ShortSummary             types.ComplianceResultShortSummary `json:"shortSummary"`
-	Policies                 []BenchmarkSummaryPolicySummary    `json:"policies"`
-	Resources                []BenchmarkSummaryResourceSummary  `json:"resources"`
-	CompliancyTrend          []Datapoint                        `json:"trend"`
-	AssignedConnectionsCount int64                              `json:"assignedConnectionsCount"`
-	TotalConnectionResources int64                              `json:"totalConnectionResources"`
-	Tags                     map[string]string                  `json:"tags"`
-	Enabled                  bool                               `json:"enabled"`
+	ID              string                        `json:"id"`
+	Title           string                        `json:"title"`
+	Description     string                        `json:"description"`
+	Connectors      []source.Type                 `json:"connectors"`
+	Tags            map[string]string             `json:"tags"`
+	Enabled         bool                          `json:"enabled"`
+	Result          types.ComplianceResultSummary `json:"result"`
+	Checks          types.SeverityResult          `json:"checks"`
+	Coverage        float64                       `json:"coverage"`
+	CompliancyTrend []Datapoint                   `json:"compliancyTrend"`
+
+	PassedResources int64 `json:"passedResources"`
+	FailedResources int64 `json:"failedResources"`
 }
 
-type BenchmarkSummaryConnectionSummary struct {
-	Connection   types.FullConnection               `json:"connection"`
-	ShortSummary types.ComplianceResultShortSummary `json:"shortSummary"`
+type ResultDatapoint struct {
+	Time   int64                `json:"time"`
+	Result types.SeverityResult `json:"result"`
 }
 
-type GetBenchmarksSummaryResponse struct {
-	ShortSummary types.ComplianceResultShortSummary  `json:"shortSummary"`
-	TotalAssets  int64                               `json:"totalAssets"`
-	Connections  []BenchmarkSummaryConnectionSummary `json:"connections"`
-	Benchmarks   []BenchmarkSummary                  `json:"benchmarks"`
+type BenchmarkResultTrend struct {
+	ResultDatapoint []ResultDatapoint `json:"resultTrend"`
 }
 
-type PolicySummary struct {
+type PolicyTree struct {
+	ID          string             `json:"id"`
 	Title       string             `json:"title"`
-	Category    string             `json:"category"`
-	Subcategory string             `json:"subcategory"`
 	Severity    types.Severity     `json:"severity"`
 	Status      types.PolicyStatus `json:"status"`
-	CreatedAt   int64              `json:"createdAt"`
+	LastChecked int64              `json:"lastChecked"`
 }
 
-type GetPoliciesSummaryResponse struct {
-	BenchmarkTitle       string                        `json:"title"`
-	BenchmarkDescription string                        `json:"description"`
-	ComplianceSummary    types.ComplianceResultSummary `json:"complianceSummary"`
-	PolicySummary        []PolicySummary               `json:"policySummary"`
-	Tags                 map[string]string             `json:"tags"`
-	Enabled              bool                          `json:"enabled"`
+type BenchmarkTree struct {
+	ID    string `json:"id"`
+	Title string `json:"title"`
+
+	Children []BenchmarkTree `json:"children"`
+	Policies []PolicyTree    `json:"policies"`
 }
 
 type GetFindingsMetricsResponse struct {
@@ -182,6 +176,11 @@ type GetFindingsMetricsResponse struct {
 	FailedFindings  int64 `json:"failedFindings"`
 	PassedFindings  int64 `json:"passedFindings"`
 	UnknownFindings int64 `json:"unknownFindings"`
+
+	LastTotalFindings   int64 `json:"lastTotalFindings"`
+	LastFailedFindings  int64 `json:"lastFailedFindings"`
+	LastPassedFindings  int64 `json:"lastPassedFindings"`
+	LastUnknownFindings int64 `json:"lastUnknownFindings"`
 }
 
 type Alarms struct {

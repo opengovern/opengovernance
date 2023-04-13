@@ -18,14 +18,14 @@ type InsightConnection struct {
 }
 
 type InsightResult struct {
-	JobID       uint                `json:"jobID"`
-	InsightID   uint                `json:"insightID"`
-	SourceID    string              `json:"sourceID"`
-	ExecutedAt  time.Time           `json:"executedAt"`
-	Result      int64               `json:"result"`
-	Locations   []string            `json:"locations"`
-	Connections []InsightConnection `json:"connections"`
-	Details     *InsightDetail      `json:"details,omitempty"`
+	JobID       uint                `json:"jobID"`             // Job ID
+	InsightID   uint                `json:"insightID"`         // Insight ID
+	SourceID    string              `json:"sourceID"`          // Source ID
+	ExecutedAt  time.Time           `json:"executedAt"`        // Time of Execution
+	Result      int64               `json:"result"`            // Result
+	Locations   []string            `json:"locations"`         // Locations
+	Connections []InsightConnection `json:"connections"`       // Connections
+	Details     *InsightDetail      `json:"details,omitempty"` // Insight Details
 }
 
 type InsightDetail struct {
@@ -78,21 +78,21 @@ type Query struct {
 }
 
 type Insight struct {
-	ID                    uint                  `json:"id"`
-	Query                 Query                 `json:"query"`
-	Category              string                `json:"category"`
-	Provider              source.Type           `json:"provider"`
-	ShortTitle            string                `json:"shortTitle"`
-	LongTitle             string                `json:"longTitle"`
-	Description           string                `json:"description"`
-	LogoURL               *string               `json:"logoURL"`
-	Labels                []InsightTag          `json:"labels"`
-	Links                 []InsightLink         `json:"links"`
-	Enabled               bool                  `json:"enabled"`
-	ExecutedAt            *time.Time            `json:"executedAt,omitempty"`
-	TotalResults          int64                 `json:"totalResults"`
-	Results               *InsightResult        `json:"results,omitempty"`
-	ListInsightResultType ListInsightResultType `json:"listInsightResultType"`
+	ID                    uint                  `json:"id"`                    // Insight Id
+	Query                 Query                 `json:"query"`                 // Query
+	Category              string                `json:"category"`              // Category
+	Provider              source.Type           `json:"provider"`              // Provider
+	ShortTitle            string                `json:"shortTitle"`            // Short Title
+	LongTitle             string                `json:"longTitle"`             // Long Title
+	Description           string                `json:"description"`           // Description
+	LogoURL               *string               `json:"logoURL"`               // Logo URL
+	Labels                []InsightTag          `json:"labels"`                // List of insight tags
+	Links                 []InsightLink         `json:"links"`                 // List of links
+	Enabled               bool                  `json:"enabled"`               // Enabled
+	ExecutedAt            *time.Time            `json:"executedAt,omitempty"`  // Time of Execution
+	TotalResults          int64                 `json:"totalResults"`          // Total Results
+	Results               *InsightResult        `json:"results,omitempty"`     // Insight Results and Details
+	ListInsightResultType ListInsightResultType `json:"listInsightResultType"` // PeerGroup or Insight
 }
 
 func (i Insight) GetType() ListInsightResultType {

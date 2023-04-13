@@ -16,6 +16,8 @@ import (
 	"strings"
 	"time"
 
+	"gorm.io/gorm"
+
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"gitlab.com/keibiengine/keibi-engine/pkg/inventory/internal"
@@ -40,7 +42,6 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/steampipe"
 
 	"github.com/google/uuid"
-	"github.com/jackc/pgx/v4"
 	"github.com/labstack/echo/v4"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpclient"
 	"gitlab.com/keibiengine/keibi-engine/pkg/inventory/api"
@@ -128,15 +129,17 @@ func bindValidate(ctx echo.Context, i interface{}) error {
 
 // GetResourceGrowthTrend godoc
 //
-//	@Summary	Returns trend of resource growth for specific account
-//	@Tags		benchmarks
-//	@Accept		json
-//	@Produce	json
-//	@Param		sourceId	query		string	false	"SourceID"
-//	@Param		provider	query		string	false	"Provider"
-//	@Param		timeWindow	query		string	false	"Time Window"	Enums(24h,1w,3m,1y,max)
-//	@Success	200			{object}	[]api.TrendDataPoint
-//	@Router		/inventory/api/v1/resources/trend [get]
+//	@Summary		Returns trend of resource count growth for specific account
+//	@Description	Returns trend of resource count in the specified time window
+//	@Description	In case of not specifying SourceID, Provider is used for filtering
+//	@Tags			benchmarks
+//	@Accept			json
+//	@Produce		json
+//	@Param			sourceId	query		string	false	"SourceID"
+//	@Param			provider	query		string	false	"Provider"
+//	@Param			timeWindow	query		string	false	"Time Window"	Enums(24h,1w,3m,1y,max)
+//	@Success		200			{object}	[]api.TrendDataPoint
+//	@Router			/inventory/api/v1/resources/trend [get]
 func (h *HttpHandler) GetResourceGrowthTrend(ctx echo.Context) error {
 	var err error
 	var fromTime, toTime int64
@@ -576,7 +579,7 @@ func (h *HttpHandler) GetCostGrowthTrendV2(ctx echo.Context) error {
 //	@Tags		cost
 //	@Accept		json
 //	@Produce	json
-//	@Param		count		query		int		true	"count"
+//	@Param		count		query		int		true	"Number of top accounts returning."
 //	@Param		provider	query		string	true	"Provider"
 //	@Success	200			{object}	[]api.TopAccountCostResponse
 //	@Router		/inventory/api/v1/cost/top/accounts [get]
@@ -654,7 +657,7 @@ func (h *HttpHandler) GetTopAccountsByCost(ctx echo.Context) error {
 //	@Tags		cost
 //	@Accept		json
 //	@Produce	json
-//	@Param		count		query		int		true	"count"
+//	@Param		count		query		int		true	"Number of top services returning."
 //	@Param		provider	query		string	true	"Provider"
 //	@Param		sourceId	query		string	true	"SourceID"
 //	@Success	200			{object}	[]api.TopServiceCostResponse
@@ -733,7 +736,7 @@ func (h *HttpHandler) GetTopServicesByCost(ctx echo.Context) error {
 //	@Tags		benchmarks
 //	@Accept		json
 //	@Produce	json
-//	@Param		count		query		int		true	"count"
+//	@Param		count		query		int		true	"Number of top accounts returning."
 //	@Param		provider	query		string	true	"Provider"
 //	@Success	200			{object}	[]api.TopAccountResponse
 //	@Router		/inventory/api/v1/resources/top/accounts [get]
@@ -785,11 +788,11 @@ func (h *HttpHandler) GetTopAccountsByResourceCount(ctx echo.Context) error {
 
 // GetTopFastestGrowingAccountsByResourceCount godoc
 //
-//	@Summary	Returns top n accounts of specified provider by resource count
+//	@Summary	Returns top n fastest growing accounts of specified provider in the specified time window by resource count
 //	@Tags		benchmarks
 //	@Accept		json
 //	@Produce	json
-//	@Param		count		query		int		true	"count"
+//	@Param		count		query		int		true	"Number of top accounts returning."
 //	@Param		provider	query		string	true	"Provider"
 //	@Param		timeWindow	query		string	true	"TimeWindow"	Enums(1d,1w,3m,1y)
 //	@Success	200			{object}	[]api.TopAccountResponse
@@ -1017,7 +1020,7 @@ func (h *HttpHandler) GetRegionsByResourceCount(ctx echo.Context) error {
 //	@Tags		benchmarks
 //	@Accept		json
 //	@Produce	json
-//	@Param		count		query		int		true	"count"
+//	@Param		count		query		int		true	"Number of top ser"
 //	@Param		provider	query		string	true	"Provider"
 //	@Param		sourceId	query		string	false	"SourceID"
 //	@Success	200			{object}	[]api.TopServicesResponse
@@ -1069,6 +1072,7 @@ func (h *HttpHandler) GetTopServicesByResourceCount(ctx echo.Context) error {
 //	@Param		category	query		string	false	"Category ID - defaults to default template category"
 //	@Success	200			{object}	[]api.CategoryNode
 //	@Router		/inventory/api/v2/resources/categories [get]
+//	@Router		/inventory/api/v2/categories	[get]
 func (h *HttpHandler) GetCategoriesV2(ctx echo.Context) error {
 	category := ctx.QueryParam("category")
 	var (
@@ -1388,7 +1392,7 @@ func (h *HttpHandler) GetMetricsResourceCount(ctx echo.Context) error {
 //	@Accept		json
 //	@Produce	json
 //	@Param		category	query		string	false	"Category ID - defaults to default template category"
-//	@Param		top			query		int		true	"How many top categories to return"
+//	@Param		top			query		int		true	"How many top categories to return. The rest will be aggregated into Others."
 //	@Param		provider	query		string	false	"Provider"
 //	@Param		sourceId	query		string	false	"SourceID"
 //	@Param		importance	query		string	false	"Filter filters by importance if they have it (array format is supported with , separator | 'all' is also supported)"
@@ -2454,7 +2458,7 @@ func (h *HttpHandler) GetServiceDistribution(ctx echo.Context) error {
 
 // GetServiceSummary godoc
 //
-//	@Summary	Returns distribution of services for specific account
+//	@Summary	Returns Service Summary
 //	@Tags		benchmarks
 //	@Accept		json
 //	@Produce	json
@@ -2690,7 +2694,8 @@ func (h *HttpHandler) GetServiceSummary(ctx echo.Context) error {
 //	@Tags			resource
 //	@Accepts		json
 //	@Produce		json
-//	@Param			request	body	api.GetResourceRequest	true	"Request Body"
+//	@Param			request	body		api.GetResourceRequest	true	"Request Body"
+//	@Success		200		{object}	map[string]string
 //	@Router			/inventory/api/v1/resource [post]
 func (h *HttpHandler) GetResource(ctx echo.Context) error {
 	var req api.GetResourceRequest
@@ -2817,7 +2822,7 @@ func (h *HttpHandler) GetResource(ctx echo.Context) error {
 // ListQueries godoc
 //
 //	@Summary		List smart queries
-//	@Description	Listing smart queries
+//	@Description	Listing smart queries by specified filters
 //	@Tags			smart_query
 //	@Produce		json
 //	@Param			request	body		api.ListQueryRequest	true	"Request Body"
@@ -2925,7 +2930,7 @@ func (h *HttpHandler) RunQuery(ctx echo.Context) error {
 
 			query, err := h.db.GetQuery(queryId)
 			if err != nil {
-				if err == pgx.ErrNoRows {
+				if err == gorm.ErrRecordNotFound {
 					return echo.NewHTTPError(http.StatusNotFound, "Query not found")
 				}
 				return err
@@ -2959,7 +2964,7 @@ func (h *HttpHandler) RunQuery(ctx echo.Context) error {
 
 	query, err := h.db.GetQuery(queryId)
 	if err != nil {
-		if err == pgx.ErrNoRows {
+		if err == gorm.ErrRecordNotFound {
 			return echo.NewHTTPError(http.StatusNotFound, "Query not found")
 		}
 		return err
@@ -2977,7 +2982,7 @@ func (h *HttpHandler) RunQuery(ctx echo.Context) error {
 //	@Description	Getting locations by provider
 //	@Tags			location
 //	@Produce		json
-//	@Param			provider	path		string	true	"Provider"	Enums(aws,azure)
+//	@Param			provider	path		string	true	"Provider"	Enums(aws,azure,all)
 //	@Success		200			{object}	[]api.LocationByProviderResponse
 //	@Router			/inventory/api/v1/locations/{provider} [get]
 func (h *HttpHandler) GetLocations(ctx echo.Context) error {
@@ -3042,6 +3047,7 @@ func (h *HttpHandler) GetLocations(ctx echo.Context) error {
 //	@Description	Getting Azure resources by filters.
 //	@Description	In order to get the results in CSV format, Accepts header must be filled with `text/csv` value.
 //	@Description	Note that csv output doesn't process pagination and returns first 5000 records.
+//	@Description	If sort by is empty, result will be sorted by the first column in ascending order.
 //	@Tags			inventory
 //	@Accept			json
 //	@Produce		json,text/csv
@@ -3077,6 +3083,7 @@ func (h *HttpHandler) GetAzureResources(ctx echo.Context) error {
 //	@Description	Getting AWS resources by filters.
 //	@Description	In order to get the results in CSV format, Accepts header must be filled with `text/csv` value.
 //	@Description	Note that csv output doesn't process pagination and returns first 5000 records.
+//	@Description	If sort by is empty, result will be sorted by the first column in ascending order.
 //	@Tags			inventory
 //	@Accept			json
 //	@Produce		json,text/csv
@@ -3143,12 +3150,13 @@ func (h *HttpHandler) GetAllResources(ctx echo.Context) error {
 
 // CountResources godoc
 //
-//	@Summary	Count resources
-//	@Tags		inventory
-//	@Accept		json
-//	@Produce	json,text/csv
-//	@Success	200	{object}	int64
-//	@Router		/inventory/api/v1/resources/count [post]
+//	@Summary		Count resources
+//	@Description	Number of all resources
+//	@Tags			inventory
+//	@Accept			json
+//	@Produce		json,text/csv
+//	@Success		200	{object}	int64
+//	@Router			/inventory/api/v1/resources/count [get]
 func (h *HttpHandler) CountResources(ctx echo.Context) error {
 	value := 0
 	toTime := time.Now()
@@ -3176,7 +3184,7 @@ func (h *HttpHandler) CountResources(ctx echo.Context) error {
 //	@Accept		json
 //	@Produce	json,text/csv
 //	@Success	200	{object}	api.ConnectionSummaryResponse
-//	@Router		/inventory/api/v1/connection/{connection_id}/summary [post]
+//	@Router		/inventory/api/v1/connection/{connection_id}/summary [get]
 func (h *HttpHandler) GetConnectionSummary(ctx echo.Context) error {
 	connectionID := ctx.Param("connection_id")
 
@@ -3227,7 +3235,7 @@ func (h *HttpHandler) GetConnectionSummary(ctx echo.Context) error {
 //	@Accept		json
 //	@Produce	json,text/csv
 //	@Success	200	{object}	api.ConnectionSummaryResponse
-//	@Router		/inventory/api/v1/provider/{provider}/summary [post]
+//	@Router		/inventory/api/v1/provider/{provider}/summary [get]
 func (h *HttpHandler) GetProviderSummary(ctx echo.Context) error {
 	provider, _ := source.ParseType(ctx.Param("provider"))
 

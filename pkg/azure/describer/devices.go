@@ -4,15 +4,15 @@ import (
 	"context"
 	"strings"
 
-	"github.com/Azure/azure-sdk-for-go/profiles/2020-09-01/monitor/mgmt/insights"
 	"github.com/Azure/azure-sdk-for-go/profiles/latest/provisioningservices/mgmt/iothub"
 	"github.com/Azure/azure-sdk-for-go/services/iothub/mgmt/2020-03-01/devices"
+	"github.com/Azure/azure-sdk-for-go/services/preview/monitor/mgmt/2021-04-01-preview/insights"
 	"github.com/Azure/go-autorest/autorest"
 	"gitlab.com/keibiengine/keibi-engine/pkg/azure/model"
 )
 
 func DevicesProvisioningServicesCertificates(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
-	rgs, err := resourceGroup(ctx, authorizer, subscription)
+	rgs, err := listResourceGroups(ctx, authorizer, subscription)
 	if err != nil {
 		return nil, err
 	}
@@ -103,6 +103,51 @@ func IOTHub(ctx context.Context, authorizer autorest.Authorizer, subscription st
 				Location: *iotHubDescription.Location,
 				Description: model.IOTHubDescription{
 					IotHubDescription:           iotHubDescription,
+					DiagnosticSettingsResources: devicesListOp.Value,
+					ResourceGroup:               resourceGroup,
+				},
+			})
+		}
+		if !result.NotDone() {
+			break
+		}
+		err = result.NextWithContext(ctx)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return values, nil
+}
+
+func IOTHubDps(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
+	client := insights.NewDiagnosticSettingsClient(subscription)
+	client.Authorizer = authorizer
+
+	iotHubClient := iothub.NewIotDpsResourceClient(subscription)
+	iotHubClient.Authorizer = authorizer
+
+	result, err := iotHubClient.ListBySubscription(ctx)
+	if err != nil {
+		return nil, err
+	}
+	var values []Resource
+	for {
+		for _, v := range result.Values() {
+			resourceGroup := strings.Split(*v.ID, "/")[4]
+
+			id := *v.ID
+
+			devicesListOp, err := client.List(ctx, id)
+			if err != nil {
+				return nil, err
+			}
+
+			values = append(values, Resource{
+				ID:       *v.ID,
+				Name:     *v.Name,
+				Location: *v.Location,
+				Description: model.IOTHubDpsDescription{
+					IotHubDps:                   v,
 					DiagnosticSettingsResources: devicesListOp.Value,
 					ResourceGroup:               resourceGroup,
 				},

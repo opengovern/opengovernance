@@ -4,10 +4,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"gitlab.com/keibiengine/keibi-engine/pkg/source"
 	"net/http"
 	"strconv"
 	"time"
+
+	"gitlab.com/keibiengine/keibi-engine/pkg/source"
 
 	"github.com/ProtonMail/gopenpgp/v2/helper"
 	api3 "gitlab.com/keibiengine/keibi-engine/pkg/auth/api"
@@ -52,6 +53,7 @@ func (h HttpServer) Register(e *echo.Echo) {
 	v0.GET("/summarize/trigger", httpserver.AuthorizeHandler(h.TriggerSummarizeJob, api3.AdminRole))
 	v0.GET("/insight/trigger", httpserver.AuthorizeHandler(h.TriggerInsightJob, api3.AdminRole))
 	v0.GET("/compliance/trigger", httpserver.AuthorizeHandler(h.TriggerComplianceJob, api3.AdminRole))
+	v0.GET("/compliance/summarizer/trigger", httpserver.AuthorizeHandler(h.TriggerComplianceSummarizerJob, api3.AdminRole))
 	v1.PUT("/benchmark/evaluation/trigger", httpserver.AuthorizeHandler(h.TriggerBenchmarkEvaluation, api3.AdminRole))
 
 	v1.GET("/describe/source/jobs/pending", httpserver.AuthorizeHandler(h.HandleListPendingDescribeSourceJobs, api3.ViewerRole))
@@ -537,14 +539,35 @@ func (h HttpServer) TriggerComplianceJob(ctx echo.Context) error {
 	return ctx.NoContent(http.StatusOK)
 }
 
+// TriggerComplianceSummarizerJob godoc
+//
+//	@Summary	Triggers a compliance summarizer job to run immediately
+//	@Tags		describe
+//	@Produce	json
+//	@Success	200
+//	@Router		/schedule/api/v0/compliance/summarizer/trigger [get]
+func (h HttpServer) TriggerComplianceSummarizerJob(ctx echo.Context) error {
+	scheduleJob, err := h.DB.FetchLastScheduleJob()
+	if err != nil {
+		return err
+	}
+
+	err = h.Scheduler.scheduleComplianceSummarizerJob(scheduleJob.ID)
+	if err != nil {
+		return err
+	}
+
+	return ctx.NoContent(http.StatusOK)
+}
+
 // TriggerBenchmarkEvaluation godoc
 //
-//	@Summary		Triggers a benchmark evaluation job to run immediately
-//	@Tags			describe
-//	@Produce		json
-//	@Success		200
-//	@Param		request	body		api.TriggerBenchmarkEvaluationRequest	true	"Request Body"
-//	@Router			/schedule/api/v1/compliance/trigger [put]
+//	@Summary	Triggers a benchmark evaluation job to run immediately
+//	@Tags		describe
+//	@Produce	json
+//	@Success	200
+//	@Param		request	body	api.TriggerBenchmarkEvaluationRequest	true	"Request Body"
+//	@Router		/schedule/api/v1/compliance/trigger [put]
 func (h HttpServer) TriggerBenchmarkEvaluation(ctx echo.Context) error {
 	var req api.TriggerBenchmarkEvaluationRequest
 	if err := bindValidate(ctx, &req); err != nil {
@@ -597,13 +620,13 @@ func (h HttpServer) TriggerBenchmarkEvaluation(ctx echo.Context) error {
 
 // HandleListBenchmarkEvaluations godoc
 //
-//	@Summary		Lists all benchmark evaluations
-//	@Tags			compliance
-//	@Produce		json
-//	@Success		200
+//	@Summary	Lists all benchmark evaluations
+//	@Tags		compliance
+//	@Produce	json
+//	@Success	200
 //	@Param		request	body		api.ListBenchmarkEvaluationsRequest	true	"Request Body"
 //	@Success	200		{object}	[]describe.ComplianceReportJob
-//	@Router			/schedule/api/v1/benchmark/evaluations [get]
+//	@Router		/schedule/api/v1/benchmark/evaluations [get]
 func (h HttpServer) HandleListBenchmarkEvaluations(ctx echo.Context) error {
 	var req api.ListBenchmarkEvaluationsRequest
 	if err := bindValidate(ctx, &req); err != nil {

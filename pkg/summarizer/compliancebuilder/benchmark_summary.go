@@ -42,7 +42,7 @@ func (b *benchmarkSummaryBuilder) Process(resource es2.Finding) error {
 		ResourceID:   resource.ResourceID,
 		ResourceName: resource.ResourceName,
 		SourceID:     resource.ConnectionID,
-		Result:       resource.Status,
+		Result:       resource.Result,
 	}
 
 	v := b.benchmarkSummary[resource.BenchmarkID]
@@ -71,9 +71,9 @@ func (b *benchmarkSummaryBuilder) Build() []kafka.Doc {
 	var docs []kafka.Doc
 	for _, v := range b.benchmarkSummary {
 		docs = append(docs, v)
-		//h := v
-		//h.ReportType = h.ReportType + "History"
-		//docs = append(docs, h)
+		h := v
+		h.ReportType = h.ReportType + "History"
+		docs = append(docs, h)
 	}
 	return docs
 }

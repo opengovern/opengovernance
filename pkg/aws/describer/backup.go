@@ -204,3 +204,73 @@ func BackupVault(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 
 	return values, nil
 }
+
+func BackupFramework(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+	client := backup.NewFromConfig(cfg)
+	paginator := backup.NewListFrameworksPaginator(client, &backup.ListFrameworksInput{})
+
+	var values []Resource
+	for paginator.HasMorePages() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page.Frameworks {
+			framework, err := client.DescribeFramework(ctx, &backup.DescribeFrameworkInput{
+				FrameworkName: v.FrameworkName,
+			})
+			if err != nil {
+				return nil, err
+			}
+
+			tags, err := client.ListTags(ctx, &backup.ListTagsInput{
+				ResourceArn: v.FrameworkArn,
+			})
+
+			values = append(values, Resource{
+				ARN:  *v.FrameworkArn,
+				Name: *v.FrameworkName,
+				Description: model.BackupFrameworkDescription{
+					Framework: *framework,
+					Tags:      tags.Tags,
+				},
+			})
+		}
+	}
+
+	return values, nil
+}
+
+func BackupLegalHold(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+	client := backup.NewFromConfig(cfg)
+	paginator := backup.NewListLegalHoldsPaginator(client, &backup.ListLegalHoldsInput{})
+
+	var values []Resource
+	for paginator.HasMorePages() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page.LegalHolds {
+			legalHold, err := client.GetLegalHold(ctx, &backup.GetLegalHoldInput{
+				LegalHoldId: v.LegalHoldId,
+			})
+			if err != nil {
+				return nil, err
+			}
+
+			values = append(values, Resource{
+				Name: *v.Title,
+				ARN:  *v.LegalHoldArn,
+				ID:   *v.LegalHoldId,
+				Description: model.BackupLegalHoldDescription{
+					LegalHold: *legalHold,
+				},
+			})
+		}
+	}
+
+	return values, nil
+}

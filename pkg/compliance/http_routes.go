@@ -7,18 +7,20 @@ import (
 	"strconv"
 	"time"
 
+	"gitlab.com/keibiengine/keibi-engine/pkg/types"
+
 	api3 "gitlab.com/keibiengine/keibi-engine/pkg/auth/api"
 	"gitlab.com/keibiengine/keibi-engine/pkg/compliance/db"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpserver"
+	es2 "gitlab.com/keibiengine/keibi-engine/pkg/summarizer/es"
+	"gitlab.com/keibiengine/keibi-engine/pkg/summarizer/query"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/compliance/api"
 	"gitlab.com/keibiengine/keibi-engine/pkg/compliance/es"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpclient"
 	"gitlab.com/keibiengine/keibi-engine/pkg/source"
-	"gitlab.com/keibiengine/keibi-engine/pkg/types"
 	"gorm.io/gorm"
 
-	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
 )
 
@@ -42,7 +44,16 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	v1.GET("/insight", httpserver.AuthorizeHandler(h.ListInsights, api3.ViewerRole))
 	v1.GET("/insight/:insightId", httpserver.AuthorizeHandler(h.GetInsight, api3.ViewerRole))
 
+	v1.GET("/benchmarks/summary", httpserver.AuthorizeHandler(h.GetBenchmarksSummary, api3.ViewerRole))
+	v1.GET("/benchmark/:benchmark_id/summary", httpserver.AuthorizeHandler(h.GetBenchmarkSummary, api3.ViewerRole))
+	v1.GET("/benchmark/:benchmark_id/summary/result/trend", httpserver.AuthorizeHandler(h.GetBenchmarkResultTrend, api3.ViewerRole))
+	v1.GET("/benchmark/:benchmark_id/tree", httpserver.AuthorizeHandler(h.GetBenchmarkTree, api3.ViewerRole))
+
 	v1.POST("/findings", httpserver.AuthorizeHandler(h.GetFindings, api3.ViewerRole))
+	v1.GET("/findings/:benchmarkId/:field/top/:count", httpserver.AuthorizeHandler(h.GetTopFieldByFindingCount, api3.ViewerRole))
+	v1.GET("/findings/metrics", httpserver.AuthorizeHandler(h.GetFindingsMetrics, api3.ViewerRole))
+
+	v1.POST("/alarms/top", httpserver.AuthorizeHandler(h.GetTopFieldByAlarmCount, api3.ViewerRole))
 }
 
 func bindValidate(ctx echo.Context, i interface{}) error {
@@ -82,7 +93,16 @@ func (h *HttpHandler) GetFindings(ctx echo.Context) error {
 		sorts = append(sorts, item)
 	}
 
-	res, err := es.FindingsQuery(h.client, nil, req.Filters.Connector, req.Filters.ResourceID, req.Filters.ConnectionID, req.Filters.BenchmarkID, req.Filters.PolicyID, req.Filters.Severity,
+	var benchmarkIDs []string
+	for _, b := range req.Filters.BenchmarkID {
+		bs, err := h.GetBenchmarkTreeIDs(b)
+		if err != nil {
+			return err
+		}
+
+		benchmarkIDs = append(benchmarkIDs, bs...)
+	}
+	res, err := es.FindingsQuery(h.client, nil, req.Filters.Connector, req.Filters.ResourceID, req.Filters.ConnectionID, benchmarkIDs, req.Filters.PolicyID, req.Filters.Severity,
 		sorts, lastIdx, req.Page.Size)
 	if err != nil {
 		return err
@@ -92,6 +112,404 @@ func (h *HttpHandler) GetFindings(ctx echo.Context) error {
 		response.Findings = append(response.Findings, h.Source)
 	}
 	response.TotalCount = res.Hits.Total.Value
+	return ctx.JSON(http.StatusOK, response)
+}
+
+// GetTopFieldByFindingCount godoc
+//
+//	@Summary	Returns all findings with respect to filters
+//	@Tags		compliance
+//	@Accept		json
+//	@Produce	json
+//	@Param		benchmarkId	path		string	true	"BenchmarkID"
+//	@Param		field		path		string	true	"Field"	Enums(resourceType,serviceName,sourceID,resourceID)
+//	@Param		count		path		int		true	"Count"
+//	@Success	200			{object}	api.GetTopFieldResponse
+//	@Router		/compliance/api/v1/findings/{benchmarkId}/{field}/top/{count} [get]
+func (h *HttpHandler) GetTopFieldByFindingCount(ctx echo.Context) error {
+	benchmarkID := ctx.Param("benchmarkId")
+	field := ctx.Param("field")
+	countStr := ctx.Param("count")
+	count, err := strconv.Atoi(countStr)
+	if err != nil {
+		return err
+	}
+
+	benchmarkIDs, err := h.GetBenchmarkTreeIDs(benchmarkID)
+	if err != nil {
+		return err
+	}
+
+	var response api.GetTopFieldResponse
+	res, err := es.FindingsTopFieldQuery(h.client, field, nil, nil, nil, nil, benchmarkIDs, nil, nil, count)
+	if err != nil {
+		return err
+	}
+
+	for _, item := range res.Aggregations.FieldFilter.Buckets {
+		response.Records = append(response.Records, api.TopFieldRecord{
+			Value: item.Key,
+			Count: item.DocCount,
+		})
+	}
+
+	return ctx.JSON(http.StatusOK, response)
+}
+
+// GetTopFieldByAlarmCount godoc
+//
+//	@Summary	Returns all findings with respect to filters
+//	@Tags		compliance
+//	@Accept		json
+//	@Produce	json
+//	@Param		request	body		api.GetTopFieldRequest	true	"Request Body"
+//	@Success	200		{object}	api.GetTopFieldResponse
+//	@Router		/compliance/api/v1/alarms/top [post]
+func (h *HttpHandler) GetTopFieldByAlarmCount(ctx echo.Context) error {
+	var req api.GetTopFieldRequest
+	if err := bindValidate(ctx, &req); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	var response api.GetTopFieldResponse
+	res, err := query.AlarmTopFieldQuery(h.client, req.Field, req.Filters.Connector, req.Filters.ResourceTypeID,
+		req.Filters.ConnectionID, req.Filters.Status, req.Filters.BenchmarkID, req.Filters.PolicyID,
+		req.Filters.Severity, req.Count)
+	if err != nil {
+		return err
+	}
+
+	for _, item := range res.Aggregations.FieldFilter.Buckets {
+		response.Records = append(response.Records, api.TopFieldRecord{
+			Value: item.Key,
+			Count: item.DocCount,
+		})
+	}
+	return ctx.JSON(http.StatusOK, response)
+}
+
+// GetFindingsMetrics godoc
+//
+//	@Summary	Returns findings metrics
+//	@Tags		compliance
+//	@Accept		json
+//	@Produce	json
+//	@Param		start	query		int64	false	"Start"
+//	@Param		end		query		int64	false	"End"
+//	@Success	200		{object}	api.GetFindingsMetricsResponse
+//	@Router		/compliance/api/v1/findings/metrics [get]
+func (h *HttpHandler) GetFindingsMetrics(ctx echo.Context) error {
+	startDateStr := ctx.QueryParam("start")
+	endDateStr := ctx.QueryParam("end")
+
+	startDate, err := strconv.ParseInt(startDateStr, 10, 64)
+	if err != nil {
+		return err
+	}
+
+	endDate, err := strconv.ParseInt(endDateStr, 10, 64)
+	if err != nil {
+		return err
+	}
+
+	startDateTo := time.UnixMilli(startDate)
+	startDateFrom := startDateTo.Add(-24 * time.Hour)
+	metricStart, err := query.GetFindingMetrics(h.client, startDateTo, startDateFrom)
+	if err != nil {
+		return err
+	}
+
+	endDateTo := time.UnixMilli(endDate)
+	endDateFrom := startDateTo.Add(-24 * time.Hour)
+	metricEnd, err := query.GetFindingMetrics(h.client, endDateTo, endDateFrom)
+	if err != nil {
+		return err
+	}
+
+	if metricEnd == nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "metrics not found")
+	}
+	if metricStart == nil {
+		metricStart = &es2.FindingMetrics{}
+	}
+
+	var response api.GetFindingsMetricsResponse
+	response.TotalFindings = metricEnd.PassedFindingsCount + metricEnd.FailedFindingsCount + metricEnd.UnknownFindingsCount
+	response.PassedFindings = metricEnd.PassedFindingsCount
+	response.FailedFindings = metricEnd.FailedFindingsCount
+	response.UnknownFindings = metricEnd.UnknownFindingsCount
+
+	response.LastTotalFindings = metricStart.PassedFindingsCount + metricStart.FailedFindingsCount + metricStart.UnknownFindingsCount
+	response.LastPassedFindings = metricStart.PassedFindingsCount
+	response.LastFailedFindings = metricStart.FailedFindingsCount
+	response.LastUnknownFindings = metricStart.UnknownFindingsCount
+	return ctx.JSON(http.StatusOK, response)
+}
+
+// GetBenchmarksSummary godoc
+//
+//	@Summary	Get benchmark summary
+//	@Tags		compliance
+//	@Accept		json
+//	@Produce	json
+//	@Param		start	query		int64	true	"Start"
+//	@Param		end		query		int64	true	"End"
+//	@Success	200		{object}	api.GetBenchmarksSummaryResponse
+//	@Router		/compliance/api/v1/benchmarks/summary [get]
+func (h *HttpHandler) GetBenchmarksSummary(ctx echo.Context) error {
+	startDateStr := ctx.QueryParam("start")
+	endDateStr := ctx.QueryParam("end")
+	if startDateStr == "" || endDateStr == "" {
+		return echo.NewHTTPError(http.StatusBadRequest, "start & end query params are required")
+	}
+	startDate, err := strconv.ParseInt(startDateStr, 10, 64)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+	endDate, err := strconv.ParseInt(endDateStr, 10, 64)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+	_, _ = startDate, endDate
+
+	var response api.GetBenchmarksSummaryResponse
+	benchmarks, err := h.db.ListRootBenchmarks()
+	if err != nil {
+		return err
+	}
+
+	totalWorkspaceAssets, err := h.inventoryClient.CountResources(httpclient.FromEchoContext(ctx))
+	if err != nil {
+		return err
+	}
+
+	summ := ShortSummary{}
+	for _, b := range benchmarks {
+		be := b.ToApi()
+		err = b.PopulateConnectors(h.db, &be)
+		if err != nil {
+			return err
+		}
+
+		s, err := GetShortSummary(h.client, h.db, b)
+		if err != nil {
+			return err
+		}
+
+		var totalBenchmarkCoveredAssets int64
+		for _, conn := range s.ConnectionIDs {
+			count, err := h.inventoryClient.GetAccountsResourceCount(httpclient.FromEchoContext(ctx), source.Nil, &conn)
+			if err != nil {
+				return err
+			}
+			totalBenchmarkCoveredAssets += int64(count[0].ResourceCount)
+		}
+
+		coverage := 100.0
+		if totalWorkspaceAssets > 0 {
+			coverage = float64(totalBenchmarkCoveredAssets) / float64(totalWorkspaceAssets) * 100.0
+		}
+
+		trend, err := h.BuildBenchmarkResultTrend(b, startDate, endDate)
+		if err != nil {
+			return err
+		}
+
+		var ctrend []api.Datapoint
+		for _, v := range trend {
+			ctrend = append(ctrend, api.Datapoint{
+				Time:  v.Time,
+				Value: int64(v.Result.PassedCount),
+			})
+		}
+
+		response.BenchmarkSummary = append(response.BenchmarkSummary, api.BenchmarkSummary{
+			ID:              b.ID,
+			Title:           b.Title,
+			Description:     b.Description,
+			Connectors:      be.Connectors,
+			Tags:            be.Tags,
+			Enabled:         b.Enabled,
+			Result:          s.Result,
+			Checks:          s.Checks,
+			Coverage:        coverage,
+			CompliancyTrend: ctrend,
+			PassedResources: int64(len(s.PassedResourceIDs)),
+			FailedResources: int64(len(s.FailedResourceIDs)),
+		})
+		summ.PassedResourceIDs = append(summ.PassedResourceIDs, s.PassedResourceIDs...)
+		summ.FailedResourceIDs = append(summ.FailedResourceIDs, s.FailedResourceIDs...)
+		summ.ConnectionIDs = append(summ.ConnectionIDs, s.ConnectionIDs...)
+	}
+	summ.PassedResourceIDs = UniqueArray(summ.PassedResourceIDs, func(t, t2 string) bool {
+		return t == t2
+	})
+	summ.FailedResourceIDs = UniqueArray(summ.FailedResourceIDs, func(t, t2 string) bool {
+		return t == t2
+	})
+	summ.ConnectionIDs = UniqueArray(summ.ConnectionIDs, func(t, t2 string) bool {
+		return t == t2
+	})
+
+	response.PassedResources = int64(len(summ.PassedResourceIDs))
+	response.FailedResources = int64(len(summ.FailedResourceIDs))
+	for _, conn := range summ.ConnectionIDs {
+		count, err := h.inventoryClient.GetAccountsResourceCount(httpclient.FromEchoContext(ctx), source.Nil, &conn)
+		if err != nil {
+			return err
+		}
+		response.TotalAssets += int64(count[0].ResourceCount)
+	}
+	return ctx.JSON(http.StatusOK, response)
+}
+
+// GetBenchmarkSummary godoc
+//
+//	@Summary	Get benchmark summary
+//	@Tags		compliance
+//	@Accept		json
+//	@Produce	json
+//	@Param		benchmark_id	path		string	true	"BenchmarkID"
+//	@Success	200				{object}	api.BenchmarkSummary
+//	@Router		/compliance/api/v1/benchmark/{benchmark_id}/summary [get]
+func (h *HttpHandler) GetBenchmarkSummary(ctx echo.Context) error {
+	benchmarkID := ctx.Param("benchmark_id")
+
+	benchmark, err := h.db.GetBenchmark(benchmarkID)
+	if err != nil {
+		return err
+	}
+
+	if benchmark == nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid benchmarkID")
+	}
+
+	totalWorkspaceAssets, err := h.inventoryClient.CountResources(httpclient.FromEchoContext(ctx))
+	if err != nil {
+		return err
+	}
+
+	be := benchmark.ToApi()
+	err = benchmark.PopulateConnectors(h.db, &be)
+	if err != nil {
+		return err
+	}
+
+	s, err := GetShortSummary(h.client, h.db, *benchmark)
+	if err != nil {
+		return err
+	}
+
+	var totalBenchmarkCoveredAssets int64
+	for _, conn := range s.ConnectionIDs {
+		count, err := h.inventoryClient.GetAccountsResourceCount(httpclient.FromEchoContext(ctx), source.Nil, &conn)
+		if err != nil {
+			return err
+		}
+		totalBenchmarkCoveredAssets += int64(count[0].ResourceCount)
+	}
+
+	coverage := 100.0
+	if totalWorkspaceAssets > 0 {
+		coverage = float64(totalBenchmarkCoveredAssets) / float64(totalWorkspaceAssets) * 100.0
+	}
+	response := api.BenchmarkSummary{
+		ID:              benchmark.ID,
+		Title:           benchmark.Title,
+		Description:     benchmark.Description,
+		Connectors:      be.Connectors,
+		Tags:            be.Tags,
+		Enabled:         benchmark.Enabled,
+		Result:          s.Result,
+		Checks:          s.Checks,
+		Coverage:        coverage,
+		PassedResources: int64(len(s.PassedResourceIDs)),
+		FailedResources: int64(len(s.FailedResourceIDs)),
+	}
+	return ctx.JSON(http.StatusOK, response)
+}
+
+// GetBenchmarkResultTrend godoc
+//
+//	@Summary	Get result trend
+//	@Tags		compliance
+//	@Accept		json
+//	@Produce	json
+//	@Param		start			query		int64	true	"Start"
+//	@Param		end				query		int64	true	"End"
+//	@Param		benchmark_id	path		string	true	"BenchmarkID"
+//	@Success	200				{object}	api.BenchmarkResultTrend
+//	@Router		/compliance/api/v1/benchmark/{benchmark_id}/summary/result/trend [get]
+func (h *HttpHandler) GetBenchmarkResultTrend(ctx echo.Context) error {
+	startDateStr := ctx.QueryParam("start")
+	endDateStr := ctx.QueryParam("end")
+	if startDateStr == "" || endDateStr == "" {
+		return echo.NewHTTPError(http.StatusBadRequest, "start & end query params are required")
+	}
+	startDate, err := strconv.ParseInt(startDateStr, 10, 64)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+	endDate, err := strconv.ParseInt(endDateStr, 10, 64)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+	_, _ = startDate, endDate
+
+	benchmarkID := ctx.Param("benchmark_id")
+	benchmark, err := h.db.GetBenchmark(benchmarkID)
+	if err != nil {
+		return err
+	}
+	if benchmark == nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid benchmarkID")
+	}
+
+	trend, err := h.BuildBenchmarkResultTrend(*benchmark, startDate, endDate)
+	if err != nil {
+		return err
+	}
+
+	return ctx.JSON(http.StatusOK, api.BenchmarkResultTrend{
+		ResultDatapoint: trend,
+	})
+}
+
+// GetBenchmarkTree godoc
+//
+//	@Summary	Get benchmark tree
+//	@Tags		compliance
+//	@Accept		json
+//	@Produce	json
+//	@Param		benchmark_id	path		string	true	"BenchmarkID"
+//	@Param		status			query		string	true	"Status"	Enums(passed,failed,unknown)
+//	@Success	200				{object}	api.BenchmarkTree
+//	@Router		/compliance/api/v1/benchmark/{benchmark_id}/tree [get]
+func (h *HttpHandler) GetBenchmarkTree(ctx echo.Context) error {
+	var status []types.PolicyStatus
+	benchmarkID := ctx.Param("benchmark_id")
+	for k, va := range ctx.QueryParams() {
+		if k == "status" {
+			for _, v := range va {
+				status = append(status, types.PolicyStatus(v))
+			}
+		}
+	}
+
+	benchmark, err := h.db.GetBenchmark(benchmarkID)
+	if err != nil {
+		return err
+	}
+
+	if benchmark == nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid benchmarkID")
+	}
+
+	response, err := GetBenchmarkTree(h.db, h.client, *benchmark, status)
+	if err != nil {
+		return err
+	}
+
 	return ctx.JSON(http.StatusOK, response)
 }
 
@@ -119,10 +537,11 @@ func (h *HttpHandler) CreateBenchmarkAssignment(ctx echo.Context) error {
 
 	benchmark, err := h.db.GetBenchmark(benchmarkId)
 	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("benchmark %s not found", benchmarkId))
-		}
 		return err
+	}
+
+	if benchmark == nil {
+		return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("benchmark %s not found", benchmarkId))
 	}
 
 	src, err := h.schedulerClient.GetSource(httpclient.FromEchoContext(ctx), connectionID)
@@ -138,6 +557,10 @@ func (h *HttpHandler) CreateBenchmarkAssignment(ctx echo.Context) error {
 		q, err := h.db.GetQuery(*policy.QueryID)
 		if err != nil {
 			return err
+		}
+
+		if q == nil {
+			return fmt.Errorf("query %s not found", *policy.QueryID)
 		}
 
 		if q.Connector != string(src.Type) {
@@ -215,44 +638,52 @@ func (h *HttpHandler) ListAssignmentsByBenchmark(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "benchmark id is empty")
 	}
 
-	dbAssignments, err := h.db.GetBenchmarkAssignmentsByBenchmarkId(benchmarkId)
+	benchmark, err := h.db.GetBenchmark(benchmarkId)
 	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("benchmark assignments for %s not found", benchmarkId))
-		}
-		ctx.Logger().Errorf("find benchmark assignments by benchmark %s: %v", benchmarkId, err)
 		return err
 	}
 
-	var sourceIds []string
-	for _, assignment := range dbAssignments {
-		sourceIds = append(sourceIds, assignment.ConnectionId)
+	var apiBenchmark api.Benchmark
+	err = benchmark.PopulateConnectors(h.db, &apiBenchmark)
+	if err != nil {
+		return err
 	}
-	srcs, err := h.onboardClient.GetSources(httpclient.FromEchoContext(ctx), sourceIds)
 
-	var sources []api.BenchmarkAssignedSource
-	for _, assignment := range dbAssignments {
-		srcUUID, err := uuid.Parse(assignment.ConnectionId)
+	hctx := httpclient.FromEchoContext(ctx)
+
+	var resp []api.BenchmarkAssignedSource
+	for _, connector := range apiBenchmark.Connectors {
+		connections, err := h.onboardClient.ListSources(hctx, &connector)
 		if err != nil {
 			return err
 		}
 
-		ba := api.BenchmarkAssignedSource{
-			Connection: types.FullConnection{
-				ID: srcUUID,
-			},
-			AssignedAt: assignment.AssignedAt.Unix(),
-		}
-		for _, src := range srcs {
-			if src.ID.String() == assignment.ConnectionId {
-				ba.Connection.ProviderID = src.ConnectionID
-				ba.Connection.ProviderName = src.ConnectionName
+		for _, connection := range connections {
+			ba := api.BenchmarkAssignedSource{
+				ConnectionID:   connection.ConnectionID,
+				ConnectionName: connection.ConnectionName,
+				Connector:      connector,
+				Status:         false,
 			}
+			resp = append(resp, ba)
 		}
-		sources = append(sources, ba)
 	}
 
-	return ctx.JSON(http.StatusOK, sources)
+	dbAssignments, err := h.db.GetBenchmarkAssignmentsByBenchmarkId(benchmarkId)
+	if err != nil {
+		return err
+	}
+
+	for _, assignment := range dbAssignments {
+		for idx, r := range resp {
+			if r.ConnectionID == assignment.ConnectionId {
+				r.Status = true
+				resp[idx] = r
+			}
+		}
+	}
+
+	return ctx.JSON(http.StatusOK, resp)
 }
 
 // ListAssignments godoc
@@ -331,14 +762,20 @@ func (h *HttpHandler) DeleteBenchmarkAssignment(ctx echo.Context) error {
 func (h *HttpHandler) ListBenchmarks(ctx echo.Context) error {
 	var response []api.Benchmark
 
-	benchmarks, err := h.db.ListBenchmarks()
+	benchmarks, err := h.db.ListRootBenchmarks()
 	if err != nil {
 		return err
 	}
 
 	for _, b := range benchmarks {
-		response = append(response, b.ToApi())
+		be := b.ToApi()
+		err = b.PopulateConnectors(h.db, &be)
+		if err != nil {
+			return err
+		}
+		response = append(response, be)
 	}
+
 	return ctx.JSON(http.StatusOK, response)
 }
 
@@ -356,7 +793,17 @@ func (h *HttpHandler) GetBenchmark(ctx echo.Context) error {
 	if err != nil {
 		return err
 	}
-	return ctx.JSON(http.StatusOK, benchmark.ToApi())
+
+	if benchmark == nil {
+		return echo.NewHTTPError(http.StatusNotFound, "benchmark not found")
+	}
+	resp := benchmark.ToApi()
+	err = benchmark.PopulateConnectors(h.db, &resp)
+	if err != nil {
+		return err
+	}
+
+	return ctx.JSON(http.StatusOK, resp)
 }
 
 // ListPolicies godoc
@@ -374,6 +821,10 @@ func (h *HttpHandler) ListPolicies(ctx echo.Context) error {
 	b, err := h.db.GetBenchmark(benchmarkId)
 	if err != nil {
 		return err
+	}
+
+	if b == nil {
+		return echo.NewHTTPError(http.StatusNotFound, "benchmark not found")
 	}
 
 	var policyIDs []string
@@ -406,7 +857,18 @@ func (h *HttpHandler) GetPolicy(ctx echo.Context) error {
 	if err != nil {
 		return err
 	}
-	return ctx.JSON(http.StatusOK, policy.ToApi())
+
+	if policy == nil {
+		return echo.NewHTTPError(http.StatusNotFound, "policy not found")
+	}
+
+	pa := policy.ToApi()
+	err = policy.PopulateConnector(h.db, &pa)
+	if err != nil {
+		return err
+	}
+
+	return ctx.JSON(http.StatusOK, pa)
 }
 
 // GetQuery godoc
@@ -423,6 +885,11 @@ func (h *HttpHandler) GetQuery(ctx echo.Context) error {
 	if err != nil {
 		return err
 	}
+
+	if q == nil {
+		return echo.NewHTTPError(http.StatusNotFound, "query not found")
+	}
+
 	return ctx.JSON(http.StatusOK, q.ToApi())
 }
 
@@ -432,7 +899,7 @@ func (h *HttpHandler) GetQuery(ctx echo.Context) error {
 //	@Description	Listing insights
 //	@Tags			insights
 //	@Produce		json
-//	@Param			connector	query		source.Type				false	"filter by connector"
+//	@Param			connector	query		source.Type	false	"filter by connector"
 //	@Success		200			{object}	[]api.Insight
 //	@Router			/compliance/api/v1/insight [get]
 func (h *HttpHandler) ListInsights(ctx echo.Context) error {

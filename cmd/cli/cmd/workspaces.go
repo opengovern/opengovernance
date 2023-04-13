@@ -1,6 +1,3 @@
-/*
-Copyright © 2023 NAME HERE <EMAIL ADDRESS>
-*/
 package cmd
 
 import (
@@ -25,16 +22,16 @@ var workspacesCmd = &cobra.Command{
 			return fmt.Errorf("[workspaces] : %v", err)
 		}
 
-		err = cli.PrintOutput(response, outputType)
+		err = cli.PrintOutput(response, OutputType)
 		if err != nil {
 			return fmt.Errorf("[workspaces] : %v", err)
 		}
 		return nil
 	},
 }
-var outputType string
+var OutputType string
 
 func init() {
 	rootCmd.AddCommand(workspacesCmd)
-	workspacesCmd.Flags().StringVar(&outputType, "output", "", "specifying output type [json, table]")
+	workspacesCmd.Flags().StringVar(&OutputType, "output", "", "specifying output type [json, table]")
 }

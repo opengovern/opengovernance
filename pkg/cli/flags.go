@@ -20,20 +20,21 @@ func PrintOutput(obj interface{}, typeOutput string) error {
 		return nil
 	}
 
-	var fields map[string]interface{}
+	var fields []map[string]interface{}
 	err = json.Unmarshal(bytes, &fields)
 	if err != nil {
 		return fmt.Errorf("[printoutput] : %v", err)
 	}
- 
 	printTable := table.NewWriter()
 	printTable.SetOutputMirror(os.Stdout)
 
 	var headers []interface{}
 	var record []interface{}
-	for key, value := range fields {
-		headers = append(headers, key)
-		record = append(record, value)
+	for _, vl := range fields {
+		for key, value := range vl {
+			headers = append(headers, key)
+			record = append(record, value)
+		}
 	}
 	printTable.AppendHeader(headers)
 	printTable.AppendRows([]table.Row{record})

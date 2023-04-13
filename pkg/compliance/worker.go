@@ -3,10 +3,9 @@ package compliance
 import (
 	"encoding/json"
 	"fmt"
-	"gitlab.com/keibiengine/keibi-engine/pkg/compliance/worker"
 	"strings"
-	"time"
 
+	"gitlab.com/keibiengine/keibi-engine/pkg/compliance/worker"
 	"gitlab.com/keibiengine/keibi-engine/pkg/keibi-es-sdk"
 
 	client2 "gitlab.com/keibiengine/keibi-engine/pkg/compliance/client"
@@ -179,9 +178,7 @@ func (w *Worker) Run() error {
 	if err != nil {
 		w.logger.Error("Failed to push metrics", zap.Error(err))
 	}
-
-	time.Sleep(1 * time.Minute)
-	return fmt.Errorf("report jobs channel is closed")
+	return nil
 }
 
 func (w *Worker) Stop() {

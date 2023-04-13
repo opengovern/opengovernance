@@ -3,6 +3,7 @@ package describer
 import (
 	"context"
 	"errors"
+	"fmt"
 	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -228,4 +229,44 @@ func ECRRegistry(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 		Name:        *output.RegistryId,
 		Description: output,
 	}}, nil
+}
+
+func ECRImage(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+	client := ecr.NewFromConfig(cfg)
+	repositoryPaginator := ecr.NewDescribeRepositoriesPaginator(client, &ecr.DescribeRepositoriesInput{})
+
+	var values []Resource
+	for repositoryPaginator.HasMorePages() {
+		repositoryPage, err := repositoryPaginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, repository := range repositoryPage.Repositories {
+			imagesPaginator := ecr.NewDescribeImagesPaginator(client, &ecr.DescribeImagesInput{
+				RepositoryName: repository.RepositoryName,
+				RegistryId:     repository.RegistryId,
+			})
+			if err != nil {
+				return nil, err
+			}
+
+			for imagesPaginator.HasMorePages() {
+				page, err := imagesPaginator.NextPage(ctx)
+				if err != nil {
+					return nil, err
+				}
+				for _, image := range page.ImageDetails {
+					values = append(values, Resource{
+						Name: fmt.Sprintf("%s:%s", *repository.RepositoryName, *image.ImageDigest),
+						Description: model.ECRImageDescription{
+							Image: image,
+						},
+					})
+				}
+			}
+		}
+	}
+
+	return values, nil
 }

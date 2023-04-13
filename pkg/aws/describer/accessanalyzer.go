@@ -9,6 +9,30 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/aws/model"
 )
 
+func GetAccessAnalyzerAnalyzer(ctx context.Context, cfg aws.Config, analyzerName string) (*Resource, error) {
+	client := accessanalyzer.NewFromConfig(cfg)
+	v, err := client.GetAnalyzer(ctx, &accessanalyzer.GetAnalyzerInput{
+		AnalyzerName: &analyzerName,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	findings, err := getAnalyzerFindings(ctx, client, v.Analyzer.Arn)
+	if err != nil {
+		return nil, err
+	}
+
+	return &Resource{
+		ARN:  *v.Analyzer.Arn,
+		Name: *v.Analyzer.Name,
+		Description: model.AccessAnalyzerAnalyzerDescription{
+			Analyzer: *v.Analyzer,
+			Findings: findings,
+		},
+	}, nil
+}
+
 func AccessAnalyzerAnalyzer(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	client := accessanalyzer.NewFromConfig(cfg)
 	paginator := accessanalyzer.NewListAnalyzersPaginator(client, &accessanalyzer.ListAnalyzersInput{})

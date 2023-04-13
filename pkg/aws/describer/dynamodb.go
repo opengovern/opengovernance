@@ -2,6 +2,8 @@ package describer
 
 import (
 	"context"
+	"fmt"
+	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
@@ -90,6 +92,30 @@ func DynamoDbGlobalSecondaryIndex(ctx context.Context, cfg aws.Config) ([]Resour
 				})
 			}
 		}
+	}
+
+	return values, nil
+}
+
+func GetDynamoDbGlobalSecondaryIndex(ctx context.Context, cfg aws.Config, tableName string) ([]Resource, error) {
+	client := dynamodb.NewFromConfig(cfg)
+
+	var values []Resource
+	tableOutput, err := client.DescribeTable(ctx, &dynamodb.DescribeTableInput{
+		TableName: &tableName,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	for _, v := range tableOutput.Table.GlobalSecondaryIndexes {
+		values = append(values, Resource{
+			ARN:  *v.IndexArn,
+			Name: *v.IndexName,
+			Description: model.DynamoDbGlobalSecondaryIndexDescription{
+				GlobalSecondaryIndex: v,
+			},
+		})
 	}
 
 	return values, nil
@@ -247,6 +273,75 @@ func DynamoDbGlobalTable(ctx context.Context, cfg aws.Config) ([]Resource, error
 			break
 		}
 		last = globalTables.LastEvaluatedGlobalTableName
+	}
+
+	return values, nil
+}
+
+func DynamoDbTableExport(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+	client := dynamodb.NewFromConfig(cfg)
+	paginator := dynamodb.NewListExportsPaginator(client, &dynamodb.ListExportsInput{})
+
+	var values []Resource
+	for paginator.HasMorePages() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, exportSummary := range page.ExportSummaries {
+			export, err := client.DescribeExport(ctx, &dynamodb.DescribeExportInput{
+				ExportArn: exportSummary.ExportArn,
+			})
+			if err != nil {
+				return nil, err
+			}
+
+			values = append(values, Resource{
+				ARN: *export.ExportDescription.ExportArn,
+				Description: model.DynamoDbTableExportDescription{
+					Export: *export.ExportDescription,
+				},
+			})
+		}
+	}
+
+	return values, nil
+}
+
+func DynamoDBMetricAccountProvisionedReadCapacityUtilization(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+	metrics, err := listCloudWatchMetricStatistics(ctx, cfg, "5_MIN", "AWS/DynamoDB", "AccountProvisionedWriteCapacityUtilization", "", "")
+	if err != nil {
+		return nil, err
+	}
+
+	var values []Resource
+	for _, metric := range metrics {
+		values = append(values, Resource{
+			ID: fmt.Sprintf("dynamodb-metric-account-provisioned-read-capacity-utilization-%s-%s-%s", *metric.DimensionName, *metric.DimensionValue, metric.Timestamp.Format(time.RFC3339)),
+			Description: model.DynamoDBMetricAccountProvisionedReadCapacityUtilizationDescription{
+				CloudWatchMetricRow: metric,
+			},
+		})
+	}
+
+	return values, nil
+}
+
+func DynamoDBMetricAccountProvisionedWriteCapacityUtilization(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+	metrics, err := listCloudWatchMetricStatistics(ctx, cfg, "5_MIN", "AWS/DynamoDB", "AccountProvisionedWriteCapacityUtilization", "", "")
+	if err != nil {
+		return nil, err
+	}
+
+	var values []Resource
+	for _, metric := range metrics {
+		values = append(values, Resource{
+			ID: fmt.Sprintf("dynamodb-metric-account-provisioned-write-capacity-utilization-%s-%s-%s", *metric.DimensionName, *metric.DimensionValue, metric.Timestamp.Format(time.RFC3339)),
+			Description: model.DynamoDBMetricAccountProvisionedWriteCapacityUtilizationDescription{
+				CloudWatchMetricRow: metric,
+			},
+		})
 	}
 
 	return values, nil

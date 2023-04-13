@@ -36,17 +36,17 @@ const (
 )
 
 type CostWithUnit struct {
-	Cost float64 `json:"cost"`
-	Unit string  `json:"unit"`
+	Cost float64 `json:"cost"` // Value
+	Unit string  `json:"unit"` // Currency
 }
 
 type GetResourceRequest struct {
-	ResourceType string `json:"resourceType" validate:"required"`
-	ID           string `json:"ID" validate:"required"` //	Resource ID
+	ResourceType string `json:"resourceType" validate:"required"` // Resource ID
+	ID           string `json:"ID" validate:"required"`           // Resource ID
 }
 
 type LocationByProviderResponse struct {
-	Name string `json:"name"`
+	Name string `json:"name"` // Name of the region
 }
 
 type RunQueryRequest struct {
@@ -56,11 +56,10 @@ type RunQueryRequest struct {
 }
 
 type RunQueryResponse struct {
-	Title   string   `json:"title"`
-	Query   string   `json:"query"`
-	Headers []string `json:"headers"` // column names
-	// result of query. in order to access a specific cell please use Result[Row][Column]
-	Result [][]interface{} `json:"result"`
+	Title   string          `json:"title"`   // Query Title
+	Query   string          `json:"query"`   // Query
+	Headers []string        `json:"headers"` // Column names
+	Result  [][]interface{} `json:"result"`  // Result of query. in order to access a specific cell please use Result[Row][Column]
 }
 
 type Page struct {
@@ -166,20 +165,20 @@ type SmartQuerySortItem struct {
 }
 
 type GetResourcesResponse struct {
-	Resources  []AllResource `json:"resources"`
-	TotalCount int64         `json:"totalCount,omitempty"`
+	Resources  []AllResource `json:"resources"`            // A list of AWS resources with details
+	TotalCount int64         `json:"totalCount,omitempty"` // Number of returned resources
 }
 
 type AllResource struct {
-	ResourceName           string     `json:"resourceName"`
-	ResourceID             string     `json:"resourceID"`
-	ResourceType           string     `json:"resourceType"`
-	ResourceTypeName       string     `json:"resourceTypeName"`
-	ResourceCategory       string     `json:"resourceCategory"`
-	Provider               SourceType `json:"provider"`
-	Location               string     `json:"location"`
-	ProviderConnectionID   string     `json:"providerConnectionID"`
-	ProviderConnectionName string     `json:"providerConnectionName"`
+	ResourceName           string     `json:"resourceName"`           // Resource Name
+	ResourceID             string     `json:"resourceID"`             // Resource Id
+	ResourceType           string     `json:"resourceType"`           // Resource Type
+	ResourceTypeName       string     `json:"resourceTypeName"`       // Resource Type Name
+	ResourceCategory       string     `json:"resourceCategory"`       // Resource Category
+	Provider               SourceType `json:"provider"`               // Resource Provider
+	Location               string     `json:"location"`               // The Region of the resource
+	ProviderConnectionID   string     `json:"providerConnectionID"`   // Provider Connection Id
+	ProviderConnectionName string     `json:"providerConnectionName"` // Provider Connection Name
 
 	Attributes map[string]string `json:"attributes"`
 }
@@ -202,20 +201,20 @@ func (r AllResource) ToCSVHeaders() []string {
 }
 
 type GetAzureResourceResponse struct {
-	Resources  []AzureResource `json:"resources"`
-	TotalCount int64           `json:"totalCount,omitempty"`
+	Resources  []AzureResource `json:"resources"`            // A list of Azure resources with details
+	TotalCount int64           `json:"totalCount,omitempty"` // Number of returned resources
 }
 
 type AzureResource struct {
-	ResourceName           string `json:"resourceName"`
-	ResourceID             string `json:"resourceID"`
-	ResourceType           string `json:"resourceType"`
-	ResourceTypeName       string `json:"resourceTypeName"`
-	ResourceCategory       string `json:"resourceCategory"`
-	ResourceGroup          string `json:"resourceGroup"`
-	Location               string `json:"location"`
-	ProviderConnectionID   string `json:"providerConnectionID"`
-	ProviderConnectionName string `json:"providerConnectionName"`
+	ResourceName           string `json:"resourceName"`           // Resource Name
+	ResourceID             string `json:"resourceID"`             // Resource Id
+	ResourceType           string `json:"resourceType"`           // Resource Type
+	ResourceTypeName       string `json:"resourceTypeName"`       // Resource Type Name
+	ResourceCategory       string `json:"resourceCategory"`       // Resource Category
+	ResourceGroup          string `json:"resourceGroup"`          // Resource Group
+	Location               string `json:"location"`               // The Region of the resource
+	ProviderConnectionID   string `json:"providerConnectionID"`   // Provider Connection Id
+	ProviderConnectionName string `json:"providerConnectionName"` // Provider Connection Name
 
 	Attributes map[string]string `json:"attributes"`
 }
@@ -236,8 +235,8 @@ func (r AzureResource) ToCSVHeaders() []string {
 }
 
 type GetAWSResourceResponse struct {
-	Resources  []AWSResource `json:"resources"`
-	TotalCount int64         `json:"totalCount,omitempty"`
+	Resources  []AWSResource `json:"resources"`            // A list of AWS resources with details
+	TotalCount int64         `json:"totalCount,omitempty"` // Number of returned resources
 }
 
 type AWSResource struct {
@@ -303,61 +302,61 @@ type GenericQueryHit struct {
 }
 
 type SmartQueryItem struct {
-	ID          uint              `json:"id"`
-	Provider    string            `json:"provider"`
-	Title       string            `json:"title"`
-	Description string            `json:"description"`
-	Category    string            `json:"category"`
-	Query       string            `json:"query"`
-	Tags        map[string]string `json:"tags"`
+	ID          uint              `json:"id"`          // Query Id
+	Provider    string            `json:"provider"`    // Provider
+	Title       string            `json:"title"`       // Title
+	Description string            `json:"description"` // Description
+	Category    string            `json:"category"`    // Category (Tags[category])
+	Query       string            `json:"query"`       // Query
+	Tags        map[string]string `json:"tags"`        // Tags
 }
 
 type TrendDataPoint struct {
-	Timestamp int64 `json:"timestamp"`
-	Value     int64 `json:"value"`
+	Timestamp int64 `json:"timestamp"` // Time
+	Value     int64 `json:"value"`     // Resource Count
 }
 
 type CostTrendDataPoint struct {
-	Timestamp int64        `json:"timestamp"`
-	Value     CostWithUnit `json:"value"`
+	Timestamp int64        `json:"timestamp"` // Time
+	Value     CostWithUnit `json:"value"`     // Cost
 }
 
 type CategoryResourceTrend struct {
-	Name  string           `json:"name"`
-	Trend []TrendDataPoint `json:"trend"`
+	Name  string           `json:"name"`  // Category Name
+	Trend []TrendDataPoint `json:"trend"` // Trends (Time Series)
 }
 
 // CategoryCostTrend is a struct for category resource cost trend. trend represents cost trend data in a map with currencies as keys.
 type CategoryCostTrend struct {
-	Name  string                          `json:"name"`
-	Trend map[string][]CostTrendDataPoint `json:"trend"`
+	Name  string                          `json:"name"`  // Category Name
+	Trend map[string][]CostTrendDataPoint `json:"trend"` // Trends (Time Series)
 }
 
 type ResourceGrowthTrendResponse struct {
-	CategoryName  string                  `json:"categoryName"`
-	Trend         []TrendDataPoint        `json:"trend"`
-	Subcategories []CategoryResourceTrend `json:"Subcategories"`
+	CategoryName  string                  `json:"categoryName"`  // Category Name
+	Trend         []TrendDataPoint        `json:"trend"`         // Main Category Cost Trend (Time Series)
+	Subcategories []CategoryResourceTrend `json:"Subcategories"` // List of sub-categories Cost Trends (Time Series)
 }
 
 type CostGrowthTrendResponse struct {
-	CategoryName  string                          `json:"categoryName"`
-	Trend         map[string][]CostTrendDataPoint `json:"trend"`
-	Subcategories []CategoryCostTrend             `json:"Subcategories"`
+	CategoryName  string                          `json:"categoryName"`  // Category Name
+	Trend         map[string][]CostTrendDataPoint `json:"trend"`         // Main Category Cost Trend (Time Series)
+	Subcategories []CategoryCostTrend             `json:"Subcategories"` // List of sub-categories Cost Trends (Time Series)
 }
 
 type ListQueryRequest struct {
-	TitleFilter    string      `json:"titleFilter"`
-	ProviderFilter *SourceType `json:"providerFilter"`
-	Labels         []string    `json:"labels"`
+	TitleFilter    string      `json:"titleFilter"`    // Specifies the Title
+	ProviderFilter *SourceType `json:"providerFilter"` // Specifies the Provider
+	Labels         []string    `json:"labels"`         // Labels
 }
 
 type AccountResourceCountResponse struct {
-	SourceID               string      `json:"sourceID"`
-	SourceType             source.Type `json:"sourceType"`
-	ProviderConnectionName string      `json:"providerConnectionName"`
-	ProviderConnectionID   string      `json:"providerConnectionID"`
+	SourceID               string      `json:"sourceID"`               // Source Id
+	SourceType             source.Type `json:"sourceType"`             // Source Type
+	ProviderConnectionName string      `json:"providerConnectionName"` // Provider Connection Name
+	ProviderConnectionID   string      `json:"providerConnectionID"`   // Provider Connection Id
 	Enabled                bool        `json:"enabled"`
-	ResourceCount          int         `json:"resourceCount"`
+	ResourceCount          int         `json:"resourceCount"` // Number of resources
 	OnboardDate            time.Time   `json:"onboardDate"`
 	LastInventory          time.Time   `json:"lastInventory"`
 }
@@ -387,43 +386,43 @@ type AccountSummary struct {
 }
 
 type TopAccountResponse struct {
-	SourceID               string `json:"sourceID"`
-	Provider               string `json:"provider"`
-	ProviderConnectionName string `json:"providerConnectionName"`
-	ProviderConnectionID   string `json:"providerConnectionID"`
-	ResourceCount          int    `json:"resourceCount"`
+	SourceID               string `json:"sourceID"`               // Source Id
+	Provider               string `json:"provider"`               // Account Provider
+	ProviderConnectionName string `json:"providerConnectionName"` // Account Provider Connection Name
+	ProviderConnectionID   string `json:"providerConnectionID"`   // Account Provider Connection ID
+	ResourceCount          int    `json:"resourceCount"`          // Last number of Resources of the account
 }
 
 type TopAccountCostResponse struct {
-	SourceID               string  `json:"sourceID"`
-	ProviderConnectionName string  `json:"providerConnectionName"`
-	ProviderConnectionID   string  `json:"providerConnectionID"`
-	Cost                   float64 `json:"cost"`
+	SourceID               string  `json:"sourceID"`               // Source Id
+	ProviderConnectionName string  `json:"providerConnectionName"` // Account Provider Connection Name
+	ProviderConnectionID   string  `json:"providerConnectionID"`   // Account Provider Connection ID
+	Cost                   float64 `json:"cost"`                   // Account costs
 }
 
 type TopServicesResponse struct {
-	ServiceName      string `json:"serviceName"`
-	Provider         string `json:"provider"`
-	ResourceCount    int    `json:"resourceCount"`
-	LastDayCount     *int   `json:"lastDayCount"`
-	LastWeekCount    *int   `json:"lastWeekCount"`
-	LastQuarterCount *int   `json:"lastQuarterCount"`
-	LastYearCount    *int   `json:"lastYearCount"`
+	ServiceName      string `json:"serviceName"`      // Service Name
+	Provider         string `json:"provider"`         // Service Provider Name
+	ResourceCount    int    `json:"resourceCount"`    // Number of resources
+	LastDayCount     *int   `json:"lastDayCount"`     // Number of resources on last day
+	LastWeekCount    *int   `json:"lastWeekCount"`    // Number of resources on last week
+	LastQuarterCount *int   `json:"lastQuarterCount"` // Number of resources on last quarter
+	LastYearCount    *int   `json:"lastYearCount"`    // Number of resources on last year
 }
 
 type TopServiceCostResponse struct {
-	ServiceName string  `json:"serviceName"`
-	Cost        float64 `json:"cost"`
+	ServiceName string  `json:"serviceName"` // Service Name
+	Cost        float64 `json:"cost"`        // Service Cost
 }
 
 type ResourceTypeResponse struct {
-	ResourceType     string `json:"resourceType"`
-	ResourceTypeName string `json:"resourceTypeName"`
-	ResourceCount    int    `json:"resourceCount"`
-	LastDayCount     *int   `json:"lastDayCount"`
-	LastWeekCount    *int   `json:"lastWeekCount"`
-	LastQuarterCount *int   `json:"lastQuarterCount"`
-	LastYearCount    *int   `json:"lastYearCount"`
+	ResourceType     string `json:"resourceType"`     // Resource Type
+	ResourceTypeName string `json:"resourceTypeName"` // Resoutce Type Name
+	ResourceCount    int    `json:"resourceCount"`    // Number of resources
+	LastDayCount     *int   `json:"lastDayCount"`     // Number of resources on last day
+	LastWeekCount    *int   `json:"lastWeekCount"`    // Number of resources on last week
+	LastQuarterCount *int   `json:"lastQuarterCount"` // Number of resources on last quarter
+	LastYearCount    *int   `json:"lastYearCount"`    // Number of resources on last year
 }
 
 type CategorizedMetricsResponse struct {
@@ -431,8 +430,8 @@ type CategorizedMetricsResponse struct {
 }
 
 type LocationResponse struct {
-	Location      string `json:"location"`
-	ResourceCount *int   `json:"resourceCount,omitempty"`
+	Location      string `json:"location"`                // Region
+	ResourceCount *int   `json:"resourceCount,omitempty"` // Number of resources in the region
 }
 
 type RegionsByResourceCountResponse struct {
@@ -527,13 +526,13 @@ func (f FilterInsightMetric) GetFilterName() string {
 
 type CategoryNode struct {
 	CategoryID          string                  `json:"categoryID"`
-	CategoryName        string                  `json:"categoryName"`
-	ResourceCount       *int                    `json:"resourceCount,omitempty"`
+	CategoryName        string                  `json:"categoryName"`            // Name of the Category
+	ResourceCount       *int                    `json:"resourceCount,omitempty"` // Number of Resources of the category
 	ResourceCountChange *float64                `json:"resourceCountChange,omitempty"`
-	Cost                map[string]CostWithUnit `json:"cost,omitempty"`
+	Cost                map[string]CostWithUnit `json:"cost,omitempty"` // The aggregation of all the services costs
 	CostChange          map[string]float64      `json:"costChange,omitempty"`
-	Subcategories       []CategoryNode          `json:"subcategories,omitempty"`
-	Filters             []Filter                `json:"filters,omitempty"`
+	Subcategories       []CategoryNode          `json:"subcategories,omitempty"` // Subcategories sorted by ResourceCount [resources/category, ]
+	Filters             []Filter                `json:"filters,omitempty"`       // List of Filters associated with this Category
 }
 
 type MetricsResponse struct {
@@ -546,13 +545,13 @@ type MetricsResponse struct {
 }
 
 type ServiceDistributionItem struct {
-	ServiceName  string         `json:"serviceName"`
-	Distribution map[string]int `json:"distribution"`
+	ServiceName  string         `json:"serviceName"`  // Service name
+	Distribution map[string]int `json:"distribution"` // Distribution name
 }
 
 type Category struct {
-	Name        string   `json:"name"`
-	SubCategory []string `json:"subCategory"`
+	Name        string   `json:"name"`        // Category Name
+	SubCategory []string `json:"subCategory"` // List of sub categories
 }
 
 type ConnectionSummaryCategory struct {
@@ -583,21 +582,21 @@ type HistoryCount struct {
 }
 
 type ConnectionSummaryResponse struct {
-	Categories    map[string]ConnectionSummaryCategory `json:"categories"`
-	CloudServices map[string]int                       `json:"cloudServices"`
-	ResourceTypes map[string]int                       `json:"resourceTypes"`
+	Categories    map[string]ConnectionSummaryCategory `json:"categories"`    // Categories with their Summary
+	CloudServices map[string]int                       `json:"cloudServices"` // Services as Key, Number of them as Value
+	ResourceTypes map[string]int                       `json:"resourceTypes"` // Resource types as Key, Number of them as Value
 }
 
 type ServiceSummaryResponse struct {
-	TotalCount int              `json:"totalCount"`
-	APIFilters map[string]any   `json:"apiFilters"`
-	Services   []ServiceSummary `json:"services"`
+	TotalCount int              `json:"totalCount"` // Number of services
+	APIFilters map[string]any   `json:"apiFilters"` // API Filters
+	Services   []ServiceSummary `json:"services"`   // A list of service summeries
 }
 
 type ServiceSummary struct {
-	CloudProvider SourceType              `json:"cloudProvider"`
-	ServiceName   string                  `json:"serviceName"`
-	ServiceCode   string                  `json:"serviceCode"`
-	ResourceCount *int                    `json:"resourceCount,omitempty"`
-	Cost          map[string]CostWithUnit `json:"cost,omitempty"`
+	CloudProvider SourceType              `json:"cloudProvider"`           // Cloud provider
+	ServiceName   string                  `json:"serviceName"`             // Service Name
+	ServiceCode   string                  `json:"serviceCode"`             // Service Code
+	ResourceCount *int                    `json:"resourceCount,omitempty"` // Number of Resources
+	Cost          map[string]CostWithUnit `json:"cost,omitempty"`          // Costs (Unit as Key, CostWithUnit as Value)
 }

@@ -70,3 +70,115 @@ func ElastiCacheCluster(ctx context.Context, cfg aws.Config) ([]Resource, error)
 	}
 	return values, nil
 }
+
+func GetElastiCacheCluster(ctx context.Context, cfg aws.Config, clusterID string) ([]Resource, error) {
+	client := elasticache.NewFromConfig(cfg)
+	out, err := client.DescribeCacheClusters(ctx, &elasticache.DescribeCacheClustersInput{
+		CacheClusterId: &clusterID,
+	})
+	if err != nil {
+		if isErr(err, "CacheClusterNotFound") || isErr(err, "InvalidParameterValue") {
+			return nil, nil
+		}
+		return nil, err
+	}
+
+	var values []Resource
+	for _, cluster := range out.CacheClusters {
+		tagsOutput, err := client.ListTagsForResource(ctx, &elasticache.ListTagsForResourceInput{
+			ResourceName: cluster.ARN,
+		})
+		if err != nil {
+			if !isErr(err, "CacheClusterNotFound") && !isErr(err, "InvalidParameterValue") {
+				return nil, err
+			} else {
+				tagsOutput = &elasticache.ListTagsForResourceOutput{}
+			}
+		}
+
+		values = append(values, Resource{
+			ARN:  *cluster.ARN,
+			Name: *cluster.ARN,
+			Description: model.ElastiCacheClusterDescription{
+				Cluster: cluster,
+				TagList: tagsOutput.TagList,
+			},
+		})
+	}
+	return values, nil
+}
+
+func ElastiCacheParameterGroup(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+	client := elasticache.NewFromConfig(cfg)
+	paginator := elasticache.NewDescribeCacheParameterGroupsPaginator(client, &elasticache.DescribeCacheParameterGroupsInput{})
+
+	var values []Resource
+	for paginator.HasMorePages() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, cacheParameterGroup := range page.CacheParameterGroups {
+			values = append(values, Resource{
+				ARN:  *cacheParameterGroup.ARN,
+				Name: *cacheParameterGroup.CacheParameterGroupName,
+				Description: model.ElastiCacheParameterGroupDescription{
+					ParameterGroup: cacheParameterGroup,
+				},
+			})
+		}
+	}
+
+	return values, nil
+}
+
+func ElastiCacheReservedCacheNode(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+	client := elasticache.NewFromConfig(cfg)
+	paginator := elasticache.NewDescribeReservedCacheNodesPaginator(client, &elasticache.DescribeReservedCacheNodesInput{})
+
+	var values []Resource
+	for paginator.HasMorePages() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, reservedCacheNode := range page.ReservedCacheNodes {
+			values = append(values, Resource{
+				ARN: *reservedCacheNode.ReservationARN,
+				ID:  *reservedCacheNode.ReservedCacheNodeId,
+				Description: model.ElastiCacheReservedCacheNodeDescription{
+					ReservedCacheNode: reservedCacheNode,
+				},
+			})
+		}
+	}
+
+	return values, nil
+}
+
+func ElastiCacheSubnetGroup(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+	client := elasticache.NewFromConfig(cfg)
+	paginator := elasticache.NewDescribeCacheSubnetGroupsPaginator(client, &elasticache.DescribeCacheSubnetGroupsInput{})
+
+	var values []Resource
+	for paginator.HasMorePages() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, cacheSubnetGroup := range page.CacheSubnetGroups {
+			values = append(values, Resource{
+				ARN:  *cacheSubnetGroup.ARN,
+				Name: *cacheSubnetGroup.CacheSubnetGroupName,
+				Description: model.ElastiCacheSubnetGroupDescription{
+					SubnetGroup: cacheSubnetGroup,
+				},
+			})
+		}
+	}
+
+	return values, nil
+}

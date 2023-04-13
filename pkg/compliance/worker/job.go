@@ -3,6 +3,11 @@ package worker
 import (
 	"errors"
 	"fmt"
+	"os/exec"
+	"time"
+
+	"gitlab.com/keibiengine/keibi-engine/pkg/keibi-es-sdk"
+
 	api2 "gitlab.com/keibiengine/keibi-engine/pkg/auth/api"
 	"gitlab.com/keibiengine/keibi-engine/pkg/cloudservice"
 	"gitlab.com/keibiengine/keibi-engine/pkg/compliance/api"
@@ -18,8 +23,6 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/types"
 	"go.uber.org/zap"
 	"gopkg.in/Shopify/sarama.v1"
-	"os/exec"
-	"time"
 )
 
 type Job struct {
@@ -110,15 +113,6 @@ func (j *Job) RunBenchmark(benchmarkID string, complianceClient client.Complianc
 			return nil, err
 		}
 
-		if res != nil {
-			fmt.Println("===============")
-			fmt.Println(j.BenchmarkID, policyID, *policy.QueryID)
-			fmt.Println(query.QueryToExecute)
-			fmt.Println(res.Headers)
-			fmt.Println(res.Data)
-			fmt.Println("===============")
-		}
-
 		f, err := j.ExtractFindings(benchmark, policy, query, res)
 		if err != nil {
 			return nil, err
@@ -143,6 +137,17 @@ func (j *Job) Run(complianceClient client.ComplianceServiceClient, onboardClient
 
 	if src.HealthState != source.HealthStatusHealthy {
 		return errors.New("connection not healthy")
+	}
+
+	defaultAccountID := "default"
+	esk, err := keibi.NewClient(keibi.ClientConfig{
+		Addresses: []string{elasticSearchConfig.Address},
+		Username:  &elasticSearchConfig.Username,
+		Password:  &elasticSearchConfig.Password,
+		AccountID: &defaultAccountID,
+	})
+	if err != nil {
+		return err
 	}
 
 	err = j.PopulateSteampipeConfig(vault, elasticSearchConfig)
@@ -171,12 +176,61 @@ func (j *Job) Run(complianceClient client.ComplianceServiceClient, onboardClient
 	}
 
 	findings, err := j.RunBenchmark(j.BenchmarkID, complianceClient, steampipeConn, src.Type)
+	if err != nil {
+		return err
+	}
+	fmt.Println("++++++ findings len: ", len(findings))
+	findingsFiltered, err := j.FilterFindings(esk, findings)
+	if err != nil {
+		return err
+	}
+	fmt.Println("++++++ findingsFiltered len: ", len(findingsFiltered))
 
 	var docs []kafka.Doc
-	for _, finding := range findings {
+	for _, finding := range findingsFiltered {
 		docs = append(docs, finding)
 	}
 	return kafka.DoSend(kfkProducer, kfkTopic, docs, logger)
+}
+
+func (j *Job) FilterFindings(esClient keibi.Client, findings []es.Finding) ([]es.Finding, error) {
+	// get all active findings from ES page by page
+	// go through the ones extracted and remove duplicates
+	// if a finding fetched from es is not duplicated disable it
+	from := 0
+	for {
+		resp, err := es.GetActiveFindings(esClient, from, 1000)
+		if err != nil {
+			return nil, err
+		}
+		fmt.Println("+++++++++ active old findings:", len(resp.Hits.Hits))
+		from += 1000
+
+		if len(resp.Hits.Hits) == 0 {
+			break
+		}
+
+		for _, hit := range resp.Hits.Hits {
+			dup := false
+
+			for idx, finding := range findings {
+				if finding.ResourceID == hit.Source.ResourceID && finding.PolicyID == hit.Source.PolicyID {
+					dup = true
+					fmt.Println("+++++++++ removing dup:", finding.ID, hit.Source.ID)
+					findings = append(findings[:idx], findings[idx+1:]...)
+					break
+				}
+			}
+
+			if !dup {
+				f := hit.Source
+				f.StateActive = false
+				fmt.Println("+++++++++ making this disabled:", f.ID)
+				findings = append(findings, f)
+			}
+		}
+	}
+	return findings, nil
 }
 
 func (j *Job) ExtractFindings(benchmark *api.Benchmark, policy *api.Policy, query *api.Query, res *steampipe.Result) ([]es.Finding, error) {
@@ -191,32 +245,53 @@ func (j *Job) ExtractFindings(benchmark *api.Benchmark, policy *api.Policy, quer
 			recordValue[header] = value
 		}
 
-		resourceID := recordValue["resource"].(string)
-		resourceName := recordValue["name"].(string)
-		resourceType := recordValue["resourceType"].(string)
-		resourceLocation := recordValue["location"].(string)
-		reason := recordValue["reason"].(string)
-		status := recordValue["status"].(string)
+		var resourceID, resourceName, resourceType, resourceLocation, reason string
+		var status types.ComplianceResult
+		if v, ok := recordValue["resource"].(string); ok {
+			resourceID = v
+		}
+		if v, ok := recordValue["name"].(string); ok {
+			resourceName = v
+		}
+		if v, ok := recordValue["resourceType"].(string); ok {
+			resourceType = v
+		}
+		if v, ok := recordValue["location"].(string); ok {
+			resourceLocation = v
+		}
+		if v, ok := recordValue["reason"].(string); ok {
+			reason = v
+		}
+		if v, ok := recordValue["status"].(string); ok {
+			status = types.ComplianceResult(v)
+		}
+		fmt.Println("======", recordValue)
 
+		severity := types.SeverityNone
+		if status == types.ComplianceResultALARM {
+			severity = policy.Severity
+		}
 		findings = append(findings, es.Finding{
 			ID:               fmt.Sprintf("%s-%s-%d", resourceID, policy.ID, j.ScheduleJobID),
-			ComplianceJobID:  j.JobID,
-			ScheduleJobID:    j.ScheduleJobID,
+			BenchmarkID:      benchmark.ID,
+			PolicyID:         policy.ID,
+			ConnectionID:     j.ConnectionID,
+			DescribedAt:      j.DescribedAt,
+			EvaluatedAt:      j.EvaluatedAt,
+			StateActive:      true,
+			Result:           status,
+			Severity:         severity,
+			Evaluator:        query.Engine,
+			Connector:        j.Connector,
 			ResourceID:       resourceID,
 			ResourceName:     resourceName,
+			ResourceLocation: resourceLocation,
 			ResourceType:     resourceType,
 			ServiceName:      cloudservice.ServiceNameByResourceType(resourceType),
 			Category:         cloudservice.CategoryByResourceType(resourceType),
-			ResourceLocation: resourceLocation,
 			Reason:           reason,
-			Status:           types.ComplianceResult(status),
-			DescribedAt:      j.DescribedAt,
-			EvaluatedAt:      j.EvaluatedAt,
-			ConnectionID:     j.ConnectionID,
-			Connector:        j.Connector,
-			BenchmarkID:      j.BenchmarkID,
-			PolicyID:         policy.ID,
-			PolicySeverity:   policy.Severity,
+			ComplianceJobID:  j.JobID,
+			ScheduleJobID:    j.ScheduleJobID,
 		})
 	}
 	return findings, nil

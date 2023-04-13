@@ -14,6 +14,10 @@ import (
 	"strconv"
 	"time"
 
+	"gitlab.com/keibiengine/keibi-engine/pkg/auth/db"
+	"gitlab.com/keibiengine/keibi-engine/pkg/config"
+	"gitlab.com/keibiengine/keibi-engine/pkg/internal/postgres"
+
 	"github.com/go-redis/cache/v8"
 	"github.com/go-redis/redis/v8"
 
@@ -36,9 +40,10 @@ var (
 	mailSender     = os.Getenv("EMAIL_SENDER")
 	mailSenderName = os.Getenv("EMAIL_SENDER_NAME")
 
-	auth0Domain       = os.Getenv("AUTH0_DOMAIN")
-	auth0ClientID     = os.Getenv("AUTH0_CLIENT_ID")
-	auth0ClientSecret = os.Getenv("AUTH0_CLIENT_SECRET")
+	auth0Domain         = os.Getenv("AUTH0_DOMAIN")
+	auth0ClientID       = os.Getenv("AUTH0_CLIENT_ID")
+	auth0ClientIDNative = os.Getenv("AUTH0_CLIENT_ID_NATIVE")
+	auth0ClientSecret   = os.Getenv("AUTH0_CLIENT_SECRET")
 
 	auth0ManageDomain       = os.Getenv("AUTH0_MANAGE_DOMAIN")
 	auth0ManageClientID     = os.Getenv("AUTH0_MANAGE_CLIENT_ID")
@@ -48,8 +53,9 @@ var (
 
 	httpServerAddress = os.Getenv("HTTP_ADDRESS")
 
-	keibiHost      = os.Getenv("KEIBI_HOST")
-	keibiPublicKey = os.Getenv("KEIBI_PUBLIC_KEY")
+	keibiHost       = os.Getenv("KEIBI_HOST")
+	keibiPublicKey  = os.Getenv("KEIBI_PUBLIC_KEY")
+	keibiPrivateKey = os.Getenv("KEIBI_PRIVATE_KEY")
 
 	workspaceBaseUrl = os.Getenv("WORKSPACE_BASE_URL")
 
@@ -69,12 +75,19 @@ func Command() *cobra.Command {
 	}
 }
 
+type ServerConfig struct {
+	PostgreSQL config.Postgres
+}
+
 // start runs both HTTP and GRPC server.
 // GRPC server has Check method to ensure user is
 // authenticated and authorized to perform an action.
 // HTTP server has multiple endpoints to view and update
 // the user roles.
 func start(ctx context.Context) error {
+	var conf ServerConfig
+	config.ReadFromEnv(&conf, nil)
+
 	logger, err := zap.NewProduction()
 	if err != nil {
 		return err
@@ -84,6 +97,12 @@ func start(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("open id connect verifier: %w", err)
 	}
+
+	verifierNative, err := newAuth0OidcVerifier(ctx, auth0Domain, auth0ClientIDNative)
+	if err != nil {
+		return fmt.Errorf("open id connect verifier: %w", err)
+	}
+
 	logger.Info("Instantiated a new Open ID Connect verifier")
 	m := email.NewSendGridClient(mailApiKey, mailSender, mailSenderName, logger)
 
@@ -106,9 +125,8 @@ func start(ctx context.Context) error {
 
 	b, err := base64.StdEncoding.DecodeString(keibiPublicKey)
 	if err != nil {
-		return fmt.Errorf("private key decode: %w", err)
+		return fmt.Errorf("public key decode: %w", err)
 	}
-
 	block, _ := pem.Decode(b)
 	if block == nil {
 		return fmt.Errorf("failed to decode my private key")
@@ -118,10 +136,24 @@ func start(ctx context.Context) error {
 		return err
 	}
 
+	b, err = base64.StdEncoding.DecodeString(keibiPrivateKey)
+	if err != nil {
+		return fmt.Errorf("public key decode: %w", err)
+	}
+	block, _ = pem.Decode(b)
+	if block == nil {
+		panic("failed to decode private key")
+	}
+	pri, err := x509.ParsePKCS8PrivateKey(block.Bytes)
+	if err != nil {
+		panic(err)
+	}
+
 	authServer := Server{
 		host:            keibiHost,
 		keibiPublicKey:  pub.(*rsa.PublicKey),
 		verifier:        verifier,
+		verifierNative:  verifierNative,
 		logger:          logger,
 		workspaceClient: workspaceClient,
 	}
@@ -135,7 +167,29 @@ func start(ctx context.Context) error {
 		return err
 	}
 
-	auth0Service := auth0.New(auth0ManageDomain, auth0ClientID, auth0ManageClientID, auth0ManageClientSecret,
+	// setup postgres connection
+	cfg := postgres.Config{
+		Host:    conf.PostgreSQL.Host,
+		Port:    conf.PostgreSQL.Port,
+		User:    conf.PostgreSQL.Username,
+		Passwd:  conf.PostgreSQL.Password,
+		DB:      conf.PostgreSQL.DB,
+		SSLMode: conf.PostgreSQL.SSLMode,
+	}
+	orm, err := postgres.NewClient(&cfg, logger)
+	if err != nil {
+		return fmt.Errorf("new postgres client: %w", err)
+	}
+
+	adb := db.Database{Orm: orm}
+	fmt.Println("Connected to the postgres database: ", conf.PostgreSQL.DB)
+
+	err = adb.Initialize()
+	if err != nil {
+		return fmt.Errorf("new postgres client: %w", err)
+	}
+
+	auth0Service := auth0.New(auth0ManageDomain, auth0ClientIDNative, auth0ClientID, auth0ManageClientID, auth0ManageClientSecret,
 		auth0Connection, int(inviteTTL))
 
 	grpcServer := grpc.NewServer(grpc.Creds(creds))
@@ -157,6 +211,8 @@ func start(ctx context.Context) error {
 			emailService:    m,
 			workspaceClient: workspaceClient,
 			auth0Service:    auth0Service,
+			keibiPrivateKey: pri.(*rsa.PrivateKey),
+			db:              adb,
 		}
 		errors <- fmt.Errorf("http server: %w", httpserver.RegisterAndStart(logger, httpServerAddress, &routes))
 	}()

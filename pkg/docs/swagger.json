@@ -10,7 +10,29 @@
     },
     "host": "dev-cluster.keibi.io",
     "paths": {
-        "/auth/api/v1/invite": {
+        "/auth/api/v1/apikey": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Lists all API Keys",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.WorkspaceApiKey"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/api/v1/apikey/create": {
             "post": {
                 "produces": [
                     "application/json"
@@ -18,24 +40,150 @@
                 "tags": [
                     "auth"
                 ],
-                "summary": "Invites a user to a workspace.",
+                "summary": "Creates an API Key",
                 "parameters": [
                     {
-                        "description": "role",
-                        "name": "role",
+                        "description": "Request Body",
+                        "name": "request",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "type": "string"
+                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.CreateAPIKeyRequest"
                         }
                     }
                 ],
                 "responses": {}
             }
         },
+        "/auth/api/v1/apikey/{id}": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Fetches an API Key",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.WorkspaceApiKey"
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/api/v1/apikey/{id}/activate": {
+            "post": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Suspend an API Key",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {}
+            }
+        },
+        "/auth/api/v1/apikey/{id}/delete": {
+            "delete": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Deletes an API Key",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {}
+            }
+        },
+        "/auth/api/v1/apikey/{id}/suspend": {
+            "post": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Suspend an API Key",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {}
+            }
+        },
+        "/auth/api/v1/invite": {
+            "post": {
+                "description": "Invites a user to a workspace with defined role\nby sending an email to the specified email address.\nThe user will be found by the email address.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Invites a user to a workspace with defined role.",
+                "parameters": [
+                    {
+                        "description": "Request Body",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.InviteRequest"
+                        }
+                    },
+                    {
+                        "type": "string",
+                        "description": "workspaceId",
+                        "name": "workspaceId",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    }
+                }
+            }
+        },
         "/auth/api/v1/user/role/binding": {
             "put": {
-                "description": "RoleBinding defines the roles and actions a user can perform. There are currently three roles (ADMIN, EDITOR, VIEWER). User must exist before you can update its RoleBinding. If you want to add a role binding for a user given the email address, call invite first to get a user id. Then call this endpoint.",
+                "description": "RoleBinding defines the roles and actions a user can perform.\nThere are currently three roles (ADMIN, EDITOR, VIEWER).\nUser must exist before you can update its RoleBinding.\nIf you want to add a role binding for a user given the email address, call invite first to get a user id. Then call this endpoint.",
                 "produces": [
                     "application/json"
                 ],
@@ -45,22 +193,20 @@
                 "summary": "Update RoleBinding for a user.",
                 "parameters": [
                     {
-                        "description": "userId",
-                        "name": "userId",
+                        "description": "Request Body",
+                        "name": "request",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "type": "string"
+                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.PutRoleBindingRequest"
                         }
                     },
                     {
-                        "description": "role",
-                        "name": "role",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "type": "string"
-                        }
+                        "type": "string",
+                        "description": "workspaceId",
+                        "name": "workspaceId",
+                        "in": "query",
+                        "required": true
                     }
                 ],
                 "responses": {
@@ -76,12 +222,19 @@
                 "tags": [
                     "auth"
                 ],
-                "summary": "Delete RoleBinding for a user.",
+                "summary": "Delete RoleBinding for the defined user in the defined workspace.",
                 "parameters": [
                     {
                         "type": "string",
                         "description": "userId",
                         "name": "userId",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "workspaceId",
+                        "name": "workspaceId",
                         "in": "query",
                         "required": true
                     }
@@ -103,6 +256,15 @@
                     "auth"
                 ],
                 "summary": "Get RoleBindings for the calling user",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "userId",
+                        "name": "userId",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -115,6 +277,7 @@
         },
         "/auth/api/v1/user/{user_id}/workspace/membership": {
             "get": {
+                "description": "Returns a list of workspaces and the user role in it for the specified user",
                 "produces": [
                     "application/json"
                 ],
@@ -151,6 +314,15 @@
                     "auth"
                 ],
                 "summary": "Get all the user RoleBindings for the given workspace.",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "workspaceId",
+                        "name": "workspaceId",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -366,7 +538,7 @@
                 }
             }
         },
-        "/compliance/api/v1/benchmark/:benchmark_id/summary": {
+        "/compliance/api/v1/benchmark/{benchmark_id}/summary": {
             "get": {
                 "consumes": [
                     "application/json"
@@ -378,11 +550,108 @@
                     "compliance"
                 ],
                 "summary": "Get benchmark summary",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "BenchmarkID",
+                        "name": "benchmark_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/types.ComplianceResultSummary"
+                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.BenchmarkSummary"
+                        }
+                    }
+                }
+            }
+        },
+        "/compliance/api/v1/benchmark/{benchmark_id}/summary/result/trend": {
+            "get": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "compliance"
+                ],
+                "summary": "Get result trend",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Start",
+                        "name": "start",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "End",
+                        "name": "end",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "BenchmarkID",
+                        "name": "benchmark_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.BenchmarkResultTrend"
+                        }
+                    }
+                }
+            }
+        },
+        "/compliance/api/v1/benchmark/{benchmark_id}/tree": {
+            "get": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "compliance"
+                ],
+                "summary": "Get benchmark tree",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "BenchmarkID",
+                        "name": "benchmark_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "enum": [
+                            "passed",
+                            "failed",
+                            "unknown"
+                        ],
+                        "type": "string",
+                        "description": "Status",
+                        "name": "status",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.BenchmarkTree"
                         }
                     }
                 }
@@ -447,6 +716,22 @@
                     "compliance"
                 ],
                 "summary": "Get benchmark summary",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Start",
+                        "name": "start",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "End",
+                        "name": "end",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -537,39 +822,6 @@
                 }
             }
         },
-        "/compliance/api/v1/findings/filters": {
-            "post": {
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "compliance"
-                ],
-                "summary": "Returns all findings with respect to filters",
-                "parameters": [
-                    {
-                        "description": "Request Body",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.GetFindingsRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.GetFindingsFiltersResponse"
-                        }
-                    }
-                }
-            }
-        },
         "/compliance/api/v1/findings/metrics": {
             "get": {
                 "consumes": [
@@ -584,16 +836,15 @@
                 "summary": "Returns findings metrics",
                 "parameters": [
                     {
-                        "enum": [
-                            "24h",
-                            "1w",
-                            "3m",
-                            "1y",
-                            "max"
-                        ],
-                        "type": "string",
-                        "description": "Time Window",
-                        "name": "timeWindow",
+                        "type": "integer",
+                        "description": "Start",
+                        "name": "start",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "End",
+                        "name": "end",
                         "in": "query"
                     }
                 ],
@@ -607,8 +858,8 @@
                 }
             }
         },
-        "/compliance/api/v1/findings/top": {
-            "post": {
+        "/compliance/api/v1/findings/{benchmarkId}/{field}/top/{count}": {
+            "get": {
                 "consumes": [
                     "application/json"
                 ],
@@ -621,13 +872,31 @@
                 "summary": "Returns all findings with respect to filters",
                 "parameters": [
                     {
-                        "description": "Request Body",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.GetTopFieldRequest"
-                        }
+                        "type": "string",
+                        "description": "BenchmarkID",
+                        "name": "benchmarkId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "enum": [
+                            "resourceType",
+                            "serviceName",
+                            "sourceID",
+                            "resourceID"
+                        ],
+                        "type": "string",
+                        "description": "Field",
+                        "name": "field",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Count",
+                        "name": "count",
+                        "in": "path",
+                        "required": true
                     }
                 ],
                 "responses": {
@@ -640,32 +909,113 @@
                 }
             }
         },
-        "/compliance/api/v1/policy/summary/{benchmark_id}": {
+        "/compliance/api/v1/insight": {
             "get": {
-                "consumes": [
-                    "application/json"
-                ],
+                "description": "Listing insights",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
-                    "compliance"
+                    "insights"
                 ],
-                "summary": "Get benchmark summary",
+                "summary": "List insights",
                 "parameters": [
                     {
+                        "enum": [
+                            "",
+                            "AWS",
+                            "Azure"
+                        ],
                         "type": "string",
-                        "description": "BenchmarkID",
-                        "name": "benchmarkID",
-                        "in": "path",
-                        "required": true
+                        "description": "filter by connector",
+                        "name": "connector",
+                        "in": "query"
                     }
                 ],
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.GetFindingsResponse"
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.Insight"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/compliance/api/v1/insight/peer": {
+            "get": {
+                "description": "Listing insights",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "insights"
+                ],
+                "summary": "List insights",
+                "parameters": [
+                    {
+                        "enum": [
+                            "",
+                            "AWS",
+                            "Azure"
+                        ],
+                        "type": "string",
+                        "description": "filter by connector",
+                        "name": "connector",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.InsightPeerGroup"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/compliance/api/v1/insight/peer/{peerGroupId}": {
+            "get": {
+                "description": "Get insight by id",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "insights"
+                ],
+                "summary": "Get insight by id",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.InsightPeerGroup"
+                        }
+                    }
+                }
+            }
+        },
+        "/compliance/api/v1/insight/{insightId}": {
+            "get": {
+                "description": "Get insight by id",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "insights"
+                ],
+                "summary": "Get insight by id",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.Insight"
                         }
                     }
                 }
@@ -759,7 +1109,7 @@
             }
         },
         "/inventory/api/v1/connection/{connection_id}/summary": {
-            "post": {
+            "get": {
                 "consumes": [
                     "application/json"
                 ],
@@ -796,7 +1146,7 @@
                 "parameters": [
                     {
                         "type": "integer",
-                        "description": "count",
+                        "description": "Number of top accounts returning.",
                         "name": "count",
                         "in": "query",
                         "required": true
@@ -837,7 +1187,7 @@
                 "parameters": [
                     {
                         "type": "integer",
-                        "description": "count",
+                        "description": "Number of top services returning.",
                         "name": "count",
                         "in": "query",
                         "required": true
@@ -884,7 +1234,8 @@
                     {
                         "enum": [
                             "aws",
-                            "azure"
+                            "azure",
+                            "all"
                         ],
                         "type": "string",
                         "description": "Provider",
@@ -907,7 +1258,7 @@
             }
         },
         "/inventory/api/v1/provider/{provider}/summary": {
-            "post": {
+            "get": {
                 "consumes": [
                     "application/json"
                 ],
@@ -931,7 +1282,7 @@
         },
         "/inventory/api/v1/query": {
             "get": {
-                "description": "Listing smart queries",
+                "description": "Listing smart queries by specified filters",
                 "produces": [
                     "application/json"
                 ],
@@ -1065,7 +1416,17 @@
                         }
                     }
                 ],
-                "responses": {}
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
             }
         },
         "/inventory/api/v1/resources": {
@@ -1127,7 +1488,7 @@
         },
         "/inventory/api/v1/resources/aws": {
             "post": {
-                "description": "Getting AWS resources by filters.\nIn order to get the results in CSV format, Accepts header must be filled with `text/csv` value.\nNote that csv output doesn't process pagination and returns first 5000 records.",
+                "description": "Getting AWS resources by filters.\nIn order to get the results in CSV format, Accepts header must be filled with `text/csv` value.\nNote that csv output doesn't process pagination and returns first 5000 records.\nIf sort by is empty, result will be sorted by the first column in ascending order.",
                 "consumes": [
                     "application/json"
                 ],
@@ -1184,7 +1545,7 @@
         },
         "/inventory/api/v1/resources/azure": {
             "post": {
-                "description": "Getting Azure resources by filters.\nIn order to get the results in CSV format, Accepts header must be filled with `text/csv` value.\nNote that csv output doesn't process pagination and returns first 5000 records.",
+                "description": "Getting Azure resources by filters.\nIn order to get the results in CSV format, Accepts header must be filled with `text/csv` value.\nNote that csv output doesn't process pagination and returns first 5000 records.\nIf sort by is empty, result will be sorted by the first column in ascending order.",
                 "consumes": [
                     "application/json"
                 ],
@@ -1240,7 +1601,8 @@
             }
         },
         "/inventory/api/v1/resources/count": {
-            "post": {
+            "get": {
+                "description": "Number of all resources",
                 "consumes": [
                     "application/json"
                 ],
@@ -1434,7 +1796,7 @@
                 "parameters": [
                     {
                         "type": "integer",
-                        "description": "count",
+                        "description": "Number of top accounts returning.",
                         "name": "count",
                         "in": "query",
                         "required": true
@@ -1471,11 +1833,11 @@
                 "tags": [
                     "benchmarks"
                 ],
-                "summary": "Returns top n accounts of specified provider by resource count",
+                "summary": "Returns top n fastest growing accounts of specified provider in the specified time window by resource count",
                 "parameters": [
                     {
                         "type": "integer",
-                        "description": "count",
+                        "description": "Number of top accounts returning.",
                         "name": "count",
                         "in": "query",
                         "required": true
@@ -1575,7 +1937,7 @@
                 "parameters": [
                     {
                         "type": "integer",
-                        "description": "count",
+                        "description": "Number of top ser",
                         "name": "count",
                         "in": "query",
                         "required": true
@@ -1609,6 +1971,7 @@
         },
         "/inventory/api/v1/resources/trend": {
             "get": {
+                "description": "Returns trend of resource count in the specified time window\nIn case of not specifying SourceID, Provider is used for filtering",
                 "consumes": [
                     "application/json"
                 ],
@@ -1618,7 +1981,7 @@
                 "tags": [
                     "benchmarks"
                 ],
-                "summary": "Returns trend of resource growth for specific account",
+                "summary": "Returns trend of resource count growth for specific account",
                 "parameters": [
                     {
                         "type": "string",
@@ -2529,7 +2892,7 @@
                     },
                     {
                         "type": "integer",
-                        "description": "How many top categories to return",
+                        "description": "How many top categories to return. The rest will be aggregated into Others.",
                         "name": "top",
                         "in": "query",
                         "required": true
@@ -2747,7 +3110,7 @@
                 "tags": [
                     "benchmarks"
                 ],
-                "summary": "Returns distribution of services for specific account",
+                "summary": "Returns Service Summary",
                 "parameters": [
                     {
                         "type": "string",
@@ -2845,7 +3208,9 @@
                 "responses": {
                     "200": {
                         "description": "OK",
-                        "schema": {}
+                        "schema": {
+                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_metadata_models.ConfigMetadata"
+                        }
                     }
                 }
             }
@@ -3892,6 +4257,22 @@
                 "responses": {}
             }
         },
+        "/schedule/api/v0/compliance/summarizer/trigger": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "describe"
+                ],
+                "summary": "Triggers a compliance summarizer job to run immediately",
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    }
+                }
+            }
+        },
         "/schedule/api/v0/compliance/trigger": {
             "get": {
                 "description": "Triggers a compliance job to run immediately",
@@ -3960,6 +4341,39 @@
                 }
             }
         },
+        "/schedule/api/v1/benchmark/evaluations": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "compliance"
+                ],
+                "summary": "Lists all benchmark evaluations",
+                "parameters": [
+                    {
+                        "description": "Request Body",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_describe_api.ListBenchmarkEvaluationsRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/describe.ComplianceReportJob"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/schedule/api/v1/compliance/report/last/completed": {
             "get": {
                 "produces": [
@@ -3975,6 +4389,33 @@
                         "schema": {
                             "type": "integer"
                         }
+                    }
+                }
+            }
+        },
+        "/schedule/api/v1/compliance/trigger": {
+            "put": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "describe"
+                ],
+                "summary": "Triggers a benchmark evaluation job to run immediately",
+                "parameters": [
+                    {
+                        "description": "Request Body",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_describe_api.TriggerBenchmarkEvaluationRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
                     }
                 }
             }
@@ -4017,79 +4458,6 @@
                 }
             }
         },
-        "/schedule/api/v1/insight": {
-            "get": {
-                "description": "Listing insights",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "insights"
-                ],
-                "summary": "List insights",
-                "parameters": [
-                    {
-                        "description": "Request Body",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_describe_api.ListInsightsRequest"
-                        }
-                    },
-                    {
-                        "enum": [
-                            "",
-                            "AWS",
-                            "Azure"
-                        ],
-                        "type": "string",
-                        "description": "filter by connector",
-                        "name": "connector",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_describe_api.Insight"
-                            }
-                        }
-                    }
-                }
-            },
-            "put": {
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "insights"
-                ],
-                "summary": "Create a new insight",
-                "parameters": [
-                    {
-                        "description": "Request Body",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_describe_api.CreateInsightRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "integer"
-                        }
-                    }
-                }
-            }
-        },
         "/schedule/api/v1/insight/jobs/pending": {
             "get": {
                 "produces": [
@@ -4104,109 +4472,6 @@
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_describe_api.Source"
-                        }
-                    }
-                }
-            }
-        },
-        "/schedule/api/v1/insight/peer": {
-            "get": {
-                "description": "Listing insights",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "insights"
-                ],
-                "summary": "List insights",
-                "parameters": [
-                    {
-                        "enum": [
-                            "",
-                            "AWS",
-                            "Azure"
-                        ],
-                        "type": "string",
-                        "description": "filter by connector",
-                        "name": "connector",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_describe_api.InsightPeerGroup"
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/schedule/api/v1/insight/peer/{peerGroupId}": {
-            "get": {
-                "description": "Get insight by id",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "insights"
-                ],
-                "summary": "Get insight by id",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_describe_api.InsightPeerGroup"
-                        }
-                    }
-                }
-            }
-        },
-        "/schedule/api/v1/insight/{id}": {
-            "delete": {
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "insights"
-                ],
-                "summary": "Delete an insight",
-                "parameters": [
-                    {
-                        "description": "Request Body",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "type": "integer"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK"
-                    }
-                }
-            }
-        },
-        "/schedule/api/v1/insight/{insightId}": {
-            "get": {
-                "description": "Get insight by id",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "insights"
-                ],
-                "summary": "Get insight by id",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_describe_api.Insight"
                         }
                     }
                 }
@@ -4916,17 +5181,95 @@
         }
     },
     "definitions": {
+        "describe.ComplianceReportJob": {
+            "type": "object",
+            "properties": {
+                "benchmarkID": {
+                    "description": "Not the primary key but should be a unique identifier",
+                    "type": "string"
+                },
+                "createdAt": {
+                    "type": "string"
+                },
+                "deletedAt": {
+                    "$ref": "#/definitions/gorm.DeletedAt"
+                },
+                "failureMessage": {
+                    "description": "Should be NULLSTRING",
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "reportCreatedAt": {
+                    "type": "integer"
+                },
+                "scheduleJobID": {
+                    "type": "integer"
+                },
+                "sourceID": {
+                    "description": "Not the primary key but should be a unique identifier",
+                    "type": "string"
+                },
+                "sourceType": {
+                    "$ref": "#/definitions/source.Type"
+                },
+                "status": {
+                    "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.ComplianceReportJobStatus"
+                },
+                "updatedAt": {
+                    "type": "string"
+                }
+            }
+        },
+        "gitlab_com_keibiengine_keibi-engine_pkg_auth_api.CreateAPIKeyRequest": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string"
+                },
+                "role": {
+                    "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.Role"
+                }
+            }
+        },
         "gitlab_com_keibiengine_keibi-engine_pkg_auth_api.GetRoleBindingsResponse": {
             "type": "object",
             "properties": {
                 "globalRoles": {
-                    "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.Role"
+                    "description": "Global Access",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.Role"
+                        }
+                    ]
                 },
                 "roleBindings": {
+                    "description": "List of user roles in each workspace",
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.UserRoleBinding"
                     }
+                }
+            }
+        },
+        "gitlab_com_keibiengine_keibi-engine_pkg_auth_api.InviteRequest": {
+            "type": "object",
+            "required": [
+                "email"
+            ],
+            "properties": {
+                "email": {
+                    "description": "User email address",
+                    "type": "string"
+                },
+                "role": {
+                    "description": "Name of the role",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.Role"
+                        }
+                    ]
                 }
             }
         },
@@ -4940,6 +5283,27 @@
                 "InviteStatus_ACCEPTED",
                 "InviteStatus_PENDING"
             ]
+        },
+        "gitlab_com_keibiengine_keibi-engine_pkg_auth_api.PutRoleBindingRequest": {
+            "type": "object",
+            "required": [
+                "role",
+                "userId"
+            ],
+            "properties": {
+                "role": {
+                    "description": "Name of the role",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.Role"
+                        }
+                    ]
+                },
+                "userId": {
+                    "description": "Unique identifier for the User",
+                    "type": "string"
+                }
+            }
         },
         "gitlab_com_keibiengine_keibi-engine_pkg_auth_api.Role": {
             "type": "string",
@@ -4960,9 +5324,44 @@
             "type": "object",
             "properties": {
                 "role": {
-                    "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.Role"
+                    "description": "Name of the binding Role",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.Role"
+                        }
+                    ]
                 },
                 "workspaceID": {
+                    "description": "Unique identifier for the Workspace",
+                    "type": "string"
+                }
+            }
+        },
+        "gitlab_com_keibiengine_keibi-engine_pkg_auth_api.WorkspaceApiKey": {
+            "type": "object",
+            "properties": {
+                "active": {
+                    "type": "boolean"
+                },
+                "createdAt": {
+                    "type": "string"
+                },
+                "creatorUserID": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "maskedKey": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "role": {
+                    "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.Role"
+                },
+                "updatedAt": {
                     "type": "string"
                 }
             }
@@ -4971,24 +5370,39 @@
             "type": "object",
             "properties": {
                 "createdAt": {
+                    "description": "Creation timestamp in UTC",
                     "type": "string"
                 },
                 "email": {
+                    "description": "Email address of the user",
                     "type": "string"
                 },
                 "lastActivity": {
+                    "description": "Last activity timestamp in UTC",
                     "type": "string"
                 },
                 "role": {
-                    "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.Role"
+                    "description": "Name of the role",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.Role"
+                        }
+                    ]
                 },
                 "status": {
-                    "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.InviteStatus"
+                    "description": "Invite status",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.InviteStatus"
+                        }
+                    ]
                 },
                 "userId": {
+                    "description": "Unique identifier for the user",
                     "type": "string"
                 },
                 "userName": {
+                    "description": "Username",
                     "type": "string"
                 }
             }
@@ -5009,6 +5423,12 @@
                     "type": "array",
                     "items": {
                         "type": "string"
+                    }
+                },
+                "connectors": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/source.Type"
                     }
                 },
                 "createdAt": {
@@ -5055,11 +5475,17 @@
         "gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.BenchmarkAssignedSource": {
             "type": "object",
             "properties": {
-                "assignedAt": {
-                    "type": "integer"
+                "connectionID": {
+                    "type": "string"
                 },
-                "connection": {
-                    "$ref": "#/definitions/types.FullConnection"
+                "connectionName": {
+                    "type": "string"
+                },
+                "connector": {
+                    "$ref": "#/definitions/source.Type"
+                },
+                "status": {
+                    "type": "boolean"
                 }
             }
         },
@@ -5077,11 +5503,37 @@
                 }
             }
         },
+        "gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.BenchmarkResultTrend": {
+            "type": "object",
+            "properties": {
+                "resultTrend": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.ResultDatapoint"
+                    }
+                }
+            }
+        },
         "gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.BenchmarkSummary": {
             "type": "object",
             "properties": {
-                "assignedConnectionsCount": {
-                    "type": "integer"
+                "checks": {
+                    "$ref": "#/definitions/types.SeverityResult"
+                },
+                "compliancyTrend": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.Datapoint"
+                    }
+                },
+                "connectors": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/source.Type"
+                    }
+                },
+                "coverage": {
+                    "type": "number"
                 },
                 "description": {
                     "type": "string"
@@ -5089,23 +5541,17 @@
                 "enabled": {
                     "type": "boolean"
                 },
+                "failedResources": {
+                    "type": "integer"
+                },
                 "id": {
                     "type": "string"
                 },
-                "policies": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.BenchmarkSummaryPolicySummary"
-                    }
+                "passedResources": {
+                    "type": "integer"
                 },
-                "resources": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.BenchmarkSummaryResourceSummary"
-                    }
-                },
-                "shortSummary": {
-                    "$ref": "#/definitions/types.ComplianceResultShortSummary"
+                "result": {
+                    "$ref": "#/definitions/types.ComplianceResultSummary"
                 },
                 "tags": {
                     "type": "object",
@@ -5115,48 +5561,29 @@
                 },
                 "title": {
                     "type": "string"
-                },
-                "totalConnectionResources": {
-                    "type": "integer"
-                },
-                "trend": {
+                }
+            }
+        },
+        "gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.BenchmarkTree": {
+            "type": "object",
+            "properties": {
+                "children": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.Datapoint"
+                        "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.BenchmarkTree"
                     }
-                }
-            }
-        },
-        "gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.BenchmarkSummaryConnectionSummary": {
-            "type": "object",
-            "properties": {
-                "connection": {
-                    "$ref": "#/definitions/types.FullConnection"
                 },
-                "shortSummary": {
-                    "$ref": "#/definitions/types.ComplianceResultShortSummary"
-                }
-            }
-        },
-        "gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.BenchmarkSummaryPolicySummary": {
-            "type": "object",
-            "properties": {
-                "policy": {
-                    "$ref": "#/definitions/types.FullPolicy"
+                "id": {
+                    "type": "string"
                 },
-                "shortSummary": {
-                    "$ref": "#/definitions/types.ComplianceResultShortSummary"
-                }
-            }
-        },
-        "gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.BenchmarkSummaryResourceSummary": {
-            "type": "object",
-            "properties": {
-                "resource": {
-                    "$ref": "#/definitions/types.FullResource"
+                "policies": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.PolicyTree"
+                    }
                 },
-                "shortSummary": {
-                    "$ref": "#/definitions/types.ComplianceResultShortSummary"
+                "title": {
+                    "type": "string"
                 }
             }
         },
@@ -5232,10 +5659,10 @@
                         "type": "string"
                     }
                 },
-                "findingStatus": {
+                "connector": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/types.ComplianceResult"
+                        "$ref": "#/definitions/source.Type"
                     }
                 },
                 "policyID": {
@@ -5244,10 +5671,10 @@
                         "type": "string"
                     }
                 },
-                "provider": {
+                "resourceID": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/source.Type"
+                        "type": "string"
                     }
                 },
                 "resourceTypeID": {
@@ -5261,52 +5688,11 @@
                     "items": {
                         "type": "string"
                     }
-                }
-            }
-        },
-        "gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.FindingResponseFilters": {
-            "type": "object",
-            "properties": {
-                "benchmarks": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/types.FullBenchmark"
-                    }
                 },
-                "connections": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/types.FullConnection"
-                    }
-                },
-                "findingStatus": {
+                "status": {
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/types.ComplianceResult"
-                    }
-                },
-                "policies": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/types.FullPolicy"
-                    }
-                },
-                "provider": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/source.Type"
-                    }
-                },
-                "resourceTypeID": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/types.FullResourceType"
-                    }
-                },
-                "severity": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
                     }
                 }
             }
@@ -5355,31 +5741,20 @@
         "gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.GetBenchmarksSummaryResponse": {
             "type": "object",
             "properties": {
-                "benchmarks": {
+                "benchmarkSummary": {
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.BenchmarkSummary"
                     }
                 },
-                "connections": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.BenchmarkSummaryConnectionSummary"
-                    }
+                "failedResources": {
+                    "type": "integer"
                 },
-                "shortSummary": {
-                    "$ref": "#/definitions/types.ComplianceResultShortSummary"
+                "passedResources": {
+                    "type": "integer"
                 },
                 "totalAssets": {
                     "type": "integer"
-                }
-            }
-        },
-        "gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.GetFindingsFiltersResponse": {
-            "type": "object",
-            "properties": {
-                "filters": {
-                    "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.FindingResponseFilters"
                 }
             }
         },
@@ -5387,6 +5762,18 @@
             "type": "object",
             "properties": {
                 "failedFindings": {
+                    "type": "integer"
+                },
+                "lastFailedFindings": {
+                    "type": "integer"
+                },
+                "lastPassedFindings": {
+                    "type": "integer"
+                },
+                "lastTotalFindings": {
+                    "type": "integer"
+                },
+                "lastUnknownFindings": {
                     "type": "integer"
                 },
                 "passedFindings": {
@@ -5441,7 +5828,17 @@
                     "type": "integer"
                 },
                 "field": {
-                    "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.TopField"
+                    "enum": [
+                        "resourceType",
+                        "serviceName",
+                        "sourceID",
+                        "resourceID"
+                    ],
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.TopField"
+                        }
+                    ]
                 },
                 "filters": {
                     "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.FindingFilters"
@@ -5459,6 +5856,125 @@
                 }
             }
         },
+        "gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.Insight": {
+            "type": "object",
+            "properties": {
+                "category": {
+                    "type": "string"
+                },
+                "connector": {
+                    "$ref": "#/definitions/source.Type"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "enabled": {
+                    "type": "boolean"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "internal": {
+                    "type": "boolean"
+                },
+                "labels": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.InsightTag"
+                    }
+                },
+                "links": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.InsightLink"
+                    }
+                },
+                "logoURL": {
+                    "type": "string"
+                },
+                "longTitle": {
+                    "type": "string"
+                },
+                "peerGroupId": {
+                    "type": "integer"
+                },
+                "query": {
+                    "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.Query"
+                },
+                "shortTitle": {
+                    "type": "string"
+                }
+            }
+        },
+        "gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.InsightLink": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "integer"
+                },
+                "linkText": {
+                    "type": "string"
+                },
+                "linkURI": {
+                    "type": "string"
+                }
+            }
+        },
+        "gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.InsightPeerGroup": {
+            "type": "object",
+            "properties": {
+                "category": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "insights": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.Insight"
+                    }
+                },
+                "labels": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.InsightTag"
+                    }
+                },
+                "links": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.InsightLink"
+                    }
+                },
+                "logoURL": {
+                    "type": "string"
+                },
+                "longTitle": {
+                    "type": "string"
+                },
+                "shortTitle": {
+                    "type": "string"
+                }
+            }
+        },
+        "gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.InsightTag": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "integer"
+                },
+                "key": {
+                    "type": "string"
+                },
+                "value": {
+                    "type": "string"
+                }
+            }
+        },
         "gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.Page": {
             "type": "object",
             "properties": {
@@ -5473,6 +5989,9 @@
         "gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.Policy": {
             "type": "object",
             "properties": {
+                "connector": {
+                    "$ref": "#/definitions/source.Type"
+                },
                 "createdAt": {
                     "type": "string"
                 },
@@ -5481,6 +6000,9 @@
                 },
                 "documentURI": {
                     "type": "string"
+                },
+                "enabled": {
+                    "type": "boolean"
                 },
                 "id": {
                     "type": "string"
@@ -5511,6 +6033,26 @@
                 }
             }
         },
+        "gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.PolicyTree": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string"
+                },
+                "lastChecked": {
+                    "type": "integer"
+                },
+                "severity": {
+                    "type": "string"
+                },
+                "status": {
+                    "$ref": "#/definitions/types.PolicyStatus"
+                },
+                "title": {
+                    "type": "string"
+                }
+            }
+        },
         "gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.Query": {
             "type": "object",
             "properties": {
@@ -5534,6 +6076,17 @@
                 },
                 "updatedAt": {
                     "type": "string"
+                }
+            }
+        },
+        "gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.ResultDatapoint": {
+            "type": "object",
+            "properties": {
+                "result": {
+                    "$ref": "#/definitions/types.SeverityResult"
+                },
+                "time": {
+                    "type": "integer"
                 }
             }
         },
@@ -5629,10 +6182,10 @@
                 "evaluatedAt": {
                     "type": "integer"
                 },
-                "policyID": {
+                "evaluator": {
                     "type": "string"
                 },
-                "policySeverity": {
+                "policyID": {
                     "type": "string"
                 },
                 "reason": {
@@ -5650,34 +6203,20 @@
                 "resourceType": {
                     "type": "string"
                 },
+                "result": {
+                    "$ref": "#/definitions/types.ComplianceResult"
+                },
                 "scheduleJobID": {
                     "type": "integer"
                 },
                 "serviceName": {
                     "type": "string"
                 },
-                "status": {
-                    "$ref": "#/definitions/types.ComplianceResult"
-                }
-            }
-        },
-        "gitlab_com_keibiengine_keibi-engine_pkg_describe_api.CreateInsightRequest": {
-            "type": "object",
-            "properties": {
-                "category": {
+                "severity": {
                     "type": "string"
                 },
-                "description": {
-                    "type": "string"
-                },
-                "internal": {
+                "stateActive": {
                     "type": "boolean"
-                },
-                "provider": {
-                    "$ref": "#/definitions/source.Type"
-                },
-                "query": {
-                    "type": "string"
                 }
             }
         },
@@ -5757,124 +6296,23 @@
                 }
             }
         },
-        "gitlab_com_keibiengine_keibi-engine_pkg_describe_api.Insight": {
+        "gitlab_com_keibiengine_keibi-engine_pkg_describe_api.ListBenchmarkEvaluationsRequest": {
             "type": "object",
             "properties": {
-                "category": {
+                "benchmarkID": {
                     "type": "string"
                 },
-                "description": {
+                "connectionID": {
                     "type": "string"
                 },
-                "enabled": {
-                    "type": "boolean"
-                },
-                "id": {
-                    "type": "integer"
-                },
-                "labels": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_describe_api.InsightLabel"
-                    }
-                },
-                "links": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_describe_api.InsightLink"
-                    }
-                },
-                "logoURL": {
-                    "type": "string"
-                },
-                "longTitle": {
-                    "type": "string"
-                },
-                "peerGroupId": {
-                    "type": "integer"
-                },
-                "provider": {
+                "connector": {
                     "$ref": "#/definitions/source.Type"
                 },
-                "query": {
-                    "type": "string"
-                },
-                "shortTitle": {
-                    "type": "string"
-                }
-            }
-        },
-        "gitlab_com_keibiengine_keibi-engine_pkg_describe_api.InsightLabel": {
-            "type": "object",
-            "properties": {
-                "id": {
+                "evaluatedAtAfter": {
                     "type": "integer"
                 },
-                "label": {
-                    "type": "string"
-                }
-            }
-        },
-        "gitlab_com_keibiengine_keibi-engine_pkg_describe_api.InsightLink": {
-            "type": "object",
-            "properties": {
-                "id": {
+                "evaluatedAtBefore": {
                     "type": "integer"
-                },
-                "linkText": {
-                    "type": "string"
-                },
-                "linkURI": {
-                    "type": "string"
-                }
-            }
-        },
-        "gitlab_com_keibiengine_keibi-engine_pkg_describe_api.InsightPeerGroup": {
-            "type": "object",
-            "properties": {
-                "category": {
-                    "type": "string"
-                },
-                "description": {
-                    "type": "string"
-                },
-                "id": {
-                    "type": "integer"
-                },
-                "insights": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_describe_api.Insight"
-                    }
-                },
-                "labels": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_describe_api.InsightLabel"
-                    }
-                },
-                "links": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_describe_api.InsightLink"
-                    }
-                },
-                "logoURL": {
-                    "type": "string"
-                },
-                "longTitle": {
-                    "type": "string"
-                },
-                "shortTitle": {
-                    "type": "string"
-                }
-            }
-        },
-        "gitlab_com_keibiengine_keibi-engine_pkg_describe_api.ListInsightsRequest": {
-            "type": "object",
-            "properties": {
-                "descriptionFilter": {
-                    "type": "string"
                 }
             }
         },
@@ -5919,6 +6357,23 @@
                 "SourceCloudAWS",
                 "SourceCloudAzure"
             ]
+        },
+        "gitlab_com_keibiengine_keibi-engine_pkg_describe_api.TriggerBenchmarkEvaluationRequest": {
+            "type": "object",
+            "properties": {
+                "benchmarkID": {
+                    "type": "string"
+                },
+                "connectionID": {
+                    "type": "string"
+                },
+                "resourceIDs": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
         },
         "gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.AWSResource": {
             "type": "object",
@@ -5968,19 +6423,28 @@
                     "type": "string"
                 },
                 "providerConnectionID": {
+                    "description": "Provider Connection Id",
                     "type": "string"
                 },
                 "providerConnectionName": {
+                    "description": "Provider Connection Name",
                     "type": "string"
                 },
                 "resourceCount": {
+                    "description": "Number of resources",
                     "type": "integer"
                 },
                 "sourceID": {
+                    "description": "Source Id",
                     "type": "string"
                 },
                 "sourceType": {
-                    "$ref": "#/definitions/source.Type"
+                    "description": "Source Type",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/source.Type"
+                        }
+                    ]
                 }
             }
         },
@@ -6068,30 +6532,43 @@
                     }
                 },
                 "location": {
+                    "description": "The Region of the resource",
                     "type": "string"
                 },
                 "provider": {
-                    "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.SourceType"
+                    "description": "Resource Provider",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.SourceType"
+                        }
+                    ]
                 },
                 "providerConnectionID": {
+                    "description": "Provider Connection Id",
                     "type": "string"
                 },
                 "providerConnectionName": {
+                    "description": "Provider Connection Name",
                     "type": "string"
                 },
                 "resourceCategory": {
+                    "description": "Resource Category",
                     "type": "string"
                 },
                 "resourceID": {
+                    "description": "Resource Id",
                     "type": "string"
                 },
                 "resourceName": {
+                    "description": "Resource Name",
                     "type": "string"
                 },
                 "resourceType": {
+                    "description": "Resource Type",
                     "type": "string"
                 },
                 "resourceTypeName": {
+                    "description": "Resource Type Name",
                     "type": "string"
                 }
             }
@@ -6106,30 +6583,39 @@
                     }
                 },
                 "location": {
+                    "description": "The Region of the resource",
                     "type": "string"
                 },
                 "providerConnectionID": {
+                    "description": "Provider Connection Id",
                     "type": "string"
                 },
                 "providerConnectionName": {
+                    "description": "Provider Connection Name",
                     "type": "string"
                 },
                 "resourceCategory": {
+                    "description": "Resource Category",
                     "type": "string"
                 },
                 "resourceGroup": {
+                    "description": "Resource Group",
                     "type": "string"
                 },
                 "resourceID": {
+                    "description": "Resource Id",
                     "type": "string"
                 },
                 "resourceName": {
+                    "description": "Resource Name",
                     "type": "string"
                 },
                 "resourceType": {
+                    "description": "Resource Type",
                     "type": "string"
                 },
                 "resourceTypeName": {
+                    "description": "Resource Type Name",
                     "type": "string"
                 }
             }
@@ -6141,9 +6627,11 @@
                     "type": "string"
                 },
                 "categoryName": {
+                    "description": "Name of the Category",
                     "type": "string"
                 },
                 "cost": {
+                    "description": "The aggregation of all the services costs",
                     "type": "object",
                     "additionalProperties": {
                         "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.CostWithUnit"
@@ -6156,16 +6644,19 @@
                     }
                 },
                 "filters": {
+                    "description": "List of Filters associated with this Category",
                     "type": "array",
                     "items": {}
                 },
                 "resourceCount": {
+                    "description": "Number of Resources of the category",
                     "type": "integer"
                 },
                 "resourceCountChange": {
                     "type": "number"
                 },
                 "subcategories": {
+                    "description": "Subcategories sorted by ResourceCount [resources/category, ]",
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.CategoryNode"
@@ -6177,9 +6668,11 @@
             "type": "object",
             "properties": {
                 "name": {
+                    "description": "Category Name",
                     "type": "string"
                 },
                 "trend": {
+                    "description": "Trends (Time Series)",
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.TrendDataPoint"
@@ -6216,18 +6709,21 @@
             "type": "object",
             "properties": {
                 "categories": {
+                    "description": "Categories with their Summary",
                     "type": "object",
                     "additionalProperties": {
                         "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ConnectionSummaryCategory"
                     }
                 },
                 "cloudServices": {
+                    "description": "Services as Key, Number of them as Value",
                     "type": "object",
                     "additionalProperties": {
                         "type": "integer"
                     }
                 },
                 "resourceTypes": {
+                    "description": "Resource types as Key, Number of them as Value",
                     "type": "object",
                     "additionalProperties": {
                         "type": "integer"
@@ -6239,9 +6735,11 @@
             "type": "object",
             "properties": {
                 "cost": {
+                    "description": "Value",
                     "type": "number"
                 },
                 "unit": {
+                    "description": "Currency",
                     "type": "string"
                 }
             }
@@ -6309,12 +6807,14 @@
             "type": "object",
             "properties": {
                 "resources": {
+                    "description": "A list of AWS resources with details",
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.AWSResource"
                     }
                 },
                 "totalCount": {
+                    "description": "Number of returned resources",
                     "type": "integer"
                 }
             }
@@ -6323,12 +6823,14 @@
             "type": "object",
             "properties": {
                 "resources": {
+                    "description": "A list of Azure resources with details",
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.AzureResource"
                     }
                 },
                 "totalCount": {
+                    "description": "Number of returned resources",
                     "type": "integer"
                 }
             }
@@ -6378,6 +6880,7 @@
                     "type": "string"
                 },
                 "resourceType": {
+                    "description": "Resource ID",
                     "type": "string"
                 }
             }
@@ -6417,12 +6920,14 @@
             "type": "object",
             "properties": {
                 "resources": {
+                    "description": "A list of AWS resources with details",
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.AllResource"
                     }
                 },
                 "totalCount": {
+                    "description": "Number of returned resources",
                     "type": "integer"
                 }
             }
@@ -6431,54 +6936,85 @@
             "type": "object",
             "properties": {
                 "category": {
+                    "description": "Category",
                     "type": "string"
                 },
                 "description": {
+                    "description": "Description",
                     "type": "string"
                 },
                 "enabled": {
+                    "description": "Enabled",
                     "type": "boolean"
                 },
                 "executedAt": {
+                    "description": "Time of Execution",
                     "type": "string"
                 },
                 "id": {
+                    "description": "Insight Id",
                     "type": "integer"
                 },
                 "labels": {
+                    "description": "List of insight tags",
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.InsightLabel"
+                        "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.InsightTag"
                     }
                 },
                 "links": {
+                    "description": "List of links",
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.InsightLink"
                     }
                 },
                 "listInsightResultType": {
-                    "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ListInsightResultType"
+                    "description": "PeerGroup or Insight",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ListInsightResultType"
+                        }
+                    ]
                 },
                 "logoURL": {
+                    "description": "Logo URL",
                     "type": "string"
                 },
                 "longTitle": {
+                    "description": "Long Title",
                     "type": "string"
                 },
                 "provider": {
-                    "$ref": "#/definitions/source.Type"
+                    "description": "Provider",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/source.Type"
+                        }
+                    ]
                 },
                 "query": {
-                    "type": "string"
+                    "description": "Query",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.Query"
+                        }
+                    ]
                 },
                 "results": {
-                    "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.InsightResult"
+                    "description": "Insight Results and Details",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.InsightResult"
+                        }
+                    ]
                 },
                 "shortTitle": {
+                    "description": "Short Title",
                     "type": "string"
                 },
                 "totalResults": {
+                    "description": "Total Results",
                     "type": "integer"
                 }
             }
@@ -6509,17 +7045,6 @@
                         "type": "array",
                         "items": {}
                     }
-                }
-            }
-        },
-        "gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.InsightLabel": {
-            "type": "object",
-            "properties": {
-                "id": {
-                    "type": "integer"
-                },
-                "label": {
-                    "type": "string"
                 }
             }
         },
@@ -6558,7 +7083,7 @@
                 "labels": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.InsightLabel"
+                        "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.InsightTag"
                     }
                 },
                 "links": {
@@ -6588,33 +7113,45 @@
             "type": "object",
             "properties": {
                 "connections": {
+                    "description": "Connections",
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.InsightConnection"
                     }
                 },
                 "details": {
-                    "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.InsightDetail"
+                    "description": "Insight Details",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.InsightDetail"
+                        }
+                    ]
                 },
                 "executedAt": {
+                    "description": "Time of Execution",
                     "type": "string"
                 },
                 "insightID": {
+                    "description": "Insight ID",
                     "type": "integer"
                 },
                 "jobID": {
+                    "description": "Job ID",
                     "type": "integer"
                 },
                 "locations": {
+                    "description": "Locations",
                     "type": "array",
                     "items": {
                         "type": "string"
                     }
                 },
                 "result": {
+                    "description": "Result",
                     "type": "integer"
                 },
                 "sourceID": {
+                    "description": "Source ID",
                     "type": "string"
                 }
             }
@@ -6627,6 +7164,20 @@
                     "items": {
                         "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.TrendDataPoint"
                     }
+                }
+            }
+        },
+        "gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.InsightTag": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "integer"
+                },
+                "key": {
+                    "type": "string"
+                },
+                "value": {
+                    "type": "string"
                 }
             }
         },
@@ -6645,15 +7196,22 @@
             "type": "object",
             "properties": {
                 "labels": {
+                    "description": "Labels",
                     "type": "array",
                     "items": {
                         "type": "string"
                     }
                 },
                 "providerFilter": {
-                    "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.SourceType"
+                    "description": "Specifies the Provider",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.SourceType"
+                        }
+                    ]
                 },
                 "titleFilter": {
+                    "description": "Specifies the Title",
                     "type": "string"
                 }
             }
@@ -6662,6 +7220,7 @@
             "type": "object",
             "properties": {
                 "name": {
+                    "description": "Name of the region",
                     "type": "string"
                 }
             }
@@ -6670,9 +7229,11 @@
             "type": "object",
             "properties": {
                 "location": {
+                    "description": "Region",
                     "type": "string"
                 },
                 "resourceCount": {
+                    "description": "Number of resources in the region",
                     "type": "integer"
                 }
             }
@@ -6685,6 +7246,32 @@
                 },
                 "size": {
                     "type": "integer"
+                }
+            }
+        },
+        "gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.Query": {
+            "type": "object",
+            "properties": {
+                "connector": {
+                    "type": "string"
+                },
+                "createdAt": {
+                    "type": "string"
+                },
+                "engine": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "listOfTables": {
+                    "type": "string"
+                },
+                "queryToExecute": {
+                    "type": "string"
+                },
+                "updatedAt": {
+                    "type": "string"
                 }
             }
         },
@@ -6821,15 +7408,18 @@
             "type": "object",
             "properties": {
                 "Subcategories": {
+                    "description": "List of sub-categories Cost Trends (Time Series)",
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.CategoryResourceTrend"
                     }
                 },
                 "categoryName": {
+                    "description": "Category Name",
                     "type": "string"
                 },
                 "trend": {
+                    "description": "Main Category Cost Trend (Time Series)",
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.TrendDataPoint"
@@ -6902,17 +7492,18 @@
             "type": "object",
             "properties": {
                 "headers": {
-                    "description": "column names",
+                    "description": "Column names",
                     "type": "array",
                     "items": {
                         "type": "string"
                     }
                 },
                 "query": {
+                    "description": "Query",
                     "type": "string"
                 },
                 "result": {
-                    "description": "result of query. in order to access a specific cell please use Result[Row][Column]",
+                    "description": "Result of query. in order to access a specific cell please use Result[Row][Column]",
                     "type": "array",
                     "items": {
                         "type": "array",
@@ -6920,6 +7511,7 @@
                     }
                 },
                 "title": {
+                    "description": "Query Title",
                     "type": "string"
                 }
             }
@@ -6928,12 +7520,14 @@
             "type": "object",
             "properties": {
                 "distribution": {
+                    "description": "Distribution name",
                     "type": "object",
                     "additionalProperties": {
                         "type": "integer"
                     }
                 },
                 "serviceName": {
+                    "description": "Service name",
                     "type": "string"
                 }
             }
@@ -6942,21 +7536,30 @@
             "type": "object",
             "properties": {
                 "cloudProvider": {
-                    "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.SourceType"
+                    "description": "Cloud provider",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.SourceType"
+                        }
+                    ]
                 },
                 "cost": {
+                    "description": "Costs (Unit as Key, CostWithUnit as Value)",
                     "type": "object",
                     "additionalProperties": {
                         "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.CostWithUnit"
                     }
                 },
                 "resourceCount": {
+                    "description": "Number of Resources",
                     "type": "integer"
                 },
                 "serviceCode": {
+                    "description": "Service Code",
                     "type": "string"
                 },
                 "serviceName": {
+                    "description": "Service Name",
                     "type": "string"
                 }
             }
@@ -6965,16 +7568,19 @@
             "type": "object",
             "properties": {
                 "apiFilters": {
+                    "description": "API Filters",
                     "type": "object",
                     "additionalProperties": {}
                 },
                 "services": {
+                    "description": "A list of service summeries",
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ServiceSummary"
                     }
                 },
                 "totalCount": {
+                    "description": "Number of services",
                     "type": "integer"
                 }
             }
@@ -6983,27 +7589,34 @@
             "type": "object",
             "properties": {
                 "category": {
+                    "description": "Category (Tags[category])",
                     "type": "string"
                 },
                 "description": {
+                    "description": "Description",
                     "type": "string"
                 },
                 "id": {
+                    "description": "Query Id",
                     "type": "integer"
                 },
                 "provider": {
+                    "description": "Provider",
                     "type": "string"
                 },
                 "query": {
+                    "description": "Query",
                     "type": "string"
                 },
                 "tags": {
+                    "description": "Tags",
                     "type": "object",
                     "additionalProperties": {
                         "type": "string"
                     }
                 },
                 "title": {
+                    "description": "Title",
                     "type": "string"
                 }
             }
@@ -7064,15 +7677,19 @@
             "type": "object",
             "properties": {
                 "cost": {
+                    "description": "Account costs",
                     "type": "number"
                 },
                 "providerConnectionID": {
+                    "description": "Account Provider Connection ID",
                     "type": "string"
                 },
                 "providerConnectionName": {
+                    "description": "Account Provider Connection Name",
                     "type": "string"
                 },
                 "sourceID": {
+                    "description": "Source Id",
                     "type": "string"
                 }
             }
@@ -7081,18 +7698,23 @@
             "type": "object",
             "properties": {
                 "provider": {
+                    "description": "Account Provider",
                     "type": "string"
                 },
                 "providerConnectionID": {
+                    "description": "Account Provider Connection ID",
                     "type": "string"
                 },
                 "providerConnectionName": {
+                    "description": "Account Provider Connection Name",
                     "type": "string"
                 },
                 "resourceCount": {
+                    "description": "Last number of Resources of the account",
                     "type": "integer"
                 },
                 "sourceID": {
+                    "description": "Source Id",
                     "type": "string"
                 }
             }
@@ -7101,9 +7723,11 @@
             "type": "object",
             "properties": {
                 "cost": {
+                    "description": "Service Cost",
                     "type": "number"
                 },
                 "serviceName": {
+                    "description": "Service Name",
                     "type": "string"
                 }
             }
@@ -7112,24 +7736,31 @@
             "type": "object",
             "properties": {
                 "lastDayCount": {
+                    "description": "Number of resources on last day",
                     "type": "integer"
                 },
                 "lastQuarterCount": {
+                    "description": "Number of resources on last quarter",
                     "type": "integer"
                 },
                 "lastWeekCount": {
+                    "description": "Number of resources on last week",
                     "type": "integer"
                 },
                 "lastYearCount": {
+                    "description": "Number of resources on last year",
                     "type": "integer"
                 },
                 "provider": {
+                    "description": "Service Provider Name",
                     "type": "string"
                 },
                 "resourceCount": {
+                    "description": "Number of resources",
                     "type": "integer"
                 },
                 "serviceName": {
+                    "description": "Service Name",
                     "type": "string"
                 }
             }
@@ -7138,12 +7769,100 @@
             "type": "object",
             "properties": {
                 "timestamp": {
+                    "description": "Time",
                     "type": "integer"
                 },
                 "value": {
+                    "description": "Resource Count",
                     "type": "integer"
                 }
             }
+        },
+        "gitlab_com_keibiengine_keibi-engine_pkg_metadata_models.ConfigMetadata": {
+            "type": "object",
+            "properties": {
+                "key": {
+                    "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_metadata_models.MetadataKey"
+                },
+                "type": {
+                    "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_metadata_models.ConfigMetadataType"
+                },
+                "value": {
+                    "type": "string"
+                }
+            }
+        },
+        "gitlab_com_keibiengine_keibi-engine_pkg_metadata_models.ConfigMetadataType": {
+            "type": "string",
+            "enum": [
+                "string",
+                "int",
+                "bool",
+                "json"
+            ],
+            "x-enum-varnames": [
+                "ConfigMetadataTypeString",
+                "ConfigMetadataTypeInt",
+                "ConfigMetadataTypeBool",
+                "ConfigMetadataTypeJSON"
+            ]
+        },
+        "gitlab_com_keibiengine_keibi-engine_pkg_metadata_models.MetadataKey": {
+            "type": "string",
+            "enum": [
+                "workspace_ownership",
+                "workspace_id",
+                "workspace_name",
+                "workspace_plan",
+                "workspace_creation_time",
+                "workspace_date_time_format",
+                "workspace_debug_mode",
+                "workspace_time_window",
+                "asset_management_enabled",
+                "compliance_enabled",
+                "product_management_enabled",
+                "custom_idp",
+                "resource_limit",
+                "connection_limit",
+                "user_limit",
+                "allow_invite",
+                "workspace_key_support",
+                "workspace_max_keys",
+                "allowed_email_domains",
+                "auto_discovery_method",
+                "describe_job_interval",
+                "health_check_job_interval",
+                "insight_job_interval",
+                "metrics_job_interval",
+                "data_retention_duration"
+            ],
+            "x-enum-varnames": [
+                "MetadataKeyWorkspaceOwnership",
+                "MetadataKeyWorkspaceID",
+                "MetadataKeyWorkspaceName",
+                "MetadataKeyWorkspacePlan",
+                "MetadataKeyWorkspaceCreationTime",
+                "MetadataKeyWorkspaceDateTimeFormat",
+                "MetadataKeyWorkspaceDebugMode",
+                "MetadataKeyWorkspaceTimeWindow",
+                "MetadataKeyAssetManagementEnabled",
+                "MetadataKeyComplianceEnabled",
+                "MetadataKeyProductManagementEnabled",
+                "MetadataKeyCustomIDP",
+                "MetadataKeyResourceLimit",
+                "MetadataKeyConnectionLimit",
+                "MetadataKeyUserLimit",
+                "MetadataKeyAllowInvite",
+                "MetadataKeyWorkspaceKeySupport",
+                "MetadataKeyWorkspaceMaxKeys",
+                "MetadataKeyAllowedEmailDomains",
+                "MetadataKeyAutoDiscoveryMethod",
+                "MetadataKeyDescribeJobInterval",
+                "MetadataKeyHealthCheckJobInterval",
+                "MetadataKeyInsightJobInterval",
+                "MetadataKeyMetricsJobInterval",
+                "MetadataKeyDataRetention"
+            ]
         },
         "gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.CatalogConnector": {
             "type": "object",
@@ -7749,6 +8468,18 @@
                 }
             }
         },
+        "gorm.DeletedAt": {
+            "type": "object",
+            "properties": {
+                "time": {
+                    "type": "string"
+                },
+                "valid": {
+                    "description": "Valid is true if Time is not NULL",
+                    "type": "boolean"
+                }
+            }
+        },
         "source.AssetDiscoveryMethodType": {
             "type": "string",
             "enum": [
@@ -7851,17 +8582,6 @@
                 "ComplianceResultERROR"
             ]
         },
-        "types.ComplianceResultShortSummary": {
-            "type": "object",
-            "properties": {
-                "failed": {
-                    "type": "integer"
-                },
-                "passed": {
-                    "type": "integer"
-                }
-            }
-        },
         "types.ComplianceResultSummary": {
             "type": "object",
             "properties": {
@@ -7882,61 +8602,39 @@
                 }
             }
         },
-        "types.FullBenchmark": {
-            "type": "object",
-            "properties": {
-                "id": {
-                    "type": "string"
-                },
-                "title": {
-                    "type": "string"
-                }
-            }
+        "types.PolicyStatus": {
+            "type": "string",
+            "enum": [
+                "passed",
+                "failed",
+                "unknown"
+            ],
+            "x-enum-varnames": [
+                "PolicyStatusPASSED",
+                "PolicyStatusFAILED",
+                "PolicyStatusUNKNOWN"
+            ]
         },
-        "types.FullConnection": {
+        "types.SeverityResult": {
             "type": "object",
             "properties": {
-                "id": {
-                    "type": "string"
+                "criticalCount": {
+                    "type": "integer"
                 },
-                "providerID": {
-                    "type": "string"
+                "highCount": {
+                    "type": "integer"
                 },
-                "providerName": {
-                    "type": "string"
-                }
-            }
-        },
-        "types.FullPolicy": {
-            "type": "object",
-            "properties": {
-                "id": {
-                    "type": "string"
+                "lowCount": {
+                    "type": "integer"
                 },
-                "title": {
-                    "type": "string"
-                }
-            }
-        },
-        "types.FullResource": {
-            "type": "object",
-            "properties": {
-                "id": {
-                    "type": "string"
+                "mediumCount": {
+                    "type": "integer"
                 },
-                "name": {
-                    "type": "string"
-                }
-            }
-        },
-        "types.FullResourceType": {
-            "type": "object",
-            "properties": {
-                "ID": {
-                    "type": "string"
+                "passedCount": {
+                    "type": "integer"
                 },
-                "name": {
-                    "type": "string"
+                "unknownCount": {
+                    "type": "integer"
                 }
             }
         }

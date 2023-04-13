@@ -14,8 +14,8 @@ const (
 )
 
 type PutRoleBindingRequest struct {
-	UserID string `json:"userId" validate:"required"`
-	Role   Role   `json:"role" validate:"required"`
+	UserID string `json:"userId" validate:"required"` // Unique identifier for the User
+	Role   Role   `json:"role" validate:"required"`   // Name of the role
 }
 type RolesDescription struct {
 	Role        Role
@@ -23,23 +23,23 @@ type RolesDescription struct {
 	UserCount   int
 }
 type UserRoleBinding struct {
-	WorkspaceID string `json:"workspaceID"`
-	Role        Role   `json:"role"`
+	WorkspaceID string `json:"workspaceID"` // Unique identifier for the Workspace
+	Role        Role   `json:"role"`        // Name of the binding Role
 }
 
 type GetRoleBindingResponse UserRoleBinding
 
 type GetRoleBindingsResponse struct {
-	RoleBindings []UserRoleBinding `json:"roleBindings"`
-	GlobalRoles  *Role             `json:"globalRoles"`
+	RoleBindings []UserRoleBinding `json:"roleBindings"` // List of user roles in each workspace
+	GlobalRoles  *Role             `json:"globalRoles"`  // Global Access
 }
 
 type Membership struct {
-	WorkspaceID   string    `json:"workspaceID"`
-	WorkspaceName string    `json:"workspaceName"`
-	Role          Role      `json:"role"`
-	AssignedAt    time.Time `json:"assignedAt"`
-	LastActivity  time.Time `json:"lastActivity"`
+	WorkspaceID   string    `json:"workspaceID"`   // Unique identifier for the workspace
+	WorkspaceName string    `json:"workspaceName"` // Name of the Workspace
+	Role          Role      `json:"role"`          // Name of the role
+	AssignedAt    time.Time `json:"assignedAt"`    // Assignment timestamp in UTC
+	LastActivity  time.Time `json:"lastActivity"`  // Last activity timestamp in UTC
 }
 
 type InviteStatus string
@@ -50,28 +50,28 @@ const (
 )
 
 type WorkspaceRoleBinding struct {
-	UserID       string       `json:"userId"`
-	UserName     string       `json:"userName"`
-	Email        string       `json:"email"`
-	Role         Role         `json:"role"`
-	Status       InviteStatus `json:"status"`
-	LastActivity time.Time    `json:"lastActivity"`
-	CreatedAt    time.Time    `json:"createdAt"`
+	UserID       string       `json:"userId"`       // Unique identifier for the user
+	UserName     string       `json:"userName"`     // Username
+	Email        string       `json:"email"`        // Email address of the user
+	Role         Role         `json:"role"`         // Name of the role
+	Status       InviteStatus `json:"status"`       // Invite status
+	LastActivity time.Time    `json:"lastActivity"` // Last activity timestamp in UTC
+	CreatedAt    time.Time    `json:"createdAt"`    // Creation timestamp in UTC
 }
 
-type GetWorkspaceRoleBindingResponse []WorkspaceRoleBinding
+type GetWorkspaceRoleBindingResponse []WorkspaceRoleBinding // List of Workspace Role Binding objects
 
 type DeleteRoleBindingRequest struct {
-	UserID string `json:"userId" validate:"required"`
+	UserID string `json:"userId" validate:"required"` // Unique identifier for the user
 }
 
 type InviteRequest struct {
-	Email string `json:"email" validate:"required,email"`
-	Role  Role   `json:"role"`
+	Email string `json:"email" validate:"required,email"` // User email address
+	Role  Role   `json:"role"`                            // Name of the role
 }
 type RoleBinding struct {
-	UserID        string `json:"userId"`
-	WorkspaceID   string `json:"workspaceID"`
-	WorkspaceName string `json:"workspaceName"`
-	Role          Role   `json:"role"`
+	UserID        string `json:"userId"`        // Unique identifier for the user
+	WorkspaceID   string `json:"workspaceID"`   // Unique identifier for the workspace
+	WorkspaceName string `json:"workspaceName"` // Name of the workspace
+	Role          Role   `json:"role"`          // Name of the binding role
 }

@@ -25,13 +25,19 @@ var aboutCmd = &cobra.Command{
 		response := cli.ResponseAbout{}
 		err = json.Unmarshal(bodyResponse, &response)
 		if err != nil {
-			return err
+			return fmt.Errorf("[about]: %v", err)
 		}
+
+		err = cli.PrintOutput(response, OutputType)
+		if err != nil {
+			return fmt.Errorf("[about]: %v", err)
+		}
+
 		return nil
 	},
 }
 
 func init() {
 	rootCmd.AddCommand(aboutCmd)
-	//aboutCmd.Flags().StringVar(&outputType, "output", "", "specifying output type [json, table]")
+	aboutCmd.Flags().StringVar(&OutputType, "output", "", "specifying output type [json, table]")
 }

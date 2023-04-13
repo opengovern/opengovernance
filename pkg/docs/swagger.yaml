@@ -1,12 +1,62 @@
 definitions:
+  describe.ComplianceReportJob:
+    properties:
+      benchmarkID:
+        description: Not the primary key but should be a unique identifier
+        type: string
+      createdAt:
+        type: string
+      deletedAt:
+        $ref: '#/definitions/gorm.DeletedAt'
+      failureMessage:
+        description: Should be NULLSTRING
+        type: string
+      id:
+        type: integer
+      reportCreatedAt:
+        type: integer
+      scheduleJobID:
+        type: integer
+      sourceID:
+        description: Not the primary key but should be a unique identifier
+        type: string
+      sourceType:
+        $ref: '#/definitions/source.Type'
+      status:
+        $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.ComplianceReportJobStatus'
+      updatedAt:
+        type: string
+    type: object
+  gitlab_com_keibiengine_keibi-engine_pkg_auth_api.CreateAPIKeyRequest:
+    properties:
+      name:
+        type: string
+      role:
+        $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.Role'
+    type: object
   gitlab_com_keibiengine_keibi-engine_pkg_auth_api.GetRoleBindingsResponse:
     properties:
       globalRoles:
-        $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.Role'
+        allOf:
+        - $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.Role'
+        description: Global Access
       roleBindings:
+        description: List of user roles in each workspace
         items:
           $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.UserRoleBinding'
         type: array
+    type: object
+  gitlab_com_keibiengine_keibi-engine_pkg_auth_api.InviteRequest:
+    properties:
+      email:
+        description: User email address
+        type: string
+      role:
+        allOf:
+        - $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.Role'
+        description: Name of the role
+    required:
+    - email
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_auth_api.InviteStatus:
     enum:
@@ -16,6 +66,19 @@ definitions:
     x-enum-varnames:
     - InviteStatus_ACCEPTED
     - InviteStatus_PENDING
+  gitlab_com_keibiengine_keibi-engine_pkg_auth_api.PutRoleBindingRequest:
+    properties:
+      role:
+        allOf:
+        - $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.Role'
+        description: Name of the role
+      userId:
+        description: Unique identifier for the User
+        type: string
+    required:
+    - role
+    - userId
+    type: object
   gitlab_com_keibiengine_keibi-engine_pkg_auth_api.Role:
     enum:
     - KEIBI-ADMIN
@@ -31,25 +94,56 @@ definitions:
   gitlab_com_keibiengine_keibi-engine_pkg_auth_api.UserRoleBinding:
     properties:
       role:
-        $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.Role'
+        allOf:
+        - $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.Role'
+        description: Name of the binding Role
       workspaceID:
+        description: Unique identifier for the Workspace
+        type: string
+    type: object
+  gitlab_com_keibiengine_keibi-engine_pkg_auth_api.WorkspaceApiKey:
+    properties:
+      active:
+        type: boolean
+      createdAt:
+        type: string
+      creatorUserID:
+        type: string
+      id:
+        type: integer
+      maskedKey:
+        type: string
+      name:
+        type: string
+      role:
+        $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.Role'
+      updatedAt:
         type: string
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_auth_api.WorkspaceRoleBinding:
     properties:
       createdAt:
+        description: Creation timestamp in UTC
         type: string
       email:
+        description: Email address of the user
         type: string
       lastActivity:
+        description: Last activity timestamp in UTC
         type: string
       role:
-        $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.Role'
+        allOf:
+        - $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.Role'
+        description: Name of the role
       status:
-        $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.InviteStatus'
+        allOf:
+        - $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.InviteStatus'
+        description: Invite status
       userId:
+        description: Unique identifier for the user
         type: string
       userName:
+        description: Username
         type: string
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.Benchmark:
@@ -63,6 +157,10 @@ definitions:
       children:
         items:
           type: string
+        type: array
+      connectors:
+        items:
+          $ref: '#/definitions/source.Type'
         type: array
       createdAt:
         type: string
@@ -93,10 +191,14 @@ definitions:
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.BenchmarkAssignedSource:
     properties:
-      assignedAt:
-        type: integer
-      connection:
-        $ref: '#/definitions/types.FullConnection'
+      connectionID:
+        type: string
+      connectionName:
+        type: string
+      connector:
+        $ref: '#/definitions/source.Type'
+      status:
+        type: boolean
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.BenchmarkAssignment:
     properties:
@@ -107,59 +209,60 @@ definitions:
       sourceId:
         type: string
     type: object
+  gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.BenchmarkResultTrend:
+    properties:
+      resultTrend:
+        items:
+          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.ResultDatapoint'
+        type: array
+    type: object
   gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.BenchmarkSummary:
     properties:
-      assignedConnectionsCount:
-        type: integer
+      checks:
+        $ref: '#/definitions/types.SeverityResult'
+      compliancyTrend:
+        items:
+          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.Datapoint'
+        type: array
+      connectors:
+        items:
+          $ref: '#/definitions/source.Type'
+        type: array
+      coverage:
+        type: number
       description:
         type: string
       enabled:
         type: boolean
+      failedResources:
+        type: integer
       id:
         type: string
-      policies:
-        items:
-          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.BenchmarkSummaryPolicySummary'
-        type: array
-      resources:
-        items:
-          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.BenchmarkSummaryResourceSummary'
-        type: array
-      shortSummary:
-        $ref: '#/definitions/types.ComplianceResultShortSummary'
+      passedResources:
+        type: integer
+      result:
+        $ref: '#/definitions/types.ComplianceResultSummary'
       tags:
         additionalProperties:
           type: string
         type: object
       title:
         type: string
-      totalConnectionResources:
-        type: integer
-      trend:
+    type: object
+  gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.BenchmarkTree:
+    properties:
+      children:
         items:
-          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.Datapoint'
+          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.BenchmarkTree'
         type: array
-    type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.BenchmarkSummaryConnectionSummary:
-    properties:
-      connection:
-        $ref: '#/definitions/types.FullConnection'
-      shortSummary:
-        $ref: '#/definitions/types.ComplianceResultShortSummary'
-    type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.BenchmarkSummaryPolicySummary:
-    properties:
-      policy:
-        $ref: '#/definitions/types.FullPolicy'
-      shortSummary:
-        $ref: '#/definitions/types.ComplianceResultShortSummary'
-    type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.BenchmarkSummaryResourceSummary:
-    properties:
-      resource:
-        $ref: '#/definitions/types.FullResource'
-      shortSummary:
-        $ref: '#/definitions/types.ComplianceResultShortSummary'
+      id:
+        type: string
+      policies:
+        items:
+          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.PolicyTree'
+        type: array
+      title:
+        type: string
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.ComplianceReport:
     properties:
@@ -211,17 +314,17 @@ definitions:
         items:
           type: string
         type: array
-      findingStatus:
+      connector:
         items:
-          $ref: '#/definitions/types.ComplianceResult'
+          $ref: '#/definitions/source.Type'
         type: array
       policyID:
         items:
           type: string
         type: array
-      provider:
+      resourceID:
         items:
-          $ref: '#/definitions/source.Type'
+          type: string
         type: array
       resourceTypeID:
         items:
@@ -231,36 +334,9 @@ definitions:
         items:
           type: string
         type: array
-    type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.FindingResponseFilters:
-    properties:
-      benchmarks:
-        items:
-          $ref: '#/definitions/types.FullBenchmark'
-        type: array
-      connections:
-        items:
-          $ref: '#/definitions/types.FullConnection'
-        type: array
-      findingStatus:
+      status:
         items:
           $ref: '#/definitions/types.ComplianceResult'
-        type: array
-      policies:
-        items:
-          $ref: '#/definitions/types.FullPolicy'
-        type: array
-      provider:
-        items:
-          $ref: '#/definitions/source.Type'
-        type: array
-      resourceTypeID:
-        items:
-          $ref: '#/definitions/types.FullResourceType'
-        type: array
-      severity:
-        items:
-          type: string
         type: array
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.FindingSortItem:
@@ -294,27 +370,28 @@ definitions:
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.GetBenchmarksSummaryResponse:
     properties:
-      benchmarks:
+      benchmarkSummary:
         items:
           $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.BenchmarkSummary'
         type: array
-      connections:
-        items:
-          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.BenchmarkSummaryConnectionSummary'
-        type: array
-      shortSummary:
-        $ref: '#/definitions/types.ComplianceResultShortSummary'
+      failedResources:
+        type: integer
+      passedResources:
+        type: integer
       totalAssets:
         type: integer
-    type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.GetFindingsFiltersResponse:
-    properties:
-      filters:
-        $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.FindingResponseFilters'
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.GetFindingsMetricsResponse:
     properties:
       failedFindings:
+        type: integer
+      lastFailedFindings:
+        type: integer
+      lastPassedFindings:
+        type: integer
+      lastTotalFindings:
+        type: integer
+      lastUnknownFindings:
         type: integer
       passedFindings:
         type: integer
@@ -350,7 +427,13 @@ definitions:
       count:
         type: integer
       field:
-        $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.TopField'
+        allOf:
+        - $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.TopField'
+        enum:
+        - resourceType
+        - serviceName
+        - sourceID
+        - resourceID
       filters:
         $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.FindingFilters'
     type: object
@@ -361,6 +444,84 @@ definitions:
           $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.TopFieldRecord'
         type: array
     type: object
+  gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.Insight:
+    properties:
+      category:
+        type: string
+      connector:
+        $ref: '#/definitions/source.Type'
+      description:
+        type: string
+      enabled:
+        type: boolean
+      id:
+        type: integer
+      internal:
+        type: boolean
+      labels:
+        items:
+          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.InsightTag'
+        type: array
+      links:
+        items:
+          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.InsightLink'
+        type: array
+      logoURL:
+        type: string
+      longTitle:
+        type: string
+      peerGroupId:
+        type: integer
+      query:
+        $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.Query'
+      shortTitle:
+        type: string
+    type: object
+  gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.InsightLink:
+    properties:
+      id:
+        type: integer
+      linkText:
+        type: string
+      linkURI:
+        type: string
+    type: object
+  gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.InsightPeerGroup:
+    properties:
+      category:
+        type: string
+      description:
+        type: string
+      id:
+        type: integer
+      insights:
+        items:
+          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.Insight'
+        type: array
+      labels:
+        items:
+          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.InsightTag'
+        type: array
+      links:
+        items:
+          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.InsightLink'
+        type: array
+      logoURL:
+        type: string
+      longTitle:
+        type: string
+      shortTitle:
+        type: string
+    type: object
+  gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.InsightTag:
+    properties:
+      id:
+        type: integer
+      key:
+        type: string
+      value:
+        type: string
+    type: object
   gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.Page:
     properties:
       "no":
@@ -370,12 +531,16 @@ definitions:
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.Policy:
     properties:
+      connector:
+        $ref: '#/definitions/source.Type'
       createdAt:
         type: string
       description:
         type: string
       documentURI:
         type: string
+      enabled:
+        type: boolean
       id:
         type: string
       managed:
@@ -395,6 +560,19 @@ definitions:
       updatedAt:
         type: string
     type: object
+  gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.PolicyTree:
+    properties:
+      id:
+        type: string
+      lastChecked:
+        type: integer
+      severity:
+        type: string
+      status:
+        $ref: '#/definitions/types.PolicyStatus'
+      title:
+        type: string
+    type: object
   gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.Query:
     properties:
       connector:
@@ -411,6 +589,13 @@ definitions:
         type: string
       updatedAt:
         type: string
+    type: object
+  gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.ResultDatapoint:
+    properties:
+      result:
+        $ref: '#/definitions/types.SeverityResult'
+      time:
+        type: integer
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.SortFieldType:
     enum:
@@ -485,9 +670,9 @@ definitions:
         type: integer
       evaluatedAt:
         type: integer
-      policyID:
+      evaluator:
         type: string
-      policySeverity:
+      policyID:
         type: string
       reason:
         type: string
@@ -499,25 +684,16 @@ definitions:
         type: string
       resourceType:
         type: string
+      result:
+        $ref: '#/definitions/types.ComplianceResult'
       scheduleJobID:
         type: integer
       serviceName:
         type: string
-      status:
-        $ref: '#/definitions/types.ComplianceResult'
-    type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_describe_api.CreateInsightRequest:
-    properties:
-      category:
+      severity:
         type: string
-      description:
-        type: string
-      internal:
+      stateActive:
         type: boolean
-      provider:
-        $ref: '#/definitions/source.Type'
-      query:
-        type: string
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_describe_api.DescribeResource:
     properties:
@@ -573,84 +749,18 @@ definitions:
       creds:
         type: string
     type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_describe_api.Insight:
+  gitlab_com_keibiengine_keibi-engine_pkg_describe_api.ListBenchmarkEvaluationsRequest:
     properties:
-      category:
+      benchmarkID:
         type: string
-      description:
+      connectionID:
         type: string
-      enabled:
-        type: boolean
-      id:
-        type: integer
-      labels:
-        items:
-          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_describe_api.InsightLabel'
-        type: array
-      links:
-        items:
-          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_describe_api.InsightLink'
-        type: array
-      logoURL:
-        type: string
-      longTitle:
-        type: string
-      peerGroupId:
-        type: integer
-      provider:
+      connector:
         $ref: '#/definitions/source.Type'
-      query:
-        type: string
-      shortTitle:
-        type: string
-    type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_describe_api.InsightLabel:
-    properties:
-      id:
+      evaluatedAtAfter:
         type: integer
-      label:
-        type: string
-    type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_describe_api.InsightLink:
-    properties:
-      id:
+      evaluatedAtBefore:
         type: integer
-      linkText:
-        type: string
-      linkURI:
-        type: string
-    type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_describe_api.InsightPeerGroup:
-    properties:
-      category:
-        type: string
-      description:
-        type: string
-      id:
-        type: integer
-      insights:
-        items:
-          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_describe_api.Insight'
-        type: array
-      labels:
-        items:
-          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_describe_api.InsightLabel'
-        type: array
-      links:
-        items:
-          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_describe_api.InsightLink'
-        type: array
-      logoURL:
-        type: string
-      longTitle:
-        type: string
-      shortTitle:
-        type: string
-    type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_describe_api.ListInsightsRequest:
-    properties:
-      descriptionFilter:
-        type: string
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_describe_api.ResourceTypeDetail:
     properties:
@@ -680,6 +790,17 @@ definitions:
     x-enum-varnames:
     - SourceCloudAWS
     - SourceCloudAzure
+  gitlab_com_keibiengine_keibi-engine_pkg_describe_api.TriggerBenchmarkEvaluationRequest:
+    properties:
+      benchmarkID:
+        type: string
+      connectionID:
+        type: string
+      resourceIDs:
+        items:
+          type: string
+        type: array
+    type: object
   gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.AWSResource:
     properties:
       attributes:
@@ -712,15 +833,21 @@ definitions:
       onboardDate:
         type: string
       providerConnectionID:
+        description: Provider Connection Id
         type: string
       providerConnectionName:
+        description: Provider Connection Name
         type: string
       resourceCount:
+        description: Number of resources
         type: integer
       sourceID:
+        description: Source Id
         type: string
       sourceType:
-        $ref: '#/definitions/source.Type'
+        allOf:
+        - $ref: '#/definitions/source.Type'
+        description: Source Type
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.AccountSummary:
     properties:
@@ -778,22 +905,32 @@ definitions:
           type: string
         type: object
       location:
+        description: The Region of the resource
         type: string
       provider:
-        $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.SourceType'
+        allOf:
+        - $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.SourceType'
+        description: Resource Provider
       providerConnectionID:
+        description: Provider Connection Id
         type: string
       providerConnectionName:
+        description: Provider Connection Name
         type: string
       resourceCategory:
+        description: Resource Category
         type: string
       resourceID:
+        description: Resource Id
         type: string
       resourceName:
+        description: Resource Name
         type: string
       resourceType:
+        description: Resource Type
         type: string
       resourceTypeName:
+        description: Resource Type Name
         type: string
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.AzureResource:
@@ -803,22 +940,31 @@ definitions:
           type: string
         type: object
       location:
+        description: The Region of the resource
         type: string
       providerConnectionID:
+        description: Provider Connection Id
         type: string
       providerConnectionName:
+        description: Provider Connection Name
         type: string
       resourceCategory:
+        description: Resource Category
         type: string
       resourceGroup:
+        description: Resource Group
         type: string
       resourceID:
+        description: Resource Id
         type: string
       resourceName:
+        description: Resource Name
         type: string
       resourceType:
+        description: Resource Type
         type: string
       resourceTypeName:
+        description: Resource Type Name
         type: string
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.CategoryNode:
@@ -826,23 +972,28 @@ definitions:
       categoryID:
         type: string
       categoryName:
+        description: Name of the Category
         type: string
       cost:
         additionalProperties:
           $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.CostWithUnit'
+        description: The aggregation of all the services costs
         type: object
       costChange:
         additionalProperties:
           type: number
         type: object
       filters:
+        description: List of Filters associated with this Category
         items: {}
         type: array
       resourceCount:
+        description: Number of Resources of the category
         type: integer
       resourceCountChange:
         type: number
       subcategories:
+        description: Subcategories sorted by ResourceCount [resources/category, ]
         items:
           $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.CategoryNode'
         type: array
@@ -850,8 +1001,10 @@ definitions:
   gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.CategoryResourceTrend:
     properties:
       name:
+        description: Category Name
         type: string
       trend:
+        description: Trends (Time Series)
         items:
           $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.TrendDataPoint'
         type: array
@@ -877,21 +1030,26 @@ definitions:
       categories:
         additionalProperties:
           $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ConnectionSummaryCategory'
+        description: Categories with their Summary
         type: object
       cloudServices:
         additionalProperties:
           type: integer
+        description: Services as Key, Number of them as Value
         type: object
       resourceTypes:
         additionalProperties:
           type: integer
+        description: Resource types as Key, Number of them as Value
         type: object
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.CostWithUnit:
     properties:
       cost:
+        description: Value
         type: number
       unit:
+        description: Currency
         type: string
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.DirectionType:
@@ -946,19 +1104,23 @@ definitions:
   gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.GetAWSResourceResponse:
     properties:
       resources:
+        description: A list of AWS resources with details
         items:
           $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.AWSResource'
         type: array
       totalCount:
+        description: Number of returned resources
         type: integer
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.GetAzureResourceResponse:
     properties:
       resources:
+        description: A list of Azure resources with details
         items:
           $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.AzureResource'
         type: array
       totalCount:
+        description: Number of returned resources
         type: integer
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.GetFiltersRequest:
@@ -986,6 +1148,7 @@ definitions:
         description: Resource ID
         type: string
       resourceType:
+        description: Resource ID
         type: string
     required:
     - ID
@@ -1015,47 +1178,68 @@ definitions:
   gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.GetResourcesResponse:
     properties:
       resources:
+        description: A list of AWS resources with details
         items:
           $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.AllResource'
         type: array
       totalCount:
+        description: Number of returned resources
         type: integer
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.Insight:
     properties:
       category:
+        description: Category
         type: string
       description:
+        description: Description
         type: string
       enabled:
+        description: Enabled
         type: boolean
       executedAt:
+        description: Time of Execution
         type: string
       id:
+        description: Insight Id
         type: integer
       labels:
+        description: List of insight tags
         items:
-          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.InsightLabel'
+          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.InsightTag'
         type: array
       links:
+        description: List of links
         items:
           $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.InsightLink'
         type: array
       listInsightResultType:
-        $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ListInsightResultType'
+        allOf:
+        - $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ListInsightResultType'
+        description: PeerGroup or Insight
       logoURL:
+        description: Logo URL
         type: string
       longTitle:
+        description: Long Title
         type: string
       provider:
-        $ref: '#/definitions/source.Type'
+        allOf:
+        - $ref: '#/definitions/source.Type'
+        description: Provider
       query:
-        type: string
+        allOf:
+        - $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.Query'
+        description: Query
       results:
-        $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.InsightResult'
+        allOf:
+        - $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.InsightResult'
+        description: Insight Results and Details
       shortTitle:
+        description: Short Title
         type: string
       totalResults:
+        description: Total Results
         type: integer
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.InsightConnection:
@@ -1076,13 +1260,6 @@ definitions:
           items: {}
           type: array
         type: array
-    type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.InsightLabel:
-    properties:
-      id:
-        type: integer
-      label:
-        type: string
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.InsightLink:
     properties:
@@ -1107,7 +1284,7 @@ definitions:
         type: array
       labels:
         items:
-          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.InsightLabel'
+          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.InsightTag'
         type: array
       links:
         items:
@@ -1127,24 +1304,33 @@ definitions:
   gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.InsightResult:
     properties:
       connections:
+        description: Connections
         items:
           $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.InsightConnection'
         type: array
       details:
-        $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.InsightDetail'
+        allOf:
+        - $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.InsightDetail'
+        description: Insight Details
       executedAt:
+        description: Time of Execution
         type: string
       insightID:
+        description: Insight ID
         type: integer
       jobID:
+        description: Job ID
         type: integer
       locations:
+        description: Locations
         items:
           type: string
         type: array
       result:
+        description: Result
         type: integer
       sourceID:
+        description: Source ID
         type: string
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.InsightResultTrendResponse:
@@ -1153,6 +1339,15 @@ definitions:
         items:
           $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.TrendDataPoint'
         type: array
+    type: object
+  gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.InsightTag:
+    properties:
+      id:
+        type: integer
+      key:
+        type: string
+      value:
+        type: string
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ListInsightResultType:
     enum:
@@ -1165,24 +1360,31 @@ definitions:
   gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ListQueryRequest:
     properties:
       labels:
+        description: Labels
         items:
           type: string
         type: array
       providerFilter:
-        $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.SourceType'
+        allOf:
+        - $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.SourceType'
+        description: Specifies the Provider
       titleFilter:
+        description: Specifies the Title
         type: string
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.LocationByProviderResponse:
     properties:
       name:
+        description: Name of the region
         type: string
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.LocationResponse:
     properties:
       location:
+        description: Region
         type: string
       resourceCount:
+        description: Number of resources in the region
         type: integer
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.Page:
@@ -1191,6 +1393,23 @@ definitions:
         type: integer
       size:
         type: integer
+    type: object
+  gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.Query:
+    properties:
+      connector:
+        type: string
+      createdAt:
+        type: string
+      engine:
+        type: string
+      id:
+        type: string
+      listOfTables:
+        type: string
+      queryToExecute:
+        type: string
+      updatedAt:
+        type: string
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ResourceFilters:
     description: if you provide two values for same filter OR operation would be used
@@ -1303,12 +1522,15 @@ definitions:
   gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ResourceGrowthTrendResponse:
     properties:
       Subcategories:
+        description: List of sub-categories Cost Trends (Time Series)
         items:
           $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.CategoryResourceTrend'
         type: array
       categoryName:
+        description: Category Name
         type: string
       trend:
+        description: Main Category Cost Trend (Time Series)
         items:
           $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.TrendDataPoint'
         type: array
@@ -1356,20 +1578,22 @@ definitions:
   gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.RunQueryResponse:
     properties:
       headers:
-        description: column names
+        description: Column names
         items:
           type: string
         type: array
       query:
+        description: Query
         type: string
       result:
-        description: result of query. in order to access a specific cell please use
+        description: Result of query. in order to access a specific cell please use
           Result[Row][Column]
         items:
           items: {}
           type: array
         type: array
       title:
+        description: Query Title
         type: string
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ServiceDistributionItem:
@@ -1377,54 +1601,72 @@ definitions:
       distribution:
         additionalProperties:
           type: integer
+        description: Distribution name
         type: object
       serviceName:
+        description: Service name
         type: string
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ServiceSummary:
     properties:
       cloudProvider:
-        $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.SourceType'
+        allOf:
+        - $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.SourceType'
+        description: Cloud provider
       cost:
         additionalProperties:
           $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.CostWithUnit'
+        description: Costs (Unit as Key, CostWithUnit as Value)
         type: object
       resourceCount:
+        description: Number of Resources
         type: integer
       serviceCode:
+        description: Service Code
         type: string
       serviceName:
+        description: Service Name
         type: string
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ServiceSummaryResponse:
     properties:
       apiFilters:
         additionalProperties: {}
+        description: API Filters
         type: object
       services:
+        description: A list of service summeries
         items:
           $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ServiceSummary'
         type: array
       totalCount:
+        description: Number of services
         type: integer
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.SmartQueryItem:
     properties:
       category:
+        description: Category (Tags[category])
         type: string
       description:
+        description: Description
         type: string
       id:
+        description: Query Id
         type: integer
       provider:
+        description: Provider
         type: string
       query:
+        description: Query
         type: string
       tags:
         additionalProperties:
           type: string
+        description: Tags
         type: object
       title:
+        description: Title
         type: string
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.SmartQuerySortItem:
@@ -1468,58 +1710,153 @@ definitions:
   gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.TopAccountCostResponse:
     properties:
       cost:
+        description: Account costs
         type: number
       providerConnectionID:
+        description: Account Provider Connection ID
         type: string
       providerConnectionName:
+        description: Account Provider Connection Name
         type: string
       sourceID:
+        description: Source Id
         type: string
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.TopAccountResponse:
     properties:
       provider:
+        description: Account Provider
         type: string
       providerConnectionID:
+        description: Account Provider Connection ID
         type: string
       providerConnectionName:
+        description: Account Provider Connection Name
         type: string
       resourceCount:
+        description: Last number of Resources of the account
         type: integer
       sourceID:
+        description: Source Id
         type: string
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.TopServiceCostResponse:
     properties:
       cost:
+        description: Service Cost
         type: number
       serviceName:
+        description: Service Name
         type: string
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.TopServicesResponse:
     properties:
       lastDayCount:
+        description: Number of resources on last day
         type: integer
       lastQuarterCount:
+        description: Number of resources on last quarter
         type: integer
       lastWeekCount:
+        description: Number of resources on last week
         type: integer
       lastYearCount:
+        description: Number of resources on last year
         type: integer
       provider:
+        description: Service Provider Name
         type: string
       resourceCount:
+        description: Number of resources
         type: integer
       serviceName:
+        description: Service Name
         type: string
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.TrendDataPoint:
     properties:
       timestamp:
+        description: Time
         type: integer
       value:
+        description: Resource Count
         type: integer
     type: object
+  gitlab_com_keibiengine_keibi-engine_pkg_metadata_models.ConfigMetadata:
+    properties:
+      key:
+        $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_metadata_models.MetadataKey'
+      type:
+        $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_metadata_models.ConfigMetadataType'
+      value:
+        type: string
+    type: object
+  gitlab_com_keibiengine_keibi-engine_pkg_metadata_models.ConfigMetadataType:
+    enum:
+    - string
+    - int
+    - bool
+    - json
+    type: string
+    x-enum-varnames:
+    - ConfigMetadataTypeString
+    - ConfigMetadataTypeInt
+    - ConfigMetadataTypeBool
+    - ConfigMetadataTypeJSON
+  gitlab_com_keibiengine_keibi-engine_pkg_metadata_models.MetadataKey:
+    enum:
+    - workspace_ownership
+    - workspace_id
+    - workspace_name
+    - workspace_plan
+    - workspace_creation_time
+    - workspace_date_time_format
+    - workspace_debug_mode
+    - workspace_time_window
+    - asset_management_enabled
+    - compliance_enabled
+    - product_management_enabled
+    - custom_idp
+    - resource_limit
+    - connection_limit
+    - user_limit
+    - allow_invite
+    - workspace_key_support
+    - workspace_max_keys
+    - allowed_email_domains
+    - auto_discovery_method
+    - describe_job_interval
+    - health_check_job_interval
+    - insight_job_interval
+    - metrics_job_interval
+    - data_retention_duration
+    type: string
+    x-enum-varnames:
+    - MetadataKeyWorkspaceOwnership
+    - MetadataKeyWorkspaceID
+    - MetadataKeyWorkspaceName
+    - MetadataKeyWorkspacePlan
+    - MetadataKeyWorkspaceCreationTime
+    - MetadataKeyWorkspaceDateTimeFormat
+    - MetadataKeyWorkspaceDebugMode
+    - MetadataKeyWorkspaceTimeWindow
+    - MetadataKeyAssetManagementEnabled
+    - MetadataKeyComplianceEnabled
+    - MetadataKeyProductManagementEnabled
+    - MetadataKeyCustomIDP
+    - MetadataKeyResourceLimit
+    - MetadataKeyConnectionLimit
+    - MetadataKeyUserLimit
+    - MetadataKeyAllowInvite
+    - MetadataKeyWorkspaceKeySupport
+    - MetadataKeyWorkspaceMaxKeys
+    - MetadataKeyAllowedEmailDomains
+    - MetadataKeyAutoDiscoveryMethod
+    - MetadataKeyDescribeJobInterval
+    - MetadataKeyHealthCheckJobInterval
+    - MetadataKeyInsightJobInterval
+    - MetadataKeyMetricsJobInterval
+    - MetadataKeyDataRetention
   gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.CatalogConnector:
     properties:
       ID:
@@ -1919,6 +2256,14 @@ definitions:
       version:
         type: string
     type: object
+  gorm.DeletedAt:
+    properties:
+      time:
+        type: string
+      valid:
+        description: Valid is true if Time is not NULL
+        type: boolean
+    type: object
   source.AssetDiscoveryMethodType:
     enum:
     - scheduled
@@ -1997,13 +2342,6 @@ definitions:
     - ComplianceResultINFO
     - ComplianceResultSKIP
     - ComplianceResultERROR
-  types.ComplianceResultShortSummary:
-    properties:
-      failed:
-        type: integer
-      passed:
-        type: integer
-    type: object
   types.ComplianceResultSummary:
     properties:
       alarmCount:
@@ -2017,42 +2355,30 @@ definitions:
       skipCount:
         type: integer
     type: object
-  types.FullBenchmark:
+  types.PolicyStatus:
+    enum:
+    - passed
+    - failed
+    - unknown
+    type: string
+    x-enum-varnames:
+    - PolicyStatusPASSED
+    - PolicyStatusFAILED
+    - PolicyStatusUNKNOWN
+  types.SeverityResult:
     properties:
-      id:
-        type: string
-      title:
-        type: string
-    type: object
-  types.FullConnection:
-    properties:
-      id:
-        type: string
-      providerID:
-        type: string
-      providerName:
-        type: string
-    type: object
-  types.FullPolicy:
-    properties:
-      id:
-        type: string
-      title:
-        type: string
-    type: object
-  types.FullResource:
-    properties:
-      id:
-        type: string
-      name:
-        type: string
-    type: object
-  types.FullResourceType:
-    properties:
-      ID:
-        type: string
-      name:
-        type: string
+      criticalCount:
+        type: integer
+      highCount:
+        type: integer
+      lowCount:
+        type: integer
+      mediumCount:
+        type: integer
+      passedCount:
+        type: integer
+      unknownCount:
+        type: integer
     type: object
 host: dev-cluster.keibi.io
 info:
@@ -2060,23 +2386,125 @@ info:
   title: Keibi Service API
   version: "1.0"
 paths:
-  /auth/api/v1/invite:
+  /auth/api/v1/apikey:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.WorkspaceApiKey'
+            type: array
+      summary: Lists all API Keys
+      tags:
+      - auth
+  /auth/api/v1/apikey/{id}:
+    get:
+      parameters:
+      - description: ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.WorkspaceApiKey'
+      summary: Fetches an API Key
+      tags:
+      - auth
+  /auth/api/v1/apikey/{id}/activate:
     post:
       parameters:
-      - description: role
-        in: body
-        name: role
+      - description: ID
+        in: path
+        name: id
         required: true
-        schema:
-          type: string
+        type: string
       produces:
       - application/json
       responses: {}
-      summary: Invites a user to a workspace.
+      summary: Suspend an API Key
+      tags:
+      - auth
+  /auth/api/v1/apikey/{id}/delete:
+    delete:
+      parameters:
+      - description: ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses: {}
+      summary: Deletes an API Key
+      tags:
+      - auth
+  /auth/api/v1/apikey/{id}/suspend:
+    post:
+      parameters:
+      - description: ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses: {}
+      summary: Suspend an API Key
+      tags:
+      - auth
+  /auth/api/v1/apikey/create:
+    post:
+      parameters:
+      - description: Request Body
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.CreateAPIKeyRequest'
+      produces:
+      - application/json
+      responses: {}
+      summary: Creates an API Key
+      tags:
+      - auth
+  /auth/api/v1/invite:
+    post:
+      description: |-
+        Invites a user to a workspace with defined role
+        by sending an email to the specified email address.
+        The user will be found by the email address.
+      parameters:
+      - description: Request Body
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.InviteRequest'
+      - description: workspaceId
+        in: query
+        name: workspaceId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+      summary: Invites a user to a workspace with defined role.
       tags:
       - auth
   /auth/api/v1/user/{user_id}/workspace/membership:
     get:
+      description: Returns a list of workspaces and the user role in it for the specified
+        user
       parameters:
       - description: userId
         in: path
@@ -2101,33 +2529,37 @@ paths:
         name: userId
         required: true
         type: string
+      - description: workspaceId
+        in: query
+        name: workspaceId
+        required: true
+        type: string
       produces:
       - application/json
       responses:
         "200":
           description: OK
-      summary: Delete RoleBinding for a user.
+      summary: Delete RoleBinding for the defined user in the defined workspace.
       tags:
       - auth
     put:
-      description: RoleBinding defines the roles and actions a user can perform. There
-        are currently three roles (ADMIN, EDITOR, VIEWER). User must exist before
-        you can update its RoleBinding. If you want to add a role binding for a user
-        given the email address, call invite first to get a user id. Then call this
-        endpoint.
+      description: |-
+        RoleBinding defines the roles and actions a user can perform.
+        There are currently three roles (ADMIN, EDITOR, VIEWER).
+        User must exist before you can update its RoleBinding.
+        If you want to add a role binding for a user given the email address, call invite first to get a user id. Then call this endpoint.
       parameters:
-      - description: userId
+      - description: Request Body
         in: body
-        name: userId
+        name: request
         required: true
         schema:
-          type: string
-      - description: role
-        in: body
-        name: role
+          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.PutRoleBindingRequest'
+      - description: workspaceId
+        in: query
+        name: workspaceId
         required: true
-        schema:
-          type: string
+        type: string
       produces:
       - application/json
       responses:
@@ -2140,6 +2572,12 @@ paths:
     get:
       description: RoleBinding defines the roles and actions a user can perform. There
         are currently three roles (ADMIN, EDITOR, VIEWER).
+      parameters:
+      - description: userId
+        in: query
+        name: userId
+        required: true
+        type: string
       produces:
       - application/json
       responses:
@@ -2155,6 +2593,12 @@ paths:
       description: RoleBinding defines the roles and actions a user can perform. There
         are currently three roles (ADMIN, EDITOR, VIEWER). The workspace path is based
         on the DNS such as (workspace1.app.keibi.io)
+      parameters:
+      - description: workspaceId
+        in: query
+        name: workspaceId
+        required: true
+        type: string
       produces:
       - application/json
       responses:
@@ -2300,18 +2744,83 @@ paths:
       summary: Get all benchmark assignments with source id
       tags:
       - benchmarks_assignment
-  /compliance/api/v1/benchmark/:benchmark_id/summary:
+  /compliance/api/v1/benchmark/{benchmark_id}/summary:
     get:
       consumes:
       - application/json
+      parameters:
+      - description: BenchmarkID
+        in: path
+        name: benchmark_id
+        required: true
+        type: string
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/types.ComplianceResultSummary'
+            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.BenchmarkSummary'
       summary: Get benchmark summary
+      tags:
+      - compliance
+  /compliance/api/v1/benchmark/{benchmark_id}/summary/result/trend:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: Start
+        in: query
+        name: start
+        required: true
+        type: integer
+      - description: End
+        in: query
+        name: end
+        required: true
+        type: integer
+      - description: BenchmarkID
+        in: path
+        name: benchmark_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.BenchmarkResultTrend'
+      summary: Get result trend
+      tags:
+      - compliance
+  /compliance/api/v1/benchmark/{benchmark_id}/tree:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: BenchmarkID
+        in: path
+        name: benchmark_id
+        required: true
+        type: string
+      - description: Status
+        enum:
+        - passed
+        - failed
+        - unknown
+        in: query
+        name: status
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.BenchmarkTree'
+      summary: Get benchmark tree
       tags:
       - compliance
   /compliance/api/v1/benchmarks:
@@ -2378,6 +2887,17 @@ paths:
     get:
       consumes:
       - application/json
+      parameters:
+      - description: Start
+        in: query
+        name: start
+        required: true
+        type: integer
+      - description: End
+        in: query
+        name: end
+        required: true
+        type: integer
       produces:
       - application/json
       responses:
@@ -2409,63 +2929,31 @@ paths:
       summary: Returns all findings with respect to filters
       tags:
       - compliance
-  /compliance/api/v1/findings/filters:
-    post:
-      consumes:
-      - application/json
-      parameters:
-      - description: Request Body
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.GetFindingsRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.GetFindingsFiltersResponse'
-      summary: Returns all findings with respect to filters
-      tags:
-      - compliance
-  /compliance/api/v1/findings/metrics:
+  /compliance/api/v1/findings/{benchmarkId}/{field}/top/{count}:
     get:
       consumes:
       - application/json
       parameters:
-      - description: Time Window
-        enum:
-        - 24h
-        - 1w
-        - 3m
-        - 1y
-        - max
-        in: query
-        name: timeWindow
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.GetFindingsMetricsResponse'
-      summary: Returns findings metrics
-      tags:
-      - compliance
-  /compliance/api/v1/findings/top:
-    post:
-      consumes:
-      - application/json
-      parameters:
-      - description: Request Body
-        in: body
-        name: request
+      - description: BenchmarkID
+        in: path
+        name: benchmarkId
         required: true
-        schema:
-          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.GetTopFieldRequest'
+        type: string
+      - description: Field
+        enum:
+        - resourceType
+        - serviceName
+        - sourceID
+        - resourceID
+        in: path
+        name: field
+        required: true
+        type: string
+      - description: Count
+        in: path
+        name: count
+        required: true
+        type: integer
       produces:
       - application/json
       responses:
@@ -2476,15 +2964,40 @@ paths:
       summary: Returns all findings with respect to filters
       tags:
       - compliance
-  /compliance/api/v1/policy/summary/{benchmark_id}:
+  /compliance/api/v1/findings/metrics:
     get:
       consumes:
       - application/json
       parameters:
-      - description: BenchmarkID
-        in: path
-        name: benchmarkID
-        required: true
+      - description: Start
+        in: query
+        name: start
+        type: integer
+      - description: End
+        in: query
+        name: end
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.GetFindingsMetricsResponse'
+      summary: Returns findings metrics
+      tags:
+      - compliance
+  /compliance/api/v1/insight:
+    get:
+      description: Listing insights
+      parameters:
+      - description: filter by connector
+        enum:
+        - ""
+        - AWS
+        - Azure
+        in: query
+        name: connector
         type: string
       produces:
       - application/json
@@ -2492,10 +3005,62 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.GetFindingsResponse'
-      summary: Get benchmark summary
+            items:
+              $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.Insight'
+            type: array
+      summary: List insights
       tags:
-      - compliance
+      - insights
+  /compliance/api/v1/insight/{insightId}:
+    get:
+      description: Get insight by id
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.Insight'
+      summary: Get insight by id
+      tags:
+      - insights
+  /compliance/api/v1/insight/peer:
+    get:
+      description: Listing insights
+      parameters:
+      - description: filter by connector
+        enum:
+        - ""
+        - AWS
+        - Azure
+        in: query
+        name: connector
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.InsightPeerGroup'
+            type: array
+      summary: List insights
+      tags:
+      - insights
+  /compliance/api/v1/insight/peer/{peerGroupId}:
+    get:
+      description: Get insight by id
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.InsightPeerGroup'
+      summary: Get insight by id
+      tags:
+      - insights
   /compliance/api/v1/queries/{query_id}:
     get:
       consumes:
@@ -2553,7 +3118,7 @@ paths:
       tags:
       - inventory
   /inventory/api/v1/connection/{connection_id}/summary:
-    post:
+    get:
       consumes:
       - application/json
       produces:
@@ -2572,7 +3137,7 @@ paths:
       consumes:
       - application/json
       parameters:
-      - description: count
+      - description: Number of top accounts returning.
         in: query
         name: count
         required: true
@@ -2599,7 +3164,7 @@ paths:
       consumes:
       - application/json
       parameters:
-      - description: count
+      - description: Number of top services returning.
         in: query
         name: count
         required: true
@@ -2634,6 +3199,7 @@ paths:
         enum:
         - aws
         - azure
+        - all
         in: path
         name: provider
         required: true
@@ -2651,7 +3217,7 @@ paths:
       tags:
       - location
   /inventory/api/v1/provider/{provider}/summary:
-    post:
+    get:
       consumes:
       - application/json
       produces:
@@ -2667,7 +3233,7 @@ paths:
       - inventory
   /inventory/api/v1/query:
     get:
-      description: Listing smart queries
+      description: Listing smart queries by specified filters
       parameters:
       - description: Request Body
         in: body
@@ -2756,7 +3322,13 @@ paths:
           $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.GetResourceRequest'
       produces:
       - application/json
-      responses: {}
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
       summary: Get details of a Resource
       tags:
       - resource
@@ -2811,6 +3383,7 @@ paths:
         Getting AWS resources by filters.
         In order to get the results in CSV format, Accepts header must be filled with `text/csv` value.
         Note that csv output doesn't process pagination and returns first 5000 records.
+        If sort by is empty, result will be sorted by the first column in ascending order.
       parameters:
       - description: Request Body
         in: body
@@ -2853,6 +3426,7 @@ paths:
         Getting Azure resources by filters.
         In order to get the results in CSV format, Accepts header must be filled with `text/csv` value.
         Note that csv output doesn't process pagination and returns first 5000 records.
+        If sort by is empty, result will be sorted by the first column in ascending order.
       parameters:
       - description: Request Body
         in: body
@@ -2888,9 +3462,10 @@ paths:
       tags:
       - inventory
   /inventory/api/v1/resources/count:
-    post:
+    get:
       consumes:
       - application/json
+      description: Number of all resources
       produces:
       - application/json
       - text/csv
@@ -3013,7 +3588,7 @@ paths:
       consumes:
       - application/json
       parameters:
-      - description: count
+      - description: Number of top accounts returning.
         in: query
         name: count
         required: true
@@ -3040,7 +3615,7 @@ paths:
       consumes:
       - application/json
       parameters:
-      - description: count
+      - description: Number of top accounts returning.
         in: query
         name: count
         required: true
@@ -3069,7 +3644,8 @@ paths:
             items:
               $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.TopAccountResponse'
             type: array
-      summary: Returns top n accounts of specified provider by resource count
+      summary: Returns top n fastest growing accounts of specified provider in the
+        specified time window by resource count
       tags:
       - benchmarks
   /inventory/api/v1/resources/top/regions:
@@ -3107,7 +3683,7 @@ paths:
       consumes:
       - application/json
       parameters:
-      - description: count
+      - description: Number of top ser
         in: query
         name: count
         required: true
@@ -3137,6 +3713,9 @@ paths:
     get:
       consumes:
       - application/json
+      description: |-
+        Returns trend of resource count in the specified time window
+        In case of not specifying SourceID, Provider is used for filtering
       parameters:
       - description: SourceID
         in: query
@@ -3165,7 +3744,7 @@ paths:
             items:
               $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.TrendDataPoint'
             type: array
-      summary: Returns trend of resource growth for specific account
+      summary: Returns trend of resource count growth for specific account
       tags:
       - benchmarks
   /inventory/api/v1/services/distribution:
@@ -3756,7 +4335,8 @@ paths:
         in: query
         name: category
         type: string
-      - description: How many top categories to return
+      - description: How many top categories to return. The rest will be aggregated
+          into Others.
         in: query
         name: top
         required: true
@@ -3953,7 +4533,7 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ServiceSummaryResponse'
-      summary: Returns distribution of services for specific account
+      summary: Returns Service Summary
       tags:
       - benchmarks
   /metadata/api/v1/metadata:
@@ -3975,7 +4555,8 @@ paths:
       responses:
         "200":
           description: OK
-          schema: {}
+          schema:
+            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_metadata_models.ConfigMetadata'
       summary: Returns the config metadata for the given key
       tags:
       - metadata
@@ -4669,6 +5250,16 @@ paths:
       summary: List SPN credentials
       tags:
       - onboard
+  /schedule/api/v0/compliance/summarizer/trigger:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+      summary: Triggers a compliance summarizer job to run immediately
+      tags:
+      - describe
   /schedule/api/v0/compliance/trigger:
     get:
       description: Triggers a compliance job to run immediately
@@ -4713,6 +5304,27 @@ paths:
       summary: Triggers a summarize job to run immediately
       tags:
       - describe
+  /schedule/api/v1/benchmark/evaluations:
+    get:
+      parameters:
+      - description: Request Body
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_describe_api.ListBenchmarkEvaluationsRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/describe.ComplianceReportJob'
+            type: array
+      summary: Lists all benchmark evaluations
+      tags:
+      - compliance
   /schedule/api/v1/compliance/report/last/completed:
     get:
       produces:
@@ -4725,6 +5337,23 @@ paths:
       summary: Get last completed compliance report
       tags:
       - schedule
+  /schedule/api/v1/compliance/trigger:
+    put:
+      parameters:
+      - description: Request Body
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_describe_api.TriggerBenchmarkEvaluationRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+      summary: Triggers a benchmark evaluation job to run immediately
+      tags:
+      - describe
   /schedule/api/v1/describe/resource/jobs/pending:
     get:
       produces:
@@ -4749,84 +5378,6 @@ paths:
       summary: Listing describe source jobs
       tags:
       - schedule
-  /schedule/api/v1/insight:
-    get:
-      description: Listing insights
-      parameters:
-      - description: Request Body
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_describe_api.ListInsightsRequest'
-      - description: filter by connector
-        enum:
-        - ""
-        - AWS
-        - Azure
-        in: query
-        name: connector
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            items:
-              $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_describe_api.Insight'
-            type: array
-      summary: List insights
-      tags:
-      - insights
-    put:
-      parameters:
-      - description: Request Body
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_describe_api.CreateInsightRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            type: integer
-      summary: Create a new insight
-      tags:
-      - insights
-  /schedule/api/v1/insight/{id}:
-    delete:
-      parameters:
-      - description: Request Body
-        in: body
-        name: request
-        required: true
-        schema:
-          type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-      summary: Delete an insight
-      tags:
-      - insights
-  /schedule/api/v1/insight/{insightId}:
-    get:
-      description: Get insight by id
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_describe_api.Insight'
-      summary: Get insight by id
-      tags:
-      - insights
   /schedule/api/v1/insight/jobs/pending:
     get:
       produces:
@@ -4839,43 +5390,6 @@ paths:
       summary: Listing insight jobs
       tags:
       - schedule
-  /schedule/api/v1/insight/peer:
-    get:
-      description: Listing insights
-      parameters:
-      - description: filter by connector
-        enum:
-        - ""
-        - AWS
-        - Azure
-        in: query
-        name: connector
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            items:
-              $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_describe_api.InsightPeerGroup'
-            type: array
-      summary: List insights
-      tags:
-      - insights
-  /schedule/api/v1/insight/peer/{peerGroupId}:
-    get:
-      description: Get insight by id
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_describe_api.InsightPeerGroup'
-      summary: Get insight by id
-      tags:
-      - insights
   /schedule/api/v1/jobs/{job_id}/creds:
     post:
       parameters:

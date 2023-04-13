@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 
-	"github.com/google/uuid"
 	"gitlab.com/keibiengine/keibi-engine/pkg/source"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/keibi-es-sdk"
@@ -148,7 +147,7 @@ func AlarmTopFieldQuery(client keibi.Client,
 	field string,
 	provider []source.Type,
 	resourceTypeID []string,
-	sourceID []uuid.UUID,
+	sourceID []string,
 	status []types.ComplianceResult,
 	benchmarkID []string,
 	policyID []string,

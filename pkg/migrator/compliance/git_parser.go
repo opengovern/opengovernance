@@ -40,7 +40,6 @@ func (g *GitParser) ExtractQueries(queryPath string) error {
 				Connector:      query.Connector,
 				ListOfTables:   query.ListOfTables,
 				Engine:         query.Engine,
-				Policies:       nil,
 			})
 		}
 
@@ -124,6 +123,7 @@ func (g *GitParser) ExtractPolicies(compliancePath string) error {
 					Description:        o.Description,
 					Tags:               nil,
 					DocumentURI:        o.DocumentURI,
+					Enabled:            true,
 					QueryID:            o.QueryID,
 					Benchmarks:         nil,
 					Severity:           o.Severity,
