@@ -9,7 +9,8 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/aws/model"
 )
 
-func GetAccessAnalyzerAnalyzer(ctx context.Context, cfg aws.Config, analyzerName string) (*Resource, error) {
+func GetAccessAnalyzerAnalyzer(ctx context.Context, cfg aws.Config, fields map[string]string) ([]Resource, error) {
+	analyzerName := fields["name"]
 	client := accessanalyzer.NewFromConfig(cfg)
 	v, err := client.GetAnalyzer(ctx, &accessanalyzer.GetAnalyzerInput{
 		AnalyzerName: &analyzerName,
@@ -23,14 +24,14 @@ func GetAccessAnalyzerAnalyzer(ctx context.Context, cfg aws.Config, analyzerName
 		return nil, err
 	}
 
-	return &Resource{
+	return []Resource{{
 		ARN:  *v.Analyzer.Arn,
 		Name: *v.Analyzer.Name,
 		Description: model.AccessAnalyzerAnalyzerDescription{
 			Analyzer: *v.Analyzer,
 			Findings: findings,
 		},
-	}, nil
+	}}, nil
 }
 
 func AccessAnalyzerAnalyzer(ctx context.Context, cfg aws.Config) ([]Resource, error) {

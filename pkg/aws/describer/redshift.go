@@ -183,7 +183,8 @@ func RedshiftSnapshot(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	return values, nil
 }
 
-func GetRedshiftSnapshot(ctx context.Context, cfg aws.Config, clusterIdentifier string) ([]Resource, error) {
+func GetRedshiftSnapshot(ctx context.Context, cfg aws.Config, fields map[string]string) ([]Resource, error) {
+	clusterIdentifier := fields["id"]
 	describeCtx := GetDescribeContext(ctx)
 
 	client := redshift.NewFromConfig(cfg)

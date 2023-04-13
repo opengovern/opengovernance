@@ -42,7 +42,8 @@ func AutoScalingAutoScalingGroup(ctx context.Context, cfg aws.Config) ([]Resourc
 	return values, nil
 }
 
-func GetAutoScalingAutoScalingGroup(ctx context.Context, cfg aws.Config, autoScalingGroupName string) ([]Resource, error) {
+func GetAutoScalingAutoScalingGroup(ctx context.Context, cfg aws.Config, fields map[string]string) ([]Resource, error) {
+	autoScalingGroupName := fields["name"]
 	client := autoscaling.NewFromConfig(cfg)
 
 	out, err := client.DescribeAutoScalingGroups(ctx, &autoscaling.DescribeAutoScalingGroupsInput{
@@ -119,7 +120,8 @@ func AutoScalingLaunchConfiguration(ctx context.Context, cfg aws.Config) ([]Reso
 	return values, nil
 }
 
-func GetAutoScalingLaunchConfiguration(ctx context.Context, cfg aws.Config, launchConfigurationName string) ([]Resource, error) {
+func GetAutoScalingLaunchConfiguration(ctx context.Context, cfg aws.Config, fields map[string]string) ([]Resource, error) {
+	launchConfigurationName := fields["name"]
 	client := autoscaling.NewFromConfig(cfg)
 	out, err := client.DescribeLaunchConfigurations(ctx, &autoscaling.DescribeLaunchConfigurationsInput{
 		LaunchConfigurationNames: []string{launchConfigurationName},

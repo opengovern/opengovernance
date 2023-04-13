@@ -81,7 +81,8 @@ func GlacierVault(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	return values, nil
 }
 
-func GetGlacierVault(ctx context.Context, cfg aws.Config, vaultName string) ([]Resource, error) {
+func GetGlacierVault(ctx context.Context, cfg aws.Config, fields map[string]string) ([]Resource, error) {
+	vaultName := fields["name"]
 	describeCtx := GetDescribeContext(ctx)
 
 	client := glacier.NewFromConfig(cfg)

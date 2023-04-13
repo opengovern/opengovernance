@@ -82,8 +82,10 @@ func ECSCluster(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	return values, nil
 }
 
-func GetECSCluster(ctx context.Context, cfg aws.Config, cluster string) ([]Resource, error) {
+func GetECSCluster(ctx context.Context, cfg aws.Config, fields map[string]string) ([]Resource, error) {
 	client := ecs.NewFromConfig(cfg)
+
+	cluster := fields["name"]
 
 	var values []Resource
 	output, err := client.DescribeClusters(ctx, &ecs.DescribeClustersInput{
@@ -159,7 +161,9 @@ func ECSService(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	return values, nil
 }
 
-func GetECSService(ctx context.Context, cfg aws.Config, cluster, service string) ([]Resource, error) {
+func GetECSService(ctx context.Context, cfg aws.Config, fields map[string]string) ([]Resource, error) {
+	cluster := fields["cluster"]
+	service := fields["service"]
 	client := ecs.NewFromConfig(cfg)
 
 	var values []Resource
@@ -227,9 +231,10 @@ func ECSTaskDefinition(ctx context.Context, cfg aws.Config) ([]Resource, error) 
 	return values, nil
 }
 
-func GetECSTaskDefinition(ctx context.Context, cfg aws.Config, taskDefinitionARN string) ([]Resource, error) {
+func GetECSTaskDefinition(ctx context.Context, cfg aws.Config, fields map[string]string) ([]Resource, error) {
 	client := ecs.NewFromConfig(cfg)
 
+	taskDefinitionARN := fields["arn"]
 	var values []Resource
 	output, err := client.DescribeTaskDefinition(ctx, &ecs.DescribeTaskDefinitionInput{
 		TaskDefinition: &taskDefinitionARN,

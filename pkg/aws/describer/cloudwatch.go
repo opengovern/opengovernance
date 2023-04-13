@@ -49,7 +49,8 @@ func CloudWatchAlarm(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	return values, nil
 }
 
-func GetCloudWatchAlarm(ctx context.Context, cfg aws.Config, alarmName string) ([]Resource, error) {
+func GetCloudWatchAlarm(ctx context.Context, cfg aws.Config, fields map[string]string) ([]Resource, error) {
+	alarmName := fields["name"]
 	client := cloudwatch.NewFromConfig(cfg)
 	out, err := client.DescribeAlarms(ctx, &cloudwatch.DescribeAlarmsInput{
 		AlarmNames: []string{alarmName},

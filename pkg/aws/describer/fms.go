@@ -42,7 +42,8 @@ func FMSPolicy(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	return values, nil
 }
 
-func GetFMSPolicy(ctx context.Context, cfg aws.Config, policyID string) ([]Resource, error) {
+func GetFMSPolicy(ctx context.Context, cfg aws.Config, fields map[string]string) ([]Resource, error) {
+	policyID := fields["id"]
 	client := fms.NewFromConfig(cfg)
 
 	out, err := client.GetPolicy(ctx, &fms.GetPolicyInput{PolicyId: &policyID})
