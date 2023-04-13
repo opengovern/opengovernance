@@ -97,7 +97,9 @@ func DynamoDbGlobalSecondaryIndex(ctx context.Context, cfg aws.Config) ([]Resour
 	return values, nil
 }
 
-func GetDynamoDbGlobalSecondaryIndex(ctx context.Context, cfg aws.Config, tableName string) ([]Resource, error) {
+func GetDynamoDbGlobalSecondaryIndex(ctx context.Context, cfg aws.Config, fields map[string]string) ([]Resource, error) {
+	tableName := fields["name"]
+
 	client := dynamodb.NewFromConfig(cfg)
 
 	var values []Resource

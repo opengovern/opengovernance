@@ -50,7 +50,8 @@ func ApiGatewayStage(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	return values, nil
 }
 
-func GetApiGatewayStage(ctx context.Context, cfg aws.Config, restAPIID string) ([]Resource, error) {
+func GetApiGatewayStage(ctx context.Context, cfg aws.Config, fields map[string]string) ([]Resource, error) {
+	restAPIID := fields["id"]
 	client := apigateway.NewFromConfig(cfg)
 
 	describeCtx := GetDescribeContext(ctx)
@@ -159,7 +160,8 @@ func ApiGatewayRestAPI(ctx context.Context, cfg aws.Config) ([]Resource, error) 
 	return values, nil
 }
 
-func GetApiGatewayRestAPI(ctx context.Context, cfg aws.Config, id string) ([]Resource, error) {
+func GetApiGatewayRestAPI(ctx context.Context, cfg aws.Config, fields map[string]string) ([]Resource, error) {
+	id := fields["id"]
 	client := apigateway.NewFromConfig(cfg)
 	describeCtx := GetDescribeContext(ctx)
 
@@ -339,7 +341,8 @@ func ApiGatewayV2API(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	return values, nil
 }
 
-func GetApiGatewayV2API(ctx context.Context, cfg aws.Config, apiID string) ([]Resource, error) {
+func GetApiGatewayV2API(ctx context.Context, cfg aws.Config, fields map[string]string) ([]Resource, error) {
+	apiID := fields["id"]
 	describeCtx := GetDescribeContext(ctx)
 	client := apigatewayv2.NewFromConfig(cfg)
 
@@ -420,7 +423,8 @@ func ApiGatewayV2DomainName(ctx context.Context, cfg aws.Config) ([]Resource, er
 	return values, nil
 }
 
-func GetApiGatewayV2DomainName(ctx context.Context, cfg aws.Config, domainName string) ([]Resource, error) {
+func GetApiGatewayV2DomainName(ctx context.Context, cfg aws.Config, fields map[string]string) ([]Resource, error) {
+	domainName := fields["domain_name"]
 	describeCtx := GetDescribeContext(ctx)
 	client := apigatewayv2.NewFromConfig(cfg)
 	var values []Resource
@@ -514,7 +518,10 @@ func ApiGatewayV2Integration(ctx context.Context, cfg aws.Config) ([]Resource, e
 	return values, nil
 }
 
-func GetApiGatewayV2Integration(ctx context.Context, cfg aws.Config, apiId, integrationID string) ([]Resource, error) {
+func GetApiGatewayV2Integration(ctx context.Context, cfg aws.Config, fields map[string]string) ([]Resource, error) {
+	apiId := fields["api_id"]
+	integrationID := fields["id"]
+
 	describeCtx := GetDescribeContext(ctx)
 	client := apigatewayv2.NewFromConfig(cfg)
 

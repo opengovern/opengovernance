@@ -72,7 +72,8 @@ func LambdaFunction(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	return values, nil
 }
 
-func GetLambdaFunction(ctx context.Context, cfg aws.Config, functionName string) ([]Resource, error) {
+func GetLambdaFunction(ctx context.Context, cfg aws.Config, fields map[string]string) ([]Resource, error) {
+	functionName := fields["name"]
 	client := lambda.NewFromConfig(cfg)
 	out, err := client.GetFunction(ctx, &lambda.GetFunctionInput{
 		FunctionName: &functionName,

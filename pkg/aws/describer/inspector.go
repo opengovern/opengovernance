@@ -120,7 +120,8 @@ func InspectorAssessmentTemplate(ctx context.Context, cfg aws.Config) ([]Resourc
 	return values, nil
 }
 
-func GetInspectorAssessmentTemplate(ctx context.Context, cfg aws.Config, arn string) ([]Resource, error) {
+func GetInspectorAssessmentTemplate(ctx context.Context, cfg aws.Config, fields map[string]string) ([]Resource, error) {
+	arn := fields["arn"]
 	client := inspector.NewFromConfig(cfg)
 
 	var values []Resource

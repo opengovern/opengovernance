@@ -71,7 +71,8 @@ func ElastiCacheCluster(ctx context.Context, cfg aws.Config) ([]Resource, error)
 	return values, nil
 }
 
-func GetElastiCacheCluster(ctx context.Context, cfg aws.Config, clusterID string) ([]Resource, error) {
+func GetElastiCacheCluster(ctx context.Context, cfg aws.Config, fields map[string]string) ([]Resource, error) {
+	clusterID := fields["id"]
 	client := elasticache.NewFromConfig(cfg)
 	out, err := client.DescribeCacheClusters(ctx, &elasticache.DescribeCacheClustersInput{
 		CacheClusterId: &clusterID,
