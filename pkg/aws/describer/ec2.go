@@ -445,7 +445,8 @@ func EC2EIP(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	return values, nil
 }
 
-func GetEC2EIP(ctx context.Context, cfg aws.Config, allocationId string) ([]Resource, error) {
+func GetEC2EIP(ctx context.Context, cfg aws.Config, fields map[string]string) ([]Resource, error) {
+	allocationId := fields["id"]
 	describeCtx := GetDescribeContext(ctx)
 
 	client := ec2.NewFromConfig(cfg)
@@ -629,7 +630,8 @@ func EC2Instance(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	return values, nil
 }
 
-func GetEC2Instance(ctx context.Context, cfg aws.Config, instanceID string) ([]Resource, error) {
+func GetEC2Instance(ctx context.Context, cfg aws.Config, fields map[string]string) ([]Resource, error) {
+	instanceID := fields["id"]
 	client := ec2.NewFromConfig(cfg)
 
 	describeCtx := GetDescribeContext(ctx)
@@ -877,7 +879,8 @@ func EC2NetworkInterface(ctx context.Context, cfg aws.Config) ([]Resource, error
 	return values, nil
 }
 
-func GetEC2NetworkInterface(ctx context.Context, cfg aws.Config, networkInterfaceID string) ([]Resource, error) {
+func GetEC2NetworkInterface(ctx context.Context, cfg aws.Config, fields map[string]string) ([]Resource, error) {
+	networkInterfaceID := fields["id"]
 	client := ec2.NewFromConfig(cfg)
 
 	describeCtx := GetDescribeContext(ctx)
@@ -1227,7 +1230,8 @@ func EC2SecurityGroup(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	return values, nil
 }
 
-func GetEC2SecurityGroup(ctx context.Context, cfg aws.Config, groupID string) ([]Resource, error) {
+func GetEC2SecurityGroup(ctx context.Context, cfg aws.Config, fields map[string]string) ([]Resource, error) {
+	groupID := fields["group_id"]
 	client := ec2.NewFromConfig(cfg)
 
 	describeCtx := GetDescribeContext(ctx)
@@ -1418,7 +1422,8 @@ func EC2Subnet(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	return values, nil
 }
 
-func GetEC2Subnet(ctx context.Context, cfg aws.Config, subnetId string) ([]Resource, error) {
+func GetEC2Subnet(ctx context.Context, cfg aws.Config, fields map[string]string) ([]Resource, error) {
+	subnetId := fields["id"]
 	client := ec2.NewFromConfig(cfg)
 	out, err := client.DescribeSubnets(ctx, &ec2.DescribeSubnetsInput{
 		SubnetIds: []string{subnetId},
@@ -1746,8 +1751,10 @@ func EC2VPC(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	return values, nil
 }
 
-func GetEC2VPC(ctx context.Context, cfg aws.Config, vpcID string) ([]Resource, error) {
+func GetEC2VPC(ctx context.Context, cfg aws.Config, fields map[string]string) ([]Resource, error) {
 	client := ec2.NewFromConfig(cfg)
+
+	vpcID := fields["id"]
 
 	describeCtx := GetDescribeContext(ctx)
 	out, err := client.DescribeVpcs(ctx, &ec2.DescribeVpcsInput{
@@ -2063,7 +2070,8 @@ func EC2KeyPair(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	return values, nil
 }
 
-func GetEC2KeyPair(ctx context.Context, cfg aws.Config, keyPairID string) ([]Resource, error) {
+func GetEC2KeyPair(ctx context.Context, cfg aws.Config, fields map[string]string) ([]Resource, error) {
+	keyPairID := fields["id"]
 	describeCtx := GetDescribeContext(ctx)
 
 	client := ec2.NewFromConfig(cfg)

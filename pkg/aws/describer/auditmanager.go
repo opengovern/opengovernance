@@ -80,7 +80,8 @@ func AuditManagerControl(ctx context.Context, cfg aws.Config) ([]Resource, error
 	return values, nil
 }
 
-func GetAuditManagerControl(ctx context.Context, cfg aws.Config, controlID string) ([]Resource, error) {
+func GetAuditManagerControl(ctx context.Context, cfg aws.Config, fields map[string]string) ([]Resource, error) {
+	controlID := fields["id"]
 	client := auditmanager.NewFromConfig(cfg)
 	control, err := client.GetControl(ctx, &auditmanager.GetControlInput{
 		ControlId: &controlID,

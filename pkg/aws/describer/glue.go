@@ -125,7 +125,8 @@ func GlueCrawler(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	return values, nil
 }
 
-func GetGlueCrawler(ctx context.Context, cfg aws.Config, name string) ([]Resource, error) {
+func GetGlueCrawler(ctx context.Context, cfg aws.Config, fields map[string]string) ([]Resource, error) {
+	name := fields["name"]
 	describeCtx := GetDescribeContext(ctx)
 	client := glue.NewFromConfig(cfg)
 
@@ -260,7 +261,8 @@ func GlueJob(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	return values, nil
 }
 
-func GetGlueJob(ctx context.Context, cfg aws.Config, jobName string) ([]Resource, error) {
+func GetGlueJob(ctx context.Context, cfg aws.Config, fields map[string]string) ([]Resource, error) {
+	jobName := fields["name"]
 	describeCtx := GetDescribeContext(ctx)
 	client := glue.NewFromConfig(cfg)
 

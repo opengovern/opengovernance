@@ -132,7 +132,8 @@ func KMSKey(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	return values, nil
 }
 
-func GetKMSKey(ctx context.Context, cfg aws.Config, id string) ([]Resource, error) {
+func GetKMSKey(ctx context.Context, cfg aws.Config, fields map[string]string) ([]Resource, error) {
+	id := fields["id"]
 	client := kms.NewFromConfig(cfg)
 
 	var values []Resource

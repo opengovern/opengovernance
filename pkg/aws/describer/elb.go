@@ -59,7 +59,8 @@ func ElasticLoadBalancingV2LoadBalancer(ctx context.Context, cfg aws.Config) ([]
 	return values, nil
 }
 
-func GetElasticLoadBalancingV2LoadBalancer(ctx context.Context, cfg aws.Config, lbARN string) ([]Resource, error) {
+func GetElasticLoadBalancingV2LoadBalancer(ctx context.Context, cfg aws.Config, fields map[string]string) ([]Resource, error) {
+	lbARN := fields["arn"]
 	client := elasticloadbalancingv2.NewFromConfig(cfg)
 	out, err := client.DescribeLoadBalancers(ctx, &elasticloadbalancingv2.DescribeLoadBalancersInput{
 		LoadBalancerArns: []string{lbARN},
@@ -139,7 +140,9 @@ func ElasticLoadBalancingV2Listener(ctx context.Context, cfg aws.Config) ([]Reso
 	return values, nil
 }
 
-func GetElasticLoadBalancingV2Listener(ctx context.Context, cfg aws.Config, lbArn string, listenerARN string) ([]Resource, error) {
+func GetElasticLoadBalancingV2Listener(ctx context.Context, cfg aws.Config, fields map[string]string) ([]Resource, error) {
+	lbArn := fields["load_balancer_arn"]
+	listenerARN := fields["arn"]
 	client := elasticloadbalancingv2.NewFromConfig(cfg)
 	out, err := client.DescribeListeners(ctx, &elasticloadbalancingv2.DescribeListenersInput{
 		ListenerArns:    []string{listenerARN},
@@ -403,10 +406,11 @@ func ApplicationLoadBalancerMetricRequestCount(ctx context.Context, cfg aws.Conf
 	return values, nil
 }
 
-func GetApplicationLoadBalancerMetricRequestCount(ctx context.Context, cfg aws.Config, loadBalancerARNs []string) ([]Resource, error) {
+func GetApplicationLoadBalancerMetricRequestCount(ctx context.Context, cfg aws.Config, fields map[string]string) ([]Resource, error) {
+	loadBalancerARN := fields["arn"]
 	client := elasticloadbalancingv2.NewFromConfig(cfg)
 	out, err := client.DescribeLoadBalancers(ctx, &elasticloadbalancingv2.DescribeLoadBalancersInput{
-		LoadBalancerArns: loadBalancerARNs,
+		LoadBalancerArns: []string{loadBalancerARN},
 	})
 	if err != nil {
 		return nil, err
@@ -469,9 +473,11 @@ func ApplicationLoadBalancerMetricRequestCountDaily(ctx context.Context, cfg aws
 	return values, nil
 }
 
-func GetApplicationLoadBalancerMetricRequestCountDaily(ctx context.Context, cfg aws.Config, loadBalancerARNs []string) ([]Resource, error) {
+func GetApplicationLoadBalancerMetricRequestCountDaily(ctx context.Context, cfg aws.Config, fields map[string]string) ([]Resource, error) {
+	loadBalancerARN := fields["arn"]
+
 	client := elasticloadbalancingv2.NewFromConfig(cfg)
-	out, err := client.DescribeLoadBalancers(ctx, &elasticloadbalancingv2.DescribeLoadBalancersInput{LoadBalancerArns: loadBalancerARNs})
+	out, err := client.DescribeLoadBalancers(ctx, &elasticloadbalancingv2.DescribeLoadBalancersInput{LoadBalancerArns: []string{loadBalancerARN}})
 	if err != nil {
 		return nil, err
 	}

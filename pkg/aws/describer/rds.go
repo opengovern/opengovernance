@@ -34,7 +34,8 @@ func RDSDBCluster(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	return values, nil
 }
 
-func GetRDSDBCluster(ctx context.Context, cfg aws.Config, arn string) ([]Resource, error) {
+func GetRDSDBCluster(ctx context.Context, cfg aws.Config, fields map[string]string) ([]Resource, error) {
+	arn := fields["arn"]
 	client := rds.NewFromConfig(cfg)
 
 	out, err := client.DescribeDBClusters(ctx, &rds.DescribeDBClustersInput{
@@ -139,7 +140,8 @@ func RDSDBInstance(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	return values, nil
 }
 
-func GetRDSDBInstance(ctx context.Context, cfg aws.Config, dbInstanceId string) ([]Resource, error) {
+func GetRDSDBInstance(ctx context.Context, cfg aws.Config, fields map[string]string) ([]Resource, error) {
+	dbInstanceId := fields["id"]
 	client := rds.NewFromConfig(cfg)
 	out, err := client.DescribeDBInstances(ctx, &rds.DescribeDBInstancesInput{
 		DBInstanceIdentifier: &dbInstanceId,
