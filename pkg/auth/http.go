@@ -788,8 +788,9 @@ func (r *httpRoutes) GetRoleKeys(ctx echo.Context) error {
 func (r *httpRoutes) UpdateKeyRole(ctx echo.Context) error {
 	workspaceID := httpserver.GetWorkspaceID(ctx)
 	var req api.UpdateKeyRoleRequest
-	if err := bindValidate(ctx, &req); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err)
+	if err := ctx.Bind(&req); err != nil {
+		ctx.Logger().Errorf("bind the request: %v", err)
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
 	}
 
 	err := r.db.UpdateRoleAPIKey(workspaceID, uint(req.ID), req.Role)

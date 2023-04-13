@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -522,7 +523,7 @@ func (ts *testSuite) TestDeleteAPIKey() {
 	}
 	for i, tc := range deleteAPIKeyTestCases {
 		ts.T().Run(fmt.Sprintf("deleteAPIKeyTestCases-%d", i), func(t *testing.T) {
-			r := httptest.NewRequest(http.MethodGet, "/", nil)
+			r := httptest.NewRequest(http.MethodDelete, "/", nil)
 			r.Header.Set("Content-Type", "application/json; charset=utf8")
 			r.Header.Set(httpserver.XKeibiWorkspaceIDHeader, tc.WorkspaceID)
 			w := httptest.NewRecorder()
@@ -649,6 +650,53 @@ func (ts *testSuite) TestGetRoleKeys() {
 				ts.NotEmpty(response)
 			}
 			fmt.Println("RES: ", response)
+		})
+	}
+}
+
+func (ts *testSuite) TestUpdateKeyRole() {
+	mockKeysInDb(&ts.httpRoutes.db)
+	updateKeyRoleTestCases := []struct {
+		WorkspaceID string
+		Request     api.UpdateKeyRoleRequest
+		Error       error
+	}{
+		{
+			WorkspaceID: "ws1",
+			Request:     api.UpdateKeyRoleRequest{ID: 1, Role: api.EditorRole},
+		},
+		{
+			WorkspaceID: "ws4",
+			Request:     api.UpdateKeyRoleRequest{ID: 2, Role: api.EditorRole},
+		},
+		{
+			WorkspaceID: "ws1",
+			Request:     api.UpdateKeyRoleRequest{ID: 10, Role: api.EditorRole},
+		},
+		{
+			WorkspaceID: "ws1",
+			Request:     api.UpdateKeyRoleRequest{ID: 3, Role: api.ViewerRole},
+		},
+	}
+	for i, tc := range updateKeyRoleTestCases {
+		ts.T().Run(fmt.Sprintf("updateKeyRoleTestCases-%d", i), func(t *testing.T) {
+			body, err := json.Marshal(tc.Request)
+			ts.NoError(err)
+			r := httptest.NewRequest(http.MethodPost, "/", bytes.NewBuffer(body))
+			r.Header.Set("Content-Type", "application/json; charset=utf8")
+			r.Header.Set(httpserver.XKeibiWorkspaceIDHeader, tc.WorkspaceID)
+
+			w := httptest.NewRecorder()
+
+			c := echo.New().NewContext(r, w)
+
+			err = ts.httpRoutes.UpdateKeyRole(c)
+			ts.NoError(err, "error while running the API")
+			if (tc.Request.ID == 10) || (tc.WorkspaceID == "ws1" && tc.Request.ID == 3) {
+			} else {
+				after, _ := ts.httpRoutes.db.GetApiKey(tc.WorkspaceID, tc.Request.ID)
+				ts.Equal(tc.Request.Role, after.Role)
+			}
 		})
 	}
 }
