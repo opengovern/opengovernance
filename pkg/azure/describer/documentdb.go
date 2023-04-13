@@ -9,7 +9,7 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/azure/model"
 )
 
-func DocumentDBDatabaseAccountsSQLDatabase(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
+func DocumentDBSQLDatabase(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
 	rgs, err := listResourceGroups(ctx, authorizer, subscription)
 	if err != nil {
 		return nil, err
@@ -56,7 +56,7 @@ func DocumentDBDatabaseAccountsSQLDatabase(ctx context.Context, authorizer autor
 	return values, nil
 }
 
-func DocumentDBDatabaseAccountsMongoDatabase(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
+func DocumentDBMongoDatabase(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
 	rgs, err := listResourceGroups(ctx, authorizer, subscription)
 	if err != nil {
 		return nil, err
