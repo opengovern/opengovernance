@@ -11,7 +11,6 @@ import (
 
 	"github.com/labstack/echo/v4"
 	"github.com/ory/dockertest/v3"
-	"github.com/ory/dockertest/v3/docker"
 	"github.com/stretchr/testify/suite"
 	"gitlab.com/keibiengine/keibi-engine/pkg/auth/api"
 	"gitlab.com/keibiengine/keibi-engine/pkg/auth/auth0"
@@ -62,22 +61,13 @@ func (ts *testSuite) FetchData() (error, string) {
 
 func (ts *testSuite) SetupSuite() {
 	t := ts.T()
-	pool, err := dockertest.NewPool("tcp://localhost:5432")
-
+	pool, err := dockertest.NewPool("")
+	ts.NoError(err, "pool constructed")
+	err = pool.Client.Ping()
+	ts.NoError(err, "pinged pool")
 	user, pass := "postgres", "123456"
-	//resource, err := pool.Run(user, "14.2-alpine", []string{fmt.Sprintf("POSTGRES_PASSWORD=%s", pass)})
-	//ts.NoError(err, "status postgres")
-	resource, err := pool.RunWithOptions(&dockertest.RunOptions{
-		Repository:   user,
-		Tag:          "14.2-alpine",
-		Env:          []string{fmt.Sprintf("POSTGRES_PASSWORD=%s", pass)},
-		ExposedPorts: []string{"5432"},
-		PortBindings: map[docker.Port][]docker.PortBinding{
-			"5432": {
-				{HostIP: "0.0.0.0", HostPort: "5433"},
-			},
-		},
-	})
+	resource, err := pool.Run(user, "14.2-alpine", []string{fmt.Sprintf("POSTGRES_PASSWORD=%s", pass)})
+	ts.NoError(err, "status postgres")
 	t.Cleanup(func() {
 		err := pool.Purge(resource)
 		ts.NoError(err, "purge resource %s", resource)
