@@ -441,14 +441,18 @@ func (ts *testSuite) TestSuspendAPIKey() {
 			ts.NoError(err, "error while running the API")
 
 			after, err := ts.httpRoutes.db.GetApiKey(tc.WorkspaceID, tc.KeyID)
-			ts.False(after.Active)
+			if tc.KeyID == 2 {
+				ts.Equal(uint(0), after.ID)
+			} else {
+				ts.False(after.Active)
+			}
 		})
 	}
 }
 
-func (ts *testSuite) TestSuspendAPIKey() {
+func (ts *testSuite) TestActiveAPIKey() {
 	mockKeysInDb(&ts.httpRoutes.db)
-	suspendAPIKeyTestCases := []struct {
+	activeAPIKeyTestCases := []struct {
 		WorkspaceID string
 		KeyID       uint
 		Error       error
@@ -459,15 +463,15 @@ func (ts *testSuite) TestSuspendAPIKey() {
 		},
 		{
 			WorkspaceID: "ws1",
-			KeyID:       3,
+			KeyID:       2,
 		},
 		{
 			WorkspaceID: "ws1",
 			KeyID:       5,
 		},
 	}
-	for i, tc := range suspendAPIKeyTestCases {
-		ts.T().Run(fmt.Sprintf("suspendAPIKeyTestCases-%d", i), func(t *testing.T) {
+	for i, tc := range activeAPIKeyTestCases {
+		ts.T().Run(fmt.Sprintf("activeAPIKeyTestCases-%d", i), func(t *testing.T) {
 			r := httptest.NewRequest(http.MethodGet, "/", nil)
 			r.Header.Set("Content-Type", "application/json; charset=utf8")
 			r.Header.Set(httpserver.XKeibiWorkspaceIDHeader, tc.WorkspaceID)
@@ -475,15 +479,60 @@ func (ts *testSuite) TestSuspendAPIKey() {
 
 			c := echo.New().NewContext(r, w)
 
-			c.SetPath("/auth/api/v1/key/:id/suspend")
+			c.SetPath("/auth/api/v1/key/:id/activate")
 			c.SetParamNames("id")
 			c.SetParamValues(strconv.FormatUint(uint64(tc.KeyID), 10))
 
-			err := ts.httpRoutes.SuspendAPIKey(c)
+			err := ts.httpRoutes.ActivateAPIKey(c)
 			ts.NoError(err, "error while running the API")
 
 			after, err := ts.httpRoutes.db.GetApiKey(tc.WorkspaceID, tc.KeyID)
-			ts.False(after.Active)
+			if tc.KeyID == 2 {
+				ts.Equal(uint(0), after.ID)
+			} else {
+				ts.True(after.Active)
+			}
+		})
+	}
+}
+
+func (ts *testSuite) TestDeleteAPIKey() {
+	mockKeysInDb(&ts.httpRoutes.db)
+	deleteAPIKeyTestCases := []struct {
+		WorkspaceID string
+		KeyID       uint
+		Error       error
+	}{
+		{
+			WorkspaceID: "ws1",
+			KeyID:       1,
+		},
+		{
+			WorkspaceID: "ws1",
+			KeyID:       5,
+		},
+	}
+	for i, tc := range deleteAPIKeyTestCases {
+		ts.T().Run(fmt.Sprintf("deleteAPIKeyTestCases-%d", i), func(t *testing.T) {
+			r := httptest.NewRequest(http.MethodGet, "/", nil)
+			r.Header.Set("Content-Type", "application/json; charset=utf8")
+			r.Header.Set(httpserver.XKeibiWorkspaceIDHeader, tc.WorkspaceID)
+			w := httptest.NewRecorder()
+
+			c := echo.New().NewContext(r, w)
+
+			c.SetPath("/auth/api/v1/key/:id/delete")
+			c.SetParamNames("id")
+			c.SetParamValues(strconv.FormatUint(uint64(tc.KeyID), 10))
+
+			before, err := ts.httpRoutes.db.GetApiKey(tc.WorkspaceID, tc.KeyID)
+			ts.NotEqual(uint(0), before.ID)
+
+			err = ts.httpRoutes.DeleteAPIKey(c)
+			ts.NoError(err, "error while running the API")
+
+			after, err := ts.httpRoutes.db.GetApiKey(tc.WorkspaceID, tc.KeyID)
+			ts.Equal(uint(0), after.ID)
 		})
 	}
 }
