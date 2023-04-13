@@ -71,7 +71,6 @@ func (r *httpRoutes) Register(e *echo.Echo) {
 	v1.GET("/role/:role/users", httpserver.AuthorizeHandler(r.GetRoleUsers, api.AdminRole))
 	v1.GET("/role/keys", httpserver.AuthorizeHandler(r.GetRoleKeys, api.AdminRole))
 	v1.POST("/key/role", httpserver.AuthorizeHandler(r.UpdateKeyRole, api.AdminRole))
-	v1.GET("/workspace/keys", httpserver.AuthorizeHandler(r.GetWorkspaceKeys, api.AdminRole))
 }
 
 func bindValidate(ctx echo.Context, i interface{}) error {
@@ -801,35 +800,4 @@ func (r *httpRoutes) UpdateKeyRole(ctx echo.Context) error {
 	}
 
 	return ctx.NoContent(http.StatusOK)
-}
-
-// GetRoleKeys godoc
-//
-//	@Summary	Lists all API Keys in a workspace
-//	@Tags		auth
-//	@Produce	json
-//	@Success	200		{object}	[]api.WorkspaceApiKey
-//	@Router		/auth/api/v1/workspace/keys [get]
-func (r *httpRoutes) GetWorkspaceKeys(ctx echo.Context) error {
-	workspaceID := httpserver.GetWorkspaceID(ctx)
-	keys, err := r.db.GetWorkspaceAPIKeys(workspaceID)
-	if err != nil {
-		return err
-	}
-
-	var resp []api.WorkspaceApiKey
-	for _, key := range keys {
-		resp = append(resp, api.WorkspaceApiKey{
-			ID:            key.ID,
-			CreatedAt:     key.CreatedAt,
-			UpdatedAt:     key.UpdatedAt,
-			Name:          key.Name,
-			Role:          key.Role,
-			CreatorUserID: key.CreatorUserID,
-			Active:        key.Active,
-			MaskedKey:     key.MaskedKey,
-		})
-	}
-
-	return ctx.JSON(http.StatusOK, resp)
 }

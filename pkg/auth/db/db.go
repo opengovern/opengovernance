@@ -111,15 +111,3 @@ func (db Database) UpdateRoleAPIKey(workspaceID string, id uint, role api.Role) 
 	}
 	return nil
 }
-
-func (db Database) GetWorkspaceAPIKeys(workspaceID string) ([]ApiKey, error) {
-	var s []ApiKey
-	tx := db.Orm.Model(&ApiKey{}).
-		Where("workspace_id", workspaceID).
-		Where("revoked", "false").
-		Find(&s)
-	if tx.Error != nil {
-		return nil, tx.Error
-	}
-	return s, nil
-}
