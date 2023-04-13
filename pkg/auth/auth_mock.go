@@ -9,6 +9,7 @@ import (
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/auth/api"
 	"gitlab.com/keibiengine/keibi-engine/pkg/auth/auth0"
+	"gitlab.com/keibiengine/keibi-engine/pkg/auth/db"
 )
 
 type tokenStruct struct {
@@ -220,4 +221,72 @@ func mockGetClient(w http.ResponseWriter, r *http.Request) {
 
 func mockPatchUser(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
+}
+
+func mockKeysInDb(adb *db.Database) error {
+	err := adb.Initialize()
+	if err != nil {
+		return err
+	}
+	keys := []db.ApiKey{
+		{
+			Name:          "keyTest1",
+			Role:          api.AdminRole,
+			CreatorUserID: "test1",
+			WorkspaceID:   "ws1",
+			Active:        true,
+			Revoked:       false,
+			MaskedKey:     "qweasdzxc",
+			KeyHash:       "***",
+		},
+		{
+			Name:          "keyTest2",
+			Role:          api.EditorRole,
+			CreatorUserID: "test4",
+			WorkspaceID:   "ws4",
+			Active:        true,
+			Revoked:       false,
+			MaskedKey:     "qweasdzxc",
+			KeyHash:       "###",
+		},
+		{
+			Name:          "keyTest3",
+			Role:          api.EditorRole,
+			CreatorUserID: "test5",
+			WorkspaceID:   "ws2",
+			Active:        true,
+			Revoked:       false,
+			MaskedKey:     "qweasdzxc",
+			KeyHash:       "***",
+		},
+		{
+			Name:          "keyTest4",
+			Role:          api.ViewerRole,
+			CreatorUserID: "test1",
+			WorkspaceID:   "ws1",
+			Active:        true,
+			Revoked:       true,
+			MaskedKey:     "qweasdzxc",
+			KeyHash:       "***",
+		},
+		{
+			Name:          "keyTest5",
+			Role:          api.AdminRole,
+			CreatorUserID: "test1",
+			WorkspaceID:   "ws1",
+			Active:        false,
+			Revoked:       false,
+			MaskedKey:     "qweasdzxc",
+			KeyHash:       "***",
+		},
+	}
+	for _, key := range keys {
+		tx := adb.Orm.Create(&key)
+
+		if tx.Error != nil {
+			return tx.Error
+		}
+	}
+	return nil
+
 }

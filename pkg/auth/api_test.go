@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"strconv"
 	"testing"
 	"time"
 
@@ -290,6 +291,199 @@ func (ts *testSuite) TestGetRoleUsers() {
 				ts.True(response[0].EmailVerified)
 			}
 
+		})
+	}
+}
+
+func (ts *testSuite) TestCreateAPIKey() { // not finished yet. has problem with some header parameters
+	createAPIKeyTestCase := []struct {
+		Request     api.CreateAPIKeyRequest
+		UserID      string
+		WorkspaceID string
+		Role        string
+		Error       int
+	}{
+		{
+			Request:     api.CreateAPIKeyRequest{Name: "Key1", Role: api.AdminRole},
+			UserID:      "test4",
+			WorkspaceID: "ws4",
+			Role:        "ADMIN",
+		},
+		{
+			Request:     api.CreateAPIKeyRequest{Name: "Key2", Role: api.EditorRole},
+			UserID:      "test2",
+			WorkspaceID: "ws1",
+			Role:        "ADMIN",
+		},
+		{
+			Request:     api.CreateAPIKeyRequest{Name: "Key3", Role: api.ViewerRole},
+			UserID:      "test1",
+			WorkspaceID: "ws1",
+			Role:        "EDITOR",
+		},
+		{
+			Request:     api.CreateAPIKeyRequest{Name: "Key4", Role: api.ViewerRole},
+			UserID:      "test3",
+			WorkspaceID: "ws2",
+			Role:        "VIEWER",
+		},
+	}
+	for i, tc := range createAPIKeyTestCase {
+		ts.T().Run(fmt.Sprintf("getRoleUsersTestCases-%d", i), func(t *testing.T) {
+			r := httptest.NewRequest(http.MethodGet, "/", nil)
+			r.Header.Set("Content-Type", "application/json; charset=utf8")
+			r.Header.Set(httpserver.XKeibiUserIDHeader, tc.UserID)
+			r.Header.Set(httpserver.XKeibiWorkspaceIDHeader, tc.WorkspaceID)
+			r.Header.Set(httpserver.XKeibiWorkspaceNameHeader, tc.WorkspaceID)
+			r.Header.Set(httpserver.XKeibiUserRoleHeader, tc.Role)
+			r.Header.Set(httpserver.XKeibiMaxUsersHeader, "10")
+			r.Header.Set(httpserver.XKeibiMaxConnectionsHeader, "10")
+			r.Header.Set(httpserver.XKeibiMaxResourcesHeader, "10")
+			w := httptest.NewRecorder()
+
+			c := echo.New().NewContext(r, w)
+
+			c.SetPath("/auth/api/v1/key/create")
+			err := (&echo.DefaultBinder{}).BindBody(c, tc.Request)
+			ts.NoError(err, "request faild to be added to the body")
+			err = ts.httpRoutes.CreateAPIKey(c)
+			if err != nil {
+				ts.Equal("[SearchUsersByRole] invalid status code: 204, body=", err.Error())
+				return
+			}
+
+			var response api.GetRoleUsersResponse
+			if err := json.NewDecoder(w.Body).Decode(&response); err != nil {
+				ts.T().Fatalf("json decode: %v", err)
+			}
+			fmt.Println("the response is : ", response)
+
+		})
+	}
+}
+
+func (ts *testSuite) TestListAPIKeys() {
+	mockKeysInDb(&ts.httpRoutes.db)
+	listAPIKeysTestCases := []struct {
+		WorkspaceID string
+		Error       error
+	}{
+		{
+			WorkspaceID: "ws1",
+		},
+		{
+			WorkspaceID: "ws2",
+		},
+		{
+			WorkspaceID: "ws3",
+		},
+		{
+			WorkspaceID: "ws4",
+		},
+	}
+	for i, tc := range listAPIKeysTestCases {
+		ts.T().Run(fmt.Sprintf("listAPIKeysTestCases-%d", i), func(t *testing.T) {
+			r := httptest.NewRequest(http.MethodGet, "/", nil)
+			r.Header.Set("Content-Type", "application/json; charset=utf8")
+			r.Header.Set(httpserver.XKeibiWorkspaceIDHeader, tc.WorkspaceID)
+			w := httptest.NewRecorder()
+
+			c := echo.New().NewContext(r, w)
+
+			c.SetPath("/auth/api/v1/key")
+
+			err := ts.httpRoutes.ListAPIKeys(c)
+			ts.NoError(err, "error while running the API")
+
+			var response []api.WorkspaceApiKey
+			if err := json.NewDecoder(w.Body).Decode(&response); err != nil {
+				ts.T().Fatalf("json decode: %v", err)
+			}
+			fmt.Println(response)
+		})
+	}
+}
+
+func (ts *testSuite) TestSuspendAPIKey() {
+	mockKeysInDb(&ts.httpRoutes.db)
+	suspendAPIKeyTestCases := []struct {
+		WorkspaceID string
+		KeyID       uint
+		Error       error
+	}{
+		{
+			WorkspaceID: "ws1",
+			KeyID:       1,
+		},
+		{
+			WorkspaceID: "ws1",
+			KeyID:       3,
+		},
+		{
+			WorkspaceID: "ws1",
+			KeyID:       5,
+		},
+	}
+	for i, tc := range suspendAPIKeyTestCases {
+		ts.T().Run(fmt.Sprintf("suspendAPIKeyTestCases-%d", i), func(t *testing.T) {
+			r := httptest.NewRequest(http.MethodGet, "/", nil)
+			r.Header.Set("Content-Type", "application/json; charset=utf8")
+			r.Header.Set(httpserver.XKeibiWorkspaceIDHeader, tc.WorkspaceID)
+			w := httptest.NewRecorder()
+
+			c := echo.New().NewContext(r, w)
+
+			c.SetPath("/auth/api/v1/key/:id/suspend")
+			c.SetParamNames("id")
+			c.SetParamValues(strconv.FormatUint(uint64(tc.KeyID), 10))
+
+			err := ts.httpRoutes.SuspendAPIKey(c)
+			ts.NoError(err, "error while running the API")
+
+			after, err := ts.httpRoutes.db.GetApiKey(tc.WorkspaceID, tc.KeyID)
+			ts.False(after.Active)
+		})
+	}
+}
+
+func (ts *testSuite) TestSuspendAPIKey() {
+	mockKeysInDb(&ts.httpRoutes.db)
+	suspendAPIKeyTestCases := []struct {
+		WorkspaceID string
+		KeyID       uint
+		Error       error
+	}{
+		{
+			WorkspaceID: "ws1",
+			KeyID:       1,
+		},
+		{
+			WorkspaceID: "ws1",
+			KeyID:       3,
+		},
+		{
+			WorkspaceID: "ws1",
+			KeyID:       5,
+		},
+	}
+	for i, tc := range suspendAPIKeyTestCases {
+		ts.T().Run(fmt.Sprintf("suspendAPIKeyTestCases-%d", i), func(t *testing.T) {
+			r := httptest.NewRequest(http.MethodGet, "/", nil)
+			r.Header.Set("Content-Type", "application/json; charset=utf8")
+			r.Header.Set(httpserver.XKeibiWorkspaceIDHeader, tc.WorkspaceID)
+			w := httptest.NewRecorder()
+
+			c := echo.New().NewContext(r, w)
+
+			c.SetPath("/auth/api/v1/key/:id/suspend")
+			c.SetParamNames("id")
+			c.SetParamValues(strconv.FormatUint(uint64(tc.KeyID), 10))
+
+			err := ts.httpRoutes.SuspendAPIKey(c)
+			ts.NoError(err, "error while running the API")
+
+			after, err := ts.httpRoutes.db.GetApiKey(tc.WorkspaceID, tc.KeyID)
+			ts.False(after.Active)
 		})
 	}
 }
