@@ -63,22 +63,27 @@ func AddConfig(accessToken string) error {
 	}
 	return nil
 }
-func RequestAbout(accessToken string) ([]byte, error) {
+func RequestAbout(accessToken string) (ResponseAbout, error) {
 	req, err := http.NewRequest("GET", urls.UrlAbout, nil)
 	if err != nil {
-		return nil, fmt.Errorf("[requestAbout] : %v", err)
+		return ResponseAbout{}, fmt.Errorf("[requestAbout] : %v", err)
 	}
 	req.Header.Set("Authorization", "Bearer "+accessToken)
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("[requestAbout] : %v", err)
+		return ResponseAbout{}, fmt.Errorf("[requestAbout] : %v", err)
 	}
 
 	body, err := io.ReadAll(res.Body)
 	if err != nil {
-		return nil, fmt.Errorf("[requestAbout] : %v", err)
+		return ResponseAbout{}, fmt.Errorf("[requestAbout] : %v", err)
 	}
-	return body, nil
+	response := ResponseAbout{}
+	err = json.Unmarshal(body, &response)
+	if err != nil {
+		return response, fmt.Errorf("[requestAbout] : %v", err)
+	}
+	return response, nil
 }
 
 func RequestDeviceCode() (string, error) {
@@ -179,7 +184,7 @@ func AccessToken(deviceCode string) (string, error) {
 	}
 }
 
-func RequestWorkspaces(accessToken string) (interface{}, error) {
+func RequestWorkspaces(accessToken string) ([]api.WorkspaceResponse, error) {
 	req, err := http.NewRequest("GET", urls.UrlWorkspace, nil)
 	if err != nil {
 		return nil, fmt.Errorf("[RequestWorkspaces] : %v", err)

@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"encoding/json"
 	"fmt"
 	"github.com/spf13/cobra"
 	"gitlab.com/keibiengine/keibi-engine/pkg/cli"
@@ -21,14 +20,7 @@ var aboutCmd = &cobra.Command{
 		if err != nil {
 			return fmt.Errorf("[about]: %v", err)
 		}
-
-		response := cli.ResponseAbout{}
-		err = json.Unmarshal(bodyResponse, &response)
-		if err != nil {
-			return fmt.Errorf("[about]: %v", err)
-		}
-
-		err = cli.PrintOutput(response, OutputType)
+		err = cli.PrintOutputForAbout(bodyResponse, OutputType)
 		if err != nil {
 			return fmt.Errorf("[about]: %v", err)
 		}
