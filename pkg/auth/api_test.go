@@ -509,7 +509,15 @@ func (ts *testSuite) TestDeleteAPIKey() {
 		},
 		{
 			WorkspaceID: "ws1",
+			KeyID:       2,
+		},
+		{
+			WorkspaceID: "ws1",
 			KeyID:       5,
+		},
+		{
+			WorkspaceID: "ws1",
+			KeyID:       10,
 		},
 	}
 	for i, tc := range deleteAPIKeyTestCases {
@@ -526,13 +534,69 @@ func (ts *testSuite) TestDeleteAPIKey() {
 			c.SetParamValues(strconv.FormatUint(uint64(tc.KeyID), 10))
 
 			before, err := ts.httpRoutes.db.GetApiKey(tc.WorkspaceID, tc.KeyID)
-			ts.NotEqual(uint(0), before.ID)
+			if tc.KeyID == 10 || tc.KeyID == 2 {
+				ts.Empty(before)
+			}
 
 			err = ts.httpRoutes.DeleteAPIKey(c)
 			ts.NoError(err, "error while running the API")
 
 			after, err := ts.httpRoutes.db.GetApiKey(tc.WorkspaceID, tc.KeyID)
-			ts.Equal(uint(0), after.ID)
+			ts.Empty(after)
+		})
+	}
+}
+
+func (ts *testSuite) TestGetAPIKey() {
+	mockKeysInDb(&ts.httpRoutes.db)
+	getAPIKeyTestCases := []struct {
+		WorkspaceID string
+		KeyID       uint
+		Error       error
+	}{
+		{
+			WorkspaceID: "ws1",
+			KeyID:       1,
+		},
+		{
+			WorkspaceID: "ws1",
+			KeyID:       2,
+		},
+		{
+			WorkspaceID: "ws1",
+			KeyID:       5,
+		},
+		{
+			WorkspaceID: "ws1",
+			KeyID:       10,
+		},
+	}
+	for i, tc := range getAPIKeyTestCases {
+		ts.T().Run(fmt.Sprintf("getAPIKeyTestCases-%d", i), func(t *testing.T) {
+			r := httptest.NewRequest(http.MethodGet, "/", nil)
+			r.Header.Set("Content-Type", "application/json; charset=utf8")
+			r.Header.Set(httpserver.XKeibiWorkspaceIDHeader, tc.WorkspaceID)
+			w := httptest.NewRecorder()
+
+			c := echo.New().NewContext(r, w)
+
+			c.SetPath("/auth/api/v1/key/:id")
+			c.SetParamNames("id")
+			c.SetParamValues(strconv.FormatUint(uint64(tc.KeyID), 10))
+
+			err := ts.httpRoutes.GetAPIKey(c)
+			if tc.KeyID == 10 || tc.KeyID == 2 {
+				ts.Equal("code=404, message=api key not found", err.Error())
+			} else {
+				ts.NoError(err, "error while running the API")
+				var response api.WorkspaceApiKey
+				if err := json.NewDecoder(w.Body).Decode(&response); err != nil {
+					ts.T().Fatalf("json decode: %v", err)
+				}
+				ts.NotEmpty(response)
+				fmt.Println("RES: ", response)
+			}
+
 		})
 	}
 }
