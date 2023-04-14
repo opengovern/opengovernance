@@ -928,3 +928,19 @@ func ExtractTableName(resourceType string) string {
 	}
 	return ""
 }
+
+func GetResourceTypeByTableName(tableName string) string {
+	tableName = strings.ToLower(tableName)
+	for k, v := range awsMap {
+		if tableName == strings.ToLower(v) {
+			return k
+		}
+	}
+
+	for k, v := range azureMap {
+		if tableName == strings.ToLower(v) {
+			return k
+		}
+	}
+	return ""
+}
