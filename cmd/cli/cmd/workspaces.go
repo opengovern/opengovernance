@@ -29,10 +29,8 @@ var workspacesCmd = &cobra.Command{
 	},
 }
 var OutputType string
-var workspacesId int64
 
 func init() {
 	rootCmd.AddCommand(workspacesCmd)
-	workspacesCmd.Flags().Int64Var(&workspacesId, "workspace", 0, "specifying the workspacesId")
 	workspacesCmd.Flags().StringVar(&OutputType, "output", "", "specifying output type [json, table]")
 }
