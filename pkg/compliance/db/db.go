@@ -217,6 +217,9 @@ func (db Database) GetBenchmarkAssignmentsByBenchmarkId(benchmarkId string) ([]B
 	tx := db.Orm.Model(&BenchmarkAssignment{}).Where(BenchmarkAssignment{BenchmarkId: benchmarkId}).Scan(&s)
 
 	if tx.Error != nil {
+		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
 		return nil, tx.Error
 	}
 

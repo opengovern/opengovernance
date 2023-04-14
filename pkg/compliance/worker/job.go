@@ -179,11 +179,12 @@ func (j *Job) Run(complianceClient client.ComplianceServiceClient, onboardClient
 	if err != nil {
 		return err
 	}
-
+	fmt.Println("++++++ findings len: ", len(findings))
 	findingsFiltered, err := j.FilterFindings(esk, findings)
 	if err != nil {
 		return err
 	}
+	fmt.Println("++++++ findingsFiltered len: ", len(findingsFiltered))
 
 	var docs []kafka.Doc
 	for _, finding := range findingsFiltered {
@@ -202,6 +203,7 @@ func (j *Job) FilterFindings(esClient keibi.Client, findings []es.Finding) ([]es
 		if err != nil {
 			return nil, err
 		}
+		fmt.Println("+++++++++ active old findings:", len(resp.Hits.Hits))
 		from += 1000
 
 		if len(resp.Hits.Hits) == 0 {
@@ -214,6 +216,7 @@ func (j *Job) FilterFindings(esClient keibi.Client, findings []es.Finding) ([]es
 			for idx, finding := range findings {
 				if finding.ResourceID == hit.Source.ResourceID && finding.PolicyID == hit.Source.PolicyID {
 					dup = true
+					fmt.Println("+++++++++ removing dup:", finding.ID, hit.Source.ID)
 					findings = append(findings[:idx], findings[idx+1:]...)
 					break
 				}
@@ -222,6 +225,7 @@ func (j *Job) FilterFindings(esClient keibi.Client, findings []es.Finding) ([]es
 			if !dup {
 				f := hit.Source
 				f.StateActive = false
+				fmt.Println("+++++++++ making this disabled:", f.ID)
 				findings = append(findings, f)
 			}
 		}

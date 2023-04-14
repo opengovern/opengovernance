@@ -82,6 +82,35 @@ func ECSCluster(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	return values, nil
 }
 
+func GetECSCluster(ctx context.Context, cfg aws.Config, fields map[string]string) ([]Resource, error) {
+	client := ecs.NewFromConfig(cfg)
+
+	cluster := fields["name"]
+
+	var values []Resource
+	output, err := client.DescribeClusters(ctx, &ecs.DescribeClustersInput{
+		Clusters: []string{cluster},
+	})
+	if err != nil {
+		return nil, err
+	}
+	if len(output.Failures) != 0 {
+		return nil, failuresToError(output.Failures)
+	}
+
+	for _, v := range output.Clusters {
+		values = append(values, Resource{
+			ARN:  *v.ClusterArn,
+			Name: *v.ClusterName,
+			Description: model.ECSClusterDescription{
+				Cluster: v,
+			},
+		})
+	}
+
+	return values, nil
+}
+
 func ECSService(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	clusters, err := listEcsClusters(ctx, cfg)
 	if err != nil {
@@ -132,6 +161,36 @@ func ECSService(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	return values, nil
 }
 
+func GetECSService(ctx context.Context, cfg aws.Config, fields map[string]string) ([]Resource, error) {
+	cluster := fields["cluster"]
+	service := fields["service"]
+	client := ecs.NewFromConfig(cfg)
+
+	var values []Resource
+	output, err := client.DescribeServices(ctx, &ecs.DescribeServicesInput{
+		Cluster:  &cluster,
+		Services: []string{service},
+	})
+	if err != nil {
+		return nil, err
+	}
+	if len(output.Failures) != 0 {
+		return nil, failuresToError(output.Failures)
+	}
+
+	for _, v := range output.Services {
+		values = append(values, Resource{
+			ARN:  *v.ServiceArn,
+			Name: *v.ServiceName,
+			Description: model.ECSServiceDescription{
+				Service: v,
+			},
+		})
+	}
+
+	return values, nil
+}
+
 func ECSTaskDefinition(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	client := ecs.NewFromConfig(cfg)
 	paginator := ecs.NewListTaskDefinitionsPaginator(client, &ecs.ListTaskDefinitionsInput{})
@@ -168,6 +227,37 @@ func ECSTaskDefinition(ctx context.Context, cfg aws.Config) ([]Resource, error) 
 			})
 		}
 	}
+
+	return values, nil
+}
+
+func GetECSTaskDefinition(ctx context.Context, cfg aws.Config, fields map[string]string) ([]Resource, error) {
+	client := ecs.NewFromConfig(cfg)
+
+	taskDefinitionARN := fields["arn"]
+	var values []Resource
+	output, err := client.DescribeTaskDefinition(ctx, &ecs.DescribeTaskDefinitionInput{
+		TaskDefinition: &taskDefinitionARN,
+		Include: []types.TaskDefinitionField{
+			types.TaskDefinitionFieldTags,
+		},
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	// From Steampipe
+	splitArn := strings.Split(taskDefinitionARN, ":")
+	name := splitArn[len(splitArn)-1]
+
+	values = append(values, Resource{
+		ARN:  taskDefinitionARN,
+		Name: name,
+		Description: model.ECSTaskDefinitionDescription{
+			TaskDefinition: output.TaskDefinition,
+			Tags:           output.Tags,
+		},
+	})
 
 	return values, nil
 }
@@ -304,6 +394,85 @@ func ECSContainerInstance(ctx context.Context, cfg aws.Config) ([]Resource, erro
 						ContainerInstance: v,
 					},
 				})
+			}
+		}
+	}
+
+	return values, nil
+}
+
+func ECSTask(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+	clusters, err := listEcsClusters(ctx, cfg)
+	if err != nil {
+		return nil, err
+	}
+
+	client := ecs.NewFromConfig(cfg)
+	var values []Resource
+
+	for _, cluster := range clusters {
+		cluster := cluster
+		services, err := listECsServices(ctx, cfg, cluster)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, service := range services {
+			service := service
+			paginator := ecs.NewListTasksPaginator(client, &ecs.ListTasksInput{
+				Cluster:     &cluster,
+				ServiceName: &service,
+			})
+			for paginator.HasMorePages() {
+				page, err := paginator.NextPage(ctx)
+				if err != nil {
+					return nil, err
+				}
+
+				if page.TaskArns == nil || len(page.TaskArns) == 0 {
+					continue
+				}
+				output, err := client.DescribeTasks(ctx, &ecs.DescribeTasksInput{
+					Cluster: &cluster,
+					Tasks:   page.TaskArns,
+				})
+				if err != nil {
+					return nil, err
+				}
+				if len(output.Failures) != 0 {
+					return nil, failuresToError(output.Failures)
+				}
+				taskProtections, err := client.GetTaskProtection(ctx, &ecs.GetTaskProtectionInput{
+					Cluster: &cluster,
+					Tasks:   page.TaskArns,
+				})
+				if err != nil {
+					return nil, err
+				}
+				if len(taskProtections.Failures) != 0 {
+					return nil, failuresToError(output.Failures)
+				}
+
+				taskProtectionMap := make(map[string]types.ProtectedTask)
+				for _, taskProtection := range taskProtections.ProtectedTasks {
+					taskProtectionMap[*taskProtection.TaskArn] = taskProtection
+				}
+
+				for _, v := range output.Tasks {
+					description := model.ECSTaskDescription{
+						Task:           v,
+						ServiceName:    service,
+						TaskProtection: nil,
+					}
+					if taskProtection, ok := taskProtectionMap[*v.TaskArn]; ok {
+						description.TaskProtection = &taskProtection
+					}
+					values = append(values, Resource{
+						ARN:         *v.TaskArn,
+						Name:        *v.TaskArn,
+						Description: description,
+					})
+				}
 			}
 		}
 	}

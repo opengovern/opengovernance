@@ -71,6 +71,68 @@ func (r *httpRoutes) Register(e *echo.Echo) {
 	v1.GET("/role/:role/users", httpserver.AuthorizeHandler(r.GetRoleUsers, api.AdminRole))
 	v1.GET("/role/keys", httpserver.AuthorizeHandler(r.GetRoleKeys, api.AdminRole))
 	v1.POST("/key/role", httpserver.AuthorizeHandler(r.UpdateKeyRole, api.AdminRole))
+	v1.GET("/roles", httpserver.AuthorizeHandler(r.ListRoles, api.ViewerRole))
+	v1.GET("/roles/details", httpserver.AuthorizeHandler(r.RolesDescription, api.ViewerRole))
+}
+
+// ListRoles godoc
+//
+//	@Summary		show lists of roles.
+//	@Tags			auth
+//	@Produce		json
+//	@Success		200	{object}	[]api.Role
+//	@Router			/auth/api/v1/roles [get]
+func (r *httpRoutes) ListRoles(ctx echo.Context) error {
+	roles := []api.Role{api.AdminRole, api.ViewerRole, api.EditorRole}
+	return ctx.JSON(http.StatusOK, roles)
+}
+
+// RolesDescription godoc
+//
+//	@Summary		show the description roles and members that use from each role
+//	@Tags			auth
+//	@Produce		json
+//	@Success		200	{object}	[]api.RolesDescription
+//	@Router			/auth/api/v1/roles/details [get]
+func (r *httpRoutes) RolesDescription(ctx echo.Context) error {
+	workspaceID := httpserver.GetWorkspaceID(ctx)
+	users, err := r.auth0Service.SearchUsersByWorkspace(workspaceID)
+	if err != nil {
+		return err
+	}
+
+	var AdminCount int
+	var ViewerCount int
+	var EditorCount int
+
+	for _, u := range users {
+		role := u.AppMetadata.WorkspaceAccess[workspaceID]
+		if role == api.AdminRole {
+			AdminCount++
+		} else if role == api.ViewerRole {
+			ViewerCount++
+		} else if role == api.EditorRole {
+			EditorCount++
+		}
+	}
+
+	var description = []api.RolesDescription{{
+		Role:        api.AdminRole,
+		Description: "The Administrator role is a super user role with all of the capabilities that can be assigned to a role, and its enables access to all data & configuration on a Kaytu Workspace. You cannot edit or delete the Administrator role",
+		UserCount:   AdminCount,
+	},
+		{
+			Role:        api.ViewerRole,
+			Description: "View all resources, but does not allow you to make any changes or trigger any action (running asset discovery) ",
+			UserCount:   ViewerCount,
+		},
+		{
+			Role:        api.EditorRole,
+			Description: "Provide full access to manage all capabilities in a workspace, with three exceptions: Changing Workspace Settings, Modifying Integrations, and making changes to user access controls.",
+			UserCount:   EditorCount,
+		},
+	}
+	return ctx.JSON(http.StatusOK, description)
 }
 
 func bindValidate(ctx echo.Context, i interface{}) error {
