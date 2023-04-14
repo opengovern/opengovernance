@@ -48,32 +48,32 @@ var awsEc2Routetable = []Mapping{
 	{Name: "route.vpc_peering_connection_id", DeepField: "Description.RouteTable.Routes.VpcPeeringConnectionId"},   //TODO-fix this mapping
 }
 var awsFmsPolicy = []Mapping{
-{Name: "arn", Steampipe: "akas"},
-{Name: "arn", Steampipe: "arn"},
-{Name: "delete_all_policy_resources", DeepField: "Description.Policy.ResourceType"}, //TODO-fix this mapping
-{Name: "delete_unused_fm_managed_resources", DeepField: "Description.Policy.DeleteUnusedFMManagedResources"}, //TODO-fix this mapping
-{Name: "description", DeepField: "Description.Tags.Key"}, //TODO-fix this mapping
-{Name: "exclude_resource_tags", DeepField: "Metadata.ResourceType"}, //TODO-fix this mapping
-{Name: "exclude_map.account", DeepField: "Metadata.AccountID"}, //TODO-fix this mapping
-{Name: "exclude_map.orgunit", DeepField: "Metadata.Region"}, //TODO-fix this mapping
-{Name: "include_map.account", DeepField: "Metadata.AccountID"}, //TODO-fix this mapping
-{Name: "include_map.orgunit", DeepField: "Metadata.Region"}, //TODO-fix this mapping
-{Name: "name", DeepField: "Metadata.Name"}, //TODO-fix this mapping
-{Name: "policy_update_token", DeepField: "Description.Policy.RemediationEnabled"}, //TODO-fix this mapping
-{Name: "remediation_enabled", DeepField: "Description.Policy.RemediationEnabled"}, //TODO-fix this mapping
-{Name: "resource_tags", DeepField: "ResourceJobID"}, //TODO-fix this mapping
-{Name: "resource_type", DeepField: "ResourceType"}, //TODO-fix this mapping
-{Name: "resource_type_list", DeepField: "ResourceType"}, //TODO-fix this mapping
-{Name: "security_service_policy_data.managed_service_data", DeepField: "Description.Policy.SecurityServiceType"}, //TODO-fix this mapping
-{Name: "security_service_policy_data.type", DeepField: "Description.Policy.PolicyName"}, //TODO-fix this mapping
+	{Name: "arn", Steampipe: "akas"},
+	{Name: "arn", Steampipe: "arn"},
+	{Name: "delete_all_policy_resources", DeepField: "Description.Policy.ResourceType"},                              //TODO-fix this mapping
+	{Name: "delete_unused_fm_managed_resources", DeepField: "Description.Policy.DeleteUnusedFMManagedResources"},     //TODO-fix this mapping
+	{Name: "description", DeepField: "Description.Tags.Key"},                                                         //TODO-fix this mapping
+	{Name: "exclude_resource_tags", DeepField: "Metadata.ResourceType"},                                              //TODO-fix this mapping
+	{Name: "exclude_map.account", DeepField: "Metadata.AccountID"},                                                   //TODO-fix this mapping
+	{Name: "exclude_map.orgunit", DeepField: "Metadata.Region"},                                                      //TODO-fix this mapping
+	{Name: "include_map.account", DeepField: "Metadata.AccountID"},                                                   //TODO-fix this mapping
+	{Name: "include_map.orgunit", DeepField: "Metadata.Region"},                                                      //TODO-fix this mapping
+	{Name: "name", DeepField: "Metadata.Name"},                                                                       //TODO-fix this mapping
+	{Name: "policy_update_token", DeepField: "Description.Policy.RemediationEnabled"},                                //TODO-fix this mapping
+	{Name: "remediation_enabled", DeepField: "Description.Policy.RemediationEnabled"},                                //TODO-fix this mapping
+	{Name: "resource_tags", DeepField: "ResourceJobID"},                                                              //TODO-fix this mapping
+	{Name: "resource_type", DeepField: "ResourceType"},                                                               //TODO-fix this mapping
+	{Name: "resource_type_list", DeepField: "ResourceType"},                                                          //TODO-fix this mapping
+	{Name: "security_service_policy_data.managed_service_data", DeepField: "Description.Policy.SecurityServiceType"}, //TODO-fix this mapping
+	{Name: "security_service_policy_data.type", DeepField: "Description.Policy.PolicyName"},                          //TODO-fix this mapping
 }
 var awsInspectorAssessmenttemplate = []Mapping{
-{Name: "arn", Steampipe: "arn"},
-{Name: "arn", Steampipe: "akas"},
-{Name: "name", Steampipe: "name"},
-{Name: "rules_package_arns", Steampipe: "rules_package_arns"},
-{Name: "duration", DeepField: "Description.AssessmentTemplate.DurationInSeconds"}, //TODO-fix this mapping
-{Name: "event_subscription.event", DeepField: "Description.EventSubscriptions.ResourceArn"}, //TODO-fix this mapping
-{Name: "event_subscription.topic_arn", DeepField: "Description.EventSubscriptions.TopicArn"}, //TODO-fix this mapping
-{Name: "target_arn", DeepField: "Metadata.Partition"}, //TODO-fix this mapping
+	{Name: "arn", Steampipe: "arn"},
+	{Name: "arn", Steampipe: "akas"},
+	{Name: "name", Steampipe: "name"},
+	{Name: "rules_package_arns", Steampipe: "rules_package_arns"},
+	{Name: "duration", DeepField: "Description.AssessmentTemplate.DurationInSeconds"},            //TODO-fix this mapping
+	{Name: "event_subscription.event", DeepField: "Description.EventSubscriptions.ResourceArn"},  //TODO-fix this mapping
+	{Name: "event_subscription.topic_arn", DeepField: "Description.EventSubscriptions.TopicArn"}, //TODO-fix this mapping
+	{Name: "target_arn", DeepField: "Metadata.Partition"},                                        //TODO-fix this mapping
 }
