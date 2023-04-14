@@ -65,30 +65,30 @@ func (r *httpRoutes) Register(e *echo.Echo) {
 	v1.POST("/apikey/:id/activate", httpserver.AuthorizeHandler(r.ActivateAPIKey, api.AdminRole))
 	v1.DELETE("/apikey/:id/delete", httpserver.AuthorizeHandler(r.DeleteAPIKey, api.AdminRole))
 	v1.GET("/apikey/:id", httpserver.AuthorizeHandler(r.GetAPIKey, api.AdminRole))
-	v1.GET("/roles", httpserver.AuthorizeHandler(r.listRoles, api.ViewerRole))
-	v1.GET("/roles/details", httpserver.AuthorizeHandler(r.rolesDescription, api.ViewerRole))
+	v1.GET("/roles", httpserver.AuthorizeHandler(r.ListRoles, api.ViewerRole))
+	v1.GET("/roles/details", httpserver.AuthorizeHandler(r.RolesDescription, api.ViewerRole))
 }
 
-// listRoles godoc
+// ListRoles godoc
 //
 //	@Summary		show lists of roles.
 //	@Tags			auth
 //	@Produce		json
 //	@Success		200	{object}	[]api.Role
 //	@Router			/auth/api/v1/roles [get]
-func (r *httpRoutes) listRoles(ctx echo.Context) error {
+func (r *httpRoutes) ListRoles(ctx echo.Context) error {
 	roles := []api.Role{api.AdminRole, api.ViewerRole, api.EditorRole}
 	return ctx.JSON(http.StatusOK, roles)
 }
 
-// rolesDescription godoc
+// RolesDescription godoc
 //
 //	@Summary		show the description roles and members that use from each role
 //	@Tags			auth
 //	@Produce		json
 //	@Success		200	{object}	[]api.RolesDescription
 //	@Router			/auth/api/v1/roles/details [get]
-func (r *httpRoutes) rolesDescription(ctx echo.Context) error {
+func (r *httpRoutes) RolesDescription(ctx echo.Context) error {
 	workspaceID := httpserver.GetWorkspaceID(ctx)
 	users, err := r.auth0Service.SearchUsersByWorkspace(workspaceID)
 	if err != nil {
