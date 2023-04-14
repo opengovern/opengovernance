@@ -8,6 +8,7 @@ import (
 	"math/rand"
 	"net/http"
 	url2 "net/url"
+	"strconv"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/auth/api"
 )
@@ -79,12 +80,12 @@ func (a *Service) fillToken() error {
 	return nil
 }
 
-func (a *Service) GetUser(userId string) (*User, error) {
+func (a *Service) GetUser(userID string) (*User, error) {
 	if err := a.fillToken(); err != nil {
 		return nil, err
 	}
 
-	url := fmt.Sprintf("%s/api/v2/users/%s", a.domain, userId)
+	url := fmt.Sprintf("%s/api/v2/users/%s", a.domain, userID)
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return nil, err
@@ -295,7 +296,7 @@ func (a *Service) PatchUserAppMetadata(userId string, appMetadata Metadata) erro
 	return nil
 }
 
-func (a *Service) SearchUsersByWorkspace(wsID string) ([]User, error) {
+func (a *Service) SearchUsers(wsID string, filters api.GetUsersRequest) ([]User, error) {
 	if err := a.fillToken(); err != nil {
 		return nil, err
 	}
@@ -306,7 +307,14 @@ func (a *Service) SearchUsersByWorkspace(wsID string) ([]User, error) {
 
 	queryString := url.Query()
 	queryString.Set("search_engine", "v3")
-	queryString.Set("q", "_exists_:app_metadata.workspaceAccess."+wsID)
+	query := "_exists_:app_metadata.workspaceAccess." + wsID
+	if filters.EmailVerified != nil {
+		query = query + " AND email_verified:" + strconv.FormatBool(*filters.EmailVerified)
+	}
+	if filters.Email != nil {
+		query = query + " AND email:" + *filters.Email
+	}
+	queryString.Set("q", query)
 	url.RawQuery = queryString.Encode()
 
 	req, err := http.NewRequest("GET", url.String(), nil)
@@ -325,12 +333,29 @@ func (a *Service) SearchUsersByWorkspace(wsID string) ([]User, error) {
 		return nil, err
 	}
 
-	var resp []User
-	err = json.Unmarshal(r, &resp)
+	var users []User
+	err = json.Unmarshal(r, &users)
 	if err != nil {
 		return nil, err
 	}
 
+	var resp []User
+	if filters.Role != nil {
+		for _, user := range users {
+			if func() bool {
+				for _, r := range user.AppMetadata.WorkspaceAccess {
+					if r == *filters.Role {
+						return true
+					}
+				}
+				return false
+			}() {
+				resp = append(resp, user)
+			}
+		}
+	} else {
+		resp = users
+	}
 	return resp, nil
 }
 
@@ -405,4 +430,18 @@ func (a *Service) SearchUsersByRole(role api.Role) ([]User, error) {
 		}
 	}
 	return resp, nil
+}
+
+func (a *Service) CheckUserValidation(userID string, workspaceID string, roles []api.Role) (bool, error) {
+	user, err := a.GetUser(userID)
+	if err != nil {
+		return false, err
+	}
+	role := user.AppMetadata.WorkspaceAccess[workspaceID]
+	for _, r := range roles {
+		if role == r {
+			return true, nil
+		}
+	}
+	return false, nil
 }

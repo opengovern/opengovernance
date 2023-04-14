@@ -195,6 +195,88 @@ func (ts *testSuite) TestDeleteInvitation() {
 	}
 }
 
+func (ts *testSuite) TestGetUsers() {
+	getUserTestCases := []struct {
+		UserId      string
+		Request     []byte
+		WorkspaceID string
+		Error       int
+	}{
+		{
+			UserId: "test1",
+			Request: []byte(`
+			{
+				"email": "testmail@gmail.com",
+				"emailVerified": true,
+				"role":	"ADMIN"
+			}`),
+			WorkspaceID: "ws1",
+		},
+		{
+			UserId: "test3",
+			Request: []byte(`
+			{
+				"email": "testmail@gmail.com",
+				"emailVerified": false
+			}`),
+			WorkspaceID: "ws2",
+		},
+		{
+			UserId: "test2",
+			Error:  http.StatusNoContent,
+			Request: []byte(`
+			{
+				"email": "testmail@gmail.com"
+			}`),
+			WorkspaceID: "ws1",
+		},
+		{
+			UserId: "test4",
+			Error:  http.StatusNoContent,
+			Request: []byte(`
+			{
+			}`),
+			WorkspaceID: "ws4",
+		},
+		{
+			UserId: "test1",
+			Error:  http.StatusNoContent,
+			Request: []byte(`
+			{
+			}`),
+			WorkspaceID: "ws4",
+		},
+	}
+	for i, tc := range getUserTestCases {
+		ts.T().Run(fmt.Sprintf("getUserTestCases-%d", i), func(t *testing.T) {
+			//body, err := json.Marshal(tc.Request)
+			//ts.NoError(err)
+			r := httptest.NewRequest(http.MethodGet, "/", bytes.NewBuffer(tc.Request))
+			r.Header.Set("Content-Type", "application/json; charset=utf8")
+			r.Header.Set(httpserver.XKeibiUserIDHeader, tc.UserId)
+			w := httptest.NewRecorder()
+
+			c := echo.New().NewContext(r, w)
+			c.SetPath("/auth/api/v1/iam/:workspace_id/users")
+			c.SetParamNames("workspace_id")
+			c.SetParamValues(tc.WorkspaceID)
+
+			err := ts.httpRoutes.GetUsers(c)
+			if tc.UserId == "test1" && tc.WorkspaceID == "ws4" {
+				ts.Equal("code=403, message=This request is only available for ADMIN and EDITOR of the workspace.", err.Error())
+			} else {
+				ts.NoError(err)
+				var response api.GetUsersResponse
+				if err := json.NewDecoder(w.Body).Decode(&response); err != nil {
+					ts.T().Fatalf("json decode: %v", err)
+				}
+				fmt.Println(response)
+			}
+		})
+	}
+
+}
+
 func (ts *testSuite) TestGetUser() {
 	getUserTestCases := []struct {
 		UserId   string
@@ -227,7 +309,7 @@ func (ts *testSuite) TestGetUser() {
 				return
 			}
 
-			var response api.WorkspaceRoleBinding
+			var response api.GetUserResponse
 			if err := json.NewDecoder(w.Body).Decode(&response); err != nil {
 				ts.T().Fatalf("json decode: %v", err)
 			}
