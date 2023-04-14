@@ -306,7 +306,7 @@ func (r *httpRoutes) GetUsers(ctx echo.Context) error {
 //	@Produce		json
 //	@Param			userId		path		string	true	"userId"
 //	@Param			workspaceId	path		string	true	"workspaceId"
-//	@Success		200			{object}	api.WorkspaceRoleBinding
+//	@Success		200			{object}	api.GetUserResponse
 //	@Router			/auth/api/v1/iam/{workspace_id}/user/{user_id} [get]
 func (r *httpRoutes) GetUserDetails(ctx echo.Context) error {
 	workspaceID := ctx.Param("workspace_id")
