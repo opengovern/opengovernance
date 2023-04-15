@@ -94,7 +94,8 @@ func bindValidate(ctx echo.Context, i interface{}) error {
 //	@Description	If you want to add a role binding for a user given the email address, call invite first to get a user id. Then call this endpoint.
 //	@Tags			auth
 //	@Produce		json
-//	@Param			request	body		api.PutRoleBindingRequest	true	"Request Body"
+//	@Param			workspaceId	path		string	true	"workspaceId"
+//	@Param			request		body		api.PutRoleBindingRequest	true	"Request Body"
 //	@Success		200		{object}	nil
 //	@Router			/auth/api/v1/iam/{workspace_id}/user/role/binding [put]
 func (r httpRoutes) PutRoleBinding(ctx echo.Context) error {

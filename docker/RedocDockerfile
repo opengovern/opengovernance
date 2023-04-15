@@ -1,0 +1,7 @@
+FROM nginx:alpine
+
+WORKDIR /redoc
+
+COPY . .
+
+COPY ../pkg/redoc/nginx.conf /etc/nginx/nginx.conf 
