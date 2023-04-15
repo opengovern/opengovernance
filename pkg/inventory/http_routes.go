@@ -208,7 +208,6 @@ func (h *HttpHandler) GetResourceGrowthTrend(ctx echo.Context) error {
 //	@Param		endTime			query		string	true	"end time for chart in epoch seconds"
 //	@Param		category		query		string	false	"Category(Template) ID defaults to default template"
 //	@Param		dataPointCount	query		int		false	"Number of data points to return"
-//	@Param		importance		query		string	false	"Filter filters by importance if they have it (array format is supported with , separator | 'all' is also supported)"
 //	@Success	200				{object}	[]api.ResourceGrowthTrendResponse
 //	@Router		/inventory/api/v2/resources/trend [get]
 func (h *HttpHandler) GetResourceGrowthTrendV2(ctx echo.Context) error {
@@ -234,12 +233,6 @@ func (h *HttpHandler) GetResourceGrowthTrendV2(ctx echo.Context) error {
 		}
 	}
 
-	importance := strings.ToLower(ctx.QueryParam("importance"))
-	if importance == "" {
-		importance = "critical,high"
-	}
-	importanceArray := strings.Split(importance, ",")
-
 	dataPointCount := 10
 	dataPointCountStr := ctx.QueryParam("dataPointCount")
 	if dataPointCountStr != "" {
@@ -252,12 +245,12 @@ func (h *HttpHandler) GetResourceGrowthTrendV2(ctx echo.Context) error {
 	category := ctx.QueryParam("category")
 	var root *CategoryNode
 	if category == "" {
-		root, err = h.graphDb.GetCategoryRootByName(ctx.Request().Context(), RootTypeTemplateRoot, DefaultTemplateRootName, importanceArray)
+		root, err = h.graphDb.GetCategoryRootByName(ctx.Request().Context(), RootTypeTemplateRoot, DefaultTemplateRootName)
 		if err != nil {
 			return err
 		}
 	} else {
-		root, err = h.graphDb.GetCategory(ctx.Request().Context(), category, importanceArray)
+		root, err = h.graphDb.GetCategory(ctx.Request().Context(), category)
 		if err != nil {
 			return err
 		}
@@ -272,7 +265,7 @@ func (h *HttpHandler) GetResourceGrowthTrendV2(ctx echo.Context) error {
 	}
 
 	for i, sc := range root.Subcategories {
-		cat, err := h.graphDb.GetCategory(ctx.Request().Context(), sc.ElementID, importanceArray)
+		cat, err := h.graphDb.GetCategory(ctx.Request().Context(), sc.ElementID)
 		if err != nil {
 			return err
 		}
@@ -451,12 +444,12 @@ func (h *HttpHandler) GetCostGrowthTrendV2(ctx echo.Context) error {
 	category := ctx.QueryParam("category")
 	var root *CategoryNode
 	if category == "" {
-		root, err = h.graphDb.GetCategoryRootByName(ctx.Request().Context(), RootTypeTemplateRoot, DefaultTemplateRootName, []string{"all"})
+		root, err = h.graphDb.GetCategoryRootByName(ctx.Request().Context(), RootTypeTemplateRoot, DefaultTemplateRootName)
 		if err != nil {
 			return err
 		}
 	} else {
-		root, err = h.graphDb.GetCategory(ctx.Request().Context(), category, []string{"all"})
+		root, err = h.graphDb.GetCategory(ctx.Request().Context(), category)
 		if err != nil {
 			return err
 		}
@@ -466,7 +459,7 @@ func (h *HttpHandler) GetCostGrowthTrendV2(ctx echo.Context) error {
 		switch f.GetFilterType() {
 		case FilterTypeCost:
 			filter := f.(*FilterCostNode)
-			serviceNames = append(serviceNames, filter.ServiceName)
+			serviceNames = append(serviceNames, filter.CostServiceName)
 		}
 	}
 	if len(serviceNames) == 0 {
@@ -474,7 +467,7 @@ func (h *HttpHandler) GetCostGrowthTrendV2(ctx echo.Context) error {
 	}
 
 	for i, sc := range root.Subcategories {
-		cat, err := h.graphDb.GetCategory(ctx.Request().Context(), sc.ElementID, []string{"all"})
+		cat, err := h.graphDb.GetCategory(ctx.Request().Context(), sc.ElementID)
 		if err != nil {
 			return err
 		}
@@ -490,14 +483,14 @@ func (h *HttpHandler) GetCostGrowthTrendV2(ctx echo.Context) error {
 
 	// Map of category ID to a trends mapped by their units
 	trendsMap := map[string]map[string][]api.CostTrendDataPoint{}
-	for serviceName, costArray := range hits {
+	for costServiceName, costArray := range hits {
 		for _, cat := range categories {
 			for _, f := range cat.SubTreeFilters {
 				isProcessed := make(map[string]bool)
 				switch f.GetFilterType() {
 				case FilterTypeCost:
 					filter := f.(*FilterCostNode)
-					if filter.ServiceName != serviceName {
+					if filter.CostServiceName != costServiceName {
 						continue
 					}
 					if _, ok := trendsMap[cat.ElementID]; !ok {
@@ -1113,18 +1106,18 @@ func (h *HttpHandler) GetCategoryNodeResourceCountHelper(ctx context.Context, de
 	)
 	if category == "" {
 		if usePrimary {
-			rootNode, err = h.graphDb.GetPrimaryCategoryRootByName(ctx, RootTypeTemplateRoot, DefaultTemplateRootName, importanceArray)
+			rootNode, err = h.graphDb.GetPrimaryCategoryRootByName(ctx, RootTypeTemplateRoot, DefaultTemplateRootName)
 		} else {
-			rootNode, err = h.graphDb.GetCategoryRootByName(ctx, RootTypeTemplateRoot, DefaultTemplateRootName, importanceArray)
+			rootNode, err = h.graphDb.GetCategoryRootByName(ctx, RootTypeTemplateRoot, DefaultTemplateRootName)
 		}
 		if err != nil {
 			return nil, err
 		}
 	} else {
 		if usePrimary {
-			rootNode, err = h.graphDb.GetPrimaryCategory(ctx, category, importanceArray)
+			rootNode, err = h.graphDb.GetPrimaryCategory(ctx, category)
 		} else {
-			rootNode, err = h.graphDb.GetCategory(ctx, category, importanceArray)
+			rootNode, err = h.graphDb.GetCategory(ctx, category)
 		}
 		if err != nil {
 			return nil, err
@@ -1167,20 +1160,20 @@ func (h *HttpHandler) GetMetricsResourceCountHelper(ctx context.Context, categor
 		}
 
 		filterType := FilterTypeCloudResourceType
-		filtersResourceTypes, err := h.graphDb.GetFilters(ctx, provider, serviceCodeArr, importanceArray, &filterType)
+		filtersResourceTypes, err := h.graphDb.GetFilters(ctx, provider, serviceCodeArr, &filterType)
 		if err != nil {
 			return nil, err
 		}
 		filters = append(filters, filtersResourceTypes...)
 
 		filterType = FilterTypeInsightMetric
-		filtersInsight, err := h.graphDb.GetFilters(ctx, provider, serviceCodeArr, importanceArray, &filterType)
+		filtersInsight, err := h.graphDb.GetFilters(ctx, provider, serviceCodeArr, &filterType)
 		if err != nil {
 			return nil, err
 		}
 		filters = append(filters, filtersInsight...)
 	} else {
-		rootNode, err := h.graphDb.GetCategory(ctx, category, importanceArray)
+		rootNode, err := h.graphDb.GetCategory(ctx, category)
 		if err != nil {
 			return nil, err
 		}
@@ -1213,12 +1206,10 @@ func (h *HttpHandler) GetMetricsResourceCountHelper(ctx context.Context, categor
 			result[f.ElementID] = &api.FilterCloudResourceType{
 				FilterType:    api.FilterTypeCloudResourceType,
 				FilterID:      f.ElementID,
-				CloudProvider: f.CloudProvider,
+				CloudProvider: f.Connector,
 				ResourceType:  f.ResourceType,
 				ResourceName:  f.ResourceName,
-				ServiceCode:   f.ServiceCode,
-				Weight:        f.Weight,
-				Importance:    f.Importance,
+				ServiceCode:   f.ServiceName,
 				ResourceCount: metricIndexed[f.ResourceType],
 			}
 		case FilterTypeInsightMetric:
@@ -1230,14 +1221,12 @@ func (h *HttpHandler) GetMetricsResourceCountHelper(ctx context.Context, categor
 				continue
 			}
 			result[f.ElementID] = &api.FilterInsightMetric{
-				FilterType:    api.FilterTypeInsightMetric,
-				FilterID:      f.ElementID,
-				InsightID:     uint(f.InsightID),
-				CloudProvider: f.CloudProvider,
-				Name:          f.Name,
-				Weight:        f.Weight,
-				Importance:    f.Importance,
-				Value:         int(insightIndexed[uint(f.InsightID)].Result),
+				FilterType: api.FilterTypeInsightMetric,
+				FilterID:   f.ElementID,
+				InsightID:  uint(f.InsightID),
+				Connector:  f.Connector,
+				Name:       f.Name,
+				Value:      int(insightIndexed[uint(f.InsightID)].Result),
 			}
 		}
 	}
@@ -1325,7 +1314,7 @@ func (h *HttpHandler) GetCategoryNodeResourceCount(ctx echo.Context) error {
 //	@Param		importance	query		string	false	"Filter filters by importance if they have it (array format is supported with , separator | 'all' is also supported)"
 //	@Param		time		query		string	false	"timestamp for resource count in epoch seconds either timeWindow or time must be provided"
 //	@Param		timeWindow	query		string	false	"time window either this or time must be provided"	Enums(1d,1w,1m,3m,1y)
-//	@Param		sortBy		query		string	false	"Sort by field - default is weight"					Enums(weight,name,count)
+//	@Param		sortBy		query		string	false	"Sort by field - default is count"					Enums(weight,name,count)
 //	@Success	200			{object}	[]api.Filter
 //	@Router		/inventory/api/v2/metrics/resources/metric [get]
 func (h *HttpHandler) GetMetricsResourceCount(ctx echo.Context) error {
@@ -1341,7 +1330,7 @@ func (h *HttpHandler) GetMetricsResourceCount(ctx echo.Context) error {
 	serviceCode := ctx.QueryParam("servicecode")
 	sortBy := ctx.QueryParam("sortBy")
 	if sortBy == "" {
-		sortBy = "weight"
+		sortBy = "count"
 	}
 
 	timeStr := ctx.QueryParam("time")
@@ -1515,7 +1504,6 @@ func (h *HttpHandler) GetMetricsResourceCountComposition(ctx echo.Context) error
 			CloudProvider: provider,
 			ResourceType:  "Others",
 			ResourceName:  "Others",
-			Weight:        0,
 			ResourceCount: 0,
 		}
 		for i := top; i < len(resultAsArr); i++ {
@@ -1536,18 +1524,18 @@ func (h *HttpHandler) GetCategoryNodeCostHelper(ctx context.Context, depth int, 
 	)
 	if category == "" {
 		if usePrimary {
-			rootNode, err = h.graphDb.GetPrimaryCategoryRootByName(ctx, RootTypeTemplateRoot, DefaultTemplateRootName, []string{"all"})
+			rootNode, err = h.graphDb.GetPrimaryCategoryRootByName(ctx, RootTypeTemplateRoot, DefaultTemplateRootName)
 		} else {
-			rootNode, err = h.graphDb.GetCategoryRootByName(ctx, RootTypeTemplateRoot, DefaultTemplateRootName, []string{"all"})
+			rootNode, err = h.graphDb.GetCategoryRootByName(ctx, RootTypeTemplateRoot, DefaultTemplateRootName)
 		}
 		if err != nil {
 			return nil, err
 		}
 	} else {
 		if usePrimary {
-			rootNode, err = h.graphDb.GetPrimaryCategory(ctx, category, []string{"all"})
+			rootNode, err = h.graphDb.GetPrimaryCategory(ctx, category)
 		} else {
-			rootNode, err = h.graphDb.GetCategory(ctx, category, []string{"all"})
+			rootNode, err = h.graphDb.GetCategory(ctx, category)
 		}
 		if err != nil {
 			return nil, err
@@ -1557,7 +1545,7 @@ func (h *HttpHandler) GetCategoryNodeCostHelper(ctx context.Context, depth int, 
 	serviceNames := make([]string, 0)
 	for _, filter := range rootNode.SubTreeFilters {
 		if filter.GetFilterType() == FilterTypeCost {
-			serviceNames = append(serviceNames, filter.(*FilterCostNode).ServiceName)
+			serviceNames = append(serviceNames, filter.(*FilterCostNode).CostServiceName)
 		}
 	}
 	if len(serviceNames) == 0 {
@@ -1584,12 +1572,12 @@ func (h *HttpHandler) GetMetricsCostHelper(ctx context.Context, category string,
 	)
 	if category == "" {
 		filterType := FilterTypeCost
-		filters, err = h.graphDb.GetFilters(ctx, provider, nil, []string{"all"}, &filterType)
+		filters, err = h.graphDb.GetFilters(ctx, provider, nil, &filterType)
 		if err != nil {
 			return nil, err
 		}
 	} else {
-		rootNode, err := h.graphDb.GetCategory(ctx, category, []string{"all"})
+		rootNode, err := h.graphDb.GetCategory(ctx, category)
 		if err != nil {
 			return nil, err
 		}
@@ -1599,7 +1587,7 @@ func (h *HttpHandler) GetMetricsCostHelper(ctx context.Context, category string,
 	serviceNames := make([]string, 0)
 	for _, filter := range filters {
 		if filter.GetFilterType() == FilterTypeCost {
-			serviceNames = append(serviceNames, filter.(*FilterCostNode).ServiceName)
+			serviceNames = append(serviceNames, filter.(*FilterCostNode).CostServiceName)
 		}
 	}
 	if len(serviceNames) == 0 {
@@ -1617,12 +1605,12 @@ func (h *HttpHandler) GetMetricsCostHelper(ctx context.Context, category string,
 		if filter.GetFilterType() == FilterTypeCost {
 			costFilter := filter.(*FilterCostNode)
 
-			if cost, ok := aggregatedCostHits[costFilter.ServiceName]; ok {
-				result[costFilter.ServiceName] = &api.FilterCost{
+			if cost, ok := aggregatedCostHits[costFilter.CostServiceName]; ok {
+				result[costFilter.CostServiceName] = &api.FilterCost{
 					FilterType:    api.FilterTypeCost,
 					FilterID:      costFilter.ElementID,
-					ServiceName:   costFilter.Name,
-					CloudProvider: costFilter.CloudProvider,
+					ServiceName:   costFilter.ServiceLabel,
+					CloudProvider: costFilter.Connector,
 					Cost:          cost,
 				}
 			}
@@ -2024,12 +2012,11 @@ func (h *HttpHandler) GetRootTemplates(ctx echo.Context) error {
 //	@Produce	json
 //	@Param		provider	query		string	false	"Provider"
 //	@Param		sourceId	query		string	false	"SourceID"
-//	@Param		importance	query		string	false	"Filter filters by importance if they have it (array format is supported with , separator | 'all' is also supported)"
 //	@Param		time		query		string	false	"timestamp for resource count in epoch seconds"
 //	@Success	200			{object}	[]api.CategoryNode
 //	@Router		/inventory/api/v2/resources/rootCloudProviders [get]
 func (h *HttpHandler) GetRootCloudProviders(ctx echo.Context) error {
-	return GetCategoryRoots(ctx, h, RootTypeCloudProviderRoot)
+	return GetCategoryRoots(ctx, h, RootTypeConnectorRoot)
 }
 
 func GetCategoryRoots(ctx echo.Context, h *HttpHandler, rootType CategoryRootType) error {
@@ -2042,11 +2029,6 @@ func GetCategoryRoots(ctx echo.Context, h *HttpHandler, rootType CategoryRootTyp
 	if sourceID == "" {
 		sourceIDPtr = nil
 	}
-	importance := strings.ToLower(ctx.QueryParam("importance"))
-	if importance == "" {
-		importance = "critical,high"
-	}
-	importanceArray := strings.Split(importance, ",")
 
 	timeStr := ctx.QueryParam("time")
 	timeVal := time.Now().Unix()
@@ -2057,7 +2039,7 @@ func GetCategoryRoots(ctx echo.Context, h *HttpHandler, rootType CategoryRootTyp
 		}
 	}
 
-	templateRoots, err := h.graphDb.GetCategoryRoots(ctx.Request().Context(), rootType, importanceArray)
+	templateRoots, err := h.graphDb.GetCategoryRoots(ctx.Request().Context(), rootType)
 	if err != nil {
 		return err
 	}
@@ -2515,9 +2497,9 @@ func (h *HttpHandler) GetServiceSummary(ctx echo.Context) error {
 	category := ctx.QueryParam("category")
 	var serviceNodes []ServiceNode
 	if category == "" {
-		serviceNodes, err = h.graphDb.GetCloudServiceNodes(ctx.Request().Context(), provider, []string{"all"})
+		serviceNodes, err = h.graphDb.GetCloudServiceNodes(ctx.Request().Context(), provider)
 	} else {
-		serviceNodes, err = h.graphDb.GetCloudServiceNodesByCategory(ctx.Request().Context(), provider, category, []string{"all"})
+		serviceNodes, err = h.graphDb.GetCloudServiceNodesByCategory(ctx.Request().Context(), provider, category)
 	}
 
 	if err != nil {
@@ -2530,12 +2512,12 @@ func (h *HttpHandler) GetServiceSummary(ctx echo.Context) error {
 			switch f.GetFilterType() {
 			case FilterTypeCost:
 				filter := f.(*FilterCostNode)
-				if provider.IsNull() || provider.String() == filter.CloudProvider.String() {
-					costFilterMap[filter.ServiceName] = map[string]api.CostWithUnit{}
+				if provider.IsNull() || provider.String() == filter.Connector.String() {
+					costFilterMap[filter.CostServiceName] = map[string]api.CostWithUnit{}
 				}
 			case FilterTypeCloudResourceType:
 				filter := f.(*FilterCloudResourceTypeNode)
-				if provider.IsNull() || provider.String() == filter.CloudProvider.String() {
+				if provider.IsNull() || provider.String() == filter.Connector.String() {
 					resourceTypeFilterMap[filter.ResourceType] = 0
 				}
 			}
@@ -2594,9 +2576,9 @@ func (h *HttpHandler) GetServiceSummary(ctx echo.Context) error {
 	var serviceSummaries []api.ServiceSummary
 	for _, serviceNode := range serviceNodes {
 		serviceSummary := api.ServiceSummary{
-			CloudProvider: api.SourceType(serviceNode.CloudProvider.String()),
+			CloudProvider: api.SourceType(serviceNode.Connector.String()),
 			ServiceName:   serviceNode.Name,
-			ServiceCode:   serviceNode.ServiceCode,
+			ServiceCode:   serviceNode.ServiceName,
 			ResourceCount: nil,
 			Cost:          nil,
 		}
@@ -2604,12 +2586,12 @@ func (h *HttpHandler) GetServiceSummary(ctx echo.Context) error {
 			switch f.GetFilterType() {
 			case FilterTypeCost:
 				filter := f.(*FilterCostNode)
-				if provider.IsNull() || provider.String() == filter.CloudProvider.String() {
-					serviceSummary.Cost = internal.MergeCostMaps(serviceSummary.Cost, costFilterMap[filter.ServiceName])
+				if provider.IsNull() || provider.String() == filter.Connector.String() {
+					serviceSummary.Cost = internal.MergeCostMaps(serviceSummary.Cost, costFilterMap[filter.CostServiceName])
 				}
 			case FilterTypeCloudResourceType:
 				filter := f.(*FilterCloudResourceTypeNode)
-				if provider.IsNull() || provider.String() == filter.CloudProvider.String() {
+				if provider.IsNull() || provider.String() == filter.Connector.String() {
 					count := int(resourceTypeFilterMap[filter.ResourceType])
 					serviceSummary.ResourceCount = pointerAdd(serviceSummary.ResourceCount, &count)
 				}
@@ -3326,13 +3308,13 @@ func (h *HttpHandler) GetResourcesFilters(ctx echo.Context) error {
 		})
 	}
 
-	services, err := h.graphDb.GetCloudServiceNodes(ctx.Request().Context(), source.Nil, []string{"all"})
+	services, err := h.graphDb.GetCloudServiceNodes(ctx.Request().Context(), source.Nil)
 	if err != nil {
 		return err
 	}
 	resp.Filters.Service = make(map[string]string)
 	for _, service := range services {
-		resp.Filters.Service[service.ServiceCode] = service.Name
+		resp.Filters.Service[service.ServiceName] = service.Name
 	}
 	if !api.FilterIsEmpty(req.Filters.Service) {
 		servicesMap := make(map[string]string)
@@ -3344,7 +3326,7 @@ func (h *HttpHandler) GetResourcesFilters(ctx echo.Context) error {
 		resp.Filters.Service = servicesMap
 	}
 
-	categories, err := h.graphDb.GetNormalCategoryNodes(ctx.Request().Context(), source.Nil, []string{"all"})
+	categories, err := h.graphDb.GetNormalCategoryNodes(ctx.Request().Context(), source.Nil)
 	if err != nil {
 		return err
 	}
@@ -3467,7 +3449,7 @@ func (h *HttpHandler) GetResources(ctx echo.Context, provider *api.SourceType, c
 			pvd, _ = source.ParseType(string(*provider))
 		}
 		filterType := FilterTypeCloudResourceType
-		resourceFilters, err := h.graphDb.GetFilters(ctx.Request().Context(), pvd, req.Filters.Service, []string{"all"}, &filterType)
+		resourceFilters, err := h.graphDb.GetFilters(ctx.Request().Context(), pvd, req.Filters.Service, &filterType)
 		if err != nil {
 			return err
 		}
@@ -3484,7 +3466,7 @@ func (h *HttpHandler) GetResources(ctx echo.Context, provider *api.SourceType, c
 	if !api.FilterIsEmpty(req.Filters.Category) && api.FilterIsEmpty(req.Filters.ResourceType) {
 		resourceTypesMap := make(map[string]bool)
 		for _, category := range req.Filters.Category {
-			cat, err := h.graphDb.GetCategory(ctx.Request().Context(), category, []string{"all"})
+			cat, err := h.graphDb.GetCategory(ctx.Request().Context(), category)
 			if err != nil {
 				return err
 			}

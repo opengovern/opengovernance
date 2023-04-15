@@ -196,7 +196,7 @@ func GetResourceTypeListFromFilters(filters []Filter, provider source.Type) []st
 		switch filter.GetFilterType() {
 		case FilterTypeCloudResourceType:
 			f := filter.(*FilterCloudResourceTypeNode)
-			if !provider.IsNull() && f.CloudProvider.String() != provider.String() {
+			if !provider.IsNull() && f.Connector.String() != provider.String() {
 				continue
 			}
 			result[f.ResourceType] = struct{}{}
@@ -217,7 +217,7 @@ func GetInsightIDListFromFilters(filters []Filter, provider source.Type) []uint 
 		switch filter.GetFilterType() {
 		case FilterTypeInsightMetric:
 			f := filter.(*FilterInsightMetricNode)
-			if !provider.IsNull() && f.CloudProvider.String() != provider.String() {
+			if !provider.IsNull() && f.Connector.String() != provider.String() {
 				continue
 			}
 			result[uint(f.InsightID)] = struct{}{}
@@ -238,7 +238,7 @@ func GetServiceNameListFromFilters(filters []Filter) []string {
 		switch filter.GetFilterType() {
 		case FilterTypeCost:
 			f := filter.(*FilterCostNode)
-			result[f.ServiceName] = struct{}{}
+			result[f.CostServiceName] = struct{}{}
 		default:
 			continue
 		}
@@ -271,12 +271,10 @@ func GetCategoryNodeResourceCountInfo(categoryNode *CategoryNode, metrics map[st
 				directFilters[filter.ElementID] = api.FilterCloudResourceType{
 					FilterType:    api.FilterTypeCloudResourceType,
 					FilterID:      filter.ElementID,
-					CloudProvider: filter.CloudProvider,
+					CloudProvider: filter.Connector,
 					ResourceName:  filter.ResourceName,
-					ServiceCode:   filter.ServiceCode,
+					ServiceCode:   filter.ServiceName,
 					ResourceType:  filter.ResourceType,
-					Weight:        filter.Weight,
-					Importance:    filter.Importance,
 					ResourceCount: 0,
 				}
 			}
@@ -295,12 +293,10 @@ func GetCategoryNodeResourceCountInfo(categoryNode *CategoryNode, metrics map[st
 				filterWithCount := api.FilterCloudResourceType{
 					FilterType:    api.FilterTypeCloudResourceType,
 					FilterID:      filter.ElementID,
-					CloudProvider: filter.CloudProvider,
+					CloudProvider: filter.Connector,
 					ResourceType:  filter.ResourceType,
 					ResourceName:  filter.ResourceName,
-					ServiceCode:   filter.ServiceCode,
-					Weight:        filter.Weight,
-					Importance:    filter.Importance,
+					ServiceCode:   filter.ServiceName,
 					ResourceCount: 0,
 				}
 				if m, ok := metrics[filter.ResourceType]; ok {
@@ -349,8 +345,8 @@ func GetCategoryNodeCostInfo(categoryNode *CategoryNode, costs map[string]map[st
 				directFilters[filter.ElementID] = api.FilterCost{
 					FilterType:    api.FilterTypeCost,
 					FilterID:      filter.ElementID,
-					ServiceName:   filter.Name,
-					CloudProvider: filter.CloudProvider,
+					ServiceName:   filter.ServiceLabel,
+					CloudProvider: filter.Connector,
 					Cost:          map[string]api.CostWithUnit{},
 				}
 			}
@@ -378,11 +374,11 @@ func GetCategoryNodeCostInfo(categoryNode *CategoryNode, costs map[string]map[st
 				filterWithCost := api.FilterCost{
 					FilterType:    api.FilterTypeCost,
 					FilterID:      filter.ElementID,
-					ServiceName:   filter.Name,
-					CloudProvider: filter.CloudProvider,
+					ServiceName:   filter.ServiceLabel,
+					CloudProvider: filter.Connector,
 					Cost:          map[string]api.CostWithUnit{},
 				}
-				if m, ok := costs[filter.ServiceName]; ok {
+				if m, ok := costs[filter.CostServiceName]; ok {
 					for costUnit, costValue := range m {
 						currentCostValue, _ := apiCosts[costUnit]
 						currentCostValue.Cost += costValue.Cost
@@ -438,9 +434,9 @@ func RenderCategoryResourceCountDFS(ctx context.Context, graphDb GraphDatabase, 
 			var subCategoryNode *CategoryNode
 			var err error
 			if usePrimary {
-				subCategoryNode, err = graphDb.GetPrimaryCategory(ctx, c.CategoryID, importanceArray)
+				subCategoryNode, err = graphDb.GetPrimaryCategory(ctx, c.CategoryID)
 			} else {
-				subCategoryNode, err = graphDb.GetCategory(ctx, c.CategoryID, importanceArray)
+				subCategoryNode, err = graphDb.GetCategory(ctx, c.CategoryID)
 			}
 			if err != nil {
 				return nil, err
@@ -474,9 +470,9 @@ func RenderCategoryCostDFS(ctx context.Context, graphDb GraphDatabase, rootNode 
 			var subCategoryNode *CategoryNode
 			var err error
 			if usePrimary {
-				subCategoryNode, err = graphDb.GetPrimaryCategory(ctx, c.CategoryID, []string{"all"})
+				subCategoryNode, err = graphDb.GetPrimaryCategory(ctx, c.CategoryID)
 			} else {
-				subCategoryNode, err = graphDb.GetCategory(ctx, c.CategoryID, []string{"all"})
+				subCategoryNode, err = graphDb.GetCategory(ctx, c.CategoryID)
 			}
 			if err != nil {
 				return nil, err

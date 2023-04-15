@@ -13,6 +13,7 @@ import (
 	hamiltonAuth "github.com/manicminer/hamilton/auth"
 	"gitlab.com/keibiengine/keibi-engine/pkg/azure/describer"
 	"gitlab.com/keibiengine/keibi-engine/pkg/describe/enums"
+	"gitlab.com/keibiengine/keibi-engine/pkg/source"
 )
 
 type ResourceDescriber interface {
@@ -26,8 +27,12 @@ func (fn ResourceDescribeFunc) DescribeResources(c context.Context, a autorest.A
 }
 
 type ResourceType struct {
-	Name          string
+	Connector source.Type
+
+	ResourceName  string
+	ResourceLabel string
 	ServiceName   string
+
 	ListDescriber ResourceDescriber
 	GetDescriber  ResourceDescriber // TODO: Change the type?
 
@@ -37,7 +42,9 @@ type ResourceType struct {
 
 var resourceTypes = map[string]ResourceType{
 	"Microsoft.Compute/virtualMachineScaleSetsVm": {
-		Name:                 "Microsoft.Compute/virtualMachineScaleSetsVm",
+		Connector:            source.CloudAzure,
+		ResourceName:         "Microsoft.Compute/virtualMachineScaleSetsVm",
+		ResourceLabel:        "",
 		ServiceName:          "Compute",
 		ListDescriber:        DescribeBySubscription(describer.ComputeVirtualMachineScaleSetVm),
 		GetDescriber:         nil,
@@ -45,7 +52,9 @@ var resourceTypes = map[string]ResourceType{
 		TerraformServiceName: "",
 	},
 	"Microsoft.EventGrid/domains/topics": {
-		Name:                 "Microsoft.EventGrid/domains/topics",
+		Connector:            source.CloudAzure,
+		ResourceName:         "Microsoft.EventGrid/domains/topics",
+		ResourceLabel:        "",
 		ServiceName:          "EventGrid",
 		ListDescriber:        DescribeBySubscription(describer.EventGridDomainTopic),
 		GetDescriber:         nil,
@@ -53,7 +62,9 @@ var resourceTypes = map[string]ResourceType{
 		TerraformServiceName: "eventgrid",
 	},
 	"Microsoft.Network/networkWatchers": {
-		Name:                 "Microsoft.Network/networkWatchers",
+		Connector:            source.CloudAzure,
+		ResourceName:         "Microsoft.Network/networkWatchers",
+		ResourceLabel:        "",
 		ServiceName:          "Network",
 		ListDescriber:        DescribeBySubscription(describer.NetworkWatcher),
 		GetDescriber:         nil,
@@ -61,7 +72,9 @@ var resourceTypes = map[string]ResourceType{
 		TerraformServiceName: "network",
 	},
 	"Microsoft.Resources/resourceGroups": {
-		Name:                 "Microsoft.Resources/resourceGroups",
+		Connector:            source.CloudAzure,
+		ResourceName:         "Microsoft.Resources/resourceGroups",
+		ResourceLabel:        "",
 		ServiceName:          "Resources",
 		ListDescriber:        DescribeBySubscription(describer.ResourceGroup),
 		GetDescriber:         nil,
@@ -69,7 +82,9 @@ var resourceTypes = map[string]ResourceType{
 		TerraformServiceName: "resource",
 	},
 	"Microsoft.Web/staticSites": {
-		Name:                 "Microsoft.Web/staticSites",
+		Connector:            source.CloudAzure,
+		ResourceName:         "Microsoft.Web/staticSites",
+		ResourceLabel:        "",
 		ServiceName:          "Web",
 		ListDescriber:        DescribeBySubscription(describer.AppServiceWebApp),
 		GetDescriber:         nil,
@@ -77,7 +92,9 @@ var resourceTypes = map[string]ResourceType{
 		TerraformServiceName: "appservice",
 	},
 	"Microsoft.Resources/serviceprincipals": {
-		Name:                 "Microsoft.Resources/serviceprincipals",
+		Connector:            source.CloudAzure,
+		ResourceName:         "Microsoft.Resources/serviceprincipals",
+		ResourceLabel:        "",
 		ServiceName:          "Resources",
 		ListDescriber:        DescribeADByTenantID(describer.AdServicePrinciple),
 		GetDescriber:         nil,
@@ -85,7 +102,9 @@ var resourceTypes = map[string]ResourceType{
 		TerraformServiceName: "",
 	},
 	"Microsoft.CognitiveServices/accounts": {
-		Name:                 "Microsoft.CognitiveServices/accounts",
+		Connector:            source.CloudAzure,
+		ResourceName:         "Microsoft.CognitiveServices/accounts",
+		ResourceLabel:        "",
 		ServiceName:          "CognitiveServices",
 		ListDescriber:        DescribeBySubscription(describer.CognitiveAccount),
 		GetDescriber:         nil,
@@ -93,7 +112,9 @@ var resourceTypes = map[string]ResourceType{
 		TerraformServiceName: "cognitive",
 	},
 	"Microsoft.Sql/managedInstances": {
-		Name:                 "Microsoft.Sql/managedInstances",
+		Connector:            source.CloudAzure,
+		ResourceName:         "Microsoft.Sql/managedInstances",
+		ResourceLabel:        "",
 		ServiceName:          "Sql",
 		ListDescriber:        DescribeBySubscription(describer.MssqlManagedInstance),
 		GetDescriber:         nil,
@@ -101,7 +122,9 @@ var resourceTypes = map[string]ResourceType{
 		TerraformServiceName: "mssql",
 	},
 	"Microsoft.Sql/servers/databases": {
-		Name:                 "Microsoft.Sql/servers/databases",
+		Connector:            source.CloudAzure,
+		ResourceName:         "Microsoft.Sql/servers/databases",
+		ResourceLabel:        "",
 		ServiceName:          "Sql",
 		ListDescriber:        DescribeBySubscription(describer.SqlDatabase),
 		GetDescriber:         nil,
@@ -109,7 +132,9 @@ var resourceTypes = map[string]ResourceType{
 		TerraformServiceName: "sql",
 	},
 	"Microsoft.Storage/fileShares": {
-		Name:                 "Microsoft.Storage/fileShares",
+		Connector:            source.CloudAzure,
+		ResourceName:         "Microsoft.Storage/fileShares",
+		ResourceLabel:        "",
 		ServiceName:          "Storage",
 		ListDescriber:        DescribeBySubscription(describer.StorageFileShare),
 		GetDescriber:         nil,
@@ -117,7 +142,9 @@ var resourceTypes = map[string]ResourceType{
 		TerraformServiceName: "storage",
 	},
 	"Microsoft.DBforPostgreSQL/servers": {
-		Name:                 "Microsoft.DBforPostgreSQL/servers",
+		Connector:            source.CloudAzure,
+		ResourceName:         "Microsoft.DBforPostgreSQL/servers",
+		ResourceLabel:        "",
 		ServiceName:          "DBforPostgreSQL",
 		ListDescriber:        DescribeBySubscription(describer.PostgresqlServer),
 		GetDescriber:         nil,
@@ -125,7 +152,9 @@ var resourceTypes = map[string]ResourceType{
 		TerraformServiceName: "postgres",
 	},
 	"Microsoft.Security/pricings": {
-		Name:                 "Microsoft.Security/pricings",
+		Connector:            source.CloudAzure,
+		ResourceName:         "Microsoft.Security/pricings",
+		ResourceLabel:        "",
 		ServiceName:          "Security",
 		ListDescriber:        DescribeBySubscription(describer.SecurityCenterSubscriptionPricing),
 		GetDescriber:         nil,
@@ -133,7 +162,9 @@ var resourceTypes = map[string]ResourceType{
 		TerraformServiceName: "securitycenter",
 	},
 	"Microsoft.Insights/guestDiagnosticSettings": {
-		Name:                 "Microsoft.Insights/guestDiagnosticSettings",
+		Connector:            source.CloudAzure,
+		ResourceName:         "Microsoft.Insights/guestDiagnosticSettings",
+		ResourceLabel:        "",
 		ServiceName:          "Insights",
 		ListDescriber:        DescribeBySubscription(describer.DiagnosticSetting),
 		GetDescriber:         nil,
@@ -141,7 +172,9 @@ var resourceTypes = map[string]ResourceType{
 		TerraformServiceName: "",
 	},
 	"Microsoft.Resources/groups": {
-		Name:                 "Microsoft.Resources/groups",
+		Connector:            source.CloudAzure,
+		ResourceName:         "Microsoft.Resources/groups",
+		ResourceLabel:        "",
 		ServiceName:          "Resources",
 		ListDescriber:        DescribeADByTenantID(describer.AdGroup),
 		GetDescriber:         nil,
@@ -149,7 +182,9 @@ var resourceTypes = map[string]ResourceType{
 		TerraformServiceName: "",
 	},
 	"Microsoft.Web/hostingEnvironments": {
-		Name:                 "Microsoft.Web/hostingEnvironments",
+		Connector:            source.CloudAzure,
+		ResourceName:         "Microsoft.Web/hostingEnvironments",
+		ResourceLabel:        "",
 		ServiceName:          "Web",
 		ListDescriber:        DescribeBySubscription(describer.AppServiceEnvironment),
 		GetDescriber:         nil,
@@ -157,7 +192,9 @@ var resourceTypes = map[string]ResourceType{
 		TerraformServiceName: "web",
 	},
 	"Microsoft.Cache/redis": {
-		Name:                 "Microsoft.Cache/redis",
+		Connector:            source.CloudAzure,
+		ResourceName:         "Microsoft.Cache/redis",
+		ResourceLabel:        "",
 		ServiceName:          "Cache",
 		ListDescriber:        DescribeBySubscription(describer.RedisCache),
 		GetDescriber:         nil,
@@ -165,7 +202,9 @@ var resourceTypes = map[string]ResourceType{
 		TerraformServiceName: "redis",
 	},
 	"Microsoft.ContainerRegistry/registries": {
-		Name:                 "Microsoft.ContainerRegistry/registries",
+		Connector:            source.CloudAzure,
+		ResourceName:         "Microsoft.ContainerRegistry/registries",
+		ResourceLabel:        "",
 		ServiceName:          "ContainerRegistry",
 		ListDescriber:        DescribeBySubscription(describer.ContainerRegistry),
 		GetDescriber:         nil,
@@ -173,7 +212,9 @@ var resourceTypes = map[string]ResourceType{
 		TerraformServiceName: "containers",
 	},
 	"Microsoft.DataFactory/factoriesPipelines": {
-		Name:                 "Microsoft.DataFactory/factoriesPipelines",
+		Connector:            source.CloudAzure,
+		ResourceName:         "Microsoft.DataFactory/factoriesPipelines",
+		ResourceLabel:        "",
 		ServiceName:          "DataFactory",
 		ListDescriber:        DescribeBySubscription(describer.DataFactoryPipeline),
 		GetDescriber:         nil,
@@ -181,7 +222,9 @@ var resourceTypes = map[string]ResourceType{
 		TerraformServiceName: "datafactory",
 	},
 	"Microsoft.Compute/resourceSku": {
-		Name:                 "Microsoft.Compute/resourceSku",
+		Connector:            source.CloudAzure,
+		ResourceName:         "Microsoft.Compute/resourceSku",
+		ResourceLabel:        "",
 		ServiceName:          "Compute",
 		ListDescriber:        DescribeBySubscription(describer.ComputeResourceSKU),
 		GetDescriber:         nil,
@@ -189,7 +232,9 @@ var resourceTypes = map[string]ResourceType{
 		TerraformServiceName: "",
 	},
 	"Microsoft.Network/expressRouteCircuits": {
-		Name:                 "Microsoft.Network/expressRouteCircuits",
+		Connector:            source.CloudAzure,
+		ResourceName:         "Microsoft.Network/expressRouteCircuits",
+		ResourceLabel:        "",
 		ServiceName:          "Network",
 		ListDescriber:        DescribeBySubscription(describer.ExpressRouteCircuit),
 		GetDescriber:         nil,
@@ -197,7 +242,9 @@ var resourceTypes = map[string]ResourceType{
 		TerraformServiceName: "network",
 	},
 	"Microsoft.Management/groups": {
-		Name:                 "Microsoft.Management/groups",
+		Connector:            source.CloudAzure,
+		ResourceName:         "Microsoft.Management/groups",
+		ResourceLabel:        "",
 		ServiceName:          "Management",
 		ListDescriber:        DescribeBySubscription(describer.ManagementGroup),
 		GetDescriber:         nil,
@@ -205,7 +252,9 @@ var resourceTypes = map[string]ResourceType{
 		TerraformServiceName: "managementgroup",
 	},
 	"Microsoft.Sql/virtualMachines": {
-		Name:                 "Microsoft.Sql/virtualMachines",
+		Connector:            source.CloudAzure,
+		ResourceName:         "Microsoft.Sql/virtualMachines",
+		ResourceLabel:        "",
 		ServiceName:          "Sql",
 		ListDescriber:        DescribeBySubscription(describer.SqlServerVirtualMachine),
 		GetDescriber:         nil,
@@ -213,7 +262,9 @@ var resourceTypes = map[string]ResourceType{
 		TerraformServiceName: "",
 	},
 	"Microsoft.Storage/tableServices": {
-		Name:                 "Microsoft.Storage/tableServices",
+		Connector:            source.CloudAzure,
+		ResourceName:         "Microsoft.Storage/tableServices",
+		ResourceLabel:        "",
 		ServiceName:          "Storage",
 		ListDescriber:        DescribeBySubscription(describer.StorageTableService),
 		GetDescriber:         nil,
@@ -221,7 +272,9 @@ var resourceTypes = map[string]ResourceType{
 		TerraformServiceName: "",
 	},
 	"Microsoft.Synapse/workspaces": {
-		Name:                 "Microsoft.Synapse/workspaces",
+		Connector:            source.CloudAzure,
+		ResourceName:         "Microsoft.Synapse/workspaces",
+		ResourceLabel:        "",
 		ServiceName:          "Synapse",
 		ListDescriber:        DescribeBySubscription(describer.SynapseWorkspace),
 		GetDescriber:         nil,
@@ -229,7 +282,9 @@ var resourceTypes = map[string]ResourceType{
 		TerraformServiceName: "synapse",
 	},
 	"Microsoft.StreamAnalytics/streamingJobs": {
-		Name:                 "Microsoft.StreamAnalytics/streamingJobs",
+		Connector:            source.CloudAzure,
+		ResourceName:         "Microsoft.StreamAnalytics/streamingJobs",
+		ResourceLabel:        "",
 		ServiceName:          "StreamAnalytics",
 		ListDescriber:        DescribeBySubscription(describer.StreamAnalyticsJob),
 		GetDescriber:         nil,
@@ -237,7 +292,9 @@ var resourceTypes = map[string]ResourceType{
 		TerraformServiceName: "streamanalytics",
 	},
 	"Microsoft.CostManagement/CostBySubscription": {
-		Name:                 "Microsoft.CostManagement/CostBySubscription",
+		Connector:            source.CloudAzure,
+		ResourceName:         "Microsoft.CostManagement/CostBySubscription",
+		ResourceLabel:        "",
 		ServiceName:          "CostManagement",
 		ListDescriber:        DescribeBySubscription(describer.DailyCostBySubscription),
 		GetDescriber:         nil,
@@ -245,7 +302,9 @@ var resourceTypes = map[string]ResourceType{
 		TerraformServiceName: "",
 	},
 	"Microsoft.ContainerService/managedClusters": {
-		Name:                 "Microsoft.ContainerService/managedClusters",
+		Connector:            source.CloudAzure,
+		ResourceName:         "Microsoft.ContainerService/managedClusters",
+		ResourceLabel:        "",
 		ServiceName:          "ContainerService",
 		ListDescriber:        DescribeBySubscription(describer.KubernetesCluster),
 		GetDescriber:         nil,
@@ -253,7 +312,9 @@ var resourceTypes = map[string]ResourceType{
 		TerraformServiceName: "containers",
 	},
 	"Microsoft.DataFactory/factories": {
-		Name:                 "Microsoft.DataFactory/factories",
+		Connector:            source.CloudAzure,
+		ResourceName:         "Microsoft.DataFactory/factories",
+		ResourceLabel:        "",
 		ServiceName:          "DataFactory",
 		ListDescriber:        DescribeBySubscription(describer.DataFactory),
 		GetDescriber:         nil,
@@ -261,7 +322,9 @@ var resourceTypes = map[string]ResourceType{
 		TerraformServiceName: "datafactory",
 	},
 	"Microsoft.Sql/servers": {
-		Name:                 "Microsoft.Sql/servers",
+		Connector:            source.CloudAzure,
+		ResourceName:         "Microsoft.Sql/servers",
+		ResourceLabel:        "",
 		ServiceName:          "Sql",
 		ListDescriber:        DescribeBySubscription(describer.SqlServer),
 		GetDescriber:         nil,
@@ -269,7 +332,9 @@ var resourceTypes = map[string]ResourceType{
 		TerraformServiceName: "sql",
 	},
 	"Microsoft.Security/autoProvisioningSettings": {
-		Name:                 "Microsoft.Security/autoProvisioningSettings",
+		Connector:            source.CloudAzure,
+		ResourceName:         "Microsoft.Security/autoProvisioningSettings",
+		ResourceLabel:        "",
 		ServiceName:          "Security",
 		ListDescriber:        DescribeBySubscription(describer.SecurityCenterAutoProvisioning),
 		GetDescriber:         nil,
@@ -277,7 +342,9 @@ var resourceTypes = map[string]ResourceType{
 		TerraformServiceName: "securitycenter",
 	},
 	"Microsoft.Insights/logProfiles": {
-		Name:                 "Microsoft.Insights/logProfiles",
+		Connector:            source.CloudAzure,
+		ResourceName:         "Microsoft.Insights/logProfiles",
+		ResourceLabel:        "",
 		ServiceName:          "Insights",
 		ListDescriber:        DescribeBySubscription(describer.LogProfile),
 		GetDescriber:         nil,
@@ -285,7 +352,9 @@ var resourceTypes = map[string]ResourceType{
 		TerraformServiceName: "",
 	},
 	"Microsoft.DataBoxEdge/dataBoxEdgeDevices": {
-		Name:                 "Microsoft.DataBoxEdge/dataBoxEdgeDevices",
+		Connector:            source.CloudAzure,
+		ResourceName:         "Microsoft.DataBoxEdge/dataBoxEdgeDevices",
+		ResourceLabel:        "",
 		ServiceName:          "DataBoxEdge",
 		ListDescriber:        DescribeBySubscription(describer.DataboxEdgeDevice),
 		GetDescriber:         nil,
@@ -293,7 +362,9 @@ var resourceTypes = map[string]ResourceType{
 		TerraformServiceName: "databoxedge",
 	},
 	"Microsoft.Network/loadBalancers": {
-		Name:                 "Microsoft.Network/loadBalancers",
+		Connector:            source.CloudAzure,
+		ResourceName:         "Microsoft.Network/loadBalancers",
+		ResourceLabel:        "",
 		ServiceName:          "Network",
 		ListDescriber:        DescribeBySubscription(describer.LoadBalancer),
 		GetDescriber:         nil,
@@ -301,7 +372,9 @@ var resourceTypes = map[string]ResourceType{
 		TerraformServiceName: "loadbalancer",
 	},
 	"Microsoft.Network/azureFirewalls": {
-		Name:                 "Microsoft.Network/azureFirewalls",
+		Connector:            source.CloudAzure,
+		ResourceName:         "Microsoft.Network/azureFirewalls",
+		ResourceLabel:        "",
 		ServiceName:          "Network",
 		ListDescriber:        DescribeBySubscription(describer.NetworkAzureFirewall),
 		GetDescriber:         nil,
@@ -309,7 +382,9 @@ var resourceTypes = map[string]ResourceType{
 		TerraformServiceName: "firewall",
 	},
 	"Microsoft.Management/locks": {
-		Name:                 "Microsoft.Management/locks",
+		Connector:            source.CloudAzure,
+		ResourceName:         "Microsoft.Management/locks",
+		ResourceLabel:        "",
 		ServiceName:          "Management",
 		ListDescriber:        DescribeBySubscription(describer.ManagementLock),
 		GetDescriber:         nil,
@@ -317,7 +392,9 @@ var resourceTypes = map[string]ResourceType{
 		TerraformServiceName: "",
 	},
 	"Microsoft.Compute/virtualMachineScaleSetNetworkInterface": {
-		Name:                 "Microsoft.Compute/virtualMachineScaleSetNetworkInterface",
+		Connector:            source.CloudAzure,
+		ResourceName:         "Microsoft.Compute/virtualMachineScaleSetNetworkInterface",
+		ResourceLabel:        "",
 		ServiceName:          "Compute",
 		ListDescriber:        DescribeBySubscription(describer.ComputeVirtualMachineScaleSetNetworkInterface),
 		GetDescriber:         nil,
@@ -325,7 +402,9 @@ var resourceTypes = map[string]ResourceType{
 		TerraformServiceName: "",
 	},
 	"Microsoft.Network/frontDoors": {
-		Name:                 "Microsoft.Network/frontDoors",
+		Connector:            source.CloudAzure,
+		ResourceName:         "Microsoft.Network/frontDoors",
+		ResourceLabel:        "",
 		ServiceName:          "Network",
 		ListDescriber:        DescribeBySubscription(describer.FrontDoor),
 		GetDescriber:         nil,
@@ -333,7 +412,9 @@ var resourceTypes = map[string]ResourceType{
 		TerraformServiceName: "frontdoor",
 	},
 	"Microsoft.Resources/subscriptions/resourceGroups": {
-		Name:                 "Microsoft.Resources/subscriptions/resourceGroups",
+		Connector:            source.CloudAzure,
+		ResourceName:         "Microsoft.Resources/subscriptions/resourceGroups",
+		ResourceLabel:        "",
 		ServiceName:          "Resources",
 		ListDescriber:        describer.GenericResourceGraph{Table: "ResourceContainers", Type: "Microsoft.Resources/subscriptions/resourceGroups"},
 		GetDescriber:         nil,
@@ -341,7 +422,9 @@ var resourceTypes = map[string]ResourceType{
 		TerraformServiceName: "",
 	},
 	"Microsoft.Authorization/policyAssignments": {
-		Name:                 "Microsoft.Authorization/policyAssignments",
+		Connector:            source.CloudAzure,
+		ResourceName:         "Microsoft.Authorization/policyAssignments",
+		ResourceLabel:        "",
 		ServiceName:          "Authorization",
 		ListDescriber:        DescribeBySubscription(describer.PolicyAssignment),
 		GetDescriber:         nil,
@@ -349,7 +432,9 @@ var resourceTypes = map[string]ResourceType{
 		TerraformServiceName: "",
 	},
 	"Microsoft.Search/searchServices": {
-		Name:                 "Microsoft.Search/searchServices",
+		Connector:            source.CloudAzure,
+		ResourceName:         "Microsoft.Search/searchServices",
+		ResourceLabel:        "",
 		ServiceName:          "Search",
 		ListDescriber:        DescribeBySubscription(describer.SearchService),
 		GetDescriber:         nil,
@@ -357,7 +442,9 @@ var resourceTypes = map[string]ResourceType{
 		TerraformServiceName: "search",
 	},
 	"Microsoft.Security/settings": {
-		Name:                 "Microsoft.Security/settings",
+		Connector:            source.CloudAzure,
+		ResourceName:         "Microsoft.Security/settings",
+		ResourceLabel:        "",
 		ServiceName:          "Security",
 		ListDescriber:        DescribeBySubscription(describer.SecurityCenterSetting),
 		GetDescriber:         nil,
@@ -365,7 +452,9 @@ var resourceTypes = map[string]ResourceType{
 		TerraformServiceName: "securitycenter",
 	},
 	"Microsoft.RecoveryServices/vaults": {
-		Name:                 "Microsoft.RecoveryServices/vaults",
+		Connector:            source.CloudAzure,
+		ResourceName:         "Microsoft.RecoveryServices/vaults",
+		ResourceLabel:        "",
 		ServiceName:          "RecoveryServices",
 		ListDescriber:        DescribeBySubscription(describer.RecoveryServicesVault),
 		GetDescriber:         nil,
@@ -373,7 +462,9 @@ var resourceTypes = map[string]ResourceType{
 		TerraformServiceName: "recoveryservices",
 	},
 	"Microsoft.Compute/diskEncryptionSets": {
-		Name:                 "Microsoft.Compute/diskEncryptionSets",
+		Connector:            source.CloudAzure,
+		ResourceName:         "Microsoft.Compute/diskEncryptionSets",
+		ResourceLabel:        "",
 		ServiceName:          "Compute",
 		ListDescriber:        DescribeBySubscription(describer.ComputeDiskEncryptionSet),
 		GetDescriber:         nil,
@@ -381,7 +472,9 @@ var resourceTypes = map[string]ResourceType{
 		TerraformServiceName: "compute",
 	},
 	"Microsoft.DocumentDB/SqlDatabases": {
-		Name:                 "Microsoft.DocumentDB/SqlDatabases",
+		Connector:            source.CloudAzure,
+		ResourceName:         "Microsoft.DocumentDB/SqlDatabases",
+		ResourceLabel:        "",
 		ServiceName:          "DocumentDB",
 		ListDescriber:        DescribeBySubscription(describer.DocumentDBSQLDatabase),
 		GetDescriber:         nil,
@@ -389,7 +482,9 @@ var resourceTypes = map[string]ResourceType{
 		TerraformServiceName: "cosmos",
 	},
 	"Microsoft.EventGrid/topics": {
-		Name:                 "Microsoft.EventGrid/topics",
+		Connector:            source.CloudAzure,
+		ResourceName:         "Microsoft.EventGrid/topics",
+		ResourceLabel:        "",
 		ServiceName:          "EventGrid",
 		ListDescriber:        DescribeBySubscription(describer.EventGridTopic),
 		GetDescriber:         nil,
@@ -397,7 +492,9 @@ var resourceTypes = map[string]ResourceType{
 		TerraformServiceName: "eventgrid",
 	},
 	"Microsoft.EventHub/namespaces": {
-		Name:                 "Microsoft.EventHub/namespaces",
+		Connector:            source.CloudAzure,
+		ResourceName:         "Microsoft.EventHub/namespaces",
+		ResourceLabel:        "",
 		ServiceName:          "EventHub",
 		ListDescriber:        DescribeBySubscription(describer.EventhubNamespace),
 		GetDescriber:         nil,
@@ -405,7 +502,9 @@ var resourceTypes = map[string]ResourceType{
 		TerraformServiceName: "eventhub",
 	},
 	"Microsoft.MachineLearningServices/workspaces": {
-		Name:                 "Microsoft.MachineLearningServices/workspaces",
+		Connector:            source.CloudAzure,
+		ResourceName:         "Microsoft.MachineLearningServices/workspaces",
+		ResourceLabel:        "",
 		ServiceName:          "MachineLearningServices",
 		ListDescriber:        DescribeBySubscription(describer.MachineLearningWorkspace),
 		GetDescriber:         nil,
@@ -413,7 +512,9 @@ var resourceTypes = map[string]ResourceType{
 		TerraformServiceName: "machinelearning",
 	},
 	"Microsoft.CostManagement/CostByResourceType": {
-		Name:                 "Microsoft.CostManagement/CostByResourceType",
+		Connector:            source.CloudAzure,
+		ResourceName:         "Microsoft.CostManagement/CostByResourceType",
+		ResourceLabel:        "",
 		ServiceName:          "CostManagement",
 		ListDescriber:        DescribeBySubscription(describer.DailyCostByResourceType),
 		GetDescriber:         nil,
@@ -421,7 +522,9 @@ var resourceTypes = map[string]ResourceType{
 		TerraformServiceName: "",
 	},
 	"Microsoft.Network/networkInterfaces": {
-		Name:                 "Microsoft.Network/networkInterfaces",
+		Connector:            source.CloudAzure,
+		ResourceName:         "Microsoft.Network/networkInterfaces",
+		ResourceLabel:        "",
 		ServiceName:          "Network",
 		ListDescriber:        DescribeBySubscription(describer.NetworkInterface),
 		GetDescriber:         nil,
@@ -429,7 +532,9 @@ var resourceTypes = map[string]ResourceType{
 		TerraformServiceName: "network",
 	},
 	"Microsoft.Network/publicIPAddresses": {
-		Name:                 "Microsoft.Network/publicIPAddresses",
+		Connector:            source.CloudAzure,
+		ResourceName:         "Microsoft.Network/publicIPAddresses",
+		ResourceLabel:        "",
 		ServiceName:          "Network",
 		ListDescriber:        DescribeBySubscription(describer.PublicIPAddress),
 		GetDescriber:         nil,
@@ -437,7 +542,9 @@ var resourceTypes = map[string]ResourceType{
 		TerraformServiceName: "network",
 	},
 	"Microsoft.HealthcareApis/services": {
-		Name:                 "Microsoft.HealthcareApis/services",
+		Connector:            source.CloudAzure,
+		ResourceName:         "Microsoft.HealthcareApis/services",
+		ResourceLabel:        "",
 		ServiceName:          "HealthcareApis",
 		ListDescriber:        DescribeBySubscription(describer.HealthcareService),
 		GetDescriber:         nil,
@@ -445,7 +552,9 @@ var resourceTypes = map[string]ResourceType{
 		TerraformServiceName: "healthcare",
 	},
 	"Microsoft.ServiceBus/namespaces": {
-		Name:                 "Microsoft.ServiceBus/namespaces",
+		Connector:            source.CloudAzure,
+		ResourceName:         "Microsoft.ServiceBus/namespaces",
+		ResourceLabel:        "",
 		ServiceName:          "ServiceBus",
 		ListDescriber:        DescribeBySubscription(describer.ServicebusNamespace),
 		GetDescriber:         nil,
@@ -453,7 +562,9 @@ var resourceTypes = map[string]ResourceType{
 		TerraformServiceName: "servicebus",
 	},
 	"Microsoft.Web/sites": {
-		Name:                 "Microsoft.Web/sites",
+		Connector:            source.CloudAzure,
+		ResourceName:         "Microsoft.Web/sites",
+		ResourceLabel:        "",
 		ServiceName:          "Web",
 		ListDescriber:        DescribeBySubscription(describer.AppServiceFunctionApp),
 		GetDescriber:         nil,
@@ -461,7 +572,9 @@ var resourceTypes = map[string]ResourceType{
 		TerraformServiceName: "web",
 	},
 	"Microsoft.Compute/availabilitySets": {
-		Name:                 "Microsoft.Compute/availabilitySets",
+		Connector:            source.CloudAzure,
+		ResourceName:         "Microsoft.Compute/availabilitySets",
+		ResourceLabel:        "",
 		ServiceName:          "Compute",
 		ListDescriber:        DescribeBySubscription(describer.ComputeAvailabilitySet),
 		GetDescriber:         nil,
@@ -469,7 +582,9 @@ var resourceTypes = map[string]ResourceType{
 		TerraformServiceName: "compute",
 	},
 	"Microsoft.Network/virtualNetworks": {
-		Name:                 "Microsoft.Network/virtualNetworks",
+		Connector:            source.CloudAzure,
+		ResourceName:         "Microsoft.Network/virtualNetworks",
+		ResourceLabel:        "",
 		ServiceName:          "Network",
 		ListDescriber:        DescribeBySubscription(describer.VirtualNetwork),
 		GetDescriber:         nil,
@@ -477,7 +592,9 @@ var resourceTypes = map[string]ResourceType{
 		TerraformServiceName: "network",
 	},
 	"Microsoft.Security/securityContacts": {
-		Name:                 "Microsoft.Security/securityContacts",
+		Connector:            source.CloudAzure,
+		ResourceName:         "Microsoft.Security/securityContacts",
+		ResourceLabel:        "",
 		ServiceName:          "Security",
 		ListDescriber:        DescribeBySubscription(describer.SecurityCenterContact),
 		GetDescriber:         nil,
@@ -485,7 +602,9 @@ var resourceTypes = map[string]ResourceType{
 		TerraformServiceName: "securitycenter",
 	},
 	"Microsoft.Compute/diskswriteops": {
-		Name:                 "Microsoft.Compute/diskswriteops",
+		Connector:            source.CloudAzure,
+		ResourceName:         "Microsoft.Compute/diskswriteops",
+		ResourceLabel:        "",
 		ServiceName:          "Compute",
 		ListDescriber:        DescribeBySubscription(describer.ComputeDiskWriteOps),
 		GetDescriber:         nil,
@@ -493,7 +612,9 @@ var resourceTypes = map[string]ResourceType{
 		TerraformServiceName: "",
 	},
 	"Microsoft.Compute/diskswriteopshourly": {
-		Name:                 "Microsoft.Compute/diskswriteopshourly",
+		Connector:            source.CloudAzure,
+		ResourceName:         "Microsoft.Compute/diskswriteopshourly",
+		ResourceLabel:        "",
 		ServiceName:          "Compute",
 		ListDescriber:        DescribeBySubscription(describer.ComputeDiskWriteOpsHourly),
 		GetDescriber:         nil,
@@ -501,7 +622,9 @@ var resourceTypes = map[string]ResourceType{
 		TerraformServiceName: "",
 	},
 	"Microsoft.EventGrid/domains": {
-		Name:                 "Microsoft.EventGrid/domains",
+		Connector:            source.CloudAzure,
+		ResourceName:         "Microsoft.EventGrid/domains",
+		ResourceLabel:        "",
 		ServiceName:          "EventGrid",
 		ListDescriber:        DescribeBySubscription(describer.EventGridDomain),
 		GetDescriber:         nil,
@@ -509,7 +632,9 @@ var resourceTypes = map[string]ResourceType{
 		TerraformServiceName: "eventgrid",
 	},
 	"Microsoft.KeyVault/deletedVaults": {
-		Name:                 "Microsoft.KeyVault/deletedVaults",
+		Connector:            source.CloudAzure,
+		ResourceName:         "Microsoft.KeyVault/deletedVaults",
+		ResourceLabel:        "",
 		ServiceName:          "KeyVault",
 		ListDescriber:        DescribeBySubscription(describer.DeletedVault),
 		GetDescriber:         nil,
@@ -517,7 +642,9 @@ var resourceTypes = map[string]ResourceType{
 		TerraformServiceName: "",
 	},
 	"Microsoft.Storage/tables": {
-		Name:                 "Microsoft.Storage/tables",
+		Connector:            source.CloudAzure,
+		ResourceName:         "Microsoft.Storage/tables",
+		ResourceLabel:        "",
 		ServiceName:          "Storage",
 		ListDescriber:        DescribeBySubscription(describer.StorageTable),
 		GetDescriber:         nil,
@@ -525,7 +652,9 @@ var resourceTypes = map[string]ResourceType{
 		TerraformServiceName: "storage",
 	},
 	"Microsoft.Resources/users": {
-		Name:                 "Microsoft.Resources/users",
+		Connector:            source.CloudAzure,
+		ResourceName:         "Microsoft.Resources/users",
+		ResourceLabel:        "",
 		ServiceName:          "Resources",
 		ListDescriber:        DescribeADByTenantID(describer.AdUsers),
 		GetDescriber:         nil,
@@ -533,7 +662,9 @@ var resourceTypes = map[string]ResourceType{
 		TerraformServiceName: "",
 	},
 	"Microsoft.Compute/snapshots": {
-		Name:                 "Microsoft.Compute/snapshots",
+		Connector:            source.CloudAzure,
+		ResourceName:         "Microsoft.Compute/snapshots",
+		ResourceLabel:        "",
 		ServiceName:          "Compute",
 		ListDescriber:        DescribeBySubscription(describer.ComputeSnapshots),
 		GetDescriber:         nil,
@@ -541,7 +672,9 @@ var resourceTypes = map[string]ResourceType{
 		TerraformServiceName: "compute",
 	},
 	"Microsoft.Kusto/clusters": {
-		Name:                 "Microsoft.Kusto/clusters",
+		Connector:            source.CloudAzure,
+		ResourceName:         "Microsoft.Kusto/clusters",
+		ResourceLabel:        "",
 		ServiceName:          "Kusto",
 		ListDescriber:        DescribeBySubscription(describer.KustoCluster),
 		GetDescriber:         nil,
@@ -549,7 +682,9 @@ var resourceTypes = map[string]ResourceType{
 		TerraformServiceName: "kusto",
 	},
 	"Microsoft.StorageSync/storageSyncServices": {
-		Name:                 "Microsoft.StorageSync/storageSyncServices",
+		Connector:            source.CloudAzure,
+		ResourceName:         "Microsoft.StorageSync/storageSyncServices",
+		ResourceLabel:        "",
 		ServiceName:          "StorageSync",
 		ListDescriber:        DescribeBySubscription(describer.StorageSync),
 		GetDescriber:         nil,
@@ -557,7 +692,9 @@ var resourceTypes = map[string]ResourceType{
 		TerraformServiceName: "storage",
 	},
 	"Microsoft.Security/locations/jitNetworkAccessPolicies": {
-		Name:                 "Microsoft.Security/locations/jitNetworkAccessPolicies",
+		Connector:            source.CloudAzure,
+		ResourceName:         "Microsoft.Security/locations/jitNetworkAccessPolicies",
+		ResourceLabel:        "",
 		ServiceName:          "Security",
 		ListDescriber:        DescribeBySubscription(describer.SecurityCenterJitNetworkAccessPolicy),
 		GetDescriber:         nil,
@@ -565,7 +702,9 @@ var resourceTypes = map[string]ResourceType{
 		TerraformServiceName: "",
 	},
 	"Microsoft.Network/virtualNetworks/subnets": {
-		Name:                 "Microsoft.Network/virtualNetworks/subnets",
+		Connector:            source.CloudAzure,
+		ResourceName:         "Microsoft.Network/virtualNetworks/subnets",
+		ResourceLabel:        "",
 		ServiceName:          "Network",
 		ListDescriber:        DescribeBySubscription(describer.Subnet),
 		GetDescriber:         nil,
@@ -573,7 +712,9 @@ var resourceTypes = map[string]ResourceType{
 		TerraformServiceName: "network",
 	},
 	"Microsoft.LoadBalancer/backendAddressPools": {
-		Name:                 "Microsoft.LoadBalancer/backendAddressPools",
+		Connector:            source.CloudAzure,
+		ResourceName:         "Microsoft.LoadBalancer/backendAddressPools",
+		ResourceLabel:        "",
 		ServiceName:          "LoadBalancer",
 		ListDescriber:        DescribeBySubscription(describer.LoadBalancerBackendAddressPool),
 		GetDescriber:         nil,
@@ -581,7 +722,9 @@ var resourceTypes = map[string]ResourceType{
 		TerraformServiceName: "loadbalancer",
 	},
 	"Microsoft.LoadBalancer/rules": {
-		Name:                 "Microsoft.LoadBalancer/rules",
+		Connector:            source.CloudAzure,
+		ResourceName:         "Microsoft.LoadBalancer/rules",
+		ResourceLabel:        "",
 		ServiceName:          "LoadBalancer",
 		ListDescriber:        DescribeBySubscription(describer.LoadBalancerRule),
 		GetDescriber:         nil,
@@ -589,7 +732,9 @@ var resourceTypes = map[string]ResourceType{
 		TerraformServiceName: "loadbalancer",
 	},
 	"Microsoft.Compute/virtualMachineCpuUtilizationDaily": {
-		Name:                 "Microsoft.Compute/virtualMachineCpuUtilizationDaily",
+		Connector:            source.CloudAzure,
+		ResourceName:         "Microsoft.Compute/virtualMachineCpuUtilizationDaily",
+		ResourceLabel:        "",
 		ServiceName:          "Compute",
 		ListDescriber:        DescribeBySubscription(describer.ComputeVirtualMachineCpuUtilizationDaily),
 		GetDescriber:         nil,
@@ -597,7 +742,9 @@ var resourceTypes = map[string]ResourceType{
 		TerraformServiceName: "",
 	},
 	"Microsoft.DataLakeStore/accounts": {
-		Name:                 "Microsoft.DataLakeStore/accounts",
+		Connector:            source.CloudAzure,
+		ResourceName:         "Microsoft.DataLakeStore/accounts",
+		ResourceLabel:        "",
 		ServiceName:          "DataLakeStore",
 		ListDescriber:        DescribeBySubscription(describer.DataLakeStore),
 		GetDescriber:         nil,
@@ -605,7 +752,9 @@ var resourceTypes = map[string]ResourceType{
 		TerraformServiceName: "",
 	},
 	"Microsoft.StorageCache/caches": {
-		Name:                 "Microsoft.StorageCache/caches",
+		Connector:            source.CloudAzure,
+		ResourceName:         "Microsoft.StorageCache/caches",
+		ResourceLabel:        "",
 		ServiceName:          "StorageCache",
 		ListDescriber:        DescribeBySubscription(describer.HpcCache),
 		GetDescriber:         nil,
@@ -613,7 +762,9 @@ var resourceTypes = map[string]ResourceType{
 		TerraformServiceName: "hpccache",
 	},
 	"Microsoft.Batch/batchAccounts": {
-		Name:                 "Microsoft.Batch/batchAccounts",
+		Connector:            source.CloudAzure,
+		ResourceName:         "Microsoft.Batch/batchAccounts",
+		ResourceLabel:        "",
 		ServiceName:          "Batch",
 		ListDescriber:        DescribeBySubscription(describer.BatchAccount),
 		GetDescriber:         nil,
@@ -621,7 +772,9 @@ var resourceTypes = map[string]ResourceType{
 		TerraformServiceName: "batch",
 	},
 	"Microsoft.ClassicNetwork/networkSecurityGroups": {
-		Name:                 "Microsoft.ClassicNetwork/networkSecurityGroups",
+		Connector:            source.CloudAzure,
+		ResourceName:         "Microsoft.ClassicNetwork/networkSecurityGroups",
+		ResourceLabel:        "",
 		ServiceName:          "ClassicNetwork",
 		ListDescriber:        DescribeBySubscription(describer.NetworkSecurityGroup),
 		GetDescriber:         nil,
@@ -629,7 +782,9 @@ var resourceTypes = map[string]ResourceType{
 		TerraformServiceName: "network",
 	},
 	"Microsoft.Authorization/roleDefinitions": {
-		Name:                 "Microsoft.Authorization/roleDefinitions",
+		Connector:            source.CloudAzure,
+		ResourceName:         "Microsoft.Authorization/roleDefinitions",
+		ResourceLabel:        "",
 		ServiceName:          "Authorization",
 		ListDescriber:        DescribeBySubscription(describer.RoleDefinition),
 		GetDescriber:         nil,
@@ -637,7 +792,9 @@ var resourceTypes = map[string]ResourceType{
 		TerraformServiceName: "authorization",
 	},
 	"Microsoft.Network/applicationSecurityGroups": {
-		Name:                 "Microsoft.Network/applicationSecurityGroups",
+		Connector:            source.CloudAzure,
+		ResourceName:         "Microsoft.Network/applicationSecurityGroups",
+		ResourceLabel:        "",
 		ServiceName:          "Network",
 		ListDescriber:        DescribeBySubscription(describer.NetworkApplicationSecurityGroups),
 		GetDescriber:         nil,
@@ -645,7 +802,9 @@ var resourceTypes = map[string]ResourceType{
 		TerraformServiceName: "network",
 	},
 	"Microsoft.Authorization/elevateAccessRoleAssignment": {
-		Name:                 "Microsoft.Authorization/elevateAccessRoleAssignment",
+		Connector:            source.CloudAzure,
+		ResourceName:         "Microsoft.Authorization/elevateAccessRoleAssignment",
+		ResourceLabel:        "",
 		ServiceName:          "Authorization",
 		ListDescriber:        DescribeBySubscription(describer.RoleAssignment),
 		GetDescriber:         nil,
@@ -653,7 +812,9 @@ var resourceTypes = map[string]ResourceType{
 		TerraformServiceName: "",
 	},
 	"Microsoft.DocumentDB/MongoDatabases": {
-		Name:                 "Microsoft.DocumentDB/MongoDatabases",
+		Connector:            source.CloudAzure,
+		ResourceName:         "Microsoft.DocumentDB/MongoDatabases",
+		ResourceLabel:        "",
 		ServiceName:          "DocumentDB",
 		ListDescriber:        DescribeBySubscription(describer.DocumentDBMongoDatabase),
 		GetDescriber:         nil,
@@ -661,7 +822,9 @@ var resourceTypes = map[string]ResourceType{
 		TerraformServiceName: "cosmos",
 	},
 	"Microsoft.Network/networkWatchers/flowLogs": {
-		Name:                 "Microsoft.Network/networkWatchers/flowLogs",
+		Connector:            source.CloudAzure,
+		ResourceName:         "Microsoft.Network/networkWatchers/flowLogs",
+		ResourceLabel:        "",
 		ServiceName:          "Network",
 		ListDescriber:        DescribeBySubscription(describer.NetworkWatcherFlowLog),
 		GetDescriber:         nil,
@@ -669,7 +832,9 @@ var resourceTypes = map[string]ResourceType{
 		TerraformServiceName: "network",
 	},
 	"Microsoft.Sql/elasticPools": {
-		Name:                 "Microsoft.Sql/elasticPools",
+		Connector:            source.CloudAzure,
+		ResourceName:         "Microsoft.Sql/elasticPools",
+		ResourceLabel:        "",
 		ServiceName:          "Sql",
 		ListDescriber:        DescribeBySubscription(describer.SqlServerElasticPool),
 		GetDescriber:         nil,
@@ -677,7 +842,9 @@ var resourceTypes = map[string]ResourceType{
 		TerraformServiceName: "sql",
 	},
 	"Microsoft.Security/subAssessments": {
-		Name:                 "Microsoft.Security/subAssessments",
+		Connector:            source.CloudAzure,
+		ResourceName:         "Microsoft.Security/subAssessments",
+		ResourceLabel:        "",
 		ServiceName:          "Security",
 		ListDescriber:        DescribeBySubscription(describer.SecurityCenterSubAssessment),
 		GetDescriber:         nil,
@@ -685,7 +852,9 @@ var resourceTypes = map[string]ResourceType{
 		TerraformServiceName: "",
 	},
 	"Microsoft.Compute/disks": {
-		Name:                 "Microsoft.Compute/disks",
+		Connector:            source.CloudAzure,
+		ResourceName:         "Microsoft.Compute/disks",
+		ResourceLabel:        "",
 		ServiceName:          "Compute",
 		ListDescriber:        DescribeBySubscription(describer.ComputeDisk),
 		GetDescriber:         nil,
@@ -693,7 +862,9 @@ var resourceTypes = map[string]ResourceType{
 		TerraformServiceName: "",
 	},
 	"Microsoft.Devices/iotHubDpses": {
-		Name:                 "Microsoft.Devices/iotHubDpses",
+		Connector:            source.CloudAzure,
+		ResourceName:         "Microsoft.Devices/iotHubDpses",
+		ResourceLabel:        "",
 		ServiceName:          "Devices",
 		ListDescriber:        DescribeBySubscription(describer.IOTHubDps),
 		GetDescriber:         nil,
@@ -701,7 +872,9 @@ var resourceTypes = map[string]ResourceType{
 		TerraformServiceName: "",
 	},
 	"Microsoft.HDInsight/clusters": {
-		Name:                 "Microsoft.HDInsight/clusters",
+		Connector:            source.CloudAzure,
+		ResourceName:         "Microsoft.HDInsight/clusters",
+		ResourceLabel:        "",
 		ServiceName:          "HDInsight",
 		ListDescriber:        DescribeBySubscription(describer.HdInsightCluster),
 		GetDescriber:         nil,
@@ -709,7 +882,9 @@ var resourceTypes = map[string]ResourceType{
 		TerraformServiceName: "hdinsight",
 	},
 	"Microsoft.ServiceFabric/clusters": {
-		Name:                 "Microsoft.ServiceFabric/clusters",
+		Connector:            source.CloudAzure,
+		ResourceName:         "Microsoft.ServiceFabric/clusters",
+		ResourceLabel:        "",
 		ServiceName:          "ServiceFabric",
 		ListDescriber:        DescribeBySubscription(describer.ServiceFabricCluster),
 		GetDescriber:         nil,
@@ -717,7 +892,9 @@ var resourceTypes = map[string]ResourceType{
 		TerraformServiceName: "servicefabric",
 	},
 	"Microsoft.SignalRService/signalR": {
-		Name:                 "Microsoft.SignalRService/signalR",
+		Connector:            source.CloudAzure,
+		ResourceName:         "Microsoft.SignalRService/signalR",
+		ResourceLabel:        "",
 		ServiceName:          "SignalRService",
 		ListDescriber:        DescribeBySubscription(describer.SignalrService),
 		GetDescriber:         nil,
@@ -725,7 +902,9 @@ var resourceTypes = map[string]ResourceType{
 		TerraformServiceName: "signalr",
 	},
 	"Microsoft.Storage/blobs": {
-		Name:                 "Microsoft.Storage/blobs",
+		Connector:            source.CloudAzure,
+		ResourceName:         "Microsoft.Storage/blobs",
+		ResourceLabel:        "",
 		ServiceName:          "Storage",
 		ListDescriber:        DescribeBySubscription(describer.StorageBlob),
 		GetDescriber:         nil,
@@ -733,7 +912,9 @@ var resourceTypes = map[string]ResourceType{
 		TerraformServiceName: "storage",
 	},
 	"Microsoft.Storage/blobServives": {
-		Name:                 "Microsoft.Storage/blobServives",
+		Connector:            source.CloudAzure,
+		ResourceName:         "Microsoft.Storage/blobServives",
+		ResourceLabel:        "",
 		ServiceName:          "Storage",
 		ListDescriber:        DescribeBySubscription(describer.StorageBlobService),
 		GetDescriber:         nil,
@@ -741,7 +922,9 @@ var resourceTypes = map[string]ResourceType{
 		TerraformServiceName: "",
 	},
 	"Microsoft.Storage/queues": {
-		Name:                 "Microsoft.Storage/queues",
+		Connector:            source.CloudAzure,
+		ResourceName:         "Microsoft.Storage/queues",
+		ResourceLabel:        "",
 		ServiceName:          "Storage",
 		ListDescriber:        DescribeBySubscription(describer.StorageQueue),
 		GetDescriber:         nil,
@@ -749,7 +932,9 @@ var resourceTypes = map[string]ResourceType{
 		TerraformServiceName: "storage",
 	},
 	"Microsoft.ApiManagement/service": {
-		Name:                 "Microsoft.ApiManagement/service",
+		Connector:            source.CloudAzure,
+		ResourceName:         "Microsoft.ApiManagement/service",
+		ResourceLabel:        "",
 		ServiceName:          "ApiManagement",
 		ListDescriber:        DescribeBySubscription(describer.APIManagement),
 		GetDescriber:         nil,
@@ -757,7 +942,9 @@ var resourceTypes = map[string]ResourceType{
 		TerraformServiceName: "apimanagement",
 	},
 	"Microsoft.Compute/disksreadops": {
-		Name:                 "Microsoft.Compute/disksreadops",
+		Connector:            source.CloudAzure,
+		ResourceName:         "Microsoft.Compute/disksreadops",
+		ResourceLabel:        "",
 		ServiceName:          "Compute",
 		ListDescriber:        DescribeBySubscription(describer.ComputeDiskReadOps),
 		GetDescriber:         nil,
@@ -765,7 +952,9 @@ var resourceTypes = map[string]ResourceType{
 		TerraformServiceName: "",
 	},
 	"Microsoft.Compute/virtualMachineScaleSets": {
-		Name:                 "Microsoft.Compute/virtualMachineScaleSets",
+		Connector:            source.CloudAzure,
+		ResourceName:         "Microsoft.Compute/virtualMachineScaleSets",
+		ResourceLabel:        "",
 		ServiceName:          "Compute",
 		ListDescriber:        DescribeBySubscription(describer.ComputeVirtualMachineScaleSet),
 		GetDescriber:         nil,
@@ -773,7 +962,9 @@ var resourceTypes = map[string]ResourceType{
 		TerraformServiceName: "compute",
 	},
 	"Microsoft.DataFactory/factoriesDatasets": {
-		Name:                 "Microsoft.DataFactory/factoriesDatasets",
+		Connector:            source.CloudAzure,
+		ResourceName:         "Microsoft.DataFactory/factoriesDatasets",
+		ResourceLabel:        "",
 		ServiceName:          "DataFactory",
 		ListDescriber:        DescribeBySubscription(describer.DataFactoryDataset),
 		GetDescriber:         nil,
@@ -781,7 +972,9 @@ var resourceTypes = map[string]ResourceType{
 		TerraformServiceName: "datafactory",
 	},
 	"Microsoft.Authorization/policyDefinitions": {
-		Name:                 "Microsoft.Authorization/policyDefinitions",
+		Connector:            source.CloudAzure,
+		ResourceName:         "Microsoft.Authorization/policyDefinitions",
+		ResourceLabel:        "",
 		ServiceName:          "Authorization",
 		ListDescriber:        DescribeBySubscription(describer.PolicyDefinition),
 		GetDescriber:         nil,
@@ -789,7 +982,9 @@ var resourceTypes = map[string]ResourceType{
 		TerraformServiceName: "",
 	},
 	"Microsoft.Resources/subscriptions/locations": {
-		Name:                 "Microsoft.Resources/subscriptions/locations",
+		Connector:            source.CloudAzure,
+		ResourceName:         "Microsoft.Resources/subscriptions/locations",
+		ResourceLabel:        "",
 		ServiceName:          "Resources",
 		ListDescriber:        DescribeBySubscription(describer.Location),
 		GetDescriber:         nil,
@@ -797,7 +992,9 @@ var resourceTypes = map[string]ResourceType{
 		TerraformServiceName: "",
 	},
 	"Microsoft.Compute/diskAccesses": {
-		Name:                 "Microsoft.Compute/diskAccesses",
+		Connector:            source.CloudAzure,
+		ResourceName:         "Microsoft.Compute/diskAccesses",
+		ResourceLabel:        "",
 		ServiceName:          "Compute",
 		ListDescriber:        DescribeBySubscription(describer.ComputeDiskAccess),
 		GetDescriber:         nil,
@@ -805,7 +1002,9 @@ var resourceTypes = map[string]ResourceType{
 		TerraformServiceName: "compute",
 	},
 	"Microsoft.DBforMySQL/servers": {
-		Name:                 "Microsoft.DBforMySQL/servers",
+		Connector:            source.CloudAzure,
+		ResourceName:         "Microsoft.DBforMySQL/servers",
+		ResourceLabel:        "",
 		ServiceName:          "DBforMySQL",
 		ListDescriber:        DescribeBySubscription(describer.MysqlServer),
 		GetDescriber:         nil,
@@ -813,7 +1012,9 @@ var resourceTypes = map[string]ResourceType{
 		TerraformServiceName: "mysql",
 	},
 	"Microsoft.DataLakeAnalytics/accounts": {
-		Name:                 "Microsoft.DataLakeAnalytics/accounts",
+		Connector:            source.CloudAzure,
+		ResourceName:         "Microsoft.DataLakeAnalytics/accounts",
+		ResourceLabel:        "",
 		ServiceName:          "DataLakeAnalytics",
 		ListDescriber:        DescribeBySubscription(describer.DataLakeAnalyticsAccount),
 		GetDescriber:         nil,
@@ -821,7 +1022,9 @@ var resourceTypes = map[string]ResourceType{
 		TerraformServiceName: "",
 	},
 	"Microsoft.Insights/activityLogAlerts": {
-		Name:                 "Microsoft.Insights/activityLogAlerts",
+		Connector:            source.CloudAzure,
+		ResourceName:         "Microsoft.Insights/activityLogAlerts",
+		ResourceLabel:        "",
 		ServiceName:          "Insights",
 		ListDescriber:        DescribeBySubscription(describer.LogAlert),
 		GetDescriber:         nil,
@@ -829,7 +1032,9 @@ var resourceTypes = map[string]ResourceType{
 		TerraformServiceName: "",
 	},
 	"Microsoft.Compute/virtualMachineCpuUtilizationHourly": {
-		Name:                 "Microsoft.Compute/virtualMachineCpuUtilizationHourly",
+		Connector:            source.CloudAzure,
+		ResourceName:         "Microsoft.Compute/virtualMachineCpuUtilizationHourly",
+		ResourceLabel:        "",
 		ServiceName:          "Compute",
 		ListDescriber:        DescribeBySubscription(describer.ComputeVirtualMachineCpuUtilizationHourly),
 		GetDescriber:         nil,
@@ -837,7 +1042,9 @@ var resourceTypes = map[string]ResourceType{
 		TerraformServiceName: "",
 	},
 	"Microsoft.LoadBalancer/outboundRules": {
-		Name:                 "Microsoft.LoadBalancer/outboundRules",
+		Connector:            source.CloudAzure,
+		ResourceName:         "Microsoft.LoadBalancer/outboundRules",
+		ResourceLabel:        "",
 		ServiceName:          "LoadBalancer",
 		ListDescriber:        DescribeBySubscription(describer.LoadBalancerOutboundRule),
 		GetDescriber:         nil,
@@ -845,7 +1052,9 @@ var resourceTypes = map[string]ResourceType{
 		TerraformServiceName: "loadbalancer",
 	},
 	"Microsoft.HybridCompute/machines": {
-		Name:                 "Microsoft.HybridCompute/machines",
+		Connector:            source.CloudAzure,
+		ResourceName:         "Microsoft.HybridCompute/machines",
+		ResourceLabel:        "",
 		ServiceName:          "HybridCompute",
 		ListDescriber:        DescribeBySubscription(describer.HybridComputeMachine),
 		GetDescriber:         nil,
@@ -853,7 +1062,9 @@ var resourceTypes = map[string]ResourceType{
 		TerraformServiceName: "hybridcompute",
 	},
 	"Microsoft.LoadBalancer/natRules": {
-		Name:                 "Microsoft.LoadBalancer/natRules",
+		Connector:            source.CloudAzure,
+		ResourceName:         "Microsoft.LoadBalancer/natRules",
+		ResourceLabel:        "",
 		ServiceName:          "LoadBalancer",
 		ListDescriber:        DescribeBySubscription(describer.LoadBalancerNatRule),
 		GetDescriber:         nil,
@@ -861,7 +1072,9 @@ var resourceTypes = map[string]ResourceType{
 		TerraformServiceName: "loadbalancer",
 	},
 	"Microsoft.Resources/providers": {
-		Name:                 "Microsoft.Resources/providers",
+		Connector:            source.CloudAzure,
+		ResourceName:         "Microsoft.Resources/providers",
+		ResourceLabel:        "",
 		ServiceName:          "Resources",
 		ListDescriber:        DescribeBySubscription(describer.ResourceProvider),
 		GetDescriber:         nil,
@@ -869,7 +1082,9 @@ var resourceTypes = map[string]ResourceType{
 		TerraformServiceName: "",
 	},
 	"Microsoft.Network/routeTables": {
-		Name:                 "Microsoft.Network/routeTables",
+		Connector:            source.CloudAzure,
+		ResourceName:         "Microsoft.Network/routeTables",
+		ResourceLabel:        "",
 		ServiceName:          "Network",
 		ListDescriber:        DescribeBySubscription(describer.RouteTables),
 		GetDescriber:         nil,
@@ -877,7 +1092,9 @@ var resourceTypes = map[string]ResourceType{
 		TerraformServiceName: "network",
 	},
 	"Microsoft.DocumentDB/databaseAccounts": {
-		Name:                 "Microsoft.DocumentDB/databaseAccounts",
+		Connector:            source.CloudAzure,
+		ResourceName:         "Microsoft.DocumentDB/databaseAccounts",
+		ResourceLabel:        "",
 		ServiceName:          "DocumentDB",
 		ListDescriber:        DescribeBySubscription(describer.CosmosdbAccount),
 		GetDescriber:         nil,
@@ -885,7 +1102,9 @@ var resourceTypes = map[string]ResourceType{
 		TerraformServiceName: "cosmos",
 	},
 	"Microsoft.Network/applicationGateways": {
-		Name:                 "Microsoft.Network/applicationGateways",
+		Connector:            source.CloudAzure,
+		ResourceName:         "Microsoft.Network/applicationGateways",
+		ResourceLabel:        "",
 		ServiceName:          "Network",
 		ListDescriber:        DescribeBySubscription(describer.ApplicationGateway),
 		GetDescriber:         nil,
@@ -893,7 +1112,9 @@ var resourceTypes = map[string]ResourceType{
 		TerraformServiceName: "network",
 	},
 	"Microsoft.Security/automations": {
-		Name:                 "Microsoft.Security/automations",
+		Connector:            source.CloudAzure,
+		ResourceName:         "Microsoft.Security/automations",
+		ResourceLabel:        "",
 		ServiceName:          "Security",
 		ListDescriber:        DescribeBySubscription(describer.SecurityCenterAutomation),
 		GetDescriber:         nil,
@@ -901,7 +1122,9 @@ var resourceTypes = map[string]ResourceType{
 		TerraformServiceName: "securitycenter",
 	},
 	"Microsoft.Kubernetes/connectedClusters": {
-		Name:                 "Microsoft.Kubernetes/connectedClusters",
+		Connector:            source.CloudAzure,
+		ResourceName:         "Microsoft.Kubernetes/connectedClusters",
+		ResourceLabel:        "",
 		ServiceName:          "Kubernetes",
 		ListDescriber:        DescribeBySubscription(describer.HybridKubernetesConnectedCluster),
 		GetDescriber:         nil,
@@ -909,7 +1132,9 @@ var resourceTypes = map[string]ResourceType{
 		TerraformServiceName: "",
 	},
 	"Microsoft.KeyVault/vaults/keys": {
-		Name:                 "Microsoft.KeyVault/vaults/keys",
+		Connector:            source.CloudAzure,
+		ResourceName:         "Microsoft.KeyVault/vaults/keys",
+		ResourceLabel:        "",
 		ServiceName:          "KeyVault",
 		ListDescriber:        DescribeBySubscription(describer.KeyVaultKey),
 		GetDescriber:         nil,
@@ -917,7 +1142,9 @@ var resourceTypes = map[string]ResourceType{
 		TerraformServiceName: "",
 	},
 	"Microsoft.DBforMariaDB/servers": {
-		Name:                 "Microsoft.DBforMariaDB/servers",
+		Connector:            source.CloudAzure,
+		ResourceName:         "Microsoft.DBforMariaDB/servers",
+		ResourceLabel:        "",
 		ServiceName:          "DBforMariaDB",
 		ListDescriber:        DescribeBySubscription(describer.MariadbServer),
 		GetDescriber:         nil,
@@ -925,7 +1152,9 @@ var resourceTypes = map[string]ResourceType{
 		TerraformServiceName: "mariadb",
 	},
 	"Microsoft.Compute/disksreadopsdaily": {
-		Name:                 "Microsoft.Compute/disksreadopsdaily",
+		Connector:            source.CloudAzure,
+		ResourceName:         "Microsoft.Compute/disksreadopsdaily",
+		ResourceLabel:        "",
 		ServiceName:          "Compute",
 		ListDescriber:        DescribeBySubscription(describer.ComputeDiskReadOpsDaily),
 		GetDescriber:         nil,
@@ -933,7 +1162,9 @@ var resourceTypes = map[string]ResourceType{
 		TerraformServiceName: "",
 	},
 	"Microsoft.Web/plan": {
-		Name:                 "Microsoft.Web/plan",
+		Connector:            source.CloudAzure,
+		ResourceName:         "Microsoft.Web/plan",
+		ResourceLabel:        "",
 		ServiceName:          "Web",
 		ListDescriber:        DescribeBySubscription(describer.AppServicePlan),
 		GetDescriber:         nil,
@@ -941,7 +1172,9 @@ var resourceTypes = map[string]ResourceType{
 		TerraformServiceName: "web",
 	},
 	"Microsoft.Compute/disksreadopshourly": {
-		Name:                 "Microsoft.Compute/disksreadopshourly",
+		Connector:            source.CloudAzure,
+		ResourceName:         "Microsoft.Compute/disksreadopshourly",
+		ResourceLabel:        "",
 		ServiceName:          "Compute",
 		ListDescriber:        DescribeBySubscription(describer.ComputeDiskReadOpsHourly),
 		GetDescriber:         nil,
@@ -949,7 +1182,9 @@ var resourceTypes = map[string]ResourceType{
 		TerraformServiceName: "",
 	},
 	"Microsoft.Compute/diskswriteopsdaily": {
-		Name:                 "Microsoft.Compute/diskswriteopsdaily",
+		Connector:            source.CloudAzure,
+		ResourceName:         "Microsoft.Compute/diskswriteopsdaily",
+		ResourceLabel:        "",
 		ServiceName:          "Compute",
 		ListDescriber:        DescribeBySubscription(describer.ComputeDiskWriteOpsDaily),
 		GetDescriber:         nil,
@@ -957,7 +1192,9 @@ var resourceTypes = map[string]ResourceType{
 		TerraformServiceName: "",
 	},
 	"Microsoft.Resources/tenants": {
-		Name:                 "Microsoft.Resources/tenants",
+		Connector:            source.CloudAzure,
+		ResourceName:         "Microsoft.Resources/tenants",
+		ResourceLabel:        "",
 		ServiceName:          "Resources",
 		ListDescriber:        DescribeBySubscription(describer.Tenant),
 		GetDescriber:         nil,
@@ -965,7 +1202,9 @@ var resourceTypes = map[string]ResourceType{
 		TerraformServiceName: "",
 	},
 	"Microsoft.Network/virtualNetworkGateways": {
-		Name:                 "Microsoft.Network/virtualNetworkGateways",
+		Connector:            source.CloudAzure,
+		ResourceName:         "Microsoft.Network/virtualNetworkGateways",
+		ResourceLabel:        "",
 		ServiceName:          "Network",
 		ListDescriber:        DescribeBySubscription(describer.VirtualNetworkGateway),
 		GetDescriber:         nil,
@@ -973,7 +1212,9 @@ var resourceTypes = map[string]ResourceType{
 		TerraformServiceName: "network",
 	},
 	"Microsoft.Devices/iotHubs": {
-		Name:                 "Microsoft.Devices/iotHubs",
+		Connector:            source.CloudAzure,
+		ResourceName:         "Microsoft.Devices/iotHubs",
+		ResourceLabel:        "",
 		ServiceName:          "Devices",
 		ListDescriber:        DescribeBySubscription(describer.IOTHub),
 		GetDescriber:         nil,
@@ -981,7 +1222,9 @@ var resourceTypes = map[string]ResourceType{
 		TerraformServiceName: "iothub",
 	},
 	"Microsoft.Logic/workflows": {
-		Name:                 "Microsoft.Logic/workflows",
+		Connector:            source.CloudAzure,
+		ResourceName:         "Microsoft.Logic/workflows",
+		ResourceLabel:        "",
 		ServiceName:          "Logic",
 		ListDescriber:        DescribeBySubscription(describer.LogicAppWorkflow),
 		GetDescriber:         nil,
@@ -989,7 +1232,9 @@ var resourceTypes = map[string]ResourceType{
 		TerraformServiceName: "logic",
 	},
 	"Microsoft.Sql/flexibleServers": {
-		Name:                 "Microsoft.Sql/flexibleServers",
+		Connector:            source.CloudAzure,
+		ResourceName:         "Microsoft.Sql/flexibleServers",
+		ResourceLabel:        "",
 		ServiceName:          "Sql",
 		ListDescriber:        DescribeBySubscription(describer.SqlServerFlexibleServer),
 		GetDescriber:         nil,
@@ -997,7 +1242,9 @@ var resourceTypes = map[string]ResourceType{
 		TerraformServiceName: "",
 	},
 	"Microsoft.Resources/links": {
-		Name:                 "Microsoft.Resources/links",
+		Connector:            source.CloudAzure,
+		ResourceName:         "Microsoft.Resources/links",
+		ResourceLabel:        "",
 		ServiceName:          "Resources",
 		ListDescriber:        DescribeBySubscription(describer.ResourceLink),
 		GetDescriber:         nil,
@@ -1005,7 +1252,9 @@ var resourceTypes = map[string]ResourceType{
 		TerraformServiceName: "",
 	},
 	"Microsoft.Resources/subscriptions": {
-		Name:                 "Microsoft.Resources/subscriptions",
+		Connector:            source.CloudAzure,
+		ResourceName:         "Microsoft.Resources/subscriptions",
+		ResourceLabel:        "",
 		ServiceName:          "Resources",
 		ListDescriber:        DescribeBySubscription(describer.Subscription),
 		GetDescriber:         nil,
@@ -1013,7 +1262,9 @@ var resourceTypes = map[string]ResourceType{
 		TerraformServiceName: "subscription",
 	},
 	"Microsoft.Compute/image": {
-		Name:                 "Microsoft.Compute/image",
+		Connector:            source.CloudAzure,
+		ResourceName:         "Microsoft.Compute/image",
+		ResourceLabel:        "",
 		ServiceName:          "Compute",
 		ListDescriber:        DescribeBySubscription(describer.ComputeImage),
 		GetDescriber:         nil,
@@ -1021,7 +1272,9 @@ var resourceTypes = map[string]ResourceType{
 		TerraformServiceName: "compute",
 	},
 	"Microsoft.Compute/virtualMachines": {
-		Name:                 "Microsoft.Compute/virtualMachines",
+		Connector:            source.CloudAzure,
+		ResourceName:         "Microsoft.Compute/virtualMachines",
+		ResourceLabel:        "",
 		ServiceName:          "Compute",
 		ListDescriber:        DescribeBySubscription(describer.ComputeVirtualMachine),
 		GetDescriber:         nil,
@@ -1029,7 +1282,9 @@ var resourceTypes = map[string]ResourceType{
 		TerraformServiceName: "compute",
 	},
 	"Microsoft.Network/natGateways": {
-		Name:                 "Microsoft.Network/natGateways",
+		Connector:            source.CloudAzure,
+		ResourceName:         "Microsoft.Network/natGateways",
+		ResourceLabel:        "",
 		ServiceName:          "Network",
 		ListDescriber:        DescribeBySubscription(describer.NatGateway),
 		GetDescriber:         nil,
@@ -1037,7 +1292,9 @@ var resourceTypes = map[string]ResourceType{
 		TerraformServiceName: "network",
 	},
 	"Microsoft.LoadBalancer/probes": {
-		Name:                 "Microsoft.LoadBalancer/probes",
+		Connector:            source.CloudAzure,
+		ResourceName:         "Microsoft.LoadBalancer/probes",
+		ResourceLabel:        "",
 		ServiceName:          "LoadBalancer",
 		ListDescriber:        DescribeBySubscription(describer.LoadBalancerProbe),
 		GetDescriber:         nil,
@@ -1045,7 +1302,9 @@ var resourceTypes = map[string]ResourceType{
 		TerraformServiceName: "loadbalancer",
 	},
 	"Microsoft.KeyVault/vaults": {
-		Name:                 "Microsoft.KeyVault/vaults",
+		Connector:            source.CloudAzure,
+		ResourceName:         "Microsoft.KeyVault/vaults",
+		ResourceLabel:        "",
 		ServiceName:          "KeyVault",
 		ListDescriber:        DescribeBySubscription(describer.KeyVault),
 		GetDescriber:         nil,
@@ -1053,7 +1312,9 @@ var resourceTypes = map[string]ResourceType{
 		TerraformServiceName: "keyvault",
 	},
 	"Microsoft.KeyVault/managedHsms": {
-		Name:                 "Microsoft.KeyVault/managedHsms",
+		Connector:            source.CloudAzure,
+		ResourceName:         "Microsoft.KeyVault/managedHsms",
+		ResourceLabel:        "",
 		ServiceName:          "KeyVault",
 		ListDescriber:        DescribeBySubscription(describer.KeyVaultManagedHardwareSecurityModule),
 		GetDescriber:         nil,
@@ -1061,7 +1322,9 @@ var resourceTypes = map[string]ResourceType{
 		TerraformServiceName: "keyvault",
 	},
 	"Microsoft.KeyVault/vaults/secrets": {
-		Name:                 "Microsoft.KeyVault/vaults/secrets",
+		Connector:            source.CloudAzure,
+		ResourceName:         "Microsoft.KeyVault/vaults/secrets",
+		ResourceLabel:        "",
 		ServiceName:          "KeyVault",
 		ListDescriber:        DescribeBySubscription(describer.KeyVaultSecret),
 		GetDescriber:         nil,
@@ -1069,7 +1332,9 @@ var resourceTypes = map[string]ResourceType{
 		TerraformServiceName: "keyvault",
 	},
 	"Microsoft.AppConfiguration/configurationStores": {
-		Name:                 "Microsoft.AppConfiguration/configurationStores",
+		Connector:            source.CloudAzure,
+		ResourceName:         "Microsoft.AppConfiguration/configurationStores",
+		ResourceLabel:        "",
 		ServiceName:          "AppConfiguration",
 		ListDescriber:        DescribeBySubscription(describer.AppConfiguration),
 		GetDescriber:         nil,
@@ -1077,7 +1342,9 @@ var resourceTypes = map[string]ResourceType{
 		TerraformServiceName: "",
 	},
 	"Microsoft.Compute/virtualMachineCpuUtilization": {
-		Name:                 "Microsoft.Compute/virtualMachineCpuUtilization",
+		Connector:            source.CloudAzure,
+		ResourceName:         "Microsoft.Compute/virtualMachineCpuUtilization",
+		ResourceLabel:        "",
 		ServiceName:          "Compute",
 		ListDescriber:        DescribeBySubscription(describer.ComputeVirtualMachineCpuUtilization),
 		GetDescriber:         nil,
@@ -1085,7 +1352,9 @@ var resourceTypes = map[string]ResourceType{
 		TerraformServiceName: "",
 	},
 	"Microsoft.Storage/storageAccounts": {
-		Name:                 "Microsoft.Storage/storageAccounts",
+		Connector:            source.CloudAzure,
+		ResourceName:         "Microsoft.Storage/storageAccounts",
+		ResourceLabel:        "",
 		ServiceName:          "Storage",
 		ListDescriber:        DescribeBySubscription(describer.StorageAccount),
 		GetDescriber:         nil,
@@ -1093,7 +1362,9 @@ var resourceTypes = map[string]ResourceType{
 		TerraformServiceName: "storage",
 	},
 	"Microsoft.AppPlatform/Spring": {
-		Name:                 "Microsoft.AppPlatform/Spring",
+		Connector:            source.CloudAzure,
+		ResourceName:         "Microsoft.AppPlatform/Spring",
+		ResourceLabel:        "",
 		ServiceName:          "AppPlatform",
 		ListDescriber:        DescribeBySubscription(describer.SpringCloudService),
 		GetDescriber:         nil,
@@ -1110,6 +1381,18 @@ func ListResourceTypes() []string {
 
 	sort.Strings(list)
 	return list
+}
+
+func GetResourceType(resourceType string) (*ResourceType, error) {
+	if r, ok := resourceTypes[resourceType]; ok {
+		return &r, nil
+	}
+
+	return nil, fmt.Errorf("resource type %s not found", resourceType)
+}
+
+func GetResourceTypesMap() map[string]ResourceType {
+	return resourceTypes
 }
 
 type ResourceDescriptionMetadata struct {
