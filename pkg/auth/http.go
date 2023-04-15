@@ -56,8 +56,8 @@ func (r *httpRoutes) Register(e *echo.Echo) {
 	v1.DELETE("/user/role/binding", httpserver.AuthorizeHandler(r.DeleteRoleBinding, api.AdminRole))
 	v1.GET("/user/role/bindings", httpserver.AuthorizeHandler(r.GetRoleBindings, api.EditorRole))
 	v1.GET("/user/:user_id/workspace/membership", httpserver.AuthorizeHandler(r.GetWorkspaceMembership, api.AdminRole))
-	v1.GET("/:workspace_id/users", httpserver.AuthorizeHandler(r.GetUsers, api.AdminRole))
-	v1.GET("/:workspace_id/user/:user_id", httpserver.AuthorizeHandler(r.GetUserDetails, api.AdminRole))
+	v1.GET("/:workspace_id/users", httpserver.AuthorizeHandler(r.GetUsers, api.EditorRole))
+	v1.GET("/:workspace_id/user/:user_id", httpserver.AuthorizeHandler(r.GetUserDetails, api.EditorRole))
 	v1.POST("/:workspace_id/user/invite", httpserver.AuthorizeHandler(r.Invite, api.AdminRole))
 	v1.DELETE("/:workspace_id/user/invite", httpserver.AuthorizeHandler(r.DeleteInvitation, api.AdminRole))
 
@@ -71,8 +71,8 @@ func (r *httpRoutes) Register(e *echo.Echo) {
 	v1.GET("/role/:role/users", httpserver.AuthorizeHandler(r.GetRoleUsers, api.AdminRole))
 	v1.GET("/role/keys", httpserver.AuthorizeHandler(r.GetRoleKeys, api.AdminRole))
 	v1.POST("/key/role", httpserver.AuthorizeHandler(r.UpdateKeyRole, api.AdminRole))
-	v1.GET("/roles", httpserver.AuthorizeHandler(r.ListRoles, api.ViewerRole))
-	v1.GET("/roles/details", httpserver.AuthorizeHandler(r.RolesDescription, api.ViewerRole))
+	v1.GET("/:workspace_id/roles", httpserver.AuthorizeHandler(r.ListRoles, api.EditorRole))
+	v1.GET("/:workspace_id/roles/:role", httpserver.AuthorizeHandler(r.RoleDetails, api.EditorRole))
 }
 
 // ListRoles godoc
@@ -80,23 +80,19 @@ func (r *httpRoutes) Register(e *echo.Echo) {
 //	@Summary		show lists of roles.
 //	@Tags			auth
 //	@Produce		json
-//	@Success		200	{object}	[]api.Role
-//	@Router			/auth/api/v1/roles [get]
+//	@Param			workspaceId	path		string	true	"workspaceId"
+//	@Success		200	{object}	[]api.RolesListResponse
+//	@Router			/auth/api/v1/iam/{workspace_id}/roles [get]
 func (r *httpRoutes) ListRoles(ctx echo.Context) error {
-	roles := []api.Role{api.AdminRole, api.ViewerRole, api.EditorRole}
-	return ctx.JSON(http.StatusOK, roles)
-}
-
-// RolesDescription godoc
-//
-//	@Summary		show the description roles and members that use from each role
-//	@Tags			auth
-//	@Produce		json
-//	@Success		200	{object}	[]api.RolesDescription
-//	@Router			/auth/api/v1/roles/details [get]
-func (r *httpRoutes) RolesDescription(ctx echo.Context) error {
-	workspaceID := httpserver.GetWorkspaceID(ctx)
-	users, err := r.auth0Service.SearchUsersByWorkspace(workspaceID)
+	workspaceID := ctx.Param("workspace_id")
+	validate, err := r.auth0Service.CheckUserValidation(httpserver.GetUserID(ctx), workspaceID, []api.Role{api.AdminRole, api.EditorRole})
+	if err != nil {
+		return err
+	}
+	if validate == false {
+		return echo.NewHTTPError(http.StatusForbidden, "This request is only available for ADMIN of the workspace.") // not sure if StatusForbidden is good for here
+	}
+	users, err := r.auth0Service.SearchUsers(workspaceID, api.GetUsersRequest{})
 	if err != nil {
 		return err
 	}
@@ -116,23 +112,84 @@ func (r *httpRoutes) RolesDescription(ctx echo.Context) error {
 		}
 	}
 
-	var description = []api.RolesDescription{{
-		Role:        api.AdminRole,
-		Description: "The Administrator role is a super user role with all of the capabilities that can be assigned to a role, and its enables access to all data & configuration on a Kaytu Workspace. You cannot edit or delete the Administrator role",
-		UserCount:   AdminCount,
-	},
+	descriptions := map[api.Role]string{
+		api.AdminRole:  "The Administrator role is a super user role with all of the capabilities that can be assigned to a role, and its enables access to all data & configuration on a Kaytu Workspace. You cannot edit or delete the Administrator role.",
+		api.EditorRole: "Provide full access to manage all capabilities in a workspace, with three exceptions: Changing Workspace Settings, Modifying Integrations, and making changes to user access controls.",
+		api.ViewerRole: "View all resources, but does not allow you to make any changes or trigger any action (running asset discovery).",
+	}
+
+	var res = []api.RolesListResponse{
 		{
-			Role:        api.ViewerRole,
-			Description: "View all resources, but does not allow you to make any changes or trigger any action (running asset discovery) ",
-			UserCount:   ViewerCount,
+			Role:        api.AdminRole,
+			Description: descriptions[api.AdminRole],
+			UserCount:   AdminCount,
 		},
 		{
 			Role:        api.EditorRole,
-			Description: "Provide full access to manage all capabilities in a workspace, with three exceptions: Changing Workspace Settings, Modifying Integrations, and making changes to user access controls.",
+			Description: descriptions[api.EditorRole],
 			UserCount:   EditorCount,
 		},
+		{
+			Role:        api.ViewerRole,
+			Description: descriptions[api.ViewerRole],
+			UserCount:   ViewerCount,
+		},
 	}
-	return ctx.JSON(http.StatusOK, description)
+	return ctx.JSON(http.StatusOK, res)
+}
+
+// RoleDetails godoc
+//
+//	@Summary		show the description roles and members that use from each role
+//	@Tags			auth
+//	@Produce		json
+//	@Param			workspaceId	path		string	true	"workspaceId"
+//	@Param			role		path		string	true	"role"
+//	@Success		200	{object}	api.RoleDetailsResponse
+//	@Router			/auth/api/v1/iam/{workspace_id}/roles/{role} [get]
+func (r *httpRoutes) RoleDetails(ctx echo.Context) error {
+	workspaceID := ctx.Param("workspace_id")
+	role := api.Role(ctx.Param("role"))
+	validate, err := r.auth0Service.CheckUserValidation(httpserver.GetUserID(ctx), workspaceID, []api.Role{api.AdminRole, api.EditorRole})
+	if err != nil {
+		return err
+	}
+	if validate == false {
+		return echo.NewHTTPError(http.StatusForbidden, "This request is only available for ADMIN of the workspace.") // not sure if StatusForbidden is good for here
+	}
+	users, err := r.auth0Service.SearchUsers(workspaceID, api.GetUsersRequest{})
+	if err != nil {
+		return err
+	}
+
+	var roleCount int
+	var roleUsers []api.GetUserResponse
+
+	for _, u := range users {
+		r := u.AppMetadata.WorkspaceAccess[workspaceID]
+		if role == r {
+			roleCount++
+			roleUsers = append(roleUsers, api.GetUserResponse{
+				UserID:        u.UserId,
+				UserName:      u.Name,
+				Email:         u.Email,
+				EmailVerified: u.EmailVerified,
+				Role:          role,
+			})
+		}
+	}
+	descriptions := map[api.Role]string{
+		api.AdminRole:  "The Administrator role is a super user role with all of the capabilities that can be assigned to a role, and its enables access to all data & configuration on a Kaytu Workspace. You cannot edit or delete the Administrator role.",
+		api.EditorRole: "Provide full access to manage all capabilities in a workspace, with three exceptions: Changing Workspace Settings, Modifying Integrations, and making changes to user access controls.",
+		api.ViewerRole: "View all resources, but does not allow you to make any changes or trigger any action (running asset discovery).",
+	}
+	var res = api.RoleDetailsResponse{
+		Role:        role,
+		Description: descriptions[role],
+		UserCount:   roleCount,
+		Users:       roleUsers,
+	}
+	return ctx.JSON(http.StatusOK, res)
 }
 
 func bindValidate(ctx echo.Context, i interface{}) error {
