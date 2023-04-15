@@ -7,6 +7,8 @@ import (
 	"strconv"
 	"time"
 
+	"gitlab.com/keibiengine/keibi-engine/pkg/types"
+
 	api3 "gitlab.com/keibiengine/keibi-engine/pkg/auth/api"
 	"gitlab.com/keibiengine/keibi-engine/pkg/compliance/db"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpserver"
@@ -17,10 +19,8 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/compliance/es"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpclient"
 	"gitlab.com/keibiengine/keibi-engine/pkg/source"
-	"gitlab.com/keibiengine/keibi-engine/pkg/types"
 	"gorm.io/gorm"
 
-	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
 )
 
@@ -93,7 +93,16 @@ func (h *HttpHandler) GetFindings(ctx echo.Context) error {
 		sorts = append(sorts, item)
 	}
 
-	res, err := es.FindingsQuery(h.client, nil, req.Filters.Connector, req.Filters.ResourceID, req.Filters.ConnectionID, req.Filters.BenchmarkID, req.Filters.PolicyID, req.Filters.Severity,
+	var benchmarkIDs []string
+	for _, b := range req.Filters.BenchmarkID {
+		bs, err := h.GetBenchmarkTreeIDs(b)
+		if err != nil {
+			return err
+		}
+
+		benchmarkIDs = append(benchmarkIDs, bs...)
+	}
+	res, err := es.FindingsQuery(h.client, nil, req.Filters.Connector, req.Filters.ResourceID, req.Filters.ConnectionID, benchmarkIDs, req.Filters.PolicyID, req.Filters.Severity,
 		sorts, lastIdx, req.Page.Size)
 	if err != nil {
 		return err
@@ -126,8 +135,13 @@ func (h *HttpHandler) GetTopFieldByFindingCount(ctx echo.Context) error {
 		return err
 	}
 
+	benchmarkIDs, err := h.GetBenchmarkTreeIDs(benchmarkID)
+	if err != nil {
+		return err
+	}
+
 	var response api.GetTopFieldResponse
-	res, err := es.FindingsTopFieldQuery(h.client, field, nil, nil, nil, nil, []string{benchmarkID}, nil, nil, count)
+	res, err := es.FindingsTopFieldQuery(h.client, field, nil, nil, nil, nil, benchmarkIDs, nil, nil, count)
 	if err != nil {
 		return err
 	}
@@ -468,10 +482,19 @@ func (h *HttpHandler) GetBenchmarkResultTrend(ctx echo.Context) error {
 //	@Accept		json
 //	@Produce	json
 //	@Param		benchmark_id	path		string	true	"BenchmarkID"
+//	@Param		status			query		string	true	"Status"	Enums(passed,failed,unknown)
 //	@Success	200				{object}	api.BenchmarkTree
 //	@Router		/compliance/api/v1/benchmark/{benchmark_id}/tree [get]
 func (h *HttpHandler) GetBenchmarkTree(ctx echo.Context) error {
+	var status []types.PolicyStatus
 	benchmarkID := ctx.Param("benchmark_id")
+	for k, va := range ctx.QueryParams() {
+		if k == "status" {
+			for _, v := range va {
+				status = append(status, types.PolicyStatus(v))
+			}
+		}
+	}
 
 	benchmark, err := h.db.GetBenchmark(benchmarkID)
 	if err != nil {
@@ -482,7 +505,7 @@ func (h *HttpHandler) GetBenchmarkTree(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid benchmarkID")
 	}
 
-	response, err := GetBenchmarkTree(h.db, h.client, *benchmark)
+	response, err := GetBenchmarkTree(h.db, h.client, *benchmark, status)
 	if err != nil {
 		return err
 	}
@@ -615,44 +638,52 @@ func (h *HttpHandler) ListAssignmentsByBenchmark(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "benchmark id is empty")
 	}
 
-	dbAssignments, err := h.db.GetBenchmarkAssignmentsByBenchmarkId(benchmarkId)
+	benchmark, err := h.db.GetBenchmark(benchmarkId)
 	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("benchmark assignments for %s not found", benchmarkId))
-		}
-		ctx.Logger().Errorf("find benchmark assignments by benchmark %s: %v", benchmarkId, err)
 		return err
 	}
 
-	var sourceIds []string
-	for _, assignment := range dbAssignments {
-		sourceIds = append(sourceIds, assignment.ConnectionId)
+	var apiBenchmark api.Benchmark
+	err = benchmark.PopulateConnectors(h.db, &apiBenchmark)
+	if err != nil {
+		return err
 	}
-	srcs, err := h.onboardClient.GetSources(httpclient.FromEchoContext(ctx), sourceIds)
 
-	var sources []api.BenchmarkAssignedSource
-	for _, assignment := range dbAssignments {
-		srcUUID, err := uuid.Parse(assignment.ConnectionId)
+	hctx := httpclient.FromEchoContext(ctx)
+
+	var resp []api.BenchmarkAssignedSource
+	for _, connector := range apiBenchmark.Connectors {
+		connections, err := h.onboardClient.ListSources(hctx, &connector)
 		if err != nil {
 			return err
 		}
 
-		ba := api.BenchmarkAssignedSource{
-			Connection: types.FullConnection{
-				ID: srcUUID,
-			},
-			AssignedAt: assignment.AssignedAt.Unix(),
-		}
-		for _, src := range srcs {
-			if src.ID.String() == assignment.ConnectionId {
-				ba.Connection.ProviderID = src.ConnectionID
-				ba.Connection.ProviderName = src.ConnectionName
+		for _, connection := range connections {
+			ba := api.BenchmarkAssignedSource{
+				ConnectionID:   connection.ConnectionID,
+				ConnectionName: connection.ConnectionName,
+				Connector:      connector,
+				Status:         false,
 			}
+			resp = append(resp, ba)
 		}
-		sources = append(sources, ba)
 	}
 
-	return ctx.JSON(http.StatusOK, sources)
+	dbAssignments, err := h.db.GetBenchmarkAssignmentsByBenchmarkId(benchmarkId)
+	if err != nil {
+		return err
+	}
+
+	for _, assignment := range dbAssignments {
+		for idx, r := range resp {
+			if r.ConnectionID == assignment.ConnectionId {
+				r.Status = true
+				resp[idx] = r
+			}
+		}
+	}
+
+	return ctx.JSON(http.StatusOK, resp)
 }
 
 // ListAssignments godoc

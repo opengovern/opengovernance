@@ -5,6 +5,7 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/kinesis"
+	"github.com/aws/aws-sdk-go-v2/service/kinesisanalyticsv2"
 	"gitlab.com/keibiengine/keibi-engine/pkg/aws/model"
 )
 
@@ -71,6 +72,52 @@ func KinesisStream(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 		}
 
 		lastStreamName = &streams.StreamNames[len(streams.StreamNames)-1]
+	}
+
+	return values, nil
+}
+
+func KinesisAnalyticsV2Application(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+	client := kinesisanalyticsv2.NewFromConfig(cfg)
+	var values []Resource
+
+	err := PaginateRetrieveAll(func(prevToken *string) (*string, error) {
+		applications, err := client.ListApplications(ctx, &kinesisanalyticsv2.ListApplicationsInput{
+			NextToken: prevToken,
+		})
+		if err != nil {
+			return nil, err
+		}
+		for _, application := range applications.ApplicationSummaries {
+			application := application
+			description, err := client.DescribeApplication(ctx, &kinesisanalyticsv2.DescribeApplicationInput{
+				ApplicationName: application.ApplicationName,
+			})
+			if err != nil {
+				if !isErr(err, "ResourceNotFoundException") && !isErr(err, "InvalidParameter") {
+					return nil, err
+				}
+				continue
+			}
+
+			tags, err := client.ListTagsForResource(ctx, &kinesisanalyticsv2.ListTagsForResourceInput{
+				ResourceARN: description.ApplicationDetail.ApplicationARN,
+			})
+
+			values = append(values, Resource{
+				ARN:  *description.ApplicationDetail.ApplicationARN,
+				Name: *description.ApplicationDetail.ApplicationName,
+				Description: model.KinesisAnalyticsV2ApplicationDescription{
+					Application: *description.ApplicationDetail,
+					Tags:        tags.Tags,
+				},
+			})
+		}
+
+		return applications.NextToken, nil
+	})
+	if err != nil {
+		return nil, err
 	}
 
 	return values, nil

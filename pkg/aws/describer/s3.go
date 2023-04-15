@@ -141,6 +141,51 @@ func S3Bucket(ctx context.Context, cfg aws.Config, regions []string) (map[string
 	return regionalValues, globalErr
 }
 
+func GetS3Bucket(ctx context.Context, cfg aws.Config, regions []string, bucketName string) (map[string][]Resource, error) {
+	regionalValues := make(map[string][]Resource, len(regions))
+	for _, r := range regions {
+		regionalValues[r] = make([]Resource, 0)
+	}
+
+	describeCtx := GetDescribeContext(ctx)
+
+	client := s3.NewFromConfig(cfg)
+	output, err := client.ListBuckets(ctx, &s3.ListBucketsInput{})
+	if err != nil {
+		fmt.Println("Error listing buckets")
+		return nil, err
+	}
+
+	for _, bucket := range output.Buckets {
+		if *bucket.Name != bucketName {
+			continue
+		}
+
+		region, err := getBucketLocation(ctx, client, bucket)
+		if err != nil {
+			return nil, err
+		}
+
+		if !isIncludedInRegions(regions, region) {
+			return nil, fmt.Errorf("not included in regions %s", *bucket.Name)
+		}
+
+		desc, err := getBucketDescription(ctx, cfg, bucket, region)
+		if err != nil {
+			return nil, err
+		}
+
+		arn := "arn:" + describeCtx.Partition + ":s3:::" + *bucket.Name
+
+		regionalValues[region] = append(regionalValues[region], Resource{
+			ARN:         arn,
+			Name:        *bucket.Name,
+			Description: desc,
+		})
+	}
+	return regionalValues, nil
+}
+
 func getBucketLocation(ctx context.Context, client *s3.Client, bucket types.Bucket) (string, error) {
 	output, err := client.GetBucketLocation(ctx, &s3.GetBucketLocationInput{
 		Bucket: bucket.Name,

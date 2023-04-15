@@ -131,3 +131,89 @@ func KMSKey(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 
 	return values, nil
 }
+
+func GetKMSKey(ctx context.Context, cfg aws.Config, fields map[string]string) ([]Resource, error) {
+	id := fields["id"]
+	client := kms.NewFromConfig(cfg)
+
+	var values []Resource
+	key, err := client.DescribeKey(ctx, &kms.DescribeKeyInput{
+		KeyId: &id,
+	})
+	if err != nil {
+		return nil, err
+	}
+	v := key.KeyMetadata
+
+	aliasPaginator := kms.NewListAliasesPaginator(client, &kms.ListAliasesInput{
+		KeyId: v.KeyId,
+	})
+
+	var keyAlias []types.AliasListEntry
+	for aliasPaginator.HasMorePages() {
+		aliasPage, err := aliasPaginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		keyAlias = append(keyAlias, aliasPage.Aliases...)
+	}
+
+	rotationStatus, err := client.GetKeyRotationStatus(ctx, &kms.GetKeyRotationStatusInput{
+		KeyId: v.KeyId,
+	})
+	if err != nil {
+		// For AWS managed KMS keys GetKeyRotationStatus API generates exceptions
+		var ae smithy.APIError
+		if errors.As(err, &ae) &&
+			helpers.StringSliceContains([]string{"AccessDeniedException", "UnsupportedOperationException"}, ae.ErrorCode()) {
+			rotationStatus = &kms.GetKeyRotationStatusOutput{}
+			err = nil
+		}
+
+		if a, ok := err.(awserr.Error); ok {
+			if helpers.StringSliceContains([]string{"AccessDeniedException", "UnsupportedOperationException"}, a.Code()) {
+				rotationStatus = &kms.GetKeyRotationStatusOutput{}
+				err = nil
+			}
+		}
+
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	var defaultPolicy = "default"
+	policy, err := client.GetKeyPolicy(ctx, &kms.GetKeyPolicyInput{
+		KeyId:      v.KeyId,
+		PolicyName: &defaultPolicy,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	tags, err := client.ListResourceTags(ctx, &kms.ListResourceTagsInput{
+		KeyId: v.KeyId,
+	})
+	if err != nil {
+		if isErr(err, "AccessDeniedException") {
+			tags = &kms.ListResourceTagsOutput{}
+		} else {
+			return nil, err
+		}
+	}
+
+	values = append(values, Resource{
+		ARN:  *key.KeyMetadata.Arn,
+		Name: *v.KeyId,
+		Description: model.KMSKeyDescription{
+			Metadata:           key.KeyMetadata,
+			Aliases:            keyAlias,
+			KeyRotationEnabled: rotationStatus.KeyRotationEnabled,
+			Policy:             policy.Policy,
+			Tags:               tags.Tags,
+		},
+	})
+
+	return values, nil
+}

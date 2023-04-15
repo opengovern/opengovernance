@@ -134,7 +134,7 @@ func UniqueArray[T any](input []T, equals func(T, T) bool) []T {
 	return out
 }
 
-func GetBenchmarkTree(db db.Database, client keibi.Client, b db.Benchmark) (api.BenchmarkTree, error) {
+func GetBenchmarkTree(db db.Database, client keibi.Client, b db.Benchmark, status []types.PolicyStatus) (api.BenchmarkTree, error) {
 	tree := api.BenchmarkTree{
 		ID:       b.ID,
 		Title:    b.Title,
@@ -147,7 +147,7 @@ func GetBenchmarkTree(db db.Database, client keibi.Client, b db.Benchmark) (api.
 			return tree, err
 		}
 
-		childTree, err := GetBenchmarkTree(db, client, *childObj)
+		childTree, err := GetBenchmarkTree(db, client, *childObj, status)
 		if err != nil {
 			return tree, err
 		}
@@ -191,6 +191,18 @@ func GetBenchmarkTree(db db.Database, client keibi.Client, b db.Benchmark) (api.
 						}
 					}
 				}
+			}
+		}
+		if len(status) > 0 {
+			contains := false
+			for _, s := range status {
+				if s == pt.Status {
+					contains = true
+				}
+			}
+
+			if !contains {
+				continue
 			}
 		}
 		tree.Policies = append(tree.Policies, pt)
@@ -269,4 +281,23 @@ func (h *HttpHandler) BuildBenchmarkResultTrend(b db.Benchmark, startDate, endDa
 		return datapoints[i].Time < datapoints[j].Time
 	})
 	return datapoints, nil
+}
+
+func (h *HttpHandler) GetBenchmarkTreeIDs(rootID string) ([]string, error) {
+	ids := []string{rootID}
+
+	root, err := h.db.GetBenchmark(rootID)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, child := range root.Children {
+		cids, err := h.GetBenchmarkTreeIDs(child.ID)
+		if err != nil {
+			return nil, err
+		}
+
+		ids = append(ids, cids...)
+	}
+	return ids, nil
 }

@@ -34,6 +34,31 @@ func RDSDBCluster(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	return values, nil
 }
 
+func GetRDSDBCluster(ctx context.Context, cfg aws.Config, fields map[string]string) ([]Resource, error) {
+	arn := fields["arn"]
+	client := rds.NewFromConfig(cfg)
+
+	out, err := client.DescribeDBClusters(ctx, &rds.DescribeDBClustersInput{
+		DBClusterIdentifier: &arn,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	var values []Resource
+	for _, v := range out.DBClusters {
+		values = append(values, Resource{
+			ARN:  *v.DBClusterArn,
+			Name: *v.DBClusterIdentifier,
+			Description: model.RDSDBClusterDescription{
+				DBCluster: v,
+			},
+		})
+	}
+
+	return values, nil
+}
+
 func RDSDBClusterSnapshot(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	client := rds.NewFromConfig(cfg)
 	paginator := rds.NewDescribeDBClusterSnapshotsPaginator(client, &rds.DescribeDBClusterSnapshotsInput{})
@@ -110,6 +135,30 @@ func RDSDBInstance(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 				},
 			})
 		}
+	}
+
+	return values, nil
+}
+
+func GetRDSDBInstance(ctx context.Context, cfg aws.Config, fields map[string]string) ([]Resource, error) {
+	dbInstanceId := fields["id"]
+	client := rds.NewFromConfig(cfg)
+	out, err := client.DescribeDBInstances(ctx, &rds.DescribeDBInstancesInput{
+		DBInstanceIdentifier: &dbInstanceId,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	var values []Resource
+	for _, v := range out.DBInstances {
+		values = append(values, Resource{
+			ARN:  *v.DBInstanceArn,
+			Name: *v.DBInstanceIdentifier,
+			Description: model.RDSDBInstanceDescription{
+				DBInstance: v,
+			},
+		})
 	}
 
 	return values, nil

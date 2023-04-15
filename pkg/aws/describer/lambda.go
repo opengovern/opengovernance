@@ -72,6 +72,61 @@ func LambdaFunction(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	return values, nil
 }
 
+func GetLambdaFunction(ctx context.Context, cfg aws.Config, fields map[string]string) ([]Resource, error) {
+	functionName := fields["name"]
+	client := lambda.NewFromConfig(cfg)
+	out, err := client.GetFunction(ctx, &lambda.GetFunctionInput{
+		FunctionName: &functionName,
+		Qualifier:    nil,
+	})
+	if err != nil {
+		return nil, err
+	}
+	v := out.Configuration
+
+	var values []Resource
+	policy, err := client.GetPolicy(ctx, &lambda.GetPolicyInput{
+		FunctionName: v.FunctionName,
+	})
+	if err != nil {
+		var ae smithy.APIError
+		if errors.As(err, &ae) && ae.ErrorCode() == "ResourceNotFoundException" {
+			policy = &lambda.GetPolicyOutput{}
+			err = nil
+		}
+
+		if awsErr, ok := err.(awserr.Error); ok {
+			log.Println("Describe Lambda Error:", awsErr.Code(), awsErr.Message())
+			if awsErr.Code() == "ResourceNotFoundException" {
+				policy = &lambda.GetPolicyOutput{}
+				err = nil
+			}
+		}
+
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	function, err := client.GetFunction(ctx, &lambda.GetFunctionInput{
+		FunctionName: v.FunctionName,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	values = append(values, Resource{
+		ARN:  *v.FunctionArn,
+		Name: *v.FunctionName,
+		Description: model.LambdaFunctionDescription{
+			Function: function,
+			Policy:   policy,
+		},
+	})
+
+	return values, nil
+}
+
 func LambdaFunctionVersion(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	client := lambda.NewFromConfig(cfg)
 	paginator := lambda.NewListFunctionsPaginator(client, &lambda.ListFunctionsInput{

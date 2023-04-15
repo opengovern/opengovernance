@@ -2,10 +2,10 @@ package describer
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/efs"
-	"github.com/aws/aws-sdk-go-v2/service/efs/types"
 	"gitlab.com/keibiengine/keibi-engine/pkg/aws/model"
 )
 
@@ -25,17 +25,17 @@ func EFSAccessPoint(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 		}
 
 		for _, v := range page.AccessPoints {
-
-			// Doc: The name of the access point. This is the value of the Name tag.
 			name := aws.ToString(v.Name)
 			if name == "" {
 				name = *v.AccessPointId
 			}
 
 			values = append(values, Resource{
-				ARN:         *v.AccessPointArn,
-				Name:        name,
-				Description: v,
+				ARN:  *v.AccessPointArn,
+				Name: name,
+				Description: model.EFSAccessPointDescription{
+					AccessPoint: v,
+				},
 			})
 		}
 	}
@@ -90,40 +90,9 @@ func EFSFileSystem(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 
 func EFSMountTarget(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	client := efs.NewFromConfig(cfg)
-
 	describeCtx := GetDescribeContext(ctx)
 
 	var values []Resource
-
-	accessPoints, err := EFSAccessPoint(ctx, cfg)
-	if err != nil {
-		return nil, err
-	}
-	for _, ap := range accessPoints {
-		accessPoint := ap.Description.(types.AccessPointDescription)
-		err := PaginateRetrieveAll(func(prevToken *string) (nextToken *string, err error) {
-			output, err := client.DescribeMountTargets(ctx, &efs.DescribeMountTargetsInput{
-				AccessPointId: accessPoint.AccessPointId,
-				Marker:        prevToken,
-			})
-			if err != nil {
-				return nil, err
-			}
-
-			for _, v := range output.MountTargets {
-				arn := "arn:" + describeCtx.Partition + ":elasticfilesystem:" + describeCtx.Region + ":" + describeCtx.AccountID + ":file-system/" + *v.FileSystemId + "/mount-target/" + *v.MountTargetId
-				values = append(values, Resource{
-					ARN:         arn,
-					Name:        *v.MountTargetId,
-					Description: v,
-				})
-			}
-			return output.NextMarker, nil
-		})
-		if err != nil {
-			return nil, err
-		}
-	}
 
 	filesystems, err := EFSFileSystem(ctx, cfg)
 	if err != nil {
@@ -141,10 +110,22 @@ func EFSMountTarget(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 			}
 
 			for _, v := range output.MountTargets {
+				arn := fmt.Sprintf("arn:%s:elasticfilesystem:%s:%s:file-system/%s/mount-target/%s", describeCtx.Partition, describeCtx.Region, describeCtx.AccountID, *filesystem.FileSystem.FileSystemId, *v.MountTargetId)
+
+				securityGroups, err := client.DescribeMountTargetSecurityGroups(ctx, &efs.DescribeMountTargetSecurityGroupsInput{
+					MountTargetId: v.MountTargetId,
+				})
+				if err != nil {
+					return nil, err
+				}
+
 				values = append(values, Resource{
-					ID:          *v.FileSystemId,
-					Name:        *v.AvailabilityZoneName,
-					Description: v,
+					ARN: arn,
+					ID:  *v.MountTargetId,
+					Description: model.EFSMountTargetDescription{
+						MountTarget:    v,
+						SecurityGroups: securityGroups.SecurityGroups,
+					},
 				})
 			}
 			return output.NextMarker, nil

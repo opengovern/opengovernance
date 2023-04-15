@@ -183,6 +183,37 @@ func RedshiftSnapshot(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	return values, nil
 }
 
+func GetRedshiftSnapshot(ctx context.Context, cfg aws.Config, fields map[string]string) ([]Resource, error) {
+	clusterIdentifier := fields["id"]
+	describeCtx := GetDescribeContext(ctx)
+
+	client := redshift.NewFromConfig(cfg)
+
+	out, err := client.DescribeClusterSnapshots(ctx, &redshift.DescribeClusterSnapshotsInput{
+		ClusterIdentifier: &clusterIdentifier,
+	})
+	if err != nil {
+		if isErr(err, "ClusterSnapshotNotFound") {
+			return nil, nil
+		}
+		return nil, err
+	}
+
+	var values []Resource
+	for _, v := range out.Snapshots {
+		arn := fmt.Sprintf("arn:%s:redshift:%s:%s:snapshot:%s/%s", describeCtx.Partition, describeCtx.Region, describeCtx.AccountID, *v.ClusterIdentifier, *v.SnapshotIdentifier)
+		values = append(values, Resource{
+			ARN:  arn,
+			Name: *v.SnapshotIdentifier,
+			Description: model.RedshiftSnapshotDescription{
+				Snapshot: v,
+			},
+		})
+	}
+
+	return values, nil
+}
+
 func RedshiftServerlessNamespace(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	client := redshiftserverless.NewFromConfig(cfg)
 	paginator := redshiftserverless.NewListNamespacesPaginator(client, &redshiftserverless.ListNamespacesInput{})

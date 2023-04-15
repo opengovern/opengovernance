@@ -115,6 +115,75 @@ func Route53HostedZone(ctx context.Context, cfg aws.Config) ([]Resource, error) 
 	return values, nil
 }
 
+func GetRoute53HostedZone(ctx context.Context, cfg aws.Config, hostedZoneID string) ([]Resource, error) {
+	describeCtx := GetDescribeContext(ctx)
+	client := route53.NewFromConfig(cfg)
+
+	var values []Resource
+	out, err := client.GetHostedZone(ctx, &route53.GetHostedZoneInput{Id: &hostedZoneID})
+	if err != nil {
+		return nil, err
+	}
+
+	v := out.HostedZone
+	id := strings.Split(*v.Id, "/")[2]
+	arn := fmt.Sprintf("arn:%s:route53:::hostedzone/%s", describeCtx.Partition, id)
+
+	queryLoggingConfigs, err := client.ListQueryLoggingConfigs(ctx, &route53.ListQueryLoggingConfigsInput{
+		HostedZoneId: &id,
+	})
+	if err != nil {
+		if !isErr(err, "NoSuchHostedZone") {
+			return nil, err
+		}
+		queryLoggingConfigs = &route53.ListQueryLoggingConfigsOutput{}
+	}
+
+	dnsSec := &route53.GetDNSSECOutput{}
+	if !v.Config.PrivateZone {
+		dnsSec, err = client.GetDNSSEC(ctx, &route53.GetDNSSECInput{
+			HostedZoneId: &id,
+		})
+		if err != nil {
+			if !isErr(err, "NoSuchHostedZone") {
+				return nil, err
+			}
+			dnsSec = &route53.GetDNSSECOutput{}
+		}
+	}
+
+	tags, err := client.ListTagsForResource(ctx, &route53.ListTagsForResourceInput{
+		ResourceId:   &id,
+		ResourceType: types.TagResourceType("hostedzone"),
+	})
+	if err != nil {
+		if !isErr(err, "NoSuchHostedZone") {
+			return nil, err
+		}
+		tags = &route53.ListTagsForResourceOutput{
+			ResourceTagSet: &types.ResourceTagSet{},
+		}
+	}
+
+	values = append(values, Resource{
+		ARN:  arn,
+		Name: *v.Name,
+		Description: model.Route53HostedZoneDescription{
+			ID:                  id,
+			HostedZone:          *v,
+			QueryLoggingConfigs: queryLoggingConfigs.QueryLoggingConfigs,
+			DNSSec:              *dnsSec,
+			Tags:                tags.ResourceTagSet.Tags,
+		},
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	return values, nil
+}
+
 func Route53DNSSEC(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	zones, err := Route53HostedZone(ctx, cfg)
 	if err != nil {

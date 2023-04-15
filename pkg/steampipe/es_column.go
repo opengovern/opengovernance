@@ -41,6 +41,33 @@ func AWSDescriptionToRecord(resource interface{}, indexName string) (map[string]
 	return DescriptionToRecord(aws.Plugin(buildContext()), resource, indexName)
 }
 
+func AWSCells(indexName string) ([]string, error) {
+	return Cells(aws.Plugin(buildContext()), indexName)
+}
+func AzureCells(indexName string) ([]string, error) {
+	return Cells(azure.Plugin(buildContext()), indexName)
+}
+func AzureADCells(indexName string) ([]string, error) {
+	return Cells(azuread.Plugin(buildContext()), indexName)
+}
+func Cells(plg *plugin.Plugin, indexName string) ([]string, error) {
+	var cells []string
+	table, ok := plg.TableMap[indexName]
+	if !ok {
+		return cells, fmt.Errorf("invalid index name: %s", indexName)
+	}
+	table.Plugin = plg
+	for _, column := range table.Columns {
+		if column != nil && column.Transform != nil {
+			cells = append(cells, column.Name)
+		} else {
+			fmt.Println("column or transform is null", column, column.Transform)
+		}
+	}
+
+	return cells, nil
+}
+
 func DescriptionToRecord(plg *plugin.Plugin, resource interface{}, indexName string) (map[string]*proto.Column, error) {
 	cells := make(map[string]*proto.Column)
 	ctx := buildContext()

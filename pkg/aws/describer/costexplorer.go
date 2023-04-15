@@ -141,8 +141,8 @@ func CostByServiceLastMonth(ctx context.Context, cfg aws.Config) ([]Resource, er
 			continue
 		}
 		values = append(values, Resource{
-			ID:          "service-" + *cost.Dimension1 + "-cost",
-			Description: cost,
+			ID:          "service-" + *cost.Dimension1 + "-cost-monthly",
+			Description: model.CostExplorerByServiceMonthlyDescription{CostExplorerRow: cost},
 		})
 	}
 
@@ -167,8 +167,8 @@ func CostByAccountLastMonth(ctx context.Context, cfg aws.Config) ([]Resource, er
 			continue
 		}
 		values = append(values, Resource{
-			ID:          "account-" + *cost.Dimension1 + "-cost",
-			Description: cost,
+			ID:          "account-" + *cost.Dimension1 + "-cost-monthly",
+			Description: model.CostExplorerByAccountMonthlyDescription{CostExplorerRow: cost},
 		})
 	}
 	return values, nil
@@ -273,7 +273,7 @@ func CostByServiceLastDay(ctx context.Context, cfg aws.Config) ([]Resource, erro
 		}
 		values = append(values, Resource{
 			ID:          "service-" + *cost.Dimension1 + "-cost-" + *cost.PeriodEnd,
-			Description: cost,
+			Description: model.CostExplorerByServiceDailyDescription{CostExplorerRow: cost},
 		})
 	}
 
@@ -299,8 +299,298 @@ func CostByAccountLastDay(ctx context.Context, cfg aws.Config) ([]Resource, erro
 		}
 		values = append(values, Resource{
 			ID:          "account-" + *cost.Dimension1 + "-cost-" + *cost.PeriodEnd,
-			Description: cost,
+			Description: model.CostExplorerByAccountDailyDescription{CostExplorerRow: cost},
 		})
 	}
+	return values, nil
+}
+
+func buildCostByRecordTypeInput(granularity string) *costexplorer.GetCostAndUsageInput {
+	timeFormat := "2006-01-02"
+	if granularity == "HOURLY" {
+		timeFormat = "2006-01-02T15:04:05Z"
+	}
+	endTime := time.Now().Format(timeFormat)
+	startTime := time.Now().AddDate(0, -1, 0).Format(timeFormat)
+
+	params := &costexplorer.GetCostAndUsageInput{
+		TimePeriod: &types.DateInterval{
+			Start: aws.String(startTime),
+			End:   aws.String(endTime),
+		},
+		Granularity: types.Granularity(granularity),
+		Metrics: []string{
+			"BlendedCost",
+			"UnblendedCost",
+			"NetUnblendedCost",
+			"AmortizedCost",
+			"NetAmortizedCost",
+			"UsageQuantity",
+			"NormalizedUsageAmount",
+		},
+		GroupBy: []types.GroupDefinition{
+			{
+				Type: types.GroupDefinitionType("DIMENSION"),
+				Key:  aws.String("LINKED_ACCOUNT"),
+			},
+			{
+				Type: types.GroupDefinitionType("DIMENSION"),
+				Key:  aws.String("RECORD_TYPE"),
+			},
+		},
+	}
+
+	return params
+}
+
+func CostByRecordTypeLastMonth(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+	client := costexplorer.NewFromConfig(cfg)
+
+	params := buildCostByRecordTypeInput("MONTHLY")
+
+	out, err := client.GetCostAndUsage(ctx, params)
+	if err != nil {
+		return nil, err
+	}
+
+	var values []Resource
+	for _, result := range out.ResultsByTime {
+		for _, group := range result.Groups {
+			var row model.CostExplorerRow
+
+			row.Estimated = result.Estimated
+			row.PeriodStart = result.TimePeriod.Start
+			row.PeriodEnd = result.TimePeriod.End
+
+			if len(group.Keys) > 0 {
+				row.Dimension1 = aws.String(group.Keys[0])
+				if len(group.Keys) > 1 {
+					row.Dimension2 = aws.String(group.Keys[1])
+				}
+			}
+			setRowMetrics(&row, group.Metrics)
+
+			values = append(values, Resource{
+				ID:          "account-" + *row.Dimension1 + "-" + *row.Dimension2 + "-cost-monthly",
+				Description: model.CostExplorerByRecordTypeMonthlyDescription{CostExplorerRow: row},
+			})
+		}
+	}
+
+	return values, nil
+}
+
+func CostByRecordTypeLastDay(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+	client := costexplorer.NewFromConfig(cfg)
+
+	params := buildCostByRecordTypeInput("DAILY")
+
+	out, err := client.GetCostAndUsage(ctx, params)
+	if err != nil {
+		return nil, err
+	}
+
+	var values []Resource
+	for _, result := range out.ResultsByTime {
+		for _, group := range result.Groups {
+			var row model.CostExplorerRow
+
+			row.Estimated = result.Estimated
+			row.PeriodStart = result.TimePeriod.Start
+			row.PeriodEnd = result.TimePeriod.End
+
+			if len(group.Keys) > 0 {
+				row.Dimension1 = aws.String(group.Keys[0])
+				if len(group.Keys) > 1 {
+					row.Dimension2 = aws.String(group.Keys[1])
+				}
+			}
+			setRowMetrics(&row, group.Metrics)
+
+			values = append(values, Resource{
+				ID:          "account-" + *row.Dimension1 + "-" + *row.Dimension2 + "-cost-" + *row.PeriodEnd,
+				Description: model.CostExplorerByRecordTypeDailyDescription{CostExplorerRow: row},
+			})
+		}
+	}
+
+	return values, nil
+}
+
+func buildCostByServiceAndUsageInput(granularity string) *costexplorer.GetCostAndUsageInput {
+	timeFormat := "2006-01-02"
+	if granularity == "HOURLY" {
+		timeFormat = "2006-01-02T15:04:05Z"
+	}
+	endTime := time.Now().Format(timeFormat)
+	startTime := time.Now().AddDate(0, -1, 0).Format(timeFormat)
+
+	params := &costexplorer.GetCostAndUsageInput{
+		TimePeriod: &types.DateInterval{
+			Start: aws.String(startTime),
+			End:   aws.String(endTime),
+		},
+		Granularity: types.Granularity(granularity),
+		Metrics: []string{
+			"BlendedCost",
+			"UnblendedCost",
+			"NetUnblendedCost",
+			"AmortizedCost",
+			"NetAmortizedCost",
+			"UsageQuantity",
+			"NormalizedUsageAmount",
+		},
+		GroupBy: []types.GroupDefinition{
+			{
+				Type: types.GroupDefinitionType("DIMENSION"),
+				Key:  aws.String("SERVICE"),
+			},
+			{
+				Type: types.GroupDefinitionType("DIMENSION"),
+				Key:  aws.String("USAGE_TYPE"),
+			},
+		},
+	}
+
+	return params
+}
+
+func CostByServiceUsageLastMonth(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+	client := costexplorer.NewFromConfig(cfg)
+
+	params := buildCostByServiceAndUsageInput("MONTHLY")
+
+	out, err := client.GetCostAndUsage(ctx, params)
+	if err != nil {
+		return nil, err
+	}
+
+	var values []Resource
+	for _, result := range out.ResultsByTime {
+		for _, group := range result.Groups {
+			var row model.CostExplorerRow
+
+			row.Estimated = result.Estimated
+			row.PeriodStart = result.TimePeriod.Start
+			row.PeriodEnd = result.TimePeriod.End
+
+			if len(group.Keys) > 0 {
+				row.Dimension1 = aws.String(group.Keys[0])
+				if len(group.Keys) > 1 {
+					row.Dimension2 = aws.String(group.Keys[1])
+				}
+			}
+			setRowMetrics(&row, group.Metrics)
+
+			values = append(values, Resource{
+				ID:          "service-" + *row.Dimension1 + "-" + *row.Dimension2 + "-cost-monthly",
+				Description: model.CostExplorerByServiceUsageTypeMonthlyDescription{CostExplorerRow: row},
+			})
+		}
+	}
+
+	return values, nil
+}
+
+func CostByServiceUsageLastDay(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+	client := costexplorer.NewFromConfig(cfg)
+
+	params := buildCostByServiceAndUsageInput("DAILY")
+
+	out, err := client.GetCostAndUsage(ctx, params)
+	if err != nil {
+		return nil, err
+	}
+
+	var values []Resource
+	for _, result := range out.ResultsByTime {
+		for _, group := range result.Groups {
+			var row model.CostExplorerRow
+
+			row.Estimated = result.Estimated
+			row.PeriodStart = result.TimePeriod.Start
+			row.PeriodEnd = result.TimePeriod.End
+
+			if len(group.Keys) > 0 {
+				row.Dimension1 = aws.String(group.Keys[0])
+				if len(group.Keys) > 1 {
+					row.Dimension2 = aws.String(group.Keys[1])
+				}
+			}
+			setRowMetrics(&row, group.Metrics)
+
+			values = append(values, Resource{
+				ID:          "service-" + *row.Dimension1 + "-" + *row.Dimension2 + "-cost-" + *row.PeriodEnd,
+				Description: model.CostExplorerByServiceUsageTypeDailyDescription{CostExplorerRow: row},
+			})
+		}
+	}
+
+	return values, nil
+}
+
+func buildCostForecastInput(granularity string) *costexplorer.GetCostForecastInput {
+	metric := "UNBLENDED_COST"
+
+	timeFormat := "2006-01-02"
+	startTime := time.Now().UTC().Format(timeFormat)
+	endTime := time.Now().AddDate(0, -1, 0).Format(timeFormat)
+
+	params := &costexplorer.GetCostForecastInput{
+		TimePeriod: &types.DateInterval{
+			Start: aws.String(startTime),
+			End:   aws.String(endTime),
+		},
+		Granularity: types.Granularity(granularity),
+		Metric:      types.Metric(metric),
+	}
+
+	return params
+}
+
+func CostForecastMonthly(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+	client := costexplorer.NewFromConfig(cfg)
+
+	params := buildCostForecastInput("MONTHLY")
+	output, err := client.GetCostForecast(ctx, params)
+	if err != nil {
+		return nil, err
+	}
+	var values []Resource
+	for _, forecast := range output.ForecastResultsByTime {
+		values = append(values, Resource{
+			ID: "forecast-monthly",
+			Description: model.CostExplorerForcastMonthlyDescription{CostExplorerRow: model.CostExplorerRow{
+				Estimated:   true,
+				PeriodStart: forecast.TimePeriod.Start,
+				PeriodEnd:   forecast.TimePeriod.End,
+				MeanValue:   forecast.MeanValue}},
+		})
+	}
+
+	return values, nil
+}
+
+func CostForecastDaily(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+	client := costexplorer.NewFromConfig(cfg)
+
+	params := buildCostForecastInput("DAILY")
+	output, err := client.GetCostForecast(ctx, params)
+	if err != nil {
+		return nil, err
+	}
+	var values []Resource
+	for _, forecast := range output.ForecastResultsByTime {
+		values = append(values, Resource{
+			ID: "forecast-daily",
+			Description: model.CostExplorerForcastDailyDescription{CostExplorerRow: model.CostExplorerRow{
+				Estimated:   true,
+				PeriodStart: forecast.TimePeriod.Start,
+				PeriodEnd:   forecast.TimePeriod.End,
+				MeanValue:   forecast.MeanValue,
+			}},
+		})
+	}
+
 	return values, nil
 }

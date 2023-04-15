@@ -13,8 +13,10 @@ type BenchmarkAssignment struct {
 }
 
 type BenchmarkAssignedSource struct {
-	Connection types.FullConnection `json:"connection"`
-	AssignedAt int64                `json:"assignedAt"`
+	ConnectionID   string      `json:"connectionID"`
+	ConnectionName string      `json:"connectionName"`
+	Connector      source.Type `json:"connector"`
+	Status         bool        `json:"status"`
 }
 
 type FindingFilters struct {
