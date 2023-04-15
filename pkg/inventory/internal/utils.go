@@ -27,37 +27,6 @@ func Paginate[T api.ServiceSummary | api.AccountSummary | api.LocationResponse](
 func SortFilters(filters []api.Filter, by string) []api.Filter {
 	sort.Slice(filters, func(i, j int) bool {
 		switch by {
-		case "weight":
-			switch filters[i].GetFilterType() {
-			case api.FilterTypeCloudResourceType:
-				fi := filters[i].(*api.FilterCloudResourceType)
-				switch filters[j].GetFilterType() {
-				case api.FilterTypeCloudResourceType:
-					fj := filters[j].(*api.FilterCloudResourceType)
-					if fi.Weight != fj.Weight {
-						return fi.Weight < fj.Weight
-					}
-				case api.FilterTypeInsightMetric:
-					fj := filters[j].(*api.FilterInsightMetric)
-					if fi.Weight != fj.Weight {
-						return fi.Weight < fj.Weight
-					}
-				}
-			case api.FilterTypeInsightMetric:
-				fi := filters[i].(*api.FilterInsightMetric)
-				switch filters[j].GetFilterType() {
-				case api.FilterTypeCloudResourceType:
-					fj := filters[j].(*api.FilterCloudResourceType)
-					if fi.Weight != fj.Weight {
-						return fi.Weight < fj.Weight
-					}
-				case api.FilterTypeInsightMetric:
-					fj := filters[j].(*api.FilterInsightMetric)
-					if fi.Weight != fj.Weight {
-						return fi.Weight < fj.Weight
-					}
-				}
-			}
 		case "name":
 			return filters[i].GetFilterName() < filters[j].GetFilterName()
 		case "count":

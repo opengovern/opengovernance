@@ -461,8 +461,6 @@ type FilterCloudResourceType struct {
 	ResourceType        string      `json:"resourceType"`
 	ResourceName        string      `json:"resourceName"`
 	ServiceCode         string      `json:"serviceCode"`
-	Weight              int64       `json:"weight"`
-	Importance          string      `json:"importance"`
 	ResourceCount       int         `json:"resourceCount"`
 	ResourceCountChange *float64    `json:"resourceCountChange,omitempty"`
 }
@@ -501,15 +499,13 @@ func (f FilterCost) GetFilterName() string {
 }
 
 type FilterInsightMetric struct {
-	FilterType    FilterType  `json:"filterType"`
-	FilterID      string      `json:"filterID"`
-	InsightID     uint        `json:"insightID"`
-	CloudProvider source.Type `json:"cloudProvider"`
-	Name          string      `json:"name"`
-	Weight        int64       `json:"weight"`
-	Importance    string      `json:"importance"`
-	Value         int         `json:"value"`
-	ValueChange   *float64    `json:"valueChange,omitempty"`
+	FilterType  FilterType  `json:"filterType"`
+	FilterID    string      `json:"filterID"`
+	InsightID   uint        `json:"insightID"`
+	Connector   source.Type `json:"connector"`
+	Name        string      `json:"name"`
+	Value       int         `json:"value"`
+	ValueChange *float64    `json:"valueChange,omitempty"`
 }
 
 func (f FilterInsightMetric) GetFilterID() string {
