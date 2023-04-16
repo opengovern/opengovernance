@@ -272,7 +272,7 @@ func GetCategoryNodeResourceCountInfo(categoryNode *CategoryNode, metrics map[st
 					FilterType:    api.FilterTypeCloudResourceType,
 					FilterID:      filter.ElementID,
 					CloudProvider: filter.Connector,
-					ResourceName:  filter.ResourceName,
+					ResourceLabel: filter.ResourceLabel,
 					ServiceCode:   filter.ServiceName,
 					ResourceType:  filter.ResourceType,
 					ResourceCount: 0,
@@ -295,7 +295,7 @@ func GetCategoryNodeResourceCountInfo(categoryNode *CategoryNode, metrics map[st
 					FilterID:      filter.ElementID,
 					CloudProvider: filter.Connector,
 					ResourceType:  filter.ResourceType,
-					ResourceName:  filter.ResourceName,
+					ResourceLabel: filter.ResourceLabel,
 					ServiceCode:   filter.ServiceName,
 					ResourceCount: 0,
 				}

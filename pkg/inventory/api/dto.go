@@ -459,7 +459,7 @@ type FilterCloudResourceType struct {
 	FilterID            string      `json:"filterId"`
 	CloudProvider       source.Type `json:"cloudProvider"`
 	ResourceType        string      `json:"resourceType"`
-	ResourceName        string      `json:"resourceName"`
+	ResourceLabel       string      `json:"resourceName"`
 	ServiceCode         string      `json:"serviceCode"`
 	ResourceCount       int         `json:"resourceCount"`
 	ResourceCountChange *float64    `json:"resourceCountChange,omitempty"`
@@ -474,7 +474,7 @@ func (f FilterCloudResourceType) GetFilterType() FilterType {
 }
 
 func (f FilterCloudResourceType) GetFilterName() string {
-	return f.ResourceName
+	return f.ResourceLabel
 }
 
 type FilterCost struct {
