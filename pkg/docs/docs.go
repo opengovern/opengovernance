@@ -4425,6 +4425,36 @@ const docTemplate = `{
                 }
             }
         },
+        "/schedule/api/v1/describe/resource": {
+            "post": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "describe"
+                ],
+                "summary": "Describe single resource",
+                "parameters": [
+                    {
+                        "description": "Request Body",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_describe_api.DescribeSingleResourceRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/aws.Resources"
+                        }
+                    }
+                }
+            }
+        },
         "/schedule/api/v1/describe/resource/jobs/pending": {
             "get": {
                 "produces": [
@@ -5186,6 +5216,26 @@ const docTemplate = `{
         }
     },
     "definitions": {
+        "aws.Resources": {
+            "type": "object",
+            "properties": {
+                "errors": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
+                },
+                "resources": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_aws_describer.Resource"
+                        }
+                    }
+                }
+            }
+        },
         "describe.ComplianceReportJob": {
             "type": "object",
             "properties": {
@@ -5408,6 +5458,35 @@ const docTemplate = `{
                 },
                 "userName": {
                     "description": "Username",
+                    "type": "string"
+                }
+            }
+        },
+        "gitlab_com_keibiengine_keibi-engine_pkg_aws_describer.Resource": {
+            "type": "object",
+            "properties": {
+                "account": {
+                    "type": "string"
+                },
+                "arn": {
+                    "description": "ARN uniquely identifies an AWS resource across regions, accounts and types.",
+                    "type": "string"
+                },
+                "description": {},
+                "id": {
+                    "description": "ID doesn't uniquely identifies a resource. It will be used to create a\nunique identifier by concating PARTITION|REGION|ACCOUNT|TYPE|ID",
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "partition": {
+                    "type": "string"
+                },
+                "region": {
+                    "type": "string"
+                },
+                "type": {
                     "type": "string"
                 }
             }
@@ -6255,6 +6334,32 @@ const docTemplate = `{
                 "DescribeResourceJobFailed",
                 "DescribeResourceJobSucceeded"
             ]
+        },
+        "gitlab_com_keibiengine_keibi-engine_pkg_describe_api.DescribeSingleResourceRequest": {
+            "type": "object",
+            "properties": {
+                "accessKey": {
+                    "type": "string"
+                },
+                "accountID": {
+                    "type": "string"
+                },
+                "additionalFields": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
+                },
+                "provider": {
+                    "$ref": "#/definitions/source.Type"
+                },
+                "resourceType": {
+                    "type": "string"
+                },
+                "secretKey": {
+                    "type": "string"
+                }
+            }
         },
         "gitlab_com_keibiengine_keibi-engine_pkg_describe_api.DescribeSource": {
             "type": "object",
