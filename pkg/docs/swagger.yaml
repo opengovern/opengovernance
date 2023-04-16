@@ -1,4 +1,17 @@
 definitions:
+  aws.Resources:
+    properties:
+      errors:
+        additionalProperties:
+          type: string
+        type: object
+      resources:
+        additionalProperties:
+          items:
+            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_aws_describer.Resource'
+          type: array
+        type: object
+    type: object
   describe.ComplianceReportJob:
     properties:
       benchmarkID:
@@ -144,6 +157,29 @@ definitions:
         type: string
       userName:
         description: Username
+        type: string
+    type: object
+  gitlab_com_keibiengine_keibi-engine_pkg_aws_describer.Resource:
+    properties:
+      account:
+        type: string
+      arn:
+        description: ARN uniquely identifies an AWS resource across regions, accounts
+          and types.
+        type: string
+      description: {}
+      id:
+        description: |-
+          ID doesn't uniquely identifies a resource. It will be used to create a
+          unique identifier by concating PARTITION|REGION|ACCOUNT|TYPE|ID
+        type: string
+      name:
+        type: string
+      partition:
+        type: string
+      region:
+        type: string
+      type:
         type: string
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.Benchmark:
@@ -718,6 +754,23 @@ definitions:
     - DescribeResourceJobCloudTimeout
     - DescribeResourceJobFailed
     - DescribeResourceJobSucceeded
+  gitlab_com_keibiengine_keibi-engine_pkg_describe_api.DescribeSingleResourceRequest:
+    properties:
+      accessKey:
+        type: string
+      accountID:
+        type: string
+      additionalFields:
+        additionalProperties:
+          type: string
+        type: object
+      provider:
+        $ref: '#/definitions/source.Type'
+      resourceType:
+        type: string
+      secretKey:
+        type: string
+    type: object
   gitlab_com_keibiengine_keibi-engine_pkg_describe_api.DescribeSource:
     properties:
       describeResourceJobs:
@@ -5352,6 +5405,25 @@ paths:
         "200":
           description: OK
       summary: Triggers a benchmark evaluation job to run immediately
+      tags:
+      - describe
+  /schedule/api/v1/describe/resource:
+    post:
+      parameters:
+      - description: Request Body
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_describe_api.DescribeSingleResourceRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/aws.Resources'
+      summary: Describe single resource
       tags:
       - describe
   /schedule/api/v1/describe/resource/jobs/pending:

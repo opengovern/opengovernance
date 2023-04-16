@@ -1,12 +1,15 @@
 package describe
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
 	"strconv"
 	"time"
+
+	"gitlab.com/keibiengine/keibi-engine/pkg/describe/enums"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/source"
 
@@ -76,6 +79,8 @@ func (h HttpServer) Register(e *echo.Echo) {
 	v1.GET("/benchmark/evaluations", httpserver.AuthorizeHandler(h.HandleListBenchmarkEvaluations, api3.ViewerRole))
 
 	v1.POST("/jobs/:job_id/creds", httpserver.AuthorizeHandler(h.HandleGetCredsForJob, api3.AdminRole))
+
+	v1.POST("/describe/resource", httpserver.AuthorizeHandler(h.DescribeSingleResource, api3.AdminRole))
 }
 
 // HandleListSources godoc
@@ -639,6 +644,45 @@ func (h HttpServer) HandleListBenchmarkEvaluations(ctx echo.Context) error {
 	}
 
 	return ctx.JSON(http.StatusOK, cp)
+}
+
+// DescribeSingleResource godoc
+//
+//	@Summary	Describe single resource
+//	@Tags		describe
+//	@Produce	json
+//	@Success	200
+//	@Param		request	body		api.DescribeSingleResourceRequest	true	"Request Body"
+//	@Success	200		{object}	aws.Resources
+//	@Router		/schedule/api/v1/describe/resource [post]
+func (h HttpServer) DescribeSingleResource(ctx echo.Context) error {
+	var req api.DescribeSingleResourceRequest
+	if err := bindValidate(ctx, &req); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	switch req.Provider {
+	case source.CloudAWS:
+		resources, err := aws.GetSingleResource(
+			context.Background(),
+			req.ResourceType,
+			enums.DescribeTriggerTypeManual,
+			req.AccountID,
+			nil,
+			req.AccessKey,
+			req.SecretKey,
+			"",
+			"",
+			false,
+			req.AdditionalFields,
+		)
+		if err != nil {
+			return err
+		}
+		return ctx.JSON(http.StatusOK, *resources)
+
+	}
+	return echo.NewHTTPError(http.StatusNotImplemented, "provider not implemented")
 }
 
 // HandleGetCredsForJob godoc
