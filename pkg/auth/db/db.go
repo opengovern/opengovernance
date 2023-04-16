@@ -102,7 +102,7 @@ func (db Database) UpdateActiveAPIKey(workspaceID string, id uint, value bool) e
 	return nil
 }
 
-func (db Database) UpdateRoleAPIKey(workspaceID string, id uint, role api.Role) error {
+func (db Database) UpdateAPIKeyRole(workspaceID string, id uint, role api.Role) error {
 	tx := db.Orm.Model(&ApiKey{}).
 		Where("workspace_id", workspaceID).
 		Where("id", id).

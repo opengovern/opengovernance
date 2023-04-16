@@ -50,29 +50,29 @@ type httpRoutes struct {
 }
 
 func (r *httpRoutes) Register(e *echo.Echo) {
-	v1 := e.Group("/api/v1/iam")
+	v1 := e.Group("/api/v1")
 
-	v1.PUT("/:workspace_id/user/role/binding", httpserver.AuthorizeHandler(r.PutRoleBinding, api.AdminRole))
-	v1.DELETE("/:workspace_id/user/role/binding", httpserver.AuthorizeHandler(r.DeleteRoleBinding, api.AdminRole))
+	v1.PUT("/user/role/binding", httpserver.AuthorizeHandler(r.PutRoleBinding, api.AdminRole))
+	v1.DELETE("/user/role/binding", httpserver.AuthorizeHandler(r.DeleteRoleBinding, api.AdminRole))
 	v1.GET("/user/role/bindings", httpserver.AuthorizeHandler(r.GetRoleBindings, api.EditorRole))
 	v1.GET("/user/:user_id/workspace/membership", httpserver.AuthorizeHandler(r.GetWorkspaceMembership, api.AdminRole))
-	v1.GET("/:workspace_id/users", httpserver.AuthorizeHandler(r.GetUsers, api.EditorRole))
-	v1.GET("/:workspace_id/user/:user_id", httpserver.AuthorizeHandler(r.GetUserDetails, api.EditorRole))
-	v1.POST("/:workspace_id/user/invite", httpserver.AuthorizeHandler(r.Invite, api.AdminRole))
-	v1.DELETE("/:workspace_id/user/invite", httpserver.AuthorizeHandler(r.DeleteInvitation, api.AdminRole))
+	v1.GET("/users", httpserver.AuthorizeHandler(r.GetUsers, api.EditorRole))
+	v1.GET("/user/:user_id", httpserver.AuthorizeHandler(r.GetUserDetails, api.EditorRole))
+	v1.POST("/user/invite", httpserver.AuthorizeHandler(r.Invite, api.AdminRole))
+	v1.DELETE("/user/invite", httpserver.AuthorizeHandler(r.DeleteInvitation, api.AdminRole))
 
-	v1.POST("/:workspace_id/key/create", httpserver.AuthorizeHandler(r.CreateAPIKey, api.AdminRole))
-	v1.GET("/:workspace_id/keys", httpserver.AuthorizeHandler(r.ListAPIKeys, api.EditorRole))
-	v1.POST("/:workspace_id/key/:id/suspend", httpserver.AuthorizeHandler(r.SuspendAPIKey, api.AdminRole))
-	v1.POST("/:workspace_id/key/:id/activate", httpserver.AuthorizeHandler(r.ActivateAPIKey, api.AdminRole))
-	v1.DELETE("/:workspace_id/key/:id/delete", httpserver.AuthorizeHandler(r.DeleteAPIKey, api.AdminRole))
-	v1.GET("/:workspace_id/key/:id", httpserver.AuthorizeHandler(r.GetAPIKey, api.EditorRole))
+	v1.POST("/key/create", httpserver.AuthorizeHandler(r.CreateAPIKey, api.AdminRole))
+	v1.GET("/keys", httpserver.AuthorizeHandler(r.ListAPIKeys, api.EditorRole))
+	v1.POST("/key/:id/suspend", httpserver.AuthorizeHandler(r.SuspendAPIKey, api.AdminRole))
+	v1.POST("/key/:id/activate", httpserver.AuthorizeHandler(r.ActivateAPIKey, api.AdminRole))
+	v1.DELETE("/key/:id/delete", httpserver.AuthorizeHandler(r.DeleteAPIKey, api.AdminRole))
+	v1.GET("/key/:id", httpserver.AuthorizeHandler(r.GetAPIKey, api.EditorRole))
 
 	v1.GET("/role/:role/users", httpserver.AuthorizeHandler(r.GetRoleUsers, api.AdminRole))
 	v1.GET("/role/keys", httpserver.AuthorizeHandler(r.GetRoleKeys, api.AdminRole))
-	v1.POST("/:workspace_id/key/role", httpserver.AuthorizeHandler(r.UpdateKeyRole, api.AdminRole))
-	v1.GET("/:workspace_id/roles", httpserver.AuthorizeHandler(r.ListRoles, api.EditorRole))
-	v1.GET("/:workspace_id/roles/:role", httpserver.AuthorizeHandler(r.RoleDetails, api.EditorRole))
+	v1.POST("/key/role", httpserver.AuthorizeHandler(r.UpdateKeyRole, api.AdminRole))
+	v1.GET("/roles", httpserver.AuthorizeHandler(r.ListRoles, api.EditorRole))
+	v1.GET("/roles/:role", httpserver.AuthorizeHandler(r.RoleDetails, api.EditorRole))
 }
 
 // ListRoles godoc
@@ -82,16 +82,9 @@ func (r *httpRoutes) Register(e *echo.Echo) {
 //	@Produce	json
 //	@Param		workspaceId	path		string	true	"workspaceId"
 //	@Success	200			{object}	[]api.RolesListResponse
-//	@Router		/auth/api/v1/iam/{workspace_id}/roles [get]
+//	@Router		/auth/api/v1/roles [get]
 func (r *httpRoutes) ListRoles(ctx echo.Context) error {
-	workspaceID := ctx.Param("workspace_id")
-	validate, err := r.auth0Service.CheckUserValidation(httpserver.GetUserID(ctx), workspaceID, []api.Role{api.AdminRole, api.EditorRole})
-	if err != nil {
-		return err
-	}
-	if validate == false {
-		return echo.NewHTTPError(http.StatusForbidden, "This request is only available for ADMIN of the workspace.") // not sure if StatusForbidden is good for here
-	}
+	workspaceID := httpserver.GetWorkspaceID(ctx)
 	users, err := r.auth0Service.SearchUsers(workspaceID, api.GetUsersRequest{})
 	if err != nil {
 		return err
@@ -146,17 +139,10 @@ func (r *httpRoutes) ListRoles(ctx echo.Context) error {
 //	@Param		workspaceId	path		string	true	"workspaceId"
 //	@Param		role		path		string	true	"role"
 //	@Success	200			{object}	api.RoleDetailsResponse
-//	@Router		/auth/api/v1/iam/{workspace_id}/roles/{role} [get]
+//	@Router		/auth/api/v1/roles/{role} [get]
 func (r *httpRoutes) RoleDetails(ctx echo.Context) error {
-	workspaceID := ctx.Param("workspace_id")
+	workspaceID := httpserver.GetWorkspaceID(ctx)
 	role := api.Role(ctx.Param("role"))
-	validate, err := r.auth0Service.CheckUserValidation(httpserver.GetUserID(ctx), workspaceID, []api.Role{api.AdminRole, api.EditorRole})
-	if err != nil {
-		return err
-	}
-	if validate == false {
-		return echo.NewHTTPError(http.StatusForbidden, "This request is only available for ADMIN and EDITOR of the workspace.") // not sure if StatusForbidden is good for here
-	}
 	users, err := r.auth0Service.SearchUsers(workspaceID, api.GetUsersRequest{})
 	if err != nil {
 		return err
@@ -216,22 +202,15 @@ func bindValidate(ctx echo.Context, i interface{}) error {
 //	@Param			workspaceId	path		string						true	"workspaceId"
 //	@Param			request		body		api.PutRoleBindingRequest	true	"Request Body"
 //	@Success		200			{object}	nil
-//	@Router			/auth/api/v1/iam/{workspace_id}/user/role/binding [put]
+//	@Router			/auth/api/v1/user/role/binding [put]
 func (r httpRoutes) PutRoleBinding(ctx echo.Context) error {
 	var req api.PutRoleBindingRequest
 	if err := bindValidate(ctx, &req); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err)
 	}
 
-	workspaceID := ctx.Param("workspace_id")
+	workspaceID := httpserver.GetWorkspaceID(ctx)
 
-	validate, err := r.auth0Service.CheckUserValidation(httpserver.GetUserID(ctx), workspaceID, []api.Role{api.AdminRole})
-	if err != nil {
-		return err
-	}
-	if validate == false {
-		return echo.NewHTTPError(http.StatusForbidden, "This request is only available for ADMIN of the workspace.") // not sure if StatusForbidden is good for here
-	}
 	if httpserver.GetUserID(ctx) == req.UserID &&
 		req.Role != api.AdminRole {
 		return echo.NewHTTPError(http.StatusBadRequest, "admin user permission can't be modified by self")
@@ -277,7 +256,7 @@ func (r httpRoutes) PutRoleBinding(ctx echo.Context) error {
 //	@Produce	json
 //	@Param		userId	query		string	true	"userId"
 //	@Success	200		{object}	nil
-//	@Router		/auth/api/v1/iam/{workspace_id}/user/role/binding [delete]
+//	@Router		/auth/api/v1/user/role/binding [delete]
 func (r httpRoutes) DeleteRoleBinding(ctx echo.Context) error {
 	userId := ctx.QueryParam("userId")
 	// The WorkspaceManager service will call this API to set the AdminRole
@@ -287,7 +266,7 @@ func (r httpRoutes) DeleteRoleBinding(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "admin user permission can't be modified by self")
 	}
 
-	workspaceID := ctx.Param("workspace_id")
+	workspaceID := httpserver.GetWorkspaceID(ctx)
 	auth0User, err := r.auth0Service.GetUser(userId)
 	if err != nil {
 		return err
@@ -308,7 +287,7 @@ func (r httpRoutes) DeleteRoleBinding(ctx echo.Context) error {
 //	@Tags			auth
 //	@Produce		json
 //	@Success		200	{object}	api.GetRoleBindingsResponse
-//	@Router			/auth/api/v1/iam/user/role/bindings [get]
+//	@Router			/auth/api/v1/user/role/bindings [get]
 func (r *httpRoutes) GetRoleBindings(ctx echo.Context) error {
 	userID := httpserver.GetUserID(ctx)
 
@@ -341,7 +320,7 @@ func (r *httpRoutes) GetRoleBindings(ctx echo.Context) error {
 //	@Produce		json
 //	@Param			userId	path		string	true	"userId"
 //	@Success		200		{object}	api.GetRoleBindingsResponse
-//	@Router			/auth/api/v1/iam/user/{user_id}/workspace/membership [get]
+//	@Router			/auth/api/v1/user/{user_id}/workspace/membership [get]
 func (r *httpRoutes) GetWorkspaceMembership(ctx echo.Context) error {
 	hctx := httpclient.FromEchoContext(ctx)
 	userID := ctx.Param("user_id")
@@ -384,17 +363,9 @@ func (r *httpRoutes) GetWorkspaceMembership(ctx echo.Context) error {
 //	@Param			workspaceID	path		string				true	"workspaceID"
 //	@Param			request		body		api.GetUsersRequest	true	"Request Body"
 //	@Success		200			{object}	api.GetUsersResponse
-//	@Router			/auth/api/v1/iam/{workspace_id}/users [get]
+//	@Router			/auth/api/v1/users [get]
 func (r *httpRoutes) GetUsers(ctx echo.Context) error {
-	workspaceID := ctx.Param("workspace_id")
-	userID := httpserver.GetUserID(ctx)
-	validate, err := r.auth0Service.CheckUserValidation(userID, workspaceID, []api.Role{api.AdminRole, api.EditorRole})
-	if err != nil {
-		return err
-	}
-	if validate == false {
-		return echo.NewHTTPError(http.StatusForbidden, "This request is only available for ADMIN and EDITOR of the workspace.") // not sure if StatusForbidden is good for here
-	}
+	workspaceID := httpserver.GetWorkspaceID(ctx)
 	var req api.GetUsersRequest
 	if err := ctx.Bind(&req); err != nil {
 		ctx.Logger().Errorf("bind the request: %v", err)
@@ -427,16 +398,9 @@ func (r *httpRoutes) GetUsers(ctx echo.Context) error {
 //	@Param			userId		path		string	true	"userId"
 //	@Param			workspaceId	path		string	true	"workspaceId"
 //	@Success		200			{object}	api.GetUserResponse
-//	@Router			/auth/api/v1/iam/{workspace_id}/user/{user_id} [get]
+//	@Router			/auth/api/v1/user/{user_id} [get]
 func (r *httpRoutes) GetUserDetails(ctx echo.Context) error {
-	workspaceID := ctx.Param("workspace_id")
-	validate, err := r.auth0Service.CheckUserValidation(httpserver.GetUserID(ctx), workspaceID, []api.Role{api.AdminRole, api.EditorRole})
-	if err != nil {
-		return err
-	}
-	if validate == false {
-		return echo.NewHTTPError(http.StatusForbidden, "This request is only available for ADMIN and EDITOR of the workspace.") // not sure if StatusForbidden is good for here
-	}
+	workspaceID := httpserver.GetWorkspaceID(ctx)
 	userID := ctx.Param("user_id")
 	user, err := r.auth0Service.GetUser(userID)
 	if err != nil {
@@ -482,26 +446,20 @@ func (r *httpRoutes) GetUserDetails(ctx echo.Context) error {
 //	@Produce		json
 //	@Param			request	body		api.InviteRequest	true	"Request Body"
 //	@Success		200		{object}	nil
-//	@Router			/auth/api/v1/iam/{workspace_id}/user/invite [post]
+//	@Router			/auth/api/v1/user/invite [post]
 func (r *httpRoutes) Invite(ctx echo.Context) error {
 	var req api.InviteRequest
 	if err := bindValidate(ctx, &req); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err)
 	}
-	workspaceID := ctx.Param("workspace_id")
+	workspaceID := httpserver.GetWorkspaceID(ctx)
 
 	hctx := httpclient.FromEchoContext(ctx)
 	cnf, err := r.metadataService.GetConfigMetadata(hctx, models.MetadataKeyAllowInvite)
 	if err != nil {
 		return err
 	}
-	validate, err := r.auth0Service.CheckUserValidation(httpserver.GetUserID(ctx), workspaceID, []api.Role{api.AdminRole})
-	if err != nil {
-		return err
-	}
-	if validate == false {
-		return echo.NewHTTPError(http.StatusForbidden, "This request is only available for ADMIN of the workspace.") // not sure if StatusForbidden is good for here
-	}
+
 	allowInvite := cnf.GetValue().(bool)
 	if !allowInvite {
 		return echo.NewHTTPError(http.StatusNotAcceptable, "invite not allowed")
@@ -595,21 +553,14 @@ func (r *httpRoutes) Invite(ctx echo.Context) error {
 //	@Produce	json
 //	@Param		userId	query		string	true	"userId"
 //	@Success	200		{object}	nil
-//	@Router		/auth/api/v1/iam/{workspace_id}/user/invite [delete]
+//	@Router		/auth/api/v1/user/invite [delete]
 func (r *httpRoutes) DeleteInvitation(ctx echo.Context) error {
 	userId := ctx.QueryParam("userId")
 	if httpserver.GetUserID(ctx) == userId {
 		return echo.NewHTTPError(http.StatusBadRequest, "admin user permission can't be modified by self")
 	}
 
-	workspaceID := ctx.Param("workspace_id")
-	validate, err := r.auth0Service.CheckUserValidation(httpserver.GetUserID(ctx), workspaceID, []api.Role{api.AdminRole})
-	if err != nil {
-		return err
-	}
-	if validate == false {
-		return echo.NewHTTPError(http.StatusForbidden, "This request is only available for ADMIN of the workspace.") // not sure if StatusForbidden is good for here
-	}
+	workspaceID := httpserver.GetWorkspaceID(ctx)
 	auth0User, err := r.auth0Service.GetUser(userId)
 	if err != nil {
 		return err
@@ -631,17 +582,10 @@ func (r *httpRoutes) DeleteInvitation(ctx echo.Context) error {
 //	@Param		workspaceId	path		string					true	"workspaceId"
 //	@Param		request		body		api.CreateAPIKeyRequest	true	"Request Body"
 //	@Success	200			{object}	api.CreateAPIKeyResponse
-//	@Router		/auth/api/v1/iam/{workspace_id}/key/create [post]
+//	@Router		/auth/api/v1/key/create [post]
 func (r *httpRoutes) CreateAPIKey(ctx echo.Context) error {
 	userID := httpserver.GetUserID(ctx)
-	workspaceID := ctx.Param("workspace_id")
-	validate, err := r.auth0Service.CheckUserValidation(httpserver.GetUserID(ctx), workspaceID, []api.Role{api.AdminRole})
-	if err != nil {
-		return err
-	}
-	if validate == false {
-		return echo.NewHTTPError(http.StatusForbidden, "This request is only available for ADMIN of the workspace.") // not sure if StatusForbidden is good for here
-	}
+	workspaceID := httpserver.GetWorkspaceID(ctx)
 	hctx := httpclient.FromEchoContext(ctx)
 	cnf, err := r.metadataService.GetConfigMetadata(hctx, models.MetadataKeyWorkspaceKeySupport)
 	if err != nil {
@@ -739,16 +683,9 @@ func (r *httpRoutes) CreateAPIKey(ctx echo.Context) error {
 //	@Param		workspaceId	path		string	true	"workspaceId"
 //	@Param		id			path		string	true	"ID"
 //	@Success	200			{object}	nil
-//	@Router		/auth/api/v1/iam/{workspace_id}/key/{id}/delete [delete]
+//	@Router		/auth/api/v1/key/{id}/delete [delete]
 func (r *httpRoutes) DeleteAPIKey(ctx echo.Context) error {
-	workspaceID := ctx.Param("workspace_id")
-	validate, err := r.auth0Service.CheckUserValidation(httpserver.GetUserID(ctx), workspaceID, []api.Role{api.AdminRole})
-	if err != nil {
-		return err
-	}
-	if validate == false {
-		return echo.NewHTTPError(http.StatusForbidden, "This request is only available for ADMIN of the workspace.") // not sure if StatusForbidden is good for here
-	}
+	workspaceID := httpserver.GetWorkspaceID(ctx)
 	idStr := ctx.Param("id")
 	id, err := strconv.ParseUint(idStr, 10, 64)
 	if err != nil {
@@ -770,16 +707,9 @@ func (r *httpRoutes) DeleteAPIKey(ctx echo.Context) error {
 //	@Produce	json
 //	@Param		workspaceId	path		string	true	"workspaceId"
 //	@Success	200			{object}	[]api.WorkspaceApiKey
-//	@Router		/auth/api/v1/iam/{workspace_id}/keys [get]
+//	@Router		/auth/api/v1/keys [get]
 func (r *httpRoutes) ListAPIKeys(ctx echo.Context) error {
-	workspaceID := ctx.Param("workspace_id")
-	validate, err := r.auth0Service.CheckUserValidation(httpserver.GetUserID(ctx), workspaceID, []api.Role{api.AdminRole, api.EditorRole})
-	if err != nil {
-		return err
-	}
-	if validate == false {
-		return echo.NewHTTPError(http.StatusForbidden, "This request is only available for ADMIN and EDITOR of the workspace.") // not sure if StatusForbidden is good for here
-	}
+	workspaceID := httpserver.GetWorkspaceID(ctx)
 	keys, err := r.db.ListApiKeys(workspaceID)
 	if err != nil {
 		return err
@@ -809,7 +739,7 @@ func (r *httpRoutes) ListAPIKeys(ctx echo.Context) error {
 //	@Param		workspaceId	path		string	true	"workspaceId"
 //	@Param		id			path		string	true	"ID"
 //	@Success	200			{object}	api.WorkspaceApiKey
-//	@Router		/auth/api/v1/iam/{workspace_id}/key/{id} [get]
+//	@Router		/auth/api/v1/key/{id} [get]
 func (r *httpRoutes) GetAPIKey(ctx echo.Context) error {
 	idStr := ctx.Param("id")
 	id, err := strconv.ParseUint(idStr, 10, 64)
@@ -817,14 +747,7 @@ func (r *httpRoutes) GetAPIKey(ctx echo.Context) error {
 		return err
 	}
 
-	workspaceID := ctx.Param("workspace_id")
-	validate, err := r.auth0Service.CheckUserValidation(httpserver.GetUserID(ctx), workspaceID, []api.Role{api.AdminRole, api.EditorRole})
-	if err != nil {
-		return err
-	}
-	if validate == false {
-		return echo.NewHTTPError(http.StatusForbidden, "This request is only available for ADMIN and EDITOR of the workspace.") // not sure if StatusForbidden is good for here
-	}
+	workspaceID := httpserver.GetWorkspaceID(ctx)
 	key, err := r.db.GetApiKey(workspaceID, uint(id))
 	if err != nil {
 		return err
@@ -855,16 +778,10 @@ func (r *httpRoutes) GetAPIKey(ctx echo.Context) error {
 //	@Param		workspaceId	path		string	true	"workspaceId"
 //	@Param		id			path		string	true	"ID"
 //	@Success	200			{object}	api.WorkspaceApiKey
-//	@Router		/auth/api/v1/iam/{workspace_id}/key/{id}/suspend [post]
+//	@Router		/auth/api/v1/key/{id}/suspend [post]
 func (r *httpRoutes) SuspendAPIKey(ctx echo.Context) error {
-	workspaceID := ctx.Param("workspace_id")
-	validate, err := r.auth0Service.CheckUserValidation(httpserver.GetUserID(ctx), workspaceID, []api.Role{api.AdminRole})
-	if err != nil {
-		return err
-	}
-	if validate == false {
-		return echo.NewHTTPError(http.StatusForbidden, "This request is only available for ADMIN of the workspace.") // not sure if StatusForbidden is good for here
-	}
+	workspaceID := httpserver.GetWorkspaceID(ctx)
+
 	idStr := ctx.Param("id")
 	id, err := strconv.ParseUint(idStr, 10, 64)
 	if err != nil {
@@ -904,16 +821,10 @@ func (r *httpRoutes) SuspendAPIKey(ctx echo.Context) error {
 //	@Param		workspaceId	path		string	true	"workspaceId"
 //	@Param		id			path		string	true	"ID"
 //	@Success	200			{object}	api.WorkspaceApiKey
-//	@Router		/auth/api/v1/iam/{workspace_id}/key/{id}/activate [post]
+//	@Router		/auth/api/v1/key/{id}/activate [post]
 func (r *httpRoutes) ActivateAPIKey(ctx echo.Context) error {
-	workspaceID := ctx.Param("workspace_id")
-	validate, err := r.auth0Service.CheckUserValidation(httpserver.GetUserID(ctx), workspaceID, []api.Role{api.AdminRole})
-	if err != nil {
-		return err
-	}
-	if validate == false {
-		return echo.NewHTTPError(http.StatusForbidden, "This request is only available for ADMIN of the workspace.") // not sure if StatusForbidden is good for here
-	}
+	workspaceID := httpserver.GetWorkspaceID(ctx)
+
 	idStr := ctx.Param("id")
 	id, err := strconv.ParseUint(idStr, 10, 64)
 	if err != nil {
@@ -952,10 +863,11 @@ func (r *httpRoutes) ActivateAPIKey(ctx echo.Context) error {
 //	@Produce	json
 //	@Param		role	path		string	true	"role"
 //	@Success	200		{object}	api.GetRoleUsersResponse
-//	@Router		/auth/api/v1/iam/role/{role}/users [get]
+//	@Router		/auth/api/v1/role/{role}/users [get]
 func (r *httpRoutes) GetRoleUsers(ctx echo.Context) error {
+	workspaceID := httpserver.GetWorkspaceID(ctx)
 	role := api.Role(ctx.Param("role"))
-	users, err := r.auth0Service.SearchUsersByRole(role)
+	users, err := r.auth0Service.SearchUsers(workspaceID, api.GetUsersRequest{Role: &role})
 	if err != nil {
 		return err
 	}
@@ -1000,7 +912,7 @@ func (r *httpRoutes) GetRoleUsers(ctx echo.Context) error {
 //	@Produce	json
 //	@Param		request	body		api.Role	true	"Request Body"
 //	@Success	200		{object}	[]api.WorkspaceApiKey
-//	@Router		/auth/api/v1/iam/role/:role/keys [get]
+//	@Router		/auth/api/v1/role/:role/keys [get]
 func (r *httpRoutes) GetRoleKeys(ctx echo.Context) error {
 	role := api.Role(ctx.Param("role"))
 	workspaceID := httpserver.GetWorkspaceID(ctx)
@@ -1034,23 +946,17 @@ func (r *httpRoutes) GetRoleKeys(ctx echo.Context) error {
 //	@Param		workspaceId	path		string						true	"workspaceId"
 //	@Param		request		body		api.UpdateKeyRoleRequest	true	"Request Body"
 //	@Success	200			{object}	api.WorkspaceApiKey
-//	@Router		/auth/api/v1/iam/{workspace_id}/key/role [post]
+//	@Router		/auth/api/v1/key/role [post]
 func (r *httpRoutes) UpdateKeyRole(ctx echo.Context) error {
-	workspaceID := ctx.Param("workspace_id")
-	validate, err := r.auth0Service.CheckUserValidation(httpserver.GetUserID(ctx), workspaceID, []api.Role{api.AdminRole})
-	if err != nil {
-		return err
-	}
-	if validate == false {
-		return echo.NewHTTPError(http.StatusForbidden, "This request is only available for ADMIN of the workspace.") // not sure if StatusForbidden is good for here
-	}
+	workspaceID := httpserver.GetWorkspaceID(ctx)
+
 	var req api.UpdateKeyRoleRequest
 	if err := ctx.Bind(&req); err != nil {
 		ctx.Logger().Errorf("bind the request: %v", err)
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
 	}
 
-	err = r.db.UpdateRoleAPIKey(workspaceID, uint(req.ID), req.Role)
+	err := r.db.UpdateAPIKeyRole(workspaceID, uint(req.ID), req.Role)
 	if err != nil {
 		return err
 	}
