@@ -27,13 +27,6 @@ const docTemplate = `{
                 "summary": "Creates an API Key",
                 "parameters": [
                     {
-                        "type": "string",
-                        "description": "workspaceId",
-                        "name": "workspaceId",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
                         "description": "Request Body",
                         "name": "request",
                         "in": "body",
@@ -63,13 +56,6 @@ const docTemplate = `{
                 ],
                 "summary": "Fetches an API Key",
                 "parameters": [
-                    {
-                        "type": "string",
-                        "description": "workspaceId",
-                        "name": "workspaceId",
-                        "in": "path",
-                        "required": true
-                    },
                     {
                         "description": "Request Body",
                         "name": "request",
@@ -102,13 +88,6 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "workspaceId",
-                        "name": "workspaceId",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
                         "description": "ID",
                         "name": "id",
                         "in": "path",
@@ -135,13 +114,6 @@ const docTemplate = `{
                 ],
                 "summary": "Suspend an API Key",
                 "parameters": [
-                    {
-                        "type": "string",
-                        "description": "workspaceId",
-                        "name": "workspaceId",
-                        "in": "path",
-                        "required": true
-                    },
                     {
                         "type": "string",
                         "description": "ID",
@@ -172,13 +144,6 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "workspaceId",
-                        "name": "workspaceId",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
                         "description": "ID",
                         "name": "id",
                         "in": "path",
@@ -202,13 +167,6 @@ const docTemplate = `{
                 ],
                 "summary": "Suspend an API Key",
                 "parameters": [
-                    {
-                        "type": "string",
-                        "description": "workspaceId",
-                        "name": "workspaceId",
-                        "in": "path",
-                        "required": true
-                    },
                     {
                         "type": "string",
                         "description": "ID",
@@ -236,15 +194,6 @@ const docTemplate = `{
                     "auth"
                 ],
                 "summary": "Lists all API Keys",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "workspaceId",
-                        "name": "workspaceId",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -299,7 +248,7 @@ const docTemplate = `{
                 "tags": [
                     "auth"
                 ],
-                "summary": "Get the list of users having the specefic role",
+                "summary": "Lists users with a role",
                 "parameters": [
                     {
                         "type": "string",
@@ -331,15 +280,6 @@ const docTemplate = `{
                     "auth"
                 ],
                 "summary": "show lists of roles.",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "workspaceId",
-                        "name": "workspaceId",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -363,13 +303,6 @@ const docTemplate = `{
                 ],
                 "summary": "show the description roles and members that use from each role",
                 "parameters": [
-                    {
-                        "type": "string",
-                        "description": "workspaceId",
-                        "name": "workspaceId",
-                        "in": "path",
-                        "required": true
-                    },
                     {
                         "type": "string",
                         "description": "role",
@@ -397,7 +330,7 @@ const docTemplate = `{
                 "tags": [
                     "auth"
                 ],
-                "summary": "Invites a user to a workspace with defined role.",
+                "summary": "Invites a user",
                 "parameters": [
                     {
                         "description": "Request Body",
@@ -450,13 +383,6 @@ const docTemplate = `{
                 ],
                 "summary": "Update RoleBinding for a user.",
                 "parameters": [
-                    {
-                        "type": "string",
-                        "description": "workspaceId",
-                        "name": "workspaceId",
-                        "in": "path",
-                        "required": true
-                    },
                     {
                         "description": "Request Body",
                         "name": "request",
@@ -526,19 +452,12 @@ const docTemplate = `{
                 "tags": [
                     "auth"
                 ],
-                "summary": "Get user details by user id",
+                "summary": "User details",
                 "parameters": [
                     {
                         "type": "string",
                         "description": "userId",
                         "name": "userId",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "workspaceId",
-                        "name": "workspaceId",
                         "in": "path",
                         "required": true
                     }
@@ -584,22 +503,15 @@ const docTemplate = `{
         },
         "/auth/api/v1/users": {
             "get": {
-                "description": "RoleBinding defines the roles and actions a user can perform. There are currently three roles (ADMIN, EDITOR, VIEWER). The workspace path is based on the DNS such as (workspace1.app.keibi.io)",
+                "description": "List of users with specified filters",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "auth"
                 ],
-                "summary": "Get all the user RoleBindings for the given workspace.",
+                "summary": "Search users",
                 "parameters": [
-                    {
-                        "type": "string",
-                        "description": "workspaceID",
-                        "name": "workspaceID",
-                        "in": "path",
-                        "required": true
-                    },
                     {
                         "description": "Request Body",
                         "name": "request",
@@ -617,6 +529,38 @@ const docTemplate = `{
                             "type": "array",
                             "items": {
                                 "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.GetUserResponse"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/api/v1/workspace/role/bindings": {
+            "get": {
+                "description": "RoleBinding defines the roles and actions a user can perform. There are currently three roles (ADMIN, EDITOR, VIEWER). The workspace path is based on the DNS such as (workspace1.app.keibi.io)",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Workspace user roleBindings.",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "workspaceId",
+                        "name": "workspaceId",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.WorkspaceRoleBinding"
                             }
                         }
                     }
@@ -5752,10 +5696,6 @@ const docTemplate = `{
                         }
                     ]
                 },
-                "tenantId": {
-                    "description": "Tenant Id",
-                    "type": "string"
-                },
                 "userId": {
                     "description": "Unique identifier for the user",
                     "type": "string"
@@ -5840,6 +5780,47 @@ const docTemplate = `{
                     "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.Role"
                 },
                 "updatedAt": {
+                    "type": "string"
+                }
+            }
+        },
+        "gitlab_com_keibiengine_keibi-engine_pkg_auth_api.WorkspaceRoleBinding": {
+            "type": "object",
+            "properties": {
+                "createdAt": {
+                    "description": "Creation timestamp in UTC",
+                    "type": "string"
+                },
+                "email": {
+                    "description": "Email address of the user",
+                    "type": "string"
+                },
+                "lastActivity": {
+                    "description": "Last activity timestamp in UTC",
+                    "type": "string"
+                },
+                "role": {
+                    "description": "Name of the role",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.Role"
+                        }
+                    ]
+                },
+                "status": {
+                    "description": "Invite status",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.InviteStatus"
+                        }
+                    ]
+                },
+                "userId": {
+                    "description": "Unique identifier for the user",
+                    "type": "string"
+                },
+                "userName": {
+                    "description": "Username",
                     "type": "string"
                 }
             }
