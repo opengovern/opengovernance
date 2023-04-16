@@ -56,8 +56,10 @@ func (r *httpRoutes) Register(e *echo.Echo) {
 	v1.DELETE("/user/role/binding", httpserver.AuthorizeHandler(r.DeleteRoleBinding, api.AdminRole))
 	v1.GET("/user/role/bindings", httpserver.AuthorizeHandler(r.GetRoleBindings, api.EditorRole))
 	v1.GET("/user/:user_id/workspace/membership", httpserver.AuthorizeHandler(r.GetWorkspaceMembership, api.AdminRole))
+	v1.GET("/workspace/role/bindings", httpserver.AuthorizeHandler(r.GetWorkspaceRoleBindings, api.AdminRole))
 	v1.GET("/users", httpserver.AuthorizeHandler(r.GetUsers, api.EditorRole))
 	v1.GET("/user/:user_id", httpserver.AuthorizeHandler(r.GetUserDetails, api.EditorRole))
+	v1.POST("/invite", httpserver.AuthorizeHandler(r.Invite, api.AdminRole))
 	v1.POST("/user/invite", httpserver.AuthorizeHandler(r.Invite, api.AdminRole))
 	v1.DELETE("/user/invite", httpserver.AuthorizeHandler(r.DeleteInvitation, api.AdminRole))
 
@@ -84,7 +86,7 @@ func (r *httpRoutes) Register(e *echo.Echo) {
 //	@Router		/auth/api/v1/roles [get]
 func (r *httpRoutes) ListRoles(ctx echo.Context) error {
 	workspaceID := httpserver.GetWorkspaceID(ctx)
-	users, err := r.auth0Service.SearchUsers(workspaceID, api.GetUsersRequest{})
+	users, err := r.auth0Service.SearchUsers(workspaceID, nil, nil, nil)
 	if err != nil {
 		return err
 	}
@@ -141,7 +143,7 @@ func (r *httpRoutes) ListRoles(ctx echo.Context) error {
 func (r *httpRoutes) RoleDetails(ctx echo.Context) error {
 	workspaceID := httpserver.GetWorkspaceID(ctx)
 	role := api.Role(ctx.Param("role"))
-	users, err := r.auth0Service.SearchUsers(workspaceID, api.GetUsersRequest{})
+	users, err := r.auth0Service.SearchUsers(workspaceID, nil, nil, nil)
 	if err != nil {
 		return err
 	}
@@ -228,7 +230,7 @@ func (r httpRoutes) PutRoleBinding(ctx echo.Context) error {
 		}
 		maxUsers := cnf.GetValue().(int)
 
-		users, err := r.auth0Service.SearchUsers(workspaceID, api.GetUsersRequest{})
+		users, err := r.auth0Service.SearchUsers(workspaceID, nil, nil, nil)
 		if err != nil {
 			return err
 		}
@@ -353,8 +355,44 @@ func (r *httpRoutes) GetWorkspaceMembership(ctx echo.Context) error {
 
 // GetWorkspaceRoleBindings godoc
 //
-//	@Summary		Get all the user RoleBindings for the given workspace.
+//	@Summary		Workspace user roleBindings.
 //	@Description	RoleBinding defines the roles and actions a user can perform. There are currently three roles (ADMIN, EDITOR, VIEWER). The workspace path is based on the DNS such as (workspace1.app.keibi.io)
+//	@Tags			auth
+//	@Produce		json
+//	@Param			workspaceId	query		string	true	"workspaceId"
+//	@Success		200			{object}	api.GetWorkspaceRoleBindingResponse
+//	@Router			/auth/api/v1/workspace/role/bindings [get]
+func (r *httpRoutes) GetWorkspaceRoleBindings(ctx echo.Context) error {
+	workspaceID := httpserver.GetWorkspaceID(ctx)
+	users, err := r.auth0Service.SearchUsersByWorkspace(workspaceID)
+	if err != nil {
+		return err
+	}
+
+	var resp api.GetWorkspaceRoleBindingResponse
+	for _, u := range users {
+		status := api.InviteStatus_PENDING
+		if u.EmailVerified {
+			status = api.InviteStatus_ACCEPTED
+		}
+
+		resp = append(resp, api.WorkspaceRoleBinding{
+			UserID:       u.UserId,
+			UserName:     u.Name,
+			Email:        u.Email,
+			Role:         u.AppMetadata.WorkspaceAccess[workspaceID],
+			Status:       status,
+			LastActivity: u.LastLogin,
+			CreatedAt:    u.CreatedAt,
+		})
+	}
+	return ctx.JSON(http.StatusOK, resp)
+}
+
+// GetUsers godoc
+//
+//	@Summary		Search users
+//	@Description	List of users with specified filters
 //	@Tags			auth
 //	@Produce		json
 //	@Param			request		body		api.GetUsersRequest	true	"Request Body"
@@ -367,7 +405,7 @@ func (r *httpRoutes) GetUsers(ctx echo.Context) error {
 		ctx.Logger().Errorf("bind the request: %v", err)
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
 	}
-	users, err := r.auth0Service.SearchUsers(workspaceID, req)
+	users, err := r.auth0Service.SearchUsers(workspaceID, req.Email, req.EmailVerified, req.Role)
 	if err != nil {
 		return err
 	}
@@ -387,7 +425,7 @@ func (r *httpRoutes) GetUsers(ctx echo.Context) error {
 
 // GetUserDetails godoc
 //
-//	@Summary		Get user details by user id
+//	@Summary		User details
 //	@Description	Get user details by user id
 //	@Tags			auth
 //	@Produce		json
@@ -433,7 +471,7 @@ func (r *httpRoutes) GetUserDetails(ctx echo.Context) error {
 
 // Invite godoc
 //
-//	@Summary		Invites a user to a workspace with defined role.
+//	@Summary		Invites a user
 //	@Description	Invites a user to a workspace with defined role
 //	@Description	by sending an email to the specified email address.
 //	@Description	The user will be found by the email address.
@@ -466,7 +504,7 @@ func (r *httpRoutes) Invite(ctx echo.Context) error {
 	}
 	maxUsers := cnf.GetValue().(int)
 
-	users, err := r.auth0Service.SearchUsers(workspaceID, api.GetUsersRequest{})
+	users, err := r.auth0Service.SearchUsers(workspaceID, nil, nil, nil)
 	if err != nil {
 		return err
 	}
@@ -847,7 +885,7 @@ func (r *httpRoutes) ActivateAPIKey(ctx echo.Context) error {
 
 // GetRoleUsers godoc
 //
-//	@Summary	Get the list of users having the specefic role
+//	@Summary	Lists users with a role
 //	@Tags		auth
 //	@Produce	json
 //	@Param		role	path		string	true	"role"
@@ -856,11 +894,7 @@ func (r *httpRoutes) ActivateAPIKey(ctx echo.Context) error {
 func (r *httpRoutes) GetRoleUsers(ctx echo.Context) error {
 	workspaceID := httpserver.GetWorkspaceID(ctx)
 	role := api.Role(ctx.Param("role"))
-	users, err := r.auth0Service.SearchUsers(workspaceID, api.GetUsersRequest{Role: &role})
-	if err != nil {
-		return err
-	}
-	tenant, err := r.auth0Service.GetClientTenant()
+	users, err := r.auth0Service.SearchUsers(workspaceID, nil, nil, &role)
 	if err != nil {
 		return err
 	}
@@ -880,7 +914,6 @@ func (r *httpRoutes) GetRoleUsers(ctx echo.Context) error {
 		resp = append(resp, api.RoleUser{
 			UserID:        u.UserId,
 			UserName:      u.Name,
-			TenantId:      tenant,
 			Email:         u.Email,
 			EmailVerified: u.EmailVerified,
 			Role:          role,

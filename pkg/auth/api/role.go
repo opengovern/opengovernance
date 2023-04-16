@@ -57,6 +57,18 @@ const (
 	InviteStatus_PENDING  InviteStatus = "PENDING"
 )
 
+type WorkspaceRoleBinding struct {
+	UserID       string       `json:"userId"`       // Unique identifier for the user
+	UserName     string       `json:"userName"`     // Username
+	Email        string       `json:"email"`        // Email address of the user
+	Role         Role         `json:"role"`         // Name of the role
+	Status       InviteStatus `json:"status"`       // Invite status
+	LastActivity time.Time    `json:"lastActivity"` // Last activity timestamp in UTC
+	CreatedAt    time.Time    `json:"createdAt"`    // Creation timestamp in UTC
+}
+
+type GetWorkspaceRoleBindingResponse []WorkspaceRoleBinding // List of Workspace Role Binding objects
+
 type GetUserResponse struct {
 	UserID        string       `json:"userId"`        // Unique identifier for the user
 	UserName      string       `json:"userName"`      // Username
@@ -80,7 +92,6 @@ type GetUsersRequest struct {
 type RoleUser struct {
 	UserID        string       `json:"userId"`        // Unique identifier for the user
 	UserName      string       `json:"userName"`      // Username
-	TenantId      string       `json:"tenantId"`      // Tenant Id
 	Email         string       `json:"email"`         // Email address of the user
 	EmailVerified bool         `json:"emailVerified"` // Is email verified or not
 	Role          Role         `json:"role"`          // Name of the role

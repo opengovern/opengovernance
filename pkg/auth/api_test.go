@@ -249,15 +249,13 @@ func (ts *testSuite) TestGetUsers() {
 	}
 	for i, tc := range getUserTestCases {
 		ts.T().Run(fmt.Sprintf("getUserTestCases-%d", i), func(t *testing.T) {
-			//body, err := json.Marshal(tc.Request)
-			//ts.NoError(err)
 			r := httptest.NewRequest(http.MethodGet, "/", bytes.NewBuffer(tc.Request))
 			r.Header.Set("Content-Type", "application/json; charset=utf8")
 			r.Header.Set(httpserver.XKeibiUserIDHeader, tc.UserId)
 			w := httptest.NewRecorder()
 
 			c := echo.New().NewContext(r, w)
-			c.SetPath("/auth/api/v1/iam/:workspace_id/users")
+			c.SetPath("/auth/api/v1/users")
 			c.SetParamNames("workspace_id")
 			c.SetParamValues(tc.WorkspaceID)
 
@@ -313,7 +311,6 @@ func (ts *testSuite) TestGetUser() {
 			if err := json.NewDecoder(w.Body).Decode(&response); err != nil {
 				ts.T().Fatalf("json decode: %v", err)
 			}
-			fmt.Println(response)
 			ts.Equal(tc.Response, response.Email)
 		})
 	}
@@ -347,6 +344,7 @@ func (ts *testSuite) TestGetRoleUsers() {
 		ts.T().Run(fmt.Sprintf("getRoleUsersTestCases-%d", i), func(t *testing.T) {
 			r := httptest.NewRequest(http.MethodGet, "/", nil)
 			r.Header.Set("Content-Type", "application/json; charset=utf8")
+			r.Header.Set(httpserver.XKeibiWorkspaceIDHeader, "ws1")
 			w := httptest.NewRecorder()
 
 			c := echo.New().NewContext(r, w)
@@ -369,11 +367,10 @@ func (ts *testSuite) TestGetRoleUsers() {
 				ts.Equal(len(response), 0)
 			} else {
 				ts.Equal(tc.Role, response[0].Role)
-				ts.Equal("testTenant", response[0].TenantId)
 				ts.Equal("user1@test.com", response[0].Email)
 				ts.True(response[0].EmailVerified)
 			}
-
+			fmt.Println(response)
 		})
 	}
 }

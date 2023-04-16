@@ -296,7 +296,46 @@ func (a *Service) PatchUserAppMetadata(userId string, appMetadata Metadata) erro
 	return nil
 }
 
-func (a *Service) SearchUsers(wsID string, filters api.GetUsersRequest) ([]User, error) {
+func (a *Service) SearchUsersByWorkspace(wsID string) ([]User, error) {
+	if err := a.fillToken(); err != nil {
+		return nil, err
+	}
+	url, err := url2.Parse(fmt.Sprintf("%s/api/v2/users", a.domain))
+	if err != nil {
+		return nil, err
+	}
+
+	queryString := url.Query()
+	queryString.Set("search_engine", "v3")
+	queryString.Set("q", "_exists_:app_metadata.workspaceAccess."+wsID)
+	url.RawQuery = queryString.Encode()
+
+	req, err := http.NewRequest("GET", url.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Add("Authorization", "Bearer "+a.token)
+	res, err := http.DefaultClient.Do(req)
+	if res.StatusCode != http.StatusOK {
+		r, _ := ioutil.ReadAll(res.Body)
+		return nil, fmt.Errorf("[SearchUsersByWorkspace] invalid status code: %d, body=%s", res.StatusCode, string(r))
+	}
+
+	r, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	var resp []User
+	err = json.Unmarshal(r, &resp)
+	if err != nil {
+		return nil, err
+	}
+
+	return resp, nil
+}
+
+func (a *Service) SearchUsers(wsID string, email *string, emailVerified *bool, role *api.Role) ([]User, error) {
 	if err := a.fillToken(); err != nil {
 		return nil, err
 	}
@@ -308,11 +347,11 @@ func (a *Service) SearchUsers(wsID string, filters api.GetUsersRequest) ([]User,
 	queryString := url.Query()
 	queryString.Set("search_engine", "v3")
 	query := "_exists_:app_metadata.workspaceAccess." + wsID
-	if filters.EmailVerified != nil {
-		query = query + " AND email_verified:" + strconv.FormatBool(*filters.EmailVerified)
+	if emailVerified != nil {
+		query = query + " AND email_verified:" + strconv.FormatBool(*emailVerified)
 	}
-	if filters.Email != nil {
-		query = query + " AND email:" + *filters.Email
+	if email != nil {
+		query = query + " AND email:" + *email
 	}
 	queryString.Set("q", query)
 	url.RawQuery = queryString.Encode()
@@ -340,11 +379,11 @@ func (a *Service) SearchUsers(wsID string, filters api.GetUsersRequest) ([]User,
 	}
 
 	var resp []User
-	if filters.Role != nil {
+	if role != nil {
 		for _, user := range users {
 			if func() bool {
 				for _, r := range user.AppMetadata.WorkspaceAccess {
-					if r == *filters.Role {
+					if r == *role {
 						return true
 					}
 				}
@@ -357,30 +396,4 @@ func (a *Service) SearchUsers(wsID string, filters api.GetUsersRequest) ([]User,
 		resp = users
 	}
 	return resp, nil
-}
-
-func (a *Service) GetClientTenant() (string, error) {
-	if err := a.fillToken(); err != nil {
-		return "", err
-	}
-	url := fmt.Sprintf("%s/api/v2/clients/%s", a.domain, a.clientID)
-	req, err := http.NewRequest("GET", url, nil)
-	if err != nil {
-		return "", err
-	}
-	res, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return "", err
-	}
-	r, err := ioutil.ReadAll(res.Body)
-	if err != nil {
-		return "", err
-	}
-	var resp map[string]interface{}
-	err = json.Unmarshal(r, &resp)
-	if str, isString := resp["tenant"].(string); !isString {
-		return "", fmt.Errorf("[getClientTenant] invalid tenant value: %s, body=%s", resp["tenant"], string(r))
-	} else {
-		return str, nil
-	}
 }
