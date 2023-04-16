@@ -34,6 +34,21 @@ definitions:
       role:
         $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.Role'
     type: object
+  gitlab_com_keibiengine_keibi-engine_pkg_auth_api.CreateAPIKeyResponse:
+    properties:
+      acrive:
+        type: boolean
+      createdAt:
+        type: string
+      id:
+        type: integer
+      name:
+        type: string
+      role:
+        $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.Role'
+      token:
+        type: string
+    type: object
   gitlab_com_keibiengine_keibi-engine_pkg_auth_api.GetRoleBindingsResponse:
     properties:
       globalRoles:
@@ -132,6 +147,19 @@ definitions:
     - AdminRole
     - EditorRole
     - ViewerRole
+  gitlab_com_keibiengine_keibi-engine_pkg_auth_api.RoleDetailsResponse:
+    properties:
+      description:
+        type: string
+      role:
+        $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.Role'
+      userCount:
+        type: integer
+      users:
+        items:
+          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.GetUserResponse'
+        type: array
+    type: object
   gitlab_com_keibiengine_keibi-engine_pkg_auth_api.RoleUser:
     properties:
       blocked:
@@ -172,6 +200,15 @@ definitions:
         items:
           type: string
         type: array
+    type: object
+  gitlab_com_keibiengine_keibi-engine_pkg_auth_api.RolesListResponse:
+    properties:
+      description:
+        type: string
+      role:
+        $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.Role'
+      userCount:
+        type: integer
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_auth_api.UpdateKeyRoleRequest:
     properties:
@@ -2449,184 +2486,14 @@ info:
   title: Keibi Service API
   version: "1.0"
 paths:
-  /auth/api/v1/iam/{workspace_id}/user/{user_id}:
+  /auth/api/v1/key/{id}:
     get:
-      description: Get user details by user id
       parameters:
-      - description: userId
-        in: path
-        name: userId
-        required: true
-        type: string
       - description: workspaceId
         in: path
         name: workspaceId
         required: true
         type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.GetUserResponse'
-      summary: Get user details by user id
-      tags:
-      - auth
-  /auth/api/v1/iam/{workspace_id}/user/invite:
-    delete:
-      parameters:
-      - description: userId
-        in: query
-        name: userId
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-      summary: Deletes an Invitation
-      tags:
-      - auth
-    post:
-      description: |-
-        Invites a user to a workspace with defined role
-        by sending an email to the specified email address.
-        The user will be found by the email address.
-      parameters:
-      - description: Request Body
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.InviteRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-      summary: Invites a user to a workspace with defined role.
-      tags:
-      - auth
-  /auth/api/v1/iam/{workspace_id}/user/role/binding:
-    put:
-      description: |-
-        RoleBinding defines the roles and actions a user can perform.
-        There are currently three roles (ADMIN, EDITOR, VIEWER).
-        User must exist before you can update its RoleBinding.
-        If you want to add a role binding for a user given the email address, call invite first to get a user id. Then call this endpoint.
-      parameters:
-      - description: Request Body
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.PutRoleBindingRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-      summary: Update RoleBinding for a user.
-      tags:
-      - auth
-  /auth/api/v1/iam/{workspace_id}/users:
-    get:
-      description: RoleBinding defines the roles and actions a user can perform. There
-        are currently three roles (ADMIN, EDITOR, VIEWER). The workspace path is based
-        on the DNS such as (workspace1.app.keibi.io)
-      parameters:
-      - description: workspaceID
-        in: path
-        name: workspaceID
-        required: true
-        type: string
-      - description: Request Body
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.GetUsersRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            items:
-              $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.GetUserResponse'
-            type: array
-      summary: Get all the user RoleBindings for the given workspace.
-      tags:
-      - auth
-  /auth/api/v1/iam/user/{user_id}/workspace/membership:
-    get:
-      description: Returns a list of workspaces and the user role in it for the specified
-        user
-      parameters:
-      - description: userId
-        in: path
-        name: userId
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.GetRoleBindingsResponse'
-      summary: List of workspaces which the user is member of
-      tags:
-      - auth
-  /auth/api/v1/iam/user/role/binding:
-    delete:
-      parameters:
-      - description: userId
-        in: query
-        name: userId
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-      summary: Delete RoleBinding for the defined user in the defined workspace.
-      tags:
-      - auth
-  /auth/api/v1/iam/user/role/bindings:
-    get:
-      description: RoleBinding defines the roles and actions a user can perform. There
-        are currently three roles (ADMIN, EDITOR, VIEWER).
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.GetRoleBindingsResponse'
-      summary: Get RoleBindings for the calling user
-      tags:
-      - auth
-  /auth/api/v1/key:
-    get:
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            items:
-              $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.WorkspaceApiKey'
-            type: array
-      summary: Lists all API Keys
-      tags:
-      - auth
-  /auth/api/v1/key/{id}:
-    get:
-      parameters:
       - description: ID
         in: path
         name: id
@@ -2645,6 +2512,11 @@ paths:
   /auth/api/v1/key/{id}/activate:
     post:
       parameters:
+      - description: workspaceId
+        in: path
+        name: workspaceId
+        required: true
+        type: string
       - description: ID
         in: path
         name: id
@@ -2652,13 +2524,22 @@ paths:
         type: string
       produces:
       - application/json
-      responses: {}
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.WorkspaceApiKey'
       summary: Suspend an API Key
       tags:
       - auth
   /auth/api/v1/key/{id}/delete:
     delete:
       parameters:
+      - description: workspaceId
+        in: path
+        name: workspaceId
+        required: true
+        type: string
       - description: ID
         in: path
         name: id
@@ -2666,13 +2547,20 @@ paths:
         type: string
       produces:
       - application/json
-      responses: {}
+      responses:
+        "200":
+          description: OK
       summary: Deletes an API Key
       tags:
       - auth
   /auth/api/v1/key/{id}/suspend:
     post:
       parameters:
+      - description: workspaceId
+        in: path
+        name: workspaceId
+        required: true
+        type: string
       - description: ID
         in: path
         name: id
@@ -2680,13 +2568,22 @@ paths:
         type: string
       produces:
       - application/json
-      responses: {}
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.WorkspaceApiKey'
       summary: Suspend an API Key
       tags:
       - auth
   /auth/api/v1/key/create:
     post:
       parameters:
+      - description: workspaceId
+        in: path
+        name: workspaceId
+        required: true
+        type: string
       - description: Request Body
         in: body
         name: request
@@ -2695,13 +2592,22 @@ paths:
           $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.CreateAPIKeyRequest'
       produces:
       - application/json
-      responses: {}
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.CreateAPIKeyResponse'
       summary: Creates an API Key
       tags:
       - auth
   /auth/api/v1/key/role:
     post:
       parameters:
+      - description: workspaceId
+        in: path
+        name: workspaceId
+        required: true
+        type: string
       - description: Request Body
         in: body
         name: request
@@ -2710,8 +2616,32 @@ paths:
           $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.UpdateKeyRoleRequest'
       produces:
       - application/json
-      responses: {}
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.WorkspaceApiKey'
       summary: Fetches an API Key
+      tags:
+      - auth
+  /auth/api/v1/keys:
+    get:
+      parameters:
+      - description: workspaceId
+        in: path
+        name: workspaceId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.WorkspaceApiKey'
+            type: array
+      summary: Lists all API Keys
       tags:
       - auth
   /auth/api/v1/role/:role/keys:
@@ -2753,6 +2683,214 @@ paths:
               $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.RoleUser'
             type: array
       summary: Get the list of users having the specefic role
+      tags:
+      - auth
+  /auth/api/v1/roles:
+    get:
+      parameters:
+      - description: workspaceId
+        in: path
+        name: workspaceId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.RolesListResponse'
+            type: array
+      summary: show lists of roles.
+      tags:
+      - auth
+  /auth/api/v1/roles/{role}:
+    get:
+      parameters:
+      - description: workspaceId
+        in: path
+        name: workspaceId
+        required: true
+        type: string
+      - description: role
+        in: path
+        name: role
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.RoleDetailsResponse'
+      summary: show the description roles and members that use from each role
+      tags:
+      - auth
+  /auth/api/v1/user/{user_id}:
+    get:
+      description: Get user details by user id
+      parameters:
+      - description: userId
+        in: path
+        name: userId
+        required: true
+        type: string
+      - description: workspaceId
+        in: path
+        name: workspaceId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.GetUserResponse'
+      summary: Get user details by user id
+      tags:
+      - auth
+  /auth/api/v1/user/{user_id}/workspace/membership:
+    get:
+      description: Returns a list of workspaces and the user role in it for the specified
+        user
+      parameters:
+      - description: userId
+        in: path
+        name: userId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.GetRoleBindingsResponse'
+      summary: List of workspaces which the user is member of
+      tags:
+      - auth
+  /auth/api/v1/user/invite:
+    delete:
+      parameters:
+      - description: userId
+        in: query
+        name: userId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+      summary: Deletes an Invitation
+      tags:
+      - auth
+    post:
+      description: |-
+        Invites a user to a workspace with defined role
+        by sending an email to the specified email address.
+        The user will be found by the email address.
+      parameters:
+      - description: Request Body
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.InviteRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+      summary: Invites a user to a workspace with defined role.
+      tags:
+      - auth
+  /auth/api/v1/user/role/binding:
+    delete:
+      parameters:
+      - description: userId
+        in: query
+        name: userId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+      summary: Delete RoleBinding for the defined user in the defined workspace.
+      tags:
+      - auth
+    put:
+      description: |-
+        RoleBinding defines the roles and actions a user can perform.
+        There are currently three roles (ADMIN, EDITOR, VIEWER).
+        User must exist before you can update its RoleBinding.
+        If you want to add a role binding for a user given the email address, call invite first to get a user id. Then call this endpoint.
+      parameters:
+      - description: workspaceId
+        in: path
+        name: workspaceId
+        required: true
+        type: string
+      - description: Request Body
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.PutRoleBindingRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+      summary: Update RoleBinding for a user.
+      tags:
+      - auth
+  /auth/api/v1/user/role/bindings:
+    get:
+      description: RoleBinding defines the roles and actions a user can perform. There
+        are currently three roles (ADMIN, EDITOR, VIEWER).
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.GetRoleBindingsResponse'
+      summary: Get RoleBindings for the calling user
+      tags:
+      - auth
+  /auth/api/v1/users:
+    get:
+      description: RoleBinding defines the roles and actions a user can perform. There
+        are currently three roles (ADMIN, EDITOR, VIEWER). The workspace path is based
+        on the DNS such as (workspace1.app.keibi.io)
+      parameters:
+      - description: workspaceID
+        in: path
+        name: workspaceID
+        required: true
+        type: string
+      - description: Request Body
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.GetUsersRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.GetUserResponse'
+            type: array
+      summary: Get all the user RoleBindings for the given workspace.
       tags:
       - auth
   /compliance/api/v1/alarms/top:
