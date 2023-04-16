@@ -1322,7 +1322,7 @@ func (gdb *GraphDatabase) GetFilters(ctx context.Context, connector source.Type,
 	}
 
 	result, err := session.Run(ctx,
-		fmt.Sprintf("MATCH (f:Filter:%s) WHERE ((f.connector IS NULL OR $connector = '' OR f.connector = $connector) AND ($service_names = [] OR (NOT f.service_name IS NULL AND f.service_name IN $service_names)) RETURN f;", filterTypeStr),
+		fmt.Sprintf("MATCH (f:Filter:%s) WHERE ((f.connector IS NULL OR $connector = '' OR f.connector = $connector) AND ($service_names = [] OR (NOT f.service_name IS NULL AND f.service_name IN $service_names))) RETURN f;", filterTypeStr),
 		map[string]any{
 			"connector":     connector.String(),
 			"service_names": servicenames,
