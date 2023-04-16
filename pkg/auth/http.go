@@ -80,7 +80,6 @@ func (r *httpRoutes) Register(e *echo.Echo) {
 //	@Summary	show lists of roles.
 //	@Tags		auth
 //	@Produce	json
-//	@Param		workspaceId	path		string	true	"workspaceId"
 //	@Success	200			{object}	[]api.RolesListResponse
 //	@Router		/auth/api/v1/roles [get]
 func (r *httpRoutes) ListRoles(ctx echo.Context) error {
@@ -136,7 +135,6 @@ func (r *httpRoutes) ListRoles(ctx echo.Context) error {
 //	@Summary	show the description roles and members that use from each role
 //	@Tags		auth
 //	@Produce	json
-//	@Param		workspaceId	path		string	true	"workspaceId"
 //	@Param		role		path		string	true	"role"
 //	@Success	200			{object}	api.RoleDetailsResponse
 //	@Router		/auth/api/v1/roles/{role} [get]
@@ -199,7 +197,6 @@ func bindValidate(ctx echo.Context, i interface{}) error {
 //	@Description	If you want to add a role binding for a user given the email address, call invite first to get a user id. Then call this endpoint.
 //	@Tags			auth
 //	@Produce		json
-//	@Param			workspaceId	path		string						true	"workspaceId"
 //	@Param			request		body		api.PutRoleBindingRequest	true	"Request Body"
 //	@Success		200			{object}	nil
 //	@Router			/auth/api/v1/user/role/binding [put]
@@ -360,7 +357,6 @@ func (r *httpRoutes) GetWorkspaceMembership(ctx echo.Context) error {
 //	@Description	RoleBinding defines the roles and actions a user can perform. There are currently three roles (ADMIN, EDITOR, VIEWER). The workspace path is based on the DNS such as (workspace1.app.keibi.io)
 //	@Tags			auth
 //	@Produce		json
-//	@Param			workspaceID	path		string				true	"workspaceID"
 //	@Param			request		body		api.GetUsersRequest	true	"Request Body"
 //	@Success		200			{object}	api.GetUsersResponse
 //	@Router			/auth/api/v1/users [get]
@@ -396,7 +392,6 @@ func (r *httpRoutes) GetUsers(ctx echo.Context) error {
 //	@Tags			auth
 //	@Produce		json
 //	@Param			userId		path		string	true	"userId"
-//	@Param			workspaceId	path		string	true	"workspaceId"
 //	@Success		200			{object}	api.GetUserResponse
 //	@Router			/auth/api/v1/user/{user_id} [get]
 func (r *httpRoutes) GetUserDetails(ctx echo.Context) error {
@@ -579,7 +574,6 @@ func (r *httpRoutes) DeleteInvitation(ctx echo.Context) error {
 //	@Summary	Creates an API Key
 //	@Tags		auth
 //	@Produce	json
-//	@Param		workspaceId	path		string					true	"workspaceId"
 //	@Param		request		body		api.CreateAPIKeyRequest	true	"Request Body"
 //	@Success	200			{object}	api.CreateAPIKeyResponse
 //	@Router		/auth/api/v1/key/create [post]
@@ -680,7 +674,6 @@ func (r *httpRoutes) CreateAPIKey(ctx echo.Context) error {
 //	@Summary	Deletes an API Key
 //	@Tags		auth
 //	@Produce	json
-//	@Param		workspaceId	path		string	true	"workspaceId"
 //	@Param		id			path		string	true	"ID"
 //	@Success	200			{object}	nil
 //	@Router		/auth/api/v1/key/{id}/delete [delete]
@@ -705,7 +698,6 @@ func (r *httpRoutes) DeleteAPIKey(ctx echo.Context) error {
 //	@Summary	Lists all API Keys
 //	@Tags		auth
 //	@Produce	json
-//	@Param		workspaceId	path		string	true	"workspaceId"
 //	@Success	200			{object}	[]api.WorkspaceApiKey
 //	@Router		/auth/api/v1/keys [get]
 func (r *httpRoutes) ListAPIKeys(ctx echo.Context) error {
@@ -736,7 +728,6 @@ func (r *httpRoutes) ListAPIKeys(ctx echo.Context) error {
 //	@Summary	Fetches an API Key
 //	@Tags		auth
 //	@Produce	json
-//	@Param		workspaceId	path		string	true	"workspaceId"
 //	@Param		id			path		string	true	"ID"
 //	@Success	200			{object}	api.WorkspaceApiKey
 //	@Router		/auth/api/v1/key/{id} [get]
@@ -775,7 +766,6 @@ func (r *httpRoutes) GetAPIKey(ctx echo.Context) error {
 //	@Summary	Suspend an API Key
 //	@Tags		auth
 //	@Produce	json
-//	@Param		workspaceId	path		string	true	"workspaceId"
 //	@Param		id			path		string	true	"ID"
 //	@Success	200			{object}	api.WorkspaceApiKey
 //	@Router		/auth/api/v1/key/{id}/suspend [post]
@@ -818,7 +808,6 @@ func (r *httpRoutes) SuspendAPIKey(ctx echo.Context) error {
 //	@Summary	Suspend an API Key
 //	@Tags		auth
 //	@Produce	json
-//	@Param		workspaceId	path		string	true	"workspaceId"
 //	@Param		id			path		string	true	"ID"
 //	@Success	200			{object}	api.WorkspaceApiKey
 //	@Router		/auth/api/v1/key/{id}/activate [post]
@@ -943,7 +932,6 @@ func (r *httpRoutes) GetRoleKeys(ctx echo.Context) error {
 //	@Summary	Fetches an API Key
 //	@Tags		auth
 //	@Produce	json
-//	@Param		workspaceId	path		string						true	"workspaceId"
 //	@Param		request		body		api.UpdateKeyRoleRequest	true	"Request Body"
 //	@Success	200			{object}	api.WorkspaceApiKey
 //	@Router		/auth/api/v1/key/role [post]
