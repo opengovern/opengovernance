@@ -1208,7 +1208,7 @@ func (h *HttpHandler) GetMetricsResourceCountHelper(ctx context.Context, categor
 				FilterID:      f.ElementID,
 				CloudProvider: f.Connector,
 				ResourceType:  f.ResourceType,
-				ResourceName:  f.ResourceName,
+				ResourceLabel: f.ResourceLabel,
 				ServiceCode:   f.ServiceName,
 				ResourceCount: metricIndexed[f.ResourceType],
 			}
@@ -1503,7 +1503,7 @@ func (h *HttpHandler) GetMetricsResourceCountComposition(ctx echo.Context) error
 			FilterID:      "-others-",
 			CloudProvider: provider,
 			ResourceType:  "Others",
-			ResourceName:  "Others",
+			ResourceLabel: "Others",
 			ResourceCount: 0,
 		}
 		for i := top; i < len(resultAsArr); i++ {

@@ -133,10 +133,10 @@ const (
 
 type FilterCloudResourceTypeNode struct {
 	Node
-	Connector    source.Type `json:"connector"`
-	ResourceType string      `json:"resource_type"`
-	ResourceName string      `json:"resource_name"`
-	ServiceName  string      `json:"service_name"`
+	Connector     source.Type `json:"connector"`
+	ResourceType  string      `json:"resource_type"`
+	ResourceLabel string      `json:"resource_name"`
+	ServiceName   string      `json:"service_name"`
 }
 
 func (f FilterCloudResourceTypeNode) GetFilterType() FilterType {
@@ -209,7 +209,7 @@ func getFilterFromNode(node neo4j.Node) (Filter, error) {
 			if !ok {
 				return nil, ErrPropertyNotFound
 			}
-			resourceName, ok := node.Props["resource_name"]
+			resourceLabel, ok := node.Props["resource_label"]
 			if !ok {
 				return nil, ErrPropertyNotFound
 			}
@@ -222,10 +222,10 @@ func getFilterFromNode(node neo4j.Node) (Filter, error) {
 				Node: Node{
 					ElementID: node.ElementId,
 				},
-				Connector:    source.Type(connector.(string)),
-				ResourceType: strings.ToLower(resourceType.(string)),
-				ResourceName: resourceName.(string),
-				ServiceName:  strings.ToLower(serviceName.(string)),
+				Connector:     source.Type(connector.(string)),
+				ResourceType:  strings.ToLower(resourceType.(string)),
+				ResourceLabel: resourceLabel.(string),
+				ServiceName:   strings.ToLower(serviceName.(string)),
 			}, nil
 		case string(FilterTypeCost):
 			connector, ok := node.Props["connector"]
