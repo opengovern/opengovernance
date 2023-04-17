@@ -37,12 +37,12 @@ func SortFilters(filters []api.Filter, by string) []api.Filter {
 				case api.FilterTypeCloudResourceType:
 					fj := filters[j].(*api.FilterCloudResourceType)
 					if fi.ResourceCount != fj.ResourceCount {
-						return fi.ResourceCount < fj.ResourceCount
+						return fi.ResourceCount > fj.ResourceCount
 					}
 				case api.FilterTypeInsightMetric:
 					fj := filters[j].(*api.FilterInsightMetric)
 					if fi.ResourceCount != fj.Value {
-						return fi.ResourceCount < fj.Value
+						return fi.ResourceCount > fj.Value
 					}
 				}
 			case api.FilterTypeInsightMetric:
@@ -51,12 +51,12 @@ func SortFilters(filters []api.Filter, by string) []api.Filter {
 				case api.FilterTypeCloudResourceType:
 					fj := filters[j].(*api.FilterCloudResourceType)
 					if fi.Value != fj.ResourceCount {
-						return fi.Value < fj.ResourceCount
+						return fi.Value > fj.ResourceCount
 					}
 				case api.FilterTypeInsightMetric:
 					fj := filters[j].(*api.FilterInsightMetric)
 					if fi.Value != fj.Value {
-						return fi.Value < fj.Value
+						return fi.Value > fj.Value
 					}
 				}
 			}
