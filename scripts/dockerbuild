@@ -69,3 +69,6 @@ if [[ $SERVICES == *"workspace-service"* ]]; then
     podman build -f  docker/WorkspaceServiceDockerfile . -t registry.digitalocean.com/keibi/workspace-service:$SVER_VERSION
     podman push registry.digitalocean.com/keibi/workspace-service:$SVER_VERSION
 fi
+
+podman build -f  docker/RedocDockerfile . -t registry.digitalocean.com/keibi/redoc:$SVER_VERSION
+podman push registry.digitalocean.com/keibi/redoc:$SVER_VERSION

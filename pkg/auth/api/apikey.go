@@ -10,8 +10,12 @@ type CreateAPIKeyRequest struct {
 }
 
 type CreateAPIKeyResponse struct {
-	ID    uint   `json:"id"`
-	Token string `json:"token"`
+	ID        uint      `json:"id"`
+	Name      string    `json:"name"`
+	Active    bool      `json:"acrive"`
+	CreatedAt time.Time `json:"createdAt"`
+	Role      Role      `json:"role"`
+	Token     string    `json:"token"`
 }
 
 type WorkspaceApiKey struct {
@@ -23,4 +27,9 @@ type WorkspaceApiKey struct {
 	CreatorUserID string    `json:"creatorUserID"`
 	Active        bool      `json:"active"`
 	MaskedKey     string    `json:"maskedKey"`
+}
+
+type UpdateKeyRoleRequest struct {
+	ID   uint `json:"id"`
+	Role Role `json:"role"`
 }

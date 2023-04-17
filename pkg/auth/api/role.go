@@ -17,11 +17,19 @@ type PutRoleBindingRequest struct {
 	UserID string `json:"userId" validate:"required"` // Unique identifier for the User
 	Role   Role   `json:"role" validate:"required"`   // Name of the role
 }
-type RolesDescription struct {
+type RolesListResponse struct {
 	Role        Role
 	Description string
 	UserCount   int
 }
+
+type RoleDetailsResponse struct {
+	Role        Role
+	Description string
+	UserCount   int
+	Users       []GetUserResponse
+}
+
 type UserRoleBinding struct {
 	WorkspaceID string `json:"workspaceID"` // Unique identifier for the Workspace
 	Role        Role   `json:"role"`        // Name of the binding Role
@@ -60,6 +68,41 @@ type WorkspaceRoleBinding struct {
 }
 
 type GetWorkspaceRoleBindingResponse []WorkspaceRoleBinding // List of Workspace Role Binding objects
+
+type GetUserResponse struct {
+	UserID        string       `json:"userId"`        // Unique identifier for the user
+	UserName      string       `json:"userName"`      // Username
+	Email         string       `json:"email"`         // Email address of the user
+	EmailVerified bool         `json:"emailVerified"` // Is email verified or not
+	Role          Role         `json:"role"`          // Name of the role in the specified workspace
+	Status        InviteStatus `json:"status"`        // Invite status
+	LastActivity  time.Time    `json:"lastActivity"`  // Last activity timestamp in UTC
+	CreatedAt     time.Time    `json:"createdAt"`     // Creation timestamp in UTC
+	Blocked       bool         `json:"blocked"`       // Is the user blocked or not
+}
+
+type GetUsersResponse []GetUserResponse // List of Workspace Role Binding objects
+
+type GetUsersRequest struct {
+	Email         *string `json:"email"`
+	EmailVerified *bool   `json:"emailVerified"`
+	Role          *Role   `json:"role"`
+}
+
+type RoleUser struct {
+	UserID        string       `json:"userId"`        // Unique identifier for the user
+	UserName      string       `json:"userName"`      // Username
+	Email         string       `json:"email"`         // Email address of the user
+	EmailVerified bool         `json:"emailVerified"` // Is email verified or not
+	Role          Role         `json:"role"`          // Name of the role
+	Workspaces    []string     `json:"workspaces"`    // A list of workspace ids which the user has the specified role in them
+	Status        InviteStatus `json:"status"`        // Invite status
+	LastActivity  time.Time    `json:"lastActivity"`  // Last activity timestamp in UTC
+	CreatedAt     time.Time    `json:"createdAt"`     // Creation timestamp in UTC
+	Blocked       bool         `json:"blocked"`       // Is the user blocked or not
+}
+
+type GetRoleUsersResponse []RoleUser // List of Role User objects
 
 type DeleteRoleBindingRequest struct {
 	UserID string `json:"userId" validate:"required"` // Unique identifier for the user

@@ -8,6 +8,7 @@ import (
 	"math/rand"
 	"net/http"
 	url2 "net/url"
+	"strconv"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/auth/api"
 )
@@ -79,12 +80,12 @@ func (a *Service) fillToken() error {
 	return nil
 }
 
-func (a *Service) GetUser(userId string) (*User, error) {
+func (a *Service) GetUser(userID string) (*User, error) {
 	if err := a.fillToken(); err != nil {
 		return nil, err
 	}
 
-	url := fmt.Sprintf("%s/api/v2/users/%s", a.domain, userId)
+	url := fmt.Sprintf("%s/api/v2/users/%s", a.domain, userID)
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return nil, err
@@ -205,6 +206,26 @@ func (a *Service) CreateUser(email, wsName string, role api.Role) (*User, error)
 	return &resp, nil
 }
 
+func (a *Service) DeleteUser(userId string) error {
+	if err := a.fillToken(); err != nil {
+		return err
+	}
+
+	url := fmt.Sprintf("%s/api/v2/users/%s", a.domain, userId)
+	req, err := http.NewRequest("DELETE", url, nil)
+	if err != nil {
+		return err
+	}
+	res, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return err
+	}
+	if res.StatusCode != http.StatusOK {
+		return fmt.Errorf("[DeleteUser] could not delete user: %d", res.StatusCode)
+	}
+	return nil
+}
+
 func (a *Service) CreatePasswordChangeTicket(userId string) (*CreatePasswordChangeTicketResponse, error) {
 	request := CreatePasswordChangeTicketRequest{
 		UserId:   userId,
@@ -311,5 +332,68 @@ func (a *Service) SearchUsersByWorkspace(wsID string) ([]User, error) {
 		return nil, err
 	}
 
+	return resp, nil
+}
+
+func (a *Service) SearchUsers(wsID string, email *string, emailVerified *bool, role *api.Role) ([]User, error) {
+	if err := a.fillToken(); err != nil {
+		return nil, err
+	}
+	url, err := url2.Parse(fmt.Sprintf("%s/api/v2/users", a.domain))
+	if err != nil {
+		return nil, err
+	}
+
+	queryString := url.Query()
+	queryString.Set("search_engine", "v3")
+	query := "_exists_:app_metadata.workspaceAccess." + wsID
+	if emailVerified != nil {
+		query = query + " AND email_verified:" + strconv.FormatBool(*emailVerified)
+	}
+	if email != nil {
+		query = query + " AND email:" + *email
+	}
+	queryString.Set("q", query)
+	url.RawQuery = queryString.Encode()
+
+	req, err := http.NewRequest("GET", url.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Add("Authorization", "Bearer "+a.token)
+	res, err := http.DefaultClient.Do(req)
+	if res.StatusCode != http.StatusOK {
+		r, _ := ioutil.ReadAll(res.Body)
+		return nil, fmt.Errorf("[SearchUsersByWorkspace] invalid status code: %d, body=%s", res.StatusCode, string(r))
+	}
+
+	r, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	var users []User
+	err = json.Unmarshal(r, &users)
+	if err != nil {
+		return nil, err
+	}
+
+	var resp []User
+	if role != nil {
+		for _, user := range users {
+			if func() bool {
+				for _, r := range user.AppMetadata.WorkspaceAccess {
+					if r == *role {
+						return true
+					}
+				}
+				return false
+			}() {
+				resp = append(resp, user)
+			}
+		}
+	} else {
+		resp = users
+	}
 	return resp, nil
 }
