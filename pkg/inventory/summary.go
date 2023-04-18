@@ -76,10 +76,10 @@ func GetServices(client keibi.Client, provider source.Type, sourceID *string) ([
 	return res, nil
 }
 
-func GetResources(client keibi.Client, provider source.Type, sourceID *string, resourceTypes []string) ([]api.ResourceTypeResponse, error) {
+func GetResources(client keibi.Client, provider source.Type, sourceIDs []string, resourceTypes []string) ([]api.ResourceTypeResponse, error) {
 	resourceTypeResponse := map[string]api.ResourceTypeResponse{}
 
-	if sourceID == nil {
+	if sourceIDs == nil {
 		hits, err := es.FetchProviderResourceTypeSummaryPage(client, provider, resourceTypes, nil, EsFetchPageSize)
 		if err != nil {
 			return nil, err
@@ -101,7 +101,7 @@ func GetResources(client keibi.Client, provider source.Type, sourceID *string, r
 			}
 		}
 	} else {
-		hits, err := es.FetchConnectionResourceTypeSummaryPage(client, sourceID, resourceTypes, nil, EsFetchPageSize)
+		hits, err := es.FetchConnectionResourceTypeSummaryPage(client, sourceIDs, resourceTypes, nil, EsFetchPageSize)
 		if err != nil {
 			return nil, err
 		}
