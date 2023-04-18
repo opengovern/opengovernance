@@ -359,7 +359,7 @@ func (r *httpRoutes) GetWorkspaceMembership(ctx echo.Context) error {
 //	@Description	RoleBinding defines the roles and actions a user can perform. There are currently three roles (ADMIN, EDITOR, VIEWER). The workspace path is based on the DNS such as (workspace1.app.keibi.io)
 //	@Tags			auth
 //	@Produce		json
-//	@Success		200			{object}	api.GetWorkspaceRoleBindingResponse
+//	@Success		200	{object}	api.GetWorkspaceRoleBindingResponse
 //	@Router			/auth/api/v1/workspace/role/bindings [get]
 func (r *httpRoutes) GetWorkspaceRoleBindings(ctx echo.Context) error {
 	workspaceID := httpserver.GetWorkspaceID(ctx)

@@ -457,10 +457,10 @@ type Filter interface {
 type FilterCloudResourceType struct {
 	FilterType          FilterType  `json:"filterType"`
 	FilterID            string      `json:"filterId"`
-	CloudProvider       source.Type `json:"cloudProvider"`
+	Connector           source.Type `json:"connector"`
 	ResourceType        string      `json:"resourceType"`
 	ResourceLabel       string      `json:"resourceName"`
-	ServiceCode         string      `json:"serviceCode"`
+	ServiceName         string      `json:"serviceName"`
 	ResourceCount       int         `json:"resourceCount"`
 	ResourceCountChange *float64    `json:"resourceCountChange,omitempty"`
 }
@@ -481,7 +481,7 @@ type FilterCost struct {
 	FilterType    FilterType              `json:"filterType"`
 	FilterID      string                  `json:"filterID"`
 	CloudProvider source.Type             `json:"cloudProvider"`
-	ServiceName   string                  `json:"serviceName"`
+	ServiceLabel  string                  `json:"serviceLabel"`
 	Cost          map[string]CostWithUnit `json:"cost"`
 	CostChange    map[string]float64      `json:"costChange,omitempty"`
 }
@@ -495,7 +495,7 @@ func (f FilterCost) GetFilterType() FilterType {
 }
 
 func (f FilterCost) GetFilterName() string {
-	return f.ServiceName
+	return f.ServiceLabel
 }
 
 type FilterInsightMetric struct {
@@ -583,16 +583,22 @@ type ConnectionSummaryResponse struct {
 	ResourceTypes map[string]int                       `json:"resourceTypes"` // Resource types as Key, Number of them as Value
 }
 
-type ServiceSummaryResponse struct {
+type ListServiceSummariesResponse struct {
 	TotalCount int              `json:"totalCount"` // Number of services
 	APIFilters map[string]any   `json:"apiFilters"` // API Filters
 	Services   []ServiceSummary `json:"services"`   // A list of service summeries
 }
 
 type ServiceSummary struct {
-	CloudProvider SourceType              `json:"cloudProvider"`           // Cloud provider
+	Connector     source.Type             `json:"connector"`               // Cloud provider
+	ServiceLabel  string                  `json:"serviceLabel"`            // Service Label
 	ServiceName   string                  `json:"serviceName"`             // Service Name
-	ServiceCode   string                  `json:"serviceCode"`             // Service Code
 	ResourceCount *int                    `json:"resourceCount,omitempty"` // Number of Resources
 	Cost          map[string]CostWithUnit `json:"cost,omitempty"`          // Costs (Unit as Key, CostWithUnit as Value)
+}
+
+type ListResourceTypesResponse struct {
+	TotalCount    int                       `json:"totalCount"`    // Number of resource types
+	APIFilters    map[string]any            `json:"apiFilters"`    // API Filters
+	ResourceTypes []FilterCloudResourceType `json:"resourceTypes"` // A list of resource types
 }
