@@ -6,7 +6,7 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/inventory/api"
 )
 
-func Paginate[T api.ServiceSummary | api.AccountSummary | api.LocationResponse](page, size int64, arr []T) []T {
+func Paginate[T api.ServiceSummary | api.AccountSummary | api.LocationResponse | api.FilterCloudResourceType](page, size int64, arr []T) []T {
 	if page < 1 {
 		page = 1
 	}
@@ -66,4 +66,22 @@ func SortFilters(filters []api.Filter, by string) []api.Filter {
 		return filters[i].GetFilterName() < filters[j].GetFilterName()
 	})
 	return filters
+}
+
+func Includes[T string](arr []T, item T) bool {
+	for _, i := range arr {
+		if i == item {
+			return true
+		}
+	}
+	return false
+}
+
+func IncludesAll[T string](arr []T, items []T) bool {
+	for _, item := range items {
+		if !Includes(arr, item) {
+			return false
+		}
+	}
+	return true
 }

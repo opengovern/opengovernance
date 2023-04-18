@@ -1219,6 +1219,21 @@ definitions:
         description: Resource types as Key, Number of them as Value
         type: object
     type: object
+  gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ConnectorMetadata:
+    properties:
+      connector:
+        $ref: '#/definitions/source.Type'
+      connector_label:
+        type: string
+      resource_types:
+        items:
+          type: string
+        type: array
+      services:
+        items:
+          type: string
+        type: array
+    type: object
   gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.CostWithUnit:
     properties:
       cost:
@@ -1236,6 +1251,35 @@ definitions:
     x-enum-varnames:
     - DirectionAscending
     - DirectionDescending
+  gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.FilterCloudResourceType:
+    properties:
+      connector:
+        $ref: '#/definitions/source.Type'
+      filterId:
+        type: string
+      filterType:
+        $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.FilterType'
+      resourceCount:
+        type: integer
+      resourceCountChange:
+        type: number
+      resourceName:
+        type: string
+      resourceType:
+        type: string
+      serviceName:
+        type: string
+    type: object
+  gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.FilterType:
+    enum:
+    - cloudResourceType
+    - cost
+    - insight-metric
+    type: string
+    x-enum-varnames:
+    - FilterTypeCloudResourceType
+    - FilterTypeCost
+    - FilterTypeInsightMetric
   gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.Filters:
     description: if you provide two values for same filter OR operation would be used
       if you provide value for two filters AND operation would be used
@@ -1548,6 +1592,36 @@ definitions:
         description: Specifies the Title
         type: string
     type: object
+  gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ListResourceTypesResponse:
+    properties:
+      apiFilters:
+        additionalProperties: {}
+        description: API Filters
+        type: object
+      resourceTypes:
+        description: A list of resource types
+        items:
+          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.FilterCloudResourceType'
+        type: array
+      totalCount:
+        description: Number of resource types
+        type: integer
+    type: object
+  gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ListServiceSummariesResponse:
+    properties:
+      apiFilters:
+        additionalProperties: {}
+        description: API Filters
+        type: object
+      services:
+        description: A list of service summeries
+        items:
+          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ServiceSummary'
+        type: array
+      totalCount:
+        description: Number of services
+        type: integer
+    type: object
   gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.LocationByProviderResponse:
     properties:
       name:
@@ -1738,6 +1812,27 @@ definitions:
       resource_type_name:
         type: string
     type: object
+  gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ResourceTypeMetadata:
+    properties:
+      compliance:
+        items:
+          type: string
+        type: array
+      connector:
+        $ref: '#/definitions/source.Type'
+      discovery_enabled:
+        type: boolean
+      insights:
+        items:
+          type: integer
+        type: array
+      resource_type_label:
+        type: string
+      resource_type_name:
+        type: string
+      service_name:
+        type: string
+    type: object
   gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.RunQueryRequest:
     properties:
       page:
@@ -1783,11 +1878,32 @@ definitions:
         description: Service name
         type: string
     type: object
+  gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ServiceMetadata:
+    properties:
+      connector:
+        $ref: '#/definitions/source.Type'
+      cost_map_service_names:
+        items:
+          type: string
+        type: array
+      cost_support:
+        type: boolean
+      parent_service:
+        type: string
+      resource_types:
+        items:
+          type: string
+        type: array
+      service_label:
+        type: string
+      service_name:
+        type: string
+    type: object
   gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ServiceSummary:
     properties:
-      cloudProvider:
+      connector:
         allOf:
-        - $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.SourceType'
+        - $ref: '#/definitions/source.Type'
         description: Cloud provider
       cost:
         additionalProperties:
@@ -1797,27 +1913,12 @@ definitions:
       resourceCount:
         description: Number of Resources
         type: integer
-      serviceCode:
-        description: Service Code
+      serviceLabel:
+        description: Service Label
         type: string
       serviceName:
         description: Service Name
         type: string
-    type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ServiceSummaryResponse:
-    properties:
-      apiFilters:
-        additionalProperties: {}
-        description: API Filters
-        type: object
-      services:
-        description: A list of service summeries
-        items:
-          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ServiceSummary'
-        type: array
-      totalCount:
-        description: Number of services
-        type: integer
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.SmartQueryItem:
     properties:
@@ -2910,12 +3011,6 @@ paths:
       description: RoleBinding defines the roles and actions a user can perform. There
         are currently three roles (ADMIN, EDITOR, VIEWER). The workspace path is based
         on the DNS such as (workspace1.app.keibi.io)
-      parameters:
-      - description: workspaceId
-        in: query
-        name: workspaceId
-        required: true
-        type: string
       produces:
       - application/json
       responses:
@@ -3404,8 +3499,10 @@ paths:
         type: string
       - description: SourceID
         in: query
+        items:
+          type: string
         name: sourceId
-        type: string
+        type: array
       produces:
       - application/json
       responses:
@@ -3801,9 +3898,11 @@ paths:
       parameters:
       - description: SourceID
         in: query
+        items:
+          type: string
         name: sourceId
         required: true
-        type: string
+        type: array
       - description: Provider
         enum:
         - AWS
@@ -3878,8 +3977,10 @@ paths:
         type: string
       - description: SourceId
         in: query
+        items:
+          type: string
         name: sourceId
-        type: string
+        type: array
       - description: page size - default is 20
         in: query
         name: pageSize
@@ -3981,8 +4082,10 @@ paths:
         type: string
       - description: SourceId
         in: query
+        items:
+          type: string
         name: sourceId
-        type: string
+        type: array
       produces:
       - application/json
       responses:
@@ -4071,9 +4174,11 @@ paths:
       parameters:
       - description: SourceID
         in: query
+        items:
+          type: string
         name: sourceId
         required: true
-        type: string
+        type: array
       - description: Provider
         in: query
         name: provider
@@ -4103,8 +4208,10 @@ paths:
         type: string
       - description: SourceID
         in: query
+        items:
+          type: string
         name: sourceId
-        type: string
+        type: array
       - description: Source Healthstate
         enum:
         - healthy
@@ -4188,8 +4295,10 @@ paths:
         type: string
       - description: SourceID
         in: query
+        items:
+          type: string
         name: sourceId
-        type: string
+        type: array
       - description: timestamp for start of cost window in epoch seconds
         in: query
         name: startTime
@@ -4239,8 +4348,10 @@ paths:
         type: string
       - description: SourceID
         in: query
+        items:
+          type: string
         name: sourceId
-        type: string
+        type: array
       - description: timestamp for start of cost window in epoch seconds
         in: query
         name: startTime
@@ -4279,8 +4390,10 @@ paths:
         type: string
       - description: filter the result by source id
         in: query
+        items:
+          type: string
         name: sourceId
-        type: string
+        type: array
       - description: unix seconds for the time to get the insight result for
         in: query
         name: time
@@ -4302,8 +4415,10 @@ paths:
       parameters:
       - description: filter the result by source id
         in: query
+        items:
+          type: string
         name: sourceId
-        type: string
+        type: array
       - description: unix seconds for the time to get the insight result for
         in: query
         name: time
@@ -4356,8 +4471,10 @@ paths:
       parameters:
       - description: filter the result by source id
         in: query
+        items:
+          type: string
         name: sourceId
-        type: string
+        type: array
       - description: unix seconds for the time to get the insight result for
         in: query
         name: time
@@ -4372,6 +4489,124 @@ paths:
       summary: Get an insight by id
       tags:
       - insight
+  /inventory/api/v2/metadata/connectors:
+    get:
+      description: Get all connectors
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ConnectorMetadata'
+            type: array
+      summary: Get all connectors
+      tags:
+      - metadata
+  /inventory/api/v2/metadata/connectors/{connector}:
+    get:
+      description: Get a single connector
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ConnectorMetadata'
+      summary: Get a single connector
+      tags:
+      - metadata
+  /inventory/api/v2/metadata/resourcetype:
+    get:
+      description: Get all resource types
+      parameters:
+      - description: Connector
+        enum:
+        - ""
+        - AWS
+        - Azure
+        in: query
+        name: connector
+        required: true
+        type: string
+      - description: Filter by service name
+        in: query
+        name: service
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ResourceTypeMetadata'
+            type: array
+      summary: Get all resource types
+      tags:
+      - metadata
+  /inventory/api/v2/metadata/resourcetype/{resourceType}:
+    get:
+      description: Get all resource types
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ResourceTypeMetadata'
+            type: array
+      summary: Get all resource types
+      tags:
+      - metadata
+  /inventory/api/v2/metadata/services:
+    get:
+      description: Get all services
+      parameters:
+      - description: Connector
+        enum:
+        - ""
+        - AWS
+        - Azure
+        in: query
+        name: connector
+        required: true
+        type: string
+      - description: Filter by cost support
+        in: query
+        name: costSupport
+        type: boolean
+      - description: Filter by resource types
+        in: query
+        name: resourceType
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ServiceMetadata'
+            type: array
+      summary: Get all services
+      tags:
+      - metadata
+  /inventory/api/v2/metadata/services/{serviceName}:
+    get:
+      description: Get a single service
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ServiceMetadata'
+      summary: Get a single service
+      tags:
+      - metadata
   /inventory/api/v2/metrics/cost/composition:
     get:
       consumes:
@@ -4392,8 +4627,10 @@ paths:
         type: string
       - description: SourceID
         in: query
+        items:
+          type: string
         name: sourceId
-        type: string
+        type: array
       - description: timestamp for start of cost window in epoch seconds
         in: query
         name: startTime
@@ -4433,8 +4670,10 @@ paths:
         type: string
       - description: SourceID
         in: query
+        items:
+          type: string
         name: sourceId
-        type: string
+        type: array
       - description: timestamp for start of cost window in epoch seconds
         in: query
         name: startTime
@@ -4485,8 +4724,10 @@ paths:
         type: string
       - description: SourceID
         in: query
+        items:
+          type: string
         name: sourceId
-        type: string
+        type: array
       - description: Filter filters by importance if they have it (array format is
           supported with , separator | 'all' is also supported)
         in: query
@@ -4527,8 +4768,10 @@ paths:
         type: string
       - description: SourceID
         in: query
+        items:
+          type: string
         name: sourceId
-        type: string
+        type: array
       - description: Filter filters by importance if they have it (array format is
           supported with , separator | 'all' is also supported)
         in: query
@@ -4549,7 +4792,7 @@ paths:
         in: query
         name: timeWindow
         type: string
-      - description: Sort by field - default is weight
+      - description: Sort by field - default is count
         enum:
         - weight
         - name
@@ -4610,8 +4853,10 @@ paths:
         type: string
       - description: SourceID
         in: query
+        items:
+          type: string
         name: sourceId
-        type: string
+        type: array
       - description: Filter filters by importance if they have it (array format is
           supported with , separator | 'all' is also supported)
         in: query
@@ -4664,8 +4909,10 @@ paths:
         type: string
       - description: SourceID
         in: query
+        items:
+          type: string
         name: sourceId
-        type: string
+        type: array
       - description: Filter filters by importance if they have it (array format is
           supported with , separator | 'all' is also supported)
         in: query
@@ -4697,13 +4944,10 @@ paths:
         type: string
       - description: SourceID
         in: query
+        items:
+          type: string
         name: sourceId
-        type: string
-      - description: Filter filters by importance if they have it (array format is
-          supported with , separator | 'all' is also supported)
-        in: query
-        name: importance
-        type: string
+        type: array
       - description: timestamp for resource count in epoch seconds
         in: query
         name: time
@@ -4732,8 +4976,10 @@ paths:
         type: string
       - description: SourceID
         in: query
+        items:
+          type: string
         name: sourceId
-        type: string
+        type: array
       - description: Filter filters by importance if they have it (array format is
           supported with , separator | 'all' is also supported)
         in: query
@@ -4799,20 +5045,98 @@ paths:
       summary: Returns trend of resource growth for specific account
       tags:
       - benchmarks
+  /inventory/api/v2/resources/type:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: ConnectorMetadata
+        enum:
+        - ""
+        - AWS
+        - Azure
+        in: query
+        name: connector
+        type: string
+      - description: SourceID
+        in: query
+        items:
+          type: string
+        name: sourceId
+        type: array
+      - description: serviceName
+        in: query
+        items:
+          type: string
+        name: serviceName
+        type: array
+      - description: minResourceCount
+        in: query
+        name: minResourceCount
+        type: integer
+      - description: page size - default is 20
+        in: query
+        name: pageSize
+        type: integer
+      - description: page number - default is 1
+        in: query
+        name: pageNumber
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ListResourceTypesResponse'
+      summary: Return list of resource types
+      tags:
+      - inventory
+  /inventory/api/v2/resources/type/{name}:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: ConnectorMetadata
+        enum:
+        - ""
+        - AWS
+        - Azure
+        in: query
+        name: connector
+        type: string
+      - description: SourceID
+        in: query
+        items:
+          type: string
+        name: sourceId
+        type: array
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.FilterCloudResourceType'
+      summary: Return list of resource types
+      tags:
+      - inventory
   /inventory/api/v2/services/summary:
     get:
       consumes:
       - application/json
       parameters:
-      - description: SourceID
+      - description: 'filter: SourceIDs'
         in: query
+        items:
+          type: string
         name: sourceId
-        type: string
-      - description: Provider
+        type: array
+      - description: 'filter: Provider'
         in: query
         name: provider
         type: string
-      - description: Category for the services
+      - description: 'filter: Category for the services'
         in: query
         name: category
         type: string
@@ -4827,6 +5151,11 @@ paths:
         name: endTime
         required: true
         type: string
+      - description: 'filter: minimum spent amount for the service in the specified
+          time'
+        in: query
+        name: minSpent
+        type: integer
       - description: page size - default is 20
         in: query
         name: pageSize
@@ -4849,8 +5178,43 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ServiceSummaryResponse'
+            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ListServiceSummariesResponse'
       summary: Returns Service Summary
+      tags:
+      - benchmarks
+  /inventory/api/v2/services/summary/{serviceName}:
+    get:
+      description: Get Service Summary
+      parameters:
+      - description: 'filter: SourceIDs'
+        in: query
+        items:
+          type: string
+        name: sourceId
+        type: array
+      - description: 'filter: Provider'
+        in: query
+        name: provider
+        type: string
+      - description: start time for cost calculation in epoch seconds
+        in: query
+        name: startTime
+        required: true
+        type: string
+      - description: end time for cost calculation and time resource count in epoch
+          seconds
+        in: query
+        name: endTime
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ListServiceSummariesResponse'
+      summary: Get Service Summary
       tags:
       - benchmarks
   /metadata/api/v1/metadata:
