@@ -48,7 +48,7 @@ import (
 )
 
 const EsFetchPageSize = 10000
-const ApiDefaultPageSize = 20
+const ApiDefaultPageSize = int64(20)
 const DefaultCurrency = "USD"
 const InventorySummaryIndex = "inventory_summary"
 
@@ -214,7 +214,10 @@ func (h *HttpHandler) GetResourceGrowthTrendV2(ctx echo.Context) error {
 	var err error
 
 	provider, _ := source.ParseType(ctx.QueryParam("provider"))
-	sourceID := ctx.QueryParam("sourceId")
+	sourceIDs := ctx.QueryParams()["sourceId"]
+	if len(sourceIDs) == 0 {
+		sourceIDs = nil
+	}
 
 	startTimeStr := ctx.QueryParam("startTime")
 	startTime := time.Now().AddDate(0, 0, -7).Unix()
@@ -280,8 +283,8 @@ func (h *HttpHandler) GetResourceGrowthTrendV2(ctx echo.Context) error {
 
 	trends := map[string]api.CategoryResourceTrend{}
 	mainCategoryTrendsMap := map[int64]api.TrendDataPoint{}
-	if sourceID != "" {
-		hits, err := es.FetchConnectionResourceTypeTrendSummaryPage(h.client, &sourceID, resourceTypes, time.Unix(startTime, 0).UnixMilli(), time.Unix(endTime, 0).UnixMilli(), sortMap, EsFetchPageSize)
+	if sourceIDs != nil {
+		hits, err := es.FetchConnectionResourceTypeTrendSummaryPage(h.client, sourceIDs, resourceTypes, time.Unix(startTime, 0).UnixMilli(), time.Unix(endTime, 0).UnixMilli(), sortMap, EsFetchPageSize)
 		if err != nil {
 			return err
 		}
@@ -410,10 +413,9 @@ func (h *HttpHandler) GetCostGrowthTrendV2(ctx echo.Context) error {
 	var err error
 
 	provider, _ := source.ParseType(ctx.QueryParam("provider"))
-	sourceID := ctx.QueryParam("sourceId")
-	sourceIDPtr := &sourceID
-	if sourceID == "" {
-		sourceIDPtr = nil
+	sourceIDs := ctx.QueryParams()["sourceId"]
+	if len(sourceIDs) == 0 {
+		sourceIDs = nil
 	}
 	startTimeStr := ctx.QueryParam("startTime")
 	startTime := time.Now().AddDate(0, 0, -7).Unix()
@@ -474,7 +476,7 @@ func (h *HttpHandler) GetCostGrowthTrendV2(ctx echo.Context) error {
 		root.Subcategories[i] = *cat
 	}
 
-	hits, err := es.FetchDailyCostHistoryByServicesBetween(h.client, sourceIDPtr, &provider, serviceNames, time.Unix(endTime, 0), time.Unix(startTime, 0), EsFetchPageSize)
+	hits, err := es.FetchDailyCostHistoryByServicesBetween(h.client, sourceIDs, &provider, serviceNames, time.Unix(endTime, 0), time.Unix(startTime, 0), EsFetchPageSize)
 	if err != nil {
 		return err
 	}
@@ -884,7 +886,7 @@ func (h *HttpHandler) GetTopFastestGrowingAccountsByResourceCount(ctx echo.Conte
 //	@Produce	json
 //	@Param		count		query		int		true	"count"
 //	@Param		provider	query		string	false	"Provider"
-//	@Param		sourceId	query		string	false	"SourceId"
+//	@Param		sourceId	query		[]string	false	"SourceId"
 //	@Success	200			{object}	[]api.LocationResponse
 //	@Router		/inventory/api/v1/resources/top/regions [get]
 func (h *HttpHandler) GetTopRegionsByResourceCount(ctx echo.Context) error {
@@ -894,15 +896,14 @@ func (h *HttpHandler) GetTopRegionsByResourceCount(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid count")
 	}
 
-	var sourceID *string
-	sourceId := ctx.QueryParam("sourceId")
-	if len(sourceId) > 0 {
-		sourceID = &sourceId
+	sourceIDs := ctx.QueryParams()["sourceId"]
+	if len(sourceIDs) == 0 {
+		sourceIDs = nil
 	}
 
 	locationDistribution := map[string]int{}
 
-	hits, err := es.FetchConnectionLocationsSummaryPage(h.client, provider, sourceID, nil, EsFetchPageSize)
+	hits, err := es.FetchConnectionLocationsSummaryPage(h.client, provider, sourceIDs, nil, EsFetchPageSize)
 	if err != nil {
 		return err
 	}
@@ -935,7 +936,7 @@ func (h *HttpHandler) GetTopRegionsByResourceCount(ctx echo.Context) error {
 //	@Accept		json
 //	@Produce	json
 //	@Param		provider	query		string	false	"Provider"
-//	@Param		sourceId	query		string	false	"SourceId"
+//	@Param		sourceId	query		[]string	false	"SourceId"
 //	@Param		pageSize	query		int		false	"page size - default is 20"
 //	@Param		pageNumber	query		int		false	"page number - default is 1"
 //	@Success	200			{object}	[]api.LocationResponse
@@ -945,22 +946,22 @@ func (h *HttpHandler) GetRegionsByResourceCount(ctx echo.Context) error {
 	provider, _ := source.ParseType(ctx.QueryParam("provider"))
 
 	var sourceID *string
-	sourceId := ctx.QueryParam("sourceId")
-	if len(sourceId) > 0 {
-		sourceID = &sourceId
+	sourceIDs := ctx.QueryParams()["sourceId"]
+	if len(sourceIDs) == 0 {
+		sourceIDs = nil
 	}
 	pageSizeStr := ctx.QueryParam("pageSize")
 	pageSize := ApiDefaultPageSize
 	if pageSizeStr != "" {
-		pageSize, err = strconv.Atoi(pageSizeStr)
+		pageSize, err = strconv.ParseInt(pageSizeStr, 10, 64)
 		if err != nil {
 			return ctx.JSON(http.StatusBadRequest, "pageSize is not a valid integer")
 		}
 	}
 	pageNumberStr := ctx.QueryParam("pageNumber")
-	pageNumber := 1
+	pageNumber := int64(1)
 	if pageNumberStr != "" {
-		pageNumber, err = strconv.Atoi(pageNumberStr)
+		pageNumber, err = strconv.ParseInt(pageNumberStr, 10, 64)
 		if err != nil {
 			return ctx.JSON(http.StatusBadRequest, "pageNumber is not a valid integer")
 		}
@@ -968,7 +969,7 @@ func (h *HttpHandler) GetRegionsByResourceCount(ctx echo.Context) error {
 
 	locationDistribution := map[string]int{}
 
-	hits, err := es.FetchConnectionLocationsSummaryPage(h.client, provider, sourceID, nil, EsFetchPageSize)
+	hits, err := es.FetchConnectionLocationsSummaryPage(h.client, provider, sourceIDs, nil, EsFetchPageSize)
 	if err != nil {
 		return err
 	}
@@ -1099,7 +1100,7 @@ func (h *HttpHandler) GetCategoriesV2(ctx echo.Context) error {
 	return ctx.JSON(http.StatusOK, res)
 }
 
-func (h *HttpHandler) GetCategoryNodeResourceCountHelper(ctx context.Context, depth int, category string, sourceID string, provider source.Type, t int64, importanceArray []string, nodeCacheMap map[string]api.CategoryNode, usePrimary bool) (*api.CategoryNode, error) {
+func (h *HttpHandler) GetCategoryNodeResourceCountHelper(ctx context.Context, depth int, category string, sourceIDs []string, provider source.Type, t int64, importanceArray []string, nodeCacheMap map[string]api.CategoryNode, usePrimary bool) (*api.CategoryNode, error) {
 	var (
 		rootNode *CategoryNode
 		err      error
@@ -1124,14 +1125,9 @@ func (h *HttpHandler) GetCategoryNodeResourceCountHelper(ctx context.Context, de
 		}
 	}
 
-	sourceIDPtr := &sourceID
-	if sourceID == "" {
-		sourceIDPtr = nil
-	}
-
 	resourceTypes := GetResourceTypeListFromFilters(rootNode.SubTreeFilters, provider)
 
-	metricIndexed, err := es.FetchResourceTypeCountAtTime(h.client, provider, sourceIDPtr, time.Unix(t, 0), resourceTypes, EsFetchPageSize)
+	metricIndexed, err := es.FetchResourceTypeCountAtTime(h.client, provider, sourceIDs, time.Unix(t, 0), resourceTypes, EsFetchPageSize)
 	if err != nil {
 		return nil, err
 	}
@@ -1144,15 +1140,12 @@ func (h *HttpHandler) GetCategoryNodeResourceCountHelper(ctx context.Context, de
 	return result, err
 }
 
-func (h *HttpHandler) GetMetricsResourceCountHelper(ctx context.Context, category string, serviceCode string, sourceID string, provider source.Type, t int64, importanceArray []string) (map[string]api.Filter, error) {
+func (h *HttpHandler) GetMetricsResourceCountHelper(ctx context.Context, category string, serviceCode string, sourceIDs []string, provider source.Type, t int64) (map[string]api.Filter, error) {
 	var (
 		filters []Filter
 		err     error
 	)
-	sourceIDPtr := &sourceID
-	if sourceID == "" {
-		sourceIDPtr = nil
-	}
+
 	if category == "" {
 		serviceCodeArr := []string{serviceCode}
 		if serviceCode == "" {
@@ -1181,15 +1174,15 @@ func (h *HttpHandler) GetMetricsResourceCountHelper(ctx context.Context, categor
 	}
 
 	resourceTypes := GetResourceTypeListFromFilters(filters, provider)
-	metricIndexed, err := es.FetchResourceTypeCountAtTime(h.client, provider, sourceIDPtr, time.Unix(t, 0), resourceTypes, EsFetchPageSize)
+	metricIndexed, err := es.FetchResourceTypeCountAtTime(h.client, provider, sourceIDs, time.Unix(t, 0), resourceTypes, EsFetchPageSize)
 	if err != nil {
 		return nil, err
 	}
 
 	insightIndexed := make(map[uint]insight.InsightResource)
-	if sourceIDPtr == nil {
+	if sourceIDs == nil {
 		insightIDs := GetInsightIDListFromFilters(filters, provider)
-		insightIndexed, err = es.FetchInsightValueAtTime(h.client, time.Unix(t, 0), provider, sourceIDPtr, insightIDs, true)
+		insightIndexed, err = es.FetchInsightValueAtTime(h.client, time.Unix(t, 0), provider, sourceIDs, insightIDs, true)
 		if err != nil {
 			return nil, err
 		}
@@ -1213,7 +1206,7 @@ func (h *HttpHandler) GetMetricsResourceCountHelper(ctx context.Context, categor
 				ResourceCount: metricIndexed[f.ResourceType],
 			}
 		case FilterTypeInsightMetric:
-			if sourceIDPtr != nil {
+			if sourceIDs != nil {
 				continue
 			}
 			f := filter.(*FilterInsightMetricNode)
@@ -1242,7 +1235,7 @@ func (h *HttpHandler) GetMetricsResourceCountHelper(ctx context.Context, categor
 //	@Param		category	query		string	false	"Category ID - defaults to default template category"
 //	@Param		depth		query		int		true	"Depth of rendering subcategories"
 //	@Param		provider	query		string	false	"Provider"
-//	@Param		sourceId	query		string	false	"SourceID"
+//	@Param		sourceId	query		[]string	false	"SourceID"
 //	@Param		importance	query		string	false	"Filter filters by importance if they have it (array format is supported with , separator | 'all' is also supported)"
 //	@Param		time		query		string	false	"timestamp for resource count in epoch seconds either timeWindow or time must be provided"
 //	@Param		timeWindow	query		string	false	"time window either this or time must be provided"	Enums(1d,1w,1m,3m,1y)
@@ -1255,7 +1248,10 @@ func (h *HttpHandler) GetCategoryNodeResourceCount(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid depth")
 	}
 	provider, _ := source.ParseType(ctx.QueryParam("provider"))
-	sourceID := ctx.QueryParam("sourceId")
+	sourceIDs := ctx.QueryParams()["sourceId"]
+	if len(sourceIDs) == 0 {
+		sourceIDs = nil
+	}
 	importance := strings.ToLower(ctx.QueryParam("importance"))
 	if importance == "" {
 		importance = "critical,high"
@@ -1286,13 +1282,13 @@ func (h *HttpHandler) GetCategoryNodeResourceCount(ctx echo.Context) error {
 		timeVal = time.Now().Unix()
 	}
 
-	result, err := h.GetCategoryNodeResourceCountHelper(ctx.Request().Context(), depth, category, sourceID, provider, timeVal, importanceArray, make(map[string]api.CategoryNode), false)
+	result, err := h.GetCategoryNodeResourceCountHelper(ctx.Request().Context(), depth, category, sourceIDs, provider, timeVal, importanceArray, make(map[string]api.CategoryNode), false)
 	if err != nil {
 		return err
 	}
 	if timeWindowStr != "" {
 		nodeCacheMap := make(map[string]api.CategoryNode)
-		_, err = h.GetCategoryNodeResourceCountHelper(ctx.Request().Context(), depth, category, sourceID, provider, time.Unix(timeVal, 0).Add(-1*timeWindow).Unix(), importanceArray, nodeCacheMap, false)
+		_, err = h.GetCategoryNodeResourceCountHelper(ctx.Request().Context(), depth, category, sourceIDs, provider, time.Unix(timeVal, 0).Add(-1*timeWindow).Unix(), importanceArray, nodeCacheMap, false)
 		if err != nil {
 			return err
 		}
@@ -1310,7 +1306,7 @@ func (h *HttpHandler) GetCategoryNodeResourceCount(ctx echo.Context) error {
 //	@Param		category	query		string	false	"Category ID"
 //	@Param		servicecode	query		string	false	"Service code for metrics"
 //	@Param		provider	query		string	false	"Provider"
-//	@Param		sourceId	query		string	false	"SourceID"
+//	@Param		sourceId	query		[]string	false	"SourceID"
 //	@Param		importance	query		string	false	"Filter filters by importance if they have it (array format is supported with , separator | 'all' is also supported)"
 //	@Param		time		query		string	false	"timestamp for resource count in epoch seconds either timeWindow or time must be provided"
 //	@Param		timeWindow	query		string	false	"time window either this or time must be provided"	Enums(1d,1w,1m,3m,1y)
@@ -1320,12 +1316,14 @@ func (h *HttpHandler) GetCategoryNodeResourceCount(ctx echo.Context) error {
 func (h *HttpHandler) GetMetricsResourceCount(ctx echo.Context) error {
 	var err error
 	provider, _ := source.ParseType(ctx.QueryParam("provider"))
-	sourceID := ctx.QueryParam("sourceId")
+	sourceIDs := ctx.QueryParams()["sourceId"]
+	if len(sourceIDs) == 0 {
+		sourceIDs = nil
+	}
 	importance := strings.ToLower(ctx.QueryParam("importance"))
 	if importance == "" {
 		importance = "critical,high"
 	}
-	importanceArray := strings.Split(importance, ",")
 	category := ctx.QueryParam("category")
 	serviceCode := ctx.QueryParam("servicecode")
 	sortBy := ctx.QueryParam("sortBy")
@@ -1352,12 +1350,12 @@ func (h *HttpHandler) GetMetricsResourceCount(ctx echo.Context) error {
 		}
 	}
 
-	result, err := h.GetMetricsResourceCountHelper(ctx.Request().Context(), category, serviceCode, sourceID, provider, timeVal, importanceArray)
+	result, err := h.GetMetricsResourceCountHelper(ctx.Request().Context(), category, serviceCode, sourceIDs, provider, timeVal)
 	if err != nil {
 		return err
 	}
 	if timeWindowStr != "" {
-		historyResult, err := h.GetMetricsResourceCountHelper(ctx.Request().Context(), category, serviceCode, sourceID, provider, time.Unix(timeVal, 0).Add(-1*timeWindow).Unix(), importanceArray)
+		historyResult, err := h.GetMetricsResourceCountHelper(ctx.Request().Context(), category, serviceCode, sourceIDs, provider, time.Unix(timeVal, 0).Add(-1*timeWindow).Unix())
 		if err != nil {
 			return err
 		}
@@ -1383,7 +1381,7 @@ func (h *HttpHandler) GetMetricsResourceCount(ctx echo.Context) error {
 //	@Param		category	query		string	false	"Category ID - defaults to default template category"
 //	@Param		top			query		int		true	"How many top categories to return. The rest will be aggregated into Others."
 //	@Param		provider	query		string	false	"Provider"
-//	@Param		sourceId	query		string	false	"SourceID"
+//	@Param		sourceId	query		[]string	false	"SourceID"
 //	@Param		importance	query		string	false	"Filter filters by importance if they have it (array format is supported with , separator | 'all' is also supported)"
 //	@Param		time		query		string	false	"timestamp for resource count in epoch seconds"
 //	@Success	200			{object}	api.CategoryNode
@@ -1395,7 +1393,10 @@ func (h *HttpHandler) GetCategoryNodeResourceCountComposition(ctx echo.Context) 
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid top")
 	}
 	provider, _ := source.ParseType(ctx.QueryParam("provider"))
-	sourceID := ctx.QueryParam("sourceId")
+	sourceIDs := ctx.QueryParams()["sourceId"]
+	if len(sourceIDs) == 0 {
+		sourceIDs = nil
+	}
 	importance := strings.ToLower(ctx.QueryParam("importance"))
 	if importance == "" {
 		importance = "critical,high"
@@ -1412,7 +1413,7 @@ func (h *HttpHandler) GetCategoryNodeResourceCountComposition(ctx echo.Context) 
 		}
 	}
 
-	result, err := h.GetCategoryNodeResourceCountHelper(ctx.Request().Context(), 2, category, sourceID, provider, timeVal, importanceArray, make(map[string]api.CategoryNode), true)
+	result, err := h.GetCategoryNodeResourceCountHelper(ctx.Request().Context(), 2, category, sourceIDs, provider, timeVal, importanceArray, make(map[string]api.CategoryNode), true)
 	if err != nil {
 		return err
 	}
@@ -1443,7 +1444,7 @@ func (h *HttpHandler) GetCategoryNodeResourceCountComposition(ctx echo.Context) 
 //	@Param		category	query		string	false	"Category ID - defaults to default template category"
 //	@Param		top			query		int		true	"How many top categories to return"
 //	@Param		provider	query		string	false	"Provider"
-//	@Param		sourceId	query		string	false	"SourceID"
+//	@Param		sourceId	query		[]string	false	"SourceID"
 //	@Param		importance	query		string	false	"Filter filters by importance if they have it (array format is supported with , separator | 'all' is also supported)"
 //	@Param		time		query		string	false	"timestamp for resource count in epoch seconds"
 //	@Success	200			{object}	[]api.Filter
@@ -1455,12 +1456,14 @@ func (h *HttpHandler) GetMetricsResourceCountComposition(ctx echo.Context) error
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid top")
 	}
 	provider, _ := source.ParseType(ctx.QueryParam("provider"))
-	sourceID := ctx.QueryParam("sourceId")
+	sourceIDs := ctx.QueryParams()["sourceId"]
+	if len(sourceIDs) == 0 {
+		sourceIDs = nil
+	}
 	importance := strings.ToLower(ctx.QueryParam("importance"))
 	if importance == "" {
 		importance = "critical,high"
 	}
-	importanceArray := strings.Split(importance, ",")
 	category := ctx.QueryParam("category")
 
 	timeStr := ctx.QueryParam("time")
@@ -1472,7 +1475,7 @@ func (h *HttpHandler) GetMetricsResourceCountComposition(ctx echo.Context) error
 		}
 	}
 
-	result, err := h.GetMetricsResourceCountHelper(ctx.Request().Context(), category, "", sourceID, provider, timeVal, importanceArray)
+	result, err := h.GetMetricsResourceCountHelper(ctx.Request().Context(), category, "", sourceIDs, provider, timeVal)
 	if err != nil {
 		return err
 	}
@@ -1517,7 +1520,7 @@ func (h *HttpHandler) GetMetricsResourceCountComposition(ctx echo.Context) error
 	return ctx.JSON(http.StatusOK, resultAsArr)
 }
 
-func (h *HttpHandler) GetCategoryNodeCostHelper(ctx context.Context, depth int, category string, sourceID *string, providerPtr *source.Type, startTime, endTime int64, nodeCacheMap map[string]api.CategoryNode, usePrimary bool) (*api.CategoryNode, error) {
+func (h *HttpHandler) GetCategoryNodeCostHelper(ctx context.Context, depth int, category string, sourceID []string, providerPtr *source.Type, startTime, endTime int64, nodeCacheMap map[string]api.CategoryNode, usePrimary bool) (*api.CategoryNode, error) {
 	var (
 		rootNode *CategoryNode
 		err      error
@@ -1565,7 +1568,7 @@ func (h *HttpHandler) GetCategoryNodeCostHelper(ctx context.Context, depth int, 
 	return result, nil
 }
 
-func (h *HttpHandler) GetMetricsCostHelper(ctx context.Context, category string, sourceID *string, provider source.Type, startTime, endTime int64) (map[string]api.Filter, error) {
+func (h *HttpHandler) GetMetricsCostHelper(ctx context.Context, category string, sourceID []string, provider source.Type, startTime, endTime int64) (map[string]api.Filter, error) {
 	var (
 		filters []Filter
 		err     error
@@ -1629,7 +1632,7 @@ func (h *HttpHandler) GetMetricsCostHelper(ctx context.Context, category string,
 //	@Param		category	query		string	false	"Category id - defaults to default template category"
 //	@Param		depth		query		int		true	"Depth of rendering subcategories"
 //	@Param		provider	query		string	false	"Provider"
-//	@Param		sourceId	query		string	false	"SourceID"
+//	@Param		sourceId	query		[]string	false	"SourceID"
 //	@Param		startTime	query		string	false	"timestamp for start of cost window in epoch seconds"
 //	@Param		endTime		query		string	false	"timestamp for end of cost window in epoch seconds"
 //	@Param		timeWindow	query		string	false	"time window either this or start & end time must be provided"	Enums(1d,1w,1m,3m,1y)
@@ -1650,10 +1653,9 @@ func (h *HttpHandler) GetCategoryNodeCost(ctx echo.Context) error {
 		}
 		providerPtr = &providerType
 	}
-	sourceID := ctx.QueryParam("sourceId")
-	sourceIDPtr := &sourceID
-	if sourceID == "" {
-		sourceIDPtr = nil
+	sourceIDs := ctx.QueryParams()["sourceId"]
+	if len(sourceIDs) == 0 {
+		sourceIDs = nil
 	}
 	startTimeStr := ctx.QueryParam("startTime")
 	startTime := time.Now().AddDate(0, 0, -7).Unix()
@@ -1686,13 +1688,13 @@ func (h *HttpHandler) GetCategoryNodeCost(ctx echo.Context) error {
 
 	category := ctx.QueryParam("category")
 
-	result, err := h.GetCategoryNodeCostHelper(ctx.Request().Context(), depth, category, sourceIDPtr, providerPtr, startTime, endTime, make(map[string]api.CategoryNode), false)
+	result, err := h.GetCategoryNodeCostHelper(ctx.Request().Context(), depth, category, sourceIDs, providerPtr, startTime, endTime, make(map[string]api.CategoryNode), false)
 	if err != nil {
 		return err
 	}
 	if timeWindowStr != "" {
 		nodeCacheMap := make(map[string]api.CategoryNode)
-		_, err = h.GetCategoryNodeCostHelper(ctx.Request().Context(), depth, category, sourceIDPtr, providerPtr, time.Unix(startTime, 0).Add(-1*timeWindow).Unix(), startTime, nodeCacheMap, false)
+		_, err = h.GetCategoryNodeCostHelper(ctx.Request().Context(), depth, category, sourceIDs, providerPtr, time.Unix(startTime, 0).Add(-1*timeWindow).Unix(), startTime, nodeCacheMap, false)
 		if err != nil {
 			return err
 		}
@@ -1710,7 +1712,7 @@ func (h *HttpHandler) GetCategoryNodeCost(ctx echo.Context) error {
 //	@Produce	json
 //	@Param		category	query		string	false	"Category id - defaults to default template category"
 //	@Param		provider	query		string	false	"Provider"
-//	@Param		sourceId	query		string	false	"SourceID"
+//	@Param		sourceId	query		[]string	false	"SourceID"
 //	@Param		startTime	query		string	false	"timestamp for start of cost window in epoch seconds"
 //	@Param		endTime		query		string	false	"timestamp for end of cost window in epoch seconds"
 //	@Param		timeWindow	query		string	false	"time window either this or start & end time must be provided"	Enums(1d,1w,1m,3m,1y)
@@ -1719,10 +1721,9 @@ func (h *HttpHandler) GetCategoryNodeCost(ctx echo.Context) error {
 func (h *HttpHandler) GetMetricsCost(ctx echo.Context) error {
 	var err error
 	provider, _ := source.ParseType(ctx.QueryParam("provider"))
-	sourceID := ctx.QueryParam("sourceId")
-	sourceIDPtr := &sourceID
-	if sourceID == "" {
-		sourceIDPtr = nil
+	sourceIDs := ctx.QueryParams()["sourceId"]
+	if len(sourceIDs) == 0 {
+		sourceIDs = nil
 	}
 	startTimeStr := ctx.QueryParam("startTime")
 	startTime := time.Now().AddDate(0, 0, -7).Unix()
@@ -1755,12 +1756,12 @@ func (h *HttpHandler) GetMetricsCost(ctx echo.Context) error {
 
 	category := ctx.QueryParam("category")
 
-	result, err := h.GetMetricsCostHelper(ctx.Request().Context(), category, sourceIDPtr, provider, startTime, endTime)
+	result, err := h.GetMetricsCostHelper(ctx.Request().Context(), category, sourceIDs, provider, startTime, endTime)
 	if err != nil {
 		return err
 	}
 	if timeWindowStr != "" {
-		historyResult, err := h.GetMetricsCostHelper(ctx.Request().Context(), category, sourceIDPtr, provider, time.Unix(startTime, 0).Add(-1*timeWindow).Unix(), time.Unix(endTime, 0).Add(-1*timeWindow).Unix())
+		historyResult, err := h.GetMetricsCostHelper(ctx.Request().Context(), category, sourceIDs, provider, time.Unix(startTime, 0).Add(-1*timeWindow).Unix(), time.Unix(endTime, 0).Add(-1*timeWindow).Unix())
 		if err != nil {
 			return err
 		}
@@ -1784,7 +1785,7 @@ func (h *HttpHandler) GetMetricsCost(ctx echo.Context) error {
 //	@Param		category	query		string	false	"Category ID - defaults to default template category"
 //	@Param		top			query		int		true	"How many top categories to return"
 //	@Param		provider	query		string	false	"Provider"
-//	@Param		sourceId	query		string	false	"SourceID"
+//	@Param		sourceId	query		[]string	false	"SourceID"
 //	@Param		startTime	query		string	false	"timestamp for start of cost window in epoch seconds"
 //	@Param		endTime		query		string	false	"timestamp for end of cost window in epoch seconds"
 //	@Param		costUnit	query		string	true	"Unit of cost to filter by"
@@ -1805,10 +1806,9 @@ func (h *HttpHandler) GetCategoryNodeCostComposition(ctx echo.Context) error {
 		}
 		providerPtr = &providerType
 	}
-	sourceID := ctx.QueryParam("sourceId")
-	sourceIDPtr := &sourceID
-	if sourceID == "" {
-		sourceIDPtr = nil
+	sourceIDs := ctx.QueryParams()["sourceId"]
+	if len(sourceIDs) == 0 {
+		sourceIDs = nil
 	}
 
 	startTimeStr := ctx.QueryParam("startTime")
@@ -1835,7 +1835,7 @@ func (h *HttpHandler) GetCategoryNodeCostComposition(ctx echo.Context) error {
 
 	category := ctx.QueryParam("category")
 
-	result, err := h.GetCategoryNodeCostHelper(ctx.Request().Context(), 2, category, sourceIDPtr, providerPtr, startTime, endTime, make(map[string]api.CategoryNode), true)
+	result, err := h.GetCategoryNodeCostHelper(ctx.Request().Context(), 2, category, sourceIDs, providerPtr, startTime, endTime, make(map[string]api.CategoryNode), true)
 	if err != nil {
 		return err
 	}
@@ -1882,7 +1882,7 @@ func (h *HttpHandler) GetCategoryNodeCostComposition(ctx echo.Context) error {
 //	@Param		category	query		string	false	"Category ID - defaults to default template category"
 //	@Param		top			query		int		true	"How many top categories to return"
 //	@Param		provider	query		string	false	"Provider"
-//	@Param		sourceId	query		string	false	"SourceID"
+//	@Param		sourceId	query		[]string	false	"SourceID"
 //	@Param		startTime	query		string	false	"timestamp for start of cost window in epoch seconds"
 //	@Param		endTime		query		string	false	"timestamp for end of cost window in epoch seconds"
 //	@Param		costUnit	query		string	false	"Unit of cost to filter by"
@@ -1895,10 +1895,9 @@ func (h *HttpHandler) GetMetricsCostComposition(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid top")
 	}
 	provider, _ := source.ParseType(ctx.QueryParam("provider"))
-	sourceID := ctx.QueryParam("sourceId")
-	sourceIDPtr := &sourceID
-	if sourceID == "" {
-		sourceIDPtr = nil
+	sourceIDs := ctx.QueryParams()["sourceId"]
+	if len(sourceIDs) == 0 {
+		sourceIDs = nil
 	}
 
 	startTimeStr := ctx.QueryParam("startTime")
@@ -1925,7 +1924,7 @@ func (h *HttpHandler) GetMetricsCostComposition(ctx echo.Context) error {
 
 	category := ctx.QueryParam("category")
 
-	result, err := h.GetMetricsCostHelper(ctx.Request().Context(), category, sourceIDPtr, provider, startTime, endTime)
+	result, err := h.GetMetricsCostHelper(ctx.Request().Context(), category, sourceIDs, provider, startTime, endTime)
 	if err != nil {
 		return err
 	}
@@ -1995,7 +1994,7 @@ func (h *HttpHandler) GetMetricsCostComposition(ctx echo.Context) error {
 //	@Accept		json
 //	@Produce	json
 //	@Param		provider	query		string	false	"Provider"
-//	@Param		sourceId	query		string	false	"SourceID"
+//	@Param		sourceId	query		[]string	false	"SourceID"
 //	@Param		importance	query		string	false	"Filter filters by importance if they have it (array format is supported with , separator | 'all' is also supported)"
 //	@Param		time		query		string	false	"timestamp for resource count in epoch seconds"
 //	@Success	200			{object}	[]api.CategoryNode
@@ -2011,7 +2010,7 @@ func (h *HttpHandler) GetRootTemplates(ctx echo.Context) error {
 //	@Accept		json
 //	@Produce	json
 //	@Param		provider	query		string	false	"Provider"
-//	@Param		sourceId	query		string	false	"SourceID"
+//	@Param		sourceId	query		[]string	false	"SourceID"
 //	@Param		time		query		string	false	"timestamp for resource count in epoch seconds"
 //	@Success	200			{object}	[]api.CategoryNode
 //	@Router		/inventory/api/v2/resources/rootCloudProviders [get]
@@ -2024,10 +2023,9 @@ func GetCategoryRoots(ctx echo.Context, h *HttpHandler, rootType CategoryRootTyp
 		err error
 	)
 	provider, _ := source.ParseType(ctx.QueryParam("provider"))
-	sourceID := ctx.QueryParam("sourceId")
-	sourceIDPtr := &sourceID
-	if sourceID == "" {
-		sourceIDPtr = nil
+	sourceIDs := ctx.QueryParams()["sourceId"]
+	if len(sourceIDs) == 0 {
+		sourceIDs = nil
 	}
 
 	timeStr := ctx.QueryParam("time")
@@ -2050,7 +2048,7 @@ func GetCategoryRoots(ctx echo.Context, h *HttpHandler, rootType CategoryRootTyp
 	}
 	resourceTypes := GetResourceTypeListFromFilters(filters, provider)
 
-	metricIndexed, err := es.FetchResourceTypeCountAtTime(h.client, provider, sourceIDPtr, time.Unix(timeVal, 0), resourceTypes, EsFetchPageSize)
+	metricIndexed, err := es.FetchResourceTypeCountAtTime(h.client, provider, sourceIDs, time.Unix(timeVal, 0), resourceTypes, EsFetchPageSize)
 
 	results := make([]api.CategoryNode, 0, len(templateRoots))
 	cacheMap := map[string]api.Filter{}
@@ -2117,7 +2115,7 @@ func (h *HttpHandler) ListCategoriesV2(ctx echo.Context) error {
 //	@Accept		json
 //	@Produce	json
 //	@Param		provider	query		string	true	"Provider"
-//	@Param		sourceId	query		string	false	"SourceID"
+//	@Param		sourceId	query		[]string	false	"SourceID"
 //	@Success	200			{object}	[]api.AccountResourceCountResponse
 //	@Router		/inventory/api/v1/accounts/resource/count [get]
 func (h *HttpHandler) GetAccountsResourceCount(ctx echo.Context) error {
@@ -2174,7 +2172,7 @@ func (h *HttpHandler) GetAccountsResourceCount(ctx echo.Context) error {
 //	@Accept		json
 //	@Produce	json
 //	@Param		provider	query		string	true	"Provider"
-//	@Param		sourceId	query		string	false	"SourceID"
+//	@Param		sourceId	query		[]string	false	"SourceID"
 //	@Param		healthState	query		string	false	"Source Healthstate"	Enums(healthy,unhealthy)
 //	@Param		isEnabled	query		bool	false	"is enabled"
 //	@Param		pageSize	query		int		false	"page size - default is 20"
@@ -2197,15 +2195,15 @@ func (h *HttpHandler) GetAccountSummary(ctx echo.Context) error {
 	pageSizeStr := ctx.QueryParam("pageSize")
 	pageSize := ApiDefaultPageSize
 	if pageSizeStr != "" {
-		pageSize, err = strconv.Atoi(pageSizeStr)
+		pageSize, err = strconv.ParseInt(pageSizeStr, 10, 64)
 		if err != nil {
 			return ctx.JSON(http.StatusBadRequest, "pageSize is not a valid integer")
 		}
 	}
 	pageNumberStr := ctx.QueryParam("pageNumber")
-	pageNumber := 1
+	pageNumber := int64(1)
 	if pageNumberStr != "" {
-		pageNumber, err = strconv.Atoi(pageNumberStr)
+		pageNumber, err = strconv.ParseInt(pageNumberStr, 10, 64)
 		if err != nil {
 			return ctx.JSON(http.StatusBadRequest, "pageNumber is not a valid integer")
 		}
@@ -2382,22 +2380,21 @@ func (h *HttpHandler) GetAccountSummary(ctx echo.Context) error {
 //	@Tags		benchmarks
 //	@Accept		json
 //	@Produce	json
-//	@Param		sourceId	query		string	true	"SourceID"
+//	@Param		sourceId	query		[]string	true	"SourceID"
 //	@Param		provider	query		string	true	"Provider"		Enums(AWS,Azure,all)
 //	@Param		timeWindow	query		string	true	"Time Window"	Enums(24h,1w,3m,1y,max)
 //	@Success	200			{object}	map[string]int
 //	@Router		/inventory/api/v1/resources/distribution [get]
 func (h *HttpHandler) GetResourceDistribution(ctx echo.Context) error {
 	provider, _ := source.ParseType(ctx.QueryParam("provider"))
-	sourceID := ctx.QueryParam("sourceId")
+	sourceIDs := ctx.QueryParams()["sourceId"]
 
-	var sourceIDPtr *string
-	if sourceID != "" {
-		sourceIDPtr = &sourceID
+	if len(sourceIDs) != 0 {
+		sourceIDs = nil
 	}
 	locationDistribution := map[string]int{}
 
-	hits, err := es.FetchConnectionLocationsSummaryPage(h.client, provider, sourceIDPtr, nil, EsFetchPageSize)
+	hits, err := es.FetchConnectionLocationsSummaryPage(h.client, provider, sourceIDs, nil, EsFetchPageSize)
 	if err != nil {
 		return err
 	}
@@ -2416,14 +2413,17 @@ func (h *HttpHandler) GetResourceDistribution(ctx echo.Context) error {
 //	@Tags		benchmarks
 //	@Accept		json
 //	@Produce	json
-//	@Param		sourceId	query		string	true	"SourceID"
+//	@Param		sourceId	query		[]string	true	"SourceID"
 //	@Param		provider	query		string	true	"Provider"
 //	@Success	200			{object}	[]api.ServiceDistributionItem
 //	@Router		/inventory/api/v1/services/distribution [get]
 func (h *HttpHandler) GetServiceDistribution(ctx echo.Context) error {
-	sourceID := ctx.QueryParam("sourceId")
+	sourceIDs := ctx.QueryParams()["sourceId"]
+	if len(sourceIDs) == 0 {
+		sourceIDs = nil
+	}
 
-	hits, err := es.FetchConnectionServiceLocationsSummaryPage(h.client, source.Nil, &sourceID, nil, EsFetchPageSize)
+	hits, err := es.FetchConnectionServiceLocationsSummaryPage(h.client, source.Nil, sourceIDs, nil, EsFetchPageSize)
 	if err != nil {
 		return err
 	}
@@ -2444,11 +2444,12 @@ func (h *HttpHandler) GetServiceDistribution(ctx echo.Context) error {
 //	@Tags		benchmarks
 //	@Accept		json
 //	@Produce	json
-//	@Param		sourceId	query		string	false	"SourceID"
-//	@Param		provider	query		string	false	"Provider"
-//	@Param		category	query		string	false	"Category for the services"
+//	@Param		sourceId	query		[]string	false	"filter: SourceIDs"
+//	@Param		provider	query		string	false	"filter: Provider"
+//	@Param		category	query		string	false	"filter: Category for the services"
 //	@Param		startTime	query		string	true	"start time for cost calculation in epoch seconds"
 //	@Param		endTime		query		string	true	"end time for cost calculation and time resource count in epoch seconds"
+//	@Param		minSpent	query		int		false	"filter: minimum spent amount for the service in the specified time"
 //	@Param		pageSize	query		int		false	"page size - default is 20"
 //	@Param		pageNumber	query		int		false	"page number - default is 1"
 //	@Param		sortBy		query		string	false	"column to sort by - default is cost"	Enums(servicecode,resourcecount,cost)
@@ -2457,10 +2458,9 @@ func (h *HttpHandler) GetServiceDistribution(ctx echo.Context) error {
 func (h *HttpHandler) GetServiceSummary(ctx echo.Context) error {
 	var err error
 
-	sourceID := ctx.QueryParam("sourceId")
-	var sourceIDPtr *string
-	if sourceID != "" {
-		sourceIDPtr = &sourceID
+	sourceIDs := ctx.QueryParams()["sourceId"]
+	if len(sourceIDs) == 0 {
+		sourceIDs = nil
 	}
 	provider, _ := source.ParseType(ctx.QueryParam("provider"))
 
@@ -2473,18 +2473,27 @@ func (h *HttpHandler) GetServiceSummary(ctx echo.Context) error {
 		return ctx.JSON(http.StatusBadRequest, "endTime is not a valid epoch time")
 	}
 
+	minSpentStr := ctx.QueryParam("minSpent")
+	minSpent := float64(0)
+	if minSpentStr != "" {
+		minSpent, err = strconv.ParseFloat(minSpentStr, 64)
+		if err != nil {
+			return ctx.JSON(http.StatusBadRequest, "minSpent is not a valid integer")
+		}
+	}
+
 	pageSizeStr := ctx.QueryParam("pageSize")
 	pageSize := ApiDefaultPageSize
 	if pageSizeStr != "" {
-		pageSize, err = strconv.Atoi(pageSizeStr)
+		pageSize, err = strconv.ParseInt(pageSizeStr, 10, 64)
 		if err != nil {
 			return ctx.JSON(http.StatusBadRequest, "pageSize is not a valid integer")
 		}
 	}
 	pageNumberStr := ctx.QueryParam("pageNumber")
-	pageNumber := 1
+	pageNumber := int64(1)
 	if pageNumberStr != "" {
-		pageNumber, err = strconv.Atoi(pageNumberStr)
+		pageNumber, err = strconv.ParseInt(pageNumberStr, 10, 64)
 		if err != nil {
 			return ctx.JSON(http.StatusBadRequest, "pageNumber is not a valid integer")
 		}
@@ -2531,7 +2540,7 @@ func (h *HttpHandler) GetServiceSummary(ctx echo.Context) error {
 
 	// do not fetch cost there is no need for its data
 	if pageSize != 0 {
-		costHits, err := es.FetchDailyCostHistoryByServicesBetween(h.client, sourceIDPtr, provider.AsPtr(), costFilters, time.Unix(endTime, 0), time.Unix(startTime, 0), EsFetchPageSize)
+		costHits, err := es.FetchDailyCostHistoryByServicesBetween(h.client, sourceIDs, provider.AsPtr(), costFilters, time.Unix(endTime, 0), time.Unix(startTime, 0), EsFetchPageSize)
 		if err != nil {
 			return err
 		}
@@ -2551,8 +2560,8 @@ func (h *HttpHandler) GetServiceSummary(ctx echo.Context) error {
 			"described_at": "desc",
 		},
 	}
-	if sourceID != "" {
-		hits, err := es.FetchConnectionResourceTypeTrendSummaryPage(h.client, &sourceID, resourceTypeFilters, time.Unix(endTime, 0).AddDate(0, 0, -1).UnixMilli(), time.Unix(endTime, 0).UnixMilli(), sortMap, EsFetchPageSize)
+	if sourceIDs != nil && len(sourceIDs) != 0 {
+		hits, err := es.FetchConnectionResourceTypeTrendSummaryPage(h.client, sourceIDs, resourceTypeFilters, time.Unix(endTime, 0).AddDate(0, 0, -1).UnixMilli(), time.Unix(endTime, 0).UnixMilli(), sortMap, EsFetchPageSize)
 		if err != nil {
 			return err
 		}
@@ -2609,6 +2618,40 @@ func (h *HttpHandler) GetServiceSummary(ctx echo.Context) error {
 	}
 	serviceSummaries = filteredServiceSummaries
 
+	if minSpentStr != "" {
+		sort.Slice(serviceSummaries, func(i, j int) bool {
+			if serviceSummaries[i].Cost == nil {
+				return false
+			}
+			if serviceSummaries[j].Cost == nil {
+				return true
+			}
+			if _, ok := serviceSummaries[i].Cost[DefaultCurrency]; !ok {
+				return false
+			}
+			if _, ok := serviceSummaries[j].Cost[DefaultCurrency]; !ok {
+				return true
+			}
+
+			return serviceSummaries[i].Cost[DefaultCurrency].Cost > serviceSummaries[j].Cost[DefaultCurrency].Cost
+		})
+
+		for i, serviceSummary := range serviceSummaries {
+			if serviceSummary.Cost == nil {
+				serviceSummaries = serviceSummaries[:i]
+				break
+			}
+			if _, ok := serviceSummary.Cost[DefaultCurrency]; !ok {
+				serviceSummaries = serviceSummaries[:i]
+				break
+			}
+			if serviceSummary.Cost[DefaultCurrency].Cost < minSpent {
+				serviceSummaries = serviceSummaries[:i]
+				break
+			}
+		}
+	}
+
 	switch sortBy {
 	case "servicecode":
 		sort.Slice(serviceSummaries, func(i, j int) bool {
@@ -2651,14 +2694,17 @@ func (h *HttpHandler) GetServiceSummary(ctx echo.Context) error {
 	if !provider.IsNull() {
 		apiFilters["provider"] = provider.String()
 	}
-	if sourceID != "" {
-		apiFilters["source_id"] = sourceID
+	if sourceIDs != nil {
+		apiFilters["source_id"] = fmt.Sprintf("%v", sourceIDs)
 	}
 	if category != "" {
 		apiFilters["category"] = category
 	}
 	apiFilters["start_time"] = startTime
 	apiFilters["end_time"] = endTime
+	if minSpentStr != "" {
+		apiFilters["min_spent"] = minSpentStr
+	}
 
 	res := api.ServiceSummaryResponse{
 		TotalCount: len(serviceSummaries),
@@ -3591,7 +3637,7 @@ func (h *HttpHandler) GetResources(ctx echo.Context, provider *api.SourceType, c
 //	@Tags			insight
 //	@Produce		json
 //	@Param			connector	query		source.Type	false	"filter insights by connector"
-//	@Param			sourceId	query		string		false	"filter the result by source id"
+//	@Param			sourceId	query		[]string		false	"filter the result by source id"
 //	@Param			time		query		int			false	"unix seconds for the time to get the insight result for"
 //	@Success		200			{object}	[]api.ListInsightResult
 //	@Router			/inventory/api/v2/insights [get]
@@ -3606,10 +3652,9 @@ func (h *HttpHandler) ListInsights(ctx echo.Context) error {
 		t := time.Unix(timeInt, 0)
 		resultTime = &t
 	}
-	sourceId := ctx.QueryParam("sourceId")
-	sourceIdPtr := &sourceId
-	if sourceId == "" {
-		sourceIdPtr = nil
+	sourceIDs := ctx.QueryParams()["sourceId"]
+	if len(sourceIDs) == 0 {
+		sourceIDs = nil
 	}
 
 	insightList, err := h.complianceClient.GetInsights(httpclient.FromEchoContext(ctx), connector)
@@ -3669,9 +3714,9 @@ func (h *HttpHandler) ListInsights(ctx echo.Context) error {
 
 	var insightValues map[uint]insight.InsightResource
 	if resultTime != nil {
-		insightValues, err = es.FetchInsightValueAtTime(h.client, *resultTime, connector, sourceIdPtr, insightIdList, true)
+		insightValues, err = es.FetchInsightValueAtTime(h.client, *resultTime, connector, sourceIDs, insightIdList, true)
 	} else {
-		insightValues, err = es.FetchInsightValueAtTime(h.client, time.Now(), connector, sourceIdPtr, insightIdList, false)
+		insightValues, err = es.FetchInsightValueAtTime(h.client, time.Now(), connector, sourceIDs, insightIdList, false)
 	}
 	if err != nil {
 		return err
@@ -3757,7 +3802,7 @@ func (h *HttpHandler) ListInsights(ctx echo.Context) error {
 //	@Description	Get an insight by id
 //	@Tags			insight
 //	@Produce		json
-//	@Param			sourceId	query		string	false	"filter the result by source id"
+//	@Param			sourceId	query		[]string	false	"filter the result by source id"
 //	@Param			time		query		int		false	"unix seconds for the time to get the insight result for"
 //	@Success		200			{object}	api.Insight
 //	@Router			/inventory/api/v2/insights/{insightId} [get]
@@ -3775,10 +3820,9 @@ func (h *HttpHandler) GetInsight(ctx echo.Context) error {
 		t := time.Unix(timeInt, 0)
 		resultTime = &t
 	}
-	sourceId := ctx.QueryParam("sourceId")
-	sourceIdPtr := &sourceId
-	if sourceId == "" {
-		sourceIdPtr = nil
+	sourceIDs := ctx.QueryParams()["sourceId"]
+	if len(sourceIDs) == 0 {
+		sourceIDs = nil
 	}
 
 	insightRow, err := h.complianceClient.GetInsightById(httpclient.FromEchoContext(ctx), uint(insightId))
@@ -3832,9 +3876,9 @@ func (h *HttpHandler) GetInsight(ctx echo.Context) error {
 
 	var insightResults map[uint]insight.InsightResource
 	if resultTime != nil {
-		insightResults, err = es.FetchInsightValueAtTime(h.client, *resultTime, source.Nil, sourceIdPtr, []uint{uint(insightId)}, true)
+		insightResults, err = es.FetchInsightValueAtTime(h.client, *resultTime, source.Nil, sourceIDs, []uint{uint(insightId)}, true)
 	} else {
-		insightResults, err = es.FetchInsightValueAtTime(h.client, time.Now(), source.Nil, sourceIdPtr, []uint{uint(insightId)}, false)
+		insightResults, err = es.FetchInsightValueAtTime(h.client, time.Now(), source.Nil, sourceIDs, []uint{uint(insightId)}, false)
 	}
 	if err != nil {
 		return err
@@ -3893,7 +3937,7 @@ func (h *HttpHandler) GetInsight(ctx echo.Context) error {
 //	@Description	Get an insight by id
 //	@Tags			insight
 //	@Produce		json
-//	@Param			sourceId	query		string	false	"filter the result by source id"
+//	@Param			sourceId	query		[]string	false	"filter the result by source id"
 //	@Param			time		query		int		false	"unix seconds for the time to get the insight result for"
 //	@Success		200			{object}	api.InsightPeerGroup
 //	@Router			/inventory/api/v2/insights/peer/{insightPeerGroupId} [get]
@@ -3911,10 +3955,9 @@ func (h *HttpHandler) GetInsightPeerGroup(ctx echo.Context) error {
 		t := time.Unix(timeInt, 0)
 		resultTime = &t
 	}
-	sourceId := ctx.QueryParam("sourceId")
-	sourceIdPtr := &sourceId
-	if sourceId == "" {
-		sourceIdPtr = nil
+	sourceIDs := ctx.QueryParams()["sourceId"]
+	if len(sourceIDs) == 0 {
+		sourceIDs = nil
 	}
 
 	insightPeerGroup, err := h.complianceClient.GetInsightPeerGroupById(httpclient.FromEchoContext(ctx), uint(insightPeerGroupId))
@@ -4004,9 +4047,9 @@ func (h *HttpHandler) GetInsightPeerGroup(ctx echo.Context) error {
 
 	var insightResults map[uint]insight.InsightResource
 	if resultTime != nil {
-		insightResults, err = es.FetchInsightValueAtTime(h.client, *resultTime, source.Nil, sourceIdPtr, insightIds, true)
+		insightResults, err = es.FetchInsightValueAtTime(h.client, *resultTime, source.Nil, sourceIDs, insightIds, true)
 	} else {
-		insightResults, err = es.FetchInsightValueAtTime(h.client, time.Now(), source.Nil, sourceIdPtr, insightIds, false)
+		insightResults, err = es.FetchInsightValueAtTime(h.client, time.Now(), source.Nil, sourceIDs, insightIds, false)
 	}
 	if err != nil {
 		return err
@@ -4108,10 +4151,9 @@ func (h *HttpHandler) GetInsightTrend(ctx echo.Context) error {
 		dataPointCount = int(dataPointCountInt)
 	}
 
-	sourceId := ctx.QueryParam("sourceId")
-	sourceIdPtr := &sourceId
-	if sourceId == "" {
-		sourceIdPtr = nil
+	sourceIDs := ctx.QueryParams()["sourceId"]
+	if len(sourceIDs) == 0 {
+		sourceIDs = nil
 	}
 
 	_, err = h.complianceClient.GetInsightById(httpclient.FromEchoContext(ctx), uint(insightId))
@@ -4122,7 +4164,7 @@ func (h *HttpHandler) GetInsightTrend(ctx echo.Context) error {
 		return err
 	}
 
-	insightResults, err := es.FetchInsightAggregatedPerQueryValuesBetweenTimes(h.client, startTime, endTime, source.Nil, sourceIdPtr, []uint{uint(insightId)})
+	insightResults, err := es.FetchInsightAggregatedPerQueryValuesBetweenTimes(h.client, startTime, endTime, source.Nil, sourceIDs, []uint{uint(insightId)})
 	if err != nil {
 		return err
 	}

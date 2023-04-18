@@ -43,7 +43,7 @@ func (h HttpHandler) Register(r *echo.Echo) {
 	v1.GET("/providers", httpserver.AuthorizeHandler(h.GetProviders, api3.ViewerRole))
 	v1.GET("/providers/types", httpserver.AuthorizeHandler(h.GetProviderTypes, api3.ViewerRole))
 
-	v1.GET("/connectors", httpserver.AuthorizeHandler(h.GetConnector, api3.ViewerRole))
+	v1.GET("/connectors", httpserver.AuthorizeHandler(h.GetConnectors, api3.ViewerRole))
 
 	source := v1.Group("/source")
 
@@ -195,7 +195,7 @@ func (h HttpHandler) GetProviders(ctx echo.Context) error {
 	})
 }
 
-// GetConnector godoc
+// GetConnectors godoc
 //
 //	@Summary		Get connectors
 //	@Description	Getting connectors
@@ -204,7 +204,7 @@ func (h HttpHandler) GetProviders(ctx echo.Context) error {
 //	@Success		200			{object}	[]api.ConnectorCount
 //	@Param			category	query		string	false	"category"
 //	@Router			/onboard/api/v1/connectors [get]
-func (h HttpHandler) GetConnector(ctx echo.Context) error {
+func (h HttpHandler) GetConnectors(ctx echo.Context) error {
 	category := ctx.QueryParam("category")
 
 	connectors, err := h.db.ListConnectors()

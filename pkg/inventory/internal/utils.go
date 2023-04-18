@@ -6,7 +6,7 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/inventory/api"
 )
 
-func Paginate[T api.ServiceSummary | api.AccountSummary | api.LocationResponse](page, size int, arr []T) []T {
+func Paginate[T api.ServiceSummary | api.AccountSummary | api.LocationResponse](page, size int64, arr []T) []T {
 	if page < 1 {
 		page = 1
 	}
@@ -15,11 +15,11 @@ func Paginate[T api.ServiceSummary | api.AccountSummary | api.LocationResponse](
 	}
 	start := (page - 1) * size
 	end := start + size
-	if start > len(arr) {
-		start = len(arr)
+	if start > int64(len(arr)) {
+		start = int64(len(arr))
 	}
-	if end > len(arr) {
-		end = len(arr)
+	if end > int64(len(arr)) {
+		end = int64(len(arr))
 	}
 	return arr[start:end]
 }
