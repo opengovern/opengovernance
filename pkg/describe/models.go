@@ -55,7 +55,6 @@ type ScheduleJob struct {
 
 type DescribeSourceJob struct {
 	gorm.Model
-	ScheduleJobID        uint
 	DescribedAt          time.Time
 	SourceID             uuid.UUID // Not the primary key but should be a unique identifier
 	AccountID            string

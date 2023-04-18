@@ -158,15 +158,14 @@ type DescribeJobResult struct {
 }
 
 type DescribeConnectionJob struct {
-	JobID         uint // DescribeSourceJob ID
-	ScheduleJobID uint
-	ResourceJobs  map[uint]string // DescribeResourceJob ID -> ResourceType
-	SourceID      string
-	AccountID     string
-	DescribedAt   int64
-	SourceType    api.SourceType
-	ConfigReg     string
-	TriggerType   enums.DescribeTriggerType
+	JobID        uint            // DescribeSourceJob ID
+	ResourceJobs map[uint]string // DescribeResourceJob ID -> ResourceType
+	SourceID     string
+	AccountID    string
+	DescribedAt  int64
+	SourceType   api.SourceType
+	ConfigReg    string
+	TriggerType  enums.DescribeTriggerType
 }
 
 type DescribeConnectionJobResult struct {
