@@ -43,7 +43,7 @@ type InsightResultQueryHit struct {
 	Sort    []any              `json:"sort"`
 }
 
-func BuildFindInsightResultsQuery(providerFilter source.Type, sourceIDFilter, uuidFilter *string, startTimeFilter, endTimeFilter *time.Time, queryIDFilter []uint, useHistoricalData bool, useProviderAggregate bool) map[string]any {
+func BuildFindInsightResultsQuery(providerFilter source.Type, sourceIDsFilter []string, uuidFilter *string, startTimeFilter, endTimeFilter *time.Time, queryIDFilter []uint, useHistoricalData bool, useProviderAggregate bool) map[string]any {
 	boolQuery := map[string]any{}
 	var filters []any
 
@@ -82,9 +82,9 @@ func BuildFindInsightResultsQuery(providerFilter source.Type, sourceIDFilter, uu
 		})
 	}
 
-	if sourceIDFilter != nil {
+	if sourceIDsFilter != nil {
 		filters = append(filters, map[string]any{
-			"terms": map[string][]string{"source_id": {*sourceIDFilter}},
+			"terms": map[string][]string{"source_id": sourceIDsFilter},
 		})
 	}
 
@@ -122,12 +122,12 @@ func BuildFindInsightResultsQuery(providerFilter source.Type, sourceIDFilter, uu
 	return res
 }
 
-func FetchInsightValueAtTime(client keibi.Client, t time.Time, provider source.Type, sourceID *string, insightIds []uint, useHistoricalData bool) (map[uint]es.InsightResource, error) {
+func FetchInsightValueAtTime(client keibi.Client, t time.Time, provider source.Type, sourceIDs []string, insightIds []uint, useHistoricalData bool) (map[uint]es.InsightResource, error) {
 	var query map[string]any
-	if sourceID == nil {
+	if sourceIDs == nil {
 		query = BuildFindInsightResultsQuery(provider, nil, nil, nil, &t, insightIds, useHistoricalData, true)
 	} else {
-		query = BuildFindInsightResultsQuery(provider, sourceID, nil, nil, &t, insightIds, useHistoricalData, false)
+		query = BuildFindInsightResultsQuery(provider, sourceIDs, nil, nil, &t, insightIds, useHistoricalData, false)
 	}
 	query["size"] = 0
 	delete(query, "sort")
@@ -192,12 +192,12 @@ type InsightHistoryResultQueryResponse struct {
 	} `json:"aggregations"`
 }
 
-func FetchInsightAggregatedPerQueryValuesBetweenTimes(client keibi.Client, startTime time.Time, endTime time.Time, provider source.Type, sourceID *string, insightIds []uint) (map[uint][]es.InsightResource, error) {
+func FetchInsightAggregatedPerQueryValuesBetweenTimes(client keibi.Client, startTime time.Time, endTime time.Time, provider source.Type, sourceIDs []string, insightIds []uint) (map[uint][]es.InsightResource, error) {
 	var query map[string]any
-	if sourceID == nil {
+	if sourceIDs == nil {
 		query = BuildFindInsightResultsQuery(provider, nil, nil, &startTime, &endTime, insightIds, true, true)
 	} else {
-		query = BuildFindInsightResultsQuery(provider, sourceID, nil, &startTime, &endTime, insightIds, true, false)
+		query = BuildFindInsightResultsQuery(provider, sourceIDs, nil, &startTime, &endTime, insightIds, true, false)
 	}
 	query["size"] = 0
 	delete(query, "sort")

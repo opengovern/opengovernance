@@ -53,9 +53,9 @@ func NewGraphDatabase(driver neo4j.DriverWithContext) (GraphDatabase, error) {
 	for _, resourceType := range awsResourceTypes {
 		_, err = session.Run(ctx, "MERGE (resource:Filter:FilterCloudResourceType{resource_label: $resource_label, connector: $connector, resource_type: $resourceType, service_name: $serviceName});", map[string]any{
 			"connector":      resourceType.Connector,
-			"serviceName":    resourceType.ServiceName,
+			"serviceName":    strings.ToLower(resourceType.ServiceName),
 			"resource_label": resourceType.ResourceLabel,
-			"resourceType":   resourceType.ResourceName,
+			"resourceType":   strings.ToLower(resourceType.ResourceName),
 		})
 		if err != nil {
 			return GraphDatabase{}, err
@@ -63,9 +63,9 @@ func NewGraphDatabase(driver neo4j.DriverWithContext) (GraphDatabase, error) {
 
 		_, err = session.Run(ctx, "MATCH (service:Category:CloudServiceCategory{connector:$connector, service_name:$serviceName}) MATCH (resource:Filter:FilterCloudResourceType{resource_label: $resource_label, connector: $connector, resource_type: $resourceType, service_name: $serviceName}) MERGE (service)-[:USES]->(resource);", map[string]any{
 			"connector":      resourceType.Connector,
-			"serviceName":    resourceType.ServiceName,
+			"serviceName":    strings.ToLower(resourceType.ServiceName),
 			"resource_label": resourceType.ResourceLabel,
-			"resourceType":   resourceType.ResourceName,
+			"resourceType":   strings.ToLower(resourceType.ResourceName),
 		})
 		if err != nil {
 			return GraphDatabase{}, err
@@ -76,9 +76,9 @@ func NewGraphDatabase(driver neo4j.DriverWithContext) (GraphDatabase, error) {
 	for _, resourceType := range azureResourceTypes {
 		_, err = session.Run(ctx, "MERGE (resource:Filter:FilterCloudResourceType{resource_label: $resource_label, connector: $connector, resource_type: $resourceType, service_name: $serviceName});", map[string]any{
 			"connector":      resourceType.Connector,
-			"serviceName":    resourceType.ServiceName,
+			"serviceName":    strings.ToLower(resourceType.ServiceName),
 			"resource_label": resourceType.ResourceLabel,
-			"resourceType":   resourceType.ResourceName,
+			"resourceType":   strings.ToLower(resourceType.ResourceName),
 		})
 		if err != nil {
 			return GraphDatabase{}, err
@@ -86,9 +86,9 @@ func NewGraphDatabase(driver neo4j.DriverWithContext) (GraphDatabase, error) {
 
 		_, err = session.Run(ctx, "MATCH (service:Category:CloudServiceCategory{connector:$connector, service_name:$serviceName}) MATCH (resource:Filter:FilterCloudResourceType{resource_label: $resource_label, connector: $connector, resource_type: $resourceType, service_name: $serviceName}) MERGE (service)-[:USES]->(resource);", map[string]any{
 			"connector":      resourceType.Connector,
-			"serviceName":    resourceType.ServiceName,
+			"serviceName":    strings.ToLower(resourceType.ServiceName),
 			"resource_label": resourceType.ResourceLabel,
-			"resourceType":   resourceType.ResourceName,
+			"resourceType":   strings.ToLower(resourceType.ResourceName),
 		})
 		if err != nil {
 			return GraphDatabase{}, err

@@ -356,7 +356,7 @@ func FetchCostByAccountsBetween(client keibi.Client, sourceID *string, provider 
 	return hits, nil
 }
 
-func FetchDailyCostHistoryByServicesBetween(client keibi.Client, sourceID *string, provider *source.Type, services []string, before time.Time, after time.Time, size int) (map[string][]summarizer.ServiceCostSummary, error) {
+func FetchDailyCostHistoryByServicesBetween(client keibi.Client, sourceIDs []string, provider *source.Type, services []string, before time.Time, after time.Time, size int) (map[string][]summarizer.ServiceCostSummary, error) {
 	before = before.Truncate(24 * time.Hour)
 	after = after.Truncate(24 * time.Hour)
 
@@ -385,9 +385,9 @@ func FetchDailyCostHistoryByServicesBetween(client keibi.Client, sourceID *strin
 		},
 	})
 
-	if sourceID != nil && *sourceID != "" {
+	if sourceIDs != nil && len(sourceIDs) != 0 {
 		filters = append(filters, map[string]interface{}{
-			"terms": map[string][]string{"source_id": {*sourceID}},
+			"terms": map[string][]string{"source_id": sourceIDs},
 		})
 	}
 	if provider != nil && !provider.IsNull() {
