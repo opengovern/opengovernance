@@ -823,16 +823,16 @@ func (s *Scheduler) processCloudNativeDescribeConnectionJobResourcesEvents(event
 				Value:   message.Value,
 				Headers: message.Headers,
 			}
-			isIdentical, err := s.compareMessageToCurrentState(saramaMessage)
-			if err != nil {
-				s.logger.Error("Failed to compare message to current state", zap.Error(err))
-			} else {
-				if isIdentical {
-					s.logger.Info("New message is identical to current state, overwriting to update timestamp")
-				} else {
-					s.logger.Info("New message is not identical to current state, overwriting")
-				}
-			}
+			//isIdentical, err := s.compareMessageToCurrentState(saramaMessage)
+			//if err != nil {
+			//	s.logger.Error("Failed to compare message to current state", zap.Error(err))
+			//} else {
+			//	if isIdentical {
+			//		s.logger.Info("New message is identical to current state, overwriting to update timestamp")
+			//	} else {
+			//		s.logger.Info("New message is not identical to current state, overwriting")
+			//	}
+			//}
 			saramaMessages = append(saramaMessages, &saramaMessage)
 		}
 		producer, err := sarama.NewSyncProducerFromClient(s.kafkaClient)
