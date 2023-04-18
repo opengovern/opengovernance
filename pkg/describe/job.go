@@ -214,17 +214,16 @@ func (j DescribeConnectionJob) Do(ictx context.Context, vlt vault.SourceConfig, 
 
 	for id, resourceType := range j.ResourceJobs {
 		workChannel <- DescribeJob{
-			JobID:         id,
-			ScheduleJobID: j.ScheduleJobID,
-			ParentJobID:   j.JobID,
-			ResourceType:  resourceType,
-			SourceID:      j.SourceID,
-			AccountID:     j.AccountID,
-			DescribedAt:   j.DescribedAt,
-			SourceType:    j.SourceType,
-			ConfigReg:     j.ConfigReg,
-			TriggerType:   j.TriggerType,
-			RetryCounter:  0,
+			JobID:        id,
+			ParentJobID:  j.JobID,
+			ResourceType: resourceType,
+			SourceID:     j.SourceID,
+			AccountID:    j.AccountID,
+			DescribedAt:  j.DescribedAt,
+			SourceType:   j.SourceType,
+			ConfigReg:    j.ConfigReg,
+			TriggerType:  j.TriggerType,
+			RetryCounter: 0,
 		}
 	}
 
@@ -252,17 +251,16 @@ func (j DescribeConnectionJob) CloudTimeout() (r DescribeConnectionJobResult) {
 	}
 	for id, resourceType := range j.ResourceJobs {
 		dj := DescribeJob{
-			JobID:         id,
-			ScheduleJobID: j.ScheduleJobID,
-			ParentJobID:   j.JobID,
-			ResourceType:  resourceType,
-			SourceID:      j.SourceID,
-			AccountID:     j.AccountID,
-			DescribedAt:   j.DescribedAt,
-			SourceType:    j.SourceType,
-			ConfigReg:     j.ConfigReg,
-			TriggerType:   j.TriggerType,
-			RetryCounter:  0,
+			JobID:        id,
+			ParentJobID:  j.JobID,
+			ResourceType: resourceType,
+			SourceID:     j.SourceID,
+			AccountID:    j.AccountID,
+			DescribedAt:  j.DescribedAt,
+			SourceType:   j.SourceType,
+			ConfigReg:    j.ConfigReg,
+			TriggerType:  j.TriggerType,
+			RetryCounter: 0,
 		}
 		describeConnectionJobResult.Result[id] = DescribeJobResult{
 			JobID:       dj.JobID,
