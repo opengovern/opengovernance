@@ -238,7 +238,7 @@ func getFilterFromNode(node neo4j.Node) (Filter, error) {
 					ElementID: node.ElementId,
 				},
 				Connector:     source.Type(connector.(string)),
-				ResourceType:  strings.ToLower(resourceType.(string)),
+				ResourceType:  resourceType.(string),
 				ResourceLabel: resourceLabel.(string),
 				ServiceName:   strings.ToLower(serviceName.(string)),
 			}, nil
