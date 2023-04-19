@@ -79,7 +79,8 @@ func (r *httpRoutes) Register(e *echo.Echo) {
 
 // ListRoles godoc
 //
-//	@Summary	show lists of roles.
+//	@Summary	Get Roles
+//	@Description	Gets a list of roles in a workspace and their descriptions and number of users.
 //	@Tags		auth
 //	@Produce	json
 //	@Success	200	{object}	[]api.RolesListResponse
@@ -134,7 +135,8 @@ func (r *httpRoutes) ListRoles(ctx echo.Context) error {
 
 // RoleDetails godoc
 //
-//	@Summary	show the description roles and members that use from each role
+//	@Summary	Get Role Details
+//	@Description	Gets the details of the Role, including the description, number of users and list of those users.
 //	@Tags		auth
 //	@Produce	json
 //	@Param		role	path		string	true	"role"
@@ -192,11 +194,10 @@ func bindValidate(ctx echo.Context, i interface{}) error {
 
 // PutRoleBinding godoc
 //
-//	@Summary		Update RoleBinding for a user.
-//	@Description	RoleBinding defines the roles and actions a user can perform.
+//	@Summary		Update User Access
+//	@Description	User Access defines the roles of a user.
 //	@Description	There are currently three roles (ADMIN, EDITOR, VIEWER).
-//	@Description	User must exist before you can update its RoleBinding.
-//	@Description	If you want to add a role binding for a user given the email address, call invite first to get a user id. Then call this endpoint.
+//	@Description	User must exist before you can update its Role.
 //	@Tags			auth
 //	@Produce		json
 //	@Param			request	body		api.PutRoleBindingRequest	true	"Request Body"
@@ -250,7 +251,8 @@ func (r httpRoutes) PutRoleBinding(ctx echo.Context) error {
 
 // DeleteRoleBinding godoc
 //
-//	@Summary	Delete RoleBinding for the defined user in the defined workspace.
+//	@Summary	Delete User Access
+//	@Description Deletes user access to the specified workspace.
 //	@Tags		auth
 //	@Produce	json
 //	@Param		userId	query		string	true	"userId"
@@ -281,7 +283,8 @@ func (r httpRoutes) DeleteRoleBinding(ctx echo.Context) error {
 
 // GetRoleBindings godoc
 //
-//	@Summary		Get RoleBindings for the calling user
+//	@Summary		Get RoleBindings
+//	@Description	Gets the roles binded to a user.
 //	@Description	RoleBinding defines the roles and actions a user can perform. There are currently three roles (ADMIN, EDITOR, VIEWER).
 //	@Tags			auth
 //	@Produce		json
@@ -313,8 +316,8 @@ func (r *httpRoutes) GetRoleBindings(ctx echo.Context) error {
 
 // GetWorkspaceMembership godoc
 //
-//	@Summary		List of workspaces which the user is member of
-//	@Description	Returns a list of workspaces and the user role in it for the specified user
+//	@Summary		User Workspaces
+//	@Description	Returns a list of workspaces and the user role in it for the specified user.
 //	@Tags			auth
 //	@Produce		json
 //	@Param			userId	path		string	true	"userId"
@@ -390,8 +393,8 @@ func (r *httpRoutes) GetWorkspaceRoleBindings(ctx echo.Context) error {
 
 // GetUsers godoc
 //
-//	@Summary		Search users
-//	@Description	List of users with specified filters
+//	@Summary		Get Users
+//	@Description	Gets a list of users with specified filters.
 //	@Tags			auth
 //	@Produce		json
 //	@Param			request	body		api.GetUsersRequest	true	"Request Body"
@@ -424,8 +427,8 @@ func (r *httpRoutes) GetUsers(ctx echo.Context) error {
 
 // GetUserDetails godoc
 //
-//	@Summary		User details
-//	@Description	Get user details by user id
+//	@Summary		Get User details
+//	@Description	Get user details by user id.
 //	@Tags			auth
 //	@Produce		json
 //	@Param			userId	path		string	true	"userId"
@@ -470,8 +473,8 @@ func (r *httpRoutes) GetUserDetails(ctx echo.Context) error {
 
 // Invite godoc
 //
-//	@Summary		Invites a user
-//	@Description	Invites a user to a workspace with defined role
+//	@Summary		Invite User
+//	@Description	Invites a user to a workspace with defined role.
 //	@Description	by sending an email to the specified email address.
 //	@Description	The user will be found by the email address.
 //	@Tags			auth
@@ -580,7 +583,8 @@ func (r *httpRoutes) Invite(ctx echo.Context) error {
 
 // DeleteInvitation godoc
 //
-//	@Summary	Deletes an Invitation
+//	@Summary	Delete Invitation
+//	@Description Deletes user access to the specified workspace.
 //	@Tags		auth
 //	@Produce	json
 //	@Param		userId	query		string	true	"userId"
@@ -608,7 +612,8 @@ func (r *httpRoutes) DeleteInvitation(ctx echo.Context) error {
 
 // CreateAPIKey godoc
 //
-//	@Summary	Creates an API Key
+//	@Summary	Creates Workspace Key
+//	@Description Creates workspace key for the defined role with the defined name.
 //	@Tags		auth
 //	@Produce	json
 //	@Param		request	body		api.CreateAPIKeyRequest	true	"Request Body"
@@ -708,7 +713,8 @@ func (r *httpRoutes) CreateAPIKey(ctx echo.Context) error {
 
 // DeleteAPIKey godoc
 //
-//	@Summary	Deletes an API Key
+//	@Summary	Deletes Workspace Key
+//	@Description Deletes the specified workspace key by ID.
 //	@Tags		auth
 //	@Produce	json
 //	@Param		id	path		string	true	"ID"
@@ -732,7 +738,8 @@ func (r *httpRoutes) DeleteAPIKey(ctx echo.Context) error {
 
 // ListAPIKeys godoc
 //
-//	@Summary	Lists all API Keys
+//	@Summary	Get Workspace Keys
+//	@Description Gets a list of available keys in a workspace.
 //	@Tags		auth
 //	@Produce	json
 //	@Success	200	{object}	[]api.WorkspaceApiKey
@@ -762,7 +769,8 @@ func (r *httpRoutes) ListAPIKeys(ctx echo.Context) error {
 
 // GetAPIKey godoc
 //
-//	@Summary	Fetches an API Key
+//	@Summary	Get Workspace Key Details
+//	@Description Gets the details of a key in a workspace with specified ID.
 //	@Tags		auth
 //	@Produce	json
 //	@Param		id	path		string	true	"ID"
@@ -800,12 +808,13 @@ func (r *httpRoutes) GetAPIKey(ctx echo.Context) error {
 
 // SuspendAPIKey godoc
 //
-//	@Summary	Suspend an API Key
-//	@Tags		auth
-//	@Produce	json
-//	@Param		id	path		string	true	"ID"
-//	@Success	200	{object}	api.WorkspaceApiKey
-//	@Router		/auth/api/v1/key/{id}/suspend [post]
+//		@Summary	Suspend Workspace Key
+//	 @Description Suspends a key in the workspace with specified ID.
+//		@Tags		auth
+//		@Produce	json
+//		@Param		id	path		string	true	"ID"
+//		@Success	200	{object}	api.WorkspaceApiKey
+//		@Router		/auth/api/v1/key/{id}/suspend [post]
 func (r *httpRoutes) SuspendAPIKey(ctx echo.Context) error {
 	workspaceID := httpserver.GetWorkspaceID(ctx)
 
@@ -842,12 +851,13 @@ func (r *httpRoutes) SuspendAPIKey(ctx echo.Context) error {
 
 // ActivateAPIKey godoc
 //
-//	@Summary	Suspend an API Key
-//	@Tags		auth
-//	@Produce	json
-//	@Param		id	path		string	true	"ID"
-//	@Success	200	{object}	api.WorkspaceApiKey
-//	@Router		/auth/api/v1/key/{id}/activate [post]
+//		@Summary	Activate Workspace Key
+//	 @Description Activates a key in the workspace with specified ID.
+//		@Tags		auth
+//		@Produce	json
+//		@Param		id	path		string	true	"ID"
+//		@Success	200	{object}	api.WorkspaceApiKey
+//		@Router		/auth/api/v1/key/{id}/activate [post]
 func (r *httpRoutes) ActivateAPIKey(ctx echo.Context) error {
 	workspaceID := httpserver.GetWorkspaceID(ctx)
 
@@ -884,7 +894,8 @@ func (r *httpRoutes) ActivateAPIKey(ctx echo.Context) error {
 
 // GetRoleUsers godoc
 //
-//	@Summary	Lists users with a role
+//	@Summary	Lists Role Users
+//	@Description Returns a list of users in a workspace with the specified role.
 //	@Tags		auth
 //	@Produce	json
 //	@Param		role	path		string	true	"role"
@@ -928,7 +939,8 @@ func (r *httpRoutes) GetRoleUsers(ctx echo.Context) error {
 
 // GetRoleKeys godoc
 //
-//	@Summary	Lists all API Keys
+//	@Summary	Get Role Keys
+//	@Description Returns a list of keys in a workspace for the specified role.
 //	@Tags		auth
 //	@Produce	json
 //	@Param		request	body		api.Role	true	"Request Body"
@@ -961,7 +973,8 @@ func (r *httpRoutes) GetRoleKeys(ctx echo.Context) error {
 
 // UpdateKeyRole godoc
 //
-//	@Summary	Fetches an API Key
+//	@Summary	Update Workspace Key Role
+//	@Description Updates the role of the specified key in workspace.
 //	@Tags		auth
 //	@Produce	json
 //	@Param		request	body		api.UpdateKeyRoleRequest	true	"Request Body"
