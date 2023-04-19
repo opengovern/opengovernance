@@ -79,12 +79,12 @@ func (r *httpRoutes) Register(e *echo.Echo) {
 
 // ListRoles godoc
 //
-//	@Summary	Get Roles
+//	@Summary		Get Roles
 //	@Description	Gets a list of roles in a workspace and their descriptions and number of users.
-//	@Tags		auth
-//	@Produce	json
-//	@Success	200	{object}	[]api.RolesListResponse
-//	@Router		/auth/api/v1/roles [get]
+//	@Tags			auth
+//	@Produce		json
+//	@Success		200	{object}	[]api.RolesListResponse
+//	@Router			/auth/api/v1/roles [get]
 func (r *httpRoutes) ListRoles(ctx echo.Context) error {
 	workspaceID := httpserver.GetWorkspaceID(ctx)
 	users, err := r.auth0Service.SearchUsers(workspaceID, nil, nil, nil)
@@ -135,13 +135,13 @@ func (r *httpRoutes) ListRoles(ctx echo.Context) error {
 
 // RoleDetails godoc
 //
-//	@Summary	Get Role Details
+//	@Summary		Get Role Details
 //	@Description	Gets the details of the Role, including the description, number of users and list of those users.
-//	@Tags		auth
-//	@Produce	json
-//	@Param		role	path		string	true	"role"
-//	@Success	200		{object}	api.RoleDetailsResponse
-//	@Router		/auth/api/v1/roles/{role} [get]
+//	@Tags			auth
+//	@Produce		json
+//	@Param			role	path		string	true	"role"
+//	@Success		200		{object}	api.RoleDetailsResponse
+//	@Router			/auth/api/v1/roles/{role} [get]
 func (r *httpRoutes) RoleDetails(ctx echo.Context) error {
 	workspaceID := httpserver.GetWorkspaceID(ctx)
 	role := api.Role(ctx.Param("role"))
@@ -251,13 +251,13 @@ func (r httpRoutes) PutRoleBinding(ctx echo.Context) error {
 
 // DeleteRoleBinding godoc
 //
-//	@Summary	Delete User Access
-//	@Description Deletes user access to the specified workspace.
-//	@Tags		auth
-//	@Produce	json
-//	@Param		userId	query		string	true	"userId"
-//	@Success	200		{object}	nil
-//	@Router		/auth/api/v1/user/role/binding [delete]
+//	@Summary		Delete User Access
+//	@Description	Deletes user access to the specified workspace.
+//	@Tags			auth
+//	@Produce		json
+//	@Param			userId	query		string	true	"userId"
+//	@Success		200		{object}	nil
+//	@Router			/auth/api/v1/user/role/binding [delete]
 func (r httpRoutes) DeleteRoleBinding(ctx echo.Context) error {
 	userId := ctx.QueryParam("userId")
 	// The WorkspaceManager service will call this API to set the AdminRole
@@ -583,13 +583,13 @@ func (r *httpRoutes) Invite(ctx echo.Context) error {
 
 // DeleteInvitation godoc
 //
-//	@Summary	Delete Invitation
-//	@Description Deletes user access to the specified workspace.
-//	@Tags		auth
-//	@Produce	json
-//	@Param		userId	query		string	true	"userId"
-//	@Success	200		{object}	nil
-//	@Router		/auth/api/v1/user/invite [delete]
+//	@Summary		Delete Invitation
+//	@Description	Deletes user access to the specified workspace.
+//	@Tags			auth
+//	@Produce		json
+//	@Param			userId	query		string	true	"userId"
+//	@Success		200		{object}	nil
+//	@Router			/auth/api/v1/user/invite [delete]
 func (r *httpRoutes) DeleteInvitation(ctx echo.Context) error {
 	userId := ctx.QueryParam("userId")
 	if httpserver.GetUserID(ctx) == userId {
@@ -612,13 +612,13 @@ func (r *httpRoutes) DeleteInvitation(ctx echo.Context) error {
 
 // CreateAPIKey godoc
 //
-//	@Summary	Creates Workspace Key
-//	@Description Creates workspace key for the defined role with the defined name.
-//	@Tags		auth
-//	@Produce	json
-//	@Param		request	body		api.CreateAPIKeyRequest	true	"Request Body"
-//	@Success	200		{object}	api.CreateAPIKeyResponse
-//	@Router		/auth/api/v1/key/create [post]
+//	@Summary		Creates Workspace Key
+//	@Description	Creates workspace key for the defined role with the defined name.
+//	@Tags			auth
+//	@Produce		json
+//	@Param			request	body		api.CreateAPIKeyRequest	true	"Request Body"
+//	@Success		200		{object}	api.CreateAPIKeyResponse
+//	@Router			/auth/api/v1/key/create [post]
 func (r *httpRoutes) CreateAPIKey(ctx echo.Context) error {
 	userID := httpserver.GetUserID(ctx)
 	workspaceID := httpserver.GetWorkspaceID(ctx)
@@ -713,13 +713,13 @@ func (r *httpRoutes) CreateAPIKey(ctx echo.Context) error {
 
 // DeleteAPIKey godoc
 //
-//	@Summary	Deletes Workspace Key
-//	@Description Deletes the specified workspace key by ID.
-//	@Tags		auth
-//	@Produce	json
-//	@Param		id	path		string	true	"ID"
-//	@Success	200	{object}	nil
-//	@Router		/auth/api/v1/key/{id}/delete [delete]
+//	@Summary		Deletes Workspace Key
+//	@Description	Deletes the specified workspace key by ID.
+//	@Tags			auth
+//	@Produce		json
+//	@Param			id	path		string	true	"ID"
+//	@Success		200	{object}	nil
+//	@Router			/auth/api/v1/key/{id}/delete [delete]
 func (r *httpRoutes) DeleteAPIKey(ctx echo.Context) error {
 	workspaceID := httpserver.GetWorkspaceID(ctx)
 	idStr := ctx.Param("id")
@@ -738,12 +738,12 @@ func (r *httpRoutes) DeleteAPIKey(ctx echo.Context) error {
 
 // ListAPIKeys godoc
 //
-//	@Summary	Get Workspace Keys
-//	@Description Gets a list of available keys in a workspace.
-//	@Tags		auth
-//	@Produce	json
-//	@Success	200	{object}	[]api.WorkspaceApiKey
-//	@Router		/auth/api/v1/keys [get]
+//	@Summary		Get Workspace Keys
+//	@Description	Gets a list of available keys in a workspace.
+//	@Tags			auth
+//	@Produce		json
+//	@Success		200	{object}	[]api.WorkspaceApiKey
+//	@Router			/auth/api/v1/keys [get]
 func (r *httpRoutes) ListAPIKeys(ctx echo.Context) error {
 	workspaceID := httpserver.GetWorkspaceID(ctx)
 	keys, err := r.db.ListApiKeys(workspaceID)
@@ -769,13 +769,13 @@ func (r *httpRoutes) ListAPIKeys(ctx echo.Context) error {
 
 // GetAPIKey godoc
 //
-//	@Summary	Get Workspace Key Details
-//	@Description Gets the details of a key in a workspace with specified ID.
-//	@Tags		auth
-//	@Produce	json
-//	@Param		id	path		string	true	"ID"
-//	@Success	200	{object}	api.WorkspaceApiKey
-//	@Router		/auth/api/v1/key/{id} [get]
+//	@Summary		Get Workspace Key Details
+//	@Description	Gets the details of a key in a workspace with specified ID.
+//	@Tags			auth
+//	@Produce		json
+//	@Param			id	path		string	true	"ID"
+//	@Success		200	{object}	api.WorkspaceApiKey
+//	@Router			/auth/api/v1/key/{id} [get]
 func (r *httpRoutes) GetAPIKey(ctx echo.Context) error {
 	idStr := ctx.Param("id")
 	id, err := strconv.ParseUint(idStr, 10, 64)
@@ -808,13 +808,13 @@ func (r *httpRoutes) GetAPIKey(ctx echo.Context) error {
 
 // SuspendAPIKey godoc
 //
-//		@Summary	Suspend Workspace Key
-//	 @Description Suspends a key in the workspace with specified ID.
-//		@Tags		auth
-//		@Produce	json
-//		@Param		id	path		string	true	"ID"
-//		@Success	200	{object}	api.WorkspaceApiKey
-//		@Router		/auth/api/v1/key/{id}/suspend [post]
+//	@Summary		Suspend Workspace Key
+//	@Description	Suspends a key in the workspace with specified ID.
+//	@Tags			auth
+//	@Produce		json
+//	@Param			id	path		string	true	"ID"
+//	@Success		200	{object}	api.WorkspaceApiKey
+//	@Router			/auth/api/v1/key/{id}/suspend [post]
 func (r *httpRoutes) SuspendAPIKey(ctx echo.Context) error {
 	workspaceID := httpserver.GetWorkspaceID(ctx)
 
@@ -851,13 +851,13 @@ func (r *httpRoutes) SuspendAPIKey(ctx echo.Context) error {
 
 // ActivateAPIKey godoc
 //
-//		@Summary	Activate Workspace Key
-//	 @Description Activates a key in the workspace with specified ID.
-//		@Tags		auth
-//		@Produce	json
-//		@Param		id	path		string	true	"ID"
-//		@Success	200	{object}	api.WorkspaceApiKey
-//		@Router		/auth/api/v1/key/{id}/activate [post]
+//	@Summary		Activate Workspace Key
+//	@Description	Activates a key in the workspace with specified ID.
+//	@Tags			auth
+//	@Produce		json
+//	@Param			id	path		string	true	"ID"
+//	@Success		200	{object}	api.WorkspaceApiKey
+//	@Router			/auth/api/v1/key/{id}/activate [post]
 func (r *httpRoutes) ActivateAPIKey(ctx echo.Context) error {
 	workspaceID := httpserver.GetWorkspaceID(ctx)
 
@@ -894,13 +894,13 @@ func (r *httpRoutes) ActivateAPIKey(ctx echo.Context) error {
 
 // GetRoleUsers godoc
 //
-//	@Summary	Lists Role Users
-//	@Description Returns a list of users in a workspace with the specified role.
-//	@Tags		auth
-//	@Produce	json
-//	@Param		role	path		string	true	"role"
-//	@Success	200		{object}	api.GetRoleUsersResponse
-//	@Router		/auth/api/v1/role/{role}/users [get]
+//	@Summary		Lists Role Users
+//	@Description	Returns a list of users in a workspace with the specified role.
+//	@Tags			auth
+//	@Produce		json
+//	@Param			role	path		string	true	"role"
+//	@Success		200		{object}	api.GetRoleUsersResponse
+//	@Router			/auth/api/v1/role/{role}/users [get]
 func (r *httpRoutes) GetRoleUsers(ctx echo.Context) error {
 	workspaceID := httpserver.GetWorkspaceID(ctx)
 	role := api.Role(ctx.Param("role"))
@@ -939,13 +939,13 @@ func (r *httpRoutes) GetRoleUsers(ctx echo.Context) error {
 
 // GetRoleKeys godoc
 //
-//	@Summary	Get Role Keys
-//	@Description Returns a list of keys in a workspace for the specified role.
-//	@Tags		auth
-//	@Produce	json
-//	@Param		request	body		api.Role	true	"Request Body"
-//	@Success	200		{object}	[]api.WorkspaceApiKey
-//	@Router		/auth/api/v1/role/:role/keys [get]
+//	@Summary		Get Role Keys
+//	@Description	Returns a list of keys in a workspace for the specified role.
+//	@Tags			auth
+//	@Produce		json
+//	@Param			request	body		api.Role	true	"Request Body"
+//	@Success		200		{object}	[]api.WorkspaceApiKey
+//	@Router			/auth/api/v1/role/:role/keys [get]
 func (r *httpRoutes) GetRoleKeys(ctx echo.Context) error {
 	role := api.Role(ctx.Param("role"))
 	workspaceID := httpserver.GetWorkspaceID(ctx)
@@ -973,13 +973,13 @@ func (r *httpRoutes) GetRoleKeys(ctx echo.Context) error {
 
 // UpdateKeyRole godoc
 //
-//	@Summary	Update Workspace Key Role
-//	@Description Updates the role of the specified key in workspace.
-//	@Tags		auth
-//	@Produce	json
-//	@Param		request	body		api.UpdateKeyRoleRequest	true	"Request Body"
-//	@Success	200		{object}	api.WorkspaceApiKey
-//	@Router		/auth/api/v1/key/role [post]
+//	@Summary		Update Workspace Key Role
+//	@Description	Updates the role of the specified key in workspace.
+//	@Tags			auth
+//	@Produce		json
+//	@Param			request	body		api.UpdateKeyRoleRequest	true	"Request Body"
+//	@Success		200		{object}	api.WorkspaceApiKey
+//	@Router			/auth/api/v1/key/role [post]
 func (r *httpRoutes) UpdateKeyRole(ctx echo.Context) error {
 	workspaceID := httpserver.GetWorkspaceID(ctx)
 

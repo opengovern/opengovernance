@@ -12,13 +12,14 @@
     "paths": {
         "/auth/api/v1/key/create": {
             "post": {
+                "description": "Creates workspace key for the defined role with the defined name.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "auth"
                 ],
-                "summary": "Creates an API Key",
+                "summary": "Creates Workspace Key",
                 "parameters": [
                     {
                         "description": "Request Body",
@@ -42,13 +43,14 @@
         },
         "/auth/api/v1/key/role": {
             "post": {
+                "description": "Updates the role of the specified key in workspace.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "auth"
                 ],
-                "summary": "Fetches an API Key",
+                "summary": "Update Workspace Key Role",
                 "parameters": [
                     {
                         "description": "Request Body",
@@ -72,13 +74,14 @@
         },
         "/auth/api/v1/key/{id}": {
             "get": {
+                "description": "Gets the details of a key in a workspace with specified ID.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "auth"
                 ],
-                "summary": "Fetches an API Key",
+                "summary": "Get Workspace Key Details",
                 "parameters": [
                     {
                         "type": "string",
@@ -100,13 +103,14 @@
         },
         "/auth/api/v1/key/{id}/activate": {
             "post": {
+                "description": "Activates a key in the workspace with specified ID.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "auth"
                 ],
-                "summary": "Suspend an API Key",
+                "summary": "Activate Workspace Key",
                 "parameters": [
                     {
                         "type": "string",
@@ -128,13 +132,14 @@
         },
         "/auth/api/v1/key/{id}/delete": {
             "delete": {
+                "description": "Deletes the specified workspace key by ID.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "auth"
                 ],
-                "summary": "Deletes an API Key",
+                "summary": "Deletes Workspace Key",
                 "parameters": [
                     {
                         "type": "string",
@@ -153,13 +158,14 @@
         },
         "/auth/api/v1/key/{id}/suspend": {
             "post": {
+                "description": "Suspends a key in the workspace with specified ID.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "auth"
                 ],
-                "summary": "Suspend an API Key",
+                "summary": "Suspend Workspace Key",
                 "parameters": [
                     {
                         "type": "string",
@@ -181,13 +187,14 @@
         },
         "/auth/api/v1/keys": {
             "get": {
+                "description": "Gets a list of available keys in a workspace.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "auth"
                 ],
-                "summary": "Lists all API Keys",
+                "summary": "Get Workspace Keys",
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -203,13 +210,14 @@
         },
         "/auth/api/v1/role/:role/keys": {
             "get": {
+                "description": "Returns a list of keys in a workspace for the specified role.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "auth"
                 ],
-                "summary": "Lists all API Keys",
+                "summary": "Get Role Keys",
                 "parameters": [
                     {
                         "description": "Request Body",
@@ -236,13 +244,14 @@
         },
         "/auth/api/v1/role/{role}/users": {
             "get": {
+                "description": "Returns a list of users in a workspace with the specified role.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "auth"
                 ],
-                "summary": "Lists users with a role",
+                "summary": "Lists Role Users",
                 "parameters": [
                     {
                         "type": "string",
@@ -267,13 +276,14 @@
         },
         "/auth/api/v1/roles": {
             "get": {
+                "description": "Gets a list of roles in a workspace and their descriptions and number of users.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "auth"
                 ],
-                "summary": "show lists of roles.",
+                "summary": "Get Roles",
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -289,13 +299,14 @@
         },
         "/auth/api/v1/roles/{role}": {
             "get": {
+                "description": "Gets the details of the Role, including the description, number of users and list of those users.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "auth"
                 ],
-                "summary": "show the description roles and members that use from each role",
+                "summary": "Get Role Details",
                 "parameters": [
                     {
                         "type": "string",
@@ -317,14 +328,14 @@
         },
         "/auth/api/v1/user/invite": {
             "post": {
-                "description": "Invites a user to a workspace with defined role\nby sending an email to the specified email address.\nThe user will be found by the email address.",
+                "description": "Invites a user to a workspace with defined role.\nby sending an email to the specified email address.\nThe user will be found by the email address.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "auth"
                 ],
-                "summary": "Invites a user",
+                "summary": "Invite User",
                 "parameters": [
                     {
                         "description": "Request Body",
@@ -343,13 +354,14 @@
                 }
             },
             "delete": {
+                "description": "Deletes user access to the specified workspace.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "auth"
                 ],
-                "summary": "Deletes an Invitation",
+                "summary": "Delete Invitation",
                 "parameters": [
                     {
                         "type": "string",
@@ -368,14 +380,14 @@
         },
         "/auth/api/v1/user/role/binding": {
             "put": {
-                "description": "RoleBinding defines the roles and actions a user can perform.\nThere are currently three roles (ADMIN, EDITOR, VIEWER).\nUser must exist before you can update its RoleBinding.\nIf you want to add a role binding for a user given the email address, call invite first to get a user id. Then call this endpoint.",
+                "description": "User Access defines the roles of a user.\nThere are currently three roles (ADMIN, EDITOR, VIEWER).\nUser must exist before you can update its Role.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "auth"
                 ],
-                "summary": "Update RoleBinding for a user.",
+                "summary": "Update User Access",
                 "parameters": [
                     {
                         "description": "Request Body",
@@ -394,13 +406,14 @@
                 }
             },
             "delete": {
+                "description": "Deletes user access to the specified workspace.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "auth"
                 ],
-                "summary": "Delete RoleBinding for the defined user in the defined workspace.",
+                "summary": "Delete User Access",
                 "parameters": [
                     {
                         "type": "string",
@@ -419,14 +432,14 @@
         },
         "/auth/api/v1/user/role/bindings": {
             "get": {
-                "description": "RoleBinding defines the roles and actions a user can perform. There are currently three roles (ADMIN, EDITOR, VIEWER).",
+                "description": "Gets the roles binded to a user.\nRoleBinding defines the roles and actions a user can perform. There are currently three roles (ADMIN, EDITOR, VIEWER).",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "auth"
                 ],
-                "summary": "Get RoleBindings for the calling user",
+                "summary": "Get RoleBindings",
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -439,14 +452,14 @@
         },
         "/auth/api/v1/user/{user_id}": {
             "get": {
-                "description": "Get user details by user id",
+                "description": "Get user details by user id.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "auth"
                 ],
-                "summary": "User details",
+                "summary": "Get User details",
                 "parameters": [
                     {
                         "type": "string",
@@ -468,14 +481,14 @@
         },
         "/auth/api/v1/user/{user_id}/workspace/membership": {
             "get": {
-                "description": "Returns a list of workspaces and the user role in it for the specified user",
+                "description": "Returns a list of workspaces and the user role in it for the specified user.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "auth"
                 ],
-                "summary": "List of workspaces which the user is member of",
+                "summary": "User Workspaces",
                 "parameters": [
                     {
                         "type": "string",
@@ -497,14 +510,14 @@
         },
         "/auth/api/v1/users": {
             "get": {
-                "description": "List of users with specified filters",
+                "description": "Gets a list of users with specified filters.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "auth"
                 ],
-                "summary": "Search users",
+                "summary": "Get Users",
                 "parameters": [
                     {
                         "description": "Request Body",
@@ -1284,6 +1297,7 @@
                         "items": {
                             "type": "string"
                         },
+                        "collectionFormat": "csv",
                         "description": "SourceID",
                         "name": "sourceId",
                         "in": "query"
@@ -1861,6 +1875,7 @@
                         "items": {
                             "type": "string"
                         },
+                        "collectionFormat": "csv",
                         "description": "SourceID",
                         "name": "sourceId",
                         "in": "query",
@@ -1976,6 +1991,7 @@
                         "items": {
                             "type": "string"
                         },
+                        "collectionFormat": "csv",
                         "description": "SourceId",
                         "name": "sourceId",
                         "in": "query"
@@ -2132,6 +2148,7 @@
                         "items": {
                             "type": "string"
                         },
+                        "collectionFormat": "csv",
                         "description": "SourceId",
                         "name": "sourceId",
                         "in": "query"
@@ -2268,6 +2285,7 @@
                         "items": {
                             "type": "string"
                         },
+                        "collectionFormat": "csv",
                         "description": "SourceID",
                         "name": "sourceId",
                         "in": "query",
@@ -2319,6 +2337,7 @@
                         "items": {
                             "type": "string"
                         },
+                        "collectionFormat": "csv",
                         "description": "SourceID",
                         "name": "sourceId",
                         "in": "query"
@@ -2450,6 +2469,7 @@
                         "items": {
                             "type": "string"
                         },
+                        "collectionFormat": "csv",
                         "description": "SourceID",
                         "name": "sourceId",
                         "in": "query"
@@ -2527,6 +2547,7 @@
                         "items": {
                             "type": "string"
                         },
+                        "collectionFormat": "csv",
                         "description": "SourceID",
                         "name": "sourceId",
                         "in": "query"
@@ -2588,6 +2609,7 @@
                         "items": {
                             "type": "string"
                         },
+                        "collectionFormat": "csv",
                         "description": "filter the result by source id",
                         "name": "sourceId",
                         "in": "query"
@@ -2626,6 +2648,7 @@
                         "items": {
                             "type": "string"
                         },
+                        "collectionFormat": "csv",
                         "description": "filter the result by source id",
                         "name": "sourceId",
                         "in": "query"
@@ -2663,6 +2686,7 @@
                         "items": {
                             "type": "string"
                         },
+                        "collectionFormat": "csv",
                         "description": "filter the result by source id",
                         "name": "sourceId",
                         "in": "query"
@@ -2945,6 +2969,7 @@
                         "items": {
                             "type": "string"
                         },
+                        "collectionFormat": "csv",
                         "description": "SourceID",
                         "name": "sourceId",
                         "in": "query"
@@ -3009,6 +3034,7 @@
                         "items": {
                             "type": "string"
                         },
+                        "collectionFormat": "csv",
                         "description": "SourceID",
                         "name": "sourceId",
                         "in": "query"
@@ -3087,6 +3113,7 @@
                         "items": {
                             "type": "string"
                         },
+                        "collectionFormat": "csv",
                         "description": "SourceID",
                         "name": "sourceId",
                         "in": "query"
@@ -3151,6 +3178,7 @@
                         "items": {
                             "type": "string"
                         },
+                        "collectionFormat": "csv",
                         "description": "SourceID",
                         "name": "sourceId",
                         "in": "query"
@@ -3273,6 +3301,7 @@
                         "items": {
                             "type": "string"
                         },
+                        "collectionFormat": "csv",
                         "description": "SourceID",
                         "name": "sourceId",
                         "in": "query"
@@ -3350,6 +3379,7 @@
                         "items": {
                             "type": "string"
                         },
+                        "collectionFormat": "csv",
                         "description": "SourceID",
                         "name": "sourceId",
                         "in": "query"
@@ -3401,6 +3431,7 @@
                         "items": {
                             "type": "string"
                         },
+                        "collectionFormat": "csv",
                         "description": "SourceID",
                         "name": "sourceId",
                         "in": "query"
@@ -3449,6 +3480,7 @@
                         "items": {
                             "type": "string"
                         },
+                        "collectionFormat": "csv",
                         "description": "SourceID",
                         "name": "sourceId",
                         "in": "query"
@@ -3573,6 +3605,7 @@
                         "items": {
                             "type": "string"
                         },
+                        "collectionFormat": "csv",
                         "description": "SourceID",
                         "name": "sourceId",
                         "in": "query"
@@ -3582,6 +3615,7 @@
                         "items": {
                             "type": "string"
                         },
+                        "collectionFormat": "csv",
                         "description": "serviceName",
                         "name": "serviceName",
                         "in": "query"
@@ -3644,6 +3678,7 @@
                         "items": {
                             "type": "string"
                         },
+                        "collectionFormat": "csv",
                         "description": "SourceID",
                         "name": "sourceId",
                         "in": "query"
@@ -3677,6 +3712,7 @@
                         "items": {
                             "type": "string"
                         },
+                        "collectionFormat": "csv",
                         "description": "filter: SourceIDs",
                         "name": "sourceId",
                         "in": "query"
@@ -3763,6 +3799,7 @@
                         "items": {
                             "type": "string"
                         },
+                        "collectionFormat": "csv",
                         "description": "filter: SourceIDs",
                         "name": "sourceId",
                         "in": "query"

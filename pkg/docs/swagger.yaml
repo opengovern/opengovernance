@@ -2665,6 +2665,7 @@ info:
 paths:
   /auth/api/v1/key/{id}:
     get:
+      description: Gets the details of a key in a workspace with specified ID.
       parameters:
       - description: ID
         in: path
@@ -2678,11 +2679,12 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.WorkspaceApiKey'
-      summary: Fetches an API Key
+      summary: Get Workspace Key Details
       tags:
       - auth
   /auth/api/v1/key/{id}/activate:
     post:
+      description: Activates a key in the workspace with specified ID.
       parameters:
       - description: ID
         in: path
@@ -2696,11 +2698,12 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.WorkspaceApiKey'
-      summary: Suspend an API Key
+      summary: Activate Workspace Key
       tags:
       - auth
   /auth/api/v1/key/{id}/delete:
     delete:
+      description: Deletes the specified workspace key by ID.
       parameters:
       - description: ID
         in: path
@@ -2712,11 +2715,12 @@ paths:
       responses:
         "200":
           description: OK
-      summary: Deletes an API Key
+      summary: Deletes Workspace Key
       tags:
       - auth
   /auth/api/v1/key/{id}/suspend:
     post:
+      description: Suspends a key in the workspace with specified ID.
       parameters:
       - description: ID
         in: path
@@ -2730,11 +2734,12 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.WorkspaceApiKey'
-      summary: Suspend an API Key
+      summary: Suspend Workspace Key
       tags:
       - auth
   /auth/api/v1/key/create:
     post:
+      description: Creates workspace key for the defined role with the defined name.
       parameters:
       - description: Request Body
         in: body
@@ -2749,11 +2754,12 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.CreateAPIKeyResponse'
-      summary: Creates an API Key
+      summary: Creates Workspace Key
       tags:
       - auth
   /auth/api/v1/key/role:
     post:
+      description: Updates the role of the specified key in workspace.
       parameters:
       - description: Request Body
         in: body
@@ -2768,11 +2774,12 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.WorkspaceApiKey'
-      summary: Fetches an API Key
+      summary: Update Workspace Key Role
       tags:
       - auth
   /auth/api/v1/keys:
     get:
+      description: Gets a list of available keys in a workspace.
       produces:
       - application/json
       responses:
@@ -2782,11 +2789,12 @@ paths:
             items:
               $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.WorkspaceApiKey'
             type: array
-      summary: Lists all API Keys
+      summary: Get Workspace Keys
       tags:
       - auth
   /auth/api/v1/role/:role/keys:
     get:
+      description: Returns a list of keys in a workspace for the specified role.
       parameters:
       - description: Request Body
         in: body
@@ -2803,11 +2811,12 @@ paths:
             items:
               $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.WorkspaceApiKey'
             type: array
-      summary: Lists all API Keys
+      summary: Get Role Keys
       tags:
       - auth
   /auth/api/v1/role/{role}/users:
     get:
+      description: Returns a list of users in a workspace with the specified role.
       parameters:
       - description: role
         in: path
@@ -2823,11 +2832,13 @@ paths:
             items:
               $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.RoleUser'
             type: array
-      summary: Lists users with a role
+      summary: Lists Role Users
       tags:
       - auth
   /auth/api/v1/roles:
     get:
+      description: Gets a list of roles in a workspace and their descriptions and
+        number of users.
       produces:
       - application/json
       responses:
@@ -2837,11 +2848,13 @@ paths:
             items:
               $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.RolesListResponse'
             type: array
-      summary: show lists of roles.
+      summary: Get Roles
       tags:
       - auth
   /auth/api/v1/roles/{role}:
     get:
+      description: Gets the details of the Role, including the description, number
+        of users and list of those users.
       parameters:
       - description: role
         in: path
@@ -2855,12 +2868,12 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.RoleDetailsResponse'
-      summary: show the description roles and members that use from each role
+      summary: Get Role Details
       tags:
       - auth
   /auth/api/v1/user/{user_id}:
     get:
-      description: Get user details by user id
+      description: Get user details by user id.
       parameters:
       - description: userId
         in: path
@@ -2874,13 +2887,13 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.GetUserResponse'
-      summary: User details
+      summary: Get User details
       tags:
       - auth
   /auth/api/v1/user/{user_id}/workspace/membership:
     get:
       description: Returns a list of workspaces and the user role in it for the specified
-        user
+        user.
       parameters:
       - description: userId
         in: path
@@ -2894,11 +2907,12 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.GetRoleBindingsResponse'
-      summary: List of workspaces which the user is member of
+      summary: User Workspaces
       tags:
       - auth
   /auth/api/v1/user/invite:
     delete:
+      description: Deletes user access to the specified workspace.
       parameters:
       - description: userId
         in: query
@@ -2910,12 +2924,12 @@ paths:
       responses:
         "200":
           description: OK
-      summary: Deletes an Invitation
+      summary: Delete Invitation
       tags:
       - auth
     post:
       description: |-
-        Invites a user to a workspace with defined role
+        Invites a user to a workspace with defined role.
         by sending an email to the specified email address.
         The user will be found by the email address.
       parameters:
@@ -2930,11 +2944,12 @@ paths:
       responses:
         "200":
           description: OK
-      summary: Invites a user
+      summary: Invite User
       tags:
       - auth
   /auth/api/v1/user/role/binding:
     delete:
+      description: Deletes user access to the specified workspace.
       parameters:
       - description: userId
         in: query
@@ -2946,15 +2961,14 @@ paths:
       responses:
         "200":
           description: OK
-      summary: Delete RoleBinding for the defined user in the defined workspace.
+      summary: Delete User Access
       tags:
       - auth
     put:
       description: |-
-        RoleBinding defines the roles and actions a user can perform.
+        User Access defines the roles of a user.
         There are currently three roles (ADMIN, EDITOR, VIEWER).
-        User must exist before you can update its RoleBinding.
-        If you want to add a role binding for a user given the email address, call invite first to get a user id. Then call this endpoint.
+        User must exist before you can update its Role.
       parameters:
       - description: Request Body
         in: body
@@ -2967,13 +2981,14 @@ paths:
       responses:
         "200":
           description: OK
-      summary: Update RoleBinding for a user.
+      summary: Update User Access
       tags:
       - auth
   /auth/api/v1/user/role/bindings:
     get:
-      description: RoleBinding defines the roles and actions a user can perform. There
-        are currently three roles (ADMIN, EDITOR, VIEWER).
+      description: |-
+        Gets the roles binded to a user.
+        RoleBinding defines the roles and actions a user can perform. There are currently three roles (ADMIN, EDITOR, VIEWER).
       produces:
       - application/json
       responses:
@@ -2981,12 +2996,12 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.GetRoleBindingsResponse'
-      summary: Get RoleBindings for the calling user
+      summary: Get RoleBindings
       tags:
       - auth
   /auth/api/v1/users:
     get:
-      description: List of users with specified filters
+      description: Gets a list of users with specified filters.
       parameters:
       - description: Request Body
         in: body
@@ -3003,7 +3018,7 @@ paths:
             items:
               $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.GetUserResponse'
             type: array
-      summary: Search users
+      summary: Get Users
       tags:
       - auth
   /auth/api/v1/workspace/role/bindings:
@@ -3497,7 +3512,8 @@ paths:
         name: provider
         required: true
         type: string
-      - description: SourceID
+      - collectionFormat: csv
+        description: SourceID
         in: query
         items:
           type: string
@@ -3896,7 +3912,8 @@ paths:
       consumes:
       - application/json
       parameters:
-      - description: SourceID
+      - collectionFormat: csv
+        description: SourceID
         in: query
         items:
           type: string
@@ -3975,7 +3992,8 @@ paths:
         in: query
         name: provider
         type: string
-      - description: SourceId
+      - collectionFormat: csv
+        description: SourceId
         in: query
         items:
           type: string
@@ -4080,7 +4098,8 @@ paths:
         in: query
         name: provider
         type: string
-      - description: SourceId
+      - collectionFormat: csv
+        description: SourceId
         in: query
         items:
           type: string
@@ -4172,7 +4191,8 @@ paths:
       consumes:
       - application/json
       parameters:
-      - description: SourceID
+      - collectionFormat: csv
+        description: SourceID
         in: query
         items:
           type: string
@@ -4206,7 +4226,8 @@ paths:
         name: provider
         required: true
         type: string
-      - description: SourceID
+      - collectionFormat: csv
+        description: SourceID
         in: query
         items:
           type: string
@@ -4293,7 +4314,8 @@ paths:
         in: query
         name: provider
         type: string
-      - description: SourceID
+      - collectionFormat: csv
+        description: SourceID
         in: query
         items:
           type: string
@@ -4346,7 +4368,8 @@ paths:
         in: query
         name: provider
         type: string
-      - description: SourceID
+      - collectionFormat: csv
+        description: SourceID
         in: query
         items:
           type: string
@@ -4388,7 +4411,8 @@ paths:
         in: query
         name: connector
         type: string
-      - description: filter the result by source id
+      - collectionFormat: csv
+        description: filter the result by source id
         in: query
         items:
           type: string
@@ -4413,7 +4437,8 @@ paths:
     get:
       description: Get an insight by id
       parameters:
-      - description: filter the result by source id
+      - collectionFormat: csv
+        description: filter the result by source id
         in: query
         items:
           type: string
@@ -4469,7 +4494,8 @@ paths:
     get:
       description: Get an insight by id
       parameters:
-      - description: filter the result by source id
+      - collectionFormat: csv
+        description: filter the result by source id
         in: query
         items:
           type: string
@@ -4625,7 +4651,8 @@ paths:
         in: query
         name: provider
         type: string
-      - description: SourceID
+      - collectionFormat: csv
+        description: SourceID
         in: query
         items:
           type: string
@@ -4668,7 +4695,8 @@ paths:
         in: query
         name: provider
         type: string
-      - description: SourceID
+      - collectionFormat: csv
+        description: SourceID
         in: query
         items:
           type: string
@@ -4722,7 +4750,8 @@ paths:
         in: query
         name: provider
         type: string
-      - description: SourceID
+      - collectionFormat: csv
+        description: SourceID
         in: query
         items:
           type: string
@@ -4766,7 +4795,8 @@ paths:
         in: query
         name: provider
         type: string
-      - description: SourceID
+      - collectionFormat: csv
+        description: SourceID
         in: query
         items:
           type: string
@@ -4851,7 +4881,8 @@ paths:
         in: query
         name: provider
         type: string
-      - description: SourceID
+      - collectionFormat: csv
+        description: SourceID
         in: query
         items:
           type: string
@@ -4907,7 +4938,8 @@ paths:
         in: query
         name: provider
         type: string
-      - description: SourceID
+      - collectionFormat: csv
+        description: SourceID
         in: query
         items:
           type: string
@@ -4942,7 +4974,8 @@ paths:
         in: query
         name: provider
         type: string
-      - description: SourceID
+      - collectionFormat: csv
+        description: SourceID
         in: query
         items:
           type: string
@@ -4974,7 +5007,8 @@ paths:
         in: query
         name: provider
         type: string
-      - description: SourceID
+      - collectionFormat: csv
+        description: SourceID
         in: query
         items:
           type: string
@@ -5058,13 +5092,15 @@ paths:
         in: query
         name: connector
         type: string
-      - description: SourceID
+      - collectionFormat: csv
+        description: SourceID
         in: query
         items:
           type: string
         name: sourceId
         type: array
-      - description: serviceName
+      - collectionFormat: csv
+        description: serviceName
         in: query
         items:
           type: string
@@ -5105,7 +5141,8 @@ paths:
         in: query
         name: connector
         type: string
-      - description: SourceID
+      - collectionFormat: csv
+        description: SourceID
         in: query
         items:
           type: string
@@ -5126,7 +5163,8 @@ paths:
       consumes:
       - application/json
       parameters:
-      - description: 'filter: SourceIDs'
+      - collectionFormat: csv
+        description: 'filter: SourceIDs'
         in: query
         items:
           type: string
@@ -5186,7 +5224,8 @@ paths:
     get:
       description: Get Service Summary
       parameters:
-      - description: 'filter: SourceIDs'
+      - collectionFormat: csv
+        description: 'filter: SourceIDs'
         in: query
         items:
           type: string
