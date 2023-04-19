@@ -394,7 +394,7 @@ func (r *httpRoutes) GetWorkspaceRoleBindings(ctx echo.Context) error {
 // GetUsers godoc
 //
 //	@Summary		Get Users
-//	@Description	Gets a list of users with specified filters.
+//	@Description	Gets a list of users with specified filters (filters are optional).
 //	@Tags			auth
 //	@Produce		json
 //	@Param			request	body		api.GetUsersRequest	true	"Request Body"

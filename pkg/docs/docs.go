@@ -516,7 +516,7 @@ const docTemplate = `{
         },
         "/auth/api/v1/users": {
             "get": {
-                "description": "Gets a list of users with specified filters.",
+                "description": "Gets a list of users with specified filters (filters are optional).",
                 "produces": [
                     "application/json"
                 ],
@@ -2762,14 +2762,14 @@ const docTemplate = `{
         },
         "/inventory/api/v2/metadata/connectors": {
             "get": {
-                "description": "Get all connectors",
+                "description": "Gets a list of all connectors in workspace and their metadata including list of their resource types and services names.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "metadata"
                 ],
-                "summary": "Get all connectors",
+                "summary": "Get List of Connectors",
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -2785,14 +2785,23 @@ const docTemplate = `{
         },
         "/inventory/api/v2/metadata/connectors/{connector}": {
             "get": {
-                "description": "Get a single connector",
+                "description": "Gets a single connector and its metadata including list of their resource types and services names by the connector name.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "metadata"
                 ],
-                "summary": "Get a single connector",
+                "summary": "Get Connector",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "connector",
+                        "name": "connector",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -2805,14 +2814,14 @@ const docTemplate = `{
         },
         "/inventory/api/v2/metadata/resourcetype": {
             "get": {
-                "description": "Get all resource types",
+                "description": "Gets a list of all resource types in workspace and their metadata including service name.\nThe results could be filtered by provider name and service name.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "metadata"
                 ],
-                "summary": "Get all resource types",
+                "summary": "Get List of Resource Types",
                 "parameters": [
                     {
                         "enum": [
@@ -2821,7 +2830,7 @@ const docTemplate = `{
                             "Azure"
                         ],
                         "type": "string",
-                        "description": "Connector",
+                        "description": "Filter by Connector",
                         "name": "connector",
                         "in": "query",
                         "required": true
@@ -2848,14 +2857,23 @@ const docTemplate = `{
         },
         "/inventory/api/v2/metadata/resourcetype/{resourceType}": {
             "get": {
-                "description": "Get all resource types",
+                "description": "Get a single resource type metadata and its details including service name and insights list. Specified by resource type name.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "metadata"
                 ],
-                "summary": "Get all resource types",
+                "summary": "Get Resource Type",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "resourceType",
+                        "name": "resourceType",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -2871,14 +2889,14 @@ const docTemplate = `{
         },
         "/inventory/api/v2/metadata/services": {
             "get": {
-                "description": "Get all services",
+                "description": "Gets a list of all workspace cloud services and their metadata inclouding parent service, list of resource types and cost support.\nThe results could be filtered by cost support and resource type.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "metadata"
                 ],
-                "summary": "Get all services",
+                "summary": "Get List of Cloud Services",
                 "parameters": [
                     {
                         "enum": [
@@ -2920,14 +2938,23 @@ const docTemplate = `{
         },
         "/inventory/api/v2/metadata/services/{serviceName}": {
             "get": {
-                "description": "Get a single service",
+                "description": "Gets a single cloud service details and its metadata inclouding parent service, list of resource types, cost support and costmap service names.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "metadata"
                 ],
-                "summary": "Get a single service",
+                "summary": "Get Cloud Service Details",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "serviceName",
+                        "name": "serviceName",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -7690,18 +7717,26 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "connector": {
-                    "$ref": "#/definitions/source.Type"
+                    "description": "Connector",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/source.Type"
+                        }
+                    ]
                 },
                 "connector_label": {
+                    "description": "Connector Lable",
                     "type": "string"
                 },
                 "resource_types": {
+                    "description": "List of resource types",
                     "type": "array",
                     "items": {
                         "type": "string"
                     }
                 },
                 "services": {
+                    "description": "List of cloud services",
                     "type": "array",
                     "items": {
                         "type": "string"
@@ -8536,30 +8571,41 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "compliance": {
+                    "description": "List of Compliances that support this Resource Type",
                     "type": "array",
                     "items": {
                         "type": "string"
                     }
                 },
                 "connector": {
-                    "$ref": "#/definitions/source.Type"
+                    "description": "Resource type connector",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/source.Type"
+                        }
+                    ]
                 },
                 "discovery_enabled": {
+                    "description": "Discovery support enabled",
                     "type": "boolean"
                 },
                 "insights": {
+                    "description": "List of Insights that support this Resource Type",
                     "type": "array",
                     "items": {
                         "type": "integer"
                     }
                 },
                 "resource_type_label": {
+                    "description": "Resource type lable",
                     "type": "string"
                 },
                 "resource_type_name": {
+                    "description": "Resource type name",
                     "type": "string"
                 },
                 "service_name": {
+                    "description": "Platform Patern Service name",
                     "type": "string"
                 }
             }
@@ -8630,30 +8676,41 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "connector": {
-                    "$ref": "#/definitions/source.Type"
+                    "description": "Service Connector",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/source.Type"
+                        }
+                    ]
                 },
                 "cost_map_service_names": {
+                    "description": "List of Cost map service names",
                     "type": "array",
                     "items": {
                         "type": "string"
                     }
                 },
                 "cost_support": {
+                    "description": "Cost is supported [yes/no]",
                     "type": "boolean"
                 },
                 "parent_service": {
+                    "description": "Parent service",
                     "type": "string"
                 },
                 "resource_types": {
+                    "description": "List of resource types",
                     "type": "array",
                     "items": {
                         "type": "string"
                     }
                 },
                 "service_label": {
+                    "description": "Service Lable",
                     "type": "string"
                 },
                 "service_name": {
+                    "description": "Service Name",
                     "type": "string"
                 }
             }

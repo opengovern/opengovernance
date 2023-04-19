@@ -4488,8 +4488,8 @@ func (h *HttpHandler) GetInsightTrend(ctx echo.Context) error {
 
 // ListConnectorMetadata godoc
 //
-//	@Summary		Get all connectors
-//	@Description	Get all connectors
+//	@Summary		Get List of Connectors
+//	@Description	Gets a list of all connectors in workspace and their metadata including list of their resource types and services names.
 //	@Tags			metadata
 //	@Produce		json
 //	@Success		200	{object}	[]api.ConnectorMetadata
@@ -4531,11 +4531,12 @@ func (h *HttpHandler) ListConnectorMetadata(ctx echo.Context) error {
 
 // GetConnectorMetadata godoc
 //
-//	@Summary		Get a single connector
-//	@Description	Get a single connector
+//	@Summary		Get Connector
+//	@Description	Gets a single connector and its metadata including list of their resource types and services names by the connector name.
 //	@Tags			metadata
 //	@Produce		json
-//	@Success		200	{object}	api.ConnectorMetadata
+//	@Param			connector	path		string	true	"connector"
+//	@Success		200			{object}	api.ConnectorMetadata
 //	@Router			/inventory/api/v2/metadata/connectors/{connector} [get]
 func (h *HttpHandler) GetConnectorMetadata(ctx echo.Context) error {
 	connector, err := source.ParseType(ctx.Param("connector"))
@@ -4575,8 +4576,9 @@ func (h *HttpHandler) GetConnectorMetadata(ctx echo.Context) error {
 
 // ListServiceMetadata godoc
 //
-//	@Summary		Get all services
-//	@Description	Get all services
+//	@Summary		Get List of Cloud Services
+//	@Description	Gets a list of all workspace cloud services and their metadata inclouding parent service, list of resource types and cost support.
+//	@Description	The results could be filtered by cost support and resource type.
 //	@Tags			metadata
 //	@Produce		json
 //	@Param			connector		query		source.Type	true	"Connector"
@@ -4648,12 +4650,12 @@ func (h *HttpHandler) ListServiceMetadata(ctx echo.Context) error {
 
 // GetServiceMetadata godoc
 //
-//	@Summary		Get a single service
-//	@Description	Get a single service
+//	@Summary		Get Cloud Service Details
+//	@Description	Gets a single cloud service details and its metadata inclouding parent service, list of resource types, cost support and costmap service names.
 //	@Tags			metadata
 //	@Produce		json
-//
-//	@Success		200	{object}	api.ServiceMetadata
+//	@Param			serviceName	path		string	true	"serviceName"
+//	@Success		200			{object}	api.ServiceMetadata
 //	@Router			/inventory/api/v2/metadata/services/{serviceName} [get]
 func (h *HttpHandler) GetServiceMetadata(ctx echo.Context) error {
 	serviceName := ctx.Param("serviceName")
@@ -4696,13 +4698,13 @@ func (h *HttpHandler) GetServiceMetadata(ctx echo.Context) error {
 
 // ListResourceTypeMetadata godoc
 //
-//	@Summary		Get all resource types
-//	@Description	Get all resource types
+//	@Summary		Get List of Resource Types
+//	@Description	Gets a list of all resource types in workspace and their metadata including service name.
+//	@Description	The results could be filtered by provider name and service name.
 //	@Tags			metadata
 //	@Produce		json
-//	@Param			connector	query		source.Type	true	"Connector"
+//	@Param			connector	query		source.Type	true	"Filter by Connector"
 //	@Param			service		query		string		false	"Filter by service name"
-//
 //	@Success		200			{object}	[]api.ResourceTypeMetadata
 //	@Router			/inventory/api/v2/metadata/resourcetype [get]
 func (h *HttpHandler) ListResourceTypeMetadata(ctx echo.Context) error {
@@ -4736,12 +4738,12 @@ func (h *HttpHandler) ListResourceTypeMetadata(ctx echo.Context) error {
 
 // GetResourceTypeMetadata godoc
 //
-//	@Summary		Get all resource types
-//	@Description	Get all resource types
+//	@Summary		Get Resource Type
+//	@Description	Get a single resource type metadata and its details including service name and insights list. Specified by resource type name.
 //	@Tags			metadata
 //	@Produce		json
-//
-//	@Success		200	{object}	[]api.ResourceTypeMetadata
+//	@Param			resourceType	path		string	true	"resourceType"
+//	@Success		200				{object}	[]api.ResourceTypeMetadata
 //	@Router			/inventory/api/v2/metadata/resourcetype/{resourceType} [get]
 func (h *HttpHandler) GetResourceTypeMetadata(ctx echo.Context) error {
 	resourceType := ctx.Param("resourceType")

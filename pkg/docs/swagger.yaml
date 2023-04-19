@@ -1222,14 +1222,19 @@ definitions:
   gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ConnectorMetadata:
     properties:
       connector:
-        $ref: '#/definitions/source.Type'
+        allOf:
+        - $ref: '#/definitions/source.Type'
+        description: Connector
       connector_label:
+        description: Connector Lable
         type: string
       resource_types:
+        description: List of resource types
         items:
           type: string
         type: array
       services:
+        description: List of cloud services
         items:
           type: string
         type: array
@@ -1815,22 +1820,30 @@ definitions:
   gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ResourceTypeMetadata:
     properties:
       compliance:
+        description: List of Compliances that support this Resource Type
         items:
           type: string
         type: array
       connector:
-        $ref: '#/definitions/source.Type'
+        allOf:
+        - $ref: '#/definitions/source.Type'
+        description: Resource type connector
       discovery_enabled:
+        description: Discovery support enabled
         type: boolean
       insights:
+        description: List of Insights that support this Resource Type
         items:
           type: integer
         type: array
       resource_type_label:
+        description: Resource type lable
         type: string
       resource_type_name:
+        description: Resource type name
         type: string
       service_name:
+        description: Platform Patern Service name
         type: string
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.RunQueryRequest:
@@ -1881,22 +1894,30 @@ definitions:
   gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ServiceMetadata:
     properties:
       connector:
-        $ref: '#/definitions/source.Type'
+        allOf:
+        - $ref: '#/definitions/source.Type'
+        description: Service Connector
       cost_map_service_names:
+        description: List of Cost map service names
         items:
           type: string
         type: array
       cost_support:
+        description: Cost is supported [yes/no]
         type: boolean
       parent_service:
+        description: Parent service
         type: string
       resource_types:
+        description: List of resource types
         items:
           type: string
         type: array
       service_label:
+        description: Service Lable
         type: string
       service_name:
+        description: Service Name
         type: string
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ServiceSummary:
@@ -3001,7 +3022,7 @@ paths:
       - auth
   /auth/api/v1/users:
     get:
-      description: Gets a list of users with specified filters.
+      description: Gets a list of users with specified filters (filters are optional).
       parameters:
       - description: Request Body
         in: body
@@ -4517,7 +4538,8 @@ paths:
       - insight
   /inventory/api/v2/metadata/connectors:
     get:
-      description: Get all connectors
+      description: Gets a list of all connectors in workspace and their metadata including
+        list of their resource types and services names.
       produces:
       - application/json
       responses:
@@ -4527,12 +4549,19 @@ paths:
             items:
               $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ConnectorMetadata'
             type: array
-      summary: Get all connectors
+      summary: Get List of Connectors
       tags:
       - metadata
   /inventory/api/v2/metadata/connectors/{connector}:
     get:
-      description: Get a single connector
+      description: Gets a single connector and its metadata including list of their
+        resource types and services names by the connector name.
+      parameters:
+      - description: connector
+        in: path
+        name: connector
+        required: true
+        type: string
       produces:
       - application/json
       responses:
@@ -4540,14 +4569,16 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ConnectorMetadata'
-      summary: Get a single connector
+      summary: Get Connector
       tags:
       - metadata
   /inventory/api/v2/metadata/resourcetype:
     get:
-      description: Get all resource types
+      description: |-
+        Gets a list of all resource types in workspace and their metadata including service name.
+        The results could be filtered by provider name and service name.
       parameters:
-      - description: Connector
+      - description: Filter by Connector
         enum:
         - ""
         - AWS
@@ -4569,12 +4600,19 @@ paths:
             items:
               $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ResourceTypeMetadata'
             type: array
-      summary: Get all resource types
+      summary: Get List of Resource Types
       tags:
       - metadata
   /inventory/api/v2/metadata/resourcetype/{resourceType}:
     get:
-      description: Get all resource types
+      description: Get a single resource type metadata and its details including service
+        name and insights list. Specified by resource type name.
+      parameters:
+      - description: resourceType
+        in: path
+        name: resourceType
+        required: true
+        type: string
       produces:
       - application/json
       responses:
@@ -4584,12 +4622,14 @@ paths:
             items:
               $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ResourceTypeMetadata'
             type: array
-      summary: Get all resource types
+      summary: Get Resource Type
       tags:
       - metadata
   /inventory/api/v2/metadata/services:
     get:
-      description: Get all services
+      description: |-
+        Gets a list of all workspace cloud services and their metadata inclouding parent service, list of resource types and cost support.
+        The results could be filtered by cost support and resource type.
       parameters:
       - description: Connector
         enum:
@@ -4617,12 +4657,19 @@ paths:
             items:
               $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ServiceMetadata'
             type: array
-      summary: Get all services
+      summary: Get List of Cloud Services
       tags:
       - metadata
   /inventory/api/v2/metadata/services/{serviceName}:
     get:
-      description: Get a single service
+      description: Gets a single cloud service details and its metadata inclouding
+        parent service, list of resource types, cost support and costmap service names.
+      parameters:
+      - description: serviceName
+        in: path
+        name: serviceName
+        required: true
+        type: string
       produces:
       - application/json
       responses:
@@ -4630,7 +4677,7 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ServiceMetadata'
-      summary: Get a single service
+      summary: Get Cloud Service Details
       tags:
       - metadata
   /inventory/api/v2/metrics/cost/composition:
