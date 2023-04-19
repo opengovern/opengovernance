@@ -273,7 +273,7 @@ func (db Database) ListInsightsWithFilters(connector source.Type, enabled *bool)
 	var s []Insight
 	m := db.Orm.Model(&Insight{}).Preload(clause.Associations)
 	if connector != source.Nil {
-		m = m.Where("provider = ?", connector)
+		m = m.Where("connector = ?", connector)
 	}
 	if enabled != nil {
 		m = m.Where("enabled = ?", *enabled)
