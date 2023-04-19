@@ -55,7 +55,7 @@ func NewGraphDatabase(driver neo4j.DriverWithContext) (GraphDatabase, error) {
 			"connector":      resourceType.Connector,
 			"serviceName":    strings.ToLower(resourceType.ServiceName),
 			"resource_label": resourceType.ResourceLabel,
-			"resourceType":   strings.ToLower(resourceType.ResourceName),
+			"resourceType":   resourceType.ResourceName,
 		})
 		if err != nil {
 			return GraphDatabase{}, err
@@ -65,7 +65,7 @@ func NewGraphDatabase(driver neo4j.DriverWithContext) (GraphDatabase, error) {
 			"connector":      resourceType.Connector,
 			"serviceName":    strings.ToLower(resourceType.ServiceName),
 			"resource_label": resourceType.ResourceLabel,
-			"resourceType":   strings.ToLower(resourceType.ResourceName),
+			"resourceType":   resourceType.ResourceName,
 		})
 		if err != nil {
 			return GraphDatabase{}, err
@@ -78,7 +78,7 @@ func NewGraphDatabase(driver neo4j.DriverWithContext) (GraphDatabase, error) {
 			"connector":      resourceType.Connector,
 			"serviceName":    strings.ToLower(resourceType.ServiceName),
 			"resource_label": resourceType.ResourceLabel,
-			"resourceType":   strings.ToLower(resourceType.ResourceName),
+			"resourceType":   resourceType.ResourceName,
 		})
 		if err != nil {
 			return GraphDatabase{}, err
@@ -88,7 +88,7 @@ func NewGraphDatabase(driver neo4j.DriverWithContext) (GraphDatabase, error) {
 			"connector":      resourceType.Connector,
 			"serviceName":    strings.ToLower(resourceType.ServiceName),
 			"resource_label": resourceType.ResourceLabel,
-			"resourceType":   strings.ToLower(resourceType.ResourceName),
+			"resourceType":   resourceType.ResourceName,
 		})
 		if err != nil {
 			return GraphDatabase{}, err
