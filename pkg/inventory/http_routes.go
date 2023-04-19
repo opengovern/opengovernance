@@ -122,9 +122,9 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 
 	metadata.GET("/connectors", httpserver.AuthorizeHandler(h.ListConnectorMetadata, api3.ViewerRole))
 	metadata.GET("/connectors/:connector", httpserver.AuthorizeHandler(h.GetConnectorMetadata, api3.ViewerRole))
-	metadata.GET("/services/", httpserver.AuthorizeHandler(h.ListServiceMetadata, api3.ViewerRole))
+	metadata.GET("/services", httpserver.AuthorizeHandler(h.ListServiceMetadata, api3.ViewerRole))
 	metadata.GET("/services/:serviceName", httpserver.AuthorizeHandler(h.GetServiceMetadata, api3.ViewerRole))
-	metadata.GET("/resourcetype/", httpserver.AuthorizeHandler(h.ListResourceTypeMetadata, api3.ViewerRole))
+	metadata.GET("/resourcetype", httpserver.AuthorizeHandler(h.ListResourceTypeMetadata, api3.ViewerRole))
 	metadata.GET("/resourcetype/:resourceType", httpserver.AuthorizeHandler(h.GetResourceTypeMetadata, api3.ViewerRole))
 }
 
