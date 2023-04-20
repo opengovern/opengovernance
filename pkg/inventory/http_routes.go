@@ -4502,10 +4502,10 @@ func (h *HttpHandler) ListConnectorMetadata(ctx echo.Context) error {
 		if err != nil {
 			return err
 		}
-		resourceTypes := make([]string, 0)
+		resourceTypesCount := 0
 		for _, filter := range rootNode.SubTreeFilters {
 			if filter.GetFilterType() == FilterTypeCloudResourceType {
-				resourceTypes = append(resourceTypes, filter.(*FilterCloudResourceTypeNode).ResourceType)
+				resourceTypesCount++
 			}
 		}
 
@@ -4513,16 +4513,13 @@ func (h *HttpHandler) ListConnectorMetadata(ctx echo.Context) error {
 		if err != nil {
 			return err
 		}
-		services := make([]string, 0)
-		for _, serviceNode := range serviceNodes {
-			services = append(services, serviceNode.ServiceName)
-		}
 
 		result = append(result, api.ConnectorMetadata{
-			Connector:      connector,
-			ConnectorLabel: connector.String(),
-			ResourceTypes:  resourceTypes,
-			Services:       services,
+			Connector:          connector,
+			ConnectorLabel:     connector.String(),
+			ResourceTypesCount: utils.GetPointer(resourceTypesCount),
+			ServicesCount:      utils.GetPointer(len(serviceNodes)),
+			LogoURI:            rootNode.LogoURI,
 		})
 	}
 
@@ -4568,6 +4565,7 @@ func (h *HttpHandler) GetConnectorMetadata(ctx echo.Context) error {
 		ConnectorLabel: connector.String(),
 		ResourceTypes:  resourceTypes,
 		Services:       services,
+		LogoURI:        rootNode.LogoURI,
 	}
 
 	return ctx.JSON(http.StatusOK, result)
@@ -4634,12 +4632,13 @@ func (h *HttpHandler) ListServiceMetadata(ctx echo.Context) error {
 			}
 		}
 		result = append(result, api.ServiceMetadata{
-			Connector:     service.Connector,
-			ServiceName:   service.ServiceName,
-			ServiceLabel:  service.Name,
-			ParentService: service.GetParentService(),
-			ResourceTypes: serviceResourceTypes,
-			CostSupport:   costSupport,
+			Connector:          service.Connector,
+			ServiceName:        service.ServiceName,
+			ServiceLabel:       service.Name,
+			ParentService:      service.GetParentService(),
+			ResourceTypesCount: utils.GetPointer(len(serviceResourceTypes)),
+			CostSupport:        costSupport,
+			LogoURI:            service.LogoURI,
 		})
 	}
 
@@ -4689,6 +4688,7 @@ func (h *HttpHandler) GetServiceMetadata(ctx echo.Context) error {
 		ResourceTypes:       serviceResourceTypes,
 		CostSupport:         costSupport,
 		CostMapServiceNames: costMapServiceNames,
+		LogoURI:             service.LogoURI,
 	}
 
 	return ctx.JSON(http.StatusOK, result)
@@ -4722,13 +4722,35 @@ func (h *HttpHandler) ListResourceTypeMetadata(ctx echo.Context) error {
 
 	for _, filter := range filters {
 		resourceTypeNode := filter.(*FilterCloudResourceTypeNode)
-		result = append(result, api.ResourceTypeMetadata{
+
+		res := api.ResourceTypeMetadata{
 			Connector:         resourceTypeNode.Connector,
 			ResourceTypeName:  resourceTypeNode.ResourceType,
 			ResourceTypeLabel: resourceTypeNode.ResourceLabel,
 			ServiceName:       resourceTypeNode.ServiceName,
 			DiscoveryEnabled:  true,
-		})
+			LogoURI:           resourceTypeNode.LogoURI,
+		}
+
+		table := steampipe.ExtractTableName(resourceTypeNode.ResourceType)
+		insightTableCount := 0
+		if table != "" {
+			insightList, err := h.complianceClient.GetInsights(httpclient.FromEchoContext(ctx), resourceTypeNode.Connector)
+			if err != nil {
+				return err
+			}
+			for _, insightEntity := range insightList {
+				for _, insightTable := range strings.Split(insightEntity.Query.ListOfTables, ",") {
+					if insightTable == table {
+						insightTableCount++
+						break
+					}
+				}
+			}
+		}
+		res.InsightsCount = utils.GetPointerOrNil(insightTableCount)
+
+		result = append(result, res)
 	}
 
 	return ctx.JSON(http.StatusOK, result)
@@ -4741,7 +4763,7 @@ func (h *HttpHandler) ListResourceTypeMetadata(ctx echo.Context) error {
 //	@Tags			metadata
 //	@Produce		json
 //
-//	@Success		200	{object}	[]api.ResourceTypeMetadata
+//	@Success		200	{object}	api.ResourceTypeMetadata
 //	@Router			/inventory/api/v2/metadata/resourcetype/{resourceType} [get]
 func (h *HttpHandler) GetResourceTypeMetadata(ctx echo.Context) error {
 	resourceType := ctx.Param("resourceType")
@@ -4757,9 +4779,10 @@ func (h *HttpHandler) GetResourceTypeMetadata(ctx echo.Context) error {
 		ResourceTypeLabel: resourceTypeNode.ResourceLabel,
 		ServiceName:       resourceTypeNode.ServiceName,
 		DiscoveryEnabled:  true,
+		LogoURI:           resourceTypeNode.LogoURI,
 	}
 
-	table := steampipe.ExtractTableName(resourceType)
+	table := steampipe.ExtractTableName(resourceTypeNode.ResourceType)
 	if table != "" {
 		insightTables := make([]uint, 0)
 		insightList, err := h.complianceClient.GetInsights(httpclient.FromEchoContext(ctx), resourceTypeNode.Connector)
@@ -4775,6 +4798,16 @@ func (h *HttpHandler) GetResourceTypeMetadata(ctx echo.Context) error {
 			}
 		}
 		result.Insights = insightTables
+
+		switch resourceTypeNode.Connector {
+		case source.CloudAWS:
+			result.Attributes, _ = steampipe.AWSCells(table)
+		case source.CloudAzure:
+			result.Attributes, err = steampipe.AzureCells(table)
+			if err != nil {
+				result.Attributes, _ = steampipe.AzureADCells(table)
+			}
+		}
 	}
 
 	return ctx.JSON(http.StatusOK, result)

@@ -2835,10 +2835,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ResourceTypeMetadata"
-                            }
+                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ResourceTypeMetadata"
                         }
                     }
                 }
@@ -7657,17 +7654,26 @@ const docTemplate = `{
                 "connector_label": {
                     "type": "string"
                 },
+                "logo_uri": {
+                    "type": "string"
+                },
                 "resource_types": {
                     "type": "array",
                     "items": {
                         "type": "string"
                     }
                 },
+                "resource_types_count": {
+                    "type": "integer"
+                },
                 "services": {
                     "type": "array",
                     "items": {
                         "type": "string"
                     }
+                },
+                "services_count": {
+                    "type": "integer"
                 }
             }
         },
@@ -8497,11 +8503,20 @@ const docTemplate = `{
         "gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ResourceTypeMetadata": {
             "type": "object",
             "properties": {
+                "attributes": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
                 "compliance": {
                     "type": "array",
                     "items": {
                         "type": "string"
                     }
+                },
+                "compliance_count": {
+                    "type": "integer"
                 },
                 "connector": {
                     "$ref": "#/definitions/source.Type"
@@ -8514,6 +8529,12 @@ const docTemplate = `{
                     "items": {
                         "type": "integer"
                     }
+                },
+                "insights_count": {
+                    "type": "integer"
+                },
+                "logo_uri": {
+                    "type": "string"
                 },
                 "resource_type_label": {
                     "type": "string"
@@ -8603,6 +8624,9 @@ const docTemplate = `{
                 "cost_support": {
                     "type": "boolean"
                 },
+                "logo_uri": {
+                    "type": "string"
+                },
                 "parent_service": {
                     "type": "string"
                 },
@@ -8611,6 +8635,9 @@ const docTemplate = `{
                     "items": {
                         "type": "string"
                     }
+                },
+                "resource_types_count": {
+                    "type": "integer"
                 },
                 "service_label": {
                     "type": "string"
