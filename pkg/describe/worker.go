@@ -716,10 +716,15 @@ type CloudNativeConnectionWorkerMessage struct {
 }
 
 type CloudNativeConnectionWorkerResult struct {
-	JobID         string                      `json:"jobId" validate:"required"`
-	BlobName      string                      `json:"blobName" validate:"required"`
-	ContainerName string                      `json:"containerName" validate:"required"`
-	JobResult     DescribeConnectionJobResult `json:"jobResult" validate:"required"`
+	JobID         string `json:"jobId" validate:"required"`
+	BlobName      string `json:"blobName" validate:"required"`
+	ContainerName string `json:"containerName" validate:"required"`
+}
+
+type CloudNativeConnectionWorkerData struct {
+	JobID     string                                `json:"jobId" validate:"required"`
+	JobResult DescribeConnectionJobResult           `json:"jobResult" validate:"required"`
+	JobData   []*CloudNativeConnectionWorkerMessage `json:"jobData" validate:"required"`
 }
 
 func (w *CloudNativeConnectionWorker) Run(ctx context.Context, sendTimeout bool) error {
@@ -741,19 +746,25 @@ func (w *CloudNativeConnectionWorker) Run(ctx context.Context, sendTimeout bool)
 		})
 	}
 
-	messagesJson, err := json.Marshal(messages)
+	resultData := &CloudNativeConnectionWorkerData{
+		JobID:     fmt.Sprint(w.instanceId),
+		JobResult: jobResult,
+		JobData:   messages,
+	}
+
+	resultDataJson, err := json.Marshal(resultData)
 	if err != nil {
 		w.logger.Error("Failed to marshal messages", zap.Error(err))
 		return err
 	}
 
-	encMessage, err := helper.EncryptMessageArmored(w.cloudNativeBlobOutputEncryptionKey, string(messagesJson))
+	encMessage, err := helper.EncryptMessageArmored(w.cloudNativeBlobOutputEncryptionKey, string(resultDataJson))
 	if err != nil {
 		w.logger.Error("Failed to encrypt messages", zap.Error(err))
 		return err
 	}
 
-	containerName := fmt.Sprintf("connection-worker-%s", strings.ToLower(fmt.Sprint(w.job.ScheduleJobID)))
+	containerName := fmt.Sprintf("connection-worker-%s", strings.ToLower(fmt.Sprint(w.instanceId)))
 
 	// get hash of resource types
 	hash := sha256.New()
@@ -778,44 +789,6 @@ func (w *CloudNativeConnectionWorker) Run(ctx context.Context, sendTimeout bool)
 				break
 			}
 			time.Sleep(time.Duration(rand.Intn(15)+1) * time.Second)
-		} else {
-			break
-		}
-	}
-
-	output := CloudNativeConnectionWorkerResult{
-		JobID:         w.instanceId,
-		ContainerName: containerName,
-		BlobName:      blobName,
-		JobResult:     jobResult,
-	}
-
-	jsonOutput, err := json.Marshal(output)
-	if err != nil {
-		w.logger.Error("Failed to marshal output", zap.Error(err))
-		return err
-	}
-
-	batch, err := w.cloudNativeOutputQueue.NewEventDataBatch(context.TODO(), nil)
-	if err != nil {
-		w.logger.Error("Failed to create event data batch", zap.Error(err))
-		return err
-	}
-	err = batch.AddEventData(&azeventhubs.EventData{
-		Body: jsonOutput,
-	}, nil)
-	if err != nil {
-		w.logger.Error("Failed to add event data", zap.Error(err))
-		return err
-	}
-	for i := 0; i < 3; i++ {
-		err = w.cloudNativeOutputQueue.SendEventDataBatch(context.TODO(), batch, nil)
-		if err != nil {
-			w.logger.Error("Failed to send event data batch", zap.Error(err))
-			if i == 2 {
-				return err
-			}
-			time.Sleep(time.Duration(rand.Intn(10)+1) * time.Second)
 		} else {
 			break
 		}
