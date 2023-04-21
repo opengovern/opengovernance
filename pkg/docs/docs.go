@@ -541,7 +541,7 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.GetUserResponse"
+                                "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.GetUsersResponse"
                             }
                         }
                     }
@@ -3611,6 +3611,7 @@ const docTemplate = `{
         },
         "/inventory/api/v2/resources/type": {
             "get": {
+                "description": "Gets the total number of resource types and the API filters and list of resource types with some details. Including filter, connection, service name and resource count.",
                 "consumes": [
                     "application/json"
                 ],
@@ -3620,7 +3621,7 @@ const docTemplate = `{
                 "tags": [
                     "inventory"
                 ],
-                "summary": "Return list of resource types",
+                "summary": "Get list of Resource Types",
                 "parameters": [
                     {
                         "enum": [
@@ -3682,8 +3683,9 @@ const docTemplate = `{
                 }
             }
         },
-        "/inventory/api/v2/resources/type/{name}": {
+        "/inventory/api/v2/resources/type/{resourceName}": {
             "get": {
+                "description": "Gets the details of the resource type for the specified resource name. Including filter, connection, service name and resource count.",
                 "consumes": [
                     "application/json"
                 ],
@@ -3693,7 +3695,7 @@ const docTemplate = `{
                 "tags": [
                     "inventory"
                 ],
-                "summary": "Return list of resource types",
+                "summary": "Get Resource Type Details",
                 "parameters": [
                     {
                         "enum": [
@@ -3715,6 +3717,13 @@ const docTemplate = `{
                         "description": "SourceID",
                         "name": "sourceId",
                         "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "resource name",
+                        "name": "resourceName",
+                        "in": "path",
+                        "required": true
                     }
                 ],
                 "responses": {
@@ -3729,6 +3738,7 @@ const docTemplate = `{
         },
         "/inventory/api/v2/services/summary": {
             "get": {
+                "description": "Gets a summary of the services including the number of them and the API filters and a list of services with more details. Including connector, the resource counts and the cost.",
                 "consumes": [
                     "application/json"
                 ],
@@ -3738,7 +3748,7 @@ const docTemplate = `{
                 "tags": [
                     "benchmarks"
                 ],
-                "summary": "Returns Service Summary",
+                "summary": "Get Cloud Services Summary",
                 "parameters": [
                     {
                         "type": "array",
@@ -3818,46 +3828,6 @@ const docTemplate = `{
         },
         "/inventory/api/v2/services/summary/{serviceName}": {
             "get": {
-                "description": "Get Service Summary",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "benchmarks"
-                ],
-                "summary": "Get Service Summary",
-                "parameters": [
-                    {
-                        "type": "array",
-                        "items": {
-                            "type": "string"
-                        },
-                        "collectionFormat": "csv",
-                        "description": "filter: SourceIDs",
-                        "name": "sourceId",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "filter: Provider",
-                        "name": "provider",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "start time for cost calculation in epoch seconds",
-                        "name": "startTime",
-                        "in": "query",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "end time for cost calculation and time resource count in epoch seconds",
-                        "name": "endTime",
-                        "in": "query",
-                        "required": true
-                    }
-                ],
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -6021,7 +5991,8 @@ const docTemplate = `{
             "properties": {
                 "blocked": {
                     "description": "Is the user blocked or not",
-                    "type": "boolean"
+                    "type": "boolean",
+                    "example": false
                 },
                 "createdAt": {
                     "description": "Creation timestamp in UTC",
@@ -6029,18 +6000,20 @@ const docTemplate = `{
                 },
                 "email": {
                     "description": "Email address of the user",
-                    "type": "string"
+                    "type": "string",
+                    "example": "sample@gmail.com"
                 },
                 "emailVerified": {
                     "description": "Is email verified or not",
-                    "type": "boolean"
+                    "type": "boolean",
+                    "example": true
                 },
                 "lastActivity": {
                     "description": "Last activity timestamp in UTC",
                     "type": "string"
                 },
-                "role": {
-                    "description": "Name of the role in the specified workspace",
+                "roleName": {
+                    "description": "Name of the role",
                     "enum": [
                         "admin",
                         "editor",
@@ -6050,23 +6023,31 @@ const docTemplate = `{
                         {
                             "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.Role"
                         }
-                    ]
+                    ],
+                    "example": "admin"
                 },
                 "status": {
                     "description": "Invite status",
+                    "enum": [
+                        "accepted",
+                        "pending"
+                    ],
                     "allOf": [
                         {
                             "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.InviteStatus"
                         }
-                    ]
+                    ],
+                    "example": "pending"
                 },
                 "userId": {
                     "description": "Unique identifier for the user",
-                    "type": "string"
+                    "type": "string",
+                    "example": "sampleID"
                 },
                 "userName": {
                     "description": "Username",
-                    "type": "string"
+                    "type": "string",
+                    "example": "sampleName"
                 }
             }
         },
@@ -6078,10 +6059,12 @@ const docTemplate = `{
                     "example": "sample@gmail.com"
                 },
                 "emailVerified": {
+                    "description": "Filter by",
                     "type": "boolean",
                     "example": true
                 },
-                "role": {
+                "roleName": {
+                    "description": "Filter by role name",
                     "enum": [
                         "admin",
                         "editor",
@@ -6096,6 +6079,45 @@ const docTemplate = `{
                 }
             }
         },
+        "gitlab_com_keibiengine_keibi-engine_pkg_auth_api.GetUsersResponse": {
+            "type": "object",
+            "properties": {
+                "email": {
+                    "description": "Email address of the user",
+                    "type": "string",
+                    "example": "sample@gmail.com"
+                },
+                "emailVerified": {
+                    "description": "Is email verified or not",
+                    "type": "boolean",
+                    "example": true
+                },
+                "roleName": {
+                    "description": "Name of the role",
+                    "enum": [
+                        "admin",
+                        "editor",
+                        "viewer"
+                    ],
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.Role"
+                        }
+                    ],
+                    "example": "admin"
+                },
+                "userId": {
+                    "description": "Unique identifier for the user",
+                    "type": "string",
+                    "example": "sampleID"
+                },
+                "userName": {
+                    "description": "Username",
+                    "type": "string",
+                    "example": "sampleName"
+                }
+            }
+        },
         "gitlab_com_keibiengine_keibi-engine_pkg_auth_api.InviteRequest": {
             "type": "object",
             "required": [
@@ -6104,9 +6126,10 @@ const docTemplate = `{
             "properties": {
                 "email": {
                     "description": "User email address",
-                    "type": "string"
+                    "type": "string",
+                    "example": "sample@gmail.com"
                 },
-                "role": {
+                "roleName": {
                     "description": "Name of the role",
                     "enum": [
                         "admin",
@@ -6125,8 +6148,8 @@ const docTemplate = `{
         "gitlab_com_keibiengine_keibi-engine_pkg_auth_api.InviteStatus": {
             "type": "string",
             "enum": [
-                "ACCEPTED",
-                "PENDING"
+                "accepted",
+                "pending"
             ],
             "x-enum-varnames": [
                 "InviteStatus_ACCEPTED",
@@ -6136,11 +6159,11 @@ const docTemplate = `{
         "gitlab_com_keibiengine_keibi-engine_pkg_auth_api.PutRoleBindingRequest": {
             "type": "object",
             "required": [
-                "role",
+                "roleName",
                 "userId"
             ],
             "properties": {
-                "role": {
+                "roleName": {
                     "description": "Name of the role",
                     "enum": [
                         "admin",
@@ -6202,7 +6225,7 @@ const docTemplate = `{
                 "users": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.GetUserResponse"
+                        "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.GetUsersResponse"
                     }
                 }
             }
@@ -6212,7 +6235,8 @@ const docTemplate = `{
             "properties": {
                 "blocked": {
                     "description": "Is the user blocked or not",
-                    "type": "boolean"
+                    "type": "boolean",
+                    "example": false
                 },
                 "createdAt": {
                     "description": "Creation timestamp in UTC",
@@ -6220,17 +6244,19 @@ const docTemplate = `{
                 },
                 "email": {
                     "description": "Email address of the user",
-                    "type": "string"
+                    "type": "string",
+                    "example": "sample@gmail.com"
                 },
                 "emailVerified": {
                     "description": "Is email verified or not",
-                    "type": "boolean"
+                    "type": "boolean",
+                    "example": true
                 },
                 "lastActivity": {
                     "description": "Last activity timestamp in UTC",
                     "type": "string"
                 },
-                "role": {
+                "roleName": {
                     "description": "Name of the role",
                     "enum": [
                         "admin",
@@ -6246,26 +6272,36 @@ const docTemplate = `{
                 },
                 "status": {
                     "description": "Invite status",
+                    "enum": [
+                        "accepted",
+                        "pending"
+                    ],
                     "allOf": [
                         {
                             "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.InviteStatus"
                         }
-                    ]
+                    ],
+                    "example": "pending"
                 },
                 "userId": {
                     "description": "Unique identifier for the user",
-                    "type": "string"
+                    "type": "string",
+                    "example": "sampleID"
                 },
                 "userName": {
                     "description": "Username",
-                    "type": "string"
+                    "type": "string",
+                    "example": "sampleName"
                 },
                 "workspaces": {
                     "description": "A list of workspace ids which the user has the specified role in them",
                     "type": "array",
                     "items": {
                         "type": "string"
-                    }
+                    },
+                    "example": [
+                        "demoWorkspace"
+                    ]
                 }
             }
         },
@@ -6276,7 +6312,7 @@ const docTemplate = `{
                     "type": "string",
                     "example": "The Administrator role is a super user role with all of the capabilities that can be assigned to a role, and its enables access to all data \u0026 configuration on a Kaytu Workspace. You cannot edit or delete the Administrator role."
                 },
-                "role": {
+                "roleName": {
                     "enum": [
                         "admin",
                         "editor",
@@ -6309,7 +6345,7 @@ const docTemplate = `{
         "gitlab_com_keibiengine_keibi-engine_pkg_auth_api.UserRoleBinding": {
             "type": "object",
             "properties": {
-                "role": {
+                "roleName": {
                     "description": "Name of the binding Role",
                     "enum": [
                         "admin",
@@ -6320,7 +6356,8 @@ const docTemplate = `{
                         {
                             "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.Role"
                         }
-                    ]
+                    ],
+                    "example": "admin"
                 },
                 "workspaceID": {
                     "description": "Unique identifier for the Workspace",
@@ -6366,13 +6403,14 @@ const docTemplate = `{
                 },
                 "email": {
                     "description": "Email address of the user",
-                    "type": "string"
+                    "type": "string",
+                    "example": "sample@gmail.com"
                 },
                 "lastActivity": {
                     "description": "Last activity timestamp in UTC",
                     "type": "string"
                 },
-                "role": {
+                "roleName": {
                     "description": "Name of the role",
                     "enum": [
                         "admin",
@@ -6383,23 +6421,31 @@ const docTemplate = `{
                         {
                             "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.Role"
                         }
-                    ]
+                    ],
+                    "example": "admin"
                 },
                 "status": {
                     "description": "Invite status",
+                    "enum": [
+                        "accepted",
+                        "pending"
+                    ],
                     "allOf": [
                         {
                             "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.InviteStatus"
                         }
-                    ]
+                    ],
+                    "example": "pending"
                 },
                 "userId": {
                     "description": "Unique identifier for the user",
-                    "type": "string"
+                    "type": "string",
+                    "example": "sampleID"
                 },
                 "userName": {
                     "description": "Username",
-                    "type": "string"
+                    "type": "string",
+                    "example": "sampleName"
                 }
             }
         },
