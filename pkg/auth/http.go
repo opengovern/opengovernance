@@ -115,17 +115,17 @@ func (r *httpRoutes) ListRoles(ctx echo.Context) error {
 
 	var res = []api.RolesListResponse{
 		{
-			Role:        api.AdminRole,
+			RoleName:    api.AdminRole,
 			Description: descriptions[api.AdminRole],
 			UserCount:   AdminCount,
 		},
 		{
-			Role:        api.EditorRole,
+			RoleName:    api.EditorRole,
 			Description: descriptions[api.EditorRole],
 			UserCount:   EditorCount,
 		},
 		{
-			Role:        api.ViewerRole,
+			RoleName:    api.ViewerRole,
 			Description: descriptions[api.ViewerRole],
 			UserCount:   ViewerCount,
 		},
@@ -151,18 +151,18 @@ func (r *httpRoutes) RoleDetails(ctx echo.Context) error {
 	}
 
 	var roleCount int
-	var roleUsers []api.GetUserResponse
+	var roleUsers []api.GetUsersResponse
 
 	for _, u := range users {
 		r := u.AppMetadata.WorkspaceAccess[workspaceID]
 		if role == r {
 			roleCount++
-			roleUsers = append(roleUsers, api.GetUserResponse{
+			roleUsers = append(roleUsers, api.GetUsersResponse{
 				UserID:        u.UserId,
 				UserName:      u.Name,
 				Email:         u.Email,
 				EmailVerified: u.EmailVerified,
-				Role:          role,
+				RoleName:      role,
 			})
 		}
 	}
@@ -172,7 +172,7 @@ func (r *httpRoutes) RoleDetails(ctx echo.Context) error {
 		api.ViewerRole: "View all resources, but does not allow you to make any changes or trigger any action (running asset discovery).",
 	}
 	var res = api.RoleDetailsResponse{
-		Role:        role,
+		RoleName:    role,
 		Description: descriptions[role],
 		UserCount:   roleCount,
 		Users:       roleUsers,
@@ -212,7 +212,7 @@ func (r httpRoutes) PutRoleBinding(ctx echo.Context) error {
 	workspaceID := httpserver.GetWorkspaceID(ctx)
 
 	if httpserver.GetUserID(ctx) == req.UserID &&
-		req.Role != api.AdminRole {
+		req.RoleName != api.AdminRole {
 		return echo.NewHTTPError(http.StatusBadRequest, "admin user permission can't be modified by self")
 	}
 	// The WorkspaceManager service will call this API to set the AdminRole
@@ -241,7 +241,7 @@ func (r httpRoutes) PutRoleBinding(ctx echo.Context) error {
 		}
 	}
 
-	auth0User.AppMetadata.WorkspaceAccess[workspaceID] = req.Role
+	auth0User.AppMetadata.WorkspaceAccess[workspaceID] = req.RoleName
 	err = r.auth0Service.PatchUserAppMetadata(req.UserID, auth0User.AppMetadata)
 	if err != nil {
 		return err
@@ -304,7 +304,7 @@ func (r *httpRoutes) GetRoleBindings(ctx echo.Context) error {
 		for wsID, role := range usr.AppMetadata.WorkspaceAccess {
 			resp.RoleBindings = append(resp.RoleBindings, api.UserRoleBinding{
 				WorkspaceID: wsID,
-				Role:        role,
+				RoleName:    role,
 			})
 		}
 		resp.GlobalRoles = usr.AppMetadata.GlobalAccess
@@ -345,7 +345,7 @@ func (r *httpRoutes) GetWorkspaceMembership(ctx echo.Context) error {
 			resp = append(resp, api.Membership{
 				WorkspaceID:   wsID,
 				WorkspaceName: ws.Name,
-				Role:          role,
+				RoleName:      role,
 				AssignedAt:    time.Time{}, //TODO- add assigned at
 				LastActivity:  time.Time{}, //TODO- add assigned at
 			})
@@ -382,7 +382,7 @@ func (r *httpRoutes) GetWorkspaceRoleBindings(ctx echo.Context) error {
 			UserID:       u.UserId,
 			UserName:     u.Name,
 			Email:        u.Email,
-			Role:         u.AppMetadata.WorkspaceAccess[workspaceID],
+			RoleName:     u.AppMetadata.WorkspaceAccess[workspaceID],
 			Status:       status,
 			LastActivity: u.LastLogin,
 			CreatedAt:    u.CreatedAt,
@@ -398,7 +398,7 @@ func (r *httpRoutes) GetWorkspaceRoleBindings(ctx echo.Context) error {
 //	@Tags			auth
 //	@Produce		json
 //	@Param			request	body		api.GetUsersRequest	true	"Request Body"
-//	@Success		200		{object}	api.GetUsersResponse
+//	@Success		200		{object}	[]api.GetUsersResponse
 //	@Router			/auth/api/v1/users [get]
 func (r *httpRoutes) GetUsers(ctx echo.Context) error {
 	workspaceID := httpserver.GetWorkspaceID(ctx)
@@ -407,19 +407,19 @@ func (r *httpRoutes) GetUsers(ctx echo.Context) error {
 		ctx.Logger().Errorf("bind the request: %v", err)
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
 	}
-	users, err := r.auth0Service.SearchUsers(workspaceID, req.Email, req.EmailVerified, req.Role)
+	users, err := r.auth0Service.SearchUsers(workspaceID, req.Email, req.EmailVerified, req.RoleName)
 	if err != nil {
 		return err
 	}
-	var resp api.GetUsersResponse
+	var resp []api.GetUsersResponse
 	for _, u := range users {
 
-		resp = append(resp, api.GetUserResponse{
+		resp = append(resp, api.GetUsersResponse{
 			UserID:        u.UserId,
 			UserName:      u.Name,
 			Email:         u.Email,
 			EmailVerified: u.EmailVerified,
-			Role:          u.AppMetadata.WorkspaceAccess[workspaceID],
+			RoleName:      u.AppMetadata.WorkspaceAccess[workspaceID],
 		})
 	}
 	return ctx.JSON(http.StatusOK, resp)
@@ -464,7 +464,7 @@ func (r *httpRoutes) GetUserDetails(ctx echo.Context) error {
 		LastActivity:  user.LastLogin,
 		CreatedAt:     user.CreatedAt,
 		Blocked:       user.Blocked,
-		Role:          user.AppMetadata.WorkspaceAccess[workspaceID],
+		RoleName:      user.AppMetadata.WorkspaceAccess[workspaceID],
 	}
 
 	return ctx.JSON(http.StatusOK, resp)
@@ -548,7 +548,7 @@ func (r *httpRoutes) Invite(ctx echo.Context) error {
 		if auth0User.AppMetadata.WorkspaceAccess == nil {
 			auth0User.AppMetadata.WorkspaceAccess = map[string]api.Role{}
 		}
-		auth0User.AppMetadata.WorkspaceAccess[workspaceID] = req.Role
+		auth0User.AppMetadata.WorkspaceAccess[workspaceID] = req.RoleName
 		err = r.auth0Service.PatchUserAppMetadata(auth0User.UserId, auth0User.AppMetadata)
 		if err != nil {
 			return err
@@ -560,7 +560,7 @@ func (r *httpRoutes) Invite(ctx echo.Context) error {
 			return err
 		}
 	} else {
-		user, err := r.auth0Service.CreateUser(req.Email, workspaceID, req.Role)
+		user, err := r.auth0Service.CreateUser(req.Email, workspaceID, req.RoleName)
 		if err != nil {
 			return err
 		}
@@ -926,7 +926,7 @@ func (r *httpRoutes) GetRoleUsers(ctx echo.Context) error {
 			UserName:      u.Name,
 			Email:         u.Email,
 			EmailVerified: u.EmailVerified,
-			Role:          role,
+			RoleName:      role,
 			Workspaces:    workspaces,
 			Status:        status,
 			LastActivity:  u.LastLogin,
