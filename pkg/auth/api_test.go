@@ -366,7 +366,7 @@ func (ts *testSuite) TestGetRoleUsers() {
 			if tc.Role == api.KeibiAdminRole {
 				ts.Equal(len(response), 0)
 			} else {
-				ts.Equal(tc.Role, response[0].Role)
+				ts.Equal(tc.Role, response[0].RoleName)
 				ts.Equal("user1@test.com", response[0].Email)
 				ts.True(response[0].EmailVerified)
 			}
@@ -776,6 +776,71 @@ func (ts *testSuite) TestUpdateKeyRole() {
 				after, _ := ts.httpRoutes.db.GetApiKey(tc.WorkspaceID, tc.Request.ID)
 				ts.Equal(tc.Request.Role, after.Role)
 			}
+		})
+	}
+}
+
+func (ts *testSuite) TestGetRoles() {
+	GetRolesTestCases := []struct {
+		WorkspaceID string
+		Error       error
+	}{
+		{
+			WorkspaceID: "ws1",
+		},
+	}
+	for i, tc := range GetRolesTestCases {
+		ts.T().Run(fmt.Sprintf("GetRolesTestCases-%d", i), func(t *testing.T) {
+			r := httptest.NewRequest(http.MethodPost, "/", nil)
+			r.Header.Set("Content-Type", "application/json; charset=utf8")
+			r.Header.Set(httpserver.XKeibiWorkspaceIDHeader, tc.WorkspaceID)
+
+			w := httptest.NewRecorder()
+
+			c := echo.New().NewContext(r, w)
+
+			err := ts.httpRoutes.ListRoles(c)
+			ts.NoError(err, "error while running the API")
+			var response []api.RolesListResponse
+			if err := json.NewDecoder(w.Body).Decode(&response); err != nil {
+				ts.T().Fatalf("json decode: %v", err)
+			}
+			fmt.Println(response)
+		})
+	}
+}
+
+func (ts *testSuite) TestGetRoleDetails() {
+	GetRoleDetailsTestCases := []struct {
+		WorkspaceID string
+		RoleName    string
+		Error       error
+	}{
+		{
+			WorkspaceID: "ws1",
+			RoleName:    "VIEWER",
+		},
+	}
+	for i, tc := range GetRoleDetailsTestCases {
+		ts.T().Run(fmt.Sprintf("GetRoleDetailsTestCases-%d", i), func(t *testing.T) {
+			r := httptest.NewRequest(http.MethodPost, "/", nil)
+			r.Header.Set("Content-Type", "application/json; charset=utf8")
+			r.Header.Set(httpserver.XKeibiWorkspaceIDHeader, tc.WorkspaceID)
+
+			w := httptest.NewRecorder()
+
+			c := echo.New().NewContext(r, w)
+			c.SetPath("/auth/api/v1/roles/:role")
+			c.SetParamNames("role")
+			c.SetParamValues(tc.RoleName)
+
+			err := ts.httpRoutes.RoleDetails(c)
+			ts.NoError(err, "error while running the API")
+			var response api.RoleDetailsResponse
+			if err := json.NewDecoder(w.Body).Decode(&response); err != nil {
+				ts.T().Fatalf("json decode: %v", err)
+			}
+			fmt.Println(response)
 		})
 	}
 }

@@ -78,82 +78,145 @@ definitions:
     properties:
       blocked:
         description: Is the user blocked or not
+        example: false
         type: boolean
       createdAt:
         description: Creation timestamp in UTC
         type: string
       email:
         description: Email address of the user
+        example: sample@gmail.com
         type: string
       emailVerified:
         description: Is email verified or not
+        example: true
         type: boolean
       lastActivity:
         description: Last activity timestamp in UTC
         type: string
-      role:
+      roleName:
         allOf:
         - $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.Role'
-        description: Name of the role in the specified workspace
+        description: Name of the role
+        enum:
+        - admin
+        - editor
+        - viewer
+        example: admin
       status:
         allOf:
         - $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.InviteStatus'
         description: Invite status
+        enum:
+        - accepted
+        - pending
+        example: pending
       userId:
         description: Unique identifier for the user
+        example: sampleID
         type: string
       userName:
         description: Username
+        example: sampleName
         type: string
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_auth_api.GetUsersRequest:
     properties:
       email:
+        example: sample@gmail.com
         type: string
       emailVerified:
+        description: Filter by
+        example: true
         type: boolean
-      role:
-        $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.Role'
+      roleName:
+        allOf:
+        - $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.Role'
+        description: Filter by role name
+        enum:
+        - admin
+        - editor
+        - viewer
+        example: admin
+    type: object
+  gitlab_com_keibiengine_keibi-engine_pkg_auth_api.GetUsersResponse:
+    properties:
+      email:
+        description: Email address of the user
+        example: sample@gmail.com
+        type: string
+      emailVerified:
+        description: Is email verified or not
+        example: true
+        type: boolean
+      roleName:
+        allOf:
+        - $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.Role'
+        description: Name of the role
+        enum:
+        - admin
+        - editor
+        - viewer
+        example: admin
+      userId:
+        description: Unique identifier for the user
+        example: sampleID
+        type: string
+      userName:
+        description: Username
+        example: sampleName
+        type: string
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_auth_api.InviteRequest:
     properties:
       email:
         description: User email address
+        example: sample@gmail.com
         type: string
-      role:
+      roleName:
         allOf:
         - $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.Role'
         description: Name of the role
+        enum:
+        - admin
+        - editor
+        - viewer
+        example: admin
     required:
     - email
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_auth_api.InviteStatus:
     enum:
-    - ACCEPTED
-    - PENDING
+    - accepted
+    - pending
     type: string
     x-enum-varnames:
     - InviteStatus_ACCEPTED
     - InviteStatus_PENDING
   gitlab_com_keibiengine_keibi-engine_pkg_auth_api.PutRoleBindingRequest:
     properties:
-      role:
+      roleName:
         allOf:
         - $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.Role'
         description: Name of the role
+        enum:
+        - admin
+        - editor
+        - viewer
+        example: admin
       userId:
         description: Unique identifier for the User
         type: string
     required:
-    - role
+    - roleName
     - userId
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_auth_api.Role:
     enum:
-    - KEIBI-ADMIN
-    - ADMIN
-    - EDITOR
-    - VIEWER
+    - keibi-admin
+    - admin
+    - editor
+    - viewer
     type: string
     x-enum-varnames:
     - KeibiAdminRole
@@ -163,50 +226,76 @@ definitions:
   gitlab_com_keibiengine_keibi-engine_pkg_auth_api.RoleDetailsResponse:
     properties:
       description:
+        example: The Administrator role is a super user role with all of the capabilities
+          that can be assigned to a role, and its enables access to all data & configuration
+          on a Kaytu Workspace. You cannot edit or delete the Administrator role.
         type: string
       role:
-        $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.Role'
+        allOf:
+        - $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.Role'
+        enum:
+        - admin
+        - editor
+        - viewer
+        example: admin
       userCount:
+        example: 1
         type: integer
       users:
         items:
-          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.GetUserResponse'
+          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.GetUsersResponse'
         type: array
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_auth_api.RoleUser:
     properties:
       blocked:
         description: Is the user blocked or not
+        example: false
         type: boolean
       createdAt:
         description: Creation timestamp in UTC
         type: string
       email:
         description: Email address of the user
+        example: sample@gmail.com
         type: string
       emailVerified:
         description: Is email verified or not
+        example: true
         type: boolean
       lastActivity:
         description: Last activity timestamp in UTC
         type: string
-      role:
+      roleName:
         allOf:
         - $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.Role'
         description: Name of the role
+        enum:
+        - admin
+        - editor
+        - viewer
+        example: admin
       status:
         allOf:
         - $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.InviteStatus'
         description: Invite status
+        enum:
+        - accepted
+        - pending
+        example: pending
       userId:
         description: Unique identifier for the user
+        example: sampleID
         type: string
       userName:
         description: Username
+        example: sampleName
         type: string
       workspaces:
         description: A list of workspace ids which the user has the specified role
           in them
+        example:
+        - demoWorkspace
         items:
           type: string
         type: array
@@ -214,10 +303,20 @@ definitions:
   gitlab_com_keibiengine_keibi-engine_pkg_auth_api.RolesListResponse:
     properties:
       description:
+        example: The Administrator role is a super user role with all of the capabilities
+          that can be assigned to a role, and its enables access to all data & configuration
+          on a Kaytu Workspace. You cannot edit or delete the Administrator role.
         type: string
-      role:
-        $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.Role'
+      roleName:
+        allOf:
+        - $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.Role'
+        enum:
+        - admin
+        - editor
+        - viewer
+        example: admin
       userCount:
+        example: 1
         type: integer
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_auth_api.UpdateKeyRoleRequest:
@@ -229,10 +328,15 @@ definitions:
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_auth_api.UserRoleBinding:
     properties:
-      role:
+      roleName:
         allOf:
         - $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.Role'
         description: Name of the binding Role
+        enum:
+        - admin
+        - editor
+        - viewer
+        example: admin
       workspaceID:
         description: Unique identifier for the Workspace
         type: string
@@ -263,23 +367,35 @@ definitions:
         type: string
       email:
         description: Email address of the user
+        example: sample@gmail.com
         type: string
       lastActivity:
         description: Last activity timestamp in UTC
         type: string
-      role:
+      roleName:
         allOf:
         - $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.Role'
         description: Name of the role
+        enum:
+        - admin
+        - editor
+        - viewer
+        example: admin
       status:
         allOf:
         - $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.InviteStatus'
         description: Invite status
+        enum:
+        - accepted
+        - pending
+        example: pending
       userId:
         description: Unique identifier for the user
+        example: sampleID
         type: string
       userName:
         description: Username
+        example: sampleName
         type: string
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_aws_describer.Resource:
@@ -1222,18 +1338,23 @@ definitions:
   gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ConnectorMetadata:
     properties:
       connector:
-        $ref: '#/definitions/source.Type'
+        allOf:
+        - $ref: '#/definitions/source.Type'
+        description: Connector
       connector_label:
+        description: Connector Label
         type: string
       logo_uri:
         type: string
       resource_types:
+        description: List of resource types
         items:
           type: string
         type: array
       resource_types_count:
         type: integer
       services:
+        description: List of cloud services
         items:
           type: string
         type: array
@@ -1825,16 +1946,21 @@ definitions:
           type: string
         type: array
       compliance:
+        description: List of Compliances that support this Resource Type
         items:
           type: string
         type: array
       compliance_count:
         type: integer
       connector:
-        $ref: '#/definitions/source.Type'
+        allOf:
+        - $ref: '#/definitions/source.Type'
+        description: Resource type connector
       discovery_enabled:
+        description: Discovery support enabled
         type: boolean
       insights:
+        description: List of Insights that support this Resource Type
         items:
           type: integer
         type: array
@@ -1843,10 +1969,13 @@ definitions:
       logo_uri:
         type: string
       resource_type_label:
+        description: Resource type lable
         type: string
       resource_type_name:
+        description: Resource type name
         type: string
       service_name:
+        description: Platform Patern Service name
         type: string
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.RunQueryRequest:
@@ -1897,26 +2026,34 @@ definitions:
   gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ServiceMetadata:
     properties:
       connector:
-        $ref: '#/definitions/source.Type'
+        allOf:
+        - $ref: '#/definitions/source.Type'
+        description: Service Connector
       cost_map_service_names:
+        description: List of Cost map service names
         items:
           type: string
         type: array
       cost_support:
+        description: Cost is supported [yes/no]
         type: boolean
       logo_uri:
         type: string
       parent_service:
+        description: Parent service
         type: string
       resource_types:
+        description: List of resource types
         items:
           type: string
         type: array
       resource_types_count:
         type: integer
       service_label:
+        description: Service Lable
         type: string
       service_name:
+        description: Service Name
         type: string
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ServiceSummary:
@@ -2685,6 +2822,7 @@ info:
 paths:
   /auth/api/v1/key/{id}:
     get:
+      description: Gets the details of a key in a workspace with specified ID.
       parameters:
       - description: ID
         in: path
@@ -2698,11 +2836,12 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.WorkspaceApiKey'
-      summary: Fetches an API Key
+      summary: Get Workspace Key Details
       tags:
       - auth
   /auth/api/v1/key/{id}/activate:
     post:
+      description: Activates a key in the workspace with specified ID.
       parameters:
       - description: ID
         in: path
@@ -2716,11 +2855,12 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.WorkspaceApiKey'
-      summary: Suspend an API Key
+      summary: Activate Workspace Key
       tags:
       - auth
   /auth/api/v1/key/{id}/delete:
     delete:
+      description: Deletes the specified workspace key by ID.
       parameters:
       - description: ID
         in: path
@@ -2732,11 +2872,12 @@ paths:
       responses:
         "200":
           description: OK
-      summary: Deletes an API Key
+      summary: Deletes Workspace Key
       tags:
       - auth
   /auth/api/v1/key/{id}/suspend:
     post:
+      description: Suspends a key in the workspace with specified ID.
       parameters:
       - description: ID
         in: path
@@ -2750,11 +2891,12 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.WorkspaceApiKey'
-      summary: Suspend an API Key
+      summary: Suspend Workspace Key
       tags:
       - auth
   /auth/api/v1/key/create:
     post:
+      description: Creates workspace key for the defined role with the defined name.
       parameters:
       - description: Request Body
         in: body
@@ -2769,11 +2911,12 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.CreateAPIKeyResponse'
-      summary: Creates an API Key
+      summary: Creates Workspace Key
       tags:
       - auth
   /auth/api/v1/key/role:
     post:
+      description: Updates the role of the specified key in workspace.
       parameters:
       - description: Request Body
         in: body
@@ -2788,11 +2931,12 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.WorkspaceApiKey'
-      summary: Fetches an API Key
+      summary: Update Workspace Key Role
       tags:
       - auth
   /auth/api/v1/keys:
     get:
+      description: Gets a list of available keys in a workspace.
       produces:
       - application/json
       responses:
@@ -2802,11 +2946,12 @@ paths:
             items:
               $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.WorkspaceApiKey'
             type: array
-      summary: Lists all API Keys
+      summary: Get Workspace Keys
       tags:
       - auth
   /auth/api/v1/role/:role/keys:
     get:
+      description: Returns a list of keys in a workspace for the specified role.
       parameters:
       - description: Request Body
         in: body
@@ -2823,11 +2968,12 @@ paths:
             items:
               $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.WorkspaceApiKey'
             type: array
-      summary: Lists all API Keys
+      summary: Get Role Keys
       tags:
       - auth
   /auth/api/v1/role/{role}/users:
     get:
+      description: Returns a list of users in a workspace with the specified role.
       parameters:
       - description: role
         in: path
@@ -2843,11 +2989,13 @@ paths:
             items:
               $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.RoleUser'
             type: array
-      summary: Lists users with a role
+      summary: Lists Role Users
       tags:
       - auth
   /auth/api/v1/roles:
     get:
+      description: Gets a list of roles in a workspace and their descriptions and
+        number of users.
       produces:
       - application/json
       responses:
@@ -2857,11 +3005,13 @@ paths:
             items:
               $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.RolesListResponse'
             type: array
-      summary: show lists of roles.
+      summary: Get Roles
       tags:
       - auth
   /auth/api/v1/roles/{role}:
     get:
+      description: Gets the details of the Role, including the description, number
+        of users and list of those users.
       parameters:
       - description: role
         in: path
@@ -2875,12 +3025,12 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.RoleDetailsResponse'
-      summary: show the description roles and members that use from each role
+      summary: Get Role Details
       tags:
       - auth
   /auth/api/v1/user/{user_id}:
     get:
-      description: Get user details by user id
+      description: Get user details by user id.
       parameters:
       - description: userId
         in: path
@@ -2894,13 +3044,13 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.GetUserResponse'
-      summary: User details
+      summary: Get User details
       tags:
       - auth
   /auth/api/v1/user/{user_id}/workspace/membership:
     get:
       description: Returns a list of workspaces and the user role in it for the specified
-        user
+        user.
       parameters:
       - description: userId
         in: path
@@ -2914,11 +3064,12 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.GetRoleBindingsResponse'
-      summary: List of workspaces which the user is member of
+      summary: User Workspaces
       tags:
       - auth
   /auth/api/v1/user/invite:
     delete:
+      description: Deletes user access to the specified workspace.
       parameters:
       - description: userId
         in: query
@@ -2930,12 +3081,12 @@ paths:
       responses:
         "200":
           description: OK
-      summary: Deletes an Invitation
+      summary: Delete Invitation
       tags:
       - auth
     post:
       description: |-
-        Invites a user to a workspace with defined role
+        Invites a user to a workspace with defined role.
         by sending an email to the specified email address.
         The user will be found by the email address.
       parameters:
@@ -2950,11 +3101,12 @@ paths:
       responses:
         "200":
           description: OK
-      summary: Invites a user
+      summary: Invite User
       tags:
       - auth
   /auth/api/v1/user/role/binding:
     delete:
+      description: Deletes user access to the specified workspace.
       parameters:
       - description: userId
         in: query
@@ -2966,15 +3118,14 @@ paths:
       responses:
         "200":
           description: OK
-      summary: Delete RoleBinding for the defined user in the defined workspace.
+      summary: Delete User Access
       tags:
       - auth
     put:
       description: |-
-        RoleBinding defines the roles and actions a user can perform.
-        There are currently three roles (ADMIN, EDITOR, VIEWER).
-        User must exist before you can update its RoleBinding.
-        If you want to add a role binding for a user given the email address, call invite first to get a user id. Then call this endpoint.
+        User Access defines the roles of a user.
+        There are currently three roles (admin, editor, viewer).
+        User must exist before you can update its Role.
       parameters:
       - description: Request Body
         in: body
@@ -2987,13 +3138,14 @@ paths:
       responses:
         "200":
           description: OK
-      summary: Update RoleBinding for a user.
+      summary: Update User Access
       tags:
       - auth
   /auth/api/v1/user/role/bindings:
     get:
-      description: RoleBinding defines the roles and actions a user can perform. There
-        are currently three roles (ADMIN, EDITOR, VIEWER).
+      description: |-
+        Gets the roles binded to a user.
+        RoleBinding defines the roles and actions a user can perform. There are currently three roles (admin, editor, viewer).
       produces:
       - application/json
       responses:
@@ -3001,12 +3153,12 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.GetRoleBindingsResponse'
-      summary: Get RoleBindings for the calling user
+      summary: Get RoleBindings
       tags:
       - auth
   /auth/api/v1/users:
     get:
-      description: List of users with specified filters
+      description: Gets a list of users with specified filters (filters are optional).
       parameters:
       - description: Request Body
         in: body
@@ -3021,15 +3173,15 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.GetUserResponse'
+              $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.GetUsersResponse'
             type: array
-      summary: Search users
+      summary: Get Users
       tags:
       - auth
   /auth/api/v1/workspace/role/bindings:
     get:
       description: RoleBinding defines the roles and actions a user can perform. There
-        are currently three roles (ADMIN, EDITOR, VIEWER). The workspace path is based
+        are currently three roles (admin, editor, viewer). The workspace path is based
         on the DNS such as (workspace1.app.keibi.io)
       produces:
       - application/json
@@ -4511,7 +4663,8 @@ paths:
       - insight
   /inventory/api/v2/metadata/connectors:
     get:
-      description: Get all connectors
+      description: Gets a list of all connectors in workspace and their metadata including
+        list of their resource types and services names.
       produces:
       - application/json
       responses:
@@ -4521,12 +4674,18 @@ paths:
             items:
               $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ConnectorMetadata'
             type: array
-      summary: Get all connectors
+      summary: Get List of Connectors
       tags:
       - metadata
   /inventory/api/v2/metadata/connectors/{connector}:
     get:
       description: Get a single connector
+      parameters:
+      - description: connector
+        in: path
+        name: connector
+        required: true
+        type: string
       produces:
       - application/json
       responses:
@@ -4539,9 +4698,11 @@ paths:
       - metadata
   /inventory/api/v2/metadata/resourcetype:
     get:
-      description: Get all resource types
+      description: |-
+        Gets a list of all resource types in workspace and their metadata including service name.
+        The results could be filtered by provider name and service name.
       parameters:
-      - description: Connector
+      - description: Filter by Connector
         enum:
         - ""
         - AWS
@@ -4563,12 +4724,19 @@ paths:
             items:
               $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ResourceTypeMetadata'
             type: array
-      summary: Get all resource types
+      summary: Get List of Resource Types
       tags:
       - metadata
   /inventory/api/v2/metadata/resourcetype/{resourceType}:
     get:
-      description: Get all resource types
+      description: Get a single resource type metadata and its details including service
+        name and insights list. Specified by resource type name.
+      parameters:
+      - description: resourceType
+        in: path
+        name: resourceType
+        required: true
+        type: string
       produces:
       - application/json
       responses:
@@ -4576,12 +4744,14 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ResourceTypeMetadata'
-      summary: Get all resource types
+      summary: Get Resource Type
       tags:
       - metadata
   /inventory/api/v2/metadata/services:
     get:
-      description: Get all services
+      description: |-
+        Gets a list of all workspace cloud services and their metadata inclouding parent service, list of resource types and cost support.
+        The results could be filtered by cost support and resource type.
       parameters:
       - description: Connector
         enum:
@@ -4609,12 +4779,19 @@ paths:
             items:
               $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ServiceMetadata'
             type: array
-      summary: Get all services
+      summary: Get List of Cloud Services
       tags:
       - metadata
   /inventory/api/v2/metadata/services/{serviceName}:
     get:
-      description: Get a single service
+      description: Gets a single cloud service details and its metadata inclouding
+        parent service, list of resource types, cost support and costmap service names.
+      parameters:
+      - description: serviceName
+        in: path
+        name: serviceName
+        required: true
+        type: string
       produces:
       - application/json
       responses:
@@ -4622,7 +4799,7 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ServiceMetadata'
-      summary: Get a single service
+      summary: Get Cloud Service Details
       tags:
       - metadata
   /inventory/api/v2/metrics/cost/composition:
@@ -5067,6 +5244,9 @@ paths:
     get:
       consumes:
       - application/json
+      description: Gets the total number of resource types and the API filters and
+        list of resource types with some details. Including filter, connection, service
+        name and resource count.
       parameters:
       - description: ConnectorMetadata
         enum:
@@ -5107,13 +5287,15 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ListResourceTypesResponse'
-      summary: Return list of resource types
+      summary: Get list of Resource Types
       tags:
       - inventory
-  /inventory/api/v2/resources/type/{name}:
+  /inventory/api/v2/resources/type/{resourceName}:
     get:
       consumes:
       - application/json
+      description: Gets the details of the resource type for the specified resource
+        name. Including filter, connection, service name and resource count.
       parameters:
       - description: ConnectorMetadata
         enum:
@@ -5129,6 +5311,11 @@ paths:
           type: string
         name: sourceId
         type: array
+      - description: resource name
+        in: path
+        name: resourceName
+        required: true
+        type: string
       produces:
       - application/json
       responses:
@@ -5136,13 +5323,16 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.FilterCloudResourceType'
-      summary: Return list of resource types
+      summary: Get Resource Type Details
       tags:
       - inventory
   /inventory/api/v2/services/summary:
     get:
       consumes:
       - application/json
+      description: Gets a summary of the services including the number of them and
+        the API filters and a list of services with more details. Including connector,
+        the resource counts and the cost.
       parameters:
       - description: 'filter: SourceIDs'
         in: query
@@ -5197,44 +5387,16 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ListServiceSummariesResponse'
-      summary: Returns Service Summary
+      summary: Get Cloud Services Summary
       tags:
       - benchmarks
   /inventory/api/v2/services/summary/{serviceName}:
     get:
-      description: Get Service Summary
-      parameters:
-      - description: 'filter: SourceIDs'
-        in: query
-        items:
-          type: string
-        name: sourceId
-        type: array
-      - description: 'filter: Provider'
-        in: query
-        name: provider
-        type: string
-      - description: start time for cost calculation in epoch seconds
-        in: query
-        name: startTime
-        required: true
-        type: string
-      - description: end time for cost calculation and time resource count in epoch
-          seconds
-        in: query
-        name: endTime
-        required: true
-        type: string
-      produces:
-      - application/json
       responses:
         "200":
           description: OK
           schema:
             $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ListServiceSummariesResponse'
-      summary: Get Service Summary
-      tags:
-      - benchmarks
   /metadata/api/v1/metadata:
     post:
       description: Sets the config metadata for the given key

@@ -63,7 +63,7 @@ func GetUserRole(ctx echo.Context) api.Role {
 		panic(fmt.Errorf("header %s is missing", XKeibiUserRoleHeader))
 	}
 
-	return api.Role(role)
+	return api.GetRole(role)
 }
 
 func GetUserID(ctx echo.Context) string {

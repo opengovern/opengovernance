@@ -364,7 +364,7 @@ func (a *Service) SearchUsers(wsID string, email *string, emailVerified *bool, r
 	res, err := http.DefaultClient.Do(req)
 	if res.StatusCode != http.StatusOK {
 		r, _ := ioutil.ReadAll(res.Body)
-		return nil, fmt.Errorf("[SearchUsersByWorkspace] invalid status code: %d, body=%s", res.StatusCode, string(r))
+		return nil, fmt.Errorf("[SearchUsers] invalid status code: %d, body=%s", res.StatusCode, string(r))
 	}
 
 	r, err := ioutil.ReadAll(res.Body)

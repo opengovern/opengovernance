@@ -17,13 +17,14 @@ const docTemplate = `{
     "paths": {
         "/auth/api/v1/key/create": {
             "post": {
+                "description": "Creates workspace key for the defined role with the defined name.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "auth"
                 ],
-                "summary": "Creates an API Key",
+                "summary": "Creates Workspace Key",
                 "parameters": [
                     {
                         "description": "Request Body",
@@ -47,13 +48,14 @@ const docTemplate = `{
         },
         "/auth/api/v1/key/role": {
             "post": {
+                "description": "Updates the role of the specified key in workspace.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "auth"
                 ],
-                "summary": "Fetches an API Key",
+                "summary": "Update Workspace Key Role",
                 "parameters": [
                     {
                         "description": "Request Body",
@@ -77,13 +79,14 @@ const docTemplate = `{
         },
         "/auth/api/v1/key/{id}": {
             "get": {
+                "description": "Gets the details of a key in a workspace with specified ID.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "auth"
                 ],
-                "summary": "Fetches an API Key",
+                "summary": "Get Workspace Key Details",
                 "parameters": [
                     {
                         "type": "string",
@@ -105,13 +108,14 @@ const docTemplate = `{
         },
         "/auth/api/v1/key/{id}/activate": {
             "post": {
+                "description": "Activates a key in the workspace with specified ID.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "auth"
                 ],
-                "summary": "Suspend an API Key",
+                "summary": "Activate Workspace Key",
                 "parameters": [
                     {
                         "type": "string",
@@ -133,13 +137,14 @@ const docTemplate = `{
         },
         "/auth/api/v1/key/{id}/delete": {
             "delete": {
+                "description": "Deletes the specified workspace key by ID.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "auth"
                 ],
-                "summary": "Deletes an API Key",
+                "summary": "Deletes Workspace Key",
                 "parameters": [
                     {
                         "type": "string",
@@ -158,13 +163,14 @@ const docTemplate = `{
         },
         "/auth/api/v1/key/{id}/suspend": {
             "post": {
+                "description": "Suspends a key in the workspace with specified ID.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "auth"
                 ],
-                "summary": "Suspend an API Key",
+                "summary": "Suspend Workspace Key",
                 "parameters": [
                     {
                         "type": "string",
@@ -186,13 +192,14 @@ const docTemplate = `{
         },
         "/auth/api/v1/keys": {
             "get": {
+                "description": "Gets a list of available keys in a workspace.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "auth"
                 ],
-                "summary": "Lists all API Keys",
+                "summary": "Get Workspace Keys",
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -208,13 +215,14 @@ const docTemplate = `{
         },
         "/auth/api/v1/role/:role/keys": {
             "get": {
+                "description": "Returns a list of keys in a workspace for the specified role.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "auth"
                 ],
-                "summary": "Lists all API Keys",
+                "summary": "Get Role Keys",
                 "parameters": [
                     {
                         "description": "Request Body",
@@ -241,13 +249,14 @@ const docTemplate = `{
         },
         "/auth/api/v1/role/{role}/users": {
             "get": {
+                "description": "Returns a list of users in a workspace with the specified role.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "auth"
                 ],
-                "summary": "Lists users with a role",
+                "summary": "Lists Role Users",
                 "parameters": [
                     {
                         "type": "string",
@@ -272,13 +281,14 @@ const docTemplate = `{
         },
         "/auth/api/v1/roles": {
             "get": {
+                "description": "Gets a list of roles in a workspace and their descriptions and number of users.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "auth"
                 ],
-                "summary": "show lists of roles.",
+                "summary": "Get Roles",
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -294,13 +304,14 @@ const docTemplate = `{
         },
         "/auth/api/v1/roles/{role}": {
             "get": {
+                "description": "Gets the details of the Role, including the description, number of users and list of those users.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "auth"
                 ],
-                "summary": "show the description roles and members that use from each role",
+                "summary": "Get Role Details",
                 "parameters": [
                     {
                         "type": "string",
@@ -322,14 +333,14 @@ const docTemplate = `{
         },
         "/auth/api/v1/user/invite": {
             "post": {
-                "description": "Invites a user to a workspace with defined role\nby sending an email to the specified email address.\nThe user will be found by the email address.",
+                "description": "Invites a user to a workspace with defined role.\nby sending an email to the specified email address.\nThe user will be found by the email address.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "auth"
                 ],
-                "summary": "Invites a user",
+                "summary": "Invite User",
                 "parameters": [
                     {
                         "description": "Request Body",
@@ -348,13 +359,14 @@ const docTemplate = `{
                 }
             },
             "delete": {
+                "description": "Deletes user access to the specified workspace.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "auth"
                 ],
-                "summary": "Deletes an Invitation",
+                "summary": "Delete Invitation",
                 "parameters": [
                     {
                         "type": "string",
@@ -373,14 +385,14 @@ const docTemplate = `{
         },
         "/auth/api/v1/user/role/binding": {
             "put": {
-                "description": "RoleBinding defines the roles and actions a user can perform.\nThere are currently three roles (ADMIN, EDITOR, VIEWER).\nUser must exist before you can update its RoleBinding.\nIf you want to add a role binding for a user given the email address, call invite first to get a user id. Then call this endpoint.",
+                "description": "User Access defines the roles of a user.\nThere are currently three roles (admin, editor, viewer).\nUser must exist before you can update its Role.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "auth"
                 ],
-                "summary": "Update RoleBinding for a user.",
+                "summary": "Update User Access",
                 "parameters": [
                     {
                         "description": "Request Body",
@@ -399,13 +411,14 @@ const docTemplate = `{
                 }
             },
             "delete": {
+                "description": "Deletes user access to the specified workspace.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "auth"
                 ],
-                "summary": "Delete RoleBinding for the defined user in the defined workspace.",
+                "summary": "Delete User Access",
                 "parameters": [
                     {
                         "type": "string",
@@ -424,14 +437,14 @@ const docTemplate = `{
         },
         "/auth/api/v1/user/role/bindings": {
             "get": {
-                "description": "RoleBinding defines the roles and actions a user can perform. There are currently three roles (ADMIN, EDITOR, VIEWER).",
+                "description": "Gets the roles binded to a user.\nRoleBinding defines the roles and actions a user can perform. There are currently three roles (admin, editor, viewer).",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "auth"
                 ],
-                "summary": "Get RoleBindings for the calling user",
+                "summary": "Get RoleBindings",
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -444,14 +457,14 @@ const docTemplate = `{
         },
         "/auth/api/v1/user/{user_id}": {
             "get": {
-                "description": "Get user details by user id",
+                "description": "Get user details by user id.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "auth"
                 ],
-                "summary": "User details",
+                "summary": "Get User details",
                 "parameters": [
                     {
                         "type": "string",
@@ -473,14 +486,14 @@ const docTemplate = `{
         },
         "/auth/api/v1/user/{user_id}/workspace/membership": {
             "get": {
-                "description": "Returns a list of workspaces and the user role in it for the specified user",
+                "description": "Returns a list of workspaces and the user role in it for the specified user.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "auth"
                 ],
-                "summary": "List of workspaces which the user is member of",
+                "summary": "User Workspaces",
                 "parameters": [
                     {
                         "type": "string",
@@ -502,14 +515,14 @@ const docTemplate = `{
         },
         "/auth/api/v1/users": {
             "get": {
-                "description": "List of users with specified filters",
+                "description": "Gets a list of users with specified filters (filters are optional).",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "auth"
                 ],
-                "summary": "Search users",
+                "summary": "Get Users",
                 "parameters": [
                     {
                         "description": "Request Body",
@@ -527,7 +540,7 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.GetUserResponse"
+                                "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.GetUsersResponse"
                             }
                         }
                     }
@@ -536,7 +549,7 @@ const docTemplate = `{
         },
         "/auth/api/v1/workspace/role/bindings": {
             "get": {
-                "description": "RoleBinding defines the roles and actions a user can perform. There are currently three roles (ADMIN, EDITOR, VIEWER). The workspace path is based on the DNS such as (workspace1.app.keibi.io)",
+                "description": "RoleBinding defines the roles and actions a user can perform. There are currently three roles (admin, editor, viewer). The workspace path is based on the DNS such as (workspace1.app.keibi.io)",
                 "produces": [
                     "application/json"
                 ],
@@ -2737,14 +2750,14 @@ const docTemplate = `{
         },
         "/inventory/api/v2/metadata/connectors": {
             "get": {
-                "description": "Get all connectors",
+                "description": "Gets a list of all connectors in workspace and their metadata including list of their resource types and services names.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "metadata"
                 ],
-                "summary": "Get all connectors",
+                "summary": "Get List of Connectors",
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -2768,6 +2781,15 @@ const docTemplate = `{
                     "metadata"
                 ],
                 "summary": "Get a single connector",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "connector",
+                        "name": "connector",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -2780,14 +2802,14 @@ const docTemplate = `{
         },
         "/inventory/api/v2/metadata/resourcetype": {
             "get": {
-                "description": "Get all resource types",
+                "description": "Gets a list of all resource types in workspace and their metadata including service name.\nThe results could be filtered by provider name and service name.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "metadata"
                 ],
-                "summary": "Get all resource types",
+                "summary": "Get List of Resource Types",
                 "parameters": [
                     {
                         "enum": [
@@ -2796,7 +2818,7 @@ const docTemplate = `{
                             "Azure"
                         ],
                         "type": "string",
-                        "description": "Connector",
+                        "description": "Filter by Connector",
                         "name": "connector",
                         "in": "query",
                         "required": true
@@ -2823,14 +2845,23 @@ const docTemplate = `{
         },
         "/inventory/api/v2/metadata/resourcetype/{resourceType}": {
             "get": {
-                "description": "Get all resource types",
+                "description": "Get a single resource type metadata and its details including service name and insights list. Specified by resource type name.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "metadata"
                 ],
-                "summary": "Get all resource types",
+                "summary": "Get Resource Type",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "resourceType",
+                        "name": "resourceType",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -2843,14 +2874,14 @@ const docTemplate = `{
         },
         "/inventory/api/v2/metadata/services": {
             "get": {
-                "description": "Get all services",
+                "description": "Gets a list of all workspace cloud services and their metadata inclouding parent service, list of resource types and cost support.\nThe results could be filtered by cost support and resource type.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "metadata"
                 ],
-                "summary": "Get all services",
+                "summary": "Get List of Cloud Services",
                 "parameters": [
                     {
                         "enum": [
@@ -2892,14 +2923,23 @@ const docTemplate = `{
         },
         "/inventory/api/v2/metadata/services/{serviceName}": {
             "get": {
-                "description": "Get a single service",
+                "description": "Gets a single cloud service details and its metadata inclouding parent service, list of resource types, cost support and costmap service names.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "metadata"
                 ],
-                "summary": "Get a single service",
+                "summary": "Get Cloud Service Details",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "serviceName",
+                        "name": "serviceName",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -3548,6 +3588,7 @@ const docTemplate = `{
         },
         "/inventory/api/v2/resources/type": {
             "get": {
+                "description": "Gets the total number of resource types and the API filters and list of resource types with some details. Including filter, connection, service name and resource count.",
                 "consumes": [
                     "application/json"
                 ],
@@ -3557,7 +3598,7 @@ const docTemplate = `{
                 "tags": [
                     "inventory"
                 ],
-                "summary": "Return list of resource types",
+                "summary": "Get list of Resource Types",
                 "parameters": [
                     {
                         "enum": [
@@ -3617,8 +3658,9 @@ const docTemplate = `{
                 }
             }
         },
-        "/inventory/api/v2/resources/type/{name}": {
+        "/inventory/api/v2/resources/type/{resourceName}": {
             "get": {
+                "description": "Gets the details of the resource type for the specified resource name. Including filter, connection, service name and resource count.",
                 "consumes": [
                     "application/json"
                 ],
@@ -3628,7 +3670,7 @@ const docTemplate = `{
                 "tags": [
                     "inventory"
                 ],
-                "summary": "Return list of resource types",
+                "summary": "Get Resource Type Details",
                 "parameters": [
                     {
                         "enum": [
@@ -3649,6 +3691,13 @@ const docTemplate = `{
                         "description": "SourceID",
                         "name": "sourceId",
                         "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "resource name",
+                        "name": "resourceName",
+                        "in": "path",
+                        "required": true
                     }
                 ],
                 "responses": {
@@ -3663,6 +3712,7 @@ const docTemplate = `{
         },
         "/inventory/api/v2/services/summary": {
             "get": {
+                "description": "Gets a summary of the services including the number of them and the API filters and a list of services with more details. Including connector, the resource counts and the cost.",
                 "consumes": [
                     "application/json"
                 ],
@@ -3672,7 +3722,7 @@ const docTemplate = `{
                 "tags": [
                     "benchmarks"
                 ],
-                "summary": "Returns Service Summary",
+                "summary": "Get Cloud Services Summary",
                 "parameters": [
                     {
                         "type": "array",
@@ -3751,45 +3801,6 @@ const docTemplate = `{
         },
         "/inventory/api/v2/services/summary/{serviceName}": {
             "get": {
-                "description": "Get Service Summary",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "benchmarks"
-                ],
-                "summary": "Get Service Summary",
-                "parameters": [
-                    {
-                        "type": "array",
-                        "items": {
-                            "type": "string"
-                        },
-                        "description": "filter: SourceIDs",
-                        "name": "sourceId",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "filter: Provider",
-                        "name": "provider",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "start time for cost calculation in epoch seconds",
-                        "name": "startTime",
-                        "in": "query",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "end time for cost calculation and time resource count in epoch seconds",
-                        "name": "endTime",
-                        "in": "query",
-                        "required": true
-                    }
-                ],
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -5953,7 +5964,8 @@ const docTemplate = `{
             "properties": {
                 "blocked": {
                     "description": "Is the user blocked or not",
-                    "type": "boolean"
+                    "type": "boolean",
+                    "example": false
                 },
                 "createdAt": {
                     "description": "Creation timestamp in UTC",
@@ -5961,39 +5973,54 @@ const docTemplate = `{
                 },
                 "email": {
                     "description": "Email address of the user",
-                    "type": "string"
+                    "type": "string",
+                    "example": "sample@gmail.com"
                 },
                 "emailVerified": {
                     "description": "Is email verified or not",
-                    "type": "boolean"
+                    "type": "boolean",
+                    "example": true
                 },
                 "lastActivity": {
                     "description": "Last activity timestamp in UTC",
                     "type": "string"
                 },
-                "role": {
-                    "description": "Name of the role in the specified workspace",
+                "roleName": {
+                    "description": "Name of the role",
+                    "enum": [
+                        "admin",
+                        "editor",
+                        "viewer"
+                    ],
                     "allOf": [
                         {
                             "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.Role"
                         }
-                    ]
+                    ],
+                    "example": "admin"
                 },
                 "status": {
                     "description": "Invite status",
+                    "enum": [
+                        "accepted",
+                        "pending"
+                    ],
                     "allOf": [
                         {
                             "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.InviteStatus"
                         }
-                    ]
+                    ],
+                    "example": "pending"
                 },
                 "userId": {
                     "description": "Unique identifier for the user",
-                    "type": "string"
+                    "type": "string",
+                    "example": "sampleID"
                 },
                 "userName": {
                     "description": "Username",
-                    "type": "string"
+                    "type": "string",
+                    "example": "sampleName"
                 }
             }
         },
@@ -6001,13 +6028,66 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "email": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "sample@gmail.com"
                 },
                 "emailVerified": {
-                    "type": "boolean"
+                    "description": "Filter by",
+                    "type": "boolean",
+                    "example": true
                 },
-                "role": {
-                    "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.Role"
+                "roleName": {
+                    "description": "Filter by role name",
+                    "enum": [
+                        "admin",
+                        "editor",
+                        "viewer"
+                    ],
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.Role"
+                        }
+                    ],
+                    "example": "admin"
+                }
+            }
+        },
+        "gitlab_com_keibiengine_keibi-engine_pkg_auth_api.GetUsersResponse": {
+            "type": "object",
+            "properties": {
+                "email": {
+                    "description": "Email address of the user",
+                    "type": "string",
+                    "example": "sample@gmail.com"
+                },
+                "emailVerified": {
+                    "description": "Is email verified or not",
+                    "type": "boolean",
+                    "example": true
+                },
+                "roleName": {
+                    "description": "Name of the role",
+                    "enum": [
+                        "admin",
+                        "editor",
+                        "viewer"
+                    ],
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.Role"
+                        }
+                    ],
+                    "example": "admin"
+                },
+                "userId": {
+                    "description": "Unique identifier for the user",
+                    "type": "string",
+                    "example": "sampleID"
+                },
+                "userName": {
+                    "description": "Username",
+                    "type": "string",
+                    "example": "sampleName"
                 }
             }
         },
@@ -6019,23 +6099,30 @@ const docTemplate = `{
             "properties": {
                 "email": {
                     "description": "User email address",
-                    "type": "string"
+                    "type": "string",
+                    "example": "sample@gmail.com"
                 },
-                "role": {
+                "roleName": {
                     "description": "Name of the role",
+                    "enum": [
+                        "admin",
+                        "editor",
+                        "viewer"
+                    ],
                     "allOf": [
                         {
                             "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.Role"
                         }
-                    ]
+                    ],
+                    "example": "admin"
                 }
             }
         },
         "gitlab_com_keibiengine_keibi-engine_pkg_auth_api.InviteStatus": {
             "type": "string",
             "enum": [
-                "ACCEPTED",
-                "PENDING"
+                "accepted",
+                "pending"
             ],
             "x-enum-varnames": [
                 "InviteStatus_ACCEPTED",
@@ -6045,17 +6132,23 @@ const docTemplate = `{
         "gitlab_com_keibiengine_keibi-engine_pkg_auth_api.PutRoleBindingRequest": {
             "type": "object",
             "required": [
-                "role",
+                "roleName",
                 "userId"
             ],
             "properties": {
-                "role": {
+                "roleName": {
                     "description": "Name of the role",
+                    "enum": [
+                        "admin",
+                        "editor",
+                        "viewer"
+                    ],
                     "allOf": [
                         {
                             "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.Role"
                         }
-                    ]
+                    ],
+                    "example": "admin"
                 },
                 "userId": {
                     "description": "Unique identifier for the User",
@@ -6066,10 +6159,10 @@ const docTemplate = `{
         "gitlab_com_keibiengine_keibi-engine_pkg_auth_api.Role": {
             "type": "string",
             "enum": [
-                "KEIBI-ADMIN",
-                "ADMIN",
-                "EDITOR",
-                "VIEWER"
+                "keibi-admin",
+                "admin",
+                "editor",
+                "viewer"
             ],
             "x-enum-varnames": [
                 "KeibiAdminRole",
@@ -6082,18 +6175,30 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "description": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "The Administrator role is a super user role with all of the capabilities that can be assigned to a role, and its enables access to all data \u0026 configuration on a Kaytu Workspace. You cannot edit or delete the Administrator role."
                 },
                 "role": {
-                    "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.Role"
+                    "enum": [
+                        "admin",
+                        "editor",
+                        "viewer"
+                    ],
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.Role"
+                        }
+                    ],
+                    "example": "admin"
                 },
                 "userCount": {
-                    "type": "integer"
+                    "type": "integer",
+                    "example": 1
                 },
                 "users": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.GetUserResponse"
+                        "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.GetUsersResponse"
                     }
                 }
             }
@@ -6103,7 +6208,8 @@ const docTemplate = `{
             "properties": {
                 "blocked": {
                     "description": "Is the user blocked or not",
-                    "type": "boolean"
+                    "type": "boolean",
+                    "example": false
                 },
                 "createdAt": {
                     "description": "Creation timestamp in UTC",
@@ -6111,46 +6217,64 @@ const docTemplate = `{
                 },
                 "email": {
                     "description": "Email address of the user",
-                    "type": "string"
+                    "type": "string",
+                    "example": "sample@gmail.com"
                 },
                 "emailVerified": {
                     "description": "Is email verified or not",
-                    "type": "boolean"
+                    "type": "boolean",
+                    "example": true
                 },
                 "lastActivity": {
                     "description": "Last activity timestamp in UTC",
                     "type": "string"
                 },
-                "role": {
+                "roleName": {
                     "description": "Name of the role",
+                    "enum": [
+                        "admin",
+                        "editor",
+                        "viewer"
+                    ],
                     "allOf": [
                         {
                             "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.Role"
                         }
-                    ]
+                    ],
+                    "example": "admin"
                 },
                 "status": {
                     "description": "Invite status",
+                    "enum": [
+                        "accepted",
+                        "pending"
+                    ],
                     "allOf": [
                         {
                             "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.InviteStatus"
                         }
-                    ]
+                    ],
+                    "example": "pending"
                 },
                 "userId": {
                     "description": "Unique identifier for the user",
-                    "type": "string"
+                    "type": "string",
+                    "example": "sampleID"
                 },
                 "userName": {
                     "description": "Username",
-                    "type": "string"
+                    "type": "string",
+                    "example": "sampleName"
                 },
                 "workspaces": {
                     "description": "A list of workspace ids which the user has the specified role in them",
                     "type": "array",
                     "items": {
                         "type": "string"
-                    }
+                    },
+                    "example": [
+                        "demoWorkspace"
+                    ]
                 }
             }
         },
@@ -6158,13 +6282,25 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "description": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "The Administrator role is a super user role with all of the capabilities that can be assigned to a role, and its enables access to all data \u0026 configuration on a Kaytu Workspace. You cannot edit or delete the Administrator role."
                 },
-                "role": {
-                    "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.Role"
+                "roleName": {
+                    "enum": [
+                        "admin",
+                        "editor",
+                        "viewer"
+                    ],
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.Role"
+                        }
+                    ],
+                    "example": "admin"
                 },
                 "userCount": {
-                    "type": "integer"
+                    "type": "integer",
+                    "example": 1
                 }
             }
         },
@@ -6182,13 +6318,19 @@ const docTemplate = `{
         "gitlab_com_keibiengine_keibi-engine_pkg_auth_api.UserRoleBinding": {
             "type": "object",
             "properties": {
-                "role": {
+                "roleName": {
                     "description": "Name of the binding Role",
+                    "enum": [
+                        "admin",
+                        "editor",
+                        "viewer"
+                    ],
                     "allOf": [
                         {
                             "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.Role"
                         }
-                    ]
+                    ],
+                    "example": "admin"
                 },
                 "workspaceID": {
                     "description": "Unique identifier for the Workspace",
@@ -6234,35 +6376,49 @@ const docTemplate = `{
                 },
                 "email": {
                     "description": "Email address of the user",
-                    "type": "string"
+                    "type": "string",
+                    "example": "sample@gmail.com"
                 },
                 "lastActivity": {
                     "description": "Last activity timestamp in UTC",
                     "type": "string"
                 },
-                "role": {
+                "roleName": {
                     "description": "Name of the role",
+                    "enum": [
+                        "admin",
+                        "editor",
+                        "viewer"
+                    ],
                     "allOf": [
                         {
                             "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.Role"
                         }
-                    ]
+                    ],
+                    "example": "admin"
                 },
                 "status": {
                     "description": "Invite status",
+                    "enum": [
+                        "accepted",
+                        "pending"
+                    ],
                     "allOf": [
                         {
                             "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.InviteStatus"
                         }
-                    ]
+                    ],
+                    "example": "pending"
                 },
                 "userId": {
                     "description": "Unique identifier for the user",
-                    "type": "string"
+                    "type": "string",
+                    "example": "sampleID"
                 },
                 "userName": {
                     "description": "Username",
-                    "type": "string"
+                    "type": "string",
+                    "example": "sampleName"
                 }
             }
         },
@@ -7649,15 +7805,22 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "connector": {
-                    "$ref": "#/definitions/source.Type"
+                    "description": "Connector",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/source.Type"
+                        }
+                    ]
                 },
                 "connector_label": {
+                    "description": "Connector Label",
                     "type": "string"
                 },
                 "logo_uri": {
                     "type": "string"
                 },
                 "resource_types": {
+                    "description": "List of resource types",
                     "type": "array",
                     "items": {
                         "type": "string"
@@ -7667,6 +7830,7 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "services": {
+                    "description": "List of cloud services",
                     "type": "array",
                     "items": {
                         "type": "string"
@@ -8510,6 +8674,7 @@ const docTemplate = `{
                     }
                 },
                 "compliance": {
+                    "description": "List of Compliances that support this Resource Type",
                     "type": "array",
                     "items": {
                         "type": "string"
@@ -8519,12 +8684,19 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "connector": {
-                    "$ref": "#/definitions/source.Type"
+                    "description": "Resource type connector",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/source.Type"
+                        }
+                    ]
                 },
                 "discovery_enabled": {
+                    "description": "Discovery support enabled",
                     "type": "boolean"
                 },
                 "insights": {
+                    "description": "List of Insights that support this Resource Type",
                     "type": "array",
                     "items": {
                         "type": "integer"
@@ -8537,12 +8709,15 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "resource_type_label": {
+                    "description": "Resource type lable",
                     "type": "string"
                 },
                 "resource_type_name": {
+                    "description": "Resource type name",
                     "type": "string"
                 },
                 "service_name": {
+                    "description": "Platform Patern Service name",
                     "type": "string"
                 }
             }
@@ -8613,24 +8788,33 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "connector": {
-                    "$ref": "#/definitions/source.Type"
+                    "description": "Service Connector",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/source.Type"
+                        }
+                    ]
                 },
                 "cost_map_service_names": {
+                    "description": "List of Cost map service names",
                     "type": "array",
                     "items": {
                         "type": "string"
                     }
                 },
                 "cost_support": {
+                    "description": "Cost is supported [yes/no]",
                     "type": "boolean"
                 },
                 "logo_uri": {
                     "type": "string"
                 },
                 "parent_service": {
+                    "description": "Parent service",
                     "type": "string"
                 },
                 "resource_types": {
+                    "description": "List of resource types",
                     "type": "array",
                     "items": {
                         "type": "string"
@@ -8640,9 +8824,11 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "service_label": {
+                    "description": "Service Lable",
                     "type": "string"
                 },
                 "service_name": {
+                    "description": "Service Name",
                     "type": "string"
                 }
             }

@@ -84,7 +84,7 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	v2.GET("/resources/trend", httpserver.AuthorizeHandler(h.GetResourceGrowthTrendV2, api3.ViewerRole))
 	v2.GET("/cost/trend", httpserver.AuthorizeHandler(h.GetCostGrowthTrendV2, api3.ViewerRole))
 	v2.GET("/resources/type", httpserver.AuthorizeHandler(h.ListResourceTypes, api3.ViewerRole))
-	v2.GET("/resources/type/:name", httpserver.AuthorizeHandler(h.GetResourceType, api3.ViewerRole))
+	v2.GET("/resources/type/:resourceName", httpserver.AuthorizeHandler(h.GetResourceType, api3.ViewerRole))
 
 	v1.GET("/accounts/resource/count", httpserver.AuthorizeHandler(h.GetAccountsResourceCount, api3.ViewerRole))
 	v2.GET("/accounts/summary", httpserver.AuthorizeHandler(h.GetAccountSummary, api3.ViewerRole))
@@ -1312,18 +1312,19 @@ func (h *HttpHandler) GetCategoryNodeResourceCount(ctx echo.Context) error {
 
 // ListResourceTypes godoc
 //
-//	@Summary	Return list of resource types
-//	@Tags		inventory
-//	@Accept		json
-//	@Produce	json
-//	@Param		connector			query		source.Type	false	"ConnectorMetadata"
-//	@Param		sourceId			query		[]string	false	"SourceID"
-//	@Param		serviceName			query		[]string	false	"serviceName"
-//	@Param		minResourceCount	query		int			false	"minResourceCount"
-//	@Param		pageSize			query		int			false	"page size - default is 20"
-//	@Param		pageNumber			query		int			false	"page number - default is 1"
-//	@Success	200					{object}	api.ListResourceTypesResponse
-//	@Router		/inventory/api/v2/resources/type [get]
+//	@Summary		Get list of Resource Types
+//	@Description	Gets the total number of resource types and the API filters and list of resource types with some details. Including filter, connection, service name and resource count.
+//	@Tags			inventory
+//	@Accept			json
+//	@Produce		json
+//	@Param			connector			query		source.Type	false	"ConnectorMetadata"
+//	@Param			sourceId			query		[]string	false	"SourceID"
+//	@Param			serviceName			query		[]string	false	"serviceName"
+//	@Param			minResourceCount	query		int			false	"minResourceCount"
+//	@Param			pageSize			query		int			false	"page size - default is 20"
+//	@Param			pageNumber			query		int			false	"page number - default is 1"
+//	@Success		200					{object}	api.ListResourceTypesResponse
+//	@Router			/inventory/api/v2/resources/type [get]
 func (h *HttpHandler) ListResourceTypes(ctx echo.Context) error {
 	var err error
 	connector, _ := source.ParseType(ctx.QueryParam("connector"))
@@ -1422,17 +1423,19 @@ func (h *HttpHandler) ListResourceTypes(ctx echo.Context) error {
 
 // GetResourceType godoc
 //
-//	@Summary	Return list of resource types
-//	@Tags		inventory
-//	@Accept		json
-//	@Produce	json
-//	@Param		connector	query		source.Type	false	"ConnectorMetadata"
-//	@Param		sourceId	query		[]string	false	"SourceID"
-//	@Success	200			{object}	api.FilterCloudResourceType
-//	@Router		/inventory/api/v2/resources/type/{name} [get]
+//	@Summary		Get Resource Type Details
+//	@Description	Gets the details of the resource type for the specified resource name. Including filter, connection, service name and resource count.
+//	@Tags			inventory
+//	@Accept			json
+//	@Produce		json
+//	@Param			connector		query		source.Type	false	"ConnectorMetadata"
+//	@Param			sourceId		query		[]string	false	"SourceID"
+//	@Param			resourceName	path		string		true	"resource name"
+//	@Success		200				{object}	api.FilterCloudResourceType
+//	@Router			/inventory/api/v2/resources/type/{resourceName} [get]
 func (h *HttpHandler) GetResourceType(ctx echo.Context) error {
 	var err error
-	resourceType := ctx.Param("name")
+	resourceType := ctx.Param("resourceName")
 	connector, _ := source.ParseType(ctx.QueryParam("connector"))
 	sourceIDs := ctx.QueryParams()["sourceId"]
 	if len(sourceIDs) == 0 {
@@ -2605,21 +2608,22 @@ func (h *HttpHandler) GetServiceDistribution(ctx echo.Context) error {
 
 // ListServiceSummaries godoc
 //
-//	@Summary	Returns Service Summary
-//	@Tags		benchmarks
-//	@Accept		json
-//	@Produce	json
-//	@Param		sourceId	query		[]string	false	"filter: SourceIDs"
-//	@Param		provider	query		string		false	"filter: Provider"
-//	@Param		category	query		string		false	"filter: Category for the services"
-//	@Param		startTime	query		string		true	"start time for cost calculation in epoch seconds"
-//	@Param		endTime		query		string		true	"end time for cost calculation and time resource count in epoch seconds"
-//	@Param		minSpent	query		int			false	"filter: minimum spent amount for the service in the specified time"
-//	@Param		pageSize	query		int			false	"page size - default is 20"
-//	@Param		pageNumber	query		int			false	"page number - default is 1"
-//	@Param		sortBy		query		string		false	"column to sort by - default is cost"	Enums(servicecode,resourcecount,cost)
-//	@Success	200			{object}	api.ListServiceSummariesResponse
-//	@Router		/inventory/api/v2/services/summary [get]
+//	@Summary		Get Cloud Services Summary
+//	@Description	Gets a summary of the services including the number of them and the API filters and a list of services with more details. Including connector, the resource counts and the cost.
+//	@Tags			benchmarks
+//	@Accept			json
+//	@Produce		json
+//	@Param			sourceId	query		[]string	false	"filter: SourceIDs"
+//	@Param			provider	query		string		false	"filter: Provider"
+//	@Param			category	query		string		false	"filter: Category for the services"
+//	@Param			startTime	query		string		true	"start time for cost calculation in epoch seconds"
+//	@Param			endTime		query		string		true	"end time for cost calculation and time resource count in epoch seconds"
+//	@Param			minSpent	query		int			false	"filter: minimum spent amount for the service in the specified time"
+//	@Param			pageSize	query		int			false	"page size - default is 20"
+//	@Param			pageNumber	query		int			false	"page number - default is 1"
+//	@Param			sortBy		query		string		false	"column to sort by - default is cost"	Enums(servicecode,resourcecount,cost)
+//	@Success		200			{object}	api.ListServiceSummariesResponse
+//	@Router			/inventory/api/v2/services/summary [get]
 func (h *HttpHandler) ListServiceSummaries(ctx echo.Context) error {
 	var err error
 
@@ -2882,19 +2886,20 @@ func (h *HttpHandler) ListServiceSummaries(ctx echo.Context) error {
 
 // GetServiceSummary godoc
 //
-//	@Summary		Get Service Summary
-//	@Description	Get Service Summary
+//	@Summary		Get Cloud Service Summary
+//	@Description	Get Cloud Service Summary for the specified service name. Including connector, the resource counts and the cost.
 //	@Tags			benchmarks
 //	@Accepts		json
 //	@Produce		json
 //
-//	@Param			sourceId	query		[]string	false	"filter: SourceIDs"
-//	@Param			provider	query		string		false	"filter: Provider"
-//	@Param			startTime	query		string		true	"start time for cost calculation in epoch seconds"
-//	@Param			endTime		query		string		true	"end time for cost calculation and time resource count in epoch seconds"
-//
-//	@Success		200			{object}	api.ListServiceSummariesResponse
-//	@Router			/inventory/api/v2/services/summary/{serviceName} [get]
+//	@Param			sourceId	query	[]string	false	"filter: SourceIDs"
+//	@Param			provider	query	string		false	"filter: Provider"
+//	@Param			startTime	query	string		true	"start time for cost calculation in epoch seconds"
+//	@Param			endTime		query	string		true	"end time for cost calculation and time resource count in epoch seconds"
+//	@Param			serviceName	path	string		true	"service name"
+
+//	@Success	200	{object}	api.ListServiceSummariesResponse
+//	@Router		/inventory/api/v2/services/summary/{serviceName} [get]
 func (h *HttpHandler) GetServiceSummary(ctx echo.Context) error {
 	serviceName := ctx.Param("serviceName")
 	if serviceName == "" {
@@ -4488,8 +4493,8 @@ func (h *HttpHandler) GetInsightTrend(ctx echo.Context) error {
 
 // ListConnectorMetadata godoc
 //
-//	@Summary		Get all connectors
-//	@Description	Get all connectors
+//	@Summary		Get List of Connectors
+//	@Description	Gets a list of all connectors in workspace and their metadata including list of their resource types and services names.
 //	@Tags			metadata
 //	@Produce		json
 //	@Success		200	{object}	[]api.ConnectorMetadata
@@ -4532,7 +4537,8 @@ func (h *HttpHandler) ListConnectorMetadata(ctx echo.Context) error {
 //	@Description	Get a single connector
 //	@Tags			metadata
 //	@Produce		json
-//	@Success		200	{object}	api.ConnectorMetadata
+//	@Param			connector	path		string	true	"connector"
+//	@Success		200			{object}	api.ConnectorMetadata
 //	@Router			/inventory/api/v2/metadata/connectors/{connector} [get]
 func (h *HttpHandler) GetConnectorMetadata(ctx echo.Context) error {
 	connector, err := source.ParseType(ctx.Param("connector"))
@@ -4573,8 +4579,9 @@ func (h *HttpHandler) GetConnectorMetadata(ctx echo.Context) error {
 
 // ListServiceMetadata godoc
 //
-//	@Summary		Get all services
-//	@Description	Get all services
+//	@Summary		Get List of Cloud Services
+//	@Description	Gets a list of all workspace cloud services and their metadata inclouding parent service, list of resource types and cost support.
+//	@Description	The results could be filtered by cost support and resource type.
 //	@Tags			metadata
 //	@Produce		json
 //	@Param			connector		query		source.Type	true	"Connector"
@@ -4647,12 +4654,12 @@ func (h *HttpHandler) ListServiceMetadata(ctx echo.Context) error {
 
 // GetServiceMetadata godoc
 //
-//	@Summary		Get a single service
-//	@Description	Get a single service
+//	@Summary		Get Cloud Service Details
+//	@Description	Gets a single cloud service details and its metadata inclouding parent service, list of resource types, cost support and costmap service names.
 //	@Tags			metadata
 //	@Produce		json
-//
-//	@Success		200	{object}	api.ServiceMetadata
+//	@Param			serviceName	path		string	true	"serviceName"
+//	@Success		200			{object}	api.ServiceMetadata
 //	@Router			/inventory/api/v2/metadata/services/{serviceName} [get]
 func (h *HttpHandler) GetServiceMetadata(ctx echo.Context) error {
 	serviceName := ctx.Param("serviceName")
@@ -4696,13 +4703,13 @@ func (h *HttpHandler) GetServiceMetadata(ctx echo.Context) error {
 
 // ListResourceTypeMetadata godoc
 //
-//	@Summary		Get all resource types
-//	@Description	Get all resource types
+//	@Summary		Get List of Resource Types
+//	@Description	Gets a list of all resource types in workspace and their metadata including service name.
+//	@Description	The results could be filtered by provider name and service name.
 //	@Tags			metadata
 //	@Produce		json
-//	@Param			connector	query		source.Type	true	"Connector"
+//	@Param			connector	query		source.Type	true	"Filter by Connector"
 //	@Param			service		query		string		false	"Filter by service name"
-//
 //	@Success		200			{object}	[]api.ResourceTypeMetadata
 //	@Router			/inventory/api/v2/metadata/resourcetype [get]
 func (h *HttpHandler) ListResourceTypeMetadata(ctx echo.Context) error {
@@ -4758,12 +4765,12 @@ func (h *HttpHandler) ListResourceTypeMetadata(ctx echo.Context) error {
 
 // GetResourceTypeMetadata godoc
 //
-//	@Summary		Get all resource types
-//	@Description	Get all resource types
+//	@Summary		Get Resource Type
+//	@Description	Get a single resource type metadata and its details including service name and insights list. Specified by resource type name.
 //	@Tags			metadata
 //	@Produce		json
-//
-//	@Success		200	{object}	api.ResourceTypeMetadata
+//	@Param			resourceType	path		string	true	"resourceType"
+//	@Success		200				{object}	api.ResourceTypeMetadata
 //	@Router			/inventory/api/v2/metadata/resourcetype/{resourceType} [get]
 func (h *HttpHandler) GetResourceTypeMetadata(ctx echo.Context) error {
 	resourceType := ctx.Param("resourceType")
