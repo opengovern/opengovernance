@@ -9,7 +9,7 @@ import (
 // loginCmd represents the login command
 var loginCmd = &cobra.Command{
 	Use:   "login",
-	Short: "Logging in into kaytu",
+	Short: "Login into kaytu",
 	Long:  `Logging into kaytu using device authentication mechanism`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		deviceCode, err := cli.RequestDeviceCode()

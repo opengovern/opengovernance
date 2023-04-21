@@ -19,7 +19,7 @@ func PrintOutputForWorkspaces(obj interface{}, typeOutput string) error {
 		fmt.Println(string(bytes))
 		return nil
 	}
-	
+
 	var fields []map[string]interface{}
 	err = json.Unmarshal(bytes, &fields)
 	if err != nil {

@@ -90,7 +90,7 @@ require (
 	github.com/prometheus/client_golang v1.12.2
 	github.com/sendgrid/rest v2.6.9+incompatible // indirect
 	github.com/sendgrid/sendgrid-go v3.11.1+incompatible
-	github.com/spf13/cobra v1.6.1
+	github.com/spf13/cobra v1.7.0
 	github.com/streadway/amqp v1.0.0
 	github.com/stretchr/testify v1.8.0
 	github.com/swaggo/echo-swagger v1.3.0
