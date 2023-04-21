@@ -95,6 +95,10 @@ definitions:
         allOf:
         - $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.Role'
         description: Name of the role in the specified workspace
+        enum:
+        - admin
+        - editor
+        - viewer
       status:
         allOf:
         - $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.InviteStatus'
@@ -109,11 +113,19 @@ definitions:
   gitlab_com_keibiengine_keibi-engine_pkg_auth_api.GetUsersRequest:
     properties:
       email:
+        example: sample@gmail.com
         type: string
       emailVerified:
+        example: true
         type: boolean
       role:
-        $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.Role'
+        allOf:
+        - $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.Role'
+        enum:
+        - admin
+        - editor
+        - viewer
+        example: admin
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_auth_api.InviteRequest:
     properties:
@@ -124,6 +136,11 @@ definitions:
         allOf:
         - $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.Role'
         description: Name of the role
+        enum:
+        - admin
+        - editor
+        - viewer
+        example: admin
     required:
     - email
     type: object
@@ -141,6 +158,11 @@ definitions:
         allOf:
         - $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.Role'
         description: Name of the role
+        enum:
+        - admin
+        - editor
+        - viewer
+        example: admin
       userId:
         description: Unique identifier for the User
         type: string
@@ -150,10 +172,10 @@ definitions:
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_auth_api.Role:
     enum:
-    - KEIBI-ADMIN
-    - ADMIN
-    - EDITOR
-    - VIEWER
+    - keibi-admin
+    - admin
+    - editor
+    - viewer
     type: string
     x-enum-varnames:
     - KeibiAdminRole
@@ -163,10 +185,20 @@ definitions:
   gitlab_com_keibiengine_keibi-engine_pkg_auth_api.RoleDetailsResponse:
     properties:
       description:
+        example: The Administrator role is a super user role with all of the capabilities
+          that can be assigned to a role, and its enables access to all data & configuration
+          on a Kaytu Workspace. You cannot edit or delete the Administrator role.
         type: string
       role:
-        $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.Role'
+        allOf:
+        - $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.Role'
+        enum:
+        - admin
+        - editor
+        - viewer
+        example: admin
       userCount:
+        example: 1
         type: integer
       users:
         items:
@@ -194,6 +226,11 @@ definitions:
         allOf:
         - $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.Role'
         description: Name of the role
+        enum:
+        - admin
+        - editor
+        - viewer
+        example: admin
       status:
         allOf:
         - $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.InviteStatus'
@@ -214,10 +251,20 @@ definitions:
   gitlab_com_keibiengine_keibi-engine_pkg_auth_api.RolesListResponse:
     properties:
       description:
+        example: The Administrator role is a super user role with all of the capabilities
+          that can be assigned to a role, and its enables access to all data & configuration
+          on a Kaytu Workspace. You cannot edit or delete the Administrator role.
         type: string
       role:
-        $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.Role'
+        allOf:
+        - $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.Role'
+        enum:
+        - admin
+        - editor
+        - viewer
+        example: admin
       userCount:
+        example: 1
         type: integer
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_auth_api.UpdateKeyRoleRequest:
@@ -233,6 +280,10 @@ definitions:
         allOf:
         - $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.Role'
         description: Name of the binding Role
+        enum:
+        - admin
+        - editor
+        - viewer
       workspaceID:
         description: Unique identifier for the Workspace
         type: string
@@ -271,6 +322,10 @@ definitions:
         allOf:
         - $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.Role'
         description: Name of the role
+        enum:
+        - admin
+        - editor
+        - viewer
       status:
         allOf:
         - $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.InviteStatus'
@@ -2988,7 +3043,7 @@ paths:
     put:
       description: |-
         User Access defines the roles of a user.
-        There are currently three roles (ADMIN, EDITOR, VIEWER).
+        There are currently three roles (admin, editor, viewer).
         User must exist before you can update its Role.
       parameters:
       - description: Request Body
@@ -3009,7 +3064,7 @@ paths:
     get:
       description: |-
         Gets the roles binded to a user.
-        RoleBinding defines the roles and actions a user can perform. There are currently three roles (ADMIN, EDITOR, VIEWER).
+        RoleBinding defines the roles and actions a user can perform. There are currently three roles (admin, editor, viewer).
       produces:
       - application/json
       responses:
@@ -3045,7 +3100,7 @@ paths:
   /auth/api/v1/workspace/role/bindings:
     get:
       description: RoleBinding defines the roles and actions a user can perform. There
-        are currently three roles (ADMIN, EDITOR, VIEWER). The workspace path is based
+        are currently three roles (admin, editor, viewer). The workspace path is based
         on the DNS such as (workspace1.app.keibi.io)
       produces:
       - application/json

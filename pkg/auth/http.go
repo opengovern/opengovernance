@@ -196,7 +196,7 @@ func bindValidate(ctx echo.Context, i interface{}) error {
 //
 //	@Summary		Update User Access
 //	@Description	User Access defines the roles of a user.
-//	@Description	There are currently three roles (ADMIN, EDITOR, VIEWER).
+//	@Description	There are currently three roles (admin, editor, viewer).
 //	@Description	User must exist before you can update its Role.
 //	@Tags			auth
 //	@Produce		json
@@ -285,7 +285,7 @@ func (r httpRoutes) DeleteRoleBinding(ctx echo.Context) error {
 //
 //	@Summary		Get RoleBindings
 //	@Description	Gets the roles binded to a user.
-//	@Description	RoleBinding defines the roles and actions a user can perform. There are currently three roles (ADMIN, EDITOR, VIEWER).
+//	@Description	RoleBinding defines the roles and actions a user can perform. There are currently three roles (admin, editor, viewer).
 //	@Tags			auth
 //	@Produce		json
 //	@Success		200	{object}	api.GetRoleBindingsResponse
@@ -359,7 +359,7 @@ func (r *httpRoutes) GetWorkspaceMembership(ctx echo.Context) error {
 // GetWorkspaceRoleBindings godoc
 //
 //	@Summary		Workspace user roleBindings.
-//	@Description	RoleBinding defines the roles and actions a user can perform. There are currently three roles (ADMIN, EDITOR, VIEWER). The workspace path is based on the DNS such as (workspace1.app.keibi.io)
+//	@Description	RoleBinding defines the roles and actions a user can perform. There are currently three roles (admin, editor, viewer). The workspace path is based on the DNS such as (workspace1.app.keibi.io)
 //	@Tags			auth
 //	@Produce		json
 //	@Success		200	{object}	api.GetWorkspaceRoleBindingResponse

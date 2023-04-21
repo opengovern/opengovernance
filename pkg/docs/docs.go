@@ -386,7 +386,7 @@ const docTemplate = `{
         },
         "/auth/api/v1/user/role/binding": {
             "put": {
-                "description": "User Access defines the roles of a user.\nThere are currently three roles (ADMIN, EDITOR, VIEWER).\nUser must exist before you can update its Role.",
+                "description": "User Access defines the roles of a user.\nThere are currently three roles (admin, editor, viewer).\nUser must exist before you can update its Role.",
                 "produces": [
                     "application/json"
                 ],
@@ -438,7 +438,7 @@ const docTemplate = `{
         },
         "/auth/api/v1/user/role/bindings": {
             "get": {
-                "description": "Gets the roles binded to a user.\nRoleBinding defines the roles and actions a user can perform. There are currently three roles (ADMIN, EDITOR, VIEWER).",
+                "description": "Gets the roles binded to a user.\nRoleBinding defines the roles and actions a user can perform. There are currently three roles (admin, editor, viewer).",
                 "produces": [
                     "application/json"
                 ],
@@ -550,7 +550,7 @@ const docTemplate = `{
         },
         "/auth/api/v1/workspace/role/bindings": {
             "get": {
-                "description": "RoleBinding defines the roles and actions a user can perform. There are currently three roles (ADMIN, EDITOR, VIEWER). The workspace path is based on the DNS such as (workspace1.app.keibi.io)",
+                "description": "RoleBinding defines the roles and actions a user can perform. There are currently three roles (admin, editor, viewer). The workspace path is based on the DNS such as (workspace1.app.keibi.io)",
                 "produces": [
                     "application/json"
                 ],
@@ -6041,6 +6041,11 @@ const docTemplate = `{
                 },
                 "role": {
                     "description": "Name of the role in the specified workspace",
+                    "enum": [
+                        "admin",
+                        "editor",
+                        "viewer"
+                    ],
                     "allOf": [
                         {
                             "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.Role"
@@ -6069,13 +6074,25 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "email": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "sample@gmail.com"
                 },
                 "emailVerified": {
-                    "type": "boolean"
+                    "type": "boolean",
+                    "example": true
                 },
                 "role": {
-                    "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.Role"
+                    "enum": [
+                        "admin",
+                        "editor",
+                        "viewer"
+                    ],
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.Role"
+                        }
+                    ],
+                    "example": "admin"
                 }
             }
         },
@@ -6091,11 +6108,17 @@ const docTemplate = `{
                 },
                 "role": {
                     "description": "Name of the role",
+                    "enum": [
+                        "admin",
+                        "editor",
+                        "viewer"
+                    ],
                     "allOf": [
                         {
                             "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.Role"
                         }
-                    ]
+                    ],
+                    "example": "admin"
                 }
             }
         },
@@ -6119,11 +6142,17 @@ const docTemplate = `{
             "properties": {
                 "role": {
                     "description": "Name of the role",
+                    "enum": [
+                        "admin",
+                        "editor",
+                        "viewer"
+                    ],
                     "allOf": [
                         {
                             "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.Role"
                         }
-                    ]
+                    ],
+                    "example": "admin"
                 },
                 "userId": {
                     "description": "Unique identifier for the User",
@@ -6134,10 +6163,10 @@ const docTemplate = `{
         "gitlab_com_keibiengine_keibi-engine_pkg_auth_api.Role": {
             "type": "string",
             "enum": [
-                "KEIBI-ADMIN",
-                "ADMIN",
-                "EDITOR",
-                "VIEWER"
+                "keibi-admin",
+                "admin",
+                "editor",
+                "viewer"
             ],
             "x-enum-varnames": [
                 "KeibiAdminRole",
@@ -6150,13 +6179,25 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "description": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "The Administrator role is a super user role with all of the capabilities that can be assigned to a role, and its enables access to all data \u0026 configuration on a Kaytu Workspace. You cannot edit or delete the Administrator role."
                 },
                 "role": {
-                    "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.Role"
+                    "enum": [
+                        "admin",
+                        "editor",
+                        "viewer"
+                    ],
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.Role"
+                        }
+                    ],
+                    "example": "admin"
                 },
                 "userCount": {
-                    "type": "integer"
+                    "type": "integer",
+                    "example": 1
                 },
                 "users": {
                     "type": "array",
@@ -6191,11 +6232,17 @@ const docTemplate = `{
                 },
                 "role": {
                     "description": "Name of the role",
+                    "enum": [
+                        "admin",
+                        "editor",
+                        "viewer"
+                    ],
                     "allOf": [
                         {
                             "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.Role"
                         }
-                    ]
+                    ],
+                    "example": "admin"
                 },
                 "status": {
                     "description": "Invite status",
@@ -6226,13 +6273,25 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "description": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "The Administrator role is a super user role with all of the capabilities that can be assigned to a role, and its enables access to all data \u0026 configuration on a Kaytu Workspace. You cannot edit or delete the Administrator role."
                 },
                 "role": {
-                    "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.Role"
+                    "enum": [
+                        "admin",
+                        "editor",
+                        "viewer"
+                    ],
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.Role"
+                        }
+                    ],
+                    "example": "admin"
                 },
                 "userCount": {
-                    "type": "integer"
+                    "type": "integer",
+                    "example": 1
                 }
             }
         },
@@ -6252,6 +6311,11 @@ const docTemplate = `{
             "properties": {
                 "role": {
                     "description": "Name of the binding Role",
+                    "enum": [
+                        "admin",
+                        "editor",
+                        "viewer"
+                    ],
                     "allOf": [
                         {
                             "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.Role"
@@ -6310,6 +6374,11 @@ const docTemplate = `{
                 },
                 "role": {
                     "description": "Name of the role",
+                    "enum": [
+                        "admin",
+                        "editor",
+                        "viewer"
+                    ],
                     "allOf": [
                         {
                             "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.Role"
