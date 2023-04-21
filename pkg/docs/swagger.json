@@ -1297,7 +1297,6 @@
                         "items": {
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "SourceID",
                         "name": "sourceId",
                         "in": "query"
@@ -1875,7 +1874,6 @@
                         "items": {
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "SourceID",
                         "name": "sourceId",
                         "in": "query",
@@ -1991,7 +1989,6 @@
                         "items": {
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "SourceId",
                         "name": "sourceId",
                         "in": "query"
@@ -2148,7 +2145,6 @@
                         "items": {
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "SourceId",
                         "name": "sourceId",
                         "in": "query"
@@ -2285,7 +2281,6 @@
                         "items": {
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "SourceID",
                         "name": "sourceId",
                         "in": "query",
@@ -2337,7 +2332,6 @@
                         "items": {
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "SourceID",
                         "name": "sourceId",
                         "in": "query"
@@ -2469,7 +2463,6 @@
                         "items": {
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "SourceID",
                         "name": "sourceId",
                         "in": "query"
@@ -2547,7 +2540,6 @@
                         "items": {
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "SourceID",
                         "name": "sourceId",
                         "in": "query"
@@ -2609,7 +2601,6 @@
                         "items": {
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "filter the result by source id",
                         "name": "sourceId",
                         "in": "query"
@@ -2648,7 +2639,6 @@
                         "items": {
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "filter the result by source id",
                         "name": "sourceId",
                         "in": "query"
@@ -2686,7 +2676,6 @@
                         "items": {
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "filter the result by source id",
                         "name": "sourceId",
                         "in": "query"
@@ -2779,14 +2768,14 @@
         },
         "/inventory/api/v2/metadata/connectors/{connector}": {
             "get": {
-                "description": "Gets a single connector and its metadata including list of their resource types and services names by the connector name.",
+                "description": "Get a single connector",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "metadata"
                 ],
-                "summary": "Get Connector",
+                "summary": "Get a single connector",
                 "parameters": [
                     {
                         "type": "string",
@@ -2993,7 +2982,6 @@
                         "items": {
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "SourceID",
                         "name": "sourceId",
                         "in": "query"
@@ -3058,7 +3046,6 @@
                         "items": {
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "SourceID",
                         "name": "sourceId",
                         "in": "query"
@@ -3137,7 +3124,6 @@
                         "items": {
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "SourceID",
                         "name": "sourceId",
                         "in": "query"
@@ -3202,7 +3188,6 @@
                         "items": {
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "SourceID",
                         "name": "sourceId",
                         "in": "query"
@@ -3325,7 +3310,6 @@
                         "items": {
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "SourceID",
                         "name": "sourceId",
                         "in": "query"
@@ -3403,7 +3387,6 @@
                         "items": {
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "SourceID",
                         "name": "sourceId",
                         "in": "query"
@@ -3455,7 +3438,6 @@
                         "items": {
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "SourceID",
                         "name": "sourceId",
                         "in": "query"
@@ -3504,7 +3486,6 @@
                         "items": {
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "SourceID",
                         "name": "sourceId",
                         "in": "query"
@@ -3630,7 +3611,6 @@
                         "items": {
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "SourceID",
                         "name": "sourceId",
                         "in": "query"
@@ -3640,7 +3620,6 @@
                         "items": {
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "serviceName",
                         "name": "serviceName",
                         "in": "query"
@@ -3704,7 +3683,6 @@
                         "items": {
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "SourceID",
                         "name": "sourceId",
                         "in": "query"
@@ -3746,7 +3724,6 @@
                         "items": {
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "filter: SourceIDs",
                         "name": "sourceId",
                         "in": "query"
@@ -7831,7 +7808,7 @@
                     ]
                 },
                 "connector_label": {
-                    "description": "Connector Lable",
+                    "description": "Connector Label",
                     "type": "string"
                 },
                 "logo_uri": {

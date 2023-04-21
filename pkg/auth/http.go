@@ -144,7 +144,7 @@ func (r *httpRoutes) ListRoles(ctx echo.Context) error {
 //	@Router			/auth/api/v1/roles/{role} [get]
 func (r *httpRoutes) RoleDetails(ctx echo.Context) error {
 	workspaceID := httpserver.GetWorkspaceID(ctx)
-	role := api.Role(ctx.Param("role"))
+	role := api.GetRole(ctx.Param("role"))
 	users, err := r.auth0Service.SearchUsers(workspaceID, nil, nil, nil)
 	if err != nil {
 		return err
@@ -903,7 +903,7 @@ func (r *httpRoutes) ActivateAPIKey(ctx echo.Context) error {
 //	@Router			/auth/api/v1/role/{role}/users [get]
 func (r *httpRoutes) GetRoleUsers(ctx echo.Context) error {
 	workspaceID := httpserver.GetWorkspaceID(ctx)
-	role := api.Role(ctx.Param("role"))
+	role := api.GetRole(ctx.Param("role"))
 	users, err := r.auth0Service.SearchUsers(workspaceID, nil, nil, &role)
 	if err != nil {
 		return err
@@ -947,7 +947,7 @@ func (r *httpRoutes) GetRoleUsers(ctx echo.Context) error {
 //	@Success		200		{object}	[]api.WorkspaceApiKey
 //	@Router			/auth/api/v1/role/:role/keys [get]
 func (r *httpRoutes) GetRoleKeys(ctx echo.Context) error {
-	role := api.Role(ctx.Param("role"))
+	role := api.GetRole(ctx.Param("role"))
 	workspaceID := httpserver.GetWorkspaceID(ctx)
 	keys, err := r.db.GetAPIKeysByRole(role, workspaceID)
 	if err != nil {

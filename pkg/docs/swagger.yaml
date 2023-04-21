@@ -1342,18 +1342,24 @@ definitions:
         - $ref: '#/definitions/source.Type'
         description: Connector
       connector_label:
-        description: Connector Lable
+        description: Connector Label
+        type: string
+      logo_uri:
         type: string
       resource_types:
         description: List of resource types
         items:
           type: string
         type: array
+      resource_types_count:
+        type: integer
       services:
         description: List of cloud services
         items:
           type: string
         type: array
+      services_count:
+        type: integer
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.CostWithUnit:
     properties:
@@ -1935,11 +1941,17 @@ definitions:
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ResourceTypeMetadata:
     properties:
+      attributes:
+        items:
+          type: string
+        type: array
       compliance:
         description: List of Compliances that support this Resource Type
         items:
           type: string
         type: array
+      compliance_count:
+        type: integer
       connector:
         allOf:
         - $ref: '#/definitions/source.Type'
@@ -1952,6 +1964,10 @@ definitions:
         items:
           type: integer
         type: array
+      insights_count:
+        type: integer
+      logo_uri:
+        type: string
       resource_type_label:
         description: Resource type lable
         type: string
@@ -2021,6 +2037,8 @@ definitions:
       cost_support:
         description: Cost is supported [yes/no]
         type: boolean
+      logo_uri:
+        type: string
       parent_service:
         description: Parent service
         type: string
@@ -2029,6 +2047,8 @@ definitions:
         items:
           type: string
         type: array
+      resource_types_count:
+        type: integer
       service_label:
         description: Service Lable
         type: string
@@ -3649,8 +3669,7 @@ paths:
         name: provider
         required: true
         type: string
-      - collectionFormat: csv
-        description: SourceID
+      - description: SourceID
         in: query
         items:
           type: string
@@ -4049,8 +4068,7 @@ paths:
       consumes:
       - application/json
       parameters:
-      - collectionFormat: csv
-        description: SourceID
+      - description: SourceID
         in: query
         items:
           type: string
@@ -4129,8 +4147,7 @@ paths:
         in: query
         name: provider
         type: string
-      - collectionFormat: csv
-        description: SourceId
+      - description: SourceId
         in: query
         items:
           type: string
@@ -4235,8 +4252,7 @@ paths:
         in: query
         name: provider
         type: string
-      - collectionFormat: csv
-        description: SourceId
+      - description: SourceId
         in: query
         items:
           type: string
@@ -4328,8 +4344,7 @@ paths:
       consumes:
       - application/json
       parameters:
-      - collectionFormat: csv
-        description: SourceID
+      - description: SourceID
         in: query
         items:
           type: string
@@ -4363,8 +4378,7 @@ paths:
         name: provider
         required: true
         type: string
-      - collectionFormat: csv
-        description: SourceID
+      - description: SourceID
         in: query
         items:
           type: string
@@ -4451,8 +4465,7 @@ paths:
         in: query
         name: provider
         type: string
-      - collectionFormat: csv
-        description: SourceID
+      - description: SourceID
         in: query
         items:
           type: string
@@ -4505,8 +4518,7 @@ paths:
         in: query
         name: provider
         type: string
-      - collectionFormat: csv
-        description: SourceID
+      - description: SourceID
         in: query
         items:
           type: string
@@ -4548,8 +4560,7 @@ paths:
         in: query
         name: connector
         type: string
-      - collectionFormat: csv
-        description: filter the result by source id
+      - description: filter the result by source id
         in: query
         items:
           type: string
@@ -4574,8 +4585,7 @@ paths:
     get:
       description: Get an insight by id
       parameters:
-      - collectionFormat: csv
-        description: filter the result by source id
+      - description: filter the result by source id
         in: query
         items:
           type: string
@@ -4631,8 +4641,7 @@ paths:
     get:
       description: Get an insight by id
       parameters:
-      - collectionFormat: csv
-        description: filter the result by source id
+      - description: filter the result by source id
         in: query
         items:
           type: string
@@ -4670,8 +4679,7 @@ paths:
       - metadata
   /inventory/api/v2/metadata/connectors/{connector}:
     get:
-      description: Gets a single connector and its metadata including list of their
-        resource types and services names by the connector name.
+      description: Get a single connector
       parameters:
       - description: connector
         in: path
@@ -4685,7 +4693,7 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ConnectorMetadata'
-      summary: Get Connector
+      summary: Get a single connector
       tags:
       - metadata
   /inventory/api/v2/metadata/resourcetype:
@@ -4735,9 +4743,7 @@ paths:
         "200":
           description: OK
           schema:
-            items:
-              $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ResourceTypeMetadata'
-            type: array
+            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ResourceTypeMetadata'
       summary: Get Resource Type
       tags:
       - metadata
@@ -4814,8 +4820,7 @@ paths:
         in: query
         name: provider
         type: string
-      - collectionFormat: csv
-        description: SourceID
+      - description: SourceID
         in: query
         items:
           type: string
@@ -4858,8 +4863,7 @@ paths:
         in: query
         name: provider
         type: string
-      - collectionFormat: csv
-        description: SourceID
+      - description: SourceID
         in: query
         items:
           type: string
@@ -4913,8 +4917,7 @@ paths:
         in: query
         name: provider
         type: string
-      - collectionFormat: csv
-        description: SourceID
+      - description: SourceID
         in: query
         items:
           type: string
@@ -4958,8 +4961,7 @@ paths:
         in: query
         name: provider
         type: string
-      - collectionFormat: csv
-        description: SourceID
+      - description: SourceID
         in: query
         items:
           type: string
@@ -5044,8 +5046,7 @@ paths:
         in: query
         name: provider
         type: string
-      - collectionFormat: csv
-        description: SourceID
+      - description: SourceID
         in: query
         items:
           type: string
@@ -5101,8 +5102,7 @@ paths:
         in: query
         name: provider
         type: string
-      - collectionFormat: csv
-        description: SourceID
+      - description: SourceID
         in: query
         items:
           type: string
@@ -5137,8 +5137,7 @@ paths:
         in: query
         name: provider
         type: string
-      - collectionFormat: csv
-        description: SourceID
+      - description: SourceID
         in: query
         items:
           type: string
@@ -5170,8 +5169,7 @@ paths:
         in: query
         name: provider
         type: string
-      - collectionFormat: csv
-        description: SourceID
+      - description: SourceID
         in: query
         items:
           type: string
@@ -5258,15 +5256,13 @@ paths:
         in: query
         name: connector
         type: string
-      - collectionFormat: csv
-        description: SourceID
+      - description: SourceID
         in: query
         items:
           type: string
         name: sourceId
         type: array
-      - collectionFormat: csv
-        description: serviceName
+      - description: serviceName
         in: query
         items:
           type: string
@@ -5309,8 +5305,7 @@ paths:
         in: query
         name: connector
         type: string
-      - collectionFormat: csv
-        description: SourceID
+      - description: SourceID
         in: query
         items:
           type: string
@@ -5339,8 +5334,7 @@ paths:
         the API filters and a list of services with more details. Including connector,
         the resource counts and the cost.
       parameters:
-      - collectionFormat: csv
-        description: 'filter: SourceIDs'
+      - description: 'filter: SourceIDs'
         in: query
         items:
           type: string

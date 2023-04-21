@@ -366,7 +366,7 @@ func (ts *testSuite) TestGetRoleUsers() {
 			if tc.Role == api.KeibiAdminRole {
 				ts.Equal(len(response), 0)
 			} else {
-				ts.Equal(tc.Role, response[0].Role)
+				ts.Equal(tc.Role, response[0].RoleName)
 				ts.Equal("user1@test.com", response[0].Email)
 				ts.True(response[0].EmailVerified)
 			}
