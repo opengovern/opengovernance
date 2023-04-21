@@ -770,7 +770,6 @@ func (s *Scheduler) processCloudNativeDescribeConnectionJobResourcesEvents(event
 			continue
 		}
 
-		messages := make([]*CloudNativeConnectionWorkerMessage, 0)
 		req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("%s/OutputReadBlob?containerName=%s&blobName=%s", s.cloudNativeAPIBaseURL, connectionWorkerResourcesResult.ContainerName, connectionWorkerResourcesResult.BlobName), nil)
 		if err != nil {
 			s.logger.Error("Failed to create OutputReadBlob http request", zap.Error(err))
@@ -793,6 +792,8 @@ func (s *Scheduler) processCloudNativeDescribeConnectionJobResourcesEvents(event
 			continue
 		}
 		resp.Body.Close()
+
+		var cloudNativeConnectionWorkerData []CloudNativeConnectionWorkerData
 		if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusNotFound {
 			s.logger.Error("Failed to get blob stream", zap.Error(err), zap.String("response", string(respBody)))
 			continue
@@ -803,66 +804,77 @@ func (s *Scheduler) processCloudNativeDescribeConnectionJobResourcesEvents(event
 				s.logger.Error("Failed to unmarshal OutputReadBlob response", zap.Error(err))
 				continue
 			}
-			decrypted, err := helper.DecryptMessageArmored(job.ResultEncryptionPrivateKey, nil, data.Data)
-			if err != nil {
-				s.logger.Error("Failed to decrypt blob", zap.Error(err))
-				continue
-			}
-
-			err = json.Unmarshal([]byte(decrypted), &messages)
+			var encryptedCNCData []string
+			err = json.Unmarshal([]byte(data.Data), &encryptedCNCData)
 			if err != nil {
 				s.logger.Error("Failed to unmarshal data into messages", zap.Error(err))
 				continue
 			}
-		}
-		saramaMessages := make([]*sarama.ProducerMessage, 0, len(messages))
-		for _, message := range messages {
-			saramaMessage := sarama.ProducerMessage{
-				Topic:   message.Topic,
-				Key:     message.Key,
-				Value:   message.Value,
-				Headers: message.Headers,
+			for _, encryptedData := range encryptedCNCData {
+				decrypted, err := helper.DecryptMessageArmored(job.ResultEncryptionPrivateKey, nil, encryptedData)
+				if err != nil {
+					s.logger.Error("Failed to decrypt blob", zap.Error(err))
+					continue
+				}
+				var cncData CloudNativeConnectionWorkerData
+				err = json.Unmarshal([]byte(decrypted), &cncData)
+				if err != nil {
+					s.logger.Error("Failed to unmarshal data into messages", zap.Error(err))
+					continue
+				}
+				cloudNativeConnectionWorkerData = append(cloudNativeConnectionWorkerData, cncData)
 			}
-			//isIdentical, err := s.compareMessageToCurrentState(saramaMessage)
-			//if err != nil {
-			//	s.logger.Error("Failed to compare message to current state", zap.Error(err))
-			//} else {
-			//	if isIdentical {
-			//		s.logger.Info("New message is identical to current state, overwriting to update timestamp")
-			//	} else {
-			//		s.logger.Info("New message is not identical to current state, overwriting")
-			//	}
-			//}
-			saramaMessages = append(saramaMessages, &saramaMessage)
 		}
 		producer, err := sarama.NewSyncProducerFromClient(s.kafkaClient)
-
-		if err != nil {
-			s.logger.Error("Failed to create producer", zap.Error(err))
-			continue
-		}
-		if err := producer.SendMessages(saramaMessages); err != nil {
-			if errs, ok := err.(sarama.ProducerErrors); ok {
-				for _, e := range errs {
-					s.logger.Error("Failed calling SendMessages", zap.Error(fmt.Errorf("Failed to persist resource[%s] in kafka topic[%s]: %s, message size: %d\n", e.Msg.Key, e.Msg.Topic, e.Error(), e.Msg.Value.Length())))
+		for _, cncData := range cloudNativeConnectionWorkerData {
+			saramaMessages := make([]*sarama.ProducerMessage, 0, len(cncData.JobData))
+			for _, message := range cncData.JobData {
+				saramaMessage := sarama.ProducerMessage{
+					Topic:   message.Topic,
+					Key:     message.Key,
+					Value:   message.Value,
+					Headers: message.Headers,
 				}
+				//isIdentical, err := s.compareMessageToCurrentState(saramaMessage)
+				//if err != nil {
+				//	s.logger.Error("Failed to compare message to current state", zap.Error(err))
+				//} else {
+				//	if isIdentical {
+				//		s.logger.Info("New message is identical to current state, overwriting to update timestamp")
+				//	} else {
+				//		s.logger.Info("New message is not identical to current state, overwriting")
+				//	}
+				//}
+				saramaMessages = append(saramaMessages, &saramaMessage)
 			}
-			continue
+
+			if err != nil {
+				s.logger.Error("Failed to create producer", zap.Error(err))
+				continue
+			}
+			if err := producer.SendMessages(saramaMessages); err != nil {
+				if errs, ok := err.(sarama.ProducerErrors); ok {
+					for _, e := range errs {
+						s.logger.Error("Failed calling SendMessages", zap.Error(fmt.Errorf("Failed to persist resource[%s] in kafka topic[%s]: %s, message size: %d\n", e.Msg.Key, e.Msg.Topic, e.Error(), e.Msg.Value.Length())))
+					}
+				}
+				continue
+			}
+
+			if len(saramaMessages) != 0 {
+				s.logger.Info("Successfully sent messages to kafka", zap.Int("count", len(saramaMessages)))
+			}
+
+			err = s.describeConnectionJobResultQueue.Publish(cncData.JobResult)
+			if err != nil {
+				s.logger.Error("Failed calling describeConnectionJobResultQueue.Publish", zap.Error(err))
+				continue
+			}
 		}
 		if err := producer.Close(); err != nil {
 			s.logger.Error("Failed to close producer", zap.Error(err))
 			continue
 		}
-		if len(saramaMessages) != 0 {
-			s.logger.Info("Successfully sent messages to kafka", zap.Int("count", len(saramaMessages)))
-		}
-
-		err = s.describeConnectionJobResultQueue.Publish(connectionWorkerResourcesResult.JobResult)
-		if err != nil {
-			s.logger.Error("Failed calling describeConnectionJobResultQueue.Publish", zap.Error(err))
-			continue
-		}
-
 		successfulIDs = append(successfulIDs, event.ID)
 	}
 
