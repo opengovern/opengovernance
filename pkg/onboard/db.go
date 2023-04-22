@@ -44,7 +44,7 @@ func (db Database) ListConnectors() ([]Connector, error) {
 // ListSources gets list of all source
 func (db Database) ListSources() ([]Source, error) {
 	var s []Source
-	tx := db.orm.Model(Source{}).Preload("Credential").Find(&s)
+	tx := db.orm.Model(Source{}).Preload(clause.Associations).Find(&s)
 
 	if tx.Error != nil {
 		return nil, tx.Error
@@ -79,7 +79,7 @@ func (db Database) CountSources() (int64, error) {
 // GetSourcesOfType gets list of sources with matching type
 func (db Database) GetSourcesOfType(rType source.Type) ([]Source, error) {
 	var s []Source
-	tx := db.orm.Find(&s, "type = ?", rType)
+	tx := db.orm.Preload(clause.Associations).Find(&s, "type = ?", rType)
 
 	if tx.Error != nil {
 		return nil, tx.Error
