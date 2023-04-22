@@ -236,7 +236,10 @@ func getFilterFromNode(node neo4j.Node) (Filter, error) {
 				return nil, ErrPropertyNotFound
 			}
 
-			logoURI, _ := node.Props["logo_uri"]
+			logoURI, ok := node.Props["logo_uri"]
+			if !ok {
+				logoURI = ""
+			}
 
 			return &FilterCloudResourceTypeNode{
 				Node: Node{
@@ -310,7 +313,10 @@ func getCategoryFromNode(node neo4j.Node) (*CategoryNode, error) {
 		return nil, ErrPropertyNotFound
 	}
 
-	logoURI, _ := node.Props["logo_uri"]
+	logoURI, ok := node.Props["logo_uri"]
+	if !ok {
+		logoURI = ""
+	}
 
 	return &CategoryNode{
 		Node: Node{
@@ -345,7 +351,10 @@ func getCloudServiceFromNode(node neo4j.Node) (*ServiceNode, error) {
 	}
 
 	// optional property
-	logoURI, _ := node.Props["logo_uri"]
+	logoURI, ok := node.Props["logo_uri"]
+	if !ok {
+		logoURI = ""
+	}
 
 	return &ServiceNode{
 		CategoryNode: *cat,
