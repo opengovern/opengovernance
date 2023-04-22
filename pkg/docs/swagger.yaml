@@ -1,3 +1,34 @@
+x-tagGroups:
+  - name: auth
+    tags:
+    - users
+    - roles
+    - keys
+  - name: compliance
+    tags:
+    - compliance
+    - benchmarks_assignemnt
+  - name: inventory
+    tags:
+    - insights
+    - benchmarks
+    - inventory
+    - cost
+    - location
+    - smart_query
+    - resource
+    - metadata
+  - name: onboard
+    tags:
+    - onboard
+  - name: schedule
+    tags:
+    - describe
+    - schedule
+    - jobs
+  - name: workspace
+    tags:
+    - workspace
 definitions:
   aws.Resources:
     properties:
@@ -44,8 +75,15 @@ definitions:
     properties:
       name:
         type: string
-      role:
-        $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.Role'
+      roleName:
+        allOf:
+        - $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.Role'
+        description: Name of the role
+        enum:
+        - admin
+        - editor
+        - viewer
+        example: admin
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_auth_api.CreateAPIKeyResponse:
     properties:
@@ -57,8 +95,15 @@ definitions:
         type: integer
       name:
         type: string
-      role:
-        $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.Role'
+      roleName:
+        allOf:
+        - $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.Role'
+        description: Name of the role
+        enum:
+        - admin
+        - editor
+        - viewer
+        example: admin
       token:
         type: string
     type: object
@@ -82,6 +127,7 @@ definitions:
         type: boolean
       createdAt:
         description: Creation timestamp in UTC
+        example: "2023-03-31T09:36:09.855Z"
         type: string
       email:
         description: Email address of the user
@@ -93,6 +139,7 @@ definitions:
         type: boolean
       lastActivity:
         description: Last activity timestamp in UTC
+        example: "2023-04-21T08:53:09.928Z"
         type: string
       roleName:
         allOf:
@@ -206,6 +253,7 @@ definitions:
         example: admin
       userId:
         description: Unique identifier for the User
+        example: sampleID
         type: string
     required:
     - roleName
@@ -226,6 +274,7 @@ definitions:
   gitlab_com_keibiengine_keibi-engine_pkg_auth_api.RoleDetailsResponse:
     properties:
       description:
+        description: Role Description and accesses
         example: The Administrator role is a super user role with all of the capabilities
           that can be assigned to a role, and its enables access to all data & configuration
           on a Kaytu Workspace. You cannot edit or delete the Administrator role.
@@ -233,15 +282,18 @@ definitions:
       role:
         allOf:
         - $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.Role'
+        description: Name of the role
         enum:
         - admin
         - editor
         - viewer
         example: admin
       userCount:
+        description: Number of users having this role
         example: 1
         type: integer
       users:
+        description: List of users having this role
         items:
           $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.GetUsersResponse'
         type: array
@@ -254,6 +306,7 @@ definitions:
         type: boolean
       createdAt:
         description: Creation timestamp in UTC
+        example: "2023-03-31T09:36:09.855Z"
         type: string
       email:
         description: Email address of the user
@@ -265,6 +318,7 @@ definitions:
         type: boolean
       lastActivity:
         description: Last activity timestamp in UTC
+        example: "2023-04-21T08:53:09.928Z"
         type: string
       roleName:
         allOf:
@@ -295,7 +349,7 @@ definitions:
         description: A list of workspace ids which the user has the specified role
           in them
         example:
-        - demoWorkspace
+        - demo
         items:
           type: string
         type: array
@@ -303,6 +357,7 @@ definitions:
   gitlab_com_keibiengine_keibi-engine_pkg_auth_api.RolesListResponse:
     properties:
       description:
+        description: Role Description and accesses
         example: The Administrator role is a super user role with all of the capabilities
           that can be assigned to a role, and its enables access to all data & configuration
           on a Kaytu Workspace. You cannot edit or delete the Administrator role.
@@ -310,12 +365,14 @@ definitions:
       roleName:
         allOf:
         - $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.Role'
+        description: Name of the role
         enum:
         - admin
         - editor
         - viewer
         example: admin
       userCount:
+        description: Number of usershaving this role
         example: 1
         type: integer
     type: object
@@ -323,8 +380,15 @@ definitions:
     properties:
       id:
         type: integer
-      role:
-        $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.Role'
+      roleName:
+        allOf:
+        - $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.Role'
+        description: Name of the role
+        enum:
+        - admin
+        - editor
+        - viewer
+        example: admin
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_auth_api.UserRoleBinding:
     properties:
@@ -339,6 +403,7 @@ definitions:
         example: admin
       workspaceID:
         description: Unique identifier for the Workspace
+        example: sampleID
         type: string
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_auth_api.WorkspaceApiKey:
@@ -355,8 +420,15 @@ definitions:
         type: string
       name:
         type: string
-      role:
-        $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.Role'
+      roleName:
+        allOf:
+        - $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.Role'
+        description: Name of the role
+        enum:
+        - admin
+        - editor
+        - viewer
+        example: admin
       updatedAt:
         type: string
     type: object
@@ -364,6 +436,7 @@ definitions:
     properties:
       createdAt:
         description: Creation timestamp in UTC
+        example: "2023-03-31T09:36:09.855Z"
         type: string
       email:
         description: Email address of the user
@@ -371,6 +444,7 @@ definitions:
         type: string
       lastActivity:
         description: Last activity timestamp in UTC
+        example: "2023-04-21T08:53:09.928Z"
         type: string
       roleName:
         allOf:
@@ -1375,20 +1449,28 @@ definitions:
   gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.FilterCloudResourceType:
     properties:
       connector:
-        $ref: '#/definitions/source.Type'
+        allOf:
+        - $ref: '#/definitions/source.Type'
+        example: AWS
       filterId:
         type: string
       filterType:
-        $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.FilterType'
+        allOf:
+        - $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.FilterType'
+        example: cloudResourceType
       resourceCount:
+        example: 0
         type: integer
       resourceCountChange:
         type: number
       resourceName:
+        example: ""
         type: string
       resourceType:
+        example: AWS::AMP::Workspace
         type: string
       serviceName:
+        example: amp
         type: string
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.FilterType:
@@ -1726,6 +1808,7 @@ definitions:
         type: array
       totalCount:
         description: Number of resource types
+        example: 1
         type: integer
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ListServiceSummariesResponse:
@@ -2818,7 +2901,7 @@ paths:
             $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.WorkspaceApiKey'
       summary: Get Workspace Key Details
       tags:
-      - auth
+      - keys
   /auth/api/v1/key/{id}/activate:
     post:
       description: Activates a key in the workspace with specified ID.
@@ -2837,7 +2920,7 @@ paths:
             $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.WorkspaceApiKey'
       summary: Activate Workspace Key
       tags:
-      - auth
+      - keys
   /auth/api/v1/key/{id}/delete:
     delete:
       description: Deletes the specified workspace key by ID.
@@ -2854,7 +2937,7 @@ paths:
           description: OK
       summary: Deletes Workspace Key
       tags:
-      - auth
+      - keys
   /auth/api/v1/key/{id}/suspend:
     post:
       description: Suspends a key in the workspace with specified ID.
@@ -2873,7 +2956,7 @@ paths:
             $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.WorkspaceApiKey'
       summary: Suspend Workspace Key
       tags:
-      - auth
+      - keys
   /auth/api/v1/key/create:
     post:
       description: Creates workspace key for the defined role with the defined name.
@@ -2893,7 +2976,7 @@ paths:
             $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.CreateAPIKeyResponse'
       summary: Creates Workspace Key
       tags:
-      - auth
+      - keys
   /auth/api/v1/key/role:
     post:
       description: Updates the role of the specified key in workspace.
@@ -2913,7 +2996,7 @@ paths:
             $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.WorkspaceApiKey'
       summary: Update Workspace Key Role
       tags:
-      - auth
+      - keys
   /auth/api/v1/keys:
     get:
       description: Gets a list of available keys in a workspace.
@@ -2928,17 +3011,16 @@ paths:
             type: array
       summary: Get Workspace Keys
       tags:
-      - auth
-  /auth/api/v1/role/:role/keys:
+      - keys
+  /auth/api/v1/role/{roleName}/keys:
     get:
       description: Returns a list of keys in a workspace for the specified role.
       parameters:
-      - description: Request Body
-        in: body
-        name: request
+      - description: roleName
+        in: path
+        name: roleName
         required: true
-        schema:
-          type: string
+        type: string
       produces:
       - application/json
       responses:
@@ -2950,14 +3032,14 @@ paths:
             type: array
       summary: Get Role Keys
       tags:
-      - auth
-  /auth/api/v1/role/{role}/users:
+      - roles
+  /auth/api/v1/role/{roleName}/users:
     get:
       description: Returns a list of users in a workspace with the specified role.
       parameters:
-      - description: role
+      - description: roleName
         in: path
-        name: role
+        name: roleName
         required: true
         type: string
       produces:
@@ -2971,7 +3053,7 @@ paths:
             type: array
       summary: Lists Role Users
       tags:
-      - auth
+      - roles
   /auth/api/v1/roles:
     get:
       description: Gets a list of roles in a workspace and their descriptions and
@@ -2987,15 +3069,15 @@ paths:
             type: array
       summary: Get Roles
       tags:
-      - auth
-  /auth/api/v1/roles/{role}:
+      - roles
+  /auth/api/v1/roles/{roleName}:
     get:
       description: Gets the details of the Role, including the description, number
         of users and list of those users.
       parameters:
-      - description: role
+      - description: roleName
         in: path
-        name: role
+        name: roleName
         required: true
         type: string
       produces:
@@ -3007,7 +3089,7 @@ paths:
             $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.RoleDetailsResponse'
       summary: Get Role Details
       tags:
-      - auth
+      - roles
   /auth/api/v1/user/{user_id}:
     get:
       description: Get user details by user id.
@@ -3026,7 +3108,7 @@ paths:
             $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.GetUserResponse'
       summary: Get User details
       tags:
-      - auth
+      - users
   /auth/api/v1/user/{user_id}/workspace/membership:
     get:
       description: Returns a list of workspaces and the user role in it for the specified
@@ -3046,7 +3128,7 @@ paths:
             $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.GetRoleBindingsResponse'
       summary: User Workspaces
       tags:
-      - auth
+      - users
   /auth/api/v1/user/invite:
     delete:
       description: Deletes user access to the specified workspace.
@@ -3063,7 +3145,7 @@ paths:
           description: OK
       summary: Delete Invitation
       tags:
-      - auth
+      - users
     post:
       description: |-
         Invites a user to a workspace with defined role.
@@ -3083,7 +3165,7 @@ paths:
           description: OK
       summary: Invite User
       tags:
-      - auth
+      - users
   /auth/api/v1/user/role/binding:
     delete:
       description: Deletes user access to the specified workspace.
@@ -3100,7 +3182,7 @@ paths:
           description: OK
       summary: Delete User Access
       tags:
-      - auth
+      - users
     put:
       description: |-
         User Access defines the roles of a user.
@@ -3120,7 +3202,7 @@ paths:
           description: OK
       summary: Update User Access
       tags:
-      - auth
+      - users
   /auth/api/v1/user/role/bindings:
     get:
       description: |-
@@ -3135,7 +3217,7 @@ paths:
             $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.GetRoleBindingsResponse'
       summary: Get RoleBindings
       tags:
-      - auth
+      - users
   /auth/api/v1/users:
     get:
       description: Gets a list of users with specified filters (filters are optional).
@@ -3157,7 +3239,7 @@ paths:
             type: array
       summary: Get Users
       tags:
-      - auth
+      - users
   /auth/api/v1/workspace/role/bindings:
     get:
       description: RoleBinding defines the roles and actions a user can perform. There
@@ -3174,7 +3256,7 @@ paths:
             type: array
       summary: Workspace user roleBindings.
       tags:
-      - auth
+      - users
   /compliance/api/v1/alarms/top:
     post:
       consumes:

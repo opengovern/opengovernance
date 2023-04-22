@@ -3,6 +3,6 @@ FROM docker.io/nginx:alpine
 WORKDIR /redoc
 
 COPY ./pkg/redoc /redoc
-COPY ./pkg/docs /redoc/src
+COPY ./pkg/docs/swagger.yaml /redoc/src/swagger.yaml
 
 COPY ./pkg/redoc/nginx.conf /etc/nginx/nginx.conf 

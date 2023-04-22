@@ -5,8 +5,8 @@ import (
 )
 
 type CreateAPIKeyRequest struct {
-	Name string `json:"name"`
-	Role Role   `json:"role"`
+	Name     string `json:"name"`
+	RoleName Role   `json:"roleName" enums:"admin,editor,viewer" example:"admin"` // Name of the role
 }
 
 type CreateAPIKeyResponse struct {
@@ -14,7 +14,7 @@ type CreateAPIKeyResponse struct {
 	Name      string    `json:"name"`
 	Active    bool      `json:"acrive"`
 	CreatedAt time.Time `json:"createdAt"`
-	Role      Role      `json:"role"`
+	RoleName  Role      `json:"roleName" enums:"admin,editor,viewer" example:"admin"` // Name of the role
 	Token     string    `json:"token"`
 }
 
@@ -23,13 +23,13 @@ type WorkspaceApiKey struct {
 	CreatedAt     time.Time `json:"createdAt"`
 	UpdatedAt     time.Time `json:"updatedAt"`
 	Name          string    `json:"name"`
-	Role          Role      `json:"role"`
+	RoleName      Role      `json:"roleName" enums:"admin,editor,viewer" example:"admin"` // Name of the role
 	CreatorUserID string    `json:"creatorUserID"`
 	Active        bool      `json:"active"`
 	MaskedKey     string    `json:"maskedKey"`
 }
 
 type UpdateKeyRoleRequest struct {
-	ID   uint `json:"id"`
-	Role Role `json:"role"`
+	ID       uint `json:"id"`
+	RoleName Role `json:"roleName" enums:"admin,editor,viewer" example:"admin"` // Name of the role
 }

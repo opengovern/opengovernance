@@ -23,7 +23,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "auth"
+                    "keys"
                 ],
                 "summary": "Creates Workspace Key",
                 "parameters": [
@@ -54,7 +54,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "auth"
+                    "keys"
                 ],
                 "summary": "Update Workspace Key Role",
                 "parameters": [
@@ -85,7 +85,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "auth"
+                    "keys"
                 ],
                 "summary": "Get Workspace Key Details",
                 "parameters": [
@@ -114,7 +114,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "auth"
+                    "keys"
                 ],
                 "summary": "Activate Workspace Key",
                 "parameters": [
@@ -143,7 +143,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "auth"
+                    "keys"
                 ],
                 "summary": "Deletes Workspace Key",
                 "parameters": [
@@ -169,7 +169,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "auth"
+                    "keys"
                 ],
                 "summary": "Suspend Workspace Key",
                 "parameters": [
@@ -198,7 +198,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "auth"
+                    "keys"
                 ],
                 "summary": "Get Workspace Keys",
                 "responses": {
@@ -214,25 +214,23 @@ const docTemplate = `{
                 }
             }
         },
-        "/auth/api/v1/role/:role/keys": {
+        "/auth/api/v1/role/{roleName}/keys": {
             "get": {
                 "description": "Returns a list of keys in a workspace for the specified role.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
-                    "auth"
+                    "roles"
                 ],
                 "summary": "Get Role Keys",
                 "parameters": [
                     {
-                        "description": "Request Body",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "type": "string"
-                        }
+                        "type": "string",
+                        "description": "roleName",
+                        "name": "roleName",
+                        "in": "path",
+                        "required": true
                     }
                 ],
                 "responses": {
@@ -248,21 +246,21 @@ const docTemplate = `{
                 }
             }
         },
-        "/auth/api/v1/role/{role}/users": {
+        "/auth/api/v1/role/{roleName}/users": {
             "get": {
                 "description": "Returns a list of users in a workspace with the specified role.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
-                    "auth"
+                    "roles"
                 ],
                 "summary": "Lists Role Users",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "role",
-                        "name": "role",
+                        "description": "roleName",
+                        "name": "roleName",
                         "in": "path",
                         "required": true
                     }
@@ -287,7 +285,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "auth"
+                    "roles"
                 ],
                 "summary": "Get Roles",
                 "responses": {
@@ -303,21 +301,21 @@ const docTemplate = `{
                 }
             }
         },
-        "/auth/api/v1/roles/{role}": {
+        "/auth/api/v1/roles/{roleName}": {
             "get": {
                 "description": "Gets the details of the Role, including the description, number of users and list of those users.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
-                    "auth"
+                    "roles"
                 ],
                 "summary": "Get Role Details",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "role",
-                        "name": "role",
+                        "description": "roleName",
+                        "name": "roleName",
                         "in": "path",
                         "required": true
                     }
@@ -339,7 +337,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "auth"
+                    "users"
                 ],
                 "summary": "Invite User",
                 "parameters": [
@@ -365,7 +363,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "auth"
+                    "users"
                 ],
                 "summary": "Delete Invitation",
                 "parameters": [
@@ -391,7 +389,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "auth"
+                    "users"
                 ],
                 "summary": "Update User Access",
                 "parameters": [
@@ -417,7 +415,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "auth"
+                    "users"
                 ],
                 "summary": "Delete User Access",
                 "parameters": [
@@ -443,7 +441,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "auth"
+                    "users"
                 ],
                 "summary": "Get RoleBindings",
                 "responses": {
@@ -463,7 +461,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "auth"
+                    "users"
                 ],
                 "summary": "Get User details",
                 "parameters": [
@@ -492,7 +490,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "auth"
+                    "users"
                 ],
                 "summary": "User Workspaces",
                 "parameters": [
@@ -521,7 +519,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "auth"
+                    "users"
                 ],
                 "summary": "Get Users",
                 "parameters": [
@@ -555,7 +553,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "auth"
+                    "users"
                 ],
                 "summary": "Workspace user roleBindings.",
                 "responses": {
@@ -5938,8 +5936,19 @@ const docTemplate = `{
                 "name": {
                     "type": "string"
                 },
-                "role": {
-                    "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.Role"
+                "roleName": {
+                    "description": "Name of the role",
+                    "enum": [
+                        "admin",
+                        "editor",
+                        "viewer"
+                    ],
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.Role"
+                        }
+                    ],
+                    "example": "admin"
                 }
             }
         },
@@ -5958,8 +5967,19 @@ const docTemplate = `{
                 "name": {
                     "type": "string"
                 },
-                "role": {
-                    "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.Role"
+                "roleName": {
+                    "description": "Name of the role",
+                    "enum": [
+                        "admin",
+                        "editor",
+                        "viewer"
+                    ],
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.Role"
+                        }
+                    ],
+                    "example": "admin"
                 },
                 "token": {
                     "type": "string"
@@ -5996,7 +6016,8 @@ const docTemplate = `{
                 },
                 "createdAt": {
                     "description": "Creation timestamp in UTC",
-                    "type": "string"
+                    "type": "string",
+                    "example": "2023-03-31T09:36:09.855Z"
                 },
                 "email": {
                     "description": "Email address of the user",
@@ -6010,7 +6031,8 @@ const docTemplate = `{
                 },
                 "lastActivity": {
                     "description": "Last activity timestamp in UTC",
-                    "type": "string"
+                    "type": "string",
+                    "example": "2023-04-21T08:53:09.928Z"
                 },
                 "roleName": {
                     "description": "Name of the role",
@@ -6179,7 +6201,8 @@ const docTemplate = `{
                 },
                 "userId": {
                     "description": "Unique identifier for the User",
-                    "type": "string"
+                    "type": "string",
+                    "example": "sampleID"
                 }
             }
         },
@@ -6202,10 +6225,12 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "description": {
+                    "description": "Role Description and accesses",
                     "type": "string",
                     "example": "The Administrator role is a super user role with all of the capabilities that can be assigned to a role, and its enables access to all data \u0026 configuration on a Kaytu Workspace. You cannot edit or delete the Administrator role."
                 },
                 "role": {
+                    "description": "Name of the role",
                     "enum": [
                         "admin",
                         "editor",
@@ -6219,10 +6244,12 @@ const docTemplate = `{
                     "example": "admin"
                 },
                 "userCount": {
+                    "description": "Number of users having this role",
                     "type": "integer",
                     "example": 1
                 },
                 "users": {
+                    "description": "List of users having this role",
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.GetUsersResponse"
@@ -6240,7 +6267,8 @@ const docTemplate = `{
                 },
                 "createdAt": {
                     "description": "Creation timestamp in UTC",
-                    "type": "string"
+                    "type": "string",
+                    "example": "2023-03-31T09:36:09.855Z"
                 },
                 "email": {
                     "description": "Email address of the user",
@@ -6254,7 +6282,8 @@ const docTemplate = `{
                 },
                 "lastActivity": {
                     "description": "Last activity timestamp in UTC",
-                    "type": "string"
+                    "type": "string",
+                    "example": "2023-04-21T08:53:09.928Z"
                 },
                 "roleName": {
                     "description": "Name of the role",
@@ -6300,7 +6329,7 @@ const docTemplate = `{
                         "type": "string"
                     },
                     "example": [
-                        "demoWorkspace"
+                        "demo"
                     ]
                 }
             }
@@ -6309,10 +6338,12 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "description": {
+                    "description": "Role Description and accesses",
                     "type": "string",
                     "example": "The Administrator role is a super user role with all of the capabilities that can be assigned to a role, and its enables access to all data \u0026 configuration on a Kaytu Workspace. You cannot edit or delete the Administrator role."
                 },
                 "roleName": {
+                    "description": "Name of the role",
                     "enum": [
                         "admin",
                         "editor",
@@ -6326,6 +6357,7 @@ const docTemplate = `{
                     "example": "admin"
                 },
                 "userCount": {
+                    "description": "Number of usershaving this role",
                     "type": "integer",
                     "example": 1
                 }
@@ -6337,8 +6369,19 @@ const docTemplate = `{
                 "id": {
                     "type": "integer"
                 },
-                "role": {
-                    "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.Role"
+                "roleName": {
+                    "description": "Name of the role",
+                    "enum": [
+                        "admin",
+                        "editor",
+                        "viewer"
+                    ],
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.Role"
+                        }
+                    ],
+                    "example": "admin"
                 }
             }
         },
@@ -6361,7 +6404,8 @@ const docTemplate = `{
                 },
                 "workspaceID": {
                     "description": "Unique identifier for the Workspace",
-                    "type": "string"
+                    "type": "string",
+                    "example": "sampleID"
                 }
             }
         },
@@ -6386,8 +6430,19 @@ const docTemplate = `{
                 "name": {
                     "type": "string"
                 },
-                "role": {
-                    "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.Role"
+                "roleName": {
+                    "description": "Name of the role",
+                    "enum": [
+                        "admin",
+                        "editor",
+                        "viewer"
+                    ],
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.Role"
+                        }
+                    ],
+                    "example": "admin"
                 },
                 "updatedAt": {
                     "type": "string"
@@ -6399,7 +6454,8 @@ const docTemplate = `{
             "properties": {
                 "createdAt": {
                     "description": "Creation timestamp in UTC",
-                    "type": "string"
+                    "type": "string",
+                    "example": "2023-03-31T09:36:09.855Z"
                 },
                 "email": {
                     "description": "Email address of the user",
@@ -6408,7 +6464,8 @@ const docTemplate = `{
                 },
                 "lastActivity": {
                     "description": "Last activity timestamp in UTC",
-                    "type": "string"
+                    "type": "string",
+                    "example": "2023-04-21T08:53:09.928Z"
                 },
                 "roleName": {
                     "description": "Name of the role",
@@ -7887,28 +7944,42 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "connector": {
-                    "$ref": "#/definitions/source.Type"
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/source.Type"
+                        }
+                    ],
+                    "example": "AWS"
                 },
                 "filterId": {
                     "type": "string"
                 },
                 "filterType": {
-                    "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.FilterType"
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.FilterType"
+                        }
+                    ],
+                    "example": "cloudResourceType"
                 },
                 "resourceCount": {
-                    "type": "integer"
+                    "type": "integer",
+                    "example": 0
                 },
                 "resourceCountChange": {
                     "type": "number"
                 },
                 "resourceName": {
-                    "type": "string"
+                    "type": "string",
+                    "example": ""
                 },
                 "resourceType": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "AWS::AMP::Workspace"
                 },
                 "serviceName": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "amp"
                 }
             }
         },
@@ -8403,7 +8474,8 @@ const docTemplate = `{
                 },
                 "totalCount": {
                     "description": "Number of resource types",
-                    "type": "integer"
+                    "type": "integer",
+                    "example": 1
                 }
             }
         },
