@@ -2790,7 +2790,11 @@ const docTemplate = `{
                 "tags": [
                     "metadata"
                 ],
+<<<<<<< HEAD
                 "summary": "Get Connector",
+=======
+                "summary": "Get a single connector",
+>>>>>>> 0c30a1a6b2f64066d9405859ce1968e90c1ad6d9
                 "parameters": [
                     {
                         "type": "string",
@@ -2876,10 +2880,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ResourceTypeMetadata"
-                            }
+                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ResourceTypeMetadata"
                         }
                     }
                 }
@@ -6225,12 +6226,18 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "description": {
+<<<<<<< HEAD
                     "description": "Role Description and accesses",
+=======
+>>>>>>> 0c30a1a6b2f64066d9405859ce1968e90c1ad6d9
                     "type": "string",
                     "example": "The Administrator role is a super user role with all of the capabilities that can be assigned to a role, and its enables access to all data \u0026 configuration on a Kaytu Workspace. You cannot edit or delete the Administrator role."
                 },
                 "role": {
+<<<<<<< HEAD
                     "description": "Name of the role",
+=======
+>>>>>>> 0c30a1a6b2f64066d9405859ce1968e90c1ad6d9
                     "enum": [
                         "admin",
                         "editor",
@@ -6244,7 +6251,10 @@ const docTemplate = `{
                     "example": "admin"
                 },
                 "userCount": {
+<<<<<<< HEAD
                     "description": "Number of users having this role",
+=======
+>>>>>>> 0c30a1a6b2f64066d9405859ce1968e90c1ad6d9
                     "type": "integer",
                     "example": 1
                 },
@@ -6329,7 +6339,11 @@ const docTemplate = `{
                         "type": "string"
                     },
                     "example": [
+<<<<<<< HEAD
                         "demo"
+=======
+                        "demoWorkspace"
+>>>>>>> 0c30a1a6b2f64066d9405859ce1968e90c1ad6d9
                     ]
                 }
             }
@@ -6338,12 +6352,18 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "description": {
+<<<<<<< HEAD
                     "description": "Role Description and accesses",
+=======
+>>>>>>> 0c30a1a6b2f64066d9405859ce1968e90c1ad6d9
                     "type": "string",
                     "example": "The Administrator role is a super user role with all of the capabilities that can be assigned to a role, and its enables access to all data \u0026 configuration on a Kaytu Workspace. You cannot edit or delete the Administrator role."
                 },
                 "roleName": {
+<<<<<<< HEAD
                     "description": "Name of the role",
+=======
+>>>>>>> 0c30a1a6b2f64066d9405859ce1968e90c1ad6d9
                     "enum": [
                         "admin",
                         "editor",
@@ -6357,7 +6377,10 @@ const docTemplate = `{
                     "example": "admin"
                 },
                 "userCount": {
+<<<<<<< HEAD
                     "description": "Number of usershaving this role",
+=======
+>>>>>>> 0c30a1a6b2f64066d9405859ce1968e90c1ad6d9
                     "type": "integer",
                     "example": 1
                 }
@@ -7897,7 +7920,14 @@ const docTemplate = `{
                     ]
                 },
                 "connector_label": {
+<<<<<<< HEAD
                     "description": "Connector Lable",
+=======
+                    "description": "Connector Label",
+                    "type": "string"
+                },
+                "logo_uri": {
+>>>>>>> 0c30a1a6b2f64066d9405859ce1968e90c1ad6d9
                     "type": "string"
                 },
                 "resource_types": {
@@ -7907,12 +7937,18 @@ const docTemplate = `{
                         "type": "string"
                     }
                 },
+                "resource_types_count": {
+                    "type": "integer"
+                },
                 "services": {
                     "description": "List of cloud services",
                     "type": "array",
                     "items": {
                         "type": "string"
                     }
+                },
+                "services_count": {
+                    "type": "integer"
                 }
             }
         },
@@ -8757,12 +8793,21 @@ const docTemplate = `{
         "gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ResourceTypeMetadata": {
             "type": "object",
             "properties": {
+                "attributes": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
                 "compliance": {
                     "description": "List of Compliances that support this Resource Type",
                     "type": "array",
                     "items": {
                         "type": "string"
                     }
+                },
+                "compliance_count": {
+                    "type": "integer"
                 },
                 "connector": {
                     "description": "Resource type connector",
@@ -8782,6 +8827,12 @@ const docTemplate = `{
                     "items": {
                         "type": "integer"
                     }
+                },
+                "insights_count": {
+                    "type": "integer"
+                },
+                "logo_uri": {
+                    "type": "string"
                 },
                 "resource_type_label": {
                     "description": "Resource type lable",
@@ -8881,6 +8932,9 @@ const docTemplate = `{
                     "description": "Cost is supported [yes/no]",
                     "type": "boolean"
                 },
+                "logo_uri": {
+                    "type": "string"
+                },
                 "parent_service": {
                     "description": "Parent service",
                     "type": "string"
@@ -8891,6 +8945,9 @@ const docTemplate = `{
                     "items": {
                         "type": "string"
                     }
+                },
+                "resource_types_count": {
+                    "type": "integer"
                 },
                 "service_label": {
                     "description": "Service Lable",

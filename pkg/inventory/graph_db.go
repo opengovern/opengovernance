@@ -10,6 +10,7 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/aws"
 	"gitlab.com/keibiengine/keibi-engine/pkg/azure"
 	"gitlab.com/keibiengine/keibi-engine/pkg/source"
+	"gitlab.com/keibiengine/keibi-engine/pkg/utils"
 )
 
 type CategoryRootType string
@@ -55,7 +56,7 @@ func NewGraphDatabase(driver neo4j.DriverWithContext) (GraphDatabase, error) {
 			"connector":      resourceType.Connector,
 			"serviceName":    strings.ToLower(resourceType.ServiceName),
 			"resource_label": resourceType.ResourceLabel,
-			"resourceType":   strings.ToLower(resourceType.ResourceName),
+			"resourceType":   resourceType.ResourceName,
 		})
 		if err != nil {
 			return GraphDatabase{}, err
@@ -65,7 +66,7 @@ func NewGraphDatabase(driver neo4j.DriverWithContext) (GraphDatabase, error) {
 			"connector":      resourceType.Connector,
 			"serviceName":    strings.ToLower(resourceType.ServiceName),
 			"resource_label": resourceType.ResourceLabel,
-			"resourceType":   strings.ToLower(resourceType.ResourceName),
+			"resourceType":   resourceType.ResourceName,
 		})
 		if err != nil {
 			return GraphDatabase{}, err
@@ -78,7 +79,7 @@ func NewGraphDatabase(driver neo4j.DriverWithContext) (GraphDatabase, error) {
 			"connector":      resourceType.Connector,
 			"serviceName":    strings.ToLower(resourceType.ServiceName),
 			"resource_label": resourceType.ResourceLabel,
-			"resourceType":   strings.ToLower(resourceType.ResourceName),
+			"resourceType":   resourceType.ResourceName,
 		})
 		if err != nil {
 			return GraphDatabase{}, err
@@ -88,7 +89,7 @@ func NewGraphDatabase(driver neo4j.DriverWithContext) (GraphDatabase, error) {
 			"connector":      resourceType.Connector,
 			"serviceName":    strings.ToLower(resourceType.ServiceName),
 			"resource_label": resourceType.ResourceLabel,
-			"resourceType":   strings.ToLower(resourceType.ResourceName),
+			"resourceType":   resourceType.ResourceName,
 		})
 		if err != nil {
 			return GraphDatabase{}, err
@@ -108,6 +109,7 @@ type Node struct {
 type CategoryNode struct {
 	Node
 	Name           string         `json:"name"`
+	LogoURI        *string        `json:"logo_uri,omitempty"`
 	Subcategories  []CategoryNode `json:"subcategories,omitempty"`
 	Filters        []Filter       `json:"filters,omitempty"` // Filters that are directly associated with this category
 	SubTreeFilters []Filter       `json:"-"`                 // SubTreeFilters List of all filters that are in the subtree of this category
@@ -118,6 +120,7 @@ type ServiceNode struct {
 	ServiceName string      `json:"service_name"`
 	Connector   source.Type `json:"connector"`
 	ServiceID   string      `json:"service_id"`
+	LogoURI     *string     `json:"logo_uri,omitempty"`
 }
 
 // GetParentService Returns the parent service name of this service node if it exists
@@ -151,6 +154,7 @@ type FilterCloudResourceTypeNode struct {
 	ResourceType  string      `json:"resource_type"`
 	ResourceLabel string      `json:"resource_name"`
 	ServiceName   string      `json:"service_name"`
+	LogoURI       *string     `json:"logo_uri,omitempty"`
 }
 
 func (f FilterCloudResourceTypeNode) GetFilterType() FilterType {
@@ -232,15 +236,18 @@ func getFilterFromNode(node neo4j.Node) (Filter, error) {
 				return nil, ErrPropertyNotFound
 			}
 
+			logoURI, _ := node.Props["logo_uri"]
+
 			return &FilterCloudResourceTypeNode{
 				Node: Node{
 					Node:      node,
 					ElementID: node.ElementId,
 				},
 				Connector:     source.Type(connector.(string)),
-				ResourceType:  strings.ToLower(resourceType.(string)),
+				ResourceType:  resourceType.(string),
 				ResourceLabel: resourceLabel.(string),
 				ServiceName:   strings.ToLower(serviceName.(string)),
+				LogoURI:       utils.GetPointerOrNil(logoURI.(string)),
 			}, nil
 		case string(FilterTypeCost):
 			connector, ok := node.Props["connector"]
@@ -303,12 +310,15 @@ func getCategoryFromNode(node neo4j.Node) (*CategoryNode, error) {
 		return nil, ErrPropertyNotFound
 	}
 
+	logoURI, _ := node.Props["logo_uri"]
+
 	return &CategoryNode{
 		Node: Node{
 			Node:      node,
 			ElementID: node.ElementId,
 		},
 		Name:           name.(string),
+		LogoURI:        utils.GetPointerOrNil(logoURI.(string)),
 		Filters:        []Filter{},
 		SubTreeFilters: []Filter{},
 		Subcategories:  []CategoryNode{},
@@ -334,11 +344,15 @@ func getCloudServiceFromNode(node neo4j.Node) (*ServiceNode, error) {
 		return nil, ErrPropertyNotFound
 	}
 
+	// optional property
+	logoURI, _ := node.Props["logo_uri"]
+
 	return &ServiceNode{
 		CategoryNode: *cat,
 		ServiceName:  serviceName.(string),
 		ServiceID:    serviceId.(string),
 		Connector:    source.Type(connector.(string)),
+		LogoURI:      utils.GetPointerOrNil(logoURI.(string)),
 	}, nil
 }
 

@@ -353,8 +353,8 @@ func (s *Server) handleWorkspace(workspace *Workspace) error {
 			}
 
 			if err := s.authClient.PutRoleBinding(authCtx, &authapi.PutRoleBindingRequest{
-				UserID: workspace.OwnerId,
-				Role:   authapi.AdminRole,
+				UserID:   workspace.OwnerId,
+				RoleName: authapi.AdminRole,
 			}); err != nil {
 				return fmt.Errorf("put role binding: %w", err)
 			}

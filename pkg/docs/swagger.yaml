@@ -274,23 +274,10 @@ definitions:
   gitlab_com_keibiengine_keibi-engine_pkg_auth_api.RoleDetailsResponse:
     properties:
       description:
-        description: Role Description and accesses
-        example: The Administrator role is a super user role with all of the capabilities
-          that can be assigned to a role, and its enables access to all data & configuration
-          on a Kaytu Workspace. You cannot edit or delete the Administrator role.
         type: string
       role:
-        allOf:
-        - $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.Role'
-        description: Name of the role
-        enum:
-        - admin
-        - editor
-        - viewer
-        example: admin
+        $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.Role'
       userCount:
-        description: Number of users having this role
-        example: 1
         type: integer
       users:
         description: List of users having this role
@@ -348,8 +335,6 @@ definitions:
       workspaces:
         description: A list of workspace ids which the user has the specified role
           in them
-        example:
-        - demo
         items:
           type: string
         type: array
@@ -357,23 +342,10 @@ definitions:
   gitlab_com_keibiengine_keibi-engine_pkg_auth_api.RolesListResponse:
     properties:
       description:
-        description: Role Description and accesses
-        example: The Administrator role is a super user role with all of the capabilities
-          that can be assigned to a role, and its enables access to all data & configuration
-          on a Kaytu Workspace. You cannot edit or delete the Administrator role.
         type: string
-      roleName:
-        allOf:
-        - $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.Role'
-        description: Name of the role
-        enum:
-        - admin
-        - editor
-        - viewer
-        example: admin
+      role:
+        $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.Role'
       userCount:
-        description: Number of usershaving this role
-        example: 1
         type: integer
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_auth_api.UpdateKeyRoleRequest:
@@ -1416,18 +1388,21 @@ definitions:
         - $ref: '#/definitions/source.Type'
         description: Connector
       connector_label:
-        description: Connector Lable
         type: string
       resource_types:
         description: List of resource types
         items:
           type: string
         type: array
+      resource_types_count:
+        type: integer
       services:
         description: List of cloud services
         items:
           type: string
         type: array
+      services_count:
+        type: integer
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.CostWithUnit:
     properties:
@@ -2018,11 +1993,17 @@ definitions:
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ResourceTypeMetadata:
     properties:
+      attributes:
+        items:
+          type: string
+        type: array
       compliance:
         description: List of Compliances that support this Resource Type
         items:
           type: string
         type: array
+      compliance_count:
+        type: integer
       connector:
         allOf:
         - $ref: '#/definitions/source.Type'
@@ -2035,6 +2016,10 @@ definitions:
         items:
           type: integer
         type: array
+      insights_count:
+        type: integer
+      logo_uri:
+        type: string
       resource_type_label:
         description: Resource type lable
         type: string
@@ -2104,6 +2089,8 @@ definitions:
       cost_support:
         description: Cost is supported [yes/no]
         type: boolean
+      logo_uri:
+        type: string
       parent_service:
         description: Parent service
         type: string
@@ -2112,6 +2099,8 @@ definitions:
         items:
           type: string
         type: array
+      resource_types_count:
+        type: integer
       service_label:
         description: Service Lable
         type: string
@@ -4752,14 +4741,7 @@ paths:
       - metadata
   /inventory/api/v2/metadata/connectors/{connector}:
     get:
-      description: Gets a single connector and its metadata including list of their
-        resource types and services names by the connector name.
-      parameters:
-      - description: connector
-        in: path
-        name: connector
-        required: true
-        type: string
+      description: Get a single connector
       produces:
       - application/json
       responses:
@@ -4820,7 +4802,7 @@ paths:
             items:
               $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ResourceTypeMetadata'
             type: array
-      summary: Get Resource Type
+      summary: Get all resource types
       tags:
       - metadata
   /inventory/api/v2/metadata/services:
