@@ -749,7 +749,7 @@ func (h HttpHandler) GetCredential(ctx echo.Context) error {
 //	@Success		200			{object}	[]api.Credential
 //	@Router			/onboard/api/v1/credential/sources/list [get]
 func (h HttpHandler) ListSourcesByCredentials(ctx echo.Context) error {
-	sType, _ := source.ParseType(ctx.QueryParam("type"))
+	sType, _ := source.ParseType(ctx.QueryParam("connector"))
 	var sources []Source
 	var err error
 	if sType != "" {
