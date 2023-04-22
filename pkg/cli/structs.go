@@ -86,3 +86,18 @@ type RequestCreateKey struct {
 	Name string `json:"name"`
 	Role string `json:"role"`
 }
+type RequestUpdateUser struct {
+	Role   string
+	UserId string
+}
+type ResponseUserDetails struct {
+	UserID        string `json:"userId"`        // Unique identifier for the user
+	UserName      string `json:"userName"`      // Username
+	Email         string `json:"email"`         // Email address of the user
+	EmailVerified bool   `json:"emailVerified"` // Is email verified or not
+	Role          string `json:"role"`          // Name of the role in the specified workspace
+	Status        string `json:"status"`        // Invite status
+	LastActivity  string `json:"lastActivity"`  // Last activity timestamp in UTC
+	CreatedAt     string `json:"createdAt"`     // Creation timestamp in UTC
+	Blocked       bool
+}

@@ -248,11 +248,11 @@ func IamGetUsers(workspaceName string, accessToken string, email string, emailVe
 		return []api.GetUserResponse{{}}, err
 	}
 	var response []api.GetUserResponse
-	//err = json.Unmarshal(bodyResponse, &response)
-	//if err != nil {
-	//	return []api.GetUserResponse{{}}, err
-	//}
 	fmt.Println(string(bodyResponse))
+	err = json.Unmarshal(bodyResponse, &response)
+	if err != nil {
+		return []api.GetUserResponse{{}}, err
+	}
 	return response, nil
 }
 func GetIamUserDetails(accessToken string, workspaceName string, userId string) (ResponseUserDetails, error) {
@@ -285,18 +285,6 @@ func GetIamUserDetails(accessToken string, workspaceName string, userId string) 
 	return response, nil
 }
 
-type ResponseUserDetails struct {
-	UserID        string `json:"userId"`        // Unique identifier for the user
-	UserName      string `json:"userName"`      // Username
-	Email         string `json:"email"`         // Email address of the user
-	EmailVerified bool   `json:"emailVerified"` // Is email verified or not
-	Role          string `json:"role"`          // Name of the role in the specified workspace
-	Status        string `json:"status"`        // Invite status
-	LastActivity  string `json:"lastActivity"`  // Last activity timestamp in UTC
-	CreatedAt     string `json:"createdAt"`     // Creation timestamp in UTC
-	Blocked       bool
-}
-
 func DeleteIamUser(workspacesName string, accessToken string, userId string) (string, error) {
 	req, err := http.NewRequest("DELETE", urls.Url+workspacesName+"/auth/api/v1/user/invite", nil)
 	if err != nil {
@@ -319,36 +307,27 @@ func DeleteIamUser(workspacesName string, accessToken string, userId string) (st
 func ListRoles(WorkspacesName string, accessToken string) ([]api.RolesListResponse, error) {
 	req, err := http.NewRequest("GET", urls.UrlListRoles+WorkspacesName+"/auth/api/v1/roles", nil)
 	if err != nil {
-		fmt.Println(1)
 		return []api.RolesListResponse{{}}, err
 	}
 	req.Header.Set("Authorization", "Bearer "+accessToken)
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {
-
-		fmt.Println(2)
 		return []api.RolesListResponse{{}}, err
 	}
 	body, err := io.ReadAll(res.Body)
 	if err != nil {
-
-		fmt.Println(3)
 		return []api.RolesListResponse{{}}, err
 	}
 	err = res.Body.Close()
 	if err != nil {
-
-		fmt.Println(4)
 		return []api.RolesListResponse{{}}, err
 	}
-	//response := []api.RolesListResponse{{}}
-	//err = json.Unmarshal(body, &response)
-	//if err != nil {
-	//
-	//	fmt.Println(5)
-	//	return []api.RolesListResponse{{}}, err
-	//}
 	fmt.Println(string(body))
+	response := []api.RolesListResponse{{}}
+	err = json.Unmarshal(body, &response)
+	if err != nil {
+		return []api.RolesListResponse{{}}, err
+	}
 	return []api.RolesListResponse{{}}, nil
 }
 
@@ -371,12 +350,11 @@ func RoleDetail(workspaceName string, role string, accessToken string) ([]api.Ro
 		return []api.RolesListResponse{{}}, err
 	}
 	response := []api.RolesListResponse{{}}
-	//err = json.Unmarshal(body, &response)
-	//if err != nil {
-	//	fmt.Println(2)
-	//	return []api.RolesListResponse{{}}, err
-	//}
 	fmt.Println(string(body))
+	err = json.Unmarshal(body, &response)
+	if err != nil {
+		return []api.RolesListResponse{{}}, err
+	}
 	return response, nil
 }
 
@@ -406,11 +384,6 @@ func CreateUser(workspaceName string, accessToken string, email string, role str
 	}
 }
 
-type RequestUpdateUser struct {
-	Role   string
-	UserId string
-}
-
 func UpdateUser(workspaceName string, accessToken string, role string, userID string) (string, error) {
 	request := api.PutRoleBindingRequest{Role: api.Role(role), UserID: userID}
 	reqBody, err := json.Marshal(request)
@@ -435,19 +408,15 @@ func UpdateUser(workspaceName string, accessToken string, role string, userID st
 func GetListKeys(workspacesName string, accessToken string) ([]api.WorkspaceApiKey, error) {
 	req, err := http.NewRequest("GET", urls.Url+workspacesName+"/auth/api/v1/keys", nil)
 	if err != nil {
-		fmt.Println(1)
 		return []api.WorkspaceApiKey{{}}, err
 	}
 	req.Header.Set("Authorization", "Bearer "+accessToken)
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {
-		fmt.Println(2)
-
 		return []api.WorkspaceApiKey{{}}, err
 	}
 	body, err := io.ReadAll(res.Body)
 	if err != nil {
-		fmt.Println(3)
 		return []api.WorkspaceApiKey{{}}, err
 	}
 	err = res.Body.Close()
@@ -455,6 +424,7 @@ func GetListKeys(workspacesName string, accessToken string) ([]api.WorkspaceApiK
 		return []api.WorkspaceApiKey{{}}, err
 	}
 	response := []api.WorkspaceApiKey{{}}
+	fmt.Println(string(body))
 	err = json.Unmarshal(body, &response)
 	if err != nil {
 		return []api.WorkspaceApiKey{{}}, err
@@ -483,19 +453,22 @@ func GetKeyDetails(workspacesName string, accessToken string, id string) (api.Wo
 	return response, nil
 }
 
-func CreateKeys(workspacesName string, accessToken string, name string, role api.Role) (api.CreateAPIKeyResponse, error) {
+func CreateKeys(workspacesName string, accessToken string, keyName string, role api.Role) (api.CreateAPIKeyResponse, error) {
 	request := api.CreateAPIKeyRequest{}
 	request.Role = role
-	request.Name = name
+	request.Name = keyName
 	reqBody, err := json.Marshal(request)
 	if err != nil {
 		return api.CreateAPIKeyResponse{}, err
 	}
-	req, err := http.NewRequest("POST", urls.Url+workspacesName+"auth/api/v1/key/create", bytes.NewBuffer(reqBody))
+	req, err := http.NewRequest("POST", urls.Url+workspacesName+"/auth/api/v1/key/create", bytes.NewBuffer(reqBody))
 	if err != nil {
 		return api.CreateAPIKeyResponse{}, err
 	}
 	req.Header.Set("Authorization", "Bearer "+accessToken)
+	fmt.Println(urls.Url + workspacesName + "/auth/api/v1/key/create")
+	fmt.Println(accessToken)
+	fmt.Println(keyName, role)
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return api.CreateAPIKeyResponse{}, err
@@ -505,6 +478,7 @@ func CreateKeys(workspacesName string, accessToken string, name string, role api
 		return api.CreateAPIKeyResponse{}, err
 	}
 	response := api.CreateAPIKeyResponse{}
+	fmt.Println(string(body))
 	err = json.Unmarshal(body, &response)
 	if err != nil {
 		return api.CreateAPIKeyResponse{}, err
@@ -531,6 +505,7 @@ func UpdateKeyRole(workspacesName string, accessToken string, id uint, role stri
 		return api.WorkspaceApiKey{}, err
 	}
 	response := api.WorkspaceApiKey{}
+	fmt.Println(string(body))
 	err = json.Unmarshal(body, &response)
 	if err != nil {
 		return api.WorkspaceApiKey{}, err
@@ -555,7 +530,24 @@ func DeleteKey(workspacesName string, accessToken string, id string) (string, er
 	}
 }
 
-//	func UpdateKeyState(workspacesName string, accessToken string, id string) error {
-//		http.NewRequest("POST", urls.Url+workspacesName+"", nil)
-//		return nil
+//func UpdateKeyState(workspacesName string, accessToken string, id string) error {
+//	req , err := http.NewRequest("POST", urls.Url+workspacesName+"", nil)
+//	if err!=nil{
+//		return err
 //	}
+//	req .Header.Set("Authorization","Bearer "+ accessToken)
+//	res , err := http.DefaultClient.Do(req)
+//	if err != nil{
+//		return err
+//	}
+//	body , err :=io.ReadAll(res.Body)
+//	if err!= nil{
+//		return err
+//	}
+//	err = res.Body.Close()
+//	if err!=nil{
+//		return err
+//	}
+//	fmt.Println(string(body))
+//	return nil
+//}

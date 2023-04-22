@@ -38,10 +38,12 @@ var CreateKeyCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		accessToken, err := apis.GetConfig()
 		if err != nil {
+			fmt.Println(1.1)
 			return err
 		}
 		response, err := apis.CreateKeys(workspacesNameCreate, accessToken, nameKey, api.Role(roleName))
 		if err != nil {
+			fmt.Println(1.2)
 			return err
 		}
 		fmt.Println(response)
