@@ -81,11 +81,7 @@ func (r *httpRoutes) Register(e *echo.Echo) {
 //
 //	@Summary		Get Roles
 //	@Description	Gets a list of roles in a workspace and their descriptions and number of users.
-<<<<<<< HEAD
 //	@Tags			roles
-=======
-//	@Tags			auth
->>>>>>> 0c30a1a6b2f64066d9405859ce1968e90c1ad6d9
 //	@Produce		json
 //	@Success		200	{object}	[]api.RolesListResponse
 //	@Router			/auth/api/v1/roles [get]
@@ -141,7 +137,6 @@ func (r *httpRoutes) ListRoles(ctx echo.Context) error {
 //
 //	@Summary		Get Role Details
 //	@Description	Gets the details of the Role, including the description, number of users and list of those users.
-<<<<<<< HEAD
 //	@Tags			roles
 //	@Produce		json
 //	@Param			roleName	path		string	true	"roleName"
@@ -150,16 +145,6 @@ func (r *httpRoutes) ListRoles(ctx echo.Context) error {
 func (r *httpRoutes) RoleDetails(ctx echo.Context) error {
 	workspaceID := httpserver.GetWorkspaceID(ctx)
 	role := api.Role(ctx.Param("roleName"))
-=======
-//	@Tags			auth
-//	@Produce		json
-//	@Param			role	path		string	true	"role"
-//	@Success		200		{object}	api.RoleDetailsResponse
-//	@Router			/auth/api/v1/roles/{role} [get]
-func (r *httpRoutes) RoleDetails(ctx echo.Context) error {
-	workspaceID := httpserver.GetWorkspaceID(ctx)
-	role := api.GetRole(ctx.Param("role"))
->>>>>>> 0c30a1a6b2f64066d9405859ce1968e90c1ad6d9
 	users, err := r.auth0Service.SearchUsers(workspaceID, nil, nil, nil)
 	if err != nil {
 		return err
@@ -213,11 +198,7 @@ func bindValidate(ctx echo.Context, i interface{}) error {
 //	@Description	User Access defines the roles of a user.
 //	@Description	There are currently three roles (admin, editor, viewer).
 //	@Description	User must exist before you can update its Role.
-<<<<<<< HEAD
 //	@Tags			users
-=======
-//	@Tags			auth
->>>>>>> 0c30a1a6b2f64066d9405859ce1968e90c1ad6d9
 //	@Produce		json
 //	@Param			request	body		api.PutRoleBindingRequest	true	"Request Body"
 //	@Success		200		{object}	nil
@@ -272,11 +253,7 @@ func (r httpRoutes) PutRoleBinding(ctx echo.Context) error {
 //
 //	@Summary		Delete User Access
 //	@Description	Deletes user access to the specified workspace.
-<<<<<<< HEAD
 //	@Tags			users
-=======
-//	@Tags			auth
->>>>>>> 0c30a1a6b2f64066d9405859ce1968e90c1ad6d9
 //	@Produce		json
 //	@Param			userId	query		string	true	"userId"
 //	@Success		200		{object}	nil
@@ -309,11 +286,7 @@ func (r httpRoutes) DeleteRoleBinding(ctx echo.Context) error {
 //	@Summary		Get RoleBindings
 //	@Description	Gets the roles binded to a user.
 //	@Description	RoleBinding defines the roles and actions a user can perform. There are currently three roles (admin, editor, viewer).
-<<<<<<< HEAD
 //	@Tags			users
-=======
-//	@Tags			auth
->>>>>>> 0c30a1a6b2f64066d9405859ce1968e90c1ad6d9
 //	@Produce		json
 //	@Success		200	{object}	api.GetRoleBindingsResponse
 //	@Router			/auth/api/v1/user/role/bindings [get]
@@ -345,11 +318,7 @@ func (r *httpRoutes) GetRoleBindings(ctx echo.Context) error {
 //
 //	@Summary		User Workspaces
 //	@Description	Returns a list of workspaces and the user role in it for the specified user.
-<<<<<<< HEAD
 //	@Tags			users
-=======
-//	@Tags			auth
->>>>>>> 0c30a1a6b2f64066d9405859ce1968e90c1ad6d9
 //	@Produce		json
 //	@Param			userId	path		string	true	"userId"
 //	@Success		200		{object}	api.GetRoleBindingsResponse
@@ -391,11 +360,7 @@ func (r *httpRoutes) GetWorkspaceMembership(ctx echo.Context) error {
 //
 //	@Summary		Workspace user roleBindings.
 //	@Description	RoleBinding defines the roles and actions a user can perform. There are currently three roles (admin, editor, viewer). The workspace path is based on the DNS such as (workspace1.app.keibi.io)
-<<<<<<< HEAD
 //	@Tags			users
-=======
-//	@Tags			auth
->>>>>>> 0c30a1a6b2f64066d9405859ce1968e90c1ad6d9
 //	@Produce		json
 //	@Success		200	{object}	api.GetWorkspaceRoleBindingResponse
 //	@Router			/auth/api/v1/workspace/role/bindings [get]
@@ -430,11 +395,7 @@ func (r *httpRoutes) GetWorkspaceRoleBindings(ctx echo.Context) error {
 //
 //	@Summary		Get Users
 //	@Description	Gets a list of users with specified filters (filters are optional).
-<<<<<<< HEAD
 //	@Tags			users
-=======
-//	@Tags			auth
->>>>>>> 0c30a1a6b2f64066d9405859ce1968e90c1ad6d9
 //	@Produce		json
 //	@Param			request	body		api.GetUsersRequest	true	"Request Body"
 //	@Success		200		{object}	[]api.GetUsersResponse
@@ -468,11 +429,7 @@ func (r *httpRoutes) GetUsers(ctx echo.Context) error {
 //
 //	@Summary		Get User details
 //	@Description	Get user details by user id.
-<<<<<<< HEAD
 //	@Tags			users
-=======
-//	@Tags			auth
->>>>>>> 0c30a1a6b2f64066d9405859ce1968e90c1ad6d9
 //	@Produce		json
 //	@Param			userId	path		string	true	"userId"
 //	@Success		200		{object}	api.GetUserResponse
@@ -628,11 +585,7 @@ func (r *httpRoutes) Invite(ctx echo.Context) error {
 //
 //	@Summary		Delete Invitation
 //	@Description	Deletes user access to the specified workspace.
-<<<<<<< HEAD
 //	@Tags			users
-=======
-//	@Tags			auth
->>>>>>> 0c30a1a6b2f64066d9405859ce1968e90c1ad6d9
 //	@Produce		json
 //	@Param			userId	query		string	true	"userId"
 //	@Success		200		{object}	nil
@@ -661,11 +614,7 @@ func (r *httpRoutes) DeleteInvitation(ctx echo.Context) error {
 //
 //	@Summary		Creates Workspace Key
 //	@Description	Creates workspace key for the defined role with the defined name.
-<<<<<<< HEAD
 //	@Tags			keys
-=======
-//	@Tags			auth
->>>>>>> 0c30a1a6b2f64066d9405859ce1968e90c1ad6d9
 //	@Produce		json
 //	@Param			request	body		api.CreateAPIKeyRequest	true	"Request Body"
 //	@Success		200		{object}	api.CreateAPIKeyResponse
@@ -766,11 +715,7 @@ func (r *httpRoutes) CreateAPIKey(ctx echo.Context) error {
 //
 //	@Summary		Deletes Workspace Key
 //	@Description	Deletes the specified workspace key by ID.
-<<<<<<< HEAD
 //	@Tags			keys
-=======
-//	@Tags			auth
->>>>>>> 0c30a1a6b2f64066d9405859ce1968e90c1ad6d9
 //	@Produce		json
 //	@Param			id	path		string	true	"ID"
 //	@Success		200	{object}	nil
@@ -795,11 +740,7 @@ func (r *httpRoutes) DeleteAPIKey(ctx echo.Context) error {
 //
 //	@Summary		Get Workspace Keys
 //	@Description	Gets a list of available keys in a workspace.
-<<<<<<< HEAD
 //	@Tags			keys
-=======
-//	@Tags			auth
->>>>>>> 0c30a1a6b2f64066d9405859ce1968e90c1ad6d9
 //	@Produce		json
 //	@Success		200	{object}	[]api.WorkspaceApiKey
 //	@Router			/auth/api/v1/keys [get]
@@ -830,11 +771,7 @@ func (r *httpRoutes) ListAPIKeys(ctx echo.Context) error {
 //
 //	@Summary		Get Workspace Key Details
 //	@Description	Gets the details of a key in a workspace with specified ID.
-<<<<<<< HEAD
 //	@Tags			keys
-=======
-//	@Tags			auth
->>>>>>> 0c30a1a6b2f64066d9405859ce1968e90c1ad6d9
 //	@Produce		json
 //	@Param			id	path		string	true	"ID"
 //	@Success		200	{object}	api.WorkspaceApiKey
@@ -873,11 +810,7 @@ func (r *httpRoutes) GetAPIKey(ctx echo.Context) error {
 //
 //	@Summary		Suspend Workspace Key
 //	@Description	Suspends a key in the workspace with specified ID.
-<<<<<<< HEAD
 //	@Tags			keys
-=======
-//	@Tags			auth
->>>>>>> 0c30a1a6b2f64066d9405859ce1968e90c1ad6d9
 //	@Produce		json
 //	@Param			id	path		string	true	"ID"
 //	@Success		200	{object}	api.WorkspaceApiKey
@@ -920,11 +853,7 @@ func (r *httpRoutes) SuspendAPIKey(ctx echo.Context) error {
 //
 //	@Summary		Activate Workspace Key
 //	@Description	Activates a key in the workspace with specified ID.
-<<<<<<< HEAD
 //	@Tags			keys
-=======
-//	@Tags			auth
->>>>>>> 0c30a1a6b2f64066d9405859ce1968e90c1ad6d9
 //	@Produce		json
 //	@Param			id	path		string	true	"ID"
 //	@Success		200	{object}	api.WorkspaceApiKey
@@ -967,7 +896,6 @@ func (r *httpRoutes) ActivateAPIKey(ctx echo.Context) error {
 //
 //	@Summary		Lists Role Users
 //	@Description	Returns a list of users in a workspace with the specified role.
-<<<<<<< HEAD
 //	@Tags			roles
 //	@Produce		json
 //	@Param			roleName	path		string	true	"roleName"
@@ -976,16 +904,6 @@ func (r *httpRoutes) ActivateAPIKey(ctx echo.Context) error {
 func (r *httpRoutes) GetRoleUsers(ctx echo.Context) error {
 	workspaceID := httpserver.GetWorkspaceID(ctx)
 	role := api.Role(ctx.Param("roleName"))
-=======
-//	@Tags			auth
-//	@Produce		json
-//	@Param			role	path		string	true	"role"
-//	@Success		200		{object}	api.GetRoleUsersResponse
-//	@Router			/auth/api/v1/role/{role}/users [get]
-func (r *httpRoutes) GetRoleUsers(ctx echo.Context) error {
-	workspaceID := httpserver.GetWorkspaceID(ctx)
-	role := api.GetRole(ctx.Param("role"))
->>>>>>> 0c30a1a6b2f64066d9405859ce1968e90c1ad6d9
 	users, err := r.auth0Service.SearchUsers(workspaceID, nil, nil, &role)
 	if err != nil {
 		return err
@@ -1023,7 +941,6 @@ func (r *httpRoutes) GetRoleUsers(ctx echo.Context) error {
 //
 //	@Summary		Get Role Keys
 //	@Description	Returns a list of keys in a workspace for the specified role.
-<<<<<<< HEAD
 //	@Tags			roles
 //	@Produce		json
 //	@Param			roleName	path		string	true	"roleName"
@@ -1031,15 +948,6 @@ func (r *httpRoutes) GetRoleUsers(ctx echo.Context) error {
 //	@Router			/auth/api/v1/role/{roleName}/keys [get]
 func (r *httpRoutes) GetRoleKeys(ctx echo.Context) error {
 	role := api.Role(ctx.Param("roleName"))
-=======
-//	@Tags			auth
-//	@Produce		json
-//	@Param			request	body		api.Role	true	"Request Body"
-//	@Success		200		{object}	[]api.WorkspaceApiKey
-//	@Router			/auth/api/v1/role/:role/keys [get]
-func (r *httpRoutes) GetRoleKeys(ctx echo.Context) error {
-	role := api.GetRole(ctx.Param("role"))
->>>>>>> 0c30a1a6b2f64066d9405859ce1968e90c1ad6d9
 	workspaceID := httpserver.GetWorkspaceID(ctx)
 	keys, err := r.db.GetAPIKeysByRole(role, workspaceID)
 	if err != nil {
@@ -1067,11 +975,7 @@ func (r *httpRoutes) GetRoleKeys(ctx echo.Context) error {
 //
 //	@Summary		Update Workspace Key Role
 //	@Description	Updates the role of the specified key in workspace.
-<<<<<<< HEAD
 //	@Tags			keys
-=======
-//	@Tags			auth
->>>>>>> 0c30a1a6b2f64066d9405859ce1968e90c1ad6d9
 //	@Produce		json
 //	@Param			request	body		api.UpdateKeyRoleRequest	true	"Request Body"
 //	@Success		200		{object}	api.WorkspaceApiKey
