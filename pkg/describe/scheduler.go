@@ -459,6 +459,7 @@ func (s *Scheduler) Run() error {
 		}
 	}
 
+	// describe
 	EnsureRunGoroutin(func() {
 		s.RunDescribeJobScheduler()
 	})
@@ -474,10 +475,13 @@ func (s *Scheduler) Run() error {
 	EnsureRunGoroutin(func() {
 		s.RunCloudNativeDescribeConnectionJobResourcesConsumer()
 	})
+	//
 
+	// describe cleanup
 	EnsureRunGoroutin(func() {
 		s.RunDescribeCleanupJobScheduler()
 	})
+	//
 
 	EnsureRunGoroutin(func() {
 		s.RunScheduleJobCompletionUpdater()
