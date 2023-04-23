@@ -51,8 +51,10 @@ type SourceAwsRequest struct {
 }
 
 type SourceConfigAzure struct {
-	SubscriptionId string `json:"subscriptionId" validate:"required,uuid_rfc4122"`
+	SubscriptionId string `json:"subscriptionId"`
 	TenantId       string `json:"tenantId" validate:"required,uuid_rfc4122"`
+	ObjectId       string `json:"objectId" validate:"required,uuid_rfc4122"`
+	SecretId       string `json:"secretId" validate:"required,uuid_rfc4122"`
 	ClientId       string `json:"clientId" validate:"required"`
 	ClientSecret   string `json:"clientSecret" validate:"required"`
 }
@@ -135,9 +137,7 @@ type DiscoverAWSAccountsResponse struct {
 }
 
 type DiscoverAzureSubscriptionsRequest struct {
-	TenantId     string `json:"tenantId" validate:"required,uuid_rfc4122"`
-	ClientId     string `json:"clientId" validate:"required"`
-	ClientSecret string `json:"clientSecret" validate:"required"`
+	Config SourceConfigAzure `json:"config"`
 }
 
 type DiscoverAzureSubscriptionsSPNRequest struct {
@@ -148,7 +148,6 @@ type DiscoverAzureSubscriptionsResponse struct {
 	ID             string `json:"id"`
 	SubscriptionID string `json:"subscriptionId"`
 	Name           string `json:"name"`
-	Status         string `json:"status"`
 }
 
 type SourceEvent struct {

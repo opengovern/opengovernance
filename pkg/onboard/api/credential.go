@@ -17,10 +17,9 @@ type CreateCredentialResponse struct {
 }
 
 type UpdateCredentialRequest struct {
-	ID         string      `json:"id"`
-	SourceType source.Type `json:"source_type"`
-	Name       *string     `json:"name"`
-	Config     any         `json:"config"`
+	Connector source.Type `json:"connector"`
+	Name      *string     `json:"name"`
+	Config    any         `json:"config"`
 }
 
 type Credential struct {

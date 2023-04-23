@@ -2388,11 +2388,6 @@ definitions:
       id:
         type: string
     type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.CreateSPNResponse:
-    properties:
-      id:
-        type: string
-    type: object
   gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.CreateSourceResponse:
     properties:
       id:
@@ -2445,22 +2440,6 @@ definitions:
         description: Nil if not part of an AWS organization
         type: string
       status:
-        type: string
-    type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.DiscoverAzureSubscriptionsResponse:
-    properties:
-      id:
-        type: string
-      name:
-        type: string
-      status:
-        type: string
-      subscriptionId:
-        type: string
-    type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.DiscoverAzureSubscriptionsSPNRequest:
-    properties:
-      spnId:
         type: string
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.GetSourcesRequest:
@@ -2548,6 +2527,10 @@ definitions:
         type: string
       clientSecret:
         type: string
+      objectId:
+        type: string
+      secretId:
+        type: string
       subscriptionId:
         type: string
       tenantId:
@@ -2555,6 +2538,8 @@ definitions:
     required:
     - clientId
     - clientSecret
+    - objectId
+    - secretId
     - subscriptionId
     - tenantId
     type: object
@@ -5594,6 +5579,21 @@ paths:
       summary: List credentials
       tags:
       - onboard
+  /onboard/api/v1/credential/{credentialId}/autoonboard:
+    post:
+      description: Onboard all available connections for a credential
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.Source'
+            type: array
+      summary: Onboard all available connections for a credential
+      tags:
+      - onboard
   /onboard/api/v1/credential/{credentialId}/disable:
     post:
       description: Disable credential
@@ -5669,62 +5669,6 @@ paths:
               $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.DiscoverAWSAccountsResponse'
             type: array
       summary: Returns the list of available AWS accounts given the credentials.
-      tags:
-      - onboard
-  /onboard/api/v1/discover/azure/subscriptions:
-    post:
-      description: Returning the list of available Azure subscriptions.
-      parameters:
-      - description: TenantId
-        in: body
-        name: tenantId
-        required: true
-        schema:
-          type: string
-      - description: ClientId
-        in: body
-        name: clientId
-        required: true
-        schema:
-          type: string
-      - description: ClientSecret
-        in: body
-        name: clientSecret
-        required: true
-        schema:
-          type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            items:
-              $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.DiscoverAzureSubscriptionsResponse'
-            type: array
-      summary: Returns the list of available Azure subscriptions.
-      tags:
-      - onboard
-  /onboard/api/v1/discover/azure/subscriptions/spn:
-    post:
-      description: Returning the list of available Azure subscriptions.
-      parameters:
-      - description: Request Body
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.DiscoverAzureSubscriptionsSPNRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            items:
-              $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.DiscoverAzureSubscriptionsResponse'
-            type: array
-      summary: Returns the list of available Azure subscriptions.
       tags:
       - onboard
   /onboard/api/v1/providers:
@@ -6035,80 +5979,6 @@ paths:
           schema:
             type: integer
       summary: Returns a count of sources
-      tags:
-      - onboard
-  /onboard/api/v1/spn/{spnId}:
-    delete:
-      parameters:
-      - description: SPN ID
-        in: query
-        name: spnId
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses: {}
-      summary: Delete SPN credential
-      tags:
-      - onboard
-    post:
-      parameters:
-      - description: SPN ID
-        in: query
-        name: spnId
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses: {}
-      summary: Get SPN credential
-      tags:
-      - onboard
-    put:
-      parameters:
-      - description: SPN ID
-        in: query
-        name: spnId
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses: {}
-      summary: Put SPN credential
-      tags:
-      - onboard
-  /onboard/api/v1/spn/azure:
-    post:
-      description: Creating Azure SPN
-      parameters:
-      - description: name
-        in: body
-        name: name
-        required: true
-        schema:
-          type: string
-      - description: config
-        in: body
-        name: config
-        required: true
-        schema:
-          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.SourceConfigAzure'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.CreateSPNResponse'
-      summary: Create Azure SPN
-      tags:
-      - onboard
-  /onboard/api/v1/spn/list:
-    get:
-      produces:
-      - application/json
-      responses: {}
-      summary: List SPN credentials
       tags:
       - onboard
   /schedule/api/v0/compliance/summarizer/trigger:

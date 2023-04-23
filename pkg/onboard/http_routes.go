@@ -11,18 +11,18 @@ import (
 	"strings"
 	"time"
 
+	"github.com/labstack/echo/v4"
+	api3 "gitlab.com/keibiengine/keibi-engine/pkg/auth/api"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpclient"
 	"gitlab.com/keibiengine/keibi-engine/pkg/source"
 	"gitlab.com/keibiengine/keibi-engine/pkg/utils"
 
-	api3 "gitlab.com/keibiengine/keibi-engine/pkg/auth/api"
-
 	keibiaws "gitlab.com/keibiengine/keibi-engine/pkg/aws"
+	keibiazure "gitlab.com/keibiengine/keibi-engine/pkg/azure"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpserver"
 
 	"github.com/google/uuid"
-	"github.com/labstack/echo/v4"
 	"gitlab.com/keibiengine/keibi-engine/pkg/describe"
 	"gitlab.com/keibiengine/keibi-engine/pkg/onboard/api"
 	"gorm.io/gorm"
@@ -39,52 +39,31 @@ func (h HttpHandler) Register(r *echo.Echo) {
 	v1.GET("/sources", httpserver.AuthorizeHandler(h.ListSources, api3.ViewerRole))
 	v1.POST("/sources", httpserver.AuthorizeHandler(h.GetSources, api3.ViewerRole))
 	v1.GET("/sources/count", httpserver.AuthorizeHandler(h.CountSources, api3.ViewerRole))
-
-	v1.GET("/providers", httpserver.AuthorizeHandler(h.GetProviders, api3.ViewerRole))
-	v1.GET("/providers/types", httpserver.AuthorizeHandler(h.GetProviderTypes, api3.ViewerRole))
-
 	v1.GET("/connectors", httpserver.AuthorizeHandler(h.GetConnectors, api3.ViewerRole))
 
-	source := v1.Group("/source")
+	sourceApiGroup := v1.Group("/source")
+	sourceApiGroup.POST("/aws", httpserver.AuthorizeHandler(h.PostSourceAws, api3.EditorRole))
+	sourceApiGroup.POST("/azure", httpserver.AuthorizeHandler(h.PostSourceAzure, api3.EditorRole))
+	sourceApiGroup.POST("/azure/spn", httpserver.AuthorizeHandler(h.PostSourceAzureSPN, api3.EditorRole))
+	sourceApiGroup.GET("/:sourceId", httpserver.AuthorizeHandler(h.GetSource, api3.ViewerRole))
+	sourceApiGroup.GET("/:sourceId/healthcheck", httpserver.AuthorizeHandler(h.GetSourceHealth, api3.EditorRole))
+	sourceApiGroup.GET("/:sourceId/credentials", httpserver.AuthorizeHandler(h.GetSourceCred, api3.ViewerRole))
+	sourceApiGroup.PUT("/:sourceId/credentials", httpserver.AuthorizeHandler(h.PutSourceCred, api3.EditorRole))
+	sourceApiGroup.PUT("/:sourceId", httpserver.AuthorizeHandler(h.PutSource, api3.EditorRole))
+	sourceApiGroup.POST("/:sourceId/disable", httpserver.AuthorizeHandler(h.DisableSource, api3.EditorRole))
+	sourceApiGroup.POST("/:sourceId/enable", httpserver.AuthorizeHandler(h.EnableSource, api3.EditorRole))
+	sourceApiGroup.DELETE("/:sourceId", httpserver.AuthorizeHandler(h.DeleteSource, api3.EditorRole))
 
-	source.POST("/aws", httpserver.AuthorizeHandler(h.PostSourceAws, api3.EditorRole))
-	source.POST("/azure", httpserver.AuthorizeHandler(h.PostSourceAzure, api3.EditorRole))
-	source.POST("/azure/spn", httpserver.AuthorizeHandler(h.PostSourceAzureSPN, api3.EditorRole))
-	source.GET("/:sourceId", httpserver.AuthorizeHandler(h.GetSource, api3.ViewerRole))
-	source.GET("/:sourceId/healthcheck", httpserver.AuthorizeHandler(h.GetSourceHealth, api3.EditorRole))
-	source.GET("/:sourceId/credentials", httpserver.AuthorizeHandler(h.GetSourceCred, api3.ViewerRole))
-	source.PUT("/:sourceId/credentials", httpserver.AuthorizeHandler(h.PutSourceCred, api3.EditorRole))
-	source.PUT("/:sourceId", httpserver.AuthorizeHandler(h.PutSource, api3.EditorRole))
-	source.POST("/:sourceId/disable", httpserver.AuthorizeHandler(h.DisableSource, api3.EditorRole))
-	source.POST("/:sourceId/enable", httpserver.AuthorizeHandler(h.EnableSource, api3.EditorRole))
-	source.DELETE("/:sourceId", httpserver.AuthorizeHandler(h.DeleteSource, api3.EditorRole))
-
-	v1.POST("/credential", httpserver.AuthorizeHandler(h.PostCredentials, api3.EditorRole))
-	v1.PUT("/credential", httpserver.AuthorizeHandler(h.PutCredentials, api3.EditorRole))
-	v1.GET("/credential", httpserver.AuthorizeHandler(h.GetCredentials, api3.ViewerRole))
-	v1.GET("/credential/sources/list", httpserver.AuthorizeHandler(h.ListSourcesByCredentials, api3.ViewerRole))
-	v1.DELETE("/credential/:credentialId", httpserver.AuthorizeHandler(h.DeleteCredential, api3.EditorRole))
-	v1.POST("/credential/:credentialId/disable", httpserver.AuthorizeHandler(h.DisableCredential, api3.EditorRole))
-	v1.POST("/credential/:credentialId/enable", httpserver.AuthorizeHandler(h.EnableCredential, api3.EditorRole))
-	v1.GET("/credential/:credentialId", httpserver.AuthorizeHandler(h.GetCredential, api3.ViewerRole))
-
-	spn := v1.Group("/spn")
-
-	spn.POST("/azure", httpserver.AuthorizeHandler(h.PostSPN, api3.EditorRole))
-	spn.DELETE("/:spnId", httpserver.AuthorizeHandler(h.DeleteSPN, api3.EditorRole))
-	spn.GET("/:spnId", httpserver.AuthorizeHandler(h.GetSPNCred, api3.ViewerRole))
-	spn.GET("/list", httpserver.AuthorizeHandler(h.ListSPNs, api3.ViewerRole))
-	spn.PUT("/:spnId", httpserver.AuthorizeHandler(h.PutSPNCred, api3.EditorRole))
-
-	disc := v1.Group("/discover")
-
-	disc.POST("/aws/accounts", httpserver.AuthorizeHandler(h.DiscoverAwsAccounts, api3.EditorRole))
-	disc.POST("/azure/subscriptions", httpserver.AuthorizeHandler(h.DiscoverAzureSubscriptions, api3.EditorRole))
-	disc.POST("/azure/subscriptions/spn", httpserver.AuthorizeHandler(h.DiscoverAzureSubscriptionsWithSPN, api3.EditorRole))
-
-	catalog := v1.Group("/catalog")
-	catalog.GET("/metrics", httpserver.AuthorizeHandler(h.CatalogMetrics, api3.ViewerRole))
-	catalog.GET("/connectors", httpserver.AuthorizeHandler(h.CatalogConnectors, api3.ViewerRole))
+	credential := v1.Group("/credential")
+	credential.POST("", httpserver.AuthorizeHandler(h.PostCredentials, api3.EditorRole))
+	credential.PUT("/:credentialId", httpserver.AuthorizeHandler(h.PutCredentials, api3.EditorRole))
+	credential.GET("", httpserver.AuthorizeHandler(h.GetCredentials, api3.ViewerRole))
+	credential.GET("/sources/list", httpserver.AuthorizeHandler(h.ListSourcesByCredentials, api3.ViewerRole))
+	credential.DELETE("/:credentialId", httpserver.AuthorizeHandler(h.DeleteCredential, api3.EditorRole))
+	credential.POST("/:credentialId/disable", httpserver.AuthorizeHandler(h.DisableCredential, api3.EditorRole))
+	credential.POST("/:credentialId/enable", httpserver.AuthorizeHandler(h.EnableCredential, api3.EditorRole))
+	credential.GET("/:credentialId", httpserver.AuthorizeHandler(h.GetCredential, api3.ViewerRole))
+	credential.POST("/:credentialId/autoonboard", httpserver.AuthorizeHandler(h.AutoOnboardCredential, api3.EditorRole))
 
 	connections := v1.Group("/connections")
 	connections.POST("/count", httpserver.AuthorizeHandler(h.CountConnections, api3.ViewerRole))
@@ -294,10 +273,13 @@ func (h HttpHandler) PostSourceAws(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusUnauthorized, PermissionError.Error())
 	}
 
-	err = keibiaws.CheckSecurityAuditPermission(req.Config.AccessKey, req.Config.SecretKey)
+	isAttached, err := keibiaws.CheckAttachedPolicy(req.Config.AccessKey, req.Config.SecretKey, keibiaws.SecurityAuditPolicyARN)
 	if err != nil {
 		fmt.Printf("error in checking security audit permission: %v", err)
 		return echo.NewHTTPError(http.StatusUnauthorized, PermissionError.Error())
+	}
+	if !isAttached {
+		return echo.NewHTTPError(http.StatusUnauthorized, "Failed to find read access policy")
 	}
 
 	// Create source section
@@ -385,6 +367,21 @@ func (h HttpHandler) PostSourceAzure(ctx echo.Context) error {
 	}
 	if count >= httpserver.GetMaxConnections(ctx) {
 		return echo.NewHTTPError(http.StatusBadRequest, "maximum number of connections reached")
+	}
+
+	isAttached, err := keibiazure.CheckRole(keibiazure.AuthConfig{
+		TenantID:     req.Config.TenantId,
+		ObjectID:     req.Config.ObjectId,
+		SecretID:     req.Config.SecretId,
+		ClientID:     req.Config.ClientId,
+		ClientSecret: req.Config.ClientSecret,
+	}, req.Config.SubscriptionId, keibiazure.DefaultReaderRoleDefinitionIDTemplate)
+	if err != nil {
+		fmt.Printf("error in checking reader role roleAssignment: %v", err)
+		return echo.NewHTTPError(http.StatusUnauthorized, PermissionError.Error())
+	}
+	if !isAttached {
+		return echo.NewHTTPError(http.StatusUnauthorized, "Failed to find reader role roleAssignment")
 	}
 
 	src := NewAzureSource(req)
@@ -490,11 +487,22 @@ func (h HttpHandler) checkCredentialHealth(cred Credential) (bool, error) {
 		err = keibiaws.CheckGetUserPermission(awsConfig.AccessKey, awsConfig.SecretKey)
 
 	case source.CloudAzure:
-		_, err = describe.AzureSubscriptionConfigFromMap(config)
+		var azureConfig describe.AzureSubscriptionConfig
+		azureConfig, err = describe.AzureSubscriptionConfigFromMap(config)
 		if err != nil {
 			return false, echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 		}
-		// TODO add azure healthcheck
+		err = keibiazure.CheckSPNAccessPermission(keibiazure.AuthConfig{
+			TenantID:            azureConfig.TenantID,
+			ObjectID:            azureConfig.ObjectID,
+			SecretID:            azureConfig.SecretID,
+			ClientID:            azureConfig.ClientID,
+			ClientSecret:        azureConfig.ClientSecret,
+			CertificatePath:     azureConfig.CertificatePath,
+			CertificatePassword: azureConfig.CertificatePass,
+			Username:            azureConfig.Username,
+			Password:            azureConfig.Password,
+		})
 	}
 
 	if err != nil {
@@ -513,7 +521,7 @@ func (h HttpHandler) checkCredentialHealth(cred Credential) (bool, error) {
 	}
 
 	if err != nil {
-		return false, echo.NewHTTPError(http.StatusOK, err.Error())
+		return false, echo.NewHTTPError(http.StatusBadRequest, "credential is not healthy")
 	}
 
 	return true, nil
@@ -739,6 +747,147 @@ func (h HttpHandler) GetCredential(ctx echo.Context) error {
 	return ctx.JSON(http.StatusOK, apiCredential)
 }
 
+// AutoOnboardCredential godoc
+//
+//	@Summary		Onboard all available connections for a credential
+//	@Description	Onboard all available connections for a credential
+//	@Tags			onboard
+//	@Produce		json
+//	@Success		200	{object}	[]api.Source
+//	@Router			/onboard/api/v1/credential/{credentialId}/autoonboard [post]
+func (h HttpHandler) AutoOnboardCredential(ctx echo.Context) error {
+	credId, err := uuid.Parse(ctx.Param(paramCredentialId))
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
+	}
+
+	credential, err := h.db.GetCredentialByID(credId)
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return echo.NewHTTPError(http.StatusNotFound, "credential not found")
+		}
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+
+	onboardedSources := make([]api.Source, 0)
+	switch credential.ConnectorType {
+	case source.CloudAzure:
+		cnf, err := h.vault.Read(credential.VaultReference)
+		if err != nil {
+			return err
+		}
+		azureCnf, err := describe.AzureSubscriptionConfigFromMap(cnf)
+
+		subs, err := discoverAzureSubscriptions(ctx.Request().Context(), keibiazure.AuthConfig{
+			TenantID:     azureCnf.TenantID,
+			ObjectID:     azureCnf.ObjectID,
+			SecretID:     azureCnf.SecretID,
+			ClientID:     azureCnf.ClientID,
+			ClientSecret: azureCnf.ClientSecret,
+		})
+
+		existingConnections, err := h.db.GetSourcesByCredentialID(credential.ID.String())
+		if err != nil {
+			return err
+		}
+
+		existingConnectionSubIDs := make([]string, 0, len(existingConnections))
+		for _, conn := range existingConnections {
+			existingConnectionSubIDs = append(existingConnectionSubIDs, conn.SourceId)
+		}
+
+		for _, sub := range subs {
+			if utils.Includes(existingConnectionSubIDs, *sub.SubscriptionID) {
+				continue
+			}
+
+			count, err := h.db.CountSources()
+			if err != nil {
+				return err
+			}
+			if count >= httpserver.GetMaxConnections(ctx) {
+				return echo.NewHTTPError(http.StatusBadRequest, "maximum number of connections reached")
+			}
+
+			isAttached, err := keibiazure.CheckRole(keibiazure.AuthConfig{
+				TenantID:     azureCnf.TenantID,
+				ObjectID:     azureCnf.ObjectID,
+				SecretID:     azureCnf.SecretID,
+				ClientID:     azureCnf.ClientID,
+				ClientSecret: azureCnf.ClientSecret,
+			}, *sub.SubscriptionID, keibiazure.DefaultReaderRoleDefinitionIDTemplate)
+			if err != nil {
+				continue
+			}
+			if !isAttached {
+				continue
+			}
+
+			subName := *sub.SubscriptionID
+			if sub.DisplayName != nil {
+				subName = *sub.DisplayName
+			}
+			src := Source{
+				ID:                   uuid.New(),
+				SourceId:             *sub.SubscriptionID,
+				Name:                 subName,
+				Type:                 source.CloudAzure,
+				Description:          fmt.Sprintf("Auto onboarded subscription %s", *sub.SubscriptionID),
+				CredentialID:         credential.ID,
+				Credential:           *credential,
+				Enabled:              true,
+				AssetDiscoveryMethod: source.AssetDiscoveryMethodTypeScheduled,
+				HealthState:          source.HealthStatusInitialDiscovery,
+				LastHealthCheckTime:  time.Now(),
+				CreationMethod:       source.SourceCreationMethodAutoOnboard,
+			}
+
+			err = h.db.orm.Transaction(func(tx *gorm.DB) error {
+				err := h.db.CreateSource(&src)
+				if err != nil {
+					return err
+				}
+
+				if err := h.sourceEventsQueue.Publish(api.SourceEvent{
+					Action:     api.SourceCreated,
+					SourceID:   src.ID,
+					AccountID:  src.SourceId,
+					SourceType: src.Type,
+					ConfigRef:  src.Credential.VaultReference,
+				}); err != nil {
+					return err
+				}
+
+				return nil
+			})
+			if err != nil {
+				return err
+			}
+
+			onboardedSources = append(onboardedSources, api.Source{
+				ID:                   src.ID,
+				ConnectionID:         src.SourceId,
+				ConnectionName:       src.Name,
+				Email:                src.Email,
+				Type:                 src.Type,
+				Description:          src.Description,
+				CredentialID:         src.CredentialID.String(),
+				CredentialName:       src.Credential.Name,
+				OnboardDate:          src.CreatedAt,
+				Enabled:              src.Enabled,
+				AssetDiscoveryMethod: src.AssetDiscoveryMethod,
+				HealthState:          src.HealthState,
+				LastHealthCheckTime:  src.LastHealthCheckTime,
+				HealthReason:         src.HealthReason,
+			})
+		}
+	default:
+		return echo.NewHTTPError(http.StatusBadRequest, "connector doesn't support auto onboard")
+	}
+
+	return ctx.JSON(http.StatusOK, onboardedSources)
+}
+
 // ListSourcesByCredentials godoc
 //
 //	@Summary		Returns a list of sources
@@ -832,7 +981,7 @@ func (h HttpHandler) ListSourcesByCredentials(ctx echo.Context) error {
 }
 
 func (h HttpHandler) putAzureCredentials(ctx echo.Context, req api.UpdateCredentialRequest) error {
-	id, err := uuid.Parse(req.ID)
+	id, err := uuid.Parse(ctx.Param("credentialId"))
 	if err != nil {
 		return ctx.JSON(http.StatusBadRequest, "invalid id")
 	}
@@ -860,6 +1009,11 @@ func (h HttpHandler) putAzureCredentials(ctx echo.Context, req api.UpdateCredent
 		if err != nil {
 			return ctx.JSON(http.StatusBadRequest, "invalid config")
 		}
+		err = h.validator.Struct(config)
+		if err != nil {
+			return ctx.JSON(http.StatusBadRequest, err.Error())
+		}
+
 		metadata, err := getAzureCredentialsMetadata(ctx.Request().Context(), config)
 		if err != nil {
 			return err
@@ -898,7 +1052,7 @@ func (h HttpHandler) putAzureCredentials(ctx echo.Context, req api.UpdateCredent
 }
 
 func (h HttpHandler) putAWSCredentials(ctx echo.Context, req api.UpdateCredentialRequest) error {
-	id, err := uuid.Parse(req.ID)
+	id, err := uuid.Parse(ctx.Param("credentialId"))
 	if err != nil {
 		return ctx.JSON(http.StatusBadRequest, "invalid id")
 	}
@@ -925,6 +1079,10 @@ func (h HttpHandler) putAWSCredentials(ctx echo.Context, req api.UpdateCredentia
 		err = json.Unmarshal(configStr, &config)
 		if err != nil {
 			return ctx.JSON(http.StatusBadRequest, "invalid config")
+		}
+		err = h.validator.Struct(config)
+		if err != nil {
+			return ctx.JSON(http.StatusBadRequest, err.Error())
 		}
 
 		metadata, err := getAWSCredentialsMetadata(ctx.Request().Context(), config)
@@ -969,14 +1127,14 @@ func (h HttpHandler) putAWSCredentials(ctx echo.Context, req api.UpdateCredentia
 //	@Produce		json
 //	@Success		200
 //	@Param			config	body	api.UpdateCredentialRequest	true	"config"
-//	@Router			/onboard/api/v1/credential [put]
+//	@Router			/onboard/api/v1/credential/{credentialId} [put]
 func (h HttpHandler) PutCredentials(ctx echo.Context) error {
 	var req api.UpdateCredentialRequest
 	if err := bindValidate(ctx, &req); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
 	}
 
-	switch req.SourceType {
+	switch req.Connector {
 	case source.CloudAzure:
 		return h.putAzureCredentials(ctx, req)
 	case source.CloudAWS:
@@ -1136,179 +1294,6 @@ func (h HttpHandler) EnableCredential(ctx echo.Context) error {
 	return ctx.JSON(http.StatusOK, struct{}{})
 }
 
-// PostSPN godoc
-//
-//	@Summary		Create Azure SPN
-//	@Description	Creating Azure SPN
-//	@Tags			onboard
-//	@Produce		json
-//	@Success		200		{object}	api.CreateSPNResponse
-//	@Param			name	body		string					true	"name"
-//	@Param			config	body		api.SourceConfigAzure	true	"config"
-//	@Router			/onboard/api/v1/spn/azure [post]
-func (h HttpHandler) PostSPN(ctx echo.Context) error {
-	var req api.CreateSPNRequest
-
-	if err := bindValidate(ctx, &req); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
-	}
-
-	src := NewSPN(req)
-	err := h.db.orm.Transaction(func(tx *gorm.DB) error {
-		if err := h.db.CreateSPN(&src); err != nil {
-			return err
-		}
-
-		// TODO: Handle edge case where writing to Vault succeeds and writing to event queue fails.
-		if err := h.vault.Write(src.ConfigRef, req.Config.AsMap()); err != nil {
-			return err
-		}
-
-		return nil
-	})
-	if err != nil {
-		if strings.Contains(err.Error(), "id conflict") {
-			spn, err := h.db.GetSPNByTenantClientID(src.TenantId, src.ClientId)
-			if err != nil {
-				return err
-			}
-
-			return ctx.JSON(http.StatusBadRequest, api.DuplicateSPNResponse{ErrorMessage: "SPN is already created",
-				SpnID: spn.ID.String()})
-		}
-		return err
-	}
-
-	return ctx.JSON(http.StatusOK, src.ToSPNResponse())
-}
-
-// GetSPNCred godoc
-//
-//	@Summary	Get SPN credential
-//	@Tags		onboard
-//	@Produce	json
-//	@Param		spnId	query	string	true	"SPN ID"
-//	@Router		/onboard/api/v1/spn/{spnId} [post]
-func (h HttpHandler) GetSPNCred(ctx echo.Context) error {
-	spnUUID, err := uuid.Parse(ctx.Param("spnId"))
-	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, "invalid SPN uuid")
-	}
-
-	src, err := h.db.GetSPN(spnUUID)
-	if err != nil {
-		return err
-	}
-
-	cnf, err := h.vault.Read(src.ConfigRef)
-	if err != nil {
-		return err
-	}
-
-	azureCnf, err := describe.AzureSubscriptionConfigFromMap(cnf)
-	if err != nil {
-		return err
-	}
-
-	return ctx.JSON(http.StatusOK, api.SPNCredential{
-		SPNName:  fmt.Sprintf("SPN-%s", src.ID.String()),
-		ClientID: azureCnf.ClientID,
-		TenantID: azureCnf.TenantID,
-	})
-}
-
-// ListSPNs godoc
-//
-//	@Summary	List SPN credentials
-//	@Tags		onboard
-//	@Produce	json
-//	@Router		/onboard/api/v1/spn/list [get]
-func (h HttpHandler) ListSPNs(ctx echo.Context) error {
-	src, err := h.db.GetAllSPNs()
-	if err != nil {
-		return err
-	}
-
-	var res []api.SPNRecord
-	for _, r := range src {
-		res = append(res, api.SPNRecord{
-			SPNID:    r.ID.String(),
-			SPNName:  fmt.Sprintf("SPN-%s", r.ID.String()),
-			ClientID: r.ClientId,
-			TenantID: r.TenantId,
-		})
-	}
-	return ctx.JSON(http.StatusOK, res)
-}
-
-// PutSPNCred godoc
-//
-//	@Summary	Put SPN credential
-//	@Tags		onboard
-//	@Produce	json
-//	@Param		spnId	query	string	true	"SPN ID"
-//	@Router		/onboard/api/v1/spn/{spnId} [put]
-func (h HttpHandler) PutSPNCred(ctx echo.Context) error {
-	spnUUID, err := uuid.Parse(ctx.Param("spnId"))
-	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, "invalid SPN uuid")
-	}
-
-	src, err := h.db.GetSPN(spnUUID)
-	if err != nil {
-		return err
-	}
-
-	cnf, err := h.vault.Read(src.ConfigRef)
-	if err != nil {
-		return err
-	}
-	azureCnf, err := describe.AzureSubscriptionConfigFromMap(cnf)
-	if err != nil {
-		return err
-	}
-
-	var req api.AzureCredential
-	if err := bindValidate(ctx, &req); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
-	}
-
-	newCnf := api.SPNConfigAzure{
-		TenantId:     azureCnf.TenantID,
-		ClientId:     req.ClientID,
-		ClientSecret: req.ClientSecret,
-	}
-	if err := h.vault.Write(src.ConfigRef, newCnf.AsMap()); err != nil {
-		return err
-	}
-	return ctx.NoContent(http.StatusOK)
-}
-
-// DeleteSPN godoc
-//
-//	@Summary	Delete SPN credential
-//	@Tags		onboard
-//	@Produce	json
-//	@Param		spnId	query	string	true	"SPN ID"
-//	@Router		/onboard/api/v1/spn/{spnId} [delete]
-func (h HttpHandler) DeleteSPN(ctx echo.Context) error {
-	spnUUID, err := uuid.Parse(ctx.Param("spnId"))
-	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, "invalid SPN uuid")
-	}
-
-	src, err := h.db.DeleteSPN(spnUUID)
-	if err != nil {
-		return err
-	}
-
-	err = h.vault.Delete(src.ConfigRef)
-	if err != nil {
-		return err
-	}
-	return ctx.NoContent(http.StatusOK)
-}
-
 // GetSourceCred godoc
 //
 //	@Summary	Get source credential
@@ -1373,40 +1358,69 @@ func (h HttpHandler) GetSourceHealth(ctx echo.Context) error {
 		return err
 	}
 
+	isHealthy, err := h.checkCredentialHealth(src.Credential)
+	if err != nil {
+		return err
+	}
+	if !isHealthy {
+		return echo.NewHTTPError(http.StatusBadRequest, "credential is not healthy")
+	}
+
 	cnf, err := h.vault.Read(src.Credential.VaultReference)
 	if err != nil {
 		return err
 	}
 
+	var isAttached bool
 	switch src.Type {
 	case source.CloudAWS:
 		awsCnf, err := describe.AWSAccountConfigFromMap(cnf)
 		if err != nil {
 			return err
 		}
-		err = keibiaws.CheckSecurityAuditPermission(awsCnf.AccessKey, awsCnf.SecretKey)
+		isAttached, err = keibiaws.CheckAttachedPolicy(awsCnf.AccessKey, awsCnf.SecretKey, keibiaws.SecurityAuditPolicyARN)
+	case source.CloudAzure:
+		azureCnf, err := describe.AzureSubscriptionConfigFromMap(cnf)
 		if err != nil {
-			src.HealthState = source.HealthStatusUnhealthy
+			return err
+		}
+		isAttached, err = keibiazure.CheckRole(keibiazure.AuthConfig{
+			TenantID:            azureCnf.TenantID,
+			ClientID:            azureCnf.ClientID,
+			ObjectID:            azureCnf.ObjectID,
+			SecretID:            azureCnf.SecretID,
+			ClientSecret:        azureCnf.ClientSecret,
+			CertificatePath:     azureCnf.CertificatePath,
+			CertificatePassword: azureCnf.CertificatePass,
+			Username:            azureCnf.Username,
+			Password:            azureCnf.Password,
+		}, src.SourceId, keibiazure.DefaultReaderRoleDefinitionIDTemplate)
+	}
+
+	if !isAttached {
+		src.HealthState = source.HealthStatusUnhealthy
+		if err != nil {
 			healthMessage := err.Error()
 			src.HealthReason = &healthMessage
-			src.LastHealthCheckTime = time.Now()
-			src.UpdatedAt = time.Now()
-			_, err = h.db.UpdateSource(&src)
-			if err != nil {
-				return err
-			}
-			//TODO Mahan: record state change in elastic search
 		} else {
-			src.HealthState = source.HealthStatusHealthy
-			src.HealthReason = nil
-			src.LastHealthCheckTime = time.Now()
-			_, err = h.db.UpdateSource(&src)
-			if err != nil {
-				return err
-			}
-			//TODO Mahan: record state change in elastic search
+			src.HealthReason = utils.GetPointer("Failed to find read permission")
 		}
-
+		src.LastHealthCheckTime = time.Now()
+		src.UpdatedAt = time.Now()
+		_, err = h.db.UpdateSource(&src)
+		if err != nil {
+			return err
+		}
+		//TODO Mahan: record state change in elastic search
+	} else {
+		src.HealthState = source.HealthStatusHealthy
+		src.HealthReason = nil
+		src.LastHealthCheckTime = time.Now()
+		_, err = h.db.UpdateSource(&src)
+		if err != nil {
+			return err
+		}
+		//TODO Mahan: record state change in elastic search
 	}
 
 	return ctx.JSON(http.StatusOK, &api.Source{
@@ -1469,9 +1483,12 @@ func (h HttpHandler) PutSourceCred(ctx echo.Context) error {
 			SecretKey: req.SecretKey,
 		}
 
-		err = keibiaws.CheckSecurityAuditPermission(newCnf.AccessKey, newCnf.SecretKey)
+		isAttached, err := keibiaws.CheckAttachedPolicy(newCnf.AccessKey, newCnf.SecretKey, keibiaws.SecurityAuditPolicyARN)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		}
+		if !isAttached {
+			return echo.NewHTTPError(http.StatusBadRequest, "Failed to find read permission")
 		}
 
 		if err := h.vault.Write(src.Credential.VaultReference, newCnf.AsMap()); err != nil {
@@ -1876,93 +1893,6 @@ func (h HttpHandler) DiscoverAwsAccounts(ctx echo.Context) error {
 		accounts[idx].Status = "DUPLICATE"
 	}
 	return ctx.JSON(http.StatusOK, accounts)
-}
-
-// DiscoverAzureSubscriptions godoc
-//
-//	@Summary		Returns the list of available Azure subscriptions.
-//	@Description	Returning the list of available Azure subscriptions.
-//	@Tags			onboard
-//	@Produce		json
-//	@Success		200				{object}	[]api.DiscoverAzureSubscriptionsResponse
-//	@Param			tenantId		body		string	true	"TenantId"
-//	@Param			clientId		body		string	true	"ClientId"
-//	@Param			clientSecret	body		string	true	"ClientSecret"
-//	@Router			/onboard/api/v1/discover/azure/subscriptions [post]
-func (h HttpHandler) DiscoverAzureSubscriptions(ctx echo.Context) error {
-	var req api.DiscoverAzureSubscriptionsRequest
-	if err := bindValidate(ctx, &req); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
-	}
-
-	subs, err := discoverAzureSubscriptions(ctx.Request().Context(), req)
-	if err != nil {
-		return err
-	}
-
-	for _, sub := range subs {
-		_, err := h.db.GetSourceBySourceID(sub.SubscriptionID)
-		if err != nil {
-			if err == gorm.ErrRecordNotFound {
-				continue
-			}
-			return err
-		}
-		sub.Status = "DUPLICATE"
-	}
-	return ctx.JSON(http.StatusOK, subs)
-}
-
-// DiscoverAzureSubscriptionsWithSPN godoc
-//
-//	@Summary		Returns the list of available Azure subscriptions.
-//	@Description	Returning the list of available Azure subscriptions.
-//	@Tags			onboard
-//	@Produce		json
-//	@Success		200		{object}	[]api.DiscoverAzureSubscriptionsResponse
-//	@Param			request	body		api.DiscoverAzureSubscriptionsSPNRequest	true	"Request Body"
-//	@Router			/onboard/api/v1/discover/azure/subscriptions/spn [post]
-func (h HttpHandler) DiscoverAzureSubscriptionsWithSPN(ctx echo.Context) error {
-	var req api.DiscoverAzureSubscriptionsSPNRequest
-	if err := bindValidate(ctx, &req); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
-	}
-
-	spn, err := h.db.GetSPN(req.SPNId)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusNotFound, "SPN not found")
-	}
-
-	cnf, err := h.vault.Read(spn.ConfigRef)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusNotFound, "SPN ref not found")
-	}
-
-	azureCnf, err := describe.AzureSubscriptionConfigFromMap(cnf)
-	if err != nil {
-		return err
-	}
-
-	var discoveryReq api.DiscoverAzureSubscriptionsRequest
-	discoveryReq.TenantId = azureCnf.TenantID
-	discoveryReq.ClientId = azureCnf.ClientID
-	discoveryReq.ClientSecret = azureCnf.ClientSecret
-	subs, err := discoverAzureSubscriptions(ctx.Request().Context(), discoveryReq)
-	if err != nil {
-		return err
-	}
-
-	for _, sub := range subs {
-		_, err := h.db.GetSourceBySourceID(sub.SubscriptionID)
-		if err != nil {
-			if err == gorm.ErrRecordNotFound {
-				continue
-			}
-			return err
-		}
-		sub.Status = "DUPLICATE"
-	}
-	return ctx.JSON(http.StatusOK, subs)
 }
 
 // CatalogMetrics godoc

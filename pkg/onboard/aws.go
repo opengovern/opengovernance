@@ -23,8 +23,11 @@ func discoverAwsAccounts(ctx context.Context, req api.DiscoverAWSAccountsRequest
 		return nil, PermissionError
 	}
 
-	err = keibiaws.CheckSecurityAuditPermission(req.AccessKey, req.SecretKey)
+	isAttached, err := keibiaws.CheckAttachedPolicy(req.AccessKey, req.SecretKey, keibiaws.SecurityAuditPolicyARN)
 	if err != nil {
+		return nil, PermissionError
+	}
+	if !isAttached {
 		return nil, PermissionError
 	}
 
@@ -148,8 +151,8 @@ func getAWSCredentialsMetadata(ctx context.Context, config api.SourceConfigAWS) 
 
 	return &source.AWSCredentialMetadata{
 		AccountID:        config.AccountId,
-		AttachedPolicies: policyARNs,
 		IamUserName:      user.User.UserName,
+		AttachedPolicies: policyARNs,
 	}, nil
 
 }

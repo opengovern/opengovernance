@@ -4634,7 +4634,7 @@ func (h *HttpHandler) ListServiceMetadata(ctx echo.Context) error {
 			}
 		}
 		if resourceTypes != nil {
-			if !internal.IncludesAll(serviceResourceTypes, resourceTypes) {
+			if !utils.IncludesAll(serviceResourceTypes, resourceTypes) {
 				continue
 			}
 		}
