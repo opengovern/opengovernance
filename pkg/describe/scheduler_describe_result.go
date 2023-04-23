@@ -120,6 +120,7 @@ func (s *Scheduler) RunDescribeConnectionJobResultsConsumer() error {
 }
 
 func (s *Scheduler) consumeDescribeConnectionJobResults(result DescribeConnectionJobResult) (requeue bool, err error) {
+	var kafkaMsgs []sarama.ProducerMessage
 	for jobID, res := range result.Result {
 		s.logger.Info("Processing JobResult for Job",
 			zap.Uint("jobId", jobID),
@@ -149,7 +150,41 @@ func (s *Scheduler) consumeDescribeConnectionJobResults(result DescribeConnectio
 			}
 		}
 
-		err := s.db.UpdateDescribeResourceJobStatus(res.JobID, res.Status, res.Error)
+		esResp, err := es.GetResourceIDsForAccountResourceTypeFromES(s.es, res.DescribeJob.SourceID, res.DescribeJob.ResourceType)
+		if err != nil {
+			return true, err
+		}
+		var esResourceIDs []string
+		for _, bucket := range esResp.Aggregations.ResourceIDFilter.Buckets {
+			esResourceIDs = append(esResourceIDs, bucket.Key)
+		}
+
+		for _, esResourceID := range esResourceIDs {
+			exists := false
+			for _, describedResourceID := range res.DescribedResourceIDs {
+				if esResourceID == describedResourceID {
+					exists = true
+					break
+				}
+			}
+
+			if !exists {
+				fmt.Println("deleting ", esResourceID)
+				kafkaMsgs = append(kafkaMsgs, sarama.ProducerMessage{
+					Topic: s.kafkaResourcesTopic,
+					Key:   sarama.StringEncoder(esResourceID),
+					Headers: []sarama.RecordHeader{
+						{
+							Key:   []byte(kafka.EsIndexHeader),
+							Value: []byte(ResourceTypeToESIndex(res.DescribeJob.ResourceType)),
+						},
+					},
+					Value: nil,
+				})
+			}
+		}
+
+		err = s.db.UpdateDescribeResourceJobStatus(res.JobID, res.Status, res.Error)
 		if err != nil {
 			return true, err
 		}

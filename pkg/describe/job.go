@@ -264,11 +264,12 @@ func (j DescribeConnectionJob) CloudTimeout() (r DescribeConnectionJobResult) {
 			RetryCounter: 0,
 		}
 		describeConnectionJobResult.Result[id] = DescribeJobResult{
-			JobID:       dj.JobID,
-			ParentJobID: dj.ParentJobID,
-			Status:      api.DescribeResourceJobCloudTimeout,
-			Error:       "Cloud job timed out",
-			DescribeJob: dj,
+			JobID:                dj.JobID,
+			ParentJobID:          dj.ParentJobID,
+			Status:               api.DescribeResourceJobCloudTimeout,
+			Error:                "Cloud job timed out",
+			DescribeJob:          dj,
+			DescribedResourceIDs: nil,
 		}
 	}
 	return describeConnectionJobResult
@@ -296,11 +297,12 @@ func (j DescribeJob) Do(ictx context.Context, vlt vault.SourceConfig, rdb *redis
 			DoDescribeJobsDuration.WithLabelValues(string(j.SourceType), j.ResourceType, "failure").Observe(float64(time.Now().Unix() - startTime))
 			DoDescribeJobsCount.WithLabelValues(string(j.SourceType), j.ResourceType, "failure").Inc()
 			r = DescribeJobResult{
-				JobID:       j.JobID,
-				ParentJobID: j.ParentJobID,
-				Status:      api.DescribeResourceJobFailed,
-				Error:       fmt.Sprintf("paniced: %s", err),
-				DescribeJob: j,
+				JobID:                j.JobID,
+				ParentJobID:          j.ParentJobID,
+				Status:               api.DescribeResourceJobFailed,
+				Error:                fmt.Sprintf("paniced: %s", err),
+				DescribeJob:          j,
+				DescribedResourceIDs: nil,
 			}
 		}
 	}()
