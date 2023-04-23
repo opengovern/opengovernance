@@ -4,11 +4,12 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"gitlab.com/keibiengine/keibi-engine/pkg/source"
 	"io"
 	"net/http"
 	"strings"
 	"time"
+
+	"gitlab.com/keibiengine/keibi-engine/pkg/source"
 
 	"github.com/ProtonMail/gopenpgp/v2/helper"
 	"gitlab.com/keibiengine/keibi-engine/pkg/describe/api"
@@ -151,13 +152,23 @@ func (s *Scheduler) consumeDescribeConnectionJobResults(result DescribeConnectio
 			}
 		}
 
-		esResp, err := es.GetResourceIDsForAccountResourceTypeFromES(s.es, res.DescribeJob.SourceID, res.DescribeJob.ResourceType)
-		if err != nil {
-			return true, err
-		}
 		var esResourceIDs []string
-		for _, bucket := range esResp.Aggregations.ResourceIDFilter.Buckets {
-			esResourceIDs = append(esResourceIDs, bucket.Key)
+		var searchAfter []interface{}
+
+		for {
+			esResp, err := es.GetResourceIDsForAccountResourceTypeFromES(s.es, res.DescribeJob.SourceID, res.DescribeJob.ResourceType, searchAfter, 10000)
+			if err != nil {
+				return true, err
+			}
+
+			if len(esResp.Hits.Hits) == 0 {
+				break
+			}
+
+			for _, hit := range esResp.Hits.Hits {
+				esResourceIDs = append(esResourceIDs, hit.Source.ResourceID)
+				searchAfter = hit.Sort
+			}
 		}
 
 		for _, esResourceID := range esResourceIDs {
