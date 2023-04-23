@@ -36,7 +36,8 @@ func ParseHealthStatus(str string) (HealthStatus, error) {
 type SourceCreationMethod string
 
 const (
-	SourceCreationMethodManual SourceCreationMethod = "manual"
+	SourceCreationMethodManual      SourceCreationMethod = "manual"
+	SourceCreationMethodAutoOnboard SourceCreationMethod = "auto-onboard"
 )
 
 type ConnectorDirectionType string

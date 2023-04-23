@@ -110,6 +110,8 @@ func AWSAccountConfigFromMap(m map[string]interface{}) (AWSAccountConfig, error)
 type AzureSubscriptionConfig struct {
 	SubscriptionID  string `json:"subscriptionId"`
 	TenantID        string `json:"tenantId"`
+	ObjectID        string `json:"objectId"`
+	SecretID        string `json:"secretId"`
 	ClientID        string `json:"clientId"`
 	ClientSecret    string `json:"clientSecret"`
 	CertificatePath string `json:"certificatePath"`

@@ -8,6 +8,8 @@ import (
 
 type AuthConfig struct {
 	TenantID            string
+	ObjectID            string
+	SecretID            string
 	AuxiliaryTenantIDs  string
 	ClientID            string
 	ClientSecret        string

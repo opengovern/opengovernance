@@ -4144,6 +4144,29 @@
                 }
             }
         },
+        "/onboard/api/v1/credential/{credentialId}/autoonboard": {
+            "post": {
+                "description": "Onboard all available connections for a credential",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "onboard"
+                ],
+                "summary": "Onboard all available connections for a credential",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.Source"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/onboard/api/v1/credential/{credentialId}/disable": {
             "post": {
                 "description": "Disable credential",
@@ -4215,92 +4238,6 @@
                             "type": "array",
                             "items": {
                                 "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.DiscoverAWSAccountsResponse"
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/onboard/api/v1/discover/azure/subscriptions": {
-            "post": {
-                "description": "Returning the list of available Azure subscriptions.",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "onboard"
-                ],
-                "summary": "Returns the list of available Azure subscriptions.",
-                "parameters": [
-                    {
-                        "description": "TenantId",
-                        "name": "tenantId",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "type": "string"
-                        }
-                    },
-                    {
-                        "description": "ClientId",
-                        "name": "clientId",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "type": "string"
-                        }
-                    },
-                    {
-                        "description": "ClientSecret",
-                        "name": "clientSecret",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "type": "string"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.DiscoverAzureSubscriptionsResponse"
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/onboard/api/v1/discover/azure/subscriptions/spn": {
-            "post": {
-                "description": "Returning the list of available Azure subscriptions.",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "onboard"
-                ],
-                "summary": "Returns the list of available Azure subscriptions.",
-                "parameters": [
-                    {
-                        "description": "Request Body",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.DiscoverAzureSubscriptionsSPNRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.DiscoverAzureSubscriptionsResponse"
                             }
                         }
                     }
@@ -4772,117 +4709,6 @@
                         }
                     }
                 }
-            }
-        },
-        "/onboard/api/v1/spn/azure": {
-            "post": {
-                "description": "Creating Azure SPN",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "onboard"
-                ],
-                "summary": "Create Azure SPN",
-                "parameters": [
-                    {
-                        "description": "name",
-                        "name": "name",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "type": "string"
-                        }
-                    },
-                    {
-                        "description": "config",
-                        "name": "config",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.SourceConfigAzure"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.CreateSPNResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/onboard/api/v1/spn/list": {
-            "get": {
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "onboard"
-                ],
-                "summary": "List SPN credentials",
-                "responses": {}
-            }
-        },
-        "/onboard/api/v1/spn/{spnId}": {
-            "put": {
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "onboard"
-                ],
-                "summary": "Put SPN credential",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "SPN ID",
-                        "name": "spnId",
-                        "in": "query",
-                        "required": true
-                    }
-                ],
-                "responses": {}
-            },
-            "post": {
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "onboard"
-                ],
-                "summary": "Get SPN credential",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "SPN ID",
-                        "name": "spnId",
-                        "in": "query",
-                        "required": true
-                    }
-                ],
-                "responses": {}
-            },
-            "delete": {
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "onboard"
-                ],
-                "summary": "Delete SPN credential",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "SPN ID",
-                        "name": "spnId",
-                        "in": "query",
-                        "required": true
-                    }
-                ],
-                "responses": {}
             }
         },
         "/schedule/api/v0/compliance/summarizer/trigger": {
@@ -9285,14 +9111,6 @@
                 }
             }
         },
-        "gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.CreateSPNResponse": {
-            "type": "object",
-            "properties": {
-                "id": {
-                    "type": "string"
-                }
-            }
-        },
         "gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.CreateSourceResponse": {
             "type": "object",
             "properties": {
@@ -9371,31 +9189,6 @@
                     "type": "string"
                 },
                 "status": {
-                    "type": "string"
-                }
-            }
-        },
-        "gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.DiscoverAzureSubscriptionsResponse": {
-            "type": "object",
-            "properties": {
-                "id": {
-                    "type": "string"
-                },
-                "name": {
-                    "type": "string"
-                },
-                "status": {
-                    "type": "string"
-                },
-                "subscriptionId": {
-                    "type": "string"
-                }
-            }
-        },
-        "gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.DiscoverAzureSubscriptionsSPNRequest": {
-            "type": "object",
-            "properties": {
-                "spnId": {
                     "type": "string"
                 }
             }
@@ -9524,6 +9317,8 @@
             "required": [
                 "clientId",
                 "clientSecret",
+                "objectId",
+                "secretId",
                 "subscriptionId",
                 "tenantId"
             ],
@@ -9532,6 +9327,12 @@
                     "type": "string"
                 },
                 "clientSecret": {
+                    "type": "string"
+                },
+                "objectId": {
+                    "type": "string"
+                },
+                "secretId": {
                     "type": "string"
                 },
                 "subscriptionId": {

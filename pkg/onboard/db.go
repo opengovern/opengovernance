@@ -103,7 +103,7 @@ func (db Database) CountSourcesOfType(rType source.Type) (int64, error) {
 // GetSource gets a source with matching id
 func (db Database) GetSource(id uuid.UUID) (Source, error) {
 	var s Source
-	tx := db.orm.Preload("Credential").First(&s, "id = ?", id.String())
+	tx := db.orm.Preload(clause.Associations).First(&s, "id = ?", id.String())
 
 	if tx.Error != nil {
 		return Source{}, tx.Error
