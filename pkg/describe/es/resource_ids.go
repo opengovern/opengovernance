@@ -3,41 +3,42 @@ package es
 import (
 	"context"
 	"encoding/json"
+
 	"gitlab.com/keibiengine/keibi-engine/pkg/keibi-es-sdk"
 )
 
-type ResourceAggregationResponse struct {
-	Aggregations ResourceAggregations `json:"aggregations"`
+type ResourceIdentifierFetchResponse struct {
+	Hits ResourceIdentifierFetchHits `json:"hits"`
 }
-type ResourceAggregations struct {
-	ResourceIDFilter AggregationResult `json:"resource_id_filter"`
+type ResourceIdentifierFetchHits struct {
+	Total keibi.SearchTotal            `json:"total"`
+	Hits  []ResourceIdentifierFetchHit `json:"hits"`
 }
-type AggregationResult struct {
-	DocCountErrorUpperBound int      `json:"doc_count_error_upper_bound"`
-	SumOtherDocCount        int      `json:"sum_other_doc_count"`
-	Buckets                 []Bucket `json:"buckets"`
-}
-type Bucket struct {
-	Key      string `json:"key"`
-	DocCount int    `json:"doc_count"`
+type ResourceIdentifierFetchHit struct {
+	ID      string         `json:"_id"`
+	Score   float64        `json:"_score"`
+	Index   string         `json:"_index"`
+	Type    string         `json:"_type"`
+	Version int64          `json:"_version,omitempty"`
+	Source  LookupResource `json:"_source"`
+	Sort    []interface{}  `json:"sort"`
 }
 
-func GetResourceIDsForAccountResourceTypeFromES(client keibi.Client, sourceID, resourceType string) (*ResourceAggregationResponse, error) {
+func GetResourceIDsForAccountResourceTypeFromES(client keibi.Client, sourceID, resourceType string, searchAfter []interface{}, from int) (*ResourceIdentifierFetchResponse, error) {
 	terms := map[string][]string{
 		"source_id":     {sourceID},
 		"resource_type": {resourceType},
 	}
 
 	root := map[string]interface{}{}
-	root["size"] = 0
+	root["search_after"] = searchAfter
+	root["from"] = from
 
-	resourceIDFilter := map[string]interface{}{
-		"terms": map[string]interface{}{"field": "resource_id", "size": 1000000},
+	root["sort"] = []map[string]interface{}{
+		{
+			"_id": "desc",
+		},
 	}
-	aggs := map[string]interface{}{
-		"resource_id_filter": resourceIDFilter,
-	}
-	root["aggs"] = aggs
 
 	boolQuery := make(map[string]interface{})
 	var filters []map[string]interface{}
@@ -58,7 +59,7 @@ func GetResourceIDsForAccountResourceTypeFromES(client keibi.Client, sourceID, r
 		return nil, err
 	}
 
-	var response ResourceAggregationResponse
+	var response ResourceIdentifierFetchResponse
 	err = client.Search(context.Background(), InventorySummaryIndex,
 		string(queryBytes), &response)
 	if err != nil {
