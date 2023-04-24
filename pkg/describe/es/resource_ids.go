@@ -3,7 +3,7 @@ package es
 import (
 	"context"
 	"encoding/json"
-
+	"fmt"
 	"gitlab.com/keibiengine/keibi-engine/pkg/keibi-es-sdk"
 )
 
@@ -24,7 +24,7 @@ type ResourceIdentifierFetchHit struct {
 	Sort    []interface{}  `json:"sort"`
 }
 
-func GetResourceIDsForAccountResourceTypeFromES(client keibi.Client, sourceID, resourceType string, searchAfter []interface{}, from int) (*ResourceIdentifierFetchResponse, error) {
+func GetResourceIDsForAccountResourceTypeFromES(client keibi.Client, sourceID, resourceType string, searchAfter []interface{}, size int) (*ResourceIdentifierFetchResponse, error) {
 	terms := map[string][]string{
 		"source_id":     {sourceID},
 		"resource_type": {resourceType},
@@ -34,7 +34,7 @@ func GetResourceIDsForAccountResourceTypeFromES(client keibi.Client, sourceID, r
 	if searchAfter != nil {
 		root["search_after"] = searchAfter
 	}
-	root["from"] = from
+	root["size"] = size
 
 	root["sort"] = []map[string]interface{}{
 		{
@@ -60,6 +60,8 @@ func GetResourceIDsForAccountResourceTypeFromES(client keibi.Client, sourceID, r
 	if err != nil {
 		return nil, err
 	}
+
+	fmt.Println("query=", string(queryBytes))
 
 	var response ResourceIdentifierFetchResponse
 	err = client.Search(context.Background(), InventorySummaryIndex,
