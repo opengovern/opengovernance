@@ -103,12 +103,13 @@ func (s Scheduler) createCloudNativeDescribeSource(source *Source, src *Describe
 		return err
 	}
 	describeSourceJobFailure := false
+	failureMsg := ""
 	defer func() {
 		if describeSourceJobFailure == true {
 			if err = s.db.UpdateDescribeSourceJob(daj.ID, api.DescribeSourceJobCompletedWithFailure); err != nil {
 				s.logger.Error("failed to update UpdateDescribeSourceJob in failure", zap.Error(err), zap.Uint("parentJobId", daj.ID))
 			}
-			if err = s.db.UpdateDescribeResourceJobStatusByParentId(daj.ID, api.DescribeResourceJobFailed, ""); err != nil {
+			if err = s.db.UpdateDescribeResourceJobStatusByParentId(daj.ID, api.DescribeResourceJobFailed, failureMsg); err != nil {
 				s.logger.Error("Failed to update DescribeResourceJob in failure", zap.Error(err), zap.Uint("parentJobId", daj.ID))
 			}
 		}
@@ -117,12 +118,14 @@ func (s Scheduler) createCloudNativeDescribeSource(source *Source, src *Describe
 	cloudDaj, err := newCloudNativeDescribeSourceJob(daj)
 	if err != nil {
 		describeSourceJobFailure = true
+		failureMsg = fmt.Sprintf("%v", err)
 		return err
 	}
 
 	err = s.db.CreateCloudNativeDescribeSourceJob(&cloudDaj)
 	if err != nil {
 		describeSourceJobFailure = true
+		failureMsg = fmt.Sprintf("%v", err)
 		return err
 	}
 
@@ -130,6 +133,7 @@ func (s Scheduler) createCloudNativeDescribeSource(source *Source, src *Describe
 		s.cloudNativeAPIAuthKey, *source, cloudDaj, s.kafkaResourcesTopic, describedAt, triggerType)
 	if err != nil {
 		describeSourceJobFailure = true
+		failureMsg = fmt.Sprintf("%v", err)
 		return err
 	}
 
@@ -273,7 +277,7 @@ func enqueueCloudNativeDescribeConnectionJob(logger *zap.Logger, db Database, wo
 		return fmt.Errorf("failed to trigger cloud native connection worker due to %s", string(resBody))
 	}
 
-	if err := db.UpdateDescribeResourceJobStatusByParentId(daj.SourceJob.ID, api.DescribeResourceJobQueued, ""); err != nil {
+	if err := db.UpdateDescribeResourceJobStatusByParentId(daj.SourceJob.ID, api.DescribeResourceJobQueued, fmt.Sprintf("%v", err)); err != nil {
 		logger.Error("Failed to update DescribeResourceJob",
 			zap.Uint("parentJobId", daj.ID),
 			zap.Error(err),
