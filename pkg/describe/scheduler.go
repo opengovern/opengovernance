@@ -489,6 +489,12 @@ func (s *Scheduler) Run() error {
 	})
 	//
 
+	// compliance
+	EnsureRunGoroutin(func() {
+		s.RunComplianceJobScheduler()
+	})
+	//
+
 	EnsureRunGoroutin(func() {
 		s.RunScheduleJobCompletionUpdater()
 	})
@@ -1018,40 +1024,6 @@ func newComplianceReportJob(connectionID string, connector source.Type, benchmar
 		Status:          complianceapi.ComplianceReportJobCreated,
 		FailureMessage:  "",
 	}
-}
-
-func enqueueComplianceReportJobs(logger *zap.Logger, db Database, q queue.Interface,
-	a Source, crj *ComplianceReportJob, scheduleJob *ScheduleJob) {
-	nextStatus := complianceapi.ComplianceReportJobInProgress
-	errMsg := ""
-
-	if err := q.Publish(complianceworker.Job{
-		JobID:         crj.ID,
-		ScheduleJobID: scheduleJob.ID,
-		DescribedAt:   scheduleJob.CreatedAt.UnixMilli(),
-		EvaluatedAt:   time.Now().UnixMilli(),
-		ConnectionID:  crj.SourceID,
-		BenchmarkID:   crj.BenchmarkID,
-		ConfigReg:     a.ConfigRef,
-		Connector:     source.Type(a.Type),
-	}); err != nil {
-		logger.Error("Failed to queue ComplianceReportJob",
-			zap.Uint("jobId", crj.ID),
-			zap.Error(err),
-		)
-
-		nextStatus = complianceapi.ComplianceReportJobCompletedWithFailure
-		errMsg = fmt.Sprintf("queue: %s", err.Error())
-	}
-
-	if err := db.UpdateComplianceReportJob(crj.ID, nextStatus, 0, errMsg); err != nil {
-		logger.Error("Failed to update ComplianceReportJob",
-			zap.Uint("jobId", crj.ID),
-			zap.Error(err),
-		)
-	}
-
-	crj.Status = nextStatus
 }
 
 func isPublishingBlocked(logger *zap.Logger, queue queue.Interface) bool {
