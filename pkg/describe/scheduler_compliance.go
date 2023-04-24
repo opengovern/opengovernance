@@ -2,11 +2,12 @@ package describe
 
 import (
 	"fmt"
+	"time"
+
 	complianceapi "gitlab.com/keibiengine/keibi-engine/pkg/compliance/api"
 	complianceworker "gitlab.com/keibiengine/keibi-engine/pkg/compliance/worker"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/queue"
 	"go.uber.org/zap"
-	"time"
 
 	api2 "gitlab.com/keibiengine/keibi-engine/pkg/auth/api"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpclient"
@@ -20,7 +21,11 @@ func (s Scheduler) RunComplianceJobScheduler() {
 	defer t.Stop()
 
 	for ; ; <-t.C {
-		s.scheduleComplianceJob()
+		err := s.scheduleComplianceJob()
+		if err != nil {
+			fmt.Printf("failed to run scheduleComplianceJob due to %v")
+			continue
+		}
 	}
 }
 
@@ -50,8 +55,20 @@ func (s Scheduler) scheduleComplianceJob() error {
 		}
 
 		for _, b := range benchmarks {
+			timeAfter := time.Now().Add(time.Duration(-s.complianceIntervalHours) * time.Hour).UnixMilli()
+			jobs, err := s.db.ListComplianceReportsWithFilter(&timeAfter, nil, &b.ConnectionId, nil, &b.BenchmarkId)
+			if err != nil {
+				ComplianceJobsCount.WithLabelValues("failure").Inc()
+				ComplianceSourceJobsCount.WithLabelValues("failure").Inc()
+				return fmt.Errorf("error while creating compliance job: %v", err)
+			}
+
+			if len(jobs) > 0 {
+				continue
+			}
+
 			crj := newComplianceReportJob(src.ID.String(), source.Type(src.Type), b.BenchmarkId, scheduleJob.ID)
-			err := s.db.CreateComplianceReportJob(&crj)
+			err = s.db.CreateComplianceReportJob(&crj)
 			if err != nil {
 				ComplianceJobsCount.WithLabelValues("failure").Inc()
 				ComplianceSourceJobsCount.WithLabelValues("failure").Inc()
