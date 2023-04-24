@@ -274,7 +274,7 @@ func enqueueCloudNativeDescribeConnectionJob(logger *zap.Logger, db Database, wo
 	}
 
 	if resp.StatusCode != http.StatusAccepted {
-		return fmt.Errorf("failed to trigger cloud native connection worker due to %s", string(resBody))
+		return fmt.Errorf("failed to trigger cloud native connection worker due to %d: %s", resp.StatusCode, string(resBody))
 	}
 
 	if err := db.UpdateDescribeResourceJobStatusByParentId(daj.SourceJob.ID, api.DescribeResourceJobQueued, fmt.Sprintf("%v", err)); err != nil {
