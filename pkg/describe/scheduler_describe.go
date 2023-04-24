@@ -48,13 +48,16 @@ func (s Scheduler) scheduleDescribeJob() {
 		return
 	}
 	for _, connection := range connections {
-		err = s.describeConnection(connection, true)
-		if err != nil {
-			s.logger.Error("Failed to describe connection", zap.String("connection_id", connection.ID.String()), zap.Error(err))
-			DescribeSourceJobsCount.WithLabelValues("failure").Inc()
-			continue
-		}
-		DescribeSourceJobsCount.WithLabelValues("successful").Inc()
+		connection := connection
+		go func() {
+			err = s.describeConnection(connection, true)
+			if err != nil {
+				s.logger.Error("Failed to describe connection", zap.String("connection_id", connection.ID.String()), zap.Error(err))
+				DescribeSourceJobsCount.WithLabelValues("failure").Inc()
+			} else {
+				DescribeSourceJobsCount.WithLabelValues("successful").Inc()
+			}
+		}()
 	}
 	DescribeJobsCount.WithLabelValues("successful").Inc()
 }
