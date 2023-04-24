@@ -25,7 +25,6 @@ type FindingAlarm struct {
 	BenchmarkID   string                 `json:"benchmarkID"`
 	ControlID     string                 `json:"control_id"`
 	ResourceType  string                 `json:"resourceType"`
-	ServiceName   string                 `json:"serviceName"`
 	SourceID      string                 `json:"sourceID"`
 	SourceType    source.Type            `json:"sourceType"`
 	Severity      types.Severity         `json:"policySeverity"`

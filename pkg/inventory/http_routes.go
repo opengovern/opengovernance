@@ -2898,8 +2898,8 @@ func (h *HttpHandler) ListServiceSummaries(ctx echo.Context) error {
 //	@Param			endTime		query	string		true	"end time for cost calculation and time resource count in epoch seconds"
 //	@Param			serviceName	path	string		true	"service name"
 
-// @Success	200	{object}	api.ListServiceSummariesResponse
-// @Router		/inventory/api/v2/services/summary/{serviceName} [get]
+//	@Success	200	{object}	api.ListServiceSummariesResponse
+//	@Router		/inventory/api/v2/services/summary/{serviceName} [get]
 func (h *HttpHandler) GetServiceSummary(ctx echo.Context) error {
 	serviceName := ctx.Param("serviceName")
 	if serviceName == "" {

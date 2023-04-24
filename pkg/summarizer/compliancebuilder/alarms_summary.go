@@ -38,7 +38,6 @@ func (b *alarmsBuilder) Process(resource es2.Finding) error {
 				BenchmarkID:   resource.BenchmarkID,
 				ControlID:     resource.PolicyID,
 				ResourceType:  resource.ResourceType,
-				ServiceName:   resource.ServiceName,
 				SourceID:      resource.ConnectionID,
 				SourceType:    resource.Connector,
 				Severity:      resource.Severity,
