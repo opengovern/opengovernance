@@ -15,7 +15,7 @@ type Connector struct {
 	AutoOnboardSupport  bool                          `json:"autoOnboardSupport"`
 	AllowNewConnections bool                          `json:"allowNewConnections"`
 	MaxConnectionLimit  int                           `json:"maxConnectionLimit"`
-	Attributes          map[string]any                `json:"attributes"`
+	Tags                map[string]any                `json:"tags"`
 }
 
 type ConnectorCount struct {

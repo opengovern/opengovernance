@@ -11,112 +11,55 @@ import (
 	"github.com/aws/smithy-go"
 	keibiaws "gitlab.com/keibiengine/keibi-engine/pkg/aws"
 	"gitlab.com/keibiengine/keibi-engine/pkg/aws/describer"
-	"gitlab.com/keibiengine/keibi-engine/pkg/onboard/api"
+	"gitlab.com/keibiengine/keibi-engine/pkg/describe"
 	"gitlab.com/keibiengine/keibi-engine/pkg/source"
 )
 
 var PermissionError = errors.New("PermissionError")
 
-func discoverAwsAccounts(ctx context.Context, req api.DiscoverAWSAccountsRequest) ([]api.DiscoverAWSAccountsResponse, error) {
-	err := keibiaws.CheckDescribeRegionsPermission(req.AccessKey, req.SecretKey)
-	if err != nil {
-		return nil, PermissionError
-	}
-
-	isAttached, err := keibiaws.CheckAttachedPolicy(req.AccessKey, req.SecretKey, keibiaws.SecurityAuditPolicyARN)
-	if err != nil {
-		return nil, PermissionError
-	}
-	if !isAttached {
-		return nil, PermissionError
-	}
-
-	cfg, err := keibiaws.GetConfig(ctx, req.AccessKey, req.SecretKey, "", "")
-	if err != nil {
-		return nil, err
-	}
-
-	if cfg.Region == "" {
-		cfg.Region = "us-east-1"
-	}
-
-	acc, err := currentAwsAccount(ctx, cfg)
-	if err != nil {
-		return nil, err
-	}
-	if acc.Name == "" {
-		acc.Name = acc.AccountID
-	}
-	return []api.DiscoverAWSAccountsResponse{acc}, nil
-	//
-	//accounts, err := describer.OrganizationAccounts(ctx, cfg)
-	//if err != nil {
-	//	if !ignoreAwsOrgError(err) {
-	//		return nil, err
-	//	}
-	//	return []api.DiscoverAWSAccountsResponse{acc}, nil
-	//}
-	//if len(accounts) == 0 {
-	//	return []api.DiscoverAWSAccountsResponse{acc}, nil
-	//}
-	//
-	//discovered := make([]api.DiscoverAWSAccountsResponse, 0, len(accounts))
-	//for _, item := range accounts {
-	//	if *item.Name == "" {
-	//		*item.Name = *item.Id
-	//	}
-	//	discovered = append(discovered, api.DiscoverAWSAccountsResponse{
-	//		AccountID:      *item.Id,
-	//		Status:         string(item.Status),
-	//		Name:           *item.Name,
-	//		Email:          *item.Email,
-	//		OrganizationID: acc.OrganizationID,
-	//	})
-	//}
-	//
-	//return discovered, nil
+type awsAccount struct {
+	AccountID    string
+	AccountName  *string
+	Organization *types.Organization
+	Account      *types.Account
 }
 
-func currentAwsAccount(ctx context.Context, cfg aws.Config) (api.DiscoverAWSAccountsResponse, error) {
+func currentAwsAccount(ctx context.Context, cfg aws.Config) (*awsAccount, error) {
 	accID, err := describer.STSAccount(ctx, cfg)
 	if err != nil {
-		return api.DiscoverAWSAccountsResponse{}, err
+		return nil, err
 	}
 
-	var (
-		orgId    string
-		accName  string
-		accEmail string
-	)
+	iamClient := iam.NewFromConfig(cfg)
+	user, err := iamClient.GetUser(ctx, &iam.GetUserInput{})
+	if err != nil {
+		fmt.Printf("failed to get user: %v", err)
+		return nil, err
+	}
+
 	orgs, err := describer.OrganizationOrganization(ctx, cfg)
 	if err != nil {
 		if !ignoreAwsOrgError(err) {
-			return api.DiscoverAWSAccountsResponse{}, err
+			return nil, err
 		}
-	} else {
-		orgId = *orgs.Id
 	}
 
 	acc, err := describer.OrganizationAccount(ctx, cfg, accID)
 	if err != nil {
 		if !ignoreAwsOrgError(err) {
-			return api.DiscoverAWSAccountsResponse{}, err
+			return nil, err
 		}
-	} else {
-		accName = *acc.Name
-		accEmail = *acc.Email
 	}
 
-	return api.DiscoverAWSAccountsResponse{
-		AccountID:      accID,
-		Status:         string(types.AccountStatusActive),
-		OrganizationID: orgId,
-		Name:           accName,
-		Email:          accEmail,
+	return &awsAccount{
+		AccountID:    accID,
+		AccountName:  user.User.UserName,
+		Organization: orgs,
+		Account:      acc,
 	}, nil
 }
 
-func getAWSCredentialsMetadata(ctx context.Context, config api.SourceConfigAWS) (*source.AWSCredentialMetadata, error) {
+func getAWSCredentialsMetadata(ctx context.Context, config describe.AWSAccountConfig) (*source.AWSCredentialMetadata, error) {
 	creds, err := keibiaws.GetConfig(ctx, config.AccessKey, config.SecretKey, "", "")
 	if err != nil {
 		return nil, err
@@ -147,13 +90,26 @@ func getAWSCredentialsMetadata(ctx context.Context, config api.SourceConfigAWS) 
 		}
 	}
 
-	//TODO get metadata from aws
-
-	return &source.AWSCredentialMetadata{
-		AccountID:        config.AccountId,
+	metadata := source.AWSCredentialMetadata{
+		AccountID:        config.AccountID,
 		IamUserName:      user.User.UserName,
 		AttachedPolicies: policyARNs,
-	}, nil
+	}
+
+	accessKeys, err := iamClient.ListAccessKeys(ctx, &iam.ListAccessKeysInput{
+		UserName: user.User.UserName,
+	})
+	for _, key := range accessKeys.AccessKeyMetadata {
+		if *key.AccessKeyId == config.AccessKey && key.CreateDate != nil {
+			metadata.IamApiKeyCreationDate = *key.CreateDate
+		}
+	}
+	if err != nil {
+		fmt.Printf("failed to get access keys: %v", err)
+		return nil, err
+	}
+
+	return &metadata, nil
 
 }
 

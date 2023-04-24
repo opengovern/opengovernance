@@ -2,20 +2,11 @@ package source
 
 import "time"
 
-type Credential interface {
-	GetExpirationDate() time.Time
-}
-
 type AWSCredentialMetadata struct {
-	AccountID               string    `json:"account_id"`
-	IamUserName             *string   `json:"iam_user_name"`
-	IamApiKeyId             string    `json:"iam_api_key_id"`
-	IamApiKeyExpirationDate time.Time `json:"iam_api_key_expiration_date"`
-	AttachedPolicies        []string  `json:"attached_policies"`
-}
-
-func (m AWSCredentialMetadata) GetExpirationDate() time.Time {
-	return m.IamApiKeyExpirationDate
+	AccountID             string    `json:"account_id"`
+	IamUserName           *string   `json:"iam_user_name"`
+	IamApiKeyCreationDate time.Time `json:"iam_api_key_creation_date"`
+	AttachedPolicies      []string  `json:"attached_policies"`
 }
 
 type AzureCredentialMetadata struct {
