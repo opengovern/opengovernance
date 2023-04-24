@@ -2898,8 +2898,8 @@ func (h *HttpHandler) ListServiceSummaries(ctx echo.Context) error {
 //	@Param			endTime		query	string		true	"end time for cost calculation and time resource count in epoch seconds"
 //	@Param			serviceName	path	string		true	"service name"
 
-//	@Success	200	{object}	api.ListServiceSummariesResponse
-//	@Router		/inventory/api/v2/services/summary/{serviceName} [get]
+// @Success	200	{object}	api.ListServiceSummariesResponse
+// @Router		/inventory/api/v2/services/summary/{serviceName} [get]
 func (h *HttpHandler) GetServiceSummary(ctx echo.Context) error {
 	serviceName := ctx.Param("serviceName")
 	if serviceName == "" {
@@ -4770,11 +4770,7 @@ func (h *HttpHandler) ListResourceTypeMetadata(ctx echo.Context) error {
 //	@Tags			metadata
 //	@Produce		json
 //	@Param			resourceType	path		string	true	"resourceType"
-<<<<<<< HEAD
 //	@Success		200				{object}	[]api.ResourceTypeMetadata
-=======
-//	@Success		200				{object}	api.ResourceTypeMetadata
->>>>>>> 0c30a1a6b2f64066d9405859ce1968e90c1ad6d9
 //	@Router			/inventory/api/v2/metadata/resourcetype/{resourceType} [get]
 func (h *HttpHandler) GetResourceTypeMetadata(ctx echo.Context) error {
 	resourceType := ctx.Param("resourceType")

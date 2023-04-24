@@ -2790,11 +2790,7 @@ const docTemplate = `{
                 "tags": [
                     "metadata"
                 ],
-<<<<<<< HEAD
                 "summary": "Get Connector",
-=======
-                "summary": "Get a single connector",
->>>>>>> 0c30a1a6b2f64066d9405859ce1968e90c1ad6d9
                 "parameters": [
                     {
                         "type": "string",
@@ -6226,18 +6222,12 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "description": {
-<<<<<<< HEAD
                     "description": "Role Description and accesses",
-=======
->>>>>>> 0c30a1a6b2f64066d9405859ce1968e90c1ad6d9
                     "type": "string",
                     "example": "The Administrator role is a super user role with all of the capabilities that can be assigned to a role, and its enables access to all data \u0026 configuration on a Kaytu Workspace. You cannot edit or delete the Administrator role."
                 },
                 "role": {
-<<<<<<< HEAD
                     "description": "Name of the role",
-=======
->>>>>>> 0c30a1a6b2f64066d9405859ce1968e90c1ad6d9
                     "enum": [
                         "admin",
                         "editor",
@@ -6251,10 +6241,7 @@ const docTemplate = `{
                     "example": "admin"
                 },
                 "userCount": {
-<<<<<<< HEAD
                     "description": "Number of users having this role",
-=======
->>>>>>> 0c30a1a6b2f64066d9405859ce1968e90c1ad6d9
                     "type": "integer",
                     "example": 1
                 },
@@ -6339,11 +6326,7 @@ const docTemplate = `{
                         "type": "string"
                     },
                     "example": [
-<<<<<<< HEAD
                         "demo"
-=======
-                        "demoWorkspace"
->>>>>>> 0c30a1a6b2f64066d9405859ce1968e90c1ad6d9
                     ]
                 }
             }
@@ -6352,18 +6335,12 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "description": {
-<<<<<<< HEAD
                     "description": "Role Description and accesses",
-=======
->>>>>>> 0c30a1a6b2f64066d9405859ce1968e90c1ad6d9
                     "type": "string",
                     "example": "The Administrator role is a super user role with all of the capabilities that can be assigned to a role, and its enables access to all data \u0026 configuration on a Kaytu Workspace. You cannot edit or delete the Administrator role."
                 },
                 "roleName": {
-<<<<<<< HEAD
                     "description": "Name of the role",
-=======
->>>>>>> 0c30a1a6b2f64066d9405859ce1968e90c1ad6d9
                     "enum": [
                         "admin",
                         "editor",
@@ -6377,13 +6354,8 @@ const docTemplate = `{
                     "example": "admin"
                 },
                 "userCount": {
-<<<<<<< HEAD
                     "description": "Number of usershaving this role",
-=======
->>>>>>> 0c30a1a6b2f64066d9405859ce1968e90c1ad6d9
                     "type": "integer",
-                    "example": 1
-                }
             }
         },
         "gitlab_com_keibiengine_keibi-engine_pkg_auth_api.UpdateKeyRoleRequest": {
@@ -7920,14 +7892,7 @@ const docTemplate = `{
                     ]
                 },
                 "connector_label": {
-<<<<<<< HEAD
                     "description": "Connector Lable",
-=======
-                    "description": "Connector Label",
-                    "type": "string"
-                },
-                "logo_uri": {
->>>>>>> 0c30a1a6b2f64066d9405859ce1968e90c1ad6d9
                     "type": "string"
                 },
                 "resource_types": {
