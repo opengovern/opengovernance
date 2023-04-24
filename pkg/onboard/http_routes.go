@@ -181,11 +181,8 @@ func (h HttpHandler) GetProviders(ctx echo.Context) error {
 //	@Tags			onboard
 //	@Produce		json
 //	@Success		200			{object}	[]api.ConnectorCount
-//	@Param			category	query		string	false	"category"
 //	@Router			/onboard/api/v1/connectors [get]
 func (h HttpHandler) GetConnectors(ctx echo.Context) error {
-	category := ctx.QueryParam("category")
-
 	connectors, err := h.db.ListConnectors()
 	if err != nil {
 		return err
@@ -193,23 +190,28 @@ func (h HttpHandler) GetConnectors(ctx echo.Context) error {
 
 	var res []api.ConnectorCount
 	for _, c := range connectors {
-		if len(category) != 0 && c.Category != category {
-			continue
-		}
 		count, err := h.db.CountSourcesOfType(c.Name)
 		if err != nil {
 			return err
 		}
-
+		attributes := make(map[string]any)
+		err = json.Unmarshal(c.Attributes, &attributes)
+		if err != nil {
+			return err
+		}
 		res = append(res, api.ConnectorCount{
 			Connector: api.Connector{
-				Code:             c.Name,
-				Name:             c.Label,
-				Description:      c.Description,
-				Direction:        c.Direction,
-				Status:           c.Status,
-				Category:         c.Category,
-				StartSupportDate: c.StartSupportDate,
+				Name:                c.Name,
+				Label:               c.Label,
+				ShortDescription:    c.ShortDescription,
+				Description:         c.Description,
+				Direction:           c.Direction,
+				Status:              c.Status,
+				Logo:                c.Logo,
+				AutoOnboardSupport:  c.AutoOnboardSupport,
+				AllowNewConnections: c.AllowNewConnections,
+				MaxConnectionLimit:  c.MaxConnectionLimit,
+				Attributes:          attributes,
 			},
 			ConnectionCount: count,
 		})
