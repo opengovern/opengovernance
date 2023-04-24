@@ -20,7 +20,6 @@ func (db Database) Initialize() error {
 		&Connector{},
 		&Credential{},
 		&Source{},
-		&SPN{},
 	)
 	if err != nil {
 		return err
@@ -39,6 +38,18 @@ func (db Database) ListConnectors() ([]Connector, error) {
 	}
 
 	return s, nil
+}
+
+// GetConnector gets connector by name
+func (db Database) GetConnector(name source.Type) (Connector, error) {
+	var c Connector
+	tx := db.orm.First(&c, "name = ?", name)
+
+	if tx.Error != nil {
+		return Connector{}, tx.Error
+	}
+
+	return c, nil
 }
 
 // ListSources gets list of all source
@@ -169,6 +180,13 @@ func (db Database) UpdateSource(s *Source) (*Source, error) {
 }
 
 // DeleteSource deletes an existing source
+func (s *Source) BeforeDelete(tx *gorm.DB) error {
+	t := tx.Model(&Source{}).
+		Where("id = ?", s.ID.String()).
+		Update("lifecycle_state", ConnectionLifecycleStateDeleted)
+	return t.Error
+}
+
 func (db Database) DeleteSource(id uuid.UUID) error {
 	tx := db.orm.
 		Where("id = ?", id.String()).
@@ -186,11 +204,17 @@ func (db Database) DeleteSource(id uuid.UUID) error {
 
 // UpdateSourceEnabled update source enabled
 func (db Database) UpdateSourceEnabled(id uuid.UUID, enabled bool) error {
+	nextState := ConnectionLifecycleStateDisabled
+	if enabled {
+		nextState = ConnectionLifecycleStateEnabled
+	}
+
 	tx := db.orm.
 		Model(&Source{}).
 		Where("id = ?", id.String()).
 		Updates(map[string]interface{}{
-			"enabled": enabled,
+			"enabled":         enabled,
+			"lifecycle_state": nextState,
 		})
 
 	if tx.Error != nil {
@@ -200,74 +224,6 @@ func (db Database) UpdateSourceEnabled(id uuid.UUID, enabled bool) error {
 	}
 
 	return nil
-}
-
-// CreateSPN creates a new spn
-func (db Database) CreateSPN(s *SPN) error {
-	tx := db.orm.
-		Model(&SPN{}).
-		Clauses(clause.OnConflict{DoNothing: true}).
-		Create(s)
-
-	if tx.Error != nil {
-		return tx.Error
-	} else if tx.RowsAffected == 0 {
-		return fmt.Errorf("create spn: didn't create spn due to id conflict")
-	}
-
-	return nil
-}
-
-// GetSPN gets a spn with matching id
-func (db Database) GetSPN(id uuid.UUID) (SPN, error) {
-	var s SPN
-	tx := db.orm.First(&s, "id = ?", id)
-
-	if tx.Error != nil {
-		return SPN{}, tx.Error
-	} else if tx.RowsAffected != 1 {
-		return SPN{}, gorm.ErrRecordNotFound
-	}
-
-	return s, nil
-}
-
-// GetSPNByTenantClientID gets a spn with matching clientID and tenantID
-func (db Database) GetSPNByTenantClientID(tenantId, clientId string) (SPN, error) {
-	var s SPN
-	tx := db.orm.First(&s, "tenant_id = ? AND client_id = ?", tenantId, clientId)
-
-	if tx.Error != nil {
-		return SPN{}, tx.Error
-	} else if tx.RowsAffected != 1 {
-		return SPN{}, gorm.ErrRecordNotFound
-	}
-	return s, nil
-}
-
-// DeleteSPN deletes a spn with matching id
-func (db Database) DeleteSPN(id uuid.UUID) (SPN, error) {
-	var s SPN
-	tx := db.orm.Delete(&s, "id = ?", id)
-
-	if tx.Error != nil {
-		return SPN{}, tx.Error
-	} else if tx.RowsAffected != 1 {
-		return SPN{}, gorm.ErrRecordNotFound
-	}
-
-	return s, nil
-}
-
-// GetAllSPNs lists all spns
-func (db Database) GetAllSPNs() ([]SPN, error) {
-	var s []SPN
-	tx := db.orm.Find(&s)
-
-	if tx.Error != nil {
-		return nil, tx.Error
-	}
-	return s, nil
 }
 
 // CreateCredential creates a new credential

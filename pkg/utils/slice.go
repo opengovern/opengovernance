@@ -27,3 +27,21 @@ func ToLowerStringSlice(arr []string) []string {
 	}
 	return res
 }
+
+func Paginate[T any](page, size int64, arr []T) []T {
+	if page < 1 {
+		page = 1
+	}
+	if size < 1 {
+		size = 1
+	}
+	start := (page - 1) * size
+	end := start + size
+	if start > int64(len(arr)) {
+		start = int64(len(arr))
+	}
+	if end > int64(len(arr)) {
+		end = int64(len(arr))
+	}
+	return arr[start:end]
+}

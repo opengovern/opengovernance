@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -39,17 +40,19 @@ func (h HttpHandler) Register(r *echo.Echo) {
 	v1.GET("/sources", httpserver.AuthorizeHandler(h.ListSources, api3.ViewerRole))
 	v1.POST("/sources", httpserver.AuthorizeHandler(h.GetSources, api3.ViewerRole))
 	v1.GET("/sources/count", httpserver.AuthorizeHandler(h.CountSources, api3.ViewerRole))
-	v1.GET("/connectors", httpserver.AuthorizeHandler(h.GetConnectors, api3.ViewerRole))
+	v1.GET("/catalog/metrics", httpserver.AuthorizeHandler(h.CatalogMetrics, api3.ViewerRole))
+
+	connector := v1.Group("/connector")
+	connector.GET("/", httpserver.AuthorizeHandler(h.ListConnectors, api3.ViewerRole))
+	connector.GET("/:connectorId", httpserver.AuthorizeHandler(h.GetConnector, api3.ViewerRole))
 
 	sourceApiGroup := v1.Group("/source")
 	sourceApiGroup.POST("/aws", httpserver.AuthorizeHandler(h.PostSourceAws, api3.EditorRole))
 	sourceApiGroup.POST("/azure", httpserver.AuthorizeHandler(h.PostSourceAzure, api3.EditorRole))
-	sourceApiGroup.POST("/azure/spn", httpserver.AuthorizeHandler(h.PostSourceAzureSPN, api3.EditorRole))
 	sourceApiGroup.GET("/:sourceId", httpserver.AuthorizeHandler(h.GetSource, api3.ViewerRole))
 	sourceApiGroup.GET("/:sourceId/healthcheck", httpserver.AuthorizeHandler(h.GetSourceHealth, api3.EditorRole))
 	sourceApiGroup.GET("/:sourceId/credentials", httpserver.AuthorizeHandler(h.GetSourceCred, api3.ViewerRole))
 	sourceApiGroup.PUT("/:sourceId/credentials", httpserver.AuthorizeHandler(h.PutSourceCred, api3.EditorRole))
-	sourceApiGroup.PUT("/:sourceId", httpserver.AuthorizeHandler(h.PutSource, api3.EditorRole))
 	sourceApiGroup.POST("/:sourceId/disable", httpserver.AuthorizeHandler(h.DisableSource, api3.EditorRole))
 	sourceApiGroup.POST("/:sourceId/enable", httpserver.AuthorizeHandler(h.EnableSource, api3.EditorRole))
 	sourceApiGroup.DELETE("/:sourceId", httpserver.AuthorizeHandler(h.DeleteSource, api3.EditorRole))
@@ -57,13 +60,14 @@ func (h HttpHandler) Register(r *echo.Echo) {
 	credential := v1.Group("/credential")
 	credential.POST("", httpserver.AuthorizeHandler(h.PostCredentials, api3.EditorRole))
 	credential.PUT("/:credentialId", httpserver.AuthorizeHandler(h.PutCredentials, api3.EditorRole))
-	credential.GET("", httpserver.AuthorizeHandler(h.GetCredentials, api3.ViewerRole))
+	credential.GET("", httpserver.AuthorizeHandler(h.ListCredentials, api3.ViewerRole))
 	credential.GET("/sources/list", httpserver.AuthorizeHandler(h.ListSourcesByCredentials, api3.ViewerRole))
 	credential.DELETE("/:credentialId", httpserver.AuthorizeHandler(h.DeleteCredential, api3.EditorRole))
 	credential.POST("/:credentialId/disable", httpserver.AuthorizeHandler(h.DisableCredential, api3.EditorRole))
 	credential.POST("/:credentialId/enable", httpserver.AuthorizeHandler(h.EnableCredential, api3.EditorRole))
 	credential.GET("/:credentialId", httpserver.AuthorizeHandler(h.GetCredential, api3.ViewerRole))
 	credential.POST("/:credentialId/autoonboard", httpserver.AuthorizeHandler(h.AutoOnboardCredential, api3.EditorRole))
+	credential.GET("/:credentialId/healthcheck", httpserver.AuthorizeHandler(h.GetCredentialHealth, api3.EditorRole))
 
 	connections := v1.Group("/connections")
 	connections.POST("/count", httpserver.AuthorizeHandler(h.CountConnections, api3.ViewerRole))
@@ -174,7 +178,7 @@ func (h HttpHandler) GetProviders(ctx echo.Context) error {
 	})
 }
 
-// GetConnectors godoc
+// ListConnectors godoc
 //
 //	@Summary		Get connectors
 //	@Description	Getting connectors
@@ -182,7 +186,7 @@ func (h HttpHandler) GetProviders(ctx echo.Context) error {
 //	@Produce		json
 //	@Success		200			{object}	[]api.ConnectorCount
 //	@Router			/onboard/api/v1/connectors [get]
-func (h HttpHandler) GetConnectors(ctx echo.Context) error {
+func (h HttpHandler) ListConnectors(ctx echo.Context) error {
 	connectors, err := h.db.ListConnectors()
 	if err != nil {
 		return err
@@ -194,8 +198,8 @@ func (h HttpHandler) GetConnectors(ctx echo.Context) error {
 		if err != nil {
 			return err
 		}
-		attributes := make(map[string]any)
-		err = json.Unmarshal(c.Attributes, &attributes)
+		tags := make(map[string]any)
+		err = json.Unmarshal(c.Tags, &tags)
 		if err != nil {
 			return err
 		}
@@ -211,12 +215,60 @@ func (h HttpHandler) GetConnectors(ctx echo.Context) error {
 				AutoOnboardSupport:  c.AutoOnboardSupport,
 				AllowNewConnections: c.AllowNewConnections,
 				MaxConnectionLimit:  c.MaxConnectionLimit,
-				Attributes:          attributes,
+				Tags:                tags,
 			},
 			ConnectionCount: count,
 		})
 
 	}
+	return ctx.JSON(http.StatusOK, res)
+}
+
+// GetConnector godoc
+//
+//	@Summary		Get connector
+//	@Description	Getting connector
+//	@Tags			onboard
+//	@Produce		json
+//	@Param			connectorName	path	string	true	"Connector name"
+//	@Success		200			{object}	api.Connector
+//	@Router			/onboard/api/v1/connectors/{connectorName} [get]
+func (h HttpHandler) GetConnector(ctx echo.Context) error {
+	connectorName, err := source.ParseType(ctx.Param("connectorName"))
+	if err != nil {
+		return ctx.JSON(http.StatusBadRequest, fmt.Sprintf("Invalid connector name"))
+	}
+
+	c, err := h.db.GetConnector(connectorName)
+	if err != nil {
+		return err
+	}
+	count, err := h.db.CountSourcesOfType(c.Name)
+	if err != nil {
+		return err
+	}
+	tags := make(map[string]any)
+	err = json.Unmarshal(c.Tags, &tags)
+	if err != nil {
+		return err
+	}
+	res := api.ConnectorCount{
+		Connector: api.Connector{
+			Name:                c.Name,
+			Label:               c.Label,
+			ShortDescription:    c.ShortDescription,
+			Description:         c.Description,
+			Direction:           c.Direction,
+			Status:              c.Status,
+			Logo:                c.Logo,
+			AutoOnboardSupport:  c.AutoOnboardSupport,
+			AllowNewConnections: c.AllowNewConnections,
+			MaxConnectionLimit:  c.MaxConnectionLimit,
+			Tags:                tags,
+		},
+		ConnectionCount: count,
+	}
+
 	return ctx.JSON(http.StatusOK, res)
 }
 
@@ -298,13 +350,9 @@ func (h HttpHandler) PostSourceAws(ctx echo.Context) error {
 	if err != nil {
 		return err
 	}
-	if acc.Name == "" {
-		acc.Name = acc.AccountID
+	if req.Name != "" {
+		acc.AccountName = &req.Name
 	}
-
-	req.Name = acc.Name
-	req.Email = acc.Email
-	req.Config.AccountId = acc.AccountID
 
 	count, err := h.db.CountSources()
 	if err != nil {
@@ -314,7 +362,7 @@ func (h HttpHandler) PostSourceAws(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "maximum number of connections reached")
 	}
 
-	src := NewAWSSource(req.Config.AccountId, req.Name, req.Description, req.Email, acc.OrganizationID)
+	src := NewAWSSource(*acc, req.Description)
 	err = h.db.orm.Transaction(func(tx *gorm.DB) error {
 		err := h.db.CreateSource(&src)
 		if err != nil {
@@ -386,7 +434,28 @@ func (h HttpHandler) PostSourceAzure(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusUnauthorized, "Failed to find reader role roleAssignment")
 	}
 
-	src := NewAzureSource(req)
+	cred, err := createAzureCredential(
+		ctx.Request().Context(),
+		fmt.Sprintf("%s - %s - default credentials", source.CloudAzure, req.Config.SubscriptionId),
+		source.CredentialTypeAutoGenerated,
+		req.Config,
+	)
+	if err != nil {
+		return err
+	}
+
+	azSub, err := currentAzureSubscription(ctx.Request().Context(), req.Config.SubscriptionId, keibiazure.AuthConfig{
+		TenantID:     req.Config.TenantId,
+		ObjectID:     req.Config.ObjectId,
+		SecretID:     req.Config.SecretId,
+		ClientID:     req.Config.ClientId,
+		ClientSecret: req.Config.ClientSecret,
+	})
+	if err != nil {
+		return err
+	}
+
+	src := NewAzureSourceWithCredentials(*azSub, source.SourceCreationMethodManual, req.Description, *cred)
 	err = h.db.orm.Transaction(func(tx *gorm.DB) error {
 		err := h.db.CreateSource(&src)
 		if err != nil {
@@ -395,63 +464,6 @@ func (h HttpHandler) PostSourceAzure(ctx echo.Context) error {
 
 		// TODO: Handle edge case where writing to Vault succeeds and writing to event queue fails.
 		if err := h.vault.Write(src.Credential.VaultReference, req.Config.AsMap()); err != nil {
-			return err
-		}
-
-		if err := h.sourceEventsQueue.Publish(api.SourceEvent{
-			Action:     api.SourceCreated,
-			SourceID:   src.ID,
-			AccountID:  src.SourceId,
-			SourceType: src.Type,
-			ConfigRef:  src.Credential.VaultReference,
-		}); err != nil {
-			return err
-		}
-
-		return nil
-	})
-	if err != nil {
-		return err
-	}
-
-	return ctx.JSON(http.StatusOK, src.ToSourceResponse())
-}
-
-// PostSourceAzureSPN godoc
-//
-//	@Summary		Create Azure source with SPN
-//	@Description	Creating Azure source with SPN
-//	@Tags			onboard
-//	@Produce		json
-//	@Success		200			{object}	api.CreateSourceResponse
-//	@Param			name		body		string					true	"name"
-//	@Param			description	body		string					true	"description"
-//	@Param			config		body		api.SourceConfigAzure	true	"config"
-//	@Router			/onboard/api/v1/source/azure/spn [post]
-func (h HttpHandler) PostSourceAzureSPN(ctx echo.Context) error {
-	var req api.SourceAzureSPNRequest
-
-	if err := bindValidate(ctx, &req); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
-	}
-
-	count, err := h.db.CountSources()
-	if err != nil {
-		return err
-	}
-	if count >= httpserver.GetMaxConnections(ctx) {
-		return echo.NewHTTPError(http.StatusBadRequest, "maximum number of connections reached")
-	}
-
-	src := NewAzureSourceWithSPN(req)
-	_, err = h.db.GetSPN(req.SPNId)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusNotFound, "SPN not found")
-	}
-
-	err = h.db.orm.Transaction(func(tx *gorm.DB) error {
-		err := h.db.CreateSource(&src)
-		if err != nil {
 			return err
 		}
 
@@ -487,6 +499,17 @@ func (h HttpHandler) checkCredentialHealth(cred Credential) (bool, error) {
 			return false, echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 		}
 		err = keibiaws.CheckGetUserPermission(awsConfig.AccessKey, awsConfig.SecretKey)
+		if err == nil {
+			metadata, err := getAWSCredentialsMetadata(context.Background(), awsConfig)
+			if err != nil {
+				return false, echo.NewHTTPError(http.StatusBadRequest, err.Error())
+			}
+			jsonMetadata, err := json.Marshal(metadata)
+			if err != nil {
+				return false, echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+			}
+			cred.Metadata = jsonMetadata
+		}
 
 	case source.CloudAzure:
 		var azureConfig describe.AzureSubscriptionConfig
@@ -505,6 +528,17 @@ func (h HttpHandler) checkCredentialHealth(cred Credential) (bool, error) {
 			Username:            azureConfig.Username,
 			Password:            azureConfig.Password,
 		})
+		if err == nil {
+			metadata, err := getAzureCredentialsMetadata(context.Background(), azureConfig)
+			if err != nil {
+				return false, echo.NewHTTPError(http.StatusBadRequest, err.Error())
+			}
+			jsonMetadata, err := json.Marshal(metadata)
+			if err != nil {
+				return false, echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+			}
+			cred.Metadata = jsonMetadata
+		}
 	}
 
 	if err != nil {
@@ -529,6 +563,23 @@ func (h HttpHandler) checkCredentialHealth(cred Credential) (bool, error) {
 	return true, nil
 }
 
+func createAzureCredential(ctx context.Context, name string, credType source.CredentialType, config api.SourceConfigAzure) (*Credential, error) {
+	azureCnf, err := describe.AzureSubscriptionConfigFromMap(config.AsMap())
+	if err != nil {
+		return nil, err
+	}
+
+	metadata, err := getAzureCredentialsMetadata(ctx, azureCnf)
+	if err != nil {
+		return nil, err
+	}
+	cred, err := NewAzureCredential(name, credType, metadata)
+	if err != nil {
+		return nil, err
+	}
+	return cred, nil
+}
+
 func (h HttpHandler) postAzureCredentials(ctx echo.Context, req api.CreateCredentialRequest) error {
 	configStr, err := json.Marshal(req.Config)
 	if err != nil {
@@ -540,19 +591,13 @@ func (h HttpHandler) postAzureCredentials(ctx echo.Context, req api.CreateCreden
 		return ctx.JSON(http.StatusBadRequest, "invalid config")
 	}
 
-	cred := NewAzureCredential(req.Name)
-	metadata, err := getAzureCredentialsMetadata(ctx.Request().Context(), config)
+	cred, err := createAzureCredential(ctx.Request().Context(), req.Name, source.CredentialTypeManual, config)
 	if err != nil {
 		return err
 	}
-	jsonMetadata, err := json.Marshal(metadata)
-	if err != nil {
-		return err
-	}
-	cred.Metadata = jsonMetadata
 
 	err = h.db.orm.Transaction(func(tx *gorm.DB) error {
-		if err := h.db.CreateCredential(&cred); err != nil {
+		if err := h.db.CreateCredential(cred); err != nil {
 			return err
 		}
 
@@ -567,7 +612,7 @@ func (h HttpHandler) postAzureCredentials(ctx echo.Context, req api.CreateCreden
 		return err
 	}
 
-	_, err = h.checkCredentialHealth(cred)
+	_, err = h.checkCredentialHealth(*cred)
 	if err != nil {
 		return err
 	}
@@ -586,19 +631,22 @@ func (h HttpHandler) postAWSCredentials(ctx echo.Context, req api.CreateCredenti
 		return ctx.JSON(http.StatusBadRequest, "invalid config")
 	}
 
-	cred := NewAWSCredential(req.Name)
-	metadata, err := getAWSCredentialsMetadata(ctx.Request().Context(), config)
+	awsCnf, err := describe.AWSAccountConfigFromMap(config.AsMap())
+	if err != nil {
+		return ctx.JSON(http.StatusBadRequest, "invalid config")
+	}
+
+	metadata, err := getAWSCredentialsMetadata(ctx.Request().Context(), awsCnf)
 	if err != nil {
 		return err
 	}
-	jsonMetadata, err := json.Marshal(metadata)
+	cred, err := NewAWSCredential(req.Name, metadata)
 	if err != nil {
 		return err
 	}
-	cred.Metadata = jsonMetadata
 
 	err = h.db.orm.Transaction(func(tx *gorm.DB) error {
-		if err := h.db.CreateCredential(&cred); err != nil {
+		if err := h.db.CreateCredential(cred); err != nil {
 			return err
 		}
 
@@ -613,7 +661,7 @@ func (h HttpHandler) postAWSCredentials(ctx echo.Context, req api.CreateCredenti
 		return err
 	}
 
-	_, err = h.checkCredentialHealth(cred)
+	_, err = h.checkCredentialHealth(*cred)
 	if err != nil {
 		return err
 	}
@@ -647,7 +695,7 @@ func (h HttpHandler) PostCredentials(ctx echo.Context) error {
 	return echo.NewHTTPError(http.StatusBadRequest, "invalid source type")
 }
 
-// GetCredentials godoc
+// ListCredentials godoc
 //
 //	@Summary		List credentials
 //	@Description	List credentials
@@ -656,10 +704,22 @@ func (h HttpHandler) PostCredentials(ctx echo.Context) error {
 //	@Success		200			{object}	[]api.Credential
 //	@Param			connector	query		source.Type	false	"filter by connector type"
 //	@Param			health		query		string		false	"filter by health status"	Enums(healthy, unhealthy, initial_discovery)
+//	@Param 			pageSize 	query 		int 		false 	"page size" 	default(50)
+//	@Param 			pageNumber	query 		int 		false 	"page number" 	default(1)
 //	@Router			/onboard/api/v1/credential [get]
-func (h HttpHandler) GetCredentials(ctx echo.Context) error {
+func (h HttpHandler) ListCredentials(ctx echo.Context) error {
 	connector, _ := source.ParseType(ctx.QueryParam("connector"))
 	health, _ := source.ParseHealthStatus(ctx.QueryParam("health"))
+	pageSizeStr := ctx.QueryParam("pageSize")
+	pageNumberStr := ctx.QueryParam("pageNumber")
+	pageSize := int64(50)
+	pageNumber := int64(1)
+	if pageSizeStr != "" {
+		pageSize, _ = strconv.ParseInt(pageSizeStr, 10, 64)
+	}
+	if pageNumberStr != "" {
+		pageNumber, _ = strconv.ParseInt(pageNumberStr, 10, 64)
+	}
 
 	credentials, err := h.db.GetCredentialsByFilters(connector, health)
 	if err != nil {
@@ -672,7 +732,6 @@ func (h HttpHandler) GetCredentials(ctx echo.Context) error {
 			ID:                  cred.ID.String(),
 			Name:                cred.Name,
 			ConnectorType:       cred.ConnectorType,
-			Status:              cred.Status,
 			CredentialType:      cred.CredentialType,
 			Enabled:             cred.Enabled,
 			OnboardDate:         cred.CreatedAt,
@@ -683,7 +742,11 @@ func (h HttpHandler) GetCredentials(ctx echo.Context) error {
 		})
 	}
 
-	return ctx.JSON(http.StatusOK, apiCredentials)
+	sort.Slice(apiCredentials, func(i, j int) bool {
+		return apiCredentials[i].OnboardDate.After(apiCredentials[j].OnboardDate)
+	})
+
+	return ctx.JSON(http.StatusOK, utils.Paginate(pageNumber, pageSize, apiCredentials))
 }
 
 // GetCredential godoc
@@ -717,7 +780,6 @@ func (h HttpHandler) GetCredential(ctx echo.Context) error {
 		ID:                  credential.ID.String(),
 		Name:                credential.Name,
 		ConnectorType:       credential.ConnectorType,
-		Status:              credential.Status,
 		CredentialType:      credential.CredentialType,
 		Enabled:             credential.Enabled,
 		OnboardDate:         credential.CreatedAt,
@@ -799,7 +861,7 @@ func (h HttpHandler) AutoOnboardCredential(ctx echo.Context) error {
 		}
 
 		for _, sub := range subs {
-			if utils.Includes(existingConnectionSubIDs, *sub.SubscriptionID) {
+			if utils.Includes(existingConnectionSubIDs, sub.SubscriptionID) {
 				continue
 			}
 
@@ -817,7 +879,7 @@ func (h HttpHandler) AutoOnboardCredential(ctx echo.Context) error {
 				SecretID:     azureCnf.SecretID,
 				ClientID:     azureCnf.ClientID,
 				ClientSecret: azureCnf.ClientSecret,
-			}, *sub.SubscriptionID, keibiazure.DefaultReaderRoleDefinitionIDTemplate)
+			}, sub.SubscriptionID, keibiazure.DefaultReaderRoleDefinitionIDTemplate)
 			if err != nil {
 				continue
 			}
@@ -825,24 +887,12 @@ func (h HttpHandler) AutoOnboardCredential(ctx echo.Context) error {
 				continue
 			}
 
-			subName := *sub.SubscriptionID
-			if sub.DisplayName != nil {
-				subName = *sub.DisplayName
-			}
-			src := Source{
-				ID:                   uuid.New(),
-				SourceId:             *sub.SubscriptionID,
-				Name:                 subName,
-				Type:                 source.CloudAzure,
-				Description:          fmt.Sprintf("Auto onboarded subscription %s", *sub.SubscriptionID),
-				CredentialID:         credential.ID,
-				Credential:           *credential,
-				Enabled:              true,
-				AssetDiscoveryMethod: source.AssetDiscoveryMethodTypeScheduled,
-				HealthState:          source.HealthStatusInitialDiscovery,
-				LastHealthCheckTime:  time.Now(),
-				CreationMethod:       source.SourceCreationMethodAutoOnboard,
-			}
+			src := NewAzureSourceWithCredentials(
+				sub,
+				source.SourceCreationMethodAutoOnboard,
+				fmt.Sprintf("Auto onboarded subscription %s", sub.SubscriptionID),
+				*credential,
+			)
 
 			err = h.db.orm.Transaction(func(tx *gorm.DB) error {
 				err := h.db.CreateSource(&src)
@@ -890,6 +940,33 @@ func (h HttpHandler) AutoOnboardCredential(ctx echo.Context) error {
 	return ctx.JSON(http.StatusOK, onboardedSources)
 }
 
+// GetCredentialHealth godoc
+//
+//	@Summary	Get live credential health status
+//	@Tags		onboard
+//	@Produce	json
+//	@Router		/onboard/api/v1/credential/{credentialId}/healthcheck [post]
+func (h HttpHandler) GetCredentialHealth(ctx echo.Context) error {
+	credUUID, err := uuid.Parse(ctx.Param("credentialId"))
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid source uuid")
+	}
+
+	credential, err := h.db.GetCredentialByID(credUUID)
+	if err != nil {
+		return err
+	}
+
+	isHealthy, err := h.checkCredentialHealth(*credential)
+	if err != nil {
+		return err
+	}
+	if !isHealthy {
+		return echo.NewHTTPError(http.StatusBadRequest, "credential is not healthy")
+	}
+	return ctx.JSON(http.StatusOK, struct{}{})
+}
+
 // ListSourcesByCredentials godoc
 //
 //	@Summary		Returns a list of sources
@@ -897,10 +974,25 @@ func (h HttpHandler) AutoOnboardCredential(ctx echo.Context) error {
 //	@Tags			onboard
 //	@Produce		json
 //	@Param			connector	query		source.Type	false	"filter by connector type"
-//	@Success		200			{object}	[]api.Credential
-//	@Router			/onboard/api/v1/credential/sources/list [get]
+//	@Param 			pageSize 	query 		int 		false 	"page size" 	default(50)
+//	@Param 			pageNumber	query 		int 		false 	"page number" 	default(1)
+//	@Param 			pageSize 	query 		int 		false 	"page size" 	default(50)
+//	@Param 			pageNumber	query 		int 		false 	"page number" 	default(1)
+//
+// @Success		200			{object}	[]api.Credential
+// @Router			/onboard/api/v1/credential/sources/list [get]
 func (h HttpHandler) ListSourcesByCredentials(ctx echo.Context) error {
 	sType, _ := source.ParseType(ctx.QueryParam("connector"))
+	pageSizeStr := ctx.QueryParam("pageSize")
+	pageNumberStr := ctx.QueryParam("pageNumber")
+	pageSize := int64(50)
+	pageNumber := int64(1)
+	if pageSizeStr != "" {
+		pageSize, _ = strconv.ParseInt(pageSizeStr, 10, 64)
+	}
+	if pageNumberStr != "" {
+		pageNumber, _ = strconv.ParseInt(pageNumberStr, 10, 64)
+	}
 	var sources []Source
 	var err error
 	if sType != "" {
@@ -926,7 +1018,6 @@ func (h HttpHandler) ListSourcesByCredentials(ctx echo.Context) error {
 			ID:                  cred.ID.String(),
 			Name:                cred.Name,
 			ConnectorType:       cred.ConnectorType,
-			Status:              cred.Status,
 			CredentialType:      cred.CredentialType,
 			Enabled:             cred.Enabled,
 			OnboardDate:         cred.CreatedAt,
@@ -938,7 +1029,6 @@ func (h HttpHandler) ListSourcesByCredentials(ctx echo.Context) error {
 		}
 	}
 
-	one := 1
 	for _, src := range sources {
 		if v, ok := apiCredentials[src.CredentialID.String()]; ok {
 			if v.Connections == nil {
@@ -961,12 +1051,12 @@ func (h HttpHandler) ListSourcesByCredentials(ctx echo.Context) error {
 				HealthReason:         src.HealthReason,
 			})
 			apiCredentials[src.CredentialID.String()] = v
-			v.TotalConnections = utils.PAdd(v.TotalConnections, &one)
+			v.TotalConnections = utils.PAdd(v.TotalConnections, utils.GetPointer(1))
 			if src.Enabled {
-				v.EnabledConnections = utils.PAdd(v.EnabledConnections, &one)
+				v.EnabledConnections = utils.PAdd(v.EnabledConnections, utils.GetPointer(1))
 			}
 			if src.HealthState == source.HealthStatusUnhealthy {
-				v.UnhealthyConnections = utils.PAdd(v.UnhealthyConnections, &one)
+				v.UnhealthyConnections = utils.PAdd(v.UnhealthyConnections, utils.GetPointer(1))
 			}
 		}
 	}
@@ -979,7 +1069,11 @@ func (h HttpHandler) ListSourcesByCredentials(ctx echo.Context) error {
 		apiCredentialsList = append(apiCredentialsList, v)
 	}
 
-	return ctx.JSON(http.StatusOK, apiCredentialsList)
+	sort.Slice(apiCredentialsList, func(i, j int) bool {
+		return apiCredentialsList[i].OnboardDate.After(apiCredentialsList[j].OnboardDate)
+	})
+
+	return ctx.JSON(http.StatusOK, utils.Paginate(pageNumber, pageSize, apiCredentialsList))
 }
 
 func (h HttpHandler) putAzureCredentials(ctx echo.Context, req api.UpdateCredentialRequest) error {
@@ -1016,7 +1110,12 @@ func (h HttpHandler) putAzureCredentials(ctx echo.Context, req api.UpdateCredent
 			return ctx.JSON(http.StatusBadRequest, err.Error())
 		}
 
-		metadata, err := getAzureCredentialsMetadata(ctx.Request().Context(), config)
+		azureCnf, err := describe.AzureSubscriptionConfigFromMap(config.AsMap())
+		if err != nil {
+			return ctx.JSON(http.StatusBadRequest, "invalid config")
+		}
+
+		metadata, err := getAzureCredentialsMetadata(ctx.Request().Context(), azureCnf)
 		if err != nil {
 			return err
 		}
@@ -1087,7 +1186,12 @@ func (h HttpHandler) putAWSCredentials(ctx echo.Context, req api.UpdateCredentia
 			return ctx.JSON(http.StatusBadRequest, err.Error())
 		}
 
-		metadata, err := getAWSCredentialsMetadata(ctx.Request().Context(), config)
+		awsCnf, err := describe.AWSAccountConfigFromMap(config.AsMap())
+		if err != nil {
+			return ctx.JSON(http.StatusBadRequest, "invalid config")
+		}
+
+		metadata, err := getAWSCredentialsMetadata(ctx.Request().Context(), awsCnf)
 		if err != nil {
 			return err
 		}
@@ -1347,7 +1451,6 @@ func (h HttpHandler) GetSourceCred(ctx echo.Context) error {
 //	@Summary	Get live source health status
 //	@Tags		onboard
 //	@Produce	json
-//	@Param		sourceId	query	string	true	"Source ID"
 //	@Router		/onboard/api/v1/source/{sourceId}/healthcheck [post]
 func (h HttpHandler) GetSourceHealth(ctx echo.Context) error {
 	sourceUUID, err := uuid.Parse(ctx.Param("sourceId"))
@@ -1381,12 +1484,31 @@ func (h HttpHandler) GetSourceHealth(ctx echo.Context) error {
 			return err
 		}
 		isAttached, err = keibiaws.CheckAttachedPolicy(awsCnf.AccessKey, awsCnf.SecretKey, keibiaws.SecurityAuditPolicyARN)
+		if err == nil && isAttached {
+			cfg, err := keibiaws.GetConfig(context.Background(), awsCnf.AccessKey, awsCnf.SecretKey, "", "")
+			if err != nil {
+				return err
+			}
+			if cfg.Region == "" {
+				cfg.Region = "us-east-1"
+			}
+			awsAccount, err := currentAwsAccount(ctx.Request().Context(), cfg)
+			if err != nil {
+				return err
+			}
+			metadata := NewAWSConnectionMetadata(*awsAccount)
+			jsonMetadata, err := json.Marshal(metadata)
+			if err != nil {
+				return err
+			}
+			src.Metadata = jsonMetadata
+		}
 	case source.CloudAzure:
 		azureCnf, err := describe.AzureSubscriptionConfigFromMap(cnf)
 		if err != nil {
 			return err
 		}
-		isAttached, err = keibiazure.CheckRole(keibiazure.AuthConfig{
+		authCnf := keibiazure.AuthConfig{
 			TenantID:            azureCnf.TenantID,
 			ClientID:            azureCnf.ClientID,
 			ObjectID:            azureCnf.ObjectID,
@@ -1396,7 +1518,18 @@ func (h HttpHandler) GetSourceHealth(ctx echo.Context) error {
 			CertificatePassword: azureCnf.CertificatePass,
 			Username:            azureCnf.Username,
 			Password:            azureCnf.Password,
-		}, src.SourceId, keibiazure.DefaultReaderRoleDefinitionIDTemplate)
+		}
+		isAttached, err = keibiazure.CheckRole(authCnf, src.SourceId, keibiazure.DefaultReaderRoleDefinitionIDTemplate)
+
+		if err == nil && isAttached {
+			azSub, err := currentAzureSubscription(ctx.Request().Context(), src.SourceId, authCnf)
+			metadata := NewAzureConnectionMetadata(*azSub)
+			jsonMetadata, err := json.Marshal(metadata)
+			if err != nil {
+				return err
+			}
+			src.Metadata = jsonMetadata
+		}
 	}
 
 	if !isAttached {
@@ -1743,7 +1876,7 @@ func (h HttpHandler) ListSources(ctx echo.Context) error {
 
 	resp := api.GetSourcesResponse{}
 	for _, s := range sources {
-		source := api.Source{
+		src := api.Source{
 			ID:                   s.ID,
 			ConnectionID:         s.SourceId,
 			ConnectionName:       s.Name,
@@ -1759,7 +1892,7 @@ func (h HttpHandler) ListSources(ctx echo.Context) error {
 			LastHealthCheckTime:  s.LastHealthCheckTime,
 			HealthReason:         s.HealthReason,
 		}
-		resp = append(resp, source)
+		resp = append(resp, src)
 	}
 
 	return ctx.JSON(http.StatusOK, resp)
@@ -1852,51 +1985,6 @@ func (h HttpHandler) CountSources(ctx echo.Context) error {
 	return ctx.JSON(http.StatusOK, count)
 }
 
-func (h HttpHandler) PutSource(ctx echo.Context) error {
-	panic("not implemented yet")
-}
-
-// DiscoverAwsAccounts godoc
-//
-//	@Summary		Returns the list of available AWS accounts given the credentials.
-//	@Description	If the account is part of an organization and the account has premission to list the accounts, it will return all the accounts in that organization. Otherwise, it will return the single account these credentials belong to.
-//	@Tags			onboard
-//	@Produce		json
-//	@Success		200			{object}	[]api.DiscoverAWSAccountsResponse
-//	@Param			accessKey	body		string	true	"AccessKey"
-//	@Param			secretKey	body		string	true	"SecretKey"
-//	@Router			/onboard/api/v1/discover/aws/accounts [post]
-func (h HttpHandler) DiscoverAwsAccounts(ctx echo.Context) error {
-	// DiscoverAwsAccounts returns the list of available AWS accounts given the credentials.
-	// If the account is part of an organization and the account has premission to
-	// list the accounts, it will return all the accounts in that organization.
-	// Otherwise, it will return the single account these credentials belong to.
-	var req api.DiscoverAWSAccountsRequest
-	if err := bindValidate(ctx, &req); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
-	}
-
-	accounts, err := discoverAwsAccounts(ctx.Request().Context(), req)
-	if err != nil {
-		if err == PermissionError {
-			return ctx.JSON(http.StatusForbidden, "Key doesn't have enough permission")
-		}
-		return err
-	}
-
-	for idx, account := range accounts {
-		_, err := h.db.GetSourceBySourceID(account.AccountID)
-		if err != nil {
-			if err == gorm.ErrRecordNotFound {
-				continue
-			}
-			return err
-		}
-		accounts[idx].Status = "DUPLICATE"
-	}
-	return ctx.JSON(http.StatusOK, accounts)
-}
-
 // CatalogMetrics godoc
 //
 //	@Summary	Returns the list of metrics for catalog page.
@@ -1913,6 +2001,7 @@ func (h HttpHandler) CatalogMetrics(ctx echo.Context) error {
 	}
 
 	for _, src := range srcs {
+		metrics.TotalConnections++
 		if src.Enabled {
 			metrics.ConnectionsEnabled++
 		}

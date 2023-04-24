@@ -23,13 +23,12 @@ type UpdateCredentialRequest struct {
 }
 
 type Credential struct {
-	ID             string                  `json:"id"`
-	Name           *string                 `json:"name,omitempty"`
-	ConnectorType  source.Type             `json:"connectorType"`
-	Status         source.CredentialStatus `json:"status"`
-	CredentialType source.CredentialType   `json:"credentialType"`
-	Enabled        bool                    `json:"enabled"`
-	OnboardDate    time.Time               `json:"onboardDate"`
+	ID             string                `json:"id"`
+	Name           *string               `json:"name,omitempty"`
+	ConnectorType  source.Type           `json:"connectorType"`
+	CredentialType source.CredentialType `json:"credentialType"`
+	Enabled        bool                  `json:"enabled"`
+	OnboardDate    time.Time             `json:"onboardDate"`
 
 	LastHealthCheckTime time.Time           `json:"lastHealthCheckTime"`
 	HealthStatus        source.HealthStatus `json:"healthStatus"`

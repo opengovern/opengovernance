@@ -1017,7 +1017,7 @@ func (h *HttpHandler) GetRegionsByResourceCount(ctx echo.Context) error {
 	return ctx.JSON(http.StatusOK, api.RegionsByResourceCountResponse{
 		TotalCount: len(response),
 		APIFilters: apiFilters,
-		Regions:    internal.Paginate(pageNumber, pageSize, response),
+		Regions:    utils.Paginate(pageNumber, pageSize, response),
 	})
 }
 
@@ -1415,7 +1415,7 @@ func (h *HttpHandler) ListResourceTypes(ctx echo.Context) error {
 	result := api.ListResourceTypesResponse{
 		TotalCount:    totalCount,
 		APIFilters:    apiFilters,
-		ResourceTypes: internal.Paginate(pageNumber, pageSize, apiResourceTypeNode),
+		ResourceTypes: utils.Paginate(pageNumber, pageSize, apiResourceTypeNode),
 	}
 
 	return ctx.JSON(http.StatusOK, result)
@@ -2536,7 +2536,7 @@ func (h *HttpHandler) GetAccountSummary(ctx echo.Context) error {
 		TotalDisabledCount:  disabledCount,
 		TotalCost:           totalCost,
 		APIFilters:          apiFilters,
-		Accounts:            internal.Paginate(pageNumber, pageSize, accountSummaries),
+		Accounts:            utils.Paginate(pageNumber, pageSize, accountSummaries),
 	}
 
 	return ctx.JSON(http.StatusOK, response)
@@ -2878,7 +2878,7 @@ func (h *HttpHandler) ListServiceSummaries(ctx echo.Context) error {
 	res := api.ListServiceSummariesResponse{
 		TotalCount: len(serviceSummaries),
 		APIFilters: apiFilters,
-		Services:   internal.Paginate(pageNumber, pageSize, serviceSummaries),
+		Services:   utils.Paginate(pageNumber, pageSize, serviceSummaries),
 	}
 
 	return ctx.JSON(http.StatusOK, res)
