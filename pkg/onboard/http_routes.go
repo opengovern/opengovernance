@@ -184,7 +184,7 @@ func (h HttpHandler) GetProviders(ctx echo.Context) error {
 //	@Description	Getting connectors
 //	@Tags			onboard
 //	@Produce		json
-//	@Success		200			{object}	[]api.ConnectorCount
+//	@Success		200	{object}	[]api.ConnectorCount
 //	@Router			/onboard/api/v1/connectors [get]
 func (h HttpHandler) ListConnectors(ctx echo.Context) error {
 	connectors, err := h.db.ListConnectors()
@@ -230,8 +230,8 @@ func (h HttpHandler) ListConnectors(ctx echo.Context) error {
 //	@Description	Getting connector
 //	@Tags			onboard
 //	@Produce		json
-//	@Param			connectorName	path	string	true	"Connector name"
-//	@Success		200			{object}	api.Connector
+//	@Param			connectorName	path		string	true	"Connector name"
+//	@Success		200				{object}	api.Connector
 //	@Router			/onboard/api/v1/connectors/{connectorName} [get]
 func (h HttpHandler) GetConnector(ctx echo.Context) error {
 	connectorName, err := source.ParseType(ctx.Param("connectorName"))
@@ -704,8 +704,8 @@ func (h HttpHandler) PostCredentials(ctx echo.Context) error {
 //	@Success		200			{object}	[]api.Credential
 //	@Param			connector	query		source.Type	false	"filter by connector type"
 //	@Param			health		query		string		false	"filter by health status"	Enums(healthy, unhealthy, initial_discovery)
-//	@Param 			pageSize 	query 		int 		false 	"page size" 	default(50)
-//	@Param 			pageNumber	query 		int 		false 	"page number" 	default(1)
+//	@Param			pageSize	query		int			false	"page size"					default(50)
+//	@Param			pageNumber	query		int			false	"page number"				default(1)
 //	@Router			/onboard/api/v1/credential [get]
 func (h HttpHandler) ListCredentials(ctx echo.Context) error {
 	connector, _ := source.ParseType(ctx.QueryParam("connector"))
@@ -974,13 +974,13 @@ func (h HttpHandler) GetCredentialHealth(ctx echo.Context) error {
 //	@Tags			onboard
 //	@Produce		json
 //	@Param			connector	query		source.Type	false	"filter by connector type"
-//	@Param 			pageSize 	query 		int 		false 	"page size" 	default(50)
-//	@Param 			pageNumber	query 		int 		false 	"page number" 	default(1)
-//	@Param 			pageSize 	query 		int 		false 	"page size" 	default(50)
-//	@Param 			pageNumber	query 		int 		false 	"page number" 	default(1)
+//	@Param			pageSize	query		int			false	"page size"		default(50)
+//	@Param			pageNumber	query		int			false	"page number"	default(1)
+//	@Param			pageSize	query		int			false	"page size"		default(50)
+//	@Param			pageNumber	query		int			false	"page number"	default(1)
 //
-// @Success		200			{object}	[]api.Credential
-// @Router			/onboard/api/v1/credential/sources/list [get]
+//	@Success		200			{object}	[]api.Credential
+//	@Router			/onboard/api/v1/credential/sources/list [get]
 func (h HttpHandler) ListSourcesByCredentials(ctx echo.Context) error {
 	sType, _ := source.ParseType(ctx.QueryParam("connector"))
 	pageSizeStr := ctx.QueryParam("pageSize")
@@ -1451,6 +1451,7 @@ func (h HttpHandler) GetSourceCred(ctx echo.Context) error {
 //	@Summary	Get live source health status
 //	@Tags		onboard
 //	@Produce	json
+//	@Param		sourceId	path	string	true	"Source ID"
 //	@Router		/onboard/api/v1/source/{sourceId}/healthcheck [post]
 func (h HttpHandler) GetSourceHealth(ctx echo.Context) error {
 	sourceUUID, err := uuid.Parse(ctx.Param("sourceId"))

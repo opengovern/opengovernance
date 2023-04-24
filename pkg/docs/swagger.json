@@ -1295,7 +1295,6 @@
                         "items": {
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "SourceID",
                         "name": "sourceId",
                         "in": "query"
@@ -1873,7 +1872,6 @@
                         "items": {
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "SourceID",
                         "name": "sourceId",
                         "in": "query",
@@ -1989,7 +1987,6 @@
                         "items": {
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "SourceId",
                         "name": "sourceId",
                         "in": "query"
@@ -2146,7 +2143,6 @@
                         "items": {
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "SourceId",
                         "name": "sourceId",
                         "in": "query"
@@ -2283,7 +2279,6 @@
                         "items": {
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "SourceID",
                         "name": "sourceId",
                         "in": "query",
@@ -2335,7 +2330,6 @@
                         "items": {
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "SourceID",
                         "name": "sourceId",
                         "in": "query"
@@ -2467,7 +2461,6 @@
                         "items": {
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "SourceID",
                         "name": "sourceId",
                         "in": "query"
@@ -2545,7 +2538,6 @@
                         "items": {
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "SourceID",
                         "name": "sourceId",
                         "in": "query"
@@ -2607,7 +2599,6 @@
                         "items": {
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "filter the result by source id",
                         "name": "sourceId",
                         "in": "query"
@@ -2646,7 +2637,6 @@
                         "items": {
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "filter the result by source id",
                         "name": "sourceId",
                         "in": "query"
@@ -2684,7 +2674,6 @@
                         "items": {
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "filter the result by source id",
                         "name": "sourceId",
                         "in": "query"
@@ -2870,7 +2859,10 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ResourceTypeMetadata"
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ResourceTypeMetadata"
+                            }
                         }
                     }
                 }
@@ -2991,7 +2983,6 @@
                         "items": {
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "SourceID",
                         "name": "sourceId",
                         "in": "query"
@@ -3056,7 +3047,6 @@
                         "items": {
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "SourceID",
                         "name": "sourceId",
                         "in": "query"
@@ -3135,7 +3125,6 @@
                         "items": {
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "SourceID",
                         "name": "sourceId",
                         "in": "query"
@@ -3200,7 +3189,6 @@
                         "items": {
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "SourceID",
                         "name": "sourceId",
                         "in": "query"
@@ -3323,7 +3311,6 @@
                         "items": {
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "SourceID",
                         "name": "sourceId",
                         "in": "query"
@@ -3401,7 +3388,6 @@
                         "items": {
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "SourceID",
                         "name": "sourceId",
                         "in": "query"
@@ -3453,7 +3439,6 @@
                         "items": {
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "SourceID",
                         "name": "sourceId",
                         "in": "query"
@@ -3502,7 +3487,6 @@
                         "items": {
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "SourceID",
                         "name": "sourceId",
                         "in": "query"
@@ -3628,7 +3612,6 @@
                         "items": {
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "SourceID",
                         "name": "sourceId",
                         "in": "query"
@@ -3638,7 +3621,6 @@
                         "items": {
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "serviceName",
                         "name": "serviceName",
                         "in": "query"
@@ -3702,7 +3684,6 @@
                         "items": {
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "SourceID",
                         "name": "sourceId",
                         "in": "query"
@@ -3744,7 +3725,6 @@
                         "items": {
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "filter: SourceIDs",
                         "name": "sourceId",
                         "in": "query"
@@ -3971,14 +3951,6 @@
                     "onboard"
                 ],
                 "summary": "Get connectors",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "category",
-                        "name": "category",
-                        "in": "query"
-                    }
-                ],
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -3987,6 +3959,35 @@
                             "items": {
                                 "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.ConnectorCount"
                             }
+                        }
+                    }
+                }
+            }
+        },
+        "/onboard/api/v1/connectors/{connectorName}": {
+            "get": {
+                "description": "Getting connector",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "onboard"
+                ],
+                "summary": "Get connector",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Connector name",
+                        "name": "connectorName",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.Connector"
                         }
                     }
                 }
@@ -4024,6 +4025,20 @@
                         "description": "filter by health status",
                         "name": "health",
                         "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 50,
+                        "description": "page size",
+                        "name": "pageSize",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 1,
+                        "description": "page number",
+                        "name": "pageNumber",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -4035,32 +4050,6 @@
                                 "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.Credential"
                             }
                         }
-                    }
-                }
-            },
-            "put": {
-                "description": "Edit a credential by Id",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "onboard"
-                ],
-                "summary": "Edit a credential by Id",
-                "parameters": [
-                    {
-                        "description": "config",
-                        "name": "config",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.UpdateCredentialRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK"
                     }
                 }
             },
@@ -4115,6 +4104,34 @@
                         "description": "filter by connector type",
                         "name": "connector",
                         "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 50,
+                        "description": "page size",
+                        "name": "pageSize",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 1,
+                        "description": "page number",
+                        "name": "pageNumber",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 50,
+                        "description": "page size",
+                        "name": "pageSize",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 1,
+                        "description": "page number",
+                        "name": "pageNumber",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -4146,6 +4163,32 @@
                         "schema": {
                             "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.Credential"
                         }
+                    }
+                }
+            },
+            "put": {
+                "description": "Edit a credential by Id",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "onboard"
+                ],
+                "summary": "Edit a credential by Id",
+                "parameters": [
+                    {
+                        "description": "config",
+                        "name": "config",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.UpdateCredentialRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
                     }
                 }
             },
@@ -4222,47 +4265,16 @@
                 }
             }
         },
-        "/onboard/api/v1/discover/aws/accounts": {
+        "/onboard/api/v1/credential/{credentialId}/healthcheck": {
             "post": {
-                "description": "If the account is part of an organization and the account has premission to list the accounts, it will return all the accounts in that organization. Otherwise, it will return the single account these credentials belong to.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "onboard"
                 ],
-                "summary": "Returns the list of available AWS accounts given the credentials.",
-                "parameters": [
-                    {
-                        "description": "AccessKey",
-                        "name": "accessKey",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "type": "string"
-                        }
-                    },
-                    {
-                        "description": "SecretKey",
-                        "name": "secretKey",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "type": "string"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.DiscoverAWSAccountsResponse"
-                            }
-                        }
-                    }
-                }
+                "summary": "Get live credential health status",
+                "responses": {}
             }
         },
         "/onboard/api/v1/providers": {
@@ -4370,55 +4382,6 @@
                     "onboard"
                 ],
                 "summary": "Create Azure source",
-                "parameters": [
-                    {
-                        "description": "name",
-                        "name": "name",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "type": "string"
-                        }
-                    },
-                    {
-                        "description": "description",
-                        "name": "description",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "type": "string"
-                        }
-                    },
-                    {
-                        "description": "config",
-                        "name": "config",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.SourceConfigAzure"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.CreateSourceResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/onboard/api/v1/source/azure/spn": {
-            "post": {
-                "description": "Creating Azure source with SPN",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "onboard"
-                ],
-                "summary": "Create Azure source with SPN",
                 "parameters": [
                     {
                         "description": "name",
@@ -4615,7 +4578,7 @@
                         "type": "string",
                         "description": "Source ID",
                         "name": "sourceId",
-                        "in": "query",
+                        "in": "path",
                         "required": true
                     }
                 ],
@@ -6084,8 +6047,7 @@
                 },
                 "createdAt": {
                     "description": "Creation timestamp in UTC",
-                    "type": "string",
-                    "example": "2023-03-31T09:36:09.855Z"
+                    "type": "string"
                 },
                 "email": {
                     "description": "Email address of the user",
@@ -6099,8 +6061,7 @@
                 },
                 "lastActivity": {
                     "description": "Last activity timestamp in UTC",
-                    "type": "string",
-                    "example": "2023-04-21T08:53:09.928Z"
+                    "type": "string"
                 },
                 "roleName": {
                     "description": "Name of the role",
@@ -7109,9 +7070,6 @@
                 "benchmarkID": {
                     "type": "string"
                 },
-                "category": {
-                    "type": "string"
-                },
                 "complianceJobID": {
                     "type": "integer"
                 },
@@ -7153,9 +7111,6 @@
                 },
                 "scheduleJobID": {
                     "type": "integer"
-                },
-                "serviceName": {
-                    "type": "string"
                 },
                 "severity": {
                     "type": "string"
@@ -7714,7 +7669,10 @@
                     ]
                 },
                 "connector_label": {
-                    "description": "Connector Lable",
+                    "description": "Connector Label",
+                    "type": "string"
+                },
+                "logo_uri": {
                     "type": "string"
                 },
                 "resource_types": {
@@ -9110,6 +9068,9 @@
                 "resourcesDiscovered": {
                     "type": "integer"
                 },
+                "totalConnections": {
+                    "type": "integer"
+                },
                 "unhealthyConnections": {
                     "type": "integer"
                 }
@@ -9143,14 +9104,53 @@
                 "ConnectionState_DISABLED"
             ]
         },
+        "gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.Connector": {
+            "type": "object",
+            "properties": {
+                "allowNewConnections": {
+                    "type": "boolean"
+                },
+                "autoOnboardSupport": {
+                    "type": "boolean"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "direction": {
+                    "$ref": "#/definitions/source.ConnectorDirectionType"
+                },
+                "label": {
+                    "type": "string"
+                },
+                "logo": {
+                    "type": "string"
+                },
+                "maxConnectionLimit": {
+                    "type": "integer"
+                },
+                "name": {
+                    "$ref": "#/definitions/source.Type"
+                },
+                "shortDescription": {
+                    "type": "string"
+                },
+                "status": {
+                    "$ref": "#/definitions/source.ConnectorStatus"
+                },
+                "tags": {
+                    "type": "object",
+                    "additionalProperties": {}
+                }
+            }
+        },
         "gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.ConnectorCount": {
             "type": "object",
             "properties": {
-                "category": {
-                    "type": "string"
+                "allowNewConnections": {
+                    "type": "boolean"
                 },
-                "code": {
-                    "$ref": "#/definitions/source.Type"
+                "autoOnboardSupport": {
+                    "type": "boolean"
                 },
                 "connection_count": {
                     "type": "integer"
@@ -9161,14 +9161,27 @@
                 "direction": {
                     "$ref": "#/definitions/source.ConnectorDirectionType"
                 },
-                "name": {
+                "label": {
                     "type": "string"
                 },
-                "startSupportDate": {
+                "logo": {
+                    "type": "string"
+                },
+                "maxConnectionLimit": {
+                    "type": "integer"
+                },
+                "name": {
+                    "$ref": "#/definitions/source.Type"
+                },
+                "shortDescription": {
                     "type": "string"
                 },
                 "status": {
                     "$ref": "#/definitions/source.ConnectorStatus"
+                },
+                "tags": {
+                    "type": "object",
+                    "additionalProperties": {}
                 }
             }
         },
@@ -9253,35 +9266,11 @@
                 "onboardDate": {
                     "type": "string"
                 },
-                "status": {
-                    "$ref": "#/definitions/source.CredentialStatus"
-                },
                 "total_connections": {
                     "type": "integer"
                 },
                 "unhealthy_connections": {
                     "type": "integer"
-                }
-            }
-        },
-        "gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.DiscoverAWSAccountsResponse": {
-            "type": "object",
-            "properties": {
-                "accountId": {
-                    "type": "string"
-                },
-                "email": {
-                    "type": "string"
-                },
-                "name": {
-                    "type": "string"
-                },
-                "organizationId": {
-                    "description": "Nil if not part of an AWS organization",
-                    "type": "string"
-                },
-                "status": {
-                    "type": "string"
                 }
             }
         },
@@ -9411,7 +9400,6 @@
                 "clientSecret",
                 "objectId",
                 "secretId",
-                "subscriptionId",
                 "tenantId"
             ],
             "properties": {
@@ -9439,14 +9427,11 @@
             "type": "object",
             "properties": {
                 "config": {},
-                "id": {
-                    "type": "string"
+                "connector": {
+                    "$ref": "#/definitions/source.Type"
                 },
                 "name": {
                     "type": "string"
-                },
-                "source_type": {
-                    "$ref": "#/definitions/source.Type"
                 }
             }
         },
@@ -9683,17 +9668,6 @@
                 "ConnectorStatusComingSoon"
             ]
         },
-        "source.CredentialStatus": {
-            "type": "string",
-            "enum": [
-                "enabled",
-                "disabled"
-            ],
-            "x-enum-varnames": [
-                "CredentialStatusEnabled",
-                "CredentialStatusDisabled"
-            ]
-        },
         "source.CredentialType": {
             "type": "string",
             "enum": [
@@ -9710,14 +9684,12 @@
             "enum": [
                 "",
                 "healthy",
-                "unhealthy",
-                "initial_discovery"
+                "unhealthy"
             ],
             "x-enum-varnames": [
                 "HealthStatusNil",
                 "HealthStatusHealthy",
-                "HealthStatusUnhealthy",
-                "HealthStatusInitialDiscovery"
+                "HealthStatusUnhealthy"
             ]
         },
         "source.Type": {
