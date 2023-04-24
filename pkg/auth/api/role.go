@@ -31,24 +31,24 @@ func GetRole(s string) Role {
 }
 
 type PutRoleBindingRequest struct {
-	UserID   string `json:"userId" validate:"required"`                                               // Unique identifier for the User
+	UserID   string `json:"userId" validate:"required" example:"sampleID"`                            // Unique identifier for the User
 	RoleName Role   `json:"roleName" validate:"required" example:"admin" enums:"admin,editor,viewer"` // Name of the role
 }
 type RolesListResponse struct {
-	RoleName    Role   `json:"roleName" example:"admin" enums:"admin,editor,viewer"` //
-	Description string `json:"description" example:"The Administrator role is a super user role with all of the capabilities that can be assigned to a role, and its enables access to all data & configuration on a Kaytu Workspace. You cannot edit or delete the Administrator role."`
-	UserCount   int    `json:"userCount" example:"1"`
+	RoleName    Role   `json:"roleName" example:"admin" enums:"admin,editor,viewer"`                                                                                                                                                                                                      // Name of the role
+	Description string `json:"description" example:"The Administrator role is a super user role with all of the capabilities that can be assigned to a role, and its enables access to all data & configuration on a Kaytu Workspace. You cannot edit or delete the Administrator role."` // Role Description and accesses
+	UserCount   int    `json:"userCount" example:"1"`                                                                                                                                                                                                                                     // Number of usershaving this role
 }
 
 type RoleDetailsResponse struct {
-	RoleName    Role               `json:"role" example:"admin" enums:"admin,editor,viewer"`
-	Description string             `json:"description" example:"The Administrator role is a super user role with all of the capabilities that can be assigned to a role, and its enables access to all data & configuration on a Kaytu Workspace. You cannot edit or delete the Administrator role."`
-	UserCount   int                `json:"userCount" example:"1"`
-	Users       []GetUsersResponse `json:"users"`
+	RoleName    Role               `json:"role" example:"admin" enums:"admin,editor,viewer"`                                                                                                                                                                                                          // Name of the role
+	Description string             `json:"description" example:"The Administrator role is a super user role with all of the capabilities that can be assigned to a role, and its enables access to all data & configuration on a Kaytu Workspace. You cannot edit or delete the Administrator role."` // Role Description and accesses
+	UserCount   int                `json:"userCount" example:"1"`                                                                                                                                                                                                                                     // Number of users having this role
+	Users       []GetUsersResponse `json:"users"`                                                                                                                                                                                                                                                     // List of users having this role
 }
 
 type UserRoleBinding struct {
-	WorkspaceID string `json:"workspaceID"`                                          // Unique identifier for the Workspace
+	WorkspaceID string `json:"workspaceID" example:"sampleID"`                       // Unique identifier for the Workspace
 	RoleName    Role   `json:"roleName" enums:"admin,editor,viewer" example:"admin"` // Name of the binding Role
 }
 
@@ -60,11 +60,11 @@ type GetRoleBindingsResponse struct {
 }
 
 type Membership struct {
-	WorkspaceID   string    `json:"workspaceID"`                                          // Unique identifier for the workspace
-	WorkspaceName string    `json:"workspaceName"`                                        // Name of the Workspace
+	WorkspaceID   string    `json:"workspaceID" example:"sampleID"`                       // Unique identifier for the workspace
+	WorkspaceName string    `json:"workspaceName" example:"demo"`                         // Name of the Workspace
 	RoleName      Role      `json:"roleName" enums:"admin,editor,viewer" example:"admin"` // Name of the role
-	AssignedAt    time.Time `json:"assignedAt"`                                           // Assignment timestamp in UTC
-	LastActivity  time.Time `json:"lastActivity"`                                         // Last activity timestamp in UTC
+	AssignedAt    time.Time `json:"assignedAt" example:"2023-03-31T09:36:09.855Z"`        // Assignment timestamp in UTC
+	LastActivity  time.Time `json:"lastActivity" example:"2023-04-21T08:53:09.928Z"`      // Last activity timestamp in UTC
 }
 
 type InviteStatus string
@@ -80,8 +80,8 @@ type WorkspaceRoleBinding struct {
 	Email        string       `json:"email" example:"sample@gmail.com"`                     // Email address of the user
 	RoleName     Role         `json:"roleName" enums:"admin,editor,viewer" example:"admin"` // Name of the role
 	Status       InviteStatus `json:"status" enums:"accepted,pending" example:"pending"`    // Invite status
-	LastActivity time.Time    `json:"lastActivity"`                                         // Last activity timestamp in UTC
-	CreatedAt    time.Time    `json:"createdAt"`                                            // Creation timestamp in UTC
+	LastActivity time.Time    `json:"lastActivity" example:"2023-04-21T08:53:09.928Z"`      // Last activity timestamp in UTC
+	CreatedAt    time.Time    `json:"createdAt" example:"2023-03-31T09:36:09.855Z"`         // Creation timestamp in UTC
 }
 
 type GetWorkspaceRoleBindingResponse []WorkspaceRoleBinding // List of Workspace Role Binding objects
@@ -93,11 +93,10 @@ type GetUserResponse struct {
 	EmailVerified bool         `json:"emailVerified" example:"true"`                         // Is email verified or not
 	RoleName      Role         `json:"roleName" enums:"admin,editor,viewer" example:"admin"` // Name of the role
 	Status        InviteStatus `json:"status" enums:"accepted,pending" example:"pending"`    // Invite status
-	LastActivity  time.Time    `json:"lastActivity"`                                         // Last activity timestamp in UTC
-	CreatedAt     time.Time    `json:"createdAt"`                                            // Creation timestamp in UTC
+	LastActivity  time.Time    `json:"lastActivity" example:"2023-04-21T08:53:09.928Z"`      // Last activity timestamp in UTC
+	CreatedAt     time.Time    `json:"createdAt" example:"2023-03-31T09:36:09.855Z"`         // Creation timestamp in UTC
 	Blocked       bool         `json:"blocked" example:"false"`                              // Is the user blocked or not
 }
-
 type GetUsersResponse struct {
 	UserID        string `json:"userId" example:"sampleID"`                            // Unique identifier for the user
 	UserName      string `json:"userName" example:"sampleName"`                        // Username
@@ -118,7 +117,7 @@ type RoleUser struct {
 	Email         string       `json:"email" example:"sample@gmail.com"`                     // Email address of the user
 	EmailVerified bool         `json:"emailVerified" example:"true"`                         // Is email verified or not
 	RoleName      Role         `json:"roleName" enums:"admin,editor,viewer" example:"admin"` // Name of the role
-	Workspaces    []string     `json:"workspaces" example:"demoWorkspace"`                   // A list of workspace ids which the user has the specified role in them
+	Workspaces    []string     `json:"workspaces" example:"demo"`                            // A list of workspace ids which the user has the specified role in them
 	Status        InviteStatus `json:"status" enums:"accepted,pending" example:"pending"`    // Invite status
 	LastActivity  time.Time    `json:"lastActivity"`                                         // Last activity timestamp in UTC
 	CreatedAt     time.Time    `json:"createdAt"`                                            // Creation timestamp in UTC
@@ -136,8 +135,8 @@ type InviteRequest struct {
 	RoleName Role   `json:"roleName" enums:"admin,editor,viewer" example:"admin"`       // Name of the role
 }
 type RoleBinding struct {
-	UserID        string `json:"userId"`                                               // Unique identifier for the user
-	WorkspaceID   string `json:"workspaceID"`                                          // Unique identifier for the workspace
-	WorkspaceName string `json:"workspaceName"`                                        // Name of the workspace
+	UserID        string `json:"userId" example:"sampleID"`                            // Unique identifier for the user
+	WorkspaceID   string `json:"workspaceID" example:"sampleID"`                       // Unique identifier for the workspace
+	WorkspaceName string `json:"workspaceName" example:"demo"`                         // Name of the workspace
 	RoleName      Role   `json:"roleName" enums:"admin,editor,viewer" example:"admin"` // Name of the binding role
 }

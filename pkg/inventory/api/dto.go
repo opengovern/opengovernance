@@ -455,13 +455,13 @@ type Filter interface {
 }
 
 type FilterCloudResourceType struct {
-	FilterType          FilterType  `json:"filterType"`
+	FilterType          FilterType  `json:"filterType" example:"cloudResourceType"`
 	FilterID            string      `json:"filterId"`
-	Connector           source.Type `json:"connector"`
-	ResourceType        string      `json:"resourceType"`
-	ResourceLabel       string      `json:"resourceName"`
-	ServiceName         string      `json:"serviceName"`
-	ResourceCount       int         `json:"resourceCount"`
+	Connector           source.Type `json:"connector" example:"AWS"`
+	ResourceType        string      `json:"resourceType" example:"AWS::AMP::Workspace"`
+	ResourceLabel       string      `json:"resourceName" example:""`
+	ServiceName         string      `json:"serviceName" example:"amp"`
+	ResourceCount       int         `json:"resourceCount" example:"0"`
 	ResourceCountChange *float64    `json:"resourceCountChange,omitempty"`
 }
 
@@ -598,7 +598,7 @@ type ServiceSummary struct {
 }
 
 type ListResourceTypesResponse struct {
-	TotalCount    int                       `json:"totalCount"`    // Number of resource types
-	APIFilters    map[string]any            `json:"apiFilters"`    // API Filters
-	ResourceTypes []FilterCloudResourceType `json:"resourceTypes"` // A list of resource types
+	TotalCount    int                       `json:"totalCount" example:"1"` // Number of resource types
+	APIFilters    map[string]any            `json:"apiFilters"`             // API Filters
+	ResourceTypes []FilterCloudResourceType `json:"resourceTypes"`          // A list of resource types
 }
