@@ -60,26 +60,26 @@ func (s Scheduler) scheduleDescribeJob() {
 }
 
 func (s Scheduler) describeConnection(connection Source, scheduled bool) error {
-	healthCheckedSrc, err := s.onboardClient.GetSourceHealthcheck(&httpclient.Context{
-		UserRole: api2.EditorRole,
-	}, connection.ID.String())
-	if err != nil {
-		return err
-	}
-
-	if scheduled && healthCheckedSrc.AssetDiscoveryMethod != source.AssetDiscoveryMethodTypeScheduled {
-		return errors.New("asset discovery is not scheduled")
-	}
-	if healthCheckedSrc.HealthState == source.HealthStatusUnhealthy {
-		return errors.New("connection is not healthy")
-	}
-
 	job, err := s.db.GetLastDescribeSourceJob(connection.ID)
 	if err != nil {
 		return err
 	}
 
 	if !scheduled || job == nil || job.UpdatedAt.Before(time.Now().Add(time.Duration(-s.describeIntervalHours)*time.Hour)) {
+		healthCheckedSrc, err := s.onboardClient.GetSourceHealthcheck(&httpclient.Context{
+			UserRole: api2.EditorRole,
+		}, connection.ID.String())
+		if err != nil {
+			return err
+		}
+
+		if scheduled && healthCheckedSrc.AssetDiscoveryMethod != source.AssetDiscoveryMethodTypeScheduled {
+			return errors.New("asset discovery is not scheduled")
+		}
+		if healthCheckedSrc.HealthState == source.HealthStatusUnhealthy {
+			return errors.New("connection is not healthy")
+		}
+
 		err = s.createCloudNativeDescribeSource(&connection, job)
 		if err != nil {
 			return err
