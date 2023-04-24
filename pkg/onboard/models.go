@@ -29,7 +29,7 @@ type Source struct {
 	HealthState         source.HealthStatus `gorm:"not null;default:'unhealthy'"`
 	HealthReason        *string
 
-	//Connector Connector `gorm:"foreignKey:Type;references:Code"`
+	//Connector Connector `gorm:"foreignKey:Type;references:Name;constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
 	Credential Credential `gorm:"foreignKey:CredentialID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:SET NULL" json:"-"`
 
 	CreationMethod source.SourceCreationMethod `gorm:"not null;default:'manual'"`
@@ -211,13 +211,16 @@ func NewSPN(in api.CreateSPNRequest) SPN {
 }
 
 type Connector struct {
-	Code             source.Type `gorm:"primaryKey"`
-	Name             string
-	Description      string
-	Direction        source.ConnectorDirectionType `gorm:"default:'ingress'"`
-	Status           source.ConnectorStatus        `gorm:"default:'disabled'"`
-	Category         string
-	StartSupportDate time.Time
+	Name                source.Type `gorm:"primaryKey"`
+	Label               string
+	ShortDescription    string
+	Description         string
+	Direction           source.ConnectorDirectionType `gorm:"default:'ingress'"`
+	Status              source.ConnectorStatus        `gorm:"default:'enabled'"`
+	LogoURI             string                        `gorm:"default:''"`
+	AutoOnboardSupport  bool                          `gorm:"default:false"`
+	AllowNewConnections bool                          `gorm:"default:true"`
+	MaxConnectionLimit  int                           `gorm:"default:25"`
 
 	CreatedAt time.Time
 	UpdatedAt time.Time
