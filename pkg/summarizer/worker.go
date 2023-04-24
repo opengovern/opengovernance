@@ -173,15 +173,7 @@ func (w *Worker) Run() error {
 		return err
 	}
 
-	if resourceJob.JobType == "" || resourceJob.JobType == JobType_ResourceSummarizer {
-		w.logger.Info("Processing job", zap.Int("jobID", int(resourceJob.JobID)))
-		result := resourceJob.DoSummarizer(w.es, w.db, w.kfkProducer, w.kfkTopic, w.logger)
-		w.logger.Info("Publishing job result", zap.Int("jobID", int(resourceJob.JobID)), zap.String("status", string(result.Status)))
-		err = w.jobResultQueue.Publish(result)
-		if err != nil {
-			w.logger.Error("Failed to send results to queue: %s", zap.Error(err))
-		}
-	} else if resourceJob.JobType == JobType_ResourceMustSummarizer {
+	if resourceJob.JobType == "" || resourceJob.JobType == JobType_ResourceSummarizer || resourceJob.JobType == JobType_ResourceMustSummarizer {
 		w.logger.Info("Processing job", zap.Int("jobID", int(resourceJob.JobID)))
 		result := resourceJob.DoMustSummarizer(w.es, w.db, w.kfkProducer, w.kfkTopic, w.logger)
 		w.logger.Info("Publishing job result", zap.Int("jobID", int(resourceJob.JobID)), zap.String("status", string(result.Status)))
