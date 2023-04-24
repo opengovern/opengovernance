@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/source"
+	"gitlab.com/keibiengine/keibi-engine/pkg/utils"
 
 	summarizer "gitlab.com/keibiengine/keibi-engine/pkg/summarizer/es"
 
@@ -75,6 +76,7 @@ func BuildFilterQuery(
 	}
 
 	if !api.FilterIsEmpty(filters.ResourceType) {
+		filters.ResourceType = utils.ToLowerStringSlice(filters.ResourceType)
 		terms["resource_type"] = filters.ResourceType
 	}
 
@@ -106,7 +108,7 @@ func BuildFilterQuery(
 		"AWS::EC2::Region",
 		"AWS::EC2::RegionalSettings",
 	}
-	notTerms["resource_type"] = ignoreResourceTypes
+	notTerms["resource_type"] = utils.ToLowerStringSlice(ignoreResourceTypes)
 
 	root := map[string]interface{}{}
 	root["size"] = 0
@@ -765,6 +767,7 @@ func FetchConnectionResourceTypeTrendSummaryPage(client keibi.Client, sourceIDs 
 		"terms": map[string][]string{"report_type": {string(summarizer.ResourceTypeTrendConnectionSummary)}},
 	})
 
+	resourceTypes = utils.ToLowerStringSlice(resourceTypes)
 	filters = append(filters, map[string]interface{}{
 		"terms": map[string][]string{"resource_type": resourceTypes},
 	})
@@ -913,6 +916,7 @@ func FetchProviderResourceTypeTrendSummaryPage(client keibi.Client, provider sou
 		"terms": map[string][]string{"report_type": {string(summarizer.ResourceTypeTrendProviderSummary)}},
 	})
 
+	resourceTypes = utils.ToLowerStringSlice(resourceTypes)
 	filters = append(filters, map[string]interface{}{
 		"terms": map[string][]string{"resource_type": resourceTypes},
 	})
@@ -979,7 +983,7 @@ type ProviderResourceTypeSummaryQueryHit struct {
 	Sort    []interface{}                          `json:"sort"`
 }
 
-func FetchProviderResourceTypeSummaryPage(client keibi.Client, provider source.Type, resourceType []string,
+func FetchProviderResourceTypeSummaryPage(client keibi.Client, provider source.Type, resourceTypes []string,
 	sort []map[string]interface{}, size int) ([]summarizer.ProviderResourceTypeSummary, error) {
 	var hits []summarizer.ProviderResourceTypeSummary
 	res := make(map[string]interface{})
@@ -995,9 +999,10 @@ func FetchProviderResourceTypeSummaryPage(client keibi.Client, provider source.T
 		})
 	}
 
-	if resourceType != nil {
+	if resourceTypes != nil {
+		resourceTypes = utils.ToLowerStringSlice(resourceTypes)
 		filters = append(filters, map[string]interface{}{
-			"terms": map[string][]string{"resource_type": resourceType},
+			"terms": map[string][]string{"resource_type": resourceTypes},
 		})
 	}
 
@@ -1049,7 +1054,7 @@ type ConnectionResourceTypeSummaryQueryHit struct {
 	Sort    []interface{}                            `json:"sort"`
 }
 
-func FetchConnectionResourceTypeSummaryPage(client keibi.Client, sourceIDs []string, resourceType []string,
+func FetchConnectionResourceTypeSummaryPage(client keibi.Client, sourceIDs []string, resourceTypes []string,
 	sort []map[string]interface{}, size int) ([]summarizer.ConnectionResourceTypeSummary, error) {
 	var hits []summarizer.ConnectionResourceTypeSummary
 	res := make(map[string]interface{})
@@ -1065,9 +1070,10 @@ func FetchConnectionResourceTypeSummaryPage(client keibi.Client, sourceIDs []str
 		})
 	}
 
-	if resourceType != nil {
+	if resourceTypes != nil {
+		resourceTypes = utils.ToLowerStringSlice(resourceTypes)
 		filters = append(filters, map[string]interface{}{
-			"terms": map[string][]string{"resource_type": resourceType},
+			"terms": map[string][]string{"resource_type": resourceTypes},
 		})
 	}
 
@@ -1235,6 +1241,7 @@ func FetchResourceTypeCountAtTime(client keibi.Client, provider source.Type, sou
 		"terms": map[string][]string{"report_type": {string(summarizer.ResourceTypeTrendConnectionSummary)}},
 	})
 
+	resourceTypes = utils.ToLowerStringSlice(resourceTypes)
 	filters = append(filters, map[string]interface{}{
 		"terms": map[string][]string{"resource_type": resourceTypes},
 	})

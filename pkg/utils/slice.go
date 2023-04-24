@@ -1,5 +1,7 @@
 package utils
 
+import "strings"
+
 func Includes[T string](arr []T, item T) bool {
 	for _, i := range arr {
 		if i == item {
@@ -16,4 +18,12 @@ func IncludesAll[T string](arr []T, items []T) bool {
 		}
 	}
 	return true
+}
+
+func ToLowerStringSlice(arr []string) []string {
+	res := make([]string, 0, len(arr))
+	for _, item := range arr {
+		res = append(res, strings.ToLower(item))
+	}
+	return res
 }

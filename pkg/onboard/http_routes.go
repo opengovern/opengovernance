@@ -196,15 +196,15 @@ func (h HttpHandler) GetConnectors(ctx echo.Context) error {
 		if len(category) != 0 && c.Category != category {
 			continue
 		}
-		count, err := h.db.CountSourcesOfType(c.Code)
+		count, err := h.db.CountSourcesOfType(c.Name)
 		if err != nil {
 			return err
 		}
 
 		res = append(res, api.ConnectorCount{
 			Connector: api.Connector{
-				Code:             c.Code,
-				Name:             c.Name,
+				Code:             c.Name,
+				Name:             c.Label,
 				Description:      c.Description,
 				Direction:        c.Direction,
 				Status:           c.Status,
