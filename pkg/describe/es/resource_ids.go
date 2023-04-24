@@ -31,7 +31,9 @@ func GetResourceIDsForAccountResourceTypeFromES(client keibi.Client, sourceID, r
 	}
 
 	root := map[string]interface{}{}
-	root["search_after"] = searchAfter
+	if searchAfter != nil {
+		root["search_after"] = searchAfter
+	}
 	root["from"] = from
 
 	root["sort"] = []map[string]interface{}{
