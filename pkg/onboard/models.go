@@ -217,10 +217,11 @@ type Connector struct {
 	Description         string
 	Direction           source.ConnectorDirectionType `gorm:"default:'ingress'"`
 	Status              source.ConnectorStatus        `gorm:"default:'enabled'"`
-	LogoURI             string                        `gorm:"default:''"`
+	Logo                string                        `gorm:"default:''"`
 	AutoOnboardSupport  bool                          `gorm:"default:false"`
 	AllowNewConnections bool                          `gorm:"default:true"`
 	MaxConnectionLimit  int                           `gorm:"default:25"`
+	Attributes          datatypes.JSON
 
 	CreatedAt time.Time
 	UpdatedAt time.Time
