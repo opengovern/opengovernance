@@ -43,7 +43,7 @@ func (h HttpHandler) Register(r *echo.Echo) {
 	v1.GET("/catalog/metrics", httpserver.AuthorizeHandler(h.CatalogMetrics, api3.ViewerRole))
 
 	connector := v1.Group("/connector")
-	connector.GET("/", httpserver.AuthorizeHandler(h.ListConnectors, api3.ViewerRole))
+	connector.GET("", httpserver.AuthorizeHandler(h.ListConnectors, api3.ViewerRole))
 	connector.GET("/:connectorId", httpserver.AuthorizeHandler(h.GetConnector, api3.ViewerRole))
 
 	sourceApiGroup := v1.Group("/source")
