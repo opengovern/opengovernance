@@ -1,7 +1,6 @@
 package cli
 
 import (
-	"gitlab.com/keibiengine/keibi-engine/pkg/auth/api"
 	"time"
 )
 
@@ -32,28 +31,28 @@ type RequestAccessToken struct {
 	ClientId   string `json:"client_id"`
 }
 type Config struct {
-	AccessToken string `json:"access_token"`
+	AccessToken string `json:"accessToken"`
 }
 type ResponseAbout struct {
 	Sub           string `json:"sub"`
 	Email         string `json:"email"`
-	EmailVerified bool   `json:"email_verified"`
+	EmailVerified bool   `json:"emailVerified"`
 }
 type RequestGetIamUsers struct {
-	Email         string
-	EmailVerified bool
-	Role          api.Role
+	Email         string `json:"email"`
+	EmailVerified bool   `json:"emailVerified"`
+	Role          string `json:"role"`
 }
 type ResponseGetIamUsers struct {
-	Blocked       bool
-	createAt      string
-	Email         string
-	EmailVerified bool
-	LastActivity  string
-	Role          string
-	Status        string
-	UserId        string
-	UserName      string
+	Blocked       bool   `json:"blocked"`
+	CreateAt      string `json:"createAt"`
+	Email         string `json:"email"`
+	EmailVerified bool   `json:"emailVerified"`
+	LastActivity  string `json:"lastActivity"`
+	Role          string `json:"role"`
+	Status        string `json:"status"`
+	UserId        string `json:"userId"`
+	UserName      string `json:"userName"`
 }
 
 type ResponseListRoles struct {
@@ -79,16 +78,16 @@ type GetUserResponse struct {
 	Blocked       bool      `json:"blocked"`       // Is the user blocked or not
 }
 type RequestCreateUser struct {
-	Email string
-	Role  string
+	Email string `json:"email"`
+	Role  string `json:"role"`
 }
 type RequestCreateKey struct {
 	Name string `json:"name"`
 	Role string `json:"role"`
 }
 type RequestUpdateUser struct {
-	Role   string
-	UserId string
+	Role   string `json:"role"`
+	UserId string `json:"userId"`
 }
 type ResponseUserDetails struct {
 	UserID        string `json:"userId"`        // Unique identifier for the user
