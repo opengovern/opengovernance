@@ -190,7 +190,7 @@ type Connector struct {
 	AutoOnboardSupport  bool                          `gorm:"default:false"`
 	AllowNewConnections bool                          `gorm:"default:true"`
 	MaxConnectionLimit  int                           `gorm:"default:25"`
-	Tags                datatypes.JSON
+	Tags                datatypes.JSON                `gorm:"default:'{}'"`
 
 	CreatedAt time.Time
 	UpdatedAt time.Time
