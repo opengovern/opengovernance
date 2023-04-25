@@ -14,7 +14,6 @@ import (
 
 	"github.com/labstack/echo/v4"
 	api3 "gitlab.com/keibiengine/keibi-engine/pkg/auth/api"
-	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpclient"
 	"gitlab.com/keibiengine/keibi-engine/pkg/source"
 	"gitlab.com/keibiengine/keibi-engine/pkg/utils"
 
@@ -2013,9 +2012,6 @@ func (h HttpHandler) CatalogMetrics(ctx echo.Context) error {
 			metrics.HealthyConnections++
 		}
 	}
-
-	resourceCount, err := h.inventoryClient.CountResources(httpclient.FromEchoContext(ctx))
-	metrics.ResourcesDiscovered = resourceCount
 
 	return ctx.JSON(http.StatusOK, metrics)
 }
