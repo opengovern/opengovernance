@@ -17,7 +17,6 @@ import (
 	"github.com/ProtonMail/gopenpgp/v2/helper"
 	"gitlab.com/keibiengine/keibi-engine/pkg/aws"
 	"gitlab.com/keibiengine/keibi-engine/pkg/azure"
-	"gitlab.com/keibiengine/keibi-engine/pkg/describe/api"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/producer"
 	"gitlab.com/keibiengine/keibi-engine/pkg/keibi-es-sdk"
 	"go.opentelemetry.io/otel/attribute"
@@ -569,12 +568,7 @@ func (w *CloudNativeConnectionWorker) Run(ctx context.Context, sendTimeout bool)
 		if err != nil {
 			w.logger.Error("Failed to upload blob", zap.Error(err))
 			if i == retryCount-1 {
-				for k, v := range jobResult.Result {
-					v.Error = fmt.Sprintf("%s\nFailed to upload blob: %s", v.Error, err.Error())
-					v.Status = api.DescribeResourceJobFailed
-					jobResult.Result[k] = v
-				}
-				break
+				return err
 			}
 			time.Sleep(time.Duration(rand.Intn(15)+1) * time.Second)
 		} else {
