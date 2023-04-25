@@ -3,6 +3,7 @@ package describe
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -144,7 +145,18 @@ func (s *Scheduler) consumeDescribeConnectionJobResults(result DescribeConnectio
 				res.Status = api.DescribeResourceJobFailed
 				res.Error = fmt.Sprintf("Retries exhuasted - original error: %s", res.Error)
 			} else {
-				err := s.describeJobQueue.Publish(res.DescribeJob)
+				connection, err := s.db.GetSourceByID(res.DescribeJob.SourceID)
+				if err != nil {
+					return true, err
+				}
+				if connection == nil {
+					return false, errors.New("connection not found")
+				}
+				job, err := s.db.GetLastDescribeSourceJob(connection.ID)
+				if err != nil {
+					return true, err
+				}
+				err = s.createCloudNativeDescribeSource(connection, job)
 				if err != nil {
 					return true, err
 				}

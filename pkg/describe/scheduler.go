@@ -121,8 +121,6 @@ type Scheduler struct {
 	db         Database
 	httpServer *HttpServer
 
-	// describeJobQueue is used to publish describe jobs to be performed by the workers.
-	describeJobQueue queue.Interface
 	// describeJobResultQueue is used to consume the describe job results returned by the workers.
 	describeJobResultQueue queue.Interface
 	// describeCleanupJobQueue is used to publish describe cleanup jobs to be performed by the workers.
@@ -582,7 +580,6 @@ func (s *Scheduler) RunScheduleJobCompletionUpdater() {
 			UserRole: api2.ViewerRole,
 		}, sourceIDs)
 		if err != nil {
-			DescribeSourceJobsCount.WithLabelValues("failure").Inc()
 			s.logger.Error("Failed to get onboard sources",
 				zap.Strings("sourceIDs", sourceIDs),
 				zap.Error(err),
@@ -993,7 +990,6 @@ func (s *Scheduler) RunComplianceReportJobResultsConsumer() error {
 
 func (s *Scheduler) Stop() {
 	queues := []queue.Interface{
-		s.describeJobQueue,
 		s.describeJobResultQueue,
 		s.describeConnectionJobResultQueue,
 		s.describeCleanupJobQueue,

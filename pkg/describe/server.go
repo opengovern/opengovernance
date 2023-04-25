@@ -479,7 +479,6 @@ func (h HttpServer) TriggerDescribeJob(ctx echo.Context) error {
 	err = h.DB.AddScheduleJob(&job)
 	if err != nil {
 		errMsg := fmt.Sprintf("error adding schedule job: %v", err)
-		DescribeJobsCount.WithLabelValues("failure").Inc()
 		return ctx.JSON(http.StatusInternalServerError, api.ErrorResponse{Message: errMsg})
 	}
 	return ctx.JSON(http.StatusOK, "")
