@@ -32,16 +32,16 @@ func GetRole(s string) Role {
 
 type PutRoleBindingRequest struct {
 	UserID   string `json:"userId" validate:"required" example:"sampleID"`                            // Unique identifier for the User
-	RoleName Role   `json:"roleName" validate:"required" example:"admin" enums:"admin,editor,viewer"` // Name of the role
+	RoleName Role   `json:"roleName" validate:"required" enums:"admin,editor,viewer" example:"admin"` // Name of the role
 }
 type RolesListResponse struct {
-	RoleName    Role   `json:"roleName" example:"admin" enums:"admin,editor,viewer"`                                                                                                                                                                                                      // Name of the role
+	RoleName    Role   `json:"roleName" enums:"admin,editor,viewer" example:"admin"`                                                                                                                                                                                                      // Name of the role
 	Description string `json:"description" example:"The Administrator role is a super user role with all of the capabilities that can be assigned to a role, and its enables access to all data & configuration on a Kaytu Workspace. You cannot edit or delete the Administrator role."` // Role Description and accesses
 	UserCount   int    `json:"userCount" example:"1"`                                                                                                                                                                                                                                     // Number of usershaving this role
 }
 
 type RoleDetailsResponse struct {
-	RoleName    Role               `json:"role" example:"admin" enums:"admin,editor,viewer"`                                                                                                                                                                                                          // Name of the role
+	RoleName    Role               `json:"role" enums:"admin,editor,viewer" example:"admin"`                                                                                                                                                                                                          // Name of the role
 	Description string             `json:"description" example:"The Administrator role is a super user role with all of the capabilities that can be assigned to a role, and its enables access to all data & configuration on a Kaytu Workspace. You cannot edit or delete the Administrator role."` // Role Description and accesses
 	UserCount   int                `json:"userCount" example:"1"`                                                                                                                                                                                                                                     // Number of users having this role
 	Users       []GetUsersResponse `json:"users"`                                                                                                                                                                                                                                                     // List of users having this role
@@ -55,8 +55,8 @@ type UserRoleBinding struct {
 type GetRoleBindingResponse UserRoleBinding
 
 type GetRoleBindingsResponse struct {
-	RoleBindings []UserRoleBinding `json:"roleBindings"` // List of user roles in each workspace
-	GlobalRoles  *Role             `json:"globalRoles"`  // Global Access
+	RoleBindings []UserRoleBinding `json:"roleBindings"`                                            // List of user roles in each workspace
+	GlobalRoles  *Role             `json:"globalRoles" enums:"admin,editor,viewer" example:"admin"` // Global Access
 }
 
 type Membership struct {

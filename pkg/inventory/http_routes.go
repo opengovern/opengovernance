@@ -145,6 +145,7 @@ func bindValidate(ctx echo.Context, i interface{}) error {
 //	@Summary		Returns trend of resource count growth for specific account
 //	@Description	Returns trend of resource count in the specified time window
 //	@Description	In case of not specifying SourceID, Provider is used for filtering
+//	@Security		BearerToken
 //	@Tags			benchmarks
 //	@Accept			json
 //	@Produce		json
@@ -211,6 +212,7 @@ func (h *HttpHandler) GetResourceGrowthTrend(ctx echo.Context) error {
 // GetResourceGrowthTrendV2 godoc
 //
 //	@Summary	Returns trend of resource growth for specific account
+//	@Security	BearerToken
 //	@Tags		benchmarks
 //	@Accept		json
 //	@Produce	json
@@ -411,6 +413,7 @@ func (h *HttpHandler) GetResourceGrowthTrendV2(ctx echo.Context) error {
 // GetCostGrowthTrendV2 godoc
 //
 //	@Summary	Returns trend of resource growth for specific account
+//	@Security	BearerToken
 //	@Tags		benchmarks
 //	@Accept		json
 //	@Produce	json
@@ -584,6 +587,7 @@ func (h *HttpHandler) GetCostGrowthTrendV2(ctx echo.Context) error {
 // GetTopAccountsByCost godoc
 //
 //	@Summary	Returns top n accounts of specified provider by cost
+//	@Security	BearerToken
 //	@Tags		cost
 //	@Accept		json
 //	@Produce	json
@@ -662,6 +666,7 @@ func (h *HttpHandler) GetTopAccountsByCost(ctx echo.Context) error {
 // GetTopServicesByCost godoc
 //
 //	@Summary	Returns top n services of specified provider by cost
+//	@Security	BearerToken
 //	@Tags		cost
 //	@Accept		json
 //	@Produce	json
@@ -741,6 +746,7 @@ func (h *HttpHandler) GetTopServicesByCost(ctx echo.Context) error {
 // GetTopAccountsByResourceCount godoc
 //
 //	@Summary	Returns top n accounts of specified provider by resource count
+//	@Security	BearerToken
 //	@Tags		benchmarks
 //	@Accept		json
 //	@Produce	json
@@ -797,6 +803,7 @@ func (h *HttpHandler) GetTopAccountsByResourceCount(ctx echo.Context) error {
 // GetTopFastestGrowingAccountsByResourceCount godoc
 //
 //	@Summary	Returns top n fastest growing accounts of specified provider in the specified time window by resource count
+//	@Security	BearerToken
 //	@Tags		benchmarks
 //	@Accept		json
 //	@Produce	json
@@ -894,6 +901,7 @@ func (h *HttpHandler) GetTopFastestGrowingAccountsByResourceCount(ctx echo.Conte
 // GetTopRegionsByResourceCount godoc
 //
 //	@Summary	Returns top n regions of specified provider by resource count
+//	@Security	BearerToken
 //	@Tags		inventory
 //	@Accept		json
 //	@Produce	json
@@ -945,6 +953,7 @@ func (h *HttpHandler) GetTopRegionsByResourceCount(ctx echo.Context) error {
 // GetRegionsByResourceCount godoc
 //
 //	@Summary	Returns top n regions of specified provider by resource count
+//	@Security	BearerToken
 //	@Tags		inventory
 //	@Accept		json
 //	@Produce	json
@@ -1024,6 +1033,7 @@ func (h *HttpHandler) GetRegionsByResourceCount(ctx echo.Context) error {
 // GetTopServicesByResourceCount godoc
 //
 //	@Summary	Returns top n services of specified provider by resource count
+//	@Security	BearerToken
 //	@Tags		benchmarks
 //	@Accept		json
 //	@Produce	json
@@ -1073,6 +1083,7 @@ func (h *HttpHandler) GetTopServicesByResourceCount(ctx echo.Context) error {
 // GetCategoriesV2 godoc
 //
 //	@Summary	Return list of the subcategories of the specified category
+//	@Security	BearerToken
 //	@Tags		inventory
 //	@Accept		json
 //	@Produce	json
@@ -1242,6 +1253,7 @@ func (h *HttpHandler) GetMetricsResourceCountHelper(ctx context.Context, categor
 // GetCategoryNodeResourceCount godoc
 //
 //	@Summary	Return category info by provided category id, info includes category name, subcategories names and ids and number of resources
+//	@Security	BearerToken
 //	@Tags		inventory
 //	@Accept		json
 //	@Produce	json
@@ -1314,6 +1326,7 @@ func (h *HttpHandler) GetCategoryNodeResourceCount(ctx echo.Context) error {
 //
 //	@Summary		Get list of Resource Types
 //	@Description	Gets the total number of resource types and the API filters and list of resource types with some details. Including filter, connection, service name and resource count.
+//	@Security		BearerToken
 //	@Tags			inventory
 //	@Accept			json
 //	@Produce		json
@@ -1425,6 +1438,7 @@ func (h *HttpHandler) ListResourceTypes(ctx echo.Context) error {
 //
 //	@Summary		Get Resource Type Details
 //	@Description	Gets the details of the resource type for the specified resource name. Including filter, connection, service name and resource count.
+//	@Security		BearerToken
 //	@Tags			inventory
 //	@Accept			json
 //	@Produce		json
@@ -1543,6 +1557,7 @@ func (h *HttpHandler) GetMetricsResourceCount(ctx echo.Context) error {
 // GetCategoryNodeResourceCountComposition godoc
 //
 //	@Summary	Return category info by provided category id, info includes category name, subcategories names and ids and number of resources
+//	@Security	BearerToken
 //	@Tags		inventory
 //	@Accept		json
 //	@Produce	json
@@ -1606,6 +1621,7 @@ func (h *HttpHandler) GetCategoryNodeResourceCountComposition(ctx echo.Context) 
 // GetMetricsResourceCountComposition godoc
 //
 //	@Summary	Return category info by provided category id, info includes category name, subcategories names and ids and number of resources
+//	@Security	BearerToken
 //	@Tags		inventory
 //	@Accept		json
 //	@Produce	json
@@ -1794,6 +1810,7 @@ func (h *HttpHandler) GetMetricsCostHelper(ctx context.Context, category string,
 // GetCategoryNodeCost godoc
 //
 //	@Summary	Return category cost info by provided category id, info includes category name, subcategories names and ids and their accumulated cost
+//	@Security	BearerToken
 //	@Tags		inventory
 //	@Accept		json
 //	@Produce	json
@@ -1875,6 +1892,7 @@ func (h *HttpHandler) GetCategoryNodeCost(ctx echo.Context) error {
 // GetMetricsCost godoc
 //
 //	@Summary	Return category cost info by provided category id, info includes category name, subcategories names and ids and their accumulated cost
+//	@Security	BearerToken
 //	@Tags		inventory
 //	@Accept		json
 //	@Produce	json
@@ -1947,6 +1965,7 @@ func (h *HttpHandler) GetMetricsCost(ctx echo.Context) error {
 // GetCategoryNodeCostComposition godoc
 //
 //	@Summary	Return category info by provided category id, info includes category name, subcategories names and ids and number of resources
+//	@Security	BearerToken
 //	@Tags		inventory
 //	@Accept		json
 //	@Produce	json
@@ -2044,6 +2063,7 @@ func (h *HttpHandler) GetCategoryNodeCostComposition(ctx echo.Context) error {
 // GetMetricsCostComposition godoc
 //
 //	@Summary	Return category info by provided category id, info includes category name, subcategories names and ids and number of resources
+//	@Security	BearerToken
 //	@Tags		inventory
 //	@Accept		json
 //	@Produce	json
@@ -2158,6 +2178,7 @@ func (h *HttpHandler) GetMetricsCostComposition(ctx echo.Context) error {
 // GetRootTemplates godoc
 //
 //	@Summary	Return root templates' info, info includes template name, template id, subcategories names and ids and number of resources
+//	@Security	BearerToken
 //	@Tags		inventory
 //	@Accept		json
 //	@Produce	json
@@ -2174,6 +2195,7 @@ func (h *HttpHandler) GetRootTemplates(ctx echo.Context) error {
 // GetRootCloudProviders godoc
 //
 //	@Summary	Return root providers' info, info includes category name, category id, subcategories names and ids and number of resources
+//	@Security	BearerToken
 //	@Tags		inventory
 //	@Accept		json
 //	@Produce	json
@@ -2230,6 +2252,7 @@ func GetCategoryRoots(ctx echo.Context, h *HttpHandler, rootType CategoryRootTyp
 // ListCategories godoc
 //
 //	@Summary	Return list of categories
+//	@Security	BearerToken
 //	@Tags		inventory
 //	@Accept		json
 //	@Produce	json
@@ -2242,6 +2265,7 @@ func (h *HttpHandler) ListCategories(ctx echo.Context) error {
 // ListCategoriesV2 godoc
 //
 //	@Summary	Return list of categories
+//	@Security	BearerToken
 //	@Tags		inventory
 //	@Accept		json
 //	@Produce	json
@@ -2279,6 +2303,7 @@ func (h *HttpHandler) ListCategoriesV2(ctx echo.Context) error {
 // GetAccountsResourceCount godoc
 //
 //	@Summary	Returns resource count of accounts
+//	@Security	BearerToken
 //	@Tags		benchmarks
 //	@Accept		json
 //	@Produce	json
@@ -2336,6 +2361,7 @@ func (h *HttpHandler) GetAccountsResourceCount(ctx echo.Context) error {
 // GetAccountSummary godoc
 //
 //	@Summary	Returns resource count of accounts
+//	@Security	BearerToken
 //	@Tags		benchmarks
 //	@Accept		json
 //	@Produce	json
@@ -2545,6 +2571,7 @@ func (h *HttpHandler) GetAccountSummary(ctx echo.Context) error {
 // GetResourceDistribution godoc
 //
 //	@Summary	Returns distribution of resource for specific account
+//	@Security	BearerToken
 //	@Tags		benchmarks
 //	@Accept		json
 //	@Produce	json
@@ -2578,6 +2605,7 @@ func (h *HttpHandler) GetResourceDistribution(ctx echo.Context) error {
 // GetServiceDistribution godoc
 //
 //	@Summary	Returns distribution of services for specific account
+//	@Security	BearerToken
 //	@Tags		benchmarks
 //	@Accept		json
 //	@Produce	json
@@ -2610,6 +2638,7 @@ func (h *HttpHandler) GetServiceDistribution(ctx echo.Context) error {
 //
 //	@Summary		Get Cloud Services Summary
 //	@Description	Gets a summary of the services including the number of them and the API filters and a list of services with more details. Including connector, the resource counts and the cost.
+//	@Security		BearerToken
 //	@Tags			benchmarks
 //	@Accept			json
 //	@Produce		json
@@ -2888,6 +2917,7 @@ func (h *HttpHandler) ListServiceSummaries(ctx echo.Context) error {
 //
 //	@Summary		Get Cloud Service Summary
 //	@Description	Get Cloud Service Summary for the specified service name. Including connector, the resource counts and the cost.
+//	@Security		BearerToken
 //	@Tags			benchmarks
 //	@Accepts		json
 //	@Produce		json
@@ -2898,8 +2928,8 @@ func (h *HttpHandler) ListServiceSummaries(ctx echo.Context) error {
 //	@Param			endTime		query	string		true	"end time for cost calculation and time resource count in epoch seconds"
 //	@Param			serviceName	path	string		true	"service name"
 
-// @Success	200	{object}	api.ListServiceSummariesResponse
-// @Router		/inventory/api/v2/services/summary/{serviceName} [get]
+//	@Success	200	{object}	api.ListServiceSummariesResponse
+//	@Router		/inventory/api/v2/services/summary/{serviceName} [get]
 func (h *HttpHandler) GetServiceSummary(ctx echo.Context) error {
 	serviceName := ctx.Param("serviceName")
 	if serviceName == "" {
@@ -3020,6 +3050,7 @@ func (h *HttpHandler) GetServiceSummary(ctx echo.Context) error {
 //
 //	@Summary		Get details of a Resource
 //	@Description	Getting resource details by id and resource type
+//	@Security		BearerToken
 //	@Tags			resource
 //	@Accepts		json
 //	@Produce		json
@@ -3152,6 +3183,7 @@ func (h *HttpHandler) GetResource(ctx echo.Context) error {
 //
 //	@Summary		List smart queries
 //	@Description	Listing smart queries by specified filters
+//	@Security		BearerToken
 //	@Tags			smart_query
 //	@Produce		json
 //	@Param			request	body		api.ListQueryRequest	true	"Request Body"
@@ -3201,6 +3233,7 @@ func (h *HttpHandler) ListQueries(ctx echo.Context) error {
 //
 //	@Summary		Count smart queries
 //	@Description	Counting smart queries
+//	@Security		BearerToken
 //	@Tags			smart_query
 //	@Produce		json
 //	@Param			request	body		api.ListQueryRequest	true	"Request Body"
@@ -3230,6 +3263,7 @@ func (h *HttpHandler) CountQueries(ctx echo.Context) error {
 //	@Description	Run a specific smart query.
 //	@Description	In order to get the results in CSV format, Accepts header must be filled with `text/csv` value.
 //	@Description	Note that csv output doesn't process pagination and returns first 5000 records.
+//	@Security		BearerToken
 //	@Tags			smart_query
 //	@Accepts		json
 //	@Produce		json,text/csv
@@ -3309,6 +3343,7 @@ func (h *HttpHandler) RunQuery(ctx echo.Context) error {
 //
 //	@Summary		Get locations
 //	@Description	Getting locations by provider
+//	@Security		BearerToken
 //	@Tags			location
 //	@Produce		json
 //	@Param			provider	path		string	true	"Provider"	Enums(aws,azure,all)
@@ -3377,6 +3412,7 @@ func (h *HttpHandler) GetLocations(ctx echo.Context) error {
 //	@Description	In order to get the results in CSV format, Accepts header must be filled with `text/csv` value.
 //	@Description	Note that csv output doesn't process pagination and returns first 5000 records.
 //	@Description	If sort by is empty, result will be sorted by the first column in ascending order.
+//	@Security		BearerToken
 //	@Tags			inventory
 //	@Accept			json
 //	@Produce		json,text/csv
@@ -3413,6 +3449,7 @@ func (h *HttpHandler) GetAzureResources(ctx echo.Context) error {
 //	@Description	In order to get the results in CSV format, Accepts header must be filled with `text/csv` value.
 //	@Description	Note that csv output doesn't process pagination and returns first 5000 records.
 //	@Description	If sort by is empty, result will be sorted by the first column in ascending order.
+//	@Security		BearerToken
 //	@Tags			inventory
 //	@Accept			json
 //	@Produce		json,text/csv
@@ -3449,6 +3486,7 @@ func (h *HttpHandler) GetAWSResources(ctx echo.Context) error {
 //	@Description	In order to get the results in CSV format, Accepts header must be filled with `text/csv` value.
 //	@Description	Note that csv output doesn't process pagination and returns first 5000 records.
 //	@Description	If sort by is empty, result will be sorted by the first column in ascending order.
+//	@Security		BearerToken
 //	@Tags			inventory
 //	@Accept			json
 //	@Produce		json,text/csv
@@ -3481,6 +3519,7 @@ func (h *HttpHandler) GetAllResources(ctx echo.Context) error {
 //
 //	@Summary		Count resources
 //	@Description	Number of all resources
+//	@Security		BearerToken
 //	@Tags			inventory
 //	@Accept			json
 //	@Produce		json,text/csv
@@ -3509,6 +3548,7 @@ func (h *HttpHandler) CountResources(ctx echo.Context) error {
 // GetConnectionSummary godoc
 //
 //	@Summary	Get connection summary
+//	@Security	BearerToken
 //	@Tags		inventory
 //	@Accept		json
 //	@Produce	json,text/csv
@@ -3560,6 +3600,7 @@ func (h *HttpHandler) GetConnectionSummary(ctx echo.Context) error {
 // GetProviderSummary godoc
 //
 //	@Summary	Get provider summary
+//	@Security	BearerToken
 //	@Tags		inventory
 //	@Accept		json
 //	@Produce	json,text/csv
@@ -3612,6 +3653,7 @@ func (h *HttpHandler) GetProviderSummary(ctx echo.Context) error {
 //
 //	@Summary		Get resource filters
 //	@Description	Getting resource filters by filters.
+//	@Security		BearerToken
 //	@Tags			inventory
 //	@Accept			json
 //	@Produce		json,text/csv
@@ -3933,8 +3975,9 @@ func (h *HttpHandler) GetResources(ctx echo.Context, provider *api.SourceType, c
 
 // ListInsights godoc
 //
-//	@Summary		List all insights
+//	@Summary		List insights
 //	@Description	List all insights
+//	@Security		BearerToken
 //	@Tags			insight
 //	@Produce		json
 //	@Param			connector	query		source.Type	false	"filter insights by connector"
@@ -4099,8 +4142,9 @@ func (h *HttpHandler) ListInsights(ctx echo.Context) error {
 
 // GetInsight godoc
 //
-//	@Summary		Get an insight by id
+//	@Summary		Get insight
 //	@Description	Get an insight by id
+//	@Security		BearerToken
 //	@Tags			insight
 //	@Produce		json
 //	@Param			sourceId	query		[]string	false	"filter the result by source id"
@@ -4234,8 +4278,9 @@ func (h *HttpHandler) GetInsight(ctx echo.Context) error {
 
 // GetInsightPeerGroup godoc
 //
-//	@Summary		Get an insight by id
-//	@Description	Get an insight by id
+//	@Summary		Get insight peer
+//	@Description	Get an insight peer by id
+//	@Security		BearerToken
 //	@Tags			insight
 //	@Produce		json
 //	@Param			sourceId	query		[]string	false	"filter the result by source id"
@@ -4409,8 +4454,9 @@ func (h *HttpHandler) GetInsightPeerGroup(ctx echo.Context) error {
 
 // GetInsightTrend godoc
 //
-//	@Summary		Get an insight by id
-//	@Description	Get an insight by id
+//	@Summary		Get insight trend
+//	@Description	Get an insight trend by id
+//	@Security		BearerToken
 //	@Tags			insight
 //	@Produce		json
 //	@Param			sourceId		query		string	false	"filter the result by source id"
@@ -4495,6 +4541,7 @@ func (h *HttpHandler) GetInsightTrend(ctx echo.Context) error {
 //
 //	@Summary		Get List of Connectors
 //	@Description	Gets a list of all connectors in workspace and their metadata including list of their resource types and services names.
+//	@Security		BearerToken
 //	@Tags			metadata
 //	@Produce		json
 //	@Success		200	{object}	[]api.ConnectorMetadata
@@ -4535,6 +4582,7 @@ func (h *HttpHandler) ListConnectorMetadata(ctx echo.Context) error {
 //
 //	@Summary		Get Connector
 //	@Description	Gets a single connector and its metadata including list of their resource types and services names by the connector name.
+//	@Security		BearerToken
 //	@Tags			metadata
 //	@Produce		json
 //	@Param			connector	path		string	true	"connector"
@@ -4582,6 +4630,7 @@ func (h *HttpHandler) GetConnectorMetadata(ctx echo.Context) error {
 //	@Summary		Get List of Cloud Services
 //	@Description	Gets a list of all workspace cloud services and their metadata inclouding parent service, list of resource types and cost support.
 //	@Description	The results could be filtered by cost support and resource type.
+//	@Security		BearerToken
 //	@Tags			metadata
 //	@Produce		json
 //	@Param			connector		query		source.Type	true	"Connector"
@@ -4656,6 +4705,7 @@ func (h *HttpHandler) ListServiceMetadata(ctx echo.Context) error {
 //
 //	@Summary		Get Cloud Service Details
 //	@Description	Gets a single cloud service details and its metadata inclouding parent service, list of resource types, cost support and costmap service names.
+//	@Security		BearerToken
 //	@Tags			metadata
 //	@Produce		json
 //	@Param			serviceName	path		string	true	"serviceName"
@@ -4706,6 +4756,7 @@ func (h *HttpHandler) GetServiceMetadata(ctx echo.Context) error {
 //	@Summary		Get List of Resource Types
 //	@Description	Gets a list of all resource types in workspace and their metadata including service name.
 //	@Description	The results could be filtered by provider name and service name.
+//	@Security		BearerToken
 //	@Tags			metadata
 //	@Produce		json
 //	@Param			connector	query		source.Type	true	"Filter by Connector"
@@ -4767,6 +4818,7 @@ func (h *HttpHandler) ListResourceTypeMetadata(ctx echo.Context) error {
 //
 //	@Summary		Get Resource Type
 //	@Description	Get a single resource type metadata and its details including service name and insights list. Specified by resource type name.
+//	@Security		BearerToken
 //	@Tags			metadata
 //	@Produce		json
 //	@Param			resourceType	path		string	true	"resourceType"

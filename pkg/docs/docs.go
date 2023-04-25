@@ -18,6 +18,11 @@ const docTemplate = `{
     "paths": {
         "/auth/api/v1/key/create": {
             "post": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
                 "description": "Creates workspace key for the defined role with the defined name.",
                 "produces": [
                     "application/json"
@@ -49,6 +54,11 @@ const docTemplate = `{
         },
         "/auth/api/v1/key/role": {
             "post": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
                 "description": "Updates the role of the specified key in workspace.",
                 "produces": [
                     "application/json"
@@ -80,6 +90,11 @@ const docTemplate = `{
         },
         "/auth/api/v1/key/{id}": {
             "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
                 "description": "Gets the details of a key in a workspace with specified ID.",
                 "produces": [
                     "application/json"
@@ -109,6 +124,11 @@ const docTemplate = `{
         },
         "/auth/api/v1/key/{id}/activate": {
             "post": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
                 "description": "Activates a key in the workspace with specified ID.",
                 "produces": [
                     "application/json"
@@ -138,6 +158,11 @@ const docTemplate = `{
         },
         "/auth/api/v1/key/{id}/delete": {
             "delete": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
                 "description": "Deletes the specified workspace key by ID.",
                 "produces": [
                     "application/json"
@@ -164,6 +189,11 @@ const docTemplate = `{
         },
         "/auth/api/v1/key/{id}/suspend": {
             "post": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
                 "description": "Suspends a key in the workspace with specified ID.",
                 "produces": [
                     "application/json"
@@ -193,6 +223,11 @@ const docTemplate = `{
         },
         "/auth/api/v1/keys": {
             "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
                 "description": "Gets a list of available keys in a workspace.",
                 "produces": [
                     "application/json"
@@ -216,6 +251,11 @@ const docTemplate = `{
         },
         "/auth/api/v1/role/{roleName}/keys": {
             "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
                 "description": "Returns a list of keys in a workspace for the specified role.",
                 "produces": [
                     "application/json"
@@ -248,6 +288,11 @@ const docTemplate = `{
         },
         "/auth/api/v1/role/{roleName}/users": {
             "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
                 "description": "Returns a list of users in a workspace with the specified role.",
                 "produces": [
                     "application/json"
@@ -280,6 +325,11 @@ const docTemplate = `{
         },
         "/auth/api/v1/roles": {
             "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
                 "description": "Gets a list of roles in a workspace and their descriptions and number of users.",
                 "produces": [
                     "application/json"
@@ -303,6 +353,11 @@ const docTemplate = `{
         },
         "/auth/api/v1/roles/{roleName}": {
             "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
                 "description": "Gets the details of the Role, including the description, number of users and list of those users.",
                 "produces": [
                     "application/json"
@@ -332,6 +387,11 @@ const docTemplate = `{
         },
         "/auth/api/v1/user/invite": {
             "post": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
                 "description": "Invites a user to a workspace with defined role.\nby sending an email to the specified email address.\nThe user will be found by the email address.",
                 "produces": [
                     "application/json"
@@ -358,6 +418,11 @@ const docTemplate = `{
                 }
             },
             "delete": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
                 "description": "Deletes user access to the specified workspace.",
                 "produces": [
                     "application/json"
@@ -384,6 +449,11 @@ const docTemplate = `{
         },
         "/auth/api/v1/user/role/binding": {
             "put": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
                 "description": "User Access defines the roles of a user.\nThere are currently three roles (admin, editor, viewer).\nUser must exist before you can update its Role.",
                 "produces": [
                     "application/json"
@@ -410,6 +480,11 @@ const docTemplate = `{
                 }
             },
             "delete": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
                 "description": "Deletes user access to the specified workspace.",
                 "produces": [
                     "application/json"
@@ -436,6 +511,11 @@ const docTemplate = `{
         },
         "/auth/api/v1/user/role/bindings": {
             "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
                 "description": "Gets the roles binded to a user.\nRoleBinding defines the roles and actions a user can perform. There are currently three roles (admin, editor, viewer).",
                 "produces": [
                     "application/json"
@@ -456,6 +536,11 @@ const docTemplate = `{
         },
         "/auth/api/v1/user/{user_id}": {
             "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
                 "description": "Get user details by user id.",
                 "produces": [
                     "application/json"
@@ -485,6 +570,11 @@ const docTemplate = `{
         },
         "/auth/api/v1/user/{user_id}/workspace/membership": {
             "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
                 "description": "Returns a list of workspaces and the user role in it for the specified user.",
                 "produces": [
                     "application/json"
@@ -514,6 +604,11 @@ const docTemplate = `{
         },
         "/auth/api/v1/users": {
             "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
                 "description": "Gets a list of users with specified filters (filters are optional).",
                 "produces": [
                     "application/json"
@@ -548,6 +643,11 @@ const docTemplate = `{
         },
         "/auth/api/v1/workspace/role/bindings": {
             "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
                 "description": "RoleBinding defines the roles and actions a user can perform. There are currently three roles (admin, editor, viewer). The workspace path is based on the DNS such as (workspace1.app.keibi.io)",
                 "produces": [
                     "application/json"
@@ -1278,6 +1378,11 @@ const docTemplate = `{
         },
         "/inventory/api/v1/accounts/resource/count": {
             "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
                 "consumes": [
                     "application/json"
                 ],
@@ -1322,6 +1427,11 @@ const docTemplate = `{
         },
         "/inventory/api/v1/categories": {
             "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
                 "consumes": [
                     "application/json"
                 ],
@@ -1347,6 +1457,11 @@ const docTemplate = `{
         },
         "/inventory/api/v1/connection/{connection_id}/summary": {
             "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
                 "consumes": [
                     "application/json"
                 ],
@@ -1370,6 +1485,11 @@ const docTemplate = `{
         },
         "/inventory/api/v1/cost/top/accounts": {
             "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
                 "consumes": [
                     "application/json"
                 ],
@@ -1411,6 +1531,11 @@ const docTemplate = `{
         },
         "/inventory/api/v1/cost/top/services": {
             "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
                 "consumes": [
                     "application/json"
                 ],
@@ -1459,6 +1584,11 @@ const docTemplate = `{
         },
         "/inventory/api/v1/locations/{provider}": {
             "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
                 "description": "Getting locations by provider",
                 "produces": [
                     "application/json"
@@ -1496,6 +1626,11 @@ const docTemplate = `{
         },
         "/inventory/api/v1/provider/{provider}/summary": {
             "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
                 "consumes": [
                     "application/json"
                 ],
@@ -1519,6 +1654,11 @@ const docTemplate = `{
         },
         "/inventory/api/v1/query": {
             "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
                 "description": "Listing smart queries by specified filters",
                 "produces": [
                     "application/json"
@@ -1553,6 +1693,11 @@ const docTemplate = `{
         },
         "/inventory/api/v1/query/count": {
             "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
                 "description": "Counting smart queries",
                 "produces": [
                     "application/json"
@@ -1584,6 +1729,11 @@ const docTemplate = `{
         },
         "/inventory/api/v1/query/{queryId}": {
             "post": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
                 "description": "Run a specific smart query.\nIn order to get the results in CSV format, Accepts header must be filled with ` + "`" + `text/csv` + "`" + ` value.\nNote that csv output doesn't process pagination and returns first 5000 records.",
                 "produces": [
                     "application/json",
@@ -1634,6 +1784,11 @@ const docTemplate = `{
         },
         "/inventory/api/v1/resource": {
             "post": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
                 "description": "Getting resource details by id and resource type",
                 "produces": [
                     "application/json"
@@ -1668,6 +1823,11 @@ const docTemplate = `{
         },
         "/inventory/api/v1/resources": {
             "post": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
                 "description": "Getting all cloud providers resources by filters.\nIn order to get the results in CSV format, Accepts header must be filled with ` + "`" + `text/csv` + "`" + ` value.\nNote that csv output doesn't process pagination and returns first 5000 records.\nIf sort by is empty, result will be sorted by the first column in ascending order.",
                 "consumes": [
                     "application/json"
@@ -1725,6 +1885,11 @@ const docTemplate = `{
         },
         "/inventory/api/v1/resources/aws": {
             "post": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
                 "description": "Getting AWS resources by filters.\nIn order to get the results in CSV format, Accepts header must be filled with ` + "`" + `text/csv` + "`" + ` value.\nNote that csv output doesn't process pagination and returns first 5000 records.\nIf sort by is empty, result will be sorted by the first column in ascending order.",
                 "consumes": [
                     "application/json"
@@ -1782,6 +1947,11 @@ const docTemplate = `{
         },
         "/inventory/api/v1/resources/azure": {
             "post": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
                 "description": "Getting Azure resources by filters.\nIn order to get the results in CSV format, Accepts header must be filled with ` + "`" + `text/csv` + "`" + ` value.\nNote that csv output doesn't process pagination and returns first 5000 records.\nIf sort by is empty, result will be sorted by the first column in ascending order.",
                 "consumes": [
                     "application/json"
@@ -1839,6 +2009,11 @@ const docTemplate = `{
         },
         "/inventory/api/v1/resources/count": {
             "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
                 "description": "Number of all resources",
                 "consumes": [
                     "application/json"
@@ -1863,6 +2038,11 @@ const docTemplate = `{
         },
         "/inventory/api/v1/resources/distribution": {
             "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
                 "consumes": [
                     "application/json"
                 ],
@@ -1927,6 +2107,11 @@ const docTemplate = `{
         },
         "/inventory/api/v1/resources/filters": {
             "post": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
                 "description": "Getting resource filters by filters.",
                 "consumes": [
                     "application/json"
@@ -1973,6 +2158,11 @@ const docTemplate = `{
         },
         "/inventory/api/v1/resources/regions": {
             "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
                 "consumes": [
                     "application/json"
                 ],
@@ -2028,6 +2218,11 @@ const docTemplate = `{
         },
         "/inventory/api/v1/resources/top/accounts": {
             "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
                 "consumes": [
                     "application/json"
                 ],
@@ -2069,6 +2264,11 @@ const docTemplate = `{
         },
         "/inventory/api/v1/resources/top/growing/accounts": {
             "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
                 "consumes": [
                     "application/json"
                 ],
@@ -2123,6 +2323,11 @@ const docTemplate = `{
         },
         "/inventory/api/v1/resources/top/regions": {
             "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
                 "consumes": [
                     "application/json"
                 ],
@@ -2173,6 +2378,11 @@ const docTemplate = `{
         },
         "/inventory/api/v1/resources/top/services": {
             "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
                 "consumes": [
                     "application/json"
                 ],
@@ -2220,6 +2430,11 @@ const docTemplate = `{
         },
         "/inventory/api/v1/resources/trend": {
             "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
                 "description": "Returns trend of resource count in the specified time window\nIn case of not specifying SourceID, Provider is used for filtering",
                 "consumes": [
                     "application/json"
@@ -2273,6 +2488,11 @@ const docTemplate = `{
         },
         "/inventory/api/v1/services/distribution": {
             "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
                 "consumes": [
                     "application/json"
                 ],
@@ -2318,6 +2538,11 @@ const docTemplate = `{
         },
         "/inventory/api/v2/accounts/summary": {
             "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
                 "consumes": [
                     "application/json"
                 ],
@@ -2413,6 +2638,11 @@ const docTemplate = `{
         },
         "/inventory/api/v2/categories": {
             "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
                 "consumes": [
                     "application/json"
                 ],
@@ -2438,6 +2668,11 @@ const docTemplate = `{
         },
         "/inventory/api/v2/cost/category": {
             "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
                 "consumes": [
                     "application/json"
                 ],
@@ -2516,6 +2751,11 @@ const docTemplate = `{
         },
         "/inventory/api/v2/cost/composition": {
             "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
                 "consumes": [
                     "application/json"
                 ],
@@ -2588,6 +2828,11 @@ const docTemplate = `{
         },
         "/inventory/api/v2/insights": {
             "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
                 "description": "List all insights",
                 "produces": [
                     "application/json"
@@ -2595,7 +2840,7 @@ const docTemplate = `{
                 "tags": [
                     "insight"
                 ],
-                "summary": "List all insights",
+                "summary": "List insights",
                 "parameters": [
                     {
                         "enum": [
@@ -2638,14 +2883,19 @@ const docTemplate = `{
         },
         "/inventory/api/v2/insights/peer/{insightPeerGroupId}": {
             "get": {
-                "description": "Get an insight by id",
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
+                "description": "Get an insight peer by id",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "insight"
                 ],
-                "summary": "Get an insight by id",
+                "summary": "Get insight peer",
                 "parameters": [
                     {
                         "type": "array",
@@ -2676,6 +2926,11 @@ const docTemplate = `{
         },
         "/inventory/api/v2/insights/{insightId}": {
             "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
                 "description": "Get an insight by id",
                 "produces": [
                     "application/json"
@@ -2683,7 +2938,7 @@ const docTemplate = `{
                 "tags": [
                     "insight"
                 ],
-                "summary": "Get an insight by id",
+                "summary": "Get insight",
                 "parameters": [
                     {
                         "type": "array",
@@ -2714,14 +2969,19 @@ const docTemplate = `{
         },
         "/inventory/api/v2/insights/{insightId}/trend": {
             "get": {
-                "description": "Get an insight by id",
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
+                "description": "Get an insight trend by id",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "insight"
                 ],
-                "summary": "Get an insight by id",
+                "summary": "Get insight trend",
                 "parameters": [
                     {
                         "type": "string",
@@ -2760,6 +3020,11 @@ const docTemplate = `{
         },
         "/inventory/api/v2/metadata/connectors": {
             "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
                 "description": "Gets a list of all connectors in workspace and their metadata including list of their resource types and services names.",
                 "produces": [
                     "application/json"
@@ -2783,6 +3048,11 @@ const docTemplate = `{
         },
         "/inventory/api/v2/metadata/connectors/{connector}": {
             "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
                 "description": "Gets a single connector and its metadata including list of their resource types and services names by the connector name.",
                 "produces": [
                     "application/json"
@@ -2812,6 +3082,11 @@ const docTemplate = `{
         },
         "/inventory/api/v2/metadata/resourcetype": {
             "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
                 "description": "Gets a list of all resource types in workspace and their metadata including service name.\nThe results could be filtered by provider name and service name.",
                 "produces": [
                     "application/json"
@@ -2855,6 +3130,11 @@ const docTemplate = `{
         },
         "/inventory/api/v2/metadata/resourcetype/{resourceType}": {
             "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
                 "description": "Get a single resource type metadata and its details including service name and insights list. Specified by resource type name.",
                 "produces": [
                     "application/json"
@@ -2876,7 +3156,10 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ResourceTypeMetadata"
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ResourceTypeMetadata"
+                            }
                         }
                     }
                 }
@@ -2884,6 +3167,11 @@ const docTemplate = `{
         },
         "/inventory/api/v2/metadata/services": {
             "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
                 "description": "Gets a list of all workspace cloud services and their metadata inclouding parent service, list of resource types and cost support.\nThe results could be filtered by cost support and resource type.",
                 "produces": [
                     "application/json"
@@ -2933,6 +3221,11 @@ const docTemplate = `{
         },
         "/inventory/api/v2/metadata/services/{serviceName}": {
             "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
                 "description": "Gets a single cloud service details and its metadata inclouding parent service, list of resource types, cost support and costmap service names.",
                 "produces": [
                     "application/json"
@@ -2962,6 +3255,11 @@ const docTemplate = `{
         },
         "/inventory/api/v2/metrics/cost/composition": {
             "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
                 "consumes": [
                     "application/json"
                 ],
@@ -3034,6 +3332,11 @@ const docTemplate = `{
         },
         "/inventory/api/v2/metrics/cost/metric": {
             "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
                 "consumes": [
                     "application/json"
                 ],
@@ -3106,6 +3409,11 @@ const docTemplate = `{
         },
         "/inventory/api/v2/metrics/resources/composition": {
             "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
                 "consumes": [
                     "application/json"
                 ],
@@ -3261,6 +3569,11 @@ const docTemplate = `{
         },
         "/inventory/api/v2/resources/categories": {
             "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
                 "consumes": [
                     "application/json"
                 ],
@@ -3294,6 +3607,11 @@ const docTemplate = `{
         },
         "/inventory/api/v2/resources/category": {
             "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
                 "consumes": [
                     "application/json"
                 ],
@@ -3372,6 +3690,11 @@ const docTemplate = `{
         },
         "/inventory/api/v2/resources/composition": {
             "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
                 "consumes": [
                     "application/json"
                 ],
@@ -3437,6 +3760,11 @@ const docTemplate = `{
         },
         "/inventory/api/v2/resources/rootCloudProviders": {
             "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
                 "consumes": [
                     "application/json"
                 ],
@@ -3486,6 +3814,11 @@ const docTemplate = `{
         },
         "/inventory/api/v2/resources/rootTemplates": {
             "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
                 "consumes": [
                     "application/json"
                 ],
@@ -3541,6 +3874,11 @@ const docTemplate = `{
         },
         "/inventory/api/v2/resources/trend": {
             "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
                 "consumes": [
                     "application/json"
                 ],
@@ -3606,6 +3944,11 @@ const docTemplate = `{
         },
         "/inventory/api/v2/resources/type": {
             "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
                 "description": "Gets the total number of resource types and the API filters and list of resource types with some details. Including filter, connection, service name and resource count.",
                 "consumes": [
                     "application/json"
@@ -3680,6 +4023,11 @@ const docTemplate = `{
         },
         "/inventory/api/v2/resources/type/{resourceName}": {
             "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
                 "description": "Gets the details of the resource type for the specified resource name. Including filter, connection, service name and resource count.",
                 "consumes": [
                     "application/json"
@@ -3733,6 +4081,11 @@ const docTemplate = `{
         },
         "/inventory/api/v2/services/summary": {
             "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
                 "description": "Gets a summary of the services including the number of them and the API filters and a list of services with more details. Including connector, the resource counts and the cost.",
                 "consumes": [
                     "application/json"
@@ -5988,11 +6341,17 @@ const docTemplate = `{
             "properties": {
                 "globalRoles": {
                     "description": "Global Access",
+                    "enum": [
+                        "admin",
+                        "editor",
+                        "viewer"
+                    ],
                     "allOf": [
                         {
                             "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.Role"
                         }
-                    ]
+                    ],
+                    "example": "admin"
                 },
                 "roleBindings": {
                     "description": "List of user roles in each workspace",
@@ -6264,8 +6623,7 @@ const docTemplate = `{
                 },
                 "createdAt": {
                     "description": "Creation timestamp in UTC",
-                    "type": "string",
-                    "example": "2023-03-31T09:36:09.855Z"
+                    "type": "string"
                 },
                 "email": {
                     "description": "Email address of the user",
@@ -6279,8 +6637,7 @@ const docTemplate = `{
                 },
                 "lastActivity": {
                     "description": "Last activity timestamp in UTC",
-                    "type": "string",
-                    "example": "2023-04-21T08:53:09.928Z"
+                    "type": "string"
                 },
                 "roleName": {
                     "description": "Name of the role",
@@ -6356,6 +6713,8 @@ const docTemplate = `{
                 "userCount": {
                     "description": "Number of usershaving this role",
                     "type": "integer",
+                    "example": 1
+                }
             }
         },
         "gitlab_com_keibiengine_keibi-engine_pkg_auth_api.UpdateKeyRoleRequest": {
@@ -7892,7 +8251,10 @@ const docTemplate = `{
                     ]
                 },
                 "connector_label": {
-                    "description": "Connector Lable",
+                    "description": "Connector Label",
+                    "type": "string"
+                },
+                "logo_uri": {
                     "type": "string"
                 },
                 "resource_types": {
@@ -10008,6 +10370,14 @@ const docTemplate = `{
                     "type": "integer"
                 }
             }
+        }
+    },
+    "securityDefinitions": {
+        "BearerToken": {
+            "description": "Enter the token with the ` + "`" + `Bearer` + "`" + ` prefix.",
+            "type": "apiKey",
+            "name": "Authorization",
+            "in": "header"
         }
     }
 }`
