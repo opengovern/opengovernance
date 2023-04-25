@@ -3,6 +3,7 @@ package es
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"gitlab.com/keibiengine/keibi-engine/pkg/keibi-es-sdk"
 )
 
@@ -64,6 +65,7 @@ func GetResourceIDsForAccountResourceTypeFromES(client keibi.Client, sourceID, r
 	err = client.Search(context.Background(), InventorySummaryIndex,
 		string(queryBytes), &response)
 	if err != nil {
+		fmt.Println("query=", string(queryBytes))
 		return nil, err
 	}
 
