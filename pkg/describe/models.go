@@ -2,6 +2,7 @@ package describe
 
 import (
 	"database/sql"
+	"gitlab.com/keibiengine/keibi-engine/pkg/describe/enums"
 	"time"
 
 	insightapi "gitlab.com/keibiengine/keibi-engine/pkg/insight/api"
@@ -60,6 +61,7 @@ type DescribeSourceJob struct {
 	AccountID            string
 	DescribeResourceJobs []DescribeResourceJob `gorm:"foreignKey:ParentJobID;constraint:OnDelete:CASCADE;"`
 	Status               api.DescribeSourceJobStatus
+	TriggerType          enums.DescribeTriggerType
 }
 
 type CloudNativeDescribeSourceJob struct {

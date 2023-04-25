@@ -48,17 +48,46 @@ func (s Scheduler) scheduleDescribeJob() {
 		return
 	}
 	for _, connection := range connections {
-		connection := connection
-		go func() {
-			err = s.describeConnection(connection, true)
-			if err != nil {
-				s.logger.Error("Failed to describe connection", zap.String("connection_id", connection.ID.String()), zap.Error(err))
-				DescribeSourceJobsCount.WithLabelValues("failure").Inc()
-			} else {
-				DescribeSourceJobsCount.WithLabelValues("successful").Inc()
-			}
-		}()
+		err = s.describeConnection(connection, true)
+		if err != nil {
+			s.logger.Error("Failed to describe connection", zap.String("connection_id", connection.ID.String()), zap.Error(err))
+			DescribeSourceJobsCount.WithLabelValues("failure").Inc()
+		} else {
+			DescribeSourceJobsCount.WithLabelValues("successful").Inc()
+		}
 	}
+
+	dss, err := s.db.ListCreatedDescribeSourceJobs()
+	if err != nil {
+		s.logger.Error("Failed to fetch all describe source jobs", zap.Error(err))
+		DescribeJobsCount.WithLabelValues("failure").Inc()
+		return
+	}
+
+	for _, ds := range dss {
+		cloudNativeDaj, err := s.db.GetCloudNativeDescribeSourceJobBySourceJobID(ds.ID)
+		if err != nil {
+			s.logger.Error("Failed to GetCloudNativeDescribeSourceJobBySourceJobID", zap.Error(err))
+			DescribeJobsCount.WithLabelValues("failure").Inc()
+			return
+		}
+
+		src, err := s.db.GetSourceByUUID(ds.SourceID)
+		if err != nil {
+			s.logger.Error("Failed to GetSourceByUUID", zap.Error(err))
+			DescribeJobsCount.WithLabelValues("failure").Inc()
+			return
+		}
+
+		err = enqueueCloudNativeDescribeConnectionJob(s.logger, s.db, CurrentWorkspaceID, s.cloudNativeAPIBaseURL,
+			s.cloudNativeAPIAuthKey, *src, *cloudNativeDaj, s.kafkaResourcesTopic, ds.DescribedAt, ds.TriggerType, s.describeIntervalHours)
+		if err != nil {
+			s.logger.Error("Failed to enqueueCloudNativeDescribeConnectionJob", zap.Error(err))
+			DescribeJobsCount.WithLabelValues("failure").Inc()
+			return
+		}
+	}
+
 	DescribeJobsCount.WithLabelValues("successful").Inc()
 }
 
@@ -68,7 +97,9 @@ func (s Scheduler) describeConnection(connection Source, scheduled bool) error {
 		return err
 	}
 
-	if !scheduled || job == nil || job.UpdatedAt.Before(time.Now().Add(time.Duration(-s.describeIntervalHours)*time.Hour)) {
+	if !scheduled || // manual
+		job == nil || job.UpdatedAt.Before(time.Now().Add(time.Duration(-s.describeIntervalHours)*time.Hour)) {
+
 		healthCheckedSrc, err := s.onboardClient.GetSourceHealthcheck(&httpclient.Context{
 			UserRole: api2.EditorRole,
 		}, connection.ID.String())
@@ -79,6 +110,7 @@ func (s Scheduler) describeConnection(connection Source, scheduled bool) error {
 		if scheduled && healthCheckedSrc.AssetDiscoveryMethod != source.AssetDiscoveryMethodTypeScheduled {
 			return errors.New("asset discovery is not scheduled")
 		}
+
 		if healthCheckedSrc.HealthState == source.HealthStatusUnhealthy {
 			return errors.New("connection is not healthy")
 		}
@@ -100,7 +132,7 @@ func (s Scheduler) createCloudNativeDescribeSource(source *Source, src *Describe
 
 	s.logger.Info("Source is due for a describe. Creating a job now", zap.String("sourceId", source.ID.String()))
 
-	daj := newDescribeSourceJob(*source, describedAt)
+	daj := newDescribeSourceJob(*source, describedAt, triggerType)
 	err := s.db.CreateDescribeSourceJob(&daj)
 	if err != nil {
 		return err
@@ -132,30 +164,17 @@ func (s Scheduler) createCloudNativeDescribeSource(source *Source, src *Describe
 		return err
 	}
 
-	err = enqueueCloudNativeDescribeConnectionJob(s.logger, s.db, CurrentWorkspaceID, s.cloudNativeAPIBaseURL,
-		s.cloudNativeAPIAuthKey, *source, cloudDaj, s.kafkaResourcesTopic, describedAt, triggerType)
-	if err != nil {
-		describeSourceJobFailure = true
-		failureMsg = fmt.Sprintf("%v", err)
-		return err
-	}
-
-	errUpdate := s.db.UpdateDescribeSourceJob(daj.ID, api.DescribeSourceJobInProgress)
-	err = s.db.UpdateSourceDescribed(source.ID, describedAt, time.Duration(s.describeIntervalHours)*time.Hour)
-
-	if errUpdate != nil {
-		return errUpdate
-	}
-	return err
+	return nil
 }
 
-func newDescribeSourceJob(a Source, describedAt time.Time) DescribeSourceJob {
+func newDescribeSourceJob(a Source, describedAt time.Time, triggerType enums.DescribeTriggerType) DescribeSourceJob {
 	daj := DescribeSourceJob{
 		DescribedAt:          describedAt,
 		SourceID:             a.ID,
 		AccountID:            a.AccountID,
 		DescribeResourceJobs: []DescribeResourceJob{},
 		Status:               api.DescribeSourceJobCreated,
+		TriggerType:          triggerType,
 	}
 	var resourceTypes []string
 	switch a.Type {
@@ -216,7 +235,7 @@ func newCloudNativeDescribeSourceJob(j DescribeSourceJob) (CloudNativeDescribeSo
 
 func enqueueCloudNativeDescribeConnectionJob(logger *zap.Logger, db Database, workspaceId string,
 	cloudNativeAPIBaseURL string, cloudNativeAPIAuthKey string, a Source, daj CloudNativeDescribeSourceJob,
-	kafkaResourcesTopic string, describedAt time.Time, triggerType enums.DescribeTriggerType) error {
+	kafkaResourcesTopic string, describedAt time.Time, triggerType enums.DescribeTriggerType, describeIntervalHours int64) error {
 
 	resourceJobs := map[uint]string{}
 	for _, drj := range daj.SourceJob.DescribeResourceJobs {
@@ -289,5 +308,14 @@ func enqueueCloudNativeDescribeConnectionJob(logger *zap.Logger, db Database, wo
 	for i := range daj.SourceJob.DescribeResourceJobs {
 		daj.SourceJob.DescribeResourceJobs[i].Status = api.DescribeResourceJobQueued
 	}
+	errUpdate := db.UpdateDescribeSourceJob(daj.SourceJob.ID, api.DescribeSourceJobInProgress)
+	if errUpdate != nil {
+		return errUpdate
+	}
+	errSourceDescribed := db.UpdateSourceDescribed(a.ID, describedAt, time.Duration(describeIntervalHours)*time.Hour)
+	if errSourceDescribed != nil {
+		return errSourceDescribed
+	}
+
 	return nil
 }
