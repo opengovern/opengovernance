@@ -284,6 +284,26 @@ func (db Database) ListPendingDescribeResourceJobs() ([]DescribeResourceJob, err
 	return jobs, nil
 }
 
+func (db Database) ListCreatedDescribeResourceJobs() ([]DescribeResourceJob, error) {
+	var jobs []DescribeResourceJob
+	tx := db.orm.Where("status in (?, ?)", api.DescribeResourceJobQueued, api.DescribeResourceJobCreated).Find(&jobs)
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+
+	return jobs, nil
+}
+
+func (db Database) ListCreatedDescribeSourceJobs() ([]DescribeSourceJob, error) {
+	var jobs []DescribeSourceJob
+	tx := db.orm.Where("status in (?)", api.DescribeSourceJobCreated).Find(&jobs)
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+
+	return jobs, nil
+}
+
 func (db Database) ListPendingSummarizeJobs() ([]SummarizerJob, error) {
 	var jobs []SummarizerJob
 	tx := db.orm.Where("status = ?", summarizerapi.SummarizerJobInProgress).Find(&jobs)
@@ -458,6 +478,19 @@ func (db Database) CreateCloudNativeDescribeSourceJob(job *CloudNativeDescribeSo
 func (db Database) GetCloudNativeDescribeSourceJob(jobID string) (*CloudNativeDescribeSourceJob, error) {
 	var job CloudNativeDescribeSourceJob
 	tx := db.orm.Preload(clause.Associations).Where("job_id = ?", jobID).First(&job)
+	if tx.Error != nil {
+		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
+		return nil, tx.Error
+	}
+
+	return &job, nil
+}
+
+func (db Database) GetCloudNativeDescribeSourceJobBySourceJobID(jobID uint) (*CloudNativeDescribeSourceJob, error) {
+	var job CloudNativeDescribeSourceJob
+	tx := db.orm.Preload(clause.Associations).Where("source_job_id = ?", jobID).First(&job)
 	if tx.Error != nil {
 		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
 			return nil, nil
