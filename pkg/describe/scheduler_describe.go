@@ -72,6 +72,12 @@ func (s Scheduler) scheduleDescribeJob() {
 			return
 		}
 
+		if cloudNativeDaj == nil {
+			s.logger.Error("Failed to find cloud native job", zap.Uint("jobID", ds.ID))
+			DescribeJobsCount.WithLabelValues("failure").Inc()
+			return
+		}
+
 		src, err := s.db.GetSourceByUUID(ds.SourceID)
 		if err != nil {
 			s.logger.Error("Failed to GetSourceByUUID", zap.Error(err))
@@ -79,6 +85,17 @@ func (s Scheduler) scheduleDescribeJob() {
 			return
 		}
 
+		if src == nil {
+			s.logger.Error("Failed to find source", zap.String("sourceID", ds.SourceID.String()))
+			DescribeJobsCount.WithLabelValues("failure").Inc()
+			return
+		}
+
+		s.logger.Info("EnqueueCloudNativeDescribeConnectionJob",
+			zap.String("connectionID", src.ID.String()),
+			zap.Uint("jobID", ds.ID),
+			zap.Uint("cloudNativeJobID", cloudNativeDaj.ID),
+		)
 		err = enqueueCloudNativeDescribeConnectionJob(s.logger, s.db, CurrentWorkspaceID, s.cloudNativeAPIBaseURL,
 			s.cloudNativeAPIAuthKey, *src, *cloudNativeDaj, s.kafkaResourcesTopic, ds.DescribedAt, ds.TriggerType, s.describeIntervalHours)
 		if err != nil {
