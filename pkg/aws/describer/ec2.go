@@ -2331,8 +2331,15 @@ func EC2SpotPrice(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 		}
 
 		for _, v := range page.SpotPriceHistory {
+			if v.SpotPrice == nil {
+				continue
+			}
+			avZone := ""
+			if v.AvailabilityZone != nil {
+				avZone = *v.AvailabilityZone
+			}
 			values = append(values, Resource{
-				Name: fmt.Sprintf("%s-%s (%s)", v.InstanceType, *v.SpotPrice, *v.AvailabilityZone),
+				Name: fmt.Sprintf("%s-%s (%s)", v.InstanceType, *v.SpotPrice, avZone),
 				Description: model.EC2SpotPriceDescription{
 					SpotPrice: v,
 				},

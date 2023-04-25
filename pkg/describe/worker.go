@@ -510,7 +510,12 @@ type CloudNativeConnectionWorkerData struct {
 	JobData   []*CloudNativeConnectionWorkerMessage `json:"jobData" validate:"required"`
 }
 
-func (w *CloudNativeConnectionWorker) Run(ctx context.Context, sendTimeout bool) error {
+func (w *CloudNativeConnectionWorker) Run(ctx context.Context, sendTimeout bool) (err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			err = fmt.Errorf("%v", r)
+		}
+	}()
 	var jobResult DescribeConnectionJobResult
 	if sendTimeout {
 		jobResult = w.job.CloudTimeout()
@@ -529,7 +534,7 @@ func (w *CloudNativeConnectionWorker) Run(ctx context.Context, sendTimeout bool)
 		})
 	}
 
-	resultData := &CloudNativeConnectionWorkerData{
+	resultData := CloudNativeConnectionWorkerData{
 		JobID:     fmt.Sprint(w.instanceId),
 		JobResult: jobResult,
 		JobData:   messages,

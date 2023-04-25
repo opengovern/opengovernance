@@ -255,11 +255,6 @@ func InitializeScheduler(
 
 	s.logger.Info("Initializing the scheduler")
 
-	s.describeJobQueue, err = initRabbitQueue(describeJobQueueName)
-	if err != nil {
-		return nil, err
-	}
-
 	s.describeJobResultQueue, err = initRabbitQueue(describeJobResultQueueName)
 	if err != nil {
 		return nil, err

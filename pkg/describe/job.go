@@ -175,6 +175,38 @@ type DescribeConnectionJobResult struct {
 }
 
 func (j DescribeConnectionJob) Do(ictx context.Context, vlt vault.SourceConfig, rdb *redis.Client, producer sarama.SyncProducer, topic string, logger *zap.Logger) (r DescribeConnectionJobResult) {
+	defer func() {
+		if rec := recover(); rec != nil {
+			describeConnectionJobResult := DescribeConnectionJobResult{
+				JobID:  j.JobID,
+				Result: map[uint]DescribeJobResult{},
+			}
+			for id, resourceType := range j.ResourceJobs {
+				dj := DescribeJob{
+					JobID:        id,
+					ParentJobID:  j.JobID,
+					ResourceType: resourceType,
+					SourceID:     j.SourceID,
+					AccountID:    j.AccountID,
+					DescribedAt:  j.DescribedAt,
+					SourceType:   j.SourceType,
+					ConfigReg:    j.ConfigReg,
+					TriggerType:  j.TriggerType,
+					RetryCounter: 0,
+				}
+				describeConnectionJobResult.Result[id] = DescribeJobResult{
+					JobID:                dj.JobID,
+					ParentJobID:          dj.ParentJobID,
+					Status:               api.DescribeResourceJobFailed,
+					Error:                fmt.Sprintf("Cloud job paniced: %v", rec),
+					DescribeJob:          dj,
+					DescribedResourceIDs: nil,
+				}
+
+			}
+			r = describeConnectionJobResult
+		}
+	}()
 	if j.TriggerType == "" {
 		j.TriggerType = enums.DescribeTriggerTypeScheduled
 	}
