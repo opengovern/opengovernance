@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"gitlab.com/keibiengine/keibi-engine/pkg/keibi-es-sdk"
+	"strings"
 )
 
 type ResourceIdentifierFetchResponse struct {
@@ -27,7 +28,7 @@ type ResourceIdentifierFetchHit struct {
 func GetResourceIDsForAccountResourceTypeFromES(client keibi.Client, sourceID, resourceType string, searchAfter []interface{}, size int) (*ResourceIdentifierFetchResponse, error) {
 	terms := map[string][]string{
 		"source_id":     {sourceID},
-		"resource_type": {resourceType},
+		"resource_type": {strings.ToLower(resourceType)},
 	}
 
 	root := map[string]interface{}{}
@@ -38,7 +39,7 @@ func GetResourceIDsForAccountResourceTypeFromES(client keibi.Client, sourceID, r
 
 	root["sort"] = []map[string]interface{}{
 		{
-			"_id": "desc",
+			"resource_id": "desc",
 		},
 	}
 
