@@ -113,6 +113,11 @@ definitions:
         allOf:
         - $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.Role'
         description: Global Access
+        enum:
+        - admin
+        - editor
+        - viewer
+        example: admin
       roleBindings:
         description: List of user roles in each workspace
         items:
@@ -261,13 +266,11 @@ definitions:
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_auth_api.Role:
     enum:
-    - keibi-admin
     - admin
     - editor
     - viewer
     type: string
     x-enum-varnames:
-    - KeibiAdminRole
     - AdminRole
     - EditorRole
     - ViewerRole
@@ -2906,6 +2909,8 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.WorkspaceApiKey'
+      security:
+      - BearerToken: []
       summary: Get Workspace Key Details
       tags:
       - keys
@@ -2925,6 +2930,8 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.WorkspaceApiKey'
+      security:
+      - BearerToken: []
       summary: Activate Workspace Key
       tags:
       - keys
@@ -2942,6 +2949,8 @@ paths:
       responses:
         "200":
           description: OK
+      security:
+      - BearerToken: []
       summary: Deletes Workspace Key
       tags:
       - keys
@@ -2961,6 +2970,8 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.WorkspaceApiKey'
+      security:
+      - BearerToken: []
       summary: Suspend Workspace Key
       tags:
       - keys
@@ -2981,6 +2992,8 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.CreateAPIKeyResponse'
+      security:
+      - BearerToken: []
       summary: Creates Workspace Key
       tags:
       - keys
@@ -3001,6 +3014,8 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.WorkspaceApiKey'
+      security:
+      - BearerToken: []
       summary: Update Workspace Key Role
       tags:
       - keys
@@ -3016,6 +3031,8 @@ paths:
             items:
               $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.WorkspaceApiKey'
             type: array
+      security:
+      - BearerToken: []
       summary: Get Workspace Keys
       tags:
       - keys
@@ -3037,6 +3054,8 @@ paths:
             items:
               $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.WorkspaceApiKey'
             type: array
+      security:
+      - BearerToken: []
       summary: Get Role Keys
       tags:
       - roles
@@ -3058,6 +3077,8 @@ paths:
             items:
               $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.RoleUser'
             type: array
+      security:
+      - BearerToken: []
       summary: Lists Role Users
       tags:
       - roles
@@ -3074,6 +3095,8 @@ paths:
             items:
               $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.RolesListResponse'
             type: array
+      security:
+      - BearerToken: []
       summary: Get Roles
       tags:
       - roles
@@ -3094,6 +3117,8 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.RoleDetailsResponse'
+      security:
+      - BearerToken: []
       summary: Get Role Details
       tags:
       - roles
@@ -3113,6 +3138,8 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.GetUserResponse'
+      security:
+      - BearerToken: []
       summary: Get User details
       tags:
       - users
@@ -3133,6 +3160,8 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.GetRoleBindingsResponse'
+      security:
+      - BearerToken: []
       summary: User Workspaces
       tags:
       - users
@@ -3150,6 +3179,8 @@ paths:
       responses:
         "200":
           description: OK
+      security:
+      - BearerToken: []
       summary: Delete Invitation
       tags:
       - users
@@ -3170,6 +3201,8 @@ paths:
       responses:
         "200":
           description: OK
+      security:
+      - BearerToken: []
       summary: Invite User
       tags:
       - users
@@ -3187,6 +3220,8 @@ paths:
       responses:
         "200":
           description: OK
+      security:
+      - BearerToken: []
       summary: Delete User Access
       tags:
       - users
@@ -3207,6 +3242,8 @@ paths:
       responses:
         "200":
           description: OK
+      security:
+      - BearerToken: []
       summary: Update User Access
       tags:
       - users
@@ -3222,6 +3259,8 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.GetRoleBindingsResponse'
+      security:
+      - BearerToken: []
       summary: Get RoleBindings
       tags:
       - users
@@ -3244,6 +3283,8 @@ paths:
             items:
               $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.GetUsersResponse'
             type: array
+      security:
+      - BearerToken: []
       summary: Get Users
       tags:
       - users
@@ -3261,6 +3302,8 @@ paths:
             items:
               $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.WorkspaceRoleBinding'
             type: array
+      security:
+      - BearerToken: []
       summary: Workspace user roleBindings.
       tags:
       - users
@@ -3753,6 +3796,8 @@ paths:
             items:
               $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.AccountResourceCountResponse'
             type: array
+      security:
+      - BearerToken: []
       summary: Returns resource count of accounts
       tags:
       - benchmarks
@@ -3769,6 +3814,8 @@ paths:
             items:
               type: string
             type: array
+      security:
+      - BearerToken: []
       summary: Return list of categories
       tags:
       - inventory
@@ -3784,6 +3831,8 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ConnectionSummaryResponse'
+      security:
+      - BearerToken: []
       summary: Get connection summary
       tags:
       - inventory
@@ -3811,6 +3860,8 @@ paths:
             items:
               $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.TopAccountCostResponse'
             type: array
+      security:
+      - BearerToken: []
       summary: Returns top n accounts of specified provider by cost
       tags:
       - cost
@@ -3843,6 +3894,8 @@ paths:
             items:
               $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.TopServiceCostResponse'
             type: array
+      security:
+      - BearerToken: []
       summary: Returns top n services of specified provider by cost
       tags:
       - cost
@@ -3868,6 +3921,8 @@ paths:
             items:
               $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.LocationByProviderResponse'
             type: array
+      security:
+      - BearerToken: []
       summary: Get locations
       tags:
       - location
@@ -3883,6 +3938,8 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ConnectionSummaryResponse'
+      security:
+      - BearerToken: []
       summary: Get provider summary
       tags:
       - inventory
@@ -3905,6 +3962,8 @@ paths:
             items:
               $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.SmartQueryItem'
             type: array
+      security:
+      - BearerToken: []
       summary: List smart queries
       tags:
       - smart_query
@@ -3942,6 +4001,8 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.RunQueryResponse'
+      security:
+      - BearerToken: []
       summary: Run a specific smart query
       tags:
       - smart_query
@@ -3962,6 +4023,8 @@ paths:
           description: OK
           schema:
             type: integer
+      security:
+      - BearerToken: []
       summary: Count smart queries
       tags:
       - smart_query
@@ -3984,6 +4047,8 @@ paths:
             additionalProperties:
               type: string
             type: object
+      security:
+      - BearerToken: []
       summary: Get details of a Resource
       tags:
       - resource
@@ -4027,6 +4092,8 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.GetResourcesResponse'
+      security:
+      - BearerToken: []
       summary: Get resources
       tags:
       - inventory
@@ -4070,6 +4137,8 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.GetAWSResourceResponse'
+      security:
+      - BearerToken: []
       summary: Get AWS resources
       tags:
       - inventory
@@ -4113,6 +4182,8 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.GetAzureResourceResponse'
+      security:
+      - BearerToken: []
       summary: Get Azure resources
       tags:
       - inventory
@@ -4129,6 +4200,8 @@ paths:
           description: OK
           schema:
             type: integer
+      security:
+      - BearerToken: []
       summary: Count resources
       tags:
       - inventory
@@ -4173,6 +4246,8 @@ paths:
             additionalProperties:
               type: integer
             type: object
+      security:
+      - BearerToken: []
       summary: Returns distribution of resource for specific account
       tags:
       - benchmarks
@@ -4204,6 +4279,8 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.GetFiltersResponse'
+      security:
+      - BearerToken: []
       summary: Get resource filters
       tags:
       - inventory
@@ -4239,6 +4316,8 @@ paths:
             items:
               $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.LocationResponse'
             type: array
+      security:
+      - BearerToken: []
       summary: Returns top n regions of specified provider by resource count
       tags:
       - inventory
@@ -4266,6 +4345,8 @@ paths:
             items:
               $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.TopAccountResponse'
             type: array
+      security:
+      - BearerToken: []
       summary: Returns top n accounts of specified provider by resource count
       tags:
       - benchmarks
@@ -4303,6 +4384,8 @@ paths:
             items:
               $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.TopAccountResponse'
             type: array
+      security:
+      - BearerToken: []
       summary: Returns top n fastest growing accounts of specified provider in the
         specified time window by resource count
       tags:
@@ -4336,6 +4419,8 @@ paths:
             items:
               $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.LocationResponse'
             type: array
+      security:
+      - BearerToken: []
       summary: Returns top n regions of specified provider by resource count
       tags:
       - inventory
@@ -4367,6 +4452,8 @@ paths:
             items:
               $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.TopServicesResponse'
             type: array
+      security:
+      - BearerToken: []
       summary: Returns top n services of specified provider by resource count
       tags:
       - benchmarks
@@ -4405,6 +4492,8 @@ paths:
             items:
               $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.TrendDataPoint'
             type: array
+      security:
+      - BearerToken: []
       summary: Returns trend of resource count growth for specific account
       tags:
       - benchmarks
@@ -4434,6 +4523,8 @@ paths:
             items:
               $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ServiceDistributionItem'
             type: array
+      security:
+      - BearerToken: []
       summary: Returns distribution of services for specific account
       tags:
       - benchmarks
@@ -4497,6 +4588,8 @@ paths:
             items:
               $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.AccountSummaryResponse'
             type: array
+      security:
+      - BearerToken: []
       summary: Returns resource count of accounts
       tags:
       - benchmarks
@@ -4513,6 +4606,8 @@ paths:
             items:
               type: string
             type: array
+      security:
+      - BearerToken: []
       summary: Return list of categories
       tags:
       - inventory
@@ -4565,6 +4660,8 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.CategoryNode'
+      security:
+      - BearerToken: []
       summary: Return category cost info by provided category id, info includes category
         name, subcategories names and ids and their accumulated cost
       tags:
@@ -4613,6 +4710,8 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.CategoryNode'
+      security:
+      - BearerToken: []
       summary: Return category info by provided category id, info includes category
         name, subcategories names and ids and number of resources
       tags:
@@ -4647,7 +4746,9 @@ paths:
           schema:
             items: {}
             type: array
-      summary: List all insights
+      security:
+      - BearerToken: []
+      summary: List insights
       tags:
       - insight
   /inventory/api/v2/insights/{insightId}:
@@ -4671,12 +4772,14 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.Insight'
-      summary: Get an insight by id
+      security:
+      - BearerToken: []
+      summary: Get insight
       tags:
       - insight
   /inventory/api/v2/insights/{insightId}/trend:
     get:
-      description: Get an insight by id
+      description: Get an insight trend by id
       parameters:
       - description: filter the result by source id
         in: query
@@ -4703,12 +4806,14 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.InsightResultTrendResponse'
-      summary: Get an insight by id
+      security:
+      - BearerToken: []
+      summary: Get insight trend
       tags:
       - insight
   /inventory/api/v2/insights/peer/{insightPeerGroupId}:
     get:
-      description: Get an insight by id
+      description: Get an insight peer by id
       parameters:
       - description: filter the result by source id
         in: query
@@ -4727,7 +4832,9 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.InsightPeerGroup'
-      summary: Get an insight by id
+      security:
+      - BearerToken: []
+      summary: Get insight peer
       tags:
       - insight
   /inventory/api/v2/metadata/connectors:
@@ -4743,6 +4850,8 @@ paths:
             items:
               $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ConnectorMetadata'
             type: array
+      security:
+      - BearerToken: []
       summary: Get List of Connectors
       tags:
       - metadata
@@ -4763,6 +4872,8 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ConnectorMetadata'
+      security:
+      - BearerToken: []
       summary: Get Connector
       tags:
       - metadata
@@ -4794,6 +4905,8 @@ paths:
             items:
               $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ResourceTypeMetadata'
             type: array
+      security:
+      - BearerToken: []
       summary: Get List of Resource Types
       tags:
       - metadata
@@ -4816,6 +4929,8 @@ paths:
             items:
               $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ResourceTypeMetadata'
             type: array
+      security:
+      - BearerToken: []
       summary: Get Resource Type
       tags:
       - metadata
@@ -4851,6 +4966,8 @@ paths:
             items:
               $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ServiceMetadata'
             type: array
+      security:
+      - BearerToken: []
       summary: Get List of Cloud Services
       tags:
       - metadata
@@ -4871,6 +4988,8 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ServiceMetadata'
+      security:
+      - BearerToken: []
       summary: Get Cloud Service Details
       tags:
       - metadata
@@ -4918,6 +5037,8 @@ paths:
           schema:
             items: {}
             type: array
+      security:
+      - BearerToken: []
       summary: Return category info by provided category id, info includes category
         name, subcategories names and ids and number of resources
       tags:
@@ -4967,6 +5088,8 @@ paths:
           schema:
             items: {}
             type: array
+      security:
+      - BearerToken: []
       summary: Return category cost info by provided category id, info includes category
         name, subcategories names and ids and their accumulated cost
       tags:
@@ -5012,6 +5135,8 @@ paths:
           schema:
             items: {}
             type: array
+      security:
+      - BearerToken: []
       summary: Return category info by provided category id, info includes category
         name, subcategories names and ids and number of resources
       tags:
@@ -5097,6 +5222,8 @@ paths:
             items:
               $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.CategoryNode'
             type: array
+      security:
+      - BearerToken: []
       summary: Return list of the subcategories of the specified category
       tags:
       - inventory
@@ -5151,6 +5278,8 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.CategoryNode'
+      security:
+      - BearerToken: []
       summary: Return category info by provided category id, info includes category
         name, subcategories names and ids and number of resources
       tags:
@@ -5196,6 +5325,8 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.CategoryNode'
+      security:
+      - BearerToken: []
       summary: Return category info by provided category id, info includes category
         name, subcategories names and ids and number of resources
       tags:
@@ -5228,6 +5359,8 @@ paths:
             items:
               $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.CategoryNode'
             type: array
+      security:
+      - BearerToken: []
       summary: Return root providers' info, info includes category name, category
         id, subcategories names and ids and number of resources
       tags:
@@ -5265,6 +5398,8 @@ paths:
             items:
               $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.CategoryNode'
             type: array
+      security:
+      - BearerToken: []
       summary: Return root templates' info, info includes template name, template
         id, subcategories names and ids and number of resources
       tags:
@@ -5309,6 +5444,8 @@ paths:
             items:
               $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ResourceGrowthTrendResponse'
             type: array
+      security:
+      - BearerToken: []
       summary: Returns trend of resource growth for specific account
       tags:
       - benchmarks
@@ -5359,6 +5496,8 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ListResourceTypesResponse'
+      security:
+      - BearerToken: []
       summary: Get list of Resource Types
       tags:
       - inventory
@@ -5395,6 +5534,8 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.FilterCloudResourceType'
+      security:
+      - BearerToken: []
       summary: Get Resource Type Details
       tags:
       - inventory
@@ -5459,6 +5600,8 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ListServiceSummariesResponse'
+      security:
+      - BearerToken: []
       summary: Get Cloud Services Summary
       tags:
       - benchmarks
@@ -6690,4 +6833,10 @@ paths:
       - workspace
 schemes:
 - https
+securityDefinitions:
+  BearerToken:
+    description: Enter the token with the `Bearer` prefix.
+    in: header
+    name: Authorization
+    type: apiKey
 swagger: "2.0"
