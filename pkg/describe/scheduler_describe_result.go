@@ -167,7 +167,7 @@ func (s *Scheduler) consumeDescribeConnectionJobResults(result DescribeConnectio
 		var searchAfter []interface{}
 
 		for {
-			esResp, err := es.GetResourceIDsForAccountResourceTypeFromES(s.es, res.DescribeJob.SourceID, res.DescribeJob.ResourceType, searchAfter, 10000)
+			esResp, err := es.GetResourceIDsForAccountResourceTypeFromES(s.es, res.DescribeJob.SourceID, res.DescribeJob.ResourceType, searchAfter, 1000)
 			if err != nil {
 				return true, err
 			}
