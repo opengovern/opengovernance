@@ -6205,6 +6205,17 @@ paths:
       summary: Listing describe source jobs
       tags:
       - schedule
+  /schedule/api/v1/describe/trigger/{connection_id}:
+    put:
+      description: Triggers a describe job to run immediately
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+      summary: Triggers a describe job to run immediately
+      tags:
+      - describe
   /schedule/api/v1/insight/jobs/pending:
     get:
       produces:

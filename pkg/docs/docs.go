@@ -4931,6 +4931,23 @@ const docTemplate = `{
                 }
             }
         },
+        "/schedule/api/v1/describe/trigger/{connection_id}": {
+            "put": {
+                "description": "Triggers a describe job to run immediately",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "describe"
+                ],
+                "summary": "Triggers a describe job to run immediately",
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    }
+                }
+            }
+        },
         "/schedule/api/v1/insight/jobs/pending": {
             "get": {
                 "produces": [
