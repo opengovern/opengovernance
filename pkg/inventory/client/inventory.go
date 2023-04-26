@@ -12,7 +12,7 @@ import (
 
 type InventoryServiceClient interface {
 	CountResources(ctx *httpclient.Context) (int64, error)
-	GetAccountsResourceCount(ctx *httpclient.Context, provider source.Type, sourceId *string) ([]api.AccountResourceCountResponse, error)
+	GetAccountsResourceCount(ctx *httpclient.Context, provider source.Type, sourceId *string) ([]api.ConnectionResourceCountResponse, error)
 }
 
 type inventoryClient struct {
@@ -33,13 +33,13 @@ func (s *inventoryClient) CountResources(ctx *httpclient.Context) (int64, error)
 	return count, nil
 }
 
-func (s *inventoryClient) GetAccountsResourceCount(ctx *httpclient.Context, provider source.Type, sourceId *string) ([]api.AccountResourceCountResponse, error) {
+func (s *inventoryClient) GetAccountsResourceCount(ctx *httpclient.Context, provider source.Type, sourceId *string) ([]api.ConnectionResourceCountResponse, error) {
 	url := fmt.Sprintf("%s/api/v1/accounts/resource/count?provider=%s", s.baseURL, provider.String())
 	if sourceId != nil {
 		url += "&sourceId=" + *sourceId
 	}
 
-	var response []api.AccountResourceCountResponse
+	var response []api.ConnectionResourceCountResponse
 	if err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &response); err != nil {
 		return nil, err
 	}

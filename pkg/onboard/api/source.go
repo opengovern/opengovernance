@@ -110,11 +110,12 @@ type Source struct {
 	CredentialID         string                          `json:"credentialID"`
 	CredentialName       *string                         `json:"credentialName,omitempty"`
 	OnboardDate          time.Time                       `json:"onboardDate"`
-	Enabled              bool                            `json:"enabled"`
+	LifecycleState       ConnectionLifecycleState        `json:"lifecycleState"`
 	AssetDiscoveryMethod source.AssetDiscoveryMethodType `json:"assetDiscoveryMethod"`
 	HealthState          source.HealthStatus             `json:"healthState"`
 	LastHealthCheckTime  time.Time                       `json:"lastHealthCheckTime"`
 	HealthReason         *string                         `json:"healthReason,omitempty"`
+	Metadata             map[string]any                  `json:"metadata"`
 }
 
 type GetSourcesRequest struct {

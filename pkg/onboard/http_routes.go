@@ -789,6 +789,14 @@ func (h HttpHandler) GetCredential(ctx echo.Context) error {
 		Connections:         make([]api.Source, 0, len(connections)),
 	}
 	for _, conn := range connections {
+		metadata := make(map[string]any)
+		if conn.Metadata.String() != "" {
+			err := json.Unmarshal(conn.Metadata, &metadata)
+			if err != nil {
+				return err
+			}
+		}
+
 		apiCredential.Connections = append(apiCredential.Connections, api.Source{
 			ID:                   conn.ID,
 			ConnectionID:         conn.SourceId,
@@ -799,11 +807,12 @@ func (h HttpHandler) GetCredential(ctx echo.Context) error {
 			CredentialID:         conn.CredentialID.String(),
 			CredentialName:       conn.Credential.Name,
 			OnboardDate:          conn.CreatedAt,
-			Enabled:              conn.Enabled,
+			LifecycleState:       api.ConnectionLifecycleState(conn.LifecycleState),
 			AssetDiscoveryMethod: conn.AssetDiscoveryMethod,
 			HealthState:          conn.HealthState,
 			LastHealthCheckTime:  conn.LastHealthCheckTime,
 			HealthReason:         conn.HealthReason,
+			Metadata:             metadata,
 		})
 	}
 
@@ -915,6 +924,14 @@ func (h HttpHandler) AutoOnboardCredential(ctx echo.Context) error {
 				return err
 			}
 
+			metadata := make(map[string]any)
+			if src.Metadata.String() != "" {
+				err := json.Unmarshal(src.Metadata, &metadata)
+				if err != nil {
+					return err
+				}
+			}
+
 			onboardedSources = append(onboardedSources, api.Source{
 				ID:                   src.ID,
 				ConnectionID:         src.SourceId,
@@ -925,11 +942,12 @@ func (h HttpHandler) AutoOnboardCredential(ctx echo.Context) error {
 				CredentialID:         src.CredentialID.String(),
 				CredentialName:       src.Credential.Name,
 				OnboardDate:          src.CreatedAt,
-				Enabled:              src.Enabled,
+				LifecycleState:       api.ConnectionLifecycleState(src.LifecycleState),
 				AssetDiscoveryMethod: src.AssetDiscoveryMethod,
 				HealthState:          src.HealthState,
 				LastHealthCheckTime:  src.LastHealthCheckTime,
 				HealthReason:         src.HealthReason,
+				Metadata:             metadata,
 			})
 		}
 	default:
@@ -1033,6 +1051,14 @@ func (h HttpHandler) ListSourcesByCredentials(ctx echo.Context) error {
 			if v.Connections == nil {
 				v.Connections = make([]api.Source, 0)
 			}
+			metadata := make(map[string]any)
+			if src.Metadata.String() != "" {
+				err := json.Unmarshal(src.Metadata, &metadata)
+				if err != nil {
+					return err
+				}
+			}
+
 			v.Connections = append(v.Connections, api.Source{
 				ID:                   src.ID,
 				ConnectionID:         src.SourceId,
@@ -1043,11 +1069,12 @@ func (h HttpHandler) ListSourcesByCredentials(ctx echo.Context) error {
 				CredentialID:         src.CredentialID.String(),
 				CredentialName:       src.Credential.Name,
 				OnboardDate:          src.CreatedAt,
-				Enabled:              src.Enabled,
+				LifecycleState:       api.ConnectionLifecycleState(src.LifecycleState),
 				AssetDiscoveryMethod: src.AssetDiscoveryMethod,
 				HealthState:          src.HealthState,
 				LastHealthCheckTime:  src.LastHealthCheckTime,
 				HealthReason:         src.HealthReason,
+				Metadata:             metadata,
 			})
 			apiCredentials[src.CredentialID.String()] = v
 			v.TotalConnections = utils.PAdd(v.TotalConnections, utils.GetPointer(1))
@@ -1558,6 +1585,14 @@ func (h HttpHandler) GetSourceHealth(ctx echo.Context) error {
 		//TODO Mahan: record state change in elastic search
 	}
 
+	metadata := make(map[string]any)
+	if src.Metadata.String() != "" {
+		err := json.Unmarshal(src.Metadata, &metadata)
+		if err != nil {
+			return err
+		}
+	}
+
 	return ctx.JSON(http.StatusOK, &api.Source{
 		ID:                   src.ID,
 		ConnectionID:         src.SourceId,
@@ -1568,11 +1603,12 @@ func (h HttpHandler) GetSourceHealth(ctx echo.Context) error {
 		CredentialID:         src.CredentialID.String(),
 		CredentialName:       src.Credential.Name,
 		OnboardDate:          src.CreatedAt,
-		Enabled:              src.Enabled,
+		LifecycleState:       api.ConnectionLifecycleState(src.LifecycleState),
 		AssetDiscoveryMethod: src.AssetDiscoveryMethod,
 		HealthState:          src.HealthState,
 		LastHealthCheckTime:  src.LastHealthCheckTime,
 		HealthReason:         src.HealthReason,
+		Metadata:             metadata,
 	})
 }
 
@@ -1679,6 +1715,14 @@ func (h HttpHandler) GetSource(ctx echo.Context) error {
 		return err
 	}
 
+	metadata := make(map[string]any)
+	if src.Metadata.String() != "" {
+		err := json.Unmarshal(src.Metadata, &metadata)
+		if err != nil {
+			return err
+		}
+	}
+
 	return ctx.JSON(http.StatusOK, &api.Source{
 		ID:                   src.ID,
 		ConnectionID:         src.SourceId,
@@ -1689,11 +1733,12 @@ func (h HttpHandler) GetSource(ctx echo.Context) error {
 		CredentialID:         src.CredentialID.String(),
 		CredentialName:       src.Credential.Name,
 		OnboardDate:          src.CreatedAt,
-		Enabled:              src.Enabled,
+		LifecycleState:       api.ConnectionLifecycleState(src.LifecycleState),
 		AssetDiscoveryMethod: src.AssetDiscoveryMethod,
 		HealthState:          src.HealthState,
 		LastHealthCheckTime:  src.LastHealthCheckTime,
 		HealthReason:         src.HealthReason,
+		Metadata:             metadata,
 	})
 }
 
@@ -1876,6 +1921,13 @@ func (h HttpHandler) ListSources(ctx echo.Context) error {
 
 	resp := api.GetSourcesResponse{}
 	for _, s := range sources {
+		metadata := make(map[string]any)
+		if s.Metadata.String() != "" {
+			err := json.Unmarshal(s.Metadata, &metadata)
+			if err != nil {
+				return err
+			}
+		}
 		src := api.Source{
 			ID:                   s.ID,
 			ConnectionID:         s.SourceId,
@@ -1886,11 +1938,12 @@ func (h HttpHandler) ListSources(ctx echo.Context) error {
 			CredentialID:         s.CredentialID.String(),
 			CredentialName:       s.Credential.Name,
 			OnboardDate:          s.CreatedAt,
-			Enabled:              s.Enabled,
+			LifecycleState:       api.ConnectionLifecycleState(s.LifecycleState),
 			AssetDiscoveryMethod: s.AssetDiscoveryMethod,
 			HealthState:          s.HealthState,
 			LastHealthCheckTime:  s.LastHealthCheckTime,
 			HealthReason:         s.HealthReason,
+			Metadata:             metadata,
 		}
 		resp = append(resp, src)
 	}
@@ -1932,6 +1985,13 @@ func (h HttpHandler) GetSources(ctx echo.Context) error {
 
 	var res []api.Source
 	for _, src := range srcs {
+		metadata := make(map[string]any)
+		if src.Metadata.String() != "" {
+			err := json.Unmarshal(src.Metadata, &metadata)
+			if err != nil {
+				return err
+			}
+		}
 		res = append(res, api.Source{
 			ID:                   src.ID,
 			ConnectionID:         src.SourceId,
@@ -1942,11 +2002,12 @@ func (h HttpHandler) GetSources(ctx echo.Context) error {
 			CredentialID:         src.CredentialID.String(),
 			CredentialName:       src.Credential.Name,
 			OnboardDate:          src.CreatedAt,
-			Enabled:              src.Enabled,
+			LifecycleState:       api.ConnectionLifecycleState(src.LifecycleState),
 			AssetDiscoveryMethod: src.AssetDiscoveryMethod,
 			HealthState:          src.HealthState,
 			LastHealthCheckTime:  src.LastHealthCheckTime,
 			HealthReason:         src.HealthReason,
+			Metadata:             metadata,
 		})
 	}
 	return ctx.JSON(http.StatusOK, res)
