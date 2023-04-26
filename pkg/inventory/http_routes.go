@@ -87,7 +87,8 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	v2.GET("/resources/type/:resourceName", httpserver.AuthorizeHandler(h.GetResourceType, api3.ViewerRole))
 
 	v1.GET("/accounts/resource/count", httpserver.AuthorizeHandler(h.GetAccountsResourceCount, api3.ViewerRole))
-	v2.GET("/accounts/summary", httpserver.AuthorizeHandler(h.GetAccountSummary, api3.ViewerRole))
+	v2.GET("/connections/summary", httpserver.AuthorizeHandler(h.ListConnectionsSummary, api3.ViewerRole))
+	v2.GET("/connections/summary/:connectionId", httpserver.AuthorizeHandler(h.GetConnectionSummary, api3.ViewerRole))
 
 	v1.GET("/resources/distribution", httpserver.AuthorizeHandler(h.GetResourceDistribution, api3.ViewerRole))
 	v1.GET("/services/distribution", httpserver.AuthorizeHandler(h.GetServiceDistribution, api3.ViewerRole))
@@ -115,7 +116,6 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	v2.GET("/insights/peer/:insightPeerGroupId", httpserver.AuthorizeHandler(h.GetInsightPeerGroup, api3.ViewerRole))
 	v2.GET("/insights/:insightId", httpserver.AuthorizeHandler(h.GetInsight, api3.ViewerRole))
 
-	v1.GET("/connection/:connection_id/summary", httpserver.AuthorizeHandler(h.GetConnectionSummary, api3.ViewerRole))
 	v1.GET("/provider/:provider/summary", httpserver.AuthorizeHandler(h.GetProviderSummary, api3.ViewerRole))
 
 	metadata := v2.Group("/metadata")
@@ -967,7 +967,6 @@ func (h *HttpHandler) GetRegionsByResourceCount(ctx echo.Context) error {
 	var err error
 	provider, _ := source.ParseType(ctx.QueryParam("provider"))
 
-	var sourceID *string
 	sourceIDs := ctx.QueryParams()["sourceId"]
 	if len(sourceIDs) == 0 {
 		sourceIDs = nil
@@ -1015,17 +1014,8 @@ func (h *HttpHandler) GetRegionsByResourceCount(ctx echo.Context) error {
 		return response[i].Location < response[j].Location
 	})
 
-	apiFilters := make(map[string]any)
-	if !provider.IsNull() {
-		apiFilters["provider"] = provider.String()
-	}
-	if sourceID != nil {
-		apiFilters["sourceId"] = *sourceID
-	}
-
 	return ctx.JSON(http.StatusOK, api.RegionsByResourceCountResponse{
 		TotalCount: len(response),
-		APIFilters: apiFilters,
 		Regions:    utils.Paginate(pageNumber, pageSize, response),
 	})
 }
@@ -1411,23 +1401,9 @@ func (h *HttpHandler) ListResourceTypes(ctx echo.Context) error {
 	})
 
 	totalCount := len(apiResourceTypeNode)
-	apiFilters := map[string]any{}
-	if connector != source.Nil {
-		apiFilters["connector"] = connector.String()
-	}
-	if sourceIDs != nil {
-		apiFilters["sourceId"] = sourceIDs
-	}
-	if len(serviceNames) != 0 {
-		apiFilters["serviceName"] = serviceNames
-	}
-	if minResourceCountStr != "" {
-		apiFilters["minResourceCount"] = minResourceCount
-	}
 
 	result := api.ListResourceTypesResponse{
 		TotalCount:    totalCount,
-		APIFilters:    apiFilters,
 		ResourceTypes: utils.Paginate(pageNumber, pageSize, apiResourceTypeNode),
 	}
 
@@ -2309,7 +2285,7 @@ func (h *HttpHandler) ListCategoriesV2(ctx echo.Context) error {
 //	@Produce	json
 //	@Param		provider	query		string		true	"Provider"
 //	@Param		sourceId	query		[]string	false	"SourceID"
-//	@Success	200			{object}	[]api.AccountResourceCountResponse
+//	@Success	200			{object}	[]api.ConnectionResourceCountResponse
 //	@Router		/inventory/api/v1/accounts/resource/count [get]
 func (h *HttpHandler) GetAccountsResourceCount(ctx echo.Context) error {
 	provider, _ := source.ParseType(ctx.QueryParam("provider"))
@@ -2319,7 +2295,7 @@ func (h *HttpHandler) GetAccountsResourceCount(ctx echo.Context) error {
 		sourceIdPtr = &sourceId
 	}
 
-	res := map[string]api.AccountResourceCountResponse{}
+	res := map[string]api.ConnectionResourceCountResponse{}
 
 	var err error
 	var allSources []api2.Source
@@ -2333,13 +2309,13 @@ func (h *HttpHandler) GetAccountsResourceCount(ctx echo.Context) error {
 	}
 
 	for _, src := range allSources {
-		res[src.ID.String()] = api.AccountResourceCountResponse{
-			SourceID:               src.ID.String(),
-			SourceType:             source.Type(src.Type),
-			ProviderConnectionName: src.ConnectionName,
-			ProviderConnectionID:   src.ConnectionID,
-			Enabled:                src.Enabled,
-			OnboardDate:            src.OnboardDate,
+		res[src.ID.String()] = api.ConnectionResourceCountResponse{
+			SourceID:                src.ID.String(),
+			Connector:               src.Type,
+			ConnectorConnectionName: src.ConnectionName,
+			ConnectorConnectionID:   src.ConnectionID,
+			LifecycleState:          string(src.LifecycleState),
+			OnboardDate:             src.OnboardDate,
 		}
 	}
 
@@ -2351,35 +2327,35 @@ func (h *HttpHandler) GetAccountsResourceCount(ctx echo.Context) error {
 			res[hit.SourceID] = v
 		}
 	}
-	var response []api.AccountResourceCountResponse
+	var response []api.ConnectionResourceCountResponse
 	for _, v := range res {
 		response = append(response, v)
 	}
 	return ctx.JSON(http.StatusOK, response)
 }
 
-// GetAccountSummary godoc
+// ListConnectionsSummary godoc
 //
 //	@Summary	Returns resource count of accounts
 //	@Security	BearerToken
 //	@Tags		benchmarks
 //	@Accept		json
 //	@Produce	json
-//	@Param		provider	query		string		true	"Provider"
-//	@Param		sourceId	query		[]string	false	"SourceID"
-//	@Param		healthState	query		string		false	"Source Healthstate"	Enums(healthy,unhealthy)
-//	@Param		isEnabled	query		bool		false	"is enabled"
-//	@Param		pageSize	query		int			false	"page size - default is 20"
-//	@Param		pageNumber	query		int			false	"page number - default is 1"
-//	@Param		startTime	query		int			false	"start time in unix seconds"
-//	@Param		endTime		query		int			false	"end time in unix seconds"
-//	@Param		sortBy		query		string		false	"column to sort by - default is cost"	Enums(onboard_date,resource_count,cost)
-//	@Success	200			{object}	[]api.AccountSummaryResponse
-//	@Router		/inventory/api/v2/accounts/summary [get]
-func (h *HttpHandler) GetAccountSummary(ctx echo.Context) error {
+//	@Param		connector		query		source.Type	true	"Connector"
+//	@Param		sourceId		query		[]string	false	"SourceID"
+//	@Param		healthState		query		string		false	"Source Healthstate"	Enums(healthy,unhealthy)
+//	@Param		lifecycleState	query		string		false	"lifecycle state filter"
+//	@Param		pageSize		query		int			false	"page size - default is 20"
+//	@Param		pageNumber		query		int			false	"page number - default is 1"
+//	@Param		startTime		query		int			false	"start time in unix seconds"
+//	@Param		endTime			query		int			false	"end time in unix seconds"
+//	@Param		sortBy			query		string		false	"column to sort by - default is cost"	Enums(onboard_date,resource_count,cost)
+//	@Success	200				{object}	api.ListConnectionsResponse
+//	@Router		/inventory/api/v2/connections/summary [get]
+func (h *HttpHandler) ListConnectionsSummary(ctx echo.Context) error {
 	var err error
 
-	provider, _ := source.ParseType(ctx.QueryParam("provider"))
+	connector, _ := source.ParseType(ctx.QueryParam("connector"))
 	sourceId := ctx.QueryParam("sourceId")
 	var sourceIdPtr *string
 	if sourceId != "" {
@@ -2428,11 +2404,11 @@ func (h *HttpHandler) GetAccountSummary(ctx echo.Context) error {
 	healthState := ctx.QueryParam("healthState")
 	enabledState := ctx.QueryParam("enabledState")
 
-	res := map[string]api.AccountSummary{}
+	res := map[string]api.Connection{}
 
 	var allSources []api2.Source
 	if sourceId == "" {
-		allSources, err = h.onboardClient.ListSources(httpclient.FromEchoContext(ctx), provider.AsPtr())
+		allSources, err = h.onboardClient.ListSources(httpclient.FromEchoContext(ctx), connector.AsPtr())
 	} else {
 		allSources, err = h.onboardClient.GetSources(httpclient.FromEchoContext(ctx), []string{sourceId})
 	}
@@ -2446,30 +2422,31 @@ func (h *HttpHandler) GetAccountSummary(ctx echo.Context) error {
 		if healthState != "" && healthState != string(src.HealthState) {
 			continue
 		}
-		if enabledState != "" && strings.ToLower(enabledState) != strconv.FormatBool(src.Enabled) {
+		if enabledState != "" && strings.ToLower(enabledState) != strings.ToLower(string(src.LifecycleState)) {
 			continue
 		}
-		res[src.ID.String()] = api.AccountSummary{
-			SourceID:               src.ID.String(),
-			SourceType:             source.Type(src.Type),
-			ProviderConnectionName: src.ConnectionName,
-			ProviderConnectionID:   src.ConnectionID,
-			Enabled:                src.Enabled,
-			OnboardDate:            src.OnboardDate,
-			HealthState:            src.HealthState,
-			LastHealthCheckTime:    src.LastHealthCheckTime,
-			HealthReason:           src.HealthReason,
+		res[src.ID.String()] = api.Connection{
+			ConnectionID:            src.ID.String(),
+			Connector:               src.Type,
+			ConnectorConnectionName: src.ConnectionName,
+			ConnectorConnectionID:   src.ConnectionID,
+			LifecycleState:          string(src.LifecycleState),
+			OnboardDate:             src.OnboardDate,
+			HealthState:             src.HealthState,
+			LastHealthCheckTime:     src.LastHealthCheckTime,
+			HealthReason:            src.HealthReason,
+			Metadata:                src.Metadata,
 		}
 
 		if src.HealthState == source.HealthStatusUnhealthy {
 			unhealthyCount++
 		}
-		if !src.Enabled {
+		if src.LifecycleState == api2.ConnectionLifecycleStateDisabled {
 			disabledCount++
 		}
 	}
 
-	hits, err := es.FetchConnectionResourcesCountAtTime(h.client, provider, sourceIdPtr, endTime, []map[string]any{{"described_at": "asc"}}, EsFetchPageSize)
+	hits, err := es.FetchConnectionResourcesCountAtTime(h.client, connector, sourceIdPtr, endTime, []map[string]any{{"described_at": "asc"}}, EsFetchPageSize)
 	for _, hit := range hits {
 		if v, ok := res[hit.SourceID]; ok {
 			v.ResourceCount += hit.ResourceCount
@@ -2480,7 +2457,7 @@ func (h *HttpHandler) GetAccountSummary(ctx echo.Context) error {
 		}
 	}
 
-	costs, err := es.FetchDailyCostHistoryByAccountsBetween(h.client, sourceIdPtr, provider.AsPtr(), endTime, startTime, EsFetchPageSize)
+	costs, err := es.FetchDailyCostHistoryByAccountsBetween(h.client, sourceIdPtr, connector.AsPtr(), endTime, startTime, EsFetchPageSize)
 	aggregatedCostHits := internal.AggregateConnectionCosts(costs)
 	if err != nil {
 		return err
@@ -2500,10 +2477,10 @@ func (h *HttpHandler) GetAccountSummary(ctx echo.Context) error {
 	}
 
 	totalCost := make(map[string]float64)
-	var accountSummaries []api.AccountSummary
+	var connectionSummaries []api.Connection
 	for _, v := range res {
 		if v.ResourceCount > 0 {
-			accountSummaries = append(accountSummaries, v)
+			connectionSummaries = append(connectionSummaries, v)
 			if v.Cost != nil {
 				for k, v := range v.Cost {
 					if _, ok := totalCost[k]; !ok {
@@ -2517,55 +2494,120 @@ func (h *HttpHandler) GetAccountSummary(ctx echo.Context) error {
 
 	switch sortBy {
 	case "onboard_date":
-		sort.Slice(accountSummaries, func(i, j int) bool {
-			return accountSummaries[i].OnboardDate.Before(accountSummaries[j].OnboardDate)
+		sort.Slice(connectionSummaries, func(i, j int) bool {
+			return connectionSummaries[i].OnboardDate.Before(connectionSummaries[j].OnboardDate)
 		})
 	case "resource_count":
-		sort.Slice(accountSummaries, func(i, j int) bool {
-			if accountSummaries[i].ResourceCount == accountSummaries[j].ResourceCount {
-				return accountSummaries[i].SourceID < accountSummaries[j].SourceID
+		sort.Slice(connectionSummaries, func(i, j int) bool {
+			if connectionSummaries[i].ResourceCount == connectionSummaries[j].ResourceCount {
+				return connectionSummaries[i].ConnectionID < connectionSummaries[j].ConnectionID
 			}
-			return accountSummaries[i].ResourceCount > accountSummaries[j].ResourceCount
+			return connectionSummaries[i].ResourceCount > connectionSummaries[j].ResourceCount
 		})
 	case "cost":
-		sort.Slice(accountSummaries, func(i, j int) bool {
-			if accountSummaries[i].Cost[DefaultCurrency] == accountSummaries[j].Cost[DefaultCurrency] {
-				return accountSummaries[i].SourceID < accountSummaries[j].SourceID
+		sort.Slice(connectionSummaries, func(i, j int) bool {
+			if connectionSummaries[i].Cost[DefaultCurrency] == connectionSummaries[j].Cost[DefaultCurrency] {
+				return connectionSummaries[i].ConnectionID < connectionSummaries[j].ConnectionID
 			}
-			return accountSummaries[i].Cost[DefaultCurrency] > accountSummaries[j].Cost[DefaultCurrency]
+			return connectionSummaries[i].Cost[DefaultCurrency] > connectionSummaries[j].Cost[DefaultCurrency]
 		})
 	default:
-		sort.Slice(accountSummaries, func(i, j int) bool {
-			return accountSummaries[i].SourceID < accountSummaries[j].SourceID
+		sort.Slice(connectionSummaries, func(i, j int) bool {
+			return connectionSummaries[i].ConnectionID < connectionSummaries[j].ConnectionID
 		})
 	}
 
-	apiFilters := make(map[string]any)
-	if !provider.IsNull() {
-		apiFilters["provider"] = provider.String()
-	}
-	if sourceId != "" {
-		apiFilters["source_id"] = sourceId
-	}
-	if healthState != "" {
-		apiFilters["health_state"] = healthState
-	}
-	if enabledState != "" {
-		apiFilters["enabled_state"] = enabledState
-	}
-	apiFilters["start_time"] = startTime.Unix()
-	apiFilters["end_time"] = endTime.Unix()
-
-	response := api.AccountSummaryResponse{
-		TotalCount:          len(accountSummaries),
+	response := api.ListConnectionsResponse{
+		TotalCount:          len(connectionSummaries),
 		TotalUnhealthyCount: unhealthyCount,
 		TotalDisabledCount:  disabledCount,
 		TotalCost:           totalCost,
-		APIFilters:          apiFilters,
-		Accounts:            utils.Paginate(pageNumber, pageSize, accountSummaries),
+		Connections:         utils.Paginate(pageNumber, pageSize, connectionSummaries),
 	}
 
 	return ctx.JSON(http.StatusOK, response)
+}
+
+// GetConnectionSummary godoc
+//
+//	@Summary	Returns resource count of accounts
+//	@Tags		benchmarks
+//	@Accept		json
+//	@Produce	json
+//	@Param		startTime	query		int	false	"start time in unix seconds"
+//	@Param		endTime		query		int	false	"end time in unix seconds"
+//	@Success	200			{object}	api.Connection
+//	@Router		/inventory/api/v2/connections/summary/{connectionId} [get]
+func (h *HttpHandler) GetConnectionSummary(ctx echo.Context) error {
+	var err error
+	connectionId := ctx.Param("connectionId")
+	endTimeStr := ctx.QueryParam("endTime")
+	endTime := time.Now()
+	if endTimeStr != "" {
+		endTimeUnix, err := strconv.ParseInt(endTimeStr, 10, 64)
+		if err != nil {
+			return ctx.JSON(http.StatusBadRequest, "endTime is not a valid integer")
+		}
+		endTime = time.Unix(endTimeUnix, 0)
+	}
+	startTimeStr := ctx.QueryParam("startTime")
+	startTime := endTime.AddDate(0, 0, -7)
+	if startTimeStr != "" {
+		startTimeUnix, err := strconv.ParseInt(startTimeStr, 10, 64)
+		if err != nil {
+			return ctx.JSON(http.StatusBadRequest, "startTime is not a valid integer")
+		}
+		startTime = time.Unix(startTimeUnix, 0)
+	}
+
+	res := api.Connection{}
+	src, err := h.onboardClient.GetSource(httpclient.FromEchoContext(ctx), connectionId)
+	if err != nil {
+		return err
+	}
+
+	res = api.Connection{
+		ConnectionID:            src.ID.String(),
+		Connector:               src.Type,
+		ConnectorConnectionName: src.ConnectionName,
+		ConnectorConnectionID:   src.ConnectionID,
+		LifecycleState:          string(src.LifecycleState),
+		OnboardDate:             src.OnboardDate,
+		HealthState:             src.HealthState,
+		LastHealthCheckTime:     src.LastHealthCheckTime,
+		HealthReason:            src.HealthReason,
+		Metadata:                src.Metadata,
+	}
+
+	hits, err := es.FetchConnectionResourcesCountAtTime(h.client, src.Type, &connectionId, endTime, []map[string]any{{"described_at": "asc"}}, EsFetchPageSize)
+	for _, hit := range hits {
+		if hit.SourceID == connectionId {
+			res.ResourceCount += hit.ResourceCount
+			if res.LastInventory.IsZero() || res.LastInventory.Before(time.UnixMilli(hit.DescribedAt)) {
+				res.LastInventory = time.UnixMilli(hit.DescribedAt)
+			}
+		}
+	}
+
+	costs, err := es.FetchDailyCostHistoryByAccountsBetween(h.client, &connectionId, src.Type.AsPtr(), endTime, startTime, EsFetchPageSize)
+	aggregatedCostHits := internal.AggregateConnectionCosts(costs)
+	if err != nil {
+		return err
+	}
+	for sourceID, costArr := range aggregatedCostHits {
+		if sourceID == connectionId {
+			if res.Cost == nil {
+				res.Cost = make(map[string]float64)
+			}
+			for _, cost := range costArr {
+				val, _ := res.Cost[cost.Unit]
+				val += cost.Cost
+				res.Cost[cost.Unit] = val
+			}
+		}
+	}
+
+	return ctx.JSON(http.StatusOK, res)
 }
 
 // GetResourceDistribution godoc
@@ -2888,25 +2930,8 @@ func (h *HttpHandler) ListServiceSummaries(ctx echo.Context) error {
 		})
 	}
 
-	apiFilters := make(map[string]any)
-	if !provider.IsNull() {
-		apiFilters["provider"] = provider.String()
-	}
-	if sourceIDs != nil {
-		apiFilters["source_id"] = fmt.Sprintf("%v", sourceIDs)
-	}
-	if category != "" {
-		apiFilters["category"] = category
-	}
-	apiFilters["start_time"] = startTime
-	apiFilters["end_time"] = endTime
-	if minSpentStr != "" {
-		apiFilters["min_spent"] = minSpentStr
-	}
-
 	res := api.ListServiceSummariesResponse{
 		TotalCount: len(serviceSummaries),
-		APIFilters: apiFilters,
 		Services:   utils.Paginate(pageNumber, pageSize, serviceSummaries),
 	}
 
@@ -3543,58 +3568,6 @@ func (h *HttpHandler) CountResources(ctx echo.Context) error {
 	}
 
 	return ctx.JSON(http.StatusOK, value)
-}
-
-// GetConnectionSummary godoc
-//
-//	@Summary	Get connection summary
-//	@Security	BearerToken
-//	@Tags		inventory
-//	@Accept		json
-//	@Produce	json,text/csv
-//	@Success	200	{object}	api.ConnectionSummaryResponse
-//	@Router		/inventory/api/v1/connection/{connection_id}/summary [get]
-func (h *HttpHandler) GetConnectionSummary(ctx echo.Context) error {
-	connectionID := ctx.Param("connection_id")
-
-	metrics, err := h.db.FetchConnectionAllMetrics(connectionID)
-	if err != nil {
-		return err
-	}
-
-	cats, err := h.db.ListCategories()
-	if err != nil {
-		return err
-	}
-
-	resp := api.ConnectionSummaryResponse{
-		Categories:    map[string]api.ConnectionSummaryCategory{},
-		CloudServices: map[string]int{},
-		ResourceTypes: map[string]int{},
-	}
-	for _, m := range metrics {
-		cloudService := cloudservice.ServiceNameByResourceType(m.ResourceType)
-		resp.ResourceTypes[m.ResourceType] += m.Count
-		resp.CloudServices[cloudService] += m.Count
-		for _, c := range cats {
-			if c.CloudService == cloudService {
-				v, ok := resp.Categories[c.Name]
-				if !ok {
-					v = api.ConnectionSummaryCategory{
-						ResourceCount: 0,
-						SubCategories: map[string]int{},
-					}
-				}
-
-				v.ResourceCount += m.Count
-				v.SubCategories[c.SubCategory] += m.Count
-
-				resp.Categories[c.Name] = v
-			}
-		}
-	}
-
-	return ctx.JSON(http.StatusOK, resp)
 }
 
 // GetProviderSummary godoc
