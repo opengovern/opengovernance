@@ -78,6 +78,21 @@ func (s Scheduler) scheduleDescribeJob() {
 			return
 		}
 
+		sourceJob, err := s.db.GetDescribeSourceJob(cloudNativeDaj.SourceJob.ID)
+		if err != nil {
+			s.logger.Error("Failed to GetCloudNativeDescribeSourceJobBySourceJobID", zap.Error(err))
+			DescribeJobsCount.WithLabelValues("failure").Inc()
+			return
+		}
+
+		if sourceJob == nil {
+			s.logger.Error("Failed to find source describe job", zap.Uint("jobID", cloudNativeDaj.SourceJob.ID))
+			DescribeJobsCount.WithLabelValues("failure").Inc()
+			return
+		}
+
+		cloudNativeDaj.SourceJob = *sourceJob
+
 		src, err := s.db.GetSourceByUUID(ds.SourceID)
 		if err != nil {
 			s.logger.Error("Failed to GetSourceByUUID", zap.Error(err))
