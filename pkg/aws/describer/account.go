@@ -47,9 +47,7 @@ func AccountContact(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 
 	var values []Resource
 
-	input := &account.GetContactInformationInput{
-		AccountId: &describeCtx.AccountID,
-	}
+	input := &account.GetContactInformationInput{}
 	op, err := client.GetContactInformation(ctx, input)
 	if err != nil {
 		return nil, err

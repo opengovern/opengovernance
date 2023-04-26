@@ -99,7 +99,7 @@ func (s Scheduler) scheduleDescribeJob() {
 		err = enqueueCloudNativeDescribeConnectionJob(s.logger, s.db, CurrentWorkspaceID, s.cloudNativeAPIBaseURL,
 			s.cloudNativeAPIAuthKey, *src, *cloudNativeDaj, s.kafkaResourcesTopic, ds.DescribedAt, ds.TriggerType, s.describeIntervalHours)
 		if err != nil {
-			s.logger.Error("Failed to enqueueCloudNativeDescribeConnectionJob", zap.Error(err))
+			s.logger.Error("Failed to enqueueCloudNativeDescribeConnectionJob", zap.Error(err), zap.String("connectionID", src.ID.String()))
 			DescribeJobsCount.WithLabelValues("failure").Inc()
 			return
 		}
@@ -315,6 +315,13 @@ func enqueueCloudNativeDescribeConnectionJob(logger *zap.Logger, db Database, wo
 	if resp.StatusCode != http.StatusAccepted {
 		return fmt.Errorf("failed to trigger cloud native connection worker due to %d: %s", resp.StatusCode, string(resBody))
 	}
+
+	logger.Error("enqueueCloudNativeDescribeConnectionJob",
+		zap.Uint("parentJobId", daj.ID),
+		zap.String("resBody", string(resBody)),
+		zap.String("connectionID", daj.SourceJob.SourceID.String()),
+		zap.Error(err),
+	)
 
 	if err := db.UpdateDescribeResourceJobStatusByParentId(daj.SourceJob.ID, api.DescribeResourceJobQueued, fmt.Sprintf("%v", err)); err != nil {
 		logger.Error("Failed to update DescribeResourceJob",
