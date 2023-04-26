@@ -17,7 +17,6 @@ import (
 	"github.com/ProtonMail/gopenpgp/v2/helper"
 	"gitlab.com/keibiengine/keibi-engine/pkg/aws"
 	"gitlab.com/keibiengine/keibi-engine/pkg/azure"
-	"gitlab.com/keibiengine/keibi-engine/pkg/describe/api"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/producer"
 	"gitlab.com/keibiengine/keibi-engine/pkg/keibi-es-sdk"
 	"go.opentelemetry.io/otel/attribute"
@@ -418,6 +417,207 @@ func (w *CleanupWorker) Stop() {
 	}
 }
 
+type CloudNativeConnectionWorker struct {
+	instanceId                         string
+	id                                 string
+	job                                DescribeConnectionJob
+	kfkProducer                        *producer.InMemorySaramaProducer
+	kfkTopic                           string
+	cloudNativeOutputQueue             *azeventhubs.ProducerClient
+	cloudNativeBlobStorageClient       *azblob.Client
+	cloudNativeBlobOutputEncryptionKey string
+	vault                              vault.SourceConfig
+	logger                             *zap.Logger
+}
+
+func InitializeCloudNativeConnectionWorker(
+	instanceId string,
+	id string,
+	job DescribeConnectionJob,
+	kfkTopic string,
+	cloudNativeOutputQueueName string,
+	cloudNativeOutputConnectionString string,
+	cloudNativeBlobStorageConnectionString string,
+	cloudNativeBlobOutputEncryptionKey string,
+	secretMap map[string]any,
+	logger *zap.Logger,
+) (w *CloudNativeConnectionWorker, err error) {
+	if id == "" {
+		return nil, fmt.Errorf("'id' must be set to a non empty string")
+	}
+	if kfkTopic == "" {
+		return nil, fmt.Errorf("'kfkTopic' must be set to a non empty string")
+	}
+
+	w = &CloudNativeConnectionWorker{
+		instanceId:                         instanceId,
+		id:                                 id,
+		job:                                job,
+		kfkTopic:                           kfkTopic,
+		cloudNativeBlobOutputEncryptionKey: cloudNativeBlobOutputEncryptionKey,
+	}
+	defer func() {
+		if err != nil && w != nil {
+			w.Stop()
+		}
+	}()
+
+	w.kfkProducer = producer.NewInMemorySaramaProducer()
+
+	// setup vault
+	v := vault.NewInMemoryVaultSourceConfig()
+	err = v.Write(job.ConfigReg, secretMap)
+	if err != nil {
+		return nil, err
+	}
+
+	w.logger = logger
+
+	w.vault = v
+
+	producerClient, err := azeventhubs.NewProducerClientFromConnectionString(cloudNativeOutputConnectionString, cloudNativeOutputQueueName, nil)
+	if err != nil {
+		return nil, err
+	}
+	w.cloudNativeOutputQueue = producerClient
+
+	blobClient, err := azblob.NewClientFromConnectionString(cloudNativeBlobStorageConnectionString, nil)
+	if err != nil {
+		return nil, err
+	}
+	w.cloudNativeBlobStorageClient = blobClient
+
+	return w, nil
+}
+
+type CloudNativeConnectionWorkerMessage struct {
+	Topic   string
+	Key     sarama.StringEncoder
+	Headers []sarama.RecordHeader
+	Value   sarama.ByteEncoder
+}
+
+type CloudNativeConnectionWorkerResult struct {
+	JobID         string `json:"jobId" validate:"required"`
+	BlobName      string `json:"blobName" validate:"required"`
+	ContainerName string `json:"containerName" validate:"required"`
+}
+
+type CloudNativeConnectionWorkerData struct {
+	JobID     string                                `json:"jobId" validate:"required"`
+	JobResult DescribeConnectionJobResult           `json:"jobResult" validate:"required"`
+	JobData   []*CloudNativeConnectionWorkerMessage `json:"jobData" validate:"required"`
+}
+
+func (w *CloudNativeConnectionWorker) Run(ctx context.Context, sendTimeout bool) (err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			err = fmt.Errorf("%v", r)
+		}
+	}()
+	var jobResult DescribeConnectionJobResult
+	if sendTimeout {
+		jobResult = w.job.CloudTimeout()
+	} else {
+		jobResult = w.job.Do(ctx, w.vault, nil, w.kfkProducer, w.kfkTopic, w.logger)
+	}
+
+	saramaMessages := w.kfkProducer.GetMessages()
+	messages := make([]*CloudNativeConnectionWorkerMessage, 0, len(saramaMessages))
+	for _, saramaMessage := range saramaMessages {
+		messages = append(messages, &CloudNativeConnectionWorkerMessage{
+			Topic:   saramaMessage.Topic,
+			Key:     saramaMessage.Key.(sarama.StringEncoder),
+			Headers: saramaMessage.Headers,
+			Value:   saramaMessage.Value.(sarama.ByteEncoder),
+		})
+	}
+
+	resultData := CloudNativeConnectionWorkerData{
+		JobID:     fmt.Sprint(w.instanceId),
+		JobResult: jobResult,
+		JobData:   messages,
+	}
+
+	resultDataJson, err := json.Marshal(resultData)
+	if err != nil {
+		w.logger.Error("Failed to marshal messages", zap.Error(err))
+		return err
+	}
+
+	encMessage, err := helper.EncryptMessageArmored(w.cloudNativeBlobOutputEncryptionKey, string(resultDataJson))
+	if err != nil {
+		w.logger.Error("Failed to encrypt messages", zap.Error(err))
+		return err
+	}
+
+	containerName := fmt.Sprintf("connection-worker-%s", strings.ToLower(fmt.Sprint(w.instanceId)))
+
+	// get hash of resource types
+	hash := sha256.New()
+	for _, v := range w.job.ResourceJobs {
+		hash.Write([]byte(v))
+	}
+	hashString := hex.EncodeToString(hash.Sum(nil))
+
+	blobName := fmt.Sprintf("%s---%s.json", w.job.SourceID, hashString)
+
+	retryCount := 30
+	for i := 0; i < retryCount; i++ {
+		_, err = w.cloudNativeBlobStorageClient.UploadBuffer(ctx, containerName, blobName, []byte(encMessage), nil)
+		if err != nil {
+			w.logger.Error("Failed to upload blob", zap.Error(err))
+			if i == retryCount-1 {
+				return err
+			}
+			time.Sleep(time.Duration(rand.Intn(15)+1) * time.Second)
+		} else {
+			break
+		}
+	}
+
+	return nil
+}
+
+func (w *CloudNativeConnectionWorker) Stop() {
+	return
+}
+
+type OldCleanerWorker struct {
+	lowerThan uint
+	esClient  *elasticsearch.Client
+	logger    *zap.Logger
+}
+
+func InitializeOldCleanerWorker(
+	lowerThan uint,
+	elasticAddress string,
+	elasticUsername string,
+	elasticPassword string,
+	logger *zap.Logger,
+) (w *OldCleanerWorker, err error) {
+	w = &OldCleanerWorker{lowerThan: lowerThan}
+
+	esClient, err := elasticsearch.NewClient(elasticsearch.Config{
+		Addresses: []string{elasticAddress},
+		Username:  elasticUsername,
+		Password:  elasticPassword,
+		Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{
+				InsecureSkipVerify: true, //nolint,gosec
+			},
+		},
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	w.esClient = esClient
+	w.logger = logger
+
+	return w, nil
+}
+
 type ConnectionWorker struct {
 	id                    string
 	jobQueue              queue.Interface
@@ -633,234 +833,6 @@ func (w *ConnectionWorker) Stop() {
 	}
 
 	w.tp.Shutdown(context.Background())
-}
-
-type CloudNativeConnectionWorker struct {
-	instanceId                         string
-	id                                 string
-	job                                DescribeConnectionJob
-	kfkProducer                        *producer.InMemorySaramaProducer
-	kfkTopic                           string
-	cloudNativeOutputQueue             *azeventhubs.ProducerClient
-	cloudNativeBlobStorageClient       *azblob.Client
-	cloudNativeBlobOutputEncryptionKey string
-	vault                              vault.SourceConfig
-	logger                             *zap.Logger
-}
-
-func InitializeCloudNativeConnectionWorker(
-	instanceId string,
-	id string,
-	job DescribeConnectionJob,
-	kfkTopic string,
-	cloudNativeOutputQueueName string,
-	cloudNativeOutputConnectionString string,
-	cloudNativeBlobStorageConnectionString string,
-	cloudNativeBlobOutputEncryptionKey string,
-	secretMap map[string]any,
-	logger *zap.Logger,
-) (w *CloudNativeConnectionWorker, err error) {
-	if id == "" {
-		return nil, fmt.Errorf("'id' must be set to a non empty string")
-	}
-	if kfkTopic == "" {
-		return nil, fmt.Errorf("'kfkTopic' must be set to a non empty string")
-	}
-
-	w = &CloudNativeConnectionWorker{
-		instanceId:                         instanceId,
-		id:                                 id,
-		job:                                job,
-		kfkTopic:                           kfkTopic,
-		cloudNativeBlobOutputEncryptionKey: cloudNativeBlobOutputEncryptionKey,
-	}
-	defer func() {
-		if err != nil && w != nil {
-			w.Stop()
-		}
-	}()
-
-	w.kfkProducer = producer.NewInMemorySaramaProducer()
-
-	// setup vault
-	v := vault.NewInMemoryVaultSourceConfig()
-	err = v.Write(job.ConfigReg, secretMap)
-	if err != nil {
-		return nil, err
-	}
-
-	w.logger = logger
-
-	w.vault = v
-
-	producerClient, err := azeventhubs.NewProducerClientFromConnectionString(cloudNativeOutputConnectionString, cloudNativeOutputQueueName, nil)
-	if err != nil {
-		return nil, err
-	}
-	w.cloudNativeOutputQueue = producerClient
-
-	blobClient, err := azblob.NewClientFromConnectionString(cloudNativeBlobStorageConnectionString, nil)
-	if err != nil {
-		return nil, err
-	}
-	w.cloudNativeBlobStorageClient = blobClient
-
-	return w, nil
-}
-
-type CloudNativeConnectionWorkerMessage struct {
-	Topic   string
-	Key     sarama.StringEncoder
-	Headers []sarama.RecordHeader
-	Value   sarama.ByteEncoder
-}
-
-type CloudNativeConnectionWorkerResult struct {
-	JobID         string                      `json:"jobId" validate:"required"`
-	BlobName      string                      `json:"blobName" validate:"required"`
-	ContainerName string                      `json:"containerName" validate:"required"`
-	JobResult     DescribeConnectionJobResult `json:"jobResult" validate:"required"`
-}
-
-func (w *CloudNativeConnectionWorker) Run(ctx context.Context, sendTimeout bool) error {
-	var jobResult DescribeConnectionJobResult
-	if sendTimeout {
-		jobResult = w.job.CloudTimeout()
-	} else {
-		jobResult = w.job.Do(ctx, w.vault, nil, w.kfkProducer, w.kfkTopic, w.logger)
-	}
-
-	saramaMessages := w.kfkProducer.GetMessages()
-	messages := make([]*CloudNativeConnectionWorkerMessage, 0, len(saramaMessages))
-	for _, saramaMessage := range saramaMessages {
-		messages = append(messages, &CloudNativeConnectionWorkerMessage{
-			Topic:   saramaMessage.Topic,
-			Key:     saramaMessage.Key.(sarama.StringEncoder),
-			Headers: saramaMessage.Headers,
-			Value:   saramaMessage.Value.(sarama.ByteEncoder),
-		})
-	}
-
-	messagesJson, err := json.Marshal(messages)
-	if err != nil {
-		w.logger.Error("Failed to marshal messages", zap.Error(err))
-		return err
-	}
-
-	encMessage, err := helper.EncryptMessageArmored(w.cloudNativeBlobOutputEncryptionKey, string(messagesJson))
-	if err != nil {
-		w.logger.Error("Failed to encrypt messages", zap.Error(err))
-		return err
-	}
-
-	containerName := fmt.Sprintf("connection-worker-%s", strings.ToLower(fmt.Sprint(w.job.ScheduleJobID)))
-
-	// get hash of resource types
-	hash := sha256.New()
-	for _, v := range w.job.ResourceJobs {
-		hash.Write([]byte(v))
-	}
-	hashString := hex.EncodeToString(hash.Sum(nil))
-
-	blobName := fmt.Sprintf("%s---%s.json", w.job.SourceID, hashString)
-
-	retryCount := 30
-	for i := 0; i < retryCount; i++ {
-		_, err = w.cloudNativeBlobStorageClient.UploadBuffer(ctx, containerName, blobName, []byte(encMessage), nil)
-		if err != nil {
-			w.logger.Error("Failed to upload blob", zap.Error(err))
-			if i == retryCount-1 {
-				for k, v := range jobResult.Result {
-					v.Error = fmt.Sprintf("%s\nFailed to upload blob: %s", v.Error, err.Error())
-					v.Status = api.DescribeResourceJobFailed
-					jobResult.Result[k] = v
-				}
-				break
-			}
-			time.Sleep(time.Duration(rand.Intn(15)+1) * time.Second)
-		} else {
-			break
-		}
-	}
-
-	output := CloudNativeConnectionWorkerResult{
-		JobID:         w.instanceId,
-		ContainerName: containerName,
-		BlobName:      blobName,
-		JobResult:     jobResult,
-	}
-
-	jsonOutput, err := json.Marshal(output)
-	if err != nil {
-		w.logger.Error("Failed to marshal output", zap.Error(err))
-		return err
-	}
-
-	batch, err := w.cloudNativeOutputQueue.NewEventDataBatch(context.TODO(), nil)
-	if err != nil {
-		w.logger.Error("Failed to create event data batch", zap.Error(err))
-		return err
-	}
-	err = batch.AddEventData(&azeventhubs.EventData{
-		Body: jsonOutput,
-	}, nil)
-	if err != nil {
-		w.logger.Error("Failed to add event data", zap.Error(err))
-		return err
-	}
-	for i := 0; i < 3; i++ {
-		err = w.cloudNativeOutputQueue.SendEventDataBatch(context.TODO(), batch, nil)
-		if err != nil {
-			w.logger.Error("Failed to send event data batch", zap.Error(err))
-			if i == 2 {
-				return err
-			}
-			time.Sleep(time.Duration(rand.Intn(10)+1) * time.Second)
-		} else {
-			break
-		}
-	}
-
-	return nil
-}
-
-func (w *CloudNativeConnectionWorker) Stop() {
-	return
-}
-
-type OldCleanerWorker struct {
-	lowerThan uint
-	esClient  *elasticsearch.Client
-	logger    *zap.Logger
-}
-
-func InitializeOldCleanerWorker(
-	lowerThan uint,
-	elasticAddress string,
-	elasticUsername string,
-	elasticPassword string,
-	logger *zap.Logger,
-) (w *OldCleanerWorker, err error) {
-	w = &OldCleanerWorker{lowerThan: lowerThan}
-
-	esClient, err := elasticsearch.NewClient(elasticsearch.Config{
-		Addresses: []string{elasticAddress},
-		Username:  elasticUsername,
-		Password:  elasticPassword,
-		Transport: &http.Transport{
-			TLSClientConfig: &tls.Config{
-				InsecureSkipVerify: true, //nolint,gosec
-			},
-		},
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	w.esClient = esClient
-	w.logger = logger
-
-	return w, nil
 }
 
 func (w *OldCleanerWorker) Run() error {

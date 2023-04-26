@@ -9,7 +9,6 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/keibi-es-sdk"
 
 	api2 "gitlab.com/keibiengine/keibi-engine/pkg/auth/api"
-	"gitlab.com/keibiengine/keibi-engine/pkg/cloudservice"
 	"gitlab.com/keibiengine/keibi-engine/pkg/compliance/api"
 	"gitlab.com/keibiengine/keibi-engine/pkg/compliance/client"
 	"gitlab.com/keibiengine/keibi-engine/pkg/compliance/es"
@@ -287,8 +286,6 @@ func (j *Job) ExtractFindings(benchmark *api.Benchmark, policy *api.Policy, quer
 			ResourceName:     resourceName,
 			ResourceLocation: resourceLocation,
 			ResourceType:     resourceType,
-			ServiceName:      cloudservice.ServiceNameByResourceType(resourceType),
-			Category:         cloudservice.CategoryByResourceType(resourceType),
 			Reason:           reason,
 			ComplianceJobID:  j.JobID,
 			ScheduleJobID:    j.ScheduleJobID,

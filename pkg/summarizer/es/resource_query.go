@@ -102,3 +102,29 @@ func FetchLookupsByDescribeResourceJobIdList(client keibi.Client, resourceType s
 
 	return response, nil
 }
+
+func FetchLookups(client keibi.Client, searchAfter []interface{}, size int) (LookupQueryResponse, error) {
+	res := make(map[string]interface{})
+	if searchAfter != nil {
+		res["search_after"] = searchAfter
+	}
+
+	res["size"] = size
+	res["sort"] = []map[string]interface{}{
+		{
+			"_id": "desc",
+		},
+	}
+	b, err := json.Marshal(res)
+	if err != nil {
+		return LookupQueryResponse{}, err
+	}
+
+	var response LookupQueryResponse
+	err = client.Search(context.Background(), InventorySummaryIndex, string(b), &response)
+	if err != nil {
+		return LookupQueryResponse{}, err
+	}
+
+	return response, nil
+}

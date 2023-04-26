@@ -16,14 +16,14 @@ const (
 	SecurityAuditPolicyARN = "arn:aws:iam::aws:policy/SecurityAudit"
 )
 
-func CheckSecurityAuditPermission(accessKey, secretKey string) error {
+func CheckAttachedPolicy(accessKey, secretKey, expectedPolicyARN string) (bool, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
 	cfg, err := GetConfig(ctx, accessKey, secretKey, "", "")
 	if err != nil {
 		fmt.Printf("failed to get config: %v", err)
-		return err
+		return false, err
 	}
 
 	cfgClone := cfg.Copy()
@@ -35,7 +35,7 @@ func CheckSecurityAuditPermission(accessKey, secretKey string) error {
 	user, err := iamClient.GetUser(ctx, &iam.GetUserInput{})
 	if err != nil {
 		fmt.Printf("failed to get user: %v", err)
-		return err
+		return false, err
 	}
 	paginator := iam.NewListAttachedUserPoliciesPaginator(iamClient, &iam.ListAttachedUserPoliciesInput{
 		UserName: user.User.UserName,
@@ -46,7 +46,7 @@ func CheckSecurityAuditPermission(accessKey, secretKey string) error {
 		page, err := paginator.NextPage(ctx)
 		if err != nil {
 			fmt.Printf("failed to get policy page: %v", err)
-			return err
+			return false, err
 		}
 		for _, policy := range page.AttachedPolicies {
 			policyARNs = append(policyARNs, *policy.PolicyArn)
@@ -54,12 +54,12 @@ func CheckSecurityAuditPermission(accessKey, secretKey string) error {
 	}
 
 	for _, policyARN := range policyARNs {
-		if policyARN == SecurityAuditPolicyARN {
-			return nil
+		if policyARN == expectedPolicyARN {
+			return true, nil
 		}
 	}
 
-	return fmt.Errorf("SecurityAudit policy is not attached to the user")
+	return false, nil
 }
 
 func CheckGetUserPermission(accessKey, secretKey string) error {

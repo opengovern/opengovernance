@@ -58,6 +58,7 @@ func (h HttpServer) Register(e *echo.Echo) {
 	v0.GET("/compliance/trigger", httpserver.AuthorizeHandler(h.TriggerComplianceJob, api3.AdminRole))
 	v0.GET("/compliance/summarizer/trigger", httpserver.AuthorizeHandler(h.TriggerComplianceSummarizerJob, api3.AdminRole))
 	v1.PUT("/benchmark/evaluation/trigger", httpserver.AuthorizeHandler(h.TriggerBenchmarkEvaluation, api3.AdminRole))
+	v1.PUT("/describe/trigger/:connection_id", httpserver.AuthorizeHandler(h.TriggerDescribeJobV1, api3.AdminRole))
 
 	v1.GET("/describe/source/jobs/pending", httpserver.AuthorizeHandler(h.HandleListPendingDescribeSourceJobs, api3.ViewerRole))
 	v1.GET("/describe/resource/jobs/pending", httpserver.AuthorizeHandler(h.HandleListPendingDescribeResourceJobs, api3.ViewerRole))
@@ -479,10 +480,32 @@ func (h HttpServer) TriggerDescribeJob(ctx echo.Context) error {
 	err = h.DB.AddScheduleJob(&job)
 	if err != nil {
 		errMsg := fmt.Sprintf("error adding schedule job: %v", err)
-		DescribeJobsCount.WithLabelValues("failure").Inc()
 		return ctx.JSON(http.StatusInternalServerError, api.ErrorResponse{Message: errMsg})
 	}
 	return ctx.JSON(http.StatusOK, "")
+}
+
+// TriggerDescribeJobV1 godoc
+//
+//	@Summary		Triggers a describe job to run immediately
+//	@Description	Triggers a describe job to run immediately
+//	@Tags			describe
+//	@Produce		json
+//	@Success		200
+//	@Router			/schedule/api/v1/describe/trigger/{connection_id} [put]
+func (h HttpServer) TriggerDescribeJobV1(ctx echo.Context) error {
+	connectionID := ctx.Param("connection_id")
+
+	src, err := h.DB.GetSourceByID(connectionID)
+	if err != nil || src == nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid connection id")
+	}
+
+	err = h.Scheduler.describeConnection(*src, false)
+	if err != nil {
+		return err
+	}
+	return ctx.NoContent(http.StatusOK)
 }
 
 // TriggerSummarizeJob godoc

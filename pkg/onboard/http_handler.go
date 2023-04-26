@@ -5,6 +5,7 @@ import (
 
 	"github.com/hashicorp/vault/api/auth/kubernetes"
 	"go.uber.org/zap"
+	"gopkg.in/go-playground/validator.v9"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/postgres"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/queue"
@@ -18,6 +19,7 @@ type HttpHandler struct {
 	vault                 vault.SourceConfig
 	awsPermissionCheckURL string
 	inventoryClient       inventory.InventoryServiceClient
+	validator             *validator.Validate
 }
 
 func InitializeHttpHandler(
@@ -105,5 +107,6 @@ func InitializeHttpHandler(
 		sourceEventsQueue:     sourceEventsQueue,
 		awsPermissionCheckURL: awsPermissionCheckURL,
 		inventoryClient:       inventoryClient,
+		validator:             validator.New(),
 	}, nil
 }

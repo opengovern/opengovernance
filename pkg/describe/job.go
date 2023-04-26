@@ -110,6 +110,8 @@ func AWSAccountConfigFromMap(m map[string]interface{}) (AWSAccountConfig, error)
 type AzureSubscriptionConfig struct {
 	SubscriptionID  string `json:"subscriptionId"`
 	TenantID        string `json:"tenantId"`
+	ObjectID        string `json:"objectId"`
+	SecretID        string `json:"secretId"`
 	ClientID        string `json:"clientId"`
 	ClientSecret    string `json:"clientSecret"`
 	CertificatePath string `json:"certificatePath"`
@@ -148,23 +150,23 @@ type DescribeJob struct {
 }
 
 type DescribeJobResult struct {
-	JobID       uint
-	ParentJobID uint
-	Status      api.DescribeResourceJobStatus
-	Error       string
-	DescribeJob DescribeJob
+	JobID                uint
+	ParentJobID          uint
+	Status               api.DescribeResourceJobStatus
+	Error                string
+	DescribeJob          DescribeJob
+	DescribedResourceIDs []string
 }
 
 type DescribeConnectionJob struct {
-	JobID         uint // DescribeSourceJob ID
-	ScheduleJobID uint
-	ResourceJobs  map[uint]string // DescribeResourceJob ID -> ResourceType
-	SourceID      string
-	AccountID     string
-	DescribedAt   int64
-	SourceType    api.SourceType
-	ConfigReg     string
-	TriggerType   enums.DescribeTriggerType
+	JobID        uint            // DescribeSourceJob ID
+	ResourceJobs map[uint]string // DescribeResourceJob ID -> ResourceType
+	SourceID     string
+	AccountID    string
+	DescribedAt  int64
+	SourceType   api.SourceType
+	ConfigReg    string
+	TriggerType  enums.DescribeTriggerType
 }
 
 type DescribeConnectionJobResult struct {
@@ -173,6 +175,38 @@ type DescribeConnectionJobResult struct {
 }
 
 func (j DescribeConnectionJob) Do(ictx context.Context, vlt vault.SourceConfig, rdb *redis.Client, producer sarama.SyncProducer, topic string, logger *zap.Logger) (r DescribeConnectionJobResult) {
+	defer func() {
+		if rec := recover(); rec != nil {
+			describeConnectionJobResult := DescribeConnectionJobResult{
+				JobID:  j.JobID,
+				Result: map[uint]DescribeJobResult{},
+			}
+			for id, resourceType := range j.ResourceJobs {
+				dj := DescribeJob{
+					JobID:        id,
+					ParentJobID:  j.JobID,
+					ResourceType: resourceType,
+					SourceID:     j.SourceID,
+					AccountID:    j.AccountID,
+					DescribedAt:  j.DescribedAt,
+					SourceType:   j.SourceType,
+					ConfigReg:    j.ConfigReg,
+					TriggerType:  j.TriggerType,
+					RetryCounter: 0,
+				}
+				describeConnectionJobResult.Result[id] = DescribeJobResult{
+					JobID:                dj.JobID,
+					ParentJobID:          dj.ParentJobID,
+					Status:               api.DescribeResourceJobFailed,
+					Error:                fmt.Sprintf("Cloud job paniced: %v", rec),
+					DescribeJob:          dj,
+					DescribedResourceIDs: nil,
+				}
+
+			}
+			r = describeConnectionJobResult
+		}
+	}()
 	if j.TriggerType == "" {
 		j.TriggerType = enums.DescribeTriggerTypeScheduled
 	}
@@ -213,17 +247,16 @@ func (j DescribeConnectionJob) Do(ictx context.Context, vlt vault.SourceConfig, 
 
 	for id, resourceType := range j.ResourceJobs {
 		workChannel <- DescribeJob{
-			JobID:         id,
-			ScheduleJobID: j.ScheduleJobID,
-			ParentJobID:   j.JobID,
-			ResourceType:  resourceType,
-			SourceID:      j.SourceID,
-			AccountID:     j.AccountID,
-			DescribedAt:   j.DescribedAt,
-			SourceType:    j.SourceType,
-			ConfigReg:     j.ConfigReg,
-			TriggerType:   j.TriggerType,
-			RetryCounter:  0,
+			JobID:        id,
+			ParentJobID:  j.JobID,
+			ResourceType: resourceType,
+			SourceID:     j.SourceID,
+			AccountID:    j.AccountID,
+			DescribedAt:  j.DescribedAt,
+			SourceType:   j.SourceType,
+			ConfigReg:    j.ConfigReg,
+			TriggerType:  j.TriggerType,
+			RetryCounter: 0,
 		}
 	}
 
@@ -251,24 +284,24 @@ func (j DescribeConnectionJob) CloudTimeout() (r DescribeConnectionJobResult) {
 	}
 	for id, resourceType := range j.ResourceJobs {
 		dj := DescribeJob{
-			JobID:         id,
-			ScheduleJobID: j.ScheduleJobID,
-			ParentJobID:   j.JobID,
-			ResourceType:  resourceType,
-			SourceID:      j.SourceID,
-			AccountID:     j.AccountID,
-			DescribedAt:   j.DescribedAt,
-			SourceType:    j.SourceType,
-			ConfigReg:     j.ConfigReg,
-			TriggerType:   j.TriggerType,
-			RetryCounter:  0,
+			JobID:        id,
+			ParentJobID:  j.JobID,
+			ResourceType: resourceType,
+			SourceID:     j.SourceID,
+			AccountID:    j.AccountID,
+			DescribedAt:  j.DescribedAt,
+			SourceType:   j.SourceType,
+			ConfigReg:    j.ConfigReg,
+			TriggerType:  j.TriggerType,
+			RetryCounter: 0,
 		}
 		describeConnectionJobResult.Result[id] = DescribeJobResult{
-			JobID:       dj.JobID,
-			ParentJobID: dj.ParentJobID,
-			Status:      api.DescribeResourceJobCloudTimeout,
-			Error:       "Cloud job timed out",
-			DescribeJob: dj,
+			JobID:                dj.JobID,
+			ParentJobID:          dj.ParentJobID,
+			Status:               api.DescribeResourceJobCloudTimeout,
+			Error:                "Cloud job timed out",
+			DescribeJob:          dj,
+			DescribedResourceIDs: nil,
 		}
 	}
 	return describeConnectionJobResult
@@ -296,19 +329,21 @@ func (j DescribeJob) Do(ictx context.Context, vlt vault.SourceConfig, rdb *redis
 			DoDescribeJobsDuration.WithLabelValues(string(j.SourceType), j.ResourceType, "failure").Observe(float64(time.Now().Unix() - startTime))
 			DoDescribeJobsCount.WithLabelValues(string(j.SourceType), j.ResourceType, "failure").Inc()
 			r = DescribeJobResult{
-				JobID:       j.JobID,
-				ParentJobID: j.ParentJobID,
-				Status:      api.DescribeResourceJobFailed,
-				Error:       fmt.Sprintf("paniced: %s", err),
-				DescribeJob: j,
+				JobID:                j.JobID,
+				ParentJobID:          j.ParentJobID,
+				Status:               api.DescribeResourceJobFailed,
+				Error:                fmt.Sprintf("paniced: %s", err),
+				DescribeJob:          j,
+				DescribedResourceIDs: nil,
 			}
 		}
 	}()
 
 	// Assume it succeeded unless it fails somewhere
 	var (
-		status         = api.DescribeResourceJobSucceeded
-		firstErr error = nil
+		status               = api.DescribeResourceJobSucceeded
+		firstErr    error    = nil
+		resourceIDs []string = nil
 	)
 
 	fail := func(err error) {
@@ -329,7 +364,8 @@ func (j DescribeJob) Do(ictx context.Context, vlt vault.SourceConfig, rdb *redis
 	} else if config == nil {
 		fail(fmt.Errorf("config is null! path is: %s", j.ConfigReg))
 	} else {
-		msgs, err := doDescribe(ctx, rdb, j, config, logger)
+		var msgs []kafka.Doc
+		msgs, resourceIDs, err = doDescribe(ctx, rdb, j, config, logger)
 		if err != nil {
 			// Don't return here. In certain cases, such as AWS, resources might be
 			// available for some regions while there was failures in other regions.
@@ -356,16 +392,17 @@ func (j DescribeJob) Do(ictx context.Context, vlt vault.SourceConfig, rdb *redis
 	}
 
 	return DescribeJobResult{
-		JobID:       j.JobID,
-		ParentJobID: j.ParentJobID,
-		Status:      status,
-		Error:       errMsg,
-		DescribeJob: j,
+		JobID:                j.JobID,
+		ParentJobID:          j.ParentJobID,
+		Status:               status,
+		Error:                errMsg,
+		DescribeJob:          j,
+		DescribedResourceIDs: resourceIDs,
 	}
 }
 
 // doDescribe describes the sources, e.g. AWS, Azure and returns the responses.
-func doDescribe(ctx context.Context, rdb *redis.Client, job DescribeJob, config map[string]interface{}, logger *zap.Logger) ([]kafka.Doc, error) {
+func doDescribe(ctx context.Context, rdb *redis.Client, job DescribeJob, config map[string]interface{}, logger *zap.Logger) ([]kafka.Doc, []string, error) {
 	logger.Info(fmt.Sprintf("Proccessing Job: ID[%d] ParentJobID[%d] RosourceType[%s]\n", job.JobID, job.ParentJobID, job.ResourceType))
 
 	switch job.SourceType {
@@ -374,14 +411,15 @@ func doDescribe(ctx context.Context, rdb *redis.Client, job DescribeJob, config 
 	case api.SourceCloudAzure:
 		return doDescribeAzure(ctx, rdb, job, config, logger)
 	default:
-		return nil, fmt.Errorf("invalid SourceType: %s", job.SourceType)
+		return nil, nil, fmt.Errorf("invalid SourceType: %s", job.SourceType)
 	}
 }
 
-func doDescribeAWS(ctx context.Context, rdb *redis.Client, job DescribeJob, config map[string]interface{}, logger *zap.Logger) ([]kafka.Doc, error) {
+func doDescribeAWS(ctx context.Context, rdb *redis.Client, job DescribeJob, config map[string]interface{}, logger *zap.Logger) ([]kafka.Doc, []string, error) {
+	var resourceIDs []string
 	creds, err := AWSAccountConfigFromMap(config)
 	if err != nil {
-		return nil, fmt.Errorf("aws account credentials: %w", err)
+		return nil, nil, fmt.Errorf("aws account credentials: %w", err)
 	}
 
 	output, err := aws.GetResources(
@@ -397,7 +435,7 @@ func doDescribeAWS(ctx context.Context, rdb *redis.Client, job DescribeJob, conf
 		false,
 	)
 	if err != nil {
-		return nil, fmt.Errorf("AWS: %w", err)
+		return nil, nil, fmt.Errorf("AWS: %w", err)
 	}
 
 	var errs []string
@@ -491,6 +529,7 @@ func doDescribeAWS(ctx context.Context, rdb *redis.Client, job DescribeJob, conf
 				CreatedAt:     job.DescribedAt,
 				IsCommon:      cloudservice.IsCommonByResourceType(job.ResourceType),
 			}
+			resourceIDs = append(resourceIDs, resource.UniqueID())
 			pluginTableName := steampipe.ExtractTableName(job.ResourceType)
 			desc, err := steampipe.ConvertToDescription(job.ResourceType, kafkaResource)
 			if err != nil {
@@ -548,14 +587,16 @@ func doDescribeAWS(ctx context.Context, rdb *redis.Client, job DescribeJob, conf
 		err = nil
 	}
 
-	return msgs, err
+	return msgs, resourceIDs, err
 }
 
-func doDescribeAzure(ctx context.Context, rdb *redis.Client, job DescribeJob, config map[string]interface{}, logger *zap.Logger) ([]kafka.Doc, error) {
+func doDescribeAzure(ctx context.Context, rdb *redis.Client, job DescribeJob, config map[string]interface{}, logger *zap.Logger) ([]kafka.Doc, []string, error) {
+	var resourceIDs []string
+
 	logger.Warn("starting to describe azure subscription", zap.String("resourceType", job.ResourceType), zap.Uint("jobID", job.JobID))
 	creds, err := AzureSubscriptionConfigFromMap(config)
 	if err != nil {
-		return nil, fmt.Errorf("azure subscription credentials: %w", err)
+		return nil, nil, fmt.Errorf("azure subscription credentials: %w", err)
 	}
 
 	subscriptionId := job.AccountID
@@ -582,7 +623,7 @@ func doDescribeAzure(ctx context.Context, rdb *redis.Client, job DescribeJob, co
 		"",
 	)
 	if err != nil {
-		return nil, fmt.Errorf("azure: %w", err)
+		return nil, nil, fmt.Errorf("azure: %w", err)
 	}
 	logger.Warn("got the resources, finding summaries", zap.String("resourceType", job.ResourceType), zap.Uint("jobID", job.JobID))
 
@@ -593,11 +634,11 @@ func doDescribeAzure(ctx context.Context, rdb *redis.Client, job DescribeJob, co
 	if rdb != nil {
 		currentResourceLimitRemaining, err := rdb.Get(ctx, RedisKeyWorkspaceResourceRemaining).Result()
 		if err != nil {
-			return nil, fmt.Errorf("redisGet: %v", err.Error())
+			return nil, nil, fmt.Errorf("redisGet: %v", err.Error())
 		}
 		remaining, err = strconv.ParseInt(currentResourceLimitRemaining, 10, 64)
 		if remaining <= 0 {
-			return nil, fmt.Errorf("workspace has reached its max resources limit")
+			return nil, nil, fmt.Errorf("workspace has reached its max resources limit")
 		}
 
 		_, err = rdb.DecrBy(ctx, RedisKeyWorkspaceResourceRemaining, int64(len(output.Resources))).Result()
@@ -672,6 +713,7 @@ func doDescribeAzure(ctx context.Context, rdb *redis.Client, job DescribeJob, co
 			CreatedAt:     job.DescribedAt,
 			IsCommon:      cloudservice.IsCommonByResourceType(job.ResourceType),
 		}
+		resourceIDs = append(resourceIDs, resource.UniqueID())
 		pluginTableName := steampipe.ExtractTableName(job.ResourceType)
 		desc, err := steampipe.ConvertToDescription(job.ResourceType, kafkaResource)
 		if err != nil {
@@ -732,7 +774,7 @@ func doDescribeAzure(ctx context.Context, rdb *redis.Client, job DescribeJob, co
 	} else {
 		err = nil
 	}
-	return msgs, err
+	return msgs, resourceIDs, err
 }
 
 func ResourceTypeToESIndex(t string) string {

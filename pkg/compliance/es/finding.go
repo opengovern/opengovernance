@@ -33,8 +33,6 @@ type Finding struct {
 	ResourceName     string                 `json:"resourceName"`
 	ResourceLocation string                 `json:"resourceLocation"`
 	ResourceType     string                 `json:"resourceType"`
-	ServiceName      string                 `json:"serviceName"`
-	Category         string                 `json:"category"`
 	Reason           string                 `json:"reason"`
 	ComplianceJobID  uint                   `json:"complianceJobID"`
 	ScheduleJobID    uint                   `json:"scheduleJobID"`

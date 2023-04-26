@@ -1,36 +1,24 @@
 package describe
 
 import (
-	"bytes"
-	"context"
 	"encoding/json"
 	"fmt"
-	"io"
-	"math/rand"
-	"net/http"
 	"strconv"
 	"strings"
 	"time"
 
-	"gitlab.com/keibiengine/keibi-engine/pkg/describe/es"
-	"gitlab.com/keibiengine/keibi-engine/pkg/kafka"
 	"gitlab.com/keibiengine/keibi-engine/pkg/metadata/models"
 
-	"github.com/ProtonMail/gopenpgp/v2/crypto"
-	"github.com/ProtonMail/gopenpgp/v2/helper"
 	"github.com/google/uuid"
 	"github.com/hashicorp/vault/api/auth/kubernetes"
 	"gitlab.com/keibiengine/keibi-engine/pkg/checkup"
 	checkupapi "gitlab.com/keibiengine/keibi-engine/pkg/checkup/api"
 	"gitlab.com/keibiengine/keibi-engine/pkg/compliance/client"
-	"gitlab.com/keibiengine/keibi-engine/pkg/describe/enums"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/vault"
 	"gitlab.com/keibiengine/keibi-engine/pkg/summarizer"
 	summarizerapi "gitlab.com/keibiengine/keibi-engine/pkg/summarizer/api"
 	"gopkg.in/Shopify/sarama.v1"
 	"gorm.io/gorm"
-
-	"gitlab.com/keibiengine/keibi-engine/pkg/azure"
 
 	"github.com/go-redis/redis/v8"
 	api2 "gitlab.com/keibiengine/keibi-engine/pkg/auth/api"
@@ -47,7 +35,6 @@ import (
 
 	complianceapi "gitlab.com/keibiengine/keibi-engine/pkg/compliance/api"
 
-	"gitlab.com/keibiengine/keibi-engine/pkg/aws"
 	complianceworker "gitlab.com/keibiengine/keibi-engine/pkg/compliance/worker"
 	"gitlab.com/keibiengine/keibi-engine/pkg/describe/api"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpserver"
@@ -134,14 +121,10 @@ type Scheduler struct {
 	db         Database
 	httpServer *HttpServer
 
-	// describeJobQueue is used to publish describe jobs to be performed by the workers.
-	describeJobQueue queue.Interface
 	// describeJobResultQueue is used to consume the describe job results returned by the workers.
 	describeJobResultQueue queue.Interface
 	// describeCleanupJobQueue is used to publish describe cleanup jobs to be performed by the workers.
 	describeCleanupJobQueue queue.Interface
-	// describeConnectionJobQueue is used to publish describe jobs to be performed by the workers.
-	describeConnectionJobQueue queue.Interface
 	// describeConnectionJobResultQueue is used to consume the describe job results returned by the workers.
 	describeConnectionJobResultQueue queue.Interface
 
@@ -194,15 +177,27 @@ type Scheduler struct {
 	cloudNativeAPIAuthKey string
 }
 
+func initRabbitQueue(queueName string) (queue.Interface, error) {
+	qCfg := queue.Config{}
+	qCfg.Server.Username = RabbitMQUsername
+	qCfg.Server.Password = RabbitMQPassword
+	qCfg.Server.Host = RabbitMQService
+	qCfg.Server.Port = RabbitMQPort
+	qCfg.Queue.Name = queueName
+	qCfg.Queue.Durable = true
+	qCfg.Producer.ID = "describe-scheduler"
+	insightQueue, err := queue.New(qCfg)
+	if err != nil {
+		return nil, err
+	}
+
+	return insightQueue, nil
+}
+
 func InitializeScheduler(
 	id string,
-	rabbitMQUsername string,
-	rabbitMQPassword string,
-	rabbitMQHost string,
-	rabbitMQPort int,
 	describeJobQueueName string,
 	describeJobResultQueueName string,
-	describeConnectionJobQueueName string,
 	describeConnectionJobResultQueueName string,
 	cloudNativeAPIBaseURL string,
 	cloudNativeAPIAuthKey string,
@@ -260,245 +255,70 @@ func InitializeScheduler(
 
 	s.logger.Info("Initializing the scheduler")
 
-	qCfg := queue.Config{}
-	qCfg.Server.Username = rabbitMQUsername
-	qCfg.Server.Password = rabbitMQPassword
-	qCfg.Server.Host = rabbitMQHost
-	qCfg.Server.Port = rabbitMQPort
-	qCfg.Queue.Name = describeJobQueueName
-	qCfg.Queue.Durable = true
-	qCfg.Producer.ID = s.id
-	describeQueue, err := queue.New(qCfg)
+	s.describeJobResultQueue, err = initRabbitQueue(describeJobResultQueueName)
 	if err != nil {
 		return nil, err
 	}
 
-	s.logger.Info("Connected to the describe jobs queue", zap.String("queue", describeJobQueueName))
-	s.describeJobQueue = describeQueue
-
-	qCfg = queue.Config{}
-	qCfg.Server.Username = rabbitMQUsername
-	qCfg.Server.Password = rabbitMQPassword
-	qCfg.Server.Host = rabbitMQHost
-	qCfg.Server.Port = rabbitMQPort
-	qCfg.Queue.Name = describeJobResultQueueName
-	qCfg.Queue.Durable = true
-	qCfg.Consumer.ID = s.id
-	describeResultsQueue, err := queue.New(qCfg)
+	s.describeConnectionJobResultQueue, err = initRabbitQueue(describeConnectionJobResultQueueName)
 	if err != nil {
 		return nil, err
 	}
 
-	s.logger.Info("Connected to the describe job results queue", zap.String("queue", describeJobResultQueueName))
-	s.describeJobResultQueue = describeResultsQueue
-
-	qCfg = queue.Config{}
-	qCfg.Server.Username = rabbitMQUsername
-	qCfg.Server.Password = rabbitMQPassword
-	qCfg.Server.Host = rabbitMQHost
-	qCfg.Server.Port = rabbitMQPort
-	qCfg.Queue.Name = describeConnectionJobQueueName
-	qCfg.Queue.Durable = true
-	qCfg.Producer.ID = s.id
-	describeConnectionQueue, err := queue.New(qCfg)
+	s.insightJobQueue, err = initRabbitQueue(insightJobQueueName)
 	if err != nil {
 		return nil, err
 	}
 
-	s.logger.Info("Connected to the describe jobs queue", zap.String("queue", describeConnectionJobQueueName))
-	s.describeConnectionJobQueue = describeConnectionQueue
-
-	qCfg = queue.Config{}
-	qCfg.Server.Username = rabbitMQUsername
-	qCfg.Server.Password = rabbitMQPassword
-	qCfg.Server.Host = rabbitMQHost
-	qCfg.Server.Port = rabbitMQPort
-	qCfg.Queue.Name = describeConnectionJobResultQueueName
-	qCfg.Queue.Durable = true
-	qCfg.Consumer.ID = s.id
-	describeConnectionResultsQueue, err := queue.New(qCfg)
+	s.insightJobResultQueue, err = initRabbitQueue(insightJobResultQueueName)
 	if err != nil {
 		return nil, err
 	}
 
-	s.logger.Info("Connected to the describe job results queue", zap.String("queue", describeConnectionJobResultQueueName))
-	s.describeConnectionJobResultQueue = describeConnectionResultsQueue
-
-	qCfg = queue.Config{}
-	qCfg.Server.Username = rabbitMQUsername
-	qCfg.Server.Password = rabbitMQPassword
-	qCfg.Server.Host = rabbitMQHost
-	qCfg.Server.Port = rabbitMQPort
-	qCfg.Queue.Name = insightJobQueueName
-	qCfg.Queue.Durable = true
-	qCfg.Producer.ID = s.id
-	insightQueue, err := queue.New(qCfg)
+	s.checkupJobQueue, err = initRabbitQueue(checkupJobQueueName)
 	if err != nil {
 		return nil, err
 	}
 
-	s.logger.Info("Connected to the insight jobs queue", zap.String("queue", insightJobQueueName))
-	s.insightJobQueue = insightQueue
-
-	qCfg = queue.Config{}
-	qCfg.Server.Username = rabbitMQUsername
-	qCfg.Server.Password = rabbitMQPassword
-	qCfg.Server.Host = rabbitMQHost
-	qCfg.Server.Port = rabbitMQPort
-	qCfg.Queue.Name = insightJobResultQueueName
-	qCfg.Queue.Durable = true
-	qCfg.Consumer.ID = s.id
-	insightResultsQueue, err := queue.New(qCfg)
+	s.checkupJobResultQueue, err = initRabbitQueue(checkupJobResultQueueName)
 	if err != nil {
 		return nil, err
 	}
 
-	s.logger.Info("Connected to the insight job results queue", zap.String("queue", insightJobResultQueueName))
-	s.insightJobResultQueue = insightResultsQueue
-
-	qCfg = queue.Config{}
-	qCfg.Server.Username = rabbitMQUsername
-	qCfg.Server.Password = rabbitMQPassword
-	qCfg.Server.Host = rabbitMQHost
-	qCfg.Server.Port = rabbitMQPort
-	qCfg.Queue.Name = checkupJobQueueName
-	qCfg.Queue.Durable = true
-	qCfg.Producer.ID = s.id
-	checkupQueue, err := queue.New(qCfg)
+	s.summarizerJobQueue, err = initRabbitQueue(summarizerJobQueueName)
 	if err != nil {
 		return nil, err
 	}
 
-	s.logger.Info("Connected to the checkup jobs queue", zap.String("queue", checkupJobQueueName))
-	s.checkupJobQueue = checkupQueue
-
-	qCfg = queue.Config{}
-	qCfg.Server.Username = rabbitMQUsername
-	qCfg.Server.Password = rabbitMQPassword
-	qCfg.Server.Host = rabbitMQHost
-	qCfg.Server.Port = rabbitMQPort
-	qCfg.Queue.Name = checkupJobResultQueueName
-	qCfg.Queue.Durable = true
-	qCfg.Consumer.ID = s.id
-	checkupResultsQueue, err := queue.New(qCfg)
+	s.summarizerJobResultQueue, err = initRabbitQueue(summarizerJobResultQueueName)
 	if err != nil {
 		return nil, err
 	}
 
-	s.logger.Info("Connected to the checkup job results queue", zap.String("queue", checkupJobResultQueueName))
-	s.checkupJobResultQueue = checkupResultsQueue
-
-	qCfg = queue.Config{}
-	qCfg.Server.Username = rabbitMQUsername
-	qCfg.Server.Password = rabbitMQPassword
-	qCfg.Server.Host = rabbitMQHost
-	qCfg.Server.Port = rabbitMQPort
-	qCfg.Queue.Name = summarizerJobQueueName
-	qCfg.Queue.Durable = true
-	qCfg.Producer.ID = s.id
-	summarizerQueue, err := queue.New(qCfg)
+	s.describeCleanupJobQueue, err = initRabbitQueue(describeCleanupJobQueueName)
 	if err != nil {
 		return nil, err
 	}
 
-	s.logger.Info("Connected to the summarizer jobs queue", zap.String("queue", summarizerJobQueueName))
-	s.summarizerJobQueue = summarizerQueue
-
-	qCfg = queue.Config{}
-	qCfg.Server.Username = rabbitMQUsername
-	qCfg.Server.Password = rabbitMQPassword
-	qCfg.Server.Host = rabbitMQHost
-	qCfg.Server.Port = rabbitMQPort
-	qCfg.Queue.Name = summarizerJobResultQueueName
-	qCfg.Queue.Durable = true
-	qCfg.Consumer.ID = s.id
-	summarizerResultsQueue, err := queue.New(qCfg)
+	s.complianceReportCleanupJobQueue, err = initRabbitQueue(complianceReportCleanupJobQueueName)
 	if err != nil {
 		return nil, err
 	}
 
-	s.logger.Info("Connected to the summarizer job results queue", zap.String("queue", summarizerJobResultQueueName))
-	s.summarizerJobResultQueue = summarizerResultsQueue
-
-	qCfg = queue.Config{}
-	qCfg.Server.Username = rabbitMQUsername
-	qCfg.Server.Password = rabbitMQPassword
-	qCfg.Server.Host = rabbitMQHost
-	qCfg.Server.Port = rabbitMQPort
-	qCfg.Queue.Name = describeCleanupJobQueueName
-	qCfg.Queue.Durable = true
-	qCfg.Producer.ID = s.id
-	describeCleanupJobQueue, err := queue.New(qCfg)
+	s.sourceQueue, err = initRabbitQueue(sourceQueueName)
 	if err != nil {
 		return nil, err
 	}
 
-	s.logger.Info("Connected to the describe cleanup job queue", zap.String("queue", describeCleanupJobQueueName))
-	s.describeCleanupJobQueue = describeCleanupJobQueue
-
-	qCfg = queue.Config{}
-	qCfg.Server.Username = rabbitMQUsername
-	qCfg.Server.Password = rabbitMQPassword
-	qCfg.Server.Host = rabbitMQHost
-	qCfg.Server.Port = rabbitMQPort
-	qCfg.Queue.Name = complianceReportCleanupJobQueueName
-	qCfg.Queue.Durable = true
-	qCfg.Producer.ID = s.id
-	complianceReportCleanupJobQueue, err := queue.New(qCfg)
+	s.complianceReportJobQueue, err = initRabbitQueue(complianceReportJobQueueName)
 	if err != nil {
 		return nil, err
 	}
 
-	s.logger.Info("Connected to the complianceReport cleanup job queue", zap.String("queue", complianceReportCleanupJobQueueName))
-	s.complianceReportCleanupJobQueue = complianceReportCleanupJobQueue
-
-	qCfg = queue.Config{}
-	qCfg.Server.Username = rabbitMQUsername
-	qCfg.Server.Password = rabbitMQPassword
-	qCfg.Server.Host = rabbitMQHost
-	qCfg.Server.Port = rabbitMQPort
-	qCfg.Queue.Name = sourceQueueName
-	qCfg.Queue.Durable = true
-	qCfg.Consumer.ID = s.id
-	sourceEventsQueue, err := queue.New(qCfg)
+	s.complianceReportJobResultQueue, err = initRabbitQueue(complianceReportJobResultQueueName)
 	if err != nil {
 		return nil, err
 	}
-
-	s.logger.Info("Connected to the source events queue", zap.String("queue", sourceQueueName))
-	s.sourceQueue = sourceEventsQueue
-
-	qCfg = queue.Config{}
-	qCfg.Server.Username = rabbitMQUsername
-	qCfg.Server.Password = rabbitMQPassword
-	qCfg.Server.Host = rabbitMQHost
-	qCfg.Server.Port = rabbitMQPort
-	qCfg.Queue.Name = complianceReportJobQueueName
-	qCfg.Queue.Durable = true
-	qCfg.Producer.ID = s.id
-	complianceReportJobsQueue, err := queue.New(qCfg)
-	if err != nil {
-		return nil, err
-	}
-
-	s.logger.Info("Connected to the compliance report jobs queue", zap.String("queue", complianceReportJobQueueName))
-	s.complianceReportJobQueue = complianceReportJobsQueue
-
-	qCfg = queue.Config{}
-	qCfg.Server.Username = rabbitMQUsername
-	qCfg.Server.Password = rabbitMQPassword
-	qCfg.Server.Host = rabbitMQHost
-	qCfg.Server.Port = rabbitMQPort
-	qCfg.Queue.Name = complianceReportJobResultQueueName
-	qCfg.Queue.Durable = true
-	qCfg.Consumer.ID = s.id
-	complianceReportJobsResultQueue, err := queue.New(qCfg)
-	if err != nil {
-		return nil, err
-	}
-
-	s.logger.Info("Connected to the compliance report jobs result queue", zap.String("queue", complianceReportJobResultQueueName))
-	s.complianceReportJobResultQueue = complianceReportJobsResultQueue
 
 	cfg := postgres.Config{
 		Host:    postgresHost,
@@ -515,8 +335,6 @@ func InitializeScheduler(
 
 	s.logger.Info("Connected to the postgres database: ", zap.String("db", postgresDb))
 	s.db = Database{orm: orm}
-
-	//
 
 	kafkaClient, err := newKafkaClient(strings.Split(KafkaService, ","))
 	if err != nil {
@@ -634,338 +452,71 @@ func (s *Scheduler) Run() error {
 		}
 	}
 
-	go s.RunDescribeJobCompletionUpdater()
-	go s.RunScheduleJobCompletionUpdater()
-	go s.RunDescribeJobScheduler()
-	go s.RunInsightJobScheduler()
-	go s.RunCheckupJobScheduler()
-	go s.RunDescribeCleanupJobScheduler()
-	go s.RunMustSummerizeJobScheduler()
-	go s.RunDeletedSourceCleanup()
-	go s.RunCloudNativeDescribeConnectionJobResourcesConsumer()
+	// describe
+	EnsureRunGoroutin(func() {
+		s.RunDescribeJobScheduler()
+	})
+	EnsureRunGoroutin(func() {
+		s.RunDescribeJobCompletionUpdater()
+	})
+	EnsureRunGoroutin(func() {
+		s.logger.Fatal("DescribeJobResults consumer exited", zap.Error(s.RunDescribeJobResultsConsumer()))
+	})
+	EnsureRunGoroutin(func() {
+		s.logger.Fatal("DescribeConnectionJobResultsConsumer consumer exited", zap.Error(s.RunDescribeConnectionJobResultsConsumer()))
+	})
+	EnsureRunGoroutin(func() {
+		s.RunCloudNativeDescribeConnectionJobResourcesConsumer()
+	})
+	//
 
-	// In order to have history of reports, we won't clean up compliance reports for now.
-	//go s.RunComplianceReportCleanupJobScheduler()
+	// describe cleanup
+	EnsureRunGoroutin(func() {
+		s.RunDescribeCleanupJobScheduler()
+	})
+	//
 
-	go func() {
-		s.logger.Fatal("SourceEvent consumer exited", zap.Error(s.RunSourceEventsConsumer()))
-	}()
+	// inventory summarizer
+	EnsureRunGoroutin(func() {
+		s.RunMustSummerizeJobScheduler()
+	})
+	//
 
-	go func() {
-		s.logger.Fatal("DescribeJobResult consumer exited", zap.Error(s.RunDescribeJobResultsConsumer()))
-	}()
+	// compliance
+	EnsureRunGoroutin(func() {
+		s.RunComplianceJobScheduler()
+	})
+	//
 
-	go func() {
-		s.logger.Fatal("DescribeConnectionJobResult consumer exited", zap.Error(s.RunDescribeConnectionJobResultsConsumer()))
-	}()
-
-	go func() {
+	EnsureRunGoroutin(func() {
+		s.RunScheduleJobCompletionUpdater()
+	})
+	EnsureRunGoroutin(func() {
+		s.RunInsightJobScheduler()
+	})
+	EnsureRunGoroutin(func() {
+		s.RunCheckupJobScheduler()
+	})
+	EnsureRunGoroutin(func() {
+		s.RunDeletedSourceCleanup()
+	})
+	EnsureRunGoroutin(func() {
+		s.logger.Fatal("SourceEvents consumer exited", zap.Error(s.RunSourceEventsConsumer()))
+	})
+	EnsureRunGoroutin(func() {
 		s.logger.Fatal("ComplianceReportJobResult consumer exited", zap.Error(s.RunComplianceReportJobResultsConsumer()))
-	}()
-
-	go func() {
+	})
+	EnsureRunGoroutin(func() {
 		s.logger.Fatal("InsightJobResult consumer exited", zap.Error(s.RunInsightJobResultsConsumer()))
-	}()
-
-	go func() {
+	})
+	EnsureRunGoroutin(func() {
 		s.logger.Fatal("InsightJobResult consumer exited", zap.Error(s.RunCheckupJobResultsConsumer()))
-	}()
-
-	go func() {
+	})
+	EnsureRunGoroutin(func() {
 		s.logger.Fatal("SummarizerJobResult consumer exited", zap.Error(s.RunSummarizerJobResultsConsumer()))
-	}()
+	})
 
 	return httpserver.RegisterAndStart(s.logger, s.httpServer.Address, s.httpServer)
-}
-
-func (s *Scheduler) compareMessageToCurrentState(message sarama.ProducerMessage) (bool, error) {
-	index := ""
-	for _, header := range message.Headers {
-		if string(header.Key) == kafka.EsIndexHeader {
-			index = string(header.Value)
-		}
-	}
-	if index == "" {
-		return false, fmt.Errorf("no index header found to compare")
-	}
-
-	id := string(message.Key.(sarama.StringEncoder))
-
-	switch index {
-	case InventorySummaryIndex:
-		currentResource, err := es.FetchLookupResourceByID(s.es, index, id)
-		if err != nil {
-			s.logger.Error("failed to fetch current resource", zap.String("error", err.Error()), zap.String("index", index), zap.String("id", id))
-			return false, err
-		}
-		if currentResource == nil {
-			return false, nil
-		}
-		newResource := es.LookupResource{}
-		err = json.Unmarshal(message.Value.(sarama.ByteEncoder), &newResource)
-
-		currentResourceBytes, err := json.Marshal(currentResource)
-		if err != nil {
-			s.logger.Error("failed to marshal current resource", zap.String("error", err.Error()), zap.String("index", index), zap.String("id", id))
-			return false, err
-		}
-		newResourceBytes, err := json.Marshal(newResource)
-		if err != nil {
-			s.logger.Error("failed to marshal new resource", zap.String("error", err.Error()), zap.String("index", index), zap.String("id", id))
-			return false, err
-		}
-
-		if string(currentResourceBytes) == string(newResourceBytes) {
-			return true, nil
-		}
-		return false, nil
-	default:
-		currentResource, err := es.FetchResourceByID(s.es, index, id)
-		if err != nil {
-			s.logger.Error("failed to fetch current resource", zap.String("error", err.Error()), zap.String("index", index), zap.String("id", id))
-			return false, err
-		}
-		if currentResource == nil {
-			return false, nil
-		}
-		newResource := es.Resource{}
-		err = json.Unmarshal(message.Value.(sarama.ByteEncoder), &newResource)
-
-		currentResourceBytes, err := json.Marshal(currentResource.Description)
-		if err != nil {
-			s.logger.Error("failed to marshal current resource", zap.String("error", err.Error()), zap.String("index", index), zap.String("id", id))
-			return false, err
-		}
-		newResourceBytes, err := json.Marshal(newResource.Description)
-		if err != nil {
-			s.logger.Error("failed to marshal new resource", zap.String("error", err.Error()), zap.String("index", index), zap.String("id", id))
-			return false, err
-		}
-
-		if string(currentResourceBytes) == string(newResourceBytes) {
-			return true, nil
-		}
-		return false, nil
-	}
-}
-
-func (s *Scheduler) processCloudNativeDescribeConnectionJobResourcesEvents(events []cloudNativeDescribeConnectionJobResourceOutput) ([]int, error) {
-	s.logger.Info("Received events from cloud native describe connection job resources sql", zap.Int("eventCount", len(events)))
-	successfulIDs := make([]int, 0)
-	for _, event := range events {
-		var connectionWorkerResourcesResult CloudNativeConnectionWorkerResult
-		err := json.Unmarshal([]byte(event.Payload), &connectionWorkerResourcesResult)
-		if err != nil {
-			s.logger.Error("Error unmarshalling event", zap.Error(err))
-			continue
-		}
-
-		job, err := s.db.GetCloudNativeDescribeSourceJob(connectionWorkerResourcesResult.JobID)
-		if err != nil {
-			s.logger.Error("Error getting cloud native describe source job", zap.Error(err))
-			continue
-		}
-		if job == nil {
-			successfulIDs = append(successfulIDs, event.ID)
-			continue
-		}
-
-		messages := make([]*CloudNativeConnectionWorkerMessage, 0)
-		req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("%s/OutputReadBlob?containerName=%s&blobName=%s", s.cloudNativeAPIBaseURL, connectionWorkerResourcesResult.ContainerName, connectionWorkerResourcesResult.BlobName), nil)
-		if err != nil {
-			s.logger.Error("Failed to create OutputReadBlob http request", zap.Error(err))
-			continue
-		}
-		httpClient := &http.Client{
-			Timeout: 1 * time.Minute,
-		}
-		req.Header.Set("Content-Type", "application/json")
-		req.Header.Set("Accept", "application/json")
-		req.Header.Set("x-kaytu-cloud-auth-key", s.cloudNativeAPIAuthKey)
-		resp, err := httpClient.Do(req)
-		if err != nil {
-			s.logger.Error("Failed to get blob stream", zap.Error(err))
-			continue
-		}
-		respBody, err := io.ReadAll(resp.Body)
-		if err != nil {
-			s.logger.Error("Failed to read OutputReadBlob http response", zap.Error(err))
-			continue
-		}
-		resp.Body.Close()
-		if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusNotFound {
-			s.logger.Error("Failed to get blob stream", zap.Error(err), zap.String("response", string(respBody)))
-			continue
-		} else if resp.StatusCode == http.StatusOK {
-			var data api.GetDataResponse
-			err = json.Unmarshal(respBody, &data)
-			if err != nil {
-				s.logger.Error("Failed to unmarshal OutputReadBlob response", zap.Error(err))
-				continue
-			}
-			decrypted, err := helper.DecryptMessageArmored(job.ResultEncryptionPrivateKey, nil, data.Data)
-			if err != nil {
-				s.logger.Error("Failed to decrypt blob", zap.Error(err))
-				continue
-			}
-
-			err = json.Unmarshal([]byte(decrypted), &messages)
-			if err != nil {
-				s.logger.Error("Failed to unmarshal data into messages", zap.Error(err))
-				continue
-			}
-		}
-		saramaMessages := make([]*sarama.ProducerMessage, 0, len(messages))
-		for _, message := range messages {
-			saramaMessage := sarama.ProducerMessage{
-				Topic:   message.Topic,
-				Key:     message.Key,
-				Value:   message.Value,
-				Headers: message.Headers,
-			}
-			//isIdentical, err := s.compareMessageToCurrentState(saramaMessage)
-			//if err != nil {
-			//	s.logger.Error("Failed to compare message to current state", zap.Error(err))
-			//} else {
-			//	if isIdentical {
-			//		s.logger.Info("New message is identical to current state, overwriting to update timestamp")
-			//	} else {
-			//		s.logger.Info("New message is not identical to current state, overwriting")
-			//	}
-			//}
-			saramaMessages = append(saramaMessages, &saramaMessage)
-		}
-		producer, err := sarama.NewSyncProducerFromClient(s.kafkaClient)
-
-		if err != nil {
-			s.logger.Error("Failed to create producer", zap.Error(err))
-			continue
-		}
-		if err := producer.SendMessages(saramaMessages); err != nil {
-			if errs, ok := err.(sarama.ProducerErrors); ok {
-				for _, e := range errs {
-					s.logger.Error("Failed calling SendMessages", zap.Error(fmt.Errorf("Failed to persist resource[%s] in kafka topic[%s]: %s, message size: %d\n", e.Msg.Key, e.Msg.Topic, e.Error(), e.Msg.Value.Length())))
-				}
-			}
-			continue
-		}
-		if err := producer.Close(); err != nil {
-			s.logger.Error("Failed to close producer", zap.Error(err))
-			continue
-		}
-		if len(saramaMessages) != 0 {
-			s.logger.Info("Successfully sent messages to kafka", zap.Int("count", len(saramaMessages)))
-		}
-
-		err = s.describeConnectionJobResultQueue.Publish(connectionWorkerResourcesResult.JobResult)
-		if err != nil {
-			s.logger.Error("Failed calling describeConnectionJobResultQueue.Publish", zap.Error(err))
-			continue
-		}
-
-		successfulIDs = append(successfulIDs, event.ID)
-	}
-
-	s.logger.Info("Processed events from cloud native describe connection job resources sql", zap.Int("eventCount", len(successfulIDs)))
-	return successfulIDs, nil
-}
-
-type cloudNativeDescribeConnectionJobResourceOutput struct {
-	ID      int    `json:"id"`
-	Payload string `json:"payload"`
-}
-
-func (s *Scheduler) cloudNativeDescribeConnectionJobResourcesConsume() {
-	for {
-		s.logger.Info("Checking for cloud native describe connection job resources")
-		httpClient := &http.Client{
-			Timeout: 1 * time.Minute,
-		}
-		req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("%s/OutputSQLReader", s.cloudNativeAPIBaseURL), nil)
-		if err != nil {
-			s.logger.Error("Failed to create http request", zap.Error(err))
-			return
-		}
-		req.Header.Set("Content-Type", "application/json")
-		req.Header.Set("Accept", "application/json")
-		req.Header.Set("x-kaytu-cloud-auth-key", s.cloudNativeAPIAuthKey)
-		resp, err := httpClient.Do(req)
-		if err != nil {
-			s.logger.Error("Failed to send OutputSQLReader http request", zap.Error(err))
-			return
-		}
-		defer resp.Body.Close()
-		resBody, err := io.ReadAll(resp.Body)
-		if err != nil {
-			s.logger.Error("Failed to read OutputSQLReader response body", zap.Error(err))
-			return
-		}
-		if resp.StatusCode != http.StatusOK {
-			s.logger.Error("Http request OutputSQLReader status not ok", zap.Int("status", resp.StatusCode), zap.String("body", string(resBody)))
-			return
-		}
-
-		res := make([]cloudNativeDescribeConnectionJobResourceOutput, 0)
-		if err := json.Unmarshal(resBody, &res); err != nil {
-			s.logger.Error("Failed to unmarshal OutputSQLReader response body", zap.Error(err))
-			return
-		}
-		if len(res) == 0 {
-			return
-		}
-
-		successfulIds, err := s.processCloudNativeDescribeConnectionJobResourcesEvents(res)
-		if err != nil {
-			s.logger.Error("Failed to process events", zap.Error(err))
-			return
-		}
-		jsonIds, err := json.Marshal(successfulIds)
-		if err != nil {
-			s.logger.Error("Failed to marshal successful ids", zap.Error(err))
-			return
-		}
-
-		req, err = http.NewRequest(http.MethodPost, fmt.Sprintf("%s/OutputSQLAck", s.cloudNativeAPIBaseURL), bytes.NewBuffer(jsonIds))
-		if err != nil {
-			s.logger.Error("Failed to create http request", zap.Error(err))
-			return
-		}
-		req.Header.Set("Content-Type", "application/json")
-		req.Header.Set("Accept", "application/json")
-		req.Header.Set("x-kaytu-cloud-auth-key", s.cloudNativeAPIAuthKey)
-		resp, err = httpClient.Do(req)
-		if err != nil {
-			s.logger.Error("Failed to send OutputSQLAck http request", zap.Error(err))
-			return
-		}
-		defer resp.Body.Close()
-		resBody, err = io.ReadAll(resp.Body)
-		if err != nil {
-			s.logger.Error("Failed to read OutputSQLAck response body", zap.Error(err))
-			return
-		}
-		if resp.StatusCode != http.StatusOK {
-			s.logger.Error("Http request OutputSQLAck status not ok", zap.Int("status", resp.StatusCode), zap.String("body", string(resBody)))
-			return
-		}
-	}
-}
-
-func (s *Scheduler) RunCloudNativeDescribeConnectionJobResourcesConsumer() {
-	defer func() {
-		if r := recover(); r != nil {
-			err := fmt.Errorf("paniced during RunCloudNativeDescribeConnectionJobResourcesConsumer: %v", r)
-			s.logger.Error("Paniced, retry", zap.Error(err))
-			go s.RunCloudNativeDescribeConnectionJobResourcesConsumer()
-		}
-	}()
-
-	t := time.NewTicker(JobCompletionInterval)
-	defer t.Stop()
-
-	for ; ; <-t.C {
-		s.cloudNativeDescribeConnectionJobResourcesConsume()
-	}
 }
 
 func (s *Scheduler) RunScheduleJobCompletionUpdater() {
@@ -1024,7 +575,6 @@ func (s *Scheduler) RunScheduleJobCompletionUpdater() {
 			UserRole: api2.ViewerRole,
 		}, sourceIDs)
 		if err != nil {
-			DescribeSourceJobsCount.WithLabelValues("failure").Inc()
 			s.logger.Error("Failed to get onboard sources",
 				zap.Strings("sourceIDs", sourceIDs),
 				zap.Error(err),
@@ -1156,387 +706,6 @@ func (s *Scheduler) RunScheduleJobCompletionUpdater() {
 	}
 }
 
-func (s *Scheduler) RunDescribeJobCompletionUpdater() {
-	t := time.NewTicker(JobCompletionInterval)
-	defer t.Stop()
-
-	for ; ; <-t.C {
-		results, err := s.db.QueryInProgressDescribedSourceJobGroupByDescribeResourceJobStatus()
-		if err != nil {
-			s.logger.Error("Failed to find DescribeSourceJobs", zap.Error(err))
-			continue
-		}
-
-		jobIDToStatus := make(map[uint]map[api.DescribeResourceJobStatus]int)
-		for _, v := range results {
-			if _, ok := jobIDToStatus[v.DescribeSourceJobID]; !ok {
-				jobIDToStatus[v.DescribeSourceJobID] = map[api.DescribeResourceJobStatus]int{
-					api.DescribeResourceJobCreated:      0,
-					api.DescribeResourceJobQueued:       0,
-					api.DescribeResourceJobCloudTimeout: 0,
-					api.DescribeResourceJobFailed:       0,
-					api.DescribeResourceJobSucceeded:    0,
-				}
-			}
-
-			jobIDToStatus[v.DescribeSourceJobID][v.DescribeResourceJobStatus] = v.DescribeResourceJobCount
-		}
-
-		for id, status := range jobIDToStatus {
-			// If any CREATED or QUEUED, job is still in progress
-			if status[api.DescribeResourceJobCreated] > 0 ||
-				status[api.DescribeResourceJobQueued] > 0 ||
-				status[api.DescribeResourceJobCloudTimeout] > 0 {
-				continue
-			}
-
-			// If any FAILURE, job is completed with failure
-			if status[api.DescribeResourceJobFailed] > 0 {
-				err := s.db.UpdateDescribeSourceJob(id, api.DescribeSourceJobCompletedWithFailure)
-				if err != nil {
-					s.logger.Error("Failed to update DescribeSourceJob status\n",
-						zap.Uint("jobId", id),
-						zap.String("status", string(api.DescribeSourceJobCompletedWithFailure)),
-						zap.Error(err),
-					)
-				}
-
-				job, err := s.db.GetDescribeSourceJob(id)
-				if err != nil {
-					s.logger.Error("Failed to call summarizer\n",
-						zap.Uint("jobId", id),
-						zap.Error(err),
-					)
-				} else if job == nil {
-					s.logger.Error("Failed to find the job for summarizer\n",
-						zap.Uint("jobId", id),
-						zap.Error(err),
-					)
-				} else {
-				}
-				continue
-			}
-
-			// If the rest is SUCCEEDED, job has completed with no failure
-			if status[api.DescribeResourceJobSucceeded] > 0 {
-				err := s.db.UpdateDescribeSourceJob(id, api.DescribeSourceJobCompleted)
-				if err != nil {
-					s.logger.Error("Failed to update DescribeSourceJob status\n",
-						zap.Uint("jobId", id),
-						zap.String("status", string(api.DescribeSourceJobCompleted)),
-						zap.Error(err),
-					)
-				}
-
-				continue
-			}
-		}
-	}
-}
-
-func (s Scheduler) RunDescribeJobScheduler() {
-	s.logger.Info("Scheduling describe jobs on a timer")
-
-	t := time.NewTicker(JobSchedulingInterval)
-	defer t.Stop()
-
-	for ; ; <-t.C {
-		s.scheduleDescribeJob()
-	}
-}
-
-func (s Scheduler) createLocalDescribeSource(scheduleJob *ScheduleJob, source *Source) {
-	if isPublishingBlocked(s.logger, s.describeConnectionJobQueue) {
-		s.logger.Warn("The jobs in queue is over the threshold")
-		return
-	}
-	src, err := s.db.GetLastDescribeSourceJob(source.ID)
-	if err != nil {
-		DescribeSourceJobsCount.WithLabelValues("failure").Inc()
-		s.logger.Error("Failed to get last describe source job",
-			zap.Uint("jobID", scheduleJob.ID),
-			zap.String("sourceID", source.ID.String()),
-			zap.Error(err))
-		return
-	}
-
-	triggerType := enums.DescribeTriggerTypeScheduled
-	if src == nil {
-		triggerType = enums.DescribeTriggerTypeInitialDiscovery
-	}
-
-	s.logger.Info("Source is due for a describe. Creating a job now", zap.String("sourceId", source.ID.String()))
-	daj := newDescribeSourceJob(*source, *scheduleJob)
-	err = s.db.CreateDescribeSourceJob(&daj)
-	if err != nil {
-		DescribeSourceJobsCount.WithLabelValues("failure").Inc()
-		s.logger.Error("Failed to create DescribeSourceJob",
-			zap.Uint("jobId", daj.ID),
-			zap.String("sourceId", source.ID.String()),
-			zap.Error(err),
-		)
-		return
-	}
-
-	enqueueDescribeConnectionJob(s.logger, s.db, s.describeConnectionJobQueue, *source, daj, scheduleJob.ID, scheduleJob.CreatedAt, triggerType)
-
-	isSuccessful := true
-
-	err = s.db.UpdateDescribeSourceJob(daj.ID, api.DescribeSourceJobInProgress)
-	if err != nil {
-		DescribeSourceJobsCount.WithLabelValues("failure").Inc()
-		s.logger.Error("Failed to update DescribeSourceJob",
-			zap.Uint("jobId", daj.ID),
-			zap.String("sourceId", source.ID.String()),
-			zap.Error(err),
-		)
-		isSuccessful = false
-	}
-	daj.Status = api.DescribeSourceJobInProgress
-
-	err = s.db.UpdateSourceDescribed(source.ID, scheduleJob.CreatedAt, time.Duration(s.describeIntervalHours)*time.Hour)
-	if err != nil {
-		DescribeSourceJobsCount.WithLabelValues("failure").Inc()
-		s.logger.Error("Failed to update Source",
-			zap.String("sourceId", source.ID.String()),
-			zap.Error(err),
-		)
-		isSuccessful = false
-	}
-
-	if isSuccessful {
-		DescribeSourceJobsCount.WithLabelValues("successful").Inc()
-	}
-
-	return
-}
-
-func (s Scheduler) createCloudNativeDescribeSource(scheduleJob *ScheduleJob, source *Source) {
-	if isPublishingBlocked(s.logger, s.describeConnectionJobQueue) {
-		s.logger.Warn("The jobs in queue is over the threshold")
-		return
-	}
-	src, err := s.db.GetLastDescribeSourceJob(source.ID)
-	if err != nil {
-		DescribeSourceJobsCount.WithLabelValues("failure").Inc()
-		s.logger.Error("Failed to get last describe source job",
-			zap.Uint("jobID", scheduleJob.ID),
-			zap.String("sourceID", source.ID.String()),
-			zap.Error(err))
-		return
-	}
-
-	triggerType := enums.DescribeTriggerTypeScheduled
-	if src == nil {
-		triggerType = enums.DescribeTriggerTypeInitialDiscovery
-	}
-
-	s.logger.Info("Source is due for a describe. Creating a job now", zap.String("sourceId", source.ID.String()))
-	daj := newDescribeSourceJob(*source, *scheduleJob)
-	err = s.db.CreateDescribeSourceJob(&daj)
-	if err != nil {
-		DescribeSourceJobsCount.WithLabelValues("failure").Inc()
-		s.logger.Error("Failed to create DescribeSourceJob",
-			zap.Uint("jobId", daj.ID),
-			zap.String("sourceId", source.ID.String()),
-			zap.Error(err),
-		)
-		return
-	}
-	cloudDaj, err := newCloudNativeDescribeSourceJob(daj)
-	if err != nil {
-		DescribeSourceJobsCount.WithLabelValues("failure").Inc()
-		s.logger.Error("Failed to create CloudNativeDescribeSourceJob",
-			zap.Uint("jobId", daj.ID),
-			zap.String("sourceId", source.ID.String()),
-			zap.Error(err),
-		)
-		return
-	}
-	err = s.db.CreateCloudNativeDescribeSourceJob(&cloudDaj)
-
-	enqueueCloudNativeDescribeConnectionJob(s.logger, s.db, CurrentWorkspaceID, s.cloudNativeAPIBaseURL, s.cloudNativeAPIAuthKey, *source, cloudDaj, s.kafkaResourcesTopic, scheduleJob.ID, scheduleJob.CreatedAt, triggerType)
-
-	isSuccessful := true
-
-	err = s.db.UpdateDescribeSourceJob(daj.ID, api.DescribeSourceJobInProgress)
-	if err != nil {
-		DescribeSourceJobsCount.WithLabelValues("failure").Inc()
-		s.logger.Error("Failed to update DescribeSourceJob",
-			zap.Uint("jobId", daj.ID),
-			zap.String("sourceId", source.ID.String()),
-			zap.Error(err),
-		)
-		isSuccessful = false
-	}
-	daj.Status = api.DescribeSourceJobInProgress
-
-	err = s.db.UpdateSourceDescribed(source.ID, scheduleJob.CreatedAt, time.Duration(s.describeIntervalHours)*time.Hour)
-	if err != nil {
-		DescribeSourceJobsCount.WithLabelValues("failure").Inc()
-		s.logger.Error("Failed to update Source",
-			zap.String("sourceId", source.ID.String()),
-			zap.Error(err),
-		)
-		isSuccessful = false
-	}
-
-	if isSuccessful {
-		DescribeSourceJobsCount.WithLabelValues("successful").Inc()
-	}
-
-	return
-}
-
-func (s Scheduler) scheduleDescribeJob() {
-	scheduleJob, err := s.db.FetchLastScheduleJob()
-	if err != nil {
-		s.logger.Error("Failed to fetch last ScheduleJob", zap.Error(err))
-		DescribeJobsCount.WithLabelValues("failure").Inc()
-		return
-	}
-
-	if scheduleJob == nil ||
-		(scheduleJob.CreatedAt.Before(time.Now().Add(time.Duration(-s.describeIntervalHours)*time.Hour)) && scheduleJob.Status != summarizerapi.SummarizerJobInProgress) {
-		job := ScheduleJob{
-			Model:          gorm.Model{},
-			Status:         summarizerapi.SummarizerJobInProgress,
-			FailureMessage: "",
-		}
-		err := s.db.AddScheduleJob(&job)
-		if err != nil {
-			s.logger.Error("Failed to add new ScheduleJob", zap.Error(err))
-			DescribeJobsCount.WithLabelValues("failure").Inc()
-			return
-		}
-		scheduleJob = &job
-	}
-
-	s.logger.Info("Checking sources due for this schedule job", zap.Uint("jobID", scheduleJob.ID))
-	describeJobs, err := s.db.QueryDescribeSourceJobsForScheduleJob(scheduleJob)
-	if err != nil {
-		s.logger.Error("Failed to fetch related describe source jobs", zap.Error(err))
-		DescribeJobsCount.WithLabelValues("failure").Inc()
-		return
-	}
-
-	srcs, err := s.db.ListSources()
-	if err != nil {
-		s.logger.Error("Failed to find list of sources", zap.Error(err))
-		DescribeJobsCount.WithLabelValues("failure").Inc()
-		return
-	}
-
-	var sources []Source
-	for _, src := range srcs {
-		hasOne := false
-		for _, j := range describeJobs {
-			if src.ID == j.SourceID {
-				hasOne = true
-				break
-			}
-		}
-		if hasOne {
-			continue
-		}
-
-		sources = append(sources, src)
-	}
-
-	sourceIDs := make([]string, 0, len(sources))
-	for _, src := range sources {
-		sourceIDs = append(sourceIDs, src.ID.String())
-	}
-	onboardSources, err := s.onboardClient.GetSources(&httpclient.Context{
-		UserRole: api2.ViewerRole,
-	}, sourceIDs)
-	if err != nil {
-		DescribeSourceJobsCount.WithLabelValues("failure").Inc()
-		s.logger.Error("Failed to get onboard sources",
-			zap.Strings("sourceIDs", sourceIDs),
-			zap.Error(err),
-		)
-		return
-	}
-	filteredSources := make([]Source, 0, len(sources))
-	for _, src := range sources {
-		for _, onboardSrc := range onboardSources {
-			if src.ID.String() == onboardSrc.ID.String() {
-				healthCheckedSrc, err := s.onboardClient.GetSourceHealthcheck(&httpclient.Context{
-					UserRole: api2.EditorRole,
-				}, onboardSrc.ID.String())
-				if err != nil {
-					s.logger.Error("Failed to get source healthcheck",
-						zap.String("sourceID", onboardSrc.ID.String()),
-						zap.Error(err),
-					)
-					continue
-				}
-				if healthCheckedSrc.AssetDiscoveryMethod == source.AssetDiscoveryMethodTypeScheduled &&
-					healthCheckedSrc.HealthState != source.HealthStatusUnhealthy {
-					filteredSources = append(filteredSources, src)
-				}
-				break
-			}
-		}
-	}
-	sources = filteredSources
-
-	if len(sources) > 0 {
-		s.logger.Info("There are some sources that need to be described", zap.Int("count", len(sources)))
-	} else {
-		DescribeJobsCount.WithLabelValues("successful").Inc()
-		return
-	}
-
-	limit, err := s.workspaceClient.GetLimitsByID(&httpclient.Context{
-		UserRole: api2.ViewerRole,
-	}, CurrentWorkspaceID)
-	if err != nil {
-		DescribeSourceJobsCount.WithLabelValues("failure").Inc()
-		s.logger.Error("Failed to get workspace limits",
-			zap.String("workspace", CurrentWorkspaceID),
-			zap.Error(err),
-		)
-		return
-	}
-
-	currentResourceCount, err := s.es.Count(context.Background(), InventorySummaryIndex)
-	if err != nil {
-		DescribeSourceJobsCount.WithLabelValues("failure").Inc()
-		s.logger.Error("Failed to get count of current resources",
-			zap.String("workspace", CurrentWorkspaceID),
-			zap.Error(err),
-		)
-		return
-	}
-
-	if currentResourceCount >= limit.MaxResources {
-		DescribeSourceJobsCount.WithLabelValues("failure").Inc()
-		s.logger.Error("Workspace has reached its max resources limit",
-			zap.String("workspace", CurrentWorkspaceID),
-			zap.Error(err),
-		)
-		return
-	}
-
-	if err = s.rdb.Set(context.Background(), RedisKeyWorkspaceResourceRemaining,
-		limit.MaxResources-currentResourceCount, 12*time.Hour).Err(); err != nil {
-		DescribeSourceJobsCount.WithLabelValues("failure").Inc()
-		s.logger.Error("Failed to set workspace resource remaining on redis",
-			zap.String("workspace", CurrentWorkspaceID),
-			zap.Error(err),
-		)
-		return
-	}
-
-	rand.Shuffle(len(sources), func(i, j int) { sources[i], sources[j] = sources[j], sources[i] })
-	for _, source := range sources {
-		//s.createLocalDescribeSource(scheduleJob, &source) // Uncomment this line to enable local describe
-		s.createCloudNativeDescribeSource(scheduleJob, &source) // Comment this line to enable local describe
-	}
-	DescribeJobsCount.WithLabelValues("successful").Inc()
-}
 func (s *Scheduler) RunComplianceReportCleanupJobScheduler() {
 	s.logger.Info("Running compliance report cleanup job scheduler")
 
@@ -1545,17 +714,6 @@ func (s *Scheduler) RunComplianceReportCleanupJobScheduler() {
 
 	for range t.C {
 		s.cleanupComplianceReportJob()
-	}
-}
-
-func (s *Scheduler) RunDescribeCleanupJobScheduler() {
-	s.logger.Info("Running describe cleanup job scheduler")
-
-	t := time.NewTicker(JobSchedulingInterval)
-	defer t.Stop()
-
-	for range t.C {
-		s.cleanupDescribeJob()
 	}
 }
 
@@ -1580,111 +738,6 @@ func (s Scheduler) cleanupDescribeJobForDeletedSource(sourceId string) {
 	}
 
 	s.handleConnectionDescribeJobsCleanup(jobs)
-
-	DescribeCleanupJobsCount.WithLabelValues("successful").Inc()
-}
-
-func (s Scheduler) handleConnectionDescribeJobsCleanup(jobs []DescribeSourceJob) {
-	for _, sj := range jobs {
-		// I purposefully didn't embbed this query in the previous query to keep returned results count low.
-		drj, err := s.db.ListDescribeResourceJobs(sj.ID)
-		if err != nil {
-			s.logger.Error("Failed to retrieve DescribeResourceJobs for DescribeSouceJob",
-				zap.Uint("jobId", sj.ID),
-				zap.Error(err),
-			)
-			DescribeCleanupSourceJobsCount.WithLabelValues("failure").Inc()
-			continue
-		}
-
-		success := true
-		for _, rj := range drj {
-			if isPublishingBlocked(s.logger, s.describeCleanupJobQueue) {
-				s.logger.Warn("The jobs in queue is over the threshold")
-				return
-			}
-
-			if err := s.describeCleanupJobQueue.Publish(DescribeCleanupJob{
-				JobType:      DescribeCleanupJobTypeInclusiveDelete,
-				JobIDs:       []uint{rj.ID},
-				ResourceType: rj.ResourceType,
-			}); err != nil {
-				s.logger.Error("Failed to publish describe clean up job to queue for DescribeResourceJob",
-					zap.Uint("jobId", rj.ID),
-					zap.Error(err),
-				)
-				success = false
-				DescribeCleanupSourceJobsCount.WithLabelValues("failure").Inc()
-				continue
-			}
-
-			err = s.db.DeleteDescribeResourceJob(rj.ID)
-			if err != nil {
-				s.logger.Error("Failed to delete DescribeResourceJob",
-					zap.Uint("jobId", rj.ID),
-					zap.Error(err),
-				)
-				success = false
-				DescribeCleanupSourceJobsCount.WithLabelValues("failure").Inc()
-				continue
-			}
-		}
-
-		if success {
-			err := s.db.DeleteDescribeSourceJob(sj.ID)
-			if err != nil {
-				s.logger.Error("Failed to delete DescribeSourceJob",
-					zap.Uint("jobId", sj.ID),
-					zap.Error(err),
-				)
-				DescribeCleanupSourceJobsCount.WithLabelValues("failure").Inc()
-			} else {
-				DescribeCleanupSourceJobsCount.WithLabelValues("successful").Inc()
-			}
-		} else {
-			DescribeCleanupSourceJobsCount.WithLabelValues("failure").Inc()
-		}
-
-		s.logger.Info("Successfully deleted DescribeSourceJob and its DescribeResourceJobs",
-			zap.Uint("jobId", sj.ID),
-		)
-	}
-}
-
-func (s Scheduler) enqueueExclusiveCleanupJob(resourceType string, jobIDs []uint) {
-	if isPublishingBlocked(s.logger, s.describeCleanupJobQueue) {
-		s.logger.Warn("The jobs in queue is over the threshold")
-		return
-	}
-
-	if err := s.describeCleanupJobQueue.Publish(DescribeCleanupJob{
-		JobType:      DescribeCleanupJobTypeExclusiveDelete,
-		JobIDs:       jobIDs,
-		ResourceType: strings.ToLower(resourceType),
-	}); err != nil {
-		s.logger.Error("Failed to publish describe clean up job to queue",
-			zap.Error(err),
-		)
-		DescribeCleanupJobsCount.WithLabelValues("failure").Inc()
-		return
-	}
-
-	DescribeCleanupJobsCount.WithLabelValues("successful").Inc()
-}
-
-func (s Scheduler) cleanupDescribeJob() {
-	latestSuccessfulJobsMap, err := s.db.GetLatestSuccessfulDescribeJobIDsPerResourcePerAccount()
-	if err != nil {
-		s.logger.Error("Failed to get latest successful DescribeResourceJobs per resource per account",
-			zap.Error(err),
-		)
-		DescribeCleanupJobsCount.WithLabelValues("failure").Inc()
-		return
-	}
-
-	for resourceType, jobIDs := range latestSuccessfulJobsMap {
-		s.enqueueExclusiveCleanupJob(resourceType, jobIDs)
-	}
 
 	DescribeCleanupJobsCount.WithLabelValues("successful").Inc()
 }
@@ -1778,160 +831,6 @@ func (s *Scheduler) RunSourceEventsConsumer() error {
 	}
 
 	return fmt.Errorf("source events queue channel is closed")
-}
-
-// RunDescribeConnectionJobResultsConsumer consumes messages from the jobResult queue.
-// It will update the status of the jobs in the database based on the message.
-// It will also update the jobs status that are not completed in certain time to FAILED
-func (s *Scheduler) RunDescribeConnectionJobResultsConsumer() error {
-	s.logger.Info("Consuming messages from the JobResults queue")
-
-	msgs, err := s.describeConnectionJobResultQueue.Consume()
-	if err != nil {
-		return err
-	}
-
-	t := time.NewTicker(JobTimeoutCheckInterval)
-	defer t.Stop()
-
-	for {
-		select {
-		case msg, ok := <-msgs:
-			if !ok {
-				return fmt.Errorf("tasks channel is closed")
-			}
-
-			var result DescribeConnectionJobResult
-			if err := json.Unmarshal(msg.Body, &result); err != nil {
-				s.logger.Error("Failed to unmarshal DescribeConnectionJobResult results\n", zap.Error(err))
-				err = msg.Nack(false, false)
-				if err != nil {
-					s.logger.Error("Failed nacking message", zap.Error(err))
-				}
-				continue
-			}
-
-			failed := false
-			for jobID, res := range result.Result {
-				s.logger.Info("Processing JobResult for Job",
-					zap.Uint("jobId", jobID),
-					zap.String("status", string(res.Status)),
-				)
-
-				if strings.Contains(res.Error, "ThrottlingException") ||
-					strings.Contains(res.Error, "Rate exceeded") ||
-					strings.Contains(res.Error, "RateExceeded") ||
-					res.Status == api.DescribeResourceJobCloudTimeout {
-					// sent it to describe jobs
-					s.logger.Info("Needs to be retried",
-						zap.Uint("jobId", jobID),
-						zap.String("status", string(res.Status)),
-					)
-					res.DescribeJob.RetryCounter++
-					if res.DescribeJob.RetryCounter > 5 {
-						res.Status = api.DescribeResourceJobFailed
-						res.Error = fmt.Sprintf("Retries exhuasted - original error: %s", res.Error)
-					} else {
-						if err := s.describeJobQueue.Publish(res.DescribeJob); err != nil {
-							s.logger.Error("Failed to queue DescribeConnectionJob",
-								zap.Uint("jobId", res.JobID),
-								zap.Error(err),
-							)
-						} else {
-							continue
-						}
-					}
-				}
-
-				err := s.db.UpdateDescribeResourceJobStatus(res.JobID, res.Status, res.Error)
-				if err != nil {
-					failed = true
-					s.logger.Error("Failed to update the status of DescribeResourceJob",
-						zap.Uint("jobId", res.JobID),
-						zap.Error(err),
-					)
-					err = msg.Nack(false, true)
-					if err != nil {
-						s.logger.Error("Failed nacking message", zap.Error(err))
-					}
-					break
-				}
-			}
-
-			if failed {
-				continue
-			}
-
-			if err := msg.Ack(false); err != nil {
-				s.logger.Error("Failed acking message", zap.Error(err))
-			}
-		case <-t.C:
-			err := s.db.UpdateDescribeResourceJobsTimedOut(s.describeTimeoutHours)
-			if err != nil {
-				s.logger.Error("Failed to update timed out DescribeResourceJobs", zap.Error(err))
-			}
-		}
-	}
-}
-
-// RunDescribeJobResultsConsumer consumes messages from the jobResult queue.
-// It will update the status of the jobs in the database based on the message.
-// It will also update the jobs status that are not completed in certain time to FAILED
-func (s *Scheduler) RunDescribeJobResultsConsumer() error {
-	s.logger.Info("Consuming messages from the JobResults queue")
-
-	msgs, err := s.describeJobResultQueue.Consume()
-	if err != nil {
-		return err
-	}
-
-	t := time.NewTicker(JobTimeoutCheckInterval)
-	defer t.Stop()
-
-	for {
-		select {
-		case msg, ok := <-msgs:
-			if !ok {
-				return fmt.Errorf("tasks channel is closed")
-			}
-
-			var result DescribeJobResult
-			if err := json.Unmarshal(msg.Body, &result); err != nil {
-				s.logger.Error("Failed to unmarshal DescribeJobResult results\n", zap.Error(err))
-				err = msg.Nack(false, false)
-				if err != nil {
-					s.logger.Error("Failed nacking message", zap.Error(err))
-				}
-				continue
-			}
-
-			s.logger.Info("Processing JobResult for Job",
-				zap.Uint("jobId", result.JobID),
-				zap.String("status", string(result.Status)),
-			)
-			err := s.db.UpdateDescribeResourceJobStatus(result.JobID, result.Status, result.Error)
-			if err != nil {
-				s.logger.Error("Failed to update the status of DescribeResourceJob",
-					zap.Uint("jobId", result.JobID),
-					zap.Error(err),
-				)
-				err = msg.Nack(false, true)
-				if err != nil {
-					s.logger.Error("Failed nacking message", zap.Error(err))
-				}
-				continue
-			}
-
-			if err := msg.Ack(false); err != nil {
-				s.logger.Error("Failed acking message", zap.Error(err))
-			}
-		case <-t.C:
-			err := s.db.UpdateDescribeResourceJobsTimedOut(s.describeTimeoutHours)
-			if err != nil {
-				s.logger.Error("Failed to update timed out DescribeResourceJobs", zap.Error(err))
-			}
-		}
-	}
 }
 
 //
@@ -2086,9 +985,7 @@ func (s *Scheduler) RunComplianceReportJobResultsConsumer() error {
 
 func (s *Scheduler) Stop() {
 	queues := []queue.Interface{
-		s.describeJobQueue,
 		s.describeJobResultQueue,
-		s.describeConnectionJobQueue,
 		s.describeConnectionJobResultQueue,
 		s.describeCleanupJobQueue,
 		s.complianceReportJobQueue,
@@ -2107,79 +1004,6 @@ func (s *Scheduler) Stop() {
 	s.kafkaClient.Close()
 }
 
-func newDescribeSourceJob(a Source, s ScheduleJob) DescribeSourceJob {
-	daj := DescribeSourceJob{
-		ScheduleJobID:        s.ID,
-		DescribedAt:          s.CreatedAt,
-		SourceID:             a.ID,
-		AccountID:            a.AccountID,
-		DescribeResourceJobs: []DescribeResourceJob{},
-		Status:               api.DescribeSourceJobCreated,
-	}
-	switch sType := api.SourceType(a.Type); sType {
-	case api.SourceCloudAWS:
-		resourceTypes := aws.ListResourceTypes()
-		rand.Shuffle(len(resourceTypes), func(i, j int) { resourceTypes[i], resourceTypes[j] = resourceTypes[j], resourceTypes[i] })
-		for _, rType := range resourceTypes {
-			daj.DescribeResourceJobs = append(daj.DescribeResourceJobs, DescribeResourceJob{
-				ResourceType: rType,
-				Status:       api.DescribeResourceJobCreated,
-			})
-		}
-	case api.SourceCloudAzure:
-		resourceTypes := azure.ListResourceTypes()
-		rand.Shuffle(len(resourceTypes), func(i, j int) { resourceTypes[i], resourceTypes[j] = resourceTypes[j], resourceTypes[i] })
-		for _, rType := range resourceTypes {
-			daj.DescribeResourceJobs = append(daj.DescribeResourceJobs, DescribeResourceJob{
-				ResourceType: rType,
-				Status:       api.DescribeResourceJobCreated,
-			})
-		}
-	default:
-		panic(fmt.Errorf("unsupported source type: %s", sType))
-	}
-
-	return daj
-}
-
-func newCloudNativeDescribeSourceJob(j DescribeSourceJob) (CloudNativeDescribeSourceJob, error) {
-	credentialsKeypair, err := crypto.GenerateKey(j.AccountID, j.SourceID.String(), "x25519", 0)
-	if err != nil {
-		return CloudNativeDescribeSourceJob{}, err
-	}
-	credentialsPrivateKey, err := credentialsKeypair.Armor()
-	if err != nil {
-		return CloudNativeDescribeSourceJob{}, err
-	}
-	credentialsPublicKey, err := credentialsKeypair.GetArmoredPublicKey()
-	if err != nil {
-		return CloudNativeDescribeSourceJob{}, err
-	}
-
-	resultEncryptionKeyPair, err := crypto.GenerateKey(j.AccountID, j.SourceID.String(), "x25519", 0)
-	if err != nil {
-		return CloudNativeDescribeSourceJob{}, err
-	}
-	resultEncryptionPrivateKey, err := resultEncryptionKeyPair.Armor()
-	if err != nil {
-		return CloudNativeDescribeSourceJob{}, err
-	}
-	resultEncryptionPublicKey, err := resultEncryptionKeyPair.GetArmoredPublicKey()
-	if err != nil {
-		return CloudNativeDescribeSourceJob{}, err
-	}
-
-	job := CloudNativeDescribeSourceJob{
-		SourceJob:                      j,
-		CredentialEncryptionPrivateKey: credentialsPrivateKey,
-		CredentialEncryptionPublicKey:  credentialsPublicKey,
-		ResultEncryptionPrivateKey:     resultEncryptionPrivateKey,
-		ResultEncryptionPublicKey:      resultEncryptionPublicKey,
-	}
-
-	return job, nil
-}
-
 func newComplianceReportJob(connectionID string, connector source.Type, benchmarkID string, scheduleJobID uint) ComplianceReportJob {
 	return ComplianceReportJob{
 		Model:           gorm.Model{},
@@ -2191,218 +1015,6 @@ func newComplianceReportJob(connectionID string, connector source.Type, benchmar
 		Status:          complianceapi.ComplianceReportJobCreated,
 		FailureMessage:  "",
 	}
-}
-
-func enqueueDescribeResourceJobs(logger *zap.Logger, db Database, q queue.Interface, a Source, daj DescribeSourceJob, describedAt time.Time) {
-	var oldJobFailed error
-
-	for i, drj := range daj.DescribeResourceJobs {
-		nextStatus := api.DescribeResourceJobQueued
-		errMsg := ""
-
-		if oldJobFailed == nil {
-			if err := q.Publish(DescribeJob{
-				JobID:        drj.ID,
-				ParentJobID:  daj.ID,
-				ResourceType: drj.ResourceType,
-				SourceID:     daj.SourceID.String(),
-				AccountID:    daj.AccountID,
-				DescribedAt:  describedAt.UnixMilli(),
-				SourceType:   a.Type,
-				ConfigReg:    a.ConfigRef,
-			}); err != nil {
-				logger.Error("Failed to queue DescribeResourceJob",
-					zap.Uint("jobId", drj.ID),
-					zap.Error(err),
-				)
-
-				nextStatus = api.DescribeResourceJobFailed
-				errMsg = fmt.Sprintf("queue: %s", err.Error())
-			}
-		} else {
-			nextStatus = api.DescribeResourceJobFailed
-			errMsg = fmt.Sprintf("queue: %s", oldJobFailed.Error())
-		}
-
-		if err := db.UpdateDescribeResourceJobStatus(drj.ID, nextStatus, errMsg); err != nil {
-			logger.Error("Failed to update DescribeResourceJob",
-				zap.Uint("jobId", drj.ID),
-				zap.Error(err),
-			)
-		}
-
-		daj.DescribeResourceJobs[i].Status = nextStatus
-	}
-}
-
-func enqueueDescribeConnectionJob(logger *zap.Logger, db Database, q queue.Interface, a Source, daj DescribeSourceJob, scheduleJobID uint, describedAt time.Time, triggerType enums.DescribeTriggerType) {
-	nextStatus := api.DescribeResourceJobQueued
-	errMsg := ""
-
-	resourceJobs := map[uint]string{}
-	for _, drj := range daj.DescribeResourceJobs {
-		resourceJobs[drj.ID] = drj.ResourceType
-	}
-	if err := q.Publish(DescribeConnectionJob{
-		JobID:         daj.ID,
-		ScheduleJobID: scheduleJobID,
-		ResourceJobs:  resourceJobs,
-		SourceID:      daj.SourceID.String(),
-		AccountID:     daj.AccountID,
-		DescribedAt:   describedAt.UnixMilli(),
-		SourceType:    a.Type,
-		ConfigReg:     a.ConfigRef,
-		TriggerType:   triggerType,
-	}); err != nil {
-		logger.Error("Failed to queue DescribeConnectionJob",
-			zap.Uint("jobId", daj.ID),
-			zap.Error(err),
-		)
-
-		nextStatus = api.DescribeResourceJobFailed
-		errMsg = fmt.Sprintf("queue: %s", err.Error())
-	}
-
-	for i, drj := range daj.DescribeResourceJobs {
-		if err := db.UpdateDescribeResourceJobStatus(drj.ID, nextStatus, errMsg); err != nil {
-			logger.Error("Failed to update DescribeResourceJob",
-				zap.Uint("jobId", drj.ID),
-				zap.Error(err),
-			)
-		}
-		daj.DescribeResourceJobs[i].Status = nextStatus
-	}
-}
-
-func enqueueCloudNativeDescribeConnectionJob(logger *zap.Logger, db Database, workspaceId string, cloudNativeAPIBaseURL string, cloudNativeAPIAuthKey string, a Source, daj CloudNativeDescribeSourceJob, kafkaResourcesTopic string, scheduleJobID uint, describedAt time.Time, triggerType enums.DescribeTriggerType) {
-	nextStatus := api.DescribeResourceJobQueued
-	errMsg := ""
-
-	resourceJobs := map[uint]string{}
-	for _, drj := range daj.SourceJob.DescribeResourceJobs {
-		resourceJobs[drj.ID] = drj.ResourceType
-	}
-	dcj := DescribeConnectionJob{
-		JobID:         daj.SourceJob.ID,
-		ScheduleJobID: scheduleJobID,
-		ResourceJobs:  resourceJobs,
-		SourceID:      daj.SourceJob.SourceID.String(),
-		AccountID:     daj.SourceJob.AccountID,
-		DescribedAt:   describedAt.UnixMilli(),
-		SourceType:    a.Type,
-		ConfigReg:     a.ConfigRef,
-		TriggerType:   triggerType,
-	}
-	dcjJson, err := json.Marshal(dcj)
-	if err != nil {
-		logger.Error("Failed to marshal DescribeConnectionJob",
-			zap.Uint("jobId", daj.ID),
-			zap.Error(err),
-		)
-
-		nextStatus = api.DescribeResourceJobFailed
-		errMsg = fmt.Sprintf("marshal: %s", err.Error())
-	}
-
-	cloudTriggerInput := api.CloudNativeConnectionWorkerTriggerInput{
-		WorkspaceID:             workspaceId,
-		JobID:                   daj.JobID.String(),
-		JobJson:                 string(dcjJson),
-		CredentialsCallbackURL:  fmt.Sprintf("%s/schedule/api/v1/jobs/%s/creds", IngressBaseURL, daj.JobID.String()),
-		EndOfJobCallbackURL:     fmt.Sprintf("%s/schedule/api/v1/jobs/%s/callback", IngressBaseURL, daj.JobID.String()),
-		CredentialDecryptionKey: daj.CredentialEncryptionPrivateKey,
-		OutputEncryptionKey:     daj.ResultEncryptionPublicKey,
-		ResourcesTopic:          kafkaResourcesTopic,
-	}
-
-	//call azure function to trigger describe connection job
-	cloudTriggerInputJson, err := json.Marshal(cloudTriggerInput)
-	if err != nil {
-		logger.Error("Failed to marshal DescribeConnectionJob",
-			zap.Uint("jobId", daj.ID),
-			zap.Error(err),
-		)
-
-		nextStatus = api.DescribeResourceJobFailed
-		errMsg = fmt.Sprintf("marshal: %s", err.Error())
-	}
-	//enqueue job to cloud native connection worker
-	httpClient := &http.Client{
-		Timeout: 5 * time.Minute,
-	}
-	req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("%s/orchestrators/ConnectionWorkerOrchestrator", cloudNativeAPIBaseURL), bytes.NewBuffer(cloudTriggerInputJson))
-	if err != nil {
-		logger.Error("Failed to create http request", zap.Error(err))
-		nextStatus = api.DescribeResourceJobFailed
-		errMsg = fmt.Sprintf("create http request: %s", err.Error())
-	} else {
-		req.Header.Set("Content-Type", "application/json")
-		req.Header.Set("Accept", "application/json")
-		req.Header.Set("x-kaytu-cloud-auth-key", cloudNativeAPIAuthKey)
-		resp, err := httpClient.Do(req)
-		if err != nil {
-			logger.Error("Failed to send orchestrators http request", zap.Error(err))
-			nextStatus = api.DescribeResourceJobFailed
-			errMsg = fmt.Sprintf("send orchestrators http request: %s", err.Error())
-		}
-		defer resp.Body.Close()
-		resBody, err := io.ReadAll(resp.Body)
-		if err != nil {
-			logger.Error("Failed to read orchestrators http response", zap.Error(err))
-			nextStatus = api.DescribeResourceJobFailed
-			errMsg = fmt.Sprintf("read orchestrators http response: %s", err.Error())
-		} else {
-			if resp.StatusCode != http.StatusAccepted {
-				logger.Error("Failed to trigger cloud native connection worker", zap.Error(err))
-				nextStatus = api.DescribeResourceJobFailed
-				errMsg = fmt.Sprintf("trigger cloud native connection worker: %s", resBody)
-			}
-		}
-	}
-
-	if err := db.UpdateDescribeResourceJobStatusByParentId(daj.SourceJob.ID, nextStatus, errMsg); err != nil {
-		logger.Error("Failed to update DescribeResourceJob",
-			zap.Uint("parentJobId", daj.ID),
-			zap.Error(err),
-		)
-	}
-	for i := range daj.SourceJob.DescribeResourceJobs {
-		daj.SourceJob.DescribeResourceJobs[i].Status = nextStatus
-	}
-}
-
-func enqueueComplianceReportJobs(logger *zap.Logger, db Database, q queue.Interface,
-	a Source, crj *ComplianceReportJob, scheduleJob *ScheduleJob) {
-	nextStatus := complianceapi.ComplianceReportJobInProgress
-	errMsg := ""
-
-	if err := q.Publish(complianceworker.Job{
-		JobID:         crj.ID,
-		ScheduleJobID: scheduleJob.ID,
-		DescribedAt:   scheduleJob.CreatedAt.UnixMilli(),
-		EvaluatedAt:   time.Now().UnixMilli(),
-		ConnectionID:  crj.SourceID,
-		BenchmarkID:   crj.BenchmarkID,
-		ConfigReg:     a.ConfigRef,
-		Connector:     source.Type(a.Type),
-	}); err != nil {
-		logger.Error("Failed to queue ComplianceReportJob",
-			zap.Uint("jobId", crj.ID),
-			zap.Error(err),
-		)
-
-		nextStatus = complianceapi.ComplianceReportJobCompletedWithFailure
-		errMsg = fmt.Sprintf("queue: %s", err.Error())
-	}
-
-	if err := db.UpdateComplianceReportJob(crj.ID, nextStatus, 0, errMsg); err != nil {
-		logger.Error("Failed to update ComplianceReportJob",
-			zap.Uint("jobId", crj.ID),
-			zap.Error(err),
-		)
-	}
-
-	crj.Status = nextStatus
 }
 
 func isPublishingBlocked(logger *zap.Logger, queue queue.Interface) bool {
@@ -2439,24 +1051,6 @@ func (s Scheduler) RunCheckupJobScheduler() {
 
 	for ; ; <-t.C {
 		s.scheduleCheckupJob()
-	}
-}
-
-func (s Scheduler) RunMustSummerizeJobScheduler() {
-	s.logger.Info("Scheduling must summerize jobs on a timer")
-
-	t := time.NewTicker(JobSchedulingInterval)
-	defer t.Stop()
-
-	for ; ; <-t.C {
-		lastJob, err := s.db.FetchLastSummarizerJob()
-		if err != nil {
-			s.logger.Error("Failed to find the last job to check for MustSummerizeJob", zap.Error(err))
-			continue
-		}
-		if lastJob == nil || lastJob.CreatedAt.Add(time.Duration(s.mustSummarizeIntervalHours)*time.Hour).Before(time.Now()) {
-			s.scheduleMustSummarizerJob(nil)
-		}
 	}
 }
 
@@ -2620,186 +1214,14 @@ func (s Scheduler) scheduleCheckupJob() {
 	}
 }
 
-func (s Scheduler) scheduleSummarizerJob(scheduleJobID uint) error {
-	job := newSummarizerJob(summarizer.JobType_ResourceSummarizer, scheduleJobID)
-	err := s.db.AddSummarizerJob(&job)
-	if err != nil {
-		SummarizerJobsCount.WithLabelValues("failure").Inc()
-		s.logger.Error("Failed to create SummarizerJob",
-			zap.Uint("jobId", job.ID),
-			zap.Error(err),
-		)
-		return err
+func newSummarizerJob(jobType summarizer.JobType, scheduleJobID uint) SummarizerJob {
+	return SummarizerJob{
+		Model:          gorm.Model{},
+		ScheduleJobID:  &scheduleJobID,
+		Status:         summarizerapi.SummarizerJobInProgress,
+		JobType:        jobType,
+		FailureMessage: "",
 	}
-
-	err = enqueueSummarizerJobs(s.db, s.summarizerJobQueue, job, scheduleJobID)
-	if err != nil {
-		SummarizerJobsCount.WithLabelValues("failure").Inc()
-		s.logger.Error("Failed to enqueue SummarizerJob",
-			zap.Uint("jobId", job.ID),
-			zap.Error(err),
-		)
-		job.Status = summarizerapi.SummarizerJobFailed
-		err = s.db.UpdateSummarizerJobStatus(job)
-		if err != nil {
-			s.logger.Error("Failed to update SummarizerJob status",
-				zap.Uint("jobId", job.ID),
-				zap.Error(err),
-			)
-		}
-		return err
-	}
-
-	return nil
-}
-
-func (s Scheduler) scheduleMustSummarizerJob(scheduleJobID *uint) error {
-	ongoingJobs, err := s.db.GetOngoingSummarizerJobsByType(summarizer.JobType_ResourceMustSummarizer)
-	if err != nil {
-		SummarizerJobsCount.WithLabelValues("failure").Inc()
-		s.logger.Error("Failed to get ongoing SummarizerJobs",
-			zap.Error(err),
-		)
-		return err
-	}
-	if len(ongoingJobs) > 0 {
-		s.logger.Info("There is ongoing MustSummarizerJob skipping this schedule")
-		return fmt.Errorf("there is ongoing MustSummarizerJob skipping this schedule")
-	}
-
-	job := newMustSummarizerJob(scheduleJobID)
-	err = s.db.AddSummarizerJob(&job)
-	if err != nil {
-		SummarizerJobsCount.WithLabelValues("failure").Inc()
-		s.logger.Error("Failed to create SummarizerJob",
-			zap.Uint("jobId", job.ID),
-			zap.Error(err),
-		)
-		return err
-	}
-
-	describeJobIdsMap, err := s.db.GetLatestSuccessfulDescribeJobIDsPerResourcePerAccount()
-	if err != nil {
-		SummarizerJobsCount.WithLabelValues("failure").Inc()
-		s.logger.Error("Failed to get latest successful DescribeJobIDs",
-			zap.Error(err),
-		)
-		return err
-	}
-
-	err = enqueueMustSummarizerJobs(s.db, s.summarizerJobQueue, job, describeJobIdsMap)
-	if err != nil {
-		SummarizerJobsCount.WithLabelValues("failure").Inc()
-		s.logger.Error("Failed to enqueue SummarizerJob",
-			zap.Uint("jobId", job.ID),
-			zap.Error(err),
-		)
-		job.Status = summarizerapi.SummarizerJobFailed
-		err = s.db.UpdateSummarizerJobStatus(job)
-		if err != nil {
-			s.logger.Error("Failed to update SummarizerJob status",
-				zap.Uint("jobId", job.ID),
-				zap.Error(err),
-			)
-		}
-		return err
-	}
-
-	return nil
-}
-
-func enqueueSummarizerJobs(db Database, q queue.Interface, job SummarizerJob, scheduleJobID uint) error {
-	var lastDayJobID, lastWeekJobID, lastQuarterJobID, lastYearJobID uint
-
-	lastDay, err := db.GetOldCompletedScheduleJob(1)
-	if err != nil {
-		return err
-	}
-	if lastDay != nil {
-		lastDayJobID = lastDay.ID
-	}
-	lastWeek, err := db.GetOldCompletedScheduleJob(7)
-	if err != nil {
-		return err
-	}
-	if lastWeek != nil {
-		lastWeekJobID = lastWeek.ID
-	}
-	lastQuarter, err := db.GetOldCompletedScheduleJob(93)
-	if err != nil {
-		return err
-	}
-	if lastQuarter != nil {
-		lastQuarterJobID = lastQuarter.ID
-	}
-	lastYear, err := db.GetOldCompletedScheduleJob(428)
-	if err != nil {
-		return err
-	}
-	if lastYear != nil {
-		lastYearJobID = lastYear.ID
-	}
-
-	if err := q.Publish(summarizer.ResourceJob{
-		JobID:                    job.ID,
-		ScheduleJobID:            &scheduleJobID,
-		LastDayScheduleJobID:     lastDayJobID,
-		LastWeekScheduleJobID:    lastWeekJobID,
-		LastQuarterScheduleJobID: lastQuarterJobID,
-		LastYearScheduleJobID:    lastYearJobID,
-		JobType:                  summarizer.JobType_ResourceSummarizer,
-	}); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func enqueueMustSummarizerJobs(db Database, q queue.Interface, job SummarizerJob, describeJobIds map[string][]uint) error {
-	var lastDayJobID, lastWeekJobID, lastQuarterJobID, lastYearJobID uint
-
-	lastDay, err := db.GetOldCompletedScheduleJob(1)
-	if err != nil {
-		return err
-	}
-	if lastDay != nil {
-		lastDayJobID = lastDay.ID
-	}
-	lastWeek, err := db.GetOldCompletedScheduleJob(7)
-	if err != nil {
-		return err
-	}
-	if lastWeek != nil {
-		lastWeekJobID = lastWeek.ID
-	}
-	lastQuarter, err := db.GetOldCompletedScheduleJob(93)
-	if err != nil {
-		return err
-	}
-	if lastQuarter != nil {
-		lastQuarterJobID = lastQuarter.ID
-	}
-	lastYear, err := db.GetOldCompletedScheduleJob(428)
-	if err != nil {
-		return err
-	}
-	if lastYear != nil {
-		lastYearJobID = lastYear.ID
-	}
-
-	if err := q.Publish(summarizer.ResourceJob{
-		JobID:                    job.ID,
-		ResourceDescribeJobIDs:   describeJobIds,
-		LastDayScheduleJobID:     lastDayJobID,
-		LastWeekScheduleJobID:    lastWeekJobID,
-		LastQuarterScheduleJobID: lastQuarterJobID,
-		LastYearScheduleJobID:    lastYearJobID,
-		JobType:                  summarizer.JobType_ResourceMustSummarizer,
-	}); err != nil {
-		return err
-	}
-
-	return nil
 }
 
 func (s Scheduler) scheduleComplianceSummarizerJob(scheduleJobID uint) error {
@@ -3179,25 +1601,5 @@ func newInsightJob(insight complianceapi.Insight, sourceType, sourceId, accountI
 func newCheckupJob() CheckupJob {
 	return CheckupJob{
 		Status: checkupapi.CheckupJobInProgress,
-	}
-}
-
-func newSummarizerJob(jobType summarizer.JobType, scheduleJobID uint) SummarizerJob {
-	return SummarizerJob{
-		Model:          gorm.Model{},
-		ScheduleJobID:  &scheduleJobID,
-		Status:         summarizerapi.SummarizerJobInProgress,
-		JobType:        jobType,
-		FailureMessage: "",
-	}
-}
-
-func newMustSummarizerJob(scheduleJobID *uint) SummarizerJob {
-	return SummarizerJob{
-		Model:          gorm.Model{},
-		Status:         summarizerapi.SummarizerJobInProgress,
-		ScheduleJobID:  scheduleJobID,
-		JobType:        summarizer.JobType_ResourceMustSummarizer,
-		FailureMessage: "",
 	}
 }

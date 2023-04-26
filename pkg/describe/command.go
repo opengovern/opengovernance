@@ -106,13 +106,8 @@ func SchedulerCommand() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			s, err := InitializeScheduler(
 				id,
-				RabbitMQUsername,
-				RabbitMQPassword,
-				RabbitMQService,
-				RabbitMQPort,
 				DescribeJobsQueueName,
 				DescribeResultsQueueName,
-				DescribeConnectionJobsQueueName,
 				DescribeConnectionResultsQueueName,
 				CloudNativeAPIBaseURL,
 				CloudNativeAPIAuthKey,

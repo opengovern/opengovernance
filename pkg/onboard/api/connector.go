@@ -1,19 +1,21 @@
 package api
 
 import (
-	"time"
-
 	"gitlab.com/keibiengine/keibi-engine/pkg/source"
 )
 
 type Connector struct {
-	Code             source.Type                   `json:"code"`
-	Name             string                        `json:"name"`
-	Description      string                        `json:"description"`
-	Direction        source.ConnectorDirectionType `json:"direction"`
-	Status           source.ConnectorStatus        `json:"status"`
-	Category         string                        `json:"category"`
-	StartSupportDate time.Time                     `json:"startSupportDate"`
+	Name                source.Type                   `json:"name"`
+	Label               string                        `json:"label"`
+	ShortDescription    string                        `json:"shortDescription"`
+	Description         string                        `json:"description"`
+	Direction           source.ConnectorDirectionType `json:"direction"`
+	Status              source.ConnectorStatus        `json:"status"`
+	Logo                string                        `json:"logo"`
+	AutoOnboardSupport  bool                          `json:"autoOnboardSupport"`
+	AllowNewConnections bool                          `json:"allowNewConnections"`
+	MaxConnectionLimit  int                           `json:"maxConnectionLimit"`
+	Tags                map[string]any                `json:"tags"`
 }
 
 type ConnectorCount struct {

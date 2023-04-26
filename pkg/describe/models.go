@@ -2,6 +2,7 @@ package describe
 
 import (
 	"database/sql"
+	"gitlab.com/keibiengine/keibi-engine/pkg/describe/enums"
 	"time"
 
 	insightapi "gitlab.com/keibiengine/keibi-engine/pkg/insight/api"
@@ -55,12 +56,12 @@ type ScheduleJob struct {
 
 type DescribeSourceJob struct {
 	gorm.Model
-	ScheduleJobID        uint
 	DescribedAt          time.Time
 	SourceID             uuid.UUID // Not the primary key but should be a unique identifier
 	AccountID            string
 	DescribeResourceJobs []DescribeResourceJob `gorm:"foreignKey:ParentJobID;constraint:OnDelete:CASCADE;"`
 	Status               api.DescribeSourceJobStatus
+	TriggerType          enums.DescribeTriggerType
 }
 
 type CloudNativeDescribeSourceJob struct {

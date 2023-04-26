@@ -1008,8 +1008,6 @@ definitions:
         type: string
       benchmarkID:
         type: string
-      category:
-        type: string
       complianceJobID:
         type: integer
       connectionID:
@@ -1038,8 +1036,6 @@ definitions:
         $ref: '#/definitions/types.ComplianceResult'
       scheduleJobID:
         type: integer
-      serviceName:
-        type: string
       severity:
         type: string
       stateActive:
@@ -2410,6 +2406,8 @@ definitions:
         type: integer
       resourcesDiscovered:
         type: integer
+      totalConnections:
+        type: integer
       unhealthyConnections:
         type: integer
     type: object
@@ -2432,24 +2430,59 @@ definitions:
     x-enum-varnames:
     - ConnectionState_ENABLED
     - ConnectionState_DISABLED
+  gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.Connector:
+    properties:
+      allowNewConnections:
+        type: boolean
+      autoOnboardSupport:
+        type: boolean
+      description:
+        type: string
+      direction:
+        $ref: '#/definitions/source.ConnectorDirectionType'
+      label:
+        type: string
+      logo:
+        type: string
+      maxConnectionLimit:
+        type: integer
+      name:
+        $ref: '#/definitions/source.Type'
+      shortDescription:
+        type: string
+      status:
+        $ref: '#/definitions/source.ConnectorStatus'
+      tags:
+        additionalProperties: {}
+        type: object
+    type: object
   gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.ConnectorCount:
     properties:
-      category:
-        type: string
-      code:
-        $ref: '#/definitions/source.Type'
+      allowNewConnections:
+        type: boolean
+      autoOnboardSupport:
+        type: boolean
       connection_count:
         type: integer
       description:
         type: string
       direction:
         $ref: '#/definitions/source.ConnectorDirectionType'
-      name:
+      label:
         type: string
-      startSupportDate:
+      logo:
+        type: string
+      maxConnectionLimit:
+        type: integer
+      name:
+        $ref: '#/definitions/source.Type'
+      shortDescription:
         type: string
       status:
         $ref: '#/definitions/source.ConnectorStatus'
+      tags:
+        additionalProperties: {}
+        type: object
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.ConnectorState:
     enum:
@@ -2468,11 +2501,6 @@ definitions:
         $ref: '#/definitions/source.Type'
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.CreateCredentialResponse:
-    properties:
-      id:
-        type: string
-    type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.CreateSPNResponse:
     properties:
       id:
         type: string
@@ -2510,42 +2538,10 @@ definitions:
         type: string
       onboardDate:
         type: string
-      status:
-        $ref: '#/definitions/source.CredentialStatus'
       total_connections:
         type: integer
       unhealthy_connections:
         type: integer
-    type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.DiscoverAWSAccountsResponse:
-    properties:
-      accountId:
-        type: string
-      email:
-        type: string
-      name:
-        type: string
-      organizationId:
-        description: Nil if not part of an AWS organization
-        type: string
-      status:
-        type: string
-    type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.DiscoverAzureSubscriptionsResponse:
-    properties:
-      id:
-        type: string
-      name:
-        type: string
-      status:
-        type: string
-      subscriptionId:
-        type: string
-    type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.DiscoverAzureSubscriptionsSPNRequest:
-    properties:
-      spnId:
-        type: string
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.GetSourcesRequest:
     properties:
@@ -2632,6 +2628,10 @@ definitions:
         type: string
       clientSecret:
         type: string
+      objectId:
+        type: string
+      secretId:
+        type: string
       subscriptionId:
         type: string
       tenantId:
@@ -2639,18 +2639,17 @@ definitions:
     required:
     - clientId
     - clientSecret
-    - subscriptionId
+    - objectId
+    - secretId
     - tenantId
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.UpdateCredentialRequest:
     properties:
       config: {}
-      id:
-        type: string
+      connector:
+        $ref: '#/definitions/source.Type'
       name:
         type: string
-      source_type:
-        $ref: '#/definitions/source.Type'
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_workspace_api.ChangeWorkspaceNameRequest:
     properties:
@@ -2808,14 +2807,6 @@ definitions:
     - ConnectorStatusEnabled
     - ConnectorStatusDisabled
     - ConnectorStatusComingSoon
-  source.CredentialStatus:
-    enum:
-    - enabled
-    - disabled
-    type: string
-    x-enum-varnames:
-    - CredentialStatusEnabled
-    - CredentialStatusDisabled
   source.CredentialType:
     enum:
     - auto-generated
@@ -2829,13 +2820,11 @@ definitions:
     - ""
     - healthy
     - unhealthy
-    - initial_discovery
     type: string
     x-enum-varnames:
     - HealthStatusNil
     - HealthStatusHealthy
     - HealthStatusUnhealthy
-    - HealthStatusInitialDiscovery
   source.Type:
     enum:
     - ""
@@ -3792,8 +3781,7 @@ paths:
         name: provider
         required: true
         type: string
-      - collectionFormat: csv
-        description: SourceID
+      - description: SourceID
         in: query
         items:
           type: string
@@ -4222,8 +4210,7 @@ paths:
       consumes:
       - application/json
       parameters:
-      - collectionFormat: csv
-        description: SourceID
+      - description: SourceID
         in: query
         items:
           type: string
@@ -4306,8 +4293,7 @@ paths:
         in: query
         name: provider
         type: string
-      - collectionFormat: csv
-        description: SourceId
+      - description: SourceId
         in: query
         items:
           type: string
@@ -4418,8 +4404,7 @@ paths:
         in: query
         name: provider
         type: string
-      - collectionFormat: csv
-        description: SourceId
+      - description: SourceId
         in: query
         items:
           type: string
@@ -4517,8 +4502,7 @@ paths:
       consumes:
       - application/json
       parameters:
-      - collectionFormat: csv
-        description: SourceID
+      - description: SourceID
         in: query
         items:
           type: string
@@ -4554,8 +4538,7 @@ paths:
         name: provider
         required: true
         type: string
-      - collectionFormat: csv
-        description: SourceID
+      - description: SourceID
         in: query
         items:
           type: string
@@ -4646,8 +4629,7 @@ paths:
         in: query
         name: provider
         type: string
-      - collectionFormat: csv
-        description: SourceID
+      - description: SourceID
         in: query
         items:
           type: string
@@ -4702,8 +4684,7 @@ paths:
         in: query
         name: provider
         type: string
-      - collectionFormat: csv
-        description: SourceID
+      - description: SourceID
         in: query
         items:
           type: string
@@ -4747,8 +4728,7 @@ paths:
         in: query
         name: connector
         type: string
-      - collectionFormat: csv
-        description: filter the result by source id
+      - description: filter the result by source id
         in: query
         items:
           type: string
@@ -4775,8 +4755,7 @@ paths:
     get:
       description: Get an insight by id
       parameters:
-      - collectionFormat: csv
-        description: filter the result by source id
+      - description: filter the result by source id
         in: query
         items:
           type: string
@@ -4836,8 +4815,7 @@ paths:
     get:
       description: Get an insight peer by id
       parameters:
-      - collectionFormat: csv
-        description: filter the result by source id
+      - description: filter the result by source id
         in: query
         items:
           type: string
@@ -5033,8 +5011,7 @@ paths:
         in: query
         name: provider
         type: string
-      - collectionFormat: csv
-        description: SourceID
+      - description: SourceID
         in: query
         items:
           type: string
@@ -5079,8 +5056,7 @@ paths:
         in: query
         name: provider
         type: string
-      - collectionFormat: csv
-        description: SourceID
+      - description: SourceID
         in: query
         items:
           type: string
@@ -5136,8 +5112,7 @@ paths:
         in: query
         name: provider
         type: string
-      - collectionFormat: csv
-        description: SourceID
+      - description: SourceID
         in: query
         items:
           type: string
@@ -5183,8 +5158,7 @@ paths:
         in: query
         name: provider
         type: string
-      - collectionFormat: csv
-        description: SourceID
+      - description: SourceID
         in: query
         items:
           type: string
@@ -5271,8 +5245,7 @@ paths:
         in: query
         name: provider
         type: string
-      - collectionFormat: csv
-        description: SourceID
+      - description: SourceID
         in: query
         items:
           type: string
@@ -5330,8 +5303,7 @@ paths:
         in: query
         name: provider
         type: string
-      - collectionFormat: csv
-        description: SourceID
+      - description: SourceID
         in: query
         items:
           type: string
@@ -5368,8 +5340,7 @@ paths:
         in: query
         name: provider
         type: string
-      - collectionFormat: csv
-        description: SourceID
+      - description: SourceID
         in: query
         items:
           type: string
@@ -5403,8 +5374,7 @@ paths:
         in: query
         name: provider
         type: string
-      - collectionFormat: csv
-        description: SourceID
+      - description: SourceID
         in: query
         items:
           type: string
@@ -5495,15 +5465,13 @@ paths:
         in: query
         name: connector
         type: string
-      - collectionFormat: csv
-        description: SourceID
+      - description: SourceID
         in: query
         items:
           type: string
         name: sourceId
         type: array
-      - collectionFormat: csv
-        description: serviceName
+      - description: serviceName
         in: query
         items:
           type: string
@@ -5548,8 +5516,7 @@ paths:
         in: query
         name: connector
         type: string
-      - collectionFormat: csv
-        description: SourceID
+      - description: SourceID
         in: query
         items:
           type: string
@@ -5580,8 +5547,7 @@ paths:
         the API filters and a list of services with more details. Including connector,
         the resource counts and the cost.
       parameters:
-      - collectionFormat: csv
-        description: 'filter: SourceIDs'
+      - description: 'filter: SourceIDs'
         in: query
         items:
           type: string
@@ -5735,11 +5701,6 @@ paths:
   /onboard/api/v1/connectors:
     get:
       description: Getting connectors
-      parameters:
-      - description: category
-        in: query
-        name: category
-        type: string
       produces:
       - application/json
       responses:
@@ -5750,6 +5711,25 @@ paths:
               $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.ConnectorCount'
             type: array
       summary: Get connectors
+      tags:
+      - onboard
+  /onboard/api/v1/connectors/{connectorName}:
+    get:
+      description: Getting connector
+      parameters:
+      - description: Connector name
+        in: path
+        name: connectorName
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.Connector'
+      summary: Get connector
       tags:
       - onboard
   /onboard/api/v1/credential:
@@ -5772,6 +5752,16 @@ paths:
         in: query
         name: health
         type: string
+      - default: 50
+        description: page size
+        in: query
+        name: pageSize
+        type: integer
+      - default: 1
+        description: page number
+        in: query
+        name: pageNumber
+        type: integer
       produces:
       - application/json
       responses:
@@ -5803,23 +5793,6 @@ paths:
       summary: Create connection credentials
       tags:
       - onboard
-    put:
-      description: Edit a credential by Id
-      parameters:
-      - description: config
-        in: body
-        name: config
-        required: true
-        schema:
-          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.UpdateCredentialRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-      summary: Edit a credential by Id
-      tags:
-      - onboard
   /onboard/api/v1/credential/{credentialId}:
     delete:
       description: Delete credential
@@ -5841,6 +5814,38 @@ paths:
           schema:
             $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.Credential'
       summary: List credentials
+      tags:
+      - onboard
+    put:
+      description: Edit a credential by Id
+      parameters:
+      - description: config
+        in: body
+        name: config
+        required: true
+        schema:
+          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.UpdateCredentialRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+      summary: Edit a credential by Id
+      tags:
+      - onboard
+  /onboard/api/v1/credential/{credentialId}/autoonboard:
+    post:
+      description: Onboard all available connections for a credential
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.Source'
+            type: array
+      summary: Onboard all available connections for a credential
       tags:
       - onboard
   /onboard/api/v1/credential/{credentialId}/disable:
@@ -5865,6 +5870,14 @@ paths:
       summary: Enable credential
       tags:
       - onboard
+  /onboard/api/v1/credential/{credentialId}/healthcheck:
+    post:
+      produces:
+      - application/json
+      responses: {}
+      summary: Get live credential health status
+      tags:
+      - onboard
   /onboard/api/v1/credential/sources/list:
     get:
       description: Returning a list of sources including both AWS and Azure unless
@@ -5878,6 +5891,26 @@ paths:
         in: query
         name: connector
         type: string
+      - default: 50
+        description: page size
+        in: query
+        name: pageSize
+        type: integer
+      - default: 1
+        description: page number
+        in: query
+        name: pageNumber
+        type: integer
+      - default: 50
+        description: page size
+        in: query
+        name: pageSize
+        type: integer
+      - default: 1
+        description: page number
+        in: query
+        name: pageNumber
+        type: integer
       produces:
       - application/json
       responses:
@@ -5888,92 +5921,6 @@ paths:
               $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.Credential'
             type: array
       summary: Returns a list of sources
-      tags:
-      - onboard
-  /onboard/api/v1/discover/aws/accounts:
-    post:
-      description: If the account is part of an organization and the account has premission
-        to list the accounts, it will return all the accounts in that organization.
-        Otherwise, it will return the single account these credentials belong to.
-      parameters:
-      - description: AccessKey
-        in: body
-        name: accessKey
-        required: true
-        schema:
-          type: string
-      - description: SecretKey
-        in: body
-        name: secretKey
-        required: true
-        schema:
-          type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            items:
-              $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.DiscoverAWSAccountsResponse'
-            type: array
-      summary: Returns the list of available AWS accounts given the credentials.
-      tags:
-      - onboard
-  /onboard/api/v1/discover/azure/subscriptions:
-    post:
-      description: Returning the list of available Azure subscriptions.
-      parameters:
-      - description: TenantId
-        in: body
-        name: tenantId
-        required: true
-        schema:
-          type: string
-      - description: ClientId
-        in: body
-        name: clientId
-        required: true
-        schema:
-          type: string
-      - description: ClientSecret
-        in: body
-        name: clientSecret
-        required: true
-        schema:
-          type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            items:
-              $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.DiscoverAzureSubscriptionsResponse'
-            type: array
-      summary: Returns the list of available Azure subscriptions.
-      tags:
-      - onboard
-  /onboard/api/v1/discover/azure/subscriptions/spn:
-    post:
-      description: Returning the list of available Azure subscriptions.
-      parameters:
-      - description: Request Body
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.DiscoverAzureSubscriptionsSPNRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            items:
-              $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.DiscoverAzureSubscriptionsResponse'
-            type: array
-      summary: Returns the list of available Azure subscriptions.
       tags:
       - onboard
   /onboard/api/v1/providers:
@@ -6104,7 +6051,7 @@ paths:
     post:
       parameters:
       - description: Source ID
-        in: query
+        in: path
         name: sourceId
         required: true
         type: string
@@ -6176,38 +6123,6 @@ paths:
           schema:
             $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.CreateSourceResponse'
       summary: Create Azure source
-      tags:
-      - onboard
-  /onboard/api/v1/source/azure/spn:
-    post:
-      description: Creating Azure source with SPN
-      parameters:
-      - description: name
-        in: body
-        name: name
-        required: true
-        schema:
-          type: string
-      - description: description
-        in: body
-        name: description
-        required: true
-        schema:
-          type: string
-      - description: config
-        in: body
-        name: config
-        required: true
-        schema:
-          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.SourceConfigAzure'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.CreateSourceResponse'
-      summary: Create Azure source with SPN
       tags:
       - onboard
   /onboard/api/v1/sources:
@@ -6284,80 +6199,6 @@ paths:
           schema:
             type: integer
       summary: Returns a count of sources
-      tags:
-      - onboard
-  /onboard/api/v1/spn/{spnId}:
-    delete:
-      parameters:
-      - description: SPN ID
-        in: query
-        name: spnId
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses: {}
-      summary: Delete SPN credential
-      tags:
-      - onboard
-    post:
-      parameters:
-      - description: SPN ID
-        in: query
-        name: spnId
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses: {}
-      summary: Get SPN credential
-      tags:
-      - onboard
-    put:
-      parameters:
-      - description: SPN ID
-        in: query
-        name: spnId
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses: {}
-      summary: Put SPN credential
-      tags:
-      - onboard
-  /onboard/api/v1/spn/azure:
-    post:
-      description: Creating Azure SPN
-      parameters:
-      - description: name
-        in: body
-        name: name
-        required: true
-        schema:
-          type: string
-      - description: config
-        in: body
-        name: config
-        required: true
-        schema:
-          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.SourceConfigAzure'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.CreateSPNResponse'
-      summary: Create Azure SPN
-      tags:
-      - onboard
-  /onboard/api/v1/spn/list:
-    get:
-      produces:
-      - application/json
-      responses: {}
-      summary: List SPN credentials
       tags:
       - onboard
   /schedule/api/v0/compliance/summarizer/trigger:
@@ -6507,6 +6348,17 @@ paths:
       summary: Listing describe source jobs
       tags:
       - schedule
+  /schedule/api/v1/describe/trigger/{connection_id}:
+    put:
+      description: Triggers a describe job to run immediately
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+      summary: Triggers a describe job to run immediately
+      tags:
+      - describe
   /schedule/api/v1/insight/jobs/pending:
     get:
       produces:
