@@ -562,7 +562,7 @@ func EC2Host(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	return values, nil
 }
 
-func EC2Instance(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func EC2Instance(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := ec2.NewFromConfig(cfg)
 	paginator := ec2.NewDescribeInstancesPaginator(client, &ec2.DescribeInstancesInput{})
 
@@ -618,11 +618,21 @@ func EC2Instance(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 					}
 				}
 				arn := "arn:" + describeCtx.Partition + ":ec2:" + describeCtx.Region + ":" + describeCtx.AccountID + ":instance/" + *v.InstanceId
-				values = append(values, Resource{
+
+				resource := Resource{
 					ARN:         arn,
 					Name:        *v.InstanceId,
 					Description: desc,
-				})
+				}
+				if stream != nil {
+					m := *stream
+					err = m(resource)
+					if err != nil {
+						return nil, err
+					}
+				} else {
+					values = append(values, resource)
+				}
 			}
 		}
 	}

@@ -11,7 +11,7 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/source"
 )
 
-type ResourceDescriber func(context.Context, aws.Config, string, []string, string, enums.DescribeTriggerType) (*Resources, error)
+type ResourceDescriber func(context.Context, aws.Config, string, []string, string, enums.DescribeTriggerType, *describer.StreamSender) (*Resources, error)
 type SingleResourceDescriber func(context.Context, aws.Config, string, []string, string, map[string]string, enums.DescribeTriggerType) (*Resources, error)
 
 type ResourceType struct {
@@ -2959,6 +2959,7 @@ func GetResources(
 	sessionToken,
 	assumeRoleArn string,
 	includeDisabledRegions bool,
+	stream *describer.StreamSender,
 ) (*Resources, error) {
 	cfg, err := GetConfig(ctx, accessKey, secretKey, sessionToken, assumeRoleArn)
 	if err != nil {
@@ -2979,7 +2980,7 @@ func GetResources(
 		}
 	}
 
-	resources, err := describe(ctx, cfg, accountId, regions, resourceType, triggerType)
+	resources, err := describe(ctx, cfg, accountId, regions, resourceType, triggerType, stream)
 	if err != nil {
 		return nil, err
 	}
@@ -3043,19 +3044,13 @@ func describeSingle(
 	return resourceTypeObject.GetDescriber(ctx, cfg, account, regions, resourceType, fields, triggerType)
 }
 
-func describe(
-	ctx context.Context,
-	cfg aws.Config,
-	account string,
-	regions []string,
-	resourceType string,
-	triggerType enums.DescribeTriggerType) (*Resources, error) {
+func describe(ctx context.Context, cfg aws.Config, account string, regions []string, resourceType string, triggerType enums.DescribeTriggerType, stream *describer.StreamSender) (*Resources, error) {
 	resourceTypeObject, ok := resourceTypes[resourceType]
 	if !ok {
 		return nil, fmt.Errorf("unsupported resource type: %s", resourceType)
 	}
 
-	return resourceTypeObject.ListDescriber(ctx, cfg, account, regions, resourceType, triggerType)
+	return resourceTypeObject.ListDescriber(ctx, cfg, account, regions, resourceType, triggerType, stream)
 }
 
 func ParallelDescribeRegionalSingleResource(describe func(context.Context, aws.Config, map[string]string) ([]describer.Resource, error)) SingleResourceDescriber {
@@ -3123,13 +3118,13 @@ func ParallelDescribeRegionalSingleResource(describe func(context.Context, aws.C
 
 // Parallel describe the resources across the reigons. Failure in one regions won't affect
 // other regions.
-func ParallelDescribeRegional(describe func(context.Context, aws.Config) ([]describer.Resource, error)) ResourceDescriber {
+func ParallelDescribeRegional(describe func(context.Context, aws.Config, *describer.StreamSender) ([]describer.Resource, error)) ResourceDescriber {
 	type result struct {
 		region    string
 		resources []describer.Resource
 		err       error
 	}
-	return func(ctx context.Context, cfg aws.Config, account string, regions []string, rType string, triggerType enums.DescribeTriggerType) (*Resources, error) {
+	return func(ctx context.Context, cfg aws.Config, account string, regions []string, rType string, triggerType enums.DescribeTriggerType, stream *describer.StreamSender) (*Resources, error) {
 		input := make(chan result, len(regions))
 		for _, region := range regions {
 			go func(r string) {
@@ -3149,7 +3144,7 @@ func ParallelDescribeRegional(describe func(context.Context, aws.Config) ([]desc
 					Partition: partition,
 				})
 				ctx = describer.WithTriggerType(ctx, triggerType)
-				resources, err := describe(ctx, rCfg)
+				resources, err := describe(ctx, rCfg, stream)
 				input <- result{region: r, resources: resources, err: err}
 			}(region)
 		}
@@ -3187,8 +3182,8 @@ func ParallelDescribeRegional(describe func(context.Context, aws.Config) ([]desc
 }
 
 // Sequentially describe the resources. If anyone of the regions fails, it will move on to the next region.
-func SequentialDescribeGlobal(describe func(context.Context, aws.Config) ([]describer.Resource, error)) ResourceDescriber {
-	return func(ctx context.Context, cfg aws.Config, account string, regions []string, rType string, triggerType enums.DescribeTriggerType) (*Resources, error) {
+func SequentialDescribeGlobal(describe func(context.Context, aws.Config, *describer.StreamSender) ([]describer.Resource, error)) ResourceDescriber {
+	return func(ctx context.Context, cfg aws.Config, account string, regions []string, rType string, triggerType enums.DescribeTriggerType, stream *describer.StreamSender) (*Resources, error) {
 		output := Resources{
 			Resources: make(map[string][]describer.Resource, len(regions)),
 			Errors:    make(map[string]string, len(regions)),
@@ -3206,7 +3201,7 @@ func SequentialDescribeGlobal(describe func(context.Context, aws.Config) ([]desc
 				Partition: partition,
 			})
 			ctx = describer.WithTriggerType(ctx, triggerType)
-			resources, err := describe(ctx, rCfg)
+			resources, err := describe(ctx, rCfg, stream)
 			if err != nil {
 				if !IsUnsupportedOrInvalidError(rType, region, err) {
 					output.Errors[region] = err.Error()
@@ -3237,8 +3232,8 @@ func SequentialDescribeGlobal(describe func(context.Context, aws.Config) ([]desc
 
 // Sequentially describe the resources. If anyone of the regions fails, it will move on to the next region.
 // This utility is specific to S3 usecase.
-func SequentialDescribeS3(describe func(context.Context, aws.Config, []string) (map[string][]describer.Resource, error)) ResourceDescriber {
-	return func(ctx context.Context, cfg aws.Config, account string, regions []string, rType string, triggerType enums.DescribeTriggerType) (*Resources, error) {
+func SequentialDescribeS3(describe func(context.Context, aws.Config, []string, *describer.StreamSender) (map[string][]describer.Resource, error)) ResourceDescriber {
+	return func(ctx context.Context, cfg aws.Config, account string, regions []string, rType string, triggerType enums.DescribeTriggerType, stream *describer.StreamSender) (*Resources, error) {
 		output := Resources{
 			Resources: make(map[string][]describer.Resource, len(regions)),
 			Errors:    make(map[string]string, len(regions)),
@@ -3256,7 +3251,7 @@ func SequentialDescribeS3(describe func(context.Context, aws.Config, []string) (
 				Partition: partition,
 			})
 			ctx = describer.WithTriggerType(ctx, triggerType)
-			resources, err := describe(ctx, rCfg, regions)
+			resources, err := describe(ctx, rCfg, regions, stream)
 			if err != nil {
 				if !IsUnsupportedOrInvalidError(rType, region, err) {
 					output.Errors[region] = err.Error()

@@ -56,7 +56,9 @@ var (
 	ElasticSearchUsername = os.Getenv("ES_USERNAME")
 	ElasticSearchPassword = os.Getenv("ES_PASSWORD")
 
-	HttpServerAddress = os.Getenv("HTTP_ADDRESS")
+	HttpServerAddress       = os.Getenv("HTTP_ADDRESS")
+	GRPCServerAddress       = os.Getenv("GRPC_ADDRESS")
+	DescribeDeliverEndpoint = os.Getenv("DESCRIBE_DELIVER_ENDPOINT")
 
 	PrometheusPushAddress = os.Getenv("PROMETHEUS_PUSH_ADDRESS")
 

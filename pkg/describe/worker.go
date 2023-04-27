@@ -46,17 +46,18 @@ import (
 )
 
 type Worker struct {
-	id                    string
-	jobQueue              queue.Interface
-	jobResultQueue        queue.Interface
-	kfkProducer           sarama.SyncProducer
-	kfkTopic              string
-	vault                 vault.SourceConfig
-	rdb                   *redis.Client
-	logger                *zap.Logger
-	pusher                *push.Pusher
-	tp                    *trace.TracerProvider
-	describeIntervalHours time.Duration
+	id                      string
+	jobQueue                queue.Interface
+	jobResultQueue          queue.Interface
+	kfkProducer             sarama.SyncProducer
+	kfkTopic                string
+	vault                   vault.SourceConfig
+	rdb                     *redis.Client
+	logger                  *zap.Logger
+	describeDeliverEndpoint *string
+	pusher                  *push.Pusher
+	tp                      *trace.TracerProvider
+	describeIntervalHours   time.Duration
 }
 
 func InitializeWorker(
@@ -178,6 +179,7 @@ func InitializeWorker(
 		return nil, err
 	}
 	w.describeIntervalHours = time.Duration(describeIntervalHours) * time.Hour
+	w.describeDeliverEndpoint = &DescribeDeliverEndpoint
 	return w, nil
 }
 
@@ -210,7 +212,7 @@ func (w *Worker) Run(ctx context.Context) error {
 		return nil
 	}
 
-	result := job.Do(ctx, w.vault, w.rdb, w.kfkProducer, w.kfkTopic, w.logger)
+	result := job.Do(ctx, w.vault, w.rdb, w.kfkProducer, w.kfkTopic, w.logger, w.describeDeliverEndpoint)
 	if strings.Contains(result.Error, "ThrottlingException") ||
 		strings.Contains(result.Error, "Rate exceeded") ||
 		strings.Contains(result.Error, "RateExceeded") {
@@ -428,6 +430,7 @@ type CloudNativeConnectionWorker struct {
 	cloudNativeBlobOutputEncryptionKey string
 	vault                              vault.SourceConfig
 	logger                             *zap.Logger
+	describeDeliverEndpoint            *string
 }
 
 func InitializeCloudNativeConnectionWorker(
@@ -472,6 +475,7 @@ func InitializeCloudNativeConnectionWorker(
 	}
 
 	w.logger = logger
+	w.describeDeliverEndpoint = &DescribeDeliverEndpoint
 
 	w.vault = v
 
@@ -519,7 +523,7 @@ func (w *CloudNativeConnectionWorker) Run(ctx context.Context, sendTimeout bool)
 	if sendTimeout {
 		jobResult = w.job.CloudTimeout()
 	} else {
-		jobResult = w.job.Do(ctx, w.vault, nil, w.kfkProducer, w.kfkTopic, w.logger)
+		jobResult = w.job.Do(ctx, w.vault, nil, w.kfkProducer, w.kfkTopic, w.logger, w.describeDeliverEndpoint)
 	}
 
 	saramaMessages := w.kfkProducer.GetMessages()
@@ -619,17 +623,18 @@ func InitializeOldCleanerWorker(
 }
 
 type ConnectionWorker struct {
-	id                    string
-	jobQueue              queue.Interface
-	jobResultQueue        queue.Interface
-	kfkProducer           sarama.SyncProducer
-	kfkTopic              string
-	vault                 vault.SourceConfig
-	describeIntervalHours time.Duration
-	rdb                   *redis.Client
-	logger                *zap.Logger
-	pusher                *push.Pusher
-	tp                    *trace.TracerProvider
+	id                      string
+	jobQueue                queue.Interface
+	jobResultQueue          queue.Interface
+	kfkProducer             sarama.SyncProducer
+	kfkTopic                string
+	vault                   vault.SourceConfig
+	describeIntervalHours   time.Duration
+	rdb                     *redis.Client
+	logger                  *zap.Logger
+	describeDeliverEndpoint *string
+	pusher                  *push.Pusher
+	tp                      *trace.TracerProvider
 }
 
 func InitializeConnectionWorker(
@@ -721,6 +726,7 @@ func InitializeConnectionWorker(
 	}
 
 	w.logger = logger
+	w.describeDeliverEndpoint = &DescribeDeliverEndpoint
 
 	w.logger.Info("Connected to vault:", zap.String("vaultAddress", vaultAddress))
 	w.vault = v
@@ -787,7 +793,7 @@ func (w *ConnectionWorker) Run(ctx context.Context) error {
 		return errors.New("job already failed: timeout")
 	}
 
-	result := job.Do(ctx, w.vault, w.rdb, w.kfkProducer, w.kfkTopic, w.logger)
+	result := job.Do(ctx, w.vault, w.rdb, w.kfkProducer, w.kfkTopic, w.logger, w.describeDeliverEndpoint)
 
 	err = w.jobResultQueue.Publish(result)
 	if err != nil {

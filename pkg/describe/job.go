@@ -4,6 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"gitlab.com/keibiengine/keibi-engine/pkg/aws/describer"
+	"gitlab.com/keibiengine/keibi-engine/pkg/describe/proto/src/golang"
+	"google.golang.org/grpc"
 	"regexp"
 	"strconv"
 	"strings"
@@ -174,7 +177,7 @@ type DescribeConnectionJobResult struct {
 	Result map[uint]DescribeJobResult // DescribeResourceJob ID -> DescribeJobResult
 }
 
-func (j DescribeConnectionJob) Do(ictx context.Context, vlt vault.SourceConfig, rdb *redis.Client, producer sarama.SyncProducer, topic string, logger *zap.Logger) (r DescribeConnectionJobResult) {
+func (j DescribeConnectionJob) Do(ictx context.Context, vlt vault.SourceConfig, rdb *redis.Client, producer sarama.SyncProducer, topic string, logger *zap.Logger, describeDeliverEndpoint *string) (r DescribeConnectionJobResult) {
 	defer func() {
 		if rec := recover(); rec != nil {
 			describeConnectionJobResult := DescribeConnectionJobResult{
@@ -237,7 +240,7 @@ func (j DescribeConnectionJob) Do(ictx context.Context, vlt vault.SourceConfig, 
 					wg.Done()
 					return
 				case job := <-workChannel:
-					res := job.Do(ictx, vlt, rdb, producer, topic, logger)
+					res := job.Do(ictx, vlt, rdb, producer, topic, logger, describeDeliverEndpoint)
 
 					resultChannel <- res
 				}
@@ -316,7 +319,7 @@ func (j DescribeConnectionJob) CloudTimeout() (r DescribeConnectionJobResult) {
 // do its best to complete the task even if some errors occur along the way. However,
 // if any error occurs, The JobResult will indicate that through the Status and Error
 // will be set to the first error that occured.
-func (j DescribeJob) Do(ictx context.Context, vlt vault.SourceConfig, rdb *redis.Client, producer sarama.SyncProducer, topic string, logger *zap.Logger) (r DescribeJobResult) {
+func (j DescribeJob) Do(ictx context.Context, vlt vault.SourceConfig, rdb *redis.Client, producer sarama.SyncProducer, topic string, logger *zap.Logger, describeDeliverEndpoint *string) (r DescribeJobResult) {
 	logger.Info("Starting DescribeJob", zap.Uint("jobID", j.JobID), zap.Uint("scheduleJobID", j.ScheduleJobID), zap.Uint("parentJobID", j.ParentJobID), zap.String("resourceType", j.ResourceType), zap.String("sourceID", j.SourceID), zap.String("accountID", j.AccountID), zap.Int64("describedAt", j.DescribedAt), zap.String("sourceType", string(j.SourceType)), zap.String("configReg", j.ConfigReg), zap.String("triggerType", string(j.TriggerType)), zap.Uint("retryCounter", j.RetryCounter))
 	ctx, span := otel.Tracer(trace2.DescribeWorkerTrace).Start(ictx, "Do")
 	defer span.End()
@@ -365,7 +368,7 @@ func (j DescribeJob) Do(ictx context.Context, vlt vault.SourceConfig, rdb *redis
 		fail(fmt.Errorf("config is null! path is: %s", j.ConfigReg))
 	} else {
 		var msgs []kafka.Doc
-		msgs, resourceIDs, err = doDescribe(ctx, rdb, j, config, logger)
+		msgs, resourceIDs, err = doDescribe(ctx, rdb, j, config, logger, describeDeliverEndpoint)
 		if err != nil {
 			// Don't return here. In certain cases, such as AWS, resources might be
 			// available for some regions while there was failures in other regions.
@@ -402,12 +405,12 @@ func (j DescribeJob) Do(ictx context.Context, vlt vault.SourceConfig, rdb *redis
 }
 
 // doDescribe describes the sources, e.g. AWS, Azure and returns the responses.
-func doDescribe(ctx context.Context, rdb *redis.Client, job DescribeJob, config map[string]interface{}, logger *zap.Logger) ([]kafka.Doc, []string, error) {
+func doDescribe(ctx context.Context, rdb *redis.Client, job DescribeJob, config map[string]interface{}, logger *zap.Logger, describeDeliverEndpoint *string) ([]kafka.Doc, []string, error) {
 	logger.Info(fmt.Sprintf("Proccessing Job: ID[%d] ParentJobID[%d] RosourceType[%s]\n", job.JobID, job.ParentJobID, job.ResourceType))
 
 	switch job.SourceType {
 	case api.SourceCloudAWS:
-		return doDescribeAWS(ctx, rdb, job, config, logger)
+		return doDescribeAWS(ctx, rdb, job, config, logger, describeDeliverEndpoint)
 	case api.SourceCloudAzure:
 		return doDescribeAzure(ctx, rdb, job, config, logger)
 	default:
@@ -415,11 +418,61 @@ func doDescribe(ctx context.Context, rdb *redis.Client, job DescribeJob, config 
 	}
 }
 
-func doDescribeAWS(ctx context.Context, rdb *redis.Client, job DescribeJob, config map[string]interface{}, logger *zap.Logger) ([]kafka.Doc, []string, error) {
+func doDescribeAWS(ctx context.Context, rdb *redis.Client, job DescribeJob, config map[string]interface{},
+	logger *zap.Logger, describeDeliverEndpoint *string) ([]kafka.Doc, []string, error) {
+
 	var resourceIDs []string
 	creds, err := AWSAccountConfigFromMap(config)
 	if err != nil {
 		return nil, nil, fmt.Errorf("aws account credentials: %w", err)
+	}
+
+	var clientStream *describer.StreamSender
+	if describeDeliverEndpoint != nil {
+		conn, err := grpc.Dial(*describeDeliverEndpoint)
+		if err != nil {
+			return nil, nil, err
+		}
+		defer conn.Close()
+
+		client := golang.NewDescribeServiceClient(conn)
+
+		stream, err := client.DeliverAWSResources(context.Background())
+		if err != nil {
+			return nil, nil, err
+		}
+
+		f := func(resource describer.Resource) error {
+			descriptionJSON, err := json.Marshal(resource.Description)
+			if err != nil {
+				return err
+			}
+
+			return stream.Send(&golang.AWSResource{
+				Arn:             resource.ARN,
+				Id:              resource.ID,
+				Name:            resource.Name,
+				Account:         resource.Account,
+				Region:          resource.Region,
+				Partition:       resource.Partition,
+				Type:            resource.Type,
+				DescriptionJson: string(descriptionJSON),
+				Job: &golang.DescribeJob{
+					JobId:         uint32(job.JobID),
+					ScheduleJobId: uint32(job.ScheduleJobID),
+					ParentJobId:   uint32(job.ParentJobID),
+					ResourceType:  job.ResourceType,
+					SourceId:      job.SourceID,
+					AccountId:     job.AccountID,
+					DescribedAt:   job.DescribedAt,
+					SourceType:    string(job.SourceType),
+					ConfigReg:     job.ConfigReg,
+					TriggerType:   string(job.TriggerType),
+					RetryCounter:  uint32(job.RetryCounter),
+				},
+			})
+		}
+		clientStream = (*describer.StreamSender)(&f)
 	}
 
 	output, err := aws.GetResources(
@@ -433,6 +486,7 @@ func doDescribeAWS(ctx context.Context, rdb *redis.Client, job DescribeJob, conf
 		creds.SessionToken,
 		creds.AssumeRoleARN,
 		false,
+		clientStream,
 	)
 	if err != nil {
 		return nil, nil, fmt.Errorf("AWS: %w", err)

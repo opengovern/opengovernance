@@ -3,9 +3,13 @@ package describe
 import (
 	"encoding/json"
 	"fmt"
+	"net"
 	"strconv"
 	"strings"
 	"time"
+
+	"gitlab.com/keibiengine/keibi-engine/pkg/describe/proto/src/golang"
+	"google.golang.org/grpc"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/metadata/models"
 
@@ -120,6 +124,7 @@ type Scheduler struct {
 	id         string
 	db         Database
 	httpServer *HttpServer
+	grpcServer *grpc.Server
 
 	// describeJobResultQueue is used to consume the describe job results returned by the workers.
 	describeJobResultQueue queue.Interface
@@ -344,6 +349,7 @@ func InitializeScheduler(
 	s.kafkaResourcesTopic = KafkaResourcesTopic
 
 	s.httpServer = NewHTTPServer(httpServerAddress, s.db, s)
+
 	s.describeIntervalHours, err = strconv.ParseInt(describeIntervalHours, 10, 64)
 	if err != nil {
 		return nil, err
@@ -403,6 +409,15 @@ func InitializeScheduler(
 		return nil, err
 	}
 	s.vault = v
+
+	producer, err := newKafkaProducer(strings.Split(KafkaService, ","))
+	if err != nil {
+		return nil, err
+	}
+
+	s.grpcServer = grpc.NewServer()
+	describeServer := NewDescribeServer(s.rdb, producer, s.kafkaResourcesTopic, s.logger)
+	golang.RegisterDescribeServiceServer(s.grpcServer, describeServer)
 
 	return s, nil
 }
@@ -515,6 +530,17 @@ func (s *Scheduler) Run() error {
 	EnsureRunGoroutin(func() {
 		s.logger.Fatal("SummarizerJobResult consumer exited", zap.Error(s.RunSummarizerJobResultsConsumer()))
 	})
+
+	lis, err := net.Listen("tcp", GRPCServerAddress)
+	if err != nil {
+		s.logger.Fatal("failed to listen on grpc port", zap.Error(err))
+	}
+	go func() {
+		err := s.grpcServer.Serve(lis)
+		if err != nil {
+			s.logger.Fatal("failed to serve grpc server", zap.Error(err))
+		}
+	}()
 
 	return httpserver.RegisterAndStart(s.logger, s.httpServer.Address, s.httpServer)
 }
